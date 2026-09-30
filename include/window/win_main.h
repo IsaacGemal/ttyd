@@ -6,6 +6,8 @@ typedef struct EventEntry EventEntry;
 
 #include <dolphin/types.h>
 s32 winGhostDiaryChk(void);
+s32 winLectureCheck(void);
+void winLectureOn(void);
 void winDisp(CameraId camId, void* param);
 void winDispKoopa(CameraId camId, void* param);
 void winLectureKeyMask(void);

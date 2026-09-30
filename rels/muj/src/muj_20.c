@@ -17,6 +17,46 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/mapdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "eff/eff_funemizu.h"
+#include "eff/n64/eff_water_damage_n64.h"
+#include "eff/eff_mahojin.h"
+#include "eff/eff_mist.h"
+#include "eff/eff_splash.h"
+#include "manager/evtmgr_cmd.h"
+#include "manager/filemgr.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "system.h"
+#include "muj_10.h"
+#include <dolphin/gx/GXTev.h>
+#include <dolphin/mtx.h>
+#include <dolphin/os.h>
+#include <stdlib.h>
+#include <string.h>
+
+// marcoship work, private to this unit (layout read from the original's asm).
+typedef struct MarcoShip {
+    f32 field_0x0;    // 0x0
+    f32 field_0x4;    // 0x4
+    f32 field_0x8;    // 0x8
+    s32 field_0xC;    // 0xC
+    s32 field_0x10;   // 0x10
+    u8 pad_0x14[4];   // 0x14
+    OSTime field_0x18; // 0x18
+} MarcoShip;
+
+// logo work, private to this unit (layout read from the original's asm).
+typedef struct LogoWork {
+    void* data;      // 0x0
+    f32 alpha;       // 0x4
+    s32 field_0x8;   // 0x8
+    s32 state;       // 0xC
+    s32 field_0x10;  // 0x10
+} LogoWork;
 
 #pragma pool_data off
 
@@ -25,12 +65,17 @@ extern s32 muj_npc_buruburu[];
 extern s32 muj_npc_fuwafuwa[];
 extern s32 muj_npc_guruguru[];
 extern s32 muj_ship_puka[];
-static void draw(void);  // TODO: real signature
+static void draw(CameraId cameraId, void* param);
 static void pressStartGX(void);  // TODO: real signature
 static USER_FUNC(fune_eff);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(void);  // TODO: real signature
+static void alpha_tev(TevCallbackParam* param);
+
+// .bss work pointers for the alpha/tev callbacks and map animation rates.
+static u8* _ap;
+extern f32 mapAnimRate[4];
+extern MarcoShip* marcoship;
 
 // clang-format off
 extend_data(40,
@@ -93,8 +138,59 @@ EVT_BEGIN(yoru_hiru_event)
     RETURN
 EVT_END()
 
-// TODO: write urouro_func (global, 0x29c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.88%): `elapsed` is kept in r25; original keeps it in r4 and copies to r25
+// across the intplGetValue calls (all instructions otherwise identical).
+USER_FUNC(urouro_func) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x1 = (f32)evtGetValue(event, args[1]);
+    f32 z1 = (f32)evtGetValue(event, args[2]);
+    f32 x2 = (f32)evtGetValue(event, args[3]);
+    f32 z2 = (f32)evtGetValue(event, args[4]);
+    s32 flag = evtGetValue(event, args[5]);
+    s32 duration = evtGetValue(event, args[6]);
+    s32 mode = evtGetValue(event, args[7]);
+    NpcEntry* npc = evtNpcNameToPtr(event, name);
+    s32 elapsed;
+    f32 x;
+    f32 z;
+
+    if (isFirstCall) {
+        event->savedTime = gp->renderTime;
+    }
+    elapsed = ((s32)gp->renderTime - (s32)event->savedTime) / (OS_TIMER_CLOCK / 1000);
+    if (elapsed < duration) {
+        x = intplGetValue(mode, elapsed, duration, x1, x2);
+        z = intplGetValue(mode, elapsed, duration, z1, z2);
+        if (flag == 0) {
+            if (npc->position.x > x) {
+                npc->direction = 270.0f;
+            } else {
+                npc->direction = 90.0f;
+            }
+        }
+        npc->prevPosition.x = x;
+        npc->position.x = x;
+        npc->prevPosition.z = z;
+        npc->position.z = z;
+        return EVT_RETURN_BLOCK;
+    } else {
+        x = x2;
+        z = z2;
+        if (flag == 0) {
+            if (npc->position.x > x) {
+                npc->direction = 270.0f;
+            } else {
+                npc->direction = 90.0f;
+            }
+        }
+        npc->prevPosition.x = x;
+        npc->position.x = x;
+        npc->prevPosition.z = z;
+        npc->position.z = z;
+        return EVT_RETURN_DONE;
+    }
+}
 
 EVT_BEGIN(urouro)
     CALL(evt_npc_get_position, LW(0), LW(11), LW(12), LW(13))
@@ -113,8 +209,67 @@ EVT_BEGIN(urouro)
     RETURN
 EVT_END()
 
-// TODO: write urouro_fuwafuwa_func (global, 0x414 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (89.45%): first-branch `pos` is allocated at stack+0x8; original uses stack+0x14
+// (separate SSA slot per branch), rest of the tail matches.
+USER_FUNC(urouro_fuwafuwa_func) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x1 = (f32)evtGetValue(event, args[1]);
+    f32 y1 = (f32)evtGetValue(event, args[2]);
+    f32 z1 = (f32)evtGetValue(event, args[3]);
+    f32 x2 = (f32)evtGetValue(event, args[4]);
+    f32 y2 = (f32)evtGetValue(event, args[5]);
+    f32 z2 = (f32)evtGetValue(event, args[6]);
+    s32 flag = evtGetValue(event, args[7]);
+    s32 duration = evtGetValue(event, args[8]);
+    s32 mode = evtGetValue(event, args[9]);
+    NpcEntry* npc = evtNpcNameToPtr(event, name);
+    f32 tbl[32] = {
+        0.0f,  0.5f,  1.0f,  1.5f,  2.0f,  2.2f,  2.5f,  2.7f,
+        2.7f,  2.7f,  2.5f,  2.2f,  2.0f,  1.5f,  1.0f,  0.5f,
+        -0.0f, -0.5f, -1.0f, -1.5f, -2.0f, -2.2f, -2.5f, -2.7f,
+        -2.7f, -2.7f, -2.5f, -2.2f, -2.0f, -1.5f, -1.0f, -0.5f,
+    };
+    Vec pos = { 0.0f, 0.0f, 0.0f };
+    s32 elapsed;
+
+    if (isFirstCall) {
+        event->savedTime = gp->renderTime;
+    }
+    elapsed = ((s32)gp->renderTime - (s32)event->savedTime) / (OS_TIMER_CLOCK / 1000);
+    if (elapsed < duration) {
+        x1 = intplGetValue(mode, elapsed, duration, x1, x2);
+        y1 = intplGetValue(mode, elapsed, duration, y1, y2);
+        z1 = intplGetValue(mode, elapsed, duration, z1, z2);
+        if (flag == 0) {
+            if (npc->position.x > x1) {
+                npc->direction = 270.0f;
+            } else {
+                npc->direction = 90.0f;
+            }
+        }
+        pos.x = x1;
+        pos.y = y1 + tbl[sysMsec2Frame(elapsed) & 0x1F];
+        pos.z = z1;
+        npc->prevPosition = pos;
+        npc->position = npc->prevPosition;
+        return EVT_RETURN_BLOCK;
+    } else {
+        if (flag == 0) {
+            if (npc->position.x > x2) {
+                npc->direction = 270.0f;
+            } else {
+                npc->direction = 90.0f;
+            }
+        }
+        pos.x = x2;
+        pos.y = y2;
+        pos.z = z2;
+        npc->prevPosition = pos;
+        npc->position = npc->prevPosition;
+        return EVT_RETURN_DONE;
+    }
+}
 
 EVT_BEGIN(urouro_fuwafuwa)
     CALL(evt_npc_get_position, LW(0), LW(11), LW(12), LW(13))
@@ -157,11 +312,69 @@ EVT_BEGIN(kirimomi)
     RETURN
 EVT_END()
 
-// TODO: write marcoship_yure_func (global, 0x1e8 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(marcoship_yure_func) {
+    MarcoShip* ship = marcoship;
+    s32* args = event->args;
+    f32 zero = 0.0f;
+    s32 elapsed;
 
-// TODO: write marcoship_yure_init_func (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+    switch (ship->field_0x10) {
+    case 0:
+        if (ship->field_0x4 > zero) {
+            if (ship->field_0x0 > ship->field_0x8) {
+                ship->field_0x4 *= -1.0f;
+                ship->field_0x10 = 1;
+                ship->field_0x18 = gp->renderTime;
+                break;
+            }
+        } else if (ship->field_0x0 < -ship->field_0x8) {
+            ship->field_0x4 *= -1.0f;
+            ship->field_0x10 = 1;
+            ship->field_0x18 = gp->renderTime;
+            break;
+        }
+        ship->field_0x0 += ship->field_0x4;
+        break;
+    case 1:
+        elapsed = OSTicksToMilliseconds((u32)gp->renderTime - (u32)ship->field_0x18);
+        if (elapsed > 500) {
+            ship->field_0x10 = 0;
+        }
+        break;
+    case 2:
+        if (ship->field_0x4 > zero) {
+            if (ship->field_0x0 > zero) {
+                ship->field_0x10 = 3;
+                break;
+            }
+        } else if (ship->field_0x0 < zero) {
+            ship->field_0x10 = 3;
+            break;
+        }
+        ship->field_0x0 += ship->field_0x4;
+        break;
+    case 3:
+        ship->field_0x0 = zero;
+        ship->field_0xC = 1;
+        break;
+    }
+    evtSetFloat(event, args[0], ship->field_0x0);
+    evtSetValue(event, args[1], ship->field_0xC);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(marcoship_yure_init_func) {
+    MarcoShip* ship = _mapAlloc(0x20);
+
+    marcoship = ship;
+    ship->field_0x0 = 0.0f;
+    ship->field_0x4 = 0.02f;
+    ship->field_0x8 = 1.5f;
+    ship->field_0xC = 0;
+    ship->field_0x10 = 0;
+    ship->field_0x18 = 0;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(marco_ship_yure)
     CALL(marcoship_yure_init_func)
@@ -267,14 +480,29 @@ EVT_BEGIN(moya_effect05)
     RETURN
 EVT_END()
 
-// TODO: write alpha_set_func (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(alpha_set_func) {
+    _ap[0] = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write alpha_init_func (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(alpha_init_func) {
+    _ap = _mapAlloc(1);
+    _ap[0] = 0xFF;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write alpha_tev (static, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+static void alpha_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    u8* ap = _ap;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, ap[0] });
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C++;
+}
 
 EVT_BEGIN(nami_alpha)
     CALL(alpha_init_func)
@@ -410,8 +638,40 @@ static u32 elmos_animtbl[11] = {
     0x00100011, 0x00120013, 0xFFFF0000,
 };
 
-// TODO: write elmos1000tai_init (global, 0x23c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (62.82%): MWCC did not hoist the loop-invariant float constants
+// (90/6.2832/360/0.9/100/0.5) into f25-f31, so register allocation and scheduling differ.
+USER_FUNC(elmos1000tai_init) {
+    NanNpcWork* work;
+    NanNpcEntry* entry;
+    s32 i;
+    s32 offset;
+    s32 r;
+
+    work = nanNPCWork;
+    work->flags |= 1;
+    for (i = 0, offset = 0; i < work->count; i++, offset += sizeof(NanNpcEntry)) {
+        entry = (NanNpcEntry*)((u8*)work->entries + offset);
+        *(s32*)entry->pose |= 4;
+        entry->color.a = 0;
+        entry->field_0x60 = 90.0f;
+        entry->field_0x70 = i;
+        if (i % 3 == 0) {
+            r = irand(360);
+        } else {
+            r = irand(140) + 110;
+        }
+        *(s32*)entry->field_0x74 = 250;
+        if (abs(180 - r) < 70) {
+            *(s32*)entry->field_0x74 += irand((70 - abs(180 - r)) * 1000 / 70 + 330);
+        } else {
+            *(s32*)entry->field_0x74 += irand(330);
+        }
+        entry->position.x = 0.9f * (f32)*(s32*)entry->field_0x74 * sin(6.2832f * (f32)r / 360.0f);
+        entry->position.y = 100.0f;
+        entry->position.z = 0.5f * (f32)*(s32*)entry->field_0x74 * cos(6.2832f * (f32)r / 360.0f) - 100.0f;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(nannpc_mode_setup)
     CALL(evt_nannpc_init, PTR(ext_entry_data), 0, 0, 0, 1000)
@@ -454,8 +714,45 @@ u32 mist_pos[91] = {
     0x0000001E, 0xFFFFFB50, 0xFFFFD8F0,
 };
 
-// TODO: write mist_func (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(mist_func) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    EffectEntry* effect;
+    s32 done = 0;
+    s32 elapsed;
+
+    if (isFirstCall) {
+        x += (f32)(irand(150) - 75);
+        y += (f32)(irand(150) - 75);
+        z += (f32)(irand(150) - 75);
+        event->userdata[1] = (s32)effMistEntry(0, 0, x, y, z, 0.0f);
+        event->userdata[0] = 0;
+    }
+    effect = (EffectEntry*)event->userdata[1];
+    switch (event->userdata[0]) {
+    case 0:
+        event->savedTime = gp->renderTime;
+        event->userdata[2] = irand(1000) + 3000;
+        event->userdata[0] = 1;
+        break;
+    case 1:
+        elapsed = ((s32)gp->renderTime - (s32)event->savedTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > event->userdata[2]) {
+            event->userdata[0] = 2;
+        }
+        break;
+    case 2:
+        done = 1;
+        break;
+    }
+    if (done == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    effSoftDelete(effect);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(mist_setup)
     LOOP(0)
@@ -480,8 +777,12 @@ EVT_BEGIN(mist_setup)
     RETURN
 EVT_END()
 
-// TODO: write marcoship_shizumu_func (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(marcoship_shizumu_func) {
+    f32 value = evtGetFloat(event, event->args[0]);
+
+    mapObjTranslate("S_a1", 0.0f, value, 0.0f);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(marcoship_shizumu)
     CALL(evt_snd_sfxon, STRING("SFX_STG5_SHIP_QUAKE1"), LW(10))
@@ -525,23 +826,69 @@ EVT_BEGIN(marcoship_shizumu)
     RETURN
 EVT_END()
 
-// TODO: write elmos1000tai_start (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(elmos1000tai_start) {
+    s32 i;
+    NanNpcEntry* entry;
+    NanNpcWork* work;
 
-// TODO: write evt_set_nami_anim_rate (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+    work = nanNPCWork;
+    for (i = 0; i < work->count; i++) {
+        entry = &work->entries[i];
+        entry->callback = elmos1000tai_seq00;
+        entry->field_0x68 = 0;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_set_fune_anim_rate (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_set_nami_anim_rate) {
+    mapAnimRate[3] = evtGetFloat(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_map_anim_rate (global, 0x128 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_set_fune_anim_rate) {
+    mapAnimRate[1] = evtGetFloat(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write marcoship_stop_wait_func (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_map_anim_rate) {
+    f32* rate = mapAnimRate;
+    f32 diff;
 
-// TODO: write marcoship_stop_func (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        rate[0] = 1.0f;
+        rate[2] = 1.0f;
+        rate[1] = 1.0f;
+        rate[3] = 1.0f;
+    }
+    diff = rate[1] - rate[0];
+    if (diff >= 0.005f) {
+        diff = 0.005f;
+    } else if (diff <= -0.005f) {
+        diff = -0.005f;
+    }
+    rate[0] += diff;
+    diff = rate[3] - rate[2];
+    if (diff >= 0.005f) {
+        diff = 0.005f;
+    } else if (diff <= -0.005f) {
+        diff = -0.005f;
+    }
+    rate[2] += diff;
+    mapSetPlayRate("fune", rate[0]);
+    mapSetPlayRate("fune_01", rate[0]);
+    mapSetPlayRate("nami", rate[2]);
+    mapSetPlayRate("nami_02", rate[2]);
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(marcoship_stop_wait_func) {
+    return (marcoship->field_0xC != 0) ? EVT_RETURN_DONE : 0;
+}
+
+USER_FUNC(marcoship_stop_func) {
+    marcoship->field_0x10 = EVT_RETURN_DONE;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(onryo_event)
     BEGIN_INLINE_EVENT
@@ -1077,8 +1424,15 @@ EVT_BEGIN(onryo_event)
     RETURN
 EVT_END()
 
-// TODO: write splash_eff (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(splash_eff) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+
+    effSplashEntry(0, x, y, z, 3.0f);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(muj_20_koopa_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -1156,8 +1510,42 @@ EVT_BEGIN(kaizoku_hata)
     RETURN
 EVT_END()
 
-// TODO: write kaizoku_fune_eff (global, 0x1d4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kaizoku_fune_eff) {
+    Vec pos;
+    EffectEntry* eff;
+    f32 x;
+    f32 z;
+    f32 dist;
+    f32 angle;
+    f32 dir;
+
+    if (isFirstCall) {
+        event->userdata[0] = (s32)effFunemizuEntry(0, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
+        mapObjGetPos("S_b", &pos);
+        event->userdataf[2] = pos.x;
+        *(f32*)&event->field_84 = pos.z;
+    }
+    eff = (EffectEntry*)event->userdata[0];
+    x = event->userdataf[2];
+    z = *(f32*)&event->field_84;
+    mapObjGetPos("S_b", &pos);
+    event->userdataf[2] = pos.x;
+    *(f32*)&event->field_84 = pos.z;
+    dist = distABf(x, z, pos.x, pos.z);
+    angle = angleABf(x, z, pos.x, pos.z);
+    dir = (angle < 180.0f) ? 1.0f : -1.0f;
+    ((EffFunemizuData*)eff->userdata)->field_0x44 = 5.0f;
+    ((EffFunemizuData*)eff->userdata)->x = 140.0f * dir + pos.x;
+    ((EffFunemizuData*)eff->userdata)->y = pos.y - 160.0f;
+    ((EffFunemizuData*)eff->userdata)->z = 40.0f + pos.z;
+    ((EffFunemizuData*)eff->userdata)->field_0x10 = dist;
+    if (angle < 180.0f) {
+        ((EffFunemizuData*)eff->userdata)->field_0x14 = 135.0f + angle;
+    } else {
+        ((EffFunemizuData*)eff->userdata)->field_0x14 = 45.0f + angle;
+    }
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(gor_muj_ship)
     CALL(evt_mario_key_onoff, 0)
@@ -1349,8 +1737,34 @@ EVT_BEGIN(anm_neji)
     RETURN
 EVT_END()
 
-// TODO: write unk_muj_00004328 (global, 0x1e8 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (69.13%): local declaration order/scheduling differ; original initialises the
+// Vec zero constant after the angle computation and swaps f29/f31 for x/y.
+USER_FUNC(unk_muj_00004328) {
+    Mtx m1;
+    Mtx m2;
+    Mtx m3;
+    Vec pos = { 0.0f, 0.0f, 0.0f };
+    f32 x = evtGetFloat(event, GW(0));
+    f32 y = evtGetFloat(event, GW(1));
+    f32 z = evtGetFloat(event, GW(2));
+    f32 speed = evtGetFloat(event, LW(0));
+    f32 angle = 5.0f * x / -6000.0f;
+
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    PSMTXTrans(m1, 0.0f, -6000.0f, 0.0f);
+    PSMTXRotRad(m2, 'z', 0.017453292f * angle);
+    PSMTXConcat(m1, m2, m3);
+    PSMTXTrans(m1, 0.0f, 6000.0f, 0.0f);
+    PSMTXConcat(m3, m1, m3);
+    PSMTXMultVec(m3, &pos, &pos);
+    evtSetFloat(event, LW(7), pos.x);
+    evtSetFloat(event, LW(8), pos.y);
+    evtSetFloat(event, LW(9), pos.z);
+    evtSetFloat(event, LW(0), speed + angle);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(anm_yure)
     CALL(evt_mapobj_trans, 1, STRING("S_fune_m"), GW(0), GW(1), GW(2))
@@ -1391,8 +1805,63 @@ EVT_BEGIN(anm_yure)
     RETURN
 EVT_END()
 
-// TODO: write logo (global, 0x2e4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(logo) {
+    LogoWork* work;
+
+    if (isFirstCall) {
+        work = _mapAlloc(0x14);
+        memset(work, 0, 0x14);
+        event->userdata[0] = (s32)work;
+    }
+    work = (LogoWork*)event->userdata[0];
+    if ((u32)fileAsyncf(4, NULL, "%s/mariost.tpl", getMarioStDvdRoot()) == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    switch (work->state) {
+    case 0:
+        work->data = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
+        work->field_0x8 = 0;
+        work->alpha = 0.0f;
+        work->field_0x10 = 0;
+        work->state++;
+        break;
+    case 1:
+        if (work->field_0x10 < 180) {
+            work->field_0x8 = (s32)intplGetValue(11, ++work->field_0x10, 180, 0.0f, 255.0f);
+            work->alpha = intplGetValue(11, ++work->field_0x10, 180, -50.0f, 0.0f);
+        } else if (gp->retraceCount % 15 == 0) {
+            work->state++;
+        }
+        break;
+    case 2:
+        if (evtGetValue(event, GF(0)) != 0) {
+            if (keyGetButtonTrg(0) & 0x1300) {
+                work->field_0x10 = 0;
+                work->state++;
+                evtSetValue(event, GF(1), 1);
+            }
+        }
+        break;
+    case 3:
+        if (work->field_0x10 < 120) {
+            work->field_0x8 = (s32)intplGetValue(11, ++work->field_0x10, 120, 255.0f, 0.0f);
+            work->alpha = intplGetValue(11, ++work->field_0x10, 120, 0.0f, 100.0f);
+        } else {
+            work->state++;
+        }
+        break;
+    case 4:
+        fileFree(work->data);
+        work->data = NULL;
+        _mapFree(work);
+        evtSetValue(event, GF(2), 1);
+        return EVT_RETURN_DONE;
+    }
+    if (work->data != NULL) {
+        dispEntry(8, 1000.0f, 0, draw, work);
+    }
+    return EVT_RETURN_BLOCK;
+}
 
 static EVT_BEGIN(evt_prologue)
     WAIT_MS(500)
@@ -1547,8 +2016,55 @@ static EVT_BEGIN(epilogue_evt)
     RETURN
 EVT_END()
 
-// TODO: write fune_eff (static, 0x2a0 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.94%): only the scratch register chosen for `pos.x + 85.0f` differs
+// (original f0=85/f1=pos.x; recompiled f1=85/f0=pos.x, same fadds).
+USER_FUNC(fune_eff) {
+    Vec pos;
+    EffectEntry* eff1;
+    EffectEntry* eff2;
+    f32 x;
+    f32 z;
+    f32 dist;
+    f32 angle;
+
+    if (isFirstCall) {
+        event->userdata[0] = (s32)effFunemizuEntry(0, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
+        event->userdata[1] = (s32)effFunemizuEntry(2, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
+        mapObjGetPos("S_fune_m", &pos);
+        event->userdataf[2] = pos.x;
+        *(f32*)&event->field_84 = pos.z;
+    }
+    eff1 = (EffectEntry*)event->userdata[0];
+    eff2 = (EffectEntry*)event->userdata[1];
+    x = event->userdataf[2];
+    z = *(f32*)&event->field_84;
+    mapObjGetPos("S_fune_m", &pos);
+    event->userdataf[2] = pos.x;
+    *(f32*)&event->field_84 = pos.z;
+    dist = distABf(x, z, pos.x, pos.z);
+    angle = angleABf(x, z, pos.x, pos.z);
+    (void)angle;
+    if (evtGetValue(event, GSW(0)) == 2) {
+        dist = 2.0f;
+    }
+    ((EffFunemizuData*)eff1->userdata)->field_0x44 = 3.0f;
+    ((EffFunemizuData*)eff1->userdata)->x = 85.0f + pos.x;
+    ((EffFunemizuData*)eff1->userdata)->y = pos.y - 51.0f;
+    ((EffFunemizuData*)eff1->userdata)->z = 30.0f + pos.z;
+    ((EffFunemizuData*)eff1->userdata)->field_0x10 = dist;
+    ((EffFunemizuData*)eff1->userdata)->field_0x14 = 225.0f;
+    ((EffFunemizuData*)eff2->userdata)->x = pos.x - 15.0f;
+    ((EffFunemizuData*)eff2->userdata)->y = pos.y - 51.0f;
+    ((EffFunemizuData*)eff2->userdata)->z = 90.0f + pos.z;
+    ((EffFunemizuData*)eff2->userdata)->field_0x10 = dist;
+    ((EffFunemizuData*)eff2->userdata)->field_0x14 = 180.0f;
+    if (dist > 1.0f) {
+        if (gp->retraceCount % 15 == 0) {
+            effWaterDamageN64Entry(5, 30, pos.x - 150.0f, pos.y - 50.0f, pos.z, 2.0f);
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(muj_20_init_evt)
     BEGIN_INLINE_EVENT
@@ -1654,27 +2170,47 @@ EVT_BEGIN(muj_20_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 _ap[1] = {
-    0x00000000,
-};
+static u8* _ap;
 
-// TODO: type
-u32 mapAnimRate[4] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+f32 mapAnimRate[4];
 
-// TODO: type
-u32 marcoship[1] = {
-    0x00000000,
-};
+MarcoShip* marcoship;
 
+// NONMATCHING (0%): not yet written.
 // TODO: write draw (static, 0x1ac bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
+// NONMATCHING (0%): not yet written.
 // TODO: write pressStartGX (static, 0x4d8 bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write elmos1000tai_seq00 (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+void elmos1000tai_seq00(struct NanNpcEntry* entry) {
+    s32 elapsed;
+
+    switch (entry->field_0x68) {
+    case 0:
+        entry->field_0x50 = gp->renderTime;
+        entry->field_0x6C = irand(1000) + *(s32*)entry->field_0x74 * 3;
+        entry->field_0x68 = 1;
+        // fallthrough
+    case 1:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed >= entry->field_0x6C) {
+            entry->field_0x50 = gp->renderTime;
+            entry->field_0x6C = 500;
+            entry->field_0x68 = 2;
+        }
+        break;
+    case 2:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->field_0x6C) {
+            entry->color.a = (u8)intplGetValue(0, elapsed, entry->field_0x6C, 0.0f, 255.0f);
+        } else {
+            entry->field_0x68 = 3;
+        }
+        break;
+    case 3:
+        break;
+    }
+}
 // clang-format on

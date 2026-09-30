@@ -31,6 +31,25 @@
 #include "forcedata.h"
 #include "kpa_act.h"
 #include "party/party_motion.h"
+#include "memory.h"
+#include "mario/mario_pouch.h"
+#include "mario/mario.h"
+#include "party.h"
+#include "manager/evtmgr_cmd.h"
+#include "manager/evtmgr.h"
+#include "driver/mapdrv.h"
+#include "driver/camdrv.h"
+#include "mario/mariost.h"
+#include <string.h>
+#include "driver/msgdrv.h"
+#include "driver/npcdrv.h"
+#include "motion/mot_ship.h"
+#include "system.h"
+#include "math_ext.h"
+#include "eff/eff_mahojin.h"
+#include "eff/eff_funemizu.h"
+#include "eff/n64/eff_water_damage_n64.h"
+#include <dolphin/gx.h>
 
 #pragma pool_data off
 
@@ -45,11 +64,18 @@ static USER_FUNC(cam_kaiten_set_direct);
 static USER_FUNC(cam_kaiten_init);
 static USER_FUNC(delete_itemsel_table);
 static USER_FUNC(make_itemsel_table);
-static void accdec_type(void);  // TODO: real signature
+static f32 accdec_type(s32 target, s32 count, f32 start, f32 end);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(void);  // TODO: real signature
+static void alpha_tev(TevCallbackParam* param);
 static s32 sanders_talk[8];
+u32 unk_gor_bss00000000;
+u32 unk_gor_bss00000004;
+static f32* ckpw;
+static f32* ckp1;
+static f32* ckp0;
+static s32* itemsel_table_ram;
+static u8* _ap;
 s32 tentyou_talk[14];
 s32 tenin_talk[14];
 static s32 borodo2_talk[13];
@@ -65,6 +91,10 @@ s32 unk_evt_gor_00028a14[61];
 static s32 peach_mail[209];
 static s32 option_ship_mario[139];
 s32 gor_muj_ship_start[258];
+const Vec vec3_gor_00013858 = {0.0f, -1000.0f, 0.0f};
+const Vec vec3_gor_00013c54 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_gor_00013c60 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_gor_00013c6c = {0.0f, 0.0f, 0.0f};
 
 // clang-format off
 extend_data(4,
@@ -853,11 +883,53 @@ EVT_BEGIN(suifubomb_a_regl)
     RETURN
 EVT_END()
 
-// TODO: write delete_itemsel_table (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(delete_itemsel_table) {
+    _mapFree(itemsel_table_ram);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write make_itemsel_table (static, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(make_itemsel_table) {
+    s32* args = event->args;
+    PouchData* pouch = pouchGetPtr();
+    s32* table;
+    s32 i;
+    s32 count;
+    s32 item;
+
+    itemsel_table_ram = _mapAlloc(0x54);
+    table = itemsel_table_ram;
+    count = 0;
+    for (i = 0; i < MAX_HELD_ITEMS; i++) {
+        item = pouch->heldItems[i];
+        if (item >= 0xB3 && item < 0xEC) {
+            *table = item;
+            table++;
+            count++;
+        }
+        if (item >= 0x94 && item < 0xA1) {
+            *table = item;
+            table++;
+            count++;
+        }
+        // F3BEGIN
+        if (item == 0xAC) goto skipF3;
+        if (item < 0xAC) {
+            if (item >= 0xA6) goto bodyF3;
+            goto skipF3;
+        }
+        if (item >= 0xB1) goto skipF3;
+    bodyF3:
+        *table = item;
+        table++;
+        count++;
+    skipF3:;
+        // F3END
+    }
+    *table = -1;
+    evtSetValue(event, args[0], count);
+    event->lwData[10] = (s32)itemsel_table_ram;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(suifubomb_a_talk)
     IF_INT_EQUAL(GSW(1420), 6)
@@ -1614,11 +1686,43 @@ EVT_BEGIN(ship_a_neji_animation)
     RETURN
 EVT_END()
 
-// TODO: write fune_yure_func (global, 0x128 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(fune_yure_func) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    f32 target = evtGetFloat(event, args[1]);
+    s32 done;
+    f32 speed;
 
-// TODO: write fune_yure_func_init (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    if (target == 0.0f) {
+        evtSetFloat(event, args[2], 0.0f);
+        evtSetValue(event, args[3], 1);
+        return EVT_RETURN_DONE;
+    }
+
+    done = 0;
+    speed = 2.0f * target / sysMsec2FrameFloat(2000.0f);
+    if (type == 0) {
+        *(f32*)&event->lwData[0] += speed;
+        if (*(f32*)&event->lwData[0] >= target) {
+            *(f32*)&event->lwData[0] = target;
+            done = 1;
+        }
+    } else {
+        *(f32*)&event->lwData[0] -= speed;
+        if (*(f32*)&event->lwData[0] <= -target) {
+            *(f32*)&event->lwData[0] = -target;
+            done = 1;
+        }
+    }
+    evtSetFloat(event, args[2], *(f32*)&event->lwData[0]);
+    evtSetValue(event, args[3], done);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(fune_yure_func_init) {
+    *(f32*)&event->lwData[0] = evtGetFloat(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(ship_a_yure_animation)
     CALL(fune_yure_func_init, FLOAT(0.0f))
@@ -1648,8 +1752,18 @@ EVT_BEGIN(ship_a_yure_animation)
     RETURN
 EVT_END()
 
-// TODO: write alpha_tev (static, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static void alpha_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    u8* ap = _ap;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColor(GX_TEVREG0, (GXColor){0, 0, 0, *ap});
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C = param->field_C + 1;
+}
 
 EVT_BEGIN(ship_a_animation)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_fune_a"), 1)
@@ -1748,8 +1862,10 @@ EVT_BEGIN(christine_osoware_setup)
     RETURN
 EVT_END()
 
-// TODO: write alpha_set_func (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(alpha_set_func) {
+    *_ap = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(enter_gorotsuki_town)
     CALL(evt_snd_bgm_scope, 0, 1)
@@ -2220,8 +2336,23 @@ EVT_BEGIN(gundan1000tai_kemuri)
     RETURN
 EVT_END()
 
-// TODO: write gundan1000tai_circle_pos_func (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(gundan1000tai_circle_pos_func) {
+    s32* args = event->args;
+    f32 radius;
+    f32 s;
+    f32 c;
+    f32 angle;
+
+    radius = (f32)(irand(0xB4) + 0x78);
+    angle = 6.2832f * (f32)irand(0x168) / 360.0f;
+    s = sin(angle);
+    c = cos(angle);
+
+    evtSetFloat(event, args[0], 0.9f * (radius * s));
+    evtSetFloat(event, args[1], 15.0f);
+    evtSetFloat(event, args[2], 0.5f * (radius * c) - 300.0f);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(gundan1000tai_zaza_se)
     BEGIN_INLINE_EVENT
@@ -2270,17 +2401,109 @@ EVT_BEGIN(gundan1000tai_yure)
     RETURN
 EVT_END()
 
-// TODO: write gundan1000tai_totsuend (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(gundan1000tai_totsuend) {
+    s32 i;
+    NanNpcWork* work = nanNPCWork;
 
-// TODO: write gundan1000tai_areacheck (global, 0x164 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < work->count; i++) {
+        work->entries[i].field_0xA8 = 1;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write gundan1000tai_totsugeki (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(gundan1000tai_areacheck) {
+    s32* args = event->args;
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(1);
+    s32 area;
 
-// TODO: write gundan1000tai_init (global, 0x2b4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    if (mario->position.y > 70.0f) {
+        area = 0;
+    } else if (mario->position.x < 60.0f) {
+        area = 0x10;
+    } else if (mario->position.x < 80.0f) {
+        area = 4;
+    } else if (mario->position.x < 100.0f) {
+        area = 2;
+    } else if (mario->position.x < 120.0f) {
+        area = 1;
+    } else {
+        area = 0;
+    }
+    evtSetValue(event, args[0], area);
+
+    if (party->position.y > 70.0f) {
+        area = 0;
+    } else if (party->position.x < 60.0f) {
+        area = 0x10;
+    } else if (party->position.x < 80.0f) {
+        area = 4;
+    } else if (party->position.x < 100.0f) {
+        area = 2;
+    } else if (party->position.x < 120.0f) {
+        area = 1;
+    } else {
+        area = 0;
+    }
+    evtSetValue(event, args[1], area);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(gundan1000tai_totsugeki) {
+    s32 i;
+    NanNpcEntry* entry;
+    NanNpcWork* work;
+
+    work = nanNPCWork;
+    for (i = 0; i < work->count; i++) {
+        entry = &work->entries[i];
+        entry->callback = gundan1000tai_seq01;
+        entry->field_0x68 = 0;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (98.72%): 55 of 173 instructions differ in operands only (registers or offsets)
+USER_FUNC(gundan1000tai_init) {
+    s32 i;
+    NanNpcEntry* entry;
+    NanNpcWork* work;
+    f32 radius;
+    f32 angle;
+    f32 s;
+    f32 c;
+    f32 base;
+
+    work = nanNPCWork;
+    for (i = 0; i < work->count; i++) {
+        entry = &work->entries[i];
+        radius = (f32)(irand(0xB4) + 0x78);
+        angle = 6.2832f * (f32)irand(0x168) / 360.0f;
+        s = sin(angle);
+        c = cos(angle);
+        entry->hoseiPosition.x = 0.9f * (radius * s);
+        entry->hoseiPosition.y = 15.0f;
+        entry->hoseiPosition.z = 0.5f * (radius * c) - 300.0f;
+        if (entry->hoseiPosition.x < 30.0f) {
+            entry->field_0x60 = 90.0f;
+            base = -280.0f;
+        } else {
+            entry->field_0x60 = 270.0f;
+            base = 340.0f;
+        }
+        radius = (f32)irand(0x64);
+        angle = 6.2832f * (f32)irand(0x168) / 360.0f;
+        s = sin(angle);
+        c = cos(angle);
+        entry->position.x = radius * s + base;
+        entry->position.y = 15.0f;
+        entry->position.z = radius * c - 300.0f;
+        entry->callback = gundan1000tai_seq00;
+        entry->field_0x68 = 0;
+        entry->field_0x74 = i;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(gundan1000tai_afterbattle)
     IF_INT_EQUAL(LW(0), 1)
@@ -2601,11 +2824,34 @@ char* shukko_npc_list[10] = {
     "ガラの悪い水夫", "マルコ", "水夫Ｄ", "めがね水夫", "オドオド水夫", "水夫ボム兵Ｃ", "サンダース", "店長", "店員", NULL,
 };
 
-// TODO: write hosei_party_pos (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(hosei_party_pos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    PartyEntry* party = partyGetPtr(partyCtrlNo);
 
-// TODO: write hosei_mario_pos (global, 0xb4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    if (party == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    party->position.x += x;
+    party->position.y += y;
+    party->position.z += z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hosei_mario_pos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    MarioWork* mario = marioGetPtr();
+
+    mario->position.x += x;
+    mario->position.y += y;
+    mario->position.z += z;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(shukko_event_move_ship)
     SPAWN_EVENT(shukko_event_move_ship_se00)
@@ -2676,20 +2922,154 @@ EVT_BEGIN(shukko_event_move_ship)
     RETURN
 EVT_END()
 
-// TODO: write cam_kaiten_set_para (static, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(cam_kaiten_set_para) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    f32* p;
 
-// TODO: write cam_kaiten_get_para (static, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    switch (index) {
+    case 0:
+        p = ckp0;
+        break;
+    case 1:
+        p = ckp1;
+        break;
+    case 2:
+    default:
+        p = ckpw;
+        break;
+    }
+    p[0] = evtGetFloat(event, args[1]);
+    p[1] = evtGetFloat(event, args[2]);
+    p[2] = evtGetFloat(event, args[3]);
+    p[3] = evtGetFloat(event, args[4]);
+    p[4] = evtGetFloat(event, args[5]);
+    p[5] = evtGetFloat(event, args[6]);
+    p[6] = evtGetFloat(event, args[7]);
+    p[7] = evtGetFloat(event, args[8]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write cam_kaiten_set_direct (static, 0x174 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(cam_kaiten_get_para) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    f32* p;
 
-// TODO: write cam_kaiten_init (static, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    switch (index) {
+    case 0:
+        p = ckp0;
+        break;
+    case 1:
+        p = ckp1;
+        break;
+    case 2:
+    default:
+        p = ckpw;
+        break;
+    }
+    evtSetFloat(event, args[1], p[0]);
+    evtSetFloat(event, args[2], p[1]);
+    evtSetFloat(event, args[3], p[2]);
+    evtSetFloat(event, args[4], p[3]);
+    evtSetFloat(event, args[5], p[4]);
+    evtSetFloat(event, args[6], p[5]);
+    evtSetFloat(event, args[7], p[6]);
+    evtSetFloat(event, args[8], p[7]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write lineardec_type (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(cam_kaiten_set_direct) {
+    CameraEntry* cam = camGetPtr(4);
+    f32 s = sin(6.2832f * ckpw[6] / 360.0f);
+    f32 c = cos(6.2832f * ckpw[6] / 360.0f);
+
+    ckpw[0] = ckpw[7] * s + ckpw[3];
+    ckpw[2] = ckpw[5] - ckpw[7] * c;
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    cam->storedPos = *(Vec*)ckpw;
+    cam->storedAt = *(Vec*)&ckpw[3];
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = 0;
+    cam->stateA = 3;
+    cam->curveA = 0xB;
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99%): 11 of 237 instructions differ: 9 with different operands, 1 missing, 1 extra
+static USER_FUNC(cam_kaiten_init) {
+    s32* args = event->args;
+    Vec b;
+    Vec a;
+    f32 dist;
+    f32 angle;
+
+    ckp0 = _mapAlloc(0x20);
+    memset(ckp0, 0, 0x20);
+    ckp1 = _mapAlloc(0x20);
+    memset(ckp1, 0, 0x20);
+    ckpw = _mapAlloc(0x20);
+    memset(ckp1, 0, 0x20);
+
+    ckp0[0] = evtGetFloat(event, args[0]);
+    ckp0[1] = evtGetFloat(event, args[1]);
+    ckp0[2] = evtGetFloat(event, args[2]);
+    ckp0[3] = evtGetFloat(event, args[3]);
+    ckp0[4] = evtGetFloat(event, args[4]);
+    ckp0[5] = evtGetFloat(event, args[5]);
+    ckp1[0] = evtGetFloat(event, args[6]);
+    ckp1[1] = evtGetFloat(event, args[7]);
+    ckp1[2] = evtGetFloat(event, args[8]);
+    ckp1[3] = evtGetFloat(event, args[9]);
+    ckp1[4] = evtGetFloat(event, args[10]);
+    ckp1[5] = evtGetFloat(event, args[11]);
+
+    a = *(Vec*)&ckp0[0];
+    b = *(Vec*)&ckp0[3];
+    b.y = 0.0f;
+    a.y = 0.0f;
+    dist = PSVECDistance(&a, &b);
+    angle = (f32)atan2(-(b.x - a.x), b.z - a.z) * 57.29579f;
+    ckp0[6] = angle;
+    ckp0[7] = dist;
+
+    a = *(Vec*)&ckp1[0];
+    b = *(Vec*)&ckp1[3];
+    b.y = 0.0f;
+    a.y = 0.0f;
+    dist = PSVECDistance(&a, &b);
+    angle = (f32)atan2(-(b.x - a.x), b.z - a.z) * 57.29579f;
+    ckp1[6] = angle;
+    ckp1[7] = dist;
+
+    *(Vec*)&ckpw[0] = *(Vec*)&ckp0[0];
+    *(Vec*)&ckpw[3] = *(Vec*)&ckp0[3];
+    ckpw[6] = ckp0[6];
+    ckpw[7] = ckp0[7];
+    return EVT_RETURN_DONE;
+}
+
+f32 lineardec_type(s32 target, s32 count, f32 start, f32 end) {
+    s32 i;
+    s32 init = count * 20 / 100;
+    s32 lim = count * 80 / 100;
+    f32 value;
+    f32 sum;
+    f32 result;
+
+    value = (f32)init;
+    sum = value;
+    for (i = 0; i < count; i++) {
+        if (i >= lim) {
+            value -= 1.0f;
+        }
+        sum += value;
+        if (i == target) {
+            result = sum;
+        }
+    }
+    return start + (end - start) * result / sum;
+}
 
 EVT_BEGIN(shukko_event)
     CALL(evt_mario_key_onoff, 0)
@@ -2903,11 +3283,39 @@ EVT_BEGIN(unk_evt_gor_000277f4)
     RETURN
 EVT_END()
 
-// TODO: write suifu100taikikan_away (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(suifu100taikikan_away) {
+    s32 i;
+    NanNpcEntry* entry;
+    NanNpcWork* work;
 
-// TODO: write suifu100taikikan_init (global, 0x110 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    work = nanNPCWork;
+    for (i = 0; i < work->count; i++) {
+        entry = &work->entries[i];
+
+        entry->field_0x60 = 90.0f;
+        entry->callback = suifu100taikikan_seq01;
+        entry->field_0x68 = 0;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(suifu100taikikan_init) {
+    s32 i;
+    NanNpcEntry* entry;
+    NanNpcWork* work;
+
+    work = nanNPCWork;
+    for (i = 0; i < work->count; i++) {
+        entry = &work->entries[i];
+
+        entry->field_0x60 = 90.0f;
+        entry->position.x = (f32)(irand(0x87) - 100);
+        entry->position.y = 15.0f;
+        entry->position.z = (f32)(irand(0x32) + 190);
+        entry->callback = suifu100taikikan_seq00;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(gorotsuki_kikan)
     CALL(evt_snd_bgm_scope, 0, 1)
@@ -3183,8 +3591,17 @@ EVT_BEGIN(unk_evt_gor_00028a14)
     RETURN
 EVT_END()
 
-// TODO: write gor_stg4_018_cb (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+void gor_stg4_018_cb(s32 type, smartEntry* smart) {
+    MessageData* data = smart->address;
+
+    switch (type) {
+    case 3:
+        if (*(u16*)((u8*)data + 8) == 1) {
+            evtSetValue(NULL, LSWF(6), 1);
+        }
+        break;
+    }
+}
 
 EVT_BEGIN(gor_00_koopa_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -3562,16 +3979,19 @@ static EVT_BEGIN(peach_mail)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 gor_ship_puka_data[16] = {
-    0x80000000, 0xBF000000, 0xBF800000, 0xBFC00000,
-    0xC0000000, 0xC00CCCCD, 0xC0200000, 0xC02CCCCD,
-    0xC02CCCCD, 0xC02CCCCD, 0xC0200000, 0xC00CCCCD,
-    0xC0000000, 0xBFC00000, 0xBF800000, 0xBF000000,
+f32 gor_ship_puka_data[16] = {
+    -0.0f, -0.5f, -1.0f, -1.5f, -2.0f, -2.2f, -2.5f, -2.7f,
+    -2.7f, -2.7f, -2.5f, -2.2f, -2.0f, -1.5f, -1.0f, -0.5f,
 };
 
-// TODO: write gor_ship_puka_func (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(gor_ship_puka_func) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    f32 value = evtGetFloat(event, args[1]);
+
+    evtSetFloat(event, args[2], value * gor_ship_puka_data[index & 0xF]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(gor_ship_puka)
     SET_VALUE(LW(10), 0)
@@ -3685,8 +4105,37 @@ EVT_BEGIN(gor_muj_ship_pera)
     RETURN
 EVT_END()
 
-// TODO: write scale_func (static, 0x138 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(scale_func) {
+    f32 scale = evtGetFloat(event, event->args[0]);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party0 = partyGetPtr(0);
+    PartyEntry* party1 = partyGetPtr(1);
+    Vec v0;
+    Vec v1;
+    Vec v2;
+
+    v0 = vec3_gor_00013c54;
+    v0.x = scale;
+    v0.y = scale;
+    v0.z = scale;
+    mario->scale = v0;
+
+    if (party0 != NULL) {
+        v1 = vec3_gor_00013c60;
+        v1.x = scale;
+        v1.y = scale;
+        v1.z = scale;
+        party0->field_70 = v1;
+    }
+    if (party1 != NULL) {
+        v2 = vec3_gor_00013c6c;
+        v2.x = scale;
+        v2.y = scale;
+        v2.z = scale;
+        party1->field_70 = v2;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(gor_muj_ship_start)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_c_hikinami"), 1)
@@ -3772,17 +4221,35 @@ EVT_BEGIN(gor_muj_ship_start)
     RETURN
 EVT_END()
 
-// TODO: write funechange_func (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(funechange_func) {
+    s32* args = event->args;
 
-// TODO: write funeflag_load (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[0], marioShipChanging());
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write funeflag_reset (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(funeflag_load) {
+    mapGrpFlagOff("S_fune_b", 1);
+    mapGrpFlagOn("S_fune_b", event->lwData[8]);
+    mapGrpFlagOff("S_fune_c", 1);
+    mapGrpFlagOn("S_fune_c", event->lwData[9]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write funeflag_save (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(funeflag_reset) {
+    mapGrpFlagOn("S_fune_b", 1);
+    mapGrpFlagOn("S_fune_c", 1);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(funeflag_save) {
+    MapObject* obj0 = mapGetMapObj("S_fune_b");
+    MapObject* obj1 = mapGetMapObj("S_fune_c");
+
+    event->lwData[8] = *(s32*)obj0->field_0x0 & 1;
+    event->lwData[9] = *(s32*)obj1->field_0x0 & 1;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(tsumini)
     IF_INT_LESS_OR_EQUAL(GSW(0), 215)
@@ -3875,11 +4342,33 @@ static EVT_BEGIN(mobj_box00)
     RETURN
 EVT_END()
 
-// TODO: write unk_gor_000006d8 (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(unk_gor_000006d8) {
+    NpcWork* work = npcGetWorkPtr();
+    s32 i;
+    s32 count = work->total;
+    NpcEntry* entry = work->entries;
 
-// TODO: write get_yoshi_color (static, 0x48 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < count; i++, entry++) {
+        if (entry->flags & 1) {
+            if (entry->moveEvent != NULL) {
+                if (entry->regularEvtId != 0) {
+                    evtDeleteID(entry->regularEvtId);
+                }
+                entry->regularEvtId = 0;
+                entry->moveEvent = NULL;
+            }
+            npcDelete(entry);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(get_yoshi_color) {
+    s32* args = event->args;
+
+    evtSetValue(event, args[0], pouchGetPartyColor(PARTNER_YOSHI));
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(epilogue_npc_entry)
     CALL(unk_gor_000006d8)
@@ -4654,11 +5143,62 @@ EVT_BEGIN(return_gorotsuki_town)
     RETURN
 EVT_END()
 
-// TODO: write fune_eff (static, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(fune_eff) {
+    f32 oldX;
+    f32 oldZ;
+    f32 dist;
+    f32 angle;
+    f32 sign;
+    EffectEntry* e1;
+    EffectEntry* e2;
+    Vec pos;
 
-// TODO: write alpha_init_func (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        event->userdata[0] = (s32)effFunemizuEntry(0, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
+        event->userdata[1] = (s32)effFunemizuEntry(2, 0.0f, -1000.0f, 0.0f, 0.0f, 0.0f);
+        mapObjGetPos("S_fune_a", &pos);
+        *(f32*)&event->userdata[2] = pos.x;
+        *(f32*)&event->field_84 = pos.z;
+    }
+
+    e1 = (EffectEntry*)event->userdata[0];
+    e2 = (EffectEntry*)event->userdata[1];
+    oldX = *(f32*)&event->userdata[2];
+    oldZ = *(f32*)&event->field_84;
+    mapObjGetPos("S_fune_a", &pos);
+    *(f32*)&event->userdata[2] = pos.x;
+    *(f32*)&event->field_84 = pos.z;
+    dist = distABf(oldX, oldZ, pos.x, pos.z);
+    angle = angleABf(oldX, oldZ, pos.x, pos.z);
+    sign = (angle < 180.0f) ? 1.0f : -1.0f;
+
+    ((EffFunemizuData*)e1->userdata)->field_0x44 = 3.0f;
+    ((EffFunemizuData*)e1->userdata)->x = 85.0f * sign + pos.x;
+    ((EffFunemizuData*)e1->userdata)->y = pos.y - 51.0f;
+    ((EffFunemizuData*)e1->userdata)->z = 30.0f + pos.z;
+    ((EffFunemizuData*)e1->userdata)->field_0x10 = dist;
+    if (angle < 180.0f) {
+        ((EffFunemizuData*)e1->userdata)->field_0x14 = 135.0f + angle;
+    } else {
+        ((EffFunemizuData*)e1->userdata)->field_0x14 = 45.0f + angle;
+    }
+
+    ((EffFunemizuData*)e2->userdata)->x = pos.x - 15.0f * sign;
+    ((EffFunemizuData*)e2->userdata)->y = pos.y - 51.0f;
+    ((EffFunemizuData*)e2->userdata)->z = 90.0f + pos.z;
+    ((EffFunemizuData*)e2->userdata)->field_0x10 = dist;
+    ((EffFunemizuData*)e2->userdata)->field_0x14 = 90.0f + angle;
+    if (dist > 1.0f && gp->retraceCount % 15 == 0) {
+        effWaterDamageN64Entry(5, 30, pos.x - 150.0f * sign, pos.y - 50.0f, pos.z, 2.0f);
+    }
+    return 0;
+}
+
+static USER_FUNC(alpha_init_func) {
+    _ap = _mapAlloc(1);
+    *_ap = 0xFF;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(gor_00_init_evt)
     BEGIN_INLINE_EVENT
@@ -4835,56 +5375,384 @@ EVT_BEGIN(gor_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 unk_gor_bss00000000[1] = {
-    0x00000000,
-};
+// NONMATCHING (99.37%): 56 of 354 instructions differ: 54 with different operands, 1 missing, 1 extra
+void suifu100taikikan_seq01(NanNpcEntry* entry) {
+    switch (entry->field_0x68) {
+    case 0:
+        entry->hoseiPosition = entry->position;
+        entry->hoseiPosition.x = -180.0f + (f32)irand(0x32);
+        entry->field_0x78 = 140.0f + (f32)irand(0x78);
+        entry->field_0x60 = 270.0f;
+        entry->field_0x70 = 1;
+        entry->field_0x68 = 100;
+        break;
+    case 1:
+        entry->hoseiPosition = entry->position;
+        entry->hoseiPosition.x = -255.0f + (f32)irand(0x1E);
+        entry->hoseiPosition.z = -230.0f + (f32)irand(0x1E);
+        entry->field_0x70 = 10;
+        entry->field_0x68 = 100;
+        break;
+    case 10:
+        entry->hoseiPosition = entry->position;
+        entry->hoseiPosition.z = -350.0f + (f32)irand(0x32);
+        entry->field_0x70 = 20;
+        entry->field_0x68 = 100;
+        break;
+    case 20:
+        entry->hoseiPosition = entry->position;
+        entry->hoseiPosition.x += 520.0f + (f32)irand(0x32);
+        entry->field_0x60 = 90.0f;
+        entry->field_0x70 = 30;
+        entry->field_0x68 = 100;
+        break;
+    case 30:
+        entry->hoseiPosition = *(Vec*)&suifu100kaidanDOWN[irand(3) * 3];
+        entry->field_0x70 = 40;
+        entry->field_0x68 = 100;
+        break;
+    case 40:
+        entry->hoseiPosition = *(Vec*)&suifu100kaidanUP[irand(3) * 3];
+        entry->field_0x60 = 270.0f;
+        entry->field_0x70 = 50;
+        entry->field_0x68 = 100;
+        break;
+    case 50:
+        entry->hoseiPosition = entry->position;
+        entry->hoseiPosition.x = -30.0f + (f32)irand(0x3C);
+        entry->field_0x70 = 60;
+        entry->field_0x68 = 100;
+        break;
+    case 60:
+        entry->hoseiPosition = entry->position;
+        entry->hoseiPosition.z -= 100.0f;
+        entry->field_0x70 = 99;
+        entry->field_0x68 = 100;
+        break;
+    case 99:
+        entry->position = vec3_gor_00013858;
+        break;
+    case 100:
+        entry->field_0x50 = gp->renderTime;
+        entry->field_0x30 = entry->position;
+        entry->field_0x68 = 101;
+        // fallthrough
+    case 101: {
+        Vec v;
+        Vec out;
+        f32 mag;
+        s32 elapsed;
+        s32 total;
 
-// TODO: type
-u32 unk_gor_bss00000004[1] = {
-    0x00000000,
-};
+        PSVECSubtract(&entry->hoseiPosition, &entry->field_0x30, &v);
+        mag = PSVECMag(&v);
+        total = (s32)(1000.0f * mag / entry->field_0x78);
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        PSVECScale(&v, &out, (f32)elapsed / (f32)total);
+        if (elapsed < total) {
+            PSVECAdd(&entry->field_0x30, &out, &entry->position);
+        } else {
+            entry->position = entry->hoseiPosition;
+            entry->field_0x68 = entry->field_0x70;
+        }
+        break;
+    }
+    }
+}
 
-// TODO: type
-static u32 ckpw[1] = {
-    0x00000000,
-};
+void suifu100taikikan_seq00(NanNpcEntry* entry) {
+    entry->field_0x68 = 0;
+}
 
-// TODO: type
-static u32 ckp1[1] = {
-    0x00000000,
-};
+// NONMATCHING (99.63%): 81 of 573 instructions differ: 79 with different operands, 1 missing, 1 extra
+void gundan1000tai_seq01(NanNpcEntry* entry) {
+    marioGetPtr();
+    switch (entry->field_0x68) {
+    case 0: {
+        s32 r;
 
-// TODO: type
-static u32 ckp0[1] = {
-    0x00000000,
-};
+        entry->field_0x30 = entry->position;
+        entry->field_0xA4 = 0;
+        entry->field_0xA8 = 0;
+        r = irand(0x3E8);
+        if (r < 0x32) {
+            entry->field_0x68 = 10;
+            break;
+        }
+        if (r < 0x96) {
+            entry->field_0x68 = 1;
+            entry->field_0x6C = irand(0x1F4) + 0x12C;
+            entry->field_0x50 = gp->renderTime;
+        } else {
+            entry->field_0x68 = 1;
+            entry->field_0x6C = irand(0x9C4) + 0x1F4;
+            entry->field_0x50 = gp->renderTime;
+        }
+        break;
+    }
+    case 1: {
+        s32 elapsed;
 
-// TODO: type
-static u32 itemsel_table_ram[1] = {
-    0x00000000,
-};
+        if (entry->field_0xA8 != 0) {
+            entry->field_0x68 = 100;
+            break;
+        }
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
+            entry->field_0x68 = 10;
+        }
+        break;
+    }
+    case 10:
+    case 11: {
+        f32 radius;
+        f32 s;
+        f32 angle;
+        f32 c;
 
-// TODO: type
-static u32 _ap[1] = {
-    0x00000000,
-};
+        entry->field_0x50 = gp->renderTime;
+        entry->hoseiPosition = entry->position;
+        if (entry->field_0x68 == 10) {
+            radius = (f32)(irand(0x19) + 0x19);
+        } else {
+            radius = (f32)(irand(0xB4) + 0x78);
+        }
+        angle = 6.2832f * (f32)irand(0x168) / 360.0f;
+        s = sin(angle);
+        c = cos(angle);
+        entry->field_0x88.x = 0.9f * (radius * s) + 30.0f;
+        entry->field_0x88.y = 15.0f;
+        entry->field_0x88.z = 0.5f * (radius * c) - 300.0f;
+        entry->field_0x78 = -4.0f * (f32)(irand(0x3C) + 0x32);
+        entry->field_0x7C = (entry->field_0x88.y - entry->hoseiPosition.y) - entry->field_0x78;
+        entry->field_0x6C = irand(0x1F4) + 0x258;
+        if (entry->field_0x68 == 10) {
+            entry->field_0x70 = 0x15;
+            if (entry->hoseiPosition.x < entry->field_0x88.x) {
+                entry->field_0x60 = 90.0f;
+            } else {
+                entry->field_0x60 = 270.0f;
+            }
+        } else {
+            entry->field_0x70 = 0x16;
+            if (entry->hoseiPosition.x < entry->field_0x88.x) {
+                entry->field_0x60 = 270.0f;
+            } else {
+                entry->field_0x60 = 90.0f;
+            }
+        }
+        entry->field_0x68 = 20;
+        evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
+        break;
+    }
+    case 20: {
+        s32 elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
 
-// TODO: write suifu100taikikan_seq01 (global, 0x584 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+        if (elapsed < entry->field_0x6C) {
+            f32 t = (f32)elapsed / (f32)entry->field_0x6C;
 
-// TODO: write suifu100taikikan_seq00 (global, 0xc bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+            entry->position.x = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.x, entry->field_0x88.x);
+            entry->position.z = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.z, entry->field_0x88.z);
+            entry->position.y = entry->hoseiPosition.y + t * (entry->field_0x7C + entry->field_0x78 * t);
+        } else {
+            entry->position = entry->field_0x88;
+            entry->field_0x68 = entry->field_0x70;
+            entry->field_0x50 = gp->renderTime;
+            entry->field_0x6C = irand(0x7D0) + 0x1F4;
+        }
+        break;
+    }
+    case 21: {
+        s32 elapsed;
 
-// TODO: write gundan1000tai_seq01 (global, 0x8f0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+        if (entry->field_0xA8 != 0) {
+            entry->field_0x68 = 100;
+            break;
+        }
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            entry->field_0x68 = 11;
+        }
+        break;
+    }
+    case 22:
+        if (entry->field_0xA8 != 0) {
+            entry->field_0x68 = 102;
+            break;
+        }
+        entry->field_0x6C = irand(0x7D0) + 0x1F4;
+        entry->field_0x50 = gp->renderTime;
+        entry->field_0x30 = entry->position;
+        entry->field_0x78 = 15.0f + entry->field_0x30.x;
+        entry->field_0x7C = entry->field_0x30.x - 15.0f;
+        if (irand(1) != 0) {
+            entry->field_0x80 = 1.0f;
+            entry->field_0x60 = 90.0f;
+        } else {
+            entry->field_0x80 = -1.0f;
+            entry->field_0x60 = 270.0f;
+        }
+        entry->field_0x68 = 30;
+        break;
+    case 30: {
+        s32 elapsed;
 
-// TODO: write gundan1000tai_seq00 (global, 0x24c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+        if (entry->field_0xA8 != 0) {
+            entry->field_0x68 = 102;
+            break;
+        }
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            entry->field_0x68 = 10;
+            break;
+        }
+        if (entry->field_0x78 < entry->position.x) {
+            entry->field_0x80 = -1.0f;
+            entry->field_0x60 = 270.0f;
+        }
+        if (entry->field_0x7C > entry->position.x) {
+            entry->field_0x80 = 1.0f;
+            entry->field_0x60 = 90.0f;
+        }
+        entry->position.x += entry->field_0x80;
+        break;
+    }
+    case 100: {
+        f32 angle;
+        f32 s;
+        f32 radius;
+        f32 c;
+        f32 dist;
+        f32 a;
 
-// TODO: write geundan1000tai_circle_pos (global, 0x120 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+        radius = (f32)(irand(0xB4) + 0x78);
+        angle = 6.2832f * (f32)irand(0x168) / 360.0f;
+        s = sin(angle);
+        c = cos(angle);
+        entry->field_0x88.x = 0.9f * (radius * s) + 30.0f;
+        entry->field_0x88.z = 0.5f * (radius * c) - 300.0f;
+        dist = distABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
+        a = angleABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
+        {
+            f32 duration = sysFrame2SecFloat(dist * 0.5f + (f32)(irand(0xB4) + 0xB4));
 
-// TODO: write accdec_type (static, 0x80 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_00.s; this is where the original has it, just before the first script that uses it
+            entry->field_0x78 = duration;
+            entry->field_0x7C = a;
+            entry->field_0x70 = (s32)(dist / duration);
+        }
+        entry->field_0x6C = 0;
+        entry->field_0x68 = 101;
+        // fallthrough
+    }
+    case 101:
+        movePos(&entry->position.x, &entry->position.z, entry->field_0x78, entry->field_0x7C);
+        entry->field_0x6C++;
+        if (entry->field_0x6C >= entry->field_0x70) {
+            entry->position.x = entry->hoseiPosition.x;
+            entry->position.z = entry->hoseiPosition.z;
+            entry->field_0x68 = 102;
+        }
+        break;
+    case 102:
+        evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl);
+        entry->field_0xA4 = 1;
+        break;
+    }
+}
+
+// NONMATCHING (99.76%): 7 of 147 instructions differ in operands only (registers or offsets)
+void gundan1000tai_seq00(NanNpcEntry* entry) {
+    marioGetPtr();
+    switch (entry->field_0x68) {
+    case 0: {
+        s32 tmp;
+
+        entry->field_0x50 = gp->renderTime;
+        tmp = (entry->field_0x74 % 6) * 500;
+        entry->field_0x6C = tmp + irand(500);
+        entry->field_0x68++;
+        // fallthrough
+    }
+    case 1: {
+        s32 elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+
+        if (elapsed > entry->field_0x6C) {
+            entry->field_0x68++;
+        }
+        break;
+    }
+    case 2: {
+        f32 dist = distABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
+        f32 angle = angleABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
+        f32 randval = (f32)(irand(0xB4) + 0xB4);
+        f32 half = 0.5f;
+        f32 duration = sysFrame2SecFloat((randval + dist * half) * half);
+
+        entry->field_0x78 = duration;
+        entry->field_0x7C = angle;
+        entry->field_0x70 = (s32)(dist / duration);
+        entry->field_0x6C = 0;
+        entry->field_0xA4 = 0;
+        evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_run_animtbl);
+        entry->field_0x68++;
+        // fallthrough
+    }
+    case 3:
+        movePos(&entry->position.x, &entry->position.z, entry->field_0x78, entry->field_0x7C);
+        entry->field_0x6C++;
+        if (entry->field_0x6C >= entry->field_0x70) {
+            entry->position.x = entry->hoseiPosition.x;
+            entry->position.z = entry->hoseiPosition.z;
+            entry->field_0xA4 = 1;
+            evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl);
+            entry->field_0x68++;
+        }
+        break;
+    case 4:
+        entry->field_0x30 = entry->position;
+        break;
+    }
+}
+
+void geundan1000tai_circle_pos(Vec* out) {
+    f32 s;
+    f32 angle;
+    f32 radius;
+    f32 c;
+
+    radius = (f32)(irand(0xB4) + 0x78);
+    angle = 6.2832f * (f32)irand(0x168) / 360.0f;
+    s = sin(angle);
+    c = cos(angle);
+
+    out->x = 0.9f * (radius * s);
+    out->y = 15.0f;
+    out->z = 0.5f * (radius * c) - 300.0f;
+}
+
+static f32 accdec_type(s32 target, s32 count, f32 start, f32 end) {
+    s32 i;
+    s32 hi = count * 10 / 100;
+    s32 lo = count * 90 / 100;
+    f32 result;
+    f32 value;
+    f32 sum;
+
+    value = 0.0f;
+    sum = value;
+
+    for (i = 0; i < count; i++) {
+        if (i <= hi) {
+            value += 1.0f;
+        } else if (i >= lo) {
+            value -= 1.0f;
+        }
+        sum += value;
+        if (i == target) {
+            result = sum;
+        }
+    }
+    return start + (end - start) * result / sum;
+}
 // clang-format on

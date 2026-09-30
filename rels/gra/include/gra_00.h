@@ -1,8 +1,9 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "memory.h"
 
-void msg_callback(void);  // TODO: real signature
+void msg_callback(s32 state, smartEntry* smart);
 USER_FUNC(camera_yure);
 EVT_DEF(evt_yabure_on);
 EVT_DEF(evt_yabure_off);

@@ -1,8 +1,11 @@
 #include "tik.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_npc.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include <dolphin/mtx.h>
 
 #pragma pool_data off
 
@@ -31,8 +34,69 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write evt_tik_villager_urouro_check_func (global, 0x148 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("tik_00", tik_00_init_evt);
+    relSetEvtAddr("tik_01", tik_01_init_evt);
+    relSetEvtAddr("tik_02", tik_02_init_evt);
+    relSetEvtAddr("tik_03", tik_03_init_evt);
+    relSetEvtAddr("tik_04", tik_04_init_evt);
+    relSetEvtAddr("tik_05", tik_05_init_evt);
+    relSetEvtAddr("tik_06", tik_06_init_evt);
+    relSetEvtAddr("tik_07", tik_07_init_evt);
+    relSetEvtAddr("tik_08", tik_08_init_evt);
+    relSetEvtAddr("tik_09", tik_09_init_evt);
+    relSetEvtAddr("tik_10", tik_10_init_evt);
+    relSetEvtAddr("tik_11", tik_11_init_evt);
+    relSetEvtAddr("tik_12", tik_12_init_evt);
+    relSetEvtAddr("tik_13", tik_13_init_evt);
+    relSetEvtAddr("tik_14", tik_14_init_evt);
+    relSetEvtAddr("tik_15", tik_15_init_evt);
+    relSetEvtAddr("tik_16", tik_16_init_evt);
+    relSetEvtAddr("tik_17", tik_17_init_evt);
+    relSetEvtAddr("tik_18", tik_18_init_evt);
+    relSetEvtAddr("tik_19", tik_19_init_evt);
+    relSetEvtAddr("tik_20", tik_20_init_evt);
+    relSetEvtAddr("tik_21", tik_21_init_evt);
+    relSetBtlAddr("tik", btlsetup_tik_tbl, btl_tik_setup_no_tbl);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
+
+USER_FUNC(evt_tik_villager_urouro_check_func) {
+    s32* args = event->args;
+    s32 arg0 = args[0];
+    s32 arg1 = args[1];
+    f32 x = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    f32 limit = evtGetFloat(event, args[4]);
+    f32 x2 = evtGetFloat(event, arg0);
+    f32 z2 = evtGetFloat(event, arg1);
+    Vec to;
+    Vec from;
+
+    to = (Vec){ x2, 0.0f, z2 };
+    from = (Vec){ x, 0.0f, z };
+    if (PSVECDistance(&from, &to) <= limit) {
+        return EVT_RETURN_DONE;
+    }
+    evtSetFloat(event, arg0, x);
+    evtSetFloat(event, arg1, z);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(tik_villager_urouro)
     CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
@@ -62,12 +126,4 @@ EVT_BEGIN(tik_villager_urouro)
     END_LOOP
 EVT_END()
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _prolog (global, 0x220 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik.s; this is where the original has it, just before the first script that uses it
 // clang-format on

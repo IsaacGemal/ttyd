@@ -10,9 +10,9 @@ USER_FUNC(teresa_wait_bikkuri);
 USER_FUNC(teresa_appear_bikkuri);
 USER_FUNC(target_id_set);
 USER_FUNC(atmic_teresa_id_set);
-void teresa_ext_disp(void);  // TODO: real signature
-void teresa_ext_main(void);  // TODO: real signature
-void teresa_ext_init(void);  // TODO: real signature
+void teresa_ext_disp(void);
+void teresa_ext_main(void);
+void teresa_ext_init(void);
 EVT_DEF(kaokakusi_event);
 EVT_DEF(press_event);
 EVT_DEF(surprise_event);

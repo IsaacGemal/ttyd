@@ -1,5 +1,15 @@
 #include "tou_01.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
 #include "driver/envdrv.h"
+#include "driver/mobjdrv.h"
+#include "driver/npcdrv.h"
+#include "eff/eff_sleep.h"
+#include "eff/eff_starstone.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_bg.h"
 #include "evt/evt_cam.h"
@@ -26,6 +36,12 @@
 #include "evt/evt_win.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mario_party.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "party.h"
 #include "party/party_motion.h"
 
 #pragma pool_data off
@@ -67,8 +83,18 @@ extend_data(9,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write proj_off (static, 0x98 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(proj_off) {
+    animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[0], 0x400);
+    animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[1], 0x400);
+    animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[2], 0x400);
+    if (partyGetPtr(marioGetPartyId()) != NULL) {
+        animPoseSetMaterialFlagOff(partyGetPtr(marioGetPartyId())->paperAnimGroup, 0x400);
+    }
+    if (partyGetPtr(marioGetExtraPartyId()) != NULL) {
+        animPoseSetMaterialFlagOff(partyGetPtr(marioGetExtraPartyId())->paperAnimGroup, 0x400);
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(n_door_open)
     IF_FLOAT_EQUAL(LW(0), FLOAT(0.0f))
@@ -419,14 +445,124 @@ EVT_BEGIN(evt_hotdog)
     RETURN
 EVT_END()
 
-// TODO: write proj_mtx (static, 0x1dc bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(proj_on) {
+    animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[0], 0x400);
+    animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[1], 0x400);
+    animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[2], 0x400);
+    if (partyGetPtr(marioGetPartyId()) != NULL) {
+        animPoseSetMaterialFlagOn(partyGetPtr(marioGetPartyId())->paperAnimGroup, 0x400);
+    }
+    if (partyGetPtr(marioGetExtraPartyId()) != NULL) {
+        animPoseSetMaterialFlagOn(partyGetPtr(marioGetExtraPartyId())->paperAnimGroup, 0x400);
+    }
+    animPoseSetMaterialFlagOn(npcNameToPtr("飛空船")->poseId, 0x400);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write make_shadow (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_tou_0000b0ac = {0.0f, 0.0f, 0.0f};
+const Vec vec3_tou_0000b0b8 = {0.0f, 0.0f, -1.0f};
+const Vec vec3_tou_0000b0c4 = {0.0f, 0.0f, 0.0f};
 
-// TODO: write proj_on (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+void make_shadow_disp(CameraId camId, void* param) {
+    ShadowWork* work = param;
+    f32 viewport[6];
+    f32 proj[7];
+    u32 scissorX;
+    u32 scissorY;
+    u32 scissorW;
+    u32 scissorH;
+    Mtx44 perspMtx;
+    f32 tanVal;
+    Mtx lookAtMtx;
+    Mtx scaleMtx;
+    Vec camPos;
+    Vec up;
+    Vec target;
+    GXColor color;
+
+    GXGetViewportv(viewport);
+    GXGetProjectionv(proj);
+    GXGetScissor(&scissorX, &scissorY, &scissorW, &scissorH);
+    GXSetViewport(0.0f, 0.0f, 256.0f, 256.0f, 0.0f, 1.0f);
+    GXSetScissor(1, 1, 0xFE, 0xFE);
+    C_MTXPerspective(perspMtx, 25.0f, 1.2666667f, 1.0f, 1000.0f);
+    GXSetProjection(perspMtx, GX_PERSPECTIVE);
+    target = vec3_tou_0000b0c4;
+    up = vec3_tou_0000b0b8;
+    camPos = vec3_tou_0000b0ac;
+    tanVal = (f32)tan(0.21816615760326385);
+    camPos.y = 128.0f / tanVal;
+    C_MTXLookAt(lookAtMtx, &camPos, &up, &target);
+    PSMTXScale(scaleMtx, 128.0f, 64.0f, 64.0f);
+    PSMTXConcat(lookAtMtx, scaleMtx, scaleMtx);
+    GXLoadPosMtxImm(scaleMtx, 0);
+    GXSetCurrentMtx(0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetNumChans(1);
+    color = (GXColor){0x80, 0x80, 0x80, 0x40};
+    GXSetChanMatColor(GX_COLOR0A0, color);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXDrawSphere(16, 8);
+    GXSetTexCopySrc(0, 0, 0x100, 0x100);
+    GXSetTexCopyDst(0x80, 0x80, GX_TF_RGB5A3, GX_TRUE);
+    GXCopyTex(work->texEntry->address, GX_TRUE);
+    GXInvalidateTexAll();
+    GXPixModeSync();
+    GXTexModeSync();
+    GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
+    GXSetProjectionv(proj);
+    GXSetScissor(scissorX, scissorY, scissorW, scissorH);
+}
+
+USER_FUNC(make_shadow) {
+    ShadowWork* work;
+
+    if (isFirstCall != 0) {
+        work = _mapAlloc(0x24);
+        event->userdata[0] = (s32)work;
+        work->texEntry = smartAlloc(GXGetTexBufferSize(0x80, 0x80, GX_TF_RGB5A3, GX_FALSE, 0), 1);
+    }
+    work = (ShadowWork*)event->userdata[0];
+    GXInitTexObj(&work->texObj, work->texEntry->address, 0x80, 0x80, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    mapSetProjTexObj(&work->texObj, work->texEntry);
+    dispEntry(CAMERA_SHADOW, 0.0f, 3, make_shadow_disp, work);
+    return EVT_RETURN_BLOCK;
+}
+static USER_FUNC(proj_mtx) {
+    s32* args = event->args;
+    f32 a0 = evtGetFloat(event, args[0]);
+    f32 a1 = evtGetFloat(event, args[1]);
+    f32 a2 = evtGetFloat(event, args[2]);
+    f32 a3 = evtGetFloat(event, args[3]);
+    f32 a4 = evtGetFloat(event, args[4]);
+    f32 a5 = evtGetFloat(event, args[5]);
+    Mtx lookAt;
+    Mtx perspMtx;
+    Vec camPos;
+    Vec target;
+    Vec up;
+
+    camPos = (Vec){a0, a1, a2};
+    target = (Vec){a3, a4, a5};
+    up = (Vec){0.0f, 0.0f, -1.0f};
+    C_MTXLightPerspective(perspMtx, 25.0f, 1.2666667f, 0.5f, 0.5f, 0.5f, 0.5f);
+    C_MTXLookAt(lookAt, &camPos, &up, &target);
+    PSMTXConcat(perspMtx, lookAt, perspMtx);
+    mapSetProjMtx(perspMtx);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_ship_shadow)
     CALL(proj_on)
@@ -1726,11 +1862,16 @@ u32 yoshi_data[30] = {
     0x00000000, 0x00000028,
 };
 
-// TODO: write mario_chk (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write eff_sleep_on (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(eff_sleep_on) {
+    EffectEntry* effect = effNameToPtr("eff_sleep");
+    NpcEntry* npc = npcNameToPtr_NoAssert("たまご");
+
+    if (effect == NULL) {
+        effSetName(effSleepEntry(0, 0, npc->position.x, npc->position.y + 16.0f, npc->position.z, 1.0f, 65.0f), "eff_sleep");
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_tamago_move)
     CALL(evt_npc_flag_onoff, 1, STRING("たまご"), 1073741856)
@@ -1853,8 +1994,14 @@ EVT_BEGIN(evt_tamago)
     RETURN
 EVT_END()
 
-// TODO: write eff_sleep_off (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(eff_sleep_off) {
+    EffectEntry* effect = effNameToPtr("eff_sleep");
+
+    if (effect != NULL) {
+        effSoftDelete(effect);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(talk_tamago)
     CALL(evt_mario_key_onoff, 0)
@@ -2229,8 +2376,56 @@ EVT_BEGIN(evt_peach_after)
     RETURN
 EVT_END()
 
-// TODO: write delete_npc_regl_evt (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(mario_chk) {
+    s32 result = 0;
+    s32* args = event->args;
+
+    if (marioChkKey() != 0 && marioChkCtrl() != 0) {
+        result = 1;
+    }
+    evtSetValue(event, args[0], !(!result));
+    return EVT_RETURN_DONE;
+}
+const Vec vec3_tou_0000c0a0 = {0.0f, 100.0f, 0.0f};
+const Vec vec3_tou_0000c0ac = {0.0f, 1.0f, 0.0f};
+const Vec vec3_tou_0000c0b8 = {0.0f, 0.0f, 0.0f};
+
+static USER_FUNC(yami_view) {
+    s32* args = event->args;
+    Mtx mtx;
+    Vec camPos;
+    Vec up;
+    Vec target;
+    CameraEntry* cam;
+    f32 sinA;
+    f32 cosA;
+    f32 value;
+    f32 angle;
+    f32 s;
+    f32 c;
+    f32 x;
+    f32 z;
+
+    value = (f32)evtGetValue(event, args[0]);
+    cam = camGetPtr(CAMERA_3D);
+    angle = 6.2831855f * (90.0f + cam->viewYaw) / 360.0f;
+    sinA = sin(angle);
+    cosA = cos(angle);
+    s = value * (f32)sin(angle);
+    c = value * -(f32)cos(angle);
+    target = vec3_tou_0000c0b8;
+    x = -100.0f * sinA;
+    z = -100.0f * -cosA;
+    target.x = s;
+    target.z = c;
+    up = vec3_tou_0000c0ac;
+    camPos = vec3_tou_0000c0a0;
+    camPos.x = x + s;
+    camPos.z = z + c;
+    C_MTXLookAt(mtx, &camPos, &up, &target);
+    envSetYamiView(mtx);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(sekai_yami_npc_init)
     CALL(evt_npc_entry, STRING("キノシコワ"), STRING("c_ksikowa"))
@@ -2252,8 +2447,6 @@ static EVT_BEGIN(sekai_yami_npc_init)
     RETURN
 EVT_END()
 
-// TODO: write yami_oowareru_check (global, 0x134 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(sekai_yami_npc)
     LOOP(0)
@@ -2279,14 +2472,42 @@ static EVT_BEGIN(sekai_yami_npc)
     RETURN
 EVT_END()
 
-// TODO: write anim_tevcallback_mobj (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(anim_tevcallback) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
 
-// TODO: write anim_tevcallback (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write yami_view (static, 0x1a4 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(anim_tevcallback_mobj) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    MapObjectEntry* obj = mobjNameToPtrNoAssert((const char*)name);
+
+    if (obj == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(obj->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(delete_npc_regl_evt) {
+    NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
+
+    if (npc->regularEvtId != 0) {
+        evtDeleteID(npc->regularEvtId);
+        npc->moveEvent = NULL;
+        npc->regularEvtId = 0;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(sekai_yami_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -2397,14 +2618,53 @@ static EVT_BEGIN(minnnanokoe_npc_entry)
     RETURN
 EVT_END()
 
-// TODO: write starstone_set_ry (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(yami_oowareru_check) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 s;
+    f32 angle;
+    f32 c;
+    f32 value;
+    angle = 6.2831855f * (90.0f + cam->viewYaw) / 360.0f;
+    s = sin(angle);
+    c = cos(angle);
+    value = s * y + -c * z;
 
-// TODO: write starstone_set_pos (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+    if (value < x) {
+        evtSetValue(event, args[3], 1);
+        return EVT_RETURN_DONE;
+    }
+    evtSetValue(event, args[3], 0);
+    return EVT_RETURN_BLOCK;
+}
 
-// TODO: write starstone_entry (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+
+    effSetName(effStarStoneEntry(2, x, y, z, 1.0f), (const char*)name);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
+
+    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
+    ((effStarStoneData*)entry->userdata)->field_0xC = y;
+    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(minnnanokoe_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -2819,6 +3079,13 @@ EVT_BEGIN(tou_01_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write make_shadow_disp (global, 0x318 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(starstone_set_ry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 value = evtGetFloat(event, args[1]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
+
+    ((effStarStoneData*)entry->userdata)->field_0x1C = value;
+    return EVT_RETURN_DONE;
+}
 // clang-format on

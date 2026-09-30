@@ -92,6 +92,7 @@ typedef struct PaperSoundWork {
 
 s32 searchPSSFXList(const char* name);
 void psndInit(void);
+void psndMapChange(void);
 void psndMain(void);
 void psndMainInt(void);
 void psndExit(void);

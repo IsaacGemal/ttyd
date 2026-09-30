@@ -4,6 +4,17 @@
 #include "evt/evt_npc.h"
 #include "evt/evt_seq.h"
 #include "forcedata.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "system.h"
+#include <string.h>
+#include <stdlib.h>
+
+void* yuunpc_yuuminigame4_ptr;
+static YuunpcWp* yuunpc_wp;
 
 #pragma pool_data off
 
@@ -317,11 +328,13 @@ u32 chusan_act_tbl[8] = {
     0x00000003, 0x00000002, 0x00000001, 0x00000000,
 };
 
-// TODO: write ext_yuunpc_minigame1_main (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void ext_yuunpc_minigame1_main(void) {
+    yuunpc_pose_minigame1_main();
+}
 
-// TODO: write ext_yuunpc_dispent (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void ext_yuunpc_dispent(void) {
+    dispEntry(4, 0.0f, 1, yuunpc_disp, NULL);
+}
 
 // TODO: write ext_yuunpc_minigame1_init (global, 0x7d0 bytes) here:
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
@@ -343,8 +356,9 @@ EVT_BEGIN(evt_yuunpc_minigame1)
     RETURN
 EVT_END()
 
-// TODO: write ext_yuunpc_minigame2_main (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void ext_yuunpc_minigame2_main(void) {
+    yuunpc_pose_minigame2_main();
+}
 
 // TODO: write ext_yuunpc_minigame2_init (global, 0x7c8 bytes) here:
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
@@ -366,8 +380,9 @@ EVT_BEGIN(evt_yuunpc_minigame2)
     RETURN
 EVT_END()
 
-// TODO: write ext_yuunpc_minigame3_main (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void ext_yuunpc_minigame3_main(void) {
+    yuunpc_pose_minigame3_main();
+}
 
 // TODO: write ext_yuunpc_minigame3_init (global, 0x7c8 bytes) here:
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
@@ -389,11 +404,18 @@ EVT_BEGIN(evt_yuunpc_minigame3)
     RETURN
 EVT_END()
 
-// TODO: write ext_yuunpc_minigame4_main (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void ext_yuunpc_minigame4_main(void) {
+    yuunpc_pose_minigame4_main();
+}
 
-// TODO: write ext_yuunpc_minigame4_init (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void ext_yuunpc_minigame4_init(void) {
+    yuunpc_wp = _mapAlloc(0xA94);
+    memset(yuunpc_wp, 0, 0xA94);
+    yuunpc_wp->count = extGetPoseNum();
+    yuunpc_wp->entries = _mapAlloc(yuunpc_wp->count * 0x70);
+    memset(yuunpc_wp->entries, 0, yuunpc_wp->count * 0x70);
+    ext_yuunpc_minigame4_init_sub();
+}
 
 EVT_BEGIN(evt_yuunpc_minigame4)
     CALL(evt_npc_entry, STRING("yuunpc0"), STRING("c_kinopiko"))
@@ -551,8 +573,27 @@ static u32 jumptable_00006054[8] = {
     (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x24e8), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x25b0),
 };
 
-// TODO: write errper_set_rtn (global, 0x1dc bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void errper_set_rtn(ErrPer* p) {
+    switch (p->field_4) {
+        case -1:
+        case 6:
+            p->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+            break;
+        case 0:
+        case 2:
+        case 4:
+            p->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+            break;
+        case 1:
+        case 3:
+        case 5:
+            p->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+            break;
+        default:
+            p->field_8 = 2.0f * (0.1f * ((f32)rand() / 32767.0f)) + (-0.1f);
+            break;
+    }
+}
 
 // TODO: type
 static u32 jumptable_00006074[8] = {
@@ -560,54 +601,290 @@ static u32 jumptable_00006074[8] = {
     (u32)((u8*)&errper_set_rtn + 0xa0), (u32)((u8*)&errper_set_rtn + 0x3c), (u32)((u8*)&errper_set_rtn + 0xa0), (u32)((u8*)&errper_set_rtn + 0x104),
 };
 
-// TODO: type
-u32 yuunpc_yuuminigame4_ptr[1] = {
-    0x00000000,
-};
 
-// TODO: type
-static u32 yuunpc_wp[1] = {
-    0x00000000,
-};
+void yuunpc_disp(CameraId cameraId, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
 
-// TODO: write yuunpc_disp (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+s32 yuunpc_juni(Vec* pos) {
+    f32 value = pos->x;
+    YuunpcEntry* entry = yuunpc_wp->entries;
+    s32 count = 0;
+    s32 i;
+    for (i = yuunpc_wp->count; i > 0; i--) {
+        if ((entry->flags & 2) && !(entry->flags & 0x40) && value < entry->field_24) {
+            count++;
+        }
+        entry++;
+    }
+    return count;
+}
 
-// TODO: write yuunpc_juni (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+u16 yuunpc_wp_flag_check(u16 mask) {
+    return yuunpc_wp->flags & mask;
+}
 
-// TODO: write yuunpc_wp_flag_check (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void yuunpc_wp_flag_off(u16 mask) {
+    yuunpc_wp->flags &= ~mask;
+}
 
-// TODO: write yuunpc_wp_flag_off (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void yuunpc_wp_flag_on(u16 mask) {
+    yuunpc_wp->flags |= mask;
+}
 
-// TODO: write yuunpc_wp_flag_on (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+s32 goalincheck(YuunpcMapWork* p) {
+    f32 dx = p->field_24 - p->field_18.x;
+    f32 dz = p->field_2C - p->field_18.z;
+    f32 r = p->field_3C;
+    if (dx * dx + dz * dz <= r * r) {
+        if (p->field_18.x == p->field_0C.x && p->field_18.z == p->field_0C.z) {
+            p->field_24 = p->field_18.x;
+            p->field_2C = p->field_18.z;
+            return -1;
+        }
+        p->field_18 = p->field_0C;
+    }
+    return 0;
+}
 
-// TODO: write goalincheck (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fallcheck (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+s32 fallcheck(YuunpcMapWork* p) {
+    BOOL outOfRange;
+    s32 height;
+    f32 ground;
+    p->field_28 += p->field_40;
+    outOfRange = p->field_24 < -1800.0f || p->field_24 >= 1800.0f || p->field_2C < -150.0f || p->field_2C >= 150.0f;
+    if (outOfRange) {
+        height = -500;
+    } else {
+        s32 zidx = (s32)((p->field_2C - -150.0f) / 50.0f);
+        s32 xidx = (s32)((p->field_24 - -1800.0f) / 50.0f);
+        height = yuunpc_wp->map[zidx * 72 + xidx];
+    }
+    ground = height;
+    if (p->field_28 <= ground) {
+        p->field_28 = ground;
+        p->field_40 = 0.0f;
+        return -1;
+    }
+    p->field_40 -= 0.53333f;
+    if (p->field_40 < -16.667f) {
+        p->field_40 = -16.667f;
+    }
+    return 0;
+}
 
 // TODO: write hitcheck (global, 0x884 bytes) here:
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuunpc_pose_minigame3_main (global, 0x26c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (81.66%): logic complete. Remaining diff: f30/f31 allocation, `ble` vs cror loop encodings,
+// and sdata2 constant addresses.
+void yuunpc_pose_minigame3_main(void) {
+    ExtPose* pose;
+    MtxPtr mtx;
+    YuunpcEntry* entry;
+    s32 i;
+    f32 camX;
+    f32 f31;
+    f32 f29;
+    f32 f28;
+    f32 f1;
 
-// TODO: write yuunpc_pose_minigame2_main (global, 0x2c4 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+    camX = camGetPtr(CAMERA_3D)->cameraAt.x;
+    pose = extGetPosePtr();
+    f31 = 600.0f + camX;
+    entry = yuunpc_wp->entries;
+    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
+        mtx = (MtxPtr)pose->matrix;
+        if (entry->flags & 1) {
+            f29 = mtx[0][3];
+            if (f29 > camX) {
+                for (;;) {
+                    if (f29 <= f31) {
+                        break;
+                    }
+                    f29 -= 1200.0f;
+                    mtx[0][3] = f29;
+                }
+            } else {
+                f32 low = camX - 600.0f;
+                for (;;) {
+                    if (f29 >= low) {
+                        break;
+                    }
+                    f29 += 1200.0f;
+                    mtx[0][3] = f29;
+                }
+            }
+            f28 = mtx[2][3];
+            if (f28 < -570.0f) {
+                f1 = mtx[1][3];
+                if ((f29 >= -1700.0f && f29 <= -1600.0f) || (f29 >= -50.0f && f29 <= 50.0f) ||
+                    (f29 >= 1600.0f && f29 <= 1700.0f)) {
+                    if (f1 > -500.0f) {
+                        mtx[1][3] = f1 + -1000.0f;
+                    }
+                } else if (f1 < -500.0f) {
+                    mtx[1][3] = f1 - -1000.0f;
+                }
+            }
+            if (irand(180) == 0) {
+                if (irand(101) > 80) {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
+                } else {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                }
+            }
+        }
+        yuunpc_pose_sub(pose, entry);
+    }
+}
 
-// TODO: write yuunpc_pose_minigame1_main (global, 0x26c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (84.62%): logic complete. Remaining diff: f30/f31 allocation, loop encodings, sdata2 addresses.
+void yuunpc_pose_minigame2_main(void) {
+    ExtPose* pose;
+    MtxPtr mtx;
+    YuunpcEntry* entry;
+    s32 i;
+    f32 camX;
+    f32 f31;
+    f32 f29;
+    f32 f28;
+    f32 f1;
+
+    camX = camGetPtr(CAMERA_3D)->cameraAt.x;
+    pose = extGetPosePtr();
+    f31 = 500.0f + camX;
+    entry = yuunpc_wp->entries;
+    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
+        mtx = (MtxPtr)pose->matrix;
+        if (entry->flags & 1) {
+            f29 = mtx[0][3];
+            if (f29 > camX) {
+                for (;;) {
+                    if (f29 <= f31) {
+                        break;
+                    }
+                    f29 -= 1000.0f;
+                    mtx[0][3] = f29;
+                }
+            } else {
+                f32 low = camX - 500.0f;
+                for (;;) {
+                    if (f29 >= low) {
+                        break;
+                    }
+                    f29 += 1000.0f;
+                    mtx[0][3] = f29;
+                }
+            }
+            f28 = mtx[2][3];
+            if (f28 < -415.0f) {
+                f1 = mtx[1][3];
+                if ((f29 >= -5000.0f && f29 <= -4000.0f) || (f29 >= 790.0f && f29 <= 5000.0f)) {
+                    if (f1 > -500.0f) {
+                        mtx[1][3] = f1 + -1000.0f;
+                    }
+                } else if (f28 < -475.0f) {
+                    if (f29 >= -50.0f && f29 <= 50.0f) {
+                        if (f1 > -500.0f) {
+                            mtx[1][3] = f1 + -1000.0f;
+                        }
+                    } else if (f1 < -500.0f) {
+                        mtx[1][3] = f1 - -1000.0f;
+                    }
+                } else if (f1 < -500.0f) {
+                    mtx[1][3] = f1 - -1000.0f;
+                }
+            }
+            if (irand(150) == 0) {
+                if (irand(101) > 80) {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
+                } else {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                }
+            }
+        }
+        yuunpc_pose_sub(pose, entry);
+    }
+}
+
+// NONMATCHING (81.66%): logic complete (camera-follow x-wrap, y-range wrap, random turn). Remaining diff:
+// f30/f31 register allocation, the `ble` vs `cror eq,lt,eq;beq` encodings, and the sdata2 constant addresses.
+void yuunpc_pose_minigame1_main(void) {
+    ExtPose* pose;
+    MtxPtr mtx;
+    YuunpcEntry* entry;
+    s32 i;
+    f32 camX;
+    f32 f31;
+    f32 f29;
+    f32 f28;
+    f32 f1;
+
+    camX = camGetPtr(CAMERA_3D)->cameraAt.x;
+    pose = extGetPosePtr();
+    f31 = 500.0f + camX;
+    entry = yuunpc_wp->entries;
+    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
+        mtx = (MtxPtr)pose->matrix;
+        if (entry->flags & 1) {
+            f29 = mtx[0][3];
+            if (f29 > camX) {
+                for (;;) {
+                    if (f29 <= f31) {
+                        break;
+                    }
+                    f29 -= 1000.0f;
+                    mtx[0][3] = f29;
+                }
+            } else {
+                f32 low = camX - 500.0f;
+                for (;;) {
+                    if (f29 >= low) {
+                        break;
+                    }
+                    f29 += 1000.0f;
+                    mtx[0][3] = f29;
+                }
+            }
+            f28 = mtx[2][3];
+            if (f28 < -260.0f) {
+                f1 = mtx[1][3];
+                if ((f29 >= -5000.0f && f29 <= -1500.0f) || (f29 >= 1700.0f && f29 <= 5000.0f) ||
+                    (f29 >= 6000.0f && f29 <= 7000.0f)) {
+                    if (f1 > -500.0f) {
+                        mtx[1][3] = f1 + -1000.0f;
+                    }
+                } else if (f1 < -500.0f) {
+                    mtx[1][3] = f1 - -1000.0f;
+                }
+            }
+            if (irand(150) == 0) {
+                if (irand(101) > 80) {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
+                } else {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                }
+            }
+        }
+        yuunpc_pose_sub(pose, entry);
+    }
+}
 
 // TODO: write yuunpc_pose_sub (global, 0x39c bytes) here:
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuunpc_set_jump_pose (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+void yuunpc_set_jump_pose(const char* name, const char* anim, f32 value) {
+    s32 idx = yuunpc_pose_check(name, anim);
+    if (idx >= 0) {
+        yuunpc_wp->poseEntries[idx].field_20 = value;
+    }
+}
 
 // TODO: write yuunpc_pose_change2 (global, 0x384 bytes) here:
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
@@ -615,12 +892,103 @@ static u32 yuunpc_wp[1] = {
 // TODO: write yuunpc_pose_change (global, 0x2e0 bytes) here:
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuunpc_pose_check (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+s32 yuunpc_pose_check(const char* name, const char* anim) {
+    YuunpcPoseEntry* entry = yuunpc_wp->poseEntries;
+    s32 i;
+    for (i = 0; i < yuunpc_wp->field_1C; entry++) {
+        if (strcmp(entry->name, name) == 0 && strcmp(entry->anim, anim) == 0) {
+            break;
+        }
+        i++;
+    }
+    if (i >= yuunpc_wp->field_1C) {
+        return -1;
+    }
+    return i;
+}
 
-// TODO: write yuunpc_pose_init (global, 0x3a8 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (96.83%): logic is complete; the remaining diff is the .sdata2/.rodata constant addresses
+// (the empty-string literal and the c_tyusan/CHU_S_1 literals) plus a rotated loop layout. Those pool
+// slots depend on the still-unimplemented pose/init functions, so the addresses cannot settle until
+// the whole file is built.
+void yuunpc_pose_init(YuunpcPoseArg* arg) {
+    char name[0x20];
+    char anim[0x20];
+    s32 i = 0;
+    s32 idx;
 
-// TODO: write yuunpc_maphit_init (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
+    strcpy(name, "");
+    strcpy(anim, "");
+    yuunpc_wp->field_1C = -1;
+    for (; arg->name != NULL; arg++) {
+        if (strcmp(arg->name, name) != 0) {
+            strcpy(name, arg->name);
+            strcpy(anim, "");
+        }
+        if (strcmp(arg->anim, anim) != 0) {
+            strcpy(anim, arg->anim);
+            idx = i;
+            yuunpc_wp->field_1C += 1;
+        }
+        strcpy(yuunpc_wp->poseEntries[yuunpc_wp->field_1C].name, name);
+        strcpy(yuunpc_wp->poseEntries[yuunpc_wp->field_1C].anim, anim);
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_24 = idx;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_28 = (i - idx) + 1;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_1C += 1.0f;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_18 = 1;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_20 = 0.0f;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_30 = 2.0f;
+        i++;
+    }
+    yuunpc_wp->field_1C += 1;
+    yuunpc_wp->field_18 = yuunpc_wp->field_1C;
+    arg++;
+    for (; arg->name != NULL; arg++) {
+        strcpy(yuunpc_wp->poseEntries[yuunpc_wp->field_1C].name, arg->name);
+        strcpy(yuunpc_wp->poseEntries[yuunpc_wp->field_1C].anim, arg->anim);
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_24 = idx;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_28 = 1;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_1C = arg->field_8;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_18 = 1;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_20 = 0.0f;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_30 = 1.0f;
+        yuunpc_wp->poseEntries[yuunpc_wp->field_1C].flags |= 1;
+        yuunpc_wp->field_1C += 1;
+    }
+    for (i = 0; i < yuunpc_wp->field_18; i++) {
+        if (strcmp(yuunpc_wp->poseEntries[i].name, "c_tyusan") == 0 && strcmp(yuunpc_wp->poseEntries[i].anim, "CHU_S_1") == 0) {
+            yuunpc_wp->field_20 = 0;
+            yuunpc_wp->poseEntries[i].field_1C = 224.0f;
+        }
+    }
+}
+
+// NONMATCHING (86.45%): register allocation differs and the str_00000EBC rodata address is off because
+// ext_yuunpc_minigame4_init_sub (the other user of that literal) is not implemented yet; logic is right.
+void yuunpc_maphit_init(void) {
+    s8 str[3] = "\x81\xA1";
+    s8* hp = (s8*)hitdata;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 72; i++) {
+        yuunpc_wp->map[6 * 72 + i] = (hp[i * 2] - '0') * 10 + (hp[i * 2 + 1] - '0');
+    }
+    for (i = 0; i < 72; i++) {
+        s16 value = -((hp[i + 0x90] - '0') * 10 + (hp[i + 0x91] - '0'));
+        yuunpc_wp->map[5 * 72 + i] = value;
+        yuunpc_wp->map[4 * 72 + i] = value;
+        yuunpc_wp->map[3 * 72 + i] = value;
+        yuunpc_wp->map[2 * 72 + i] = value;
+        yuunpc_wp->map[1 * 72 + i] = value;
+        yuunpc_wp->map[0 * 72 + i] = value;
+    }
+    for (i = 0; i < 6; i++) {
+        for (j = 0; j < 72; j++) {
+            if (hp[i * 0x90 + j * 2 + 0x120] == str[0] && hp[i * 0x90 + j * 2 + 0x121] == str[1]) {
+                yuunpc_wp->map[i * 72 + j] = -500;
+            }
+        }
+    }
+}
 // clang-format on

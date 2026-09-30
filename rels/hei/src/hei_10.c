@@ -1,4 +1,8 @@
 #include "hei_10.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "driver/npcdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -11,19 +15,98 @@
 #include "evt/evt_npc.h"
 #include "evt/evt_snd.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "memory.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
+#include "system.h"
+#include <stdlib.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 hei_test_water_tev[];
 static USER_FUNC(npc_jump);
-static void ext_dispent(void);  // TODO: real signature
-static void ext_main(void);  // TODO: real signature
-static void ext_shadow_disp(void);  // TODO: real signature
-static void ext_disp(void);  // TODO: real signature
-static void ext_init(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
+static void ext_dispent(void);
+static void ext_main(void);
+static void ext_shadow_disp(void);
+static void ext_disp(CameraId cameraId, void* param);
+static void ext_init(void);
+static f32 randf(f32 min, f32 max);
+
+static HeiExtWork* wp;
+
+// Inline degree/radian sine and cosine approximations (same polynomials used by
+// the npc blur path), inlined into the jump updaters below.
+static inline f32 heiSinf(f32 rad) {
+    f32 f0, f1, sinv = 0.00761f;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            sinv = sinv * f0 - 0.16605f;
+            sinv = sinv * f0 + 1.0f;
+            sinv = sinv * rad;
+        } else {
+            f0 = rad - 1.5707964f;
+            f1 = 1.5707964f - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - 0.16605f;
+            sinv = sinv * f0 + 1.0f;
+            sinv = sinv * f1;
+        }
+    } else if (rad < 4.712389f) {
+        f1 = rad - 3.1415927f;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - 0.16605f;
+        sinv = sinv * f0 + 1.0f;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f0 = rad - 4.712389f;
+        f1 = 1.5707964f - f0;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - 0.16605f;
+        sinv = sinv * f0 + 1.0f;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 heiCosf(f32 rad) {
+    f32 f0, cosv = 0.03705f;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            cosv = cosv * f0 - 0.4967f;
+            cosv = cosv * f0 + 1.0f;
+        } else {
+            f0 = rad - 1.5707964f;
+            f0 = 1.5707964f - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - 0.4967f;
+            cosv = cosv * f0 + 1.0f;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - 3.1415927f;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - 0.4967f;
+        cosv = cosv * f0 + 1.0f;
+        cosv = -cosv;
+    } else {
+        f0 = rad - 4.712389f;
+        f0 = 1.5707964f - f0;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - 0.4967f;
+        cosv = cosv * f0 + 1.0f;
+    }
+    return cosv;
+}
 
 // clang-format off
 extend_data(44,
@@ -45,45 +128,415 @@ extend_data(45,
      f32, one, 1.0f)
 
 static BeroEntry bero_entry_data[4] = {
-    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hei_09", "e_bero", 1, 1},
-    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hei_11", "w_bero", 1, 1},
-    {"dokan", 2, 0, 0x06, 100000, 0, 0, -1, NULL, 10, NULL, "hei_07", "dokan", 1, 1},
-    {NULL},
+    { "w_bero", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "hei_09", "e_bero", 1, 1, 0, 0 },
+    { "e_bero", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "hei_11", "w_bero", 1, 1, 0, 0 },
+    { "dokan", 2, 0, 0x06, 0x186A0, 0, 0, -1, NULL, 0x0A, NULL, "hei_07", "dokan", 1, 1, 0, 0 },
+    { NULL, 0, 0, 0, 0, 0, 0, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0 },
 };
 
-// TODO: type
-static u32 ext_data[63] = {
-    (u32)"c_chorobon", (u32)"CBN_W_1", 0x00000000, (u32)"c_chorobon",
-    (u32)"CBN_W_1", 0x40000000, (u32)"c_chorobon", (u32)"CBN_W_1",
-    0x40800000, (u32)"c_chorobon", (u32)"CBN_W_1", 0x40C00000,
-    (u32)"c_chorobon", (u32)"CBN_W_1", 0x41000000, (u32)"c_chorobon",
-    (u32)"CBN_W_1", 0x41200000, (u32)"c_chorobon", (u32)"CBN_W_1",
-    0x41400000, (u32)"c_chorobon", (u32)"CBN_W_1", 0x41600000,
-    (u32)"c_chorobon", (u32)"CBN_W_1", 0x41800000, (u32)"c_chorobon",
-    (u32)"CBN_W_1", 0x41900000, (u32)"c_chorobon", (u32)"CBN_W_1",
-    0x41A00000, (u32)"c_chorobon", (u32)"CBN_W_1", 0x41B00000,
-    (u32)"c_chorobon", (u32)"CBN_W_1", 0x41C00000, (u32)"c_chorobon",
-    (u32)"CBN_W_1", 0x41D00000, (u32)"c_chorobon", (u32)"CBN_W_1",
-    0x41E00000, (u32)"c_chorobon", (u32)"CBN_W_1", 0x41F00000,
-    (u32)"c_chorobon", (u32)"CBN_W_1", 0x42000000, (u32)"c_chorobon",
-    (u32)"CBN_W_1", 0x42080000, (u32)"c_chorobon", (u32)"CBN_W_1",
-    0x42100000, (u32)"c_chorobon", (u32)"CBN_W_1", 0x42180000,
-    0x00000000, 0x00000000, 0x00000000,
+static ExtEntry ext_data[21] = {
+    { "c_chorobon", "CBN_W_1", 0.0f },
+    { "c_chorobon", "CBN_W_1", 2.0f },
+    { "c_chorobon", "CBN_W_1", 4.0f },
+    { "c_chorobon", "CBN_W_1", 6.0f },
+    { "c_chorobon", "CBN_W_1", 8.0f },
+    { "c_chorobon", "CBN_W_1", 10.0f },
+    { "c_chorobon", "CBN_W_1", 12.0f },
+    { "c_chorobon", "CBN_W_1", 14.0f },
+    { "c_chorobon", "CBN_W_1", 16.0f },
+    { "c_chorobon", "CBN_W_1", 18.0f },
+    { "c_chorobon", "CBN_W_1", 20.0f },
+    { "c_chorobon", "CBN_W_1", 22.0f },
+    { "c_chorobon", "CBN_W_1", 24.0f },
+    { "c_chorobon", "CBN_W_1", 26.0f },
+    { "c_chorobon", "CBN_W_1", 28.0f },
+    { "c_chorobon", "CBN_W_1", 30.0f },
+    { "c_chorobon", "CBN_W_1", 32.0f },
+    { "c_chorobon", "CBN_W_1", 34.0f },
+    { "c_chorobon", "CBN_W_1", 36.0f },
+    { "c_chorobon", "CBN_W_1", 38.0f },
+    { NULL, NULL, 0.0f },
 };
 
-// TODO: mt$559 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 mt$559[12] = {
-//     0x41000000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x41000000, 0x00000000, 0x3F000000,
-//     0x00000000, 0x00000000, 0x41000000, 0x00000000,
-// };
+static f32 randf(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
 
-// TODO: write wait_anim_end (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
+    return r * (max - min) + min;
+}
 
-// TODO: write wait_anim_frame (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
+static void ext_init(void) {
+    s32 i;
+    ExtPose* pose;
+    HeiExtEntry* entry;
+
+    wp = _mapAlloc(0xC);
+    memset(wp, 0, 0xC);
+    wp->count = extGetPoseNum();
+    wp->entries = _mapAlloc(wp->count * 0x30);
+    memset(wp->entries, 0, wp->count * 0x30);
+    pose = extGetPosePtr();
+    entry = wp->entries;
+    i = 0;
+    while (i < wp->count) {
+        pose->flags |= 7;
+        PSMTXIdentity(*pose->matrix);
+        (*pose->matrix)[0][3] = randf(-230.0f, 230.0f);
+        (*pose->matrix)[1][3] = -15.0f;
+        (*pose->matrix)[2][3] = randf(-100.0f, 100.0f);
+        i++;
+        pose++;
+        entry->field_0x00 = 0;
+        entry->state = 0;
+        entry->field_0x04 = 0;
+        entry++;
+    }
+}
+
+static void ext_disp(CameraId cameraId, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+static void ext_shadow_disp(void) {
+    static Mtx mt = {
+        {8.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 8.0f, 0.0f, 0.5f},
+        {0.0f, 0.0f, 8.0f, 0.0f},
+    };
+
+    extLoadShadowMtx(mt);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+}
+
+void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 z, f32 v1, f32 v2) {
+    Vec pos = { 0 };
+    f32 dy;
+    f32 dist;
+    s32 frames;
+
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    entry->position = pos;
+    entry->field_0x1C = v1;
+    entry->field_0x20 = v2;
+    dy = entry->position.y - (*pose->matrix)[1][3];
+    dist = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+    angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+    frames = (s32)(dist / entry->field_0x1C);
+    entry->field_0x18 = frames;
+    entry->field_0x14 = entry->field_0x20 * entry->field_0x18 / 2.0f + dy / entry->field_0x18;
+    entry->state = 0x64;
+    entry->field_0x24 = field24;
+}
+
+// Structure and the switch dispatch match. MWCC rematerialises the
+// heiSinf/heiCosf coefficients per branch here instead of hoisting them, and
+// the int->float constant is allocated to f2/f1 swapped, which shifts the
+// float/vector register allocation. The `sfx` local is hoisted into a
+// callee-saved register as in the original.
+// NONMATCHING (54.39%): float-register allocation / constant scheduling.
+#pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
+static void ext_main(void) {
+    MarioWork* mario = marioGetPtr();
+    ExtPose* pose = extGetPosePtr();
+    HeiExtEntry* entry = wp->entries;
+    const char* sfx = "SFX_STG1_CHORO_ESCAPE1";
+    s32 i;
+
+    for (i = 0; i < wp->count; i++, pose++, entry++) {
+        switch (entry->state) {
+        case 0: {
+            f32 deg = randf(0.0f, 360.0f);
+            f32 rad = 3.1415927f * deg / 180.0f;
+            f32 speed = randf(4.0f, 7.0f);
+            f32 sinv = heiSinf(rad);
+            f32 px = speed * sinv + (*pose->matrix)[0][3];
+            f32 py = (*pose->matrix)[1][3];
+            f32 cosv = heiCosf(rad);
+            f32 pz = (*pose->matrix)[2][3] - speed * cosv;
+            f32 a = randf(0.3f, 0.5f);
+            f32 b = randf(0.5f, 0.8f);
+            Vec pos = { 0 };
+            s16 oldState = entry->state;
+            f32 dy;
+            f32 dist;
+            s32 frames;
+
+            pos.x = px;
+            pos.y = py;
+            pos.z = pz;
+            entry->position = pos;
+            entry->field_0x1C = a;
+            entry->field_0x20 = b;
+            dy = entry->position.y - (*pose->matrix)[1][3];
+            dist = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+            angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+            frames = (s32)(dist / entry->field_0x1C);
+            entry->field_0x18 = frames;
+            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 * 0.5f + dy / (f32)(s16)entry->field_0x18;
+            entry->state = 0x64;
+            entry->field_0x24 = oldState;
+        } break;
+        case 1: {
+            f32 dist = distABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
+            f32 r;
+            f32 dir;
+            f32 rad;
+            f32 speed;
+            f32 sinv;
+            f32 py;
+            f32 cosv;
+            f32 px;
+            f32 pz;
+            f32 a;
+            f32 b;
+            Vec pos = { 0 };
+            s16 oldState;
+            f32 dy;
+            s32 frames;
+
+            if (dist >= 800.0f) {
+                entry->state = 99;
+                break;
+            }
+            r = randf(0.0f, 1.0f);
+            dir = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]) + (r * 90.0f - 45.0f);
+            rad = 3.1415927f * dir / 180.0f;
+            speed = randf(15.0f, 20.0f);
+            sinv = heiSinf(rad);
+            py = (*pose->matrix)[1][3];
+            cosv = heiCosf(rad);
+            px = speed * sinv + (*pose->matrix)[0][3];
+            pz = (*pose->matrix)[2][3] - speed * cosv;
+            a = randf(0.0f, 1.0f);
+            b = randf(0.0f, 1.0f);
+            pos.x = px;
+            pos.y = py;
+            pos.z = pz;
+            oldState = entry->state;
+            entry->position = pos;
+            entry->field_0x1C = 2.0f * (1.0f + 0.2f * a);
+            entry->field_0x20 = 0.8f + 0.0f * b;
+            dy = entry->position.y - (*pose->matrix)[1][3];
+            dist = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+            angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+            frames = (s32)(dist / entry->field_0x1C);
+            entry->field_0x18 = frames;
+            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 * 0.5f + dy / (f32)(s16)entry->field_0x18;
+            entry->state = 0x64;
+            entry->field_0x24 = oldState;
+            if (rand() % 150 == 0) {
+                Vec sfxPos = { 0 };
+
+                sfxPos.x = (*pose->matrix)[0][3];
+                sfxPos.y = (*pose->matrix)[1][3];
+                sfxPos.z = (*pose->matrix)[2][3];
+                psndSFXOn_3D(sfx, &sfxPos);
+            }
+        } break;
+        case 0x63:
+            break;
+        case 0x64: {
+            f32 angle;
+            f32 rad;
+            f32 sinv;
+            f32 cosv;
+
+            (*pose->matrix)[1][3] += entry->field_0x14;
+            entry->field_0x14 -= entry->field_0x20;
+            angle = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
+            rad = 3.1415927f * angle / 180.0f;
+            sinv = heiSinf(rad);
+            cosv = heiCosf(rad);
+            (*pose->matrix)[0][3] += entry->field_0x1C * sinv;
+            (*pose->matrix)[2][3] -= entry->field_0x1C * cosv;
+            entry->field_0x18--;
+            if (entry->field_0x18 < 0) {
+                (*pose->matrix)[0][3] = entry->position.x;
+                (*pose->matrix)[1][3] = entry->position.y;
+                (*pose->matrix)[2][3] = entry->position.z;
+                entry->state = entry->field_0x24;
+            }
+        } break;
+        default:
+            break;
+        }
+        if (entry->state == 0) {
+            if ((*pose->matrix)[0][3] > 230.0f) {
+                (*pose->matrix)[0][3] = 230.0f;
+            }
+            if ((*pose->matrix)[0][3] < -230.0f) {
+                (*pose->matrix)[0][3] = -230.0f;
+            }
+            if ((*pose->matrix)[2][3] > 100.0f) {
+                (*pose->matrix)[2][3] = 100.0f;
+            }
+            if ((*pose->matrix)[2][3] < -100.0f) {
+                (*pose->matrix)[2][3] = -100.0f;
+            }
+        }
+        if (gp->retraceCount & 1) {
+            pose->field_0x10 = (i + gp->retraceCount) % 20;
+        }
+    }
+}
+#pragma opt_propagation reset
+
+static void ext_dispent(void) {
+    dispEntry(4, 0.0f, 1, ext_disp, NULL);
+}
+
+USER_FUNC(evt_chorobon_escape) {
+    s32 i;
+    HeiExtEntry* entry;
+
+    extGetPosePtr();
+    entry = wp->entries;
+    for (i = 0; i < wp->count; i++) {
+        entry->state = 1;
+        entry->field_0x24 = 1;
+        entry++;
+    }
+    return 2;
+}
+
+USER_FUNC(evt_chorobon_wait) {
+    s32 i;
+    HeiExtEntry* entry;
+
+    extGetPosePtr();
+    entry = wp->entries;
+    for (i = 0; i < wp->count; i++) {
+        if (entry->state != 99) {
+            return 0;
+        }
+        entry++;
+    }
+    extReset();
+    return 2;
+}
+
+// Frame (0x90, f28-f31) and prologue match; `volatile` puts b/speed in stack
+// slots. The 4-byte temp for the userdataf[1] result at 0x8 is forced under
+// MUST_MATCH, which puts b/speed at 0xc/0x10 like the original. Remaining:
+// the heiSinf/heiCosf coefficient loads are scheduled per branch and some
+// userdataf reads are not hoisted into the 0x8/0xc/0x10 temps before angleABf.
+// NONMATCHING (59.29%): coefficient scheduling + userdataf read hoisting.
+#pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
+static USER_FUNC(npc_jump) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 tx = evtGetFloat(event, args[1]);
+    f32 ty = evtGetFloat(event, args[2]);
+    f32 tz = evtGetFloat(event, args[3]);
+#ifdef MUST_MATCH
+    // volatile keeps b/speed in stack slots as in the original (otherwise they
+    // live in f26/f27 and the frame is 0x20 larger).
+    volatile f32 speed = evtGetFloat(event, args[4]);
+#else
+    f32 speed = evtGetFloat(event, args[4]);
+#endif
+    f32 scale = evtGetFloat(event, args[5]);
+#ifdef MUST_MATCH
+    volatile f32 b = (f32)evtGetValue(event, args[6]) * 60.0f / 1000.0f;
+#else
+    f32 b = (f32)evtGetValue(event, args[6]) * 60.0f / 1000.0f;
+#endif
+    NpcEntry* npc = npcNameToPtr(name);
+
+    Vec pos;
+    if (isFirstCall) {
+        Vec start = { 0 };
+        Vec target = { 0 };
+        f32 dist;
+        f32 dy;
+
+        start.x = npc->position.x;
+        start.y = 0.0f;
+        start.z = npc->position.z;
+        target.x = tx;
+        target.y = 0.0f;
+        target.z = tz;
+        dist = PSVECDistance(&target, &start);
+        dy = ty - npc->position.y;
+        if (b == 0.0f) {
+            b = dist / speed;
+        } else {
+            speed = dist / b;
+        }
+#ifdef MUST_MATCH
+        // Force the userdataf[1] result through a 4-byte stack temp at 0x8, as
+        // the original does; this shifts b/speed to 0xc/0x10 to match.
+        {
+            f32 tmp = scale * b * 0.5f + dy / b;
+            event->userdataf[0] = b;
+            event->userdataf[1] = tmp;
+            event->userdataf[2] = speed;
+        }
+#else
+        event->userdataf[0] = b;
+        event->userdataf[1] = scale * b * 0.5f + dy / b;
+        event->userdataf[2] = speed;
+#endif
+    }
+    {
+        f32 angle = angleABf(npc->position.x, npc->position.z, tx, tz);
+        f32 rad = 6.2831855f * angle / 360.0f;
+        f32 sinv;
+        f32 cosv;
+        f32 counter;
+        f32 vel;
+
+        sinv = heiSinf(rad);
+        npc->position.x += event->userdataf[2] * sinv;
+        cosv = heiCosf(rad);
+        npc->position.z -= event->userdataf[2] * cosv;
+        vel = event->userdataf[1] - scale;
+        npc->position.y += event->userdataf[1];
+        counter = event->userdataf[0] - 1.0f;
+        if (counter < 0.0f) {
+            pos.x = tx;
+            pos.y = ty;
+            pos.z = tz;
+            npc->position = pos;
+            return 1;
+        }
+        event->userdataf[0] = counter;
+        event->userdataf[1] = vel;
+    }
+    return 0;
+}
+#pragma opt_propagation reset
+
+USER_FUNC(wait_anim_frame) {
+    f32 frame = evtGetFloat(event, event->args[0]);
+    AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("ゴールドチョロボン")->poseId);
+
+    if (((AnimPoseField24*)pose)->field_0x24 < frame) {
+        return 0;
+    }
+    return 2;
+}
+
+USER_FUNC(wait_anim_end) {
+    NpcEntry* npc = npcNameToPtr("ゴールドチョロボン");
+
+    if (isFirstCall) {
+        event->lwData[15] = (s32)animPoseGetLoopTimes(npc->poseId);
+    }
+    if (event->lwData[15] == (s32)animPoseGetLoopTimes(npc->poseId)) {
+        return 0;
+    }
+    return 2;
+}
 
 EVT_BEGIN(golden_se)
     LOOP(0)
@@ -100,24 +553,6 @@ EVT_BEGIN(golden_se)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write npc_jump (static, 0x484 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_chorobon_wait (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_chorobon_escape (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write ext_dispent (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write ext_main (static, 0xc3c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write ext_init (static, 0x1f4 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_golden)
     CALL(evt_npc_entry, STRING("dummy"), STRING("c_chorobon"))
@@ -217,21 +652,4 @@ EVT_BEGIN(hei_10_init_evt)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("mizu"), 256)
     RETURN
 EVT_END()
-
-// TODO: type
-static u32 wp[1] = {
-    0x00000000,
-};
-
-// TODO: write chb_jump (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write ext_shadow_disp (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write ext_disp (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_10.s; this is where the original has it, just before the first script that uses it
 // clang-format on

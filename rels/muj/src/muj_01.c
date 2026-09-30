@@ -1,4 +1,5 @@
 #include "muj_01.h"
+#include "rel/muj/muj.h"
 #include "driver/envdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_bg.h"
@@ -26,11 +27,22 @@
 #include "evt/evt_window.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include <dolphin/mtx.h>
+#include <stdio.h>
+#include "driver/animdrv.h"
+#include "driver/effdrv.h"
+#include "driver/hitdrv.h"
+#include "driver/icondrv.h"
+#include "driver/mobjdrv.h"
+#include "eff/eff_starstone.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mario_pouch.h"
+#include "memory.h"
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 muj_npc_buruburu[];
 static USER_FUNC(starstone_set_ry);
 static USER_FUNC(starstone_set_pos);
 static USER_FUNC(starstone_entry);
@@ -40,6 +52,7 @@ static USER_FUNC(yami_view);
 static USER_FUNC(delete_itemsel_table);
 static USER_FUNC(make_itemsel_table);
 s32 settoku_event_main[95];
+static s32* itemsel_table_ram;
 
 // clang-format off
 extend_data(8,
@@ -216,14 +229,41 @@ EVT_BEGIN(marco_kyorokyoro)
     RETURN
 EVT_END()
 
-// TODO: write evt_mario_get_reqdir (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(make_itemsel_table) {
+    s32* args = event->args;
+    PouchData* pouch = pouchGetPtr();
+    s32 i;
+    s32 count;
+    s32* p;
 
-// TODO: write delete_itemsel_table (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+    itemsel_table_ram = _mapAlloc(0x54);
+    p = itemsel_table_ram;
+    for (count = 0, i = 0; i < MAX_HELD_ITEMS; i++) {
+        s32 item = pouch->heldItems[i];
+        if (item > 0) {
+            *p++ = item;
+            count++;
+        }
+    }
+    *p = -1;
+    evtSetValue(event, args[0], count);
+    event->lwData[10] = (s32)itemsel_table_ram;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write make_itemsel_table (static, 0xa0 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+
+static USER_FUNC(delete_itemsel_table) {
+    _mapFree(itemsel_table_ram);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_mario_get_reqdir) {
+    s32* args = event->args;
+    f32 reqdir = *(f32*)((u8*)marioGetPtr() + 0x1AC);
+
+    evtSetFloat(event, args[0], reqdir);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(marco_talk)
     SWITCH(GSW(0))
@@ -744,106 +784,24 @@ static EVT_BEGIN(musume_c_entry)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[391] = {
-    (u32)"ガラの悪い水夫", 0x00000600, 0x00000000, (u32)&garawaru_init,
-    0x00000000, (u32)&garawaru_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"マルコ",
-    0x00000600, 0x00000000, (u32)&marco_init, 0x00000000,
-    (u32)&marco_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"めがね水夫", 0x00000600,
-    0x00000000, (u32)&megane_init, 0x00000000, (u32)&megane_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"オドオド水夫", 0x00000600, 0x00000000,
-    (u32)&odoodo_init, 0x00000000, (u32)&odoodo_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"店員", 0x00000600, 0x00000000, (u32)npc_init_evt,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"宿店員",
-    0x00000600, 0x00000000, (u32)npc_init_evt, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"水夫A", 0x00000600,
-    0x00000000, (u32)&suifu_a_init, 0x00000000, (u32)&suifu_a_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"水夫ボム兵", 0x00000600, 0x00000000,
-    (u32)&suifu_bomb_init, 0x00000000, (u32)&suifu_bomb_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"水夫D", 0x00000600, 0x00000000, (u32)&suifu_d_init,
-    (u32)&suifu_d_regl, (u32)&suifu_d_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ボロ水夫A",
-    0x00000600, 0x00000000, (u32)&borosuifu_a_init, 0x00000000,
-    (u32)&borosuifu_a_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ボロ水夫B", 0x00000600,
-    0x00000000, (u32)&borosuifu_b_init, (u32)&borosuifu_b_regl, (u32)&borosuifu_b_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"モニー", 0x00000600, 0x00000000,
-    (u32)&mony_init, 0x00000000, (u32)&mony_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"ピートン", 0x00000600, 0x00000000, (u32)&peton_init,
-    0x00000000, (u32)&peton_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"エルモスA",
-    0x00000600, 0x00000000, (u32)npc_init_evt, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"エルモスB", 0x00000600,
-    0x00000000, (u32)npc_init_evt, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"エルモスC", 0x00000600, 0x00000000,
-    (u32)npc_init_evt, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[17] = {
+    {"ガラの悪い水夫", 0x00000600, 0x00000000, (void*)&garawaru_init, NULL, (void*)&garawaru_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"マルコ", 0x00000600, 0x00000000, (void*)&marco_init, NULL, (void*)&marco_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"めがね水夫", 0x00000600, 0x00000000, (void*)&megane_init, NULL, (void*)&megane_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"オドオド水夫", 0x00000600, 0x00000000, (void*)&odoodo_init, NULL, (void*)&odoodo_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"店員", 0x00000600, 0x00000000, (void*)npc_init_evt, NULL, NULL, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"宿店員", 0x00000600, 0x00000000, (void*)npc_init_evt, NULL, NULL, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"水夫A", 0x00000600, 0x00000000, (void*)&suifu_a_init, NULL, (void*)&suifu_a_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"水夫ボム兵", 0x00000600, 0x00000000, (void*)&suifu_bomb_init, NULL, (void*)&suifu_bomb_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"水夫D", 0x00000600, 0x00000000, (void*)&suifu_d_init, (void*)&suifu_d_regl, (void*)&suifu_d_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"ボロ水夫A", 0x00000600, 0x00000000, (void*)&borosuifu_a_init, NULL, (void*)&borosuifu_a_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"ボロ水夫B", 0x00000600, 0x00000000, (void*)&borosuifu_b_init, (void*)&borosuifu_b_regl, (void*)&borosuifu_b_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"モニー", 0x00000600, 0x00000000, (void*)&mony_init, NULL, (void*)&mony_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"ピートン", 0x00000600, 0x00000000, (void*)&peton_init, NULL, (void*)&peton_talk, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"エルモスA", 0x00000600, 0x00000000, (void*)npc_init_evt, NULL, NULL, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"エルモスB", 0x00000600, 0x00000000, (void*)npc_init_evt, NULL, NULL, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {"エルモスC", 0x00000600, 0x00000000, (void*)npc_init_evt, NULL, NULL, NULL, NULL, NULL, NULL, NULL, (NpcTerritoryType)0x00000000, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0x00000000},
+    {0},
 };
 
 static EVT_BEGIN(bero_in_event)
@@ -857,8 +815,24 @@ static BeroEntry bero_entry_data[3] = {
     {NULL},
 };
 
-// TODO: write muj_get_door_check (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(muj_get_door_check) {
+    s32* args = event->args;
+    DoorEntry* door = (DoorEntry*)evtGetValue(event, args[0]);
+    f32 range = evtGetFloat(event, args[1]);
+    Vec hitPos;
+    Vec marioPos;
+
+    hitObjGetPos(door->openHit, &hitPos);
+    marioPos = marioGetPtr()->position;
+    hitPos.y = 0.0f;
+    marioPos.y = 0.0f;
+    if (PSVECDistance(&hitPos, &marioPos) > range) {
+        evtSetValue(event, args[2], 0);
+    } else {
+        evtSetValue(event, args[2], 1);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(muj_00_door_open)
     CALL(evt_mario_party_use_check, LW(4))
@@ -949,7 +923,7 @@ EVT_BEGIN(muj_00_door_close)
     RETURN
 EVT_END()
 
-static char* mise_npc[2] = {
+static const char* mise_npc[2] = {
     "店員", NULL,
 };
 
@@ -977,16 +951,11 @@ EVT_BEGIN(mise_data_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 mise_data[18] = {
-    0x00000000, 0x00000003, 0x00000000, 0x00000000,
-    (u32)"A_mise_in_doa", (u32)"A_mise_doa", 0x00000000, 0x00000000,
-    (u32)"S_mise", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)&mise_npc, 0x00000000, 0x00000000,
-    (u32)&mise_data_open, (u32)&mise_data_close,
+static DoorEntry mise_data[1] = {
+    {0, 3, 0, NULL, "A_mise_in_doa", "A_mise_doa", NULL, NULL, "S_mise", NULL, NULL, 0, NULL, mise_npc, NULL, NULL, mise_data_open, mise_data_close},
 };
 
-static char* yado_npc[2] = {
+static const char* yado_npc[2] = {
     "宿店員", NULL,
 };
 
@@ -1011,13 +980,8 @@ EVT_BEGIN(mise_close_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 yado_data[18] = {
-    0x00000000, 0x00000003, 0x00000000, 0x00000000,
-    (u32)"A_yado_in_doa", (u32)"A_yado_doa", 0x00000000, 0x00000000,
-    (u32)"S_yado_in", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)&yado_npc, 0x00000000, 0x00000000,
-    (u32)&mise_open_event, (u32)&mise_close_event,
+static DoorEntry yado_data[1] = {
+    {0, 3, 0, NULL, "A_yado_in_doa", "A_yado_doa", NULL, NULL, "S_yado_in", NULL, NULL, 0, NULL, yado_npc, NULL, NULL, mise_open_event, mise_close_event},
 };
 
 EVT_BEGIN(evt_door_entry_custom00)
@@ -1051,21 +1015,19 @@ static char* obj_list[12] = {
     "A_item_04", "S_item_05", "A_item_05", "S_item_06", "A_item_06",
 };
 
-// TODO: type
-static u32 goods_list[12] = {
-    0x00000083, 0x0000000F, 0x00000084, 0x00000005,
-    0x0000008A, 0x0000000A, 0x000000A2, 0x00000002,
-    0x0000009A, 0x00000003, 0x00000095, 0x0000000C,
+static s32 goods_list[] = {
+    0x83, 0x0F, 0x84, 0x05,
+    0x8A, 0x0A, 0xA2, 0x02,
+    0x9A, 0x03, 0x95, 0x0C,
 };
 
-// TODO: type
-static u32 trade_list[24] = {
-    0x00000083, 0x000A0000, 0x00000084, 0x00020000,
-    0x0000008A, 0x00050000, 0x000000A2, 0x00010000,
-    0x0000009A, 0x00010000, 0x00000095, 0x00060000,
-    0x00000099, 0x00050000, 0x0000009F, 0x000D0000,
-    0x000000C7, 0x00140000, 0x000000C8, 0x00230000,
-    0x000000C9, 0x000F0000, 0x00000000, 0x00000000,
+static s32 trade_list[] = {
+    0x83, 0x000A0000, 0x84, 0x00020000,
+    0x8A, 0x00050000, 0xA2, 0x00010000,
+    0x9A, 0x00010000, 0x95, 0x00060000,
+    0x99, 0x00050000, 0x9F, 0x000D0000,
+    0xC7, 0x00140000, 0xC8, 0x00230000,
+    0xC9, 0x000F0000, 0, 0,
 };
 
 static char* shopper_data[38] = {
@@ -1424,17 +1386,64 @@ static EVT_BEGIN(sekai_yami_shake)
     RETURN
 EVT_END()
 
-// TODO: write sekai_yami_omise (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_muj_0000f360 = {0.0f, 100.0f, 0.0f};
+const Vec vec3_muj_0000f36c = {0.0f, 1.0f, 0.0f};
+const Vec vec3_muj_0000f378 = {0.0f, 0.0f, 0.0f};
+const f32 float_3p004_muj_0000f384 = 3.003967f;
 
-// TODO: write anim_tevcallback_mobj (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(yami_view) {
+    Vec camPos;
+    Vec up;
+    Vec target;
+    Mtx mtx;
+    f32 value = evtGetFloat(event, event->args[0]);
 
-// TODO: write anim_tevcallback (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+    target = vec3_muj_0000f378;
+    target.z = value;
+    up = vec3_muj_0000f36c;
+    camPos = vec3_muj_0000f360;
+    camPos.z = 100.0f + value;
+    C_MTXLookAt(mtx, &camPos, &up, &target);
+    envSetYamiView(mtx);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write yami_view (static, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(anim_tevcallback) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
+
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(anim_tevcallback_mobj) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    MapObjectEntry* mobj = mobjNameToPtrNoAssert((const char*)name);
+
+    if (mobj == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(mobj->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(sekai_yami_omise) {
+    char name[32];
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        sprintf(name, "shp%d", i);
+        iconNameToPtr(name)->color = *(volatile GXColor*)&float_3p004_muj_0000f384;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(sekai_yami_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -1516,14 +1525,41 @@ static EVT_BEGIN(sekai_yami_evt)
     RETURN
 EVT_END()
 
-// TODO: write starstone_set_ry (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* effect = effStarStoneEntry(4, x, y, z, 1.0f);
 
-// TODO: write starstone_set_pos (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+    effSetName(effect, (const char*)name);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write starstone_entry (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(starstone_set_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* eff = effNameToPtr((const char*)name);
+
+    ((effStarStoneData*)eff->userdata)->field_0x8 = x;
+    ((effStarStoneData*)eff->userdata)->field_0xC = y;
+    ((effStarStoneData*)eff->userdata)->field_0x10 = z;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_ry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 ry = evtGetFloat(event, args[1]);
+    effStarStoneData* data = effNameToPtr((const char*)name)->userdata;
+
+    data->field_0x1C = ry;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(minnnanokoe_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -1792,8 +1828,4 @@ EVT_BEGIN(muj_01_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 itemsel_table_ram[1] = {
-    0x00000000,
-};
 // clang-format on

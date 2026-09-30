@@ -4,28 +4,28 @@
 
 USER_FUNC(kuzi_bomb_bomb_eff);
 USER_FUNC(kuzi_get_keihin);
-void kuji_bomb_055_callback(void);  // TODO: real signature
+void kuji_bomb_055_callback(s32 type, s32* param);
 USER_FUNC(dummy_shadow);
 USER_FUNC(get_mario_dispReqDir);
 USER_FUNC(desk_talk_func);
 USER_FUNC(desk_talk_init_func);
 USER_FUNC(teresa_badge_item_list_init);
 // goryuugijo_disp_slot: this unit has its own copy; a header already declares it.
-void goryuugijo_main_slot(void);  // TODO: real signature
-void slot_rotate_sub(void);  // TODO: real signature
-void slot_neon_sub(void);  // TODO: real signature
-void goryuugijo_init_slot(void);  // TODO: real signature
+USER_FUNC(goryuugijo_main_slot);
+s32 slot_rotate_sub(s32 arg0, u8* data, s32 index);
+void slot_neon_sub(s32 arg0, u8* data, s32 arg2);
+USER_FUNC(goryuugijo_init_slot);
 USER_FUNC(goryuugijo_door_init_slot);
-void goryuugijo_upsidewindow_disp_sub(void);  // TODO: real signature
-void goryuugijo_upsidewindow_dispoff_sub(void);  // TODO: real signature
+void goryuugijo_upsidewindow_disp_sub(s32 a, s32 b);
+void goryuugijo_upsidewindow_dispoff_sub(s32 a, s32 b);
 USER_FUNC(goryuugijo_get_slot_phase);
 USER_FUNC(goryuugijo_set_slot_phase);
 USER_FUNC(evt_goryuugijo_set_nowslot);
-void evt_goryuugijo_get_caseid(void);  // TODO: real signature
+USER_FUNC(evt_goryuugijo_get_caseid);
 USER_FUNC(evt_goryuugijo_set_caseid);
 // goryuugijo_disp_montemedal: this unit has its own copy; a header already declares it.
-void goryuugijo_main_montemedal(void);  // TODO: real signature
-void goryuugijo_init_montemedal(void);  // TODO: real signature
+USER_FUNC(goryuugijo_main_montemedal);
+USER_FUNC(goryuugijo_init_montemedal);
 USER_FUNC(goryuugijo_set_dataadr);
 USER_FUNC(goryuugijo_get_dataadr);
 USER_FUNC(mario_walkpoint_enzan);
@@ -34,7 +34,7 @@ USER_FUNC(evt_exchange_msg_set);
 USER_FUNC(evt_exchange_msg_alloc);
 USER_FUNC(evt_exchange_msg_free);
 USER_FUNC(exchange_ryokin_medal);
-void exchange_ret_tbl_no(void);  // TODO: real signature
+s32 exchange_ret_tbl_no(void);
 USER_FUNC(gor_npc_fuwafuwa);
 EVT_DEF(debug_event);
 EVT_DEF(gor_03_down_evt);

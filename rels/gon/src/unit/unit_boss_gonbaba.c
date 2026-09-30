@@ -16,6 +16,12 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle_sub.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
+#include "driver/lightdrv.h"
+#include "eff/n64/eff_kemuri9_n64.h"
+#include <stdlib.h>
 
 #pragma pool_data off
 
@@ -52,8 +58,24 @@ extend_data(65,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write weaponGetPower_Gonbaba (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/gon/asm/unit/unit_boss_gonbaba.s; this is where the original has it, just before the first script that uses it
+u32 weaponGetPower_Gonbaba(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
+    s32 power = weapon->hpDamageWork[0];
+    power -= unit1->work[0];
+    if (power <= 0) {
+        power = 1;
+    }
+    return power;
+}
+
+static USER_FUNC(_leg_smoke_effect) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+
+    effKemuri9N64Entry(1, 0x12, 0x5A, x, y, z, 60.0f, 0.0f);
+    return EVT_RETURN_DONE;
+}
 
 BattleWeapon weapon_gonbaba_fumituke_attack = {
     NULL,                                      // name
@@ -537,15 +559,42 @@ static EVT_BEGIN(battle_entry_event)
     RETURN
 EVT_END()
 
-// TODO: write _btlgon_get_escape_param (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/unit/unit_boss_gonbaba.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_btlgon_get_escape_param) {
+    s32* args = event->args;
+    s32 v0;
+    s32 v1;
+    s32 a2;
+    s32 a3;
+    s32 a4;
+    f32 angle;
+    s32 x;
+    s32 z;
+    f32 speed;
 
-// TODO: write _set_gonbaba_light (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/gon/asm/unit/unit_boss_gonbaba.s; this is where the original has it, just before the first script that uses it
+    v0 = evtGetValue(event, args[0]);
+    v1 = evtGetValue(event, args[1]);
+    a2 = args[2];
+    a3 = args[3];
+    a4 = args[4];
+    angle = angleABf(100.0f, 205.0f, (f32)v0, (f32)v1);
 
-// TODO: write _wait_damage_event_end (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/gon/asm/unit/unit_boss_gonbaba.s; this is where the original has it, just before the first script that uses it
+    if (angle > 270.0f && angle < 360.0f) {
+        angle = 270.0f;
+    }
+    if (angle < 90.0f) {
+        angle = 90.0f;
+    }
 
+    x = (s32)(500.0f * sinfd(angle));
+    z = (s32)(500.0f * -cosfd(angle));
+    speed = 6.0f + (f32)(rand() % 6);
+    speed = 0.67f * speed;
+
+    evtSetValue(event, a2, x);
+    evtSetValue(event, a3, z);
+    evtSetFloat(event, a4, speed);
+    return EVT_RETURN_DONE;
+}
 EVT_BEGIN(negotiation_event)
     CALL(evt_btl_camera_set_prilimit, 1)
     CALL(evt_btl_camera_wait_move_end)
@@ -1009,6 +1058,35 @@ EVT_BEGIN(negotiation_event)
     RETURN
 EVT_END()
 
+USER_FUNC(_set_gonbaba_light) {
+    LightEntry* paper = lightGetPaperCraft();
+    Vec vec = {-200.0f, 50.0f, 500.0f};
+    Mtx mtx;
+
+    paper->position = vec;
+    PSMTXScale(mtx, 3.0f, 3.0f, 3.0f);
+    PSMTXMultVec(mtx, &paper->position, &paper->position);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_wait_damage_event_end) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+    s32 id;
+    BattleUnit* unit;
+
+    id = evtGetValue(event, *args++);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+
+    if (unit == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    if (unit->damageEventId != 0 && evtCheckID(unit->damageEventId)) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
 EVT_BEGIN(gon_extra_eaten_event)
     WAIT_FRAMES(14)
     CALL(btlevtcmd_SetUnitWork, -2, 4, 6)
@@ -1438,9 +1516,6 @@ static EVT_BEGIN(attack_event)
     END_SWITCH
     RETURN
 EVT_END()
-
-// TODO: write _leg_smoke_effect (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/unit/unit_boss_gonbaba.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(fumituke_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))

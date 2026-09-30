@@ -19,6 +19,12 @@
 #include "forcedata.h"
 #include "kpa_act.h"
 #include "party/party_motion.h"
+#include "driver/effdrv.h"
+#include "driver/npcdrv.h"
+#include "eff/eff_starstone.h"
+#include "mario/mario_cam.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
 
 #pragma pool_data off
 
@@ -28,7 +34,7 @@ static USER_FUNC(starstone_entry);
 static USER_FUNC(get_starstone_pos);
 static USER_FUNC(set_starstone_pos);
 static USER_FUNC(starstone_fall);
-static void npc_set_pos(void);  // TODO: real signature
+static USER_FUNC(npc_set_pos);
 BeroEntry s_bero_peach[1];
 s32 evt_kaiga[14];
 
@@ -136,12 +142,13 @@ static EVT_BEGIN(s_door_close)
 EVT_END()
 
 static BeroEntry bero_data[5] = {
-    {"s_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, haikei_off, -1, NULL, "pik_01", "n_bero", 5, 5, s_door_close, s_door_open},
-    {"dokan", 2, 0, 0x09, 100000, 0, 0, -1, evt_return, 6, evt_go, NULL, "h_dokan", 1, 1},
-    {"h_dokan", 4098, 0, 0x09, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan", 1, 1},
-    {"h_bero", 4096, 0, 0x02, 100000, 0, 0, -1, NULL, 0, NULL, "pik_03", "s_bero", 1, 1},
+    {"s_bero", 1, 6, 20000, 100000, 0, 0, -1, haikei_off, -1, NULL, "pik_01", "n_bero", 5, 5, s_door_close, s_door_open},
+    {"dokan", 2, 0, 9, 100000, 0, 0, -1, evt_return, 6, evt_go, NULL, "h_dokan", 1, 1, 0, 0},
+    {"h_dokan", 0x1002, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan", 1, 1, 0, 0},
+    {"h_bero", 0x1000, 0, 2, 100000, 0, 0, -1, NULL, 0, NULL, "pik_03", "s_bero", 1, 1, 0, 0},
     {NULL},
 };
+
 
 EVT_BEGIN(out_room)
     CALL(evt_snd_bgmoff_f, 512, 2000)
@@ -151,8 +158,9 @@ EVT_BEGIN(out_room)
 EVT_END()
 
 BeroEntry s_bero_peach[1] = {
-    {"s_bero", 1, 6, 0x4E20, 100000, 0, 0, 80, haikei_off, -1, out_room, "aji_10", NULL, 5, 5, s_door_close, s_door_open},
+    {"s_bero", 1, 6, 20000, 100000, 0, 0, 0x50, haikei_off, -1, out_room, "aji_10", NULL, 5, 5, s_door_close, s_door_open},
 };
+
 
 static EVT_BEGIN(init_powan)
     SWITCH(GSW(0))
@@ -223,62 +231,182 @@ static EVT_BEGIN(baba_init)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npc_data[161] = {
-    (u32)"ポワン探偵", 0x40000600, 0x00000000, (u32)&init_powan,
-    0x00000000, (u32)&talk_powan, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"マジョリン",
-    0x40000600, 0x00000000, (u32)&init_majo, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"マリリン", 0x40000600,
-    0x00000000, (u32)&init_mari, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"ランペル", 0x40000600, 0x00000000,
-    (u32)&init_ramp, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"パタクリ", 0x40000600, 0x00000000, (u32)&patakuri_init,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ババ",
-    0x40000600, 0x00000000, (u32)&baba_init, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static NpcSetupInfo npc_data[7] = {
+    {"ポワン探偵", 0x40000600, 0, init_powan, NULL, talk_powan},
+    {"マジョリン", 0x40000600, 0, init_majo},
+    {"マリリン", 0x40000600, 0, init_mari},
+    {"ランペル", 0x40000600, 0, init_ramp},
+    {"パタクリ", 0x40000600, 0, patakuri_init},
+    {"ババ", 0x40000600, 0, baba_init},
+    {NULL},
 };
 
-// TODO: write hoshi_jump (global, 0x34c bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write hoshi_r (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_pik_00002b80 = { 0.0f, 0.0f, 0.0f };
 
-// TODO: write hoshi_delete (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(npc_set_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
+    Vec pos = vec3_pik_00002b80;
 
-// TODO: write hoshi (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    npc->prevPosition = pos;
+    npc->position = npc->prevPosition;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hoshi) {
+    event->lwData[10] = (s32)effStarStoneEntry(5, 0.0f, 60.0f, -950.0f, 1.0f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hoshi_delete) {
+    effSoftDelete((EffectEntry*)event->lwData[10]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hoshi_r) {
+    EffectEntry* entry = (EffectEntry*)event->lwData[10];
+
+    ((effStarStoneData*)entry->userdata)->field_0x1C = (f32)evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
+
+// `pragma opt_propagation off` is required or MWCC rematerialises the sin/cos coefficients per branch.
+// See evt_sub_get_coin / evt_item_get_important_item for the same FPR-colouring gap.
+// NONMATCHING (76.75%): giving the sin and cos polynomials separate accumulator locals (`sinv`,
+// `cosv`) instead of reusing `f4` puts the radian in f5 like retail, but the coefficient/accumulator
+// FPRs still differ (retail keeps 0.00761->f4, 0.16605->f3, 1.0->f2, 1.5708->f1) and retail copies
+// event->userdataf back through GPRs (lwz/stw) where ours stores with stfs.
+#pragma opt_propagation off
+USER_FUNC(hoshi_jump) {
+    EffectEntry* entry = (EffectEntry*)event->lwData[10];
+    effStarStoneData* data = entry->userdata;
+    NpcEntry* npc = npcNameToPtr("マジョリン");
+    f32 nx = npc->position.x;
+    f32 ny = npc->position.y + 50.0f;
+    f32 nz = npc->position.z;
+    f32 f0, f1, f2, f3, f4, f5;
+    f32 sinv, cosv;
+    volatile f32 v1;
+    volatile f32 half;
+    volatile f32 v0;
+
+    if (isFirstCall) {
+        f32 d = distABf(nx, nz, data->field_0x8, data->field_0x10) / 0.5f;
+        f4 = ny - data->field_0xC;
+        f0 = f4 / d;
+        f2 = 0.1f * d;
+        event->userdataf[0] = d;
+        event->userdataf[1] = f2 * 0.5f + f0;
+        event->userdataf[2] = 0.5f;
+        event->field_84 = 0;
+    }
+
+    v0 = event->userdataf[0];
+    v1 = event->userdataf[1];
+    half = event->userdataf[2];
+
+    f2 = 6.2831855f * angleABf(data->field_0x8, data->field_0x10, nx, nz);
+    f5 = f2 / 360.0f;
+    sinv = 0.00761f;
+    f3 = 0.16605f;
+    f2 = 1.0f;
+    f1 = 3.1415927f;
+    if (f5 <= f1) {
+        f1 = 1.5707964f;
+        if (f5 <= f1) {
+            f0 = f5 * f5;
+            sinv = sinv * f0 - f3;
+            sinv = sinv * f0 + f2;
+            sinv = sinv * f5;
+        } else {
+            f0 = f5 - f1;
+            f1 = f1 - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - f3;
+            sinv = sinv * f0 + f2;
+            sinv = sinv * f1;
+        }
+    } else {
+        f0 = 4.712389f;
+        if (f5 < f0) {
+            f1 = f5 - f1;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - f3;
+            sinv = sinv * f0 + f2;
+            sinv = sinv * f1;
+            sinv = -sinv;
+        } else {
+            f0 = f5 - f0;
+            f1 = 1.5707964f;
+            f1 = f1 - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - f3;
+            sinv = sinv * f0 + f2;
+            sinv = sinv * f1;
+            sinv = -sinv;
+        }
+    }
+    data->field_0x8 = half * sinv + data->field_0x8;
+
+    cosv = 0.03705f;
+    f3 = 0.4967f;
+    f2 = 1.0f;
+    f1 = 3.1415927f;
+    if (f5 <= f1) {
+        f1 = 1.5707964f;
+        if (f5 <= f1) {
+            f0 = f5 * f5;
+            cosv = cosv * f0 - f3;
+            cosv = cosv * f0 + f2;
+        } else {
+            f0 = f5 - f1;
+            f0 = f1 - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - f3;
+            cosv = cosv * f0 + f2;
+            cosv = -cosv;
+        }
+    } else {
+        f0 = 4.712389f;
+        if (f5 < f0) {
+            f0 = f5 - f1;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - f3;
+            cosv = cosv * f0 + f2;
+            cosv = -cosv;
+        } else {
+            f0 = f5 - f0;
+            f1 = 1.5707964f;
+            f0 = f1 - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - f3;
+            cosv = cosv * f0 + f2;
+        }
+    }
+    data->field_0x10 = -((half * cosv) - data->field_0x10);
+    data->field_0xC += v1;
+
+    f1 = v0 - 1.0f;
+    f2 = v1 - 0.1f;
+    if (f1 >= 0.0f) {
+        event->userdataf[0] = f1;
+        event->userdataf[1] = f2;
+        return EVT_RETURN_BLOCK;
+    }
+    data->field_0x8 = nx;
+    data->field_0xC = ny;
+    data->field_0x10 = nz;
+    return EVT_RETURN_DONE;
+}
+#pragma opt_propagation reset
 
 EVT_BEGIN(evt_garnet)
     CALL(evt_mario_key_onoff, 0)
@@ -469,26 +597,76 @@ static EVT_BEGIN(evt_daiza)
     RETURN
 EVT_END()
 
-// TODO: write reset_stone_cam (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(get_starstone_seq) {
+    s32* args = event->args;
+    effStarStoneData* data = effNameToPtr((const char*)evtGetValue(event, args[0]))->userdata;
 
-// TODO: write stone_bg (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[1], data->field_0x3C);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write starstone_entry (static, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(starstone_fall) {
+    effStarStoneData* data = effNameToPtr((const char*)evtGetValue(event, event->args[0]))->userdata;
 
-// TODO: write get_starstone_pos (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+    data->field_0x3C = 1;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write set_starstone_pos (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(set_starstone_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
 
-// TODO: write starstone_fall (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
+    ((effStarStoneData*)entry->userdata)->field_0xC = y;
+    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write get_starstone_seq (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(get_starstone_pos) {
+    s32* args = event->args;
+    EffectEntry* entry = effNameToPtr((const char*)evtGetValue(event, args[0]));
+
+    evtSetFloat(event, args[1], ((effStarStoneData*)entry->userdata)->field_0x8);
+    evtSetFloat(event, args[2], ((effStarStoneData*)entry->userdata)->field_0xC);
+    evtSetFloat(event, args[3], ((effStarStoneData*)entry->userdata)->field_0x10);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 idx = evtGetValue(event, args[1]);
+    f32 x = evtGetFloat(event, args[2]);
+    f32 y = evtGetFloat(event, args[3]);
+    f32 z = evtGetFloat(event, args[4]);
+    f32 scale = evtGetFloat(event, args[5]);
+    EffectEntry* entry = effStarStoneEntry(idx, x, y, z, scale);
+
+    effSetName(entry, (const char*)name);
+    ((effStarStoneData*)entry->userdata)->field_0x4 |= 0x10;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(stone_bg) {
+    effStarStoneData* data = effNameToPtr("sub_bg")->userdata;
+
+    data->field_0x38 = 5;
+    data = effNameToPtr("nise")->userdata;
+    data->field_0x38 = 5;
+    marioSetCamId(5);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(reset_stone_cam) {
+    effStarStoneData* data = effNameToPtr("nise")->userdata;
+
+    data->field_0x38 = 4;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(pik_02_koopa_evt)
     CALL(evt_snd_envoff, 512)
@@ -876,6 +1054,5 @@ EVT_BEGIN(pik_02_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write npc_set_pos (static, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik_02.s; this is where the original has it, just before the first script that uses it
+
 // clang-format on

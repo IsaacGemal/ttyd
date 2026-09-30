@@ -224,6 +224,8 @@ void* mapSearchDmdJointSub2(void* a, void* b, const char* c);
 void mapGetJointsSub(MapFileJoint* joint, s32* numJoints);
 void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table);
 void _mapLoad(MapWork* wp, BOOL group, const char* map);
+void mapSetProjMtx(Mtx mtx);
+void mapSetProjTexObj(GXTexObj* obj, void* imgRef);
 void mapObjSetColor(const char* name, GXColor* color);
 void mapSetBlend(GXColor* color);
 void mapSetBlend2(GXColor* color);

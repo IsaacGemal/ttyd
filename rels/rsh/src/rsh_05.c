@@ -16,31 +16,102 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "driver/hitdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/npcdrv.h"
+#include "driver/offscreendrv.h"
+#include "mario/mariost.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "system.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <string.h>
+#include <stdlib.h>
 
 #pragma pool_data off
 
+// Moamoa EXTask work entry, stride 0x50.
+typedef struct MoamoaPose {
+    u16 flags;          // 0x0
+    u16 field_0x2;      // 0x2
+    u16 field_0x4;      // 0x4
+    u8 pad_0x6[0x1E];   // 0x6
+    u16 field_0x24;     // 0x24
+    u8 pad_0x26[0x16];  // 0x26
+    s16 field_0x3C;     // 0x3C
+    u8 pad_0x3E[2];     // 0x3E
+    OSTime time;        // 0x40
+    u8 pad_0x48[4];     // 0x48
+    u8 field_0x4C;      // 0x4C
+    u8 pad_0x4D[3];     // 0x4D
+} MoamoaPose;
+
+// Moamoa group table entry (ext_moamoa_data), stride 0xC.
+typedef struct MoamoaGroupDef {
+    char* name;     // 0x0
+    char* name2;    // 0x4
+    f32 field_0x8;  // 0x8
+} MoamoaGroupDef;
+
+// Moamoa name-group entry, stride 0x28, starting at MoamoaWork+0x50.
+typedef struct MoamoaGroup {
+    char name[16];      // 0x0
+    char name2[8];      // 0x10
+    u16 field_0x18;     // 0x18
+    u8 pad_0x1A[2];     // 0x1A
+    f32 field_0x1C;     // 0x1C
+    s32 field_0x20;     // 0x20
+    s32 field_0x24;     // 0x24
+} MoamoaGroup;
+
+// Moamoa EXTask work header (allocated as 0x870 bytes by ext_moamoa_init).
+typedef struct MoamoaWork {
+    u16 flags;          // 0x0
+    u16 field_0x2;      // 0x2
+    s32 poseNum;        // 0x4
+    MoamoaPose* poses;  // 0x8
+    void* field_0xC;    // 0xC
+    f32 field_0x10;     // 0x10
+    Vec pos[3];         // 0x14
+    u16 field_0x38;     // 0x38
+    u16 field_0x3A[2];  // 0x3A
+    u16 field_0x3E;     // 0x3E
+    u16 field_0x40;     // 0x40
+    u16 field_0x42;     // 0x42
+    s32 field_0x44;     // 0x44
+    s32 field_0x48;     // 0x48
+    s32 groupCount;     // 0x4C
+    MoamoaGroup groups[1]; // 0x50
+} MoamoaWork;
+
 #pragma force_active on
+// Constant spawn offset used by ext_moamoa_init (moamoa spawn vector).
+static const Vec vec3_rsh_000136d4 = {-290.0f, 65.0f, -95.0f};
 static USER_FUNC(npc_jump);
-static void ext_moamoa_dispent(void);  // TODO: real signature
-static void ext_moamoa_main(void);  // TODO: real signature
-static void moamoa_hit_check(void);  // TODO: real signature
-static void moamoa_jump(void);  // TODO: real signature
-static void ext_shadow_disp(void);  // TODO: real signature
-static void ext_disp(void);  // TODO: real signature
-static void ext_moamoa_init(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
+static void ext_moamoa_dispent(void);
+static void ext_moamoa_main(void);
+static void moamoa_hit_check(void);
+static void moamoa_jump(void);
+static void ext_shadow_disp(s32 camId);
+static void ext_disp(s32 camId);
+static void ext_moamoa_init(void);
+static f32 randf(f32 min, f32 max);
 static USER_FUNC(evt_moamoa_target_off);
-static void evt_moamoa_fusion_debug(void);  // TODO: real signature
-static void evt_moamoa_blow(void);  // TODO: real signature
-static void evt_moamoa_kind_onoff(void);  // TODO: real signature
-static void evt_moamoa_fusion(void);  // TODO: real signature
+static USER_FUNC(evt_moamoa_fusion_debug);
+static USER_FUNC(evt_moamoa_blow);
+static USER_FUNC(evt_moamoa_kind_onoff);
+static USER_FUNC(evt_moamoa_fusion);
 static USER_FUNC(evt_moamoa_end_wait);
 static USER_FUNC(evt_moamoa_ry_reset);
 static USER_FUNC(evt_moamoa_exit);
 static USER_FUNC(evt_moamoa_flag_onoff);
-static void moamoa_pose_change(void);  // TODO: real signature
+static void moamoa_pose_change(MoamoaPose* pose, char* name1, char* name2);
 static void moamoa_pose_main(void);  // TODO: real signature
 static void moamoa_pose_init(void);  // TODO: real signature
+static MoamoaWork* wp;
 static s32 talk_syashou[19];
 static s32 talk_waitless[19];
 
@@ -63,79 +134,179 @@ extend_data(25,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 ext_moamoa_data[141] = {
-    (u32)"c_n_moa_a", (u32)"S_1", 0x00000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x40000000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x40800000, (u32)"c_n_moa_a", (u32)"S_1", 0x40C00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41200000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41400000, (u32)"c_n_moa_a", (u32)"S_1", 0x41600000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41800000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41900000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41A00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41B00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41C00000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41D00000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41E00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41F00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x42000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x42080000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x42100000, (u32)"c_n_moa_a", (u32)"S_1", 0x42180000,
-    (u32)"c_n_moa_a", (u32)"D_1", 0x00000000, (u32)"c_n_moa_a",
-    (u32)"D_1", 0x40800000, (u32)"c_n_moa_a", (u32)"D_1",
-    0x41000000, (u32)"c_n_moa_b", (u32)"S_1", 0x00000000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x40000000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x40800000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x40C00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41000000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41200000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41400000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41600000, (u32)"c_n_moa_b", (u32)"S_1", 0x41800000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41900000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41A00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41B00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41C00000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41D00000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41E00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41F00000, (u32)"c_n_moa_b", (u32)"S_1", 0x42000000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x42080000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x42100000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x42180000, (u32)"c_n_moa_b", (u32)"D_1", 0x00000000,
-    (u32)"c_n_moa_b", (u32)"D_1", 0x40800000, (u32)"c_n_moa_b",
-    (u32)"D_1", 0x41000000, 0x00000000, 0x00000000,
-    0x00000000,
+// Moamoa group definitions, one row per distinctive group (stride 0xC).
+static MoamoaGroupDef ext_moamoa_data[] = {
+    {"c_n_moa_a", "S_1", 0.0f},
+    {"c_n_moa_a", "S_1", 2.0f},
+    {"c_n_moa_a", "S_1", 4.0f},
+    {"c_n_moa_a", "S_1", 6.0f},
+    {"c_n_moa_a", "S_1", 8.0f},
+    {"c_n_moa_a", "S_1", 10.0f},
+    {"c_n_moa_a", "S_1", 12.0f},
+    {"c_n_moa_a", "S_1", 14.0f},
+    {"c_n_moa_a", "S_1", 16.0f},
+    {"c_n_moa_a", "S_1", 18.0f},
+    {"c_n_moa_a", "S_1", 20.0f},
+    {"c_n_moa_a", "S_1", 22.0f},
+    {"c_n_moa_a", "S_1", 24.0f},
+    {"c_n_moa_a", "S_1", 26.0f},
+    {"c_n_moa_a", "S_1", 28.0f},
+    {"c_n_moa_a", "S_1", 30.0f},
+    {"c_n_moa_a", "S_1", 32.0f},
+    {"c_n_moa_a", "S_1", 34.0f},
+    {"c_n_moa_a", "S_1", 36.0f},
+    {"c_n_moa_a", "S_1", 38.0f},
+    {"c_n_moa_a", "D_1", 0.0f},
+    {"c_n_moa_a", "D_1", 4.0f},
+    {"c_n_moa_a", "D_1", 8.0f},
+    {"c_n_moa_b", "S_1", 0.0f},
+    {"c_n_moa_b", "S_1", 2.0f},
+    {"c_n_moa_b", "S_1", 4.0f},
+    {"c_n_moa_b", "S_1", 6.0f},
+    {"c_n_moa_b", "S_1", 8.0f},
+    {"c_n_moa_b", "S_1", 10.0f},
+    {"c_n_moa_b", "S_1", 12.0f},
+    {"c_n_moa_b", "S_1", 14.0f},
+    {"c_n_moa_b", "S_1", 16.0f},
+    {"c_n_moa_b", "S_1", 18.0f},
+    {"c_n_moa_b", "S_1", 20.0f},
+    {"c_n_moa_b", "S_1", 22.0f},
+    {"c_n_moa_b", "S_1", 24.0f},
+    {"c_n_moa_b", "S_1", 26.0f},
+    {"c_n_moa_b", "S_1", 28.0f},
+    {"c_n_moa_b", "S_1", 30.0f},
+    {"c_n_moa_b", "S_1", 32.0f},
+    {"c_n_moa_b", "S_1", 34.0f},
+    {"c_n_moa_b", "S_1", 36.0f},
+    {"c_n_moa_b", "S_1", 38.0f},
+    {"c_n_moa_b", "D_1", 0.0f},
+    {"c_n_moa_b", "D_1", 4.0f},
+    {"c_n_moa_b", "D_1", 8.0f},
+    {"00000000", "00000000", 0.0f},
 };
 
-// TODO: group_tbl$582 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 group_tbl$582[22] = {
-//     (u32)"c_n_moa_a", (u32)"S_1", (u32)"c_n_moa_b", (u32)"S_1",
-//     (u32)"c_kinodebu", (u32)"G_1", (u32)"c_puku_c", (u32)"U_1",
-//     (u32)"c_powan", (u32)"O_1", (u32)"c_smoko", (u32)"T_2",
-//     (u32)"c_rose", (u32)"G_1", (u32)"c_papab", (u32)"G_1",
-//     (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
-//     (u32)"c_n_moa_a", (u32)"S_1",
-// };
+// data for the moamoa group lookup table
+static char* group_tbl[11][2] = {
+    {"c_n_moa_a", "S_1"},
+    {"c_n_moa_b", "S_1"},
+    {"c_kinodebu", "G_1"},
+    {"c_puku_c", "U_1"},
+    {"c_powan", "O_1"},
+    {"c_smoko", "T_2"},
+    {"c_rose", "G_1"},
+    {"c_papab", "G_1"},
+    {"c_mamab", "G_1"},
+    {"c_konari", "G_1"},
+    {"c_n_moa_a", "S_1"},
+};
 
-// TODO: mt$746 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 mt$746[12] = {
-//     0x41000000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x41000000, 0x00000000, 0x3F000000,
-//     0x00000000, 0x00000000, 0x41000000, 0x00000000,
-// };
-
-// TODO: write ext_moamoa_dispent (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static void ext_moamoa_dispent(void) {
+    if (wp->flags & 1) {
+        dispEntry(4, 0.0f, 1, (DispCallback)ext_disp, NULL);
+        dispEntry(4, 0.0f, 2, (DispCallback)ext_shadow_disp, NULL);
+    }
+    if (wp->flags & 2) {
+        dispEntry(1, -5000.0f, 1, (DispCallback)ext_disp, NULL);
+        dispEntry(1, -5000.0f, 2, (DispCallback)ext_shadow_disp, NULL);
+    }
+}
 
 // TODO: write ext_moamoa_main (static, 0x3220 bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write ext_moamoa_init (static, 0x4a4 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+// Reconstructed logic: allocate/clear wp, copy both npc positions + spawn vector, build the
+// pose array, random matrix translation + ground hitCheckFilter, then 600 warm-up ext_moamoa_main.
+// NONMATCHING (50.01%): larger frame + different hitCheckFilter stack layout than the original.
+static void ext_moamoa_init(void) {
+    MapObject* mapObj;
+    NpcEntry* npc;
+    ExtPose* extPose;
+    MoamoaPose* pose;
+    s32 i;
 
-// TODO: write evt_moamoa_target_off (static, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    wp = _mapAlloc(0x870);
+    memset(wp, 0, 0x870);
 
-// TODO: write evt_moamoa_flag_onoff (static, 0x84 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    npc = npcNameToPtr("ウェイトレス");
+    wp->pos[0] = npc->position;
+    npc = npcNameToPtr("車掌");
+    wp->pos[1] = npc->position;
+    wp->pos[2] = vec3_rsh_000136d4;
+
+    wp->poseNum = extGetPoseNum();
+    wp->poses = _mapAlloc(wp->poseNum * 0x50);
+    memset(wp->poses, 0, wp->poseNum * 0x50);
+    moamoa_pose_init();
+
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    i = 0;
+    while (i < wp->poseNum) {
+        f32 hz;
+        f32 hy;
+        f32 hx;
+        f32 dist;
+        f32 nz;
+        f32 ny;
+        f32 nx;
+        pose->flags = 0;
+        pose->field_0x2 = 0;
+        pose->field_0x4 = 0;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        extPose->flags |= 3;
+        PSMTXIdentity(*extPose->matrix);
+        (*extPose->matrix)[0][3] = randf(-290.0f, 240.0f);
+        (*extPose->matrix)[1][3] = 0.0f;
+        (*extPose->matrix)[2][3] = randf(-130.0f, 50.0f);
+        hz = 0.0f;
+        hy = 0.0f;
+        hx = 0.0f;
+        dist = 1000000.0f;
+        if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz,
+                           (*extPose->matrix)[0][3], 100.0f + (*extPose->matrix)[1][3],
+                           (*extPose->matrix)[2][3], 0.0f, -1.0f, 0.0f)) {
+            (*extPose->matrix)[1][3] = hy;
+        }
+        i++;
+        extPose++;
+        pose++;
+    }
+    mapObj = mapGetMapObj("ressha");
+    wp->field_0xC = mapObj;
+    wp->field_0x10 = *(f32*)((u8*)mapObj + 0x98);
+    for (i = 0; i < 600; i++) {
+        ext_moamoa_main();
+    }
+}
+
+static USER_FUNC(evt_moamoa_target_off) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    wp->pos[index] = wp->pos[1 - index];
+    wp->field_0x3A[index] = 100;
+    if (index == 0) {
+        wp->flags |= 0x1000;
+    }
+    else {
+        wp->flags |= 0x2000;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_flag_onoff) {
+    s32* args = event->args;
+    s32 onoff = evtGetValue(event, args[0]);
+    s32 bits = evtGetValue(event, args[1]);
+
+    if (onoff != 0) {
+        wp->flags |= bits;
+    }
+    else {
+        wp->flags &= ~bits;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_moamoa_init)
     CALL(evt_npc_entry, STRING("moa_a"), STRING("c_n_moa_a"))
@@ -155,8 +326,17 @@ static EVT_BEGIN(evt_moamoa_init)
     RETURN
 EVT_END()
 
-// TODO: write evt_moamoa_ry_reset (static, 0x60 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_moamoa_ry_reset) {
+    ExtPose* pose = extGetPosePtr();
+    s32 i;
+
+    for (i = 0; i < wp->poseNum; i++) {
+        pose->field_0x14 = 0.0f;
+        pose->field_0x1C = 0.0f;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_meet_moamoa)
     CALL(evt_mario_key_onoff, 0)
@@ -279,11 +459,25 @@ EVT_BEGIN(evt_moamoa_escape1)
     RETURN
 EVT_END()
 
-// TODO: write evt_moamoa_end_wait (static, 0x60 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_moamoa_end_wait) {
+    s32 i;
+    MoamoaPose* pose;
 
-// TODO: write evt_moamoa_exit (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = wp->poseNum; i > 0; i--) {
+        if (!(pose->flags & 0x20)) {
+            return EVT_RETURN_BLOCK;
+        }
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_exit) {
+    extReset();
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_moamoa_escape)
     CALL(evt_mario_key_onoff, 0)
@@ -644,44 +838,267 @@ static u32 jumptable_00014F3C[66] = {
     (u32)((u8*)&ext_moamoa_main + 0x2f3c), (u32)((u8*)&ext_moamoa_main + 0x2f60),
 };
 
-// TODO: type
-static u32 wp[1] = {
-    0x00000000,
-};
-
 // TODO: write moamoa_hit_check (static, 0xb28 bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write moamoa_jump (static, 0x270 bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write ext_shadow_disp (static, 0x90 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static void ext_shadow_disp(s32 camId) {
+    static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
+    u16 left, top, right, bottom;
 
-// TODO: write ext_disp (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    if (camId == 1) {
+        GXClearBoundingBox();
+    }
+    extLoadShadowMtx(mt);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+    if (camId == 1) {
+        sysWaitDrawSync();
+        GXReadBoundingBox(&left, &top, &right, &bottom);
+        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
+    }
+}
 
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static void ext_disp(s32 camId) {
+    u16 left, top, right, bottom;
 
-// TODO: write evt_moamoa_fusion_debug (static, 0x1dc bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    if (camId == 1) {
+        GXClearBoundingBox();
+    }
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+    GXSetNumIndStages(0);
+    GXSetTevDirect(0);
+    if (camId == 1) {
+        sysWaitDrawSync();
+        GXReadBoundingBox(&left, &top, &right, &bottom);
+        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
+    }
+}
 
-// TODO: write evt_moamoa_blow (static, 0x74 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static f32 randf(f32 min, f32 max) {
+    f32 value = (f32)rand() / 32767.0f;
 
-// TODO: write evt_moamoa_kind_onoff (static, 0x220 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    return value * (max - min) + min;
+}
 
-// TODO: write evt_moamoa_fusion (static, 0x2a4 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_moamoa_fusion_debug) {
+    s32 i;
+    ExtPose* extPose = extGetPosePtr();
+    MoamoaPose* pose = wp->poses;
 
-// TODO: write moamoa_pose_change (static, 0x168 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    i = 0;
+    while (i < wp->poseNum) {
+        extPose->flags |= 0x4;
+        pose->flags |= 0x400;
+        pose->flags |= 0x100;
+        pose->flags |= 0x200;
+        pose->field_0x2 = 0x3D;
+        pose->flags |= 0x800;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        i++;
+        extPose++;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write moamoa_pose_main (static, 0x17c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_moamoa_blow) {
+    s32 i;
+    MoamoaPose* pose;
 
-// TODO: write moamoa_pose_init (static, 0x1c8 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+    (void)evtGetValue(event, event->args[0]);
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        pose->flags &= ~0x400;
+        pose->field_0x2 = 0x3F;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_kind_onoff) {
+    s32* args = event->args;
+    s32 on = evtGetValue(event, args[0]);
+    s32 off = evtGetValue(event, args[1]);
+    s32 i;
+    MoamoaPose* pose;
+
+    extGetPosePtr();
+    pose = wp->poses;
+    i = 0;
+    while (i < wp->poseNum) {
+        if (on) {
+            if (off == 0) {
+                if (pose->field_0x4C == 1) {
+                    pose->flags |= 0x800;
+                }
+            }
+            else {
+                pose->flags |= 0x800;
+            }
+        }
+        else {
+            if (off == 0) {
+                if (pose->field_0x4C != 1) {
+                    pose->flags &= ~0x800;
+                }
+            }
+            else {
+                pose->flags &= ~0x800;
+            }
+        }
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        i++;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_fusion) {
+    ExtPose* extPose;
+    s32 i;
+    MoamoaPose* pose;
+
+    if (isFirstCall) {
+        extPose = extGetPosePtr();
+        pose = wp->poses;
+        i = 0;
+        while (i < wp->poseNum) {
+            (*extPose->matrix)[2][2] = 1.0f;
+            (*extPose->matrix)[1][1] = 1.0f;
+            (*extPose->matrix)[0][0] = 1.0f;
+            pose->field_0x24 = 0xE;
+            pose->field_0x2 = 0xE;
+            pose->field_0x4 = (i < 100) ? (i % 100) : (i % 60 + 100);
+            i++;
+            extPose++;
+            pose->flags |= 0x100;
+            pose++;
+        }
+    }
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        if (!(pose->flags & 0x200)) {
+            return EVT_RETURN_BLOCK;
+        }
+        pose++;
+    }
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    i = 0;
+    while (i < wp->poseNum) {
+        extPose->flags |= 0x4;
+        pose->flags |= 0x400;
+        pose->field_0x2 = 0x3D;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        i++;
+        extPose++;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static void moamoa_pose_change(MoamoaPose* pose, char* name1, char* name2) {
+    MoamoaGroup* group = wp->groups;
+    s32 i;
+
+    if (pose->flags & 0x800) {
+        name1 = group_tbl[pose->field_0x4C][0];
+        if (pose->field_0x4C >= 2) {
+            name2 = group_tbl[pose->field_0x4C][1];
+        }
+        if (pose->field_0x4C == 0xA) {
+            name2 = "S_2";
+        }
+    }
+    i = 0;
+    while (i < wp->groupCount) {
+        if (strcmp(group->name, name1) == 0 && strcmp(group->name2, name2) == 0) {
+            break;
+        }
+        i++;
+        group++;
+    }
+    if (i < wp->groupCount && pose->field_0x3C != i) {
+        if ((pose->flags & 0x4) && strncmp(name2, "D", 1) != 0) {
+            return;
+        }
+        if ((pose->flags & 0x10) && strncmp(name2, "R", 1) != 0) {
+            return;
+        }
+        pose->field_0x3C = i;
+        pose->time = gp->renderTime;
+    }
+}
+
+static void moamoa_pose_main(void) {
+    MoamoaGroup* group;
+    s32 i;
+    ExtPose* pose;
+    MoamoaPose* work;
+    f32 progress;
+
+    pose = extGetPosePtr();
+    work = wp->poses;
+    i = 0;
+    while (i < wp->poseNum) {
+        group = &wp->groups[work->field_0x3C];
+        progress = (f32)OSTicksToMilliseconds((u64)(gp->renderTime - work->time)) * 60.0f / 1000.0f
+                   / group->field_0x1C;
+        if (progress >= 1.0f) {
+            work->time = gp->renderTime;
+            progress = 0.0f;
+        }
+        pose->field_0x10 = group->field_0x20 + (s32)((f32)(group->field_0x24 - 1) * progress);
+        i++;
+        work++;
+        pose++;
+    }
+}
+static void moamoa_pose_init(void) {
+    MoamoaGroupDef* def = ext_moamoa_data;
+    char name[32];
+    char groupName[32];
+    s32 i;
+    s32 start;
+
+    i = 0;
+    strcpy(name, "");
+    strcpy(groupName, "");
+    wp->groupCount = -1;
+    do {
+        if (strcmp(def->name, name) != 0) {
+            strcpy(name, def->name);
+            strcpy(groupName, "");
+        }
+        if (strcmp(def->name2, groupName) != 0) {
+            strcpy(groupName, def->name2);
+            start = i;
+            wp->groupCount++;
+        }
+        strcpy(wp->groups[wp->groupCount].name, name);
+        strcpy(wp->groups[wp->groupCount].name2, groupName);
+        wp->groups[wp->groupCount].field_0x20 = start;
+        wp->groups[wp->groupCount].field_0x24 = i - start + 1;
+        wp->groups[wp->groupCount].field_0x1C = def->field_0x8;
+        wp->groups[wp->groupCount].field_0x18 = 1;
+        if (strncmp(groupName, "J", 1) == 0) {
+            wp->groups[wp->groupCount].field_0x18 = 0;
+        }
+        def++;
+        i++;
+    } while (def->name != NULL);
+    wp->groupCount++;
+}
 // clang-format on

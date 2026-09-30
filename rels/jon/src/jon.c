@@ -24,6 +24,19 @@
 #include "forcedata.h"
 #include "npc_event.h"
 #include "party/party_motion.h"
+#include "data/mapdata.h"
+#include "data/npc_data.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/npcdrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "mario/mariost.h"
+#include <string.h>
+#include <dolphin/gx.h>
 
 #pragma pool_data off
 
@@ -319,15 +332,20 @@ EVT_BEGIN(jon_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 enemy_100[25] = {
-    0x01020304, 0x05010203, 0x04050607, 0x08090A06,
-    0x0708090A, 0x0B0C0D0E, 0x0F0B0C0D, 0x0E0F1011,
-    0x12131410, 0x11121314, 0x15161718, 0x19151617,
-    0x18191A1B, 0x1C1D1E1A, 0x1B1C1D1E, 0x1F202122,
-    0x231F2021, 0x22232425, 0x26272824, 0x25262728,
-    0x292A2B2C, 0x2D292A2B, 0x2C2D2E2F, 0x30312E2F,
-    0x30312E33,
+u8 enemy_100[100] = {
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x06,
+    0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+    0x0F, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11,
+    0x12, 0x13, 0x14, 0x10, 0x11, 0x12, 0x13, 0x14,
+    0x15, 0x16, 0x17, 0x18, 0x19, 0x15, 0x16, 0x17,
+    0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1A,
+    0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22,
+    0x23, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
+    0x26, 0x27, 0x28, 0x24, 0x25, 0x26, 0x27, 0x28,
+    0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x29, 0x2A, 0x2B,
+    0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x2E, 0x2F,
+    0x30, 0x31, 0x2E, 0x33,
 };
 
 // TODO: type
@@ -745,18 +763,6 @@ u32 npcEnt_zonbaba[46] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000,
 };
-
-// TODO: write wanwan_set_home_pos (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write setup_npc_ex_para (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write yattukeFlag (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write enemy_info (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(enemy_setup)
     CALL(evt_npc_check, STRING("移動屋"), LW(0))
@@ -1179,9 +1185,6 @@ EVT_BEGIN(get_map_name)
     RETURN
 EVT_END()
 
-// TODO: write evt_raster (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(talk_idouya)
     CALL(evt_msg_print, 0, STRING("msg_jon_mover"), 0, 0)
     CALL(evt_msg_select, 0, STRING("msg_jon_mover_select"))
@@ -1383,9 +1386,6 @@ EVT_BEGIN(gyousyou_setup)
     CALL(evt_npc_set_position, STRING("行商人"), 100, 0, 0)
     RETURN
 EVT_END()
-
-// TODO: write shikakeFlag (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(shikake_setup)
     IF_INT_EQUAL(GSW(1321), 99)
@@ -1684,9 +1684,6 @@ EVT_BEGIN(setup_normal)
     RETURN
 EVT_END()
 
-// TODO: write iri_12_paper_init (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(iri_12_dokan_in_sub)
     LOOP(0)
         CALL(evt_npc_get_unitwork, STRING("マッキノ"), 0, LW(0))
@@ -1777,9 +1774,6 @@ EVT_BEGIN(iri_12_dokan_in)
     END_IF
     RETURN
 EVT_END()
-
-// TODO: write iri_12_makkino_set_y (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(iri_12_makkino_return_dokan)
     CALL(evt_npc_set_ry, STRING("マッキノ"), 90)
@@ -1875,9 +1869,6 @@ EVT_BEGIN(iri_12_makkino_return_zonbaba)
     RETURN
 EVT_END()
 
-// TODO: write wait_landon (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(iri_12_makkino_move_dokan_side)
     CALL(evt_npc_set_unitwork, STRING("マッキノ"), 0, 1)
     CALL(evt_npc_get_reglid, STRING("マッキノ"), LW(0))
@@ -1954,9 +1945,6 @@ EVT_BEGIN(iri_12_makkino_okiru)
     CALL(evt_set_dir_to_target, STRING("マッキノ"), STRING("mario"))
     RETURN
 EVT_END()
-
-// TODO: write iri_12_msgcb (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(iri_12_makkino_talk)
     CALL(evt_npc_check, STRING("敵"), LW(0))
@@ -2200,9 +2188,6 @@ static EVT_BEGIN(gonbaba_down_shake)
     RETURN
 EVT_END()
 
-// TODO: write gonbaba_wait_landon (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(zonbaba_first_event)
     IF_INT_EQUAL(GSWF(5085), 1)
         CALL(evt_npc_set_position, STRING("敵"), 0, -1000, 0)
@@ -2381,15 +2366,268 @@ EVT_BEGIN(zonbaba_first_event)
     RETURN
 EVT_END()
 
-// TODO: write raster_disp (global, 0x5a8 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _prolog (global, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/jon.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("jon_00", jon_init_evt);
+    relSetEvtAddr("jon_01", jon_init_evt);
+    relSetEvtAddr("jon_02", jon_init_evt);
+    relSetEvtAddr("jon_03", jon_init_evt);
+    relSetEvtAddr("jon_04", jon_init_evt);
+    relSetEvtAddr("jon_05", jon_init_evt);
+    relSetEvtAddr("jon_06", jon_init_evt);
+    relSetBtlAddr("jon", btlsetup_jon_tbl, btl_jon_setup_no_tbl);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
+
+// NONMATCHING (89.1%): callee-saved register permutation (original row=r31, ours r27) and the
+// GXBegin vertex constant schedule (two extra instructions); loop body shape now matches.
+void raster_disp(CameraId camera, void* param) {
+    s32 row;
+    CameraEntry* cam = camGetPtr(camera);
+    EventEntry* event = param;
+    f32* eventf = (f32*)&event->lwData[0];
+    f32 indMtx[2][3];
+    GXTexObj texObj;
+    u8* tex;
+    u8* image;
+    f32 amplitude;
+    f32 phase;
+    s32 i, j;
+    amplitude = eventf[0];
+    phase = eventf[1];
+    if (amplitude > 127.0f) {
+        amplitude = 127.0f;
+    }
+
+    tex = (u8*)smartAlloc(GXGetTexBufferSize(0x260, 0x1e0, GX_TF_RGBA8, GX_FALSE, GX_FALSE), 3)->address;
+    image = (u8*)smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, GX_FALSE), 3)->address;
+    phase = 6.2831855f * phase;
+
+    for (i = 0; i < 0x40; i++) {
+        row = (i / 4) * 32;
+        for (j = 0; j < 0x40; j++) {
+            s32 off = row + (j / 4) * 512 + ((i % 4) + (j % 4) * 4) * 2;
+            image[off] = (s32)(amplitude * (f32)sin((f32)j + ((f32)gp->retraceCount * 0.25f + phase)) + 128.0f);
+            image[off + 1] = 0x80;
+        }
+    }
+
+    DCFlushRange(image, 0x2000);
+    GXSetTexCopySrc(0, 0, 0x260, 0x1e0);
+    GXSetTexCopyDst(0x260, 0x1e0, GX_TF_RGBA8, GX_FALSE);
+    GXCopyTex(tex, GX_FALSE);
+    GXPixModeSync();
+
+    GXInitTexObj(&texObj, tex, 0x260, 0x1e0, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+
+    GXInitTexObj(&texObj, image, 0x40, 0x40, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP1);
+
+    GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_OR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, 0x7d);
+
+    {
+        indMtx[0][0] = 0.5f;
+        indMtx[0][1] = 0.0f;
+        indMtx[0][2] = 0.0f;
+        indMtx[1][0] = 0.0f;
+        indMtx[1][1] = 0.5f;
+        indMtx[1][2] = 0.0f;
+        GXSetIndTexMtx(GX_ITM_0, indMtx, 1);
+    }
+
+    GXSetIndTexOrder(GX_INDTEXSTAGE0, GX_TEXCOORD0, GX_TEXMAP1);
+    GXSetIndTexCoordScale(GX_INDTEXSTAGE0, GX_ITS_8, GX_ITS_8);
+    GXSetTevIndWarp(GX_TEVSTAGE0, GX_INDTEXSTAGE0, 1, 0, GX_ITM_0);
+    GXSetNumIndStages(1);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXLoadPosMtxImm(cam->view, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
+
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(-608.0f / 2.0f, 240.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(304.0f, 240.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(304.0f, -480.0f / 2.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-608.0f / 2.0f, -480.0f / 2.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXSetNumIndStages(0);
+    GXSetTevDirect(GX_TEVSTAGE0);
+}
+
+s32 evt_raster(EventEntry* event, BOOL isFirstCall) {
+    f32* eventf = (f32*)&event->lwData[0];
+
+    if (isFirstCall) {
+        eventf[0] = 0.0f;
+        eventf[1] = 0.0f;
+    }
+    eventf[0] += 0.2f;
+    eventf[1] += 0.01f;
+    dispEntry(CAMERA_2D, 0.0f, 3, raster_disp, event);
+    return 0;
+}
+
+// NONMATCHING (99.46%): r4/r5 register allocation for enemy_100/npcTribe differs.
+s32 enemy_info(EventEntry* event, BOOL isFirstCall) {
+    s32* args;
+    s32 index;
+    u8 kind;
+    NpcTribeInfo* tribe;
+    const char* name;
+    s32 found;
+
+    args = event->args;
+    index = evtGetValue(event, args[0]);
+    kind = enemy_100[index];
+    found = 0;
+
+    for (tribe = npcTribe; tribe->nameJp != NULL; tribe++) {
+        if (strcmp(tribe->nameJp, btlsetup_jon_tbl[kind].name) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        name = "クリボー";
+        tribe = npcGetTribe(name);
+    } else {
+        name = tribe->nameJp;
+    }
+    evtSetValue(event, args[1], (s32)tribe->modelName);
+    evtSetValue(event, args[2], (s32)name);
+    evtSetValue(event, args[3], kind);
+    return 2;
+}
+
+s32 yattukeFlag(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("敵");
+
+    npc->battleInfo.field_4 |= 0x10000000;
+    return 2;
+}
+
+s32 setup_npc_ex_para(EventEntry* event, BOOL isFirstCall) {
+    s32 name = evtGetValue(event, event->args[0]);
+    NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
+
+    npc->territoryLoiter.y = 50.0f;
+    npc->territoryHoming.y = 180.0f;
+    return 2;
+}
+
+// NONMATCHING (98.47%): int->float magic and npcEnt_wanwan address register
+// allocation differ.
+s32 wanwan_set_home_pos(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 x = evtGetValue(event, args[0]);
+    s32 y = evtGetValue(event, args[1]);
+    s32 z = evtGetValue(event, args[2]);
+    NpcSetupInfo* setup = (NpcSetupInfo*)npcEnt_wanwan;
+
+    setup->territoryBase.x = (f32)x;
+    setup->territoryBase.y = (f32)y;
+    setup->territoryBase.z = (f32)z;
+    return 2;
+}
+
+s32 shikakeFlag(EventEntry* event, BOOL isFirstCall) {
+    s32 flag = evtGetValue(event, event->args[0]);
+    NpcEntry* npc = npcNameToPtr("敵");
+
+    switch (flag) {
+    case 0:
+        npc->battleInfo.field_4 |= 0x04000000;
+        break;
+    case 1:
+        npc->battleInfo.field_4 |= 0x02000000;
+        break;
+    case 2:
+        npc->battleInfo.field_4 |= 0x01000000;
+        break;
+    case 3:
+        npc->battleInfo.field_4 |= 0x00000100;
+        break;
+    }
+    return 2;
+}
+
+s32 iri_12_paper_init(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("マッキノ");
+
+    animPosePaperPeraOff(npc->poseId);
+    animPoseSetMaterialLightFlagOff(npc->poseId, 1);
+    return 2;
+}
+
+s32 iri_12_makkino_set_y(EventEntry* event, BOOL isFirstCall) {
+    f32 y = evtGetFloat(event, event->args[0]);
+    NpcEntry* npc = npcNameToPtr("マッキノ");
+
+    npc->position.y = y;
+    return 2;
+}
+
+s32 wait_landon(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("マッキノ");
+
+    if (!(npc->flags & 0x10) || *(u32*)npc->field_300 != 0) {
+        return 2;
+    }
+    return 0;
+}
+
+void iri_12_msgcb(s32 type, smartEntry* smart) {
+    void* data = smart->address;
+
+    if (type == 3 && *(u16*)((u8*)data + 8) == 1) {
+        evtEntry(iri_12_makkino_okiru, 0, 0);
+    }
+}
+
+static s32 gonbaba_wait_landon(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("敵");
+
+    return *(u32*)npc->field_300 != 0 ? 2 : 0;
+}

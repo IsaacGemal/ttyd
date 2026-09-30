@@ -1,4 +1,5 @@
 #include "win.h"
+#include "data/mapdata.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_case.h"
 #include "evt/evt_cmd.h"
@@ -7,6 +8,11 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "win_00.h"
+#include "win_03.h"
+#include "win_04.h"
+#include "win_06.h"
+
 
 #pragma pool_data off
 
@@ -157,12 +163,30 @@ EVT_BEGIN(win_puni_walk_se)
     RETURN
 EVT_END()
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/win/asm/win.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/win/asm/win.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("win_00", win_00_init_evt);
+    relSetEvtAddr("win_01", win_01_init_evt);
+    relSetEvtAddr("win_02", win_02_init_evt);
+    relSetEvtAddr("win_03", win_03_init_evt);
+    relSetEvtAddr("win_04", win_04_init_evt);
+    relSetEvtAddr("win_05", win_05_init_evt);
+    relSetEvtAddr("win_06", win_06_init_evt);
+    relSetBtlAddr("win", btlsetup_win_tbl, btl_win_setup_no_tbl);
+}
 
-// TODO: write _prolog (global, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/win/asm/win.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
 // clang-format on

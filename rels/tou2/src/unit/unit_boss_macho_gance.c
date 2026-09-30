@@ -11,7 +11,9 @@
 #include "evt/evt_msg.h"
 #include "evt/evt_snd.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
+#include "system.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
@@ -20,14 +22,14 @@
 
 #pragma force_active on
 static USER_FUNC(x_flag_wait);
-static void x_flag_get(void);  // TODO: real signature
-static void x_flag_add(void);  // TODO: real signature
+static USER_FUNC(x_flag_get);
+static USER_FUNC(x_flag_add);
 static USER_FUNC(x_flag_set);
-static void wariai_enzan_0f(void);  // TODO: real signature
-static void wariai_enzan_0(void);  // TODO: real signature
+static USER_FUNC(wariai_enzan_0f);
+static USER_FUNC(wariai_enzan_0);
 static USER_FUNC(wariai_enzan_1f_intpl);
 static USER_FUNC(wariai_enzan_1f);
-static void wariai_enzan_1(void);  // TODO: real signature
+static USER_FUNC(wariai_enzan_1);
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[15];
 static BattleUnitKindPart parts[1];
@@ -1012,9 +1014,6 @@ EVT_BEGIN(base_size_change)
     RETURN
 EVT_END()
 
-// TODO: write wariai_enzan_1f (static, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(phase_event)
     CALL(btlevtcmd_CheckPhase, LW(0), 67108867)
     IF_INT_EQUAL(LW(0), 0)
@@ -1434,12 +1433,6 @@ EVT_BEGIN(gance_footwork_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write x_flag_wait (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write x_flag_set (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(gance_attack_attack_event)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_GANSU_PAUSING1"), EVTDAT_POINTER_MAX, 0, LW(15))
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("E_1A"))
@@ -1748,9 +1741,6 @@ EVT_BEGIN(gance_rariat_attack_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write wariai_enzan_1f_intpl (static, 0x1c0 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(gance_body_attack_attack_event)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_GANSU_PAUSING1"), EVTDAT_POINTER_MAX, 0, LW(15))
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("E_1A"))
@@ -1894,26 +1884,150 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 x_flag_data[2] = {
-    0x00000000, 0x00000000,
-};
+static s32 x_flag_data[2];
 
-// TODO: write x_flag_get (static, 0x54 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write x_flag_add (static, 0x60 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(wariai_enzan_1) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
 
-// TODO: write wariai_enzan_0f (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write wariai_enzan_0 (static, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(wariai_enzan_1f) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
 
-// TODO: write wariai_enzan_1f_intpl_w (global, 0x2e0 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
+    evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write wariai_enzan_1 (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_boss_macho_gance.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (93.98%): the intplGetValue call setup differs: the original materialises both pooled
+// constants (lis/addi/lfs 0(rN)); mwcc folds one into lfs sym@l(rN) and loads the int args right-to-left.
+static USER_FUNC(wariai_enzan_1f_intpl) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    s32 out = args[4];
+    f32 t = evtGetFloat(event, args[5]);
+    f32 r;
+
+    if (t >= 14.0f) {
+        t -= 14.0f;
+        if (t >= 14.0f) {
+            evtSetFloat(event, out, c);
+            return EVT_RETURN_DONE;
+        }
+        r = 1.0f - intplGetValue((s32)t, (s32)(b - a), (s32)b, 1.0f, 0.0f);
+    } else {
+        r = intplGetValue((s32)t, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+    }
+    evtSetFloat(event, out, (1.0f - r) * c + r * d);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (92.67%): same intplGetValue call-setup difference as wariai_enzan_1f_intpl
+// (folded constant load + reversed int-arg load order) at all four call sites.
+USER_FUNC(wariai_enzan_1f_intpl_w) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    s32 out = args[4];
+    f32 t = evtGetFloat(event, args[5]);
+    f32 u = evtGetFloat(event, args[6]);
+    f32 r1;
+    f32 r2;
+    f32 r;
+
+    if (t >= 14.0f) {
+        t -= 14.0f;
+        if (t >= 14.0f) {
+            evtSetFloat(event, out, c);
+            return EVT_RETURN_DONE;
+        }
+        r1 = 1.0f - intplGetValue((s32)t, (s32)(b - a), (s32)b, 1.0f, 0.0f);
+    } else {
+        r1 = intplGetValue((s32)t, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+    }
+    if (u >= 14.0f) {
+        f32 t2 = t - 14.0f;
+        if (t2 >= 14.0f) {
+            evtSetFloat(event, out, c);
+            return EVT_RETURN_DONE;
+        }
+        r2 = 1.0f - intplGetValue((s32)t2, (s32)(b - a), (s32)b, 1.0f, 0.0f);
+    } else {
+        r2 = intplGetValue((s32)u, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+    }
+    r = r1 * r2;
+    evtSetFloat(event, out, c * (1.0f - r) + d * r);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(wariai_enzan_0) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]) - 1.0f;
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(wariai_enzan_0f) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]) - 1.0f;
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(x_flag_set) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    x_flag_data[index] = value;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(x_flag_add) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    x_flag_data[index] += value;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(x_flag_get) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], x_flag_data[index]);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(x_flag_wait) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    return (value == x_flag_data[index]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
 // clang-format on

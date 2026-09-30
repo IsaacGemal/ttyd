@@ -1,5 +1,18 @@
 #include "mri_00.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dolphin/mtx.h>
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/effdrv.h"
 #include "driver/envdrv.h"
+#include "driver/fadedrv.h"
+#include "driver/hitdrv.h"
+#include "driver/imgdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/offscreendrv.h"
+#include "eff/eff_starstone.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_bg.h"
 #include "evt/evt_cam.h"
@@ -7,6 +20,7 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_fade.h"
 #include "evt/evt_hit.h"
+#include "evt/evt_img.h"
 #include "evt/evt_item.h"
 #include "evt/evt_map.h"
 #include "evt/evt_mario.h"
@@ -19,7 +33,14 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_telop.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "party.h"
+#include "party/party_cloud.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
 #include "rel/mri/mri.h"
 
 #pragma pool_data off
@@ -36,9 +57,14 @@ extern s32 evt_puni_pera_onoff[];
 extern s32 mri_puni_jump_se[];
 extern s32 mri_puni_walk_se[];
 extern s32 mri_waterfall_effect[];
-static void _img_alloc_capture(void);  // TODO: real signature
-static void _mapsetofs_all(void);  // TODO: real signature
-static void _mapclsofs_all(void);  // TODO: real signature
+
+// Work entry for the "poof" cloud effect (local layout, not in a header yet).
+static CloudEntry* cloud;
+static s8 cloud_once_flag;
+
+static void _img_alloc_capture(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7);
+static void _mapsetofs_all(CloudEntry* cp);
+static void _mapclsofs_all(CloudEntry* cp);
 static USER_FUNC(evt_cloud_main);
 static USER_FUNC(yami_view);
 static USER_FUNC(anim_tevcallback);
@@ -557,17 +583,280 @@ EVT_BEGIN(first_bigtree)
     RETURN
 EVT_END()
 
+static const f32 zero_capturemap = 0.0f;
 static char* capturemap[4] = {
-    "S_non", "S_ha_10_07", "S_kesu", "",
+    "S_non", "S_ha_10_07", "S_kesu", (char*)&zero_capturemap,
 };
 
 // TODO: write evt_cloud_main (static, 0x658 bytes) here:
 // its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
 
+static void _img_alloc_capture(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7) {
+    EventEntry event;
+    s32 args[10];
+
+    event.args = args;
+    args[0] = a0;
+    args[1] = a1;
+    args[2] = a2;
+    args[3] = a3;
+    args[4] = a4;
+    args[5] = a5;
+    args[6] = a6;
+    args[7] = a7;
+    evt_img_alloc_capture(&event, 1);
+}
+
+s32 _ofs_get_boundingbox(const char* name, s32* a, s32* b, s32* c, s32* d) {
+    u16 left;
+    u16 top;
+    u16 right;
+    u16 bottom;
+    s32 id = offscreenNameToId(name);
+
+    if (offscreenGetBoundingBox_BeforeFrame(id, &left, &top, &right, &bottom) == 0) {
+        return 0;
+    }
+    *a = left;
+    *b = top;
+    *c = right - left + 50;
+    *d = bottom - top;
+    if (*a + *c >= 0x260) {
+        *c = 0x260 - *a;
+    }
+    return 2;
+}
+
+static void _mapsetofs_all(CloudEntry* cp) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (cp->mapGrpName[i][0] == 0) {
+            break;
+        }
+        mapGrpSetOffScreen((const char*)cp->mapGrpName[i], cp->offName);
+    }
+}
+
+static void _mapclsofs_all(CloudEntry* cp) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (cp->mapGrpName[i][0] == 0) {
+            break;
+        }
+        mapGrpClearOffScreen((const char*)cp->mapGrpName[i]);
+    }
+}
+
+static USER_FUNC(evt_cloud_main) {
+    CloudEntry* cp = (CloudEntry*)event->lwData[0];
+    s32 inBattle = (gp->inBattle != 0);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(0);
+    ImageEntry* img;
+    HitEntry* hit;
+    HitEntry* h0;
+    HitEntry* h1;
+    HitEntry* h2;
+    HitEntry* h3;
+
+    if (isFirstCall) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (party == NULL) {
+        return EVT_RETURN_BLOCK;
+    }
+
+    h0 = (HitEntry*)cloudGetHitBreathout(0);
+    h1 = (HitEntry*)cloudGetHitBreathout(1);
+    h2 = (HitEntry*)cloudGetHitBreathout(2);
+    h3 = (HitEntry*)cloudGetHitBreathout(3);
+
+    switch (cp->mode) {
+    case 0:
+        if (cloud_once_flag == 1) {
+            break;
+        }
+        hit = hitNameToPtr(cp->hitName);
+        if (h0 == hit || h1 == hit || h2 == hit || h3 == hit) {
+            cp->mode++;
+        }
+        if (cp->field_0x18C > 0) {
+            cp->field_0x18C--;
+        }
+        break;
+    case 1: {
+        f32 angle = *(f32*)mario->unk1AC;
+
+        if (angle > 90.0f && angle <= 270.0f) {
+            strcpy(cp->animName, "P_oof_cloud_2");
+        } else {
+            strcpy(cp->animName, "P_oof_cloud_1");
+        }
+        if (animGroupBaseAsync(cp->animName, inBattle, NULL)) {
+            cloud_once_flag = 1;
+            animPaperPoseEntry(cp->animName, inBattle);
+            offscreenEntry(cp->offName);
+            _mapsetofs_all(cp);
+            cp->mode++;
+        }
+        break;
+    }
+    case 2:
+        imgEntry(cp->imgName, inBattle);
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->poseId = animPaperPoseGetId(cp->animName, inBattle);
+        (*(OSTime*)&img->field_0x10C[4]) = animTimeGetTime(inBattle);
+        imgClearVirtualPoint(img);
+        imgSetShadow(img, 2);
+        img->flags |= 2;
+        cp->mode = 0xDE;
+        break;
+    case 0xDE:
+        if (_ofs_get_boundingbox(cp->offName, &cp->field_0x19C, &cp->field_0x1A0, &cp->field_0x1A4, &cp->field_0x1A8) != 0) {
+            _img_alloc_capture((s32)cp->imgName, 0, 0, 1, cp->field_0x19C, cp->field_0x1A0, cp->field_0x1A4, cp->field_0x1A8);
+            cp->mode = 0xDF;
+        }
+        break;
+    case 0xDF:
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->flags &= ~2;
+        cp->mode = 3;
+        // fallthrough
+    case 3:
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->field_0x108 = (s32)"A_1";
+        (*(OSTime*)&img->field_0x10C[4]) = animTimeGetTime(inBattle);
+        img->flags &= ~2;
+        cp->field_0x198 = 0x1E;
+        cp->field_0x1AC = 0.0f;
+        cp->mode++;
+        break;
+    case 4:
+        img = imgNameToPtr(cp->imgName, inBattle);
+        if (cp->field_0x1AC == 0.0f || 1.0f + cp->field_0x1AC < img->field_0x118) {
+            psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
+            cp->field_0x1AC = img->field_0x118;
+        }
+        if (mario->currMotionId != 0x1B) {
+            cp->mode = 0xA;
+            break;
+        }
+        hit = hitNameToPtr(cp->hitName);
+        if (h0 != hit && h1 != hit && h2 != hit && h3 != hit) {
+            if (cp->field_0x198 == 0) {
+                cp->mode = 0xA;
+            } else {
+                cp->field_0x198--;
+                cp->field_0x18C += 2;
+            }
+        } else {
+            cp->field_0x198 = 0x1E;
+            cp->field_0x18C += 2;
+            if (cp->field_0x18C > cp->field_0x188) {
+                cp->mode = 0x14;
+            }
+        }
+        break;
+    case 0xA:
+        cp->mode = 0x63;
+        break;
+    case 0x14:
+        psndSFXOn_3D("SFX_OFF_CLAUD_WIND3", &mario->position);
+        if (cp->field_0x194 != NULL) {
+            evtEntry(cp->field_0x194, 0, 0);
+        }
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->field_0x108 = (s32)"A_2";
+        (*(OSTime*)&img->field_0x10C[4]) = animTimeGetTime(inBattle);
+        cp->field_0x198 = 0x3C;
+        cp->mode++;
+        break;
+    case 0x15:
+        if (cp->field_0x198 != 0) {
+            cp->field_0x198--;
+        } else {
+            cp->field_0x198 = 0x1E;
+            cp->field_0x18C += 2;
+            cp->mode = 0x64;
+        }
+        break;
+    case 0x63:
+    case 0x64:
+        img = imgNameToPtr(cp->imgName, inBattle);
+        _mapclsofs_all(cp);
+        animPaperPoseRelease(img->poseId);
+        imgFreeCapture(img, 0);
+        imgSetShadow(img, 0);
+        imgRelease(img, inBattle);
+        offscreenDelete(cp->offName);
+        cloud_once_flag = 0;
+        if (cp->mode == 0x63) {
+            cp->mode = 0;
+            break;
+        }
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
 static EVT_BEGIN(evt_cloud_main_evt)
     CALL(evt_cloud_main)
     RETURN
 EVT_END()
+
+USER_FUNC(evt_mri_cloud_init) {
+    s32 i;
+
+    cloud = _mapAlloc(0x1B00);
+    for (i = 0; i < 16; i++) {
+        cloud[i].flags = 0;
+        sprintf(cloud[i].imgName, "i_name_%1d", i);
+        sprintf(cloud[i].offName, "o_name_%1d", i);
+    }
+    cloud_once_flag = 0;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_mri_cloud_ent) {
+    s32* args = event->args;
+    s8** a;
+    s8* b;
+    void* c;
+    CloudEntry* cp;
+    s32 i, j;
+    a = (s8**)evtGetValue(event, args[0]);
+    b = (s8*)evtGetValue(event, args[1]);
+    c = (void*)evtGetValue(event, args[2]);
+    for (j = 0; j < 16; j++) {
+        if (cloud[j].flags == 0) {
+            break;
+        }
+    }
+    if (j >= 16) {
+        return EVT_RETURN_DONE;
+    }
+
+    cp = &cloud[j];
+    cp->flags = 1;
+    strcpy(cp->animName, "P_oof_cloud_1");
+    for (i = 0; i < 8; i++) {
+        if (a[i][0] == 0) {
+            break;
+        }
+        strcpy((char*)cp->mapGrpName[i], (const char*)a[i]);
+    }
+    strcpy(cp->hitName, (const char*)b);
+    cp->field_0x194 = c;
+    cp->field_0x188 = 0xB4;
+    cp->field_0x18C = 0;
+    cp->mode = 0;
+    cp->field_0x198 = 0;
+    cp->field_0x190 = evtEntry(evt_cloud_main_evt, 0, 0);
+    cp->field_0x190->lwData[0] = (s32)cp;
+    return EVT_RETURN_DONE;
+}
 
 // TODO: type
 u32 guide_move_data[15] = {
@@ -743,8 +1032,86 @@ EVT_BEGIN(mario_see_you)
     RETURN
 EVT_END()
 
-// TODO: write get_puni_pos (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_mri_00020a58 = {0.0f, 100.0f, 0.0f};
+const Vec vec3_mri_00020a64 = {0.0f, 1.0f, 0.0f};
+const Vec vec3_mri_00020a70 = {0.0f, 0.0f, 0.0f};
+
+static USER_FUNC(yami_view) {
+    Vec camPos;
+    Vec up;
+    Vec target;
+    Mtx mtx;
+    f32 value = evtGetFloat(event, event->args[0]);
+
+    target = vec3_mri_00020a70;
+    target.x = value;
+    up = vec3_mri_00020a64;
+    camPos = vec3_mri_00020a58;
+    camPos.x = value + -100.0f;
+    C_MTXLookAt(mtx, &camPos, &up, &target);
+    envSetYamiView(mtx);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(anim_tevcallback) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
+
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_puni_pos) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 x = (index % 15) * 20 + rand() % 10;
+    s32 y = (x -= 280);
+    s32 z = 180 - ((index / 15) * 20 + rand() % 30 - 15);
+
+    evtSetValue(event, args[1], y);
+    evtSetValue(event, args[2], z);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+
+    effSetName(effStarStoneEntry(1, x, y, z, 1.0f), (const char*)name);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* eff = effNameToPtr((const char*)name);
+
+    ((f32*)eff->userdata)[2] = x;
+    ((f32*)eff->userdata)[3] = y;
+    ((f32*)eff->userdata)[4] = z;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_ry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 ry = evtGetFloat(event, args[1]);
+    f32* userdata = effNameToPtr((const char*)name)->userdata;
+
+    userdata[7] = ry;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(puni_set)
     SET_VALUE(LW(0), 5)
@@ -817,12 +1184,6 @@ EVT_BEGIN(sekai_yami_puni)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write yami_view (static, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write anim_tevcallback (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(sekai_yami_evt)
     CALL(evt_puni_wait_systemmode, 2)
@@ -923,15 +1284,6 @@ static EVT_BEGIN(sekai_yami_evt)
     CALL(evt_mario_key_onoff, 1)
     RETURN
 EVT_END()
-
-// TODO: write starstone_entry (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write starstone_set_pos (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write starstone_set_ry (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(minnnanokoe_evt)
     CALL(evt_puni_wait_systemmode, 2)
@@ -1107,14 +1459,15 @@ static EVT_BEGIN(evt_switch_init)
     RETURN
 EVT_END()
 
-// TODO: write evt_mri_cloud_init (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
+__declspec(section ".rodata") GXColor zero_mri_00020b88 = {0, 0, 0, 0};
 
-// TODO: write evt_mri_cloud_ent (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write sysflag (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(sysflag) {
+    if (gp->flags & 1) {
+        gp->flags &= ~1;
+        fadeEntry(0x1C, 0, zero_mri_00020b88);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(mri_00_init_evt)
     CALL(sysflag)
@@ -1226,26 +1579,4 @@ EVT_BEGIN(mri_00_init_evt)
     END_IF
     RETURN
 EVT_END()
-
-// TODO: type
-static u8 cloud_once_flag[1] = {
-    0x00,
-};
-
-// TODO: type
-static u32 cloud[1] = {
-    0x00000000,
-};
-
-// TODO: write _img_alloc_capture (static, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ofs_get_boundingbox (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _mapsetofs_all (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _mapclsofs_all (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
 // clang-format on

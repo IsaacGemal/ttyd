@@ -4,8 +4,12 @@
 
 USER_FUNC(battenSatelliteToOutside);
 USER_FUNC(battenSatelliteToInside);
-void battenSatelliteTo_Main(void);  // TODO: real signature
-void battenSatelliteTo_Init(void);  // TODO: real signature
+struct BattleUnit;
+s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index);
+s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table);
+extern u32 xlw2[16];
+extern u32 xmemo[5];
+extern EventEntry* xevt[1];
 USER_FUNC(unk_las_0000d538);
 void _light_point_callback(void);  // TODO: real signature
 USER_FUNC(btl_hitoffsetx);
@@ -17,9 +21,9 @@ USER_FUNC(enzan_lw_save2);
 USER_FUNC(btlevtcmd_AnimeGetPose);
 void battleGetBattenSatelliteInitPos(void);  // TODO: real signature
 USER_FUNC(check_satellite);
-void evt_eff_firechange00(void);  // TODO: real signature
-void evt_eff_barriersizechange(void);  // TODO: real signature
-void evt_eff_colorchange00(void);  // TODO: real signature
+USER_FUNC(evt_eff_firechange00);
+USER_FUNC(evt_eff_barriersizechange);
+USER_FUNC(evt_eff_colorchange00);
 USER_FUNC(evt_eff_pokopi_thunder);
 EVT_DEF(batten_leader_zoom);
 EVT_DEF(hakai_snd_event);

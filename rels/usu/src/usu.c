@@ -1,6 +1,18 @@
 #include "usu.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "party.h"
+#include "usu_00.h"
+#include "usu_01.h"
+#include <string.h>
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
 
 #pragma pool_data off
 
@@ -29,20 +41,42 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: type
-static u32 pose_buf[1] = {
-    0x00000000,
-};
+// A one-entry buffer holding Vivian's saved pose table row (15 char*).
+static char* pose_buf[1];
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_usu_vivian_pose_set) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 pose = evtGetValue(event, args[1]);
 
-// TODO: write _epilog (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu.s; this is where the original has it, just before the first script that uses it
+    partyPoseTbl[PARTY_MEMBER_VIVIAN][index] = (char*)pose;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write _prolog (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
+    char* buf;
 
-// TODO: write evt_usu_vivian_pose_set (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("usu_00", usu_00_init_evt);
+    relSetEvtAddr("usu_01", usu_01_init_evt);
+    buf = _mapAlloc(0x3C);
+    pose_buf[0] = buf;
+    memcpy(buf, partyPoseTbl[PARTY_MEMBER_VIVIAN], 0x3C);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+    memcpy(partyPoseTbl[PARTY_MEMBER_VIVIAN], pose_buf[0], 0x3C);
+    _mapFree(pose_buf[0]);
+}
+
+void _unresolved(void) {
+}
 // clang-format on

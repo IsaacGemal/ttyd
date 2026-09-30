@@ -2,6 +2,12 @@
 
 #include <dolphin/types.h>
 #include "driver/effdrv.h"
+
+EffectEntry* effHokoriN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z);
+#pragma once
+
+#include <dolphin/types.h>
+#include "driver/effdrv.h"
 EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z);
 #include "driver/camdrv.h"
 #include <dolphin/mtx.h>

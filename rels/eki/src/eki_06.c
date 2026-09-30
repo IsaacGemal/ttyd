@@ -1,4 +1,6 @@
 #include "eki_06.h"
+#include "driver/animdrv.h"
+#include "driver/mobjdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -9,7 +11,12 @@
 #include "evt/evt_npc.h"
 #include "evt/evt_snd.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario_motion.h"
+#include "mario/mariost.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
+#include <string.h>
 
 #pragma pool_data off
 
@@ -51,9 +58,6 @@ static BeroEntry bero_data[3] = {
     {"e_bero_2", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_05", "w_bero_1", 1, 1},
     {NULL},
 };
-
-// TODO: write sw_entry (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_06.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_box_open)
     IF_INT_GREATER_OR_EQUAL(GSW(0), 317)
@@ -167,6 +171,8 @@ EVT_BEGIN(evt_sw_complete)
     RETURN
 EVT_END()
 
+const Vec vec3_eki_00009504 = { 0.0f, 0.0f, 0.0f };
+
 EVT_BEGIN(eki_06_init_evt)
     SET_VALUE(LW(0), PTR(bero_data))
     CALL(evt_bero_get_info)
@@ -204,20 +210,187 @@ EVT_BEGIN(eki_06_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 lock[1] = {
-    0x00000000,
-};
+s32 lock;
 
-// TODO: write sw_main (global, 0x1004 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_06.s; this is where the original has it, just before the first script that uses it
+void sw_cntup(MapObjectEntry* obj) {
+    if (strcmp(obj->name, "MOBJ_eki_06_su1") == 0) {
+        evtSetValue(NULL, GW(0), evtGetValue(NULL, GW(0)) + 1);
+    } else if (strcmp(obj->name, "MOBJ_eki_06_su2") == 0) {
+        evtSetValue(NULL, GW(1), evtGetValue(NULL, GW(1)) + 1);
+    } else if (strcmp(obj->name, "MOBJ_eki_06_su3") == 0) {
+        evtSetValue(NULL, GW(2), evtGetValue(NULL, GW(2)) + 1);
+    }
+}
 
-// TODO: write sw_reset (global, 0x2ac bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_06.s; this is where the original has it, just before the first script that uses it
+// The original emits sw_cnt with its last guard negated (`if (name != su3) return 0; return GW(2)`),
+// but the copies inlined into sw_reset/sw_main keep the plain if/else-if chain. Calling sw_cnt from them
+// would make the inliner use the negated form, so they expand SW_CNT_NATURAL instead.
+s32 sw_cnt(MapObjectEntry* obj) {
+    if (strcmp(obj->name, "MOBJ_eki_06_su1") == 0)
+        return evtGetValue(NULL, GW(0));
+    if (strcmp(obj->name, "MOBJ_eki_06_su2") == 0)
+        return evtGetValue(NULL, GW(1));
+    if (strcmp(obj->name, "MOBJ_eki_06_su3") != 0)
+        return 0;
+    return evtGetValue(NULL, GW(2));
+}
 
-// TODO: write sw_cnt (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_06.s; this is where the original has it, just before the first script that uses it
+#define SW_CNT_NATURAL(obj)                                                                     \
+    (strcmp((obj)->name, "MOBJ_eki_06_su1") == 0   ? evtGetValue(NULL, GW(0))                   \
+     : strcmp((obj)->name, "MOBJ_eki_06_su2") == 0 ? evtGetValue(NULL, GW(1))                   \
+     : strcmp((obj)->name, "MOBJ_eki_06_su3") == 0 ? evtGetValue(NULL, GW(2))                   \
+                                                   : 0)
 
-// TODO: write sw_cntup (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_06.s; this is where the original has it, just before the first script that uses it
+void sw_reset(void) {
+    MapObjectEntry* obj;
+
+    obj = mobjNameToPtr("MOBJ_eki_06_su1");
+    obj->flags &= ~2;
+    switch (SW_CNT_NATURAL(obj)) {
+        case 2:
+            animPoseSetAnim(obj->poseId, "ANIM_5", 1);
+            evtSetValue(NULL, GW(0), 0);
+            break;
+    }
+    obj = mobjNameToPtr("MOBJ_eki_06_su2");
+    obj->flags &= ~2;
+    switch (SW_CNT_NATURAL(obj)) {
+        case 11:
+            animPoseSetAnim(obj->poseId, "ANIM_7", 1);
+            evtSetValue(NULL, GW(1), 0);
+            break;
+    }
+    obj = mobjNameToPtr("MOBJ_eki_06_su3");
+    obj->flags &= ~2;
+    switch (SW_CNT_NATURAL(obj)) {
+        case 4:
+            animPoseSetAnim(obj->poseId, "ANIM_7", 1);
+            evtSetValue(NULL, GW(2), 0);
+            break;
+    }
+}
+
+s32 sw_main(MapObjectEntry* obj) {
+    MapObjectEntry* su;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (!(obj->flags & 8)) {
+                break;
+            }
+            if (lock != 0) {
+                break;
+            }
+            lock = 1;
+            if (obj->unk1E0 == 0x200000) {
+                marioChgMot(5);
+            }
+            psndSFXOn_3D("SFX_STG6_OBJ_SWITCH_ON1", &obj->position);
+            sw_cntup(obj);
+            if (strcmp(obj->name, "MOBJ_eki_06_su1") == 0) {
+                if (SW_CNT_NATURAL(obj) == 1) {
+                    animPoseSetAnim(obj->poseId, "ANIM_2", 1);
+                } else {
+                    sw_reset();
+                }
+            }
+            if (strcmp(obj->name, "MOBJ_eki_06_su2") == 0) {
+                if (SW_CNT_NATURAL(obj) < 10) {
+                    animPoseSetAnim(obj->poseId, "ANIM_2", 1);
+                } else if (SW_CNT_NATURAL(obj) == 10) {
+                    animPoseSetAnim(obj->poseId, "ANIM_4", 1);
+                } else {
+                    sw_reset();
+                }
+            }
+            if (strcmp(obj->name, "MOBJ_eki_06_su3") == 0) {
+                if (SW_CNT_NATURAL(obj) < 3) {
+                    animPoseSetAnim(obj->poseId, "ANIM_2", 1);
+                } else if (SW_CNT_NATURAL(obj) == 3) {
+                    animPoseSetAnim(obj->poseId, "ANIM_4", 1);
+                } else {
+                    sw_reset();
+                }
+            }
+            obj->unk1DC++;
+            break;
+        case 1:
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
+                break;
+            }
+            if (evtGetValue(NULL, GW(0)) == 1 && evtGetValue(NULL, GW(1)) == 10 &&
+                evtGetValue(NULL, GW(2)) == 3) {
+                evtEntry(evt_sw_complete, 0, 0);
+                obj->unk1DC++;
+                break;
+            }
+            su = mobjNameToPtr("MOBJ_eki_06_su1");
+            su->flags |= 2;
+            su = mobjNameToPtr("MOBJ_eki_06_su2");
+            su->flags |= 2;
+            su = mobjNameToPtr("MOBJ_eki_06_su3");
+            su->flags |= 2;
+            if (strcmp(obj->name, "MOBJ_eki_06_su1") == 0) {
+                if (SW_CNT_NATURAL(obj) == 1) {
+                    animPoseSetAnim(obj->poseId, "ANIM_3", 1);
+                } else {
+                    animPoseSetAnim(obj->poseId, "ANIM_1", 1);
+                }
+            }
+            if (strcmp(obj->name, "MOBJ_eki_06_su2") == 0) {
+                if (SW_CNT_NATURAL(obj) == 10) {
+                    animPoseSetAnim(obj->poseId, "ANIM_5", 1);
+                } else {
+                    animPoseSetAnim(obj->poseId, "ANIM_1", 1);
+                }
+            }
+            if (strcmp(obj->name, "MOBJ_eki_06_su3") == 0) {
+                if (SW_CNT_NATURAL(obj) == 3) {
+                    animPoseSetAnim(obj->poseId, "ANIM_5", 1);
+                } else {
+                    animPoseSetAnim(obj->poseId, "ANIM_1", 1);
+                }
+            }
+            obj->flags &= ~8;
+            obj->unk1DC = 0;
+            lock = 0;
+            break;
+        case 2:
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+
+USER_FUNC(sw_entry) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    MapObjectEntry* obj;
+    Vec pos;
+
+    if (!animGroupBaseAsync(name, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, name);
+    obj = mobjNameToPtr(name);
+    /* MUST_MATCH: volatile makes the flags store stay ahead of the vec3 copy, as in the original;
+       the objects themselves are not volatile, but this reproduces MWCC's exact schedule. */
+    *(volatile s32*)&obj->flags |= 6;
+    pos = *(volatile Vec*)&vec3_eki_00009504;
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    obj->position = pos;
+    obj->unk1D0 = sw_main;
+    obj->flags |= 0xa10000;
+    obj->unk1DC = 0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "ANIM_1", 1);
+    lock = 0;
+    return EVT_RETURN_DONE;
+}
 // clang-format on

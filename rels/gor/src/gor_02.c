@@ -29,6 +29,27 @@
 #include "evt/evt_window.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "battle/battle_monosiri.h"
+#include "cam_road.h"
+#include "driver/bgdrv.h"
+#include "driver/camdrv.h"
+#include "driver/imgdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/npcdrv.h"
+#include "driver/swdrv.h"
+#include "dolphin/gx/GXTev.h"
+#include "eff/eff_stardust.h"
+#include "eff/eff_mahojin.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mario_pouch.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "pmario_sound.h"
+#include "statuswindow.h"
+#include "system.h"
+#include "window/win_main.h"
 
 #pragma pool_data off
 
@@ -47,19 +68,19 @@ static USER_FUNC(bgm_start_wait);
 static USER_FUNC(bgScrollControll);
 static USER_FUNC(enzan_lw_load);
 static USER_FUNC(enzan_lw_save);
-static void enzan_set_f_i(void);  // TODO: real signature
-static void enzan_set_i_f(void);  // TODO: real signature
+static USER_FUNC(enzan_set_f_i);
+static USER_FUNC(enzan_set_i_f);
 static USER_FUNC(enzan_cam_turn_keisan_f);
-static void enzan_cam_turn_keisan(void);  // TODO: real signature
-static void wariai_enzan_0f(void);  // TODO: real signature
-static void wariai_enzan_0(void);  // TODO: real signature
-static void wariai_enzan_1f_intpl(void);  // TODO: real signature
-static void wariai_enzan_1f(void);  // TODO: real signature
-static void wariai_enzan_1(void);  // TODO: real signature
+static USER_FUNC(enzan_cam_turn_keisan);
+static USER_FUNC(wariai_enzan_0f);
+static USER_FUNC(wariai_enzan_0);
+static USER_FUNC(wariai_enzan_1f_intpl);
+static USER_FUNC(wariai_enzan_1f);
+static USER_FUNC(wariai_enzan_1);
 static USER_FUNC(effect_stardust);
-static void alpha_set_func(void);  // TODO: real signature
-static void alpha_init_func(void);  // TODO: real signature
-static void alpha_tev(void);  // TODO: real signature
+static USER_FUNC(alpha_set_func);
+static USER_FUNC(alpha_init_func);
+static void alpha_tev(TevCallbackParam* param);
 static u32 door_data_01[18];
 u32 door_data_06[18];
 s32 evt_gor_door_open_sanders[80];
@@ -70,6 +91,20 @@ s32 kurihakase_wall_remove[257];
 s32 kurihakase_lecture[286];
 s32 kurihakase_lecture_badge[272];
 s32 kurihakase_after3minutes[177];
+u32 stg0_list[1];
+u32 stg1_list[4];
+u32 stg2_list[4];
+u32 stg3_list[1];
+u32 stg5_list[2];
+u32 stg6_list[1];
+u32 stg7_list[6];
+u32 stg8_list[10];
+u32 follow[24];
+u32 camstring[1];
+u32 iri_13_item_tbl[1];
+static u32 xlw[16];
+static u32 _ap[1];
+u32 _door[1];
 
 // clang-format off
 extend_data(12,
@@ -147,26 +182,92 @@ static BeroEntry bero_entry_data[3] = {
     {NULL},
 };
 
-// TODO: write bgm_start_wait (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(bgm_start_wait) {
+    return psndBGMStartCheck(1) != 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
 
-// TODO: write bgScrollControll (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(bgScrollControll) {
+    if (evtGetValue(event, event->args[0]) == 0) {
+        bgTransOffsetOff();
+    } else {
+        bgTransOffsetOn();
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_set_bgtpl (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_set_bgtpl) {
+    char name[0x48];
+    const char* tpl = (const char*)evtGetValue(event, event->args[0]);
 
-// TODO: write enzan_lw_load (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    if (tpl == NULL) {
+        tpl = gp->currentMapName;
+    }
+    sprintf(name, "./b/%s.tpl", tpl);
+    bgReEntry(name);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write enzan_lw_save (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(enzan_lw_load) {
+    s32 i;
 
-// TODO: write enzan_cam_turn_keisan_f (static, 0x1e4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw[i];
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write effect_stardust (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(enzan_lw_save) {
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+        xlw[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (80.7%): the two Vec temporaries are assigned the opposite stack slots and some float register
+// allocation differs; otherwise the same instructions.
+static USER_FUNC(enzan_cam_turn_keisan_f) {
+    f32 p = evtGetFloat(event, event->args[0]) / 100.0f;
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec a = { -362.0f, 37.0f, -200.0f };
+    Vec b;
+    Vec c;
+    Mtx mtx;
+
+    c.y = -62.0f * p + 193.0f;
+    c.z = -354.0f * p + 686.0f;
+    c.x = -362.0f;
+    b = c;
+    PSVECSubtract(&b, &a, &b);
+    PSMTXRotRad(mtx, 'Y', 0.017453292f * (720.0f * p));
+    PSMTXMultVec(mtx, &b, &b);
+    PSVECAdd(&b, &a, &b);
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    cam->storedPos = b;
+    cam->storedAt = cam->cameraAt;
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = 0;
+    cam->stateA = 3;
+    cam->curveA = 0;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(effect_stardust) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    f32 a = evtGetFloat(event, args[1]);
+    f32 b = evtGetFloat(event, args[2]);
+    f32 c = evtGetFloat(event, args[3]);
+    f32 d = evtGetFloat(event, args[4]);
+    f32 e = evtGetFloat(event, args[5]);
+    s32 f = evtGetValue(event, args[6]);
+    s32 g = evtGetValue(event, args[7]);
+
+    effStardustEntry(type, f, g, a, b, c, d, e);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(powerupya_party_lank_rtn)
     BEGIN_SIBLING_EVENT
@@ -460,8 +561,10 @@ EVT_BEGIN(powerupya_party_rtn)
     RETURN
 EVT_END()
 
-// TODO: write setmertn (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(setmertn) {
+    event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(powerupya_table_talk)
     CALL(setmertn, STRING("パワーアップ屋"))
@@ -571,11 +674,26 @@ EVT_BEGIN(unk_evt_gor_0003e708)
     RETURN
 EVT_END()
 
-// TODO: write unk_gor_0000574c (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(unk_gor_0000574c) {
+    s32* args = event->args;
+    MarioWork* mario = marioGetPtr();
 
-// TODO: write stonechangertn (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    evtSetFloat(event, args[0], *(f32*)mario->unk1AC);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(stonechangertn) {
+    const char* name = (const char*)evtGetValue(event, event->args[0]);
+
+    if (strcmp(name, "S_i01_sui_ao") == 0) {
+        mapGrpFlagOff("S_i01_sui_ao", 1);
+        mapGrpFlagOn("S_i01_sui_aka", 1);
+    } else if (strcmp(name, "S_i01_sui_aka") == 0) {
+        mapGrpFlagOn("S_i01_sui_ao", 1);
+        mapGrpFlagOff("S_i01_sui_aka", 1);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(unk_evt_gor_0003e7a0)
     CALL(evt_mario_dispflag_onoff, 1, 2)
@@ -1017,8 +1135,10 @@ EVT_BEGIN(oyabun_init)
     RETURN
 EVT_END()
 
-// TODO: write status_gauge_force_off (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(status_gauge_force_off) {
+    statusWinForceOff();
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(oyabun_talk)
     SWITCH(GSW(0))
@@ -1469,8 +1589,12 @@ EVT_BEGIN(tozokudan3_talk)
     RETURN
 EVT_END()
 
-// TODO: write set_talk_memory_ry (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(set_talk_memory_ry) {
+    NpcEntry* npc = npcNameToPtr("サンダース");
+
+    *(f32*)npc->field_148 = 270.0f;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(sanders_open_door)
     IF_INT_EQUAL(GSWF(1216), 1)
@@ -1672,14 +1796,36 @@ static u32 item_tbl[2] = {
     0x0000005F, 0xFFFFFFFF,
 };
 
-// TODO: write iri_13_free_item_tbl (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(iri_13_free_item_tbl) {
+    _mapFree((void*)iri_13_item_tbl[0]);
+    iri_13_item_tbl[0] = 0;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write iri_13_update_item_tbl (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(iri_13_update_item_tbl) {
+    s32* args = event->args;
+    s32 count = pouchCheckItem(0x6B);
+    s32 i;
 
-// TODO: write iri_13_make_item_tbl (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    if (count > 0) {
+        for (i = 0; i < count; i++) {
+            ((s32*)iri_13_item_tbl[0])[i] = 0x6B;
+        }
+        ((s32*)iri_13_item_tbl[0])[i] = -1;
+    }
+    evtSetValue(event, args[0], iri_13_item_tbl[0]);
+    evtSetValue(event, args[1], count);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(iri_13_make_item_tbl) {
+    s32 count = pouchCheckItem(0x6B);
+
+    if (count > 0) {
+        iri_13_item_tbl[0] = (u32)_mapAlloc((count + 1) * sizeof(s32));
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(kuribo4_talk)
     IF_INT_EQUAL(GSW(1420), 2)
@@ -1977,8 +2123,19 @@ EVT_BEGIN(kuragarisan_init)
     RETURN
 EVT_END()
 
-// TODO: write kuragarisan_msgcb (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+void kuragarisan_msgcb(s32 type, void* param) {
+    void* p = *(void**)param;
+
+    switch (type) {
+    case 3:
+        if (((u16*)p)[4] == 1) {
+            NpcEntry* npc = npcNameToPtr("クラガリさん");
+
+            npc->direction = 90.0f;
+        }
+        break;
+    }
+}
 
 EVT_BEGIN(kuragarisan_write_name)
     CALL(evt_npc_get_position, STRING("me"), LW(13), LW(14), LW(15))
@@ -2358,8 +2515,44 @@ static char* door_data_02_npc[2] = {
     "クリハカセ", NULL,
 };
 
-// TODO: write monosiri_check (global, 0x1c8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(monosiri_check) {
+    s32* args = event->args;
+    s32 stage = evtGetValue(event, GSW(0));
+    u32 i;
+    s32 j;
+    FollowPath* entry;
+
+    for (i = 0, entry = (FollowPath*)follow; i < 8; i++, entry++) {
+        if (stage < entry->unk0) {
+            break;
+        }
+        for (j = 0; j < entry->count; j++) {
+            if (swGet(entry->ptr[j] + 0x117A) == 0) {
+                evtSetValue(event, args[0], 1);
+                evtSetValue(event, args[1], entry->ptr[j]);
+                return EVT_RETURN_DONE;
+            }
+        }
+    }
+    if (swGet(0x4BD) != 0 && swGet(0x1181) == 0) {
+        evtSetValue(event, args[0], 1);
+        evtSetValue(event, args[1], 7);
+        return EVT_RETURN_DONE;
+    }
+    if (swGet(0x13DD) != 0 && swGet(0x1225) == 0) {
+        evtSetValue(event, args[0], 1);
+        evtSetValue(event, args[1], 0xAB);
+        return EVT_RETURN_DONE;
+    }
+    if (swGet(0x8B2) != 0 && swGet(0x11C6) == 0) {
+        evtSetValue(event, args[0], 1);
+        evtSetValue(event, args[1], 0x4C);
+        return EVT_RETURN_DONE;
+    }
+    evtSetValue(event, args[0], 0);
+    evtSetValue(event, args[1], 0);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_door_02_open)
     SPAWN_EVENT(unk_evt_gor_0003d138)
@@ -3018,17 +3211,53 @@ EVT_BEGIN(evt_gor_door_open_sub)
     RETURN
 EVT_END()
 
-// TODO: write _door_color2_main_func (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_door_color2_main_func) {
+    s32* args = event->args;
+    u8* door = (u8*)_door[0];
 
-// TODO: write _door_color_main_func (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    door[4] = evtGetValue(event, args[0]);
+    door[5] = evtGetValue(event, args[1]);
+    door[6] = evtGetValue(event, args[2]);
+    door[7] = evtGetValue(event, args[3]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write _door_color2_tev (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_door_color_main_func) {
+    s32* args = event->args;
+    u8* door = (u8*)_door[0];
 
-// TODO: write _door_color_tev (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    door[0] = evtGetValue(event, args[0]);
+    door[1] = evtGetValue(event, args[1]);
+    door[2] = evtGetValue(event, args[2]);
+    door[3] = evtGetValue(event, args[3]);
+    return EVT_RETURN_DONE;
+}
+
+void _door_color2_tev(struct TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    u8* door = (u8*)_door[0];
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColor(GX_TEVREG0, *(GXColor*)(door + 4));
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C++;
+}
+
+void _door_color_tev(struct TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    u8* door = (u8*)_door[0];
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColor(GX_TEVREG0, *(GXColor*)door);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C++;
+}
 
 EVT_BEGIN(evt_gor_door_dark_sub)
     CALL(evt_map_set_tevcallback, 1, PTR(_door_color_tev))
@@ -3089,11 +3318,29 @@ EVT_BEGIN(evt_gor_door_dark_sub)
     RETURN
 EVT_END()
 
-// TODO: write evt_gor_door_out_info (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_gor_door_out_info) {
+    s32* args = event->args;
+    Vec in = { 0.0f, 0.0f, 0.0f };
+    Vec out = { 0.0f, 0.0f, 0.0f };
 
-// TODO: write evt_gor_door_in_info (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    door_position_sub(3, "S_ie_03_doao", "A_ie_03_doa_02", "A_ie_03_doa_04", &in, &out, 0);
+    evtSetValue(event, args[0], (s32)out.x);
+    evtSetValue(event, args[1], (s32)out.y);
+    evtSetValue(event, args[2], (s32)out.z);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_gor_door_in_info) {
+    s32* args = event->args;
+    Vec in = { 0.0f, 0.0f, 0.0f };
+    Vec out = { 0.0f, 0.0f, 0.0f };
+
+    door_position_sub(3, "S_ie_03_doao", "A_ie_03_doa_02", "A_ie_03_doa_04", &in, &out, 0);
+    evtSetValue(event, args[0], (s32)in.x);
+    evtSetValue(event, args[1], (s32)in.y);
+    evtSetValue(event, args[2], (s32)in.z);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_gor_door_open)
     CALL(evt_cam_letter_box_disable, 1)
@@ -3250,8 +3497,20 @@ EVT_BEGIN(evt_gor_door_close)
     RETURN
 EVT_END()
 
-// TODO: write _door_color_init_func (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_door_color_init_func) {
+    u8* door = _mapAlloc(8);
+
+    _door[0] = (u32)door;
+    ((u8*)_door[0])[0] = 0xFF;
+    ((u8*)_door[0])[1] = 0xFF;
+    ((u8*)_door[0])[2] = 0xFF;
+    ((u8*)_door[0])[3] = 0xFF;
+    ((u8*)_door[0])[4] = 0xFF;
+    ((u8*)_door[0])[5] = 0xFF;
+    ((u8*)_door[0])[6] = 0xFF;
+    ((u8*)_door[0])[7] = 0xFF;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_gor_offscren_door_entry)
     CALL(_door_color_init_func)
@@ -3293,11 +3552,15 @@ EVT_BEGIN(cam_yurasu_event)
     RETURN
 EVT_END()
 
-// TODO: write evt_StatusClose (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_StatusClose) {
+    statusWinForceOff();
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_StatusOpen (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_StatusOpen) {
+    statusWinForceOpen();
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(steel_coin)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kmn"), 2)
@@ -3597,8 +3860,13 @@ EVT_BEGIN(kurihakase_first_talk)
     RETURN
 EVT_END()
 
-// TODO: write set_depthPlaneOffset (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(set_depthPlaneOffset) {
+    s32* args = event->args;
+    u8* obj = (u8*)imgNameToPtr((const char*)evtGetValue(event, args[0]), gp->inBattle != 0);
+
+    *(f32*)(obj + 0x11C) = evtGetFloat(event, args[1]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(kurihakase_wall_remove)
     CALL(evt_door_end_wait)
@@ -3769,8 +4037,15 @@ EVT_BEGIN(kurihakase_door)
     RETURN
 EVT_END()
 
-// TODO: write lecture (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(lecture) {
+    if (isFirstCall) {
+        winLectureOn();
+    }
+    if (winLectureCheck() != 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(kurihakase_lecture_badge)
     CALL(evt_door_end_wait)
@@ -4682,8 +4957,15 @@ u32 follow[24] = {
     0x00000006, 0x00000191, (u32)&stg8_list, 0x0000000A,
 };
 
-// TODO: write monosiri_on (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(monosiri_on) {
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+    TattleEntry* tattle = battleGetUnitMonosiriPtr(id);
+
+    swSet(id + 0x117A);
+    evtSetValue(event, args[1], (s32)msgSearch(tattle->enemyTag));
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_monosiri)
     CALL(evt_mario_key_onoff, 0)
@@ -4791,8 +5073,21 @@ EVT_BEGIN(dearu_event)
     RETURN
 EVT_END()
 
-// TODO: write camera_front_check (global, 0x110 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(camera_front_check) {
+    s32* args = event->args;
+    f32 angle = reviseAngle((100.0f * camGetPtr(CAMERA_3D)->viewYaw + 5.0f) / 100.0f);
+
+    if (angle >= 0.0f && angle < 90.0f) {
+        evtSetValue(event, *args++, 1);
+    }
+    if (angle >= 90.0f && angle < 270.0f) {
+        evtSetValue(event, *args++, 0);
+    }
+    if (angle >= 270.0f && angle < 360.0f) {
+        evtSetValue(event, *args, 1);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(front_wall_keshi)
     LOOP(0)
@@ -4807,14 +5102,43 @@ EVT_BEGIN(front_wall_keshi)
     RETURN
 EVT_END()
 
-// TODO: write camera_move_check (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(camera_move_check) {
+    f32 angle;
 
-// TODO: write get_camcurve (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        event->userdataf[0] = -1000.0f;
+    }
+    angle = reviseAngle((100.0f * camGetPtr(CAMERA_3D)->viewYaw + 5.0f) / 100.0f);
+    if (event->userdataf[0] != angle) {
+        event->userdataf[0] = angle;
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write get_camcurve_init (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(get_camcurve) {
+    s32* args = event->args;
+    struct CamRoadWork* road = camRoadGetWorkPtr();
+    s32 flag = 0;
+
+    if (((s32*)road)[0xD8 / 4] != 0 && ((char**)road)[0xFC / 4] != NULL) {
+        if (strcmp(((char**)road)[0xFC / 4], "|MarioSt_CameraRoad|C_ground_ok") == 0 &&
+            strcmp((char*)camstring[0], "|MarioSt_CameraRoad|C_ue") == 0) {
+            flag = 1;
+        }
+        strcpy((char*)camstring[0], ((char**)road)[0xFC / 4]);
+    }
+    evtSetValue(event, args[0], flag);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_camcurve_init) {
+    char* p = _mapAlloc(0x100);
+
+    camstring[0] = (u32)p;
+    p[0] = 0;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(tobiori_check)
     CALL(get_camcurve_init)
@@ -5012,63 +5336,150 @@ EVT_BEGIN(gor_02_init_evt)
 EVT_END()
 
 // TODO: type
-u32 camstring[1] = {
-    0x00000000,
-};
+static USER_FUNC(enzan_set_f_i) {
+    s32* args = event->args;
+    s32 out = args[0];
 
-// TODO: type
-u32 iri_13_item_tbl[1] = {
-    0x00000000,
-};
+    evtSetFloat(event, out, (f32)evtGetValue(event, args[1]));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: type
-static u32 xlw[16] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+static USER_FUNC(enzan_set_i_f) {
+    s32* args = event->args;
+    s32 out = args[0];
+    f32 value = evtGetFloat(event, args[1]);
 
-// TODO: type
-static u32 _ap[1] = {
-    0x00000000,
-};
+    evtSetValue(event, out, (s32)value);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: type
-u32 _door[1] = {
-    0x00000000,
-};
+static USER_FUNC(enzan_cam_turn_keisan) {
+    s32* args = event->args;
+    f32 angle = (f32)(evtGetValue(event, args[0]) % 360);
+    s32 arg1 = args[1];
+    s32 arg2 = args[2];
+    Vec p1;
+    Vec p0;
+    Mtx mtx;
 
-// TODO: write enzan_set_f_i (static, 0x6c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    p1.x = (f32)evtGetValue(event, arg1);
+    p1.z = (f32)evtGetValue(event, arg2);
+    p1.y = 0.0f;
+    p0.x = (f32)evtGetValue(event, args[3]);
+    p0.z = (f32)evtGetValue(event, args[4]);
+    p0.y = 0.0f;
+    PSVECSubtract(&p1, &p0, &p1);
+    PSMTXRotRad(mtx, 'Y', 0.017453292f * angle);
+    PSMTXMultVec(mtx, &p1, &p1);
+    PSVECAdd(&p1, &p0, &p1);
+    evtSetValue(event, arg1, (s32)p1.x);
+    evtSetValue(event, arg2, (s32)p1.z);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write enzan_set_i_f (static, 0x54 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(wariai_enzan_0f) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]) - 1.0f;
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
 
-// TODO: write enzan_cam_turn_keisan (static, 0x1f0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    f32 num = d * (b - a);
 
-// TODO: write wariai_enzan_0f (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    evtSetFloat(event, args[4], (num + a * c) / b);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write wariai_enzan_0 (static, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(wariai_enzan_0) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]) - 1.0f;
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
 
-// TODO: write wariai_enzan_1f_intpl (static, 0x1c0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    f32 num = d * (b - a);
 
-// TODO: write wariai_enzan_1f (static, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[4], (s32)((num + a * c) / b));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write wariai_enzan_1 (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (93.66%): same instructions; one 1.0f constant is loaded with the short lfs form instead of lis+addi.
+static USER_FUNC(wariai_enzan_1f_intpl) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    s32 out = args[4];
+    f32 t = evtGetFloat(event, args[5]);
+    f32 result;
+    f32 rd;
 
-// TODO: write alpha_set_func (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    if (t >= 14.0f) {
+        if (t - 14.0f >= 14.0f) {
+            evtSetFloat(event, out, c);
+            return EVT_RETURN_DONE;
+        }
+        result = 1.0f - intplGetValue((s32)(t - 14.0f), (s32)(b - a), (s32)b, 1.0f, 0.0f);
+    } else {
+        result = intplGetValue((s32)t, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+    }
+    rd = result * d;
+    evtSetFloat(event, out, rd + (1.0f - result) * c);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write alpha_init_func (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(wariai_enzan_1f) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
 
-// TODO: write alpha_tev (static, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_02.s; this is where the original has it, just before the first script that uses it
+    f32 num = d * (b - a);
+
+    evtSetFloat(event, args[4], (num + a * c) / b);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(wariai_enzan_1) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    f32 num = d * (b - a);
+
+    evtSetValue(event, args[4], (s32)((num + a * c) / b));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(alpha_set_func) {
+    s32 value = evtGetValue(event, event->args[0]);
+
+    *(u8*)_ap[0] = value;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(alpha_init_func) {
+    u8* p = _mapAlloc(1);
+
+    _ap[0] = (u32)p;
+    p[0] = 0xFF;
+    return EVT_RETURN_DONE;
+}
+
+static void alpha_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    u8* ap = (u8*)_ap[0];
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColor(GX_TEVREG0, (GXColor){ 0, 0, 0, *ap });
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C++;
+}
 // clang-format on

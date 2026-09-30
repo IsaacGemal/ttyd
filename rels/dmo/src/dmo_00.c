@@ -18,13 +18,44 @@
 #include "evt/evt_urouro.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "driver/imgdrv.h"
+#include "driver/msgdrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "manager/filemgr.h"
+#include "manager/fontmgr.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
+#include "pmario_sound.h"
+#include "statuswindow.h"
+#include "system.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <stdio.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(next);
+
+typedef struct DemoWork {
+    u32 field_0x00;
+    f32 field_0x04;
+    s32 field_0x08;
+    s32 field_0x0C;
+    f32 field_0x10;
+    f32 field_0x14;
+    f32 field_0x18;
+    f32 field_0x1C;
+    void* field_0x20;
+    FileEntry* field_0x24;
+    s32 field_0x28;
+    s32 field_0x2C;
+} DemoWork;
+static DemoWork work;
 u32 buf[128];
-static u32 work[12];
 
 // clang-format off
 extend_data(0,
@@ -50,9 +81,455 @@ extend_data(2,
      f64, _half, 0.5)
 
 // TODO: type
-static u32 wp[1] = {
-    (u32)&work,
-};
+static DemoWork* wp = &work;
+
+// Functions are written in the reverse of their .text order (deferred codegen).
+
+USER_FUNC(demo_init) {
+    if (isFirstCall) {
+        memset(wp, 0, sizeof(DemoWork));
+        wp->field_0x04 = 0.0f;
+        wp->field_0x08 = -1;
+        wp->field_0x0C = 0;
+        wp->field_0x10 = 0.0f;
+        wp->field_0x14 = 1.0f;
+        wp->field_0x18 = 0.0f;
+        wp->field_0x1C = 0.0f;
+        statusWinDispOff();
+        psndSetFlag(4);
+    }
+    if ((u32)fileAsyncf(4, 0, "%s/demo.tpl", getMarioStDvdRoot()) != 0) {
+        wp->field_0x24 = fileAllocf(4, "%s/demo.tpl", getMarioStDvdRoot());
+        gp->areaFadeOutType = 9;
+        gp->areaFadeOutDuration = 500;
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+void demo_exit(void) {
+    CameraEntry* cam = camGetPtr(8);
+    if (wp->field_0x24 != 0) {
+        fileFree(wp->field_0x24);
+    }
+    psndClearFlag(4);
+    cam = camGetPtr(4);
+    cam->viewport[0] = 0.0f;
+    cam->viewport[1] = 0.0f;
+    cam->viewport[2] = 608.0f;
+    cam->viewport[3] = 480.0f;
+    statusWinDispOn();
+}
+
+void demo_cap(void) {
+    if (wp->field_0x08 == 4) {
+        if (wp->field_0x0C == 0) {
+            GXSetTexCopySrc(0, 0, 608, 480);
+            GXSetTexCopyDst(608, 480, 6, 0);
+            GXCopyTex(*(void**)wp->field_0x20, 0);
+            GXTexModeSync();
+            wp->field_0x0C = 1;
+        } else if (wp->field_0x10 != 0.0f) {
+            GXSetTexCopySrc(0, 0, 608, 480);
+            GXSetTexCopyDst(608, 480, 6, 0);
+            GXCopyTex(*(void**)wp->field_0x20, 0);
+            GXTexModeSync();
+        }
+    }
+}
+
+// NONMATCHING (93%): GXColor now matches (compound literal) but the four vertex constants are
+// scheduled with different FPRs / pool loads than the original (ours `fmuls f3, f2, f0`, original
+// `fmuls f5, f0, f4`).
+void demo_desk(CameraId cameraId, void* param) {
+    CameraEntry* cam = camGetPtr(8);
+    GXTexObj texObj;
+    Mtx m1;
+    Mtx m2;
+    f32 w = 608.0f;
+    f32 h = 480.0f;
+
+    GXSetProjection(cam->projection, cam->projType);
+    GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->field_0x10)) });
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    GXSetTevSwapMode(0, 0, 0);
+    PSMTXTrans(m1, wp->field_0x18, wp->field_0x1C, 0.0f);
+    PSMTXScale(m2, wp->field_0x14, wp->field_0x14, wp->field_0x14);
+    PSMTXConcat(m1, m2, m1);
+    PSMTXConcat(cam->view, m1, m1);
+    GXLoadPosMtxImm(m1, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(-w * 0.5f, 240.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(304.0f, 240.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(304.0f, -h * 0.5f, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-w * 0.5f, -h * 0.5f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+}
+
+// NONMATCHING (85.19%): GXColor now matches (compound literal); frame is 0x110 vs 0x130 (the original
+// keeps the two x/y temps in f30/f31, ours rematerialises them); vp/proj and the GXProject output slots are shifted.
+void demo_img(CameraId cameraId, void* param) {
+    CameraEntry* cam = camGetPtr(8);
+    GXTexObj texObj;
+    Mtx m1;
+    Mtx m2;
+    f32 proj[7];
+    f32 vp[6];
+    f32 x0, y0, z0;
+    f32 x1, y1, z1;
+    f32 x2, y2, z2;
+    f32 x3, y3, z3;
+    f32 a;
+    f32 b;
+
+    if (wp->field_0x08 == -1) {
+        return;
+    }
+    GXSetProjection(cam->projection, cam->projType);
+    GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->field_0x10)) });
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, wp->field_0x08 + 8);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    GXSetTevAlphaIn(0, 7, 7, 7, 5);
+    GXSetTevSwapMode(0, 0, 0);
+    PSMTXTrans(m1, wp->field_0x18, wp->field_0x1C, 0.0f);
+    PSMTXScale(m2, wp->field_0x14, wp->field_0x14, wp->field_0x14);
+    PSMTXConcat(m1, m2, m1);
+    PSMTXConcat(cam->view, m1, m1);
+    GXLoadPosMtxImm(m1, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(2);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXGetViewportv(vp);
+    GXGetProjectionv(proj);
+    a = -202.66667f * 0.5f;
+    GXProject(a, 115.0f, 0.0f, m1, proj, vp, &x0, &y0, &z0);
+    GXProject(101.333336f, 115.0f, 0.0f, m1, proj, vp, &x1, &y1, &z1);
+    b = -160.0f * 0.5f + 35.0f;
+    GXProject(101.333336f, b, 0.0f, m1, proj, vp, &x2, &y2, &z2);
+    GXProject(a, b, 0.0f, m1, proj, vp, &x3, &y3, &z3);
+    cam = camGetPtr(4);
+    cam->viewport[0] = x0;
+    cam->viewport[1] = y0;
+    cam->viewport[2] = x2 - x0;
+    cam->viewport[3] = y2 - y0;
+    cam = camGetPtr(6);
+    cam->viewport[0] = 0.0f;
+    cam->viewport[1] = 0.0f;
+    cam->viewport[2] = 608.0f;
+    cam->viewport[3] = 480.0f;
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(a, 115.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(101.333336f, 115.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(101.333336f, b, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(a, b, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+}
+
+// NONMATCHING (88.59%): GXColor now matches (compound literal); the mtx stack slots and the f29/f30
+// width/height temps differ (ours also spills f28), and the vertex constants schedule differently.
+void demo_book(CameraId cameraId, void* param) {
+    CameraEntry* cam = camGetPtr(8);
+    GXTexObj texObj;
+    Mtx m1;
+    Mtx m2;
+    Mtx m3;
+    f32 w;
+    f32 h;
+    f32 top;
+    f32 bottom;
+    f32 w95;
+    f32 h95;
+    f32 top95;
+    f32 bottom95;
+
+    GXSetProjection(cam->projection, cam->projType);
+    GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 2);
+    w = (f32)(u16)GXGetTexObjWidth(&texObj);
+    PSMTXTrans(m1, wp->field_0x18, wp->field_0x1C, 0.0f);
+    PSMTXScale(m2, wp->field_0x14, wp->field_0x14, wp->field_0x14);
+    PSMTXConcat(m1, m2, m1);
+    PSMTXConcat(cam->view, m1, m2);
+    PSMTXTrans(m1, -w * 0.5f + 8.0f, 0.0f, 0.0f);
+    PSMTXConcat(m1, m2, m2);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(255.0f * (1.0f - wp->field_0x10)) });
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 1);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    GXSetTevAlphaIn(0, 7, 7, 7, 5);
+    GXSetTevSwapMode(0, 0, 0);
+    GXSetCullMode(2);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 2);
+    GXLoadTexObj(&texObj, 0);
+    w = (f32)(u16)GXGetTexObjWidth(&texObj);
+    h = (f32)(u16)GXGetTexObjHeight(&texObj);
+    top = h * 0.5f;
+    bottom = -top;
+    GXLoadPosMtxImm(m2, 0);
+    GXSetCurrentMtx(0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(0.0f, top, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(w, top, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(w, bottom, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(0.0f, bottom, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    if (wp->field_0x08 >= 0) {
+        TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, wp->field_0x08 + 3);
+        GXLoadTexObj(&texObj, 0);
+        GXBegin(0x80, 0, 4);
+        w95 = w * 0.95f;
+        h95 = h * 0.95f;
+        top95 = h95 * 0.5f;
+        bottom95 = -top95;
+        GXPosition3f32(0.0f, top95, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(w95, top95, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(w95, bottom95, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(0.0f, bottom95, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+        demo_img(cameraId, param);
+    }
+    GXSetBlendMode(0, 1, 0, 7);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetTevSwapMode(0, 0, 0);
+    PSMTXRotRad(m3, 'y', 0.017453292f * -wp->field_0x04);
+    PSMTXConcat(m1, m3, m3);
+    GXLoadPosMtxImm(m3, 0);
+    GXSetCurrentMtx(0);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 1);
+    GXLoadTexObj(&texObj, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(0.0f, top, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(w, top, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(w, bottom, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(0.0f, bottom, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXSetCullMode(1);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 2);
+    GXLoadTexObj(&texObj, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(0.0f, top, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(w, top, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(w, bottom, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(0.0f, bottom, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+}
+
+void demo_window(CameraId cameraId, void* param) {
+    CameraEntry* cam = camGetPtr(cameraId);
+    Mtx m1;
+    GXTexObj texObj;
+    f32 w;
+    f32 h;
+    f32 left;
+    f32 bottom;
+    f32 right;
+    f32 top;
+
+    if (wp->field_0x28 != 0) {
+        wp->field_0x2C += 10;
+    } else {
+        wp->field_0x2C -= 10;
+    }
+    if (wp->field_0x2C > 0xCC) {
+        wp->field_0x2C = 0xCC;
+    }
+    if (wp->field_0x2C < 0) {
+        wp->field_0x2C = 0;
+    }
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 0xD);
+    GXLoadTexObj(&texObj, 0);
+    w = (f32)(u16)GXGetTexObjWidth(&texObj);
+    h = (f32)(u16)GXGetTexObjHeight(&texObj);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetChanMatColor(4, (GXColor) { 0xFF, 0xFF, 0xFF, (u8)(wp->field_0x2C * 255 / 255) });
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    GXSetTevSwapMode(0, 0, 0);
+    GXSetCullMode(2);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    PSMTXTrans(m1, 0.0f, -130.0f, 0.0f);
+    PSMTXConcat(cam->view, m1, m1);
+    GXLoadPosMtxImm(m1, 0);
+    GXSetCurrentMtx(0);
+    GXBegin(0x80, 0, 4);
+    right = w / 2.0f;
+    top = h / 2.0f;
+    left = -right;
+    bottom = -top;
+    GXPosition3f32(left, top, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(right, top, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(right, bottom, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(left, bottom, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+}
+
+USER_FUNC(demo_draw) {
+    dispEntry(4, 9.0f, 7, demo_desk, 0);
+    dispEntry(4, 8.0f, 7, demo_book, 0);
+    if (wp->field_0x10 != 0.0f) {
+        dispEntry(7, 0.0f, 7, demo_img, 0);
+    }
+    dispEntry(8, 0.0f, 3, demo_window, 0);
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(demo_winonoff) {
+    wp->field_0x28 = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(demo_scale) {
+    OSTime time = event->lifetime;
+    f32 t;
+    if (isFirstCall) {
+        event->savedTime = time;
+    }
+    t = (f32)(s32)((u64)((s32)time - (s32)event->savedTime) / (OS_TIMER_CLOCK / 1000)) / 12000.0f;
+    wp->field_0x14 = 600.0f * (1.0f - t) + 1500.0f * t;
+    wp->field_0x14 /= 1000.0f;
+    if (wp->field_0x14 >= 1.5f) {
+        wp->field_0x14 = 1.5f;
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(book_r) {
+    wp->field_0x04 = evtGetFloat(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(next) {
+    wp->field_0x08++;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(adjust) {
+    f32 angle = evtGetFloat(event, event->args[0]);
+    ImageEntry* img = imgNameToPtr("img4", gp->inBattle != 0);
+    Mtx m1;
+    Mtx m2;
+
+    wp->field_0x10 = angle;
+    wp->field_0x14 = 1.5f * (f32)sin(1.5707964f * wp->field_0x10) + 1.5f;
+    wp->field_0x1C = -105.0f * (f32)sin(1.5707964f * wp->field_0x10);
+    PSMTXTrans(m1, wp->field_0x18 / 10.0f, wp->field_0x1C / 10.0f, 0.0f);
+    PSMTXScale(m2, wp->field_0x14 / 1.5f, wp->field_0x14 / 1.5f, wp->field_0x14 / 1.5f);
+    PSMTXConcat(m1, m2, img->field_0x120);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(eff_cam) {
+    *(s32*)((u8*)effNameToPtr("eff0")->userdata + 0x38) = 5;
+    *(s32*)((u8*)effNameToPtr("eff1")->userdata + 0x38) = 5;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(eff_cam1) {
+    *(s32*)((u8*)effNameToPtr("eff2")->userdata + 0x98) = 5;
+    return EVT_RETURN_DONE;
+}
+
+// width is u16 in the original (the compiler emits `clrlwi r3, r3, 16` before the `neg`).
+USER_FUNC(make_msg) {
+    u16 lines;
+    u16 width = FontGetMessageWidthLine(msgSearch((const char*)evtGetValue(event, event->args[0])), &lines);
+    sprintf((char*)buf, "<clear><wpos %d %d %d %d><once_stop>", -width / 2 - 0x3e, lines * 0x1c / 2 - 0x54, 0x190,
+            0xc8);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(buttonCheck)
     CALL(evt_fade_end_wait)
@@ -67,30 +544,6 @@ EVT_BEGIN(buttonCheck)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write make_msg (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write eff_cam1 (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write eff_cam (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write adjust (global, 0x154 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write next (static, 0x1c bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write book_r (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_scale (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_winonoff (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(demo_evt)
     CALL(evt_seq_wait, 2)
@@ -538,12 +991,6 @@ EVT_BEGIN(chusan_move)
     RETURN
 EVT_END()
 
-// TODO: write demo_draw (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_init (global, 0x120 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(dmo_00_init_evt)
     CALL(demo_init)
     CALL(evt_npc_entry, STRING("peach"), STRING("c_peach"))
@@ -608,64 +1055,5 @@ EVT_BEGIN(dmo_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 buf[128] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
 
-// TODO: type
-static u32 work[12] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: write demo_window (global, 0x39c bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_book (global, 0x900 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_img (global, 0x52c bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_desk (global, 0x368 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_cap (global, 0xf8 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write demo_exit (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo_00.s; this is where the original has it, just before the first script that uses it
 // clang-format on

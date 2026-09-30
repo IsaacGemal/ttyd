@@ -20,15 +20,31 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "driver/camdrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "mario/mario.h"
+#include "party.h"
+#include "party/party_cloud.h"
+#include "memory.h"
+#include "system.h"
+#include <stdlib.h>
+#include <string.h>
+
+#define PI 3.141592653589793f
+#define TWO_PI 6.283185307179586f
 
 #pragma pool_data off
 
 #pragma force_active on
 extern s32 evt_tou_get_ranking_27_text_1ED4[];
-static void randf(void);  // TODO: real signature
-static void pose_change(void);  // TODO: real signature
-static void pose_main(void);  // TODO: real signature
-static void pose_init(void);  // TODO: real signature
+
+static f32 randf(f32 min, f32 max);
+static void pose_change(FanPose* pose, const char* name, const char* motion);
+static void pose_main(void);
+static void pose_init(void);
 
 // clang-format off
 extend_data(12,
@@ -735,9 +751,6 @@ u32 move_pos[26] = {
     0x0000006E, 0xFFFFFFD8,
 };
 
-// TODO: write evt_end_count (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(move_champ)
     SET_VALUE(LW(10), 0)
     LOOP(0)
@@ -1192,10 +1205,9 @@ EVT_BEGIN(mario_momikucha_msg)
 EVT_END()
 
 // TODO: write ext_fan_dispent (global, 0x1a0 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
+// its asm is in build/G8MJ01/tou/asm/tou_02.s; implemented below in source order
 
 // TODO: write ext_fan_main (global, 0xfcc bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write ext_fan_init (global, 0x670 bytes) here:
 // its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
@@ -1574,25 +1586,292 @@ EVT_BEGIN(tou_02_init_evt)
 EVT_END()
 
 // TODO: type
-u32 fan_wp[1] = {
-    0x00000000,
-};
+ExtFanWork* fan_wp;
 
-// TODO: write check_hammer (global, 0x4d8 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (98.53%): the body is structurally identical but the stack frame is 0x30
+// instead of 0x60 (the original reserves extra space for the name buffer).
+static void pose_init(void) {
+    ExtFanData* data = (ExtFanData*)ext_fan_data;
+    char name[0x10];
+    char motion[0x8];
+    s32 start = 0;
+    s32 i = 0;
 
-// TODO: write fan_disp (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
+    strcpy(name, "");
+    strcpy(motion, "");
+    fan_wp->groupCount = -1;
+    do {
+        if (strcmp(data->name, name) != 0) {
+            strcpy(name, data->name);
+            strcpy(motion, "");
+        }
+        if (strcmp(data->motion, motion) != 0) {
+            strcpy(motion, data->motion);
+            start = i;
+            fan_wp->groupCount++;
+        }
+        strcpy(fan_wp->groups[fan_wp->groupCount].name, name);
+        strcpy(fan_wp->groups[fan_wp->groupCount].motion, motion);
+        fan_wp->groups[fan_wp->groupCount].start = start;
+        fan_wp->groups[fan_wp->groupCount].count = i - start + 1;
+        fan_wp->groups[fan_wp->groupCount].scale = data->scale;
+        fan_wp->groups[fan_wp->groupCount].field_0x18 = 1;
+        i++;
+        data++;
+    } while (data->name != NULL);
+    fan_wp->groupCount++;
+}
 
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (98.63%): only general-purpose register allocation differs (the original
+// keeps fan/pose/i in r24-r26).
+static void pose_main(void) {
+    ExtPose* pose = extGetPosePtr();
+    FanPose* fan = fan_wp->poses;
+    s32 i;
 
-// TODO: write pose_change (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
+        PoseGroup* group = (PoseGroup*)((u8*)gp + 0xC + fan->groupIndex * 0x28);
+        f32 ratio = (f32)OSTicksToMilliseconds((u64)gp->renderTime - (u64)fan->time);
 
-// TODO: write pose_main (static, 0x17c bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
+        ratio = (60.0f * ratio) / 1000.0f / group->scale;
+        if (ratio >= 1.0f) {
+            fan->time = gp->renderTime;
+            ratio = 0.0f;
+        }
+        pose->field_0x10 = group->start + (s32)((f32)(group->count - 1) * ratio);
+    }
+}
 
-// TODO: write pose_init (static, 0x18c bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
+static void pose_change(FanPose* pose, const char* name, const char* motion) {
+    PoseGroup* group = &fan_wp->groups[0];
+    s32 i;
+
+    for (i = 0; i < fan_wp->groupCount; i++, group++) {
+        if (strcmp(group->name, name) == 0 && strcmp(group->motion, motion) == 0) {
+            break;
+        }
+    }
+    if (i < fan_wp->groupCount && pose->groupIndex != i) {
+        pose->groupIndex = i;
+        pose->time = gp->renderTime;
+    }
+}
+
+static f32 randf(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
+    return r * (max - min) + min;
+}
+
+// TODO: write ext_fan_init (global, 0x670 bytes) here
+
+void fan_disp(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+// TODO: write ext_fan_main (global, 0xfcc bytes) here
+
+// NONMATCHING (98.79%): only general-purpose register allocation differs from the original.
+void ext_fan_dispent(void) {
+    ExtPose* pose = extGetPosePtr();
+    FanPose* fan = fan_wp->poses;
+    s32 i;
+
+    for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
+        PoseGroup* group = (PoseGroup*)((u8*)gp + 0xC + fan->groupIndex * 0x28);
+        f32 ratio = (f32)OSTicksToMilliseconds((u64)gp->renderTime - (u64)fan->time);
+
+        ratio = (60.0f * ratio) / 1000.0f / group->scale;
+        if (ratio >= 1.0f) {
+            fan->time = gp->renderTime;
+            ratio = 0.0f;
+        }
+        pose->field_0x10 = group->start + (s32)((f32)(group->count - 1) * ratio);
+    }
+    dispEntry(4, 0.0f, 1, (DispCallback)fan_disp, NULL);
+}
+
+// NONMATCHING (54.58%): structure matches but the sin/cos coefficient loads are not
+// hoisted before the branch (the original loads 0.00761/0.16605/1.0 and 0.03705/0.4967 early)
+// and the resulting fpr allocation differs.
+s32 check_hammer(FanPose* pose) {
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party;
+    f32 ang;
+    f32 rad;
+    f32 s;
+    f32 c;
+    f32 x;
+    f32 z;
+
+    if (mario->position.y > 0.0f) {
+        return 0;
+    }
+    if (pose->flags & 1) {
+        return 0;
+    }
+    if (mario->currMotionId == 0x12 && fan_wp->field_0x50C > 10) {
+        f32 t;
+
+        ang = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw);
+        rad = TWO_PI * ang / 360.0f;
+        s = 0.00761f;
+        if (rad <= PI) {
+            t = MTXDegToRad(90.0f);
+            if (rad <= t) {
+                f32 x2 = rad * rad;
+                s = (s * x2) - 0.16605f;
+                s = (s * x2) + 1.0f;
+                s = s * rad;
+            } else {
+                f32 d = t - (rad - t);
+                f32 d2 = d * d;
+                s = (s * d2) - 0.16605f;
+                s = (s * d2) + 1.0f;
+                s = s * d;
+            }
+        } else {
+            t = MTXDegToRad(270.0f);
+            if (rad < t) {
+                f32 d = rad - PI;
+                f32 d2 = d * d;
+                s = (s * d2) - 0.16605f;
+                s = (s * d2) + 1.0f;
+                s = s * d;
+                s = -s;
+            } else {
+                f32 d = MTXDegToRad(90.0f) - (rad - t);
+                f32 d2 = d * d;
+                s = (s * d2) - 0.16605f;
+                s = (s * d2) + 1.0f;
+                s = s * d;
+                s = -s;
+            }
+        }
+        x = 35.0f * s + mario->position.x;
+        c = 0.03705f;
+        if (rad <= PI) {
+            if (rad <= MTXDegToRad(90.0f)) {
+                f32 x2 = rad * rad;
+                c = (c * x2) - 0.4967f;
+                c = (c * x2) + 1.0f;
+            } else {
+                f32 d = MTXDegToRad(90.0f) - (rad - MTXDegToRad(90.0f));
+                f32 d2 = d * d;
+                c = (c * d2) - 0.4967f;
+                c = (c * d2) + 1.0f;
+                c = -c;
+            }
+        } else {
+            if (rad < MTXDegToRad(270.0f)) {
+                f32 d = rad - PI;
+                f32 d2 = d * d;
+                c = (c * d2) - 0.4967f;
+                c = (c * d2) + 1.0f;
+                c = -c;
+            } else {
+                f32 d = MTXDegToRad(90.0f) - (rad - MTXDegToRad(270.0f));
+                f32 d2 = d * d;
+                c = (c * d2) - 0.4967f;
+                c = (c * d2) + 1.0f;
+            }
+        }
+        z = mario->position.z - 35.0f * c;
+        if (distABf(pose->position.x, pose->position.z, x, z) < 35.0f) {
+            return 1;
+        }
+    }
+    if (mario->currMotionId == 0x13 && mario->currSubMotionId == 0x14) {
+        if (PSVECDistance(&mario->position, &pose->position) < 65.0f) {
+            return 1;
+        }
+    }
+    party = partyGetPtr(0);
+    if (party != NULL && party->currentMemberId == 5 && (party->flags & 0x100)) {
+        Vec local;
+        f32 dist;
+        f32 t;
+
+        ang = TWO_PI * cloudGetBreathDir() / 360.0f;
+        dist = cloudGetBreathDist();
+        s = 0.00761f;
+        if (ang <= PI) {
+            t = MTXDegToRad(90.0f);
+            if (ang <= t) {
+                f32 x2 = ang * ang;
+                s = (s * x2) - 0.16605f;
+                s = (s * x2) + 1.0f;
+                s = s * ang;
+            } else {
+                f32 d = t - (ang - t);
+                f32 d2 = d * d;
+                s = (s * d2) - 0.16605f;
+                s = (s * d2) + 1.0f;
+                s = s * d;
+            }
+        } else {
+            t = MTXDegToRad(270.0f);
+            if (ang < t) {
+                f32 d = ang - PI;
+                f32 d2 = d * d;
+                s = (s * d2) - 0.16605f;
+                s = (s * d2) + 1.0f;
+                s = s * d;
+                s = -s;
+            } else {
+                f32 d = MTXDegToRad(90.0f) - (ang - t);
+                f32 d2 = d * d;
+                s = (s * d2) - 0.16605f;
+                s = (s * d2) + 1.0f;
+                s = s * d;
+                s = -s;
+            }
+        }
+        local.x = party->position.x + dist * s;
+        local.y = party->position.y;
+        c = 0.03705f;
+        if (ang <= PI) {
+            if (ang <= MTXDegToRad(90.0f)) {
+                f32 x2 = ang * ang;
+                c = (c * x2) - 0.4967f;
+                c = (c * x2) + 1.0f;
+            } else {
+                f32 d = MTXDegToRad(90.0f) - (ang - MTXDegToRad(90.0f));
+                f32 d2 = d * d;
+                c = (c * d2) - 0.4967f;
+                c = (c * d2) + 1.0f;
+                c = -c;
+            }
+        } else {
+            if (ang < MTXDegToRad(270.0f)) {
+                f32 d = ang - PI;
+                f32 d2 = d * d;
+                c = (c * d2) - 0.4967f;
+                c = (c * d2) + 1.0f;
+                c = -c;
+            } else {
+                f32 d = MTXDegToRad(90.0f) - (ang - MTXDegToRad(270.0f));
+                f32 d2 = d * d;
+                c = (c * d2) - 0.4967f;
+                c = (c * d2) + 1.0f;
+            }
+        }
+        local.z = party->position.z - dist * c;
+        if (ang >= 0.0f) {
+            if (PSVECDistance(&local, &pose->position) < 30.0f) {
+                return 2;
+            }
+        }
+    }
+    return 0;
+}
+
+USER_FUNC(evt_end_count) {
+    evtSetValue(event, event->args[0], fan_wp->field_0x510);
+    return EVT_RETURN_DONE;
+}
 // clang-format on

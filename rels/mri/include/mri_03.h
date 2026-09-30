@@ -1,8 +1,9 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "mri_puni.h"
 
-void puniModeEventparent(void);  // TODO: real signature
+void puniModeEventparent(PuniData* punidat);
 USER_FUNC(puni_parent);
 USER_FUNC(puni_away);
 EVT_DEF(jail_alpha_mario_check);

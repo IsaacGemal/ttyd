@@ -1,4 +1,9 @@
 #include "aji_17.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/npcdrv.h"
+#include "eff/eff_peach_fukidashi.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -16,7 +21,49 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "pmario_sound.h"
+#include "mario/mario_motion.h"
+#include "memory.h"
 #include "party/party_motion.h"
+#include "system.h"
+#include <math.h>
+#include <stdlib.h>
+
+// The Peach dance minigame's shared work (bss).
+typedef struct DanceWork {
+    u16 flags;   // 0x0
+    u8 step;     // 0x2
+    u8 moveIdx;  // 0x3
+    f32 centerX; // 0x4
+    f32 centerY; // 0x8
+    f32 rotate;  // 0xC
+} DanceWork;
+
+// The horogram framebuffer work (bss).
+typedef struct HorogramWork {
+    void* tex1;       // 0x0
+    void* tex2;       // 0x4
+    GXTexObj texObj1; // 0x8
+    GXTexObj texObj2; // 0x28
+    u16 done;         // 0x48
+    u16 flags;        // 0x4A
+} HorogramWork;
+
+// One entry of peach_evt_stg4_quiz_data.
+typedef struct QuizData {
+    const char* question; // 0x0
+    const char* answer1;  // 0x4
+    const char* answer2;  // 0x8
+    s32 correct;          // 0xC
+} QuizData;
+
+extern DanceWork dance_dt;
+extern HorogramWork* horogram_wp;
+extern f32 move_pos_list[15][2];
+extern QuizData peach_evt_stg4_quiz_data[5];
 
 #pragma pool_data off
 
@@ -27,9 +74,9 @@ extern s32 shuryolight_head_normal_2_data_37004[];
 extern s32 shuryolight_pow_normal_2_data_36ED8[];
 extern s32 shuryolight_tue_normal_2_data_37104[];
 static USER_FUNC(bgm_start_wait);
-static void polygon(void);  // TODO: real signature
 static USER_FUNC(peach_set_pose);
 static USER_FUNC(viewport);
+static void polygon(f32 a, f32 b, f32 c, f32 d, f32 e, f32 f);
 s32 peach_dance_pose[44];
 
 // clang-format off
@@ -93,8 +140,12 @@ EVT_BEGIN(evt_emergency)
     RETURN
 EVT_END()
 
-// TODO: write noise (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(noise) {
+    s32 value = evtGetValue(event, event->args[0]);
+
+    dispEntry(8, 1100.0f, 0, noiseDisp, (void*)value);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_last)
     CALL(evt_mario_key_onoff, 0)
@@ -312,8 +363,26 @@ EVT_BEGIN(evt_last)
     RETURN
 EVT_END()
 
-// TODO: write viewport (static, 0xac bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(viewport) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]);
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    CameraEntry* cam;
+
+    cam = camGetPtr(4);
+    cam->viewport[0] = a;
+    cam->viewport[1] = b;
+    cam->viewport[2] = c;
+    cam->viewport[3] = d;
+    cam = camGetPtr(8);
+    cam->viewport[0] = a;
+    cam->viewport[1] = b;
+    cam->viewport[2] = c;
+    cam->viewport[3] = d;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_last2)
     CALL(evt_mario_key_onoff, 0)
@@ -456,8 +525,13 @@ EVT_BEGIN(mail_sousin_se)
     RETURN
 EVT_END()
 
-// TODO: write peach_set_pose (static, 0x44 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(peach_set_pose) {
+    char* pose = (char*)evtGetValue(event, event->args[0]);
+
+    marioGetPtr();
+    marioChgPose(pose);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(peach_evt_stg1)
     CALL(evt_mario_set_mode, 1)
@@ -749,38 +823,133 @@ static EVT_BEGIN(peach_evt_stg1)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 move_pos_list[30] = {
-    0x00000000, 0xC2A00000, 0x421D80F1, 0xC29565D2,
-    0x4296FADE, 0xC268C010, 0x42CCF59D, 0xC1E8933B,
-    0x42DA4024, 0x412119DE, 0x42B56E66, 0x4234FD06,
-    0x42687358, 0x4287D97D, 0x419EC666, 0x429D5FC9,
-    0xC19F5FB0, 0x429D5AAA, 0xC268A098, 0x4287CF3F,
-    0xC2B57CE0, 0x4234DE4F, 0xC2DA43B5, 0x41207604,
-    0xC2CCEA9F, 0xC1E8E528, 0xC296E479, 0xC268DEC7,
-    0xC21D3763, 0xC2957010,
+f32 move_pos_list[15][2] = {
+    { 0.0f, -80.0f },
+    { 39.375919342041016f, -74.69886779785156f },
+    { 75.48997497558594f, -58.18756103515625f },
+    { 102.4797134399414f, -29.071889877319336f },
+    { 109.12527465820312f, 10.068815231323242f },
+    { 90.71562194824219f, 45.247093200683594f },
+    { 58.112640380859375f, 67.9247817993164f },
+    { 19.846874237060547f, 78.68708038330078f },
+    { -19.921722412109375f, 78.67707824707031f },
+    { -58.156829833984375f, 67.90477752685547f },
+    { -90.743896484375f, 45.217098236083984f },
+    { -109.13224029541016f, 10.028812408447266f },
+    { -102.45824432373047f, -29.111892700195312f },
+    { -75.44623565673828f, -58.21755599975586f },
+    { -39.3040885925293f, -74.7188720703125f },
 };
 
-// TODO: write set_npc_pos (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(set_npc_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    NpcEntry* npc = npcNameToPtr((const char*)name);
 
-// TODO: write compute_horogram_pos (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    npc->prevPosition.x = x;
+    npc->position.x = x;
+    npc->prevPosition.y = y;
+    npc->position.y = y;
+    npc->prevPosition.z = z;
+    npc->position.z = z;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write compute_peach_pos (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(compute_horogram_pos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 s = sin(dance_dt.rotate);
+    f32 c = cos(dance_dt.rotate);
 
-// TODO: write compute_move_pos (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    evtSetFloat(event, args[2], x - 5.5f * s);
+    evtSetFloat(event, args[3], y + 5.5f * c);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write move_center (global, 0x198 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(compute_peach_pos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 s = sin(dance_dt.rotate);
+    f32 c = cos(dance_dt.rotate);
 
-// TODO: write dance_flag_check (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    evtSetFloat(event, args[2], x + 5.5f * s);
+    evtSetFloat(event, args[3], y - 5.5f * c);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write get_center (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(compute_move_pos) {
+    s32* args = event->args;
+
+    if (!(dance_dt.flags & 1)) {
+        dance_dt.moveIdx = (dance_dt.moveIdx + 1) % 15;
+    } else {
+        if (dance_dt.moveIdx != 0) {
+            dance_dt.moveIdx--;
+        } else {
+            dance_dt.moveIdx = 14;
+        }
+    }
+    evtSetFloat(event, args[0], move_pos_list[dance_dt.moveIdx][0]);
+    evtSetFloat(event, args[1], move_pos_list[dance_dt.moveIdx][1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(move_center) {
+    s32* args = event->args;
+    f32 startX = evtGetFloat(event, args[0]);
+    f32 startY = evtGetFloat(event, args[1]);
+    f32 endX = evtGetFloat(event, args[2]);
+    f32 endY = evtGetFloat(event, args[3]);
+    s32 duration = evtGetValue(event, args[4]);
+    OSTime now = gp->renderTime;
+    s32 elapsed;
+
+    if (isFirstCall) {
+        dance_dt.flags |= 4;
+        event->userdata[0] = ((u64)now >> 32) & 0xFFFFFFFF;
+        event->userdata[1] = now & 0xFFFFFFFF;
+        return EVT_RETURN_BLOCK;
+    }
+    elapsed = (s32)((u64)((s32)now - event->userdata[1]) / (OS_TIMER_CLOCK / 1000));
+    if (elapsed < duration) {
+        dance_dt.centerX = intplGetValue(11, elapsed, duration, startX, endX);
+        dance_dt.centerY = intplGetValue(11, elapsed, duration, startY, endY);
+        return EVT_RETURN_BLOCK;
+    }
+    dance_dt.centerX = endX;
+    dance_dt.centerY = endY;
+    dance_dt.flags &= ~4;
+    dance_dt.step++;
+    if (dance_dt.step >= 3) {
+        dance_dt.step = 0;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(dance_flag_check) {
+    s32* args = event->args;
+    s32 mask = evtGetValue(event, args[0]);
+
+    if (dance_dt.flags & mask) {
+        evtSetValue(event, args[1], 1);
+    } else {
+        evtSetValue(event, args[1], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_center) {
+    s32* args = event->args;
+
+    evtSetFloat(event, args[0], dance_dt.centerX);
+    evtSetFloat(event, args[1], dance_dt.centerY);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(peach_dance_move)
     CALL(get_center, LW(2), LW(3))
@@ -811,11 +980,24 @@ EVT_BEGIN(peach_dance_move)
     RETURN
 EVT_END()
 
-// TODO: write horogram_set_pose (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(horogram_set_pose) {
+    const char* pose = (const char*)evtGetValue(event, event->args[0]);
+    char buf[24];
+    NpcEntry* horogram = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e0");
+    NpcEntry* dummy = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e02");
 
-// TODO: write dance_get_step (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    marioGetPtr();
+    animPoseSetAnim(horogram->poseId, pose, 1);
+    strcpy(buf, pose);
+    strcat(buf, "R");
+    animPoseSetAnim(dummy->poseId, buf, 1);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(dance_get_step) {
+    evtSetValue(event, event->args[0], dance_dt.step);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(peach_dance_pose)
     CALL(dance_flag_check, 8, LW(0))
@@ -843,11 +1025,22 @@ EVT_BEGIN(peach_dance_action_step)
     RETURN
 EVT_END()
 
-// TODO: write set_local_rotate (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(set_local_rotate) {
+    s32* args = event->args;
+    dance_dt.rotate = evtGetFloat(event, args[0]);
+    if (dance_dt.rotate > 6.2831855f) {
+        dance_dt.rotate -= 6.2831855f;
+    }
+    if (dance_dt.rotate < 0.0f) {
+        dance_dt.rotate += 6.2831855f;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write get_local_rotate (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(get_local_rotate) {
+    evtSetFloat(event, event->args[0], dance_dt.rotate);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(dance_action_turn_sub)
     CALL(evt_mario_get_dispdir, LW(6))
@@ -889,8 +1082,18 @@ EVT_BEGIN(dance_action_turn_sub)
     RETURN
 EVT_END()
 
-// TODO: write dance_flag_onoff (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(dance_flag_onoff) {
+    s32* args = event->args;
+    s32 mask = evtGetValue(event, args[0]);
+    s32 on = evtGetValue(event, args[1]);
+
+    if (on) {
+        dance_dt.flags |= mask;
+    } else {
+        dance_dt.flags &= ~mask;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(peach_dance_action_turn)
     CALL(dance_flag_onoff, 2, 1)
@@ -899,8 +1102,14 @@ EVT_BEGIN(peach_dance_action_turn)
     RETURN
 EVT_END()
 
-// TODO: write dance_reverse (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(dance_reverse) {
+    if (dance_dt.flags & 1) {
+        dance_dt.flags &= ~1;
+    } else {
+        dance_dt.flags |= 1;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(peach_dance_action_reverse)
     CALL(dance_flag_onoff, 2, 1)
@@ -911,8 +1120,10 @@ EVT_BEGIN(peach_dance_action_reverse)
     RETURN
 EVT_END()
 
-// TODO: write peach_dance_after_fail (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(peach_dance_after_fail) {
+    marioChgPoseTime("P_O_F_1", 20);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(peach_dance_action_fail)
     CALL(dance_flag_onoff, 2, 1)
@@ -926,8 +1137,36 @@ EVT_BEGIN(peach_dance_action_fail)
     RETURN
 EVT_END()
 
-// TODO: write evt_fuki_btn (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_fuki_btn) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    const char* name2 = (const char*)evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[2]);
+    f32 a3 = evtGetFloat(event, args[3]);
+    f32 a4 = evtGetFloat(event, args[4]);
+    f32 a5 = evtGetFloat(event, args[5]);
+    f32 a6 = evtGetFloat(event, args[6]);
+    f32 angle = evtGetFloat(event, args[7]);
+    f32 a8 = evtGetFloat(event, args[8]);
+    NpcEntry* npc;
+    EffectEntry* eff;
+
+    (void)a3;
+    (void)a4;
+    (void)a5;
+    (void)a6;
+    (void)a8;
+    if (strcmp(name, "me") == 0) {
+        npc = event->ownerNPC;
+    } else {
+        npc = npcNameToPtr(name);
+    }
+    eff = effPeachFukidashiEntry(type, npc, 10000, 0.0f, 0.0f, 0.0f, 0.0f, angle);
+    if (name2 != NULL && strcmp(name2, "") != 0) {
+        effSetName(eff, name2);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(dance_btn_disp_sub)
     SWITCH(LW(1))
@@ -963,8 +1202,10 @@ EVT_BEGIN(dance_btn_disp)
     RETURN
 EVT_END()
 
-// TODO: write evt_fuki_btn_set_batu (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_fuki_btn_set_batu) {
+    effSetPeachFukiBatu((const char*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(dance_btn_batu)
     SWITCH(LW(1))
@@ -1058,17 +1299,86 @@ EVT_BEGIN(peach_dance_light)
     RETURN
 EVT_END()
 
-// TODO: write bgm_start_wait (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(bgm_start_wait) {
+    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
 
-// TODO: write btn_check (global, 0x124 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(btn_check) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+    u32 buttons = keyGetButtonTrg(0);
+    s32 a = buttons & 0x100;
+    s32 b = buttons & 0x200;
+    s32 c = buttons & 0x400;
+    s32 result = 0;
 
-// TODO: write dance_data_init (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    switch (idx) {
+        case 1:
+            if (a) {
+                if (!(b | c)) {
+                    result = 1;
+                    goto btn_done;
+                }
+            }
+            if (a == 0 && (b | c)) {
+                result = 2;
+            }
+            break;
+        case 2:
+            if (b) {
+                if (!(a | c)) {
+                    result = 1;
+                    goto btn_done;
+                }
+            }
+            if (b == 0 && (a | c)) {
+                result = 2;
+            }
+            break;
+        case 0:
+            if (c) {
+                if (!(a | b)) {
+                    result = 1;
+                    goto btn_done;
+                }
+            }
+            if (c == 0 && (a | b)) {
+                result = 2;
+            }
+            break;
+        default:
+            if (a | b | c) {
+                result = 2;
+            }
+            break;
+    }
+btn_done:
+    evtSetValue(event, args[1], result);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write horogram_flag_onoff (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(dance_data_init) {
+    dance_dt.flags = 0;
+    dance_dt.centerX = 0.0f;
+    dance_dt.centerY = -80.0f;
+    dance_dt.rotate = -0.4712389f;
+    dance_dt.step = 0;
+    dance_dt.moveIdx = 0;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(horogram_flag_onoff) {
+    s32* args = event->args;
+    s32 on = evtGetValue(event, args[0]);
+    s32 mask = evtGetValue(event, args[1]);
+
+    if (on) {
+        horogram_wp->flags |= mask;
+    } else {
+        horogram_wp->flags &= ~mask;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(peach_evt_dance)
     CALL(evt_npc_pera_onoff, STRING("ホログラム"), 0)
@@ -1248,14 +1558,26 @@ EVT_BEGIN(peach_evt_dance)
     RETURN
 EVT_END()
 
-// TODO: write horogram_init (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(horogram_init) {
+    s32 size = GXGetTexBufferSize(0x260, 0x1e0, 6, 0, 0);
 
-// TODO: write horogram_cap_evt (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    horogram_wp = _mapAlloc(0x4c);
+    horogram_wp->tex1 = _mapAlloc(size);
+    horogram_wp->tex2 = _mapAlloc(GXGetTexBufferSize(0x260, 0x1e0, 0x11, 0, 0));
+    horogram_wp->done = 0;
+    horogram_wp->flags = 0;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write disp_horogram_evt (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(horogram_cap_evt) {
+    dispEntry(4, 1000.0f, 0, peach_capture, NULL);
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(disp_horogram_evt) {
+    dispEntry(4, 0.0f, 2, disp_horogram, NULL);
+    return EVT_RETURN_BLOCK;
+}
 
 static EVT_BEGIN(peach_evt_stg2)
     CALL(evt_mario_set_mode, 1)
@@ -1753,17 +2075,24 @@ static EVT_BEGIN(peach_evt_stg3_1)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 peach_evt_stg4_quiz_data[20] = {
-    (u32)"peach_aji_174", (u32)"peach_aji_175", (u32)"peach_aji_175_sel", 0x00000001,
-    (u32)"peach_aji_178", (u32)"peach_aji_179", (u32)"peach_aji_179_sel", 0x00000000,
-    (u32)"peach_aji_180", (u32)"peach_aji_181", (u32)"peach_aji_183_sel", 0x00000002,
-    (u32)"peach_aji_184", (u32)"peach_aji_185", (u32)"peach_aji_185_sel", 0x00000001,
-    (u32)"peach_aji_186", (u32)"peach_aji_187", (u32)"peach_aji_187_sel", 0x00000002,
+QuizData peach_evt_stg4_quiz_data[5] = {
+    { "peach_aji_174", "peach_aji_175", "peach_aji_175_sel", 1 },
+    { "peach_aji_178", "peach_aji_179", "peach_aji_179_sel", 0 },
+    { "peach_aji_180", "peach_aji_181", "peach_aji_183_sel", 2 },
+    { "peach_aji_184", "peach_aji_185", "peach_aji_185_sel", 1 },
+    { "peach_aji_186", "peach_aji_187", "peach_aji_187_sel", 2 },
 };
 
-// TODO: write peach_evt_stg4_read_quiz_data (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(peach_evt_stg4_read_quiz_data) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], (s32)peach_evt_stg4_quiz_data[index].question);
+    evtSetValue(event, args[2], (s32)peach_evt_stg4_quiz_data[index].answer1);
+    evtSetValue(event, args[3], (s32)peach_evt_stg4_quiz_data[index].answer2);
+    evtSetValue(event, args[4], peach_evt_stg4_quiz_data[index].correct);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(peach_evt_stg4)
     CALL(evt_mario_key_onoff, 0)
@@ -2665,31 +2994,11 @@ static EVT_BEGIN(syuryo_init)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[92] = {
-    (u32)"手下１", 0x00000000, 0x00000000, (u32)&teshita1_init,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"手下２",
-    0x00000000, 0x00000000, (u32)&teshita2_init, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"シュリョー", 0x00000000,
-    0x00000000, (u32)&syuryo_init, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[4] = {
+    { "手下１", 0, 0, teshita1_init },
+    { "手下２", 0, 0, teshita2_init },
+    { "シュリョー", 0, 0, syuryo_init },
+    { NULL },
 };
 
 EVT_BEGIN(tec_talk)
@@ -2799,34 +3108,239 @@ EVT_BEGIN(aji_17_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 dance_dt[4] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+DanceWork dance_dt;
 
-// TODO: type
-u32 horogram_wp[1] = {
-    0x00000000,
-};
+HorogramWork* horogram_wp;
 
-// TODO: write wait_move_end (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+s32 wait_move_end(void) {
+    return (dance_dt.flags & 4) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
 
-// TODO: write wait_action_begin (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+s32 wait_action_begin(void) {
+    return (dance_dt.flags & 2) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
 
-// TODO: write wait_action_end (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+s32 wait_action_end(void) {
+    return (dance_dt.flags & 2) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
 
-// TODO: write peach_capture (global, 0x3e0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+void peach_capture(CameraId cameraId, void* param) {
+    CameraEntry camera = *camGetCurPtr();
+    f32 viewport[6];
+    f32 projection[7];
+    u32 scissorLeft;
+    u32 scissorTop;
+    u32 scissorWd;
+    u32 scissorHt;
+    Mtx44 ortho;
+    Mtx lookMtx;
+    Mtx mtx;
+    NpcEntry* npc1;
+    NpcEntry* npc2;
+    NpcEntry* npc;
 
-// TODO: write disp_horogram (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    npc1 = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e0");
+    npc2 = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e02");
+    if (90.0f <= npc1->direction && npc1->direction < 270.0f) {
+        npc = npc2;
+        if (!(horogram_wp->flags & 2)) {
+            animPoseSetLocalTime(npc2->poseId, 0.0f);
+        }
+        horogram_wp->flags |= 2;
+    } else {
+        npc = npc1;
+        if (horogram_wp->flags & 2) {
+            animPoseSetLocalTime(npc1->poseId, 0.0f);
+        }
+        horogram_wp->flags &= ~2;
+    }
+    if (!(horogram_wp->flags & 1)) {
+        npc = npc1;
+    }
 
-// TODO: write polygon (static, 0x124 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    GXGetViewportv(viewport);
+    GXGetProjectionv(projection);
+    GXGetScissor(&scissorLeft, &scissorTop, &scissorWd, &scissorHt);
+    GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
+    GXSetScissor(1, 1, 0x25E, 0x1DE);
+    C_MTXOrtho(ortho, 28.0f, 0.0f, -14.0f, 14.0f, 1.0f, 100.0f);
+    GXSetProjection(ortho, GX_ORTHOGRAPHIC);
+    C_MTXLookAt(lookMtx, &(Vec){0.0f, 0.0f, 20.0f}, &(Vec){0.0f, 1.0f, 0.0f}, &(Vec){0.0f, 0.0f, 0.0f});
+    PSMTXCopy(lookMtx, camGetCurPtr()->view);
 
-// TODO: write noiseDisp (global, 0x494 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_17.s; this is where the original has it, just before the first script that uses it
+    PSMTXIdentity(mtx);
+    animPoseSetMaterialFlagOff(npc->poseId, 0x40);
+    animPoseMain(npc->poseId);
+    animPoseDrawMtx(npc->poseId, mtx, 1, 0.0f, 1.0f);
+    animPoseDrawMtx(npc->poseId, mtx, 2, 0.0f, 1.0f);
+    animPoseDrawMtx(npc->poseId, mtx, 3, 0.0f, 1.0f);
+
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x130, 0xF0, GX_TF_RGBA8, GX_TRUE);
+    GXCopyTex(horogram_wp->tex1, GX_FALSE);
+    GXPixModeSync();
+    GXSetTexCopyDst(0x130, 0xF0, 0x11, GX_TRUE);
+    GXCopyTex(horogram_wp->tex2, GX_TRUE);
+    GXPixModeSync();
+
+    PSMTXCopy(camera.view, camGetCurPtr()->view);
+    GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
+    GXSetProjectionv(projection);
+    GXSetScissor(scissorLeft, scissorTop, scissorWd, scissorHt);
+    horogram_wp->done = 1;
+}
+
+void disp_horogram(CameraId cameraId, void* param) {
+    NpcEntry* npc = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e0");
+    GXCullMode cullMode;
+    Mtx lookMtx;
+    Mtx transMtx;
+    Mtx rotMtx;
+    f32 angle;
+    GXColor matColor;
+    GXColor ambColor;
+
+    if (horogram_wp->done == 0) {
+        return;
+    }
+    GXGetCullMode(&cullMode);
+    GXInitTexObj(&horogram_wp->texObj1, horogram_wp->tex1, 0x130, 0xF0, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&horogram_wp->texObj1, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObj(&horogram_wp->texObj2, horogram_wp->tex2, 0x130, 0xF0, 0x11, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&horogram_wp->texObj2, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+
+    PSMTXTrans(transMtx, npc->position.x, npc->position.y, npc->position.z);
+    angle = reviseAngle(-npc->direction);
+    angle = angle - camGetPtr(cameraId)->viewYaw;
+    angle += (horogram_wp->flags & 4) ? 180.0f : 0.0f;
+    PSMTXRotRad(rotMtx, 0x79, angle * 0.017453292f);
+    PSMTXConcat(transMtx, rotMtx, lookMtx);
+    PSMTXConcat(camGetPtr(cameraId)->view, lookMtx, lookMtx);
+
+    GXSetCurrentMtx(0);
+    GXLoadTexObj(&horogram_wp->texObj1, GX_TEXMAP0);
+    GXLoadTexObj(&horogram_wp->texObj2, GX_TEXMAP1);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    matColor = npc->color;
+    GXSetChanMatColor(4, matColor);
+    ambColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+    GXSetChanAmbColor(4, ambColor);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(2);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 1);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 1);
+    GXSetTevColorIn(0, 8, 0xF, 0xF, 0xF);
+    GXSetTevAlphaIn(0, 5, 7, 7, 7);
+    GXSetTevOrder(1, 0, 1, 0xFF);
+    GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(1, 2, 0xF, 0xF, 0xF);
+    GXSetTevAlphaIn(1, 1, 7, 4, 7);
+    GXSetCullMode(GX_CULL_NONE);
+    GXLoadPosMtxImm(lookMtx, 0);
+    polygon(-28.0f, 55.0f, 56.0f, 55.0f, 1.0f, 1.0f);
+    GXSetCullMode(cullMode);
+}
+
+static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(u, 0.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(u, v);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, v);
+}
+
+// NONMATCHING (97.91%): the offset arithmetic now matches (split `off += k % 8` /
+// `off += b`). What differs is the callee-saved register allocation (param/cam/data/
+// i/j/i%4 land in different registers) and, as a result, the original recomputes
+// (i/4)*256 and (i%4)*8 before the noise loop where we keep them live.
+void noiseDisp(CameraId cameraId, void* param) {
+    CameraEntry* cam;
+    smartEntry* entry;
+    u8* data;
+    GXTexObj texObj;
+    Mtx mtx;
+    GXColor color;
+    s32 i, j, k;
+    s32 num, len, start;
+    u8 val;
+
+    cam = camGetPtr(cameraId);
+    entry = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_I8, GX_FALSE, 0), 3);
+    data = (u8*)entry->address;
+    for (i = 0; i < 0x40; i++) {
+        s32 a = (i / 4) * 256;
+        s32 b = (i % 4) * 8;
+
+        for (j = 0; j < 0x40; j++) {
+            s32 off = (j / 8) * 32 + a;
+            off += j % 8;
+            off += b;
+            data[off] = (i & 1) ? 0xFF : 0;
+        }
+        num = rand() % 100 + 100;
+        for (j = 0; j < num; j++) {
+            len = rand() % 4 + 2;
+            start = rand() % (0x41 - len);
+            val = rand() % 255;
+            for (k = start; k < start + len; k++) {
+                s32 off = (k / 8) * 32 + a;
+                off += k % 8;
+                off += b;
+                data[off] = val;
+            }
+        }
+    }
+    DCFlushRange(data, 0x1000);
+    GXInitTexObj(&texObj, data, 0x40, 0x40, GX_TF_I8, GX_REPEAT, GX_REPEAT, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+    PSMTXScale(mtx, 9.5f, 7.5f, 0.0f);
+    GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    color = (GXColor){0, 0, 0, 0};
+    color.a = (u8)param;
+    GXSetTevColor(GX_TEVREG0, color);
+    GXLoadPosMtxImm(cam->view, 0);
+    GXSetCurrentMtx(0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3s16(-gp->fbWidth / 2, gp->efbHeight / 2, 0);
+    GXTexCoord2s16(0, 1);
+    GXPosition3s16(gp->fbWidth / 2, gp->efbHeight / 2, 0);
+    GXTexCoord2s16(1, 1);
+    GXPosition3s16(gp->fbWidth / 2, -gp->efbHeight / 2, 0);
+    GXTexCoord2s16(1, 0);
+    GXPosition3s16(-gp->fbWidth, -gp->efbHeight / 2, 0);
+    GXTexCoord2s16(0, 0);
+}
 // clang-format on

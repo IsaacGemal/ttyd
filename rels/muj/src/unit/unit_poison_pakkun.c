@@ -2,7 +2,9 @@
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
+#include "battle/battle_sub.h"
 #include "battle/battle_weapon_power.h"
+#include "eff/n64/eff_vapor_n64.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
@@ -10,6 +12,10 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
+
+#include <stdlib.h>
 
 #pragma pool_data off
 
@@ -338,15 +344,6 @@ static EVT_BEGIN(attack_event)
         RETURN
 EVT_END()
 
-// TODO: write shadow_scale_return (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_poison_pakkun.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shadow_scale_small (static, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_poison_pakkun.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write eff_poison_breath (static, 0x18c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_poison_pakkun.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(breath_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -533,9 +530,6 @@ static BattleDataEntry data_table[15] = {
     { 0x00, NULL },
 };
 
-// TODO: write shadow_scale_memory (static, 0x78 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_poison_pakkun.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
     CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
@@ -623,9 +617,6 @@ static EVT_BEGIN(ceil_fall_ready_event)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PKF_S_1"))
     RETURN
 EVT_END()
-
-// TODO: write pakkun_ceil_exist (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_poison_pakkun.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(return_event)
     CALL(evt_btl_camera_set_mode, 0, 0)
@@ -797,3 +788,111 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 // clang-format on
+
+// Function source order is the reverse of the assembly order (deferred inlining):
+// eff_poison_breath, pakkun_ceil_exist, shadow_scale_memory, shadow_scale_small, shadow_scale_return.
+USER_FUNC(eff_poison_breath) {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 scale;
+    EffectEntry* effect;
+    effVaporN64Data* data;
+
+    x = (evtGetValue(event, event->args[0]) == 0) ? -125.0f : 125.0f;
+    x += (f32)(irand(150) - 75);
+    y = (f32)irand(70);
+    z = (f32)(irand(80) - 40);
+    scale = 2.5f + (f32)rand() / 32767.0f;
+
+    effect = effVaporN64Entry(0, 15, x, y, z, scale);
+    data = effect->userdata;
+    data->color1R = 0x20;
+    data->color1G = 0x73;
+    data->color1B = 0x64;
+    data->color1A = 0xFF;
+    data->color2R = 0x20;
+    data->color2G = 0x73;
+    data->color2B = 0x64;
+    data->color2A = 0xFF;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(pakkun_ceil_exist) {
+    s32* args = event->args;
+    u8 flags = _battleWorkPointer->field_180C0[0x1C];
+
+    if (flags & 0x20) {
+        evtSetValue(event, args[0], 0);
+    } else {
+        evtSetValue(event, args[0], 1);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(shadow_scale_memory) {
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    unit->work[0] = (s32)part->field_0x78;
+    return EVT_RETURN_DONE;
+}
+
+// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
+// double and rematerialises the 0.0f load, so shadow_scale_return loses the original's
+// fp register allocation and store order; off keeps both as separate .rodata loads.
+#pragma opt_propagation off
+// NONMATCHING (86.75%): both constants are materialised, but MWCC issues the 0.0f `lis`
+// after `xoris` and orders the `lfd f0`/`li r3`/`lfs f2`/`li r5` 4th-arg setup
+// differently from the original. The instruction set is identical.
+USER_FUNC(shadow_scale_small) {
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 id;
+    f32 start;
+    f32 end;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    if (isFirstCall) {
+        unit->work[1] = 0;
+    }
+    start = (f32)unit->work[0];
+    end = 0.0f;
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+    if (unit->work[1] >= 15) {
+        return EVT_RETURN_DONE;
+    }
+    unit->work[1]++;
+    return 0;
+}
+
+USER_FUNC(shadow_scale_return) {
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 id;
+    f32 start;
+    f32 end;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    if (isFirstCall) {
+        unit->work[1] = 0;
+    }
+    start = 0.0f;
+    end = (f32)unit->work[0];
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+    if (unit->work[1] >= 15) {
+        return EVT_RETURN_DONE;
+    }
+    unit->work[1]++;
+    return 0;
+}
+#pragma opt_propagation reset
+

@@ -1,6 +1,16 @@
 #include "yuu.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "yuu_00.h"
+#include "yuu_01.h"
+#include "yuu_02.h"
+#include "yuu_03.h"
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
 
 #pragma pool_data off
 
@@ -25,12 +35,26 @@ extend_data(9,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("yuu_00", yuu_00_init_evt);
+    relSetEvtAddr("yuu_01", yuu_01_init_evt);
+    relSetEvtAddr("yuu_02", yuu_02_init_evt);
+    relSetEvtAddr("yuu_03", yuu_03_init_evt);
+}
 
-// TODO: write _prolog (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
 // clang-format on

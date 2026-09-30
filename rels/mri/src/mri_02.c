@@ -1,4 +1,6 @@
 #include "mri_02.h"
+#include "driver/hitdrv.h"
+#include "driver/mapdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -14,13 +16,15 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
 #include "rel/mri/mri.h"
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 evt_puni_dokan_onoff[];
+f32 mri02switch[4];
 
 // clang-format off
 extend_data(12,
@@ -56,18 +60,78 @@ static EVT_BEGIN(evt_ueki_04)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[24] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", 0x00000000,
-    0x00000001, (u32)"A_ueki02", (u32)"S_ueki02", 0x00000000,
-    0x00000001, (u32)"A_ueki03", (u32)"s_ueki03", 0x00000000,
-    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", (u32)&evt_ueki_04,
-    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[6] = {
+    {1, "A_ueki01", "S_ueki01", NULL},
+    {1, "A_ueki02", "S_ueki02", NULL},
+    {1, "A_ueki03", "s_ueki03", NULL},
+    {1, "A_ueki04", "S_ueki04", evt_ueki_04},
+    {1, "A_ueki05", "S_ueki05", NULL},
+    {4, NULL, NULL, NULL},
 };
 
-// TODO: write moveSwitch (global, 0x1d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(moveSwitch) {
+    f32* unk = mri02switch;
+    f32 diff;
+
+    if (isFirstCall) {
+        unk[1] = 0.0f;
+        unk[0] = 0.0f;
+        unk[3] = 0.0f;
+        unk[2] = 0.0f;
+        event->userdataf[0] = 0.0f;
+        event->userdata[1] = 0;
+        event->userdata[2] = 0;
+    }
+
+    unk[2] = unk[0] + unk[1];
+    if (unk[2] < -10.0f) {
+        unk[2] = -10.0f;
+    }
+
+    diff = unk[2] - unk[3];
+    if (diff >= 0.25f) {
+        diff = 0.25f;
+    } else if (diff <= -0.25f) {
+        diff = -0.25f;
+    }
+    unk[3] += diff;
+
+    {
+        Vec pos = {0.0f, 0.0f, 0.0f};
+        s32 changed = 0;
+
+        event->userdata[2] -= 1;
+        if (event->userdata[2] < 0) {
+            event->userdata[2] = 0;
+            if (event->userdataf[0] != diff) {
+                changed = 1;
+            }
+            event->userdataf[0] = diff;
+        }
+
+        if (changed) {
+            if (event->userdata[1] != 0) {
+                psndSFXOff(event->userdata[1]);
+            }
+            if (diff < 0.0f) {
+                event->userdata[1] = psndSFXOn_3D("SFX_STG2_SWITCH_ON1", &pos);
+                event->userdata[2] = 3;
+            }
+            if (diff > 0.0f) {
+                event->userdata[1] = psndSFXOn_3D("SFX_STG2_SWITCH_OFF1", &pos);
+                event->userdata[2] = 3;
+            }
+        }
+    }
+
+    mapObjTranslate("S_sui_l", 0.0f, unk[3], 0.0f);
+    hitBindUpdate("A_sui_l");
+    return 0;
+}
+
+f32 getMri02Yuka(void) {
+    return mri02switch[3];
+}
 
 EVT_BEGIN(punipuni_switch)
     CALL(moveSwitch)
@@ -117,9 +181,6 @@ EVT_BEGIN(dokan_event)
     RETURN
 EVT_END()
 
-// TODO: write getSwitch (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_02.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(dokan_init)
     CALL(evt_hit_bind_mapobj, STRING("A_dokan2"), STRING("S_dokan2"))
     CALL(evt_mapobj_trans, 1, STRING("S_dokan2"), 0, -50, 0)
@@ -155,8 +216,10 @@ static EVT_BEGIN(yuka_main)
     RETURN
 EVT_END()
 
-// TODO: write setPuniWeight (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(setPuniWeight) {
+    mri02switch[1] = evtGetFloat(event, event->args[0]);
+    return 2;
+}
 
 static EVT_BEGIN(yuka_move)
     SET_VALUE(LW(12), GW(0))
@@ -301,11 +364,15 @@ EVT_BEGIN(mri_02_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 mri02switch[4] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+USER_FUNC(getSwitch) {
+    s32* args = event->args;
+    s32 result = 0;
 
-// TODO: write getMri02Yuka (global, 0x10 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_02.s; this is where the original has it, just before the first script that uses it
+    if (mri02switch[3] <= -10.0f) {
+        result = 1;
+    }
+    evtSetValue(event, args[0], result);
+    return 2;
+}
+
 // clang-format on

@@ -1,4 +1,9 @@
 #include "gor_01.h"
+#include <dolphin/mtx.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "driver/envdrv.h"
 #include "evt/evt_badgeshop.h"
 #include "evt/evt_bero.h"
@@ -28,6 +33,21 @@
 #include "evt/evt_win.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "system.h"
+#include "statuswindow.h"
+#include "data/item_data.h"
+#include "driver/animdrv.h"
+#include "driver/mapdrv.h"
+#include "memory.h"
+#include "driver/npcdrv.h"
+#include "driver/swdrv.h"
+#include "eff/eff_fire.h"
+#include "eff/eff_kemuri.h"
+#include "eff/eff_starstone.h"
+#include "evt/evt_johoya.h"
+#include "pmario_sound.h"
 #include "kpa_act.h"
 #include "party/party_motion.h"
 
@@ -38,6 +58,18 @@ extern s32 all_juyoitem_lecture_rel_10_data_4C6C0[];
 extern s32 all_party_lecture_10_data_4B0DC[];
 extern s32 evt_goki_sub_intpl_get_value[];
 extern s32 evt_goki_sub_intpl_init[];
+
+// Forward declarations: these const globals are defined later in the file at the
+// source positions their .rodata lives at, but the reordered functions above them
+// reference them.
+extern const Vec vec3_gor_00016020;
+extern const Vec vec3_gor_0001602c;
+extern const Vec vec3_gor_00016038;
+extern const Vec vec3_gor_000169f8;
+extern const Vec vec3_gor_00016a04;
+extern const GXColor dat_gor_000154cc;
+extern const GXColor dat_gor_000154d0;
+extern const GXColor dat_gor_000154d4;
 extern s32 evt_gor_villager_urouro_check_func[];
 extern s32 gor_villager_urouro[];
 extern s32 keijiban_data_alloc[];
@@ -53,7 +85,7 @@ static USER_FUNC(anim_tevcallback_mobj);
 static USER_FUNC(anim_tevcallback);
 static USER_FUNC(yami_view);
 static USER_FUNC(delete_npc_regl_evt);
-static void npc_process(void);  // TODO: real signature
+static s32 npc_process(void);
 static USER_FUNC(evt_osreport);
 static USER_FUNC(mario_keyoff_wait);
 static USER_FUNC(get_value);
@@ -75,6 +107,7 @@ s32 iri_09_tentyo_talk[172];
 s32 iri_16_tyutyu_talk[445];
 s32 cooking_evt[852];
 static u32 item_tbl[21];
+extern void* iri_09_item_tbl[1];
 
 // clang-format off
 extend_data(8,
@@ -144,8 +177,12 @@ static EVT_BEGIN(sell_evt)
     RETURN
 EVT_END()
 
-// TODO: write unk_gor_00004db4 (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(unk_gor_00004db4) {
+    s32* args = event->args;
+
+    evtSetValue(event, args[0], U_badgeShop_SpecialCheck());
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(zaiko_buy_evt)
     CALL(evt_badgeShop_throw_get_kind_cnt, LW(0))
@@ -576,11 +613,53 @@ EVT_BEGIN(nancy_door_anime)
     RETURN
 EVT_END()
 
-// TODO: write nancy_block_func (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(nancy_block_init_func) {
+    NpcEntry* npc = evtNpcNameToPtr(event, "me");
+    f32 z = npc->position.z;
 
-// TODO: write nancy_block_init_func (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    ((f32*)event->lwData)[10] = z;
+    ((f32*)event->lwData)[11] = z;
+    npc->flags |= 0x400000;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(nancy_block_func) {
+    MarioWork* mario = marioGetPtr();
+    NpcEntry* npc = evtNpcNameToPtr(event, "me");
+    f32 value;
+    f32 limit;
+    f32 clamped;
+
+    ((f32*)event->lwData)[10] = npc->position.z;
+    if (distABf(npc->position.x, npc->position.z, mario->position.x, mario->position.z) < 30.0f) {
+        return EVT_RETURN_DONE;
+    }
+    if (distABf(npc->position.x, npc->position.z, mario->position.x, mario->position.z) > 130.0f) {
+        return EVT_RETURN_DONE;
+    }
+    value = mario->position.z;
+    limit = ((f32*)event->lwData)[11];
+    clamped = value;
+    if (value > limit + 40.0f) {
+        clamped = limit + 40.0f;
+    }
+    if (value < limit - 40.0f) {
+        clamped = limit - 40.0f;
+    }
+    if (npc->position.z <= clamped) {
+        npc->position.z += 4.0f;
+        if (npc->position.z > clamped) {
+            npc->position.z = clamped;
+        }
+    }
+    if (npc->position.z > clamped) {
+        npc->position.z -= 4.0f;
+        if (npc->position.z <= clamped) {
+            npc->position.z = clamped;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(nancy_regl)
     IF_INT_EQUAL(GSWF(1187), 0)
@@ -1359,8 +1438,18 @@ EVT_BEGIN(chusan1_dead)
     RETURN
 EVT_END()
 
-// TODO: write chusan1_alwaysencont (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(chusan1_alwaysencont) {
+    s32* args = event->args;
+    NpcWork* work = npcGetWorkPtr();
+    s32 value = evtGetValue(event, args[0]);
+
+    if (value != 0) {
+        work->flags |= 1;
+    } else {
+        work->flags &= ~1;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(chusan1_naguru)
     WAIT_WHILE(GF(9))
@@ -1836,11 +1925,15 @@ EVT_BEGIN(thief_init)
     RETURN
 EVT_END()
 
-// TODO: write evt_StatusClose (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_StatusOpen) {
+    statusWinForceOpen();
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_StatusOpen (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_StatusClose) {
+    statusWinForceOff();
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(thief_talk)
     SWITCH(GSW(0))
@@ -2199,11 +2292,37 @@ char* badgemise_npc[3] = {
     "バッジ店長", "バッジ店員", NULL,
 };
 
-// TODO: write get_value (static, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// Private view of the layout src/event/evt_win.c uses for its UnitWinWork
+typedef struct UnitWinWork {
+    u16 flags;        // 0x0
+    u16 pad_02;       // 0x2
+    void* objList;    // 0x4
+    s32* field_0x8;   // 0x8
+    u16 field_0xC[6]; // 0xC
+    s32 count;        // 0x18
+    void* field_0x1C; // 0x1C
+    void* field_0x20; // 0x20
+    s32 index;        // 0x24
+} UnitWinWork;
 
-// TODO: write disp_off (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(disp_off) {
+    u16* p = (u16*)evtGetValue(event, event->args[0]);
+
+    *p &= ~1;
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (97% get_value: target loads discount_price with lhz; MWCC 2.6 emits lha+clrlwi for (u16)s16)
+static USER_FUNC(get_value) {
+    s32* args = event->args;
+    UnitWinWork* work = (UnitWinWork*)evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], (s32)itemDataTable[work->field_0x8[work->index]].id);
+    evtSetValue(event, args[2], work->field_0x8[work->index]);
+    evtSetValue(event, args[3], (u16)itemDataTable[work->field_0x8[work->index]].discount_price);
+    evtSetValue(event, args[4], itemDataTable[work->field_0x8[work->index]].bp_cost);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_badge_dummy)
     CALL(evt_mario_normalize)
@@ -2268,8 +2387,13 @@ EVT_BEGIN(evt_open_02_01_f2)
     RETURN
 EVT_END()
 
-// TODO: write mario_keyoff_wait (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (63% mario_keyoff_wait: target keeps the branchy cntlzw/srwi./beq; ours if-converts to subic/subfe)
+static USER_FUNC(mario_keyoff_wait) {
+    if (!marioChkKey()) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_YIELD;
+}
 
 EVT_BEGIN(evt_close_sub)
     CALL(mario_keyoff_wait)
@@ -2325,8 +2449,24 @@ EVT_BEGIN(luigi_f1_fade_check)
     RETURN
 EVT_END()
 
-// TODO: write house03_f1_fade_func (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+const GXColor dat_gor_000154cc = {0, 0, 0, 0xFF};
+const GXColor dat_gor_000154d0 = {0, 0, 0, 0xFF};
+const GXColor dat_gor_000154d4 = {0, 0, 0, 0xFF};
+
+USER_FUNC(house03_f1_fade_func) {
+    s32 value = evtGetValue(event, event->args[0]);
+    GXColor c;
+    GXColor color;
+
+    color = dat_gor_000154cc;
+    color.r = value;
+    color.g = value;
+    color.b = value;
+    c = color;
+    mapGrpSetColor("S_i03_f1_naka", &c);
+    return EVT_RETURN_DONE;
+}
+
 
 EVT_BEGIN(house03_f1_fade)
     LOOP(0)
@@ -2362,8 +2502,29 @@ EVT_BEGIN(luigi_f2_fade_check)
     RETURN
 EVT_END()
 
-// TODO: write house03_f2_fade_func (global, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(house03_f2_fade_func) {
+    u8 value = evtGetValue(event, event->args[0]);
+    GXColor c;
+    GXColor color;
+    GXColor c2;
+    GXColor color2;
+
+    color = dat_gor_000154d0;
+    color.r = value;
+    color.g = value;
+    color.b = value;
+    c = color;
+    mapGrpSetColor("S_i03_f2_naka", &c);
+    color2 = dat_gor_000154d4;
+    color2.r = value;
+    color2.g = value;
+    color2.b = value;
+    c2 = color2;
+    mapGrpSetColor("S_ie_03_f21_doa", &c2);
+    return EVT_RETURN_DONE;
+}
+
+
 
 EVT_BEGIN(house03_f2_fade)
     LOOP(0)
@@ -2405,8 +2566,19 @@ EVT_BEGIN(house03_suiteki)
     RETURN
 EVT_END()
 
-// TODO: write chk_marco_fuki (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(chk_marco_fuki) {
+    s32* args = event->args;
+    NpcEntry* npc;
+
+    marioGetPtr();
+    npc = fbatNpcTalkCheck();
+    if (npc != NULL && strcmp(npc->description, "マルコ") == 0) {
+        evtSetValue(event, args[0], 1);
+        return EVT_RETURN_DONE;
+    }
+    evtSetValue(event, args[0], 0);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(marco_hitorigoto)
     IF_INT_GREATER_OR_EQUAL(GSW(0), 223)
@@ -3088,8 +3260,15 @@ EVT_BEGIN(christine_nakama)
     RETURN
 EVT_END()
 
-// TODO: write maffia_kemuri (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(maffia_kemuri) {
+    s32* args = event->args;
+    f32 x = evtGetValue(event, args[0]);
+    f32 y = evtGetValue(event, args[1]);
+    f32 z = evtGetValue(event, args[2]);
+
+    effKemuriEntry(1, x, y, z, 0.0f);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(maffia_turn)
     CALL(evt_snd_sfxon, STRING("SFX_STG0_THIEF_FIGHT1"), 0)
@@ -3429,8 +3608,15 @@ EVT_BEGIN(ultrahammer_get)
     RETURN
 EVT_END()
 
-// TODO: write evt_osreport (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (96% evt_osreport: target branches beq BODY; b END; ours emits the inverted bne END)
+static USER_FUNC(evt_osreport) {
+    s32* args = event->args;
+
+    if (evtGetValue(event, args[0]) == 0) {
+        evtSetValue(event, args[1], (s32)search_evt_moji(evtGetValue(event, GSW(0))));
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(keijiban_omote_joho)
     CALL(evt_mario_key_onoff, 0)
@@ -3593,8 +3779,22 @@ static EVT_BEGIN(koopa_npc_entry)
     RETURN
 EVT_END()
 
-// TODO: write delete_npc_regl_evt (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+static s32 npc_process(void) {
+    NpcWork* work = npcGetWorkPtr();
+    NpcEntry* npc = work->entries;
+    s32 i;
+
+    for (i = 0; i < work->total; i++, npc++) {
+        if (npc->flags & 1) {
+            if (npc->position.y <= -1000.0f) {
+                npc->flags |= 0x800;
+            } else {
+                npc->flags &= ~0x800;
+            }
+        }
+    }
+    return 0;
+}
 
 EVT_BEGIN(gor_01_koopa_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -3766,14 +3966,48 @@ static EVT_BEGIN(sekai_yami_npc)
     RETURN
 EVT_END()
 
-// TODO: write anim_tevcallback_mobj (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(delete_npc_regl_evt) {
+    NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
-// TODO: write anim_tevcallback (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    if (npc->regularEvtId != 0) {
+        evtDeleteID(npc->regularEvtId);
+        npc->moveEvent = NULL;
+        npc->regularEvtId = 0;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write yami_view (static, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (96% yami_view: target stack slots for target/camPos are swapped relative to ours)
+static USER_FUNC(yami_view) {
+    f32 value = evtGetFloat(event, event->args[0]);
+    Vec target = vec3_gor_00016038;
+    Vec camUp = vec3_gor_0001602c;
+    Vec camPos = vec3_gor_00016020;
+    Mtx mtx;
+
+    target.z = value;
+    camPos.z = 100.0f + value;
+    C_MTXLookAt(mtx, (Point3d*)&camPos, &camUp, (Point3d*)&target);
+    envSetYamiView(mtx);
+    return EVT_RETURN_DONE;
+}
+
+const Vec vec3_gor_00016020 = {0.0f, 100.0f, 0.0f};
+const Vec vec3_gor_0001602c = {0.0f, 1.0f, 0.0f};
+const Vec vec3_gor_00016038 = {0.0f, 0.0f, 0.0f};
+
+static USER_FUNC(anim_tevcallback) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    s32 mask = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr_NoAssert(name);
+
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(npc->poseId, (mask & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(sekai_yami_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -3833,17 +4067,88 @@ static EVT_BEGIN(sekai_yami_evt)
     RETURN
 EVT_END()
 
-// TODO: write wait_mahojin (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(anim_tevcallback_mobj) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    s32 mask = evtGetValue(event, args[1]);
+    MapObjectEntry* obj = mobjNameToPtrNoAssert(name);
 
-// TODO: write starstone_set_ry (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    if (obj == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(obj->poseId, (mask & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write starstone_set_pos (static, 0x1a4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.85% starstone_entry: only the y/sin float-register assignment (f23/f25) differs)
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    char name[16];
+    s32 i;
+    s32 offset;
 
-// TODO: write starstone_entry (static, 0x20c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    for (i = 0, offset = 0; i < 7; i++, offset += 0x30) {
+        f32 angle = 6.2831855f * (f32)i / 7.0f;
+        f32 s = sin(angle);
+        f32 c = cos(angle);
+        f32 px;
+        f32 pz;
+        EffectEntry* eff;
+
+        sprintf(name, "starstone%d", i);
+        px = 140.0f * s + x;
+        pz = z - 140.0f * c;
+        eff = effStarStoneEntry(i, px, y, pz, 1.0f);
+        effSetName(eff, name);
+        *(u16*)((u8*)eff->userdata + 0x4) &= ~4;
+        *(u16*)((u8*)eff->userdata + 0x4) |= 0x20;
+        *(EffectEntry**)((u8*)effNameToPtr("mahojin")->userdata + offset + 0x88) = eff;
+        *(void**)((u8*)effNameToPtr("mahojin")->userdata + offset + 0x8C) = (void*)effStarStoneDraw;
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+static USER_FUNC(starstone_set_pos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    char name[16];
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        f32 s;
+        f32 c;
+        f32 angle = 6.2831855f * (f32)i / 7.0f;
+        EffectEntry* eff;
+
+        s = sin(angle);
+        c = cos(angle);
+        sprintf(name, "starstone%d", i);
+        eff = effNameToPtr(name);
+        *(f32*)((u8*)eff->userdata + 0x8) = 140.0f * s + x;
+        *(f32*)((u8*)eff->userdata + 0xC) = y;
+        *(f32*)((u8*)eff->userdata + 0x10) = z - 140.0f * c;
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+static USER_FUNC(starstone_set_ry) {
+    f32 ry = evtGetFloat(event, event->args[0]);
+    char name[16];
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        sprintf(name, "starstone%d", i);
+        *(f32*)((u8*)effNameToPtr(name)->userdata + 0x1C) = ry;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(minnnanokoe_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -3974,8 +4279,16 @@ static EVT_BEGIN(minnnanokoe_evt)
     RETURN
 EVT_END()
 
-// TODO: write set_fook_evt (static, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(wait_mahojin) {
+    s32 id = *(s32*)((u8*)effNameToPtr("mahojin")->userdata + 0x18);
+
+    if (id != -1) {
+        if (animPoseGetLoopTimes(id) != 0.0f) {
+            return EVT_RETURN_DONE;
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(iri_09_init)
     IF_INT_EQUAL(GSW(1420), 9)
@@ -3984,14 +4297,31 @@ EVT_BEGIN(iri_09_init)
     RETURN
 EVT_END()
 
-// TODO: write iri_09_item_tbl_free (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(iri_09_item_tbl_alloc) {
+    s32 n = evtGetValue(event, event->args[0]);
 
-// TODO: write iri_09_item_tbl_make (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    iri_09_item_tbl[0] = _mapAlloc((n + 1) * 4);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write iri_09_item_tbl_alloc (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(iri_09_item_tbl_make) {
+    s32* args = event->args;
+    s32 n = evtGetValue(event, args[0]);
+    s32 i;
+
+    for (i = 0; i < n; i++) {
+        ((s32*)iri_09_item_tbl[0])[i] = 0x8F;
+    }
+    ((s32*)iri_09_item_tbl[0])[i] = -1;
+    evtSetValue(event, args[1], (s32)iri_09_item_tbl[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(iri_09_item_tbl_free) {
+    _mapFree(iri_09_item_tbl[0]);
+    iri_09_item_tbl[0] = NULL;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(iri_09_tentyo_talk)
     IF_INT_EQUAL(GSWF(5383), 1)
@@ -4685,18 +5015,32 @@ u32 R_mystery_cook_list[20] = {
 };
 
 // TODO: type
-u32 special_cook_list[16] = {
+s32 special_cook_list[16] = {
     0x000000C2, 0x000000C3, 0x000000C4, 0x000000CB,
     0x000000D2, 0x000000D5, 0x000000D6, 0x000000D7,
     0x000000D8, 0x000000D9, 0x000000DA, 0x000000DB,
     0x000000DC, 0x000000DD, 0x000000E0, 0xFFFFFFFF,
 };
 
-// TODO: write chk_special_cook (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(set_fook_evt) {
+    s32* args = event->args;
+    void** table = (void**)evtGetValue(event, args[0]);
 
-// TODO: write cook_effect (global, 0x1c4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    table[1] = (void*)evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
+
+const Vec vec3_gor_000169f8 = {-380.0f, 25.0f, -170.0f};
+const Vec vec3_gor_00016a04 = {-380.0f, 60.0f, -170.0f};
+
+s32 naniga_okorukana_cook(void) {
+    s32 r = rand() % 100;
+
+    if (r < 50) {
+        return R_mystery_cook_list[(s32)((f32)(u32)(r * 20) / 50.0f)];
+    }
+    return 0xB6;
+}
 
 EVT_BEGIN(cooking_evt_sub)
     CALL(evt_snd_bgmoff, 1024)
@@ -4774,23 +5118,110 @@ u32 iri_18_item_tbl[2] = {
     0x0000003C, 0xFFFFFFFF,
 };
 
-// TODO: write cooking_flag (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+s32 itemNameToID(const char* name) {
+    s32 i;
 
-// TODO: write chk_cook_msg (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < 0x153; i++) {
+        if (strcmp(name, itemDataTable[i].id) == 0) {
+            break;
+        }
+    }
+    if (i >= 0x153) {
+        return 0;
+    }
+    return i;
+}
 
-// TODO: write get_item_name (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (97% cook_chk: hoisting ItemData* p = &itemDataTable[item] matched the target; the inlined naniga_okorukana_cook tail still differs)
+USER_FUNC(cook_chk) {
+    s32* args = event->args;
+    s32 item = evtGetValue(event, args[0]);
+    ItemData* p = &itemDataTable[item];
+    u32 i;
 
-// TODO: write make_item_tbl (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    if (item == 0xA3) {
+        s32 result = naniga_okorukana_cook();
 
-// TODO: write cook_chk2 (global, 0x1e4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+        evtSetValue(event, args[1], result);
+        evtSetValue(event, args[2], result);
+        return EVT_RETURN_DONE;
+    }
+    for (i = 0; i < 0x1A; i++) {
+        if (strcmp(p->id, R_simple_recipe_table[i * 3]) == 0) {
+            evtSetValue(event, args[1], itemNameToID(R_simple_recipe_table[i * 3 + 1]));
+            evtSetValue(event, args[2], itemNameToID(R_simple_recipe_table[i * 3 + 2]));
+            return EVT_RETURN_DONE;
+        }
+    }
+    evtSetValue(event, args[1], 0);
+    evtSetValue(event, args[2], 0);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write cook_chk (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+
+// NONMATCHING (94% cook_chk2: hoisting ItemData* p = &itemDataTable[item] matched the loop; the inlined naniga_okorukana_cook tail still differs)
+USER_FUNC(cook_chk2) {
+    s32* args = event->args;
+    s32 item1 = evtGetValue(event, args[0]);
+    s32 item2 = evtGetValue(event, args[1]);
+    ItemData* p1 = &itemDataTable[item1];
+    ItemData* p2 = &itemDataTable[item2];
+    u32 i;
+
+    if (item1 == 0xA3 || item2 == 0xA3) {
+        evtSetValue(event, args[2], naniga_okorukana_cook());
+        return EVT_RETURN_DONE;
+    }
+    for (i = 0; i < 0x121; i++) {
+        if ((strcmp(p1->id, R_cookbook_recipe_table[i * 3]) == 0 &&
+             strcmp(p2->id, R_cookbook_recipe_table[i * 3 + 1]) == 0) ||
+            (strcmp(p2->id, R_cookbook_recipe_table[i * 3]) == 0 &&
+             strcmp(p1->id, R_cookbook_recipe_table[i * 3 + 1]) == 0)) {
+            evtSetValue(event, args[2], itemNameToID(R_cookbook_recipe_table[i * 3 + 2]));
+            return EVT_RETURN_DONE;
+        }
+    }
+    evtSetValue(event, args[2], 0);
+    return EVT_RETURN_DONE;
+}
+
+
+s32 chkCookItem(s32 id) {
+    return id != 0;
+}
+
+USER_FUNC(make_item_tbl) {
+    s32* args = event->args;
+    s32 item = evtGetValue(event, args[0]);
+    s32 count = pouchGetHaveItemCnt();
+    s32 j = 0;
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        ItemType have;
+
+        if (item == i) {
+            continue;
+        }
+        have = pouchHaveItem(i);
+        if (have == 0) {
+            continue;
+        }
+        item_tbl[j] = have;
+        j++;
+    }
+    item_tbl[j] = -1;
+    evtSetValue(event, args[1], j);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_item_name) {
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], (s32)itemDataTable[id].id);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(cooking_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -5085,22 +5516,110 @@ static u32 item_tbl[21] = {
 };
 
 // TODO: type
-u32 iri_09_item_tbl[1] = {
+void* iri_09_item_tbl[1] = {
     0x00000000,
 };
 
-// TODO: write chk_cook_eff_type (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (65% chk_cook_eff_type: target branches on the 0xB1..0xB2 / 0xD1 comparisons into shared return-0/1 blocks; MWCC folds ours to branchless compares)
+s32 chk_cook_eff_type(s32 itemId) {
+    s32 result;
+    if (itemId < 0x94) {
+        return 1;
+    }
+    if (itemId < 0xA1) {
+        return 0;
+    }
+    if (itemId < 0xB3) {
+        if (itemId >= 0xB1) {
+            result = itemId < 0xB3;
+        } else if (itemId >= 0xA5) {
+            result = 0;
+        } else {
+            result = 1;
+        }
+        return result;
+    }
+    if (itemId < 0xEC) {
+        if (itemId < 0xCC) {
+            if (itemId == 0xC4) {
+                result = 1;
+            } else if (itemId < 0xC4) {
+                result = 0;
+            } else if (itemId >= 0xCA) {
+                result = 1;
+            } else {
+                result = 0;
+            }
+        } else {
+            result = itemId == 0xD1;
+        }
+        return result;
+    }
+    return 0;
+}
 
-// TODO: write chkCookItem (global, 0xc bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (90% cook_effect: inlined chk_cook_eff_type differs (see chk_cook_eff_type))
+USER_FUNC(cook_effect) {
+    s32 item = evtGetValue(event, event->args[0]);
 
-// TODO: write itemNameToID (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+    switch (chk_cook_eff_type(item)) {
+        case 0: {
+            Vec pos = vec3_gor_000169f8;
 
-// TODO: write naniga_okorukana_cook (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+            psndSFXOn_3D("SFX_EVT_COOK_FIRE1", &pos);
+            effFireEntry(4, 0x3C, -380.0f, 25.0f, -170.0f, 1.5f);
+            break;
+        }
+        case 1:
+        default: {
+            Vec pos = vec3_gor_00016a04;
 
-// TODO: write npc_process (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_01.s; this is where the original has it, just before the first script that uses it
+            psndSFXOn_3D("SFX_EVT_COOK_EXPLOSION1", &pos);
+            effKemuri12N64Entry(0, 0x3C, -380.0f, 60.0f, -170.0f, 2.0f);
+            break;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (86% chk_cook_msg: inlined chk_cook_eff_type differs (see chk_cook_eff_type))
+USER_FUNC(chk_cook_msg) {
+    s32* args = event->args;
+    s32 item = evtGetValue(event, args[0]);
+    s32 result;
+
+    if (item == 0xC3 || item == 0xC4) {
+        result = 0;
+    } else if ((item >= 0xC1 && item <= 0xC5) || item == 0xE8 || item == 0xC8) {
+        result = 1;
+    } else if (item == 0xB6) {
+        result = 2;
+    } else {
+        result = chk_cook_eff_type(item) + 3;
+    }
+    evtSetValue(event, args[1], result);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(cooking_flag) {
+    swSet(evtGetValue(event, event->args[0]) - 0x72);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(chk_special_cook) {
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    s32 found = 0;
+    s32 i;
+    s32 entry;
+
+    for (i = 0; (entry = special_cook_list[i]) != -1; i++) {
+        if (value == entry) {
+            found = 1;
+            break;
+        }
+    }
+    evtSetValue(event, args[1], found);
+    return EVT_RETURN_DONE;
+}
 // clang-format on

@@ -2,7 +2,27 @@
 
 #include "evt/evt_cmd.h"
 
-void _ofs_get_boundingbox(void);  // TODO: real signature
+typedef struct CloudEntry {
+    s32 flags;                // 0x0
+    s32 mode;                 // 0x4
+    char animName[0x20];      // 0x8
+    char imgName[0x20];       // 0x28
+    char offName[0x20];       // 0x48
+    s8 mapGrpName[8][0x20]; // 0x68
+    char hitName[0x20];       // 0x168
+    s32 field_0x188;          // 0x188
+    s32 field_0x18C;          // 0x18C
+    EventEntry* field_0x190;  // 0x190
+    void* field_0x194;        // 0x194
+    s32 field_0x198;          // 0x198
+    s32 field_0x19C;          // 0x19C
+    s32 field_0x1A0;          // 0x1A0
+    s32 field_0x1A4;          // 0x1A4
+    s32 field_0x1A8;          // 0x1A8
+    f32 field_0x1AC;          // 0x1AC
+} CloudEntry;                 // 0x1B0
+
+s32 _ofs_get_boundingbox(const char* name, s32* a, s32* b, s32* c, s32* d);
 USER_FUNC(evt_mri_cloud_init);
 USER_FUNC(evt_mri_cloud_ent);
 USER_FUNC(get_puni_pos);

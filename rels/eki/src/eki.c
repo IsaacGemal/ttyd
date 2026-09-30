@@ -1,4 +1,5 @@
 #include "eki.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
@@ -29,12 +30,31 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _prolog (global, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("eki_00", eki_00_init_evt);
+    relSetEvtAddr("eki_01", eki_01_init_evt);
+    relSetEvtAddr("eki_02", eki_02_init_evt);
+    relSetEvtAddr("eki_03", eki_03_init_evt);
+    relSetEvtAddr("eki_04", eki_04_init_evt);
+    relSetEvtAddr("eki_05", eki_05_init_evt);
+    relSetEvtAddr("eki_06", eki_06_init_evt);
+    relSetBtlAddr("eki", btlsetup_eki_tbl, btl_eki_setup_no_tbl);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}

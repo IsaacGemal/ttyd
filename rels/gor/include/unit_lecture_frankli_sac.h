@@ -1,9 +1,10 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "driver/camdrv.h"
 
-void spot_square_disp(void);  // TODO: real signature
-void Quads2D(void);  // TODO: real signature
+void spot_square_disp(CameraId cameraId, void* param);
+void Quads2D(f32 x0, f32 y0, f32 x1, f32 y1);
 USER_FUNC(spot_square);
 USER_FUNC(blinkAP);
 USER_FUNC(aud_attack_end);

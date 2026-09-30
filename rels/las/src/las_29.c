@@ -1,4 +1,18 @@
 #include "las_29.h"
+#include "driver/camdrv.h"
+#include "driver/effdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/npcdrv.h"
+#include "eff/eff_fire.h"
+#include "eff/eff_mist.h"
+#include "eff/eff_ripple.h"
+#include "eff/eff_starstone.h"
+#include "eff/n64/eff_pokopi_pcharge_n64.h"
+#include "eff/n64/eff_pokopi_thunder_n64.h"
+#include "eff/n64/eff_radiation_n64.h"
+#include "mario/mario_party.h"
+#include "manager/evtmgr_cmd.h"
+#include "pmario_sound.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -19,6 +33,11 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+
+#include <dolphin/gx.h>
+#include "math_ext.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #pragma pool_data off
 
@@ -142,6 +161,9 @@ static u32 npcEnt[184] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
+const GXColor dat_las_00015a4c = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_las_00015a50 = {0x00, 0x00, 0x00, 0xFF};
+
 // TODO: type
 u32 hikari_data[81] = {
     0x00000144, 0x00000026, 0x00000126, 0x00000014,
@@ -185,14 +207,10 @@ u32 hikari_data_2[55] = {
     0xFFFFFED9, 0x0000003D, 0xFFFFFC19,
 };
 
-// TODO: write hikari_se (global, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write hikari_change (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write hikari_set_scale (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+
 
 EVT_BEGIN(hikari_off_evt)
     SET_VALUE(LW(10), LW(0))
@@ -239,8 +257,6 @@ EVT_BEGIN(hikari_on_evt)
     RETURN
 EVT_END()
 
-// TODO: write all_hikari_onoff (global, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(flush_on)
     CALL(evt_npc_flag_onoff, 1, STRING("シュリョー"), 128)
@@ -286,14 +302,8 @@ EVT_BEGIN(flush_off)
     RETURN
 EVT_END()
 
-// TODO: write all_hikari_change_kuro (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write hikari_onoff (global, 0x108 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write rou_hikari_front_onoff (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(last_evt_1)
     CALL(evt_mario_key_onoff, 0)
@@ -606,9 +616,6 @@ EVT_BEGIN(last_evt_1)
     RETURN
 EVT_END()
 
-// TODO: write map_color_tev (global, 0x10c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(last_evt_2)
     CALL(evt_mario_key_onoff, 0)
     CALL(evt_party_stop, 0)
@@ -702,8 +709,6 @@ EVT_BEGIN(unk_evt_las_00034ca0)
     RETURN
 EVT_END()
 
-// TODO: write b_peach_thunder (global, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(last_evt_3)
     CALL(evt_mario_key_onoff, 0)
@@ -1038,8 +1043,6 @@ EVT_BEGIN(last_evt_3)
     RETURN
 EVT_END()
 
-// TODO: write add_vy (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(b_peach_fuwafuwa)
     LOOP(0)
@@ -1061,26 +1064,12 @@ EVT_BEGIN(b_peach_fuwafuwa)
     RETURN
 EVT_END()
 
-// TODO: write starstone_set_ry (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_set_pos (static, 0x1e8 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_entry (static, 0x1c0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write pcharge_set_pos (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write pcharge_entry (global, 0xb4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write radiation_entry (global, 0xac bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write b_peach_msgcb (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(last_evt_3_1)
     CALL(evt_mario_key_onoff, 0)
@@ -1231,11 +1220,7 @@ EVT_BEGIN(last_evt_3_1)
     RETURN
 EVT_END()
 
-// TODO: write make_koe_pos (global, 0x118 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write make_koe_label (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(koe_evt)
     SET_VALUE(LW(0), 1)
@@ -1265,8 +1250,6 @@ EVT_BEGIN(koe_evt)
     RETURN
 EVT_END()
 
-// TODO: write slowturnoff_check (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(majo_kyorokyoro)
     BEGIN_SIBLING_EVENT
@@ -1708,17 +1691,9 @@ EVT_BEGIN(last_evt_3_2)
     RETURN
 EVT_END()
 
-// TODO: write mist_add_vy (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write make_mist_name (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write eff_b_peach_mist (global, 0xf8 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write eff_b_peach_ripple (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(last_evt_4)
     CALL(evt_snd_bgmoff, 512)
@@ -2235,8 +2210,6 @@ EVT_BEGIN(shuryolight_delete)
     RETURN
 EVT_END()
 
-// TODO: write rousoku_init (static, 0xfc bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(las_29_init_evt)
     SET_VALUE(LW(0), PTR(bero_entry_data))
@@ -2305,22 +2278,492 @@ EVT_BEGIN(las_29_init_evt)
     RETURN
 EVT_END()
 
-// TODO: name$877 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 name$877[2] = {
-//     0x00000000, 0x00000000,
-// };
 
-// TODO: name$801 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 name$801[8] = {
-//     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// };
-
-// TODO: write radiation_set_pos (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _hikariEntry (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+
+/* moved function block below (reverse order of the original) */
+void _hikariEntry(const char* name, s32 type, f32 scale) {
+    Vec pos;
+    EffectEntry* effect;
+
+    mapObjGetPos(name, &pos);
+    effect = effFireEntry(type, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
+    ((effFireData*)effect->userdata)->field_0x78 = scale;
+    ((effFireData*)effect->userdata)->field_0x7C = scale;
+    effSetName(effect, name);
+}
+
+// NONMATCHING (98.25%)
+static USER_FUNC(rousoku_init) {
+    s32 type = evtGetValue(event, event->args[0]) ? 8 : 3;
+    s32 i;
+    char name[8];
+    Vec pos;
+
+    for (i = 1; i <= 0x42; i++) {
+        EffectEntry* effect;
+
+        sprintf(name, "hi%d", i);
+        mapGrpFlagOn(name, 1);
+        mapObjGetPos(name, &pos);
+        effect = effFireEntry(type, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
+        ((effFireData*)effect->userdata)->field_0x78 = 0.5f;
+        ((effFireData*)effect->userdata)->field_0x7C = 0.5f;
+        effSetName(effect, name);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(rou_hikari_front_onoff) {
+    s32* args = event->args;
+    s32 on = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    void (*flagFunc)(const char*, u32) = on ? mapGrpFlagOn : mapGrpFlagOff;
+    f32 scale = on ? 0.0f : 0.5f;
+    s32 i;
+    char name[8];
+    EffectEntry* effect;
+
+    (void)b;
+    for (i = 0x27; i <= 0x3e; i++) {
+        sprintf(name, "S_rou%02d", i);
+        flagFunc(name, 1);
+        sprintf(name, "hi%d", i);
+        effect = effNameToPtr(name);
+        ((effFireData*)effect->userdata)->field_0x78 = scale;
+        ((effFireData*)effect->userdata)->field_0x7C = scale;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hikari_set_scale) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+    f32 scale = evtGetFloat(event, args[1]);
+    char name[8];
+    EffectEntry* effect;
+
+    sprintf(name, "hi%d", idx);
+    effect = effNameToPtr(name);
+    ((effFireData*)effect->userdata)->field_0x78 = scale;
+    ((effFireData*)effect->userdata)->field_0x7C = scale;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hikari_change) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+    s32 dark = evtGetValue(event, args[1]);
+    s32 type = dark ? 3 : 8;
+    char name[8];
+    Vec pos;
+    EffectEntry* effect;
+
+    sprintf(name, "hi%d", idx);
+    effDelete(effNameToPtr(name));
+    mapObjGetPos(name, &pos);
+    effect = effFireEntry(type, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
+    ((effFireData*)effect->userdata)->field_0x78 = 0.0f;
+    ((effFireData*)effect->userdata)->field_0x7C = 0.0f;
+    effSetName(effect, name);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hikari_se) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+    s32 dark = evtGetValue(event, args[1]);
+    s32 off = evtGetValue(event, args[2]);
+    char name[8];
+    Vec pos;
+
+    sprintf(name, "hi%d", idx);
+    mapObjGetPos(name, &pos);
+    if (dark == 0) {
+        if (off == 0) {
+            psndSFXOn_3D("SFX_STG8_CANDLE_ON1", &pos);
+        } else {
+            psndSFXOn_3D("SFX_STG8_CANDLE_DARK_ON1", &pos);
+        }
+    } else {
+        if (off == 0) {
+            psndSFXOn_3D("SFX_STG8_CANDLE_OFF1", &pos);
+        } else {
+            psndSFXOn_3D("SFX_STG8_CANDLE_DARK_OFF1", &pos);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (89.31%)
+USER_FUNC(hikari_onoff) {
+    s32* args = event->args;
+    s32* data = (s32*)args[0];
+    s32 a = evtGetValue(event, args[1]);
+    s32 onoff = evtGetValue(event, args[2]);
+    s32 index = evtGetValue(event, args[3]);
+    s32 limit = evtGetValue(event, args[4]);
+    void* evt;
+    s32 value = data[index * 2];
+    s32 i;
+
+    evt = onoff ? hikari_off_evt : hikari_on_evt;
+
+    if (value == -999) {
+        evtSetValue(event, args[5], -1);
+        return EVT_RETURN_DONE;
+    }
+    i = index;
+    while (value > limit && value != -999) {
+        EventEntry* entry = evtEntry(evt, 0, 0);
+        entry->lwData[0] = data[i * 2 + 1];
+        entry->lwData[1] = a;
+        i++;
+        value = data[i * 2];
+    }
+    evtSetValue(event, args[5], i);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (82.71%)
+USER_FUNC(all_hikari_change_kuro) {
+    s32 idx = evtGetValue(event, event->args[0]);
+    s32 i;
+    char name[8];
+    Vec pos2;
+    Vec pos;
+    EffectEntry* effect;
+
+    if (idx != -1) {
+        s32* d = (s32*)&hikari_data[idx * 2];
+
+        while (d[0] != -999) {
+            sprintf(name, "hi%d", d[1]);
+            effDelete(effNameToPtr(name));
+            mapObjGetPos(name, &pos2);
+            effect = effFireEntry(8, 1000, pos2.x, pos2.y - 7.0f, pos2.z, 1.0f);
+            ((effFireData*)effect->userdata)->field_0x78 = 0.5f;
+            ((effFireData*)effect->userdata)->field_0x7C = 0.5f;
+            effSetName(effect, name);
+            d += 2;
+        }
+    }
+    for (i = 0x27; i <= 0x42; i++) {
+        if (i == 0x40 || i == 0x42) {
+            continue;
+        }
+        sprintf(name, "hi%d", i);
+        effDelete(effNameToPtr(name));
+        mapObjGetPos(name, &pos);
+        effect = effFireEntry(8, 1000, pos.x, pos.y - 7.0f, pos.z, 1.0f);
+        ((effFireData*)effect->userdata)->field_0x78 = 0.5f;
+        ((effFireData*)effect->userdata)->field_0x7C = 0.5f;
+        effSetName(effect, name);
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+void map_color_tev(void* work) {
+    MapColorTevWork* w = work;
+
+    GXSetTevOrder(0, 0xff, 0xff, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 2, 0xf, 0xf, 0xf);
+    GXSetTevAlphaIn(0, 1, 7, 7, 7);
+    if (evtGetValue(NULL, 0xF971888A)) {
+        GXSetTevColor(1, dat_las_00015a4c);
+    } else {
+        GXSetTevColor(1, dat_las_00015a50);
+    }
+    w->field_0xC = 1;
+    w->field_0x14 = 0;
+    w->field_0x10 = 0;
+}
+
+USER_FUNC(all_hikari_onoff) {
+    s32 on = evtGetValue(event, event->args[0]);
+    f32 scale = on ? 0.0f : 0.5f;
+    s32 i;
+    char name[8];
+
+    for (i = 1; i <= 0x42; i++) {
+        EffectEntry* effect;
+
+        sprintf(name, "hi%d", i);
+        effect = effNameToPtr(name);
+        ((effFireData*)effect->userdata)->field_0x78 = scale;
+        ((effFireData*)effect->userdata)->field_0x7C = scale;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(b_peach_thunder) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    EffectEntry* effect = effPokopiThunderN64Entry(0, 0x96, 35.0f + x, 160.0f + y, z, x, y, z, 2.0f);
+
+    ((EffPokopiThunderData*)effect->userdata)->field_0x30 = 0xFF;
+    ((EffPokopiThunderData*)effect->userdata)->field_0x34 = 0xA0;
+    ((EffPokopiThunderData*)effect->userdata)->field_0x38 = 0xC0;
+    ((EffPokopiThunderData*)effect->userdata)->field_0x40 = 0x14;
+    ((EffPokopiThunderData*)effect->userdata)->field_0x44 = 0x14;
+    ((EffPokopiThunderData*)effect->userdata)->field_0x48 = 0x14;
+    return EVT_RETURN_DONE;
+}
+
+void b_peach_msgcb(s32 state) {
+    switch (state) {
+    case 0:
+    case 3:
+        npcSetTalkPose("影の女王");
+        break;
+    case 1:
+    case 2:
+        npcSetStayPose("影の女王");
+        break;
+    }
+}
+
+// NONMATCHING (98.57%)
+USER_FUNC(add_vy) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    f32 base = a ? -0.3f : 0.3f;
+    f32 step = a ? 0.01f : -0.01f;
+    NpcEntry* npc = npcNameToPtr("ブラックピーチ");
+
+    npc->moveOffset.y += (f32)b * step + base;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(radiation_entry) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    f32 w = evtGetFloat(event, args[4]);
+    EffectEntry* effect = effRadiationN64Entry(2, x, y, z, w);
+
+    effSetName(effect, name);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(radiation_set_pos) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* effect = effNameToPtr(name);
+
+    ((EffRadiationData*)effect->userdata)->x = x;
+    ((EffRadiationData*)effect->userdata)->y = y;
+    ((EffRadiationData*)effect->userdata)->z = z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(pcharge_entry) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* effect = effPokopiPchargeN64Entry(x, y, z, 1.0f, 8, 0);
+
+    effSetName(effect, name);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(pcharge_set_pos) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* effect = effNameToPtr(name);
+
+    ((effPokopiPchargeData*)effect->userdata)->x = x;
+    ((effPokopiPchargeData*)effect->userdata)->y = y;
+    ((effPokopiPchargeData*)effect->userdata)->z = z;
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.82%)
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    f32 x0 = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z0 = evtGetFloat(event, args[2]);
+    f32 radius = evtGetFloat(event, args[3]);
+    f32 a;
+    f32 c;
+    f32 s;
+    s32 i;
+    char name[16];
+
+    for (i = 0; i < 7; i++) {
+        EffectEntry* effect;
+
+        a = (f32)i * 6.2831855f / 7.0f;
+        c = cos(a);
+        s = sin(a);
+        sprintf(name, "starstone%d", i);
+        effect = effStarStoneEntry(i, radius * c + x0, y, radius * s + z0, 1.0f);
+        effSetName(effect, name);
+        ((effStarStoneData*)effect->userdata)->field_0x4 &= ~4;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.59%)
+static USER_FUNC(starstone_set_pos) {
+    s32* args = event->args;
+    f32 x0 = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z0 = evtGetFloat(event, args[2]);
+    f32 angle = evtGetFloat(event, args[3]);
+    f32 radius = evtGetFloat(event, args[4]);
+    f32 a;
+    f32 c;
+    f32 s;
+    s32 i;
+    char name[16];
+
+    for (i = 0; i < 7; i++) {
+        a = (f32)i * 6.2831855f / 7.0f + angle;
+        if (a >= 6.2831855f) {
+            a -= 6.2831855f;
+        }
+        c = cos(a);
+        s = sin(a);
+        sprintf(name, "starstone%d", i);
+        {
+            EffectEntry* effect = effNameToPtr(name);
+
+            ((effStarStoneData*)effect->userdata)->field_0x8 = radius * c + x0;
+            ((effStarStoneData*)effect->userdata)->field_0xC = y;
+            ((effStarStoneData*)effect->userdata)->field_0x10 = radius * s + z0;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_ry) {
+    f32 ry = evtGetFloat(event, event->args[0]);
+    s32 i;
+    char name[16];
+
+    for (i = 0; i < 7; i++) {
+        EffectEntry* effect;
+
+        sprintf(name, "starstone%d", i);
+        effect = effNameToPtr(name);
+        ((effStarStoneData*)effect->userdata)->field_0x1C = ry;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(make_koe_label) {
+    static char name[32];
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+
+    if (idx == 0x12 && partyChkJoin(7) == 0) {
+        idx = 1;
+        evtSetValue(event, args[0], 1);
+    }
+    sprintf(name, "stg8_las_148_74_%02d", idx + 1);
+    evtSetValue(event, args[1], (s32)name);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(make_koe_pos) {
+    s32* args = event->args;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    x = (rand() >> 1) % 41 * 10;
+    z = (rand() >> 1) % 33 * 10 - 190;
+    y = x - 200;
+    if (y > 0) {
+        y += rand() % 10;
+    } else {
+        y -= rand() % 10;
+    }
+    if (z > 0) {
+        z += rand() % 10;
+    } else {
+        z += rand() % 10;
+    }
+    evtSetValue(event, args[0], y);
+    evtSetValue(event, args[1], z);
+    evtSetValue(event, args[2], 0);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(slowturnoff_check) {
+    NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
+
+    return (npc->flags & 0x8000) ? 0 : 2;
+}
+
+USER_FUNC(eff_b_peach_ripple) {
+    NpcEntry* npc = npcNameToPtr("ブラックピーチ");
+    EffectEntry* effect = effRippleEntry(3, npc->position.x, npc->position.y + 30.0f, npc->position.z);
+
+    effRippleSetRxRz(effect, 0.0f, 176.0f);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.11%)
+USER_FUNC(eff_b_peach_mist) {
+    NpcEntry* npc = npcNameToPtr("ピーチ姫");
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 angle;
+    f32 s;
+    f32 c;
+    f32 px;
+    f32 pz;
+
+    angle = 180.0f + cam->viewYaw;
+    angle = angle * 6.2831855f;
+    angle = angle / 360.0f;
+    s = sin(angle);
+    c = cos(angle);
+    px = 20.0f * s;
+    pz = 20.0f * -c;
+    effMistEntry(6, 300, npc->position.x + px, npc->position.y + 30.0f, npc->position.z + pz, 0.0f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(make_mist_name) {
+    static char name[8];
+    s32* args = event->args;
+
+    sprintf(name, "mist%d", evtGetValue(event, args[0]));
+    evtSetValue(event, args[1], (s32)name);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mist_add_vy) {
+    f32 vy = evtGetFloat(event, event->args[0]);
+    s32 i;
+    char name[8];
+
+    for (i = 0; i < 10; i++) {
+        EffectEntry* effect;
+
+        sprintf(name, "mist%d", i);
+        effect = effNameToPtr(name);
+        ((MistWork*)effect->userdata)->y += vy;
+    }
+    return EVT_RETURN_DONE;
+}

@@ -19,32 +19,122 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "driver/hitdrv.h"
+#include "driver/imgdrv.h"
+#include "driver/offscreendrv.h"
 #include "forcedata.h"
+#include "math_ext.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "party.h"
 #include "party/party_motion.h"
+#include "system.h"
+#include <stdlib.h>
+#include <string.h>
 
 #pragma pool_data off
 
+// Layout of the work area allocated by ext_moamoa_init (offset comments are the original's).
+typedef struct MoamoaNpc {
+    char name[0x10];  // 0x00
+    char anim[8];     // 0x10
+    s16 field_0x18;   // 0x18
+    f32 field_0x1C;   // 0x1C
+    s32 field_0x20;   // 0x20
+    s32 field_0x24;   // 0x24
+} MoamoaNpc;
+
+typedef struct MoamoaPose {
+    u16 flags;          // 0x00
+    u16 field_0x02;     // 0x02
+    u16 field_0x04;     // 0x04
+    u16 field_0x06;     // 0x06
+    f32 x;              // 0x08
+    f32 y;              // 0x0C
+    f32 z;              // 0x10
+    f32 field_0x14;     // 0x14
+    s16 field_0x18;     // 0x18
+    u8 pad_0x1A[2];     // 0x1A
+    f32 field_0x1C;     // 0x1C
+    f32 field_0x20;     // 0x20
+    s16 field_0x24;     // 0x24
+    u8 pad_0x26[0x16];  // 0x26
+    s16 animId;         // 0x3C
+    u16 field_0x3E;     // 0x3E
+    OSTime field_0x40;  // 0x40
+    u32 field_0x48;     // 0x48
+    u8 groupIndex;      // 0x4C
+    u8 pad_0x4D[3];     // 0x4D
+} MoamoaPose;
+
+typedef struct MoamoaWork {
+    u16 field_0x00;    // 0x00
+    u16 pad_0x02;      // 0x02
+    s32 poseNum;       // 0x04
+    MoamoaPose* poses; // 0x08
+    u32 field_0x0C;    // 0x0C
+    u32 field_0x10;    // 0x10
+    Vec field_0x14;    // 0x14
+    Vec field_0x20;    // 0x20
+    Vec field_0x2C;    // 0x2C
+    s16 field_0x38;    // 0x38
+    u16 field_0x3A;    // 0x3A
+    u16 field_0x3C;    // 0x3C
+    u16 field_0x3E;    // 0x3E
+    s16 field_0x40;    // 0x40
+    s16 field_0x42;    // 0x42
+    u8 pad_0x44[8];    // 0x44
+    s32 field_0x4C;    // 0x4C
+    MoamoaNpc npcs[52];// 0x50
+} MoamoaWork;
+
+typedef struct MoamoaData {
+    const char* name;  // 0x00
+    const char* anim;  // 0x04
+    f32 field_0x8;     // 0x08
+} MoamoaData;
+
+static MoamoaWork* wp;
+
+const Vec vec3_eki_000088a8 = {0.0f, 0.0f, 0.0f};
+
+static inline GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
+    GXColor color = {0, 0, 0, 0};
+
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = a;
+    return color;
+}
+
 #pragma force_active on
-static void ext_moamoa_dispent(void);  // TODO: real signature
-static void ext_moamoa_main(void);  // TODO: real signature
-static void moamoa_hit_check(void);  // TODO: real signature
-static void moamoa_jump(void);  // TODO: real signature
-static void ext_shadow_disp(void);  // TODO: real signature
-static void ext_disp(void);  // TODO: real signature
-static void ext_moamoa_init(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
-static void evt_moamoa_target_off(void);  // TODO: real signature
-static void evt_moamoa_fusion_debug(void);  // TODO: real signature
-static void evt_moamoa_blow(void);  // TODO: real signature
-static void evt_moamoa_kind_onoff(void);  // TODO: real signature
-static void evt_moamoa_fusion(void);  // TODO: real signature
+static void ext_moamoa_dispent(void);
+static void ext_moamoa_main(void);
+static s32 moamoa_hit_check(MoamoaPose* pose, s32 kind);
+static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5);
+static void ext_shadow_disp(CameraId cameraId, void* param);
+static void ext_disp(CameraId cameraId, void* param);
+static void ext_moamoa_init(void);
+static f32 randf(f32 min, f32 max);
+static USER_FUNC(evt_moamoa_target_off);
+static s32 evt_moamoa_fusion_debug(void);
+static USER_FUNC(evt_moamoa_blow);
+static USER_FUNC(evt_moamoa_kind_onoff);
+static USER_FUNC(evt_moamoa_fusion);
 static USER_FUNC(evt_moamoa_end_wait);
-static void evt_moamoa_ry_reset(void);  // TODO: real signature
+static s32 evt_moamoa_ry_reset(void);
 static USER_FUNC(evt_moamoa_exit);
 static USER_FUNC(evt_moamoa_flag_onoff);
-static void moamoa_pose_change(void);  // TODO: real signature
-static void moamoa_pose_main(void);  // TODO: real signature
-static void moamoa_pose_init(void);  // TODO: real signature
+static void moamoa_pose_change(MoamoaPose* pose, const char* name, const char* anim);
+static void moamoa_pose_main(void);
+static void moamoa_pose_init(void);
 
 // clang-format off
 extend_data(4,
@@ -104,25 +194,6 @@ static u32 ext_moamoa_data[141] = {
     (u32)"D_1", 0x41000000, 0x00000000, 0x00000000,
     0x00000000,
 };
-
-// TODO: group_tbl$588 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 group_tbl$588[22] = {
-//     (u32)"c_n_moa_a", (u32)"S_1", (u32)"c_n_moa_b", (u32)"S_1",
-//     (u32)"c_kinodebu", (u32)"G_1", (u32)"c_puku_c", (u32)"U_1",
-//     (u32)"c_powan", (u32)"O_1", (u32)"c_smoko", (u32)"T_2",
-//     (u32)"c_rose", (u32)"G_1", (u32)"c_papab", (u32)"G_1",
-//     (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
-//     (u32)"c_n_moa_a", (u32)"S_1",
-// };
-
-// TODO: mt$758 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 mt$758[12] = {
-//     0x41000000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x41000000, 0x00000000, 0x3F000000,
-//     0x00000000, 0x00000000, 0x41000000, 0x00000000,
-// };
 
 static EVT_BEGIN(e_door_close)
     MULTIPLY_FLOAT(LW(0), FLOAT(-0.44434f))
@@ -247,8 +318,16 @@ static EVT_BEGIN(evt_origami)
     RETURN
 EVT_END()
 
-// TODO: write ext_moamoa_dispent (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+static void ext_moamoa_dispent(void) {
+    if (wp->field_0x00 & 0x1) {
+        dispEntry(CAMERA_3D, 0.0f, 1, ext_disp, NULL);
+        dispEntry(CAMERA_3D, 0.0f, 2, ext_shadow_disp, NULL);
+    }
+    if (wp->field_0x00 & 0x2) {
+        dispEntry(CAMERA_OFFSCREEN2, -5000.0f, 1, ext_disp, NULL);
+        dispEntry(CAMERA_OFFSCREEN2, -5000.0f, 2, ext_shadow_disp, NULL);
+    }
+}
 
 // TODO: write ext_moamoa_main (static, 0x31c0 bytes) here:
 // its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
@@ -335,11 +414,25 @@ static EVT_BEGIN(evt_meet_moamoa)
     RETURN
 EVT_END()
 
-// TODO: write evt_moamoa_end_wait (static, 0x60 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_moamoa_end_wait) {
+    MoamoaPose* pose;
+    s32 i;
 
-// TODO: write evt_moamoa_exit (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        if (!(pose->flags & 0x20)) {
+            return EVT_RETURN_BLOCK;
+        }
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_exit) {
+    extReset();
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_moamoa_escape)
     CALL(evt_mario_key_onoff, 0)
@@ -389,11 +482,40 @@ static EVT_BEGIN(evt_elv_init)
     RETURN
 EVT_END()
 
-// TODO: write img_set_color (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(img_set_color) {
+    s32* args = event->args;
+    const char* name;
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    ImageEntry* entry;
 
-// TODO: write evt_moamoa_flag_onoff (static, 0x84 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    name = (const char*)evtGetValue(event, args[0]);
+    r = evtGetValue(event, args[1]);
+    g = evtGetValue(event, args[2]);
+    b = evtGetValue(event, args[3]);
+    a = evtGetValue(event, args[4]);
+    entry = imgNameToPtr(name, gp->inBattle != 0);
+    animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    animPoseSetMaterialEvtColor(entry->poseId, makeColor(r, g, b, a));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_flag_onoff) {
+    s32* args = event->args;
+    s32 on;
+    s32 mask;
+
+    on = evtGetValue(event, args[0]);
+    mask = evtGetValue(event, args[1]);
+    if (on) {
+        wp->field_0x00 |= mask;
+    } else {
+        wp->field_0x00 &= ~mask;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_elv_down)
     BEGIN_INLINE_EVENT
@@ -784,50 +906,347 @@ static u32 jumptable_00002400[66] = {
     (u32)((u8*)&ext_moamoa_main + 0x2e08), (u32)((u8*)&ext_moamoa_main + 0x2e2c),
 };
 
-// TODO: type
-static u32 wp[1] = {
-    0x00000000,
-};
-
 // TODO: write moamoa_hit_check (static, 0xb28 bytes) here:
 // its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write moamoa_jump (static, 0x270 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (78.79%): float arg register allocation (f27/f28/f29 vs f31/f27/f28), extra `frsp` before the
+// pose Vec stores and the fabs/angle result scheduling; logic is complete.
+static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5) {
+    f32 hitX;
+    f32 hitY;
+    f32 hitZ;
+    f32 distance;
+    f32 hitNX;
+    f32 hitNY;
+    f32 hitNZ;
+    Vec pos;
+    f32 ty;
+    f32 dist;
+    f32 angle;
+    f32 dy;
+    s32 distInt;
 
-// TODO: write ext_shadow_disp (static, 0x90 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    if (c != 0) {
+        hitX = 0.0f;
+        hitY = 0.0f;
+        hitZ = 0.0f;
+        distance = 1000000.0f;
+        if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, f1, f2 + 100.0f, f3,
+                           0.0f, -1.0f, 0.0f)
+            != NULL) {
+            dy = f2 - hitY;
+            if (__fabs(dy) > 30.0) {
+                f4 -= 0.1f;
+                f5 += 0.1f;
+            }
+            f2 = hitY;
+        }
+    }
+    pos = vec3_eki_000088a8;
+    pos.x = f1;
+    pos.y = f2;
+    pos.z = f3;
+    pose->x = pos.x;
+    pose->y = pos.y;
+    pose->z = pos.z;
+    pose->field_0x1C = f4;
+    pose->field_0x20 = f5;
+    ty = pose->y - ep->matrix[0][1][3];
+    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->x, pose->z);
+    angle = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->x, pose->z);
+    distInt = (s32)(dist / pose->field_0x1C);
+    pose->field_0x18 = (s16)distInt;
+    pose->field_0x14 = pose->field_0x20 * (f32)distInt * 0.5f + ty / (f32)pose->field_0x18;
+    pose->field_0x02 = 3;
+    pose->field_0x24 = b;
+    ep->field_0x4 = 180.0f + angle;
+    pose->flags |= 0x2;
+    ep->flags |= 0x10;
+    ep->flags &= ~0x4;
+}
 
-// TODO: write ext_disp (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+static void ext_shadow_disp(CameraId cameraId, void* param) {
+    static Mtx mt = {
+        {8.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 8.0f, 0.0f, 0.5f},
+        {0.0f, 0.0f, 8.0f, 0.0f},
+    };
+    u16 left;
+    u16 top;
+    u16 right;
+    u16 bottom;
 
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    if (cameraId == CAMERA_OFFSCREEN2) {
+        GXClearBoundingBox();
+    }
+    extLoadShadowMtx(mt);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+    if (cameraId == CAMERA_OFFSCREEN2) {
+        sysWaitDrawSync();
+        GXReadBoundingBox(&left, &top, &right, &bottom);
+        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
+    }
+}
 
-// TODO: write evt_moamoa_target_off (static, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+static void ext_disp(CameraId cameraId, void* param) {
+    u16 left;
+    u16 top;
+    u16 right;
+    u16 bottom;
 
-// TODO: write evt_moamoa_fusion_debug (static, 0x1dc bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    if (cameraId == CAMERA_OFFSCREEN2) {
+        GXClearBoundingBox();
+    }
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+    GXSetNumIndStages(0);
+    GXSetTevDirect(0);
+    if (cameraId == CAMERA_OFFSCREEN2) {
+        sysWaitDrawSync();
+        GXReadBoundingBox(&left, &top, &right, &bottom);
+        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
+    }
+}
 
-// TODO: write evt_moamoa_blow (static, 0x74 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+static f32 randf(f32 min, f32 max) {
+    f32 t = (f32)rand() / 32767.0f;
 
-// TODO: write evt_moamoa_kind_onoff (static, 0x220 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    return t * (max - min) + min;
+}
 
-// TODO: write evt_moamoa_fusion (static, 0x2a4 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(evt_moamoa_target_off) {
+    s32 index = evtGetValue(event, event->args[0]);
+    Vec* vecs = &wp->field_0x14;
 
-// TODO: write evt_moamoa_ry_reset (static, 0x60 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    vecs[index] = vecs[1 - index];
+    (&wp->field_0x3A)[index] = 0x64;
+    if (index == 0) {
+        wp->field_0x00 |= 0x1000;
+    } else {
+        wp->field_0x00 |= 0x2000;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write moamoa_pose_change (static, 0x168 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99%): 46 of 119 instructions differ in operands only (registers or offsets)
+static s32 evt_moamoa_fusion_debug(void) {
+    ExtPose* ep = extGetPosePtr();
+    MoamoaPose* pose = wp->poses;
+    s32 i;
 
-// TODO: write moamoa_pose_main (static, 0x17c bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < wp->poseNum; i++) {
+        ep->flags |= 4;
+        pose->flags |= 0x400;
+        pose->flags |= 0x100;
+        pose->flags |= 0x200;
+        pose->field_0x02 = 0x3D;
+        pose->flags |= 0x800;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        ep++;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write moamoa_pose_init (static, 0x1c8 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
-// clang-format on
+static USER_FUNC(evt_moamoa_blow) {
+    s32 i;
+    MoamoaPose* pose;
+
+    evtGetValue(event, event->args[0]);
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        pose->flags &= ~0x400;
+        pose->field_0x02 = 0x3F;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.21%): 43 of 136 instructions differ in operands only (registers or offsets)
+static USER_FUNC(evt_moamoa_kind_onoff) {
+    s32* args = event->args;
+    s32 on = evtGetValue(event, args[0]);
+    s32 mode = evtGetValue(event, args[1]);
+    MoamoaPose* pose;
+    s32 i;
+
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        if (on != 0) {
+            if (mode == 0) {
+                if (pose->groupIndex == 1) {
+                    pose->flags |= 0x800;
+                }
+            } else {
+                pose->flags |= 0x800;
+            }
+        } else {
+            if (mode == 0) {
+                if (pose->groupIndex != 1) {
+                    pose->flags &= ~0x800;
+                }
+            } else {
+                pose->flags &= ~0x800;
+            }
+        }
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_fusion) {
+    s32 i;
+    ExtPose* ep;
+    MoamoaPose* pose;
+
+    if (isFirstCall) {
+        ep = extGetPosePtr();
+        pose = wp->poses;
+        for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
+            ep->matrix[0][2][2] = 1.0f;
+            ep->matrix[0][1][1] = 1.0f;
+            ep->matrix[0][0][0] = 1.0f;
+            pose->field_0x24 = 0xE;
+            pose->field_0x02 = 0xE;
+            pose->field_0x04 = (i < 100) ? i % 100 : i % 60 + 100;
+            pose->flags |= 0x100;
+        }
+    }
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        if (!(pose->flags & 0x200)) {
+            return EVT_RETURN_BLOCK;
+        }
+        pose++;
+    }
+    ep = extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
+        ep->flags |= 4;
+        pose->flags |= 0x400;
+        pose->field_0x02 = 0x3D;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+    }
+    return EVT_RETURN_DONE;
+}
+
+static s32 evt_moamoa_ry_reset(void) {
+    ExtPose* pose = extGetPosePtr();
+    s32 i;
+
+    for (i = 0; i < wp->poseNum; i++) {
+        pose->field_0x14 = 0.0f;
+        pose->field_0x1C = 0.0f;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static void moamoa_pose_change(MoamoaPose* pose, const char* name, const char* anim) {
+    static const char* group_tbl[11][2] = {
+        {"c_n_moa_a", "S_1"},
+        {"c_n_moa_b", "S_1"},
+        {"c_kinodebu", "G_1"},
+        {"c_puku_c", "U_1"},
+        {"c_powan", "O_1"},
+        {"c_smoko", "T_2"},
+        {"c_rose", "G_1"},
+        {"c_papab", "G_1"},
+        {"c_mamab", "G_1"},
+        {"c_konari", "G_1"},
+        {"c_n_moa_a", "S_1"},
+    };
+    MoamoaNpc* npc = wp->npcs;
+    s32 i;
+
+    if (pose->flags & 0x800) {
+        name = group_tbl[pose->groupIndex][0];
+        if (pose->groupIndex >= 2) {
+            anim = group_tbl[pose->groupIndex][1];
+        }
+        if (pose->groupIndex == 0xa) {
+            anim = "S_2";
+        }
+    }
+    for (i = 0; i < wp->field_0x4C; i++, npc++) {
+        if (strcmp(npc->name, name) == 0 && strcmp(npc->anim, anim) == 0) {
+            break;
+        }
+    }
+    if (i < wp->field_0x4C && pose->animId != i) {
+        if (!(pose->flags & 0x4) || strncmp(anim, "D", 1) == 0) {
+            if (!(pose->flags & 0x10) || strncmp(anim, "R", 1) == 0) {
+                pose->animId = i;
+                pose->field_0x40 = gp->renderTime;
+            }
+        }
+    }
+}
+
+static void moamoa_pose_main(void) {
+    s32 i;
+    ExtPose* ep;
+    MoamoaPose* pose;
+
+    ep = extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        MoamoaNpc* npc = &wp->npcs[pose->animId];
+        f32 ratio = (f32)((u64)(gp->renderTime - pose->field_0x40) / (u64)((OS_BUS_CLOCK >> 2) / 1000)) * 60.0f
+                    / 1000.0f / npc->field_0x1C;
+
+        if (ratio >= 1.0f) {
+            pose->field_0x40 = gp->renderTime;
+            ratio = 0.0f;
+        }
+        pose++;
+        ep->field_0x10 = npc->field_0x20 + (s32)((npc->field_0x24 - 1) * ratio);
+        ep++;
+    }
+}
+
+static void moamoa_pose_init(void) {
+    char name[0x20];
+    char anim[0x20];
+    MoamoaData* entry = (MoamoaData*)ext_moamoa_data;
+    s32 i = 0;
+    s32 start;
+
+    strcpy(name, "");
+    strcpy(anim, "");
+    wp->field_0x4C = -1;
+    do {
+        if (strcmp(entry->name, name) != 0) {
+            strcpy(name, entry->name);
+            strcpy(anim, "");
+        }
+        if (strcmp(entry->anim, anim) != 0) {
+            strcpy(anim, entry->anim);
+            start = i;
+            wp->field_0x4C++;
+        }
+        strcpy(wp->npcs[wp->field_0x4C].name, name);
+        strcpy(wp->npcs[wp->field_0x4C].anim, anim);
+        wp->npcs[wp->field_0x4C].field_0x20 = start;
+        wp->npcs[wp->field_0x4C].field_0x24 = i - start + 1;
+        wp->npcs[wp->field_0x4C].field_0x1C = entry->field_0x8;
+        wp->npcs[wp->field_0x4C].field_0x18 = 1;
+        if (strncmp(anim, "J", 1) == 0) {
+            wp->npcs[wp->field_0x4C].field_0x18 = 0;
+        }
+        i++;
+        entry++;
+    } while (entry->name != NULL);
+    wp->field_0x4C++;
+}// clang-format on

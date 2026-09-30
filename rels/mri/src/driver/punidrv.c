@@ -1,12 +1,22 @@
 #include "punidrv.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "mri_puni.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/mapdrv.h"
+#include "memory.h"
+#include "system.h"
+#include "win/win_main.h"
+#include "math_trig.h"
+#include <dolphin/os.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
-static void compare(void);  // TODO: real signature
-static void camGetRy(void);  // TODO: real signature
+static int compare(void* a, void* b);
+static f32 camGetRy(void);
 
 // clang-format off
 extend_data(72,
@@ -144,26 +154,417 @@ static u32 sintbl[450] = {
     0x3F7FD817, 0x3F7FF60A,
 };
 
-// TODO: Normals$480 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 Normals$480[6] = {
-//     0x00000000, 0x00000000, 0x3F800000, 0x00000000,
-//     0x00000000, 0xBF800000,
-// };
+// Normals$480, Colors$481 and UVs$482 are static locals of puniEntry (below).
 
-// TODO: Colors$481 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 Colors$481[1] = {
-//     0xFFFFFFFF,
-// };
+static PuniDrvWork* work;
 
-// TODO: UVs$482 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 UVs$482[11] = {
-//     0x00000000, 0x00000000, 0x3F800000, 0x00000000,
-//     0x3F800000, 0x3F800000, 0x00000000, 0x3F800000,
-//     0x00000000, 0x00000000, 0x00000000,
-// };
+void puniSinCosRet(u32 angle, f32* sinOut, f32* cosOut, f32 scaleSin, f32 scaleCos) {
+    f32* tbl = (f32*)sintbl;
+    f32* tbl2 = (f32*)sintbl;
+    s32 idx = angle % 360;
+
+    *sinOut += scaleSin * tbl[idx];
+    *cosOut += scaleCos * tbl2[idx + 90];
+}
+
+void puniInit(void) {
+    PuniDrvWork* wp = (PuniDrvWork*)_mapAlloc(sizeof(PuniDrvWork));
+
+    work = wp;
+    wp->poseNum = 0;
+    wp->poses = NULL;
+    wp->field_0x70 = 1;
+}
+
+void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void)) {
+    static Vec Normals[2] = {
+        { 0.0f, 0.0f, 1.0f },
+        { 0.0f, 0.0f, -1.0f },
+    };
+    static GXColor Colors = { 0xFF, 0xFF, 0xFF, 0xFF };
+    static f32 UVs[11] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f };
+    PuniDrvWork* wp = work;
+    void* p = param;
+    s32 texCount = 0;
+    s32 i;
+
+    while (*(u32*)p != 0) {
+        texCount++;
+        p = (u8*)p + 0xC;
+    }
+
+    wp->poses = __memAlloc(2, count * sizeof(PuniPose));
+    wp->poseNum = count;
+    wp->cb0 = cb0;
+    wp->cb1 = cb1;
+    wp->textures = __memAlloc(2, texCount * sizeof(PuniTexture));
+    wp->texCount = texCount;
+    wp->mtx = __memAlloc(2, count * 0x30);
+    wp->vertices = __memAlloc(2, texCount * 0xC * sizeof(f32));
+    wp->normals = Normals;
+    wp->colors = &Colors;
+    wp->uvs = UVs;
+    wp->sortList = __memAlloc(2, count * 8);
+    wp->dlBuffer = __memAlloc(2, texCount * 0x80);
+    DCInvalidateRange(wp->dlBuffer, texCount * 0x80);
+    wp->dlSizes = __memAlloc(2, texCount * 4);
+    memset(wp->poses, 0, wp->poseNum * sizeof(PuniPose));
+
+    for (i = 0; i < count; i++) {
+        wp->sortList[i].field_0x0 = i;
+        wp->poses[i].matrix = &wp->mtx[i];
+        wp->poses[i].field_0x14 = 1.0f;
+    }
+
+    PSMTXIdentity(wp->field_0x3C);
+    dispEntry(CAMERA_OFFSCREEN, 0.0f, 1, puniMakeTexture, param);
+    if (callback != NULL) {
+        callback();
+    }
+}
+
+// NONMATCHING (90.97%): 110 of 200 instructions differ: 98 with different operands, 2 replaced, 5 missing, 5 extra
+void puniMakeTexture(CameraId camId, void* param) {
+    PuniDrvWork* wp = work;
+    PuniTexture* tex = wp->textures;
+    PuniTexInfo* info = param;
+    s32 i;
+
+    anim_ext_tex_size = 0;
+    for (i = 0; i < wp->texCount; i++) {
+        s32 out0;
+        s32 out1;
+        s32 out2;
+        s32 out3;
+        s32 idx = i * 12;
+        s32 vi = i * 4;
+
+        animPoseDisp_MakeExtTexture(info->unk0, info->unk8, info->unk4, &tex->texObj, tex, 5.84f, &out0, &out1,
+                                    &out2, &out3);
+        wp->vertices[idx++] = (f32)out0 * 0.34246576f;
+        wp->vertices[idx++] = (f32)(-out1) * 0.34246576f;
+        wp->vertices[idx++] = 0.0f;
+        wp->vertices[idx++] = (f32)out2 * 0.34246576f;
+        wp->vertices[idx++] = (f32)(-out1) * 0.34246576f;
+        wp->vertices[idx++] = 0.0f;
+        wp->vertices[idx++] = (f32)out2 * 0.34246576f;
+        wp->vertices[idx++] = (f32)(-out3) * 0.34246576f;
+        wp->vertices[idx++] = 0.0f;
+        wp->vertices[idx++] = (f32)out0 * 0.34246576f;
+        wp->vertices[idx++] = (f32)(-out3) * 0.34246576f;
+        wp->vertices[idx++] = 0.0f;
+
+        GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
+        GXBegin(0x80, 0, 4);
+        GXPosition1x16(vi + 0);
+        GXTexCoord1x16(0);
+        GXPosition1x16(vi + 1);
+        GXTexCoord1x16(1);
+        GXPosition1x16(vi + 2);
+        GXTexCoord1x16(2);
+        GXPosition1x16(vi + 3);
+        GXTexCoord1x16(3);
+        wp->dlSizes[i] = GXEndDisplayList();
+        info++;
+        tex++;
+    }
+}
+
+void puniReset(void) {
+    PuniDrvWork* wp = work;
+
+    if (wp->poses != NULL) {
+        __memFree(2, wp->poses);
+    }
+    if (wp->textures != NULL) {
+        __memFree(2, wp->textures);
+    }
+    if (wp->mtx != NULL) {
+        __memFree(2, wp->mtx);
+    }
+    if (wp->vertices != NULL) {
+        __memFree(2, wp->vertices);
+    }
+    if (wp->sortList != NULL) {
+        __memFree(2, wp->sortList);
+    }
+    if (wp->dlBuffer != NULL) {
+        __memFree(2, wp->dlBuffer);
+    }
+    if (wp->dlSizes != NULL) {
+        __memFree(2, wp->dlSizes);
+    }
+    memset(wp, 0, sizeof(PuniDrvWork));
+}
+
+void puniFadeOff(s32 fadeOff) {
+    work->field_0x70 = fadeOff;
+}
+
+void puniMain(void) {
+    PuniDrvWork* wp = work;
+    s32 i;
+    PuniPose* pose;
+    PuniSortEntry* sort;
+    f32 angle;
+    f32 target;
+
+    if (winCheck() == 0 && wp->cb0 != NULL) {
+        wp->cb0();
+    }
+    if (wp->cb1 != NULL) {
+        wp->cb1();
+    }
+    pose = wp->poses;
+    sort = wp->sortList;
+    angle = camGetRy();
+    camGetPtr(CAMERA_3D);
+    camGetPtr(CAMERA_3D);
+    target = 180.0f + angle;
+
+    for (i = wp->poseNum - 1; i >= 0; i--) {
+        u32 flags = pose->flags;
+
+        sort->field_0x0 = i;
+        if (flags & 1) {
+            sort->field_0x4 = (f32)pose->field_0x1C;
+        }
+        {
+            f32 diff = 90.0f + (angle - pose->field_0x4);
+
+            while (diff < -360.0f) {
+                diff += 360.0f;
+            }
+            while (diff >= 360.0f) {
+                diff -= 360.0f;
+            }
+            if ((diff > 90.0f && diff <= 270.0f) || (diff < -90.0f && diff >= -270.0f)) {
+                pose->field_0x28 = target;
+            } else {
+                pose->field_0x28 = camGetRy();
+            }
+        }
+        while ((pose->field_0x28 - pose->field_0x20) > 180.0f) {
+            pose->field_0x20 += 360.0f;
+        }
+        while ((pose->field_0x28 - pose->field_0x20) < -180.0f) {
+            pose->field_0x20 -= 360.0f;
+        }
+        if (flags & 2) {
+            f32 diff = pose->field_0x28 - pose->field_0x20;
+
+            pose->field_0x20 = 0.1f * diff + pose->field_0x20;
+        } else {
+            pose->field_0x20 = pose->field_0x28;
+        }
+        {
+            f32 a = pose->field_0x20;
+            f32 c;
+            f32 s;
+            s32 idx;
+
+            while (a < 0.0f) {
+                a += 360.0f;
+            }
+            while (a >= 360.0f) {
+                a -= 360.0f;
+            }
+            idx = (s32)a;
+            s = ((f32*)sintbl)[idx];
+            c = ((f32*)sintbl)[idx + 90];
+            (*pose->matrix)[0][0] = c;
+            (*pose->matrix)[2][2] = c;
+            (*pose->matrix)[0][2] = s;
+            (*pose->matrix)[2][0] = -s;
+        }
+        pose++;
+        sort++;
+    }
+
+    if (wp->poseNum != 0) {
+        qqsort(wp->sortList, wp->poseNum, 8, compare);
+    }
+    wp->lastTex = -1;
+    wp->texSize = 0;
+}
+
+static int compare(void* a, void* b) {
+    if (((PuniSortEntry*)a)->field_0x4 > ((PuniSortEntry*)b)->field_0x4) {
+        return 1;
+    }
+    if (((PuniSortEntry*)a)->field_0x4 < ((PuniSortEntry*)b)->field_0x4) {
+        return -1;
+    }
+    return 0;
+}
+
+PuniPose* puniGetPosePtr(void) {
+    return work->poses;
+}
+
+s32 puniGetPoseNum(void) {
+    return work->poseNum;
+}
+
+void puniPoseDraw(s32 poseId) {
+    PuniDrvWork* wp = work;
+    PuniPose* pose = &wp->poses[poseId];
+
+    if (pose->flags & 1) {
+        s32 texId = pose->field_0x1C;
+
+        if (wp->lastTex != texId) {
+            PuniTexture* tex = &wp->textures[texId];
+
+            GXLoadTexObjPreLoaded(smartTexObj(&tex->texObj, tex->image), &tex->region, 0);
+            wp->lastTex = texId;
+        }
+        {
+            Mtx m;
+
+            PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
+            GXLoadPosMtxImm(m, 0);
+            GXSetCurrentMtx(0);
+            GXCallDisplayList((u8*)wp->dlBuffer + pose->field_0x1C * 0x80, wp->dlSizes[pose->field_0x1C]);
+        }
+    }
+}
+
+void puniDraw(void) {
+    PuniDrvWork* wp = work;
+    s32 i;
+    PuniSortEntry* sort = wp->sortList;
+
+    for (i = wp->poseNum - 1; i >= 0; i--, sort++) {
+        PuniPose* pose = &wp->poses[sort->field_0x0];
+
+        if (pose->flags & 1) {
+            s32 texId = pose->field_0x1C;
+
+            if (texId != wp->lastTex) {
+                PuniTexture* tex = &wp->textures[texId];
+
+                GXLoadTexObjPreLoaded(smartTexObj(&tex->texObj, tex->image), &tex->region, 0);
+                wp->lastTex = texId;
+            }
+            {
+                Mtx m;
+                Mtx scale;
+                Mtx rot;
+                Mtx trans;
+
+                PSMTXTrans(trans, 0.0f, pose->field_0xC, 0.0f);
+                PSMTXRotRad(rot, 'Z', 0.017453292f * pose->field_0x8);
+                PSMTXScale(scale, pose->field_0x14, pose->field_0x14, 1.0f);
+                PSMTXConcat(*pose->matrix, trans, m);
+                PSMTXConcat(m, rot, m);
+                PSMTXConcat(m, scale, m);
+                PSMTXConcat(camGetCurPtr()->view, m, m);
+                GXLoadPosMtxImm(m, 0);
+                GXSetCurrentMtx(0);
+                GXCallDisplayList((u8*)wp->dlBuffer + texId * 0x80, wp->dlSizes[texId]);
+            }
+        }
+    }
+}
+
+void puniLoadRenderMode(void) {
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(1, 3, 1);
+}
+
+void puniLoadVertex(void) {
+    PuniDrvWork* wp = work;
+
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 3);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetArray(9, wp->vertices, 0xC);
+    GXSetVtxDesc(0xD, 3);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetArray(0xD, wp->uvs, 8);
+    GXSetCullMode(0);
+}
+
+void puniLoadTexture(void) {
+    PuniDrvWork* wp = work;
+    PuniTexture* tex = wp->textures;
+    s32 i;
+    u32 total = 0;
+
+    GXInvalidateTexAll();
+    for (i = 0; i < wp->texCount; i++, tex++) {
+        u32 size = GXGetTexBufferSize(GXGetTexObjWidth(&tex->texObj), GXGetTexObjHeight(&tex->texObj),
+                                      GXGetTexObjFmt(&tex->texObj), 0, 0);
+
+        if (total < 0x80000 && total + size >= 0x80000) {
+            total = 0x80000;
+        }
+        GXInitTexPreLoadRegion(&tex->region, total, size, 0, 0);
+        GXPreLoadEntireTexture(smartTexObj(&tex->texObj, tex->image), &tex->region);
+        total += size;
+    }
+    wp->texSize = total;
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+}
+
+u32 puniGetUsedTmemSize(void) {
+    return work->texSize;
+}
+
+void puniLoadTextureExit(void) {
+    GXTexModeSync();
+}
+
+// original global data referenced by puniLoadTev / puniLoadShadowTev
+__declspec(section ".rodata") GXColor dat_mri_000252f0 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".rodata") GXColor dat_mri_000252f4 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".rodata") GXColor dat_mri_000252f8 = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+void puniLoadTev(void) {
+    GXColor blend;
+    GXColor color = dat_mri_000252f8;
+
+    if (work->field_0x70 == 0) {
+        mapGetBlend(&blend);
+        GXSetTevColor(1, blend);
+        GXSetTevOrder(0, 0, 0, 0xFF);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0, 0xF, 8, 2, 0xF);
+        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+        GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    } else {
+        GXSetTevOrder(0, 0, 0, 0xFF);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+        GXSetTevAlphaIn(0, 7, 7, 7, 4);
+    }
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
+    GXSetNumTexGens(1);
+    GXSetNumTevStages(1);
+}
+
+static f32 camGetRy(void) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 angle = (f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z));
+
+    angle = 57.29579f * angle;
+    while (angle >= 360.0f) {
+        angle -= 360.0f;
+    }
+    if (angle < 0.0f) {
+        angle += 360.0f;
+    }
+    return angle;
+}
+
+// original global data referenced by puniLoadShadowTev
+__declspec(section ".rodata") GXColor dat_mri_00025300 = { 0, 0, 0, 0x40 };
 
 // TODO: type
 static u32 shadow_dl[8] = {
@@ -195,80 +596,58 @@ u32 shadow_col[8] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 work[1] = {
-    0x00000000,
-};
+void puniLoadShadowVertex(void) {
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 2);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetArray(9, shadow_vtx, 0xC);
+    GXSetCullMode(0);
+}
 
-// TODO: write puniSinCosRet (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
+void puniLoadShadowTev(void) {
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanMatColor(4, dat_mri_00025300);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0xFF, 0xFF, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+    GXSetTevAlphaIn(0, 7, 7, 7, 5);
+}
 
-// TODO: write puniInit (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
+void puniLoadShadowRenderMode(void) {
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(1, 3, 0);
+}
 
-// TODO: write puniEntry (global, 0x1cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
+void puniLoadShadowMtx(Mtx mtx) {
+    PSMTXCopy(mtx, work->field_0x3C);
+}
 
-// TODO: write puniMakeTexture (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
+void puniDrawShadow(void) {
+    PuniDrvWork* wp = work;
+    s32 i;
+    PuniSortEntry* sort = &wp->sortList[wp->poseNum - 1];
 
-// TODO: write puniReset (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
+    for (i = wp->poseNum - 1; i >= 0; i--, sort--) {
+        PuniPose* pose = &wp->poses[sort->field_0x0];
 
-// TODO: write puniFadeOff (global, 0x14 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
+        if (!(pose->flags & 4)) {
+            Mtx m;
 
-// TODO: write puniMain (global, 0x318 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write compare (static, 0x2c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniGetPosePtr (global, 0x14 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniGetPoseNum (global, 0x14 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPoseDraw (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDraw (global, 0x16c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadRenderMode (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadVertex (global, 0xa0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadTexture (global, 0xfc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniGetUsedTmemSize (global, 0x14 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadTextureExit (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadTev (global, 0x1bc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write camGetRy (static, 0x90 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadShadowVertex (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadShadowTev (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadShadowRenderMode (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniLoadShadowMtx (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDrawShadow (global, 0xf8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/driver/punidrv.s; this is where the original has it, just before the first script that uses it
+            PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
+            PSMTXConcat(m, wp->field_0x3C, m);
+            if (pose->flags & 0x10) {
+                PSMTXTransApply(m, m, 0.0f, -(*pose->matrix)[1][3] + pose->field_0x10, 0.0f);
+            }
+            GXLoadPosMtxImm(m, 0);
+            GXSetCurrentMtx(0);
+            GXCallDisplayList(shadow_dl, 0x20);
+        }
+    }
+}
 // clang-format on

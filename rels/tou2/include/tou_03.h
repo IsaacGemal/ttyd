@@ -18,10 +18,10 @@ void screen_tev(void);  // TODO: real signature
 USER_FUNC(screen_init);
 void ext_kyaku_dispent(void);  // TODO: real signature
 void ext_kyaku_main(void);  // TODO: real signature
-void kyaku_disp(void);  // TODO: real signature
+void kyaku_disp(CameraId camera, void* param);
 void ext_kyaku_init(void);  // TODO: real signature
-void __tou_rand(void);  // TODO: real signature
-void __tou_srand(void);  // TODO: real signature
+u32 __tou_rand(void);
+void __tou_srand(s32 seed);
 USER_FUNC(_firstattack_setting);
 EVT_DEF(x);
 EVT_DEF(evt_kyaku);

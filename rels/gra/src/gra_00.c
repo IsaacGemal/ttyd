@@ -1,4 +1,6 @@
 #include "gra_00.h"
+#include "driver/camdrv.h"
+#include "driver/msgdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -15,6 +17,10 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
 #include "party/party_motion.h"
 #include "rel/gra/event/evt_kagemario.h"
 
@@ -50,6 +56,38 @@ extend_data(2,
 
 // TODO: write camera_yure (global, 0x19c bytes) here:
 // its asm is in build/G8MJ01/gra/asm/gra_00.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (98.78%): 18 of 103 instructions differ in operands only (registers or offsets)
+USER_FUNC(camera_yure) {
+    s32 count;
+    CameraEntry* cam;
+    CameraEntry* cam2;
+    Vec vec;
+    f32 s;
+    f32 scale;
+
+    count = evtGetValue(event, event->args[0]);
+    cam = camGetPtr(CAMERA_3D);
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+        event->userdata[1] = count;
+    }
+    s = (f32)sin(18.849556f * (f32)event->userdata[0] / (f32)event->userdata[1]) * 0.1f;
+    scale = (f32)(event->userdata[1] - event->userdata[0]) * s / (f32)event->userdata[1];
+    PSVECSubtract(&cam->cameraAt, &cam->cameraPos, &vec);
+    PSVECScale(&vec, &vec, scale);
+    cam->viewOffset.x = vec.x;
+    cam->viewOffset.y = vec.y;
+    cam->viewOffset.z = vec.z;
+    cam2 = camGetPtr(CAMERA_3D_IMAGE);
+    cam2->viewOffset.x = vec.x;
+    cam2->viewOffset.y = vec.y;
+    cam2->viewOffset.z = vec.z;
+    event->userdata[0]++;
+    if (event->userdata[0] > event->userdata[1]) {
+        return 2;
+    }
+    return 0;
+}
 
 EVT_BEGIN(evt_yabure_on)
     CALL(evt_paper_entry, STRING("OFF_d_yabu_small"))
@@ -108,11 +146,24 @@ EVT_BEGIN(evt_nameent)
     RETURN
 EVT_END()
 
-// TODO: write cam_r (static, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra_00.s; this is where the original has it, just before the first script that uses it
+// TODO: write cam_r at the end of the file (deferred-inline order puts it first in .text)
 
-// TODO: write zoom (static, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(zoom) {
+    s32* args = event->args;
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec vec;
+
+    PSVECSubtract(&cam->cameraPos, &cam->cameraAt, &vec);
+    PSVECScale(&vec, &vec, 0.6f);
+    PSVECAdd(&cam->cameraAt, &vec, &vec);
+    evtSetFloat(event, args[0], vec.x);
+    evtSetFloat(event, args[1], vec.y);
+    evtSetFloat(event, args[2], vec.z);
+    evtSetFloat(event, args[3], cam->cameraAt.x);
+    evtSetFloat(event, args[4], cam->cameraAt.y);
+    evtSetFloat(event, args[5], cam->cameraAt.z);
+    return 2;
+}
 
 EVT_BEGIN(name_seikai)
     CALL(evt_npc_get_position, STRING("にせマリオ"), LW(0), LW(1), LW(2))
@@ -517,27 +568,14 @@ static BeroEntry bero_entry_data[3] = {
     {NULL},
 };
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"にせマリオ", 0x00000600, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[2] = {
+    { "にせマリオ", 0x00000600 },
+    { NULL },
 };
 
-// TODO: type
-static u32 tree_tbl[12] = {
-    0x00000002, (u32)"A_ki_1", (u32)"S_gra00_ki", 0x00000000,
-    0x00000000, 0x00000000, 0x00000007, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static TreeAccessEntry tree_tbl[2] = {
+    { 2, "A_ki_1", "S_gra00_ki", NULL, NULL, NULL },
+    { 7, NULL, NULL, NULL, NULL, NULL },
 };
 
 EVT_BEGIN(evt_majin_key)
@@ -571,4 +609,47 @@ EVT_END()
 
 // TODO: write msg_callback (global, 0xdc bytes) here:
 // its asm is in build/G8MJ01/gra/asm/gra_00.s; this is where the original has it, just before the first script that uses it
+void msg_callback(s32 state, smartEntry* smart) {
+    MessageData* data = smart->address;
+    EventEntry* event = data->event;
+
+    switch (state) {
+    case 0:
+        evtSetValue(event, GW(0), 0);
+        evtSetValue(event, GW(1), 0);
+        event->lwData[15] = 0;
+        break;
+    case 5:
+        if (event->lwData[15] == 3) {
+            marioKeyOff();
+        }
+        event->lwData[15]++;
+        break;
+    case 1:
+        evtSetValue(event, GW(1), 1);
+        break;
+    case 3:
+        evtSetValue(event, GW(0), 1);
+        break;
+    }
+}
+
+static USER_FUNC(cam_r) {
+    f32 angle = evtGetFloat(event, event->args[0]);
+    f32 zero = 0.0f;
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+
+    if (angle == zero) {
+        cam->rollAngle = zero;
+        cam->viewOffset.z = zero;
+    } else {
+        f32 yure;
+        cam->rollAngle = angle;
+        yure = (f32)sin((f32)gp->retraceCount / 10.0f);
+        cam->viewOffset.z = -(__fabsf(15.0f * yure));
+        cam->cameraPos.y = 97.0f;
+        cam->cameraAt.y = 45.0f;
+    }
+    return 2;
+}
 // clang-format on

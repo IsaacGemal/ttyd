@@ -1,8 +1,19 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "evt_yuuminigame.h"
 
-void yuuminigame1_gamerule(void);  // TODO: real signature
+// Data block allocated per 1-hikoki minigame (size 0x18, see evt_yuuminigame.c).
+typedef struct YuuMinigame1Data {
+    u32 flags;          // 0x00
+    s32 phase;          // 0x04
+    s32 counterData;    // 0x08
+    s32 table;          // 0x0C
+    s32 count;          // 0x10
+    EventEntry* event;  // 0x14
+} YuuMinigame1Data;
+
+s32 yuuminigame1_gamerule(EventEntry* event, BOOL isFirstCall, YuuminigameWork* work, YuuMinigame1Data* data);
 // yuuminigame_disp_1hikoki: this unit has its own copy; a header already declares it.
 // yuuminigame_main_1hikoki: this unit has its own copy; a header already declares it.
 // yuuminigame_init_1hikoki: this unit has its own copy; a header already declares it.

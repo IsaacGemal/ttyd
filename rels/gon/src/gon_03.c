@@ -17,16 +17,29 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mario_sbr.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "math_ext.h"
+#include "party.h"
+#include "pmario_sound.h"
+#include <stdlib.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
-static void randf(void);  // TODO: real signature
-static void senkaron_ext_init(void);  // TODO: real signature
-static void senkaron_ext_main(void);  // TODO: real signature
-static void senkaron_ext_dispent(void);  // TODO: real signature
-static void senkaron_ext_disp(void);  // TODO: real signature
-static void senkaron_ext_shadow_disp(void);  // TODO: real signature
+
+static f32 randf(f32 min, f32 max);
+static void senkaron_ext_init(void);
+static void senkaron_ext_main(void);
+static void senkaron_ext_dispent(void);
+static void senkaron_ext_disp(void);
+static void senkaron_ext_shadow_disp(void);
 static USER_FUNC(senkaronToEscape);
 static USER_FUNC(senkaronFlagOnMesPushing);
 static USER_FUNC(senkaronFlagOffMesPushing);
@@ -62,31 +75,10 @@ extend_data(17,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 npcEnt[92] = {
-    (u32)"カロン1", 0x00000000, 0x00000000, (u32)&senkarondummy_init_event,
-    (u32)&senkarondummy_regl_event, (u32)&senkarondummy_talk_event, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"リチャード",
-    0x00000000, 0x00000000, (u32)&richard_init_event, (u32)&richard_regl_event,
-    (u32)&richard_talk_event, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"リーダー", 0x00000000,
-    0x00000000, (u32)&leaderkaron_init_event, 0x00000000, (u32)&leaderkaron_talk_event,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[4] = {
+    {"カロン1", 0, 0, senkarondummy_init_event, senkarondummy_regl_event, senkarondummy_talk_event},
+    {"リチャード", 0, 0, richard_init_event, richard_regl_event, richard_talk_event},
+    {"リーダー", 0, 0, leaderkaron_init_event, NULL, leaderkaron_talk_event},
 };
 
 static EVT_BEGIN(door01_close)
@@ -123,8 +115,6 @@ char* nokotaro_pose[2] = {
     "PNK_L_1", "PNK_L_2",
 };
 
-// TODO: write nokotaro_callback (global, 0xac bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(tegami_event)
     LOOP(0)
@@ -213,20 +203,10 @@ EVT_BEGIN(tegami_event)
     RETURN
 EVT_END()
 
-// TODO: write unk_gon_00000374 (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senkaronFlagOnMesPushing (static, 0x18 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senkaronFlagOffMesPushing (static, 0x18 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senkaronAttackStart (static, 0x18 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senkaronGetMarioPushedFlag (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(senkaron_event)
     IF_INT_LESS_OR_EQUAL(GSW(0), 39)
@@ -566,8 +546,7 @@ EVT_BEGIN(leaderkaron_talk_event)
 EVT_END()
 
 // TODO: type
-static u32 senkaron_ext_entry_data[78] = {
-    (u32)"c_karon_g_h", (u32)"KRN_R_1", 0x00000000, (u32)"c_karon_g_h",
+static u32 senkaron_ext_entry_data[78] = {    (u32)"c_karon_g_h", (u32)"KRN_R_1", 0x00000000, (u32)"c_karon_g_h",
     (u32)"KRN_R_1", 0x3F800000, (u32)"c_karon_g_h", (u32)"KRN_R_1",
     0x40000000, (u32)"c_karon_g_h", (u32)"KRN_R_1", 0x40400000,
     (u32)"c_karon_g_h", (u32)"KRN_R_1", 0x40800000, (u32)"c_karon_g_h",
@@ -602,72 +581,404 @@ EVT_BEGIN(senkarondummy_talk_event)
     RETURN
 EVT_END()
 
-// TODO: write senkaron_ext_init (static, 0x1a8 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senkaron_ext_main (static, 0xcf8 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senkaron_ext_dispent (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
+
 
 EVT_BEGIN(senkaron_entry_event)
     CALL(evt_ext_entry, 1000, PTR(senkaron_ext_entry_data), PTR(senkaron_ext_init), PTR(senkaron_ext_main), PTR(senkaron_ext_dispent))
     RETURN
 EVT_END()
 
-// TODO: write senkaronToEscape (static, 0x18 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(senkaron_escape_event)
     CALL(senkaronToEscape)
     RETURN
 EVT_END()
 
-// TODO: mt$850 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 mt$850[12] = {
-//     0x41200000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x41200000, 0x00000000, 0x3DCCCCCD,
-//     0x00000000, 0x00000000, 0x41200000, 0x00000000,
-// };
+SenkaronEntry* senkaron;
+s32 senkaronAttackStartFlag;
+s32 senkaronEscapeFlag;
+s32 senkaronMesPushingFlag;
+s32 marioPushedFlag;
+s32 marioHammerFrame;
 
-// TODO: type
-u32 marioHammerFrame[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 marioPushedFlag[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 senkaronMesPushingFlag[1] = {
-    0x00000000,
-};
+void nokotaro_callback(s32 index) {
+    PartyEntry* party = partyGetPtr(partyCtrlNo);
 
-// TODO: type
-u32 senkaronEscapeFlag[1] = {
-    0x00000000,
-};
+    switch (index) {
+        case 0:
+            partyChgPose(party, nokotaro_pose[1]);
+            break;
+        case 2:
+            partyChgPose(party, nokotaro_pose[0]);
+            break;
+        case 3:
+            partyChgPose(party, nokotaro_pose[1]);
+            break;
+        case 1:
+            partyChgPose(party, nokotaro_pose[0]);
+            break;
+    }
+}
 
-// TODO: type
-u32 senkaronAttackStartFlag[1] = {
-    0x00000000,
-};
+USER_FUNC(unk_gon_00000374) {
+    NpcEntry* npc = marioGetTouchNpcPtr();
+    s32 flag = FALSE;
 
-// TODO: type
-u32 senkaron[1] = {
-    0x00000000,
-};
+    if (marioKeyOffChk() || marioCtrlOffChk()) {
+        flag = TRUE;
+    }
+    if ((u32)marioStGetSystemLevel() != 0) {
+        flag = TRUE;
+    }
 
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
+    if (npc != NULL && strcmp(npc->description, "リーダー") == 0 && flag == FALSE) {
+        evtSetValue(event, LW(0), 1);
+    } else {
+        evtSetValue(event, LW(0), 0);
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write senkaron_ext_disp (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
+#pragma dont_inline on // randf is emitted as a separate function in the original
+static f32 randf(f32 min, f32 max) {
+    f32 ratio = (f32)rand() / 32767.0f;
 
-// TODO: write senkaron_ext_shadow_disp (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon_03.s; this is where the original has it, just before the first script that uses it
+    return ratio * (max - min) + min;
+}
+#pragma dont_inline reset
+
+static void senkaron_ext_init(void) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+
+    senkaron = _mapAlloc(0x5DC0);
+    i = extGetPoseNum() - 1;
+    while (i >= 0) {
+        pose->flags = 3;
+        pose->field_0x4 = randf(0.0f, 360.0f);
+        PSMTXIdentity(*pose->matrix);
+        (*pose->matrix)[0][3] = randf(-385.0f, 375.0f);
+        (*pose->matrix)[1][3] = 200.0f;
+        (*pose->matrix)[2][3] = randf(-125.0f, 140.0f);
+        pose->field_0x4 = 90.0f;
+        senkaron[i].state = 0;
+        senkaron[i].field_0x4 = (s32)randf(1.0f, 50.0f);
+        senkaron[i].field_0xC = -5.0f;
+        i--;
+        pose++;
+    }
+    senkaronAttackStartFlag = 0;
+    senkaronEscapeFlag = 0;
+    marioHammerFrame = 0;
+}
+
+// NONMATCHING (97.68%): identical length and instruction mix; only register allocation differs
+// (pose/i/offset land in r29/r28/r24 here vs r25/r26/r23 in the original).
+static void senkaron_ext_main(void) {
+    f32 f31;
+    ExtPose* pose;
+    MarioWork* mario;
+    f32 f30;
+    const char* sfxLanding;
+    f32 f29;
+    const char* sfxFly;
+    s32 i;
+
+    pose = extGetPosePtr();
+    mario = marioGetPtr();
+    f29 = mario->wPlayerCollisionBox.x * 0.5f;
+    marioPushedFlag = 0;
+    if (mario->currMotionId == MARIO_MOTION_HAMMER) {
+        marioHammerFrame++;
+        if (marioHammerFrame == 0xF) {
+            marioHammerFrame = 0;
+        }
+    } else {
+        marioHammerFrame = 0;
+    }
+
+    i = extGetPoseNum() - 1;
+    f30 = 3.0f * f29;
+    f31 = 1.5f * (6.0f * f29);
+    sfxLanding = "SFX_STG1_HONE_LANDING1";
+    sfxFly = "SFX_STG1_HONE_FLY1";
+
+    for (; i >= 0; i--) {
+        switch (senkaron[i].state) {
+            case 0:
+                pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+                if (senkaron[i].field_0x4 > 0) {
+                    if (senkaronEscapeFlag == 1) {
+                        senkaron[i].state = 0x62;
+                    } else if (senkaronAttackStartFlag == 1) {
+                        senkaron[i].field_0x4--;
+                    }
+                } else {
+                    (*pose->matrix)[1][3] += senkaron[i].field_0xC;
+                    senkaron[i].field_0xC -= 0.3f;
+                    if ((*pose->matrix)[1][3] < 0.0f) {
+                        (*pose->matrix)[1][3] = 0.0f;
+                        senkaron[i].state = 1;
+                        senkaron[i].field_0x4 = 0;
+                        senkaron[i].flags &= 0x0000FFFE;
+                        if (i % 8 == 0) {
+                            Vec v = {0.0f, 0.0f, 0.0f};
+
+                            v.x = (*pose->matrix)[0][3];
+                            v.y = (*pose->matrix)[1][3];
+                            v.z = (*pose->matrix)[2][3];
+                            psndSFXOn_3D(sfxLanding, &v);
+                        }
+                    }
+                }
+                break;
+            case 1:
+                pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+                if (senkaronEscapeFlag == 1) {
+                    f32 len;
+
+                    if ((*pose->matrix)[0][3] == 0.0f && (*pose->matrix)[2][3] == 0.0f) {
+                        senkaron[i].field_0x8 = 1.0f;
+                        senkaron[i].field_0x10 = 1.0f;
+                    } else {
+                        len = (f32)sqrt((*pose->matrix)[0][3] * (*pose->matrix)[0][3]
+                                        + (*pose->matrix)[2][3] * (*pose->matrix)[2][3]);
+                        senkaron[i].field_0x8 = 4.0f * (*pose->matrix)[0][3] / len;
+                        senkaron[i].field_0x10 = 4.0f * (*pose->matrix)[2][3] / len;
+                    }
+                    if (senkaron[i].field_0x8 < 0.0f) {
+                        pose->field_0x4 = 90.0f;
+                    } else {
+                        pose->field_0x4 = 270.0f;
+                    }
+                    senkaron[i].state = 0x62;
+                    senkaron[i].field_0x4 = 300;
+                } else {
+                    if (senkaronMesPushingFlag == 1) {
+                        break;
+                    }
+                    if (mario->currMotionId == MARIO_MOTION_HAMMER && marioHammerFrame == 0xA) {
+                        f32 mz = (*pose->matrix)[2][3];
+                        f32 pz = mario->position.z;
+
+                        if (mz > pz - 80.0f && mz < pz + 80.0f) {
+                            if (mario->directionView > 0.0f && mario->directionView < 180.0f) {
+                                if ((*pose->matrix)[0][3] > mario->position.x && (*pose->matrix)[0][3] < mario->position.x + f31) {
+                                    f32 dx = (*pose->matrix)[0][3] - mario->position.x;
+                                    f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
+
+                                    senkaron[i].field_0x8 = 3.0f * dx / len - 1.0f;
+                                    senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                    senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
+                                    senkaron[i].state = 0x61;
+                                    {
+                                        Vec v = {0.0f, 0.0f, 0.0f};
+
+                                        v.x = (*pose->matrix)[0][3];
+                                        v.y = (*pose->matrix)[1][3];
+                                        v.z = (*pose->matrix)[2][3];
+                                        psndSFXOn_3D(sfxFly, &v);
+                                    }
+                                }
+                            } else if ((*pose->matrix)[0][3] < mario->position.x && (*pose->matrix)[0][3] > mario->position.x - f31) {
+                                f32 dx = (*pose->matrix)[0][3] - mario->position.x;
+                                f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
+
+                                senkaron[i].field_0x8 = 1.0f + 3.0f * dx / len;
+                                senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
+                                senkaron[i].state = 0x61;
+                                {
+                                    Vec v = {0.0f, 0.0f, 0.0f};
+
+                                    v.x = (*pose->matrix)[0][3];
+                                    v.y = (*pose->matrix)[1][3];
+                                    v.z = (*pose->matrix)[2][3];
+                                    psndSFXOn_3D(sfxFly, &v);
+                                }
+                            }
+                        }
+                    }
+                    {
+                        f32 mx = (*pose->matrix)[0][3];
+                        f32 mz = (*pose->matrix)[2][3];
+                        f32 px = mario->position.x;
+                        f32 pz = mario->position.z;
+
+                        if (mx > px + f29 - 10.0f && mx < px + f30 && mz > pz - 20.0f && mz < pz + 20.0f) {
+                            marioPushedFlag = 1;
+                        }
+                    }
+                    if ((*pose->matrix)[0][3] >= mario->position.x) {
+                        if (senkaron[i].flags & 1) {
+                            pose->field_0x4 = 270.0f;
+                        } else {
+                            pose->field_0x4 = 90.0f;
+                        }
+                    } else {
+                        if (senkaron[i].flags & 1) {
+                            pose->field_0x4 = 90.0f;
+                        } else {
+                            pose->field_0x4 = 270.0f;
+                        }
+                    }
+                    if (senkaron[i].field_0x4 == 0) {
+                        f32 dx = (*pose->matrix)[0][3] - mario->position.x;
+                        f32 dz = (*pose->matrix)[2][3] - mario->position.z;
+                        f32 len = (f32)sqrt(dx * dx + dz * dz);
+                        f32 d = 10.0f * len;
+                        s32 r = (s32)randf(0.0f, 50.0f);
+
+                        senkaron[i].field_0x8 = randf(-0.5f, 0.5f);
+                        senkaron[i].field_0x10 = randf(-0.5f, 0.5f);
+                        senkaron[i].field_0x8 -= dx / d;
+                        senkaron[i].field_0x10 -= dz / d;
+                        if (r == 1) {
+                            senkaron[i].flags |= 1;
+                        } else {
+                            senkaron[i].flags &= 0x0000FFFE;
+                        }
+                        senkaron[i].field_0x4 = 60;
+                    }
+                    senkaron[i].field_0x4--;
+                    (*pose->matrix)[0][3] += senkaron[i].field_0x8;
+                    (*pose->matrix)[2][3] += senkaron[i].field_0x10;
+                    if ((*pose->matrix)[0][3] > 375.0f) {
+                        (*pose->matrix)[0][3] = 375.0f;
+                    }
+                    if ((*pose->matrix)[0][3] < -385.0f) {
+                        (*pose->matrix)[0][3] = -385.0f;
+                    }
+                    if ((*pose->matrix)[2][3] > 140.0f) {
+                        (*pose->matrix)[2][3] = 140.0f;
+                    }
+                    if ((*pose->matrix)[2][3] < -125.0f) {
+                        (*pose->matrix)[2][3] = -125.0f;
+                    }
+                }
+                break;
+            case 0x61:
+                pose->flags |= 4;
+                if ((*pose->matrix)[1][3] > -100.0f) {
+                    (*pose->matrix)[0][3] += senkaron[i].field_0x8;
+                    (*pose->matrix)[1][3] += senkaron[i].field_0xC;
+                    (*pose->matrix)[2][3] += senkaron[i].field_0x10;
+                    if ((*pose->matrix)[2][3] <= -125.0f) {
+                        (*pose->matrix)[2][3] = -125.0f;
+                    }
+                    senkaron[i].field_0xC -= 0.3f;
+                    pose->field_0x10 = 0x18;
+                } else {
+                    marioGetPtr();
+                    (*pose->matrix)[0][3] = randf(-385.0f, 375.0f);
+                    (*pose->matrix)[1][3] = 200.0f;
+                    (*pose->matrix)[2][3] = randf(-125.0f, 140.0f);
+                    pose->field_0x4 = randf(0.0f, 360.0f);
+                    pose->flags &= ~4;
+                    senkaron[i].state = 0;
+                    senkaron[i].field_0x4 = (s32)randf(1.0f, 1000.0f);
+                    senkaron[i].field_0xC = 0.0f;
+                }
+                break;
+            case 0x62:
+                if (senkaron[i].field_0x4 > 0) {
+                    (*pose->matrix)[0][3] += senkaron[i].field_0x8;
+                    (*pose->matrix)[2][3] += senkaron[i].field_0x10;
+                    senkaron[i].field_0x4--;
+                } else {
+                    senkaron[i].state = 0x63;
+                }
+                pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+                break;
+            case 0x63:
+                break;
+        }
+        pose++;
+    }
+
+    if (marioPushedFlag == 1) {
+        f32 nx = -390.0f - mario->position.x;
+        f32 nz = -mario->position.z;
+        f32 len = (f32)sqrt(nx * nx + nz * nz);
+        f32 speed;
+
+        switch (mario->currMotionId) {
+            case MARIO_MOTION_HAMMER:
+                speed = 0.0f;
+                break;
+            case MARIO_MOTION_WALK:
+                speed = randf(2.0f, 2.5f);
+                break;
+            case MARIO_MOTION_DASH:
+                speed = randf(2.8f, 3.3f);
+                break;
+            case MARIO_MOTION_JUMP:
+                speed = randf(2.3f, 2.8f);
+                break;
+            default:
+                speed = randf(0.7f, 1.2f);
+                break;
+        }
+        mario->position.x += speed * (nx / len);
+        mario->position.z += speed * (nz / len);
+    }
+}
+
+static void senkaron_ext_dispent(void) {
+    dispEntry(4, 0.0f, 1, (DispCallback)senkaron_ext_disp, NULL);
+    dispEntry(4, 0.0f, 2, (DispCallback)senkaron_ext_shadow_disp, NULL);
+}
+
+static void senkaron_ext_disp(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+static void senkaron_ext_shadow_disp(void) {
+    static Mtx mt = {
+        {10.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 10.0f, 0.0f, 0.1f},
+        {0.0f, 0.0f, 10.0f, 0.0f},
+    };
+
+    extLoadShadowMtx(mt);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+}
+
+static USER_FUNC(senkaronToEscape) {
+    senkaronEscapeFlag = 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senkaronFlagOnMesPushing) {
+    senkaronMesPushingFlag = 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senkaronFlagOffMesPushing) {
+    senkaronMesPushingFlag = 0;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senkaronAttackStart) {
+    senkaronAttackStartFlag = 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senkaronGetMarioPushedFlag) {
+    evtSetValue(event, event->args[0], marioPushedFlag);
+    return EVT_RETURN_DONE;
+}
+
 // clang-format on

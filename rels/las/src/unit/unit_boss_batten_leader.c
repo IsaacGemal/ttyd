@@ -15,6 +15,14 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle_sub.h"
+#include "manager/evtmgr_cmd.h"
+#include "driver/animdrv.h"
+#include "eff/n64/eff_pokopi_thunder_n64.h"
+#include "memory.h"
+#include "driver/mapdrv.h"
+#include "system.h"
+#include "eff/eff_syuryou.h"
 
 #pragma pool_data off
 
@@ -23,6 +31,7 @@ extern s32 bts_x_flag_add[];
 extern s32 bts_x_flag_set[];
 extern s32 bts_x_flag_wait[];
 extern BattleUnitKind unit_boss_batten_satellite;
+static u32 xlw[16];
 static USER_FUNC(_set_draw_callback);
 static USER_FUNC(enzan_lw_load);
 static USER_FUNC(enzan_lw_save);
@@ -1208,20 +1217,47 @@ EVT_BEGIN(light_rod_anim_rtn)
     RETURN
 EVT_END()
 
-// TODO: write enzan_lw_load2 (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (92.18%): register allocation swaps args/unitId (orig r30/r31, ours r31/r30) and the
+// original emits `mr r0,r3; mr r4,r0` around the BattleTransID call.
+USER_FUNC(btlevtcmd_AnimeGetPose) {
+    s32* args = event->args;
+    s32 unitId = BattleTransID(event, evtGetValue(event, args[0]));
+    evtSetValue(event, args[2],
+                (s32)animPoseGetCurrentAnim(*(s32*)((u8*)BattleGetUnitPartsPtr(unitId, evtGetValue(event, args[1])) + 0x1C0)));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write enzan_lw_save2 (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(enzan_lw_save) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        xlw[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write enzan_lw_load (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(enzan_lw_load) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw[i];
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write enzan_lw_save (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(enzan_lw_save2) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        xlw2[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write btlevtcmd_AnimeGetPose (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(enzan_lw_load2) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw2[i];
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(light_pose_change)
     CALL(enzan_lw_save2)
@@ -1345,8 +1381,17 @@ EVT_BEGIN(light_pose_change)
     RETURN
 EVT_END()
 
-// TODO: write datastrcopy (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(datastrcopy) {
+    s8* src = (s8*)evtGetValue(event, event->args[0]);
+    s8* dst = (s8*)xmemo;
+    s32 i = 0;
+    while (i < 16 && src[i] != 0) {
+        dst[i] = src[i];
+        i++;
+    }
+    ((s8*)xmemo)[i] = 0;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(maiframeanimcheck)
     LOOP(0)
@@ -1360,14 +1405,47 @@ EVT_BEGIN(maiframeanimcheck)
     RETURN
 EVT_END()
 
-// TODO: write _set_draw_callback (static, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (98.25%): only the `mr r0,r3; mr r4,r0` shuffle before BattleGetUnitPtr differs.
+USER_FUNC(_set_draw_callback) {
+    BattleWork* wp;
+    BattleUnit* unit;
+    BattleUnitPart *part1, *part3, *part4, *part5, *part6, *part7;
+    wp = _battleWorkPointer;
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, -2));
+    part1 = BtlUnit_GetPartsPtr(unit, 1);
+    animPoseSetDispCallBack(*(s32*)((u8*)part1 + 0x1C0), _light_point_callback, part1);
+    part3 = BtlUnit_GetPartsPtr(unit, 3);
+    part4 = BtlUnit_GetPartsPtr(unit, 4);
+    part5 = BtlUnit_GetPartsPtr(unit, 5);
+    part6 = BtlUnit_GetPartsPtr(unit, 6);
+    part7 = BtlUnit_GetPartsPtr(unit, 7);
+    part3->attributes |= 0x01000000;
+    part4->attributes |= 0x01000000;
+    part5->attributes |= 0x01000000;
+    part6->attributes |= 0x01000000;
+    part7->attributes |= 0x01000000;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write btl_hitoffsetx (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (91.93%): same register allocation / `mr r0,r3` difference as btlevtcmd_AnimeGetPose.
+USER_FUNC(btl_hitoffsetx) {
+    s32* args = event->args;
+    s32 unitId = BattleTransID(event, evtGetValue(event, args[0]));
+    BattleUnitPart* part = BattleGetUnitPartsPtr(unitId, evtGetValue(event, args[1]));
+    part->field_0x1A0 = evtGetValue(event, args[2]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write pose_check_evt_run (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(pose_check_evt_run) {
+    xevt[0] = evtEntryType(maiframeanimcheck, event->priority, 0, event->type);
+    xevt[0]->unitId = event->unitId;
+    xevt[0]->ownerNPC = event->ownerNPC;
+    ((u8*)xmemo)[0] = 0;
+    xevt[0]->lwData[0] = (s32)xmemo;
+    xevt[0]->uwBase = event->uwBase;
+    xevt[0]->ufBase = event->ufBase;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
@@ -1416,8 +1494,21 @@ EVT_END()
 // TODO: write check_satellite (global, 0x418 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write eff_staff (static, 0x11c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (96.9%): _battleWorkPointer load order and one float register differ.
+static USER_FUNC(eff_staff) {
+    s32* args = event->args;
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, evtGetValue(event, args[0])));
+    u8* data = (u8*)effSyuryouEntry(0, 0x5A, 0.0f, -1000.0f, 0.0f)->userdata;
+    f32 x, y, z;
+    f32 faceDir;
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    faceDir = (f32)unit->faceDirection;
+    *(f32*)(data + 0x4) = 6.0f * (*(f32*)((u8*)unit + 0x114) * faceDir) + x;
+    *(f32*)(data + 0x8) = 68.0f * *(f32*)((u8*)unit + 0x114) + y;
+    *(f32*)(data + 0xC) = 5.0f + z;
+    *(f32*)(data + 0x10) = *(f32*)((u8*)unit + 0x114);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(entry_event)
     CALL(btlevtcmd_StatusWindowOnOff, 0)
@@ -1469,8 +1560,19 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: write unk_las_0000d538 (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (95.53%): only the `mr r0,r3; mr r4,r0` shuffle before BattleTransID differs.
+USER_FUNC(unk_las_0000d538) {
+    s32* args;
+    BattleWork* wp;
+    BattleUnit* unit;
+    args = event->args;
+    wp = _battleWorkPointer;
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, evtGetValue(event, args[0])));
+    if (unit != NULL) {
+        unit->hpGauge.field_0x2 |= 1;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(damage_sub_event)
     CALL(btlevtcmd_CheckDamageCode, LW(10), 256, LW(0))
@@ -1603,8 +1705,10 @@ EVT_BEGIN(monster_before_phase_event)
     RETURN
 EVT_END()
 
-// TODO: write pose_check_evt_stop (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(pose_check_evt_stop) {
+    evtDeleteID(xevt[0]->eventId);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_WaitAttackEnd)
@@ -2011,8 +2115,18 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-// TODO: write evt_eff_pokopi_thunder (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_eff_pokopi_thunder) {
+    s32* args = event->args;
+    f32 f31;
+    f32 f30 = evtGetFloat(event, args[0]);
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f28 = evtGetFloat(event, args[2]);
+    f31 = 250.0f + f29;
+    effPokopiThunderN64Entry(0, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
+    effPokopiThunderN64Entry(1, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
+    effPokopiThunderN64Entry(1, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(batten_leader_thunder_attack_event)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_SRYO_STUFF_PUTOUT1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -2550,8 +2664,8 @@ static EVT_BEGIN(wait_event)
 EVT_END()
 
 // TODO: type
-u32 xevt[1] = {
-    0x00000000,
+EventEntry* xevt[1] = {
+    NULL,
 };
 
 // TODO: type
@@ -2586,11 +2700,57 @@ u32 nowv[3] = {
     0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: write battenSatelliteTo_Main (global, 0x1d4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
+    u8* data;
+    struct BattleUnit* sat;
+    f32 pos[3];
+    f32 spline[3];
+    u8* p;
+    p = (u8*)unit + index * 4;
+    if (*(s32*)(p + 0x238) == -1) {
+        return 0;
+    }
+    data = *(u8**)(p + 0x248);
+    if (data == NULL) {
+        return 0;
+    }
+    if (*(s32*)(data + 0x58) >= 0x3C) {
+        if (data != NULL) {
+            __memFree(4, data);
+            *(s32*)(p + 0x248) = 0;
+        }
+        return 0;
+    }
+    spline_getvalue(spline, *(s32*)(data + 0x0), *(s32*)(data + 0x4), (s32)(data + 8), (s32)(data + 0x1C),
+                    intplGetValue(4, *(s32*)(data + 0x58), 0x3C, 0.0f, 1.0f));
+    sat = BattleGetUnitPtr(_battleWorkPointer, *(s32*)(p + 0x238));
+    if (sat == NULL) {
+        return 0;
+    }
+    BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
+    BtlUnit_SetPos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
+    BtlUnit_SetHomePos(sat, spline[0] * (f32)unit->faceDirection + pos[0], 5.0f + (pos[1] + spline[1]), pos[2] + spline[2]);
+    *(s32*)(data + 0x58) += 1;
+    return 1;
+}
 
-// TODO: write battenSatelliteTo_Init (global, 0xac bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (90%): data init register scheduling (data in r7 vs r4) differs.
+s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
+    u8* data;
+    struct BattleUnit* sat;
+    data = (u8*)__memAlloc(4, 0x5C);
+    if (*(s32*)((u8*)unit + index * 4 + 0x238) == -1) {
+        return 0;
+    }
+    *(s32*)((u8*)unit + index * 4 + 0x248) = (s32)data;
+    *(s32*)(data + 0x0) = 5;
+    *(s32*)(data + 0x4) = (s32)table;
+    *(s32*)(data + 0x58) = 0;
+    spline_maketable(5, (s32)table, (s32*)(data + 8), (s32*)(data + 0x1C));
+    sat = BattleGetUnitPtr(_battleWorkPointer, *(s32*)((u8*)unit + index * 4 + 0x238));
+    *(s32*)((u8*)BtlUnit_GetPartsPtr(sat, 1) + 0x134) = (s32)table;
+    return 1;
+}
 
 // TODO: write _light_point_callback (global, 0x238 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
@@ -2601,9 +2761,24 @@ u32 nowv[3] = {
 // TODO: write evt_eff_firechange00 (global, 0x58c bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write evt_eff_barriersizechange (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_eff_barriersizechange) {
+    s32* args = event->args;
+    EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, args[0]));
+    *(f32*)((u8*)effect->userdata + 0x10) = evtGetFloat(event, args[1]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_eff_colorchange00 (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.1%): only f0/f1 are swapped for the 10.0f/65.0f constants.
+USER_FUNC(evt_eff_colorchange00) {
+    EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
+    *(s32*)((u8*)effect->userdata + 0x18) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x1C) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x20) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x28) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x2C) = 0xF5;
+    *(s32*)((u8*)effect->userdata + 0x30) = 0;
+    *(f32*)((u8*)effect->userdata + 0x8) += 65.0f;
+    *(f32*)((u8*)effect->userdata + 0xC) += 10.0f;
+    return EVT_RETURN_DONE;
+}
 // clang-format on

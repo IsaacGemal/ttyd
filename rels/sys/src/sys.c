@@ -1,4 +1,9 @@
 #include "sys.h"
+#include "data/mapdata.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "eff/eff_itemget.h"
+#include "eff/n64/eff_stardust_n64.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -8,12 +13,36 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "manager/filemgr.h"
+#include "manager/fontmgr.h"
+#include "driver/msgdrv.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "pmario_sound.h"
+#include "sdk/texPalette.h"
+#include "system.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <string.h>
+
+// Provided without <math.h> so the compiler does not emit the unused sqrt/sqrtf intrinsic constants.
+extern f64 fmod(f64, f64);
+extern f64 tan(f64);
 
 #pragma pool_data off
 
 #pragma force_active on
-static void _unresolved(void);  // TODO: real signature
-static void _epilog(void);  // TODO: real signature
+
+// Work data for the sys_01 stage-select icons (size 0x104); SysWork is declared in sys.h.
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
+
+static void _unresolved(void);
+static void _epilog(void);
 s32 evt_start[189];
 
 // clang-format off
@@ -53,6 +82,17 @@ static char* msg_tbl[9] = {
     "msg_stg_seq_stg4", "msg_stg_seq_stg5", "msg_stg_seq_stg6", "msg_stg_seq_stg7",
     "msg_stg_seq_stg8",
 };
+
+// file-scope constants used by display_func (kept global, in original order)
+const u32 dat_sys_000019b8 = 0x808080FF;
+const Vec vec3_sys_000019bc = { 0.0f, 0.0f, 300.0f };
+const u32 dat_sys_000019c8 = 0xFFFFFFFF;
+const u32 dat_sys_000019cc = 0x000000FF;
+const u32 dat_sys_000019d0 = 0x363636FF;
+const u32 dat_sys_000019d4 = 0x000000FF;
+const Vec vec3_sys_000019d8 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_sys_000019e4 = { 0.0f, 1.0f, 0.0f };
+const Vec vec3_sys_000019f0 = { 0.0f, 0.0f, 0.0f };
 
 // TODO: type
 u32 prologue_jp_tbl[2] = {
@@ -167,15 +207,6 @@ char* lang_prefix[2] = {
     "jp", "us",
 };
 
-// TODO: write init (global, 0x8 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write bg (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write display (global, 0x404 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(sys_01_init_evt)
     CALL(init)
     CALL(evt_mario_cont_onoff, 0)
@@ -224,9 +255,6 @@ EVT_BEGIN(sys_01_init_evt)
     SPAWN_EVENT(evt_start)
     RETURN
 EVT_END()
-
-// TODO: write start (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_start)
     CALL(evt_fade_end_wait)
@@ -303,26 +331,467 @@ EVT_BEGIN(evt_start)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 g_wp[1] = {
-    0x00000000,
-};
+// .rodata constants referenced by the functions below; the definitions follow
+// the functions so the compiler does not fold the literals at the use sites.
+extern const f32 zero_sys_00001ad8;
+extern const f32 float_36_sys_00001adc;
+extern const f32 float_0p5_sys_00001ae0;
+extern const f32 float_40_sys_00001ae4;
+extern const f32 float_90_sys_00001ae8;
+extern const char str_000001EC[];
+extern const char lbl_25_rodata_1F0[];
+extern const f32 float_1800_sys_00001b04;
+extern const f32 float_0p8_sys_00001b08;
+extern const f32 float_360_sys_00001b0c;
+extern const f64 double_to_int_sys_00001b10;
+extern const f32 float_1_sys_00001b18;
+extern const f32 float_2p5_sys_00001b1c;
+extern const f32 float_180_sys_00001b20;
+extern const f64 double_360_sys_00001b28;
+extern const f32 float_270_sys_00001b30;
+extern const f32 float_neg40_sys_00001b34;
+extern const f32 float_deg2rad_sys_00001b38;
+extern const f32 float_neg8p1818_sys_00001b3c;
+extern const f32 float_57p5_sys_00001b40;
+extern const f32 float_0p6_sys_00001b44;
+extern const f32 float_44_sys_00001b48;
+extern const f64 double_0p21817_sys_00001b50;
+extern const f32 float_25_sys_00001b58;
+extern const f32 float_640_sys_00001b5c;
+extern const f32 float_22_sys_00001b60;
+extern const f64 double_to_int_mask_sys_00001b68;
+extern const char str_00000270[];
+extern const char str_00000278[];
+extern const char lbl_25_rodata_27C[];
 
-// TODO: write display_func (global, 0x10cc bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
+SysWork* g_wp;
 
-// TODO: write getLightColor (global, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write sys_01_release (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr(str_00000278, dummy_evt);
+    relSetEvtAddr(str_00000270, sys_01_init_evt);
+    if (evtGetValue(0, 0xF5DE0180) != 2 && evtGetValue(0, 0xF5DE0180) != 0x7D &&
+        evtGetValue(0, 0xF5DE0180) != 0xE5 && evtGetValue(0, 0xF5DE0180) != 0x118) {
+        psndStopAllFadeOut();
+    }
+    camGetPtr(CAMERA_2D)->flags |= 0x200;
+    camGetPtr(CAMERA_2D)->flags &= ~0x100;
+    camGetPtr(CAMERA_2D)->flags |= 0x400;
+}
 
-// TODO: write _unresolved (static, 0x4 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
+static void _epilog(void) {
+    voidfunctionptr* dtor;
 
-// TODO: write _epilog (static, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
+    if (strcmp(gp->currentMapName, str_00000270) == 0) {
+        if (g_wp->handle != NULL) {
+            fileFree(g_wp->handle);
+        }
+        g_wp = NULL;
+    }
+    camGetPtr(CAMERA_2D)->flags &= ~0x200;
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
 
-// TODO: write _prolog (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/sys/asm/sys.s; this is where the original has it, just before the first script that uses it
+static void _unresolved(void) {
+    (void)0;
+}
+
+void sys_01_release(void) {
+    if (g_wp->handle != NULL) {
+        fileFree(g_wp->handle);
+    }
+    g_wp = NULL;
+}
+
+s32 getLightColor(f32 angle) {
+    s32 result;
+    f32 a = (f32)fmod(angle, double_360_sys_00001b28);
+
+    if (a >= float_270_sys_00001b30) {
+        result = float_360_sys_00001b0c - a;
+    } else if (a >= float_180_sys_00001b20) {
+        result = a - float_180_sys_00001b20;
+    } else if (a >= float_90_sys_00001ae8) {
+        result = float_180_sys_00001b20 - a;
+    } else {
+        result = a;
+    }
+    return 0xFF - result * 2;
+}
+
+// NONMATCHING (81.06%): every GX/matrix/font call is in the right order and the function size matches; the
+// remaining diffs are register allocation and the loop-invariant strlen scheduling.
+void display_func(CameraId cameraId, void* param) {
+    SysWork* work = param;
+    CameraEntry* cam = camGetPtr(cameraId);
+    GXLightObj light;
+    GXTexObj tex;
+    GXTexObj tex2;
+    GXColor color;
+    Mtx mtx;
+    Mtx mtx2;
+    Mtx mtx3;
+    Vec pos;
+    Vec camPos;
+    Vec camUp;
+    Vec target;
+    const char* msg;
+    const u16* msg16;
+    u16 cbuf[2];
+    s32 frame;
+    s32 i;
+    s32 lightColor;
+    s32 revealed;
+    u8 alpha;
+    f32 halfW;
+    f32 halfH;
+
+    frame = work->field_0x10;
+    work->field_0x10 = frame + 1;
+    if (frame > 0x500) {
+        frame -= 0x500;
+    }
+
+    color = *(GXColor*)&dat_sys_000019b8;
+    GXSetChanAmbColor(GX_COLOR1A1, color);
+
+    pos = vec3_sys_000019bc;
+    PSMTXMultVec((MtxPtr)&cam->view, &pos, &pos);
+    GXInitLightPos(&light, pos.x, pos.y, pos.z);
+    GXInitLightColor(&light, *(GXColor*)&dat_sys_000019c8);
+    GXInitLightAttn(&light, float_1_sys_00001b18, zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18,
+                    zero_sys_00001ad8, zero_sys_00001ad8);
+    GXLoadLightObjImm(&light, GX_LIGHT0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_GEQUAL, 0, GX_AOP_AND, GX_GEQUAL, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR1A1, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_NRM, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+    work->field_0x8 += float_2p5_sys_00001b1c;
+    if (work->field_0x8 > float_180_sys_00001b20) {
+        work->field_0x8 = zero_sys_00001ad8;
+        work->field_0xC++;
+        work->field_0xC %= 8;
+    }
+
+    lightColor = getLightColor(float_90_sys_00001ae8 + work->field_0x8);
+    color = *(GXColor*)&dat_sys_000019cc;
+    color.r = color.g = color.b = lightColor;
+    GXSetChanMatColor(GX_COLOR1A1, color);
+
+    PSMTXTrans(mtx, zero_sys_00001ad8, zero_sys_00001ad8, zero_sys_00001ad8);
+    PSMTXRotRad(mtx3, 'y', float_deg2rad_sys_00001b38 * (float_90_sys_00001ae8 + work->field_0x8));
+    PSMTXConcat(mtx, mtx3, mtx);
+    PSMTXConcat((MtxPtr)&cam->view, mtx, mtx);
+    GXLoadPosMtxImm(mtx, GX_PNMTX0);
+    PSMTXInvXpose(mtx, mtx);
+    GXLoadNrmMtxImm(mtx, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
+
+    TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)work->field_0xC);
+    GXLoadTexObj(&tex, GX_TEXMAP0);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    halfW = (f32)(u16)GXGetTexObjWidth(&tex) * float_0p5_sys_00001ae0;
+    halfH = (f32)(u16)GXGetTexObjHeight(&tex) * float_0p5_sys_00001ae0;
+    GXPosition3f32(-halfW * float_0p5_sys_00001ae0, halfH * float_0p5_sys_00001ae0, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(halfW * float_0p5_sys_00001ae0, halfH * float_0p5_sys_00001ae0, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(halfW * float_0p5_sys_00001ae0, -halfH * float_0p5_sys_00001ae0, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-halfW * float_0p5_sys_00001ae0, -halfH * float_0p5_sys_00001ae0, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+
+    msg = msgSearch((const char*)msg_tbl[work->field_0x14]);
+    FontDrawStart();
+
+    revealed = work->field_0x18 / (1 << 8);
+    alpha = (u8)work->field_0x18;
+    for (i = 0; i < (s32)strlen(msg); i += 2) {
+        msg16 = (const u16*)msg;
+
+        cbuf[0] = msg16[i / 2];
+        cbuf[1] = 0;
+        PSMTXTrans(mtx, zero_sys_00001ad8, float_neg40_sys_00001b34, zero_sys_00001ad8);
+        PSMTXRotRad(mtx3, 'z',
+                    float_deg2rad_sys_00001b38 *
+                        (float_neg8p1818_sys_00001b3c * (f32)i + work->field_0x1C));
+        PSMTXConcat(mtx, mtx3, mtx);
+        PSMTXTrans(mtx, zero_sys_00001ad8, float_57p5_sys_00001b40, zero_sys_00001ad8);
+        PSMTXConcat(mtx3, mtx, mtx3);
+        PSMTXScale(mtx2, float_0p6_sys_00001b44, float_0p6_sys_00001b44, float_0p6_sys_00001b44);
+        PSMTXConcat(mtx, mtx2, mtx);
+        if (i / 2 < revealed) {
+            FontDrawStart_alpha(0xFF);
+            FontDrawStringMtx(mtx, (const char*)cbuf);
+        } else {
+            FontDrawStart_alpha(alpha);
+            FontDrawStringMtx(mtx, (const char*)cbuf);
+            break;
+        }
+    }
+
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_GEQUAL, 0, GX_AOP_AND, GX_GEQUAL, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR1A1, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetNumTexGens(2);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_NRM, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXSetNumTevStages(4);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, 8, 0xf, 8, 0xf);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, 4, 7, 4, 7);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP1);
+    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE1, 0xf, 0, 8, 0xf);
+    GXSetTevAlphaIn(GX_TEVSTAGE1, 7, 7, 7, 0);
+    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE2, 0xf, 0xa, 0, 0xf);
+    GXSetTevAlphaIn(GX_TEVSTAGE2, 7, 5, 0, 7);
+    GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_sys_000019d0);
+    GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE3, 0xf, 0xa, 0, 0xf);
+    GXSetTevAlphaIn(GX_TEVSTAGE3, 7, 5, 0, 7);
+    GXSetTevSwapMode(GX_TEVSTAGE3, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    for (i = 0; i < work->count; i++) {
+        SysWorkEntry* entry = &work->entries[i];
+
+        if (entry->field_0x14 == 0) {
+            break;
+        }
+
+        TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex2, (u16)entry->field_0x18);
+        GXLoadTexObj(&tex2, GX_TEXMAP0);
+        TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex2, (u16)niji_tbl[gp->language]);
+        GXLoadTexObj(&tex2, GX_TEXMAP1);
+        lightColor = getLightColor(entry->angle);
+        color = *(GXColor*)&dat_sys_000019d4;
+        color.r = color.g = color.b = lightColor;
+        GXSetChanMatColor(GX_COLOR1A1, color);
+        if (gp->language != 0) {
+            PSMTXScale(mtx3, float_0p8_sys_00001b08, float_0p8_sys_00001b08, float_0p8_sys_00001b08);
+        } else {
+            PSMTXScale(mtx3, float_1_sys_00001b18, float_1_sys_00001b18, float_1_sys_00001b18);
+        }
+        PSMTXTrans(mtx, entry->x, entry->y, entry->z);
+        PSMTXRotRad(mtx2, 'y', float_deg2rad_sys_00001b38 * entry->angle);
+        PSMTXConcat(mtx3, mtx, mtx);
+        PSMTXConcat(mtx, mtx2, mtx);
+        PSMTXConcat((MtxPtr)&cam->view, mtx, mtx);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
+        PSMTXInvXpose(mtx, mtx);
+        GXLoadNrmMtxImm(mtx, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        camPos = vec3_sys_000019d8;
+        camUp = vec3_sys_000019e4;
+        target = vec3_sys_000019f0;
+        camPos.z = float_1_sys_00001b18 / (f32)tan(double_0p21817_sys_00001b50);
+        C_MTXLightPerspective(mtx2, float_25_sys_00001b58, float_640_sys_00001b5c, float_0p5_sys_00001ae0,
+                              float_0p5_sys_00001ae0, float_0p5_sys_00001ae0, float_0p5_sys_00001ae0);
+        C_MTXLookAt(mtx, &camPos, &camUp, &target);
+        PSMTXConcat(mtx2, mtx, mtx2);
+        if (gp->language != 0) {
+            PSMTXScale(mtx3, float_0p5_sys_00001ae0, float_0p5_sys_00001ae0, float_0p5_sys_00001ae0);
+        } else {
+            PSMTXScale(mtx3, float_1_sys_00001b18, float_1_sys_00001b18, float_1_sys_00001b18);
+        }
+        PSMTXTrans(mtx, entry->x, entry->y, entry->z);
+        PSMTXConcat(mtx3, mtx, mtx);
+        PSMTXConcat(mtx2, mtx, mtx);
+        PSMTXTrans(mtx3, (f32)-frame, zero_sys_00001ad8, zero_sys_00001ad8);
+        PSMTXConcat(mtx, mtx3, mtx);
+        GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX3x4);
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+        GXPosition3f32(-float_44_sys_00001b48 * float_0p5_sys_00001ae0, float_22_sys_00001b60, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(float_22_sys_00001b60, float_22_sys_00001b60, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(float_22_sys_00001b60, -float_44_sys_00001b48 * float_0p5_sys_00001ae0, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-float_44_sys_00001b48 * float_0p5_sys_00001ae0,
+                      -float_44_sys_00001b48 * float_0p5_sys_00001ae0, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+    }
+
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+}
+
+// NONMATCHING (93.27%): the int->float conversion's scheduler emits different registers around the entry-fill
+// loop and the outer switch uses a range check instead of the original's two compares.
+USER_FUNC(display) {
+    s32 value = evtGetValue(event, event->args[0]);
+    SysWork* work;
+    s32 i;
+
+    if (isFirstCall) {
+        work = _mapAlloc(0x104);
+        event->userdata[0] = (s32)work;
+        memset(work, 0, 0x104);
+        work->field_0x14 = value;
+        work->field_0x1C = zero_sys_00001ad8;
+        work->count = 0;
+        while (((s8*)((u32*)lang_tbl[gp->language])[value])[work->count] != -1) {
+            work->count++;
+        }
+        for (i = 0; i < work->count; i++) {
+            work->entries[i].x = (f32)((work->count - 1) * 0x24) * float_0p5_sys_00001ae0 -
+                                 float_36_sys_00001adc * (f32)i;
+            work->entries[i].y = float_40_sys_00001ae4;
+            work->entries[i].z = zero_sys_00001ad8;
+            work->entries[i].angle = float_90_sys_00001ae8;
+            work->entries[i].field_0x10 = i * 0x14 + 1;
+            work->entries[i].field_0x14 = 0;
+            work->entries[i].field_0x18 = ((s8*)((u32*)lang_tbl[gp->language])[value])[i];
+        }
+    }
+    work = (SysWork*)event->userdata[0];
+    g_wp = work;
+    switch (work->state) {
+        case 0:
+            if ((u32)fileAsyncf(4, 0, str_000001EC, getMarioStDvdRoot(), lang_prefix[gp->language]) != 0) {
+                work->handle = fileAllocf(4, str_000001EC, getMarioStDvdRoot(), lang_prefix[gp->language]);
+                work->state++;
+            }
+            break;
+        case 2:
+            for (i = 0; i < work->count; i++) {
+                SysWorkEntry* entry = &work->entries[i];
+
+                switch (entry->field_0x14) {
+                    case 0:
+                        entry->field_0x10--;
+                        if (entry->field_0x10 < 0) {
+                            entry->field_0x10 = 0;
+                            entry->field_0x14++;
+                            effStardustN64SetDrawCam(effStardustN64Entry(4, entry->x, entry->y, entry->z, float_40_sys_00001ae4), 5);
+                        }
+                        break;
+                    case 1:
+                        entry->angle = intplGetValue(5, entry->field_0x10, 0x5A, float_90_sys_00001ae8, float_1800_sys_00001b04);
+                        entry->field_0x10++;
+                        if (entry->field_0x10 > 0x5A) {
+                            entry->field_0x14++;
+                        }
+                        break;
+                    case 2:
+                        if (i == work->count - 1) {
+                            work->field_0x1C += float_0p8_sys_00001b08;
+                            if (work->field_0x1C > float_360_sys_00001b0c) {
+                                work->field_0x1C -= float_360_sys_00001b0c;
+                            }
+                            work->field_0x18 += 0x30;
+                            if (work->field_0x18 > 0x2710) {
+                                work->field_0x18 = 0x2710;
+                            }
+                        }
+                        break;
+                }
+            }
+            break;
+    }
+    if (work->state != 0) {
+        dispEntry(5, zero_sys_00001ad8, 2, display_func, work);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(start) {
+    SysWork* work = g_wp;
+
+    gp->flags |= 0x10;
+    if (work->state < 1) {
+        return 0;
+    }
+    work->state++;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(bg) {
+    EffectEntry* entry = effItemGetEntry(0, zero_sys_00001ad8, zero_sys_00001ad8, zero_sys_00001ad8);
+
+    ((effItemGetData*)entry->userdata)->field_0x20 = 1;
+    ((effItemGetData*)entry->userdata)->field_0x38 = 5;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(init) {
+    return EVT_RETURN_DONE;
+}
+
+const f32 zero_sys_00001ad8 = 0.0f;
+const f32 float_36_sys_00001adc = 36.0f;
+const f32 float_0p5_sys_00001ae0 = 0.5f;
+const f32 float_40_sys_00001ae4 = 40.0f;
+const f32 float_90_sys_00001ae8 = 90.0f;
+const char str_000001EC[4] = { '%', 's', '/', 'e' };
+const char lbl_25_rodata_1F0[] = "/%s/effect_sys.tpl";
+const f32 float_1800_sys_00001b04 = 1800.0f;
+const f32 float_0p8_sys_00001b08 = 0.8f;
+const f32 float_360_sys_00001b0c = 360.0f;
+const f64 double_to_int_sys_00001b10 = 4503601774854144.0;
+const f32 float_1_sys_00001b18 = 1.0f;
+const f32 float_2p5_sys_00001b1c = 2.5f;
+const f32 float_180_sys_00001b20 = 180.0f;
+const f64 double_360_sys_00001b28 = 360.0;
+const f32 float_270_sys_00001b30 = 270.0f;
+const f32 float_neg40_sys_00001b34 = -40.0f;
+const f32 float_deg2rad_sys_00001b38 = 0.017453292f;
+const f32 float_neg8p1818_sys_00001b3c = -8.181818f;
+const f32 float_57p5_sys_00001b40 = 57.5f;
+const f32 float_0p6_sys_00001b44 = 0.6f;
+const f32 float_44_sys_00001b48 = 44.0f;
+const f64 double_0p21817_sys_00001b50 = 0.21816615760326385;
+const f32 float_25_sys_00001b58 = 25.0f;
+const f32 float_640_sys_00001b5c = 640.0f;
+const f32 float_22_sys_00001b60 = 22.0f;
+const f64 double_to_int_mask_sys_00001b68 = 4503599627370496.0;
+const char str_00000270[] = "sys_01";
+const char str_00000278[4] = { 's', 'y', 's', '_' };
+const char lbl_25_rodata_27C[] = "00";
 // clang-format on

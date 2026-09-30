@@ -1,5 +1,6 @@
 #pragma once
 
+#include "driver/camdrv.h"
 #include "evt/evt_cmd.h"
 
 USER_FUNC(make_msg);
@@ -10,12 +11,12 @@ USER_FUNC(book_r);
 USER_FUNC(demo_scale);
 USER_FUNC(demo_winonoff);
 USER_FUNC(demo_draw);
-void demo_window(void);  // TODO: real signature
-void demo_book(void);  // TODO: real signature
-void demo_img(void);  // TODO: real signature
-void demo_desk(void);  // TODO: real signature
-void demo_cap(void);  // TODO: real signature
-void demo_exit(void);  // TODO: real signature
+void demo_window(CameraId cameraId, void* param);
+void demo_book(CameraId cameraId, void* param);
+void demo_img(CameraId cameraId, void* param);
+void demo_desk(CameraId cameraId, void* param);
+void demo_cap(void);
+void demo_exit(void);
 USER_FUNC(demo_init);
 EVT_DEF(buttonCheck);
 EVT_DEF(demo_evt);

@@ -1,3 +1,13 @@
+#include "data/item_data.h"
+#include "driver/animdrv.h"
+#include "driver/mobjdrv.h"
+#include "driver/npcdrv.h"
+#include "mario/mario.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario_pouch.h"
+#include "memory.h"
+#include "pmario_sound.h"
+#include <string.h>
 #include "usu_01.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
@@ -34,13 +44,14 @@ extern s32 evt_usu_kagemario_party_kill_29_data_104A8[];
 extern s32 roll_majin_lecture[];
 extern s32 roll_majin_lecture_init[];
 static USER_FUNC(bgm_start_wait);
-static void majin_callback(void);  // TODO: real signature
+static void majin_callback(s32 type);
 static USER_FUNC(npc_process);
 static USER_FUNC(booboo_main);
 static USER_FUNC(set_fook_evt);
 s32 village_chief_change_pig_event[166];
-static u32 door_1[18];
+static DoorEntry door_1[1];
 s32 evt_monban_buta2[17];
+static char* obj_list[12];
 
 // clang-format off
 extend_data(8,
@@ -235,8 +246,20 @@ EVT_BEGIN(shop_woman_init)
     RETURN
 EVT_END()
 
-// TODO: write sleep_voice (global, 0xb4 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(sleep_voice) {
+    MarioWork* mario = marioGetPtr();
+    if (isFirstCall) {
+        event->userdata[0] = -1;
+    }
+    if (strcmp(mario->animName, "M_N_5A") == 0) {
+        s32 loop = (s32)animPoseGetLoopTimes(mario->paperAnimGroupId[marioAnimeId()]);
+        if (loop != event->userdata[0]) {
+            event->userdata[0] = loop;
+            evtSetValue(event, GW(10), psndSFXOn_3D("SFX_VOICE_MARIO_SLEEP1", &mario->position));
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(shop_woman_talk)
     SWITCH(GSW(0))
@@ -597,14 +620,37 @@ EVT_BEGIN(iri_20_aunt_to_house)
     RETURN
 EVT_END()
 
-// TODO: write check_tabemono (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(get_item_list) {
+    s32* args = event->args;
+    s32* list = _mapAlloc((pouchGetHaveItemCnt() + 1) * 4);
+    s32 j, i;
+    for (i = 0, j = 0; i < 20; i++) {
+        if (pouchHaveItem(i) != 0) {
+            list[j] = pouchHaveItem(i);
+            j++;
+        }
+    }
+    list[j] = -1;
+    evtSetValue(event, args[0], (s32)list);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write delete_item_list (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(delete_item_list) {
+    _mapFree((void*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write get_item_list (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(check_tabemono) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+    ItemData* item = &itemDataTable[idx];
+    s32 flag = 0;
+    if (item->usable_locations & 4) {
+        flag = 1;
+    }
+    evtSetValue(event, args[1], flag);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(aunt_talk)
     IF_INT_EQUAL(GSW(1420), 20)
@@ -1105,146 +1151,31 @@ EVT_BEGIN(urouro_move_semai)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[552] = {
-    (u32)"村人Ｆ", 0x40080600, 0x00000000, (u32)&villagerF_init,
-    0x00000000, (u32)&villagerF_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"村人Ｇ",
-    0x00080600, 0x00000000, (u32)&villagerG_init, (u32)&urouro_move,
-    (u32)&villagerG_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"村人Ｈ", 0x40080600,
-    0x00000000, (u32)&villagerH_init, 0x00000000, (u32)&villagerH_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"村人Ｉ", 0x40080600, 0x00000000,
-    (u32)&villagerI_init, 0x00000000, (u32)&villagerI_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"村人Ｊ", 0x00080600, 0x00000000, (u32)&villagerJ_init,
-    (u32)&urouro_move, (u32)&villagerJ_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"店の主人",
-    0x40080600, 0x00000000, (u32)&shop_man_init, 0x00000000,
-    (u32)&shop_man_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"お店の奥さん", 0x40080600,
-    0x00000000, (u32)&shop_woman_init, 0x00000000, (u32)&shop_woman_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"キザ野郎", 0x40080600, 0x00000000,
-    (u32)&kizayarou_init, 0x00000000, (u32)&kizayarou_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"おばさん", 0x40080600, 0x00000000, (u32)&aunt_init,
-    0x00000000, (u32)&aunt_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"子供Ａ",
-    0x40080600, 0x00000000, (u32)&childA_init, 0x00000000,
-    (u32)&childA_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"子供Ｂ", 0x40080600,
-    0x00000000, (u32)&childB_init, 0x00000000, (u32)&childB_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"子供Ｃ", 0x40080600, 0x00000000,
-    (u32)&childC_init, 0x00000000, (u32)&childC_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"門番", 0x40080600, 0x00000000, (u32)&gatekeeper_init,
-    0x00000000, (u32)&gatekeeper_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ブタキザ野郎",
-    0x00080600, 0x00000000, (u32)&kizayarou_pig_init, (u32)&urouro_move,
-    (u32)&kizayarou_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ブタおばさん", 0x00080600,
-    0x00000000, (u32)&aunt_pig_init, (u32)&urouro_move, (u32)&aunt_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"ブタ門番", 0x00080600, 0x00000000,
-    (u32)&gatekeeper_pig_init, 0x00000000, (u32)&gatekeeper_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"ブタ村人Ｉ", 0x00080600, 0x00000000, (u32)&villagerI_pig_init,
-    (u32)&urouro_move, (u32)&villagerI_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ブタ村人Ｊ",
-    0x00080600, 0x00000000, (u32)&villagerJ_pig_init, (u32)&urouro_move,
-    (u32)&villagerJ_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"カラスＦ", 0x40000600,
-    0x00000000, (u32)&crow_f_init, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"カラスＧ", 0x40000600, 0x00000000,
-    (u32)&crow_g_init, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"カラスＨ", 0x40000600, 0x00000000, (u32)&crow_h_init,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"カラスＩ",
-    0x40000600, 0x00000000, (u32)&crow_i_init, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"カラスＪ", 0x40000600,
-    0x00000000, (u32)&crow_j_init, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[24] = {
+    {"村人Ｆ", 0x40080600, 0x00000000, villagerF_init, 0x00000000, villagerF_talk},
+    {"村人Ｇ", 0x00080600, 0x00000000, villagerG_init, urouro_move, villagerG_talk},
+    {"村人Ｈ", 0x40080600, 0x00000000, villagerH_init, 0x00000000, villagerH_talk},
+    {"村人Ｉ", 0x40080600, 0x00000000, villagerI_init, 0x00000000, villagerI_talk},
+    {"村人Ｊ", 0x00080600, 0x00000000, villagerJ_init, urouro_move, villagerJ_talk},
+    {"店の主人", 0x40080600, 0x00000000, shop_man_init, 0x00000000, shop_man_talk},
+    {"お店の奥さん", 0x40080600, 0x00000000, shop_woman_init, 0x00000000, shop_woman_talk},
+    {"キザ野郎", 0x40080600, 0x00000000, kizayarou_init, 0x00000000, kizayarou_talk},
+    {"おばさん", 0x40080600, 0x00000000, aunt_init, 0x00000000, aunt_talk},
+    {"子供Ａ", 0x40080600, 0x00000000, childA_init, 0x00000000, childA_talk},
+    {"子供Ｂ", 0x40080600, 0x00000000, childB_init, 0x00000000, childB_talk},
+    {"子供Ｃ", 0x40080600, 0x00000000, childC_init, 0x00000000, childC_talk},
+    {"門番", 0x40080600, 0x00000000, gatekeeper_init, 0x00000000, gatekeeper_talk},
+    {"ブタキザ野郎", 0x00080600, 0x00000000, kizayarou_pig_init, urouro_move, kizayarou_talk},
+    {"ブタおばさん", 0x00080600, 0x00000000, aunt_pig_init, urouro_move, aunt_talk},
+    {"ブタ門番", 0x00080600, 0x00000000, gatekeeper_pig_init, 0x00000000, gatekeeper_talk},
+    {"ブタ村人Ｉ", 0x00080600, 0x00000000, villagerI_pig_init, urouro_move, villagerI_talk},
+    {"ブタ村人Ｊ", 0x00080600, 0x00000000, villagerJ_pig_init, urouro_move, villagerJ_talk},
+    {"カラスＦ", 0x40000600, 0x00000000, crow_f_init},
+    {"カラスＧ", 0x40000600, 0x00000000, crow_g_init},
+    {"カラスＨ", 0x40000600, 0x00000000, crow_h_init},
+    {"カラスＩ", 0x40000600, 0x00000000, crow_i_init},
+    {"カラスＪ", 0x40000600, 0x00000000, crow_j_init},
+    {NULL},
 };
 
 EVT_BEGIN(village_chief_change_pig_event)
@@ -1709,14 +1640,11 @@ static EVT_BEGIN(door_1_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_1[18] = {
-    0x00000000, 0x00000003, 0x00000002, (u32)"S_usu01_ie1_door",
-    (u32)"A_door46", (u32)"A_door45", (u32)"S_usu01_ie1", 0x00000000,
-    (u32)"S_usu01_ie1_naka", 0x00000000, (u32)&evt_door_1_1, (u32)&evt_door_1_2,
-    (u32)&evt_wall_1, (u32)&minka_npc, 0x00000000, (u32)&minka_item,
-    (u32)&door_1_open, (u32)&door_1_close,
-};
+static DoorEntry door_1[1] = {{
+    0, 3, 2, "S_usu01_ie1_door", "A_door46", "A_door45", "S_usu01_ie1", NULL,
+    "S_usu01_ie1_naka", NULL, evt_door_1_1, (s32)evt_door_1_2, evt_wall_1, (const char**)minka_npc, NULL, (const char**)minka_item,
+    door_1_open, door_1_close,
+}};
 
 EVT_BEGIN(evt_door_2_1_1)
     SET_VALUE(LW(2), LW(0))
@@ -1739,8 +1667,18 @@ EVT_BEGIN(evt_wall_2_1)
     RETURN
 EVT_END()
 
-// TODO: write chk_fuki (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(chk_fuki) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    NpcWork* work = npcGetWorkPtr();
+    NpcEntry* npc = work->field_0x10;
+    if (npc != NULL && strcmp(npc->description, (const char*)name) == 0) {
+        evtSetValue(event, args[1], 1);
+        return EVT_RETURN_DONE;
+    }
+    evtSetValue(event, args[1], 0);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(loop_msg)
     IF_INT_LESS(GSW(0), 200)
@@ -1830,20 +1768,53 @@ EVT_BEGIN(door_2_1_open)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 door_2_1[18] = {
-    0x00000000, 0x00000003, 0x00000002, (u32)"S_usu01_ie2_door1",
-    (u32)"A_usu01_ie2_door2_u", (u32)"A_usu01_ie2_door2", (u32)"S_usu01_ie2", 0x00000000,
-    (u32)"S_usu01_ie2_naka", 0x00000000, (u32)&evt_door_2_1_1, 0x00000000,
-    (u32)&evt_wall_2_1, (u32)&shop_npc, (u32)&shop_mobj, (u32)&shop_item,
-    (u32)&door_2_1_open, (u32)&mawari_house_delay,
-};
+DoorEntry door_2_1[1] = {{
+    0, 3, 2, "S_usu01_ie2_door1", "A_usu01_ie2_door2_u", "A_usu01_ie2_door2", "S_usu01_ie2", NULL,
+    "S_usu01_ie2_naka", NULL, evt_door_2_1_1, 0, evt_wall_2_1, (const char**)shop_npc, (const char**)shop_mobj, (const char**)shop_item,
+    door_2_1_open, mawari_house_delay,
+}};
 
-// TODO: write ie2_npc_disp_off (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(shop_item_disp_off) {
+    s32 i;
+    for (i = 0; i < 6; i++) {
+        mapObjFlagOn(obj_list[i * 2], 1);
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write shop_item_disp_off (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(shop_item_disp_on) {
+    s32 i;
+    for (i = 0; i < 6; i++) {
+        mapObjFlagOff(obj_list[i * 2], 1);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(ie2_npc_disp_off) {
+    const char* off_list[] = {"お店の奥さん", "キザ野郎", "ブタキザ野郎", "店の主人", NULL};
+    const char* on_list[] = {"ペラ魔人", NULL};
+    s32 i;
+    for (i = 0; off_list[i] != NULL; i++) {
+        animPoseSetMaterialFlagOff(npcNameToPtr(off_list[i])->poseId, 0x1800);
+    }
+    for (i = 0; on_list[i] != NULL; i++) {
+        animPoseSetMaterialFlagOn(npcNameToPtr(on_list[i])->poseId, 0x1800);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(ie2_npc_disp_on) {
+    const char* on_list[] = {"お店の奥さん", "キザ野郎", "ブタキザ野郎", "店の主人", NULL};
+    const char* off_list[] = {"ペラ魔人", NULL};
+    s32 i;
+    for (i = 0; on_list[i] != NULL; i++) {
+        animPoseSetMaterialFlagOn(npcNameToPtr(on_list[i])->poseId, 0x1800);
+    }
+    for (i = 0; off_list[i] != NULL; i++) {
+        animPoseSetMaterialFlagOff(npcNameToPtr(off_list[i])->poseId, 0x1800);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_ie2_door2_1)
     CALL(evt_cam_letter_box_disable, 1)
@@ -1918,12 +1889,6 @@ EVT_BEGIN(evt_ie2_door2_1)
     CALL(evt_cam_letter_box_disable, 0)
     RETURN
 EVT_END()
-
-// TODO: write ie2_npc_disp_on (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shop_item_disp_on (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_ie2_door2_2)
     CALL(evt_cam_letter_box_disable, 1)
@@ -2037,14 +2002,11 @@ static EVT_BEGIN(door_3_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_3[18] = {
-    0x00000000, 0x00000003, 0x00000002, (u32)"S_usu01_ie3_door",
-    (u32)"A_usu01_ie3_doaa_u", (u32)"A_usu01_ie3_doaa", (u32)"S_usu01_ie3", 0x00000000,
-    (u32)"S_usu01_ie3_naka", 0x00000000, (u32)&evt_door_3_1, (u32)&evt_door_3_2,
-    (u32)&evt_wall_3, 0x00000000, 0x00000000, (u32)&door_3_item,
-    (u32)&door_3_open, (u32)&door_3_close,
-};
+static DoorEntry door_3[1] = {{
+    0, 3, 2, "S_usu01_ie3_door", "A_usu01_ie3_doaa_u", "A_usu01_ie3_doaa", "S_usu01_ie3", NULL,
+    "S_usu01_ie3_naka", NULL, evt_door_3_1, (s32)evt_door_3_2, evt_wall_3, NULL, NULL, (const char**)door_3_item,
+    door_3_open, door_3_close,
+}};
 
 static BeroEntry bero_entry_data[3] = {
     {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gra_00", "w_bero", 1, 1},
@@ -2153,8 +2115,7 @@ EVT_BEGIN(evt_monban_look)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 lock_tbl[2] = {
+static s32 lock_tbl[2] = {
     0x00000015, 0xFFFFFFFF,
 };
 
@@ -2239,13 +2200,16 @@ EVT_BEGIN(evt_roll_get)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 key_tbl[2] = {
+static s32 key_tbl[2] = {
     0x00000023, 0xFFFFFFFF,
 };
 
-// TODO: write majin_callback (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(set_fook_evt) {
+    s32* args = event->args;
+    s32* data = (s32*)evtGetValue(event, args[0]);
+    data[1] = evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_majin)
     CALL(evt_mario_key_onoff, 0)
@@ -2334,8 +2298,15 @@ static EVT_BEGIN(evt_majin)
     RETURN
 EVT_END()
 
-// TODO: write bgm_start_wait (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(booboo_main) {
+    u32 i;
+    for (i = 0; i < 8; i++) {
+        if (npcNameToPtr_NoAssert((const char*)booboo_name[i * 2]) != NULL) {
+            animPoseSetMaterialLightFlagOn(npcNameToPtr((const char*)booboo_name[i * 2])->poseId, 0x10);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_majin2)
     CALL(evt_mario_key_onoff, 0)
@@ -2455,16 +2426,12 @@ static EVT_BEGIN(evt_ki_3)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 tree_tbl[30] = {
-    0x00000002, (u32)"A_ki_1", (u32)"S_usu01_ki01", 0x00000000,
-    0x00000000, (u32)&evt_ki_1, 0x00000002, (u32)"A_ki_2",
-    (u32)"S_usu01_ki02", 0x00000000, 0x00000000, (u32)&evt_ki_2,
-    0x00000002, (u32)"A_ki_3", (u32)"S_usu01_ki03", 0x00000000,
-    0x00000000, (u32)&evt_ki_3, 0x00000002, (u32)"A_ki_4",
-    (u32)"S_usu01_ki05", 0x00000000, 0x00000000, 0x00000000,
-    0x00000007, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static TreeAccessEntry tree_tbl[5] = {
+    {2, "A_ki_1", "S_usu01_ki01", NULL, NULL, evt_ki_1},
+    {2, "A_ki_2", "S_usu01_ki02", NULL, NULL, evt_ki_2},
+    {2, "A_ki_3", "S_usu01_ki03", NULL, NULL, evt_ki_3},
+    {2, "A_ki_4", "S_usu01_ki05", NULL, NULL, NULL},
+    {7, NULL, NULL, NULL, NULL, NULL},
 };
 
 EVT_BEGIN(usu_01_tree_init)
@@ -2484,20 +2451,53 @@ static EVT_BEGIN(mobj_box00)
     RETURN
 EVT_END()
 
-// TODO: write mobj_ry (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(npc_process) {
+    NpcWork* work = npcGetWorkPtr();
+    NpcEntry* npc = work->entries;
+    s32 i;
+    for (i = 0; i < work->total; i++, npc++) {
+        if (npc->flags & 1) {
+            if (npc->position.y <= -1000.0f) {
+                npc->flags |= 0x800;
+            } else {
+                npc->flags &= ~0x800;
+            }
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
 
-// TODO: write box_r (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+static void majin_callback(s32 type) {
+    MapObjectEntry* obj = mobjNameToPtr("pera_box");
 
-// TODO: write npc_process (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+    if (type == 0) {
+        animPoseSetAnim(obj->poseId, "A_2", 1);
+    } else if (type == 5) {
+        if (animPoseGetLoopTimes(obj->poseId) >= 1.0f) {
+            animPoseSetAnim(obj->poseId, "A_2", 1);
+        }
+    } else if (type == 2) {
+        animPoseSetAnim(obj->poseId, "S_1", 1);
+    }
+}
 
-// TODO: write booboo_main (static, 0x6c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(box_r) {
+    MapObjectEntry* obj = mobjNameToPtr("pera_box");
+    obj->rotation.y = 135.0f;
+    obj->flags |= 4;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write set_fook_evt (static, 0x4c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_01.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(bgm_start_wait) {
+    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(mobj_ry) {
+    MapObjectEntry* obj = mobjNameToPtr("mobj_box00");
+    obj->rotation.y = 135.0f;
+    obj->flags |= 4;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(usu_01_init_evt)
     CALL(evt_snd_bgmon, 512, STRING("BGM_STG4_USU1"))

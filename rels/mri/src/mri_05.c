@@ -1,4 +1,6 @@
 #include "mri_05.h"
+#include "driver/effdrv.h"
+#include "eff/eff_puniballoon.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -14,6 +16,9 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mario_motion.h"
 #include "party/party_motion.h"
 #include "rel/mri/mri.h"
 
@@ -83,26 +88,14 @@ EVT_BEGIN(puni_5_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[69] = {
-    (u32)"プニ族４", 0x00000600, 0x00000000, (u32)&puni_4_init,
-    0x00000000, (u32)&puni_4_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"プニ族５",
-    0x00000600, 0x00000000, (u32)&puni_5_init, 0x00000000,
-    (u32)&puni_5_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static NpcSetupInfo npcEnt[] = {
+    {
+        "プニ族４", 0x600, 0, puni_4_init, NULL, puni_4_talk,
+    },
+    {
+        "プニ族５", 0x600, 0, puni_5_init, NULL, puni_5_talk,
+    },
+    {},
 };
 
 static EVT_BEGIN(bero_s_doa_close)
@@ -166,14 +159,13 @@ static EVT_BEGIN(evt_ueki_04)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[24] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", 0x00000000,
-    0x00000001, (u32)"A_ueki02", (u32)"S_ueki02", 0x00000000,
-    0x00000001, (u32)"A_ueki03", (u32)"S_ueki03", 0x00000000,
-    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", (u32)&evt_ueki_04,
-    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[] = {
+    {1, "A_ueki01", "S_ueki01", NULL},
+    {1, "A_ueki02", "S_ueki02", NULL},
+    {1, "A_ueki03", "S_ueki03", NULL},
+    {1, "A_ueki04", "S_ueki04", evt_ueki_04},
+    {1, "A_ueki05", "S_ueki05", NULL},
+    {4, NULL, NULL, NULL},
 };
 
 static EVT_BEGIN(punipuni_ball00_init)
@@ -246,6 +238,41 @@ EVT_BEGIN(punipuni_ball01)
     RETURN
 EVT_END()
 
+USER_FUNC(mario_shabon_init) {
+    MarioWork* mario = marioGetPtr();
+    mario->hitobjStandOn = NULL;
+    mario->airTimer = 1;
+    marioChgMot(8);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mario_shabon_eff) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+
+    marioeff = effPuniBalloonEntry(type, x, y, evtGetFloat(event, args[3]), 2.5f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mario_shabon_effpos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+
+    ((EffPuniBalloonData*)marioeff->userdata)->position.x = x;
+    ((EffPuniBalloonData*)marioeff->userdata)->position.y = y;
+    ((EffPuniBalloonData*)marioeff->userdata)->position.z = z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mario_shabon_effdel) {
+    effDelete(marioeff);
+    return EVT_RETURN_DONE;
+}
+
 EVT_BEGIN(mario_shabon_move_sound)
     LOOP(0)
         CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_SOAPBALL_MOVE1"), LW(0), LW(1), LW(2), 0)
@@ -258,18 +285,6 @@ EVT_BEGIN(mario_shabon_break_sound)
     CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_SOAPBALL_BREAK1"), LW(0), LW(1), LW(2), 0)
     RETURN
 EVT_END()
-
-// TODO: write mario_shabon_init (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_05.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write mario_shabon_eff (global, 0xac bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_05.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write mario_shabon_effpos (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_05.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write mario_shabon_effdel (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(mario_shabon_check)
     SET_VALUE(LW(1), 0)
@@ -364,8 +379,19 @@ EVT_BEGIN(mario_shabon_check)
     RETURN
 EVT_END()
 
-// TODO: write evt_pcharge_pos (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_05.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_pcharge_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]) + 15.0f;
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* effect = effNameToPtr((const char*)name);
+
+    ((EffPuniBalloonData*)effect->userdata)->position.x = x;
+    ((EffPuniBalloonData*)effect->userdata)->position.y = y;
+    ((EffPuniBalloonData*)effect->userdata)->position.z = z;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_shabon_s)
     BEGIN_INLINE_EVENT
@@ -508,8 +534,5 @@ EVT_BEGIN(mri_05_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 marioeff[1] = {
-    0x00000000,
-};
+EffectEntry* marioeff;
 // clang-format on

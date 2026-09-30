@@ -15,6 +15,21 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_sub.h"
+#include "driver/effdrv.h"
+#include "driver/animdrv.h"
+#include "system.h"
+#include "eff/eff_batten.h"
+#include "eff/eff_kemutest.h"
+#include "eff/n64/eff_akari_charge_n64.h"
+#include "eff/n64/eff_kameki_tornade_n64.h"
+#include "eff/n64/eff_kumokumo_n64.h"
+#include "manager/evtmgr_cmd.h"
+#include "math_trig.h"
+#include "pmario_sound.h"
+#include <stdlib.h>
 
 #pragma pool_data off
 
@@ -53,6 +68,20 @@ static s32 arm_event_end[35];
 static s32 damage_event_r[30];
 static s32 attack_event_r[368];
 static s32 wait_event_r[18];
+EffectEntry* eff_tor[1];
+s32 torCount[1];
+EffectEntry* eff_jet[2];
+s32 jetCount[1];
+static u32 list[1];
+EffectEntry* eff_suikomi[1];
+s32 screamId[1];
+s32 unk_aji_bss00000168[1];
+u8 unk_aji_bss00000165;
+u8 unk_aji_bss00000164;
+TargetWork* wp_target[1];
+u32 targetSoundId[1];
+static EffectEntry* eff_charge[1];
+static ArmWork* work[2];
 
 // clang-format off
 extend_data(76,
@@ -514,8 +543,6 @@ EVT_BEGIN(aud_no_hit_event)
     RETURN
 EVT_END()
 
-// TODO: write arm_init (static, 0x94 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_OnUnitFlag, -2, 16777216)
@@ -540,8 +567,6 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: write waku_main (static, 0xf8 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(waku_event)
     LABEL(0)
@@ -590,17 +615,9 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: write arm_end (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write eff_dead_delete (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write eff_dead (static, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write arm_check (static, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_SetUnitWork, -2, 6, 1)
@@ -693,8 +710,6 @@ static EVT_BEGIN(entry_event)
     RETURN
 EVT_END()
 
-// TODO: write get_aud_num (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(0))
@@ -828,11 +843,7 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-// TODO: write drill_jet (global, 0x180 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write drill_tor (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(drill_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -1054,20 +1065,10 @@ EVT_BEGIN(boomerang_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write aud_target_mark (global, 0x45c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write unk_aji_00007668 (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write aud_suikomi (global, 0x384 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write aud_jet_end (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write aud_jet (global, 0x1f8 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(aud_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -1292,11 +1293,7 @@ EVT_BEGIN(aud_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write aud_fire_no_hit (global, 0x314 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write aud_fire_hit (global, 0x458 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(aud_attack_event_sub)
     IF_INT_EQUAL(LW(10), 9)
@@ -1635,8 +1632,6 @@ static BattleWeapon weapon_batten_rocket_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write arm_init2 (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(init_event_r)
     CALL(btlevtcmd_OnUnitFlag, -2, 16777216)
@@ -1682,8 +1677,6 @@ static EVT_BEGIN(init_event_r)
     RETURN
 EVT_END()
 
-// TODO: write arm_main (static, 0x330 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(arm_event)
     LABEL(0)
@@ -1863,79 +1856,570 @@ static u32 jumptable_0002B350[16] = {
     (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x3f0),
 };
 
-// TODO: type
-static u32 work[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 eff_charge[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 targetSoundId[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 wp_target[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u8 unk_aji_bss00000164[1] = {
-    0x00,
-};
-
-// TODO: type
-u8 unk_aji_bss00000165[1] = {
-    0x00,
-};
-
-// TODO: type
-u32 unk_aji_bss00000168[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 screamId[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 eff_suikomi[1] = {
-    0x00000000,
-};
-
-// TODO: type
-static u32 list[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 jetCount[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 eff_jet[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 torCount[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 eff_tor[1] = {
-    0x00000000,
-};
-
-// TODO: write aud_fire_eff (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write aud_get_pod_pos (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_boss_magnum_battender_mkII.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+// NONMATCHING (99.03%): register naming and literal symbol names
+static USER_FUNC(waku_main) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    s32 id;
+    s32 poseId;
+    s32 idx;
+    BattleUnit* unit;
+    BattleUnitPart* parts1;
+    BattleUnitPart* parts3;
+    AnimationPose* pose;
+    CameraEntry* cam;
+    u8* tbl;
+    Vec* vtx;
+
+    id = evtGetValue(event, args[0]);
+    animGetPtr();
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+    parts1 = BtlUnit_GetPartsPtr(unit, 1);
+    parts3 = BtlUnit_GetPartsPtr(unit, 3);
+    poseId = *(s32*)parts1->field_0x1C0;
+    animPoseWorldPositionEvalOn(poseId);
+    animPoseGetAnimBaseDataPtr(poseId);
+    pose = animPoseGetAnimPosePtr(poseId);
+    idx = animPoseGetGroupIdx(poseId, "locator17");
+    tbl = *(u8**)((u8*)pose + 0x15C);
+    vtx = (Vec*)(*(u8**)tbl);
+    BtlUnit_SetPartsPos(parts3, vtx[idx].x, vtx[idx].y, vtx[idx].z);
+    cam = camGetPtr(4);
+    BtlUnit_SetPartsRotate(parts3, 0.0f, -cam->viewYaw, 0.0f);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (98.98%): argument register swap (r30/r31)
+static USER_FUNC(arm_check) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 i;
+    s32 result = -1;
+
+    for (i = 0; i < 64; i++) {
+        BattleUnit* unit = wp->units[i];
+
+        if (unit == NULL) {
+            continue;
+        }
+        if (unit->currentKind != 0x23 && unit->currentKind != 0x7a) {
+            continue;
+        }
+        if (type == 0) {
+            if (unit->work[0] == 0 || unit->work[0] == 2) {
+                result = i;
+                break;
+            }
+        } else if (type == 1) {
+            if (unit->work[0] == 1 || unit->work[0] == 3) {
+                result = i;
+                break;
+            }
+        }
+    }
+    evtSetValue(event, args[1], result);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(drill_tor) {
+    f32 x;
+    f32 y;
+    f32 z;
+    s32 transId = BattleTransID(event, evtGetValue(event, event->args[0]));
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit = BattleGetUnitPtr(wp, transId);
+
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    if (isFirstCall) {
+        eff_tor[0] = effKamekiTornadeN64Entry(0, 1000, 0.0f, -1000.0f, 0.0f, 3.5f);
+        torCount[0] = 0;
+    }
+    if (y <= 300.0f) {
+        ((BattenData*)eff_tor[0]->userdata)->position.x = x;
+        ((BattenData*)eff_tor[0]->userdata)->position.y = y - 240.0f;
+        ((BattenData*)eff_tor[0]->userdata)->position.z = z;
+    }
+    if (++torCount[0] >= 70) {
+        effDelete(eff_tor[0]);
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(drill_jet) {
+    f32 x;
+    f32 y;
+    f32 z;
+    s32 i;
+    s32 transId = BattleTransID(event, evtGetValue(event, event->args[0]));
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit = BattleGetUnitPtr(wp, transId);
+    BattenData* data;
+
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    if (isFirstCall) {
+        for (i = 0; i < 2; i++) {
+            eff_jet[i] = effBattenEntry(3, 1000, 0.0f, -1000.0f, 0.0f, 3.0f);
+        }
+        jetCount[0] = 0;
+    }
+    data = eff_jet[0]->userdata;
+    data->position.x = x - 20.0f;
+    data->position.y = y;
+    data->position.z = z - 20.0f;
+    data = eff_jet[1]->userdata;
+    data->position.x = x + 20.0f;
+    data->position.y = y;
+    data->position.z = z + 20.0f;
+    if (++jetCount[0] >= 90) {
+        for (i = 0; i < 2; i++) {
+            effDelete(eff_jet[i]);
+        }
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+// NONMATCHING (98.25%): literal symbol names and register/scheduling
+USER_FUNC(aud_jet) {
+    Mtx mtx;
+    f32 x;
+    f32 y;
+    f32 z;
+    s32 i;
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, evtGetValue(event, event->args[0])));
+    BattenData* data;
+
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    if (isFirstCall) {
+        for (i = 0; i < 2; i++) {
+            eff_jet[i] = effBattenEntry(3, 1000, 0.0f, -1000.0f, 0.0f, 3.0f);
+        }
+        jetCount[0] = 0;
+    }
+    PSMTXRotRad(mtx, 'z', -0.34906584f);
+    data = eff_jet[0]->userdata;
+    data->position.x = x - 60.0f;
+    data->position.y = y + 22.5f;
+    data->position.z = z;
+    PSMTXCopy(mtx, ((BattenData*)eff_jet[0]->userdata)->matrix);
+    data = eff_jet[1]->userdata;
+    data->position.x = x - 15.0f;
+    data->position.y = y + 22.5f;
+    data->position.z = z + 70.0f;
+    PSMTXCopy(mtx, ((BattenData*)eff_jet[1]->userdata)->matrix);
+    if (jetCount[0] == 1) {
+        for (i = 0; i < 2; i++) {
+            effDelete(eff_jet[i]);
+        }
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(aud_jet_end) {
+    jetCount[0] = 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_aud_num) {
+    s32* args = event->args;
+    s32 num = BattleAudience_GetAudienceNum();
+
+    evtSetValue(event, args[0], num);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (87.76%): register scheduling and literal names
+USER_FUNC(aud_suikomi) {
+    s32* args = event->args;
+    s32 transId = BattleTransID(event, evtGetValue(event, args[0]));
+    s32 count = 0;
+    s32 temp[200];
+    s32 found;
+    s32 i;
+    BattleUnit* unit;
+    BattleAudienceMember* aud;
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 v;
+
+    if (isFirstCall) {
+        if (list[0] != 0) {
+            BattleFree((void*)list[0]);
+        }
+        list[0] = (u32)BattleAlloc(0x50);
+        found = 0;
+        for (i = 0; i < 200; i++) {
+            if ((u8)BattleAudience_GetExist(i) == 1) {
+                temp[found] = i;
+                found++;
+            }
+        }
+        for (i = 0; i < 1000; i++) {
+            s32 a = irand(found);
+            s32 b = irand(found);
+            s32 tmp = temp[a];
+            temp[a] = temp[b];
+            temp[b] = tmp;
+        }
+        for (i = 0; i < 20; i++) {
+            s32 id = temp[i];
+            aud = BattleAudienceGetPtr(id);
+            aud->flags |= 0x10;
+            BattleAudience_SetAnim(id, 9, 0);
+            aud->interpFramesTotal = 60 + i * 3;
+            *(s32*)aud->field_0x8 = 0;
+            aud->mRotation.y = 0.0f;
+            ((s32*)list[0])[i] = id;
+        }
+        unit = BattleGetUnitPtr(_battleWorkPointer, transId);
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        eff_suikomi[0] = effKumokumoN64Entry(2, 120, x - 10.0f, y + 10.0f, z, -40.0f, 1.0f, 1.5f);
+        screamId[0] = psndSFXOn("SFX_AUDIENCE_PANIC_SCREAM1");
+    }
+    unit = BattleGetUnitPtr(_battleWorkPointer, transId);
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    y += 5.0f;
+    for (i = 0; i < 200; i++) {
+        s32 j;
+        for (j = 0; j < 20; j++) {
+            if (i != ((s32*)list[0])[j]) {
+                continue;
+            }
+            aud = BattleAudienceGetPtr(i);
+            aud->mRotation.y += 19.0f;
+            if (aud->interpFramesLeft < aud->interpFramesTotal) {
+                aud->interpFramesLeft++;
+            } else {
+                aud->flags &= ~4;
+                count++;
+                aud->flags |= 2;
+            }
+            aud->position.x = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.x, x);
+            aud->position.y = intplGetValue(2, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.y, y);
+            aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.z, z);
+            v = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, 1.0f, 0.65f);
+            *(f32*)(aud->field_0x54 + 0x10) = v;
+            *(f32*)(aud->field_0x54 + 0xC) = v;
+            break;
+        }
+    }
+    return (count < 20) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+// NONMATCHING (90.42%): literal symbol names and u8 volume/timer scheduling
+USER_FUNC(unk_aji_00007668) {
+    s32 timer;
+    f32 v;
+    u8 vol;
+
+    if (isFirstCall) {
+        unk_aji_bss00000168[0] = 120;
+        unk_aji_bss00000165 = psndSFX_get_vol(screamId[0]);
+    }
+    timer = --unk_aji_bss00000168[0];
+    v = intplGetValue(0, 120 - timer, 120, unk_aji_bss00000165, 0.0f);
+    vol = (u8)(s32)v;
+    unk_aji_bss00000164 = vol;
+    psndSFX_vol(screamId[0], vol);
+    if (unk_aji_bss00000168[0] <= 0) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+void aud_get_pod_pos(BattleUnit* unit, f32* x, f32* y, f32* z) {
+    BtlUnit_GetPos(unit, x, y, z);
+    *x += 10.0f;
+    *y += 78.0f;
+}
+
+void aud_fire_eff(f32 x, f32 y, f32 z) {
+    EffectEntry* effect = effKemuTestEntry(11, x - 50.0f, y + 20.0f, z + 50.0f, 0.75f);
+    effKemuTestSetRxRz(effect, 40.0f, 110.0f);
+}
+
+// NONMATCHING (95.99%): register scheduling and literal names
+USER_FUNC(aud_fire_hit) {
+    s32* args = event->args;
+    s32 transId1;
+    s32 transId2;
+    s32 start;
+    s32 i;
+    BattleUnit* unit;
+    BattleUnit* unit2;
+    BattleUnitPart* parts;
+    EffectEntry* effect;
+    BattleAudienceMember* aud;
+    EventEntry* ev;
+    Vec pos;
+    f32 hx;
+    f32 hy;
+    f32 hz;
+
+    transId1 = BattleTransID(event, evtGetValue(event, args[0]));
+    transId2 = BattleTransID(event, evtGetValue(event, args[1]));
+    start = evtGetValue(event, args[2]);
+    if (isFirstCall) {
+    unit = BattleGetUnitPtr(_battleWorkPointer, transId1);
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    pos.x += 10.0f;
+    pos.y += 78.0f;
+    effect = effKemuTestEntry(11, pos.x - 50.0f, pos.y + 20.0f, pos.z + 50.0f, 0.75f);
+    effKemuTestSetRxRz(effect, 40.0f, 110.0f);
+    unit2 = BattleGetUnitPtr(_battleWorkPointer, transId2);
+    parts = BtlUnit_GetPartsPtr(unit2, BtlUnit_GetBodyPartsId(unit2));
+    BtlUnit_GetHitPos(unit2, parts, &hx, &hy, &hz);
+    for (i = start; i < start + 2; i++) {
+        aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
+        BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
+        aud->position = (Vec){ pos.x, pos.y, pos.z };
+        aud->interpFramesTotal = 0;
+        *(s32*)aud->field_0x8 = 0;
+        aud->mRotation.y = 0.0f;
+        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
+        *(f32*)(aud->field_0x54 + 0x10) = 1.0f;
+        aud->flags |= 4;
+        ev = evtEntry(aud_hit_event, 0, 0x20);
+        ev->lwData[0] = ((s32*)list[0])[i];
+        ev->lwData[1] = FLOAT(hx);
+        ev->lwData[2] = FLOAT(hy);
+        ev->lwData[3] = FLOAT(hz);
+        ev->lwData[4] = 0;
+        ev->lwData[5] = irand(3) + 10;
+        ev->lwData[6] = FLOAT(hx + 200.0f * rand() / 32767.0f - 100.0f);
+        ev->lwData[7] = FLOAT(-100.0f);
+        ev->lwData[8] = FLOAT(hz + 100.0f * rand() / 32767.0f - 50.0f);
+        ev->lwData[9] = irand(30) + 30;
+        ev->lwData[10] = FLOAT(-0.3f);
+    }
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.25%): register scheduling
+USER_FUNC(aud_fire_no_hit) {
+    s32* args = event->args;
+    s32 transId1;
+    s32 transId2;
+    s32 start;
+    s32 i;
+    BattleUnit* unit;
+    BattleUnit* unit2;
+    BattleUnitPart* parts;
+    EffectEntry* effect;
+    BattleAudienceMember* aud;
+    EventEntry* ev;
+    Vec pos;
+    f32 hx;
+    f32 hy;
+    f32 hz;
+
+    transId1 = BattleTransID(event, evtGetValue(event, args[0]));
+    transId2 = BattleTransID(event, evtGetValue(event, args[1]));
+    start = evtGetValue(event, args[2]);
+    if (isFirstCall) {
+    unit = BattleGetUnitPtr(_battleWorkPointer, transId1);
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    pos.x += 10.0f;
+    pos.y += 78.0f;
+    effect = effKemuTestEntry(11, pos.x - 50.0f, pos.y + 20.0f, pos.z + 50.0f, 0.75f);
+    effKemuTestSetRxRz(effect, 40.0f, 110.0f);
+    unit2 = BattleGetUnitPtr(_battleWorkPointer, transId2);
+    parts = BtlUnit_GetPartsPtr(unit2, BtlUnit_GetBodyPartsId(unit2));
+    BtlUnit_GetHitPos(unit2, parts, &hx, &hy, &hz);
+    for (i = start; i < start + 2; i++) {
+        aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
+        BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
+        aud->position = (Vec){ pos.x, pos.y, pos.z };
+        aud->interpFramesTotal = 0;
+        *(s32*)aud->field_0x8 = 0;
+        aud->mRotation.y = 0.0f;
+        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
+        *(f32*)(aud->field_0x54 + 0x10) = 1.0f;
+        aud->flags |= 4;
+        ev = evtEntry(aud_hit_event, 0, 0x20);
+        ev->lwData[0] = ((s32*)list[0])[i];
+        ev->lwData[1] = FLOAT(-275.0f);
+        ev->lwData[2] = FLOAT(hy - 20.0f);
+        ev->lwData[3] = FLOAT(hz);
+        ev->lwData[4] = 0;
+        ev->lwData[5] = irand(3) + 10;
+    }
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (93.45%): register reload ordering and literal names
+USER_FUNC(aud_target_mark) {
+    s32* args = event->args;
+    f32 f31 = (f32)evtGetValue(event, args[0]);
+    f32 f30 = (f32)evtGetValue(event, args[1]);
+    f32 f29 = (f32)evtGetValue(event, args[2]);
+    BattenData* data;
+
+    if (isFirstCall) {
+        wp_target[0] = BattleAlloc(0xC);
+        wp_target[0]->effect = effBattenEntry(1, 1000, 0.0f, -1000.0f, 0.0f, 1.0f);
+        wp_target[0]->field_0x0 = 0;
+        wp_target[0]->field_0x4 = 0;
+        targetSoundId[0] = psndSFXOn("SFX_BOSS_MBTN_SEARCH1");
+    }
+    data = wp_target[0]->effect->userdata;
+    switch (wp_target[0]->field_0x0) {
+    case 0:
+        wp_target[0]->field_0x4 += 1;
+        data->position.x = intplGetValue(4, wp_target[0]->field_0x4, 60, 60.0f + f31, f31 - 5.0f);
+        data->position.y = intplGetValue(4, wp_target[0]->field_0x4, 60, 20.0f + f30, 60.0f + f30);
+        data->position.z = 20.0f + f29;
+        if (wp_target[0]->field_0x4 >= 60) {
+            wp_target[0]->field_0x0 = 5;
+            wp_target[0]->field_0x4 = 0;
+        }
+        break;
+    case 5:
+        wp_target[0]->field_0x4 += 1;
+        data->position.x = intplGetValue(4, wp_target[0]->field_0x4, 40, f31 - 5.0f, f31 - 25.0f);
+        data->position.y = intplGetValue(4, wp_target[0]->field_0x4, 40, 60.0f + f30, 20.0f + f30);
+        data->position.z = 20.0f + f29;
+        if (wp_target[0]->field_0x4 >= 40) {
+            wp_target[0]->field_0x0 = 10;
+            wp_target[0]->field_0x4 = 0;
+        }
+        break;
+    case 10:
+        wp_target[0]->field_0x4 += 1;
+        data->position.x = intplGetValue(4, wp_target[0]->field_0x4, 20, f31 - 25.0f, f31);
+        data->position.y = intplGetValue(4, wp_target[0]->field_0x4, 20, 20.0f + f30, f30);
+        data->position.z = 20.0f + f29;
+        if (wp_target[0]->field_0x4 >= 20) {
+            wp_target[0]->field_0x0 = 15;
+            wp_target[0]->field_0x4 = 0;
+            effDelete(wp_target[0]->effect);
+            wp_target[0]->effect = effBattenEntry(2, 1000, f31, f30, f29 + 10.0f, 1.0f);
+            psndSFXOff(targetSoundId[0]);
+            psndSFXOn("SFX_BOSS_MBTN_LOCKON1");
+        }
+        break;
+    case 15:
+        wp_target[0]->field_0x4 += 1;
+        if (wp_target[0]->field_0x4 >= 90) {
+            effDelete(wp_target[0]->effect);
+            BattleFree(wp_target[0]);
+            return EVT_RETURN_DONE;
+        }
+        break;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+static USER_FUNC(eff_dead) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+
+    eff_charge[0] = effAkariChargeN64Entry(0, 1000, x, y, z, 1.5f);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(eff_dead_delete) {
+    effDelete(eff_charge[0]);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.05%): register naming (r4 vs r5) for the first work[i] reload
+static USER_FUNC(arm_init) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        work[i] = BattleAlloc(sizeof(ArmWork));
+        work[i]->field_0xC = (Vec){ 0.0f, 0.0f, 0.0f };
+        work[i]->field_0x0 = work[i]->field_0xC;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(arm_init2) {
+    s32 idx = evtGetValue(event, event->args[0]);
+    ArmWork* w = work[idx];
+
+    w->effect = effBattenEntry(3, 1000, 0.0f, -1000.0f, 0.0f, 1.0f);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (97.65%): register allocation
+static USER_FUNC(arm_main) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    s32 id = evtGetValue(event, args[0]);
+    ArmWork* w = work[evtGetValue(event, args[1])];
+    BattleUnit* unit;
+    BattenData* data;
+    Vec pos;
+    Vec out;
+    Mtx mtx74;
+    Mtx mtx44;
+    f32 rx;
+    f32 ry;
+    f32 rz;
+    f32 bx;
+    f32 by;
+    f32 bz;
+    f32 dx;
+    f32 dy;
+
+    if (w->effect == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    data = w->effect->userdata;
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    w->field_0x0 = w->field_0xC;
+    w->field_0xC = (Vec){ pos.x, pos.y, pos.z };
+    if (evtCheckID(unit->waitEventId) != 1) {
+        dx = w->field_0xC.x - w->field_0x0.x;
+        dy = w->field_0xC.y - w->field_0x0.y;
+        if (dx != 0.0f) {
+            w->field_0x1C = 360.0f * (f32)atan(dy / dx) / 6.2832f;
+            w->field_0x18 += (w->field_0x1C - w->field_0x18) / 3.0f;
+            BtlUnit_GetRotate(unit, &rx, &ry, &rz);
+            BtlUnit_SetRotate(unit, rx, ry, w->field_0x18);
+        } else {
+            w->field_0x1C = 0.0f;
+        }
+    }
+    BtlUnit_GetBaseRotate(unit, &bx, &by, &bz);
+    BtlUnit_GetRotate(unit, &rx, &ry, &rz);
+    rx += bx;
+    ry += by;
+    rz += bz;
+    PSMTXRotRad(mtx74, 'x', 1.5707964f);
+    PSMTXRotRad(mtx44, 'y', 0.017453292f * ry);
+    PSMTXConcat(mtx44, mtx74, mtx74);
+    PSMTXRotRad(mtx44, 'x', 0.017453292f * rx);
+    PSMTXConcat(mtx44, mtx74, mtx74);
+    PSMTXRotRad(mtx44, 'z', 0.017453292f * rz);
+    PSMTXConcat(mtx44, mtx74, mtx74);
+    PSMTXCopy(mtx74, data->matrix);
+    PSMTXMultVec(mtx74, &(Vec){ 0.0f, -18.0f, 0.0f }, &out);
+    data->position.x = w->field_0xC.x + out.x;
+    data->position.y = w->field_0xC.y + out.y;
+    data->position.z = w->field_0xC.z + out.z;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(arm_end) {
+    s32 idx = evtGetValue(event, event->args[0]);
+    ArmWork* w = work[idx];
+    if (w->effect != NULL) {
+        effDelete(w->effect);
+        w->effect = NULL;
+    }
+    return EVT_RETURN_DONE;
+}

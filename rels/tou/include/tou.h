@@ -2,7 +2,7 @@
 
 #include "evt/evt_cmd.h"
 
-void tou_champion_belt_27_text_34(void);  // TODO: real signature
+USER_FUNC(tou_champion_belt_27_text_34);
 USER_FUNC(fight_money);
 USER_FUNC(octo_start);
 USER_FUNC(octo_stop);
@@ -10,16 +10,13 @@ USER_FUNC(unk_tou_000005d0);
 USER_FUNC(unk_tou_0000063c);
 USER_FUNC(chk);
 USER_FUNC(onoff);
-void monitor_tev(void);  // TODO: real signature
+void monitor_tev(void* param);
 USER_FUNC(make_monitor);
-void gans_tex(void);  // TODO: real signature
+void gans_tex(CameraId cameraId, void* param);
 USER_FUNC(evt_tou_get_rule_msg2_27_text_182C);
 USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8);
 USER_FUNC(evt_tou_get_ranking_27_text_1ED4);
-void unk_tou_00002e24(void);  // TODO: real signature
-void _unresolved(void);  // TODO: real signature
-void _epilog(void);  // TODO: real signature
-void _prolog(void);  // TODO: real signature
+USER_FUNC(unk_tou_00002e24);
 EVT_DEF(evt_close);
 EVT_DEF(evt_tou_locker_init);
 EVT_DEF(evt_tou_monitor_on);
@@ -61,3 +58,17 @@ EVT_DEF(evt_tamago_hello);
 EVT_DEF(evt_tamago_hello2);
 EVT_DEF(evt_tou_ranking_msg);
 EVT_DEF(evt_tou_match_after_default);
+EVT_DEF(tou_00_init_evt);
+EVT_DEF(tou_01_init_evt);
+EVT_DEF(tou_02_init_evt);
+EVT_DEF(tou_04_init_evt);
+EVT_DEF(tou_05_init_evt);
+EVT_DEF(tou_06_init_evt);
+EVT_DEF(tou_07_init_evt);
+EVT_DEF(tou_08_init_evt);
+EVT_DEF(tou_09_init_evt);
+EVT_DEF(tou_10_init_evt);
+EVT_DEF(tou_11_init_evt);
+EVT_DEF(tou_12_init_evt);
+EVT_DEF(tou_13_init_evt);
+EVT_DEF(tou_20_init_evt);

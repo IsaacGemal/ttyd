@@ -18,25 +18,43 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "eff/eff_teresa.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "motion/mot_hammer.h"
+#include "party.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
+#include "system.h"
+#include <stdlib.h>
 
 #pragma pool_data off
 
 #pragma force_active on
 extern s32 evt_kagemario_init_14_text_4DB8[];
 extern s32 evt_usu_kagemario_party_kill_14_data_AF00[];
-static void senteresa_ext_shadow_disp(void);  // TODO: real signature
-static void senteresa_ext_disp(void);  // TODO: real signature
-static void senteresa_ext_dispent(void);  // TODO: real signature
-static void senteresa_ext_main(void);  // TODO: real signature
-static void senteresa_ext_init(void);  // TODO: real signature
-static void computePos(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
+static void senteresa_ext_shadow_disp(void);
+static void senteresa_ext_disp(void);
+static void senteresa_ext_dispent(void);
+static void senteresa_ext_main(void);
+static void senteresa_ext_init(void);
+static void computePos(TeresaEntry* p, Vec* out);
+static f32 randf(f32 min, f32 max);
 s32 senteresa_evt[1248];
-static u32 g_nNumEndProc[1];
-u32 g_nNumHarituku[1];
+static TeresaEntry* pTeresa;
+Vec g_vecRotCenter;
+u32 g_bMove[1];
+u32 g_nMarioMoveCnt[1];
 u32 g_nNumHuttobasu[1];
+u32 g_nNumHarituku[1];
+static s32 g_nNumEndProc[1];
+f32 g_fSpeed[1];
 
 // clang-format off
 extend_data(4,
@@ -196,8 +214,6 @@ static EVT_BEGIN(check_roll)
     RETURN
 EVT_END()
 
-// TODO: write get_npc_color (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(teresa_n_fadein)
     IS_EVENT_RUNNING(GW(0), LW(0))
@@ -524,8 +540,6 @@ EVT_BEGIN(tyuou_teresa_init)
     RETURN
 EVT_END()
 
-// TODO: write senteresa_wait_end_seq (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(tyuou_teresa_talk)
     CALL(evt_msg_print, 0, STRING("stg4_jin_54"), 0, STRING("中央テレサ"))
@@ -785,44 +799,18 @@ static u32 senteresa_ext_entry_data[141] = {
 //     0x00000000, 0x00000000, 0x41200000, 0x00000000,
 // };
 
-// TODO: write teresa_eff (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_mario_spd (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_get_rot_center (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_end (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_turiageru (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_huttobu (global, 0x2bc bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_dispoff (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_syugo (global, 0x278 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_tikaduku_stop (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_get_seq (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_ext_dispent (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_ext_main (static, 0x278c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_ext_init (static, 0x340 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(senteresa_evt)
     CALL(evt_ext_entry, 200, PTR(senteresa_ext_entry_data), PTR(senteresa_ext_init), PTR(senteresa_ext_main), PTR(senteresa_ext_dispent))
@@ -1272,76 +1260,395 @@ EVT_BEGIN(jin_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 g_fSpeed[1] = {
-    0x00000000,
-};
 
-// TODO: type
-static u32 g_nNumEndProc[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 g_nNumHarituku[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 g_nNumHuttobasu[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 g_nMarioMoveCnt[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 g_bMove[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 g_vecRotCenter[3] = {
-    0x00000000, 0x00000000, 0x00000000,
-};
 
-// TODO: type
-static u32 pTeresa[1] = {
-    0x00000000,
-};
 
-// TODO: write senteresa_get_random_position (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_ext_shadow_disp (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_ext_disp (static, 0x1c4 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_loadTev (global, 0x108 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write senteresa_loadRenderMode (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write computePos (static, 0x78 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write computeAlpha (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write computeMtx (global, 0xac bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write computeAngle (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randn (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+USER_FUNC(get_npc_color) {
+    s32* args = event->args;
+    NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, args[0]));
+
+    evtSetValue(event, args[1], npc->color.r);
+    evtSetValue(event, args[2], npc->color.g);
+    evtSetValue(event, args[3], npc->color.b);
+    evtSetValue(event, args[4], npc->color.a);
+    return EVT_RETURN_DONE;
+}
+
+s32 randn(s32 min, s32 max) {
+    return min + rand() % (max - min);
+}
+
+static f32 randf(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
+    f32 d = max - min;
+
+    return r * d + min;
+}
+
+f32 computeAngle(ExtPose* pose, NpcEntry* npc) {
+    Mtx* m = pose->matrix;
+    f32 angle = angleABf(npc->position.x, npc->position.z, (*m)[0][3], (*m)[2][3]);
+
+    if (0.0f <= angle && angle < 90.0f) {
+        return 90.0f - angle;
+    }
+    if (90.0f <= angle && angle < 180.0f) {
+        return 360.0f - (angle - 90.0f);
+    }
+    if (180.0f <= angle && angle < 270.0f) {
+        return 180.0f + (270.0f - angle);
+    }
+    return 90.0f + (360.0f - angle);
+}
+
+void computeMtx(ExtPose* pose, f32 angle) {
+    Mtx m;
+
+    PSMTXRotRad(m, 0x59, angle * 0.017453292f);
+    (*pose->matrix)[0][0] = m[0][0];
+    (*pose->matrix)[0][1] = m[0][1];
+    (*pose->matrix)[0][2] = m[0][2];
+    (*pose->matrix)[1][0] = m[1][0];
+    (*pose->matrix)[1][1] = m[1][1];
+    (*pose->matrix)[1][2] = m[1][2];
+    (*pose->matrix)[2][0] = m[2][0];
+    (*pose->matrix)[2][1] = m[2][1];
+    (*pose->matrix)[2][2] = m[2][2];
+}
+
+s32 computeAlpha(TeresaEntry* p, NpcEntry* npc, f32 angle) {
+    f32 a;
+
+    if (angle > 180.0f) {
+        angle = 360.0f - angle;
+    }
+    a = npc->moveDir - 180.0f;
+    if (a < 0.0f) {
+        a += 360.0f;
+    }
+    if (a < 90.0f) {
+        if (angle < 90.0f) {
+            p->field_0x40 = (u8)(s32)(128.0f * (angle / 90.0f) + 128.0f);
+            return 0;
+        } else {
+            p->field_0x40 = 0xFF;
+            return 1;
+        }
+    } else {
+        if (angle > 90.0f) {
+            p->field_0x40 = (u8)(s32)(128.0f * ((180.0f - angle) / 90.0f) + 128.0f);
+            return 0;
+        } else {
+            p->field_0x40 = 0xFF;
+            return 1;
+        }
+    }
+}
+
+static void computePos(TeresaEntry* p, Vec* out) {
+    Mtx m;
+    Vec v;
+
+    v.x = p->field_0x10;
+    v.y = 0.0f;
+    v.z = p->field_0x18;
+    PSMTXRotRad(m, 0x59, p->field_0x0C * 0.017453292f);
+    PSMTXMultVec(m, &v, out);
+}
+
+static void senteresa_ext_init(void) {
+    ExtPose* pose = extGetPosePtr();
+    MarioWork* mario = marioGetPtr();
+    s32 count = extGetPoseNum();
+    s32 i;
+
+    pTeresa = _mapAlloc(0x3520);
+    for (i = 0; i < count; i++, pose++) {
+        pose->flags = 3;
+        PSMTXIdentity(*pose->matrix);
+        pTeresa[i].field_0x0C = 0.0f;
+        pTeresa[i].field_0x3C = (i % 100 + 1) * 3;
+        pTeresa[i].field_0x40 = 0;
+        pTeresa[i].field_0x41 = 0;
+        pTeresa[i].field_0x20 = randf(0.0f, 0.1f);
+        pTeresa[i].field_0x10 = randf(-300.0f, 300.0f);
+        pTeresa[i].field_0x14 = 0.0f;
+        pTeresa[i].field_0x18 = randf(-235.0f, 235.0f);
+        (*pose->matrix)[0][3] = mario->position.x + pTeresa[i].field_0x10;
+        (*pose->matrix)[1][3] = randf(10.0f, 400.0f);
+        (*pose->matrix)[2][3] = mario->position.z + pTeresa[i].field_0x18;
+        if (mario->position.x < (*pose->matrix)[0][3]) {
+            pose->field_0x4 = 90.0f;
+        } else {
+            pose->field_0x4 = 270.0f;
+        }
+    }
+    g_nNumEndProc[0] = 0;
+    g_nNumHarituku[0] = 0;
+    g_nNumHuttobasu[0] = 0;
+    g_nMarioMoveCnt[0] = 0;
+    g_fSpeed[0] = 0.0f;
+    g_bMove[0] = 0;
+    g_vecRotCenter.x = mario->position.x;
+    g_vecRotCenter.y = 0.0f;
+    g_vecRotCenter.z = mario->position.z;
+}
+
+// NONMATCHING (0.03%): the full 0x278c-byte teresa extension state machine was not
+// reconstructed from asm in this session. Stubbed so the unit links.
+static void senteresa_ext_main(void) {
+}
+
+static void senteresa_ext_dispent(void) {
+    dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);
+}
+
+void senteresa_loadRenderMode(void) {
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(1, 3, 1);
+}
+
+void senteresa_loadTev(void) {
+    GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
+    GXSetNumTexGens(1);
+    GXSetNumTevStages(1);
+}
+
+// NONMATCHING (99.96%): 11 of 113 instructions differ in operands only (registers or offsets)
+static void senteresa_ext_disp(void) {
+    GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+    s32 count = extGetPoseNum();
+    s32 i;
+
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(1, 3, 1);
+    extLoadVertex();
+    extLoadTexture();
+    {
+        GXColor fog = {0xFF, 0xFF, 0xFF, 0xFF};
+
+        GXSetTevOrder(0, 0, 0, 4);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+        GXSetTevAlphaIn(0, 7, 4, 1, 7);
+        GXSetNumChans(0);
+        GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fog);
+    }
+    GXSetNumTexGens(1);
+    GXSetNumTevStages(1);
+    for (i = 0; i < count; i++) {
+        color.a = pTeresa[i].field_0x40;
+        GXSetTevColor(1, color);
+        extPoseDraw(i);
+    }
+    extLoadTextureExit();
+}
+
+static void senteresa_ext_shadow_disp(void) {
+    static Mtx mt_859 = {
+        {10.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 10.0f, 0.0f, 0.1f},
+        {0.0f, 0.0f, 10.0f, 0.0f},
+    };
+
+    extLoadShadowMtx(mt_859);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+}
+
+USER_FUNC(senteresa_get_seq) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], pTeresa[idx].field_0x41);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_get_random_position) {
+    s32* args = event->args;
+    ExtPose* poses = extGetPosePtr();
+    s32 num = extGetPoseNum();
+    ExtPose* pose = &poses[rand() % num];
+
+    evtSetFloat(event, args[0], (*pose->matrix)[0][3]);
+    evtSetFloat(event, args[1], (*pose->matrix)[1][3]);
+    evtSetFloat(event, args[2], (*pose->matrix)[2][3]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_tikaduku_stop) {
+    s32 count = extGetPoseNum();
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        if (pTeresa[i].field_0x41 != 10) {
+            pTeresa[i].field_0x41 = 4;
+            pTeresa[i].field_0x3C = 0x1869F;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.55%): 21 of 158 instructions differ in operands only (registers or offsets)
+USER_FUNC(senteresa_syugo) {
+    ExtPose* pose = extGetPosePtr();
+    NpcEntry* npc = npcNameToPtr("中央テレサ");
+    s32 count = extGetPoseNum();
+    s32 i;
+
+    g_nNumEndProc[0] = 0;
+    for (i = 0; i < count; i++, pose++) {
+        f32 a;
+        f32 b;
+
+        pTeresa[i].field_0x24 = (*pose->matrix)[0][3];
+        pTeresa[i].field_0x28 = (*pose->matrix)[1][3];
+        pTeresa[i].field_0x2C = (*pose->matrix)[2][3];
+        a = randf(0.0f, 6.2831f);
+        b = randf(0.0f, 25.0f);
+        pTeresa[i].field_0x30 = b * (f32)cos(a) + npc->position.x;
+        pTeresa[i].field_0x34 = b * (f32)sin(a) + npc->position.y;
+        pTeresa[i].field_0x38 = npc->position.z;
+        pTeresa[i].field_0x1C = 0.0f;
+        pTeresa[i].field_0x3C = (i & 0xF) + (rand() % 10) * 30 + 1;
+        pTeresa[i].field_0x40 = 0xFF;
+        pTeresa[i].field_0x41 = 0x14;
+        if (pTeresa[i].field_0x24 < pTeresa[i].field_0x30) {
+            pose->field_0x4 = 270.0f;
+        } else {
+            pose->field_0x4 = 90.0f;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_dispoff) {
+    ExtPose* pose = extGetPosePtr();
+    s32 count = extGetPoseNum();
+    s32 i;
+
+    for (i = 0; i < count; i++, pose++) {
+        pose->flags = 0;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_huttobu) {
+    ExtPose* pose = extGetPosePtr();
+    NpcEntry* npc = npcNameToPtr("アトミックテレサ");
+    s32 count = extGetPoseNum();
+    s32 i;
+
+    g_nNumEndProc[0] = 0;
+    for (i = 0; i < count; i++, pose++) {
+        f32 mul;
+
+        pose->flags = 3;
+        (*pose->matrix)[0][3] = npc->position.x;
+        (*pose->matrix)[1][3] = npc->position.y;
+        (*pose->matrix)[2][3] = npc->position.z;
+        pTeresa[i].field_0x00 = 4.0f * (f32)sin(pTeresa[i].field_0x0C);
+        pTeresa[i].field_0x04 = randf(6.0f, 12.0f);
+        pTeresa[i].field_0x08 = (f32)cos(pTeresa[i].field_0x0C);
+        if (pTeresa[i].field_0x08 > 0.0f) {
+            mul = randf(5.0f, 12.5f);
+        } else {
+            mul = randf(-5.0f, -2.0f);
+        }
+        pTeresa[i].field_0x08 *= mul;
+        pTeresa[i].field_0x40 = 0xFF;
+        pTeresa[i].field_0x41 = 0x1E;
+        if (i & 1) {
+            Vec pos = {0.0f, 0.0f, 0.0f};
+
+            pos.x = (*pose->matrix)[0][3];
+            pos.y = (*pose->matrix)[1][3];
+            pos.z = (*pose->matrix)[2][3];
+            psndSFXOn_3D((const char*)0x5D7, &pos);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_turiageru) {
+    s32 n = extGetPoseNum();
+    s32 i;
+
+    g_nNumEndProc[0] = 0;
+    for (i = 0; i < n; i++) {
+        if (pTeresa[i].field_0x41 == 6) {
+            pTeresa[i].field_0x41 = 0x50;
+        } else if (pTeresa[i].field_0x41 != 9) {
+            pTeresa[i].field_0x3C = 0x1869F;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_end) {
+    extReset();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_wait_end_seq) {
+    return g_nNumEndProc[0] == 200 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(senteresa_get_rot_center) {
+    s32* args = event->args;
+
+    evtSetValue(event, args[0], (s32)g_vecRotCenter.x);
+    evtSetValue(event, args[1], (s32)g_vecRotCenter.y);
+    evtSetValue(event, args[2], (s32)g_vecRotCenter.z);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_mario_spd) {
+    MarioWork* mario = marioGetPtr();
+    f32 f = (f32)(20 - (s32)g_nNumHarituku[0]) / 20.0f;
+
+    if (mario->currMotionId == 1) {
+        mario->baseSpeed = mario->mBaseWalkSpeed * f;
+    } else if (mario->currMotionId == 2) {
+        mario->baseSpeed = mario->mBaseDashSpeed * f;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(teresa_eff) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+
+    effTeresaEntry(0, x, y + 20.0f, z + 20.0f);
+    return EVT_RETURN_DONE;
+}

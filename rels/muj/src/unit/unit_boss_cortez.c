@@ -15,6 +15,30 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_sub.h"
+#include "driver/effdrv.h"
+#include "eff/eff_spirit.h"
+#include "eff/n64/eff_kumokumo_n64.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
+
+// Work area of the cortez unit, allocated by _make_cortez_work_area (size 0xE14).
+typedef struct CortezWork {
+    s16 state;                 // 0x0
+    s16 count;                 // 0x2
+    s16 audienceId[100];       // 0x4
+    s16 timer[100];            // 0xCC
+    s16 field_194[100];        // 0x194
+    s16 field_25C[100];        // 0x25C
+    EffectEntry* effects[100]; // 0x324
+    Vec pos1[100];             // 0x4B4
+    Vec pos2[100];             // 0x964
+} CortezWork;
+
+// psndSFX_get_vol has no header prototype; this file masks the u8 result (clrlwi 24).
+extern u8 psndSFX_get_vol(s32 id);
 
 #pragma pool_data off
 
@@ -152,99 +176,45 @@ BattleUnitDefense defence_mode1 = { { 1, 1, 1, 1, 1 } };
 
 BattleUnitDefenseAttr defence_attr_mode1 = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_mode2_upper_head[2] = {
-    0x01010101, 0x01000000,
-};
+BattleUnitDefense defence_mode2_upper_head = { { 1, 1, 1, 1, 1 } };
 
-// TODO: type
-u32 defence_attr_mode2_upper_head[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_upper_head = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_mode2_upper_rib_open[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefense defence_mode2_upper_rib_open = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_attr_mode2_upper_rib_open[2] = {
-    0x01010101, 0x01000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_upper_rib_open = { { 1, 1, 1, 1, 1 } };
 
 BattleUnitDefense defence_mode2_upper_rib_close = { { 3, 3, 3, 3, 3 } };
 
 BattleUnitDefenseAttr defence_attr_mode2_upper_rib_close = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_mode2_middle_head[2] = {
-    0x01010101, 0x01000000,
-};
+BattleUnitDefense defence_mode2_middle_head = { { 1, 1, 1, 1, 1 } };
 
-// TODO: type
-u32 defence_attr_mode2_middle_head[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_middle_head = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_mode2_middle_rib_open[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefense defence_mode2_middle_rib_open = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_attr_mode2_middle_rib_open[2] = {
-    0x01010101, 0x01000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_middle_rib_open = { { 1, 1, 1, 1, 1 } };
 
-// TODO: type
-u32 defence_mode2_middle_rib_close[2] = {
-    0x03030303, 0x03000000,
-};
+BattleUnitDefense defence_mode2_middle_rib_close = { { 3, 3, 3, 3, 3 } };
 
-// TODO: type
-u32 defence_attr_mode2_middle_rib_close[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_middle_rib_close = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_mode2_lower_head[2] = {
-    0x01010101, 0x01000000,
-};
+BattleUnitDefense defence_mode2_lower_head = { { 1, 1, 1, 1, 1 } };
 
-// TODO: type
-u32 defence_attr_mode2_lower_head[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_lower_head = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_mode2_lower_rib_open[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefense defence_mode2_lower_rib_open = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_attr_mode2_lower_rib_open[2] = {
-    0x01010101, 0x01000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_lower_rib_open = { { 1, 1, 1, 1, 1 } };
 
-// TODO: type
-u32 defence_mode2_lower_rib_close[2] = {
-    0x03030303, 0x03000000,
-};
+BattleUnitDefense defence_mode2_lower_rib_close = { { 3, 3, 3, 3, 3 } };
 
-// TODO: type
-u32 defence_attr_mode2_lower_rib_close[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefenseAttr defence_attr_mode2_lower_rib_close = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-u32 defence_mode3[2] = {
-    0x01010101, 0x01000000,
-};
+BattleUnitDefense defence_mode3 = { { 1, 1, 1, 1, 1 } };
 
-// TODO: type
-u32 defence_attr_mode3[2] = {
-    0x00000000, 0x00000000,
-};
+BattleUnitDefenseAttr defence_attr_mode3 = { { 0, 0, 0, 0, 0 } };
 
 BattleUnitDefense defence_honeduka = { { 1, 1, 1, 1, 1 } };
 
@@ -1355,8 +1325,260 @@ static BattleUnitKindPart parts[19] = {
     },
 };
 
-// TODO: write _make_cortez_work_area (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_cortez.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_make_cortez_work_area) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 id;
+    void* area;
+
+    id = evtGetValue(event, args[0]);
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id));
+    args = BattleAlloc(0xE14);
+    area = args;
+    *(void**)((u8*)unit + 0x310) = area;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_muj_0000652c) {
+    s32* args = event->args;
+    s32 val = evtGetValue(event, args[0]);
+    s32 arg1 = args[1];
+
+    evtSetValue(event, arg1, psndSFX_get_vol(val));
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_cortez_check_drain_audience) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    s32 arg1;
+    BattleUnit* unit;
+    CortezWork* area;
+    s32 id;
+    s32 i;
+
+    id = evtGetValue(event, args[0]);
+    arg1 = args[1];
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id));
+    area = *(CortezWork**)((u8*)unit + 0x310);
+    area->count = 0;
+    for (i = 0; i < 100; i++) {
+        s32 audienceId;
+        area->audienceId[i] = -1;
+        area->effects[i] = NULL;
+        area->field_25C[i] = 0;
+        audienceId = (i / 10) * 20 + 10 + i % 10;
+        if ((u8)BattleAudience_GetExist(audienceId) != 0) {
+            area->audienceId[i] = audienceId;
+            area->count++;
+        }
+    }
+    evtSetValue(event, arg1, area->count);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_cortez_collect_energy) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    CortezWork* area;
+    s32 id;
+    s32 i;
+    s32 flag;
+    s32 ret;
+    f32 x, y, z;
+
+    id = evtGetValue(event, args[0]);
+    args = (s32*)BattleGetUnitPtr(work, BattleTransID(event, id));
+    unit = (BattleUnit*)args;
+    area = *(CortezWork**)((u8*)unit + 0x310);
+    if (isFirstCall) {
+        area->state = 0;
+    }
+    switch (area->state) {
+    case 0:
+        flag = 0;
+        for (i = 0; i < 100; i++) {
+            s32 audienceId = area->audienceId[i];
+            if (audienceId != -1) {
+                BattleAudienceMember* member = BattleAudienceGetPtr(audienceId);
+                member->flags |= 0x12;
+                BattleAudience_SetAnim(audienceId, 9, 1);
+                area->timer[i] = irand(60) + 30;
+                area->pos1[i] = member->position;
+                BtlUnit_GetPos(unit, &area->pos2[i].x, &area->pos2[i].y, &area->pos2[i].z);
+                area->pos2[i].y += 20.0f;
+                effSpiritEntry(0, area->timer[i] + 60, area->pos1[i].x, area->pos1[i].y, area->pos1[i].z,
+                               area->pos2[i].x, area->pos2[i].y, area->pos2[i].z, 2.0f);
+                if (flag == 0) {
+                    flag = 1;
+                    effKumokumoN64Entry(1, 60, area->pos2[i].x, area->pos2[i].y, area->pos2[i].z, 180.0f, -1.0f,
+                                        1.0f);
+                }
+            }
+        }
+        area->state++;
+        // fallthrough
+    case 1:
+        ret = 1;
+        for (i = 0; i < 100; i++) {
+            s32 audienceId = area->audienceId[i];
+            if (audienceId == -1) {
+                continue;
+            }
+            switch (area->field_25C[i]) {
+            case 0:
+                if (area->timer[i] > 0) {
+                    area->timer[i]--;
+                    ret = 0;
+                    break;
+                }
+                area->field_25C[i]++;
+                area->field_194[i] = 0;
+                // fallthrough
+            case 1:
+                area->field_194[i]++;
+                BattleAudience_GetRotate(audienceId, &x, &y, &z);
+                x = intplGetValue(0, area->field_194[i], 30, 0.0f, -90.0f);
+                BattleAudience_SetRotate(audienceId, x, y, z);
+                if (area->field_194[i] >= 30) {
+                    area->field_25C[i]++;
+                } else {
+                    ret = 0;
+                    break;
+                }
+                // fallthrough
+            case 2:
+                area->field_194[i] = 0;
+                area->field_25C[i]++;
+                // fallthrough
+            case 3:
+                area->field_194[i]++;
+                if (area->field_194[i] >= 60) {
+                    area->field_25C[i]++;
+                }
+                ret = 0;
+                break;
+            case 4:
+            default:
+                break;
+            }
+        }
+        if (ret == 0) {
+            break;
+        }
+        // fallthrough
+    default:
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(_cortez_drain_energy) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    s32 arg1;
+    BattleUnit* unit;
+    CortezWork* area;
+    s32 id;
+    s32 i;
+
+    id = evtGetValue(event, args[0]);
+    arg1 = args[1];
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id));
+    area = *(CortezWork**)((u8*)unit + 0x310);
+    for (i = 0; i < 100; i++) {
+        if (area->effects[i] != NULL) {
+            effDelete(area->effects[i]);
+            area->effects[i] = NULL;
+        }
+    }
+    evtSetValue(event, arg1, area->count);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_cortez_recovery_audience) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    CortezWork* area;
+    s32 id;
+    s32 flag;
+    s32 i;
+
+    id = evtGetValue(event, args[0]);
+    args = (s32*)BattleGetUnitPtr(work, BattleTransID(event, id));
+    unit = (BattleUnit*)args;
+    area = *(CortezWork**)((u8*)unit + 0x310);
+    if (isFirstCall) {
+        area->state = 0;
+    }
+    switch (area->state) {
+    case 0:
+        for (i = 0; i < 100; i++) {
+            if (area->audienceId[i] != -1) {
+                area->field_25C[i] = 0;
+            }
+        }
+        area->state++;
+        // fallthrough
+    case 1:
+        flag = 1;
+        for (i = 0; i < 100; i++) {
+            if (area->audienceId[i] != -1) {
+                switch (area->field_25C[i]) {
+                case 0:
+                    area->field_25C[i]++;
+                    area->field_194[i] = 0;
+                    // fallthrough
+                case 1:
+                    area->field_194[i]++;
+                    flag = 1;
+                    break;
+                }
+            }
+        }
+        if (!flag) {
+            break;
+        }
+        area->state++;
+        // fallthrough
+    case 2:
+        for (i = 0; i < 100; i++) {
+            flag = area->audienceId[i];
+            if (flag != -1) {
+                BattleAudience_Delete(area->audienceId[i]);
+                BattleAudienceAddTargetNum(0.0f, -1.0f);
+            }
+        }
+        area->state++;
+        return EVT_RETURN_DONE;
+    default:
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(_check_zenei_kouei) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 id;
+    s32 arg1;
+    f32 x, y, z;
+
+    id = evtGetValue(event, args[0]);
+    arg1 = args[1];
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id));
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    if (x >= -120.0f) {
+        evtSetValue(event, arg1, 0);
+    } else {
+        evtSetValue(event, arg1, 1);
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(init_event)
     CALL(_make_cortez_work_area, -2)
@@ -1615,9 +1837,6 @@ EVT_BEGIN(attack_event_mode2)
     END_SWITCH
     RETURN
 EVT_END()
-
-// TODO: write _check_zenei_kouei (static, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_cortez.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(at2_head_bat_event)
     SET_VALUE(LW(12), PTR(&weapon_cortez_mode2_head_attack))
@@ -1953,9 +2172,6 @@ EVT_BEGIN(_bone_rain_event)
     RETURN
 EVT_END()
 
-// TODO: write _cortez_check_drain_audience (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_cortez.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(attack_event_mode3)
     CALL(btlevtcmd_GetUnitWork, -2, 9, LW(0))
     IF_INT_EQUAL(LW(0), 0)
@@ -1976,18 +2192,6 @@ EVT_BEGIN(attack_event_mode3)
     CALL_CHILD(at3_kamitsuki_attack)
     RETURN
 EVT_END()
-
-// TODO: write _cortez_recovery_audience (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_cortez.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _cortez_drain_energy (global, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_cortez.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _cortez_collect_energy (global, 0x318 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_cortez.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_muj_0000652c (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_cortez.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(attack_audience_event)
     CALL(evt_btl_camera_set_mode, 0, 3)
@@ -2333,11 +2537,11 @@ EVT_BEGIN(cortez_reset_pose_table)
             ELSE
                 CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table_mode_2_upper_charge_counter))
             END_IF
-            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(defence_mode2_upper_rib_open))
-            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(defence_attr_mode2_upper_rib_open))
+            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(&defence_mode2_upper_rib_open))
+            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(&defence_attr_mode2_upper_rib_open))
         END_IF
-        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(defence_mode2_upper_head))
-        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(defence_attr_mode2_upper_head))
+        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(&defence_mode2_upper_head))
+        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(&defence_attr_mode2_upper_head))
         CALL(btlevtcmd_OnPartsAttribute, -2, 1, 6291456)
         CALL(btlevtcmd_OnPartsAttribute, -2, 2, 7340032)
         CALL(btlevtcmd_SetHitOffset, -2, 1, 20, 15, 0)
@@ -2354,8 +2558,8 @@ EVT_BEGIN(cortez_reset_pose_table)
             ELSE
                 CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table_mode_2_middle_charge))
             END_IF
-            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(defence_mode2_middle_rib_close))
-            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(defence_attr_mode2_middle_rib_close))
+            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(&defence_mode2_middle_rib_close))
+            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(&defence_attr_mode2_middle_rib_close))
         ELSE
             CALL(btlevtcmd_GetUnitWork, -2, 10, LW(0))
             IF_INT_EQUAL(LW(0), 0)
@@ -2363,11 +2567,11 @@ EVT_BEGIN(cortez_reset_pose_table)
             ELSE
                 CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table_mode_2_middle_charge_counter))
             END_IF
-            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(defence_mode2_middle_rib_open))
-            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(defence_attr_mode2_middle_rib_open))
+            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(&defence_mode2_middle_rib_open))
+            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(&defence_attr_mode2_middle_rib_open))
         END_IF
-        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(defence_mode2_middle_head))
-        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(defence_attr_mode2_middle_head))
+        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(&defence_mode2_middle_head))
+        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(&defence_attr_mode2_middle_head))
         CALL(btlevtcmd_OnPartsAttribute, -2, 1, 6291456)
         CALL(btlevtcmd_OnPartsAttribute, -2, 2, 7340032)
         CALL(btlevtcmd_SetHitOffset, -2, 1, 10, 10, 0)
@@ -2384,8 +2588,8 @@ EVT_BEGIN(cortez_reset_pose_table)
             ELSE
                 CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table_mode_2_lower_charge))
             END_IF
-            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(defence_mode2_lower_rib_close))
-            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(defence_attr_mode2_lower_rib_close))
+            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(&defence_mode2_lower_rib_close))
+            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(&defence_attr_mode2_lower_rib_close))
         ELSE
             CALL(btlevtcmd_GetUnitWork, -2, 10, LW(0))
             IF_INT_EQUAL(LW(0), 0)
@@ -2393,12 +2597,12 @@ EVT_BEGIN(cortez_reset_pose_table)
             ELSE
                 CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table_mode_2_lower_charge_counter))
             END_IF
-            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(defence_mode2_lower_rib_open))
-            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(defence_attr_mode2_lower_rib_open))
+            CALL(btlevtcmd_SetPartsDefenceTable, -2, 2, PTR(&defence_mode2_lower_rib_open))
+            CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 2, PTR(&defence_attr_mode2_lower_rib_open))
             CALL(btlevtcmd_OnPartsAttribute, -2, 2, 6291456)
         END_IF
-        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(defence_mode2_lower_head))
-        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(defence_attr_mode2_lower_head))
+        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(&defence_mode2_lower_head))
+        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(&defence_attr_mode2_lower_head))
         CALL(btlevtcmd_OnPartsAttribute, -2, 1, 6291456)
         CALL(btlevtcmd_OnPartsAttribute, -2, 2, 6291456)
         CALL(btlevtcmd_OffPartsAttribute, -2, 2, 1048576)
@@ -2409,8 +2613,8 @@ EVT_BEGIN(cortez_reset_pose_table)
         CASE_DEFAULT
         CALL(btlevtcmd_SetKissHitOffset, -2, 30, 50, 50)
         CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table_mode_3))
-        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(defence_mode3))
-        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(defence_attr_mode3))
+        CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(&defence_mode3))
+        CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(&defence_attr_mode3))
         CALL(btlevtcmd_OnPartsAttribute, -2, 1, 6291456)
         CALL(btlevtcmd_OnAttribute, -2, 4)
         CALL(btlevtcmd_SetHitOffset, -2, 1, -135, -64, 0)

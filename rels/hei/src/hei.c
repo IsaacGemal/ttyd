@@ -1,4 +1,5 @@
 #include "hei.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
@@ -29,12 +30,38 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("hei_00", hei_00_init_evt);
+    relSetEvtAddr("hei_01", hei_01_init_evt);
+    relSetEvtAddr("hei_02", hei_02_init_evt);
+    relSetEvtAddr("hei_03", hei_03_init_evt);
+    relSetEvtAddr("hei_04", hei_04_init_evt);
+    relSetEvtAddr("hei_05", hei_05_init_evt);
+    relSetEvtAddr("hei_06", hei_06_init_evt);
+    relSetEvtAddr("hei_07", hei_07_init_evt);
+    relSetEvtAddr("hei_08", hei_08_init_evt);
+    relSetEvtAddr("hei_09", hei_09_init_evt);
+    relSetEvtAddr("hei_10", hei_10_init_evt);
+    relSetEvtAddr("hei_11", hei_11_init_evt);
+    relSetEvtAddr("hei_12", hei_12_init_evt);
+    relSetEvtAddr("hei_13", hei_13_init_evt);
+    relSetEvtAddr("hei_bt00", hei_bt00_init_evt);
+    relSetBtlAddr("hei", btlsetup_hei_tbl, btl_hei_setup_no_tbl);
+}
 
-// TODO: write _prolog (global, 0x194 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
 // clang-format on

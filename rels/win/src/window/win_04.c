@@ -18,15 +18,26 @@
 #include "evt/evt_window.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/envdrv.h"
+#include "driver/fadedrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <stdlib.h>
 
-#pragma pool_data off
+#pragma pool_data off // keep each float constant in its own .rodata slot, as in the original
 
-#pragma force_active on
+#pragma force_active on // event scripts are only referenced from data tables
 extern s32 all_party_lecture_30_data_192D4[];
 extern s32 evt_win_door_close[];
 extern s32 evt_win_door_open[];
 extern s32 evt_win_door_open_pure[];
-static void randf(void);  // TODO: real signature
+// .bss
+static s32 ssf[3];
+static f32 randf(f32 a, f32 b);
 s32 meet_clouda2[139];
 s32 mirror_ball_event[18];
 s32 flower_event[28];
@@ -361,8 +372,28 @@ EVT_BEGIN(mario_move_wait)
     RETURN
 EVT_END()
 
-// TODO: write ss_ch_set (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.33%): only the int->float conversion register allocation differs. The original keeps the loaded
+// ssf[index] in r5 and the pooled conversion double's address in r6 (xoris r5,r5 / addi r6,r3 / lfd f1,0(r6) /
+// stw r5,0xc(r1)); MWCC 2.6/2.0/2.5/2.7 here copy the value into r0 and put the double address in r4. Same class of
+// unsolved pooled int->float conversion as mri_16.c ss_check and the win_log.c/win_item.c conversions.
+USER_FUNC(ss_ch_check) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    f32 value = (f32)ssf[index];
+
+    evtSetFloat(event, args[1], value);
+    return 2;
+}
+
+
+USER_FUNC(ss_ch_set) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    ssf[index] = value;
+    return 2;
+}
 
 EVT_BEGIN(dummy1_jump)
     CALL(evt_npc_set_position, STRING("dummy1"), LW(0), LW(1), LW(2))
@@ -388,11 +419,16 @@ static u32 item_list[2] = {
     0x0000003F, 0xFFFFFFFF,
 };
 
-// TODO: write fade_alpha (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(fade_alpha) {
+    s32* args = event->args;
+    s32 r = evtGetValue(event, args[0]);
+    s32 g = evtGetValue(event, args[1]);
+    s32 b = evtGetValue(event, args[2]);
+    s32 a = evtGetValue(event, args[3]);
 
-// TODO: write ss_ch_check (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+    fadeEntry(0xd, 0, (GXColor){r, g, b, a});
+    return 2;
+}
 
 EVT_BEGIN(clouda_nakama)
     CALL(evt_npc_flag_onoff, 1, STRING("クラウダ"), 1536)
@@ -846,8 +882,9 @@ EVT_BEGIN(touch_door)
     RETURN
 EVT_END()
 
-// TODO: write mirror_ball (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+void mirror_ball(void* param) {
+    envAddTev(0xa, param);
+}
 
 EVT_BEGIN(mirror_ball_event)
     CALL(evt_map_set_tevcallback, 1, PTR(mirror_ball))
@@ -1172,50 +1209,62 @@ static u32 texture_0[1248] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 rose_table_direct[165] = {
-    0xC3449C29, 0x435FF0A4, 0x3F47AE14, 0xC30D8F5C,
-    0x435B6E14, 0x3F428F5C, 0xC292C7AE, 0x436C2666,
-    0x3F333333, 0xC1AFAE14, 0x4372B5C3, 0x3F333333,
-    0x42AFCCCD, 0x437163D7, 0x3F7AE148, 0x4305EE14,
-    0x435FA8F6, 0x3F570A3D, 0x432D1C29, 0x435791EC,
-    0x3F47AE14, 0xC2EE70A4, 0xC355F333, 0x3F59999A,
-    0xC28E70A4, 0xC363F0A4, 0x3F51EB85, 0xC1BB3333,
-    0xC358199A, 0x3F400000, 0x41ED1EB8, 0xC35ED47B,
-    0x3F428F5C, 0x42FE6B85, 0xC369FAE1, 0x3F4F5C29,
-    0x434051EC, 0xC34F199A, 0x3F3851EC, 0xC3432666,
-    0xC3339C29, 0x3F75C28F, 0xC2A99EB8, 0xC329B852,
-    0x3F70A3D7, 0xC1CC3D71, 0xC31BDC29, 0x3F4A3D71,
-    0x42033D71, 0xC32E4000, 0x3F3D70A4, 0x42AC051F,
-    0xC31B4F5C, 0x3F51EB85, 0x433CB5C3, 0xC31D028F,
-    0x3F570A3D, 0xC361FD71, 0x4368999A, 0x3F35C28F,
-    0xC37E70A4, 0x42BF5C29, 0x3F400000, 0xC376547B,
-    0x420C999A, 0x3F6B851F, 0xC375851F, 0xC22147AE,
-    0x3F5EB852, 0xC365B0A4, 0xC2B82E14, 0x3F570A3D,
-    0xC373199A, 0xC356147B, 0x3F733333, 0x43712B85,
-    0x4357A666, 0x3F733333, 0x437DA148, 0x4319428F,
-    0x3F6E147B, 0x4372FD71, 0x42D2AE14, 0x3F3AE148,
-    0x437C8F5C, 0x41BA6666, 0x3F5C28F6, 0x4372947B,
-    0xC2ACE148, 0x3F570A3D, 0x436F028F, 0xC31C7AE1,
-    0x3F570A3D, 0x4377AE14, 0xC34F28F6, 0x3F3AE148,
-    0xC38C50A4, 0x4324F0A4, 0x3F3D70A4, 0xC38E68F6,
-    0x42BA9EB8, 0x3F7AE148, 0xC38DA28F, 0xC197C28F,
-    0x3F5EB852, 0xC386170A, 0xC2BFE148, 0x3F3AE148,
-    0xC38771EC, 0xC3110CCD, 0x3F70A3D7, 0xC3923333,
-    0xC3627852, 0x3F570A3D, 0x4389BC29, 0x436D9C29,
-    0x3F6E147B, 0x43904B85, 0x431CC000, 0x3F666666,
-    0x43905333, 0x42DB7AE1, 0x3F7D70A4, 0x438D3D71,
-    0xC14FD70A, 0x3F333333, 0x43860A3D, 0xC29A6B85,
-    0x3F3AE148, 0x43863D71, 0xC30D68F6, 0x3F70A3D7,
-    0xC33BDC29, 0x4386BD71, 0x3F47AE14, 0xC3343333,
-    0xC375E148, 0x3F3851EC, 0x43409C29, 0xC3850000,
-    0x3F6B851F, 0xC32FFD71, 0x433A999A, 0x3F4CCCCD,
-    0xC34ADC29, 0x4312C000, 0x3F800000, 0x433D2B85,
-    0x4332A666, 0x3F733333, 0x4352A148, 0x42F0851F,
-    0x3F6E147B, 0x436BA148, 0x42A0851F, 0x3F4CCCCD,
-    0xC32AA148, 0xC2F0851F, 0x3F6E147B, 0x433DA148,
-    0xC2C8851F, 0x3F666666, 0x432DA148, 0xC2FA851F,
-    0x3F3851EC,
+Vec rose_table_direct[55] = {
+    { -196.610001, 223.940002, 0.779999971 },
+    { -141.559998, 219.429993, 0.75999999 },
+    { -73.3899994, 236.149994, 0.699999988 },
+    { -21.9599991, 242.710007, 0.699999988 },
+    { 87.9000015, 241.389999, 0.980000019 },
+    { 133.929993, 223.660004, 0.839999974 },
+    { 173.110001, 215.570007, 0.779999971 },
+    { -119.220001, -213.949997, 0.850000024 },
+    { -71.2200012, -227.940002, 0.819999993 },
+    { -23.3999996, -216.100006, 0.75 },
+    { 29.6399994, -222.830002, 0.75999999 },
+    { 127.209999, -233.979996, 0.810000002 },
+    { 192.320007, -207.100006, 0.720000029 },
+    { -195.149994, -179.610001, 0.959999979 },
+    { -84.8099976, -169.720001, 0.939999998 },
+    { -25.5300007, -155.860001, 0.790000021 },
+    { 32.8100014, -174.25, 0.74000001 },
+    { 86.0100021, -155.309998, 0.819999993 },
+    { 188.710007, -157.009995, 0.839999974 },
+    { -225.990005, 232.600006, 0.709999979 },
+    { -254.440002, 95.6800003, 0.75 },
+    { -246.330002, 35.1500015, 0.920000017 },
+    { -245.520004, -40.3199997, 0.870000005 },
+    { -229.690002, -92.0899963, 0.839999974 },
+    { -243.100006, -214.080002, 0.949999988 },
+    { 241.169998, 215.649994, 0.949999988 },
+    { 253.630005, 153.259995, 0.930000007 },
+    { 242.990005, 105.339996, 0.730000019 },
+    { 252.559998, 23.2999992, 0.860000014 },
+    { 242.580002, -86.4400024, 0.839999974 },
+    { 239.009995, -156.479996, 0.839999974 },
+    { 247.679993, -207.160004, 0.730000019 },
+    { -280.630005, 164.940002, 0.74000001 },
+    { -284.820007, 93.3099976, 0.980000019 },
+    { -283.269989, -18.9699993, 0.870000005 },
+    { -268.179993, -95.9400024, 0.730000019 },
+    { -270.890015, -145.050003, 0.939999998 },
+    { -292.399994, -226.470001, 0.839999974 },
+    { 275.470001, 237.610001, 0.930000007 },
+    { 288.589996, 156.75, 0.899999976 },
+    { 288.649994, 109.739998, 0.99000001 },
+    { 282.480011, -12.9899998, 0.699999988 },
+    { 268.079987, -77.2099991, 0.730000019 },
+    { 268.480011, -141.410004, 0.939999998 },
+    { -187.860001, 269.480011, 0.779999971 },
+    { -180.199997, -245.880005, 0.720000029 },
+    { 192.610001, -266, 0.920000017 },
+    { -175.990005, 186.600006, 0.800000012 },
+    { -202.860001, 146.75, 1 },
+    { 189.169998, 178.649994, 0.949999988 },
+    { 210.630005, 120.260002, 0.930000007 },
+    { 235.630005, 80.2600021, 0.800000012 },
+    { -170.630005, -120.260002, 0.930000007 },
+    { 189.630005, -100.260002, 0.899999976 },
+    { 173.630005, -125.260002, 0.720000029 },
 };
 
 // TODO: type
@@ -1252,17 +1301,164 @@ u32 rose_table[120] = {
     0x433E0000, 0x43870000, 0x433E0000, 0xC3820000,
 };
 
-// TODO: write evt_flower_end_main (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.91%): only the two negation temporaries differ. The original computes left/bottom as
+// `fneg f2,f0` (w) and `fneg f1,f1` (h) then `fmuls f29,f2,0.5` / `fmuls f28,f1,0.5`; MWCC 2.6 negates directly into
+// the persistent f29/f28 (`fneg f29,f0` / `fneg f28,f1` / `fmuls f29,f29,0.5`). Every source shape that forces a
+// separate temp (`-w * 0.5f`, `-w / 2.0f`, explicit intermediates) reorders the .rodata float pool and scores lower.
+void flower_disp(CameraId camera, void* param) {
+    CameraEntry* cam = camGetPtr(camera);
+    FlowerData* data = (FlowerData*)param;
+    Flower* flower;
+    GXTexObj texObj;
+    Mtx trans;
+    Mtx scale;
+    Mtx result;
+    f32 left;
+    f32 bottom;
+    f32 top;
+    f32 right;
+    s32 i;
 
-// TODO: write evt_flower_end (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_RASC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_RASA, GX_CA_ZERO);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXInitTexObj(&texObj, texture_0, 0x65, 0x5c, GX_TF_CMPR, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    flower = data->flowers;
+    {
+        f32 w = 101.0f;
+        f32 h = 92.0f;
+        left = -w;
+        bottom = -h;
+        left = left / 2.0f;
+        bottom = bottom / 2.0f;
+        top = 46.0f;
+        right = 50.5f;
+    }
 
-// TODO: write evt_flower (global, 0x170 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < data->count; i++, flower++) {
+        GXSetChanMatColor(GX_COLOR0A0, (GXColor){0xFF, 0xFF, 0xFF, flower->alpha});
+        PSMTXTrans(trans, flower->x, flower->y, 0.0f);
+        PSMTXScale(scale, flower->scale, flower->scale, flower->scale);
+        PSMTXConcat(cam->view, trans, result);
+        PSMTXConcat(result, scale, result);
+        GXLoadPosMtxImm(result, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+        GXPosition3f32(left, top, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(left, bottom, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXPosition3f32(right, bottom, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(right, top, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+    }
+}
 
-// TODO: write evt_flower_init (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+static f32 randf(f32 a, f32 b) {
+    f32 r = (f32)rand() / 32767.0f;
+
+    return a + r * (b - a);
+}
+
+USER_FUNC(evt_flower_init) {
+    FlowerData* data = _mapAlloc(8);
+
+    data->count = 0x37;
+    data->flowers = _mapAlloc(data->count * 0x18);
+    event->lwData[10] = (s32)data;
+    return 2;
+}
+
+USER_FUNC(evt_flower) {
+    FlowerData* data = (FlowerData*)event->lwData[10];
+    Flower* flower = data->flowers;
+    s32 i;
+
+    for (i = 0; i < data->count; i++, flower++) {
+        switch (flower->state) {
+        case 0:
+            flower->timer = rand() % 100;
+            flower->state++;
+            break;
+        case 1:
+            if (--flower->timer < 0) {
+                flower->x = rose_table_direct[i].x;
+                flower->y = rose_table_direct[i].y;
+                flower->scaleMax = rose_table_direct[i].z;
+                flower->scale = 0.0f;
+                flower->state++;
+            }
+            break;
+        case 2:
+            if (flower->scale < flower->scaleMax) {
+                flower->scale += 0.08f;
+            } else {
+                flower->timer = 0;
+                flower->state++;
+            }
+            flower->alpha += 20;
+            if (flower->alpha > 0xff) {
+                flower->alpha = 0xff;
+            }
+            break;
+        }
+    }
+    dispEntry(CAMERA_2D, 1000.0f, 0, flower_disp, data);
+    return 2;
+}
+
+USER_FUNC(evt_flower_end) {
+    FlowerData* data = (FlowerData*)event->lwData[10];
+    Flower* flower = data->flowers;
+    s32 i;
+
+    for (i = 0; i < data->count; i++, flower++) {
+        flower->state = 0;
+    }
+    return 2;
+}
+
+USER_FUNC(evt_flower_end_main) {
+    FlowerData* data = (FlowerData*)event->lwData[10];
+    Flower* flower = data->flowers;
+    s32 i;
+
+    for (i = 0; i < data->count; i++, flower++) {
+        switch (flower->state) {
+        case 0:
+            flower->alpha -= 10;
+            if (flower->alpha < 0) {
+                flower->alpha = 0;
+                flower->state++;
+            }
+            break;
+        case 1:
+            break;
+        }
+    }
+    dispEntry(CAMERA_2D, 1000.0f, 0, flower_disp, data);
+    return 2;
+}
 
 EVT_BEGIN(flower_event)
     SET_VALUE(GW(0), 0)
@@ -1281,9 +1477,6 @@ EVT_BEGIN(flower_event)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write flower_pos_report (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(flower_disp_pos)
     LOOP(0)
@@ -1355,14 +1548,12 @@ EVT_BEGIN(win_04_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ssf[3] = {
-    0x00000000, 0x00000000, 0x00000000,
-};
+USER_FUNC(flower_pos_report) {
+    FlowerData* data = (FlowerData*)event->lwData[10];
+    s32 i;
 
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write flower_disp (global, 0x3c8 bytes) here:
-// its asm is in build/G8MJ01/win/asm/window/win_04.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < data->count; i++) {
+    }
+    return 2;
+}
 // clang-format on

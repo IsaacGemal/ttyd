@@ -1,12 +1,20 @@
 #pragma once
 
+#include <dolphin/gx.h>
 #include "evt/evt_cmd.h"
+#include "driver/camdrv.h"
+#include "memory.h"
+
+typedef struct ShadowWork {
+    GXTexObj texObj;      // 0x0
+    smartEntry* texEntry; // 0x20
+} ShadowWork;
 
 USER_FUNC(yami_oowareru_check);
 USER_FUNC(eff_sleep_off);
 USER_FUNC(eff_sleep_on);
 USER_FUNC(make_shadow);
-void make_shadow_disp(void);  // TODO: real signature
+void make_shadow_disp(CameraId camId, void* param);
 EVT_DEF(evt_door_1_open);
 EVT_DEF(evt_door_1_close);
 EVT_DEF(evt_sakaba_1);

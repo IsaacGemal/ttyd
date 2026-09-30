@@ -1,70 +1,82 @@
 [
-  {
-    "path": "*",
-    "name": "psndSFXOnEx_3D",
-    "reason": "the definition takes s32 arguments, but the original's callers pass u8/u16 widths; declare it with the widths your file's asm passes."
-  },
-  {
-    "path": "*",
-    "name": "psndSFX_get_vol",
-    "reason": "the definition returns u8, but some of the original's callers use the result unmasked; declare it with the return width your file's asm uses."
-  },
-  {
-    "path": "*",
-    "name": "psndSFX_pit",
-    "reason": "the original's callers disagree on the pitch's width and signedness (s16, u16 and full width); declare it with the width your file's asm passes."
-  },
-  {
-    "path": "*",
-    "name": "psndSFX_vol",
-    "reason": "the original's callers disagree on the volume's width (u8 and full width); declare it with the width your file's asm passes."
-  },
-  {
-    "path": "src/battle/battle_event_cmd.c",
-    "name": "BattleCheckCounter",
-    "declaration": "s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* out);",
-    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
-  },
-  {
-    "path": "src/battle/battle_stage_object.c",
-    "name": "windowDispGX_Waku_col",
-    "declaration": "extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 w, f32 h, f32 curve);",
-    "reason": "match-only: the original copies the GXColor to a stack temp as usual for a by-value struct, so the header's by-value prototype is ABI-correct; this local by-pointer prototype only steers register allocation (_disp_escape_wall_message loses ~1% with the header's). Review 1 of PR #10."
-  },
-  {
-    "path": "src/event/evt_party.c",
-    "name": "cloudGetStatus",
-    "declaration": "s32 cloudGetStatus(void);",
-    "reason": "Retail evt_party_cloud_breathout consumes the result as s32 without masking; the implementation/header return u8."
-  },
-  {
-    "path": "src/battle/battle_damage.c",
-    "name": "_getRegistStatus",
-    "declaration": "u8 _getRegistStatus(BattleUnit* unit, s32 type);",
-    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
-  },
-  {
-    "path": "src/battle/battle_damage.c",
-    "name": "_getSickStatusParam",
-    "declaration": "void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2);",
-    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
-  },
-  {
-    "path": "src/battle/battle_damage.c",
-    "name": "_getSickStatusRate",
-    "declaration": "s32 _getSickStatusRate(BattleWeapon* weapon, s32 type);",
-    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
-  },
-  {
-    "path": "src/battle/battle_damage.c",
-    "name": "BattleSetStatusDamage",
-    "declaration": "s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, s32 type, s32 rate, s32 levelDiff, u8 arg8, u8 arg9);",
-    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
-  },
-  {
-    "path": "src/battle/battle_damage.c",
-    "name": "BattleSetStatusDamageFromWeapon",
-    "declaration": "s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags);",
-    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
-  }
+ {
+  "path": "*",
+  "name": "psndSFXOnEx_3D",
+  "reason": "the definition takes s32 arguments, but the original's callers pass u8/u16 widths; declare it with the widths your file's asm passes."
+ },
+ {
+  "path": "*",
+  "name": "psndSFX_get_vol",
+  "reason": "the definition returns u8, but some of the original's callers use the result unmasked; declare it with the return width your file's asm uses."
+ },
+ {
+  "path": "*",
+  "name": "psndSFX_pit",
+  "reason": "the original's callers disagree on the pitch's width and signedness (s16, u16 and full width); declare it with the width your file's asm passes."
+ },
+ {
+  "path": "*",
+  "name": "psndSFX_vol",
+  "reason": "the original's callers disagree on the volume's width (u8 and full width); declare it with the width your file's asm passes."
+ },
+ {
+  "path": "src/battle/battle_event_cmd.c",
+  "name": "BattleCheckCounter",
+  "declaration": "s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* out);",
+  "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+ },
+ {
+  "path": "src/battle/battle_stage_object.c",
+  "name": "windowDispGX_Waku_col",
+  "declaration": "extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 w, f32 h, f32 curve);",
+  "reason": "match-only: the original copies the GXColor to a stack temp as usual for a by-value struct, so the header's by-value prototype is ABI-correct; this local by-pointer prototype only steers register allocation (_disp_escape_wall_message loses ~1% with the header's). Review 1 of PR #10."
+ },
+ {
+  "path": "src/event/evt_party.c",
+  "name": "cloudGetStatus",
+  "declaration": "s32 cloudGetStatus(void);",
+  "reason": "Retail evt_party_cloud_breathout consumes the result as s32 without masking; the implementation/header return u8."
+ },
+ {
+  "path": "src/battle/battle_damage.c",
+  "name": "_getRegistStatus",
+  "declaration": "u8 _getRegistStatus(BattleUnit* unit, s32 type);",
+  "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+ },
+ {
+  "path": "src/battle/battle_damage.c",
+  "name": "_getSickStatusParam",
+  "declaration": "void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2);",
+  "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+ },
+ {
+  "path": "src/battle/battle_damage.c",
+  "name": "_getSickStatusRate",
+  "declaration": "s32 _getSickStatusRate(BattleWeapon* weapon, s32 type);",
+  "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+ },
+ {
+  "path": "src/battle/battle_damage.c",
+  "name": "BattleSetStatusDamage",
+  "declaration": "s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, s32 type, s32 rate, s32 levelDiff, u8 arg8, u8 arg9);",
+  "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+ },
+ {
+  "path": "src/battle/battle_damage.c",
+  "name": "BattleSetStatusDamageFromWeapon",
+  "declaration": "s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags);",
+  "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+ },
+ {
+  "path": "rels/sys/src/sys.c",
+  "name": "fmod",
+  "declaration": "extern f64 fmod(f64, f64);",
+  "reason": "including <math.h> makes MWCC emit sqrt/sqrtf's constants, which this unit's original doesn't have; the unit declares the two functions it calls itself."
+ },
+ {
+  "path": "rels/sys/src/sys.c",
+  "name": "tan",
+  "declaration": "extern f64 tan(f64);",
+  "reason": "including <math.h> makes MWCC emit sqrt/sqrtf's constants, which this unit's original doesn't have; the unit declares the two functions it calls itself."
+ }
 ]

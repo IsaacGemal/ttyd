@@ -1,24 +1,71 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "evt_yuuminigame.h"
+#include <dolphin/mtx.h>
 
-void yuuminigame4_gamerule(void);  // TODO: real signature
+typedef struct Yuuminigame4Data {
+    u32 flags;                     // 0x00
+    s32 phase;                     // 0x04
+    s32 unk08;                     // 0x08
+    s32 unk0C;                     // 0x0C
+    s32 unk10;                     // 0x10
+    s32 unk14;                     // 0x14
+    f32 unk18;                     // 0x18
+    f32 unk1C;                     // 0x1C
+    s32 unk20;                     // 0x20
+    EventEntry* subEvent;          // 0x24
+} Yuuminigame4Data;
+
+typedef struct Yuuminigame4Work {
+    u8 unk0;                    // 0x00
+    u8 pad_01;                  // 0x01
+    s16 count;                  // 0x02
+    u8 unk4;                    // 0x04
+    u8 pad_05[0x0C - 0x05];     // 0x05
+    Vec position;               // 0x0C
+    f32 unk18;                  // 0x18
+    u8 pad_1C[0x40 - 0x1C];     // 0x1C
+    YuuminigameWork* work;      // 0x40
+} Yuuminigame4Work;
+
+typedef struct RyushiEntry {
+    s32 unk0;                    // 0x00
+    s32 unk04;                   // 0x04
+    f32 unk08;                  // 0x08
+    f32 unk0C;                  // 0x0C
+    f32 unk10;                  // 0x10
+    f32 x;                      // 0x14
+    f32 y;                      // 0x18
+    f32 z;                      // 0x1C
+    s32 unk20;                  // 0x20
+    s32 unk24;                  // 0x24
+    f32 scale;                  // 0x28
+    s32 unk2C;                  // 0x2C
+    s32 unk30;                  // 0x30
+    s32 unk34;                  // 0x34
+    s32 unk38;                  // 0x38
+    s32 unk3C;                  // 0x3C
+    s32 unk40;                  // 0x40
+} RyushiEntry;
+
+s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data);
 // yuuminigame_disp_4slit: this unit has its own copy; a header already declares it.
 // yuuminigame_main_4slit: this unit has its own copy; a header already declares it.
 // yuuminigame_init_4slit: this unit has its own copy; a header already declares it.
 USER_FUNC(evt_ryushi);
 USER_FUNC(evt_ryushi_clr);
-void evt_ryushi_init(void);  // TODO: real signature
-void ryushi_disp(void);  // TODO: real signature
+USER_FUNC(evt_ryushi_init);
+void ryushi_disp(CameraId cameraId, void* param);
 USER_FUNC(yuuminigame4_opening_chk);
 USER_FUNC(yuuminigame4_opening_on_off);
 USER_FUNC(yuunpc_go);
 USER_FUNC(re_init_yuunpc);
-void evt_slit_cancel(void);  // TODO: real signature
+USER_FUNC(evt_slit_cancel);
 USER_FUNC(yuuminigame4_set_phase);
-void unk_yuu_0000341c(void);  // TODO: real signature
+USER_FUNC(unk_yuu_0000341c);
 USER_FUNC(unk_yuu_000034bc);
-void unk_yuu_0000365c(void);  // TODO: real signature
+void unk_yuu_0000365c(CameraId cameraId, void* param);
 USER_FUNC(unk_yuu_0000371c);
 EVT_DEF(unk_evt_yuu_00015fe0);
 EVT_DEF(ryushi_event);

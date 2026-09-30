@@ -1,4 +1,22 @@
 #include "gor_03.h"
+#include <dolphin/mtx.h>
+#include <math.h>
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "driver/icondrv.h"
+#include "driver/mapdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/shadowdrv.h"
+#include "eff/eff_bomb.h"
+#include "eff/eff_mario_balloon.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "system.h"
+#include <stdio.h>
+#include <string.h>
 #include "evt/evt_badgeshop.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
@@ -27,13 +45,14 @@
 #include "evt/evt_win.h"
 #include "evt/evt_window.h"
 #include "evt/evt_yuugijou.h"
+#include "evt_goryuugijo.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 evt_goryuugijo_alloc[];
 extern s32 evt_yuuranking_alloc_10_text_A47C[];
 extern s32 evt_yuuranking_free_10_text_A3F8[];
 extern s32 luigi_gor_first_talk[];
@@ -43,9 +62,15 @@ static USER_FUNC(enzan_lw_save);
 static USER_FUNC(viewport);
 static USER_FUNC(mario_keyoff_wait);
 static USER_FUNC(fall_rtn);
-static void monte_disp(void);  // TODO: real signature
-static void get_monte_check(void);  // TODO: real signature
+static void monte_disp(CameraId cameraId, void* param);
+static s32 get_monte_check(Vec* a, Vec* b);
 static USER_FUNC(setmertn);
+static u32 xlw[16];
+static u32 dataadr[8];
+static EffectEntry* eff[1];
+static u32 monte_p[1];
+NpcEntry* npc[1];
+u32 exchange_msgp[1];
 u32 cherryEnt[46];
 s32 majorin_nusumigiki[331];
 s32 kuzi_bomb_talk[16];
@@ -1434,7 +1459,7 @@ EVT_BEGIN(gor_03_dokan_down_evt)
 EVT_END()
 
 // TODO: type
-u32 exchange_ryokin_medal_tbl[54] = {
+s32 exchange_ryokin_medal_tbl[9][3][2] = {
     0x00000003, 0x00000001, 0x0000000F, 0x00000005,
     0x0000001E, 0x0000000A, 0x00000003, 0x00000001,
     0x0000000F, 0x00000005, 0x0000001E, 0x0000000A,
@@ -1451,8 +1476,28 @@ u32 exchange_ryokin_medal_tbl[54] = {
     0x0000001E, 0x0000000A,
 };
 
-// TODO: write mario_walkpoint_enzan (global, 0x108 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(mario_walkpoint_enzan) {
+    s32* args = event->args;
+    Vec a;
+    Vec b;
+    Vec c;
+    f32 dist;
+
+    a.x = evtGetFloat(event, args[0]);
+    a.y = 0.0f;
+    a.z = evtGetFloat(event, args[1]);
+    b.x = evtGetFloat(event, args[2]);
+    b.y = 0.0f;
+    b.z = evtGetFloat(event, args[3]);
+    dist = evtGetFloat(event, args[4]);
+    PSVECSubtract(&a, &b, &c);
+    PSVECNormalize(&c, &c);
+    PSVECScale(&c, &c, dist);
+    PSVECAdd(&c, &b, &c);
+    evtSetFloat(event, args[5], c.x);
+    evtSetFloat(event, args[6], c.z);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(bteresa_talk_sub_minigame)
     SET_VALUE(LW(15), LW(0))
@@ -1618,17 +1663,95 @@ EVT_BEGIN(bteresa_talk_sub_keihin)
     RETURN
 EVT_END()
 
-// TODO: write minigameselect_msg_set (global, 0x24c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (84.01%): register allocation of the two copy loops; logic matches.
+USER_FUNC(minigameselect_msg_set) {
+    s32* args = event->args;
+    s8* msg = (s8*)msgSearch((const char*)evtGetValue(event, args[0]));
+    s32 flags[4];
+    s32 i;
+    s32 src;
+    s32 pos;
+    s32 count;
+    s32 num;
 
-// TODO: write evt_exchange_msg_alloc (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    flags[0] = evtGetValue(event, GSWF(1232));
+    flags[1] = evtGetValue(event, GSWF(1235));
+    flags[2] = evtGetValue(event, GSWF(1234));
+    flags[3] = evtGetValue(event, GSWF(1233));
 
-// TODO: write evt_exchange_msg_free (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    src = 0;
+    pos = 0;
+    count = 0;
 
-// TODO: write setmertn (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    while (msg[src] != '\n') {
+        ((char*)exchange_msgp[0])[pos] = msg[src];
+        src++;
+        pos++;
+    }
+    ((char*)exchange_msgp[0])[pos] = msg[src];
+    src++;
+    pos++;
+
+    for (i = 0; i < 4; i++) {
+        if (flags[i] != 0) {
+            while (msg[src] != '\n') {
+                ((char*)exchange_msgp[0])[pos] = msg[src];
+                src++;
+                pos++;
+            }
+            ((char*)exchange_msgp[0])[pos] = msg[src];
+            src++;
+            pos++;
+            count++;
+        } else {
+            while (msg[src] != '\n') {
+                src++;
+            }
+            src++;
+        }
+    }
+
+    while (msg[src] != 0) {
+        ((char*)exchange_msgp[0])[pos] = msg[src];
+        src++;
+        pos++;
+    }
+    ((char*)exchange_msgp[0])[pos] = msg[src];
+
+    i = 0;
+    while (((char*)exchange_msgp[0])[i] != '>') {
+        i++;
+    }
+    while (((char*)exchange_msgp[0])[i] != ' ') {
+        i--;
+    }
+    num = 0x50 - (4 - count) * 12;
+    ((char*)exchange_msgp[0])[i + 1] = num / 10 + '0';
+    ((char*)exchange_msgp[0])[i + 2] = num % 10 + '0';
+
+    evtSetValue(event, args[1], exchange_msgp[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_exchange_msg_alloc) {
+    exchange_msgp[0] = (u32)_mapAlloc(0x100);
+    memset((void*)exchange_msgp[0], 0, 0x100);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_exchange_msg_free) {
+    if (exchange_msgp[0] == 0) {
+        return EVT_RETURN_DONE;
+    }
+    _mapFree((void*)exchange_msgp[0]);
+    exchange_msgp[0] = 0;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(setmertn) {
+    event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(bteresa_table_talk)
     CALL(setmertn, STRING("バニーテレサ"))
@@ -1910,17 +2033,43 @@ EVT_BEGIN(slot_fall_monte)
     RETURN
 EVT_END()
 
-// TODO: write goryuugijo_get_slot_phase (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(goryuugijo_get_slot_phase) {
+    s32* args = event->args;
+    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
 
-// TODO: write goryuugijo_set_slot_phase (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[1], *(s32*)((u8*)work->data + 0x04));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_goryuugijo_set_nowslot (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(goryuugijo_set_slot_phase) {
+    s32* args = event->args;
+    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
+    u8* data = (u8*)work->data;
 
-// TODO: write goryuugijo_get_dataadr (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    *(s32*)(data + 0x04) = evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_goryuugijo_set_nowslot) {
+    s32* args = event->args;
+    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
+    u8* data = (u8*)work->data;
+
+    *(s32*)(data + 0x60) = evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(goryuugijo_get_dataadr) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    if (index >= 8) {
+        evtSetValue(event, args[1], 0);
+    } else {
+        evtSetValue(event, args[1], dataadr[index]);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(slot_set)
     CALL(goryuugijo_get_dataadr, 1, LW(0))
@@ -1992,7 +2141,7 @@ EVT_BEGIN(slot2_set)
     RETURN
 EVT_END()
 
-char* drumname[34] = {
+char* drumname[2][17] = {
     "S_srot01_dram_01", "S_srot01_dram_02", "S_srot01_dram_03", "S_srot01_reber", "A_srot01",
     "S_srot01_m_01", "S_srot01_s_01", "S_srot01_7_01", "S_srot01_m_02", "S_srot01_s_02",
     "S_srot01_7_02", "S_srot01_m_03", "S_srot01_s_03", "S_srot01_7_03", "neon_01", "neon_03",
@@ -2062,11 +2211,64 @@ EVT_BEGIN(ranking_set)
     RETURN
 EVT_END()
 
-// TODO: write evt_exchange_msg_set (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_exchange_msg_set) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    const char* msg = msgSearch((const char*)evtGetValue(event, args[1]));
+    s32 value = evtGetValue(NULL, GSW(0));
+    s32 rank = 0;
 
-// TODO: write exchange_ryokin_medal (global, 0x110 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    if (value >= 0x192) {
+        rank = 8;
+    } else if (value >= 0x177) {
+        rank = 7;
+    } else if (value >= 0x158) {
+        rank = 6;
+    } else if (value >= 0x10b) {
+        rank = 5;
+    } else if (value >= 0xda) {
+        rank = 4;
+    } else if (value >= 0xab) {
+        rank = 3;
+    } else if (value >= 0x75) {
+        rank = 2;
+    } else if (value >= 0x3d) {
+        rank = 1;
+    }
+    sprintf((char*)exchange_msgp[0], msg, a, exchange_ryokin_medal_tbl[rank][0][1], exchange_ryokin_medal_tbl[rank][0][0],
+            exchange_ryokin_medal_tbl[rank][1][1], exchange_ryokin_medal_tbl[rank][1][0], exchange_ryokin_medal_tbl[rank][2][1],
+            exchange_ryokin_medal_tbl[rank][2][0]);
+    evtSetValue(event, args[2], exchange_msgp[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(exchange_ryokin_medal) {
+    s32* args = event->args;
+    s32 sel = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(NULL, GSW(0));
+    s32 rank = 0;
+
+    if (value >= 0x192) {
+        rank = 8;
+    } else if (value >= 0x177) {
+        rank = 7;
+    } else if (value >= 0x158) {
+        rank = 6;
+    } else if (value >= 0x10b) {
+        rank = 5;
+    } else if (value >= 0xda) {
+        rank = 4;
+    } else if (value >= 0xab) {
+        rank = 3;
+    } else if (value >= 0x75) {
+        rank = 2;
+    } else if (value >= 0x3d) {
+        rank = 1;
+    }
+    evtSetValue(event, args[1], exchange_ryokin_medal_tbl[rank][sel][0]);
+    evtSetValue(event, args[2], exchange_ryokin_medal_tbl[rank][sel][1]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(exchange_set)
     CALL(evt_mario_key_onoff, 0)
@@ -2741,11 +2943,42 @@ char* door_data_02_0_npc[6] = {
     "バニーテレサ", "客１", "客４", "キノピオ女Ａ", "マフィアボスカジノ", NULL,
 };
 
-// TODO: write mario_keyoff_wait (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (76.78%): MWCC folds if(!x) return 0; return 1; branchlessly; original keeps cntlzw; srwi.; branch.
+static USER_FUNC(mario_keyoff_wait) {
+    BOOL notKey = !marioChkKey();
 
-// TODO: write goryuugijo_door_init_slot (global, 0x1bc bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    if (notKey) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_YIELD;
+}
+
+// NONMATCHING (81.69%): register allocation of loop-invariant constants and counters differs.
+USER_FUNC(goryuugijo_door_init_slot) {
+    s32* args = event->args;
+    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
+    u8* data = (u8*)work->data;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 3; j++) {
+            f32* angle = (f32*)(data + i * 0xc + j * 4 + 0xc);
+
+            *angle = 0.0f;
+            if (*angle >= 360.0f) {
+                *angle -= 360.0f;
+            }
+            *angle = 45.0f * irand(8);
+            mapObjRotate(drumname[i][j], 0.0f, 0.0f, *angle);
+            *(u8*)(data + i * 3 + j + 0x33) = upsidegara[i * 24 + j * 8 + irand(8)];
+            mapGrpFlagOn(drumname[i][j * 3 + 5], 1);
+            mapGrpFlagOn(drumname[i][j * 3 + 6], 1);
+            mapGrpFlagOn(drumname[i][j * 3 + 7], 1);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(door_data_02_0_open_sub)
     WAIT_FRAMES(1)
@@ -2755,8 +2988,10 @@ EVT_BEGIN(door_data_02_0_open_sub)
     RETURN
 EVT_END()
 
-// TODO: write teresa_badge_item_list_init (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(teresa_badge_item_list_init) {
+    badgeShop_bteresaGeneration();
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(door_data_02_0_open)
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_i02_soto_kai"), 1)
@@ -2837,14 +3072,39 @@ char* door_data_02_1_npc[6] = {
     "マフィアボス", "マフィア１", "マフィア２", "モニー", "ピートン", NULL,
 };
 
-// TODO: write get_mario_dispReqDir (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(get_mario_dispReqDir) {
+    s32* args = event->args;
+    MarioWork* mario = marioGetPtr();
 
-// TODO: write desk_talk_func (global, 0x134 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[0], (s32) * (f32*)((u8*)mario + 0x1AC));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write desk_talk_init_func (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(desk_talk_func) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    s32 x = evtGetValue(event, args[2]);
+    s32 y = evtGetValue(event, args[3]);
+    s32 z = evtGetValue(event, args[4]);
+
+    if (a == 1 && b == 0) {
+        eff[0] = effMarioBalloonEntry(1, npc[0]);
+    }
+    if (a == 0 && b == 1) {
+        effDelete(eff[0]);
+    }
+    npc[0]->position.x = (f32)x;
+    npc[0]->position.y = (f32)y;
+    npc[0]->position.z = (f32)z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(desk_talk_init_func) {
+    npc[0] = (NpcEntry*)_mapAlloc(0x340);
+    eff[0] = (EffectEntry*)_mapAlloc(0x28);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(desk_talk_check)
     CALL(desk_talk_init_func)
@@ -3404,8 +3664,16 @@ static u32 shopper_data[38] = {
     (u32)"gor_shop2_33", (u32)"gor_shop2_34",
 };
 
-// TODO: write dummy_shadow (global, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(dummy_shadow) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    f32 size = evtGetFloat(event, args[3]);
+
+    shadowSetCollision(shadowEntry(x, y, z, 10.0f * size), 0);
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(majorin_nusumigiki)
     CALL(evt_npc_set_ry_lr, STRING("マジョリン"), 0)
@@ -3719,11 +3987,73 @@ EVT_BEGIN(kuzi_bomb_talk_normal)
     RETURN
 EVT_END()
 
-// TODO: write kuji_bomb_055_callback (global, 0x14c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.87%): only anonymous rodata symbol names (arg_mismatch) differ; expected to resolve once all functions are written.
+void kuji_bomb_055_callback(s32 type, s32* param) {
+    NpcEntry* npc;
+    u8* p;
 
-// TODO: write viewport (static, 0x104 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    p = (u8*)param[0];
+    npc = npcNameToPtr("グルメボム兵");
+
+    switch (type) {
+    case 3:
+        if (*(u16*)(p + 8) == 1) {
+            evtSetValue(NULL, GF(0), 1);
+        }
+        break;
+    case 5:
+        switch (*(s32*)(p + 0x10)) {
+        case 0x1d:
+            animPoseSetAnim(npc->poseId, "T_3", 1);
+            break;
+        case 0xc8:
+            animPoseSetAnim(npc->poseId, "T_4", 1);
+            break;
+        case 0x158:
+            animPoseSetAnim(npc->poseId, "T_3", 1);
+            break;
+        case 0x1f1:
+            animPoseSetAnim(npc->poseId, "T_4", 1);
+            break;
+        case 0x2b7:
+        case 0x2b8:
+            *(u32*)p &= ~0x200;
+            animPoseSetAnim(npc->poseId, "B_1", 1);
+            break;
+        }
+        break;
+    }
+}
+
+static USER_FUNC(viewport) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]);
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    CameraEntry* cam;
+
+    cam = camGetPtr(3);
+    cam->viewport[0] = a;
+    cam->viewport[1] = b;
+    cam->viewport[2] = c;
+    cam->viewport[3] = d;
+    cam = camGetPtr(4);
+    cam->viewport[0] = a;
+    cam->scissor[0] = a;
+    cam->viewport[1] = b;
+    cam->scissor[1] = b;
+    cam->viewport[2] = c;
+    cam->scissor[2] = c;
+    cam->viewport[3] = d;
+    cam->scissor[3] = d;
+    cam = camGetPtr(8);
+    cam->viewport[0] = a;
+    cam->viewport[1] = b;
+    cam->viewport[2] = c;
+    cam->viewport[3] = d;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(kuzi_bomb_talk_husei)
     CALL(evt_unitwin_alloc, 0)
@@ -3932,8 +4262,50 @@ EVT_BEGIN(kuzi_bomb_talk_husei)
     RETURN
 EVT_END()
 
-// TODO: write kuzi_bomb_bomb_eff (global, 0x1b4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.03%): one extra mr r3,r0 before npcNameToPtr (string address materialised into r0, original into r3).
+USER_FUNC(kuzi_bomb_bomb_eff) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 state = evtGetValue(event, args[1]);
+    NpcEntry* npc;
+    npc = npcNameToPtr("グルメボム兵");
+
+    if (type == 2 || type == 3) {
+        return EVT_RETURN_DONE;
+    }
+    switch (state) {
+    case 0:
+        if (npc->position.y > 25.0f) {
+            effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
+            if (type == 0) {
+                state = 1;
+            } else {
+                state = 2;
+            }
+        }
+        break;
+    case 1:
+        if (npc->position.y > 50.0f) {
+            effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
+            state = 2;
+        }
+        break;
+    case 2:
+        if (npc->position.y > 75.0f) {
+            effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
+            state = 3;
+        }
+        break;
+    case 3:
+        if (npc->position.y > 100.0f) {
+            effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
+            state = 4;
+        }
+        break;
+    }
+    evtSetValue(event, args[2], state);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(kuzi_bomb_bomb)
     SET_VALUE(LW(15), LW(0))
@@ -3985,8 +4357,41 @@ EVT_BEGIN(kuzi_bomb_bomb)
     RETURN
 EVT_END()
 
-// TODO: write kuzi_get_keihin (global, 0xfc bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kuzi_get_keihin) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 ret;
+
+    switch (type) {
+    case 0:
+        if (evtGetValue(NULL, GSWF(1238)) == 0) {
+            ret = 0x104;
+            evtSetValue(NULL, GSWF(1238), 1);
+        } else {
+            ret = 0xc4;
+        }
+        break;
+    case 1:
+        if (evtGetValue(NULL, GSWF(1239)) == 0) {
+            ret = 0x12f;
+            evtSetValue(NULL, GSWF(1239), 1);
+        } else {
+            ret = 0xc2;
+        }
+        break;
+    case 2:
+        ret = 0x96;
+        break;
+    case 3:
+        ret = 0x97;
+        break;
+    default:
+        ret = 0x94;
+        break;
+    }
+    evtSetValue(event, args[1], ret);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(kuzi_keiziban_normal)
     CALL(evt_mario_key_onoff, 0)
@@ -4136,8 +4541,60 @@ EVT_BEGIN(kuzi_keiziban_entry)
     RETURN
 EVT_END()
 
-// TODO: write gor_npc_fuwafuwa (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(gor_npc_fuwafuwa) {
+    s32* args = event->args;
+    NpcEntry* npc;
+    f32 scale;
+    s32 duration;
+    s32 time;
+    f32 elapsed;
+    u32 idx;
+    f32 v;
+    u32* now;
+    u32* saved;
+    s32 name;
+    f32 base;
+
+    name = evtGetValue(event, args[0]);
+    npc = evtNpcNameToPtr(event, (const char*)name);
+    scale = evtGetFloat(event, args[1]);
+    duration = evtGetValue(event, args[2]);
+    {
+        f32 table[40] = {
+            0.0f, 0.5f, 1.0f, 1.4f, 1.8f, 2.0f, 2.3f, 2.5f,
+            2.6f, 2.7f, 2.7f, 2.7f, 2.6f, 2.5f, 2.3f, 2.0f,
+            1.8f, 1.4f, 1.0f, 0.5f, -0.0f, -0.5f, -1.0f, -1.4f,
+            -1.8f, -2.0f, -2.3f, -2.5f, -2.6f, -2.7f, -2.7f, -2.7f,
+            -2.6f, -2.5f, -2.3f, -2.0f, -1.8f, -1.4f, -1.0f, -0.5f,
+        };
+
+        if (isFirstCall) {
+            event->savedTime = gp->renderTime;
+            event->userdataf[1] = npc->position.x;
+            event->userdataf[2] = npc->position.y;
+            *(f32*)&event->field_84 = npc->position.z;
+        }
+        now = (u32*)&gp->renderTime;
+        saved = (u32*)&event->savedTime;
+        time = (now[1] - saved[1]) / ((*(u32*)0x800000F8 >> 2) / 1000);
+        elapsed = sysMsec2FrameFloat((f32)time);
+        idx = (u32)(s32)((0.5f + elapsed) * scale) % 40;
+        v = event->userdataf[2];
+        v += table[idx];
+        npc->prevPosition.y = v;
+        npc->position.y = v;
+    }
+    if (duration == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (time < duration) {
+        return EVT_RETURN_BLOCK;
+    }
+    v = event->userdataf[2];
+    npc->prevPosition.y = v;
+    npc->position.y = v;
+    return EVT_RETURN_YIELD;
+}
 
 EVT_BEGIN(tenin_fuwafuwa)
     CALL(gor_npc_fuwafuwa, STRING("店員"), FLOAT(0.5f), 0)
@@ -4198,11 +4655,21 @@ EVT_BEGIN(debug_event_mode)
     RETURN
 EVT_END()
 
-// TODO: write enzan_lw_load (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(enzan_lw_load) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw[i];
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write enzan_lw_save (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(enzan_lw_save) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        xlw[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(monte_evt_door_close)
     CALL(enzan_lw_save)
@@ -4237,11 +4704,28 @@ EVT_BEGIN(monte_evt_door_entry)
     RETURN
 EVT_END()
 
-// TODO: write evt_goryuugijo_set_caseid (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (81.4%): same addi/stwx fold as evt_goryuugijo_get_caseid.
+USER_FUNC(evt_goryuugijo_set_caseid) {
+    s32* args = event->args;
+    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
+    u8* data = (u8*)work->data;
+    s32 index = evtGetValue(event, args[1]);
+    s32 value = evtGetValue(event, args[2]);
+    u8* p = data + index * 4;
 
-// TODO: write goryuugijo_set_dataadr (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    *(s32*)(p + 0x64) = value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(goryuugijo_set_dataadr) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    if (index < 8) {
+        dataadr[index] = evtGetValue(event, args[1]);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(gor_03_init_evt)
     IF_INT_EQUAL(GSWF(1229), 0)
@@ -4396,13 +4880,13 @@ static u32 xlw[16] = {
 };
 
 // TODO: type
-static u32 eff[1] = {
-    0x00000000,
+static EffectEntry* eff[1] = {
+    NULL,
 };
 
 // TODO: type
-u32 npc[1] = {
-    0x00000000,
+NpcEntry* npc[1] = {
+    NULL,
 };
 
 // TODO: type
@@ -4416,42 +4900,297 @@ static u32 dataadr[8] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: write goryuugijo_disp_slot (global, 0x20c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.19%): iconDispGx2 third param is s16 in the header (matches src/driver/icondrv.c), so MWCC emits extsh; original emits only clrlwi (the real param is u16).
+void goryuugijo_disp_slot(CameraId cameraId, void* param) {
+    u8* p = (u8*)((void**)param)[7];
+    u32 tbl[3] = {0x1f3, 0x1f3, 0x1f3};
+    Vec pos;
+    f32 projv[7];
+    f32 viewportv[6];
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    Mtx trans;
+    Mtx scale;
+    Mtx mtx;
+    CameraEntry* cam;
+    u16 iconId;
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        if (*(s8*)(p + 0x30 + i) == 2 && i == *(s16*)(p + 0x74)) {
+            mapObjGetPos(drumname[*(s32*)(p + 0x60)][i], &pos);
+            pos.x -= 25.0f;
+            pos.y += 10.0f;
+            cam = camGetPtr(4);
+            GXSetProjection(cam->projection, cam->projType);
+            GXGetProjectionv(projv);
+            GXGetViewportv(viewportv);
+            GXProject(pos.x, pos.y, pos.z, cam->view, projv, viewportv, &sx, &sy, &sz);
+            cam = camGetPtr(cameraId);
+            GXSetProjection(cam->projection, cam->projType);
+            PSMTXScale(scale, 1.1f, 1.1f, 1.1f);
+            PSMTXTrans(trans, -304.0f + sx, 240.0f - sy, 0.0f);
+            PSMTXConcat(trans, scale, mtx);
+            iconDispGx2(mtx, 0x10, 0x1f2);
+            PSMTXTrans(trans, -304.0f + sx, 31.35f + (240.0f - sy), 0.0f);
+            PSMTXConcat(trans, scale, mtx);
+            iconDispGx2(mtx, 0x10, (u16)tbl[i]);
+        }
+    }
+}
 
 // TODO: write slot_rotate_sub (global, 0x2e8 bytes) here:
 // its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (74.24%): constant address materialisation and angle address mode scheduled differently.
+s32 slot_rotate_sub(s32 arg0, u8* data, s32 index) {
+    f32* slot = (f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4);
+    f32* tbase = (f32*)(data + index * 4);
+    s32 dir = 0;
+    s32 changed = 0;
+    s32 steps = (s32)((f32)(s32)slot[3] / 45.0f);
+    f32 diff;
+    s32 next;
+
+    if (tbase[9] > 0.0f) {
+        next = (steps + 1) & 7;
+        diff = 45.0f * (f32)next - slot[3];
+        if (diff < 0.0f) {
+            diff += 360.0f;
+        }
+        dir = (diff <= tbase[9]) ? 1 : 0;
+    } else {
+        diff = 45.0f * (f32)steps - slot[3];
+        if (diff > 0.0f) {
+            diff -= 360.0f;
+        }
+        dir = (diff > tbase[9]) ? -1 : 0;
+    }
+    if ((((s8*)(data + index))[0x30] == 3 || ((s8*)(data + index))[0x30] == 4) && dir != 0) {
+        if (((s8*)(data + index))[0x39] != 0) {
+            if (((s8*)(data + index))[0x30] == 4) {
+                s32* q = (s32*)(data + index * 4);
+                if (q[0xf] == 0) {
+                    if (q[0x12] != 0) {
+                        q[0x12]--;
+                        q[0xf] = 0;
+                    } else {
+                        q[0xf] = 0x12;
+                    }
+                } else {
+                    q[0xf]--;
+                }
+            }
+            if (*(s32*)(data + index * 4 + 0x3c) == 0) {
+                ((s8*)(data + index))[0x39]--;
+            }
+        } else {
+            ((s8*)(data + index))[0x30] = 0;
+            changed = 1;
+            slot[3] = 45.0f * (f32)steps;
+            goto done;
+        }
+    }
+    slot[3] += tbase[9];
+    if (slot[3] >= 360.0f) {
+        slot[3] -= 360.0f;
+    }
+    if (slot[3] < 0.0f) {
+        slot[3] += 360.0f;
+    }
+done:
+    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, slot[3]);
+    return changed;
+}
 
 // TODO: write slot_neon_sub (global, 0x42c bytes) here:
 // its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (92.16%): register allocation of loop counters and lbzx vs lbz+offset differ.
+void slot_neon_sub(s32 arg0, u8* data, s32 arg2) {
+    s32 i;
+    s32 r;
+    s32 cur;
 
-// TODO: write goryuugijo_init_slot (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    if (*(s32*)(data + 0x58) > 0x4e) {
+        return;
+    }
+    if (*(s32*)(data + 0x58) == 0) {
+        if (irand(0xa) == 0) {
+            *(u32*)data |= 2;
+        }
+        *(u32*)data &= ~4;
+    }
+    if (*(s32*)(data + 0x58) < 0x1b) {
+        if (*(s32*)(data + 0x58) & 1) {
+            for (i = 0; i < 3; i++) {
+                r = irand(8);
+                cur = *(s32*)(data + 0x60);
+                while ((s32)upsidegara[cur * 24 + i * 8 + r] == (s8)*(data + cur * 3 + i + 0x33)) {
+                    r = (r + 1) & 7;
+                }
+                *(u8*)(data + cur * 3 + i + 0x33) = upsidegara[cur * 24 + i * 8 + r];
+                if (*(u32*)data & 2) {
+                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                } else {
+                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                }
+            }
+        }
+    } else if (*(s32*)(data + 0x58) == 0x1b) {
+        for (i = 0; i < 3; i++) {
+            cur = *(s32*)(data + 0x60);
+            *(u8*)(data + cur * 3 + i + 0x33) = i;
+            mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
+            mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
+            mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+        }
+        cur = *(s32*)(data + 0x60);
+        if (*(s8*)(data + cur * 3 + 0x33) == *(s8*)(data + cur * 3 + 0x34) &&
+            *(s8*)(data + cur * 3 + 0x34) == *(s8*)(data + cur * 3 + 0x35)) {
+            *(u32*)data |= 4;
+        }
+        if ((*(u32*)data & 4) && (*(u32*)data & 2)) {
+            *(f32*)(data + 0x24) = 2.8125f;
+            *(f32*)(data + 0x28) = 2.8125f;
+            *(f32*)(data + 0x2c) = 2.8125f;
+        } else {
+            *(f32*)(data + 0x24) = 11.25f;
+            *(f32*)(data + 0x28) = 11.25f;
+            *(f32*)(data + 0x2c) = 11.25f;
+        }
+        *(s8*)(data + 0x30) = 2;
+        *(s8*)(data + 0x31) = 2;
+        *(s8*)(data + 0x32) = 2;
+    } else {
+        if (*(u32*)data & 4) {
+            if (*(s32*)(data + 0x58) == 0x21 || *(s32*)(data + 0x58) == 0x33 || *(s32*)(data + 0x58) == 0x45) {
+                for (i = 0; i < 3; i++) {
+                    cur = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                }
+            }
+            if (*(s32*)(data + 0x58) == 0x2a || *(s32*)(data + 0x58) == 0x3c || *(s32*)(data + 0x58) == 0x4e) {
+                for (i = 0; i < 3; i++) {
+                    cur = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                }
+            }
+        }
+    }
+    if (*(u32*)data & 2) {
+        if (*(s32*)(data + 0x58) == 0 || *(s32*)(data + 0x58) == 0xc || *(s32*)(data + 0x58) == 0x18) {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
+        }
+        if (*(s32*)(data + 0x58) == 6 || *(s32*)(data + 0x58) == 0x12) {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
+        }
+    } else {
+        if (*(s32*)(data + 0x58) == 0x18) {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
+        }
+    }
+    if (*(s32*)(data + 0x58) <= 0x4e) {
+        *(s32*)(data + 0x58) = *(s32*)(data + 0x58) + 1;
+    }
+}
 
-// TODO: write goryuugijo_upsidewindow_disp_sub (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (95.83%): data pointer lands in r5 instead of r4 (constant addr materialised into r4).
+USER_FUNC(goryuugijo_init_slot) {
+    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
+    u8* data = (u8*)work->data;
 
-// TODO: write goryuugijo_upsidewindow_dispoff_sub (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    *(s32*)(data + 0x54) = 0;
+    *(f32*)(data + 0x8) = 0.0f;
+    *(s32*)(data + 0x6c) = 0;
+    *(u32*)data &= ~1;
+}
 
-// TODO: write monte_disp (static, 0x78 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+void goryuugijo_upsidewindow_disp_sub(s32 a, s32 b) {
+    mapGrpFlagOn(drumname[a][b * 3 + 5], 1);
+    mapGrpFlagOn(drumname[a][b * 3 + 6], 1);
+    mapGrpFlagOn(drumname[a][b * 3 + 7], 1);
+}
 
-// TODO: write get_monte_check (static, 0x6c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+void goryuugijo_upsidewindow_dispoff_sub(s32 a, s32 b) {
+    mapGrpFlagOn(drumname[a][b * 3 + 5], 1);
+    mapGrpFlagOn(drumname[a][b * 3 + 6], 1);
+    mapGrpFlagOn(drumname[a][b * 3 + 7], 1);
+}
 
-// TODO: write evt_goryuugijo_get_caseid (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+static void monte_disp(CameraId cameraId, void* param) {
+    u8* p = (u8*)param;
+    s32 i;
 
-// TODO: write goryuugijo_disp_montemedal (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < *(s32*)(*(u32*)(p + 0x4c) + 0x5c); i++) {
+        if (p[i * 0x50] == 0) {
+            iconDispGx((Vec*)(p + i * 0x50 + 0xc), 0x40, 0x13f, 1.0f);
+        }
+    }
+}
 
-// TODO: write goryuugijo_main_montemedal (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+static s32 get_monte_check(Vec* a, Vec* b) {
+    if (PSVECDistance(a, b) < 20.0f) {
+        if (fabs(a->y - b->y) < 20.0) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
-// TODO: write goryuugijo_init_montemedal (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (94.79%): MWCC folds data+index then +0x64 into addi/lwzx; original uses add r4,data,index*4; lwz 0x64(r4).
+USER_FUNC(evt_goryuugijo_get_caseid) {
+    s32* args = event->args;
+    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
+    u8* data = (u8*)work->data;
+    s32 index = evtGetValue(event, args[1]);
+    u8* p = data + index * 4;
 
-// TODO: write exchange_ret_tbl_no (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[2], *(s32*)(p + 0x64));
+    return EVT_RETURN_DONE;
+}
+
+void goryuugijo_disp_montemedal(CameraId cameraId, void* param) {
+    monteCountDisp();
+}
+
+USER_FUNC(goryuugijo_main_montemedal) {
+}
+
+USER_FUNC(goryuugijo_init_montemedal) {
+    if (evtGetValue(event, GSWF(1229)) == 0) {
+        yuugijou_montemedal_keep(event, isFirstCall);
+    }
+}
+
+s32 exchange_ret_tbl_no(void) {
+    s32 value = evtGetValue(NULL, GSW(0));
+    s32 ret = 0;
+
+    if (value >= 0x192) {
+        ret = 8;
+    } else if (value >= 0x177) {
+        ret = 7;
+    } else if (value >= 0x158) {
+        ret = 6;
+    } else if (value >= 0x10b) {
+        ret = 5;
+    } else if (value >= 0xda) {
+        ret = 4;
+    } else if (value >= 0xab) {
+        ret = 3;
+    } else if (value >= 0x75) {
+        ret = 2;
+    } else if (value >= 0x3d) {
+        ret = 1;
+    }
+    return ret;
+}
 // clang-format on

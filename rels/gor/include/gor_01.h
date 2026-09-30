@@ -6,14 +6,14 @@ USER_FUNC(chk_special_cook);
 USER_FUNC(cooking_flag);
 USER_FUNC(chk_cook_msg);
 USER_FUNC(cook_effect);
-void chk_cook_eff_type(void);  // TODO: real signature
+s32 chk_cook_eff_type(s32 itemId);
 USER_FUNC(get_item_name);
 USER_FUNC(make_item_tbl);
-void chkCookItem(void);  // TODO: real signature
+s32 chkCookItem(s32 id);
 USER_FUNC(cook_chk2);
 USER_FUNC(cook_chk);
-void itemNameToID(void);  // TODO: real signature
-void naniga_okorukana_cook(void);  // TODO: real signature
+s32 itemNameToID(const char* name);
+s32 naniga_okorukana_cook(void);
 USER_FUNC(iri_09_item_tbl_free);
 USER_FUNC(iri_09_item_tbl_make);
 USER_FUNC(iri_09_item_tbl_alloc);

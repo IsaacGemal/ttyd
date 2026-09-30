@@ -1,4 +1,7 @@
 #include "las.h"
+#include "data/mapdata.h"
+#include "driver/animdrv.h"
+#include "driver/mobjdrv.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_hit.h"
@@ -7,6 +10,7 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
 
 #pragma pool_data off
@@ -36,14 +40,88 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write mobj_set_ry (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write mobj_color_off (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("las_00", las_00_init_evt);
+    relSetEvtAddr("las_01", las_01_init_evt);
+    relSetEvtAddr("las_02", las_02_init_evt);
+    relSetEvtAddr("las_03", las_03_init_evt);
+    relSetEvtAddr("las_04", las_04_init_evt);
+    relSetEvtAddr("las_05", las_05_init_evt);
+    relSetEvtAddr("las_06", las_06_init_evt);
+    relSetEvtAddr("las_07", las_07_init_evt);
+    relSetEvtAddr("las_08", las_08_init_evt);
+    relSetEvtAddr("las_09", las_09_init_evt);
+    relSetEvtAddr("las_10", las_10_init_evt);
+    relSetEvtAddr("las_11", las_11_init_evt);
+    relSetEvtAddr("las_12", las_12_init_evt);
+    relSetEvtAddr("las_13", las_13_init_evt);
+    relSetEvtAddr("las_14", las_14_init_evt);
+    relSetEvtAddr("las_15", las_15_init_evt);
+    relSetEvtAddr("las_16", las_16_init_evt);
+    relSetEvtAddr("las_17", las_17_init_evt);
+    relSetEvtAddr("las_18", las_18_init_evt);
+    relSetEvtAddr("las_19", las_19_init_evt);
+    relSetEvtAddr("las_20", las_20_init_evt);
+    relSetEvtAddr("las_21", las_21_init_evt);
+    relSetEvtAddr("las_22", las_22_init_evt);
+    relSetEvtAddr("las_23", las_23_init_evt);
+    relSetEvtAddr("las_24", las_24_init_evt);
+    relSetEvtAddr("las_25", las_25_init_evt);
+    relSetEvtAddr("las_26", las_26_init_evt);
+    relSetEvtAddr("las_27", las_27_init_evt);
+    relSetEvtAddr("las_28", las_28_init_evt);
+    relSetEvtAddr("las_29", las_29_init_evt);
+    relSetEvtAddr("las_30", las_30_init_evt);
+    relSetBtlAddr("las", btlsetup_las_tbl, btl_las_setup_no_tbl);
+}
 
-// TODO: write mobj_set_color (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
+
+#ifdef MUST_MATCH
+/* MUST_MATCH: returning the colour through an inline aggregate forces MWCC to build it in the
+   return temporary (r1+8) and copy it to the by-value argument slot (r1+0xC), as retail does. */
+static inline GXColor mobjColor(s32 r, s32 g, s32 b) {
+    GXColor color = {0, 0, 0, 0xFF};
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    return color;
+}
+#endif
+
+USER_FUNC(mobj_set_color) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 r = evtGetValue(event, args[1]);
+    s32 g = evtGetValue(event, args[2]);
+    s32 b = evtGetValue(event, args[3]);
+    MapObjectEntry* mobj = mobjNameToPtr((const char*)name);
+#ifdef MUST_MATCH
+    animPoseSetMaterialEvtColor(mobj->poseId, mobjColor(r, g, b));
+#else
+    GXColor color = {0, 0, 0, 0xFF};
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    animPoseSetMaterialEvtColor(mobj->poseId, color);
+#endif
+    animPoseSetMaterialFlagOn(mobj->poseId, 0x40);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(box_syutugen)
     SET_VALUE(LW(2), LW(0))
@@ -158,12 +236,21 @@ EVT_BEGIN(hikari_evt)
     RETURN
 EVT_END()
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(mobj_color_off) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    MapObjectEntry* mobj = mobjNameToPtr((const char*)name);
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las.s; this is where the original has it, just before the first script that uses it
+    animPoseSetMaterialFlagOff(mobj->poseId, 0x40);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write _prolog (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(mobj_set_ry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    MapObjectEntry* mobj = mobjNameToPtr((const char*)name);
+
+    mobj->rotation.y = evtGetFloat(event, args[1]);
+    return EVT_RETURN_DONE;
+}
 // clang-format on

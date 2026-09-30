@@ -1,8 +1,15 @@
 #include "las_14.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/hitdrv.h"
+#include "driver/imgdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/offscreendrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_case.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_hit.h"
+#include "evt/evt_img.h"
 #include "evt/evt_item.h"
 #include "evt/evt_map.h"
 #include "evt/evt_mario.h"
@@ -10,16 +17,28 @@
 #include "evt/evt_msg.h"
 #include "evt/evt_snd.h"
 #include "forcedata.h"
+#include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "party.h"
+#include "party/party_cloud.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
+
+#include <dolphin/mtx.h>
+#include <stdio.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(evt_cloud_main);
-static void _mapclsofs_all(void);  // TODO: real signature
-static void _mapsetofs_all(void);  // TODO: real signature
-static void _get_boundingbox(void);  // TODO: real signature
-static void _img_alloc_capture(void);  // TODO: real signature
+static void _mapclsofs_all(CloudEntry* cp);
+static void _mapsetofs_all(CloudEntry* cp);
+static s32 _get_boundingbox(const char* name, s32* left, s32* top, s32* width, s32* height);
+static void _img_alloc_capture(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7);
 
 // clang-format off
 extend_data(60,
@@ -71,18 +90,16 @@ static char* capturemap[3] = {
     "S_kabe1", "S_ten", "",
 };
 
-// TODO: type
-static u32 v_list[24] = {
-    0xC2480000, 0x42C80000, 0x42480000, 0x42480000,
-    0x42C80000, 0x42480000, 0x42480000, 0x00000000,
-    0x42480000, 0xC2480000, 0x00000000, 0x42480000,
-    0xC2480000, 0x42C80000, 0xC2480000, 0x42480000,
-    0x42C80000, 0xC2480000, 0x42480000, 0x00000000,
-    0xC2480000, 0xC2480000, 0x00000000, 0xC2480000,
+static Vec v_list[8] = {
+    {-50.0f, 100.0f, 50.0f},
+    {50.0f, 100.0f, 50.0f},
+    {50.0f, 0.0f, 50.0f},
+    {-50.0f, 0.0f, 50.0f},
+    {-50.0f, 100.0f, -50.0f},
+    {50.0f, 100.0f, -50.0f},
+    {50.0f, 0.0f, -50.0f},
+    {-50.0f, 0.0f, -50.0f},
 };
-
-// TODO: write evt_cloud_main (static, 0x5fc bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_14.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(evt_cloud_main_evt)
     CALL(evt_cloud_main)
@@ -113,12 +130,6 @@ static EVT_BEGIN(hint_plate)
     RETURN
 EVT_END()
 
-// TODO: write evt_las_cloud_ent (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_14.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_las_cloud_init (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_14.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(las_14_init_evt)
     CALL(evt_snd_bgmon, 512, STRING("BGM_STG8_LST2"))
     CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS1"))
@@ -143,25 +154,342 @@ EVT_BEGIN(las_14_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u8 cloud_once_flag[1] = {
-    0x00,
-};
+static CloudEntry* cloud;
+static s8 cloud_once_flag;
 
-// TODO: type
-static u32 cloud[1] = {
-    0x00000000,
-};
+static void _img_alloc_capture(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7) {
+    s32 args[10];
+    EventEntry tmpEvent;
 
-// TODO: write _mapclsofs_all (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_14.s; this is where the original has it, just before the first script that uses it
+    args[0] = a0;
+    args[1] = a1;
+    tmpEvent.args = args;
+    args[2] = a2;
+    args[3] = a3;
+    args[4] = a4;
+    args[5] = a5;
+    args[6] = a6;
+    args[7] = a7;
+    evt_img_alloc_capture(&tmpEvent, 1);
+}
 
-// TODO: write _mapsetofs_all (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_14.s; this is where the original has it, just before the first script that uses it
+static s32 _get_boundingbox(const char* name, s32* left, s32* top, s32* width, s32* height) {
+    Vec pos;
+    Vec screen;
+    s32 minX;
+    s32 maxX;
+    s32 minY;
+    s32 maxY;
+    s32 i;
 
-// TODO: write _get_boundingbox (static, 0x238 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_14.s; this is where the original has it, just before the first script that uses it
+    hitObjGetPos(name, &pos);
+    PSVECAdd(&pos, v_list, &screen);
+    getScreenPoint(&screen, &screen);
+    minX = (s32)screen.x;
+    maxX = (s32)screen.x;
+    minY = (s32)screen.y;
+    maxY = (s32)screen.y;
+    for (i = 1; i < 8; i++) {
+        PSVECAdd(&pos, &v_list[i], &screen);
+        getScreenPoint(&screen, &screen);
+        if (screen.x < (f32)minX) {
+            minX = (s32)screen.x;
+        }
+        if ((f32)maxX < screen.x) {
+            maxX = (s32)screen.x;
+        }
+        if (screen.y < (f32)minY) {
+            minY = (s32)screen.y;
+        }
+        if ((f32)maxY < screen.y) {
+            maxY = (s32)screen.y;
+        }
+    }
+    *left = minX + 0x130;
+    *top = minY + 0xF0;
+    *width = maxX - minX;
+    *height = maxY - minY;
+    if (*left < 0) {
+        *left = 0;
+    }
+    if (*top < 0) {
+        *top = 0;
+    }
+    if (*left + *width > 0x260) {
+        *width = 0x260 - *left;
+    }
+    if (*top + *height > 0x1E0) {
+        *height = 0x1E0 - *top;
+    }
+    if (*left < 0) {
+        *left = 0;
+    }
+    if (*top < 0) {
+        *top = 0;
+    }
+    return 1;
+}
 
-// TODO: write _img_alloc_capture (static, 0x50 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_14.s; this is where the original has it, just before the first script that uses it
+static void _mapsetofs_all(CloudEntry* cp) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if ((s8)cp->mapGrpName[i][0] == 0) {
+            break;
+        }
+        mapGrpSetOffScreen(cp->mapGrpName[i], cp->offName);
+    }
+}
+
+static void _mapclsofs_all(CloudEntry* cp) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if ((s8)cp->mapGrpName[i][0] == 0) {
+            break;
+        }
+        mapGrpClearOffScreen(cp->mapGrpName[i]);
+    }
+}
+
+static USER_FUNC(evt_cloud_main) {
+    CloudEntry* cp = (CloudEntry*)event->lwData[0];
+    s32 inBattle = (gp->inBattle != 0);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(0);
+    ImageEntry* img;
+    HitEntry* hit;
+    HitEntry* h0;
+    HitEntry* h1;
+    HitEntry* h2;
+    HitEntry* h3;
+
+    if (isFirstCall) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (party == NULL) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (party->currentMemberId != PARTY_MEMBER_FLURRIE) {
+        return EVT_RETURN_BLOCK;
+    }
+
+    h0 = (HitEntry*)cloudGetHitBreathout(0);
+    h1 = (HitEntry*)cloudGetHitBreathout(1);
+    h2 = (HitEntry*)cloudGetHitBreathout(2);
+    h3 = (HitEntry*)cloudGetHitBreathout(3);
+
+    switch (cp->mode) {
+    case 0:
+        if (cloud_once_flag == 1) {
+            break;
+        }
+        hit = hitNameToPtr(cp->hitName);
+        if (h0 == hit || h1 == hit || h2 == hit || h3 == hit) {
+            cp->mode++;
+        }
+        cp->counter = 0;
+        break;
+    case 1: {
+        f32 angle = *(f32*)mario->unk1AC;
+
+        if (angle > 90.0f && angle <= 270.0f) {
+            strcpy(cp->animName, "P_oof_cloud_2");
+        } else {
+            strcpy(cp->animName, "P_oof_cloud_1");
+        }
+        if (animGroupBaseAsync(cp->animName, inBattle, NULL)) {
+            cloud_once_flag = 1;
+            animPaperPoseEntry(cp->animName, inBattle);
+            offscreenEntry(cp->offName);
+            _mapsetofs_all(cp);
+            cp->mode++;
+        }
+        break;
+    }
+    case 2:
+        imgEntry(cp->imgName, inBattle);
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->poseId = animPaperPoseGetId(cp->animName, inBattle);
+        *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
+        imgClearVirtualPoint(img);
+        imgSetShadow(img, 2);
+        img->flags |= 2;
+        cp->mode = 0xDE;
+        break;
+    case 0xDE:
+        if (!_get_boundingbox(cp->hitName, &cp->left, &cp->top, &cp->width, &cp->height)) {
+            break;
+        }
+        {
+            EventEntry tmpEvent;
+            s32 captureArgs[10];
+            s32 left;
+            s32 top;
+            s32 width;
+            s32 height;
+
+            height = cp->height;
+            width = cp->width;
+            top = cp->top;
+            left = cp->left;
+
+            tmpEvent.args = captureArgs;
+            captureArgs[0] = (s32)cp->imgName;
+            captureArgs[1] = 0;
+            captureArgs[2] = (s32)cp->offName;
+            captureArgs[3] = 1;
+            captureArgs[4] = left;
+            captureArgs[5] = top;
+            captureArgs[6] = width;
+            captureArgs[7] = height;
+            evt_img_alloc_capture(&tmpEvent, 1);
+        }
+        cp->mode = 0xDF;
+        break;
+    case 0xDF:
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->flags &= ~2;
+        cp->mode = 3;
+        // fallthrough
+    case 3:
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->field_0x108 = (s32)"A_1";
+        *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
+        img->flags &= ~2;
+        cp->timer = 0x1E;
+        cp->lastTime = 0.0f;
+        cp->mode++;
+        break;
+    case 4:
+        img = imgNameToPtr(cp->imgName, inBattle);
+        if (cp->lastTime == 0.0f || 1.0f + cp->lastTime < img->field_0x118) {
+            psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
+            cp->lastTime = img->field_0x118;
+        }
+        if (mario->currMotionId != MARIO_MOTION_CLOUD) {
+            cp->mode = 0xA;
+            break;
+        }
+        hit = hitNameToPtr(cp->hitName);
+        if (!(h0 == hit || h1 == hit || h2 == hit || h3 == hit)) {
+            if (cp->timer == 0) {
+                cp->mode = 0xA;
+                break;
+            }
+            cp->timer--;
+            cp->counter += 2;
+            break;
+        }
+        cp->timer = 0x1E;
+        cp->counter += 2;
+        if (cp->counter > cp->maxCount) {
+            cp->mode = 0x14;
+        }
+        break;
+    case 0xA:
+        cp->mode = 0x63;
+        break;
+    case 0x14:
+        psndSFXOn_3D("SFX_OFF_CLAUD_WIND3", &mario->position);
+        if (cp->script != NULL) {
+            evtEntry(cp->script, 0, 0);
+        }
+        img = imgNameToPtr(cp->imgName, inBattle);
+        img->field_0x108 = (s32)"A_2";
+        *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
+        cp->timer = 0x3C;
+        cp->mode++;
+        break;
+    case 0x15:
+        if (cp->timer != 0) {
+            cp->timer--;
+            break;
+        }
+        cp->timer = 0x1E;
+        cp->counter += 2;
+        cp->mode = 0x64;
+        break;
+    case 0x63:
+    case 0x64: {
+        s32 i;
+        ImageEntry* img;
+
+        img = imgNameToPtr(cp->imgName, inBattle);
+        for (i = 0; i < 8; i++) {
+            if ((s8)cp->mapGrpName[i][0] == 0) {
+                break;
+            }
+            mapGrpClearOffScreen(cp->mapGrpName[i]);
+        }
+        animPaperPoseRelease(img->poseId);
+        imgFreeCapture(img, 0);
+        imgSetShadow(img, 0);
+        imgRelease(img, inBattle);
+        offscreenDelete(cp->offName);
+        cloud_once_flag = 0;
+        if (cp->mode == 0x63) {
+            cp->mode = 0;
+        } else {
+            return EVT_RETURN_DONE;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(evt_las_cloud_init) {
+    s32 i;
+
+    cloud = _mapAlloc(0x1B00);
+    for (i = 0; i < 16; i++) {
+        cloud[i].flags = 0;
+        sprintf(cloud[i].imgName, "i_name_%1d", i);
+        sprintf(cloud[i].offName, "o_name_%1d", i);
+    }
+    cloud_once_flag = 0;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_las_cloud_ent) {
+    s32* args = event->args;
+    s8** a;
+    s8* b;
+    void* c;
+    CloudEntry* cp;
+    s32 i, j;
+
+    a = (s8**)evtGetValue(event, args[0]);
+    b = (s8*)evtGetValue(event, args[1]);
+    c = (void*)evtGetValue(event, args[2]);
+    for (j = 0; j < 16; j++) {
+        if (cloud[j].flags == 0) {
+            break;
+        }
+    }
+    if (j >= 16) {
+        return EVT_RETURN_DONE;
+    }
+    cp = &cloud[j];
+    cp->flags = 1;
+    strcpy(cp->animName, "P_oof_cloud_1");
+    for (i = 0; i < 8; i++) {
+        if (a[i][0] == 0) {
+            break;
+        }
+        strcpy((char*)cp->mapGrpName[i], (const char*)a[i]);
+    }
+    strcpy(cp->hitName, (const char*)b);
+    cp->script = c;
+    cp->maxCount = 0xB4;
+    cp->counter = 0;
+    cp->mode = 0;
+    cp->timer = 0;
+    cp->event = evtEntry(evt_cloud_main_evt, 0, 0);
+    cp->event->lwData[0] = (s32)cp;
+    return EVT_RETURN_DONE;
+}
 // clang-format on

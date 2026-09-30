@@ -10,6 +10,8 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
 
 #pragma pool_data off
 
@@ -238,8 +240,15 @@ static BattleDataEntry data_table[15] = {
     { 0x00, NULL },
 };
 
-// TODO: write bts_wariai_enzan_1 (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_wariai_enzan_1) {
+    s32* args = event->args;
+    f32 f29 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f30 = evtGetFloat(event, args[1]);
+    f32 f31 = evtGetFloat(event, args[2]);
+    f32 f1 = evtGetFloat(event, args[3]);
+    evtSetValue(event, args[4], (s32)((f29 * f31 + f1 * (f30 - f29)) / f30));
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(dmg_counter_event)
     CALL(btlevtcmd_OnUnitFlag, LW(10), 1)
@@ -441,34 +450,137 @@ static EVT_BEGIN(wait_event)
 EVT_END()
 
 // TODO: type
-u32 bts_x_flag_data[1] = {
-    0x00000000,
-};
+// Uninitialised so it lands in .bss like the original (not .data).
+u32 bts_x_flag_data[1];
 
-// TODO: write bts_x_flag_wait (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_wariai_enzan_1f) {
+    s32* args = event->args;
+    f32 f29 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f30 = evtGetFloat(event, args[1]);
+    f32 f31 = evtGetFloat(event, args[2]);
+    f32 f1 = evtGetFloat(event, args[3]);
+    evtSetFloat(event, args[4], (f29 * f31 + f1 * (f30 - f29)) / f30);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_x_flag_get (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+// The original materialises both constant addresses for the intplGetValue operands
+// (lis/addi then lfs 0(rX)); MWCC folds the float_1 load into lfs float_1@l(rX), so one addi
+// is missing and the int temporaries load r5/r4 instead of r4/r5.  The `t` temporary keeps
+// the original's fmadds operand order, and the second decrement goes into a fresh `f2`.
+// NONMATCHING (93.98%): the intplGetValue constant operands are folded, not materialised.
+USER_FUNC(bts_wariai_enzan_1f_intpl) {
+    s32* args = event->args;
+    f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f31 = evtGetFloat(event, args[2]);
+    f32 f30 = evtGetFloat(event, args[3]);
+    s32 dest = args[4];
+    f32 f1 = evtGetFloat(event, args[5]);
+    f32 v;
+    f32 f2;
+    f32 t;
+    if (f1 >= float_14_las_000192d0) {
+        f2 = f1 - float_14_las_000192d0;
+        if (f2 >= float_14_las_000192d0) {
+            evtSetFloat(event, dest, f31);
+            return EVT_RETURN_DONE;
+        }
+        v = float_1_las_000192cc - intplGetValue((s32)f2, (s32)(f29 - f28), (s32)f29, float_1_las_000192cc, zero_las_000192d4);
+    } else {
+        v = intplGetValue((s32)f1, (s32)(f29 - f28), (s32)f29, zero_las_000192d4, float_1_las_000192cc);
+    }
+    t = float_1_las_000192cc - v;
+    evtSetFloat(event, dest, t * f31 + v * f30);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_x_flag_add (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+// The second if tests f31 but subtracts 14 from f26 into a fresh `f2`, as in the original;
+// declaring the result first and using `t` for the final expression got closest.
+// NONMATCHING (92.18%): the intpl constant addresses are folded, and the seven live floats
+// still land one register higher than the original (arg1 f30 vs f29, arg6 f25 vs f31).
+USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
+    s32* args = event->args;
+    f32 f25;
+    f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f27 = evtGetFloat(event, args[2]);
+    f32 f30 = evtGetFloat(event, args[3]);
+    s32 dest = args[4];
+    f32 f26 = evtGetFloat(event, args[5]);
+    f32 f31 = evtGetFloat(event, args[6]);
+    f32 f1;
+    f32 f2;
+    f32 t;
+    if (f26 >= float_14_las_000192d0) {
+        f26 = f26 - float_14_las_000192d0;
+        if (f26 >= float_14_las_000192d0) {
+            evtSetFloat(event, dest, f27);
+            return EVT_RETURN_DONE;
+        }
+        f25 = float_1_las_000192cc - intplGetValue((s32)f26, (s32)(f29 - f28), (s32)f29, float_1_las_000192cc, zero_las_000192d4);
+    } else {
+        f25 = intplGetValue((s32)f26, (s32)(f29 - f28), (s32)f29, zero_las_000192d4, float_1_las_000192cc);
+    }
+    if (f31 >= float_14_las_000192d0) {
+        f2 = f26 - float_14_las_000192d0;
+        if (f2 >= float_14_las_000192d0) {
+            evtSetFloat(event, dest, f27);
+            return EVT_RETURN_DONE;
+        }
+        f1 = float_1_las_000192cc - intplGetValue((s32)f2, (s32)(f29 - f28), (s32)f29, float_1_las_000192cc, zero_las_000192d4);
+    } else {
+        f1 = intplGetValue((s32)f31, (s32)(f29 - f28), (s32)f29, zero_las_000192d4, float_1_las_000192cc);
+    }
+    f1 = f25 * f1;
+    t = float_1_las_000192cc - f1;
+    evtSetFloat(event, dest, f27 * t + f1 * f30);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_x_flag_set (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_wariai_enzan_0) {
+    s32* args = event->args;
+    f32 f30 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f29 = evtGetFloat(event, args[1]) - float_1_las_000192cc;
+    f32 f31 = evtGetFloat(event, args[2]);
+    f32 f1 = evtGetFloat(event, args[3]);
+    evtSetValue(event, args[4], (s32)((f30 * f31 + f1 * (f29 - f30)) / f29));
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_wariai_enzan_0f (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_wariai_enzan_0f) {
+    s32* args = event->args;
+    f32 f30 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
+    f32 f29 = evtGetFloat(event, args[1]) - float_1_las_000192cc;
+    f32 f31 = evtGetFloat(event, args[2]);
+    f32 f1 = evtGetFloat(event, args[3]);
+    evtSetFloat(event, args[4], (f30 * f31 + f1 * (f29 - f30)) / f29);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_wariai_enzan_0 (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_x_flag_set) {
+    s32* args = event->args;
+    bts_x_flag_data[0] = evtGetValue(event, args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_wariai_enzan_1f_intpl_w (global, 0x2e0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_x_flag_add) {
+    s32* args = event->args;
+    bts_x_flag_data[0] += evtGetValue(event, args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_wariai_enzan_1f_intpl (global, 0x1c0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_x_flag_get) {
+    s32* args = event->args;
+    evtSetValue(event, args[0], bts_x_flag_data[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write bts_wariai_enzan_1f (global, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_satellite.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(bts_x_flag_wait) {
+    s32* args = event->args;
+    return (evtGetValue(event, args[0]) - bts_x_flag_data[0]) == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+
+const f32 float_1_las_000192cc = 1.0f;
+const f32 float_14_las_000192d0 = 14.0f;
+const f32 zero_las_000192d4 = 0.0f;
 // clang-format on

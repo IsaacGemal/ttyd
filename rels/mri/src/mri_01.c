@@ -24,6 +24,21 @@
 #include "kpa_act.h"
 #include "party/party_motion.h"
 #include "rel/mri/mri.h"
+#include "countdown.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/fadedrv.h"
+#include "driver/npcdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/swdrv.h"
+#include "eff/n64/eff_akari_charge_n64.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "mri_puni.h"
+#include "punidrv.h"
+#include "system.h"
+#include <dolphin/mtx.h>
 
 #pragma pool_data off
 
@@ -48,6 +63,7 @@ extern s32 mri_puni_save[];
 extern s32 mri_puni_walk_se[];
 extern s32 mri_waterfall_effect[];
 static USER_FUNC(evtflash);
+static u8* bp;
 s32 meet_rival[2247];
 s32 elder_kaisetsu[206];
 s32 boss_battle_win[1493];
@@ -71,6 +87,45 @@ extend_data(9,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
+
+static USER_FUNC(evtflash) {
+    if (isFirstCall) {
+        event->userdata[2] = 0;
+    }
+    switch (event->userdata[2]) {
+        case 0:
+            fadeEntry(10, 20, (GXColor){255, 255, 255, 255});
+            event->userdata[2]++;
+        case 1:
+            if (fadeIsFinish() != TRUE) {
+                return EVT_RETURN_BLOCK;
+            }
+            event->userdata[0] = 50;
+            event->savedTime = (s32)gp->renderTime;
+            event->userdata[2]++;
+            if (event->userdata[0] == 0) {
+                event->userdata[2]++;
+            }
+            return EVT_RETURN_BLOCK;
+        case 2:
+            if (OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime) <
+                (u32)event->userdata[0]) {
+                return EVT_RETURN_BLOCK;
+            }
+            event->userdata[2]++;
+            return EVT_RETURN_BLOCK;
+        case 3:
+            fadeEntry(9, 80, (GXColor){255, 255, 255, 255});
+            event->userdata[2]++;
+        case 4:
+            if (fadeIsFinish() != TRUE) {
+                return EVT_RETURN_BLOCK;
+            }
+            return EVT_RETURN_DONE;
+        default:
+            return EVT_RETURN_DONE;
+    }
+}
 
 static EVT_BEGIN(guide_init)
     SWITCH(GSW(0))
@@ -222,11 +277,49 @@ EVT_BEGIN(puni_return)
     RETURN
 EVT_END()
 
-// TODO: write elder_talk_sub_punicheck (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(elder_talk_sub_punicheck) {
+    s32* args = event->args;
+    PuniWork* punigp;
+    s32 i;
+    s32 trapCount;
+    s32 modeCount;
+    s32 result;
+    s32 trap;
+    s32 lswIndex;
 
-// TODO: write elder_talk_sub_fadeoff (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
+    punigp = puniGetPunigp();
+    trapCount = 0;
+    modeCount = 0;
+    i = 1;
+    do {
+        Vec lswPos;
+
+        puniGetPunidat();
+        if (i != 1 || swGet(0xb14) == 0) {
+            puniswGetindex(0xF70F2E80, i - 1, &lswIndex, &lswPos);
+            puniswTrapGetindex(i, &trap);
+            if (trap != 0) {
+                trapCount++;
+            } else if (lswIndex != 0 && lswIndex != punigp->unk328) {
+                modeCount++;
+            }
+        }
+        i++;
+    } while (i < 0x67);
+    result = 1;
+    if (modeCount != 0) {
+        result = 0;
+    } else if (trapCount != 0) {
+        result = 2;
+    }
+    evtSetValue(event, args[0], result);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(elder_talk_sub_fadeoff) {
+    puniFadeOff(evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(elder_talk_sub)
     CALL(evt_msg_print, 0, STRING("stg2_mri_e15_22"), 0, STRING("me"))
@@ -1816,8 +1909,76 @@ u32 puni_position[102] = {
     0x010A000D, 0x013D0003,
 };
 
-// TODO: write bossrobot (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
+void bossrobot_batu(CameraId cameraId, void* param) {
+    NpcEntry* robo = npcNameToPtr("ボスロボット");
+    NpcEntry* batu = npcNameToPtr("ボスロボットバツ");
+    AnimationPose* animPose = animPoseGetAnimPosePtr(robo->poseId);
+    Mtx* mtx = ((smartEntry*)*(void**)((u8*)animPose + 0x164))->address;
+    Mtx mtx2;
+    Mtx mtx1;
+    s32 idx = animPoseGetGroupIdx(robo->poseId, "locator23");
+
+    mtxGetRotationElement(mtx[idx], mtx2, 'x', 'z');
+    PSMTXTrans(mtx1, mtx[idx][0][3], mtx[idx][1][3], mtx[idx][2][3]);
+    PSMTXConcat(mtx1, mtx2, mtx1);
+    PSMTXTrans(mtx2, 0.0f, 0.0f, 0.2f);
+    PSMTXConcat(mtx1, mtx2, mtx1);
+    animPosePeraOff(batu->poseId);
+    animPoseSetMaterialFlagOn(batu->poseId, 0x40);
+    animPoseSetMaterialEvtColor(batu->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, ((u8*)param)[0] });
+    switch (dispGetCurWork()->renderMode) {
+        case 0:
+            animPoseDrawMtx(batu->poseId, mtx1, 1, 0.0f, 2.0f);
+            break;
+        case 1:
+            animPoseDrawMtx(batu->poseId, mtx1, 2, 0.0f, 2.0f);
+            break;
+        case 2:
+            animPoseDrawMtx(batu->poseId, mtx1, 3, 0.0f, 2.0f);
+            break;
+    }
+}
+
+USER_FUNC(bossrobot) {
+    s32 value = evtGetValue(event, event->args[0]);
+    u8 color = (u8)value;
+    NpcEntry* robo;
+    NpcEntry* batu;
+    NpcEntry* maru;
+    AnimationPose* animPose;
+    Mtx* mtx;
+    Vec sp;
+    Vec pos;
+    s32 idx;
+    s32 i;
+
+    robo = npcNameToPtr("ボスロボット");
+    batu = npcNameToPtr("ボスロボットバツ");
+    maru = npcNameToPtr("ボスロボットマル");
+    if (isFirstCall) {
+        bp = _mapAlloc(1);
+        animPoseWorldMatrixEvalOn(robo->poseId);
+        animPose = animPoseGetAnimPosePtr(robo->poseId);
+        mtx = ((smartEntry*)*(void**)((u8*)animPose + 0x164))->address;
+        for (i = 0; i < *(s32*)((u8*)animPose + 0x168); i++) {
+            PSMTXTrans(mtx[i], 0.0f, -1000.0f, 0.0f);
+        }
+    }
+    animPose = animPoseGetAnimPosePtr(robo->poseId);
+    mtx = ((smartEntry*)*(void**)((u8*)animPose + 0x164))->address;
+    idx = animPoseGetGroupIdx(robo->poseId, "locator17");
+    pos = (Vec){ 0.0f, 0.0f, 0.0f };
+    pos.x = mtx[idx][0][3];
+    pos.y = mtx[idx][1][3];
+    pos.z = mtx[idx][2][3];
+    maru->position = pos;
+    sp = (Vec){ 0.0f, 0.0f, 0.0f };
+    *bp = color;
+    dispEntry(CAMERA_3D, dispCalcZ(&sp), 0, bossrobot_batu, bp);
+    dispEntry(CAMERA_3D, dispCalcZ(&sp), 1, bossrobot_batu, bp);
+    dispEntry(CAMERA_3D, dispCalcZ(&sp), 2, bossrobot_batu, bp);
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(boss_battle_init)
     CALL(evt_npc_entry, STRING("第三勢力幹部"), STRING("c_kanbu_ibt"))
@@ -1919,11 +2080,10 @@ EVT_BEGIN(boss_robot_pera_after)
     RETURN
 EVT_END()
 
-// TODO: write evtflash (static, 0x198 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_countdown_stop (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_countdown_stop) {
+    countDownStop();
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(boss_battle)
     CALL(evt_npc_set_position, STRING("プニ族長老"), -320, 0, 30)
@@ -2253,8 +2413,32 @@ EVT_BEGIN(starstone_item)
     RETURN
 EVT_END()
 
-// TODO: write akari_charge_entry (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(akari_charge_entry) {
+    s32* args = event->args;
+    f32 f0;
+    f32 f1;
+    f32 f2;
+    s32 v0;
+    s32 v1;
+    s32 v2;
+    f32 f3;
+    s32 v3;
+    EffectEntry* eff;
+
+    f0 = evtGetFloat(event, args[0]);
+    f1 = evtGetFloat(event, args[1]);
+    f2 = evtGetFloat(event, args[2]);
+    v0 = evtGetValue(event, args[3]);
+    v1 = evtGetValue(event, args[4]);
+    v2 = evtGetValue(event, args[5]);
+    f3 = evtGetFloat(event, args[6]);
+    v3 = evtGetValue(event, args[7]);
+    eff = effAkariChargeN64Entry(0, v3, f0, f1, f2, f3);
+    ((EffAkariChargeData*)eff->userdata)->field_0x18 = v0;
+    ((EffAkariChargeData*)eff->userdata)->field_0x1C = v1;
+    ((EffAkariChargeData*)eff->userdata)->field_0x20 = v2;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(boss_robot_electro)
     CALL(evt_npc_get_position, LW(10), LW(0), LW(1), LW(2))
@@ -2794,13 +2978,12 @@ static EVT_BEGIN(evt_ueki_08)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[20] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", (u32)&evt_ueki_01,
-    0x00000001, (u32)"A_ueki02", (u32)"S_ueki02", (u32)&evt_ueki_02,
-    0x00000001, (u32)"A_ueki03", (u32)"S_ueki03", (u32)&evt_ueki_03,
-    0x00000001, (u32)"A_ueki08", (u32)"S_ueki08", (u32)&evt_ueki_08,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[5] = {
+    { 0x00000001, "A_ueki01", "S_ueki01", evt_ueki_01 },
+    { 0x00000001, "A_ueki02", "S_ueki02", evt_ueki_02 },
+    { 0x00000001, "A_ueki03", "S_ueki03", evt_ueki_03 },
+    { 0x00000001, "A_ueki08", "S_ueki08", evt_ueki_08 },
+    { 0x00000004, 0x00000000, 0x00000000, 0x00000000 },
 };
 
 EVT_BEGIN(puni_mario_wait)
@@ -2918,8 +3101,17 @@ EVT_BEGIN(mri_01_koopa_first_evt)
     RETURN
 EVT_END()
 
-// TODO: write mri_stg3_012_cb (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
+void mri_stg3_012_cb(s32 type, smartEntry* smart) {
+    MessageData* msg = smart->address;
+
+    switch (type) {
+    case 3:
+        if (*(u16*)((u8*)msg + 0x8) == 1) {
+            evtSetValue(NULL, LSWF(2), 1);
+        }
+        break;
+    }
+}
 
 EVT_BEGIN(mri_01_koopa_second_evt)
     CALL(evt_snd_bgmoff, 512)
@@ -3242,12 +3434,4 @@ EVT_BEGIN(mri_01_init_evt)
     END_IF
     RETURN
 EVT_END()
-
-// TODO: type
-static u32 bp[1] = {
-    0x00000000,
-};
-
-// TODO: write bossrobot_batu (global, 0x1b8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_01.s; this is where the original has it, just before the first script that uses it
 // clang-format on

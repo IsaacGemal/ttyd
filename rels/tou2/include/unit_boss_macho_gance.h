@@ -2,7 +2,7 @@
 
 #include "evt/evt_cmd.h"
 
-void wariai_enzan_1f_intpl_w(void);  // TODO: real signature
+USER_FUNC(wariai_enzan_1f_intpl_w);
 EVT_DEF(macho_gance_zoom);
 EVT_DEF(macho_gance_blur_zoom);
 EVT_DEF(base_size_change);

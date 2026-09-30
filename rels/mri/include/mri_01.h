@@ -1,14 +1,16 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "driver/dispdrv.h"
+#include "memory.h"
 
 USER_FUNC(elder_talk_sub_punicheck);
 USER_FUNC(elder_talk_sub_fadeoff);
-void bossrobot_batu(void);  // TODO: real signature
+void bossrobot_batu(CameraId cameraId, void* param);
 USER_FUNC(bossrobot);
 USER_FUNC(evt_countdown_stop);
 USER_FUNC(akari_charge_entry);
-void mri_stg3_012_cb(void);  // TODO: real signature
+void mri_stg3_012_cb(s32 type, smartEntry* smart);
 EVT_DEF(puni_return);
 EVT_DEF(elder_talk_sub);
 EVT_DEF(puni_1_init);

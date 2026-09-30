@@ -6,6 +6,17 @@
 #include "forcedata.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle_sub.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/mapdrv.h"
+#include "memory.h"
+#include "system.h"
+#include "math_ext.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <string.h>
 
 #pragma pool_data off
 
@@ -145,8 +156,117 @@ static BattleUnitKindPart parts[1] = {
     },
 };
 
-// TODO: write replace_evt (global, 0x26c bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_wanawana.s; this is where the original has it, just before the first script that uses it
+// .text:0x680 | 0x8ACC | size: 0x24
+// The original has its own static tanf (the object defines a local tanf that
+// calls the double tan and narrows the result), so include math_ext.h, not math.h.
+#pragma dont_inline on
+static f32 tanf(f32 x) {
+    return tan(x);
+}
+#pragma dont_inline reset
+
+// .text:0x324 | 0x8770 | size: 0x35C
+void replace_disp(CameraId cameraId, void* param) {
+    WanawanaWork* p = param;
+    CameraEntry save;
+    CameraEntry* cam;
+    AnimationPoseData* animData;
+    Vec vmin;
+    Vec vmax;
+    Vec pos;
+    s32 width;
+    s32 height;
+
+    memcpy(&save, camGetPtr(cameraId), 0x260);
+    animData = animPoseGetAnimBaseDataPtr(p->poseId);
+    vmin = (Vec){ animData->bboxMin.x, animData->bboxMin.y, animData->bboxMin.z };
+    vmax = (Vec){ animData->bboxMax.x, animData->bboxMax.y, animData->bboxMax.z };
+    width = (s32)(2.0f * (vmax.x - vmin.x));
+    height = (s32)(2.0f * (vmax.z - vmin.z));
+    cam = camGetPtr(cameraId);
+    width += width & 1;
+    height += height & 1;
+    BtlUnit_GetPartsWorldPos(p->part, &pos.x, &pos.y, &pos.z);
+    cam->cameraUp = (Vec){ 0.0f, 0.0f, -1.0f };
+    cam->cameraAt = pos;
+    cam->cameraPos = pos;
+    cam->cameraPos.y += (f32)height / 2.0f / tanf(0.21816616f);
+    C_MTXPerspective(cam->projection, 25.0f, (f32)width / (f32)height, 1.0f, 32767.0f);
+    cam->projType = GX_PERSPECTIVE;
+    C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
+    GXSetProjection(cam->projection, cam->projType);
+    GXSetViewport(0.0f, 0.0f, (f32)width, (f32)height, 0.0f, 1.0f);
+    GXSetScissor(0, 0, width, height);
+    test_kururing_mapdisp(cameraId);
+    sysWaitDrawSync();
+    GXSetTexCopySrc(0, 0, width, height);
+    GXSetTexCopyDst(width / 2, height / 2, GX_TF_RGB5A3, GX_TRUE);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+    GXCopyTex(p->tex->address, GX_TRUE);
+    GXInvalidateTexAll();
+    GXPixModeSync();
+    GXTexModeSync();
+    memcpy(camGetPtr(cameraId), &save, 0x260);
+    p->field_0x00 = 1;
+}
+
+// .text:0x26C | 0x86B8 | size: 0xB8
+void replace_callback(BattleUnitPart* part, s32 arg) {
+    WanawanaWork* p = *(WanawanaWork**)((u8*)part->mOwner + 0x310);
+    Mtx mtx;
+
+    if (p->field_0x00 == 0) {
+        return;
+    }
+    PSMTXIdentity(mtx);
+    if (arg == 0) {
+        animSetPaperTexMtx(mtx, NULL, NULL);
+        animSetPaperTexObj(&p->texObj, NULL, NULL, p->tex, NULL, NULL, 1, 1);
+    } else {
+        animSetPaperTexMtx(NULL, NULL, NULL);
+        animSetPaperTexObj(NULL, NULL, NULL, NULL, NULL, NULL, 1, 1);
+    }
+}
+
+// .text:0x0 | 0x844C | size: 0x26C
+USER_FUNC(replace_evt) {
+    WanawanaWork* p;
+    BattleUnitPart* part;
+    BattleUnit* unit;
+    AnimationPoseData* animData;
+    Vec vmin;
+    Vec vmax;
+    s32 width;
+    s32 height;
+    u32 size;
+
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
+    animData = animPoseGetAnimBaseDataPtr(*(s32*)part->field_0x1C0);
+    vmin = (Vec){ animData->bboxMin.x, animData->bboxMin.y, animData->bboxMin.z };
+    vmax = (Vec){ animData->bboxMax.x, animData->bboxMax.y, animData->bboxMax.z };
+    width = (s32)(2.0f * (vmax.x - vmin.x));
+    height = (s32)(2.0f * (vmax.z - vmin.z));
+    width += width & 1;
+    height += height & 1;
+    p = __memAlloc(HEAP_BATTLE, 0x60);
+    width /= 2;
+    height /= 2;
+    size = GXGetTexBufferSize(width, height, GX_TF_RGB5A3, GX_FALSE, 0);
+    p->tex = smartAlloc(size, 1);
+    p->poseId = *(s32*)part->field_0x1C0;
+    p->part = part;
+    GXInitTexObj(&p->texObj, p->tex->address, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&p->texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    PSMTXIdentity(p->mtx);
+    animGetPtr()->poses[*(s32*)part->field_0x1C0].flags |= 0x10;
+    *(void (**)(BattleUnitPart*, s32))((u8*)part + 0x210) = replace_callback;
+    *(WanawanaWork**)((u8*)unit + 0x310) = p;
+    *(smartEntry**)((u8*)unit + 0x318) = p->tex;
+    p->field_0x00 = 0;
+    dispEntry(CAMERA_SHADOW, 0.0f, 0, replace_disp, p);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
@@ -186,12 +306,4 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: write replace_callback (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_wanawana.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write replace_disp (global, 0x35c bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_wanawana.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write tanf (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_wanawana.s; this is where the original has it, just before the first script that uses it
 // clang-format on

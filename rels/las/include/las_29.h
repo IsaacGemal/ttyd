@@ -11,20 +11,20 @@ USER_FUNC(make_koe_pos);
 USER_FUNC(make_koe_label);
 USER_FUNC(pcharge_set_pos);
 USER_FUNC(pcharge_entry);
-void radiation_set_pos(void);  // TODO: real signature
+USER_FUNC(radiation_set_pos);
 USER_FUNC(radiation_entry);
 USER_FUNC(add_vy);
-void b_peach_msgcb(void);  // TODO: real signature
+void b_peach_msgcb(s32 state);
 USER_FUNC(b_peach_thunder);
 USER_FUNC(all_hikari_onoff);
-void map_color_tev(void);  // TODO: real signature
+void map_color_tev(void* work);
 USER_FUNC(all_hikari_change_kuro);
 USER_FUNC(hikari_onoff);
 USER_FUNC(hikari_se);
 USER_FUNC(hikari_change);
 USER_FUNC(hikari_set_scale);
 USER_FUNC(rou_hikari_front_onoff);
-void _hikariEntry(void);  // TODO: real signature
+void _hikariEntry(const char* name, s32 type, f32 scale);
 EVT_DEF(q_kage_init);
 EVT_DEF(hikari_off_evt);
 EVT_DEF(hikari_on_evt);
@@ -42,3 +42,10 @@ EVT_DEF(last_evt_3_2);
 EVT_DEF(last_evt_4);
 EVT_DEF(shuryolight_delete);
 EVT_DEF(las_29_init_evt);
+
+typedef struct MapColorTevWork {
+    u8 pad_0x0[0xC];
+    s32 field_0xC;
+    s32 field_0x10;
+    s32 field_0x14;
+} MapColorTevWork;

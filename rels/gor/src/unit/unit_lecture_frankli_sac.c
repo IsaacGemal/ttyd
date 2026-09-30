@@ -7,6 +7,14 @@
 #include "forcedata.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_break_slot.h"
+#include "battle/battle_sub.h"
+#include "manager/evtmgr_cmd.h"
+#include "driver/dispdrv.h"
+#include "statuswindow.h"
+#include "system.h"
 
 #pragma pool_data off
 
@@ -21,6 +29,9 @@ static s32 phase_event[105];
 s32 actend_event[538];
 static s32 damage_event[75];
 static s32 wait_event[6];
+f32 point[4];
+s32 darkCount;
+u8 dark;
 
 // clang-format off
 extend_data(80,
@@ -149,8 +160,16 @@ static BattleUnitKindPart parts[1] = {
     },
 };
 
-// TODO: write _set_actend_event (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_set_actend_event) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+    s32 code = evtGetValue(event, args[1]);
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+
+    *(s32*)((u8*)unit + 0x2C4) = code;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(_test_event)
     CALL(btlevtcmd_SetTalkPose, -6, STRING("T_1"))
@@ -169,11 +188,39 @@ EVT_BEGIN(stop_wait_event)
     RETURN
 EVT_END()
 
-// TODO: write lecture_init (static, 0xf8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+#pragma opt_dead_assignments off
+#pragma opt_common_subs off
+#pragma opt_propagation off
+// NONMATCHING (94.56%): 16 of 62 instructions differ: 13 with different operands, 1 replaced, 2 missing
+static USER_FUNC(lecture_init) {
+    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
+    BattleAudience* aud = BattleAudienceBaseGetPtr();
+    s32 ids[11] = { 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0x30 };
+    s32 i;
 
-// TODO: write _battle_set_lecture_unit_id (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+    *(s32*)slot |= 1;
+    aud->flags |= 0x40000;
+    for (i = 0; i < 200; i++) {
+        BattleAudience_Delete(i);
+    }
+    for (i = 0; i < 11; i++) {
+            if (ids[i] != 0x30) {
+                BattleAudience_Entry(ids[i], 0, 0);
+            } else {
+                BattleAudience_Entry(ids[i], 3, 0);
+                BattleAudienceGetPtr(ids[i])->flags |= 0x200;
+            }
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(_battle_set_lecture_unit_id) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+
+    wp->field_424 = evtGetValue(event, args[0]);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(init_event)
     CALL(lecture_init)
@@ -194,11 +241,37 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: write spot_square (global, 0x1b8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.68%): 20 of 110 instructions differ in operands only (registers or offsets)
+USER_FUNC(spot_square) {
+    s32* args = event->args;
+    s32 a;
+    s32 b;
 
-// TODO: write blinkAP (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+    point[0] = evtGetFloat(event, args[0]);
+    point[1] = evtGetFloat(event, args[1]);
+    point[2] = evtGetFloat(event, args[2]);
+    point[3] = evtGetFloat(event, args[3]);
+    a = evtGetValue(event, args[4]);
+    b = evtGetValue(event, args[5]);
+    if (isFirstCall) {
+        dark = 0;
+        darkCount = 0;
+    }
+    darkCount++;
+    if (darkCount >= 0 && darkCount <= a) {
+        dark = (u8)(s32)intplGetValue(0, darkCount, a, 0.0f, 192.0f);
+    }
+    if (darkCount >= a + b && darkCount <= b + 2 * a) {
+        dark = (u8)(s32)intplGetValue(0, darkCount - (a + b), a, 192.0f, 0.0f);
+    }
+    dispEntry(8, 500.0f, 2, spot_square_disp, 0);
+    return (darkCount >= b + 2 * a) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(blinkAP) {
+    statusAPBlink(0xA0);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(phase_event)
     CALL(btlevtcmd_CheckPhase, LW(0), 67108865)
@@ -233,29 +306,56 @@ static EVT_BEGIN(phase_event)
     RETURN
 EVT_END()
 
-// TODO: write aud_attack_end (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(aud_attack_end) {
+    *(s32*)&_battleWorkPointer->field_19064[0x1C] |= 1;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write aud_attack_init (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(aud_attack_init) {
+    BattleWork* wp = _battleWorkPointer;
 
-// TODO: write hammer_on (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+    *(s32*)&wp->field_19064[0x1C] |= 1;
+    *(s32*)&wp->field_19064[0x20] = event->printWindowId;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write aud_dec (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(hammer_on) {
+    BattleAudience* base = BattleAudienceBaseGetPtr();
+    BattleAudienceMember* member = BattleAudienceGetPtr(0x30);
 
-// TODO: write aud_inc (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+    base->flags &= ~0x40000;
+    if (BattleAudienceItemOn(0x30, 0xEF, 1) == 1) {
+        member->flags &= ~0x200;
+        base->flags |= 0x40000;
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
 
-// TODO: write aud_joy (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(aud_dec) {
+    BattleAudienceAddAudienceNum(-5);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write get_ac_result (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(aud_inc) {
+    BattleAudienceAddAudienceNum(5);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write get_actkind (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(aud_joy) {
+    BattleAudienceJoySACLecture();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_ac_result) {
+    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_actkind) {
+    evtSetValue(event, event->args[0], *(s32*)&_battleWorkPointer->commandMenu.unk540[0]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(actend_event)
     CALL_CHILD(stop_wait_event)
@@ -443,24 +543,48 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 point[4] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+f32 point[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-// TODO: type
-u32 darkCount[1] = {
-    0x00000000,
-};
+s32 darkCount = 0;
 
-// TODO: type
-u8 dark[1] = {
-    0x00,
-};
+u8 dark = 0;
 
-// TODO: write spot_square_disp (global, 0x390 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (75.59%): 148 of 254 instructions differ: 94 with different operands, 4 replaced, 24 missing, 26 extra
+void spot_square_disp(CameraId cameraId, void* param) {
+    Mtx mtx;
+    CameraEntry* cam;
+    GXColor color = { 0, 0, 0, 0 };
 
-// TODO: write Quads2D (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/unit/unit_lecture_frankli_sac.s; this is where the original has it, just before the first script that uses it
+    color.a = dark;
+
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetChanMatColor(GX_COLOR0A0, color);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    cam = camGetPtr(8);
+    PSMTXIdentity(mtx);
+    PSMTXConcat(cam->view, mtx, mtx);
+    GXLoadPosMtxImm(mtx, GX_PNMTX0);
+    Quads2D(-320.0f, 240.0f, 320.0f, point[1]);
+    Quads2D(-320.0f, point[1], point[0], point[3]);
+    Quads2D(point[2], point[1], 320.0f, point[3]);
+    Quads2D(-320.0f, point[3], 320.0f, -240.0f);
+}
+
+void Quads2D(f32 x0, f32 y0, f32 x1, f32 y1) {
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(x0, y0, 0.0f);
+    GXPosition3f32(x1, y0, 0.0f);
+    GXPosition3f32(x1, y1, 0.0f);
+    GXPosition3f32(x0, y1, 0.0f);
+}
 // clang-format on

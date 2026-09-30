@@ -2,6 +2,25 @@
 
 #include "evt/evt_cmd.h"
 
+typedef struct KpaSenEntry {
+    s8 state;      // 0x0
+    u8 pad_1;      // 0x1
+    u16 timer;     // 0x2
+    f32 field_4;   // 0x4
+    f32 field_8;   // 0x8
+    f32 field_C;   // 0xC
+    f32 field_10;  // 0x10
+    f32 field_14;  // 0x14
+    f32 field_18;  // 0x18
+    f32 field_1C;  // 0x1C
+    u8 field_20;   // 0x20
+    u8 field_21;   // 0x21
+    u8 field_22;   // 0x22
+    u8 field_23;   // 0x23
+} KpaSenEntry;
+
+extern KpaSenEntry* kpaSen;
+
 USER_FUNC(party_scale);
 USER_FUNC(white_off);
 USER_FUNC(white_on);
@@ -12,10 +31,10 @@ void kpaSen_ext_dispent(void);  // TODO: real signature
 void kpaSen_ext_shadow_disp(void);  // TODO: real signature
 void kpaSen_ext_disp(void);  // TODO: real signature
 void kpaSen_ext_main(void);  // TODO: real signature
-void calcPose(void);  // TODO: real signature
-void kpaSen_ext_init(void);  // TODO: real signature
-void kpa_stg5_009_7_cb(void);  // TODO: real signature
-void party_tev(void);  // TODO: real signature
+s32 calcPose(s32 a, s32 b, s32 c, s32 d);
+void kpaSen_ext_init(void);
+void kpa_stg5_009_7_cb(s32 type, void* param);
+USER_FUNC(party_tev);
 EVT_DEF(villagerA_init);
 EVT_DEF(villagerA_pig_init);
 EVT_DEF(villagerA_talk);

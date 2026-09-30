@@ -19,8 +19,12 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
 #include "party/party_motion.h"
+#include "eff/eff_mahojin.h"
 #include "rel/mri/mri.h"
+#include <dolphin/gx.h>
 
 #pragma pool_data off
 
@@ -37,9 +41,7 @@ extern s32 evt_puni_set_trap_index[];
 extern s32 mri_guide_goryu[];
 extern s32 mri_guide_hagure_check[];
 extern s32 mri_puni_walk_se[];
-static void alpha_tev(void);  // TODO: real signature
-static void alpha_init_func(void);  // TODO: real signature
-static void alpha_set_func(void);  // TODO: real signature
+static u8* _ap;
 s32 guide_sister[775];
 
 // clang-format off
@@ -60,6 +62,32 @@ extend_data(17,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
+
+// Tev callback used by the alpha fade effect. Called before the scripts, so its
+// .rodata zero constant lands first, matching the original's section order.
+static void alpha_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    u8* ap = _ap;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColor(GX_TEVREG0, (GXColor){0, 0, 0, ap[0]});
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C = param->field_C + 1;
+}
+
+static USER_FUNC(alpha_init_func) {
+    _ap = _mapAlloc(1);
+    _ap[0] = 0xFF;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(alpha_set_func) {
+    _ap[0] = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(jail_alpha_mario_check)
     LOOP(0)
@@ -160,22 +188,23 @@ EVT_BEGIN(after_2hours)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 spline_dt[24] = {
-    0x43040000, 0x00000000, 0xC3190000, 0x42BE88CF,
-    0x00000000, 0xC2D82E45, 0x42A29D06, 0x00000000,
-    0xC2C9655A, 0x429F74A3, 0x00000000, 0xC292A75A,
-    0x42EAAB4E, 0x00000000, 0xC26CB60F, 0x43220B78,
-    0x00000000, 0xC2544E42, 0x4364A6AD, 0x00000000,
-    0x42114D20, 0x43757472, 0x00000000, 0x41B28E3B,
+static Vec spline_dt[8] = {
+    { 132.0f, 0.0f, -153.0f },
+    { 95.26720428466797f, 0.0f, -108.09037017822266f },
+    { 81.30668640136719f, 0.0f, -100.69795227050781f },
+    { 79.7278060913086f, 0.0f, -73.32685852050781f },
+    { 117.33457946777344f, 0.0f, -59.177791595458984f },
+    { 162.0447998046875f, 0.0f, -53.07642364501953f },
+    { 228.6510772705078f, 0.0f, 36.3253173828125f },
+    { 245.45486450195312f, 0.0f, 22.319448471069336f },
 };
 
-// TODO: type
-u32 spline_dt1[15] = {
-    0x42C40000, 0x00000000, 0xC31C0000, 0x4282388C,
-    0x00000000, 0xC2A078F9, 0x42628B17, 0x00000000,
-    0xC2658E55, 0xC08ABA41, 0x00000000, 0xC22371F6,
-    0xC3110000, 0x00000000, 0xC2700000,
+Vec spline_dt1[5] = {
+    { 98.0f, 0.0f, -156.0f },
+    { 65.11044311523438f, 0.0f, -80.23627471923828f },
+    { 56.63582992553711f, 0.0f, -57.38899612426758f },
+    { -4.335236072540283f, 0.0f, -40.861289978027344f },
+    { -145.0f, 0.0f, -60.0f },
 };
 
 EVT_BEGIN(elder_rescue)
@@ -452,37 +481,28 @@ EVT_BEGIN(puni_3_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[115] = {
-    (u32)"プニ族長老", 0x00000600, 0x00000000, (u32)&elder_init,
-    0x00000000, (u32)&elder_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ガイド妹",
-    0x00000600, 0x00000000, (u32)&sister_init, (u32)&sister_regl,
-    (u32)&sister_talk, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ガイド", 0x00000600,
-    0x00000000, (u32)&guide_init, 0x00000000, (u32)&guide_talk,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"プニ族３", 0x00000600, 0x00000000,
-    (u32)&puni_3_init, 0x00000000, (u32)&puni_3_talk, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[] = {
+    {
+        "プニ族長老", 0x600, 0, elder_init, NULL, elder_talk, NULL, NULL,
+        NULL, NULL, NULL, NPC_TERRITORY_TYPE_NOTHING, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f },
+        0.0f, 0.0f, 0.0f, 0.0f, 0,
+    },
+    {
+        "ガイド妹", 0x600, 0, sister_init, sister_regl, sister_talk, NULL, NULL,
+        NULL, NULL, NULL, NPC_TERRITORY_TYPE_NOTHING, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f },
+        0.0f, 0.0f, 0.0f, 0.0f, 0,
+    },
+    {
+        "ガイド", 0x600, 0, guide_init, NULL, guide_talk, NULL, NULL,
+        NULL, NULL, NULL, NPC_TERRITORY_TYPE_NOTHING, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f },
+        0.0f, 0.0f, 0.0f, 0.0f, 0,
+    },
+    {
+        "プニ族３", 0x600, 0, puni_3_init, NULL, puni_3_talk, NULL, NULL,
+        NULL, NULL, NULL, NPC_TERRITORY_TYPE_NOTHING, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f },
+        0.0f, 0.0f, 0.0f, 0.0f, 0,
+    },
+    { NULL },
 };
 
 EVT_BEGIN(bero_custom_00)
@@ -508,31 +528,20 @@ static BeroEntry bero_entry_data[3] = {
     {NULL},
 };
 
-// TODO: type
-static u32 puni_rand_position[89] = {
-    0xFFBCFF71, 0xFF6EFF39, 0xFF9BFEE2, 0xFF82FF03,
-    0xFF70FF6B, 0xFF1BFF1E, 0xFF49FF41, 0xFFD8FF38,
-    0xFF5AFF36, 0xFF26FF67, 0xFFB2FF60, 0xFF3BFEF1,
-    0xFF0CFF2C, 0xFF6FFF4D, 0xFFC5FF17, 0xFFC0FF2A,
-    0xFF4FFF10, 0xFFD4FF4C, 0xFF1AFF09, 0xFF6DFED6,
-    0xFF8DFF68, 0xFEFCFF37, 0xFF2DFF28, 0xFF92FEF4,
-    0xFF74FF11, 0xFF51FEE6, 0xFF9EFF5E, 0xFF27FF52,
-    0xFFD8FF10, 0xFFB2FF39, 0xFF5FFF04, 0xFF5BFF70,
-    0xFF50FF25, 0xFF7DFF5C, 0xFF07FF03, 0xFFA9FF0A,
-    0xFFCEFEE6, 0xFF2CFF13, 0xFF15FEDD, 0xFF5BFF4A,
-    0xFFB7FF4C, 0xFF73FF26, 0xFFA3FF4A, 0xFFA0FF2E,
-    0xFF21FEED, 0xFF3BFF64, 0xFEF5FEF9, 0xFF95FF08,
-    0xFFA7FF70, 0xFF1EFF36, 0xFFB0FF1D, 0xFF30FEE0,
-    0xFFA6FEF5, 0xFF0CFEEF, 0xFF70FEF9, 0xFF85FF2F,
-    0xFF4DFF59, 0xFF80FF43, 0xFF14FF4D, 0xFF08FF17,
-    0xFF13FF62, 0xFFD0FF6C, 0xFF88FEDA, 0xFFBDFEF1,
-    0xFFC5FF3D, 0xFFD4FF24, 0xFF87FF1A, 0xFF7FFEEC,
-    0xFFD0FEFE, 0xFF4DFEFA, 0xFF00FF69, 0xFF65FEE8,
-    0xFFC6FF5A, 0xFF00FF4B, 0xFF7FFF78, 0xFF3EFF06,
-    0xFF8EFF51, 0xFF3FFF2F, 0xFF2BFEFE, 0xFF61FF5D,
-    0xFFBDFF05, 0xFF93FF3E, 0xFF30FF3D, 0xFF95FF7A,
-    0xFF61FF19, 0xFF3EFF1B, 0xFF9CFF1B, 0xFFAFFEE2,
-    0xFF3BFF50,
+// s16 data; evt_mri_get16bitdata reads it with lhax
+static s16 puni_rand_position[178] = {
+    -68, -143, -146, -199, -101, -286, -126, -253, -144, -149, -229, -226, -183, -191, -40, -200,
+    -166, -202, -218, -153, -78, -160, -197, -271, -244, -212, -145, -179, -59, -233, -64, -214,
+    -177, -240, -44, -180, -230, -247, -147, -298, -115, -152, -260, -201, -211, -216, -110, -268,
+    -140, -239, -175, -282, -98, -162, -217, -174, -40, -240, -78, -199, -161, -252, -165, -144,
+    -176, -219, -131, -164, -249, -253, -87, -246, -50, -282, -212, -237, -235, -291, -165, -182,
+    -73, -180, -141, -218, -93, -182, -96, -210, -223, -275, -197, -156, -267, -263, -107, -248,
+    -89, -144, -226, -202, -80, -227, -208, -288, -90, -267, -244, -273, -144, -263, -123, -209,
+    -179, -167, -128, -189, -236, -179, -248, -233, -237, -158, -48, -148, -120, -294, -67, -271,
+    -59, -195, -44, -220, -121, -230, -129, -276, -48, -258, -179, -262, -256, -151, -155, -280,
+    -58, -166, -256, -181, -129, -136, -194, -250, -114, -175, -193, -209, -213, -258, -159, -163,
+    -67, -251, -109, -194, -208, -195, -107, -134, -159, -231, -194, -229, -100, -229, -81, -286,
+    -197, -176,
 };
 
 EVT_BEGIN(jail_init_00)
@@ -594,8 +603,7 @@ EVT_BEGIN(evt_unlock00_01)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 key_table00[2] = {
+s32 key_table00[] = {
     0x00000010, 0xFFFFFFFF,
 };
 
@@ -646,8 +654,7 @@ static EVT_BEGIN(evt_unlock01)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 key_table01[3] = {
+s32 key_table01[] = {
     0x00000010, 0x00000011, 0xFFFFFFFF,
 };
 
@@ -808,24 +815,147 @@ EVT_BEGIN(party_kirimomi_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 JailAwayTable_New[15] = {
+s32 JailAwayTable_New[15] = {
     0xFFFFFFAD, 0xFFFFFF28, 0xFFFFFF67, 0xFFFFFF3D,
     0xFFFFFF33, 0xFFFFFF66, 0xFFFFFF0F, 0xFFFFFFA1,
     0xFFFFFF24, 0xFFFFFFE7, 0xFFFFFF42, 0x00000000,
     0xFFFFFF60, 0x00000028, 0x00002710,
 };
 
-// TODO: write puniModeEventparent (global, 0x45c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
+void puniModeEventparent(PuniData* punidat) {
+    s32* table = JailAwayTable_New;
+    u8* p = (u8*)punidat;
+    Vec v;
+    Vec target;
+    f32 dist;
 
-// TODO: type
-static u32 jumptable_00012AC0[13] = {
-    (u32)((u8*)&puniModeEventparent + 0x58), (u32)((u8*)&puniModeEventparent + 0x100), (u32)((u8*)&puniModeEventparent + 0x25c), (u32)((u8*)&puniModeEventparent + 0x430),
-    (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430),
-    (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x270), (u32)((u8*)&puniModeEventparent + 0x3d8),
-    (u32)((u8*)&puniModeEventparent + 0x430),
-};
+    switch (*(u16*)(p + 0x114)) {
+        case 0: {
+            f32 best = 1000000.0f;
+            s32 i;
+            s32 bestIdx = -1;
+
+            for (i = 0; i < 4; i++) {
+                target.x = (f32)table[i * 2];
+                target.y = 0.0f;
+                target.z = (f32)table[i * 2 + 1];
+                dist = PSVECSquareDistance(&target, (Vec*)(p + 0x12C));
+                if (best > dist) {
+                    best = dist;
+                    bestIdx = i;
+                }
+            }
+            *(s32*)(p + 0x1E0) = bestIdx;
+            *(u16*)(p + 0x11E) = 2;
+            *(u16*)(p + 0x114) = 1;
+            // fallthrough
+        }
+        case 1: {
+            target.x = (f32)table[*(s32*)(p + 0x1E0) * 2];
+            target.y = 0.0f;
+            target.z = (f32)table[*(s32*)(p + 0x1E0) * 2 + 1];
+            dist = PSVECSquareDistance(&target, (Vec*)(p + 0x12C));
+            if (dist > 100.0f) {
+                PSVECSubtract(&target, (Vec*)(p + 0x12C), &v);
+                PSVECNormalize(&v, &v);
+                v.y = 0.0f;
+                PSVECScale(&v, &v, 1.5f);
+                PSVECAdd((Vec*)(p + 0x15C), &v, (Vec*)(p + 0x15C));
+            } else if (*(s32*)(p + 0x1E0) == *(s32*)(p + 0x1E4) + 5) {
+                *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
+                *(u16*)(p + 0x114) = 2;
+            } else if (table[*(s32*)(p + 0x1E0) * 2 + 2] != 0x2710) {
+                *(s32*)(p + 0x1E0) = *(s32*)(p + 0x1E0) + 1;
+            } else {
+                *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
+                *(u16*)(p + 0x114) = 2;
+            }
+            break;
+        }
+        case 2:
+            *(u16*)(p + 0x11E) = 0;
+            *(u16*)(p + 0x114) = 3;
+            break;
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 12:
+            break;
+        case 10: {
+            Vec pos;
+
+            target = (Vec){ -160.0f, 0.0f, 40.0f };
+            if (PSVECSquareDistance(&target, (Vec*)(p + 0x12C)) < 4900.0f) {
+                PSVECSubtract((Vec*)(p + 0x12C), &target, &v);
+                PSVECNormalize(&v, &v);
+                v.y = 0.0f;
+                PSVECScale(&v, &v, 0.7f);
+                PSVECAdd((Vec*)(p + 0x15C), &v, (Vec*)(p + 0x15C));
+                *(f32*)(p + 0x174) = 2.1f;
+                {
+                    f32 mag = PSVECMag((Vec*)(p + 0x15C));
+
+                    pos = *(Vec*)(p + 0x12C);
+                    pos.y += 1.0f;
+                    if (mag != 0.0f) {
+                        PSVECNormalize((Vec*)(p + 0x15C), &v);
+                    } else {
+                        v = (Vec){ 0.0f, 0.0f, 0.0f };
+                    }
+                    puniMoveAtari(punidat, pos, v, 0, mag);
+                }
+            } else {
+                *(u16*)(p + 0x114) = 11;
+            }
+            break;
+        }
+        case 11:
+            *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
+            if (*(f32*)(p + 0x12C) < -160.0f) {
+                *(f32*)(p + 0x180) = 90.0f;
+            } else {
+                *(f32*)(p + 0x180) = 270.0f;
+            }
+            *(u16*)(p + 0x114) = 12;
+            break;
+    }
+}
+
+USER_FUNC(puni_parent) {
+    PuniData* punidat = &puniGetPunidat()[evtGetValue(event, event->args[0])];
+    u8* p = (u8*)punidat;
+    u16 dir;
+
+    if (*(f32*)(p + 0x12C) > -180.0f) {
+        *(s32*)(p + 0x1E4) = event->lwData[11] % 2;
+        event->lwData[11]++;
+        dir = 1;
+    } else {
+        *(s32*)(p + 0x1E4) = event->lwData[12] % 2;
+        event->lwData[12]++;
+        dir = 2;
+    }
+    *(s32*)(p + 0x4) |= 0x100000;
+    *(u16*)(p + 0x118) = dir;
+    *(u16*)(p + 0xC) = 0x1D;
+    *(u16*)(p + 0x114) = 0;
+    *(u16*)(p + 0x11E) = 1000;
+    *(void**)(p + 0x56C) = (void*)puniModeEventparent;
+    *(void**)(p + 0x570) = (void*)puniMoveDecel;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(puni_away) {
+    PuniData* punidat = &puniGetPunidat()[evtGetValue(event, event->args[0])];
+    u8* p = (u8*)punidat;
+
+    *(u16*)(p + 0x114) = 10;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(kinoko_small)
     CALL(evt_item_get_position, LW(10), LW(0), LW(1), LW(2))
@@ -839,12 +969,6 @@ EVT_BEGIN(kinoko_small)
     CALL(evt_item_set_position, STRING("item00"), 0, -1000, 0)
     RETURN
 EVT_END()
-
-// TODO: write puni_parent (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_away (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(guide_sister)
     CALL(evt_mario_key_onoff, 0)
@@ -1204,13 +1328,12 @@ EVT_BEGIN(guide_sister_before)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[20] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", 0x00000000,
-    0x00000001, (u32)"A_ueki03", (u32)"S_ueki03", 0x00000000,
-    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", 0x00000000,
-    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[] = {
+    { 1, "A_ueki01", "S_ueki01", NULL },
+    { 1, "A_ueki03", "S_ueki03", NULL },
+    { 1, "A_ueki04", "S_ueki04", NULL },
+    { 1, "A_ueki05", "S_ueki05", NULL },
+    { 4, NULL, NULL, NULL },
 };
 
 EVT_BEGIN(mri_03_init_evt)
@@ -1281,18 +1404,4 @@ EVT_BEGIN(mri_03_init_evt)
     END_IF
     RETURN
 EVT_END()
-
-// TODO: type
-static u32 _ap[1] = {
-    0x00000000,
-};
-
-// TODO: write alpha_tev (static, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write alpha_init_func (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write alpha_set_func (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
 // clang-format on

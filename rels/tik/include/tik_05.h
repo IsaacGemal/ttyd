@@ -1,6 +1,40 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include <dolphin/mtx.h>
+#include "memory.h"
+
+extern s32 __float_nan[];
+long __fpclassifyf(float x);
+
+typedef struct CamKaiten {
+    Vec pos;   // 0x00
+    Vec at;    // 0x0C
+    f32 angle; // 0x18
+    f32 dist;  // 0x1C
+} CamKaiten;
+
+typedef struct BrokenEntry {
+    s32 field_0x0;   // 0x00
+    s32 field_0x4;   // 0x04
+    s32 field_0x8;   // 0x08
+    f32 field_0xC;   // 0x0C
+    f32 field_0x10;  // 0x10
+    f32 field_0x14;  // 0x14
+    f32 x;           // 0x18
+    f32 y;           // 0x1C
+    f32 z;           // 0x20
+    f32 field_0x24;  // 0x24
+    f32 field_0x28;  // 0x28
+    f32 field_0x2C;  // 0x2C
+    f32 field_0x30;  // 0x30
+} BrokenEntry;
+
+typedef struct BrokenWork {
+    s32 field_0x0;         // 0x00
+    smartEntry* field_0x4; // 0x04
+    smartEntry* field_0x8; // 0x08
+} BrokenWork;
 
 USER_FUNC(is_dol_viewer);
 USER_FUNC(stardust_setting);
@@ -14,7 +48,7 @@ USER_FUNC(map_bgmode);
 USER_FUNC(crystal_bgmode);
 USER_FUNC(unk_tik_0000247c);
 USER_FUNC(tiz_broken);
-void tiz_broken_draw(void);  // TODO: real signature
+void tiz_broken_draw(CameraId cameraId, void* param);
 USER_FUNC(tiz_stone);
 USER_FUNC(img_alpha);
 USER_FUNC(effect_position);
@@ -23,7 +57,7 @@ USER_FUNC(disp_treasure_map_func);
 USER_FUNC(disp_lighteffect_func);
 USER_FUNC(eff_starstone_sound_off);
 USER_FUNC(starstone_circle_link_func);
-void starstone_set_scale(void);  // TODO: real signature
+USER_FUNC(starstone_set_scale);
 USER_FUNC(starstone_set_alpha);
 USER_FUNC(starstone_get_position);
 USER_FUNC(starstone_set_position);

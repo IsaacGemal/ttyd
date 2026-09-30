@@ -1,4 +1,8 @@
 #include "yuu_03.h"
+#include "cam_shift.h"
+#include "driver/dispdrv.h"
+#include "driver/icondrv.h"
+#include "driver/mapdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -10,28 +14,43 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "evt/evt_yuugijou.h"
+#include "evt_yuuminigame.h"
 #include "forcedata.h"
+#include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "motion/mot_roll.h"
+#include "motion/mot_slit.h"
+#include "party.h"
 #include "party/party_motion.h"
+#include "rel/yuu/yuu.h"
+#include "system.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <stdlib.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 eff_call_minigame[];
 extern s32 evt_yuucounter_alloc[];
 extern s32 evt_yuucounter_free[];
-extern s32 evt_yuuminigame_alloc[];
 extern s32 evt_yuunpc_minigame4[];
 extern s32 evt_yuuranking_alloc_31_text_52F8[];
 extern s32 evt_yuuranking_free_31_text_5274[];
 extern s32 evt_yuutitle_alloc[];
 extern s32 evt_yuutitle_free[];
-extern s32 yuuminigame_get_dataadr[];
-extern s32 yuuminigame_set_dataadr[];
 extern s32 yuuranking_get_monte_31_text_51C0[];
 extern s32 yuuranking_wait_button_31_text_51F8[];
-static void randf(void);  // TODO: real signature
-static void polygon(void);  // TODO: real signature
-static void evt_nomal_cange(void);  // TODO: real signature
+static f32 randf(f32 min, f32 max);
+static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v);
+static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall);
+
+Yuuminigame4Work* unk_yuu_bss00000010;
+RyushiEntry* xwp;
+s32 ryuwp;
+static void* yuunpc_wp;
 
 // clang-format off
 extend_data(4,
@@ -52,19 +71,185 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write unk_yuu_000034bc (global, 0x1a0 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (78.27%): unk_yuu_000034bc; needs register/allocation scheduling work
+USER_FUNC(unk_yuu_000034bc) {
+    s32 prev = 0;
+    YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
+    MarioWork* mario = marioGetPtr();
+    if (isFirstCall) {
+        s32 num = 1;
+        s32 i;
+        if (unk_yuu_bss00000010 != NULL) {
+            prev = 1;
+        }
+        unk_yuu_bss00000010 = _mapAlloc(num * sizeof(Yuuminigame4Work));
+        memset(unk_yuu_bss00000010, 0, num * sizeof(Yuuminigame4Work));
+        unk_yuu_bss00000010->count = num;
+        unk_yuu_bss00000010->work = work2;
+        for (i = 0; i < unk_yuu_bss00000010->count; i++) {
+            Yuuminigame4Work* e = &unk_yuu_bss00000010[i];
+            e->position = mario->position;
+            e->position.y += 40.0f;
+            e->unk18 = 1.0f;
+        }
+    }
+    {
+        s32 i;
+        for (i = 0; i < unk_yuu_bss00000010->count; i++) {
+            Yuuminigame4Work* e = &unk_yuu_bss00000010[i];
+            if (e->unk4 == 0) {
+                e->position = mario->position;
+                e->position.y += 40.0f;
+            }
+        }
+    }
+    if (prev == 0) {
+        dispEntry(4, 0.0f, 1, unk_yuu_0000365c, unk_yuu_bss00000010);
+    }
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(unk_evt_yuu_00015fe0)
     CALL(unk_yuu_000034bc)
     RETURN
 EVT_END()
 
-// TODO: write evt_ryushi (global, 0x73c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (73.37%): evt_ryushi; needs register/allocation scheduling work
+USER_FUNC(evt_ryushi) {
+    YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
+    Yuuminigame4Data* data = work2->data;
+    RyushiEntry* wp = xwp;
+    Vec pos = { 0.0f, 0.0f, 0.0f };
+    f32 f20;
+    f32 f21;
+    f32 f22;
+    f32 f23 = 1.0f;
+    s32 i;
 
-// TODO: write evt_ryushi_clr (global, 0x32c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+    pos.x = wp->x;
+    pos.y = wp->y;
+    pos.z = wp->z;
+
+    f20 = camGetPtr(4)->cameraAt.x;
+    f22 = 0.0f;
+    f21 = f22;
+    switch (data->unk10) {
+    case 1:
+    case 5:
+        f21 = (f32)(0x3C - data->unk14) / 60.0f;
+        f23 = f21;
+        break;
+    case 2:
+    case 6:
+        f22 = f22 * (f32)(0x3C - data->unk14) / 60.0f;
+        break;
+    case 4:
+    case 8:
+        f21 = (f32)data->unk14 / 48.0f;
+        break;
+    }
+
+    wp->unk24++;
+    if (wp->unk24 <= 0x14) {
+        wp->unk20 = wp->unk24 * 12;
+    } else {
+        wp->unk20 = 0xFF;
+    }
+    if (wp->unk24 & 1) {
+        wp->unk20 /= 2;
+    }
+    f23 *= 0.5f;
+
+    for (i = 1; i < ryuwp; i++) {
+        RyushiEntry* e = &wp[i];
+
+        switch (e->unk04) {
+        case 0:
+            e->z -= f22;
+            if (e->z < -200.0f) {
+                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
+                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
+                e->z = 200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
+            }
+            break;
+        case 1:
+            e->z += f22;
+            if (e->z > 200.0f) {
+                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
+                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
+                e->z = -200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
+            }
+            break;
+        }
+        {
+            f32 step = 10.0f * wp->unk08;
+            f32 t = (e->x - f20) / (step * 0.5f);
+            s32 n = (s32)t;
+            if (n != 0) {
+                if (n > 0) {
+                    n += 1;
+                } else {
+                    n -= 1;
+                }
+                n = -n;
+                n /= 2;
+                e->x = e->x + (f32)n * step;
+            }
+        }
+        {
+            f32 a = e->z;
+            if (a < 0.0f) {
+                a = -a;
+            }
+            a = a - 100.0f;
+            if (a < 0.0f) {
+                a = 0.0f;
+            } else if (a > 100.0f) {
+                a = 100.0f;
+            }
+            e->unk20 = (s32)(0.7 * (255.0f * ((100.0f - a) / 100.0f) * f21));
+        }
+        e->scale = f23;
+    }
+
+    dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (66.84%): evt_ryushi_clr; needs register/allocation scheduling work
+USER_FUNC(evt_ryushi_clr) {
+    RyushiEntry* wp = xwp;
+    s32 n = ryuwp;
+    s32 i;
+
+    wp->unk04 = evtGetValue(event, event->args[0]);
+    wp->unk24 = 0;
+    wp->unk20 = 0;
+    wp->x = 0.0f;
+    wp->y = 0.0f;
+    wp->z = 0.0f;
+    wp->unk08 = 50.0f;
+    wp->unk0C = 50.0f;
+    wp->unk10 = 100.0f;
+    wp = &wp[1];
+    for (i = 1; i < n; i++, wp++) {
+        s32 a = (i - 1) % 10;
+        s32 b = ((i - 1) / 10) % 6;
+        s32 c = (i - 1) / 60;
+        f32 r08 = xwp->unk08;
+        f32 r0C = xwp->unk0C;
+        f32 r10 = xwp->unk10;
+
+        wp->unk08 = r08 * 0.5f * (b + c) + ((f32)a * r08 - r08 * 4.5f);
+        wp->unk0C = (f32)b * r0C - r0C * 2.5f;
+        wp->unk10 = (f32)c * r10 - r10 * 1.5f;
+        wp->x = wp->unk08 + randf(-0.3f * xwp->unk08, 0.3f * xwp->unk08);
+        wp->y = wp->unk0C + randf(-0.3f * xwp->unk0C, 0.3f * xwp->unk0C);
+        wp->z = wp->unk10 + randf(-0.3f * xwp->unk10, 0.3f * xwp->unk10);
+        wp->scale = 0.5f;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(ryushi_event)
     SET_VALUE(GW(0), 0)
@@ -94,8 +279,13 @@ EVT_BEGIN(yuu_03_kaijo_init2)
     RETURN
 EVT_END()
 
-// TODO: write yuuminigame4_set_phase (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(yuuminigame4_set_phase) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame4Data* data = work->data;
+    data->phase = evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(minigame04_main)
     CALL(evt_mario_key_onoff, 0)
@@ -134,14 +324,34 @@ EVT_BEGIN(minigame04_start_cam_cancel)
     RETURN
 EVT_END()
 
-// TODO: write yuuminigame4_opening_chk (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(yuuminigame4_opening_chk) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame4Data* data = work->data;
+    if (data->flags & 1) {
+        evtSetValue(event, args[1], 1);
+    } else {
+        evtSetValue(event, args[1], 0);
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write yuuminigame4_opening_on_off (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(yuuminigame4_opening_on_off) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame4Data* data = work->data;
+    if (evtGetValue(event, args[1]) != 0) {
+        data->flags |= 1;
+    } else {
+        data->flags &= ~1;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write yuunpc_go (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(yuunpc_go) {
+    yuunpc_wp_flag_off(1);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(minigame04_start)
     CALL(yuuminigame4_opening_chk, LW(0), LW(1))
@@ -180,11 +390,15 @@ EVT_BEGIN(minigame04_start)
     RETURN
 EVT_END()
 
-// TODO: write re_init_yuunpc (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(re_init_yuunpc) {
+    ext_yuunpc_minigame4_init_sub();
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write unk_yuu_0000371c (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(unk_yuu_0000371c) {
+    camShiftReset();
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(minigame04_end)
     CALL(evt_cam_letter_box_onoff, 1, 0)
@@ -292,8 +506,164 @@ EVT_BEGIN(yuu_03_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write yuuminigame4_gamerule (global, 0x7a0 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (84.86%): yuuminigame4_gamerule; needs register/allocation scheduling work
+s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
+    MarioWork* mario = marioGetPtr();
+    EventEntry* e;
+    f32 angle;
+    f32 f;
+
+    data->unk14--;
+
+    switch (data->unk10) {
+    case 0:
+        if (data->unk14 != 0) {
+            break;
+        }
+        if (irand(2) != 0) {
+            data->unk10 = 1;
+            e = evtEntryType(ryushi_event, 0, 0, 0);
+            e->lwData[0] = (s32)work;
+            e->lwData[1] = 1;
+        } else {
+            data->unk10 = 5;
+            e = evtEntryType(ryushi_event, 0, 0, 0);
+            e->lwData[0] = (s32)work;
+            e->lwData[1] = 0;
+        }
+        data->unk14 = 0x3C;
+        break;
+    case 1:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 2;
+        data->unk14 = 0x3C;
+        /* fallthrough */
+    case 2:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 3;
+        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
+        break;
+    case 3:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 4;
+        data->unk14 = 0x30;
+        break;
+    case 4:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 0;
+        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        evtSetValue(event, 0xFD050F80, 1);
+        break;
+    case 5:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 6;
+        data->unk14 = 0x3C;
+        break;
+    case 6:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 7;
+        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
+        break;
+    case 7:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 8;
+        data->unk14 = 0x30;
+        break;
+    case 8:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 0;
+        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        evtSetValue(event, 0xFD050F80, 1);
+        break;
+    }
+
+    switch (data->unk10) {
+    case 1:
+    case 2:
+        angle = data->unk18 + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
+        data->unk18 = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
+        break;
+    case 3:
+        angle = data->unk18 + 36.0f;
+        data->unk18 = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
+        break;
+    case 4:
+        angle = data->unk18 + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
+        data->unk18 = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
+        break;
+    case 5:
+    case 6:
+        angle = data->unk1C + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
+        data->unk1C = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
+        break;
+    case 7:
+        angle = data->unk1C + 36.0f;
+        data->unk1C = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
+        break;
+    case 8:
+        angle = data->unk1C + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
+        data->unk1C = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
+        break;
+    }
+
+    if (mario->position.x < 1500.0f) {
+        f = 0.0f;
+        switch (data->unk10) {
+        case 2:
+        case 3:
+        case 4:
+            if (!(mario->dispFlags & 0x01000000)) {
+                f = 2.9166667f;
+            }
+            break;
+        case 6:
+        case 7:
+        case 8:
+            if (!(mario->dispFlags & 0x01000000)) {
+                f = -2.9166667f;
+            } else {
+                f = -0.0f;
+            }
+            break;
+        }
+        if (data->unk10 == 2 || data->unk10 == 6) {
+            f = f * (f32)(0x3C - data->unk14) / 60.0f;
+        }
+        mario->riderDelta.z += f;
+    }
+
+    if (mario->position.y <= -100.0f || mario->position.x >= 1500.0f) {
+        if (mario->position.y <= -100.0f) {
+            data->unk08 = 0x2BD;
+            yuucounter_flag_on(1);
+        } else {
+            data->unk08 = yuucounter_get_data();
+        }
+        data->unk10 = 0;
+        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        marioKeyOff();
+        partyKeyOff();
+        yuucounter_flag_on(2);
+        return 1;
+    }
+    return 0;
+}
 
 // TODO: type
 static u32 jumptable_00001654[9] = {
@@ -317,55 +687,323 @@ static u32 jumptable_0000169C[9] = {
 };
 
 // TODO: type
-u32 unk_yuu_bss00000010[1] = {
-    0x00000000,
-};
+// (globals declared above)
 
-// TODO: type
-u32 xwp[1] = {
-    0x00000000,
-};
+void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
+    monteCountDisp();
+}
 
-// TODO: type
-u32 ryuwp[1] = {
-    0x00000000,
-};
+void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    Yuuminigame4Data* data = work->data;
 
-// TODO: type
-static u32 yuunpc_wp[1] = {
-    0x00000000,
-};
+    switch (data->phase) {
+    case 0:
+        break;
+    case 5:
+        data->phase = 1;
+        /* fallthrough */
+    case 1:
+        work->childEvent = evtEntry(minigame04_start, 0, 0);
+        work->childEvent->lwData[0] = event->lwData[0];
+        data->phase++;
+        break;
+    case 2:
+        data->unk10 = 0;
+        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        data->unk0C = 0;
+        data->phase = 3;
+        /* fallthrough */
+    case 3:
+        if (yuuminigame4_gamerule(event, isFirstCall, work, data) != 0) {
+            data->phase++;
+        }
+        break;
+    case 4:
+        work->childEvent = evtEntry(minigame04_end, 0, 0);
+        work->childEvent->lwData[0] = data->unk08;
+        switch (data->unk08) {
+        case 0x0:
+            data->unk0C = 0x105;
+            break;
+        case 0x1:
+            data->unk0C = 0x103;
+            break;
+        case 0x2:
+            data->unk0C = 0x101;
+            break;
+        case 0x15:
+        case 0x41:
+        case 0xA:
+        case 0x20:
+        case 0x2B:
+        case 0x36:
+        case 0x4C:
+        case 0x57:
+        case 0x62:
+        case 0x6E:
+        case 0xDD:
+        case 0x14C:
+        case 0x1BB:
+        case 0x22A:
+        case 0x299:
+        case 0x308:
+        case 0x377:
+        case 0x3E6:
+        case 0x456:
+        case 0x8AD:
+        case 0xD04:
+        case 0x115B:
+        case 0x15B2:
+        case 0x1A09:
+        case 0x1E60:
+        case 0x22B7:
+        case 0x270E:
+            data->unk0C = 0x103;
+            break;
+        }
+        work->childEvent->lwData[1] = data->unk0C;
+        data->phase++;
+        break;
+    }
 
-// TODO: write yuuminigame_disp_4slit (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+    mapObjRotate("puro_1", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_2", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_3", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_4", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_5", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_6", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_7", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_8", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_9", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("puro_10", 0.0f, 0.0f, data->unk18);
+    mapObjRotate("pera_1", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_2", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_3", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_4", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_5", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_6", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_7", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_8", 0.0f, 0.0f, data->unk1C);
+    mapObjRotate("pera_9", 0.0f, 0.0f, data->unk1C);
+}
 
-// TODO: write yuuminigame_main_4slit (global, 0x4e0 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    Yuuminigame4Data* data = work->data;
+    RyushiEntry* wp;
+    s32 i;
 
-// TODO: write yuuminigame_init_4slit (global, 0xf8 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+    data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
+    data->subEvent->lwData[0] = event->lwData[0];
+    data->flags |= 1;
 
-// TODO: write evt_ryushi_init (global, 0xb4 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+    ryuwp = 0xF1;
+    wp = _mapAlloc(0x4004);
+    xwp = wp;
+    wp->unk04 = 0;
+    wp->unk24 = 0;
+    wp->unk20 = 0;
+    wp->x = 0.0f;
+    wp->y = 0.0f;
+    wp->z = 0.0f;
+    wp->scale = 1.0f;
+    wp->unk2C = 0xFF;
+    wp->unk30 = 0;
+    wp->unk34 = 0xFF;
+    wp->unk38 = 0xFF;
+    wp->unk3C = 0x80;
+    wp->unk40 = 0xFF;
+    wp = &wp[1];
+    for (i = 0xF0; i != 0; i--) {
+        wp->unk0 = 0;
+        wp++;
+    }
+}
 
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_ryushi_init) {
+    RyushiEntry* wp;
+    s32 i;
+    ryuwp = 0xF1;
+    wp = _mapAlloc(0x4004);
+    xwp = wp;
+    wp->unk04 = 0;
+    wp->unk24 = 0;
+    wp->unk20 = 0;
+    wp->x = 0.0f;
+    wp->y = 0.0f;
+    wp->z = 0.0f;
+    wp->scale = 1.0f;
+    wp->unk2C = 0xFF;
+    wp->unk30 = 0;
+    wp->unk34 = 0xFF;
+    wp->unk38 = 0xFF;
+    wp->unk3C = 0x80;
+    wp->unk40 = 0xFF;
+    wp = &wp[1];
+    for (i = 0xF0; i != 0; i--) {
+        wp->unk0 = 0;
+        wp++;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write ryushi_disp (global, 0x574 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+static f32 randf(f32 min, f32 max) {
+    f32 d = max - min;
+    f32 r = (f32)rand() / 32767.0f;
+    return r * d + min;
+}
 
-// TODO: write polygon (static, 0x124 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (87.88%): ryushi_disp; needs register/allocation scheduling work
+void ryushi_disp(CameraId cameraId, void* param) {
+    RyushiEntry* wp = xwp;
+    Mtx mtx;
+    Mtx rot;
+    Mtx scale;
+    Mtx trans;
+    Mtx out;
+    GXTexObj texObj;
+    GXColor color;
+    f32 f29 = 0.0f;
+    f32 f30;
+    f32 f31;
+    s32 i;
 
-// TODO: write evt_nomal_cange (static, 0x74 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+    PSMTXScale(mtx, wp->scale, wp->scale, 1.0f);
+    PSMTXTransApply(mtx, mtx, wp->x, wp->y, wp->z);
+    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
+    PSMTXConcat(mtx, rot, mtx);
+    effGetTexObj(0x1E, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    color.r = wp->unk38;
+    color.g = wp->unk3C;
+    color.b = wp->unk40;
+    color.a = 0;
+    GXSetTevColor(2, color);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(2);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 8, 8, 0xF);
+    GXSetTevAlphaIn(0, 7, 7, 7, 4);
+    GXSetTevOrder(1, 0xFF, 0xFF, 0xFF);
+    GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(1, 2, 4, 0, 0xF);
+    GXSetTevAlphaIn(1, 7, 1, 0, 7);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
-// TODO: write evt_slit_cancel (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+    f31 = 0.0f;
+    wp = &xwp[1];
+    for (i = 1; i < ryuwp; i++, wp++) {
+        f30 = wp->scale;
+        if (f30 == f31) {
+            continue;
+        }
+        color.r = (s32)f29;
+        color.g = wp->unk30;
+        color.b = wp->unk34;
+        color.a = wp->unk20;
+        GXSetTevColor(1, color);
+        {
+            f32 t = (3.1415927f * (f32)i * 0.25f + wp->z * 0.125f) / 3.1415927f;
+            f32 d = 180.0f * t;
+            s32 k = (s32)(d / 360.0f);
+            if (d < 0.0f) {
+                k -= 1;
+            }
+            {
+                f32 a = d - (f32)(k * 360);
+                s32 idx = (s32)a;
+                f32 s = *(f32*)&yuusintbl[idx];
+                PSMTXTrans(trans, 3.0f * s + wp->x, wp->y, wp->z);
+            }
+        }
+        PSMTXScale(scale, f30, f30, f30);
+        PSMTXConcat(trans, scale, trans);
+        PSMTXConcat(mtx, trans, trans);
+        PSMTXConcat(camGetPtr(cameraId)->view, trans, out);
+        GXLoadPosMtxImm(out, 0);
+        GXSetCurrentMtx(0);
+        polygon(-8.0f, -8.0f, 16.0f, 16.0f, 1.0f, 1.0f);
+    }
+}
 
-// TODO: write unk_yuu_0000341c (global, 0xa0 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(u, 0.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(u, v);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, v);
+}
 
-// TODO: write unk_yuu_0000365c (global, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_03.s; this is where the original has it, just before the first script that uses it
+static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall) {
+    MarioWork* mario = marioGetPtr();
+    if (isFirstCall) {
+        unk_8009f9c8();
+        if (mario->flags & 0x100000) {
+            motSlitCancel3();
+        }
+    }
+    if (!marioRollKeyDisable()) {
+        return 0;
+    }
+    return (mario->dispFlags & 0x01000000) ? 0 : 2;
+}
+
+USER_FUNC(evt_slit_cancel) {
+    MarioWork* mario = marioGetPtr();
+    if (mario->trigFlags & 1) {
+        mario->trigFlags &= ~1;
+        marioSlitForceCancel();
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_yuu_0000341c) {
+    Yuuminigame4Work* work = unk_yuu_bss00000010;
+    if (work != NULL) {
+        YuuminigameWork* work2 = work->work;
+        Yuuminigame4Data* data = work2->data;
+        if (data->subEvent != NULL) {
+            evtDeleteID(data->subEvent->eventId);
+            data->subEvent = NULL;
+            _mapFree(unk_yuu_bss00000010);
+            data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
+            data->subEvent->lwData[0] = (s32)unk_yuu_bss00000010->work;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (98.85%): unk_yuu_0000365c; needs register/allocation scheduling work
+void unk_yuu_0000365c(CameraId cameraId, void* param) {
+    Yuuminigame4Work* work = param;
+    if (param != NULL) {
+        s32 i;
+        for (i = 0; i < work->count; i++) {
+            Yuuminigame4Work* e = &work[i];
+            if (e->unk0 == 0) {
+                Vec pos = e->position;
+                if ((gp->retraceCount & 0x1F) < 9) {
+                    pos.y += 5.0f;
+                }
+                iconDispGx(&pos, 0, 0x1B6, 1.0f);
+            }
+        }
+    }
+}
 // clang-format on

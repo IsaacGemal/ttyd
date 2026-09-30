@@ -1,4 +1,5 @@
 #include "pik.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
@@ -7,7 +8,7 @@
 #pragma force_active on
 
 // clang-format off
-extend_data(0,
+extend_data(26,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -16,7 +17,7 @@ extend_data(0,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(1,
+extend_data(27,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -25,16 +26,34 @@ extend_data(1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(2,
+extend_data(28,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _prolog (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/pik/asm/pik.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("pik_00", pik_00_init_evt);
+    relSetEvtAddr("pik_01", pik_01_init_evt);
+    relSetEvtAddr("pik_02", pik_02_init_evt);
+    relSetEvtAddr("pik_03", pik_03_init_evt);
+    relSetEvtAddr("pik_04", pik_04_init_evt);
+    relSetBtlAddr("pik", btlsetup_pik_tbl, btl_pik_setup_no_tbl);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
+

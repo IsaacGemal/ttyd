@@ -1,4 +1,8 @@
 #include "tik_11.h"
+#include "driver/bgdrv.h"
+#include "driver/camdrv.h"
+#include "driver/npcdrv.h"
+#include "eff/eff_stardust.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -15,7 +19,10 @@
 #include "evt/evt_win.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
 
 #pragma pool_data off
 
@@ -25,16 +32,18 @@ static USER_FUNC(bgm_start_wait);
 static USER_FUNC(bgScrollControll);
 static USER_FUNC(enzan_lw_load);
 static USER_FUNC(enzan_lw_save);
-static void enzan_set_f_i(void);  // TODO: real signature
-static void enzan_set_i_f(void);  // TODO: real signature
+static USER_FUNC(enzan_set_f_i);
+static USER_FUNC(enzan_set_i_f);
 static USER_FUNC(enzan_cam_turn_keisan_f);
-static void enzan_cam_turn_keisan(void);  // TODO: real signature
-static void wariai_enzan_0f(void);  // TODO: real signature
-static void wariai_enzan_0(void);  // TODO: real signature
+static USER_FUNC(enzan_cam_turn_keisan);
+static USER_FUNC(wariai_enzan_0f);
+static USER_FUNC(wariai_enzan_0);
 static USER_FUNC(wariai_enzan_1f);
-static void wariai_enzan_1(void);  // TODO: real signature
+static USER_FUNC(wariai_enzan_1);
 static USER_FUNC(effect_stardust);
 static USER_FUNC(setmertn);
+
+static s32 xlw[16];
 
 // clang-format off
 extend_data(52,
@@ -55,6 +64,166 @@ extend_data(53,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
+static USER_FUNC(setmertn) {
+    event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(effect_stardust) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    f32 c = evtGetFloat(event, args[1]);
+    f32 d = evtGetFloat(event, args[2]);
+    f32 e = evtGetFloat(event, args[3]);
+    f32 f = evtGetFloat(event, args[4]);
+    f32 g = evtGetFloat(event, args[5]);
+    s32 a = evtGetValue(event, args[6]);
+    s32 b = evtGetValue(event, args[7]);
+
+    effStardustEntry(type, a, b, c, d, e, f, g);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(wariai_enzan_1) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(wariai_enzan_1f) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(wariai_enzan_0) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]) - 1.0f;
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(wariai_enzan_0f) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]) - 1.0f;
+    f32 b = evtGetFloat(event, args[1]) - 1.0f;
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_cam_turn_keisan) {
+    s32* args = event->args;
+    f32 angle = (f32)(evtGetValue(event, args[0]) % 360);
+    s32 idx1 = args[1];
+    s32 idx2 = args[2];
+    Vec v1;
+    Vec v2;
+    Mtx mtx;
+
+    v1.x = (f32)evtGetValue(event, idx1);
+    v1.z = (f32)evtGetValue(event, idx2);
+    v1.y = 0.0f;
+    v2.x = (f32)evtGetValue(event, args[3]);
+    v2.z = (f32)evtGetValue(event, args[4]);
+    v2.y = 0.0f;
+    PSVECSubtract(&v1, &v2, &v1);
+    PSMTXRotRad(mtx, 'Y', 0.017453292f * angle);
+    PSMTXMultVec(mtx, &v1, &v1);
+    PSVECAdd(&v1, &v2, &v1);
+    evtSetValue(event, idx1, (s32)v1.x);
+    evtSetValue(event, idx2, (s32)v1.z);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_cam_turn_keisan_f) {
+    f32 ratio = evtGetFloat(event, event->args[0]) / 100.0f;
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 px = -9.0f;
+    f32 py = -60.0f * ratio + 212.0f;
+    f32 pz = -344.0f * ratio + 886.0f;
+    Vec pos = (Vec){px, py, pz};
+    Vec base = (Vec){-9.0f, 56.0f, 0.0f};
+    Mtx mtx;
+
+    PSVECSubtract(&pos, &base, &pos);
+    PSMTXRotRad(mtx, 'Y', 0.017453292f * (720.0f * ratio));
+    PSMTXMultVec(mtx, &pos, &pos);
+    PSVECAdd(&pos, &base, &pos);
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    cam->storedPos = pos;
+    cam->storedAt = cam->cameraAt;
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = 0;
+    cam->stateA = 3;
+    cam->curveA = 0;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_set_i_f) {
+    s32* args = event->args;
+    s32 target = args[0];
+
+    evtSetValue(event, target, (s32)evtGetFloat(event, args[1]));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_set_f_i) {
+    s32* args = event->args;
+    s32 target = args[0];
+
+    evtSetFloat(event, target, (f32)evtGetValue(event, args[1]));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_lw_save) {
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+        xlw[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_lw_load) {
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(bgScrollControll) {
+    if (evtGetValue(event, event->args[0]) == 0) {
+        bgTransOffsetOff();
+    } else {
+        bgTransOffsetOn();
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(bgm_start_wait) {
+    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+
 EVT_BEGIN(unk_evt_tik_00021280)
     LOOP(0)
         CALL(evt_party_set_dir_pos, 0, -9, 0)
@@ -63,24 +232,6 @@ EVT_BEGIN(unk_evt_tik_00021280)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write bgm_start_wait (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write bgScrollControll (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write enzan_lw_load (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write enzan_lw_save (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write enzan_cam_turn_keisan_f (static, 0x1e4 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write effect_stardust (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(powerdownya_mario_level_rtn)
     CALL(evt_pouch_get_coin, LW(0))
@@ -269,9 +420,6 @@ EVT_BEGIN(powerdownya_mario_level_rtn)
     END_IF
     RETURN
 EVT_END()
-
-// TODO: write wariai_enzan_1f (static, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(powerdownya_party_lank_rtn)
     CALL(evt_pouch_get_coin, LW(0))
@@ -563,9 +711,6 @@ EVT_BEGIN(powerdownya_party_lank_rtn)
     RETURN
 EVT_END()
 
-// TODO: write setmertn (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(powerdownya_table_talk)
     CALL(setmertn, STRING("パワーダウン屋"))
     CALL(evt_mario_key_onoff, 0)
@@ -609,20 +754,9 @@ EVT_BEGIN(powerdownya_init)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"パワーダウン屋", 0x00000600, 0x00000000, (u32)&powerdownya_init,
-    0x00000000, (u32)&powerdownya_direct_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[] = {
+    {"パワーダウン屋", 0x00000600, 0x00000000, &powerdownya_init, NULL, &powerdownya_direct_talk},
+    {NULL},
 };
 
 static BeroEntry bero_entry_data[2] = {
@@ -643,29 +777,6 @@ EVT_BEGIN(tik_11_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 xlw[16] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+static s32 xlw[16];
 
-// TODO: write enzan_set_f_i (static, 0x6c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write enzan_set_i_f (static, 0x54 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write enzan_cam_turn_keisan (static, 0x1f0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write wariai_enzan_0f (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write wariai_enzan_0 (static, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write wariai_enzan_1 (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_11.s; this is where the original has it, just before the first script that uses it
 // clang-format on

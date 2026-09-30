@@ -1,4 +1,18 @@
 #include "tik_05.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "driver/imgdrv.h"
+#include "driver/itemdrv.h"
+#include "driver/mapdrv.h"
+#include "eff/eff_mahojin.h"
+#include "eff/eff_itemget.h"
+#include "eff/eff_mist2.h"
+#include "eff/eff_starstone.h"
+#include "eff/n64/eff_pokopi_pcharge_n64.h"
+#include "eff/n64/eff_stardust2_n64.h"
+#include "eff/n64/eff_stardust_n64.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -21,7 +35,37 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "mario/mario_cam.h"
+#include "mario/mariost.h"
+#include "manager/evtmgr_cmd.h"
+#include "math_ext.h"
+#include "math_trig.h"
+
+// LOCAL_PROTO: inline MSL sqrtf; the SDK math.h drags in an overloaded sqrt.
+#define FP_NAN 1
+#define NAN (*(f32*)__float_nan)
+static inline f32 sqrtf(f32 x) {
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (__fpclassifyf(x) == FP_NAN) {
+        return NAN;
+    }
+    return x;
+}
+#include "memory.h"
 #include "party/party_motion.h"
+#include "system.h"
+#include "dolphin/exi.h"
+#include "dolphin/gx.h"
+#include "dolphin/gx/GXVert.h"
+#include "dolphin/mtx.h"
+#include "dolphin/os.h"
 
 #pragma pool_data off
 
@@ -33,10 +77,10 @@ static USER_FUNC(cam_kaiten_set_direct);
 static USER_FUNC(cam_kaiten_init);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(void);  // TODO: real signature
+static void alpha_tev(TevCallbackParam* param);
 static USER_FUNC(starstone_set_ry);
 s32 look_large_door[25];
-u32 broken_work[3];
+BrokenWork broken_work;
 
 // clang-format off
 extend_data(24,
@@ -117,11 +161,8 @@ static u32 npcEnt[46] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: write alpha_set_func (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
+const u32 zero_tik_00009b58 = 0x00000000;
 
-// TODO: write alpha_tev (static, 0x128 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(mahojin_alpha)
     CALL(evt_map_set_tevcallback, 1, PTR(alpha_tev))
@@ -339,8 +380,6 @@ EVT_BEGIN(mahojin_se_event_end)
     RETURN
 EVT_END()
 
-// TODO: write disp_lighteffect_func (global, 0x138 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(disp_lighteffect)
     LOOP(0)
@@ -351,8 +390,6 @@ EVT_BEGIN(disp_lighteffect)
     RETURN
 EVT_END()
 
-// TODO: write disp_treasure_map_func (global, 0x108 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(disp_treasure_map)
     LOOP(0)
@@ -368,57 +405,36 @@ u32 broken_wp[1] = {
     (u32)&broken_work,
 };
 
-// TODO: type
-u32 param_tbl[5] = {
-    0x42B40000, 0x41B80000, 0x3F7AE148, 0x419B3333,
-    0x40000000,
+f32 param_tbl[5] = {
+    90.0f, 23.0f, 0.98f, 19.4f,
+    2.0f,
 };
 
-// TODO: type
-u32 add_tbl[5] = {
-    0x3F800000, 0x3DCCCCCD, 0x3C23D70A, 0x3DCCCCCD,
-    0x3F800000,
+f32 add_tbl[5] = {
+    1.0f, 0.1f, 0.01f, 0.1f,
+    1.0f,
 };
+
+const u32 dat_tik_00009bb8 = 0xFFFFFF00;
 
 static char* name_tbl[5] = {
     "delay", "v0", "vscale", "pow", "vr",
 };
 
-// TODO: write cam_mahojin_kaiten_main (global, 0x1d0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
+const u32 dat_tik_00009bd8 = 0xFFFFFFFF;
+const u32 dat_tik_00009bdc = 0xFFFFFFFF;
 
-// TODO: write map_bgmode_end (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write map_bgmode (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write unk_tik_0000247c (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write tiz_broken (global, 0x760 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write tiz_stone (global, 0x110 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write img_alpha (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write effect_position (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write cam_kaiten_set_para (static, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write cam_kaiten_get_para (static, 0xf4 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write cam_kaiten_set_direct (static, 0x174 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write cam_kaiten_init (static, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
+
 
 EVT_BEGIN(evt_mapwrite)
     WAIT_MS(800)
@@ -801,11 +817,7 @@ EVT_BEGIN(fake_fade)
     RETURN
 EVT_END()
 
-// TODO: write eff_starstone_sound_off (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_get_position (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_starstone_up)
     WAIT_MS(500)
@@ -832,17 +844,9 @@ EVT_BEGIN(evt_starstone_up)
     RETURN
 EVT_END()
 
-// TODO: write starstone_setting (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_circle_link_func (global, 0x1cc bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_set_alpha (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_set_ry (static, 0xb4 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_starstone_set)
     WAIT_MS(7000)
@@ -881,8 +885,6 @@ EVT_BEGIN(evt_starstone_set)
     RETURN
 EVT_END()
 
-// TODO: write evtflash (static, 0x1c0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(mahojin_event)
     SET_VALUE(GW(15), 0)
@@ -1249,26 +1251,12 @@ EVT_BEGIN(lastdungeon)
     RETURN
 EVT_END()
 
-// TODO: write stardust_setting (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write pcharge_set_position (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kemuri_set_color (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kemuri_set_position (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write crystal_bgmode (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write mahojin_effect_alpha (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_set_position (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(mahojin_event7)
     CALL(evt_cam_letter_box_disable, 1)
@@ -1804,11 +1792,7 @@ EVT_BEGIN(mahojin_event7)
     RETURN
 EVT_END()
 
-// TODO: write is_dol_viewer (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write alpha_init_func (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(tik_05_init_evt)
     SET_VALUE(LW(0), PTR(bero_entry_data))
@@ -1890,34 +1874,898 @@ u32 select[1] = {
     0x00000000,
 };
 
-// TODO: type
-u32 broken_work[3] = {
-    0x00000000, 0x00000000, 0x00000000,
-};
+BrokenWork broken_work;
 
-// TODO: type
-static u32 ckpw[1] = {
-    0x00000000,
-};
+static CamKaiten* ckpw;
 
-// TODO: type
-static u32 ckp1[1] = {
-    0x00000000,
-};
+static CamKaiten* ckp1;
 
-// TODO: type
-static u32 ckp0[1] = {
-    0x00000000,
-};
+static CamKaiten* ckp0;
 
-// TODO: type
-static u32 _ap[1] = {
-    0x00000000,
-};
+static u8* _ap;
 
-// TODO: write tiz_broken_draw (global, 0x558 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write starstone_set_scale (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_05.s; this is where the original has it, just before the first script that uses it
+
+USER_FUNC(starstone_set_position) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+
+    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
+    ((effStarStoneData*)entry->userdata)->field_0xC = y;
+    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(starstone_get_position) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+    f32 y = data->field_0xC;
+    f32 z = data->field_0x10;
+
+    evtSetFloat(event, args[1], data->field_0x8);
+    evtSetFloat(event, args[2], y);
+    evtSetFloat(event, args[3], z);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (90.66%): instruction sequence matches; only the FPR/GR constant assignment and data-pool refs differ.
+static USER_FUNC(starstone_set_ry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 ry = evtGetFloat(event, args[1]);
+    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+
+    data->field_0x1C = ry - 360.0f * (s32)((s32)ry / 360);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(starstone_set_alpha) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    u8 alpha = evtGetValue(event, args[1]);
+    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+
+    data->field_0x5F = alpha;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(starstone_set_scale) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 scale = evtGetFloat(event, args[1]);
+    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+
+    data->field_0x14 = scale;
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (92.26%): logic and control flow match; the 360.0f temp and a few constant registers are allocated differently.
+USER_FUNC(starstone_circle_link_func) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 idx = (f32)(evtGetValue(event, args[1]) - 1);
+    f32 x = evtGetFloat(event, args[2]);
+    f32 y = evtGetFloat(event, args[3]);
+    f32 z = evtGetFloat(event, args[4]);
+    f32 angle = evtGetFloat(event, args[5]);
+    f32 radius = evtGetFloat(event, args[6]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+    f32 a = angle - 360.0f * (f32)((s32)angle / 360);
+    f32 rad = 6.2831855f * (360.0f * idx / 7.0f + a) / 360.0f;
+    f32 s = (f32)sin(rad);
+    f32 c = (f32)cos(rad);
+
+    ((effStarStoneData*)entry->userdata)->field_0x8 = s * radius + x;
+    ((effStarStoneData*)entry->userdata)->field_0xC = y;
+    ((effStarStoneData*)entry->userdata)->field_0x10 = -c * radius + z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(eff_starstone_sound_off) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+
+    data->field_0x4 &= ~4;
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.93%): only the stack slot for the local GXColor copy differs (0x8 vs 0xC); instructions otherwise identical.
+static void alpha_tev(TevCallbackParam* param) {
+    u32 stage = param->field_C;
+    u8* ap = _ap;
+    GXColor color;
+
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    color = *(GXColor*)&zero_tik_00009b58;
+    color.a = *ap;
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C = param->field_C + 1;
+}
+
+static USER_FUNC(alpha_init_func) {
+    _ap = _mapAlloc(1);
+    *_ap = 0xFF;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(alpha_set_func) {
+    s32* args = event->args;
+    *_ap = evtGetValue(event, args[0]);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(cam_kaiten_init) {
+    s32* args = event->args;
+    Vec a;
+    Vec p;
+    f32 dx;
+    f32 dz;
+    f32 dist;
+
+    ckp0 = _mapAlloc(0x20);
+    memset(ckp0, 0, 0x20);
+    ckp1 = _mapAlloc(0x20);
+    memset(ckp1, 0, 0x20);
+    ckpw = _mapAlloc(0x20);
+    memset(ckp1, 0, 0x20);
+
+    ckp0->pos.x = evtGetFloat(event, args[0]);
+    ckp0->pos.y = evtGetFloat(event, args[1]);
+    ckp0->pos.z = evtGetFloat(event, args[2]);
+    ckp0->at.x = evtGetFloat(event, args[3]);
+    ckp0->at.y = evtGetFloat(event, args[4]);
+    ckp0->at.z = evtGetFloat(event, args[5]);
+    ckp1->pos.x = evtGetFloat(event, args[6]);
+    ckp1->pos.y = evtGetFloat(event, args[7]);
+    ckp1->pos.z = evtGetFloat(event, args[8]);
+    ckp1->at.x = evtGetFloat(event, args[9]);
+    ckp1->at.y = evtGetFloat(event, args[10]);
+    ckp1->at.z = evtGetFloat(event, args[11]);
+
+    p = ckp0->pos;
+    a = ckp0->at;
+    a.y = 0.0f;
+    p.y = 0.0f;
+    dist = PSVECDistance(&p, &a);
+    dx = a.x - p.x;
+    dz = a.z - p.z;
+    ckp0->angle = 57.29579f * (f32)atan2(-dx, dz);
+    ckp0->dist = dist;
+
+    p = ckp1->pos;
+    a = ckp1->at;
+    a.y = 0.0f;
+    p.y = 0.0f;
+    dist = PSVECDistance(&p, &a);
+    dx = a.x - p.x;
+    dz = a.z - p.z;
+    ckp1->angle = 57.29579f * (f32)atan2(-dx, dz);
+    ckp1->dist = dist;
+
+    ckpw->pos = ckp0->pos;
+    ckpw->at = ckp0->at;
+    ckpw->angle = ckp0->angle;
+    ckpw->dist = ckp0->dist;
+
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(cam_kaiten_set_direct) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 s;
+    f32 c;
+
+    s = (f32)sin(6.2831855f * ckpw->angle / 360.0f);
+    c = (f32)cos(6.2831855f * ckpw->angle / 360.0f);
+    ckpw->pos.x = ckpw->at.x + ckpw->dist * s;
+    ckpw->pos.z = ckpw->at.z - ckpw->dist * c;
+
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    cam->storedPos = ckpw->pos;
+    cam->storedAt = ckpw->at;
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = 0;
+    cam->stateA = 3;
+    cam->curveA = 11;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(cam_kaiten_get_para) {
+    s32* args = event->args;
+    CamKaiten* kp;
+
+    switch (evtGetValue(event, args[0])) {
+    case 0:
+        kp = ckp0;
+        break;
+    case 1:
+        kp = ckp1;
+        break;
+    case 2:
+    default:
+        kp = ckpw;
+        break;
+    }
+
+    evtSetFloat(event, args[1], kp->pos.x);
+    evtSetFloat(event, args[2], kp->pos.y);
+    evtSetFloat(event, args[3], kp->pos.z);
+    evtSetFloat(event, args[4], kp->at.x);
+    evtSetFloat(event, args[5], kp->at.y);
+    evtSetFloat(event, args[6], kp->at.z);
+    evtSetFloat(event, args[7], kp->angle);
+    evtSetFloat(event, args[8], kp->dist);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(cam_kaiten_set_para) {
+    s32* args = event->args;
+    CamKaiten* kp;
+
+    switch (evtGetValue(event, args[0])) {
+    case 0:
+        kp = ckp0;
+        break;
+    case 1:
+        kp = ckp1;
+        break;
+    case 2:
+    default:
+        kp = ckpw;
+        break;
+    }
+
+    kp->pos.x = evtGetFloat(event, args[1]);
+    kp->pos.y = evtGetFloat(event, args[2]);
+    kp->pos.z = evtGetFloat(event, args[3]);
+    kp->at.x = evtGetFloat(event, args[4]);
+    kp->at.y = evtGetFloat(event, args[5]);
+    kp->at.z = evtGetFloat(event, args[6]);
+    kp->angle = evtGetFloat(event, args[7]);
+    kp->dist = evtGetFloat(event, args[8]);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.67%): near-identical; a handful of register assignments differ.
+USER_FUNC(disp_lighteffect_func) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    f32 angle = evtGetFloat(event, args[4]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+    f32 rad = 6.2831855f * -angle / 360.0f;
+    f32 s = (f32)sin(rad);
+    f32 c = (f32)cos(rad);
+
+    ((MahojinWork*)entry->userdata)->position.x = 30.0f * s + x;
+    ((MahojinWork*)entry->userdata)->position.y = y;
+    ((MahojinWork*)entry->userdata)->position.z = 30.0f * -c + z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(disp_treasure_map_func) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    f32 angle = evtGetFloat(event, args[4]);
+    u8 alpha = evtGetValue(event, args[5]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+
+    ((MahojinWork*)entry->userdata)->position.x = x;
+    ((MahojinWork*)entry->userdata)->position.y = y;
+    ((MahojinWork*)entry->userdata)->position.z = z;
+    *(f32*)&((MahojinWork*)entry->userdata)->alpha = 180.0f + angle;
+    ((MahojinWork*)entry->userdata)->field_0x14 = alpha;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mahojin_effect_alpha) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    u8 alpha = evtGetValue(event, args[1]);
+    MahojinWork* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+
+    data->alpha = alpha;
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.71%): near-identical; a handful of register/stack assignments differ.
+USER_FUNC(effect_position) {
+    ItemEntry* item = itemNameToPtr("item00");
+    CameraEntry* cam;
+    EffectEntry* entry;
+    f32 rad;
+    f32 s, c;
+
+    cam = camGetPtr(CAMERA_3D);
+    rad = -(6.2831855f * cam->viewYaw / 360.0f);
+    s = 5.0f * (f32)sin(rad);
+    c = 5.0f * (f32)cos(rad);
+    entry = effNameToPtr("map_wave");
+    if (entry != NULL) {
+        ((f32*)entry->userdata)[1] = item->position.x + s;
+        ((f32*)entry->userdata)[2] = item->position.y;
+        ((f32*)entry->userdata)[3] = item->position.z + c;
+    }
+    s = 10.0f * (f32)sin(rad);
+    c = 10.0f * (f32)cos(rad);
+    entry = effNameToPtr("map_map");
+    if (entry != NULL) {
+        ((f32*)entry->userdata)[1] = item->position.x + s;
+        ((f32*)entry->userdata)[2] = item->position.y;
+        ((f32*)entry->userdata)[3] = item->position.z + c;
+        cam = camGetPtr(CAMERA_3D);
+        ((f32*)entry->userdata)[8] = 180.0f - cam->viewYaw;
+        ((s32*)entry->userdata)[5] = evtGetValue(event, GW(11));
+        ((f32*)entry->userdata)[4] = 0.9f;
+    }
+    s = 15.0f * (f32)sin(rad);
+    c = 15.0f * (f32)cos(rad);
+    entry = effNameToPtr("map_ball");
+    if (entry != NULL) {
+        ((f32*)entry->userdata)[1] = item->position.x + s;
+        ((f32*)entry->userdata)[2] = item->position.y;
+        ((f32*)entry->userdata)[3] = item->position.z + c;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+// NONMATCHING (99.92%): only the stack slot for the local GXColor copy differs (0x8 vs 0xC); instructions otherwise identical.
+USER_FUNC(img_alpha) {
+    s32* args = event->args;
+    s32 alpha = evtGetValue(event, args[0]);
+    ImageEntry* entry = imgNameToPtr("img", gp->inBattle != 0);
+    Mtx trans;
+    Mtx scale;
+    Mtx rot;
+    GXColor color;
+
+    animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    color = *(GXColor*)&dat_tik_00009bb8;
+    color.a = alpha;
+    animPoseSetMaterialEvtColor(entry->poseId, color);
+    PSMTXTrans(trans, 0.0f, 1.5f, 0.0f);
+    PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
+    PSMTXRotRad(rot, 'x', -0.5235988f);
+    PSMTXConcat(trans, scale, trans);
+    PSMTXConcat(trans, rot, entry->field_0x120);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.85%): only the temp FPR used for (value-2^52)/10000.0f differs (f1 vs f31).
+USER_FUNC(tiz_stone) {
+    s32* args = event->args;
+    f32 t = (f32)evtGetValue(event, args[0]) / 10000.0f;
+    EffectEntry* entry;
+
+    entry = effNameToPtr("tiz_dust");
+    if (entry != NULL) {
+        effStardustN64SetDrawCam(entry, 7);
+    }
+    entry = effNameToPtr("tiz_stone");
+    if (entry != NULL) {
+        ((effStarStoneData*)entry->userdata)->field_0x38 = 7;
+        ((effStarStoneData*)entry->userdata)->field_0x5F = (u8)(255.0f * t);
+        ((effStarStoneData*)entry->userdata)->field_0x1C = 5.0f * (360.0f * t);
+    }
+    entry = effNameToPtr("tiz_dust2");
+    if (entry != NULL) {
+        effStardust2N64SetDrawCam(entry, 7);
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.87%): only the scheduling of the loop-increment `entry++` vs the strength-reduced
+// `j * 0x10` accumulator differs; instruction sequence and constants match.
+void tiz_broken_draw(CameraId camId, void* param) {
+    CameraEntry* cam = camGetPtr(camId);
+    GXTexObj texObj;
+    Mtx m1;
+    Mtx m0;
+    Mtx m2;
+    Mtx mtx;
+    f32 y;
+    f32 angle;
+    s32 j;
+    s32 i;
+    BrokenEntry* entry;
+
+    if (((BrokenWork*)broken_wp[0])->field_0x0 == 0) {
+        GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+        GXSetTexCopyDst(0x130, 0xF0, 5, 1);
+        GXCopyTex(((BrokenWork*)broken_wp[0])->field_0x4->address, 0);
+        GXPixModeSync();
+        ((BrokenWork*)broken_wp[0])->field_0x0 = 1;
+    }
+
+    GXSetNumChans(0);
+    GXInitTexObj(&texObj, ((BrokenWork*)broken_wp[0])->field_0x4->address, 0x130, 0xF0, 5, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetBlendMode(0, 1, 0, 7);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(13, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 13, 1, 4, 0);
+    GXSetCurrentMtx(0);
+    PSMTXIdentity(mtx);
+
+    entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->field_0x8->address;
+    for (i = 0; i < 0x1E; i++) {
+        y = 232.0f - (f32)(i * 0x10);
+        for (j = 0; j < 0x26; j++) {
+            if (entry->field_0x4 == 0) {
+                PSMTXScale(m0, 0.026315789f, 0.033333335f, 1.0f);
+                PSMTXTrans(m1, (f32)j, (f32)i, 0.0f);
+                PSMTXConcat(m0, m1, m1);
+                GXLoadTexMtxImm(m1, 0x1E, 1);
+                PSMTXTrans(m1, -296.0f + (f32)(j * 0x10), y, 0.0f);
+                switch (entry->field_0x8) {
+                case 0:
+                    angle = -45.0f;
+                    break;
+                case 1:
+                    angle = 45.0f;
+                    break;
+                case 2:
+                    angle = 225.0f;
+                    break;
+                case 3:
+                    angle = 135.0f;
+                    break;
+                }
+                PSMTXTrans(m2, entry->x, entry->y, entry->z);
+                PSMTXConcat(m1, m2, m1);
+                PSMTXRotRad(m2, 'z', 0.017453292f * angle);
+                PSMTXConcat(m1, m2, m1);
+                PSMTXRotRad(m2, 'y', 0.017453292f * entry->field_0x24);
+                PSMTXConcat(m1, m2, m1);
+                PSMTXRotRad(m2, 'z', 0.017453292f * -angle);
+                PSMTXConcat(m1, m2, m1);
+                PSMTXConcat(cam->view, m1, m1);
+                GXLoadPosMtxImm(m1, 0);
+                GXBegin(0x80, 0, 4);
+                GXPosition3f32(-8.0f, 8.0f, 0.0f);
+                GXTexCoord2f32(0.0f, 0.0f);
+                GXPosition3f32(8.0f, 8.0f, 0.0f);
+                GXTexCoord2f32(1.0f, 0.0f);
+                GXPosition3f32(8.0f, -8.0f, 0.0f);
+                GXTexCoord2f32(1.0f, 1.0f);
+                GXPosition3f32(-8.0f, -8.0f, 0.0f);
+                GXTexCoord2f32(0.0f, 1.0f);
+            }
+            entry++;
+        }
+        entry++;
+    }
+}
+
+// NONMATCHING (65.41%): logic follows the asm; register/stack allocation and the sqrtf/sincos constant pool differ.
+USER_FUNC(tiz_broken) {
+    s32 active = 0;
+    BrokenWork* work;
+    BrokenEntry* entry;
+    s32 i;
+    s32 j;
+    f32 f0, f1, f2, f3, f4, f5, f6, f7;
+    f32 angle;
+    f32 rad;
+
+    if (isFirstCall) {
+        memset(&broken_work, 0, 0xC);
+        broken_work.field_0x4 = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
+        broken_work.field_0x8 = smartAlloc(0xF594, 1);
+        broken_work.field_0x0 = 0;
+
+        work = &broken_work;
+        entry = (BrokenEntry*)work->field_0x8->address;
+        for (i = 0; i < 0x1E; i++) {
+            for (j = 0; j < 0x26; j++) {
+                f3 = (f32)j / 37.0f - 0.5f;
+                f4 = 0.5f + (f32)i / 29.0f;
+                if (f4 > 0.0f) {
+                    entry->field_0x8 = (f3 >= 0.0f) ? 1 : 0;
+                } else {
+                    entry->field_0x8 = (f3 >= 0.0f) ? 3 : 2;
+                }
+                if (f3 == 0.0f && f4 == 0.0f) {
+                    f7 = 0.0f;
+                    f0 = 0.0f;
+                    f2 = 0.0f;
+                } else {
+                    f6 = f4 * f4 + f3 * f3;
+                    f7 = sqrtf(f6);
+                    f0 = f3 / f7;
+                    f2 = f4 / f7;
+                }
+                entry->field_0x0 = 0;
+                entry->field_0x4 = (s32)(param_tbl[0] * f7);
+                entry->x = 0.0f;
+                entry->y = 0.0f;
+                entry->z = 0.0f;
+                entry->field_0x28 = 0.0f;
+                entry->field_0x24 = 0.0f;
+                entry->field_0xC = -f0 * param_tbl[1];
+                entry->field_0x10 = -f2 * param_tbl[1];
+                entry->field_0x14 = 10.0f;
+                f0 = 0.00761f;
+                f5 = 0.16605f;
+                angle = angleABf(0.0f, 0.0f, f3, f4);
+                rad = 6.2831855f * angle / 360.0f;
+
+                if (rad <= 3.1415927f) {
+                    if (rad <= 1.5707964f) {
+                        f1 = rad * rad;
+                        f6 = (f0 * f1) - f5;
+                        f6 = (f6 * f1) + 1.0f;
+                        f6 = f6 * rad;
+                    } else {
+                        f1 = rad - 1.5707964f;
+                        f1 = 1.5707964f - f1;
+                        f2 = f1 * f1;
+                        f6 = (f0 * f2) - f5;
+                        f6 = (f6 * f2) + 1.0f;
+                        f6 = f6 * f1;
+                    }
+                } else {
+                    if (rad < 4.712389f) {
+                        f1 = rad - 3.1415927f;
+                        f2 = f1 * f1;
+                        f6 = (f0 * f2) - f5;
+                        f6 = (f6 * f2) + 1.0f;
+                        f6 = -(f6 * f1);
+                    } else {
+                        f1 = rad - 4.712389f;
+                        f1 = 1.5707964f - f1;
+                        f2 = f1 * f1;
+                        f6 = (f0 * f2) - f5;
+                        f6 = (f6 * f2) + 1.0f;
+                        f6 = -(f6 * f1);
+                    }
+                }
+                entry->field_0x2C = param_tbl[3] * f6;
+
+                f6 = 0.03705f;
+                if (rad <= 3.1415927f) {
+                    if (rad <= 1.5707964f) {
+                        f1 = rad * rad;
+                        f6 = (f6 * f1) - 0.4967f;
+                        f6 = (f6 * f1) + 1.0f;
+                    } else {
+                        f1 = rad - 1.5707964f;
+                        f1 = 1.5707964f - f1;
+                        f2 = f1 * f1;
+                        f6 = (f6 * f2) - 0.4967f;
+                        f6 = (f6 * f2) + 1.0f;
+                        f6 = -f6;
+                    }
+                } else {
+                    if (rad < 4.712389f) {
+                        f1 = rad - 3.1415927f;
+                        f2 = f1 * f1;
+                        f6 = (f6 * f2) - 0.4967f;
+                        f6 = (f6 * f2) + 1.0f;
+                        f6 = -f6;
+                    } else {
+                        f1 = rad - 4.712389f;
+                        f1 = 1.5707964f - f1;
+                        f2 = f1 * f1;
+                        f6 = (f6 * f2) - 0.4967f;
+                        f6 = (f6 * f2) + 1.0f;
+                    }
+                }
+                entry->field_0x30 = param_tbl[3] * -f6;
+                entry++;
+            }
+            entry++;
+        }
+    }
+
+    work = &broken_work;
+    entry = (BrokenEntry*)work->field_0x8->address;
+    for (i = 0; i < 0x1E; i++) {
+        for (j = 0; j < 0x26; j++) {
+            switch (entry->field_0x0) {
+            case 0:
+                if (entry->field_0x4 != 0) {
+                    entry->field_0x4--;
+                } else {
+                    entry->x += entry->field_0x2C;
+                    entry->y += entry->field_0x30;
+                    entry->x += entry->field_0xC;
+                    entry->y += entry->field_0x10;
+                    entry->z += entry->field_0x14;
+                    entry->field_0xC *= param_tbl[2];
+                    entry->field_0x10 *= param_tbl[2];
+                    entry->field_0x14 *= param_tbl[2];
+                    entry->field_0x28 += param_tbl[4];
+                    entry->field_0x24 += entry->field_0x28;
+                    if (fabs(entry->x) > 340.0 || fabs(entry->y) > 260.0) {
+                        entry->field_0x0++;
+                    }
+                }
+                break;
+            case 1:
+                active++;
+                break;
+            }
+            entry++;
+        }
+        entry++;
+    }
+
+    if (active >= 0x474) {
+        smartFree(broken_work.field_0x4);
+        smartFree(broken_work.field_0x8);
+        return EVT_RETURN_DONE;
+    }
+    dispEntry(8, 0.0f, 0, tiz_broken_draw, NULL);
+    return EVT_RETURN_BLOCK;
+}
+
+static USER_FUNC(evtflash) {
+    s32* args = event->args;
+    s32 arg0 = evtGetValue(event, args[0]);
+    s32 arg1 = evtGetValue(event, args[1]);
+    s32 arg2 = evtGetValue(event, args[2]);
+    GXColor color;
+
+    if (isFirstCall) {
+        event->userdata[2] = 0;
+    }
+    switch (event->userdata[2]) {
+    case 0:
+        color = *(GXColor*)&dat_tik_00009bd8;
+        fadeEntry(10, arg0, color);
+        event->userdata[2]++;
+    case 1:
+        if (fadeIsFinish() != TRUE) {
+            return EVT_RETURN_BLOCK;
+        }
+        event->userdata[0] = arg1;
+        event->savedTime = (s32)gp->renderTime;
+        event->userdata[2]++;
+        if (event->userdata[0] == 0) {
+            event->userdata[2]++;
+        }
+        return EVT_RETURN_BLOCK;
+    case 2: {
+        u32 elapsed = (u32)((s32)gp->renderTime - (s32)event->savedTime) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < (u32)event->userdata[0]) {
+            return EVT_RETURN_BLOCK;
+        }
+        event->userdata[2]++;
+        return EVT_RETURN_BLOCK;
+    }
+    case 3:
+        color = *(GXColor*)&dat_tik_00009bdc;
+        fadeEntry(9, arg2, color);
+        event->userdata[2]++;
+    case 4:
+        if (fadeIsFinish() != TRUE) {
+            return EVT_RETURN_BLOCK;
+        }
+        return EVT_RETURN_DONE;
+    default:
+        return EVT_RETURN_DONE;
+    }
+}
+
+USER_FUNC(unk_tik_0000247c) {
+    s32* args = event->args;
+    if (evtGetValue(event, args[0]) != 0) {
+        N_mapDispOn();
+    } else {
+        N_mapDispOff();
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(crystal_bgmode) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+
+    ((effItemGetData*)entry->userdata)->field_0x38 = 5;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(map_bgmode) {
+    s32* args = event->args;
+    s32 name1 = evtGetValue(event, args[0]);
+    s32 name2 = evtGetValue(event, args[1]);
+    EffectEntry* entry = effNameToPtr((char*)name1);
+
+    ((effItemGetData*)entry->userdata)->field_0x38 = 5;
+    ((effItemGetData*)entry->userdata)->field_0x14 = 4.3f;
+    entry = effNameToPtr((char*)name2);
+    *(s32*)&((effItemGetData*)entry->userdata)->field_0x28 = 5;
+    marioSetCamId(5);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(map_bgmode_end) {
+    s32* args = event->args;
+    s32 name1 = evtGetValue(event, args[0]);
+    s32 name2 = evtGetValue(event, args[1]);
+    EffectEntry* entry = effNameToPtr((char*)name1);
+    effItemGetData* data = entry->userdata;
+
+    data->field_0x38 = 4;
+    entry = effNameToPtr((char*)name2);
+    *(s32*)&((effItemGetData*)entry->userdata)->field_0x28 = 4;
+    marioSetCamId(4);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (91.5%): logic follows the asm; loop-variable and parameter registers are allocated differently.
+USER_FUNC(cam_mahojin_kaiten_main) {
+    s32* args = event->args;
+    f32 start = evtGetFloat(event, args[0]);
+    f32 end = evtGetFloat(event, args[1]);
+    s32 duration = evtGetValue(event, args[2]);
+    s32 frames = sysMsec2Frame(duration);
+    s32 active = 1;
+    f32 value;
+    f32 curve = 0.0f;
+    f32 step = 0.0f;
+    s32 i;
+    s32 up;
+    s32 down;
+
+    if (event->lwData[15] == 0) {
+        event->lwData[14] = 0;
+        event->lwData[15] = 1;
+        event->savedTime = gp->renderTime;
+    }
+
+    up = frames * 20 / 100;
+    down = frames * 80 / 100;
+    for (i = 0; i < frames; i++) {
+        if (i <= up) {
+            step += 1.0f;
+        } else if (i >= down) {
+            step -= 1.0f;
+        }
+        curve += step;
+        if (i == event->lwData[14]) {
+            value = curve;
+        }
+    }
+
+    {
+        u32 elapsed = (u32)((s32)gp->renderTime - (s32)event->savedTime) / (OS_TIMER_CLOCK / 1000);
+        if ((s32)elapsed > duration) {
+            elapsed = duration;
+        }
+        event->lwData[14] = sysMsec2Frame(elapsed);
+    }
+    if (frames == event->lwData[14]) {
+        active = 0;
+    }
+
+    evtSetFloat(event, args[3], start + (value * (end - start)) / curve);
+    evtSetValue(event, args[4], active);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(starstone_setting) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+    EffectEntry* e1 = effNameToPtr((char*)name);
+    EffectEntry* e2 = effNameToPtr("mahojin");
+    effStarStoneData* d1 = e1->userdata;
+
+    d1->field_0x4 |= 0x20;
+    ((MahojinWork*)e2->userdata)[index + 2].field_0x28 = e1;
+    ((MahojinWork*)e2->userdata)[index + 2].field_0x2C = (void (*)(CameraId, void*))effStarStoneDraw;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kemuri_set_position) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+
+    ((EffMist2Data*)entry->userdata)->x = x;
+    ((EffMist2Data*)entry->userdata)->y = y;
+    ((EffMist2Data*)entry->userdata)->z = z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kemuri_set_color) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    u8 r = evtGetValue(event, args[1]);
+    u8 g = evtGetValue(event, args[2]);
+    u8 b = evtGetValue(event, args[3]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+
+    ((EffMist2Data*)entry->userdata)->unk38 = r;
+    ((EffMist2Data*)entry->userdata)->unk39 = g;
+    ((EffMist2Data*)entry->userdata)->unk3A = b;
+    ((EffMist2Data*)entry->userdata)->unk18 = 1.0f + (f32)irand(0x1E) / 10.0f;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(pcharge_set_position) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* entry = effNameToPtr((char*)name);
+
+    ((effPokopiPchargeData*)entry->userdata)->x = x;
+    ((effPokopiPchargeData*)entry->userdata)->y = y;
+    ((effPokopiPchargeData*)entry->userdata)->z = z;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(stardust_setting) {
+    s32* args = event->args;
+    s32 name1 = evtGetValue(event, args[0]);
+    s32 name2 = evtGetValue(event, args[1]);
+    EffectEntry* e1 = effNameToPtr((char*)name1);
+    EffectEntry* e2 = effNameToPtr((char*)name2);
+
+    effStardustN64SetDrawCam(e1, 5);
+    effStardustN64SetDrawCam(e2, 5);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(is_dol_viewer) {
+    u32 type;
+
+    EXIGetType(0, 2, &type);
+    if (type == EXI_IS_VIEWER) {
+        animPoseRelease(animPoseEntry("MOBJ_EFF_las_mon", 0));
+        animPoseRelease(animPoseEntry("EFF_treasure_map", 0));
+        animPoseRelease(animPoseEntry("MOBJ_EFF_mahojin_omote", 0));
+        animPoseRelease(animPoseEntry("MOBJ_EFF_mahojin_ura", 0));
+        animPoseRelease(animPoseEntry("MOBJ_EFF_laser", 0));
+        animPoseRelease(animPoseEntry("OFF_d_tizu_tex", 0));
+        animPoseRelease(animPoseEntry("TIZ_stg_1", 0));
+        animPoseRelease(animPoseEntry("TIZ_stg_2", 0));
+        animPoseRelease(animPoseEntry("TIZ_stg_3", 0));
+        animPoseRelease(animPoseEntry("TIZ_stg_4", 0));
+        animPoseRelease(animPoseEntry("TIZ_stg_5", 0));
+        animPoseRelease(animPoseEntry("TIZ_stg_6", 0));
+        animPoseRelease(animPoseEntry("TIZ_stg_7", 0));
+    }
+    return EVT_RETURN_DONE;
+}
+
 // clang-format on

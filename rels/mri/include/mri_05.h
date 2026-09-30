@@ -1,6 +1,9 @@
 #pragma once
 
+#include "driver/effdrv.h"
 #include "evt/evt_cmd.h"
+
+extern EffectEntry* marioeff;
 
 USER_FUNC(mario_shabon_init);
 USER_FUNC(mario_shabon_eff);

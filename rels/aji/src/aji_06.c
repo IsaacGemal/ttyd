@@ -1,4 +1,5 @@
 #include "aji_06.h"
+#include "dolphin/gx.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -17,6 +18,11 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "driver/mapdrv.h"
+#include "eff/eff_mahojin.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
 #include "party/party_motion.h"
 
 #pragma pool_data off
@@ -27,7 +33,11 @@ s32 peach_evt_pato_on[46];
 s32 peach_evt_pato_off[18];
 s32 peach_evt_tyogo_entry[6];
 s32 peach_evt_wait_memo[18];
+u32 yuka_anim[2];
 u32 g_Kusuri1_No[1];
+s32 g_Kusuri_B[1];
+s32 g_Kusuri_G[1];
+s32 g_Kusuri_R[1];
 
 // clang-format off
 extend_data(24,
@@ -88,26 +98,20 @@ static BeroEntry bero_peach_data[2] = {
     {NULL},
 };
 
-// TODO: type
-u8 g_Kusuri_Col[4] = {
-    0x00, 0x00, 0x00, 0xFF,
-};
+GXColor g_Kusuri_Col = {0x00, 0x00, 0x00, 0xFF};
 
-// TODO: type
-u32 g_Kusuri_Src_Col[4] = {
-    0xFF0000FF, 0x0000FFFF, 0xFFFF00FF, 0x00FF00FF,
+GXColor g_Kusuri_Src_Col[4] = {
+    {0xFF, 0x00, 0x00, 0xFF}, {0x00, 0x00, 0xFF, 0xFF}, {0xFF, 0xFF, 0x00, 0xFF}, {0x00, 0xFF, 0x00, 0xFF},
 };
 
 EVT_BEGIN(g_Kusuri2_No)
 EVT_END()
 
-// TODO: type
-u32 g_Kusuri3_No[1] = {
+s32 g_Kusuri3_No[1] = {
     0x00000002,
 };
 
-// TODO: type
-u32 g_Kusuri4_No[1] = {
+s32 g_Kusuri4_No[1] = {
     0x00000003,
 };
 
@@ -182,31 +186,312 @@ EVT_BEGIN(peach_evt_kaihei_close_all)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 kusuri_tyogo_list[8] = {
+s32 kusuri_tyogo_list[8] = {
     0x00000001, 0x00000002, 0x00000003, 0x00000002,
     0x00000003, 0x00000001, 0x00000003, 0x00000004,
 };
 
-// TODO: type
-u32 kusuri_list[5] = {
+s32 kusuri_list[5] = {
     0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
     0xFFFFFFFF,
 };
 
-// TODO: type
-u32 kusuri_id[4] = {
+s32 kusuri_id[4] = {
     0x00000066, 0x00000065, 0x00000067, 0x00000068,
 };
 
-// TODO: write kusuri_list_get_no (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kusuri_color_init) {
+    g_Kusuri_Col.r = 0;
+    g_Kusuri_Col.g = 0;
+    g_Kusuri_Col.b = 0;
+    g_Kusuri_R[0] = 0;
+    g_Kusuri_G[0] = 0;
+    g_Kusuri_B[0] = 0;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write kusuri_list_add (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kusuri_color_set) {
+    s32* args = event->args;
+    s32 no = evtGetValue(event, args[0]);
+    s32 time = evtGetValue(event, args[1]);
+    OSTime now = gp->renderTime;
+    s32 elapsed;
+    f32 t;
+    s32 flag;
+    s32 cr, cg, cb;
 
-// TODO: write kusuri_list_init (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        event->lwData[8] = time;
+        event->lwData[9] = (g_Kusuri_Col.r << 16) | (g_Kusuri_Col.g << 8) | g_Kusuri_Col.b;
+        event->userdata[0] = ((u64)now >> 32) & 0xFFFFFFFF;
+        event->userdata[1] = now & 0xFFFFFFFF;
+    }
+    elapsed = OSTicksToMilliseconds((u64)(s32)((s32)now - event->userdata[1]));
+    if (elapsed < event->lwData[8]) {
+        t = (f32)elapsed / (f32)event->lwData[8];
+        flag = 0;
+    } else {
+        t = 1.0f;
+        flag = 1;
+    }
+    cr = (s32)(t * g_Kusuri_Src_Col[no - 1].r + g_Kusuri_R[0]);
+    cg = (s32)(t * g_Kusuri_Src_Col[no - 1].g + g_Kusuri_G[0]);
+    cb = (s32)(t * g_Kusuri_Src_Col[no - 1].b + g_Kusuri_B[0]);
+    if (cr > cg) {
+        if (cr > cb) {
+            g_Kusuri_Col.r = 255;
+            g_Kusuri_Col.g = 255.0f * ((f32)cg / (f32)cr);
+            g_Kusuri_Col.b = 255.0f * ((f32)cb / (f32)cr);
+        } else {
+            g_Kusuri_Col.r = 255.0f * ((f32)cr / (f32)cb);
+            g_Kusuri_Col.g = 255.0f * ((f32)cg / (f32)cb);
+            g_Kusuri_Col.b = 255;
+        }
+    } else {
+        if (cg > cb) {
+            g_Kusuri_Col.r = 255.0f * ((f32)cr / (f32)cg);
+            g_Kusuri_Col.g = 255;
+            g_Kusuri_Col.b = 255.0f * ((f32)cb / (f32)cg);
+        } else {
+            g_Kusuri_Col.r = 255.0f * ((f32)cr / (f32)cb);
+            g_Kusuri_Col.g = 255.0f * ((f32)cg / (f32)cb);
+            g_Kusuri_Col.b = 255;
+        }
+    }
+    if (flag) {
+        g_Kusuri_R[0] = cr;
+        g_Kusuri_G[0] = cg;
+        g_Kusuri_B[0] = cb;
+    }
+    if (flag) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(kusuri_color_set_rgb) {
+    s32* args = event->args;
+    s32 r = evtGetValue(event, args[0]);
+    s32 g = evtGetValue(event, args[1]);
+    s32 b = evtGetValue(event, args[2]);
+
+    g_Kusuri_Col.r = r;
+    g_Kusuri_Col.g = g;
+    g_Kusuri_Col.b = b;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kusuri_color_get) {
+    s32* args = event->args;
+
+    evtSetValue(event, args[0], g_Kusuri_Col.r);
+    evtSetValue(event, args[1], g_Kusuri_Col.g);
+    evtSetValue(event, args[2], g_Kusuri_Col.b);
+    return EVT_RETURN_DONE;
+}
+
+void kusuri_naka_color_tev(TevCallbackParam* param) {
+    GXColor color;
+
+    GXSetTevOrder(0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(0, GX_CC_C0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+    GXSetTevAlphaIn(0, GX_CA_RASA, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+    color = g_Kusuri_Col;
+    GXSetTevColor(GX_TEVREG0, color);
+    param->field_C = 1;
+    param->field_14 = 0;
+    param->field_10 = 0;
+}
+
+void kusuri_1_color_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    GXColor color;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_C0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+    color = g_Kusuri_Src_Col[g_Kusuri1_No[0]];
+    GXSetTevColor(GX_TEVREG0, color);
+    param->field_C++;
+}
+
+void kusuri_2_color_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    GXColor color;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_C0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+    color = g_Kusuri_Src_Col[g_Kusuri2_No[0]];
+    GXSetTevColor(GX_TEVREG0, color);
+    param->field_C++;
+}
+
+void kusuri_3_color_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    GXColor color;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_C0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+    color = g_Kusuri_Src_Col[g_Kusuri3_No[0]];
+    GXSetTevColor(GX_TEVREG0, color);
+    param->field_C++;
+}
+
+void kusuri_4_color_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    GXColor color;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_C0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_APREV, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+    color = g_Kusuri_Src_Col[g_Kusuri4_No[0]];
+    GXSetTevColor(GX_TEVREG0, color);
+    param->field_C++;
+}
+
+USER_FUNC(kusuri_list_init) {
+    s32 i;
+
+    for (i = 0; i < 5; i++) {
+        kusuri_list[i] = -1;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kusuri_list_add) {
+    s32 id = evtGetValue(event, event->args[0]);
+    s32 i = 0;
+
+    while (kusuri_list[i] != -1) {
+        i++;
+    }
+    kusuri_list[i] = kusuri_id[id - 1];
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kusuri_list_get_no) {
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+    s32 i = 0;
+
+    while (id != kusuri_id[i]) {
+        i++;
+    }
+    evtSetValue(event, args[1], i + 1);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(peach_evt_seikai_check) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+    s32 color = evtGetValue(event, args[1]);
+
+    if (color == kusuri_tyogo_list[idx]) {
+        evtSetValue(event, args[2], 1);
+    } else {
+        evtSetValue(event, args[2], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(peach_set_scale) {
+    MarioWork* mario;
+    f32 scale = evtGetFloat(event, event->args[0]);
+
+    mario = marioGetPtr();
+    mario->scale.x = scale;
+    mario->scale.y = scale;
+    mario->scale.z = scale;
+    mario->wPlayerCollisionBox.x = 20.0f * scale;
+    mario->wPlayerCollisionBox.y = 47.0f * scale;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(peach_evt_toumei_onoff) {
+    s32* args = event->args;
+    MarioWork* mario = marioGetPtr();
+
+    if (evtGetValue(event, args[0]) != 0) {
+        mario->scale.x = 0.0f;
+        mario->scale.y = 0.0f;
+        mario->scale.z = 0.0f;
+    } else {
+        mario->scale.x = 1.0f;
+        mario->scale.y = 1.0f;
+        mario->scale.z = 1.0f;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(peach_chg_pose) {
+    marioChgPose((const char*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuka_anim_reverse_play) {
+    OSTime now;
+
+    if (isFirstCall) {
+        yuka_anim[0] = (u32)mapSearchAnmObj("yuka");
+        yuka_anim[1] = 0;
+        *(OSTime*)((u8*)(MapEntryAnimData*)yuka_anim[0] + 0x8) =
+            OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
+        *(u16*)((u8*)(MapEntryAnimData*)yuka_anim[0]) |= 0x10;
+        *(u16*)((u8*)(MapEntryAnimData*)yuka_anim[0]) &= ~0x20;
+    }
+    if (yuka_anim[1] & 2) {
+        return EVT_RETURN_DONE;
+    }
+    if (!(yuka_anim[1] & 1)) {
+        MapEntryAnimData* anim;
+        f32 rate;
+        f32 frame;
+
+        now = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
+        anim = (MapEntryAnimData*)yuka_anim[0];
+        rate = *(f32*)((u8*)anim + 0x14);
+        frame = 60.0f * (f32)(u64)(now - *(OSTime*)((u8*)anim + 0x8)) / 1000.0f;
+        *(f32*)((u8*)anim + 0x10) -= frame * rate;
+        if (*(f32*)((u8*)(MapEntryAnimData*)yuka_anim[0] + 0x10) <= 0.0f) {
+            MapEntryAnimData* anim = (MapEntryAnimData*)yuka_anim[0];
+            f32 localTime = *(f32*)((u8*)anim + 0x10);
+            while (localTime < 0.0f) {
+                localTime += *(f32*)(*(u8**)((u8*)anim + 0x18) + 8);
+            }
+            *(f32*)((u8*)anim + 0x10) = localTime;
+        }
+    }
+    *(OSTime*)((u8*)(MapEntryAnimData*)yuka_anim[0] + 0x8) =
+        OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(yuka_anim_reverse_replay) {
+    yuka_anim[1] &= ~1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuka_anim_reverse_pause) {
+    yuka_anim[1] |= 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuka_anim_reverse_end) {
+    yuka_anim[1] |= 2;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(peach_evt_kusuri_select)
     CALL(kusuri_list_init)
@@ -292,9 +577,6 @@ EVT_BEGIN(peach_evt_check_all_kusuri_set)
     RETURN
 EVT_END()
 
-// TODO: write kusuri_color_set (global, 0x4b8 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(peach_evt_kusuri_dasu)
     SET_VALUE(LW(5), LW(0))
     SET_VALUE(LW(6), LW(1))
@@ -356,9 +638,6 @@ EVT_BEGIN(peach_evt_seikai_evt)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write peach_evt_seikai_check (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(peach_evt_kaihei1)
     CALL(evt_cam_letter_box_disable, 1)
@@ -719,9 +998,6 @@ EVT_BEGIN(peach_evt_hari_off)
     RETURN
 EVT_END()
 
-// TODO: write peach_set_scale (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(peach_evt_sugata_modoru)
     WAIT_MS(15000)
     SWITCH(LSW(5))
@@ -752,12 +1028,6 @@ EVT_BEGIN(peach_evt_sugata_modoru)
     END_SWITCH
     RETURN
 EVT_END()
-
-// TODO: write peach_chg_pose (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write peach_evt_toumei_onoff (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(peach_evt_kusuri_nomu)
     CALL(evt_mario_key_onoff, 0)
@@ -864,9 +1134,6 @@ EVT_BEGIN(peach_evt_kusuri_nomu)
     RETURN
 EVT_END()
 
-// TODO: write kusuri_color_set_rgb (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(kusuri_color_seiko)
     SET_VALUE(LW(0), 0)
     SET_VALUE(LW(1), 255)
@@ -889,9 +1156,6 @@ EVT_BEGIN(kusuri_color_seiko)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write kusuri_color_get (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kusuri_color_sippai)
     CALL(kusuri_color_get, LW(0), LW(1), LW(2))
@@ -929,7 +1193,6 @@ EVT_BEGIN(kusuri_color_sippai)
     RETURN
 EVT_END()
 
-// TODO: type
 u32 peach_evt_bika_move_data[33] = {
     0x00000000, 0x0000004D, 0x00000906, 0x00000000,
     0x00000000, 0x0000008D, 0x00000780, 0x00000001,
@@ -941,15 +1204,6 @@ u32 peach_evt_bika_move_data[33] = {
     0x00000000, 0x0000010A, 0x00000762, 0x00000003,
     0x00000000,
 };
-
-// TODO: write yuka_anim_reverse_end (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write yuka_anim_reverse_play (global, 0x218 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kusuri_color_init (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(peach_evt_tyogo_sub)
     CALL(evt_mario_key_onoff, 0)
@@ -1369,21 +1623,6 @@ EVT_BEGIN(peach_evt_memo4)
     RETURN
 EVT_END()
 
-// TODO: write kusuri_4_color_tev (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kusuri_3_color_tev (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kusuri_2_color_tev (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kusuri_1_color_tev (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kusuri_naka_color_tev (global, 0xd4 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(peach_evt_stg5)
     CALL(evt_mario_key_onoff, 0)
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_dami"), 1)
@@ -1720,34 +1959,4 @@ EVT_BEGIN(aji_06_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 g_Kusuri_R[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 g_Kusuri_G[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 g_Kusuri_B[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 g_Kusuri1_No[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 yuka_anim[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: write yuka_anim_reverse_pause (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write yuka_anim_reverse_replay (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_06.s; this is where the original has it, just before the first script that uses it
 // clang-format on

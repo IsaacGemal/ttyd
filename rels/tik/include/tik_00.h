@@ -1,17 +1,18 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "eff/eff_mahojin.h"
 
-void mario_key_onoff_wait(void);  // TODO: real signature
+USER_FUNC(mario_key_onoff_wait);
 USER_FUNC(unk_tik_00000598);
 USER_FUNC(unk_tik_000005c0);
 USER_FUNC(unk_tik_000005e8);
 USER_FUNC(card_camid);
-void card_xlu(void);  // TODO: real signature
+USER_FUNC(card_xlu);
 USER_FUNC(uranai_bbox);
-void card_tev(void);  // TODO: real signature
+void card_tev(TevCallbackParam* param);
 USER_FUNC(uranai_cap_evt);
-void uranai_cap(void);  // TODO: real signature
+void uranai_cap(CameraId cameraId, void* param);
 USER_FUNC(uranai_exit_func);
 USER_FUNC(uranai_init_func);
 USER_FUNC(evt_uranaisi_msg_set);

@@ -1,10 +1,11 @@
 #pragma once
 
+#include "eff/eff_mahojin.h"
 #include "evt/evt_cmd.h"
 
 USER_FUNC(yuka_anim_reverse_end);
-void yuka_anim_reverse_pause(void);  // TODO: real signature
-void yuka_anim_reverse_replay(void);  // TODO: real signature
+USER_FUNC(yuka_anim_reverse_pause);
+USER_FUNC(yuka_anim_reverse_replay);
 USER_FUNC(yuka_anim_reverse_play);
 USER_FUNC(peach_chg_pose);
 USER_FUNC(peach_evt_toumei_onoff);
@@ -13,11 +14,11 @@ USER_FUNC(peach_evt_seikai_check);
 USER_FUNC(kusuri_list_get_no);
 USER_FUNC(kusuri_list_add);
 USER_FUNC(kusuri_list_init);
-void kusuri_4_color_tev(void);  // TODO: real signature
-void kusuri_3_color_tev(void);  // TODO: real signature
-void kusuri_2_color_tev(void);  // TODO: real signature
-void kusuri_1_color_tev(void);  // TODO: real signature
-void kusuri_naka_color_tev(void);  // TODO: real signature
+void kusuri_4_color_tev(TevCallbackParam* param);
+void kusuri_3_color_tev(TevCallbackParam* param);
+void kusuri_2_color_tev(TevCallbackParam* param);
+void kusuri_1_color_tev(TevCallbackParam* param);
+void kusuri_naka_color_tev(TevCallbackParam* param);
 USER_FUNC(kusuri_color_get);
 USER_FUNC(kusuri_color_set_rgb);
 USER_FUNC(kusuri_color_set);

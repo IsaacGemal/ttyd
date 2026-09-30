@@ -245,6 +245,8 @@ NpcEntry* npcNameToPtr(const char* name);
 NpcEntry* npcNameToPtr_NoAssert(const char* name);
 
 FieldBattleData* fbatGetPointer(void);
+void fbatSetAttackAnnounce(s32 a1);
+void fbatSetAttackAnnounceEnable(void);
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id);
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId);
@@ -285,6 +287,7 @@ f32 npcTransRytoFaceDir(NpcEntry* npc);
 s32 npcCheckBlow(NpcEntry* npc);
 void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history);
 void npcSetStayPose(const char* name);
+void npcSetTalkPose(const char* name);
 void _npcDead(NpcEntry* entry, s32 type);
 NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius);
 void npcKoopaModeEncountCheck(void);

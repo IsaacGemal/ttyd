@@ -1,12 +1,22 @@
 #include "nok.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_npc.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "nok_00.h"
+#include "nok_01.h"
+#include <dolphin/mtx.h>
 
 #pragma pool_data off
 
 #pragma force_active on
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
 
 // clang-format off
 extend_data(0,
@@ -31,8 +41,8 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write evt_nokonoko_urouro_check_func (global, 0x148 bytes) here:
-// its asm is in build/G8MJ01/nok/asm/nok.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_nok_00000a58 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_nok_00000a64 = {0.0f, 0.0f, 0.0f};
 
 EVT_BEGIN(nokonoko_urouro_regl)
     CALL(evt_npc_get_position, STRING("me"), LW(6), LW(7), LW(8))
@@ -62,12 +72,55 @@ EVT_BEGIN(nokonoko_urouro_regl)
     RETURN
 EVT_END()
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/nok/asm/nok.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/nok/asm/nok.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("nok_00", nok_00_init_evt);
+    relSetEvtAddr("nok_01", nok_01_init_evt);
+    relSetBtlAddr("nok", btlsetup_nok_tbl, btl_nok_setup_no_tbl);
+}
 
-// TODO: write _prolog (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/nok/asm/nok.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
+
+USER_FUNC(evt_nokonoko_urouro_check_func) {
+    s32* args = event->args;
+    s32 arg0 = args[0];
+    s32 arg1 = args[1];
+    f32 f2 = evtGetFloat(event, args[2]);
+    f32 f3 = evtGetFloat(event, args[3]);
+    f32 f4 = evtGetFloat(event, args[4]);
+    f32 f0 = evtGetFloat(event, arg0);
+    f32 f1 = evtGetFloat(event, arg1);
+    Vec c;
+    Vec d;
+    Vec a;
+    Vec b;
+
+    a = vec3_nok_00000a58;
+    a.x = f0;
+    a.z = f1;
+    c = a;
+    b = vec3_nok_00000a64;
+    b.x = f2;
+    b.z = f3;
+    d = b;
+    if (PSVECDistance(&d, &c) <= f4) {
+        return EVT_RETURN_DONE;
+    }
+    evtSetFloat(event, arg0, f2);
+    evtSetFloat(event, arg1, f3);
+    return EVT_RETURN_DONE;
+}
 // clang-format on

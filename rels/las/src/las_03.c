@@ -1,4 +1,5 @@
 #include "las_03.h"
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_damage.h"
@@ -10,6 +11,7 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
 
 #pragma pool_data off
@@ -73,11 +75,10 @@ static BeroEntry bero_entry_data[3] = {
     {NULL},
 };
 
-// TODO: type
-static u32 dmgRetPoint[12] = {
-    (u32)"A_yuka_02", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"A_yuka_03", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn dmgRetPoint[3] = {
+    {"A_yuka_02", {0.0f, -1000.0f, 0.0f}},
+    {"A_yuka_03", {0.0f, -1000.0f, 0.0f}},
+    {NULL},
 };
 
 char* toge_data[18] = {
@@ -86,14 +87,37 @@ char* toge_data[18] = {
     "S_toge_08", "A_toge_08", "S_toge_09", "A_toge_09",
 };
 
-// TODO: write toge_flag_onoff (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_03.s; this is where the original has it, just before the first script that uses it
+u16 toge_flag;
 
-// TODO: write toge_check_flag (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_03.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(get_toge_name) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
 
-// TODO: write get_toge_name (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_03.s; this is where the original has it, just before the first script that uses it
+    evtSetValue(event, args[1], (s32)toge_data[index * 2]);
+    evtSetValue(event, args[2], (s32)toge_data[index * 2 + 1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(toge_check_flag) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], toge_flag & (1 << index));
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(toge_flag_onoff) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 onoff = evtGetValue(event, args[1]);
+
+    if (onoff != 0) {
+        toge_flag |= (1 << index);
+    } else {
+        toge_flag &= ~(1 << index);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(toge_evt_sub)
     SET_VALUE(LW(2), LW(0))
@@ -178,8 +202,4 @@ EVT_BEGIN(las_03_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u8 toge_flag[2] = {
-    0x00, 0x00,
-};
 // clang-format on

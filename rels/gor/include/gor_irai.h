@@ -1,8 +1,9 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "driver/camdrv.h"
 
-void irai_window_disp(void);  // TODO: real signature
+void irai_window_disp(CameraId cameraId, void* param);
 USER_FUNC(irai_end_func);
 USER_FUNC(irai_check_func);
 USER_FUNC(irai_main_func);

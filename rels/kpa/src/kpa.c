@@ -1,4 +1,8 @@
 #include "kpa.h"
+#include "data/mapdata.h"
+#include "driver/dispdrv.h"
+#include "driver/icondrv.h"
+#include "driver/mobjdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -15,8 +19,21 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_twoddisp.h"
 #include "forcedata.h"
+#include "koopa.h"
 #include "kpa_act.h"
+#include "manager/evtmgr_cmd.h"
+#include "manager/fontmgr.h"
+#include "mario/mario.h"
+#include "mario/mario_pouch.h"
+#include "mario/mariost.h"
+#include "memory.h"
 #include "party/party_motion.h"
+#include <stdio.h>
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
 
 #pragma pool_data off
 
@@ -42,9 +59,6 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write kpa_mobj_on (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(kpa_init)
     CALL(evt_mario_set_mode, 2)
     CALL(evt_mario_kill_party, 0)
@@ -66,9 +80,6 @@ EVT_BEGIN(kpa_init)
     SET_VALUE(LSWF(5), 0)
     RETURN
 EVT_END()
-
-// TODO: write kpa_make_mobj_name (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kpa_read_mobj)
     SET_INT_READ_ADDR(LW(0))
@@ -138,16 +149,12 @@ EVT_BEGIN(kpa_read_mobj)
     RETURN
 EVT_END()
 
-// TODO: write kpa_add_coin (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_kpa_000014a4 = {0.0f, 0.0f, 0.0f};
 
 EVT_BEGIN(kpa_coin_evt)
     CALL(kpa_add_coin, LW(0), LW(1), LW(2))
     RETURN
 EVT_END()
-
-// TODO: write kpa_make_item_name (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kpa_read_item)
     SET_INT_READ_ADDR(LW(0))
@@ -163,15 +170,6 @@ EVT_BEGIN(kpa_read_item)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write unk_kpa_00000a08 (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kpa_nohitenemy_ct_clear (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kpa_status_get_stage (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kpa_dead)
     IF_INT_EQUAL(LSWF(3), 1)
@@ -261,8 +259,7 @@ EVT_BEGIN(kpa_fall_sub)
     RETURN
 EVT_END()
 
-// TODO: write kpa_muteki_check (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_kpa_000014d8 = {0.0f, 0.0f, 0.0f};
 
 EVT_BEGIN(kpa_bgm_change)
     IF_INT_GREATER(GSW(1222), 30)
@@ -338,12 +335,6 @@ EVT_BEGIN(kpa_bgm_change)
     RETURN
 EVT_END()
 
-// TODO: write kpa_get_msg (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kpa_set_scale (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(kpa_stage_start)
     CALL(evt_cam_letter_box_disable, 1)
     CALL(evt_cam_letter_box_onoff, 0, 0)
@@ -390,14 +381,12 @@ EVT_BEGIN(kpa_stage_start)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 numeric_id[5] = {
-    0x01D901DB, 0x01DD01DF, 0x01E101E3, 0x01E501E7,
-    0x01E901EB,
-};
+const GXColor dat_kpa_000015cc = {0xFF, 0xFF, 0xFF, 0xFF};
 
-// TODO: write kpa_status_main (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+u16 numeric_id[10] = {
+    0x01D9, 0x01DB, 0x01DD, 0x01DF, 0x01E1,
+    0x01E3, 0x01E5, 0x01E7, 0x01E9, 0x01EB,
+};
 
 EVT_BEGIN(kpa_status_main_evt)
     LOOP(0)
@@ -406,12 +395,6 @@ EVT_BEGIN(kpa_status_main_evt)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write kpa_pole_hitoff (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write kpa_set_time (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kpa_time)
     CALL(evt_seq_wait, 2)
@@ -455,9 +438,6 @@ EVT_BEGIN(kpa_time)
     RETURN
 EVT_END()
 
-// TODO: write kpa_time_countdown (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(kpa_stage_clear)
     CALL(evt_mario_key_onoff, 0)
     CALL(evt_snd_sfxon, STRING("SFX_KUPPA_COUNTER1"), LW(0))
@@ -469,62 +449,296 @@ EVT_BEGIN(kpa_stage_clear)
     RETURN
 EVT_END()
 
-// TODO: label$603 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 label$603[4] = {
-//     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// };
+u8* kwp;
 
-// TODO: no$581 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 no$581[1] = {
-//     0x00000000,
-// };
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: name$580 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 name$580[4] = {
-//     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// };
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("kpa_00", kpa_00_init_evt);
+    relSetEvtAddr("kpa_01", kpa_01_init_evt);
+    relSetEvtAddr("kpa_02", kpa_02_init_evt);
+    relSetEvtAddr("kpa_03", kpa_03_init_evt);
+    relSetEvtAddr("kpa_04", kpa_04_init_evt);
+    relSetEvtAddr("kpa_05", kpa_05_init_evt);
+    relSetEvtAddr("kpa_06", kpa_06_init_evt);
+    relSetEvtAddr("kpa_07", kpa_07_init_evt);
+}
 
-// TODO: no$573 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 no$573[1] = {
-//     0x00000000,
-// };
+void _epilog(void) {
+    voidfunctionptr* dtor;
 
-// TODO: name$572 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 name$572[4] = {
-//     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// };
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
 
-// TODO: type
-u32 kwp[1] = {
-    0x00000000,
-};
+void _unresolved(void) {
+}
 
-// TODO: write kpa_get_cam_pt (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kpa_status_get_stage) {
+    evtSetValue(event, event->args[0], kwp[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write kpa_stageclear_disp_entry (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kpa_mobj_on) {
+    mobjKoopaOn();
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write kpa_stageclear_disp (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kpa_make_mobj_name) {
+    static s32 no;
+    static char name[16];
+    s32* args = event->args;
 
-// TODO: write kpa_status_init (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+    sprintf(name, "mobj%x", no);
+    no++;
+    evtSetValue(event, args[0], (s32)name);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write kpa_status_disp (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(kpa_make_item_name) {
+    static s32 no;
+    static char name[16];
+    s32* args = event->args;
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+    sprintf(name, "item%2x", no);
+    no++;
+    evtSetValue(event, args[0], (s32)name);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (93.66%): the three vec3_kpa_000014a4 words are loaded before `event->args`
+// (r31) in ours; the original loads r31 first, then the three words. Pure scheduling.
+USER_FUNC(kpa_add_coin) {
+    s32* args = event->args;
+    Vec pos = vec3_kpa_000014a4;
 
-// TODO: write _prolog (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/kpa/asm/kpa.s; this is where the original has it, just before the first script that uses it
+    pos.x = evtGetFloat(event, args[0]);
+    pos.y = evtGetFloat(event, args[1]);
+    pos.z = evtGetFloat(event, args[2]);
+    kpaAddCoinPos(1, &pos);
+    pouchAddCoin(-1);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_nohitenemy_ct_clear) {
+    MarioWork* mario = marioGetPtr();
+    *(u16*)&mario->unk78[0] = 0;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_kpa_00000a08) {
+    unk_801f8cd0();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_set_scale) {
+    f32 scale = evtGetFloat(event, event->args[0]);
+    MarioWork* mario = marioGetPtr();
+    Vec v = vec3_kpa_000014d8;
+
+    v.x = scale;
+    v.y = scale;
+    v.z = scale;
+    mario->scale = v;
+    mario->wPlayerCollisionBox.x = kpaGetWidth(1) * scale;
+    mario->wPlayerCollisionBox.y = 75.0f * scale;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_get_msg) {
+    static char msgBuf[16];
+    s32* args = event->args;
+    s32 n = kwp[1];
+    s32 stage = kwp[0];
+    s32 x;
+
+    if (n > 0x1E) {
+        n = 0x1E;
+    }
+    x = (stage - 1) * 0x1E + n;
+    x -= 1;
+    sprintf(msgBuf, "kpa_start_%03d", x);
+    evtSetValue(event, args[0], (s32)msgBuf);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_muteki_check) {
+    event->lwData[0] = kpaMutekiCheck();
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (79.41%): numeric_id is u16 and the original passes it to iconDispGx without
+// sign-extension (lhzx -> bl), i.e. iconDispGx's iconId parameter is u16, but include/driver/
+// icondrv.h declares it s16, so the compiler inserts an extsh. With the header changed to u16
+// the score rises to 83.53%, but the callee-saved register rotation (r27-r31) still differs.
+void kpa_status_disp(CameraId cameraId, void* param) {
+    Vec pos;
+    s32 digits[6];
+    s32 i;
+    s32 value;
+
+    pos.x = -210.0f;
+    pos.y = 160.0f;
+    iconDispGx(&pos, 0x10, gp->language == 0 ? 0x206 : 0x210, 1.0f);
+    pos.x = 50.0f;
+    iconDispGx(&pos, 0x10, 0x208, 1.0f);
+    pos.x = 220.0f;
+    iconDispGx(&pos, 0x10, 0x207, 1.0f);
+
+    value = pouchGetKpaScore();
+    pos.x = -250.0f;
+    pos.y = 130.0f;
+    digits[0] = value / 100000;
+    value %= 100000;
+    digits[1] = value / 10000;
+    value %= 10000;
+    digits[2] = value / 1000;
+    value %= 1000;
+    digits[3] = value / 100;
+    value %= 100;
+    digits[4] = value / 10;
+    value %= 10;
+    digits[5] = value;
+    for (i = 0; i < 6; i++) {
+        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        pos.x += 20.0f;
+    }
+    pos.x += 20.0f;
+    iconDispGx(&pos, 0x10, 0x18B, 0.7f);
+    pos.x += 30.0f;
+    iconDispGx(&pos, 0x10, 0x1D5, 1.0f);
+
+    value = pouchGetKpaCoin();
+    pos.x += 20.0f;
+    digits[0] = value / 10;
+    digits[1] = value % 10;
+    for (i = 0; i < 2; i++) {
+        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        pos.x += 20.0f;
+    }
+
+    pos.x = 50.0f;
+    iconDispGx(&pos, 0x10, numeric_id[kwp[0]], 1.0f);
+    pos.x += 20.0f;
+    iconDispGx(&pos, 0x10, 0x1EE, 1.0f);
+
+    value = kwp[1];
+    pos.x += 20.0f;
+    digits[0] = value / 10;
+    digits[1] = value % 10;
+    for (i = (digits[0] == 0); i < 2; i++) {
+        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        pos.x += 20.0f;
+    }
+
+    value = kwp[2];
+    pos.x = 212.0f;
+    digits[0] = value / 100;
+    value %= 100;
+    digits[1] = value / 10;
+    value %= 10;
+    digits[2] = value;
+    for (i = 0; i < 3; i++) {
+        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        pos.x += 20.0f;
+    }
+}
+
+USER_FUNC(kpa_status_main) {
+    dispEntry(8, 1000.0f, 0, kpa_status_disp, NULL);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_status_init) {
+    EventEntry* newEvent;
+    s32* args = event->args;
+    s32 a0, a1, a2;
+    s32 i;
+
+    a0 = evtGetValue(event, args[0]);
+    a1 = evtGetValue(event, args[1]);
+    a2 = evtGetValue(event, args[2]);
+    newEvent = evtEntryType(kpa_status_main_evt, event->priority, 0, event->type);
+    newEvent->unitId = event->unitId;
+    newEvent->ownerNPC = event->ownerNPC;
+    for (i = 0; i < 16; i++) {
+        newEvent->lwData[i] = event->lwData[i];
+    }
+    for (i = 0; i < 3; i++) {
+        newEvent->lfData[i] = event->lfData[i];
+    }
+    newEvent->uwBase = event->uwBase;
+    newEvent->ufBase = event->ufBase;
+    kwp = (u8*)_mapAlloc(3);
+    kwp[0] = a0;
+    kwp[1] = a1;
+    kwp[2] = a2;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_set_time) {
+    s32* args = event->args;
+    s32 remain;
+
+    remain = evtGetValue(event, args[0]) / 1000;
+    remain = 180 - (remain + evtGetValue(event, args[1]) * 10);
+    if (remain < 0) {
+        remain = 0;
+    }
+    kwp[2] = remain;
+    evtSetValue(event, args[2], remain);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_pole_hitoff) {
+    MapObjectEntry* entry = mobjNameToPtrNoAssert("pole");
+
+    if (entry != NULL) {
+        entry->flags |= 0x100;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (87.11%): only the two float literals' load order/registers differ
+// (ours loads -140 into r4 base and 40 via addi+0; the original loads 40 into r4 and
+// -140 via addi+0(r5)). Pure scheduling/addressing.
+void kpa_stageclear_disp(CameraId cameraId, void* param) {
+    GXColor color;
+
+    FontDrawStart();
+    FontDrawScale(2.0f);
+    FontDrawEdge();
+    color = dat_kpa_000015cc;
+    FontDrawColor(&color);
+    FontDrawString("ゴールイン！！", -140.0f, 40.0f);
+    FontDrawEdgeOff();
+}
+
+USER_FUNC(kpa_stageclear_disp_entry) {
+    dispEntry(8, 1000.0f, 0, kpa_stageclear_disp, NULL);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_time_countdown) {
+    if (kwp[2] != 0) {
+        kwp[2]--;
+        kpaAddScore(100);
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpa_get_cam_pt) {
+    s32* args = event->args;
+    CameraEntry* cam = camGetPtr(4);
+
+    evtSetFloat(event, args[0], cam->cameraPos.x);
+    evtSetFloat(event, args[1], cam->cameraPos.y);
+    evtSetFloat(event, args[2], cam->cameraPos.z);
+    return EVT_RETURN_DONE;
+}
 // clang-format on

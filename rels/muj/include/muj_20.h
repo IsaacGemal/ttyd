@@ -8,7 +8,7 @@ USER_FUNC(kaizoku_fune_eff);
 USER_FUNC(splash_eff);
 USER_FUNC(marcoship_shizumu_func);
 USER_FUNC(mist_func);
-void elmos1000tai_seq00(void);  // TODO: real signature
+void elmos1000tai_seq00(struct NanNpcEntry* entry);
 USER_FUNC(elmos1000tai_start);
 USER_FUNC(elmos1000tai_init);
 USER_FUNC(evt_set_nami_anim_rate);

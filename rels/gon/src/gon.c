@@ -1,4 +1,5 @@
 #include "gon.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
@@ -29,12 +30,39 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write _prolog (global, 0x194 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/gon/asm/gon.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("gon_00", gon_00_init_evt);
+    relSetEvtAddr("gon_01", gon_01_init_evt);
+    relSetEvtAddr("gon_02", gon_02_init_evt);
+    relSetEvtAddr("gon_03", gon_03_init_evt);
+    relSetEvtAddr("gon_04", gon_04_init_evt);
+    relSetEvtAddr("gon_05", gon_05_init_evt);
+    relSetEvtAddr("gon_06", gon_06_init_evt);
+    relSetEvtAddr("gon_07", gon_07_init_evt);
+    relSetEvtAddr("gon_08", gon_08_init_evt);
+    relSetEvtAddr("gon_09", gon_09_init_evt);
+    relSetEvtAddr("gon_10", gon_10_init_evt);
+    relSetEvtAddr("gon_11", gon_11_init_evt);
+    relSetEvtAddr("gon_12", gon_12_init_evt);
+    relSetEvtAddr("gon_13", gon_13_init_evt);
+    relSetEvtAddr("gon_bt00", gon_bt00_init_evt);
+    relSetBtlAddr("gon", btlsetup_gon_tbl, btl_gon_setup_no_tbl);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}

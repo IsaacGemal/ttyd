@@ -1,8 +1,12 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "memory.h"
 
-void iri_12_msgcb(void);  // TODO: real signature
+extern BattleSetupData btlsetup_jon_tbl[];
+extern u32 btl_jon_setup_no_tbl[];
+
+void iri_12_msgcb(s32 type, smartEntry* smart);
 USER_FUNC(wait_landon);
 USER_FUNC(iri_12_makkino_set_y);
 USER_FUNC(iri_12_paper_init);
@@ -12,10 +16,7 @@ USER_FUNC(setup_npc_ex_para);
 USER_FUNC(yattukeFlag);
 USER_FUNC(enemy_info);
 USER_FUNC(evt_raster);
-void raster_disp(void);  // TODO: real signature
-void _unresolved(void);  // TODO: real signature
-void _epilog(void);  // TODO: real signature
-void _prolog(void);  // TODO: real signature
+void raster_disp(CameraId camera, void* param);
 EVT_DEF(jon_init_evt);
 EVT_DEF(enemy_setup);
 EVT_DEF(evt_open_box);

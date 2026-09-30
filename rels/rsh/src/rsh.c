@@ -1,4 +1,13 @@
 #include "rsh.h"
+#include "battle_database_rsh.h"
+#include "data/mapdata.h"
+#include "driver/camdrv.h"
+#include "driver/imgdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/npcdrv.h"
+#include "driver/swdrv.h"
+#include "dolphin/gx.h"
+#include "dolphin/mtx.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -15,7 +24,19 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
+#include "memory.h"
 #include "party/party_motion.h"
+#include "rsh_00.h"
+#include "rsh_02.h"
+#include "rsh_03.h"
+#include "rsh_04.h"
+#include "rsh_05.h"
+#include "rsh_06.h"
+#include <stdio.h>
+#include <string.h>
 
 #pragma pool_data off
 
@@ -203,8 +224,6 @@ EVT_BEGIN(evt_rsh_door_entry)
     RETURN
 EVT_END()
 
-// TODO: write img_wait (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_rsh_door_open)
     SET_INT_READ_ADDR(LW(0))
@@ -520,8 +539,12 @@ EVT_BEGIN(evt_rsh_door_close)
     RETURN
 EVT_END()
 
-// TODO: write rsh_window_tev (global, 0x470 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
+
+
+static const GXTexMtx texMtx[10] = {
+    GX_TEXMTX0, GX_TEXMTX1, GX_TEXMTX2, GX_TEXMTX3, GX_TEXMTX4,
+    GX_TEXMTX5, GX_TEXMTX6, GX_TEXMTX7, GX_TEXMTX8, GX_TEXMTX9,
+};
 
 EVT_BEGIN(evt_rsh_window)
     CALL(evt_map_set_tevcallback, 1, PTR(rsh_window_tev))
@@ -880,14 +903,8 @@ char* rsh_04_rnd_npc_4_list[4] = {
     "５−１", "５−３", "５−４", "５−７",
 };
 
-// TODO: write debug_print_func (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write evt_rsh_get_rnd_npc_data (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write evt_rsh_get_rnd_npc (global, 0x170 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(debug_print_rnd_npc)
     SET_VALUE(LW(0), 0)
@@ -913,8 +930,6 @@ EVT_BEGIN(debug_print_rnd_npc)
     RETURN
 EVT_END()
 
-// TODO: write evt_rsh_set_rnd_npc (global, 0x1b8 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_rsh_rnd_npc_init)
     SET_VALUE(GSW(821), 0)
@@ -942,11 +957,7 @@ EVT_BEGIN(evt_rsh_rnd_npc_init)
     RETURN
 EVT_END()
 
-// TODO: write evt_rsh_set_rnd_npc_talk_evt (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write evt_rsh_get_rnd_npc_talk_evt (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_rsh_01_rnd_npc_entry)
     CALL(evt_rsh_get_rnd_npc, 0, 0, LW(0))
@@ -1075,15 +1086,448 @@ EVT_BEGIN(evt_rsh_04_rnd_npc_entry)
     RETURN
 EVT_END()
 
-// TODO: write _get_rnd_npc_data (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write _prolog (global, 0x3c4 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    if (swByteGet(0) < 0x153) {
+        relSetEvtAddr("rsh_00_a", rsh_00_a_init_evt);
+        relSetEvtAddr("rsh_00_b", rsh_00_b_init_evt);
+        relSetEvtAddr("rsh_00_c", rsh_00_c_init_evt);
+        relSetEvtAddr("rsh_01_a", rsh_01_a_init_evt);
+        relSetEvtAddr("rsh_01_b", rsh_01_b_init_evt);
+        relSetEvtAddr("rsh_01_c", rsh_01_c_init_evt);
+        relSetEvtAddr("rsh_02_a", rsh_02_a_init_evt);
+        relSetEvtAddr("rsh_02_b", rsh_02_b_init_evt);
+        relSetEvtAddr("rsh_02_c", rsh_02_c_init_evt);
+        relSetEvtAddr("rsh_03_a", rsh_03_a_init_evt);
+        relSetEvtAddr("rsh_03_b", rsh_03_b_init_evt);
+        relSetEvtAddr("rsh_03_c", rsh_03_c_init_evt);
+        relSetEvtAddr("rsh_04_a", rsh_04_a_init_evt);
+        relSetEvtAddr("rsh_04_b", rsh_04_b_init_evt);
+        relSetEvtAddr("rsh_04_c", rsh_04_c_init_evt);
+        relSetEvtAddr("rsh_05_a", rsh_05_a_init_evt);
+        relSetEvtAddr("rsh_06_a", rsh_06_a_init_evt);
+        relSetEvtAddr("rsh_07_a", rsh_07_a_init_evt);
+        relSetEvtAddr("rsh_07_b", rsh_07_b_init_evt);
+        relSetEvtAddr("rsh_07_c", rsh_07_c_init_evt);
+        relSetEvtAddr("rsh_08_a", rsh_08_a_init_evt);
+    }
+    else {
+        relSetEvtAddr("rsh_00_a", rsh_00_a_init_evt_nidome);
+        relSetEvtAddr("rsh_00_b", rsh_00_b_init_evt_nidome);
+        relSetEvtAddr("rsh_00_c", rsh_00_c_init_evt_nidome);
+        relSetEvtAddr("rsh_01_a", rsh_01_a_init_evt_nidome);
+        relSetEvtAddr("rsh_01_b", rsh_01_b_init_evt_nidome);
+        relSetEvtAddr("rsh_01_c", rsh_01_c_init_evt_nidome);
+        relSetEvtAddr("rsh_02_a", rsh_02_a_init_evt_nidome);
+        relSetEvtAddr("rsh_02_b", rsh_02_b_init_evt_nidome);
+        relSetEvtAddr("rsh_02_c", rsh_02_c_init_evt_nidome);
+        relSetEvtAddr("rsh_03_a", rsh_03_a_init_evt_nidome);
+        relSetEvtAddr("rsh_03_b", rsh_03_b_init_evt_nidome);
+        relSetEvtAddr("rsh_03_c", rsh_03_c_init_evt_nidome);
+        relSetEvtAddr("rsh_04_a", rsh_04_a_init_evt_nidome);
+        relSetEvtAddr("rsh_04_b", rsh_04_b_init_evt_nidome);
+        relSetEvtAddr("rsh_04_c", rsh_04_c_init_evt_nidome);
+        relSetEvtAddr("rsh_05_a", rsh_05_a_init_evt_nidome);
+        relSetEvtAddr("rsh_06_a", rsh_06_a_init_evt_nidome);
+        relSetEvtAddr("rsh_07_a", rsh_07_a_init_evt);
+        relSetEvtAddr("rsh_07_b", rsh_07_b_init_evt);
+        relSetEvtAddr("rsh_07_c", rsh_07_c_init_evt);
+        relSetEvtAddr("rsh_08_a", rsh_08_a_init_evt);
+    }
+    relSetBtlAddr("rsh", btlsetup_rsh_tbl, btl_rsh_setup_no_tbl);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
+
+USER_FUNC(img_wait) {
+    ImageEntry* img = imgNameToPtr("capture_img", gp->inBattle != 0);
+
+    if (!(img->flags & 2) && img->field_0x118 < 1.0f) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_YIELD;
+}
+
+// NONMATCHING (70.45%): 184 of 316 instructions differ: 105 with different operands, 5 replaced, 42 missing, 32 extra
+void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
+    MapObject* obj = param->obj;
+    s32 stage = param->field_C;
+    s32 texMap = param->field_10;
+    s32 texCoord = param->field_14;
+    s32 field18 = param->field_18;
+    u16 x0, y0, x1, y1;
+    s32 width, height;
+    u16 halfW, halfH;
+    void* buf;
+    GXTexObj texObj;
+    Mtx frustumMtx;
+    CameraEntry* cam;
+    f32 near, top, bottom, left, right;
+
+    if (*(u32*)((u8*)obj + 0x0) & 0x20) {
+        for (obj = obj->parent; obj != NULL; obj = obj->parent) {
+            if (!(*(u32*)((u8*)obj + 0x0) & 0x10)) {
+                continue;
+            }
+            if (*(u32*)((u8*)obj + 0x0) & 0x20000000) {
+                break;
+            }
+            *(u32*)((u8*)obj + 0x0) |= 0x20000000;
+            return;
+        }
+    } else if (!(*(u32*)((u8*)obj + 0x0) & 0x20000000)) {
+        *(u32*)((u8*)obj + 0x0) |= 0x20000000;
+        return;
+    }
+
+    x0 = *(u16*)((u8*)obj + 0xEC);
+    y0 = *(u16*)((u8*)obj + 0xEE);
+    x1 = *(u16*)((u8*)obj + 0xF0);
+    y1 = *(u16*)((u8*)obj + 0xF2);
+
+    if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
+        return;
+    }
+    if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
+        return;
+    }
+
+    x0 &= ~1;
+    y0 &= ~1;
+    x1 = x1 + (x1 & 1);
+    y1 = y1 + (y1 & 1);
+    if (x1 > gp->fbWidth) {
+        x1 = gp->fbWidth;
+    }
+    if (y1 > gp->efbHeight) {
+        y1 = gp->efbHeight;
+    }
+    width = x1 - x0;
+    height = y1 - y0;
+    halfW = width / 2;
+    halfH = height / 2;
+
+    buf = *(void**)smartAlloc(GXGetTexBufferSize(halfW, halfH, GX_TF_RGB5A3, GX_FALSE, GX_FALSE), HEAP_EFFECT);
+    GXSetTexCopySrc(x0, y0, width, height);
+    GXSetTexCopyDst(halfW, halfH, GX_TF_RGB5A3, GX_TRUE);
+    GXCopyTex(buf, GX_FALSE);
+    GXInvalidateTexAll();
+    GXPixModeSync();
+    GXTexModeSync();
+    GXInitTexObj(&texObj, buf, halfW, halfH, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+
+    cam = camGetPtr(4);
+    near = (gp->efbHeight * 0.5f) /
+           (f32)tan(6.2831855f * (*(f32*)((u8*)cam + 0x38) * 0.5f) / 360.0f);
+    top = (f32)(gp->efbHeight / 2 - y1);
+    bottom = (f32)(gp->efbHeight / 2 - y0);
+    left = (f32)(gp->fbWidth / 2 - x0);
+    right = (f32)(gp->fbWidth / 2 - x1);
+    C_MTXLightFrustum(frustumMtx, top, bottom, left, right, near, 0.5f, 0.5f, 0.4f, 0.6f);
+    PSMTXConcat(frustumMtx, *(Mtx*)((u8*)camGetCurPtr() + 0x11C), frustumMtx);
+    PSMTXConcat(frustumMtx, *(Mtx*)param->field_4, frustumMtx);
+
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);
+    GXLoadTexMtxImm(frustumMtx, texMtx[texMap], GX_MTX3x4);
+    GXLoadTexObj(&texObj, texMap);
+    GXSetTevOrder(stage, texCoord, texMap, GX_COLOR_NULL);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+    GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevKColorSel(stage, GX_TEV_KCSEL_3_4);
+    param->field_C = stage + 1;
+    param->field_14 = texCoord + 1;
+    param->field_18 = field18;
+    param->field_10 = texMap + 1;
+}
+
+USER_FUNC(evt_rsh_get_rnd_npc) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+    s32 value;
+
+    switch (type) {
+        case 0: {
+            s32 gsw = evtGetValue(NULL, GSW(821));
+
+            switch (index) {
+                case 0:
+                    value = gsw & 7;
+                    break;
+                case 1:
+                    value = (gsw >> 3) & 3;
+                    break;
+                case 2:
+                    value = (gsw >> 5) & 1;
+                    break;
+                default:
+                    value = 0;
+                    break;
+            }
+        } break;
+        case 1: {
+            s32 gsw = evtGetValue(NULL, GSW(822));
+
+            switch (index) {
+                case 0:
+                    value = gsw & 0xF;
+                    break;
+                case 1:
+                    value = (gsw >> 4) & 7;
+                    break;
+                default:
+                    value = 0;
+                    break;
+            }
+        } break;
+        case 2: {
+            s32 gsw = evtGetValue(NULL, GSW(823));
+
+            switch (index) {
+                case 0:
+                    value = gsw & 1;
+                    break;
+                case 1:
+                    value = (gsw >> 1) & 1;
+                    break;
+                case 2:
+                    value = (gsw >> 2) & 1;
+                    break;
+                case 3:
+                    value = (gsw >> 3) & 3;
+                    break;
+                default:
+                    value = 0;
+                    break;
+            }
+        } break;
+    }
+    evtSetValue(event, args[2], value);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_rsh_set_rnd_npc) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+    s32 value = evtGetValue(event, args[2]);
+
+    switch (type) {
+        case 0: {
+            s32 gsw = evtGetValue(NULL, GSW(821));
+
+            switch (index) {
+                case 0:
+                    gsw |= value & 7;
+                    break;
+                case 1:
+                    gsw |= (value & 3) << 3;
+                    break;
+                case 2:
+                    gsw |= (value & 1) << 5;
+                    break;
+            }
+            evtSetValue(NULL, GSW(821), gsw);
+        } break;
+        case 1: {
+            s32 gsw = evtGetValue(NULL, GSW(822));
+
+            switch (index) {
+                case 0:
+                    gsw |= value & 0xF;
+                    break;
+                case 1:
+                    gsw |= (value & 7) << 4;
+                    break;
+            }
+            evtSetValue(NULL, GSW(822), gsw);
+        } break;
+        case 2: {
+            s32 gsw = evtGetValue(NULL, GSW(823));
+
+            switch (index) {
+                case 0:
+                    gsw |= value & 1;
+                    break;
+                case 1:
+                    gsw |= (value & 1) << 1;
+                    break;
+                case 2:
+                    gsw |= (value & 1) << 2;
+                    break;
+                case 3:
+                    gsw |= (value & 3) << 3;
+                    break;
+            }
+            evtSetValue(NULL, GSW(823), gsw);
+        } break;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// dont_inline keeps _get_rnd_npc_data out of line: original callers emit a real `bl _get_rnd_npc_data`.
+#pragma dont_inline on
+void* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
+    u32* data = NULL;
+
+    switch (type) {
+        case 0:
+            switch (group) {
+                case 0:
+                    data = rsh_01_rnd_npc_1;
+                    break;
+                case 1:
+                    data = rsh_01_rnd_npc_2;
+                    break;
+                case 2:
+                    data = rsh_01_rnd_npc_3;
+                    break;
+            }
+            break;
+        case 1:
+            switch (group) {
+                case 0:
+                    data = rsh_03_rnd_npc_1;
+                    break;
+                case 1:
+                    data = rsh_03_rnd_npc_2;
+                    break;
+            }
+            break;
+        case 2:
+            switch (group) {
+                case 0:
+                    data = rsh_04_rnd_npc_1;
+                    break;
+                case 1:
+                    data = rsh_04_rnd_npc_2;
+                    break;
+                case 2:
+                    data = rsh_04_rnd_npc_3;
+                    break;
+                case 3:
+                    data = rsh_04_rnd_npc_4;
+                    break;
+            }
+            break;
+    }
+    if (data == NULL) {
+        data = rsh_01_rnd_npc_1;
+        index = 0;
+    }
+    return (void*)((u8*)data + index * 0xC);
+}
+#pragma dont_inline reset
+
+USER_FUNC(evt_rsh_get_rnd_npc_data) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+    s32 npc = evtGetValue(event, args[2]);
+    s32* data = _get_rnd_npc_data(type, index, npc);
+
+    evtSetValue(event, args[3], data[0]);
+    evtSetValue(event, args[4], data[1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_rsh_get_rnd_npc_talk_evt) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+    s32 npc = evtGetValue(event, args[2]);
+    s32* data = _get_rnd_npc_data(type, index, npc);
+
+    evtSetValue(event, args[3], data[2]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_rsh_set_rnd_npc_talk_evt) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 evt = evtGetValue(event, args[1]);
+    NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
+
+    npc->talkEvt = (void*)evt;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(debug_print_func) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+    s32 npc = evtGetValue(event, args[2]);
+    s32 unk = evtGetValue(event, args[3]);
+    char name[256] = {0};
+    char buf[256];
+    char** list;
+
+    switch (type) {
+        case 0:
+            strcpy(name, "RSH_01:");
+            switch (index) {
+                case 0:
+                    list = rsh_01_rnd_npc_1_list;
+                    break;
+                case 1:
+                    list = rsh_01_rnd_npc_2_list;
+                    break;
+                case 2:
+                    list = rsh_01_rnd_npc_3_list;
+                    break;
+            }
+            break;
+        case 1:
+            strcpy(name, "RSH_03:");
+            switch (index) {
+                case 0:
+                    list = rsh_03_rnd_npc_1_list;
+                    break;
+                case 1:
+                    list = rsh_03_rnd_npc_2_list;
+                    break;
+            }
+            break;
+        case 2:
+            strcpy(name, "RSH_04:");
+            switch (index) {
+                case 0:
+                    list = rsh_04_rnd_npc_1_list;
+                    break;
+                case 1:
+                    list = rsh_04_rnd_npc_2_list;
+                    break;
+                case 2:
+                    list = rsh_04_rnd_npc_3_list;
+                    break;
+                case 3:
+                    list = rsh_04_rnd_npc_4_list;
+                    break;
+            }
+            break;
+    }
+    sprintf(buf, "%s%d(%s, %s)\n", name, index, list[npc], (char*)unk);
+    return EVT_RETURN_DONE;
+}

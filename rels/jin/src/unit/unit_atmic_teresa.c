@@ -1,19 +1,51 @@
 #include "unit_atmic_teresa.h"
+#include "battle/battle.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
+#include "battle/battle_sub.h"
 #include "battle/battle_weapon_power.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_ext.h"
 #include "evt/evt_npc.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "math_ext.h"
 #include "party/party_motion.h"
+#include "system.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+
+// One animated Teresian used by teresa_ext_main's state machine.
+typedef struct TeresaEntry {
+    u8 state;        // 0x0
+    s8 field_0x1;    // 0x1
+    u8 pad_0x2[2];   // 0x2
+    s32 field_0x4;   // 0x4
+    s32 field_0x8;   // 0x8
+    s32 field_0xC;   // 0xC
+    Vec field_0x10;  // 0x10
+    f32 field_0x1C;  // 0x1C
+    f32 field_0x20;  // 0x20
+    f32 field_0x24;  // 0x24
+    Vec field_0x28;  // 0x28
+    u8 field_0x34;   // 0x34
+    u8 pad_0x35[3];  // 0x35
+} TeresaEntry;       // 0x38
+
+// Defined later in the original's data block; forward-declared so the functions above can use them.
+s32 atmic_teresa_id;
+s32 target_unit_id;
+s32 target_parts_id;
+f32 atmic_teresa_scale;
+TeresaEntry* teresa;
+s32 teresa_count;
 
 #pragma pool_data off
 
@@ -504,9 +536,6 @@ BattleWeapon weapon_atmic_teresa_breath = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write atmic_teresa_id_set (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
     CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
@@ -765,15 +794,6 @@ EVT_BEGIN(surprise_event)
     RETURN
 EVT_END()
 
-// TODO: write teresa_wait_bikkuri2 (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write teresa_wait_bikkuri (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write teresa_appear_bikkuri (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(bikkuri_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_atmic_teresa_bikkuri))
@@ -867,18 +887,6 @@ EVT_BEGIN(bikkuri_event)
     LABEL(99)
     RETURN
 EVT_END()
-
-// TODO: write teresa_wait_breath2 (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write teresa_wait_breath (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write teresa_appear_breath (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write target_id_set (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(breath_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -989,25 +997,13 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 atmic_teresa_id[1] = {
-    0xFFFFFFFF,
-};
+s32 atmic_teresa_id = -1;
 
-// TODO: type
-u32 target_unit_id[1] = {
-    0xFFFFFFFF,
-};
+s32 target_unit_id = -1;
 
-// TODO: type
-u32 target_parts_id[1] = {
-    0xFFFFFFFF,
-};
+s32 target_parts_id = -1;
 
-// TODO: type
-u32 atmic_teresa_scale[1] = {
-    0x3F800000,
-};
+f32 atmic_teresa_scale = 1.0f;
 
 // TODO: type
 u32 teresa_ext_entry_data[51] = {
@@ -1026,11 +1022,7 @@ u32 teresa_ext_entry_data[51] = {
     0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: write teresa_ext_main (global, 0x10f0 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write teresa_ext_init (global, 0x138 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
+// This is where the original has it, just before the first script that uses it.
 
 EVT_BEGIN(teresa_entry)
     CALL(evt_npc_entry, STRING("ext_teresa"), STRING("c_teresa"))
@@ -1039,38 +1031,452 @@ EVT_BEGIN(teresa_entry)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 jumptable_00016A64[72] = {
-    (u32)((u8*)&teresa_ext_main + 0x360), (u32)((u8*)&teresa_ext_main + 0x3bc), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x4a4), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x624), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x798),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x968), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x9ac),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0xaf0), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0xb84),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0xbd4),
-    (u32)((u8*)&teresa_ext_main + 0xbd4), (u32)((u8*)&teresa_ext_main + 0xd84), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0xda8),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0xe74),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0xfb8), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c),
-    (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x108c), (u32)((u8*)&teresa_ext_main + 0x1040),
-};
+// This is where the original has it, just before the first script that uses it.
+void teresa_ext_init(void) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
 
-// TODO: type
-u32 teresa_count[1] = {
-    0x00000000,
-};
+    teresa = BattleAlloc(0x690);
+    for (i = 0; i < extGetPoseNum(); i++, pose++) {
+        pose->flags = 1;
+        PSMTXIdentity(*pose->matrix);
+        (*pose->matrix)[0][3] = 0.0f;
+        (*pose->matrix)[1][3] = -1000.0f;
+        (*pose->matrix)[2][3] = 0.0f;
+        pose->field_0x4 = 90.0f;
+        teresa[i].state = 0;
+        teresa[i].field_0x1 = 0;
+        teresa[i].field_0x4 = 0;
+        teresa[i].field_0x10 = (Vec){0.0f, 0.0f, 0.0f};
+    }
+}
 
-// TODO: type
-u32 teresa[1] = {
-    0x00000000,
-};
+// NONMATCHING (99.44%): 6 of 1087 instructions differ: 3 missing, 3 extra
+void teresa_ext_main(void) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+    TeresaEntry* entry;
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, atmic_teresa_id);
+    BattleUnit* target = BattleGetUnitPtr(_battleWorkPointer, target_unit_id);
+    s32 sp60[8] = {0, 2, 5, 7, 10, 12, 15, 17};
+    f32 sp80[60] = {
+        -30.0f, 8.0f,   -28.0f, 10.0f, -26.0f, 6.0f,   -24.0f, 30.0f, -22.0f, 16.0f,
+        -20.0f, 50.0f,  -18.0f, 14.0f, -16.0f, 18.0f,  -14.0f, 60.0f, -12.0f, 34.0f,
+        -10.0f, 66.0f,  -8.0f,  8.0f,  -6.0f,  28.0f,  -4.0f,  40.0f, -2.0f,  46.0f,
+        0.0f,   20.0f,  2.0f,   26.0f, 4.0f,   52.0f,  6.0f,   74.0f, 8.0f,   68.0f,
+        10.0f,  0.0f,   12.0f,  28.0f, 14.0f,  44.0f,  16.0f,  72.0f, 18.0f,  42.0f,
+        20.0f,  76.0f,  22.0f,  56.0f, 24.0f,  32.0f,  26.0f,  4.0f,  28.0f,  2.0f,
+    };
+    u8 sp2C[7] = {0, 1, 2, 3, 4, 5, 6};
+    s32 j;
+    s32 count;
+    BattleUnitPart* part;
+    f32 posX, posY, posZ;
+    f32 hitX, hitY, hitZ;
+    f32 scaleX, scaleY, scaleZ;
+    f32 angle;
 
-// TODO: write teresa_ext_disp (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_atmic_teresa.s; this is where the original has it, just before the first script that uses it
+    teresa_count++;
+    if (teresa_count >= 360) {
+        teresa_count -= 360;
+    }
+    if (unit != NULL) {
+        BtlUnit_GetPos(unit, &posX, &posY, &posZ);
+        posY += 40.0f;
+        BtlUnit_GetScale(unit, &scaleX, &scaleY, &scaleZ);
+        if (scaleX > atmic_teresa_scale) {
+            scaleX -= 0.005f;
+            if (scaleX <= atmic_teresa_scale) {
+                scaleX = atmic_teresa_scale;
+            }
+            BtlUnit_SetScale(unit, scaleX, scaleX, scaleZ);
+        }
+        if (scaleX < atmic_teresa_scale) {
+            scaleX += 0.005f;
+            if (scaleX >= atmic_teresa_scale) {
+                scaleX = atmic_teresa_scale;
+            }
+            BtlUnit_SetScale(unit, scaleX, scaleX, scaleZ);
+        }
+    }
+    if (target != NULL) {
+        part = BtlUnit_GetPartsPtr(target, target_parts_id);
+        BtlUnit_GetHitPos(target, part, &hitX, &hitY, &hitZ);
+    }
+    for (i = 0; i < extGetPoseNum(); i++, pose++) {
+        entry = &teresa[i];
+
+        switch (entry->field_0x1) {
+        case 1:
+            entry->field_0x4++;
+            if (entry->field_0x4 <= 0x1E) {
+                pose->field_0x10 = 8;
+            } else if (entry->field_0x4 < 0x2C) {
+                pose->field_0x10 = (entry->field_0x4 - 0x1E) / 2 + 9;
+            } else {
+                pose->field_0x10 = 0xF;
+            }
+            break;
+        default:
+            entry->field_0x4++;
+            if (entry->field_0x4 >= 0x18) {
+                entry->field_0x4 -= 0x18;
+            }
+            pose->field_0x10 = entry->field_0x4 / 3;
+            break;
+        }
+        if (entry->field_0x8 >= 1) {
+            entry->field_0x8--;
+            continue;
+        }
+        (*pose->matrix)[0][3] += entry->field_0x10.x;
+        (*pose->matrix)[1][3] += entry->field_0x10.y;
+        (*pose->matrix)[2][3] += entry->field_0x10.z;
+        if ((*pose->matrix)[1][3] < 0.0f) {
+            (*pose->matrix)[1][3] = 0.0f;
+        }
+        switch (entry->state) {
+        case 0:
+            (*pose->matrix)[0][3] = 0.0f;
+            (*pose->matrix)[1][3] = -1000.0f;
+            (*pose->matrix)[2][3] = 0.0f;
+            pose->field_0x4 = 90.0f;
+            (*pose->matrix)[1][1] = 1.0f;
+            (*pose->matrix)[0][0] = 1.0f;
+            break;
+        case 1:
+            pose->flags &= ~2;
+            (*pose->matrix)[0][3] = posX;
+            (*pose->matrix)[1][3] = posY;
+            (*pose->matrix)[2][3] = posZ - 5.0f;
+            (*pose->matrix)[0][0] = 0.0f;
+            (*pose->matrix)[1][1] = 0.0f;
+            angle = 0.785398f * (f32)i;
+            entry->field_0x10.x = 2.0f * (f32)cos(angle);
+            entry->field_0x10.y = 2.0f * (f32)sin(angle);
+            entry->field_0x10.z = 0.0f;
+            entry->field_0x8 = sp60[i];
+            entry->field_0xC = 0x32;
+            entry->state = 5;
+            break;
+        case 5:
+            entry->field_0xC--;
+            if (entry->field_0xC == 0x19) {
+                atmic_teresa_scale -= 0.05f;
+                if (i % 2 == 0) {
+                    Vec pos = {0.0f, 0.0f, 0.0f};
+                    pos.x = (*pose->matrix)[0][3];
+                    pos.y = (*pose->matrix)[1][3];
+                    pos.z = (*pose->matrix)[2][3];
+                    BtlUnit_snd_se_pos(unit, "SFX_BOSS_ATMTLSA_DIVIDE1", 0xF1194D80, 0, &pos);
+                }
+            }
+            (*pose->matrix)[0][0] += 0.02f;
+            (*pose->matrix)[1][1] += 0.02f;
+            if (entry->field_0xC <= 0) {
+                pose->flags |= 2;
+                entry->state = 0xA;
+                entry->field_0xC = 0x96;
+                entry->field_0x10.x = 0.0f;
+                entry->field_0x10.y = 0.0f;
+                entry->field_0x10.z = 0.0f;
+                if (i % 2 == 0) {
+                    Vec pos = {0.0f, 0.0f, 0.0f};
+                    pos.x = (*pose->matrix)[0][3];
+                    pos.y = (*pose->matrix)[1][3];
+                    pos.z = (*pose->matrix)[2][3];
+                    BtlUnit_snd_se_pos(unit, "SFX_BOSS_ATMTLSA_S_MOVE1", 0xF1194D80, 0, &pos);
+                }
+            }
+            break;
+        case 0xA:
+            angle = 6.283184f * (0.125f * (f32)i + 2.0f * (f32)teresa_count / 360.0f);
+            entry->field_0x28.x = 90.0f * (f32)cos(angle) - 100.0f;
+            entry->field_0x28.y = 10.0f;
+            entry->field_0x28.z = 90.0f * (f32)sin(angle);
+            if ((*pose->matrix)[0][3] >= -100.0f) {
+                pose->field_0x4 = 90.0f;
+            } else {
+                pose->field_0x4 = 270.0f;
+            }
+            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 20.0f;
+            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 20.0f;
+            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 20.0f;
+            if (entry->field_0xC <= 0) {
+                entry->state = 0xF;
+                entry->field_0x10.x = 0.0f;
+                entry->field_0x10.y = 0.0f;
+                entry->field_0x10.z = 0.0f;
+            }
+            entry->field_0xC--;
+            break;
+        case 0xF:
+            angle = 6.283184f * (0.125f * (f32)i + 2.0f * (f32)teresa_count / 360.0f);
+            entry->field_0x28.x = 90.0f * (f32)cos(angle) - 100.0f;
+            entry->field_0x28.y = 10.0f;
+            entry->field_0x28.z = 90.0f * (f32)sin(angle);
+            if ((*pose->matrix)[0][3] >= -100.0f) {
+                pose->field_0x4 = 90.0f;
+            } else {
+                pose->field_0x4 = 270.0f;
+            }
+            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 20.0f;
+            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 20.0f;
+            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 20.0f;
+            count = 0;
+            for (j = 0; j < 8; j++) {
+                if (teresa[j].state == 0xF) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+            if (count == 8) {
+                for (j = 0; j < 8; j++) {
+                    TeresaEntry* e = &teresa[j];
+                    e->state = 0x14;
+                    e->field_0x1 = 1;
+                    e->field_0x4 = 0;
+                    e->field_0x10.x = 0.0f;
+                    e->field_0x10.y = 0.0f;
+                    e->field_0x10.z = 0.0f;
+                }
+            }
+            break;
+        case 0x14:
+            if (entry->field_0x4 >= 0xB4) {
+                entry->state = 0x17;
+                entry->field_0x1 = 0;
+                entry->field_0x4 = 0;
+                entry->field_0xC = 0x3C;
+                entry->field_0x8 = sp60[i];
+                pose->field_0x4 = 90.0f;
+            }
+            break;
+        case 0x17:
+            entry->field_0x28.x = posX - 35.0f + (f32)irand(90);
+            entry->field_0x28.y = posY - 35.0f + (f32)irand(90);
+            entry->field_0x28.z = posZ - 30.0f - 0.05f * (f32)i;
+            entry->field_0xC = 0x3C;
+            entry->state = 0x19;
+            if (i % 2 == 0) {
+                Vec pos = {0.0f, 0.0f, 0.0f};
+                pos.x = (*pose->matrix)[0][3];
+                pos.y = (*pose->matrix)[1][3];
+                pos.z = (*pose->matrix)[2][3];
+                BtlUnit_snd_se_pos(unit, "SFX_BOSS_ATMTLSA_S_MOVE1", 0xF1194D80, 0, &pos);
+            }
+            break;
+        case 0x19:
+            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 20.0f;
+            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 20.0f;
+            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 20.0f;
+            if (entry->field_0xC <= 0) {
+                entry->state = 0x1E;
+                entry->field_0x10.x = 0.0f;
+                entry->field_0x10.y = 0.0f;
+                entry->field_0x10.z = 0.0f;
+                pose->flags &= ~2;
+            }
+            entry->field_0xC--;
+            break;
+        case 0x1F:
+            (*pose->matrix)[0][0] -= 0.0125f;
+            (*pose->matrix)[1][1] = (*pose->matrix)[0][0];
+            if ((*pose->matrix)[0][0] <= 0.0f) {
+                entry->state = 0;
+            }
+            break;
+        case 0x33:
+        case 0x34:
+            pose->flags &= ~2;
+            (*pose->matrix)[0][3] = posX - 15.0f;
+            (*pose->matrix)[1][3] = posY - 5.0f;
+            (*pose->matrix)[2][3] = posZ + 5.0f;
+            (*pose->matrix)[1][1] = 0.0f;
+            (*pose->matrix)[0][0] = 0.0f;
+            entry->field_0x10.x = 0.0f;
+            entry->field_0x10.y = 0.0f;
+            entry->field_0x10.z = 0.0f;
+            entry->field_0x1C = (*pose->matrix)[0][3];
+            entry->field_0x20 = (*pose->matrix)[1][3];
+            entry->field_0x24 = (*pose->matrix)[2][3];
+            if (entry->state == 0x33) {
+                entry->field_0x28.x = hitX + sp80[i * 2] - 200.0f;
+            } else {
+                entry->field_0x28.x = hitX + sp80[i * 2] - 200.0f;
+            }
+            if (entry->state == 0x33) {
+                entry->field_0x28.y = hitY + sp80[i * 2 + 1] - 50.0f;
+            } else {
+                entry->field_0x28.y = hitY + sp80[i * 2 + 1] - 50.0f;
+            }
+            entry->field_0x28.z = hitZ - 10.0f - 0.05f * (f32)i;
+            entry->field_0x8 = i * 3;
+            entry->field_0xC = 0;
+            entry->state = 0x35;
+            entry->field_0x34 = sp2C[irand(7)];
+            break;
+        case 0x35:
+            atmic_teresa_scale -= 0.015f;
+            entry->state = 0x37;
+            break;
+        case 0x37:
+            (*pose->matrix)[0][0] += 0.04f;
+            if ((*pose->matrix)[0][0] >= 1.0f) {
+                (*pose->matrix)[0][0] = 1.0f;
+            }
+            (*pose->matrix)[1][1] = (*pose->matrix)[0][0];
+            (*pose->matrix)[0][3] = intplGetValue(entry->field_0x34, entry->field_0xC, 0x1E, entry->field_0x1C, entry->field_0x28.x);
+            (*pose->matrix)[1][3] = intplGetValue(entry->field_0x34, entry->field_0xC, 0x1E, entry->field_0x20, entry->field_0x28.y);
+            (*pose->matrix)[2][3] = intplGetValue(entry->field_0x34, entry->field_0xC, 0x1E, entry->field_0x24, entry->field_0x28.z);
+            if (entry->field_0xC >= 0x1E) {
+                entry->state = 0x3C;
+            }
+            entry->field_0xC++;
+            break;
+        case 0x3F:
+            entry->field_0x28.x = posX - 35.0f + (f32)irand(90);
+            entry->field_0x28.y = posY - 35.0f + (f32)irand(90);
+            entry->field_0x28.z = posZ - 30.0f - 0.05f * (f32)i;
+            entry->field_0xC = 0x3C;
+            entry->state = 0x41;
+            if (i % 2 == 0) {
+                Vec pos = {0.0f, 0.0f, 0.0f};
+                pos.x = (*pose->matrix)[0][3];
+                pos.y = (*pose->matrix)[1][3];
+                pos.z = (*pose->matrix)[2][3];
+                BtlUnit_snd_se_pos(unit, "SFX_BOSS_ATMTLSA_S_MOVE1", 0xF1194D80, 0, &pos);
+            }
+            break;
+        case 0x41:
+            entry->field_0x10.x = (entry->field_0x28.x - (*pose->matrix)[0][3]) / 15.0f;
+            entry->field_0x10.y = (entry->field_0x28.y - (*pose->matrix)[1][3]) / 15.0f;
+            entry->field_0x10.z = (entry->field_0x28.z - (*pose->matrix)[2][3]) / 15.0f;
+            if (entry->field_0xC <= 0) {
+                entry->state = 0x46;
+                entry->field_0x10.x = 0.0f;
+                entry->field_0x10.y = 0.0f;
+                entry->field_0x10.z = 0.0f;
+            }
+            entry->field_0xC--;
+            break;
+        case 0x47:
+            (*pose->matrix)[0][0] -= 0.0125f;
+            (*pose->matrix)[1][1] = (*pose->matrix)[0][0];
+            if ((*pose->matrix)[0][0] <= 0.0f) {
+                entry->state = 0;
+            }
+            break;
+        }
+    }
+    dispEntry(4, 0.0f, 1, (DispCallback)teresa_ext_disp, NULL);
+}
+
+void teresa_ext_disp(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+s32 atmic_teresa_id_set(EventEntry* event, BOOL isFirstCall) {
+    s32 id = evtGetValue(event, event->args[0]);
+    atmic_teresa_id = BattleTransID(event, id);
+    return EVT_RETURN_DONE;
+}
+
+s32 target_id_set(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    target_unit_id = BattleTransID(event, a);
+    target_parts_id = b;
+    return EVT_RETURN_DONE;
+}
+
+s32 teresa_appear_bikkuri(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    for (i = 0; i < 8; i++) {
+        teresa[i].state = 1;
+    }
+    return EVT_RETURN_DONE;
+}
+
+s32 teresa_wait_bikkuri(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    for (i = 0; i < 8; i++) {
+        if (teresa[i].state != 0x0F) {
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+s32 teresa_wait_bikkuri2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    for (i = 0; i < 8; i++) {
+        if (teresa[i].state != 0x1E) {
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    for (i = 0; i < 8; i++) {
+        teresa[i].state = 0x1F;
+    }
+    atmic_teresa_scale = 1.0f;
+    return EVT_RETURN_DONE;
+}
+
+s32 teresa_appear_breath(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 state;
+    s32 t = evtGetValue(event, event->args[0]) - 1;
+
+    if ((u32)t <= 0) {
+        state = 0x33;
+    } else {
+        state = 0x34;
+    }
+    for (i = 0; i < extGetPoseNum(); i++) {
+        teresa[i].state = state;
+    }
+    return EVT_RETURN_DONE;
+}
+
+s32 teresa_wait_breath(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    for (i = 0; i < 30; i++) {
+        if (teresa[i].state != 0x3C) {
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    for (i = 0; i < 30; i++) {
+        TeresaEntry* entry = &teresa[i];
+        entry->state = 0x3F;
+        entry->field_0x8 = 30;
+    }
+    return EVT_RETURN_DONE;
+}
+
+s32 teresa_wait_breath2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    for (i = 0; i < 30; i++) {
+        if (teresa[i].state != 0x46) {
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    for (i = 0; i < 30; i++) {
+        teresa[i].state = 0x47;
+    }
+    atmic_teresa_scale = 1.0f;
+    return EVT_RETURN_DONE;
+}
+
+
+
+// These live in .bss in the original, so they must not be initialized.
+s32 teresa_count;
+TeresaEntry* teresa;
 // clang-format on

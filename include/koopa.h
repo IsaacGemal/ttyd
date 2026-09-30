@@ -70,5 +70,6 @@ void kpaCancelAttackMode(void);
 f32 kpaGetWidth(s32 index);
 f32 kpaSetFallPara(void);
 void kpaMSetMutekiTimer(void);
+void unk_801f8cd0(void);
 void kpaMutekiOn(void);
 void kpaMutekiOff(void);

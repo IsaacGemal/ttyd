@@ -1,6 +1,14 @@
 #include "hom.h"
+#include "hom_00.h"
+#include "hom_10.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
 
 #pragma pool_data off
 
@@ -28,13 +36,27 @@ extend_data(1,
 extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
-
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/hom/asm/hom.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/hom/asm/hom.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _prolog (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/hom/asm/hom.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("hom_00", hom_00_init_evt);
+    relSetEvtAddr("hom_10", hom_10_init_evt_13_data_3954);
+    relSetEvtAddr("hom_11", hom_11_init_evt);
+    relSetEvtAddr("hom_12", hom_12_init_evt);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}

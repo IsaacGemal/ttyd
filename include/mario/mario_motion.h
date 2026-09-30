@@ -12,6 +12,7 @@ f32 marioMakeJumpPara(void);
 void marioChgTalkMotion(void);
 void marioClearJumpPara(void);
 void marioChgJumpStandMotion(f32 a);
+void marioChgRollMotion(void);
 void marioChgGetItemMotion(void);
 f32 marioGetFallSpd(void);
 void marioLandOn(void);

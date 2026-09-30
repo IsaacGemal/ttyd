@@ -2,6 +2,12 @@
 
 #include "evt/evt_cmd.h"
 
+typedef struct {
+    s32 unk0;
+    s32* ptr;
+    s32 count;
+} FollowPath;
+
 USER_FUNC(camera_move_check);
 USER_FUNC(get_camcurve);
 USER_FUNC(get_camcurve_init);
@@ -11,7 +17,7 @@ USER_FUNC(monosiri_check);
 USER_FUNC(lecture);
 USER_FUNC(evt_gor_door_out_info);
 USER_FUNC(evt_gor_door_in_info);
-void kuragarisan_msgcb(void);  // TODO: real signature
+void kuragarisan_msgcb(s32 type, void* param);
 USER_FUNC(iri_13_free_item_tbl);
 USER_FUNC(iri_13_update_item_tbl);
 USER_FUNC(iri_13_make_item_tbl);
@@ -23,8 +29,8 @@ USER_FUNC(evt_set_bgtpl);
 USER_FUNC(_door_color2_main_func);
 USER_FUNC(_door_color_main_func);
 USER_FUNC(_door_color_init_func);
-void _door_color2_tev(void);  // TODO: real signature
-void _door_color_tev(void);  // TODO: real signature
+void _door_color2_tev(struct TevCallbackParam* param);
+void _door_color_tev(struct TevCallbackParam* param);
 EVT_DEF(unk_evt_gor_0003d138);
 EVT_DEF(unk_evt_gor_0003d1a4);
 EVT_DEF(gor_02_event_00);

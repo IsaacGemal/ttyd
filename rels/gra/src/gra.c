@@ -1,6 +1,11 @@
 #include "gra.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "memory.h"
+#include "manager/evtmgr_cmd.h"
+#include "party.h"
+#include <string.h>
 
 #pragma pool_data off
 
@@ -25,20 +30,45 @@ extend_data(29,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 pose_buf[1] = {
-    0x00000000,
-};
+static void* pose_buf;
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_gra_vivian_pose_set) {
+    s32* args = event->args;
+    s32 poseId = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
 
-// TODO: write _epilog (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra.s; this is where the original has it, just before the first script that uses it
+    partyPoseTbl[PARTY_MEMBER_VIVIAN][poseId] = (char*)value;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write _prolog (global, 0x11c bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write evt_gra_vivian_pose_set (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("gra_00", gra_00_init_evt);
+    relSetEvtAddr("gra_01", gra_01_init_evt);
+    relSetEvtAddr("gra_02", gra_02_init_evt);
+    relSetEvtAddr("gra_03", gra_03_init_evt);
+    relSetEvtAddr("gra_04", gra_04_init_evt);
+    relSetEvtAddr("gra_05", gra_05_init_evt);
+    relSetEvtAddr("gra_06", gra_06_init_evt);
+    relSetBtlAddr("gra", btlsetup_gra_tbl, btl_gra_setup_no_tbl);
+    pose_buf = _mapAlloc(0x3c);
+    memcpy(pose_buf, &partyPoseTbl[PARTY_MEMBER_VIVIAN][0], 0x3c);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+    memcpy(&partyPoseTbl[PARTY_MEMBER_VIVIAN][0], pose_buf, 0x3c);
+    _mapFree(pose_buf);
+}
+
+void _unresolved(void) {
+}
 // clang-format on

@@ -13,6 +13,18 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle.h"
+#include "battle/battle_sub.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/effdrv.h"
+#include "eff/eff_batten.h"
+#include "eff/n64/eff_akari_charge_n64.h"
+#include "eff/n64/eff_hokori_n64.h"
+#include "manager/evtmgr_cmd.h"
+#include "math_trig.h"
+#include "memory.h"
+#include <dolphin/mtx.h>
 
 #pragma pool_data off
 
@@ -25,6 +37,8 @@ static USER_FUNC(arm_init);
 static USER_FUNC(arm_init2);
 static USER_FUNC(arm_main);
 static USER_FUNC(arm_end);
+static EffectEntry* eff_charge;
+static MagnumBattenderWork* work[2];
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts[3];
@@ -401,8 +415,66 @@ static BattleUnitSetup entry_rocket_punch[1] = {
     { &unit_boss_rocket_punch, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: write arm_init (static, 0x94 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(waku_main) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    BattleUnitPart* part1;
+    BattleUnitPart* part3;
+    AnimationPose* pose;
+    Vec* positions;
+    s32 id;
+    s32 poseId;
+    s32 group;
+
+    id = evtGetValue(event, *args++);
+    animGetPtr();
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
+    part1 = BtlUnit_GetPartsPtr(unit, 1);
+    part3 = BtlUnit_GetPartsPtr(unit, 3);
+    poseId = *(s32*)part1->field_0x1C0;
+    animPoseWorldPositionEvalOn(poseId);
+    animPoseGetAnimBaseDataPtr(poseId);
+    pose = animPoseGetAnimPosePtr(poseId);
+    group = animPoseGetGroupIdx(poseId, "locator17");
+    positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
+    BtlUnit_SetPartsPos(part3, positions[group].x, positions[group].y, positions[group].z);
+    {
+        f32 yaw = camGetPtr(CAMERA_3D)->viewYaw;
+        BtlUnit_SetPartsRotate(part3, 0.0f, -yaw, 0.0f);
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(arm_check) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 value = evtGetValue(event, args[0]);
+    s32 result = -1;
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        unit = wp->units[i];
+        if (unit != NULL && (unit->currentKind == UNIT_X_FIST || unit->currentKind == UNIT_X_PUNCH)) {
+            if (value == 0) {
+                if (unit->work[0] == 0 || unit->work[0] == 2) {
+                    result = i;
+                    break;
+                }
+            }
+            if (value == 1) {
+                if (unit->work[0] == 1 || unit->work[0] == 3) {
+                    result = i;
+                    break;
+                }
+            }
+        }
+    }
+    evtSetValue(event, args[1], result);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_OnUnitFlag, -2, 16777216)
@@ -426,9 +498,6 @@ static EVT_BEGIN(init_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
-// TODO: write waku_main (static, 0xf8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(waku_event)
     LABEL(0)
@@ -477,17 +546,20 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: write arm_check (static, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(eff_dead) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
 
-// TODO: write eff_dead (static, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
+    eff_charge = effAkariChargeN64Entry(0, 1000, x, y, z, 1.5f);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write eff_dead_delete (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write arm_end (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(eff_dead_delete) {
+    effDelete(eff_charge);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_SetUnitWork, -2, 6, 1)
@@ -749,8 +821,22 @@ EVT_BEGIN(stamp_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write eff_hokori (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(eff_hokori) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    s32 a = evtGetValue(event, args[3]);
+    EffectEntry* effect = effHokoriN64Entry(0, a, x, y, z);
+
+    ((u32*)effect->userdata)[0xC] = 0xFF;
+    ((u32*)effect->userdata)[0xD] = 0xFF;
+    ((u32*)effect->userdata)[0xE] = 0xFF;
+    ((u32*)effect->userdata)[0xF] = 0;
+    ((u32*)effect->userdata)[0x10] = 0;
+    ((u32*)effect->userdata)[0x11] = 0;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(shake_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -1146,8 +1232,23 @@ static BattleWeapon weapon_batten_rocket_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write arm_init2 (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(arm_init) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        work[i] = BattleAlloc(0x24);
+        work[i]->field_0x00 = work[i]->field_0x0C = (Vec){0.0f, 0.0f, 0.0f};
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(arm_init2) {
+    s32 index = evtGetValue(event, event->args[0]);
+    MagnumBattenderWork* w = work[index];
+
+    w->effect = effBattenEntry(3, 1000, 0.0f, -1000.0f, 0.0f, 1.0f);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(init_event_r)
     CALL(btlevtcmd_OnUnitFlag, -2, 16777216)
@@ -1193,8 +1294,85 @@ static EVT_BEGIN(init_event_r)
     RETURN
 EVT_END()
 
-// TODO: write arm_main (static, 0x330 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_boss_magnum_battender.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(arm_main) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    MagnumBattenderWork* w;
+    BattenData* data;
+    s32 id;
+    Mtx mtx1;
+    Mtx mtx2;
+    Vec offset;
+    Vec pos;
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 rx;
+    f32 ry;
+    f32 rz;
+    f32 bx;
+    f32 by;
+    f32 bz;
+
+    id = evtGetValue(event, args[0]);
+    w = work[evtGetValue(event, args[1])];
+    if (w->effect == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    data = (BattenData*)w->effect->userdata;
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    w->field_0x00 = w->field_0x0C;
+    pos = (Vec){0.0f, 0.0f, 0.0f};
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    w->field_0x0C = pos;
+    if (evtCheckID(unit->waitEventId) != 1) {
+        f32 dx = w->field_0x0C.x - w->field_0x00.x;
+        f32 dy = w->field_0x0C.y - w->field_0x00.y;
+
+        if (dx != 0.0f) {
+            w->field_0x1C = 360.0f * (f32)atan(dy / dx) / 6.283184f;
+            w->field_0x18 = w->field_0x18 + (w->field_0x1C - w->field_0x18) / 3.0f;
+            BtlUnit_GetRotate(unit, &rx, &ry, &rz);
+            BtlUnit_SetRotate(unit, rx, ry, w->field_0x18);
+        } else {
+            w->field_0x1C = 0.0f;
+        }
+    }
+    BtlUnit_GetBaseRotate(unit, &bx, &by, &bz);
+    BtlUnit_GetRotate(unit, &rx, &ry, &rz);
+    rx += bx;
+    ry += by;
+    rz += bz;
+    PSMTXRotRad(mtx1, 'x', 1.5707964f);
+    PSMTXRotRad(mtx2, 'y', MTXDegToRad(ry));
+    PSMTXConcat(mtx2, mtx1, mtx1);
+    PSMTXRotRad(mtx2, 'x', MTXDegToRad(rx));
+    PSMTXConcat(mtx2, mtx1, mtx1);
+    PSMTXRotRad(mtx2, 'z', MTXDegToRad(rz));
+    PSMTXConcat(mtx2, mtx1, mtx1);
+    PSMTXCopy(mtx1, data->matrix);
+    offset = (Vec){0.0f, -18.0f, 0.0f};
+    PSMTXMultVec(mtx1, &offset, &offset);
+    data->position.x = w->field_0x0C.x + offset.x;
+    data->position.y = w->field_0x0C.y + offset.y;
+    data->position.z = w->field_0x0C.z + offset.z;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(arm_end) {
+    MagnumBattenderWork* w = work[evtGetValue(event, event->args[0])];
+
+    if (w->effect != NULL) {
+        effDelete(w->effect);
+        w->effect = NULL;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(arm_event)
     LABEL(0)
@@ -1366,13 +1544,4 @@ static EVT_BEGIN(wait_event_r)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 work[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 eff_charge[1] = {
-    0x00000000,
-};
 // clang-format on

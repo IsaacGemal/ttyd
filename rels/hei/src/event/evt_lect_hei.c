@@ -15,41 +15,75 @@
 #include "forcedata.h"
 #include "party/party_motion.h"
 
+#include <dolphin/os.h>
+#include <string.h>
+
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "driver/hitdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/mobjdrv.h"
+#include "eff/eff_mario_balloon.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "manager/evtmgr_cmd.h"
+#include "party.h"
+#include "pmario_sound.h"
+#include "statuswindow.h"
+#include "driver/icondrv.h"
+
 #pragma pool_data off
 
 #pragma force_active on
-static void bgm_start_wait(void);  // TODO: real signature
+static s32 bgm_start_wait(void);
 static USER_FUNC(set_dir);
 static USER_FUNC(lect_party_ido_sum);
-static void lect_party_ido_sub(void);  // TODO: real signature
-static void efffukidashichange_cam(void);  // TODO: real signature
-static void lect_npc_balloon_on_off(void);  // TODO: real signature
+static f32 lect_party_ido_sub(f32, f32, f32, f32);
+static USER_FUNC(efffukidashichange_cam);
+static USER_FUNC(lect_npc_balloon_on_off);
 static USER_FUNC(lect_itemget_kesan);
-static void lect_mobj_hit_nasi(void);  // TODO: real signature
+static USER_FUNC(lect_mobj_hit_nasi);
 static USER_FUNC(effitemget_busaiku);
-static void effitemget_open_ptr(void);  // TODO: real signature
+static USER_FUNC(effitemget_open_ptr);
 static USER_FUNC(effitemget_open);
-static void effitemgetchange_cam_ptr(void);  // TODO: real signature
+static USER_FUNC(effitemgetchange_cam_ptr);
 static USER_FUNC(effitemgetchange_cam);
-static void lect_map_cam_chg(void);  // TODO: real signature
-static void lect_map_cam_chg_sub(void);  // TODO: real signature
-static void lecture_button_set_pos(void);  // TODO: real signature
-static void lecture_button_seq_wait(void);  // TODO: real signature
-static void lecture_button_get_icon_id(void);  // TODO: real signature
-static void lecture_button_set_seq(void);  // TODO: real signature
-static void lecture_button_flag_on_off(void);  // TODO: real signature
-static void lecture_button_set_alpha(void);  // TODO: real signature
-static void lecture_button_set_icon_id(void);  // TODO: real signature
-static void lecture_button_rtn(void);  // TODO: real signature
-static void lecture_button_disp(void);  // TODO: real signature
+static USER_FUNC(lect_map_cam_chg);
+static void lect_map_cam_chg_sub(MapObject* obj, s32 camId, BOOL recurse);
+static USER_FUNC(lecture_button_set_pos);
+static USER_FUNC(lecture_button_seq_wait);
+static USER_FUNC(lecture_button_get_icon_id);
+static USER_FUNC(lecture_button_set_seq);
+static USER_FUNC(lecture_button_flag_on_off);
+static USER_FUNC(lecture_button_set_alpha);
+static USER_FUNC(lecture_button_set_icon_id);
+static USER_FUNC(lecture_button_rtn);
+static void lecture_button_disp(CameraId cameraId, void* param);
 static USER_FUNC(x_flag_wait);
-static void x_flag_get(void);  // TODO: real signature
-static void x_flag_add(void);  // TODO: real signature
+static USER_FUNC(x_flag_get);
+static USER_FUNC(x_flag_add);
 static USER_FUNC(x_flag_set);
-static void lect_status_on(void);  // TODO: real signature
-static void lect_status_off(void);  // TODO: real signature
-static void lect_mario_ido_sum(void);  // TODO: real signature
-static void lect_mario_ido_sub(void);  // TODO: real signature
+static USER_FUNC(lect_status_on);
+static USER_FUNC(lect_status_off);
+static USER_FUNC(lect_mario_ido_sum);
+static f32 lect_mario_ido_sub(f32, f32, f32, f32);
+
+
+typedef struct LectureButton {
+    u8 flags;                  // 0x0
+    u8 seq;                    // 0x1
+    u8 pad_2[0x4 - 0x2];       // 0x2
+    u8 pad_4[0xC - 0x4];       // 0x4
+    Vec position;              // 0xC
+    u8 pad_18[0x40 - 0x18];    // 0x18
+    s16 iconId;                // 0x40
+    s16 alpha;                 // 0x42
+} LectureButton;
+
+static OSTime wwstart;
+static s32 x_flag_data[2];
+static LectureButton lbtn[2];
+static EffectEntry* eff;
 
 // clang-format off
 extend_data(116,
@@ -70,8 +104,473 @@ extend_data(117,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write lect_party_ido_sum (static, 0x29c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
+f32 lect_mario_ido_sub(f32 cur, f32 total, f32 end, f32 start) {
+    f32 t = total - cur;
+
+    return (t * end + cur * start) / total;
+}
+
+USER_FUNC(lect_mario_ido_sum) {
+    s32* args = event->args;
+    MarioWork* mario = marioGetPtr();
+    s32 total = evtGetValue(event, args[0]);
+    s32 progress;
+
+    if (isFirstCall) {
+        wwstart = event->lifetime;
+        evtSetFloat(event, LW(0), mario->position.x);
+        evtSetFloat(event, LW(1), mario->position.y);
+        evtSetFloat(event, LW(2), mario->position.z);
+    }
+    progress = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
+    if (progress > total) {
+        progress = total;
+    }
+    {
+        f32 start = evtGetFloat(event, LW(0));
+        f32 target = evtGetFloat(event, LW(3));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.x = (t * target + (f32)progress * start) / (f32)total;
+    }
+    {
+        f32 start = evtGetFloat(event, LW(1));
+        f32 target = evtGetFloat(event, LW(4));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.y = (t * target + (f32)progress * start) / (f32)total;
+    }
+    {
+        f32 start = evtGetFloat(event, LW(2));
+        f32 target = evtGetFloat(event, LW(5));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.z = (t * target + (f32)progress * start) / (f32)total;
+    }
+    if (progress >= total) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(lect_status_off) {
+    statusWinForceClose();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lect_status_on) {
+    statusWinForceCloseClear();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(x_flag_set) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    x_flag_data[index] = value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(x_flag_add) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    x_flag_data[index] += value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(x_flag_get) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], x_flag_data[index]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(x_flag_wait) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    return (x_flag_data[index] == value) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+
+// NONMATCHING (95.85%): the iconId/alpha test's branch layout differs by 18 bytes.
+// Target: `cmpwi 0x75; bge neg15; b neg15` (branch-to-then); MWCC 2.6 emits
+// `cmpwi 0x75; blt zero` plus a hoisted `addi r5, r9, 0x40` CSE of the iconId
+// address. Every source form tried (flat &&, not-and, nested if, ge/lt, casts,
+// struct vs raw access, all -O4 flag orders, GC/1.3 and GC/2.6) yields one of
+// those two shapes; none reproduces both the size (0xd0) and the branch.
+// NONMATCHING (88.63%): 10 of 55 instructions differ: 3 with different operands, 1 replaced, 2 missing, 3 extra, 1 with a different opcode
+void lecture_button_disp(CameraId cameraId, void* param) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        Vec* ppos = (Vec*)((u8*)&lbtn[i] + 8);
+        f32 yoff;
+        Vec pos;
+
+        if (lbtn[i].flags & 1) {
+            continue;
+        }
+        if (*(s16*)((u8*)&lbtn[i] + 0x40) < 0x7E && *(s16*)((u8*)&lbtn[i] + 0x40) >= 0x75) {
+            yoff = -15.0f;
+        } else {
+            yoff = 0.0f;
+        }
+        pos = *(Vec*)((u8*)ppos + 4);
+        pos.y += yoff;
+        iconDispGxAlpha(&pos, 0x50, (u16)*(s16*)((u8*)&lbtn[i] + 0x40), (u8)*(s16*)((u8*)&lbtn[i] + 0x42), 1.0f);
+    }
+}
+
+USER_FUNC(lecture_button_rtn) {
+    s32 i;
+    LectureButton* button;
+    s32 done;
+
+    if (isFirstCall) {
+        memset(lbtn, 0, sizeof(lbtn));
+        for (i = 0; i < 2; i++) {
+            lbtn[i].position = (Vec){200.0f, -25.0f, 0.0f};
+        }
+    }
+    done = 0;
+    for (i = 0; i < 2; i++) {
+        button = &lbtn[i];
+
+        switch (button->seq) {
+            case 0:
+                button->iconId = 0x68;
+                button->seq = 1;
+                break;
+            case 2:
+                button->alpha += 7;
+                if (button->alpha >= 0xFF) {
+                    button->alpha = 0xFF;
+                    button->seq = 1;
+                }
+                break;
+            case 3:
+                button->alpha -= 7;
+                if (button->alpha <= 0) {
+                    button->alpha = 0;
+                    button->seq = 1;
+                }
+                break;
+            case 4:
+                button->flags |= 1;
+                done++;
+                break;
+        }
+    }
+    if (done >= 2) {
+        return EVT_RETURN_DONE;
+    }
+    dispEntry(CAMERA_2D, 0.0f, 1, lecture_button_disp, NULL);
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(lecture_button_set_icon_id) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    *(s16*)((u8*)lbtn + index * 0x44 + 0x40) = value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lecture_button_set_alpha) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    *(s16*)((u8*)lbtn + index * 0x44 + 0x42) = value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lecture_button_flag_on_off) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    u8 mask = evtGetValue(event, args[1]);
+
+    {
+        BOOL on = evtGetValue(event, args[2]);
+        u8* base = (u8*)lbtn;
+        s32 offset = index * 0x44;
+
+        if (on) {
+            base[offset] |= mask;
+        } else {
+            base[offset] &= ~mask;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lecture_button_set_seq) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    *(u8*)((u8*)lbtn + index * 0x44 + 1) = value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lecture_button_get_icon_id) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], *(u8*)((u8*)lbtn + index * 0x44 + 1));
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lecture_button_seq_wait) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    unsigned char field = *(u8*)((u8*)lbtn + index * 0x44 + 1);
+
+    return (field != value) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+USER_FUNC(lecture_button_set_pos) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+
+    {
+        Vec pos = (Vec){x, y, z};
+        *(Vec*)((u8*)lbtn + index * 0x44 + 0xC) = pos;
+    }
+    return EVT_RETURN_DONE;
+}
+
+void lect_map_cam_chg_sub(MapObject* obj, s32 camId, BOOL recurse) {
+    *(u8*)((u8*)obj + 0x5) = camId;
+    if (obj->child != NULL) {
+        lect_map_cam_chg_sub(obj->child, camId, TRUE);
+    }
+    if (recurse && obj->next != NULL) {
+        lect_map_cam_chg_sub(obj->next, camId, TRUE);
+    }
+}
+
+USER_FUNC(lect_map_cam_chg) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 camId = evtGetValue(event, args[1]);
+    MapObject* obj = mapGetMapObj((const char*)name);
+
+    if (obj != NULL) {
+        lect_map_cam_chg_sub(obj, camId, FALSE);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(effitemgetchange_cam) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 camId = evtGetValue(event, args[1]);
+    EffectEntry* effect = effNameToPtr((const char*)name);
+
+    *(s32*)((u8*)effect->userdata + 0x38) = camId;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(effitemgetchange_cam_ptr) {
+    s32* args = event->args;
+    EffectEntry* effect = (EffectEntry*)evtGetValue(event, args[0]);
+    s32 camId = evtGetValue(event, args[1]);
+
+    *(s32*)((u8*)effect->userdata + 0x38) = camId;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(effitemget_open) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    EffectEntry* effect = effNameToPtr((const char*)name);
+
+    *(s32*)((u8*)effect->userdata + 0x20) = 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(effitemget_open_ptr) {
+    s32* args = event->args;
+    EffectEntry* effect = (EffectEntry*)evtGetValue(event, args[0]);
+
+    *(s32*)((u8*)effect->userdata + 0x20) = 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(effitemget_busaiku) {
+    s32* args = event->args;
+    s32 flag = evtGetValue(event, args[0]);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec offset;
+
+    if (flag) {
+        offset = (Vec){0.0f, 2016.0f, 0.0f};
+    } else {
+        offset = (Vec){0.0f, -2016.0f, 0.0f};
+    }
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    PSVECAdd(&cam->cameraPos, &offset, &cam->storedPos);
+    PSVECAdd(&cam->cameraAt, &offset, &cam->storedAt);
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = 0;
+    cam->stateA = 3;
+    cam->curveA = 0xB;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lect_mobj_hit_nasi) {
+    s32* args = event->args;
+    MapObjectEntry* obj;
+    const char* hit;
+    s32 name;
+    s32 i;
+
+    name = evtGetValue(event, args[0]);
+    if (strcmp((const char*)name, "me") != 0) {
+        obj = mobjNameToPtr((const char*)name);
+    } else {
+        obj = event->thisMapObj;
+    }
+    for (i = 0; i < 2; i++) {
+        hit = obj->hitObj[i].name;
+        if (hit != NULL && strcmp(hit, "") != 0) {
+            hitGrpFlagOn(hit, 1);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lect_itemget_kesan) {
+    s32* args = event->args;
+    s32 index = args[0] == 0 ? partyCtrlNo : 1;
+    PartyEntry* party = partyGetPtr(index);
+    f32 dist = evtGetFloat(event, args[1]);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec pos;
+    Vec dir;
+    f32 v;
+    f32 half;
+
+    if (party == NULL) {
+        evtSetFloat(event, args[2], 0.0f);
+        evtSetFloat(event, args[3], 0.0f);
+        evtSetFloat(event, args[4], 0.0f);
+        return EVT_RETURN_DONE;
+    }
+    pos = party->position;
+    half = 0.5f;
+    v = *(f32*)((u8*)party + 0xF0);
+    pos.y += v * half;
+    PSVECSubtract(&pos, &cam->cameraPos, &dir);
+    PSVECNormalize(&dir, &dir);
+    PSVECScale(&dir, &dir, dist);
+    PSVECAdd(&cam->cameraPos, &dir, &dir);
+    evtSetFloat(event, args[2], dir.x);
+    evtSetFloat(event, args[3], dir.y);
+    evtSetFloat(event, args[4], dir.z);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lect_npc_balloon_on_off) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
+
+    if (evtGetValue(event, args[1])) {
+        eff = effMarioBalloonEntry(1, npc);
+        *(s32*)((u8*)eff->userdata + 0x1C) = 7;
+    } else {
+        effDelete(eff);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(efffukidashichange_cam) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 camId = evtGetValue(event, args[1]);
+    EffectEntry* effect = effNameToPtr((const char*)name);
+
+    *(s32*)((u8*)effect->userdata + 0x4C) = camId;
+    return EVT_RETURN_DONE;
+}
+
+f32 lect_party_ido_sub(f32 cur, f32 total, f32 end, f32 start) {
+    f32 t = total - cur;
+
+    return (t * end + cur * start) / total;
+}
+
+USER_FUNC(lect_party_ido_sum) {
+    s32* args = event->args;
+    s32 index = args[0] == 0 ? partyCtrlNo : 1;
+    PartyEntry* party = partyGetPtr(index);
+    s32 total = evtGetValue(event, args[1]);
+    s32 progress;
+
+    if (isFirstCall) {
+        wwstart = event->lifetime;
+        evtSetFloat(event, LW(3), party->position.x);
+        evtSetFloat(event, LW(4), party->position.y);
+        evtSetFloat(event, LW(5), party->position.z);
+        return EVT_RETURN_BLOCK;
+    }
+    progress = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
+    if (progress > total) {
+        progress = total;
+    }
+    {
+        f32 target = evtGetFloat(event, LW(0));
+        f32 start = evtGetFloat(event, LW(3));
+        f32 t = (f32)total - (f32)progress;
+        party->position.x = (t * start + (f32)progress * target) / (f32)total;
+    }
+    {
+        f32 target = evtGetFloat(event, LW(1));
+        f32 start = evtGetFloat(event, LW(4));
+        f32 t = (f32)total - (f32)progress;
+        party->position.y = (t * start + (f32)progress * target) / (f32)total;
+    }
+    {
+        f32 target = evtGetFloat(event, LW(2));
+        f32 start = evtGetFloat(event, LW(5));
+        f32 t = (f32)total - (f32)progress;
+        party->position.z = (t * start + (f32)progress * target) / (f32)total;
+    }
+    if (progress >= total) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(set_dir) {
+    s32* args = event->args;
+    s32 dir = evtGetValue(event, args[0]);
+    PartyEntry* party = partyGetPtr(0);
+
+    if (party != NULL) {
+        s32 angle = (dir > 180) ? 270 : 90;
+        f32 value = (f32)(270 - angle);
+
+        party->field_10C = value;
+        party->field_110 = value;
+    }
+    return EVT_RETURN_DONE;
+}
+
+s32 bgm_start_wait(void) {
+    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(nokotaro_party_lecture_init)
     CALL(evt_mario_set_pos, 350, 0, 0)
@@ -85,12 +584,6 @@ EVT_BEGIN(nokotaro_party_lecture_init)
     CALL(evt_party_set_dir, 0, 90, 300)
     RETURN
 EVT_END()
-
-// TODO: write x_flag_wait (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write x_flag_set (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(nokotaro_party_lecture)
     CALL(evt_msg_print, 0, STRING("lecture_friends_04_0_1"), 0, 0)
@@ -187,21 +680,6 @@ static EVT_BEGIN(all_party_lecture_otosub)
     WAIT_MS(2000)
     RETURN
 EVT_END()
-
-// TODO: write set_dir (static, 0x84 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_itemget_kesan (static, 0x174 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write effitemget_busaiku (static, 0x12c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write effitemget_open (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write effitemgetchange_cam (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(all_party_lecture_12_data_1CF80)
     CALL(evt_mario_normalize)
@@ -336,104 +814,4 @@ EVT_BEGIN(all_party_lecture_12_data_1CF80)
     END_SWITCH
     RETURN
 EVT_END()
-
-// TODO: type
-static u32 eff[1] = {
-    0x00000000,
-};
-
-// TODO: type
-static u32 lbtn[34] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 x_flag_data[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 wwstart[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: write bgm_start_wait (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_party_ido_sub (static, 0x14 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write efffukidashichange_cam (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_npc_balloon_on_off (static, 0x94 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_mobj_hit_nasi (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write effitemget_open_ptr (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write effitemgetchange_cam_ptr (static, 0x50 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_map_cam_chg (static, 0x6c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_map_cam_chg_sub (static, 0x298 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_set_pos (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_seq_wait (static, 0x6c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_get_icon_id (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_set_seq (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_flag_on_off (static, 0x88 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_set_alpha (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_set_icon_id (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_rtn (static, 0x184 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lecture_button_disp (static, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write x_flag_get (static, 0x54 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write x_flag_add (static, 0x60 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_status_on (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_status_off (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_mario_ido_sum (static, 0x278 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write lect_mario_ido_sub (static, 0x14 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/event/evt_lect_hei.s; this is where the original has it, just before the first script that uses it
 // clang-format on

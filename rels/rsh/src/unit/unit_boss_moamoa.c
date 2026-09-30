@@ -4,25 +4,94 @@
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
 #include "battle/battle_weapon_power.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_ext.h"
 #include "evt/evt_npc.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "mario/mariost.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
+#include <stdlib.h>
+#include <string.h>
 
 #pragma pool_data off
+
+typedef struct MoamoaWorkPose {
+    u16 field_0x0; // 0x0
+    u8 pad_0x2[2];
+    f32 field_0x4;     // 0x4
+    f32 field_0x8;     // 0x8
+    f32 field_0xC;     // 0xC
+    s16 field_0x10;    // 0x10
+    u8 pad_0x12[2];
+    s32 field_0x14;    // 0x14
+    OSTime field_0x18; // 0x18
+    s16 groupIdx;      // 0x20
+    s16 seq;           // 0x22
+    f32 frame;         // 0x24
+    void* animPose;    // 0x28
+    s32 type;          // 0x2C
+    void* field_0x30;  // 0x30
+    f32 field_0x34[3]; // 0x34
+    f32 field_0x40[3]; // 0x40
+    u8 pad_0x4C[4];
+} MoamoaWorkPose; // 0x50
+
+typedef struct MoamoaWorkAnim {
+    char field_0x0[0x10]; // 0x0
+    char field_0x10[8];   // 0x10
+    f32 field_0x18;       // 0x18
+    s32 field_0x1C;       // 0x1C
+    s32 field_0x20;       // 0x20
+} MoamoaWorkAnim; // 0x24
+
+typedef struct MoamoaWork {
+    u8 pad_0x0[4];
+    s32 countA;            // 0x4
+    MoamoaWorkPose* poses; // 0x8
+    s32 countB;            // 0xC
+    MoamoaWorkAnim anims[32]; // 0x10
+    s16 seqCounts[0x80];    // 0x490
+    s16 groupCounts[0x100]; // 0x590
+    void* field_0x790[5];   // 0x790
+    s32 mainUnitId;         // 0x7A4
+    f32 field_0x7A8[3];     // 0x7A8
+    f32 field_0x7B4;        // 0x7B4
+    f32 field_0x7B8;        // 0x7B8
+    f32 field_0x7BC;        // 0x7BC
+    f32 field_0x7C0;        // 0x7C0
+} MoamoaWork; // 0x7C4
+
+typedef struct MoamoaPoseArg {
+    u8 pad_0x0[0x10];
+    s16 field_0x10;   // 0x10
+    u8 pad_0x12[2];   // 0x12
+    s32 field_0x14;   // 0x14
+    OSTime field_0x18; // 0x18
+    u8 pad_0x20[0xC]; // 0x20
+    s32 type;         // 0x2C
+} MoamoaPoseArg;
+
+static MoamoaWork* wp;
+
+static u32 group_tbl[22];
 
 #pragma force_active on
 extern BattleUnitKind unit_boss_moamoa_mouth;
 extern BattleUnitKind unit_boss_moamoa_tentacle_a;
 extern BattleUnitKind unit_boss_moamoa_tentacle_b;
 extern BattleUnitKind unit_boss_moamoa_tentacle_c;
-static void ext_moamoa_main(void);  // TODO: real signature
-static void ext_moamoa_init(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
+static void ext_moamoa_main(void); // TODO: real signature
+static void ext_moamoa_init(void); // TODO: real signature
+static f32 randf(f32 min, f32 max);
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts[1];
@@ -351,7 +420,10 @@ char* MOAMOA_TAIJOU[4] = {
 // its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write evt_moamoa_mainUnitIdClear (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_moamoa_mainUnitIdClear) {
+    wp->mainUnitId = -1;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_WaitAttackEnd)
@@ -509,7 +581,47 @@ EVT_BEGIN(moamoa_tentacl_on)
 EVT_END()
 
 // TODO: write moamoa2_on (global, 0x1ac bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (78.48%): WIP reconstruction; see REPORT.md.
+USER_FUNC(moamoa2_on) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+    BattleUnitPart* part = BattleGetUnitPartsPtr(unit->work[6], 1);
+    const Vec vec = {0.0f, -1000.0f, 0.0f};
+    AnimationPose* pose;
+    Vec* vtx;
+    MoamoaWorkPose* wp2;
+    s32 count;
+    s32 i;
+    s32 j;
+
+    wp->field_0x790[4] = (void*)*(s32*)((u8*)part + 0x1C0);
+    animPoseWorldPositionEvalOn((s32)wp->field_0x790[4]);
+    pose = animPoseGetAnimPosePtr((s32)wp->field_0x790[4]);
+    vtx = *(Vec**)((u8*)pose + 0x15C);
+    count = *(s32*)((u8*)pose + 0x160);
+    for (j = 0; j < count; j++) {
+        vtx[j] = vec;
+    }
+    wp2 = wp->poses;
+    for (i = 0; i < wp->countA; i++, wp2++) {
+        if (wp2->groupIdx < 5) {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        } else if (wp2->groupIdx < 0xA) {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        } else if (wp2->groupIdx < 0xF) {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        } else if (wp2->groupIdx < 0x1E) {
+            wp2->animPose = wp->field_0x790[4];
+            wp2->field_0x30 = &unit->work[6];
+        } else {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(moamoa_mouth_on)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_MOA_G_ARM_RESTORE2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -700,7 +812,36 @@ static u32 ext_moamoa_data[267] = {
 // its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write ext_moamoa_init (static, 0x134 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (98.44%): body and control flow match; MWCC assigns the callee-saved registers in a
+// different order than the original (ours: &wp=r30,i=r27,group_tbl=r31,j=r26,name=r25,sub=r24).
+static void ext_moamoa_init(void) {
+    ExtPose* extPose = extGetPosePtr();
+    MoamoaWorkPose* pose = wp->poses;
+    const char* name;
+    const char* sub;
+    MoamoaWorkAnim* anim;
+    s32 i;
+    s32 j;
+
+    wp->field_0x7BC = 1.0f;
+    wp->field_0x7C0 = 1.0f;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+        extPose->flags |= 5;
+        PSMTXIdentity(*extPose->matrix);
+        name = (const char*)group_tbl[pose->type * 2];
+        sub = (const char*)group_tbl[pose->type * 2 + 1];
+        anim = wp->anims;
+        for (j = 0; j < wp->countB; j++, anim++) {
+            if (strcmp(anim->field_0x0, name) == 0 && strcmp(anim->field_0x10, sub) == 0) {
+                break;
+            }
+        }
+        if (j < wp->countB && pose->field_0x10 != j) {
+            pose->field_0x10 = j;
+            pose->field_0x18 = gp->renderTime;
+        }
+    }
+}
 
 // TODO: write moamoa_on (global, 0x6c4 bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
@@ -739,42 +880,107 @@ static EVT_BEGIN(evt_moamoa)
     RETURN
 EVT_END()
 
-// TODO: group_tbl$811 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 group_tbl$811[22] = {
-//     (u32)"c_n_moa_a", (u32)"S_1", (u32)"c_n_moa_b", (u32)"S_1",
-//     (u32)"c_kinodebu", (u32)"G_1", (u32)"c_puku_c", (u32)"U_1",
-//     (u32)"c_powan", (u32)"R_2", (u32)"c_smoko", (u32)"G_1",
-//     (u32)"c_rose", (u32)"G_1", (u32)"c_papab", (u32)"G_1",
-//     (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
-//     (u32)"c_n_moa_a", (u32)"S_2",
-// };
+static u32 group_tbl[22] = {
+    (u32)"c_n_moa_a", (u32)"S_1", (u32)"c_n_moa_b", (u32)"S_1",
+    (u32)"c_kinodebu", (u32)"G_1", (u32)"c_puku_c", (u32)"U_1",
+    (u32)"c_powan", (u32)"R_2", (u32)"c_smoko", (u32)"G_1",
+    (u32)"c_rose", (u32)"G_1", (u32)"c_papab", (u32)"G_1",
+    (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
+    (u32)"c_n_moa_a", (u32)"S_2",
+};
 
 // TODO: write moamoa_set_bodyScale (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(moamoa_set_bodyScale) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
+    s32 num = 0;
+
+    if (unit == NULL) {
+        extReset();
+        return EVT_RETURN_DONE;
+    }
+
+    if (unit->work[6] == -1) {
+        num = 3;
+    }
+    if (unit->work[5] == -1) {
+        num++;
+    }
+    if (unit->work[4] == -1) {
+        num++;
+    }
+    if (unit->work[3] == -1) {
+        num++;
+    }
+    wp->field_0x7BC = 0.333f * (num - 3) + 1.0f;
+    return 0;
+}
 
 EVT_BEGIN(MOAMOA_SET_BODYSCALE)
     CALL(moamoa_set_bodyScale)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 wp[1] = {
-    0x00000000,
-};
-
 // TODO: write moamoa_draw (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+void moamoa_draw(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
 
 // TODO: write moamoa_pose (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (90.89%): logic matches; MWCC assigns the callee-saved registers differently
+// (ours: i=r27,name=r29,anim=r26 vs orig: i=r28,name=r26,anim=r29).
+void moamoa_pose(void* poseArg) {
+    MoamoaPoseArg* pose = poseArg;
+    const char* name = (const char*)group_tbl[pose->type * 2];
+    const char* sub = (const char*)group_tbl[pose->type * 2 + 1];
+    s32 i = 0;
+    MoamoaWorkAnim* anim = wp->anims;
+
+    for (; i < wp->countB; i++, anim++) {
+        if (strcmp(anim->field_0x0, name) == 0 && strcmp(anim->field_0x10, sub) == 0) {
+            break;
+        }
+    }
+    if (i < wp->countB && pose->field_0x10 != i) {
+        pose->field_0x10 = i;
+        pose->field_0x18 = gp->renderTime;
+    }
+}
 
 // TODO: write moamoa_mainUnitIdClear (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+void moamoa_mainUnitIdClear(void) {
+    wp->mainUnitId = -1;
+}
 
 // TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+static f32 randf(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
+    f32 d = max - min;
+    return r * d + min;
+}
 
 // TODO: write boss_moamoa_check_zenei_kouei (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (97.5%): one extra `mr r0,r3` before passing evtGetValue()'s result to BattleTransID
+// (ours `mr r0,r3; mr r4,r0`, orig `mr r4,r3`).
+USER_FUNC(boss_moamoa_check_zenei_kouei) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    s32 index = args[1];
+    s32 id = BattleTransID(event, value);
+    BattleUnit* unit = BattleGetUnitPtr(work, id);
+    f32 x, y, z;
+
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    if (x >= -120.0f) {
+        evtSetValue(event, index, 0);
+    } else {
+        evtSetValue(event, index, 1);
+    }
+    return EVT_RETURN_DONE;
+}
 // clang-format on

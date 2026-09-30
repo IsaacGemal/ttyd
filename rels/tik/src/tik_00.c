@@ -29,6 +29,35 @@
 #include "evt/evt_window.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/msgdrv.h"
+#include "eff/eff_mahojin.h"
+#include "memory.h"
+#include "pmario_sound.h"
+#include "manager/evtmgr_cmd.h"
+#include "driver/npcdrv.h"
+#include "mario/mario.h"
+#include "party.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+// Work area for the fortune-teller (uranai) card rendering. Only the fields
+// reached by this file are named; the rest is the copy of the event's LW/GW
+// area that uranai_init_func stores here (0x0..0xBF).
+typedef struct UranaiWork {
+    u8 pad_0x0[0xC0];
+    smartEntry* buffer;     // 0xC0, render target from smartAlloc
+    GXTexObj texObj;        // 0xC4
+    s32 field_0xE4;         // 0xE4, texture valid flag
+    EventEntry* field_0xE8; // 0xE8, the evt_uranai_cap event
+    s32 field_0xEC;         // 0xEC
+    s32 field_0xF0;         // 0xF0
+    s32 field_0xF4;         // 0xF4, viewport width (low 16 bits)
+    s32 field_0xF8;         // 0xF8, viewport height (low 16 bits)
+} UranaiWork;
 
 #pragma pool_data off
 
@@ -37,9 +66,13 @@ extern s32 tik_villager_urouro[];
 static USER_FUNC(scale_func);
 static USER_FUNC(evt_osreport);
 static USER_FUNC(ss_set);
-static void ss_check(void);  // TODO: real signature
+static USER_FUNC(ss_check);
 static USER_FUNC(setmertn);
 s32 kurihakase_event[221];
+
+char* uranaisi_msgp;
+UranaiWork* uranai_wp;
+static s32 ssf[1];
 
 // clang-format off
 extend_data(4,
@@ -98,8 +131,283 @@ static char* shopper_data[38] = {
     "tik_shop_29", "shop_30", "shop_31", "shop_32", "shop_33", "shop_34",
 };
 
-// TODO: write evt_osreport (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(setmertn) {
+    s32 name = evtGetValue(event, event->args[0]);
+
+    event->ownerNPC = npcNameToPtr((const char*)name);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (86.91%): 9 of 24 instructions differ: 6 with different operands, 1 replaced, 1 missing, 1 extra
+static USER_FUNC(ss_check) {
+    s32* args = event->args;
+    s32 value = ssf[0];
+
+    evtSetFloat(event, args[0], (f32)value);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(ss_set) {
+    ssf[0] = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_uranaisi_msg_free) {
+    if (uranaisi_msgp == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    _mapFree(uranaisi_msgp);
+    uranaisi_msgp = NULL;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_uranaisi_msg_alloc) {
+    uranaisi_msgp = _mapAlloc(0x100);
+    memset(uranaisi_msgp, 0, 0x100);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_uranaisi_msg_set) {
+    s32* args = event->args;
+    const char* msg = msgSearch((const char*)evtGetValue(event, args[0]));
+
+    sprintf(uranaisi_msgp, msg, uranaisi_ryokin_rtn(0), uranaisi_ryokin_rtn(1), uranaisi_ryokin_rtn(2));
+    evtSetValue(event, args[1], (s32)uranaisi_msgp);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_osreport) {
+    s32* args = event->args;
+
+    switch (evtGetValue(event, args[0])) {
+    case 0:
+        evtSetValue(event, args[1], (s32)search_evt_moji(evtGetValue(event, 0xF5DE0180)));
+        break;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(uranai_init_func) {
+    char name[64];
+    s32 i;
+
+    uranai_wp = _mapAlloc(0xFC);
+    memset(uranai_wp, 0, 0xFC);
+    memcpy(uranai_wp, event->lwData, 0x40);
+    memcpy((u8*)uranai_wp + 0x40, evtGetWork()->gwData, 0x80);
+    for (i = 0; i < 9; i++) {
+        sprintf(name, "card_omote_%d", i + 1);
+        if (mapGetMapObj(name) != NULL) {
+            *(u8*)((u8*)mapGetMapObj(name) + 5) = 5;
+        }
+        sprintf(name, "card_ura_%d", i + 1);
+        if (mapGetMapObj(name) != NULL) {
+            *(u8*)((u8*)mapGetMapObj(name) + 5) = 5;
+        }
+    }
+    uranai_wp->field_0xE8 = evtEntry(evt_uranai_cap, 0, 0);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(uranai_exit_func) {
+    memcpy(event->lwData, uranai_wp, 0x40);
+    memcpy(evtGetWork()->gwData, (u8*)uranai_wp + 0x40, 0x80);
+    evtDelete(uranai_wp->field_0xE8);
+    _mapFree(uranai_wp);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (81.48%): 196 of 337 instructions differ: 126 with different operands, 19 replaced, 39 missing, 12 extra
+void uranai_cap(CameraId cameraId, void* param) {
+    CameraEntry cam;
+    f32 viewport[6];
+    f32 proj[7];
+    Mtx44 persp;
+    Mtx lookMtx;
+    Mtx mtx;
+    Vec camPos;
+    Vec camUp;
+    Vec camTarget;
+    Vec min;
+    Vec max;
+    Vec bboxMin;
+    Vec bboxMax;
+    AnimationPoseData* anim;
+    NpcEntry* npc;
+    f32 ratio;
+    s32 height;
+    s32 width;
+    u32 left;
+    u32 top;
+    u32 wd;
+    u32 ht;
+
+    camGetPtr(CAMERA_3D);
+    width = (u16)uranai_wp->field_0xF4;
+    height = (u16)uranai_wp->field_0xF8;
+    GXGetViewportv(viewport);
+    GXGetProjectionv(proj);
+    GXGetScissor(&left, &top, &wd, &ht);
+    GXSetViewport(0.0f, 0.0f, width, height, 0.0f, 1.0f);
+    GXSetScissor(1, 1, width - 2, height - 2);
+    C_MTXPerspective(persp, 25.0f, (f32)(width / height), 1.0f, 1000.0f);
+    GXSetProjection(persp, GX_PERSPECTIVE);
+    camUp = (Vec){0.0f, 1.0f, 0.0f};
+    camPos = (Vec){0.0f, 0.0f, 0.0f};
+    camTarget = (Vec){0.0f, 0.0f, 0.0f};
+    camPos.y = (f32)height / 3.0f;
+    camTarget.y = camPos.y;
+    camPos.z = 0.7f * ((f32)height * 0.5f / (f32)tan(0.21816615760326385));
+    C_MTXLookAt(lookMtx, &camPos, &camUp, &camTarget);
+    cam = *camGetPtr(cameraId);
+    npc = npcNameToPtr("うらない師");
+    anim = animPoseGetAnimBaseDataPtr(npc->poseId);
+    bboxMin = anim->bboxMin;
+    bboxMax = anim->bboxMax;
+    min = bboxMin;
+    max = bboxMax;
+    ratio = (f32)width / (2.0f * (max.x - min.x));
+    PSMTXCopy(lookMtx, camGetCurPtr()->view);
+    animPosePeraOff(npc->poseId);
+    PSMTXIdentity(mtx);
+    animPoseDrawMtx(npc->poseId, mtx, 1, 0.0f, ratio);
+    animPoseDrawMtx(npc->poseId, mtx, 2, 0.0f, ratio);
+    animPoseDrawMtx(npc->poseId, mtx, 3, 0.0f, ratio);
+    animPosePeraOn(npc->poseId);
+    PSMTXCopy(cam.view, camGetCurPtr()->view);
+    uranai_wp->buffer = smartAlloc(GXGetTexBufferSize(width, height, 5, 0, 0), HEAP_EFFECT);
+    GXSetTexCopySrc(0, 0, width, height);
+    GXSetTexCopyDst(width, height, 5, 0);
+    GXCopyTex(uranai_wp->buffer->address, 1);
+    GXPixModeSync();
+    GXInitTexObj(&uranai_wp->texObj, uranai_wp->buffer->address, width, height, 5, 0, 0, 0);
+    GXInitTexObjLOD(&uranai_wp->texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
+    GXSetProjectionv(proj);
+    GXSetScissor(left, top, wd, ht);
+    uranai_wp->field_0xE4 = 1;
+}
+
+USER_FUNC(uranai_cap_evt) {
+    dispEntry(CAMERA_SHADOW, 0.0f, 3, uranai_cap, NULL);
+    return EVT_RETURN_BLOCK;
+}
+
+// NONMATCHING (99.82%): 3 of 95 instructions differ in operands only (registers or offsets)
+void card_tev(TevCallbackParam* param) {
+    if (uranai_wp->field_0xE4 != 0) {
+        GXLoadTexObj(smartTexObj(&uranai_wp->texObj, (void**)uranai_wp->buffer), GX_TEXMAP0);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
+    }
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_ZERO, GX_CA_APREV);
+    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    param->field_C = 1;
+    param->field_14 = 1;
+    param->field_10 = 1;
+}
+
+USER_FUNC(uranai_bbox) {
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+
+    evtGetValue(event, args[1]);
+    evtGetValue(event, args[2]);
+    evtGetValue(event, args[3]);
+    uranai_wp->field_0xEC = value;
+    uranai_wp->field_0xF0 = value;
+    uranai_wp->field_0xF4 = value;
+    uranai_wp->field_0xF8 = value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(card_xlu) {
+    GXColor c;
+    GXColor color;
+    const char* name = (const char*)evtGetValue(event, LW(2));
+
+    if (isFirstCall) {
+        event->userdata[0] = 0xFF;
+    }
+    color = (GXColor){0xFF, 0xFF, 0xFF, 0};
+    color.a = event->userdata[0];
+    c = color;
+    mapGrpSetColor(name, &c);
+    event->userdata[0] -= 8;
+    if (event->userdata[0] < 0) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(card_camid) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+
+    if (mapGetMapObj(name) != NULL) {
+        *(u8*)((u8*)mapGetMapObj(name) + 5) = value;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_tik_000005e8) {
+    MapObject* obj = mapGetMapObj("supotto");
+
+    *(u8*)((u8*)obj + 4) = 10;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_tik_000005c0) {
+    psndSetFlag(0x80);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_tik_00000598) {
+    psndClearFlag(0x80);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mario_key_onoff_wait) {
+    marioGetPtr();
+    switch (!marioChkKey()) {
+    case 0:
+        break;
+    default:
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(scale_func) {
+    f32 scale = evtGetFloat(event, event->args[0]);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(0);
+    Vec v = {0.0f, 0.0f, 0.0f};
+
+    v.x = scale;
+    v.y = scale;
+    v.z = scale;
+    mario->scale = v;
+    if (party != NULL) {
+        Vec v2 = {0.0f, 0.0f, 0.0f};
+
+        v2.x = scale;
+        v2.y = scale;
+        v2.z = scale;
+        party->field_70 = v2;
+    }
+    return EVT_RETURN_DONE;
+}
+
 
 EVT_BEGIN(uranaisi_next_evt)
     IF_INT_LESS(GSW(0), 405)
@@ -205,25 +513,15 @@ static u32 name_tbl[18] = {
     (u32)"card_9", 0x00000001,
 };
 
-// TODO: write uranai_cap_evt (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_uranai_cap)
     CALL(uranai_cap_evt)
     RETURN
 EVT_END()
 
-// TODO: write unk_tik_000005e8 (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write uranai_bbox (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write card_tev (global, 0x17c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write uranai_init_func (global, 0x12c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(uranai_init)
     CALL(uranai_init_func)
@@ -264,8 +562,6 @@ EVT_BEGIN(uranai_init)
     RETURN
 EVT_END()
 
-// TODO: write card_camid (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(uranai_main)
     BEGIN_INLINE_EVENT
@@ -482,8 +778,6 @@ EVT_BEGIN(uranai_main)
     RETURN
 EVT_END()
 
-// TODO: write uranai_exit_func (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(uranai_exit)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("uranai_mae"), 1)
@@ -513,17 +807,9 @@ EVT_BEGIN(uranai_exit)
     RETURN
 EVT_END()
 
-// TODO: write evt_uranaisi_msg_set (global, 0xa0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write evt_uranaisi_msg_alloc (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write evt_uranaisi_msg_free (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write setmertn (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(uranaisi_table_talk)
     CALL(setmertn, STRING("うらない師"))
@@ -629,19 +915,13 @@ EVT_BEGIN(unk_evt_tik_0000f438)
     RETURN
 EVT_END()
 
-// TODO: write ss_set (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(starmaniac_get_event)
     CALL(ss_set, 1)
     RETURN
 EVT_END()
 
-// TODO: write unk_tik_00000598 (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write unk_tik_000005c0 (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(starmaniac_talk)
     CALL(evt_badgeShop_starmaniac_get_kind_cnt, LW(0))
@@ -1635,8 +1915,6 @@ static EVT_BEGIN(evt_door_04_entry)
     RETURN
 EVT_END()
 
-// TODO: write scale_func (static, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(tensou_return)
     CALL(evt_mario_key_onoff, 0)
@@ -2121,30 +2399,7 @@ EVT_BEGIN(tik_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 uranaisi_msgp[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 uranai_wp[1] = {
-    0x00000000,
-};
 
-// TODO: type
-static u32 ssf[1] = {
-    0x00000000,
-};
 
-// TODO: write mario_key_onoff_wait (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write card_xlu (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write uranai_cap (global, 0x514 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write ss_check (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_00.s; this is where the original has it, just before the first script that uses it
 // clang-format on

@@ -3,7 +3,7 @@
 #include "evt/evt_cmd.h"
 
 USER_FUNC(moveSwitch);
-void getMri02Yuka(void);  // TODO: real signature
+f32 getMri02Yuka(void);
 USER_FUNC(setPuniWeight);
 USER_FUNC(getSwitch);
 EVT_DEF(punipuni_switch);

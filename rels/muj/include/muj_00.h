@@ -1,6 +1,12 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "muj_10.h"
+
+typedef struct {
+    f32 angle; // 0x0
+    f32 dist;  // 0x4
+} OpField;
 
 USER_FUNC(cam_test_func);
 USER_FUNC(cam_test_init_func);
@@ -8,15 +14,15 @@ USER_FUNC(ship_rotate_rev);
 USER_FUNC(ship_rotate);
 USER_FUNC(tobikakaru_end);
 USER_FUNC(tobikakaru_init);
-void tobikakari_seq00(void);  // TODO: real signature
-void random_choice_target(void);  // TODO: real signature
+void tobikakari_seq00(NanNpcEntry* entry);
+NanNpcEntry* random_choice_target(s32 type);
 USER_FUNC(mario_main_func);
 USER_FUNC(mario_main_setup_func);
 USER_FUNC(mario_main_init_func);
 USER_FUNC(kaizoku_main_func);
 USER_FUNC(dai3_butai_main_func);
-void suifu_kyorokyoro_init(void);  // TODO: real signature
-void suifu_kyorokyoro(void);  // TODO: real signature
+void suifu_kyorokyoro_init(NanNpcEntry* entry);
+void suifu_kyorokyoro(NanNpcEntry* entry);
 USER_FUNC(koburon_get_encount_info);
 EVT_DEF(suifu_dark);
 EVT_DEF(nannpc_light);

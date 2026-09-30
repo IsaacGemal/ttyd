@@ -1,4 +1,6 @@
 #include "aji_13.h"
+#include "driver/camdrv.h"
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -18,15 +20,22 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mario_cam.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "party.h"
 #include "party/party_motion.h"
+#include "system.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 extern s32 evt_emergency[];
 static USER_FUNC(mario_chk);
-static void hitIsGroup(void);  // TODO: real signature
-static void _hitIsGroupSub(void);  // TODO: real signature
+static s32 hitIsGroup(HitEntry* group, HitEntry* hit);
+static s32 _hitIsGroupSub(HitEntry* group, HitEntry* hit, BOOL recurse);
 
 // clang-format off
 extend_data(52,
@@ -124,6 +133,11 @@ static char* name_tbl[13] = {
 char* name_tbl2[6] = {
     "A_zenmai1", "A_zenmai2", "A_zenmai3", "A__zenmai4", "A_zenmai5", "A_zenmai6",
 };
+
+Vec vec3_aji_00014358 = {0.0f, 0.0f, 0.0f};
+Vec vec3_aji_00014364 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_aji_00014370 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_aji_0001437c = {0.0f, 1.0f, 0.0f};
 
 EVT_BEGIN(move_left_right)
     SET_VALUE(LW(5), LW(0))
@@ -633,4 +647,163 @@ EVT_END()
 
 // TODO: write _hitIsGroupSub (static, 0x530 bytes) here:
 // its asm is in build/G8MJ01/aji/asm/aji_13.s; this is where the original has it, just before the first script that uses it
+
+// The original emits functions in reverse source order, so the functions below are in the reverse
+// of their order in build/G8MJ01/aji/asm/aji_13.s (_hitIsGroupSub, hitIsGroup, mario_chk,
+// unk_aji_000035a0, bg_cam_chk).
+static s32 _hitIsGroupSub(HitEntry* group, HitEntry* hit, BOOL recurse) {
+    if (strcmp(group->joint->name, hit->joint->name) == 0) {
+        return TRUE;
+    }
+    if (hit->child != NULL) {
+        return _hitIsGroupSub(group, hit->child, TRUE);
+    }
+    if (recurse && hit->sibling != NULL) {
+        return _hitIsGroupSub(group, hit->sibling, TRUE);
+    }
+    return FALSE;
+}
+
+static s32 hitIsGroup(HitEntry* group, HitEntry* hit) {
+    return _hitIsGroupSub(group, hit, FALSE);
+}
+
+typedef struct ChkEntry {
+    Vec prev;
+    Vec diff;
+} ChkEntry;
+
+// NONMATCHING (98.97%): 78 of 331 instructions differ: 77 with different operands, 1 missing
+static USER_FUNC(mario_chk) {
+    f32 dir;
+    f32 dist;
+    f32 diff;
+    f32 angle;
+    Vec tmp;
+    Vec up;
+    Mtx rot;
+    Vec pos;
+    s32 i;
+    s32 j;
+    HitEntry* hit;
+    PartyEntry* party;
+    MarioWork* mario;
+    ChkEntry* area;
+
+    if (isFirstCall) {
+        ChkEntry* p = _mapAlloc(13 * sizeof(ChkEntry));
+        for (i = 0; i < 13; i++) {
+            p[i].prev = vec3_aji_00014358;
+            p[i].diff = vec3_aji_00014364;
+        }
+        event->userdata[0] = (s32)p;
+        event->userdataf[1] = 0.0f;
+        event->userdata[2] = 0;
+    }
+    area = (ChkEntry*)event->userdata[0];
+
+    for (i = 0; i < 13; i++) {
+        hit = hitNameToPtr((const char*)name_tbl[i]);
+        if (hit != NULL && hit->mapObj != NULL) {
+            pos = vec3_aji_00014370;
+            pos.x = hit->mapObj->unkAC[0][3];
+            pos.y = hit->mapObj->unkAC[1][3];
+            pos.z = hit->mapObj->unkAC[2][3];
+            tmp = pos;
+            PSVECSubtract(&tmp, &area[i].prev, &area[i].diff);
+            area[i].prev = tmp;
+        }
+    }
+
+    for (j = 0; j < 13; j++) {
+        hit = hitNameToPtr((const char*)name_tbl[j]);
+        mario = marioGetPtr();
+        if (hit != NULL && mario != NULL && mario->hitobjStandOn != NULL &&
+            hitIsGroup((HitEntry*)mario->hitobjStandOn, hit) != 0) {
+            mario->riderDelta.x = area[j].diff.x * 10.0f;
+            mario->riderDelta.z = area[j].diff.z * 10.0f;
+            break;
+        }
+    }
+
+    for (j = 0; j < 13; j++) {
+        hit = hitNameToPtr((const char*)name_tbl[j]);
+        party = partyGetPtr(0);
+        if (hit != NULL && party != NULL && party->field_138 != NULL &&
+            hitIsGroup((HitEntry*)party->field_138, hit) != 0) {
+            *(f32*)((u8*)party + 0xAC) = area[j].diff.x * 10.0f;
+            *(f32*)((u8*)party + 0xB4) = area[j].diff.z * 10.0f;
+            break;
+        }
+    }
+
+    if (evtGetValue(event, GSW(0)) >= 370) {
+        mario = marioGetPtr();
+        party = partyGetPtr(0);
+        if (mario != NULL && mario->hitobjStandOn != NULL &&
+            hitIsGroup((HitEntry*)mario->hitobjStandOn, hitNameToPtr("A_bel")) != 0) {
+            mario->riderDelta.x = 0.6f;
+        }
+        if (party != NULL && *(void**)((u8*)party + 0x144) != NULL &&
+            hitIsGroup((HitEntry*)party->field_138, hitNameToPtr("A_bel")) != 0) {
+            *(f32*)((u8*)party + 0xAC) = 0.6f;
+        }
+    }
+
+    for (j = 0; j < 6; j++) {
+        hit = hitNameToPtr((const char*)name_tbl2[j]);
+        mario = marioGetPtr();
+        if (hit == NULL) {
+            continue;
+        }
+        if (mario->hitobjStandOn == NULL) {
+            event->userdataf[1] = 0.0f;
+            event->userdata[2] = 0;
+            continue;
+        }
+        if (hitIsGroup((HitEntry*)mario->hitobjStandOn, hit) != 0) {
+            up = vec3_aji_0001437c;
+            mtxGetRotationElement(hit->mapObj->unkAC, rot, 0x78, 0x79);
+            PSMTXMultVec(rot, &up, &up);
+            angle = angleABf(0.0f, 0.0f, up.x, up.y);
+            diff = angle - event->userdataf[1];
+            hitObjGetPos((const char*)name_tbl2[j], &up);
+            dist = distABf(mario->position.x, mario->position.y, up.x, up.y);
+            dir = angleABf(up.x, up.y, mario->position.x, mario->position.y);
+            if ((HitEntry*)event->userdata[2] != NULL &&
+                strcmp(hit->joint->name, ((HitEntry*)event->userdata[2])->joint->name) == 0) {
+                mario->riderDelta.x = up.x + dist * (f32)sin(6.2831855f * (dir + diff) / 360.0f) - mario->position.x;
+                mario->riderDelta.y = up.y - dist * (f32)cos(6.2831855f * (dir + diff) / 360.0f) - mario->position.y;
+            }
+            event->userdataf[1] = angle;
+            event->userdata[2] = (s32)hit;
+            break;
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(unk_aji_000035a0) {
+    s32* args = event->args;
+    const char* name0 = (const char*)evtGetValue(event, args[0]);
+    const char* name1 = (const char*)evtGetValue(event, args[1]);
+    HitEntry* hit0 = name0 != NULL ? hitNameToPtr(name0) : NULL;
+    HitEntry* hit1 = name1 != NULL ? hitNameToPtr(name1) : NULL;
+
+    if (hit0 != NULL && hit1 != NULL && hitIsGroup(hit0, hit1) != 0) {
+        evtSetValue(event, args[2], 1);
+    } else {
+        evtSetValue(event, args[2], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(bg_cam_chk) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+
+    if (marioBgmodeChk() != 0 && (cam->flags & 0x10) && marioGetPtr()->airTimer == 0) {
+        camFollowYOn();
+    }
+    return EVT_RETURN_BLOCK;
+}
 // clang-format on

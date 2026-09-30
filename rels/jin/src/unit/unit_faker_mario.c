@@ -12,6 +12,10 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include "battle/battle_sub.h"
+#include "manager/evtmgr_cmd.h"
+
+#include <string.h>
 
 #pragma pool_data off
 
@@ -534,11 +538,53 @@ static EVT_BEGIN(gparty_zoom)
     RETURN
 EVT_END()
 
-// TODO: write _load_param (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_faker_mario.s; this is where the original has it, just before the first script that uses it
+// Source order of the six functions is the reverse of their order in the asm
+// (-inline auto,deferred emits functions in reverse source order).
 
-// TODO: write _gullible_party_info_init (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_faker_mario.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(vivian_comeback) {
+    PouchData* pouch = pouchGetPtr();
+
+    pouch->partyData[6].flags &= ~2;
+    return EVT_RETURN_YIELD;
+}
+
+USER_FUNC(_gullible_party_info_init) {
+    PouchData* pouch = pouchGetPtr();
+    BattleUnit* unit;
+    s32 id;
+    BattleUnitParam* info;
+    s32 fp;
+    s32 i;
+
+    id = BattleTransID(event, -2);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    info = (BattleUnitParam*)BattleAlloc(0xC0);
+    *(void**)((u8*)unit + 0x310) = info;
+    memset(info, 0, 0xC0);
+    for (i = 0; i < 4; i++) {
+        BattleUnitParam* p = &info[i];
+        p->mSizeMultiplier = 1.0f;
+        p->mStatusFlags = 0;
+        memset(p->mStatus.data, 0, 0x1E);
+        switch (i) {
+            case 0:
+                p->maxHp = p->currentHp = pouch->partyData[1].baseMaxHP;
+                break;
+            case 1:
+                p->maxHp = p->currentHp = pouch->partyData[2].baseMaxHP;
+                break;
+            case 2:
+                p->maxHp = p->currentHp = pouch->partyData[5].baseMaxHP;
+                break;
+            default:
+                p->maxHp = p->currentHp = pouch->partyData[4].baseMaxHP;
+                break;
+        }
+        fp = pouch->baseMaxFP;
+        p->maxFp = p->currentFp = fp;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(init_event_fmario)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event_fmario))
@@ -622,8 +668,44 @@ EVT_BEGIN(dead_event_fmario_down)
     RETURN
 EVT_END()
 
-// TODO: write vivian_comeback (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_faker_mario.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_load_param) {
+    BattleWork* work = _battleWorkPointer;
+    BattleUnit* src;
+    BattleUnit* dst;
+    BattleUnitParam* info;
+    BattleUnitParam* slot;
+    s32* args = event->args;
+    s32 id0;
+    s32 id1;
+
+    id0 = evtGetValue(event, args[0]);
+    id1 = evtGetValue(event, args[1]);
+    src = BattleGetUnitPtr(work, BattleTransID(event, id0));
+    dst = BattleGetUnitPtr(work, BattleTransID(event, id1));
+    info = *(BattleUnitParam**)((u8*)src + 0x310);
+    switch (dst->currentKind) {
+        case UNIT_GOOMBELLA_CHAPTER4:
+            slot = info;
+            break;
+        case UNIT_KOOPS_CHAPTER4:
+            slot = info + 1;
+            break;
+        case UNIT_FLURRIE_CHAPTER4:
+            slot = info + 2;
+            break;
+        case UNIT_YOSHI_CHAPTER4:
+            slot = info + 3;
+            break;
+    }
+    dst->mSizeMultiplier = slot->mSizeMultiplier;
+    dst->mStatusFlags = slot->mStatusFlags;
+    *(BattleUnitStatus*)&dst->mSleepTurns = slot->mStatus;
+    dst->maxHp = slot->maxHp;
+    dst->currentHp = slot->currentHp;
+    dst->maxFp = slot->maxFp;
+    dst->currentFp = slot->currentFp;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(dead_event_fmario)
     CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
@@ -648,7 +730,7 @@ static EVT_BEGIN(dead_event_fmario)
     IF_INT_EQUAL(GW(21), 0)
         SET_VALUE(GW(21), 1)
         CALL(vivian_comeback)
-        CALL(btlevtcmd_SpawnUnit, LW(3), PTR(entryunit_party), 0)
+        CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entryunit_party[4]), 0)
         CALL(btlevtcmd_SetHomePos, LW(3), FLOAT(-140.0f), FLOAT(0.0f), FLOAT(5.0f))
         CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
         CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
@@ -713,7 +795,7 @@ EVT_BEGIN(phase_event_fmario)
             WAIT_MS(200)
             SET_VALUE(GW(21), 1)
             CALL(vivian_comeback)
-            CALL(btlevtcmd_SpawnUnit, LW(3), PTR(entryunit_party), 0)
+            CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entryunit_party[4]), 0)
             CALL(btlevtcmd_SetHomePos, LW(3), FLOAT(-140.0f), FLOAT(0.0f), FLOAT(5.0f))
             CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
             CALL(btlevtcmd_TransStageFloorPosition, LW(0), LW(1), LW(2))
@@ -1238,14 +1320,106 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
     RETURN
 EVT_END()
 
-// TODO: write _anime_load_wait (static, 0xb4 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_faker_mario.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(_save_param) {
+    BattleWork* work = _battleWorkPointer;
+    BattleUnit* dst;
+    BattleUnit* src;
+    BattleUnitParam* info;
+    BattleUnitParam* slot;
+    s32* args = event->args;
+    s32 id0;
+    s32 id1;
 
-// TODO: write _anime_load (static, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_faker_mario.s; this is where the original has it, just before the first script that uses it
+    id0 = evtGetValue(event, args[0]);
+    id1 = evtGetValue(event, args[1]);
+    dst = BattleGetUnitPtr(work, BattleTransID(event, id0));
+    src = BattleGetUnitPtr(work, BattleTransID(event, id1));
+    info = *(BattleUnitParam**)((u8*)dst + 0x310);
+    switch (src->currentKind) {
+        case UNIT_GOOMBELLA_CHAPTER4:
+            slot = info;
+            break;
+        case UNIT_KOOPS_CHAPTER4:
+            slot = info + 1;
+            break;
+        case UNIT_FLURRIE_CHAPTER4:
+            slot = info + 2;
+            break;
+        case UNIT_YOSHI_CHAPTER4:
+            slot = info + 3;
+            break;
+    }
+    slot->mSizeMultiplier = src->mSizeMultiplier;
+    slot->mStatusFlags = src->mStatusFlags;
+    slot->mStatus = *(BattleUnitStatus*)&src->mSleepTurns;
+    slot->maxHp = src->maxHp;
+    slot->currentHp = src->currentHp;
+    slot->maxFp = src->maxFp;
+    slot->currentFp = src->currentFp;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write _save_param (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_faker_mario.s; this is where the original has it, just before the first script that uses it
+// Copy propagation off: with it on, _anime_load and _anime_load_wait both
+// allocate the BattleGetUnitPtr scratch register differently from the target.
+#pragma opt_propagation off
+static USER_FUNC(_anime_load) {
+    BattleWork* work = _battleWorkPointer;
+    BattleUnit* unit;
+    s32* args = event->args;
+    s32 id;
+    s32 partyId;
+
+    id = evtGetValue(event, args[0]);
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id));
+    switch (unit->currentKind) {
+        case UNIT_GOOMBELLA_CHAPTER4:
+            partyId = UNIT_GOOMBELLA;
+            break;
+        case UNIT_KOOPS_CHAPTER4:
+            partyId = UNIT_KOOPS;
+            break;
+        case UNIT_FLURRIE_CHAPTER4:
+            partyId = UNIT_FLURRIE;
+            break;
+        case UNIT_YOSHI_CHAPTER4:
+        default:
+            partyId = UNIT_YOSHI;
+            break;
+    }
+    BattlePartyAnimeLoad(partyId);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(_anime_load_wait) {
+    BattleWork* work = _battleWorkPointer;
+    BattleUnit* unit;
+    s32* args = event->args;
+    s32 id;
+    s32 partyId;
+
+    id = evtGetValue(event, args[0]);
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id));
+    switch (unit->currentKind) {
+        case UNIT_GOOMBELLA_CHAPTER4:
+            partyId = UNIT_GOOMBELLA;
+            break;
+        case UNIT_KOOPS_CHAPTER4:
+            partyId = UNIT_KOOPS;
+            break;
+        case UNIT_FLURRIE_CHAPTER4:
+            partyId = UNIT_FLURRIE;
+            break;
+        case UNIT_YOSHI_CHAPTER4:
+        default:
+            partyId = UNIT_YOSHI;
+            break;
+    }
+    if (BattlePartyAnimeLoad(partyId)) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+#pragma opt_propagation on
 
 EVT_BEGIN(party_change_event)
     ADD(GW(18), 1)

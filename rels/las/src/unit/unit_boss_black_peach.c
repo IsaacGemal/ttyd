@@ -16,16 +16,37 @@
 #include "forcedata.h"
 #include "party/party_motion.h"
 #include "unit/party/unit_party_vivian.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_break_slot.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
+#include "battle/battle.h"
+#include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "driver/extdrv.h"
+#include "driver/lightdrv.h"
+#include "driver/npcdrv.h"
+#include "eff/n64/eff_pokopi_thunder_n64.h"
+#include "eff/n64/eff_shock_n64.h"
+#include "eff/n64/eff_stardust2_n64.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "pmario_sound.h"
+#include "system.h"
+#include <dolphin/mtx.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
-static void hand_init(void);  // TODO: real signature
-static void pose_main(void);  // TODO: real signature
-static void pose_init(void);  // TODO: real signature
+static void hand_init(void);
+static void pose_main(void);
+static void pose_init(void);
 BattleVulnerableStatus peach_regist;
 BattleDataEntry peach_data_table[2];
 BattleUnitKindPart peach_parts[7];
@@ -4513,4 +4534,885 @@ u32 hand_data[96] = {
 
 // TODO: write pose_init (static, 0x1c8 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
+
+typedef struct HandElem {
+    /*0x00*/ u16 field_0x00;
+    /*0x02*/ u16 field_0x02;
+    /*0x04*/ s32 field_0x04;
+    /*0x08*/ OSTime field_0x08;
+    /*0x10*/ s16 field_0x10;
+    /*0x12*/ s16 field_0x12;
+    /*0x14*/ f32 field_0x14;
+    /*0x18*/ f32 field_0x18;
+    /*0x1C*/ f32 field_0x1C;
+    /*0x20*/ f32 field_0x20;
+    /*0x24*/ u8 pad_0x24[4];
+} HandElem;
+
+typedef struct HandPose {
+    /*0x00*/ char name[0x10];
+    /*0x10*/ char name2[8];
+    /*0x18*/ f32 field_0x18;
+    /*0x1C*/ s32 field_0x1C;
+    /*0x20*/ s32 field_0x20;
+} HandPose;
+
+typedef struct HandWork {
+    /*0x000*/ HandElem* elems;
+    /*0x004*/ s32 count;
+    /*0x008*/ HandPose poses[32];
+    /*0x488*/ u8 pad_0x488[0x14];
+    /*0x49C*/ f32 field_0x49C;
+    /*0x4A0*/ u8 pad_0x4A0[4];
+    /*0x4A4*/ s32 field_0x4A4;
+    /*0x4A8*/ s32 field_0x4A8;
+    /*0x4AC*/ s32 field_0x4AC;
+} HandWork;
+
+typedef struct HandData {
+    /*0x0*/ const char* str1;
+    /*0x4*/ const char* str2;
+    /*0x8*/ f32 value;
+} HandData;
+
+#define HAND ((HandWork*)hand_wp[0])
+
+typedef struct ShadowQueenData {
+    s32 field_0x00;
+    s32 field_0x04;
+    s32 field_0x08;
+    u8 pad_0x0C[0x34];
+    s32 field_0x40;
+    s32 field_0x44;
+} ShadowQueenData;
+
+#define DEF_QUEEN_HAND_SMALL_SCROLL_EVT(name, startval, limitval)                                        \
+    USER_FUNC(name) {                                                                                     \
+        if (isFirstCall) {                                                                                \
+            HAND->field_0x4AC = 0;                                                                        \
+        }                                                                                                 \
+        switch (HAND->field_0x4AC) {                                                                      \
+        case 0:                                                                                           \
+            HAND->field_0x49C = startval;                                                                 \
+            HAND->field_0x4AC++;                                                                          \
+        case 1:                                                                                           \
+            if (HAND->field_0x49C <= limitval) {                                                          \
+                HAND->field_0x4AC++;                                                                      \
+                break;                                                                                    \
+            }                                                                                             \
+            HAND->field_0x49C -= 1.0f;                                                                    \
+            extGetPosePtr();                                                                              \
+            {                                                                                             \
+                s32 i;                                                                                    \
+                HandElem* elem = HAND->elems;                                                             \
+                for (i = 0; i < HAND->count; i++) {                                                       \
+                    elem->field_0x1C = HAND->field_0x49C * elem->field_0x14 - (f32)elem->field_0x10;       \
+                    elem++;                                                                               \
+                }                                                                                         \
+            }                                                                                             \
+            break;                                                                                        \
+        case 2:                                                                                           \
+        case 0x63:                                                                                        \
+            {                                                                                             \
+                s32 i;                                                                                    \
+                ExtPose* pose = extGetPosePtr();                                                          \
+                for (i = 0; i < HAND->count; i++) {                                                       \
+                    pose->flags &= ~1;                                                                    \
+                    pose++;                                                                               \
+                }                                                                                         \
+            }                                                                                             \
+            return EVT_RETURN_YIELD;                                                                      \
+        default:                                                                                          \
+            break;                                                                                        \
+        }                                                                                                 \
+        return EVT_RETURN_BLOCK;                                                                          \
+    }
+#define DEF_QUEEN_HAND_SMALL_SETUP_EVT(name)                                                             \
+    USER_FUNC(name) {                                                                                     \
+        if (isFirstCall) {                                                                                \
+            HAND->field_0x4AC = 0;                                                                        \
+        }                                                                                                 \
+        switch (HAND->field_0x4AC) {                                                                      \
+        case 0:                                                                                           \
+            {                                                                                             \
+                s32 i;                                                                                    \
+                ExtPose* pose;                                                                            \
+                HandElem* elem;                                                                           \
+                HAND->field_0x49C = -80.0f;                                                               \
+                pose = extGetPosePtr();                                                                   \
+                elem = HAND->elems;                                                                       \
+                for (i = 0; i < HAND->count; i++, pose++, elem++) {                                         \
+                    pose->flags |= 1;                                                                     \
+                    pose->flags &= ~2;                                                                    \
+                    PSMTXIdentity(*pose->matrix);                                                          \
+                    elem->field_0x10 = irand(0x14);                                                       \
+                    elem->field_0x14 = 1.0f + (f32)irand(0xc8) / 100.0f;                                  \
+                    elem->field_0x18 = (f32)((i % 10) * 0x14 + irand(0xf));                               \
+                    elem->field_0x1C = HAND->field_0x49C - (f32)elem->field_0x10;                         \
+                    {                                                                                     \
+                        s32 v = irand(0xf) + (i / 10) * -0xf;                                             \
+                        elem->field_0x20 = (f32)(v + 0x46);                                               \
+                    }                                                                                     \
+                    pose->field_0x4 = (f32)(irand(0x14) - 0xa);                                           \
+                    ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));                         \
+                    ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));                         \
+                    if (elem->field_0x00 != 0) {                                                           \
+                        ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;                        \
+                    }                                                                                     \
+                }                                                                                         \
+                HAND->field_0x4AC++;                                                                      \
+            }                                                                                             \
+        case 1:                                                                                           \
+            if (HAND->field_0x49C >= 0.0f) {                                                              \
+                HAND->field_0x4AC++;                                                                      \
+                break;                                                                                    \
+            }                                                                                             \
+            HAND->field_0x49C += 1.0f;                                                                    \
+            extGetPosePtr();                                                                              \
+            {                                                                                             \
+                HandElem* elem = HAND->elems;                                                             \
+                s32 i;                                                                                    \
+                for (i = 0; i < HAND->count; i++) {                                                       \
+                    elem->field_0x1C = HAND->field_0x49C * elem->field_0x14 - (f32)elem->field_0x10;       \
+                    elem++;                                                                               \
+                }                                                                                         \
+            }                                                                                             \
+            break;                                                                                        \
+        case 2:                                                                                           \
+        case 0x63:                                                                                        \
+            return EVT_RETURN_YIELD;                                                                      \
+        default:                                                                                          \
+            break;                                                                                        \
+        }                                                                                                 \
+        return EVT_RETURN_BLOCK;                                                                          \
+    }
+
+USER_FUNC(shadow_queen_connect) {
+    ShadowQueenData* data;
+    BattleUnitPart* part;
+    AnimationPose* pose;
+    f32* verts;
+    if (isFirstCall) {
+        data = __memAlloc(4, 0x48);
+        event->userdata[0] = (s32)data;
+        data->field_0x00 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 2) + 0x1C0);
+        animPoseWorldPositionEvalOn(data->field_0x00);
+        data->field_0x40 = animPoseGetGroupIdx(data->field_0x00, "locator12");
+        data->field_0x04 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 3) + 0x1C0);
+        animPoseWorldPositionEvalOn(data->field_0x04);
+        data->field_0x44 = animPoseGetGroupIdx(data->field_0x04, "locator12");
+        animPosePeraOff(data->field_0x00);
+        animPosePeraOff(data->field_0x04);
+        data->field_0x08 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 4) + 0x1C0);
+        animPosePeraOff(data->field_0x08);
+    }
+    data = (ShadowQueenData*)event->userdata[0];
+    pose = animPoseGetAnimPosePtr(data->field_0x00);
+    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+    BtlUnit_SetPartsPos(part, verts[data->field_0x40 * 3], verts[data->field_0x40 * 3 + 1], verts[data->field_0x40 * 3 + 2]);
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 5);
+    *(f32*)((u8*)part + 0x4F8) = 7.0f;
+    BtlUnit_SetPartsPos(part, verts[data->field_0x40 * 3], verts[data->field_0x40 * 3 + 1], verts[data->field_0x40 * 3 + 2]);
+    pose = animPoseGetAnimPosePtr(data->field_0x04);
+    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4);
+    *(f32*)((u8*)part + 0x4F8) = 1.0f;
+    BtlUnit_SetPartsPos(part, verts[data->field_0x44 * 3], verts[data->field_0x44 * 3 + 1], verts[data->field_0x44 * 3 + 2]);
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(peach_talk_synchro_shadow_head_evt) {
+    BattleUnitPart* part;
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0 || strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") == 0 ||
+        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") == 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0) {
+            BtlUnit_SetAnim(part, "KRT_T_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0 && strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") != 0 &&
+        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") != 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0) {
+            BtlUnit_SetAnim(part, "KRT_S_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
+            BtlUnit_SetAnim(part, "KRT_D_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
+            BtlUnit_SetAnim(part, "KRT_S_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(make_pattern) {
+    HandData* p;
+    NpcEntry* npc;
+    AnimData* data;
+    s32 i;
+    p = (HandData*)hand_data;
+    npc = npcNameToPtr("dummy");
+    animPoseSetAnim(npc->poseId, "KRT_S_1", 1);
+    animPoseGetAnimPosePtr(npc->poseId);
+    data = animPoseGetAnimDataPtr(npc->poseId);
+    for (i = 0; i < (s32)*(f32*)(*(u8**)((u8*)data + 0x24) + 0x8); i += 3) {
+        p->str1 = "c_s_hand";
+        p->str2 = "KRT_S_1";
+        p->value = 3.0f * (f32)i;
+        p++;
+    }
+    p->str1 = NULL;
+    return EVT_RETURN_DONE;
+}
+
+static void pose_init(void) {
+    char name1[0x20];
+    char name2[0x20];
+    Mtx mtx;
+    LightEntry* light;
+    HandData* data;
+    s32 i;
+    s32 start;
+    data = (HandData*)hand_data;
+    i = 0;
+    light = lightGetPaperCraft();
+    light->position = (Vec){-200.0f, 100.0f, 500.0f};
+    PSMTXScale(mtx, 3.0f, 3.0f, 3.0f);
+    PSMTXMultVec(mtx, &light->position, &light->position);
+    strcpy(name1, "");
+    strcpy(name2, "");
+    HAND->field_0x4A4 = -1;
+    do {
+        if (strcmp(data->str1, name1) != 0) {
+            strcpy(name1, data->str1);
+            strcpy(name2, "");
+        }
+        if (strcmp(data->str2, name2) != 0) {
+            strcpy(name2, data->str2);
+            start = i;
+            HAND->field_0x4A4++;
+        }
+        strcpy(HAND->poses[HAND->field_0x4A4].name, name1);
+        strcpy(HAND->poses[HAND->field_0x4A4].name2, name2);
+        HAND->poses[HAND->field_0x4A4].field_0x1C = start;
+        HAND->poses[HAND->field_0x4A4].field_0x20 = i - start + 1;
+        HAND->poses[HAND->field_0x4A4].field_0x18 = data->value;
+        i++;
+        data++;
+    } while (data->str1 != NULL);
+    HAND->field_0x4A4++;
+}
+
+static void pose_main(void) {
+    ExtPose* pose;
+    HandElem* elem;
+    s32 i;
+    pose = extGetPosePtr();
+    elem = HAND->elems;
+    i = 0;
+    for (i = 0; i < HAND->count; i++, pose++, elem++) {
+        HandPose* hp = &HAND->poses[elem->field_0x04];
+        s32 unitId;
+        f32 f1 = (f32)OSTicksToMilliseconds((u64)(gp->renderTime - elem->field_0x08));
+        f1 = (f32)gp->framerate * f1 / 1000.0f / hp->field_0x18;
+        if (f1 >= 1.0f) {
+            elem->field_0x08 = gp->renderTime;
+            f1 -= 1.0f;
+        }
+        pose->field_0x10 = hp->field_0x1C + (s32)((hp->field_0x20 - 1) * f1);
+        unitId = evtGetValue(NULL, 0xFD050F8A);
+        if (unitId == -1) {
+            ((f32*)pose->matrix)[3] = elem->field_0x18;
+            ((f32*)pose->matrix)[7] = elem->field_0x1C;
+            ((f32*)pose->matrix)[11] = elem->field_0x20;
+        } else {
+            BattleUnit* unit;
+            f32 x, y, z, hx, hy, hz;
+            BattleGetUnitPtr(_battleWorkPointer, unitId);
+            unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+            BtlUnit_GetPos(unit, &x, &y, &z);
+            unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+            BtlUnit_GetHomePos(unit, &hx, &hy, &hz);
+            ((f32*)pose->matrix)[3] = elem->field_0x18 + x - hx;
+            ((f32*)pose->matrix)[7] = elem->field_0x1C + y - hy;
+            ((f32*)pose->matrix)[11] = elem->field_0x20 + z - hz;
+        }
+    }
+}
+
+static void hand_init(void) {
+    s32 i;
+    ExtPose* pose;
+    HandElem* elem;
+    hand_wp[0] = (u32)__memAlloc(4, 0x4B0);
+    memset(HAND, 0, 0x4B0);
+    HAND->count = extGetPoseNum();
+    HAND->elems = __memAlloc(4, HAND->count * 0x28);
+    memset(HAND->elems, 0, HAND->count * 0x28);
+    pose_init();
+    pose = extGetPosePtr();
+    i = 0;
+    elem = HAND->elems;
+    for (i = 0; i < HAND->count; i++, pose++, elem++) {
+        pose->flags |= 6;
+        PSMTXIdentity(*pose->matrix);
+        elem->field_0x04 = 0;
+        {
+            OSTime t = (OSTime)irand(0x64);
+            elem->field_0x08 = gp->renderTime - t * (OSTime)10000000;
+        }
+        elem->field_0x00 = irand(1);
+    }
+}
+
+void hand_draw(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+// NONMATCHING (98.9%): 43 of 166 instructions differ in operands only (registers or offsets)
+void hand_main(void) {
+    ExtPose* pose;
+    HandElem* elem;
+    s32 i;
+    pose = extGetPosePtr();
+    elem = HAND->elems;
+    i = 0;
+    for (i = 0; i < HAND->count; i++, pose++, elem++) {
+        HandPose* hp = &HAND->poses[elem->field_0x04];
+        s32 unitId;
+        f32 f1 = (f32)OSTicksToMilliseconds((u64)(gp->renderTime - elem->field_0x08));
+        f1 = (f32)gp->framerate * f1 / 1000.0f / hp->field_0x18;
+        if (f1 >= 1.0f) {
+            elem->field_0x08 = gp->renderTime;
+            f1 -= 1.0f;
+        }
+        pose->field_0x10 = hp->field_0x1C + (s32)((hp->field_0x20 - 1) * f1);
+        unitId = evtGetValue(NULL, 0xFD050F8A);
+        if (unitId == -1) {
+            ((f32*)pose->matrix)[3] = elem->field_0x18;
+            ((f32*)pose->matrix)[7] = elem->field_0x1C;
+            ((f32*)pose->matrix)[11] = elem->field_0x20;
+        } else {
+            BattleUnit* unit;
+            f32 x, y, z, hx, hy, hz;
+            BattleGetUnitPtr(_battleWorkPointer, unitId);
+            unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+            BtlUnit_GetPos(unit, &x, &y, &z);
+            unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+            BtlUnit_GetHomePos(unit, &hx, &hy, &hz);
+            ((f32*)pose->matrix)[3] = elem->field_0x18 + x - hx;
+            ((f32*)pose->matrix)[7] = elem->field_0x1C + y - hy;
+            ((f32*)pose->matrix)[11] = elem->field_0x20 + z - hz;
+        }
+    }
+    dispEntry(4, 0.0f, 1, (DispCallback)hand_draw, 0);
+}
+
+USER_FUNC(change_pose) {
+    s32 value = evtGetValue(event, event->args[0]);
+    HandElem* elem = HAND->elems;
+    s32 i;
+    for (i = 0; i < HAND->count; i++) {
+        elem->field_0x04 = value;
+        elem->field_0x08 = gp->renderTime;
+        elem++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(queen_thunder) {
+    s32* args = event->args;
+    f32 a;
+    f32 b;
+    f32 c;
+    Vec pos;
+    EffectEntry* eff;
+    a = evtGetFloat(event, args[0]);
+    b = evtGetFloat(event, args[1]);
+    c = evtGetFloat(event, args[2]);
+    pos.x = a;
+    pos.y = b;
+    pos.z = c;
+    psndSFXOn_3D((const char*)0xf1e, &pos);
+    eff = effPokopiThunderN64Entry(0, 0x28, a + 20.0f + (f32)irand(0x14), 150.0f, c + 20.0f, a, 0.0f, c, 1.0f);
+    *(s32*)((u8*)eff->userdata + 0x30) = 0xff;
+    *(s32*)((u8*)eff->userdata + 0x34) = 0xa0;
+    *(s32*)((u8*)eff->userdata + 0x38) = 0xc0;
+    *(s32*)((u8*)eff->userdata + 0x40) = 0x14;
+    *(s32*)((u8*)eff->userdata + 0x44) = 0x14;
+    *(s32*)((u8*)eff->userdata + 0x48) = 0x14;
+    eff = effShockN64Entry(3, a, 0.0f, c, 80.0f, 80.0f);
+    *(s32*)((u8*)eff->userdata + 0x30) = 0x14;
+    *(s32*)((u8*)eff->userdata + 0x34) = 0x14;
+    *(s32*)((u8*)eff->userdata + 0x38) = 0x14;
+    *(s32*)((u8*)eff->userdata + 0x3C) = 0xff;
+    *(s32*)((u8*)eff->userdata + 0x40) = 0xa0;
+    *(s32*)((u8*)eff->userdata + 0x44) = 0xc0;
+    btl_camera_shake_w(0, 8, 0, 1.0f, 1.0f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(queen_drain) {
+    Vec position;
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    position.x = x;
+    position.y = y;
+    position.z = z;
+    psndSFXOn_3D((const char*)0xF20, &position);
+    effStardust2N64Entry(5, 10, 30, x, y, z, 20.0f, 40.0f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_las_0000af38) {
+    *(u32*)BattleBreakSlotGetPtr() |= 2;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(eff_queen_set_alpha_evt) {
+    s32 value = evtGetValue(event, event->args[0]);
+    EffectEntry* eff = effNameToPtr("m_q2");
+    *(s32*)((u8*)eff->userdata + 0x28) = value;
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.96%): 23 of 279 instructions differ in operands only (registers or offsets)
+USER_FUNC(peach_hand1000_dark_drag_1_evt) {
+    if (isFirstCall) {
+        HAND->field_0x4AC = 0;
+    }
+    switch (HAND->field_0x4AC) {
+    case 0:
+        {
+            s32 i;
+            ExtPose* pose;
+            HandElem* elem;
+            HAND->field_0x49C = -80.0f;
+            pose = extGetPosePtr();
+            elem = HAND->elems;
+            for (i = 0; i < HAND->count; i++, pose++, elem++) {
+                pose->flags |= 1;
+                pose->flags &= ~2;
+                PSMTXIdentity(*pose->matrix);
+                elem->field_0x10 = irand(0x14);
+                elem->field_0x14 = 1.0f + (f32)irand(0xc8) / 100.0f;
+                {
+                    s32 v = irand(0xf) + (i % 10) * 0x14;
+                    elem->field_0x18 = (f32)(v - 0xc8);
+                }
+                elem->field_0x1C = HAND->field_0x49C - (f32)elem->field_0x10;
+                {
+                    s32 v = irand(0xf) + (i / 10) * -0xf;
+                    elem->field_0x20 = (f32)(v + 0x46);
+                }
+                pose->field_0x4 = (f32)(irand(0x14) - 0xa);
+                ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
+                ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
+                if (elem->field_0x00 != 0) {
+                    ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;
+                }
+            }
+            HAND->field_0x4AC++;
+        }
+    case 1:
+        if (HAND->field_0x49C >= 0.0f) {
+            HAND->field_0x4AC++;
+            break;
+        }
+        HAND->field_0x49C += 1.0f;
+        extGetPosePtr();
+        {
+            HandElem* elem = HAND->elems;
+            s32 i;
+            for (i = 0; i < HAND->count; i++) {
+                elem->field_0x1C = HAND->field_0x49C * elem->field_0x14 - (f32)elem->field_0x10;
+                elem++;
+            }
+        }
+        break;
+    case 2:
+        HAND->field_0x4A8 = 30;
+        HAND->field_0x4AC++;
+        break;
+    case 3:
+        if (HAND->field_0x4A8 != 0) {
+            HAND->field_0x4A8--;
+        } else {
+            if (HAND->field_0x49C <= -80.0f) {
+                HAND->field_0x4AC++;
+            } else {
+                HAND->field_0x49C -= 1.0f;
+                extGetPosePtr();
+                {
+                    HandElem* elem = HAND->elems;
+                    s32 i;
+                    for (i = 0; i < HAND->count; i++) {
+                        elem->field_0x1C = HAND->field_0x49C * elem->field_0x14 - (f32)elem->field_0x10;
+                        elem++;
+                    }
+                }
+            }
+        }
+        break;
+    case 4:
+    case 0x63:
+        return EVT_RETURN_YIELD;
+    default:
+        break;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(queen_kankyaku_delete_evt) {
+    s32 i;
+    for (i = 0; i < 200; i++) {
+        if ((u8)BattleAudience_GetSysCtrl(i)) {
+            BattleAudience_Delete(i);
+            BattleAudienceAddTargetNum(0.0f, -1.0f);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(queen_get_aud_num) {
+    s32* args = event->args;
+    s32 num;
+    BattleAudience_GetAudienceNum();
+    num = BattleAudience_GetAudienceNum();
+    evtSetValue(event, args[0], num);
+    return EVT_RETURN_DONE;
+}
+
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_1_evt, 0.0f, -80.0f)
+
+// NONMATCHING (99.95%): 21 of 226 instructions differ in operands only (registers or offsets)
+USER_FUNC(queen_hp_drain_2_evt) {
+    if (isFirstCall) {
+        HAND->field_0x4AC = 0;
+    }
+    switch (HAND->field_0x4AC) {
+    case 0:
+        {
+            s32 i;
+            ExtPose* pose;
+            HandElem* elem;
+            event->userdata[0]++;
+            HAND->field_0x49C = -110.0f;
+            pose = extGetPosePtr();
+            elem = HAND->elems;
+            for (i = 0; i < HAND->count; i++, pose++, elem++) {
+                pose->flags |= 1;
+                pose->flags &= ~2;
+                PSMTXIdentity(*pose->matrix);
+                elem->field_0x10 = irand(0x14);
+                elem->field_0x14 = 1.0f + (f32)irand(0xc8) / 100.0f;
+                {
+                    s32 v = irand(0xf) + (i % 10) * 0x28;
+                    elem->field_0x18 = (f32)(v - 0xc8);
+                }
+                elem->field_0x1C = HAND->field_0x49C - (f32)elem->field_0x10;
+                {
+                    s32 v = irand(0xf) + (i / 10) * -0xf;
+                    elem->field_0x20 = (f32)(v + 0x10e);
+                }
+                pose->field_0x4 = (f32)(irand(0x14) - 0xa);
+                ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
+                ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
+                if (elem->field_0x00 != 0) {
+                    ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;
+                }
+            }
+            HAND->field_0x4AC++;
+        }
+    case 1:
+        if (HAND->field_0x49C >= -30.0f) {
+            HAND->field_0x4AC++;
+            break;
+        }
+        HAND->field_0x49C += 1.0f;
+        extGetPosePtr();
+        {
+            HandElem* elem = HAND->elems;
+            s32 i;
+            for (i = 0; i < HAND->count; i++) {
+                elem->field_0x1C = HAND->field_0x49C * elem->field_0x14 - (f32)elem->field_0x10;
+                elem++;
+            }
+        }
+        break;
+    case 2:
+    case 0x63:
+        return EVT_RETURN_YIELD;
+    default:
+        break;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_3_evt, -30.0f, -110.0f)
+
+USER_FUNC(queen_hp_drain_4_evt) {
+    s32 i;
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+    }
+    switch (event->userdata[0]) {
+    case 0:
+        event->userdata[1] = 0;
+        event->userdata[0]++;
+        for (i = 0; i < 200; i++) {
+            if ((u8)BattleAudience_GetSysCtrl(i)) {
+                BattleAudience_SetAnim(i, 9, 1);
+            }
+        }
+    case 1:
+        for (i = 0; i < 200; i++) {
+            if ((u8)BattleAudience_GetSysCtrl(i)) {
+                f32 x, y, z;
+                BattleAudience_GetPosition(i, &x, &y, &z);
+                BattleAudience_SetPosition(i, x, y - 1.0f, z);
+            }
+        }
+        event->userdata[1]--;
+        if (event->userdata[1] < -80) {
+            event->userdata[0]++;
+        }
+        break;
+    case 2:
+        for (i = 0; i < 200; i++) {
+            if ((u8)BattleAudience_GetSysCtrl(i)) {
+                BattleAudience_Delete(i);
+                BattleAudienceAddTargetNum(0.0f, -1.0f);
+            }
+        }
+        event->userdata[0] = 0x63;
+    case 0x63:
+        return EVT_RETURN_YIELD;
+    default:
+        break;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hp_drain_5_evt)
+
+USER_FUNC(peach_shock_evt) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    s32 c = evtGetValue(event, args[2]);
+    EffectEntry* eff = effShockN64Entry(3, (f32)a, (f32)b, (f32)c, 200.0f, 150.0f);
+    *(s32*)((u8*)eff->userdata + 0x30) = 10;
+    *(s32*)((u8*)eff->userdata + 0x34) = 10;
+    *(s32*)((u8*)eff->userdata + 0x38) = 10;
+    *(s32*)((u8*)eff->userdata + 0x3C) = irand(50) + 155;
+    *(s32*)((u8*)eff->userdata + 0x40) = irand(50) + 155;
+    *(s32*)((u8*)eff->userdata + 0x44) = irand(50) + 155;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(slot_init) {
+    *(u32*)BattleBreakSlotGetPtr() |= 4;
+    return EVT_RETURN_DONE;
+}
+
+DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_entry_evt)
+
+// NONMATCHING (99.96%): 26 of 295 instructions differ in operands only (registers or offsets)
+USER_FUNC(queen_hand_small_drag_1_evt) {
+    if (isFirstCall) {
+        HAND->field_0x4AC = 0;
+    }
+    switch (HAND->field_0x4AC) {
+    case 0:
+        {
+            s32 i;
+            ExtPose* pose;
+            HandElem* elem;
+            HAND->field_0x49C = -80.0f;
+            pose = extGetPosePtr();
+            elem = HAND->elems;
+            for (i = 0; i < HAND->count; i++, pose++, elem++) {
+                pose->flags |= 1;
+                pose->flags &= ~2;
+                PSMTXIdentity(*pose->matrix);
+                elem->field_0x10 = irand(0x14);
+                elem->field_0x14 = 1.0f + (f32)irand(0xc8) / 100.0f;
+                {
+                    s32 v = irand(0xf) + (i % 10) * 0x14;
+                    elem->field_0x18 = (f32)(v - 0xc8);
+                }
+                elem->field_0x1C = HAND->field_0x49C - (f32)elem->field_0x10;
+                {
+                    s32 v = irand(0xf) + (i / 10) * -0xf;
+                    elem->field_0x20 = (f32)(v + 0x46);
+                }
+                pose->field_0x4 = (f32)(irand(0x14) - 0xa);
+                ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
+                ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
+                if (elem->field_0x00 != 0) {
+                    ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;
+                }
+            }
+            HAND->field_0x4AC++;
+        }
+    case 1:
+        if (HAND->field_0x49C >= 0.0f) {
+            HAND->field_0x4AC++;
+            break;
+        }
+        HAND->field_0x49C += 1.0f;
+        extGetPosePtr();
+        {
+            HandElem* elem = HAND->elems;
+            s32 i;
+            for (i = 0; i < HAND->count; i++) {
+                elem->field_0x1C = HAND->field_0x49C * elem->field_0x14 - (f32)elem->field_0x10;
+                elem++;
+            }
+        }
+        break;
+    case 2:
+        HAND->field_0x4A8 = 30;
+        HAND->field_0x4AC++;
+        break;
+    case 3:
+        if (HAND->field_0x4A8 != 0) {
+            HAND->field_0x4A8--;
+            if (HAND->field_0x4A8 == 0) {
+                Vec pos;
+                pos.x = -100.0f;
+                pos.y = 0.0f;
+                pos.z = 0.0f;
+                psndSFXOn_3D((const char*)0xf3c, &pos);
+            }
+        } else {
+            if (HAND->field_0x49C <= -80.0f) {
+                HAND->field_0x4AC++;
+            } else {
+                HAND->field_0x49C -= 1.0f;
+                extGetPosePtr();
+                {
+                    HandElem* elem = HAND->elems;
+                    s32 i;
+                    for (i = 0; i < HAND->count; i++) {
+                        elem->field_0x1C = HAND->field_0x49C * elem->field_0x14 - (f32)elem->field_0x10;
+                        elem++;
+                    }
+                }
+            }
+        }
+        break;
+    case 4:
+    case 0x63:
+        return EVT_RETURN_YIELD;
+    default:
+        break;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_2_evt, 0.0f, -80.0f)
+
+DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_drag_3_evt)
+
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_4_evt, 0.0f, -80.0f)
+
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_dead_evt, 0.0f, -80.0f)
+
+USER_FUNC(queen_hand_small_1000hand_1_evt) {
+    if (isFirstCall) {
+        HAND->field_0x4AC = 0;
+    }
+    switch (HAND->field_0x4AC) {
+    case 0:
+        HAND->field_0x4A8 = 0;
+        HAND->field_0x49C = 0.0f;
+        HAND->field_0x4A8 = 0;
+        extGetPosePtr();
+        {
+            s32 i;
+            HandElem* elem = HAND->elems;
+            for (i = 0; i < HAND->count; i++, elem++) {
+                elem->field_0x12 = 0;
+            }
+        }
+        HAND->field_0x4AC++;
+    case 1:
+        if (HAND->field_0x4A8 > 200) {
+            HAND->field_0x4AC++;
+            break;
+        }
+        HAND->field_0x4A8++;
+        extGetPosePtr();
+        {
+            HandElem* elem = HAND->elems;
+            s32 i;
+            for (i = 0; i < HAND->count; i++, elem++) {
+                if ((i % 10) <= HAND->field_0x4A8 / 3) {
+                    elem->field_0x18 -= 3.0f;
+                    elem->field_0x1C -= 0.3f * (f32)cos((f32)elem->field_0x12 / 6.0f);
+                    elem->field_0x12++;
+                    if (elem->field_0x12 >= 0x870) {
+                        elem->field_0x12 -= 0x870;
+                    }
+                }
+            }
+        }
+        break;
+    case 2:
+    case 0x63:
+        return EVT_RETURN_YIELD;
+    default:
+        break;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_1000hand_2_evt)
+
+USER_FUNC(queen_hand_small_1000hand_set_offset_evt) {
+    s32* args = event->args;
+    s32 off18;
+    s32 off1C;
+    s32 off20;
+    s32 i;
+    HandElem* elem;
+    off18 = evtGetValue(event, args[0]);
+    off1C = evtGetValue(event, args[1]);
+    off20 = evtGetValue(event, args[2]);
+    extGetPosePtr();
+    elem = HAND->elems;
+    for (i = 0; i < HAND->count; i++) {
+        elem->field_0x18 += (f32)off18;
+        elem->field_0x1C += (f32)off1C;
+        elem->field_0x20 += (f32)off20;
+        elem++;
+    }
+    return EVT_RETURN_DONE;
+}
+
 // clang-format on

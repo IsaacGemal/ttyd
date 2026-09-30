@@ -1,6 +1,13 @@
 #include "dmo.h"
+#include "dmo_00.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
 
 #pragma pool_data off
 
@@ -25,12 +32,25 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _epilog (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _prolog (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/dmo/asm/dmo.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("dmo_00", dmo_00_init_evt);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+    demo_exit();
+}
+
+void _unresolved(void) {
+}

@@ -1,16 +1,17 @@
 #pragma once
 
+#include "driver/camdrv.h"
 #include "evt/evt_cmd.h"
 
-void kpa_get_cam_pt(void);  // TODO: real signature
+USER_FUNC(kpa_get_cam_pt);
 USER_FUNC(kpa_time_countdown);
-void kpa_stageclear_disp_entry(void);  // TODO: real signature
-void kpa_stageclear_disp(void);  // TODO: real signature
+USER_FUNC(kpa_stageclear_disp_entry);
+void kpa_stageclear_disp(CameraId cameraId, void* param);
 USER_FUNC(kpa_pole_hitoff);
 USER_FUNC(kpa_set_time);
-void kpa_status_init(void);  // TODO: real signature
+USER_FUNC(kpa_status_init);
 USER_FUNC(kpa_status_main);
-void kpa_status_disp(void);  // TODO: real signature
+void kpa_status_disp(CameraId cameraId, void* param);
 USER_FUNC(kpa_muteki_check);
 USER_FUNC(kpa_get_msg);
 USER_FUNC(kpa_set_scale);
@@ -21,9 +22,9 @@ USER_FUNC(kpa_make_item_name);
 USER_FUNC(kpa_make_mobj_name);
 USER_FUNC(kpa_mobj_on);
 USER_FUNC(kpa_status_get_stage);
-void _unresolved(void);  // TODO: real signature
-void _epilog(void);  // TODO: real signature
-void _prolog(void);  // TODO: real signature
+void _unresolved(void);
+void _epilog(void);
+void _prolog(void);
 EVT_DEF(kpa_init);
 EVT_DEF(kpa_read_mobj);
 EVT_DEF(kpa_coin_evt);
@@ -35,3 +36,11 @@ EVT_DEF(kpa_stage_start);
 EVT_DEF(kpa_status_main_evt);
 EVT_DEF(kpa_time);
 EVT_DEF(kpa_stage_clear);
+EVT_DEF(kpa_00_init_evt);
+EVT_DEF(kpa_01_init_evt);
+EVT_DEF(kpa_02_init_evt);
+EVT_DEF(kpa_03_init_evt);
+EVT_DEF(kpa_04_init_evt);
+EVT_DEF(kpa_05_init_evt);
+EVT_DEF(kpa_06_init_evt);
+EVT_DEF(kpa_07_init_evt);

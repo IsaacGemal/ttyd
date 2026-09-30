@@ -1,4 +1,5 @@
 #include "muj_00.h"
+#include "eff/eff_mahojin.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -25,7 +26,15 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_telop.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "math_trig.h"
+#include "memory.h"
+#include "party.h"
 #include "party/party_motion.h"
+#include "system.h"
+#include <math.h>
 
 #pragma pool_data off
 
@@ -34,11 +43,15 @@ extern s32 muj_ship_puka[];
 static USER_FUNC(scale_func);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
-static void alpha_tev(void);  // TODO: real signature
+static void alpha_tev(TevCallbackParam* param);
 s32 koburon_talk[87];
 static s32 dai3_shurai_after[68];
 s32 dai3_beat_back[194];
 s32 muj_gor_ship_start[245];
+
+void* Tobidat;
+OpField* _op;
+static u8* _ap;
 
 // clang-format off
 extend_data(4,
@@ -480,8 +493,491 @@ EVT_BEGIN(koburon_talk)
     RETURN
 EVT_END()
 
-// TODO: write koburon_get_encount_info (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
+static void alpha_tev(TevCallbackParam* param) {
+    s32 stage = param->field_C;
+    u8* ap = _ap;
+
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColor(GX_TEVREG0, (GXColor){0, 0, 0, *ap});
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    param->field_C++;
+}
+
+static USER_FUNC(alpha_init_func) {
+    _ap = _mapAlloc(1);
+    *_ap = 0xFF;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(alpha_set_func) {
+    *_ap = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(koburon_get_encount_info) {
+    s32* args = event->args;
+    s32 id = args[0];
+    FieldBattleData* fbat = fbatGetPointer();
+
+    evtSetValue(event, id, *(s32*)((u8*)fbat + 0x10));
+    return EVT_RETURN_DONE;
+}
+
+void suifu_kyorokyoro(NanNpcEntry* entry) {
+    s32 elapsed;
+
+    switch (entry->field_0x68) {
+    case 0:
+        entry->field_0x50 = gp->renderTime;
+        entry->field_0x68 = 1;
+        entry->field_0x6C = irand(1000) + 100;
+        if (entry->field_0x60 == 90.0f) {
+            entry->field_0x60 = 270.0f;
+        } else {
+            entry->field_0x60 = 90.0f;
+        }
+        break;
+    case 1:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            entry->field_0x50 = gp->renderTime;
+            entry->field_0x68 = 2;
+            entry->field_0x6C = irand(350) + 350;
+            if (entry->field_0x60 == 90.0f) {
+                entry->field_0x60 = 270.0f;
+            } else {
+                entry->field_0x60 = 90.0f;
+            }
+        }
+        break;
+    case 2:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            entry->field_0x50 = gp->renderTime;
+            entry->field_0x68 = 3;
+            entry->field_0x6C = irand(350) + 350;
+            if (entry->field_0x60 == 90.0f) {
+                entry->field_0x60 = 270.0f;
+            } else {
+                entry->field_0x60 = 90.0f;
+            }
+        }
+        break;
+    case 3:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            entry->callback = NULL;
+            if (entry->field_0x60 == 90.0f) {
+                entry->field_0x60 = 270.0f;
+            }
+        }
+        break;
+    }
+}
+
+void suifu_kyorokyoro_init(NanNpcEntry* entry) {
+    entry->field_0x68 = 0;
+    entry->callback = suifu_kyorokyoro;
+}
+
+// NONMATCHING (94.81%): remaining r27/r28 int and f27/f28 float register swaps.
+USER_FUNC(dai3_butai_main_func) {
+    s32* args = event->args;
+    f32 cur = (f32)evtGetValue(event, args[0]);
+    f32 target = (f32)evtGetValue(event, args[1]);
+    f32 centerX = (f32)evtGetValue(event, args[2]);
+    f32 centerZ = (f32)evtGetValue(event, args[3]);
+    f32 s;
+    s32 delta = (s32)(target - cur);
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        NanNpcEntry* entry = &nanNPCWork->entries[i + 0xCD];
+        f32 radius;
+
+        entry->work[0] += delta;
+        radius = (f32)entry->work[1];
+        cur = 3.141592f * (f32)entry->work[0] / 180.0f;
+        target = sin(cur);
+        s = cos(cur);
+        entry->position.x = radius * target + centerX;
+        entry->position.z = radius * s + centerZ;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (93.89%): remaining r27/r28 int and f24/f26 float register swaps.
+USER_FUNC(kaizoku_main_func) {
+    s32* args = event->args;
+    f32 v0 = (f32)evtGetValue(event, args[0]);
+    f32 v1 = (f32)evtGetValue(event, args[1]);
+    f32 v2 = (f32)evtGetValue(event, args[2]);
+    f32 v3 = (f32)evtGetValue(event, args[3]);
+    s32 delta = (s32)(v1 - v0);
+    s32 i;
+    f32 s;
+    f32 c;
+
+    for (i = 0; i < 95; i++) {
+        NanNpcEntry* entry = &nanNPCWork->entries[i + 10];
+        entry->work[0] += delta;
+        v0 = (f32)entry->work[1];
+        v1 = 3.141592f * (f32)entry->work[0] / 180.0f;
+        s = sin(v1);
+        c = cos(v1);
+        entry->position.x = v0 * s + v2;
+        entry->position.z = v0 * c + v3;
+    }
+    for (i = 0; i < 100; i++) {
+        NanNpcEntry* entry = &nanNPCWork->entries[i + 0x69];
+        entry->work[0] += delta;
+        v0 = (f32)entry->work[1];
+        v1 = 3.141592f * (f32)entry->work[0] / 180.0f;
+        s = sin(v1);
+        c = cos(v1);
+        entry->position.x = v0 * s + v2;
+        entry->position.z = v0 * c + v3;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mario_main_init_func) {
+    _op = _mapAlloc(0x40);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mario_main_setup_func) {
+    s32* args = event->args;
+    f32 x = (f32)evtGetValue(event, args[0]);
+    f32 z = (f32)evtGetValue(event, args[1]);
+    OpField* op = _op;
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(0);
+    NpcEntry* marco = evtNpcNameToPtr(event, "マルコ");
+    NpcEntry* cortez = evtNpcNameToPtr(event, "コルテス");
+    NpcEntry* monie = evtNpcNameToPtr(event, "モニー");
+    NpcEntry* gara = evtNpcNameToPtr(event, "ガラの悪い水夫");
+    NpcEntry* piton = evtNpcNameToPtr(event, "ピートン");
+    NpcEntry* odoodo = evtNpcNameToPtr(event, "オドオド水夫");
+
+    op[0].dist = distABf(x, -z, x + mario->position.x, -(z + mario->position.z));
+    op[0].angle = angleABf(x, -z, x + mario->position.x, -(z + mario->position.z));
+    op[1].dist = distABf(x, -z, x + party->position.x, -(z + party->position.z));
+    op[1].angle = angleABf(x, -z, x + party->position.x, -(z + party->position.z));
+    op[2].dist = distABf(x, -z, x + marco->position.x, -(z + marco->position.z));
+    op[2].angle = angleABf(x, -z, x + marco->position.x, -(z + marco->position.z));
+    op[3].dist = distABf(x, -z, x + cortez->position.x, -(z + cortez->position.z));
+    op[3].angle = angleABf(x, -z, x + cortez->position.x, -(z + cortez->position.z));
+    op[4].dist = distABf(x, -z, x + monie->position.x, -(z + monie->position.z));
+    op[4].angle = angleABf(x, -z, x + monie->position.x, -(z + monie->position.z));
+    op[5].dist = distABf(x, -z, x + gara->position.x, -(z + gara->position.z));
+    op[5].angle = angleABf(x, -z, x + gara->position.x, -(z + gara->position.z));
+    op[6].dist = distABf(x, -z, x + piton->position.x, -(z + piton->position.z));
+    op[6].angle = angleABf(x, -z, x + piton->position.x, -(z + piton->position.z));
+    op[7].dist = distABf(x, -z, x + odoodo->position.x, -(z + odoodo->position.z));
+    op[7].angle = angleABf(x, -z, x + odoodo->position.x, -(z + odoodo->position.z));
+    return EVT_RETURN_DONE;
+}
+
+
+#define MARIO_MAIN_UPDATE(idx, obj)                                                              \
+    op[idx].angle += delta;                                                                     \
+    {                                                                                           \
+        f32 rad;                                                                                \
+        f32 s;                                                                                  \
+        f32 c;                                                                                  \
+        f32 x;                                                                                  \
+        cur = op[idx].dist;                                                                     \
+        rad = 3.141592f * op[idx].angle / 180.0f;                                               \
+        s = sin(rad);                                                                           \
+        x = cur * s + centerX;                                                                  \
+        (obj)->position.x = x;                                                                  \
+        c = cos(rad);                                                                           \
+        (obj)->position.z = cur * c + centerZ;                                                  \
+    }
+
+// NONMATCHING (90.77%): saves 5 floats instead of 6 (the target register is not kept live).
+USER_FUNC(mario_main_func) {
+    s32* args = event->args;
+    f32 cur = (f32)evtGetValue(event, args[0]);
+    f32 target = (f32)evtGetValue(event, args[1]);
+    f32 centerX = (f32)evtGetValue(event, args[2]);
+    f32 centerZ = (f32)evtGetValue(event, args[3]);
+    OpField* op = _op;
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(0);
+    NpcEntry* marco = evtNpcNameToPtr(event, "マルコ");
+    NpcEntry* cortez = evtNpcNameToPtr(event, "コルテス");
+    NpcEntry* monie = evtNpcNameToPtr(event, "モニー");
+    NpcEntry* gara = evtNpcNameToPtr(event, "ガラの悪い水夫");
+    NpcEntry* piton = evtNpcNameToPtr(event, "ピートン");
+    NpcEntry* odoodo = evtNpcNameToPtr(event, "オドオド水夫");
+    f32 delta = target - cur;
+
+    MARIO_MAIN_UPDATE(0, mario);
+    MARIO_MAIN_UPDATE(1, party);
+    MARIO_MAIN_UPDATE(2, marco);
+    MARIO_MAIN_UPDATE(3, cortez);
+    MARIO_MAIN_UPDATE(4, monie);
+    MARIO_MAIN_UPDATE(5, gara);
+    MARIO_MAIN_UPDATE(6, piton);
+    MARIO_MAIN_UPDATE(7, odoodo);
+
+    marco->prevPosition = marco->position;
+    cortez->prevPosition = cortez->position;
+    monie->prevPosition = monie->position;
+    gara->prevPosition = gara->position;
+    piton->prevPosition = piton->position;
+    odoodo->prevPosition = odoodo->position;
+    return EVT_RETURN_DONE;
+}
+
+NanNpcEntry* random_choice_target(s32 type) {
+    NanNpcWork* work = nanNPCWork;
+    s32 index;
+
+    switch (type) {
+    case 0:
+    case 1:
+        index = irand(100) + 0xCD;
+        break;
+    case 2:
+    default:
+        if (irand(2) != 0) {
+            index = irand(0x5F) + 0xA;
+        } else {
+            index = irand(100) + 0x69;
+        }
+        break;
+    }
+    return &work->entries[index];
+}
+
+// NONMATCHING (99.34%): one lwz r5,0x6c is scheduled before the two lfs of the 2nd intplGetValue.
+void tobikakari_seq00(NanNpcEntry* entry) {
+    void* dat = *(void**)((u8*)entry + 0xA0);
+    s32 elapsed;
+
+    switch (entry->field_0x68) {
+    case 0: {
+        s32 r = irand(1000);
+        if (r < 100) {
+            entry->field_0x68 = 10;
+        } else if (r < 200) {
+            entry->field_0x50 = (s32)gp->renderTime;
+            entry->field_0x6C = irand(500) + 1;
+            entry->field_0x68 = 0x15;
+        } else {
+            entry->field_0x50 = (s32)gp->renderTime;
+            entry->field_0x6C = irand(2000) + 500;
+            entry->field_0x68 = 0x16;
+        }
+        break;
+    }
+    case 10: {
+        NanNpcEntry* target;
+        Vec* pos;
+        entry->field_0x50 = (s32)gp->renderTime;
+        entry->hoseiPosition = entry->position;
+        target = random_choice_target(*(s32*)((u8*)dat + 0xC));
+        pos = (Vec*)*(void**)((u8*)target + 0xA0);
+        entry->homePosition = *pos;
+        entry->homePosition.z += 2.0f;
+        *(f32*)((u8*)entry + 0x78) = -4.0f * (f32)(irand(30) + 100);
+        *(f32*)((u8*)entry + 0x7C) = entry->homePosition.y - entry->hoseiPosition.y - *(f32*)((u8*)entry + 0x78);
+        entry->field_0x6C = irand(500) + 400;
+        if (entry->hoseiPosition.x < entry->homePosition.x) {
+            entry->field_0x60 = 90.0f;
+        } else {
+            entry->field_0x60 = 270.0f;
+        }
+        entry->field_0x68 = 0x14;
+        entry->field_0x70 = 0x15;
+        break;
+    }
+    case 11:
+        entry->field_0x50 = (s32)gp->renderTime;
+        entry->hoseiPosition = entry->position;
+        entry->homePosition = *(Vec*)dat;
+        *(f32*)((u8*)entry + 0x78) = -4.0f * (f32)(irand(30) + 100);
+        *(f32*)((u8*)entry + 0x7C) = entry->homePosition.y - entry->hoseiPosition.y - *(f32*)((u8*)entry + 0x78);
+        entry->field_0x6C = irand(500) + 400;
+        entry->field_0x68 = 0x14;
+        entry->field_0x70 = 0x16;
+        break;
+    case 20:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed < entry->field_0x6C) {
+            f32 t = (f32)elapsed / (f32)entry->field_0x6C;
+            entry->position.x = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.x, entry->homePosition.x);
+            entry->position.z = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.z, entry->homePosition.z);
+            entry->position.y = t * (*(f32*)((u8*)entry + 0x78) * t + *(f32*)((u8*)entry + 0x7C)) + entry->hoseiPosition.y;
+        } else {
+            entry->position = entry->homePosition;
+            entry->field_0x50 = (s32)gp->renderTime;
+            entry->field_0x6C = irand(2000) + 500;
+            entry->field_0x68 = entry->field_0x70;
+        }
+        break;
+    case 21:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            entry->field_0x68 = 11;
+        }
+        break;
+    case 22:
+        elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
+        if (elapsed > entry->field_0x6C) {
+            entry->field_0x68 = 10;
+        }
+        break;
+    }
+}
+
+USER_FUNC(tobikakaru_init) {
+    NanNpcWork* work = nanNPCWork;
+    u8* dat;
+    s32 i;
+    NanNpcEntry* entry;
+
+    dat = _mapAlloc(0x1310);
+    Tobidat = dat;
+    for (i = 0; i < 0x5F; i++) {
+        entry = &work->entries[i + 10];
+        entry->callback = tobikakari_seq00;
+        entry->field_0x68 = 0;
+        *(void**)((u8*)entry + 0xA0) = dat;
+        evt_nannpc_set_animtbl_sub(entry, (s16*)suifu_animtbl_run);
+        *(Vec*)dat = entry->position;
+        *(s32*)(dat + 0xC) = 0;
+        dat += 0x10;
+    }
+    for (i = 0; i < 100; i++) {
+        entry = &work->entries[i + 0x69];
+        entry->callback = tobikakari_seq00;
+        entry->field_0x68 = 0;
+        *(void**)((u8*)entry + 0xA0) = dat;
+        *(Vec*)dat = entry->position;
+        *(s32*)(dat + 0xC) = 1;
+        dat += 0x10;
+    }
+    for (i = 0; i < 100; i++) {
+        entry = &work->entries[i + 0xCD];
+        entry->callback = tobikakari_seq00;
+        entry->field_0x68 = 0;
+        *(void**)((u8*)entry + 0xA0) = dat;
+        evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl_run);
+        *(Vec*)dat = entry->position;
+        *(s32*)(dat + 0xC) = 2;
+        dat += 0x10;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(tobikakaru_end) {
+    NanNpcWork* work = nanNPCWork;
+    s32 i;
+
+    for (i = 0; i < 0x5F; i++) {
+        NanNpcEntry* entry = &work->entries[i + 10];
+        entry->callback = NULL;
+        evt_nannpc_set_animtbl_sub(entry, (s16*)suifu_animtbl);
+    }
+    for (i = 0; i < 100; i++) {
+        NanNpcEntry* entry = &work->entries[i + 0x69];
+        entry->callback = NULL;
+    }
+    for (i = 0; i < 100; i++) {
+        NanNpcEntry* entry = &work->entries[i + 0xCD];
+        entry->callback = NULL;
+        evt_nannpc_set_animtbl_sub(entry, (s16*)dai3_animtbl);
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (96.07%): only the mr r3,r30 reload is scheduled one slot later than the original.
+USER_FUNC(ship_rotate) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]);
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    f32 angle = angleABf(a, -b, c, -d) - 90.0f;
+
+    evtSetFloat(event, args[4], angle);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (92.35%): the 90.0f/180.0f constant loads are picked in the opposite order.
+USER_FUNC(ship_rotate_rev) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]);
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+
+    evtSetFloat(event, args[4], angleABf(a, -b, c, -d) - 90.0f + 180.0f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(cam_test_init_func) {
+    s32* args = event->args;
+    Vec v2;
+    Vec v1;
+    f32 dist;
+    f32 angle;
+    f32 dx;
+    f32 dz;
+
+    v1.x = (f32)evtGetValue(event, args[0]);
+    v1.y = 110.0f;
+    v1.z = (f32)evtGetValue(event, args[1]);
+    v2.x = 70.0f;
+    v2.y = 110.0f;
+    v2.z = 0.0f;
+    dist = PSVECDistance(&v1, &v2);
+    dx = v2.x - v1.x;
+    dz = v2.z - v1.z;
+    angle = 57.29579f * (f32)atan2(-dx, dz);
+    evtSetFloat(event, args[2], angle);
+    evtSetFloat(event, args[3], dist);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (90.54%): needs the extra args+1 int base (frame 0x60 vs 0x50) and the sin/cos swap.
+USER_FUNC(cam_test_func) {
+    s32* args = event->args;
+    f32 angle = evtGetFloat(event, args[2]);
+    f32 radius = evtGetFloat(event, args[3]);
+    f32 rad = angle * 6.2831855f / 360.0f;
+    f32 s = sin(rad);
+    f32 c = cos(rad);
+
+    evtSetValue(event, args[0], (s32)(radius * s + 70.0f));
+    evtSetValue(event, args[1], (s32)(0.0f - radius * c));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(scale_func) {
+    s32* args = event->args;
+    f32 scale = evtGetFloat(event, args[0]);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party0 = partyGetPtr(0);
+    PartyEntry* party1 = partyGetPtr(1);
+
+    mario->scale = (Vec){scale, scale, scale};
+    if (party0 != NULL) {
+        party0->field_70 = (Vec){scale, scale, scale};
+    }
+    if (party1 != NULL) {
+        party1->field_70 = (Vec){scale, scale, scale};
+    }
+    return EVT_RETURN_DONE;
+}
+
 
 EVT_BEGIN(koburon_dead)
     CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
@@ -899,8 +1395,6 @@ EVT_BEGIN(npc_kyorokyoro)
     RETURN
 EVT_END()
 
-// TODO: write suifu_kyorokyoro_init (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(dai3_shurai_sub)
     CALL(evt_mario_key_onoff, 0)
@@ -1603,8 +2097,6 @@ EVT_BEGIN(dai3_butai_setup)
     RETURN
 EVT_END()
 
-// TODO: write dai3_butai_main_func (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(dai3_butai_main)
     SET_VALUE(LW(10), GW(1))
@@ -1691,8 +2183,6 @@ EVT_BEGIN(kaizoku_setup)
     RETURN
 EVT_END()
 
-// TODO: write kaizoku_main_func (global, 0x2c4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kaizoku_main)
     SET_VALUE(LW(10), GW(4))
@@ -1704,19 +2194,12 @@ EVT_BEGIN(kaizoku_main)
     RETURN
 EVT_END()
 
-// TODO: write mario_main_init_func (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(mario_main_init)
     CALL(mario_main_init_func)
     RETURN
 EVT_END()
 
-// TODO: write mario_main_func (global, 0x52c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write mario_main_setup_func (global, 0x390 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(mario_main)
     CALL(evt_mario_set_pos, 20, 40, 10)
@@ -1825,8 +2308,6 @@ EVT_BEGIN(kaizoku_move_trace_se)
     RETURN
 EVT_END()
 
-// TODO: write ship_rotate (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kaizoku_move_trace)
     SET_FLOAT_VALUE(LW(5), GW(5))
@@ -1960,11 +2441,6 @@ EVT_BEGIN(tobikakari_kemuri)
     RETURN
 EVT_END()
 
-// TODO: write cam_test_func (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write cam_test_init_func (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(cam_dai3_vs_kaizoku)
     SET_VALUE(LW(0), 70)
@@ -1984,11 +2460,6 @@ EVT_BEGIN(cam_dai3_vs_kaizoku)
     RETURN
 EVT_END()
 
-// TODO: write tobikakaru_end (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write tobikakaru_init (global, 0x180 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kaizoku_vs_dai3)
     CALL(evt_mario_key_onoff, 0)
@@ -2223,8 +2694,6 @@ EVT_BEGIN(nameraka_rotate)
     RETURN
 EVT_END()
 
-// TODO: write ship_rotate_rev (global, 0xd4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(dai3_taisan_move_trace00)
     SET_FLOAT_VALUE(LW(5), GW(2))
@@ -2780,14 +3249,6 @@ EVT_BEGIN(muj_gor_ship_sub)
     RETURN
 EVT_END()
 
-// TODO: write alpha_set_func (static, 0x3c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write alpha_init_func (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write alpha_tev (static, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(muj_gor_ship)
     CALL(evt_npc_set_position, STRING("コルテス"), 655, 40, -542)
@@ -2836,8 +3297,6 @@ static EVT_BEGIN(ship_pera)
     RETURN
 EVT_END()
 
-// TODO: write scale_func (static, 0x138 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(muj_gor_ship_start)
     CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG5_GHOST_SHIP1"))
@@ -3208,37 +3667,5 @@ EVT_BEGIN(muj_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write tobikakari_seq00 (global, 0x4c4 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: type
-static u32 jumptable_0000A574[23] = {
-    (u32)((u8*)&tobikakari_seq00 + 0x44), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8),
-    (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8),
-    (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0xd8), (u32)((u8*)&tobikakari_seq00 + 0x24c),
-    (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8),
-    (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8), (u32)((u8*)&tobikakari_seq00 + 0x4a8),
-    (u32)((u8*)&tobikakari_seq00 + 0x310), (u32)((u8*)&tobikakari_seq00 + 0x41c), (u32)((u8*)&tobikakari_seq00 + 0x464),
-};
-
-// TODO: type
-u32 Tobidat[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 _op[1] = {
-    0x00000000,
-};
-
-// TODO: type
-static u32 _ap[1] = {
-    0x00000000,
-};
-
-// TODO: write random_choice_target (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write suifu_kyorokyoro (global, 0x228 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_00.s; this is where the original has it, just before the first script that uses it
 // clang-format on

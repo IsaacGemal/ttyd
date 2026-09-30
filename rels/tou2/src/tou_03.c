@@ -1,3 +1,6 @@
+// This unit defines its own GXSetTexCoordGen (the SDK header declares it static inline); rename the header's
+// copy so the unit's global definition below does not clash.
+#define GXSetTexCoordGen GXSetTexCoordGen_sdk_inline
 #include "tou_03.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
@@ -19,8 +22,68 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/animdrv.h"
+#include "driver/effdrv.h"
+#include "driver/extdrv.h"
+#include "driver/itemdrv.h"
+#include "driver/mapdrv.h"
+#include "eff/eff_mahojin.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "driver/dispdrv.h"
+#include "pmario_sound.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dolphin/os.h>
+#include <dolphin/gx/GXTev.h>
+#include <dolphin/gx/GXFrameBuffer.h>
+#include <dolphin/gx/GXManage.h>
+#undef GXSetTexCoordGen
 
 #pragma pool_data off
+
+typedef struct ScreenWork {
+    void* field_0x0; // 0x0 tex buffer
+    s32 field_0x4;   // 0x4
+    f32 field_0x8;   // 0x8
+    f32 field_0xC;   // 0xC
+    f32 field_0x10;  // 0x10
+    f32 field_0x14;  // 0x14
+    f32 field_0x18;  // 0x18
+    f32 field_0x1C;  // 0x1C
+    s32 field_0x20;  // 0x20
+    s32 field_0x24;  // 0x24
+    f32 field_0x28;  // 0x28
+    void* field_0x2C; // 0x2C
+} ScreenWork;
+
+typedef struct KyakuEntry {
+    char name1[0x10]; // 0x0
+    char name2[0x8];  // 0x10
+    s16 field_0x18;   // 0x18
+    u8 pad_0x1A[2];   // 0x1A
+    f32 field_0x1C;   // 0x1C
+    s32 field_0x20;   // 0x20
+    s32 field_0x24;   // 0x24
+} KyakuEntry;
+
+typedef struct KyakuState {
+    u8 field_0x0[0x10]; // 0x0
+    s16 poseId;         // 0x10
+    u8 pad_0x12[6];     // 0x12
+    u64 field_0x18;     // 0x18
+} KyakuState;
+
+typedef struct KyakuWork {
+    u8 field_0x0[0x4];    // 0x0
+    s32 count1;           // 0x4
+    KyakuState* array1;   // 0x8
+    s32 count2;           // 0xC
+    KyakuEntry entries[]; // 0x10
+} KyakuWork;
 
 #pragma force_active on
 extern s32 evt_tou_get_fighter_battle_msg_28_text_3CB4[];
@@ -33,15 +96,18 @@ extern s32 evt_tou_set_ranking_win_lose_28_text_35C0[];
 extern s32 evt_tou_set_rule_result_28_text_355C[];
 extern s32 tou_champion_belt_28_text_2A10[];
 extern s32 tou_champion_belt_onoff_28_text_29DC[];
-static void callback(void);  // TODO: real signature
+static void callback(TevCallbackParam* param);
 // cosf: this unit has its own copy; a header already declares it.
 // sinf: this unit has its own copy; a header already declares it.
 static USER_FUNC(screen_evt);
-static void screen_capture(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
-static void pose_change(void);  // TODO: real signature
+static void screen_capture(CameraId camera, void* param);
+static f32 randf(f32 min, f32 max);
+static void pose_change(KyakuState* state, const char* name1, const char* name2);
 static void pose_main(void);  // TODO: real signature
-static void pose_init(void);  // TODO: real signature
+static void pose_init(void);
+s32 gans_alpha;
+static ScreenWork* screen_wp;
+static KyakuWork* kyaku_wp;
 s32 burst_chain_entry[289];
 s32 burst_wangwang[69];
 s32 evt_kurikuri_opening[442];
@@ -81,60 +147,91 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: type
-u32 ext_kyaku_data[153] = {
-    (u32)"c_kinopio", (u32)"KNP_S_1", 0x00000000, (u32)"c_kinopio",
-    (u32)"KNP_S_1", 0x41200000, (u32)"c_kinopio", (u32)"KNP_S_1",
-    0x41A00000, (u32)"c_kinopio", (u32)"KNP_S_1", 0x41F00000,
-    (u32)"c_kinopio", (u32)"KNP_S_1", 0x42200000, (u32)"c_kinopio",
-    (u32)"KNP_S_1", 0x42480000, (u32)"c_kinopio", (u32)"KNP_S_1",
-    0x42700000, (u32)"c_kinopio", (u32)"KNP_S_1", 0x428C0000,
-    (u32)"c_kinopio", (u32)"KNP_S_1", 0x42A00000, (u32)"c_kinopio",
-    (u32)"KNP_S_1", 0x42B40000, (u32)"c_kinopio", (u32)"KNP_S_1",
-    0x42C80000, (u32)"c_kinopio", (u32)"KNP_S_1", 0x42DC0000,
-    (u32)"c_kinopio", (u32)"KNP_S_1", 0x42F00000, (u32)"c_kinopio",
-    (u32)"KNP_S_1", 0x43020000, (u32)"c_kinopio", (u32)"KNP_S_1",
-    0x430C0000, (u32)"c_kinopio", (u32)"KNP_S_1", 0x43160000,
-    (u32)"c_kinopio", (u32)"KNP_S_1", 0x43200000, (u32)"c_kinopio",
-    (u32)"KNP_S_1", 0x432A0000, (u32)"c_kinopio", (u32)"KNP_S_1",
-    0x43340000, (u32)"c_kinopio", (u32)"KNP_S_1", 0x433E0000,
-    (u32)"c_kinopiko", (u32)"KNF_S_1", 0x00000000, (u32)"c_kinopiko",
-    (u32)"KNF_S_1", 0x41200000, (u32)"c_kinopiko", (u32)"KNF_S_1",
-    0x41A00000, (u32)"c_kinopiko", (u32)"KNF_S_1", 0x41F00000,
-    (u32)"c_kinopiko", (u32)"KNF_S_1", 0x42200000, (u32)"c_kinopiko",
-    (u32)"KNF_S_1", 0x42480000, (u32)"c_kinopiko", (u32)"KNF_S_1",
-    0x42700000, (u32)"c_kinopiko", (u32)"KNF_S_1", 0x428C0000,
-    (u32)"c_kinopiko", (u32)"KNF_S_1", 0x42A00000, (u32)"c_kinopiko",
-    (u32)"KNF_S_1", 0x42B40000, (u32)"c_kinopiko", (u32)"KNF_S_1",
-    0x42C80000, (u32)"c_kinopiko", (u32)"KNF_S_1", 0x42DC0000,
-    (u32)"c_kinopiko", (u32)"KNF_S_1", 0x42F00000, (u32)"c_kinopiko",
-    (u32)"KNF_S_1", 0x43020000, (u32)"c_kinopiko", (u32)"KNF_S_1",
-    0x430C0000, (u32)"c_kinopiko", (u32)"KNF_S_1", 0x43160000,
-    (u32)"c_kinopiko", (u32)"KNF_S_1", 0x43200000, (u32)"c_roten",
-    (u32)"S_1", 0x00000000, (u32)"c_roten", (u32)"S_1",
-    0x41200000, (u32)"c_roten", (u32)"S_1", 0x41A00000,
-    (u32)"c_roten", (u32)"S_1", 0x41F00000, (u32)"c_roten",
-    (u32)"S_1", 0x42200000, (u32)"c_roten", (u32)"S_1",
-    0x42480000, (u32)"c_jugemu", (u32)"JGM_S_1", 0x00000000,
-    (u32)"c_jugemu", (u32)"JGM_S_1", 0x41200000, (u32)"c_jugemu",
-    (u32)"JGM_S_1", 0x41A00000, (u32)"c_jugemu", (u32)"JGM_S_1",
-    0x41F00000, (u32)"c_jugemu", (u32)"JGM_S_1", 0x42200000,
-    (u32)"c_jugemu", (u32)"JGM_S_1", 0x42480000, (u32)"c_jugemu",
-    (u32)"JGM_S_1", 0x42700000, 0x00000000, 0x00000000,
-    0x00000000,
+// static kyaku pose table: {model name, group name, animation frame value}
+typedef struct ExtKyakuData {
+    const char* name1; // 0x0
+    const char* name2; // 0x4
+    f32 value;         // 0x8
+} ExtKyakuData;
+
+ExtKyakuData ext_kyaku_data[51] = {
+    { "c_kinopio", "KNP_S_1", 0.0f },
+    { "c_kinopio", "KNP_S_1", 10.0f },
+    { "c_kinopio", "KNP_S_1", 20.0f },
+    { "c_kinopio", "KNP_S_1", 30.0f },
+    { "c_kinopio", "KNP_S_1", 40.0f },
+    { "c_kinopio", "KNP_S_1", 50.0f },
+    { "c_kinopio", "KNP_S_1", 60.0f },
+    { "c_kinopio", "KNP_S_1", 70.0f },
+    { "c_kinopio", "KNP_S_1", 80.0f },
+    { "c_kinopio", "KNP_S_1", 90.0f },
+    { "c_kinopio", "KNP_S_1", 100.0f },
+    { "c_kinopio", "KNP_S_1", 110.0f },
+    { "c_kinopio", "KNP_S_1", 120.0f },
+    { "c_kinopio", "KNP_S_1", 130.0f },
+    { "c_kinopio", "KNP_S_1", 140.0f },
+    { "c_kinopio", "KNP_S_1", 150.0f },
+    { "c_kinopio", "KNP_S_1", 160.0f },
+    { "c_kinopio", "KNP_S_1", 170.0f },
+    { "c_kinopio", "KNP_S_1", 180.0f },
+    { "c_kinopio", "KNP_S_1", 190.0f },
+    { "c_kinopiko", "KNF_S_1", 0.0f },
+    { "c_kinopiko", "KNF_S_1", 10.0f },
+    { "c_kinopiko", "KNF_S_1", 20.0f },
+    { "c_kinopiko", "KNF_S_1", 30.0f },
+    { "c_kinopiko", "KNF_S_1", 40.0f },
+    { "c_kinopiko", "KNF_S_1", 50.0f },
+    { "c_kinopiko", "KNF_S_1", 60.0f },
+    { "c_kinopiko", "KNF_S_1", 70.0f },
+    { "c_kinopiko", "KNF_S_1", 80.0f },
+    { "c_kinopiko", "KNF_S_1", 90.0f },
+    { "c_kinopiko", "KNF_S_1", 100.0f },
+    { "c_kinopiko", "KNF_S_1", 110.0f },
+    { "c_kinopiko", "KNF_S_1", 120.0f },
+    { "c_kinopiko", "KNF_S_1", 130.0f },
+    { "c_kinopiko", "KNF_S_1", 140.0f },
+    { "c_kinopiko", "KNF_S_1", 150.0f },
+    { "c_kinopiko", "KNF_S_1", 160.0f },
+    { "c_roten", "S_1", 0.0f },
+    { "c_roten", "S_1", 10.0f },
+    { "c_roten", "S_1", 20.0f },
+    { "c_roten", "S_1", 30.0f },
+    { "c_roten", "S_1", 40.0f },
+    { "c_roten", "S_1", 50.0f },
+    { "c_jugemu", "JGM_S_1", 0.0f },
+    { "c_jugemu", "JGM_S_1", 10.0f },
+    { "c_jugemu", "JGM_S_1", 20.0f },
+    { "c_jugemu", "JGM_S_1", 30.0f },
+    { "c_jugemu", "JGM_S_1", 40.0f },
+    { "c_jugemu", "JGM_S_1", 50.0f },
+    { "c_jugemu", "JGM_S_1", 60.0f },
+    { NULL, NULL, 0.0f },
 };
 
 EVT_BEGIN(x)
 EVT_END()
 
 // TODO: write ext_kyaku_dispent (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+void ext_kyaku_dispent(void) {
+    dispEntry(4, 0.0f, 1, kyaku_disp, NULL);
+}
 
 // TODO: write ext_kyaku_main (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+void ext_kyaku_main(void) {
+    pose_main();
+}
 
-// TODO: write ext_kyaku_init (global, 0x558 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (partial): only the allocation/init preamble is written; the per-pose hit-check placement
+// search (hitCheckFilter / angleABf / irand switch) is still TODO.
+void ext_kyaku_init(void) {
+    kyaku_wp = _mapAlloc(0x510);
+    memset(kyaku_wp, 0, 0x510);
+    kyaku_wp->count1 = extGetPoseNum();
+    kyaku_wp->array1 = _mapAlloc(kyaku_wp->count1 * 0x20);
+    memset(kyaku_wp->array1, 0, kyaku_wp->count1 * 0x20);
+    pose_init();
+    __tou_srand(0x25B0E2B);
+}
 
 EVT_BEGIN(evt_kyaku)
     CALL(evt_npc_entry, STRING("kyaku1"), STRING("c_kinopio"))
@@ -1070,8 +1167,18 @@ EVT_BEGIN(evt_teki_nyuujyou)
     RETURN
 EVT_END()
 
-// TODO: write tribe_chk (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 tribe_chk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 name1 = evtGetValue(event, args[0]);
+    s32 name2 = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr((char*)name1);
+    if (strcmp(npc->tribe->nameJp, (char*)name2) == 0) {
+        evtSetValue(event, args[2], 1);
+    } else {
+        evtSetValue(event, args[2], 0);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_teki_nyuujyou_default)
     SWITCH(LW(1))
@@ -1122,8 +1229,53 @@ EVT_BEGIN(evt_teki_nyuujyou_default)
     RETURN
 EVT_END()
 
-// TODO: write burst_chain (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.22%): the four float constants land in different callee-saved registers (retail f29=3,
+// f30=1, f31=10, f28=210); every other instruction matches.
+s32 burst_chain(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr((char*)name);
+    NpcEntry* base;
+    NpcEntry* cur;
+    NpcEntry* next;
+    f32 f3;
+    f32 f1;
+    f32 f10;
+    f32 f210;
+    f32 d;
+    f32 t;
+    char buf[32];
+    s32 i;
+
+    sprintf(buf, "鎖%d_%d", flag, 0);
+    base = npcNameToPtr(buf);
+    base->position = npc->position;
+    f3 = 3.0f;
+    f1 = 1.0f;
+    f10 = 10.0f;
+    f210 = 210.0f;
+    for (i = 0; i < 4; i++) {
+        sprintf(buf, "鎖%d_%d", flag, i);
+        cur = npcNameToPtr(buf);
+        sprintf(buf, "鎖%d_%d", flag, i + 1);
+        next = npcNameToPtr(buf);
+        next->position.y -= f3;
+        d = PSVECDistance(&cur->position, &next->position);
+        t = f1 - f10 / d;
+        next->position.x = t * (cur->position.x - next->position.x) + next->position.x;
+        next->position.y = t * (cur->position.y - next->position.y) + next->position.y;
+        next->position.z = t * (cur->position.z - next->position.z) + next->position.z;
+        if (next->position.x > f210 || next->position.x < -210.0f) {
+            if (next->position.y < 0.0f) {
+                next->position.y = 0.0f;
+            }
+        } else if (next->position.y < 60.0f) {
+            next->position.y = 60.0f;
+        }
+    }
+    return 0;
+}
 
 EVT_BEGIN(burst_chain_entry)
     SWITCH(LW(0))
@@ -1220,11 +1372,20 @@ EVT_BEGIN(burst_wangwang)
     RETURN
 EVT_END()
 
-// TODO: write snd_sfx_stop (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 snd_sfx_stop(EventEntry* event, BOOL isFirstCall) {
+    psndMapChange();
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write _firstattack_setting (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 _firstattack_setting(EventEntry* event, BOOL isFirstCall) {
+    FieldBattleData* fbat = fbatGetPointer();
+    *(u32*)((u8*)fbat + 0x10) = 0x10000000;
+    *(u32*)((u8*)fbat + 0x14) = 0x10;
+    *(u32*)((u8*)fbat + 0x1C) &= ~1;
+    fbatSetAttackAnnounce(0x10000000);
+    fbatSetAttackAnnounceEnable();
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_match)
     SWITCH(GSW(501))
@@ -2531,8 +2692,12 @@ EVT_BEGIN(evt_default_opening)
     RETURN
 EVT_END()
 
-// TODO: write confupose (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 confupose(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    NpcEntry* npc = npcNameToPtr((char*)evtGetValue(event, args[0]));
+    evtSetValue(event, args[1], (s32)npc->tribe->confuseAnimation);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_default_win)
     CALL(evt_cam3d_evt_set, 0, 220, 533, 0, 125, -8, 0, 0)
@@ -2802,8 +2967,19 @@ static EVT_BEGIN(evt_shake)
     RETURN
 EVT_END()
 
-// TODO: write starstone_sound_onoff (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 starstone_sound_onoff(EventEntry* event, BOOL isFirstCall) {
+    s32 val = evtGetValue(event, event->args[0]);
+    EffectEntry* effect = itemNameToPtr("stone")->effect;
+    if (effect != NULL) {
+        if (val == 0) {
+            *(u16*)((u8*)effect->userdata + 0x4) &= ~4;
+        }
+        if (val == 1) {
+            *(u16*)((u8*)effect->userdata + 0x4) |= 4;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_boss_stone)
     SET_VALUE(LW(10), 0)
@@ -2827,23 +3003,118 @@ EVT_BEGIN(evt_boss_stone)
     RETURN
 EVT_END()
 
-// TODO: write gans_white_off (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 gans_white_off(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("ガンス");
+    mapSetTevCallback(0xC, NULL);
+    animPoseSetMaterialFlagOff(npc->poseId, 0x0C000000);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write gans_white_on (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 gans_white_on(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("ガンス");
+    if (isFirstCall) {
+        gans_alpha = 0;
+        mapSetTevCallback(0xC, callback);
+        animPoseSetMaterialFlagOn(npc->poseId, 0x0C000000);
+    }
+    gans_alpha += 5;
+    if (gans_alpha > 0xFF) {
+        gans_alpha = 0xFF;
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
 
-// TODO: write eff_pos (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
+    ItemEntry* item = itemNameToPtr("stone");
+    EffectEntry* eff1 = effNameToPtr("eff_1");
+    EffectEntry* eff2 = effNameToPtr("eff_2");
+    if (item != NULL) {
+        if (eff1 != NULL) {
+            *(f32*)((u8*)eff1->userdata + 0x4) = item->position.x;
+            *(f32*)((u8*)eff1->userdata + 0x8) = 15.0f + item->position.y;
+            *(f32*)((u8*)eff1->userdata + 0xC) = item->position.z;
+        }
+        if (eff2 != NULL) {
+            *(f32*)((u8*)eff2->userdata + 0x4) = item->position.x;
+            *(f32*)((u8*)eff2->userdata + 0x8) = 15.0f + item->position.y;
+            *(f32*)((u8*)eff2->userdata + 0xC) = item->position.z;
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
 
-// TODO: write evt_boss_stone_r (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 evt_boss_stone_r(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    EffectEntry* effect = itemNameToPtr("stone")->effect;
+    f32 value;
+    value = evtGetFloat(event, args[0]);
+    *(f32*)((u8*)effect->userdata + 0x1C) = value;
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write getY (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 getY(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("ガンス");
+    MapObject* obj = mapGetMapObj("block_5");
+    Vec pos;
+    f32 y;
+    mapObjGetPos("group151", &pos);
+    y = obj->modelWorldMtx[1][3] + 100.0f;
+    if (y > pos.y) {
+        npc->position.y = y;
+    } else {
+        npc->position.z = 0.0f;
+        npc->position.x = 0.0f;
+        npc->position.y = pos.y;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write item_jump (global, 0x274 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (49.03%): logic is right but MWCC keeps x/y/z/d/dist/v in six callee-saved float regs
+// (f26-f31) instead of retail's four (f28-f31), growing the frame from 0x80 to 0x90.
+s32 item_jump(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    ItemEntry* item = itemNameToPtr("stone");
+    f32 d;
+    f32 dist;
+    f32 v;
+    f32 angle;
+    Vec pos;
+
+    if (isFirstCall) {
+        d = y - item->position.y;
+        dist = distABf(x, z, item->position.x, item->position.z) / 1.0f;
+        v = 0.5f * dist * 0.5f + d / dist;
+        angle = angleABf(item->position.x, item->position.z, x, z);
+        event->userdataf[0] = dist;
+        event->userdataf[1] = v;
+        event->userdataf[2] = angle;
+    }
+    dist = event->userdataf[0];
+    v = event->userdataf[1];
+    angle = event->userdataf[2];
+    item->position.x += sinf(6.2832f * angle / 360.0f);
+    item->position.z -= cosf(6.2832f * angle / 360.0f);
+    item->position.y += v;
+    dist = dist - 1.0f;
+    v = v - 0.5f;
+    if (dist < 0.0f) {
+        item->position.x = x;
+        item->position.y = y;
+        item->position.z = z;
+        pos.x = x;
+        pos.y = y;
+        pos.z = z;
+        psndSFXOn_3D("stone", &pos);
+        return 1;
+    }
+    event->userdataf[0] = dist;
+    event->userdataf[1] = v;
+    return 0;
+}
 
 static EVT_BEGIN(evt_boss)
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("group34"), 1)
@@ -3669,14 +3940,49 @@ EVT_BEGIN(evt_kyaku_8)
     RETURN
 EVT_END()
 
-// TODO: write screen_tev (global, 0x698 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (2.38%): not decompiled yet. The `screen_wp->field_0x4 == 0` early-out is the only part
+// recovered; the GX tev/tex copy setup is still TODO.
+void screen_tev(void) {
+    if (screen_wp->field_0x4 == 0) {
+        return;
+    }
+    if (screen_wp->field_0x24 != 0 && screen_wp->field_0x2C != NULL) {
+        return;
+    }
+}
 
-// TODO: write screen_evt (static, 0x44 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+static s32 screen_evt(EventEntry* event, BOOL isFirstCall) {
+    dispEntry(8, 1000.0f, 0, screen_capture, NULL);
+    return EVT_RETURN_BLOCK;
+}
 
-// TODO: write screen_init (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+s32 screen_init(EventEntry* event, BOOL isFirstCall) {
+    u32 size;
+    f32 negOne;
+    f32 zero;
+    f32 one;
+
+    size = GXGetTexBufferSize(0x260, 0x1E0, 0, 0, 0);
+    screen_wp = _mapAlloc(0x30);
+    screen_wp->field_0x0 = _mapAlloc(size);
+    one = 1.0f;
+    zero = 0.0f;
+    negOne = -1.0f;
+    screen_wp->field_0x4 = 0;
+    screen_wp->field_0xC = one;
+    screen_wp->field_0x8 = one;
+    screen_wp->field_0x14 = zero;
+    screen_wp->field_0x10 = zero;
+    screen_wp->field_0x1C = zero;
+    screen_wp->field_0x18 = zero;
+    screen_wp->field_0x20 = 0;
+    screen_wp->field_0x28 = negOne;
+    screen_wp->field_0x2C = _mapAlloc(GXGetTexBufferSize(0x40, 0x40, 1, 0, 0));
+    if (evtGetValue(event, GSW(0)) == 0xA3) {
+        screen_wp->field_0x24 = 1;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(tou_03_init_evt)
     SWITCH(GSW(0))
@@ -3799,54 +4105,148 @@ EVT_BEGIN(tou_03_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 gans_alpha[1] = {
-    0x00000000,
-};
+static ScreenWork* screen_wp;
 
-// TODO: type
-static u32 screen_wp[1] = {
-    0x00000000,
-};
+// NONMATCHING (99.92%): the GXColor temporary is 4 bytes lower on the stack than retail (0xC vs 0x8);
+// every other instruction matches.
+static void callback(TevCallbackParam* param) {
+    GXColor color = {0, 0xFF, 0xFF, 0};
+    s32 stage = param->field_C;
+    s32 field_10 = param->field_10;
+    s32 field_14 = param->field_14;
+    s32 field_18 = param->field_18;
 
-// TODO: type
-u32 kyaku_wp[1] = {
-    0x00000000,
-};
+    color.a = gans_alpha;
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+    GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_C0, GX_CC_A0, GX_CC_ZERO);
+    GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+    GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
-// TODO: write callback (static, 0x104 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+    param->field_C = stage + 1;
+    param->field_14 = field_14;
+    param->field_18 = field_18;
+    param->field_10 = field_10;
+}
 
-// TODO: write cosf (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+static f32 cosf(f32 x) {
+    return cos(x);
+}
 
-// TODO: write sinf (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+static f32 sinf(f32 x) {
+    return sin(x);
+}
 
-// TODO: write GXSetTexCoordGen (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+void GXSetTexCoordGen(GXTexCoordID dst_coord, GXTexGenType func, GXTexGenSrc src_param, u32 mtx) {
+    GXSetTexCoordGen2(dst_coord, func, src_param, mtx, GX_FALSE, GX_PTIDENTITY);
+}
 
-// TODO: write screen_capture (static, 0x74 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+static void screen_capture(CameraId camId, void* param) {
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x130, 0xF0, 4, 1);
+    GXCopyTex(screen_wp->field_0x0, 0);
+    GXPixModeSync();
+    screen_wp->field_0x4 = 1;
+}
 
-// TODO: write kyaku_disp (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+void kyaku_disp(CameraId camera, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
 
-// TODO: write randf (static, 0x78 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+static f32 randf(f32 min, f32 max) {
+    f32 t = (f32)__tou_rand() / 32767.0f;
+    return t * (max - min) + min;
+}
 
-// TODO: write __tou_rand (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+// dont_inline keeps __tou_rand/__tou_srand real `bl` calls from randf and ext_kyaku_init, as in retail.
+#pragma dont_inline on
+u32 __tou_rand(void) {
+    x[0] = x[0] * 1103515245 + 12345;
+    return (x[0] >> 16) & 0x7FFF;
+}
 
-// TODO: write __tou_srand (global, 0xc bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+void __tou_srand(s32 seed) {
+    x[0] = seed;
+}
+#pragma dont_inline reset
 
-// TODO: write pose_change (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+static void pose_change(KyakuState* state, const char* name1, const char* name2) {
+    KyakuEntry* entry;
+    s32 i;
 
-// TODO: write pose_main (static, 0x17c bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+    for (i = 0, entry = kyaku_wp->entries; i < kyaku_wp->count2; i++, entry++) {
+        if (strcmp(entry->name1, name1) == 0 &&
+            strcmp(entry->name2, name2) == 0) {
+            break;
+        }
+    }
+    if (i < kyaku_wp->count2 && state->poseId != i) {
+        state->poseId = i;
+        state->field_0x18 = gp->renderTime + (s64)rand();
+    }
+}
 
-// TODO: write pose_init (static, 0x18c bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+// dont_inline keeps the real `bl pose_main` that ext_kyaku_main has in retail.
+#pragma dont_inline on
+static void pose_main(void) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+    KyakuState* state = kyaku_wp->array1;
+    f32 ratio;
+
+    for (i = 0; i < kyaku_wp->count1; i++, state++, pose++) {
+        KyakuEntry* entry = &kyaku_wp->entries[state->poseId];
+        u64 delta = gp->renderTime - state->field_0x18;
+        u32 ticks = OS_TIMER_CLOCK / 1000;
+
+        ratio = 60.0f * (f32)(delta / ticks) / 1000.0f / entry->field_0x1C;
+        if (ratio >= 1.0f) {
+            state->field_0x18 = gp->renderTime;
+            ratio = 0.0f;
+        }
+        pose->field_0x10 = entry->field_0x20 + (s32)((f32)(entry->field_0x24 - 1) * ratio);
+    }
+}
+#pragma dont_inline reset
+
+static void pose_init(void) {
+    char buf1[0x28];
+    char buf2[0x20];
+    ExtKyakuData* data;
+    s32 i;
+    s32 start;
+
+    data = ext_kyaku_data;
+    i = 0;
+    strcpy(buf1, "");
+    strcpy(buf2, "");
+    kyaku_wp->count2 = -1;
+    do {
+        if (strcmp(data->name1, buf1) != 0) {
+            strcpy(buf1, data->name1);
+            strcpy(buf2, "");
+        }
+        if (strcmp(data->name2, buf2) != 0) {
+            strcpy(buf2, data->name2);
+            start = i;
+            kyaku_wp->count2++;
+        }
+        strcpy(kyaku_wp->entries[kyaku_wp->count2].name1, buf1);
+        strcpy(kyaku_wp->entries[kyaku_wp->count2].name2, buf2);
+        kyaku_wp->entries[kyaku_wp->count2].field_0x20 = start;
+        kyaku_wp->entries[kyaku_wp->count2].field_0x24 = i - start + 1;
+        kyaku_wp->entries[kyaku_wp->count2].field_0x1C = data->value;
+        kyaku_wp->entries[kyaku_wp->count2].field_0x18 = 1;
+        i++;
+        data++;
+    } while (data->name1 != NULL);
+    kyaku_wp->count2++;
+}
 // clang-format on

@@ -29,6 +29,23 @@
 #include "forcedata.h"
 #include "kpa_act.h"
 #include "party/party_motion.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "driver/extdrv.h"
+#include "driver/fadedrv.h"
+#include "driver/npcdrv.h"
+#include "eff/eff_kemutest.h"
+#include "eff/eff_small_star.h"
+#include "eff/eff_starstone.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario_pouch.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "party.h"
+#include "pmario_sound.h"
+#include <dolphin/mtx.h>
+#include <stdlib.h>
 
 #pragma pool_data off
 
@@ -46,6 +63,7 @@ static USER_FUNC(yami_view);
 static USER_FUNC(small_star);
 static USER_FUNC(booboo_main);
 static USER_FUNC(getYoshiColor);
+static u32 booboo_name[10];
 s32 nise_mario_talk[8];
 s32 christine_talk[8];
 s32 nokotaro_talk[8];
@@ -376,8 +394,39 @@ EVT_BEGIN(village_chief_talk)
     RETURN
 EVT_END()
 
-// TODO: write getYoshiColor (static, 0x48 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+// The reverse-source-order placement of the file's functions starts here: these are the last
+// four functions in .text, so they are the first four defined in the original source.
+static USER_FUNC(getYoshiColor) {
+    s32* args = event->args;
+    s32 color = pouchGetPartyColor(PARTY_MEMBER_YOSHI);
+    evtSetValue(event, args[0], color);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(party_tev) {
+    animPoseSetMaterialFlagOff(partyGetPtr(0)->paperAnimGroup, 0x0F000000);
+    return EVT_RETURN_DONE;
+}
+
+void kpa_stg5_009_7_cb(s32 type, void* param) {
+    u32 data = *(u32*)param;
+    switch (type) {
+    case 3:
+        if (*(u16*)(data + 8) == 1) {
+            psndBGMOn(0x201, "BGM_FF_GET_ITEM1");
+        }
+        break;
+    }
+}
+
+static USER_FUNC(booboo_main) {
+    u32 i;
+    for (i = 0; i < 5; i++) {
+        NpcEntry* npc = npcNameToPtr((const char*)booboo_name[i * 2]);
+        animPoseSetMaterialLightFlagOn(npc->poseId, 0x10);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(chief_mario_talk_init)
     CALL(evt_npc_entry, STRING("にせマリオ"), STRING("c_mario"))
@@ -1753,8 +1802,6 @@ EVT_BEGIN(usu_00_tree_init)
     RETURN
 EVT_END()
 
-// TODO: write kpa_stg5_009_7_cb (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(kusa_01_evt)
     IF_INT_EQUAL(GSW(0), 266)
@@ -1889,13 +1936,217 @@ u32 kpaSen_ext_entry_data[117] = {
     0x00000000,
 };
 
-// TODO: mt$1025 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 mt$1025[12] = {
-//     0x41200000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x41200000, 0x00000000, 0x3DCCCCCD,
-//     0x00000000, 0x00000000, 0x41200000, 0x00000000,
-// };
+const Vec vec3_usu_000049ac = {85.0f, 0.0f, 75.0f};
+
+// NONMATCHING (79%): the original keeps r25/r26/r27 live in the i<100 branch (frame 0x80 vs 0x70) and
+// schedules the int->float conversions slightly differently; structure and constants match.
+void kpaSen_ext_init(void) {
+    ExtPose* pose = extGetPosePtr();
+    Vec pos = vec3_usu_000049ac;
+    f32 f30;
+    f32 f31;
+    s32 i;
+    s32 offset;
+
+    kpaSen = _mapAlloc(0x1c20);
+    f30 = pos.x + 200.0f;
+    f31 = pos.z;
+
+    for (i = 0, offset = 0; i < extGetPoseNum(); i++, offset += 0x24, pose++) {
+        pose->flags |= 3;
+        PSMTXIdentity(*pose->matrix);
+        if (i < 100) {
+            pose->field_0x4 = 90.0f;
+            kpaSen[i].field_14 = pos.x + 30.0f * (i / 10.0f) - 9.0f;
+            kpaSen[i].field_18 = 0.0f;
+            kpaSen[i].field_1C = pos.z + 50.0f * (i % 10 - 5);
+            kpaSen[i].field_8 = f30;
+            (*pose->matrix)[0][3] = f30;
+            kpaSen[i].field_C = 0.0f;
+            (*pose->matrix)[1][3] = 0.0f;
+            kpaSen[i].field_10 = pos.z + 20.0f * (i % 10 - 5);
+            (*pose->matrix)[2][3] = kpaSen[i].field_10;
+            kpaSen[i].timer = (i / 10) * 3 + 1;
+            kpaSen[i].field_20 = 0;
+            kpaSen[i].field_21 = 5;
+            kpaSen[i].field_22 = 6;
+            kpaSen[i].field_23 = 8;
+        }
+        else {
+            pose->field_0x4 = 270.0f;
+            kpaSen[i].field_14 = pos.x - 30.0f * ((i - 100) / 10.0f) - 150.0f;
+            kpaSen[i].field_18 = 0.0f;
+            kpaSen[i].field_1C = pos.z + 50.0f * ((i - 100) % 10 - 5);
+            kpaSen[i].field_8 = pos.x - 350.0f;
+            (*pose->matrix)[0][3] = pos.x - 350.0f;
+            kpaSen[i].field_C = 0.0f;
+            (*pose->matrix)[1][3] = 0.0f;
+            kpaSen[i].field_10 = pos.z + 20.0f * ((i - 100) % 10 - 5);
+            (*pose->matrix)[2][3] = kpaSen[i].field_10;
+            kpaSen[i].timer = ((i - 100) / 10) * 3 + 1;
+            switch (rand() % 3) {
+            case 0:
+                kpaSen[i].field_20 = 9;
+                kpaSen[i].field_21 = 14;
+                kpaSen[i].field_22 = 15;
+                kpaSen[i].field_23 = 17;
+                break;
+            case 1:
+                kpaSen[i].field_20 = 18;
+                kpaSen[i].field_21 = 23;
+                kpaSen[i].field_22 = 24;
+                kpaSen[i].field_23 = 26;
+                break;
+            case 2:
+                kpaSen[i].field_20 = 27;
+                kpaSen[i].field_21 = 34;
+                kpaSen[i].field_22 = 35;
+                kpaSen[i].field_23 = 37;
+                break;
+            }
+        }
+        kpaSen[i].state = -1;
+        kpaSen[i].field_4 = 0.0f;
+        if (i == 6) {
+            pose->flags &= ~1;
+        }
+        if (i == 0x6a || i == 0x74) {
+            pose->flags &= ~1;
+        }
+    }
+}
+
+s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
+    u32 range = c - b + 1;
+    u32 n = (d != 0) ? 6 : 7;
+    u32 v = gp->retraceCount + a * a;
+
+    return b + (v % (range * n)) / n;
+}
+
+// NONMATCHING (94.45%): the i<100 state==1 path in the original evaluates an extra `i % 10` branch that the
+// compiler dropped from this source, plus register-allocation differences; the rest matches.
+void kpaSen_ext_main(void) {
+    ExtPose* pose = extGetPosePtr();
+    s32 i;
+    s32 offset;
+
+    for (i = 0, offset = 0; i < extGetPoseNum(); i++, offset += 0x24, pose++) {
+        switch (kpaSen[i].state) {
+        case -1:
+            break;
+        case 0:
+            kpaSen[i].timer--;
+            if (kpaSen[i].timer == 0) {
+                kpaSen[i].state++;
+            }
+            break;
+        case 1:
+            if (i < 100) {
+                pose->field_0x10 = calcPose(i, kpaSen[i].field_22, kpaSen[i].field_23, 1);
+                if (i % 10 == 0) {
+                }
+            }
+            else {
+                pose->field_0x10 = calcPose(i - 100, kpaSen[i].field_22, kpaSen[i].field_23, 1);
+            }
+            (*pose->matrix)[0][3] = kpaSen[i].field_8 * (1.0f - kpaSen[i].field_4) + kpaSen[i].field_14 * kpaSen[i].field_4;
+            (*pose->matrix)[2][3] = kpaSen[i].field_10 * (1.0f - kpaSen[i].field_4) + kpaSen[i].field_1C * kpaSen[i].field_4;
+            kpaSen[i].field_4 += 0.03;
+            kpaSen[i].timer++;
+            if (kpaSen[i].field_4 >= 1.0f) {
+                (*pose->matrix)[0][3] = kpaSen[i].field_14;
+                (*pose->matrix)[2][3] = kpaSen[i].field_1C;
+                kpaSen[i].state = 0x63;
+            }
+            break;
+        case 0x63:
+            if (i < 100) {
+                pose->field_0x10 = calcPose(i, kpaSen[i].field_20, kpaSen[i].field_21, 0);
+            }
+            else {
+                pose->field_0x10 = calcPose(i - 100, kpaSen[i].field_20, kpaSen[i].field_21, 0);
+            }
+            break;
+        }
+    }
+}
+
+void kpaSen_ext_disp(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+void kpaSen_ext_shadow_disp(void) {
+    static Mtx mt = {
+        {20.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 20.0f, 0.0f, 0.1f},
+        {0.0f, 0.0f, 20.0f, 0.0f},
+    };
+
+    extLoadShadowMtx(mt);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+}
+
+void kpaSen_ext_dispent(void) {
+    dispEntry(4, 0.0f, 1, (DispCallback)kpaSen_ext_disp, NULL);
+    dispEntry(4, 0.0f, 2, (DispCallback)kpaSen_ext_shadow_disp, NULL);
+}
+
+USER_FUNC(kpaSen_zako_syugo) {
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        kpaSen[i].state = 0;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kpaSen_toge_syugo) {
+    s32 i;
+
+    for (i = 100; i < 200; i++) {
+        kpaSen[i].state = 0;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(small_star) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+
+    effSmallStarEntry(3, 2, x, y, z, 0.0f, -1.0f, 0.0f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(bakuhatu_kemuri) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    EffectEntry* effect = effKemuTestEntry(8, x, y, 0.0f, 2.5f);
+
+    effKemuTestDrawCam(effect, 8);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(white_on) {
+    fadeWhiteOutOn();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(white_off) {
+    fadeWhiteOutOff();
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(baba_talk)
     CALL(evt_msg_print, 0, STRING("kpa_stg5_009_1"), 0, STRING("me"))
@@ -2038,8 +2289,6 @@ EVT_BEGIN(usu_00_koopa_first_evt)
     RETURN
 EVT_END()
 
-// TODO: write bakuhatu_kemuri (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(bakuhatu_evt)
     CALL(bakuhatu_kemuri, FLOAT(0.0f), FLOAT(0.0f))
@@ -2062,9 +2311,6 @@ EVT_BEGIN(bakuhatu_evt)
     CALL(bakuhatu_kemuri, FLOAT(171.19531f), FLOAT(127.26f))
     RETURN
 EVT_END()
-
-// TODO: write delete_npc_regl_evt (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(murabito_out)
     CALL(delete_npc_regl_evt, STRING("村人Ｃ"))
@@ -2112,29 +2358,13 @@ EVT_BEGIN(murabito_out)
     RETURN
 EVT_END()
 
-// TODO: write white_off (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write white_on (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write small_star (static, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kpaSen_toge_syugo (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kpaSen_zako_syugo (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kpaSen_ext_dispent (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kpaSen_ext_main (global, 0x2ec bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kpaSen_ext_init (global, 0x524 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(usu_00_koopa_second_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -2525,11 +2755,57 @@ static EVT_BEGIN(sekai_yami_shake)
     RETURN
 EVT_END()
 
-// TODO: write anim_tevcallback (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_usu_00004d84 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_usu_00004d90 = {0.0f, 1.0f, 0.0f};
+const Vec vec3_usu_00004d9c = {0.0f, 100.0f, 0.0f};
 
-// TODO: write yami_view (static, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(yami_view) {
+    Vec camPos;
+    Vec up;
+    Vec target;
+    Mtx mtx;
+    f32 value = evtGetFloat(event, event->args[0]);
+
+    target = vec3_usu_00004d84;
+    target.z = value;
+    up = vec3_usu_00004d90;
+    camPos = vec3_usu_00004d9c;
+    camPos.z = 100.0f + value;
+    C_MTXLookAt(mtx, &camPos, &up, &target);
+    envSetYamiView(mtx);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(anim_tevcallback) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
+
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(delete_npc_regl_evt) {
+    s32 name = evtGetValue(event, event->args[0]);
+    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
+
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    if (npc->regularEvtId != 0) {
+        evtDeleteID(npc->regularEvtId);
+        npc->moveEvent = NULL;
+        npc->regularEvtId = 0;
+    }
+    else if (npc->moveEvent != NULL) {
+        npc->moveEvent = NULL;
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(sekai_yami_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -2627,14 +2903,40 @@ static EVT_BEGIN(minnnanokoe_npc_entry)
     RETURN
 EVT_END()
 
-// TODO: write starstone_set_ry (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
 
-// TODO: write starstone_set_pos (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+    effSetName(effStarStoneEntry(3, x, y, z, 1.0f), (const char*)name);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write starstone_entry (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(starstone_set_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
+
+    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
+    ((effStarStoneData*)entry->userdata)->field_0xC = y;
+    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_ry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 value = evtGetFloat(event, args[1]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
+
+    ((effStarStoneData*)entry->userdata)->field_0x1C = value;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(minnnanokoe_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -2736,8 +3038,14 @@ static EVT_BEGIN(minnnanokoe_evt)
     RETURN
 EVT_END()
 
-// TODO: write party_scale (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_usu_00004f64 = {1.0f, 1.0f, 1.0f};
+
+// NONMATCHING (87.77%): the original interleaves the 3-word copy (2 loads, 2 stores, load, store); here the
+// compiler loads all three before storing.
+USER_FUNC(party_scale) {
+    partyGetPtr(0)->field_70 = vec3_usu_00004f64;
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_after_peach)
     CALL(evt_mario_key_onoff, 0)
@@ -2877,11 +3185,24 @@ static EVT_BEGIN(epilogue_evt)
     RETURN
 EVT_END()
 
-// TODO: write npc_process (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(npc_process) {
+    NpcWork* work = npcGetWorkPtr();
+    NpcEntry* npc = work->entries;
+    s32 i;
 
-// TODO: write booboo_main (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < work->total; i++, npc++) {
+        if (npc->flags & 1) {
+            if (npc->position.y <= -1000.0f) {
+                npc->flags |= 0x800;
+            }
+            else {
+                npc->flags &= ~0x800;
+            }
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
 
 EVT_BEGIN(usu_00_init_evt)
     SET_VALUE(GF(1), 0)
@@ -3103,20 +3424,9 @@ EVT_BEGIN(usu_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 kpaSen[1] = {
-    0x00000000,
-};
+KpaSenEntry* kpaSen;
 
-// TODO: write kpaSen_ext_shadow_disp (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write kpaSen_ext_disp (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write calcPose (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write party_tev (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/usu/asm/usu_00.s; this is where the original has it, just before the first script that uses it
 // clang-format on

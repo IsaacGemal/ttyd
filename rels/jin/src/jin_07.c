@@ -15,19 +15,26 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/dispdrv.h"
+#include "jin_10.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
+#include "memory.h"
+#include <stdlib.h>
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 evt_kagemario_init_14_text_4DB8[];
-extern s32 evt_usu_kagemario_party_kill_14_data_AF00[];
-static void senteresa_ext_shadow_disp(void);  // TODO: real signature
-static void senteresa_ext_disp(void);  // TODO: real signature
-static void senteresa_ext_dispent(void);  // TODO: real signature
-static void senteresa_ext_main(void);  // TODO: real signature
-static void computePos(void);  // TODO: real signature
-static void senteresa_ext_init(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
+static f32 randf(f32 min, f32 max);
+static void senteresa_ext_init(void);
+static f32 computePos(f32 a, f32 b, f32 t);
+static void senteresa_ext_disp(void);
+static void senteresa_ext_shadow_disp(void);
+static void senteresa_ext_dispent(void);
+static void senteresa_ext_main(void);
+static TeresaEntry* pTeresa;
 u32 g_nNumOutBox[1];
 static u32 g_nNumEndProc[1];
 
@@ -125,20 +132,9 @@ static EVT_BEGIN(evt_unlock)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"テレサ", 0x40000620, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[2] = {
+    {"テレサ", 0x40000620},
+    {NULL},
 };
 
 // TODO: type
@@ -149,28 +145,227 @@ static u32 senteresa_ext_entry_data[15] = {
     0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: mt$600 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 mt$600[12] = {
-//     0x41200000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x41200000, 0x00000000, 0x3DCCCCCD,
-//     0x00000000, 0x00000000, 0x41200000, 0x00000000,
-// };
+const Vec vec3_jin_00007f9c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_jin_00007fa8 = {1.0f, 0.0f, 0.0f};
+const Vec vec3_jin_00007fb4 = {0.0f, 250.0f, 0.0f};
+const Vec vec3_jin_00007fc0 = {1.0f, 0.0f, 0.0f};
 
-// TODO: write senteresa_okure_move (global, 0x1e4 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
+// Functions are written in the reverse of their order in the asm (deferred inlining).
+static f32 randf(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
+    f32 d = max - min;
 
-// TODO: write senteresa_okure_move_init (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
+    return r * d + min;
+}
 
-// TODO: write senteresa_ext_dispent (static, 0x40 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (91.68%): scheduling/register allocation only; the constants and
+// loop body match. The original also loads pTeresa[i].field_0x04/0x08 instead of
+// the literals 6.0f/80.0f, which changes the instruction schedule.
+static void senteresa_ext_init(void) {
+    ExtPose* pose = extGetPosePtr();
+    s32 count = extGetPoseNum();
+    s32 i;
 
-// TODO: write senteresa_ext_main (static, 0x348 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
+    pTeresa = _mapAlloc(0x2580);
+    for (i = 0; i < count; i++, pose++) {
+        f32 a;
+        f32 b;
 
-// TODO: write senteresa_ext_init (static, 0x3bc bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
+        pose->flags = 2;
+        pose->field_0x4 = 270.0f;
+        PSMTXIdentity(*pose->matrix);
+        pTeresa[i].field_0x00 = 0.0f;
+        (*pose->matrix)[0][3] = 0.0f;
+        pTeresa[i].field_0x04 = 6.0f;
+        (*pose->matrix)[1][3] = 6.0f;
+        pTeresa[i].field_0x08 = 80.0f;
+        (*pose->matrix)[2][3] = 80.0f;
+        pTeresa[i].field_0x0C = 200.0f;
+        a = (f32)rand() / 32767.0f;
+        b = (f32)rand() / 32767.0f;
+        pTeresa[i].field_0x10 = 6.0f + ((f32)rand() / 32767.0f * 143.0f + 27.0f);
+        pTeresa[i].field_0x14 = 80.0f + (b * 20.0f + 10.0f) * (f32)cos(a * 360.0f + 0.0f);
+        pTeresa[i].field_0x1C = 0.0f;
+        pTeresa[i].field_0x20 = (f32)rand() / 32767.0f * 0.2f + -0.1f;
+        pTeresa[i].field_0x18 = 0.0f;
+        pTeresa[i].field_0x28 = (s32)(1.7f * (f32)(i + 1));
+        pTeresa[i].field_0x2C = 0;
+        pTeresa[i].field_0x24 = (f32)rand() / 32767.0f * 350.0f + 0.0f;
+    }
+    g_nNumOutBox[0] = 0;
+    g_nNumEndProc[0] = 0;
+}
+
+static f32 computePos(f32 a, f32 b, f32 t) {
+    return (1.0f - t) * a + t * b;
+}
+
+// NONMATCHING (65.34%): the Hermite basis and matrix math are correct, but MWCC
+// schedules the basis multiplies in a different order (the original computes
+// t*t third, before (1+2t)); register allocation of the basis temps differs.
+void computePosHermite(ExtPose* pose, f32* p) {
+    f32 t = p[6];
+    f32 two_t = 2.0f * t;
+    f32 omt = 1.0f - t;
+    f32 h11 = (t - 1.0f) * (t * t);
+    f32 h01 = (3.0f - two_t) * (t * t);
+    f32 h00 = (1.0f + two_t) * omt * omt;
+    f32 h10 = t * omt * omt;
+    Vec va = vec3_jin_00007f9c;
+    Vec vb = vec3_jin_00007fa8;
+
+    (*pose->matrix)[0][3] = p[0] * h00 + p[9] * h10 + vb.x * h11 + p[3] * h01;
+    (*pose->matrix)[1][3] = p[1] * h00 + 3.4f * p[4] * h10 + vb.y * h11 + p[4] * h01;
+    (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
+}
+
+// NONMATCHING (78.2%): 104 of 224 instructions differ: 54 with different operands, 20 replaced, 16 missing, 14 extra
+static void senteresa_ext_main(void) {
+    ExtPose* pose = extGetPosePtr();
+    s32 count;
+    s32 i;
+
+    marioGetPtr();
+    count = extGetPoseNum();
+    for (i = 0; i < count; i++, pose++) {
+        switch (pTeresa[i].field_0x2C) {
+            case 0:
+                pose->field_0x10 = 0;
+                pTeresa[i].field_0x28--;
+                if (pTeresa[i].field_0x28 == 0) {
+                    pose->flags |= 1;
+                    g_nNumOutBox[0]++;
+                    pTeresa[i].field_0x2C++;
+                }
+                break;
+            case 1: {
+                Vec va = vec3_jin_00007f9c;
+                Vec vb = vec3_jin_00007fa8;
+                f32 t;
+                f32 omt;
+                f32 h00;
+                f32 h10;
+                f32 h11;
+                f32 h01;
+
+                pose->field_0x10 = (gp->retraceCount + i * i) % 3 + 1;
+                t = pTeresa[i].field_0x18;
+                omt = 1.0f - t;
+                h11 = (t - 1.0f) * (t * t);
+                h01 = (3.0f - 2.0f * t) * (t * t);
+                h00 = (1.0f + 2.0f * t) * omt * omt;
+                h10 = t * omt * omt;
+                (*pose->matrix)[0][3] = pTeresa[i].field_0x00 * h00 + pTeresa[i].field_0x24 * h10 + vb.x * h11 +
+                                         pTeresa[i].field_0x0C * h01;
+                (*pose->matrix)[1][3] = pTeresa[i].field_0x04 * h00 + 3.4f * pTeresa[i].field_0x10 * h10 +
+                                         vb.y * h11 + pTeresa[i].field_0x10 * h01;
+                (*pose->matrix)[2][3] =
+                    pTeresa[i].field_0x08 * h00 + va.z * h10 + vb.z * h11 + pTeresa[i].field_0x14 * h01;
+                pTeresa[i].field_0x18 = t + 0.015f;
+                if (pTeresa[i].field_0x18 >= 1.0f) {
+                    pTeresa[i].field_0x00 = (*pose->matrix)[0][3];
+                    pTeresa[i].field_0x04 = (*pose->matrix)[1][3];
+                    pTeresa[i].field_0x08 = (*pose->matrix)[2][3];
+                    pTeresa[i].field_0x0C = 200.0f;
+                    pTeresa[i].field_0x10 = (*pose->matrix)[1][3];
+                    pTeresa[i].field_0x14 = 50.0f;
+                    pTeresa[i].field_0x18 = 0.01f;
+                    pTeresa[i].field_0x2C = 99;
+                    g_nNumEndProc[0]++;
+                }
+                break;
+            }
+            case 99:
+                break;
+            default:
+                break;
+        }
+    }
+    if (g_nNumEndProc[0] == 200) {
+        extReset();
+    }
+}
+
+static void senteresa_ext_dispent(void) {
+    dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);
+}
+
+// NONMATCHING (78.20%): same Hermite-basis scheduling mismatch as
+// computePosHermite; the state machine and the finish block match.
+static void senteresa_ext_disp(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+static void senteresa_ext_shadow_disp(void) {
+    static Mtx mt_600 = {
+        {10.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 10.0f, 0.0f, 0.1f},
+        {0.0f, 0.0f, 10.0f, 0.0f},
+    };
+
+    extLoadShadowMtx(mt_600);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+}
+
+USER_FUNC(senteresa_get_position) {
+    s32* args = event->args;
+    ExtPose* poses = extGetPosePtr();
+    ExtPose* pose = &poses[evtGetValue(event, args[0])];
+
+    evtSetFloat(event, args[1], (*pose->matrix)[0][3]);
+    evtSetFloat(event, args[2], (*pose->matrix)[1][3]);
+    evtSetFloat(event, args[3], (*pose->matrix)[2][3]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(senteresa_okure_move_init) {
+    s32* args = event->args;
+
+    event->lwData[10] = evtGetValue(event, args[0]);
+    event->lwData[11] = evtGetValue(event, args[1]);
+    event->lwData[12] = evtGetValue(event, args[2]);
+    event->lwData[13] = evtGetValue(event, args[3]);
+    event->lwData[14] = evtGetValue(event, args[4]);
+    event->lwData[15] = evtGetValue(event, args[5]);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (67.85%): same Hermite-basis scheduling mismatch; the original
+// converts each event->lwData word in its own stack slot, ours coalesces them.
+USER_FUNC(senteresa_okure_move) {
+    s32* args = event->args;
+    NpcEntry* npc = npcNameToPtr("テレサ");
+    f32 t = evtGetFloat(event, args[0]);
+    f32 p0 = (f32)event->lwData[10];
+    f32 p1 = (f32)event->lwData[11];
+    f32 p2 = (f32)event->lwData[12];
+    f32 p3 = (f32)event->lwData[13];
+    f32 p4 = (f32)event->lwData[14];
+    f32 p5 = (f32)event->lwData[15];
+    f32 omt = 1.0f - t;
+    f32 two_t = 2.0f * t;
+    f32 h11 = (t - 1.0f) * (t * t);
+    f32 h01 = (3.0f - two_t) * (t * t);
+    f32 h00 = (1.0f + two_t) * omt * omt;
+    f32 h10 = t * omt * omt;
+    Vec va = vec3_jin_00007fb4;
+    Vec vb = vec3_jin_00007fc0;
+    Vec pos;
+
+    pos.x = p0 * h00 + va.x * h10 + vb.x * h11 + p3 * h01;
+    pos.y = p1 * h00 + va.y * h10 + vb.y * h11 + p4 * h01;
+    pos.z = p2 * h00 + va.z * h10 + vb.z * h11 + p5 * h01;
+    npc->position = pos;
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_teresa_box_open)
     CALL(evt_snd_bgmoff, 512)
@@ -403,36 +598,11 @@ EVT_BEGIN(jin_07_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
 u32 g_nNumOutBox[1] = {
     0x00000000,
 };
 
-// TODO: type
 static u32 g_nNumEndProc[1] = {
     0x00000000,
 };
-
-// TODO: type
-static u32 pTeresa[1] = {
-    0x00000000,
-};
-
-// TODO: write senteresa_get_position (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write senteresa_ext_shadow_disp (static, 0x38 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write senteresa_ext_disp (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write computePosHermite (global, 0x120 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write computePos (static, 0x18 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_07.s; this is where the original has it, just before the first script that uses it
 // clang-format on

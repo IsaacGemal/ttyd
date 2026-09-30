@@ -8,11 +8,11 @@ USER_FUNC(queen_hand_small_1000hand_1_evt);
 USER_FUNC(queen_hand_small_drag_1_evt);
 USER_FUNC(queen_hand_small_drag_2_evt);
 USER_FUNC(queen_hand_small_drag_3_evt);
-void queen_hand_small_drag_4_evt(void);  // TODO: real signature
+USER_FUNC(queen_hand_small_drag_4_evt);
 USER_FUNC(queen_hand_small_dead_evt);
 USER_FUNC(queen_hand_small_entry_evt);
 USER_FUNC(slot_init);
-void peach_shock_evt(void);  // TODO: real signature
+USER_FUNC(peach_shock_evt);
 USER_FUNC(queen_hp_drain_5_evt);
 USER_FUNC(queen_hp_drain_4_evt);
 USER_FUNC(queen_hp_drain_3_evt);
@@ -25,7 +25,7 @@ USER_FUNC(eff_queen_set_alpha_evt);
 USER_FUNC(unk_las_0000af38);
 USER_FUNC(queen_drain);
 USER_FUNC(queen_thunder);
-void change_pose(void);  // TODO: real signature
+USER_FUNC(change_pose);
 void hand_main(void);  // TODO: real signature
 void hand_draw(void);  // TODO: real signature
 USER_FUNC(make_pattern);

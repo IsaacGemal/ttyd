@@ -1,4 +1,8 @@
 #include "mri.h"
+#include <dolphin/mtx.h>
+#include <stdlib.h>
+#include "data/mapdata.h"
+#include "driver/mapdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -16,8 +20,14 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "manager/fontmgr.h"
+#include "mario/mario_pouch.h"
+#include "mario/mariost.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
 #include "rel/mri/mri.h"
+#include "system.h"
 
 #pragma pool_data off
 
@@ -32,27 +42,68 @@ extern s32 evt_puni_set_position[];
 extern s32 evt_puni_set_trap_index[];
 
 // clang-format off
-extend_data(0,
-     u64, negone_one, 0xBF8000003F800000,
-     u32, neg_one, 0xBF800000,
-     f32, __local_PI, 3.1415926535897932384626433832795f,
-     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
-     u64, one_negone, 0x3F800000BF800000,
-     f32, __local_PIO2, 1.57079632679489661923132169163975f,
-     f32, one, 1.0f)
-
-extend_data(1,
-     u64, negone_one, 0xBF8000003F800000,
-     u32, neg_one, 0xBF800000,
-     f32, __local_PI, 3.1415926535897932384626433832795f,
-     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
-     u64, one_negone, 0x3F800000BF800000,
-     f32, __local_PIO2, 1.57079632679489661923132169163975f,
-     f32, one, 1.0f)
-
 extend_data(2,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(3,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(6,
      f64, _three, 3,
      f64, _half, 0.5)
+
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("mri_00", mri_00_init_evt);
+    relSetEvtAddr("mri_01", mri_01_init_evt);
+    relSetEvtAddr("mri_02", mri_02_init_evt);
+    relSetEvtAddr("mri_03", mri_03_init_evt);
+    relSetEvtAddr("mri_04", mri_04_init_evt);
+    relSetEvtAddr("mri_05", mri_05_init_evt);
+    relSetEvtAddr("mri_06", mri_06_init_evt);
+    relSetEvtAddr("mri_07", mri_07_init_evt);
+    relSetEvtAddr("mri_08", mri_08_init_evt);
+    relSetEvtAddr("mri_09", mri_09_init_evt);
+    relSetEvtAddr("mri_10", mri_10_init_evt);
+    relSetEvtAddr("mri_11", mri_11_init_evt);
+    relSetEvtAddr("mri_12", mri_12_init_evt);
+    relSetEvtAddr("mri_13", mri_13_init_evt);
+    relSetEvtAddr("mri_14", mri_14_init_evt);
+    relSetEvtAddr("mri_15", mri_15_init_evt);
+    relSetEvtAddr("mri_16", mri_16_init_evt);
+    relSetEvtAddr("mri_17", mri_17_init_evt);
+    relSetEvtAddr("mri_18", mri_18_init_evt);
+    relSetEvtAddr("mri_19", mri_19_init_evt);
+    relSetEvtAddr("mri_20", mri_20_init_evt);
+    relSetBtlAddr("mri", btlsetup_mri_tbl, btl_mri_setup_no_tbl);
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
 
 EVT_BEGIN(evt_mri_door_open_pure)
     IF_INT_EQUAL(LW(9), 0)
@@ -147,8 +198,37 @@ EVT_BEGIN(evt_mri_door_close)
     RETURN
 EVT_END()
 
-// TODO: write evt_mri_door_naname_func (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.81%): 3 of 108 instructions differ in operands only (registers or offsets)
+USER_FUNC(evt_mri_door_naname_func) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 startX = evtGetFloat(event, args[1]);
+    f32 startZ = evtGetFloat(event, args[2]);
+    f32 endX = evtGetFloat(event, args[3]);
+    f32 endZ = evtGetFloat(event, args[4]);
+    s32 steps = evtGetValue(event, args[5]);
+    s32 mode = evtGetValue(event, args[6]);
+    s32 curStep;
+    f32 x;
+    f32 z;
+
+    if (isFirstCall) {
+        event->savedTime = gp->renderTime;
+    }
+    {
+        s32 elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime);
+
+        curStep = elapsed;
+        if (curStep < steps) {
+            x = intplGetValue(mode, curStep, steps, startX, endX);
+            z = intplGetValue(mode, curStep, steps, startZ, endZ);
+            mapObjTranslate(name, x, 0.0f, z);
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    mapObjTranslate(name, endX, 0.0f, endZ);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(evt_mri_door_naname_open_pure)
     BEGIN_INLINE_EVENT
@@ -237,9 +317,8 @@ EVT_BEGIN(mri_puni_save)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 mri_itemsel_table[2] = {
-    0x00000040, 0xFFFFFFFF,
+ItemType mri_itemsel_table[2] = {
+    ITEM_PUNI_ORB, -1,
 };
 
 EVT_BEGIN(mri_punipuni_setup)
@@ -283,8 +362,27 @@ EVT_BEGIN(mri_punipuni_itemremove)
     RETURN
 EVT_END()
 
-// TODO: write hakari_color (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(hakari_color) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    s32 a = evtGetValue(event, args[1]);
+    s32 b = evtGetValue(event, args[2]);
+    if (a <= b) {
+        GXColor color;
+        GXColor tmp;
+        GXColor hsv = {0xFF, 0xFF, 0xFF, 0};
+
+        hsv.r = (u8)gp->retraceCount;
+        tmp = hsv;
+        *(u32*)&color = HSV2RGB(&tmp);
+        mapGrpSetColor(name, &color);
+    } else {
+        GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+
+        mapGrpSetColor(name, &color);
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(mri_hikari_color)
     CALL(evt_mapobj_flag_onoff, 0, 0, LW(0), 256)
@@ -308,6 +406,74 @@ EVT_BEGIN(mri_hikari_color)
     END_LOOP
     RETURN
 EVT_END()
+
+USER_FUNC(evt_mri_get16bitdata) {
+    s32* args = event->args;
+    s32 base = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+
+    evtSetValue(event, args[2], *(s16*)(base + index * 2));
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mri_npc_buruburu) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    NpcEntry* npc = evtNpcNameToPtr(event, name);
+    s32 mode = evtGetValue(event, args[1]);
+    f32 amplitude = evtGetFloat(event, args[2]);
+    s32 period = evtGetValue(event, args[3]);
+    s32 endTime = evtGetValue(event, args[4]);
+    s32 elapsed;
+    f32 cur;
+    f32 delta;
+
+    if (isFirstCall) {
+        event->savedTime = gp->renderTime;
+        event->userdataf[0] = 0.0f;
+        event->userdataf[1] = npc->position.x;
+        event->userdataf[2] = npc->position.y;
+        *(f32*)&event->field_84 = npc->position.z;
+    }
+    elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime);
+    if ((elapsed % (period * 2)) >= period) {
+        cur = amplitude;
+    } else {
+        cur = -amplitude;
+    }
+    delta = cur - event->userdataf[0];
+    switch (mode) {
+        case 0:
+            npc->position.x += delta;
+            npc->prevPosition.x = npc->position.x;
+            break;
+        case 1:
+            npc->position.y += delta;
+            npc->prevPosition.y = npc->position.y;
+            break;
+        case 2:
+            npc->position.z += delta;
+            npc->prevPosition.z = npc->position.z;
+            break;
+    }
+    event->userdataf[0] = cur;
+    if (endTime == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (elapsed < endTime) {
+        return EVT_RETURN_BLOCK;
+    }
+    {
+        Vec pos = {0.0f, 0.0f, 0.0f};
+
+        pos.x = event->userdataf[1];
+        pos.y = event->userdataf[2];
+        pos.z = *(f32*)&event->field_84;
+        npc->prevPosition = pos;
+        npc->position = npc->prevPosition;
+    }
+    return EVT_RETURN_YIELD;
+}
 
 EVT_BEGIN(mri_countdown)
     IF_INT_GREATER_OR_EQUAL(GSW(0), 118)
@@ -437,51 +603,299 @@ EVT_BEGIN(mri_puni_jump_se)
     RETURN
 EVT_END()
 
-// TODO: write _prolog (global, 0x20c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+s32 toge_searchParent(PuniData* puni, s16 id) {
+    s32 i;
+    s32 best = 10000;
+    PuniData* parent;
+    u8* p;
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    for (i = 110; i <= 209; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        if (!(*(u32*)(p + 0x4) & 0x400) || !(*(u32*)(p + 0x4) & 0x80000) || *(s16*)(p + 0x118) != id ||
+            *(void**)(p + 0x1D4) != NULL || p == (u8*)puni || (s16)best <= *(s16*)(p + 0x11A)) {
+            continue;
+        }
+        parent = (PuniData*)p;
+        best = *(s16*)(p + 0x11A) + 1;
+    }
+    if ((s16)best == 10000) {
+        return 0;
+    }
+    *(void**)((u8*)puni + 0x1D0) = parent;
+    *(s16*)((u8*)puni + 0x11A) = best;
+    *(s16*)((u8*)puni + 0x118) = *(s16*)((u8*)parent + 0x118);
+    *(void**)((u8*)parent + 0x1D4) = puni;
+    return 1;
+}
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+void togeModeParent(PuniData* puni) {
+    Vec diff;
 
-// TODO: write evt_mri_get16bitdata (global, 0x5c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    PSVECSubtract((Vec*)((u8*)*(u8**)((u8*)puni + 0x1D0) + 0x12C), (Vec*)((u8*)puni + 0x12C), &diff);
+    *(f32*)((u8*)puni + 0x1A8) = PSVECMag(&diff);
+    if (*(f32*)((u8*)puni + 0x1A8) >
+        2.0f + (*(f32*)((u8*)puni + 0x190) + *(f32*)((u8*)*(u8**)((u8*)puni + 0x1D0) + 0x190)) + 3.0f) {
+        PSVECNormalize(&diff, &diff);
+        diff.y = 0.0f;
+        PSVECScale(&diff, &diff, 1.0f);
+        PSVECAdd((Vec*)((u8*)puni + 0x15C), &diff, (Vec*)((u8*)puni + 0x15C));
+        *(f32*)((u8*)puni + 0x174) = 3.0f;
+    }
+}
 
-// TODO: write mri_npc_buruburu (global, 0x234 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+void togeMoveParent(PuniData* puni) {
+    puniMoveDecel(puni);
+}
 
-// TODO: write toge_searchParent (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+void puniModeWinjump(PuniData* puni) {
+    u8* p = (u8*)puni;
+    s32 elapsed;
+    f32 t;
+    f32 accel;
 
-// TODO: write togeModeParent (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    switch (*(u16*)(p + 0x114)) {
+        case 0:
+            *(OSTime*)(p + 0x1C8) = gp->renderTime;
+            *(s32*)(p + 0x1E4) = 0;
+            *(f32*)(p + 0x1EC) = *(f32*)(p + 0x130);
+            *(f32*)(p + 0x1F0) = -72.0f;
+            *(f32*)(p + 0x1F4) = -*(f32*)(p + 0x1F0);
+            *(u16*)(p + 0x114) = 1;
+            psndSFXOn_3D("SFX_STG2_PUNI_JUMP1", (Vec*)(p + 0x12C));
+            // fallthrough
+        case 1:
+            elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)*(OSTime*)(p + 0x1C8));
+            if (elapsed > 100 && *(s32*)(p + 0x1E4) == 0) {
+                *(s32*)(p + 0x1E4) = 1;
+                *(s32*)(p + 0x124) = 0;
+            }
+            if (elapsed < 200) {
+                t = (f32)elapsed / 200.0f;
+                accel = *(f32*)(p + 0x1F0) * t + *(f32*)(p + 0x1F4);
+                *(f32*)(p + 0x130) = t * accel + *(f32*)(p + 0x1EC);
+            } else {
+                *(f32*)(p + 0x130) = *(f32*)(p + 0x1EC);
+                *(u16*)(p + 0xC) = 27;
+                *(u16*)(p + 0x11C) = 1;
+                *(u16*)(p + 0x114) = 0;
+            }
+            break;
+    }
+}
 
-// TODO: write togeMoveParent (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+void togeMakeRetsu(Vec* pos, s16 a, s16 b, s16 c) {
+    u8* parent;
+    s32 best;
+    s32 j;
+    u8* p;
+    s32 i;
+    u8* q;
 
-// TODO: write puniModeWinjump (global, 0x164 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    p = (u8*)&puniGetPunidat()[a];
+    *(f32*)(p + 0x12C) = pos->x;
+    *(f32*)(p + 0x130) = pos->y;
+    *(f32*)(p + 0x134) = pos->z;
+    *(void**)(p + 0x56C) = NULL;
+    *(void**)(p + 0x570) = NULL;
+    *(s16*)(p + 0x118) = *(s16*)(p + 0x116);
+    *(s16*)(p + 0x11C) = 1;
+    *(u32*)(p + 0x4) |= 0x80000;
 
-// TODO: write togeMakeRetsu (global, 0x188 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    for (i = b; i <= c; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        *(void**)(p + 0x56C) = togeModeParent;
+        *(void**)(p + 0x570) = togeMoveParent;
+        *(f32*)(p + 0x12C) = pos->x;
+        *(f32*)(p + 0x130) = pos->y;
+        *(f32*)(p + 0x134) = pos->z;
+        *(s16*)(p + 0x11C) = 1;
+        *(u32*)(p + 0x4) |= 0x80000;
+        toge_searchParent((PuniData*)p, a);
+    }
+}
 
-// TODO: write evt_mri_toge_make_retsu (global, 0x24c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (98.46%): 35 of 147 instructions differ in operands only (registers or offsets)
+USER_FUNC(evt_mri_toge_make_retsu) {
+    s32* args = event->args;
+    f32 x = (f32)evtGetValue(event, args[0]);
+    f32 y = (f32)evtGetValue(event, args[1]);
+    f32 z = (f32)evtGetValue(event, args[2]);
+    s16 a = (s16)evtGetValue(event, args[3]);
+    s16 b = (s16)evtGetValue(event, args[4]);
+    s16 c = (s16)evtGetValue(event, args[5]);
+    s32 j;
+    u8* parent;
+    s32 best;
+    u8* p;
+    s32 i;
+    u8* q;
 
-// TODO: write evt_mri_toge_retsu_stop (global, 0xbc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    p = (u8*)&puniGetPunidat()[a];
+    *(f32*)(p + 0x12C) = x;
+    *(f32*)(p + 0x130) = y;
+    *(f32*)(p + 0x134) = z;
+    *(void**)(p + 0x56C) = NULL;
+    *(void**)(p + 0x570) = NULL;
+    *(s16*)(p + 0x118) = *(s16*)(p + 0x116);
+    *(s16*)(p + 0x11C) = 1;
+    *(u32*)(p + 0x4) |= 0x80000;
 
-// TODO: write evt_mri_toge_enter_init (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    for (i = b; i <= c; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        *(void**)(p + 0x56C) = togeModeParent;
+        *(void**)(p + 0x570) = togeMoveParent;
+        *(f32*)(p + 0x12C) = x;
+        *(f32*)(p + 0x130) = y;
+        *(f32*)(p + 0x134) = z;
+        *(s16*)(p + 0x11C) = 1;
+        *(u32*)(p + 0x4) |= 0x80000;
+        best = 10000;
+        for (j = 110; j <= 209; j++) {
+            q = (u8*)&puniGetPunidat()[j];
+            if ((*(u32*)(q + 0x4) & 0x400) && (*(u32*)(q + 0x4) & 0x80000) && *(s16*)(q + 0x118) == a &&
+                *(void**)(q + 0x1D4) == NULL && q != p && (s16)best > *(s16*)(q + 0x11A)) {
+                parent = q;
+                best = *(s16*)(q + 0x11A) + 1;
+            }
+        }
+        if ((s16)best != 10000) {
+            *(void**)(p + 0x1D0) = parent;
+            *(s16*)(p + 0x11A) = best;
+            *(s16*)(p + 0x118) = *(s16*)(parent + 0x118);
+            *(void**)(parent + 0x1D4) = p;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_mri_toge_retsu_stop) {
+    s32* args = event->args;
+    s16 a = (s16)evtGetValue(event, args[0]);
+    s16 start = (s16)evtGetValue(event, args[1]);
+    s16 end = (s16)evtGetValue(event, args[2]);
+    u8* p = (u8*)&puniGetPunidat()[a];
+    s32 i;
 
-// TODO: write evt_mri_puni_win_init (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    *(void**)(p + 0x56C) = NULL;
+    *(void**)(p + 0x570) = NULL;
+    *(s16*)(p + 0x11C) = 0;
+    *(u32*)(p + 0x4) &= ~0x80000;
+    for (i = start; i <= end; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        *(void**)(p + 0x56C) = NULL;
+        *(void**)(p + 0x570) = NULL;
+        *(s16*)(p + 0x11C) = 0;
+        *(u32*)(p + 0x4) &= ~0x80000;
+    }
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write evt_mri_puni_win_attack (global, 0x260 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(evt_mri_toge_enter_init) {
+    s32 i;
+    u8* p;
 
-// TODO: write evt_mri_puni_win_end (global, 0x2b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri.s; this is where the original has it, just before the first script that uses it
+    for (i = 110; i <= 209; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        if (*(u32*)(p + 0x4) & 0x400) {
+            *(f32*)(p + 0x12C) = 0.0f;
+            *(f32*)(p + 0x130) = -1000.0f;
+            *(f32*)(p + 0x134) = 0.0f;
+            *(s16*)(p + 0xC) = 29;
+            *(s16*)(p + 0x11C) = 0;
+            *(u32*)(p + 0x4) &= ~0x100000;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_mri_puni_win_init) {
+    s32 i;
+    u8* p;
+
+    for (i = 1; i <= 102; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        if (*(u32*)(p + 0x4) & 0x400) {
+            *(s16*)(p + 0x574) = *(s16*)(p + 0x576);
+            *(f32*)(p + 0x188) = 0.0f;
+            *(f32*)(p + 0x184) = 0.0f;
+            *(f32*)(p + 0x148) = 0.0f;
+            *(u32*)(p + 0x8) &= ~1;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_mri_puni_win_attack) {
+    s32* args = event->args;
+    f32 a0 = (f32)evtGetValue(event, args[0]);
+    f32 a1 = (f32)evtGetValue(event, args[1]);
+    f32 a2 = (f32)evtGetValue(event, args[2]);
+    f32 a3 = (f32)evtGetValue(event, args[3]);
+    f32 a4 = (f32)evtGetValue(event, args[4]);
+    f32 a5 = (f32)evtGetValue(event, args[5]);
+    u8* w = (u8*)puniGetPunigp();
+    s32 i;
+    u8* p;
+
+    *(s32*)(w + 0x47C) = 2;
+    *(f32*)(w + 0x480) = a0;
+    *(f32*)(w + 0x484) = a1;
+    *(f32*)(w + 0x488) = a2;
+    *(f32*)(w + 0x4B0) = 100.0f;
+    *(f32*)(w + 0x48C) = a3;
+    *(f32*)(w + 0x490) = a4;
+    *(f32*)(w + 0x494) = a5;
+    *(f32*)(w + 0x4B4) = 100.0f;
+
+    for (i = 1; i <= 102; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        if (*(u32*)(p + 0x4) & 0x400) {
+            PuniDokuritsu((PuniData*)p);
+            *(s16*)(p + 0x11C) = 1;
+            *(s16*)(p + 0x114) = 0;
+            if (*(u32*)(p + 0x4) & 0x4000) {
+                *(u32*)(p + 0x4) &= ~0x4000;
+                *(s16*)(p + 0xC) = 29;
+                *(void**)(p + 0x56C) = puniModeWinjump;
+                *(void**)(p + 0x570) = puniMoveDecel;
+            } else {
+                *(s16*)(p + 0xC) = 27;
+            }
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_mri_puni_win_end) {
+    s32* args = event->args;
+    f32 a0 = (f32)evtGetValue(event, args[0]);
+    f32 a1 = (f32)evtGetValue(event, args[1]);
+    f32 a2 = (f32)evtGetValue(event, args[2]);
+    f32 a3 = (f32)evtGetValue(event, args[3]);
+    f32 a4 = (f32)evtGetValue(event, args[4]);
+    f32 a5 = (f32)evtGetValue(event, args[5]);
+    u8* w = (u8*)puniGetPunigp();
+    s32 i;
+    u8* p;
+    f32 r1;
+    f32 r2;
+
+    *(s32*)(w + 0x43C) = 0;
+    for (i = 1; i <= 102; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        if (*(u32*)(p + 0x4) & 0x400) {
+            PuniDokuritsu((PuniData*)p);
+            r1 = (f32)(rand() % 21);
+            r2 = (f32)(rand() % 21);
+            *(f32*)(p + 0x12C) = a0 + r1 - 10.0f;
+            *(f32*)(p + 0x130) = a1;
+            *(f32*)(p + 0x134) = a2 + r2 - 10.0f;
+            *(f32*)(p + 0x1F8) = a3 + r1 - 10.0f;
+            *(f32*)(p + 0x1FC) = a4;
+            *(f32*)(p + 0x200) = a5 + r2 - 10.0f;
+            *(s16*)(p + 0xC) = 25;
+            *(s16*)(p + 0x114) = 0;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 // clang-format on

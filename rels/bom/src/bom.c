@@ -1,6 +1,19 @@
 #include "bom.h"
+#include "bom_01.h"
+#include "bom_02.h"
+#include "battle_database_bom.h"
+#include "data/mapdata.h"
+#include "driver/animdrv.h"
+#include "driver/npcdrv.h"
+#include "eff/eff_mist.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "mario/mario.h"
+#include "memory.h"
+#include "party.h"
+#include "party/party_vivian.h"
+#include "system.h"
+#include <string.h>
 
 #pragma pool_data off
 
@@ -29,27 +42,108 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: offset$519 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 offset$519[8] = {
-//     0x00000000, 0x41200000, 0x41C00000, 0x41200000,
-//     0x41700000, 0x41A00000, 0x41A00000, 0x41200000,
-// };
+USER_FUNC(bress) {
+    static f32 offset[8] = {
+        0.0f, 10.0f, 24.0f, 10.0f,
+        15.0f, 20.0f, 20.0f, 10.0f,
+    };
+    MarioWork* mario;
+    PartyEntry* party0;
+    PartyEntry* party1;
+    NpcWork* npcWork;
+    NpcEntry* npc;
+    s32* timers;
+    s32 i;
 
-// TODO: write bress (global, 0x300 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom.s; this is where the original has it, just before the first script that uses it
+    mario = marioGetPtr();
+    party0 = partyGetPtr(0);
+    party1 = partyGetPtr(1);
+    npcWork = npcGetWorkPtr();
+
+    if (isFirstCall) {
+        event->userdata[0] = 30;
+        event->userdata[1] = 30;
+        event->userdata[2] = 30;
+        timers = _mapAlloc(npcWork->total * 4);
+        event->field_84 = (u32)timers;
+        memset(timers, 0, npcWork->total * 4);
+    }
+
+    timers = (s32*)event->field_84;
+
+    if (event->userdata[0] != 0) {
+        event->userdata[0]--;
+    }
+    if (event->userdata[1] != 0) {
+        event->userdata[1]--;
+    }
+    if (event->userdata[2] != 0) {
+        event->userdata[2]--;
+    }
+    for (i = 0; i < npcWork->total; i++) {
+        if (timers[i] != 0) {
+            timers[i]--;
+        }
+    }
+
+    if (mario != NULL && event->userdata[0] == 0 && !marioChkSts(4) && !marioChkSts(0x10) && !marioChkSts(8) &&
+        vivianGetStatus() != 2) {
+        effMistEntry(4, 30, mario->position.x, mario->position.y + 24.0f, mario->position.z,
+                     270.0f - mario->unk1A8);
+        event->userdata[0] = irand(60) + 60;
+    }
+    if (party0 != NULL && event->userdata[1] == 0 && !marioChkSts(4) && !marioChkSts(0x10) && !marioChkSts(8) &&
+        vivianGetStatus() != 2) {
+        effMistEntry(4, 30, party0->position.x, party0->position.y + offset[party0->currentMemberId],
+                     party0->position.z, 270.0f - party0->field_10C);
+        event->userdata[1] = irand(60) + 60;
+    }
+    if (party1 != NULL && event->userdata[2] == 0) {
+        event->userdata[2] = irand(60) + 60;
+    }
+
+    npc = npcWork->entries;
+    for (i = 0; i < npcWork->total; i++, npc++) {
+        if ((npc->flags & 1) && timers[i] == 0) {
+            AnimationPose* pose = animPoseGetAnimPosePtr(npc->poseId);
+
+            effMistEntry(4, 30, npc->position.x, npc->position.y + npc->height / 2.0f, npc->position.z,
+                         270.0f - pose->field_0x7C);
+            timers[i] = irand(60) + 60;
+        }
+    }
+
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(evt_bress)
     CALL(bress)
     RETURN
 EVT_END()
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("bom_00", bom_00_init_evt);
+    relSetEvtAddr("bom_01", bom_01_init_evt);
+    relSetEvtAddr("bom_02", bom_02_init_evt);
+    relSetEvtAddr("bom_03", bom_03_init_evt);
+    relSetEvtAddr("bom_04", bom_04_init_evt);
+    relSetBtlAddr("bom", btlsetup_bom_tbl, btl_bom_setup_no_tbl);
+    evtEntryType(evt_bress, 0, 0, 0);
+}
 
-// TODO: write _prolog (global, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
 // clang-format on

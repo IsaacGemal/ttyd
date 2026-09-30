@@ -24,6 +24,20 @@
 #include "evt/evt_window.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "cam_road.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/npcdrv.h"
+#include "mario/mario.h"
+#include "mario/mario_pouch.h"
+#include "mario/mario_party.h"
+#include "memory.h"
+#include "manager/evtmgr_cmd.h"
+#include "party.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
 
 #pragma pool_data off
 
@@ -51,28 +65,17 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write make_gonbaba_projection_evt (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_hei_00005f38 = {0.0f, 190.0f, 0.0f};
+const Vec vec3_hei_00005f44 = {0.0f, 0.0f, -1.0f};
+const Vec vec3_hei_00005f50 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00005f5c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00005f68 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00005f74 = {1.0f, 0.0f, 0.0f};
 
 EVT_BEGIN(make_proj_evt)
     CALL(make_gonbaba_projection_evt)
     RETURN
 EVT_END()
-
-// TODO: write shake_reset (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shake (global, 0xa0 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write proj_mtx (static, 0x204 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write proj_off (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write proj_on (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_gonbaba_shadow)
     SPAWN_EVENT_GET_ID(PTR(make_proj_evt), LW(9))
@@ -134,6 +137,9 @@ EVT_BEGIN(evt_gonbaba_shadow)
     RETURN
 EVT_END()
 
+const Vec vec3_hei_00005f8c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00005f98 = {0.0f, 0.0f, 0.0f};
+
 static EVT_BEGIN(first_evt)
     CALL(evt_snd_bgmon, 512, STRING("BGM_STG1_HEI1"))
     CALL(evt_snd_envon, 272, STRING("ENV_STG1_HEI1"))
@@ -189,9 +195,6 @@ static EVT_BEGIN(first_evt)
     CALL(evt_party_run, 0)
     RETURN
 EVT_END()
-
-// TODO: write cam_test (global, 0x1d8 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(gonbaba_evt)
     LABEL(1)
@@ -442,8 +445,7 @@ EVT_BEGIN(evt_snd)
     RETURN
 EVT_END()
 
-// TODO: write unk_hei_000002a8 (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_hei_000060d4 = {150.0f, 25.0f, 0.0f};
 
 EVT_BEGIN(moji_msg)
     CALL(unk_hei_000002a8, LW(0))
@@ -543,9 +545,6 @@ static EVT_BEGIN(switch_evt)
     CALL(evt_party_run, 0)
     RETURN
 EVT_END()
-
-// TODO: write dist_check (global, 0x94 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(dokan_evt)
     CALL(evt_mario_key_onoff, 0)
@@ -663,9 +662,8 @@ EVT_BEGIN(setting_sun_stone)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 itemsel_table00[2] = {
-    0x0000003E, 0xFFFFFFFF,
+static s32 itemsel_table00[] = {
+    ITEM_SUN_STONE, -1,
 };
 
 EVT_BEGIN(sun_stone_set_event)
@@ -704,9 +702,8 @@ EVT_BEGIN(setting_moon_stone)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 itemsel_table01[2] = {
-    0x0000003D, 0xFFFFFFFF,
+static s32 itemsel_table01[] = {
+    ITEM_MOON_STONE, -1,
 };
 
 EVT_BEGIN(moon_stone_set_event)
@@ -747,30 +744,17 @@ EVT_BEGIN(ki_data_evt_02)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ki_data[24] = {
-    0x00000000, (u32)"a_ki_1", (u32)"miki_1", (u32)"ha_temae_1",
-    (u32)"ha_usiro_1", (u32)&ki_data_evt_01, 0x00000000, (u32)"a_ki_2",
-    (u32)"miki_2", (u32)"ha_temae_2", (u32)"ha_usiro_2", (u32)&ki_data_evt_02,
-    0x00000000, (u32)"a_ki_3", (u32)"miki_3", (u32)"ha_temae_3",
-    (u32)"ha_usiro_3", 0x00000000, 0x00000007, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static TreeAccessEntry ki_data[] = {
+    {0, "a_ki_1", "miki_1", "ha_temae_1", "ha_usiro_1", ki_data_evt_01},
+    {0, "a_ki_2", "miki_2", "ha_temae_2", "ha_usiro_2", ki_data_evt_02},
+    {0, "a_ki_3", "miki_3", "ha_temae_3", "ha_usiro_3", NULL},
+    {7},
 };
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"ババ", 0x00000000, 0x00000000, (u32)npc_init_evt,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[] = {
+    {"ババ", 0, 0, npc_init_evt, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0,
+     {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, 0.0f, 0.0f, 0.0f, 0},
+    {NULL},
 };
 
 EVT_BEGIN(hei_00_koopa_evt)
@@ -976,9 +960,278 @@ EVT_BEGIN(hei_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write cam_test2 (global, 0x1d8 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write make_gonbaba_projection (global, 0x294 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_00.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(proj_on) {
+    MarioWork* mario;
+    PartyEntry* party;
+
+    mario = marioGetPtr();
+    animPoseSetMaterialFlagOn(mario->paperAnimGroupId[0], 0x400);
+    mario = marioGetPtr();
+    animPoseSetMaterialFlagOn(mario->paperAnimGroupId[1], 0x400);
+    mario = marioGetPtr();
+    animPoseSetMaterialFlagOn(mario->paperAnimGroupId[2], 0x400);
+    party = partyGetPtr(marioGetPartyId());
+    animPoseSetMaterialFlagOn(party->paperAnimGroup, 0x400);
+    return 2;
+}
+
+static USER_FUNC(proj_off) {
+    MarioWork* mario;
+    PartyEntry* party;
+
+    mario = marioGetPtr();
+    animPoseSetMaterialFlagOff(mario->paperAnimGroupId[0], 0x400);
+    mario = marioGetPtr();
+    animPoseSetMaterialFlagOff(mario->paperAnimGroupId[1], 0x400);
+    mario = marioGetPtr();
+    animPoseSetMaterialFlagOff(mario->paperAnimGroupId[2], 0x400);
+    party = partyGetPtr(marioGetPartyId());
+    animPoseSetMaterialFlagOff(party->paperAnimGroup, 0x400);
+    return 2;
+}
+
+void make_gonbaba_projection(CameraId cameraId, void* param) {
+    CameraEntry camBackup;
+    Mtx44 perspective;
+    Mtx mtx;
+    Mtx identity;
+    f32 viewport[GX_VIEWPORT_SZ];
+    f32 projection[GX_PROJECTION_SZ];
+    Vec camPos;
+    Vec camUp;
+    Vec target;
+    u32 x;
+    u32 y;
+    u32 w;
+    u32 h;
+    NpcEntry* npc;
+    GonbabaProj* work = param;
+
+    GXGetViewportv(viewport);
+    GXGetProjectionv(projection);
+    GXGetScissor(&x, &y, &w, &h);
+    GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f,
+                  0.0f, 1.0f);
+    GXSetScissor(1, 1, 0x25E, 0x1DE);
+    C_MTXPerspective(perspective, 25.0f, 1.2666667f, 1.0f,
+                     1000.0f);
+    GXSetProjection(perspective, GX_PERSPECTIVE);
+    target = vec3_hei_00005f50;
+    camUp = vec3_hei_00005f44;
+    camPos = vec3_hei_00005f38;
+    C_MTXLookAt(mtx, &camPos, &camUp, &target);
+    camBackup = *camGetCurPtr();
+    npc = npcNameToPtr("ゴンババ影");
+    PSMTXCopy(mtx, camGetCurPtr()->view);
+    PSMTXIdentity(identity);
+    animPoseDrawMtx(npc->poseId, identity, 1, 0.0f, 2.0f);
+    animPoseDrawMtx(npc->poseId, identity, 2, 0.0f, 2.0f);
+    animPoseDrawMtx(npc->poseId, identity, 3, 0.0f, 2.0f);
+    PSMTXCopy(camBackup.view, camGetCurPtr()->view);
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x260, 0x1E0, GX_TF_RGBA8, GX_FALSE);
+    GXCopyTex(work->texBuffer->address, GX_TRUE);
+    GXInvalidateTexAll();
+    GXPixModeSync();
+    GXTexModeSync();
+    GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
+    GXSetProjectionv(projection);
+    GXSetScissor(x, y, w, h);
+}
+
+USER_FUNC(make_gonbaba_projection_evt) {
+    GonbabaProj* work;
+
+    if (isFirstCall) {
+        *(void**)&event->userdata[0] = _mapAlloc(0x24);
+    }
+    work = (GonbabaProj*)*(void**)&event->userdata[0];
+    work->texBuffer = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, GX_TF_RGBA8, GX_FALSE, 0), 3);
+    GXInitTexObj(&work->texObj, work->texBuffer->address, 0x260, 0x1E0, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    mapSetProjTexObj(&work->texObj, work->texBuffer);
+    dispEntry(CAMERA_SHADOW, 0.0f, 3, make_gonbaba_projection, work);
+    return 0;
+}
+
+USER_FUNC(proj_mtx) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]);
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    f32 e = evtGetFloat(event, args[4]);
+    f32 f = evtGetFloat(event, args[5]);
+    Mtx lookAt;
+    Mtx proj;
+    Mtx rot;
+    Vec camPos;
+    Vec target;
+    Vec camUp;
+    Vec pos;
+    Vec tgt;
+
+    pos = vec3_hei_00005f5c;
+    tgt = vec3_hei_00005f68;
+    pos.x = a;
+    pos.y = b;
+    pos.z = c;
+    tgt.x = d;
+    tgt.y = e;
+    tgt.z = f;
+    camPos = pos;
+    target = tgt;
+    camUp = vec3_hei_00005f74;
+    C_MTXLightPerspective(proj, 25.0f, 1.2666667f, 0.5f,
+                          0.5f, 0.5f, 0.5f);
+    C_MTXLookAt(lookAt, &camPos, &camUp, &target);
+    PSMTXRotRad(rot, 'y', 0.17453292f);
+    PSMTXConcat(proj, lookAt, proj);
+    PSMTXConcat(proj, rot, proj);
+    mapSetProjMtx(proj);
+    return 2;
+}
+
+USER_FUNC(shake) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+        event->userdata[1] = 0;
+    }
+    event->userdata[1]--;
+    if (event->userdata[1] < 0) {
+        event->userdata[0] = 1 - event->userdata[0];
+        event->userdata[1] = 2;
+    }
+    if (event->userdata[0] != 0) {
+        cam->viewOffset.z = 3.0f;
+    } else {
+        cam->viewOffset.z = 0.0f;
+    }
+    return 0;
+}
+
+USER_FUNC(shake_reset) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+
+    cam->viewOffset.z = 0.0f;
+    return 2;
+}
+
+// `#pragma opt_common_subs off` required: with common-subexpression elimination on, the compiler
+// reorders the camRoadMain midpoint setup and the two functions no longer match.
+#pragma opt_common_subs off
+USER_FUNC(cam_test) {
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    CameraParams work;
+    Vec dir;
+    Vec tmp;
+    f32 midX;
+    f32 midZ;
+#ifdef MUST_MATCH
+    f32 t1;
+    f32 t2;
+    f32 half;
+#endif
+
+    camGetPtr(CAMERA_3D);
+#ifdef MUST_MATCH
+    half = 0.5f;
+    t1 = mario->position.x + party->position.x;
+    t2 = mario->position.z + party->position.z;
+    midX = t1 * half;
+    midZ = t2 * half;
+#else
+    midX = (mario->position.x + party->position.x) * 0.5f;
+    midZ = (mario->position.z + party->position.z) * 0.5f;
+#endif
+    camRoadMain(&work.fovY, 0.0f, 25.0f, 0.0f, 0.0f, 25.0f, 0.0f, 0.0f);
+    tmp = vec3_hei_00005f8c;
+    tmp.x = work.pos.x - work.at.x;
+    tmp.y = work.pos.y - work.at.y;
+    tmp.z = work.pos.z - work.at.z;
+    dir = tmp;
+    PSVECNormalize(&dir, &dir);
+    event->lwData[0] = (s32)(midX + work.at.x + 250.0f * dir.x);
+    event->lwData[1] = (s32)(250.0f * dir.y + work.at.y);
+    event->lwData[2] = (s32)(midZ + work.at.z + 250.0f * dir.z);
+    event->lwData[3] = (s32)(midX + work.at.x);
+    event->lwData[4] = (s32)(work.at.y);
+    event->lwData[5] = (s32)(midZ + work.at.z);
+    return 2;
+}
+
+USER_FUNC(cam_test2) {
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    CameraParams work;
+    Vec dir;
+    Vec tmp;
+    f32 midX;
+    f32 midZ;
+#ifdef MUST_MATCH
+    f32 t1;
+    f32 t2;
+    f32 half;
+#endif
+
+    camGetPtr(CAMERA_3D);
+#ifdef MUST_MATCH
+    half = 0.5f;
+    t1 = mario->position.x + party->position.x;
+    t2 = mario->position.z + party->position.z;
+    midX = t1 * half;
+    midZ = t2 * half;
+#else
+    midX = (mario->position.x + party->position.x) * 0.5f;
+    midZ = (mario->position.z + party->position.z) * 0.5f;
+#endif
+    camRoadMain(&work.fovY, 0.0f, 75.0f, 0.0f, 0.0f, 75.0f, 0.0f, 0.0f);
+    tmp = vec3_hei_00005f98;
+    tmp.x = work.pos.x - work.at.x;
+    tmp.y = work.pos.y - work.at.y;
+    tmp.z = work.pos.z - work.at.z;
+    dir = tmp;
+    PSVECNormalize(&dir, &dir);
+    event->lwData[0] = (s32)(midX + work.at.x + 270.0f * dir.x);
+    event->lwData[1] = (s32)(270.0f * dir.y + work.at.y);
+    event->lwData[2] = (s32)(midZ + work.at.z + 270.0f * dir.z);
+    event->lwData[3] = (s32)(midX + work.at.x);
+    event->lwData[4] = (s32)(work.at.y);
+    event->lwData[5] = (s32)(midZ + work.at.z);
+    return 2;
+}
+
+#pragma opt_common_subs reset
+USER_FUNC(dist_check) {
+    PartyEntry* party;
+    Vec pos;
+
+    marioGetPtr();
+    party = partyGetPtr(marioGetPartyId());
+    pos = vec3_hei_000060d4;
+    event->lwData[0] = 0;
+    if (party == NULL) {
+        return 2;
+    }
+    if (PSVECDistance(&pos, &party->position) < 100.0f) {
+        event->lwData[0] = 1;
+    }
+    return 2;
+}
+
+USER_FUNC(unk_hei_000002a8) {
+    s32* args = event->args;
+
+    if (marioKeyOffChk() || marioCtrlOffChk()) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 0);
+    }
+    return 2;
+}
+
 // clang-format on

@@ -2,18 +2,45 @@
 
 #include "evt/evt_cmd.h"
 
+typedef void (*voidfunctionptr)(void);
+
+typedef struct RshWindowTevParam {
+    void* obj;     // 0x0
+    void* field_4; // 0x4, a Mtx*
+    u8 field_8[4]; // 0x8
+    s32 field_C;   // 0xC
+    s32 field_10;  // 0x10
+    s32 field_14;  // 0x14
+    s32 field_18;  // 0x18
+} RshWindowTevParam;
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
+
 USER_FUNC(debug_print_func);
 USER_FUNC(evt_rsh_set_rnd_npc_talk_evt);
 USER_FUNC(evt_rsh_get_rnd_npc_talk_evt);
 USER_FUNC(evt_rsh_get_rnd_npc_data);
-void _get_rnd_npc_data(void);  // TODO: real signature
+void* _get_rnd_npc_data(s32 type, s32 group, s32 index);
 USER_FUNC(evt_rsh_set_rnd_npc);
 USER_FUNC(evt_rsh_get_rnd_npc);
-void rsh_window_tev(void);  // TODO: real signature
+void rsh_window_tev(RshWindowTevParam* param, s32 arg1);
 USER_FUNC(img_wait);
-void _unresolved(void);  // TODO: real signature
-void _epilog(void);  // TODO: real signature
-void _prolog(void);  // TODO: real signature
+void _unresolved(void);
+void _epilog(void);
+void _prolog(void);
+EVT_DEF(rsh_01_a_init_evt);
+EVT_DEF(rsh_01_b_init_evt);
+EVT_DEF(rsh_01_c_init_evt);
+EVT_DEF(rsh_01_a_init_evt_nidome);
+EVT_DEF(rsh_01_b_init_evt_nidome);
+EVT_DEF(rsh_01_c_init_evt_nidome);
+EVT_DEF(rsh_07_a_init_evt);
+EVT_DEF(rsh_07_b_init_evt);
+EVT_DEF(rsh_07_c_init_evt);
+EVT_DEF(rsh_08_a_init_evt);
+extern u32 btlsetup_rsh_tbl[];
+extern u32 btl_rsh_setup_no_tbl[];
 EVT_DEF(simi_check);
 EVT_DEF(simi_offscreen_check);
 EVT_DEF(kami_check);

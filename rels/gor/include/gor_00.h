@@ -1,6 +1,45 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "memory.h"
+#include <dolphin/os.h>
+#include <dolphin/types.h>
+#include <dolphin/mtx.h>
+
+typedef struct NanNpcEntry NanNpcEntry;
+
+typedef struct NanNpcWork {
+    NanNpcEntry* entries;   // 0x0
+    u8 pad_0x04[0x0C - 0x04]; // 0x4
+    s32 count;              // 0xC
+} NanNpcWork;
+
+struct NanNpcEntry {
+    u8 pad_0x00[0x18];              // 0x0
+    Vec position;                   // 0x18
+    Vec hoseiPosition;              // 0x24
+    Vec field_0x30;                 // 0x30
+    u8 pad_0x3C[0x50 - 0x3C];       // 0x3C
+    OSTime field_0x50;              // 0x50
+    u8 pad_0x58[0x60 - 0x58];       // 0x58
+    f32 field_0x60;                 // 0x60
+    void (*callback)(NanNpcEntry*); // 0x64
+    s32 field_0x68;                 // 0x68
+    s32 field_0x6C;                 // 0x6C
+    s32 field_0x70;                 // 0x70
+    s32 field_0x74;                 // 0x74
+    f32 field_0x78;                 // 0x78
+    f32 field_0x7C;                 // 0x7C
+    f32 field_0x80;                 // 0x80
+    f32 field_0x84;                 // 0x84
+    Vec field_0x88;                 // 0x88
+    u8 pad_0x94[0xA4 - 0x94];       // 0x94
+    s32 field_0xA4;                 // 0xA4
+    s32 field_0xA8;                 // 0xA8
+    u8 pad_0xAC[0xC0 - 0xAC];       // 0xAC
+};
+
+extern NanNpcWork* nanNPCWork;
 
 USER_FUNC(unk_gor_000006d8);
 USER_FUNC(funechange_func);
@@ -8,24 +47,24 @@ USER_FUNC(funeflag_load);
 USER_FUNC(funeflag_reset);
 USER_FUNC(funeflag_save);
 USER_FUNC(gor_ship_puka_func);
-void gor_stg4_018_cb(void);  // TODO: real signature
-void suifu100taikikan_seq01(void);  // TODO: real signature
-void suifu100taikikan_seq00(void);  // TODO: real signature
+void gor_stg4_018_cb(s32 type, smartEntry* smart);
+void suifu100taikikan_seq01(NanNpcEntry* entry);
+void suifu100taikikan_seq00(NanNpcEntry* entry);
 USER_FUNC(suifu100taikikan_away);
 USER_FUNC(suifu100taikikan_init);
 USER_FUNC(hosei_party_pos);
 USER_FUNC(hosei_mario_pos);
-void gundan1000tai_seq01(void);  // TODO: real signature
-void gundan1000tai_seq00(void);  // TODO: real signature
+void gundan1000tai_seq01(NanNpcEntry* entry);
+void gundan1000tai_seq00(NanNpcEntry* entry);
 USER_FUNC(gundan1000tai_totsuend);
 USER_FUNC(gundan1000tai_areacheck);
 USER_FUNC(gundan1000tai_totsugeki);
 USER_FUNC(gundan1000tai_init);
 USER_FUNC(gundan1000tai_circle_pos_func);
-void geundan1000tai_circle_pos(void);  // TODO: real signature
+void geundan1000tai_circle_pos(Vec* out);
 USER_FUNC(fune_yure_func);
 USER_FUNC(fune_yure_func_init);
-void lineardec_type(void);  // TODO: real signature
+f32 lineardec_type(s32 target, s32 count, f32 start, f32 end);
 EVT_DEF(no00_custom);
 EVT_DEF(unk_evt_gor_0001f4b4);
 EVT_DEF(mony_peton_talk);

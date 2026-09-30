@@ -19,12 +19,23 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/effdrv.h"
+#include "driver/hitdrv.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "party.h"
+#include "manager/evtmgr_cmd.h"
+#include <dolphin/os.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
-static void hitIsGroup(void);  // TODO: real signature
-static void _hitIsGroupSub(void);  // TODO: real signature
+static s32 hitIsGroup(HitEntry* group, HitEntry* hit);
+static s32 _hitIsGroupSub(HitEntry* group, HitEntry* hit, s32 recurse);
+
+const Vec vec3_tik_00009200 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_tik_0000920c = { 0.0f, 0.0f, 0.0f };
 
 // clang-format off
 extend_data(12,
@@ -75,24 +86,10 @@ EVT_BEGIN(geso_dead)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"ゲッソーのゲソ", 0x00000000, 0x00000003, (u32)&geso_init,
-    0x00000000, (u32)&geso_talk, (u32)&geso_dead, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[2] = {
+    {"ゲッソーのゲソ", 0, 3, geso_init, NULL, geso_talk, geso_dead},
+    {NULL},
 };
-
-// TODO: write mario_hosei_all (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_02.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(ukishima_move)
     CALL(evt_hit_bind_mapobj, LW(5), LW(4))
@@ -138,10 +135,7 @@ EVT_BEGIN(ukishima_move)
     RETURN
 EVT_END()
 
-// TODO: type
-u8 geso_checkpose[8] = {
-    0x4D, 0x5F, 0x53, 0x5F, 0x31, 0x00, 0x00, 0x00,
-};
+char geso_checkpose[8] = "M_S_1";
 
 static EVT_BEGIN(ukishima_apper)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("ugo_yuka_1"), 2)
@@ -232,18 +226,6 @@ static EVT_BEGIN(ukishima_apper)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write geso_set_checkpose (global, 0x54 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_02.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write hokori_color_func (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_02.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write ripple_scale_func (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_02.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write tik_npc_buruburu (global, 0x31c bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_02.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(geso_battle)
     CALL(evt_npc_set_position, STRING("ゲッソー"), -385, -60, 0)
@@ -453,15 +435,14 @@ static EVT_BEGIN(wall_bomb)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 hitDmgRetPoints[28] = {
-    (u32)"mod_1", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_2", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_3", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_4", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_5", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"dokan_1", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[7] = {
+    {"mod_1", {0.0f, -1000.0f, 0.0f}},
+    {"mod_2", {0.0f, -1000.0f, 0.0f}},
+    {"mod_3", {0.0f, -1000.0f, 0.0f}},
+    {"mod_4", {0.0f, -1000.0f, 0.0f}},
+    {"mod_5", {0.0f, -1000.0f, 0.0f}},
+    {"dokan_1", {0.0f, -1000.0f, 0.0f}},
+    {NULL},
 };
 
 EVT_BEGIN(tik_02_init_evt)
@@ -528,9 +509,158 @@ EVT_BEGIN(tik_02_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write hitIsGroup (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_02.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(tik_npc_buruburu) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
+    s32 type = evtGetValue(event, args[1]);
+    f32 amplitude = evtGetFloat(event, args[2]);
+    s32 period = evtGetValue(event, args[3]);
+    s32 duration = evtGetValue(event, args[4]);
+    PartyEntry* party = partyGetPtr(1);
+    f32 angle;
+    f32 delta;
+    s32 elapsed;
 
-// TODO: write _hitIsGroupSub (static, 0x530 bytes) here:
-// its asm is in build/G8MJ01/tik/asm/tik_02.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        event->savedTime = gp->renderTime;
+        event->userdataf[0] = 0.0f;
+        if (npc == (NpcEntry*)-2) {
+            event->userdataf[1] = party->position.x;
+            event->userdataf[2] = party->position.y;
+            *(f32*)&event->field_84 = party->position.z;
+        } else {
+            event->userdataf[1] = npc->position.x;
+            event->userdataf[2] = npc->position.y;
+            *(f32*)&event->field_84 = npc->position.z;
+        }
+    }
+
+    elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime);
+
+    if (elapsed % (period * 2) >= period) {
+        angle = amplitude;
+    } else {
+        angle = -amplitude;
+    }
+    delta = angle - event->userdataf[0];
+
+    switch (type) {
+    case 0:
+        if (npc == (NpcEntry*)-2) {
+            party->position.x += delta;
+        } else {
+            npc->position.x += delta;
+            npc->prevPosition.x = npc->position.x;
+        }
+        break;
+    case 1:
+        if (npc == (NpcEntry*)-2) {
+            party->position.y += delta;
+        } else {
+            npc->position.y += delta;
+            npc->prevPosition.y = npc->position.y;
+        }
+        break;
+    case 2:
+        if (npc == (NpcEntry*)-2) {
+            party->position.z += delta;
+        } else {
+            npc->position.z += delta;
+            npc->prevPosition.z = npc->position.z;
+        }
+        break;
+    }
+
+    event->userdataf[0] = angle;
+    if (duration == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (elapsed < duration) {
+        return EVT_RETURN_BLOCK;
+    }
+
+    if (npc == (NpcEntry*)-2) {
+        Vec pos = vec3_tik_00009200;
+        pos.x = event->userdataf[1];
+        pos.y = event->userdataf[2];
+        pos.z = *(f32*)&event->field_84;
+        party->position = pos;
+    } else {
+        Vec pos = vec3_tik_0000920c;
+        pos.x = event->userdataf[1];
+        pos.y = event->userdataf[2];
+        pos.z = *(f32*)&event->field_84;
+        npc->prevPosition = pos;
+        npc->position = npc->prevPosition;
+    }
+    return EVT_RETURN_YIELD;
+}
+
+static s32 _hitIsGroupSub(HitEntry* group, HitEntry* hit, s32 recurse) {
+    if (strcmp(group->joint->name, hit->joint->name) == 0) {
+        return TRUE;
+    }
+    if (hit->child != NULL) {
+        return _hitIsGroupSub(group, hit->child, TRUE);
+    }
+    if (recurse != 0 && hit->sibling != NULL) {
+        return _hitIsGroupSub(group, hit->sibling, TRUE);
+    }
+    return FALSE;
+}
+
+static s32 hitIsGroup(HitEntry* group, HitEntry* hit) {
+    if (group != NULL) {
+        return _hitIsGroupSub(group, hit, FALSE);
+    }
+    return FALSE;
+}
+
+USER_FUNC(mario_hosei_all) {
+    s32* args = event->args;
+    HitEntry* hit = hitNameToPtr((const char*)evtGetValue(event, args[0]));
+    f32 value = evtGetFloat(event, args[1]);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(0);
+    PartyEntry* party2 = partyGetPtr(1);
+
+    if (mario != NULL && hitIsGroup(mario->hitobjStandOn, hit)) {
+        mario->riderDelta.x = value;
+    }
+    if (party != NULL && hitIsGroup(party->field_138, hit)) {
+        *(f32*)((u8*)party + 0xAC) = value;
+    }
+    if (party2 != NULL && hitIsGroup(party2->field_138, hit)) {
+        *(f32*)((u8*)party2 + 0xAC) = value;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(ripple_scale_func) {
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    f32 scale = evtGetFloat(event, args[1]);
+    EffectEntry* eff = effNameToPtr((const char*)value);
+
+    *(f32*)((u8*)eff->userdata + 0x14) = scale;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hokori_color_func) {
+    EffectEntry* eff = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
+
+    *(s32*)((u8*)eff->userdata + 0x30) = 0x70;
+    *(s32*)((u8*)eff->userdata + 0x34) = 0x58;
+    *(s32*)((u8*)eff->userdata + 0x38) = 0x58;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(geso_set_checkpose) {
+    s32 value = evtGetValue(event, event->args[0]);
+    NpcEntry* npc = evtNpcNameToPtr(event, (const char*)value);
+
+    npc->field_10C = geso_checkpose;
+    return EVT_RETURN_DONE;
+}
 // clang-format on

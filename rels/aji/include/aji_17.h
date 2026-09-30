@@ -1,5 +1,6 @@
 #pragma once
 
+#include "driver/camdrv.h"
 #include "evt/evt_cmd.h"
 
 USER_FUNC(peach_evt_stg4_read_quiz_data);
@@ -9,9 +10,9 @@ USER_FUNC(evt_fuki_btn);
 USER_FUNC(peach_dance_after_fail);
 USER_FUNC(set_npc_pos);
 USER_FUNC(btn_check);
-void wait_move_end(void);  // TODO: real signature
-void wait_action_begin(void);  // TODO: real signature
-void wait_action_end(void);  // TODO: real signature
+s32 wait_move_end(void);
+s32 wait_action_begin(void);
+s32 wait_action_end(void);
 USER_FUNC(compute_horogram_pos);
 USER_FUNC(compute_peach_pos);
 USER_FUNC(compute_move_pos);
@@ -27,11 +28,11 @@ USER_FUNC(get_center);
 USER_FUNC(horogram_flag_onoff);
 USER_FUNC(horogram_init);
 USER_FUNC(horogram_cap_evt);
-void peach_capture(void);  // TODO: real signature
+void peach_capture(CameraId camera, void* param);
 USER_FUNC(disp_horogram_evt);
-void disp_horogram(void);  // TODO: real signature
+void disp_horogram(CameraId camera, void* param);
 USER_FUNC(noise);
-void noiseDisp(void);  // TODO: real signature
+void noiseDisp(CameraId camera, void* param);
 EVT_DEF(evt_emergency);
 EVT_DEF(evt_last);
 EVT_DEF(evt_last2);

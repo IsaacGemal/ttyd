@@ -14,30 +14,37 @@
 #include "evt/evt_yuugijou.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "cam_shift.h"
+#include "driver/dispdrv.h"
+#include "driver/hitdrv.h"
+#include "driver/icondrv.h"
+#include "evt_yuucounter.h"
+#include "mario/mario.h"
+#include "mario/mario_motion.h"
+#include "mario/mariost.h"
+#include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "motion/mot_roll.h"
+#include "party.h"
+#include "pmario_sound.h"
+#include "system.h"
+#include <string.h>
+#include "evt_yuutitle.h"
+#include "evt_yuunpc.h"
+
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 eff_call_minigame[];
-extern s32 evt_yuucounter_alloc[];
-extern s32 evt_yuucounter_free[];
-extern s32 evt_yuuminigame_alloc[];
-extern s32 evt_yuunpc_minigame3[];
 extern s32 evt_yuuranking_alloc_31_text_52F8[];
 extern s32 evt_yuuranking_free_31_text_5274[];
-extern s32 evt_yuutitle_alloc[];
-extern s32 evt_yuutitle_free[];
-extern s32 yuu_atai_init[];
-extern s32 yuu_atai_pop[];
-extern s32 yuu_atai_push[];
-extern s32 yuuminigame_get_dataadr[];
-extern s32 yuuminigame_set_dataadr[];
 extern s32 yuuranking_get_monte_31_text_51C0[];
 extern s32 yuuranking_wait_button_31_text_51F8[];
 static USER_FUNC(re_fall_rtn);
 static USER_FUNC(fall_rtn);
-static void monte_disp(void);  // TODO: real signature
-static void get_monte_check(void);  // TODO: real signature
+static void monte_disp(CameraId cameraId, void* param);
+static s32 get_monte_check(Vec* a, Vec* b);
 
 // clang-format off
 extend_data(0,
@@ -62,61 +69,480 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: type
-u32 fukkipoint[45] = {
-    0x43960000, 0x00000000, 0x43960000, 0x443B8000,
-    0x00000000, 0x43960000, 0x448FC000, 0x00000000,
-    0x43960000, 0x44BB8000, 0x00000000, 0x43960000,
-    0x44C1C000, 0x00000000, 0xC3960000, 0x44674000,
-    0x43480000, 0xC3960000, 0x437A0000, 0x43480000,
-    0xC3960000, 0xC37A0000, 0x43480000, 0xC3960000,
-    0xC46D8000, 0x43480000, 0xC3960000, 0xC4B54000,
-    0x00000000, 0xC3960000, 0xC4C1C000, 0x00000000,
-    0x43960000, 0xC46D8000, 0x00000000, 0x43960000,
-    0xC37A0000, 0x00000000, 0x43960000, 0x437A0000,
-    0x00000000, 0x43960000, 0x437A0000, 0x00000000,
-    0x43960000,
+f32 fukkipoint[45] = {
+    300.0f, 0.0f, 300.0f, 750.0f,
+    0.0f, 300.0f, 1150.0f, 0.0f,
+    300.0f, 1500.0f, 0.0f, 300.0f,
+    1550.0f, 0.0f, -300.0f, 925.0f,
+    200.0f, -300.0f, 250.0f, 200.0f,
+    -300.0f, -250.0f, 200.0f, -300.0f,
+    -950.0f, 200.0f, -300.0f, -1450.0f,
+    0.0f, -300.0f, -1550.0f, 0.0f,
+    300.0f, -950.0f, 0.0f, 300.0f,
+    -250.0f, 0.0f, 300.0f, 250.0f,
+    0.0f, 300.0f, 250.0f, 0.0f,
+    300.0f,
 };
 
-// TODO: write unk_yuu_00000f1c (global, 0x138 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(unk_evt_yuu_000152bc)
     CALL(unk_yuu_00000f1c)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 montetable[66] = {
-    0x44BB8000, 0x44778000, 0xC3480000, 0xC3960000,
-    0x00000001, 0x00000001, 0x44BB8000, 0x44778000,
-    0xC3960000, 0xC3C80000, 0x00000001, 0x00000002,
-    0x43960000, 0x44610000, 0xC37A0000, 0xC3898000,
-    0x00000001, 0x00000001, 0x43960000, 0x44610000,
-    0xC3A28000, 0xC3AF0000, 0x00000001, 0x00000002,
-    0x43160000, 0xC3160000, 0xC3820000, 0xC3AF0000,
-    0x00000001, 0x00000002, 0xC485C000, 0xC4A64000,
-    0xC3610000, 0xC3BB8000, 0x00000001, 0x00000002,
-    0xC46D8000, 0xC46D8000, 0x43960000, 0x43960000,
-    0x00000001, 0x00000001, 0xC49C4000, 0xC49C4000,
-    0x43960000, 0x43960000, 0x00000001, 0x00000001,
-    0xC4A8C000, 0xC4A8C000, 0x43960000, 0x43960000,
-    0x00000001, 0x00000001, 0xC4B54000, 0xC4B54000,
-    0x43960000, 0x43960000, 0x00000001, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static MonteTableEntry montetable[11] = {
+    { 1500.0f, 990.0f, -200.0f, -300.0f, 1, 1 },
+    { 1500.0f, 990.0f, -300.0f, -400.0f, 1, 2 },
+    { 300.0f, 900.0f, -250.0f, -275.0f, 1, 1 },
+    { 300.0f, 900.0f, -325.0f, -350.0f, 1, 2 },
+    { 150.0f, -150.0f, -260.0f, -350.0f, 1, 2 },
+    { -1070.0f, -1330.0f, -225.0f, -375.0f, 1, 2 },
+    { -950.0f, -950.0f, 300.0f, 300.0f, 1, 1 },
+    { -1250.0f, -1250.0f, 300.0f, 300.0f, 1, 1 },
+    { -1350.0f, -1350.0f, 300.0f, 300.0f, 1, 1 },
+    { -1450.0f, -1450.0f, 300.0f, 300.0f, 1, 2 },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0, 0 },
 };
 
-// TODO: write fall_rtn (static, 0x5ac bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(minigame_view_monte)
     CALL(fall_rtn)
     RETURN
 EVT_END()
 
-// TODO: write yuu_roll_reset (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
+static MonteEntry* monte_p;
+MonteEntry* unk_yuu_bss00000004;
+static void* yuunpc_wp;
+
+USER_FUNC(unk_yuu_00001210) {
+    camShiftReset();
+    return EVT_RETURN_DONE;
+}
+
+void fn_31_112C(s32 index) {
+    monte_p[index].active = 0;
+}
+
+void unk_yuu_000011e0(s32 index) {
+    monte_p[index].active = 1;
+}
+
+USER_FUNC(unk_yuu_00001160) {
+    s32* args = event->args;
+    s32 on = evtGetValue(event, args[0]);
+    s32 index = evtGetValue(event, args[1]);
+
+    if (monte_p != NULL) {
+        if (on != 0) {
+            monte_p[index].active = 0;
+        } else {
+            monte_p[index].active = 1;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+void unk_yuu_00001054(CameraId cameraId, void* param) {
+    MonteEntry* board = (MonteEntry*)param;
+    MarioWork* mario;
+    s32 i;
+
+    mario = marioGetPtr();
+    if (board != NULL) {
+        for (i = 0; i < board->count; i++) {
+            f32 dir = mario->position.z >= 0.0f ? 1.0f : -1.0f;
+            if (board[i].active == 0) {
+                Vec pos = board[i].pos;
+                if ((gp->retraceCount & 0x1F) < 9) {
+                    pos.x -= 5.0f * dir;
+                }
+                iconDispGx(&pos, 0, 0x163, -2.0f * dir);
+            }
+        }
+    }
+}
+
+// NONMATCHING (80.46%): `count` is declared volatile to stop this compiler constant-folding it away (the
+// original kept it in a register); the Vec store addressing still differs.
+USER_FUNC(unk_yuu_00000f1c) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    s32 already = 0;
+    volatile s32 count;
+    s32 size;
+    s32 i;
+
+    marioGetPtr();
+    if (isFirstCall) {
+        if (monte_p != NULL) {
+            already = 1;
+        }
+        count = 1;
+        size = count * sizeof(MonteEntry);
+        monte_p = (MonteEntry*)_mapAlloc(size);
+        memset(monte_p, 0, size);
+        monte_p->count = count;
+        monte_p->work = work;
+        for (i = 0; i < monte_p->count; i++) {
+            monte_p[i].pos = (Vec){0.0f, 0.0f, 0.0f};
+            monte_p[i].scale = 1.0f;
+            monte_p[i].active = 1;
+        }
+    }
+    for (i = 0; i < monte_p->count; i++) {
+    }
+    if (already == 0) {
+        dispEntry(8, 0.0f, 0, unk_yuu_00001054, monte_p);
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+static s32 get_monte_check(Vec* a, Vec* b) {
+    if (PSVECDistance(a, b) < 20.0f && __fabs(a->y - b->y) < 20.0) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static void monte_disp(CameraId cameraId, void* param) {
+    MonteEntry* board = (MonteEntry*)param;
+    s32 i;
+
+    if (board != NULL) {
+        for (i = 0; i < board->count; i++) {
+            if (board[i].active == 0) {
+                iconDispGx(&board[i].pos, 0, 0x13F, 1.0f);
+            }
+        }
+    }
+}
+
+// NONMATCHING (68.93%): register allocation/stack frame differ; the collision loop uses an unexplained 0x38 stride.
+USER_FUNC(fall_rtn) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    YuuMinigame3Data* data = (YuuMinigame3Data*)work->data;
+    s32 already = 0;
+    s32 i, j, k;
+    s32 seg;
+    s32 total;
+    s32 inner;
+    s32 placed;
+    Vec cur, prev, d;
+    HitCheckQuery query;
+    s32 n;
+    s32 r;
+    f32 lo, hi;
+
+    if (isFirstCall) {
+        if (unk_yuu_bss00000004 != NULL) {
+            already = 1;
+        }
+        total = 0;
+        for (seg = 0; montetable[seg].type != 0; seg++) {
+            total += montetable[seg].count;
+        }
+        unk_yuu_bss00000004 = (MonteEntry*)_mapAlloc(total * 0x44);
+        memset(unk_yuu_bss00000004, 0, total * 0x44);
+        unk_yuu_bss00000004->count = total;
+        unk_yuu_bss00000004->work = work;
+        data->field_24 = 0;
+
+        seg = 0;
+        inner = 0;
+        placed = 0;
+        for (i = 0; i < unk_yuu_bss00000004->count; i++) {
+            unk_yuu_bss00000004[i].pos.y = 210.0f;
+            for (j = 0; j < 500; j++) {
+                lo = montetable[seg].x0 < montetable[seg].x1 ? montetable[seg].x0 : montetable[seg].x1;
+                hi = montetable[seg].x0 < montetable[seg].x1 ? montetable[seg].x1 : montetable[seg].x0;
+                unk_yuu_bss00000004[i].pos.x = lo + (f32)irand((s32)(100.0f * (hi - lo))) / 100.0f;
+                lo = montetable[seg].z0 < montetable[seg].z1 ? montetable[seg].z0 : montetable[seg].z1;
+                hi = montetable[seg].z0 < montetable[seg].z1 ? montetable[seg].z1 : montetable[seg].z0;
+                unk_yuu_bss00000004[i].pos.z = lo + (f32)irand((s32)(100.0f * (hi - lo))) / 100.0f;
+
+                cur = unk_yuu_bss00000004[i].pos;
+                cur.y = 0.0f;
+                for (k = 0; k < inner; k++) {
+                    u8* p = (u8*)&unk_yuu_bss00000004[i].pos - 4 - (k + 1) * 0x38;
+                    prev.x = *(f32*)(p + 4);
+                    prev.y = 0.0f;
+                    prev.z = *(f32*)(p + 0xC);
+                    PSVECSubtract(&cur, &prev, &d);
+                    if (PSVECMag(&d) < 20.0f) {
+                        break;
+                    }
+                }
+                if (k != inner) {
+                    continue;
+                }
+
+                query.targetPos = unk_yuu_bss00000004[i].pos;
+                query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+                query.targetDistance = 220.0f;
+                if (hitCheckVecFilter(&query, NULL) == NULL) {
+                    continue;
+                }
+                {
+                    Vec hit = query.hitPos;
+                    query.targetPos.x -= 9.0f;
+                    if (hitCheckVecFilter(&query, NULL) != NULL) {
+                        if (query.hitPos.y > hit.y + 1.0f) {
+                            continue;
+                        }
+                    }
+                    unk_yuu_bss00000004[i].pos.y = query.hitPos.y;
+                }
+                break;
+            }
+            if (j == 500) {
+                unk_yuu_bss00000004[i].pos = (Vec){0.0f, 0.0f, 0.0f};
+            }
+            unk_yuu_bss00000004[i].scale = 1.0f;
+            inner++;
+            placed++;
+            if (inner >= montetable[seg].count) {
+                if (montetable[seg].type == 2) {
+                    for (n = 0; n < placed; n++) {
+                        unk_yuu_bss00000004[i - n].active = 1;
+                        unk_yuu_bss00000004[i - n].hit = 1;
+                    }
+                    for (n = 0; n < montetable[seg].count;) {
+                        r = irand(placed);
+                        if (unk_yuu_bss00000004[i - r].active != 0) {
+                            unk_yuu_bss00000004[i - r].active = 0;
+                            unk_yuu_bss00000004[i - r].hit = 0;
+                            n++;
+                        }
+                    }
+                    placed = 0;
+                }
+                inner = 0;
+                seg++;
+            }
+        }
+    }
+
+    for (i = 0; i < unk_yuu_bss00000004->count; i++) {
+        if (unk_yuu_bss00000004[i].hit == 0) {
+            MarioWork* mario = marioGetPtr();
+            if (get_monte_check(&unk_yuu_bss00000004[i].pos, &mario->position)) {
+                data->field_24++;
+                mario = marioGetPtr();
+                psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", &mario->position);
+                unk_yuu_bss00000004[i].active = 1;
+                unk_yuu_bss00000004[i].hit = 1;
+            }
+        }
+    }
+    if (already == 0) {
+        dispEntry(4, 0.0f, 1, monte_disp, unk_yuu_bss00000004);
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(re_fall_rtn) {
+    if (unk_yuu_bss00000004 != NULL) {
+        YuuMinigame3Data* data =
+            (YuuMinigame3Data*)((YuuminigameWork*)unk_yuu_bss00000004->work)->data;
+        if (data->viewEvent != NULL) {
+            evtDeleteID(data->viewEvent->eventId);
+            data->viewEvent = NULL;
+            _mapFree(unk_yuu_bss00000004);
+            data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
+            data->viewEvent->lwData[0] = (s32)unk_yuu_bss00000004->work;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame3_set_phase) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    YuuMinigame3Data* data = (YuuMinigame3Data*)work->data;
+
+    data->phase = evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame3_roll_fix_on) {
+    marioRollFixOn();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame3_roll_fix_off) {
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame3_opening_on_off) {
+    s32* args = event->args;
+    YuuMinigame3Data* data =
+        (YuuMinigame3Data*)((YuuminigameWork*)evtGetValue(event, args[0]))->data;
+
+    if (evtGetValue(event, args[1]) != 0) {
+        data->flags |= 1;
+    } else {
+        data->flags &= ~1;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame3_opening_chk) {
+    s32* args = event->args;
+    YuuMinigame3Data* data =
+        (YuuMinigame3Data*)((YuuminigameWork*)evtGetValue(event, args[0]))->data;
+
+    if (data->flags & 1) {
+        evtSetValue(event, args[1], 1);
+    } else {
+        evtSetValue(event, args[1], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+void yuuminigame_init_3roll(EventEntry* event, BOOL isFirstCall) {
+    YuuMinigame3Data* data = ((YuuminigameWork*)event->lwData[0])->data;
+    EventEntry* e;
+
+    e = evtEntryType(unk_evt_yuu_000152bc, 0, 0, 0xEF);
+    e->lwData[0] = (s32)event->lwData[0];
+    data->viewEvent = evtEntryType(minigame_view_monte, 0, 0, 0);
+    data->viewEvent->lwData[0] = (s32)event->lwData[0];
+    data->flags |= 1;
+    marioChgRollMotion();
+}
+
+void yuuminigame_main_3roll(EventEntry* event, BOOL isFirstCall) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    YuuMinigame3Data* data = (YuuMinigame3Data*)work->data;
+    MarioWork* mario = marioGetPtr();
+
+    switch (data->phase) {
+    case 5:
+        data->phase = 1;
+        // fallthrough
+    case 1:
+        work->childEvent = evtEntry(minigame03_start, 0, 0);
+        work->childEvent->lwData[0] = (s32)event->lwData[0];
+        data->phase++;
+        break;
+    case 2:
+        data->position = mario->position;
+        data->phase = 3;
+        data->field_0C = 0;
+        // fallthrough
+    case 3:
+        if (yuuminigame3_gamerule(event, isFirstCall, work, data)) {
+            data->phase++;
+        }
+        break;
+    case 4:
+        work->childEvent = evtEntry(minigame03_end, 0, 0);
+        work->childEvent->lwData[0] = data->counter;
+        if (data->field_0C + 5 <= 0) {
+            data->field_0C = 1;
+        } else {
+            data->field_0C += 0x105;
+        }
+        work->childEvent->lwData[1] = data->field_0C;
+        work->childEvent->lwData[2] = data->field_24;
+        data->phase++;
+        break;
+    default:
+        break;
+    }
+}
+
+void yuuminigame_disp_3roll(CameraId cameraId, void* param) {
+    monteCountDisp();
+}
+
+USER_FUNC(yuu_roll_reset) {
+    marioResetRollSpd();
+    clrRollEvtFlag();
+    return EVT_RETURN_DONE;
+}
+
+s32 yuuminigame3_gamerule(EventEntry* event, BOOL isFirstCall, void* work, YuuMinigame3Data* data) {
+    MarioWork* mario = marioGetPtr();
+    s32 adj;
+
+    if (!(data->flags & 2) && mario->position.y <= -50.0f) {
+        data->flags |= 2;
+        data->event = evtEntry(yuu_02_jumpret, 0, 0);
+        adj = fukkipoint[data->index * 3 + 2] >= 0.0f ? 5 : -5;
+        {
+            s32 v = (s32)fukkipoint[data->index * 3 + 0];
+            data->event->lwData[0] = v + adj;
+        }
+        data->event->lwData[1] = (s32)fukkipoint[data->index * 3 + 1] + 200;
+        data->event->lwData[2] = (s32)fukkipoint[data->index * 3 + 2];
+        data->event->lwData[3] = (s32)fukkipoint[data->index * 3 + 1];
+        data->field_0C--;
+    }
+
+    if (!(data->flags & 2)) {
+        if (mario->position.z * fukkipoint[data->index * 3 + 5] >= 0.0f &&
+            mario->position.y >= fukkipoint[data->index * 3 + 4] - 1.0f) {
+            if (mario->position.z >= 0.0f) {
+                if (data->position.x < fukkipoint[data->index * 3 + 3] &&
+                    mario->position.x >= fukkipoint[data->index * 3 + 3]) {
+                    goto advance;
+                }
+            }
+            if (mario->position.z < 0.0f) {
+                if (data->position.x > fukkipoint[data->index * 3 + 3] &&
+                    mario->position.x <= fukkipoint[data->index * 3 + 3]) {
+                    goto advance;
+                }
+            }
+        }
+        goto check_back;
+    advance:
+        if (data->index < 0xE) {
+            data->index++;
+        }
+        monte_p->active = 1;
+    check_back:
+        if (mario->position.z * fukkipoint[data->index * 3 + 2] >= 0.0f) {
+            if (mario->position.z < 0.0f) {
+                if (data->position.x < fukkipoint[data->index * 3 + 0] &&
+                    mario->position.x >= fukkipoint[data->index * 3 + 0]) {
+                    goto retreat;
+                }
+            }
+            if (mario->position.z >= 0.0f) {
+                if (data->position.x > fukkipoint[data->index * 3 + 0] &&
+                    mario->position.x <= fukkipoint[data->index * 3 + 0]) {
+                    goto retreat;
+                }
+            }
+        }
+        goto finish;
+    retreat:
+        if (data->index > 0) {
+            data->index--;
+        }
+        monte_p->active = 0;
+    finish:
+        data->position = mario->position;
+        if (yuucounter_get_data() < 0 || data->index >= 0xD) {
+            data->counter = yuucounter_get_data();
+            data->index = 0;
+            marioKeyOff();
+            partyKeyOff();
+            yuucounter_flag_on(2);
+            monte_p->active = 1;
+            return 1;
+        }
+    } else {
+        data->position = mario->position;
+        if (!evtCheckID(data->event->eventId)) {
+            data->flags &= ~2;
+        }
+    }
+    return 0;
+}
+
+
 
 EVT_BEGIN(yuu_02_jumpret)
     CALL(evt_mario_key_onoff, 0)
@@ -176,8 +602,6 @@ EVT_BEGIN(yuu_02_kaijo_init2)
     RETURN
 EVT_END()
 
-// TODO: write yuuminigame3_set_phase (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(minigame03_main)
     CALL(evt_mario_key_onoff, 0)
@@ -215,14 +639,8 @@ EVT_BEGIN(minigame03_start_cam_cancel)
     RETURN
 EVT_END()
 
-// TODO: write yuuminigame3_opening_chk (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuuminigame3_opening_on_off (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuuminigame3_roll_fix_on (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(minigame03_start)
     CALL(yuu_atai_init)
@@ -294,14 +712,8 @@ EVT_BEGIN(minigame03_start)
     RETURN
 EVT_END()
 
-// TODO: write yuuminigame3_roll_fix_off (global, 0x8 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write re_fall_rtn (static, 0xa0 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write unk_yuu_00001210 (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(minigame03_end)
     CALL(evt_cam_letter_box_onoff, 1, 0)
@@ -404,48 +816,14 @@ EVT_BEGIN(yuu_02_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 monte_p[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 unk_yuu_bss00000004[1] = {
-    0x00000000,
-};
 
-// TODO: type
-static u32 yuunpc_wp[1] = {
-    0x00000000,
-};
 
-// TODO: write yuuminigame3_gamerule (global, 0x39c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuuminigame_disp_3roll (global, 0x20 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuuminigame_main_3roll (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write yuuminigame_init_3roll (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write monte_disp (static, 0x78 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write get_monte_check (static, 0x6c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write unk_yuu_00001054 (global, 0x10c bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write unk_yuu_00001160 (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_yuu_000011e0 (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_31_112C (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/yuu/asm/yuu_02.s; this is where the original has it, just before the first script that uses it
 // clang-format on

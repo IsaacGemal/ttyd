@@ -1,8 +1,11 @@
 #include "unit_boss_gundan_zako_group1.h"
+#include "unit_boss_gundan_zako_group2.h"
+#include "battle/battle.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
+#include "battle/battle_stage_object.h"
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -10,6 +13,9 @@
 #include "evt/evt_npc.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "system.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
@@ -497,47 +503,12 @@ EVT_BEGIN(zakogun_entry)
     RETURN
 EVT_END()
 
-// TODO: write zakogun_ext_main1 (global, 0x1904 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
 
 // TODO: type
-static u32 jumptable_00030120[97] = {
-    (u32)((u8*)&zakogun_ext_main1 + 0x15c), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x19c), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1c8), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x274), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x3e8),
-    (u32)((u8*)&zakogun_ext_main1 + 0x5d8), (u32)((u8*)&zakogun_ext_main1 + 0x730), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x7fc), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0xc24), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0xc60),
-    (u32)((u8*)&zakogun_ext_main1 + 0xcb0), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0xd84), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0xe08), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0xec0), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0xfec),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x10cc), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x11a4), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x11e8), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x123c), (u32)((u8*)&zakogun_ext_main1 + 0x1258), (u32)((u8*)&zakogun_ext_main1 + 0x12ec), (u32)((u8*)&zakogun_ext_main1 + 0x13c4),
-    (u32)((u8*)&zakogun_ext_main1 + 0x148c), (u32)((u8*)&zakogun_ext_main1 + 0x14dc), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1534), (u32)((u8*)&zakogun_ext_main1 + 0x1808),
-    (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x1808), (u32)((u8*)&zakogun_ext_main1 + 0x15f8),
-    (u32)((u8*)&zakogun_ext_main1 + 0x15f8),
-};
+ZakogunWork* work_20_bss_6C;
 
 // TODO: type
-u32 zakogun[1] = {
-    0x00000000,
-};
-
-// TODO: type
-u32 work_20_bss_6C[1] = {
-    0x00000000,
-};
+ZakogunEntry* zakogun;
 
 // TODO: write zakogun_escape1 (global, 0xa8 bytes) here:
 // its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
@@ -562,4 +533,879 @@ u32 work_20_bss_6C[1] = {
 
 // TODO: write zakogun_set_pose (global, 0x18 bytes) here:
 // its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
+// clang-format on
+
+// clang-format off
+
+s32 zakogun_set_target_id(EventEntry* event, BOOL isFirstCall) {
+    work_20_bss_6C->targetId = evtGetValue(event, event->args[0]);
+    return 2;
+}
+
+void zakogun_set_pose(ZakogunEntry* entry, s32 poseStart, s32 poseCount, s32 poseDiv) {
+    entry->poseStart = poseStart;
+    entry->poseCount = poseCount;
+    entry->poseDiv = poseDiv;
+    entry->poseIndex = 0;
+}
+
+s32 zakogun_damage_pose(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+
+    if (isFirstCall) {
+        for (i = 0; i < 500; i++) {
+            ZakogunEntry* entry = &zakogun[i];
+
+            if (entry != NULL) {
+                switch (work_20_bss_6C->field_0x0) {
+                    case 0:
+                    case 2:
+                        entry->poseStart = 0x21;
+                        entry->poseCount = 3;
+                        entry->poseDiv = 3;
+                        entry->poseIndex = 0;
+                        break;
+                    case 1:
+                        entry->poseStart = 0x2D;
+                        entry->poseCount = 3;
+                        entry->poseDiv = 2;
+                        entry->poseIndex = 0;
+                        break;
+                }
+            }
+        }
+    }
+    return 2;
+}
+
+s32 zakogun_damage_pose_cancel(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+
+    if (isFirstCall) {
+        for (i = 0; i < 500; i++) {
+            ZakogunEntry* entry = &zakogun[i];
+
+            if (entry != NULL) {
+                switch (work_20_bss_6C->field_0x0) {
+                    case 0:
+                        entry->poseStart = 0x15;
+                        entry->poseCount = 1;
+                        entry->poseDiv = 1;
+                        entry->poseIndex = 0;
+                        break;
+                    case 1:
+                        entry->poseStart = 0x25;
+                        entry->poseCount = 4;
+                        entry->poseDiv = 6;
+                        entry->poseIndex = 0;
+                        break;
+                    case 2:
+                        entry->poseStart = 0;
+                        entry->poseCount = 0x14;
+                        entry->poseDiv = 2;
+                        entry->poseIndex = 0;
+                        break;
+                }
+            }
+        }
+    }
+    return 2;
+}
+
+BattleUnit* zakogun_get_ptr(void) {
+    s32 i;
+    BattleWork* wp = _battleWorkPointer;
+
+    for (i = 0; i < 0x40; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+
+        if (unit != NULL) {
+            if (unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION1 ||
+                unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION2 ||
+                unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION3) {
+                return unit;
+            }
+        }
+    }
+    return NULL;
+}
+
+void zakogun_ext_init(void) {
+    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
+    BattleStageObject* obj;
+    BattleStageObject* obj2;
+
+    work_20_bss_6C = BattleAlloc(0x74);
+    work_20_bss_6C->entries = BattleAlloc(0xDAC0);
+    zakogun = work_20_bss_6C->entries;
+    work_20_bss_6C->field_0x0 = 0;
+    obj = BattleSearchObjectPtr("if_body");
+    obj2 = BattleSearchObjectPtr("if_wire");
+    obj2->mPosition = (Vec){0.0f, 250.0f, 0.0f};
+    obj->mPosition = obj2->mPosition;
+    flag[0] |= 0x60;
+}
+
+void zakogun_ext_main(void) {
+    switch (work_20_bss_6C->field_0x0) {
+        case 0:
+            zakogun_ext_main1();
+            break;
+        case 1:
+            zakogun_ext_main2();
+            break;
+        case 2:
+            zakogun_ext_main3();
+            break;
+    }
+    dispEntry(4, 0.0f, 1, zakogun_ext_disp, NULL);
+}
+
+void zakogun_ext_disp(CameraId cameraId, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+s32 zakogun_get_kanbu_id_evtcmd(EventEntry* event, BOOL isFirstCall) {
+    s32 id = -1;
+    BattleWork* wp = _battleWorkPointer;
+    s32 i;
+    s32* args = event->args;
+
+    for (i = 0; i < 0x40; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+
+        if (unit != NULL) {
+            if (unit->initialKind == UNIT_LORD_CRUMP_CHAPTER5) {
+                id = i;
+            }
+        }
+    }
+    evtSetValue(event, args[0], id);
+    return 2;
+}
+
+s32 zakogun_get_kanbu_id(void) {
+    s32 i;
+    BattleWork* wp = _battleWorkPointer;
+    s32 id = -1;
+
+    for (i = 0; i < 0x40; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+
+        if (unit != NULL) {
+            if (unit->initialKind == UNIT_LORD_CRUMP_CHAPTER5) {
+                id = i;
+            }
+        }
+    }
+    return id;
+}
+
+s32 zakogun_ext_init1(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+
+    work_20_bss_6C->field_0x0 = 0;
+    for (i = 0; i < 6; i++, pose++) {
+        zakogun_ext_init123_common(pose, i);
+    }
+    return 2;
+}
+
+void zakogun_ext_init123_common(ExtPose* pose, s32 index) {
+    pose->flags = 1;
+    PSMTXIdentity(*pose->matrix);
+    (*pose->matrix)[0][3] = 0.0f;
+    (*pose->matrix)[1][3] = -1000.0f;
+    (*pose->matrix)[2][3] = 0.0f;
+    pose->field_0x4 = 90.0f;
+    zakogun[index].field_0x0 = 0;
+    zakogun[index].state = 0;
+    zakogun[index].timer = 0;
+    zakogun[index].pos = (Vec){0.0f, -1000.0f, 0.0f};
+    zakogun[index].target = (Vec){0.0f, 0.0f, 0.0f};
+    zakogun[index].rotY = 0.0f;
+}
+
+const ZakoOffsetTable dat_muj_00012fdc = {
+    { -20.0f, -10.0f, 0.0f, 10.0f, 20.0f, 30.0f }
+};
+
+void zakogun_ext_main1(void) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    s32 i;
+    s32 j;
+    s32 n;
+    ExtPose* pose;
+    f32 x;
+    f32 y;
+    f32 z;
+    ZakoOffsetTable arr;
+    f32 f31;
+    Mtx mtx;
+
+    unit = zakogun_get_ptr();
+    pose = extGetPosePtr();
+    for (i = 0; i < 6; i++, pose++) {
+        ZakogunEntry* entry = &zakogun[i];
+
+        pose->field_0x10 = entry->poseStart + entry->poseIndex / entry->poseDiv;
+        entry->poseIndex++;
+        if (entry->poseIndex >= entry->poseCount * entry->poseDiv) {
+            entry->poseIndex = 0;
+        }
+        if (i == 1 && entry->state >= 0x23 && entry->state < 0x50) {
+            unit->mPosition.x = entry->pos.x;
+        }
+        switch (entry->state) {
+            case 0:
+                entry->state = 5;
+                entry->timer = 0;
+                entry->rotZ = 0.0f;
+                entry->rotY = 0.0f;
+                entry->rotX = 0.0f;
+                entry->poseStart = 0;
+                entry->poseCount = 0x14;
+                entry->poseDiv = 2;
+                entry->poseIndex = 0;
+                break;
+            case 5:
+                entry->timer--;
+                if (entry->timer <= 0) {
+                    entry->timer = 0;
+                    entry->state = 0xA;
+                }
+                break;
+            case 0xA:
+                entry->pos.x = entry->field_0x34 = 300.0f + (f32)irand(100);
+                entry->field_0x38 = 0.0f;
+                entry->pos.y = 0.0f;
+                entry->pos.z = entry->field_0x3c = (f32)irand(100) - 50.0f;
+                entry->state = 0xC;
+                entry->rotY = 0.0f;
+                // fallthrough
+            case 0xC:
+                x = unit->mHomePosition.x;
+                y = unit->mHomePosition.y;
+                z = unit->mHomePosition.z;
+                switch (i) {
+                    case 0:
+                        entry->field_0x40 = x - 10.0f;
+                        entry->field_0x44 = y;
+                        entry->field_0x48 = z - 10.0f;
+                        break;
+                    case 1:
+                        entry->field_0x40 = x;
+                        entry->field_0x44 = y;
+                        entry->field_0x48 = z;
+                        break;
+                    case 2:
+                        entry->field_0x40 = x + 10.0f;
+                        entry->field_0x44 = y;
+                        entry->field_0x48 = z + 10.0f;
+                        break;
+                    case 3:
+                        entry->field_0x40 = 45.0f + x;
+                        entry->field_0x44 = y;
+                        entry->field_0x48 = z - 5.0f;
+                        break;
+                    case 4:
+                        entry->field_0x40 = 55.0f + x;
+                        entry->field_0x44 = y;
+                        entry->field_0x48 = z + 5.0f;
+                        break;
+                    case 5:
+                        entry->field_0x40 = 75.0f + x;
+                        entry->field_0x44 = y;
+                        entry->field_0x48 = z;
+                        break;
+                }
+                entry->state = 0xF;
+                entry->timer = entry->timerMax = irand(0x28) + 0x28;
+                entry->poseStart = 0x16;
+                entry->poseCount = 0xA;
+                entry->poseDiv = 1;
+                entry->poseIndex = 0;
+                break;
+            case 0xF:
+                entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x34, entry->field_0x40);
+                entry->pos.y = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x38, entry->field_0x44);
+                entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x3c, entry->field_0x48);
+                if (i == 5) {
+                    if (entry->timer % 12 == 0) {
+                        BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1L", 0x7F, 0, &entry->pos);
+                    }
+                    if (entry->timer % 12 == 6) {
+                        BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1R", 0x7F, 0, &entry->pos);
+                    }
+                }
+                entry->timer--;
+                if (entry->timer >= 0) {
+                    break;
+                }
+                entry->timer = -1;
+                entry->rotY = 0.0f;
+                if (i >= 3 && i <= 5) {
+                    switch (i) {
+                        case 3:
+                        case 4: {
+                            for (j = 0, n = 0; j < 3; j++) {
+                                if (zakogun[j].state == 0x14) {
+                                    n++;
+                                }
+                            }
+                            if (n == 3) {
+                                entry->state = 0x10;
+                            }
+                            break;
+                        }
+                        case 5: {
+                            for (j = 3, n = 0; j < 5; j++) {
+                                if (zakogun[j].state == 0x14) {
+                                    n++;
+                                }
+                            }
+                            if (n == 2) {
+                                entry->state = 0x10;
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    entry->state = 0x14;
+                    entry->timer = 0;
+                    entry->poseStart = 0x15;
+                    entry->poseCount = 1;
+                    entry->poseDiv = 1;
+                    entry->poseIndex = 0;
+                }
+                break;
+            case 0x10:
+                x = unit->mHomePosition.x;
+                y = unit->mHomePosition.y;
+                z = unit->mHomePosition.z;
+                entry->field_0x34 = entry->pos.x;
+                entry->field_0x38 = entry->pos.y;
+                entry->field_0x3c = entry->pos.z;
+                switch (i) {
+                    case 3:
+                        entry->field_0x40 = x - 5.0f;
+                        entry->field_0x44 = y + 10.0f;
+                        entry->field_0x48 = z - 5.0f;
+                        break;
+                    case 4:
+                        entry->field_0x40 = x + 5.0f;
+                        entry->field_0x44 = y + 10.0f;
+                        entry->field_0x48 = z + 5.0f;
+                        break;
+                    case 5:
+                        entry->field_0x40 = x;
+                        entry->field_0x44 = y + 20.0f;
+                        entry->field_0x48 = z;
+                        break;
+                }
+                entry->state = 0x11;
+                entry->timerMax = 0x14;
+                entry->timer = 0x14;
+                entry->field_0x50 = ((2.0f * (entry->field_0x44 - entry->field_0x38)) - -200.0f) / 40.0f;
+                entry->poseStart = 0x22;
+                entry->poseCount = 1;
+                entry->poseDiv = 1;
+                entry->poseIndex = 0;
+                break;
+            case 0x11:
+                entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x34, entry->field_0x40);
+                entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x3c, entry->field_0x48);
+                entry->pos.y += entry->field_0x50;
+                entry->field_0x50 += -0.5f;
+                entry->timer--;
+                if (entry->timer < 0) {
+                    entry->state = 0x14;
+                    entry->timer = 0;
+                    entry->pos.y = entry->field_0x44;
+                    entry->poseStart = 0x15;
+                    entry->poseCount = 1;
+                    entry->poseDiv = 1;
+                    entry->poseIndex = 0;
+                    BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_WAKE1", 0x7F, 0, &entry->pos);
+                }
+                break;
+            case 0x14:
+                if (unit == NULL) {
+                    break;
+                }
+                BtlUnit_GetPos(unit, &x, &y, &z);
+                entry->timer++;
+                entry->timer = zakogun[0].timer;
+                if (entry->timer >= 0x1E) {
+                    entry->timer -= 0x1E;
+                }
+                switch (i) {
+                    case 0:
+                        entry->pos.x = entry->target.x = x - 10.0f;
+                        entry->pos.y = entry->target.y = y;
+                        entry->pos.z = entry->target.z = z - 10.0f;
+                        break;
+                    case 1:
+                        entry->pos.x = entry->target.x = x;
+                        entry->pos.y = entry->target.y = y;
+                        entry->pos.z = entry->target.z = z;
+                        break;
+                    case 2:
+                        entry->pos.x = entry->target.x = x + 10.0f;
+                        entry->pos.y = entry->target.y = y;
+                        entry->pos.z = entry->target.z = z + 10.0f;
+                        break;
+                    case 3:
+                        entry->pos.x = entry->target.x = x - 5.0f;
+                        if (entry->timer < 0xA) {
+                            entry->pos.y = entry->target.y = (y + 10.0f) - 0.1f * (f32)entry->timer;
+                        } else if (entry->timer < 0x14) {
+                            entry->pos.y = entry->target.y = (y + 10.0f) - 1.0f;
+                        } else {
+                            entry->pos.y = entry->target.y =
+                                ((y + 10.0f) - 1.0f) + 0.1f * ((f32)entry->timer - 20.0f);
+                        }
+                        entry->pos.z = entry->target.z = z - 5.0f;
+                        break;
+                    case 4:
+                        entry->pos.x = entry->target.x = x + 5.0f;
+                        if (entry->timer < 0xA) {
+                            entry->pos.y = entry->target.y = (y + 10.0f) - 0.1f * (f32)entry->timer;
+                        } else if (entry->timer < 0x14) {
+                            entry->pos.y = entry->target.y = (y + 10.0f) - 1.0f;
+                        } else {
+                            entry->pos.y = entry->target.y =
+                                ((y + 10.0f) - 1.0f) + 0.1f * ((f32)entry->timer - 20.0f);
+                        }
+                        entry->pos.z = entry->target.z = z + 5.0f;
+                        break;
+                    case 5:
+                        entry->pos.x = entry->target.x = x;
+                        if (entry->timer < 0xF) {
+                            entry->pos.y = entry->target.y = (y + 20.0f) - 0.15f * (f32)entry->timer;
+                        } else {
+                            entry->pos.y = entry->target.y =
+                                ((y + 20.0f) - 2.25f) + 0.15f * ((f32)entry->timer - 15.0f);
+                        }
+                        entry->pos.z = entry->target.z = z;
+                        break;
+                }
+                break;
+            case 0x1E:
+                if (i >= 0 && i <= 2) {
+                    entry->poseStart = 0x14;
+                    entry->poseCount = 1;
+                    entry->poseDiv = 1;
+                    entry->poseIndex = 0;
+                }
+                entry->state = 0x23;
+                entry->timer = 5;
+                // fallthrough
+            case 0x23:
+                if (i >= 3 && i <= 5) {
+                    entry->pos.y += 3.0f;
+                }
+                entry->timer--;
+                if (entry->timer < 0) {
+                    entry->state = 0x24;
+                    entry->timer = 0x1E;
+                }
+                break;
+            case 0x24:
+                entry->timer--;
+                if (i >= 0 && i <= 2) {
+                    if (entry->timer == 0xF) {
+                        entry->poseStart = 0x16;
+                        entry->poseCount = 0xA;
+                        entry->poseDiv = 1;
+                        entry->poseIndex = 0;
+                    }
+                    if (entry->timer <= 0xF) {
+                        if (entry->timer % 12 == 0) {
+                            BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1L", 0x7F, 0, &entry->pos);
+                        }
+                        if (entry->timer % 12 == 6) {
+                            BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1R", 0x7F, 0, &entry->pos);
+                        }
+                    }
+                }
+                if (entry->timer > 0) {
+                    break;
+                }
+                entry->state = 0x28;
+                break;
+            case 0x28: {
+                BattleUnit* target = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
+
+                BtlUnit_GetPos(target, &x, &y, &z);
+                x += 100.0f;
+                entry->field_0x34 = entry->pos.x;
+                entry->field_0x38 = entry->pos.y;
+                entry->field_0x3c = entry->pos.z;
+                entry->field_0x40 = x;
+                entry->field_0x44 = entry->pos.y;
+                entry->field_0x48 = entry->pos.z;
+                entry->state = 0x2D;
+                entry->timerMax = 0x28;
+                entry->timer = 0x28;
+            }
+                // fallthrough
+            case 0x2D:
+                entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x34, entry->field_0x40);
+                if (entry->timer % 12 == 0) {
+                    BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1L", 0x7F, 0, &entry->pos);
+                }
+                if (entry->timer % 12 == 6) {
+                    BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1R", 0x7F, 0, &entry->pos);
+                }
+                entry->timer--;
+                if (entry->timer < 0) {
+                    entry->state = 0x32;
+                    entry->timer = 0;
+                }
+                break;
+            case 0x32: {
+                BattleUnit* target;
+
+                arr = dat_muj_00012fdc;
+                target = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
+                BtlUnit_GetPos(target, &x, &y, &z);
+                entry->field_0x34 = entry->pos.x;
+                entry->field_0x38 = entry->pos.y;
+                entry->field_0x3c = entry->pos.z;
+                entry->field_0x40 = x - arr.v[i];
+                entry->field_0x44 = 0.0f;
+                entry->field_0x48 = entry->field_0x3c;
+                entry->state = 0x37;
+                entry->timerMax = 0x28;
+                entry->timer = 0x28;
+                entry->field_0x50 = ((2.0f * (entry->field_0x44 - entry->field_0x38)) - -320.0f) / 80.0f;
+                entry->poseStart = 0x20;
+                entry->poseCount = 1;
+                entry->poseDiv = 1;
+                entry->poseIndex = 0;
+                if (i == 0) {
+                    BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_ATTACK1", 0x7F, 0, &entry->pos);
+                }
+                break;
+            }
+            case 0x37: {
+                BattleUnit* target = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
+
+                BtlUnit_GetPos(target, &x, &y, &z);
+                entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x34, entry->field_0x40);
+                entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x3c, entry->field_0x48);
+                entry->pos.y += entry->field_0x50;
+                entry->field_0x50 += -0.2f;
+                entry->timer--;
+                if (entry->timer <= 0xA) {
+                    entry->state = 0x3A;
+                    if (i == 0) {
+                        unit->work[0]++;
+                        entry->poseStart = 0;
+                        entry->poseCount = 0x14;
+                        entry->poseDiv = 2;
+                        entry->poseIndex = 0;
+                    }
+                }
+                break;
+            }
+            case 0x3A:
+                entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x34, entry->field_0x40);
+                entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax,
+                                             entry->field_0x3c, entry->field_0x48);
+                entry->pos.y += entry->field_0x50;
+                entry->field_0x50 += -0.2f;
+                entry->timer--;
+                if (entry->timer < 0) {
+                    entry->state = 0x3C;
+                    entry->timer = 0x1E;
+                    entry->pos.y = entry->field_0x44;
+                    entry->poseStart = 0x15;
+                    entry->poseCount = 1;
+                    entry->poseDiv = 1;
+                    entry->poseIndex = 0;
+                    if (i == 0) {
+                        BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_ATTACK1_2", 0x7F, 0, &entry->pos);
+                    }
+                }
+                break;
+            case 0x3C:
+                entry->timer--;
+                if (entry->timer <= 0) {
+                    entry->state = 0x3E;
+                    entry->poseStart = 0x16;
+                    entry->poseCount = 0xA;
+                    entry->poseDiv = 1;
+                    entry->poseIndex = 0;
+                }
+                break;
+            case 0x3E:
+                entry->state = 0xC;
+                entry->rotY = 180.0f;
+                *(Vec*)&entry->field_0x34 = entry->pos;
+                unit->mPosition = unit->mHomePosition;
+                btl_camera_set_mode(0, 0);
+                break;
+            case 0x50:
+                entry->rotZ = 0.0f;
+                entry->state = 0x51;
+                entry->timer = 6;
+                // fallthrough
+            case 0x51:
+                if (i >= 0 && i <= 2) {
+                    entry->rotZ += 15.0f;
+                    if (entry->rotZ >= 45.0f) {
+                        entry->rotZ = 45.0f;
+                    }
+                }
+                entry->timer--;
+                if (entry->timer <= 0) {
+                    entry->state = 0x52;
+                    entry->timer = 0xA;
+                    entry->field_0x50 = 0.0f;
+                    if (i >= 0 && i <= 2) {
+                        entry->rotZ = 45.0f;
+                    }
+                }
+                break;
+            case 0x52:
+                if (i >= 3 && i <= 4) {
+                    entry->rotZ += 15.0f;
+                    if (entry->rotZ >= 45.0f) {
+                        entry->rotZ = 45.0f;
+                    }
+                    entry->pos.y += entry->field_0x50;
+                    entry->field_0x50 += -0.5f;
+                    if (entry->pos.y < 0.0f) {
+                        entry->pos.y = 0.0f;
+                    }
+                }
+                entry->timer--;
+                if (entry->timer <= 0) {
+                    entry->state = 0x53;
+                    entry->timer = 0x14;
+                    entry->field_0x50 = 0.0f;
+                    if (i >= 3 && i <= 4) {
+                        entry->rotZ = 45.0f;
+                        entry->pos.y = 0.0f;
+                    }
+                }
+                break;
+            case 0x53:
+                if (i == 5) {
+                    entry->rotZ += 15.0f;
+                    if (entry->rotZ >= 45.0f) {
+                        entry->rotZ = 45.0f;
+                    }
+                    entry->pos.y += entry->field_0x50;
+                    entry->field_0x50 += -0.5f;
+                    if (entry->pos.y < 0.0f) {
+                        entry->pos.y = 0.0f;
+                    }
+                }
+                entry->timer--;
+                if (entry->timer <= 0) {
+                    entry->rotY = 0.0f;
+                    entry->state = 0x54;
+                    entry->timer = 0x30;
+                    if (i == 5) {
+                        entry->rotZ = 45.0f;
+                        entry->pos.y = 0.0f;
+                    }
+                }
+                break;
+            case 0x54:
+                if (entry->timer <= 0x30) {
+                    entry->rotY -= 15.0f;
+                }
+                entry->timer--;
+                if (entry->timer <= 0) {
+                    entry->rotY = 0.0f;
+                    entry->state = 0x55;
+                }
+                break;
+            case 0x55:
+                entry->rotX += 3.0f;
+                if (entry->rotX >= 90.0f) {
+                    entry->state = -1;
+                    entry->pos = (Vec){0.0f, -1000.0f, 0.0f};
+                }
+                break;
+            case 0x5A:
+                entry->pos.x += 5.0f;
+                if (i == 0) {
+                    if (gp->retraceCount % 12 == 0) {
+                        BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1L", 0x7F, 0, &entry->pos);
+                    }
+                    if (gp->retraceCount % 12 == 6) {
+                        BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_3RD_MOVE1R", 0x7F, 0, &entry->pos);
+                    }
+                }
+                if (entry->pos.x >= 300.0f) {
+                    entry->state = -1;
+                }
+                break;
+            case 0x5F:
+            case 0x60:
+                f31 = 0.0f;
+                BtlUnit_GetPos(unit, &x, &y, &z);
+                if (entry->state == 0x60) {
+                    entry->timer++;
+                    entry->timer = zakogun[0].timer;
+                    if ((entry->timer & 3) == 0 || (entry->timer & 3) == 1) {
+                        f31 = 1.0f;
+                    } else {
+                        f31 = -1.0f;
+                    }
+                }
+                switch (i) {
+                    case 0:
+                        entry->pos.x = entry->target.x = x - 10.0f + f31;
+                        entry->pos.y = entry->target.y = y;
+                        entry->pos.z = entry->target.z = z - 10.0f;
+                        break;
+                    case 1:
+                        entry->pos.x = entry->target.x = x + f31;
+                        entry->pos.y = entry->target.y = y;
+                        entry->pos.z = entry->target.z = z;
+                        break;
+                    case 2:
+                        entry->pos.x = entry->target.x = x + 10.0f + f31;
+                        entry->pos.y = entry->target.y = y;
+                        entry->pos.z = entry->target.z = z + 10.0f;
+                        break;
+                    case 3:
+                        entry->pos.x = entry->target.x = x - 5.0f + f31;
+                        entry->pos.y = entry->target.y = y + 20.0f;
+                        entry->pos.z = entry->target.z = z - 5.0f;
+                        break;
+                    case 4:
+                        entry->pos.x = entry->target.x = x + 5.0f + f31;
+                        entry->pos.y = entry->target.y = y + 20.0f;
+                        entry->pos.z = entry->target.z = z + 5.0f;
+                        break;
+                    case 5:
+                        entry->pos.x = entry->target.x = x + f31;
+                        entry->pos.y = entry->target.y = y + 40.0f;
+                        entry->pos.z = entry->target.z = z;
+                        break;
+                }
+                break;
+        }
+        PSMTXIdentity(*pose->matrix);
+        PSMTXRotRad(mtx, 'x', 0.017453292f * entry->rotX);
+        PSMTXConcat(*pose->matrix, mtx, *pose->matrix);
+        PSMTXRotRad(mtx, 'y', 0.017453292f * entry->rotY);
+        PSMTXConcat(*pose->matrix, mtx, *pose->matrix);
+        PSMTXRotRad(mtx, 'z', 0.017453292f * entry->rotZ);
+        PSMTXConcat(*pose->matrix, mtx, *pose->matrix);
+        (*pose->matrix)[0][3] = entry->pos.x;
+        (*pose->matrix)[1][3] = entry->pos.y;
+        (*pose->matrix)[2][3] = 0.25f * (f32)i + entry->pos.z;
+    }
+}
+
+
+s32 zakogun_attack1(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
+
+    if (isFirstCall) {
+        for (i = 0; i < 6; i++) {
+            zakogun[i].state = 0x1E;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 6; i++) {
+        if (zakogun[i].state == 0x14) {
+            count++;
+        }
+    }
+    return count == 6 ? 2 : 0;
+}
+
+s32 zakogun_dead1(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        zakogun[i].state = 0x50;
+    }
+    return 2;
+}
+
+s32 zakogun_escape1(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
+
+    if (isFirstCall) {
+        for (i = 0; i < 6; i++) {
+            ZakogunEntry* entry = &zakogun[i];
+
+            entry->state = 0x5A;
+            entry->poseStart = 0x16;
+            entry->poseCount = 0xA;
+            entry->poseDiv = 1;
+            entry->poseIndex = 0;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 6; i++) {
+        if (zakogun[i].state == -1) {
+            count++;
+        }
+    }
+    return count == 6 ? 2 : 0;
+}
+
+s32 zakogun_start_sukima(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 mode = evtGetValue(event, event->args[0]);
+
+    for (i = 0; i < 6; i++) {
+        ZakogunEntry* entry = &zakogun[i];
+
+        if (!(entry->state >= 0x50 && entry->state < 0x5A)) {
+            if (mode == 1) {
+                entry->state = 0x60;
+                entry->timer = 0;
+            } else {
+                entry->state = 0x5F;
+            }
+        }
+    }
+    return 2;
+}
+
+s32 zakogun_end_sukima(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        ZakogunEntry* entry = &zakogun[i];
+
+        if (!(entry->state >= 0x50 && entry->state < 0x5A)) {
+            entry->state = 0x14;
+        }
+    }
+    return 2;
+}
+
 // clang-format on

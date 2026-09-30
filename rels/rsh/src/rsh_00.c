@@ -16,16 +16,29 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "mario/mariost.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "system.h"
+#include <dolphin/os.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 #pragma pool_data off
 
 #pragma force_active on
 extern s32 evt_rsh_window[];
-static void ext_disp(void);  // TODO: real signature
-static void randf(void);  // TODO: real signature
-static void moamoa_pose_change(void);  // TODO: real signature
-static void moamoa_pose_main(void);  // TODO: real signature
-static void moamoa_pose_init(void);  // TODO: real signature
+
+static MoamoaWork* wp;
+
+static void ext_disp(void);
+static f32 randf(f32 min, f32 max);
+static void moamoa_pose_change(MoamoaEntry* entry, const char* name1, const char* name2);
+static void moamoa_pose_main(void);
+static void moamoa_pose_init(void);
 
 // clang-format off
 extend_data(4,
@@ -46,76 +59,391 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 moamoa_data[243] = {
-    (u32)"c_n_moa_a", (u32)"S_1", 0x00000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x3F800000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x40000000, (u32)"c_n_moa_a", (u32)"S_1", 0x40400000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x40800000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x40A00000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x40C00000, (u32)"c_n_moa_a", (u32)"S_1", 0x40E00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41100000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41200000, (u32)"c_n_moa_a", (u32)"S_1", 0x41300000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41400000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41500000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41600000, (u32)"c_n_moa_a", (u32)"S_1", 0x41700000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41800000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41880000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41900000, (u32)"c_n_moa_a", (u32)"S_1", 0x41980000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41A00000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41A80000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41B00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41B80000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41C00000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41C80000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41D00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41D80000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41E00000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41E80000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41F00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41F80000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x42000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x42040000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x42080000, (u32)"c_n_moa_a", (u32)"S_1", 0x420C0000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x42100000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x42140000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x42180000, (u32)"c_n_moa_a", (u32)"S_1", 0x421C0000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x00000000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x3F800000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x40000000, (u32)"c_n_moa_b", (u32)"S_1", 0x40400000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x40800000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x40A00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x40C00000, (u32)"c_n_moa_b", (u32)"S_1", 0x40E00000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41000000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41100000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41200000, (u32)"c_n_moa_b", (u32)"S_1", 0x41300000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41400000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41500000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41600000, (u32)"c_n_moa_b", (u32)"S_1", 0x41700000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41800000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41880000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41900000, (u32)"c_n_moa_b", (u32)"S_1", 0x41980000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41A00000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41A80000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41B00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41B80000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41C00000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41C80000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41D00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41D80000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41E00000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41E80000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41F00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41F80000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x42000000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x42040000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x42080000, (u32)"c_n_moa_b", (u32)"S_1", 0x420C0000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x42100000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x42140000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x42180000, (u32)"c_n_moa_b", (u32)"S_1", 0x421C0000,
-    0x00000000, 0x00000000, 0x00000000,
+MoamoaData moamoa_data[81] = {
+    {"c_n_moa_a", "S_1", 0.0f},
+    {"c_n_moa_a", "S_1", 1.0f},
+    {"c_n_moa_a", "S_1", 2.0f},
+    {"c_n_moa_a", "S_1", 3.0f},
+    {"c_n_moa_a", "S_1", 4.0f},
+    {"c_n_moa_a", "S_1", 5.0f},
+    {"c_n_moa_a", "S_1", 6.0f},
+    {"c_n_moa_a", "S_1", 7.0f},
+    {"c_n_moa_a", "S_1", 8.0f},
+    {"c_n_moa_a", "S_1", 9.0f},
+    {"c_n_moa_a", "S_1", 10.0f},
+    {"c_n_moa_a", "S_1", 11.0f},
+    {"c_n_moa_a", "S_1", 12.0f},
+    {"c_n_moa_a", "S_1", 13.0f},
+    {"c_n_moa_a", "S_1", 14.0f},
+    {"c_n_moa_a", "S_1", 15.0f},
+    {"c_n_moa_a", "S_1", 16.0f},
+    {"c_n_moa_a", "S_1", 17.0f},
+    {"c_n_moa_a", "S_1", 18.0f},
+    {"c_n_moa_a", "S_1", 19.0f},
+    {"c_n_moa_a", "S_1", 20.0f},
+    {"c_n_moa_a", "S_1", 21.0f},
+    {"c_n_moa_a", "S_1", 22.0f},
+    {"c_n_moa_a", "S_1", 23.0f},
+    {"c_n_moa_a", "S_1", 24.0f},
+    {"c_n_moa_a", "S_1", 25.0f},
+    {"c_n_moa_a", "S_1", 26.0f},
+    {"c_n_moa_a", "S_1", 27.0f},
+    {"c_n_moa_a", "S_1", 28.0f},
+    {"c_n_moa_a", "S_1", 29.0f},
+    {"c_n_moa_a", "S_1", 30.0f},
+    {"c_n_moa_a", "S_1", 31.0f},
+    {"c_n_moa_a", "S_1", 32.0f},
+    {"c_n_moa_a", "S_1", 33.0f},
+    {"c_n_moa_a", "S_1", 34.0f},
+    {"c_n_moa_a", "S_1", 35.0f},
+    {"c_n_moa_a", "S_1", 36.0f},
+    {"c_n_moa_a", "S_1", 37.0f},
+    {"c_n_moa_a", "S_1", 38.0f},
+    {"c_n_moa_a", "S_1", 39.0f},
+    {"c_n_moa_b", "S_1", 0.0f},
+    {"c_n_moa_b", "S_1", 1.0f},
+    {"c_n_moa_b", "S_1", 2.0f},
+    {"c_n_moa_b", "S_1", 3.0f},
+    {"c_n_moa_b", "S_1", 4.0f},
+    {"c_n_moa_b", "S_1", 5.0f},
+    {"c_n_moa_b", "S_1", 6.0f},
+    {"c_n_moa_b", "S_1", 7.0f},
+    {"c_n_moa_b", "S_1", 8.0f},
+    {"c_n_moa_b", "S_1", 9.0f},
+    {"c_n_moa_b", "S_1", 10.0f},
+    {"c_n_moa_b", "S_1", 11.0f},
+    {"c_n_moa_b", "S_1", 12.0f},
+    {"c_n_moa_b", "S_1", 13.0f},
+    {"c_n_moa_b", "S_1", 14.0f},
+    {"c_n_moa_b", "S_1", 15.0f},
+    {"c_n_moa_b", "S_1", 16.0f},
+    {"c_n_moa_b", "S_1", 17.0f},
+    {"c_n_moa_b", "S_1", 18.0f},
+    {"c_n_moa_b", "S_1", 19.0f},
+    {"c_n_moa_b", "S_1", 20.0f},
+    {"c_n_moa_b", "S_1", 21.0f},
+    {"c_n_moa_b", "S_1", 22.0f},
+    {"c_n_moa_b", "S_1", 23.0f},
+    {"c_n_moa_b", "S_1", 24.0f},
+    {"c_n_moa_b", "S_1", 25.0f},
+    {"c_n_moa_b", "S_1", 26.0f},
+    {"c_n_moa_b", "S_1", 27.0f},
+    {"c_n_moa_b", "S_1", 28.0f},
+    {"c_n_moa_b", "S_1", 29.0f},
+    {"c_n_moa_b", "S_1", 30.0f},
+    {"c_n_moa_b", "S_1", 31.0f},
+    {"c_n_moa_b", "S_1", 32.0f},
+    {"c_n_moa_b", "S_1", 33.0f},
+    {"c_n_moa_b", "S_1", 34.0f},
+    {"c_n_moa_b", "S_1", 35.0f},
+    {"c_n_moa_b", "S_1", 36.0f},
+    {"c_n_moa_b", "S_1", 37.0f},
+    {"c_n_moa_b", "S_1", 38.0f},
+    {"c_n_moa_b", "S_1", 39.0f},
+    {NULL, NULL, 0.0f},
 };
 
-// TODO: write evt_moamoa_set_seq_all (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
+// dont_inline: retail emits a real `bl moamoa_pose_init` from moamoa_init; without this MWCC
+// inlines it and moamoa_init's stack frame no longer matches.
+#pragma dont_inline on
+static void moamoa_pose_init(void) {
+    MoamoaData* data = (MoamoaData*)moamoa_data;
+    char name1[32];
+    char name2[32];
+    s32 i = 0;
+    s32 first;
 
-// TODO: write evt_moamoa_set_one (global, 0x14c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
+    strcpy(name1, "");
+    strcpy(name2, "");
+    wp->poseCount = -1;
+    do {
+        if (strcmp(data->name1, name1) != 0) {
+            strcpy(name1, data->name1);
+            strcpy(name2, "");
+        }
+        if (strcmp(data->name2, name2) != 0) {
+            strcpy(name2, data->name2);
+            first = i;
+            wp->poseCount++;
+        }
+        strcpy(wp->poses[wp->poseCount].name1, name1);
+        strcpy(wp->poses[wp->poseCount].name2, name2);
+        wp->poses[wp->poseCount].startFrame = first;
+        wp->poses[wp->poseCount].frameCount = i - first + 1;
+        wp->poses[wp->poseCount].duration = data->frame;
+        wp->poses[wp->poseCount].field_0x18 = 1;
+        if (strncmp(name2, "J", 1) == 0) {
+            wp->poses[wp->poseCount].field_0x18 = 0;
+        }
+        data++;
+        i++;
+    } while (data->name1 != NULL);
+    wp->poseCount++;
+}
+// dont_inline keeps moamoa_pose_init a real `bl` from moamoa_init as in retail.
+#pragma dont_inline reset
+static void moamoa_pose_main(void) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+    MoamoaEntry* entry = wp->entries;
+
+    for (i = 0; i < wp->poseNum; i++, entry++, pose++) {
+        MoamoaPose* seq = &wp->poses[entry->field_0x18];
+        f32 f = (f32)((u64)(gp->renderTime - entry->time) / (OS_TIMER_CLOCK / 1000)) * 60.0f / 1000.0f / seq->duration;
+
+        if (f >= 1.0f) {
+            if (seq->field_0x18 != 0) {
+                entry->time = gp->renderTime;
+                f = 0.0f;
+            } else {
+                f = 1.0f;
+            }
+        }
+        pose->field_0x10 = seq->startFrame + (s32)((f32)(seq->frameCount - 1) * f);
+    }
+}
+static void moamoa_pose_change(MoamoaEntry* entry, const char* name1, const char* name2) {
+    MoamoaPose* pose;
+    s32 i;
+
+    pose = wp->poses;
+    if (entry->flags & 2) {
+        name1 = "c_n_moa_b";
+    }
+    for (i = 0; i < wp->poseCount; i++, pose++) {
+        if (strcmp(pose->name1, name1) == 0 && strcmp(pose->name2, name2) == 0) {
+            break;
+        }
+    }
+    if (i < wp->poseCount && entry->field_0x18 != i) {
+        entry->field_0x18 = i;
+        entry->time = gp->renderTime;
+    }
+}
+static f32 randf(f32 min, f32 max) {
+    f32 frac = (f32)rand() / 32767.0f;
+
+    return frac * (max - min) + min;
+}
+// NONMATCHING (99.77%): the `name = "c_n_moa_b"` branch emits an extra `mr r26, r0` copy before
+// the address is stored (MWCC does not coalesce the addi into r26). Every register matches.
+void moamoa_init(void) {
+    s32 j;
+    MoamoaPose* pose;
+    const char* name;
+    s32 i;
+    ExtPose* poses;
+    MoamoaEntry* entry;
+
+    wp = _mapAlloc(0x510);
+    memset(wp, 0, 0x510);
+    wp->poseNum = extGetPoseNum();
+    wp->entries = _mapAlloc(wp->poseNum * 0x28);
+    memset(wp->entries, 0, wp->poseNum * 0x28);
+    moamoa_pose_init();
+
+    poses = extGetPosePtr();
+    entry = wp->entries;
+    for (i = 0; i < wp->poseNum; i++, poses++, entry++) {
+        PSMTXIdentity(*poses->matrix);
+        poses->flags |= 5;
+        entry->flags = 0;
+        entry->state = 0;
+        name = "c_n_moa_a";
+        pose = wp->poses;
+
+        if (entry->flags & 2) {
+            name = "c_n_moa_b";
+        }
+        for (j = 0; j < wp->poseCount; j++, pose++) {
+            if (strcmp(pose->name1, name) == 0 && strcmp(pose->name2, "S_1") == 0) {
+                break;
+            }
+        }
+        if (j < wp->poseCount && entry->field_0x18 != j) {
+            entry->field_0x18 = j;
+            entry->time = gp->renderTime;
+        }
+
+        if (strncmp(gp->currentMapName, "rsh_00", 6) == 0) {
+            f32 a = randf(-200.0f, 600.0f);
+            f32 b;
+            f32 c;
+
+            if (a > 257.0f) {
+                a = randf(257.0f, 262.0f);
+            }
+            b = randf(20.0f, 100.0f);
+            if (a < 185.0f) {
+                c = randf(-160.0f, -165.0f);
+            } else if (a < 257.0f) {
+                c = 0.8f * (a - 185.0f) + -160.0f;
+            } else {
+                c = randf(-90.0f, -20.0f);
+            }
+            {
+                Vec pos = {0.0f, 0.0f, 0.0f};
+
+                pos.x = a;
+                pos.y = b;
+                pos.z = c - 100.0f;
+                entry->position = pos;
+            }
+            (*poses->matrix)[0][3] = 0.0f;
+            (*poses->matrix)[1][3] = -1000.0f;
+            (*poses->matrix)[2][3] = 0.0f;
+            if (!(a < 185.0f)) {
+                Mtx m;
+                Mtx m2;
+
+                if (a < 257.0f) {
+                    PSMTXRotRad(m, 'y', -0.7853982f);
+                    PSMTXConcat(*poses->matrix, m, *poses->matrix);
+                    entry->flags |= 1;
+                } else {
+                    PSMTXRotRad(m2, 'y', 1.5707964f);
+                    PSMTXConcat(*poses->matrix, m2, *poses->matrix);
+                    entry->flags |= 1;
+                }
+            }
+        } else {
+            f32 a;
+            f32 b;
+            f32 c;
+
+            if (strncmp(gp->currentMapName, "rsh_03", 6) == 0) {
+                b = randf(-500.0f, 500.0f);
+                a = randf(20.0f, 100.0f) - 10.0f;
+                c = randf(-170.0f, -180.0f);
+                c -= 100.0f;
+            } else {
+                b = randf(-350.0f, 350.0f);
+                a = randf(20.0f, 100.0f);
+                c = randf(-290.0f, -300.0f);
+            }
+            {
+                Vec pos = {0.0f, 0.0f, 0.0f};
+
+                pos.x = b;
+                pos.y = a;
+                pos.z = c;
+                entry->position = pos;
+            }
+            (*poses->matrix)[0][3] = 0.0f;
+            (*poses->matrix)[1][3] = -1000.0f;
+            (*poses->matrix)[2][3] = 0.0f;
+        }
+    }
+}
+static void ext_disp(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+void moamoa_main(void) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+    MoamoaEntry* entry = wp->entries;
+
+    for (i = 0; i < wp->poseNum; i++, pose++, entry++) {
+        switch (entry->state) {
+            case 0:
+                break;
+            case 1:
+                entry->counter = rand() % 60;
+                entry->state++;
+                break;
+            case 2:
+                if (--entry->counter <= 0) {
+                    entry->state++;
+                    entry->angle = randf(0.0f, 6.283184f);
+                }
+                break;
+            case 3:
+                if (entry->counter < 20) {
+                    f32 off;
+
+                    if (!(entry->flags & 1)) {
+                        off = intplGetValue(2, ++entry->counter, 20, 50.0f, 0.0f);
+                        (*pose->matrix)[0][3] = entry->position.x + off * (f32)sin(entry->angle);
+                        (*pose->matrix)[1][3] = entry->position.y - off * (f32)cos(entry->angle);
+                        (*pose->matrix)[2][3] = entry->position.z;
+                    } else {
+                        off = intplGetValue(2, ++entry->counter, 20, 50.0f, 0.0f);
+                        (*pose->matrix)[0][3] = entry->position.x;
+                        (*pose->matrix)[1][3] = entry->position.y - off * (f32)cos(entry->angle);
+                        (*pose->matrix)[2][3] = entry->position.z;
+                    }
+                } else {
+                    entry->state++;
+                }
+                break;
+            case 4:
+                (*pose->matrix)[0][3] = entry->position.x;
+                (*pose->matrix)[1][3] = entry->position.y;
+                (*pose->matrix)[2][3] = entry->position.z;
+                break;
+        }
+        if ((*pose->matrix)[2][3] > 45.0f) {
+            (*pose->matrix)[2][3] = 45.0f;
+        }
+    }
+    moamoa_pose_main();
+}
+void moamoa_dispent(void) {
+    dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)ext_disp, NULL);
+}
+// NONMATCHING (94.76%, 328 B vs 332 B): MWCC folds the single global read of `wp` into the
+// displacement (`lwz rD, wp@l(rB)`) where the original materialises the address
+// (`addi rB, rB, wp@l; lwz rD, 0(rB)`), and it schedules the `extGetPosePtr` return copy after the load
+// instead of before, so `pose`/`entry` land in r31/r29 (retail r29/r31). Everything else is identical;
+// the missing instruction shifts every later function.
+USER_FUNC(evt_moamoa_set_one) {
+    ExtPose* pose;
+    MoamoaEntry* entry;
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+
+    pose = extGetPosePtr();
+    entry = &wp->entries[id];
+
+    entry->state = 3;
+    {
+        Vec pos = {0.0f, 0.0f, 0.0f};
+
+        pos.x = x;
+        pos.y = y;
+        pos.z = z;
+        entry->position = pos;
+    }
+    if (!(entry->flags & 1)) {
+        Mtx m;
+
+        PSMTXRotRad(m, 'y', 1.5707964f);
+        PSMTXConcat(*pose[id].matrix, m, *pose[id].matrix);
+        entry->flags |= 1;
+    }
+    return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_moamoa_set_seq_all) {
+    s32 seq = evtGetValue(event, event->args[0]);
+    s32 i;
+    MoamoaEntry* entry;
+
+    extGetPosePtr();
+    entry = wp->entries;
+    for (i = 0; i < wp->poseNum; i++, entry++) {
+        entry->state = seq;
+    }
+    return EVT_RETURN_DONE;
+}
+
 
 static EVT_BEGIN(evt_moamoa)
     CALL(evt_snd_bgmoff_f, 512, 120)
@@ -198,15 +526,6 @@ static EVT_BEGIN(evt_moamoa)
     WAIT_MS(500)
     RETURN
 EVT_END()
-
-// TODO: write moamoa_dispent (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write moamoa_main (global, 0x3e4 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write moamoa_init (global, 0x72c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_rsh_moamoa_on_window)
     SWITCH(GSW(0))
@@ -447,20 +766,9 @@ static EVT_BEGIN(talk_unten)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npc_data[46] = {
-    (u32)"運転手", 0x40020610, 0x00000000, (u32)&init_unten,
-    (u32)&regu_unten, (u32)&talk_unten, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npc_data[2] = {
+    {"運転手", 0x40020610, 0, (void*)&init_unten, (void*)&regu_unten, (void*)&talk_unten},
+    {NULL},
 };
 
 static char* access_tbl[5] = {
@@ -668,23 +976,4 @@ EVT_BEGIN(rsh_00_c_init_evt_nidome)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 wp[1] = {
-    0x00000000,
-};
-
-// TODO: write ext_disp (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write moamoa_pose_change (static, 0xec bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write moamoa_pose_main (static, 0x194 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write moamoa_pose_init (static, 0x1c8 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_00.s; this is where the original has it, just before the first script that uses it
 // clang-format on

@@ -23,6 +23,23 @@
 #include "evt/evt_telop.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "driver/extdrv.h"
+#include "eff/eff_kemutest.h"
+#include "eff/eff_starstone.h"
+#include "effect/n64/eff_ripple_n64.h"
+#include "manager/filemgr.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "system.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #pragma pool_data off
 
@@ -35,14 +52,14 @@ static USER_FUNC(anim_tevcallback);
 static USER_FUNC(yami_view);
 static USER_FUNC(make_name);
 static USER_FUNC(depth);
-static void depthDisp(void);  // TODO: real signature
-static void ext_dispent(void);  // TODO: real signature
+static void depthDisp(CameraId cameraId, void* param);
+static void ext_dispent(void);
 static void ext_main(void);  // TODO: real signature
-static void ext_disp(void);  // TODO: real signature
+static void ext_disp(CameraId cameraId, void* param);
 static void ext_init(void);  // TODO: real signature
-static void pose_change(void);  // TODO: real signature
+static void pose_change(s32 index, const char* name);
 static void pose_main(void);  // TODO: real signature
-static void pose_init(void);  // TODO: real signature
+static void pose_init(void);
 
 // clang-format off
 extend_data(8,
@@ -204,33 +221,7 @@ EVT_BEGIN(evt_bom_01_karakara)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ext_data[93] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
-};
+static ExtTableEntry ext_data[31] = {0};
 
 // TODO: write ext_dispent (static, 0x5c bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
@@ -1673,7 +1664,6 @@ EVT_BEGIN(bom_01_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
 u32 lp[1] = {
     0x00000000,
 };
@@ -1687,10 +1677,7 @@ u32 lp[1] = {
 //     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 // };
 
-// TODO: type
-u32 sight_wp[1] = {
-    0x00000000,
-};
+SightWork* sight_wp;
 
 // TODO: write ext_disp_minnnanokoe (global, 0xb4 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
@@ -1722,6 +1709,341 @@ u32 sight_wp[1] = {
 // TODO: write drawNum (global, 0x224 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write drawBG (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+// ------------------------------------------------------------------------------------------------------------
+// Function bodies. The original was compiled with -inline auto,deferred, which emits functions in reverse source
+// order, so the functions below are written in the reverse of the order they appear in build/G8MJ01/bom/asm/bom_01.s
+// (the last asm function first). Data the functions need is declared at file scope, as the original does.
+// ------------------------------------------------------------------------------------------------------------
+
+extern const f32 float_100_bom_00007000;
+extern const f32 zero_bom_00007004;
+extern const f32 float_1000_bom_0000705c;
+extern const f32 float_1_bom_00006ffc;
+extern const f32 float_2_bom_0000704c;
+extern const f32 float_4_bom_00007044;
+extern const f32 float_6_bom_000070f0;
+extern const double double_0p7854_bom_00007088;
+extern const double double_to_int_bom_00007030;
+extern const char zero_bom_00007038[];
+extern const f32 float_800_bom_0000711c;
+
+const Vec vec3_bom_00006ebc = {0.0f, 100.0f, 0.0f};
+const Vec vec3_bom_00006ec8 = {0.0f, 1.0f, 0.0f};
+const Vec vec3_bom_00006ed4 = {0.0f, 0.0f, 0.0f};
+
+USER_FUNC(make_ext_table) {
+    s32 i;
+
+    memset(ext_data, 0, 0x174);
+    for (i = 0; i < 10; i++) {
+        ext_data[i].name = "c_bom_sen";
+        ext_data[i].type = "R_1";
+        ext_data[i].value = (f32)i * 2.0f;
+    }
+    for (i = 0; i < 20; i++) {
+        ext_data[10 + i].name = "c_bom_sen";
+        ext_data[10 + i].type = "S_2";
+        ext_data[10 + i].value = (f32)i * 6.0f;
+    }
+    ext_data[30].name = NULL;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(make_ext_table_minnnanokoe) {
+    s32 i;
+
+    memset(ext_data, 0, 0x174);
+    for (i = 0; i < 10; i++) {
+        ext_data[i].name = "c_bom_sen";
+        ext_data[i].type = "S_1";
+        ext_data[i].value = (f32)i * 4.0f;
+    }
+    for (i = 0; i < 20; i++) {
+        ext_data[10 + i].name = "c_bom_sen";
+        ext_data[10 + i].type = "R_1";
+        ext_data[10 + i].value = (f32)i * 2.0f;
+    }
+    ext_data[30].name = NULL;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_ry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 value = evtGetFloat(event, args[1]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
+
+    ((effStarStoneData*)entry->userdata)->field_0x1C = value;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_set_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
+
+    ((effStarStoneData*)entry->userdata)->field_0x8 = x;
+    ((effStarStoneData*)entry->userdata)->field_0xC = y;
+    ((effStarStoneData*)entry->userdata)->field_0x10 = z;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+
+    effSetName(effStarStoneEntry(6, x, y, z, float_1_bom_00006ffc), (const char*)name);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(anim_tevcallback) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
+
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(yami_view) {
+    Vec camPos;
+    Vec up;
+    Vec target;
+    Mtx mtx;
+    f32 value = evtGetFloat(event, event->args[0]);
+
+    target = vec3_bom_00006ed4;
+    target.z = value;
+    up = vec3_bom_00006ec8;
+    camPos = vec3_bom_00006ebc;
+    camPos.z = 100.0f + value;
+    C_MTXLookAt(mtx, &camPos, &up, &target);
+    envSetYamiView(mtx);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(make_name) {
+    static char name[0x40];
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+
+    sprintf(name, "S_hikari%d", value);
+    evtSetValue(event, args[1], (s32)name);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(depth) {
+    dispEntry(CAMERA_2D, float_1000_bom_0000705c, 0, depthDisp, NULL);
+    return EVT_RETURN_BLOCK;
+}
+
+static USER_FUNC(sight) {
+    s32 i;
+
+    if (isFirstCall) {
+        sight_wp = _mapAlloc(0x28);
+        memset(sight_wp, 0, 0x28);
+        for (i = 0; i < 5; i++) {
+            sight_wp->field_4[i] = 0;
+        }
+        sight_wp->field_20 = rand();
+        sight_wp->field_24 = rand();
+        sight_wp->state = 5;
+    }
+    if (sight_wp->file == NULL) {
+        if ((u32)fileAsyncf(4, 0, "%s/%s", getMarioStDvdRoot(), "taihou.tpl") == 0) {
+            return EVT_RETURN_BLOCK;
+        }
+        sight_wp->file = fileAllocf(4, "%s/%s", getMarioStDvdRoot(), "taihou.tpl");
+    }
+    if (sight_wp->state == 6) {
+        fileFree(sight_wp->file);
+        _mapFree(sight_wp);
+        return EVT_RETURN_DONE;
+    }
+    if (sight_wp->state != 5) {
+        dispEntry(CAMERA_2D, float_800_bom_0000711c, 0, disp_sight, NULL);
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+static USER_FUNC(sight_dir) {
+    s32 value = evtGetValue(event, event->args[0]);
+
+    sight_wp->state = value;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(bom_flag) {
+    s32* args = event->args;
+    s32 onoff = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
+
+    if (onoff != 0) {
+        *p |= flag;
+    } else {
+        *p &= ~flag;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static void ext_disp(CameraId cameraId, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+static void ext_dispent(void) {
+    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
+
+    if (!(*p & 1)) {
+        dispEntry(CAMERA_3D, zero_bom_00007004, 1, ext_disp, NULL);
+    }
+}
+
+void ext_dispent_minnnanokoe(void) {
+    dispEntry(CAMERA_3D, zero_bom_00007004, 1, ext_disp_minnnanokoe, NULL);
+}
+
+void ext_disp_minnnanokoe(CameraId cameraId, void* param) {
+    EnvironmentYami yami;
+    EnvironmentYami* pyami = &yami;
+    ExtPose* pose = extGetPosePtr();
+    s32 i;
+
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    for (i = 0; i < extGetPoseNum(); ) {
+        pyami->tevStage = 1;
+        pyami->texMap = 1;
+        pyami->texCoord = 1;
+        pyami->unk18 = 0;
+        pyami->unk4 = (MtxPtr)pose->matrix;
+        envSetYami(pyami);
+        GXSetNumTexGens(pyami->texCoord);
+        GXSetNumTevStages(pyami->tevStage);
+        GXSetNumIndStages(pyami->unk18);
+        extPoseDraw(i);
+        i++;
+        pose++;
+    }
+    extLoadTextureExit();
+}
+
+static void pose_change(s32 index, const char* name) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseEntry* e = pd->entries;
+    s32 i;
+
+    for (i = 0; i < pd->count; i++, e++) {
+        if (strcmp(e->name, name) == 0) {
+            break;
+        }
+    }
+    if (i < pd->count) {
+        if (pd->states[index].field_20 != i) {
+            pd->states[index].field_20 = (s16)i;
+            pd->states[index].time = gp->renderTime + rand();
+        }
+    }
+}
+
+static void pose_init(void) {
+    char buf[0x28];
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtTableEntry* p = ext_data;
+    s32 i = 0;
+    s32 start;
+
+    strcpy(buf, zero_bom_00007038);
+    pd->count = -1;
+    do {
+        if (strcmp(p->type, buf) != 0) {
+            strcpy(buf, p->type);
+            start = i;
+            pd->count++;
+        }
+        strcpy(pd->entries[pd->count].name, buf);
+        pd->entries[pd->count].field_C = start;
+        pd->entries[pd->count].field_10 = i - start + 1;
+        pd->entries[pd->count].field_8 = p->value;
+        i++;
+    } while ((++p)->name != NULL);
+    pd->count++;
+}
+
+// NONMATCHING (75.88%): rand() scheduling differs (compiler hoists the call before idx computation)
+USER_FUNC(bom1000_msg) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    ExtPose* pose = extGetPosePtr();
+    s32 base;
+    s32 flag;
+    s32 idx;
+    s32 mod;
+
+    if (a == 0) {
+        base = 3;
+        flag = 1;
+    } else {
+        base = 10;
+        flag = 0;
+    }
+    idx = b + base * 14;
+    mod = (b + (rand() % 2 + 1) * 4) % 14;
+    evtSetValue(event, args[0], flag);
+    evtSetValue(event, args[1], mod);
+    evtSetFloat(event, args[2], pose[idx].matrix[0][0][3]);
+    evtSetFloat(event, args[3], pose[idx].matrix[0][2][3]);
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (87.15%): original keeps 3 float temps live (f29/f30/f31); this keeps 2
+USER_FUNC(taihou_r) {
+    f32 c;
+    f32 s;
+    f32 rx;
+    f32 rz;
+
+    c = (f32)cos(double_0p7854_bom_00007088);
+    s = float_100_bom_00007000 * (f32)sin(double_0p7854_bom_00007088);
+    rx = -angleABf(zero_bom_00007004, zero_bom_00007004, zero_bom_00007004, s);
+    rz = -angleABf(zero_bom_00007004, zero_bom_00007004, float_100_bom_00007000 * c, s);
+    effKemuTestSetRxRz(effNameToPtr("kemuri"), rx, rz);
+    effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
+    return EVT_RETURN_DONE;
+}
+
+// clang-format on
+
+const f32 float_100_bom_00007000 = 100.0f;
+const f32 zero_bom_00007004 = 0.0f;
+const f32 float_1000_bom_0000705c = 1000.0f;
+const f32 float_1_bom_00006ffc = 1.0f;
+const f32 float_2_bom_0000704c = 2.0f;
+const f32 float_4_bom_00007044 = 4.0f;
+const f32 float_6_bom_000070f0 = 6.0f;
+const double double_0p7854_bom_00007088 = 0.7853981852531433;
+const double double_to_int_bom_00007030 = 4503601774854144.0;
+const char zero_bom_00007038[4] = {0};
+const f32 float_800_bom_0000711c = 800.0f;
+

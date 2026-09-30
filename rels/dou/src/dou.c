@@ -1,7 +1,17 @@
 #include "dou.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "system.h"
+#include "dou_00.h"
+#include "dou_04.h"
+#include "dou_05.h"
+#include "dou_07.h"
+#include "dou_10.h"
+#include "dou_11.h"
 
 #pragma pool_data off
 
@@ -30,16 +40,12 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: type
-u32 dou_normal_puka_data[16] = {
-    0x80000000, 0xBF000000, 0xBF800000, 0xBFC00000,
-    0xC0000000, 0xC00CCCCD, 0xC0200000, 0xC02CCCCD,
-    0xC02CCCCD, 0xC02CCCCD, 0xC0200000, 0xC00CCCCD,
-    0xC0000000, 0xBFC00000, 0xBF800000, 0xBF000000,
+f32 dou_normal_puka_data[16] = {
+    -0.0f, -0.5f, -1.0f, -1.5f,
+    -2.0f, -2.2f, -2.5f, -2.7f,
+    -2.7f, -2.7f, -2.5f, -2.2f,
+    -2.0f, -1.5f, -1.0f, -0.5f,
 };
-
-// TODO: write evt_dou_normal_puka (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/dou/asm/dou.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(dou_normal_puka)
     SET_VALUE(LW(0), 1)
@@ -95,20 +101,53 @@ EVT_BEGIN(dou_puka_event)
     RETURN
 EVT_END()
 
-// TODO: write dou_mario_pos_osreport_func (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/dou/asm/dou.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(dou_mario_pos_osreport)
     CALL(dou_mario_pos_osreport_func)
     RETURN
 EVT_END()
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/dou/asm/dou.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write _epilog (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/dou/asm/dou.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("dou_00", dou_00_init_evt);
+    relSetEvtAddr("dou_01", dou_01_init_evt);
+    relSetEvtAddr("dou_02", dou_02_init_evt);
+    relSetEvtAddr("dou_03", dou_03_init_evt);
+    relSetEvtAddr("dou_04", dou_04_init_evt);
+    relSetEvtAddr("dou_05", dou_05_init_evt);
+    relSetEvtAddr("dou_06", dou_06_init_evt);
+    relSetEvtAddr("dou_07", dou_07_init_evt);
+    relSetEvtAddr("dou_08", dou_08_init_evt);
+    relSetEvtAddr("dou_09", dou_09_init_evt);
+    relSetEvtAddr("dou_10", dou_10_init_evt);
+    relSetEvtAddr("dou_11", dou_11_init_evt);
+    relSetEvtAddr("dou_12", dou_12_init_evt);
+    relSetEvtAddr("dou_13", dou_13_init_evt);
+    relSetBtlAddr("dou", btlsetup_dou_tbl, btl_dou_setup_no_tbl);
+}
 
-// TODO: write _prolog (global, 0x180 bytes) here:
-// its asm is in build/G8MJ01/dou/asm/dou.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+}
+
+void _unresolved(void) {
+}
+
+USER_FUNC(evt_dou_normal_puka) {
+    evtSetFloat(event, event->args[0], dou_normal_puka_data[event->lwData[0] & 0xF]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(dou_mario_pos_osreport_func) {
+    marioGetPtr();
+    keyGetButtonTrg(0);
+    return EVT_RETURN_BLOCK;
+}
 // clang-format on

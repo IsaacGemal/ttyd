@@ -1,9 +1,10 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include <dolphin/mtx.h>
 
 USER_FUNC(npc_anim_wait);
-void moamoa_joint_position(void);  // TODO: real signature
+void moamoa_joint_position(void* entry, Vec* out);
 void evalOn(void);  // TODO: real signature
 EVT_DEF(evt_resha_init);
 EVT_DEF(evt_great_moamoa);

@@ -1,4 +1,15 @@
 #include "end_unknown.h"
+#include "data/mapdata.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/extdrv.h"
+#include "driver/mapdrv.h"
+#include "driver/npcdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/swdrv.h"
+#include "driver/windowdrv.h"
+#include "eff/eff_mahojin.h"
 #include "evt/evt_bg.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -13,7 +24,70 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/filemgr.h"
+#include "manager/evtmgr_cmd.h"
+#include "manager/fontmgr.h"
+#include "mario/mariost.h"
+#include "memory.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
+#include "sdk/texPalette.h"
+#include "system.h"
+#include <dolphin/exi.h>
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <libc/stdio.h>
+#include <libc/stdlib.h>
+#include <libc/string.h>
+
+typedef void (*voidfunctionptr)(void);
+
+extern voidfunctionptr _ctors[];
+extern voidfunctionptr _dtors[];
+
+typedef struct MoaNameAnim {
+    /* 0x00 */ const char* name;
+    /* 0x04 */ const char* anim;
+    /* 0x08 */ f32 frame;
+} MoaNameAnim;
+
+typedef struct CreditsPoseState {
+    /* 0x00 */ Vec position;
+    /* 0x0C */ s32 idx;
+    /* 0x10 */ s32 counter;
+} CreditsPoseState;
+
+
+// "end" REL credits work block (the target of dat_ptr_end_00003218)
+typedef struct CreditsWork {
+    /* 0x00 */ void* image;
+    /* 0x04 */ s32 mode;
+    /* 0x08 */ s32 field_08;
+    /* 0x0C */ s32 field_0C;
+    /* 0x10 */ s32 field_10;
+    /* 0x14 */ s32 windowIdA[3];
+    /* 0x20 */ s32 windowIdB[3];
+    /* 0x2C */ s32 field_2C;
+    /* 0x30 */ s32 entryIdx;
+    /* 0x34 */ s32 eventId;
+} CreditsWork;
+
+// R_credits_npc_info entries
+typedef struct CreditsNpcInfo {
+    /* 0x00 */ const char* name;
+    /* 0x04 */ const char* anim;
+    /* 0x08 */ s32* event;
+} CreditsNpcInfo;
+
+// per-pose entry allocated by unk_end_00001d90 for the credits animation callback
+typedef struct CreditsPoseEntry {
+    /* 0x00 */ s32 state;
+    /* 0x04 */ s32 poseId;
+    /* 0x08 */ f32 frame;
+    /* 0x0C */ f32 endFrame;
+    /* 0x10 */ s32 field_10;
+    /* 0x14 */ Mtx matrix;
+} CreditsPoseEntry;
 
 #pragma pool_data off
 
@@ -28,6 +102,10 @@ s32 unk_evt_end_00004cbc[50];
 s32 unk_evt_end_00004d84[83];
 s32 unk_evt_end_00004ed0[89];
 s32 unk_evt_end_0000503c[108];
+u32 unk_end_bss00000000[1];
+u32 unk_end_bss00000004[1];
+u32 unk_end_bss00000008[1];
+u32 unk_end_bss0000000c[1];
 u32 unk_end_bss00000010[14];
 
 // clang-format off
@@ -271,11 +349,148 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_peach", (u32)"P_W_1", 0x00000000,
 };
 
-// TODO: write unk_end_00001d90 (global, 0x558 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (84.8%): register allocation and constant-pool symbols differ.
+s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
+    s32 idx = evtGetValue(event, event->args[0]);
+    CreditsPoseEntry* entry;
+    s32 inBattle = (gp->inBattle != 0);
+    f32 f31;
+    f32 f30;
+    f32 f29;
+    Mtx mtx1;
+    Mtx mtx2;
+    Mtx mtx3;
 
-// TODO: write unk_end_000022e8 (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    if (((CreditsNpcInfo*)R_credits_npc_info)[idx].event != NULL) {
+        evtEntry(((CreditsNpcInfo*)R_credits_npc_info)[idx].event, 0, 0);
+        if ((u32)(idx + 5) < 0x98) {
+            animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[idx + 5].name, inBattle, NULL);
+        }
+        return EVT_RETURN_DONE;
+    }
+    if (isFirstCall) {
+        entry = _mapAlloc(0x44);
+        memset(entry, 0, 0x44);
+        entry->state = 0;
+        entry->field_10 = ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx;
+        switch (entry->field_10) {
+            case 0:
+                entry->frame = -20.0f;
+                break;
+            case 1:
+            case 4:
+                entry->frame = 160.0f;
+                break;
+            case 2:
+                entry->frame = 250.0f;
+                break;
+            default:
+                entry->frame = 70.0f;
+                break;
+        }
+        entry->endFrame = 30.0f + (90.0f + entry->frame);
+        if ((u32)(idx + 5) < 0x98) {
+            animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[idx + 5].name, inBattle, NULL);
+        }
+        event->userdata[0] = (s32)entry;
+    }
+    entry = (CreditsPoseEntry*)event->userdata[0];
+    switch (entry->field_10) {
+        case 0:
+            f31 = 304.0f;
+            f30 = -240.0f;
+            f29 = 100.0f;
+            break;
+        case 1:
+        case 4:
+            f31 = -304.0f;
+            f30 = 240.0f;
+            f29 = 100.0f;
+            break;
+        case 2:
+            f31 = -304.0f;
+            f30 = -240.0f;
+            f29 = 100.0f;
+            break;
+        default:
+            f31 = 304.0f;
+            f30 = 240.0f;
+            f29 = 100.0f;
+            break;
+    }
+    if (animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[idx].name, inBattle, NULL) == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    switch (entry->state) {
+        case 0:
+            {
+                u32 type;
+
+                EXIGetType(0, 2, &type);
+                if (type != 0x05070000) {
+                    entry->poseId = animPoseEntry(((CreditsNpcInfo*)R_credits_npc_info)[idx].name, inBattle);
+                    animPoseSetAnim(entry->poseId, ((CreditsNpcInfo*)R_credits_npc_info)[idx].anim, 1);
+                } else {
+                    entry->poseId = animPoseEntry("a_mario", inBattle);
+                    animPoseSetAnim(entry->poseId, "M_W_1", 1);
+                }
+            }
+            entry->state++;
+            break;
+        case 1:
+            entry->frame += 0.15f;
+            if (entry->frame > entry->endFrame) {
+                animPoseRelease(entry->poseId);
+                _mapFree(entry);
+                return EVT_RETURN_DONE;
+            }
+            break;
+    }
+    PSMTXTrans(mtx1, 0.0f, f29, 0.0f);
+    PSMTXRotRad(mtx2, 'z', 0.017453292f * entry->frame);
+    PSMTXConcat(mtx2, mtx1, mtx1);
+    PSMTXTrans(mtx2, 0.5f * f31, 0.5f * f30, 0.0f);
+    PSMTXConcat(mtx2, mtx1, entry->matrix);
+    PSMTXScale(mtx3, 1.0f, 1.0f, 0.01f);
+    PSMTXConcat(entry->matrix, mtx3, entry->matrix);
+    if (animPoseGetVivianType(entry->poseId) != 0) {
+        Vec pos = {0.0f, 0.0f, 0.0f};
+
+        pos.x = entry->matrix[0][3];
+        pos.y = entry->matrix[1][3];
+        pos.z = entry->matrix[2][3];
+        animPoseVivianMain(entry->poseId, &pos);
+    }
+    if (strcmp(animPoseGetCurrentAnim(entry->poseId)->name, "GAZ_A_1") == 0) {
+        if (animPoseGetLoopTimes(entry->poseId) > 0.9f) {
+            animPoseSetAnim(entry->poseId, "GAZ_A_1", 1);
+        }
+    }
+    animPoseMain(entry->poseId);
+    dispEntry(4, 0.0f, 1, unk_end_000023ac, entry);
+    return EVT_RETURN_BLOCK;
+}
+
+s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 idx = evtGetValue(event, args[0]);
+
+    if ((u32)idx >= 0x98) {
+        evtSetValue(event, args[1], 0);
+        return EVT_RETURN_DONE;
+    } else {
+        CreditsNpcInfo* npc = (CreditsNpcInfo*)R_credits_npc_info;
+
+        if (npc[idx].event != NULL) {
+            evtSetValue(event, args[1], 0);
+        } else if (strcmp(npc[idx].name, "c_gazigazi") == 0) {
+            evtSetValue(event, args[1], 2);
+        } else {
+            evtSetValue(event, args[1], 1);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(unk_evt_end_00004044)
     SET_VALUE(LW(0), 0)
@@ -302,11 +517,15 @@ EVT_BEGIN(unk_evt_end_00004044)
     RETURN
 EVT_END()
 
-// TODO: write unk_end_000011f0 (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_000011f0(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)dat_ptr_end_00003218[0])->field_10 = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write unk_end_0000122c (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_0000122c(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)dat_ptr_end_00003218[0])->mode = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(unk_end_0000410c)
     LOOP(0)
@@ -363,14 +582,20 @@ EVT_BEGIN(unk_end_0000410c)
     RETURN
 EVT_END()
 
-// TODO: write unk_end_00001268 (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_00001268(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)dat_ptr_end_00003218[0])->field_0C = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write unk_end_000012a4 (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_000012a4(EventEntry* event, BOOL isFirstCall) {
+    ((CreditsWork*)dat_ptr_end_00003218[0])->field_08 = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write unk_end_000012e0 (global, 0x44 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_000012e0(EventEntry* event, BOOL isFirstCall) {
+    dispEntry(4, 0.0f, 7, unk_end_00001324, NULL);
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(unk_evt_end_000042e0)
     LOOP(0)
@@ -458,8 +683,13 @@ EVT_BEGIN(unk_evt_end_000042e0)
     RETURN
 EVT_END()
 
-// TODO: write unk_end_000009cc (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_000009cc(EventEntry* event, BOOL isFirstCall) {
+    gp->language = 0;
+    JUTFont_Free();
+    JUTFontSetup(0);
+    psndClearFlag(4);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(unk_evt_end_000045cc)
     CALL(evt_fade_entry, 12, 2000, 0, 0, 0)
@@ -478,11 +708,208 @@ EVT_BEGIN(unk_evt_end_000045cc)
     RETURN
 EVT_END()
 
-// TODO: write unk_end_00000a6c (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
+    s32 flag = (gp->inBattle != 0);
+    s32 i;
 
-// TODO: write unk_end_00000bc8 (global, 0x628 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        ((CreditsWork*)dat_ptr_end_00003218[0])->image = NULL;
+        ((CreditsWork*)dat_ptr_end_00003218[0])->field_08 = 0;
+        ((CreditsWork*)dat_ptr_end_00003218[0])->mode = 0;
+        ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx = 0;
+        psndSetFlag(4);
+        gp->language = 1;
+        JUTFont_Free();
+        JUTFontSetup(1);
+    }
+    if ((void*)fileAsyncf(4, NULL, "%s/ending.tpl", getMarioStDvdRoot()) == NULL) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (((CreditsWork*)dat_ptr_end_00003218[0])->image == NULL) {
+        ((CreditsWork*)dat_ptr_end_00003218[0])->image = fileAllocf(4, "%s/ending.tpl", getMarioStDvdRoot());
+    }
+    for (i = 0; i < 5; i++) {
+        if (animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[i].name, flag, NULL) == 0) {
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    for (i = 0; i < 5; i++) {
+    }
+    return EVT_RETURN_DONE;
+}
+
+typedef struct CreditsEndingRecord {
+    /* 0x00 */ s32 field_0;
+    /* 0x04 */ s32 field_4;
+    /* 0x08 */ s32 field_8;
+    /* 0x0C */ const char* msgA[3];
+    /* 0x18 */ const char* msgB[3];
+} CreditsEndingRecord;
+
+// NONMATCHING (86.92%): 0x10-smaller frame and fewer callee-saved regs; record pointer uses lwz instead of lwzu.
+s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
+    s32 state = event->userdata[0];
+    s32 index = event->userdata[1];
+    CreditsEndingRecord* rec;
+    s32 i;
+    s32 offset;
+    s32 x;
+    s32 y;
+    char bufA[0x400];
+    char bufB[0x400];
+
+    if (isFirstCall) {
+        for (i = 0; i < 3; i++) {
+            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] = -1;
+        }
+        for (i = 0; i < 3; i++) {
+            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] = -1;
+        }
+        evtSetValue(event, GW(10), 0);
+        ((CreditsWork*)dat_ptr_end_00003218[0])->eventId = (s32)evtEntry(unk_evt_end_000042e0, 0, 0);
+    }
+    offset = index * 0x24;
+    rec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + offset);
+    ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx = rec->field_4;
+    switch (((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx) {
+        case 0:
+            x = -274;
+            y = -24;
+            break;
+        case 1:
+            x = 274;
+            y = 250;
+            break;
+        case 2:
+            x = 274;
+            y = -24;
+            break;
+        case 3:
+            x = -274;
+            y = 250;
+            break;
+        case 4:
+            x = 0;
+            y = -60;
+            break;
+        default:
+            x = 0;
+            y = 0;
+            break;
+    }
+    switch (state) {
+        case 0:
+            for (i = 0; i < 3; i++) {
+                const char* key = rec->msgA[i];
+
+                if (key != NULL) {
+                    const char* msg = msgSearch(key);
+                    s32 ypos = y - i * 0x16;
+                    s32 xpos = ypos - 4;
+                    s32 xoff = x;
+
+                    if (x == 0) {
+                        xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg) * 0.5f);
+                    } else if (x > 0) {
+                        xoff = x - FontGetMessageWidth(msg);
+                    }
+                    sprintf(bufA, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0><scale 0.8>%s</scale></speed></col><wait 500></dkey><once_stop>", xpos, xoff - 0x3E, msg);
+                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] = msgWindow_Entry(bufA, 0, 0);
+                }
+            }
+            for (i = 0; i < 3; i++) {
+                const char* key = rec->msgB[i];
+
+                if (key != NULL) {
+                    const char* msg = msgSearch(key);
+                    s32 ypos = y - i * 0x18;
+                    s32 xpos = ypos - 0x32;
+                    s32 xoff = x;
+
+                    if (x == 0) {
+                        xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg) * 0.5f);
+                    } else if (x > 0) {
+                        xoff = x - FontGetMessageWidth(msg);
+                    }
+                    sprintf(bufB, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0>%s</speed></col><wait 5200></dkey><once_stop>", xpos, xoff - 0x3E, msg);
+                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] = msgWindow_Entry(bufB, 0, 0);
+                } else {
+                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] = -1;
+                }
+            }
+            evtSetValue(event, GW(10), 1);
+            evtSetValue(event, GW(11), rec->field_8);
+            evtSetValue(event, GW(12), rec->field_4);
+            state++;
+            break;
+        case 1:
+            for (i = 0; i < 3; i++) {
+                if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i]) != 0) {
+                    break;
+                }
+            }
+            if (i >= 3) {
+                for (i = 0; i < 3; i++) {
+                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i]) != 0) {
+                        break;
+                    }
+                }
+                if (i >= 3) {
+                    state++;
+                }
+            }
+            break;
+        case 2:
+            {
+                s32 next = index + 1;
+                s32 nulls;
+
+                if ((u32)next < 0x32) {
+                    CreditsEndingRecord* nextRec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + next * 0x24);
+
+                    nulls = 0;
+                    for (i = 0; i < 3; i++) {
+                        if (nextRec->msgA[i] != NULL) {
+                            break;
+                        }
+                        nulls++;
+                    }
+                } else {
+                    nulls = 0;
+                }
+                if (nulls < 3) {
+                    for (i = 0; i < 3; i++) {
+                        if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] != -1) {
+                            msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i]);
+                        }
+                    }
+                }
+                for (i = 0; i < 3; i++) {
+                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] != -1) {
+                        msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i]);
+                    }
+                }
+                evtSetValue(event, GW(10), 2);
+                if ((u32)next < 0x32) {
+                    state++;
+                } else {
+                    state += 2;
+                }
+            }
+            break;
+        case 3:
+            if (evtGetValue(event, GW(10)) == 0) {
+                state = 0;
+                index++;
+            }
+            break;
+        case 4:
+            return EVT_RETURN_DONE;
+    }
+    event->userdata[0] = state;
+    event->userdata[1] = index;
+    return EVT_RETURN_BLOCK;
+}
 
 EVT_BEGIN(unk_evt_end_00004690)
     CALL(evt_mario_cont_onoff, 0)
@@ -504,8 +931,14 @@ EVT_BEGIN(unk_evt_end_00004690)
     RETURN
 EVT_END()
 
-// TODO: write unk_end_00000938 (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_00000938(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
+
+    mapSetTevCallback(1, unk_end_00002508);
+    animPoseSetMaterialFlagOn(npc->poseId, 0x1000000);
+    animPoseSetGXFunc(npc->poseId, unk_end_00002494, FALSE);
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(unk_evt_end_0000478c)
     CALL(evt_npc_entry, STRING("gesso"), STRING("c_gesso"))
@@ -718,20 +1151,154 @@ char* dat_ptr_end_00005034 = "c_n_moa_a";
 
 char* dat_ptr_end_00005038 = "S_1";
 
-// TODO: write unk_end_000000c4 (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_000000c4(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("モアモア");
 
-// TODO: write unk_end_0000012c (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    L_animPoseWorldPositionEvalOff(npc->poseId);
+    _mapFree((void*)unk_end_bss00000000[0]);
+    extReset();
+    _mapFree((void*)unk_end_bss0000000c[0]);
+    _mapFree((void*)unk_end_bss00000008[0]);
+    return EVT_RETURN_DONE;
+}
 
-// TODO: write unk_end_0000035c (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (97.82%): group-index loop register allocation and anonymous constant symbols differ.
+s32 unk_end_0000012c(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("モアモア");
+    AnimationPose* pose;
+    Vec* positions;
+    void* p;
+    s32 i;
+    s32 count;
 
-// TODO: write unk_end_00000440 (global, 0x2b8 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    p = _mapAlloc(0x1770);
+    unk_end_bss00000000[0] = (u32)p;
+    memset(p, 0, 0x1770);
+    animPoseWorldPositionEvalOn(npc->poseId);
+    p = _mapAlloc(0x1EC);
+    unk_end_bss00000004[0] = (u32)p;
+    memset(p, 0, 0x1EC);
+    for (i = 0; i < 0x28; i++) {
+        ((s32*)unk_end_bss00000004[0])[i * 3 + 0] = (s32)dat_ptr_end_00005034;
+        ((s32*)unk_end_bss00000004[0])[i * 3 + 1] = (s32)dat_ptr_end_00005038;
+        ((f32*)unk_end_bss00000004[0])[i * 3 + 2] = (f32)i;
+    }
+    evtSetValue(event, LW(10), unk_end_bss00000004[0]);
 
-// TODO: write unk_end_000006f8 (global, 0x1c4 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
+    {
+        smartEntry* entry = *(smartEntry**)((u8*)pose + 0x15C);
+
+        positions = (Vec*)entry->address;
+    }
+    count = *(s32*)((u8*)pose + 0x160);
+    for (i = 0; i < count; i++) {
+        positions[i] = (Vec){0.0f, -1000.0f, 0.0f};
+    }
+
+    p = _mapAlloc(dat_80419a28 * 4);
+    unk_end_bss00000008[0] = (u32)p;
+    memset(p, 0, dat_80419a28 * 4);
+    p = _mapAlloc(dat_80419a28 * 8);
+    unk_end_bss0000000c[0] = (u32)p;
+    memset(p, 0, dat_80419a28 * 8);
+    count = dat_80419a28;
+    for (i = 0; i < count; i++) {
+        ((s32*)unk_end_bss0000000c[0])[i * 2 + 0] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].name);
+        ((s32*)unk_end_bss0000000c[0])[i * 2 + 1] = animPoseGetGroupIdx(npc->poseId, g_moamoa_chain_tbl[i].anim);
+    }
+    return EVT_RETURN_DONE;
+}
+
+void unk_end_0000035c(void) {
+    dispEntry(4, 0.0f, 1, unk_end_0000039c, NULL);
+}
+
+// NONMATCHING (92.62%): Mtx stack slots and register allocation differ; constant symbols differ.
+void unk_end_00000440(void) {
+    NpcEntry* npc = npcNameToPtr("モアモア");
+    AnimationPose* pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
+    Vec* positions = (Vec*)(*(smartEntry**)((u8*)pose + 0x15C))->address;
+    CreditsPoseState* work;
+    ExtPose* extPose;
+    Mtx mtx1;
+    Mtx mtx2;
+    Mtx mtx3;
+    Vec offset;
+    Vec tmp;
+    s32 i;
+
+    if (positions == NULL) {
+        return;
+    }
+    work = (CreditsPoseState*)unk_end_bss00000000[0];
+    extPose = extGetPosePtr();
+    for (i = 0; i < extGetPoseNum(); i++) {
+        s32 p0 = ((s32*)unk_end_bss0000000c[0])[work->idx * 2 + 0];
+        s32 p1 = ((s32*)unk_end_bss0000000c[0])[work->idx * 2 + 1];
+        f32 ratio = (f32)work->counter / (f32)((s32*)unk_end_bss00000008[0])[work->idx];
+        f32 c = 1.0f - ratio;
+
+        if (positions[p0].y == -1000.0f || positions[p1].y == -1000.0f) {
+            offset = (Vec){0.0f, -1000.0f, 0.0f};
+            extPose->flags &= ~1;
+        } else {
+            PSVECScale(&positions[p0], &offset, ratio);
+            PSVECScale(&positions[p1], &tmp, c);
+            PSVECAdd(&offset, &tmp, &offset);
+            extPose->flags |= 1;
+        }
+        PSMTXTrans(mtx1, offset.x, offset.y, offset.z);
+        PSMTXScale(mtx2, npc->scale.x, npc->scale.y, npc->scale.z);
+        PSMTXConcat(mtx1, mtx2, mtx1);
+        PSMTXTrans(mtx3, work->position.x, work->position.y, work->position.z);
+        PSMTXConcat(mtx1, mtx3, *extPose->matrix);
+        extPose->field_0x10 = (gp->retraceCount + i) % 40;
+        work++;
+        extPose++;
+    }
+
+    pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
+    positions = (Vec*)(*(smartEntry**)((u8*)pose + 0x15C))->address;
+    {
+        s32 count = *(s32*)((u8*)pose + 0x160);
+
+        for (i = 0; i < count; i++) {
+            positions[i] = (Vec){0.0f, -1000.0f, 0.0f};
+        }
+    }
+}
+
+// NONMATCHING (85.78%): fmadds operand order (20.0f/quotient) and work->idx reload differ; constant symbols differ.
+void unk_end_000006f8(void) {
+    ExtPose* pose = extGetPosePtr();
+    CreditsPoseState* work = (CreditsPoseState*)unk_end_bss00000000[0];
+    s32* counters = (s32*)unk_end_bss00000008[0];
+    s32 groupCount = dat_80419a28;
+    s32 i;
+
+    for (i = 0; i < extGetPoseNum(); i++) {
+        pose->flags |= 5;
+        PSMTXIdentity(*pose->matrix);
+        {
+            Vec pos = {0.0f, 0.0f, 0.0f};
+            f32 r;
+
+            r = (f32)rand() / 32767.0f;
+            pos.x = 20.0f * r + -10.0f;
+            r = (f32)rand() / 32767.0f;
+            pos.y = 20.0f * r + -10.0f;
+            r = (f32)rand() / 32767.0f;
+            pos.z = 20.0f * r + -10.0f;
+            work->position = pos;
+        }
+        work->idx = i % groupCount;
+        work->counter = counters[work->idx];
+        counters[work->idx]++;
+        work++;
+        pose++;
+    }
+}
 
 EVT_BEGIN(unk_evt_end_0000503c)
     CALL(evt_npc_entry, STRING("モアモアダミー"), STRING("c_n_moa_a"))
@@ -816,38 +1383,99 @@ u32 unk_end_bss00000010[14] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: write unk_end_0000039c (global, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+void unk_end_0000039c(CameraId cameraId, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xC);
+    animGetPtr()->currDispMode = 0;
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(1, 3, 1);
+    extDraw();
+    extLoadTextureExit();
+}
 
-// TODO: write unk_end_000008bc (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.68%): fmadds operand order differs (f0/f1 swapped); lone relocation symbols differ.
+f32 unk_end_000008bc(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
 
-// TODO: write unk_end_000009a4 (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    return r * (max - min) + min;
+}
 
-// TODO: write unk_end_00000a14 (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+s32 unk_end_000009a4(EventEntry* event, BOOL isFirstCall) {
+    psndSetFlag(0x1000);
+    return EVT_RETURN_DONE;
+}
+
+// dont_inline keeps unk_end_00000a14 a real `bl` from _epilog as in retail.
+#pragma dont_inline on
+void unk_end_00000a14(void) {
+    CreditsWork* work = (CreditsWork*)dat_ptr_end_00003218[0];
+
+    fileFree(work->image);
+    psndClearFlag(4);
+    gp->language = 0;
+    JUTFont_Free();
+    JUTFontSetup(0);
+}
+#pragma dont_inline reset
 
 // TODO: write unk_end_00001324 (global, 0xa6c bytes) here:
 // its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write unk_end_000023ac (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+void unk_end_000023ac(CameraId cameraId, void* param) {
+    CreditsPoseEntry* entry = (CreditsPoseEntry*)param;
 
-// TODO: write unk_end_00002494 (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    if (evtGetValue(NULL, GF(10)) == 0) {
+        mapSetTevCallback(1, unk_end_00002508);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x1000000);
+        animPoseSetGXFunc(entry->poseId, unk_end_00002494, FALSE);
+        animPoseDrawMtx(entry->poseId, entry->matrix, 1, 0.0f, 2.0f);
+        animPoseDrawMtx(entry->poseId, entry->matrix, 2, 0.0f, 2.0f);
+        animPoseDrawMtx(entry->poseId, entry->matrix, 3, 0.0f, 2.0f);
+        animPoseSetMaterialFlagOff(entry->poseId, 0x1000000);
+    }
+}
 
-// TODO: write unk_end_00002508 (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+void unk_end_00002494(s32 wXluStage) {
+    AnimationWork* anim = animGetPtr();
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+    anim->currDispMode = wXluStage;
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(1, 3, 1);
+}
 
-// TODO: write _epilog (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+void unk_end_00002508(TevCallbackParam* param) {
+    GXSetTevColorIn(param->field_C - 1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
+}
 
-// TODO: write _prolog (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
+void _unresolved(void) {
+}
+
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+    unk_end_00000a14();
+}
+#pragma dont_inline reset
+
+// NONMATCHING (80%): the "end_00" rodata literal lands at a different offset until all constants are pooled identically.
+void _prolog(void) {
+    voidfunctionptr* ctor;
+
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("end_00", unk_evt_end_00004690);
+}
 
 // TODO: write gap_00_00002520_text (global, 0x10 bytes) here:
 // its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it, just before the first script that uses it
