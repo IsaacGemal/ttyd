@@ -3092,7 +3092,7 @@ musyx/runtime/stream.c:
 	.sbss       start:0x80418CD8 end:0x80418CE8
 	.sdata2     start:0x80422BD0 end:0x80422BE8
 
-data/musyx/runtime/synthdata.c:
+musyx/runtime/synthdata.c:
 	.text       start:0x80277808 end:0x802794F4
 	.bss        start:0x803F54E0 end:0x803FFD18
 	.sbss       start:0x80418CE8 end:0x80418D38
@@ -3125,7 +3125,7 @@ musyx/runtime/synth_vsamples.c:
 	.text       start:0x80280B44 end:0x802814DC
 	.bss        start:0x80400CF8 end:0x80401848
 
-data/musyx/runtime/s_data.c:
+musyx/runtime/s_data.c:
 	.text       start:0x802814DC end:0x802820EC
 	.bss        start:0x80401848 end:0x80401E60
 	.sbss       start:0x80418D70 end:0x80418D80

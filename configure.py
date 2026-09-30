@@ -943,7 +943,7 @@ config.libs = [
             Object(Matching, "musyx/runtime/seq_api.c"),
             Object(Matching, "musyx/runtime/snd_synthapi.c"),
             Object(Matching, "musyx/runtime/stream.c"),
-            Object(NonMatching, "musyx/runtime/synthdata.c"),
+            Object(Matching, "musyx/runtime/synthdata.c"),
             Object(Matching, "musyx/runtime/synthmacros.c"),
             Object(Matching, "musyx/runtime/synthvoice.c"),
             Object(Matching, "musyx/runtime/synth_ac.c"),
