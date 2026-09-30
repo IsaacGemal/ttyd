@@ -173,6 +173,9 @@ void winPartyInit2(WindowWork* work) {
 // so the strings that precede them are missing. Every instruction opcode/register matches.
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
+#ifndef MUST_MATCH
+    u8* p;
+#endif
     s32 i;
     s32 j;
     s32 k;
@@ -231,11 +234,19 @@ void winPartyInit(WindowWork* work) {
 
     i = 0;
     WW_S32(work, 0x1DC) = i;
+#ifdef MUST_MATCH
     for (; i < WW_S32(work, 0x1E0); i++) {
+#else
+    for (p = (u8*)work; i < WW_S32(work, 0x1E0); i++, p += 4) {
+#endif
         s32 party;
 
         party = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
+#ifdef MUST_MATCH
         if (party == ((s32*)work)[i + 0x6F]) {
+#else
+        if (party == *(s32*)(p + 0x1BC)) {
+#endif
             WW_S32(work, 0x1DC) = i;
             break;
         }

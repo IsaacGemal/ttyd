@@ -12,11 +12,14 @@
 #include <math.h>
 
 extern GXColor unk_804232d8;
-/* Named .sdata2 constants, declared here and defined at the end of the file: the compiler can't
-   fold `-32.0f * 0.5f` into -16 (the original does the multiply at runtime), and the pool keeps them. */
+#ifdef MUST_MATCH
+/* Match-only trick: named .sdata2 constants, defined at the end of the file, so the compiler can't
+   fold `-32.0f * 0.5f` into -16 (the original does the multiply at runtime). The original's 0.5 and 16.0
+   are ordinary pool literals, so this duplicates them (two extra .sdata2 words). */
 extern const f32 float_32_80420abc;
 extern const f32 float_0p5_80420ad0;
 extern const f32 float_16_80420ad4;
+#endif
 
 const GXColor dat_80420ab0 = { 0x80, 0x80, 0x80, 0x80 };
 const GXColor dat_80420ab4 = { 0x00, 0x00, 0x00, 0x60 };
@@ -127,7 +130,11 @@ void effKemuTestDisp(CameraId camId, void* param) {
 
 	data++;
 	{
+#ifdef MUST_MATCH
 		f32 dsize = -float_32_80420abc;
+#else
+		f32 dsize = -32.0f;
+#endif
 
 		for (i = 1; i < effect->count; i++, data++) {
 			if (data->field_0x44 != 0) {
@@ -145,7 +152,12 @@ void effKemuTestDisp(CameraId camId, void* param) {
 			PSMTXConcat(mtx, scale, mtx);
 			GXLoadTexMtxImm(mtx, 0x21, 1);
 			{
+#ifdef MUST_MATCH
 				f32 dsize_half = dsize * float_0p5_80420ad0;
+#else
+				f32 dsize_half = dsize * 0.5f;
+				f32 size = 16.0f;
+#endif
 
 				for (j = flag; j < 2; j++) {
 					if (j == 0) {
@@ -183,11 +195,19 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						GXLoadPosMtxImm(mtx, 0);
 					}
 					GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
 					GXPosition3f32(dsize_half, float_16_80420ad4, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
 					GXPosition3f32(float_16_80420ad4, float_16_80420ad4, 0.0f);
 					GXTexCoord2f32(1.0f, 0.0f);
 					GXPosition3f32(float_16_80420ad4, dsize_half, 0.0f);
+#else
+					GXPosition3f32(dsize_half, size, 0.0f);
+					GXTexCoord2f32(0.0f, 0.0f);
+					GXPosition3f32(size, size, 0.0f);
+					GXTexCoord2f32(1.0f, 0.0f);
+					GXPosition3f32(size, dsize_half, 0.0f);
+#endif
 					GXTexCoord2f32(1.0f, 1.0f);
 					GXPosition3f32(dsize_half, dsize_half, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
@@ -767,6 +787,8 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
+#ifdef MUST_MATCH
 const f32 float_32_80420abc = 32.0f;
 const f32 float_0p5_80420ad0 = 0.5f;
 const f32 float_16_80420ad4 = 16.0f;
+#endif

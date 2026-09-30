@@ -2623,7 +2623,12 @@ Linked seven more wave-28 units: `eff_majinai`, `eff_hibashira`, `eff_teresa`, `
 Wave 28's recipe on the next 48 dol files (units with one or two open functions), 02:42-03:55, from main 1b631ac: all 48
 merged cleanly. **25 of 48 reached 100%, 13 improved, 10 unchanged, 0 worse**, confirming wave 28. Fixed at collection:
 four units whose data got worse (deleted named definitions and .sbss2 objects in opuku_jetwrain, externs for constants
-the unit pools itself in snow_dust and kemutest, a removed double in starpoint).
+the unit pools itself in snow_dust and kemutest, a removed double in starpoint). The wave also fixed three bugs on
+main: crane_timing's 0x3EB fall-through, opuku_jetwrain's TEV register, and release's case 2 fall-through.
+
+**Follow-ups:** `BattleActionCommandGetDifficulty` returns a word (`lbz r3,0x1cbd(r3); blr`), but battle_ac.h types it
+`s8`, so ac_stick_keep_left calls it through a function-pointer cast; romfont's glyph width is `u16` (the asm uses
+`lhz`), but include/romfont.h types it `s16`.
 
 ## Wave 27: the REL finishing pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 

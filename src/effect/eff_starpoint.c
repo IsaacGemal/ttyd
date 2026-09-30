@@ -198,7 +198,6 @@ void effStarPointMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 1, effStarPointDisp, effect);
 }
 
-// NONMATCHING (99.61%): instructions differ; see check.py
 void effStarPointDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     StarPointData* data = effect->userdata;

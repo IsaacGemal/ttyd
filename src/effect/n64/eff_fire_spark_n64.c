@@ -325,9 +325,13 @@ void effFireSparkDisp(CameraId camId, void* param) {
         GXLoadPosMtxImm(m0, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
         PSMTXScale(m2, float_0p03125_8041eea0, float_0p0078125_8041eea4, float_0_8041eea8);
-        // The original passes literal 0.0f here (not the named float_0_8041eea8); that is what
-        // makes the signed i%4*32 conversion schedule its constant loads as the original does.
+#ifdef MUST_MATCH
+        // Match-only: literal 0.0f instead of the named float_0_8041eea8 makes the signed i%4*32 conversion
+        // schedule its constant loads as the original does. It adds an anonymous 0.0 to .sdata2.
         PSMTXTrans(m0, 0.0f, (f32)(i % 4 * 32), 0.0f);
+#else
+        PSMTXTrans(m0, float_0_8041eea8, (f32)(i % 4 * 32), float_0_8041eea8);
+#endif
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
         PSMTXScale(m2, float_0p03125_8041eea0, float_0p03125_8041eea0, float_0_8041eea8);

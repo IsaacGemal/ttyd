@@ -169,3 +169,4 @@ void effKamekiTornadeMain(EffectEntry* effect) {
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKamekiTornadeDisp, effect);
 }
+#pragma opt_common_subs reset

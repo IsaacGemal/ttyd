@@ -120,7 +120,7 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 // the original emits it after `lfs f2, data->y`. Tried literal/inline/enum/const forms, named
 // count temps, evaluation-order and duplicated-call shapes, and the opt/scheduling pragmas (and
 // several compiler versions); the hoist is a scheduler choice that could not be steered from C.
-// (2) case 6 is fixed: naming the 0.9f constant (`k`) keeps field_0x28 + 18.0f in f2, double_to_int
+// (2) case 6 is fixed under MUST_MATCH: naming the 0.9f constant (`k`) keeps field_0x28 + 18.0f in f2, double_to_int
 // in f3 and 0.9f in f1, matching retail.
 // NONMATCHING (99.15%): only the case 0 `li r4, 7` hoist remains.
 void effFireFlowerMain(EffectEntry* effect) {
@@ -135,7 +135,9 @@ void effFireFlowerMain(EffectEntry* effect) {
 	s32 timer;
 	s32 state;
 	f32 fx;
+#ifdef MUST_MATCH
 	f32 k;
+#endif
 
 	disp.x = data->x;
 	disp.y = data->y;
@@ -217,9 +219,14 @@ void effFireFlowerMain(EffectEntry* effect) {
 		break;
 	case 6:
 		data->field_0x34 = 0;
+#ifdef MUST_MATCH
 		k = 0.9f;
 		data->field_0x28 += 18.0f;
 		data->field_0x3C = (s32)((f32)data->field_0x3C * k);
+#else
+		data->field_0x28 += 18.0f;
+		data->field_0x3C = (s32)((f32)data->field_0x3C * 0.9f);
+#endif
 		if (data->field_0x28 >= 720.0f) {
 			data->field_0x28 = 720.0f;
 			data->state++;

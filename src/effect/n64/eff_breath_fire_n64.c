@@ -132,9 +132,9 @@ inline Vec initializeVec(Vec* input) {
 
 // Matching notes: the zero vector, the int->float magic and the two mode-1 doubles are all compiler-
 // generated anonymous pool constants here, which puts .rodata exactly at vec+0, magic+0x10, 0.008+0x18,
-// 0.3+0x20 (the given named definitions emitted first and shifted every base+offset load). Writing the
-// speed term as `float_4 * (f32)... / float_10` (rather than `(f32)... * float_4`) makes mwcc hoist the
-// float_4 load into f3 first, matching the original's schedule.
+// 0.3+0x20 (the given named definitions emitted first and shifted every base+offset load). Under MUST_MATCH
+// the speed term is `float_4 * (f32)... / float_10` (rather than `(f32)... * float_4`), which makes mwcc
+// hoist the float_4 load into f3 first, matching the original's schedule.
 void effBreathFireMain(EffectEntry* effect) {
 	s32 life;
 	effBreathFireData* data = effect->userdata;
@@ -143,7 +143,11 @@ void effBreathFireMain(EffectEntry* effect) {
 	Vec position = initializeVec((Vec*)&data->field_0x0C);
 	EffectEntry* newEffect;
 
+#ifdef MUST_MATCH
 	data->field_0x5C = float_4_8041ea94 * (f32)data->field_0x4C / float_10_8041ea98;
+#else
+	data->field_0x5C = (f32)data->field_0x4C * float_4_8041ea94 / float_10_8041ea98;
+#endif
 	data->field_0x48--;
 	data->field_0x4C++;
 	life = data->field_0x48;

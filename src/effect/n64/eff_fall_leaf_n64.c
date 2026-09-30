@@ -32,9 +32,10 @@ typedef struct effFallLeafData {
 	effFallLeafParticle particle[4]; // 0x30
 } effFallLeafData;
 
-// Header-plus-particle view of the same 0x30-byte record effFallLeafMain walks with `data++`.
-// effFallLeafData names the array form (effFallLeafN64Entry), this names the scalar fields the
-// main loop steps through; both describe the same layout.
+#ifdef MUST_MATCH
+// Match-only: a second description of the same 0x30-byte record as effFallLeafData/effFallLeafParticle.
+// Walking the loop with `data++` over this type is what reproduces the original's allocation; the
+// natural form (under #else in effFallLeafMain) walks effFallLeafData::particle instead.
 typedef struct effFallLeafMainData {
 	s32 type;        // 0x00
 	f32 x;           // 0x04
@@ -49,6 +50,7 @@ typedef struct effFallLeafMainData {
 	s32 life;        // 0x28
 	s32 counter;     // 0x2C
 } effFallLeafMainData;
+#endif
 
 extern const u32 dat_8041edb0;
 extern const u32 dat_8041edb4;
@@ -172,6 +174,7 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 // call so the value stays live and is kept in a callee-saved FPR, which is also what schedules it
 // ahead of the 10.0 load.
 // NONMATCHING (99.96%): the f24 (0.5) and f31 (10.0) loop-setup loads are swapped.
+#ifdef MUST_MATCH
 void effFallLeafMain(EffectEntry* effect) {
 	effFallLeafMainData* data = effect->userdata;
 	Vec position2;
@@ -252,6 +255,71 @@ void effFallLeafMain(EffectEntry* effect) {
 	}
 	dispEntry(4, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
 }
+#else
+void effFallLeafMain(EffectEntry* effect) {
+	effFallLeafData* data = effect->userdata;
+	effFallLeafParticle* particle;
+	Vec position2;
+	Vec position;
+	s32 type;
+	s32 life;
+	s32 counter;
+	s32 i;
+	s32 idx;
+	f32 s;
+	f32 t;
+
+	position = vec3_802fa538;
+	position.x = data->x;
+	position.y = data->y;
+	position.z = data->z;
+	position2 = position;
+
+	data->life--;
+	data->counter++;
+	if (data->life < 0) {
+		effDelete(effect);
+		return;
+	}
+	counter = data->counter;
+	type = data->type;
+	life = data->life;
+	if (counter < 10) {
+		data->field_0x24 = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->field_0x24) + (f32)data->field_0x24);
+	}
+	if (life < 10) {
+		data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041edd8);
+	}
+	idx = counter + 20;
+	i = 1;
+	particle = &data->particle[0];
+	for (; i < effect->count; i++, particle++, idx += 20) {
+		s = (f32)sin(float_6p2832_8041eddc * (float_2_8041ede0 * particle->field_0x18) / float_360_8041ede4);
+		particle->field_0x14 += float_neg0p05_8041ede8;
+		t = float_0p2_8041edec * s;
+		particle->field_0x10 += t;
+		switch (type) {
+		case 0:
+		case 2:
+		case 3:
+		case 4:
+			particle->field_0x10 *= float_0p94_8041edf0;
+			particle->field_0x14 *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * particle->field_0x18 / float_360_8041ede4) + float_0p95_8041edf4;
+			break;
+		case 1:
+			particle->field_0x14 += float_neg0p05_8041ede8;
+			particle->field_0x10 *= float_0p92_8041edfc;
+			break;
+		}
+		particle->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
+		particle->field_0x18 += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * particle->field_0x1C / float_360_8041ede4);
+		particle->field_0x20 += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (particle->field_0x1C * float_0p5_8041ee04) / float_360_8041ede4);
+		particle->x += particle->field_0x10;
+		particle->y += particle->field_0x14;
+	}
+	dispEntry(4, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
+}
+#endif
 
 void effFallLeafDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;

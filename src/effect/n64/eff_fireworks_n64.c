@@ -125,9 +125,10 @@ EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a
 	return entry;
 }
 
-// effFireworksMakeVec builds the display-space position from the anonymous zero literal:
-// MWCC coalesces that literal with vec3_802fa600 and schedules the three field stores the
-// way the target prologue does (the same shape as eff_vapor_n64's makeVec).
+#ifdef MUST_MATCH
+// Match-only trick: builds the position from an anonymous zero-vector literal, which schedules the field
+// stores the way the target prologue does (the same shape as eff_vapor_n64's makeVec). The original loads
+// the named vec3_802fa600 instead, so this adds a duplicate zero vector to .rodata.
 static inline Vec effFireworksMakeVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;
@@ -135,6 +136,7 @@ static inline Vec effFireworksMakeVec(f32 x, f32 y, f32 z) {
 	temp.z = z;
 	return temp;
 }
+#endif
 
 void effFireworksMain(EffectEntry* effect) {
 	effFireworksData* data = effect->userdata;
@@ -146,7 +148,14 @@ void effFireworksMain(EffectEntry* effect) {
 	f32 sinAngle;
 	s32 b;
 
+#ifdef MUST_MATCH
 	position = effFireworksMakeVec(data->x, data->y, data->z);
+#else
+	position = vec3_802fa600;
+	position.x = data->x;
+	position.y = data->y;
+	position.z = data->z;
+#endif
 	position2 = position;
 
 	if (effect->flags & 4) {
@@ -182,9 +191,9 @@ void effFireworksMain(EffectEntry* effect) {
 		angle = float_6p2832_8041ef28 * (f32)(counter * 90 >> 5) / float_360_8041ef2c;
 		sinAngle = (f32)sin(angle);
 #ifdef MUST_MATCH
-		// The literal 80.0f (not float_80_8041ef58) pools to the same .sdata2 slot but lets MWCC
-		// coalesce the constant into f0 for both fnmsubs operands; the named extern leaves it in
-		// a third FPR and rotates the conversion/constant registers (f0/f1/f6 vs f1/f0/f5).
+		// The literal 80.0f (not float_80_8041ef58) lets MWCC keep the constant in f0 for both fnmsubs
+		// operands; the named extern leaves it in a third FPR and rotates the conversion/constant
+		// registers (f0/f1/f6 vs f1/f0/f5). It adds an anonymous 80.0 to .sdata2 next to the named one.
 		data->field_0x60[counter & 3] =
 			data->y - data->field_0x14 * (f32)b - (80.0f - 80.0f * sinAngle);
 #else

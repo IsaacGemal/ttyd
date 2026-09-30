@@ -722,9 +722,10 @@ inline Vec initializeVec(Vec* input) {
 }
 
 
-extern u8 lbl_803B70C0[];
-// The original reaches this file's .data tables from the section anchor lbl_803B70C0.
 #ifdef MUST_MATCH
+// lbl_803B70C0 is evt_memcard's last object; the original reaches the wakka tables that follow it
+// as offsets from that symbol.
+extern u8 lbl_803B70C0[];
 #define DATA_AT(off, sym) (base + (off))
 #else
 #define DATA_AT(off, sym) ((u8*)(sym))
@@ -737,7 +738,9 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
     s32 temp_r24;
     EffUltraHammerData *data;
     int i;
+#ifdef MUST_MATCH
     u8* base;
+#endif
     Mtx spC0;
     Mtx sp90;
     Mtx sp60;
@@ -746,7 +749,9 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
     u32 j;
     
     effect = param;
+#ifdef MUST_MATCH
     base = lbl_803B70C0;
+#endif
     data = effect->userdata;
     temp_r31 = camGetPtr(camId);
     temp_r24 = data->unk0;

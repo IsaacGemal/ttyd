@@ -283,9 +283,14 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			xEnd = 0;
 		}
 		iPos = 0x18 + i * 0x10;
+#ifdef MUST_MATCH
 		xEnd += 0x10;
 		xBase += iPos;
 		xEnd += iPos;
+#else
+		xBase += iPos;
+		xEnd += iPos + 0x10;
+#endif
 		fieldBase = xBase << 2;
 		fieldEnd = xEnd << 2;
 

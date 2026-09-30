@@ -12,11 +12,14 @@
 #include <dolphin/mtx.h>
 
 // .sdata2 float constants (named after their original addresses).
-// float_0_8041e8ac is defined here (not just declared) so the file's 0.0f literals pool with the
-// original symbol instead of an anonymous @N; objdiff compares the relocation target by name.
 extern const f32 float_deg2rad_8041e8a8;
 extern const f32 float_0_8041e8ac;
+#ifdef MUST_MATCH
+// Match-only: defining float_0_8041e8ac here makes the compiler fold its uses to 0.0 immediates, as the
+// original's code does, and objdiff pairs the named object. The original has one 0.0 in .sdata2; this
+// adds an anonymous duplicate next to it.
 const f32 float_0_8041e8ac = 0.0f;
+#endif
 extern const f32 float_0p0625_8041e8b0;
 extern const f32 float_1_8041e8b4;
 extern const f32 float_0p0039062_8041e8b8;
@@ -319,9 +322,8 @@ static inline GXColor akariColorPart(s32 r, s32 g, s32 b, s32 a) {
 }
 #endif
 
-// The two integer-to-float PSMTXTrans calls use 0.0f literals; naming float_0_8041e8ac there makes mwcc hoist
-// it into a fourth fpr, which grows the frame and shifts every local. Defining the constant in this unit (the
-// original's .sdata2 does) instead lets the literals pool with it, so objdiff sees the original symbol.
+// Naming float_0_8041e8ac in the two integer-to-float PSMTXTrans calls would make mwcc hoist it into a fourth
+// fpr, which grows the frame and shifts every local, so they use 0.0f literals.
 // NONMATCHING (99.17%): only the loop-setup order of `li r29,1` (i) and `addi r30,r30,0x44`
 // (part = data->particles) differs, the same mwcc scheduler artifact eff_akari_pose_n64.c reports.
 void effAkariChargeDisp(CameraId camId, void* param) {
