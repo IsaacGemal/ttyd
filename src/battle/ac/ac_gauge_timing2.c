@@ -54,12 +54,19 @@ extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// NONMATCHING (91.25%): logic matches; MWCC's register allocator assigns work/disp to r23/r22
-// instead of r25/r23, and pool-emits the s32->f32 conversion constant at .rodata 0xC8 instead of
-// reusing double_to_int at 0x80. Byte size (1628) matches.
+// optimize_for_size: the original saves r23-r31 with `stmw` and keeps work in r25; the default
+// (-O4,p) model assigns work to r24 and emits individual saves, and scores 91.25%.
+#pragma optimize_for_size on
+// Logic, constants and every load/store offset match (byte size 1628 matches). The remaining diffs
+// are register allocation (dec=r29 vs r27, autoFlag=r28 vs r26, the loop-index and per-loop SFX-name
+// temporaries) and the pooled s32->f32 conversion double: MWCC emits a local literal at .rodata 0xD0
+// instead of the named double_to_int_80300060 at 0x80. That literal is shared with the original's
+// actionCommandDisp, which this unit does not define (0%, `*UND*`), so the conversion can't land at
+// 0x80 until actionCommandDisp is written.
+// NONMATCHING (96.47%): register allocation and the pooled int->float conversion double differ.
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
+	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	BattleUnit* unit = work->actionCommands.mAcUnit;
 	s32 autoFlag = 0;
 	s32 i;
@@ -173,13 +180,16 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 
 		if (autoFlag) {
 			s32 found = 0;
+			autoFlag = 0;
 			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
 				if (dec->state[i] == 0 && __fabs(dec->progress - dec->value[i]) <= double_6_80300058) {
 					found = 1;
 					break;
 				}
 			}
-			autoFlag = found;
+			if (found) {
+				autoFlag = 1;
+			}
 		}
 
 		if (triggered || autoFlag) {
@@ -263,6 +273,8 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	}
 	return 1;
 }
+
+#pragma optimize_for_size reset
 
 s32 battleAcResult_GaugeTiming2(BattleWork* work) {
 	return work->actionCommands.result;

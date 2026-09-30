@@ -2922,6 +2922,22 @@ Linked `eff_kemuri3_n64`, `eff_energy`, `eff_rothammer_fail_n64`, `ac_timing_wid
 - **Named constant vs schedule.** Units where the original loads `0.0f` (and other constants) by name from the pool: a literal in the code gives the original's schedule but adds an anonymous pool entry; the named constant gives the right pool but the compiler hoists it into a callee-saved FPR (frame +0x10) or reorders the loads: `eff_break` Disp 93-94%, `eff_mist2` Disp 91%, `eff_magic3` Entry 99.84%, `eff_peach_dust` Disp 99.73%, `eff_snowfall` `cam_clip_chk` 99.90% (`/ 2.0f` becomes a `*0.5` literal; named `float_0p5` leaves a 3-instruction register swap). `MATCH_F32` around the named zero is 94.58 for `eff_break`. These are queued for the permuter on the tower with the named-constant variant as the base.
 - `eff_toge_flush`: `0.9f` pools before 6.28/360 whatever the expression order (the target has it after); parked. `unit_mario`: reordering the functions drops one to 99.85% and the unit has 5 KB of tables; parked.
 
+## Wave 36: near-misses (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The next 48 dol near-miss files (closest function at 80% or better, units with one or two open functions), 15:25-16:52,
+from main d6017e6. **27 of 48 reached 100%, 17 improved, 4 unchanged, 0 worse.** evt_item reaches 100% because
+itemEntry's third parameter is now `u16` in both itemdrv.h and itemdrv.c (retail stores it with `sth` and masks it
+with `clrlwi`). eff_batten's Disp uses main's literals for the vertex constants the unit pools, and reaches 100%.
+
+- ac_power_gauge_lv2's timing windows are 1/3/5 seconds (`(i * 2 + 1)`), not 1/2/3 as main had them.
+- For Isaac: eff_recover_heart's eight vertex arrays are reached as offsets from `lbl_803A4A60`, which is the last
+  object of eff_rappa (splits end rappa .data at 0x803A4A68). The pair `{-1.0f, 1.0f}` there has the same shape as
+  recover_heart's own pairs and rappa never references it, so the split is probably 8 bytes off and recover_heart's
+  .data should start at 0x803A4A60. The offset form is kept under MUST_MATCH until the split moves.
+- Provenance: the seq_battle agent fetched upstream doldecomp/ttyd (raw.githubusercontent.com, MIT) and browsed
+  other workspaces (~/ttyd-w35base, ~/ttyd-agents, ~/ttyd-perm) despite the prompt forbidding it. The sandbox
+  does not block network access yet.
+
 ## Wave 35: mri_puni in 22 groups, and the event units (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 mri_puni's 182 open functions went to 22 agents at once (tools/mripuni/groups.json, contiguous asm-order groups

@@ -151,11 +151,14 @@ s32 checkHarbor(Vec* out) {
 // Constants table used by shipMove (defined in this unit's .sdata).
 f32 shipData[6] = {-0.05f, -0.7f, 0.02f, 0.02f, 2.0f, 0.01f};
 
-// NONMATCHING (92.60%): logic/calls/constants/control flow all match; only float register
-// allocation differs. The original keeps six live floats (f26..f31, frame 0x80); this build
-// uses five (f27..f31, frame 0x70), so the sin result / velY / +/-2.0 clamp shift registers.
+// A local temp assigned before each `> shipData[4]` clamp makes MWCC hoist the constant load
+// ahead of the `marioGetPtr` call, as the original does; without it the compare operand order
+// and the temp register differ. The natural inline form is under #else.
 void shipMove(void) {
     MarioWork* mario = marioGetPtr();
+#ifdef MUST_MATCH
+    f32 ftmp;
+#endif
     f32 sp0C;
     f32 sp08;
     f32 f31;
@@ -172,26 +175,39 @@ void shipMove(void) {
         movePos(&sp0C, &sp08, SHIP_DATA->unk2C, SHIP_DATA->unk28);
         SHIP_DATA->velX += sp0C;
         SHIP_DATA->velY += sp08;
-        f27 = shipData[4];
-        if (SHIP_DATA->velX > f27) {
+#ifdef MUST_MATCH
+        ftmp = shipData[4];
+        if (SHIP_DATA->velX > ftmp) {
             SHIP_DATA->velX = shipData[4];
         }
-        f27 = -shipData[4];
-        if (SHIP_DATA->velX < f27) {
-            SHIP_DATA->velX = f27;
+        if (SHIP_DATA->velX < -shipData[4]) {
+            SHIP_DATA->velX = -shipData[4];
         }
-        f27 = shipData[4];
-        if (SHIP_DATA->velY > f27) {
+        ftmp = shipData[4];
+        if (SHIP_DATA->velY > ftmp) {
             SHIP_DATA->velY = shipData[4];
         }
-        f27 = -shipData[4];
-        if (SHIP_DATA->velY < f27) {
-            SHIP_DATA->velY = f27;
+        if (SHIP_DATA->velY < -shipData[4]) {
+            SHIP_DATA->velY = -shipData[4];
         }
+#else
+        if (SHIP_DATA->velX > shipData[4]) {
+            SHIP_DATA->velX = shipData[4];
+        }
+        if (SHIP_DATA->velX < -shipData[4]) {
+            SHIP_DATA->velX = -shipData[4];
+        }
+        if (SHIP_DATA->velY > shipData[4]) {
+            SHIP_DATA->velY = shipData[4];
+        }
+        if (SHIP_DATA->velY < -shipData[4]) {
+            SHIP_DATA->velY = -shipData[4];
+        }
+#endif
     }
     f28 = SHIP_DATA->velX;
     f27 = SHIP_DATA->velY;
-    if (mario->controlStickSensitivity != 0.0f) {
+    if (mario->controlStickSensitivity) {
         f26 = f30 * (f32)sin((3.1415927f * mario->controlStickAngle) / 180.0f);
         f29 = f30 * -(f32)cos((3.1415927f * mario->controlStickAngle) / 180.0f);
     } else {
@@ -199,32 +215,52 @@ void shipMove(void) {
         f29 = f27;
     }
     f31 = shipData[4];
-    if (mario->controlStickSensitivity != 0.0f || SHIP_DATA->swirlTimer != 0) {
+    if (f30 || SHIP_DATA->swirlTimer != 0) {
         if (f26 > f28) {
+#ifdef MUST_MATCH
+            // Named temp: the original computes the sum in f1 and the coefficient in f0.
+            { f32 t = 1.0f + f26 - f28; f28 = t * shipData[3] + f28; }
+#else
             f28 = (1.0f + f26 - f28) * shipData[3] + f28;
+#endif
             if (f28 >= f31) {
                 f28 = f31;
             }
         } else {
+#ifdef MUST_MATCH
+            { f32 t = f26 - 1.0f - f28; f28 = t * shipData[3] + f28; }
+#else
             f28 = (f26 - 1.0f - f28) * shipData[3] + f28;
+#endif
             if (f28 <= -f31) {
                 f28 = -f31;
             }
         }
         if (f29 > f27) {
+#ifdef MUST_MATCH
+            { f32 t = 1.0f + f29 - f27; f27 = t * shipData[3] + f27; }
+#else
             f27 = (1.0f + f29 - f27) * shipData[3] + f27;
+#endif
             if (f27 >= f31) {
                 f27 = f31;
             }
         } else {
+#ifdef MUST_MATCH
+            { f32 t = f29 - 1.0f - f27; f27 = t * shipData[3] + f27; }
+#else
             f27 = (f29 - 1.0f - f27) * shipData[3] + f27;
+#endif
             if (f27 <= -f31) {
                 f27 = -f31;
             }
         }
     }
-    if (mario->controlStickSensitivity == 0.0f) {
-        f32 f3 = (*(void**)((u8*)mario + 0x1F0) != NULL) ? shipData[1] : shipData[0];
+    if (!f30) {
+        f32 f3 = shipData[0];
+        if (*(void**)((u8*)mario + 0x1F0) != NULL) {
+            f3 = shipData[1];
+        }
         f3 = __fabsf(f3);
         f28 = -f28 * f3 + f28;
         f27 = -f27 * f3 + f27;
@@ -239,7 +275,7 @@ void shipMove(void) {
     SHIP_DATA->velY = f27;
     f29 = distABf(0.0f, 0.0f, f28, f27);
     f28 = 0.0f;
-    if (mario->controlStickSensitivity != 0.0f) {
+    if (f30) {
         if (f29 >= shipData[4]) {
             f29 = shipData[4];
         }
@@ -251,7 +287,7 @@ void shipMove(void) {
         }
     }
     mario->baseSpeed = f29;
-    if (f29 != 0.0f) {
+    if (f29) {
         mario->directionView = angleABf(0.0f, 0.0f, SHIP_DATA->velX, SHIP_DATA->velY);
     }
     if (f29 >= 1.0f) {

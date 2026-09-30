@@ -199,17 +199,24 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (98.27%): accumulator seeds (MATCH_F32) land in f4/f3 and MWCC computes the
-// first fmsubs into a scratch register instead of accumulating in place; the release-loop counter
-// is r26 vs r29; both `type == 7` guards are bne-first vs retail's beq + b.
+// opt_lifetimes off is required for the polynomial accumulators: the default lifetime analysis
+// splits the seed load (f4) from the first fmsubs result (f1) instead of accumulating in place
+// (seed f2, fmsubs f2,f2); with it on the function scores 99.06%.
+#pragma opt_lifetimes off
+// NONMATCHING (99.93%): instruction sequence matches except the early-release loop's work pointer
+// lands in r30; retail copies data into r27 (the only registers the off-lifetime analyser cannot
+// split back).
 void effMObjBrokenMain(EffectEntry* effect) {
 	MobjBrokenWork* data = effect->userdata;
+	MobjBrokenWork* work;
+	MobjBrokenWork* work2;
+	s32 j;
 	Vec position;
 	Vec disp;
+	s32 i;
 	s32 type;
 	s32 inBattle;
 	s32 done = 0;
-	s32 i;
 	f32 d;
 
 	disp = vec3_802fe628;
@@ -220,20 +227,21 @@ void effMObjBrokenMain(EffectEntry* effect) {
 	type = data->type;
 	inBattle = gp->inBattle != 0;
 	if (effect->flags & 4) {
-		data = effect->userdata;
-		done = 0;
-		for (i = 0; i < effect->count; i++, data++) {
-			if (data->poseId != -1) {
-				animPoseRelease(data->poseId);
+		work = effect->userdata;
+		for (done = 0; done < effect->count; done++, work++) {
+			if (work->poseId != -1) {
+				animPoseRelease(work->poseId);
 			}
 		}
 		effDelete(effect);
 		return;
 	}
-	if (type == 7) {
+	switch (type) {
+	case 7:
 		if (!animGroupBaseAsync(str_802FE658, inBattle, NULL)) {
 			return;
 		}
+		break;
 	}
 	{
 	f32 kpi, k360, k2pi, k1, k16605, k4967, kneg100;
@@ -248,11 +256,13 @@ void effMObjBrokenMain(EffectEntry* effect) {
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		if (type == 7) {
+		switch (type) {
+		case 7:
 			if (data->poseId == -1) {
 				data->poseId = animPoseEntry(str_802FE658, inBattle);
 				animPoseSetAnim(data->poseId, (i & 1) ? str_80421104 : str_80421108, TRUE);
 			}
+			break;
 		}
 		{
 			f32 s = MATCH_F32(float_0p00761_8042110c);
@@ -336,10 +346,10 @@ void effMObjBrokenMain(EffectEntry* effect) {
 	}
 	}
 	if (done >= effect->count - 1) {
-		data = effect->userdata;
-		for (i = 0; i < effect->count; i++, data++) {
-			if (data->poseId != -1) {
-				animPoseRelease(data->poseId);
+		work2 = effect->userdata;
+		for (j = 0; j < effect->count; j++, work2++) {
+			if (work2->poseId != -1) {
+				animPoseRelease(work2->poseId);
 			}
 		}
 		effDelete(effect);
@@ -351,6 +361,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effMObjBrokenDisp2, effect);
 	}
 }
+#pragma opt_lifetimes reset
 
 EffectEntry* effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;

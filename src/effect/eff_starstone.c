@@ -566,15 +566,46 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xd); \
 	GXSetArray(0xd, base + (tex), 4)
 
+// The original walks both tables with pointer increments: i first, then dl, then the size pointer in
+// the branch delay slot, with the counter in r27 and dl/sz in r25/r26. The block-scoped pointers and
+// the explicit `i = 0` before `sz = ...` make MWCC emit that allocation; the indexed form is the
+// natural equivalent.
+#ifdef MUST_MATCH
 #define STARSTONE_DL_LOOP(off, sztbl, n) \
-	dl = (void**)(base + (off)); \
-	sz = (sztbl); \
-	for (i = 0; i < (n); i++) { \
-		GXCallDisplayList(dl[i], sz[i] << 5); \
+	{ \
+		u8* sz; \
+		void** dl; \
+		dl = (void**)(base + (off)); \
+		i = 0; \
+		sz = (sztbl); \
+		for (; i < (n); i++) { \
+			GXCallDisplayList(*dl, *sz << 5); \
+			sz++; \
+			dl++; \
+		} \
 	}
+#else
+#define STARSTONE_DL_LOOP(off, sztbl, n) \
+	for (i = 0; i < (n); i++) { \
+		GXCallDisplayList(((void**)(base + (off)))[i], (sztbl)[i] << 5); \
+	}
+#endif
 
-// NONMATCHING (98.63%): 25 instructions differ, 3 missing, plus register differences.
+// Passing the constant GXColor in by value keeps the by-value temporary in the slot the original
+// uses; building the colour in the caller puts it 4 bytes low (same shape as effBattenDisp2).
+#ifdef MUST_MATCH
+static inline GXColor starStoneTevColor(GXColor c, effStarStoneData* data) {
+	c.r = data->field_0x5C;
+	c.g = data->field_0x5D;
+	c.b = data->field_0x5E;
+	c.a = data->field_0x5F;
+	return c;
+}
+#endif
+
+#pragma opt_lifetimes off // the default lifetime analysis puts the loop counter in r25, not r27
 void effStarStoneDisp_1(CameraId camId, void* param) {
+	u32 i;
 	u8* base = lbl_803AC080;
 	EffectEntry* effect = param;
 	effStarStoneData* data = effect->userdata;
@@ -584,11 +615,6 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotMtx;
 	GXTexObj texObj;
-	GXColor color;
-	s32 i;
-	void** dl;
-	u8* sz;
-
 	mapSetMaterialFog();
 	GXSetArray(0xb, color_tbl[data->field_0x0], 4);
 	GXSetNumChans(1);
@@ -603,12 +629,18 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
 	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-	color = *(GXColor*)&unk_804232e0;
-	color.r = data->field_0x5C;
-	color.g = data->field_0x5D;
-	color.b = data->field_0x5E;
-	color.a = data->field_0x5F;
-	GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e0, data));
+#else
+	{
+		GXColor color = *(GXColor*)&unk_804232e0;
+		color.r = data->field_0x5C;
+		color.g = data->field_0x5D;
+		color.b = data->field_0x5E;
+		color.a = data->field_0x5F;
+		GXSetTevColor(1, color);
+	}
+#endif
 
 	PSMTXTrans(mtx, data->field_0x8, data->field_0xC, data->field_0x10);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
@@ -661,12 +693,18 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
 	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-	color = *(GXColor*)&unk_804232e4;
-	color.r = data->field_0x5C;
-	color.g = data->field_0x5D;
-	color.b = data->field_0x5E;
-	color.a = data->field_0x5F;
-	GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e4, data));
+#else
+	{
+		GXColor color = *(GXColor*)&unk_804232e4;
+		color.r = data->field_0x5C;
+		color.g = data->field_0x5D;
+		color.b = data->field_0x5E;
+		color.a = data->field_0x5F;
+		GXSetTevColor(1, color);
+	}
+#endif
 
 	PSMTXTrans(mtx, data->field_0x8, data->field_0xC, data->field_0x10);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
@@ -678,10 +716,11 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetCurrentMtx(0);
 	if (type == 0) {
 		effGetTexObj(0x2e, &texObj);
+		GXLoadTexObj(&texObj, 0);
 	} else {
 		effGetTexObj(0x2f, &texObj);
+		GXLoadTexObj(&texObj, 0);
 	}
-	GXLoadTexObj(&texObj, 0);
 	GXSetBlendMode(1, 4, 5, 0);
 	GXSetZCompLoc(1);
 	GXSetAlphaCompare(7, 0, 0, 7, 0);
@@ -719,3 +758,4 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		STARSTONE_DL_LOOP(0x9b4, diamond_7_dl_1_size_tbl, 0x21);
 	}
 }
+#pragma opt_lifetimes reset

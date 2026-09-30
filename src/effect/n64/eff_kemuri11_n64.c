@@ -439,15 +439,13 @@ void effKemuri11Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri11Disp, e);
 }
 
-// NONMATCHING (96.47%): the particle-init loop's index expression is
-// strength-reduced to precomputed 2*i/3*i induction variables instead of the
-// original `subi/slwi|mulli/subfic` per-iteration form.
+// The original tests type with a switch: cases 0/1 share the 2*(i-1) form,
+// everything else (including negative types) takes the 3*(i-1) default.
 EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effKemuri11Data* data;
     s32 count;
     s32 i;
-    s32 angle;
 
     effect = effEntry();
     switch (type) {
@@ -564,26 +562,18 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
         break;
     }
 
-    angle = 30;
-    {
-        effKemuri11Data* p = data + 1;
-
-        for (i = 1; i < count + 1; i++, p++) {
-            if (type < 2) {
-                if (type >= 0) {
-                    p->field_0x4C = 1 - 2 * i;
-                }
-                else {
-                    p->field_0x4C = 2 - 3 * i;
-                }
-            }
-            else {
-                p->field_0x4C = 2 - 3 * i;
-            }
-            p->field_0x34 = float_0_8041f4fc;
-            p->field_0x30 = angle;
-            angle += 30;
+    for (i = 1, data++; i < count + 1; i++, data++) {
+        switch (type) {
+        case 0:
+        case 1:
+            data->field_0x4C = -1 - (i - 1) * 2;
+            break;
+        default:
+            data->field_0x4C = -1 - (i - 1) * 3;
+            break;
         }
+        data->field_0x34 = float_0_8041f4fc;
+        data->field_0x30 = (f32)(i * 30);
     }
 
     if (type == 6) {

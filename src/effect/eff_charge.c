@@ -14,22 +14,6 @@ extern const f64 double_to_int_802f8e70;
 extern GXColor unk_80423068;
 extern GXColor unk_8042306c;
 
-extern const f32 float_1_8041e2e8;
-extern const f32 float_deg2rad_8041e2ec;
-extern const f32 float_0_8041e2f0;
-extern const f32 float_neg8_8041e2f4;
-extern const f32 float_8_8041e2f8;
-extern const f32 float_neg24_8041e2fc;
-extern const f32 float_neg12_8041e300;
-extern const f32 float_12_8041e304;
-extern const f32 float_neg36_8041e308;
-extern const f32 float_6p2832_8041e30c;
-extern const f32 float_360_8041e310;
-extern const f32 float_100_8041e314;
-extern const f32 float_0p2_8041e318;
-extern const f32 float_80_8041e31c;
-extern const f32 float_9_8041e320;
-extern const f32 float_30_8041e324;
 
 // NONMATCHING (80.49%): the s32->f32 conversion pool symbol plus the schedule/register allocation of the
 // particle-init loop (frame 0x80 vs 0x70, extra conversion spills, A/B interleave order).
@@ -83,12 +67,12 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
 
     for (i = 1; i < 0x1f; i += 2) {
         elem = &data[i];
-        elem[0].angle1 = float_9_8041e320 * (float_360_8041e310 * (f32)(i - 1)) / float_30_8041e324;
-        elem[0].angle2 = float_0_8041e2f0;
+        elem[0].angle1 = 9.0f * (360.f * (f32)(i - 1)) / 30.f;
+        elem[0].angle2 = 0.0f;
         elem[0].radius = (f32)((i - 1) * 100 / 30);
         elem[0].field_0x00 = 0;
-        elem[1].angle1 = float_9_8041e320 * (float_360_8041e310 * (f32)i) / float_30_8041e324;
-        elem[1].angle2 = float_0_8041e2f0;
+        elem[1].angle1 = 9.0f * (360.f * (f32)i) / 30.f;
+        elem[1].angle2 = 0.0f;
         elem[1].radius = (f32)(i * 100 / 30);
         elem[1].field_0x00 = 0;
     }
@@ -141,46 +125,57 @@ void effChargeMain(EffectEntry* effect) {
         f32 angle2;
         radius = data->radius;
         angle2 = data->angle2;
-        a1 = float_6p2832_8041e30c * data->angle1 / float_360_8041e310;
+        a1 = 6.2831855f * data->angle1 / 360.f;
         s1 = (f32)sin(a1);
         c1 = (f32)cos(a1);
-        a2 = float_6p2832_8041e30c * angle2 / float_360_8041e310;
+        a2 = 6.2831855f * angle2 / 360.f;
         s2 = (f32)sin(a2);
         c2 = (f32)cos(a2);
         data->x = radius * s1 * c2;
         data->y = radius * c1 * c2;
         data->z = radius * s2;
-        data->alpha = (s32)(float_100_8041e314 - data->radius) * 510 / 100;
+        data->alpha = (s32)(100.f - data->radius) * 510 / 100;
         if (data->alpha > 0xff) {
             data->alpha = 0xff;
         }
-        data->scale = float_0p2_8041e318 + data->radius / float_80_8041e31c;
+        data->scale = 0.2f + data->radius / 80.f;
         data->radius -= (f32)((i & 3) * 2 + 2);
-#ifdef MUST_MATCH
         if (data->radius < 0.0f) {
             data->radius = 0.0f;
             data->scale = 0.0f;
         }
-#else
-        if (data->radius < float_0_8041e2f0) {
-            data->radius = float_0_8041e2f0;
-            data->scale = float_0_8041e2f0;
-        }
-#endif
         data->angle1 += (f32)(odd ? 5 : 2);
         data->angle2 += (f32)(odd ? 2 : 5);
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effChargeDisp, effect);
 }
 
-// NONMATCHING (88.56%): the GXColor args are built one slot above the outgoing copy (target builds below and
-// copies up), and the GXPosition3f32/GXTexCoord2f32 blocks CSE the vertex constants into f1-f4 instead of
-// reloading each into f0 per store; one `fmuls` operand order also differs.
+#ifdef MUST_MATCH
+// Build each GXColor in a helper so the by-value argument is copied into the outgoing slot retail uses.
+static inline GXColor effChargeColorBase(u8 r, u8 g, u8 b) {
+    GXColor c = unk_80423068;
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    return c;
+}
+static inline GXColor effChargeColorElem(u8 r, u8 g, u8 b, u8 a) {
+    GXColor c = unk_8042306c;
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = a;
+    return c;
+}
+#endif
+// NONMATCHING (99.91%): only stack slots differ. Retail builds the first tev-color temp at 0x10 and copies it
+// up to the outgoing slot at 0x14, and the second colour's outgoing slot is 0xc; MWCC builds the first temp at
+// 0xc, copies to 0x14 and gives the second colour 0x10. `fmuls`/`fcmpu` operand order also differs.
 void effChargeDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     ChargeEffectData* data = effect->userdata;
-    GXColor color;
     GXColor color2;
+    GXColor color;
     GXTexObj tex;
     Mtx mtxF8;
     Mtx mtxC8;
@@ -197,19 +192,31 @@ void effChargeDisp(CameraId cameraId, void* param) {
     colR = data->colorR;
     colG = data->colorG;
     colB = data->colorB;
-    PSMTXScale(mtx38, data->scale, data->scale, float_1_8041e2e8);
+    PSMTXScale(mtx38, data->scale, data->scale, 1.0f);
     PSMTXTransApply(mtx38, mtx38, data->x, data->y, data->z);
     camera = camGetPtr(cameraId);
-    PSMTXRotRad(mtxC8, 'y', -camera->viewYaw * float_deg2rad_8041e2ec);
+#ifdef MUST_MATCH
+    // A named local keeps the deg2rad load in f0 and the yaw in f1, as retail orders them.
+    {
+        f32 deg = 0.017453292f;
+        PSMTXRotRad(mtxC8, 'y', -camera->viewYaw * deg);
+    }
+#else
+    PSMTXRotRad(mtxC8, 'y', -camera->viewYaw * 0.017453292f);
+#endif
     PSMTXConcat(mtx38, mtxC8, mtx38);
 
     effGetTexObj(0x1e, &tex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
 
+#ifdef MUST_MATCH
+    color = effChargeColorBase(data->field_0x3C, data->field_0x40, data->field_0x44);
+#else
     color = unk_80423068;
     color.r = data->field_0x3C;
     color.g = data->field_0x40;
     color.b = data->field_0x44;
+#endif
     GXSetTevColor(GX_TEVREG1, color);
 
     GXSetNumChans(0);
@@ -237,15 +244,19 @@ void effChargeDisp(CameraId cameraId, void* param) {
     data++;
     for (i = 1; i < effect->count; i++, data++) {
         scale = data->scale;
-        if (scale == float_0_8041e2f0) {
+        if (scale == 0.0f) {
             continue;
         }
 
+#ifdef MUST_MATCH
+        color2 = effChargeColorElem(colR, colG, colB, data->alpha);
+#else
         color2 = unk_8042306c;
         color2.r = colR;
         color2.g = colG;
         color2.b = colB;
         color2.a = data->alpha;
+#endif
         GXSetTevColor(GX_TEVREG0, color2);
 
         PSMTXTrans(mtxF8, data->x, data->y, data->z);
@@ -258,24 +269,24 @@ void effChargeDisp(CameraId cameraId, void* param) {
 
         if ((i & 1) == 0) {
                                     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-            GXPosition3f32(float_neg8_8041e2f4, float_neg8_8041e2f4, float_0_8041e2f0);
-            GXTexCoord2f32(float_0_8041e2f0, float_0_8041e2f0);
-            GXPosition3f32(float_8_8041e2f8, float_neg8_8041e2f4, float_0_8041e2f0);
-            GXTexCoord2f32(float_1_8041e2e8, float_0_8041e2f0);
-            GXPosition3f32(float_8_8041e2f8, float_neg24_8041e2fc, float_0_8041e2f0);
-            GXTexCoord2f32(float_1_8041e2e8, float_1_8041e2e8);
-            GXPosition3f32(float_neg8_8041e2f4, float_neg24_8041e2fc, float_0_8041e2f0);
-            GXTexCoord2f32(float_0_8041e2f0, float_1_8041e2e8);
+            GXPosition3f32(-8.0f, -8.0f, 0.0f);
+            GXTexCoord2f32(0.0f, 0.0f);
+            GXPosition3f32(8.0f, -8.0f, 0.0f);
+            GXTexCoord2f32(1.0f, 0.0f);
+            GXPosition3f32(8.0f, -24.0f, 0.0f);
+            GXTexCoord2f32(1.0f, 1.0f);
+            GXPosition3f32(-8.0f, -24.0f, 0.0f);
+            GXTexCoord2f32(0.0f, 1.0f);
         } else {
                                     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-            GXPosition3f32(float_neg12_8041e300, float_neg12_8041e300, float_0_8041e2f0);
-            GXTexCoord2f32(float_0_8041e2f0, float_0_8041e2f0);
-            GXPosition3f32(float_12_8041e304, float_neg12_8041e300, float_0_8041e2f0);
-            GXTexCoord2f32(float_1_8041e2e8, float_0_8041e2f0);
-            GXPosition3f32(float_12_8041e304, float_neg36_8041e308, float_0_8041e2f0);
-            GXTexCoord2f32(float_1_8041e2e8, float_1_8041e2e8);
-            GXPosition3f32(float_neg12_8041e300, float_neg36_8041e308, float_0_8041e2f0);
-            GXTexCoord2f32(float_0_8041e2f0, float_1_8041e2e8);
+            GXPosition3f32(-12.0f, -12.0f, 0.0f);
+            GXTexCoord2f32(0.0f, 0.0f);
+            GXPosition3f32(12.0f, -12.0f, 0.0f);
+            GXTexCoord2f32(1.0f, 0.0f);
+            GXPosition3f32(12.0f, -36.0f, 0.0f);
+            GXTexCoord2f32(1.0f, 1.0f);
+            GXPosition3f32(-12.0f, -36.0f, 0.0f);
+            GXTexCoord2f32(0.0f, 1.0f);
         }
     }
 }
