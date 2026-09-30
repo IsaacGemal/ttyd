@@ -225,9 +225,15 @@ s32 marioWaitDamageReturnFall(void) {
 	return 0;
 }
 
-// NONMATCHING (99.12%): case 0x14 swaps f30/f31 (original spd=f31, floorY=f30; ours the reverse) and the
-// compiler emits a second 2^52 conversion double instead of reusing double_to_int_802f32b0 (one `lfd`
-// offset); the 0x98/0xA4 Vec copies also hoist the `lwz 0x8(r30)` one instruction earlier.
+// The 0x98/0xA4 Vec copies below are copied through double-volatile casts to keep the original
+// unscheduled per-component load/store order (the plain copy hoists `lwz 0x8(r30)` and `lwz 0xC(r30)`
+// one instruction too early). That fix is worth 0.80% and is guarded by MUST_MATCH (rule 7).
+// What still differs:
+//   - case 0x14 swaps f30/f31 (original spd=f31, floorY=f30; ours the reverse) - the allocator picks the
+//     free register for floorY rather than spd. Worth ~0.078%; no source shape found that flips it.
+//   - the compiler emits its own 2^52 conversion double instead of reusing double_to_int_802f32b0, so
+//     the second `lfd` reads 0xA8(r30) instead of 0x78(r30). Worth ~0.002% (known project-wide issue).
+// NONMATCHING (99.92%): case 0x14 f30/f31 swap and the anonymous 2^52 magic double; see above.
 void mot_damage(void) {
 	MarioWork* mario;
 	HitEntry* hit;
@@ -269,8 +275,14 @@ void mot_damage(void) {
 				effSplashEntry(0, pos.x, pos.y, pos.z, 1.0f);
 			}
 		}
+#ifdef MUST_MATCH
+		// The original copies each Vec with an unscheduled per-component load/store pair.
+		*(volatile Vec*)mario->field_0x98 = *(volatile Vec*)&vec3_802f3238;
+		*(volatile Vec*)(mario->field_0x98 + 0xC) = *(volatile Vec*)&vec3_802f3244;
+#else
 		*(Vec*)mario->field_0x98 = vec3_802f3238;
 		*(Vec*)(mario->field_0x98 + 0xC) = vec3_802f3244;
+#endif
 		npcStopForEvent();
 	}
 

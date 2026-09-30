@@ -10,8 +10,18 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// Builds the zero vector from an anonymous literal so the scheduler keeps the
+// userdata load ahead of the copy (see docs/CONTEXT.md, Grind 19). The literal
+// lands in .rodata at the position the named zero vector used to occupy.
+static inline Vec makeHibashiraVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 // .rodata
-const Vec vec3_803013b8 = { 0.0f, 0.0f, 0.0f };
 const char str_803013C4[] = "EFF_hibashira";
 const char str_803013D4[] = "EFF_hibashira2";
 const char str_803013E4[] = "hibashira";
@@ -103,10 +113,6 @@ EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 
 	return entry;
 }
 
-// The vec3_803013b8 -> disp copy in the first basic block is scheduled differently:
-// MWCC emits the words 0,2,1 and hoists the copy above the userdata load; retail emits
-// 0,1,2 interleaved with the data->position loads. Every other instruction matches.
-// NONMATCHING (96.16%): first basic block scheduling only.
 void effHibashiraMain(EffectEntry* effect) {
 	HibashiraData* data;
 	HibashiraData* elem;
@@ -121,10 +127,7 @@ void effHibashiraMain(EffectEntry* effect) {
 	s32 i;
 
 	data = effect->userdata;
-	disp = vec3_803013b8;
-	disp.x = data->position.x;
-	disp.y = data->position.y;
-	disp.z = data->position.z;
+	disp = makeHibashiraVec(data->position.x, data->position.y, data->position.z);
 #ifdef MUST_MATCH
 	position = disp;
 #endif

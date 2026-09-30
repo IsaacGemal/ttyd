@@ -239,10 +239,9 @@ USER_FUNC(evt_moving_floor_free) {
 }
 
 
-// NONMATCHING (99.85%): the field_0x0C blend in the tail differs only in float
-// register allocation. The original computes `t = 1.0f - ratio` into f1 and
-// loads `start` into f2, while this build assigns f2 to `t` and f1 to `start`
-// (and therefore emits `fmuls f0, f31, f0` instead of `fmuls f0, f0, f31`).
+// The three explicit temporaries in the field_0x0C blend are what make MWCC put
+// `t = 1.0f - ratio` in f1 and the second value in f2, matching the original's
+// register allocation; the plain expression compiles to the opposite order.
 USER_FUNC(evt_moving_floor_init) {
     s32* args = event->args;
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
@@ -385,15 +384,27 @@ USER_FUNC(evt_moving_floor_init) {
         delta = ((f32*)&work->end)[work->index] - ((f32*)&work->start)[work->index];
     }
     work->speed = delta / (f32)work->field_0x68[work->index];
+#ifdef MUST_MATCH
     if (reverse != 0) {
-        f32 u = ((f32*)&work->start)[work->index] * ratio;
+        f32 a = ((f32*)&work->start)[work->index];
+        f32 b = ((f32*)&work->end)[work->index];
         f32 t = 1.0f - ratio;
-        work->field_0x0C = ((f32*)&work->end)[work->index] * t + u;
+        work->field_0x0C = b * t + a * ratio;
     } else {
-        f32 u = ((f32*)&work->end)[work->index] * ratio;
+        f32 a = ((f32*)&work->end)[work->index];
+        f32 b = ((f32*)&work->start)[work->index];
         f32 t = 1.0f - ratio;
-        work->field_0x0C = ((f32*)&work->start)[work->index] * t + u;
+        work->field_0x0C = b * t + a * ratio;
     }
+#else
+    if (reverse != 0) {
+        f32 t = 1.0f - ratio;
+        work->field_0x0C = ((f32*)&work->end)[work->index] * t + ((f32*)&work->start)[work->index] * ratio;
+    } else {
+        f32 t = 1.0f - ratio;
+        work->field_0x0C = ((f32*)&work->start)[work->index] * t + ((f32*)&work->end)[work->index] * ratio;
+    }
+#endif
     work->field_0x10 = (f32)work->field_0x68[work->index] * ratio;
     return EVT_RETURN_DONE;
 }

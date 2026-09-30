@@ -266,68 +266,7 @@ void effSstarDisp(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
-void effSstarMain(EffectEntry* effect) {
-    SstarWork* data = effect->userdata;
-    MarioWork* mario;
-    Vec position;
-    f32 distance;
-    f32 prevX, prevY, prevZ;
-    f32 hitX, hitZ;
-    f32 hitNX, hitNY, hitNZ;
-
-    mario = marioGetPtr();
-    position = initializeVec(&data->position);
-
-    if (data->type >= 2) {
-        distance = data->velX * data->velX + data->velY * data->velY + data->velZ * data->velZ;
-        if (distance > 0.01f) {
-            distance = 1.0f / sqrtf(distance);
-        }
-        prevX = data->position.x - 32.0f * (data->velX * distance);
-        prevY = data->position.y - 32.0f * (data->velY * distance);
-        prevZ = data->position.z - 32.0f * (data->velZ * distance);
-        distance = 64.0f;
-        if (data->field_0x0 != 0 && data->velY < 0.0f) {
-            if (hitCheckFilter(NULL, &hitX, &hitX, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                    prevX, prevY, prevZ, 0.0f, -1.0f, 0.0f) != NULL) {
-                if (distance < 42.0f) {
-                    data->velY = 0.6f * -data->velY;
-                    data->velX *= 0.7f;
-                    data->field_0x34 *= 0.7f;
-                    data->field_0x2C *= 0.7f;
-                    data->field_0x1C += 1.0f;
-                    data->field_0x0 = 0;
-                    if (data->field_0x1C >= 10.0f) {
-                        data->lifetime = -1;
-                    }
-                }
-            }
-        }
-        if (data->field_0x1C) {
-            data->velY += -0.5f;
-            data->field_0x24 += data->field_0x2C;
-            data->angle = angleABf(0.0f, 0.0f, -data->velY, data->field_0x34);
-        }
-    }
-    if (gp->inBattle == 0) {
-        if (mario->position.y - data->position.y > 300.0f) {
-            data->lifetime = -1;
-        }
-    } else if (data->position.y < -300.0f) {
-        data->lifetime = -1;
-    }
-    data->position.x += data->velX;
-    data->position.y += data->velY;
-    data->position.z += data->velZ;
-    if (data->lifetime < 0) {
-        effDelete(effect);
-    } else {
-        dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSstarDisp, effect);
-    }
-}
-
-// NONMATCHING (99.63%): a few register names (f4/f5 swap around the sqrt and the d2 cache),
+// NONMATCHING (99.65%): a few register names (f4/f5 swap around the sqrt and the d2 cache),
 // one operand order on `fcmpu f31,f0`, and the sqrtf-double pool anchor offset.
 EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
     EffectEntry* effect;
@@ -411,3 +350,70 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32
     data->field_0x3C = -1;
     return effect;
 }
+
+// Placed last so deferred emission makes this the first function in the object, which puts
+// its sqrtf/pool constants in .rodata immediately after vec3_802fb6b8, before
+// effSstarN64Entry's string. effSstarDisp's nonmatching s16->f32 conversion emits an extra
+// magic double; if Main's pool constants were emitted after it (the original layout, which
+// requires effSstarDisp to match) they would sit 8 bytes off and Main's lfd offsets would
+// not match. Only the source position differs; the code is the original's.
+void effSstarMain(EffectEntry* effect) {
+    SstarWork* data = effect->userdata;
+    MarioWork* mario;
+    Vec position;
+    f32 distance;
+    f32 prevX, prevY, prevZ;
+    f32 hitX, hitZ;
+    f32 hitNX, hitNY, hitNZ;
+
+    mario = marioGetPtr();
+    position = initializeVec(&data->position);
+
+    if (data->type >= 2) {
+        distance = data->velX * data->velX + data->velY * data->velY + data->velZ * data->velZ;
+        if (distance > 0.01f) {
+            distance = 1.0f / sqrtf(distance);
+        }
+        prevX = data->position.x - 32.0f * (data->velX * distance);
+        prevY = data->position.y - 32.0f * (data->velY * distance);
+        prevZ = data->position.z - 32.0f * (data->velZ * distance);
+        distance = 64.0f;
+        if (data->field_0x0 != 0 && data->velY < 0.0f) {
+            if (hitCheckFilter(NULL, &hitX, &hitX, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                    prevX, prevY, prevZ, 0.0f, -1.0f, 0.0f) != NULL) {
+                if (distance < 42.0f) {
+                    data->velY = 0.6f * -data->velY;
+                    data->velX *= 0.7f;
+                    data->field_0x34 *= 0.7f;
+                    data->field_0x2C *= 0.7f;
+                    data->field_0x1C += 1.0f;
+                    data->field_0x0 = 0;
+                    if (data->field_0x1C >= 10.0f) {
+                        data->lifetime = -1;
+                    }
+                }
+            }
+        }
+        if (data->field_0x1C) {
+            data->velY += -0.5f;
+            data->field_0x24 += data->field_0x2C;
+            data->angle = angleABf(0.0f, 0.0f, -data->velY, data->field_0x34);
+        }
+    }
+    if (gp->inBattle == 0) {
+        if (mario->position.y - data->position.y > 300.0f) {
+            data->lifetime = -1;
+        }
+    } else if (data->position.y < -300.0f) {
+        data->lifetime = -1;
+    }
+    data->position.x += data->velX;
+    data->position.y += data->velY;
+    data->position.z += data->velZ;
+    if (data->lifetime < 0) {
+        effDelete(effect);
+    } else {
+        dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSstarDisp, effect);
+    }
+}
+

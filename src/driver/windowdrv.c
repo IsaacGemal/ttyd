@@ -151,7 +151,7 @@ void windowMain(void) {
 	}
 }
 
-// NONMATCHING (99.99%): only the fog/tev outgoing GXColor argument temps are swapped (ours: fog r1+0x10,
+// NONMATCHING (99.996%): only the fog/tev outgoing GXColor argument temps are swapped (ours: fog r1+0x10,
 // tev copy r1+0x8; original: fog r1+0x8, tev copy r1+0x10). Every other instruction matches.
 void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;

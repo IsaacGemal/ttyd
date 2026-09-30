@@ -167,12 +167,31 @@ void effStampMain(EffectEntry* effect) {
     dispEntry(4, dispCalcZ(&position2), 2, effStampDisp, effect);
 }
 
-// NONMATCHING (98.60%): the by-value GXColor argument slots (0x8/0xc/0x10/0x14) are permuted and one
-// `addi r29` is scheduled a slot earlier.
+// The original builds each TEV colour in a helper-style local whose stack slot sits below its
+// outgoing copy; writing the same code inline makes mwcc put the two slots the other way round
+// (see eff_ripple_n64.c).
+#ifdef MUST_MATCH
+static inline void effStampSetColor1(effStampData* data) {
+    GXColor color = unk_80423270;
+    color.r = data->field_0x38;
+    color.g = data->field_0x39;
+    color.b = data->field_0x3A;
+    color.a = data->alpha;
+    GXSetTevColor(1, color);
+}
+
+static inline void effStampSetColor2(effStampData* data) {
+    GXColor color = unk_80423274;
+    color.r = data->field_0x3B;
+    color.g = data->field_0x3C;
+    color.b = data->field_0x3D;
+    GXSetTevColor(2, color);
+}
+#endif
+
 void effStampDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effStampData* data;
-    effStampData* part;
     CameraEntry* cam;
     GXTexObj texObj;
     Mtx mtx;
@@ -200,6 +219,10 @@ void effStampDisp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, mtx, viewMtx);
 
     {
+#ifdef MUST_MATCH
+        effStampSetColor1(data);
+        effStampSetColor2(data);
+#else
         GXColor color;
         GXColor color2;
         GXColor tmp;
@@ -217,6 +240,7 @@ void effStampDisp(CameraId camId, void* param) {
         color2.g = data->field_0x3C;
         color2.b = data->field_0x3D;
         GXSetTevColor(2, color2);
+#endif
     }
 
     GXSetNumTexGens(1);
@@ -225,15 +249,15 @@ void effStampDisp(CameraId camId, void* param) {
     GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
     effGetTexObjN64(0x2b, &texObj);
     GXLoadTexObj(&texObj, 0);
+    data++;
     GXSetCullMode(0);
     effSetVtxDescN64((effVtxArray*)size16x16_tex64x32_vtx);
 
     deg2rad = float_deg2rad_8041fde0;
-    part = data + 1;
-    for (i = 1; i < effect->count; i++, part++) {
-        PSMTXTrans(mtx, part->x, part->y, part->z);
-        PSMTXRotRad(rotMtx, 'z', deg2rad * part->angle);
-        PSMTXScale(scaleMtx, part->field_0x20, part->field_0x1C, float_1_8041fdec);
+    for (i = 1; i < effect->count; i++, data++) {
+        PSMTXTrans(mtx, data->x, data->y, data->z);
+        PSMTXRotRad(rotMtx, 'z', deg2rad * data->angle);
+        PSMTXScale(scaleMtx, data->field_0x20, data->field_0x1C, float_1_8041fdec);
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);
         PSMTXConcat(viewMtx, mtx, mtx);

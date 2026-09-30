@@ -127,8 +127,16 @@ void effCoinFukidashiMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (99.77%): the only remaining differences are register/stack allocation: the GXColor
-// argument sits at r1+0x08 (retail r1+0x0C) and f0/f1 are swapped for -w and the 0.5f uses.
+#ifdef MUST_MATCH
+// MUST_MATCH: building the GXColor through an inline return puts the colour temp in the slot retail uses.
+static inline GXColor effCoinFukidashiColor(u8 alpha) {
+    GXColor color = *(GXColor*)&dat_80420468;
+    color.a = alpha;
+    return color;
+}
+#endif
+
+// effCoinFukidashiDisp (1140 B, matched).
 void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam;
@@ -137,6 +145,11 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXColor color;
     Mtx m0, m1, m2;
     f32 w, h;
+#ifdef MUST_MATCH
+    // MUST_MATCH: a named 0.5f local reproduces retail's FP register allocation of the vertex
+    // and text maths; using the literal directly swaps f0/f1 in eight instructions.
+    f32 half = float_0p5_80420474;
+#endif
     f32 textW;
     s32 alpha;
     char buf[0x40];
@@ -153,8 +166,12 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
     GXSetTevOp(0, 0);
+#ifdef MUST_MATCH
+    color = effCoinFukidashiColor(alpha);
+#else
     color = *(GXColor*)&dat_80420468;
     color.a = alpha;
+#endif
     GXSetChanMatColor(4, color);
 
     PSMTXTrans(m0, data->position.x, data->position.y + data->field_0x10, data->position.z);
@@ -175,21 +192,45 @@ void effCoinFukidashiDisp(CameraId cameraId, void* param) {
     GXBegin(0x80, 0, 4);
     w = float_0p4_80420470 * (f32)GXGetTexObjWidth(&tex);
     h = float_0p4_80420470 * (f32)GXGetTexObjHeight(&tex);
+#ifdef MUST_MATCH
+    GXPosition3f32(-w * half, h, float_0_80420478);
+#else
     GXPosition3f32(-w * float_0p5_80420474, h, float_0_80420478);
+#endif
     GXTexCoord2f32(float_0_80420478, float_0_80420478);
+#ifdef MUST_MATCH
+    GXPosition3f32(w * half, h, float_0_80420478);
+#else
     GXPosition3f32(w * float_0p5_80420474, h, float_0_80420478);
+#endif
     GXTexCoord2f32(float_1_8042047c, float_0_80420478);
+#ifdef MUST_MATCH
+    GXPosition3f32(w * half, float_0_80420478, float_0_80420478);
+#else
     GXPosition3f32(w * float_0p5_80420474, float_0_80420478, float_0_80420478);
+#endif
     GXTexCoord2f32(float_1_8042047c, float_1_8042047c);
+#ifdef MUST_MATCH
+    GXPosition3f32(-w * half, float_0_80420478, float_0_80420478);
+#else
     GXPosition3f32(-w * float_0p5_80420474, float_0_80420478, float_0_80420478);
+#endif
     GXTexCoord2f32(float_0_80420478, float_1_8042047c);
 
     sprintf(buf, str_80420480, data->field_0x14);
     textW = data->scale * (f32)FontGetMessageWidth(buf) / float_3_80420484;
+#ifdef MUST_MATCH
+    PSMTXTrans(m0, -textW * half, float_neg28_80420488, float_0_80420478);
+#else
     PSMTXTrans(m0, -textW * float_0p5_80420474, float_neg28_80420488, float_0_80420478);
+#endif
     PSMTXScale(m1, data->scale / float_3_80420484, data->scale / float_3_80420484, data->scale / float_3_80420484);
     PSMTXConcat(m0, m1, m1);
+#ifdef MUST_MATCH
+    PSMTXTrans(m0, textW * half, float_28_8042048c, float_0_80420478);
+#else
     PSMTXTrans(m0, textW * float_0p5_80420474, float_28_8042048c, float_0_80420478);
+#endif
     PSMTXConcat(m1, m0, m1);
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
     PSMTXRotRad(m2, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_8042046c);

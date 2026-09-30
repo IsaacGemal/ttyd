@@ -125,9 +125,26 @@ static u32 size16x16_tex64x64_vtx[14] = {
 	0x00080008, 0x00000800, 0x0C000000, 0x00FFFFF8, 0x00080000, 0x00000C00, 0x000000FF,
 };
 
-// NONMATCHING (99.97%): the by-value GXColor argument slots (original: type color at
-// 0x10 copied to 0x14, alpha color at 0x8 copied to 0xc) come out at 0xc and 0x14/0x8
-// here; every other instruction matches.
+// Inlined in the original; the helper scope reproduces the stack slots the compiler
+// picks for the by-value GXColor copy (type color: local at 0x10, outgoing copy at
+// 0x14; alpha color: local at 0x8, outgoing copy at 0xc).
+static inline void effWangFlushSetTypeColor(s32 idx, s32 alpha) {
+	GXColor color = unk_804232c0;
+
+	color.r = color_rotation_data[idx];
+	color.g = color_rotation_data[idx + 1];
+	color.b = color_rotation_data[idx + 2];
+	color.a = alpha;
+	GXSetTevColor(1, color);
+}
+
+static inline void effWangFlushSetAlphaColor(s32 alpha) {
+	GXColor color = dat_80420110;
+
+	color.a = alpha;
+	GXSetTevColor(1, color);
+}
+
 void effWangFlushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 idx;
@@ -140,7 +157,6 @@ void effWangFlushDisp(CameraId camId, void* param) {
 	Mtx mtxD;
 	Mtx mtxB;
 	Mtx mtxC;
-	GXColor color;
 	GXTexObj texObj;
 
 	cam = camGetPtr(camId);
@@ -170,19 +186,12 @@ void effWangFlushDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
 
 	if (type == 0) {
-		GXColor color1;
-
 		PSMTXScale(mtxD, data->alphaScale, data->alphaScale, data->alphaScale);
 		PSMTXConcat(mtxC, mtxD, mtxD);
 		GXLoadPosMtxImm(mtxD, 0);
 		GXSetCurrentMtx(0);
 		idx %= 24;
-		color1 = unk_804232c0;
-		color1.r = color_rotation_data[idx];
-		color1.g = color_rotation_data[idx + 1];
-		color1.b = color_rotation_data[idx + 2];
-		color1.a = field28;
-		GXSetTevColor(1, color1);
+		effWangFlushSetTypeColor(idx, field28);
 		GXBegin(0x90, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
@@ -198,9 +207,7 @@ void effWangFlushDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtxC, mtxD, mtxD);
 		GXLoadPosMtxImm(mtxD, 0);
 		GXSetCurrentMtx(0);
-		color = dat_80420110;
-		color.a = alpha;
-		GXSetTevColor(1, color);
+		effWangFlushSetAlphaColor(alpha);
 		GXBegin(0x90, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}

@@ -314,9 +314,14 @@ USER_FUNC(mario_get_renzoku_count_max) {
 }
 
 
-// NONMATCHING (97.60%): the only difference is scheduling of the `lwz` that
-// reads event->userdata[0] for the two intplGetValue calls: mwcc issues it first,
-// the original issues it after the `lfs`/`li` argument setup. Everything else matches.
+// NONMATCHING (97.60%): the only difference is the scheduling of the `lwz` that
+// reads event->userdata[0] for the two intplGetValue calls. With the frame in a
+// local (below) MWCC hoists the single load above the faceDirection test; with the
+// read inlined in each branch it stays in the branch but is issued before the
+// lfs/li argument setup, where the original issues it last. Tried with no change:
+// opt_common_subs/opt_propagation/optimize_for_size/pool_data/schedule off, inline
+// helpers, volatile, comma and assignment forms, swapped branch bodies, and the
+// other installed MWCC versions (all give the same schedule).
 USER_FUNC(_hammer_star_effect) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;

@@ -8,9 +8,13 @@
 #include <dolphin/mtx.h>
 #include <dolphin/types.h>
 
-// .rodata string and .sdata2 constant, declared in the original unit's data order.
+// .rodata string; the .sdata2 constants this unit owns, in the original's data order. float_100 and
+// float_1 must be defined (not extern): MWCC colours the second pose's stretch FPRs differently when
+// it knows their values, which is what makes effNokotarouDisp byte-exact.
 const char str_803014B8[] = "Nokotarou";
 const f32 float_0_8042248c = 0.0f;
+const f32 float_100_80422494 = 100.0f;
+const f32 float_1_80422498 = 1.0f;
 // externs for the remaining constants the disp/main read from the original unit's data.
 extern const char str_803014A4[];
 extern const char str_8042249C[4];
@@ -18,9 +22,7 @@ extern const char str_804224A0[4];
 extern const u32 dat_80422480;
 extern const u32 dat_80422484;
 extern const f32 float_deg2rad_80422488;
-extern const f32 float_1_80422498;
 extern const f32 float_2_80422490;
-extern const f32 float_100_80422494;
 extern const f32 float_0p03125_804224a4;
 
 EffectEntry* effNokotarouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
@@ -127,9 +129,6 @@ static inline void nokotarouSetColorSub(NokotarouWork* work) {
 	animPoseSetMaterialEvtColor(work->animPose2, color);
 }
 
-// NONMATCHING (98.35%): second pose's stretch factors differ only in the float scratch registers: the
-// original loads work->scale into f8, keeps x2-x in f7 and float_1 in f5; this build loads float_1 into f7
-// first and folds x2-x into f5. Same instructions and operands otherwise.
 void effNokotarouDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	NokotarouWork* work = effect->userdata;

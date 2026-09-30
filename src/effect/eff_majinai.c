@@ -55,8 +55,14 @@ EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     return effect;
 }
 
-// NONMATCHING (99.93%): `inBattle` (`gp->inBattle != 0`) is allocated to r28; the original keeps it
-// in r29 (then reuses r29 for the mario loop pointer). Every other instruction and scheduling matches.
+#ifdef MUST_MATCH
+/* MUST_MATCH: materialising the boolean through an inline makes MWCC colour it r29 (the plain
+   `inBattle = gp->inBattle != 0;` gets r28); the inlined body emits the identical instructions. */
+static inline s32 effMajinaiGetInBattle(void) {
+    return gp->inBattle != 0;
+}
+#endif
+
 void effMajinaiMain(EffectEntry* effect) {
     s32 inBattle;
     s32 i;
@@ -74,8 +80,10 @@ void effMajinaiMain(EffectEntry* effect) {
     disp.z = work->z;
 #ifdef MUST_MATCH
     position = disp;
-#endif
+    inBattle = effMajinaiGetInBattle();
+#else
     inBattle = gp->inBattle != 0;
+#endif
 
     if (effect->flags & 4) {
         effect->flags &= ~4;

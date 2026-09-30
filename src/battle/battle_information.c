@@ -72,8 +72,9 @@ HogTable N_item_hog_table = {
 	}
 };
 
-// NONMATCHING (98.05%): the original hoists each drop-count load (lwz r26, 0x8(rp)) above the chance
-// comparison; MWCC 2.6 leaves it after the branch. No source form or pragma tried moves it.
+// The retail scheduler hoists each drop-count load (lwz r26, 0x8(rp)) above the chance comparison.
+// Computing the irand() roll into `roll` before reading the count reproduces that scheduling; the plain
+// `if (irand(100) < ...)` form leaves the load after the branch. Marked MUST_MATCH (see the two loops).
 void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	NpcBattleInfo* setup = info->setup;
 	BattleGroupSetup* group = setup->groupSetup;
@@ -95,8 +96,14 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	setup->heartsDropped = 0;
 	while ((threshold = heartParams->field_0x0) != 0) {
 		if (hpPercent <= threshold) {
+#ifdef MUST_MATCH
+			roll = irand(100);
+			i = heartParams->field_0x8;
+			if (roll < heartParams->field_0x4) {
+#else
 			if (irand(100) < heartParams->field_0x4) {
 				i = heartParams->field_0x8;
+#endif
 				while (i != 0) {
 					if (irand(100) < heartParams->field_0xC) {
 						setup->heartsDropped++;
@@ -117,8 +124,14 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	setup->flowersDropped = 0;
 	while ((threshold = flowerParams->field_0x0) != 0) {
 		if (fpPercent <= threshold) {
+#ifdef MUST_MATCH
+			roll = irand(100);
+			j = flowerParams->field_0x8;
+			if (roll < flowerParams->field_0x4) {
+#else
 			if (irand(100) < flowerParams->field_0x4) {
 				j = flowerParams->field_0x8;
+#endif
 				while (j != 0) {
 					if (irand(100) < flowerParams->field_0xC) {
 						setup->flowersDropped++;
