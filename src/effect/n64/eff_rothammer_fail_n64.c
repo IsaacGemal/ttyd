@@ -7,21 +7,25 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
-#include <math.h>
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_80423254_sbss2;
+__declspec(section ".sdata") GXColor unk_80423250;
+
+u32 size24x24_tex32x32_vtx[14] = {
+    0xFFF4FFF4, 0x00000000, 0x00000000, 0x00FF000C,
+    0xFFF40000, 0xFC000000, 0x000000FF, 0x000C000C,
+    0x0000FC00, 0x04000000, 0x00FFFFF4, 0x000C0000,
+    0x00000400, 0x000000FF,
+};
+
 // .sdata2/.rodata/.data objects defined by the original unit's split map.
 
-extern const f32 float_256_8041fbcc;
-extern const f32 float_deg2rad_8041fbd0;
-extern const f32 float_0p0044643_8041fbd4;
-extern const f32 float_0p03125_8041fbd8;
-extern const f32 float_0_8041fbdc;
-extern const f32 float_32_8041fbe0;
-extern GXColor dat_8041fbc8;
-extern GXColor unk_80423250;
-extern u32 size24x24_tex32x32_vtx[];
+extern const GXColor dat_8041fbc8;
 
 typedef struct effRotHammerFailParticle {
 	u8 field_0x00[4];    // 0x00
@@ -69,17 +73,15 @@ typedef struct effRotHammerFailRecord {
 	f32 field_0x30;  // 0x30
 } effRotHammerFailRecord; // 0x34
 
-// The target keeps the header base in volatile r3 and materializes `particle = data + 0x34` in
-// r30 (addi r30, r3, 0x34); MWCC folds the particle pointer back into the live data base, so
-// this version reloads userdata (lwz r30, 0xc(r31)) and uses data+0x38/... instead of
-// particle+0x4/... . Everything else (FPR saves, header stores, call sequence, epilogue) matches.
-// NONMATCHING (88.74%): see above; particle base/offset pair is the only real difference.
+// The two 0x34-byte records are the header (index 0) and the particle (index 1). The original
+// walks to the particle with the same `data++` the Main callback uses; the loop shape is what
+// makes MWCC keep the header base in r3 and materialize the particle base in r30
+// (addi r30, r3, 0x34) for the sin/cos stores.
 EffectEntry* effRotHammerFailN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
-	effRotHammerFailData* data;
-	effRotHammerFailParticle* particle;
-	u8* base;
+	effRotHammerFailRecord* data;
 	f32 zero;
+	s32 j;
 
 	effect = effEntry();
 	effect->type = "RotHammerFailN64";
@@ -88,21 +90,22 @@ EffectEntry* effRotHammerFailN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f
 	effect->userdata = data;
 	effect->callback = effRotHammerFailMain;
 	zero = 0.0f;
-	base = (u8*)effect->userdata;
-	particle = (effRotHammerFailParticle*)(base + 0x34);
+	data->field_0x24 = life;
+	data->field_0x28 = 0;
+	data->field_0x2C = life;
+	data->field_0x30 = zero;
 	data->type = type;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->field_0x1C = 10.0f;
 	data->field_0x20 = 30.0f;
-	data->field_0x24 = life;
-	data->field_0x28 = 0;
-	data->field_0x2C = life;
-	particle->z = particle->y = particle->x = data->field_0x30 = zero;
-	particle->field_0x10 = sin(zero);
-	particle->field_0x14 = zero;
-	particle->field_0x18 = cos(zero);
+	for (j = 1, data++; j < 2; j++, data++) {
+		data->z = data->y = data->x = zero;
+		data->field_0x10 = sin(zero);
+		data->field_0x14 = zero;
+		data->field_0x18 = cos(zero);
+	}
 	return effect;
 }
 
@@ -125,7 +128,7 @@ void effRotHammerFailMain(EffectEntry* effect) {
 	position = disp;
 #endif
 
-	data->field_0x30 = float_7_8041fbe4 * data->field_0x28 / data->field_0x2C;
+	data->field_0x30 = 7.0f * data->field_0x28 / data->field_0x2C;
 	data->field_0x28 += 1;
 	data->field_0x24 -= 1;
 	if (data->field_0x24 < 0) {
@@ -133,11 +136,11 @@ void effRotHammerFailMain(EffectEntry* effect) {
 		return;
 	}
 
-	data->field_0x1C += float_0p1_8041fbe8 * (data->field_0x20 - data->field_0x1C);
+	data->field_0x1C += 0.1f * (data->field_0x20 - data->field_0x1C);
 	scale = data->field_0x1C;
 	for (i = 1, data++; i < effect->count; i++, data++) {
-		data->field_0x14 += float_0p04_8041fbec;
-		data->field_0x14 *= float_0p9_8041fbf0;
+		data->field_0x14 += 0.04f;
+		data->field_0x14 *= 0.9f;
 		data->x = scale * data->field_0x10;
 		data->y += data->field_0x14;
 		data->z = scale * data->field_0x18;
@@ -156,9 +159,9 @@ static inline void hammerSetColor(u8 a) {
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
-// NONMATCHING (99.97%): the flag==0 branch's `offset + 32` is materialised in place
-// (`addi r27, r27, 0x20`) because MWCC coalesces the dead `offset`; the target keeps
-// `offset` and adds into a fresh r3. The read form `(f32)(offset + 32)` lands in r0.
+// Without this, MWCC CSEs the two branches' identical `offset + 32` and the flag==0 copy
+// reuses a dead register (addi r27, r27, 0x20) instead of the target's fresh r3.
+#pragma opt_common_subs off
 void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effRotHammerFailRecord* data;
@@ -178,7 +181,7 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	data = effect->userdata;
 
 	whole = (s32)data->field_0x30;
-	frac = (s32)(float_256_8041fbcc * (data->field_0x30 - (f32)whole));
+	frac = (s32)(256.0f * (data->field_0x30 - (f32)whole));
 	flag = (whole == 6);
 
 	GXSetNumChans(0);
@@ -208,7 +211,7 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_vtx);
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041fbd0 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, work);
 
@@ -216,20 +219,19 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	hammerSetColor(frac);
 
 	offset = whole * 32;
-	PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
-	PSMTXTrans(trans, (f32)offset, float_0_8041fbdc, float_0_8041fbdc);
+	PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
+	PSMTXTrans(trans, (f32)offset, 0.0f, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, GX_TEXMTX0, GX_MTX2x4);
 
 	if (flag != 0) {
-		PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
-		PSMTXTrans(trans, (f32)(offset + 32), float_32_8041fbe0, float_0_8041fbdc);
+		PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
+		PSMTXTrans(trans, (f32)(offset + 32), 32.0f, 0.0f);
 		PSMTXConcat(scale, trans, trans);
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	} else {
-		PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
-		offset = offset + 32;
-		PSMTXTrans(trans, (f32)offset, float_0_8041fbdc, float_0_8041fbdc);
+		PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
+		PSMTXTrans(trans, (f32)(offset + 32), 0.0f, 0.0f);
 		PSMTXConcat(scale, trans, trans);
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	}
@@ -244,3 +246,8 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+#pragma opt_common_subs reset
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+const GXColor dat_8041fbc8 = { 0xE6, 0xDE, 0xDE, 0x82 };

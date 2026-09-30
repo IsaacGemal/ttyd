@@ -188,10 +188,11 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// The life<5 scale block is one float-register colouring off. Retail keeps float_3/the fmadds
-// accumulator in f0, double_to_int in f3 and float_30 in f2; our allocator uses f3/f2/f0 for the
-// same three values, so the fmadds destination is the only real difference and the rest cascades.
-// NONMATCHING (99.77%): that one volatile-FPR colouring block; every opcode/constant/order matches.
+// The life<5 scale block: MWCC's FPR allocator only keeps float_3/the fmadds accumulator in f0
+// (with double_to_int in f3 and float_30 in f2) when the angle sin, alpha sin and division term
+// are computed into named temporaries before the sum is formed. The single expression gives the
+// same instructions with f0/f3/f2 rotated. MUST_MATCH keeps the allocator-steering temp form; the
+// natural expression is under #else.
 void effMagic3Main(EffectEntry* effect) {
 	s32 life;
 	effMagic3Data* data;
@@ -222,7 +223,16 @@ void effMagic3Main(EffectEntry* effect) {
 			data->vx *= float_0p7_8041f730;
 			data->vy *= float_0p7_8041f730;
 			data->vz *= float_0p7_8041f730;
+#ifdef MUST_MATCH
+			{
+				f32 sg = (f32)sin(angle / float_360_8041f724);
+				f32 sa = (f32)sin(float_6p2832_8041f718 * (f32)(data->alpha / 2) / float_360_8041f724);
+				f32 extra = (f32)(255 - data->alpha) / float_30_8041f734;
+				data->scale = float_3_8041f728 * sa + sg + extra;
+			}
+#else
 			data->scale = float_3_8041f728 * (f32)sin(float_6p2832_8041f718 * (f32)(data->alpha / 2) / float_360_8041f724) + (f32)sin(angle / float_360_8041f724) + (f32)(255 - data->alpha) / float_30_8041f734;
+#endif
 		}
 		data->x += data->vx;
 		data->y += data->vy;
@@ -278,3 +288,24 @@ void effMagic3Disp(CameraId camId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041f700 = 0xFFFFFF00;
+const f32 float_0p015625_8041f704 = 0.015625f;
+const f32 float_0p03125_8041f708 = 0.03125f;
+const f32 float_0_8041f70c = 0.0f;
+const f32 float_deg2rad_8041f710 = 0.017453292f;
+const f32 float_1_8041f714 = 1.0f;
+const f32 float_6p2832_8041f718 = 6.2831855f;
+const f32 float_0p8_8041f71c = 0.8f;
+const f32 float_0p4_8041f720 = 0.4f;
+const f32 float_360_8041f724 = 360.0f;
+const f32 float_3_8041f728 = 3.0f;
+const f32 float_0p6_8041f72c = 0.6f;
+const f32 float_0p7_8041f730 = 0.7f;
+const f32 float_30_8041f734 = 30.0f;
+const f32 float_neg1_8041f738 = -1.0f;
+const f32 float_18_8041f73c = 18.0f;
+const f32 float_0p25_8041f744 = 0.25f;
+const f32 float_50_8041f748 = 50.0f;
+const f32 float_0p5_8041f74c = 0.5f;

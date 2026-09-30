@@ -37,13 +37,24 @@ typedef struct StickKeepLeftWork {
 // optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too), i.e. built
 // with -O4,s; without this pragma MWCC emits separate stw/lwz for r23-r31.
 #pragma optimize_for_size on
-// NONMATCHING (98.29%): string pointers copied through a `mr`; case 0x3EB empty loop lacks the second
-// bound check (`blt` + `cmpwi r3, 0`); ok_frame index gets an extra `extsb` after the call to
-// BattleActionCommandGetDifficulty (header and definition both return `s8`, so the cause is not the
-// callee's type; the original's bare `lbz` is how an s8 return compiles).
+// 100% via three match-only shapes (all under MUST_MATCH below/inside):
+//  - an array for the two SFX names makes MWCC materialise each address straight into its callee-saved
+//    register (`addi r31/r30, rX, @l`); two separate pointer locals give `addi rX, rX, @l` + `mr`;
+//  - case 0x3EB keeps the count in a local `n` and re-tests it, adding the original's first `blt`;
+//  - the ok_frame index casts the call through the callee's real 4-byte return type. battle_ac.h says
+//    `s8`, but the callee is `lbz r3, 0x1cbd(r3); blr` (a whole word) and the original caller emits a
+//    bare `slwi r0, r3, 2`; report: header/definition should be `s32` and `mAcDifficulty` a `u8`.
 s32 battleAcMain_StickKeepLeft(BattleWork* work) {
+#ifdef MUST_MATCH
+    const char* sfxName[2];
+#define STICK_PI_NAME sfxName[0]
+#define STICK_PONE_NAME sfxName[1]
+#else
     const char* piName;
     const char* poneName;
+#define STICK_PI_NAME piName
+#define STICK_PONE_NAME poneName
+#endif
     StickKeepLeftWork* dec = (StickKeepLeftWork*)((u8*)work + 0x1F4C);
     BattleACDispParams* disp = (BattleACDispParams*)((u8*)work + 0x1F20);
     s32 stateChanged;
@@ -64,8 +75,8 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
         }
     }
 
-    piName = str_802EFBA8;
-    poneName = str_802EFBB4;
+    STICK_PI_NAME = str_802EFBA8;
+    STICK_PONE_NAME = str_802EFBB4;
 
     for (;;) {
         stateChanged = 0;
@@ -153,12 +164,12 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                     s32 idx = dec->field_0x04 - 2;
                     if (idx < *(s32*)&work->actionCommands.field_34[4] - 1) {
                         if (dec->sfx[idx] == -1) {
-                            dec->sfx[idx] = psndSFXOn(piName);
+                            dec->sfx[idx] = psndSFXOn(STICK_PI_NAME);
                         }
                     }
                     else {
                         if (dec->sfx[idx] == -1) {
-                            dec->sfx[idx] = psndSFXOn(poneName);
+                            dec->sfx[idx] = psndSFXOn(STICK_PONE_NAME);
                             *(s32*)&work->actionCommands.field_34[0x14] = 1;
                         }
                     }
@@ -178,7 +189,12 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 }
                 else {
                     s32 remain = *(s32*)&work->actionCommands.field_34[8] - dec->field_0x00;
+#ifdef MUST_MATCH
+                    // Match-only: the callee really returns 4 bytes; the `s8` header would emit `extsb`.
+                    if (remain > ac_stickkeepleft_ok_frame[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)]) {
+#else
                     if (remain > ac_stickkeepleft_ok_frame[BattleActionCommandGetDifficulty(work)]) {
+#endif
                         if (!(*(s32*)&work->actionCommands.field_34[0] & 2)) {
                             work->actionCommands.outputParams[2] = 1;
                         }
@@ -209,11 +225,24 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
                 }
             }
             break;
+#ifdef MUST_MATCH
+        case 0x3EB: {
+            // Match-only: the extra `n >= 0` test reproduces the original's first `blt` before `mtctr`.
+            s32 n = dec->field_0x04 - 2;
+            if (n >= 0) {
+                for (i = 0; i <= n; i++) {
+                }
+            }
+            work->actionCommands.mAcState = 0x3EC;
+            break;
+        }
+#else
         case 0x3EB:
             for (i = 0; i <= dec->field_0x04 - 2; i++) {
             }
             work->actionCommands.mAcState = 0x3EC;
             break;
+#endif
         case 0x3ED:
             dec->field_0x08 = 0x3C;
             work->actionCommands.mAcState = 0x3EE;
@@ -241,8 +270,10 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
 
     return 1;
 }
-#pragma optimize_for_size reset
 
+#undef STICK_PI_NAME
+#undef STICK_PONE_NAME
+#pragma optimize_for_size reset
 s32 battleAcResult_StickKeepLeft(BattleWork* work) {
     return work->actionCommands.result;
 }
@@ -300,7 +331,6 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
     }
 }
 #pragma optimize_for_size reset
-
 void battleAcDelete_StickKeepLeft(BattleWork* work) {
     work->actionCommands.mAcState = 0x3ED;
 }

@@ -149,7 +149,11 @@ EVT_BEGIN(kpa_read_mobj)
     RETURN
 EVT_END()
 
-const Vec vec3_kpa_000014a4 = {0.0f, 0.0f, 0.0f};
+// helper placed here so its (Vec){0,0,0} literal pools at the same .rodata offset
+// as the original's vec3_kpa_000014a4 (the scheduler then keeps the event->args load first)
+static inline void kpaZeroVec(Vec* v) {
+    *v = (Vec){ 0.0f, 0.0f, 0.0f };
+}
 
 EVT_BEGIN(kpa_coin_evt)
     CALL(kpa_add_coin, LW(0), LW(1), LW(2))
@@ -510,12 +514,13 @@ USER_FUNC(kpa_make_item_name) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.66%): the three vec3_kpa_000014a4 words are loaded before `event->args`
-// (r31) in ours; the original loads r31 first, then the three words. Pure scheduling.
+// The zero Vec comes from kpaZeroVec's anonymous (Vec){0,0,0} literal rather than a named
+// vec3_... object: the literal's pool entry is what keeps the event->args load ahead of the copy.
 USER_FUNC(kpa_add_coin) {
     s32* args = event->args;
-    Vec pos = vec3_kpa_000014a4;
+    Vec pos;
 
+    kpaZeroVec(&pos);
     pos.x = evtGetFloat(event, args[0]);
     pos.y = evtGetFloat(event, args[1]);
     pos.z = evtGetFloat(event, args[2]);
@@ -703,20 +708,23 @@ USER_FUNC(kpa_pole_hitoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (87.11%): only the two float literals' load order/registers differ
-// (ours loads -140 into r4 base and 40 via addi+0; the original loads 40 into r4 and
-// -140 via addi+0(r5)). Pure scheduling/addressing.
+#pragma opt_propagation off // the default propagation assigns the -140/40 address bases to the opposite registers
 void kpa_stageclear_disp(CameraId cameraId, void* param) {
     GXColor color;
+    f32 x;
+    f32 y;
 
     FontDrawStart();
     FontDrawScale(2.0f);
     FontDrawEdge();
     color = dat_kpa_000015cc;
     FontDrawColor(&color);
-    FontDrawString("ゴールイン！！", -140.0f, 40.0f);
+    x = -140.0f;
+    y = 40.0f;
+    FontDrawString("ゴールイン！！", x, y);
     FontDrawEdgeOff();
 }
+#pragma opt_propagation reset
 
 USER_FUNC(kpa_stageclear_disp_entry) {
     dispEntry(8, 1000.0f, 0, kpa_stageclear_disp, NULL);

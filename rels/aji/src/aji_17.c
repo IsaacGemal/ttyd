@@ -29,7 +29,7 @@
 #include "memory.h"
 #include "party/party_motion.h"
 #include "system.h"
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 
 // The Peach dance minigame's shared work (bss).
@@ -140,10 +140,24 @@ EVT_BEGIN(evt_emergency)
     RETURN
 EVT_END()
 
-USER_FUNC(noise) {
-    s32 value = evtGetValue(event, event->args[0]);
+static USER_FUNC(viewport) {
+    s32* args = event->args;
+    f32 a = evtGetFloat(event, args[0]);
+    f32 b = evtGetFloat(event, args[1]);
+    f32 c = evtGetFloat(event, args[2]);
+    f32 d = evtGetFloat(event, args[3]);
+    CameraEntry* cam;
 
-    dispEntry(8, 1100.0f, 0, noiseDisp, (void*)value);
+    cam = camGetPtr(4);
+    cam->viewport[0] = a;
+    cam->viewport[1] = b;
+    cam->viewport[2] = c;
+    cam->viewport[3] = d;
+    cam = camGetPtr(8);
+    cam->viewport[0] = a;
+    cam->viewport[1] = b;
+    cam->viewport[2] = c;
+    cam->viewport[3] = d;
     return EVT_RETURN_DONE;
 }
 
@@ -363,25 +377,96 @@ EVT_BEGIN(evt_last)
     RETURN
 EVT_END()
 
-static USER_FUNC(viewport) {
-    s32* args = event->args;
-    f32 a = evtGetFloat(event, args[0]);
-    f32 b = evtGetFloat(event, args[1]);
-    f32 c = evtGetFloat(event, args[2]);
-    f32 d = evtGetFloat(event, args[3]);
-    CameraEntry* cam;
+// Builds the texture's TEV colour; the temporary keeps the zero colour in the
+// original's stack slot instead of the outgoing argument slot.
+static inline GXColor noiseTevColor(u8 alpha) {
+    GXColor c = (GXColor){0, 0, 0, 0};
+    c.a = alpha;
+    return c;
+}
 
-    cam = camGetPtr(4);
-    cam->viewport[0] = a;
-    cam->viewport[1] = b;
-    cam->viewport[2] = c;
-    cam->viewport[3] = d;
-    cam = camGetPtr(8);
-    cam->viewport[0] = a;
-    cam->viewport[1] = b;
-    cam->viewport[2] = c;
-    cam->viewport[3] = d;
-    return EVT_RETURN_DONE;
+// NONMATCHING (98.99%): the offset arithmetic now matches; what still differs is the
+// callee-saved register allocation (target param/cam/data/i in r25/r30/r26/r28, i/4/i%4 in
+// r31/r29; ours r24/r31/r27/r28 and r30/r29) plus two first-loop schedule slots.
+void noiseDisp(CameraId cameraId, void* param) {
+    GXTexObj texObj;
+    s32 i, j, k;
+    u8 val;
+    GXColor color;
+    Mtx mtx;
+    CameraEntry* cam;
+    s32 num, len, start;
+    u8* data;
+    smartEntry* entry;
+
+    cam = camGetPtr(cameraId);
+    entry = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_I8, GX_FALSE, 0), 3);
+    data = (u8*)entry->address;
+    for (i = 0; i < 0x40; i++) {
+        s32 q = i / 4;
+        s32 r = i % 4;
+        for (j = 0; j < 0x40; j++) {
+            s32 off = q * 256 + (j / 8) * 32;
+            off += j % 8;
+            off += r * 8;
+            data[off] = (i & 1) ? 0xFF : 0;
+        }
+        num = rand() % 100 + 100;
+        {
+            s32 a = (i / 4) * 256;
+            s32 b = (i % 4) * 8;
+            for (j = 0; j < num; j++) {
+                len = rand() % 4 + 2;
+                start = rand() % (0x41 - len);
+                val = rand() % 255;
+                for (k = start; k < start + len; k++) {
+                    s32 off = (k / 8) * 32;
+                    off += a;
+                    off += k % 8;
+                    off += b;
+                    data[off] = val;
+                }
+            }
+        }
+    }
+    DCFlushRange(data, 0x1000);
+    GXInitTexObj(&texObj, data, 0x40, 0x40, GX_TF_I8, GX_REPEAT, GX_REPEAT, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+    PSMTXScale(mtx, 9.5f, 7.5f, 0.0f);
+    GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    color = noiseTevColor((u8)param);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXLoadPosMtxImm(cam->view, 0);
+    GXSetCurrentMtx(0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3s16(-gp->fbWidth / 2, gp->efbHeight / 2, 0);
+    GXTexCoord2s16(0, 1);
+    GXPosition3s16(gp->fbWidth / 2, gp->efbHeight / 2, 0);
+    GXTexCoord2s16(1, 1);
+    GXPosition3s16(gp->fbWidth / 2, -gp->efbHeight / 2, 0);
+    GXTexCoord2s16(1, 0);
+    GXPosition3s16(-gp->fbWidth, -gp->efbHeight / 2, 0);
+    GXTexCoord2s16(0, 0);
 }
 
 EVT_BEGIN(evt_last2)
@@ -525,11 +610,10 @@ EVT_BEGIN(mail_sousin_se)
     RETURN
 EVT_END()
 
-static USER_FUNC(peach_set_pose) {
-    char* pose = (char*)evtGetValue(event, event->args[0]);
+USER_FUNC(noise) {
+    s32 value = evtGetValue(event, event->args[0]);
 
-    marioGetPtr();
-    marioChgPose(pose);
+    dispEntry(8, 1100.0f, 0, noiseDisp, (void*)value);
     return EVT_RETURN_DONE;
 }
 
@@ -841,113 +925,170 @@ f32 move_pos_list[15][2] = {
     { -39.3040885925293f, -74.7188720703125f },
 };
 
-USER_FUNC(set_npc_pos) {
-    s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
-    f32 x = evtGetFloat(event, args[1]);
-    f32 y = evtGetFloat(event, args[2]);
-    f32 z = evtGetFloat(event, args[3]);
-    NpcEntry* npc = npcNameToPtr((const char*)name);
+static USER_FUNC(peach_set_pose) {
+    char* pose = (char*)evtGetValue(event, event->args[0]);
 
-    npc->prevPosition.x = x;
-    npc->position.x = x;
-    npc->prevPosition.y = y;
-    npc->position.y = y;
-    npc->prevPosition.z = z;
-    npc->position.z = z;
+    marioGetPtr();
+    marioChgPose(pose);
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(compute_horogram_pos) {
-    s32* args = event->args;
-    f32 x = evtGetFloat(event, args[0]);
-    f32 y = evtGetFloat(event, args[1]);
-    f32 s = sin(dance_dt.rotate);
-    f32 c = cos(dance_dt.rotate);
-
-    evtSetFloat(event, args[2], x - 5.5f * s);
-    evtSetFloat(event, args[3], y + 5.5f * c);
-    return EVT_RETURN_DONE;
+static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(u, 0.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(u, v);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, v);
 }
 
-USER_FUNC(compute_peach_pos) {
-    s32* args = event->args;
-    f32 x = evtGetFloat(event, args[0]);
-    f32 y = evtGetFloat(event, args[1]);
-    f32 s = sin(dance_dt.rotate);
-    f32 c = cos(dance_dt.rotate);
+void disp_horogram(CameraId cameraId, void* param) {
+    NpcEntry* npc = npcNameToPtr("ホログラム");
+    GXCullMode cullMode;
+    Mtx lookMtx;
+    Mtx transMtx;
+    Mtx rotMtx;
+    f32 angle;
+    GXColor matColor;
+    GXColor ambColor;
 
-    evtSetFloat(event, args[2], x + 5.5f * s);
-    evtSetFloat(event, args[3], y - 5.5f * c);
-    return EVT_RETURN_DONE;
+    if (horogram_wp->done == 0) {
+        return;
+    }
+    GXGetCullMode(&cullMode);
+    GXInitTexObj(&horogram_wp->texObj1, horogram_wp->tex1, 0x130, 0xF0, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&horogram_wp->texObj1, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObj(&horogram_wp->texObj2, horogram_wp->tex2, 0x130, 0xF0, 0x11, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&horogram_wp->texObj2, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+
+    PSMTXTrans(transMtx, npc->position.x, npc->position.y, npc->position.z);
+    angle = reviseAngle(-npc->direction);
+    angle = angle - camGetPtr(cameraId)->viewYaw;
+    angle += (horogram_wp->flags & 4) ? 180.0f : 0.0f;
+    PSMTXRotRad(rotMtx, 0x79, angle * 0.017453292f);
+    PSMTXConcat(transMtx, rotMtx, lookMtx);
+    PSMTXConcat(camGetPtr(cameraId)->view, lookMtx, lookMtx);
+
+    GXSetCurrentMtx(0);
+    GXLoadTexObj(&horogram_wp->texObj1, GX_TEXMAP0);
+    GXLoadTexObj(&horogram_wp->texObj2, GX_TEXMAP1);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    matColor = npc->color;
+    GXSetChanMatColor(4, matColor);
+    ambColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+    GXSetChanAmbColor(4, ambColor);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(2);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 1);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 1);
+    GXSetTevColorIn(0, 8, 0xF, 0xF, 0xF);
+    GXSetTevAlphaIn(0, 5, 7, 7, 7);
+    GXSetTevOrder(1, 0, 1, 0xFF);
+    GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(1, 2, 0xF, 0xF, 0xF);
+    GXSetTevAlphaIn(1, 1, 7, 4, 7);
+    GXSetCullMode(GX_CULL_NONE);
+    GXLoadPosMtxImm(lookMtx, 0);
+    polygon(-28.0f, 55.0f, 56.0f, 55.0f, 1.0f, 1.0f);
+    GXSetCullMode(cullMode);
 }
 
-USER_FUNC(compute_move_pos) {
-    s32* args = event->args;
+USER_FUNC(disp_horogram_evt) {
+    dispEntry(4, 0.0f, 2, disp_horogram, NULL);
+    return EVT_RETURN_BLOCK;
+}
 
-    if (!(dance_dt.flags & 1)) {
-        dance_dt.moveIdx = (dance_dt.moveIdx + 1) % 15;
-    } else {
-        if (dance_dt.moveIdx != 0) {
-            dance_dt.moveIdx--;
-        } else {
-            dance_dt.moveIdx = 14;
+void peach_capture(CameraId cameraId, void* param) {
+    CameraEntry camera = *camGetCurPtr();
+    f32 viewport[6];
+    f32 projection[7];
+    u32 scissorLeft;
+    u32 scissorTop;
+    u32 scissorWd;
+    u32 scissorHt;
+    Mtx44 ortho;
+    Mtx lookMtx;
+    Mtx mtx;
+    NpcEntry* npc1;
+    NpcEntry* npc2;
+    NpcEntry* npc;
+
+    npc1 = npcNameToPtr("ホログラム");
+    npc2 = npcNameToPtr("ホログラム2");
+    if (90.0f <= npc1->direction && npc1->direction < 270.0f) {
+        npc = npc2;
+        if (!(horogram_wp->flags & 2)) {
+            animPoseSetLocalTime(npc2->poseId, 0.0f);
         }
-    }
-    evtSetFloat(event, args[0], move_pos_list[dance_dt.moveIdx][0]);
-    evtSetFloat(event, args[1], move_pos_list[dance_dt.moveIdx][1]);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(move_center) {
-    s32* args = event->args;
-    f32 startX = evtGetFloat(event, args[0]);
-    f32 startY = evtGetFloat(event, args[1]);
-    f32 endX = evtGetFloat(event, args[2]);
-    f32 endY = evtGetFloat(event, args[3]);
-    s32 duration = evtGetValue(event, args[4]);
-    OSTime now = gp->renderTime;
-    s32 elapsed;
-
-    if (isFirstCall) {
-        dance_dt.flags |= 4;
-        event->userdata[0] = ((u64)now >> 32) & 0xFFFFFFFF;
-        event->userdata[1] = now & 0xFFFFFFFF;
-        return EVT_RETURN_BLOCK;
-    }
-    elapsed = (s32)((u64)((s32)now - event->userdata[1]) / (OS_TIMER_CLOCK / 1000));
-    if (elapsed < duration) {
-        dance_dt.centerX = intplGetValue(11, elapsed, duration, startX, endX);
-        dance_dt.centerY = intplGetValue(11, elapsed, duration, startY, endY);
-        return EVT_RETURN_BLOCK;
-    }
-    dance_dt.centerX = endX;
-    dance_dt.centerY = endY;
-    dance_dt.flags &= ~4;
-    dance_dt.step++;
-    if (dance_dt.step >= 3) {
-        dance_dt.step = 0;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(dance_flag_check) {
-    s32* args = event->args;
-    s32 mask = evtGetValue(event, args[0]);
-
-    if (dance_dt.flags & mask) {
-        evtSetValue(event, args[1], 1);
+        horogram_wp->flags |= 2;
     } else {
-        evtSetValue(event, args[1], 0);
+        npc = npc1;
+        if (horogram_wp->flags & 2) {
+            animPoseSetLocalTime(npc1->poseId, 0.0f);
+        }
+        horogram_wp->flags &= ~2;
     }
-    return EVT_RETURN_DONE;
+    if (!(horogram_wp->flags & 1)) {
+        npc = npc1;
+    }
+
+    GXGetViewportv(viewport);
+    GXGetProjectionv(projection);
+    GXGetScissor(&scissorLeft, &scissorTop, &scissorWd, &scissorHt);
+    GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
+    GXSetScissor(1, 1, 0x25E, 0x1DE);
+    C_MTXOrtho(ortho, 28.0f, 0.0f, -14.0f, 14.0f, 1.0f, 100.0f);
+    GXSetProjection(ortho, GX_ORTHOGRAPHIC);
+    C_MTXLookAt(lookMtx, &(Vec){0.0f, 0.0f, 20.0f}, &(Vec){0.0f, 1.0f, 0.0f}, &(Vec){0.0f, 0.0f, 0.0f});
+    PSMTXCopy(lookMtx, camGetCurPtr()->view);
+
+    PSMTXIdentity(mtx);
+    animPoseSetMaterialFlagOff(npc->poseId, 0x40);
+    animPoseMain(npc->poseId);
+    animPoseDrawMtx(npc->poseId, mtx, 1, 0.0f, 1.0f);
+    animPoseDrawMtx(npc->poseId, mtx, 2, 0.0f, 1.0f);
+    animPoseDrawMtx(npc->poseId, mtx, 3, 0.0f, 1.0f);
+
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x130, 0xF0, GX_TF_RGBA8, GX_TRUE);
+    GXCopyTex(horogram_wp->tex1, GX_FALSE);
+    GXPixModeSync();
+    GXSetTexCopyDst(0x130, 0xF0, 0x11, GX_TRUE);
+    GXCopyTex(horogram_wp->tex2, GX_TRUE);
+    GXPixModeSync();
+
+    PSMTXCopy(camera.view, camGetCurPtr()->view);
+    GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
+    GXSetProjectionv(projection);
+    GXSetScissor(scissorLeft, scissorTop, scissorWd, scissorHt);
+    horogram_wp->done = 1;
 }
 
-USER_FUNC(get_center) {
-    s32* args = event->args;
+USER_FUNC(horogram_cap_evt) {
+    dispEntry(4, 1000.0f, 0, peach_capture, NULL);
+    return EVT_RETURN_BLOCK;
+}
 
-    evtSetFloat(event, args[0], dance_dt.centerX);
-    evtSetFloat(event, args[1], dance_dt.centerY);
+USER_FUNC(horogram_init) {
+    s32 size = GXGetTexBufferSize(0x260, 0x1e0, 6, 0, 0);
+
+    horogram_wp = _mapAlloc(0x4c);
+    horogram_wp->tex1 = _mapAlloc(size);
+    horogram_wp->tex2 = _mapAlloc(GXGetTexBufferSize(0x260, 0x1e0, 0x11, 0, 0));
+    horogram_wp->done = 0;
+    horogram_wp->flags = 0;
     return EVT_RETURN_DONE;
 }
 
@@ -980,22 +1121,24 @@ EVT_BEGIN(peach_dance_move)
     RETURN
 EVT_END()
 
-USER_FUNC(horogram_set_pose) {
-    const char* pose = (const char*)evtGetValue(event, event->args[0]);
-    char buf[24];
-    NpcEntry* horogram = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e0");
-    NpcEntry* dummy = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e02");
+USER_FUNC(horogram_flag_onoff) {
+    s32* args = event->args;
+    s32 on = evtGetValue(event, args[0]);
+    s32 mask = evtGetValue(event, args[1]);
 
-    marioGetPtr();
-    animPoseSetAnim(horogram->poseId, pose, 1);
-    strcpy(buf, pose);
-    strcat(buf, "R");
-    animPoseSetAnim(dummy->poseId, buf, 1);
+    if (on) {
+        horogram_wp->flags |= mask;
+    } else {
+        horogram_wp->flags &= ~mask;
+    }
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(dance_get_step) {
-    evtSetValue(event, event->args[0], dance_dt.step);
+USER_FUNC(get_center) {
+    s32* args = event->args;
+
+    evtSetFloat(event, args[0], dance_dt.centerX);
+    evtSetFloat(event, args[1], dance_dt.centerY);
     return EVT_RETURN_DONE;
 }
 
@@ -1025,6 +1168,11 @@ EVT_BEGIN(peach_dance_action_step)
     RETURN
 EVT_END()
 
+USER_FUNC(get_local_rotate) {
+    evtSetFloat(event, event->args[0], dance_dt.rotate);
+    return EVT_RETURN_DONE;
+}
+
 USER_FUNC(set_local_rotate) {
     s32* args = event->args;
     dance_dt.rotate = evtGetFloat(event, args[0]);
@@ -1034,11 +1182,6 @@ USER_FUNC(set_local_rotate) {
     if (dance_dt.rotate < 0.0f) {
         dance_dt.rotate += 6.2831855f;
     }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_local_rotate) {
-    evtSetFloat(event, event->args[0], dance_dt.rotate);
     return EVT_RETURN_DONE;
 }
 
@@ -1082,16 +1225,8 @@ EVT_BEGIN(dance_action_turn_sub)
     RETURN
 EVT_END()
 
-USER_FUNC(dance_flag_onoff) {
-    s32* args = event->args;
-    s32 mask = evtGetValue(event, args[0]);
-    s32 on = evtGetValue(event, args[1]);
-
-    if (on) {
-        dance_dt.flags |= mask;
-    } else {
-        dance_dt.flags &= ~mask;
-    }
+USER_FUNC(dance_get_step) {
+    evtSetValue(event, event->args[0], dance_dt.step);
     return EVT_RETURN_DONE;
 }
 
@@ -1102,12 +1237,13 @@ EVT_BEGIN(peach_dance_action_turn)
     RETURN
 EVT_END()
 
-USER_FUNC(dance_reverse) {
-    if (dance_dt.flags & 1) {
-        dance_dt.flags &= ~1;
-    } else {
-        dance_dt.flags |= 1;
-    }
+USER_FUNC(dance_data_init) {
+    dance_dt.flags = 0;
+    dance_dt.centerX = 0.0f;
+    dance_dt.centerY = -80.0f;
+    dance_dt.rotate = -0.4712389f;
+    dance_dt.step = 0;
+    dance_dt.moveIdx = 0;
     return EVT_RETURN_DONE;
 }
 
@@ -1120,8 +1256,16 @@ EVT_BEGIN(peach_dance_action_reverse)
     RETURN
 EVT_END()
 
-USER_FUNC(peach_dance_after_fail) {
-    marioChgPoseTime("P_O_F_1", 20);
+USER_FUNC(dance_flag_onoff) {
+    s32* args = event->args;
+    s32 mask = evtGetValue(event, args[0]);
+    s32 on = evtGetValue(event, args[1]);
+
+    if (on) {
+        dance_dt.flags |= mask;
+    } else {
+        dance_dt.flags &= ~mask;
+    }
     return EVT_RETURN_DONE;
 }
 
@@ -1137,33 +1281,14 @@ EVT_BEGIN(peach_dance_action_fail)
     RETURN
 EVT_END()
 
-USER_FUNC(evt_fuki_btn) {
+USER_FUNC(dance_flag_check) {
     s32* args = event->args;
-    s32 type = evtGetValue(event, args[0]);
-    const char* name2 = (const char*)evtGetValue(event, args[1]);
-    const char* name = (const char*)evtGetValue(event, args[2]);
-    f32 a3 = evtGetFloat(event, args[3]);
-    f32 a4 = evtGetFloat(event, args[4]);
-    f32 a5 = evtGetFloat(event, args[5]);
-    f32 a6 = evtGetFloat(event, args[6]);
-    f32 angle = evtGetFloat(event, args[7]);
-    f32 a8 = evtGetFloat(event, args[8]);
-    NpcEntry* npc;
-    EffectEntry* eff;
+    s32 mask = evtGetValue(event, args[0]);
 
-    (void)a3;
-    (void)a4;
-    (void)a5;
-    (void)a6;
-    (void)a8;
-    if (strcmp(name, "me") == 0) {
-        npc = event->ownerNPC;
+    if (dance_dt.flags & mask) {
+        evtSetValue(event, args[1], 1);
     } else {
-        npc = npcNameToPtr(name);
-    }
-    eff = effPeachFukidashiEntry(type, npc, 10000, 0.0f, 0.0f, 0.0f, 0.0f, angle);
-    if (name2 != NULL && strcmp(name2, "") != 0) {
-        effSetName(eff, name2);
+        evtSetValue(event, args[1], 0);
     }
     return EVT_RETURN_DONE;
 }
@@ -1202,8 +1327,12 @@ EVT_BEGIN(dance_btn_disp)
     RETURN
 EVT_END()
 
-USER_FUNC(evt_fuki_btn_set_batu) {
-    effSetPeachFukiBatu((const char*)evtGetValue(event, event->args[0]));
+USER_FUNC(dance_reverse) {
+    if (dance_dt.flags & 1) {
+        dance_dt.flags &= ~1;
+    } else {
+        dance_dt.flags |= 1;
+    }
     return EVT_RETURN_DONE;
 }
 
@@ -1299,84 +1428,76 @@ EVT_BEGIN(peach_dance_light)
     RETURN
 EVT_END()
 
-static USER_FUNC(bgm_start_wait) {
-    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
-
-USER_FUNC(btn_check) {
+USER_FUNC(move_center) {
     s32* args = event->args;
-    s32 idx = evtGetValue(event, args[0]);
-    u32 buttons = keyGetButtonTrg(0);
-    s32 a = buttons & 0x100;
-    s32 b = buttons & 0x200;
-    s32 c = buttons & 0x400;
-    s32 result = 0;
+    f32 startX = evtGetFloat(event, args[0]);
+    f32 startY = evtGetFloat(event, args[1]);
+    f32 endX = evtGetFloat(event, args[2]);
+    f32 endY = evtGetFloat(event, args[3]);
+    s32 duration = evtGetValue(event, args[4]);
+    OSTime now = gp->renderTime;
+    s32 elapsed;
 
-    switch (idx) {
-        case 1:
-            if (a) {
-                if (!(b | c)) {
-                    result = 1;
-                    goto btn_done;
-                }
-            }
-            if (a == 0 && (b | c)) {
-                result = 2;
-            }
-            break;
-        case 2:
-            if (b) {
-                if (!(a | c)) {
-                    result = 1;
-                    goto btn_done;
-                }
-            }
-            if (b == 0 && (a | c)) {
-                result = 2;
-            }
-            break;
-        case 0:
-            if (c) {
-                if (!(a | b)) {
-                    result = 1;
-                    goto btn_done;
-                }
-            }
-            if (c == 0 && (a | b)) {
-                result = 2;
-            }
-            break;
-        default:
-            if (a | b | c) {
-                result = 2;
-            }
-            break;
+    if (isFirstCall) {
+        dance_dt.flags |= 4;
+        event->userdata[0] = ((u64)now >> 32) & 0xFFFFFFFF;
+        event->userdata[1] = now & 0xFFFFFFFF;
+        return EVT_RETURN_BLOCK;
     }
-btn_done:
-    evtSetValue(event, args[1], result);
+    elapsed = (s32)((u64)((s32)now - event->userdata[1]) / (OS_TIMER_CLOCK / 1000));
+    if (elapsed < duration) {
+        dance_dt.centerX = intplGetValue(11, elapsed, duration, startX, endX);
+        dance_dt.centerY = intplGetValue(11, elapsed, duration, startY, endY);
+        return EVT_RETURN_BLOCK;
+    }
+    dance_dt.centerX = endX;
+    dance_dt.centerY = endY;
+    dance_dt.flags &= ~4;
+    dance_dt.step++;
+    if (dance_dt.step >= 3) {
+        dance_dt.step = 0;
+    }
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(dance_data_init) {
-    dance_dt.flags = 0;
-    dance_dt.centerX = 0.0f;
-    dance_dt.centerY = -80.0f;
-    dance_dt.rotate = -0.4712389f;
-    dance_dt.step = 0;
-    dance_dt.moveIdx = 0;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(horogram_flag_onoff) {
+USER_FUNC(compute_move_pos) {
     s32* args = event->args;
-    s32 on = evtGetValue(event, args[0]);
-    s32 mask = evtGetValue(event, args[1]);
 
-    if (on) {
-        horogram_wp->flags |= mask;
+    if (!(dance_dt.flags & 1)) {
+        dance_dt.moveIdx = (dance_dt.moveIdx + 1) % 15;
     } else {
-        horogram_wp->flags &= ~mask;
+        if (dance_dt.moveIdx != 0) {
+            dance_dt.moveIdx--;
+        } else {
+            dance_dt.moveIdx = 14;
+        }
     }
+    evtSetFloat(event, args[0], move_pos_list[dance_dt.moveIdx][0]);
+    evtSetFloat(event, args[1], move_pos_list[dance_dt.moveIdx][1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(compute_peach_pos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 s = sin(dance_dt.rotate);
+    f32 c = cos(dance_dt.rotate);
+
+    evtSetFloat(event, args[2], x + 5.5f * s);
+    evtSetFloat(event, args[3], y - 5.5f * c);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(compute_horogram_pos) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 s = sin(dance_dt.rotate);
+    f32 c = cos(dance_dt.rotate);
+
+    evtSetFloat(event, args[2], x - 5.5f * s);
+    evtSetFloat(event, args[3], y + 5.5f * c);
     return EVT_RETURN_DONE;
 }
 
@@ -1558,25 +1679,16 @@ EVT_BEGIN(peach_evt_dance)
     RETURN
 EVT_END()
 
-USER_FUNC(horogram_init) {
-    s32 size = GXGetTexBufferSize(0x260, 0x1e0, 6, 0, 0);
-
-    horogram_wp = _mapAlloc(0x4c);
-    horogram_wp->tex1 = _mapAlloc(size);
-    horogram_wp->tex2 = _mapAlloc(GXGetTexBufferSize(0x260, 0x1e0, 0x11, 0, 0));
-    horogram_wp->done = 0;
-    horogram_wp->flags = 0;
-    return EVT_RETURN_DONE;
+s32 wait_action_end(void) {
+    return (dance_dt.flags & 2) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-USER_FUNC(horogram_cap_evt) {
-    dispEntry(4, 1000.0f, 0, peach_capture, NULL);
-    return EVT_RETURN_BLOCK;
+s32 wait_action_begin(void) {
+    return (dance_dt.flags & 2) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-USER_FUNC(disp_horogram_evt) {
-    dispEntry(4, 0.0f, 2, disp_horogram, NULL);
-    return EVT_RETURN_BLOCK;
+s32 wait_move_end(void) {
+    return (dance_dt.flags & 4) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
 static EVT_BEGIN(peach_evt_stg2)
@@ -2083,14 +2195,57 @@ QuizData peach_evt_stg4_quiz_data[5] = {
     { "peach_aji_186", "peach_aji_187", "peach_aji_187_sel", 2 },
 };
 
-USER_FUNC(peach_evt_stg4_read_quiz_data) {
+USER_FUNC(btn_check) {
     s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
+    s32 idx = evtGetValue(event, args[0]);
+    u32 buttons = keyGetButtonTrg(0);
+    s32 a = buttons & 0x100;
+    s32 b = buttons & 0x200;
+    s32 c = buttons & 0x400;
+    s32 result = 0;
 
-    evtSetValue(event, args[1], (s32)peach_evt_stg4_quiz_data[index].question);
-    evtSetValue(event, args[2], (s32)peach_evt_stg4_quiz_data[index].answer1);
-    evtSetValue(event, args[3], (s32)peach_evt_stg4_quiz_data[index].answer2);
-    evtSetValue(event, args[4], peach_evt_stg4_quiz_data[index].correct);
+    switch (idx) {
+        case 1:
+            if (a) {
+                if (!(b | c)) {
+                    result = 1;
+                    goto btn_done;
+                }
+            }
+            if (a == 0 && (b | c)) {
+                result = 2;
+            }
+            break;
+        case 2:
+            if (b) {
+                if (!(a | c)) {
+                    result = 1;
+                    goto btn_done;
+                }
+            }
+            if (b == 0 && (a | c)) {
+                result = 2;
+            }
+            break;
+        case 0:
+            if (c) {
+                if (!(a | b)) {
+                    result = 1;
+                    goto btn_done;
+                }
+            }
+            if (c == 0 && (a | b)) {
+                result = 2;
+            }
+            break;
+        default:
+            if (a | b | c) {
+                result = 2;
+            }
+            break;
+    }
+btn_done:
+    evtSetValue(event, args[1], result);
     return EVT_RETURN_DONE;
 }
 
@@ -3108,239 +3263,94 @@ EVT_BEGIN(aji_17_init_evt)
     RETURN
 EVT_END()
 
-DanceWork dance_dt;
-
 HorogramWork* horogram_wp;
 
-s32 wait_move_end(void) {
-    return (dance_dt.flags & 4) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+DanceWork dance_dt;
+
+USER_FUNC(set_npc_pos) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    NpcEntry* npc = npcNameToPtr((const char*)name);
+
+    npc->prevPosition.x = x;
+    npc->position.x = x;
+    npc->prevPosition.y = y;
+    npc->position.y = y;
+    npc->prevPosition.z = z;
+    npc->position.z = z;
+    return EVT_RETURN_DONE;
 }
 
-s32 wait_action_begin(void) {
-    return (dance_dt.flags & 2) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+USER_FUNC(peach_dance_after_fail) {
+    marioChgPoseTime("P_O_F_1", 20);
+    return EVT_RETURN_DONE;
 }
 
-s32 wait_action_end(void) {
-    return (dance_dt.flags & 2) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
-}
-
-void peach_capture(CameraId cameraId, void* param) {
-    CameraEntry camera = *camGetCurPtr();
-    f32 viewport[6];
-    f32 projection[7];
-    u32 scissorLeft;
-    u32 scissorTop;
-    u32 scissorWd;
-    u32 scissorHt;
-    Mtx44 ortho;
-    Mtx lookMtx;
-    Mtx mtx;
-    NpcEntry* npc1;
-    NpcEntry* npc2;
+USER_FUNC(evt_fuki_btn) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    const char* name2 = (const char*)evtGetValue(event, args[1]);
+    const char* name = (const char*)evtGetValue(event, args[2]);
+    f32 a3 = evtGetFloat(event, args[3]);
+    f32 a4 = evtGetFloat(event, args[4]);
+    f32 a5 = evtGetFloat(event, args[5]);
+    f32 a6 = evtGetFloat(event, args[6]);
+    f32 angle = evtGetFloat(event, args[7]);
+    f32 a8 = evtGetFloat(event, args[8]);
     NpcEntry* npc;
+    EffectEntry* eff;
 
-    npc1 = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e0");
-    npc2 = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e02");
-    if (90.0f <= npc1->direction && npc1->direction < 270.0f) {
-        npc = npc2;
-        if (!(horogram_wp->flags & 2)) {
-            animPoseSetLocalTime(npc2->poseId, 0.0f);
-        }
-        horogram_wp->flags |= 2;
+    (void)a3;
+    (void)a4;
+    (void)a5;
+    (void)a6;
+    (void)a8;
+    if (strcmp(name, "me") == 0) {
+        npc = event->ownerNPC;
     } else {
-        npc = npc1;
-        if (horogram_wp->flags & 2) {
-            animPoseSetLocalTime(npc1->poseId, 0.0f);
-        }
-        horogram_wp->flags &= ~2;
+        npc = npcNameToPtr(name);
     }
-    if (!(horogram_wp->flags & 1)) {
-        npc = npc1;
+    eff = effPeachFukidashiEntry(type, npc, 10000, 0.0f, 0.0f, 0.0f, 0.0f, angle);
+    if (name2 != NULL && strcmp(name2, "") != 0) {
+        effSetName(eff, name2);
     }
-
-    GXGetViewportv(viewport);
-    GXGetProjectionv(projection);
-    GXGetScissor(&scissorLeft, &scissorTop, &scissorWd, &scissorHt);
-    GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
-    GXSetScissor(1, 1, 0x25E, 0x1DE);
-    C_MTXOrtho(ortho, 28.0f, 0.0f, -14.0f, 14.0f, 1.0f, 100.0f);
-    GXSetProjection(ortho, GX_ORTHOGRAPHIC);
-    C_MTXLookAt(lookMtx, &(Vec){0.0f, 0.0f, 20.0f}, &(Vec){0.0f, 1.0f, 0.0f}, &(Vec){0.0f, 0.0f, 0.0f});
-    PSMTXCopy(lookMtx, camGetCurPtr()->view);
-
-    PSMTXIdentity(mtx);
-    animPoseSetMaterialFlagOff(npc->poseId, 0x40);
-    animPoseMain(npc->poseId);
-    animPoseDrawMtx(npc->poseId, mtx, 1, 0.0f, 1.0f);
-    animPoseDrawMtx(npc->poseId, mtx, 2, 0.0f, 1.0f);
-    animPoseDrawMtx(npc->poseId, mtx, 3, 0.0f, 1.0f);
-
-    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
-    GXSetTexCopyDst(0x130, 0xF0, GX_TF_RGBA8, GX_TRUE);
-    GXCopyTex(horogram_wp->tex1, GX_FALSE);
-    GXPixModeSync();
-    GXSetTexCopyDst(0x130, 0xF0, 0x11, GX_TRUE);
-    GXCopyTex(horogram_wp->tex2, GX_TRUE);
-    GXPixModeSync();
-
-    PSMTXCopy(camera.view, camGetCurPtr()->view);
-    GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
-    GXSetProjectionv(projection);
-    GXSetScissor(scissorLeft, scissorTop, scissorWd, scissorHt);
-    horogram_wp->done = 1;
+    return EVT_RETURN_DONE;
 }
 
-void disp_horogram(CameraId cameraId, void* param) {
-    NpcEntry* npc = npcNameToPtr("\u30db\u30ed\u30b0\u30e9\u30e0");
-    GXCullMode cullMode;
-    Mtx lookMtx;
-    Mtx transMtx;
-    Mtx rotMtx;
-    f32 angle;
-    GXColor matColor;
-    GXColor ambColor;
-
-    if (horogram_wp->done == 0) {
-        return;
-    }
-    GXGetCullMode(&cullMode);
-    GXInitTexObj(&horogram_wp->texObj1, horogram_wp->tex1, 0x130, 0xF0, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&horogram_wp->texObj1, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXInitTexObj(&horogram_wp->texObj2, horogram_wp->tex2, 0x130, 0xF0, 0x11, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&horogram_wp->texObj2, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-
-    PSMTXTrans(transMtx, npc->position.x, npc->position.y, npc->position.z);
-    angle = reviseAngle(-npc->direction);
-    angle = angle - camGetPtr(cameraId)->viewYaw;
-    angle += (horogram_wp->flags & 4) ? 180.0f : 0.0f;
-    PSMTXRotRad(rotMtx, 0x79, angle * 0.017453292f);
-    PSMTXConcat(transMtx, rotMtx, lookMtx);
-    PSMTXConcat(camGetPtr(cameraId)->view, lookMtx, lookMtx);
-
-    GXSetCurrentMtx(0);
-    GXLoadTexObj(&horogram_wp->texObj1, GX_TEXMAP0);
-    GXLoadTexObj(&horogram_wp->texObj2, GX_TEXMAP1);
-    GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-    GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
-    matColor = npc->color;
-    GXSetChanMatColor(4, matColor);
-    ambColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-    GXSetChanAmbColor(4, ambColor);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-    GXSetNumTevStages(2);
-    GXSetTevOrder(0, 0, 0, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 1);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 1);
-    GXSetTevColorIn(0, 8, 0xF, 0xF, 0xF);
-    GXSetTevAlphaIn(0, 5, 7, 7, 7);
-    GXSetTevOrder(1, 0, 1, 0xFF);
-    GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(1, 2, 0xF, 0xF, 0xF);
-    GXSetTevAlphaIn(1, 1, 7, 4, 7);
-    GXSetCullMode(GX_CULL_NONE);
-    GXLoadPosMtxImm(lookMtx, 0);
-    polygon(-28.0f, 55.0f, 56.0f, 55.0f, 1.0f, 1.0f);
-    GXSetCullMode(cullMode);
+USER_FUNC(evt_fuki_btn_set_batu) {
+    effSetPeachFukiBatu((const char*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
 }
 
-static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x, y, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x + w, y, 0.0f);
-    GXTexCoord2f32(u, 0.0f);
-    GXPosition3f32(x + w, y - h, 0.0f);
-    GXTexCoord2f32(u, v);
-    GXPosition3f32(x, y - h, 0.0f);
-    GXTexCoord2f32(0.0f, v);
+USER_FUNC(horogram_set_pose) {
+    const char* pose = (const char*)evtGetValue(event, event->args[0]);
+    char buf[24];
+    NpcEntry* horogram = npcNameToPtr("ホログラム");
+    NpcEntry* dummy = npcNameToPtr("ホログラム2");
+
+    marioGetPtr();
+    animPoseSetAnim(horogram->poseId, pose, 1);
+    strcpy(buf, pose);
+    strcat(buf, "R");
+    animPoseSetAnim(dummy->poseId, buf, 1);
+    return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.91%): the offset arithmetic now matches (split `off += k % 8` /
-// `off += b`). What differs is the callee-saved register allocation (param/cam/data/
-// i/j/i%4 land in different registers) and, as a result, the original recomputes
-// (i/4)*256 and (i%4)*8 before the noise loop where we keep them live.
-void noiseDisp(CameraId cameraId, void* param) {
-    CameraEntry* cam;
-    smartEntry* entry;
-    u8* data;
-    GXTexObj texObj;
-    Mtx mtx;
-    GXColor color;
-    s32 i, j, k;
-    s32 num, len, start;
-    u8 val;
+static USER_FUNC(bgm_start_wait) {
+    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
 
-    cam = camGetPtr(cameraId);
-    entry = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_I8, GX_FALSE, 0), 3);
-    data = (u8*)entry->address;
-    for (i = 0; i < 0x40; i++) {
-        s32 a = (i / 4) * 256;
-        s32 b = (i % 4) * 8;
+USER_FUNC(peach_evt_stg4_read_quiz_data) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
 
-        for (j = 0; j < 0x40; j++) {
-            s32 off = (j / 8) * 32 + a;
-            off += j % 8;
-            off += b;
-            data[off] = (i & 1) ? 0xFF : 0;
-        }
-        num = rand() % 100 + 100;
-        for (j = 0; j < num; j++) {
-            len = rand() % 4 + 2;
-            start = rand() % (0x41 - len);
-            val = rand() % 255;
-            for (k = start; k < start + len; k++) {
-                s32 off = (k / 8) * 32 + a;
-                off += k % 8;
-                off += b;
-                data[off] = val;
-            }
-        }
-    }
-    DCFlushRange(data, 0x1000);
-    GXInitTexObj(&texObj, data, 0x40, 0x40, GX_TF_I8, GX_REPEAT, GX_REPEAT, GX_FALSE);
-    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXLoadTexObj(&texObj, GX_TEXMAP0);
-    GXSetNumChans(0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-    PSMTXScale(mtx, 9.5f, 7.5f, 0.0f);
-    GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-    color = (GXColor){0, 0, 0, 0};
-    color.a = (u8)param;
-    GXSetTevColor(GX_TEVREG0, color);
-    GXLoadPosMtxImm(cam->view, 0);
-    GXSetCurrentMtx(0);
-    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-    GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
-    GXSetCullMode(GX_CULL_NONE);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0);
-    GXBegin(0x80, 0, 4);
-    GXPosition3s16(-gp->fbWidth / 2, gp->efbHeight / 2, 0);
-    GXTexCoord2s16(0, 1);
-    GXPosition3s16(gp->fbWidth / 2, gp->efbHeight / 2, 0);
-    GXTexCoord2s16(1, 1);
-    GXPosition3s16(gp->fbWidth / 2, -gp->efbHeight / 2, 0);
-    GXTexCoord2s16(1, 0);
-    GXPosition3s16(-gp->fbWidth, -gp->efbHeight / 2, 0);
-    GXTexCoord2s16(0, 0);
+    evtSetValue(event, args[1], (s32)peach_evt_stg4_quiz_data[index].question);
+    evtSetValue(event, args[2], (s32)peach_evt_stg4_quiz_data[index].answer1);
+    evtSetValue(event, args[3], (s32)peach_evt_stg4_quiz_data[index].answer2);
+    evtSetValue(event, args[4], peach_evt_stg4_quiz_data[index].correct);
+    return EVT_RETURN_DONE;
 }
 // clang-format on

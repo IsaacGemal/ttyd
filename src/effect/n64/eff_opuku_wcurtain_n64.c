@@ -41,7 +41,6 @@ inline Vec initializeVec(Vec* input) {
 	temp.z = input->z;
 	return temp;
 }
-
 EffectEntry* effOpukuWcurtainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effOpukuWcurtainData* data;
@@ -78,7 +77,6 @@ EffectEntry* effOpukuWcurtainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 
 	return entry;
 }
-
 void effOpukuWcurtainMain(EffectEntry* effect) {
 	effOpukuWcurtainData* data = effect->userdata;
 	Vec position = initializeVec((Vec*)&data->x);
@@ -114,7 +112,7 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-// NONMATCHING (75.16%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
+// NONMATCHING (75.15%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
 // retail (the store saturates, which clampS16 reproduces); they need inline asm, so here they lower to
 // xoris/lfd/fsubs loads and compare/fctiwz/sth stores. That changes the transform loop body, the saved
 // FPRs and every local stack offset; tri2's u16 prototype also adds a clrlwi the retail call lacks.

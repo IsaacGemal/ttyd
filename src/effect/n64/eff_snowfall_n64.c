@@ -10,7 +10,6 @@
 #include <stdlib.h>
 
 // .rodata
-extern const Vec vec3_802fb668;
 extern const char str_802FB674[];
 extern const f64 double_to_int_802fb680;
 
@@ -132,20 +131,28 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 	return effect;
 }
 
-// Only the callee-saved pointer pair differs. GC/2.6 assigns the `effect` parameter the higher
-// NONMATCHING (86.22%): data is r30/effect r31 here, the original is data r31/effect r30.
+// The position Vec is built by this makeVec inline (the plain `Vec position = vec3_802fb668;` plus three
+// field stores schedules the loads worse).  `data++` rather than a byte-cast add is what makes mwcc colour
+// data r31 and the effect parameter r30 as the original does; together they give a byte-exact match.
+static inline Vec effSnowfallMakeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 void effSnowfallMain(EffectEntry* effect) {
 	effSnowfallData* data = effect->userdata;
 	Vec position2;
-	Vec position = vec3_802fb668;
+	Vec position;
 	s32 i;
 	s32 life;
 	s32 count;
 	s32 limit;
 
-	position.x = data->position.x;
-	position.y = data->position.y;
-	position.z = data->position.z;
+	position = effSnowfallMakeVec(data->position.x, data->position.y, data->position.z);
 	position2 = position;
 	camGetPtr(CAMERA_3D);
 	if (data->life < 100) {
@@ -162,7 +169,7 @@ void effSnowfallMain(EffectEntry* effect) {
 		data->field_0x28 = life * 25;
 	}
 	limit = (s32)float_166_8041fd24;
-	data = (effSnowfallData*)((u8*)data + 0x34);
+	data++;
 	for (i = 0; i < count; i++, data++) {
 		if (data->timer > 0) {
 			data->timer--;
@@ -178,11 +185,29 @@ void effSnowfallMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 10, effSnowfallDisp, effect);
 }
 
-// (1) the colour is built at r1+0x14 and word-copied down to the argument slot at r1+0x10, while the
-//     original builds at r1+0x10 and copies up to r1+0x14 (the known mwcc GXColor quirk also recorded on
-//     eff_booboo_n64.c / eff_confetti_n64.c);
-// (2) the 8 differing instructions are that build/copy pair and its operands; everything else is identical.
-// NONMATCHING (99.97%): the temporary GXColor argument to GXSetTevColor in the blend branch is one word off.
+// MUST_MATCH: the original builds GXSetTevColor's by-value GXColor argument in a scratch slot and word-copies
+// it up into the outgoing argument slot.  Building it in a plain local makes mwcc put the build in the higher of
+// the two slots (the known GXColor quirk); when the build and the call both live in an inline, mwcc keeps the
+// scratch below the outgoing copy, as the original does.  Natural form under #else.
+#ifdef MUST_MATCH
+static inline void effSnowfallSetBlendColor(GXColor* blend, s32 alpha) {
+	GXColor c = unk_80423268;
+	c.r = blend->r * 0xFF;
+	c.g = blend->g * 0xFF;
+	c.b = blend->b * 0xFF;
+	c.a = alpha * blend->a;
+	GXSetTevColor(1, c);
+}
+static inline void effSnowfallSetPlainColor(s32 alpha) {
+	GXColor c = dat_8041fd10;
+	c.a = alpha;
+	GXSetTevColor(1, c);
+}
+#endif
+
+// (1) The original builds the blend/flat GXColor in a scratch slot and copies it to the outgoing argument slot
+//     (local below the copy); a plain local lands the other way round.  The effSnowfallSet*Color inlines fix it.
+// (2) The rest of the function matches the original instruction for instruction.
 void effSnowfallDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effSnowfallData* data;
@@ -231,16 +256,24 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 	if (mapGetWork()->entries[0].flags & 2) {
 		mapGetBlend(&blend);
+#ifdef MUST_MATCH
+		effSnowfallSetBlendColor(&blend, alpha);
+#else
 		color = unk_80423268;
 		color.r = blend.r * 0xFF;
 		color.g = blend.g * 0xFF;
 		color.b = blend.b * 0xFF;
 		color.a = alpha * blend.a;
 		GXSetTevColor(1, color);
+#endif
 	} else {
+#ifdef MUST_MATCH
+		effSnowfallSetPlainColor(alpha);
+#else
 		color = dat_8041fd10;
 		color.a = alpha;
 		GXSetTevColor(1, color);
+#endif
 	}
 	GXSetCullMode(0);
 	effSetVtxDescN64(eff_snowfall_v);

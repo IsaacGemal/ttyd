@@ -14,6 +14,9 @@
 #include "evt/evt_twoddisp.h"
 #include <stdio.h>
 
+
+EVT_DEF(twoddisp_main_event);
+
 // FontDrawScale is defined in manager/fontmgr.c but not yet in fontmgr.h.
 
 // 2D display entry work. Not extracted into a header yet.
@@ -34,16 +37,16 @@ typedef struct TwoDDisplayer {
 TwoDDisplayer* twodPtr;
 u32 twodID;
 
+// .sbss2 scratch words (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042304c;
+__declspec(section ".sdata") GXColor unk_80423048;
+
 // .sdata2 constants owned by this translation unit (see config/G8MJ01/symbols.txt).
 extern const GXColor dat_8041cca8;
 extern const GXColor dat_8041ccac;
-extern const f32 float_0_8041ccb0;
-extern const f32 float_1_8041ccb4;
-extern const f32 float_1000_8041ccb8;
 
 // .sbss2 fog colors.
-extern GXColor unk_80423048;
-extern GXColor unk_8042304c;
 
 static TwoDDisplayer* twodNameToPtr(s32 name) {
 	s32 i;
@@ -58,79 +61,84 @@ static TwoDDisplayer* twodNameToPtr(s32 name) {
 	return NULL;
 }
 
-//s32* onoff, s32* name, s32* flag
-USER_FUNC(evt_twoddisp_flag_onoff) {
-	TwoDDisplayer* entry;
-	s32* args = event->args;
-	s32 onoff;
-	s32 name;
-
-	onoff = evtGetValue(event, args[0]);
-	name = evtGetValue(event, args[1]);
-	entry = twodNameToPtr(name);
-	if (onoff) {
-		entry->flags |= evtGetValue(event, args[2]);
-	} else {
-		entry->flags &= ~evtGetValue(event, args[2]);
-	}
-	return EVT_RETURN_DONE;
+// Match-only stack shape: passing the font colour by value makes the compiler place all four GXColor
+// argument copies in the outgoing-argument area, matching the original's 0x14/0x10/0xc/0x8 slots; the
+// natural address-taken locals below land in the other half of the frame.
+static inline void twoddisp_fontColor(GXColor color) {
+	FontDrawColor(&color);
 }
 
-//s32* name, f32* baseX, f32* baseY
-USER_FUNC(evt_twoddisp_set_base_position) {
-	TwoDDisplayer* entry;
-	s32* args = event->args;
-	s32 name;
-
-	name = evtGetValue(event, args[0]);
-	entry = twodNameToPtr(name);
-	entry->baseX = evtGetFloat(event, args[1]);
-	entry->baseY = evtGetFloat(event, args[2]);
-	return EVT_RETURN_DONE;
-}
-
-//s32* name, f32* x, f32* y
-USER_FUNC(evt_twoddisp_set_position) {
-	TwoDDisplayer* entry;
-	s32* args = event->args;
-	s32 name;
-
-	name = evtGetValue(event, args[0]);
-	entry = twodNameToPtr(name);
-	entry->x = evtGetFloat(event, args[1]);
-	entry->y = evtGetFloat(event, args[2]);
-	return EVT_RETURN_DONE;
-}
-
-//s32* name, s32* data (text pointer or icon id)
-USER_FUNC(evt_twoddisp_entry) {
+// The original's translation unit saw `iconDispGx` with a `u16` iconId: the call site zero-extends
+// (`clrlwi r5, r0, 16`). This repo's include/driver/icondrv.h declares the third parameter `s16`, which
+// makes the call sign-extend (`extsh r5, r0`). Cast through the signature the original used so the call
+// site emits the original's zero-extension. Reported in REPORT.md; the header itself is not changed
+// because other call sites (ac_timing_wide) rely on the `s16` declaration.
+void twoddisp_disp(CameraId cameraId, void* param) {
+	s32 offset;
 	s32 i;
-	s32* args = event->args;
-	const char* name;
-	s32 data;
+	TwoDDisplayer* entry;
+	Vec pos;
+	GXColor color;
+	GXColor textColor;
+#ifndef MUST_MATCH
+	GXColor color1;
+	GXColor color2;
+#endif
+	char text[0x100];
 
-	name = (const char*)evtGetValue(event, args[0]);
-	data = evtGetValue(event, args[1]);
-	for (i = 0; i < 100; i++) {
-		TwoDDisplayer* entry = &twodPtr[i];
-		strcmp(entry->name, name);
+	offset = 0;
+	for (i = 0; i < 100; i++, offset += 0x34) {
+		entry = (TwoDDisplayer*)((u8*)twodPtr + offset);
 		if ((s8)entry->name[0] == 0) {
-			strcpy(entry->name, name);
-			entry->flags = 1;
-			entry->field_0x12 = 0;
-			entry->x = float_0_8041ccb0;
-			entry->baseX = float_0_8041ccb0;
-			entry->y = float_0_8041ccb0;
-			entry->baseY = float_0_8041ccb0;
-			entry->field_0x24 = data;
-			entry->scale = float_1_8041ccb4;
-			break;
+			continue;
+		}
+		if (!(entry->flags & 1)) {
+			continue;
+		}
+		if (!(entry->field_0x24 & 0x80000000)) {
+			color = unk_80423048;
+			pos.x = entry->baseX + entry->x;
+			pos.y = entry->baseY + entry->y;
+			pos.z = 0.0f;
+			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
+#ifdef MUST_MATCH
+			// Match-only: original call site passes a u16 icon id (clrlwi); the header's s16 would extsh.
+			((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, entry->field_0x24, entry->scale);
+#else
+			iconDispGx(&pos, 0x10, entry->field_0x24, entry->scale);
+#endif
+		} else {
+			FontDrawStart();
+			FontDrawScale(entry->scale);
+			textColor = unk_8042304c;
+			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, textColor);
+			sprintf(text, (char*)entry->field_0x24);
+#ifdef MUST_MATCH
+			twoddisp_fontColor(dat_8041cca8);
+#else
+			color1 = dat_8041cca8;
+			FontDrawColor(&color1);
+#endif
+			FontDrawString(text, entry->baseX + entry->x, entry->baseY + entry->y);
+#ifdef MUST_MATCH
+			twoddisp_fontColor(dat_8041ccac);
+#else
+			color2 = dat_8041ccac;
+			FontDrawColor(&color2);
+#endif
+			FontDrawString(text, entry->baseX + entry->x + 1.0f, entry->baseY + entry->y - 1.0f);
 		}
 	}
-	return EVT_RETURN_DONE;
 }
 
-EVT_DEF(twoddisp_main_event);
+USER_FUNC(twoddisp_main) {
+	u32 i;
+
+	for (i = 0; (s32)i < 100; i++) {
+	}
+	dispEntry(8, 1000.f, 0, twoddisp_disp, NULL);
+	return EVT_RETURN_DONE;
+}
 
 USER_FUNC(evt_twoddisp_init) {
 	EventEntry* entry;
@@ -154,68 +162,91 @@ USER_FUNC(evt_twoddisp_init) {
 		entry->name[0] = 0;
 		entry->flags = 0;
 		entry->field_0x12 = 0;
-		entry->x = float_0_8041ccb0;
-		entry->baseX = float_0_8041ccb0;
-		entry->y = float_0_8041ccb0;
-		entry->baseY = float_0_8041ccb0;
+		entry->x = 0.0f;
+		entry->baseX = 0.0f;
+		entry->y = 0.0f;
+		entry->baseY = 0.0f;
 		entry->field_0x24 = 0;
-		entry->scale = float_1_8041ccb4;
+		entry->scale = 1.0f;
 	}
 	return EVT_RETURN_DONE;
 }
 
-
-USER_FUNC(twoddisp_main) {
-	u32 i;
-
-	for (i = 0; (s32)i < 100; i++) {
-	}
-	dispEntry(8, float_1000_8041ccb8, 0, twoddisp_disp, NULL);
-	return EVT_RETURN_DONE;
-}
-
-// NONMATCHING (98.85%): the icon id passes through an extra `extsh`, and the GXColor temporaries sit in different stack slots.
-void twoddisp_disp(CameraId cameraId, void* param) {
-	s32 offset;
+//s32* name, s32* data (text pointer or icon id)
+USER_FUNC(evt_twoddisp_entry) {
 	s32 i;
-	TwoDDisplayer* entry;
-	Vec pos;
-	GXColor color;
-	GXColor textColor;
-	GXColor color1;
-	GXColor color2;
-	char text[0x100];
+	s32* args = event->args;
+	const char* name;
+	s32 data;
 
-	offset = 0;
-	for (i = 0; i < 100; i++, offset += 0x34) {
-		entry = (TwoDDisplayer*)((u8*)twodPtr + offset);
+	name = (const char*)evtGetValue(event, args[0]);
+	data = evtGetValue(event, args[1]);
+	for (i = 0; i < 100; i++) {
+		TwoDDisplayer* entry = &twodPtr[i];
+		strcmp(entry->name, name);
 		if ((s8)entry->name[0] == 0) {
-			continue;
-		}
-		if (!(entry->flags & 1)) {
-			continue;
-		}
-		if (!(entry->field_0x24 & 0x80000000)) {
-			color = unk_80423048;
-			pos.x = entry->baseX + entry->x;
-			pos.y = entry->baseY + entry->y;
-			pos.z = float_0_8041ccb0;
-			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, color);
-			iconDispGx(&pos, 0x10, (u16)entry->field_0x24, entry->scale);
-		} else {
-			FontDrawStart();
-			FontDrawScale(entry->scale);
-			textColor = unk_8042304c;
-			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, textColor);
-			sprintf(text, (char*)entry->field_0x24);
-			color1 = dat_8041cca8;
-			FontDrawColor(&color1);
-			FontDrawString(text, entry->baseX + entry->x, entry->baseY + entry->y);
-			color2 = dat_8041ccac;
-			FontDrawColor(&color2);
-			FontDrawString(text, entry->baseX + entry->x + float_1_8041ccb4, entry->baseY + entry->y - float_1_8041ccb4);
+			strcpy(entry->name, name);
+			entry->flags = 1;
+			entry->field_0x12 = 0;
+			entry->x = 0.0f;
+			entry->baseX = 0.0f;
+			entry->y = 0.0f;
+			entry->baseY = 0.0f;
+			entry->field_0x24 = data;
+			entry->scale = 1.0f;
+			break;
 		}
 	}
+	return EVT_RETURN_DONE;
+}
+
+
+//s32* name, f32* x, f32* y
+USER_FUNC(evt_twoddisp_set_position) {
+	TwoDDisplayer* entry;
+	s32* args = event->args;
+	s32 name;
+
+	name = evtGetValue(event, args[0]);
+	entry = twodNameToPtr(name);
+	entry->x = evtGetFloat(event, args[1]);
+	entry->y = evtGetFloat(event, args[2]);
+	return EVT_RETURN_DONE;
+}
+
+
+//s32* name, f32* baseX, f32* baseY
+USER_FUNC(evt_twoddisp_set_base_position) {
+	TwoDDisplayer* entry;
+	s32* args = event->args;
+	s32 name;
+
+	name = evtGetValue(event, args[0]);
+	entry = twodNameToPtr(name);
+	entry->baseX = evtGetFloat(event, args[1]);
+	entry->baseY = evtGetFloat(event, args[2]);
+	return EVT_RETURN_DONE;
+}
+
+#ifdef MUST_MATCH
+#endif
+
+//s32* onoff, s32* name, s32* flag
+USER_FUNC(evt_twoddisp_flag_onoff) {
+	TwoDDisplayer* entry;
+	s32* args = event->args;
+	s32 onoff;
+	s32 name;
+
+	onoff = evtGetValue(event, args[0]);
+	name = evtGetValue(event, args[1]);
+	entry = twodNameToPtr(name);
+	if (onoff) {
+		entry->flags |= evtGetValue(event, args[2]);
+	} else {
+		entry->flags &= ~evtGetValue(event, args[2]);
+	}
+	return EVT_RETURN_DONE;
 }
 
 EVT_BEGIN(twoddisp_main_event)
@@ -225,3 +256,11 @@ WAIT_FRAMES(1)
 END_LOOP
 RETURN
 EVT_END()
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041cca8 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_8041ccac = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+#pragma explicit_zero_data on
+__declspec(section ".sdata") u32 gap_07_80411DDC_sdata = 0;
+#pragma explicit_zero_data reset

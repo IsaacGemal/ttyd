@@ -5,6 +5,41 @@
 
 #include <dolphin/mtx.h>
 
+u32 stg_houki_kemuri_v[126] = {
+    0x0000FFCE, 0x00140000, 0x0200FFFF, 0xFFFF0023,
+    0xFFDD0014, 0x01000200, 0xFFFFFFFF, 0x0015FFEB,
+    0x00000100, 0x0100FFFF, 0xFFFF0000, 0xFFE20000,
+    0x00000100, 0xFFFFFFFF, 0x0023FFDD, 0xFFEC0100,
+    0x0000FFFF, 0xFFFF0000, 0xFFCEFFEC, 0x00000000,
+    0xFFFFFFFF, 0x001E0000, 0x00000200, 0x0100FFFF,
+    0xFFFF0032, 0x0000FFEC, 0x02000000, 0xFFFFFFFF,
+    0x00320000, 0x00140200, 0x0200FFFF, 0xFFFF0046,
+    0x00000000, 0x02000100, 0xFFFFFFFF, 0x0031FFCF,
+    0x00000100, 0x0100FFFF, 0xFFFF0000, 0xFFBA0000,
+    0x00000100, 0xFFFFFFFF, 0x00150015, 0x00000300,
+    0x0100FFFF, 0xFFFF0023, 0x0023FFEC, 0x03000000,
+    0xFFFFFFFF, 0x00230023, 0x00140300, 0x0200FFFF,
+    0xFFFF0031, 0x00310000, 0x03000100, 0xFFFFFFFF,
+    0xFFDDFFDD, 0x00140700, 0x0200FFFF, 0xFFFF0000,
+    0xFFCE0014, 0x08000200, 0xFFFFFFFF, 0x0000FFE2,
+    0x00000800, 0x0100FFFF, 0xFFFFFFEB, 0xFFEB0000,
+    0x07000100, 0xFFFFFFFF, 0xFFCFFFCF, 0x00000700,
+    0x0100FFFF, 0xFFFF0000, 0xFFBA0000, 0x08000100,
+    0xFFFFFFFF, 0xFFBA0000, 0x00000600, 0x0100FFFF,
+    0xFFFFFFCE, 0x00000014, 0x06000200, 0xFFFFFFFF,
+    0xFFE20000, 0x00000600, 0x0100FFFF, 0xFFFF0000,
+    0xFFCEFFEC, 0x08000000, 0xFFFFFFFF, 0xFFDDFFDD,
+    0xFFEC0700, 0x0000FFFF, 0xFFFFFFCE, 0x0000FFEC,
+    0x06000000, 0xFFFFFFFF, 0xFFDD0023, 0x00140500,
+    0x0200FFFF, 0xFFFFFFEB, 0x00150000, 0x05000100,
+    0xFFFFFFFF, 0xFFDD0023, 0xFFEC0500, 0x0000FFFF,
+    0xFFFFFFCF, 0x00310000, 0x05000100, 0xFFFFFFFF,
+    0x0000001E, 0x00000400, 0x0100FFFF, 0xFFFF0000,
+    0x0032FFEC, 0x04000000, 0xFFFFFFFF, 0x00000046,
+    0x00000400, 0x0100FFFF, 0xFFFF0000, 0x00320014,
+    0x04000200, 0xFFFFFFFF,
+};
+
 typedef struct effKemuri10Data {
     s32 field_0x0;    // 0x0
     Vec position;     // 0x4
@@ -258,9 +293,10 @@ void effKemuri10Main(EffectEntry* effect) {
 
 // .data vertex array this unit defines in the original; its address is passed
 // to effSetVtxDescN64.
-extern effVtxArray stg_houki_kemuri_v;
 // .sbss2 GXColor scratch this unit defines in the original.
-extern u32 unk_80423178;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 unk_80423178;
 
 // Build the TEV register colour from the scratch colour and the effect data.
 static inline void kemuri10SetColor(effKemuri10Data* data) {
@@ -308,7 +344,7 @@ void effKemuri10Disp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, m0, m0);
     GXLoadPosMtxImm(m0, 0);
     GXSetCurrentMtx(0);
-    effSetVtxDescN64(&stg_houki_kemuri_v);
+    effSetVtxDescN64((effVtxArray*)stg_houki_kemuri_v);
     GXBegin(0x90, 0, 0xc0);
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(3, 2, 4, 0, 3, 4, 5, 0);
@@ -343,3 +379,18 @@ void effKemuri10Disp(CameraId camId, void* param) {
     tri2(35, 28, 29, 0, 35, 29, 32, 0);
     tri2(14, 35, 32, 0, 14, 32, 12, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p015625_8041f4b0 = 0.015625f;
+const f32 float_0p03125_8041f4b4 = 0.03125f;
+const f32 float_0_8041f4b8 = 0.0f;
+const f32 float_0p3_8041f4bc = 0.3f;
+const f32 float_0p8_8041f4c0 = 0.8f;
+const f32 float_0p6_8041f4c4 = 0.6f;
+const f32 float_0p7_8041f4c8 = 0.7f;
+const f32 float_1p05_8041f4cc = 1.05f;
+const f32 float_1_8041f4d0 = 1.0f;
+const f32 float_4_8041f4d4 = 4.0f;
+const f32 float_278_8041f4d8 = 278.0f;
+const f32 float_32_8041f4dc = 32.0f;
+const f32 float_0p1_8041f4e0 = 0.1f;

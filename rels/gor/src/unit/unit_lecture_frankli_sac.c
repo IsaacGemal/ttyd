@@ -191,12 +191,16 @@ EVT_END()
 #pragma opt_dead_assignments off
 #pragma opt_common_subs off
 #pragma opt_propagation off
-// NONMATCHING (94.56%): 16 of 62 instructions differ: 13 with different operands, 1 replaced, 2 missing
 static USER_FUNC(lecture_init) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleAudience* aud = BattleAudienceBaseGetPtr();
     s32 ids[11] = { 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0x30 };
     s32 i;
+#ifdef MUST_MATCH
+    s32 id = 0; // dead store: keeps id in r29 and the loop counter in r28
+#else
+    s32 id;
+#endif
 
     *(s32*)slot |= 1;
     aud->flags |= 0x40000;
@@ -204,20 +208,19 @@ static USER_FUNC(lecture_init) {
         BattleAudience_Delete(i);
     }
     for (i = 0; i < 11; i++) {
-            if (ids[i] != 0x30) {
-                BattleAudience_Entry(ids[i], 0, 0);
-            } else {
-                BattleAudience_Entry(ids[i], 3, 0);
-                BattleAudienceGetPtr(ids[i])->flags |= 0x200;
-            }
+        id = ids[i];
+        if (id != 0x30) {
+            BattleAudience_Entry(id, 0, 0);
+        } else {
+            BattleAudience_Entry(id, 3, 0);
+            BattleAudienceGetPtr(id)->flags |= 0x200;
+        }
     }
     return EVT_RETURN_DONE;
 }
-#pragma opt_dead_assignments reset
-#pragma opt_common_subs reset
-#pragma opt_propagation reset
 
-// NONMATCHING (98.75%): 4 of 16 instructions differ in operands only (registers or offsets)
+// The opt_* block above also covers this function: with the default
+// optimizations it keeps _battleWorkPointer's address temp in r5 instead of r4.
 static USER_FUNC(_battle_set_lecture_unit_id) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -225,6 +228,9 @@ static USER_FUNC(_battle_set_lecture_unit_id) {
     wp->field_424 = evtGetValue(event, args[0]);
     return EVT_RETURN_DONE;
 }
+#pragma opt_dead_assignments reset
+#pragma opt_common_subs reset
+#pragma opt_propagation reset
 
 static EVT_BEGIN(init_event)
     CALL(lecture_init)

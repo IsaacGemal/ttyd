@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "mri_00.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,9 +52,6 @@ extern s32 evt_mri_door_naname_close_pure[];
 extern s32 evt_mri_door_naname_open[];
 extern s32 evt_mri_door_naname_open_pure[];
 extern s32 evt_mri_get16bitdata[];
-extern s32 evt_puni_get_dir[];
-extern s32 evt_puni_init_puni[];
-extern s32 evt_puni_pera_onoff[];
 extern s32 mri_puni_jump_se[];
 extern s32 mri_puni_walk_se[];
 extern s32 mri_waterfall_effect[];

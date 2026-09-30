@@ -36,14 +36,13 @@ const Vec vec3_802fe908 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fe918 = 4503601774854144.0;
 const char str_8042150C[] = "Mist";
 
-// NONMATCHING (98.59%): register allocation differs, the int->float magic constant is @240 instead
-// of double_to_int_802fe918, and the generated jump table symbol is anonymous (known pool-naming
-// limitation).
 EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	EffectEntry* entry = effEntry();
 	MistWork* work;
+	MistWork* ptr;
 	s32 numEffects;
 	s32 i;
+	f32 c;
 
 	if (type == 4) {
 		numEffects = 2;
@@ -68,66 +67,67 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	work->counter = 0;
 	work->alpha = float_255_804214e8;
 	work->field_0x40 = w - camGetPtr(CAMERA_3D)->viewYaw;
-	for (i = 1; i < entry->count; i++) {
-		work[i].x = (f32)(irand(0x32) - 0x19);
-		work[i].y = (f32)(irand(0x32) - 0x19);
-		work[i].z = float_0_804214f4;
-		work[i].scaleZ = work[i].scaleY = work[i].scaleX = float_0p8_80421514 + (f32)irand(0xc) / float_10_80421518;
-		work[i].velX = (f32)(irand(0xa) - 5) / float_20_8042151c;
-		work[i].velY = (f32)(irand(0xa) - 5) / float_20_8042151c;
-		work[i].velZ = float_0_804214f4;
-		work[i].alpha = float_0_804214f4;
-		work[i].life = irand(0x1e) + 0x1e;
-		work[i].counter = 0;
-		work[i].field_0x40 = w - camGetPtr(CAMERA_3D)->viewYaw;
+	for (i = 1, ptr = work + 1; i < entry->count; i++, ptr++) {
+		ptr->x = (f32)(irand(0x32) - 0x19);
+		ptr->y = (f32)(irand(0x32) - 0x19);
+		ptr->z = float_0_804214f4;
+		ptr->scaleX = ptr->scaleY = ptr->scaleZ = float_0p8_80421514 + (f32)irand(0xc) / float_10_80421518;
+		ptr->velX = (f32)(irand(0xa) - 5) / float_20_8042151c;
+		ptr->velY = (f32)(irand(0xa) - 5) / float_20_8042151c;
+		ptr->velZ = float_0_804214f4;
+		ptr->alpha = float_0_804214f4;
+		ptr->life = irand(0x1e) + 0x1e;
+		ptr->counter = 0;
+		ptr->field_0x40 = w - camGetPtr(CAMERA_3D)->viewYaw;
 		switch (type) {
 		case 0:
-			work[i].r = 0xff;
-			work[i].g = 0xff;
-			work[i].b = 0xff;
+			ptr->r = 0xff;
+			ptr->g = 0xff;
+			ptr->b = 0xff;
 			break;
 		case 1:
-			work[i].r = 0xb;
-			work[i].g = 9;
-			work[i].b = 0x60;
+			ptr->r = 0xb;
+			ptr->g = 9;
+			ptr->b = 0x60;
 			break;
 		case 2:
-			work[i].r = 0xe1;
-			work[i].g = 0x99;
-			work[i].b = 0xaf;
+			ptr->r = 0xe1;
+			ptr->g = 0x99;
+			ptr->b = 0xaf;
 			break;
 		case 3:
-			work[i].r = 0x49;
-			work[i].g = 0x65;
-			work[i].b = 0;
+			ptr->r = 0x49;
+			ptr->g = 0x65;
+			ptr->b = 0;
 			break;
 		case 4:
-			work[i].x = float_0_804214f4;
-			work[i].y = float_0_804214f4;
-			work[i].z = float_1_804214f8;
-			work[i].velX = float_1p1_80421528 * (f32)sin(float_6p2832_80421520 * work[i].field_0x40 / float_360_80421524);
-			work[i].velY = float_neg2_8042152c;
-			work[i].velZ = float_1p1_80421528 * -(f32)cos(float_6p2832_80421520 * work[i].field_0x40 / float_360_80421524);
-			work[i].field_0x28 = float_0p95_80421530;
-			work[i].field_0x2C = float_neg0p04_80421534;
-			work[i].field_0x30 = float_0p94_80421538;
-			work[i].r = 0xff;
-			work[i].g = 0xff;
-			work[i].b = 0xff;
-			work[i].scaleX = float_0p3_8042153c;
-			work[i].scaleY = float_0p3_8042153c;
-			work[i].scaleZ = float_0p3_8042153c;
-			work[i].alpha = float_200_80421540;
+			ptr->x = float_0_804214f4;
+			ptr->y = float_0_804214f4;
+			ptr->z = float_1_804214f8;
+			ptr->velX = float_1p1_80421528 * (f32)sin(float_6p2832_80421520 * ptr->field_0x40 / float_360_80421524);
+			ptr->velY = float_neg2_8042152c;
+			c = (f32)cos(float_6p2832_80421520 * ptr->field_0x40 / float_360_80421524);
+			ptr->velZ = float_1p1_80421528 * -c;
+			ptr->field_0x28 = float_0p95_80421530;
+			ptr->field_0x2C = float_neg0p04_80421534;
+			ptr->field_0x30 = float_0p94_80421538;
+			ptr->r = 0xff;
+			ptr->g = 0xff;
+			ptr->b = 0xff;
+			ptr->scaleX = float_0p3_8042153c;
+			ptr->scaleY = float_0p3_8042153c;
+			ptr->scaleZ = float_0p3_8042153c;
+			ptr->alpha = float_200_80421540;
 			break;
 		case 5:
-			work[i].r = 0x46;
-			work[i].g = 0;
-			work[i].b = 0x32;
+			ptr->r = 0x46;
+			ptr->g = 0;
+			ptr->b = 0x32;
 			break;
 		case 6:
-			work[i].r = 0;
-			work[i].g = 0;
-			work[i].b = 0;
+			ptr->r = 0;
+			ptr->g = 0;
+			ptr->b = 0;
 			break;
 		}
 	}
@@ -207,29 +207,42 @@ void effMistMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMistDisp, effect);
 }
 
-// NONMATCHING (97.68%): instruction sequence and data match; only GPR/FPR register numbers differ
-// and the compiler emits the int->float magic constant as an anonymous @240 instead of
-// double_to_int_802fe918 (known pool-naming limitation).
+#ifdef MUST_MATCH
+// Build the GXColor in a helper so the by-value argument lands in stack 0xc, as retail does.
+static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c;
+	u8* p = (u8*)&c;
+	c = unk_80423320;
+	p[0] = r;
+	p[1] = g;
+	p[2] = b;
+	p[3] = a;
+	return c;
+}
+#endif
+
+// NONMATCHING (99.89%): the loop's color channel loads differ (r,b,g vs r,g,b) and the compiler pools
+// the int->float magic and the 0.0f/1.0f vertex literals as anonymous @255/@252/@253 instead of the
+// named double_to_int_802fe918/float_0_804214f4/float_1_804214f8 (known pool-naming limitation).
 void effMistDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
-	MistWork* work = entry->userdata;
+	MistWork* work;
 	CameraEntry* cam;
 	GXTexObj texObj;
+	GXColor color;
 	Mtx mtxTrans;
 	Mtx mtxRot;
 	Mtx mtxScale;
 	Mtx mtxView;
-	GXColor color;
-	s32 alpha;
-	s32 type;
 	s32 i;
+	s32 alpha;
 	f32 half;
 	f32 size;
 
+	work = entry->userdata;
 	cam = camGetPtr(cameraId);
 	alpha = (s32)work->alpha;
-	type = work->type;
-	if (type == 4) {
+	if (work->type == 4) {
 		if (mapGetWork()->entries[0].flags & 2) {
 			return;
 		}
@@ -256,9 +269,7 @@ void effMistDisp(CameraId cameraId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	half = -float_32_804214e4 * float_0p5_804214ec;
-	size = float_16_804214f0;
-	work++;
+	work = &work[1];
 	for (i = 1; i < entry->count; i++, work++) {
 		PSMTXTrans(mtxTrans, work->x, work->y, work->z);
 		PSMTXScale(mtxScale, work->scaleX, work->scaleY, work->scaleZ);
@@ -266,11 +277,17 @@ void effMistDisp(CameraId cameraId, void* param) {
 		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+		color = mistColor(work->r, work->g, work->b, (s32)(work->alpha * (f32)alpha / float_255_804214e8));
+#else
 		color = unk_80423320;
 		color.r = work->r;
 		color.g = work->g;
 		color.b = work->b;
 		color.a = (s32)(work->alpha * (f32)alpha / float_255_804214e8);
+#endif
+		size = float_16_804214f0;
+		half = -float_32_804214e4 * float_0p5_804214ec;
 		GXSetChanMatColor(GX_COLOR0A0, color);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(half, size, 0.0f);

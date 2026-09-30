@@ -30,7 +30,7 @@ extern const f32 float_0_804225b0;
 // (offset 0, 0xC, 0x18); MWCC here emits a separate base per `{ 0 }` literal, which changes
 // every GPR in the function. Declaring them as one array reproduces the shared base.
 #ifdef MUST_MATCH
-static const Vec vec3_zero[3] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
+static const Vec vec3_80301948[3] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
 #endif
 
 // NONMATCHING (97.30%): 1 instruction differs, 4 missing, 1 extra, plus register differences.
@@ -113,16 +113,35 @@ EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX
     return effect;
 }
 
-// NONMATCHING (99.46%): all logic matches. Remaining: (1) the first zero-Vec copy picks scratch
-// registers r4/r3/r0 and r7/r6/r5 where retail uses r3/r0/r5 and r4/r3/r0; (2) three fneg/fsubs
-// results land in f0 where retail puts them in f1. Same values and opcodes.
+#ifdef MUST_MATCH
+static inline Vec mahorn2MakeDisp(effMahorn2Data* data) {
+    Vec v = vec3_80301948[0];
+    v.x = data->position.x;
+    v.y = data->position.y;
+    v.z = data->position.z;
+    return v;
+}
+
+static inline Vec mahorn2MakeTarget(effMahorn2Data* data) {
+    Vec v = vec3_80301948[1];
+    v.x = data->target.x;
+    v.y = data->target.y;
+    v.z = data->target.z;
+    return v;
+}
+#endif
+
+// NONMATCHING (99.73%): all logic matches. The three Vec temps' stack slots are rotated vs retail
+// (retail: case-3 sum Vec 0x8, targetDisp 0x14, disp 0x20; here 0x20/0x8/0x14), because the two
+// helper returns are allocated in the inlining pass before the case-3 local. Registers and instructions
+// match; the helpers above reproduce retail's register allocation, and without them it is 99.63% (see #else).
 void effMahorn2Main(EffectEntry* effect) {
     effMahorn2Data* data;
     Vec position;
     Vec target;
 #ifdef MUST_MATCH
-    Vec disp = vec3_zero[0];
-    Vec targetDisp = vec3_zero[1];
+    Vec disp;
+    Vec targetDisp;
 #else
     Vec disp = { 0 };
     Vec targetDisp = { 0 };
@@ -133,6 +152,12 @@ void effMahorn2Main(EffectEntry* effect) {
     s32 i;
 
     data = effect->userdata;
+#ifdef MUST_MATCH
+    disp = mahorn2MakeDisp(data);
+    position = disp;
+    targetDisp = mahorn2MakeTarget(data);
+    target = targetDisp;
+#else
     disp.x = data->position.x;
     disp.y = data->position.y;
     disp.z = data->position.z;
@@ -141,6 +166,7 @@ void effMahorn2Main(EffectEntry* effect) {
     targetDisp.y = data->target.y;
     targetDisp.z = data->target.z;
     target = targetDisp;
+#endif
     hitDistance = data->hitDistance;
     scale = data->scale;
 
@@ -169,7 +195,7 @@ void effMahorn2Main(EffectEntry* effect) {
             break;
         case 3: {
 #ifdef MUST_MATCH
-            Vec v = vec3_zero[2];
+            Vec v = vec3_80301948[2];
 #else
             Vec v = { 0 };
 #endif

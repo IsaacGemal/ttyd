@@ -114,9 +114,9 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-// NONMATCHING (74.16%): control flow/constants/GX state match, but MWCC picks a different
-// register allocation and a shorter saved-register frame (0x1a0 vs 0x1c0), shifting all stack
-// offsets by -0x18, and lowers the vertex s16->f32 reads via lha/fctiwz instead of psq_l.
+// NONMATCHING (74.94%): control flow/constants/GX state match, but MWCC emits lha/fctiwz for the
+// vertex s16<->f32 conversions where the original uses psq_l/psq_st (GQR2-5 + qr5), so it saves a
+// different register set (f25-f31 vs f31) and a different frame (0x1c0 vs 0x1a0).
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     u8* base = (u8*)lbl_803A5C90;
@@ -152,14 +152,14 @@ void effSstarDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx1, mtx2, mtx3);
     PSMTXScale(mtx4, scale, scale, scale);
     PSMTXConcat(mtx3, mtx4, mtx3);
-    PSMTXRotRad(mtx2, 'z', data->angle * 0.017453292f);
+    PSMTXRotRad(mtx2, 'z', data->field_0x24 * 0.017453292f);
     PSMTXConcat(mtx3, mtx2, mtx3);
 
     GXSetCullMode(GX_CULL_NONE);
+    color = (GXColor){ 0, 0, 0, 0xFF };
     color.r = colR;
     color.g = colG;
     color.b = colB;
-    color.a = 0xFF;
     GXSetTevColor(1, color);
     GXSetTevColor(2, (GXColor){ 0x7F, 0x7F, 0x7F, 0x7F });
     GXSetTevColor(3, (GXColor){ 0x50, 0x50, 0x50, 0x50 });
@@ -266,7 +266,99 @@ void effSstarDisp(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
+// MWCC's FPR allocation follows the local declaration order: with negSin declared next to
+// negCos (the file's earlier 99.65% shape) negSin lands in f4 and d2 in f5; the order below
+// gives the original's negSin=f5, d2=f4. The two `if (x)` truthiness tests (not `x != 0.0f`)
+// are also needed for the original's `fcmpu f31,f0` operand order. Do not reorder/simplify.
+EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
+    EffectEntry* effect;
+    SstarWork* data;
+    f32 dx, dy, dz;
+    f32 dist;
+    f32 scale;
+    f32 angle;
+    f32 negCos;
+    f32 c;
+    f32 s;
+    f32 d2;
+    f32 negSin;
+    s32 i;
+
+    effect = effEntry();
+    effect->type = "SstarN64";
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, sizeof(SstarWork));
+    effect->userdata = data;
+    effect->callback = effSstarMain;
+
+    data->field_0x0 = 1;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->field_0x1C = 0.0f;
+    data->field_0x24 = 0.0f;
+    data->field_0x28 = 0.0f;
+    data->type = type;
+
+    if (type == 3) {
+        data->scale = 0.2f;
+        data->colR = rand() % 256;
+        data->colG = rand() % (255 - data->colR);
+        data->colB = (255 - data->colR) - data->colG;
+    } else {
+        data->scale = 0.5f;
+        data->colR = 0xD2;
+        data->colG = 0xBA;
+        data->colB = 0x5A;
+    }
+
+    dx = a5 - x;
+    dy = a6 - y;
+    dz = a7 - z;
+    dist = dx * dx + dy * dy + dz * dz;
+    scale = dist;
+    if (dist) {
+        dist = sqrtf(dist);
+        scale = a8 / dist;
+    }
+    data->velX = dx * scale;
+    data->velY = dy * scale;
+    data->velZ = dz * scale;
+
+    angle = (6.2831855f * camGetPtr(CAMERA_3D)->viewYaw) / 360.0f;
+    negCos = -(f32)cos(angle);
+    negSin = -(f32)sin(angle);
+    c = negCos * data->velX;
+    s = negSin * data->velZ;
+    d2 = c * c + s * s;
+    if (d2) {
+        d2 = sqrtf(d2);
+    }
+    if (negCos * data->velX + negSin * data->velZ < 0.0f) {
+        d2 = -d2;
+        data->field_0x2C = -20.0f;
+    } else {
+        data->field_0x2C = 20.0f;
+    }
+    negCos = -d2;
+    angle = angleABf(0.0f, 0.0f, -data->velY, negCos);
+    data->field_0x24 = angle;
+    data->angle = angle;
+    data->field_0x34 = negCos;
+    data->lifetime = (s32)(dist / a8);
+    for (i = 0; i < 8; i++) {
+        PSMTXTrans(data->mtx[i], data->position.x, data->position.y, data->position.z);
+    }
+    data->field_0x3C = -1;
+    return effect;
+}
+
+// Placed last so deferred emission makes this the first function in the object, which puts
+// its sqrtf/pool constants in .rodata immediately after vec3_802fb6b8, before
+// effSstarN64Entry's string. effSstarDisp's nonmatching s16->f32 conversion emits an extra
+// magic double; if Main's pool constants were emitted after it (the original layout, which
+// requires effSstarDisp to match) they would sit 8 bytes off and Main's lfd offsets would
+// not match. Only the source position differs; the code is the original's.
 void effSstarMain(EffectEntry* effect) {
     SstarWork* data = effect->userdata;
     MarioWork* mario;
@@ -327,87 +419,3 @@ void effSstarMain(EffectEntry* effect) {
     }
 }
 
-// NONMATCHING (99.63%): a few register names (f4/f5 swap around the sqrt and the d2 cache),
-// one operand order on `fcmpu f31,f0`, and the sqrtf-double pool anchor offset.
-EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
-    EffectEntry* effect;
-    SstarWork* data;
-    f32 dx, dy, dz;
-    f32 dist;
-    f32 scale;
-    f32 angle;
-    f32 negCos;
-    f32 negSin;
-    f32 c;
-    f32 s;
-    f32 d2;
-    s32 i;
-
-    effect = effEntry();
-    effect->type = "SstarN64";
-    effect->count = 1;
-    data = __memAlloc(HEAP_EFFECT, sizeof(SstarWork));
-    effect->userdata = data;
-    effect->callback = effSstarMain;
-
-    data->field_0x0 = 1;
-    data->position.x = x;
-    data->position.y = y;
-    data->position.z = z;
-    data->field_0x1C = 0.0f;
-    data->field_0x24 = 0.0f;
-    data->field_0x28 = 0.0f;
-    data->type = type;
-
-    if (type == 3) {
-        data->scale = 0.2f;
-        data->colR = rand() % 256;
-        data->colG = rand() % (255 - data->colR);
-        data->colB = (255 - data->colR) - data->colG;
-    } else {
-        data->scale = 0.5f;
-        data->colR = 0xD2;
-        data->colG = 0xBA;
-        data->colB = 0x5A;
-    }
-
-    dx = a5 - x;
-    dy = a6 - y;
-    dz = a7 - z;
-    dist = dx * dx + dy * dy + dz * dz;
-    scale = dist;
-    if (dist != 0.0f) {
-        dist = sqrtf(dist);
-        scale = a8 / dist;
-    }
-    data->velX = dx * scale;
-    data->velY = dy * scale;
-    data->velZ = dz * scale;
-
-    angle = (6.2831855f * camGetPtr(CAMERA_3D)->viewYaw) / 360.0f;
-    negCos = -(f32)cos(angle);
-    negSin = -(f32)sin(angle);
-    c = negCos * data->velX;
-    s = negSin * data->velZ;
-    d2 = c * c + s * s;
-    if (d2 != 0.0f) {
-        d2 = sqrtf(d2);
-    }
-    if (negCos * data->velX + negSin * data->velZ < 0.0f) {
-        d2 = -d2;
-        data->field_0x2C = -20.0f;
-    } else {
-        data->field_0x2C = 20.0f;
-    }
-    negCos = -d2;
-    angle = angleABf(0.0f, 0.0f, -data->velY, negCos);
-    data->field_0x24 = angle;
-    data->angle = angle;
-    data->field_0x34 = negCos;
-    data->lifetime = (s32)(dist / a8);
-    for (i = 0; i < 8; i++) {
-        PSMTXTrans(data->mtx[i], data->position.x, data->position.y, data->position.z);
-    }
-    data->field_0x3C = -1;
-    return effect;
-}

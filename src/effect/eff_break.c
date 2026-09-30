@@ -75,14 +75,15 @@ EffectEntry* effBreakEntry(s32 type, s32 a2, f32 x, f32 y, f32 z) {
     return entry;
 }
 
-// NONMATCHING (99.94%): the constant multiply is encoded as fmuls f31, f1, f0; the original emits fmuls f31, f0, f1.
-// Same registers (f0 = float_20_804210c0, f1 = data->field_0x20), only the commutative operand order differs. Stating the
-// constant first makes the same instructions but shuffles the float file (f0<->f1), which costs 9 more instructions.
+#pragma opt_propagation off // without it MWCC rematerialises the scale multiply and swaps f0/f1, losing the target's fmuls operand order
 void effBreakMain(EffectEntry* effect) {
     BreakEffect* data = effect->userdata;
     Vec position;
     Vec disp;
     f32 scale;
+#ifdef MUST_MATCH
+    f32 t;
+#endif
     s32 max;
     s32 i;
     s32 done;
@@ -92,7 +93,14 @@ void effBreakMain(EffectEntry* effect) {
     disp.y = data->y;
     disp.z = data->z;
     position = disp;
+#ifdef MUST_MATCH
+    // The target loads field_0x20 into f1, then the constant into f0, and multiplies f0*f1. Keeping the field in a
+    // temp and writing the constant first gives that allocation (the pragma above is required for it to hold).
+    t = data->field_0x20;
+    scale = float_20_804210c0 * t;
+#else
     scale = data->field_0x20 * float_20_804210c0;
+#endif
     max = data->field_0x10;
 
     done = 0;
@@ -157,9 +165,11 @@ void effBreakMain(EffectEntry* effect) {
     }
 }
 
-// NONMATCHING (99.89%): everything matches except the order of the two independent loop-latch
-// increments. The original emits `addi r30,r30,4` (the texid index, i-1) before `addi r28,r28,1`
-// (i); MWCC emits them the other way round. The volatile 1.0 texcoord reload is handled above.
+#pragma opt_propagation reset
+
+// The default common-subexpression pass reorders the two independent loop-latch induction
+// increments (i before the i-1 texid index); disabling it keeps the target's order.
+#pragma opt_common_subs off // keeps the i-1 texid induction increment before the i increment in the loop latch
 void effBreakDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     BreakEffect* data = effect->userdata;
@@ -217,3 +227,5 @@ void effBreakDisp(CameraId cameraId, void* param) {
         GXTexCoord2f32(0.0f, float_1_804210bc);
     }
 }
+
+#pragma opt_common_subs reset

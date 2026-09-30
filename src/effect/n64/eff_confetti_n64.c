@@ -153,24 +153,46 @@ void effConfettiMain(EffectEntry* effect) {
 	}
 }
 
-// The instruction sequence and stack frame are identical; three allocation/labelling artifacts remain:
-//  (1) register numbering: the original keeps the frame value and the loop counter in r26 (reusing it after
-//      the frame dies) with count in r24; this build reuses r24 for seq and puts the loop counter in r29
-//      (data/type/alpha are r27/r28/r25 in both);
-//  (2) the GXColor for the first GXSetTevColor is built at r1+0xc and word-copied to the outgoing slot at
-//      r1+0x10, while this build builds it at r1+0x10 and copies down to r1+0xc (known mwcc quirk, also in
-//      eff_akari_pose_n64.c / eff_booboo_n64.c / eff_batten.c);
-//  (3) the implicit int->float constant gets the local label @240 instead of double_to_int_802fa448.
-// NONMATCHING (99.61%): only (1) the frame/loop-counter register numbering, (2) the GXColor stack slot
-// direction, and (3) the @240 label differ.
+// MUST_MATCH: retail builds each by-value GXColor in a scratch slot and word-copies it to the
+// outgoing slot.  Building the caller's colour local directly lands it at 0x8 and the second call's
+// temp at 0xc (a downward 0x10->0xc copy); putting each GXSetTevColor inside an inlined helper makes
+// mwcc lay its locals out in the original's order (colour at 0xc, second temp at 0x8, outgoing 0x10).
+// The plain field assignments under #else are the natural form.  Same quirk as eff_thunder_n64.
+#ifdef MUST_MATCH
+static inline void makeConfettiColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c = unk_804230c8;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+
+static inline void makeConfettiColor1(void) {
+	GXColor c = *(GXColor*)&float_0p011489_8041ebf0;
+	GXSetTevColor(GX_TEVREG1, c);
+}
+#endif
+
+// The instructions, stack slots and GXColor temporaries now all match; only the register colouring
+// of the pre-loop sequence computation differs.  The original keeps the frame value and the loop
+// counter in the same register (r26) and gives the loop-invariant sequence index a compiler temporary
+// (r31, with divisor r30 and anm_seq r29).  This build instead coalesces seq with the dead frame value
+// in r26 and gives the loop counter r29 (divisor r31, anm_seq r30).  The two modulos schedule
+// identically; the allocator simply picks the other of two equivalent colourings.  Declaration-order
+// and pragma searches (perm_decls, opt_propagation/opt_lifetimes/opt_common_subs) plus inline-helper
+// forms for the seq computation all failed to move it.  The implicit int->float constant is also
+// emitted as a local @NNN label instead of double_to_int_802fa448 (a duplicate of the file's named
+// .rodata copy).
+// NONMATCHING (99.72%): frame/loop in r26 and seq in a r31 temporary (this build: seq r26, loop r29).
 void effConfettiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	s32 type;
 	effConfettiN64Data* data;
-	s32 count;
-	s32 alpha;
 	s32 i;
 	s32 seq;
+	s32 alpha;
+	s32 count;
 	s32 idx2;
 	u8* clr;
 	CameraEntry* cam;
@@ -217,13 +239,21 @@ void effConfettiDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx2, mtx0, mtx0);
 		GXLoadPosMtxImm(mtx0, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+		makeConfettiColor(clr[0], clr[1], clr[2], alpha);
+#else
 		color = unk_804230c8;
 		color.r = clr[0];
 		color.g = clr[1];
 		color.b = clr[2];
 		color.a = alpha;
 		GXSetTevColor(GX_TEVREG0, color);
+#endif
+#ifdef MUST_MATCH
+		makeConfettiColor1();
+#else
 		GXSetTevColor(GX_TEVREG1, *(GXColor*)&float_0p011489_8041ebf0);
+#endif
 		idx2 = ((i + anm_seq[seq]) & 0xF) << 6;
 		PSMTXScale(scaleMtx, float_0p0625_8041ebf8, float_0p0039062_8041ebfc, float_0_8041ec00);
 		PSMTXTrans(mtx0, float_0_8041ec00, (f32)idx2, float_0_8041ec00);

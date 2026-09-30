@@ -38,16 +38,8 @@
 
 #pragma pool_data off
 
-// These pooled constants live in the REL's generated auto_* rodata objects, not in this unit.
-extern const f32 zero_eki_0000a6b4;
-extern const f32 float_neg1000_eki_0000a6b8;
-extern const u32 zero_eki_0000a6bc;
-extern const f32 float_neg15_eki_0000a6c0;
-extern const f32 float_1_eki_0000a6c4;
-extern const f64 double_to_int_eki_0000a6c8;
-
 // Forward declarations for the unit's .bss objects (defined near the end, at their original .bss position).
-static s32 wwstart[2];
+static OSTime wwstart;
 static s32 x_flag_data[2];
 static LectureButton lbtn[2];
 
@@ -118,50 +110,41 @@ static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
     return (diff * c + a * d) / b;
 }
 
-// NONMATCHING (98.67%): the elapsed division's divisor-high `li r5,0` is scheduled before the 64-bit
-// subtraction instead of after it, so `ww` lands in r7 rather than r5; and the 2^52 conversion constant
-// is pooled as @604@ instead of the original's double_to_int_eki_0000a6c8.
 static USER_FUNC(lect_mario_ido_sum) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 total = evtGetValue(event, args[0]);
-    s32 elapsed;
-    s32 diff;
-    s32 ev;
-    s32 ww;
-    f32 d;
-    f32 start;
-    f32 end;
+    s32 progress;
 
     if (isFirstCall) {
-        *(OSTime*)wwstart = event->lifetime;
+        wwstart = event->lifetime;
         evtSetFloat(event, LW(0), mario->position.x);
         evtSetFloat(event, LW(1), mario->position.y);
         evtSetFloat(event, LW(2), mario->position.z);
     }
-
-    ev = ((s32*)&event->lifetime)[1];
-    ww = ((s32*)wwstart)[1];
-    diff = ev - ww;
-    elapsed = (s32)OSTicksToMilliseconds((u64)diff);
-    if (elapsed > total) {
-        elapsed = total;
+    progress = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
+    if (progress > total) {
+        progress = total;
     }
-
-    start = evtGetFloat(event, LW(0));
-    end = evtGetFloat(event, LW(3));
-    d = (f32)total - (f32)elapsed;
-    mario->position.x = (d * end + (f32)elapsed * start) / (f32)total;
-
-    start = evtGetFloat(event, LW(1));
-    end = evtGetFloat(event, LW(4));
-    mario->position.y = (d * end + (f32)elapsed * start) / (f32)total;
-
-    start = evtGetFloat(event, LW(2));
-    end = evtGetFloat(event, LW(5));
-    mario->position.z = (d * end + (f32)elapsed * start) / (f32)total;
-
-    if (elapsed >= total) {
+    {
+        f32 start = evtGetFloat(event, LW(0));
+        f32 target = evtGetFloat(event, LW(3));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.x = (t * target + (f32)progress * start) / (f32)total;
+    }
+    {
+        f32 start = evtGetFloat(event, LW(1));
+        f32 target = evtGetFloat(event, LW(4));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.y = (t * target + (f32)progress * start) / (f32)total;
+    }
+    {
+        f32 start = evtGetFloat(event, LW(2));
+        f32 target = evtGetFloat(event, LW(5));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.z = (t * target + (f32)progress * start) / (f32)total;
+    }
+    if (progress >= total) {
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;
@@ -209,9 +192,9 @@ static USER_FUNC(x_flag_wait) {
     return (val == x_flag_data[index]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (81.11%): the second iconId test emits `blt zero` (MWCC falls through to the neg15 block)
-// where the original keeps an explicit `bge neg15; b zero`, and the iconId/alpha argument loads are
-// scheduled in the opposite order.
+// The iconId 0x75..0x7D range test must be a switch: MWCC lowers the grouped cases to the original's
+// `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. An `if (a < 0x7E && a >= 0x75)` makes
+// MWCC invert the second branch (`blt zero`).
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
@@ -221,11 +204,25 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
         if (!(btn->flags & 1)) {
             Vec pos;
             f32 yOff;
-            yOff = (btn->iconId >= 0x7E) ? zero_eki_0000a6b4
-                 : (btn->iconId >= 0x75) ? float_neg15_eki_0000a6c0 : zero_eki_0000a6b4;
+
+            switch (btn->iconId) {
+            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
+            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
+                yOff = -15.0f;
+                break;
+            default:
+                yOff = 0.0f;
+                break;
+            }
             pos = p->position;
             pos.y += yOff;
-            iconDispGxAlpha(&pos, 0x50, (s16)btn->iconId, (u8)btn->alpha, float_1_eki_0000a6c4);
+#ifdef MUST_MATCH
+            // iconDispGxAlpha's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
+            ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)btn->iconId, (u8)btn->alpha,
+                                                                 1.0f);
+#else
+            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
+#endif
         }
     }
 }
@@ -273,7 +270,7 @@ static USER_FUNC(lecture_button_rtn) {
     if (count >= 2) {
         return EVT_RETURN_DONE;
     }
-    dispEntry(CAMERA_2D, zero_eki_0000a6b4, 1, lecture_button_disp, NULL);
+    dispEntry(CAMERA_2D, 0.0f, 1, lecture_button_disp, NULL);
     return EVT_RETURN_BLOCK;
 }
 
@@ -536,7 +533,7 @@ static USER_FUNC(lect_mobj_hit_nasi) {
     }
     for (i = 0; i < 2; i++) {
         if (obj->hitObj[i].name != NULL &&
-            strcmp(obj->hitObj[i].name, (const char*)&zero_eki_0000a6bc) != 0) {
+            strcmp(obj->hitObj[i].name, "") != 0) {
             hitGrpFlagOn(obj->hitObj[i].name, 1);
         }
     }
@@ -564,7 +561,7 @@ static USER_FUNC(juyoitem_gogo) {
     ItemEntry* item = (ItemEntry*)event->lwData[8];
 
     iconFlagOff(item->name, 0x200);
-    itemSetPosition(item, zero_eki_0000a6b4, float_neg1000_eki_0000a6b8, zero_eki_0000a6b4);
+    itemSetPosition(item, 0.0f, -1000.0f, 0.0f);
     marioChgStayMotion();
     marioStSystemLevel(0);
     return EVT_RETURN_DONE;
@@ -906,8 +903,8 @@ EVT_BEGIN(all_juyoitem_lecture_rel_7_data_150F8)
     RETURN
 EVT_END()
 
-// TODO: type
-static s32 wwstart[2];
+// Start time of the lecture move-in animation (captured on the first call).
+static OSTime wwstart;
 
 // TODO: type
 static s32 x_flag_data[2];

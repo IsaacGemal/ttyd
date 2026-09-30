@@ -676,21 +676,39 @@ static void senkaron_ext_init(void) {
     marioHammerFrame = 0;
 }
 
-// NONMATCHING (97.68%): identical length and instruction mix; only register allocation differs
-// (pose/i/offset land in r29/r28/r24 here vs r25/r26/r23 in the original).
 static void senkaron_ext_main(void) {
     f32 f31;
-    ExtPose* pose;
-    MarioWork* mario;
-    f32 f30;
+#ifdef MUST_MATCH
+    // MWCC coalesces two equal scalar string pointers into one register; modelling the fly SFX name
+    // as an array element forces the original's second live copy of it (r28/r27).
+    const char* sfx[3];
+#define sfxLanding sfx[0]
+#define sfxFly0 sfx[1]
+#define sfxFly1 sfx[2]
+#else
     const char* sfxLanding;
-    f32 f29;
     const char* sfxFly;
+#define sfxFly0 sfxFly
+#define sfxFly1 sfxFly
+#endif
+    f32 f30;
     s32 i;
+    f32 f29;
+#ifdef MUST_MATCH
+    // Naming the constant makes MWCC load the field into f1 and 0.5f into f0, as in the original.
+    f32 half;
+#endif
+    MarioWork* mario;
+    ExtPose* pose;
 
     pose = extGetPosePtr();
     mario = marioGetPtr();
+#ifdef MUST_MATCH
+    half = 0.5f;
+    f29 = mario->wPlayerCollisionBox.x * half;
+#else
     f29 = mario->wPlayerCollisionBox.x * 0.5f;
+#endif
     marioPushedFlag = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
         marioHammerFrame++;
@@ -702,12 +720,13 @@ static void senkaron_ext_main(void) {
     }
 
     i = extGetPoseNum() - 1;
-    f30 = 3.0f * f29;
-    f31 = 1.5f * (6.0f * f29);
     sfxLanding = "SFX_STG1_HONE_LANDING1";
-    sfxFly = "SFX_STG1_HONE_FLY1";
+    f31 = 1.5f * (6.0f * f29);
+    sfxFly0 = "SFX_STG1_HONE_FLY1";
+    sfxFly1 = "SFX_STG1_HONE_FLY1";
+    f30 = 3.0f * f29;
 
-    for (; i >= 0; i--) {
+    for (; i >= 0; i--, pose++) {
         switch (senkaron[i].state) {
             case 0:
                 pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
@@ -762,17 +781,15 @@ static void senkaron_ext_main(void) {
                         break;
                     }
                     if (mario->currMotionId == MARIO_MOTION_HAMMER && marioHammerFrame == 0xA) {
-                        f32 mz = (*pose->matrix)[2][3];
-                        f32 pz = mario->position.z;
-
-                        if (mz > pz - 80.0f && mz < pz + 80.0f) {
+                        if ((*pose->matrix)[2][3] > mario->position.z - 80.0f && (*pose->matrix)[2][3] < mario->position.z + 80.0f) {
                             if (mario->directionView > 0.0f && mario->directionView < 180.0f) {
                                 if ((*pose->matrix)[0][3] > mario->position.x && (*pose->matrix)[0][3] < mario->position.x + f31) {
                                     f32 dx = (*pose->matrix)[0][3] - mario->position.x;
-                                    f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
+                                    f32 dz = (*pose->matrix)[2][3] - mario->position.z;
+                                    f32 len = (f32)sqrt(dx * dx + dz * dz);
 
                                     senkaron[i].field_0x8 = 3.0f * dx / len - 1.0f;
-                                    senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                    senkaron[i].field_0xC = randf(5.0f, 10.0f);
                                     senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
                                     senkaron[i].state = 0x61;
                                     {
@@ -781,15 +798,16 @@ static void senkaron_ext_main(void) {
                                         v.x = (*pose->matrix)[0][3];
                                         v.y = (*pose->matrix)[1][3];
                                         v.z = (*pose->matrix)[2][3];
-                                        psndSFXOn_3D(sfxFly, &v);
+                                        psndSFXOn_3D(sfxFly0, &v);
                                     }
                                 }
                             } else if ((*pose->matrix)[0][3] < mario->position.x && (*pose->matrix)[0][3] > mario->position.x - f31) {
                                 f32 dx = (*pose->matrix)[0][3] - mario->position.x;
-                                f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
+                                f32 dz = (*pose->matrix)[2][3] - mario->position.z;
+                                f32 len = (f32)sqrt(dx * dx + dz * dz);
 
                                 senkaron[i].field_0x8 = 1.0f + 3.0f * dx / len;
-                                senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                senkaron[i].field_0xC = randf(5.0f, 10.0f);
                                 senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
                                 senkaron[i].state = 0x61;
                                 {
@@ -798,19 +816,22 @@ static void senkaron_ext_main(void) {
                                     v.x = (*pose->matrix)[0][3];
                                     v.y = (*pose->matrix)[1][3];
                                     v.z = (*pose->matrix)[2][3];
-                                    psndSFXOn_3D(sfxFly, &v);
+                                    psndSFXOn_3D(sfxFly1, &v);
                                 }
                             }
                         }
                     }
                     {
-                        f32 mx = (*pose->matrix)[0][3];
-                        f32 mz = (*pose->matrix)[2][3];
                         f32 px = mario->position.x;
-                        f32 pz = mario->position.z;
+                        f32 mx = (*pose->matrix)[0][3];
 
-                        if (mx > px + f29 - 10.0f && mx < px + f30 && mz > pz - 20.0f && mz < pz + 20.0f) {
-                            marioPushedFlag = 1;
+                        if (mx > px + f29 - 10.0f && mx < px + f30) {
+                            f32 pz = mario->position.z;
+                            f32 mz = (*pose->matrix)[2][3];
+
+                            if (mz > pz - 20.0f && mz < pz + 20.0f) {
+                                marioPushedFlag = 1;
+                            }
                         }
                     }
                     if ((*pose->matrix)[0][3] >= mario->position.x) {
@@ -897,7 +918,6 @@ static void senkaron_ext_main(void) {
             case 0x63:
                 break;
         }
-        pose++;
     }
 
     if (marioPushedFlag == 1) {
@@ -927,6 +947,12 @@ static void senkaron_ext_main(void) {
         mario->position.z += speed * (nz / len);
     }
 }
+
+#ifdef MUST_MATCH
+#undef sfxLanding
+#endif
+#undef sfxFly0
+#undef sfxFly1
 
 static void senkaron_ext_dispent(void) {
     dispEntry(4, 0.0f, 1, (DispCallback)senkaron_ext_disp, NULL);

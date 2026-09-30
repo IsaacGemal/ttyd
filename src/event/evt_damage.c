@@ -9,7 +9,9 @@
 #include "mario/mario.h"
 #include "mario/mariost.h"
 #include "system.h"
+#include "evt/evt_snd.h"
 
+// clang-format off
 USER_FUNC(camdir) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 yaw = cam->viewYaw;
@@ -32,9 +34,55 @@ USER_FUNC(camdir) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.91%): only the live range of the elapsed-step `divwu` result differs; the
-// original computes it into r4 and copies it to r26 before the first intplGetValue call, MWCC
-// keeps it in r26 from the start. Values, constants and control flow otherwise match.
+EVT_BEGIN(evt_gazigazi_entry)
+    CALL(evt_npc_entry, STRING("ガジガジ"), STRING("c_gazigazi"))
+    CALL(evt_npc_set_position, STRING("ガジガジ"), 0, -1000, 0)
+    CALL(evt_npc_pera_onoff, STRING("ガジガジ"), 0)
+    CALL(evt_npc_set_ry, STRING("ガジガジ"), FLOAT(0.0f))
+    CALL(evt_npc_flag_onoff, 1, STRING("ガジガジ"), 33554432)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_gazigazi_anim_loop)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_GAJIGAJI1"), LW(0), LW(1), LW(2), 0)
+    LOOP(0)
+        CALL(evt_npc_set_anim, STRING("ガジガジ"), STRING("GAZ_A_1"))
+        CALL(evt_npc_wait_anim, STRING("ガジガジ"), FLOAT(1.0f))
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_gazigazi_appear)
+    SET_VALUE(LW(10), LW(0))
+    SET_VALUE(LW(11), LW(1))
+    SET_VALUE(LW(12), LW(2))
+    SET_VALUE(LW(13), LW(0))
+    SET_VALUE(LW(14), LW(1))
+    SET_VALUE(LW(15), LW(2))
+    ADD(LW(10), 0)
+    ADD(LW(11), -50)
+    ADD(LW(12), 0)
+    ADD(LW(13), 0)
+    ADD(LW(14), -10)
+    ADD(LW(15), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("ガジガジ"), 1073741856)
+    CALL(evt_npc_set_rotate_offset, STRING("ガジガジ"), 0, 20, 0)
+    CALL(camdir)
+    CALL(evt_npc_set_rotate, STRING("ガジガジ"), FLOAT(0.0f), LW(3), FLOAT(270.0f))
+    CALL(evt_npc_set_scale, STRING("ガジガジ"), FLOAT(1.0f), FLOAT(1.0f), LW(4))
+    CALL(evt_npc_set_anim, STRING("ガジガジ"), STRING("GAZ_S_1"))
+    SPAWN_EVENT_GET_ID(PTR(evt_gazigazi_anim_loop), LW(9))
+    BEGIN_INLINE_EVENT
+        CALL(evt_gazigazi_move_position, STRING("ガジガジ"), LW(10), LW(11), LW(12), LW(13), LW(14), LW(15), 300, 1)
+    END_INLINE_EVENT
+    WAIT_MS(1000)
+    CALL(evt_gazigazi_move_position, STRING("ガジガジ"), LW(13), LW(14), LW(15), LW(10), LW(11), LW(12), 600, 0)
+    DELETE_EVENT(LW(9))
+    CALL(evt_npc_set_position, STRING("ガジガジ"), 0, -1000, 0)
+    RETURN
+EVT_END()
+// clang-format on
+
 USER_FUNC(evt_gazigazi_move_position) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -53,9 +101,17 @@ USER_FUNC(evt_gazigazi_move_position) {
     if (isFirstCall) {
         event->userdata[0] = (s32)gp->renderTime;
     }
+#ifdef MUST_MATCH
+    // MUST_MATCH: evaluating the step expression in the condition and assigning curStep inside the
+    // first call keeps the divwu result in r4 and its callee-saved copy in r26; the natural s32
+    // form homes the step in r26 throughout.
+    if ((s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]) < steps) {
+        startX = intplGetValue(mode, curStep = (u32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]), steps, startX, endX);
+#else
     curStep = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
     if (curStep < steps) {
         startX = intplGetValue(mode, curStep, steps, startX, endX);
+#endif
         startY = intplGetValue(mode, curStep, steps, startY, endY);
         startZ = intplGetValue(mode, curStep, steps, startZ, endZ);
         pos = (Vec){ startX, startY, startZ };
@@ -68,3 +124,7 @@ USER_FUNC(evt_gazigazi_move_position) {
     npc->position = npc->prevPosition;
     return EVT_RETURN_DONE;
 }
+
+#pragma explicit_zero_data on
+__declspec(section ".data") u32 gap_05_8036203C_data = 0;
+#pragma explicit_zero_data reset

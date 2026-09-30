@@ -7,13 +7,14 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423130;
+
+
 // .sdata2 constants (defined in the original unit's data section).
-extern const f32 float_deg2rad_8041f0c8;
-extern const f32 float_0p03125_8041f0cc;
-extern const f32 float_0_8041f0d0;
 
 // .sbss2 shared scratch GXColor, only its bytes are overwritten.
-GXColor unk_80423130;
 
 // .sdata byte-indexed color rotation table (24 bytes).
 static u8 color_rotation_data[24] = {
@@ -31,9 +32,10 @@ static u32 size16x16_tex64x64_vtx[0x38 / 4] = {
 };
 
 // Inlined in the original; the helper scope reproduces the stack slot the compiler
-// picks for the by-value GXColor copy (local at 0x8, outgoing copy at 0xC).
-static inline void hagetakaFlushSetColor(effHagetakaFlushData* data, s32 alpha) {
-	s32 idx = data->field_0x14 * 3 % 24;
+// picks for the by-value GXColor copy (local at 0x8, outgoing copy at 0xC). Its index
+// argument is computed with `%=` in the caller (as in eff_wangflush_n64.c) so the
+// remainder reuses the dividend register r7.
+static inline void hagetakaFlushSetColor(s32 idx, s32 alpha) {
 	GXColor color = unk_80423130;
 
 	color.r = color_rotation_data[idx];
@@ -116,8 +118,9 @@ void effHagetakaFlushMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (99.91%): the color-index modulo's remainder lands in r0 instead of r7
-// (`subf r0,r0,r7` + the following `add`/`lbzx` index), so three instructions differ.
+// The color index is computed here with `%=` rather than `% 24` at the call site:
+// the in-place form makes the remainder reuse the dividend register (r7), matching
+// the original's subf/add/lbzx.
 void effHagetakaFlushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effHagetakaFlushData* data;
@@ -128,6 +131,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	Mtx mtxRot;
 	f32 scale;
 	s32 alpha;
+	s32 idx;
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -135,7 +139,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	alpha = data->field_0x24;
 	scale = data->field_0x28 * data->field_0x2C;
 	PSMTXTrans(mtxTrans, data->x, data->y, data->z);
-	PSMTXRotRad(mtxRot, 'y', float_deg2rad_8041f0c8 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(mtxRot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(mtxScale, scale, scale, scale);
 	PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
 	PSMTXConcat(mtxTrans, mtxScale, mtxTrans);
@@ -151,15 +155,23 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(0, 7, 1, 4, 7);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	PSMTXScale(mtxScale, float_0p03125_8041f0cc, float_0p03125_8041f0cc, float_0_8041f0d0);
+	PSMTXScale(mtxScale, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(mtxScale, 0x1e, 1);
 	effGetTexObjN64(0x1c, &texObj);
 	GXLoadTexObj(&texObj, 0);
 
-	hagetakaFlushSetColor(data, alpha);
+	idx = data->field_0x14 * 3;
+#ifdef MUST_MATCH
+	idx %= 24;
+#else
+	idx = idx % 24;
+#endif
+	hagetakaFlushSetColor(idx, alpha);
 
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

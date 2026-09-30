@@ -19,21 +19,32 @@
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 evt_puni_flag_onoff[];
-extern s32 evt_puni_get_flag[];
-extern s32 evt_puni_get_position[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_maze[];
-extern s32 evt_puni_set_mode[];
-extern s32 evt_puni_set_position[];
-extern s32 evt_puni_set_ymode[];
-extern s32 evt_puni_set_yuka[];
 extern s32 mri_countdown[];
 extern s32 mri_puni_init[];
 extern s32 puni_disp_info[];
 static USER_FUNC(ss_check);
 static USER_FUNC(ss_set);
 static s32 ssf;
+
+#ifdef MUST_MATCH
+// Match-only: reading ssf through a volatile pointer inside an inline makes MWCC emit the target's
+// int->float register allocation (value in r5, conversion double address in r6, event->args in r4).
+static inline f32 ss_check_to_f(volatile s32* p) { return (f32)*p; }
+#endif
+
+static USER_FUNC(ss_check) {
+#ifdef MUST_MATCH
+    evtSetFloat(event, event->args[0], ss_check_to_f(&ssf));
+#else
+    evtSetFloat(event, event->args[0], ssf);
+#endif
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(ss_set) {
+    ssf = evtGetValue(event, event->args[0]);
+    return EVT_RETURN_DONE;
+}
 
 USER_FUNC(puni_get_id) {
     s32 offset;
@@ -45,18 +56,6 @@ USER_FUNC(puni_get_id) {
     puni = (u8*)puniGetPunidat() + offset;
 
     evtSetValue(event, args[1], *(s16*)(puni + 0x116));
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(ss_set) {
-    ssf = evtGetValue(event, event->args[0]);
-    return EVT_RETURN_DONE;
-}
-
-// NONMATCHING (86.91%): the target loads ssf into r5 and event->args before the int->float conversion; ours keeps the
-// argument load until after it (no source variant changed it).
-static USER_FUNC(ss_check) {
-    evtSetFloat(event, event->args[0], ssf);
     return EVT_RETURN_DONE;
 }
 

@@ -158,9 +158,12 @@ static f32 randf(f32 min, f32 max) {
     return r * d + min;
 }
 
-// NONMATCHING (91.68%): scheduling/register allocation only; the constants and
-// loop body match. The original also loads pTeresa[i].field_0x04/0x08 instead of
-// the literals 6.0f/80.0f, which changes the instruction schedule.
+// Inlined arithmetic helper: keeps the `+ min` (even when min is 0) as a
+// separate fmadds, which the original's inlined randf produces.
+static inline f32 scale(f32 r, f32 min, f32 max) {
+    return r * (max - min) + min;
+}
+
 static void senteresa_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count = extGetPoseNum();
@@ -170,6 +173,9 @@ static void senteresa_ext_init(void) {
     for (i = 0; i < count; i++, pose++) {
         f32 a;
         f32 b;
+        f32 angle;
+        f32 c;
+        f32 bscale;
 
         pose->flags = 2;
         pose->field_0x4 = 270.0f;
@@ -180,17 +186,20 @@ static void senteresa_ext_init(void) {
         (*pose->matrix)[1][3] = 6.0f;
         pTeresa[i].field_0x08 = 80.0f;
         (*pose->matrix)[2][3] = 80.0f;
-        pTeresa[i].field_0x0C = 200.0f;
         a = (f32)rand() / 32767.0f;
         b = (f32)rand() / 32767.0f;
-        pTeresa[i].field_0x10 = 6.0f + ((f32)rand() / 32767.0f * 143.0f + 27.0f);
-        pTeresa[i].field_0x14 = 80.0f + (b * 20.0f + 10.0f) * (f32)cos(a * 360.0f + 0.0f);
+        pTeresa[i].field_0x0C = 200.0f;
+        angle = scale(a, 0.0f, 360.0f);
+        pTeresa[i].field_0x10 = pTeresa[i].field_0x04 + randf(27.0f, 170.0f);
+        c = (f32)cos(angle);
+        bscale = scale(b, 10.0f, 30.0f);
+        pTeresa[i].field_0x14 = pTeresa[i].field_0x08 + bscale * c;
         pTeresa[i].field_0x1C = 0.0f;
-        pTeresa[i].field_0x20 = (f32)rand() / 32767.0f * 0.2f + -0.1f;
+        pTeresa[i].field_0x20 = randf(-0.1f, 0.1f);
         pTeresa[i].field_0x18 = 0.0f;
         pTeresa[i].field_0x28 = (s32)(1.7f * (f32)(i + 1));
         pTeresa[i].field_0x2C = 0;
-        pTeresa[i].field_0x24 = (f32)rand() / 32767.0f * 350.0f + 0.0f;
+        pTeresa[i].field_0x24 = randf(0.0f, 350.0f);
     }
     g_nNumOutBox[0] = 0;
     g_nNumEndProc[0] = 0;
@@ -219,7 +228,9 @@ void computePosHermite(ExtPose* pose, f32* p) {
     (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
 }
 
-// NONMATCHING (78.2%): 104 of 224 instructions differ: 54 with different operands, 20 replaced, 16 missing, 14 extra
+// NONMATCHING (78.2%): the Hermite math matches; the original keeps t*t in a
+// callee-saved f31 and schedules the basis loads/stores differently. 104 of 224
+// instructions differ, mostly register allocation.
 static void senteresa_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count;
@@ -336,8 +347,9 @@ USER_FUNC(senteresa_okure_move_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (67.85%): same Hermite-basis scheduling mismatch; the original
-// converts each event->lwData word in its own stack slot, ours coalesces them.
+// NONMATCHING (84.14%): the Hermite basis now matches. What differs is GPR
+// allocation: the original keeps the args pointer in r31 (reused for npc) and
+// only saves r30/r31, ours needs a third callee-saved register for args.
 USER_FUNC(senteresa_okure_move) {
     s32* args = event->args;
     NpcEntry* npc = npcNameToPtr("テレサ");
@@ -350,10 +362,10 @@ USER_FUNC(senteresa_okure_move) {
     f32 p5 = (f32)event->lwData[15];
     f32 omt = 1.0f - t;
     f32 two_t = 2.0f * t;
-    f32 h11 = (t - 1.0f) * (t * t);
-    f32 h01 = (3.0f - two_t) * (t * t);
     f32 h00 = (1.0f + two_t) * omt * omt;
+    f32 h11 = (t - 1.0f) * (t * t);
     f32 h10 = t * omt * omt;
+    f32 h01 = (3.0f - two_t) * (t * t);
     Vec va = vec3_jin_00007fb4;
     Vec vb = vec3_jin_00007fc0;
     Vec pos;

@@ -9,29 +9,52 @@
 #include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 
 extern GXColor unk_804232d8;
+#ifdef MUST_MATCH
+/* Match-only trick: named .sdata2 constants, defined at the end of the file, so the compiler can't
+   fold `-32.0f * 0.5f` into -16 (the original does the multiply at runtime). The original's 0.5 and 16.0
+   are ordinary pool literals, so this duplicates them (two extra .sdata2 words). */
+extern const f32 float_32_80420abc;
+extern const f32 float_0p5_80420ad0;
+extern const f32 float_16_80420ad4;
+#endif
+
+extern const Vec vec3_802fdcf8;
+typedef struct {
+	f32 v[4];
+} effKemuTestQuad;
 
 const GXColor dat_80420ab0 = { 0x80, 0x80, 0x80, 0x80 };
 const GXColor dat_80420ab4 = { 0x00, 0x00, 0x00, 0x60 };
-
 void effKemuTestSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	effKemuTestData* data = effect->userdata;
 
 	data->field_0x50 = rx;
 	data->field_0x54 = rz;
 }
-
 void effKemuTestDrawCam(EffectEntry* effect, s32 camId) {
 	effKemuTestData* data = effect->userdata;
 
 	data->field_0x1C = camId;
 }
 
-// NONMATCHING (98.37%): retail duplicates the per-quad mat/pos/scale/draw block into both
-// branches of the `j == 0` test; this compiler merges them, and the quad extent is
-// constant-folded to -16 instead of kept as a hoisted -32 * 0.5.
+#ifdef MUST_MATCH
+static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
+	GXColor color = unk_804232d8;
+
+	color.r = data->field_0x4C;
+	color.g = data->field_0x4D;
+	color.b = data->field_0x4E;
+	color.a = alpha;
+	return color;
+}
+#endif
+
+/* Matches using the named .sdata2 constants above (so the compiler emits the
+   `-32 * 0.5` multiply at runtime instead of folding it into -16), and a helper
+   that returns the channel-built GXColor so it lands in the original's stack slot. */
 void effKemuTestDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKemuTestData* data = effect->userdata;
@@ -110,7 +133,11 @@ void effKemuTestDisp(CameraId camId, void* param) {
 
 	data++;
 	{
+#ifdef MUST_MATCH
+		f32 dsize = -float_32_80420abc;
+#else
 		f32 dsize = -32.0f;
+#endif
 
 		for (i = 1; i < effect->count; i++, data++) {
 			if (data->field_0x44 != 0) {
@@ -128,7 +155,12 @@ void effKemuTestDisp(CameraId camId, void* param) {
 			PSMTXConcat(mtx, scale, mtx);
 			GXLoadTexMtxImm(mtx, 0x21, 1);
 			{
+#ifdef MUST_MATCH
+				f32 dsize_half = dsize * float_0p5_80420ad0;
+#else
+				f32 dsize_half = dsize * 0.5f;
 				f32 size = 16.0f;
+#endif
 
 				for (j = flag; j < 2; j++) {
 					if (j == 0) {
@@ -144,6 +176,9 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						GXLoadPosMtxImm(mtx, 0);
 					}
 					else {
+#ifdef MUST_MATCH
+						GXSetChanMatColor(4, kemuTestColor(data, alpha));
+#else
 						GXColor color = unk_804232d8;
 
 						color.r = data->field_0x4C;
@@ -151,6 +186,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						color.b = data->field_0x4E;
 						color.a = alpha;
 						GXSetChanMatColor(4, color);
+#endif
 						PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
 						PSMTXScale(scale, data->scale, data->scale, data->scale);
 						PSMTXConcat(view, mtx, mtx);
@@ -162,27 +198,34 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						GXLoadPosMtxImm(mtx, 0);
 					}
 					GXBegin(0x80, 0, 4);
-					GXPosition3f32(dsize * 0.5f, size, 0.0f);
+#ifdef MUST_MATCH
+					GXPosition3f32(dsize_half, float_16_80420ad4, 0.0f);
+					GXTexCoord2f32(0.0f, 0.0f);
+					GXPosition3f32(float_16_80420ad4, float_16_80420ad4, 0.0f);
+					GXTexCoord2f32(1.0f, 0.0f);
+					GXPosition3f32(float_16_80420ad4, dsize_half, 0.0f);
+#else
+					GXPosition3f32(dsize_half, size, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
 					GXPosition3f32(size, size, 0.0f);
 					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(size, dsize * 0.5f, 0.0f);
+					GXPosition3f32(size, dsize_half, 0.0f);
+#endif
 					GXTexCoord2f32(1.0f, 1.0f);
-					GXPosition3f32(dsize * 0.5f, dsize * 0.5f, 0.0f);
+					GXPosition3f32(dsize_half, dsize_half, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
 				}
 			}
 		}
 	}
 }
-
 void effKemuTestMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
 #endif
-	Vec disp = { 0 };
+	Vec disp = vec3_802fdcf8;
 	effKemuTestData* data = effect->userdata;
 	s32 type;
 	s32 done = 0;
@@ -357,16 +400,19 @@ void effKemuTestMain(EffectEntry* effect) {
 
 static f32 bom_dir[10] = { 10.0f, 40.0f, 80.0f, 170.0f, 140.0f, 100.0f, 25.0f, 155.0f, 60.0f, 120.0f };
 static f32 bom_spd[10] = { 2.2f, 2.7f, 3.0f, 2.2f, 2.7f, 3.0f, 1.9f, 1.9f, 1.5f, 1.5f };
-const f32 dat_802fdcac[4] = { 0.0f, 120.0f, 180.0f, 240.0f };
-const f32 vec3_802fdcbc[3] = { 0.0f, 120.0f, 240.0f };
-const f32 vec3_802fdc88[3] = { 0.5f, 0.3f, 0.8f };
-const f32 vec3_802fdc94[3] = { 0.0f, 10.0f, 10.0f };
-const f32 vec3_802fdca0[3] = { 0.0f, 5.0f, 20.0f };
-const f32 vec3_802fdcc8[3] = { 0.0f, 5.0f, -5.0f };
-const f32 vec3_802fdcd4[3] = { 5.0f, 0.0f, -2.0f };
-const f32 vec3_802fdce0[3] = { 0.0f, 1.0f, 2.0f };
+const Vec vec3_802fdc88 = { 0.5f, 0.3f, 0.8f };
+const Vec vec3_802fdc94 = { 0.0f, 10.0f, 10.0f };
+const Vec vec3_802fdca0 = { 0.0f, 5.0f, 20.0f };
+const effKemuTestQuad dat_802fdcac = { { 0.0f, 120.0f, 180.0f, 240.0f } };
+const Vec vec3_802fdcbc = { 0.0f, 120.0f, 240.0f };
+const Vec vec3_802fdcc8 = { 0.0f, 5.0f, -5.0f };
+const Vec vec3_802fdcd4 = { 5.0f, 0.0f, -2.0f };
+const Vec vec3_802fdce0 = { 0.0f, 1.0f, 2.0f };
+const Vec vec3_802fdcec = { 0.0f, 0.0f, 0.0f };
 
-// NONMATCHING (68.41%): 58 instructions differ, 156 missing, 80 extra, plus register differences.
+// NONMATCHING (84.84%): frame 0x150, rodata arrays and the scratch Vec/word copies line up. Still
+// differs: `entry` in a callee-saved reg other than r31 and `count` in r17 (not r4), pool base
+// `...rodata.0` not `vec3_802fdc88`, the int->double magic and .sdata2 pool at other offsets.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effKemuTestData* data;
@@ -374,8 +420,10 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	s32 count;
 	s32 i;
 	f32 angle;
+	f32 spd;
 
 	entry = effEntry();
+	count = 1;
 	switch (type) {
 	case 0:
 	case 1:
@@ -384,7 +432,6 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		count = 2;
 		break;
 	case 2:
-	case 14:
 	case 16:
 		count = 5;
 		break;
@@ -392,15 +439,15 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		count = 33;
 		break;
 	case 4:
-	case 13:
 		count = 11;
 		break;
 	case 5:
 		count = 4;
 		break;
 	case 6:
+		count = 7;
+		break;
 	case 7:
-	case 10:
 		count = 7;
 		break;
 	case 8:
@@ -409,19 +456,31 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	case 9:
 		count = 21;
 		break;
+	case 10:
+		count = 7;
+		break;
 	case 11:
 		count = 9;
 		break;
 	case 12:
 		count = irand(3) + 4;
 		break;
+	case 13:
+		count = 11;
+		break;
+	case 14:
+		count = 5;
+		break;
 	case 17:
-	case 20:
 		count = 11;
 		scale *= 0.5f;
 		break;
 	case 19:
 		count = 4;
+		break;
+	case 20:
+		count = 11;
+		scale *= 0.5f;
 		break;
 	case 21:
 		count = 3;
@@ -429,14 +488,11 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	case 22:
 		count = 4;
 		break;
-	default:
-		count = 1;
-		break;
 	}
 
 	entry->type = "KemuTest";
 	entry->count = count;
-	data = __memAlloc(HEAP_EFFECT, count * sizeof(effKemuTestData));
+	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(effKemuTestData));
 	entry->userdata = data;
 	entry->callback = effKemuTestMain;
 
@@ -452,7 +508,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->field_0x54 = 0.0f;
 
 	work = data + 1;
-	for (i = 1; i < count; i++, work++) {
+	for (i = 1; i < entry->count; i++, work++) {
 		switch (type) {
 		case 0:
 		case 15:
@@ -489,9 +545,22 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4E = 0xFF;
 			work->scale = 1.0f;
 			if (type == 19) {
-				work->posX = vec3_802fdc94[i - 1];
-				work->posY = vec3_802fdca0[i - 1];
-				work->scale = vec3_802fdc88[i - 1];
+#ifdef MUST_MATCH
+				/* MUST_MATCH: retail copies each rodata vector to a scratch Vec and
+				   indexes that; the plain form below loads the globals directly and
+				   leaves the frame and register allocation short. */
+				Vec v94 = vec3_802fdc94;
+				Vec va0 = vec3_802fdca0;
+				Vec v88 = vec3_802fdc88;
+
+				work->posX = ((f32*)&v94)[i - 1];
+				work->posY = ((f32*)&va0)[i - 1];
+				work->scale = ((f32*)&v88)[i - 1];
+#else
+				work->posX = ((const f32*)&vec3_802fdc94)[i - 1];
+				work->posY = ((const f32*)&vec3_802fdca0)[i - 1];
+				work->scale = ((const f32*)&vec3_802fdc88)[i - 1];
+#endif
 				work->field_0x44 = 4 * i;
 				work->field_0x4C = 0x78;
 				work->field_0x4D = 0x78;
@@ -548,8 +617,6 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4D = 0xFF;
 			work->field_0x4E = 0xFF;
 			if (type == 4 || type == 13) {
-				f32 spd;
-
 				angle = 6.2831855f * (90.0f + bom_dir[i - 1]) / 360.0f;
 				spd = 2.0f * bom_spd[i - 1];
 				work->velX = spd * (f32)sin(angle);
@@ -557,7 +624,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->scale = 1.0f;
 				work->field_0x44 = irand(0x1E);
 				if (type == 13) {
-					work->field_0x34 = 0.6f;
+					work->field_0x34 = 0.59999996f;
 					work->field_0x38 = -0.08f;
 					work->field_0x3C = 0.94f;
 					work->field_0x4C = 0xAA;
@@ -569,22 +636,34 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				}
 			}
 			else if (type == 5) {
-				angle = 6.2831855f * dat_802fdcac[i] / 360.0f;
-				work->velX = 3.0f * (f32)sin(angle);
-				work->velY = -3.0f * (f32)cos(angle);
+#ifdef MUST_MATCH
+				effKemuTestQuad vac = dat_802fdcac;
+
+				spd = 3.0f;
+				work->velX = spd * (f32)sin(6.2831855f * vac.v[i] / 360.0f);
+				work->velY = -spd * (f32)cos(6.2831855f * vac.v[i] / 360.0f);
+#else
+				work->velX = 3.0f * (f32)sin(6.2831855f * dat_802fdcac.v[i] / 360.0f);
+				work->velY = -3.0f * (f32)cos(6.2831855f * dat_802fdcac.v[i] / 360.0f);
+#endif
 				work->scale = 0.5f;
 			}
 			else if (type == 21) {
-				angle = 6.2831855f * vec3_802fdcbc[i] / 360.0f;
-				work->velX = 3.0f * (f32)sin(angle);
-				work->velY = -3.0f * (f32)cos(angle);
+#ifdef MUST_MATCH
+				Vec vbc = vec3_802fdcbc;
+
+				spd = 3.0f;
+				work->velX = spd * (f32)sin(6.2831855f * ((f32*)&vbc)[i] / 360.0f);
+				work->velY = -spd * (f32)cos(6.2831855f * ((f32*)&vbc)[i] / 360.0f);
+#else
+				work->velX = 3.0f * (f32)sin(6.2831855f * ((const f32*)&vec3_802fdcbc)[i] / 360.0f);
+				work->velY = -3.0f * (f32)cos(6.2831855f * ((const f32*)&vec3_802fdcbc)[i] / 360.0f);
+#endif
 				work->scale = 0.5f;
 			}
 			else if (type == 9 || type == 17 || type == 20) {
-				f32 spd;
-
 				angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
-				if (i < (count - 1) / 2 + 1) {
+				if (i < (entry->count - 1) / 2 + 1) {
 					spd = 4.5f;
 					work->field_0x44 = 0;
 				}
@@ -632,7 +711,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x30 = 0x40;
 			work->field_0x28 = 0;
 			work->field_0x44 = irand(0xA);
-			work->field_0x34 = 0.6f;
+			work->field_0x34 = 0.59999996f;
 			work->field_0x38 = -0.04f;
 			work->field_0x3C = 0.94f;
 			work->field_0x4C = 0xFF;
@@ -640,7 +719,8 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4E = 0xFF;
 			work->scale = 0.6f;
 			angle = angleABf(0.0f, 0.0f, work->posX, work->posY);
-			work->velX = 1.0f * (f32)sin(6.2831855f * angle / 360.0f);
+			spd = 1.0f;
+			work->velX = spd * (f32)sin(6.2831855f * angle / 360.0f);
 			break;
 		case 7:
 			work->posX = 0.0f;
@@ -648,7 +728,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posZ = 0.0f;
 			angle = 6.2831855f * (135.0f - 90.0f * ((f32)(i - 1) / (f32)(count - 2))) / 360.0f;
 			{
-				f32 spd = 1.0f + (f32)irand(0x28) / 10.0f;
+				spd = 1.0f + (f32)irand(0x28) / 10.0f;
 
 				work->velX = spd * (f32)cos(angle);
 				work->velY = spd * (f32)sin(angle);
@@ -667,12 +747,12 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->posZ = 0.0f;
 			angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
 			{
-				f32 spd = 2.0f * ((f32)irand(0x28) / 10.0f) + 1.0f;
+				spd = 2.0f * ((f32)irand(0x28) / 10.0f) + 1.0f;
 
 				work->velX = spd * (f32)cos(angle);
 				work->velY = spd * (f32)sin(angle);
 			}
-			work->field_0x44 = i & 0x1F;
+			work->field_0x44 = i % 0x20;
 			work->field_0x30 = 0x20;
 			work->field_0x28 = 0;
 			work->field_0x4C = 0xFF;
@@ -707,10 +787,20 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4D = 0xFF;
 			work->field_0x4E = 0xFF;
 			break;
-		case 22:
-			work->posX = vec3_802fdcc8[i - 1];
-			work->posY = vec3_802fdcd4[i - 1];
-			work->posZ = vec3_802fdce0[i - 1];
+		case 22: {
+#ifdef MUST_MATCH
+			Vec vc8 = vec3_802fdcc8;
+			Vec vd4 = vec3_802fdcd4;
+			Vec ve0 = vec3_802fdce0;
+
+			work->posX = ((f32*)&vc8)[i - 1];
+			work->posY = ((f32*)&vd4)[i - 1];
+			work->posZ = ((f32*)&ve0)[i - 1];
+#else
+			work->posX = ((const f32*)&vec3_802fdcc8)[i - 1];
+			work->posY = ((const f32*)&vec3_802fdcd4)[i - 1];
+			work->posZ = ((const f32*)&vec3_802fdce0)[i - 1];
+#endif
 			work->velX = 0.0f;
 			work->velY = 0.0f;
 			work->velZ = 0.0f;
@@ -722,13 +812,14 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4E = 0xFF;
 			work->scale = 0.5f;
 			break;
+		}
 		default:
 			break;
 		}
 	}
 
 	if (type == 3) {
-		Vec position;
+		Vec position = vec3_802fdcec;
 
 		position.x = x;
 		position.y = y;
@@ -745,3 +836,12 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 
 	return entry;
 }
+
+#ifdef MUST_MATCH
+#endif
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802fdcf8 = { 0.0f, 0.0f, 0.0f };
+const f32 float_32_80420abc = 32.0f;
+const f32 float_0p5_80420ad0 = 0.5f;
+const f32 float_16_80420ad4 = 16.0f;

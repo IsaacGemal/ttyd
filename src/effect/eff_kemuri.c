@@ -69,7 +69,6 @@ static void effKemuri2Disp(CameraId camId, void* param);
 // local per the original: .fn effKemuri2Main, local
 static void effKemuri2Main(EffectEntry* effect);
 
-// NONMATCHING (99.80%): same instructions; only register numbers or operands differ.
 EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6) {
 	effKemuriData* data;
 	s32 numEffects, i;
@@ -103,34 +102,35 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 	data->field_0x44 = 1.0f;
 	data->field_0x48 = 1.0f;
 	data->field_0x74 = 1.0f;
-	for (i = 1; i < entry->count; i++) {
-		data[i].field_0x4 = 0.0f;
-		data[i].field_0x8 = 0.0f;
-		data[i].field_0xC = 0.0f;
+	data++;
+	for (i = 1; i < entry->count; i++, data++) {
+		data->field_0x4 = 0.0f;
+		data->field_0x8 = 0.0f;
+		data->field_0xC = 0.0f;
 
-		data[i].field_0x44 = 1.0f;
-		data[i].field_0x48 = 1.0f;
-		data[i].field_0x74 = 1.0f;
+		data->field_0x44 = 1.0f;
+		data->field_0x48 = 1.0f;
+		data->field_0x74 = 1.0f;
 
-		data[i].field_0x58 = 0.0f;
-		data[i].field_0x5C = 0.0f;
+		data->field_0x58 = 0.0f;
+		data->field_0x5C = 0.0f;
 
-		data[i].field_0x40 = 0;
-		data[i].field_0x80 = 0;
-		data[i].field_0x84 = 0;
+		data->field_0x40 = 0;
+		data->field_0x80 = 0;
+		data->field_0x84 = 0;
 
 		switch (int2) {
 			case 0:
-				data[i].field_0x4C = i & 1 ? 3.0f : -3.0f;
-				data[i].field_0x88 = 32;
+				data->field_0x4C = i & 1 ? 3.0f : -3.0f;
+				data->field_0x88 = 32;
 				break;
 			case 1:
-				data[i].field_0x4C = 0.0f;
-				data[i].field_0x88 = 32;
+				data->field_0x4C = 0.0f;
+				data->field_0x88 = 32;
 				break;
 			case 2:
-				data[i].field_0x4C = 0.0f;
-				data[i].field_0x88 = 64;
+				data->field_0x4C = 0.0f;
+				data->field_0x88 = 64;
 				break;
 		}
 	}

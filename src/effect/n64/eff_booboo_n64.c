@@ -640,14 +640,18 @@ u8 anime_data_walk[8] = { 0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x00, 0x00 };
 #ifdef MUST_MATCH
 static inline GXColor boobooColor(u8 v) {
 	GXColor c = unk_804230a8;
-	c.r = c.g = c.b = v;
+	c.r = v;
+	c.g = v;
+	c.b = v;
 	return c;
 }
 #endif
 
-// NONMATCHING (99.30%): identical instructions, but mwcc allocates the tail's callee-saved registers
-// differently (target: effect r29, camera r28, flags-base r26; ours: effect r26, camera r29, flags-base r28)
-// and builds the GXSetTevColor GXColor at r1+0xc instead of r1+0x8 (same known quirk as eff_irekaeru.c).
+// effBoobooDisp: instructions match except mwcc's callee-saved allocation. Building the GXColor with
+// separate .r/.g/.b statements fixed the by-value store order (99.30% -> 99.42%). Using `param` directly
+// instead of a local `effect` fixes effect/camera (r29/r28) but swaps the word/byte induction pointers
+// (word r27, byte r26) and scores 99.29%, below the original, so it is not used.
+// NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
 void effBoobooDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* camera;
@@ -663,7 +667,7 @@ void effBoobooDisp(CameraId camId, void* param) {
 	camera = camGetPtr(camId);
 	data = effect->userdata;
 	phase = data->timer * 30;
-	for (i = 0; i < 11; i++) {
+	for (i = 0; i < 11; i++, phase += 20) {
 		if (data->flags[i] & 1) {
 			PSMTXTrans(mtx, data->x[i], data->y[i] + data->bob[i], data->z[i]);
 			PSMTXRotRad(rotMtx, 'y', 0.017453292f * (180.0f - data->rot[i]));
@@ -699,7 +703,6 @@ void effBoobooDisp(CameraId camId, void* param) {
 				}
 			}
 		}
-		phase += 20;
 	}
 }
 

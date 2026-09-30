@@ -11,7 +11,7 @@ extern s32 eki_04_init_evt[];
 extern s32 eki_05_init_evt[];
 extern s32 eki_06_init_evt[];
 
-extern BattleSetupData btlsetup_eki_tbl[];
+extern BattleSetupData btlsetup_eki_tbl[20];
 extern u32 btl_eki_setup_no_tbl[];
 
 typedef void (*voidfunctionptr)(void);

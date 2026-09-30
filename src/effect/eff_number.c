@@ -6,11 +6,14 @@
 #include <stdio.h>
 #include <string.h>
 
-// Register allocation and switch dispatch still differ from the target.
-// NONMATCHING (98.58%): the switch dispatch and every instruction now match; only register
-// allocation differs (the target keeps value/color/cam in r14/r17/r18 and the eight colour bytes in
-// r20-r27; here cam is r14, value r17, color r18, and the bytes are r19-r25 plus r31). Local
-// declaration order does not change it.
+// Register allocation is the only difference; the instruction stream and switch dispatch match.
+// Folding `end` into the index (`buf[len - 1 - j]`) puts value/color in the target's r14/r17, but
+// type lands in r18 (not r19), cam in r25 (not r18), len stays r26 instead of reusing type's r19 and
+// the eight colour bytes take r18-r25 instead of r20-r27. The named-`end` form scores 98.58% (cam r14,
+// value r17, color r18, len r26). Local declaration order, GXColor-returning inlines, -O4,s/
+// optimize_for_size, opt_propagation/opt_common_subs/opt_lifetimes and register/volatile hints all
+// score lower.
+// NONMATCHING (98.71%): len does not reuse type's r19; value/color/cam are r14/r17/r25, not r14/r17/r18.
 void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	CameraEntry* cam;
 	GXColor colors[2];
@@ -20,7 +23,6 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	f32 neg24;
 	f32 pos24;
 	char buf[0x20];
-	s32 end;
 	s32 half;
 	s32 len;
 	s32 i;
@@ -64,7 +66,6 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	sprintf(buf, "%d", value);
 	len = strlen(buf);
 	half = len / 2;
-	end = len - 1;
 	neg24 = -24.0f;
 	pos24 = 24.0f;
 
@@ -112,14 +113,14 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 			GXLoadPosMtxImm(tmp, 0);
 			GXSetCurrentMtx(0);
 
-			if ((s8)buf[end - j] == '-') {
+			if ((s8)buf[len - 1 - j] == '-') {
 				PSMTXScale(scale, 0.09090909f, 1.0f, 1.0f);
 				PSMTXTrans(tmp, 10.0f, 0.0f, 0.0f);
 				PSMTXConcat(scale, tmp, tmp);
 				GXLoadTexMtxImm(tmp, 30, GX_MTX2x4);
 			} else {
 				PSMTXScale(scale, 0.09090909f, 1.0f, 1.0f);
-				PSMTXTrans(tmp, (f32)((s8)buf[end - j] - '0'), 0.0f, 0.0f);
+				PSMTXTrans(tmp, (f32)((s8)buf[len - 1 - j] - '0'), 0.0f, 0.0f);
 				PSMTXConcat(scale, tmp, tmp);
 				GXLoadTexMtxImm(tmp, 30, GX_MTX2x4);
 			}

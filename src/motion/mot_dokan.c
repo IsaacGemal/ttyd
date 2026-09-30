@@ -17,9 +17,26 @@
 #define M_F32(m, off) (*(f32*)((unsigned char*)(m) + (off)))
 #define M_VEC(m, off) (*(Vec*)((unsigned char*)(m) + (off)))
 
+// The original copies each Vec with an unscheduled per-component load/store pair; a volatile cast
+// stops MWCC's scheduler hoisting the third component's load (same shape as mot_damageToge).
+#ifdef MUST_MATCH
+#define COPY_VEC(dst, src) (*(volatile Vec*)(dst) = *(volatile Vec*)(src))
+#define STORE_F32V(m, off, v) (*(volatile f32*)((unsigned char*)(m) + (off)) = (v))
+#else
+#define COPY_VEC(dst, src) (*(dst) = *(src))
+#define STORE_F32V(m, off, v) (M_F32(m, off) = (v))
+#endif
+
 // .rodata named constants, in the order they appear in the original.
-const Vec vec3_802f3d60 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3d6c = { 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+// Non-const arrays placed in .rodata: MWCC then copies them with the original's r3/r0 load split. A const
+// scalar pools differently (r0/r3), which _partyEntry's two copies at offset 0x70 are sensitive to.
+__declspec(section ".rodata") Vec vec3_802f3d60[] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_802f3d6c[] = { { 0.0f, 0.0f, 0.0f } };
+#else
+const Vec vec3_802f3d60[1] = { { 0.0f, 0.0f, 0.0f } };
+const Vec vec3_802f3d6c[1] = { { 0.0f, 0.0f, 0.0f } };
+#endif
 const Vec vec3_802f3d78 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f3d84 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f3d90 = { 0.0f, 0.0f, 0.0f };
@@ -55,10 +72,6 @@ const f32 float_180_8041cdb4 = 180.0f;
 const f32 float_120_8041cdb8 = 120.0f;
 const f32 float_neg120_8041cdbc = -120.0f;
 
-// The original allocates the first word of each 0x70 Vec copy to r3 (lwz r3; lwz r0; stw r3; stw r0; lwz r0;
-// stw r0); MWCC allocates it to r0 and hoists the third load. No expression shape tried changes this
-// (same scheduling artifact as mot_roll.c).
-// NONMATCHING (96.45%): only the two Vec copies at 0x70 differ.
 void _partyEntry(s32 arg) {
     MarioWork* mario;
     PartyEntry* party;
@@ -98,7 +111,7 @@ void _partyEntry(s32 arg) {
                     party = partyGetPtr(member);
                     partyChgRunMode(party, 0xA);
                     if (arg == 0) {
-                        M_VEC(party, 0x70) = vec3_802f3d60;
+                        M_VEC(party, 0x70) = vec3_802f3d60[0];
                     }
                     party->flags |= 0x04000000;
                     party->flags |= 0x02000000;
@@ -117,7 +130,7 @@ void _partyEntry(s32 arg) {
             party = partyGetPtr(mario->currPartySlotId[i]);
             partyChgRunMode(party, 0xA);
             if (arg == 0) {
-                M_VEC(party, 0x70) = vec3_802f3d6c;
+                M_VEC(party, 0x70) = vec3_802f3d6c[0];
             }
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
@@ -134,11 +147,13 @@ void _partyEntry(s32 arg) {
     }
 }
 
-// The original emits clean load/load/store/store/load/store per Vec copy; MWCC here hoists the third
-// word load ahead of the second store (same artifact as mot_roll/mot_damage, see mot_roll.c note). The
-// float mismatches are anonymous @NNN .sdata2 slots because the constants are const-defined in this TU;
-// declaring them extern keeps the names but changes register allocation and scores lower (94.20%).
-// NONMATCHING (94.68%): instruction scheduling + .sdata2 float symbol names.
+// Two scheduling shapes the original's compiler emitted that MWCC only reproduces with help:
+//  - Every Vec copy is an unscheduled load x/load y/store x/store y/load z/store z, so COPY_VEC reads both
+//    sides volatile to stop the scheduler hoisting the third component's load (same shape as mot_damageToge).
+//  - In the sub-motion-1 branch the second 0x2A0 store is volatile (STORE_F32V): it keeps that branch's scale
+//    copy below both 0x2A0 stores, which also settles the f1/f2/f0 assignment.
+// The float constants still pool into anonymous @NNN .sdata2 slots (MWCC folds consts defined above the code);
+// objdiff matches those by value, so they do not affect the score.
 void mot_dokan(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -168,8 +183,8 @@ void mot_dokan(void) {
             mario->unk1A8 = M_F32(mario, 0x1AC);
             mario->currSubMotionId = 0x14;
             M_F32(mario, 0x2A0) = float_0_8041cd80;
-            M_F32(mario, 0x2A0) = float_30_8041cd8c;
-            mario->scale = vec3_802f3d78;
+            STORE_F32V(mario, 0x2A0, float_30_8041cd8c);
+            COPY_VEC(&mario->scale, &vec3_802f3d78);
             _partyEntry(1);
         } else if (M_S8(mario, 0x3E) == 0) {
             _partyEntry(0);
@@ -182,10 +197,10 @@ void mot_dokan(void) {
             if ((party = partyGetPtr(1)) != NULL) {
                 partyShadowOff(party);
             }
-            M_VEC(mario, 0x98) = vec3_802f3d84;
-            M_VEC(mario, 0xA4) = vec3_802f3d90;
-            M_VEC(mario, 0xBC) = vec3_802f3d9c;
-            M_VEC(mario, 0xB0) = vec3_802f3da8;
+            COPY_VEC(&M_VEC(mario, 0x98), &vec3_802f3d84);
+            COPY_VEC(&M_VEC(mario, 0xA4), &vec3_802f3d90);
+            COPY_VEC(&M_VEC(mario, 0xBC), &vec3_802f3d9c);
+            COPY_VEC(&M_VEC(mario, 0xB0), &vec3_802f3da8);
             marioSlitForceCancel();
             marioPaperOn(str_802F3E28);
             marioPaperLightOff();
@@ -196,11 +211,11 @@ void mot_dokan(void) {
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0;
         } else if (M_S8(mario, 0x3E) == 4) {
-            mario->scale = vec3_802f3db4;
-            M_VEC(mario, 0x98) = vec3_802f3dc0;
-            M_VEC(mario, 0xA4) = vec3_802f3dcc;
-            M_VEC(mario, 0xBC) = vec3_802f3dd8;
-            M_VEC(mario, 0xB0) = vec3_802f3de4;
+            COPY_VEC(&mario->scale, &vec3_802f3db4);
+            COPY_VEC(&M_VEC(mario, 0x98), &vec3_802f3dc0);
+            COPY_VEC(&M_VEC(mario, 0xA4), &vec3_802f3dcc);
+            COPY_VEC(&M_VEC(mario, 0xBC), &vec3_802f3dd8);
+            COPY_VEC(&M_VEC(mario, 0xB0), &vec3_802f3de4);
             mario->directionView = toMovedir(mario->unk1A8);
             M_F32(mario, 0x19C) = mario->directionView;
             marioPaperOn(str_802F3E28);
@@ -228,7 +243,7 @@ void mot_dokan(void) {
         mario->scale.z = mario->scale.x;
         break;
     case 0x14:
-        mario->scale = vec3_802f3df0;
+        COPY_VEC(&mario->scale, &vec3_802f3df0);
         mario->currSubMotionId = 0x15;
         if (mario->flags & 0x02000000) {
             M_F32(mario, 0xA8) = float_neg2_8041cd94;
@@ -344,8 +359,8 @@ void mot_dokan(void) {
         }
         break;
     case 0x67:
-        M_VEC(mario, 0xE0) = mario->position;
-        mario->scale = vec3_802f3dfc;
+        COPY_VEC(&M_VEC(mario, 0xE0), &mario->position);
+        COPY_VEC(&mario->scale, &vec3_802f3dfc);
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
         mario->dispFlags &= ~0x100;
@@ -399,8 +414,8 @@ void mot_dokan(void) {
         }
         break;
     case 0x71:
-        M_VEC(mario, 0xE0) = mario->position;
-        mario->scale = vec3_802f3e08;
+        COPY_VEC(&M_VEC(mario, 0xE0), &mario->position);
+        COPY_VEC(&mario->scale, &vec3_802f3e08);
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
         mario->dispFlags &= ~0x100;

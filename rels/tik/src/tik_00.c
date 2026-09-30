@@ -138,12 +138,18 @@ static USER_FUNC(setmertn) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (86.91%): 9 of 24 instructions differ: 6 with different operands, 1 replaced, 1 missing, 1 extra
-static USER_FUNC(ss_check) {
-    s32* args = event->args;
-    s32 value = ssf[0];
+#ifdef MUST_MATCH
+// Match-only: reading ssf through a volatile pointer inside an inline makes MWCC emit the target's
+// int->float register allocation (value in r5, conversion double address in r6, event->args in r4).
+static inline f32 ss_check_to_f(volatile s32* p) { return (f32)*p; }
+#endif
 
-    evtSetFloat(event, args[0], (f32)value);
+static USER_FUNC(ss_check) {
+#ifdef MUST_MATCH
+    evtSetFloat(event, event->args[0], ss_check_to_f(ssf));
+#else
+    evtSetFloat(event, event->args[0], ssf[0]);
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -293,7 +299,6 @@ USER_FUNC(uranai_cap_evt) {
     return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (99.82%): 3 of 95 instructions differ in operands only (registers or offsets)
 void card_tev(TevCallbackParam* param) {
     if (uranai_wp->field_0xE4 != 0) {
         GXLoadTexObj(smartTexObj(&uranai_wp->texObj, (void**)uranai_wp->buffer), GX_TEXMAP0);
@@ -301,18 +306,18 @@ void card_tev(TevCallbackParam* param) {
         GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+        GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+        GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_ZERO, GX_CA_APREV);
+        GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        param->field_C = 1;
+        param->field_14 = 1;
+        param->field_10 = 1;
     }
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_ZERO, GX_CA_APREV);
-    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    param->field_C = 1;
-    param->field_14 = 1;
-    param->field_10 = 1;
 }
 
 USER_FUNC(uranai_bbox) {

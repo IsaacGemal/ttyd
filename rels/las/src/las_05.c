@@ -23,6 +23,7 @@
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
 #include "mario/mario.h"
+#include "mario/mariost.h"
 #include "math_ext.h"
 #include "mario/mario_party.h"
 #include "motion/mot_hammer.h"
@@ -41,13 +42,13 @@
 
 // Position table entry shared by the senkaron "ext" callbacks.
 typedef struct KaronPoseEntry {
-    u8 type;       // 0x0
+    s8 type;       // 0x0
     u8 field_1;    // 0x1
     u16 area;      // 0x2
-    u32 field_4;   // 0x4
-    u32 field_8;   // 0x8
+    s32 field_4;   // 0x4
+    f32 field_8;   // 0x8
     f32 field_C;   // 0xC
-    u32 field_10;  // 0x10
+    f32 field_10;  // 0x10
     u32 flags;     // 0x14
 } KaronPoseEntry;  // 0x18
 
@@ -56,7 +57,7 @@ typedef struct LasWork {
     s32 attackStart;         // 0x0
     s32 escape;              // 0x4
     s32 mesPushing;          // 0x8
-    s32 field_C;             // 0xC
+    u32 field_C;             // 0xC
     s32 marioPushed;         // 0x10
     s32 field_14;            // 0x14
     KaronPoseEntry* entries; // 0x18
@@ -194,6 +195,13 @@ static inline f32 sqrtf(f32 x) {
 }
 
 // clang-format off
+
+LasWork* skwp;
+// file-scope so MWCC lays these out in the original .bss order (flag, count, name)
+static char name[20];
+static s32 count;
+static s32 flag;
+
 extend_data(24,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
@@ -255,11 +263,246 @@ u8 kurokaron_prev_goal[4] = {
 };
 
 // 6 (x, z) destinations the karon walks between.
+
 f32 kurokaron_move_list[12] = {
     500.0f, -130.0f, 0.0f, -200.0f,
     -500.0f, -130.0f, -500.0f, 130.0f,
     0.0f, 200.0f, 500.0f, 130.0f,
 };
+
+EVT_BEGIN(kurokaron_move)
+    SET_VALUE(LW(3), 0)
+    SET_FLOAT_VALUE(GW(0), FLOAT(70.0f))
+    SET_VALUE(GW(1), 200)
+    BEGIN_SIBLING_EVENT
+        SET_VALUE(LW(13), 0)
+        SPAWN_EVENT_GET_ID(PTR(evt_sub_stopwatch), LW(15))
+        LOOP(0)
+            CALL(evt_sub_get_stopwatch, LW(15), LW(14))
+            IF_INT_GREATER_OR_EQUAL(LW(14), 10000)
+                ADD(LW(13), 1)
+                IF_INT_EQUAL(LW(13), 6)
+                    BREAK_LOOP
+                END_IF
+                SPAWN_EVENT_GET_ID(PTR(evt_sub_stopwatch), LW(15))
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+        SET_FLOAT_VALUE(GW(0), FLOAT(50.0f))
+        SET_VALUE(GW(1), 300)
+        DEBUG_PUT_MSG(STRING("kurokaron 1 minute late"))
+    END_SIBLING_EVENT
+    SET_VALUE(LF(0), 0)
+    LOOP(0)
+        CALL(kurokaron_get_move_pos, LW(0), LW(1))
+        CALL(kurokaron_move_position, STRING("黒カロン"), LW(0), LW(1), GW(0))
+        CALL(kurokaron_flag_check, 2, LW(2))
+        IF_INT_NOT_EQUAL(LW(2), 0)
+            IF_INT_EQUAL(LW(3), 0)
+                IF_INT_EQUAL(LF(0), 0)
+                    WAIT_MS(GW(1))
+                    SET_VALUE(LF(0), 1)
+                ELSE
+                    CALL(evt_sub_random, 300, LW(5))
+                    ADD(LW(5), GW(1))
+                    WAIT_MS(LW(5))
+                END_IF
+            END_IF
+        END_IF
+        SET_VALUE(LW(3), LW(2))
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 senkaron_ext_entry_data[78] = {
+    (u32)"c_karon_h", (u32)"KRN_R_1", 0x00000000, (u32)"c_karon_h",
+    (u32)"KRN_R_1", 0x3F800000, (u32)"c_karon_h", (u32)"KRN_R_1",
+    0x40000000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x40400000,
+    (u32)"c_karon_h", (u32)"KRN_R_1", 0x40800000, (u32)"c_karon_h",
+    (u32)"KRN_R_1", 0x40A00000, (u32)"c_karon_h", (u32)"KRN_R_1",
+    0x40C00000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x40E00000,
+    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41000000, (u32)"c_karon_h",
+    (u32)"KRN_R_1", 0x41100000, (u32)"c_karon_h", (u32)"KRN_R_1",
+    0x41200000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41300000,
+    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41400000, (u32)"c_karon_h",
+    (u32)"KRN_R_1", 0x41500000, (u32)"c_karon_h", (u32)"KRN_R_1",
+    0x41600000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41700000,
+    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41800000, (u32)"c_karon_h",
+    (u32)"KRN_R_1", 0x41880000, (u32)"c_karon_h", (u32)"KRN_R_1",
+    0x41900000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41980000,
+    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41A00000, (u32)"c_karon_h",
+    (u32)"KRN_R_1", 0x41A80000, (u32)"c_karon_h", (u32)"KRN_R_1",
+    0x41B00000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41B80000,
+    (u32)"c_karon_h", (u32)"KRN_D_1", 0x00000000, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 move_check_list[20] = {
+    0x00000019, 0x00000034, 0x0000004F, 0x0000006B,
+    0x00000088, 0x000000A6, 0x000000C5, 0x000000E5,
+    0x00000107, 0x0000012A, 0x0000014F, 0x00000176,
+    0x000001A0, 0x000001CD, 0x000001FE, 0x00000235,
+    0x00000274, 0x000002BF, 0x00000326, 0x000003E8,
+};
+
+USER_FUNC(kurokaron_flag_check) {
+    s32* args = event->args;
+    s32 mask = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], kurokaron_move_flag & mask);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(kurokaron_get_move_pos) {
+    s32* args = event->args;
+
+    evtSetFloat(event, args[0], kurokaron_move_list[kurokaron_move_index * 2]);
+    evtSetFloat(event, args[1], kurokaron_move_list[kurokaron_move_index * 2 + 1]);
+    return EVT_RETURN_DONE;
+}
+
+s32 _kurokaron_run_away(f32 x1, f32 z1, f32 x2, f32 z2) {
+    s32 candidates[6];
+    u8 index;
+    s32 count;
+    s32 other;
+    f32 base = angleABf(x1, z1, x2, z2);
+    f32 curAngle;
+    f32 otherAngle;
+    s32 result;
+    s32 i;
+
+    index = kurokaron_move_index;
+    if (!(kurokaron_move_flag & 1)) {
+        if (index == 0) {
+            other = 5;
+        } else {
+            other = index - 1;
+        }
+    } else {
+        other = (index + 1) % 6;
+    }
+
+    count = 0;
+    for (i = 0; i < 6; i++) {
+        f32 angle = __fabsf(compAngle(angleABf(x1, z1, kurokaron_move_list[i * 2], kurokaron_move_list[i * 2 + 1]), base));
+
+        if (i == index) {
+            curAngle = angle;
+        }
+        if (i == other) {
+            otherAngle = angle;
+        }
+        if (angle > float_90_las_00012208) {
+            candidates[count] = i;
+            count++;
+        }
+    }
+
+    if (count > 0) {
+        result = candidates[rand() % count];
+        if (curAngle < float_90_las_00012208) {
+            if (!(kurokaron_move_flag & 1)) {
+                kurokaron_move_flag |= 1;
+            } else {
+                kurokaron_move_flag &= ~1;
+            }
+        }
+    } else if (curAngle < otherAngle) {
+        if (!(kurokaron_move_flag & 1)) {
+            if (kurokaron_move_index == 0) {
+                result = 5;
+            } else {
+                result = kurokaron_move_index - 1;
+            }
+            kurokaron_move_flag |= 1;
+        } else {
+            kurokaron_move_flag &= ~1;
+            result = (kurokaron_move_index + 1) % 6;
+        }
+    }
+    return result;
+}
+// clang-format on
+
+// NONMATCHING (98.5%): register allocation; the compiler swaps the load/store order around
+// kurokaron_move_flag / kurokaron_move_index and schedules the `li r3, 0` return differently.
+s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
+    if (!(kurokaron_move_flag & 2)) {
+        flag = 0;
+        return 0;
+    }
+    kurokaron_move_flag &= ~4;
+
+    if (npc->position.x < float_neg560_las_000122f8 || npc->position.x > float_560_las_000122fc ||
+        npc->position.z < float_neg260_las_00012300 || npc->position.z > float_260_las_00012304) {
+        f32 angle;
+
+        if (rand() % 100 == 0) {
+            if (kurokaron_move_flag & 8) {
+                kurokaron_move_flag &= ~8;
+            } else {
+                kurokaron_move_flag |= 8;
+            }
+        }
+        angle = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
+
+        if (kurokaron_move_flag & 8) {
+            npc->moveDir = reviseAngle(angle - float_90_las_00012208);
+        } else {
+            npc->moveDir = reviseAngle(float_90_las_00012208 + angle);
+        }
+        flag = 0;
+        kurokaron_move_flag |= 4;
+        return 0;
+    }
+
+    if (distABf(npc->position.x, npc->position.z, mario->position.x, mario->position.z) < float_100_las_000122ec) {
+        if (count != 0) {
+            count--;
+        } else {
+            if (npc->position.x < float_neg490_las_00012308 || npc->position.x > float_490_las_0001230c ||
+                npc->position.z < float_neg190_las_00012310 || npc->position.z > float_190_las_00012314) {
+                f32 angle = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
+
+                if (kurokaron_move_flag & 8) {
+                    npc->moveDir = angle - float_90_las_00012208;
+                } else {
+                    npc->moveDir = float_90_las_00012208 + angle;
+                }
+                count = 10;
+            } else {
+                npc->moveDir = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
+                count = 20;
+            }
+            flag = 0;
+        }
+        return 0;
+    }
+
+    if (flag == 0) {
+        kurokaron_move_index = _kurokaron_run_away(npc->position.x, npc->position.z, mario->position.x, mario->position.z);
+        flag = 1;
+        return 1;
+    }
+    return 0;
+}
+
+void _kurokaron_next_move_index(void) {
+    if (kurokaron_move_flag & 1) {
+        if (kurokaron_move_index == 0) {
+            kurokaron_move_index = 5;
+        } else {
+            kurokaron_move_index--;
+        }
+    } else {
+        kurokaron_move_index = kurokaron_move_index + 1;
+        kurokaron_move_index = kurokaron_move_index % 6;
+    }
+}
 
 // NONMATCHING (93.89%): 65 of 540 instructions differ: 29 with different operands, 8 replaced, 19 missing, 9 extra
 USER_FUNC(kurokaron_move_position) {
@@ -397,244 +640,580 @@ USER_FUNC(kurokaron_move_position) {
     return EVT_RETURN_BLOCK;
 }
 
-USER_FUNC(kurokaron_get_move_pos) {
-    s32* args = event->args;
-
-    evtSetFloat(event, args[0], kurokaron_move_list[kurokaron_move_index * 2]);
-    evtSetFloat(event, args[1], kurokaron_move_list[kurokaron_move_index * 2 + 1]);
-    return EVT_RETURN_DONE;
+static f32 randf(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
+    f32 d = max - min;
+    return r * d + min;
 }
 
-USER_FUNC(kurokaron_flag_check) {
-    s32* args = event->args;
-    s32 mask = evtGetValue(event, args[0]);
-
-    evtSetValue(event, args[1], kurokaron_move_flag & mask);
-    return EVT_RETURN_DONE;
-}
-
-EVT_BEGIN(kurokaron_move)
-    SET_VALUE(LW(3), 0)
-    SET_FLOAT_VALUE(GW(0), FLOAT(70.0f))
-    SET_VALUE(GW(1), 200)
-    BEGIN_SIBLING_EVENT
-        SET_VALUE(LW(13), 0)
-        SPAWN_EVENT_GET_ID(PTR(evt_sub_stopwatch), LW(15))
-        LOOP(0)
-            CALL(evt_sub_get_stopwatch, LW(15), LW(14))
-            IF_INT_GREATER_OR_EQUAL(LW(14), 10000)
-                ADD(LW(13), 1)
-                IF_INT_EQUAL(LW(13), 6)
-                    BREAK_LOOP
-                END_IF
-                SPAWN_EVENT_GET_ID(PTR(evt_sub_stopwatch), LW(15))
-            END_IF
-            WAIT_FRAMES(1)
-        END_LOOP
-        SET_FLOAT_VALUE(GW(0), FLOAT(50.0f))
-        SET_VALUE(GW(1), 300)
-        DEBUG_PUT_MSG(STRING("kurokaron 1 minute late"))
-    END_SIBLING_EVENT
-    SET_VALUE(LF(0), 0)
-    LOOP(0)
-        CALL(kurokaron_get_move_pos, LW(0), LW(1))
-        CALL(kurokaron_move_position, STRING("黒カロン"), LW(0), LW(1), GW(0))
-        CALL(kurokaron_flag_check, 2, LW(2))
-        IF_INT_NOT_EQUAL(LW(2), 0)
-            IF_INT_EQUAL(LW(3), 0)
-                IF_INT_EQUAL(LF(0), 0)
-                    WAIT_MS(GW(1))
-                    SET_VALUE(LF(0), 1)
-                ELSE
-                    CALL(evt_sub_random, 300, LW(5))
-                    ADD(LW(5), GW(1))
-                    WAIT_MS(LW(5))
-                END_IF
-            END_IF
-        END_IF
-        SET_VALUE(LW(3), LW(2))
-        WAIT_FRAMES(1)
-    END_LOOP
-    RETURN
-EVT_END()
-
-// TODO: type
-static u32 senkaron_ext_entry_data[78] = {
-    (u32)"c_karon_h", (u32)"KRN_R_1", 0x00000000, (u32)"c_karon_h",
-    (u32)"KRN_R_1", 0x3F800000, (u32)"c_karon_h", (u32)"KRN_R_1",
-    0x40000000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x40400000,
-    (u32)"c_karon_h", (u32)"KRN_R_1", 0x40800000, (u32)"c_karon_h",
-    (u32)"KRN_R_1", 0x40A00000, (u32)"c_karon_h", (u32)"KRN_R_1",
-    0x40C00000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x40E00000,
-    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41000000, (u32)"c_karon_h",
-    (u32)"KRN_R_1", 0x41100000, (u32)"c_karon_h", (u32)"KRN_R_1",
-    0x41200000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41300000,
-    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41400000, (u32)"c_karon_h",
-    (u32)"KRN_R_1", 0x41500000, (u32)"c_karon_h", (u32)"KRN_R_1",
-    0x41600000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41700000,
-    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41800000, (u32)"c_karon_h",
-    (u32)"KRN_R_1", 0x41880000, (u32)"c_karon_h", (u32)"KRN_R_1",
-    0x41900000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41980000,
-    (u32)"c_karon_h", (u32)"KRN_R_1", 0x41A00000, (u32)"c_karon_h",
-    (u32)"KRN_R_1", 0x41A80000, (u32)"c_karon_h", (u32)"KRN_R_1",
-    0x41B00000, (u32)"c_karon_h", (u32)"KRN_R_1", 0x41B80000,
-    (u32)"c_karon_h", (u32)"KRN_D_1", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 move_check_list[20] = {
-    0x00000019, 0x00000034, 0x0000004F, 0x0000006B,
-    0x00000088, 0x000000A6, 0x000000C5, 0x000000E5,
-    0x00000107, 0x0000012A, 0x0000014F, 0x00000176,
-    0x000001A0, 0x000001CD, 0x000001FE, 0x00000235,
-    0x00000274, 0x000002BF, 0x00000326, 0x000003E8,
-};
-
-// TODO: mt$975 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// u32 mt$975[12] = {
-//     0x41200000, 0x00000000, 0x00000000, 0x00000000,
-//     0x00000000, 0x41200000, 0x00000000, 0x3DCCCCCD,
-//     0x00000000, 0x00000000, 0x41200000, 0x00000000,
-// };
-
-// NONMATCHING (92.15%): 4 of 41 instructions differ: 1 with different operands, 1 missing, 2 extra
-USER_FUNC(party_hit) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-    NpcEntry* npc = npcNameToPtr("黒カロン");
-    s32* args = event->args;
-    f32 dir;
-
-    if (party_hit_check(&dir, npc->position.x, npc->position.z) != 0 &&
-        (party->currentMemberId == 2 || party->currentMemberId == 3)) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(chk_mario_ctrloff) {
-    s32* args = event->args;
-
-    evtSetValue(event, args[0], marioCtrlOffChk());
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(party_land_on) {
-    PartyEntry* party = partyGetPtr(partyCtrlNo);
-
-    if (party != NULL) {
-        if (party->position.y < 0.0f) {
-            party->position.y = 0.0f;
-        }
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(mario_land_on) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->position.y < 0.0f) {
-        mario->position.y = 0.0f;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(set_party_y_pos) {
-    f32 y = evtGetFloat(event, event->args[0]);
-    PartyEntry* party = partyGetPtr(partyCtrlNo);
-
-    if (party != NULL) {
-        party->position.y = y;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_party_y_pos) {
-    s32* args = event->args;
-    PartyEntry* party = partyGetPtr(partyCtrlNo);
-
-    if (party != NULL) {
-        evtSetFloat(event, args[0], party->position.y);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(set_mario_y_pos) {
-    f32 y = evtGetFloat(event, event->args[0]);
-
-    marioGetPtr()->position.y = y;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_mario_y_pos) {
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-
-    evtSetFloat(event, args[0], mario->position.y);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(senkaronGetMarioPushedFlag) {
-    evtSetValue(event, event->args[0], skwp->marioPushed);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(senkaronAttackStart) {
-    skwp->attackStart = 1;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(senkaronFlagOffMesPushing) {
-    skwp->mesPushing = 0;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(senkaronFlagOnMesPushing) {
-    skwp->mesPushing = 1;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(senkaronToEscape) {
-    skwp->escape = 1;
-    return EVT_RETURN_DONE;
-}
-
-static void senkaron_ext_dispent(void) {
-    dispEntry(CAMERA_3D, 0.0f, 1, senkaron_ext_disp, NULL);
-    dispEntry(CAMERA_3D, 0.0f, 2, senkaron_ext_shadow_disp, NULL);
-}
-
-// TODO: write senkaron_ext_main (static, 0x14bc bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_05.s; this is where the original has it, just before the first script that uses it
-
-// NONMATCHING (73.64%): 71 of 166 instructions differ: 31 with different operands, 19 missing, 19 extra, 2 with a different opcode
 static void senkaron_ext_init(void) {
+    s32 i;
     ExtPose* pose = extGetPosePtr();
     KaronPoseEntry* entries;
-    s32 i;
 
     skwp = _mapAlloc(0x18);
     memset(skwp, 0, 0x18);
     skwp->entries = _mapAlloc(0x5DC0);
     entries = skwp->entries;
-
-    for (i = extGetPoseNum() - 1; i >= 0; i--) {
-        KaronPoseEntry* entry = &entries[i];
-
+    i = extGetPoseNum() - 1;
+    while (i >= 0) {
         pose->flags = 3;
         PSMTXIdentity(*pose->matrix);
         (*pose->matrix)[0][3] = randf(-570.0f, 570.0f);
         (*pose->matrix)[1][3] = 250.0f;
         (*pose->matrix)[2][3] = randf(-270.0f, 270.0f);
         pose->field_0x4 = 90.0f;
-        entry->type = 0;
-        entry->field_4 = (s32)randf(1.0f, 200.0f);
-        entry->field_C = -3.0f;
+        entries[i].type = 0;
+        entries[i].field_4 = (s32)randf(1.0f, 200.0f);
+        entries[i].field_C = -3.0f;
+        i--;
         pose++;
     }
+}
+
+// NONMATCHING (95.32%): float register scheduling and a couple of operand orders differ
+void move_check(ExtPose* pose, s32 index) {
+    MarioWork* mario;
+    KaronPoseEntry* entries;
+    KaronPoseEntry* entry;
+    KaronPoseEntry* other;
+    ExtPose* nextPose;
+    s32 count;
+    s32 j;
+
+    extGetPosePtr();
+    mario = marioGetPtr();
+    entries = skwp->entries;
+    count = extGetPoseNum() - (index + 1);
+    entry = &entries[index];
+
+    if (entry->type != 1) {
+        return;
+    }
+    nextPose = pose + 1;
+
+    for (j = index + 1; count != 0; count--, j++, nextPose++) {
+        other = &entries[j];
+
+        if (other->type == 1 && other->area == entry->area) {
+            f32 mz = mario->position.z;
+            f32 mx = mario->position.x;
+            f32 dz0 = (*pose->matrix)[2][3] - mz;
+            f32 dz1 = (*nextPose->matrix)[2][3] - mz;
+            f32 dx0 = (*pose->matrix)[0][3] - mx;
+            f32 dx1 = (*nextPose->matrix)[0][3] - mx;
+            f32 d0 = __fabsf(dx0) * __fabsf(dx0) + __fabsf(dz0) * __fabsf(dz0);
+            f32 d1 = __fabsf(dx1) * __fabsf(dx1) + __fabsf(dz1) * __fabsf(dz1);
+
+            if (d0 > d1) {
+                f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
+                f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
+
+                if (__fabsf(ax - az) < float_20_las_00012220) {
+                    entry->flags |= 2;
+                }
+            } else {
+                other->flags |= 2;
+            }
+        }
+    }
+}
+
+// NONMATCHING (82.91%): 22 of 49 instructions differ: 14 with different operands, 2 replaced, 3 missing, 3 extra
+void calc_area(s32 index, f32 x, f32 z) {
+    KaronPoseEntry* entries = skwp->entries;
+    u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
+    u16 b = (u16)(s32)((x - float_neg570_las_00012210) / float_40_las_00012218);
+
+    entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
+}
+
+s32 party_hit_check(f32 x, f32 z, f32* out) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    s32 result = 0;
+    s32 isNokonoko = 0;
+    f32 dx, dz;
+
+    if (party == NULL) {
+        return 0;
+    }
+
+    dx = __fabsf(x - party->position.x);
+    dz = __fabsf(z - party->position.z);
+
+    switch (party->currentMemberId) {
+    case PARTY_MEMBER_KOOPS:
+        {
+            s32 status = nokonokoGetStatus(party);
+
+            switch (status) {
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                isNokonoko = 1;
+                break;
+            }
+        }
+        if (isNokonoko && dx < party->field_F4 && dz < party->field_F4) {
+            result = 1;
+            if (x < party->position.x) {
+                *out = float_1_las_00012260;
+            } else {
+                *out = float_neg1_las_0001226c;
+            }
+        }
+        break;
+    case PARTY_MEMBER_BOBBERY:
+        if (partyGetPtr(PARTY_SLOT_PARTY)->useMotionId == 0x46 && dx < float_80_las_00012268 && dz < float_80_las_00012268) {
+            result = 1;
+            if (x < party->position.x) {
+                *out = float_1_las_00012260;
+            } else {
+                *out = float_neg1_las_0001226c;
+            }
+        }
+        break;
+    case PARTY_MEMBER_FLURRIE:
+        if ((party->flags & PARTY_FLAG_IS_BEING_USED) != 0 && dx < cloudGetBreathDist() && dz < float_30_las_000122d8) {
+            if (cloudGetBreathDir() < float_180_las_00012204) {
+                if (x > party->position.x) {
+                    result = 1;
+                    *out = float_neg1_las_0001226c;
+                }
+            } else {
+                if (x < party->position.x) {
+                    result = 1;
+                    *out = float_1_las_00012260;
+                }
+            }
+        }
+        break;
+    }
+    return result;
+}
+
+// NONMATCHING (91.25%): f-register allocation/scheduling; the collision half lands in
+// f27 instead of f29, the dir range test lays out its branches differently, and
+// calc_area's constant load order differs.
+static void senkaron_ext_main(void) {
+    ExtPose* pose;
+    MarioWork* mario;
+    KaronPoseEntry* entries;
+    const char* sfxLanding;
+    const char* sfxFly;
+    f32 f31;
+    f32 f30;
+    f32 f29;
+    f32 f28;
+    f32 f27;
+    f32 f26;
+    f32 f25;
+    s32 i;
+    s32 j;
+    s32 start;
+    s32 end;
+    s32 hit;
+    s32 dir;
+
+    pose = extGetPosePtr();
+    mario = marioGetPtr();
+    entries = skwp->entries;
+    f29 = mario->wPlayerCollisionBox.x * 0.5f;
+    skwp->marioPushed = 0;
+    dir = 0;
+    if (mario->currMotionId == MARIO_MOTION_HAMMER) {
+        skwp->field_14 = skwp->field_14 + 1;
+        skwp->field_14 = skwp->field_14 % 0xF;
+    } else {
+        skwp->field_14 = 0;
+    }
+
+    if (mario->currMotionId == MARIO_MOTION_HAMMER) {
+        if (skwp->field_14 == 0xA) {
+            if (*(f32*)mario->unk1AC == 0.0f) {
+                dir = 1;
+            } else if (*(f32*)mario->unk1AC == 180.0f) {
+                dir = 2;
+            } else if (mario->unk1A8 < 90.0f) {
+                dir = 1;
+            } else if (270.0f >= mario->unk1A8) {
+                dir = 2;
+            } else {
+                dir = 1;
+            }
+        }
+    }
+
+    j = skwp->field_C % 20;
+    if (j != 0) {
+        start = move_check_list[j - 1] + 1;
+    } else {
+        start = 0;
+    }
+    end = move_check_list[j];
+
+    for (j = start; j < end; j++, pose++) {
+        entries[j].flags &= ~2;
+        calc_area(j, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
+    }
+
+    pose = extGetPosePtr() + start;
+    for (j = start; j < end; j++, pose++) {
+        MarioWork* m;
+        KaronPoseEntry* entry;
+        KaronPoseEntry* other;
+        ExtPose* nextPose;
+        s32 count;
+        s32 k;
+
+        extGetPosePtr();
+        m = marioGetPtr();
+        count = extGetPoseNum() - (j + 1);
+        entry = &entries[j];
+        if (entry->type != 1) {
+            continue;
+        }
+        nextPose = pose + 1;
+        for (k = j + 1; count != 0; count--, k++, nextPose++) {
+            other = &entries[k];
+            if (other->type == 1 && other->area == entry->area) {
+                f32 mz = m->position.z;
+                f32 mx = m->position.x;
+                f32 dz0 = (*pose->matrix)[2][3] - mz;
+                f32 dz1 = (*nextPose->matrix)[2][3] - mz;
+                f32 dx0 = (*pose->matrix)[0][3] - mx;
+                f32 dx1 = (*nextPose->matrix)[0][3] - mx;
+                f32 d0 = __fabsf(dx0) * __fabsf(dx0) + __fabsf(dz0) * __fabsf(dz0);
+                f32 d1 = __fabsf(dx1) * __fabsf(dx1) + __fabsf(dz1) * __fabsf(dz1);
+
+                if (d0 > d1) {
+                    f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
+                    f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
+
+                    if (__fabsf(ax - az) < float_20_las_00012220) {
+                        entry->flags |= 2;
+                    }
+                } else {
+                    other->flags |= 2;
+                }
+            }
+        }
+    }
+
+    skwp->field_C++;
+    pose = extGetPosePtr();
+    f30 = 3.0f * f29;
+    f31 = 1.5f * (6.0f * f29);
+    sfxLanding = "SFX_STG8_KARON_LANDING1";
+    sfxFly = "SFX_STG8_KARON_FLY1";
+
+    for (i = 0; i < 1000; i++) {
+        KaronPoseEntry* p = &entries[i];
+
+        switch (p->type) {
+        case 0:
+            pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            if (p->field_4 > 0) {
+                if (skwp->escape != 0) {
+                    pose->flags &= ~1;
+                    p->type = 0x63;
+                } else if (skwp->attackStart != 0) {
+                    p->field_4--;
+                }
+            } else {
+                (*pose->matrix)[1][3] += p->field_C;
+                p->field_C -= 0.3f;
+                if ((*pose->matrix)[1][3] < 0.0f) {
+                    (*pose->matrix)[1][3] = 0.0f;
+                    p->type = 1;
+                    p->field_4 = 0;
+                    p->flags &= ~2;
+                    if (i % 8 == 0) {
+                        Vec v = {0.0f, 0.0f, 0.0f};
+
+                        v.x = (*pose->matrix)[0][3];
+                        v.y = (*pose->matrix)[1][3];
+                        v.z = (*pose->matrix)[2][3];
+                        psndSFXOn_3D(sfxLanding, &v);
+                    }
+                }
+            }
+            break;
+        case 1:
+            pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            if (skwp->escape != 0) {
+                if ((*pose->matrix)[0][3] == 0.0f && (*pose->matrix)[2][3] == 0.0f) {
+                    p->field_8 = 1.0f;
+                    p->field_10 = 1.0f;
+                } else {
+                    f32 len = (f32)sqrt((*pose->matrix)[0][3] * (*pose->matrix)[0][3] +
+                                        (*pose->matrix)[2][3] * (*pose->matrix)[2][3]);
+
+                    p->field_8 = 4.0f * (*pose->matrix)[0][3] / len;
+                    p->field_10 = 4.0f * (*pose->matrix)[2][3] / len;
+                }
+                if (p->field_8 < 0.0f) {
+                    pose->field_0x4 = 90.0f;
+                } else {
+                    pose->field_0x4 = 270.0f;
+                }
+                p->type = 0x62;
+                p->field_4 = 300;
+                break;
+            }
+            if (skwp->mesPushing != 0) {
+                break;
+            }
+
+            hit = 0;
+            f27 = (*pose->matrix)[0][3] - mario->position.x;
+            f26 = __fabsf(f27);
+            f25 = __fabsf((*pose->matrix)[2][3] - mario->position.z);
+
+            if (dir != 0 && f25 < 80.0f) {
+                if (dir == 2) {
+                    if ((*pose->matrix)[0][3] > mario->position.x && f26 < f31) {
+                        hit = 1;
+                        f28 = 1.0f;
+                    }
+                } else {
+                    if ((*pose->matrix)[0][3] < mario->position.x && f26 < f31) {
+                        hit = 1;
+                        f28 = -1.0f;
+                    }
+                }
+            }
+
+            {
+                f32 ka = marioGetAngleKaitenHammer();
+
+                if (ka >= 0.0f && f26 < 80.0f && f25 < 80.0f) {
+                    if (ka < 90.0f) {
+                        if ((*pose->matrix)[2][3] > mario->position.z &&
+                            (*pose->matrix)[0][3] > mario->position.x) {
+                            hit = 1;
+                            f28 = 1.0f;
+                        }
+                    } else if (ka < 180.0f) {
+                        if ((*pose->matrix)[2][3] > mario->position.z &&
+                            (*pose->matrix)[0][3] < mario->position.x) {
+                            hit = 1;
+                            f28 = -1.0f;
+                        }
+                    } else if (ka < 270.0f) {
+                        if ((*pose->matrix)[2][3] < mario->position.z &&
+                            (*pose->matrix)[0][3] < mario->position.x) {
+                            hit = 1;
+                            f28 = -1.0f;
+                        }
+                    } else {
+                        if ((*pose->matrix)[2][3] < mario->position.z &&
+                            (*pose->matrix)[0][3] > mario->position.x) {
+                            hit = 1;
+                            f28 = -1.0f;
+                        }
+                    }
+                }
+            }
+
+            {
+                f32 out = 0.0f;
+
+                if (party_hit_check((*pose->matrix)[0][3], (*pose->matrix)[2][3], &out) != 0) {
+                    hit = 2;
+                    f28 = out;
+                }
+            }
+
+            if (hit != 0) {
+                f32 len = sqrtf(f26 * f26 + f25 * f25);
+
+                p->field_8 = f28 + 3.0f * f27 / len;
+                p->field_C = randf(5.0f, 10.0f);
+                p->field_10 = randf(-5.0f, 10.0f);
+                p->type = 0x61;
+                if (hit == 1) {
+                    Vec v = {0.0f, 0.0f, 0.0f};
+
+                    v.x = (*pose->matrix)[0][3];
+                    v.y = (*pose->matrix)[1][3];
+                    v.z = (*pose->matrix)[2][3];
+                    psndSFXOn_3D(sfxFly, &v);
+                }
+                break;
+            }
+
+            if (f25 < 40.0f && vivianGetStatus() != 1 && vivianGetStatus() != 2 && vivianGetStatus() != 3) {
+                if ((*pose->matrix)[0][3] > 0.0f) {
+                    if ((*pose->matrix)[0][3] > mario->position.x + f29 - 10.0f &&
+                        (*pose->matrix)[0][3] < mario->position.x + f30) {
+                        skwp->marioPushed |= 1;
+                    }
+                } else {
+                    if ((*pose->matrix)[0][3] > mario->position.x - f30 &&
+                        (*pose->matrix)[0][3] < mario->position.x - f29 + 10.0f) {
+                        skwp->marioPushed |= 2;
+                    }
+                }
+            }
+
+            if (p->field_4 == 0) {
+                f32 d;
+
+                f26 = (*pose->matrix)[2][3] - mario->position.z;
+                f25 = (*pose->matrix)[0][3] - mario->position.x;
+                d = 10.0f * (f32)sqrt(f25 * f25 + f26 * f26);
+                hit = rand() % 50;
+                p->field_8 = randf(-0.5f, 0.5f);
+                p->field_10 = randf(-0.5f, 0.5f);
+                p->field_8 -= f25 / d;
+                p->field_10 -= f26 / d;
+                if (hit == 1) {
+                    p->flags |= 1;
+                } else {
+                    p->flags &= ~1;
+                }
+                p->field_4 = 60;
+            }
+            p->field_4--;
+            if (p->flags & 2) {
+                (*pose->matrix)[0][3] -= p->field_8;
+                (*pose->matrix)[2][3] -= p->field_10;
+            } else {
+                (*pose->matrix)[0][3] += p->field_8;
+                (*pose->matrix)[2][3] += p->field_10;
+            }
+            if ((*pose->matrix)[0][3] > 570.0f) {
+                (*pose->matrix)[0][3] = 570.0f;
+            }
+            if ((*pose->matrix)[0][3] < -570.0f) {
+                (*pose->matrix)[0][3] = -570.0f;
+            }
+            if ((*pose->matrix)[2][3] > 270.0f) {
+                (*pose->matrix)[2][3] = 270.0f;
+            }
+            if ((*pose->matrix)[2][3] < -270.0f) {
+                (*pose->matrix)[2][3] = -270.0f;
+            }
+            break;
+        case 0x61:
+            pose->flags |= 4;
+            if ((*pose->matrix)[1][3] > -100.0f) {
+                (*pose->matrix)[0][3] += p->field_8;
+                (*pose->matrix)[1][3] += p->field_C;
+                (*pose->matrix)[2][3] += p->field_10;
+                if ((*pose->matrix)[2][3] <= -270.0f) {
+                    (*pose->matrix)[2][3] = -270.0f;
+                }
+                p->field_C -= 0.3f;
+                pose->field_0x10 = 0x18;
+            } else {
+                marioGetPtr();
+                (*pose->matrix)[0][3] = randf(-570.0f, 570.0f);
+                (*pose->matrix)[1][3] = 250.0f;
+                (*pose->matrix)[2][3] = randf(-270.0f, 270.0f);
+                pose->field_0x4 = randf(0.0f, 360.0f);
+                pose->flags &= ~4;
+                p->type = 0;
+                p->field_4 = rand() % 1000 + 1;
+                p->field_C = 0.0f;
+            }
+            break;
+        case 0x62:
+            if (p->field_4 > 0) {
+                (*pose->matrix)[0][3] += p->field_8;
+                (*pose->matrix)[2][3] += p->field_10;
+                p->field_4--;
+                if (p->field_4 % 10 == 0) {
+                    if ((p->field_4 / 5) & 1) {
+                        Vec v = {0.0f, 0.0f, 0.0f};
+
+                        v.x = (*pose->matrix)[0][3];
+                        v.y = (*pose->matrix)[1][3];
+                        v.z = (*pose->matrix)[2][3];
+                        psndSFXOn_3D((const char*)0xAFC, &v);
+                    } else {
+                        Vec v = {0.0f, 0.0f, 0.0f};
+
+                        v.x = (*pose->matrix)[0][3];
+                        v.y = (*pose->matrix)[1][3];
+                        v.z = (*pose->matrix)[2][3];
+                        psndSFXOn_3D((const char*)0xAFB, &v);
+                    }
+                }
+            } else {
+                pose->flags &= ~1;
+                p->type = 0x63;
+            }
+            pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            break;
+        case 0x63:
+            break;
+        }
+        pose++;
+    }
+
+    if (((skwp->marioPushed & 1) && mario->position.x > 0.0f) ||
+        ((skwp->marioPushed & 2) && mario->position.x < 0.0f)) {
+        f32 speed;
+
+        f26 = -mario->position.z;
+        f25 = -mario->position.x;
+        {
+            f32 len = sqrtf(f25 * f25 + f26 * f26);
+
+            switch (mario->currMotionId) {
+            case MARIO_MOTION_WALK:
+                speed = randf(3.0f, 3.5f);
+                break;
+            case MARIO_MOTION_DASH:
+                speed = randf(3.8f, 4.3f);
+                break;
+            case MARIO_MOTION_JUMP:
+                speed = randf(3.3f, 3.8f);
+                break;
+            case MARIO_MOTION_HAMMER:
+            case MARIO_MOTION_HAMMER_2:
+                speed = 0.0f;
+                break;
+            default:
+                speed = randf(1.7f, 2.2f);
+                break;
+            }
+            mario->position.x += speed * (f25 / len);
+            mario->position.z += speed * (f26 / len);
+        }
+    }
+}
+
+
+static void senkaron_ext_dispent(void) {
+    dispEntry(CAMERA_3D, 0.0f, 1, senkaron_ext_disp, NULL);
+    dispEntry(CAMERA_3D, 0.0f, 2, senkaron_ext_shadow_disp, NULL);
+}
+
+static void senkaron_ext_disp(CameraId cameraId, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+static void senkaron_ext_shadow_disp(CameraId cameraId, void* param) {
+    static Mtx mt = {
+        {10.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 10.0f, 0.0f, 0.1f},
+        {0.0f, 0.0f, 10.0f, 0.0f},
+    };
+
+    extLoadShadowMtx(mt);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
 }
 
 static EVT_BEGIN(senkaron_event)
@@ -1032,14 +1611,107 @@ static EVT_BEGIN(unlock_evt)
     RETURN
 EVT_END()
 
-static USER_FUNC(make_name) {
-    static char name[20];
-    s32* args = event->args;
-    s32 a = evtGetValue(event, args[0]);
-    s32 b = evtGetValue(event, args[1]);
+static USER_FUNC(senkaronToEscape) {
+    skwp->escape = 1;
+    return EVT_RETURN_DONE;
+}
 
-    sprintf(name, "S_shan_%02d_rou_%02d", a, b);
-    evtSetValue(event, args[2], (s32)name);
+static USER_FUNC(senkaronFlagOnMesPushing) {
+    skwp->mesPushing = 1;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(senkaronFlagOffMesPushing) {
+    skwp->mesPushing = 0;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(senkaronAttackStart) {
+    skwp->attackStart = 1;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(senkaronGetMarioPushedFlag) {
+    evtSetValue(event, event->args[0], skwp->marioPushed);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_mario_y_pos) {
+    s32* args = event->args;
+    MarioWork* mario = marioGetPtr();
+
+    evtSetFloat(event, args[0], mario->position.y);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(set_mario_y_pos) {
+    f32 y = evtGetFloat(event, event->args[0]);
+
+    marioGetPtr()->position.y = y;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_party_y_pos) {
+    s32* args = event->args;
+    PartyEntry* party = partyGetPtr(partyCtrlNo);
+
+    if (party != NULL) {
+        evtSetFloat(event, args[0], party->position.y);
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(set_party_y_pos) {
+    f32 y = evtGetFloat(event, event->args[0]);
+    PartyEntry* party = partyGetPtr(partyCtrlNo);
+
+    if (party != NULL) {
+        party->position.y = y;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mario_land_on) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->position.y < 0.0f) {
+        mario->position.y = 0.0f;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(party_land_on) {
+    PartyEntry* party = partyGetPtr(partyCtrlNo);
+
+    if (party != NULL) {
+        if (party->position.y < 0.0f) {
+            party->position.y = 0.0f;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(chk_mario_ctrloff) {
+    s32* args = event->args;
+
+    evtSetValue(event, args[0], marioCtrlOffChk());
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(party_hit) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    NpcEntry* npc = npcNameToPtr("黒カロン");
+    s32* args = event->args;
+    f32 dir;
+    f32 nx = npc->position.x;
+    f32 nz = npc->position.z;
+
+    if (party_hit_check(nx, nz, &dir) != 0 &&
+        (party->currentMemberId == 2 || party->currentMemberId == 3)) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 0);
+    }
     return EVT_RETURN_DONE;
 }
 
@@ -1066,6 +1738,16 @@ static EVT_BEGIN(shan_init)
     RETURN
 EVT_END()
 
+static USER_FUNC(make_name) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+
+    sprintf(name, "S_shan_%02d_rou_%02d", a, b);
+    evtSetValue(event, args[2], (s32)name);
+    return EVT_RETURN_DONE;
+}
+
 EVT_BEGIN(las_05_init_evt)
     CALL(evt_snd_bgmon, 512, STRING("BGM_STG8_LST1"))
     CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS1"))
@@ -1088,295 +1770,9 @@ EVT_BEGIN(las_05_init_evt)
     RETURN
 EVT_END()
 
-u8 kurokaron_move_index;
-u8 kurokaron_move_flag;
-u8 kurokaron_same_goal;
-u32 kurokaron_vivian_prev_sts;
-u8 kurokaron_stop_cnt;
 u16 kurokaron_run_cnt;
-LasWork* skwp;
-
-static void senkaron_ext_shadow_disp(CameraId cameraId, void* param) {
-    static Mtx mt = {
-        {10.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 10.0f, 0.0f, 0.1f},
-        {0.0f, 0.0f, 10.0f, 0.0f},
-    };
-
-    extLoadShadowMtx(mt);
-    extLoadShadowRenderMode();
-    extLoadShadowVertex();
-    extLoadShadowTev();
-    extDrawShadow();
-}
-
-static void senkaron_ext_disp(CameraId cameraId, void* param) {
-    extLoadRenderMode();
-    extLoadVertex();
-    extLoadTexture();
-    extLoadTev();
-    extDraw();
-    extLoadTextureExit();
-}
-
-// NONMATCHING (99.15%): 2 of 130 instructions differ: 1 missing, 1 with a different opcode
-s32 party_hit_check(f32* out, f32 x, f32 z) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-    s32 result = 0;
-    s32 isNokonoko = 0;
-    f32 dx, dz;
-
-    if (party == NULL) {
-        return 0;
-    }
-
-    dx = __fabsf(x - party->position.x);
-    dz = __fabsf(z - party->position.z);
-
-    switch (party->currentMemberId) {
-    case PARTY_MEMBER_KOOPS:
-        {
-            s32 status = nokonokoGetStatus(party);
-
-            if (status < 6) {
-                if (status >= 2) {
-                    isNokonoko = 1;
-                }
-            }
-        }
-        if (isNokonoko && dx < *(f32*)((u8*)party + 0xF4) && dz < *(f32*)((u8*)party + 0xF4)) {
-            result = 1;
-            if (x < party->position.x) {
-                *out = float_1_las_00012260;
-            } else {
-                *out = float_neg1_las_0001226c;
-            }
-        }
-        break;
-    case PARTY_MEMBER_BOBBERY:
-        if (partyGetPtr(PARTY_SLOT_PARTY)->useMotionId == 0x46 && dx < float_80_las_00012268 && dz < float_80_las_00012268) {
-            result = 1;
-            if (x < party->position.x) {
-                *out = float_1_las_00012260;
-            } else {
-                *out = float_neg1_las_0001226c;
-            }
-        }
-        break;
-    case PARTY_MEMBER_FLURRIE:
-        if ((party->flags & PARTY_FLAG_IS_BEING_USED) != 0 && dx < cloudGetBreathDist() && dz < float_30_las_000122d8) {
-            if (cloudGetBreathDir() < float_180_las_00012204) {
-                if (x > party->position.x) {
-                    result = 1;
-                    *out = float_neg1_las_0001226c;
-                }
-            } else {
-                if (x < party->position.x) {
-                    result = 1;
-                    *out = float_1_las_00012260;
-                }
-            }
-        }
-        break;
-    }
-    return result;
-}
-
-// NONMATCHING (82.91%): 22 of 49 instructions differ: 14 with different operands, 2 replaced, 3 missing, 3 extra
-void calc_area(s32 index, f32 x, f32 z) {
-    KaronPoseEntry* entries = skwp->entries;
-    u16 b = (u16)(s32)((x - float_neg570_las_00012210) / float_40_las_00012218);
-    u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
-
-    entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
-}
-
-// NONMATCHING (78.71%): 44 of 86 instructions differ: 27 with different operands, 3 replaced, 8 missing, 5 extra, 1 with a different opcode
-void move_check(ExtPose* pose, s32 index) {
-    MarioWork* mario;
-    KaronPoseEntry* entries;
-    KaronPoseEntry* entry;
-    ExtPose* nextPose;
-    s32 count;
-    s32 j;
-
-    extGetPosePtr();
-    mario = marioGetPtr();
-    entries = skwp->entries;
-    count = extGetPoseNum() - (index + 1);
-    entry = &entries[index];
-
-    if (entry->type != 1) {
-        return;
-    }
-    nextPose = pose + 1;
-
-    for (j = index + 1; count != 0; count--, j++, nextPose++) {
-        KaronPoseEntry* other = &entries[j];
-
-        if (other->type == 1 && other->area == entry->area) {
-            f32 mz = mario->position.z;
-            f32 mx = mario->position.x;
-            f32 dz0 = (*pose->matrix)[2][3] - mz;
-            f32 dx0 = (*pose->matrix)[0][3] - mx;
-            f32 dz1 = (*nextPose->matrix)[2][3] - mz;
-            f32 dx1 = (*nextPose->matrix)[0][3] - mx;
-            f32 d0 = dx0 * dx0 + dz0 * dz0;
-            f32 d1 = dx1 * dx1 + dz1 * dz1;
-
-            if (d0 <= d1) {
-                other->flags |= 2;
-            } else {
-                f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
-                f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
-
-                if (__fabsf(ax - az) < float_20_las_00012220) {
-                    entry->flags |= 2;
-                }
-            }
-        }
-    }
-}
-
-static f32 randf(f32 min, f32 max) {
-    f32 r = (f32)rand() / 32767.0f;
-    f32 d = max - min;
-    return r * d + min;
-}
-
-void _kurokaron_next_move_index(void) {
-    if (kurokaron_move_flag & 1) {
-        if (kurokaron_move_index == 0) {
-            kurokaron_move_index = 5;
-        } else {
-            kurokaron_move_index--;
-        }
-    } else {
-        kurokaron_move_index = kurokaron_move_index + 1;
-        kurokaron_move_index = kurokaron_move_index % 6;
-    }
-}
-
-// NONMATCHING (90.85%): 40 of 180 instructions differ: 25 with different operands, 5 missing, 10 extra
-s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
-    static s32 flag;
-    static s32 count;
-
-    if (!(kurokaron_move_flag & 2)) {
-        flag = 0;
-        return 0;
-    }
-    kurokaron_move_flag &= ~4;
-
-    if (npc->position.x < float_neg560_las_000122f8 || npc->position.x > float_560_las_000122fc ||
-        npc->position.z < float_neg260_las_00012300 || npc->position.z > float_260_las_00012304) {
-        if (rand() % 100 == 0) {
-            if (kurokaron_move_flag & 8) {
-                kurokaron_move_flag &= ~8;
-            } else {
-                kurokaron_move_flag |= 8;
-            }
-        }
-        if (kurokaron_move_flag & 8) {
-            npc->moveDir = reviseAngle(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) - float_90_las_00012208);
-        } else {
-            npc->moveDir = reviseAngle(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) + float_90_las_00012208);
-        }
-        flag = 0;
-        kurokaron_move_flag |= 4;
-        return 0;
-    }
-
-    if (distABf(npc->position.x, npc->position.z, mario->position.x, mario->position.z) < float_100_las_000122ec) {
-        if (count != 0) {
-            count--;
-        } else {
-            if (npc->position.x < float_neg490_las_00012308 || npc->position.x > float_490_las_0001230c ||
-                npc->position.z < float_neg190_las_00012310 || npc->position.z > float_190_las_00012314) {
-                f32 angle = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
-
-                if (kurokaron_move_flag & 8) {
-                    npc->moveDir = angle - float_90_las_00012208;
-                } else {
-                    npc->moveDir = angle + float_90_las_00012208;
-                }
-                count = 10;
-            } else {
-                npc->moveDir = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
-                count = 20;
-            }
-            flag = 0;
-        }
-        return 0;
-    }
-
-    if (flag == 0) {
-        kurokaron_move_index = _kurokaron_run_away(npc->position.x, npc->position.z, mario->position.x, mario->position.z);
-        flag = 1;
-        return 1;
-    }
-    return 0;
-}
-
-// NONMATCHING (84.08%): 47 of 148 instructions differ: 24 with different operands, 5 replaced, 12 missing, 6 extra
-s32 _kurokaron_run_away(f32 x1, f32 z1, f32 x2, f32 z2) {
-    s32 candidates[6];
-    s32 count = 0;
-    s32 index = kurokaron_move_index;
-    s32 other;
-    f32 base = angleABf(x1, z1, x2, z2);
-    f32 curAngle;
-    f32 otherAngle;
-    s32 result;
-    s32 i;
-
-    if (!(kurokaron_move_flag & 1)) {
-        if (index == 0) {
-            other = 5;
-        } else {
-            other = index - 1;
-        }
-    } else {
-        other = (index + 1) % 6;
-    }
-
-    for (i = 0; i < 6; i++) {
-        f32 angle = __fabsf(compAngle(angleABf(x1, z1, kurokaron_move_list[i * 2], kurokaron_move_list[i * 2 + 1]), base));
-
-        if (i == index) {
-            curAngle = angle;
-        }
-        if (i == other) {
-            otherAngle = angle;
-        }
-        if (angle > float_90_las_00012208) {
-            candidates[count] = i;
-            count++;
-        }
-    }
-
-    if (count > 0) {
-        result = candidates[rand() % count];
-        if (curAngle < float_90_las_00012208) {
-            if (!(kurokaron_move_flag & 1)) {
-                kurokaron_move_flag |= 1;
-            } else {
-                kurokaron_move_flag &= ~1;
-            }
-        }
-    } else if (curAngle < otherAngle) {
-        if (!(kurokaron_move_flag & 1)) {
-            if (index == 0) {
-                result = 5;
-            } else {
-                result = index - 1;
-            }
-            kurokaron_move_flag |= 1;
-        } else {
-            kurokaron_move_flag &= ~1;
-            result = (index + 1) % 6;
-        }
-    }
-    return result;
-}
-// clang-format on
+u8 kurokaron_stop_cnt;
+u32 kurokaron_vivian_prev_sts;
+u8 kurokaron_same_goal;
+u8 kurokaron_move_flag;
+u8 kurokaron_move_index;

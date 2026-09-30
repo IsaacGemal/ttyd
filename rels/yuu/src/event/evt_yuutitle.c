@@ -36,7 +36,18 @@ const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 // two `(1.0f - t)` uses are merged and MWCC puts `1.0f`/`wp->field_18` in different FP
 // registers, which changes the whole block.  Same reason as evt_badgeshop.c/evt_sub.c.
 #pragma opt_common_subs off
-// NONMATCHING (95.65%): only FP scratch allocation differs: the `0.8f * t + 0.2f` fmadds writes f0 where the original writes f1 (products then swap f0/f1) and the tail schedules the `msg` load one instruction early.  Same MWCC allocator limitation as shadowdrv.c:cylinder.
+// Only MWCC's register allocation/scheduling differs.  The `wp->field_08` lerp and the `0.8f * t + 0.2f`
+// fade both compute in registers that are one apart from the target: the original keeps the fade factor in f1
+// and the `field_10 * (1-t)` product in f0, while this build does the opposite (`fmadds f0, f1, f5, f0` /
+// `fmuls f1, f3, f2`), which also swaps the dependent `fmuls f31` / `fmadds f0, f4, f5, ...`.  Writing the
+// half-width factor as a division rather than `* 0.5f` does reproduce the original's operand order
+// (`fmuls f30, f1, f0`, since MWCC keeps `x / 2.0f` as `x * 0.5` instead of forcing the constant into FRA),
+// which is where the extra 0.10% comes from.  The tail also hoists `lwz r3, wp->msg` one instruction early
+// (original: lfs 0x8, lfs 0xc, fsubs, lwz r3; ours: lfs 0x8, lwz r3, fsubs, lfs 0xc).  Tried:
+// every statement/temporary order, explicit/inline fade and lerp helpers, `opt_lifetimes`/`opt_propagation`/
+// `optimize_for_size`/`defer_codegen` pragmas, and the `/ 2.0f` shape on the blend; none changes the
+// factor/product allocation or the tail.  Same class as shadowdrv.c:cylinder.
+// NONMATCHING (95.76%): fade/first-lerp register allocation and FontDrawString tail scheduling differ.
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     YuuTitleWork* wp = param;
     f32 scale = 2.0f;
@@ -60,7 +71,12 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
         temp = wp->field_14 * (1.0f - t);
         wp->field_0c = temp + wp->field_1c * t;
     }
+#ifdef MUST_MATCH
+    // MWCC folds `/ 2.0f` into `* 0.5f` but keeps the product's operand order.
+    halfWidth = scale * (f32)FontGetMessageWidth(wp->msg) / 2.0f;
+#else
     halfWidth = scale * (f32)FontGetMessageWidth(wp->msg) * 0.5f;
+#endif
     FontDrawStart();
     FontDrawScale(scale);
     FontDrawEdge();

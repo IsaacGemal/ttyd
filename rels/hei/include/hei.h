@@ -24,6 +24,6 @@ EVT_DEF(hei_12_init_evt);
 EVT_DEF(hei_13_init_evt);
 EVT_DEF(hei_bt00_init_evt);
 
-extern BattleSetupData btlsetup_hei_tbl[];
+extern BattleSetupData btlsetup_hei_tbl[28];
 extern u32 btl_hei_setup_no_tbl[];
 

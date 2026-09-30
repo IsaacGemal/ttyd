@@ -53,13 +53,14 @@ typedef struct effKemuri3Data {
     f32 field_84;   // 0x84
 } effKemuri3Data;
 
-// NONMATCHING (98.85%): instructions differ; see check.py
 EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri3Data* data;
     s32 i;
-    s32 angle;
-    f32 rad;
+    // One reused float local: MWCC only colours the constants to f19-f27 and the
+    // arguments to f28-f31 (matching the target) when the int->float angle and the
+    // rad value share this variable; with separate `rad` they land a block lower.
+    f32 angle;
 
     effect = effEntry();
     effect->type = str_802FA8E4;
@@ -82,16 +83,18 @@ EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
         data->field_08 = 0xff;
         data->field_06 = 0x3c;
         data->field_24 = float_0_8041f2f0;
-        data->field_28 = a4 + (f32)(i * 72);
+        angle = a4 + (f32)(i * 72);
+        data->field_28 = angle;
         data->field_2C = float_0_8041f2f0;
         data->field_70 = float_1p75_8041f310;
         data->field_74 = float_neg0p08_8041f314;
         data->field_78 = float_0_8041f2f0;
         data->field_7C = float_0_8041f2f0;
         data->field_60 = float_neg3p9_8041f318;
-        rad = float_6p2832_8041f31c * reviseAngle(data->field_28) / float_360_8041f320;
-        data->field_80 = sin(rad);
-        data->field_84 = cos(rad);
+        angle = reviseAngle(data->field_28);
+        angle = float_6p2832_8041f31c * angle / float_360_8041f320;
+        data->field_80 = sin(angle);
+        data->field_84 = cos(angle);
     }
 
     return effect;
@@ -265,3 +268,20 @@ void effKemuri3Disp(CameraId camId, void* param) {
 }
 
 const char str_802FA8E4[] = "Kemuri3N64";
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041f2e8 = 0x70601900;
+const f32 float_8_8041f2ec = 8.0f;
+const f32 float_0_8041f2f0 = 0.0f;
+const f32 float_1_8041f2f4 = 1.0f;
+const f32 float_neg8_8041f2f8 = -8.0f;
+const f32 float_0p85_8041f2fc = 0.85f;
+const f32 float_0p004_8041f300 = 0.004f;
+const f32 float_neg100_8041f304 = -100.0f;
+const f32 float_deg2rad_8041f308 = 0.017453292f;
+const f32 float_0p3_8041f30c = 0.29999998f;
+const f32 float_1p75_8041f310 = 1.75f;
+const f32 float_neg0p08_8041f314 = -0.08f;
+const f32 float_neg3p9_8041f318 = -3.9f;
+const f32 float_6p2832_8041f31c = 6.2831855f;
+const f32 float_360_8041f320 = 360.0f;

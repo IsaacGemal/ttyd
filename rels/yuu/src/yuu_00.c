@@ -571,10 +571,17 @@ static void monte_disp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (95.56%): the monte-table sum loop now matches; what remains is scheduling/register
-// tie-breaks in the constant-setup block (li r24/r18/r21/r17 order, the second monte_p load into r9
-// vs r8, montetable@ha reusing r7 vs r8), the placement of the z-store relative to the x/y pointer
-// setup, and the sfx string address register (original r26, ours r21). FPR allocation matches.
+// NONMATCHING (95.62%): the monte-table sum loop and FPR allocation match. Reading the montetable
+// bounds straight from their fields (rather than copying them into lo/hi first) fixed the yMin/yMax
+// pointer-register swap (r26/r27) and the second monte_rand. What remains is integer scheduling and
+// register allocation in the constant-setup block: the original forms &zero_yuu_00014548 with an extra
+// `addi r8, r7, zero@l` (so its second monte_p load goes to r9, ours reuses r8), computes the montetable
+// base (r30) and the li r24/r18/r21/r17 sequence in a different order, and schedules the z-store before
+// the x/y pointer setup. The sfx string address still lands in r21 via an extra `mr` instead of r26, and
+// the second monte_rand subtracts into f0 where the original uses f1 (differing only in the
+// source-level value the compiler kept live). Referencing the target's named .rodata globals
+// (zero_yuu_00014548, float_20/100/1_yuu_*, str_00000550) instead of literals does not change these, so
+// the literal version is kept.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -611,31 +618,25 @@ static USER_FUNC(fall_rtn) {
         for (i = 0; i < monte_p->count; i++) {
             s32 j;
             f32* base = (f32*)((u8*)&monte_p[i] + 8);
-            f32 lo;
-            f32 hi;
             f32 min;
             f32 max;
 
             do {
                 base[3] = 0.0f;
-                lo = montetable[tableIdx].xMin;
-                hi = montetable[tableIdx].xMax;
-                if (lo < hi) {
-                    min = lo;
-                    max = hi;
+                if (montetable[tableIdx].xMin < montetable[tableIdx].xMax) {
+                    min = montetable[tableIdx].xMin;
+                    max = montetable[tableIdx].xMax;
                 } else {
-                    min = hi;
-                    max = lo;
+                    min = montetable[tableIdx].xMax;
+                    max = montetable[tableIdx].xMin;
                 }
                 base[1] = monte_rand(min, max);
-                lo = montetable[tableIdx].yMin;
-                hi = montetable[tableIdx].yMax;
-                if (lo < hi) {
-                    min = lo;
-                    max = hi;
+                if (montetable[tableIdx].yMin < montetable[tableIdx].yMax) {
+                    min = montetable[tableIdx].yMin;
+                    max = montetable[tableIdx].yMax;
                 } else {
-                    min = hi;
-                    max = lo;
+                    min = montetable[tableIdx].yMax;
+                    max = montetable[tableIdx].yMin;
                 }
                 base[2] = monte_rand(min, max);
                 for (j = 0; j < pointIdx; j++) {

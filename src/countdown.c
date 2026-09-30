@@ -3,8 +3,19 @@
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include <string.h>
+#include "driver/dispdrv.h"
+#include "driver/icondrv.h"
+#include "evt/evt_cmd.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
+#include <dolphin/mtx.h>
 
 extern GlobalWork* gp;
+// .sdata2 colours of this unit: white (0xFFFFFFFF) for the digits and the colon, and a yellowish 0xFFFFFF99 for the frame.
+extern u32 dat_80420498;
+extern u32 dat_8042049c;
+#define COUNTDOWN_WHITE (*(GXColor*)&dat_80420498)
+#define COUNTDOWN_YELLOW (*(GXColor*)&dat_8042049c)
 
 //.sbss
 static CountdownWork* wp;
@@ -14,17 +25,213 @@ void countDownInit(void) {
     memset(&gp->countdown, 0, sizeof(gp->countdown));
 }
 
-// NONMATCHING (1.47%): empty placeholder, not decompiled yet.
 void countDownSaveReStart(void) {
+	CountdownWork* work = wp;
+	OSTime ticksPerMs;
+	OSTime ms;
+	OSTime span;
+
+	if (work->flags & 1) {
+		ticksPerMs = OS_TIMER_CLOCK / 1000;
+		ms = OSTicksToMilliseconds(work->elapsed);
+		if ((u32)(work->limit - ms) <= (u32)work->restartTime) {
+			span = (u32)(work->limit - work->restartTime);
+			work->elapsed = ticksPerMs * span;
+		}
+		wp->lastTime = gp->renderTime;
+		if (evtGetValue(NULL, GSW(0)) < 0x160) {
+			wp->sfxId = psndSFXOn("SFX_STG2_BOMB_TIMER1");
+		} else {
+			wp->sfxId = psndSFXOn("SFX_STG7_ALART_WARNING1");
+		}
+	}
+}
+
+void countDownStart(s32 limit, s32 restartTime) {
+	wp->limit = limit;
+	wp->restartTime = restartTime;
+	wp->lastTime = gp->renderTime;
+	wp->elapsed = 0;
+	wp->state = 0;
+	wp->counter = 0;
+	wp->dx = 0.0f;
+	wp->dy = 0.0f;
+	wp->x = 180.0f;
+	wp->y = -180.0f;
+	wp->flags = 0;
+	wp->flags |= 1;
+	if (evtGetValue(NULL, GSW(0)) < 0x160) {
+		wp->sfxId = psndSFXOn("SFX_STG2_BOMB_TIMER1");
+	} else {
+		wp->sfxId = psndSFXOn("SFX_STG7_ALART_WARNING1");
+	}
 }
 
 void countDownSetRestartTime(s32 time) {
-    // offset 0x1C is unnamed in CountdownWork (inside field_0x2 padding)
-    *(s32*)((u8*)wp + 0x1C) = time;
+    wp->restartTime = time;
 }
 
-// NONMATCHING (0.72%): empty placeholder, not decompiled yet.
+#ifdef MUST_MATCH
+// Undefined stand-ins for two pooled literals (0.0f and 300.0f) in this unit's .sdata2. Unless
+// the compiler cannot see the values, it will not load both float arguments before wp->counter.
+extern const f32 float_0_804204a0;
+extern const f32 float_300_804204bc;
+#endif
+
 void countDownMain(void) {
+	if (wp->flags & 1) {
+		switch (wp->state) {
+		case 0:
+			if (++wp->counter < 30) {
+#ifdef MUST_MATCH
+				// MUST_MATCH: the comma expression (its volatile cast has no effect on an rvalue)
+				// orders the float constant loads before wp->counter, as in the original.
+				wp->dx = intplGetValue(0xB, ((volatile f32)float_300_804204bc, wp->counter), 30, float_300_804204bc, float_0_804204a0);
+#else
+				wp->dx = intplGetValue(0xB, wp->counter, 30, 300.0f, 0.0f);
+#endif
+			} else {
+				wp->counter = 0;
+				wp->state++;
+			}
+			break;
+		case 1:
+			if (wp->flags & 2) {
+				psndSFXOff(wp->sfxId);
+				wp->sfxId = -1;
+			}
+			break;
+		case 2:
+			if (++wp->counter < 30) {
+#ifdef MUST_MATCH
+				// 300.0f stays a literal so it remains in this unit's .sdata2 pool.
+				wp->dx = intplGetValue(0xB, ((volatile f32)float_0_804204a0, wp->counter), 30, float_0_804204a0, 300.0f);
+#else
+				wp->dx = intplGetValue(0xB, wp->counter, 30, 0.0f, 300.0f);
+#endif
+			} else {
+				wp->counter = 0;
+				wp->state++;
+				wp->flags &= ~1;
+				psndSFXOff(wp->sfxId);
+			}
+			break;
+		}
+		if (!(wp->flags & 8) && (u32)marioStGetSystemLevel() == 0) {
+			wp->elapsed += (s32)((u32)gp->renderTime - (u32)wp->lastTime);
+		}
+		wp->lastTime = gp->renderTime;
+		if (OSTicksToMilliseconds(wp->elapsed) >= wp->limit) {
+			wp->flags |= 2;
+		}
+		dispEntry(CAMERA_2D, 1000.0f, 0, countDownDisp, NULL);
+	}
+}
+
+// The MUST_MATCH body reproduces the original's stack layout: retail keeps three copies of the white
+// colour (one never read) at 0x8/0x20/0x1c, and the `flags`/`msRaw` locals and `sec %= 100` shape the register
+// allocation. The #else body is the same function written naturally.
+void countDownDisp(CameraId camId, void* param) {
+#ifdef MUST_MATCH
+	// MUST_MATCH: colDigit must be declared before colColon but initialised after it, so the digit copy gets slot
+	// 0x20 and the colon copy 0x1c, matching the original's store order (declaration order sets the slots,
+	// assignment order sets the stores). col0 is the third copy retail keeps; it is never read.
+	GXColor col0;
+	GXColor colDigit;
+	GXColor colColon;
+	u16 flags;
+	s32 sec;
+	s32 ms;
+	s32 msRaw;
+	s32 i;
+	s32 digits[3];
+	Mtx mtx;
+	CountdownWork* work = wp;
+	Mtx scale;
+	Mtx base;
+
+	col0 = COUNTDOWN_WHITE;
+	colColon = COUNTDOWN_WHITE;
+	colDigit = COUNTDOWN_WHITE;
+	flags = work->flags;
+	msRaw = (s32)(work->limit - OSTicksToMilliseconds(work->elapsed));
+	if (flags & 4) {
+		return;
+	}
+	if (flags & 2) {
+		msRaw = 0;
+	}
+	sec = msRaw / 1000;
+	ms = msRaw % 1000;
+	PSMTXTrans(base, work->x + work->dx, work->y + work->dy, 0.0f);
+	PSMTXScale(scale, 2.5f, 1.0f, 1.0f);
+	PSMTXConcat(base, scale, mtx);
+	iconDispGxCol(mtx, 0x10, 0x1F6, COUNTDOWN_YELLOW);
+	digits[0] = sec / 100;
+	sec = sec % 100;
+	digits[1] = sec / 10;
+	digits[2] = sec % 10;
+	for (i = 0; i < 3; i++) {
+		PSMTXTrans(mtx, (f32)(-50 + i * 30), 8.0f, 0.0f);
+		PSMTXConcat(base, mtx, mtx);
+		iconDispGxCol(mtx, 0x10, (u16)(digits[i] + 0x1F7), colDigit);
+	}
+	PSMTXTrans(mtx, 28.0f, 10.0f, 0.0f);
+	PSMTXConcat(base, mtx, mtx);
+	iconDispGxCol(mtx, 0x10, 0x201, colColon);
+	digits[0] = ms / 100;
+	digits[1] = (ms % 100) / 10;
+	for (i = 0; i < 2; i++) {
+		PSMTXTrans(mtx, (f32)(40 + i * 15), 8.0f, 0.0f);
+		PSMTXScale(scale, 0.5f, 0.5f, 0.5f);
+		PSMTXConcat(mtx, scale, mtx);
+		PSMTXConcat(base, mtx, mtx);
+		iconDispGxCol(mtx, 0x10, (u16)(digits[i] + 0x1F7), colDigit);
+	}
+#else
+	s32 sec;
+	s32 ms;
+	s32 i;
+	s32 digits[3];
+	Mtx mtx;
+	CountdownWork* work = wp;
+	Mtx scale;
+	Mtx base;
+
+	ms = (s32)(work->limit - OSTicksToMilliseconds(work->elapsed));
+	if (work->flags & 4) {
+		return;
+	}
+	if (work->flags & 2) {
+		ms = 0;
+	}
+	sec = ms / 1000;
+	ms = ms % 1000;
+	PSMTXTrans(base, work->x + work->dx, work->y + work->dy, 0.0f);
+	PSMTXScale(scale, 2.5f, 1.0f, 1.0f);
+	PSMTXConcat(base, scale, mtx);
+	iconDispGxCol(mtx, 0x10, 0x1F6, COUNTDOWN_YELLOW);
+	digits[0] = sec / 100;
+	digits[1] = (sec % 100) / 10;
+	digits[2] = (sec % 100) % 10;
+	for (i = 0; i < 3; i++) {
+		PSMTXTrans(mtx, (f32)(-50 + i * 30), 8.0f, 0.0f);
+		PSMTXConcat(base, mtx, mtx);
+		iconDispGxCol(mtx, 0x10, digits[i] + 0x1F7, COUNTDOWN_WHITE);
+	}
+	PSMTXTrans(mtx, 28.0f, 10.0f, 0.0f);
+	PSMTXConcat(base, mtx, mtx);
+	iconDispGxCol(mtx, 0x10, 0x201, COUNTDOWN_WHITE);
+	digits[0] = ms / 100;
+	digits[1] = (ms % 100) / 10;
+	for (i = 0; i < 2; i++) {
+		PSMTXTrans(mtx, (f32)(40 + i * 15), 8.0f, 0.0f);
+		PSMTXScale(scale, 0.5f, 0.5f, 0.5f);
+		PSMTXConcat(mtx, scale, mtx);
+		PSMTXConcat(base, mtx, mtx);
+		iconDispGxCol(mtx, 0x10, digits[i] + 0x1F7, COUNTDOWN_WHITE);
+	}
+#endif
 }
 
 s32 countDownGetStatus(void) {
@@ -34,14 +241,13 @@ s32 countDownGetStatus(void) {
 
 void countDownEnd(void) {
     if ((wp->flags & 1) != 0) {
-        wp->unk30 = 2;
+        wp->state = 2;
     }
 }
 
 void countDownStop(void) {
     wp->flags |= 8;
-    // offset 0x38 is unnamed in CountdownWork (inside field_0x34 padding)
-    psndSFXOff(*(s32*)(wp->field_0x34 + 4));
+    psndSFXOff(wp->sfxId);
 }
 
 void countDownFlagOn(u16 flag) {

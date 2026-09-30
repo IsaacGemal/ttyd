@@ -53,10 +53,9 @@ extern const f32 float_0p9_8041ff28;
 // opt_common_subs on breaks the two fmadds contractions in the particle update; the original still
 // has them, so keep common subexpression merging off for this function.
 #pragma opt_common_subs off
-// NONMATCHING (98.67%): the original converts `i & 3` in the type-0 random branch with the signed
-// `clrlwi` + `xoris` + double_to_int_802fb788 path. The `(f32)(u32)(i & 3)` cast in this C picks the
-// unsigned double_to_int_mask_802fb780 path, but dropping it scores lower (95.92%), so it stays as a
-// matching choice; `i & 3` is never negative, so behaviour is the same. 19 register diffs follow.
+// NONMATCHING (99.84%): type-0 random branch: conversion stack slots swapped, shared double in f4
+// not f5 (0.5 in f5 not f4), and `fmuls f1,f2,f1` for `fmuls f1,f1,f2`: 12 instruction diffs.
+// `#pragma opt_propagation off` fixes the slots (8 diffs) but scores 99.78.
 void effStardustMain(EffectEntry* effect) {
     EffStardustN64Data* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -104,10 +103,22 @@ void effStardustMain(EffectEntry* effect) {
                 data->scale = float_0p01_8041ff08 * (f32)scale_data[counter - 1];
             } else {
                 s32 rnd;
+#ifdef MUST_MATCH
+                /* MUST_MATCH: retail evaluates the signed int->float conversion into a temp and only
+                   divides after the radius; writing it as one expression (the #else form) makes MWCC
+                   coalesce the conversion into the loaded double's register. */
+                f32 p;
+#endif
                 rnd = effTblRandN64(0x168, i + 0xb1);
+#ifdef MUST_MATCH
+                p = (f32)rnd * float_6p2832_8041ff14;
+                radius = float_0p5_8041ff10 * (f32)(i & 3) + float_1_8041ff0c;
+                angle = p / float_360_8041ff18;
+#else
                 angle = float_6p2832_8041ff14 * (f32)rnd / float_360_8041ff18;
+                radius = float_0p5_8041ff10 * (f32)(i & 3) + float_1_8041ff0c;
+#endif
                 data->type = 10;
-                radius = float_0p5_8041ff10 * (f32)(u32)(i & 3) + float_1_8041ff0c;
                 data->field_0x10 = radius * (f32)sin(angle);
                 data->field_0x14 = radius * (f32)cos(angle);
                 data->field_0x18 = float_neg0p05_8041ff1c;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "driver/npcdrv.h"
 
 typedef void (*voidfunctionptr)(void);
 extern voidfunctionptr _ctors[];
@@ -28,7 +29,7 @@ EVT_DEF(tik_18_init_evt);
 EVT_DEF(tik_19_init_evt);
 EVT_DEF(tik_20_init_evt);
 EVT_DEF(tik_21_init_evt);
-extern BattleSetupData btlsetup_tik_tbl[];
+extern BattleSetupData btlsetup_tik_tbl[30];
 extern u32 btl_tik_setup_no_tbl[];
 
 USER_FUNC(evt_tik_villager_urouro_check_func);

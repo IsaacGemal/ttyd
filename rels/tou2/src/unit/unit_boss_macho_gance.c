@@ -1909,8 +1909,20 @@ static USER_FUNC(wariai_enzan_1f) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.98%): the intplGetValue call setup differs: the original materialises both pooled
-// constants (lis/addi/lfs 0(rN)); mwcc folds one into lfs sym@l(rN) and loads the int args right-to-left.
+// The original intplGetValue prototype orders the float ranges before the integer step. That order is
+// ABI-identical to include/system.h's declaration (r3, f1, f2, r4, r5) but makes MWCC materialise both
+// pooled float constants with lis/addi before loading them, exactly as the retail bytes do. The cast
+// selects that declaration; the natural prototype (include/system.h) is the #else form.
+#ifdef MUST_MATCH
+static inline f32 gance_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
+}
+#else
+static inline f32 gance_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return intplGetValue(mode, step, steps, start, end);
+}
+#endif
+
 static USER_FUNC(wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1927,9 +1939,9 @@ static USER_FUNC(wariai_enzan_1f_intpl) {
             evtSetFloat(event, out, c);
             return EVT_RETURN_DONE;
         }
-        r = 1.0f - intplGetValue((s32)t, (s32)(b - a), (s32)b, 1.0f, 0.0f);
+        r = 1.0f - gance_intpl((s32)t, 1.0f, 0.0f, (s32)(b - a), (s32)b);
     } else {
-        r = intplGetValue((s32)t, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+        r = gance_intpl((s32)t, 0.0f, 1.0f, (s32)(b - a), (s32)b);
     }
     evtSetFloat(event, out, (1.0f - r) * c + r * d);
     return EVT_RETURN_DONE;

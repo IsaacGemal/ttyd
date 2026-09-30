@@ -58,8 +58,9 @@ u8 rz_tbl[32] = {
 const char str_802FAAB8[] = "KumokumoN64";
 
 
-// NONMATCHING (99.97%): the case-3 irand(360) result is kept in f30 where the original used f31, and the
-// int->float magic constants are anonymous where the original named them.
+// The int->float magic doubles pool as anonymous labels (@392/@393/@447); the target names them
+// double_to_int_802faaa0/double_to_int_mask_802faaa8/double_360_802faab0. The relocation names differ,
+// but the instruction bytes are identical.
 EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 scale, f32 a6, f32 a7) {
 	EffectEntry* effect;
 	effKumokumoData* data;
@@ -171,9 +172,8 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 				break;
 			case 3:
 				angle = (f32)irand(360);
-				radius = (f32)irand(200);
+				radius = float_200_8041f5c4 + (f32)irand(200);
 				angle = (float_6p2832_8041f5bc * angle) / float_360_8041f598;
-				radius = float_200_8041f5c4 + radius;
 				data->x = radius * (f32)sin((f64)angle);
 				data->y = radius * (f32)cos((f64)angle);
 				data->z = float_0_8041f594;
@@ -198,9 +198,11 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 	return effect;
 }
 
-// NONMATCHING (99.39%): the type-0/4 decay blocks keep 30.0/scale in the opposite f-registers from the
-// original and the lifetime<16 temp lands in r0 instead of r3 (register allocation only); the compiler's
-// int->float magic constants are anonymous where the original named them.
+// The type-3 respawn's angle must be built in the shared temp f1, not a dedicated local: reusing the
+// variable makes MWCC coalesce the raw (f32)irand(360) and its normalized value into f31, as the target
+// does. The type-0/4 decay writes scale/rotation without f3/f4 temporaries (with them MWCC colours
+// 30.0/scale to the opposite f-registers), and field_0x14 is copied to a local before the lifetime<16
+// test so the compiler hoists its reload ahead of that branch's bge.
 void effKumokumoMain(EffectEntry* effect) {
 	effKumokumoData* data;
 	Vec pos2;
@@ -208,12 +210,12 @@ void effKumokumoMain(EffectEntry* effect) {
 	s32 i;
 	s32 type;
 	s32 camera;
-	f32 angle;
 	f32 radius;
 	f32 f1;
 	f32 f2;
 	f32 f3;
 	f32 f4;
+	s32 field14;
 
 	data = effect->userdata;
 	pos = vec3_802faa90;
@@ -235,11 +237,12 @@ void effKumokumoMain(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
+	field14 = data->field_0x14;
 	if (data->lifetime < 16) {
 		data->color1A = data->lifetime << 4;
 	}
-	if (data->field_0x14 < 16) {
-		data->color1A = (data->field_0x14 << 4) + 0xf;
+	if (field14 < 16) {
+		data->color1A = (field14 << 4) + 0xf;
 	}
 	data->texX += data->texXVel;
 	data->texY += data->texYVel;
@@ -307,12 +310,12 @@ void effKumokumoMain(EffectEntry* effect) {
 					data->y += -data->y * float_0p03125_8041f5c0;
 					data->z += -data->z * float_0p03125_8041f5c0;
 					if (data->scale < float_0p1_8041f590) {
-						angle = (f32)irand(360);
+						f1 = (f32)irand(360);
 						radius = (f32)irand(200);
-						angle = (float_6p2832_8041f5bc * angle) / float_360_8041f598;
+						f1 = (float_6p2832_8041f5bc * f1) / float_360_8041f598;
 						radius = float_200_8041f5c4 + radius;
-						data->x = radius * (f32)sin((f64)angle);
-						data->y = radius * (f32)cos((f64)angle);
+						data->x = radius * (f32)sin((f64)f1);
+						data->y = radius * (f32)cos((f64)f1);
 						data->z = float_0_8041f594;
 						data->scale = float_3_8041f5ac;
 						data->color1A = 0;
@@ -333,11 +336,8 @@ void effKumokumoMain(EffectEntry* effect) {
 						data->texX = float_8_8041f5b0;
 					}
 					else {
-						f3 = data->scale;
-						f4 = float_30_8041f5b8;
-						data->scale = f3 + (float_1_8041f5a0 - f3) / f4;
-						f3 = data->rotation;
-						data->rotation = f3 + (float_30_8041f5b8 - f3) / f4;
+						data->scale += (float_1_8041f5a0 - data->scale) / float_30_8041f5b8;
+						data->rotation += (float_30_8041f5b8 - data->rotation) / float_30_8041f5b8;
 						f1 = (float_6p2832_8041f5bc * data->rotation) / float_360_8041f598;
 						f3 = (f32)cos((f64)f1);
 						data->x += data->texX * f3;

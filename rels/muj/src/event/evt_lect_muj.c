@@ -90,11 +90,6 @@ const Vec vec3_muj_000141a4 = {0.0f, -2016.0f, 0.0f};
 
 // Pooled scalar constants live in the REL's generated rodata objects, not in this unit.
 extern const f64 double_to_int_muj_00014350;
-extern const f32 zero_muj_00014358;
-extern const f32 float_0p5_muj_0001435c;
-extern const f32 zero_muj_00014364;
-extern const f32 float_neg15_muj_00014368;
-extern const f32 float_1_muj_0001436c;
 
 // clang-format off
 extend_data(116,
@@ -178,31 +173,44 @@ static USER_FUNC(x_flag_wait) {
 
     return (x_flag_data[idx] == value) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-// NONMATCHING (93.57%): 8 of 53 instructions differ: 4 with different operands, 2 missing, 1 extra, 1 with a different opcode
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        if (!(lbtn[i].flags & 1)) {
+        LectureButton* btn = &lbtn[i];
+#ifdef MUST_MATCH
+        // The original addresses the button Vec off &lbtn[i] + 8 with a +4 displacement; matching MWCC's
+        // base register needs the pointer built the same way. The natural btn->position scores lower.
+        u8* ppos = (u8*)&lbtn[i] + 8;
+#endif
+
+        if (!(btn->flags & 1)) {
             Vec pos;
             f32 yOff;
 
-            if (lbtn[i].iconId >= 0x7E) {
-                goto set_zero;
+            switch (btn->iconId) {
+            case 0x75:
+            case 0x76:
+            case 0x77:
+            case 0x78:
+            case 0x79:
+            case 0x7A:
+            case 0x7B:
+            case 0x7C:
+            case 0x7D:
+                yOff = -15.0f;
+                break;
+            default:
+                yOff = 0.0f;
+                break;
             }
-            if (lbtn[i].iconId >= 0x75) {
-                goto set_neg15;
-            }
-            goto set_zero;
-        set_neg15:
-            yOff = float_neg15_muj_00014368;
-            goto set_done;
-        set_zero:
-            yOff = zero_muj_00014358;
-        set_done:
-            pos = lbtn[i].position;
+#ifdef MUST_MATCH
+            pos = *(Vec*)(ppos + 4);
+#else
+            pos = btn->position;
+#endif
             pos.y += yOff;
-            iconDispGxAlpha(&pos, 0x50, lbtn[i].iconId, lbtn[i].alpha, float_1_muj_0001436c);
+            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
         }
     }
 }
@@ -249,7 +257,7 @@ static USER_FUNC(lecture_button_rtn) {
     if (done >= 2) {
         return EVT_RETURN_DONE;
     }
-    dispEntry(CAMERA_2D, zero_muj_00014364, 1, lecture_button_disp, NULL);
+    dispEntry(CAMERA_2D, 0.0f, 1, lecture_button_disp, NULL);
     return EVT_RETURN_BLOCK;
 }
 static USER_FUNC(lecture_button_set_icon_id) {
@@ -596,13 +604,13 @@ static USER_FUNC(lect_itemget_kesan) {
     dist = evtGetFloat(event, args[1]);
     cam = camGetPtr(CAMERA_3D);
     if (party == NULL) {
-        evtSetFloat(event, args[2], zero_muj_00014358);
-        evtSetFloat(event, args[3], zero_muj_00014358);
-        evtSetFloat(event, args[4], zero_muj_00014358);
+        evtSetFloat(event, args[2], 0.0f);
+        evtSetFloat(event, args[3], 0.0f);
+        evtSetFloat(event, args[4], 0.0f);
         return EVT_RETURN_DONE;
     }
     pos = party->position;
-    pos.y += *(f32*)((u8*)party + 0xF0) * float_0p5_muj_0001435c;
+    pos.y += *(f32*)((u8*)party + 0xF0) / 2.0f;
     PSVECSubtract(&pos, &cam->cameraPos, &dir);
     PSVECNormalize(&dir, &dir);
     PSVECScale(&dir, &dir, dist);

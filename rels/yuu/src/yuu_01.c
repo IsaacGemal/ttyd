@@ -30,7 +30,6 @@
 #include "rel/yuu/yuu.h"
 #include "system.h"
 #include <dolphin/mtx.h>
-#include <math.h>
 #include <string.h>
 
 typedef struct MonteEntry {
@@ -133,101 +132,6 @@ static MonteTable montetable[6] = {
     {0.0f, 0.0f, 0.0f, 0.0f, 0},
 };
 
-// NONMATCHING (90.74%): the dead proximity loop uses a 0x38 stride and an entry base of +8 in the
-// original (we base at +0 and stride by sizeof(MonteEntry)); the remaining diff is register
-// allocation in the search/allocate loop. Logic matches.
-static USER_FUNC(fall_rtn) {
-    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
-    Yuuminigame2Data* data = work->data;
-    s32 prevExists = 0;
-    s32 total;
-    s32 i;
-    s32 k;
-    s32 groupCount;
-    s32 j;
-    f32 fmin;
-    f32 fmax;
-
-    if (isFirstCall) {
-        if (monte_p != NULL) {
-            prevExists = 1;
-        }
-        total = 0;
-        k = 0;
-        while ((groupCount = montetable[k].count) != 0) {
-            total += groupCount;
-            k++;
-        }
-        monte_p = _mapAlloc(total * sizeof(MonteEntry));
-        memset(monte_p, 0, total * sizeof(MonteEntry));
-        monte_p->count = total;
-        monte_p->work = work;
-        data->unk34 = 0;
-
-        groupCount = 0;
-        k = 0;
-        for (i = 0; i < monte_p->count; i++) {
-            MonteEntry* e = &monte_p[i];
-            do {
-                e->position.y = 0.0f;
-                if (montetable[k].xmin < montetable[k].xmax) {
-                    fmin = montetable[k].xmin;
-                    fmax = montetable[k].xmax;
-                } else {
-                    fmin = montetable[k].xmax;
-                    fmax = montetable[k].xmin;
-                }
-                e->position.x = fmin + (f32)irand((s32)(100.0f * (fmax - fmin))) / 100.0f;
-                if (montetable[k].zmin < montetable[k].zmax) {
-                    fmin = montetable[k].zmin;
-                    fmax = montetable[k].zmax;
-                } else {
-                    fmin = montetable[k].zmax;
-                    fmax = montetable[k].zmin;
-                }
-                e->position.z = fmin + (f32)irand((s32)(100.0f * (fmax - fmin))) / 100.0f;
-
-                for (j = 0; j < groupCount; j++) {
-                    Vec tmp;
-                    PSVECSubtract(&e->position, &monte_p[i - j - 1].position, &tmp);
-                    if (PSVECMag(&tmp) < 20.0f) {
-                        break;
-                    }
-                }
-            } while (j != groupCount);
-            if (++groupCount >= montetable[k].count) {
-                groupCount = 0;
-                k++;
-            }
-            e->unk18 = 1.0f;
-        }
-    }
-
-    {
-        const char* sfx = "SFX_EVT_GAME_MONTE_COUNT1";
-
-        for (i = 0; i < monte_p->count; i++) {
-            MonteEntry* e = &monte_p[i];
-            switch (e->unk4) {
-            case 0:
-                if (get_monte_check(&e->position, &marioGetPtr()->position) == 1) {
-                    data->unk34++;
-                    psndSFXOn_3D(sfx, &marioGetPtr()->position);
-                    e->unk0 = 1;
-                    e->unk4 = 1;
-                }
-                break;
-            case 1:
-                break;
-            }
-        }
-    }
-    if (!prevExists) {
-        dispEntry(4, 0.0f, 1, monte_disp, monte_p);
-    }
-    return EVT_RETURN_BLOCK;
-}
-
 static EVT_BEGIN(minigame_view_monte)
     CALL(fall_rtn)
     RETURN
@@ -244,14 +148,6 @@ EVT_BEGIN(yuu_01_kaijo_init2)
     CALL(evt_mario_set_dir, 90, 0, 0)
     RETURN
 EVT_END()
-
-USER_FUNC(yuuminigame2_set_phase) {
-    s32* args = event->args;
-    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
-    Yuuminigame2Data* data = work->data;
-    data->phase = evtGetValue(event, args[1]);
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(minigame02_main)
     CALL(evt_mario_key_onoff, 0)
@@ -290,30 +186,6 @@ EVT_BEGIN(minigame02_start_cam_cancel)
     RETURN
 EVT_END()
 
-USER_FUNC(yuuminigame2_opening_chk) {
-    s32* args = event->args;
-    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
-    Yuuminigame2Data* data = work->data;
-    if (data->flags & 1) {
-        evtSetValue(event, args[1], 1);
-    } else {
-        evtSetValue(event, args[1], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(yuuminigame2_opening_on_off) {
-    s32* args = event->args;
-    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
-    Yuuminigame2Data* data = work->data;
-    if (evtGetValue(event, args[1]) != 0) {
-        data->flags |= 1;
-    } else {
-        data->flags &= ~1;
-    }
-    return EVT_RETURN_DONE;
-}
-
 EVT_BEGIN(minigame02_start)
     CALL(yuuminigame2_opening_chk, LW(0), LW(1))
     IF_INT_NOT_EQUAL(LW(1), 0)
@@ -351,25 +223,6 @@ EVT_BEGIN(minigame02_start)
     CALL(evt_mario_key_onoff, 1)
     RETURN
 EVT_END()
-
-static USER_FUNC(re_fall_rtn) {
-    if (monte_p != NULL) {
-        Yuuminigame2Data* data = ((YuuminigameWork*)((MonteEntry*)monte_p)->work)->data;
-        if (data->unk38 != NULL) {
-            evtDeleteID(data->unk38->eventId);
-            data->unk38 = NULL;
-            _mapFree(monte_p);
-            data->unk38 = evtEntryType(minigame_view_monte, 0, 0, 0);
-            data->unk38->lwData[0] = (s32)((MonteEntry*)monte_p)->work;
-        }
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(unk_yuu_00005268) {
-    camShiftReset();
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(minigame02_end)
     CALL(evt_cam_letter_box_onoff, 1, 0)
@@ -429,15 +282,6 @@ EVT_BEGIN(minigame02_end)
     CALL(evt_fade_in, 1000)
     RETURN
 EVT_END()
-
-USER_FUNC(yuuminigame2_get_name) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
-    evtSetValue(event, args[1], (s32)s_nametbl[index]);
-    evtSetValue(event, args[2], (s32)a_nametbl[index]);
-    evtSetValue(event, args[3], turn_tbl[index]);
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(yuu_01_init_evt)
     CALL(evt_map_playanim, STRING("den1"), 1, 0)
@@ -776,9 +620,252 @@ static u32 yuunpc_wp[1] = {
     0x00000000,
 };
 
-// NONMATCHING (96.92%): register allocation in the hoko_tbl swirl-power conversion and the
-// state-machine cases, one dead `(0xD ^ i) >> 1` the compiler materialised after the second
-// search, and the whole-file .rodata constant offsets.
+USER_FUNC(unk_yuu_00005268) {
+    camShiftReset();
+    return EVT_RETURN_DONE;
+}
+
+static BOOL get_monte_check(Vec* a, Vec* b) {
+    if (PSVECDistance(a, b) < 20.0f && __fabs(a->y - b->y) < 20.0) {
+        return TRUE;
+    }
+    return FALSE;
+}
+// clang-format on
+static void monte_disp(CameraId cameraId, void* param) {
+    MonteEntry* entries = param;
+    s32 i;
+
+    if (param != NULL) {
+        for (i = 0; i < entries->count; i++) {
+            if (entries[i].unk0 == 0) {
+                iconDispGx(&entries[i].position, 0, 0x13f, 1.0f);
+            }
+        }
+    }
+}
+
+static inline f32 monte_rand(f32 min, f32 max) {
+    return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
+}
+
+// NONMATCHING (99.44%): base[2]=0.0f is set before the do-while and base[4]=1.0f after it, matching the
+// target's store layout. Only register ties remain: the z min/max pointers land in r26/r27 reversed (z
+// subtraction in f0, not f1) and the psndSFX string address gets an extra `mr` into r21 instead of r26.
+static USER_FUNC(fall_rtn) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    s32 wasAllocated;
+    Yuuminigame2Data* data;
+    s32 total;
+    s32 i;
+    s32 tableIdx;
+    s32 pointIdx;
+    const char* sfx;
+
+    wasAllocated = 0;
+    data = work->data;
+    if (isFirstCall) {
+        if (monte_p != NULL) {
+            wasAllocated = 1;
+        }
+        total = 0;
+        i = 0;
+        {
+            s32 c;
+            while ((c = montetable[i].count) != 0) {
+                total += c;
+                i++;
+            }
+        }
+        monte_p = _mapAlloc(total * 0x44);
+        memset(monte_p, 0, total * 0x44);
+        monte_p->count = total;
+        monte_p->work = work;
+        data->unk34 = 0;
+
+        tableIdx = 0;
+        pointIdx = 0;
+        for (i = 0; i < monte_p->count; i++) {
+            s32 j;
+            f32* base = (f32*)((u8*)&monte_p[i] + 8);
+            f32 lo;
+            f32 hi;
+            f32 min;
+            f32 max;
+
+            base[2] = 0.0f;
+            do {
+                lo = montetable[tableIdx].xmin;
+                hi = montetable[tableIdx].xmax;
+                if (lo < hi) {
+                    min = lo;
+                    max = hi;
+                } else {
+                    min = hi;
+                    max = lo;
+                }
+                base[1] = monte_rand(min, max);
+                lo = montetable[tableIdx].zmin;
+                hi = montetable[tableIdx].zmax;
+                if (lo < hi) {
+                    min = lo;
+                    max = hi;
+                } else {
+                    min = hi;
+                    max = lo;
+                }
+                base[3] = monte_rand(min, max);
+                for (j = 0; j < pointIdx; j++) {
+                    Vec tmp;
+                    PSVECSubtract((Vec*)(base + 1), (Vec*)((u8*)base - (j + 1) * 0x38 + 4), &tmp);
+                    if (PSVECMag(&tmp) < 20.0f) {
+                        break;
+                    }
+                }
+            } while (j != pointIdx);
+            pointIdx++;
+            if (pointIdx >= montetable[tableIdx].count) {
+                pointIdx = 0;
+                tableIdx++;
+            }
+            base[4] = 1.0f;
+        }
+    }
+
+    sfx = "SFX_EVT_GAME_MONTE_COUNT1";
+    {
+        for (i = 0; i < monte_p->count; i++) {
+            MonteEntry* p = &monte_p[i];
+            switch (p->unk4) {
+            case 0:
+                if (get_monte_check(&p->position, &marioGetPtr()->position) == 1) {
+                    data->unk34++;
+                    psndSFXOn_3D(sfx, &marioGetPtr()->position);
+                    p->unk0 = 1;
+                    p->unk4 = 1;
+                }
+                break;
+            case 1:
+                break;
+            }
+        }
+    }
+    if (wasAllocated == 0) {
+        dispEntry(4, 0.0f, 1, monte_disp, monte_p);
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+static USER_FUNC(re_fall_rtn) {
+    if (monte_p != NULL) {
+        Yuuminigame2Data* data = ((YuuminigameWork*)((MonteEntry*)monte_p)->work)->data;
+        if (data->unk38 != NULL) {
+            evtDeleteID(data->unk38->eventId);
+            data->unk38 = NULL;
+            _mapFree(monte_p);
+            data->unk38 = evtEntryType(minigame_view_monte, 0, 0, 0);
+            data->unk38->lwData[0] = (s32)((MonteEntry*)monte_p)->work;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame2_set_phase) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame2Data* data = work->data;
+    data->phase = evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame2_get_name) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    evtSetValue(event, args[1], (s32)s_nametbl[index]);
+    evtSetValue(event, args[2], (s32)a_nametbl[index]);
+    evtSetValue(event, args[3], turn_tbl[index]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame2_opening_on_off) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame2Data* data = work->data;
+    if (evtGetValue(event, args[1]) != 0) {
+        data->flags |= 1;
+    } else {
+        data->flags &= ~1;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(yuuminigame2_opening_chk) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame2Data* data = work->data;
+    if (data->flags & 1) {
+        evtSetValue(event, args[1], 1);
+    } else {
+        evtSetValue(event, args[1], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+void yuuminigame_init_2fune(EventEntry* event, BOOL isFirstCall) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    Yuuminigame2Data* data = work->data;
+
+    data->unk38 = evtEntryType(minigame_view_monte, 0, 0, 0);
+    data->unk38->lwData[0] = event->lwData[0];
+    data->flags |= 1;
+    marioChgShipMotion();
+}
+
+void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    Yuuminigame2Data* data = work->data;
+
+    switch (data->phase) {
+    case 5:
+        data->phase = 1;
+        /* fallthrough */
+    case 1:
+        work->childEvent = evtEntry(minigame02_start, 0, 0);
+        work->childEvent->lwData[0] = event->lwData[0];
+        data->phase++;
+        break;
+    case 2:
+        data->unk10 = 0x15;
+        data->phase = 3;
+        data->unk0C = 0;
+        /* fallthrough */
+    case 3:
+        if (yuuminigame2_gamerule(event, isFirstCall, work, data)) {
+            data->phase++;
+        }
+        break;
+    case 4:
+        work->childEvent = evtEntry(minigame02_end, 0, 0);
+        work->childEvent->lwData[0] = data->unk08;
+        if (data->unk0C + 5 <= 0) {
+            data->unk0C = 1;
+        } else {
+            data->unk0C += 0x105;
+        }
+        work->childEvent->lwData[1] = data->unk0C;
+        work->childEvent->lwData[2] = data->unk34;
+        data->phase++;
+        break;
+    }
+}
+
+void yuuminigame_disp_2fune(CameraId cameraId, void* param) {
+    monteCountDisp();
+}
+
+// 100%: the dead `(0xD ^ i) >> 1` after the second search needs an explicit `if (i < 0xD) break;`,
+// and the hoko_tbl swirl-power conversion inlines `irand` into the argument (so the 8.0f
+// constant's address is materialised as in the original). Both were reproduced here.
 s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame2Data* data) {
     MarioWork* mario = marioGetPtr();
     Vec near[3];
@@ -854,8 +941,7 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
                         }
                         data->unk10 = i;
                         {
-                            s32 power = irand(0x5B) - 0x2D;
-                            marioSetSwirlPower(1000, 8.0f, (f32)(s32)(hoko_tbl[data->unk10] + power));
+                            marioSetSwirlPower(1000, 8.0f, (f32)(s32)(hoko_tbl[data->unk10] + irand(0x5B) - 0x2D));
                         }
                         mario->dispFlags |= 0x100;
                         break;
@@ -864,6 +950,9 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
                 if (j < 3) {
                     break;
                 }
+            }
+            if (i < 0xD) {
+                break;
             }
         }
         break;
@@ -912,8 +1001,8 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
             mario->position.z = vec.z;
             mario->position.y = data->unk2C - 30.0f * ((f32)(0x78 - data->unk28) / 120.0f);
             if (data->unk28 <= 0) {
-                angle = 0.0f;
                 data->unk14++;
+                angle = 0.0f;
                 data->unk28 = 0x1E;
                 mario->dispFlags &= ~0x100;
                 data->unk30 = mario->position.x;
@@ -922,10 +1011,10 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
 
         case 1:
             data->unk28--;
+            angle = 0.0f;
             mario->position.x = data->unk30 + (-100.0f) * ((f32)(0x1E - data->unk28) / 30.0f);
             mario->position.y = data->unk2C - 30.0f;
             if (data->unk28 <= 0) {
-                angle = 0.0f;
                 data->unk14++;
                 data->unk28 = 0x1E;
             }
@@ -933,8 +1022,8 @@ s32 yuuminigame2_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
 
         case 2:
             data->unk28--;
-            mario->position.y = data->unk2C - 30.0f * ((f32)data->unk28 / 30.0f);
             angle = 0.0f;
+            mario->position.y = data->unk2C - 30.0f * ((f32)data->unk28 / 30.0f);
             if (data->unk28 <= 0) {
                 data->unk10 = 0x15;
                 marioKeyOn();
@@ -953,75 +1042,3 @@ end:
     return 0;
 }
 
-void yuuminigame_disp_2fune(CameraId cameraId, void* param) {
-    monteCountDisp();
-}
-
-void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
-    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
-    Yuuminigame2Data* data = work->data;
-
-    switch (data->phase) {
-    case 5:
-        data->phase = 1;
-        /* fallthrough */
-    case 1:
-        work->childEvent = evtEntry(minigame02_start, 0, 0);
-        work->childEvent->lwData[0] = event->lwData[0];
-        data->phase++;
-        break;
-    case 2:
-        data->unk10 = 0x15;
-        data->phase = 3;
-        data->unk0C = 0;
-        /* fallthrough */
-    case 3:
-        if (yuuminigame2_gamerule(event, isFirstCall, work, data)) {
-            data->phase++;
-        }
-        break;
-    case 4:
-        work->childEvent = evtEntry(minigame02_end, 0, 0);
-        work->childEvent->lwData[0] = data->unk08;
-        if (data->unk0C + 5 <= 0) {
-            data->unk0C = 1;
-        } else {
-            data->unk0C += 0x105;
-        }
-        work->childEvent->lwData[1] = data->unk0C;
-        work->childEvent->lwData[2] = data->unk34;
-        data->phase++;
-        break;
-    }
-}
-
-void yuuminigame_init_2fune(EventEntry* event, BOOL isFirstCall) {
-    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
-    Yuuminigame2Data* data = work->data;
-
-    data->unk38 = evtEntryType(minigame_view_monte, 0, 0, 0);
-    data->unk38->lwData[0] = event->lwData[0];
-    data->flags |= 1;
-    marioChgShipMotion();
-}
-
-static void monte_disp(CameraId cameraId, void* param) {
-    MonteEntry* entries = param;
-    s32 i;
-
-    if (param != NULL) {
-        for (i = 0; i < entries->count; i++) {
-            if (entries[i].unk0 == 0) {
-                iconDispGx(&entries[i].position, 0, 0x13f, 1.0f);
-            }
-        }
-    }
-}
-
-static BOOL get_monte_check(Vec* a, Vec* b) {
-    if (PSVECDistance(a, b) < 20.0f && fabs(a->y - b->y) < 20.0) {
-        return TRUE;
-    }
-    return FALSE;
-}
-// clang-format on

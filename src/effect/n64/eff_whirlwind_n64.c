@@ -6,12 +6,17 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include "mario/mario.h"
+
+// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042308C_sbss2;
+__declspec(section ".sdata") GXColor unk_80423088;
 #include <stdlib.h>
 
 // .sdata color tables (original symbols col_r/col_g/col_b at 0x80412D28-0x80412D33).
 __declspec(section ".sdata") u8 col_r[4] = { 0xFF, 0xFF, 0x40, 0x00 };
 __declspec(section ".sdata") u8 col_g[4] = { 0xFF, 0x40, 0x40, 0x00 };
-__declspec(section ".sdata") u8 col_b[4] = { 0xFF, 0x40, 0xFF, 0x00 };
+__declspec(section ".sdata") u8 col_b[8] = { 0xFF, 0x40, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 // .data vertex array (original symbol eff_whirlwind_v, 0x16C bytes).
 u32 eff_whirlwind_v[0x16C / 4] = {
@@ -54,9 +59,8 @@ typedef struct EffWhirlwindData {
 	u8 field_0x47;    //0x47
 } EffWhirlwindData; //0x48
 
-// NONMATCHING (99.91%): in the type>=8 branch the (f32)(i-1) int->float conversion is allocated to f0
-// instead of the original's f1 (3 register-only diffs: lfd/fsubs f1->f0 and the 0.25f constant f0->f1).
-// Every other instruction matches.
+// Note: under MUST_MATCH the `(f32)(i - 1) / 4.0f` is exact and compiles to a multiply by 0.25; writing it as
+// `* 0.25f` makes MWCC allocate the int->float conversion to f0 instead of the original's f1.
 EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 	s32 v31;
 	s32 v30;
@@ -69,7 +73,7 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 	s32 i;
 	s32 color;
 	effect = effEntry();
-	effect->type = str_802FA168;
+	effect->type = "WhirlwindN64";
 	effect->count = 5;
 	data = __memAlloc(HEAP_EFFECT, 0x168);
 	effect->userdata = data;
@@ -132,7 +136,11 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 			p->field_0x38 = (f32)(((rand() % 2) * 2 - 1) * 4);
 			p->field_0x3C = 0.0f;
 			p->field_0x40 = (f32)(((rand() % 2) * 2 - 1) * 4);
+#ifdef MUST_MATCH
+			p->field_0x14 = ((f32)(i - 1) / 4.0f) * 0.5f + 0.5f;
+#else
 			p->field_0x14 = 0.5f * ((f32)(i - 1) * 0.25f) + 0.5f;
+#endif
 			p->field_0x2C = (f32)v29;
 			p->field_0x30 = (f32)((i - 1) * 360 / 4);
 			p->field_0x34 = (f32)(360 - v28);
@@ -337,3 +345,7 @@ void effWhirlwindDisp(CameraId camId, void* param) {
 		tri2(19, 18, 25, 0, 19, 25, 24, 0);
 	}
 }
+
+#pragma explicit_zero_data on
+__declspec(section ".data") u32 gap_05_8039A604_data = 0;
+#pragma explicit_zero_data reset

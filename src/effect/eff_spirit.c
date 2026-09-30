@@ -6,12 +6,9 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
-
-// .rodata
-const Vec vec3_80301320 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_80301330 = 4503601774854144.0;
-const char str_80301338[] = "Spirit";
+// math_ext.h instead of <math.h>: the SDK math.h instantiates its sqrtf inline, whose static
+// _half/_three doubles land at the front of .rodata and shift the vec3/double/string pool retail has.
+#include "math_ext.h"
 
 // .sdata2
 extern const f32 float_deg2rad_80422270;
@@ -42,7 +39,7 @@ EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 tar
     effSpiritData* data;
 
     entry = effEntry();
-    entry->type = str_80301338;
+    entry->type = "Spirit";
     entry->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(effSpiritData));
     entry->userdata = data;
@@ -77,17 +74,32 @@ EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 tar
     return entry;
 }
 
-// NONMATCHING (92.55%): the s32->f32 conversions use this TU's anonymous pool copy of double_to_int instead of
-// the named symbol, and several intplGetValue argument loads are scheduled before the float constant loads.
+// The zero-vector copy is built from an anonymous literal so the scheduler keeps the userdata load
+// ahead of it.
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+    Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+#ifdef MUST_MATCH
+// The original translation unit called intplGetValue through a prototype that lists the two
+// float bounds before the step/duration words. The ABI is identical (ints->r3-r5, floats->f1-f2);
+// only the source argument order differs, and MWCC then schedules the float loads first as retail does.
+#define intplGetValueFM(mode, start, end, currStep, steps) \
+    ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps)
+#else
+#define intplGetValueFM(mode, start, end, currStep, steps) intplGetValue(mode, currStep, steps, start, end)
+#endif
+
 void effSpiritMain(EffectEntry* effect) {
     effSpiritData* data = effect->userdata;
     Vec position;
     Vec disp;
 
-    disp = vec3_80301320;
-    disp.x = data->x;
-    disp.y = data->y;
-    disp.z = data->z;
+    disp = makeVec(data->x, data->y, data->z);
     position = disp;
 
     if (effect->flags & 4) {
@@ -121,12 +133,12 @@ void effSpiritMain(EffectEntry* effect) {
     case 1:
         if (data->step < data->duration) {
             data->step++;
-            data->x = intplGetValue(0xB, data->step, data->duration, data->startX, data->targetX);
-            data->y = intplGetValue(0xB, data->step, data->duration, data->startY, data->targetY);
-            data->z = intplGetValue(0xB, data->step, data->duration, data->startZ, data->targetZ);
+            data->x = intplGetValueFM(0xB, data->startX, data->targetX, data->step, data->duration);
+            data->y = intplGetValueFM(0xB, data->startY, data->targetY, data->step, data->duration);
+            data->z = intplGetValueFM(0xB, data->startZ, data->targetZ, data->step, data->duration);
             data->y += float_50_80422298 *
                        (f32)sin(float_3p1416_80422294 * ((f32)data->step / (f32)data->duration));
-            data->scaleBase = intplGetValue(0xB, data->step, data->duration, float_1_8042229c, float_0_80422284);
+            data->scaleBase = intplGetValueFM(0xB, float_1_8042229c, float_0_80422284, data->step, data->duration);
         } else {
             effDelete(effect);
             return;
@@ -136,9 +148,9 @@ void effSpiritMain(EffectEntry* effect) {
 
     switch (data->colorState) {
     case 0:
-        data->colorR = intplGetValue(0xB, data->colorStep, 0x20, float_255_804222a0, float_37_804222a4);
-        data->colorG = intplGetValue(0xB, data->colorStep, 0x20, float_242_804222a8, float_254_804222ac);
-        data->colorB = intplGetValue(0xB, data->colorStep, 0x20, float_0_80422284, float_246_804222b0);
+        data->colorR = intplGetValueFM(0xB, float_255_804222a0, float_37_804222a4, data->colorStep, 0x20);
+        data->colorG = intplGetValueFM(0xB, float_242_804222a8, float_254_804222ac, data->colorStep, 0x20);
+        data->colorB = intplGetValueFM(0xB, float_0_80422284, float_246_804222b0, data->colorStep, 0x20);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 1;
@@ -146,9 +158,9 @@ void effSpiritMain(EffectEntry* effect) {
         }
         break;
     case 1:
-        data->colorR = intplGetValue(0xB, data->colorStep, 0x20, float_37_804222a4, float_226_804222b4);
-        data->colorG = intplGetValue(0xB, data->colorStep, 0x20, float_254_804222ac, float_65_804222b8);
-        data->colorB = intplGetValue(0xB, data->colorStep, 0x20, float_246_804222b0, float_255_804222a0);
+        data->colorR = intplGetValueFM(0xB, float_37_804222a4, float_226_804222b4, data->colorStep, 0x20);
+        data->colorG = intplGetValueFM(0xB, float_254_804222ac, float_65_804222b8, data->colorStep, 0x20);
+        data->colorB = intplGetValueFM(0xB, float_246_804222b0, float_255_804222a0, data->colorStep, 0x20);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 2;
@@ -156,9 +168,9 @@ void effSpiritMain(EffectEntry* effect) {
         }
         break;
     case 2:
-        data->colorR = intplGetValue(0xB, data->colorStep, 0x20, float_226_804222b4, float_255_804222a0);
-        data->colorG = intplGetValue(0xB, data->colorStep, 0x20, float_65_804222b8, float_242_804222a8);
-        data->colorB = intplGetValue(0xB, data->colorStep, 0x20, float_255_804222a0, float_0_80422284);
+        data->colorR = intplGetValueFM(0xB, float_226_804222b4, float_255_804222a0, data->colorStep, 0x20);
+        data->colorG = intplGetValueFM(0xB, float_65_804222b8, float_242_804222a8, data->colorStep, 0x20);
+        data->colorB = intplGetValueFM(0xB, float_255_804222a0, float_0_80422284, data->colorStep, 0x20);
         data->colorStep++;
         if (data->colorStep >= 0x20) {
             data->colorState = 0;
@@ -170,9 +182,9 @@ void effSpiritMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSpiritDisp, effect);
 }
 
-// NONMATCHING (91.99%): the vertex-block constants are reloaded by the original for 0.0/2.0 but kept in
-// registers here; the s32->f32 conversion also uses this TU's anonymous pool copy of double_to_int, not the
-// named symbol; the color local and its outgoing-argument copy are at 0x8/0xc swapped.
+// NONMATCHING (91.99%): the s32->f32 conversion double now pools at the right .rodata offset, but the
+// color local and its outgoing-argument copy are at 0x8/0xc swapped, and the vertex-block constants are
+// reloaded by the original for 0.0/2.0 (and land in f1/f2) where we keep them in registers (f3/f4/f5).
 void effSpiritDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effSpiritData* data = effect->userdata;

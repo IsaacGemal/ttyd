@@ -42,6 +42,27 @@ f32 kpaWidthDat[4] = {20.0f, 60.0f, 84.0f, 186.0f};
 f32 baseScaleTbl[4] = {0.3f, 1.0f, 1.4f, 3.1f};
 void* fireefp;
 const Vec vec3_802fc920 = {0.0f, 0.0f, 0.0f};
+#ifdef MUST_MATCH
+// Match-only rodata: these pool entries belong to the not-yet-written kpaFireAttack; kpaPreInit
+// addresses its map-name strings as offsets from vec3_802fc920, so its .rodata must hold them.
+const double double_to_int_802fc930 = 4503601774854144.0;
+const char str_802FC938[0xC] = "KPA_A_1A";
+const char str_802FC944[0xC] = "KPA2_A_1A";
+const char str_802FC950[0xC] = "KPA_A_1B";
+const char str_802FC95C[0xC] = "KPA2_A_1B";
+const char str_802FC968[0xC] = "KPA_A_1C";
+const char str_802FC974[0xC] = "KPA2_A_1C";
+const char str_802FC980[0xC] = "KPA_A_1D";
+const char str_802FC98C[0xC] = "KPA2_A_1D";
+const char str_802FC998[0x8] = "KPA_S_1";
+const char str_802FC9A0[0xC] = "KPA2_S_1";
+const char str_802FC9AC[0x8] = "KPA_W_1";
+const char str_802FC9B4[0xC] = "KPA2_W_1";
+const char str_802FC9C0[0x8] = "KPA_R_1";
+const char str_802FC9C8[0xC] = "KPA2_R_1";
+const char str_802FC9D4[0xC] = "KPA2_Z_2";
+#endif
+
 
 void kpaPauseSE2(void) {
     psndSFXOn((const char*)(kpaPauseSeTable[irand(0x1C)] | 0x20000));
@@ -67,9 +88,9 @@ f32 kpaGetBaseScale(s32 index) {
     return baseScaleTbl[index];
 }
 
-// NONMATCHING (80.50%): the original saves f29 and r28-r31 with individual stores where ours emits
-// `stmw r27`; see REPORT.md "Compiler flags note" (no available flag/version gives individual saves).
-// Register allocation and two load/store schedules also differ.
+// NONMATCHING (95.28%): only the y-offset temp (f2 vs f0) and the PSMTXRotRad camera read (f0 vs f2)
+// differ, and neither responds to source shape. The prologue, f29/f30/f31, r28-r31 and every
+// store/loop instruction match; the file's compiler build stamps .comment 02040701 vs the object's 02040201.
 void kpaFireMain(void) {
     MarioWork* mp = marioGetPtr();
     f32 sign;
@@ -77,61 +98,54 @@ void kpaFireMain(void) {
     f32 x, y, z;
     f32 f30, f31;
     s32 level;
-    s32 i;
     EffectEntry* efp;
     KpaFireNode* root;
     KpaFireNode* node;
+    s32 i;
     CameraEntry* cam;
-    Mtx m0, m1, m2, m3;
-    Vec v;
+    Mtx m2, m0, m1, m3; // declaration order puts the matrices in the original's stack slots
     Vec out;
+    Vec v;
     void* hit;
+    f32 rootScale;
+    f32 py;
+    f32 off;
 
     KPA(mp)->unk18 = NULL;
     if (fireefp == NULL) {
         goto cleanup;
     }
     sign = (mp->unk1A8 >= 90.0f && mp->unk1A8 <= 270.0f) ? 1.0f : -1.0f;
-    level = 0;
-    if (marioGetPtr()->characterId == 2) {
-        level = KPA(marioGetPtr())->level;
-    }
+    level = kpaGetLevel();
     scale = baseScaleTbl[level];
     x = 40.0f * sign * scale + mp->position.x;
-    if (((MW_U32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) {
-        y = mp->position.y + 20.0f * scale + 6.0f;
-    } else {
-        y = mp->position.y + 20.0f * scale;
-    }
+    off = (((MW_S32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
+    py = mp->position.y;
+    y = py + (20.0f * scale + off);
     z = mp->position.z;
-    efp = fireefp;
-    root = efp->userdata;
-    root->pos.x = x;
-    root->pos.y = y;
-    root->pos.z = z;
-    if (root->unk4C != NULL) {
-        KpaFireNode* sub = ((EffectEntry*)root->unk4C)->userdata;
-        sub->pos.x = x;
-        sub->pos.y = y;
-        sub->pos.z = z;
+    ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.x = x;
+    ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.y = y;
+    ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.z = z;
+    if (((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C != NULL) {
+        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C)->userdata)->pos.x = x;
+        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C)->userdata)->pos.y = y;
+        ((KpaFireNode*)((EffectEntry*)((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->unk4C)->userdata)->pos.z = z;
     }
-    level = 0;
-    if (marioGetPtr()->characterId == 2) {
-        level = KPA(marioGetPtr())->level;
-    }
+    level = kpaGetLevel();
     if (level == 0) {
         goto cleanup;
     }
     efp = fireefp;
     cam = camGetPtr(4);
     root = efp->userdata;
+    rootScale = root->unk40;
     PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
     cam = camGetPtr(4);
-    PSMTXRotRad(m1, 0x79, (root->unk48 - MW_F32(cam, 0x114)) * 0.017453292f);
+    PSMTXRotRad(m1, 0x79, 0.017453292f * (root->unk48 - MW_F32(cam, 0x114)));
     if (root->unk48 > 90.0f && root->unk48 < 270.0f) {
-        PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
+        PSMTXScale(m2, rootScale, rootScale, -rootScale);
     } else {
-        PSMTXScale(m2, root->unk40, root->unk40, root->unk40);
+        PSMTXScale(m2, rootScale, rootScale, rootScale);
     }
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m3);
@@ -148,7 +162,7 @@ void kpaFireMain(void) {
             continue;
         }
         f30 = 7.0f * node->unk40;
-        f31 = f30 * root->unk40;
+        f31 = f30 * rootScale;
         if (f31 < 7.0f) {
             continue;
         }
@@ -165,16 +179,11 @@ void kpaFireMain(void) {
         }
     }
 cleanup:
-    mp = marioGetPtr();
-    if (mp->flags & 1) {
-        s32 mode = KPA(mp)->attackMode;
-        if ((mode >= 0x14 && mode <= 0x17) || (mode >= 0x28 && mode <= 0x2B)) {
-            return;
+    if (!kpaFireAttackCheck()) {
+        if (fireefp != NULL) {
+            effSoftDelete(fireefp);
+            fireefp = NULL;
         }
-    }
-    if (fireefp != NULL) {
-        effSoftDelete(fireefp);
-        fireefp = NULL;
     }
 }
 
@@ -317,6 +326,43 @@ void kpaFall(void) {
             marioLandOn();
         }
     }
+}
+
+// The five map-name strings are addressed as `addi r4, r31, off` off the vec3_802fc920 rodata base.
+// MWCC pools literals in emitted (reverse-source) first-use order, so kpaPreInit sits before
+// kpa_jumpNpc here: kpaFall/kpaGetBodyStatus emit kpa_03 first, then kpa_jumpNpc's M_J_1B/M_J_1C,
+// then kpaPreInit's kpa_02/kpa_04/kpa_05/kpa_06, matching the target .rodata. The kpaFireAttack
+// pool entries above must also be present (see the #ifdef MUST_MATCH block).
+void kpaPreInit(void) {
+    MarioWork* mp = marioGetPtr();
+
+    if (KPA(mp) == NULL) {
+        KPA(mp) = __memAlloc(0, 0x154);
+    }
+    memset(KPA(mp), 0, 0x154);
+    KPA(mp)->level = 1;
+    KPA(mp)->unkD0 = 1;
+    KPA(mp)->unkE0 = 0;
+    KPA(mp)->unkD8 = 1;
+    mp = marioGetPtr();
+    KPA(mp)->sfxId = -1;
+    mp = marioGetPtr();
+    if (strcmp(gp->currentMapName, "kpa_02") == 0
+        || strcmp(gp->currentMapName, "kpa_03") == 0
+        || strcmp(gp->currentMapName, "kpa_04") == 0
+        || strcmp(gp->currentMapName, "kpa_05") == 0
+        || strcmp(gp->currentMapName, "kpa_06") == 0) {
+        MW_U32(mp, 0x14) |= 1;
+    } else {
+        MW_U32(mp, 0x14) &= ~1;
+    }
+    mp = marioGetPtr();
+    if (strcmp(gp->currentMapName, "kpa_03") == 0) {
+        MW_U32(mp, 0x14) |= 2;
+    } else {
+        MW_U32(mp, 0x14) &= ~2;
+    }
+    fireefp = NULL;
 }
 
 void kpa_jumpNpc(void) {
@@ -634,40 +680,6 @@ void kpaMain(void) {
     }
 }
 
-// NONMATCHING (99.94%): the five map-name strings are addressed as `addi r4, r31, off` off a common
-// vec3_802fc920 base; our .rodata pool puts them at different offsets because the original pool also
-// holds the KPA_* pose strings of the not-yet-written kpaFireAttack. No source difference remains.
-void kpaPreInit(void) {
-    MarioWork* mp = marioGetPtr();
-
-    if (KPA(mp) == NULL) {
-        KPA(mp) = __memAlloc(0, 0x154);
-    }
-    memset(KPA(mp), 0, 0x154);
-    KPA(mp)->level = 1;
-    KPA(mp)->unkD0 = 1;
-    KPA(mp)->unkE0 = 0;
-    KPA(mp)->unkD8 = 1;
-    mp = marioGetPtr();
-    KPA(mp)->sfxId = -1;
-    mp = marioGetPtr();
-    if (strcmp(gp->currentMapName, "kpa_02") == 0
-        || strcmp(gp->currentMapName, "kpa_03") == 0
-        || strcmp(gp->currentMapName, "kpa_04") == 0
-        || strcmp(gp->currentMapName, "kpa_05") == 0
-        || strcmp(gp->currentMapName, "kpa_06") == 0) {
-        MW_U32(mp, 0x14) |= 1;
-    } else {
-        MW_U32(mp, 0x14) &= ~1;
-    }
-    mp = marioGetPtr();
-    if (strcmp(gp->currentMapName, "kpa_03") == 0) {
-        MW_U32(mp, 0x14) |= 2;
-    } else {
-        MW_U32(mp, 0x14) &= ~2;
-    }
-    fireefp = NULL;
-}
 
 s32 kpaCamFollow(void) {
     MarioWork* mp = marioGetPtr();

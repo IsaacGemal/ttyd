@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/gx.h>
 #include "driver/effdrv.h"
 typedef struct effHoraoSpellData {
 	s32 type;       // 0x00
@@ -19,6 +20,15 @@ typedef struct effHoraoSpellData {
 	s32 field_0x34; // 0x34
 	f32 field_0x38; // 0x38
 } effHoraoSpellData;
+typedef struct effHoraoSpellVtx {
+	s16 pos[3]; // 0x0, XYZ
+	s16 tex[2]; // 0x6, ST
+	u8 clr[4];  // 0xA, RGBA8
+} effHoraoSpellVtx;
+extern GXColor unk_80423150;
+extern GXColor unk_80423154;
+extern GXColor unk_80423158;
+extern effHoraoSpellVtx horao_spell_vtx[];
 EffectEntry* effHoraoSpellN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);
 void effHoraoSpellMain(EffectEntry* effect);
 #include "driver/camdrv.h"

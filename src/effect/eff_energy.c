@@ -3,6 +3,11 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 
+// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042335C_sbss2;
+__declspec(section ".sdata") GXColor unk_80423358;
+
 typedef struct EnergyData {
     s32 type;       // 0x00
     f32 x;          // 0x04
@@ -19,15 +24,13 @@ typedef struct EnergyData {
     s32 alphaSpeed; // 0x30
 } EnergyData;
 
-const char str_8030148C[] = "Energy";
-extern const f32 float_0_80422470;
 
 EffectEntry* effEnergyEntry(s32 a, s32 b, f32 p1, f32 p2, f32 p3, f32 p4, f32 p5, f32 p6) {
     EffectEntry* entry;
     EnergyData* data;
 
     entry = effEntry();
-    entry->type = str_8030148C;
+    entry->type = "Energy";
     entry->count = 1;
     data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(EnergyData));
     entry->userdata = data;
@@ -37,10 +40,10 @@ EffectEntry* effEnergyEntry(s32 a, s32 b, f32 p1, f32 p2, f32 p3, f32 p4, f32 p5
     data->x = p1;
     data->y = p2;
     data->z = p3;
-    data->angle = float_0_80422470;
+    data->angle = 0.0f;
     data->angleSpeed = p5;
     data->scale = p4;
-    data->scaleAnim = float_0_80422470;
+    data->scaleAnim = 0.0f;
     data->scaleSpeed = p6;
     data->alpha = 0xFF;
     data->alphaAnim = 0;
@@ -125,11 +128,26 @@ static GXColor color_tbl[10] = {
 };
 
 
-// NONMATCHING (99.96%): the GXColor local's stack slot and its by-value argument temp are
-// swapped (ours local 0x14/arg 0x10; original local 0x10/arg 0x14). The other 8 differing
-// instructions are exactly that swap; everything else, including the vertex block, matches.
+// Routing both by-value GXColor calls through the MUST_MATCH void helpers below
+// makes MWCC build the colour in stack slot 0x10 and copy it to the argument temp at 0x14
+// (retail's layout); the plain form put them the other way round (0x14/0x10).
+#ifdef MUST_MATCH
+static inline void effEnergySetMatColor(EnergyData* data) {
+    GXColor color = unk_80423358;
+    color.r = data->alphaAnim;
+    color.g = data->alphaAnim;
+    color.b = data->alphaAnim;
+    color.a = data->alpha;
+    GXSetChanMatColor(4, color);
+}
+static inline void effEnergySetTevColor(s32 id, GXColor c) {
+    GXSetTevColor(id, c);
+}
+#endif
 void effEnergyDisp(CameraId camId, void* param) {
+#ifndef MUST_MATCH
     GXColor color;
+#endif
     EffectEntry* effect = param;
     EnergyData* data = effect->userdata;
     CameraEntry* cam;
@@ -163,14 +181,23 @@ void effEnergyDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+#ifdef MUST_MATCH
+    effEnergySetMatColor(data);
+#else
     color = unk_80423358;
     color.r = data->alphaAnim;
     color.g = data->alphaAnim;
     color.b = data->alphaAnim;
     color.a = data->alpha;
     GXSetChanMatColor(4, color);
+#endif
+#ifdef MUST_MATCH
+    effEnergySetTevColor(1, color_tbl[type * 2]);
+    effEnergySetTevColor(2, color_tbl[type * 2 + 1]);
+#else
     GXSetTevColor(1, color_tbl[type * 2]);
     GXSetTevColor(2, color_tbl[type * 2 + 1]);
+#endif
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 4);
     GXSetTevColorOp(0, 0, 0, 0, 1, 0);

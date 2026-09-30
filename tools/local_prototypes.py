@@ -97,7 +97,17 @@ def asm_path(path, root=ROOT):
     parts = Path(path).with_suffix(".s").parts
     if parts[0] == "src":
         return root / "build" / "G8MJ01" / "asm" / Path(*parts[1:])
+    if parts[1] == "common":
+        return shared_asm_path(Path(*parts[3:]).with_suffix(".c").as_posix(), root)
     return root / "build" / "G8MJ01" / parts[1] / "asm" / Path(*parts[3:])
+
+
+def shared_asm_path(rel, root=ROOT):
+    """A shared unit (rels/common/src/REL) has no asm of its own: use the first module configure.py builds it for."""
+    for m in re.finditer(r'Object\(\w+, "([^"]+)", modules=\["(\w+)"\](?:, source="([^"]+)")?', (root / "configure.py").read_text()):
+        if (m.group(3) or m.group(1)) == rel:
+            return root / "build" / "G8MJ01" / m.group(2) / "asm" / Path(m.group(1)).with_suffix(".s")
+    raise ValueError(f"rels/common/src/{rel}: no Object in configure.py builds it")
 
 
 def asm_scopes(path, root=ROOT):

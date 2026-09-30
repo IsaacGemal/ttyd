@@ -413,15 +413,32 @@ char* MOAMOA_TAIJOU[4] = {
     "S_1_2", NULL, "L_1_4", NULL,
 };
 
-// TODO: write moamoa_bomb (global, 0x3e0 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(boss_moamoa_check_zenei_kouei) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    s32 index = args[1];
+    BattleUnit* unit = BattleGetUnitPtr(work, BattleTransID(event, value));
+    f32 x, y, z;
 
-// TODO: write moamoa_guruguru (global, 0x25c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    if (x >= -120.0f) {
+        evtSetValue(event, index, 0);
+    } else {
+        evtSetValue(event, index, 1);
+    }
+    return EVT_RETURN_DONE;
+}
 
 USER_FUNC(evt_moamoa_mainUnitIdClear) {
     wp->mainUnitId = -1;
     return EVT_RETURN_DONE;
+}
+
+static f32 randf(f32 min, f32 max) {
+    f32 r = (f32)rand() / 32767.0f;
+    f32 d = max - min;
+    return r * d + min;
 }
 
 static EVT_BEGIN(dead_event)
@@ -528,8 +545,9 @@ char* moamoa2_change_tbl[7] = {
     "L_2_1", "L_2_3", NULL, "L_2_4", "L_2_5", "S_2", NULL,
 };
 
-// TODO: write moamoa1_on (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+void moamoa_mainUnitIdClear(void) {
+    wp->mainUnitId = -1;
+}
 
 EVT_BEGIN(moamoa_tentacl_on)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_MOA_G_ARM_RESTORE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -579,43 +597,55 @@ EVT_BEGIN(moamoa_tentacl_on)
     RETURN
 EVT_END()
 
-// NONMATCHING (78.48%): WIP reconstruction; see REPORT.md.
-USER_FUNC(moamoa2_on) {
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
-    BattleUnitPart* part = BattleGetUnitPartsPtr(unit->work[6], 1);
-    const Vec vec = {0.0f, -1000.0f, 0.0f};
-    AnimationPose* pose;
-    Vec* vtx;
-    MoamoaWorkPose* wp2;
-    s32 count;
+// NONMATCHING (99.8%): body exact; MWCC picks a different temp register for `wp` (r4 vs the
+// original's r5) in the two `wp->poses` loads (the `zero` constant takes the other).
+USER_FUNC(moamoa_guruguru) {
+    BattleUnit* unit;
+    Vec vec;
+    Mtx mtx;
+    f32 count;
+    f32 angle;
     s32 i;
-    s32 j;
+    MoamoaWorkPose* pose;
+    ExtPose* extPose;
 
-    wp->field_0x790[4] = (void*)*(s32*)((u8*)part + 0x1C0);
-    animPoseWorldPositionEvalOn((s32)wp->field_0x790[4]);
-    pose = animPoseGetAnimPosePtr((s32)wp->field_0x790[4]);
-    vtx = *(Vec**)((u8*)pose + 0x15C);
-    count = *(s32*)((u8*)pose + 0x160);
-    for (j = 0; j < count; j++) {
-        vtx[j] = vec;
+    unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+    *(Vec*)wp->field_0x7A8 = (Vec){ 0.0f, 0.0f, 0.0f };
+
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    count = 0.0f;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+        if (*(s32*)pose->field_0x30 != -1) {
+            vec.x = (*extPose->matrix)[0][3];
+            vec.y = (*extPose->matrix)[1][3];
+            vec.z = (*extPose->matrix)[2][3];
+            if (vec.y >= 0.0f) {
+                pose->field_0x0 |= 1;
+                count += 1.0f;
+                PSVECAdd(&vec, (Vec*)wp->field_0x7A8, (Vec*)wp->field_0x7A8);
+            }
+        }
     }
-    wp2 = wp->poses;
-    for (i = 0; i < wp->countA; i++, wp2++) {
-        if (wp2->groupIdx < 5) {
-            wp2->animPose = wp->field_0x790[0];
-            wp2->field_0x30 = &wp->mainUnitId;
-        } else if (wp2->groupIdx < 0xA) {
-            wp2->animPose = wp->field_0x790[0];
-            wp2->field_0x30 = &wp->mainUnitId;
-        } else if (wp2->groupIdx < 0xF) {
-            wp2->animPose = wp->field_0x790[0];
-            wp2->field_0x30 = &wp->mainUnitId;
-        } else if (wp2->groupIdx < 0x1E) {
-            wp2->animPose = wp->field_0x790[4];
-            wp2->field_0x30 = &unit->work[6];
-        } else {
-            wp2->animPose = wp->field_0x790[0];
-            wp2->field_0x30 = &wp->mainUnitId;
+    PSVECScale((Vec*)wp->field_0x7A8, (Vec*)wp->field_0x7A8, 1.0f / count);
+    wp->field_0x7B4 = 0.0f;
+    wp->field_0x7B8 = 2.0f;
+
+    extPose = extGetPosePtr();
+    angle = 0.0f;
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+        if (pose->field_0x0 & 1) {
+            pose->field_0x34[0] = (*extPose->matrix)[0][3];
+            pose->field_0x34[1] = (*extPose->matrix)[1][3];
+            pose->field_0x34[2] = (*extPose->matrix)[2][3];
+            *(Vec*)pose->field_0x40 = (Vec){ 0.0f, 1.0f, 0.0f };
+            PSMTXRotRad(mtx, 'Z', angle * 0.017453292f);
+            PSMTXMultVec(mtx, (Vec*)pose->field_0x40, (Vec*)pose->field_0x40);
+            angle += 22.4375f;
+            if (angle >= 360.0f) {
+                angle -= 360.0f;
+            }
         }
     }
     return EVT_RETURN_DONE;
@@ -735,113 +765,265 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ext_moamoa_data[267] = {
-    (u32)"c_n_moa_a", (u32)"S_1", 0x00000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x40000000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x40800000, (u32)"c_n_moa_a", (u32)"S_1", 0x40C00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41200000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41400000, (u32)"c_n_moa_a", (u32)"S_1", 0x41600000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41800000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41900000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41A00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41B00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41C00000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41D00000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41E00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41F00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x42000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x42080000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x42100000, (u32)"c_n_moa_a", (u32)"S_1", 0x42180000,
-    (u32)"c_n_moa_a", (u32)"D_1", 0x00000000, (u32)"c_n_moa_a",
-    (u32)"D_1", 0x40000000, (u32)"c_n_moa_a", (u32)"D_1",
-    0x40800000, (u32)"c_n_moa_a", (u32)"D_1", 0x40C00000,
-    (u32)"c_n_moa_a", (u32)"D_1", 0x41000000, (u32)"c_n_moa_a",
-    (u32)"D_1", 0x41200000, (u32)"c_n_moa_a", (u32)"S_2",
-    0x00000000, (u32)"c_n_moa_a", (u32)"S_2", 0x40000000,
-    (u32)"c_n_moa_a", (u32)"S_2", 0x40800000, (u32)"c_n_moa_a",
-    (u32)"S_2", 0x40C00000, (u32)"c_n_moa_a", (u32)"S_2",
-    0x41000000, (u32)"c_n_moa_a", (u32)"S_2", 0x41200000,
-    (u32)"c_n_moa_a", (u32)"S_2", 0x41400000, (u32)"c_n_moa_a",
-    (u32)"S_2", 0x41600000, (u32)"c_n_moa_a", (u32)"S_2",
-    0x41800000, (u32)"c_n_moa_a", (u32)"S_2", 0x41900000,
-    (u32)"c_n_moa_a", (u32)"S_2", 0x41A00000, (u32)"c_n_moa_a",
-    (u32)"S_2", 0x41B00000, (u32)"c_n_moa_a", (u32)"S_2",
-    0x41C00000, (u32)"c_n_moa_a", (u32)"S_2", 0x41D00000,
-    (u32)"c_n_moa_a", (u32)"S_2", 0x41E00000, (u32)"c_n_moa_a",
-    (u32)"S_2", 0x41F00000, (u32)"c_n_moa_a", (u32)"S_2",
-    0x42000000, (u32)"c_n_moa_a", (u32)"S_2", 0x42080000,
-    (u32)"c_n_moa_a", (u32)"S_2", 0x42100000, (u32)"c_n_moa_a",
-    (u32)"S_2", 0x42180000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x00000000, (u32)"c_n_moa_b", (u32)"S_1", 0x40000000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x40800000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x40C00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41000000, (u32)"c_n_moa_b", (u32)"S_1", 0x41200000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41400000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41600000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41800000, (u32)"c_n_moa_b", (u32)"S_1", 0x41900000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41A00000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41B00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41C00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41D00000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41E00000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41F00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x42000000, (u32)"c_n_moa_b", (u32)"S_1", 0x42080000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x42100000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x42180000, (u32)"c_n_moa_b", (u32)"D_1",
-    0x00000000, (u32)"c_n_moa_b", (u32)"D_1", 0x40000000,
-    (u32)"c_n_moa_b", (u32)"D_1", 0x40800000, (u32)"c_n_moa_b",
-    (u32)"D_1", 0x40C00000, (u32)"c_n_moa_b", (u32)"D_1",
-    0x41000000, (u32)"c_n_moa_b", (u32)"D_1", 0x41200000,
-    (u32)"c_kinodebu", (u32)"G_1", 0x40400000, (u32)"c_kinodebu",
-    (u32)"G_1", 0x41300000, (u32)"c_puku_c", (u32)"U_1",
-    0x3F800000, (u32)"c_puku_c", (u32)"U_1", 0x40C00000,
-    (u32)"c_powan", (u32)"R_2", 0x40400000, (u32)"c_powan",
-    (u32)"R_2", 0x40C00000, (u32)"c_smoko", (u32)"G_1",
-    0x40000000, (u32)"c_smoko", (u32)"G_1", 0x40C00000,
-    (u32)"c_rose", (u32)"G_1", 0x40800000, (u32)"c_rose",
-    (u32)"G_1", 0x41000000, (u32)"c_papab", (u32)"G_1",
-    0x3F800000, (u32)"c_papab", (u32)"G_1", 0x40A00000,
-    (u32)"c_mamab", (u32)"G_1", 0x3F800000, (u32)"c_mamab",
-    (u32)"G_1", 0x40A00000, (u32)"c_konari", (u32)"G_1",
-    0x3F800000, (u32)"c_konari", (u32)"G_1", 0x40A00000,
-    0x00000000, 0x00000000, 0x00000000,
+static MoamoaAnimData ext_moamoa_data[89] = {
+    { "c_n_moa_a", "S_1", 0.0f },
+    { "c_n_moa_a", "S_1", 2.0f },
+    { "c_n_moa_a", "S_1", 4.0f },
+    { "c_n_moa_a", "S_1", 6.0f },
+    { "c_n_moa_a", "S_1", 8.0f },
+    { "c_n_moa_a", "S_1", 10.0f },
+    { "c_n_moa_a", "S_1", 12.0f },
+    { "c_n_moa_a", "S_1", 14.0f },
+    { "c_n_moa_a", "S_1", 16.0f },
+    { "c_n_moa_a", "S_1", 18.0f },
+    { "c_n_moa_a", "S_1", 20.0f },
+    { "c_n_moa_a", "S_1", 22.0f },
+    { "c_n_moa_a", "S_1", 24.0f },
+    { "c_n_moa_a", "S_1", 26.0f },
+    { "c_n_moa_a", "S_1", 28.0f },
+    { "c_n_moa_a", "S_1", 30.0f },
+    { "c_n_moa_a", "S_1", 32.0f },
+    { "c_n_moa_a", "S_1", 34.0f },
+    { "c_n_moa_a", "S_1", 36.0f },
+    { "c_n_moa_a", "S_1", 38.0f },
+    { "c_n_moa_a", "D_1", 0.0f },
+    { "c_n_moa_a", "D_1", 2.0f },
+    { "c_n_moa_a", "D_1", 4.0f },
+    { "c_n_moa_a", "D_1", 6.0f },
+    { "c_n_moa_a", "D_1", 8.0f },
+    { "c_n_moa_a", "D_1", 10.0f },
+    { "c_n_moa_a", "S_2", 0.0f },
+    { "c_n_moa_a", "S_2", 2.0f },
+    { "c_n_moa_a", "S_2", 4.0f },
+    { "c_n_moa_a", "S_2", 6.0f },
+    { "c_n_moa_a", "S_2", 8.0f },
+    { "c_n_moa_a", "S_2", 10.0f },
+    { "c_n_moa_a", "S_2", 12.0f },
+    { "c_n_moa_a", "S_2", 14.0f },
+    { "c_n_moa_a", "S_2", 16.0f },
+    { "c_n_moa_a", "S_2", 18.0f },
+    { "c_n_moa_a", "S_2", 20.0f },
+    { "c_n_moa_a", "S_2", 22.0f },
+    { "c_n_moa_a", "S_2", 24.0f },
+    { "c_n_moa_a", "S_2", 26.0f },
+    { "c_n_moa_a", "S_2", 28.0f },
+    { "c_n_moa_a", "S_2", 30.0f },
+    { "c_n_moa_a", "S_2", 32.0f },
+    { "c_n_moa_a", "S_2", 34.0f },
+    { "c_n_moa_a", "S_2", 36.0f },
+    { "c_n_moa_a", "S_2", 38.0f },
+    { "c_n_moa_b", "S_1", 0.0f },
+    { "c_n_moa_b", "S_1", 2.0f },
+    { "c_n_moa_b", "S_1", 4.0f },
+    { "c_n_moa_b", "S_1", 6.0f },
+    { "c_n_moa_b", "S_1", 8.0f },
+    { "c_n_moa_b", "S_1", 10.0f },
+    { "c_n_moa_b", "S_1", 12.0f },
+    { "c_n_moa_b", "S_1", 14.0f },
+    { "c_n_moa_b", "S_1", 16.0f },
+    { "c_n_moa_b", "S_1", 18.0f },
+    { "c_n_moa_b", "S_1", 20.0f },
+    { "c_n_moa_b", "S_1", 22.0f },
+    { "c_n_moa_b", "S_1", 24.0f },
+    { "c_n_moa_b", "S_1", 26.0f },
+    { "c_n_moa_b", "S_1", 28.0f },
+    { "c_n_moa_b", "S_1", 30.0f },
+    { "c_n_moa_b", "S_1", 32.0f },
+    { "c_n_moa_b", "S_1", 34.0f },
+    { "c_n_moa_b", "S_1", 36.0f },
+    { "c_n_moa_b", "S_1", 38.0f },
+    { "c_n_moa_b", "D_1", 0.0f },
+    { "c_n_moa_b", "D_1", 2.0f },
+    { "c_n_moa_b", "D_1", 4.0f },
+    { "c_n_moa_b", "D_1", 6.0f },
+    { "c_n_moa_b", "D_1", 8.0f },
+    { "c_n_moa_b", "D_1", 10.0f },
+    { "c_kinodebu", "G_1", 3.0f },
+    { "c_kinodebu", "G_1", 11.0f },
+    { "c_puku_c", "U_1", 1.0f },
+    { "c_puku_c", "U_1", 6.0f },
+    { "c_powan", "R_2", 3.0f },
+    { "c_powan", "R_2", 6.0f },
+    { "c_smoko", "G_1", 2.0f },
+    { "c_smoko", "G_1", 6.0f },
+    { "c_rose", "G_1", 4.0f },
+    { "c_rose", "G_1", 8.0f },
+    { "c_papab", "G_1", 1.0f },
+    { "c_papab", "G_1", 5.0f },
+    { "c_mamab", "G_1", 1.0f },
+    { "c_mamab", "G_1", 5.0f },
+    { "c_konari", "G_1", 1.0f },
+    { "c_konari", "G_1", 5.0f },
+    { 0, 0, 0.0f },
 };
 
-// TODO: write ext_moamoa_main (static, 0x68c bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (99.6%): no instruction differences; MWCC swaps the callee-saved registers for
+// `pose` and `extPose` in the second loop (ours extPose=r29,pose=r30 vs orig extPose=r30,pose=r29).
+USER_FUNC(moamoa_bomb) {
 
-// NONMATCHING (98.44%): body and control flow match; MWCC assigns the callee-saved registers in a
-// different order than the original (ours: &wp=r30,i=r27,group_tbl=r31,j=r26,name=r25,sub=r24).
-static void ext_moamoa_init(void) {
-    ExtPose* extPose = extGetPosePtr();
-    MoamoaWorkPose* pose = wp->poses;
-    const char* name;
-    const char* sub;
-    MoamoaWorkAnim* anim;
-    s32 i;
+
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+    ExtPose* extPose;
     s32 j;
+    s32 count;
+    s32 i;
+    MoamoaWorkPose* pose;
 
-    wp->field_0x7BC = 1.0f;
-    wp->field_0x7C0 = 1.0f;
-    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
-        extPose->flags |= 5;
-        PSMTXIdentity(*extPose->matrix);
-        name = (const char*)group_tbl[pose->type * 2];
-        sub = (const char*)group_tbl[pose->type * 2 + 1];
-        anim = wp->anims;
-        for (j = 0; j < wp->countB; j++, anim++) {
-            if (strcmp(anim->field_0x0, name) == 0 && strcmp(anim->field_0x10, sub) == 0) {
+    *(Vec*)wp->field_0x7A8 = (Vec){ 0.0f, 0.0f, 0.0f };
+
+    if (isFirstCall) {
+        extGetPosePtr();
+        pose = wp->poses;
+        for (i = 0; i < wp->countA; i++, pose++) {
+            if (*(s32*)pose->field_0x30 != -1) {
+                pose->field_0x0 &= ~1;
+            }
+        }
+    }
+
+    if (!(gp->retraceCount & 1)) {
+        extPose = extGetPosePtr();
+        count = 0;
+        pose = wp->poses;
+        for (j = 0; j < wp->countA; j++, pose++, extPose++) {
+            if ((*extPose->matrix)[1][3] >= 0.0f) {
+                if (!(pose->field_0x0 & 1)) {
+                    pose->field_0x0 |= 1;
+                    if (pose->field_0x0 & 1) {
+                        pose->field_0x34[0] = randf(0.0f, 60.0f) - 30.0f;
+                        pose->field_0x34[1] = randf(0.0f, 35.0f);
+                        pose->field_0x34[2] = randf(0.0f, 30.0f) + 60.0f;
+                        pose->field_0x40[0] = (*extPose->matrix)[0][3];
+                        pose->field_0x40[1] = (*extPose->matrix)[1][3];
+                        pose->field_0x40[2] = (*extPose->matrix)[2][3];
+                        count++;
+                    }
+                }
+            }
+            if (count >= 10) {
                 break;
             }
         }
-        if (j < wp->countB && pose->field_0x10 != j) {
-            pose->field_0x10 = j;
-            pose->field_0x18 = gp->renderTime;
+    }
+
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, pose++, extPose++) {
+        if (pose->field_0x0 & 1) {
+            if (pose->field_0x40[1] >= -500.0f) {
+                pose->field_0x40[0] += pose->field_0x34[0];
+                pose->field_0x40[1] += pose->field_0x34[1];
+                pose->field_0x40[2] += pose->field_0x34[2];
+                pose->field_0x34[1] -= 1.0f;
+            }
+            (*extPose->matrix)[0][3] = pose->field_0x40[0];
+            (*extPose->matrix)[1][3] = pose->field_0x40[1];
+            (*extPose->matrix)[2][3] = pose->field_0x40[2];
         }
     }
+
+    extPose = extGetPosePtr();
+    count = 0;
+    for (i = 0; i < wp->countA; i++, extPose++) {
+        if ((*extPose->matrix)[1][3] >= -200.0f) {
+            count++;
+        }
+    }
+    if (count <= 9) {
+        *(Vec*)wp->field_0x7A8 = (Vec){ 0.0f, -1000.0f, 0.0f };
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
 }
 
-// TODO: write moamoa_on (global, 0x6c4 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(moamoa1_on) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+    MoamoaWorkPose* pose;
+    s32 i;
+    s32 j;
+
+    for (i = 1; i < 4; i++) {
+        BattleUnitPart* part;
+        AnimationPose* anim;
+        Vec* positions;
+
+        switch (i) {
+        case 1:
+            part = BattleGetUnitPartsPtr(unit->work[3], 1);
+            break;
+        case 2:
+            part = BattleGetUnitPartsPtr(unit->work[4], 1);
+            break;
+        case 3:
+            part = BattleGetUnitPartsPtr(unit->work[5], 1);
+            break;
+        }
+        wp->field_0x790[i] = (void*)*(s32*)part->field_0x1C0;
+        animPoseWorldPositionEvalOn((s32)wp->field_0x790[i]);
+        anim = animPoseGetAnimPosePtr((s32)wp->field_0x790[i]);
+        positions = (Vec*)((smartEntry*)*(void**)((u8*)anim + 0x15C))->address;
+        for (j = 0; j < *(s32*)((u8*)anim + 0x160); j++) {
+            *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
+        }
+    }
+
+    for (i = 0, pose = wp->poses; i < wp->countA; i++, pose++) {
+        if (pose->groupIdx < 5) {
+            pose->animPose = wp->field_0x790[3];
+            pose->field_0x30 = &unit->work[5];
+        } else if (pose->groupIdx < 0xA) {
+            pose->animPose = wp->field_0x790[2];
+            pose->field_0x30 = &unit->work[4];
+        } else if (pose->groupIdx < 0xF) {
+            pose->animPose = wp->field_0x790[1];
+            pose->field_0x30 = &unit->work[3];
+        } else if (pose->groupIdx < 0x1E) {
+            pose->animPose = wp->field_0x790[0];
+            pose->field_0x30 = &wp->mainUnitId;
+        } else {
+            pose->animPose = wp->field_0x790[0];
+            pose->field_0x30 = &wp->mainUnitId;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(moamoa2_on) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+    BattleUnitPart* part = BattleGetUnitPartsPtr(unit->work[6], 1);
+    AnimationPose* pose;
+    Vec* positions;
+    s32 i;
+    MoamoaWorkPose* wp2;
+    s32 j;
+
+    wp->field_0x790[4] = (void*)*(s32*)part->field_0x1C0;
+    animPoseWorldPositionEvalOn((s32)wp->field_0x790[4]);
+    pose = animPoseGetAnimPosePtr((s32)wp->field_0x790[4]);
+    positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
+    for (j = 0; j < *(s32*)((u8*)pose + 0x160); j++) {
+        *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
+    }
+    for (i = 0, wp2 = wp->poses; i < wp->countA; i++, wp2++) {
+        if (wp2->groupIdx < 5) {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        } else if (wp2->groupIdx < 0xA) {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        } else if (wp2->groupIdx < 0xF) {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        } else if (wp2->groupIdx < 0x1E) {
+            wp2->animPose = wp->field_0x790[4];
+            wp2->field_0x30 = &unit->work[6];
+        } else {
+            wp2->animPose = wp->field_0x790[0];
+            wp2->field_0x30 = &wp->mainUnitId;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_moamoa)
     CALL(evt_npc_entry, STRING("moa_a"), STRING("c_n_moa_a"))
@@ -886,6 +1068,327 @@ static u32 group_tbl[22] = {
     (u32)"c_n_moa_a", (u32)"S_2",
 };
 
+USER_FUNC(moamoa_on) {
+    s32 i;
+    MoamoaWorkPose* pose;
+    AnimationPose* animPose;
+    Vec* positions;
+    BattleUnitPart* part;
+    MoamoaAnimData* data;
+    s32 j;
+    s32 lastAnim;
+    char name[32];
+    char animName[32];
+
+    wp = __memAlloc(4, 0x7C4);
+    memset(wp, 0, 0x7C4);
+    wp->countA = 750;
+    wp->poses = __memAlloc(4, wp->countA * 0x50);
+    memset(wp->poses, 0, wp->countA * 0x50);
+
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, pose++) {
+        Vec pos;
+
+        pose->field_0x0 = 0;
+        pos = (Vec){ 0.0f, 0.0f, 0.0f };
+        pos.x = randf(-10.0f, 10.0f);
+        pos.y = randf(-10.0f, 10.0f);
+        pos.z = randf(-10.0f, 10.0f);
+        *(Vec*)&pose->field_0x4 = pos;
+    }
+
+    wp->mainUnitId = BattleTransID(event, -2);
+    BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+    part = BattleGetUnitPartsPtr(wp->mainUnitId, 1);
+    wp->field_0x790[0] = (void*)*(s32*)part->field_0x1C0;
+    animPoseWorldPositionEvalOn((s32)wp->field_0x790[0]);
+    animPose = animPoseGetAnimPosePtr((s32)wp->field_0x790[0]);
+    positions = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
+    for (i = 0; i < *(s32*)((u8*)animPose + 0x160); i++) {
+        *positions++ = (Vec){ 0.0f, -1000.0f, 0.0f };
+    }
+
+    for (i = 0; i < dat_80419a28; i++) {
+        wp->groupCounts[i * 2] = animPoseGetGroupIdx((s32)wp->field_0x790[0], g_moamoa_chain_tbl[i].name);
+        wp->groupCounts[i * 2 + 1] = animPoseGetGroupIdx((s32)wp->field_0x790[0], g_moamoa_chain_tbl[i].anim);
+    }
+
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, pose++) {
+        pose->groupIdx = i % dat_80419a28;
+        pose->seq = wp->seqCounts[pose->groupIdx]++;
+    }
+
+    moamoa1_on(event, isFirstCall);
+
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, pose++) {
+        pose->frame = (f32)pose->seq / (f32)wp->seqCounts[pose->groupIdx];
+    }
+
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, pose++) {
+        if (pose->groupIdx == 0 || pose->groupIdx == 5 || pose->groupIdx == 0xA ||
+            pose->groupIdx == 0xF || pose->groupIdx == 0x2E) {
+            pose->type = 1;
+        }
+        if (pose->seq == 0) {
+            if (pose->groupIdx == 3) {
+                pose->type = 2;
+            }
+            if (pose->groupIdx == 4) {
+                pose->type = 3;
+            }
+            if (pose->groupIdx == 7) {
+                pose->type = 4;
+            }
+            if (pose->groupIdx == 8) {
+                pose->type = 5;
+            }
+            if (pose->groupIdx == 9) {
+                pose->type = 6;
+            }
+            if (pose->groupIdx == 0xC) {
+                pose->type = 7;
+            }
+            if (pose->groupIdx == 0xD) {
+                pose->type = 8;
+            }
+            if (pose->groupIdx == 0xE) {
+                pose->type = 9;
+            }
+        }
+    }
+
+    data = (MoamoaAnimData*)ext_moamoa_data;
+    j = 0;
+    strcpy(name, "");
+    strcpy(animName, "");
+    wp->countB = -1;
+    do {
+        if (strcmp(data->name1, name) != 0) {
+            strcpy(name, data->name1);
+            strcpy(animName, "");
+        }
+        if (strcmp(data->name2, animName) != 0) {
+            strcpy(animName, data->name2);
+            lastAnim = j;
+            wp->countB++;
+        }
+        strcpy(wp->anims[wp->countB].field_0x0, name);
+        strcpy(wp->anims[wp->countB].field_0x10, animName);
+        wp->anims[wp->countB].field_0x1C = lastAnim;
+        wp->anims[wp->countB].field_0x20 = j - lastAnim + 1;
+        if (pose->type >= 2 && pose->type != 0xA) {
+            wp->anims[wp->countB].field_0x18 = 12.0f;
+        } else {
+            wp->anims[wp->countB].field_0x18 = data->frame;
+        }
+        j++;
+        data++;
+    } while (data->name1 != NULL);
+    wp->countB++;
+    for (i = 0; i < wp->countB; i++) {
+    }
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(MOAMOA_SET_BODYSCALE)
+    CALL(moamoa_set_bodyScale)
+    RETURN
+EVT_END()
+
+void moamoa_pose(void* poseArg) {
+    MoamoaPoseArg* pose = poseArg;
+    MoamoaWorkAnim* anim;
+    s32 i;
+    const char* sub;
+    const char* name;
+
+    i = 0;
+    anim = wp->anims;
+    name = (const char*)group_tbl[pose->type * 2];
+    sub = (const char*)group_tbl[pose->type * 2 + 1];
+    for (; i < wp->countB; i++, anim++) {
+        if (strcmp(anim->field_0x0, name) == 0 && strcmp(anim->field_0x10, sub) == 0) {
+            break;
+        }
+    }
+    if (i < wp->countB && pose->field_0x10 != i) {
+        pose->field_0x10 = i;
+        pose->field_0x18 = gp->renderTime;
+    }
+}
+
+static void ext_moamoa_init(void) {
+    s32 i;
+    ExtPose* extPose = extGetPosePtr();
+    MoamoaWorkPose* pose = wp->poses;
+    const char* name;
+    const char* sub;
+    s32 j;
+    MoamoaWorkAnim* anim;
+
+    wp->field_0x7BC = 1.0f;
+    wp->field_0x7C0 = 1.0f;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+        extPose->flags |= 5;
+        PSMTXIdentity(*extPose->matrix);
+        name = (const char*)group_tbl[pose->type * 2];
+        sub = (const char*)group_tbl[pose->type * 2 + 1];
+        anim = wp->anims;
+        for (j = 0; j < wp->countB; j++, anim++) {
+            if (strcmp(anim->field_0x0, name) == 0 && strcmp(anim->field_0x10, sub) == 0) {
+                break;
+            }
+        }
+        if (j < wp->countB && pose->field_0x10 != j) {
+            pose->field_0x10 = j;
+            pose->field_0x18 = gp->renderTime;
+        }
+    }
+}
+
+// NONMATCHING (95.83%): body instruction-perfect except register allocation; the part loop keeps
+// its counter/offsets in r22/r23/r21 in the original but r25/r22/r21 here, and the animation loop
+// cycles pose/extPose/i by one register. `.text` size already matches (0x1bb4); 166 `.text` bytes
+// and a few `.rodata` pool references still differ.
+static void ext_moamoa_main(void) {
+    MoamoaWorkPose* pose;
+    ExtPose* extPose;
+    MoamoaWorkAnim* anim;
+    s32 i;
+    AnimationPose* animPose;
+    Vec* vtx;
+    BattleUnit* unit;
+    Vec tmp2[5];
+    Vec tmp1[5];
+    Vec tmp;
+    Vec offset;
+    Vec offsetR;
+    Mtx mtx;
+    s32 j;
+    s32 p0;
+    s32 p1;
+    s32 frame;
+    f32 f;
+
+    extGetPosePtr();
+    for (i = 0; i < wp->countA; i++) {
+    }
+    wp->field_0x7C0 += 0.1f * (wp->field_0x7BC - wp->field_0x7C0);
+
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+        anim = &wp->anims[pose->field_0x10];
+        f = (f32)gp->framerate * (f32)OSTicksToMilliseconds((u64)(gp->renderTime - pose->field_0x18)) / 1000.0f / anim->field_0x18;
+        if (f >= 1.0f) {
+            pose->field_0x18 = gp->renderTime;
+            f = 0.0f;
+        }
+        frame = (s32)((f32)anim->field_0x20 * f);
+        if (frame >= anim->field_0x20) {
+            frame = anim->field_0x20 - 1;
+        }
+        extPose->field_0x10 = anim->field_0x1C + frame;
+    }
+
+    if (wp->mainUnitId != -1) {
+        unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+        for (i = 0; i < 5; i++) {
+            if (i != 0 && unit->work[i + 2] == -1) {
+                continue;
+            }
+            animPose = animPoseGetAnimPosePtr((s32)wp->field_0x790[i]);
+            j = animPoseGetGroupIdx((s32)wp->field_0x790[i], "joint_core");
+            vtx = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
+            tmp2[i] = vtx[j];
+            PSVECSubtract(&tmp2[0], &tmp2[i], &tmp1[i]);
+        }
+
+        extPose = extGetPosePtr();
+        pose = wp->poses;
+        for (i = 0; i < wp->countA; i++, pose++, extPose++) {
+            if (*(s32*)pose->field_0x30 == -1) {
+                (*extPose->matrix)[0][3] = 0.0f;
+                (*extPose->matrix)[1][3] = -1000.0f;
+                (*extPose->matrix)[2][3] = 0.0f;
+            } else {
+                f32 t;
+                f32 inv;
+
+                animPose = animPoseGetAnimPosePtr((s32)pose->animPose);
+                vtx = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
+                p0 = wp->groupCounts[pose->groupIdx * 2];
+                p1 = wp->groupCounts[pose->groupIdx * 2 + 1];
+                t = pose->frame;
+                inv = 1.0f - t;
+                if (vtx[p0].y == -1000.0f || vtx[p1].y == -1000.0f) {
+                    offset = (Vec){ 0.0f, -1000.0f, 0.0f };
+                    extPose->flags &= ~1;
+                } else {
+                    PSVECScale(&vtx[p0], &offset, t);
+                    PSVECScale(&vtx[p1], &tmp, inv);
+                    PSVECAdd(&offset, &tmp, &offset);
+                    PSVECAdd(&offset, (Vec*)&pose->field_0x4, &offset);
+                    extPose->flags |= 1;
+                }
+                if (pose->field_0x30 != &wp->mainUnitId) {
+                    for (j = 1; j < 5; j++) {
+                        if (&unit->work[j + 2] == (s32*)pose->field_0x30) {
+                            PSVECAdd(&offset, &tmp1[j], &offset);
+                            break;
+                        }
+                    }
+                }
+                if (pose->groupIdx >= 0x2E) {
+                    f = wp->field_0x7C0;
+                    (*extPose->matrix)[1][1] = f;
+                    (*extPose->matrix)[0][0] = f;
+                }
+                (*extPose->matrix)[0][3] += 0.5f * (offset.x - (*extPose->matrix)[0][3]);
+                (*extPose->matrix)[1][3] += 0.5f * (offset.y - (*extPose->matrix)[1][3]);
+                (*extPose->matrix)[2][3] += 0.5f * (offset.z - (*extPose->matrix)[2][3]);
+            }
+        }
+    } else {
+        wp->field_0x7B4 += 8.571428f;
+        wp->field_0x7B8 -= 0.0044444446f;
+        if (wp->field_0x7B8 < 0.8f) {
+            wp->field_0x7B8 = 0.8f;
+        }
+        if (wp->field_0x7B4 >= 360.0f) {
+            wp->field_0x7B4 -= 360.0f;
+        }
+        extPose = extGetPosePtr();
+        pose = wp->poses;
+        for (i = 0; i < wp->countA; i++, pose++, extPose++) {
+            if (pose->field_0x0 & 1) {
+                PSVECSubtract((Vec*)pose->field_0x34, (Vec*)wp->field_0x7A8, &offsetR);
+                PSMTXRotAxisRad(mtx, (Vec*)pose->field_0x40, 0.017453292f * wp->field_0x7B4);
+                PSMTXMultVec(mtx, &offsetR, &offsetR);
+                PSVECScale(&offsetR, &offsetR, wp->field_0x7B8);
+                PSVECAdd(&offsetR, (Vec*)wp->field_0x7A8, &offsetR);
+                (*extPose->matrix)[0][3] += 0.5f * (offsetR.x - (*extPose->matrix)[0][3]);
+                (*extPose->matrix)[1][3] += 0.5f * (offsetR.y - (*extPose->matrix)[1][3]);
+                (*extPose->matrix)[2][3] += 0.5f * (offsetR.z - (*extPose->matrix)[2][3]);
+            }
+        }
+    }
+    dispEntry(4, 0.0f, 1, (DispCallback)moamoa_draw, NULL);
+}
+
+void moamoa_draw(void) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
 USER_FUNC(moamoa_set_bodyScale) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
     s32 num = 0;
@@ -909,69 +1412,5 @@ USER_FUNC(moamoa_set_bodyScale) {
     }
     wp->field_0x7BC = 0.333f * (num - 3) + 1.0f;
     return EVT_RETURN_BLOCK;
-}
-
-EVT_BEGIN(MOAMOA_SET_BODYSCALE)
-    CALL(moamoa_set_bodyScale)
-    RETURN
-EVT_END()
-
-void moamoa_draw(void) {
-    extLoadRenderMode();
-    extLoadVertex();
-    extLoadTexture();
-    extLoadTev();
-    extDraw();
-    extLoadTextureExit();
-}
-
-// NONMATCHING (90.89%): logic matches; MWCC assigns the callee-saved registers differently
-// (ours: i=r27,name=r29,anim=r26 vs orig: i=r28,name=r26,anim=r29).
-void moamoa_pose(void* poseArg) {
-    MoamoaPoseArg* pose = poseArg;
-    const char* name = (const char*)group_tbl[pose->type * 2];
-    const char* sub = (const char*)group_tbl[pose->type * 2 + 1];
-    s32 i = 0;
-    MoamoaWorkAnim* anim = wp->anims;
-
-    for (; i < wp->countB; i++, anim++) {
-        if (strcmp(anim->field_0x0, name) == 0 && strcmp(anim->field_0x10, sub) == 0) {
-            break;
-        }
-    }
-    if (i < wp->countB && pose->field_0x10 != i) {
-        pose->field_0x10 = i;
-        pose->field_0x18 = gp->renderTime;
-    }
-}
-
-void moamoa_mainUnitIdClear(void) {
-    wp->mainUnitId = -1;
-}
-
-static f32 randf(f32 min, f32 max) {
-    f32 r = (f32)rand() / 32767.0f;
-    f32 d = max - min;
-    return r * d + min;
-}
-
-// NONMATCHING (97.5%): one extra `mr r0,r3` before passing evtGetValue()'s result to BattleTransID
-// (ours `mr r0,r3; mr r4,r0`, orig `mr r4,r3`).
-USER_FUNC(boss_moamoa_check_zenei_kouei) {
-    BattleWork* work = _battleWorkPointer;
-    s32* args = event->args;
-    s32 value = evtGetValue(event, args[0]);
-    s32 index = args[1];
-    s32 id = BattleTransID(event, value);
-    BattleUnit* unit = BattleGetUnitPtr(work, id);
-    f32 x, y, z;
-
-    BtlUnit_GetPos(unit, &x, &y, &z);
-    if (x >= -120.0f) {
-        evtSetValue(event, index, 0);
-    } else {
-        evtSetValue(event, index, 1);
-    }
-    return EVT_RETURN_DONE;
 }
 // clang-format on

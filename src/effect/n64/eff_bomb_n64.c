@@ -196,15 +196,27 @@ static void effBombMain(EffectEntry* effect) {
 	dispEntry(camId, dispCalcZ(&position), 2, effBombDisp, effect);
 }
 
-// Two MWCC allocation artifacts keep this below 100%. (1) The original keeps data/camera/timer in
-// r29/r30/r31 (data coalesces with the saved param); this build puts timer in r29 and data/camera in
-// r30/r31. (2) color2's GXColor local/outgoing-copy land in the opposite stack slots (target builds at
-// 0x8 and copies to 0xc; this build builds at 0x14 reusing color1's own outgoing slot and copies to
-// 0x8). Making color2 a block-local fixes neither without moving color1 too. Same mwcc by-value-GXColor
-// quirk as effStoneSmokeDisp/effConfettiDisp.
-// NONMATCHING (99.53%): (1) data/camera/timer are r30/r31/r29 here vs r29/r30/r31 original;
-// (2) color2's GXColor local/copy slots are swapped (0x14/0x8 here vs 0x8/0xc original).
+#ifdef MUST_MATCH
+// Calling GXSetTevColor inside each inline places the colour build word and its by-value argument copy
+// in the original's slots (color1 0x10/0x14, color2 0x8/0xc).
+static inline void bombSetColor1(u8 a) {
+	GXColor c = dat_8041e9d0;
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+static inline void bombSetColor2(u8 b, u8 a) {
+	GXColor c = dat_8041e9d4;
+	c.b = b;
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+#endif
+
+// NONMATCHING (99.92%): color1's seed load and alpha load use r0/r5 where the original uses r5/r0
+// (4 instructions). Everything else matches, including the stack slots and camera/timer registers.
+#pragma opt_propagation off // default propagation puts camera/timer in r31/r30, the reverse of the target
 static void effBombDisp(CameraId camId, void* param) {
+	s32 timer;
 	effBombN64Data* data;
 	CameraEntry* camera;
 	Mtx mtx;
@@ -213,7 +225,6 @@ static void effBombDisp(CameraId camId, void* param) {
 	Mtx outMtx;
 	GXTexObj texObj;
 	GXColor color2;
-	s32 timer;
 	s32 alpha;
 	s32 blue;
 	s32 tmp;
@@ -242,13 +253,17 @@ static void effBombDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
 
 	if (data->field_0x44 != -1) {
-		GXColor color1;
-
 		effGetTexObjN64(0x18, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
-		color1 = dat_8041e9d0;
-		color1.a = data->field_0x7C;
-		GXSetTevColor(GX_TEVREG0, color1);
+#ifdef MUST_MATCH
+		bombSetColor1(data->field_0x7C);
+#else
+		{
+			GXColor color1 = dat_8041e9d0;
+			color1.a = data->field_0x7C;
+			GXSetTevColor(GX_TEVREG0, color1);
+		}
+#endif
 		PSMTXScale(scaleMtx, data->field_0x64, data->field_0x64, float_1_8041e9e4);
 		PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
@@ -273,10 +288,14 @@ static void effBombDisp(CameraId camId, void* param) {
 	} else {
 		blue = 0xFF;
 	}
+#ifdef MUST_MATCH
+	bombSetColor2(blue, alpha);
+#else
 	color2 = dat_8041e9d4;
 	color2.b = blue;
 	color2.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color2);
+#endif
 
 	PSMTXScale(scaleMtx, data->field_0xA8, data->field_0xA8, data->field_0xA8);
 	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e9d8 * data->field_0xB0);
@@ -303,3 +322,4 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+#pragma opt_propagation reset

@@ -202,8 +202,8 @@ static void lecture_button_disp(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (98.96%): count and btn occupy r6/r7 swapped.
 static USER_FUNC(lecture_button_rtn) {
+    LectureButton* btn;
     s32 i;
     s32 count;
 
@@ -215,7 +215,7 @@ static USER_FUNC(lecture_button_rtn) {
     }
     count = 0;
     for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
+        btn = &lbtn[i];
         switch (btn->seq) {
         case 0:
             btn->iconId = 0x68;
@@ -407,11 +407,9 @@ static USER_FUNC(effitemget_busaiku) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.77%): name is kept in r29 (reusing obj's register) instead of r28.
 static USER_FUNC(lect_mobj_hit_nasi) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     MapObjectEntry* obj;
-    const char* hitName;
     s32 i;
 
     if (strcmp(name, "me") != 0) {
@@ -420,9 +418,8 @@ static USER_FUNC(lect_mobj_hit_nasi) {
         obj = event->thisMapObj;
     }
     for (i = 0; i < 2; i++) {
-        hitName = obj->hitObj[i].name;
-        if (hitName != NULL && strcmp(hitName, "") != 0) {
-            hitGrpFlagOn(hitName, 1);
+        if (obj->hitObj[i].name != NULL && strcmp(obj->hitObj[i].name, "") != 0) {
+            hitGrpFlagOn(obj->hitObj[i].name, 1);
         }
     }
     return EVT_RETURN_DONE;

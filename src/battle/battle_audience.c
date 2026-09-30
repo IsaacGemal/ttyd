@@ -186,8 +186,14 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (98.58%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
+// NONMATCHING (99.12%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
 // dropped); the resulting liveness difference also shifts the loop registers.
+// MUST_MATCH: the retail Init passes an unsigned index to GetExist (same asm, different scheduling).
+#ifdef MUST_MATCH
+#define INIT_EXIST_ARG(i) ((u32)(i))
+#else
+#define INIT_EXIST_ARG(i) (i)
+#endif
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -212,7 +218,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j + 10;
-			if ((u8)BattleAudience_GetExist(index) == 1) {
+			if ((u8)BattleAudience_GetExist(INIT_EXIST_ARG(index)) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountRight++;
@@ -224,7 +230,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j;
-			if ((u8)BattleAudience_GetExist(index) == 1) {
+			if ((u8)BattleAudience_GetExist(INIT_EXIST_ARG(index)) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountLeft++;
@@ -1506,8 +1512,6 @@ void BattleAudience_Case_Appeal(BattleUnit* unit) {
 	                           float_0_8041e618);
 }
 
-// NONMATCHING (99.94%): only the absolute target address printed for the flag-test branch differs
-// (same relative branch, different object base).
 void BattleAudience_Case_TurnEnd(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* mario = BattleGetMarioPtr(wp);
@@ -1553,8 +1557,8 @@ void BattleAudience_Case_TurnEnd(void) {
 			BattleAudienceAddPhaseEvtList(13);
 			audience->mTurnEndPhaseEventChance = 0;
 		}
+		BattleAudienceNumToTarget();
 	}
-	BattleAudienceNumToTarget();
 }
 
 s32 BattleAudienceSound0(const char* name) {
@@ -1601,15 +1605,13 @@ void BattleAudience_SetPresentItemType(s32 value) {
 	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8) = value;
 }
 
-// NONMATCHING (99.51%): after the waiting-member collection loop the allocator puts the picked
-// member in r27/r28 instead of the original r28/r30; the body is otherwise identical.
 void BattleAudienceSoundWhistleKind(s32 kind) {
 	s32 waiting[200];
 	s32 i;
-	s32 count = 0;
 	s32 vol;
 	s32 member;
 	s32 kindIdx;
+	s32 count = 0;
 	Vec pos;
 	BattleAudienceSound* sound;
 

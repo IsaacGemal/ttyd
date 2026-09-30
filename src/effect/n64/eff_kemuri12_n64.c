@@ -4,27 +4,21 @@
 #include "memory.h"
 #include "system.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423194;
+__declspec(section ".sdata") GXColor unk_80423190;
+
+
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 // .sdata2 float constants (named after their original addresses).
-const f32 float_256_8041f548 = 256.0f;
-const f32 float_deg2rad_8041f54c = 0.017453292f;
-const f32 float_0p34907_8041f550 = 0.34906584f;
-const f32 float_0p0039062_8041f554 = 0.00390625f;
-const f32 float_0p03125_8041f558 = 0.03125f;
-extern const f32 float_0_8041f55c;
-const f32 float_32_8041f560 = 32.0f;
-const f32 float_8_8041f564 = 8.0f;
 
 // .sbss2 zero GXColor scratch objects the original builds its TEV colors from.
-GXColor unk_80423190;
-GXColor unk_80423194;
 
 // .rodata constants (named after their original addresses).
-const Vec vec3_802faa28 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802faa38 = 4503601774854144.0;
-const char str_802FAA40[] = "Kemuri12N64";
+extern const Vec vec3_802faa28;
 
 typedef struct effKemuri12Data {
     u16 type;        // 0x0
@@ -68,7 +62,7 @@ EffectEntry* effKemuri12N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
     effKemuri12Data* data;
 
     effect = effEntry();
-    effect->type = str_802FAA40;
+    effect->type = "Kemuri12N64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri12Data));
     effect->userdata = data;
@@ -76,7 +70,7 @@ EffectEntry* effKemuri12N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
     data->field_0x14 = life;
     data->field_0x18 = 0;
     data->field_0x1c = life;
-    data->field_0x20 = float_0_8041f55c;
+    data->field_0x20 = 0.0f;
     data->type = type;
     data->position.x = x;
     data->position.y = y;
@@ -115,7 +109,7 @@ void effKemuri12Main(EffectEntry* effect) {
     e = effect;
     data = e->userdata;
     position = initializeVec(&data->position);
-    data->field_0x20 = float_8_8041f564 * (f32)data->field_0x18 / (f32)data->field_0x1c;
+    data->field_0x20 = 8.0f * (f32)data->field_0x18 / (f32)data->field_0x1c;
     data->field_0x18++;
     data->field_0x14--;
     if (data->field_0x14 < 0) {
@@ -126,16 +120,32 @@ void effKemuri12Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri12Disp, e);
 }
 
-// NONMATCHING (98.31%): the two GXColor temps get 4-byte local/arg stack slots
-// (original builds each as an 8-byte local+arg pair at r1+0x8/0xc and 0x10/0x14),
-// and the else-branch PSMTXTrans int->float conversion schedules addi/xoris/lis differently.
+// Building each GXColor *inside* the inline and calling GXSetTevColor there makes MWCC
+// allocate each colour's local+outgoing-arg pair adjacently (r1+0x10/0x14, r1+0x8/0xc),
+// as the original does.
+#ifdef MUST_MATCH
+static inline void setKemuriColor(GXTevRegID id, u8 r, u8 g, u8 b, u8 a) {
+    GXColor c = unk_80423190;
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = a;
+    GXSetTevColor(id, c);
+}
+
+static inline void setKemuriAlphaColor(GXTevRegID id, u8 a) {
+    GXColor c = unk_80423194;
+    c.a = a;
+    GXSetTevColor(id, c);
+}
+#endif
+
 void effKemuri12Disp(CameraId camId, void* param) {
     EffectEntry* effect;
     effKemuri12Data* data;
     CameraEntry* cam;
     GXTexObj texobj;
     Mtx m0, m1, m2;
-    GXColor color[2];
     s32 type;
     s32 ia;
     s32 scaled;
@@ -148,7 +158,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
     data = effect->userdata;
     type = data->type;
     ia = (s32)data->field_0x20;
-    frac256 = (s32)(float_256_8041f548 * (data->field_0x20 - (f32)ia));
+    frac256 = (s32)(256.0f * (data->field_0x20 - (f32)ia));
     isLast = (ia == 7) ? 1 : 0;
 
     GXSetNumChans(0);
@@ -173,44 +183,53 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXLoadTexObj(&texobj, GX_TEXMAP1);
 
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(m2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041f54c);
+    PSMTXRotRad(m2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
     PSMTXScale(m1, data->field_0x10, data->field_0x10, data->field_0x10);
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(m0, m1, m0);
-    PSMTXRotRad(m2, 'z', float_0p34907_8041f550);
+    PSMTXRotRad(m2, 'z', 0.34906584f);
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(cam->view, m0, m0);
     GXLoadPosMtxImm(m0, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
 
-    color[0] = unk_80423190;
-    color[0].r = data->color[0];
-    color[0].g = data->color[1];
-    color[0].b = data->color[2];
-    color[0].a = data->color[3];
-    GXSetTevColor(GX_TEVREG0, color[0]);
-    color[1] = unk_80423194;
-    color[1].a = frac256;
-    GXSetTevColor(GX_TEVREG1, color[1]);
+#ifdef MUST_MATCH
+    setKemuriColor(GX_TEVREG0, data->color[0], data->color[1], data->color[2], data->color[3]);
+    setKemuriAlphaColor(GX_TEVREG1, frac256);
+#else
+    {
+        GXColor color = unk_80423190;
+        color.r = data->color[0];
+        color.g = data->color[1];
+        color.b = data->color[2];
+        color.a = data->color[3];
+        GXSetTevColor(GX_TEVREG0, color);
+    }
+    {
+        GXColor color = unk_80423194;
+        color.a = frac256;
+        GXSetTevColor(GX_TEVREG1, color);
+    }
+#endif
 
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
     scaled = ia * 32;
-    PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
-    PSMTXTrans(m0, (f32)scaled, float_0_8041f55c, float_0_8041f55c);
+    PSMTXScale(m1, 0.00390625f, 0.03125f, 0.0f);
+    PSMTXTrans(m0, (f32)scaled, 0.0f, 0.0f);
     PSMTXConcat(m1, m0, m1);
     GXLoadTexMtxImm(m1, GX_TEXMTX0, GX_MTX2x4);
     if (isLast) {
-        PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
-        PSMTXTrans(m0, (f32)(scaled + 32), float_32_8041f560, float_0_8041f55c);
+        PSMTXScale(m1, 0.00390625f, 0.03125f, 0.0f);
+        PSMTXTrans(m0, (f32)(scaled + 32), 32.0f, 0.0f);
         PSMTXConcat(m1, m0, m1);
         GXLoadTexMtxImm(m1, GX_TEXMTX1, GX_MTX2x4);
     }
     else {
-        PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
-        PSMTXTrans(m0, (f32)(scaled + 32), float_0_8041f55c, float_0_8041f55c);
+        PSMTXScale(m1, 0.00390625f, 0.03125f, 0.0f);
+        PSMTXTrans(m0, (f32)(scaled + 32), 0.0f, 0.0f);
         PSMTXConcat(m1, m0, m1);
         GXLoadTexMtxImm(m1, GX_TEXMTX1, GX_MTX2x4);
     }
@@ -241,3 +260,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
         break;
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

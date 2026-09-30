@@ -28,9 +28,17 @@ s32 unk_80418b54;
 PiantaParlorWork yuugijouwork;
 PiantaParlorWork* yuwp;
 
-// NONMATCHING (95.28%): the field formulas and constants all match; the remaining diff is register
-// allocation / instruction scheduling around the computed groups (the reference reloads yuwp into
-// r7/r12/r11 and hoists the 0xA4..0xB4 constants and the /2000 magic earlier than this build does).
+static inline s32 scale700(u32 v) {
+	s32 q = (0x2BC - (s32)v) * 15 / 0x2BC;
+	return (q >= 0 ? q : 0);
+}
+
+static inline s32 scale2000b(u32 v) {
+	s32 q = ((s32)v - 0x12110) / 2000;
+	return (q >= 0 ? q : 0);
+}
+
+// NONMATCHING (95.46%): the 0xA4..0xB4 and 0xBC..0xCC constant loads are scheduled earlier than in the target.
 void yuugijou_init(void) {
 	s32 q;
 
@@ -67,8 +75,7 @@ void yuugijou_init(void) {
 	yuwp->field_0x98 = 0x1B;
 	yuwp->field_0x9C = 0x8A;
 
-	q = (0x2BC - (s32)yuwp->field_0x8C) * 15 / 0x2BC;
-	yuwp->field_0xEC = (q >= 0 ? q : 0) + 1;
+	yuwp->field_0xEC = scale700(yuwp->field_0x8C) + 1;
 	q = (0x2BC - (s32)yuwp->field_0x90) * 15 / 0x2BC;
 	yuwp->field_0xF0 = (q >= 0 ? q : 0);
 	q = (0x2BC - (s32)yuwp->field_0x94) * 15 / 0x2BC;
@@ -113,21 +120,15 @@ void yuugijou_init(void) {
 	yuwp->field_0xC8 = 0x1627E;
 	yuwp->field_0xCC = 0x15950;
 
-	q = ((s32)yuwp->field_0xBC - 0x12110) / 2000;
-	yuwp->field_0x11C = (q >= 0 ? q : 0) + 7;
-	q = ((s32)yuwp->field_0xC0 - 0x12110) / 2000;
-	yuwp->field_0x120 = (q >= 0 ? q : 0) + 6;
-	q = ((s32)yuwp->field_0xC4 - 0x12110) / 2000;
-	yuwp->field_0x124 = (q >= 0 ? q : 0) + 4;
-	q = ((s32)yuwp->field_0xC8 - 0x12110) / 2000;
-	yuwp->field_0x128 = (q >= 0 ? q : 0) + 3;
-	q = ((s32)yuwp->field_0xCC - 0x12110) / 2000;
-	yuwp->field_0x12C = (q >= 0 ? q : 0) + 4;
+	yuwp->field_0x11C = scale2000b(yuwp->field_0xBC) + 7;
+	yuwp->field_0x120 = scale2000b(yuwp->field_0xC0) + 6;
+	yuwp->field_0x124 = scale2000b(yuwp->field_0xC4) + 4;
+	yuwp->field_0x128 = scale2000b(yuwp->field_0xC8) + 3;
+	yuwp->field_0x12C = scale2000b(yuwp->field_0xCC) + 4;
 }
 
-// NONMATCHING (99.26%): the compiler-generated int->float double constant is an anonymous local
-// label (@281) instead of the reference's named double_to_int_802fe900; and the bit-2 test compiles
-// to beq/fallthrough instead of `bne body; b end`. Everything else matches.
+// The original splits the visibility test as `flag1 == 0 || flag2 == 0`; two separate early
+// returns would fold into a single `beq` instead of the target's `bne body; b end`.
 void monteCountDisp(void) {
 	static s32 monte_snd_flag;
 	s32 x = -180;
@@ -137,42 +138,37 @@ void monteCountDisp(void) {
 	if (yuwp->field_0x0 & 4) {
 		x = -120;
 	}
-	if (!(yuwp->field_0x0 & 1)) {
-		return;
-	}
-	if (!(yuwp->field_0x0 & 2)) {
-		return;
-	}
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_804214b0, float_neg288_804214c0, (f32)(x + 44), float_200_804214c4, float_44_804214c8, float_16_804214cc);
+	if ((yuwp->field_0x0 & 1) == 0 || (yuwp->field_0x0 & 2) == 0) return;
+	windowDispGX_Waku_col(0, *(GXColor*)&dat_804214b0, float_neg288_804214c0, (f32)(x + 44), float_200_804214c4, float_44_804214c8, float_16_804214cc);
 
-		PSMTXTrans(mtx, float_neg260_804214d0, (f32)(x + 2), float_0_804214d4);
-		iconDispGxCol(mtx, 0x10, 0x13F, *(GXColor*)&dat_804214b4);
+	PSMTXTrans(mtx, float_neg260_804214d0, (f32)(x + 2), float_0_804214d4);
+	iconDispGxCol(mtx, 0x10, 0x13F, *(GXColor*)&dat_804214b4);
 
-		PSMTXTrans(mtx, float_neg230_804214d8, (f32)(x + 2), float_0_804214d4);
-		iconDispGxCol(mtx, 0x10, 0x1D6, *(GXColor*)&dat_804214b8);
+	PSMTXTrans(mtx, float_neg230_804214d8, (f32)(x + 2), float_0_804214d4);
+	iconDispGxCol(mtx, 0x10, 0x1D6, *(GXColor*)&dat_804214b8);
 
-		PSMTXTrans(mtx, float_neg128_804214dc, (f32)(x + 2), float_0_804214d4);
-		iconNumberDispGx(mtx, yuwp->field_0x10, 0, *(GXColor*)&dat_804214bc);
+	PSMTXTrans(mtx, float_neg128_804214dc, (f32)(x + 2), float_0_804214d4);
+	iconNumberDispGx(mtx, yuwp->field_0x10, 0, *(GXColor*)&dat_804214bc);
 
-		yuwp->field_0xC++;
-		if ((yuwp->field_0xC & 3) == 0) {
-			delta = yuwp->tokens - yuwp->field_0x10;
-			yuwp->field_0xC = 0;
-			if (monte_snd_flag == 0 && delta != 0) {
-				psndSFXOn((const char*)0x8CA);
-				monte_snd_flag = 8;
-			}
-			if (delta != 0) {
-				delta /= 10;
-				if (delta == 0) {
-					delta = ((s32)yuwp->tokens > (s32)yuwp->field_0x10) ? 1 : -1;
-				}
-				yuwp->field_0x10 += delta;
-			}
+	yuwp->field_0xC++;
+	if ((yuwp->field_0xC & 3) == 0) {
+		delta = yuwp->tokens - yuwp->field_0x10;
+		yuwp->field_0xC = 0;
+		if (monte_snd_flag == 0 && delta != 0) {
+			psndSFXOn((const char*)0x8CA);
+			monte_snd_flag = 8;
 		}
-		if (monte_snd_flag != 0) {
-			monte_snd_flag--;
+		if (delta != 0) {
+			delta /= 10;
+			if (delta == 0) {
+				delta = ((s32)yuwp->tokens > (s32)yuwp->field_0x10) ? 1 : -1;
+			}
+			yuwp->field_0x10 += delta;
 		}
+	}
+	if (monte_snd_flag != 0) {
+		monte_snd_flag--;
+	}
 }
 
 USER_FUNC(yuugijou_add_montemedal) {

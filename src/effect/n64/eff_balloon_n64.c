@@ -18,7 +18,6 @@ inline Vec initializeVec(Vec* input) {
 	temp.z = input->z;
 	return temp;
 }
-
 EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	EffectEntry* effect;
 	effBalloonN64Data* data;
@@ -42,17 +41,21 @@ EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	return effect;
 }
 
-// NONMATCHING (97.29%): only callee-saved register colours differ; the instruction sequence is identical.
+// The loop walks `segs` as an incrementing pointer.
+// MUST_MATCH: holding the raw sin/cos in `wave` and fusing `0.1f * wave + 2.0f` at the
+// use site (assigned back into `wave`) is what makes MWCC assign the preserved constants
+// to f27/f28/f29 = 30/5/2 and emit the in-place `fmadds f0, f21, f0, f29`. The natural
+// fused-wave form under #else is the same math but colors them 2/30/5 (99.67%).
 void effBalloonMain(EffectEntry* effect) {
-	effBalloonN64Data* data = effect->userdata;
-	Vec position = initializeVec((Vec*)&data->x);
 	s32 life;
-	BalloonSeg* segs;
-	s32 phase;
+	effBalloonN64Data* data = effect->userdata;
+	BalloonSeg* segs = (BalloonSeg*)data->pad;
+	Vec position = initializeVec((Vec*)&data->x);
 	f32 radius;
 	f32 angle;
 	f32 wave;
 	s32 i;
+	s32 phase;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -70,20 +73,32 @@ void effBalloonMain(EffectEntry* effect) {
 		effDelete(effect);
 	} else {
 		phase = data->field_0x20;
-		data->field_0x18 = data->field_0x18 + 0.1f * (data->field_0x14 - data->field_0x18);
+		data->field_0x18 += 0.1f * (data->field_0x14 - data->field_0x18);
 		radius = data->field_0x18 +
 		         0.1f * (data->field_0x18 * (f32)sin(6.2831855f * (f32)(phase * 3) / 360.0f));
-		segs = (BalloonSeg*)data->pad;
 		for (i = 0; i < 20; i++) {
 			angle = 6.2831855f * (17.0f + 360.0f * (f32)i / 21.0f) / 360.0f;
-			segs[i].x = radius * (f32)sin(angle);
-			segs[i].y = -radius * (f32)cos(angle);
+			segs->x = radius * (f32)sin(angle);
+			segs->y = -radius * (f32)cos(angle);
+#ifdef MUST_MATCH
+			wave = (f32)sin(6.2831855f * (f32)(i * 53) / 360.0f);
+			segs->x += (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
+			                                  (wave = 0.1f * wave + 2.0f) * (f32)phase) / 360.0f) * 1.5f;
+#else
 			wave = 0.1f * (f32)sin(6.2831855f * (f32)(i * 53) / 360.0f) + 2.0f;
-			segs[i].x += 1.5f * (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
-			                                     (f32)phase * wave) / 360.0f);
+			segs->x += 1.5f * (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
+			                                  wave * (f32)phase) / 360.0f);
+#endif
+#ifdef MUST_MATCH
+			wave = (f32)cos(6.2831855f * (f32)(i * 36) / 360.0f);
+			segs->y += (f32)cos(6.2831855f * (50.0f * (5.0f + (f32)i) +
+			                                  (wave = 0.1f * wave + 2.0f) * (f32)phase) / 360.0f) * 1.5f;
+#else
 			wave = 0.1f * (f32)cos(6.2831855f * (f32)(i * 36) / 360.0f) + 2.0f;
-			segs[i].y += 1.5f * (f32)cos(6.2831855f * (50.0f * (5.0f + (f32)i) +
-			                                     (f32)phase * wave) / 360.0f);
+			segs->y += 1.5f * (f32)cos(6.2831855f * (50.0f * (5.0f + (f32)i) +
+			                                  wave * (f32)phase) / 360.0f);
+#endif
+			segs++;
 		}
 		*(f32*)&data->pad[0xA0] = 0.0f;
 		if (life < 100) {
@@ -218,3 +233,8 @@ void effBalloonDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p0625_8041e940 = 0.0625f;
+const f32 float_0_8041e944 = 0.0f;
+const f32 float_deg2rad_8041e948 = 0.017453292f;

@@ -151,8 +151,15 @@ void windowMain(void) {
 	}
 }
 
-// NONMATCHING (99.99%): only the fog/tev outgoing GXColor argument temps are swapped (ours: fog r1+0x10,
-// tev copy r1+0x8; original: fog r1+0x8, tev copy r1+0x10). Every other instruction matches.
+#ifdef MUST_MATCH
+// MUST_MATCH: the original's outgoing GXColor argument slots need the fog colour passed through a
+// by-value inline (fog temp at r1+0x8) and the tev colour passed as a direct compound literal (built at
+// r1+0xc, copied to r1+0x10); the natural forms land in the other slots.
+static inline void kanbanSetFog(GXColor color) {
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
+}
+#endif
+
 void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
 	Mtx trans, scale;
@@ -169,7 +176,11 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
 	fogColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+#ifdef MUST_MATCH
+	kanbanSetFog(fogColor);
+#else
 	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+#endif
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -186,8 +197,12 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 	GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+	GXSetTevColor(GX_TEVREG0, (GXColor){0xFF, 0xFF, 0xFF, alpha});
+#else
 	tevColor = (GXColor){0xFF, 0xFF, 0xFF, alpha};
 	GXSetTevColor(GX_TEVREG0, tevColor);
+#endif
 	MTXTrans(trans, x, y, 0.0f);
 	MTXScale(scale, height / 560.0f, width / 176.0f, 1.0f);
 	MTXConcat(trans, scale, trans);

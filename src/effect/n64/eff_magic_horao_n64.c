@@ -165,36 +165,52 @@ extern const f32 float_0p015625_8041f76c;
 extern const f32 float_500_8041f774;
 extern const f32 float_200_8041f778;
 
-// All code, constants, control flow and the generated vertex data match. The remaining diffs are MWCC
-// register-allocation choices: the target keeps alpha in f31 (here f29), angleBase in r25 (here r29),
-// colorAlpha in r27 (here r26) and counter in r26 (here r25), and its loop keeps off1/off2/y/v/vp in
-// r28/r30/r29/r24/r31 where this build uses r28/r27/r26/r25/r30. The final draw loop also emits
-// `clrlwi` on the tri2 u16 arguments that the original does not.
-// NONMATCHING (96.47%): only the register names above differ.
+// MUST_MATCH: building colour2 in an inline that returns it keeps its by-value temporary in the
+// original's stack slot (the plain field-by-field form below puts the local in the temporary's slot).
+#ifdef MUST_MATCH
+static inline GXColor makeHoraoColor2(u8 a) {
+	GXColor c = unk_804231b8;
+	c.a = a;
+	return c;
+}
+#endif
+
+// Register allocation is the only thing left. The local declaration order below is tuned so MWCC's
+// GPR allocator reproduces the original's loop registers; moving a line changes which register each
+// loop variable gets, so only reorder them together with a check. Remaining diffs: alpha is f29 where
+// the target has f31 and the vertex loop's FPRs are rotated (target 2pi/magic/360/500/200 = f26-f30 and
+// alpha f31; here alpha f29, 2pi/magic f30/f31, 360/500/200 f26/f27/f28); the first colour's local sits
+// at 0x14 (target 0x10), so its argument copy is at 0x10 (target 0x14) and colour.a stores before the
+// first fmadds; the vertex loop's i/off2/v are rotated (target i/off2/v = r26/r30/r24) and the draw
+// loop keeps i/j in r23/r24 (target r24/r23); the int->float magic is pooled (@NNN) instead of the named
+// double_to_int_802faba0 symbol because of the unit's extra compiler-emitted sqrt statics.
+#pragma opt_lifetimes off // without it MWCC's lifetime analysis picks a worse register assignment here
+// NONMATCHING (98.51%): FPR/GPR register-allocation and first-colour stack-slot differences above.
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
-	EffectEntry* effect = param;
 	effMagicHoraoData* data;
-	CameraEntry* cam;
-	MagicHoraoVtx* vtx;
-	MagicHoraoVtx* vp;
 	Mtx mtx1;
-	Mtx mtx2;
-	GXTexObj texObj;
-	GXColor color;
 	GXColor color2;
-	f32 angle;
+	MagicHoraoVtx* vp;
+	GXTexObj texObj;
 	f32 alpha;
-	s32 angleBase;
-	s32 counter;
-	s32 colorAlpha;
-	s32 off1;
+	s32 j;
 	s32 off2;
 	s32 y;
-	s16 v;
+	s32 off1;
+	s32 counter;
+	Mtx mtx2;
+	GXColor color;
+	f32 angle;
+	MagicHoraoVtx* vtx;
 	s32 i;
-	s32 j;
+	s32 angleBase;
+	EffectEntry* effect;
+	s32 colorAlpha;
+	CameraEntry* cam;
+	s16 v;
 
 	cam = camGetPtr(cameraId);
+	effect = param;
 	data = effect->userdata;
 	alpha = data->alpha;
 	angleBase = data->field_0x38;
@@ -236,8 +252,12 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		GXBegin(0x90, 0, 6);
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
+#ifdef MUST_MATCH
+		color2 = makeHoraoColor2(((0x1E - data->field_0x30) * 0xFF) / 0x1E);
+#else
 		color2 = unk_804231b8;
 		color2.a = ((0x1E - data->field_0x30) * 0xFF) / 0x1E;
+#endif
 		GXSetTevColor(1, color2);
 
 		GXSetNumTevStages(1);
@@ -272,9 +292,9 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		}
 
 		vtx = smartAlloc(0x1C0, 3)->address;
-		vp = vtx;
 		off1 = counter * 10;
 		off2 = off1;
+		vp = vtx;
 		y = 0;
 		v = 0;
 		for (i = 0; i < 16; i++) {
@@ -283,6 +303,18 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 
 			a = (s32)(float_500_8041f774 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off1)) / float_360_8041f760) * alpha);
 			b = (s32)(float_200_8041f778 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off2)) / float_360_8041f760) * alpha);
+#ifdef MUST_MATCH
+			vp->x = a - 0xC80;
+			vp->y = b + y;
+			vp->z = 0;
+			vp->unk06 = 0;
+			vp->unk08 = v;
+			vp->x2 = a + 0xC80;
+			vp->y2 = b + y;
+			vp->z2 = 0;
+			vp->unk14 = 0x800;
+			vp->unk16 = v;
+#else
 			vp->x = a - 0xC80;
 			vp->x2 = a + 0xC80;
 			vp->y = b + y;
@@ -291,8 +323,9 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 			vp->z2 = 0;
 			vp->unk06 = 0;
 			vp->unk08 = v;
-			vp->unk16 = v;
 			vp->unk14 = 0x800;
+			vp->unk16 = v;
+#endif
 			vp++;
 			off1 += 60;
 			off2 += 6;
@@ -308,3 +341,4 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		}
 	}
 }
+#pragma opt_lifetimes reset

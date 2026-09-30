@@ -1,8 +1,10 @@
 #include "gor_03.h"
 #include <dolphin/mtx.h>
 #include <math.h>
+#include <stdlib.h>
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
+#include "driver/casedrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
@@ -49,6 +51,7 @@
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
 
 #pragma pool_data off
 
@@ -2021,12 +2024,137 @@ EVT_BEGIN(kyaku4_talk)
 EVT_END()
 
 // TODO: type
-u32 montemedalzpos[2] = {
-    0xC36B0000, 0xC3200000,
+f32 montemedalzpos[2] = {
+    -235.0f, -160.0f,
 };
 
-// TODO: write fall_rtn (static, 0x6a4 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+const Vec vec3_gor_0001a234 = {-113.0f, 70.0f, 0.0f};
+const Vec vec3_gor_0001a240 = {0.0f, 10.0f, 0.0f};
+
+// NONMATCHING (72.86%): constant-pool register allocation and loop strength-reduction differ from the original.
+static USER_FUNC(fall_rtn) {
+    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
+    u8* data = (u8*)work->data;
+    u8* p;
+    s32 i;
+    s32 j;
+    s32 alive;
+    f32 f23;
+    f32 moveX;
+    f32 moveZ;
+
+    if (isFirstCall) {
+        monte_p[0] = (u32)_mapAlloc(*(s32*)(data + 0x5c) * 0x50);
+        memset((void*)monte_p[0], 0, *(s32*)(data + 0x5c) * 0x50);
+        p = (u8*)monte_p[0];
+        *(u8**)(p + 0x4c) = data;
+
+        for (i = 0; i < *(s32*)(data + 0x5c); i++) {
+            u8* e = p + i * 0x50;
+
+            *(f32*)(e + 0x0c) = vec3_gor_0001a234.x;
+            *(f32*)(e + 0x10) = vec3_gor_0001a234.y;
+            *(f32*)(e + 0x14) = montemedalzpos[*(s32*)(data + 0x60)];
+
+            f23 = (2.0f * (f32)(i & 1) - 1.0f) * ((f32)(rand() % 101) / 10.0f);
+            *(f32*)(e + 0x14) += f23;
+            *(f32*)(e + 0x18) = 1.0f;
+
+            moveX = 0.0f;
+            moveZ = 0.0f;
+            movePos(&moveX, &moveZ, 2.0f + (f32)(rand() % 300) / 100.0f, 270.0f - 3.0f * f23);
+            *(f32*)(e + 0x40) = moveX;
+            *(f32*)(e + 0x44) = vec3_gor_0001a240.y;
+            *(f32*)(e + 0x48) = moveZ;
+
+            *(u16*)(e + 0x02) = (u16)(((rand() % 700) + 100) * 60 / 1000);
+        }
+    }
+
+    alive = 0;
+    for (j = 0; j < *(s32*)(data + 0x5c); j++) {
+        u8* e = (u8*)monte_p[0] + j * 0x50;
+        MarioWork* mario;
+        Vec tmp;
+
+        switch (*(u8*)(e + 0x01)) {
+        case 0:
+            if (*(s16*)(e + 0x02) != 0) {
+                *(s16*)(e + 0x02) = *(s16*)(e + 0x02) - 1;
+            } else {
+                *(u8*)(e + 0x01) = 1;
+            }
+            break;
+        case 1:
+            PSVECAdd((Vec*)(e + 0x0c), (Vec*)(e + 0x40), (Vec*)(e + 0x0c));
+            *(f32*)(e + 0x44) = *(f32*)(e + 0x44) - 0.81666666f;
+            if (*(f32*)(e + 0x10) <= 0.0f) {
+                *(f32*)(e + 0x10) = 0.0f;
+                psndSFXOn_3D("SFX_EVT_GAME_MONTE_LEAPED1", (Vec*)(e + 0x0c));
+                if (fabs(*(f32*)(e + 0x44)) <= 4.0) {
+                    *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
+                    *(s16*)(e + 0x04) = 300;
+                } else {
+                    *(f32*)(e + 0x44) = *(f32*)(e + 0x44) * -(0.5f + (f32)(rand() % 21) / 100.0f);
+                    *(f32*)(e + 0x40) = 0.0f;
+                    *(f32*)(e + 0x48) = 0.0f;
+                }
+            }
+
+            mario = marioGetPtr();
+            if (PSVECDistance((Vec*)(e + 0x0c), &mario->position) < 20.0f &&
+                fabs(*(f32*)(e + 0x10) - mario->position.y) < 20.0) {
+                psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", (Vec*)(e + 0x0c));
+                if (yuwp->tokens < 0x1869f) {
+                    yuwp->tokens++;
+                }
+                *(u8*)(e + 0x00) = 1;
+                *(u8*)(e + 0x01) = 3;
+            }
+            break;
+        case 2:
+            *(s16*)(e + 0x04) = *(s16*)(e + 0x04) - 1;
+            if (*(s16*)(e + 0x04) == 0) {
+                *(u8*)(e + 0x00) = 1;
+                *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
+            }
+            if (*(s16*)(e + 0x04) < 0x3c) {
+                if (*(s16*)(e + 0x04) & 2) {
+                    *(f32*)(e + 0x10) = 0.0f;
+                } else {
+                    *(f32*)(e + 0x10) = -1000.0f;
+                }
+            }
+
+            tmp = *(Vec*)(e + 0x0c);
+            tmp.y = 0.0f;
+            mario = marioGetPtr();
+            if (PSVECDistance(&tmp, &mario->position) < 20.0f &&
+                fabs(tmp.y - mario->position.y) < 20.0) {
+                psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", (Vec*)(e + 0x0c));
+                if (yuwp->tokens < 0x1869f) {
+                    yuwp->tokens++;
+                }
+                *(u8*)(e + 0x00) = 1;
+                *(u8*)(e + 0x01) = 3;
+            }
+            break;
+        case 3:
+            alive++;
+            break;
+        }
+    }
+
+    if (alive < *(s32*)(data + 0x5c)) {
+        dispEntry(4, 0.0f, 1, monte_disp, (void*)monte_p[0]);
+        return 0;
+    }
+
+    *(s32*)(data + 0x5c) = 0;
+    *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x6c) = 0;
+    _mapFree((void*)monte_p[0]);
+    return 2;
+}
 
 EVT_BEGIN(slot_fall_monte)
     CALL(fall_rtn)
@@ -3987,7 +4115,6 @@ EVT_BEGIN(kuzi_bomb_talk_normal)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.87%): only anonymous rodata symbol names (arg_mismatch) differ; expected to resolve once all functions are written.
 void kuji_bomb_055_callback(s32 type, s32* param) {
     NpcEntry* npc;
     u8* p;
@@ -4017,7 +4144,7 @@ void kuji_bomb_055_callback(s32 type, s32* param) {
             break;
         case 0x2b7:
         case 0x2b8:
-            *(u32*)p &= ~0x200;
+            npc->flags &= ~0x200;
             animPoseSetAnim(npc->poseId, "B_1", 1);
             break;
         }
@@ -4704,16 +4831,14 @@ EVT_BEGIN(monte_evt_door_entry)
     RETURN
 EVT_END()
 
-// NONMATCHING (81.4%): same addi/stwx fold as evt_goryuugijo_get_caseid.
 USER_FUNC(evt_goryuugijo_set_caseid) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    u8* data = (u8*)work->data;
+    s32* data = (s32*)work->data;
     s32 index = evtGetValue(event, args[1]);
     s32 value = evtGetValue(event, args[2]);
-    u8* p = data + index * 4;
 
-    *(s32*)(p + 0x64) = value;
+    data[index + 0x19] = value;
     return EVT_RETURN_DONE;
 }
 
@@ -4856,51 +4981,351 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write goryuugijo_main_slot (global, 0xd40 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (76.19%): the original checks the stop button inside a three-case switch with a keyGetButtonTrg call
+// per case, where ours tests it once; register allocation of event/work/data also differs.
+USER_FUNC(goryuugijo_main_slot) {
+    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
+    u8* data = (u8*)work->data;
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 changed;
 
-// TODO: type
-static u32 jumptable_0003A49C[12] = {
-    (u32)((u8*)&goryuugijo_main_slot + 0xd2c), (u32)((u8*)&goryuugijo_main_slot + 0x40), (u32)((u8*)&goryuugijo_main_slot + 0xb4), (u32)((u8*)&goryuugijo_main_slot + 0x144),
-    (u32)((u8*)&goryuugijo_main_slot + 0x428), (u32)((u8*)&goryuugijo_main_slot + 0x8bc), (u32)((u8*)&goryuugijo_main_slot + 0x920), (u32)((u8*)&goryuugijo_main_slot + 0xa74),
-    (u32)((u8*)&goryuugijo_main_slot + 0xaa4), (u32)((u8*)&goryuugijo_main_slot + 0xad4), (u32)((u8*)&goryuugijo_main_slot + 0xb34), (u32)((u8*)&goryuugijo_main_slot + 0xbd0),
-};
+    switch (*(s32*)(data + 0x04)) {
+    case 1:
+        *(s16*)(data + 0x74) = 0;
+        *(s32*)(data + 0x54) = 0;
+        *(s32*)(data + 0x58) = 0;
+        *(s32*)(data + 0x44) = 0;
+        *(s32*)(data + 0x40) = 0;
+        *(s32*)(data + 0x3c) = 0;
+        *(s32*)(data + 0x50) = 0;
+        *(s32*)(data + 0x4c) = 0;
+        *(s32*)(data + 0x48) = 0;
+        *(s8*)(data + 0x32) = 1;
+        *(s8*)(data + 0x31) = 1;
+        *(s8*)(data + 0x30) = 1;
+        *(f32*)(data + 0x2c) = 0.0f;
+        *(f32*)(data + 0x28) = 0.0f;
+        *(f32*)(data + 0x24) = 0.0f;
+        *(u32*)data &= ~2;
+        *(u32*)data &= ~4;
+        *(s32*)(data + 0x04) += 1;
+        break;
+    case 2:
+        slot_neon_sub(work, data);
+        if (*(s32*)(data + 0x54) < 0xf) {
+            *(s32*)(data + 0x54) += 1;
+            *(f32*)(data + 0x08) += 4.0f;
+            mapObjRotate(drumname[*(s32*)(data + 0x60)][3], 0.0f, 0.0f, *(f32*)(data + 0x08));
+        } else {
+            *(s32*)(data + 0x54) = 0;
+            *(s32*)(data + 0x04) += 1;
+            *(s32*)(data + 0x70) = psndSFXOn("SFX_EVT_GAME_SLOT_ROUND1");
+        }
+        break;
+    case 3:
+        slot_neon_sub(work, data);
+        if (*(s32*)(data + 0x54) <= 6) {
+            if (*(s32*)(data + 0x54) == 6) {
+                *(f32*)(data + 0x08) = 0.0f;
+            } else {
+                *(f32*)(data + 0x08) -= 10.0f;
+            }
+            mapObjRotate(drumname[*(s32*)(data + 0x60)][3], 0.0f, 0.0f, *(f32*)(data + 0x08));
+            *(s32*)(data + 0x54) += 1;
+        }
+        i = *(s16*)(data + 0x74);
+        if (*(u8*)(data + i + 0x30) != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
+            s32 dir;
+            if (*(u8*)(data + i + 0x30) == 2) {
+                dir = (keyGetDirRep(0) & 0x4000) ? -1 : 1;
+            } else {
+                dir = 1;
+            }
+            for (j = 0; j < 3; j++) {
+                i = *(s16*)(data + 0x74) + dir;
+                *(s16*)(data + 0x74) = i;
+                if (*(s16*)(data + 0x74) < 0) {
+                    *(s16*)(data + 0x74) = 2;
+                } else if (*(s16*)(data + 0x74) > 2) {
+                    *(s16*)(data + 0x74) = 0;
+                }
+                if (*(s8*)(data + *(s16*)(data + 0x74) + 0x30) == 2) {
+                    break;
+                }
+            }
+        }
+        changed = 0;
+        for (i = 0; i < 3; i++) {
+            if (*(s8*)(data + i + 0x30) == 0) {
+                changed += 1;
+                continue;
+            }
+            if (i == *(s16*)(data + 0x74)) {
+                if ((keyGetButtonTrg(0) & 0x100) != 0 && *(s8*)(data + i + 0x30) == 2) {
+                    *(s8*)(data + i + 0x30) = 3;
+                    if (*(u32*)data & 2) {
+                        *(s8*)(data + i + 0x39) = 0;
+                    } else {
+                        *(s8*)(data + i + 0x39) = irand(2);
+                    }
+                    psndSFXOn("SFX_EVT_GAME_SLOT_STOP1");
+                }
+            }
+            changed += slot_rotate_sub(work, data, i);
+        }
+        if (changed == 3) {
+            for (i = 0; i < 3; i++) {
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 5], 1);
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 6], 1);
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 7], 1);
+            }
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
+            *(s32*)(data + 0x54) = 0;
+            *(s32*)(data + 0x04) += 1;
+        }
+        break;
+    case 4:
+    {
+        s32 phase = *(s32*)(data + 0x54);
+        if (phase == 0) {
+            s32 tmp1[3];
+            s32 cnt;
+            for (i = 0; i < 3; i++) {
+                tmp1[i] = slotgara[*(s32*)(data + 0x60) * 24 + i * 8 +
+                                   (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f)];
+            }
+            if (tmp1[0] == tmp1[1] && tmp1[1] == tmp1[2]) {
+                *(s32*)(data + 0x04) = 6;
+                break;
+            }
+            if ((*(u32*)data & 4) == 0) {
+                *(s32*)(data + 0x04) = 6;
+                break;
+            }
+            cnt = 0;
+            for (j = 0; j < 3; j++) {
+                if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + j + 0x33) == tmp1[j]) {
+                    cnt += 1;
+                }
+            }
+            if (cnt < 2) {
+                *(s32*)(data + 0x04) = 6;
+                break;
+            }
+        }
+        if (phase == 0 || phase == 0x12 || phase == 0x24) {
+            for (i = 0; i < 3; i++) {
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 5], 1);
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 6], 1);
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 7], 1);
+            }
+        }
+        if (phase == 9 || phase == 0x1b || phase == 0x2d) {
+            for (i = 0; i < 3; i++) {
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 5], 1);
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 6], 1);
+                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 7], 1);
+            }
+        }
+        if (phase == 0x2d) {
+            s32 tmp[3][3];
+            for (i = 0; i < 3; i++) {
+                s32 a = (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f);
+                for (j = 0; j < 3; j++) {
+                    tmp[j][i] = slotgara[*(s32*)(data + 0x60) * 24 + i * 8 + ((a + j - 1) & 7)];
+                }
+            }
+            for (i = 0; i < 3; i++) {
+                s32 s;
+                s32 sel;
+                if (tmp[1][i] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33)) {
+                    continue;
+                }
+                sel = irand(2);
+                for (k = 0; k < 2; k++) {
+                    sel = (sel + 1) & 1;
+                    s = *(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33);
+                    if (sel == 0) {
+                        if (s != tmp[0][i] && tmp[2][i] == s) {
+                            continue;
+                        }
+                        if (s == 0) {
+                            *(s8*)(data + i + 0x39) = 1;
+                            *(s32*)(data + i * 4 + 0x48) = 1;
+                            *(f32*)(data + i * 4 + 0x24) = -1.40625f;
+                        } else {
+                            *(s8*)(data + i + 0x39) = 6;
+                            if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33) == 2) {
+                                *(s8*)(data + i + 0x39) += 8;
+                            }
+                            *(s32*)(data + i * 4 + 0x48) = 0;
+                            *(f32*)(data + i * 4 + 0x24) = 1.40625f;
+                        }
+                        *(s8*)(data + i + 0x30) = 4;
+                        break;
+                    } else {
+                        if (s != tmp[2][i] && s == tmp[0][i]) {
+                            continue;
+                        }
+                        if (s == 0) {
+                            *(s8*)(data + i + 0x39) = 0;
+                            *(s32*)(data + i * 4 + 0x48) = 0;
+                            *(f32*)(data + i * 4 + 0x24) = 1.40625f;
+                        } else {
+                            *(s8*)(data + i + 0x39) = 7;
+                            if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33) == 2) {
+                                *(s8*)(data + i + 0x39) += 8;
+                            }
+                            *(s32*)(data + i * 4 + 0x48) = 1;
+                            *(f32*)(data + i * 4 + 0x24) = -1.40625f;
+                        }
+                        *(s8*)(data + i + 0x30) = 4;
+                        break;
+                    }
+                }
+            }
+            *(s32*)(data + 0x04) += 1;
+        }
+        *(s32*)(data + 0x54) += 1;
+        break;
+    }
+    case 5:
+    {
+        s32 n = 0;
+        for (i = 0; i < 3; i++) {
+            if (*(s8*)(data + i + 0x30) == 0) {
+                n += 1;
+            } else {
+                n += slot_rotate_sub(work, data, i);
+            }
+        }
+        if (n == 3) {
+            *(s32*)(data + 0x54) = 0;
+            *(s32*)(data + 0x04) += 1;
+        }
+        break;
+    }
+    case 6:
+    {
+        s32 tmp[3];
+        for (i = 0; i < 3; i++) {
+            tmp[i] = slotgara[*(s32*)(data + 0x60) * 24 + i * 8 +
+                              (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f)];
+        }
+        if (tmp[0] == tmp[1] && tmp[1] == tmp[2]) {
+            *(s32*)(data + 0x54) = 0;
+            *(s32*)(data + 0x04) += 1;
+            psndSFXOn("SFX_EVT_GAME_SLOT_SUCCESS1");
+            switch (tmp[0]) {
+            case 0:
+                *(s32*)(data + 0x5c) = 3;
+                break;
+            case 1:
+                *(s32*)(data + 0x5c) = 0xf;
+                break;
+            case 2:
+                *(s32*)(data + 0x5c) = 0x64;
+                break;
+            }
+            caseDelete(*(s32*)(data + 0x64));
+            caseDelete(*(s32*)(data + 0x68));
+            *(u32*)data |= 1;
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][16], 1, 0);
+            *(u32*)data |= 8;
+        } else {
+            *(s32*)(data + 0x04) = 0xb;
+        }
+        psndSFXOff(*(s32*)(data + 0x70));
+        break;
+    }
+    case 7:
+        if (*(s32*)(data + 0x54) >= 0x30) {
+            *(s32*)(data + 0x54) = 0;
+            *(s32*)(data + 0x04) += 1;
+        }
+        *(s32*)(data + 0x54) += 1;
+        break;
+    case 8:
+        if (*(s32*)(data + 0x54) >= 0x24) {
+            *(s32*)(data + 0x54) = 0x13;
+            *(s32*)(data + 0x04) += 1;
+        }
+        *(s32*)(data + 0x54) += 1;
+        break;
+    case 9:
+        if (*(s32*)(data + 0x54) >= 0x13) {
+            EventEntry* e;
+            *(s32*)(data + 0x54) = 0;
+            if (*(EventEntry**)(data + 0x6c) == NULL) {
+                e = evtEntry(slot_fall_monte, 0, 0);
+                *(EventEntry**)(data + 0x6c) = e;
+                e->lwData[0] = event->lwData[0];
+            }
+            *(s32*)(data + 0x04) += 1;
+        } else {
+            *(s32*)(data + 0x54) += 1;
+        }
+        break;
+    case 10:
+    {
+        EventEntry* e = *(EventEntry**)(data + 0x6c);
+        if (e != NULL && evtCheckID(e->eventId) != 0) {
+            *(s32*)(data + 0x54) += 1;
+        } else {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][16], 2, 0);
+            *(u32*)data &= ~8;
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
+            *(s32*)(data + 0x54) = 0;
+            *(EventEntry**)(data + 0x6c) = NULL;
+            *(s32*)(data + 0x04) += 1;
+        }
+        break;
+    }
+    case 11:
+    {
+        EventEntry* e = *(EventEntry**)(data + 0x6c);
+        if (e != NULL) {
+            u8* p = (u8*)monte_p[0];
+            *(s32*)(*(u8**)(p + 0x4c) + 0x5c) = 0;
+            _mapFree((void*)monte_p[0]);
+            evtDeleteID(e->eventId);
+            *(EventEntry**)(data + 0x6c) = NULL;
+        }
+        *(s32*)(data + 0x54) = 0;
+        *(s32*)(data + 0x58) = 0;
+        *(s32*)(data + 0x04) = 0;
+        *(s32*)(data + 0x44) = 0;
+        *(s32*)(data + 0x40) = 0;
+        *(s32*)(data + 0x3c) = 0;
+        *(s32*)(data + 0x50) = 0;
+        *(s32*)(data + 0x4c) = 0;
+        *(s32*)(data + 0x48) = 0;
+        if (*(u32*)data & 1) {
+            CaseSetup setup;
+            *(u32*)data &= ~1;
+            for (i = 0; i < 2; i++) {
+                setup.activeConditionId = 0x8009;
+                setup.hitObjName = drumname[i][4];
+                setup.swFlag = 0;
+                setup.activeFunc = 0;
+                setup.evtCode = (void*)slotevttbl[i];
+                setup.priority = 0;
+                memcpy(setup.lwData, event->lwData, 0x40);
+                *(s32*)(data + i * 4 + 0x64) = caseEntry(&setup);
+            }
+        }
+        if (*(u32*)data & 8) {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][16], 2, 0);
+            *(u32*)data &= ~8;
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
+        }
+        break;
+    }
+    }
+}
 
-// TODO: type
-u32 exchange_msgp[1] = {
-    0x00000000,
-};
-
-// TODO: type
-static u32 xlw[16] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static EffectEntry* eff[1] = {
-    NULL,
-};
-
-// TODO: type
-NpcEntry* npc[1] = {
-    NULL,
-};
-
-// TODO: type
-static u32 monte_p[1] = {
-    0x00000000,
-};
-
-// TODO: type
-static u32 dataadr[8] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// NONMATCHING (99.19%): iconDispGx2 third param is s16 in the header (matches src/driver/icondrv.c), so MWCC emits extsh; original emits only clrlwi (the real param is u16).
 void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     u8* p = (u8*)((void**)param)[7];
     u32 tbl[3] = {0x1f3, 0x1f3, 0x1f3};
@@ -4935,13 +5360,18 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
             iconDispGx2(mtx, 0x10, 0x1f2);
             PSMTXTrans(trans, -304.0f + sx, 31.35f + (240.0f - sy), 0.0f);
             PSMTXConcat(trans, scale, mtx);
+#ifdef MUST_MATCH
+            // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
+            ((void (*)(Mtx, s16, u16))iconDispGx2)(mtx, 0x10, (u16)tbl[i]);
+#else
             iconDispGx2(mtx, 0x10, (u16)tbl[i]);
+#endif
         }
     }
 }
 
 // NONMATCHING (74.24%): constant address materialisation and angle address mode scheduled differently.
-s32 slot_rotate_sub(s32 arg0, u8* data, s32 index) {
+s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
     f32* slot = (f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4);
     f32* tbase = (f32*)(data + index * 4);
     s32 dir = 0;
@@ -5001,8 +5431,8 @@ done:
     return changed;
 }
 
-// NONMATCHING (92.16%): register allocation of loop counters and lbzx vs lbz+offset differ.
-void slot_neon_sub(s32 arg0, u8* data, s32 arg2) {
+// NONMATCHING (92.19%): register allocation of loop counters and lbzx vs lbz+offset differ.
+void slot_neon_sub(void* arg0, u8* data) {
     s32 i;
     s32 r;
     s32 cur;
@@ -5014,7 +5444,7 @@ void slot_neon_sub(s32 arg0, u8* data, s32 arg2) {
         if (irand(0xa) == 0) {
             *(u32*)data |= 2;
         }
-        *(u32*)data &= ~4;
+        *(u32*)data &= ~2;
     }
     if (*(s32*)(data + 0x58) < 0x1b) {
         if (*(s32*)(data + 0x58) & 1) {
@@ -5100,8 +5530,7 @@ void slot_neon_sub(s32 arg0, u8* data, s32 arg2) {
 
 // NONMATCHING (95.83%): data pointer lands in r5 instead of r4 (constant addr materialised into r4).
 USER_FUNC(goryuugijo_init_slot) {
-    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
-    u8* data = (u8*)work->data;
+    u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
 
     *(s32*)(data + 0x54) = 0;
     *(f32*)(data + 0x8) = 0.0f;
@@ -5141,15 +5570,13 @@ static s32 get_monte_check(Vec* a, Vec* b) {
     return 0;
 }
 
-// NONMATCHING (94.79%): MWCC folds data+index then +0x64 into addi/lwzx; original uses add r4,data,index*4; lwz 0x64(r4).
 USER_FUNC(evt_goryuugijo_get_caseid) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    u8* data = (u8*)work->data;
+    s32* data = (s32*)work->data;
     s32 index = evtGetValue(event, args[1]);
-    u8* p = data + index * 4;
 
-    evtSetValue(event, args[2], *(s32*)(p + 0x64));
+    evtSetValue(event, args[2], data[index + 0x19]);
     return EVT_RETURN_DONE;
 }
 

@@ -168,12 +168,19 @@ void winPartyInit2(WindowWork* work) {
     winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].field_0xC, 0);
 }
 
-// NONMATCHING (99.84%): the party-selection walk loop assigns the counter i to r22
-// and the walk pointer to r23; the original has i in r23 and the pointer in r22 (the
-// register the inner loop's j used). Everything else, including all three switches, matches.
+// NONMATCHING (99.97%): every opcode and register matches; the 23 differing arguments are
+// all symbol addresses. winPartyInit's literals are pooled with the undecompiled winPartyDt /
+// winPartyDisp data, which is emitted ahead of them in the same sections, so the referenced
+// symbols land at different offsets from our object: .rodata (the seven EFF_m_yoshi* strings
+// and the u32->double constant), .sdata2 (the R_5..R_11 and W_1 strings and the 360.0f
+// constant) and .data (the three switch jump tables). Nothing inside winPartyInit can move
+// them; declaring the strings as named locals instead only perturbs register allocation
+// (99.57%).
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
+#ifndef MUST_MATCH
     u8* p;
+#endif
     s32 i;
     s32 j;
     s32 k;
@@ -232,11 +239,19 @@ void winPartyInit(WindowWork* work) {
 
     i = 0;
     WW_S32(work, 0x1DC) = i;
+#ifdef MUST_MATCH
+    for (; i < WW_S32(work, 0x1E0); i++) {
+#else
     for (p = (u8*)work; i < WW_S32(work, 0x1E0); i++, p += 4) {
+#endif
         s32 party;
 
         party = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
+#ifdef MUST_MATCH
+        if (party == ((s32*)work)[i + 0x6F]) {
+#else
         if (party == *(s32*)(p + 0x1BC)) {
+#endif
             WW_S32(work, 0x1DC) = i;
             break;
         }

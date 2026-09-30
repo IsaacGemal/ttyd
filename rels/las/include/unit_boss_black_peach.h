@@ -26,7 +26,7 @@ USER_FUNC(unk_las_0000af38);
 USER_FUNC(queen_drain);
 USER_FUNC(queen_thunder);
 USER_FUNC(change_pose);
-void hand_main(void);  // TODO: real signature
+void hand_main(void);
 void hand_draw(void);  // TODO: real signature
 USER_FUNC(make_pattern);
 USER_FUNC(peach_talk_synchro_shadow_head_evt);

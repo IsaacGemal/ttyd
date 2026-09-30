@@ -33,8 +33,6 @@ f64 double_to_int_802ffa48 = 4503601774854144.0;
 const char str_80421950[] = "A_1";
 const char str_80421964[] = "sheep";
 
-// NONMATCHING (99.49%): only the float-register allocation in the `type != 0` block differs
-// (target divisor f2 / 0.2 f1 / 0.5 f0, here f1 / f0 / f2).
 EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	EffSheepWork* data;
@@ -75,7 +73,16 @@ EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 		if (p->type != 0) {
 			p->field_0x14 = (s32)((f32)(irand(50) + 50) / p->field_0x2C);
 			p->field_0x1C = float_0p2_80421974;
+#ifdef MUST_MATCH
+			// MUST_MATCH: splitting the product into a local makes MWCC allocate the
+			// divisor/0.2/0.5 to f2/f1/f0 like the original instead of f1/f0/f2.
+			{
+				f32 v = p->field_0x1C * p->field_0x14;
+				p->field_0x18 = v * float_0p5_80421978;
+			}
+#else
 			p->field_0x18 = p->field_0x1C * p->field_0x14 * float_0p5_80421978;
+#endif
 		}
 		if (entry->count - 1 == i) {
 			p->z = float_0_80421948;
@@ -212,31 +219,28 @@ void effSheepMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (98.21%): only the loop preheader's `li r30,1` (i) and `addi r31,r31,0x34` (p) are
-// scheduled in the opposite order; every other instruction matches.
+// `data++; for (i = 1; i < effect->count; i++, data++)` (the effStarPointDisp shape)
+// makes MWCC schedule the preheader as `li r30,1` then `addi r31,r31,0x34`, matching the original;
+// with a separate pointer (`p = &data[1]; while (...)`) the scheduler emits the addi first.
 void effSheepDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffSheepWork* data = effect->userdata;
 	Mtx mtxLocal;
 	Mtx mtxScale;
 	Mtx mtxBase;
-	EffSheepWork* p;
 	s32 i;
 
 	PSMTXTrans(mtxBase, data->x, data->y, data->z);
-	i = 1;
-	p = &data[1];
-	while (i < effect->count) {
-		if (p->poseId != -1) {
-			PSMTXTrans(mtxLocal, p->x, p->y, p->z);
-			PSMTXScale(mtxScale, p->scale, p->scale, p->scale);
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->poseId != -1) {
+			PSMTXTrans(mtxLocal, data->x, data->y, data->z);
+			PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
 			PSMTXConcat(mtxLocal, mtxScale, mtxLocal);
 			PSMTXConcat(mtxBase, mtxLocal, mtxLocal);
-			animPoseDrawMtx(p->poseId, mtxLocal, 1, float_0_80421948, float_10_8042194c);
-			animPoseDrawMtx(p->poseId, mtxLocal, 2, float_0_80421948, float_10_8042194c);
-			animPoseDrawMtx(p->poseId, mtxLocal, 3, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(data->poseId, mtxLocal, 1, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(data->poseId, mtxLocal, 2, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(data->poseId, mtxLocal, 3, float_0_80421948, float_10_8042194c);
 		}
-		i++;
-		p++;
 	}
 }

@@ -145,20 +145,16 @@ USER_FUNC(evt_party_set_camid) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (91.90%): party/mario land in swapped callee-saved regs, the marioGetScreenPos
-// out slots (sx/sy/sz, Vec temporaries) sit 4 bytes lower, 100.0f/50.0f land in f31/f30
-// instead of f30/f31, the loop in-screen test uses `beq`+a duplicated return instead of a
-// `bne` to the shared return, and the partyHitCheck Vec argument slots differ.
 USER_FUNC(evt_party_force_reset_outofscreen) {
     s32* args = event->args;
     MarioWork* mario;
     PartyEntry* party;
-    f32 dist;
-    Vec hitNormal;
-    Vec hitPos;
-    Vec dir;
     Vec tmp;
+    Vec dir;
+    Vec hitPos;
+    Vec hitNormal;
     f32 sx, sy, sz;
+    f32 dist;
     f32 angle;
     f32 up;
     f32 maxDist;
@@ -179,19 +175,20 @@ USER_FUNC(evt_party_force_reset_outofscreen) {
     while (TRUE) {
         marioGetScreenPos(party->position, &sx, &sy, &sz);
         if (marioChkInScreen((s32)sx, (s32)sy)) {
-            return EVT_RETURN_DONE;
+            break;
         }
         angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
         movePos(&party->position.x, &party->position.z, float_1_8041bb10, angle);
+        dist = maxDist;
         tmp = party->position;
         tmp.y += up;
-        dist = maxDist;
         if (partyHitCheck(party, &tmp, &dir, &hitPos, &hitNormal, &dist)) {
             party->position.y = hitPos.y;
         } else {
             party->position.y = mario->position.y;
         }
     }
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_party_outofscreen) {
@@ -441,9 +438,10 @@ USER_FUNC(evt_party_move_pos) {
     return 0;
 }
 
-// NONMATCHING (98.04%): only the two int->float conversions of gp->framerate differ: the
-// target reuses f4 for the 2^52 constant and stack slots 0x10/0x18; ours reloads it into f5
-// and swaps the slots. The constant reloc is also anonymous @611@ vs double_to_int_802e9678.
+// `#pragma opt_propagation off`: with propagation on MWCC folds the two `(f32)gp->framerate`
+// conversions into one and the int->float constant lands in f5 instead of f4 (same pragma as
+// evt_sub_spline_get_value_manual).
+#pragma opt_propagation off
 USER_FUNC(evt_party_move_pos2) {
     PartyEntry* party;
     s32* args = event->args;
@@ -470,8 +468,19 @@ USER_FUNC(evt_party_move_pos2) {
         len = evtGetFloat(event, args[3]);
         dist = distABf(party->position.x, party->position.z, x, z);
         party->dir = angleABf(party->position.x, party->position.z, x, z);
+#ifdef MUST_MATCH
+        // MUST_MATCH: casting the frames product after `spd`, not in the one expression under
+        // #else, places the int->float temp at 0x10 and the fctiwz slot at 0x18; the #else form
+        // swaps the two slots.
+        {
+            f32 fr = (f32)gp->framerate * (dist / len);
+            spd = len / (f32)gp->framerate;
+            frames = (s32)fr;
+        }
+#else
         frames = (s32)((f32)gp->framerate * (dist / len));
         spd = len / (f32)gp->framerate;
+#endif
         partySetForceMove(party, frames, party->dir, spd);
     }
     if (party->field_28 == 0) {
@@ -479,6 +488,8 @@ USER_FUNC(evt_party_move_pos2) {
     }
     return 0;
 }
+
+#pragma opt_propagation reset
 
 USER_FUNC(evt_party_wait_landon) {
     s32* args = event->args;

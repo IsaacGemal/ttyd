@@ -19,13 +19,28 @@ extern const f32 float_10_80421cd4;
 extern const Vec vec3_80300248;
 const char str_80421CD8[] = "Mist2";
 
-// NONMATCHING (94.95%): the original keeps effect/cameraId/work in r23/r30/r28 and the colour
-// temp before the named GXColor (0x8 then 0xc); ours allocates those the other way round. All
-// instructions and constants are otherwise identical.
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423340;
+
+#ifdef MUST_MATCH
+// Build the GXColor in a helper so the by-value argument lands in stack 0xc, as retail does.
+static inline GXColor effMist2Color(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c = *(GXColor*)&unk_80423340;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+#endif
+
+// The GXColor build is in the MUST_MATCH inline above so the by-value argument lands in stack
+// 0xc, matching retail.
 void effMist2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	EffMist2Data* work = effect->userdata;
-	EffMist2Data* elem;
 	CameraEntry* cam;
 	GXTexObj texObj;
 	GXColor color;
@@ -33,8 +48,8 @@ void effMist2Disp(CameraId cameraId, void* param) {
 	Mtx mtxRot;
 	Mtx mtxScale;
 	Mtx mtxView;
-	s32 alpha;
 	s32 i;
+	s32 alpha;
 	u8 cr;
 	u8 cg;
 	u8 cb;
@@ -59,8 +74,7 @@ void effMist2Disp(CameraId cameraId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
 	PSMTXTrans(mtxTrans, work->x, work->y, work->z);
-	cam = camGetPtr(cameraId);
-	PSMTXRotRad(mtxRot, 'y', float_deg2rad_80421ca8 * -cam->viewYaw);
+	PSMTXRotRad(mtxRot, 'y', float_deg2rad_80421ca8 * -camGetPtr(cameraId)->viewYaw);
 	PSMTXScale(mtxScale, work->unk18, work->unk18, work->unk18);
 	PSMTXConcat(mtxTrans, mtxRot, mtxView);
 	PSMTXConcat(mtxView, mtxScale, mtxView);
@@ -73,25 +87,26 @@ void effMist2Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	f28 = -float_16_80421cac * float_0p5_80421cb4;
-	f27 = float_8_80421cb8;
-	elem = &work[1];
-	for (i = 1; i < effect->count; i++, elem++) {
-		PSMTXTrans(mtxTrans, elem->x, elem->y, elem->z);
-		PSMTXScale(mtxScale, elem->unk18, elem->unk18, elem->unk18);
-		PSMTXRotRad(mtxRot, 'z', float_deg2rad_80421ca8 * elem->unk24);
+	work = &work[1];
+	for (i = 1; i < effect->count; i++, work++) {
+		PSMTXTrans(mtxTrans, work->x, work->y, work->z);
+		PSMTXScale(mtxScale, work->unk18, work->unk18, work->unk18);
+		PSMTXRotRad(mtxRot, 'z', float_deg2rad_80421ca8 * work->unk24);
 		PSMTXConcat(mtxTrans, mtxScale, mtxTrans);
 		PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
 		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		{
-			GXColor tmp = { 0, 0, 0, 0 };
-			tmp.r = cr;
-			tmp.g = cg;
-			tmp.b = cb;
-			tmp.a = (u8)(s32)(elem->unk2C * (f32)alpha / float_255_80421cb0);
-			color = tmp;
-		}
+#ifdef MUST_MATCH
+		color = effMist2Color(cr, cg, cb, (u8)(s32)(work->unk2C * (f32)alpha / float_255_80421cb0));
+#else
+		color = unk_80423340;
+		color.r = cr;
+		color.g = cg;
+		color.b = cb;
+		color.a = (u8)(s32)(work->unk2C * (f32)alpha / float_255_80421cb0);
+#endif
+		f27 = float_8_80421cb8;
 		GXSetChanMatColor(GX_COLOR0A0, color);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f28, f27, 0.0f);

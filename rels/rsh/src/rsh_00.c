@@ -225,12 +225,9 @@ static f32 randf(f32 min, f32 max) {
 
     return frac * (max - min) + min;
 }
-// NONMATCHING (99.77%): the `name = "c_n_moa_b"` branch emits an extra `mr r26, r0` copy before
-// the address is stored (MWCC does not coalesce the addi into r26). Every register matches.
+// The pose search below is moamoa_pose_change(entry, "c_n_moa_a", "S_1") inlined by the compiler;
+// calling it keeps the `name1 = "c_n_moa_b"` override writing its address straight to r26.
 void moamoa_init(void) {
-    s32 j;
-    MoamoaPose* pose;
-    const char* name;
     s32 i;
     ExtPose* poses;
     MoamoaEntry* entry;
@@ -249,24 +246,10 @@ void moamoa_init(void) {
         poses->flags |= 5;
         entry->flags = 0;
         entry->state = 0;
-        name = "c_n_moa_a";
-        pose = wp->poses;
-
-        if (entry->flags & 2) {
-            name = "c_n_moa_b";
-        }
-        for (j = 0; j < wp->poseCount; j++, pose++) {
-            if (strcmp(pose->name1, name) == 0 && strcmp(pose->name2, "S_1") == 0) {
-                break;
-            }
-        }
-        if (j < wp->poseCount && entry->field_0x18 != j) {
-            entry->field_0x18 = j;
-            entry->time = gp->renderTime;
-        }
+        moamoa_pose_change(entry, "c_n_moa_a", "S_1");
 
         if (strncmp(gp->currentMapName, "rsh_00", 6) == 0) {
-            f32 a = randf(-200.0f, 600.0f);
+            f32 a = randf(-200.0f, 400.0f);
             f32 b;
             f32 c;
 
@@ -396,11 +379,11 @@ void moamoa_main(void) {
 void moamoa_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)ext_disp, NULL);
 }
-// NONMATCHING (94.76%, 328 B vs 332 B): MWCC folds the single global read of `wp` into the
-// displacement (`lwz rD, wp@l(rB)`) where the original materialises the address
-// (`addi rB, rB, wp@l; lwz rD, 0(rB)`), and it schedules the `extGetPosePtr` return copy after the load
-// instead of before, so `pose`/`entry` land in r31/r29 (retail r29/r31). Everything else is identical;
-// the missing instruction shifts every later function.
+// MWCC normally folds the single global read of `wp` into the displacement
+// (`lwz rD, wp@l(rB)`) where the original materialises the address
+// (`addi rB, rB, wp@l; lwz rD, 0(rB)`). Under MUST_MATCH a one-iteration loop keeps the address
+// materialised (LICM hoists `&wp` out of the loop before unrolling it).
+// NONMATCHING (99.1%): register colouring of `event` and `id` differs.
 USER_FUNC(evt_moamoa_set_one) {
     ExtPose* pose;
     MoamoaEntry* entry;
@@ -411,7 +394,19 @@ USER_FUNC(evt_moamoa_set_one) {
     f32 z = evtGetFloat(event, args[3]);
 
     pose = extGetPosePtr();
+#ifdef MUST_MATCH
+    {
+        s32 i;
+
+        // A one-iteration loop: LICM hoists `&wp` out before the loop is unrolled, leaving the
+        // `addi;lwz` materialisation retail has instead of the folded `lwz wp@l(rB)`.
+        for (i = 0; i < 1; i++) {
+            entry = &wp->entries[id];
+        }
+    }
+#else
     entry = &wp->entries[id];
+#endif
 
     entry->state = 3;
     {

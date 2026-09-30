@@ -138,16 +138,20 @@ void demo_cap(void) {
     }
 }
 
-// NONMATCHING (93%): GXColor now matches (compound literal) but the four vertex constants are
-// scheduled with different FPRs / pool loads than the original (ours `fmuls f3, f2, f0`, original
-// `fmuls f5, f0, f4`).
 void demo_desk(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(8);
     GXTexObj texObj;
     Mtx m1;
     Mtx m2;
+#ifdef MUST_MATCH
+    // MUST_MATCH: these temporaries pin MWCC's FPR assignment and commutative-operand order; the
+    // #else branch is the natural form and does not match.
     f32 w = 608.0f;
     f32 h = 480.0f;
+    f32 top = 240.0f;
+    f32 right = 304.0f;
+    f32 half = 0.5f;
+#endif
 
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
@@ -179,14 +183,25 @@ void demo_desk(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(-w * 0.5f, 240.0f, 0.0f);
+#ifdef MUST_MATCH
+    GXPosition3f32(-w * half, top, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(right, top, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(right, -h * half, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-w * half, -h * half, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+#else
+    GXPosition3f32(-608.0f * 0.5f, 240.0f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXPosition3f32(304.0f, 240.0f, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(304.0f, -h * 0.5f, 0.0f);
+    GXPosition3f32(304.0f, -480.0f * 0.5f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(-w * 0.5f, -h * 0.5f, 0.0f);
+    GXPosition3f32(-608.0f * 0.5f, -480.0f * 0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
+#endif
 }
 
 // NONMATCHING (85.19%): GXColor now matches (compound literal); frame is 0x110 vs 0x130 (the original
@@ -267,8 +282,6 @@ void demo_img(CameraId cameraId, void* param) {
     GXTexCoord2f32(0.0f, 1.0f);
 }
 
-// NONMATCHING (92.88%): GXColor now matches (compound literal); the mtx stack slots and the f29/f30
-// width/height temps differ (ours also spills f28), and the vertex constants schedule differently.
 void demo_book(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(8);
     GXTexObj texObj;
@@ -277,12 +290,8 @@ void demo_book(CameraId cameraId, void* param) {
     Mtx m3;
     f32 w;
     f32 h;
-    f32 top;
-    f32 bottom;
     f32 w95;
     f32 h95;
-    f32 top95;
-    f32 bottom95;
 
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
@@ -292,8 +301,8 @@ void demo_book(CameraId cameraId, void* param) {
     PSMTXScale(m2, wp->field_0x14, wp->field_0x14, wp->field_0x14);
     PSMTXConcat(m1, m2, m1);
     PSMTXConcat(cam->view, m1, m2);
-    PSMTXTrans(m1, -w * 0.5f + 8.0f, 0.0f, 0.0f);
-    PSMTXConcat(m1, m2, m2);
+    PSMTXTrans(m1, -w / 2.0f + 8.0f, 0.0f, 0.0f);
+    PSMTXConcat(m2, m1, m1);
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZCompLoc(1);
     GXSetAlphaCompare(7, 0, 0, 7, 0);
@@ -320,38 +329,34 @@ void demo_book(CameraId cameraId, void* param) {
     GXLoadTexObj(&texObj, 0);
     w = (f32)(u16)GXGetTexObjWidth(&texObj);
     h = (f32)(u16)GXGetTexObjHeight(&texObj);
-    top = h * 0.5f;
-    bottom = -top;
-    GXLoadPosMtxImm(m2, 0);
+    GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(0.0f, top, 0.0f);
+    GXPosition3f32(0.0f, h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(w, top, 0.0f);
+    GXPosition3f32(w, h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(w, bottom, 0.0f);
+    GXPosition3f32(w, -h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.0f, bottom, 0.0f);
+    GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
     w = (f32)(u16)GXGetTexObjWidth(&texObj);
     h = (f32)(u16)GXGetTexObjHeight(&texObj);
-    GXLoadPosMtxImm(m2, 0);
+    GXLoadPosMtxImm(m1, 0);
     GXSetCurrentMtx(0);
     if (wp->field_0x08 >= 0) {
         TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, wp->field_0x08 + 3);
         GXLoadTexObj(&texObj, 0);
         GXBegin(0x80, 0, 4);
-        w95 = w * 0.95f;
         h95 = h * 0.95f;
-        top95 = h95 * 0.5f;
-        bottom95 = -top95;
-        GXPosition3f32(0.0f, top95, 0.0f);
+        w95 = w * 0.95f;
+        GXPosition3f32(0.0f, h95 / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(w95, top95, 0.0f);
+        GXPosition3f32(w95, h95 / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(w95, bottom95, 0.0f);
+        GXPosition3f32(w95, -h95 / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(0.0f, bottom95, 0.0f);
+        GXPosition3f32(0.0f, -h95 / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
         demo_img(cameraId, param);
     }
@@ -373,25 +378,25 @@ void demo_book(CameraId cameraId, void* param) {
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, 0);
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(0.0f, top, 0.0f);
+    GXPosition3f32(0.0f, h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(w, top, 0.0f);
+    GXPosition3f32(w, h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(w, bottom, 0.0f);
+    GXPosition3f32(w, -h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(0.0f, bottom, 0.0f);
+    GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
     GXSetCullMode(1);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, 2);
     GXLoadTexObj(&texObj, 0);
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(0.0f, top, 0.0f);
+    GXPosition3f32(0.0f, h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(w, top, 0.0f);
+    GXPosition3f32(w, h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(w, bottom, 0.0f);
+    GXPosition3f32(w, -h / 2.0f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.0f, bottom, 0.0f);
+    GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
 }
 

@@ -5,6 +5,28 @@
 #include "math_ext.h"
 #include "eff/eff_n64.h"
 
+// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423294;
+__declspec(section ".sdata") GXColor unk_80423290;
+
+u32 testsrc__s_v[98] = {
+	0x021301BA, 0x00190000, 0x0000FFFF, 0xFFFF02C3, 0x011C0019, 0x02000000, 0xFFFFFFFF,
+	0x064A0507, 0x00190200, 0x0800FFFF, 0xFFFF059A, 0x05A50019, 0x00000800, 0xFFFFFFFF,
+	0x0547FF44, 0x00190000, 0x0000FFFF, 0xFFFF05E4, 0xFF080019, 0x02000000, 0xFFFFFFFF,
+	0x06D6017E, 0x00190200, 0x0800FFFF, 0xFFFF0639, 0x01BA0019, 0x00000800, 0xFFFFFFFF,
+	0xFD5C02BB, 0x00020000, 0x0000FFFF, 0xFF7EFE16, 0x01790002, 0x02000000, 0xFFFFFF7E,
+	0x04F0056E, 0x00020200, 0x0800FFFF, 0xFF7E0436, 0x06AF0002, 0x00000800, 0xFFFFFF7E,
+	0xFC210350, 0x001B0000, 0x0000FFFF, 0xFFE5FC4B, 0x02F3001B, 0x02000000, 0xFFFFFFE5,
+	0x0247059D, 0x001B0200, 0x0800FFFF, 0xFFE5021E, 0x05FA001B, 0x00000800, 0xFFFFFFE5,
+	0x023BFF32, 0x00190000, 0x0000FFFF, 0xFFFF02C7, 0xFED30019, 0x02000000, 0xFFFFFFFF,
+	0x06E804F2, 0x00190200, 0x02E9FFFF, 0xFFFF065C, 0x05510019, 0x000002E9, 0xFFFFFFFF,
+	0xFE0400CA, 0x00190000, 0x0000FFFF, 0xFFFFFE69, 0x00440019, 0x02000000, 0xFFFFFFFF,
+	0x05B605C4, 0x00190200, 0x0800FFFF, 0xFFFF0551, 0x064B0019, 0x00000800, 0xFFFFFFFF,
+	0x01E3FC33, 0x0002FDD1, 0x0044FFFF, 0xFF7E032B, 0xFB840002, 0xFFD10044, 0xFFFFFF7E,
+	0x081E04D4, 0x0002FFD1, 0x0844FFFF, 0xFF7E06D6, 0x05830002, 0xFDD10844, 0xFFFFFF7E,
+};
+
 EffectEntry* effSunlightN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effSunlightData* data;
@@ -35,11 +57,11 @@ EffectEntry* effSunlightN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
 	data->g1 = 0xff;
 	data->b1 = 0xff;
 	data->a1 = 0xff;
-	data->field_0x20 = 0.0f;
-	data->field_0x24 = 0.0f;
-	data->field_0x28 = 0.0f;
-	data->field_0x2C = 0.0f;
-	data->field_0x30 = 0.0f;
+	data->field_0x20 = float_0_8041ff80;
+	data->field_0x24 = float_0_8041ff80;
+	data->field_0x28 = float_0_8041ff80;
+	data->field_0x2C = float_0_8041ff80;
+	data->field_0x30 = float_0_8041ff80;
 	data->field_0x3C = 0xff;
 	data->field_0x38 = 0;
 
@@ -140,14 +162,45 @@ void effSunlightMain(EffectEntry* effect) {
 		}
 	}
 
+#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSunlightDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effSunlightDisp, effect);
+#endif
 }
 
-// NONMATCHING (96.78%): the target keeps one r31 base across the function and reaches the three Vecs
-// and the int->float double as offsets from it, while mwcc addresses vec3_802fb7d4/e0/ec and
-// double_to_int_802fb7f8 separately; the userdata pointer and the 0x4330 constant / loop counter swap
-// r30/r31, and the GXColor locals land at 0x14/0x10 and are copied to 0xc/0x8 where the target builds
-// at 0x10/0x8 and copies to 0x14/0xc.
+// Matched by pooling the three view Vecs as file-local consts right after effSunlightMain's zero Vec,
+// so mwcc keeps one r31 base and reaches target/eye/up and the int->float double as offsets from it.
+// The colours are built and passed by inlined helpers: a helper that returns the GXColor leaves the
+// inlined local and the by-value copy in the wrong two stack slots when two colours are passed, while
+// inlining the whole GXSetTevColor call (helper builds the colour, then calls) reproduces the target
+// slots. `alpha` is declared before `type` to put them in r29/r28.
+const Vec vec3_802fb7d4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fb7e0 = { 0.0f, 0.0f, 100.0f };
+const Vec vec3_802fb7ec = { 0.0f, 1.0f, 0.0f };
+
+#ifdef MUST_MATCH
+/* MUST_MATCH: inlining the whole call keeps the colour and its by-value copy in the target's two
+   stack slots; a helper that returns the GXColor puts them the other way round and mis-matches
+   when the function passes two colours. */
+static inline void effSunlightSetColor1(GXTevRegID id, effSunlightData* data, s32 alpha) {
+	GXColor c = unk_80423290;
+	c.r = data->r0;
+	c.g = data->g0;
+	c.b = data->b0;
+	c.a = alpha >> 1;
+	GXSetTevColor(id, c);
+}
+static inline void effSunlightSetColor2(GXTevRegID id, effSunlightData* data) {
+	GXColor c = unk_80423294;
+	c.r = data->r1;
+	c.g = data->g1;
+	c.b = data->b1;
+	c.a = data->a1;
+	GXSetTevColor(id, c);
+}
+#endif
+
 void effSunlightDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
 	effSunlightData* data;
@@ -160,10 +213,10 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	Vec target;
 	Vec eye;
 	Vec up;
-	GXColor color2;
 	GXColor color1;
-	s32 type;
+	GXColor color2;
 	s32 alpha;
+	s32 type;
 	s32 i;
 
 	effect = param;
@@ -192,6 +245,10 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(lookAt, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
+#ifdef MUST_MATCH
+	effSunlightSetColor1(GX_TEVREG0, data, alpha);
+	effSunlightSetColor2(GX_TEVREG1, data);
+#else
 	color1 = unk_80423290;
 	color1.r = data->r0;
 	color1.g = data->g0;
@@ -204,6 +261,7 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	color2.b = data->b1;
 	color2.a = data->a1;
 	GXSetTevColor(GX_TEVREG1, color2);
+#endif
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
@@ -277,3 +335,22 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	}
 	GXSetProjectionv(proj);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_1200_8041ff60 = 1200.0f;
+const f32 float_neg1200_8041ff64 = -1200.0f;
+const f32 float_neg1600_8041ff68 = -1600.0f;
+const f32 float_1600_8041ff6c = 1600.0f;
+const f32 float_1_8041ff70 = 1.0f;
+const f32 float_32768_8041ff74 = 32768.0f;
+const f32 float_0p0625_8041ff78 = 0.0625f;
+const f32 float_0p015625_8041ff7c = 0.015625f;
+const f32 float_0_8041ff80 = 0.0f;
+const f32 float_0p0039062_8041ff84 = 0.00390625f;
+const f32 float_0p125_8041ff88 = 0.125f;
+const f32 float_0p25_8041ff8c = 0.25f;
+const f32 float_6p2832_8041ff90 = 6.2831855f;
+const f32 float_360_8041ff94 = 360.0f;
+const f32 float_4_8041ff98 = 4.0f;
+const f32 float_0p05_8041ff9c = 0.05f;
+const f32 float_0p01_8041ffa0 = 0.01f;

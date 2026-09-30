@@ -8,7 +8,7 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 
 // .sdata2 constants (definitions live in the retail object, referenced by name).
 extern const u32 dat_80421b98;
@@ -23,24 +23,8 @@ extern const f32 float_deg2rad_80421ba0;
 extern const f32 float_32_80421ba4;
 extern const f32 float_0p5_80421ba8;
 extern const f32 float_16_80421bac;
-extern const MATCH_VOLATILE f32 float_0_80421bb0;
-extern const MATCH_VOLATILE f32 float_1_80421bb4;
-extern const f32 float_4_80421bb8;
-extern const f32 float_100_80421bbc;
-const char str_80421BC0[] = "Z_1";
-extern const f32 float_6p2832_80421bc4;
-extern const f32 float_360_80421bc8;
-extern const f32 float_0p2_80421bcc;
-extern const f32 float_51_80421bd0;
-extern const f32 float_1p1_80421bd4;
-extern const f32 float_15_80421bd8;
 
 // .rodata
-const Vec vec3_80300138 = { 0.0f, 0.0f, 0.0f };
-const char str_80300144[16] = "EFF_bakuhatu";
-const f64 double_to_int_mask_80300158 = 4503599627370496.0;
-const char str_80300160[8] = "Sandars";
-const f64 double_to_int_80300168 = 4503601774854144.0;
 
 // .sdata
 static u8 scale_data[16] = {
@@ -66,8 +50,15 @@ static inline GXColor effSandarsColorDisp2(u8 alpha) {
 }
 #endif
 
-// NONMATCHING (96.61%): the int->float magic is pooled as `@260` rather than `double_to_int_80300168`, and the
-// loop-invariant `float_0`/`float_0p2`/`float_51` land in f29/f27/f28 rather than retail's f27/f28/f29.
+// Under MUST_MATCH the zero literal stays `0.0f` rather than `0.0f` on purpose: `zero` is volatile for
+// effSandarsDisp2, and the literal lets MWCC treat it as rematerializable, which lands the loop-invariant
+// loads in retail's f27/f28/f29 (f27=0, f28=float_0p2, f29=float_51). It pools as an anonymous @NNN@ whose
+// bytes equal 0.0f; the int->float magic likewise pools anonymously instead of
+// double_to_int_80300168. Both relocations score the same in objdiff.
+#ifndef MUST_MATCH
+const Vec vec3_80300138 = { 0.0f, 0.0f, 0.0f }; // the zero vector the natural copy reads (MUST_MATCH uses a literal)
+#endif
+
 EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	EffectEntry* entry;
 	effSandarsData* data;
@@ -83,7 +74,7 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	if (type == 5) {
 		count = 6;
 	}
-	entry->type = str_80300160;
+	entry->type = "Sandars";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, count * sizeof(effSandarsData));
 	entry->userdata = data;
@@ -94,7 +85,7 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->scale = float_1_80421bb4;
+	data->scale = 1.0f;
 	data->state = 0;
 	data->timer = 0;
 	data->poseId = -1;
@@ -104,13 +95,13 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	case 0:
 	case 4:
 		data->bombType = 1;
-		data->animScale = float_1_80421bb4;
+		data->animScale = 1.0f;
 		break;
 	case 1:
 	case 2:
 	case 3:
 		data->bombType = 2;
-		data->animScale = float_4_80421bb8;
+		data->animScale = 4.0f;
 		break;
 	case 5:
 		data->timer = 0x64;
@@ -119,38 +110,47 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	}
 
 	if (data->type == 3 || data->type == 4) {
-		animGroupBaseAsync(str_80300144, inBattle, NULL);
+		animGroupBaseAsync("EFF_bakuhatu", inBattle, NULL);
 		data->poseId = -1;
 		data->alpha = 0xff;
 	}
 
-	angle = (float_6p2832_80421bc4 * a) / float_360_80421bc8;
-	zero = float_0_80421bb0;
+	angle = (6.2831855f * a) / 360.0f;
+#ifdef MUST_MATCH
+	zero = 0.0f;
+#else
+	zero = 0.0f;
+#endif
 	data = &data[1];
 	for (i = 1; i < entry->count; i++, data++) {
 		data->x = (f32)(i * 10) * (f32)cos(angle);
 		data->y = (f32)(i * 10) * (f32)sin(angle);
 		data->z = zero;
+#ifdef MUST_MATCH
+		data->scaleRate = 0.2f * (f32)i;
 		data->scale = zero;
-		data->scaleRate = float_0p2_80421bcc * (f32)i;
-		data->alpha = (s32)(float_51_80421bd0 * (f32)i);
+#else
+		data->scale = zero;
+		data->scaleRate = 0.2f * (f32)i;
+#endif
+		data->alpha = (s32)(51.0f * (f32)i);
 		data->field_0x34 = (i - 1) * 5;
 		data->timer = 0;
 		data->rot = zero;
 		data->rotSpeed = zero;
 		if (i == entry->count - 1) {
-			data->scaleRate = float_1p1_80421bd4;
+			data->scaleRate = 1.1f;
 			data->alpha = 0xCC;
-			data->rotSpeed = float_15_80421bd8;
+			data->rotSpeed = 15.0f;
 		}
 	}
 
 	return entry;
 }
 
-// NONMATCHING (95.44%): the `type == 5` test emits `bne` where retail emits `beq; b`, the vec3 copy is
-// scheduled before the `userdata` load, one `mr` arg move is reversed, and the unsigned int->float magic is
-// pooled as `@300` rather than `double_to_int_mask_80300158`.
+// opt_common_subs off required: with CSE on MWCC interleaves the vec3/data x and y stores in the opposite
+// order (f1/f2 and r4/r5 swapped vs retail).
+#pragma opt_common_subs off
 void effSandarsMain(EffectEntry* effect) {
 	effSandarsData* data = effect->userdata;
 	Vec position;
@@ -160,10 +160,19 @@ void effSandarsMain(EffectEntry* effect) {
 	s32 type;
 	s32 i;
 
+#ifdef MUST_MATCH
+	/* MUST_MATCH: the zero literal (not the named vec3_80300138) keeps MWCC from hoisting the vec3 copy before
+	   the userdata load. It does not pool with the named vector: it adds a duplicate 12-byte Vec in .rodata. */
+	disp = (Vec){ 0.0f, 0.0f, 0.0f };
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
+#else
 	disp = vec3_80300138;
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
+#endif
 	position = disp;
 
 	inBattle = gp->inBattle != 0;
@@ -179,7 +188,8 @@ void effSandarsMain(EffectEntry* effect) {
 		return;
 	}
 
-	if (type == 5) {
+	switch (type) {
+	case 5:
 		data->timer--;
 		if (data->timer < 0) {
 			effDelete(effect);
@@ -191,14 +201,15 @@ void effSandarsMain(EffectEntry* effect) {
 				data->field_0x34--;
 			} else {
 				if ((u32)data->timer < 0xF) {
-					data->scale = (f32)scale_data[data->timer] / float_100_80421bbc;
+					data->scale = (f32)scale_data[data->timer] / 100.0f;
 				}
 				data->timer++;
 				data->rot += data->rotSpeed;
 			}
 		}
 		dispEntry(camId, dispCalcZ(&position), 2, effSandarsDisp2, effect);
-	} else {
+		break;
+	default:
 		switch (data->state) {
 		case 0:
 			effBombN64SetCamId(effBombN64Entry(data->bombType, data->x, data->y, data->z), camId);
@@ -214,9 +225,9 @@ void effSandarsMain(EffectEntry* effect) {
 				data->timer--;
 				break;
 			}
-			if (animGroupBaseAsync(str_80300144, inBattle, NULL)) {
-				data->poseId = animPoseEntry(str_80300144, inBattle);
-				animPoseSetAnim(data->poseId, str_80421BC0, 1);
+			if (animGroupBaseAsync("EFF_bakuhatu", inBattle, NULL)) {
+				data->poseId = animPoseEntry("EFF_bakuhatu", inBattle);
+				animPoseSetAnim(data->poseId, "Z_1", 1);
 				data->state++;
 			}
 			break;
@@ -232,8 +243,11 @@ void effSandarsMain(EffectEntry* effect) {
 		}
 
 		dispEntry(camId, dispCalcZ(&position), 2, effSandarsDisp, effect);
+		break;
 	}
 }
+
+#pragma opt_common_subs reset
 
 void effSandarsDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -267,9 +281,9 @@ void effSandarsDisp(CameraId camId, void* param) {
 	animPoseSetMaterialEvtColor(data->poseId, color);
 #endif
 	animPoseMain(data->poseId);
-	animPoseDrawMtx(data->poseId, mtx10, 1, float_0_80421bb0, float_4_80421bb8);
-	animPoseDrawMtx(data->poseId, mtx10, 2, float_0_80421bb0, float_4_80421bb8);
-	animPoseDrawMtx(data->poseId, mtx10, 3, float_0_80421bb0, float_4_80421bb8);
+	animPoseDrawMtx(data->poseId, mtx10, 1, 0.0f, 4.0f);
+	animPoseDrawMtx(data->poseId, mtx10, 2, 0.0f, 4.0f);
+	animPoseDrawMtx(data->poseId, mtx10, 3, 0.0f, 4.0f);
 }
 
 void effSandarsDisp2(CameraId camId, void* param) {
@@ -345,13 +359,21 @@ void effSandarsDisp2(CameraId camId, void* param) {
 		GXSetChanMatColor(GX_COLOR0A0, color);
 #endif
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(negSize, posSize, float_0_80421bb0);
-		GXTexCoord2f32(float_0_80421bb0, float_0_80421bb0);
-		GXPosition3f32(posSize, posSize, float_0_80421bb0);
-		GXTexCoord2f32(float_1_80421bb4, float_0_80421bb0);
-		GXPosition3f32(posSize, negSize, float_0_80421bb0);
-		GXTexCoord2f32(float_1_80421bb4, float_1_80421bb4);
-		GXPosition3f32(negSize, negSize, float_0_80421bb0);
-		GXTexCoord2f32(float_0_80421bb0, float_1_80421bb4);
+		GXPosition3f32(negSize, posSize, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(posSize, posSize, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(posSize, negSize, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(negSize, negSize, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80421b98 = 0xFFFFFF00;
+const MATCH_VOLATILE u32 dat_80421b9c = 0xFFFFFF00;
+const f32 float_deg2rad_80421ba0 = 0.017453292f;
+const f32 float_32_80421ba4 = 32.0f;
+const f32 float_0p5_80421ba8 = 0.5f;
+const f32 float_16_80421bac = 16.0f;

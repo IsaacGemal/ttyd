@@ -50,7 +50,9 @@ typedef struct EffThunderflareData {
 	s32 field_0x44; // 0x44
 } EffThunderflareData;
 
-// NONMATCHING (78.74%): instructions differ; see check.py
+// The element index-to-value expression must read `i + j - 1`, not `i - 1 + j`:
+// the former lets MWCC fold the second iteration back to `i` and reuse r10, the
+// latter makes it keep a copy of the pre-increment `i` in r11.
 EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	EffectEntry* entry;
 	EffThunderflareData* data;
@@ -99,7 +101,7 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 
 	for (i = 1; i < 0x1f; i += 2) {
 		elem = &data[i];
 		for (j = 0; j < 2; j++, elem++) {
-			s32 n = j == 0 ? i - 1 : i;
+			s32 n = i + j - 1;
 			elem->angle1 = (f32)(n * 0xca8 / 30);
 			elem->angle2 = 0.0f;
 			elem->radius = (f32)(n * 100 / 30);
@@ -136,13 +138,25 @@ static inline Vec thunderflareMakeVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// NONMATCHING (97.69%): only FP register allocation differs. The original keeps the loop constants in f24=2*pi, f26=2, f27=255, f28=100, the running radius in f23 and the zero component in f22; ours uses f26=2*pi, f24=100, f27=2, f28=255, f21=radius, f23=zero, which shifts the sin/cos temporaries.
+#pragma opt_common_subs off // without it MWCC CSEs across the sin/cos calls and picks different callee-saved FPRs (100 lands in f24, not f28)
 void effThunderflareMain(EffectEntry* effect) {
 	EffThunderflareData* data;
 	Vec pos;
 	s32 phase;
 	s32 i;
 	s32 counter;
+#ifdef MUST_MATCH
+	// MWCC assigns FPRs partly by declaration order; this order plus the
+	// angle2raw temp reproduce the original's f18-f23 allocation.
+	f32 sin1;
+	f32 cos1;
+	f32 sin2;
+	f32 cos2;
+	f32 angle2;
+	f32 angle2raw;
+	f32 radius;
+	f32 angle1;
+#endif
 
 	data = effect->userdata;
 	pos = thunderflareMakeVec(data->x, data->y, data->z);
@@ -168,6 +182,18 @@ void effThunderflareMain(EffectEntry* effect) {
 	phase = data->counter & 1;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
+#ifdef MUST_MATCH
+		// Loading angle2 early (angle2raw) schedules its 2*pi multiply into the
+		// sin/cos call's latency slot, as in the original.
+		angle1 = float_6p2832_80420090 * data->angle1 / float_360_80420094;
+		radius = data->radius;
+		angle2raw = data->angle2;
+		sin1 = sin(angle1);
+		cos1 = cos(angle1);
+		angle2 = float_6p2832_80420090 * angle2raw / float_360_80420094;
+		sin2 = sin(angle2);
+		cos2 = cos(angle2);
+#else
 		f32 angle1 = float_6p2832_80420090 * data->angle1 / float_360_80420094;
 		f32 radius = data->radius;
 		f32 angle2 = float_6p2832_80420090 * data->angle2 / float_360_80420094;
@@ -175,6 +201,7 @@ void effThunderflareMain(EffectEntry* effect) {
 		f32 cos1 = cos(angle1);
 		f32 sin2 = sin(angle2);
 		f32 cos2 = cos(angle2);
+#endif
 
 		data->x = cos2 * (radius * sin1);
 		data->y = cos2 * (radius * cos1);
@@ -194,7 +221,7 @@ void effThunderflareMain(EffectEntry* effect) {
 	}
 	dispEntry(4, dispCalcZ(&pos), 2, effThunderflareDisp, effect);
 }
-
+#pragma opt_common_subs reset
 void effThunderflareDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;
@@ -270,3 +297,16 @@ void effThunderflareDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_80420080 = 0.017453292f;
+const f32 float_0p03125_80420084 = 0.03125f;
+const f32 float_0_80420088 = 0.0f;
+const f32 float_0p5_8042008c = 0.5f;
+const f32 float_6p2832_80420090 = 6.2831855f;
+const f32 float_360_80420094 = 360.0f;
+const f32 float_2_80420098 = 2.0f;
+const f32 float_255_8042009c = 255.0f;
+const f32 float_100_804200a0 = 100.0f;
+const f32 float_0p2_804200a4 = 0.2f;
+const f32 float_80_804200a8 = 80.0f;

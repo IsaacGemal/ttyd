@@ -100,6 +100,19 @@ static inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
+#ifdef MUST_MATCH
+// Build the tev colour in an inline so mwcc keeps the temporary at 0x8(r1) and copies it to the
+// outgoing argument slot at 0xc(r1); with the channels set on a plain local the two slots swap.
+static inline GXColor makeTevColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c = unk_804231d8;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+#endif
+
 // The first loop's callee-saved allocation is shifted one register down: mwcc puts counter in r26
 // (original r28) and the 0x4330 double-magic temp in r24 (original r25), so stmw/lmw saves r24..r31
 // instead of r25..r31; effect/data/lifetime are correct. That also renames every scratch register in
@@ -170,31 +183,38 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwrainDisp, effect);
 }
 
-// Loop register allocation doesn't line up: iPos/fieldBase are swapped (r24/r26)
-// and vtx/xBase/the 0x4330 double-magic temp are rotated (r29/r31/r30 vs r31/r30/r29).
-// The GXColor for GXSetTevColor is built at 0x8(r1) by the original and copied to
-// 0xc(r1); mwcc here builds it at 0xc(r1) and copies to 0x8(r1). mwcc also pools a
-// duplicate of double_to_int_802fb278 in .rodata, so PSMTXTrans's f64 conversion
-// loads it via vec3_802fb248+0x50 instead of +0x30.
-// NONMATCHING (98.93%): codegen-only differences (see above).
+// The vtx/field/x/descriptor shuffles below are match-only (the natural positions are under
+// #else); they change mwcc's live ranges so it matches the target's callee-saved allocation.
+// Original: vtx=r31, magic 0x4330=r29, xoris temp=r30, iPos=r24, fieldBase=r26, fieldEnd=r25,
+// xBase=r3, xEnd=r0. Ours: every instruction's opcode, order and stack slot match; only xBase
+// and xEnd land in each other's volatile register (ours xBase=r0, xEnd=r3) and the operand order
+// of xEnd += iPos follows from it. All callee-saved registers (vtx, magic, xoris, iPos, fieldBase,
+// fieldEnd, x, jPos, i, j) now match. Declaration-order, arithmetic-order, pragma, type and
+// statement-position sweeps did not move xBase/xEnd.
+// NONMATCHING (99.78%): xBase/xEnd volatile-register swap (r0/r3 vs r3/r0).
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;
 	void* tex;
 	effOpukuJetwrainVtx* vtx;
+	s32 fieldEnd;
+	s32 iPos;
+	s32 fieldBase;
 	s32 xBase;
 	s32 jPos;
-	s32 fieldEnd;
-	s32 fieldBase;
-	s32 iPos;
 	s32 x;
 	effOpukuJetwrainData* data;
 	s32 j;
 	s32 i;
 	s32 outerEdge;
 	s32 xEnd;
+#ifdef MUST_MATCH
+	s32 x2;
+	s32 innerEdge;
+#else
 	s32 innerEdge;
 	s32 x2;
+#endif
 	s32 base;
 	smartEntry* entry;
 	Mtx transMtx;
@@ -207,7 +227,6 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	Vec target;
 	Vec eye;
 	GXColor color;
-
 	camGetPtr(camId);
 	data = effect->userdata;
 	alpha = data->field_0x1F;
@@ -232,12 +251,16 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(0, GX_CC_ZERO, GX_CC_C0, GX_CC_A0, GX_CC_TEXC);
 	GXSetTevAlphaIn(0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+#ifdef MUST_MATCH
+	color = makeTevColor(data->field_0x1C, data->field_0x1D, data->field_0x1E, alpha >> 1);
+#else
 	color = unk_804231d8;
 	color.r = data->field_0x1C;
 	color.g = data->field_0x1D;
 	color.b = data->field_0x1E;
 	color.a = alpha >> 1;
-	GXSetTevColor(GX_TEVREG1, color);
+#endif
+	GXSetTevColor(GX_TEVREG0, color);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);
@@ -248,8 +271,6 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	C_MTXLookAt(lookAtMtx, &eye, &up, &target);
 	GXLoadPosMtxImm(lookAtMtx, 0);
 	GXSetCurrentMtx(0);
-	vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
-
 	for (i = 0; i < 12; i++) {
 		outerEdge = 0;
 		if (i == 0) {
@@ -265,12 +286,23 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			xEnd = 0;
 		}
 		iPos = 0x18 + i * 0x10;
+#ifdef MUST_MATCH
+		xEnd += 0x10;
+		xBase = iPos + xBase;
+		xEnd += iPos;
+#else
 		xBase += iPos;
 		xEnd += iPos + 0x10;
+#endif
+#ifndef MUST_MATCH
 		fieldBase = xBase << 2;
 		fieldEnd = xEnd << 2;
-
+#endif
 		for (j = 0; j < 18; j++) {
+#ifdef MUST_MATCH
+			fieldBase = xBase << 2;
+			fieldEnd = xEnd << 2;
+#endif
 			innerEdge = 0;
 			if (j == 0) {
 				x = -4;
@@ -287,7 +319,11 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			jPos = 0x10 + j * 0x10;
 
 			PSMTXScale(texMtx, float_0p0039062_8041f7ec, float_0p0039062_8041f7ec, float_1_8041f7e4);
+#ifdef MUST_MATCH
+			x = jPos + x;
+#else
 			x += jPos;
+#endif
 			PSMTXTrans(transMtx, (f32)x, (f32)xBase, float_0_8041f7d8);
 			PSMTXConcat(texMtx, transMtx, texMtx);
 			GXLoadTexMtxImm(texMtx, GX_TEXMTX0, GX_MTX2x4);
@@ -302,6 +338,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 				base = 0;
 			}
 
+			vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
 			vtx[base + 0].x = x << 2;
 			vtx[base + 0].y = (s8)data->field_0x23[j][i] + fieldBase;
 			vtx[base + 1].x = (jPos + x2 + 0x10) << 2;

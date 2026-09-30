@@ -112,8 +112,6 @@ EffectEntry* effMagic2N64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
 	return effect;
 }
 
-// NONMATCHING (99.54%): only register allocation differs in the sin/scale block
-// (frsp f2,f1 vs f1,f1 and swapped f1/f2/f3); every opcode and operand order matches.
 void effMagic2Main(EffectEntry* effect) {
 	effMagic2Data* data = effect->userdata;
 	Vec pos;
@@ -141,10 +139,10 @@ void effMagic2Main(EffectEntry* effect) {
 	}
 	if (data->type == 1) {
 		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
-		data->scale = data->scale + 0.4f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
+		data->scale += 0.4f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
 	} else {
 		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
-		data->scale = data->scale + 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
+		data->scale += 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
 	}
 	v = initializeVec((Vec*)&data->vx);
 	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &v, &v);
@@ -169,18 +167,31 @@ void effMagic2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMagic2Disp, effect);
 }
 
-// NONMATCHING (95.74%): structure matches; remaining diffs are callee-saved register
-// assignments (r20-r28 mapping) and two GXColor stack temp slots.
+#ifdef MUST_MATCH
+// Match-only: building color2 through an inline return puts its local at 0x8 and its
+// by-value argument copy at 0xc, as the original does (a plain local lands at 0x14/0x8).
+static inline GXColor magic2Color2(s32 alpha) {
+	GXColor c = unk_804231b4;
+	c.a = alpha / 2;
+	return c;
+}
+#endif
+
+// The declaration order below is tuned so MWCC assigns the original's callee-saved registers
+// (data=r29, i=r28, idx=r27, alpha=r26, type=r25, rot=r24, vOffset=r23, rot2=r22).
+// NONMATCHING (96.24%): structure and instruction count match. effect and uOffset still swap
+// callee-saved registers (target effect=r21/uOffset=r20).
 void effMagic2Disp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
 	effMagic2Data* data;
-	s32 type;
-	s32 alpha;
+	s32 i;
 	s32 idx;
-	s32 uOffset;
-	s32 vOffset;
+	s32 alpha;
+	s32 type;
 	s32 rot;
+	s32 vOffset;
 	s32 rot2;
+	EffectEntry* effect;
+	s32 uOffset;
 	Mtx mtxD;
 	Mtx mtxE;
 	Mtx44 mtxC;
@@ -188,8 +199,8 @@ void effMagic2Disp(CameraId camId, void* param) {
 	Mtx44 mtxB;
 	f32 proj[7];
 	f32 viewport[6];
-	s32 i;
 
+	effect = param;
 	camGetPtr(camId);
 	data = effect->userdata;
 	type = data->type;
@@ -202,11 +213,11 @@ void effMagic2Disp(CameraId camId, void* param) {
 	PSMTX44Concat(mtxC, mtxA, mtxC);
 	GXSetProjection(mtxC, 0);
 	switch (type) {
-	case 0:
-		PSMTXTrans(mtxD, 0.0f, 0.0f, -80.0f);
-		break;
 	case 1:
 		PSMTXTrans(mtxD, 0.0f, 0.0f, -70.0f);
+		break;
+	case 0:
+		PSMTXTrans(mtxD, 0.0f, 0.0f, -80.0f);
 		break;
 	}
 	GXLoadPosMtxImm(mtxD, 0);
@@ -230,8 +241,12 @@ void effMagic2Disp(CameraId camId, void* param) {
 		color1.b = ptr[2];
 		color1.a = alpha;
 		GXSetTevColor(1, color1);
+#ifdef MUST_MATCH
+		color2 = magic2Color2(alpha);
+#else
 		color2 = unk_804231b4;
 		color2.a = alpha / 2;
+#endif
 		GXSetTevColor(2, color2);
 		if (type == 0) {
 			PSMTXScale(mtxE, 0.015625f, 0.015625f, 1.0f);

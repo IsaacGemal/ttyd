@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_item.h"
@@ -11,10 +12,6 @@
 
 #pragma force_active on
 extern s32 all_juyoitem_lecture_rel_19_data_3A540[];
-extern s32 evt_puni_mem_init[];
-extern s32 evt_puni_puninum_onoff[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_yuka[];
 extern s32 mri_countdown[];
 extern s32 mri_puni_init[];
 extern s32 puni_disp_info[];

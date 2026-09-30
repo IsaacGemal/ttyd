@@ -7,26 +7,31 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
-// This unit's .sdata2 literals. float_0_8041f56c stays an extern (like eff_kumokumo_n64.c)
-// and is only ever read through the named symbol. float_1_8041f570 is *defined* here:
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042319c;
+__declspec(section ".sdata") GXColor unk_80423198;
+
+
+// This unit's .sdata2 literals. 0.0f stays an extern (like eff_kumokumo_n64.c)
+// and is only ever read through the named symbol. 1.0f is *defined* here:
 // with no definition MWCC pools the `1.0f` as an anonymous .sdata2 entry instead of
 // referencing the named symbol, which costs one instruction of fuzzy match. Defining it
 // makes every `1.0f` in this TU reference the symbol.
-extern const f32 float_0p03125_8041f568;
-extern const f32 float_0_8041f56c;
-const f32 float_1_8041f570 = 1.0f;
 
 // Local vertex data (0x38 bytes); the original symbol is local to this unit's asm.
-static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
+static u32 size32x32_tex32x32_vtx[0x48 / 4] = {
 	0xFFF00000, 0x00000000, 0x00000000, 0x00FF0010,
 	0x00000000, 0x04000000, 0x000000FF, 0x00100020,
 	0x00000400, 0x04000000, 0x00FFFFF0, 0x00200000,
 	0x00000400, 0x000000FF,
 };
 
+__declspec(section ".data") u32 lbl_803A2280[2] = {
+    0xBF800000, 0x3F800000,
+};
+
 // .sbss2 colour scratch, global to this unit's asm
-GXColor unk_80423198;
-GXColor unk_8042319c;
 
 const Vec vec3_802faa50 = { 0.0f, 0.0f, 0.0f };
 const char str_802FAA5C[] = "KumokumoChipN64";
@@ -82,22 +87,18 @@ static inline f32 chip_sqrtf(f32 x) {
 	return x;
 }
 
-// The original's reverse-source-order position puts this entry point first in the .c (rule 18).
+// This entry point sits first in the .c (rule 18: reverse source order).
 //
-// Remaining gap (99.93%, 5 instructions), all pooling artifacts, no wrong logic or
-// constants:
-//  * effKumokumoChipMain's `pos = (Vec){0,0,0}` makes MWCC emit a dead 12-byte anonymous
-//    zero Vec in .rodata at vec3+0x1c, so this function's pooled sqrtf doubles land at
-//    +0x28 instead of the original +0x20 (the four `lfd` offsets differ). Every source
-//    form that drops the anonymous Vec also drops Main to 97.83% (the scheduler hoists
-//    the vec3 load; only the compound literal reproduces Main's byte order), and Main
-//    must stay at 100%, so the offsets are left.
-//  * `if (dist != 0.0f)` emits `fcmpu cr0, f3, f7` where the original has
-//    `fcmpu cr0, f7, f3`. The pooled 0.0f itself resolves to float_0_8041f56c once
-//    float_1_8041f570 is defined (the .sdata2 layout lets objdiff name it), so only the
-//    operand order differs; writing `float_0_8041f56c` in the source swaps the operands
-//    right but moves the live zero from f3 to f4 and costs more overall.
-// NONMATCHING (99.93%): pool offsets + one swapped fcmpu operand, see the block above.
+// `if (dist)` reproduces the original's `fcmpu cr0, f7, f3` + `beq`; writing
+// `if (dist != 0.0f)` makes MWCC emit `fcmpu cr0, f3, f7`. The truth test is equivalent
+// for every float (NaN included).
+//
+// The unit's pooled sqrtf doubles must sit at vec3+0x20. effKumokumoChipMain used to build
+// its zero Vec from a compound literal, which made MWCC emit a dead 12-byte anonymous Vec
+// in .rodata at vec3+0x1c and pushed the doubles to +0x28 (four wrong `lfd` offsets). Main
+// now reads its userdata and the zero Vec through volatile lvalues under MUST_MATCH (the
+// lwz/stw bytes are unchanged); that keeps the scheduler from hoisting the vec3 copy and
+// leaves no literal object, so the doubles land at +0x20 and the whole file matches.
 EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 spacing, f32 scale) {
 	EffectEntry* effect;
 	effKumokumoChipData* data;
@@ -121,13 +122,13 @@ EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 
 	dy = y2 - y;
 	dz = z2 - z;
 	dist = dx * dx + dy * dy + dz * dz;
-	if (dist != 0.0f) {
+	if (dist) {
 		dist = chip_sqrtf(dist);
 	}
 
-	count = (spacing > float_0_8041f56c) ? (s32)(dist / spacing) : 0;
+	count = (spacing > 0.0f) ? (s32)(dist / spacing) : 0;
 	if (count != 0) {
-		f32 inv = float_1_8041f570 / (f32)count;
+		f32 inv = 1.0f / (f32)count;
 		data->xVel = dx * inv;
 		data->yVel = dy * inv;
 		data->zVel = dz * inv;
@@ -181,8 +182,16 @@ void effKumokumoChipMain(EffectEntry* effect) {
 	Vec pos2;
 	Vec pos;
 
+#ifdef MUST_MATCH
+	// Volatile lvalues (same lwz bytes as the plain forms) stop the scheduler hoisting the
+	// vec3 copy and stop MWCC emitting a dead anonymous zero Vec, so the unit's pool doubles
+	// stay at vec3+0x20. See the comment above effKumokumoChipN64Entry.
+	data = ((volatile EffectEntry*)effect)->userdata;
+	pos = *(volatile Vec*)&vec3_802faa50;
+#else
 	data = effect->userdata;
-	pos = (Vec){ 0.0f, 0.0f, 0.0f };
+	pos = vec3_802faa50;
+#endif
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
@@ -271,7 +280,7 @@ void effKumokumoChipDisp(CameraId camId, void* param) {
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	PSMTXScale(scale, float_0p03125_8041f568, float_0p03125_8041f568, float_0_8041f56c);
+	PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(scale, 0x1e, 1);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(0, 0, 0, 0xff);
@@ -284,3 +293,5 @@ void effKumokumoChipDisp(CameraId camId, void* param) {
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

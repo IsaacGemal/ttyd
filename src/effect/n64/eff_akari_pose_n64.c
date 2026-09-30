@@ -244,16 +244,15 @@ static inline GXColor akariColor(u8 alpha) {
 }
 #endif
 
-// (1) The original emits `li r31,1` (i) before `addi r30,r30,0x38` (part = data->part); mwcc here
-//     always schedules the pointer advance first.
-// (2) GXSetTevColor's GXColor is built at r1+0x8 and word-copied to the outgoing arg at r1+0xc;
-//     here the local lands at r1+0xc and is copied to r1+0x8 (same known quirk as eff_booboo_n64.c,
-//     eff_batten.c, eff_irekaeru.c).
-// NONMATCHING (99.25%): only those two scheduler/allocation artifacts differ.
+// The original reuses the header pointer as the parts cursor: `data++` steps it past the 0x38-byte
+// header and the loop steps it once per part, so the `part` cursor is `data` cast to the part type.
+// With a separate `part = data->part` pointer mwcc schedules the preheader `addi r30,r30,0x38`
+// before `li r31,1` (99.25%); reusing `data` reproduces the original's `li`-then-`addi` order.
+// The MUST_MATCH `akariColor` inline above fixes the GXColor stack slot the natural assignment
+// produces (local at r1+0xc vs the target's r1+0x8; the same quirk as eff_booboo_n64.c).
 void effAkariPoseDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effAkariPoseData* data;
-    effAkariPosePart* part;
     CameraEntry* cam;
     GXTexObj texObj;
     GXColor color;
@@ -285,7 +284,9 @@ void effAkariPoseDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, 0);
     GXSetCullMode(0);
     effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
-    for (i = 1, part = data->part; i < effect->count; i++, part++) {
+    data++;
+    for (i = 1; i < effect->count; i++, data++) {
+        effAkariPosePart* part = (effAkariPosePart*)data;
         if (part->field_0x20 < 0) {
             continue;
         }

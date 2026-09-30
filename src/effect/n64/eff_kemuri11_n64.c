@@ -136,10 +136,50 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     }
 }
 
-// NONMATCHING (97.62%): register allocation of the cached colour bytes and
-// effect/cam/data pointers differs, plus a branch-sense and stack-slot delta.
+#ifdef MUST_MATCH
+// Setting each TEV colour inside a void inline reproduces the original's
+// per-call by-value colour slots (build/copy pairs 0x20/0x24, 0x18/0x1c,
+// 0x10/0x14, 0x08/0x0c).
+static inline void kemuri11SetColor0(s32 r, s32 g, s32 b, s32 a) {
+    GXColor color = unk_80423180;
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = a;
+    GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void kemuri11SetColor1(s32 r, s32 g, s32 b) {
+    GXColor color = unk_80423184;
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    GXSetTevColor(GX_TEVREG1, color);
+}
+
+static inline void kemuri11SetColor2(s32 r, s32 g, s32 b, s32 a) {
+    GXColor color = unk_80423188;
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = a;
+    GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void kemuri11SetColor3(s32 r, s32 g, s32 b) {
+    GXColor color = unk_8042318c;
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    GXSetTevColor(GX_TEVREG1, color);
+}
+#endif
+
+// The original compiles the two type==0/1 cases as a switch range check; a plain
+// `type < 2 && type >= 0` emits the opposite branch sense. The four TEV colours
+// are set through void inlines so each by-value copy lands in the original's
+// interleaved stack slots, and the alpha is kept in one live local across main_dl.
 void effKemuri11Disp(CameraId camId, void* param) {
-    EffectEntry* effect;
     effKemuri11Data* data;
     CameraEntry* cam;
     GXTexObj texobj;
@@ -147,6 +187,8 @@ void effKemuri11Disp(CameraId camId, void* param) {
     s32 c0, c1, c2, c3, c4, c5;
     s32 d0, d1, d2, d3, d4, d5;
     s32 type;
+    s32 alpha;
+    EffectEntry* effect;
 
     effect = param;
     cam = camGetPtr(camId);
@@ -178,7 +220,9 @@ void effKemuri11Disp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 125);
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 125);
 
-    if (type < 2 && type >= 0) {
+    switch (type) {
+    case 0:
+    case 1:
         GXSetNumTevStages(2);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
         GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -194,8 +238,8 @@ void effKemuri11Disp(CameraId camId, void* param) {
         GXLoadTexObj(&texobj, GX_TEXMAP0);
         effGetTexObjN64(0x24, &texobj);
         GXLoadTexObj(&texobj, GX_TEXMAP1);
-    }
-    else {
+        break;
+    default:
         GXSetNumTevStages(3);
         GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
         GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -216,6 +260,7 @@ void effKemuri11Disp(CameraId camId, void* param) {
         GXLoadTexObj(&texobj, GX_TEXMAP0);
         effGetTexObjN64(0x24, &texobj);
         GXLoadTexObj(&texobj, GX_TEXMAP1);
+        break;
     }
 
     effSetVtxDescN64((effVtxArray*)stg_thruhammer_v);
@@ -224,6 +269,11 @@ void effKemuri11Disp(CameraId camId, void* param) {
     PSMTXConcat(m0, m1, m2);
     PSMTXConcat(cam->view, m2, m2);
 
+#ifdef MUST_MATCH
+    alpha = data->field_0x38;
+    kemuri11SetColor0(d0, d1, d2, alpha);
+    kemuri11SetColor1(d3, d4, d5);
+#else
     {
         GXColor color = unk_80423180;
         color.r = d0;
@@ -239,8 +289,13 @@ void effKemuri11Disp(CameraId camId, void* param) {
         color.b = d5;
         GXSetTevColor(GX_TEVREG1, color);
     }
+#endif
     GXSetCullMode(GX_CULL_BACK);
     main_dl(effect, m2);
+#ifdef MUST_MATCH
+    kemuri11SetColor2(c0, c1, c2, alpha);
+    kemuri11SetColor3(c3, c4, c5);
+#else
     {
         GXColor color = unk_80423188;
         color.r = c0;
@@ -256,6 +311,7 @@ void effKemuri11Disp(CameraId camId, void* param) {
         color.b = c5;
         GXSetTevColor(GX_TEVREG1, color);
     }
+#endif
     GXSetCullMode(GX_CULL_FRONT);
     main_dl(effect, m2);
 }
@@ -383,15 +439,13 @@ void effKemuri11Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri11Disp, e);
 }
 
-// NONMATCHING (96.47%): the particle-init loop's index expression is
-// strength-reduced to precomputed 2*i/3*i induction variables instead of the
-// original `subi/slwi|mulli/subfic` per-iteration form.
+// The original tests type with a switch: cases 0/1 share the 2*(i-1) form,
+// everything else (including negative types) takes the 3*(i-1) default.
 EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effKemuri11Data* data;
     s32 count;
     s32 i;
-    s32 angle;
 
     effect = effEntry();
     switch (type) {
@@ -508,26 +562,18 @@ EffectEntry* effKemuri11N64Entry(s32 type, f32 x, f32 y, f32 z) {
         break;
     }
 
-    angle = 30;
-    {
-        effKemuri11Data* p = data + 1;
-
-        for (i = 1; i < count + 1; i++, p++) {
-            if (type < 2) {
-                if (type >= 0) {
-                    p->field_0x4C = 1 - 2 * i;
-                }
-                else {
-                    p->field_0x4C = 2 - 3 * i;
-                }
-            }
-            else {
-                p->field_0x4C = 2 - 3 * i;
-            }
-            p->field_0x34 = float_0_8041f4fc;
-            p->field_0x30 = angle;
-            angle += 30;
+    for (i = 1, data++; i < count + 1; i++, data++) {
+        switch (type) {
+        case 0:
+        case 1:
+            data->field_0x4C = -1 - (i - 1) * 2;
+            break;
+        default:
+            data->field_0x4C = -1 - (i - 1) * 3;
+            break;
         }
+        data->field_0x34 = float_0_8041f4fc;
+        data->field_0x30 = (f32)(i * 30);
     }
 
     if (type == 6) {

@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
@@ -24,22 +25,6 @@ extern s32 evt_mri_puni_win_init[];
 extern s32 evt_mri_toge_enter_init[];
 extern s32 evt_mri_toge_make_retsu[];
 extern s32 evt_mri_toge_retsu_stop[];
-extern s32 evt_puni_all_movestop[];
-extern s32 evt_puni_attack_on[];
-extern s32 evt_puni_flag_onoff[];
-extern s32 evt_puni_force_se_off[];
-extern s32 evt_puni_get_flag[];
-extern s32 evt_puni_get_position[];
-extern s32 evt_puni_landon_check[];
-extern s32 evt_puni_mem_init[];
-extern s32 evt_puni_move_position2[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_mode[];
-extern s32 evt_puni_set_position[];
-extern s32 evt_puni_set_yuka[];
-extern s32 evt_puni_wait_systemmode[];
-extern s32 evt_puni_winddisable_onoff[];
-extern s32 evt_puni_zenmetsu_check[];
 extern s32 mri_countdown[];
 extern s32 mri_guide_goryu[];
 extern s32 mri_puni_init[];

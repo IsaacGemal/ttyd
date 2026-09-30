@@ -430,7 +430,6 @@ void dummy_draw(CameraId camId, void* param) {
 }
 
 //param is unused
-// NONMATCHING (99.92%): the selection-box message keeps the 2^52 constant in f5 instead of f4.
 void progDisp(CameraId camId, void* param) {
 	static OSTime time; //time instance 2
 	const char* msg;
@@ -492,12 +491,25 @@ void progDisp(CameraId camId, void* param) {
 
 				msg = romFontGetMessage(2); //selection box
 				width = (f32)romFontGetWidth(msg);
+#ifdef MUST_MATCH
+				// Reuse width for the 0.7f*width product: doing the product as its own step makes the
+				// compiler put the int->float magic constant in f4 and the product in f5 (the original's
+				// order); written as ((0.7f * width) / 2.0f) it emits the reverse allocation.
+				width = 0.7f * width;
+				romFontPrintGX(
+					-((width / 2.0f) - (f32)(75 * ((2 * wp->toggle) - 1))),
+					-160.0f,
+					0.7f,
+					&(GXColor){0xFF, 0xFF, 0xFF, 0xFF},
+					msg);
+#else
 				romFontPrintGX(
 					-(((0.7f * width) / 2.0f) - (f32)(75 * ((2 * wp->toggle) - 1))),
 					-160.0f,
 					0.7f,
 					&(GXColor){0xFF, 0xFF, 0xFF, 0xFF},
 					msg);
+#endif
 				break;
 
 			case 2:

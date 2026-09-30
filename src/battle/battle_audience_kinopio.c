@@ -752,8 +752,11 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 	}
 }
 
-// NONMATCHING (97.50%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (99.76%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
+#ifdef MUST_MATCH
+	f32 angle; // the retail code loads 270.0f before the stores
+#endif
 	BattleAudienceMember* member;
 
 	BattleAudienceBaseGetPtr();
@@ -761,10 +764,17 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 	switch (member->field_0x4) {
 	case 0:
 		BattleAudience_SetAnim(index, 9, 0);
+#ifdef MUST_MATCH
+		angle = float_270_8041e170;
+#endif
 		*(f32*)((u8*)member + 0xdc) = float_8_8041e1f4;
 		*(f32*)((u8*)member + 0xe4) = float_neg1_8041e18c;
 		*(s32*)((u8*)member + 0x30) = 0;
+#ifdef MUST_MATCH
+		member->field_0xE8 = angle;
+#else
 		member->field_0xE8 = float_270_8041e170;
+#endif
 		member->field_0x4++;
 		// fallthrough
 	case 1:

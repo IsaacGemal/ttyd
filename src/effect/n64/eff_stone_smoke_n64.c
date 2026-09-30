@@ -4,12 +4,16 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042328c;
+__declspec(section ".sdata") GXColor unk_80423288;
+
+
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 // .sbss2 scratch GXColors the original builds its TEV colours from.
-extern GXColor unk_80423288;
-extern GXColor unk_8042328c;
 
 // .sdata2 constant referenced by the disp function.
 extern const f32 float_0p03125_8041ff50;
@@ -21,14 +25,13 @@ static u32 size16x16_tex32x32_vtx[14] = {
 	0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
 };
 
-const char str_802FB7B8[] = "StoneSmokeN64";
 
 EffectEntry* effStoneSmokeN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effStoneSmokeN64Data* data;
 
 	effect = effEntry();
-	effect->type = str_802FB7B8;
+	effect->type = "StoneSmokeN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x3C);
 	effect->userdata = data;
@@ -117,19 +120,38 @@ void effStoneSmokeMain(EffectEntry* effect) {
 #endif
 }
 
-// The only difference is the stack-slot layout of the two by-value GXColor arguments to
-// GXSetTevColor. The target interleaves each colour's local with its by-value copy
-// (0x8/0xc and 0x10/0x14); this build groups the locals (0x10/0x14) and the copies
-// (0x8/0xc) separately. Known mwcc quirk, also seen in eff_confetti_n64.c and
-// eff_release_n64.c.
-// NONMATCHING (99.90%): GXColor by-value stack-slot layout differs.
+#ifdef MUST_MATCH
+static inline void effStoneSmokeSetColor0(effStoneSmokeN64Data* data, s32 alpha) {
+	GXColor c = unk_80423288;
+	c.r = data->field_0x18;
+	c.g = data->field_0x1C;
+	c.b = data->field_0x20;
+	c.a = alpha;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+static inline void effStoneSmokeSetColor1(effStoneSmokeN64Data* data) {
+	GXColor c = unk_8042328c;
+	c.r = data->field_0x28;
+	c.g = data->field_0x2C;
+	c.b = data->field_0x30;
+	GXSetTevColor(GX_TEVREG1, c);
+}
+#endif
+
+// Building each TEV colour and calling GXSetTevColor inside the same inline makes mwcc
+// allocate that colour's build slot and its by-value argument copy together
+// (0x8/0xc for colour1, 0x10/0x14 for colour0), as retail does. Building both colours
+// first and calling GXSetTevColor afterwards groups the build slots and the copies
+// (the old 99.90% layout). Two separate inlines, one per colour, are needed.
 void effStoneSmokeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStoneSmokeN64Data* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
+#ifndef MUST_MATCH
 	GXColor color0;
 	GXColor color1;
+#endif
 	Mtx mtx;
 	Mtx scaleMtx;
 	s32 alpha;
@@ -145,6 +167,10 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+	effStoneSmokeSetColor0(data, alpha);
+	effStoneSmokeSetColor1(data);
+#else
 	color0 = unk_80423288;
 	color0.r = data->field_0x18;
 	color0.g = data->field_0x1C;
@@ -156,6 +182,7 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	color1.g = data->field_0x2C;
 	color1.b = data->field_0x30;
 	GXSetTevColor(GX_TEVREG1, color1);
+#endif
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
@@ -174,3 +201,9 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p03125_8041ff50 = 0.03125f;
+const f32 float_0_8041ff54 = 0.0f;
+const f32 float_0p6_8041ff58 = 0.6f;
+const f32 float_0p01_8041ff5c = 0.01f;

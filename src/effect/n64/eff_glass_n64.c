@@ -7,8 +7,12 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const char str_802FA710[12] = "GlassN64";
-const f64 double_to_int_802fa708 = 4503601774854144.0;
+// .sbss2 zero GXColor scratch objects (declared in reverse: they are placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042312c;
+__declspec(section ".sdata") GXColor unk_80423128;
+__declspec(section ".sdata") GXColor unk_80423124;
+__declspec(section ".sdata") GXColor unk_80423120;
 
 // .data vertex arrays, local to this file.
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
@@ -26,7 +30,7 @@ EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 	effGlassData* data;
 
 	entry = effEntry();
-	entry->type = str_802FA710;
+	entry->type = "GlassN64";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x5C);
 	entry->userdata = data;
@@ -68,14 +72,14 @@ EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 		break;
 	}
 
-	data->angle = float_0_8041f094;
+	data->angle = 0.0f;
 	data->angleVel = (0.1f * (f32)(rand() % 5) + 0.1f) * (0.25f * (f32)(rand() % 2 * 2 - 1));
 	data->rot = (f32)(rand() % 360);
 	data->velX = (f32)(rand() % 11 - 5);
 	data->velY = (f32)(rand() % 11 - 5);
 	data->velZ = (f32)(rand() % 11 - 5);
 	data->rotVel = (f32)(rand() % 41 - 20);
-	data->gravity = float_neg0p1_8041f0a4;
+	data->gravity = -0.1f;
 	return entry;
 }
 
@@ -116,11 +120,11 @@ void effGlassMain(EffectEntry* effect) {
 	}
 
 	data->angle += data->angleVel;
-	if (data->angle < float_0_8041f094) {
-		data->angle += float_1_8041f098;
+	if (data->angle < 0.0f) {
+		data->angle += 1.0f;
 	}
-	if (data->angle > float_1_8041f098) {
-		data->angle = data->angle - float_1_8041f098;
+	if (data->angle > 1.0f) {
+		data->angle = data->angle - 1.0f;
 	}
 
 	data->velY += data->gravity;
@@ -136,8 +140,42 @@ void effGlassMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (96.71%): the instruction sequence is identical, but mwcc assigns different stack slots to
-// the int<->float conversion temps and the GXColor value/argument copies, and orders the PSMTXScale setup differently.
+/* effGlassDisp matches with the colour writes and the frame conversion in inlines (see the MUST_MATCH
+   shapes below). The natural form is under each #else. */
+#ifdef MUST_MATCH
+/* MUST_MATCH: setting each colour inside a void inline (rather than assigning a local then passing it)
+   reproduces the original's per-call by-value colour slots, local 0x18/copy 0x1c, 0x10/0x14, 0x08/0x0c
+   (same shape as effHitDisp). */
+static inline void effGlassSetColor1(effGlassData* data, s32 a) {
+	GXColor color = unk_80423120;
+	color.r = data->field_0x18;
+	color.g = data->field_0x1C;
+	color.b = data->field_0x20;
+	color.a = a;
+	GXSetTevColor(1, color);
+}
+static inline void effGlassSetColor2(effGlassData* data, s32 a) {
+	GXColor color = unk_80423124;
+	color.r = data->field_0x28;
+	color.g = data->field_0x2C;
+	color.b = data->field_0x30;
+	color.a = a;
+	GXSetTevColor(2, color);
+}
+static inline void effGlassSetColor3(effGlassData* data, s32 a) {
+	GXColor color = unk_80423128;
+	color.r = data->field_0x18;
+	color.g = data->field_0x1C;
+	color.b = data->field_0x20;
+	color.a = a;
+	GXSetTevColor(1, color);
+}
+/* MUST_MATCH: calling the cast through an inline makes mwcc allocate the frame conversion's scratch slot
+   first (0x100) instead of last, matching the original. */
+static inline s32 effGlassFrame(f32 x) {
+	return (s32)x;
+}
+#endif
 void effGlassDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 type;
@@ -163,12 +201,12 @@ void effGlassDisp(CameraId camId, void* param) {
 	type = data->type;
 
 	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041f080 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	PSMTXConcat(cam->view, trans, viewMtx);
-	PSMTXRotRad(rot, 'z', float_deg2rad_8041f080 * data->rot);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->rot);
 	PSMTXConcat(viewMtx, rot, trans);
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
@@ -198,20 +236,28 @@ void effGlassDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
 
 	type = type % 2;
-	frame = (s32)(float_4_8041f084 * data->angle);
-	tileAlpha = (s32)(float_256_8041f088 * (float_4_8041f084 * data->angle - (f32)((s32)data->angle * 4)));
+#ifdef MUST_MATCH
+	frame = effGlassFrame(4.0f * data->angle);
+#else
+	frame = (s32)(4.0f * data->angle);
+#endif
+	tileAlpha = (s32)(256.0f * (4.0f * data->angle - (f32)((s32)data->angle * 4)));
 
 	typeOffset = type * 0x20;
 	frameOffset = frame * 0x20;
-	PSMTXScale(scale, float_0p015625_8041f08c, float_0p0078125_8041f090, float_0_8041f094);
-	PSMTXTrans(trans, (f32)typeOffset, (f32)frameOffset, float_0_8041f094);
+	PSMTXScale(scale, 0.015625f, 0.0078125f, 0.0f);
+	PSMTXTrans(trans, (f32)typeOffset, (f32)frameOffset, 0.0f);
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, 0x1e, 1);
-	PSMTXScale(scale, float_0p015625_8041f08c, float_0p0078125_8041f090, float_0_8041f094);
-	PSMTXTrans(trans, (f32)typeOffset, (f32)(frameOffset + 0x20), float_0_8041f094);
+	PSMTXScale(scale, 0.015625f, 0.0078125f, 0.0f);
+	PSMTXTrans(trans, (f32)typeOffset, (f32)(frameOffset + 0x20), 0.0f);
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, 0x21, 1);
 
+#ifdef MUST_MATCH
+	effGlassSetColor1(data, dataAlpha);
+	effGlassSetColor2(data, tileAlpha);
+#else
 	color1 = unk_80423120;
 	color1.r = data->field_0x18;
 	color1.g = data->field_0x1C;
@@ -224,18 +270,23 @@ void effGlassDisp(CameraId camId, void* param) {
 	color2.b = data->field_0x30;
 	color2.a = tileAlpha;
 	GXSetTevColor(2, color2);
+#endif
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
-	if (type == 1 && (s32)(float_4_8041f084 * data->angle) == 3) {
+	if (type == 1 && (s32)(4.0f * data->angle) == 3) {
+#ifdef MUST_MATCH
+		effGlassSetColor3(data, dataAlpha * tileAlpha / 255);
+#else
 		color3 = unk_80423128;
 		color3.r = data->field_0x18;
 		color3.g = data->field_0x1C;
 		color3.b = data->field_0x20;
 		color3.a = dataAlpha * tileAlpha / 255;
 		GXSetTevColor(1, color3);
+#endif
 		GXSetNumChans(1);
 		GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
 		GXSetNumTevStages(1);

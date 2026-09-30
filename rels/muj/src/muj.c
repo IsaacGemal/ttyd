@@ -103,7 +103,6 @@ USER_FUNC(muj_ship_puka_func) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.78%): 10 of 215 instructions differ: 8 with different operands, 1 missing, 1 extra
 USER_FUNC(muj_npc_guruguru) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -128,11 +127,10 @@ USER_FUNC(muj_npc_guruguru) {
     }
     msec = ((u32)gp->renderTime - (u32)event->savedTime) / ((__OSBusClock / 4) / 1000);
     frame = sysMsec2FrameFloat((f32)msec);
-    angle = event->userdataf[1];
+    angle = event->userdataf[1] + speed * (f32)(s32)(0.5f + frame);
     x = targetX;
     y = npc->position.y;
     z = targetZ;
-    angle = angle + speed * (f32)(s32)(0.5f + frame);
     movePos(&x, &z, event->userdataf[2], angle);
     if (direction == 0) {
         if (npc->position.x > x) {

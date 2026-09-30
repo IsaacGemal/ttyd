@@ -156,14 +156,19 @@ void _st_chg_msg_disp(CameraId camera, void* param) {
 	FontDrawMessage((s32)f31, (s32)-120.0f + lines * 0x1D, msg);
 }
 
-// NONMATCHING (97.43%): loop pointer allocated r4 instead of r3, li r29 scheduling, constant pool symbol
+// NONMATCHING (99.03%): loop pointer allocated r4 instead of r3, li r29 scheduling, constant pool symbol
 BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
 	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
 	BattleStatusChangeEntry* entry;
 	BOOL shown = FALSE;
 	s8* pri;
 
+#ifdef MUST_MATCH
+	// MUST_MATCH: the (char) cast (extsb + cmpwi either way) moves the walking pointer to r4 as in retail.
+	for (pri = _st_pri_data; (char)*pri != -1; pri++) {
+#else
 	for (pri = _st_pri_data; *pri != -1; pri++) {
+#endif
 		entry = &work->entries[*pri];
 
 		if (entry->type != -1) {

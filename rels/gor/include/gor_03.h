@@ -12,8 +12,8 @@ USER_FUNC(desk_talk_init_func);
 USER_FUNC(teresa_badge_item_list_init);
 // goryuugijo_disp_slot: this unit has its own copy; a header already declares it.
 USER_FUNC(goryuugijo_main_slot);
-s32 slot_rotate_sub(s32 arg0, u8* data, s32 index);
-void slot_neon_sub(s32 arg0, u8* data, s32 arg2);
+s32 slot_rotate_sub(void* arg0, u8* data, s32 index);
+void slot_neon_sub(void* arg0, u8* data);
 USER_FUNC(goryuugijo_init_slot);
 USER_FUNC(goryuugijo_door_init_slot);
 void goryuugijo_upsidewindow_disp_sub(s32 a, s32 b);

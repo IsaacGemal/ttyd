@@ -173,41 +173,43 @@ void effOpukuJetwMain(EffectEntry* effect) {
     }
 }
 
-// NONMATCHING (89.18%): register allocation and loop codegen differ. Details:
-// The original keeps the selected spiral table in r22; mwcc here spills it to the stack and reloads it
-// every inner iteration. It also hoists `columns - 1` and `half` into stack slots instead of
-// recomputing `columns - 1` inline and keeping `half` in a register, which in turn pushes the cached
-// data fields into r19-r23 instead of r25-r31. Because the GXColor call temporaries overlap here,
-// every Mtx stack slot is 8 bytes lower (work 0x38 not 0x40). The .data objects are reached by name
-// (adata, a2data, size16x16_tex32x32_vtx) where the original addresses them off one base register.
+// The frame size (0x180), the Mtx slots (work/rot/scale/trans at 0x40/0x70/0xa0/0xd0), the switch layout and
+// the loop's `rowOffset += columns, j++` bottom test all match; what is left is register allocation. mwcc
+// puts the cached data fields in r18-r26 (original r25-r28), so the whole callee-saved assignment is rotated. That pressure spills `half` to 0x130 (original
+// keeps it in r14) and makes the inner pointer emit `(rowOffset + col) * 10` (add/mulli) where the original
+// emits `rowOffset * 10` then `+ col * 10` (the `&table[rowOffset] + col` shape); writing that shape in C makes
+// this compiler spill more, so the additive-index form is kept. The three GXColor call temporaries also land
+// at 0x8/0x10/0x18 rather than the original 0x8/0xc/0x10. All candidate compilers (GC/1.3..GC/2.7) generate
+// identical code; GC/3.0 is worse.
+// NONMATCHING (92.76%)
 void effOpukuJetwDisp(CameraId camId, void* param) {
-    EffectEntry* effect = param;
-    effOpukuJetwData* data;
-    CameraEntry* cam;
-    effOpukuJetwPoint* table;
-    effOpukuJetwPoint* ptr;
-    effOpukuJetwPoint* colPtr;
-    GXTexObj texObj;
     Mtx trans;
-    Mtx scale;
-    Mtx rot;
-    Mtx work;
-    GXColor color;
-    s32 counter;
-    s32 lifetime;
+    s32 half;
     s32 field24;
-    s32 field18;
     s32 field1c;
+    effOpukuJetwData* data;
     s32 field20;
     s32 columns;
     s32 rows;
-    s32 i;
-    s32 j;
-    s32 col;
-    s32 threshold;
-    s32 half;
+    effOpukuJetwPoint* table;
+    CameraEntry* cam;
+    effOpukuJetwPoint* colPtr;
+    Mtx scale;
+    s32 lifetime;
+    s32 field18;
     s32 rowOffset;
+    Mtx rot;
+    s32 j;
+    EffectEntry* effect;
+    effOpukuJetwPoint* ptr;
+    s32 threshold;
+    s32 i;
+    s32 col;
+    s32 counter;
+    Mtx work;
+    GXTexObj texObj;
 
+    effect = param;
     cam = camGetPtr(camId);
     data = effect->userdata;
     counter = data->counter;
@@ -217,14 +219,18 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     field1c = data->field_0x1C;
     field20 = data->field_0x20;
 
-    if (data->type == 0) {
-        table = (effOpukuJetwPoint*)adata;
-        columns = 20;
-    } else {
-        table = (effOpukuJetwPoint*)a2data;
-        columns = 11;
+    switch (data->type) {
+        case 0:
+            table = (effOpukuJetwPoint*)adata;
+            columns = 20;
+            rows = 3;
+            break;
+        default:
+            table = (effOpukuJetwPoint*)a2data;
+            columns = 11;
+            rows = 3;
+            break;
     }
-    rows = 3;
 
     PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
     PSMTXRotRad(rot, 'y', float_deg2rad_8041f7c0 * -camGetPtr(CAMERA_3D)->viewYaw);
@@ -253,20 +259,24 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     PSMTXConcat(rot, scale, scale);
     PSMTXConcat(work, scale, work);
 
-    color = unk_804231c8;
-    color.r = data->field_0x28;
-    color.g = data->field_0x2C;
-    color.b = data->field_0x30;
-    color.a = field24;
-    GXSetTevColor(GX_TEVREG1, color);
+    {
+        GXColor color = unk_804231c8;
+        color.r = data->field_0x28;
+        color.g = data->field_0x2C;
+        color.b = data->field_0x30;
+        color.a = field24;
+        GXSetTevColor(GX_TEVREG1, color);
+    }
 
     if (columns - 1 <= lifetime) {
-        color = unk_804231cc;
-        color.r = field18;
-        color.g = field1c;
-        color.b = field20;
-        color.a = field24;
-        GXSetTevColor(GX_TEVREG0, color);
+        {
+            GXColor color = unk_804231cc;
+            color.r = field18;
+            color.g = field1c;
+            color.b = field20;
+            color.a = field24;
+            GXSetTevColor(GX_TEVREG0, color);
+        }
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
         effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
@@ -279,13 +289,12 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     for (i = 0; i < half; i++) {
         col = (counter + i * 2) % columns;
         rowOffset = 0;
-        for (j = 0; j < rows; j++) {
-            ptr = &table[rowOffset] + col;
-            rowOffset += columns;
+        for (j = 0; j < rows; rowOffset += columns, j++) {
+            ptr = &table[rowOffset + col];
             if (col > threshold) {
                 continue;
             }
-            if (columns - 1 - col > lifetime) {
+            if (columns - 1 > col + lifetime) {
                 continue;
             }
             colPtr = &table[col];
@@ -297,12 +306,14 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
             GXSetCurrentMtx(0);
-            color = unk_804231d0;
-            color.r = field18;
-            color.g = field1c;
-            color.b = field20;
-            color.a = (field24 * colPtr->field_0x8) >> 8;
-            GXSetTevColor(GX_TEVREG0, color);
+            {
+                GXColor color = unk_804231d0;
+                color.r = field18;
+                color.g = field1c;
+                color.b = field20;
+                color.a = (field24 * colPtr->field_0x8) >> 8;
+                GXSetTevColor(GX_TEVREG0, color);
+            }
             effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);

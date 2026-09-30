@@ -351,13 +351,13 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 }
 
-// NONMATCHING (98.20%): bound check and clamp now match; the target reuses r6 for
+// NONMATCHING (98.61%): bound check and clamp now match; the target reuses r6 for
 // `bound = index / 4` (addze r6), we get r7 so mask/shift move to r8/r9.
 s32 badgeShop_set(u8* table, s16 id, s16 val) {
 	s32 bound;
 	s16 index;
-	u8 mask;
 	s32 shift;
+	u8 mask;
 
 	if (table == bdsw->bottakuru_table || table == bdsw->bteresa_table) {
 		bound = KEY_ITEM_MIN;

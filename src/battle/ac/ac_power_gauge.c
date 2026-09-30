@@ -35,12 +35,13 @@ typedef struct PowerGaugeDecWork {
 
 // optimize_for_size: the original saves r28-r31 with `stmw`; the default model uses individual saves.
 #pragma optimize_for_size on
-// NONMATCHING (98.26%): register allocation of the two base pointers only; the original materialises
-// dec (work+0x1F4C) in r31 and disp (work+0x1F20) in r28, while MWCC folds dec to 0x2C(r31) and
-// materialises disp in r31. Deriving dec from `work` folds it into the work base entirely (93.83%).
+// NONMATCHING (98.85%): register allocation matches, but MWCC's scheduler hoists `lwz r3, dat_80421588` in
+// case 0 and `lwz r4, 0x8(r31)` before intplGetValue's `lfs` pair (same near-miss as ac_power_gauge_lv).
+// The `ac` intermediate keeps dec=r31/disp=r28 apart; the int->float magic stays a local `@362` (.rodata:0x8).
 s32 battleAcMain_PowerGauge(BattleWork* work) {
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-    PowerGaugeDecWork* dec = (PowerGaugeDecWork*)((u8*)disp + 0x2C);
+    BattleActions* ac = &work->actionCommands;
+    PowerGaugeDecWork* dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
+    BattleACDispParams* disp = &ac->dispParams;
     s32 autoCommand = 0;
 
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {

@@ -72,30 +72,28 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.65%): 174 of 502 instructions differ: 160 with different operands, 1 replaced, 7 missing, 6 extra
+// NONMATCHING (96.65%): `work` still lands in r31 (target r24); the case loop's base/digit/skip registers
+// and the GXColor copy's scheduling follow from that. Writing case 0/1 in place (`seconds %= ...`) and case
+// 2 with a separate `rem` coalesces them like the target (`time` is now r20).
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
-    s32 digit;
-    s32 xoff;
-    s32 xoff0, xoff1, xoff2, xoff3;
     s32 digits[4];
     s32 digit0, digit1, digit2;
     s32 i0, i1, i2, i3;
-    GXColor iconColor;
-    s32 icon;
-    s32 subsec;
-    f32 scale;
-    Mtx mtx;
-    s32 skip0, skip2;
     GXColor digitColor;
-    Mtx mtxScale;
-    s32 skip;
-    Mtx mtxTemp;
     s32 time;
-    s32 i;
+    s32 subsec;
+    GXColor iconColor;
+    Mtx mtxTemp;
+    s32 icon;
+    s32 xoff0, xoff1, xoff2, xoff3;
+    YuuCounterWork* work;
+    s32 skip0, skip2;
+    Mtx mtxScale;
+    f32 scale;
     s32 seconds;
+    Mtx mtx;
     f32 xbase;
     GXColor color;
-    YuuCounterWork* work;
     work = param;
     color = *(GXColor*)&dat_yuu_00014dd0;
     iconColor = *(GXColor*)&dat_yuu_00014dd0;
@@ -104,7 +102,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     switch (work->mode) {
     case 0:
         if (!(work->flags2 & 2)) {
-            work->time = (s32)(200.0f * (1300.0f + marioGetPtr()->position.x));
+            f32 x = marioGetPtr()->position.x;
+            work->time = (s32)(200.0f * (1300.0f + x));
         }
         scale = 2.5f;
         icon = 0x202;
@@ -160,11 +159,10 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
 
     switch (work->mode) {
     case 0: {
-        s32 val0 = seconds;
-        digits[0] = val0 / 100;
-        val0 %= 100;
-        digits[1] = val0 / 10;
-        digits[2] = val0 % 10;
+        digits[0] = seconds / 100;
+        seconds %= 100;
+        digits[1] = seconds / 10;
+        digits[2] = seconds % 10;
 
         skip0 = 1;
         xoff0 = 0;
@@ -183,11 +181,10 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         break;
     }
     case 1: {
-        s32 val1 = seconds;
-        digits[0] = val1 / 60;
-        val1 %= 60;
-        digits[1] = val1 / 10;
-        digits[2] = val1 % 10;
+        digits[0] = seconds / 60;
+        seconds %= 60;
+        digits[1] = seconds / 10;
+        digits[2] = seconds % 10;
 
         xoff1 = 0;
         for (i1 = 0; i1 < 3; i1++) {
@@ -207,13 +204,13 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     }
     case 2: {
         s32 val2 = time + 1;
-        val2 %= 100000;
-        digits[0] = val2 / 1000;
-        val2 %= 1000;
-        digits[1] = val2 / 100;
-        val2 %= 100;
-        digits[2] = val2 / 10;
-        digits[3] = val2 % 10;
+        s32 rem = val2 % 100000;
+        digits[0] = rem / 1000;
+        rem %= 1000;
+        digits[1] = rem / 100;
+        rem %= 100;
+        digits[2] = rem / 10;
+        digits[3] = rem % 10;
 
         skip2 = 1;
         xoff2 = 0;
@@ -253,6 +250,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
             iconDispGxCol(mtxTemp, 0x10, (u16)(digits[i3] + 0x1F7), digitColor);
             xoff3 += 15;
         }
+        break;
+    case 2:
         break;
     }
 }

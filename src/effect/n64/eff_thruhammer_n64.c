@@ -89,8 +89,9 @@ static inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (99.80%): only the sin block's register allocation differs (sin in f3
-// instead of f1); the rest are anonymous .sdata2/.rodata pool labels.
+// The single-use temp forces sin's result to stay in f1 through the negate
+// (retail: frsp f1,f1 / fneg f1,f1 / fmuls f1,f3,f1); the inline expression
+// makes MWCC move it to f3 and load 0.5f into f1 instead.
 void effThruHammerMain(EffectEntry* effect) {
 	EffThruHammerData* data = effect->userdata;
 	Vec disp;
@@ -116,7 +117,14 @@ void effThruHammerMain(EffectEntry* effect) {
 			data->x = 0.0f;
 			data->y = 0.0f;
 			data->z = 0.0f;
+#ifdef MUST_MATCH
+			{
+				f32 s = (f32)sin(6.2831855f * data->field_0x34 / 360.0f);
+				data->field_0x10 = -s * 0.5f;
+			}
+#else
 			data->field_0x10 = -(f32)sin(6.2831855f * data->field_0x34 / 360.0f) * 0.5f;
+#endif
 			data->field_0x14 = 0.5f * (f32)cos(6.2831855f * data->field_0x34 / 360.0f);
 			data->field_0x18 = 0.0f;
 			data->field_0x3C = 32.0f;
@@ -141,29 +149,29 @@ void effThruHammerMain(EffectEntry* effect) {
 }
 
 #ifdef MUST_MATCH
-/* MUST_MATCH: building the colour through an inline that returns it makes MWCC pass the
-   caller's local directly (retail's by-value slot) instead of a separate copy slot. */
-static inline GXColor thruColor4(u32* base, u8 r, u8 g, u8 b, s32 a) {
+/* MUST_MATCH: setting each colour inside a void inline (rather than assigning a local and
+   returning/passing it) reproduces the original's per-call by-value colour slots, with the
+   inline's build local just below the copy the call passes (same shape as effGlassDisp). */
+static inline void thruColor4(s32 reg, u32* base, u8 r, u8 g, u8 b, s32 a) {
 	GXColor c = *(GXColor*)base;
 	c.r = r;
 	c.g = g;
 	c.b = b;
 	c.a = a;
-	return c;
+	GXSetTevColor(reg, c);
 }
 
-static inline GXColor thruColor3(u32* base, u8 r, u8 g, u8 b) {
+static inline void thruColor3(s32 reg, u32* base, u8 r, u8 g, u8 b) {
 	GXColor c = *(GXColor*)base;
 	c.r = r;
 	c.g = g;
 	c.b = b;
-	return c;
+	GXSetTevColor(reg, c);
 }
 #endif
 
-// NONMATCHING (99.88%): only the four GXColor stack slots differ.  Retail puts each
-// caller local 8 bytes apart (0x24/0x1c/0x14/0xc) with the inline build temp just below
-// it; this MWCC groups the four locals (0x24/0x20/0x1c/0x18) and the temps separately.
+// The four GXColors are built and passed inside the void inlines above, which makes
+// MWCC emit retail's per-call by-value slots (inline local just below the copy it passes).
 void effThruHammerDisp(CameraId camId, void* param) {
 	CameraEntry* cam = camGetPtr(camId);
 	EffectEntry* effect = param;
@@ -172,10 +180,6 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	Mtx trans;
 	Mtx rot;
 	Mtx work;
-	GXColor color1;
-	GXColor color2;
-	GXColor color3;
-	GXColor color4;
 	s32 ca;
 	u8 cr = data->field_0x50;
 	u8 cg = data->field_0x51;
@@ -211,49 +215,57 @@ void effThruHammerDisp(CameraId camId, void* param) {
 
 	ca = data->field_0x38;
 #ifdef MUST_MATCH
-	color1 = thruColor4(&unk_80423298, cr, cg, cb, ca);
+	thruColor4(1, &unk_80423298, cr, cg, cb, ca);
 #else
-	color1 = *(GXColor*)&unk_80423298;
-	color1.r = cr;
-	color1.g = cg;
-	color1.b = cb;
-	color1.a = ca;
+	{
+		GXColor color1 = *(GXColor*)&unk_80423298;
+		color1.r = cr;
+		color1.g = cg;
+		color1.b = cb;
+		color1.a = ca;
+		GXSetTevColor(1, color1);
+	}
 #endif
-	GXSetTevColor(1, color1);
 
 #ifdef MUST_MATCH
-	color2 = thruColor3(&unk_8042329c, cr2, cg2, cb2);
+	thruColor3(2, &unk_8042329c, cr2, cg2, cb2);
 #else
-	color2 = *(GXColor*)&unk_8042329c;
-	color2.r = cr2;
-	color2.g = cg2;
-	color2.b = cb2;
+	{
+		GXColor color2 = *(GXColor*)&unk_8042329c;
+		color2.r = cr2;
+		color2.g = cg2;
+		color2.b = cb2;
+		GXSetTevColor(2, color2);
+	}
 #endif
-	GXSetTevColor(2, color2);
 
 	GXSetCullMode(2);
 	main_dl(effect, work);
 
 #ifdef MUST_MATCH
-	color3 = thruColor4(&unk_804232a0, cr, cg, cb, ca);
+	thruColor4(1, &unk_804232a0, cr, cg, cb, ca);
 #else
-	color3 = *(GXColor*)&unk_804232a0;
-	color3.r = cr;
-	color3.g = cg;
-	color3.b = cb;
-	color3.a = ca;
+	{
+		GXColor color3 = *(GXColor*)&unk_804232a0;
+		color3.r = cr;
+		color3.g = cg;
+		color3.b = cb;
+		color3.a = ca;
+		GXSetTevColor(1, color3);
+	}
 #endif
-	GXSetTevColor(1, color3);
 
 #ifdef MUST_MATCH
-	color4 = thruColor3(&unk_804232a4, cr2, cg2, cb2);
+	thruColor3(2, &unk_804232a4, cr2, cg2, cb2);
 #else
-	color4 = *(GXColor*)&unk_804232a4;
-	color4.r = cr2;
-	color4.g = cg2;
-	color4.b = cb2;
+	{
+		GXColor color4 = *(GXColor*)&unk_804232a4;
+		color4.r = cr2;
+		color4.g = cg2;
+		color4.b = cb2;
+		GXSetTevColor(2, color4);
+	}
 #endif
-	GXSetTevColor(2, color4);
 
 	GXSetCullMode(1);
 	main_dl(effect, work);

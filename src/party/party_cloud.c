@@ -42,20 +42,35 @@ void cloudGetAt(Vec* position) {
 }
 
 #define cloud ((PartyCloud*)party->useStruct)
-// NONMATCHING (97.65%): mode offset and direction swap callee-saved float registers (f31/f30 vs the
-// original's f30/f31); all instructions otherwise identical.
+#ifdef MUST_MATCH
+// Match-only: reading the mode through an inline gives the original's register allocation
+// (cloud in r4, mode in r3); the plain dereference in the #else compiles the same but swaps them.
+static inline s16 getHitBreatheout2_mode(PartyEntry* party) {
+    return *(s16*)((u8*)((PartyCloud*)party->useStruct) + 0x38);
+}
+#endif
+
 void getHitBreatheout2(PartyEntry* party, f32 angle) {
-    MarioWork* mario = party->playerPtr;
+    MarioWork* mario;
     HitEntry* hit;
     f32 sin2, cos2, sin1, cos1;
     f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
+#ifdef MUST_MATCH
+    f32 dz, dx; // reversed declaration order puts dx/dz in the original's stack slots
+#else
     f32 dx, dz;
+#endif
     f32 f31;
     f32 dir;
     f32 f30;
     s16 mode;
 
+#ifdef MUST_MATCH
+    mode = getHitBreatheout2_mode(party);
+#else
     mode = *(s16*)((u8*)cloud + 0x38);
+#endif
+    mario = party->playerPtr;
     if (mode == 0) {
         f30 = 8.0f;
     } else if (mode == 1) {
@@ -98,7 +113,11 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         }
     }
 
-    f31 = (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) ? 1.0f : -1.0f;
+    if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
+        f31 = 1.0f;
+    } else {
+        f31 = -1.0f;
+    }
 
     if (*(s32*)((u8*)cloud + 0x14) == 0) {
         *(f32*)((u8*)cloud + 0x10) += 1.0f;
@@ -419,14 +438,29 @@ void N__cloud_use(PartyEntry* party) {
 #undef cloud
 #undef MOVE_TO_MARIO
 
-// NONMATCHING (93.73%): original wraps the body in an `if (mot == 2)` with inverted branch (bne body;
-// b end); ours emits `beq end`. Also caches party+0x94 in r29 and keeps the dir flag in r5 instead of r0.
+// Two diffs remain in cloud_use. (1) The original spells the `mot == 2` guard as
+// `if (mot == 2) return;` but MWCC keeps the then-block out of line (`bne body; b end`); we emit the
+// merged `beq end`, one instruction shorter. (2) The move-to-mario flag lands in r4 where the original
+// uses r0, so the two position loads pick r3/r0 instead of r4/r3. opt_common_subs off is required:
+// with CSE on MWCC hoists party+0x94 across movePos into a callee-saved register (r29 + a 0x20 frame).
+#pragma opt_common_subs off // without it MWCC CSEs party+0x94 across movePos into a callee-saved register (r29)
+static inline void cloudMoveToMario(PartyEntry* party) {
+    MarioWork* pm = party->playerPtr;
+    f32 pa;
+    s32 pf = 0;
+    *(Vec*)((u8*)party + 0x94) = pm->position;
+    pa = *(f32*)pm->unk1AC;
+    if (pa < 90.0f || pa >= 270.0f) { pf = 1; }
+    pa = toMovedir(pa + (pf ? -90.0f : 90.0f));
+    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
+    *(f32*)((u8*)party + 0x98) += 10.0f;
+    party->position = *(Vec*)((u8*)party + 0x94);
+}
+
+// NONMATCHING (98.65%): see the note above the inline helper for the two remaining diffs.
 void cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     u16 mot;
-    s32 flag;
-    f32 angle;
-    f32 offset;
 
     N__cloud_use(party);
 
@@ -452,23 +486,8 @@ void cloud_use(PartyEntry* party) {
             *(void**)((u8*)party + 0x178) = NULL;
         }
 
-        *(Vec*)((u8*)party + 0x94) = party->playerPtr->position;
+        cloudMoveToMario(party);
 
-        angle = *(f32*)((u8*)party->playerPtr + 0x1AC);
-        flag = 0;
-        if (angle < 90.0f || angle >= 270.0f) {
-            flag = 1;
-        }
-        if (flag) {
-            offset = -90.0f;
-        } else {
-            offset = 90.0f;
-        }
-        angle = toMovedir(angle + offset);
-        movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, angle);
-        *(f32*)((u8*)party + 0x98) += 10.0f;
-
-        party->position = *(Vec*)((u8*)party + 0x94);
         party->flags2 |= 0x10;
         party->flags &= 0x7FFFFFFF;
 
@@ -487,6 +506,7 @@ void cloud_use(PartyEntry* party) {
         }
     }
 }
+#pragma opt_common_subs reset
 
 void unk_801820d0(PartyEntry* party) {
     *(f32*)((u8*)party + 0x17C) = 0.0f;

@@ -207,13 +207,26 @@ void effPeachDustMain(EffectEntry* effect) {
 	}
 }
 
+#ifdef MUST_MATCH
+// Match-only: building the colour in an inline fixes the by-value GXColor stack slot, and
+// routing the u8*k multiply through an inline local makes mwcc emit the byte as fmuls's
+// first operand. The plain forms are under #else below.
+static inline s32 scaleColor(const u8* t, s32 i, f32 k) {
+	u8 c = t[i];
+	return (s32)(c * k);
+}
+
+static inline GXColor peachDustColor(u8 r, u8 g, u8 b) {
+	GXColor c = dat_8041f948;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	return c;
+}
+#endif
+
 // Local declaration order is chosen to reproduce mwcc's GPR assignment (camera i colorType
-// colorIndex vtx); moving the lines changes which register each loop variable gets. The
-// remaining differences from the asm are mwcc artifacts: the u8->f32 2^52 mask lands in f3
-// (original f4, rotating the f2/f4 operands), the by-value GXColor temp/copy sit at r1+0xC/r1+0x8
-// (original r1+0x8/r1+0xC, the effBoobooDisp/shadowCharShadowDisp_Polygon stack-temp quirk), and the
-// pooled 2^52 constant and switch jump table get local @-names instead of double_to_int_mask_802fb350 / jumptable_803A4020.
-// NONMATCHING (99.70%): see above.
+// colorIndex vtx); moving the lines changes which register each loop variable gets.
 void effPeachDustDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PeachDustParticle* data;
@@ -271,9 +284,15 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		if (colorIndex >= 0x24) {
 			colorIndex = 0;
 		}
-		r = (s32)((f32)color_rotation_data[colorIndex++] * float_1p4_8041f95c);
-		g = (s32)((f32)color_rotation_data[colorIndex++] * float_0p7_8041f960);
-		b = (s32)((f32)color_rotation_data[colorIndex++] * float_0p7_8041f960);
+#ifdef MUST_MATCH
+		r = scaleColor(color_rotation_data, colorIndex++, float_1p4_8041f95c);
+		g = scaleColor(color_rotation_data, colorIndex++, 0.7f);
+		b = scaleColor(color_rotation_data, colorIndex++, 0.7f);
+#else
+		r = (s32)(color_rotation_data[colorIndex++] * float_1p4_8041f95c);
+		g = (s32)(color_rotation_data[colorIndex++] * float_0p7_8041f960);
+		b = (s32)(color_rotation_data[colorIndex++] * float_0p7_8041f960);
+#endif
 		if (r > 0xFF) {
 			r = 0xFF;
 		}
@@ -283,10 +302,14 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		if (b > 0xFF) {
 			b = 0xFF;
 		}
+#ifdef MUST_MATCH
+		color = peachDustColor(r, g, b);
+#else
 		color = dat_8041f948;
 		color.r = r;
 		color.g = g;
 		color.b = b;
+#endif
 		GXSetTevColor(1, color);
 		switch (colorType & 7) {
 		case 0:

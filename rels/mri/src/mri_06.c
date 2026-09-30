@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cloud.h"
@@ -20,15 +21,6 @@
 #pragma force_active on
 extern s32 evt_mri_door_close[];
 extern s32 evt_mri_door_open[];
-extern s32 evt_puni_count[];
-extern s32 evt_puni_flag_onoff[];
-extern s32 evt_puni_mem_init[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_mode[];
-extern s32 evt_puni_set_position[];
-extern s32 evt_puni_set_yuka[];
-extern s32 evt_target_flag_onoff[];
-extern s32 evt_target_set_position[];
 extern s32 mri_countdown[];
 extern s32 mri_guide_goryu[];
 extern s32 mri_puni_init[];

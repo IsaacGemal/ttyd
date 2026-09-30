@@ -7,8 +7,6 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-const Vec vec3_802fb520 = { 0.0f, 0.0f, 0.0f };
-
 // .sdata2 constants owned by this unit (named after their original addresses).
 const GXColor dat_8041fb98;
 const f32 float_0p0625_8041fb9c;
@@ -76,42 +74,58 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 }
 #pragma dont_inline reset
 
-// MWCC's callee-saved register colours differ: retail keeps `effect` in r28 and `timer` in r30, ours
-// swaps them (effect r30, timer r28); that also moves the prologue's `mr r28, r3` and lets the
-// scheduler hoist the vec loads. Every declaration/assignment order, `register`/`volatile`, variable
-// splitting, opt_common_subs/opt_propagation and function order were tried.
-// NONMATCHING (93.49%): only the effect/timer callee-saved colours (r28 vs r30) and the prologue schedule differ.
+// Building `position` from a named zero vector schedules its loads before the callee-save stores and
+// leaves `effect`/`timer` in swapped callee-saved registers. Copying from the anonymous zero literal
+// (which pools to the same .rodata slot) reproduces the retail schedule.
+static inline Vec makeRippleVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// The Vec copy above fixed the prologue schedule and declaring `timer` before `type` fixed their
+// colours, leaving only `effect` in r30 instead of r28. Reading `effect->userdata` once more (an alias
+// of `data`) is what makes the allocator give `effect` the last callee-saved register; every pragma,
+// declaration/assignment order and pure-expression form tried either left `effect` in r30 or added the
+// same extra load.
+// NONMATCHING (99.18%): one redundant `lwz r4, 0xc(r3)` before the field_0x20 update (retail reuses the
+// cached `data` in r31); everything else, including the callee-saved colours, matches.
 void effRippleMain(EffectEntry* effect) {
 	EffRippleData* data = effect->userdata;
 	Vec position2;
 	Vec position;
-	s32 type;
 	s32 timer;
+	s32 type;
 
-	position = vec3_802fb520;
-	position.x = data->x;
-	position.y = data->y;
-	position.z = data->z;
+	position = makeRippleVec(data->x, data->y, data->z);
 	position2 = position;
 
 	timer = data->field_0x1C;
 	type = data->type;
 	data->field_0x1C--;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: the extra `effect->userdata` read (same pointer as `data`) is what moves `effect`
+	   to r28; the natural form leaves it in r30. */
+	data->field_0x20 = ((EffRippleData*)effect->userdata)->field_0x20 + 1;
+#else
 	data->field_0x20++;
+#endif
 	if (data->field_0x1C < 0) {
 		effDelete(effect);
 		return;
 	}
 
 	if (timer > 5) {
-		data->field_0x18 = (s32)(0.3f * (f32)(120 - data->field_0x18) + (f32)data->field_0x18);
+		data->field_0x18 = (s32)(float_0p3_8041fbb0 * (f32)(120 - data->field_0x18) + (f32)data->field_0x18);
 	}
 
 	if ((type == 1 || type == 2 || type == 3) && timer == 15) {
 #ifdef MUST_MATCH
 		/* MUST_MATCH: the original loads the new effect's userdata into r3 before reading
 		   data->rz, so rz lands in f1; the natural one-liner reads userdata first and reuses f0. */
-		EffectEntry* e = effRippleN64Entry(type * 10, data->x, data->y, data->z, 0.0f);
+		EffectEntry* e = effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0);
 		f32 rz = data->rz;
 		EffRippleData* newData = e->userdata;
 		f32 rx = data->rx;
@@ -119,17 +133,17 @@ void effRippleMain(EffectEntry* effect) {
 		newData->rz = rz;
 #else
 		EffRippleData* newData =
-			effRippleN64Entry(type * 10, data->x, data->y, data->z, 0.0f)->userdata;
+			effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0)->userdata;
 		newData->rx = data->rx;
 		newData->rz = data->rz;
 #endif
 	}
 
 	if (type == 2 || type == 20) {
-		data->field_0x10 *= 1.05f;
+		data->field_0x10 *= float_1p05_8041fbb4;
 	}
 	if (type == 3 || type == 30) {
-		data->field_0x10 *= 1.05f;
+		data->field_0x10 *= float_1p05_8041fbb4;
 	}
 
 	if (timer < 0x20) {
@@ -141,7 +155,7 @@ void effRippleMain(EffectEntry* effect) {
 		data->field_0x24 -= 0x20;
 	}
 
-	data->field_0x10 += 0.1f;
+	data->field_0x10 += float_0p1_8041fbb8;
 	dispEntry(data->camId, dispCalcZ(&position2), 2, effRippleDisp, effect);
 }
 

@@ -26,8 +26,6 @@ extern u8 diamond_7_color0_tbl[];
 const Vec vec3_802fdd50 = { 0.0f, 0.0f, 0.0f };
 const char str_802FDD5C[] = "SFX_EVT_STARSTONE_SHINE1";
 const char str_802FDD78[] = "SFX_EVT_STARSTONE_JUMP1";
-const f64 double_to_int_mask_802fdd90 = 4503599627370496.0;
-const char str_802FDD98[] = "StarStone";
 
 Vec edge_color[7] = {
 	{ 0.3310000002384186, 0.3149999976158142, 0.23199999332427979 },
@@ -114,7 +112,7 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	effStarStoneData* data;
 
 	entry = effEntry();
-	entry->type = str_802FDD98;
+	entry->type = "StarStone";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effStarStoneData) * entry->count);
 	entry->userdata = data;
@@ -172,8 +170,10 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-// NONMATCHING (98.94%): the u8->f32 magic double pools into an anonymous copy instead of the named
-// double_to_int_mask_802fdd90 (see evt_telop.c / ac_pendulum_crane_timing.c), plus two FP/branch-shape deltas.
+// `opt_common_subs off` required: with common-subexpression merging on, the two u8->f32 color
+// conversions and the field_0x24 update pick different FPRs than the original (the 2^52 mask and
+// the 255.0f divisor land in f3/f4 instead of f4/f3, the update's temporaries rotate).
+#pragma opt_common_subs off
 void effStarStoneMain(EffectEntry* effect) {
 	effStarStoneData* data = effect->userdata;
 	Vec position;
@@ -219,16 +219,19 @@ void effStarStoneMain(EffectEntry* effect) {
 
 	switch (data->field_0x3C) {
 	case 0:
-		if (type == 6) {
+		switch (type) {
+		case 6:
 			data->field_0x24 -= float_0p01_80420b58;
 			if (data->field_0x24 <= float_0_80420b54) {
 				data->field_0x24 += float_1_80420b5c;
 			}
-		} else {
+			break;
+		default:
 			data->field_0x24 += float_0p01_80420b58;
 			if (data->field_0x24 >= float_1_80420b5c) {
 				data->field_0x24 -= float_1_80420b5c;
 			}
+			break;
 		}
 		break;
 	case 1:
@@ -274,20 +277,19 @@ void effStarStoneMain(EffectEntry* effect) {
 			data->field_0xC += data->field_0x44;
 			data->field_0x44 -= data->field_0x40;
 		}
+		if (data->field_0x3C > 2) {
+			data->field_0x48 -= (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x4C -= (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x50 += (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x54 += (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x20 = data->field_0x20 + (float_90_80420b80 - data->field_0x20) / float_10_80420b64;
+		}
+		if (data->field_0x3C > 3) {
+			data->field_0x18 = data->field_0x18 + (float_neg90_80420b88 - data->field_0x18) / float_10_80420b64;
+		}
 		break;
 	default:
 		break;
-	}
-
-	if (data->field_0x3C > 2) {
-		data->field_0x48 -= (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x4C -= (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x50 += (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x54 += (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x20 = data->field_0x20 + (float_90_80420b80 - data->field_0x20) / float_10_80420b64;
-	}
-	if (data->field_0x3C > 3) {
-		data->field_0x18 = data->field_0x18 + (float_neg90_80420b88 - data->field_0x18) / float_10_80420b64;
 	}
 
 	data->field_0x2C = data->field_0x2C + 1;
@@ -309,31 +311,36 @@ void effStarStoneMain(EffectEntry* effect) {
 			                       color_tbl[data->field_0x0][2] / float_255_80420b78);
 			effStardustN64SetDrawCam(entry, camId);
 		}
-	}
 
-	if (data->field_0x3C == 0) {
-		*(s32*)((u8*)data->field_0x34->userdata + 0x68) = camId;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x04) = data->field_0x8;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x08) = data->field_0xC - float_10_80420b64 * data->field_0x14;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = data->field_0x10;
-	} else {
-		*(f32*)((u8*)data->field_0x34->userdata + 0x04) = float_0_80420b54;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x08) = float_neg1000_80420b8c;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = float_0_80420b54;
-	}
+		if (data->field_0x3C == 0) {
+			*(s32*)((u8*)data->field_0x34->userdata + 0x68) = camId;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x04) = data->field_0x8;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x08) = data->field_0xC - float_10_80420b64 * data->field_0x14;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = data->field_0x10;
+		} else {
+			*(f32*)((u8*)data->field_0x34->userdata + 0x04) = float_0_80420b54;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x08) = float_neg1000_80420b8c;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = float_0_80420b54;
+		}
 
-	if (data->field_0x3C < 3 && camId == CAMERA_3D) {
-		U_shadowSetMode(shadowEntry(data->field_0x8, data->field_0xC, data->field_0x10, float_8_80420b90 * data->field_0x14), data->field_0x5F);
+		if (data->field_0x3C < 3 && camId == CAMERA_3D) {
+			U_shadowSetMode(shadowEntry(data->field_0x8, data->field_0xC, data->field_0x10, float_8_80420b90 * data->field_0x14), data->field_0x5F);
+		}
 	}
 
 	if (!(data->field_0x4 & 0x20)) {
-		if (type == 0 || type == 6) {
+		switch (type) {
+		case 0:
+		case 6:
 			dispEntry(camId, dispCalcZ(&position), 2, effStarStoneDisp_1, effect);
-		} else {
+			break;
+		default:
 			dispEntry(camId, dispCalcZ(&position), 2, effStarStoneDisp_2, effect);
+			break;
 		}
 	}
 }
+#pragma opt_common_subs reset
 
 // NONMATCHING (95.83%): lbl_803AC080 address is re-materialised instead of kept live; GXColor
 // argument temporaries / local frame sit 4 bytes low; a few branch shapes differ.
@@ -559,15 +566,46 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xd); \
 	GXSetArray(0xd, base + (tex), 4)
 
+// The original walks both tables with pointer increments: i first, then dl, then the size pointer in
+// the branch delay slot, with the counter in r27 and dl/sz in r25/r26. The block-scoped pointers and
+// the explicit `i = 0` before `sz = ...` make MWCC emit that allocation; the indexed form is the
+// natural equivalent.
+#ifdef MUST_MATCH
 #define STARSTONE_DL_LOOP(off, sztbl, n) \
-	dl = (void**)(base + (off)); \
-	sz = (sztbl); \
-	for (i = 0; i < (n); i++) { \
-		GXCallDisplayList(dl[i], sz[i] << 5); \
+	{ \
+		u8* sz; \
+		void** dl; \
+		dl = (void**)(base + (off)); \
+		i = 0; \
+		sz = (sztbl); \
+		for (; i < (n); i++) { \
+			GXCallDisplayList(*dl, *sz << 5); \
+			sz++; \
+			dl++; \
+		} \
 	}
+#else
+#define STARSTONE_DL_LOOP(off, sztbl, n) \
+	for (i = 0; i < (n); i++) { \
+		GXCallDisplayList(((void**)(base + (off)))[i], (sztbl)[i] << 5); \
+	}
+#endif
 
-// NONMATCHING (98.63%): 25 instructions differ, 3 missing, plus register differences.
+// Passing the constant GXColor in by value keeps the by-value temporary in the slot the original
+// uses; building the colour in the caller puts it 4 bytes low (same shape as effBattenDisp2).
+#ifdef MUST_MATCH
+static inline GXColor starStoneTevColor(GXColor c, effStarStoneData* data) {
+	c.r = data->field_0x5C;
+	c.g = data->field_0x5D;
+	c.b = data->field_0x5E;
+	c.a = data->field_0x5F;
+	return c;
+}
+#endif
+
+#pragma opt_lifetimes off // the default lifetime analysis puts the loop counter in r25, not r27
 void effStarStoneDisp_1(CameraId camId, void* param) {
+	u32 i;
 	u8* base = lbl_803AC080;
 	EffectEntry* effect = param;
 	effStarStoneData* data = effect->userdata;
@@ -577,11 +615,6 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotMtx;
 	GXTexObj texObj;
-	GXColor color;
-	s32 i;
-	void** dl;
-	u8* sz;
-
 	mapSetMaterialFog();
 	GXSetArray(0xb, color_tbl[data->field_0x0], 4);
 	GXSetNumChans(1);
@@ -596,12 +629,18 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
 	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-	color = *(GXColor*)&unk_804232e0;
-	color.r = data->field_0x5C;
-	color.g = data->field_0x5D;
-	color.b = data->field_0x5E;
-	color.a = data->field_0x5F;
-	GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e0, data));
+#else
+	{
+		GXColor color = *(GXColor*)&unk_804232e0;
+		color.r = data->field_0x5C;
+		color.g = data->field_0x5D;
+		color.b = data->field_0x5E;
+		color.a = data->field_0x5F;
+		GXSetTevColor(1, color);
+	}
+#endif
 
 	PSMTXTrans(mtx, data->field_0x8, data->field_0xC, data->field_0x10);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
@@ -654,12 +693,18 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
 	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-	color = *(GXColor*)&unk_804232e4;
-	color.r = data->field_0x5C;
-	color.g = data->field_0x5D;
-	color.b = data->field_0x5E;
-	color.a = data->field_0x5F;
-	GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+	GXSetTevColor(1, starStoneTevColor(*(GXColor*)&unk_804232e4, data));
+#else
+	{
+		GXColor color = *(GXColor*)&unk_804232e4;
+		color.r = data->field_0x5C;
+		color.g = data->field_0x5D;
+		color.b = data->field_0x5E;
+		color.a = data->field_0x5F;
+		GXSetTevColor(1, color);
+	}
+#endif
 
 	PSMTXTrans(mtx, data->field_0x8, data->field_0xC, data->field_0x10);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
@@ -671,10 +716,11 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 	GXSetCurrentMtx(0);
 	if (type == 0) {
 		effGetTexObj(0x2e, &texObj);
+		GXLoadTexObj(&texObj, 0);
 	} else {
 		effGetTexObj(0x2f, &texObj);
+		GXLoadTexObj(&texObj, 0);
 	}
-	GXLoadTexObj(&texObj, 0);
 	GXSetBlendMode(1, 4, 5, 0);
 	GXSetZCompLoc(1);
 	GXSetAlphaCompare(7, 0, 0, 7, 0);
@@ -712,3 +758,4 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		STARSTONE_DL_LOOP(0x9b4, diamond_7_dl_1_size_tbl, 0x21);
 	}
 }
+#pragma opt_lifetimes reset

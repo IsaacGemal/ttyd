@@ -71,7 +71,6 @@ s32 _get_attack_aud_no(EventEntry* event) {
     return 2;
 }
 
-// NONMATCHING (99.74%): `args` is r31 here (r29 in the original, which reuses r29 for the &z pointer afterwards).
 s32 _attack_aud(EventEntry* event) {
     f32 z;
     f32 y;
@@ -80,9 +79,10 @@ s32 _attack_aud(EventEntry* event) {
     s32 memberId = evtGetValue(event, args[0]);
     s32 type = evtGetValue(event, args[1]);
 #ifdef MUST_MATCH
-    // these pointers give the original's frame (0x30) and r28-r31 save set
-    f32* py = &y;
-    f32* pz = &z;
+    // The `(0, &y)` comma initializers make MWCC keep py/pz in r30/r29 and args in r29 (the
+    // original's registers and 0x30 frame); the plain `&y`/`&z` under #else puts args in r31.
+    f32* py = (0, &y);
+    f32* pz = (0, &z);
 #else
 #define py (&y)
 #define pz (&z)
@@ -157,9 +157,12 @@ s32 _get_present_target_id(EventEntry* event) {
     return 2;
 }
 
-// NONMATCHING (99.45%): the 2^52 double is an anonymous @246 pool entry instead of the named
-// double_to_int_802f3a90 (known MWCC quirk, cf. mot_damage.c), and r6/r7/r8 in the conversion are
-// permuted. Same instruction sequence otherwise.
+// Two match-only shapes steer MWCC's register allocation: the colour is loaded into the local
+// before the int->float conversion (so the conversion magic lands in r6 and the colour in r7, the
+// reverse of the by-value form), and the call goes through a by-pointer prototype, which is the real
+// ABI (GXColor is passed by reference) and the same trick battle_message.c's _disp uses. objdiff still
+// shows the 2^52 bias as an anonymous @NNN pool entry instead of the named double_to_int_802f3a90
+// (MWCC quirk, cf. mot_damage.c); that is a relocation name, not an instruction difference.
 void _get_item_announce_disp(CameraId camera, void* param) {
     s32 itemNo = BattleAudience_GetPresentItemNo();
     const char* itemName = msgSearch(itemDataTable[itemNo].name);
@@ -172,15 +175,20 @@ void _get_item_announce_disp(CameraId camera, void* param) {
 
     sprintf(buf, fmt, itemName);
     width = FontGetMessageWidthLine(buf, &lines);
-    x = float_0_8041cccc - (f32)(width / 2);
     lines++;
 #ifdef MUST_MATCH
     color = *(GXColor*)&dat_8041ccc0; // a GXColor object here changes the load (99% -> 80%)
 #else
     color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
 #endif
+    x = float_0_8041cccc - (f32)(width / 2);
+#ifdef MUST_MATCH
+    ((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - float_10_8041ccd0,
+        float_34_8041ccd4, (f32)(width + 20), (f32)(lines * 0x1D + 3), float_10_8041ccd0);
+#else
     windowDispGX_Waku_col(0, color, x - float_10_8041ccd0, float_34_8041ccd4,
                           (f32)(width + 20), (f32)(lines * 0x1D + 3), float_10_8041ccd0);
+#endif
     FontDrawStart();
     FontDrawMessage((s32)x, (s32)float_60_8041ccd8 - 0x1D, buf);
 }

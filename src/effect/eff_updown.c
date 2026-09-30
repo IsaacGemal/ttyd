@@ -73,7 +73,9 @@ EffectEntry* effUpdownEntry(s32 type, f32 x, f32 y, f32 z, s32 field18, s32 life
 #define POLY_ALPHA alpha
 #endif
 // .text:0x644 | 0x8018E170 | size: 0x1D8
-// NONMATCHING (90.17%): 3 instructions differ, 6 missing, 4 extra, plus register differences.
+// NONMATCHING (96.97%): scaleX/scaleY and the final Vec values exactly match; the remaining diff
+// is the frame++/renderMode/Vec-copy schedule (the original materialises &pos into r3 before the
+// frame store and delays the first lwz past li r29) and the resulting r5-vs-r6 colouring.
 void effUpdownMain(EffectEntry* effect) {
 	EffUpdownWork* work = effect->userdata;
 	s32 type;
@@ -100,9 +102,17 @@ void effUpdownMain(EffectEntry* effect) {
 			work->scaleX = (f32)scale_data[work->frame * 2] / float_100_8041e2dc;
 			work->scaleY = (f32)scale_data[work->frame * 2 + 1] / float_100_8041e2dc;
 		} else {
-			work->scaleY = float_1_8041e2b4 -
-						   float_0p1_8041e2e4 * (f32)sin((f32)(s32)(work->frame - 15) * float_0p25_8041e2e0);
+#ifdef MUST_MATCH
+			/* MUST_MATCH: splitting out the signed frame delta fixes the FP register allocation
+			   of the int->float conversion and the fnmsubs. */
+			s32 t = work->frame - 15;
 			work->scaleX = float_1_8041e2b4;
+			work->scaleY = float_1_8041e2b4 - (f32)sin((f32)t * float_0p25_8041e2e0) * float_0p1_8041e2e4;
+#else
+			work->scaleY = float_1_8041e2b4 -
+						   (f32)sin((f32)(s32)(work->frame - 15) * float_0p25_8041e2e0) * float_0p1_8041e2e4;
+			work->scaleX = float_1_8041e2b4;
+#endif
 		}
 	}
 	work->frame++;
@@ -172,12 +182,13 @@ static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 
 }
 
 // .text:0x0 | 0x8018DB2C | size: 0x45C
-// NONMATCHING (99.53%): same instructions; only register numbers or operands differ.
 void effUpdownDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
-	u8 alpha;
-	CameraEntry* cam;
 	EffUpdownWork* work = effect->userdata;
+	s32 field18;
+	s32 alpha;
+	CameraEntry* cam;
+	s32 type;
 	GXTexObj texObj;
 	Mtx mtxPos;
 	Mtx mtxRot;
@@ -185,8 +196,6 @@ void effUpdownDisp(CameraId cameraId, void* param) {
 	Mtx mtxA;
 	Mtx mtxB;
 	Mtx mtxC;
-	s32 type;
-	s32 field18;
 
 	cam = camGetPtr(cameraId);
 	field18 = work->field18;

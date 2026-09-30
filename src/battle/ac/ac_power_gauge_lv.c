@@ -11,23 +11,27 @@
 // --- Declarations that belong in a header (no ac_power_gauge_lv.h exists yet) ---
 
 // --- .rodata literals of this unit (offsets in REPORT.md) ---
-// The seven Vec3 literals are one contiguous array; the original object names them individually at
-// 0xC strides. Referencing them as an array is what makes mwcc keep a single base register.
-const Vec vec3_802fea38[7] = {
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-};
-const f64 double_to_int_802fea90 = 4503601774854144.0;
+// The original object names the seven Vec3 literals individually at 0xC strides (0x802fea38..0x802fea80),
+// followed by the int->float magic double at 0x802fea90.
+const Vec vec3_802fea38 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea44 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea50 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea5c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea68 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea74 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea80 = {0.0f, 0.0f, 0.0f};
 
 // --- .sdata2 literals of this unit (offsets in REPORT.md) ---
-// Declared here and defined at the bottom so the compiler emits a reference to the named symbol
-// instead of folding the value into its own literal pool.
-extern const s32 dat_804215d0;
+// The float constants are declared here and defined at the bottom so the compiler emits a reference to
+// the named symbol instead of folding the value into its own literal pool.
+#ifdef MUST_MATCH
+// A `const` object here lets MWCC hoist this function's `lwz r6, dat` above the disp stores; the
+// original schedules the load at its store. Non-const defeats the alias analysis, and the section
+// directive keeps it in .sdata2 where the original has it.
+__declspec(section ".sdata2") s32 dat_804215d0 = -1;
+#else
+const s32 dat_804215d0 = -1;
+#endif
 extern const f32 float_neg200_804215d4;
 extern const f32 float_25_804215d8;
 extern const f32 float_1_804215dc;
@@ -53,19 +57,32 @@ typedef struct PowerGaugeLvDecWork {
 static void actionCommandDisp(f32, f32);
 
 // don't_inline: the original keeps actionCommandDisp as its own local function.
+#pragma optimize_for_size on
 #pragma dont_inline on
-// NONMATCHING (73.11%): 15 instructions differ, 14 missing, 25 extra, plus register differences.
+// NONMATCHING (98.94%): only the fdivs destination differs (original `fdivs f1, f2, f1` overwrites the divisor, MWCC emits `fdivs f2, f2, f1` overwriting the numerator); the following fctiwz/stfs and argument schedule shift with it.
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
+#ifdef MUST_MATCH
+    // Deriving disp/dec through the BattleActions intermediate makes MWCC materialise them in their
+    // own registers (work=r30, disp=r29, dec=r28) instead of folding them into the BattleWork base.
+    BattleActions* ac = &work->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    PowerGaugeLvDecWork* dec;
+#else
     BattleACDispParams* disp = &work->actionCommands.dispParams;
-    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
-    Vec pos;
+    PowerGaugeLvDecWork* dec;
+#endif
     f32 ratio;
 
     camGetPtr(CAMERA_2D);
+#ifdef MUST_MATCH
+    dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
+#else
+    dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
+#endif
 
     {
-        pos = vec3_802fea38[0];
+        Vec pos = vec3_802fea38;
         pos.x = float_neg200_804215d4 + f1;
         pos.y = float_25_804215d8 + f2;
         iconDispGx(&pos, 0x10, 0x8c, float_1_804215dc);
@@ -89,13 +106,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
         f1 = float_neg220_804215e4 + f1;
         f2 = float_70_804215e8 + f2;
         {
-            pos = vec3_802fea38[1];
+            Vec pos = vec3_802fea44;
             pos.x = f1;
             pos.y = f2;
             iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
         }
         {
-            pos = vec3_802fea38[2];
+            Vec pos = vec3_802fea50;
             pos.x = float_56_804215ec + f1;
             pos.y = f2;
             iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
@@ -107,13 +124,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
             f1 = float_neg220_804215e4 + f1;
             f2 = float_70_804215e8 + f2;
             {
-                pos = vec3_802fea38[3];
+                Vec pos = vec3_802fea5c;
                 pos.x = f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x7f, float_1_804215dc);
             }
             {
-                pos = vec3_802fea38[4];
+                Vec pos = vec3_802fea68;
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x81, float_1_804215dc);
@@ -123,13 +140,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
             f1 = float_neg220_804215e4 + f1;
             f2 = float_70_804215e8 + f2;
             {
-                pos = vec3_802fea38[5];
+                Vec pos = vec3_802fea74;
                 pos.x = f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
             }
             {
-                pos = vec3_802fea38[6];
+                Vec pos = vec3_802fea80;
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
@@ -139,48 +156,48 @@ static void actionCommandDisp(f32 f1, f32 f2) {
     }
 }
 #pragma dont_inline reset
-
+#pragma optimize_for_size reset
 void battleAcDelete_PowerGaugeLv(BattleWork* work) {
     if (!(work->actionCommands.field_0x30 & 1)) {
         work->actionCommands.mAcState = 0x3eb;
     }
 }
 
-// NONMATCHING (98.86%): only `addi r31, r4, 0x1f20` differs; mwcc folds the disp pointer into
-// the BattleWork base (`mr r31, r4` + 0x1fxx offsets) instead of materialising it.
+// The `BattleActions*` intermediate is what makes MWCC materialise `disp` in r31
+// (`addi r31, r4, 0x1f20`) instead of folding it into the BattleWork base
+// (`mr r31, r4` + 0x1fxx offsets); the state is read through `ac` and folds back to r4.
 void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
-    BattleWork* work = (BattleWork*)param;
-    BattleACDispParams* ag = &work->actionCommands.dispParams;
-    s32 state = work->actionCommands.mAcState;
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    s32 state = ac->mAcState;
 
     switch (state) {
     case 0x63:
-        ag->iconX = intplGetValue(4, 0x14 - ag->counter, 0x14, float_neg300_804215f0, float_30_804215f4);
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_804215f0, float_30_804215f4);
         // fallthrough
     case 0x64:
     case 0x3e8:
     case 0x3ea:
-        actionCommandDisp(ag->iconX, ag->iconY);
-        if (ag->counter > 0) {
-            ag->counter--;
+        actionCommandDisp(disp->iconX, disp->iconY);
+        if (disp->counter > 0) {
+            disp->counter--;
         }
         break;
     case 0x3eb:
     case 0x3ec:
-        if (ag->counter >= 0x28) {
-            ag->iconX = intplGetValue(4, ag->counter - 0x28, 0x14, float_30_804215f4, float_neg300_804215f0);
+        if (disp->counter >= 0x28) {
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_804215f4, float_neg300_804215f0);
         }
         else {
-            ag->iconX = float_30_804215f4;
+            disp->iconX = float_30_804215f4;
         }
-        actionCommandDisp(ag->iconX, ag->iconY);
-        if (ag->counter < 0x3c) {
-            ag->counter++;
+        actionCommandDisp(disp->iconX, disp->iconY);
+        if (disp->counter < 0x3c) {
+            disp->counter++;
         }
         break;
     }
 }
-
 s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
     return work->actionCommands.result;
 }
@@ -188,12 +205,20 @@ s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
 // optimize_for_size: the original main saves r29-r31 with `stmw`; the size model reproduces its
 // prologue/register choice for the state machine. The rest of the file does not need it.
 #pragma optimize_for_size on
-// NONMATCHING (96.38%): register allocation only. The original keeps work=r30, dec=r31, disp=r29;
-// mwcc folds dec (and sometimes disp) into the BattleWork base instead of materialising them.
-// All logic, switch tree, thresholds and the `result &= ~2` bit clear match.
+// MWCC folds dec (and disp) into the BattleWork base when both are derived directly from
+// `work`; the MUST_MATCH `ac` intermediate below keeps work=r30, dec=r31 and disp=r29 as the original.
 s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
+#ifdef MUST_MATCH
+    // MWCC folds dec (and disp) into the BattleWork base when both are derived directly from `work`;
+    // deriving both from the `ac` intermediate keeps work, dec and disp in their own registers, as the
+    // original does (same fix as battleAcMain_CraneTiming).
+    BattleActions* ac = &work->actionCommands;
+    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
+    BattleACDispParams* disp = &ac->dispParams;
+#else
     PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
+#endif
 
     switch (work->actionCommands.mAcState) {
     case 0x63:
@@ -312,7 +337,8 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
 #pragma optimize_for_size reset
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
-const s32 dat_804215d0 = -1;
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const f32 float_neg200_804215d4 = -200.0f;
 const f32 float_25_804215d8 = 25.0f;
 const f32 float_1_804215dc = 1.0f;
