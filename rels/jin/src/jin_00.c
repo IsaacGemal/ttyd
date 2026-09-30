@@ -1856,7 +1856,8 @@ void senteresa_loadTev(void) {
     GXSetNumTevStages(1);
 }
 
-// NONMATCHING (99.96%): 11 of 113 instructions differ in operands only (registers or offsets)
+// NONMATCHING (99.96%): 4 of 113 instructions differ in stack offsets only (the fog local/temp and the
+// loop's GXSetTevColor temp swap {0x8,0x10}); the other 6 operand diffs are anonymous-pool relocations.
 static void senteresa_ext_disp(void) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
     s32 count = extGetPoseNum();

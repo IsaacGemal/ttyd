@@ -2028,7 +2028,10 @@ s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
 // plain `if (i % 10 == 0) {}`. Writing it as the equivalent `i - i / 10 * 10 == 0` with a self-assign body keeps
 // the test. The 5 remaining instructions differ only in register allocation: the original keeps 10 in r0 and puts
 // the quotient in r4 / the calcPose remainder in r5, while this source lets the compiler reuse r0 for the
-// quotient and emit `mulli` (the rest of the function matches).
+// quotient and emit `mulli` (the rest of the function matches). Writing the condition with `%` does give the
+// original `mullw`/r4 quotient, but the modulo lowering then hoists `field_23` before the gp dereference and the
+// whole i<100 block's register assignment shifts (95.27%). Inlining calcPose, a helper, locals, casts, pragmas
+// (optimize_for_size/opt_propagation/opt_common_subs) and argument-order changes were tried; none beats this.
 // NONMATCHING (99.55%): only that register assignment differs.
 void kpaSen_ext_main(void) {
     ExtPose* pose = extGetPosePtr();

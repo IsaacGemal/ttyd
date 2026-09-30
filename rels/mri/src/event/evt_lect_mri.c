@@ -202,8 +202,8 @@ static void lecture_button_disp(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (98.96%): count and btn occupy r6/r7 swapped.
 static USER_FUNC(lecture_button_rtn) {
+    LectureButton* btn;
     s32 i;
     s32 count;
 
@@ -215,7 +215,7 @@ static USER_FUNC(lecture_button_rtn) {
     }
     count = 0;
     for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
+        btn = &lbtn[i];
         switch (btn->seq) {
         case 0:
             btn->iconId = 0x68;

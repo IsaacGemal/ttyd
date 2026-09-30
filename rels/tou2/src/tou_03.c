@@ -2722,26 +2722,27 @@ EVT_BEGIN(evt_default_opening)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.25%): instruction stream matches byte-for-byte in length; only the callee-saved
-// integer registers picked for kyaku_wp/pose/state/i and the address constants differ.
+// The declaration order is load-bearing: MWCC assigns the callee-saved GPRs and the
+// hitCheckFilter out-parameter stack slots in an order derived from it, and this order
+// reproduces the original's (r22=flag ... r31=zero, hitX@0x20 ... nz@0x8).
 void ext_kyaku_init(void) {
-    s32 i;
-    KyakuState* state;
-    ExtPose* pose;
-    HitEntry* hit;
     f32 radius;
+    HitEntry* hit;
     f32 angle;
-    f32 s;
-    f32 c;
     f32 hitX;
     f32 hitY;
     f32 hitZ;
+    s32 flag;
+    Vec pos;
+    s32 i;
     f32 distance;
     f32 nx;
+    ExtPose* pose;
+    f32 c;
     f32 ny;
     f32 nz;
-    Vec pos;
-    s32 flag;
+    f32 s;
+    KyakuState* state;
 
     kyaku_wp = _mapAlloc(0x510);
     memset(kyaku_wp, 0, 0x510);

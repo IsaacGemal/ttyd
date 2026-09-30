@@ -578,6 +578,10 @@ static void monte_disp(CameraId cameraId, void* param) {
 // before the x/y pointer setup, and keeps the sfx string address in r26 (ours uses r21 plus an extra mr).
 // Referencing the target's named .rodata globals (zero_yuu_00014548, float_20/100/1_yuu_*, str_00000550)
 // instead of literals does not change any of these, so the literal version is kept.
+// Also tried with no effect (same 95.57%): #pragma opt_propagation/scheduling/opt_common_subs off or on,
+// MATCH_F32 through named consts, ternary min/max, struct-field instead of f32* base, and reordering the
+// count/work/data->count stores and the tableIdx/pointIdx initialisers. Everything below the setup block
+// (sum loop, FPR allocation, inlined get_monte_check, switch and sfx loop) already matches.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;

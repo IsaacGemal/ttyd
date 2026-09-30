@@ -2595,9 +2595,26 @@ USER_FUNC(pcharge_set_pos) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.82%)
+// Match requires this declaration order: MWCC's FPR allocator puts y in f23
+// (and a/c in f24/f25) only when y is declared after c and a.
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
+#ifdef MUST_MATCH
+    f32 x0;
+    f32 z0;
+    f32 radius;
+    f32 c;
+    f32 a;
+    f32 y;
+    f32 s;
+    s32 i;
+    char name[16];
+
+    x0 = evtGetFloat(event, args[0]);
+    y = evtGetFloat(event, args[1]);
+    z0 = evtGetFloat(event, args[2]);
+    radius = evtGetFloat(event, args[3]);
+#else
     f32 x0 = evtGetFloat(event, args[0]);
     f32 y = evtGetFloat(event, args[1]);
     f32 z0 = evtGetFloat(event, args[2]);
@@ -2607,7 +2624,7 @@ static USER_FUNC(starstone_entry) {
     f32 s;
     s32 i;
     char name[16];
-
+#endif
     for (i = 0; i < 7; i++) {
         EffectEntry* effect;
 

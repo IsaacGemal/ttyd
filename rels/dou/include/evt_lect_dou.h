@@ -4,6 +4,8 @@
 
 #include "evt/evt_cmd.h"
 
+void iconDispGxAlpha(Vec* position, s16 flags, u16 iconId, u8 alpha, f32 scale);
+
 typedef struct LectureButton {
     u8 flags;               // 0x0
     u8 state;               // 0x1

@@ -577,7 +577,6 @@ static USER_FUNC(lect_slit_check) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.94%): 17 of 141 instructions differ: 11 with different operands, 4 replaced, 2 extra
 static USER_FUNC(evtflash) {
     u32 ticks;
     u32 elapsed;
@@ -586,7 +585,7 @@ static USER_FUNC(evtflash) {
     }
     switch (event->userdata[2]) {
         case 0:
-            fadeEntry(10, 40, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            fadeEntry(10, 40, dat_usu_0000647c);
             event->userdata[2]++;
             // fallthrough
         case 1:
@@ -609,7 +608,7 @@ static USER_FUNC(evtflash) {
             event->userdata[2]++;
             return EVT_RETURN_BLOCK;
         case 3:
-            fadeEntry(9, 40, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            fadeEntry(9, 40, dat_usu_00006480);
             event->userdata[2]++;
             // fallthrough
         case 4:
@@ -626,7 +625,7 @@ static USER_FUNC(evtflash) {
         case 5:
             ticks = OSMillisecondsToTicks(1);
             elapsed = (u32)gp->renderTime - (u32)event->savedTime;
-            return elapsed / ticks >= (u32)event->userdata[0] ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+            return elapsed / ticks < (u32)event->userdata[0] ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
         default:
             return EVT_RETURN_DONE;
     }

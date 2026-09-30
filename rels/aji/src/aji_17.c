@@ -377,20 +377,27 @@ EVT_BEGIN(evt_last)
     RETURN
 EVT_END()
 
-// NONMATCHING (98.8%): the offset arithmetic matches (split `off += k % 8` /
-// `off += b`). What differs is the callee-saved register allocation (the target keeps i/4 and
-// i%4 live and rematerialises (i/4)*256 and (i%4)*8 per loop; we keep the two scaled values)
-// and its 8 extra `.text` bytes.
+// Builds the texture's TEV colour; the temporary keeps the zero colour in the
+// original's stack slot instead of the outgoing argument slot.
+static inline GXColor noiseTevColor(u8 alpha) {
+    GXColor c = (GXColor){0, 0, 0, 0};
+    c.a = alpha;
+    return c;
+}
+
+// NONMATCHING (98.99%): the offset arithmetic now matches; what still differs is the
+// callee-saved register allocation (target param/cam/data/i in r25/r30/r26/r28, i/4/i%4 in
+// r31/r29; ours r24/r31/r27/r28 and r30/r29) plus two first-loop schedule slots.
 void noiseDisp(CameraId cameraId, void* param) {
-    GXColor color;
     GXTexObj texObj;
-    s32 num, len, start;
-    CameraEntry* cam;
-    u8 val;
-    u8* data;
     s32 i, j, k;
-    smartEntry* entry;
+    u8 val;
+    GXColor color;
     Mtx mtx;
+    CameraEntry* cam;
+    s32 num, len, start;
+    u8* data;
+    smartEntry* entry;
 
     cam = camGetPtr(cameraId);
     entry = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_I8, GX_FALSE, 0), 3);
@@ -399,7 +406,7 @@ void noiseDisp(CameraId cameraId, void* param) {
         s32 q = i / 4;
         s32 r = i % 4;
         for (j = 0; j < 0x40; j++) {
-            s32 off = (j / 8) * 32 + q * 256;
+            s32 off = q * 256 + (j / 8) * 32;
             off += j % 8;
             off += r * 8;
             data[off] = (i & 1) ? 0xFF : 0;
@@ -413,7 +420,8 @@ void noiseDisp(CameraId cameraId, void* param) {
                 start = rand() % (0x41 - len);
                 val = rand() % 255;
                 for (k = start; k < start + len; k++) {
-                    s32 off = (k / 8) * 32 + a;
+                    s32 off = (k / 8) * 32;
+                    off += a;
                     off += k % 8;
                     off += b;
                     data[off] = val;
@@ -436,8 +444,7 @@ void noiseDisp(CameraId cameraId, void* param) {
     GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-    color = (GXColor){0, 0, 0, 0};
-    color.a = (u8)param;
+    color = noiseTevColor((u8)param);
     GXSetTevColor(GX_TEVREG0, color);
     GXLoadPosMtxImm(cam->view, 0);
     GXSetCurrentMtx(0);

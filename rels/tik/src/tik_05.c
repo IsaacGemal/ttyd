@@ -1975,20 +1975,34 @@ USER_FUNC(eff_starstone_sound_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.93%): only the stack slot for the local GXColor copy differs (0x8 vs 0xC); instructions otherwise identical.
+// The original builds the colour in one stack slot and copies it into the
+// argument slot, so the build goes through an inline that returns by value.
+#ifdef MUST_MATCH
+static inline GXColor alpha_tev_color(u8 a) {
+    GXColor c = *(GXColor*)&zero_tik_00009b58;
+    c.a = a;
+    return c;
+}
+#endif
+
 static void alpha_tev(TevCallbackParam* param) {
     u32 stage = param->field_C;
     u8* ap = _ap;
-    GXColor color;
 
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZCompLoc(GX_TRUE);
     GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    color = *(GXColor*)&zero_tik_00009b58;
-    color.a = *ap;
-    GXSetTevColor(GX_TEVREG0, color);
+#ifdef MUST_MATCH
+    GXSetTevColor(GX_TEVREG0, alpha_tev_color(*ap));
+#else
+    {
+        GXColor color = *(GXColor*)&zero_tik_00009b58;
+        color.a = *ap;
+        GXSetTevColor(GX_TEVREG0, color);
+    }
+#endif
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);

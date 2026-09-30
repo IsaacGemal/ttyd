@@ -13,7 +13,6 @@
 #include "driver/effdrv.h"
 #include "driver/fadedrv.h"
 #include "driver/hitdrv.h"
-#include "driver/icondrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
 #include "manager/evtmgr_cmd.h"
@@ -62,6 +61,10 @@ static USER_FUNC(evtflash);
 static USER_FUNC(lect_push_r_check);
 static USER_FUNC(evt_nomal_cange);
 static USER_FUNC(bgm_start_wait);
+
+// icondrv's header declares iconId as s16, but this unit's original passes it zero-extended (u16);
+// tools/local_prototype_exceptions.json lists iconDispGxAlpha for exactly this ABI disagreement.
+void iconDispGxAlpha(Vec* position, s16 flags, u16 iconId, u8 alpha, f32 scale);
 
 typedef struct LectureButton {
     u8 flags;        // 0x0
@@ -184,28 +187,41 @@ static USER_FUNC(x_flag_wait) {
     return x_flag_data[idx] == value ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (89.88%): compiler keeps btn in r6 and tests the range with blt;
-// the original uses r9 and an out-of-line -15 block (bge/b)
+// The iconId 0x75..0x7D range test is a switch: MWCC lowers the grouped cases to the
+// original's `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. Writing it as
+// `if (a < 0x7E && a >= 0x75)` instead makes MWCC invert the second branch (`blt zero`).
+// The position base must be built from `&b[8] + 4` so the original's `addi r4, r9, 0x8`
+// plus its 0x4/0x8/0xC field loads are reproduced (see the MUST_MATCH block).
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
-        f32* f = (f32*)((u8*)btn + 8);
+        LectureButton* b = &lbtn[i];
+#ifdef MUST_MATCH
+        f32* f = (f32*)((u8*)b + 8);
+#endif
+        f32 yoff;
+        Vec pos;
 
-        if (!(lbtn[i].flags & 1)) {
-            f32 offset;
-            Vec pos;
-
-            if (btn->iconId < 0x7E && btn->iconId >= 0x75) {
-                offset = -15.0f;
-            } else {
-                offset = 0.0f;
-            }
-            pos = *(Vec*)(f + 1);
-            pos.y += offset;
-            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
+        if (b->flags & 1) {
+            continue;
         }
+        switch (b->iconId) {
+            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
+            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
+                yoff = -15.0f;
+                break;
+            default:
+                yoff = 0.0f;
+                break;
+        }
+#ifdef MUST_MATCH
+        pos = *(Vec*)(f + 1);
+#else
+        pos = b->pos;
+#endif
+        pos.y += yoff;
+        iconDispGxAlpha(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
     }
 }
 

@@ -376,7 +376,7 @@ USER_FUNC(hakari_color) {
     if (a <= b) {
         GXColor color;
         GXColor tmp;
-        GXColor hsv = {0xFF, 0xFF, 0xFF, 0};
+        GXColor hsv = {0, 0xFF, 0xFF, 0xFF};
 
         hsv.r = (u8)gp->retraceCount;
         tmp = hsv;
@@ -720,57 +720,21 @@ void togeMakeRetsu(Vec* pos, s16 a, s16 b, s16 c) {
     }
 }
 
-// NONMATCHING (98.46%): 35 of 147 instructions differ in operands only (registers or offsets)
 USER_FUNC(evt_mri_toge_make_retsu) {
     s32* args = event->args;
-    f32 x = (f32)evtGetValue(event, args[0]);
-    f32 y = (f32)evtGetValue(event, args[1]);
-    f32 z = (f32)evtGetValue(event, args[2]);
-    s16 a = (s16)evtGetValue(event, args[3]);
-    s16 b = (s16)evtGetValue(event, args[4]);
-    s16 c = (s16)evtGetValue(event, args[5]);
-    s32 j;
-    u8* parent;
-    s32 best;
-    u8* p;
-    s32 i;
-    u8* q;
+    Vec pos;
+    s16 a;
+    s16 b;
+    s16 c;
 
-    p = (u8*)&puniGetPunidat()[a];
-    *(f32*)(p + 0x12C) = x;
-    *(f32*)(p + 0x130) = y;
-    *(f32*)(p + 0x134) = z;
-    *(void**)(p + 0x56C) = NULL;
-    *(void**)(p + 0x570) = NULL;
-    *(s16*)(p + 0x118) = *(s16*)(p + 0x116);
-    *(s16*)(p + 0x11C) = 1;
-    *(u32*)(p + 0x4) |= 0x80000;
+    pos.x = (f32)evtGetValue(event, args[0]);
+    pos.y = (f32)evtGetValue(event, args[1]);
+    pos.z = (f32)evtGetValue(event, args[2]);
+    a = (s16)evtGetValue(event, args[3]);
+    b = (s16)evtGetValue(event, args[4]);
+    c = (s16)evtGetValue(event, args[5]);
+    togeMakeRetsu(&pos, a, b, c);
 
-    for (i = b; i <= c; i++) {
-        p = (u8*)&puniGetPunidat()[i];
-        *(void**)(p + 0x56C) = togeModeParent;
-        *(void**)(p + 0x570) = togeMoveParent;
-        *(f32*)(p + 0x12C) = x;
-        *(f32*)(p + 0x130) = y;
-        *(f32*)(p + 0x134) = z;
-        *(s16*)(p + 0x11C) = 1;
-        *(u32*)(p + 0x4) |= 0x80000;
-        best = 10000;
-        for (j = 110; j <= 209; j++) {
-            q = (u8*)&puniGetPunidat()[j];
-            if ((*(u32*)(q + 0x4) & 0x400) && (*(u32*)(q + 0x4) & 0x80000) && *(s16*)(q + 0x118) == a &&
-                *(void**)(q + 0x1D4) == NULL && q != p && (s16)best > *(s16*)(q + 0x11A)) {
-                parent = q;
-                best = *(s16*)(q + 0x11A) + 1;
-            }
-        }
-        if ((s16)best != 10000) {
-            *(void**)(p + 0x1D0) = parent;
-            *(s16*)(p + 0x11A) = best;
-            *(s16*)(p + 0x118) = *(s16*)(parent + 0x118);
-            *(void**)(parent + 0x1D4) = p;
-        }
-    }
     return EVT_RETURN_DONE;
 }
 USER_FUNC(evt_mri_toge_retsu_stop) {

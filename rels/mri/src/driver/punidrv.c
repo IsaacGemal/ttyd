@@ -223,13 +223,11 @@ void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void)
     }
 }
 
-// NONMATCHING (93.67%): 88 of 195 instructions differ, all GPR colouring and the scheduling it causes. The original
-// keeps `offset` in r29, wp in r28, ..., vi in r23 and the GX fifo base in r22; ours colours the pointer and
-// counters one register lower (vi r28, offset r22, fifo r31), so the GX vi+1/2/3 adds recompute instead of chaining.
+// Match-only shapes inside steer MWCC to the original's register colours and instruction schedule.
 void puniMakeTexture(CameraId camId, void* param) {
     PuniDrvWork* wp = work;
-    PuniTexture* tex = wp->textures;
     PuniTexInfo* info = param;
+    PuniTexture* tex = wp->textures;
     s32 i;
 #ifdef MUST_MATCH
     // The scale as a named local puts it in f30 and the int->float bias in f29, as the original does; the literal
@@ -238,7 +236,14 @@ void puniMakeTexture(CameraId camId, void* param) {
 #endif
 
     anim_ext_tex_size = 0;
+#ifdef MUST_MATCH
+    // The original loop bumps i, then info, then tex; a flat `for` rotates those three adds and the running p
+    // temp chains the GX index adds (p, then p+1, p+2, p+3) the way the original does.
+    i = 0;
+    while (i < wp->texCount) {
+#else
     for (i = 0; i < wp->texCount; i++) {
+#endif
         s32 out0;
         s32 out1;
         s32 out2;
@@ -246,8 +251,16 @@ void puniMakeTexture(CameraId camId, void* param) {
         s32 idx = i * 12;
         s32 vi = i * 4;
 
+#ifdef MUST_MATCH
+        // Match-only: the original caller saw this prototype with field_0x4 before the f32, so MWCC evaluated
+        // info->unk4 into r4 before copying tex and reading info->unk8. The ABI is unchanged (the float still
+        // lands in f1), so the reordered cast is safe; the header's real order is under #else.
+        ((void (*)(const char*, void*, f32, void*, void*, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
+            info->unk0, info->unk4, info->unk8, &tex->texObj, tex, 5.84f, &out0, &out1, &out2, &out3);
+#else
         animPoseDisp_MakeExtTexture(info->unk0, info->unk8, info->unk4, &tex->texObj, tex, 5.84f, &out0, &out1,
                                     &out2, &out3);
+#endif
 #ifdef MUST_MATCH
         wp->vertices[idx++] = (f32)out0 * k;
         wp->vertices[idx++] = (f32)(-out1) * k;
@@ -278,6 +291,17 @@ void puniMakeTexture(CameraId camId, void* param) {
 
         GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
         GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+        { s32 p = vi;
+        GXPosition1x16(p++);
+        GXTexCoord1x16(0);
+        GXPosition1x16(p++);
+        GXTexCoord1x16(1);
+        GXPosition1x16(p++);
+        GXTexCoord1x16(2);
+        GXPosition1x16(p++);
+        GXTexCoord1x16(3); }
+#else
         GXPosition1x16(vi + 0);
         GXTexCoord1x16(0);
         GXPosition1x16(vi + 1);
@@ -286,10 +310,18 @@ void puniMakeTexture(CameraId camId, void* param) {
         GXTexCoord1x16(2);
         GXPosition1x16(vi + 3);
         GXTexCoord1x16(3);
+#endif
         wp->dlSizes[i] = GXEndDisplayList();
+#ifdef MUST_MATCH
+        i++;
         info++;
         tex++;
     }
+#else
+        info++;
+        tex++;
+    }
+#endif
 }
 
 void puniReset(void) {

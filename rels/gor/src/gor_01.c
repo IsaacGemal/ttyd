@@ -4080,9 +4080,11 @@ static USER_FUNC(anim_tevcallback_mobj) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.85% starstone_entry: only the y/sin float-register assignment (f23/f25) differs)
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
+    f32 s;
+    f32 c;
+    f32 angle;
     f32 x = evtGetFloat(event, args[0]);
     f32 y = evtGetFloat(event, args[1]);
     f32 z = evtGetFloat(event, args[2]);
@@ -4091,13 +4093,12 @@ static USER_FUNC(starstone_entry) {
     s32 offset;
 
     for (i = 0, offset = 0; i < 7; i++, offset += 0x30) {
-        f32 angle = 6.2831855f * (f32)i / 7.0f;
-        f32 s = sin(angle);
-        f32 c = cos(angle);
+        EffectEntry* eff;
         f32 px;
         f32 pz;
-        EffectEntry* eff;
-
+        angle = 6.2831855f * (f32)i / 7.0f;
+        s = sin(angle);
+        c = cos(angle);
         sprintf(name, "starstone%d", i);
         px = 140.0f * s + x;
         pz = z - 140.0f * c;

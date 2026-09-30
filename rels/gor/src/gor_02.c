@@ -5122,7 +5122,19 @@ static USER_FUNC(wariai_enzan_1f) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.98%): same instructions; one 1.0f constant is loaded with the short lfs form instead of lis+addi.
+// The original intplGetValue prototype orders the float ranges before the integer step. That order is
+// ABI-identical to include/system.h's declaration (r3, f1, f2, r4, r5) but makes MWCC materialise both
+// float-constant addresses (lis/addi/lfs 0(rN)) and load the float args before the integer steps, as the
+// retail bytes do; the cast selects it.
+#ifdef MUST_MATCH
+static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
+}
+#else
+static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return intplGetValue(mode, step, steps, start, end);
+}
+#endif
 static USER_FUNC(wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -5140,9 +5152,9 @@ static USER_FUNC(wariai_enzan_1f_intpl) {
             evtSetFloat(event, out, c);
             return EVT_RETURN_DONE;
         }
-        result = 1.0f - intplGetValue((s32)u, (s32)(b - a), (s32)b, 1.0f, 0.0f);
+        result = 1.0f - intpl_f((s32)u, 1.0f, 0.0f, (s32)(b - a), (s32)b);
     } else {
-        result = intplGetValue((s32)t, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+        result = intpl_f((s32)t, 0.0f, 1.0f, (s32)(b - a), (s32)b);
     }
     rd = result * d;
     evtSetFloat(event, out, rd + (1.0f - result) * c);

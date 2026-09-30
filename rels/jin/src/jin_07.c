@@ -158,9 +158,12 @@ static f32 randf(f32 min, f32 max) {
     return r * d + min;
 }
 
-// NONMATCHING (95.64%): only the rand/lwData scheduling is not yet identical.
-// The original reads pTeresa[i].field_0x04/0x08 for field_0x10/0x14 and keeps
-// `x + 0.0f` in fmadds, which ours folds to fmuls.
+// Inlined arithmetic helper: keeps the `+ min` (even when min is 0) as a
+// separate fmadds, which the original's inlined randf produces.
+static inline f32 scale(f32 r, f32 min, f32 max) {
+    return r * (max - min) + min;
+}
+
 static void senteresa_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count = extGetPoseNum();
@@ -170,6 +173,9 @@ static void senteresa_ext_init(void) {
     for (i = 0; i < count; i++, pose++) {
         f32 a;
         f32 b;
+        f32 angle;
+        f32 c;
+        f32 bscale;
 
         pose->flags = 2;
         pose->field_0x4 = 270.0f;
@@ -183,14 +189,17 @@ static void senteresa_ext_init(void) {
         a = (f32)rand() / 32767.0f;
         b = (f32)rand() / 32767.0f;
         pTeresa[i].field_0x0C = 200.0f;
-        pTeresa[i].field_0x10 = 6.0f + ((f32)rand() / 32767.0f * 143.0f + 27.0f);
-        pTeresa[i].field_0x14 = 80.0f + (b * 20.0f + 10.0f) * (f32)cos(a * 360.0f + 0.0f);
+        angle = scale(a, 0.0f, 360.0f);
+        pTeresa[i].field_0x10 = pTeresa[i].field_0x04 + randf(27.0f, 170.0f);
+        c = (f32)cos(angle);
+        bscale = scale(b, 10.0f, 30.0f);
+        pTeresa[i].field_0x14 = pTeresa[i].field_0x08 + bscale * c;
         pTeresa[i].field_0x1C = 0.0f;
-        pTeresa[i].field_0x20 = (f32)rand() / 32767.0f * 0.2f + -0.1f;
+        pTeresa[i].field_0x20 = randf(-0.1f, 0.1f);
         pTeresa[i].field_0x18 = 0.0f;
         pTeresa[i].field_0x28 = (s32)(1.7f * (f32)(i + 1));
         pTeresa[i].field_0x2C = 0;
-        pTeresa[i].field_0x24 = (f32)rand() / 32767.0f * 350.0f + 0.0f;
+        pTeresa[i].field_0x24 = randf(0.0f, 350.0f);
     }
     g_nNumOutBox[0] = 0;
     g_nNumEndProc[0] = 0;
