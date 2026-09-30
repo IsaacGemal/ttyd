@@ -2541,9 +2541,9 @@ u32 xlw2[16];
 // TODO: type
 static u32 xlw[16];
 
-static f32 maer;
+f32 maer;
 
-static Vec nowv;
+Vec nowv;
 
 
 
@@ -2809,7 +2809,7 @@ USER_FUNC(check_satellite) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.29%): `wp` gets r29 (reused for `unit`) instead of the original r26.
+// NONMATCHING (99.88%): `wp` gets r29 (reused for `unit`) instead of the original r26.
 USER_FUNC(battleGetBattenSatelliteInitPos) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -3003,7 +3003,7 @@ void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx
     }
 }
 
-// NONMATCHING (99.29%): `_battleWorkPointer` scratch register is r5 in ours, r4 in the original (args load uses the other).
+// NONMATCHING (99.28%): `_battleWorkPointer` scratch register is r5 in ours, r4 in the original (args load uses the other).
 USER_FUNC(unk_las_0000d538) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
@@ -3064,7 +3064,8 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (84.02%): the original hoists all spline-table addresses out of the satellite loop; ours re-materialises them inside each branch.
+// NONMATCHING (84.2%): the original tests each satellite case with independent `if`s where ours chains them with
+// else-if, and it hoists the spline-table addresses out of the loop.
 USER_FUNC(battenSatelliteToInside) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -3116,7 +3117,7 @@ USER_FUNC(battenSatelliteToInside) {
     return haveAll == 0 ? EVT_RETURN_DONE : 0;
 }
 
-// NONMATCHING (90.40%): the inlined battenSatelliteTo_Init keeps `data` in r4 (original: r7) and reuses r25 for the table (original re-materialises it).
+// NONMATCHING (90.61%): the inlined battenSatelliteTo_Init keeps `data` in r4 (original: r7) and reuses r25 for the table (original re-materialises it).
 USER_FUNC(battenSatelliteToOutside) {
     s32* args = event->args;
     s32 id;

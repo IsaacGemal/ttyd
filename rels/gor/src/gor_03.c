@@ -2025,13 +2025,13 @@ EVT_END()
 
 // TODO: type
 f32 montemedalzpos[2] = {
-    -234.0f, -160.0f,
+    -235.0f, -160.0f,
 };
 
 const Vec vec3_gor_0001a234 = {-113.0f, 70.0f, 0.0f};
 const Vec vec3_gor_0001a240 = {0.0f, 10.0f, 0.0f};
 
-// NONMATCHING (74.44%): constant-pool register allocation and loop strength-reduction differ from the original.
+// NONMATCHING (72.86%): constant-pool register allocation and loop strength-reduction differ from the original.
 static USER_FUNC(fall_rtn) {
     GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
     u8* data = (u8*)work->data;
@@ -2040,8 +2040,8 @@ static USER_FUNC(fall_rtn) {
     s32 j;
     s32 alive;
     f32 f23;
-    f32 sin;
-    f32 cos;
+    f32 moveX;
+    f32 moveZ;
 
     if (isFirstCall) {
         monte_p[0] = (u32)_mapAlloc(*(s32*)(data + 0x5c) * 0x50);
@@ -2060,10 +2060,12 @@ static USER_FUNC(fall_rtn) {
             *(f32*)(e + 0x14) += f23;
             *(f32*)(e + 0x18) = 1.0f;
 
-            movePos(&sin, &cos, 2.0f + (f32)(rand() % 300) / 100.0f, 270.0f - 3.0f * f23);
-            *(f32*)(e + 0x40) = sin;
+            moveX = 0.0f;
+            moveZ = 0.0f;
+            movePos(&moveX, &moveZ, 2.0f + (f32)(rand() % 300) / 100.0f, 270.0f - 3.0f * f23);
+            *(f32*)(e + 0x40) = moveX;
             *(f32*)(e + 0x44) = vec3_gor_0001a240.y;
-            *(f32*)(e + 0x48) = cos;
+            *(f32*)(e + 0x48) = moveZ;
 
             *(u16*)(e + 0x02) = (u16)(((rand() % 700) + 100) * 60 / 1000);
         }
@@ -2085,7 +2087,7 @@ static USER_FUNC(fall_rtn) {
             break;
         case 1:
             PSVECAdd((Vec*)(e + 0x0c), (Vec*)(e + 0x40), (Vec*)(e + 0x0c));
-            *(f32*)(e + 0x44) = *(f32*)(e + 0x44) - 0.81667f;
+            *(f32*)(e + 0x44) = *(f32*)(e + 0x44) - 0.81666666f;
             if (*(f32*)(e + 0x10) <= 0.0f) {
                 *(f32*)(e + 0x10) = 0.0f;
                 psndSFXOn_3D("SFX_EVT_GAME_MONTE_LEAPED1", (Vec*)(e + 0x0c));
@@ -4387,7 +4389,7 @@ EVT_BEGIN(kuzi_bomb_talk_husei)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.04%): one extra mr r3,r0 before npcNameToPtr (string address materialised into r0, original into r3).
+// NONMATCHING (99.03%): one extra mr r3,r0 before npcNameToPtr (string address materialised into r0, original into r3).
 USER_FUNC(kuzi_bomb_bomb_eff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -4979,7 +4981,8 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (76.18%): full transcription; register allocation of event/work/data differs (ours event=r28/work=r30/data=r29, original event=r26/work=r29/data=r28), which cascades through the whole function.
+// NONMATCHING (76.19%): the original checks the stop button inside a three-case switch with a keyGetButtonTrg call
+// per case, where ours tests it once; register allocation of event/work/data also differs.
 USER_FUNC(goryuugijo_main_slot) {
     GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
     u8* data = (u8*)work->data;
@@ -5062,7 +5065,7 @@ USER_FUNC(goryuugijo_main_slot) {
             if (i == *(s16*)(data + 0x74)) {
                 if ((keyGetButtonTrg(0) & 0x100) != 0 && *(s8*)(data + i + 0x30) == 2) {
                     *(s8*)(data + i + 0x30) = 3;
-                    if (*(u32*)data & 4) {
+                    if (*(u32*)data & 2) {
                         *(s8*)(data + i + 0x39) = 0;
                     } else {
                         *(s8*)(data + i + 0x39) = irand(2);
@@ -5323,7 +5326,7 @@ USER_FUNC(goryuugijo_main_slot) {
     }
 }
 
-// NONMATCHING (99.20%): iconDispGx2 third param is s16 in the header (matches src/driver/icondrv.c), so MWCC emits extsh; original emits only clrlwi (the real param is u16).
+// NONMATCHING (99.19%): iconDispGx2 third param is s16 in the header (matches src/driver/icondrv.c), so MWCC emits extsh; original emits only clrlwi (the real param is u16).
 void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     u8* p = (u8*)((void**)param)[7];
     u32 tbl[3] = {0x1f3, 0x1f3, 0x1f3};
@@ -5424,7 +5427,7 @@ done:
     return changed;
 }
 
-// NONMATCHING (92.16%): register allocation of loop counters and lbzx vs lbz+offset differ.
+// NONMATCHING (92.19%): register allocation of loop counters and lbzx vs lbz+offset differ.
 void slot_neon_sub(void* arg0, u8* data) {
     s32 i;
     s32 r;

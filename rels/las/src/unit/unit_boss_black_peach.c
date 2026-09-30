@@ -4764,6 +4764,7 @@ static void pose_main(void) {
     }
 }
 
+// NONMATCHING (98.47%): register allocation and scheduling differ.
 static void hand_init(void) {
     s32 i;
     ExtPose* pose;
@@ -4798,8 +4799,8 @@ void hand_draw(void) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (98.9%): 43 of 166 instructions differ in operands only (registers or offsets)
-static void hand_main(void) {
+// NONMATCHING (98.97%): 43 of 166 instructions differ in operands only (registers or offsets)
+void hand_main(void) {
     ExtPose* pose;
     HandElem* elem;
     s32 i;
@@ -4907,7 +4908,6 @@ USER_FUNC(eff_queen_set_alpha_evt) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.96%): 23 of 279 instructions differ in operands only (registers or offsets)
 USER_FUNC(peach_hand1000_dark_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5016,7 +5016,6 @@ USER_FUNC(queen_get_aud_num) {
 
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_1_evt, 0.0f, -80.0f)
 
-// NONMATCHING (99.95%): 21 of 226 instructions differ in operands only (registers or offsets)
 USER_FUNC(queen_hp_drain_2_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5154,7 +5153,6 @@ DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_4_evt, 0.0f, -80.0f)
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_drag_3_evt)
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_2_evt, 0.0f, -80.0f)
 
-// NONMATCHING (99.96%): 26 of 295 instructions differ in operands only (registers or offsets)
 USER_FUNC(queen_hand_small_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;

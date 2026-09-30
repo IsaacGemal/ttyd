@@ -2697,3 +2697,25 @@ hom_00 labels. Behaviour fixes the agents made: tik_00 `card_tev` issues its 12 
 branches to the epilogue), and gor_irai's `irai_window_disp` colours had their bytes reversed (proven by the link).
 Follow-up: evt_lect_muj links only if its named constants become literals, but then `lect_itemget_kesan` drops to
 99.89% (two bytes at .text+0x521).
+
+## Salvage of wave 27's left-out units (2026-09-30, Claude Opus 5.5 "TTYD Claude #2")
+
+Local work while the tower waited on a Tailscale SSH check. Of the nine units wave 27 left out, gor_10 and
+lecture_frankli_sac had since changed in wave 30; the other seven were rebuilt on the wave 30 tree one at a time
+and every lowered measure traced. Three came back, each losing only on one spot:
+- black_peach: pose_init lost 7% to the agent's named `vec3_las_000181a4` and an unsigned OSTime product; main's
+  literal and signed maths restored.
+- batten_leader: `defencecopy` typed as BattleUnitDefense (5 bytes) where retail's object is 8; kept `u8[8]`.
+- gor_03: the agent's "logic fix" to `mario_keyoff_wait` inverted it (retail: BLOCK with no key held, YIELD
+  while held); main's version restored. .data stays 0.1 lower: the placeholder `jumptable_0003A49C` data became a
+  real switch whose compiler-made table points into code that doesn't match yet (--allow-regress gor/gor_03).
+Left out: hei_10 (sin/cos inline helpers turned into macros under MUST_MATCH, and .data 100% -> 92%), bom_01 (11
+named const objects standing in for literals), muj_20 and rsh_05 (.rodata literal positions shift, unexplained).
+Their agent files stay in scratch/wave27/<unit>/final.c.
+
+A fresh Claude review of the three found five real bugs, all fixed: `montemedalzpos[0]` -235.0f (not -234); gor_03
+`fall_rtn` passed uninitialised outputs to `movePos`, which adds to them, and used 0.81667f for 49/60;
+`goryuugijo_main_slot` tested flag `& 4` where retail tests `& 2`; black_peach's `hand_main` was made static while
+the script and header use the global. batten_leader's `maer`/`nowv` are global as in retail. Follow-ups: gor_03's
+`vec3_gor_0001a234/0001a240` may be local Vec initializers rather than objects; batten_leader's `VecData` should be
+a function-static (retail `VecData$634`); `minigameselect_msg_set` compares unsigned where retail is signed.
