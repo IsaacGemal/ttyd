@@ -2995,3 +2995,26 @@ Three rewrites fix bugs in main, each confirmed against the retail asm:
 
 Two functions outside the targets also gained from mapdrv's const definitions of float_0_80419850 and
 float_1_80419860: mapCheckAnimation 94.21 to 99.47 and mapCalcAnimMatrix 93.45 to 94.26.
+
+## Wave 38: mri_puni's last 69 functions; two restarts (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+mri_puni's 69 open functions (9 unwritten, 60 partial) in 18 size-balanced groups, one agent each on the corrected
+structs, plus yuu's evt_yuuranking and unit_boss_gundan_zako_group2 restarted from their earlier agents' files
+(scratch/wave38). 20 agents, 17:17-18:01. Collection spliced by name as in wave 35, a group's version replacing the
+tree's only where it differs from the base (scratch/wave38/splice.py); the helpers groups changed or added came
+along; three named retail constants became literals (scratch/wave38/literalize2.py, which infers each type from the
+asm and works for any REL unit). PuniData 0x1C8 is `OSTime modeStartTime` (structs.py override): a mode's start
+time, written by puniModeWater, the fall modes and puniModeEnter.
+
+**Result:** mri_puni 119 -> 144 of 188 functions at 100%, every function written (.text 97.7%); yuu evt_yuuranking
+7 of 9 with its .data at 100% (wave 35's attempt had lowered it); gundan_zako_group2 reached .text 99.4% but its
+data still drops while shake_ceil (a work-pointer materialisation) and zakogun_ext_main2 differ: left out again.
+8,122 -> 8,154 functions.
+
+**Review** (fresh Claude): puniMoveLimitedNormal only ran its wall test with flag 0x1000 set, where retail always
+calls hitCheckFilter (a puni walked through walls; the line predates the wave); PuniSakanobori returns the root it
+walks to (wave 35's review item, unfixed until now); puniModeRecover/Fall's jitter is `puniRandf(0, 2) - 1`, which
+rounds twice as retail does instead of one fused multiply-subtract. puniModeAway and puniFukki are wrapped in
+`#pragma push / dont_inline on / pop`: retail calls puniModeAway_sub and puniDeleteEffect with bl, and MWCC would
+inline them (42% -> 99.9%, 97.4%; the one exception to "no pragma without a match", since it states a fact about
+retail). Labels that blamed the wrong cause are rewritten.
