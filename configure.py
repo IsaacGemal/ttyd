@@ -821,7 +821,7 @@ config.libs = [
             Object(NonMatching, "unit/unit_mario.c"),
             Object(Matching, "unit/unit_bomzou.c"),
             Object(Matching, "unit/unit_koura.c"),
-            Object(NonMatching, "unit/unit_object_tree.c"),
+            Object(Matching, "unit/unit_object_tree.c"),
             Object(Matching, "unit/unit_object_switch.c"),
             Object(Matching, "unit/unit_system.c"),
         ],
