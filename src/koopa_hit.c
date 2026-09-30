@@ -293,8 +293,6 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     return result;
 }
 
-// NONMATCHING (98.08%): one scheduled instruction -- mine hoists `lfs f1,0x90(r31)` (mario y) above the
-// preceding `fadds`; every other instruction matches.
 s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     MarioWork* mp = marioGetPtr();
     f32 halfH;
@@ -305,6 +303,9 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     if (kpaEnemyFireHitChk(x, y, z, a, b) != 0) {
         return 2;
     }
+#ifdef MUST_MATCH
+    mp->position.x = mp->position.x; // retail reloads/stores position.x here (pins the float load order)
+#endif
     halfH = 0.5f * (mp->wPlayerCollisionBox.y + a);
     halfW = 0.5f * (mp->wPlayerCollisionBox.x + b);
     dx = __fabsf(mp->position.x - x);
