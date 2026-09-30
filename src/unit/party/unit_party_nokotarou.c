@@ -16,6 +16,8 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
 
 
 #define TECH_MENU_ENTRY(table)                                                        \
@@ -44,7 +46,7 @@ extern s32 _get_attack_aud_no[];
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
-extern s32 unit_koura[];
+extern BattleUnitKind unit_koura;
 extern s32 weaponGetACOutputParam[];
 extern s32 weaponGetPowerFromPartyAttackLv[];
 extern s32 evt_btl_camera_set_homing_unit_audience[];
@@ -57,10 +59,10 @@ static s32 init_event[78];
 s32 change_party_spawn_init_event[28];
 static s32 dmg_turn_event[65];
 static s32 wakeup_event[67];
-u32 partyWeapon_NokotarouKouraAttack[48];
-u32 partyWeapon_NokotarouSyubibinKoura[48];
-u32 partyWeapon_NokotarouKouraGuard[48];
-u32 partyWeapon_NokotarouTsuranukiKoura[48];
+BattleWeapon partyWeapon_NokotarouKouraAttack;
+BattleWeapon partyWeapon_NokotarouSyubibinKoura;
+BattleWeapon partyWeapon_NokotarouKouraGuard;
+BattleWeapon partyWeapon_NokotarouTsuranukiKoura;
 s32 partyNokotarouAttack_FirstAttack[236];
 s32 partyNokotarouAttack_NormalAttack[793];
 s32 partyNokotarouAttack_SyubibinKoura[691];
@@ -70,52 +72,32 @@ s32 nokotarou_appeal_event[34];
 static s32 party_win_reaction[16];
 static s32 attack_audience_event[263];
 u32 unk_evt_80390b30[17];
-static u32 defence[2];
-static u32 defence_attr[2];
-static u32 defence_turn[2];
-static u32 regist[6];
+static BattleUnitDefense defence;
+static BattleUnitDefenseAttr defence_attr;
+static BattleUnitDefense defence_turn;
+static BattleVulnerableStatus regist;
 static s32 damage_event[10];
 static s32 attack_event[2];
 static s32 wait_event[6];
-u32 entry_koura[12];
+BattleUnitSetup entry_koura[1];
 
-// The weapons are reached only as offsets from lbl_8038BEB8 and the tables only from other units, so keep the data linked.
+// The tables are reached only from other units, so keep the data linked.
 #pragma force_active on
 // clang-format off
-// The original addresses the four weapons from lbl_8038BEB8, the label 8 bytes before this unit's .data
-// (addi r30, r5, lbl_8038BEB8@l, then +0x844/+0x904/+0x9C4/+0xA84).
-extern u8 lbl_8038BEB8[];
-
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
-#ifdef MUST_MATCH
-    u8* const weaponBase = lbl_8038BEB8;
-#endif
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
-#ifdef MUST_MATCH
-    TECH_MENU_ENTRY_ICON(weaponBase + 0x844, 0x150);  // partyWeapon_NokotarouKouraAttack
+    TECH_MENU_ENTRY_ICON(&partyWeapon_NokotarouKouraAttack, 0x150);
     if (techLv >= 0) {
-        TECH_MENU_ENTRY_ICON(weaponBase + 0x904, 0x151); // partyWeapon_NokotarouSyubibinKoura
+        TECH_MENU_ENTRY_ICON(&partyWeapon_NokotarouSyubibinKoura, 0x151);
     }
     if (techLv >= 1) {
-        TECH_MENU_ENTRY(weaponBase + 0x9C4); // partyWeapon_NokotarouKouraGuard
+        TECH_MENU_ENTRY(&partyWeapon_NokotarouKouraGuard);
     }
     if (techLv >= 2) {
-        TECH_MENU_ENTRY(weaponBase + 0xA84); // partyWeapon_NokotarouTsuranukiKoura
+        TECH_MENU_ENTRY(&partyWeapon_NokotarouTsuranukiKoura);
     }
-#else
-    TECH_MENU_ENTRY(partyWeapon_NokotarouKouraAttack);
-    if (techLv >= 0) {
-        TECH_MENU_ENTRY(partyWeapon_NokotarouSyubibinKoura);
-    }
-    if (techLv >= 1) {
-        TECH_MENU_ENTRY(partyWeapon_NokotarouKouraGuard);
-    }
-    if (techLv >= 2) {
-        TECH_MENU_ENTRY(partyWeapon_NokotarouTsuranukiKoura);
-    }
-#endif
 }
 
 USER_FUNC(_check_mario_move_count) {
@@ -225,6 +207,11 @@ static USER_FUNC(_check_guard_koura) {
 }
 
 // TODO: type
+__declspec(section ".data") u32 lbl_8038BEB8[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
 static __declspec(section ".data") u32 negone_one_374[2] = {
     0xBF800000, 0x3F800000,
 };
@@ -259,67 +246,130 @@ static __declspec(section ".data") u32 one_negone_359[2] = {
     0x3F800000, 0xBF800000,
 };
 
-// TODO: type
-u32 pose_table_nokotarou_stay[52] = {
-    0x00000009, (u32)"PNK_D_5", 0x00000002, (u32)"PNK_D_5",
-    0x00000003, (u32)"PNK_X_1", 0x00000004, (u32)"PNK_D_2",
-    0x00000005, (u32)"PNK_X_1", 0x00000001, (u32)"PNK_N_1",
-    0x0000001B, (u32)"PNK_D_3", 0x0000001C, (u32)"PNK_S_1",
-    0x00000025, (u32)"PNK_G_2", 0x0000001F, (u32)"PNK_G_1",
-    0x00000027, (u32)"PNK_D_1", 0x00000028, (u32)"PNK_W_1",
-    0x0000002A, (u32)"PNK_R_1", 0x00000032, (u32)"PNK_A_1",
-    0x00000039, (u32)"PNK_D_2", 0x00000038, (u32)"PNK_D_2",
-    0x0000003C, (u32)"PNK_D_4", 0x0000003D, (u32)"PNK_X_1",
-    0x00000041, (u32)"PNK_T_1", 0x00000034, (u32)"PNK_I_1",
-    0x00000043, (u32)"PNK_C_1", 0x00000042, (u32)"PNK_O_1",
-    0x00000040, (u32)"PNK_X_1", 0x00000031, (u32)"PNK_A_1",
-    0x0000002D, (u32)"PNK_G_1", 0x00000045, (u32)"PNK_S_1",
+BattleDispPose pose_table_nokotarou_stay[26] = {
+    { 0x09, "PNK_D_5" },
+    { 0x02, "PNK_D_5" },
+    { 0x03, "PNK_X_1" },
+    { 0x04, "PNK_D_2" },
+    { 0x05, "PNK_X_1" },
+    { 0x01, "PNK_N_1" },
+    { 0x1B, "PNK_D_3" },
+    { 0x1C, "PNK_S_1" },
+    { 0x25, "PNK_G_2" },
+    { 0x1F, "PNK_G_1" },
+    { 0x27, "PNK_D_1" },
+    { 0x28, "PNK_W_1" },
+    { 0x2A, "PNK_R_1" },
+    { 0x32, "PNK_A_1" },
+    { 0x39, "PNK_D_2" },
+    { 0x38, "PNK_D_2" },
+    { 0x3C, "PNK_D_4" },
+    { 0x3D, "PNK_X_1" },
+    { 0x41, "PNK_T_1" },
+    { 0x34, "PNK_I_1" },
+    { 0x43, "PNK_C_1" },
+    { 0x42, "PNK_O_1" },
+    { 0x40, "PNK_X_1" },
+    { 0x31, "PNK_A_1" },
+    { 0x2D, "PNK_G_1" },
+    { 0x45, "PNK_S_1" },
 };
 
-// TODO: type
-u32 pose_table_nokotarou_turn[24] = {
-    0x00000009, (u32)"PNK_D_5", 0x00000002, (u32)"PNK_D_5",
-    0x00000001, (u32)"PNK_N_2", 0x0000001B, (u32)"PNK_D_3",
-    0x0000001C, (u32)"PNK_H_1", 0x0000001F, (u32)"PNK_D_1",
-    0x00000027, (u32)"PNK_D_1", 0x00000039, (u32)"PNK_H_1",
-    0x00000038, (u32)"PNK_H_1", 0x00000040, (u32)"PNK_H_1",
-    0x0000002D, (u32)"PNK_H_1", 0x00000045, (u32)"PNK_H_1",
+BattleDispPose pose_table_nokotarou_turn[12] = {
+    { 0x09, "PNK_D_5" },
+    { 0x02, "PNK_D_5" },
+    { 0x01, "PNK_N_2" },
+    { 0x1B, "PNK_D_3" },
+    { 0x1C, "PNK_H_1" },
+    { 0x1F, "PNK_D_1" },
+    { 0x27, "PNK_D_1" },
+    { 0x39, "PNK_H_1" },
+    { 0x38, "PNK_H_1" },
+    { 0x40, "PNK_H_1" },
+    { 0x2D, "PNK_H_1" },
+    { 0x45, "PNK_H_1" },
 };
 
-// TODO: type
-static u32 data_table[24] = {
-    0x00000005, (u32)&nokotarou_appeal_event, 0x00000006, (u32)&attack_audience_event,
-    0x00000004, (u32)&change_party_spawn_init_event, 0x0000000D, (u32)&dmg_turn_event,
-    0x00000001, (u32)__makeTechMenuFunc, 0x00000002, (u32)&wakeup_event,
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000040, (u32)&party_win_reaction,
-    0x00000007, (u32)subset_attack_ready_jump_event, 0x00000043, (u32)&unk_evt_80390b30,
-    0x0000002F, (u32)btldefaultevt_avoid_counter_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[12] = {
+    { 0x05, nokotarou_appeal_event },
+    { 0x06, attack_audience_event },
+    { 0x04, change_party_spawn_init_event },
+    { 0x0D, dmg_turn_event },
+    { 0x01, __makeTechMenuFunc },
+    { 0x02, wakeup_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x40, party_win_reaction },
+    { 0x07, subset_attack_ready_jump_event },
+    { 0x43, unk_evt_80390b30 },
+    { 0x2F, btldefaultevt_avoid_counter_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-u32 unitpartsdata_Party_Nokotarou[19] = {
-    0x00000001, (u32)"btl_un_nokotarou", (u32)"c_pnk", 0x00000000,
-    0x00000000, 0x00000000, 0x41400000, 0x41F00000,
-    0x40A00000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00001009, 0x00000000, (u32)&pose_table_nokotarou_stay,
+BattleUnitKindPart unitpartsdata_Party_Nokotarou[1] = {
+    {
+        1,                         // partNum
+        "btl_un_nokotarou",        // partName
+        "c_pnk",                   // modelName
+        { 0.0f, 0.0f, 0.0f },      // positionOffset
+        { 12.0f, 30.0f, 5.0f },    // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },     // hitCursorBaseOffset
+        20,                        // field_0x30
+        30,                        // field_0x32
+        255,                       // baseAlpha
+        &defence,                  // defense
+        &defence_attr,             // defenseAttr
+        0x00001009,                // attributes
+        0,                         // counterAttributes
+        pose_table_nokotarou_stay, // poseTable
+    },
 };
 
-// TODO: type
-u32 unitdata_Party_Nokotarou[49] = {
-    0x000000E1, (u32)"btl_un_nokotarou", 0x000A0005, 0x05010100,
-    0x00000064, 0x00090014, 0x0021000E, 0x00240000,
-    0x00000000, 0x41400000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x00000000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41200000,
-    0x00000000, 0x00000000, 0x41200000, 0x41AB999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_PARTY_DAMAGE1",
-    (u32)"SFX_MARIO_DAMAGE_FIRE1", (u32)"SFX_MARIO_DAMAGE_ICE1", (u32)"SFX_MARIO_DAMAGE_BIRIBIRI1", 0x02000000,
-    (u32)&regist, 0x01000000, (u32)&unitpartsdata_Party_Nokotarou, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unitdata_Party_Nokotarou = {
+    UNIT_KOOPS,                    // mUnitType
+    "btl_un_nokotarou",            // name
+    10,                            // maxHp
+    5,                             // maxFp
+    5,                             // mDangerHP
+    1,                             // mPerilHP
+    1,                             // mLevel
+    0,                             // mBonusExp
+    0,                             // bonusCoinRolls
+    0,                             // bonusCoinRate
+    0,                             // baseCoin
+    100,                           // field_0x13
+    9,                             // field_0x14
+    20,                            // width
+    33,                            // height
+    { 14, 36 },                    // statusIconOffset
+    { 0.0f, 12.0f, 0.0f },         // centerOffset
+    { 0, 0 },                      // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },         // talkTogeBaseOffset
+    { 0.0f, 40.0f, 0.0f },         // field_0x3C
+    { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
+    0.0f,                          // field_0x54
+    0.0f,                          // field_0x58
+    { 10.0f, 0.0f, 0.0f },         // bintaHitOffset
+    { 10.0f, 21.45f, 0.0f },       // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },          // cutBaseOffset
+    0.0f,                          // cutWidth
+    0.0f,                          // cutHeight
+    0,                             // turnOrder
+    0,                             // turnOrderVariance
+    -1,                            // swallowRate
+    0,                             // swallowAttribute
+    100,                           // field_0x8C
+    20,                            // itemStealParam
+    { 0.0f, 0.0f, 0.0f },          // starPointDispOffset
+    "SFX_PARTY_DAMAGE1",           // damageSfxName
+    "SFX_MARIO_DAMAGE_FIRE1",      // fireDamageSfxName
+    "SFX_MARIO_DAMAGE_ICE1",       // iceDamageSfxName
+    "SFX_MARIO_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
+    0x02000000,                    // attributeFlags
+    &regist,                       // vulnStatus
+    1,                             // numParts
+    unitpartsdata_Party_Nokotarou, // mParts
+    init_event,                    // initEvtScript
+    data_table,                    // dataTable
 };
 
 static EVT_BEGIN(battle_entry_event)
@@ -358,7 +408,7 @@ EVT_END()
 EVT_BEGIN(change_party_spawn_init_event)
     CALL(btlevtcmd_GetOverTurnCount, -4, LW(0))
     IF_INT_GREATER_OR_EQUAL(LW(0), 1)
-        CALL(btlevtcmd_SetPartsDefenceTable, -4, 1, PTR(defence_turn))
+        CALL(btlevtcmd_SetPartsDefenceTable, -4, 1, PTR(&defence_turn))
         CALL(btlevtcmd_AnimeSetPoseTable, -4, 1, PTR(pose_table_nokotarou_turn))
         CALL(btlevtcmd_OnStatusFlag, -4, 1)
     END_IF
@@ -369,7 +419,7 @@ EVT_END()
 static EVT_BEGIN(dmg_turn_event)
     SET_VALUE(LW(10), -2)
     SET_VALUE(LW(11), 1)
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence_turn))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence_turn))
     CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table_nokotarou_turn))
     CALL(btlevtcmd_OnStatusFlag, LW(10), 1)
     CALL(btlevtcmd_SetOverTurnCount, LW(10), 2)
@@ -393,7 +443,7 @@ static EVT_BEGIN(wakeup_event)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
     END_IF
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence))
     CALL(btlevtcmd_OffStatusFlag, LW(10), 1)
     CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table_nokotarou_stay))
     CALL(btlevtcmd_AnimeChangePose, LW(10), LW(11), STRING("PNK_S_1"))
@@ -404,84 +454,394 @@ static EVT_BEGIN(wakeup_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 partyWeapon_NokotarouFirstAttack[48] = {
-    0x00000000, 0x01500000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000002, 0x00000002, 0x00000003, 0x00000003,
-    0x00000005, 0x00000005, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21004004, 0x00080302,
-    0x00000000, 0x0002008F, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyNokotarouAttack_FirstAttack, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_NokotarouFirstAttack = {
+    NULL,                                     // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 2, 2, 3, 3, 5, 5, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21004004,                               // targetPropertyFlags
+    0,                                        // element
+    8,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x0002008F,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyNokotarouAttack_FirstAttack,         // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_NokotarouKouraAttack[48] = {
-    (u32)"btl_wn_pnk_normal", 0x01500000, 0x00000000, (u32)"msg_pnk_normal_attack",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000003,
-    0x00000003, 0x00000005, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21004004, 0x00080302,
-    (u32)"msg_ac_hammer", 0x00030087, 0x000005FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyNokotarouAttack_NormalAttack, 0x00000064, 0x00020200, 0x00000000,
+BattleWeapon partyWeapon_NokotarouKouraAttack = {
+    "btl_wn_pnk_normal",                      // name
+    336,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pnk_normal_attack",                  // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 1, 2, 2, 3, 3, 5, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21004004,                               // targetPropertyFlags
+    0,                                        // element
+    8,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_hammer",                          // acHelpMsg
+    0x00030087,                               // special
+    0x000005FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyNokotarouAttack_NormalAttack,        // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 2, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_NokotarouSyubibinKoura[48] = {
-    (u32)"btl_wn_pnk_lv1", 0x01510000, 0x00000000, (u32)"msg_pnk_syubibin_koura",
-    0x64030000, 0x3F800000, 0x02056432, (u32)weaponGetPowerFromPartyAttackLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000003,
-    0x00000003, 0x00000005, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20004004, 0x00080302,
-    (u32)"msg_ac_koura_shubibin", 0x00020087, 0x000005FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyNokotarouAttack_SyubibinKoura, 0x00000064, 0x00050500, 0x00000000,
+BattleWeapon partyWeapon_NokotarouSyubibinKoura = {
+    "btl_wn_pnk_lv1",                         // name
+    337,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pnk_syubibin_koura",                 // description
+    100,                                      // baseAccuracy
+    3,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromPartyAttackLv,          // hpDamageFn
+    { 1, 2, 2, 3, 3, 5, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20004004,                               // targetPropertyFlags
+    0,                                        // element
+    8,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_koura_shubibin",                  // acHelpMsg
+    0x00020087,                               // special
+    0x000005FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyNokotarouAttack_SyubibinKoura,       // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_NokotarouKouraGuard[48] = {
-    (u32)"btl_wn_pnk_lv2", 0x01520000, 0x00000000, (u32)"msg_pnk_koura_no_mamori",
-    0x64040000, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000002, 0x00000002, 0x00000003,
-    0x00000003, 0x00000004, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01110020, 0x10000000, 0x00000302,
-    (u32)"msg_ac_koura_no_mamori", 0x00020000, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyNokotarouAttack_KouraGuard, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon partyWeapon_NokotarouKouraGuard = {
+    "btl_wn_pnk_lv2",                         // name
+    338,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pnk_koura_no_mamori",                // description
+    100,                                      // baseAccuracy
+    4,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 2, 2, 3, 3, 4, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01110020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_koura_no_mamori",                 // acHelpMsg
+    0x00020000,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyNokotarouAttack_KouraGuard,          // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 partyWeapon_NokotarouTsuranukiKoura[48] = {
-    (u32)"btl_wn_pnk_lv3_tsuranuki", 0x01530000, 0x00000000, (u32)"msg_pnk_koura_tsuranuki",
-    0x64060000, 0x3F800000, 0x03056432, (u32)weaponGetACOutputParam,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20004004, 0x00000302,
-    (u32)"msg_ac_tsuranuki_koura", 0x000200C7, 0x000005FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&partyNokotarouAttack_TsuranukiKoura, 0x00000064, 0x00050500, 0x00000000,
+BattleWeapon partyWeapon_NokotarouTsuranukiKoura = {
+    "btl_wn_pnk_lv3_tsuranuki",               // name
+    339,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_pnk_koura_tsuranuki",                // description
+    100,                                      // baseAccuracy
+    6,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    3,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetACOutputParam,                   // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20004004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_tsuranuki_koura",                 // acHelpMsg
+    0x000200C7,                               // special
+    0x000005FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    partyNokotarouAttack_TsuranukiKoura,      // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(_change_koura_pose)
@@ -605,7 +965,7 @@ EVT_BEGIN(partyNokotarouAttack_FirstAttack)
     IF_INT_EQUAL(LW(3), -1)
         GOTO(99)
     END_IF
-    CALL(btlevtcmd_WeaponAftereffect, PTR(partyWeapon_NokotarouFirstAttack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&partyWeapon_NokotarouFirstAttack))
     CALL(evt_btl_camera_set_mode, 0, 7)
     CALL(evt_btl_camera_set_homing_unit, 0, LW(3), -1)
     CALL(evt_btl_camera_set_zoom, 0, 300)
@@ -625,8 +985,8 @@ EVT_BEGIN(partyNokotarouAttack_FirstAttack)
     CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, 0, 0)
     CALL_CHILD(_koura_rotate_stop)
     CALL(evt_btl_camera_set_mode, 0, 0)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(partyWeapon_NokotarouFirstAttack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(partyWeapon_NokotarouFirstAttack), 131328, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&partyWeapon_NokotarouFirstAttack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&partyWeapon_NokotarouFirstAttack), 131328, LW(5))
     SET_VALUE(LW(0), 45)
     CALL(btlevtcmd_SetUnitWork, -2, 1, 45)
     CALL_CHILD(_koura_rotate_start)
@@ -1706,25 +2066,35 @@ __declspec(section ".data") u32 lbl_80390B74[1] = {
     0x3F800000,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x01010101, 0x01000000,
-};
+static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 defence_turn[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence_turn = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x64646464, 0x64646464, 0x64646464, 0x64646464,
-    0x64646464, 0x64640000,
+static BattleVulnerableStatus regist = {
+    100, // sleepRate
+    100, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    100, // frightRate
+    100, // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    100, // instaKillRate
 };
 
 static EVT_BEGIN(damage_event)
@@ -1743,11 +2113,8 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 entry_koura[12] = {
-    (u32)unit_koura, 0x00000000, 0x04000001, 0x447A0000,
-    0x00000000, 0x447A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_koura[1] = {
+    { &unit_koura, 0, 0x04000001, { 1000.0f, 0.0f, 1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 // clang-format on
 #pragma force_active off

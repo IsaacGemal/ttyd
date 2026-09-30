@@ -1152,13 +1152,13 @@ party/party_cloud.c:
 party/party_chuchu.c:
 	.text       start:0x8018255C end:0x80183040
 	.rodata     start:0x802F8158 end:0x802F83F8
-	.data       start:0x8038BAB0 end:0x8038BEC0
+	.data       start:0x8038BAB0 end:0x8038BEB8
 	.sdata2     start:0x8041DFF8 end:0x8041E020
 
 unit/party/unit_party_nokotarou.c:
 	.text       start:0x80183040 end:0x80183670
 	.rodata     start:0x802F83F8 end:0x802F8808
-	.data       start:0x8038BEC0 end:0x80390B78
+	.data       start:0x8038BEB8 end:0x80390B78
 	.sdata      start:0x804124E8 end:0x80412590
 	.sdata2     start:0x8041E020 end:0x8041E040
 

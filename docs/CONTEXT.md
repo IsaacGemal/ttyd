@@ -2527,3 +2527,23 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
 - eff_machinegun links: the `-16.0f` fold (`x0 = -32.0f * 0.5f` computed at compile time) is avoided with `f32 f = 32.0f;
   f32 h = 0.5f; x0 = -f * h;` under MUST_MATCH. eff_mizutama has the same fold but the target also re-multiplies `sz * 0.5f` in
   the loop (loop-invariant hoisting differs), left open at 95.6%.
+
+## Grind 28 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **eff_ice links** (10.8 KB of `.data` through `tools/dol_gen.py --append`). The `.data`, `.sdata` and `.sdata2` ends carry the
+  linker's alignment padding in the original object (the next unit's sections are only 8-aligned in dtk's objects), so a
+  compiled unit is short by the pad and everything after shifts: `#pragma explicit_zero_data` pad objects for `.data`/`.sdata`
+  (`ice_padData`, `ice_padSdata`), and for `.sdata2` a dead `(void)"\0\0\0";` after `"Ice"` so the pool ends with the four zero
+  bytes (a pad *object* is emitted before the pooled literals and moves them).
+- **nokotarou's `.data` split was 8 bytes off**: `party/party_chuchu` ended at 0x8038BEB8+8 with a `{ -1.0f, 1.0f }` pair
+  (`lbl_8038BEB8`), and `__makeTechMenuFunc` addressed the weapons as `lbl_8038BEB8 + 0x844`. That pair is the first object of
+  nokotarou's `.data` (the unit's base label), so the split now starts nokotarou at 0x8038BEB8; the MUST_MATCH anchor is gone and
+  the function reads the weapons by name and compiles to the target. Symptom for other units: a dtk `lbl_XXXX` used as the base
+  register of `lis/addi` with a big offset, sitting at the end of the previous unit's `.data`.
+- **struct_render on dol units**: `fix_index` treated a scalar definition (`static BattleUnitDefense defence = {`) as a use and
+  refused to convert (only `[`-suffixed declarations were skipped), so the typed tables were left raw; it now also skips a
+  definition or declaration ending in `=` or `;`. With that, `tools/struct_render.py FILE --auto` plus the two `run_all` passes
+  (driver: monkey-patch `c_files` to the one file) types nokotarou's entry, data table, defence tables, resistance table, the
+  first weapon and the pose tables (two `extern s32 pose_table_nokotarou_*[]` in rels/jin and rels/las become `BattleDispPose[N]`);
+  the other four weapons, `unitdata_Party_Nokotarou` and `unitpartsdata_Party_Nokotarou` were typed by name
+  (`SYMBOL=BattleWeapon` etc.). Left raw: `unk_evt_80390b30` and the effect mesh tables of eff_ice (no layout for them).
