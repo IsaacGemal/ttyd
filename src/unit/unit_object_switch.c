@@ -12,20 +12,19 @@
 #include "driver/mobjdrv.h"
 #include "evt/evt_map.h"
 #include "unit/unit_object_switch.h"
-
-// Rumble strength table, indexed by event->userdata[0] (original's local .data:0x1CC _data).
+#include "battle/battle_disp.h"
 
 const f64 double_to_int_802f9f50 = 4503601774854144.0;
 
 static s32 _data[35];
-static u32 parts[19];
+static BattleUnitKindPart parts[1];
 static s32 init_event[25];
 static s32 damage_event[22];
-static u32 defence[2];
-static u32 defence_attr[2];
-static u32 regist[6];
-static u32 pose_table[8];
-static u32 data_table[2];
+static BattleUnitDefense defence;
+static BattleUnitDefenseAttr defence_attr;
+static BattleVulnerableStatus regist;
+static BattleDispPose pose_table[4];
+static BattleDataEntry data_table[1];
 static s32 attack_event[5];
 static s32 wait_event[2];
 
@@ -53,52 +52,95 @@ USER_FUNC(_rumble_switch) {
     return EVT_RETURN_BLOCK;
 }
 
-// TODO: type
-u32 unit_object_switch[49] = {
-    0x000000D9, (u32)"btl_un_switch", 0x03E70000, 0x01010200,
-    0x00000064, 0x00090018, 0x00180000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41400000,
-    0x00000000, 0x00000000, 0x41400000, 0x4179999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BTL_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x12003001,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_object_switch = {
+    UNIT_UNUSED_SWITCH,         // mUnitType
+    "btl_un_switch",            // name
+    999,                        // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    2,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    0,                          // bonusCoinRate
+    0,                          // baseCoin
+    100,                        // field_0x13
+    9,                          // field_0x14
+    24,                         // width
+    24,                         // height
+    { 0, 0 },                   // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 0.0f, 0.0f, 0.0f },       // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 12.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 12.0f, 15.6f, 0.0f },     // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },       // cutBaseOffset
+    0.0f,                       // cutWidth
+    0.0f,                       // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BTL_DAMAGE1",          // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x12003001,                 // attributeFlags
+    &regist,                     // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
+};
+
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_switch",       // partName
+        "b_mario",             // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x03000009,            // attributes
+        0,                     // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
 // TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_switch", (u32)"b_mario", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x03000009, 0x00000000, (u32)&pose_table,
-};
+static EVT_BEGIN(init_event)
+    CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
+    CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
+    CALL(btlevtcmd_SetEventDamage, -2, PTR(damage_event))
+    CALL(btlevtcmd_SetEventConfusion, -2, PTR(btldefaultevt_Confuse))
+    CALL(btlevtcmd_SetMaxMoveCount, -2, 0)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
 // TODO: type
-static s32 init_event[25] = {
-    0x0003005B, (s32)btlevtcmd_SetEventWait, 0xFFFFFFFE, (s32)&wait_event,
-    0x0003005B, (s32)btlevtcmd_SetEventAttack, 0xFFFFFFFE, (s32)&attack_event,
-    0x0003005B, (s32)btlevtcmd_SetEventDamage, 0xFFFFFFFE, (s32)&damage_event,
-    0x0003005B, (s32)btlevtcmd_SetEventConfusion, 0xFFFFFFFE, (s32)btldefaultevt_Confuse,
-    0x0003005B, (s32)btlevtcmd_SetMaxMoveCount, 0xFFFFFFFE, 0x00000000,
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002,
-    0x00000001,
-};
-
-// TODO: type
-static s32 damage_event[22] = {
-    0x0004005B, (s32)btlevtcmd_CheckDamageCode, 0xFFFFFFFE, 0x00000100,
-    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
-    0x0002005B, (s32)_rumble_switch, 0xFFFFFFFE, 0x00000002,
-    0x00000021, 0x0004005B, (s32)evt_map_playanim, (s32)"switch_a",
-    0x00000000, 0x00000000, 0x0001000A, 0x000001F4,
-    0x00000002, 0x00000001,
-};
+static EVT_BEGIN(damage_event)
+    CALL(btlevtcmd_CheckDamageCode, -2, 256, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(_rumble_switch, -2)
+        RETURN
+    END_IF
+    CALL(evt_map_playanim, STRING("switch_a"), 0, 0)
+    WAIT_MS(500)
+    RETURN
+EVT_END()
 
 // TODO: type
 static s32 _data[35] = {
@@ -106,40 +148,54 @@ static s32 _data[35] = {
     8,  0, -7, 0, 6,   0, -6, 0, 5,   0, -4, 0, 2,   0, -2, 0, 0,
 };
 
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    0, // sleepRate
+    0, // stopRate
+    0, // dizzyRate
+    0, // poisonRate
+    0, // confuseRate
+    0, // electricRate
+    0, // burnRate
+    0, // freezeRate
+    0, // hugeRate
+    0, // tinyRate
+    0, // attackUpRate
+    0, // attackDownRate
+    0, // defenseUpRate
+    0, // defenseDownRate
+    0, // allergicRate
+    0, // frightRate
+    0, // galeForceRate
+    0, // fastRate
+    0, // slowRate
+    0, // dodgyRate
+    0, // invisibleRate
+    0, // instaKillRate
+};
+
+static BattleDispPose pose_table[4] = {
+    { 0x1C, "M_S_1" },
+    { 0x1F, "M_S_1" },
+    { 0x27, "M_O_1" },
+    { 0x45, "M_S_1" },
+};
+
+static BattleDataEntry data_table[1] = {
+    { 0x00, NULL },
 };
 
 // TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
+static EVT_BEGIN(attack_event)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
 
 // TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 pose_table[8] = {
-    0x0000001C, (u32)"M_S_1", 0x0000001F, (u32)"M_S_1",
-    0x00000027, (u32)"M_O_1", 0x00000045, (u32)"M_S_1",
-};
-
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static s32 attack_event[5] = {
-    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002,
-    0x00000001,
-};
-
-// TODO: type
-static s32 wait_event[2] = {
-    0x00000002, 0x00000001,
-};
+static EVT_BEGIN(wait_event)
+    RETURN
+EVT_END()
 // clang-format on

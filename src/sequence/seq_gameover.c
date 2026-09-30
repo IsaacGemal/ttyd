@@ -17,14 +17,12 @@
 #include "seq/seq_mapchange.h"
 #include "seq/seq_gameover.h"
 #include <string.h>
-#include "battle/ac/ac_table.h"
-#include "battle/battle_ac.h"
-#include "driver/mobjdrv.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_map.h"
 #include "evt/evt_mario.h"
 #include "evt/evt_party.h"
+#include "evt/evt_snd.h"
 
 // object-local data
 static const char str_802C4960[7];
@@ -34,8 +32,6 @@ static EventEntry** wp = &work;
 // mapdrv.h declares mapPreLoad(void); the original calls it with a map-name string, so reach it through a
 // matching function pointer. Report as a header bug.
 #define mapPreLoad(map) ((BOOL (*)(const char*))mapPreLoad)(map)
-
-extern s32 N_evt_snd_bgm_unpause[];
 
 // clang-format off
 // TODO: type
@@ -157,6 +153,7 @@ EVT_BEGIN(evt_gameover)
     CALL_CHILD(fall_gameover)
     RETURN
 EVT_END()
+// clang-format on
 
 void seq_gameOverMain(SequenceWork* work) {
     CameraEntry* cam;
@@ -266,6 +263,5 @@ void seq_gameOverMain(SequenceWork* work) {
         break;
     }
 }
-// clang-format on
 
 static const char str_802C4960[7] = "sys_00";

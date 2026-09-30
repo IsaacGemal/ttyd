@@ -46,7 +46,6 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     return 0;
 }
 
-// The original uses size-oriented prologues (stmw/lmw) and -O4,s scheduling; the file wants -O4,s.
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                             BattleWeapon* weapon, s32* damageCode, s32 flags) {
     s32 damage = 0;
@@ -84,7 +83,6 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
     return damage;
 }
 
-// The original uses an stmw/lmw size prologue; the file wants -O4,s.
 // NONMATCHING (99.86%): one `cmpw` has its operands swapped (r4,r0 vs r0,r4); everything else matches.
 void BattleAttackDeclareAll(BattleWork* wp) {
     s32 i;
@@ -120,7 +118,6 @@ void BattleAttackDeclareAll(BattleWork* wp) {
     sampling[0xab7] = 0;
 }
 
-// The original uses an stmw/lmw size prologue; the file wants -O4,s.
 void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
     s32 i;
     BattleUnit* unit;
@@ -181,7 +178,6 @@ void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
     }
 }
 
-// The original uses an stmw/lmw size prologue; the file wants -O4,s.
 void BattleAttackDeclare(s32* out1, s32* out2) {
     s32 i;
     BattleUnit* unit;
@@ -292,7 +288,6 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
     }
 }
 
-// The original uses a size-oriented prologue and keeps `weights` on the stack; the file wants -O4,s.
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     BattleWork* wp = _battleWorkPointer;
     s32 weights[5] = { 0 };
@@ -370,7 +365,6 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     return result;
 }
 
-// Size-op: the original's instruction selection here matches -O4,s (see the header note for this file).
 // NONMATCHING (96.87%): the GALE_FORCE compare is `cmpwi r8,0` vs `extsb. r0,r8`; the rest is register/relocation naming.
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
@@ -431,7 +425,6 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
 
 }
 
-// Size-op: the original uses stmw/lmw prologues and a jump table (see the header note for this file).
 void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2) {
     s32 param1;
     s32 param2;
@@ -631,7 +624,6 @@ void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* o
     *out2 = param2;
 }
 
-// Size-op: the original's instruction selection here matches -O4,s (see the header note for this file).
 s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
     u8* w = (u8*)weapon;
 
@@ -692,7 +684,6 @@ s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
     return 0;
 }
 
-// Size-op: the original's instruction selection here matches -O4,s (see the header note for this file).
 // NONMATCHING (99.80%): the (s32)((f32)rate * 0.5f) conversion allocates f1/f2 for the constants,
 // whereas the original uses f2/f0; every other byte matches.
 s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a) {

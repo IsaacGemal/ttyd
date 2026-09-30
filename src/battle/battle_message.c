@@ -2,7 +2,6 @@
 #include "manager/evtmgr_cmd.h"
 #include "battle/battle.h"
 
-// The original saves r29-r31 with stmw/lmw (size-oriented prologue); battle_message.c wants -O4,s.
 //s32 index, s32 value
 USER_FUNC(btlevtcmd_AnnounceSetParam) {
     BattleWork* wp = _battleWorkPointer;
