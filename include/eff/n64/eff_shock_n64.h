@@ -26,3 +26,5 @@ typedef struct EffShockData {
 	s32 field_0x44;   // 0x44
 } EffShockData;
 void effShockMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effShockDisp(CameraId cameraId, void* param);

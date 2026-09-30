@@ -49,6 +49,17 @@ extern f32 float_60_8041c314;
 extern u32 dat_8041c2d8;
 extern u32 dat_8041c2c0;
 extern u32 dat_8041c2c4;
+extern u32 dat_8041c2c8;
+extern u32 dat_8041c2cc;
+extern u32 dat_8041c2d0;
+extern u32 dat_8041c2d4;
+extern f32 float_neg240_8041c328;
+extern f32 float_86_8041c32c;
+extern f32 float_16_8041c330;
+extern f32 float_neg232_8041c334;
+extern f32 float_83_8041c338;
+extern f32 float_118_8041c33c;
+extern f32 float_115_8041c340;
 extern f32 float_neg30_8041c344;
 extern f32 float_30_8041c348;
 extern f32 float_65_8041c34c;
@@ -61,6 +72,25 @@ extern f32 float_neg13_8041c364;
 extern f32 float_neg38_8041c368;
 extern f32 float_neg40_8041c36c;
 extern f32 float_900_8041c370;
+
+// Sampling work block lives inside BattleWork at offset 0x428 (same layout as the
+// local BattleSampling struct in battle_detect.c).
+typedef struct BattleTargetEntry {
+    s16 unitId;   // 0x0
+    s16 partId;   // 0x2
+    s16 x;        // 0x4
+    s16 y;        // 0x6
+    s16 z;        // 0x8
+    u8 pad_0xA[0x24 - 0xA];
+} BattleTargetEntry;
+
+typedef struct BattleTargetSampling {
+    BattleWeapon* weapon;           // 0x0
+    u8 entries[0xA6C - 0x4];        // 0x4, BattleTargetEntry[]
+    s8 count;                       // 0xA6C
+    s8 order[0xAB7 - 0xA6D];        // 0xA6D
+    s8 selectIdx;                   // 0xAB7
+} BattleTargetSampling;
 
 // NONMATCHING (19.37%): 116 missing, plus register differences.
 void BattleDrawEnemyHP(CameraId camId, void* param) {
@@ -883,6 +913,127 @@ void BattleCommandDisplay_TargetSelectMenuSetup(BattleWork* wp) {
 	unit = BattleGetUnitPtr(wp, id);
 	wp->commandMenu.field_4 |= 0x00010000;
 	BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), 0x28);
+}
+
+// NONMATCHING (99.09%): the single-target path matches, but the compiler keeps `wp` in r26 where
+// the original keeps it in r29; the multi-target loop's sampling/i/yoff then shift from r28/r27/r26
+// to r29/r28/r27. The `double_to_int_*` reloc names are the known pool artifact.
+void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp) {
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
+	BattleCursor* cursor;
+	BattleWeapon* weapon;
+	Vec iconPos;
+
+	_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
+	weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
+	if (weapon->targetClassFlags & 0x01000000) {
+		BattleTargetSampling* sampling = (BattleTargetSampling*)wp->field_428;
+		BattleUnit* unit;
+		BattleUnitPart* part;
+		BattleTargetEntry* entry;
+		char* name;
+		f32 width;
+		Vec pos;
+		Vec screen;
+
+		entry = (BattleTargetEntry*)((u8*)sampling + 4 + sampling->order[sampling->selectIdx] * 0x24);
+		unit = BattleGetUnitPtr(wp, entry->unitId);
+		part = BtlUnit_GetPartsPtr(unit, entry->partId);
+		pos.x = entry->x;
+		pos.y = entry->y;
+		pos.z = entry->z;
+		if ((unit->mAttributeFlags & 2) == 0) {
+			btlGetScreenPoint(&pos, &screen);
+			iconPos.x = screen.x;
+			iconPos.y = screen.y;
+			iconPos.z = float_0_8041c2f0;
+			iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
+			if (unit->currentKind == 0xE2) {
+				name = pouchGetYoshiName();
+			} else {
+				name = (char*)msgSearch(part->partName);
+			}
+			width = (f32)FontGetMessageWidth(name);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c8, float_neg240_8041c328, float_86_8041c32c,
+			                      float_16_8041c330 + width, float_32_8041c30c, float_10_8041c2e4);
+			FontDrawStart();
+			FontDrawString(name, float_neg232_8041c334, float_83_8041c338);
+		} else {
+			btlGetScreenPoint(&pos, &screen);
+			iconPos.x = screen.x;
+			iconPos.y = screen.y;
+			iconPos.z = float_0_8041c2f0;
+			iconDispGx(&iconPos, 0x18, 0x1EF, float_1_8041c2f4);
+			if (unit->currentKind == 0xE2) {
+				name = pouchGetYoshiName();
+			} else {
+				name = (char*)msgSearch(part->partName);
+			}
+			width = (f32)FontGetMessageWidth(name);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2cc, float_neg240_8041c328, float_86_8041c32c,
+			                      float_16_8041c330 + width, float_32_8041c30c, float_10_8041c2e4);
+			FontDrawStart();
+			FontDrawString(name, float_neg232_8041c334, float_83_8041c338);
+		}
+	} else {
+		BattleTargetSampling* sampling = (BattleTargetSampling*)wp->field_428;
+		BattleUnit* unit;
+		BattleUnitPart* part;
+		BattleTargetEntry* entry;
+		char* name;
+		f32 width;
+		Vec pos;
+		Vec screen;
+		s32 i;
+		s32 yoff;
+
+		yoff = 0;
+		for (i = 0; i < sampling->count; i++, yoff += 0x20) {
+			entry = (BattleTargetEntry*)((u8*)sampling + 4 + sampling->order[i] * 0x24);
+			unit = BattleGetUnitPtr(wp, entry->unitId);
+			part = BtlUnit_GetPartsPtr(unit, entry->partId);
+			pos.x = entry->x;
+			pos.y = entry->y;
+			pos.z = entry->z;
+			if ((unit->mAttributeFlags & 2) == 0) {
+				btlGetScreenPoint(&pos, &screen);
+				iconPos.x = screen.x;
+				iconPos.y = screen.y;
+				iconPos.z = float_0_8041c2f0;
+				iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
+				if (unit->currentKind == 0xE2) {
+					name = pouchGetYoshiName();
+				} else {
+					name = (char*)msgSearch(part->partName);
+				}
+				width = (f32)FontGetMessageWidth(name);
+				windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d0, float_neg240_8041c328,
+				                      float_118_8041c33c - (f32)yoff, float_16_8041c330 + width,
+				                      float_32_8041c30c, float_10_8041c2e4);
+				FontDrawStart();
+				FontDrawString(name, float_neg232_8041c334, float_115_8041c340 - (f32)yoff);
+			} else {
+				btlGetScreenPoint(&pos, &screen);
+				iconPos.x = screen.x;
+				iconPos.y = screen.y;
+				iconPos.z = float_0_8041c2f0;
+				iconDispGx(&iconPos, 0x18, 0x1EF, float_1_8041c2f4);
+				if (unit->currentKind == 0xE2) {
+					name = pouchGetYoshiName();
+				} else {
+					name = (char*)msgSearch(part->partName);
+				}
+				width = (f32)FontGetMessageWidth(name);
+				windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d4, float_neg240_8041c328,
+				                      float_118_8041c33c - (f32)yoff, float_16_8041c330 + width,
+				                      float_32_8041c30c, float_10_8041c2e4);
+				FontDrawStart();
+				FontDrawString(name, float_neg232_8041c334, float_115_8041c340 - (f32)yoff);
+			}
+		}
+	}
+	btl_camera_set_mode(0, 0);
 }
 
 void BattleCommandDisplay_ProtectPartnerSelectMenuSetup(BattleWork* wp) {

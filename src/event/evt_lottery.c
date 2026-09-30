@@ -59,3 +59,11 @@ USER_FUNC(evt_lottery_flag) {
 	evtSetValue(event, args[0], gp->mLotteryInfo.mFlags);
 	return EVT_RETURN_DONE;
 }
+
+USER_FUNC(evt_lottery_todaynum) {
+	s32* args = event->args;
+
+	// offset 0x10 into lottery_info is an s16; the header only has a padding array there
+	evtSetValue(event, args[0], *(s16*)((u8*)&gp->mLotteryInfo + 0x10));
+	return EVT_RETURN_DONE;
+}

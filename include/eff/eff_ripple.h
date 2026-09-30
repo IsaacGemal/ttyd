@@ -22,3 +22,4 @@ typedef struct EffRippleData {
     s32 camId;      // 0x34
 } EffRippleData;
 void effRippleSetCamId(EffectEntry* effect, s32 camId);
+void effRippleSetRxRz(EffectEntry* effect, f32 rx, f32 rz);

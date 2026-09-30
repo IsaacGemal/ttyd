@@ -19,3 +19,7 @@ typedef struct EffAkariSflushData {
 	f32 field_0x2C; //0x2C
 	s32 field_0x30; //0x30
 } EffAkariSflushData;
+#include "driver/camdrv.h"
+void effAkariSflushDisp(CameraId camId, void* param);
+/* .sdata2 constant shared with the original unit. */
+extern const f32 float_0p3_8041e920;

@@ -18,3 +18,7 @@ typedef struct effBalloonN64Data {
 EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5);
 void effBalloonMain(EffectEntry* effect);
 void effBalloonDisp(CameraId camId, void* param);
+typedef struct BalloonSeg {
+	f32 x; // 0x0
+	f32 y; // 0x4
+} BalloonSeg;

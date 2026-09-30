@@ -1,11 +1,26 @@
 #include "eff/n64/eff_kemuri7_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "memory.h"
+#include "system.h"
 
 #include <dolphin/mtx.h>
+#include <math.h>
 
-// .sdata2 constant (defined by this unit in the original).
+// .sdata2 constants (defined by this unit in the original).
+extern const f32 float_0_8041f3f0;
+extern const f32 float_1_8041f3f8;
 extern const f32 float_deg2rad_8041f3fc;
+extern const f32 float_30_8041f400;
+extern const f32 float_15_8041f404;
+extern const f32 float_180_8041f408;
+extern const f32 float_6p2832_8041f40c;
+extern const f32 float_360_8041f410;
+extern const f32 float_45_8041f414;
+extern const f32 float_5_8041f418;
+
+// .rodata string defined by this unit.
+const char str_802FA964[] = "Kemuri7N64";
 
 typedef struct effKemuri7Data {
     s32 field_0x0;               // 0x0
@@ -14,11 +29,21 @@ typedef struct effKemuri7Data {
     u8 field_0x8;                // 0x8
     u8 pad_9[3];                 // 0x9
     Vec position;                // 0xC
-    u8 pad_18[0x28 - 0x18];      // 0x18
+    f32 field_0x18;              // 0x18
+    f32 field_0x1C;              // 0x1C
+    f32 field_0x20;              // 0x20
+    f32 field_0x24;              // 0x24
     f32 field_0x28;              // 0x28
-    u8 pad_2C[0x30 - 0x2C];      // 0x2C
+    f32 field_0x2C;              // 0x2C
     Mtx field_0x30;              // 0x30
-    u8 pad_60[0x88 - 0x60];      // 0x60
+    f32 field_0x60;              // 0x60
+    u8 pad_64[0x6C - 0x64];      // 0x64
+    f32 field_0x6C;              // 0x6C
+    f32 field_0x70;              // 0x70
+    f32 field_0x74;              // 0x74
+    u8 pad_78[0x80 - 0x78];      // 0x78
+    f32 field_0x80;              // 0x80
+    f32 field_0x84;              // 0x84
 } effKemuri7Data;
 
 // Local copy of system.c's inline helper so it inlines here as in the original.
@@ -28,6 +53,56 @@ inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
+}
+
+EffectEntry* effKemuri7N64Entry(f32 x, f32 y, f32 z, f32 angle, f32 scale) {
+    EffectEntry* effect;
+    effKemuri7Data* data;
+    f32 field28;
+    f32 a;
+    f32 b;
+    f32 r;
+    f32 r2;
+    s32 i;
+
+    effect = effEntry();
+    effect->type = str_802FA964;
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, 0x88);
+    effect->userdata = data;
+    effect->callback = effKemuri7Main;
+
+    for (i = 0; i < 1; i++) {
+        field28 = float_30_8041f400 * scale + angle - float_15_8041f404;
+        data->field_0x0 = 1;
+        data->field_0x6C = float_0_8041f3f0;
+        data->position.x = x;
+        data->position.y = y;
+        data->position.z = z;
+        data->field_0x18 = float_1_8041f3f8;
+        data->field_0x1C = float_1_8041f3f8;
+        data->field_0x20 = float_1_8041f3f8;
+        data->field_0x8 = 0xFF;
+        data->field_0x60 = scale;
+        data->field_0x70 = float_0_8041f3f0;
+        data->field_0x74 = float_0_8041f3f0;
+        data->field_0x6 = 0xFF;
+        data->field_0x24 = float_0_8041f3f0;
+        data->field_0x28 = field28;
+        data->field_0x2C = float_0_8041f3f0;
+
+        b = float_180_8041f408 * scale;
+        a = reviseAngle(angle);
+        r = float_6p2832_8041f40c * a / float_360_8041f410;
+        data->field_0x80 = (f32)sin(r);
+        data->field_0x84 = (f32)cos(r);
+
+        r2 = float_6p2832_8041f40c * (float_45_8041f414 + a - b) / float_360_8041f410;
+        data->position.x += float_5_8041f418 * (f32)sin(r2);
+        data->position.z += float_5_8041f418 * (f32)cos(r2);
+        data->field_0x8 = 0xFF;
+    }
+    return effect;
 }
 
 void effKemuri7Main(EffectEntry* effect) {

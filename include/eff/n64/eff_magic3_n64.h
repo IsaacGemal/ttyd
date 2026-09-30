@@ -17,3 +17,14 @@ typedef struct effMagic3Data {
 	s32 timer; // 0x2C
 } effMagic3Data;
 void effMagic3Disp(CameraId camId, void* param);
+// .sdata2 float constants specific to effMagic3Main (named after their original addresses).
+extern const f32 float_6p2832_8041f718;
+extern const f32 float_0p8_8041f71c;
+extern const f32 float_0p4_8041f720;
+extern const f32 float_360_8041f724;
+extern const f32 float_3_8041f728;
+extern const f32 float_0p6_8041f72c;
+extern const f32 float_0p7_8041f730;
+extern const f32 float_30_8041f734;
+typedef struct EffectEntry EffectEntry;
+void effMagic3Main(EffectEntry* effect);

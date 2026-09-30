@@ -10,6 +10,7 @@
 #include "manager/evtmgr.h"
 #include "mario/mario.h"
 #include "mario/mariost.h"
+#include "math_ext.h"
 #include "memory.h"
 #include "system.h"
 #include <string.h>
@@ -18,6 +19,10 @@
 #define MAX_MOBJ_WORK 3
 
 extern GlobalWork* gp;
+
+// .rodata constants referenced by this file's original.
+extern const Vec vec3_802c3d10;
+extern const Vec vec3_802c3d1c;
 
 //.sbss
 BOOL koopaRunFlag;
@@ -328,6 +333,64 @@ EventEntry* mobjRunEvent(MapObjectEntry* entry, s32* eventCode) {
     entry->eventId = event->eventId;
 
     return event;
+}
+
+// Original rounds the fabs result into a fresh f1 (frsp f1, f0) and keeps scale.x
+// in f2; ours rounds in place (frsp f0, f0) and keeps scale.x in f1. Everything
+// else (bbox setup, scale2.y/z, HOBJ_ block, MTX concat, hitObj loop) matches.
+// NONMATCHING (93.35%): register allocation in the scale2.x computation differs.
+void mobjCalcMtx(MapObjectEntry* entry) {
+    Mtx mtx;
+    Mtx zRot;
+    Mtx yRot;
+    Mtx xRot;
+    Mtx scale;
+    Mtx trans;
+    Vec position;
+    AnimationPoseData* animData;
+    Vec bboxMin;
+    Vec bboxMax;
+    Vec minTmp;
+    Vec maxTmp;
+    s32 i;
+
+    PSVECAdd(&entry->position, &entry->translation, &position);
+    animData = animPoseGetAnimBaseDataPtr(entry->poseId);
+
+    minTmp = vec3_802c3d10;
+    minTmp.x = animData->bboxMin.x;
+    minTmp.y = animData->bboxMin.y;
+    minTmp.z = animData->bboxMin.z;
+    bboxMin = minTmp;
+    maxTmp = vec3_802c3d1c;
+    maxTmp.x = animData->bboxMax.x;
+    maxTmp.y = animData->bboxMax.y;
+    maxTmp.z = animData->bboxMax.z;
+    bboxMax = maxTmp;
+
+    entry->scale2.x = 10.0f * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
+    entry->scale2.y = 10.0f * (entry->scale.y * (f32)__fabs(bboxMax.y));
+    entry->scale2.z = 10.0f * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
+
+    if (strncmp(animData->fileName, "HOBJ_", strlen("HOBJ_")) == 0) {
+        entry->translation.z = 0.0f;
+        entry->scale2.z = 10.0f * (2.5f * entry->scale.z);
+    }
+
+    MTXTrans(trans, position.x, position.y, position.z);
+    MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
+    MTXRotRad(xRot, 'x', MTXDegToRad(entry->rotation.x));
+    MTXRotRad(yRot, 'y', MTXDegToRad(entry->rotation.y));
+    MTXRotRad(zRot, 'z', MTXDegToRad(entry->rotation.z));
+    MTXConcat(trans, zRot, trans);
+    MTXConcat(trans, yRot, trans);
+    MTXConcat(trans, xRot, trans);
+    MTXConcat(trans, scale, mtx);
+
+    for (i = 0; i < 2; i++) {
+        if (entry->hitObj[i].hitObject != 0)
+            hitReCalcMatrix(entry->hitObj[i].hitObject, mtx);
+    }
 }
 
 void mobjCalcMtx2(MapObjectEntry* entry) {

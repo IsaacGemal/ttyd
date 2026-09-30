@@ -2,6 +2,7 @@
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
+#include "memory.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -10,6 +11,17 @@
 extern const f32 float_deg2rad_8041e8d0;
 extern const f32 float_0p03125_8041e8d4;
 extern const f32 float_0_8041e8d8;
+extern const f32 float_0p5_8041e8f8;
+extern const f32 float_neg1_8041e8fc;
+
+// .rodata string and the pooled int->float conversion double (named after their original addresses).
+const char str_802FA1D0[16] = "AkariPoseN64";
+// The compiler only references this by name if it is non-const; a const definition is constant-folded
+// to an anonymous @NNN literal, which no longer matches the original `lfd ... double_to_int_802fa1c8`.
+f64 double_to_int_802fa1c8 = 4503601774854144.0;
+
+// .sdata sequence-length table indexed by the effect type (local to this file in the original).
+static s32 max_seq_num[2] = {0x18, 0x0C};
 
 // .sbss2 scratch GXColor the original builds its TEV colour from.
 extern GXColor unk_80423098;
@@ -33,15 +45,62 @@ typedef struct effAkariPosePart {
 } effAkariPosePart;
 
 typedef struct effAkariPoseData {
-    u8 pad_0x00[0x4];        // 0x00
+    s32 type;                // 0x00
     f32 x;                   // 0x04
     f32 y;                   // 0x08
     f32 z;                   // 0x0C
-    u8 pad_0x10[0x20];       // 0x10
+    u8 pad_0x10[0x18];       // 0x10
+    s32 field_0x28;          // 0x28
+    s32 field_0x2c;          // 0x2C
     s32 field_0x30;          // 0x30
     f32 field_0x34;          // 0x34
     effAkariPosePart part[]; // 0x38
 } effAkariPoseData;
+
+EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
+    EffectEntry* effect;
+    effAkariPoseData* data;
+    effAkariPosePart* part;
+    s32 i;
+    f32 seqStep;
+#ifdef MUST_MATCH
+    // Two statements instead of one: the original loads the 0.5 constant into f0 and the converted
+    // seq length into f1; a single expression makes this compiler swap them.
+    f32 seqF;
+#endif
+
+    effect = effEntry();
+    effect->type = str_802FA1D0;
+    effect->count = count + 1;
+    data = __memAlloc(HEAP_EFFECT, (count + 1) * 0x38);
+    effect->userdata = data;
+    effect->callback = effAkariPoseMain;
+    effect->flags |= 2;
+
+    data->type = type;
+    data->field_0x2c = 0;
+    if (lifetime <= 0) {
+        data->field_0x28 = 1000;
+    } else {
+        data->field_0x28 = lifetime;
+    }
+    data->field_0x30 = 0xff;
+    data->x = x;
+    data->y = y;
+    data->z = z;
+    data->field_0x34 = scale;
+
+#ifdef MUST_MATCH
+    seqF = (f32)max_seq_num[type];
+    seqStep = seqF * float_0p5_8041e8f8;
+#else
+    seqStep = (f32)max_seq_num[type] * float_0p5_8041e8f8;
+#endif
+    for (i = 1, part = data->part; i < count + 1; i++, part++) {
+        part->field_0x20 = (s32)(float_neg1_8041e8fc - seqStep * (f32)(i & 1));
+    }
+    return effect;
+}
 
 // (1) The original emits `li r31,1` (i) before `addi r30,r30,0x38` (part = data->part); mwcc here
 //     always schedules the pointer advance first.

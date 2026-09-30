@@ -5,3 +5,7 @@
 s32 battleAcResult_SignalTiming(BattleWork* work) {
     return work->actionCommands.result;
 }
+
+void battleAcDelete_SignalTiming(BattleWork* work) {
+    work->actionCommands.mAcState = 0x3EC;
+}

@@ -1,4 +1,5 @@
 #include "eff/n64/eff_kemuri3_n64.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "system.h"
@@ -6,11 +7,14 @@
 #include <dolphin/mtx.h>
 #include <math_ext.h>
 
-const Vec vec3_802fa8d8 = { 0.0f, 0.0f, 0.0f };
-const char str_802FA8E4[] = "Kemuri3N64";
+const char str_802FA8E4[];
 
 extern const f32 float_0_8041f2f0;
 extern const f32 float_1_8041f2f4;
+extern const f32 float_0p85_8041f2fc;
+extern const f32 float_0p004_8041f300;
+extern const f32 float_neg100_8041f304;
+extern const f32 float_deg2rad_8041f308;
 extern const f32 float_0p3_8041f30c;
 extern const f32 float_1p75_8041f310;
 extern const f32 float_neg0p08_8041f314;
@@ -87,3 +91,76 @@ EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
 
     return effect;
 }
+
+// Local copy of system.c's inline helper so it inlines here as in the original.
+inline Vec initializeVec(Vec* input) {
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    temp.x = input->x;
+    temp.y = input->y;
+    temp.z = input->z;
+    return temp;
+}
+
+#pragma opt_common_subs off // subexpression elimination merges the field_24 decrement with the compare, changing FPR allocation
+void effKemuri3Main(EffectEntry* effect) {
+    effKemuri3Data* data = effect->userdata;
+    Vec position = initializeVec(&data->position);
+    Mtx rotZ;
+    Mtx rotY;
+    Mtx rotX;
+    Mtx trans;
+    Mtx scale;
+    s32 i;
+    s32 active;
+
+    active = 0;
+
+    for (i = 0; i < effect->count; i++, data++) {
+        if (data->type == 0) {
+            continue;
+        }
+        if (--data->field_06 <= 0) {
+            data->type = 0;
+            continue;
+        }
+        active = 1;
+
+        data->field_60 *= float_0p85_8041f2fc;
+        data->position.x += data->field_60 * data->field_80;
+        data->position.z += data->field_60 * data->field_84;
+
+        data->field_78 += data->field_7C;
+        data->field_74 += data->field_78;
+        data->field_70 += data->field_74;
+        data->position.y += data->field_70;
+
+        if (data->field_70 < float_0_8041f2f0) {
+            data->field_78 = float_0p004_8041f300;
+        }
+
+        data->field_24 -= float_1_8041f2f4;
+        if (data->field_24 < float_neg100_8041f304) {
+            data->field_24 = float_neg100_8041f304;
+        }
+
+        PSMTXRotRad(rotX, 'x', float_deg2rad_8041f308 * data->field_24);
+        PSMTXRotRad(rotY, 'y', float_deg2rad_8041f308 * data->field_28);
+        PSMTXRotRad(rotZ, 'z', float_deg2rad_8041f308 * data->field_2C);
+        PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+        PSMTXScale(scale, data->field_18, data->field_1C, data->field_20);
+        PSMTXConcat(rotX, rotZ, rotZ);
+        PSMTXConcat(rotY, rotZ, rotZ);
+        PSMTXConcat(rotZ, scale, scale);
+        PSMTXConcat(trans, scale, data->field_30);
+    }
+
+    if (active == 0) {
+        effDelete(effect);
+    }
+    else {
+        dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri3Disp, effect);
+    }
+}
+#pragma opt_common_subs reset
+
+const char str_802FA8E4[] = "Kemuri3N64";

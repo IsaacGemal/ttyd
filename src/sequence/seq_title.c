@@ -37,7 +37,6 @@ void seq_titleExit(SequenceWork* work) {
 	}
 }
 
-// NONMATCHING (0.00%): 20 extra, plus register differences.
 void seq_titleMain(SequenceWork* work) {
 	titleMain(work);
 }
@@ -97,6 +96,8 @@ void titleInit(SequenceWork* work) {
 }
 
 // NONMATCHING (4.50%): 11 instructions differ, 509 missing, plus register differences.
+// dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
+#pragma dont_inline on
 void titleMain(SequenceWork* work) {
 	switch (wp2->field_0x8) {
 		case 0:
@@ -109,3 +110,5 @@ void titleMain(SequenceWork* work) {
 			break;
 	}
 }
+
+#pragma dont_inline reset

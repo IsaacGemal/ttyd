@@ -2,6 +2,7 @@
 #include "driver/dispdrv.h"
 #include "math_ext.h"
 #include "memory.h"
+#include "system.h"
 
 typedef struct effKemuriData {
 	s32 field_0x0; //0x0
@@ -24,8 +25,21 @@ typedef struct effKemuriData {
 	s32 field_0x88; //0x88
 } effKemuriData;
 
+// Named sdata2 constants of the original unit (definitions live in the original object's data).
+extern const f32 float_1_8041c6b0;
+extern const f32 float_0_8041c6bc;
+extern const f32 float_360_8041c70c;
+extern const f32 float_1000_8041c710;
+extern const f32 float_6p2832_8041c714;
+extern const f32 float_5_8041c718;
+extern const f32 float_0p7_8041c71c;
+extern const f32 float_neg20_8041c720;
+extern const char str_802F3120[];
+
 // local per the original: .fn effKemuri2Disp, local
 static void effKemuri2Disp(CameraId camId, void* param);
+// local per the original: .fn effKemuri2Main, local
+static void effKemuri2Main(EffectEntry* effect);
 
 // NONMATCHING (99.80%): same instructions; only register numbers or operands differ.
 EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6) {
@@ -92,6 +106,54 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 				break;
 		}
 	}
+	return entry;
+}
+
+// NONMATCHING (94.30%): the int->float conversion pools an anonymous @204 double instead of
+// double_to_int_802f3110, and the allocator maps the angle (f27/f28 vs f24) and the 1.0/0.7/-20/0.0
+// temporaries (f25-f27/f31 vs f26-f28/f31) one register apart; structure, args and constants match.
+EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6, f32 float7) {
+	EffectEntry* entry = effEntry();
+	effKemuri2Data* data;
+	f32 one;
+	f32 p7;
+	f32 neg20;
+	f32 zero;
+	f32 cosVal;
+	f32 sinVal;
+	f32 angle;
+	f32 z;
+
+	entry->type = str_802F3120;
+	entry->count = 1;
+	data = (effKemuri2Data*)__memAlloc(HEAP_EFFECT, sizeof(effKemuri2Data));
+	entry->userdata = data;
+	memset(data, 0, sizeof(effKemuri2Data));
+	entry->callback = effKemuri2Main;
+
+	sinVal = float_1000_8041c710 * float6;
+	cosVal = float_1000_8041c710 * float7;
+	angle = float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714;
+	data->field_0x78 = reviseAngle(float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714 + camGetPtr(CAMERA_3D)->viewYaw);
+	data->counter = 0;
+	z = float5 + float_5_8041c718;
+	angle = float_6p2832_8041c714 * (f32)(s32)angle / float_360_8041c70c;
+	one = float_1_8041c6b0;
+	p7 = float_0p7_8041c71c;
+	neg20 = float_neg20_8041c720;
+	zero = float_0_8041c6bc;
+	data->field_0x30 = sin(angle);
+	data->field_0x34 = cos(angle);
+	data->x = float3;
+	data->y = float4;
+	data->z = z;
+	data->field_0x10 = one;
+	data->field_0x20 = p7;
+	data->field_0x64 = neg20;
+	data->field_0x68 = zero;
+	data->alpha = 0xFF;
+	data->field_0x70 = one;
+	data->field_0x74 = one;
 	return entry;
 }
 

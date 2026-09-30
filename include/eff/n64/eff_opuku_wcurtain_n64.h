@@ -19,3 +19,5 @@ typedef struct effOpukuWcurtainData {
 } effOpukuWcurtainData;
 EffectEntry* effOpukuWcurtainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale);
 void effOpukuWcurtainMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effOpukuWcurtainDisp(CameraId camId, void* param);

@@ -653,6 +653,126 @@ static void yuka_init(void) {
     dispEntry(CAMERA_SHADOW, float_0_80421e8c, 0, (DispCallback)yuka_capture, NULL);
 }
 
+// .text:0x2664 | 0x80245664 | size: 0x38C
+static void yuka_main(void) {
+    DekaWork* p = get_ptr();
+    DekaYukaMesh* mesh = p->matEntry->address;
+    s32 i, j;
+    Vec v2;
+    Vec vA;
+    Vec vN;
+    Vec v8;
+    f32 f;
+
+    for (i = 0; i < 6; i++) {
+        if (p->yukaActive[i] == 1) {
+            p->yukaScale[i] += p->yukaPos[i];
+            for (;;) {
+                s32 idx = p->yukaIndex[i];
+                s32 sc = (s32)p->yukaScale[i];
+
+                if ((sc > idx && p->yukaPos[i] > float_0_80421e8c) ||
+                    (sc < idx && p->yukaPos[i] < float_0_80421e8c)) {
+                    for (j = 0; j < 2; j++) {
+                        mesh->normal[j][p->yukaIndex[i]].y += p->yukaUnk[i];
+                    }
+                    if (p->yukaPos[i] > float_0_80421e8c) {
+                        p->yukaIndex[i]++;
+                    }
+                    else {
+                        p->yukaIndex[i]--;
+                    }
+                    if (p->yukaIndex[i] <= 0 || p->yukaIndex[i] >= 0x80) {
+                        p->yukaActive[i] = 0;
+                        break;
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+        }
+    }
+
+    memcpy_as4(mesh->prev, mesh->pos, 0xC18);
+
+    {
+#ifdef MUST_MATCH
+        // Register allocation: the original assigns the callee-saved FP registers
+        // in reverse declaration order, so declare two/zero/one and initialise
+        // one/zero/two to get f29=one, f30=zero, f31=two.
+        f32 two, zero, one;
+        one = float_1_80421e88;
+        zero = float_0_80421e8c;
+        two = float_2_80421e7c;
+#else
+        const f32 one = float_1_80421e88;
+        const f32 zero = float_0_80421e8c;
+        const f32 two = float_2_80421e7c;
+#endif
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 0x81; j++) {
+            v2 = vec3_8030051c[0];
+
+            PSVECSubtract(&mesh->prev[i][j], &mesh->prev[i][j + 1], &vA);
+            PSVECNormalize(&vA, &vN);
+            f = one - PSVECMag(&vA);
+            PSVECScale(&vN, &vN, f);
+            PSVECAdd(&v2, &vN, &v2);
+
+            PSVECSubtract(&mesh->prev[i][j], &mesh->prev[i][j - 1], &vA);
+            PSVECNormalize(&vA, &vN);
+            f = one - PSVECMag(&vA);
+            PSVECScale(&vN, &vN, f);
+            PSVECAdd(&v2, &vN, &v2);
+
+            v2.x = zero;
+            v2.z = zero;
+            PSVECScale(&v2, &v2, float_0p01_80421ef4);
+
+            PSVECAdd(&mesh->normal[i][j], &v2, &mesh->normal[i][j]);
+            PSVECScale(&mesh->normal[i][j], &v8, float_0p1_80421ee4);
+            PSVECAdd(&mesh->pos[i][j], &v8, &mesh->pos[i][j]);
+
+            mesh->pos[i][j].y += mesh->normal[i][j].y;
+            mesh->normal[i][j].y -= two;
+            if (mesh->pos[i][j].y <= zero) {
+                mesh->pos[i][j].y = zero;
+                mesh->normal[i][j].y = zero;
+            }
+        }
+    }
+    }
+
+#ifdef MUST_MATCH
+    {
+        // float_0p5_80421e54 is not const in this file, so copy it to a local to
+        // keep its load out of the inner loop, as the original does.
+        f32 half = float_0p5_80421e54;
+
+        for (i = 0; i < 2; i++) {
+            for (j = 1; j < 0x80; j++) {
+                mesh->pos[i][j].y = half * (mesh->pos[i][j - 1].y + mesh->pos[i][j + 1].y);
+            }
+        }
+    }
+#else
+    for (i = 0; i < 2; i++) {
+        for (j = 1; j < 0x80; j++) {
+            mesh->pos[i][j].y = float_0p5_80421e54 * (mesh->pos[i][j - 1].y + mesh->pos[i][j + 1].y);
+        }
+    }
+#endif
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 0x81; j++) {
+            mesh->disp[i][j].x = mesh->pos[i][j].x;
+            mesh->disp[i][j].y = mesh->pos[i][j].y;
+            mesh->disp[i][j].z = mesh->pos[i][j].z;
+        }
+    }
+}
+
 // .text:0xAA0 | 0x80243A98 | size: 0x4
 static void disp_3D_alpha(CameraId cameraId, void* param) {}
 

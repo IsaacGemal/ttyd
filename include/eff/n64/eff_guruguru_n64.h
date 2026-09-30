@@ -19,3 +19,4 @@ typedef struct EffGuruguruData {
 EffectEntry* effGuruguruN64Entry(s32 a, s32 b, f32 c, f32 d, f32 e, f32 f);
 #include "driver/camdrv.h"
 void effGuruguruDisp(CameraId camId, void* param);
+void effGuruguruMain(EffectEntry* effect);

@@ -45,3 +45,4 @@ void* effMayaAnimAlloc(void* animData);
 void effPlayMayaAnim(void* anim);
 void effCalcMayaAnim(void* anim);
 void effDeleteMayaAnim(void* anim);
+void effDrawMayaPoly(void* data);

@@ -15,3 +15,7 @@ typedef struct effBlowData {
     u32 field_0x58;    // 0x58
     u8 pad_0x5C[0xC];
 } effBlowData;
+#include "driver/camdrv.h"
+typedef struct EffectEntry EffectEntry;
+void effBlowMain(EffectEntry* effect);
+void effBlowDisp(CameraId camId, void* param);

@@ -1,7 +1,59 @@
 #include "eff/n64/eff_cloud_n64.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
+#include <dolphin/mtx.h>
 #include <stdlib.h>
+
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+extern const f32 float_0_8041eba0;
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+		case 0x7F800000:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_NAN;
+			} else {
+				return FP_INFINITE;
+			}
+			break;
+		case 0:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_SUBNORMAL;
+			} else {
+				return FP_ZERO;
+			}
+			break;
+		default:
+			return FP_NORMAL;
+	}
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+	if (x > float_0_8041eba0) {
+		f64 guess = __frsqrte(x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
+		return x * guess;
+	} else if (x < 0.0) {
+		return NAN;
+	} else if (isnan(x)) {
+		return NAN;
+	}
+	return x;
+}
 
 EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
@@ -119,4 +171,91 @@ EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	data->field_0x48 = 0.0f;
 	data->field_0x4C = 0.0f;
 	return effect;
+}
+
+// MWCC's float register colouring in the ring-buffer block and the anonymous rodata pool
+// order still differ: retail keeps the current position in f3/f4/f5 and the previous sample
+// in f0/f1/f2 (this build picks f5/f6/f7 and f1/f3/f4), and retail places double_to_int at
+// vec3+0x10 then the sqrtf doubles at +0x18/+0x20/+0x28, while this build places the sqrtf
+// doubles first and double_to_int last, so the pooled lfd offsets are shifted.
+// NONMATCHING (92.37%): see above; the double_to_int conversion constant is compiler-generated
+// and always allocated after the literal sqrtf doubles.
+void effCloudMain(EffectEntry* effect) {
+	effCloudData* data = effect->userdata;
+	s32 type;
+	s32 counter;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+	   local before dispCalcZ; a single local folds the copy away (same idiom as
+	   effGlassMain). */
+	Vec position;
+#endif
+	Vec disp = { 0 };
+
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->lifetime = 16;
+	}
+	type = data->type;
+	if (data->lifetime < 1000) {
+		data->lifetime--;
+	}
+	data->field_0x14++;
+	if (data->lifetime < 0) {
+		effDelete(effect);
+		return;
+	}
+	counter = data->field_0x14;
+	if (data->lifetime < 16) {
+		data->field_0x24 = data->lifetime << 4;
+	}
+
+	if (type == 3) {
+		data->field_0x44 += (f32)(rand() % 10 - 5);
+		data->field_0x48 += (f32)(rand() % 10 - 5);
+		data->field_0x38 += data->field_0x44;
+		data->field_0x3C += data->field_0x48;
+		data->field_0x40 += data->field_0x4C;
+	}
+
+	{
+		f32 px = data->field_0x38;
+		f32 py = data->field_0x3C;
+		f32 pz = data->field_0x40;
+		s32 index = data->field_0x2A8 % 30;
+		f32 ox = data->field_0x50[index];
+		f32 oy = data->field_0xC8[index];
+		f32 oz = data->field_0x140[index];
+
+		if (px != ox || py != oy || pz != oz) {
+			f32 len = data->field_0x2AC[index];
+			f32 dist;
+
+			data->field_0x2A8++;
+			if (data->field_0x2A8 >= 30) {
+				data->field_0x2A8 = 0;
+			}
+			index = data->field_0x2A8;
+			data->field_0x230[index] = 1;
+			data->field_0x50[index] = px;
+			data->field_0xC8[index] = py;
+			data->field_0x140[index] = pz;
+			data->field_0x1B8[index] = counter;
+			dist = sqrtf((px - ox) * (px - ox) + (py - oy) * (py - oy) + (pz - oz) * (pz - oz));
+			data->field_0x2AC[index] = len + dist;
+		}
+	}
+
+#ifdef MUST_MATCH
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCloudDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effCloudDisp, effect);
+#endif
 }

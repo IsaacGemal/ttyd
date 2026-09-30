@@ -3,8 +3,12 @@
 #include "evt/evt_cmd.h"
 
 typedef struct ExtSortEntry ExtSortEntry;
+typedef struct NanNpcWork NanNpcWork;
 
 #include <dolphin/types.h>
+
+extern NanNpcWork* nanNPCWork;
+
 void nannpc_ext_dispent(void);
 void nannpc_ext_main(void);
 void nannpc_ext_main_sub(void);

@@ -141,6 +141,24 @@ void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 di
 	work->actionCommands.mAcDifficulty = adjusted;
 }
 
+s32 BattleActionCommandGetPrizeLv(BattleWork* wp, BattleUnit* unit, s32 index) {
+	s32 lv;
+
+	if (unit != NULL && (u8)unit->damageCode == 0x1E) {
+		return -1;
+	}
+
+	lv = index + (u8)wp->actionCommands.mAcDifficulty;
+	lv--;
+	if (lv < 0) {
+		lv = 0;
+	}
+	if (lv >= 7) {
+		lv = 6;
+	}
+	return lv;
+}
+
 void BattleAcGaugeSeInit(void) {
 	BattleWork* work = _battleWorkPointer;
 

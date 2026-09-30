@@ -14,3 +14,5 @@ typedef struct effMahornData {
 } effMahornData;
 EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ, f32 scale, s32 unk);
 void effMahornMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effMahornDisp(CameraId camId, void* param);

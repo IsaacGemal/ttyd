@@ -14,3 +14,4 @@ typedef struct BalloonHeihoData {
 } BalloonHeihoData;
 void effBalloonHeihoMain(EffectEntry* effect);
 void effBalloonHeihoDisp(CameraId camId, void* param);
+EffectEntry* effBalloonHeihoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, f32 a5);

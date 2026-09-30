@@ -8,6 +8,10 @@ f32 sinfd(f32 deg) {
 	return (f32)sin(6.2831855f * deg / 360.0f);
 }
 
+f32 cosfd(f32 angle) {
+	return (f32)cos(6.2831855f * angle / 360.0f);
+}
+
 // NONMATCHING (57.38%): 1 instruction differs, 2 missing, 6 extra, plus register differences.
 void btlsubResetMoveColorLvAll(BattleWork* work) {
 	BattleUnit* unit;

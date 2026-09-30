@@ -17,3 +17,4 @@ typedef struct effSweatData {
 } effSweatData; // 0x34
 void effSweatMain(EffectEntry* effect);
 void effSweatDisp(CameraId camId, void* param);
+EffectEntry* effSweatN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale, f32 angle);

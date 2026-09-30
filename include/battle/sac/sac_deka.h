@@ -7,3 +7,4 @@ typedef struct BattleUnit BattleUnit;
 #include <dolphin/types.h>
 void main_enemy_sub(BattleUnit* unit, s32* count);
 void yuka_disp(CameraId cameraId, void* param);
+extern Vec vec3_8030051c[];

@@ -44,3 +44,5 @@ typedef struct EffRadiationData {
 extern s32 r_data[];
 EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5);
 void effRadiationMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effRadiationDisp(CameraId camId, void* param);

@@ -1,6 +1,8 @@
 #include "eff/n64/eff_pokopi_pipo_n64.h"
 #include "driver/dispdrv.h"
+#include "eff/eff_n64.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 typedef struct effPokopiPipoData {
@@ -29,6 +31,9 @@ typedef struct effPokopiPipoData {
 } effPokopiPipoData;
 
 // .sdata2 (pool constants referenced by name so the symbol matches the original)
+extern const f32 float_0p71429_8041f9e8;
+extern const f32 float_deg2rad_8041f9ec;
+extern const f32 float_0p03125_8041f9f0;
 extern const f32 float_0_8041f9f4;
 extern const f32 float_0p01_8041f9f8;
 extern const f32 float_40_8041f9fc;
@@ -41,6 +46,15 @@ extern const f32 float_neg20_8041fa10;
 // .sdata
 u8 w_scale_data[8] = { 0x6E, 0x96, 0x82, 0x6E, 0x64, 0x5F, 0x64, 0x00 };
 u8 h_scale_data[8] = { 0x50, 0x3C, 0x50, 0x64, 0x78, 0x6E, 0x64, 0x00 };
+
+// .sbss2 zero GXColor scratch object the original builds its TEV color from.
+GXColor unk_80423218;
+
+// .data 32x32 quad vertex descriptor; the original passes its address to effSetVtxDescN64.
+static u32 size32x32_tex32x32_vtx[0xE] = {
+	0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010, 0xFFF00000, 0x04000000, 0x000000FF,
+	0x00100010, 0x00000400, 0x04000000, 0x00FFFFF0, 0x00100000, 0x00000400, 0x000000FF
+};
 
 void effPokopiPipoMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
@@ -105,4 +119,72 @@ void effPokopiPipoMain(EffectEntry* effect) {
 #else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effPokopiPipoDisp, effect);
 #endif
+}
+
+// The original builds the TEV colour inside an inlined helper; keeping that helper (and
+// passing the alpha byte) is what reproduces the stack slot the by-value GXColor copy lands in.
+static inline void effPokopiPipoSetColor(effPokopiPipoData* data, s32 a) {
+	GXColor color = unk_80423218;
+	color.r = data->field_0x30;
+	color.g = data->field_0x34;
+	color.b = data->field_0x38;
+	color.a = a;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+
+// NONMATCHING (99.93%): one `fmuls` differs -- the target computes `f0 * f1` (deg2rad *
+// -viewYaw) where MWCC emits `f1 * f0`; loads, fneg and all other instructions match.
+void effPokopiPipoDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effPokopiPipoData* data;
+	CameraEntry* camera;
+	CameraEntry* camera3d;
+	Mtx mtx;
+	Mtx scale;
+	Mtx rot;
+	GXTexObj tex;
+	s32 a;
+	s32 type;
+	s32 texId;
+	f32 scaleXZ;
+	f32 angle;
+
+	camera = camGetPtr(camId);
+	data = effect->userdata;
+	a = data->field_0x3C;
+	type = data->type;
+	scaleXZ = float_0p71429_8041f9e8 * data->field_0x40;
+	PSMTXTrans(mtx, data->x, data->y, data->z);
+	camera3d = camGetPtr(CAMERA_3D);
+	angle = -camera3d->viewYaw * float_deg2rad_8041f9ec;
+	PSMTXRotRad(rot, 'y', angle);
+	PSMTXScale(scale, scaleXZ * data->field_0x58, scaleXZ * data->field_0x5C, scaleXZ);
+	PSMTXConcat(mtx, rot, mtx);
+	PSMTXConcat(mtx, scale, mtx);
+	PSMTXRotRad(rot, 'z', float_deg2rad_8041f9ec * data->field_0x50);
+	PSMTXConcat(mtx, rot, mtx);
+	PSMTXConcat(camera->view, mtx, mtx);
+	GXLoadPosMtxImm(mtx, 0);
+	GXSetCurrentMtx(0);
+
+	effPokopiPipoSetColor(data, a);
+
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7d);
+	PSMTXScale(scale, float_0p03125_8041f9f0, float_0p03125_8041f9f0, float_0_8041f9f4);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+	texId = 0x96;
+	if (type == 0) {
+		texId = 0x95;
+	}
+	effGetTexObjN64(texId, &tex);
+	GXLoadTexObj(&tex, GX_TEXMAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
+	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

@@ -94,3 +94,4 @@ USER_FUNC(evt_mobj_switch_red);
 USER_FUNC(evt_mobj_timerswitch);
 USER_FUNC(evt_mobj_tornadoswitch_blue);
 USER_FUNC(evt_mobj_wait_animation_end);
+extern s32 evt_fire[8];

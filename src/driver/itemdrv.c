@@ -16,6 +16,7 @@
 #include "motion/mot_jabara.h"
 #include "driver/hitdrv.h"
 #include "math_ext.h"
+#include "system.h"
 #include "memory.h"
 #include <string.h>
 #include "driver/npcdrv.h"
@@ -28,7 +29,10 @@ extern int __float_nan[];
 extern const f32 float_0_8041af9c;
 extern const f32 float_1_8041afa4;
 extern const f32 float_10_8041afb0;
+extern const f32 float_15_8041afb4;
 extern const f32 float_0p5_8041afb8;
+extern const f32 float_180_8041afbc;
+extern const f32 float_100_8041afc0;
 #define NAN (*(f32*)__float_nan)
 
 #define FP_NAN 1
@@ -254,6 +258,75 @@ void itemSetPosition(ItemEntry* item, f32 x, f32 y, f32 z) {
     item->position.x = x;
     item->position.y = y;
     item->position.z = z;
+}
+
+// The zero check emits a compiler-generated local 0.0 constant (`@...`) with the operands
+// reversed (`fcmpu dirX, 0`) where the original loads float_0_8041af9c and compares
+// `fcmpu 0, dirX`; the push-out scratch floats also land in different registers.
+// NONMATCHING (98.07%): compiler 0.0 pooling and push-out float registers differ.
+HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f32 dirX, f32 dirZ) {
+    f32 hitX;
+    f32 hitY;
+    f32 hitZ;
+    f32 distance;
+    f32 hitNX;
+    f32 hitNY;
+    f32 hitNZ;
+    f32 sin;
+    f32 cos;
+    HitEntry* hit;
+    f32 dot;
+    f32 nx;
+    f32 nz;
+
+    *outX = item->position.x;
+    *outZ = item->position.z;
+
+    if (!dirX && !dirZ) {
+        return NULL;
+    }
+
+    sincosf(&sin, &cos, angleABf(float_0_8041af9c, float_0_8041af9c, dirX, dirZ));
+
+    distance = float_10_8041afb0 + sqrtf(dirX * dirX + dirZ * dirZ);
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                         item->position.x, item->position.y + float_15_8041afb4, item->position.z,
+                         sin, float_0_8041af9c, cos);
+    if (hit != NULL) {
+        dot = dirX * hitNX + dirZ * hitNZ;
+        nx = float_0p5_8041afb8 * (dirX - dot * hitNX);
+        nz = float_0p5_8041afb8 * (dirZ - dot * hitNZ);
+        *outX = *outX + nx;
+        *outZ = *outZ + nz;
+        dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
+        dirX = reviseAngle(angleABf(float_0_8041af9c, float_0_8041af9c, float_100_8041afc0 * hitNX,
+                                    float_100_8041afc0 * hitNZ));
+        *angle = (s32)reviseAngle(dirX + reviseAngle(dirX - dirZ));
+        return hit;
+    }
+    else {
+        distance = float_10_8041afb0 + sqrtf(dirX * dirX + dirZ * dirZ);
+        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                             item->position.x, item->position.y + float_15_8041afb4, item->position.z,
+                             sin, float_0_8041af9c, cos);
+        if (hit != NULL) {
+            dot = dirX * hitNX + dirZ * hitNZ;
+            nx = float_0p5_8041afb8 * (dirX - dot * hitNX);
+            nz = float_0p5_8041afb8 * (dirZ - dot * hitNZ);
+            *outX = *outX + nx;
+            *outZ = *outZ + nz;
+            dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
+            dirX = reviseAngle(angleABf(float_0_8041af9c, float_0_8041af9c, float_100_8041afc0 * hitNX,
+                                        float_100_8041afc0 * hitNZ));
+            *angle = (s32)reviseAngle(dirX + reviseAngle(dirX - dirZ));
+            return hit;
+        }
+        else {
+            *outX = *outX + dirX;
+            *outZ = *outZ + dirZ;
+            return NULL;
+        }
+    }
 }
 
 void itemForceGet(ItemEntry* item) {

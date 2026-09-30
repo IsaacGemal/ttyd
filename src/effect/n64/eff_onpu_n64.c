@@ -2,14 +2,27 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "memory.h"
 #include "system.h"
 
 #include <dolphin/mtx.h>
+#include <stdlib.h>
 
 // .sdata2 float constants (named after their original addresses).
+extern const f32 float_0_8041f798;
 extern const f32 float_0p3_8041f7a0;
 extern const f32 float_1_8041f7a4;
 extern const f32 float_0p04_8041f7a8;
+extern const f32 float_neg5_8041f7ac;
+extern const f32 float_0p1_8041f7b0;
+extern const f32 float_0p5_8041f7b4;
+extern const f32 float_5_8041f7b8;
+
+// .rodata
+extern const char str_802FB218[];
+
+// Pooled int->double conversion constant for the (f32)(rand() % 11) casts.
+const f64 double_to_int_802fb210 = 4503601774854144.0;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
 inline Vec initializeVec(Vec* input) {
@@ -33,6 +46,51 @@ typedef struct effOnpuData {
     f32 targetX;   // 0x2C
     f32 targetY;   // 0x30
 } effOnpuData; // 0x34
+
+EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z) {
+    EffectEntry* effect;
+    effOnpuData* data;
+
+    effect = effEntry();
+    effect->type = str_802FB218;
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, sizeof(effOnpuData));
+    effect->userdata = data;
+    effect->callback = effOnpuMain;
+
+    data->type = type;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->scale = float_0_8041f798;
+    data->lifetime = 0x40;
+    data->alpha = 0;
+    data->counter = 0;
+    data->randIndex = rand() % 7;
+
+    switch (type) {
+    case 0:
+        data->velX = float_0_8041f798;
+        data->targetX = float_0_8041f798;
+        data->velY = float_1_8041f7a4;
+        data->targetY = float_1_8041f7a4;
+        break;
+    case 1:
+        data->velX = float_0p1_8041f7b0 * (f32)(rand() % 11) + float_neg5_8041f7ac;
+        data->velY = float_0p1_8041f7b0 * (f32)(rand() % 11) + float_0p5_8041f7b4;
+        data->targetX = float_0_8041f798;
+        data->targetY = float_0_8041f798;
+        break;
+    default:
+        data->velX = float_5_8041f7b8 - float_0p1_8041f7b0 * (f32)(rand() % 11);
+        data->velY = float_0p1_8041f7b0 * (f32)(rand() % 11) + float_1_8041f7a4;
+        data->targetX = float_0_8041f798;
+        data->targetY = float_0_8041f798;
+        break;
+    }
+
+    return effect;
+}
 
 void effOnpuMain(EffectEntry* effect) {
     effOnpuData* data;

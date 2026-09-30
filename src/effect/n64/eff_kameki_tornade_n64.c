@@ -2,7 +2,9 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "memory.h"
 #include <dolphin/mtx.h>
+#include <stdlib.h>
 
 typedef struct effKamekiTornadeData {
 	s32 type;            // 0x00
@@ -43,6 +45,61 @@ extern const f32 float_17p28_8041f218;
 extern const f32 float_64_8041f21c;
 extern const f32 float_90_8041f20c;
 extern const f32 float_neg90_8041f210;
+extern const f32 float_0p1_8041f1ec;
+extern const f32 float_0_8041f1f8;
+extern const f32 float_1_8041f220;
+extern const f32 float_0p2_8041f224;
+extern const f32 float_2_8041f228;
+extern const char str_802FA870[];
+const f64 double_to_int_802fa868 = 4503601774854144.0;
+
+EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
+	EffectEntry* effect;
+	effKamekiTornadeData* data;
+	s32 i;
+
+	effect = effEntry();
+	effect->type = str_802FA870;
+	effect->count = 1;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effKamekiTornadeData));
+	effect->userdata = data;
+	effect->callback = effKamekiTornadeMain;
+	effect->flags |= 2;
+	data->type = a;
+	data->field_0x14 = 0;
+	if (b <= 0) {
+		data->field_0x10 = 1000;
+	} else {
+		data->field_0x10 = b;
+	}
+	data->field_0x24 = 0;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->scale = scale;
+	data->field_0x18 = 0xFF;
+	data->field_0x1C = 0xFF;
+	data->field_0x20 = 0xFF;
+	data->field_0x28 = 0xFF;
+	data->field_0x2C = 0xFF;
+	data->field_0x30 = 0xEB;
+	for (i = 0; i < 8; i++) {
+		data->field_0x38[i] = x;
+		data->field_0x58[i] = y;
+		data->field_0x78[i] = z;
+		data->field_0x98[i] = float_0p2_8041f224 * i + float_1_8041f220;
+		data->field_0xB8[i] = rand() % 360;
+		data->field_0xD8[i] = float_0p1_8041f1ec * (rand() % 100) + float_2_8041f228;
+		data->field_0xF8[i] = float_0p1_8041f1ec * (rand() % 30);
+		data->field_0x118[i] = float_0_8041f1f8;
+	}
+	data->field_0x138 = float_0_8041f1f8;
+	data->field_0x144 = float_0_8041f1f8;
+	data->field_0x13C = float_0_8041f1f8;
+	data->field_0x140 = float_0_8041f1f8;
+	data->field_0x148 = float_1_8041f220;
+	return effect;
+}
 
 // The loop induction, the position scratch copy and every load/store offset match. Retail keeps the
 // loop-invariant constants in f4 (4.0), f1 (90), f0 (-90) and the loop temporaries in f2/f3, while

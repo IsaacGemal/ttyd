@@ -2,6 +2,10 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 #include "math_ext.h"
+#include "driver/camdrv.h"
+
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
 
 #include <stdlib.h>
 
@@ -44,10 +48,20 @@ static s8 y_data[28] = {
 };
 
 extern const f32 float_0_8041ecf4;
+extern const f32 float_0p03125_8041ecf0;
+extern const f32 float_deg2rad_8041ecf8;
+extern const f32 float_1_8041ecfc;
 extern const f32 float_6p2832_8041ed0c;
 extern const f32 float_360_8041ed10;
 extern const f32 float_15_8041ed18;
 extern const f32 float_120_8041ed28;
+
+// .data vertex array for the 12x12 textured quad.
+u32 size12x12_tex32x32_vtx[14] = {
+    0xFFFAFFFA, 0x00000000, 0x00000000, 0x00FF0006, 0xFFFA0000, 0x04000000, 0x000000FF,
+    0x00060006, 0x00000400, 0x04000000, 0x00FFFFFA, 0x00060000, 0x00000400, 0x000000FF,
+};
+
 const char str_802FA4D0[20] = "DogabonAttackN64";
 
 EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
@@ -102,4 +116,65 @@ EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, 
     }
 
     return effect;
+}
+
+void effDogabonAttackDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    DogabonAttackData* data;
+    CameraEntry* camera;
+    GXTexObj texObj;
+    Mtx transMtx;
+    Mtx scaleMtx;
+    Mtx rotMtx;
+    Mtx baseMtx;
+    s32 alpha;
+    s32 i;
+
+    camera = camGetPtr(camId);
+    data = effect->userdata;
+    alpha = data->field_0x24;
+
+    PSMTXTrans(transMtx, data->x, data->y, data->z);
+    PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
+    PSMTXConcat(transMtx, scaleMtx, baseMtx);
+    PSMTXConcat(camera->view, baseMtx, baseMtx);
+
+    GXSetTevColor(GX_TEVREG0, (GXColor){ data->field_0x18, data->field_0x1C, data->field_0x20, alpha });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ 0, 0, 0, 0 });
+
+    GXSetNumChans(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_TEXC, GX_CC_C0, GX_CC_C1, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
+    PSMTXScale(scaleMtx, float_0p03125_8041ecf0, float_0p03125_8041ecf0, float_0_8041ecf4);
+    GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
+    effGetTexObjN64(0x8C, &texObj);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetCullMode(GX_CULL_NONE);
+    effSetVtxDescN64((effVtxArray*)size12x12_tex32x32_vtx);
+
+    for (i = 0; i < 25; i++) {
+        if (data->field_0x6D0[i] == 0 || data->field_0x6D0[i] == 7) {
+            continue;
+        }
+        PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041ecf8 * data->field_0x4DC[i]);
+        PSMTXTrans(transMtx, data->field_0x2C[i], data->field_0x90[i], data->field_0xF4[i]);
+        PSMTXConcat(rotMtx, transMtx, transMtx);
+        PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041ecf8 * -data->field_0x4DC[i]);
+        PSMTXConcat(transMtx, transMtx, transMtx);
+        PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041ecf8 * data->field_0x478[i]);
+        PSMTXConcat(transMtx, rotMtx, transMtx);
+        PSMTXScale(scaleMtx, data->field_0x3B0[i], data->field_0x414[i], float_1_8041ecfc);
+        PSMTXConcat(transMtx, scaleMtx, transMtx);
+        PSMTXConcat(baseMtx, transMtx, transMtx);
+        GXLoadPosMtxImm(transMtx, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXBegin(0x90, GX_VTXFMT0, 6);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
+    }
 }

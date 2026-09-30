@@ -75,14 +75,56 @@ typedef struct SukiTevParam {
     s32 field_14;  // 0x14
 } SukiTevParam;
 
-extern Vec dat_8030096c[6];
-extern const Vec vec3_803009f4;
-extern Vec vec3_803009b4;
-extern Vec vec3_80300a00;
-extern Vec vec3_80300a0c;
-extern Vec vec3_80300a78;
-extern Vec vec3_80300a84;
-extern Vec vec3_80300a90;
+// File .rodata, in the original object's address order (main_suki reaches dat_8030096c at +0x3C,
+// vec3_803009b4 at +0x84 and the img strings at +0x260 through the str_80300930 base).
+const char str_80300930[0x1C] = "btl_wn_sac_sukkari_sukkiri";
+const char str_8030094C[0x14] = "msg_sukkari_sukkiri";
+const char str_80300960[0xC] = "msg_sac_7";
+__declspec(section ".rodata") Vec dat_8030096c[6] = {
+    {95.0f, 35.0f, -150.0f},
+    {180.0f, 80.0f, -150.0f},
+    {95.0f, 110.0f, -150.0f},
+    {10.0f, 80.0f, -150.0f},
+    {30.0f, -10.0f, -150.0f},
+    {160.0f, -10.0f, -150.0f},
+};
+__declspec(section ".rodata") Vec vec3_803009b4 = {0.0f, -1000.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_803009c0 = {0.0f, -45.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_803009cc = {0.0f, -45.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_803009d8 = {0.0f, -45.0f, 0.0f};
+const u32 dat_803009e4[4] = {0x100, 0x200, 0x400, 0x800};
+__declspec(section ".rodata") Vec vec3_803009f4 = {0.0f, -40.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a00 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a0c = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a18 = {0.0f, 300.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a24 = {2.0f, 2.0f, 2.0f};
+__declspec(section ".rodata") Vec vec3_80300a30 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a3c = {1.5f, 1.5f, 1.5f};
+__declspec(section ".rodata") Vec vec3_80300a48 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a54 = {0.0f, 300.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a60 = {2.0f, 2.0f, 2.0f};
+__declspec(section ".rodata") Vec vec3_80300a6c = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a78 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a84 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300a90 = {0.0f, 0.0f, 0.0f};
+const char str_80300A9C[0x14] = "SFX_BTL_SAC_START1";
+const char str_80300AB0[0x14] = "SFX_BTL_SAC_START2";
+const char str_80300AC4[0x14] = "SFX_BTL_SAC_START3";
+const char str_80300AD8[0x14] = "OFF_d_yabu_small";
+const char str_80300AEC[0xC] = "indirect";
+const char str_80300AF8[0x18] = "SFX_BTL_SAC_SUKKIRI4";
+const char str_80300B10[0x18] = "SFX_BTL_SAC_SUKKIRI4_2";
+const char str_80300B28[0x18] = "SFX_BTL_SAC_SUKKIRI5";
+const char str_80300B40[0x18] = "SFX_BTL_SAC_SUKKIRI3";
+const double double_to_int_80300b58 = 4503601774854144.0;
+const char str_80300B60[0x18] = "SFX_BTL_SAC_SUKKIRI2";
+const char str_80300B78[0x18] = "SFX_BTL_SAC_SUKKIRI1";
+const char str_80300B90[0x10] = "sac_suki_img0";
+const char str_80300BA0[0x10] = "sac_suki_img1";
+const char str_80300BB0[0x10] = "sac_suki_img2";
+const char str_80300BC0[0x10] = "sac_suki_img3";
+const char str_80300BD0[0x10] = "sac_suki_img4";
+const char str_80300BE0[0x10] = "sac_suki_img5";
 extern u8 N_ohko_rate_tbl[6];
 extern u8 weapon[];
 extern s32 nice_event[];
@@ -100,11 +142,48 @@ static s32 start_game(EventEntry* event, BOOL isFirstCall);
 static void disp_3D_alpha(CameraId camera, void* param);
 static void disp_3D(CameraId camera, void* param);
 
+#ifdef MUST_MATCH
+// MUST_MATCH: a 6x Vec struct assignment makes MWCC emit the original's inline 9-iteration copy
+// loop; a plain memcpy over a Vec[6] emits a real `bl memcpy`.
+typedef struct SukiTable6 {
+    Vec v[6];
+} SukiTable6;
+#endif
 
+// .text:0x5BC | 0x8024AE84 | size: 0x174
+s32 main_suki(EventEntry* event, BOOL isFirstCall) {
+    SukiWork* work = get_ptr();
+    s32* args = event->args;
+#ifdef MUST_MATCH
+    SukiTable6 table = *(SukiTable6*)dat_8030096c;
+#else
+    Vec table[6];
+    memcpy(table, dat_8030096c, 0x48);
+#endif
+    s32 i;
 
-
-
-
+    if (isFirstCall) {
+        memset(work, 0, sizeof(SukiWork));
+        work->field_8 = evtGetValue(event, args[0]);
+        memcpy(work->table, &table, 0x48);
+        strcpy(work->img[0], str_80300B90);
+        strcpy(work->img[1], str_80300BA0);
+        strcpy(work->img[2], str_80300BB0);
+        strcpy(work->img[3], str_80300BC0);
+        strcpy(work->img[4], str_80300BD0);
+        strcpy(work->img[5], str_80300BE0);
+        work->pos = vec3_803009b4;
+    }
+    main_base();
+    for (i = 0; i < 7; i++) {
+        main_button(i);
+    }
+    main_star();
+    dispEntry(8, 901.0f, 1, disp_2D, NULL);
+    dispEntry(4, 0.0f, 1, disp_3D, NULL);
+    dispEntry(4, 0.0f, 2, disp_3D_alpha, NULL);
+    return 0;
+}
 
 // .text:0x0 | 0x80249920 | size: 0xE8
 // NONMATCHING (99.88%): same instructions; only register numbers or operands differ.
@@ -353,6 +432,9 @@ static void disp_2D(CameraId camera, void* param) {
     GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
 }
 
+// dont_inline: MWCC would otherwise inline main_button's switch into main_suki's loop
+// (the original keeps the bl).
+#pragma dont_inline on
 // .text:0xFE0 | 0x8024A900 | size: 0x114
 void main_button(s32 index) {
     SukiWork* work = get_ptr();
@@ -374,6 +456,7 @@ void main_button(s32 index) {
         break;
     }
 }
+#pragma dont_inline reset
 
 // .text:0x9DC | 0x8024A2FC | size: 0x48
 s32 end_suki(EventEntry* event, BOOL isFirstCall) {

@@ -11,3 +11,12 @@ USER_FUNC(evt_bg_disp_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
+USER_FUNC(evt_bg_auto_scroll_onoff) {
+    if (evtGetValue(event, event->args[0]) != 0) {
+        bgAutoScrollOff();
+    } else {
+        bgAutoScrollOn();
+    }
+    return EVT_RETURN_DONE;
+}

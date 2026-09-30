@@ -619,6 +619,111 @@ void partyUsePost(PartyEntry* party) {
     }
 }
 
+void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode) {
+    typedef void (*PartyFunc)(PartyEntry*);
+    const Vec* v = (const Vec*)vec3_802ccd30;
+    s32 index;
+    char* pose;
+    MarioWork* player;
+
+    switch (oldMode) {
+        case 11:
+            if (newMode == 8) {
+                break;
+            }
+            player = party->playerPtr;
+            {
+                Vec* dst = &party->field_70;
+
+                dst[0] = v[33];
+                dst[1] = v[34];
+            }
+            party->field_FC = PF32(player, 0x19C);
+            party->dir = player->directionView;
+            party->field_110 = PF32(player, 0x1AC);
+            party->flags &= ~0x70000;
+            partyClearJumpPara(party);
+            index = 1;
+            if (!(party->flags2 & 2)) {
+                s32 lowHp = 0;
+                if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
+                    lowHp = 1;
+                }
+                if (lowHp == 1) {
+                    index = 12;
+                }
+                if (!(party->flags2 & 0x8000)) {
+                    pose = partyPoseTbl[party->currentMemberId][index];
+                } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+                    pose = partyDotPoseTbl[party->currentMemberId][index];
+                } else {
+                    pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][index];
+                }
+                if (!(party->field_18 && !strcmp(party->field_18, pose))) {
+                    party->field_18 = pose;
+                    party->field_20 = 0;
+                    party->field_8 |= 0x2000;
+                }
+            }
+            party->flags2 &= ~0x10;
+            party->flags2 &= ~1;
+            if (party) {
+                party->flags2 &= ~0x100000;
+            }
+            break;
+        case 4:
+            player = party->playerPtr;
+            party->field_70 = v[23];
+            party->flags2 &= ~0x10;
+            party->field_FC = PF32(player, 0x19C);
+            party->dir = player->directionView;
+            party->field_110 = PF32(player, 0x1AC);
+            party->field_10C = player->unk1A8;
+            partyClearJumpPara(party);
+            index = 1;
+            if (!(party->flags2 & 2)) {
+                s32 lowHp = 0;
+                if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
+                    lowHp = 1;
+                }
+                if (lowHp == 1) {
+                    index = 12;
+                }
+                if (!(party->flags2 & 0x8000)) {
+                    pose = partyPoseTbl[party->currentMemberId][index];
+                } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+                    pose = partyDotPoseTbl[party->currentMemberId][index];
+                } else {
+                    pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][index];
+                }
+                if (!(party->field_18 && !strcmp(party->field_18, pose))) {
+                    party->field_18 = pose;
+                    party->field_20 = 0;
+                    party->field_8 |= 0x2000;
+                }
+            }
+            party->flags2 &= ~0x10;
+            party->field_34 = 1;
+            break;
+        case 12:
+            if (party) {
+                party->flags2 &= ~0x100000;
+            }
+            break;
+        case 3:
+            if (partyDataTbl[party->currentMemberId].post_func) {
+                ((PartyFunc)partyDataTbl[party->currentMemberId].post_func)(party);
+            }
+            break;
+        case 1:
+        case 2:
+            L_partyForceSlitOff(party);
+            break;
+        default:
+            break;
+    }
+}
+
 // Keep partyChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void partyChgRunMode(PartyEntry* party, s32 mode) {

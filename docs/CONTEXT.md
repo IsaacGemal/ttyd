@@ -2228,6 +2228,27 @@ audit of 802807f..0f455e3 found nine tool bugs the per-PR Claude reviews had mis
 inputs rather than reading diffs): scratch/codex-audit/. Fixes after a review aren't re-reviewed, only rebuilt and
 checked, so reviews should be asked to say which findings need a second look after fixing.
 
+## Wave 23: the next untouched function per dol file (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Wave 21's recipe again, on the next 0% function of 179 dol files (median 576 bytes, nearly all in existing files),
+45 minutes each, 19:48-21:40; the prompt now told agents to stay inside their workspace. **129 at 100%, 41 at
+90-99%, 6 at 50-89%, 3 unchanged. Functions 5,724 -> 5,851.** Main had moved during the wave (Claude #3's PRs touched
+some of the same files), so collection was a three-way merge per file (base: main at launch, ce513a4): 175 clean,
+1 new, 3 kept main's version on conflict (mot_yoshi, unit_object_tree, battle_damage). Fixed at collection: agents'
+duplicate prototypes where the definition says otherwise (tri2, SoundSSPlayChEx, effFallLeafN64Entry,
+effFlowerN64Entry, effGlassN64Entry); eff_pturn_n64 kept at main's version (its header's struct merged badly);
+evt_paper_entry defined by both #41 and an agent (kept the agent's, which is at 100% and in the right order). Lesson: a per-file three-way merge makes a wave
+safe to collect onto a moving main; the remaining conflicts are prototypes two writers guessed differently.
+
+Review (Claude + Codex) found no wrong logic in the 47 partials, but a merge regression and four rule breaks,
+all fixed before merge: the agent's `#pragma optimize_for_size` pair in battle_message.c survived main's move of
+that file to `-O4,s`, and its `off` dropped btlevtcmd_AnnounceSetParam to 72%; `nanNPCWork` is global in the
+original but was `static` in evt_nannpc.c; star_control and winItemDisp read Vecs as offsets past a string (now
+the named vec3 symbols, 88.5 -> 77.5% and 90.0 -> 65.9% until those units' .rodata is decompiled); envDisp_FF's
+invented seed globals are literals again (97.9 -> 94.3%). Agents still left their workspaces: 43 of 179 used
+the tower's shared /tmp (same file names at the same time) and 21 read the tower's ~/ttyd, which they didn't
+write to. Next waves give each agent its own TMPDIR.
+
 ## Grind 18 (Claude #3)
 
 - **win_mario**: `unk_8016af5c` and `winZenkakuStr` match (only pool symbol names differ): the digit table and the `"-"`, `""`, `"%d"` strings are literals (they pool into `.sdata2`/`.rodata` by themselves), the `char` buffer is `signed char`, `winZenkakuStr`'s index is `u32` (`unk_8016af5c` keeps `s32 i`), and the static buffer is used directly instead of through an `out` pointer.

@@ -1,4 +1,5 @@
 #include "eff/eff_indirect.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 #include <dolphin/gx.h>
@@ -24,6 +25,8 @@ typedef struct IndirectData {
 extern const char str_8030134C[];
 extern const f32 float_0_804222ec;
 extern const f32 float_neg0p05_804222f4;
+extern const f32 float_neg5_804222f0;
+extern const f32 float_1_804222dc;
 
 EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -52,4 +55,42 @@ EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	data->field_30 = float_neg0p05_804222f4;
 
 	return entry;
+}
+
+void effIndirectMain(EffectEntry* effect) {
+	IndirectData* data;
+	Vec pos2;
+	Vec pos;
+
+	data = effect->userdata;
+	pos = (Vec){ 0.0f, 0.0f, 0.0f };
+	pos.x = data->x;
+	pos.y = data->y;
+	pos.z = data->z;
+	pos2 = pos;
+
+	switch (data->type) {
+	case 0:
+	case 1:
+		if (effect->flags & 4) {
+			effect->flags &= ~4;
+			data->timer = 0x10;
+		}
+		if (data->timer < 1000) {
+			data->timer--;
+		}
+		if (data->timer < 0) {
+			smartFree(data->texBuffer);
+			effDelete(effect);
+			return;
+		}
+		if (data->timer < 0x20) {
+			data->alpha = data->timer << 3;
+		}
+		data->rotZ += float_neg5_804222f0;
+		data->scale += float_1_804222dc;
+		break;
+	}
+
+	dispEntry(CAMERA_3D_EFFECTB, dispCalcZ(&pos2), 2, effIndirectDisp, effect);
 }

@@ -1,5 +1,6 @@
 #include "eff/n64/eff_guruguru_n64.h"
 #include "driver/dispdrv.h"
+#include "memory.h"
 #include "system.h"
 
 #include <dolphin/mtx.h>
@@ -16,6 +17,43 @@ inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
+}
+
+EffectEntry* effGuruguruN64Entry(s32 a, s32 b, f32 c, f32 d, f32 e, f32 f) {
+    EffectEntry* effect;
+    EffGuruguruData* data;
+    s32 i;
+
+    effect = effEntry();
+    effect->type = "GuruguruN64";
+    effect->count = b + 1;
+    data = __memAlloc(HEAP_EFFECT, (b + 1) * sizeof(EffGuruguruData));
+    effect->userdata = data;
+    effect->callback = effGuruguruMain;
+
+    data[0].field_0x00 = a;
+    data[0].field_0x04 = c;
+    data[0].field_0x08 = d;
+    data[0].field_0x0C = e;
+    data[0].field_0x10 = 0.0f;
+    data[0].field_0x24 = 0;
+    data[0].field_0x14 = f;
+    data[0].field_0x28 = 1;
+    data[0].field_0x2C = 1.0f;
+
+    for (i = 1; i < b + 1; i++) {
+        s32 angle = ((i - 1) * 360) / b;
+
+        data[i].field_0x04 = 0.0f;
+        data[i].field_0x08 = 0.0f;
+        data[i].field_0x0C = 0.0f;
+        data[i].field_0x18 = angle;
+        data[i].field_0x1C = 20.0f;
+        data[i].field_0x20 = 0.0f;
+        data[i].field_0x24 = angle;
+    }
+
+    return effect;
 }
 
 void effGuruguruMain(EffectEntry* effect) {

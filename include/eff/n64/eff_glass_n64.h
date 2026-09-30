@@ -30,6 +30,7 @@ typedef struct effGlassData {
 // .sdata2 constants shared with the display code, named as in the original unit.
 extern const f32 float_0_8041f094;
 extern const f32 float_1_8041f098;
-EffectEntry* effGlassN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale);
 void effGlassMain(EffectEntry* effect);
 void effGlassDisp(CameraId camId, void* param);
+extern const f32 float_neg0p1_8041f0a4;
+EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);

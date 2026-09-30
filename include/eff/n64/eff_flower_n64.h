@@ -22,6 +22,6 @@ typedef struct effFlowerData {
     s32 field_0x40; // 0x40
     s32 field_0x44; // 0x44
 } effFlowerData;
-EffectEntry* effFlowerN64Entry(s32 type, f32 x, f32 y, f32 z);
 void effFlowerMain(EffectEntry* effect);
 void effFlowerDisp(CameraId camId, void* param);
+EffectEntry* effFlowerN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z);

@@ -36,3 +36,7 @@ void countDownEnd(void) {
         wp->unk30 = 2;
     }
 }
+
+void countDownFlagOn(u16 flag) {
+    wp->flags |= flag;
+}

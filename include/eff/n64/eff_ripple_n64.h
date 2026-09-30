@@ -8,3 +8,5 @@ typedef struct effRippleN64Data {
 	f32 field_0x30; //0x30
 } effRippleN64Data;
 void effRippleN64SetRxRz(EffectEntry* effect, f32 rx, f32 rz);
+EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale);
+void effRippleMain(EffectEntry* effect);

@@ -1,6 +1,7 @@
 #include "eff/n64/eff_opuku_jetw_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "memory.h"
 #include "system.h"
 
 #include <dolphin/gx.h>
@@ -13,6 +14,43 @@ inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
+}
+
+EffectEntry* effOpukuJetwN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
+    EffectEntry* effect = effEntry();
+    effOpukuJetwData* data;
+
+    effect->type = "OpukuJetwN64";
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, 0x44);
+    effect->userdata = data;
+    effect->callback = effOpukuJetwMain;
+    effect->flags |= 2;
+
+    data->type = type;
+    data->counter = 0;
+    if (duration <= 0) {
+        data->lifetime = 1000;
+    } else {
+        data->lifetime = duration;
+    }
+
+    data->field_0x24 = 0xFF;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->scale = scale;
+    data->field_0x18 = 0x46;
+    data->field_0x1C = 0xB4;
+    data->field_0x20 = 0xFF;
+    data->field_0x28 = 0xFF;
+    data->field_0x2C = 0xFF;
+    data->field_0x30 = 0xFF;
+    data->field_0x38 = 0.0f;
+    data->field_0x3C = 1.0f;
+    data->field_0x40 = 1.0f;
+
+    return effect;
 }
 
 void effOpukuJetwMain(EffectEntry* effect) {

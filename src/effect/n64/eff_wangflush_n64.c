@@ -1,6 +1,18 @@
 #include "eff/n64/eff_wangflush_n64.h"
+#include "driver/dispdrv.h"
 #include "memory.h"
 #include <dolphin/mtx.h>
+#include <math.h>
+
+extern const f32 float_0p5_80420120;
+extern const f32 float_0p78_80420124;
+extern const f32 float_0p29_80420128;
+extern const f32 float_0p93_8042012c;
+extern const f32 float_6p2832_80420130;
+extern const f32 float_360_80420134;
+extern const f32 float_0p9_80420138;
+extern const f32 float_144_8042013c;
+extern const f32 float_64_80420140;
 
 typedef struct effWangFlushData {
 	s32 type;         // 0x0
@@ -44,4 +56,53 @@ EffectEntry* effWangFlushN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	data->field_0x28 = 0;
 	data->alphaScale = 0.0f;
 	return effect;
+}
+
+void effWangFlushMain(EffectEntry* effect) {
+	s32 duration;
+	s32 frame;
+	effWangFlushData* data = effect->userdata;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+	   local before dispCalcZ; a single local folds the copy away (same idiom as
+	   effGlassMain). */
+	Vec position;
+#endif
+	Vec disp = { 0 };
+
+	disp.x = data->position.x;
+	disp.y = data->position.y;
+	disp.z = data->position.z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	data->duration--;
+	data->frame++;
+	duration = data->duration;
+	if (duration < 0) {
+		effDelete(effect);
+		return;
+	}
+
+	frame = data->frame;
+	if (frame <= 6) {
+		data->alpha = float_0p5_80420120 * (218 - data->alpha) + data->alpha;
+	}
+	if (frame > 6) {
+		data->alpha = data->alpha * float_0p78_80420124;
+	}
+
+	data->scale += data->scaleSpeed;
+	data->scaleSpeed += float_0p29_80420128;
+	data->rot += data->rotSpeed;
+	data->rotSpeed *= float_0p93_8042012c;
+	data->alphaScale = float_0p5_80420120 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 50) / float_360_80420134) + float_0p9_80420138;
+	data->field_0x28 = float_64_80420140 * (f32)sin(float_6p2832_80420130 * (f32)(duration * 40) / float_360_80420134) + float_144_8042013c;
+
+#ifdef MUST_MATCH
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effWangFlushDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effWangFlushDisp, effect);
+#endif
 }

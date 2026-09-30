@@ -19,3 +19,5 @@ typedef struct BushN64Data {
 } BushN64Data;
 EffectEntry* effBushN64Entry(s32 type, f32 x, f32 y, f32 z);
 void effBushMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effBushDisp(CameraId camId, void* param);

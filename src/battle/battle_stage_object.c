@@ -44,6 +44,15 @@ extern f32 float_30_8041cd5c;
 extern f32 float_neg117_8041cd58;
 extern f32 float_neg120_8041cd60;
 extern const char str_802F3C84[];
+extern char str_802F3B88[];
+extern char str_802F3B94[];
+extern char str_802F3BA0[];
+extern char str_802F3CA0[];
+extern char str_802F3CAC[];
+extern char str_802F3CB8[];
+extern f32 float_45_8041cd2c;
+extern f32 float_neg80_8041cd3c;
+extern f32 float_neg45_8041cd4c;
 
 // LOCAL_PROTO(windowDispGX_Waku_col): match-only. The original passes the GXColor by value like every caller (a
 // stack copy); this by-pointer declaration only steers register allocation (see the exceptions file).
@@ -688,6 +697,119 @@ s32 _nozzle_work_attack_set(void) {
 		}
 	}
 	return 2;
+}
+
+// Register-allocation/scheduling detail: (1) first timer, mwcc keeps the `frame = userdata[2]+1` temp in r4
+// and passes it directly, while the target materializes it in r0 and reloads event->userdata[2] into r4 before
+// intpl_sub (passing event->userdata[2] restores r0/reload but then schedules the two `lfs` after call setup).
+// (2) final event-slot store, the target rotates scratch regs (byte ptr r6, loaded value r5, base+unitId*4 r4);
+// mwcc uses r5 / r4 / r6. Any form that forces a materialized base+unitId*4 pointer either folds to `stwx` or
+// shifts the whole function's callee-saved allocation.
+// NONMATCHING (97.61%): first intpl_sub timer temp register (r0+reload vs r4) and final event-slot store
+// scratch-register rotation; all instructions/control flow/constants match.
+USER_FUNC(_nozzle_turn) {
+	u8* base = (u8*)_battleWorkPointer + 0x180C0;
+	s32 unitId = event->unitId;
+	char* vec = vec3_802f3ac8;
+	const char* name;
+	f32 angle1;
+	f32 angle2;
+
+	if (isFirstCall) {
+		u8* p = base;
+
+		p += unitId;
+		event->userdata[2] = 0;
+		event->field_84 = 0;
+		if (p[0x1C4] != 0) {
+			event->userdata[2] = 0x1E;
+		}
+	}
+
+	switch (unitId) {
+		case 0:
+			name = vec + 0xC0;
+			break;
+		case 1:
+			name = vec + 0xCC;
+			break;
+		case 2:
+			name = vec + 0xD8;
+			break;
+		default:
+			return 2;
+	}
+	BattleSearchObjectPtr(name);
+
+	if (event->userdata[2] < 0x1E) {
+		s32 frame;
+
+		frame = event->userdata[2] + 1;
+		event->userdata[2] = frame;
+		angle1 = intpl_sub(2, frame, 0x1E, float_0_8041cd04, float_neg80_8041cd3c);
+	} else {
+		angle1 = float_neg80_8041cd3c;
+	}
+
+	if ((s32)event->field_84 < 0x1E) {
+		f32 oldAngle;
+		f32 newAngle;
+
+		event->field_84++;
+		switch (*(u8*)(base + unitId + 0x1C4)) {
+			case 1:
+				oldAngle = float_45_8041cd2c;
+				break;
+			case 2:
+				oldAngle = float_0_8041cd04;
+				break;
+			case 3:
+				oldAngle = float_neg45_8041cd4c;
+				break;
+			case 0:
+			default:
+				oldAngle = float_0_8041cd04;
+				break;
+		}
+		switch (*(u8*)(base + unitId + 0x1C7)) {
+			case 1:
+				newAngle = float_45_8041cd2c;
+				break;
+			case 2:
+				newAngle = float_0_8041cd04;
+				break;
+			case 3:
+				newAngle = float_neg45_8041cd4c;
+				break;
+			case 0:
+			default:
+				newAngle = float_0_8041cd04;
+				break;
+		}
+		angle2 = intpl_sub(0xC, event->field_84, 0x1E, oldAngle, newAngle);
+	}
+
+	switch (unitId) {
+		case 0:
+			mapObjRotate(vec + 0x1D8, angle1, angle2, float_0_8041cd04);
+			break;
+		case 1:
+			mapObjRotate(vec + 0x1E4, angle1, angle2, float_0_8041cd04);
+			break;
+		case 2:
+			mapObjRotate(vec + 0x1F0, angle1, angle2, float_0_8041cd04);
+			break;
+	}
+
+	if (event->userdata[2] >= 0x1E && (s32)event->field_84 >= 0x1E) {
+		u32* slot = (u32*)base;
+
+		*(u8*)(base + unitId + 0x1C4) = *(u8*)(base + unitId + 0x1C7);
+		slot += unitId;
+		slot[0x73] = 0;
+		return 2;
+	}
+	return 0;
 }
 
 #pragma dont_inline on
