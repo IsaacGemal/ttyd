@@ -11,7 +11,8 @@ extern u32 xlw2[16];
 extern u32 xmemo[5];
 extern EventEntry* xevt[1];
 USER_FUNC(unk_las_0000d538);
-void _light_point_callback(void);  // TODO: real signature
+struct BattleWorkUnitPart;
+void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx);
 USER_FUNC(btl_hitoffsetx);
 USER_FUNC(pose_check_evt_stop);
 USER_FUNC(pose_check_evt_run);
@@ -19,7 +20,7 @@ USER_FUNC(datastrcopy);
 USER_FUNC(enzan_lw_load2);
 USER_FUNC(enzan_lw_save2);
 USER_FUNC(btlevtcmd_AnimeGetPose);
-void battleGetBattenSatelliteInitPos(void);  // TODO: real signature
+USER_FUNC(battleGetBattenSatelliteInitPos);
 USER_FUNC(check_satellite);
 USER_FUNC(evt_eff_firechange00);
 USER_FUNC(evt_eff_barriersizechange);

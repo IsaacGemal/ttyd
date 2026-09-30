@@ -71,10 +71,12 @@ typedef struct KyakuEntry {
 } KyakuEntry;
 
 typedef struct KyakuState {
-    u8 field_0x0[0x10]; // 0x0
-    s16 poseId;         // 0x10
-    u8 pad_0x12[6];     // 0x12
-    u64 field_0x18;     // 0x18
+    u16 field_0x0;   // 0x0
+    u8 pad_0x2[2];   // 0x2
+    Vec position;    // 0x4
+    s16 poseId;      // 0x10
+    u8 pad_0x12[6];  // 0x12
+    u64 field_0x18;  // 0x18
 } KyakuState;
 
 typedef struct KyakuWork {
@@ -105,9 +107,9 @@ static f32 randf(f32 min, f32 max);
 static void pose_change(KyakuState* state, const char* name1, const char* name2);
 static void pose_main(void);  // TODO: real signature
 static void pose_init(void);
-s32 gans_alpha;
+KyakuWork* kyaku_wp;
 static ScreenWork* screen_wp;
-static KyakuWork* kyaku_wp;
+s32 gans_alpha;
 s32 burst_chain_entry[289];
 s32 burst_wangwang[69];
 s32 evt_kurikuri_opening[442];
@@ -211,16 +213,81 @@ ExtKyakuData ext_kyaku_data[51] = {
 EVT_BEGIN(x)
 EVT_END()
 
-void ext_kyaku_dispent(void) {
-    dispEntry(4, 0.0f, 1, kyaku_disp, NULL);
+s32 _firstattack_setting(EventEntry* event, BOOL isFirstCall) {
+    FieldBattleData* fbat = fbatGetPointer();
+    *(u32*)((u8*)fbat + 0x10) = 0x10000000;
+    *(u32*)((u8*)fbat + 0x14) = 0x10;
+    *(u32*)((u8*)fbat + 0x1C) &= ~1;
+    fbatSetAttackAnnounce(0x10000000);
+    fbatSetAttackAnnounceEnable();
+    return EVT_RETURN_DONE;
 }
 
-void ext_kyaku_main(void) {
-    pose_main();
-}
 
-// TODO: write ext_kyaku_init (global, 0x558 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+static void pose_init(void) {
+    char buf1[0x28];
+    char buf2[0x20];
+    ExtKyakuData* data;
+    s32 i;
+    s32 start;
+
+    data = ext_kyaku_data;
+    i = 0;
+    strcpy(buf1, "");
+    strcpy(buf2, "");
+    kyaku_wp->count2 = -1;
+    do {
+        if (strcmp(data->name1, buf1) != 0) {
+            strcpy(buf1, data->name1);
+            strcpy(buf2, "");
+        }
+        if (strcmp(data->name2, buf2) != 0) {
+            strcpy(buf2, data->name2);
+            start = i;
+            kyaku_wp->count2++;
+        }
+        strcpy(kyaku_wp->entries[kyaku_wp->count2].name1, buf1);
+        strcpy(kyaku_wp->entries[kyaku_wp->count2].name2, buf2);
+        kyaku_wp->entries[kyaku_wp->count2].field_0x20 = start;
+        kyaku_wp->entries[kyaku_wp->count2].field_0x24 = i - start + 1;
+        kyaku_wp->entries[kyaku_wp->count2].field_0x1C = data->value;
+        kyaku_wp->entries[kyaku_wp->count2].field_0x18 = 1;
+        i++;
+        data++;
+    } while (data->name1 != NULL);
+    kyaku_wp->count2++;
+}
+#pragma dont_inline reset
+
+
+
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+static void pose_main(void) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+    KyakuState* state = kyaku_wp->array1;
+    f32 ratio;
+
+    for (i = 0; i < kyaku_wp->count1; i++, state++, pose++) {
+        KyakuEntry* entry = &kyaku_wp->entries[state->poseId];
+        u64 delta = gp->renderTime - state->field_0x18;
+        u32 ticks = OS_TIMER_CLOCK / 1000;
+
+        ratio = 60.0f * (f32)(delta / ticks) / 1000.0f / entry->field_0x1C;
+        if (ratio >= 1.0f) {
+            state->field_0x18 = gp->renderTime;
+            ratio = 0.0f;
+        }
+        pose->field_0x10 = entry->field_0x20 + (s32)((f32)(entry->field_0x24 - 1) * ratio);
+    }
+}
+#pragma dont_inline reset
+
+
 
 EVT_BEGIN(evt_kyaku)
     CALL(evt_npc_entry, STRING("kyaku1"), STRING("c_kinopio"))
@@ -1156,18 +1223,26 @@ EVT_BEGIN(evt_teki_nyuujyou)
     RETURN
 EVT_END()
 
-s32 tribe_chk(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    s32 name1 = evtGetValue(event, args[0]);
-    s32 name2 = evtGetValue(event, args[1]);
-    NpcEntry* npc = npcNameToPtr((char*)name1);
-    if (strcmp(npc->tribe->nameJp, (char*)name2) == 0) {
-        evtSetValue(event, args[2], 1);
-    } else {
-        evtSetValue(event, args[2], 0);
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+static void pose_change(KyakuState* state, const char* name1, const char* name2) {
+    KyakuEntry* entry;
+    s32 i;
+
+    for (i = 0, entry = kyaku_wp->entries; i < kyaku_wp->count2; i++, entry++) {
+        if (strcmp(entry->name1, name1) == 0 &&
+            strcmp(entry->name2, name2) == 0) {
+            break;
+        }
     }
-    return EVT_RETURN_DONE;
+    if (i < kyaku_wp->count2 && state->poseId != i) {
+        state->poseId = i;
+        state->field_0x18 = gp->renderTime + (s64)rand();
+    }
 }
+#pragma dont_inline reset
+
+
 
 EVT_BEGIN(evt_teki_nyuujyou_default)
     SWITCH(LW(1))
@@ -1218,53 +1293,14 @@ EVT_BEGIN(evt_teki_nyuujyou_default)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.22%): the four float constants land in different callee-saved registers (retail f29=3,
-// f30=1, f31=10, f28=210); every other instruction matches.
-s32 burst_chain(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
-    s32 flag = evtGetValue(event, args[1]);
-    NpcEntry* npc = npcNameToPtr((char*)name);
-    NpcEntry* base;
-    NpcEntry* cur;
-    NpcEntry* next;
-    f32 f3;
-    f32 f1;
-    f32 f10;
-    f32 f210;
-    f32 d;
-    f32 t;
-    char buf[32];
-    s32 i;
-
-    sprintf(buf, "鎖%d_%d", flag, 0);
-    base = npcNameToPtr(buf);
-    base->position = npc->position;
-    f3 = 3.0f;
-    f1 = 1.0f;
-    f10 = 10.0f;
-    f210 = 210.0f;
-    for (i = 0; i < 4; i++) {
-        sprintf(buf, "鎖%d_%d", flag, i);
-        cur = npcNameToPtr(buf);
-        sprintf(buf, "鎖%d_%d", flag, i + 1);
-        next = npcNameToPtr(buf);
-        next->position.y -= f3;
-        d = PSVECDistance(&cur->position, &next->position);
-        t = f1 - f10 / d;
-        next->position.x = t * (cur->position.x - next->position.x) + next->position.x;
-        next->position.y = t * (cur->position.y - next->position.y) + next->position.y;
-        next->position.z = t * (cur->position.z - next->position.z) + next->position.z;
-        if (next->position.x > f210 || next->position.x < -210.0f) {
-            if (next->position.y < 0.0f) {
-                next->position.y = 0.0f;
-            }
-        } else if (next->position.y < 60.0f) {
-            next->position.y = 60.0f;
-        }
-    }
-    return EVT_RETURN_BLOCK;
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+void __tou_srand(s32 seed) {
+    x[0] = seed;
 }
+#pragma dont_inline reset
+
+
 
 EVT_BEGIN(burst_chain_entry)
     SWITCH(LW(0))
@@ -1361,20 +1397,25 @@ EVT_BEGIN(burst_wangwang)
     RETURN
 EVT_END()
 
-s32 snd_sfx_stop(EventEntry* event, BOOL isFirstCall) {
-    psndMapChange();
-    return EVT_RETURN_DONE;
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+u32 __tou_rand(void) {
+    x[0] = x[0] * 1103515245 + 12345;
+    return (x[0] >> 16) & 0x7FFF;
 }
+#pragma dont_inline reset
 
-s32 _firstattack_setting(EventEntry* event, BOOL isFirstCall) {
-    FieldBattleData* fbat = fbatGetPointer();
-    *(u32*)((u8*)fbat + 0x10) = 0x10000000;
-    *(u32*)((u8*)fbat + 0x14) = 0x10;
-    *(u32*)((u8*)fbat + 0x1C) &= ~1;
-    fbatSetAttackAnnounce(0x10000000);
-    fbatSetAttackAnnounceEnable();
-    return EVT_RETURN_DONE;
+
+
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+static f32 randf(f32 min, f32 max) {
+    f32 t = (f32)__tou_rand() / 32767.0f;
+    return t * (max - min) + min;
 }
+#pragma dont_inline reset
+
+
 
 EVT_BEGIN(evt_match)
     SWITCH(GSW(501))
@@ -2681,12 +2722,119 @@ EVT_BEGIN(evt_default_opening)
     RETURN
 EVT_END()
 
-s32 confupose(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    NpcEntry* npc = npcNameToPtr((char*)evtGetValue(event, args[0]));
-    evtSetValue(event, args[1], (s32)npc->tribe->confuseAnimation);
-    return EVT_RETURN_DONE;
+// NONMATCHING (99.25%): instruction stream matches byte-for-byte in length; only the callee-saved
+// integer registers picked for kyaku_wp/pose/state/i and the address constants differ.
+void ext_kyaku_init(void) {
+    s32 i;
+    KyakuState* state;
+    ExtPose* pose;
+    HitEntry* hit;
+    f32 radius;
+    f32 angle;
+    f32 s;
+    f32 c;
+    f32 hitX;
+    f32 hitY;
+    f32 hitZ;
+    f32 distance;
+    f32 nx;
+    f32 ny;
+    f32 nz;
+    Vec pos;
+    s32 flag;
+
+    kyaku_wp = _mapAlloc(0x510);
+    memset(kyaku_wp, 0, 0x510);
+    kyaku_wp->count1 = extGetPoseNum();
+    kyaku_wp->array1 = _mapAlloc(kyaku_wp->count1 * 0x20);
+    memset(kyaku_wp->array1, 0, kyaku_wp->count1 * 0x20);
+    pose_init();
+    __tou_srand(0x25B0E2B);
+    pose = extGetPosePtr();
+    state = kyaku_wp->array1;
+    for (i = 0; i < kyaku_wp->count1; i++, pose++, state++) {
+        pose->flags |= 7;
+        PSMTXIdentity(*pose->matrix);
+        do {
+            flag = __tou_rand() % 100 >= 30;
+            angle = randf(0.0f, 6.283184f);
+            if (!flag) {
+                radius = randf(250.0f, 500.0f);
+            } else {
+                s32 flag2 = (angle < 0.7853982f) || (angle > 5.4977875f);
+                f32 r;
+                if (flag2) {
+                    r = randf(550.0f, 650.0f);
+                } else {
+                    r = randf(550.0f, 850.0f);
+                }
+                radius = r;
+            }
+            s = radius * sinf(angle);
+            c = radius * cosf(angle);
+            if (!flag) {
+                if (!(fabsf(c) > 70.0)) {
+                    continue;
+                }
+                distance = 100000.0f;
+                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &nx, &ny, &nz, s, 100.0f, c,
+                                     0.0f, -1.0f, 0.0f);
+                if (hit == NULL) {
+                    continue;
+                }
+                if (hitY != 0.0f) {
+                    continue;
+                }
+                (*pose->matrix)[0][3] = hitX;
+                (*pose->matrix)[2][3] = hitZ;
+                pose->field_0x4 = angleABf(0.0f, 0.0f, hitX, hitZ);
+                break;
+            } else {
+                distance = 100000.0f;
+                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &nx, &ny, &nz, s, 500.0f, c,
+                                     0.0f, -1.0f, 0.0f);
+                if (hit == NULL) {
+                    continue;
+                }
+                (*pose->matrix)[0][3] = hitX;
+                (*pose->matrix)[1][3] = hitY;
+                (*pose->matrix)[2][3] = hitZ;
+                if (hitZ > 570.0f && fabsf(hitX) > 40.0f && fabsf(hitX) < 60.0f) {
+                    (*pose->matrix)[0][3] += (f32)((hitX > 0.0f) ? -15 : 15);
+                }
+                pose->field_0x4 = angleABf(0.0f, 0.0f, hitX, hitZ);
+                break;
+            }
+        } while (1);
+        if (strcmp(gp->beroEnterName, "s_bero_2") != 0 && (*pose->matrix)[2][3] > 350.0f) {
+            pose->flags &= ~1;
+        }
+        if ((*pose->matrix)[1][3] != 0.0f) {
+            state->field_0x0 |= 1;
+        }
+        pos = (Vec){0.0f, 0.0f, 0.0f};
+        pos.x = (*pose->matrix)[0][3];
+        pos.y = (*pose->matrix)[1][3];
+        pos.z = (*pose->matrix)[2][3];
+        state->position = pos;
+        switch (irand(1000) % 4) {
+        case 0:
+            pose_change(state, "c_kinopio", "KNP_S_1");
+            break;
+        case 1:
+            pose_change(state, "c_kinopiko", "KNF_S_1");
+            break;
+        case 2:
+            pose_change(state, "c_roten", "S_1");
+            break;
+        case 3:
+            pose_change(state, "c_jugemu", "JGM_S_1");
+            break;
+        }
+    }
 }
+
+
 
 EVT_BEGIN(evt_default_win)
     CALL(evt_cam3d_evt_set, 0, 220, 533, 0, 125, -8, 0, 0)
@@ -2956,19 +3104,16 @@ static EVT_BEGIN(evt_shake)
     RETURN
 EVT_END()
 
-s32 starstone_sound_onoff(EventEntry* event, BOOL isFirstCall) {
-    s32 val = evtGetValue(event, event->args[0]);
-    EffectEntry* effect = itemNameToPtr("stone")->effect;
-    if (effect != NULL) {
-        if (val == 0) {
-            *(u16*)((u8*)effect->userdata + 0x4) &= ~4;
-        }
-        if (val == 1) {
-            *(u16*)((u8*)effect->userdata + 0x4) |= 4;
-        }
-    }
-    return EVT_RETURN_DONE;
+void kyaku_disp(CameraId camera, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
 }
+
+
 
 EVT_BEGIN(evt_boss_stone)
     SET_VALUE(LW(10), 0)
@@ -2992,118 +3137,73 @@ EVT_BEGIN(evt_boss_stone)
     RETURN
 EVT_END()
 
-s32 gans_white_off(EventEntry* event, BOOL isFirstCall) {
-    NpcEntry* npc = npcNameToPtr("ガンス");
-    mapSetTevCallback(0xC, NULL);
-    animPoseSetMaterialFlagOff(npc->poseId, 0x0C000000);
-    return EVT_RETURN_DONE;
+void ext_kyaku_main(void) {
+    pose_main();
 }
 
-s32 gans_white_on(EventEntry* event, BOOL isFirstCall) {
-    NpcEntry* npc = npcNameToPtr("ガンス");
-    if (isFirstCall) {
-        gans_alpha = 0;
-        mapSetTevCallback(0xC, callback);
-        animPoseSetMaterialFlagOn(npc->poseId, 0x0C000000);
-    }
-    gans_alpha += 5;
-    if (gans_alpha > 0xFF) {
-        gans_alpha = 0xFF;
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
+
+
+void ext_kyaku_dispent(void) {
+    dispEntry(4, 0.0f, 1, kyaku_disp, NULL);
 }
 
-s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
-    ItemEntry* item = itemNameToPtr("stone");
-    EffectEntry* eff1 = effNameToPtr("eff_1");
-    EffectEntry* eff2 = effNameToPtr("eff_2");
-    if (item != NULL) {
-        if (eff1 != NULL) {
-            *(f32*)((u8*)eff1->userdata + 0x4) = item->position.x;
-            *(f32*)((u8*)eff1->userdata + 0x8) = 15.0f + item->position.y;
-            *(f32*)((u8*)eff1->userdata + 0xC) = item->position.z;
-        }
-        if (eff2 != NULL) {
-            *(f32*)((u8*)eff2->userdata + 0x4) = item->position.x;
-            *(f32*)((u8*)eff2->userdata + 0x8) = 15.0f + item->position.y;
-            *(f32*)((u8*)eff2->userdata + 0xC) = item->position.z;
-        }
-    }
-    return EVT_RETURN_BLOCK;
+
+
+static void screen_capture(CameraId camId, void* param) {
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x130, 0xF0, 4, 1);
+    GXCopyTex(screen_wp->field_0x0, 0);
+    GXPixModeSync();
+    screen_wp->field_0x4 = 1;
 }
 
-s32 evt_boss_stone_r(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    EffectEntry* effect = itemNameToPtr("stone")->effect;
-    f32 value;
-    value = evtGetFloat(event, args[0]);
-    *(f32*)((u8*)effect->userdata + 0x1C) = value;
-    return EVT_RETURN_DONE;
-}
 
-s32 getY(EventEntry* event, BOOL isFirstCall) {
-    NpcEntry* npc = npcNameToPtr("ガンス");
-    MapObject* obj = mapGetMapObj("block_5");
-    Vec pos;
-    f32 y;
-    mapObjGetPos("group151", &pos);
-    y = obj->modelWorldMtx[1][3] + 100.0f;
-    if (y > pos.y) {
-        npc->position.y = y;
-    } else {
-        npc->position.z = 0.0f;
-        npc->position.x = 0.0f;
-        npc->position.y = pos.y;
+
+s32 screen_init(EventEntry* event, BOOL isFirstCall) {
+    u32 size;
+    f32 negOne;
+    f32 zero;
+    f32 one;
+
+    size = GXGetTexBufferSize(0x260, 0x1E0, 0, 0, 0);
+    screen_wp = _mapAlloc(0x30);
+    screen_wp->field_0x0 = _mapAlloc(size);
+    one = 1.0f;
+    zero = 0.0f;
+    negOne = -1.0f;
+    screen_wp->field_0x4 = 0;
+    screen_wp->field_0xC = one;
+    screen_wp->field_0x8 = one;
+    screen_wp->field_0x14 = zero;
+    screen_wp->field_0x10 = zero;
+    screen_wp->field_0x1C = zero;
+    screen_wp->field_0x18 = zero;
+    screen_wp->field_0x20 = 0;
+    screen_wp->field_0x28 = negOne;
+    screen_wp->field_0x2C = _mapAlloc(GXGetTexBufferSize(0x40, 0x40, 1, 0, 0));
+    if (evtGetValue(event, GSW(0)) == 0xA3) {
+        screen_wp->field_0x24 = 1;
     }
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (49.03%): logic is right but MWCC keeps x/y/z/d/dist/v in six callee-saved float regs
-// (f26-f31) instead of retail's four (f28-f31), growing the frame from 0x80 to 0x90.
-s32 item_jump(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    f32 x = evtGetFloat(event, args[0]);
-    f32 y = evtGetFloat(event, args[1]);
-    f32 z = evtGetFloat(event, args[2]);
-    ItemEntry* item = itemNameToPtr("stone");
-    f32 d;
-    f32 dist;
-    f32 v;
-    f32 angle;
-    Vec pos;
 
-    if (isFirstCall) {
-        d = y - item->position.y;
-        dist = distABf(x, z, item->position.x, item->position.z) / 1.0f;
-        v = 0.5f * dist * 0.5f + d / dist;
-        angle = angleABf(item->position.x, item->position.z, x, z);
-        event->userdataf[0] = dist;
-        event->userdataf[1] = v;
-        event->userdataf[2] = angle;
-    }
-    dist = event->userdataf[0];
-    v = event->userdataf[1];
-    angle = event->userdataf[2];
-    item->position.x += sinf(6.2832f * angle / 360.0f);
-    item->position.z -= cosf(6.2832f * angle / 360.0f);
-    item->position.y += v;
-    dist = dist - 1.0f;
-    v = v - 0.5f;
-    if (dist < 0.0f) {
-        item->position.x = x;
-        item->position.y = y;
-        item->position.z = z;
-        pos.x = x;
-        pos.y = y;
-        pos.z = z;
-        psndSFXOn_3D("stone", &pos);
-        return EVT_RETURN_YIELD;
-    }
-    event->userdataf[0] = dist;
-    event->userdataf[1] = v;
+
+static s32 screen_evt(EventEntry* event, BOOL isFirstCall) {
+    dispEntry(8, 1000.0f, 0, screen_capture, NULL);
     return EVT_RETURN_BLOCK;
 }
+
+
+
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+void GXSetTexCoordGen(GXTexCoordID dst_coord, GXTexGenType func, GXTexGenSrc src_param, u32 mtx) {
+    GXSetTexCoordGen2(dst_coord, func, src_param, mtx, GX_FALSE, GX_PTIDENTITY);
+}
+#pragma dont_inline reset
+
+
 
 static EVT_BEGIN(evt_boss)
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("group34"), 1)
@@ -3929,41 +4029,197 @@ EVT_BEGIN(evt_kyaku_8)
     RETURN
 EVT_END()
 
-// TODO: write screen_tev (global, 0x698 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (97.31%): texture-fill loop schedules (j/8)*0x20 before j%8 and the min-clamp keeps
+// `ratio` in f0 where retail uses f1, so the function is 3 instructions short.
+void screen_tev(TevCallbackParam* param) {
+    GXTexObj texObj;
+    Mtx mtx;
+    Mtx mtxScale;
+    Mtx mtxTrans;
 
-static s32 screen_evt(EventEntry* event, BOOL isFirstCall) {
-    dispEntry(8, 1000.0f, 0, screen_capture, NULL);
-    return EVT_RETURN_BLOCK;
+    if (screen_wp->field_0x4 == 0) {
+        return;
+    }
+
+    if (screen_wp->field_0x24 != 0) {
+        u8* buf = (u8*)screen_wp->field_0x2C;
+        s32 i;
+        s32 j;
+        s32 k;
+
+        for (i = 0; i < 0x40; i++) {
+            for (j = 0; j < 0x40; j++) {
+                s32 idx = (j / 8) * 0x20 + (i / 4) * 0x100;
+                s32 col = (i % 4) * 8;
+                idx += (j % 8);
+                buf[idx + col] = (i & 1) ? 0xFF : 0;
+            }
+            {
+                s32 count = 100 + rand() % 100;
+                for (k = 0; k < count; k++) {
+                    s32 len = rand() % 4 + 2;
+                    s32 start = rand() % (0x41 - len);
+                    u8 val = rand() % 0x100;
+                    s32 m;
+                    for (m = start; m < start + len; m++) {
+                        s32 idx = (m / 8) * 0x20 + (i / 4) * 0x100;
+                        s32 col = (i % 4) * 8;
+                        idx += (m % 8);
+                        buf[idx + col] = val;
+                    }
+                }
+            }
+        }
+        DCFlushRange(buf, 0x1000);
+        GXInitTexObj(&texObj, buf, 0x40, 0x40, 1, 1, 1, 0);
+        GXInitTexObjLOD(&texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        GXLoadTexObj(&texObj, 0);
+    } else {
+        GXInitTexObj(&texObj, screen_wp->field_0x0, 0x130, 0xF0, 4, 0, 0, 0);
+        GXInitTexObjLOD(&texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    }
+    GXLoadTexObj(&texObj, 0);
+
+    GXInitTexObj(&texObj, inta_tex, 4, 8, 0, 1, 1, 0);
+    GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&texObj, 1);
+
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+    GXSetTevAlphaIn(0, 7, 7, 7, 7);
+    GXSetTevOrder(1, 1, 1, 0xFF);
+    GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(1, 0xF, 8, 0, 0xF);
+    GXSetTevAlphaIn(1, 7, 7, 7, 6);
+
+    if (screen_wp->field_0x24 == 0) {
+        screen_wp->field_0x20++;
+        if (screen_wp->field_0x20 % 200 == 0) {
+            switch (rand() % 3) {
+            case 0:
+                screen_wp->field_0x14 = randf(0.0f, (1.0f - screen_wp->field_0x8) / screen_wp->field_0x8);
+                screen_wp->field_0x1C = randf(0.0f, (1.0f - screen_wp->field_0x8) / screen_wp->field_0x8);
+                break;
+            case 1:
+                screen_wp->field_0xC = randf(1.0f, 0.25f);
+                break;
+            case 2:
+                break;
+            }
+        }
+        screen_wp->field_0x8 += (screen_wp->field_0xC - screen_wp->field_0x8) / 60.0f;
+        screen_wp->field_0x10 += (screen_wp->field_0x14 - screen_wp->field_0x10) / 60.0f;
+        screen_wp->field_0x18 += (screen_wp->field_0x1C - screen_wp->field_0x18) / 60.0f;
+        PSMTXScale(mtxScale, screen_wp->field_0x8, screen_wp->field_0x8, 1.0f);
+        {
+            f32 ratio = (1.0f - screen_wp->field_0x8) / screen_wp->field_0x8;
+            f32 y = screen_wp->field_0x18;
+            if (y > ratio) {
+                y = ratio;
+            }
+            {
+                f32 x = screen_wp->field_0x10;
+                if (x > ratio) {
+                    x = ratio;
+                }
+                PSMTXTrans(mtxTrans, x, y, 0.0f);
+            }
+        }
+        PSMTXConcat(mtxScale, mtxTrans, mtx);
+    } else {
+        PSMTXScale(mtx, 4.75f, 3.75f, 0.0f);
+    }
+
+    GXSetTexCoordGen(0, 1, 4, 0x1E);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    {
+        CameraEntry* cam = camGetPtr(4);
+        PSMTXScale(mtx, 1.0f, 6.0f * ((100.0f - cam->cameraPos.z) / 1000.0f) + 16.0f, 1.0f);
+    }
+    GXSetTexCoordGen(1, 1, 4, 0x21);
+    GXLoadTexMtxImm(mtx, 0x21, 1);
+
+    param->field_C = 2;
+    param->field_14 = 2;
+    param->field_10 = 2;
 }
 
-s32 screen_init(EventEntry* event, BOOL isFirstCall) {
-    u32 size;
-    f32 negOne;
-    f32 zero;
-    f32 one;
 
-    size = GXGetTexBufferSize(0x260, 0x1E0, 0, 0, 0);
-    screen_wp = _mapAlloc(0x30);
-    screen_wp->field_0x0 = _mapAlloc(size);
-    one = 1.0f;
-    zero = 0.0f;
-    negOne = -1.0f;
-    screen_wp->field_0x4 = 0;
-    screen_wp->field_0xC = one;
-    screen_wp->field_0x8 = one;
-    screen_wp->field_0x14 = zero;
-    screen_wp->field_0x10 = zero;
-    screen_wp->field_0x1C = zero;
-    screen_wp->field_0x18 = zero;
-    screen_wp->field_0x20 = 0;
-    screen_wp->field_0x28 = negOne;
-    screen_wp->field_0x2C = _mapAlloc(GXGetTexBufferSize(0x40, 0x40, 1, 0, 0));
-    if (evtGetValue(event, GSW(0)) == 0xA3) {
-        screen_wp->field_0x24 = 1;
+
+s32 tribe_chk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 name1 = evtGetValue(event, args[0]);
+    s32 name2 = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr((char*)name1);
+    if (strcmp(npc->tribe->nameJp, (char*)name2) == 0) {
+        evtSetValue(event, args[2], 1);
+    } else {
+        evtSetValue(event, args[2], 0);
     }
     return EVT_RETURN_DONE;
 }
+
+
+
+// NONMATCHING (99.22%): the four float constants land in different callee-saved registers (retail f29=3,
+// f30=1, f31=10, f28=210); every other instruction matches.
+s32 burst_chain(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr((char*)name);
+    NpcEntry* base;
+    NpcEntry* cur;
+    NpcEntry* next;
+    f32 f3;
+    f32 f1;
+    f32 f10;
+    f32 f210;
+    f32 d;
+    f32 t;
+    char buf[32];
+    s32 i;
+
+    sprintf(buf, "鎖%d_%d", flag, 0);
+    base = npcNameToPtr(buf);
+    base->position = npc->position;
+    f3 = 3.0f;
+    f1 = 1.0f;
+    f10 = 10.0f;
+    f210 = 210.0f;
+    for (i = 0; i < 4; i++) {
+        sprintf(buf, "鎖%d_%d", flag, i);
+        cur = npcNameToPtr(buf);
+        sprintf(buf, "鎖%d_%d", flag, i + 1);
+        next = npcNameToPtr(buf);
+        next->position.y -= f3;
+        d = PSVECDistance(&cur->position, &next->position);
+        t = f1 - f10 / d;
+        next->position.x = t * (cur->position.x - next->position.x) + next->position.x;
+        next->position.y = t * (cur->position.y - next->position.y) + next->position.y;
+        next->position.z = t * (cur->position.z - next->position.z) + next->position.z;
+        if (next->position.x > f210 || next->position.x < -210.0f) {
+            if (next->position.y < 0.0f) {
+                next->position.y = 0.0f;
+            }
+        } else if (next->position.y < 60.0f) {
+            next->position.y = 60.0f;
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+
+
+s32 snd_sfx_stop(EventEntry* event, BOOL isFirstCall) {
+    psndMapChange();
+    return EVT_RETURN_DONE;
+}
+
+
 
 EVT_BEGIN(tou_03_init_evt)
     SWITCH(GSW(0))
@@ -4088,16 +4344,161 @@ EVT_END()
 
 static ScreenWork* screen_wp;
 
-// NONMATCHING (99.92%): the GXColor temporary is 4 bytes lower on the stack than retail (0xC vs 0x8);
-// every other instruction matches.
+s32 confupose(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    NpcEntry* npc = npcNameToPtr((char*)evtGetValue(event, args[0]));
+    evtSetValue(event, args[1], (s32)npc->tribe->confuseAnimation);
+    return EVT_RETURN_DONE;
+}
+
+
+
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+static f32 sinf(f32 x) {
+    return sin(x);
+}
+#pragma dont_inline reset
+
+
+
+// dont_inline keeps the real bl call in this unit's callers.
+#pragma dont_inline on
+static f32 cosf(f32 x) {
+    return cos(x);
+}
+#pragma dont_inline reset
+
+
+
+// NONMATCHING (50.75%): the float copy of the branch-carried locals is the remaining problem;
+// MWCC keeps x/y/z/d/dist/v in callee-saved float regs instead of spilling dist/v/angle like retail.
+s32 item_jump(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    ItemEntry* item = itemNameToPtr("stone");
+    f32 d;
+    f32 dist;
+    f32 v;
+    f32 angle;
+
+    if (isFirstCall) {
+        d = y - item->position.y;
+        dist = distABf(x, z, item->position.x, item->position.z) / 1.0f;
+        v = 0.5f * dist * 0.5f + d / dist;
+        angle = angleABf(item->position.x, item->position.z, x, z);
+        event->userdataf[0] = dist;
+        event->userdataf[1] = v;
+        event->userdataf[2] = angle;
+    }
+    dist = event->userdataf[0];
+    v = event->userdataf[1];
+    angle = event->userdataf[2];
+    item->position.x += sinf(6.2831855f * angle / 360.0f);
+    item->position.z -= cosf(6.2831855f * angle / 360.0f);
+    item->position.y += v;
+    dist = dist - 1.0f;
+    v = v - 0.5f;
+    if (dist < 0.0f) {
+        Vec pos = {0.0f, 0.0f, 0.0f};
+        item->position.x = x;
+        item->position.y = y;
+        item->position.z = z;
+        pos.x = item->position.x;
+        pos.y = item->position.y;
+        pos.z = item->position.z;
+        psndSFXOn_3D("SFX_EVT_STARSTONE_JUMP1", &pos);
+        return EVT_RETURN_YIELD;
+    }
+    event->userdataf[0] = dist;
+    event->userdataf[1] = v;
+    return EVT_RETURN_BLOCK;
+}
+
+
+
+s32 getY(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("ガンス");
+    MapObject* obj = mapGetMapObj("block_5");
+    Vec pos;
+    f32 y;
+    mapObjGetPos("group151", &pos);
+    y = obj->modelWorldMtx[1][3] + 100.0f;
+    if (y > pos.y) {
+        npc->position.y = y;
+    } else {
+        npc->position.z = 0.0f;
+        npc->position.x = 0.0f;
+        npc->position.y = pos.y;
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+
+s32 starstone_sound_onoff(EventEntry* event, BOOL isFirstCall) {
+    s32 val = evtGetValue(event, event->args[0]);
+    EffectEntry* effect = itemNameToPtr("stone")->effect;
+    if (effect != NULL) {
+        if (val == 0) {
+            *(u16*)((u8*)effect->userdata + 0x4) &= ~4;
+        }
+        if (val == 1) {
+            *(u16*)((u8*)effect->userdata + 0x4) |= 4;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+
+s32 evt_boss_stone_r(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    EffectEntry* effect = itemNameToPtr("stone")->effect;
+    f32 value;
+    value = evtGetFloat(event, args[0]);
+    *(f32*)((u8*)effect->userdata + 0x1C) = value;
+    return EVT_RETURN_DONE;
+}
+
+
+
+s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
+    ItemEntry* item = itemNameToPtr("stone");
+    EffectEntry* eff1 = effNameToPtr("eff_1");
+    EffectEntry* eff2 = effNameToPtr("eff_2");
+    if (item != NULL) {
+        if (eff1 != NULL) {
+            *(f32*)((u8*)eff1->userdata + 0x4) = item->position.x;
+            *(f32*)((u8*)eff1->userdata + 0x8) = 15.0f + item->position.y;
+            *(f32*)((u8*)eff1->userdata + 0xC) = item->position.z;
+        }
+        if (eff2 != NULL) {
+            *(f32*)((u8*)eff2->userdata + 0x4) = item->position.x;
+            *(f32*)((u8*)eff2->userdata + 0x8) = 15.0f + item->position.y;
+            *(f32*)((u8*)eff2->userdata + 0xC) = item->position.z;
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+
+
+// NONMATCHING: the constant {0xFF,0xFF,0xFF,0} lands at .rodata 6220 anonymously instead of retail's named
+// `dat_tou2_0000a738` at 4424.
+static inline GXColor gansColor(u8 a) {
+    GXColor c = {0xFF, 0xFF, 0xFF, 0};
+    c.a = a;
+    return c;
+}
 static void callback(TevCallbackParam* param) {
-    GXColor color = {0, 0xFF, 0xFF, 0};
     s32 stage = param->field_C;
     s32 field_10 = param->field_10;
     s32 field_14 = param->field_14;
     s32 field_18 = param->field_18;
-
-    color.a = gans_alpha;
+    GXColor color = gansColor(gans_alpha);
     GXSetTevColor(GX_TEVREG0, color);
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -4112,122 +4513,31 @@ static void callback(TevCallbackParam* param) {
     param->field_10 = field_10;
 }
 
-static f32 cosf(f32 x) {
-    return cos(x);
-}
 
-static f32 sinf(f32 x) {
-    return sin(x);
-}
 
-void GXSetTexCoordGen(GXTexCoordID dst_coord, GXTexGenType func, GXTexGenSrc src_param, u32 mtx) {
-    GXSetTexCoordGen2(dst_coord, func, src_param, mtx, GX_FALSE, GX_PTIDENTITY);
-}
-
-static void screen_capture(CameraId camId, void* param) {
-    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
-    GXSetTexCopyDst(0x130, 0xF0, 4, 1);
-    GXCopyTex(screen_wp->field_0x0, 0);
-    GXPixModeSync();
-    screen_wp->field_0x4 = 1;
-}
-
-void kyaku_disp(CameraId camera, void* param) {
-    extLoadRenderMode();
-    extLoadVertex();
-    extLoadTexture();
-    extLoadTev();
-    extDraw();
-    extLoadTextureExit();
-}
-
-static f32 randf(f32 min, f32 max) {
-    f32 t = (f32)__tou_rand() / 32767.0f;
-    return t * (max - min) + min;
-}
-
-// dont_inline keeps __tou_rand/__tou_srand real `bl` calls from randf and ext_kyaku_init, as in retail.
-#pragma dont_inline on
-u32 __tou_rand(void) {
-    x[0] = x[0] * 1103515245 + 12345;
-    return (x[0] >> 16) & 0x7FFF;
-}
-
-void __tou_srand(s32 seed) {
-    x[0] = seed;
-}
-#pragma dont_inline reset
-
-static void pose_change(KyakuState* state, const char* name1, const char* name2) {
-    KyakuEntry* entry;
-    s32 i;
-
-    for (i = 0, entry = kyaku_wp->entries; i < kyaku_wp->count2; i++, entry++) {
-        if (strcmp(entry->name1, name1) == 0 &&
-            strcmp(entry->name2, name2) == 0) {
-            break;
-        }
+s32 gans_white_on(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("ガンス");
+    if (isFirstCall) {
+        gans_alpha = 0;
+        mapSetTevCallback(0xC, callback);
+        animPoseSetMaterialFlagOn(npc->poseId, 0x0C000000);
     }
-    if (i < kyaku_wp->count2 && state->poseId != i) {
-        state->poseId = i;
-        state->field_0x18 = gp->renderTime + (s64)rand();
+    gans_alpha += 5;
+    if (gans_alpha > 0xFF) {
+        gans_alpha = 0xFF;
+        return EVT_RETURN_DONE;
     }
+    return EVT_RETURN_BLOCK;
 }
 
-// dont_inline keeps the real `bl pose_main` that ext_kyaku_main has in retail.
-#pragma dont_inline on
-static void pose_main(void) {
-    s32 i;
-    ExtPose* pose = extGetPosePtr();
-    KyakuState* state = kyaku_wp->array1;
-    f32 ratio;
 
-    for (i = 0; i < kyaku_wp->count1; i++, state++, pose++) {
-        KyakuEntry* entry = &kyaku_wp->entries[state->poseId];
-        u64 delta = gp->renderTime - state->field_0x18;
-        u32 ticks = OS_TIMER_CLOCK / 1000;
 
-        ratio = 60.0f * (f32)(delta / ticks) / 1000.0f / entry->field_0x1C;
-        if (ratio >= 1.0f) {
-            state->field_0x18 = gp->renderTime;
-            ratio = 0.0f;
-        }
-        pose->field_0x10 = entry->field_0x20 + (s32)((f32)(entry->field_0x24 - 1) * ratio);
-    }
+s32 gans_white_off(EventEntry* event, BOOL isFirstCall) {
+    NpcEntry* npc = npcNameToPtr("ガンス");
+    mapSetTevCallback(0xC, NULL);
+    animPoseSetMaterialFlagOff(npc->poseId, 0x0C000000);
+    return EVT_RETURN_DONE;
 }
-#pragma dont_inline reset
 
-static void pose_init(void) {
-    char buf1[0x28];
-    char buf2[0x20];
-    ExtKyakuData* data;
-    s32 i;
-    s32 start;
 
-    data = ext_kyaku_data;
-    i = 0;
-    strcpy(buf1, "");
-    strcpy(buf2, "");
-    kyaku_wp->count2 = -1;
-    do {
-        if (strcmp(data->name1, buf1) != 0) {
-            strcpy(buf1, data->name1);
-            strcpy(buf2, "");
-        }
-        if (strcmp(data->name2, buf2) != 0) {
-            strcpy(buf2, data->name2);
-            start = i;
-            kyaku_wp->count2++;
-        }
-        strcpy(kyaku_wp->entries[kyaku_wp->count2].name1, buf1);
-        strcpy(kyaku_wp->entries[kyaku_wp->count2].name2, buf2);
-        kyaku_wp->entries[kyaku_wp->count2].field_0x20 = start;
-        kyaku_wp->entries[kyaku_wp->count2].field_0x24 = i - start + 1;
-        kyaku_wp->entries[kyaku_wp->count2].field_0x1C = data->value;
-        kyaku_wp->entries[kyaku_wp->count2].field_0x18 = 1;
-        i++;
-        data++;
-    } while (data->name1 != NULL);
-    kyaku_wp->count2++;
-}
 // clang-format on

@@ -71,13 +71,38 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// NONMATCHING (78.27%): unk_yuu_000034bc; needs register/allocation scheduling work
+USER_FUNC(unk_yuu_0000371c) {
+    camShiftReset();
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(unk_evt_yuu_00015fe0)
+    CALL(unk_yuu_000034bc)
+    RETURN
+EVT_END()
+
+void unk_yuu_0000365c(CameraId cameraId, void* param) {
+    Yuuminigame4Work* work = param;
+    s32 i;
+    if (work != NULL) {
+        for (i = 0; i < work->count; i++) {
+            if (work[i].unk0 == 0) {
+                Vec pos = work[i].position;
+                if ((gp->retraceCount & 0x1F) < 9) {
+                    pos.y += 5.0f;
+                }
+                iconDispGx(&pos, 0, 0x1B6, 1.0f);
+            }
+        }
+    }
+}
+// NONMATCHING (88.26%): unk_yuu_000034bc; needs register/allocation scheduling work
 USER_FUNC(unk_yuu_000034bc) {
     s32 prev = 0;
+    s32 num = 1;
     YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
     MarioWork* mario = marioGetPtr();
     if (isFirstCall) {
-        s32 num = 1;
         s32 i;
         if (unk_yuu_bss00000010 != NULL) {
             prev = 1;
@@ -97,9 +122,13 @@ USER_FUNC(unk_yuu_000034bc) {
         s32 i;
         for (i = 0; i < unk_yuu_bss00000010->count; i++) {
             Yuuminigame4Work* e = &unk_yuu_bss00000010[i];
-            if (e->unk4 == 0) {
+            switch (e->unk4) {
+            case 0:
                 e->position = mario->position;
                 e->position.y += 40.0f;
+                break;
+            case 1:
+                break;
             }
         }
     }
@@ -109,161 +138,49 @@ USER_FUNC(unk_yuu_000034bc) {
     return EVT_RETURN_BLOCK;
 }
 
-EVT_BEGIN(unk_evt_yuu_00015fe0)
-    CALL(unk_yuu_000034bc)
-    RETURN
-EVT_END()
 
-// NONMATCHING (77.57%): evt_ryushi; needs register/allocation scheduling work
-USER_FUNC(evt_ryushi) {
-    YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
-    Yuuminigame4Data* data = work2->data;
-    RyushiEntry* wp = xwp;
-    Vec pos = { 0.0f, 0.0f, 0.0f };
-    f32 f20;
-    f32 f21;
-    f32 f22;
-    f32 f23 = 1.0f;
-    s32 i;
 
-    pos.x = wp->x;
-    pos.y = wp->y;
-    pos.z = wp->z;
 
-    f20 = camGetPtr(4)->cameraAt.x;
-    f22 = 0.0f;
-    f21 = f22;
-    switch (data->unk10) {
-    case 2:
-    case 3:
-    case 4:
-        f22 = 2.9166667f;
-        f21 = 1.0f;
-        break;
-    case 6:
-    case 7:
-    case 8:
-        f22 = 2.9166667f;
-        f21 = 1.0f;
-        break;
-    }
-    switch (data->unk10) {
-    case 1:
-    case 5:
-        f21 = (f32)(0x3C - data->unk14) / 60.0f;
-        f23 = f21;
-        break;
-    case 2:
-    case 6:
-        f22 = f22 * (f32)(0x3C - data->unk14) / 60.0f;
-        break;
-    case 4:
-    case 8:
-        f21 = (f32)data->unk14 / 48.0f;
-        break;
-    }
 
-    wp->unk24++;
-    if (wp->unk24 <= 0x14) {
-        wp->unk20 = wp->unk24 * 12;
-    } else {
-        wp->unk20 = 0xFF;
-    }
-    if (wp->unk24 & 1) {
-        wp->unk20 /= 2;
-    }
-    f23 *= 0.5f;
 
-    for (i = 1; i < ryuwp; i++) {
-        RyushiEntry* e = &wp[i];
 
-        switch (e->unk04) {
-        case 0:
-            e->z -= f22;
-            if (e->z < -200.0f) {
-                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
-                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
-                e->z = 200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
-            }
-            break;
-        case 1:
-            e->z += f22;
-            if (e->z > 200.0f) {
-                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
-                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
-                e->z = -200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
-            }
-            break;
-        }
-        {
-            f32 step = 10.0f * wp->unk08;
-            f32 t = (e->x - f20) / (step * 0.5f);
-            s32 n = (s32)t;
-            if (n != 0) {
-                if (n > 0) {
-                    n += 1;
-                } else {
-                    n -= 1;
-                }
-                n = -n;
-                n /= 2;
-                e->x = e->x + (f32)n * step;
-            }
-        }
-        {
-            f32 a = e->z;
-            if (a < 0.0f) {
-                a = -a;
-            }
-            a = a - 100.0f;
-            if (a < 0.0f) {
-                a = 0.0f;
-            } else if (a > 100.0f) {
-                a = 100.0f;
-            }
-            e->unk20 = (s32)(0.7 * (255.0f * ((100.0f - a) / 100.0f) * f21));
-        }
-        e->scale = f23;
-    }
 
-    dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
-    return EVT_RETURN_DONE;
-}
 
-// NONMATCHING (66.84%): evt_ryushi_clr; needs register/allocation scheduling work
-USER_FUNC(evt_ryushi_clr) {
-    RyushiEntry* wp = xwp;
-    s32 n = ryuwp;
-    s32 i;
 
-    wp->unk04 = evtGetValue(event, event->args[0]);
-    wp->unk24 = 0;
-    wp->unk20 = 0;
-    wp->x = 0.0f;
-    wp->y = 0.0f;
-    wp->z = 0.0f;
-    wp->unk08 = 50.0f;
-    wp->unk0C = 50.0f;
-    wp->unk10 = 100.0f;
-    wp = &wp[1];
-    for (i = 1; i < n; i++, wp++) {
-        s32 a = (i - 1) % 10;
-        s32 b = ((i - 1) / 10) % 6;
-        s32 c = (i - 1) / 60;
-        f32 r08 = xwp->unk08;
-        f32 r0C = xwp->unk0C;
-        f32 r10 = xwp->unk10;
 
-        wp->unk08 = r08 * 0.5f * (b + c) + ((f32)a * r08 - r08 * 4.5f);
-        wp->unk0C = (f32)b * r0C - r0C * 2.5f;
-        wp->unk10 = (f32)c * r10 - r10 * 1.5f;
-        wp->x = wp->unk08 + randf(-0.3f * xwp->unk08, 0.3f * xwp->unk08);
-        wp->y = wp->unk0C + randf(-0.3f * xwp->unk0C, 0.3f * xwp->unk0C);
-        wp->z = wp->unk10 + randf(-0.3f * xwp->unk10, 0.3f * xwp->unk10);
-        wp->scale = 0.5f;
-    }
-    return EVT_RETURN_DONE;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 EVT_BEGIN(ryushi_event)
     SET_VALUE(GW(0), 0)
@@ -293,11 +210,19 @@ EVT_BEGIN(yuu_03_kaijo_init2)
     RETURN
 EVT_END()
 
-USER_FUNC(yuuminigame4_set_phase) {
-    s32* args = event->args;
-    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
-    Yuuminigame4Data* data = work->data;
-    data->phase = evtGetValue(event, args[1]);
+USER_FUNC(unk_yuu_0000341c) {
+    Yuuminigame4Work* work = unk_yuu_bss00000010;
+    if (work != NULL) {
+        YuuminigameWork* work2 = work->work;
+        Yuuminigame4Data* data = work2->data;
+        if (data->subEvent != NULL) {
+            evtDeleteID(data->subEvent->eventId);
+            data->subEvent = NULL;
+            _mapFree(unk_yuu_bss00000010);
+            data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
+            data->subEvent->lwData[0] = (s32)unk_yuu_bss00000010->work;
+        }
+    }
     return EVT_RETURN_DONE;
 }
 
@@ -338,32 +263,25 @@ EVT_BEGIN(minigame04_start_cam_cancel)
     RETURN
 EVT_END()
 
-USER_FUNC(yuuminigame4_opening_chk) {
+USER_FUNC(yuuminigame4_set_phase) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
     Yuuminigame4Data* data = work->data;
-    if (data->flags & 1) {
-        evtSetValue(event, args[1], 1);
-    } else {
-        evtSetValue(event, args[1], 0);
+    data->phase = evtGetValue(event, args[1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_slit_cancel) {
+    MarioWork* mario = marioGetPtr();
+    if (mario->trigFlags & 1) {
+        mario->trigFlags &= ~1;
+        marioSlitForceCancel();
     }
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(yuuminigame4_opening_on_off) {
-    s32* args = event->args;
-    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
-    Yuuminigame4Data* data = work->data;
-    if (evtGetValue(event, args[1]) != 0) {
-        data->flags |= 1;
-    } else {
-        data->flags &= ~1;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(yuunpc_go) {
-    yuunpc_wp_flag_off(1);
+USER_FUNC(re_init_yuunpc) {
+    ext_yuunpc_minigame4_init_sub();
     return EVT_RETURN_DONE;
 }
 
@@ -404,14 +322,23 @@ EVT_BEGIN(minigame04_start)
     RETURN
 EVT_END()
 
-USER_FUNC(re_init_yuunpc) {
-    ext_yuunpc_minigame4_init_sub();
+USER_FUNC(yuunpc_go) {
+    yuunpc_wp_flag_off(1);
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(unk_yuu_0000371c) {
-    camShiftReset();
-    return EVT_RETURN_DONE;
+static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall) {
+    MarioWork* mario = marioGetPtr();
+    if (isFirstCall) {
+        unk_8009f9c8();
+        if (mario->flags & 0x100000) {
+            motSlitCancel3();
+        }
+    }
+    if (!marioRollKeyDisable()) {
+        return EVT_RETURN_BLOCK;
+    }
+    return (mario->dispFlags & 0x01000000) ? 0 : 2;
 }
 
 EVT_BEGIN(minigame04_end)
@@ -520,170 +447,354 @@ EVT_BEGIN(yuu_03_init_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (84.86%): yuuminigame4_gamerule; needs register/allocation scheduling work
-s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
-    MarioWork* mario = marioGetPtr();
-    EventEntry* e;
-    f32 angle;
-    f32 f;
-
-    data->unk14--;
-
-    switch (data->unk10) {
-    case 0:
-        if (data->unk14 != 0) {
-            break;
-        }
-        if (irand(2) != 0) {
-            data->unk10 = 1;
-            e = evtEntryType(ryushi_event, 0, 0, 0);
-            e->lwData[0] = (s32)work;
-            e->lwData[1] = 1;
-        } else {
-            data->unk10 = 5;
-            e = evtEntryType(ryushi_event, 0, 0, 0);
-            e->lwData[0] = (s32)work;
-            e->lwData[1] = 0;
-        }
-        data->unk14 = 0x3C;
-        break;
-    case 1:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 2;
-        data->unk14 = 0x3C;
-        /* fallthrough */
-    case 2:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 3;
-        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
-        break;
-    case 3:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 4;
-        data->unk14 = 0x30;
-        break;
-    case 4:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 0;
-        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
-        evtSetValue(event, 0xFD050F80, 1);
-        break;
-    case 5:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 6;
-        data->unk14 = 0x3C;
-        break;
-    case 6:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 7;
-        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
-        break;
-    case 7:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 8;
-        data->unk14 = 0x30;
-        break;
-    case 8:
-        if (data->unk14 != 0) {
-            break;
-        }
-        data->unk10 = 0;
-        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
-        evtSetValue(event, 0xFD050F80, 1);
-        break;
+USER_FUNC(yuuminigame4_opening_on_off) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame4Data* data = work->data;
+    if (evtGetValue(event, args[1]) != 0) {
+        data->flags |= 1;
+    } else {
+        data->flags &= ~1;
     }
-
-    switch (data->unk10) {
-    case 1:
-    case 2:
-        angle = data->unk18 + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
-        data->unk18 = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
-        break;
-    case 3:
-        angle = data->unk18 + 36.0f;
-        data->unk18 = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
-        break;
-    case 4:
-        angle = data->unk18 + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
-        data->unk18 = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
-        break;
-    case 5:
-    case 6:
-        angle = data->unk1C + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
-        data->unk1C = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
-        break;
-    case 7:
-        angle = data->unk1C + 36.0f;
-        data->unk1C = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
-        break;
-    case 8:
-        angle = data->unk1C + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
-        data->unk1C = (angle + 3600.0f) - (f32)((s32)((angle + 3600.0f) / 360.0f) * 360);
-        break;
-    }
-
-    if (mario->position.x < 1500.0f) {
-        f = 0.0f;
-        switch (data->unk10) {
-        case 2:
-        case 3:
-        case 4:
-            if (!(mario->dispFlags & 0x01000000)) {
-                f = 2.9166667f;
-            }
-            break;
-        case 6:
-        case 7:
-        case 8:
-            if (!(mario->dispFlags & 0x01000000)) {
-                f = -2.9166667f;
-            } else {
-                f = -0.0f;
-            }
-            break;
-        }
-        if (data->unk10 == 2 || data->unk10 == 6) {
-            f = f * (f32)(0x3C - data->unk14) / 60.0f;
-        }
-        mario->riderDelta.z += f;
-    }
-
-    if (mario->position.y <= -100.0f || mario->position.x >= 1500.0f) {
-        if (mario->position.y <= -100.0f) {
-            data->unk08 = 0x2BD;
-            yuucounter_flag_on(1);
-        } else {
-            data->unk08 = yuucounter_get_data();
-        }
-        data->unk10 = 0;
-        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
-        marioKeyOff();
-        partyKeyOff();
-        yuucounter_flag_on(2);
-        return 1;
-    }
-    return 0;
+    return EVT_RETURN_DONE;
 }
 
 // TODO: type
 // (globals declared above)
 
-void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
-    monteCountDisp();
+USER_FUNC(yuuminigame4_opening_chk) {
+    s32* args = event->args;
+    YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
+    Yuuminigame4Data* data = work->data;
+    if (data->flags & 1) {
+        evtSetValue(event, args[1], 1);
+    } else {
+        evtSetValue(event, args[1], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(u, 0.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(u, v);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, v);
+}
+
+// NONMATCHING (88%): ryushi_disp; needs register/allocation scheduling work
+void ryushi_disp(CameraId cameraId, void* param) {
+    RyushiEntry* wp = xwp;
+    Mtx mtx;
+    Mtx rot;
+    Mtx scale;
+    Mtx trans;
+    Mtx out;
+    GXTexObj texObj;
+    GXColor color;
+    f32 f29 = 0.0f;
+    f32 f30;
+    f32 f31;
+    s32 i;
+
+    PSMTXScale(mtx, wp->scale, wp->scale, 1.0f);
+    PSMTXTransApply(mtx, mtx, wp->x, wp->y, wp->z);
+    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
+    PSMTXConcat(mtx, rot, mtx);
+    effGetTexObj(0x1E, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    color.r = wp->unk38;
+    color.g = wp->unk3C;
+    color.b = wp->unk40;
+    color.a = 0;
+    GXSetTevColor(2, color);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(2);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 8, 8, 0xF);
+    GXSetTevAlphaIn(0, 7, 7, 7, 4);
+    GXSetTevOrder(1, 0xFF, 0xFF, 0xFF);
+    GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(1, 2, 4, 0, 0xF);
+    GXSetTevAlphaIn(1, 7, 1, 0, 7);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+    f31 = 0.0f;
+    wp = &xwp[1];
+    for (i = 1; i < ryuwp; i++, wp++) {
+        f30 = wp->scale;
+        if (f30 == f31) {
+            continue;
+        }
+        color.r = (s32)f29;
+        color.g = xwp->unk30;
+        color.b = xwp->unk34;
+        color.a = wp->unk20;
+        GXSetTevColor(1, color);
+        {
+            f32 t = (3.14f * (f32)i * 0.25f + wp->z * 0.125f) / 3.14f;
+            f32 d = 180.0f * t;
+            s32 k = (s32)(d / 360.0f);
+            if (d < 0.0f) {
+                k -= 1;
+            }
+            {
+                f32 a = d - (f32)(k * 360);
+                s32 idx = (s32)a;
+                f32 s = *(f32*)&yuusintbl[idx];
+                f29 = 3.0f;
+                PSMTXTrans(trans, f29 * s + wp->x, wp->y, wp->z);
+            }
+        }
+        PSMTXScale(scale, f30, f30, f30);
+        PSMTXConcat(trans, scale, trans);
+        PSMTXConcat(mtx, trans, trans);
+        PSMTXConcat(camGetPtr(cameraId)->view, trans, out);
+        GXLoadPosMtxImm(out, 0);
+        GXSetCurrentMtx(0);
+        polygon(-8.0f, -8.0f, 16.0f, 16.0f, 1.0f, 1.0f);
+    }
+}
+
+static f32 randf(f32 min, f32 max) {
+    f32 d = max - min;
+    f32 r = (f32)rand() / 32767.0f;
+    return r * d + min;
+}
+
+USER_FUNC(evt_ryushi_init) {
+    RyushiEntry* wp;
+    s32 i;
+    ryuwp = 0xF1;
+    wp = _mapAlloc(0x4004);
+    xwp = wp;
+    wp->unk04 = 0;
+    wp->unk24 = 0;
+    wp->unk20 = 0;
+    wp->x = 0.0f;
+    wp->y = 0.0f;
+    wp->z = 0.0f;
+    wp->scale = 1.0f;
+    wp->unk2C = 0xFF;
+    wp->unk30 = 0;
+    wp->unk34 = 0xFF;
+    wp->unk38 = 0xFF;
+    wp->unk3C = 0x80;
+    wp->unk40 = 0xFF;
+    wp = &wp[1];
+    for (i = 0xF0; i != 0; i--) {
+        wp->unk0 = 0;
+        wp++;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (93.02%): evt_ryushi_clr; reload xwp global for unk08/0C/10 matched; randf fneg order + r27/r28 still differ
+USER_FUNC(evt_ryushi_clr) {
+    RyushiEntry* wp = xwp;
+    s32 i;
+    s32 n = ryuwp;
+
+    wp->unk04 = evtGetValue(event, event->args[0]);
+    wp->unk24 = 0;
+    wp->unk20 = 0;
+    wp->x = 0.0f;
+    wp->y = 0.0f;
+    wp->z = 0.0f;
+    xwp->unk08 = 50.0f;
+    xwp->unk0C = 50.0f;
+    xwp->unk10 = 100.0f;
+    wp = &wp[1];
+    for (i = 1; i < n; i++, wp++) {
+        s32 a = (i - 1) % 10;
+        s32 b = ((i - 1) / 10) % 6;
+        s32 c = (i - 1) / 60;
+
+        wp->unk0 = 0;
+        wp->unk08 = xwp->unk08 * 0.5f * ((b + c) & 1) + ((f32)a * xwp->unk08 - xwp->unk08 * 4.5f);
+        wp->unk0C = (f32)b * xwp->unk0C - xwp->unk0C * 2.5f;
+        wp->unk10 = (f32)c * xwp->unk10 - xwp->unk10 * 1.5f;
+        wp->x = wp->unk08 + randf(-(0.3f * xwp->unk08), 0.3f * xwp->unk08);
+        wp->y = wp->unk0C + randf(-(0.3f * xwp->unk0C), 0.3f * xwp->unk0C);
+        wp->z = wp->unk10 + randf(-(0.3f * xwp->unk10), 0.3f * xwp->unk10);
+        wp->scale = 0.5f;
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// NONMATCHING (77.7%): evt_ryushi; needs register/allocation scheduling work
+USER_FUNC(evt_ryushi) {
+    YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
+    Yuuminigame4Data* data = work2->data;
+    RyushiEntry* wp = xwp;
+    Vec pos = { 0.0f, 0.0f, 0.0f };
+    f32 f20;
+    f32 f21;
+    f32 f22;
+    f32 f23 = 1.0f;
+    s32 i;
+
+    pos.x = wp->x;
+    pos.y = wp->y;
+    pos.z = wp->z;
+
+    f22 = 0.0f;
+    f21 = f22;
+    f20 = camGetPtr(4)->cameraAt.x;
+    switch (data->unk10) {
+    case 2:
+    case 3:
+    case 4:
+        f22 = 2.9166667f;
+        f21 = 1.0f;
+        break;
+    case 6:
+    case 7:
+    case 8:
+        f22 = 2.9166667f;
+        f21 = 1.0f;
+        break;
+    }
+    switch (data->unk10) {
+    case 1:
+    case 5:
+        f21 = (f32)(0x3C - data->unk14) / 60.0f;
+        f23 = f21;
+        break;
+    case 2:
+    case 6:
+        f22 = f22 * (f32)(0x3C - data->unk14) / 60.0f;
+        break;
+    case 4:
+    case 8:
+        f21 = (f32)data->unk14 / 48.0f;
+        break;
+    }
+
+    wp->unk24++;
+    if (wp->unk24 <= 0x14) {
+        wp->unk20 = wp->unk24 * 12;
+    } else {
+        wp->unk20 = 0xFF;
+    }
+    if (wp->unk24 & 1) {
+        wp->unk20 /= 2;
+    }
+    f23 *= 0.5f;
+
+    for (i = 1; i < ryuwp; i++) {
+        RyushiEntry* e = &wp[i];
+
+        switch (e->unk04) {
+        case 0:
+            e->z -= f22;
+            if (e->z < -200.0f) {
+                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
+                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
+                e->z = 200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
+            }
+            break;
+        case 1:
+            e->z += f22;
+            if (e->z > 200.0f) {
+                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
+                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
+                e->z = -200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
+            }
+            break;
+        }
+        {
+            f32 step = 10.0f * wp->unk08;
+            f32 t = (e->x - f20) / (step * 0.5f);
+            s32 n = (s32)t;
+            if (n != 0) {
+                if (n > 0) {
+                    n += 1;
+                } else {
+                    n -= 1;
+                }
+                n = -n;
+                n /= 2;
+                e->x = e->x + (f32)n * step;
+            }
+        }
+        {
+            f32 a = e->z;
+            if (a < 0.0f) {
+                a = -a;
+            }
+            a = a - 100.0f;
+            if (a < 0.0f) {
+                a = 0.0f;
+            } else if (a > 100.0f) {
+                a = 100.0f;
+            }
+            e->unk20 = (s32)(0.7 * (255.0f * ((100.0f - a) / 100.0f) * f21));
+        }
+        e->scale = f23;
+    }
+
+    dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
+    return EVT_RETURN_DONE;
+}
+
+void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    Yuuminigame4Data* data = work->data;
+    RyushiEntry* wp;
+    s32 i;
+
+    data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
+    data->subEvent->lwData[0] = event->lwData[0];
+    data->flags |= 1;
+
+    ryuwp = 0xF1;
+    wp = _mapAlloc(0x4004);
+    xwp = wp;
+    wp->unk04 = 0;
+    wp->unk24 = 0;
+    wp->unk20 = 0;
+    wp->x = 0.0f;
+    wp->y = 0.0f;
+    wp->z = 0.0f;
+    wp->scale = 1.0f;
+    wp->unk2C = 0xFF;
+    wp->unk30 = 0;
+    wp->unk34 = 0xFF;
+    wp->unk38 = 0xFF;
+    wp->unk3C = 0x80;
+    wp->unk40 = 0xFF;
+    wp = &wp[1];
+    for (i = 0xF0; i != 0; i--) {
+        wp->unk0 = 0;
+        wp++;
+    }
 }
 
 void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
@@ -781,222 +892,175 @@ void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
     mapObjRotate("pera_9", 0.0f, 0.0f, data->unk1C);
 }
 
-void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
-    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
-    Yuuminigame4Data* data = work->data;
-    RyushiEntry* wp;
-    s32 i;
-
-    data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
-    data->subEvent->lwData[0] = event->lwData[0];
-    data->flags |= 1;
-
-    ryuwp = 0xF1;
-    wp = _mapAlloc(0x4004);
-    xwp = wp;
-    wp->unk04 = 0;
-    wp->unk24 = 0;
-    wp->unk20 = 0;
-    wp->x = 0.0f;
-    wp->y = 0.0f;
-    wp->z = 0.0f;
-    wp->scale = 1.0f;
-    wp->unk2C = 0xFF;
-    wp->unk30 = 0;
-    wp->unk34 = 0xFF;
-    wp->unk38 = 0xFF;
-    wp->unk3C = 0x80;
-    wp->unk40 = 0xFF;
-    wp = &wp[1];
-    for (i = 0xF0; i != 0; i--) {
-        wp->unk0 = 0;
-        wp++;
-    }
+void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
+    monteCountDisp();
 }
 
-USER_FUNC(evt_ryushi_init) {
-    RyushiEntry* wp;
-    s32 i;
-    ryuwp = 0xF1;
-    wp = _mapAlloc(0x4004);
-    xwp = wp;
-    wp->unk04 = 0;
-    wp->unk24 = 0;
-    wp->unk20 = 0;
-    wp->x = 0.0f;
-    wp->y = 0.0f;
-    wp->z = 0.0f;
-    wp->scale = 1.0f;
-    wp->unk2C = 0xFF;
-    wp->unk30 = 0;
-    wp->unk34 = 0xFF;
-    wp->unk38 = 0xFF;
-    wp->unk3C = 0x80;
-    wp->unk40 = 0xFF;
-    wp = &wp[1];
-    for (i = 0xF0; i != 0; i--) {
-        wp->unk0 = 0;
-        wp++;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static f32 randf(f32 min, f32 max) {
-    f32 d = max - min;
-    f32 r = (f32)rand() / 32767.0f;
-    return r * d + min;
-}
-
-// NONMATCHING (87.88%): ryushi_disp; needs register/allocation scheduling work
-void ryushi_disp(CameraId cameraId, void* param) {
-    RyushiEntry* wp = xwp;
-    Mtx mtx;
-    Mtx rot;
-    Mtx scale;
-    Mtx trans;
-    Mtx out;
-    GXTexObj texObj;
-    GXColor color;
-    f32 f29 = 0.0f;
-    f32 f30;
-    f32 f31;
-    s32 i;
-
-    PSMTXScale(mtx, wp->scale, wp->scale, 1.0f);
-    PSMTXTransApply(mtx, mtx, wp->x, wp->y, wp->z);
-    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
-    PSMTXConcat(mtx, rot, mtx);
-    effGetTexObj(0x1E, &texObj);
-    GXLoadTexObj(&texObj, 0);
-    color.r = wp->unk38;
-    color.g = wp->unk3C;
-    color.b = wp->unk40;
-    color.a = 0;
-    GXSetTevColor(2, color);
-    GXSetNumChans(0);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-    GXSetNumTevStages(2);
-    GXSetTevOrder(0, 0, 0, 0xFF);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 8, 8, 0xF);
-    GXSetTevAlphaIn(0, 7, 7, 7, 4);
-    GXSetTevOrder(1, 0xFF, 0xFF, 0xFF);
-    GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(1, 2, 4, 0, 0xF);
-    GXSetTevAlphaIn(1, 7, 1, 0, 7);
-    GXSetCullMode(0);
-    GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-
-    f31 = 0.0f;
-    wp = &xwp[1];
-    for (i = 1; i < ryuwp; i++, wp++) {
-        f30 = wp->scale;
-        if (f30 == f31) {
-            continue;
-        }
-        color.r = (s32)f29;
-        color.g = wp->unk30;
-        color.b = wp->unk34;
-        color.a = wp->unk20;
-        GXSetTevColor(1, color);
-        {
-            f32 t = (3.1415927f * (f32)i * 0.25f + wp->z * 0.125f) / 3.1415927f;
-            f32 d = 180.0f * t;
-            s32 k = (s32)(d / 360.0f);
-            if (d < 0.0f) {
-                k -= 1;
-            }
-            {
-                f32 a = d - (f32)(k * 360);
-                s32 idx = (s32)a;
-                f32 s = *(f32*)&yuusintbl[idx];
-                PSMTXTrans(trans, 3.0f * s + wp->x, wp->y, wp->z);
-            }
-        }
-        PSMTXScale(scale, f30, f30, f30);
-        PSMTXConcat(trans, scale, trans);
-        PSMTXConcat(mtx, trans, trans);
-        PSMTXConcat(camGetPtr(cameraId)->view, trans, out);
-        GXLoadPosMtxImm(out, 0);
-        GXSetCurrentMtx(0);
-        polygon(-8.0f, -8.0f, 16.0f, 16.0f, 1.0f, 1.0f);
-    }
-}
-
-static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x, y, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x + w, y, 0.0f);
-    GXTexCoord2f32(u, 0.0f);
-    GXPosition3f32(x + w, y - h, 0.0f);
-    GXTexCoord2f32(u, v);
-    GXPosition3f32(x, y - h, 0.0f);
-    GXTexCoord2f32(0.0f, v);
-}
-
-static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall) {
+// NONMATCHING (96.12%): yuuminigame4_gamerule; needs register/allocation scheduling work
+s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
     MarioWork* mario = marioGetPtr();
-    if (isFirstCall) {
-        unk_8009f9c8();
-        if (mario->flags & 0x100000) {
-            motSlitCancel3();
+    EventEntry* e;
+    f32 f;
+
+    data->unk14--;
+
+    switch (data->unk10) {
+    case 0:
+        if (data->unk14 != 0) {
+            break;
         }
-    }
-    if (!marioRollKeyDisable()) {
-        return EVT_RETURN_BLOCK;
-    }
-    return (mario->dispFlags & 0x01000000) ? 0 : 2;
-}
-
-USER_FUNC(evt_slit_cancel) {
-    MarioWork* mario = marioGetPtr();
-    if (mario->trigFlags & 1) {
-        mario->trigFlags &= ~1;
-        marioSlitForceCancel();
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(unk_yuu_0000341c) {
-    Yuuminigame4Work* work = unk_yuu_bss00000010;
-    if (work != NULL) {
-        YuuminigameWork* work2 = work->work;
-        Yuuminigame4Data* data = work2->data;
-        if (data->subEvent != NULL) {
-            evtDeleteID(data->subEvent->eventId);
-            data->subEvent = NULL;
-            _mapFree(unk_yuu_bss00000010);
-            data->subEvent = evtEntryType(unk_evt_yuu_00015fe0, 0, 0, 0);
-            data->subEvent->lwData[0] = (s32)unk_yuu_bss00000010->work;
+        if (irand(2) != 0) {
+            data->unk10 = 1;
+            e = evtEntryType(ryushi_event, 0, 0, 0);
+            e->lwData[0] = (s32)work;
+            e->lwData[1] = 1;
+        } else {
+            data->unk10 = 5;
+            e = evtEntryType(ryushi_event, 0, 0, 0);
+            e->lwData[0] = (s32)work;
+            e->lwData[1] = 0;
         }
+        data->unk14 = 0x3C;
+        break;
+    case 1:
+        if (data->unk14 == 0) {
+            data->unk10 = 2;
+            data->unk14 = 0x3C;
+        }
+        /* fallthrough */
+    case 2:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 3;
+        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
+        break;
+    case 3:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 4;
+        data->unk14 = 0x30;
+        break;
+    case 4:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 0;
+        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        evtSetValue(event, 0xFD050F80, 1);
+        break;
+    case 5:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 6;
+        data->unk14 = 0x3C;
+        break;
+    case 6:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 7;
+        data->unk14 = (irand(0x7D1) + 0xBB8) * 0x3C / 1000;
+        break;
+    case 7:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 8;
+        data->unk14 = 0x30;
+        break;
+    case 8:
+        if (data->unk14 != 0) {
+            break;
+        }
+        data->unk10 = 0;
+        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        evtSetValue(event, 0xFD050F80, 1);
+        break;
     }
-    return EVT_RETURN_DONE;
-}
 
-// NONMATCHING (98.85%): unk_yuu_0000365c; needs register/allocation scheduling work
-void unk_yuu_0000365c(CameraId cameraId, void* param) {
-    Yuuminigame4Work* work = param;
-    if (param != NULL) {
-        s32 i;
-        for (i = 0; i < work->count; i++) {
-            Yuuminigame4Work* e = &work[i];
-            if (e->unk0 == 0) {
-                Vec pos = e->position;
-                if ((gp->retraceCount & 0x1F) < 9) {
-                    pos.y += 5.0f;
+    switch (data->unk10) {
+    case 0:
+        break;
+    case 1:
+    case 2:
+        data->unk18 = data->unk18 + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
+        data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
+        break;
+    case 3:
+        data->unk18 = data->unk18 + 36.0f;
+        data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
+        break;
+    case 4:
+        data->unk18 = data->unk18 + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
+        data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
+        break;
+    case 5:
+    case 6:
+        data->unk1C = data->unk1C + 36.0f * (120.0f - (f32)(data->unk14 - 1)) / 120.0f;
+        data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
+        break;
+    case 7:
+        data->unk1C = data->unk1C + 36.0f;
+        data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
+        break;
+    case 8:
+        data->unk1C = data->unk1C + 36.0f * (f32)(data->unk14 - 1) / 48.0f;
+        data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
+        break;
+    }
+
+    if (mario->position.x < 1500.0f) {
+        f = 0.0f;
+        switch (data->unk10) {
+        case 2:
+        case 3:
+        case 4:
+            if (mario->dispFlags & 0x01000000) {
+                if (mario->flags & 0x00100000) {
+                    f = 0.0f;
                 }
-                iconDispGx(&pos, 0, 0x1B6, 1.0f);
+            } else {
+                f = 2.9166667f;
             }
+            break;
+        case 6:
+        case 7:
+        case 8:
+            if (mario->dispFlags & 0x01000000) {
+                if (mario->flags & 0x00100000) {
+                    f = -0.0f;
+                } else {
+                    f = -0.0f;
+                }
+            } else {
+                f = -2.9166667f;
+            }
+            break;
         }
+        if (data->unk10 == 2 || data->unk10 == 6) {
+            f = f * (f32)(0x3C - data->unk14) / 60.0f;
+        }
+        mario->riderDelta.z += f;
     }
+
+    if (mario->position.y <= -100.0f || mario->position.x >= 1500.0f) {
+        if (mario->position.y <= -100.0f) {
+            data->unk08 = 0x2BD;
+            yuucounter_flag_on(1);
+        } else {
+            data->unk08 = yuucounter_get_data();
+        }
+        data->unk10 = 0;
+        data->unk14 = (irand(0xF3D) + 100) * 0x3C / 1000;
+        marioKeyOff();
+        partyKeyOff();
+        yuucounter_flag_on(2);
+        return 1;
+    }
+    return 0;
 }
+
 // clang-format on

@@ -10,7 +10,7 @@ extern voidfunctionptr _dtors[];
 
 extern void* unk_gor_bss00000000[];
 extern s32 unk_gor_bss00000004[];
-extern BattleSetupData btlsetup_gor_tbl[];
+extern BattleSetupData btlsetup_gor_tbl[7];
 extern u32 btl_gor_setup_no_tbl[];
 
 USER_FUNC(unk_gor_000000cc);

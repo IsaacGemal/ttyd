@@ -23,7 +23,7 @@ EVT_DEF(gon_11_init_evt);
 EVT_DEF(gon_12_init_evt);
 EVT_DEF(gon_13_init_evt);
 EVT_DEF(gon_bt00_init_evt);
-extern BattleSetupData btlsetup_gon_tbl[];
+extern BattleSetupData btlsetup_gon_tbl[22];
 extern u32 btl_gon_setup_no_tbl[];
 
 void _prolog(void);

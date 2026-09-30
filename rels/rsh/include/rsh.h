@@ -1,6 +1,7 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "driver/npcdrv.h"
 
 typedef void (*voidfunctionptr)(void);
 
@@ -39,7 +40,7 @@ EVT_DEF(rsh_07_a_init_evt);
 EVT_DEF(rsh_07_b_init_evt);
 EVT_DEF(rsh_07_c_init_evt);
 EVT_DEF(rsh_08_a_init_evt);
-extern u32 btlsetup_rsh_tbl[];
+extern BattleSetupData btlsetup_rsh_tbl[3];
 extern u32 btl_rsh_setup_no_tbl[];
 EVT_DEF(simi_check);
 EVT_DEF(simi_offscreen_check);

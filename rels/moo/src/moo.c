@@ -9,6 +9,8 @@ typedef void (*voidfunctionptr)(void);
 extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
 
+#pragma pool_data off // keep the 8 event-name literals as separate strings, as the original does
+
 #pragma force_active on
 // clang-format off
 extend_data(moo_0,

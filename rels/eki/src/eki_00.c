@@ -29,11 +29,13 @@
 #include "forcedata.h"
 #include "math_ext.h"
 #include "mario/mario.h"
+#include "mario/mario_motion.h"
 #include "mario/mariost.h"
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
 #include "party.h"
 #include "party/party_motion.h"
+#include "party/party_nokonoko.h"
 #include "system.h"
 #include <stdlib.h>
 #include <string.h>
@@ -55,16 +57,16 @@ typedef struct MoamoaPose {
     u16 field_0x02;     // 0x02
     u16 field_0x04;     // 0x04
     u16 field_0x06;     // 0x06
-    f32 x;              // 0x08
-    f32 y;              // 0x0C
-    f32 z;              // 0x10
+    Vec position;       // 0x08
     f32 field_0x14;     // 0x14
     s16 field_0x18;     // 0x18
     u8 pad_0x1A[2];     // 0x1A
     f32 field_0x1C;     // 0x1C
     f32 field_0x20;     // 0x20
     s16 field_0x24;     // 0x24
-    u8 pad_0x26[0x16];  // 0x26
+    u8 pad_0x26[2];     // 0x26
+    Vec field_0x28;     // 0x28
+    u8 pad_0x34[8];     // 0x34
     s16 animId;         // 0x3C
     u16 field_0x3E;     // 0x3E
     OSTime field_0x40;  // 0x40
@@ -91,7 +93,13 @@ typedef struct MoamoaWork {
     s16 field_0x42;    // 0x42
     u8 pad_0x44[8];    // 0x44
     s32 field_0x4C;    // 0x4C
-    MoamoaNpc npcs[52];// 0x50
+    MoamoaNpc npcs[32];// 0x50
+    f32 field_0x550;   // 0x550
+    f32 field_0x554;   // 0x554
+    s32 field_0x558;   // 0x558
+    f32 field_0x55C;   // 0x55C
+    u8 pad_0x560[4];   // 0x560
+    Vec field_0x564;   // 0x564
 } MoamoaWork;
 
 typedef struct MoamoaData {
@@ -103,6 +111,97 @@ typedef struct MoamoaData {
 static MoamoaWork* wp;
 
 const Vec vec3_eki_000088a8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_000088b4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_000088c0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_000088cc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_000088d8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_000088e4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_000088f0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_000088fc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_00008908 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_00008914 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_00008920 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_0000892c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_eki_00008884 = {0.0f, 0.0f, 10.0f};
+const Vec vec3_eki_00008890 = {0.0f, 0.0f, 10.0f};
+const Vec vec3_eki_0000889c = {0.0f, 0.0f, 10.0f};
+
+static inline f32 ekiSinf(f32 rad) {
+    f32 f0, f1, sinv = 0.00761f;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            sinv = sinv * f0 - 0.16605f;
+            sinv = sinv * f0 + 1.0f;
+            sinv = sinv * rad;
+        } else {
+            f0 = rad - 1.5707964f;
+            f1 = 1.5707964f - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - 0.16605f;
+            sinv = sinv * f0 + 1.0f;
+            sinv = sinv * f1;
+        }
+    } else if (rad < 4.712389f) {
+        f1 = rad - 3.1415927f;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - 0.16605f;
+        sinv = sinv * f0 + 1.0f;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f0 = rad - 4.712389f;
+        f1 = 1.5707964f - f0;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - 0.16605f;
+        sinv = sinv * f0 + 1.0f;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 ekiCosf(f32 rad) {
+    f32 f0, cosv = 0.03705f;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            cosv = cosv * f0 - 0.4967f;
+            cosv = cosv * f0 + 1.0f;
+        } else {
+            f0 = rad - 1.5707964f;
+            f0 = 1.5707964f - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - 0.4967f;
+            cosv = cosv * f0 + 1.0f;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - 3.1415927f;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - 0.4967f;
+        cosv = cosv * f0 + 1.0f;
+        cosv = -cosv;
+    } else {
+        f0 = rad - 4.712389f;
+        f0 = 1.5707964f - f0;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - 0.4967f;
+        cosv = cosv * f0 + 1.0f;
+    }
+    return cosv;
+}
+
+static inline Vec ekiVec3(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
 
 static inline GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
     GXColor color = {0, 0, 0, 0};
@@ -117,7 +216,7 @@ static inline GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
 #pragma force_active on
 static void ext_moamoa_dispent(void);
 static void ext_moamoa_main(void);
-static s32 moamoa_hit_check(MoamoaPose* pose, s32 kind);
+static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose);
 static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5);
 static void ext_shadow_disp(CameraId cameraId, void* param);
 static void ext_disp(CameraId cameraId, void* param);
@@ -155,44 +254,54 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 ext_moamoa_data[141] = {
-    (u32)"c_n_moa_a", (u32)"S_1", 0x00000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x40000000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x40800000, (u32)"c_n_moa_a", (u32)"S_1", 0x40C00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41200000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41400000, (u32)"c_n_moa_a", (u32)"S_1", 0x41600000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41800000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41900000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41A00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41B00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x41C00000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x41D00000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x41E00000, (u32)"c_n_moa_a", (u32)"S_1", 0x41F00000,
-    (u32)"c_n_moa_a", (u32)"S_1", 0x42000000, (u32)"c_n_moa_a",
-    (u32)"S_1", 0x42080000, (u32)"c_n_moa_a", (u32)"S_1",
-    0x42100000, (u32)"c_n_moa_a", (u32)"S_1", 0x42180000,
-    (u32)"c_n_moa_a", (u32)"D_1", 0x00000000, (u32)"c_n_moa_a",
-    (u32)"D_1", 0x40800000, (u32)"c_n_moa_a", (u32)"D_1",
-    0x41000000, (u32)"c_n_moa_b", (u32)"S_1", 0x00000000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x40000000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x40800000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x40C00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41000000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41200000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41400000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41600000, (u32)"c_n_moa_b", (u32)"S_1", 0x41800000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41900000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41A00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41B00000, (u32)"c_n_moa_b", (u32)"S_1", 0x41C00000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x41D00000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x41E00000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x41F00000, (u32)"c_n_moa_b", (u32)"S_1", 0x42000000,
-    (u32)"c_n_moa_b", (u32)"S_1", 0x42080000, (u32)"c_n_moa_b",
-    (u32)"S_1", 0x42100000, (u32)"c_n_moa_b", (u32)"S_1",
-    0x42180000, (u32)"c_n_moa_b", (u32)"D_1", 0x00000000,
-    (u32)"c_n_moa_b", (u32)"D_1", 0x40800000, (u32)"c_n_moa_b",
-    (u32)"D_1", 0x41000000, 0x00000000, 0x00000000,
-    0x00000000,
+static MoamoaData ext_moamoa_data[47] = {
+    {"c_n_moa_a", "S_1", 0.0f},
+    {"c_n_moa_a", "S_1", 2.0f},
+    {"c_n_moa_a", "S_1", 4.0f},
+    {"c_n_moa_a", "S_1", 6.0f},
+    {"c_n_moa_a", "S_1", 8.0f},
+    {"c_n_moa_a", "S_1", 10.0f},
+    {"c_n_moa_a", "S_1", 12.0f},
+    {"c_n_moa_a", "S_1", 14.0f},
+    {"c_n_moa_a", "S_1", 16.0f},
+    {"c_n_moa_a", "S_1", 18.0f},
+    {"c_n_moa_a", "S_1", 20.0f},
+    {"c_n_moa_a", "S_1", 22.0f},
+    {"c_n_moa_a", "S_1", 24.0f},
+    {"c_n_moa_a", "S_1", 26.0f},
+    {"c_n_moa_a", "S_1", 28.0f},
+    {"c_n_moa_a", "S_1", 30.0f},
+    {"c_n_moa_a", "S_1", 32.0f},
+    {"c_n_moa_a", "S_1", 34.0f},
+    {"c_n_moa_a", "S_1", 36.0f},
+    {"c_n_moa_a", "S_1", 38.0f},
+    {"c_n_moa_a", "D_1", 0.0f},
+    {"c_n_moa_a", "D_1", 4.0f},
+    {"c_n_moa_a", "D_1", 8.0f},
+    {"c_n_moa_b", "S_1", 0.0f},
+    {"c_n_moa_b", "S_1", 2.0f},
+    {"c_n_moa_b", "S_1", 4.0f},
+    {"c_n_moa_b", "S_1", 6.0f},
+    {"c_n_moa_b", "S_1", 8.0f},
+    {"c_n_moa_b", "S_1", 10.0f},
+    {"c_n_moa_b", "S_1", 12.0f},
+    {"c_n_moa_b", "S_1", 14.0f},
+    {"c_n_moa_b", "S_1", 16.0f},
+    {"c_n_moa_b", "S_1", 18.0f},
+    {"c_n_moa_b", "S_1", 20.0f},
+    {"c_n_moa_b", "S_1", 22.0f},
+    {"c_n_moa_b", "S_1", 24.0f},
+    {"c_n_moa_b", "S_1", 26.0f},
+    {"c_n_moa_b", "S_1", 28.0f},
+    {"c_n_moa_b", "S_1", 30.0f},
+    {"c_n_moa_b", "S_1", 32.0f},
+    {"c_n_moa_b", "S_1", 34.0f},
+    {"c_n_moa_b", "S_1", 36.0f},
+    {"c_n_moa_b", "S_1", 38.0f},
+    {"c_n_moa_b", "D_1", 0.0f},
+    {"c_n_moa_b", "D_1", 4.0f},
+    {"c_n_moa_b", "D_1", 8.0f},
+    {NULL, NULL, 0.0f},
 };
 
 static EVT_BEGIN(e_door_close)
@@ -332,9 +441,101 @@ static void ext_moamoa_dispent(void) {
 // TODO: write ext_moamoa_main (static, 0x31c0 bytes) here:
 // its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write ext_moamoa_init (static, 0x624 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+// dont_inline keeps moamoa_pose_init a real `bl` from ext_moamoa_init as in retail.
+#pragma dont_inline on
+static void moamoa_pose_init(void) {
+    char name[0x20];
+    char anim[0x20];
+    MoamoaData* entry = (MoamoaData*)ext_moamoa_data;
+    s32 i = 0;
+    s32 start;
 
+    strcpy(name, "");
+    strcpy(anim, "");
+    wp->field_0x4C = -1;
+    do {
+        if (strcmp(entry->name, name) != 0) {
+            strcpy(name, entry->name);
+            strcpy(anim, "");
+        }
+        if (strcmp(entry->anim, anim) != 0) {
+            strcpy(anim, entry->anim);
+            start = i;
+            wp->field_0x4C++;
+        }
+        strcpy(wp->npcs[wp->field_0x4C].name, name);
+        strcpy(wp->npcs[wp->field_0x4C].anim, anim);
+        wp->npcs[wp->field_0x4C].field_0x20 = start;
+        wp->npcs[wp->field_0x4C].field_0x24 = i - start + 1;
+        wp->npcs[wp->field_0x4C].field_0x1C = entry->field_0x8;
+        wp->npcs[wp->field_0x4C].field_0x18 = 1;
+        if (strncmp(anim, "J", 1) == 0) {
+            wp->npcs[wp->field_0x4C].field_0x18 = 0;
+        }
+        i++;
+        entry++;
+    } while (entry->name != NULL);
+    wp->field_0x4C++;
+}
+#pragma dont_inline reset
+
+#pragma opt_propagation off // stop MWCC rematerialising the ekiSinf/ekiCosf coefficients per branch
+// NONMATCHING (79.81%): `#pragma opt_propagation off` above stops MWCC rematerialising the ekiSinf/ekiCosf
+// coefficients per branch, which recovered most of the gap (72.30 -> 79.81). What is left is register
+// pressure: retail saves f20-f31 and r17-r31 (frame 0x140), ours f21-f31 and r19-r31 (frame 0x120).
+static void ext_moamoa_init(void) {
+    ExtPose* ep;
+    MoamoaPose* pose;
+    s32 i;
+    f32 angle;
+    f32 radius;
+    f32 hitX;
+    f32 hitY;
+    f32 hitZ;
+    f32 distance;
+    f32 hitNX;
+    f32 hitNY;
+    f32 hitNZ;
+
+    wp = _mapAlloc(0x870);
+    memset(wp, 0, 0x870);
+    wp->field_0x14 = vec3_eki_00008884;
+    wp->field_0x20 = vec3_eki_00008890;
+    wp->field_0x2C = vec3_eki_0000889c;
+    wp->poseNum = extGetPoseNum();
+    wp->poses = _mapAlloc(wp->poseNum * 0x50);
+    memset(wp->poses, 0, wp->poseNum * 0x50);
+    moamoa_pose_init();
+    ep = extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
+        pose->flags = 0;
+        pose->field_0x02 = 0;
+        pose->field_0x04 = 0;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        angle = randf(0.0f, 6.2831855f);
+        radius = randf(0.0f, 100.0f);
+        ep->flags |= 0x13;
+        PSMTXIdentity(*ep->matrix);
+        ep->matrix[0][0][3] = radius * ekiSinf(angle) + wp->field_0x14.x;
+        ep->matrix[0][1][3] = 0.0f;
+        ep->matrix[0][0][3] = wp->field_0x14.z - radius * ekiCosf(angle);  // retail stores z here too, over x
+        hitX = 0.0f;
+        hitY = 0.0f;
+        hitZ = 0.0f;
+        distance = 1000000.0f;
+        if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, ep->matrix[0][0][3],
+                           ep->matrix[0][1][3] + 100.0f, ep->matrix[0][2][3], 0.0f, -1.0f, 0.0f)
+            != NULL) {
+            ep->matrix[0][1][3] = hitY;
+        }
+    }
+    for (i = 0; i < 600; i++) {
+        ext_moamoa_main();
+    }
+}
+
+#pragma opt_propagation reset
 static EVT_BEGIN(evt_moamoa_init)
     CALL(evt_npc_entry, STRING("moa_a"), STRING("c_n_moa_a"))
     CALL(evt_npc_set_position, STRING("moa_a"), 0, -1000, 0)
@@ -796,9 +997,8 @@ EVT_BEGIN(evt_elv_up)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 item_tbl[2] = {
-    0x0000001A, 0xFFFFFFFF,
+static s32 item_tbl[2] = {
+    26, -1,
 };
 
 EVT_BEGIN(evt_elv)
@@ -906,11 +1106,107 @@ static u32 jumptable_00002400[66] = {
     (u32)((u8*)&ext_moamoa_main + 0x2e08), (u32)((u8*)&ext_moamoa_main + 0x2e2c),
 };
 
-// TODO: write moamoa_hit_check (static, 0xb28 bytes) here:
-// its asm is in build/G8MJ01/eki/asm/eki_00.s; this is where the original has it, just before the first script that uses it
+#pragma opt_propagation off // stop MWCC rematerialising the ekiSinf/ekiCosf coefficients per branch
+// NONMATCHING (68.14%): dropping the cached `Mtx* mtx` local fixed the r29/r30 argument-register
+// swap and `#pragma opt_propagation off` recovered the sin/cos coefficient gap (58.50 -> 68.14).
+// Left: Vec temporaries make the frame 0xc0 vs retail 0xf0, plus a few FPR-colouring diffs.
+static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
+    MarioWork* mario = marioGetPtr();
+    Vec va;
+    Vec vc;
+    f32 dist;
+    f32 thresh;
+    f32 angle;
+    f32 diff;
+    f32 rad;
+    f32 t;
 
-// NONMATCHING (78.79%): float arg register allocation (f27/f28/f29 vs f31/f27/f28), extra `frsp` before the
-// pose Vec stores and the fabs/angle result scheduling; logic is complete.
+    if (mario->position.y > ep->matrix[0][1][3] + 20.0f) {
+        return 0;
+    }
+    if (ep->matrix[0][1][3] > mario->position.y + mario->wPlayerCollisionBox.y) {
+        return 0;
+    }
+    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], mario->position.x, mario->position.z);
+    if (dist < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
+        if (mario->position.y > ep->matrix[0][1][3] + 10.0f && (mario->flags & MARIO_FLAG_IS_FALLING)
+            && !(mario->flags & MARIO_FLAG_IS_JUMPING) && wp->field_0x558 < 2) {
+            if (mario->currMotionId != MARIO_MOTION_ROLL && mario->currMotionId != MARIO_MOTION_YOSHI) {
+                marioChgMot(MARIO_MOTION_JUMP_SW);
+            }
+            wp->field_0x558++;
+            return 1;
+        }
+    }
+    if (!(mario->flags & (MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING))) {
+        wp->field_0x558 = 0;
+    }
+    if (mario->currMotionId == MARIO_MOTION_HAMMER && wp->field_0x40 > 10) {
+        CameraEntry* cam = camGetPtr(CAMERA_3D);
+        angle = reviseAngle((mario->unk1A8 - 90.0f) + cam->viewYaw);
+        rad = angle * 6.2831855f / 360.0f;
+        t = 35.0f * ekiSinf(rad) + mario->position.x;
+        diff = mario->position.z - 35.0f * ekiCosf(rad);
+        if (distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], t, diff) < 35.0f) {
+            return 2;
+        }
+    }
+    if (mario->currMotionId == MARIO_MOTION_HAMMER_2 && (s32)mario->currSubMotionId == 0x14) {
+        va = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088b4);
+        if (PSVECDistance(&mario->position, &va) < 65.0f) {
+            return 2;
+        }
+    }
+    if (wp->field_0x55C >= 0.0f) {
+        va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088c0);
+        if (PSVECDistance(&wp->field_0x564, &va) < 30.0f) {
+            return 3;
+        }
+    }
+    if (nokonokoGetStatus(partyGetPtr(0)) == 2) {
+        va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088cc);
+        if (PSVECDistance(&partyGetPtr(0)->position, &va) < 30.0f) {
+            return 2;
+        }
+    }
+    if (partyGetPtr(0)->currentMemberId == 3 && partyGetPtr(0)->useMotionId == 0x46) {
+        va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088d8);
+        if (PSVECDistance(&partyGetPtr(0)->position, &va) < 50.0f) {
+            return 4;
+        }
+    }
+    va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088e4);
+    vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088f0);
+    thresh = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
+    if (PSVECDistance(&va, &vc) >= thresh) {
+        return 0;
+    }
+    ep->matrix[0][0][3] = pose->field_0x28.x;
+    ep->matrix[0][2][3] = pose->field_0x28.y;
+    vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088f0);
+    dist = PSVECDistance(&va, &vc);
+    if (dist >= thresh) {
+        return 0;
+    }
+    angle = angleABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
+    diff = compAngle(angle, mario->directionView);
+    if (__fabsf(diff) < 40.0f) {
+        rad = mario->directionView * 6.2831855f / 360.0f;
+        t = thresh - dist;
+        mario->riderDelta.x = -(t * ekiSinf(rad));
+        mario->riderDelta.z = t * ekiCosf(rad);
+    } else {
+        rad = angle * 6.2831855f / 360.0f;
+        mario->riderDelta.x = (ep->matrix[0][0][3] - thresh * ekiSinf(rad)) - mario->position.x;
+        mario->riderDelta.z = (thresh * ekiCosf(rad) + ep->matrix[0][2][3]) - mario->position.z;
+    }
+    return 0;
+}
+
+#pragma opt_propagation reset
+
+// NONMATCHING (95.8%): only the int->float `0x4330` block schedules the `lfd` magic, `lfs 0.5`
+// and the `fadds 180+angle` in a different order; all instructions and values are equal.
 static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5) {
     f32 hitX;
     f32 hitY;
@@ -924,12 +1220,11 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32
     f32 dist;
     f32 angle;
     f32 dy;
-    s32 distInt;
 
     if (c != 0) {
-        hitX = 0.0f;
-        hitY = 0.0f;
         hitZ = 0.0f;
+        hitY = 0.0f;
+        hitX = 0.0f;
         distance = 1000000.0f;
         if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, f1, f2 + 100.0f, f3,
                            0.0f, -1.0f, 0.0f)
@@ -946,20 +1241,17 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32
     pos.x = f1;
     pos.y = f2;
     pos.z = f3;
-    pose->x = pos.x;
-    pose->y = pos.y;
-    pose->z = pos.z;
+    pose->position = pos;
     pose->field_0x1C = f4;
     pose->field_0x20 = f5;
-    ty = pose->y - ep->matrix[0][1][3];
-    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->x, pose->z);
-    angle = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->x, pose->z);
-    distInt = (s32)(dist / pose->field_0x1C);
-    pose->field_0x18 = (s16)distInt;
-    pose->field_0x14 = pose->field_0x20 * (f32)distInt * 0.5f + ty / (f32)pose->field_0x18;
+    ty = pose->position.y - ep->matrix[0][1][3];
+    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->position.x, pose->position.z);
+    angle = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->position.x, pose->position.z);
+    pose->field_0x18 = (s16)(dist / pose->field_0x1C);
+    pose->field_0x14 = pose->field_0x20 * (f32)pose->field_0x18 * 0.5f + ty / (f32)pose->field_0x18;
     pose->field_0x02 = 3;
     pose->field_0x24 = b;
-    ep->field_0x4 = 180.0f + angle;
+    ep->field_0x4 = angle + 180.0f;
     pose->flags |= 0x2;
     ep->flags |= 0x10;
     ep->flags &= ~0x4;
@@ -1035,13 +1327,12 @@ static USER_FUNC(evt_moamoa_target_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99%): 46 of 119 instructions differ in operands only (registers or offsets)
 static s32 evt_moamoa_fusion_debug(void) {
+    s32 i;
     ExtPose* ep = extGetPosePtr();
     MoamoaPose* pose = wp->poses;
-    s32 i;
 
-    for (i = 0; i < wp->poseNum; i++) {
+    for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
         ep->flags |= 4;
         pose->flags |= 0x400;
         pose->flags |= 0x100;
@@ -1049,8 +1340,6 @@ static s32 evt_moamoa_fusion_debug(void) {
         pose->field_0x02 = 0x3D;
         pose->flags |= 0x800;
         moamoa_pose_change(pose, "c_n_moa_a", "S_1");
-        ep++;
-        pose++;
     }
     return EVT_RETURN_DONE;
 }
@@ -1070,17 +1359,16 @@ static USER_FUNC(evt_moamoa_blow) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.21%): 43 of 136 instructions differ in operands only (registers or offsets)
 static USER_FUNC(evt_moamoa_kind_onoff) {
     s32* args = event->args;
     s32 on = evtGetValue(event, args[0]);
     s32 mode = evtGetValue(event, args[1]);
-    MoamoaPose* pose;
     s32 i;
+    MoamoaPose* pose;
 
     extGetPosePtr();
     pose = wp->poses;
-    for (i = 0; i < wp->poseNum; i++) {
+    for (i = 0; i < wp->poseNum; i++, pose++) {
         if (on != 0) {
             if (mode == 0) {
                 if (pose->groupIndex == 1) {
@@ -1099,7 +1387,6 @@ static USER_FUNC(evt_moamoa_kind_onoff) {
             }
         }
         moamoa_pose_change(pose, "c_n_moa_a", "S_1");
-        pose++;
     }
     return EVT_RETURN_DONE;
 }
@@ -1215,38 +1502,4 @@ static void moamoa_pose_main(void) {
         ep++;
     }
 }
-
-static void moamoa_pose_init(void) {
-    char name[0x20];
-    char anim[0x20];
-    MoamoaData* entry = (MoamoaData*)ext_moamoa_data;
-    s32 i = 0;
-    s32 start;
-
-    strcpy(name, "");
-    strcpy(anim, "");
-    wp->field_0x4C = -1;
-    do {
-        if (strcmp(entry->name, name) != 0) {
-            strcpy(name, entry->name);
-            strcpy(anim, "");
-        }
-        if (strcmp(entry->anim, anim) != 0) {
-            strcpy(anim, entry->anim);
-            start = i;
-            wp->field_0x4C++;
-        }
-        strcpy(wp->npcs[wp->field_0x4C].name, name);
-        strcpy(wp->npcs[wp->field_0x4C].anim, anim);
-        wp->npcs[wp->field_0x4C].field_0x20 = start;
-        wp->npcs[wp->field_0x4C].field_0x24 = i - start + 1;
-        wp->npcs[wp->field_0x4C].field_0x1C = entry->field_0x8;
-        wp->npcs[wp->field_0x4C].field_0x18 = 1;
-        if (strncmp(anim, "J", 1) == 0) {
-            wp->npcs[wp->field_0x4C].field_0x18 = 0;
-        }
-        i++;
-        entry++;
-    } while (entry->name != NULL);
-    wp->field_0x4C++;
-}// clang-format on
+// clang-format on

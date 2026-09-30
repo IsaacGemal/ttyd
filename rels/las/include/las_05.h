@@ -12,7 +12,7 @@ USER_FUNC(mario_land_on);
 USER_FUNC(get_party_y_pos);
 USER_FUNC(set_mario_y_pos);
 USER_FUNC(get_mario_y_pos);
-s32 party_hit_check(f32* out, f32 x, f32 z);
+s32 party_hit_check(f32 x, f32 z, f32* out);
 void calc_area(s32 index, f32 x, f32 z);
 void move_check(ExtPose* pose, s32 index);
 USER_FUNC(kurokaron_move_position);

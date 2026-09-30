@@ -221,14 +221,8 @@ EVT_BEGIN(evt_poster_15)
     RETURN
 EVT_END()
 
-extern const f32 float_31p416_eki_000091e0;
-extern const f32 float_0p015625_eki_000091e4;
-extern const f32 float_0p125_eki_000091e8;
-extern const f32 float_128_eki_000091ec;
-extern const f32 float_3_eki_000091f0;
-extern const f32 zero_eki_000091f4;
-extern const f32 float_0p5_eki_000091f8;
-
+// NONMATCHING (99.28%): in the else branch the two `subi` (y0 from 0xEE, x0 from 0xEC) and their
+// `extsh` are scheduled x0-first; the original does y0 first.
 static USER_FUNC(test_glare) {
     MapObject* obj = mapGetMapObj("sun");
 
@@ -238,36 +232,33 @@ static USER_FUNC(test_glare) {
         return 0;
     }
 
-    if (*(u16*)((u8*)obj + 0xEC) == 0x3FF || *(u16*)((u8*)obj + 0xEE) == 0x3FF || *(u16*)((u8*)obj + 0xF0) == 0x3FF
-        || *(u16*)((u8*)obj + 0xF2) == 0x3FF) {
+    if (*(u16*)obj->field_0xEC == 0x3FF || *(u16*)(obj->field_0xEC + 2) == 0x3FF
+        || *(u16*)(obj->field_0xEC + 4) == 0x3FF || *(u16*)(obj->field_0xEC + 6) == 0x3FF) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
-    else if (*(u16*)((u8*)obj + 0xEC) == 0 && *(u16*)((u8*)obj + 0xEE) == 0 && *(u16*)((u8*)obj + 0xF0) == 0
-             && *(u16*)((u8*)obj + 0xF2) == 0) {
+    else if (*(u16*)obj->field_0xEC == 0 && *(u16*)(obj->field_0xEC + 2) == 0 && *(u16*)(obj->field_0xEC + 4) == 0
+             && *(u16*)(obj->field_0xEC + 6) == 0) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else {
-        s16 y0 = *(u16*)((u8*)obj + 0xEE) - 0x32;
-        s16 x0 = *(u16*)((u8*)obj + 0xEC) - 0x32;
-        s16 y1 = *(u16*)((u8*)obj + 0xF2) + 0x32;
-        s16 x1 = *(u16*)((u8*)obj + 0xF0) + 0x32;
-
-        envGlareFilter(1, y0, x0, y1, x1);
+        envGlareFilter(1, (s16)(*(u16*)(obj->field_0xEC + 2) - 0x32), (s16)(*(u16*)obj->field_0xEC - 0x32),
+                       (s16)(*(u16*)(obj->field_0xEC + 6) + 0x32), (s16)(*(u16*)(obj->field_0xEC + 4) + 0x32));
         envGlareFilterZ(1.148f);
     }
     return 0;
 }
 
+// NONMATCHING (98.81%): `(i/4)*32` is scheduled one slot before the `i%4` `add` (original after); as a
+// result gp/0x4330/row land in r31/r30/r29 instead of r30/r29/r31.
 static void sun_tev(EnvironmentYami* yami) {
-    GXTexObj texObj;
-    u8* image;
-    s32 i;
-    s32 j;
     s32 tevStage = yami->tevStage;
     s32 texMap = yami->texMap;
     s32 texCoord = yami->texCoord;
     s32 indStage = yami->unk18;
+    u8* image;
+    GXTexObj texObj;
     f32 indMtx[2][3];
+    s32 i, j;
 
     if (ind_lp == NULL) {
         ind_lp = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, GX_FALSE), 1);
@@ -276,33 +267,34 @@ static void sun_tev(EnvironmentYami* yami) {
     image = (u8*)ind_lp->address;
     for (i = 0; i < 0x40; i++) {
         for (j = 0; j < 0x40; j++) {
-            image[(i / 4) * 32 + (j / 4) * 512 + ((i % 4) + (j % 4) * 4) * 2]
-                = (s32)(float_3_eki_000091f0 * sin((float_31p416_eki_000091e0 * (f32)j) * float_0p015625_eki_000091e4 - (f32)gp->retraceCount * float_0p125_eki_000091e8)
-                        + float_128_eki_000091ec);
-            image[(i / 4) * 32 + (j / 4) * 512 + ((i % 4) + (j % 4) * 4) * 2 + 1] = 0x80;
+            f32 s = (f32)sin(31.41592f * (f32)j / 64.0f - (f32)gp->retraceCount / 8.0f);
+            s32 off = (i / 4) * 32 + (j / 4) * 512;
+            off += ((i % 4) + (j % 4) * 4) * 2;
+            image[off] = (s32)(3.0f * s + 128.0f);
+            image[off + 1] = 0x80;
         }
     }
 
     DCFlushRange(image, 0x2000);
     GXInitTexObj(&texObj, image, 0x40, 0x40, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
-    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, zero_eki_000091f4, zero_eki_000091f4, zero_eki_000091f4, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, texMap);
 
-    indMtx[0][0] = float_0p5_eki_000091f8;
-    indMtx[0][1] = zero_eki_000091f4;
-    indMtx[0][2] = zero_eki_000091f4;
-    indMtx[1][0] = zero_eki_000091f4;
-    indMtx[1][1] = float_0p5_eki_000091f8;
-    indMtx[1][2] = zero_eki_000091f4;
+    indMtx[0][0] = 0.5f;
+    indMtx[0][1] = 0.0f;
+    indMtx[0][2] = 0.0f;
+    indMtx[1][0] = 0.0f;
+    indMtx[1][1] = 0.5f;
+    indMtx[1][2] = 0.0f;
     GXSetIndTexMtx(GX_ITM_0, indMtx, 1);
     GXSetIndTexOrder(indStage, GX_TEXCOORD0, texMap);
     GXSetIndTexCoordScale(indStage, GX_ITS_1, GX_ITS_1);
     GXSetTevIndWarp(GX_TEVSTAGE0, indStage, 1, 0, GX_ITM_0);
 
     yami->tevStage = tevStage;
-    yami->texMap = texMap + 1;
     yami->texCoord = texCoord;
     yami->unk18 = indStage + 1;
+    yami->texMap = texMap + 1;
 }
 
 EVT_BEGIN(eki_03_init_evt)
@@ -431,12 +423,5 @@ EVT_BEGIN(eki_03_init_evt)
 EVT_END()
 
 static const s32 texmtx_tbl[] = { 30, 33, 36, 39, 42, 45, 48, 51, 54, 57 };
-const f32 float_31p416_eki_000091e0 = 31.41592f;
-const f32 float_0p015625_eki_000091e4 = 0.015625f;
-const f32 float_0p125_eki_000091e8 = 0.125f;
-const f32 float_128_eki_000091ec = 128.0f;
-const f32 float_3_eki_000091f0 = 3.0f;
-const f32 zero_eki_000091f4 = 0.0f;
-const f32 float_0p5_eki_000091f8 = 0.5f;
 
 // clang-format on

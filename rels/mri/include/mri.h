@@ -54,7 +54,7 @@ void puniMoveDecel(PuniData* puni);
 void PuniDokuritsu(PuniData* puni);
 
 // Battle setup data defined by the original data unit.
-extern BattleSetupData btlsetup_mri_tbl[];
+extern BattleSetupData btlsetup_mri_tbl[22];
 extern s32 btl_mri_setup_no_tbl[];
 
 // Per-map init scripts registered by _prolog (defined by the mri_NN units).

@@ -181,9 +181,22 @@ ext=[f'extern s32 {n}[];' for n in sorted(missing)]
 # declarations of the unit's own functions, so the file builds before they're written: global ones (and global
 # scripts) in the unit's header, static ones here
 called={m for m in re.findall(r'\bCALL\((\w+)',src)}
+# functions the SDK headers already declare (the REL's own copies of atan2f, GX inlines): include the header instead
+sdk={}
+for root in ('libs/dolsdk2004/include','libs/dolsdk2004/include/libc'):
+    for d,subs,fs_ in os.walk(root):
+        if root=='libs/dolsdk2004/include' and 'libc' in subs: subs.remove('libc')  # its own root, for <math.h> paths
+        for fn_ in fs_:
+            if fn_.endswith('.h'):
+                ht=open(os.path.join(d,fn_),errors='replace').read()
+                for f in fns:
+                    if f['name'] not in sdk and re.search(rf'^\s*(?:extern\s+)?[A-Za-z_][\w\s\*]*\b{re.escape(f["name"])}\s*\([^;{{}}]*\)\s*[;{{]',ht,re.M):
+                        sdk[f['name']]=os.path.relpath(os.path.join(d,fn_),root)
+fns_decl=[f for f in fns if f['name'] not in sdk]
+hdrs|=set(sdk.values())
 def fdecl(f): return f'USER_FUNC({f["name"]});' if f['name'] in called else f'void {f["name"]}(void);  // TODO: real signature'
-hdr_lines=[fdecl(f) for f in fns if f['scope']=='global']+[f'EVT_DEF({o["name"]});' for o in data if o['scope']=='global' and isscript(o)]
-fwd=[('static '+fdecl(f)) for f in fns if f['scope']!='global']+fwd
+hdr_lines=[fdecl(f) for f in fns_decl if f['scope']=='global']+[f'EVT_DEF({o["name"]});' for o in data if o['scope']=='global' and isscript(o)]
+fwd=[('static '+fdecl(f)) for f in fns_decl if f['scope']!='global']+fwd
 if hdr_lines:
     hname=f'rels/{MOD}/include/{os.path.basename(UNIT)}.h'
     os.makedirs(os.path.dirname(hname),exist_ok=True)
