@@ -2281,3 +2281,51 @@ write to. Next waves give each agent its own TMPDIR.
   other way round. Under `MUST_MATCH` (see eff_sandars): effBattenDisp2, effButterflyDisp and effStardust2Disp match;
   akari_pose, booboo and batten `Disp` improve. It does not help when the function passes several by-value colours
   (shadowdrv, itemget, envDisp_Blur) or a colour built without a base.
+
+## Wave 22: the remaining REL units with functions (2026-09-29, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+Scope (Claude #1, Isaac's go): the unique-name REL units with functions not yet configured (58 big ones: over 12
+functions or one over 4 KB, 1,431 functions), wave 19's leftovers (25 not linked, mri_02/05 for the no-deferred
+flags, with the previous attempt attached), and the REL entry files and units rel_gen couldn't write before: 113
+units, 24 agents at a time, 18:44-22:52, per-unit budgets 30 min to 2 h (+30 min for a function over 4 KB).
+Wave 19's 7 dropped enemy units were done without agents: their functions with the tables re-rendered by
+tools/struct_render.py, each linked on its own.
+
+**Result: 111 units collected, 41 linked; their functions: 1,490 of 1,777 matched** (plus wave 19's 7 enemy
+units, all linked). Claude #1 changed the
+collection mid-wave: every unit that builds and lowers nothing is taken, NonMatching unless it links, each partial
+function labelled `// NONMATCHING (NN%)` (45 labels generated from objdiff's instruction diff where the agent left
+none: "K of N instructions differ ..."). 41 came back LINKED; 17 hit the time limit; 96 ended on their own.
+
+**Agents stop early.** Most exited (rc=0) well inside their budget with functions unwritten: dmo_00 stopped after
+18 of 60 minutes with 11 of 16 functions at 100% and 3 not started. A continuation pass
+(scratch/wave22/launch_continue.py) resumed rc=0 NOT LINKED units in their own workspaces with the rest of their
+budget ("read REPORT.md, continue"), taking slots only as the main queue freed them; it ran 13 rounds and linked 1
+more (mri_01). Most early stoppers had under 15 minutes left. For the next wave: resume automatically inside the
+launcher (a loop until LINKED or the budget is spent), not as a second pass.
+
+**Collection lessons.**
+- Header additions must be applied as patches with context, unit by unit. Appending each added line to the end of
+  the header (wave 19's collect) broke every struct an agent added to (a field landed outside its struct). Several
+  agents of one REL also edited each other's headers (rels/<mod>/include): those diffs are collected too.
+- Agents of one wave collide: two copies of one struct (EffPokopiThunderData, effVaporN64Data, YuuminigameWork,
+  MonteEntry, ZakogunEntry), `extern` stand-ins for things another agent declared properly, a prototype one agent
+  replaced while another kept the placeholder. Resolved by keeping main's layout and naming the fields the units
+  use; gundan_zako_group2 (its ZakogunEntry has other names for group1/3's fields) is left out.
+- A unit LINKED in its workspace can fail in the collected tree: unit_churantalar's code refers to its own copy of
+  the int-to-double constant where the original uses the global double_to_int_jon_0000e888. Relink every unit after
+  collection (tools/rel_link.py), don't trust the workspace's verdict.
+- The new extend_data check (tools/ci.py, #45) caught a real collision on its first run: rel_gen numbers a unit's
+  ids by its position in the REL, which collided with mri_puni.c's hand-picked ids.
+- rel_gen: data objects needing byte granularity (.string, .byte, odd .skip) come out as u8 arrays; a data object
+  whose first word merely looks like a command was read as a script (gor_03's slotgara, evt_yuunpc's
+  chusan_act_tbl): a script's first word must now be a real opcode.
+
+**Provenance.** The agents had network access and used it: curl and git clone to GitHub (the upstream
+doldecomp/ttyd, its API, forks: Penguinjanator, FermataRest, lincoln-lm, theKidOfArcrania and others), and
+grep.app / DuckDuckGo / searchcode for function names (nok_nok, gor_gor, gor_gor_irai, gra_gra_00, jin_jin_07,
+las_las_04, pik_pik_02, rsh_rsh_00 and others; scratch/wave22's scan). The only successful downloads were upstream
+doldecomp/ttyd files (MIT, this fork's base; e.g. src/event/evt_npc.c); the forks returned 404 and the search
+sites returned pages without results; no collected file shares code with anything downloaded. Agents also read
+other wave-22 workspaces and the tower's ~/ttyd copy (this project's own code). Next waves: the prompt forbids
+network access and reading outside the workspace, and the tower's agents should run without network.

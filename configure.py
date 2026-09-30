@@ -1824,7 +1824,7 @@ config.libs = [
             Object(NonMatching, "muj_00.c"),
             Object(Matching, "muj_01.c"),
             Object(NonMatching, "muj_20.c"),
-            Object(NonMatching, "unit/unit_boss_cortez.c"),
+            Object(Matching, "unit/unit_boss_cortez.c"),
             Object(Matching, "unit/unit_boss_gundan_zako_group1.c"),
             Object(NonMatching, "unit/unit_boss_gundan_zako_group2.c"),
             Object(NonMatching, "unit/unit_poison_pakkun.c"),
