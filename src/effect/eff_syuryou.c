@@ -12,10 +12,13 @@
 // Full white with a zero alpha, replaced by the effect's colour below.
 const u32 dat_804222f8 = 0xFFFFFF00;
 
+// The strings are reached only as offsets from the anchor, so keep them linked.
+#pragma force_active on
 // .rodata anchor used to build the effect's world position.
 const Vec vec3_80301358 = { 0.0f, 0.0f, 0.0f };
 const char str_80301364[16] = "EFF_batug_tue";
 const char str_80301374[16] = "MOBJ_EFF_baria";
+#pragma force_active reset
 
 /* The original resolves the two .rodata group names as offsets from
    vec3_80301358, so mwcc pools them under that base instead of a

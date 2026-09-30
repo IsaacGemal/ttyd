@@ -8,31 +8,22 @@
 
 // .sdata2 / .rodata constants used only by effHokoriN64Entry, named after their
 // original addresses. The string lives in this unit's own .rodata.
-extern const f32 float_0_8041f110;
-extern const f32 float_neg1_8041f120;
-extern const f32 float_1_8041f124;
-extern const f32 float_200_8041f128;
-extern const f32 float_0p1_8041f12c;
-extern const f32 float_0p2_8041f130;
-extern const f32 float_0p4_8041f134;
-extern const f64 double_to_int_802fa7b8;
-extern const char str_802FA7C0[];
 
 // .sbss2 colour bases the retail unit leaves uninitialised; the fields are
 // overwritten one by one before each GXSetTevColor.
-GXColor unk_80423140;
-GXColor unk_80423144;
 
 // Float pairs that precede the vertex arrays in the retail unit's .data; kept so
 // the unit's data section is complete. The arrays themselves are reached through
 // lbl_8039D5D0 (declared in the header) in effHokoriDisp under MUST_MATCH.
-static f32 negone_one_374[2] = { -1.0f, 1.0f };
-f32 lbl_8039D5E0[2] = { 1.0f, -1.0f };
-static f32 one_negone_373[2] = { 1.0f, -1.0f };
-f32 lbl_8039D5F0[2] = { -1.0f, 1.0f };
-static f32 negone_one_360[2] = { -1.0f, 1.0f };
-f32 lbl_8039D600[2] = { 1.0f, -1.0f };
-static f32 one_negone_359[2] = { 1.0f, -1.0f };
+// The unit's own .data is reached only through lbl_8039D5D0 (the previous unit's last object), so keep it linked.
+#pragma force_active on
+__declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_8039D5E0[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_373[2] = { 1.0f, -1.0f };
+__declspec(section ".data") f32 lbl_8039D5F0[2] = { -1.0f, 1.0f };
+__declspec(section ".data") static f32 negone_one_360[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_8039D600[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_359[2] = { 1.0f, -1.0f };
 
 // .data vertex arrays.
 u32 size16x32_tex32x64_vtx[14] = {
@@ -53,6 +44,7 @@ static u32 size8x8_tex32x32_vtx[14] = {
 	0x00000400, 0x04000000, 0x00FFFFFC, 0x00040000,
 	0x00000400, 0x000000FF,
 };
+#pragma force_active reset
 
 EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
@@ -63,7 +55,7 @@ EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 
 	effect = effEntry();
 	num = (type <= 1) ? 5 : 4;
-	effect->type = str_802FA7C0;
+	effect->type = "HokoriN64";
 	effect->count = num;
 	data = __memAlloc(HEAP_EFFECT, num * 0x48);
 	effect->userdata = data;
@@ -84,25 +76,25 @@ EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	for (i = 1, p = data + 1; i < num; i++, p++) {
 		p->x = (f32)(rand() % 200 - 100);
 		p->y = (f32)(rand() % 50);
-		p->z = float_0_8041f110;
-		p->field_0x10 = float_neg1_8041f120;
-		p->field_0x14 = float_0_8041f110;
-		p->field_0x1C = float_1_8041f124;
-		p->field_0x20 = float_1_8041f124;
-		p->field_0x24 = (f32)(rand() % 10) / float_200_8041f128;
+		p->z = 0.0f;
+		p->field_0x10 = -1.0f;
+		p->field_0x14 = 0.0f;
+		p->field_0x1C = 1.0f;
+		p->field_0x20 = 1.0f;
+		p->field_0x24 = (f32)(rand() % 10) / 200.f;
 		switch (type) {
 		case 0:
-			p->field_0x28 = float_0p1_8041f12c * p->field_0x24;
+			p->field_0x28 = 0.1f * p->field_0x24;
 			break;
 		case 1:
-			p->field_0x28 = float_0p2_8041f130 * p->field_0x24;
+			p->field_0x28 = 0.2f * p->field_0x24;
 			break;
 		default:
-			p->field_0x24 = float_0p4_8041f134;
-			p->field_0x28 = float_0p4_8041f134;
-			p->field_0x10 = float_0_8041f110;
-			p->x = float_0p1_8041f12c * (f32)(rand() % 40 - 20);
-			p->y = float_0p1_8041f12c * (f32)(rand() % 40 - 20);
+			p->field_0x24 = 0.4f;
+			p->field_0x28 = 0.4f;
+			p->field_0x10 = 0.0f;
+			p->x = 0.1f * (f32)(rand() % 40 - 20);
+			p->y = 0.1f * (f32)(rand() % 40 - 20);
 			break;
 		}
 	}
@@ -134,7 +126,12 @@ void effHokoriMain(EffectEntry* effect) {
 	else {
 		type = data->type;
 		if (data->life < 0x18) {
-			data->field_0x18 = (s32)((f32)data->field_0x18 * float_0p9_8041f118);
+#ifdef MUST_MATCH
+			f32 k = 0.9f;
+			data->field_0x18 = (s32)((f32)data->field_0x18 * k);
+#else
+			data->field_0x18 = (s32)((f32)data->field_0x18 * 0.9f);
+#endif
 		}
 		i = 1;
 		data++;
@@ -142,7 +139,7 @@ void effHokoriMain(EffectEntry* effect) {
 			for (; i < effect->count; i++, data++) {
 				data->field_0x10 += data->field_0x14;
 				data->y += data->field_0x10;
-				data->field_0x24 += float_0p005_8041f11c;
+				data->field_0x24 += 0.005f;
 				data->field_0x1C += data->field_0x24;
 				data->field_0x20 += data->field_0x28;
 			}
@@ -160,7 +157,7 @@ void effHokoriMain(EffectEntry* effect) {
 }
 
 static inline void hokoriSetColor1(effHokoriData* data) {
-	GXColor color = unk_80423140;
+	GXColor color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->field_0x30;
 	color.g = data->field_0x34;
 	color.b = data->field_0x38;
@@ -169,7 +166,7 @@ static inline void hokoriSetColor1(effHokoriData* data) {
 }
 
 static inline void hokoriSetColor2(effHokoriData* data) {
-	GXColor color = unk_80423144;
+	GXColor color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->field_0x3C;
 	color.g = data->field_0x40;
 	color.b = data->field_0x44;
@@ -198,7 +195,7 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	PSMTXScale(scale, float_0p03125_8041f108, float_0p010417_8041f10c, float_0_8041f110);
+	PSMTXScale(scale, 0.03125f, 0.010416667f, 0.0f);
 	GXLoadTexMtxImm(scale, 0x1e, 1);
 
 	hokoriSetColor1(data);
@@ -228,7 +225,7 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 	}
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041f114 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, work);
 	PSMTXConcat(cam->view, work, work);
 
