@@ -103,6 +103,8 @@ void FontDrawScale(f32 scale);
 u16 JUTFont_CodeToGlyph(u32 code);
 void FontDrawMessage(s32 x, s32 y, const char* msg);
 void JUTFont_DrawStart(GXColor color);
+void JUTFontSetup(u16 idx);
+void JUTFont_Free(void);
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y);
 void FontDrawMessageMtx(Mtx mtx, const char* msg);
 void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch);

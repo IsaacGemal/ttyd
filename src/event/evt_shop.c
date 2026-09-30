@@ -23,6 +23,9 @@
 #include "party.h"
 #include "window/win_mario.h"
 
+// this file's own script (its data isn't written as source yet)
+extern u32 buy_evt[];
+
 extern GlobalWork* gp;
 
 //.sbss

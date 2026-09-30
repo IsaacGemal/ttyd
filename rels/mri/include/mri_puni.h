@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
 #include "evt/evt_cmd.h"
 
 #define PUNI_DATA_MAX 211
@@ -33,3 +34,8 @@ typedef struct PuniTexInfo {
 USER_FUNC(evt_puni_mem_init);
 
 PuniData* puniGetPunidat(void);
+PuniWork* puniGetPunigp(void);
+void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos);
+void puniswTrapGetindex(s32 index, s32* out);
+void puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag);
+void puniMoveDecel(PuniData* punidat);

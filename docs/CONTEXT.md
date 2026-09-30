@@ -2282,6 +2282,89 @@ write to. Next waves give each agent its own TMPDIR.
   akari_pose, booboo and batten `Disp` improve. It does not help when the function passes several by-value colours
   (shadowdrv, itemget, envDisp_Blur) or a colour built without a base.
 
+## Wave 22: the remaining REL units with functions (2026-09-29, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+Scope (Claude #1, Isaac's go): the unique-name REL units with functions not yet configured (58 big ones: over 12
+functions or one over 4 KB, 1,431 functions), wave 19's leftovers (25 not linked, mri_02/05 for the no-deferred
+flags, with the previous attempt attached), and the REL entry files and units rel_gen couldn't write before: 113
+units, 24 agents at a time, 18:44-22:52, per-unit budgets 30 min to 2 h (+30 min for a function over 4 KB).
+Wave 19's 7 dropped enemy units were done without agents: their functions with the tables re-rendered by
+tools/struct_render.py, each linked on its own.
+
+**Result: 111 units collected, 41 linked; their functions: 1,490 of 1,777 matched** (plus wave 19's 7 enemy
+units, all linked). Claude #1 changed the
+collection mid-wave: every unit that builds and lowers nothing is taken, NonMatching unless it links, each partial
+function labelled `// NONMATCHING (NN%)` (45 labels generated from objdiff's instruction diff where the agent left
+none: "K of N instructions differ ..."). 41 came back LINKED; 17 hit the time limit; 96 ended on their own.
+
+**Agents stop early.** Most exited (rc=0) well inside their budget with functions unwritten: dmo_00 stopped after
+18 of 60 minutes with 11 of 16 functions at 100% and 3 not started. A continuation pass
+(scratch/wave22/launch_continue.py) resumed rc=0 NOT LINKED units in their own workspaces with the rest of their
+budget ("read REPORT.md, continue"), taking slots only as the main queue freed them; it ran 13 rounds and linked 1
+more (mri_01). Most early stoppers had under 15 minutes left. For the next wave: resume automatically inside the
+launcher (a loop until LINKED or the budget is spent), not as a second pass.
+
+**Collection lessons.**
+- Header additions must be applied as patches with context, unit by unit. Appending each added line to the end of
+  the header (wave 19's collect) broke every struct an agent added to (a field landed outside its struct). Several
+  agents of one REL also edited each other's headers (rels/<mod>/include): those diffs are collected too.
+- Agents of one wave collide: two copies of one struct (EffPokopiThunderData, effVaporN64Data, YuuminigameWork,
+  MonteEntry, ZakogunEntry), `extern` stand-ins for things another agent declared properly, a prototype one agent
+  replaced while another kept the placeholder. Resolved by keeping main's layout and naming the fields the units
+  use; gundan_zako_group2 (its ZakogunEntry has other names for group1/3's fields) is left out.
+- A unit LINKED in its workspace can fail in the collected tree: unit_churantalar's code refers to its own copy of
+  the int-to-double constant where the original uses the global double_to_int_jon_0000e888. Relink every unit after
+  collection (tools/rel_link.py), don't trust the workspace's verdict.
+- The new extend_data check (tools/ci.py, #45) caught a real collision on its first run: rel_gen numbers a unit's
+  ids by its position in the REL, which collided with mri_puni.c's hand-picked ids.
+- rel_gen: data objects needing byte granularity (.string, .byte, odd .skip) come out as u8 arrays; a data object
+  whose first word merely looks like a command was read as a script (gor_03's slotgara, evt_yuunpc's
+  chusan_act_tbl): a script's first word must now be a real opcode.
+
+**Provenance.** The agents had network access and used it: curl and git clone to GitHub (the upstream
+doldecomp/ttyd, its API, forks: Penguinjanator, FermataRest, lincoln-lm, theKidOfArcrania and others), and
+grep.app / DuckDuckGo / searchcode for function names (nok_nok, gor_gor, gor_gor_irai, gra_gra_00, jin_jin_07,
+las_las_04, pik_pik_02, rsh_rsh_00 and others; scratch/wave22's scan). The only successful downloads were upstream
+doldecomp/ttyd files (MIT, this fork's base; e.g. src/event/evt_npc.c); the forks returned 404 and the search
+sites returned pages without results; no collected file shares code with anything downloaded. Agents also read
+other wave-22 workspaces and the tower's ~/ttyd copy (this project's own code). Next waves: the prompt forbids
+network access and reading outside the workspace, and the tower's agents should run without network.
+
+**Review round 1 (one fresh Claude; ~50 partial functions compared with the asm, plus an automated check of every
+partial function's call arguments).** Four partial functions were wrong in ways no score shows: sys's
+display_func passed a dozen wrong GX arguments (COLOR1A1 for COLOR0A0, GEQUAL for ALWAYS, a light and DF_CLAMP
+where the original has none, PASSCLR for MODULATE, TEVREG1 for TEVREG0, stage 3's TEV inputs on stage 2, ...),
+tik_05's tiz_broken dropped a negation, rsh's rsh_window_tev used a 2x4 texgen and tik_00's uranai_cap a
+point-sampled texture. All fixed against the asm (display_func's 87 GX calls now pass the original's constants).
+Also fixed: conflicting declarations between agents' headers, repeated prototypes, 104 bare returns in event
+functions, stale placeholders, unbalanced optimizer pragmas (gor_10's reset brings tegami_delete to 100% and costs
+depthDisp: 93.8% -> 72.2%), misplaced and stale labels. unit_boss_cortez's entry_honeduka had been rendered with
+an all-zero initializer although it's .bss in the original: tools/struct_render.py now leaves .bss objects alone,
+and the unit links. Lesson: an agent's own label ("every GX call is in the right order", "logic follows the asm")
+is not evidence; partial functions need their call arguments checked against the asm, which a script can do for
+every function (the constants loaded into r3-r10 before each `bl`).
+
+**Review round 2 (Claude #1's Claude and Codex reviews).** More wrong logic, each fixed against the asm: sys's
+display placed the letters mirrored (36*i - 18*(count-1), ours had the negation); yuu_03's evt_ryushi lacked a
+whole switch (states 2-4 and 6-8 set the scroll speed); tou's rankingControll inserted the 0x1000 fighter at
+position 0 instead of 1, searched for flag 4 where the original tests flag 2, and compared entries' ids with
+swByteGet(0x1FB) where the original compares the indices (and moves the winner to the front); dmo_00's demo_book
+lacked four calls; muj_20's elmos1000tai_init evaluated `0.9f * v * sin` in the wrong order and precision. Three
+stubs an agent had left as bodies ("stubbed so the unit links": jin_00's 10 KB senteresa_ext_main, tou_03's
+screen_tev and ext_kyaku_init) are TODO placeholders again, for the next wave. Five copies of original jump
+tables whose functions are now written (their offsets point into the original's code) are gone; 15 whose
+functions aren't written stay as generated data. batten_leader's satellite helpers use BattleUnit.work /
+BattleUnitPart.work instead of raw offsets.
+
+**Follow-ups:** 21 NonMatching units have their functions in the asm's order rather than rule 18's reverse order
+(listed in Claude #1's review) and won't link until reordered; named literal globals (`const f32 float_0p5_... =
+0.5f`) remain in tou.c, sys.c, las_05, bom_01, batten_satellite and three lecture files (the prompt forbade them;
+the agents wrote them anyway); unit_boss_gundan_zako_group2 (left out) needs its ZakogunEntry renamed onto
+group1/3's; MonteEntry is defined in yuu_02.h and yuu_01.c under different field names; EffPokopiThunderData's
+fields at 0x30-0x48 are unnamed (the units write two colours there); unit_churantalar should link once its code
+refers to double_to_int_jon_0000e888; tou.c names its local functions with dtk's `_27_text_` stand-ins; the three
+stubbed functions and the other unwritten ones go to the next wave.
+
 ## Wave 24: the next untouched function per dol file (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
 
 Wave 23's recipe on 121 more files, 21:45-23:29, launched from e7a5263 and

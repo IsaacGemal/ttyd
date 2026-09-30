@@ -12,8 +12,8 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern s32 moamoa1_weakness_pose_table[];
-extern s32 moamoa_defence_no_parts[];
+extern BattleDispPose moamoa1_weakness_pose_table[4];
+extern BattleUnitDefense moamoa_defence_no_parts;
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts[1];
@@ -253,7 +253,7 @@ static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_AnimeWaitPlayComplete, -2, 1)
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(1))
     CALL(btlevtcmd_SetUnitWork, LW(1), 6, -1)
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(1), 1, PTR(moamoa_defence_no_parts))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(1), 1, PTR(&moamoa_defence_no_parts))
     CALL(btlevtcmd_OffPartsAttribute, LW(1), 1, 536870912)
     CALL(btlevtcmd_AnimeSetPoseTable, LW(1), 1, PTR(moamoa1_weakness_pose_table))
     CALL(btlevtcmd_SetHitOffset, LW(1), 1, 0, 32, 0)

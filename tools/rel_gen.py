@@ -26,7 +26,9 @@ def cstr(s):
 # unique extend_data index per unit within the REL: position of the unit in the REL's splits
 spl=[l.strip()[:-3] for l in open(f'config/G8MJ01/{MOD}/splits.txt') if l.strip().endswith('.c:')]
 base_idx=spl.index(UNIT)*4
-isscript=lambda o: bool(re.match(r'\s*\.4byte 0x000[0-9A-F]{5}',o['body'])) and bool(re.search(r'\.4byte 0x00000001(\s*\.4byte 0x00000000)*\s*$',o['body']))
+def isscript(o):
+    m=re.match(r'\s*\.4byte 0x000([0-9A-F])([0-9A-F]{4})',o['body'])  # first command: arg count, opcode 1-118
+    return bool(m) and 1<=int(m.group(2),16)<=118 and bool(re.search(r'\.4byte 0x00000001(\s*\.4byte 0x00000000)*\s*$',o['body']))
 out=[];decl=[];fd=0;names={o['name'] for o in objs}
 defined=set()
 used_before=collections.Counter()
@@ -44,7 +46,25 @@ def wrap_ptr(line):
         parts[i]=head+rest
     s=''.join(parts)
     return re.sub(r'\b(CALL_CHILD|SPAWN_EVENT)\(PTR\((\w+)\)\)',r'\1(\2)',s)
-i=0;todo=[];placed=set()
+i=0;todo=[];placed=set();bytes_objs=set()
+def as_bytes(o):
+    """The object's bytes if it has no pointers and needs byte granularity (.string/.byte/.2byte/odd .skip)."""
+    import struct
+    b=bytearray(); odd=False
+    for m in re.finditer(r'^\s*\.(\w+) (.*)$',o['body'],re.M):
+        k,v=m.group(1),m.group(2).strip()
+        if k=='4byte':
+            if not v.startswith('0x'): return None
+            b+=int(v,16).to_bytes(4,'big')
+        elif k=='float': b+=struct.pack('>f',float(v))
+        elif k=='double': b+=struct.pack('>d',float(v))
+        elif k=='2byte': b+=int(v,0).to_bytes(2,'big'); odd=True
+        elif k=='byte': b+=bytes(int(x,0)&0xFF for x in v.split(',')); odd=True
+        elif k=='skip': b+=bytes(int(v,0)); odd=odd or int(v,0)%4!=0
+        elif k=='string':
+            b+=re.fullmatch(r'"((?:[^"\\]|\\.)*)"',v).group(1).encode('latin1','backslashreplace').decode('unicode_escape').encode('latin1')+b'\0'; odd=True
+        else: return None
+    return bytes(b) if odd and len(b)==o['size'] else None
 def placeholder(f):
     return (f"// TODO: write {f['name']} ({'global' if f['scope']=='global' else 'static'}, {f['size']:#x} bytes) here:\n"
             f"// its asm is in build/G8MJ01/{MOD}/asm/{UNIT}.s; this is where the original has it, just before the first script that uses it")
@@ -89,6 +109,12 @@ while i<len(data):
         lines=[l for l in t.stdout.rstrip('\n').split('\n') if l.strip()!='END']
         body=[lines[0]]+[wrap_ptr(l) for l in lines[1:]]
         out.append(st+'\n'.join(body))
+    elif as_bytes(o) is not None:
+        # plain bytes (strings, .byte, odd .skip) with no pointers: a u8 array holding exactly those bytes
+        b=as_bytes(o)
+        todo.append(o['name']); bytes_objs.add(o['name'])
+        table=f"{st}u8 {o['name']}[{len(b)}] = {{\n    "+',\n    '.join(', '.join(f'0x{x:02X}' for x in b[j:j+16]) for j in range(0,len(b),16))+",\n};"
+        out.append("// TODO: type\n"+table)
     else:
         words=[]
         for m in re.finditer(r'^\s*\.(4byte|float|string|byte|2byte|double|rel|skip) (.*)$',o['body'],re.M):
@@ -140,7 +166,7 @@ for o in data:
     dpos=min([p for p in (src.find(f'EVT_BEGIN({n})'),src.find(f' {n}[')) if p>=0] or [0])
     if re.search(rf'[(&]\s*{re.escape(n)}\b',src[:dpos]):
         st='' if o['scope']=='global' else 'static '
-        fwd.append(f"{st}s32 {n}[{o['size']//4}];" if isscript(o) else f"{st}u32 {n}[{o['size']//4}];")
+        fwd.append(f"{st}s32 {n}[{o['size']//4}];" if isscript(o) else f"{st}u8 {n}[{o['size']}];" if n in bytes_objs else f"{st}u32 {n}[{o['size']//4}];")
 # headers declaring the names the scripts use
 idents=set(re.findall(r'\b([A-Za-z_]\w*)\b',re.sub(r'"(?:[^"\\]|\\.)*"','',re.sub(r'//[^\n]*','',src))))-defined-{f['name'] for f in fns}-{'negone_one','neg_one','__local_PI','__local_3PIO2','one_negone','__local_PIO2','one','_three','_half'}
 hdrs=set()

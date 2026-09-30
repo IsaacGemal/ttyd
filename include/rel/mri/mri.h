@@ -27,3 +27,4 @@ extern s32 mri_punipuni_itemselect[];
 extern s32 mri_punipuni_itemset[];
 extern s32 mri_punipuni_setup[];
 extern s32 puni_disp_info[];
+extern s32 evt_puni_dokan_onoff[];

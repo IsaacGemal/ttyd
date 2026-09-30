@@ -21,18 +21,18 @@ EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	else {
 		data->lifetime = lifetime;
 	}
-	data->field_0x24 = 0xff;
+	data->color1A = 0xff;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->scale = scale;
-	data->field_0x18 = 0xff;
-	data->field_0x1c = 0xff;
-	data->field_0x20 = 0xff;
-	data->field_0x28 = 0xff;
-	data->field_0x2c = 0xff;
-	data->field_0x30 = 0xff;
-	data->field_0x34 = 0xff;
+	data->color1R = 0xff;
+	data->color1G = 0xff;
+	data->color1B = 0xff;
+	data->color2R = 0xff;
+	data->color2G = 0xff;
+	data->color2B = 0xff;
+	data->color2A = 0xff;
 	data->field_0x38 = 0.0f;
 	data->field_0x3c = 0.0f;
 	return effect;
@@ -73,7 +73,7 @@ void effVaporMain(EffectEntry* effect) {
 		return;
 	}
 	if (data->lifetime < 0x10) {
-		data->field_0x24 = data->lifetime << 4;
+		data->color1A = data->lifetime << 4;
 	}
 	switch (type) {
 	case 0:

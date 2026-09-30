@@ -19,6 +19,7 @@ typedef struct PartyCloud {
 void cloudGetAt(Vec* position);
 void cloudResetAt();
 f32 cloudGetBreathDir(void);
+f32 cloudGetBreathDist(void);
 s32 cloudGetHitBreathout(s32 param_1);
 u8 cloudGetStatus();
 void unk_801820d0(PartyEntry* party);

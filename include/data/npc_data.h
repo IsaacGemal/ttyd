@@ -3,6 +3,8 @@
 #include "driver/npcdrv.h"
 #include <dolphin/types.h>
 
+extern NpcTribeInfo npcTribe[];
+
 typedef struct NpcAiInfo {
 	const char* description; //0x0, used for s/etup.xml tag lookup
 	s32 flags; //0x4

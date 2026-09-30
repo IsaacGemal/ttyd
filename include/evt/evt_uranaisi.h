@@ -14,3 +14,4 @@ USER_FUNC(uranaisi_supercoin_check);
 USER_FUNC(uranaisi_supercoin_makelabel);
 USER_FUNC(uranaisi_supercoin_setreadflag);
 USER_FUNC(uranaisi_table_clear);
+s32 uranaisi_ryokin_rtn(s32 idx);
