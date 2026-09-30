@@ -1720,13 +1720,14 @@ USER_FUNC(btlevtcmd_GetOverTurnCount) {
 
 // NONMATCHING (96.11%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_SetOverTurnCount) {
+    s32 btlId;
+    s32 id;
     s32* args = event->args;
-    s32 btlId, id;
-    s8 value;
+    s32 value;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
-    value = (s8)evtGetValue(event, args[1]);
+    value = evtGetValue(event, args[1]);
     BattleGetUnitPtr(_battleWorkPointer, id)->flippedTurns = value;
     return EVT_RETURN_DONE;
 }
@@ -2334,9 +2335,10 @@ USER_FUNC(btlevtcmd_GetFaceDirection) {
 
 // NONMATCHING (96.11%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_ChangeFaceDirection) {
-    s32* args = event->args;
-    s32 btlId, id;
     s8 value;
+    s32 btlId;
+    s32 id;
+    s32* args = event->args;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
@@ -2349,12 +2351,12 @@ USER_FUNC(btlevtcmd_ChangeFaceDirection) {
 USER_FUNC(btlevtcmd_ChangePartsFaceDirection) {
     s32* args = event->args;
     s32 btlId, id, partId;
-    s8 value;
+    s32 value;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     partId = evtGetValue(event, args[1]);
-    value = (s8)evtGetValue(event, args[2]);
+    value = evtGetValue(event, args[2]);
     BattleGetUnitPartsPtr(id, partId)->faceDirection = value;
     return EVT_RETURN_DONE;
 }
@@ -5700,9 +5702,11 @@ USER_FUNC(btlevtcmd_AcSetGaugeParam) {
 // NONMATCHING (88.82%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_PadCheckTrigger) {
     s32* args = event->args;
-    s32 index = args[2];
+    s32 chan, index;
 
-    if (BattlePadMultiCheckTrigger(evtGetValue(event, args[0]), args[1])) {
+    chan = evtGetValue(event, args[0]);
+    index = args[2];
+    if (BattlePadMultiCheckTrigger(chan, args[1])) {
         evtSetValue(event, index, TRUE);
     }
     else {
@@ -5715,9 +5719,11 @@ USER_FUNC(btlevtcmd_PadCheckTrigger) {
 // NONMATCHING (88.82%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_PadCheckNow) {
     s32* args = event->args;
-    s32 index = args[2];
+    s32 chan, index;
 
-    if (BattlePadMultiCheckNow(evtGetValue(event, args[0]), args[1])) {
+    chan = evtGetValue(event, args[0]);
+    index = args[2];
+    if (BattlePadMultiCheckNow(chan, args[1])) {
         evtSetValue(event, index, TRUE);
     }
     else {
