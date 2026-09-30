@@ -251,6 +251,7 @@ void BattleAudienceSoundGetInfo2(s32 index, Vec* pos);
 s32 BattleAudienceSound1(const char* name, s32 a, s32 b);
 s32 BattleAudienceSound2(const char* name, s32 index);
 void BattleAudienceSoundStop(s32 index);
+void BattleAudienceSoundRun(s32 kind);
 void BattleAudienceSoundWhistle(void);
 void BattleAudiencePuniAllEscape(void);
 void BattleAudienceAddPuni(s32 num);
