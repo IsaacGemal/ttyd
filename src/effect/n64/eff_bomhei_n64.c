@@ -8,9 +8,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const f32 float_9_8041ea4c = 9.0f;
-
-const Vec vec3_802fa2b0 = { 0.0f, 0.0f, 0.0f };
+extern const f32 float_9_8041ea4c;
 
 // NB: when the f32 constants below are defined here the compiler folds every use to an anonymous
 // .sdata2 copy; declaring them extern keeps the original's named @sda21 references (the int->float
@@ -36,6 +34,10 @@ static u32 size32x32_tex32x32_vtx[0xE] = {
 	0x00000400, 0x000000FF,
 };
 
+__declspec(section ".data") u32 lbl_8039A9E0[2] = {
+	0xBF800000, 0x3F800000,
+};
+
 static inline Vec initializeVec(Vec* input) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
@@ -57,15 +59,15 @@ EffectEntry* effBomheiN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a5)
 	data->field_0x14 = count;
 	data->field_0x18 = 0;
 	data->field_0x1C = count;
-	data->field_0x20 = 0.0f;
+	data->field_0x20 = float_0_8041ea38;
 	data->type = type;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->field_0x10 = a5;
-	data->field_0x24 = 0.0f;
+	data->field_0x24 = float_0_8041ea38;
 	if (type == 0) {
-		data->field_0x28 = 0.0f;
+		data->field_0x28 = float_0_8041ea38;
 	}
 	else {
 		data->field_0x28 = 40.0f;
@@ -212,3 +214,4 @@ const f32 float_32_8041ea3c = 32.0f;
 const f32 float_deg2rad_8041ea40 = 0.017453292f;
 const f32 float_1_8041ea44 = 1.0f;
 const f32 float_4_8041ea48 = 4.0f;
+const f32 float_9_8041ea4c = 9.0f;

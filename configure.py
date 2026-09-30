@@ -570,7 +570,7 @@ config.libs = [
             Object(NonMatching, "effect/n64/eff_balloon_n64.c"),
             Object(NonMatching, "effect/n64/eff_blow_n64.c"),
             Object(NonMatching, "effect/n64/eff_bomb_n64.c"),
-            Object(NonMatching, "effect/n64/eff_bomhei_n64.c"),
+            Object(Matching, "effect/n64/eff_bomhei_n64.c"),
             Object(NonMatching, "effect/n64/eff_booboo_n64.c"),
             Object(NonMatching, "effect/n64/eff_breath_fire_n64.c"),
             Object(NonMatching, "effect/n64/eff_broken_barrier_n64.c"),
