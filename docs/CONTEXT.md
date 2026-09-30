@@ -2253,3 +2253,14 @@ write to. Next waves give each agent its own TMPDIR.
 
 - **win_mario**: `unk_8016af5c` and `winZenkakuStr` match (only pool symbol names differ): the digit table and the `"-"`, `""`, `"%d"` strings are literals (they pool into `.sdata2`/`.rodata` by themselves), the `char` buffer is `signed char`, `winZenkakuStr`'s index is `u32` (`unk_8016af5c` keeps `s32 i`), and the static buffer is used directly instead of through an `out` pointer.
 - **battle_event_cmd**: the `btlevtcmd_*` handlers that fetch a unit match with `BattleWork* wp = _battleWorkPointer;` declared (after `args`) and the call nested as `BattleGetUnitPtr(wp, BattleTransID(event, id))` (no `id` temp); 7 more at 100%. `btlevtcmd_SpawnUnit` is an early return on NULL. `btlevtcmd_onoff_battleflag` reads `args[1]` and `wp` after the call (97.9%).
+
+## Grind 19 (Claude #3, near-miss list from waves 21 and 23)
+
+- **Zero-Vec temp**: the `effXxxMain` functions that open with `position = vec3_...; position.x = ...` need the copy to come
+  from an inline that builds the temp from a literal `(Vec){ 0, 0, 0 }` (`makeVec(x, y, z)` / `initializeVec`), not from the
+  named rodata `vec3_...`: the scheduler then keeps the `userdata` load ahead of the copy. kemuri10, vapor, hokori and rappa
+  match; kemuri9 and peach_dust improve. The helper copies (`Vec temp = vec3_...`) in ten other effect files are literals now.
+- **`tri2` takes `s32` arguments**: callers pass unmasked values (`clrlwi` disappears); pikkyolo and thunderflare `Disp` match.
+- **Blend expression**: `(C - v) * k + v` wants a temp for `C - v` (`f32 t = C - v; v = t * k + v;`) (eff_mahorn). A `for` loop
+  that steps two pointers wants the stepping in the header (`i++, data++`) when the target steps `i` first (starpoint).
+- Three units the wave 23 branch had matched but not linked were linked with `tools/autolink.py`: evt_paper, evt_ext, evt_urouro.
