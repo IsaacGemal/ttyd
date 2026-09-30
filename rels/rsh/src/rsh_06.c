@@ -1830,7 +1830,7 @@ static inline f32 moamoa_cos(f32 r) {
     return c;
 }
 
-// NONMATCHING (52.79%): reconstructed from the assembly; sin/cos FPR colouring and the
+// NONMATCHING (53.9%): reconstructed from the assembly; sin/cos FPR colouring and the
 // stacked Vec temporaries still differ.
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
     MarioWork* mario = marioGetPtr();
@@ -1948,7 +1948,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
             return 0;
 
         f30 = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
-        if (fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
+        if (__fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
             rad = 6.2831855f * mario->directionView / 360.0f;
             s = moamoa_sin(rad);
             mario->riderDelta.x = -((f31 - f29) * s);

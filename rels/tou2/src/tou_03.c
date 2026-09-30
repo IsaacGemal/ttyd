@@ -4396,8 +4396,8 @@ s32 item_jump(EventEntry* event, BOOL isFirstCall) {
     dist = event->userdataf[0];
     v = event->userdataf[1];
     angle = event->userdataf[2];
-    item->position.x += sinf(6.2832f * angle / 360.0f);
-    item->position.z -= cosf(6.2832f * angle / 360.0f);
+    item->position.x += sinf(6.2831855f * angle / 360.0f);
+    item->position.z -= cosf(6.2831855f * angle / 360.0f);
     item->position.y += v;
     dist = dist - 1.0f;
     v = v - 0.5f;
@@ -4409,7 +4409,7 @@ s32 item_jump(EventEntry* event, BOOL isFirstCall) {
         pos.x = item->position.x;
         pos.y = item->position.y;
         pos.z = item->position.z;
-        psndSFXOn_3D("stone", &pos);
+        psndSFXOn_3D("SFX_EVT_STARSTONE_JUMP1", &pos);
         return EVT_RETURN_YIELD;
     }
     event->userdataf[0] = dist;
@@ -4486,11 +4486,10 @@ s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
 
 
 
-// NONMATCHING (99.9% in the final link check): the instruction stream is byte-identical and check.py shows
-// 100%, but the constant {0,0xFF,0xFF,0xFF} ends up at .rodata 6220 anonymously instead of retail's named
-// `dat_tou2_0000a738` at 4424. Fixing it needs a named const placed at the right source position.
+// NONMATCHING: the constant {0xFF,0xFF,0xFF,0} lands at .rodata 6220 anonymously instead of retail's named
+// `dat_tou2_0000a738` at 4424.
 static inline GXColor gansColor(u8 a) {
-    GXColor c = {0, 0xFF, 0xFF, 0xFF};
+    GXColor c = {0xFF, 0xFF, 0xFF, 0};
     c.a = a;
     return c;
 }

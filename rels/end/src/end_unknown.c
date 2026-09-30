@@ -346,7 +346,8 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_peach", (u32)"P_W_1", 0x00000000,
 };
 
-// NONMATCHING (80%): the "end_00" rodata literal lands at a different offset until all constants are pooled identically.
+// NONMATCHING (80%): config/G8MJ01/end/symbols.txt gives _prolog size 0x50, but it is 0x60; its epilogue is split off
+// into gap_00_00002520_text, so the target is cut short.
 void _prolog(void) {
     voidfunctionptr* ctor;
 

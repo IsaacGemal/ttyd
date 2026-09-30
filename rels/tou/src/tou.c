@@ -3727,7 +3727,7 @@ USER_FUNC(fight_money) {
 static f32 camGetRy(void) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 ry = reviseAngle((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)) *
-                         57.29578f);
+                         57.29579f);
 
     if (ry < 0.0f) {
         ry += 360.0f;

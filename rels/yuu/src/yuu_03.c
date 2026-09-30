@@ -547,7 +547,7 @@ void ryushi_disp(CameraId cameraId, void* param) {
         color.a = wp->unk20;
         GXSetTevColor(1, color);
         {
-            f32 t = (3.1415927f * (f32)i * 0.25f + wp->z * 0.125f) / 3.1415927f;
+            f32 t = (3.14f * (f32)i * 0.25f + wp->z * 0.125f) / 3.14f;
             f32 d = 180.0f * t;
             s32 k = (s32)(d / 360.0f);
             if (d < 0.0f) {
@@ -604,7 +604,7 @@ USER_FUNC(evt_ryushi_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.63%): evt_ryushi_clr; reload xwp global for unk08/0C/10 matched; randf fneg order + r27/r28 still differ
+// NONMATCHING (93.02%): evt_ryushi_clr; reload xwp global for unk08/0C/10 matched; randf fneg order + r27/r28 still differ
 USER_FUNC(evt_ryushi_clr) {
     RyushiEntry* wp = xwp;
     s32 i;
@@ -625,12 +625,13 @@ USER_FUNC(evt_ryushi_clr) {
         s32 b = ((i - 1) / 10) % 6;
         s32 c = (i - 1) / 60;
 
+        wp->unk0 = 0;
         wp->unk08 = xwp->unk08 * 0.5f * ((b + c) & 1) + ((f32)a * xwp->unk08 - xwp->unk08 * 4.5f);
         wp->unk0C = (f32)b * xwp->unk0C - xwp->unk0C * 2.5f;
         wp->unk10 = (f32)c * xwp->unk10 - xwp->unk10 * 1.5f;
         wp->x = wp->unk08 + randf(-(0.3f * xwp->unk08), 0.3f * xwp->unk08);
-        wp->y = wp->unk0C + randf(-(0.3f * xwp->unk08), 0.3f * xwp->unk08);
-        wp->z = wp->unk10 + randf(-(0.3f * xwp->unk08), 0.3f * xwp->unk08);
+        wp->y = wp->unk0C + randf(-(0.3f * xwp->unk0C), 0.3f * xwp->unk0C);
+        wp->z = wp->unk10 + randf(-(0.3f * xwp->unk10), 0.3f * xwp->unk10);
         wp->scale = 0.5f;
     }
     return EVT_RETURN_DONE;

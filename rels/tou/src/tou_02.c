@@ -1666,7 +1666,7 @@ void ext_fan_main(void) {
         fan_wp->field_0x50C = 0;
     }
 
-    if (evtGetValue(NULL, -0x55C4A76)) {
+    if (evtGetValue(NULL, GF(10))) {
         pose = extGetPosePtr();
         fan = fan_wp->poses;
         i = fan_wp->poseNum;
@@ -1868,7 +1868,7 @@ void ext_fan_main(void) {
 
                 fan->position.x += fan->field_0x3C * s;
                 c = fanCosf(a);
-                fan->position.y += fan->field_0x3C * -c;
+                fan->position.z += fan->field_0x3C * -c;
             }
             fan->field_0x44--;
             if (fan->field_0x44 < 0) {

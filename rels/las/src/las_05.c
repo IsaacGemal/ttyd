@@ -791,7 +791,7 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
     return result;
 }
 
-// NONMATCHING (89.54%): f-register allocation/scheduling; the collision half lands in
+// NONMATCHING (91.25%): f-register allocation/scheduling; the collision half lands in
 // f27 instead of f29, the dir range test lays out its branches differently, and
 // calc_area's constant load order differs.
 static void senkaron_ext_main(void) {
@@ -1114,7 +1114,7 @@ static void senkaron_ext_main(void) {
                 pose->field_0x4 = randf(0.0f, 360.0f);
                 pose->flags &= ~4;
                 p->type = 0;
-                p->field_4 = (s32)randf(1.0f, 1000.0f);
+                p->field_4 = rand() % 1000 + 1;
                 p->field_C = 0.0f;
             }
             break;

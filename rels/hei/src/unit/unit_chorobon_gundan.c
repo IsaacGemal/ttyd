@@ -661,7 +661,6 @@ USER_FUNC(chorogun_set_target_id) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (94.9%): `li r0,0x2` is scheduled one slot later than the target.
 USER_FUNC(chorogun_appear) {
     s32 i;
     s32 count;
@@ -926,7 +925,6 @@ USER_FUNC(chorogun_after_attack) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.35%): callee-saved register assignment and float_2500 pool slot differ.
 USER_FUNC(chorogun_escape) {
     BattleUnit* unit;
     s32 j;

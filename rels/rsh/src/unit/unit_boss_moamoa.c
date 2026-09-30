@@ -1094,9 +1094,9 @@ USER_FUNC(moamoa_on) {
 
         pose->field_0x0 = 0;
         pos = (Vec){ 0.0f, 0.0f, 0.0f };
-        pos.x = randf(-10.0f, 20.0f);
-        pos.y = randf(-10.0f, 20.0f);
-        pos.z = randf(-10.0f, 20.0f);
+        pos.x = randf(-10.0f, 10.0f);
+        pos.y = randf(-10.0f, 10.0f);
+        pos.z = randf(-10.0f, 10.0f);
         *(Vec*)&pose->field_0x4 = pos;
     }
 
@@ -1357,7 +1357,7 @@ static void ext_moamoa_main(void) {
         }
     } else {
         wp->field_0x7B4 += 8.571428f;
-        wp->field_0x7B8 -= 0.0044444f;
+        wp->field_0x7B8 -= 0.0044444446f;
         if (wp->field_0x7B8 < 0.8f) {
             wp->field_0x7B8 = 0.8f;
         }

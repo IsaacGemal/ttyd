@@ -873,9 +873,9 @@ s32 fallcheck(YuunpcMapWork* p) {
         p->field_40 = 0.0f;
         return -1;
     }
-    p->field_40 -= 0.53333f;
-    if (p->field_40 < -16.667f) {
-        p->field_40 = -16.667f;
+    p->field_40 -= 0.53333336f;
+    if (p->field_40 < -16.666666f) {
+        p->field_40 = -16.666666f;
     }
     return 0;
 }

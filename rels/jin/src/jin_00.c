@@ -50,7 +50,7 @@ static TeresaEntry* pTeresa;
 Vec g_vecRotCenter;
 u32 g_bMove[1];
 u32 g_nMarioMoveCnt[1];
-u32 g_nNumHuttobasu[1];
+s32 g_nNumHuttobasu[1];
 u32 g_nNumHarituku[1];
 static s32 g_nNumEndProc[1];
 f32 g_fSpeed[1];
@@ -1404,8 +1404,8 @@ static void senteresa_ext_init(void) {
     g_vecRotCenter.z = mario->position.z;
 }
 
-// NONMATCHING (93.52%): .text 4 bytes short (missing one instruction in the bero predicate);
-// v/pos stack slots swapped (v 0x98 vs 0x8c) and rodata constant-pool order differs
+// NONMATCHING (94.72%): the float literals are pooled anonymously instead of retail's named jin constants (most
+// of the operand differences); the rest is scheduling and register allocation (64 missing, 57 extra instructions)
 static void senteresa_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     MarioWork* mario = marioGetPtr();
@@ -1413,7 +1413,7 @@ static void senteresa_ext_main(void) {
     s32 i;
     s32 hammer = 0;
     s32 bero;
-    u32 party;
+    s32 party;
     Vec pos;
     Vec v;
 
@@ -1688,9 +1688,9 @@ static void senteresa_ext_main(void) {
                 PSVECNormalize(&v, &v);
                 pTeresa[i].field_0x00 = 4.2f * v.x;
                 if (v.z > 0.0f) {
-                    pTeresa[i].field_0x08 = randf(5.2f, 7.5f) * v.z;
+                    pTeresa[i].field_0x08 = randf(5.2f, 12.7f) * v.z;
                 } else {
-                    pTeresa[i].field_0x08 = randf(-5.0f, 3.0f) * v.z;
+                    pTeresa[i].field_0x08 = randf(-5.0f, -2.0f) * v.z;
                 }
                 pTeresa[i].field_0x04 = randf(6.0f, 10.0f);
                 pTeresa[i].field_0x41 = 10;
@@ -1732,7 +1732,7 @@ static void senteresa_ext_main(void) {
                 break;
             }
             case 0xA:
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x1A;
+                pose->field_0x10 = (gp->retraceCount + i * i) % 8 + 0x1A;
                 (*pose->matrix)[0][3] += pTeresa[i].field_0x00;
                 (*pose->matrix)[1][3] += pTeresa[i].field_0x04;
                 (*pose->matrix)[2][3] += pTeresa[i].field_0x08;
@@ -1807,7 +1807,7 @@ static void senteresa_ext_main(void) {
                 break;
             }
             case 0x1E:
-                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x1A;
+                pose->field_0x10 = (gp->retraceCount + i * i) % 8 + 0x1A;
                 (*pose->matrix)[0][3] += pTeresa[i].field_0x00;
                 (*pose->matrix)[1][3] += pTeresa[i].field_0x04;
                 (*pose->matrix)[2][3] += pTeresa[i].field_0x08;

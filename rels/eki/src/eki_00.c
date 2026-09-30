@@ -519,7 +519,7 @@ static void ext_moamoa_init(void) {
         PSMTXIdentity(*ep->matrix);
         ep->matrix[0][0][3] = radius * ekiSinf(angle) + wp->field_0x14.x;
         ep->matrix[0][1][3] = 0.0f;
-        ep->matrix[0][2][3] = wp->field_0x14.z - radius * ekiCosf(angle);
+        ep->matrix[0][0][3] = wp->field_0x14.z - radius * ekiCosf(angle);  // retail stores z here too, over x
         hitX = 0.0f;
         hitY = 0.0f;
         hitZ = 0.0f;
@@ -1182,7 +1182,7 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
         return 0;
     }
     ep->matrix[0][0][3] = pose->field_0x28.x;
-    ep->matrix[0][2][3] = pose->field_0x28.z;
+    ep->matrix[0][2][3] = pose->field_0x28.y;
     vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088f0);
     dist = PSVECDistance(&va, &vc);
     if (dist >= thresh) {
