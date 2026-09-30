@@ -70,7 +70,9 @@ _fa,_fb=force_active(_orig),force_active(_ours)
 # so the flag matters only there; references are relocations to the function's name or to its .text offset
 _refs={t[0] for r in BR.values() for t in r.values()}|{('.text',t[2]) for r in BR.values() for t in r.values() if t[1]=='.text'}
 def _unreferenced_static(nm):
+    # static in either object: a function the original has static but ours made global is stripped all the same
     fa,local,addr=_fb.get(nm,(True,False,0))
+    local=local or _fa.get(nm,(False,False,0))[1]
     return local and nm not in _refs and ('.text',addr) not in _refs
 for nm in sorted(_fa):
     if _fa[nm][0] and nm in _fb and not _fb[nm][0] and _unreferenced_static(nm): bad.append(f'function {nm} lacks the force-active flag (write `#pragma force_active on` and do not end the file with `off`)')

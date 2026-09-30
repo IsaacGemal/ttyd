@@ -120,8 +120,9 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    Written in the asm's order, every function can reach 100% and the file still won't link. It applies to every
    file built with `-inline auto,deferred`: game code, the RELs, and in libs/ at least MetroTRK, MSL and the
    runtime. Check your unit's cflags in configure.py; battle.c and dispdrv.c are built without it, as are the
-   Dolphin SDK libraries and the gon and mri RELs (cflags_rel_nodefer): in those, write functions in the asm's
-   order.
+   Dolphin SDK libraries and gon's and mri's own sources (rels/gon, rels/mri, built with cflags_rel_nodefer; the
+   shared units in rels/common compiled into gon or mri stay deferred unless their Object says otherwise): in
+   those, write functions in the asm's order.
 
 ## Signedness hints from the assembly
 
