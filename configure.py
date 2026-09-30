@@ -565,7 +565,7 @@ config.libs = [
             Object(NonMatching, "effect/n64/eff_whirlwind_n64.c"),
             Object(NonMatching, "effect/n64/eff_akari_charge_n64.c"),
             Object(NonMatching, "effect/n64/eff_akari_pose_n64.c"),
-            Object(NonMatching, "effect/n64/eff_akari_sflush_n64.c"),
+            Object(Matching, "effect/n64/eff_akari_sflush_n64.c"),
             Object(Matching, "effect/n64/eff_balloon_heiho_n64.c"),
             Object(NonMatching, "effect/n64/eff_balloon_n64.c"),
             Object(NonMatching, "effect/n64/eff_blow_n64.c"),

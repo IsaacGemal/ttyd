@@ -13,7 +13,12 @@ __declspec(section ".sdata") GXColor unk_804230a0;
 
 
 // .sdata2 constants owned by this unit (named after their original addresses).
-extern GXColor dat_8041e900;
+extern const GXColor dat_8041e900;
+extern const f32 float_deg2rad_8041e904;
+extern const f32 float_6p2832_8041e908;
+extern const f32 float_360_8041e90c;
+extern const f32 float_0p1_8041e910;
+
 // .sbss2 scratch GXColor the original builds its TEV colour from.
 // .rodata integer-to-float conversion constant.
 
@@ -164,7 +169,7 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	field14 = data->field_0x14;
 	alpha = data->field_0x24;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e904);
 	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -202,17 +207,17 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
 	for (i = 0; i < data->field_0x30 + 1; i++) {
-		scaleVal = 0.1f * (f32)cos(6.2831855f *
+		scaleVal = float_0p1_8041e910 * (f32)cos(float_6p2832_8041e908 *
 		                                        (f32)(field14 * 8 + i * 180 / (data->field_0x30 + 1)) /
-		                                        360.f) +
+		                                        float_360_8041e90c) +
 		           (f32)(i + 1);
 		scaleVal *= data->field_0x2C;
-		PSMTXRotRad(rotMtx, 'z', 0.017453292f * (f32)(i * 36));
+		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e904 * (f32)(i * 36));
 		PSMTXScale(scaleMtx, scaleVal, scaleVal, scaleVal);
 		PSMTXConcat(rotMtx, scaleMtx, outerMtx);
 
 		for (j = 0; j < 5; j++) {
-			PSMTXRotRad(rotMtx, 'z', 0.017453292f * (f32)(90 + j * 72));
+			PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e904 * (f32)(90 + j * 72));
 			PSMTXScale(scaleMtx, 1.0f, 1.0f, 1.0f);
 			PSMTXConcat(rotMtx, scaleMtx, rotMtx);
 			PSMTXTrans(mtx, 30.0f, 0.0f, 0.0f);
@@ -231,3 +236,9 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+const GXColor dat_8041e900 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const f32 float_deg2rad_8041e904 = 0.017453292f;
+const f32 float_6p2832_8041e908 = 6.2831855f;
+const f32 float_360_8041e90c = 360.0f;
+const f32 float_0p1_8041e910 = 0.1f;
