@@ -8,7 +8,8 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .rodata: zero vector the per-effect position helper starts from.
+// .rodata: zero vector (kept for the original layout; the position helper now uses
+// the merged literal, see initializeVec).
 const Vec vec3_802fb4a0 = { 0.0f, 0.0f, 0.0f };
 
 // .rodata: int->float conversion magic double.
@@ -36,8 +37,11 @@ static u8 color_rotation_data[36] = {
 GXColor unk_80423230;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_sstar.c).
+// The literal zero vector (rather than the named vec3_802fb4a0) is deliberate: MWCC
+// schedules the userdata load before the vec words with the literal, as in the original;
+// the named-vector form hoists the vec loads into the prologue slots.
 inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fb4a0;
+	Vec temp = { 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -112,7 +116,6 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, 
 	return effect;
 }
 
-// NONMATCHING (98.29%): the original loads effect->userdata into r7 before the vec3_802fb4a0 words; MWCC GC/2.6 hoists the first two global loads into the prologue slots instead. Everything else matches.
 void effRappaMain(EffectEntry* effect) {
 	EffectEntry* e;
 	effRappaData* data;

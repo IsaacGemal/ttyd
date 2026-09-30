@@ -101,12 +101,10 @@ EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 sca
 	return effect;
 }
 
-// The loop induction, the position scratch copy and every load/store offset match. Retail keeps the
-// loop-invariant constants in f4 (4.0), f1 (90), f0 (-90) and the loop temporaries in f2/f3, while
-// this compiler assigns the constants f2/f3/f4 and the temporaries f0/f1 (the same permutation
-// continues through the 0x138/0x13C/0x140 rotation block). Reordering the declarations, the loop
-// counter direction and the block order does not change it.
-// NONMATCHING (98.25%): only the f-register allocation differs.
+// With common-subexpression elimination on, MWCC reuses the loop temporaries for the 4.0/90/-90
+// constants and permutes every FPR in the loop and the 0x138/0x13C/0x140 rotation block; turning it
+// off keeps retail's f4/f1/f0 constants and f2/f3 temporaries.
+#pragma opt_common_subs off
 void effKamekiTornadeMain(EffectEntry* effect) {
 	effKamekiTornadeData* data;
 	Vec position;

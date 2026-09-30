@@ -40,7 +40,8 @@ const f64 double_to_int_mask_802fb508 = 4503599627370496.0;
 const char str_802FB510[] = "ReleaseN64";
 
 // .data
-__declspec(section ".data") f32 lbl_803A4C60[2] = {-1.0f, 1.0f};
+// lbl_803A4C60 belongs to the previous unit (eff_recover_heart_n64); effReleaseDisp reaches
+// its own .data through it as an offset base. Declared in the header.
 __declspec(section ".data") static f32 negone_one_374[2] = {-1.0f, 1.0f};
 __declspec(section ".data") f32 lbl_803A4C70[2] = {1.0f, -1.0f};
 __declspec(section ".data") static f32 one_negone_373[2] = {1.0f, -1.0f};
@@ -360,10 +361,38 @@ void effReleaseMain(EffectEntry* effect) {
 
 // .text
 
-// NONMATCHING (99.59%): only the .data base symbol (lbl_803A4C60 vs the local section
-// symbol), the GXColor stack-slot layout (target interleaves each color with its by-value
-// copy; this build groups the copies separately) and one switch-dispatch branch differ.
+#ifdef MUST_MATCH
+// The three GXColors are built inside inline setters so each call gets its own
+// local-plus-by-value-copy stack pair, as in the original.
+static inline void releaseSetColor1(effReleaseN64Data* data) {
+    GXColor c = *(GXColor*)&unk_80423240;
+    c.r = data->field_0x2C;
+    c.g = data->field_0x30;
+    c.b = data->field_0x34;
+    c.a = data->field_0x38;
+    GXSetTevColor(GX_TEVREG1, c);
+}
+
+static inline void releaseSetColor2(effReleaseN64Data* data, s32 i) {
+    GXColor c = *(GXColor*)&unk_80423244;
+    c.r = data->field_0x1C;
+    c.g = data->field_0x20;
+    c.b = data->field_0x24;
+    c.a = data->alphas[i];
+    GXSetTevColor(GX_TEVREG0, c);
+}
+
+static inline void releaseSetColor3(s32 alpha) {
+    GXColor c = *(GXColor*)&dat_8041fb38;
+    c.a = alpha;
+    GXSetChanMatColor(GX_COLOR0A0, c);
+}
+#endif
+
 void effReleaseDisp(CameraId camId, void* param) {
+#ifdef MUST_MATCH
+    u8* vtxBase = (u8*)lbl_803A4C60;
+#endif
     EffectEntry* effect = param;
     effReleaseN64Data* data;
     CameraEntry* cam = camGetPtr(camId);
@@ -398,6 +427,9 @@ void effReleaseDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 
     {
+#ifdef MUST_MATCH
+    releaseSetColor1(data);
+#else
     GXColor color;
     color = *(GXColor*)&unk_80423240;
     color.r = data->field_0x2C;
@@ -405,11 +437,14 @@ void effReleaseDisp(CameraId camId, void* param) {
     color.b = data->field_0x34;
     color.a = data->field_0x38;
     GXSetTevColor(GX_TEVREG1, color);
+#endif
     }
     GXSetCullMode(GX_CULL_NONE);
 
     for (i = 0; i < 4; i++) {
+#ifndef MUST_MATCH
         GXColor color2;
+#endif
         if (type == 1 && i == 2) {
             continue;
         }
@@ -424,12 +459,16 @@ void effReleaseDisp(CameraId camId, void* param) {
         PSMTXConcat(cam->view, scale, scale);
         GXLoadPosMtxImm(scale, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+        releaseSetColor2(data, i);
+#else
         color2 = *(GXColor*)&unk_80423244;
         color2.r = data->field_0x1C;
         color2.g = data->field_0x20;
         color2.b = data->field_0x24;
         color2.a = data->alphas[i];
         GXSetTevColor(GX_TEVREG0, color2);
+#endif
 
         switch (i) {
             case 0:
@@ -437,14 +476,22 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, float_0p03125_8041fb44, float_0p03125_8041fb44, float_0_8041fb40);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+#ifdef MUST_MATCH
+                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x130));
+#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
+#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 break;
             case 1:
                 effGetTexObjN64(0x45, &texObj);
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
+#ifdef MUST_MATCH
+                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x168));
+#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex256x32_vtx);
+#endif
                 PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
                 PSMTXTrans(trans, float_0_8041fb40, float_0_8041fb40, float_0_8041fb40);
                 PSMTXConcat(scale, trans, scale);
@@ -479,19 +526,29 @@ void effReleaseDisp(CameraId camId, void* param) {
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, float_0p015625_8041fb58, float_0p015625_8041fb58, float_0_8041fb40);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+#ifdef MUST_MATCH
+                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x328));
+#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex128x128_vtx);
+#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
-                break;
+                /* no break: case 2 falls through into case 3 (matches the original) */
             case 3:
                 effGetTexObjN64(0x47, &texObj);
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
                 PSMTXScale(scale, float_0p015625_8041fb58, float_0p03125_8041fb44, float_0_8041fb40);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+#ifdef MUST_MATCH
+                effSetVtxDescN64((effVtxArray*)(vtxBase + 0x360));
+#else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_0_vtx);
+#endif
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 tri2(4, 5, 6, 4, 4, 6, 7, 4);
+                break;
+            case 4:
                 break;
             default:
                 break;
@@ -511,15 +568,21 @@ void effReleaseDisp(CameraId camId, void* param) {
             }
         }
         if (alpha > 0) {
+#ifndef MUST_MATCH
             GXColor color3;
+#endif
             GXGetProjectionv(projv);
             C_MTXOrtho(ortho, float_0_8041fb40, float_480_8041fb5c, float_0_8041fb40, float_608_8041fb60, float_0_8041fb40, float_1_8041fb64);
             GXSetProjection(ortho, GX_ORTHOGRAPHIC);
             GXSetNumChans(1);
             GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+#ifdef MUST_MATCH
+            releaseSetColor3(alpha);
+#else
             color3 = *(GXColor*)&dat_8041fb38;
             color3.a = alpha;
             GXSetChanMatColor(GX_COLOR0A0, color3);
+#endif
             GXSetNumTevStages(1);
             GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
             GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -529,7 +592,11 @@ void effReleaseDisp(CameraId camId, void* param) {
             PSMTXIdentity(trans);
             GXLoadPosMtxImm(trans, GX_PNMTX0);
             GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+            effSetVtxDescN64((effVtxArray*)(vtxBase + 0x3d0));
+#else
             effSetVtxDescN64((effVtxArray*)rectangle_vtx);
+#endif
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
             GXSetProjectionv(projv);

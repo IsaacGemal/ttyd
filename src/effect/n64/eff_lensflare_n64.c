@@ -105,7 +105,9 @@ void effLensflareMain(EffectEntry* effect) {
         data->field_14 = data->field_18 * 12;
     }
 
-    for (i = 1, entry = data->entries; i < effect->count; i++, entry++) {
+    i = 1;
+    entry = &data->entries[i - 1];
+    for (; i < effect->count; i++, entry++) {
         angle = float_6p2832_8041f62c * (float_90_8041f630 * (entry->field_2C - float_70_8041f634) / float_10_8041f638) / float_360_8041f63c;
         // field_14 is inside the padded region of LensflareEntry (no named field).
         *(s32*)((u8*)entry + 0x14) = (s32)(float_255_8041f640 * (f32)cos(angle));

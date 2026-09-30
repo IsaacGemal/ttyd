@@ -153,24 +153,36 @@ void effConfettiMain(EffectEntry* effect) {
 	}
 }
 
-// The instruction sequence and stack frame are identical; three allocation/labelling artifacts remain:
-//  (1) register numbering: the original keeps the frame value and the loop counter in r26 (reusing it after
-//      the frame dies) with count in r24; this build reuses r24 for seq and puts the loop counter in r29
-//      (data/type/alpha are r27/r28/r25 in both);
-//  (2) the GXColor for the first GXSetTevColor is built at r1+0xc and word-copied to the outgoing slot at
-//      r1+0x10, while this build builds it at r1+0x10 and copies down to r1+0xc (known mwcc quirk, also in
-//      eff_akari_pose_n64.c / eff_booboo_n64.c / eff_batten.c);
-//  (3) the implicit int->float constant gets the local label @240 instead of double_to_int_802fa448.
-// NONMATCHING (99.61%): only (1) the frame/loop-counter register numbering, (2) the GXColor stack slot
-// direction, and (3) the @240 label differ.
+// MUST_MATCH: retail's first GXSetTevColor builds the colour in a temp and word-copies it to a
+// higher outgoing slot; returning the colour from an inline makes mwcc copy upwards (0x8->0xc here)
+// instead of building the local above and copying down.  The plain field assignment is the natural form.
+// Same quirk as eff_akari_pose_n64.c / eff_booboo_n64.c / eff_batten.c.
+#ifdef MUST_MATCH
+static inline GXColor makeConfettiColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c = unk_804230c8;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+#endif
+
+// Differences from the original: (1) the frame value and loop counter are both r26 in the original
+// (seq r31, loop counter r26, anm_seq r29, divisor r30) while this build keeps the frame in r26 but
+// coalesces seq into r26 and gives the loop counter r29 (anm_seq r30, divisor r31); (2) the GXColor
+// copy now goes upwards like the original, but its two temps sit at 0x8/0xc instead of the original's
+// 0xc/0x10 (the second GXSetTevColor's temp is 0x8 in both).  The implicit int->float constant is also
+// emitted as a local @NNN label instead of double_to_int_802fa448, but objdiff does not score that.
+// NONMATCHING (99.69%): register allocation and GXColor temp slots differ; see above.
 void effConfettiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	s32 type;
 	effConfettiN64Data* data;
-	s32 count;
-	s32 alpha;
 	s32 i;
 	s32 seq;
+	s32 alpha;
+	s32 count;
 	s32 idx2;
 	u8* clr;
 	CameraEntry* cam;
@@ -217,11 +229,15 @@ void effConfettiDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx2, mtx0, mtx0);
 		GXLoadPosMtxImm(mtx0, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+		color = makeConfettiColor(clr[0], clr[1], clr[2], alpha);
+#else
 		color = unk_804230c8;
 		color.r = clr[0];
 		color.g = clr[1];
 		color.b = clr[2];
 		color.a = alpha;
+#endif
 		GXSetTevColor(GX_TEVREG0, color);
 		GXSetTevColor(GX_TEVREG1, *(GXColor*)&float_0p011489_8041ebf0);
 		idx2 = ((i + anm_seq[seq]) & 0xF) << 6;

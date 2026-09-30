@@ -168,12 +168,11 @@ void winPartyInit2(WindowWork* work) {
     winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].field_0xC, 0);
 }
 
-// NONMATCHING (99.84%): the party-selection walk loop assigns the counter i to r22
-// and the walk pointer to r23; the original has i in r23 and the pointer in r22 (the
-// register the inner loop's j used). Everything else, including all three switches, matches.
+// NONMATCHING (99.97%): only the .rodata-base offsets differ (the addi/lfd immediates for
+// the yoshi strings and the u32->double constant); winPartyDt/winPartyDisp are not decompiled,
+// so the strings that precede them are missing. Every instruction opcode/register matches.
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
-    u8* p;
     s32 i;
     s32 j;
     s32 k;
@@ -232,11 +231,11 @@ void winPartyInit(WindowWork* work) {
 
     i = 0;
     WW_S32(work, 0x1DC) = i;
-    for (p = (u8*)work; i < WW_S32(work, 0x1E0); i++, p += 4) {
+    for (; i < WW_S32(work, 0x1E0); i++) {
         s32 party;
 
         party = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
-        if (party == *(s32*)(p + 0x1BC)) {
+        if (party == ((s32*)work)[i + 0x6F]) {
             WW_S32(work, 0x1DC) = i;
             break;
         }

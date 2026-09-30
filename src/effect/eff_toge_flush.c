@@ -98,13 +98,68 @@ void effTogeFlushMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (99.90%): every opcode matches; the only diffs are the compiler colouring the per-case
-// `GXColor color` temp and the by-value argument copy to different stack slots (ours: temp 0x44/0x08..0x14,
-// arg 0x40/0x38.. ; original: an 8-byte block per case at 0x40/0x38/0x30/0x28/0x20/0x18/0x10/0x08).
+#ifdef MUST_MATCH
+/* MUST_MATCH: building the colour inside an inline that also issues the GXSetTevColor call makes MWCC
+   allocate the temp and the by-value argument copy together per call site (r1+0x40/0x44, 0x38/0x3c, ...),
+   as retail does. A helper that only returns the colour (the usual pattern) leaves them in separate slots. */
+static inline void togeSetColor0(s32 a, s32 idx) {
+	GXColor c = *(GXColor*)&unk_80423070;
+	c.a = a;
+	c.r = color_rotation_data[idx + 0];
+	c.g = color_rotation_data[idx + 1];
+	c.b = color_rotation_data[idx + 2];
+	GXSetTevColor(1, c);
+}
+
+static inline void togeSetColor1(s32 a) {
+	GXColor c = dat_8041e328;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void togeSetColor2(s32 a) {
+	GXColor c = dat_8041e32c;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void togeSetColor3(s32 a) {
+	GXColor c = dat_8041e330;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void togeSetColor4(s32 a) {
+	GXColor c = dat_8041e334;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void togeSetColorA3(s32 a) {
+	GXColor c = dat_8041e338;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void togeSetColorA4(s32 a) {
+	GXColor c = dat_8041e33c;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void togeSetColorAD(s32 a) {
+	GXColor c = dat_8041e340;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+#endif
+
 void effTogeFlushDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effTogeFlushData* data = effect->userdata;
+#ifndef MUST_MATCH
 	GXColor color;
+#endif
 	GXTexObj texObj;
 	Mtx mtxTrans;
 	Mtx mtxRot;
@@ -151,6 +206,26 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtxPos, 0);
 	GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+	switch (type) {
+	case 0:
+		idx %= 24;
+		togeSetColor0(colorAlpha, idx);
+		break;
+	case 1:
+		togeSetColor1(colorAlpha);
+		break;
+	case 2:
+		togeSetColor2(colorAlpha);
+		break;
+	case 3:
+		togeSetColor3(colorAlpha);
+		break;
+	case 4:
+		togeSetColor4(colorAlpha);
+		break;
+	}
+#else
 	switch (type) {
 	case 0:
 		idx %= 24;
@@ -182,6 +257,7 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 		GXSetTevColor(1, color);
 		break;
 	}
+#endif
 
 	GXBegin(0x80, 0, 4);
 	GXPosition3f32(-8.0f, 8.0f, 0.0f);
@@ -206,6 +282,19 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 		GXLoadPosMtxImm(mtxPos, 0);
 		GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+		switch (type) {
+		case 3:
+			togeSetColorA3(alpha);
+			break;
+		case 4:
+			togeSetColorA4(alpha);
+			break;
+		default:
+			togeSetColorAD(alpha);
+			break;
+		}
+#else
 		switch (type) {
 		case 3:
 			color = dat_8041e338;
@@ -223,6 +312,7 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 			GXSetTevColor(1, color);
 			break;
 		}
+#endif
 
 		GXBegin(0x80, 0, 4);
 		GXPosition3f32(-4.0f, 4.0f, 0.0f);

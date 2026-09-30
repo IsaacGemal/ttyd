@@ -196,15 +196,34 @@ static void effBombMain(EffectEntry* effect) {
 	dispEntry(camId, dispCalcZ(&position), 2, effBombDisp, effect);
 }
 
-// Two MWCC allocation artifacts keep this below 100%. (1) The original keeps data/camera/timer in
-// r29/r30/r31 (data coalesces with the saved param); this build puts timer in r29 and data/camera in
-// r30/r31. (2) color2's GXColor local/outgoing-copy land in the opposite stack slots (target builds at
-// 0x8 and copies to 0xc; this build builds at 0x14 reusing color1's own outgoing slot and copies to
-// 0x8). Making color2 a block-local fixes neither without moving color1 too. Same mwcc by-value-GXColor
-// quirk as effStoneSmokeDisp/effConfettiDisp.
-// NONMATCHING (99.53%): (1) data/camera/timer are r30/r31/r29 here vs r29/r30/r31 original;
-// (2) color2's GXColor local/copy slots are swapped (0x14/0x8 here vs 0x8/0xc original).
+#ifdef MUST_MATCH
+// Returning each GXColor from an inline makes MWCC build it in a return temporary and copy it to the
+// by-value argument slot. With both calls this reproduces the original's 0x10/0x14 (first call) and
+// 0x8/0xc (second) layout, except for the two slots noted below.
+static inline GXColor bombColor1(u8 a) {
+	GXColor c = dat_8041e9d0;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor bombColor2(u8 b, u8 a) {
+	GXColor c = dat_8041e9d4;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+#endif
+
+// Two MWCC allocation artifacts keep this below 100%. (1) The original keeps timer/camera in r31/r30;
+// this build swaps them (camera r31, timer r30); both keep data in r29. (2) The colour temporaries
+// interleave: this build writes color1's build word at 0x10/0x14 and color2's at 0x8/0x10, so color1's
+// local (0xc here vs 0x10 original) and color2's by-value copy (0x10 here vs 0xc original) are swapped,
+// while color1's copy (0x14) and color2's local (0x8) match. Same mwcc by-value-GXColor quirk as
+// effStoneSmokeDisp/effConfettiDisp.
+// NONMATCHING (99.77%): (1) camera/timer are r31/r30 here vs r30/r31 original;
+// (2) color1's local and color2's copy stack slots are swapped (0xc/0x10 vs 0x10/0xc).
 static void effBombDisp(CameraId camId, void* param) {
+	s32 timer;
 	effBombN64Data* data;
 	CameraEntry* camera;
 	Mtx mtx;
@@ -213,7 +232,6 @@ static void effBombDisp(CameraId camId, void* param) {
 	Mtx outMtx;
 	GXTexObj texObj;
 	GXColor color2;
-	s32 timer;
 	s32 alpha;
 	s32 blue;
 	s32 tmp;
@@ -242,13 +260,17 @@ static void effBombDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
 
 	if (data->field_0x44 != -1) {
-		GXColor color1;
-
 		effGetTexObjN64(0x18, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
-		color1 = dat_8041e9d0;
-		color1.a = data->field_0x7C;
-		GXSetTevColor(GX_TEVREG0, color1);
+#ifdef MUST_MATCH
+		GXSetTevColor(GX_TEVREG0, bombColor1(data->field_0x7C));
+#else
+		{
+			GXColor color1 = dat_8041e9d0;
+			color1.a = data->field_0x7C;
+			GXSetTevColor(GX_TEVREG0, color1);
+		}
+#endif
 		PSMTXScale(scaleMtx, data->field_0x64, data->field_0x64, float_1_8041e9e4);
 		PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
@@ -273,10 +295,14 @@ static void effBombDisp(CameraId camId, void* param) {
 	} else {
 		blue = 0xFF;
 	}
+#ifdef MUST_MATCH
+	GXSetTevColor(GX_TEVREG0, bombColor2(blue, alpha));
+#else
 	color2 = dat_8041e9d4;
 	color2.b = blue;
 	color2.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color2);
+#endif
 
 	PSMTXScale(scaleMtx, data->field_0xA8, data->field_0xA8, data->field_0xA8);
 	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e9d8 * data->field_0xB0);

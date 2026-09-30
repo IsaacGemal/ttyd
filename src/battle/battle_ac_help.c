@@ -44,7 +44,22 @@ void BattleAcHelpMain(void) {
 // This function wants -O4,s (its stmw r30 prologue and signed div-by-2 only come out right with it);
 // the ledger replaces such pragmas with a file-level -O4,s.
 #pragma optimize_for_size on
-// NONMATCHING (98.68%): the fallback string address is materialized through r0 with an extra `mr` instead of `addi r31, r3, str@l`, and the GXColor local is in stack slot 0x10 with its outgoing copy at 0xc (the original has the two swapped).
+#ifdef MUST_MATCH
+// Build the waku colour in an inline so the caller's local and outgoing copy land in the original slots.
+static inline GXColor makeWakuColor(u8 alpha) {
+    GXColor c = *(GXColor*)&dat_80420d60;
+    c.a = alpha;
+    return c;
+}
+// Resolving the message in an inline (rather than an if in the caller) lets the fallback string
+// address coalesce into the message register instead of an extra r0 temporary.
+static inline const char* acHelpResolve(const char* m) {
+    if (m == NULL) {
+        m = str_802FE1D8;
+    }
+    return m;
+}
+#endif
 void _ac_help_disp(CameraId camera, void* param) {
     BattleWork* wp = _battleWorkPointer;
     const char** helpMsg = (const char**)&wp->field_18FF0;
@@ -60,14 +75,22 @@ void _ac_help_disp(CameraId camera, void* param) {
     if (*dispType == 1) {
         alpha = 0x80;
     }
+#ifdef MUST_MATCH
+    msg = acHelpResolve(msgSearch(*helpMsg));
+#else
     msg = msgSearch(*helpMsg);
     if (msg == NULL) {
         msg = str_802FE1D8;
     }
+#endif
     width = FontGetMessageWidthLine(msg, &lines);
     lines++;
+#ifdef MUST_MATCH
+    color = makeWakuColor(alpha);
+#else
     *(u32*)&color = dat_80420d60;
     color.a = alpha;
+#endif
     x = float_0_80420d64 - (f32)(width / 2);
     windowDispGX_Waku_col(0, color, x - float_20_80420d68, float_neg145_80420d6c + (f32)((lines - 1) * 0x1D),
                           (f32)(width + 0x28), (f32)(lines * 0x1D + 1), float_10_80420d70);

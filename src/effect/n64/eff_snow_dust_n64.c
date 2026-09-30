@@ -144,19 +144,27 @@ static u8 a_data[32] = {
 
 extern const Vec vec3_802fb968;
 
-// NONMATCHING (97.83%): only register-number operands and symbol names differ; the two
-// 'replace' diffs are the i=1 / ptr=data+1 init order. FP callee-saved register allocation
-// (f26..f31) is permuted relative to the original.
+
+// MWCC splits the callee-saved FP live ranges so they stay permuted (f29/f25/f26/f28/f27/f31/f30),
+// which also re-schedules the pooled arithmetic; the implicit int->float conversions emit anonymous
+// @310/@367 rodata instead of double_to_int_802fb978/double_to_int_mask_802fb980 (compiler-generated,
+// same limitation as eff_cloud). Reordering the float declarations, opt_propagation off, and naming
+// every float/double constant did not change either.
+// NONMATCHING (99.36%): only the callee-saved FP register permutation and those two anonymous
+// conversion-constant names differ; all GPR operands, the stack frame and the loop init match.
 void effSnowDustMain(EffectEntry* effect) {
-	effSnowDustData* data;
-	effSnowDustData* ptr;
-	Vec position;
-	Vec position2;
-	s32 type;
-	s32 camera;
-	s32 i;
+	s32 r31;
+	s32 r30;
 	s32 life;
-	s32 r23, r24, r25, r30, r31;
+	effSnowDustData* data;
+	s32 i;
+	s32 type;
+	s32 r25;
+	s32 r24;
+	s32 r23;
+	s32 camera;
+	Vec position2;
+	Vec position;
 	f32 f25;
 	f32 f26, f27, f28, f29, f30, f31;
 
@@ -196,112 +204,112 @@ void effSnowDustMain(EffectEntry* effect) {
 	r23 = data->field_0x44;
 	r31 = (s32)f29;
 	r30 = (s32)f25;
-	f29 = 0.5f * f29;
+	f29 *= 0.5f;
 	i = 1;
-	ptr = data + 1;
-	for (; i < effect->count; i++, ptr++) {
-		ptr->field_0x30++;
-		if (ptr->field_0x30 >= 0x1e) {
+	data = data + 1;
+	for (; i < effect->count; i++, data++) {
+		data->field_0x30++;
+		if (data->field_0x30 >= 0x1e) {
 			if (life < 0x1e) {
-				ptr->field_0x30 = 0x14;
+				data->field_0x30 = 0x14;
 			}
 			else {
-				ptr->field_0x30 = 0;
+				data->field_0x30 = 0;
 			}
 		}
-		if (ptr->field_0x30 >= 0) {
-			if (ptr->field_0x30 == 0) {
+		if (data->field_0x30 >= 0) {
+			if (data->field_0x30 == 0) {
 				f25 = (f32)(rand() % r31) - f29;
-				ptr->x = f25 * f31 + f28 - f30;
-				ptr->y = f27 + (f32)(rand() % r30);
-				ptr->z = f31 + (f25 * f30 + f26);
-				ptr->field_0x3C = r25;
-				ptr->field_0x40 = r24;
-				ptr->field_0x44 = r23;
+				data->x = f25 * f31 + f28 - f30;
+				data->y = f27 + (f32)(rand() % r30);
+				data->z = f31 + (f25 * f30 + f26);
+				data->field_0x3C = r25;
+				data->field_0x40 = r24;
+				data->field_0x44 = r23;
 			}
 			switch (type) {
 				case 0:
 				case 1:
-					if (ptr->field_0x30 == 0) {
-						ptr->field_0x18 = 0.0f;
-						ptr->field_0x1C = 0.0f;
-						ptr->field_0x24 = 0.0f;
-						ptr->field_0x28 = 0.05f * (f32)(-(rand() % 10) - 2);
-						ptr->field_0x60 = 0.0f;
-						ptr->field_0x64 = 0.0f;
-						ptr->field_0x5C = 0.05f * (f32)(rand() % 10) + 0.5f;
+					if (data->field_0x30 == 0) {
+						data->field_0x18 = 0.0f;
+						data->field_0x1C = 0.0f;
+						data->field_0x24 = 0.0f;
+						data->field_0x28 = 0.05f * (f32)(-(rand() % 10) - 2);
+						data->field_0x60 = 0.0f;
+						data->field_0x64 = 0.0f;
+						data->field_0x5C = 0.05f * (f32)(rand() % 10) + 0.5f;
 					}
-					ptr->field_0x48 = a_data[ptr->field_0x30];
-					ptr->x += ptr->field_0x18;
-					ptr->y += ptr->field_0x1C;
-					ptr->field_0x60 += 0.2f;
-					ptr->field_0x64 += 0.6f;
-					ptr->field_0x18 = 0.04f * (ptr->field_0x24 - ptr->field_0x18) + ptr->field_0x18;
-					ptr->field_0x1C = 0.04f * (ptr->field_0x28 - ptr->field_0x1C) + ptr->field_0x1C;
+					data->field_0x48 = a_data[data->field_0x30];
+					data->x += data->field_0x18;
+					data->y += data->field_0x1C;
+					data->field_0x60 += 0.2f;
+					data->field_0x64 += 0.6f;
+					data->field_0x18 = 0.04f * (data->field_0x24 - data->field_0x18) + data->field_0x18;
+					data->field_0x1C = 0.04f * (data->field_0x28 - data->field_0x1C) + data->field_0x1C;
 					break;
 				case 2:
 				case 3:
-					if (ptr->field_0x30 == 0) {
+					if (data->field_0x30 == 0) {
 						if (type == 2) {
-							ptr->field_0x18 = 0.05f * (f32)(rand() % 20 - 10);
-							ptr->field_0x1C = 0.05f * (f32)(rand() % 20 - 10);
+							data->field_0x18 = 0.05f * (f32)(rand() % 20 - 10);
+							data->field_0x1C = 0.05f * (f32)(rand() % 20 - 10);
 						}
 						else {
-							ptr->field_0x18 = 0.0f;
-							ptr->field_0x1C = 0.0f;
+							data->field_0x18 = 0.0f;
+							data->field_0x1C = 0.0f;
 						}
-						ptr->field_0x24 = 0.0f;
-						ptr->field_0x28 = 0.0f;
-						ptr->field_0x60 = (f32)(rand() % 15);
-						ptr->field_0x64 = (f32)(rand() % 15);
-						ptr->field_0x48 = 0xff;
+						data->field_0x24 = 0.0f;
+						data->field_0x28 = 0.0f;
+						data->field_0x60 = (f32)(rand() % 15);
+						data->field_0x64 = (f32)(rand() % 15);
+						data->field_0x48 = 0xff;
 					}
-					ptr->field_0x5C = 0.1f * (f32)scale_data[ptr->field_0x30];
-					ptr->x += ptr->field_0x18;
-					ptr->y += ptr->field_0x1C;
-					ptr->field_0x60 += 0.2f;
-					ptr->field_0x64 += 0.6f;
-					ptr->field_0x18 = 0.04f * (ptr->field_0x24 - ptr->field_0x18) + ptr->field_0x18;
-					ptr->field_0x1C = 0.04f * (ptr->field_0x28 - ptr->field_0x1C) + ptr->field_0x1C;
+					data->field_0x5C = 0.1f * (f32)scale_data[data->field_0x30];
+					data->x += data->field_0x18;
+					data->y += data->field_0x1C;
+					data->field_0x60 += 0.2f;
+					data->field_0x64 += 0.6f;
+					data->field_0x18 = 0.04f * (data->field_0x24 - data->field_0x18) + data->field_0x18;
+					data->field_0x1C = 0.04f * (data->field_0x28 - data->field_0x1C) + data->field_0x1C;
 					break;
 				case 6:
-					if (ptr->field_0x30 == 0) {
-						ptr->field_0x18 = 0.0f;
-						ptr->field_0x1C = 0.0f;
-						ptr->field_0x24 = 0.0f;
-						ptr->field_0x28 = 0.05f * (f32)(-(rand() % 10) - 2);
-						ptr->field_0x60 = 0.0f;
-						ptr->field_0x64 = 0.0f;
-						ptr->field_0x5C = 0.05f * (f32)(rand() % 10) + 0.5f;
-						ptr->field_0x38 = irand(0x168);
+					if (data->field_0x30 == 0) {
+						data->field_0x18 = 0.0f;
+						data->field_0x1C = 0.0f;
+						data->field_0x24 = 0.0f;
+						data->field_0x28 = 0.05f * (f32)(-(rand() % 10) - 2);
+						data->field_0x60 = 0.0f;
+						data->field_0x64 = 0.0f;
+						data->field_0x5C = 0.05f * (f32)(rand() % 10) + 0.5f;
+						data->field_0x38 = irand(0x168);
 					}
-					ptr->field_0x48 = a_data[ptr->field_0x30];
-					ptr->field_0x48 = 0xff;
-					ptr->y += ptr->field_0x1C;
-					ptr->field_0x60 += 0.2f;
-					ptr->field_0x64 += 0.6f;
-					ptr->field_0x1C = 0.04f * (ptr->field_0x28 - ptr->field_0x1C) + ptr->field_0x1C;
-					f25 = distABf(position2.x, position2.z, ptr->x, ptr->z) * 0.97f;
-					ptr->x = f25 * (f32)sin(6.2831855f * (f32)ptr->field_0x38 / 360.0f) + position2.x;
-					ptr->z = f25 * (f32)cos(6.2831855f * (f32)ptr->field_0x38 / 360.0f) + position2.z;
-					ptr->field_0x38 += 4;
-					ptr->field_0x38 %= 360;
+					data->field_0x48 = a_data[data->field_0x30];
+					data->field_0x48 = 0xff;
+					data->y += data->field_0x1C;
+					data->field_0x60 += 0.2f;
+					data->field_0x64 += 0.6f;
+					data->field_0x1C = 0.04f * (data->field_0x28 - data->field_0x1C) + data->field_0x1C;
+					f25 = distABf(position2.x, position2.z, data->x, data->z) * 0.97f;
+					data->x = f25 * (f32)sin(6.2831855f * (f32)data->field_0x38 / 360.0f) + position2.x;
+					data->z = f25 * (f32)cos(6.2831855f * (f32)data->field_0x38 / 360.0f) + position2.z;
+					data->field_0x38 += 4;
+					data->field_0x38 %= 360;
 					break;
 				default:
-					if (ptr->field_0x30 == 0) {
-						ptr->field_0x60 = 0.0f;
-						ptr->field_0x64 = 0.0f;
-						ptr->field_0x48 = 0xff;
-						ptr->field_0x5C = 1.0f;
-						ptr->field_0x3C = 128 + rand() % 127;
-						ptr->field_0x40 = 128 + rand() % (0x7F - (ptr->field_0x3C - 0x80));
-						ptr->field_0x44 = 128 + rand() % (0x7F - (ptr->field_0x3C - 0x80) - (ptr->field_0x40 - 0x80));
+					if (data->field_0x30 == 0) {
+						data->field_0x60 = 0.0f;
+						data->field_0x64 = 0.0f;
+						data->field_0x48 = 0xff;
+						data->field_0x5C = 1.0f;
+						data->field_0x3C = 128 + rand() % 127;
+						data->field_0x40 = 128 + rand() % (0x7F - (data->field_0x3C - 0x80));
+						data->field_0x44 = 128 + rand() % (0x7F - (data->field_0x3C - 0x80) - (data->field_0x40 - 0x80));
 					}
 					if (type == 4) {
-						ptr->field_0x5C = 0.01f * (f32)scale_data2[ptr->field_0x30];
+						data->field_0x5C = 0.01f * (f32)scale_data2[data->field_0x30];
 					}
 					else {
-						ptr->field_0x5C = 0.01f * (f32)scale_data[ptr->field_0x30];
+						data->field_0x5C = 0.01f * (f32)scale_data[data->field_0x30];
 					}
 					break;
 			}

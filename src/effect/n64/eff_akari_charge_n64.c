@@ -12,8 +12,11 @@
 #include <dolphin/mtx.h>
 
 // .sdata2 float constants (named after their original addresses).
+// float_0_8041e8ac is defined here (not just declared) so the file's 0.0f literals pool with the
+// original symbol instead of an anonymous @N; objdiff compares the relocation target by name.
 extern const f32 float_deg2rad_8041e8a8;
 extern const f32 float_0_8041e8ac;
+const f32 float_0_8041e8ac = 0.0f;
 extern const f32 float_0p0625_8041e8b0;
 extern const f32 float_1_8041e8b4;
 extern const f32 float_0p0039062_8041e8b8;
@@ -178,10 +181,10 @@ EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f3
 }
 
 // The early work pointer lands in r5 instead of the original's r29, so p = work->particles is computed at
-// the top of the early block rather than at loop setup, and the FP allocator keeps x + dx and the 0.0f
-// constant in f2 rather than f4/f0. Every other instruction, GPR and FPR matches; this is the same mwcc
-// allocator/coalescing difference documented for the other effect units.
-// NONMATCHING (98.73%): early work pointer r5 not r29; x+dx / 0.0f temporaries in f2 not f4/f0.
+// the top of the early block rather than at loop setup; the same pointer lands in r3 instead of r25 at the
+// bottom, and the two fcmpu operands are swapped. Every other instruction, GPR and FPR matches; this is the
+// same mwcc allocator/coalescing difference documented for the other effect units.
+// NONMATCHING (99.14%): early work pointer r5 not r29; bottom pointer r3 not r25; fcmpu operands swapped.
 void effAkariChargeMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
@@ -294,19 +297,39 @@ void effAkariChargeMain(EffectEntry* effect) {
 	}
 }
 
+// The original builds each TEV colour in a local GXColor and copies it into the outgoing argument
+// slot.  Returning the colour from an inline makes mwcc lay those two slots out the same way it did
+// in the original; building them inline in the caller puts the local/outgoing pair the wrong way
+// round (the same quirk eff_akari_pose_n64.c documents).
+#ifdef MUST_MATCH
+static inline GXColor akariColorProj(GXColor c, s32 r, s32 g, s32 b) {
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	return c;
+}
+
+static inline GXColor akariColorPart(s32 r, s32 g, s32 b, s32 a) {
+	GXColor c = unk_80423094;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+#endif
+
 // The two integer-to-float PSMTXTrans calls use 0.0f literals; naming float_0_8041e8ac there makes mwcc hoist
-// it into a fourth fpr, which grows the frame and shifts every local. The prologue colour is built at 0x10 and
-// copied to 0x14 in the original, the loop colour at 0x8 copied to 0xc; mwcc here puts the prologue copy at
-// 0xc, the loop local at 0x14 and the loop copy at 0x8 (the same local/outgoing swap eff_akari_pose_n64.c
-// documents), and schedules the three loop-setup insns around double_to_int/part differently.
-// NONMATCHING (99.13%): only those GXColor stack slots and the loop-setup instruction order differ.
+// it into a fourth fpr, which grows the frame and shifts every local. Defining the constant in this unit (the
+// original's .sdata2 does) instead lets the literals pool with it, so objdiff sees the original symbol.
+// NONMATCHING (99.17%): only the loop-setup order of `li r29,1` (i) and `addi r30,r30,0x44`
+// (part = data->particles) differs, the same mwcc scheduler artifact eff_akari_pose_n64.c reports.
 void effAkariChargeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffAkariChargeParticle* part;
 	EffAkariChargeWork* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
-	GXColor color2;
 	GXColor color;
 	Mtx mtx;
 	Mtx scaleMtx;
@@ -344,11 +367,15 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, scaleMtx, viewMtx);
 	PSMTXConcat(cam->view, viewMtx, viewMtx);
 
+#ifdef MUST_MATCH
+	GXSetTevColor(2, akariColorProj(unk_80423090, data->field_0x28, data->field_0x2C, data->field_0x30));
+#else
 	color = unk_80423090;
 	color.r = data->field_0x28;
 	color.g = data->field_0x2C;
 	color.b = data->field_0x30;
 	GXSetTevColor(2, color);
+#endif
 	GXSetNumChans(0);
 	GXSetNumTevStages(2);
 	GXSetTevOrder(0, 0, 0, 0xff);
@@ -370,11 +397,16 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 
 	i = 1;
 	for (part = data->particles; i < effect->count; i++, part++) {
+		GXColor color2;
+#ifdef MUST_MATCH
+		color2 = akariColorPart(colR, colG, colB, (part->field_0x24 * field24) / 255);
+#else
 		color2 = unk_80423094;
 		color2.r = colR;
 		color2.g = colG;
 		color2.b = colB;
 		color2.a = (part->field_0x24 * field24) / 255;
+#endif
 		GXSetTevColor(1, color2);
 
 		PSMTXTrans(mtx, part->field_0x4, part->field_0x8, float_0_8041e8ac);

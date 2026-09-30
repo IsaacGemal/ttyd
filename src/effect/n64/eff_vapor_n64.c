@@ -170,14 +170,20 @@ static u32 size64x64_tex32x32_vtx[0x118 / 4] = {
 extern u8 lbl_803A85F8[];
 #endif
 
-// The body is complete and byte-correct except for (a) the compiler keeps `data` in
-// r30 and `frame` in r29, the original the other way round; (b) the table reads use
-// base+index then an offset load instead of the original's base+offset then an indexed
-// load; (c) the int->float helpers are pooled as anonymous .rodata copies instead of
-// double_to_int_802fb8f8/_mask_802fb900; (d) the `band < 4` branch polarity is inverted.
-// NONMATCHING (95.94%): see list above.
+// The original materialises each table base (base+offset) before an indexed load;
+// MWCC 2.6 instead folds the four bases into base+index plus an offset load. The two
+// GXColor inline temporaries also land in swapped stack slots (color1 0x10 / color2
+// 0xc in the original, 0xc / 0x10 here), and the seq*5*0.0039062 multiply keeps the
+// 5.0 and 0.0039062 registers swapped. The int->float pool entries are anonymous
+// @NNN@ locals, which objdiff resolves to the original's double_to_int_* symbols.
+// opt_common_subs off: with CSE on MWCC folds the table bases through one register,
+// costing more instructions than the original's per-base form.
+#pragma opt_common_subs off
+// NONMATCHING (97.28%): the table address form, the GXColor temporaries' stack slots
+// and the seq multiply's f-registers still differ.
 void effVaporDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
+	s32 frame;
 	effVaporN64Data* data;
 	CameraEntry* cam;
 #ifdef MUST_MATCH
@@ -193,12 +199,11 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	f32 rz;
 	f32 dx;
 	f32 t;
-	s32 frame;
 	s32 alpha1;
 	s32 type;
 	s32 index;
-	s32 band;
 	s32 frac;
+	s32 band;
 
 	effect = param;
 #ifdef MUST_MATCH
@@ -316,12 +321,12 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(mtxB, mtxA, mtxB);
 	GXLoadTexMtxImm(mtxB, GX_TEXMTX0, GX_MTX2x4);
 	if (band <= 4) {
-		if (band < 4) {
-			PSMTXScale(mtxB, float_0p032258_804200f4, float_0p007874_804200f8, float_0_804200e4);
+		if (band >= 4) {
+			PSMTXScale(mtxB, float_0_804200e4, float_0_804200e4, float_0_804200e4);
 			GXLoadTexMtxImm(mtxB, GX_TEXMTX1, GX_MTX2x4);
 		}
 		else {
-			PSMTXScale(mtxB, float_0_804200e4, float_0_804200e4, float_0_804200e4);
+			PSMTXScale(mtxB, float_0p032258_804200f4, float_0p007874_804200f8, float_0_804200e4);
 			GXLoadTexMtxImm(mtxB, GX_TEXMTX1, GX_MTX2x4);
 		}
 		color = effVaporN64Color2(data, frac);
@@ -331,3 +336,5 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	}
 }
 
+
+#pragma opt_common_subs reset

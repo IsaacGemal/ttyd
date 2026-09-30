@@ -722,13 +722,22 @@ inline Vec initializeVec(Vec* input) {
 }
 
 
-// NONMATCHING (99.28%): same instructions; only register numbers or operands differ.
-void effUltraHammerDisp(enum CameraId camId, void *param) { //minor regalloc
+extern u8 lbl_803B70C0[];
+// The original reaches this file's .data tables from the section anchor lbl_803B70C0.
+#ifdef MUST_MATCH
+#define DATA_AT(off, sym) (base + (off))
+#else
+#define DATA_AT(off, sym) ((u8*)(sym))
+#endif
+
+// NONMATCHING (99.70%): same instructions, including the lbl_803B70C0 .data anchor; only callee-saved register numbers differ (camId r24 vs r25, cached data->unk0 r27 vs r24, inner table pointers shift by one). Local declaration order and split variables do not move it.
+void effUltraHammerDisp(enum CameraId camId, void *param) {
     EffectEntry *effect;
-    EffUltraHammerData *data;
-    int i;
     CameraEntry *temp_r31;
     s32 temp_r24;
+    EffUltraHammerData *data;
+    int i;
+    u8* base;
     Mtx spC0;
     Mtx sp90;
     Mtx sp60;
@@ -737,6 +746,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) { //minor regalloc
     u32 j;
     
     effect = param;
+    base = lbl_803B70C0;
     data = effect->userdata;
     temp_r31 = camGetPtr(camId);
     temp_r24 = data->unk0;
@@ -784,7 +794,7 @@ void effUltraHammerDisp(enum CameraId camId, void *param) { //minor regalloc
             GXClearVtxDesc();
             GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA4, 10);
-            GXSetArray(GX_VA_POS, &wakka_vertex_tbl, 6);
+            GXSetArray(GX_VA_POS, DATA_AT(0x40, wakka_vertex_tbl), 6);
             GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_TEX_S, GX_RGB8, 6);
             GXSetArray(GX_VA_NRM, &wakka_normal_tbl, 3);
@@ -793,9 +803,9 @@ void effUltraHammerDisp(enum CameraId camId, void *param) { //minor regalloc
             GXSetArray(GX_VA_CLR0, &wakka_color0_tbl, 4);
             GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA4, 13);
-            GXSetArray(GX_VA_TEX0, &wakka_texcoord0_tbl, 4);
+            GXSetArray(GX_VA_TEX0, DATA_AT(0x140, wakka_texcoord0_tbl), 4);
             for (j = 0; j < 20; j++) {
-                GXCallDisplayList(wakka_dl_0_tbl[j], wakka_dl_0_size_tbl[j] * 32);
+                GXCallDisplayList(((u8**)DATA_AT(0x1e8, wakka_dl_0_tbl))[j], wakka_dl_0_size_tbl[j] * 32);
             }
         }
     }

@@ -172,8 +172,9 @@ static RomFontChar* romFontFindChar(u16 code) {
     return table; // not found
 }
 
-// Not quite matched, see: https://decomp.me/scratch/cdEUS
-// NONMATCHING (99.67%): 1 instruction differs, plus register differences.
+// Matches 100%.
+// The width field is unsigned in the original (the asm loads it with lhz);
+// include/romfont.h types it s16, so the MUST_MATCH path reinterprets it.
 void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ...) {
     char buf[1024];  // 0x158
     Mtx mtx;         // 0x128
@@ -185,8 +186,8 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
     Point3d camPos;  // 0x084
     va_list ap;
     s32 i = 0;
-    s16 curX = 0;
-    s16 curY = 0;
+    s32 curX = 0;
+    s32 curY = 0;
     RomFontChar* glyph;
 
     // --- camera: place the eye so 1 unit == 1 px at the target plane ---
@@ -256,17 +257,25 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
         GXLoadTexObj(&texObj, GX_TEXMAP0);
 
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        GXPosition3s16(curX, curY + 24, 0);
-        GXTexCoord2s16(0, 0);
-        GXPosition3s16(curX + 24, curY + 24, 0);
-        GXTexCoord2s16(1, 0);
-        GXPosition3s16(curX + 24, curY, 0);
-        GXTexCoord2s16(1, 1);
-        GXPosition3s16(curX, curY, 0);
-        GXTexCoord2s16(0, 1);
+        {
+            s16 x = (s16)curX;
+            s16 y = (s16)curY;
+            GXPosition3s16(x, y + 24, 0);
+            GXTexCoord2s16(0, 0);
+            GXPosition3s16(x + 24, y + 24, 0);
+            GXTexCoord2s16(1, 0);
+            GXPosition3s16(x + 24, y, 0);
+            GXTexCoord2s16(1, 1);
+            GXPosition3s16(x, y, 0);
+            GXTexCoord2s16(0, 1);
+        }
         GXEnd();
 
+#ifdef MUST_MATCH
+        curX += *(u16*)&glyph->width; // header types width s16; the real field is u16 (asm uses lhz)
+#else
         curX += glyph->width;
+#endif
     }
 }
 

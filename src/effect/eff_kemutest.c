@@ -12,6 +12,11 @@
 #include <math.h>
 
 extern GXColor unk_804232d8;
+/* Named .sdata2 constants, declared here and defined at the end of the file: the compiler can't
+   fold `-32.0f * 0.5f` into -16 (the original does the multiply at runtime), and the pool keeps them. */
+extern const f32 float_32_80420abc;
+extern const f32 float_0p5_80420ad0;
+extern const f32 float_16_80420ad4;
 
 const GXColor dat_80420ab0 = { 0x80, 0x80, 0x80, 0x80 };
 const GXColor dat_80420ab4 = { 0x00, 0x00, 0x00, 0x60 };
@@ -29,9 +34,21 @@ void effKemuTestDrawCam(EffectEntry* effect, s32 camId) {
 	data->field_0x1C = camId;
 }
 
-// NONMATCHING (98.37%): retail duplicates the per-quad mat/pos/scale/draw block into both
-// branches of the `j == 0` test; this compiler merges them, and the quad extent is
-// constant-folded to -16 instead of kept as a hoisted -32 * 0.5.
+#ifdef MUST_MATCH
+static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
+	GXColor color = unk_804232d8;
+
+	color.r = data->field_0x4C;
+	color.g = data->field_0x4D;
+	color.b = data->field_0x4E;
+	color.a = alpha;
+	return color;
+}
+#endif
+
+/* Matches using the named .sdata2 constants above (so the compiler emits the
+   `-32 * 0.5` multiply at runtime instead of folding it into -16), and a helper
+   that returns the channel-built GXColor so it lands in the original's stack slot. */
 void effKemuTestDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKemuTestData* data = effect->userdata;
@@ -110,7 +127,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 
 	data++;
 	{
-		f32 dsize = -32.0f;
+		f32 dsize = -float_32_80420abc;
 
 		for (i = 1; i < effect->count; i++, data++) {
 			if (data->field_0x44 != 0) {
@@ -128,7 +145,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 			PSMTXConcat(mtx, scale, mtx);
 			GXLoadTexMtxImm(mtx, 0x21, 1);
 			{
-				f32 size = 16.0f;
+				f32 dsize_half = dsize * float_0p5_80420ad0;
 
 				for (j = flag; j < 2; j++) {
 					if (j == 0) {
@@ -144,6 +161,9 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						GXLoadPosMtxImm(mtx, 0);
 					}
 					else {
+#ifdef MUST_MATCH
+						GXSetChanMatColor(4, kemuTestColor(data, alpha));
+#else
 						GXColor color = unk_804232d8;
 
 						color.r = data->field_0x4C;
@@ -151,6 +171,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						color.b = data->field_0x4E;
 						color.a = alpha;
 						GXSetChanMatColor(4, color);
+#endif
 						PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
 						PSMTXScale(scale, data->scale, data->scale, data->scale);
 						PSMTXConcat(view, mtx, mtx);
@@ -162,13 +183,13 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						GXLoadPosMtxImm(mtx, 0);
 					}
 					GXBegin(0x80, 0, 4);
-					GXPosition3f32(dsize * 0.5f, size, 0.0f);
+					GXPosition3f32(dsize_half, float_16_80420ad4, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
-					GXPosition3f32(size, size, 0.0f);
+					GXPosition3f32(float_16_80420ad4, float_16_80420ad4, 0.0f);
 					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(size, dsize * 0.5f, 0.0f);
+					GXPosition3f32(float_16_80420ad4, dsize_half, 0.0f);
 					GXTexCoord2f32(1.0f, 1.0f);
-					GXPosition3f32(dsize * 0.5f, dsize * 0.5f, 0.0f);
+					GXPosition3f32(dsize_half, dsize_half, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
 				}
 			}
@@ -745,3 +766,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 
 	return entry;
 }
+
+const f32 float_32_80420abc = 32.0f;
+const f32 float_0p5_80420ad0 = 0.5f;
+const f32 float_16_80420ad4 = 16.0f;

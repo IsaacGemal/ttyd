@@ -55,8 +55,7 @@ extern const f32 float_0p04_8041eaa8;
 extern const f32 float_0p1_8041eaac;
 extern const f32 float_0p2_8041eab0;
 
-const f64 double_to_int_802fa300 = 4503601774854144.0;
-const char str_802FA318[] = "BreathFireN64";
+// .rodata zero vector, int->float and mode-1 doubles are compiler-generated pool constants here.
 
 // .sbss2 zero GXColor locals the original copies before filling its fields.
 extern GXColor unk_804230b0;
@@ -71,7 +70,7 @@ EffectEntry* effBreathFireN64Entry(s32 a, f32 b, f32 c, s32 d, f32 e, s32 f, f32
 	effBreathFireData* data;
 
 	entry = effEntry();
-	entry->type = str_802FA318;
+	entry->type = "BreathFireN64";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effBreathFireData));
 	entry->userdata = data;
@@ -131,9 +130,11 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (97.11%): the int->float magic constant is a local anonymous pool literal at .rodata+0x38,
-// not the named double_to_int_802fa300 at +0x10, so Main's base+offset loads are shifted (zero vec +0x18,
-// 0.008/0.3 +0x28/+0x30); the inline initializeVec store schedule and the hoisted float_4 load also differ.
+// Matching notes: the zero vector, the int->float magic and the two mode-1 doubles are all compiler-
+// generated anonymous pool constants here, which puts .rodata exactly at vec+0, magic+0x10, 0.008+0x18,
+// 0.3+0x20 (the given named definitions emitted first and shifted every base+offset load). Writing the
+// speed term as `float_4 * (f32)... / float_10` (rather than `(f32)... * float_4`) makes mwcc hoist the
+// float_4 load into f3 first, matching the original's schedule.
 void effBreathFireMain(EffectEntry* effect) {
 	s32 life;
 	effBreathFireData* data = effect->userdata;
@@ -142,7 +143,7 @@ void effBreathFireMain(EffectEntry* effect) {
 	Vec position = initializeVec((Vec*)&data->field_0x0C);
 	EffectEntry* newEffect;
 
-	data->field_0x5C = (f32)data->field_0x4C * float_4_8041ea94 / float_10_8041ea98;
+	data->field_0x5C = float_4_8041ea94 * (f32)data->field_0x4C / float_10_8041ea98;
 	data->field_0x48--;
 	data->field_0x4C++;
 	life = data->field_0x48;

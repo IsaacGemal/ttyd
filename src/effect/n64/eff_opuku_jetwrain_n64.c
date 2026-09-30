@@ -100,6 +100,19 @@ static inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
+#ifdef MUST_MATCH
+// Build the tev colour in an inline so mwcc keeps the temporary at 0x8(r1) and copies it to the
+// outgoing argument slot at 0xc(r1); with the channels set on a plain local the two slots swap.
+static inline GXColor makeTevColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c = unk_804231d8;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+#endif
+
 // The first loop's callee-saved allocation is shifted one register down: mwcc puts counter in r26
 // (original r28) and the 0x4330 double-magic temp in r24 (original r25), so stmw/lmw saves r24..r31
 // instead of r25..r31; effect/data/lifetime are correct. That also renames every scratch register in
@@ -170,23 +183,24 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwrainDisp, effect);
 }
 
-// Loop register allocation doesn't line up: iPos/fieldBase are swapped (r24/r26)
-// and vtx/xBase/the 0x4330 double-magic temp are rotated (r29/r31/r30 vs r31/r30/r29).
-// The GXColor for GXSetTevColor is built at 0x8(r1) by the original and copied to
-// 0xc(r1); mwcc here builds it at 0xc(r1) and copies to 0x8(r1). mwcc also pools a
-// duplicate of double_to_int_802fb278 in .rodata, so PSMTXTrans's f64 conversion
-// loads it via vec3_802fb248+0x50 instead of +0x30.
-// NONMATCHING (98.93%): codegen-only differences (see above).
+// The instruction sequence and the .sdata2/.rodata pool now match the target; what is left is the
+// compiler's register choice for the outer loop and the int->float magic. Original: vtx=r31,
+// magic 0x4330=r29, xoris temp=r30, iPos=r24, fieldBase=r26, fieldEnd=r25, xBase=r3, xEnd=r4.
+// Ours: vtx=r29, magic=r30, xoris temp=r31, iPos=r26, fieldBase=r24, fieldEnd=r25, xBase=r0,
+// xEnd=r3 (the {r29,r30,r31} triple and the {r24,r26} pair are permuted; r25, i, j, jPos, data,
+// the field pointer and the conversion operands all match). Declaration-order, arithmetic-order,
+// pragma and type sweeps did not change the permutation.
+// NONMATCHING (99.51%): register-allocation-only differences (see above).
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;
 	void* tex;
 	effOpukuJetwrainVtx* vtx;
+	s32 fieldEnd;
+	s32 iPos;
+	s32 fieldBase;
 	s32 xBase;
 	s32 jPos;
-	s32 fieldEnd;
-	s32 fieldBase;
-	s32 iPos;
 	s32 x;
 	effOpukuJetwrainData* data;
 	s32 j;
@@ -232,12 +246,16 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(0, GX_CC_ZERO, GX_CC_C0, GX_CC_A0, GX_CC_TEXC);
 	GXSetTevAlphaIn(0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+#ifdef MUST_MATCH
+	color = makeTevColor(data->field_0x1C, data->field_0x1D, data->field_0x1E, alpha >> 1);
+#else
 	color = unk_804231d8;
 	color.r = data->field_0x1C;
 	color.g = data->field_0x1D;
 	color.b = data->field_0x1E;
 	color.a = alpha >> 1;
-	GXSetTevColor(GX_TEVREG1, color);
+#endif
+	GXSetTevColor(GX_TEVREG0, color);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);
@@ -265,8 +283,9 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			xEnd = 0;
 		}
 		iPos = 0x18 + i * 0x10;
+		xEnd += 0x10;
 		xBase += iPos;
-		xEnd += iPos + 0x10;
+		xEnd += iPos;
 		fieldBase = xBase << 2;
 		fieldEnd = xEnd << 2;
 
