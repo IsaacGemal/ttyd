@@ -30,3 +30,11 @@ typedef struct effSunlightData {
 EffectEntry* effSunlightN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);
 void effSunlightMain(EffectEntry* effect);
 void effSunlightDisp(CameraId cameraId, void* param);
+// .sdata2 float constants shared with the display code, named as in the original unit.
+extern const f32 float_0_8041ff80;
+extern const f32 float_0p25_8041ff8c;
+extern const f32 float_6p2832_8041ff90;
+extern const f32 float_360_8041ff94;
+extern const f32 float_4_8041ff98;
+extern const f32 float_0p05_8041ff9c;
+extern const f32 float_0p01_8041ffa0;

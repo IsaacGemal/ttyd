@@ -472,6 +472,83 @@ s32 fire_func(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
+s32 mobj_koopa_sango_evt(MapObjectEntry* obj) {
+    s32 sp10 = 0;
+    EventEntry* event;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                switch (kpaGetLevel()) {
+                    case 0:
+                    case 1:
+                    case 2:
+                        if (obj->unk1E0 == 0x20000000) {
+                            sp10 = 1;
+                        }
+                        break;
+                    case 3:
+                        sp10 = 1;
+                        break;
+                }
+                if (sp10 == 0) {
+                    obj->flags &= ~0x8;
+                    break;
+                }
+                mobjRunEvent(obj, obj->unk1D4);
+                evtSetValue(NULL, obj->unk1E4, 1);
+                if (obj->unk1E0 == 0x04000000) {
+                    npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
+                }
+                if (obj->hitObj[0].hitObject != NULL) {
+                    obj->hitObj[0].hitObject->flags |= 1;
+                }
+                obj->flags |= 2;
+                kpaAddScore(kpaMutekiCheck() ? 0x1f4 : 0x190);
+                obj->unk1DC = 0xa;
+            }
+            break;
+        case 0xa:
+            if (obj->unk1E0 == 0x20000000) {
+                psndSFXOn_3D((const char*)0xb67, &obj->position);
+            }
+            event = evtEntry(evt_fire, 0, 0);
+            event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+            event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+            event->lwData[2] = (s32)(1024.0f * (obj->position.z + 10.0f)) + 0xF24A7A80;
+            event->lwData[3] = 0x5a;
+            obj->unk1DC++;
+            break;
+        case 0x14:
+            event = evtEntry(evt_fire, 0, 0);
+            event->lwData[0] = (s32)(1024.0f * (obj->position.x + 10.0f)) + 0xF24A7A80;
+            event->lwData[1] = (s32)(1024.0f * (obj->position.y + 30.0f)) + 0xF24A7A80;
+            event->lwData[2] = (s32)(1024.0f * (obj->position.z + 10.0f)) + 0xF24A7A80;
+            event->lwData[3] = 0x50;
+            obj->unk1DC++;
+            break;
+        case 0x1e:
+            event = evtEntry(evt_fire, 0, 0);
+            event->lwData[0] = (s32)(1024.0f * (obj->position.x - 10.0f)) + 0xF24A7A80;
+            event->lwData[1] = (s32)(1024.0f * (obj->position.y + 60.0f)) + 0xF24A7A80;
+            event->lwData[2] = (s32)(1024.0f * (obj->position.z + 10.0f)) + 0xF24A7A80;
+            event->lwData[3] = 0x46;
+            obj->unk1DC++;
+            break;
+        case 0x62:
+            effMObjBrokenEntry(7, obj->position.x, obj->position.y, obj->position.z + 10.0f);
+            obj->unk1DC++;
+            break;
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+        default:
+            obj->unk1DC++;
+            break;
+    }
+    return 0;
+}
+
 s32 kpa_powerup(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     Vec pos;

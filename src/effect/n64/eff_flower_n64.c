@@ -1,7 +1,9 @@
 #include "eff/n64/eff_flower_n64.h"
 #include "driver/dispdrv.h"
 #include "eff/eff_n64.h"
+#include "memory.h"
 #include <dolphin/mtx.h>
+#include <stdlib.h>
 
 // .sdata2 constants. The first four are used by effFlowerDisp/effFlowerN64Entry;
 // they are defined here so the compiler's literal pool lands at their original
@@ -20,6 +22,56 @@ static inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
+}
+
+EffectEntry* effFlowerN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
+    static s32 kaiten;
+    EffectEntry* effect;
+    effFlowerData* data;
+
+    effect = effEntry();
+    effect->type = "FlowerN64";
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, sizeof(effFlowerData));
+    effect->userdata = data;
+    effect->callback = effFlowerMain;
+
+    data->type = type;
+    data->position.x = x;
+    data->position.y = y + 10.0f;
+    data->position.z = z;
+    data->field_0x10 = 0.0f;
+    data->field_0x14 = 0.0f;
+    data->field_0x18 = 0.0f;
+
+    if (type == 0) {
+        data->field_0x1C = 0.12f;
+        data->field_0x20 = -0.0152f;
+        data->field_0x18 = 0.0f;
+        data->field_0x24 = 0.0f;
+        data->field_0x28 = 0.0f;
+        data->field_0x2C = 3.0f;
+        data->field_0x30 = kaiten != 0 ? -10 : 10;
+        data->field_0x34 = lifetime;
+    } else {
+        data->field_0x1C = 0.12f;
+        data->field_0x20 = -0.0152f;
+        data->field_0x24 = (rand() % 2) * 30 - 15;
+        data->field_0x28 = rand() % 361;
+        data->field_0x2C = 0.0f;
+        data->field_0x30 = (rand() % 2) * 8 - 4;
+        data->field_0x34 = lifetime;
+        data->field_0x38 = 0;
+        data->field_0x44 = rand() % 11;
+        data->field_0x40 = rand() % 21;
+        data->field_0x3C = (rand() % 2) * 2 - 1;
+    }
+
+    kaiten++;
+    if (kaiten > 1) {
+        kaiten = 0;
+    }
+    return effect;
 }
 
 void effFlowerMain(EffectEntry* effect) {

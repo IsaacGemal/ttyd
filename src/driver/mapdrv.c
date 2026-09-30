@@ -1828,6 +1828,170 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 
 
+static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
+	BOOL recalc;
+
+	recalc = FALSE;
+	if (flags & 0x200) {
+		recalc = TRUE;
+	}
+	if (force) {
+		recalc = TRUE;
+	}
+	return recalc;
+}
+
+void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
+	u32* flags = (u32*)obj->field_0x0;
+	MapObject* child;
+	MapObject* next;
+	BOOL recalc;
+
+	recalc = FALSE;
+	if ((*flags) & 0x200) {
+		recalc = TRUE;
+	}
+	if (force) {
+		recalc = TRUE;
+	}
+
+	if (recalc) {
+		if ((*flags) & 0x2000) {
+			PSMTXConcat(mtx, (MtxPtr)((u8*)obj + 0x7C), obj->modelWorldMtx);
+		}
+		else {
+			PSMTXConcat(mtx, (MtxPtr)((u8*)obj + 0x4C), obj->modelWorldMtx);
+		}
+		if ((*flags) & 0x200000) {
+			PSMTXConcat(obj->modelWorldMtx, obj->unkAC, obj->modelWorldMtx);
+		}
+		(*flags) &= ~0x200;
+
+		child = obj->child;
+		if (child != NULL) {
+			u32* cflags = (u32*)child->field_0x0;
+
+			if ((*cflags) & 0x2000) {
+				PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x7C), child->modelWorldMtx);
+			}
+			else {
+				PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x4C), child->modelWorldMtx);
+			}
+			if ((*cflags) & 0x200000) {
+				PSMTXConcat(child->modelWorldMtx, child->unkAC, child->modelWorldMtx);
+			}
+			(*cflags) &= ~0x200;
+
+			if (child->child != NULL) {
+				mapReCalcMatrix(child->child, child->modelWorldMtx, 1);
+			}
+			if (child->next != NULL) {
+				mapReCalcMatrix(child->next, obj->modelWorldMtx, 1);
+			}
+		}
+
+		next = obj->next;
+		if (next != NULL) {
+			u32* nflags = (u32*)next->field_0x0;
+
+			if (mapReCalcMatrixCheck(force, *nflags)) {
+				if ((*nflags) & 0x2000) {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x7C), next->modelWorldMtx);
+				}
+				else {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x4C), next->modelWorldMtx);
+				}
+				if ((*nflags) & 0x200000) {
+					PSMTXConcat(next->modelWorldMtx, next->unkAC, next->modelWorldMtx);
+				}
+				(*nflags) &= ~0x200;
+
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, 1);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+			else {
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, force);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+		}
+	}
+	else {
+		child = obj->child;
+		if (child != NULL) {
+			u32* cflags = (u32*)child->field_0x0;
+
+			if (mapReCalcMatrixCheck(force, *cflags)) {
+				if ((*cflags) & 0x2000) {
+					PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x7C), child->modelWorldMtx);
+				}
+				else {
+					PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x4C), child->modelWorldMtx);
+				}
+				if ((*cflags) & 0x200000) {
+					PSMTXConcat(child->modelWorldMtx, child->unkAC, child->modelWorldMtx);
+				}
+				(*cflags) &= ~0x200;
+
+				if (child->child != NULL) {
+					mapReCalcMatrix(child->child, child->modelWorldMtx, 1);
+				}
+				if (child->next != NULL) {
+					mapReCalcMatrix(child->next, obj->modelWorldMtx, force);
+				}
+			}
+			else {
+				if (child->child != NULL) {
+					mapReCalcMatrix(child->child, child->modelWorldMtx, force);
+				}
+				if (child->next != NULL) {
+					mapReCalcMatrix(child->next, obj->modelWorldMtx, force);
+				}
+			}
+		}
+
+		next = obj->next;
+		if (next != NULL) {
+			u32* nflags = (u32*)next->field_0x0;
+
+			if (mapReCalcMatrixCheck(force, *nflags)) {
+				if ((*nflags) & 0x2000) {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x7C), next->modelWorldMtx);
+				}
+				else {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x4C), next->modelWorldMtx);
+				}
+				if ((*nflags) & 0x200000) {
+					PSMTXConcat(next->modelWorldMtx, next->unkAC, next->modelWorldMtx);
+				}
+				(*nflags) &= ~0x200;
+
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, 1);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+			else {
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, force);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+		}
+	}
+}
+
 // NONMATCHING (0.07%): only a stub is present
 void mapMain(void) {
 

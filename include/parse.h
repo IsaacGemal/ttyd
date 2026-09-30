@@ -10,3 +10,4 @@ typedef struct ParseWork {
 	u8 field_0x30[0x54 - 0x30]; //0x30
 	s32 field_0x54; //0x54
 } ParseWork;
+void parsePopNext(void);

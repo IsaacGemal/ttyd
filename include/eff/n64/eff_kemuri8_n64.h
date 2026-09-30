@@ -8,3 +8,6 @@ typedef struct effKemuri8Data {
 	s32 camId;         // 0x58
 } effKemuri8Data;
 void effKemuri8N64SetCamId(EffectEntry* entry, s32 camId);
+#include "driver/camdrv.h"
+void effKemuri8Main(EffectEntry* effect);
+void effKemuri8Disp(CameraId camId, void* param);

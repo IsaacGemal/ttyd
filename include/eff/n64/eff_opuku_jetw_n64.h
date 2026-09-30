@@ -23,3 +23,4 @@ typedef struct effOpukuJetwData {
     f32 field_0x40; // 0x40
 } effOpukuJetwData;
 void effOpukuJetwDisp(CameraId camId, void* param);
+void effOpukuJetwMain(EffectEntry* effect);

@@ -16,6 +16,9 @@
 
 extern BattleWork* _battleWorkPointer;
 extern ItemData itemDataTable[];
+extern const GXColor dat_8041c118;
+extern const GXColor dat_8041c11c;
+extern const GXColor dat_8041c120;
 
 
 // Layout of the battle menu scratch buffer allocated by
@@ -956,6 +959,104 @@ void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32
 }
 
 #pragma dont_inline reset
+void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 scale) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleMenuDispEntry* entry = entryPtr;
+    CameraEntry* cam = camGetPtr(8);
+    GXColor color;
+    GXTexObj texObj;
+    Mtx rotMtx;
+    Mtx scaleMtx;
+    Mtx transMtx;
+    Mtx resultMtx;
+    f32 f31;
+    f32 f30;
+    u16 iconId;
+    const char* msg;
+
+    btlDispGXInit2D();
+    GXSetTevColor(1, dat_8041c118);
+    GXSetNumTevStages(1);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xA, 2, 0xF);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaIn(0, 7, 5, 4, 7);
+    GXSetTevOrder(0, 0, 0, 4);
+    PSMTXScale(scaleMtx, 1.0f, 1.0f, 1.0f);
+    PSMTXTrans(transMtx, 0.0f, -5.0f, 0.0f);
+    f31 = 0.017453292f * scale;
+    PSMTXRotRad(rotMtx, 'y', f31);
+    PSMTXConcat(*mtx, rotMtx, resultMtx);
+    PSMTXConcat(resultMtx, scaleMtx, resultMtx);
+    PSMTXConcat(resultMtx, transMtx, resultMtx);
+    PSMTXConcat(cam->view, resultMtx, resultMtx);
+    GXLoadPosMtxImm(resultMtx, 0);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+
+    if (scale >= 0.0f && scale <= 180.0f) {
+        f30 = 4.0f - 8.0f * scale / 180.0f;
+    }
+    if (scale >= 180.0f && scale <= 360.0f) {
+        f30 = -4.0f + 8.0f * (scale - 180.0f) / 180.0f;
+    }
+
+    if (window->field_0x1C == 0) {
+        btlDispGXQuads2D(64.0f + f30, 76.0f, -64.0f + f30, -4.0f, 0, 0, 0, 0x80);
+        btlDispGXQuads2D(64.0f, 80.0f, -64.0f, 0.0f, 0xFF, 0xFF, 0xFF, 0xFF);
+    } else {
+        btlDispGXQuads2D(-64.0f + f30, 76.0f, 64.0f + f30, -4.0f, 0, 0, 0, 0x80);
+        btlDispGXQuads2D(-64.0f, 80.0f, 64.0f, 0.0f, 0xFF, 0xFF, 0xFF, 0xFF);
+    }
+
+    PSMTXTrans(transMtx, -67.0f, 20.0f, 0.0f);
+    PSMTXScale(scaleMtx, 1.0f, 1.0f, 1.0f);
+    PSMTXRotRad(rotMtx, 'y', f31);
+    PSMTXConcat(*mtx, rotMtx, resultMtx);
+    PSMTXConcat(resultMtx, transMtx, resultMtx);
+    PSMTXConcat(resultMtx, scaleMtx, resultMtx);
+    iconId = entry->field_0xC;
+    if (iconId == 0) {
+        iconId = 0x18B;
+    }
+    if (entry->field_0x4 == 1) {
+#ifdef MUST_MATCH
+        // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
+        ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x10, iconId);
+#else
+        iconDispGx2(resultMtx, 0x10, iconId);
+#endif
+    } else {
+#ifdef MUST_MATCH
+        ((void (*)(Mtx, s16, u16))iconDispGx2)(resultMtx, 0x30, iconId);
+#else
+        iconDispGx2(resultMtx, 0x30, iconId);
+#endif
+    }
+
+    msg = (const char*)entry->field_0x8;
+    PSMTXTrans(transMtx, 0.0f, 52.5f, 0.0f);
+    PSMTXScale(scaleMtx, 0.9f, 0.9f, 0.9f);
+    PSMTXRotRad(rotMtx, 'y', f31);
+    PSMTXConcat(*mtx, rotMtx, resultMtx);
+    PSMTXConcat(resultMtx, transMtx, resultMtx);
+    PSMTXConcat(resultMtx, scaleMtx, resultMtx);
+    FontDrawStart();
+    if (entry->field_0x4 == 1) {
+        color = dat_8041c11c;
+    } else {
+        color = dat_8041c120;
+    }
+#ifdef MUST_MATCH
+    // FontDrawColor's header says GXColor* but the original takes GXColor by value (which MWCC
+    // lowers to a caller-allocated copy); the cast restores that ABI. See REPORT.md.
+    ((void (*)(GXColor))FontDrawColor)(color);
+#else
+    FontDrawColor(&color);
+#endif
+    FontDrawStringCenterMtx(resultMtx, msg);
+}
+
 void GetRingOffset(f32* x, f32* y, f32 angle) {
     f32 a = 4.712389f - angle;
     f32 c = 80.0f * (f32)cos(a);

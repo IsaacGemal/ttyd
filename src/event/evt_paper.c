@@ -3,6 +3,18 @@
 #include "mario/mariost.h"
 #include "manager/evtmgr_cmd.h"
 
+USER_FUNC(evt_paper_entry) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	s32 inBattle = gp->inBattle != 0;
+
+	if (!animGroupBaseAsync((const char*)name, inBattle, NULL)) {
+		return EVT_RETURN_BLOCK;
+	}
+	animPaperPoseEntry((const char*)name, inBattle);
+	return EVT_RETURN_DONE;
+}
+
 USER_FUNC(evt_paper_delete) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -11,15 +23,3 @@ USER_FUNC(evt_paper_delete) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.19%): only the callee-saved registers of `name` and `inBattle` are swapped (r30/r31).
-USER_FUNC(evt_paper_entry) {
-	s32* args = event->args;
-	const char* name = (const char*)evtGetValue(event, args[0]);
-	BOOL inBattle = gp->inBattle != 0;
-
-	if (!animGroupBaseAsync(name, inBattle, NULL)) {
-		return EVT_RETURN_BLOCK;
-	}
-	animPaperPoseEntry(name, inBattle);
-	return EVT_RETURN_DONE;
-}

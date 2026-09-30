@@ -2,10 +2,23 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "mario/mario.h"
+#include "memory.h"
 #include "system.h"
 
 #include <dolphin/mtx.h>
 #include <math.h>
+#include <stdlib.h>
+
+const f64 double_to_int_802fa950 = 4503601774854144.0;
+const char str_802FA944[] = "Kemuri6N64";
+
+extern const f32 float_0_8041f3b0;
+extern const f32 float_1_8041f3d0;
+extern const f32 float_1p4_8041f3d4;
+extern const f32 float_0p03_8041f3d8;
+extern const f32 float_1p5_8041f3dc;
+extern const f32 float_2_8041f3e0;
+extern const f32 float_neg0p5_8041f3e4;
 
 typedef struct effKemuri6Data {
     s32 field_0x0;   // 0x0
@@ -37,6 +50,43 @@ inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
+}
+
+EffectEntry* effKemuri6N64Entry(s32 type, f32 x, f32 y, f32 z) {
+    EffectEntry* effect;
+    effKemuri6Data* data;
+    s32 i;
+
+    effect = effEntry();
+    effect->type = str_802FA944;
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri6Data));
+    effect->userdata = data;
+    effect->callback = effKemuri6Main;
+
+    for (i = 0; i < 1; i++) {
+        data->field_0x0 = 1;
+        data->field_0x4 = type;
+        data->field_0x40 = float_0_8041f3b0;
+        data->field_0x44 = float_0_8041f3b0;
+        data->position.x = x;
+        data->position.y = y;
+        data->position.z = z;
+        data->field_0x1C = float_1_8041f3d0;
+        data->field_0x20 = float_1_8041f3d0;
+        data->field_0x24 = float_1_8041f3d0;
+        data->field_0x8 = 0xFF;
+        data->field_0x28 = float_0p03_8041f3d8 * (f32)(rand() % 11) + float_1p4_8041f3d4;
+        data->field_0x2C = float_0p03_8041f3d8 * (f32)(rand() % 11) + float_1p5_8041f3dc;
+        data->field_0x30 = (f32)(rand() % 61);
+        data->field_0x4 = type;
+        data->field_0x38 = float_2_8041f3e0;
+        data->field_0x3C = float_neg0p5_8041f3e4;
+        data->field_0x6 = 15;
+        data->field_0x18 = (f32)(rand() % 361);
+        data->field_0x8 = 0xFF;
+    }
+    return effect;
 }
 
 void effKemuri6Main(EffectEntry* effect) {

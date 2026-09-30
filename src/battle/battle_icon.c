@@ -11,20 +11,28 @@ extern ItemData itemDataTable[];
 
 // dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
+// The original keeps this 16-iteration loop rolled; at -O4,p the compiler unrolls it 4x.
+#pragma optimize_for_size on
 
-// NONMATCHING (0.00%): 3 instructions differ, 29 extra, plus register differences.
 BattleIcon* BtlIconGetPtr(s32 index) {
 	BattleIcon* icon;
 	int i;
 
 	for (i = 0; i < 16; i++) {
 		icon = &_battleWorkPointer->icons[i];
+#ifdef MUST_MATCH
+		// BattleWorkIcon.flags is u16 in the original (lhz); the header declares it s16, so reinterpret
+		// to emit the unsigned load without editing the existing header line.
+		if (*(u16*)&icon->flags & 1 && icon->index == index) {
+#else
 		if (icon->flags & 1 && icon->index == index) {
+#endif
 			return icon; //TODO: redo bwp->iconWork?
 		}
 	}
 	return NULL;
 }
+#pragma optimize_for_size reset
 #pragma dont_inline reset
 
 // NONMATCHING (99.92%): same instructions; only register numbers or operands differ.

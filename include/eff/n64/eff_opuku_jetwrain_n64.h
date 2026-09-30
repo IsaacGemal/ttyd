@@ -22,3 +22,14 @@ typedef struct effOpukuJetwrainData {
 	s16 field_0x11A[19][13]; // 0x11A
 } effOpukuJetwrainData;
 void effOpukuJetwrainMain(EffectEntry* effect);
+typedef struct effOpukuJetwrainVtx {
+	s16 x;   // 0x0
+	s16 y;   // 0x2
+	s16 z;   // 0x4
+	u16 s;   // 0x6
+	u16 t;   // 0x8
+	u8 r;    // 0xA
+	u8 g;    // 0xB
+	u8 b;    // 0xC
+	u8 a;    // 0xD
+} effOpukuJetwrainVtx;

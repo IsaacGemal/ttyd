@@ -1,4 +1,5 @@
 #include "driver/effdrv.h"
+#include "driver/camdrv.h"
 #include "eff/eff_n64.h"
 
 #include <dolphin/gx.h>
@@ -7,8 +8,14 @@
 // .sdata2 constants (named after their original addresses).
 const f32 float_255_8041eab8 = 255.0f;
 const f32 float_deg2rad_8041eabc = 0.017453292f;
+const f32 float_0p0056818_8041eac0 = 0.0056818184f;
+const f32 float_0p045455_8041eac4 = 0.045454547f;
+const f32 float_0_8041eac8 = 0.0f;
+const f32 float_2p0944_8041eacc = 2.0943952f;
+const f32 float_neg2p0944_8041ead0 = -2.0943952f;
 
-// .rodata constant (named after its original address).
+// .rodata constants (named after their original addresses).
+const Vec vec3_802fa334 = { 0.4f, 0.0f, 0.8f };
 const f64 double_to_int_802fa340 = 4503601774854144.0;
 
 // .sbss2 zero GXColor the original copies before filling its fields.
@@ -48,7 +55,10 @@ typedef struct effBrokenBarrierData {
     u8 pad_10[0x20];  // 0x10
     s32 field_0x30;   // 0x30
     f32 field_0x34;   // 0x34
-    u8 pad_38[0x14];  // 0x38
+    u8 pad_38[0x8];   // 0x38
+    u32 field_0x40;   // 0x40
+    u32 field_0x44;   // 0x44
+    u32 field_0x48;   // 0x48
     s32 field_0x4C;   // 0x4C
     u32 field_0x50;   // 0x50
     u32 field_0x54;   // 0x54
@@ -57,6 +67,64 @@ typedef struct effBrokenBarrierData {
     f32 field_0x60;   // 0x60
     u8 pad_64[0x8];   // 0x64
 } effBrokenBarrierData;
+
+// .sbss2 GXColor the original copies before filling its fields.
+GXColor unk_804230b8;
+
+static void main_dl(EffectEntry* effect, Mtx matrix);
+
+// NONMATCHING (99.95%): every instruction matches except the by-value GXSetTevColor
+// GXColor stack slots. The original keeps the named colour at r1+0x8 and its outgoing
+// copy at r1+0xC; mwcc builds them at r1+0xC and r1+0x8 (the same quirk main_dl has below).
+void effBrokenBarrierDisp(CameraId camId, EffectEntry* effect) {
+    effBrokenBarrierData* data;
+    CameraEntry* camera;
+    Mtx mtx;
+    Mtx scale;
+    Mtx rot;
+    Mtx work;
+    Mtx view;
+    GXTexObj texObj;
+    Vec axis;
+    GXColor color;
+
+    camera = camGetPtr(camId);
+    data = effect->userdata;
+    PSMTXTrans(mtx, data->x, data->y, data->z);
+    PSMTXScale(scale, data->field_0x60, data->field_0x60, data->field_0x60);
+    PSMTXConcat(mtx, scale, work);
+    color = unk_804230b8;
+    color.r = data->field_0x40;
+    color.g = data->field_0x44;
+    color.b = data->field_0x48;
+    color.a = data->field_0x5C;
+    GXSetTevColor(GX_TEVREG1, color);
+    effGetTexObjN64(0x20, &texObj);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+    PSMTXScale(scale, float_0p0056818_8041eac0, float_0p045455_8041eac4, float_0_8041eac8);
+    GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_ONE, GX_CC_TEXC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetCullMode(GX_CULL_NONE);
+    PSMTXConcat(camera->view, work, view);
+    main_dl(effect, view);
+    axis = vec3_802fa334;
+    PSMTXRotAxisRad(rot, &axis, float_2p0944_8041eacc);
+    PSMTXConcat(work, rot, view);
+    PSMTXConcat(camera->view, view, view);
+    main_dl(effect, view);
+    PSMTXRotAxisRad(rot, &axis, float_neg2p0944_8041ead0);
+    PSMTXConcat(work, rot, view);
+    PSMTXConcat(camera->view, view, view);
+    main_dl(effect, view);
+}
 
 // NONMATCHING (99.95%): all instructions match except that mwcc builds the by-value GXSetTevColor
 // GXColor temporary at r1+0xC and its outgoing copy at r1+0x8, while the original has them at

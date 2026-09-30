@@ -6,3 +6,7 @@
 s32 battleAcResult_StickKeepLeft(BattleWork* work) {
     return work->actionCommands.result;
 }
+
+void battleAcDelete_StickKeepLeft(BattleWork* work) {
+    work->actionCommands.mAcState = 0x3ED;
+}

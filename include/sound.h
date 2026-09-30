@@ -211,6 +211,7 @@ void SoundEfxMain(void);
 void SoundDVDMain(void);
 void SoundSSMainInt(void);
 void SoundAIDMACallback(void);
-s32 SoundSSPlayChEx(s32 chan, u32 a2, u32 a3);
 u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 count, u8* in);
 extern SoundWork sound;
+void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3);
+void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo);

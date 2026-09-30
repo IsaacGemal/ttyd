@@ -45,3 +45,4 @@ void _pose_one_pattern(BattleUnitPart* part);
 void _pose_two_pattern(BattleUnitPart* part);
 void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation);
 void btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, GXColor* color);
+void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scale2, GXColor* color);

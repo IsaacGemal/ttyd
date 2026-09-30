@@ -10,6 +10,22 @@
 
 #define TWO_PI 6.283185307179586f
 
+// .sdata2 data referenced by effMahorn2Disp
+// data externs that have no header declaration
+extern u32 dat_80422598;
+extern const f32 float_deg2rad_8042259c;
+extern const f32 float_16_804225a0;
+extern const f32 float_2_804225a4;
+extern const f32 float_8_804225a8;
+extern const f32 float_0p5_804225ac;
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reloads float_0_804225b0 for every 0.0f FIFO write; a plain literal lets
+// MWCC pool it into an anonymous constant, so the extern is volatile to force the same reloads.
+extern const volatile f32 float_0_804225b0;
+#else
+extern const f32 float_0_804225b0;
+#endif
+
 // MUST_MATCH: retail's compiler addressed the three zero Vecs below off one base register
 // (offset 0, 0xC, 0x18); MWCC here emits a separate base per `{ 0 }` literal, which changes
 // every GPR in the function. Declaring them as one array reproduces the shared base.
@@ -198,4 +214,152 @@ void effMahorn2Main(EffectEntry* effect) {
         }
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMahorn2Disp, effect);
+}
+
+// Remaining differences are compiler scheduling/allocation, not values: (1) the texture switch
+// dispatches the default before the >=2 check where retail does the reverse (2 insts); (2)
+// GXSetChanMatColor builds/copies the GXColor at stack 0xc/0x8 where retail uses 0x8/0xc; (3)
+// the quad's -w and 0.5f temporaries land in f1/f2 swapped from retail; (4) the type-3
+// top/bottom temporaries land in f0/f1 swapped; (5) the two local array-init templates are
+// objdiff-named @239/@240 because the pre-existing Entry/Main .rodata (extra 0.5/3.0 doubles)
+// shifts them past retail's dat_8030196c/84; (6) the type-3 2.0f literal pools into @305 instead
+// of float_2_804225a4.
+// NONMATCHING (99.44%): all logic matches; remaining are scheduling/frame/symbol-name differences.
+void effMahorn2Disp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effMahorn2Data* data = effect->userdata;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx mtxFinal;
+    Mtx mtxRot;
+    Mtx mtxScale;
+    Mtx mtxRoot;
+    GXColor color;
+    f32 top;
+    f32 bottom;
+    s32 headerAlpha;
+    f32 rootScale;
+    f32 w;
+    f32 h;
+    f32 texW;
+    f32 texH;
+    s32 type;
+    s32 i;
+    s32 j;
+
+    cam = camGetPtr(camId);
+    headerAlpha = data->alpha;
+    rootScale = data->scale;
+    PSMTXTrans(mtxRoot, data->position.x, data->position.y, data->position.z);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+    GXSetTevAlphaIn(0, 7, 5, 4, 7);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+    data++;
+    for (i = 1; i < effect->count; i++, data++) {
+        if (data->counter != 0) {
+            continue;
+        }
+        switch (data->type) {
+        case 1:
+            effGetTexObj(0x8F, &texObj);
+            GXLoadTexObj(&texObj, 0);
+            break;
+        case 2:
+        case 3:
+        case 4:
+            effGetTexObj(0x90, &texObj);
+            GXLoadTexObj(&texObj, 0);
+            break;
+        }
+        color = *(GXColor*)&dat_80422598;
+        color.a = (data->alpha * headerAlpha) / 255;
+        GXSetChanMatColor(4, color);
+
+        PSMTXTrans(mtxFinal, data->position.x, data->position.y, data->position.z);
+        PSMTXScale(mtxScale, data->scale * rootScale, data->scale * rootScale, data->scale * rootScale);
+        PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
+        PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8042259c);
+        PSMTXConcat(mtxFinal, mtxRot, mtxFinal);
+        PSMTXConcat(mtxRoot, mtxFinal, mtxFinal);
+        PSMTXConcat(cam->view, mtxFinal, mtxFinal);
+        GXLoadPosMtxImm(mtxFinal, 0);
+        GXSetCurrentMtx(0);
+
+        type = data->type;
+        switch (type) {
+        case 0:
+            break;
+        case 1:
+            w = float_16_804225a0;
+            texW = float_2_804225a4;
+            h = w;
+            texH = texW;
+            break;
+        case 2:
+            w = float_16_804225a0;
+            texW = float_2_804225a4;
+            h = w;
+            texH = texW;
+            break;
+        case 3:
+            h = float_2_804225a4;
+            w = float_16_804225a0;
+            texW = h;
+            texH = h;
+            break;
+        case 4:
+            w = float_8_804225a8;
+            texW = float_2_804225a4;
+            h = w;
+            texH = texW;
+            break;
+        }
+
+        if (type != 3) {
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(-w * float_0p5_804225ac, h * float_0p5_804225ac, float_0_804225b0);
+            GXTexCoord2f32(float_0_804225b0, float_0_804225b0);
+            GXPosition3f32(w * float_0p5_804225ac, h * float_0p5_804225ac, float_0_804225b0);
+            GXTexCoord2f32(texW, float_0_804225b0);
+            GXPosition3f32(w * float_0p5_804225ac, -h * float_0p5_804225ac, float_0_804225b0);
+            GXTexCoord2f32(texW, texH);
+            GXPosition3f32(-w * float_0p5_804225ac, -h * float_0p5_804225ac, float_0_804225b0);
+            GXTexCoord2f32(float_0_804225b0, texH);
+        }
+        else {
+            top = h * float_0p5_804225ac;
+            bottom = -h * float_0p5_804225ac;
+
+            for (j = 0; j < 3; j++) {
+                GXBegin(0x80, 0, 4);
+                {
+                    f32 widths[6] = { 0.0f, 2.0f, 2.0f, 12.0f, 12.0f, 14.0f };
+                    f32 texs[6] = { 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f };
+
+                    GXPosition3f32(widths[j * 2], top, float_0_804225b0);
+                    GXTexCoord2f32(2.0f * texs[j * 2], float_0_804225b0);
+                    GXPosition3f32(widths[j * 2 + 1], top, float_0_804225b0);
+                    GXTexCoord2f32(2.0f * texs[j * 2 + 1], float_0_804225b0);
+                    GXPosition3f32(widths[j * 2 + 1], bottom, float_0_804225b0);
+                    GXTexCoord2f32(2.0f * texs[j * 2 + 1], texH);
+                    GXPosition3f32(widths[j * 2], bottom, float_0_804225b0);
+                    GXTexCoord2f32(2.0f * texs[j * 2], texH);
+                }
+            }
+        }
+    }
 }

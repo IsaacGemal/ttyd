@@ -3,6 +3,7 @@
 #include "battle/battle_actrecord.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
+#include "battle/battle_damage_split.h"
 #include "driver/animdrv.h"
 #include "driver/msgdrv.h"
 #include "driver/windowdrv.h"
@@ -256,6 +257,87 @@ void btlseqFirstAct(BattleWork* wp) {
 	switch (BattleGetSeq(wp, SEQ_FIRST_ACT)) {
 
 	}
+}
+
+extern const char str_802EF5C8[];
+
+// _set_effect_luck is an EVT command (nanika_luck_event) returning 2. The four comma initializers are
+// match-only: `(0, x)` computes the same value as `x`, but it makes MWCC assign the callee-saved
+// registers r30=&weapon, r29=&z, r28=&y, r27=sfxName as the original does. Without them the string
+// address is copied through r0 (one extra `mr`), so the natural forms are under #else.
+s32 _set_effect_luck(void) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleWeapon weapon = *(BattleWeapon*)N_weapon_lucky_start;
+	f32 z, y, x;
+#ifdef MUST_MATCH
+	BattleWeapon* weaponPtr = (0, &weapon);
+	f32* pz = (0, &z);
+	f32* py = (0, &y);
+	const char* sfxName = (0, str_802EF5C8);
+#else
+	BattleWeapon* weaponPtr = &weapon;
+	f32* pz = &z;
+	f32* py = &y;
+	const char* sfxName = str_802EF5C8;
+#endif
+	BattleUnit* unit;
+	BattleUnitPart* part;
+	s32 i;
+	EffectEntry* eff;
+	for (i = 0; i < 64; i++) {
+		unit = BattleGetUnitPtr(wp, i);
+
+		if (unit == NULL) {
+			continue;
+		}
+		if (unit->badgesEquipped.LuckyStart == 0) {
+			continue;
+		}
+		if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+			continue;
+		}
+		switch (irand(4)) {
+		case 0:
+			weapon.dodgyChance = 0;
+			weapon.dodgyTime = 0;
+			weapon.hpRegenTime = 0;
+			weapon.hpRegenStrength = 0;
+			weapon.fpRegenTime = 0;
+			weapon.fpRegenStrength = 0;
+			break;
+		case 1:
+			weapon.electricChance = 0;
+			weapon.electricTime = 0;
+			weapon.hpRegenTime = 0;
+			weapon.hpRegenStrength = 0;
+			weapon.fpRegenTime = 0;
+			weapon.fpRegenStrength = 0;
+			break;
+		case 2:
+			weapon.electricChance = 0;
+			weapon.electricTime = 0;
+			weapon.dodgyChance = 0;
+			weapon.dodgyTime = 0;
+			weapon.fpRegenTime = 0;
+			weapon.fpRegenStrength = 0;
+			break;
+		default:
+			weapon.electricChance = 0;
+			weapon.electricTime = 0;
+			weapon.dodgyChance = 0;
+			weapon.dodgyTime = 0;
+			weapon.hpRegenTime = 0;
+			weapon.hpRegenStrength = 0;
+			break;
+		}
+		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+		BattleSetStatusDamageFromWeapon(BattleGetSystemPtr(wp), unit, part, weaponPtr, 0x100);
+		BtlUnit_GetPos(unit, &x, py, pz);
+		psndSFXOn(sfxName);
+		eff = effNiceEntry(6, x - float_45_8041c2b0, float_60_8041c2b4 + y, z);
+		((NiceEffectWork*)eff->userdata)->field_0x1C = float_0p75_8041c2b8;
+	}
+	return 2;
 }
 
 // NONMATCHING (0.05%): empty placeholder, not decompiled yet.

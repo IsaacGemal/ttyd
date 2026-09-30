@@ -18,3 +18,4 @@ typedef struct EffHolographyData {
 } EffHolographyData;
 void effHolographyMain(EffectEntry* effect);
 void effHolographyDisp(CameraId camId, void* param);
+EffectEntry* effHolographyN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale);

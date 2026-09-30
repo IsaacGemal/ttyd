@@ -22,6 +22,53 @@ typedef struct effSnowfallData {
 	s32 timer;       // 0x30
 } effSnowfallData;
 
+void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
+	effSnowfallData* data = p;
+	CameraEntry* cam = camGetPtr(CAMERA_3D);
+	f32 cx = cam->cameraAt.x;
+	f32 cy = (cam->cameraAt.y + cam->cameraPos.y) / 2.0f;
+	f32 cz = (cam->cameraAt.z + cam->viewDistance) / 2.0f;
+	f32 px = data->position.x;
+	f32 py = data->position.y;
+	f32 pz = data->position.z;
+	s32 i;
+
+	i = (s32)(px - cx);
+	if (i > a) {
+		i %= a;
+		data->position.x = cx - a + i;
+	} else if (i < -a) {
+		i = -i;
+		i %= a;
+		data->position.x = cx + a - i;
+	}
+
+	i = (s32)(py - cy);
+	if (i > b) {
+		i %= b;
+		data->position.y = cy - b + i;
+	} else if (i < -b) {
+		if (c < 100) {
+			data->velocity.y = 0.0f;
+			data->field_0x28 = 0;
+		} else {
+			i = -i;
+			i %= b;
+			data->position.y = cy + b - i;
+		}
+	}
+
+	i = (s32)(pz - cz);
+	if (i > a) {
+		i %= a;
+		data->position.z = cz - a + i;
+	} else if (i < -a) {
+		i = -i;
+		i %= a;
+		data->position.z = cz + a - i;
+	}
+}
+
 // Only the callee-saved pointer pair differs. GC/2.6 assigns the `effect` parameter the higher
 // NONMATCHING (86.22%): data is r30/effect r31 here, the original is data r31/effect r30.
 void effSnowfallMain(EffectEntry* effect) {

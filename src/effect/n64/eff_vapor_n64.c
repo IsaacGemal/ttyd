@@ -1,4 +1,5 @@
 #include "eff/n64/eff_vapor_n64.h"
+#include "driver/dispdrv.h"
 #include "memory.h"
 
 EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
@@ -36,3 +37,56 @@ EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	data->field_0x3c = 0.0f;
 	return effect;
 }
+
+// opt_common_subs off required: with CSE on MWCC reuses the 0.02f result register for
+// data->field_0x3c in the y integration below (f0/f1 swapped vs the target's f2/f1).
+#pragma opt_common_subs off
+
+// NONMATCHING (97.58%): only the top-of-function scheduler swap differs; the original
+// loads effect->userdata (r6) before the three vec3_802fb8e8 words, MWCC here hoists
+// the two independent vec loads first. Same issue as effHokoriMain.
+void effVaporMain(EffectEntry* effect) {
+	effVaporN64Data* data;
+	Vec position2;
+	Vec position;
+	s32 type;
+
+	data = effect->userdata;
+	position = vec3_802fb8e8;
+	position.x = data->x;
+	position.y = data->y;
+	position.z = data->z;
+	position2 = position;
+	type = data->type;
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->lifetime = 0x10;
+	}
+	if (data->lifetime < 1000) {
+		data->lifetime--;
+	}
+	data->field_0x14++;
+	if (data->lifetime < 0) {
+		effDelete(effect);
+		return;
+	}
+	if (data->lifetime < 0x10) {
+		data->field_0x24 = data->lifetime << 4;
+	}
+	switch (type) {
+	case 0:
+	case 1:
+		data->field_0x3c += float_0p02_80420100;
+		break;
+	}
+	data->y += data->field_0x3c;
+	if (data->field_0x3c > float_0p5_804200dc) {
+		data->field_0x3c = float_0p5_804200dc;
+	}
+	if (data->field_0x3c < float_neg1p5_80420104) {
+		data->field_0x3c = float_neg1p5_80420104;
+	}
+	data->field_0x38 += float_1_80420108;
+	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effVaporDisp, effect);
+}
+#pragma opt_common_subs reset

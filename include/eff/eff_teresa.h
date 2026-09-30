@@ -16,3 +16,5 @@ typedef struct EffTeresaData {
 } EffTeresaData;
 EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z);
 void effTeresaMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effTeresaDisp(CameraId camId, void* param);

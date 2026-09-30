@@ -17,3 +17,5 @@ typedef struct EffAkariChargeData {
 
 EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
 void effAkariChargeMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effAkariChargeDisp(CameraId camId, void* param);

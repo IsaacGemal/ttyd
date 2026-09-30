@@ -25,3 +25,7 @@ extern const f32 float_10_8041faf4;
 void effRappaDisp(CameraId cameraId, void* param);
 void effRappaMain(EffectEntry* effect);
 EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, f32 a5);
+extern const f32 float_6p2832_8041faf8;
+extern const f32 float_5_8041fafc;
+extern const f32 float_0p25_8041fb00;
+extern const f32 float_360_8041fb04;

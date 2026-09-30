@@ -17,6 +17,7 @@
 #include "driver/swdrv.h"
 #include "driver/msgdrv.h"
 #include "driver/mapdrv.h"
+#include "window/win_mario.h"
 
 extern GlobalWork* gp;
 
@@ -87,6 +88,20 @@ extern const f32 float_6_8041bc24;
 extern u32 shopper_talk_evt[];
 extern u32 main_evt[4];
 extern u32 evt_shoplist[10];
+extern const char str_802ECDF8[];
+extern const char str_802ECE10[];
+extern const char str_8041BC28[];
+extern u32 dat_8041bbf0;
+extern u32 dat_8041bbf4;
+extern u32 dat_8041bbf8;
+extern u32 dat_8041bbfc;
+extern u32 dat_8041bc00;
+extern u32 dat_8041bc04;
+extern u32 dat_8041bc08;
+extern u32 dat_8041bc0c;
+extern const f32 float_0p6_8041bc2c;
+extern const f32 float_40_8041bc30;
+extern const f32 float_0p64_8041bc38;
 
 s32 evtShopIsActive(void) {
 	s32 active;
@@ -396,6 +411,99 @@ void title_disp(WinMgrEntry* entry) {
 		FontDrawColor(&color);
 		FontDrawMessage(entry->field_0x18 + (entry->field_0x20 - FontGetMessageWidth(msg)) / 2, entry->field_0x1C - 12, msg);
 		FontDrawEdgeOff();
+	}
+}
+
+// NONMATCHING (88.49%): i/bit/p land in a cyclic permutation of the original loop registers;
+// the message x arithmetic is reassociated; the int->float constants load on f28/f30 swapped.
+void list_disp(WinMgrEntry* entry) {
+	PouchData* pouch;
+	GXColor color0;
+	GXColor color1;
+	GXColor color2;
+	GXColor color3;
+	GXColor color4;
+	GXColor color5;
+	GXColor color6;
+	GXColor color7;
+	const char* msg;
+	s32 y;
+	s32 i;
+	ShopPointEntry* p;
+	ItemData* item;
+	u16 width;
+	char buf[0x100];
+	Mtx mtx;
+	Mtx scale;
+
+	if (entry->flags & 4) {
+		return;
+	}
+
+	pouch = pouchGetPtr();
+
+	msg = msgSearch(str_802ECDF8);
+	FontDrawStart();
+	FontDrawEdge();
+	*(u32*)&color0 = dat_8041bbf0;
+	FontDrawColor(&color0);
+	width = FontGetMessageWidth(msg);
+	FontDrawMessage(entry->field_0x18 + (100 - width) / 2 + 10, entry->field_0x1C + 13, msg);
+	FontDrawEdgeOff();
+
+	msg = msgSearch(str_802ECE10);
+	FontDrawStart();
+	FontDrawEdge();
+	*(u32*)&color1 = dat_8041bbf4;
+	FontDrawColor(&color1);
+	width = FontGetMessageWidth(msg);
+	FontDrawMessage(entry->field_0x18 + (entry->field_0x20 / 2 - 10) + (100 - width) / 2, entry->field_0x1C + 13, msg);
+	FontDrawEdgeOff();
+
+	FontDrawStart();
+	for (i = 0, y = 0, p = shopPointList; p->price != -1; i++, y += 26, p++) {
+		item = &itemDataTable[p->item];
+		FontDrawStart();
+		if (pouch->field_0x5B4 & (1 << i)) {
+			*(u32*)&color2 = dat_8041bbf8;
+			FontDrawColor(&color2);
+		}
+		else {
+			*(u32*)&color3 = dat_8041bbfc;
+			FontDrawColor(&color3);
+		}
+		sprintf(buf, "%s", winZenkakuStr(p->price));
+		width = FontGetMessageWidth(buf);
+		FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - width - 90, entry->field_0x1C - 20 - y, buf);
+
+		FontDrawStart();
+		if (pouch->field_0x5B4 & (1 << i)) {
+			*(u32*)&color4 = dat_8041bc00;
+			FontDrawColor(&color4);
+		}
+		else {
+			*(u32*)&color5 = dat_8041bc04;
+			FontDrawColor(&color5);
+		}
+		msg = msgSearch(str_802ECDF8);
+		sprintf(buf, "%s", msg);
+		width = FontGetMessageWidth(buf);
+		PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - 0.6f * width) - 40.0f, entry->field_0x1C - 28 - y, 0.0f);
+		PSMTXScale(scale, 0.64f, 0.64f, 0.64f);
+		PSMTXConcat(mtx, scale, mtx);
+		FontDrawMessageMtx(mtx, buf);
+
+		msg = msgSearch(item->name);
+		FontDrawStart();
+		if (pouch->field_0x5B4 & (1 << i)) {
+			*(u32*)&color6 = dat_8041bc08;
+			FontDrawColor(&color6);
+		}
+		else {
+			*(u32*)&color7 = dat_8041bc0c;
+			FontDrawColor(&color7);
+		}
+		FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10, entry->field_0x1C - 20 - y, msg);
 	}
 }
 

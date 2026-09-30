@@ -29,6 +29,23 @@ s32 marioPlaneGetFlyingDir(void) {
 	return -1;
 }
 
+s32 marioGetPlaneStatus(void) {
+	MarioWork* mario = marioGetPtr();
+
+	if (mario->currMotionId != MARIO_MOTION_PLANE) {
+		return 0;
+	}
+#ifdef MUST_MATCH
+	// The original compares currSubMotionId with cmpwi (signed); the header types it u32.
+	if ((s32)mario->currSubMotionId >= 0xC && (s32)mario->currSubMotionId < 0x14) {
+#else
+	if (mario->currSubMotionId >= 0xC && mario->currSubMotionId < 0x14) {
+#endif
+		return 2;
+	}
+	return 1;
+}
+
 // NONMATCHING (3.48%): 6 instructions differ, 891 missing, plus register differences.
 void mot_plane(void) {
 	MarioWork* mario;

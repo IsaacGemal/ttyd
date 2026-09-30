@@ -29,3 +29,5 @@ typedef struct EffStarPowerData {
 } EffStarPowerData;
 EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale);
 void effStarPowerMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effStarPowerDisp(CameraId camId, void* param);

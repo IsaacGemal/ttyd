@@ -7,6 +7,7 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/eff_starstone.h"
 #include "driver/icondrv.h"
 #include "driver/offscreendrv.h"
 #include "manager/evtmgr_cmd.h"
@@ -50,6 +51,11 @@ extern f32 float_neg300_80421778;
 extern f32 float_300_8042177c;
 extern f32 float_neg200_80421780;
 extern f32 float_200_80421784;
+extern f32 float_37_804217a0;
+extern f32 float_2_804217a4;
+extern f32 float_2160_804217a8;
+extern f32 float_1p5_804217ac;
+extern char str_802FF570[];
 extern char str_802FF648[];
 extern u32 dat_80421718;
 extern u32 dat_8042171c;
@@ -103,7 +109,16 @@ typedef struct ScissorWork {
     void* field_0x118;            // 0x118
     s32 state;                    // 0x11C
     s32 field_0x120;              // 0x120
-    u8 field_0x124[0x30];         // 0x124
+    f32 field_0x124;              // 0x124
+    f32 field_0x128;              // 0x128
+    f32 field_0x12C;              // 0x12C
+    f32 field_0x130;              // 0x130
+    f32 field_0x134;              // 0x134
+    f32 field_0x138;              // 0x138
+    f32 field_0x13C;              // 0x13C
+    f32 field_0x140;              // 0x140
+    f32 field_0x144;              // 0x144
+    u8 field_0x148[0x0C];         // 0x148
     f32 field_0x154;              // 0x154
     f32 field_0x158;              // 0x158
     f32 field_0x15C;              // 0x15C
@@ -113,6 +128,30 @@ typedef struct ScissorWork {
     EffectEntry* field_0x16C;     // 0x16C
     smartEntry* field_0x170;      // 0x170
 } ScissorWork;
+
+// Star trail area reached through a work+0x9C pointer in the original.
+// No header declares it; fields are listed in REPORT.md.
+typedef struct StarTrail {
+    u8 field_0x00[0x18];  // 0x00
+    f32 velX;             // 0x18
+    f32 velY;             // 0x1C
+    u8 field_0x20[0x20];  // 0x20
+    f32 trailX[4];        // 0x40
+    f32 trailY[4];        // 0x50
+} StarTrail;
+
+// Star-stone effect userdata written at the end of star_control.
+// No header declares it; fields are listed in REPORT.md.
+typedef struct ScissorEffectData {
+    u8 field_0x00[0x8];  // 0x00
+    f32 posX;            // 0x08
+    f32 posY;            // 0x0C
+    f32 posZ;            // 0x10
+    f32 scale;           // 0x14
+    f32 rotX;            // 0x18
+    f32 rotY;            // 0x1C
+    f32 rotZ;            // 0x20
+} ScissorEffectData;
 
 
 
@@ -674,6 +713,141 @@ void star_disp2D(void) {
         star_disp2D_sub(3, 0x40);
         star_disp2D_sub(4, 0x20);
     }
+}
+
+// NONMATCHING (88.51%): the int->float magic double is an anonymous pool copy (@863) instead
+// of the folded double_to_int_802ff638 at vec+0xC8, which shifts the FP registers through case 1;
+// intplGetValue also loads r4 before f1/f2. Same instructions otherwise. See REPORT.md.
+s32 star_control(void) {
+    const f32* vec = (const f32*)str_802FF570;
+    ScissorWork* work = GetScissorPtr();
+    StarTrail* star = (StarTrail*)((u8*)work + 0x9C);
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    f32 f;
+    s32 i;
+
+    if ((gp->retraceCount & 3) == 0) {
+        for (i = 3; i > 0; i--) {
+            star->trailX[i] = star->trailX[i - 1];
+            star->trailY[i] = star->trailY[i - 1];
+        }
+        star->trailX[0] = star->velX;
+        star->trailY[0] = star->velY;
+    }
+    switch (work->state) {
+    case 1:
+        {
+            f32 zero = float_0_80421734;
+            f32 neg = float_neg1000_8042179c;
+            f32 one = float_1_80421754;
+
+            work->state = 2;
+            work->field_0x120 = 0;
+            work->field_0x16C = effStarStoneEntry(3, zero, neg, zero, one);
+        }
+        BtlUnit_GetPos(mario, &work->field_0x124, &work->field_0x128, &work->field_0x12C);
+        work->field_0x128 = work->field_0x128 +
+            (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804217a0);
+        *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
+        *(Vec*)&work->field_0x13C = *(Vec*)&work->field_0x124;
+        work->field_0x140 += float_50_80421770;
+        work->field_0x144 += float_neg1_80421750;
+        *(Vec*)&work->field_0x154 = *(const Vec*)&vec[0x2C / 4];
+        *(Vec*)&work->field_0x160 = *(const Vec*)&vec[0x38 / 4];
+        /* fallthrough */
+    case 2:
+        work->field_0x120++;
+        if (work->field_0x120 <= 0x64) {
+            work->field_0x124 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x130, work->field_0x13C);
+            work->field_0x128 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x134, work->field_0x140);
+            work->field_0x12C = intplGetValue(0, work->field_0x120, 0x64, work->field_0x138, work->field_0x144);
+            f = intplGetValue(0, work->field_0x120, 0x64, float_0_80421734, float_2_804217a4);
+            work->field_0x15C = f;
+            work->field_0x158 = f;
+            work->field_0x154 = f;
+        } else {
+            f32 two = float_2_804217a4;
+
+            work->field_0x124 = work->field_0x13C;
+            work->field_0x128 = work->field_0x140;
+            work->field_0x12C = work->field_0x144;
+            work->field_0x15C = two;
+            work->field_0x158 = two;
+            work->field_0x154 = two;
+        }
+        work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, float_0_80421734, float_2160_804217a8);
+        if (work->field_0x120 >= 0x78) {
+            work->state = 3;
+            work->field_0x120 = 0;
+            *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
+            work->field_0x140 = float_300_8042177c;
+        }
+        break;
+    case 3:
+        work->field_0x120++;
+        work->field_0x128 = intplGetValue(1, work->field_0x120, 0x3C, work->field_0x134, work->field_0x140);
+        if (work->field_0x120 >= 0x3C) {
+            work->state = 4;
+            work->field_0x120 = 0;
+            {
+                f32 neg = float_neg1000_8042179c;
+                f32 zero = float_0_80421734;
+
+                *(Vec*)&work->field_0x124 = *(const Vec*)&vec[0x44 / 4];
+                *(Vec*)&work->field_0x154 = *(const Vec*)&vec[0x50 / 4];
+                *(Vec*)&work->field_0x160 = *(const Vec*)&vec[0x5C / 4];
+                work->field_0x134 = work->field_0x128;
+                work->field_0x140 = zero;
+                star->velX = work->field_0x124;
+                star->velY = work->field_0x128;
+                for (i = 0; i < 4; i++) {
+                    star->trailX[i] = zero;
+                    star->trailY[i] = neg;
+                }
+            }
+        }
+        break;
+    case 4:
+        work->field_0x120++;
+        work->field_0x128 = intplGetValue(4, work->field_0x120, 0x3C, work->field_0x134, work->field_0x140);
+        star->velX = work->field_0x124;
+        star->velY = work->field_0x128;
+        if (work->field_0x120 >= 0x3C) {
+            work->state = 5;
+            work->field_0x120 = 0;
+        }
+        break;
+    case 5:
+    case 6:
+        break;
+    }
+    if (work->field_0x16C != NULL) {
+        ScissorEffectData* data = work->field_0x16C->userdata;
+
+        if (work->state >= 4) {
+            f32 zero = float_0_80421734;
+
+            data->posX = zero;
+            data->posY = float_neg1000_8042179c;
+            data->posZ = zero;
+        } else {
+            data->posX = work->field_0x124;
+            data->posY = work->field_0x128;
+            data->posZ = work->field_0x12C;
+        }
+        {
+            f32 s = float_1p5_804217ac;
+
+            data->rotX = work->field_0x160;
+            data->rotY = work->field_0x164;
+            data->rotZ = work->field_0x168;
+            data->scale = s * work->field_0x154;
+        }
+    }
+    if (work->state >= 4 && work->state <= 6) {
+        dispEntry(8, float_0_80421734, 2, (DispCallback)star_disp2D, NULL);
+    }
+    return 0;
 }
 
 s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {

@@ -3,8 +3,11 @@
 #include "driver/camdrv.h"
 #include "driver/hitdrv.h"
 #include "evt/evt_cmd.h"
+#include "evt/evt_npc.h"
 #include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
 #include "mario/mario.h"
+#include "mario/mariost.h"
 #include "system.h"
 
 USER_FUNC(camdir) {
@@ -26,5 +29,42 @@ USER_FUNC(camdir) {
     event->lwData[3] = (s32)(1024.0f * -yaw) + 0xF24A7A80;
     event->lwData[4] = ((yaw > 90.0f && yaw < 270.0f) ? -dir : dir) * 1024 + 0xF24A7A80;
 
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.91%): only the live range of the elapsed-step `divwu` result differs; the
+// original computes it into r4 and copies it to r26 before the first intplGetValue call, MWCC
+// keeps it in r26 from the start. Values, constants and control flow otherwise match.
+USER_FUNC(evt_gazigazi_move_position) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 startX = (f32)evtGetValue(event, args[1]);
+    f32 startY = (f32)evtGetValue(event, args[2]);
+    f32 startZ = (f32)evtGetValue(event, args[3]);
+    f32 endX = (f32)evtGetValue(event, args[4]);
+    f32 endY = (f32)evtGetValue(event, args[5]);
+    f32 endZ = (f32)evtGetValue(event, args[6]);
+    s32 steps = evtGetValue(event, args[7]);
+    s32 mode = evtGetValue(event, args[8]);
+    NpcEntry* npc = evtNpcNameToPtr(event, (char*)name);
+    s32 curStep;
+    Vec pos;
+
+    if (isFirstCall) {
+        event->userdata[0] = (s32)gp->renderTime;
+    }
+    curStep = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
+    if (curStep < steps) {
+        startX = intplGetValue(mode, curStep, steps, startX, endX);
+        startY = intplGetValue(mode, curStep, steps, startY, endY);
+        startZ = intplGetValue(mode, curStep, steps, startZ, endZ);
+        pos = (Vec){ startX, startY, startZ };
+        npc->prevPosition = pos;
+        npc->position = npc->prevPosition;
+        return EVT_RETURN_BLOCK;
+    }
+    pos = (Vec){ endX, endY, endZ };
+    npc->prevPosition = pos;
+    npc->position = npc->prevPosition;
     return EVT_RETURN_DONE;
 }

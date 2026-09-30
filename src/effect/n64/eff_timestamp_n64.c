@@ -1,5 +1,8 @@
 #include "eff/n64/eff_timestamp_n64.h"
+#include "driver/dispdrv.h"
 #include "memory.h"
+
+#include <dolphin/mtx.h>
 
 typedef struct effTimestampN64Data {
 	s32 type;            // 0x0
@@ -88,4 +91,76 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 		data->field_0x14c[i] = pos_data[i][2];
 	}
 	return effect;
+}
+
+void effTimestampMain(EffectEntry* effect) {
+	effTimestampN64Data* data = effect->userdata;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
+	   dispCalcZ; a single local folds the copy away. */
+	Vec position;
+#endif
+	Vec disp = { 0.0f, 0.0f, 0.0f };
+	s32 life;
+	s32 counter;
+	s32 i;
+
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->field_0x10 = 64;
+	}
+	if (data->field_0x10 < 1000) {
+		data->field_0x10--;
+	}
+	data->field_0x14++;
+	life = data->field_0x10;
+	if (life < 0) {
+		effDelete(effect);
+		return;
+	}
+	counter = data->field_0x14;
+	if (life < 64) {
+		data->field_0x30 -= 0.05f;
+		if (data->field_0x30 < 0.0f) {
+			data->field_0x30 = 0.0f;
+		}
+	}
+	if (life < 32) {
+		data->field_0x2c += 0x80;
+		if (data->field_0x2c > 255) {
+			data->field_0x2c = 255;
+		}
+		data->field_0x30 = 0.0f;
+	}
+	if (life < 16) {
+		data->field_0x24 = life << 4;
+	}
+	if (counter < 16) {
+		data->field_0x24 = (counter << 4) + 0xf;
+	}
+	for (i = 0; i < 10; i++) {
+		if (data->field_0x14c[i] != 0) {
+			data->field_0x14c[i]--;
+			if (data->field_0x14c[i] != 0) {
+				continue;
+			}
+		}
+		data->field_0x124[i] += 8;
+		if (data->field_0x124[i] > 255) {
+			data->field_0x124[i] = 255;
+		}
+	}
+
+#ifdef MUST_MATCH
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effTimestampDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effTimestampDisp, effect);
+#endif
 }

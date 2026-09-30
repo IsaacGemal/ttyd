@@ -7,3 +7,4 @@ typedef struct EffectEntry EffectEntry;
 EffectEntry* effCoinN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale);
 #include "driver/camdrv.h"
 void effCoinDisp(CameraId camId, void* param);
+void effCoinMain(EffectEntry* effect);

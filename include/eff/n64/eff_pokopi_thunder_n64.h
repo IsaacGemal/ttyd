@@ -18,3 +18,6 @@ typedef struct EffPokopiThunderData {
 	s32 cameraId;    // 0x118
 } EffPokopiThunderData;
 void effPokopiThunderDisp(CameraId camId, void* param);
+#include "driver/effdrv.h"
+EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 endX, f32 endY, f32 endZ, f32 scale);
+void effPokopiThunderMain(EffectEntry* effect);

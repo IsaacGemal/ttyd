@@ -1343,6 +1343,73 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
 }
 
+// NONMATCHING (99.91%): only the DVDMgrOpen path materialisation order differs -- MWCC emits
+// `addi r3,r3,str@l; mr r27,r3`, the original `addi r27,r3,str@l; mr r3,r27`. Register scheduling only.
+// Returns void: the original never writes r3, and an s32 definition (or header prototype!) shifts the tail to r4.
+void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3) {
+    SoundStream* stream = &sound.streams[chan];
+    u8* e = (u8*)stream;
+    char* path;
+    int i;
+
+    if (stream->flags) {
+        SoundSSStopCh(chan);
+    }
+
+    if ((s32)a3 != 0) {
+        for (i = 0; i < sound.unk224; i++) {
+            if (sound.unk226[i] == 0) {
+                sound.unk226[i] = 1;
+                stream->unk2 = i;
+                break;
+            }
+        }
+        if (i >= sound.unk224) {
+            return;
+        }
+    }
+
+    sound.unk104 = chan;
+    *(u16*)(e + 0x74) = 0;
+    *(u32*)(e + 0x6c) = 0;
+    *(u32*)(e + 0x5c) = 0;
+    *(u32*)(e + 0x60) = 0;
+    *(u16*)(e + 0x7c) = 0;
+    *(u16*)(e + 0x7e) = 0;
+    *(u16*)(e + 0x80) = 0;
+    *(u16*)(e + 0x82) = 0;
+    *(u16*)(e + 0x84) = 0;
+    *(u16*)(e + 0xfc) = 0;
+    *(u32*)(e + 0xf4) = 0;
+    *(u32*)(e + 0xe4) = 0;
+    *(u32*)(e + 0xe8) = 0;
+    *(u16*)(e + 0x104) = 0;
+    *(u16*)(e + 0x106) = 0;
+    *(u16*)(e + 0x108) = 0;
+    *(u16*)(e + 0x10a) = 0;
+    *(u16*)(e + 0x10c) = 0;
+    stream->pan = 0x40;
+    stream->span = 0;
+    stream->unk10 = 0.0f;
+    stream->vol = 127.0f;
+    stream->flags = 1;
+    if ((s32)a3 != 0) {
+        stream->flags |= 0x400;
+    }
+
+    sprintf(str, "%s/%s%s", getMarioStDvdRoot(), a2, ".stm");
+    path = str;
+    if ((stream->entries[0].dvd = DVDMgrOpen(path, 0, 0)) == 0) {
+        stream->flags = 0;
+        return;
+    }
+    if ((stream->entries[1].dvd = DVDMgrOpen(path, 0, 0)) == 0) {
+        stream->flags = 0;
+        return;
+    }
+    DVDMgrReadAsync(stream->entries[0].dvd, stream->entries[0].unk28, 0x100, 0, SoundSSPlayChEx_main);
+}
+
 // NONMATCHING (0.16%): 626 missing.
 void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     if (result >= 0) {}

@@ -1,7 +1,9 @@
 #include "eff/n64/eff_rubble_n64.h"
 #include "eff/n64/eff_hokori_n64.h"
 #include "driver/dispdrv.h"
+#include "memory.h"
 #include <dolphin/mtx.h>
+#include <stdlib.h>
 
 const Vec vec3_802fb5a0 = { 0.0f, 0.0f, 0.0f };
 
@@ -29,7 +31,45 @@ typedef struct effRubbleData {
 } effRubbleData;
 
 extern const f32 float_0p8_8041fc38;
+extern const f32 float_0_8041fc3c;
+extern const f32 float_20_8041fc40;
+extern const f32 float_neg20_8041fc44;
+extern const f32 float_2_8041fc48;
 const f64 double_to_int_802fb5b0 = 4503601774854144.0;
+const char str_802FB5B8[] = "RubbleN64";
+
+EffectEntry* effRubbleN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
+	EffectEntry* effect;
+	effRubbleData* data;
+
+	effect = effEntry();
+	effect->type = str_802FB5B8;
+	effect->count = 1;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effRubbleData));
+	effect->userdata = data;
+	effect->callback = effRubbleMain;
+	data->type = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->field_0x10 = a5;
+	data->field_0x18 = a6;
+	data->field_0x20 = a7;
+	data->field_0x48 = life;
+	data->field_0x4C = 0;
+	data->field_0x14 = float_0_8041fc3c;
+	data->field_0x1C = float_0_8041fc3c;
+	data->field_0x24 = float_0_8041fc3c;
+	data->field_0x28 = (f32)(rand() % 360);
+	data->field_0x2C = (f32)(rand() % 360);
+	data->field_0x30 = float_0_8041fc3c;
+	data->field_0x38 = float_20_8041fc40;
+	data->field_0x34 = float_neg20_8041fc44;
+	data->field_0x44 = 0xFF;
+	data->field_0x3C = float_2_8041fc48 * a8;
+	data->field_0x40 = 0;
+	return effect;
+}
 
 void effRubbleMain(EffectEntry* effect) {
 	effRubbleData* data;

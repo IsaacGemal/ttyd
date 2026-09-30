@@ -28,6 +28,10 @@
 extern const f32 float_0_8041a7a4;
 extern const f32 float_1000_8041a7a0;
 extern const f32 float_1_8041a7bc;
+extern const f32 float_11_8041a7ac;
+extern const f32 float_13_8041a7b0;
+extern const f32 float_45_8041a7b4;
+
 extern const f32 float_0p5_8041a7c4;
 extern const f32 float_neg0p5_8041a7c8;
 extern const f32 float_0p1_8041a7e4;
@@ -1160,6 +1164,149 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
     }
     *out = float_neg1_8041a7dc;
     return NULL;
+}
+
+// The original schedules each dir vector's y-component load after the sn/cs loads
+// instead of grouping all three component loads first. The `volatile` copy keeps
+// the loads inside the loop: with the (const) table declaration the compiler
+// hoists them as loop-invariant, unlike the original, which reads a non-const
+// table. The MUST_MATCH `hit = hit ? NULL : hit` is the original's redundant
+// "if (hit == NULL) hit = NULL" test.
+// NONMATCHING (98.35%): only the y-component load scheduling of the dir vectors differs.
+s32 marioSlitChkWallAround(void) {
+    const u8* base = vec3_802c5730;
+    MarioWork* wp = marioGetPtr();
+    s32 flags[8];
+    HitEntry* hit;
+    Vec pos;
+    f32 sn;
+    f32 cs;
+    f32 angle;
+    s32 i;
+
+    pos = wp->position;
+    pos.y = pos.y + float_11_8041a7ac;
+    angle = float_0_8041a7a4;
+    {
+        HitCheckQuery query;
+
+        for (i = 0; i < 8; i++) {
+            Vec dir;
+            flags[i] = 0;
+            sincosf(&sn, &cs, angle);
+#ifdef MUST_MATCH
+            dir = *(volatile Vec*)(base + 0x1C8);
+#else
+            dir = *(const Vec*)(base + 0x1C8);
+#endif
+            dir.x = sn;
+            dir.z = cs;
+            query.targetPos = pos;
+            query.targetDir = dir;
+            query.targetDistance = float_13_8041a7b0;
+            if (marioGetPtr()->currMotionId == 0x1C) {
+                hit = hitCheckVecFilter(&query, chkfilterVecVivian);
+            } else if (marioGetPtr()->flags & 0x1000000) {
+                hit = hitCheckVecFilter(&query, chkfilterVecRoll);
+            } else {
+                hit = hitCheckVecFilter(&query, chkfilterVec);
+            }
+#ifdef MUST_MATCH
+            hit = (hit == NULL) ? NULL : hit;
+#endif
+            if (hit != NULL) {
+                if (marioChkBero(hit) == 0) {
+                    flags[i] = 1;
+                }
+            }
+            angle = angle + float_45_8041a7b4;
+        }
+    }
+
+    pos.y = wp->position.y + float_5_8041a7b8;
+    angle = float_0_8041a7a4;
+    {
+        HitCheckQuery query;
+
+        for (i = 0; i < 8; i++) {
+            Vec dir;
+            if (flags[i] != 1) {
+                sincosf(&sn, &cs, angle);
+#ifdef MUST_MATCH
+                dir = *(volatile Vec*)(base + 0x1D4);
+#else
+                dir = *(const Vec*)(base + 0x1D4);
+#endif
+                dir.x = sn;
+                dir.z = cs;
+                query.targetPos = pos;
+                query.targetDir = dir;
+                query.targetDistance = float_13_8041a7b0;
+                if (marioGetPtr()->currMotionId == 0x1C) {
+                    hit = hitCheckVecFilter(&query, chkfilterVecVivian);
+                } else if (marioGetPtr()->flags & 0x1000000) {
+                    hit = hitCheckVecFilter(&query, chkfilterVecRoll);
+                } else {
+                    hit = hitCheckVecFilter(&query, chkfilterVec);
+                }
+#ifdef MUST_MATCH
+                hit = (hit == NULL) ? NULL : hit;
+#endif
+                if (hit != NULL) {
+                    if (marioChkBero(hit) == 0) {
+                        flags[i] = 1;
+                    }
+                }
+            }
+            angle = angle + float_45_8041a7b4;
+        }
+    }
+
+    pos.y = wp->position.y + (wp->wPlayerCollisionBox.y - float_1_8041a7bc);
+    angle = float_0_8041a7a4;
+    {
+        HitCheckQuery query;
+
+        for (i = 0; i < 8; i++) {
+            Vec dir;
+            if (flags[i] != 1) {
+                sincosf(&sn, &cs, angle);
+#ifdef MUST_MATCH
+                dir = *(volatile Vec*)(base + 0x1E0);
+#else
+                dir = *(const Vec*)(base + 0x1E0);
+#endif
+                dir.x = sn;
+                dir.z = cs;
+                query.targetPos = pos;
+                query.targetDir = dir;
+                query.targetDistance = float_13_8041a7b0;
+                if (marioGetPtr()->currMotionId == 0x1C) {
+                    hit = hitCheckVecFilter(&query, chkfilterVecVivian);
+                } else if (marioGetPtr()->flags & 0x1000000) {
+                    hit = hitCheckVecFilter(&query, chkfilterVecRoll);
+                } else {
+                    hit = hitCheckVecFilter(&query, chkfilterVec);
+                }
+#ifdef MUST_MATCH
+                hit = (hit == NULL) ? NULL : hit;
+#endif
+                if (hit != NULL) {
+                    if (marioChkBero(hit) == 0) {
+                        flags[i] = 1;
+                    }
+                }
+            }
+            angle = angle + float_45_8041a7b4;
+        }
+    }
+
+    for (i = 0; i < 8; i++) {
+        if (flags[i] == 0 && flags[(i + 1) & 7] == 0 && flags[(i + 2) & 7] == 0) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 // NONMATCHING (99.35%): float_0/float_1000 are allocated f1/f0 instead of f0/f1,

@@ -306,6 +306,25 @@ EffectSet* effGetSet(const char* name) {
 	return NULL;
 }
 
+typedef struct EffectMayaAnimData {
+	u8 field_0x0[0x8]; // 0x0
+	s32* count;        // 0x8
+} EffectMayaAnimData;
+
+typedef struct EffectMayaAnim {
+	u8 field_0x0[0x10]; // 0x0
+	void* animData;     // 0x10
+} EffectMayaAnim;
+
+void* effMayaAnimAlloc(void* animData) {
+	u32 size = *((EffectMayaAnimData*)animData)->count * 0x34 + 0x18;
+	EffectMayaAnim* anim = __memAlloc(HEAP_EFFECT, size);
+
+	memset(anim, 0, size);
+	anim->animData = animData;
+	return anim;
+}
+
 void effDeleteMayaAnim(void* anim) {
 	__memFree(HEAP_EFFECT, anim);
 }

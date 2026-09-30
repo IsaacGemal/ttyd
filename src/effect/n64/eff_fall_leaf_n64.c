@@ -3,6 +3,8 @@
 #include "driver/dispdrv.h"
 #include <dolphin/mtx.h>
 #include <math.h>
+#include <stdlib.h>
+#include "memory.h"
 
 typedef struct effFallLeafParticle {
 	s32 field_0x00;       // 0x00
@@ -42,9 +44,62 @@ extern const f32 float_0p05_8041edf8;
 extern const f32 float_0p92_8041edfc;
 extern const f32 float_10_8041ee00;
 extern const f32 float_0p5_8041ee04;
+extern const f32 float_0_8041ee08;
+
+extern const char str_802FA550[];
 
 const Vec vec3_802fa538 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fa548 = 4503601774854144.0;
+
+EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
+	EffectEntry* effect;
+	effFallLeafData* data;
+	effFallLeafParticle* particle;
+	s32 i;
+
+	effect = effEntry();
+	effect->type = str_802FA550;
+	effect->count = 5;
+	data = __memAlloc(HEAP_EFFECT, 0xF0);
+	effect->userdata = data;
+	effect->callback = effFallLeafMain;
+	data->type = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->life = life;
+	data->counter = 0;
+	data->field_0x24 = 0;
+	particle = data->particle;
+	for (i = 1; i < 5; i++, particle++) {
+		switch (type) {
+		case 0:
+		case 2:
+		case 3:
+		case 4:
+			particle->x = (f32)(rand() % 50 - 25);
+			particle->y = (f32)(rand() % 50 - 25);
+			particle->z = float_0_8041ee08;
+			particle->field_0x18 = (f32)(rand() % 360);
+			particle->field_0x20 = (f32)(rand() % 360);
+			particle->field_0x1C = (f32)(rand() % 100) / float_10_8041ee00;
+			particle->field_0x10 = float_0_8041ee08;
+			particle->field_0x14 = float_0_8041ee08;
+			break;
+		case 1:
+			particle->x = (f32)(rand() % 10 - 5);
+			particle->y = (f32)(rand() % 10 + 5);
+			particle->z = float_10_8041ee00;
+			particle->field_0x18 = (f32)(rand() % 360);
+			particle->field_0x20 = (f32)(rand() % 360);
+			particle->field_0x1C = (f32)(rand() % 100) / float_10_8041ee00;
+			particle->field_0x10 = float_0_8041ee08;
+			particle->field_0x14 = float_2_8041ede0;
+			break;
+		}
+	}
+	return effect;
+}
 
 // The code and the original's instruction sequence line up; what still
 // differs is float callee-saved register allocation. The original puts the loop-invariant

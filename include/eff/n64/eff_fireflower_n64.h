@@ -27,3 +27,5 @@ typedef struct effFireFlowerData {
 } effFireFlowerData;
 EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z);
 void effFireFlowerMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effFireFlowerDisp(CameraId camId, void* param);

@@ -12,9 +12,12 @@ extern const f32 float_0p045455_8041ee1c;
 extern const f32 float_0_8041ee20;
 extern const f32 float_2p0944_8041ee24;
 extern const f32 float_neg2p0944_8041ee28;
+extern const f32 float_255_8041ee10;
+extern const f32 float_deg2rad_8041ee14;
 
 // .sbss2 zero GXColor scratch the original builds the TEV color from.
 extern GXColor unk_804230f8;
+extern GXColor unk_804230fc;
 
 // Local to this unit in the original (`.fn main_dl, local`); defined further down.
 static void main_dl(EffectEntry* effect, Mtx matrix);
@@ -58,6 +61,17 @@ static inline void effFireDustSetColor(effFireDustData* data) {
     color.b = data->field_0x48;
     color.a = data->field_0x5C;
     GXSetTevColor(GX_TEVREG1, color);
+}
+
+// Same by-value GXColor build, for the per-particle colour main_dl passes to
+// GXSetTevColor; the helper scope reproduces the original's stack slots.
+static inline void effFireDustSetVtxColor(s32 r, s32 g, s32 b, u8 a) {
+    GXColor color = unk_804230fc;
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = a;
+    GXSetTevColor(GX_TEVREG0, color);
 }
 
 // NOTE: this file's functions are emitted in reverse source order. In the original the
@@ -112,4 +126,89 @@ void effFireDustDisp(CameraId camId, void* param) {
     PSMTXConcat(outMtx, rotMtx, dispMtx);
     PSMTXConcat(cam->view, dispMtx, dispMtx);
     main_dl(effect, dispMtx);
+}
+
+// .data vertex strip; the original is a raw 0x1C0-byte object and main_dl
+// passes 0x38-byte slices of it to effSetVtxDescN64.
+static u32 size8x8_tex22x22_vtx[0x70] = {
+    0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x02C00000,
+    0x000000FF, 0x00080008, 0x000002C0, 0x02C00000, 0x00FFFFF8, 0x00080000,
+    0x000002C0, 0x000000FF, 0xFFF8FFF8, 0x000002C0, 0x00000000, 0x00FF0008,
+    0xFFF80000, 0x05800000, 0x000000FF, 0x00080008, 0x00000580, 0x02C00000,
+    0x00FFFFF8, 0x00080000, 0x02C002C0, 0x000000FF, 0xFFF8FFF8, 0x00000580,
+    0x00000000, 0x00FF0008, 0xFFF80000, 0x08400000, 0x000000FF, 0x00080008,
+    0x00000840, 0x02C00000, 0x00FFFFF8, 0x00080000, 0x058002C0, 0x000000FF,
+    0xFFF8FFF8, 0x00000840, 0x00000000, 0x00FF0008, 0xFFF80000, 0x0B000000,
+    0x000000FF, 0x00080008, 0x00000B00, 0x02C00000, 0x00FFFFF8, 0x00080000,
+    0x084002C0, 0x000000FF, 0xFFF8FFF8, 0x00000B00, 0x00000000, 0x00FF0008,
+    0xFFF80000, 0x0DC00000, 0x000000FF, 0x00080008, 0x00000DC0, 0x02C00000,
+    0x00FFFFF8, 0x00080000, 0x0B0002C0, 0x000000FF, 0xFFF8FFF8, 0x00000DC0,
+    0x00000000, 0x00FF0008, 0xFFF80000, 0x10800000, 0x000000FF, 0x00080008,
+    0x00001080, 0x02C00000, 0x00FFFFF8, 0x00080000, 0x0DC002C0, 0x000000FF,
+    0xFFF8FFF8, 0x00001080, 0x00000000, 0x00FF0008, 0xFFF80000, 0x13400000,
+    0x000000FF, 0x00080008, 0x00001340, 0x02C00000, 0x00FFFFF8, 0x00080000,
+    0x108002C0, 0x000000FF, 0xFFF8FFF8, 0x00001340, 0x00000000, 0x00FF0008,
+    0xFFF80000, 0x16000000, 0x000000FF, 0x00080008, 0x00001600, 0x02C00000,
+    0x00FFFFF8, 0x00080000, 0x134002C0, 0x000000FF,
+};
+
+static void main_dl(EffectEntry* effect, Mtx matrix) {
+    effFireDustData* data;
+    Mtx mtx, scale, rot;
+    s32 c0, c1, c2;
+    s32 i;
+    effVtxArray* vtx;
+    f32 alphaScale;
+    f32 v;
+
+    data = effect->userdata;
+    c0 = data->field_0x50;
+    c1 = data->field_0x54;
+    c2 = data->field_0x58;
+    alphaScale = (f32)data->field_0x4C / float_255_8041ee10;
+    data++;
+    for (i = 1; i < effect->count; i++, data++) {
+        if (data->field_0x30 < 0) {
+            continue;
+        }
+        PSMTXTrans(mtx, data->x, data->y, data->z);
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041ee14 * data->field_0x34);
+        v = data->field_0x60 * alphaScale;
+        PSMTXScale(scale, v, v, v);
+        PSMTXConcat(mtx, rot, mtx);
+        PSMTXConcat(mtx, scale, mtx);
+        PSMTXConcat(matrix, mtx, mtx);
+        GXLoadPosMtxImm(mtx, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        effFireDustSetVtxColor(c0, c1, c2, (u8)((f32)data->field_0x4C * alphaScale));
+        switch (i & 7) {
+            case 0:
+                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xA8);
+                break;
+            case 1:
+                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0xE0);
+                break;
+            case 2:
+                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x118);
+                break;
+            case 3:
+                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x150);
+                break;
+            case 4:
+                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x188);
+                break;
+            case 5:
+                vtx = (effVtxArray*)size8x8_tex22x22_vtx;
+                break;
+            case 6:
+                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x38);
+                break;
+            case 7:
+                vtx = (effVtxArray*)((u8*)size8x8_tex22x22_vtx + 0x70);
+                break;
+        }
+        effSetVtxDescN64(vtx);
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
+    }
 }

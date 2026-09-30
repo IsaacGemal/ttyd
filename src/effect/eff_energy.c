@@ -1,4 +1,5 @@
 #include "eff/eff_energy.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 
@@ -51,4 +52,61 @@ EffectEntry* effEnergyEntry(s32 a, s32 b, f32 p1, f32 p2, f32 p3, f32 p4, f32 p5
     }
 
     return entry;
+}
+
+void effEnergyMain(EffectEntry* effect) {
+    EnergyData* data = effect->userdata;
+#ifdef MUST_MATCH
+    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+       local before dispCalcZ; a single local folds the copy away (same idiom as
+       effLasMonMain and effGlassMain). The { 0 } literal also reproduces the
+       original's scheduling of the zero-vector loads around the userdata load. */
+    Vec position;
+#endif
+    Vec disp = { 0 };
+
+    disp.x = data->x;
+    disp.y = data->y;
+    disp.z = data->z;
+#ifdef MUST_MATCH
+    position = disp;
+#endif
+
+    if (effect->flags & 4) {
+        effect->flags &= ~4;
+        data->lifetime = 16;
+    }
+
+    if (data->lifetime < 1000) {
+        data->lifetime--;
+    }
+
+    if (data->lifetime < 16) {
+        data->alpha = data->lifetime * 16;
+    }
+
+    if (data->lifetime < 0) {
+        effDelete(effect);
+        return;
+    }
+
+    data->angle += data->angleSpeed;
+    data->scaleAnim += data->scaleSpeed;
+
+    data->alphaAnim += data->alphaSpeed;
+    if (data->alphaAnim > 0xFF) {
+        data->alphaAnim = 0xFF;
+        data->alphaSpeed = -0x20;
+    }
+
+    if (data->alphaAnim < 0) {
+        data->alphaAnim = 0;
+        data->alphaSpeed = 0x20;
+    }
+
+#ifdef MUST_MATCH
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effEnergyDisp, effect);
+#else
+    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effEnergyDisp, effect);
+#endif
 }

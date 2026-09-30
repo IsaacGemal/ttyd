@@ -33,6 +33,16 @@ void parsePop(void) {
 
 
 
+// .text:0x2F8 | 0x80083D64 | size: 0x28
+void parsePopNext(void) {
+	parse.field_0x54--;
+	((s32*)&parse.field_0x4)[parse.field_0x54] = ((s32*)&parse.field_0x30)[parse.field_0x54];
+}
+
+
+
+
+
 // NONMATCHING (2.89%): 2 instructions differ, 158 missing, plus register differences.
 BOOL parseGet1Next(s32 type, void* data) {
 	BOOL result;

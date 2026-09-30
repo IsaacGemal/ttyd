@@ -33,3 +33,4 @@ typedef struct EffThruHammerData {
 } EffThruHammerData; //0x58
 void effThruHammerMain(EffectEntry* effect);
 void effThruHammerDisp(CameraId camId, void* param);
+EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle);

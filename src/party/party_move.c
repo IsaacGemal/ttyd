@@ -13,6 +13,7 @@
 #include "party/party_move.h"
 #include "party/party_hit.h"
 #include "driver/mobjdrv.h"
+#include "driver/npcdrv.h"
 #include "party/party_motion.h"
 #include "party/party_cloud.h"
 #include "party/party_vivian.h"
@@ -1184,6 +1185,106 @@ s32 partyGetFootmarkReadId(u32 index) {
 Footmark* partyGetFootmarkPtr(u32 index) {
     u32 id = readId[index];
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
+}
+
+// The compiler does not pool the .rodata constants for this function, so it keeps two
+// pool-base registers live across the loop instead of the original's one. That shifts
+// every callee-saved register by one (stmw r20 vs r21) and leaves the four Vec/angle
+// literal offsets (@749/@755/@757/@761/@763) unnamed instead of
+// str_802CDB20+0x41c/0x440/0x44c/0x458/0x464. All opcodes and stack offsets otherwise match.
+// NONMATCHING (89.61%): one extra callee-saved register and unpooled constant relocations.
+BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
+    MarioWork* player = party->playerPtr;
+    f32 unk1AC = *(f32*)((u8*)player + 0x1AC);
+    f32 targetDist = 30.0f + *(f32*)((u8*)party + 0xF4);
+    HitCheckQuery query;
+    s32 angles[9] = {45, 135, -135, 315, -315, 180, -180, 90, -90};
+    HitEntry* hit;
+    NpcEntry* npc;
+    f32 bestX;
+    f32 bestY;
+    f32 bestZ;
+    f32 bestDist = -1.0f;
+    f32 sinv;
+    f32 cosv;
+    Vec hitNormal;
+    f32 angle;
+    u32 i;
+
+    position->x = player->position.x;
+    position->y = player->position.y;
+    position->z = player->position.z;
+
+    for (i = 0; i < 9; i++) {
+        angle = toMovedir2(unk1AC, (f32)angles[i]);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit != NULL) {
+            continue;
+        }
+
+        position->x = player->position.x;
+        position->y = player->position.y;
+        position->z = player->position.z;
+        movePos(&position->x, &position->z, 30.0f, angle);
+
+        query.targetDistance = 87.0f;
+        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+        query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            continue;
+        }
+        if (unk_800c8dd0(hit) != 0) {
+            continue;
+        }
+        {
+            hitNormal = query.hitNormal;
+            if (partyNrmToAngle(&hitNormal) > 60.0f) {
+                continue;
+            }
+        }
+        {
+            BOOL proceed;
+            if (hit == NULL) {
+                proceed = FALSE;
+            } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                proceed = FALSE;
+            } else if (unk_800c8dd0(hit) != 0) {
+                proceed = FALSE;
+            } else {
+                proceed = TRUE;
+            }
+            if (!proceed) {
+                continue;
+            }
+        }
+
+        npc = npcNearDistCheck(position->x, position->y, position->z, *(f32*)((u8*)party + 0xF4));
+        if (npc != NULL) {
+            if (bestDist < PSVECDistance(&npc->position, position)) {
+                bestDist = PSVECDistance(&npc->position, position);
+                bestX = position->x;
+                bestY = position->y;
+                bestZ = position->z;
+            }
+        } else {
+            position->y = query.hitPos.y;
+            marioChkWallAround(position, 1, 2.0f, 0.0f, *(f32*)((u8*)party + 0xF4),
+                               *(f32*)((u8*)party + 0xF0));
+            return TRUE;
+        }
+    }
+    if (bestDist >= 0.0f) {
+        position->x = bestX;
+        position->y = bestY;
+        position->z = bestZ;
+        return TRUE;
+    }
+    return FALSE;
 }
 
 // NONMATCHING (72.32%): the Vec-literal stack layout differs.

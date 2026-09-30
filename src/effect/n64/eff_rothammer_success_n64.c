@@ -1,5 +1,7 @@
 #include "eff/n64/eff_rothammer_success_n64.h"
 #include "driver/dispdrv.h"
+#include "memory.h"
+#include <math.h>
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_water_damage.c).
 static inline Vec initializeVec(Vec* input) {
@@ -9,6 +11,40 @@ static inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
+}
+
+EffectEntry* effRotHammerSuccessN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, s32 a6) {
+    EffectEntry* effect;
+    effRotHammerSuccessData* data;
+    f32 angle;
+    s32 i;
+
+    effect = effEntry();
+    effect->type = "RotHammerSuccessN64";
+    effect->count = count + 1;
+    data = __memAlloc(HEAP_EFFECT, (count + 1) * sizeof(effRotHammerSuccessData));
+    effect->userdata = data;
+    effect->callback = effRotHammerSuccessMain;
+    data->field_0x24 = a6;
+    data->field_0x28 = 0;
+    data->field_0x2c = a6;
+    data->type = type;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    for (i = 1, data++; i < count + 1; i++, data++) {
+        data->position.x = 0.0f;
+        data->position.y = 0.0f;
+        data->position.z = 0.0f;
+        angle = 6.2831855f * (f32)((i - 1) * 360 / count) / 360.0f;
+        data->velocity.x = 8.0f * (f32)sin(angle);
+        data->velocity.y = 8.0f * (f32)cos(angle);
+        data->velocity.z = 0.0f;
+        data->angle = 0.0f;
+        data->field_0x20 = 20.0f;
+        data->scale = 1.0f;
+    }
+    return effect;
 }
 
 void effRotHammerSuccessMain(EffectEntry* effect) {

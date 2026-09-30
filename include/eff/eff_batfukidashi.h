@@ -14,3 +14,5 @@ typedef struct CoinFukidashiData {
 } CoinFukidashiData;
 EffectEntry* effCoinFukidashiEntry(s32 type, s32 coinNum, s32 count, f32 x, f32 y, f32 z);
 void effCoinFukidashiMain(EffectEntry* effect);
+#include "driver/camdrv.h"
+void effCoinFukidashiDisp(CameraId cameraId, void* param);

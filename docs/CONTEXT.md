@@ -2227,3 +2227,15 @@ functions. Plus a periodic Codex audit of everything merged since the last one (
 audit of 802807f..0f455e3 found nine tool bugs the per-PR Claude reviews had missed (it ran the tools on crafted
 inputs rather than reading diffs): scratch/codex-audit/. Fixes after a review aren't re-reviewed, only rebuilt and
 checked, so reviews should be asked to say which findings need a second look after fixing.
+
+## Wave 23: the next untouched function per dol file (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Wave 21's recipe again, on the next 0% function of 179 dol files (median 576 bytes, nearly all in existing files),
+45 minutes each, 19:48-21:40; the prompt now told agents to stay inside their workspace. **129 at 100%, 41 at
+90-99%, 7 at 50-89%, 2 unchanged. Functions 5,724 -> 5,851.** Main had moved during the wave (Claude #3's PRs touched
+some of the same files), so collection was a three-way merge per file (base: main at launch, ce513a4): 175 clean,
+1 new, 3 kept main's version on conflict (mot_yoshi, unit_object_tree, battle_damage). Fixed at collection: agents'
+duplicate prototypes where the definition says otherwise (tri2, SoundSSPlayChEx, effFallLeafN64Entry,
+effFlowerN64Entry, effGlassN64Entry); eff_pturn_n64 kept at main's version (its header's struct merged badly);
+evt_paper_entry defined by both #41 and an agent (kept #41's). Lesson: a per-file three-way merge makes a wave
+safe to collect onto a moving main; the remaining conflicts are prototypes two writers guessed differently.

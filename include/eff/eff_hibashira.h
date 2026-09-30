@@ -18,3 +18,4 @@ typedef struct HibashiraData {
 	s32 field_0x24; // 0x24
 } HibashiraData;
 void effHibashiraDisp(CameraId camId, void* param);
+void effHibashiraMain(EffectEntry* effect);

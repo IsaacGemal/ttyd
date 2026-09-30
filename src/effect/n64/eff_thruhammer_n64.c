@@ -2,8 +2,59 @@
 #include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "memory.h"
 #include <dolphin/mtx.h>
 #include <math.h>
+
+const char str_802FB858[] = "ThruHammerN64";
+
+const f64 double_to_int_802fb850 = 4503601774854144.0;
+
+EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
+	EffectEntry* effect;
+	EffThruHammerData* data;
+	s32 count;
+	s32 i;
+
+	effect = effEntry();
+	count = 1;
+	switch (type) {
+	case 0:
+		count = 4;
+		break;
+	case 1:
+	default:
+		count = 1;
+		break;
+	}
+	effect->type = str_802FB858;
+	effect->count = count + 1;
+	data = __memAlloc(HEAP_EFFECT, (count + 1) * 0x58);
+	effect->userdata = data;
+	effect->callback = effThruHammerMain;
+
+	data->field_0x28 = 60;
+	data->field_0x2C = 0;
+	data->type = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->field_0x38 = 0xFF;
+	data->field_0x50 = 0;
+	data->field_0x51 = 0xFF;
+	data->field_0x52 = 0x7A;
+	data->field_0x53 = 0xF0;
+	data->field_0x54 = 0xFF;
+	data->field_0x55 = 0xFA;
+
+	for (i = 1, data++; i < count + 1; i++, data++) {
+		data->field_0x4C = -1 - (i - 1) * 4;
+		data->field_0x34 = angle;
+		data->field_0x30 = (f32)(i * 30);
+	}
+
+	return effect;
+}
 
 //local helper
 static inline Vec initializeVec(Vec* input) {

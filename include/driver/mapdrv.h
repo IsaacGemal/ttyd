@@ -259,3 +259,4 @@ typedef struct MapMaterialTex {
     MapMatTexMtx entries[];   // 0x2C
 } MapMaterialTex;
 void mapSetTextureMatrix(MapMaterialTex* material);
+void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force);

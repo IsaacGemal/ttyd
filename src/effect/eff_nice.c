@@ -9,9 +9,13 @@ extern GlobalWork* gp;
 
 // .sdata2 named float constants
 extern const f32 float_0p017453_8041cba4;
-extern const f32 float_0_8041cbb0;
-extern const f32 float_1_8041cbb8;
+extern f32 float_20_8041cba8;
+extern f32 float_0p5_8041cbac;
+extern f32 float_0_8041cbb0;
+extern f32 float_10_8041cbb4;
+extern f32 float_1_8041cbb8;
 extern const f32 float_8_8041cbd4;
+extern const GXColor dat_8041cba0;
 
 //.sdata
 const char* anim_jp[] = {
@@ -151,3 +155,85 @@ void effNiceDisp(CameraId camId, void* param) {
 	animPoseDrawMtx(data->poseId, mtxFinal, 2, float_0_8041cbb0, float_1_8041cbb8);
 	animPoseDrawMtx(data->poseId, mtxFinal, 3, float_0_8041cbb0, float_1_8041cbb8);
 }
+
+#pragma opt_common_subs off // without it MWCC CSEs the repeated float_0/float_1 pool loads in the GX vertex block
+// NONMATCHING (99.91%): only the two loop-increment stores are scheduled in the opposite order
+// (`addi r29,r29,4` texidx vs `addi r28,r28,0x64` data++); every other instruction is identical.
+void effAcrobatDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	NiceEffectWork* data = effect->userdata;
+	CameraEntry* camera = camGetPtr(camId);
+	Mtx mtxTrans;
+	Mtx mtxRot;
+	Mtx mtxScale;
+	Mtx mtxFinal;
+	GXTexObj texObj;
+	s32 i;
+	f32 max, negSize, min;
+	f32 offsetX, offsetY;
+
+	PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
+	PSMTXScale(mtxScale, data->field_0x1C, data->field_0x1C, data->field_0x1C);
+	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_0p017453_8041cba4);
+	PSMTXConcat(mtxTrans, mtxRot, mtxFinal);
+	PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
+
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+	GXSetNumChans(1);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetChanMatColor(GX_COLOR0A0, dat_8041cba0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+	max = float_10_8041cbb4;
+	negSize = -float_20_8041cba8;
+	min = negSize * float_0p5_8041cbac;
+	i = 1;
+	data = data + 1;
+	for (; i < effect->count; i++, data++) {
+		if (data->field_0x28 < 6) {
+			offsetX = negSize * float_0p5_8041cbac;
+			offsetY = float_0_8041cbb0;
+		}
+		else {
+			offsetX = float_0_8041cbb0;
+			offsetY = negSize * float_0p5_8041cbac;
+		}
+		PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
+		PSMTXTrans(mtxRot, offsetX, offsetY, float_0_8041cbb0);
+		PSMTXScale(mtxScale, data->field_0x10, data->field_0x14, data->field_0x18);
+		PSMTXConcat(mtxRot, mtxScale, mtxScale);
+		PSMTXTrans(mtxRot, -offsetX, -offsetY, float_0_8041cbb0);
+		PSMTXConcat(mtxScale, mtxRot, mtxScale);
+		PSMTXConcat(mtxTrans, mtxScale, mtxScale);
+		PSMTXConcat(mtxFinal, mtxScale, mtxScale);
+		PSMTXConcat(camera->view, mtxScale, mtxScale);
+		GXLoadPosMtxImm(mtxScale, 0);
+		GXSetCurrentMtx(0);
+
+		effGetTexObj(acrobal_tbl[gp->language][i - 1], &texObj);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+		GXPosition3f32(min, max, float_0_8041cbb0);
+		GXTexCoord2f32(float_0_8041cbb0, float_0_8041cbb0);
+		GXPosition3f32(max, max, float_0_8041cbb0);
+		GXTexCoord2f32(float_1_8041cbb8, float_0_8041cbb0);
+		GXPosition3f32(max, min, float_0_8041cbb0);
+		GXTexCoord2f32(float_1_8041cbb8, float_1_8041cbb8);
+		GXPosition3f32(min, min, float_0_8041cbb0);
+		GXTexCoord2f32(float_0_8041cbb0, float_1_8041cbb8);
+	}
+}
+#pragma opt_common_subs on
