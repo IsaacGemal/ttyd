@@ -26,3 +26,4 @@ f32 marioGetMoveRate(f32 angle);
 f32 toMovedir2(f32 a, f32 b);
 f32 partyToMovedir(PartyEntry* party, f32 dir);
 void N_marioReloadMapOnBottomlessOn(void);
+void N_marioReloadMapOnBottomlessOff(void);

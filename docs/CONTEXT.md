@@ -3024,3 +3024,35 @@ retail). Labels that blamed the wrong cause are rewritten.
 - **`eff_sandars` linked** by keeping the first constants named (`dat` x2, deg2rad, 32, 0.5, 16, i.e. up to the last one the original loads by name) and turning every later constant, the `Z_1` string and the `0.0f`/`1.0f` `MATCH_VOLATILE` views into literals: the literals pool in first-use order after the named ones, which is the original's interleaving, and a literal zero/one load then reads its own pool slot instead of a named slot at another offset (one byte in the dol). `tools/pool_prefix.py UNIT [--apply]` tries k = 0..n named constants (after `pool_define`) and reports the worst function and whether `.sdata2` is equal; `tools/pool_floats.py --keep=` does the conversion. For `eff_break`, `eff_mist2`, `eff_magic3`, `eff_peach_dust`, `eff_kemuri9` no k gives 100% with an equal pool (kemuri9: k>=7 is 100% but leaves the `0.0f`/`1.0f` literals of the vertex writes as extra entries; k=0..6 is 99.88%, an operand-order swap of the hoisted 0.5).
 - **Definitions before the code fold, after the code do not.** `mot_dokan` defines its named floats before the code (function 100%, but a second copy of every literal lands in `.sdata2`); moving the definitions after the code gives the right pool (with the `M_Z_1` string defined after `float_0`) but `mot_dokan` drops to 99.52% (hoisted loads in other registers). `countdown`: the `dat_` colours must be `extern const u32` + defined after the code, the zero word in `.sbss` is a `u32` declared before `wp`; a literal 300.0f (the pool needs it after the 0.5) drops `countDownMain` to 97.81%.
 - Permuter wins: `checkOneRevolution` 100% (a pointer to the ring head taken before the loop, `MUST_MATCH`), `unk_8017599c` 99.96% (scale `pos.y` before `pos.x`).
+
+## Wave 40: DOL whole-file pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+At Claude #1's suggestion, the DOL files its near-miss waves leave behind: every open function either untouched and
+over 1 KB or partial below 80% (41 files, 67 functions; library units are out of scope, ported as libs). One agent
+per file on all its open functions, 60-120 minutes by size, sharing the tower with wave 38 through a slot check.
+data/database and data/battle/battle_item_data had no source (src/database.c and src/battle/battle_item_data.c are
+other units): their skeletons come from dol_gen with global declarations in include/data/*.h.
+
+**Collection.** Agents again declared retail constants as externs; replacing them with literals moved FP loads in
+functions that were at 100%, so they are defined after the code in the original order with tools/pool_define.py
+(Claude #3's), which leaves the code unchanged. Left out: mot_ship, evt_item, battle_item_data, eff_small_star,
+eff_sleep, eff_opuku_wcurtain (a section score drops), eff_pokopi_thunder (a 100% function slips), ac_stick_keep_left and
+eff_kameki_tornade (pragmas without a match). Kept pragmas state retail facts: dont_inline where retail calls the
+helper with bl, optimize_for_size where retail saves registers with stmw.
+
+**Result:** mot_yoshi, mario_cam and battle_ac_help link; 8,181 -> 8,196 functions. Seven more units are code-complete
+but reference data their split owns through undefined stand-ins (tools/finish_unit.py is the next step for them).
+
+**Review** (fresh Claude) found seven wrong behaviours, all fixed: fadeEntry mapped fade types 41-48 to the wrong
+animations (the pipe fades were shifted by two); disp_texture loaded a 3x4 texture matrix for retail's 2x4; seq_load's
+copy screens read the wrong window table; eff_stardust2's sin argument had its sign flipped; ac_gauge_timing checked
+the wrong field for success, computed the gauge ratio from the unclamped value (100x too large) and drew the wrong
+button; ac_signal_timing's u8 states never compared equal to -1, so the NG mark never drew. Also retail-exact floats
+(0.59999996f, 0.16000001f, 0.080000006f) and eff_sstar's first rotation angle. Stubs carried over from main remain:
+fadeMain (4.3 KB) and BattleBreakSlot_Main (5.6 KB).
+Codex's review of #106: seq_load reached win_dt/win_dt2/win_dt3 through npc_event's lbl_80349DE8 plus fixed offsets;
+that stays only under MUST_MATCH, with the named tables in #else; evt_shake and evt_continue are EVT macros (the latter
+passing the file's named strings, which keeps .sdata at 100%). Every changed file compiles without MUST_MATCH. Normal
+for NonMatching units and noted here: eight of this wave's units still reference data their split owns through
+undefined stand-ins (they link only after tools/finish_unit.py), and seq_load's loadDraw is registered but still a
+TODO.

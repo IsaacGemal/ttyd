@@ -10,4 +10,11 @@ typedef struct ParseWork {
 	u8 field_0x30[0x54 - 0x30]; //0x30
 	s32 field_0x54; //0x54
 } ParseWork;
+void parseInit(void* ptr, u32 size);
+BOOL parsePush(const char* tag);
+void parsePop(void);
 void parsePopNext(void);
+BOOL parseTagGet1(const char* tag, s32 type, void* data);
+BOOL parseGet1Next(s32 type, void* data);
+// libc's stdio.h here doesn't declare it
+int sscanf(const char* str, const char* format, ...);
