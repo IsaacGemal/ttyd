@@ -5,7 +5,12 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
+
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423070;
+
 
 static u8 color_rotation_data[24] = {
 	0xFF, 0xFF, 0x52, 0xFF, 0xFF, 0x52, 0xB5, 0x94, 0x00, 0xB5, 0x94, 0x00,
@@ -19,7 +24,6 @@ const GXColor dat_8041e334 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_8041e338 = { 0xF1, 0x4B, 0x41, 0x00 };
 const GXColor dat_8041e33c = { 0xC9, 0xC0, 0xCF, 0x00 };
 const GXColor dat_8041e340 = { 0xFF, 0xFF, 0xFF, 0x00 };
-GXColor unk_80423070;
 
 #ifdef MUST_MATCH
 // MUST_MATCH: non-const (pinned to .rodata, as kpa_act.c does) so MWCC assumes the store to
@@ -29,14 +33,13 @@ __declspec(section ".rodata") Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
 #endif
-const char str_802F8E98[] = "TogeFlush";
 
 EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
 	EffectEntry* entry;
 	effTogeFlushData* data;
 
 	entry = effEntry();
-	entry->type = str_802F8E98;
+	entry->type = "TogeFlush";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x34);
 	entry->userdata = data;
