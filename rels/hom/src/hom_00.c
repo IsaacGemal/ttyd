@@ -623,7 +623,6 @@ s32 tokei(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.62%): register allocation and scheduling differ.
 static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     MapObject* obj = mapGetMapObj("sun");
 
@@ -643,8 +642,15 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else {
+#ifdef MUST_MATCH
+        // MUST_MATCH: the volatile pointer holds the four halfword loads in the original's order; without it
+        // the scheduler moves the y0 `subi` one slot ahead of the y1 load.
+        volatile u16* p = (volatile u16*)((u8*)obj + 0xEC);
+        envGlareFilter(1, (s16)(p[1] - 0x32), (s16)(p[0] - 0x32), (s16)(p[3] + 0x32), (s16)(p[2] + 0x32));
+#else
         envGlareFilter(1, (s16)(*(u16*)((u8*)obj + 0xEE) - 0x32), (s16)(*(u16*)((u8*)obj + 0xEC) - 0x32),
                        (s16)(*(u16*)((u8*)obj + 0xF2) + 0x32), (s16)(*(u16*)((u8*)obj + 0xF0) + 0x32));
+#endif
     }
     return 0;
 }
