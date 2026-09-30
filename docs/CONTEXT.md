@@ -2218,3 +2218,4 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
   uranoko's pool order (1.0 before 0.125), and scanning builds `disp` from a second `Vec` local. peach_fukidashi's `.sdata2`
   pool is plain literals (the colour is a `static const GXColor` at the top of `effPeachFukidashiDisp`), with the functions in
   reverse address order in the source. Its `vec3_802fdc28`/`dat_802fdc34` rodata are still stand-ins.
+- **win_mario**: `unk_8016af5c` and `winZenkakuStr` match (only pool symbol names differ): the digit table and the `"-"`, `""`, `"%d"` strings are literals (they pool into `.sdata2`/`.rodata` by themselves), the `char` buffer is `signed char`, the index is `u32`, and the static buffer is used directly instead of through an `out` pointer.
