@@ -1099,6 +1099,112 @@ inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShape
 }
 
 // materialProc
+// NONMATCHING (92.79%): the animSetMaterial_Texture call is inlined away (its body is still an empty stub); register allocation also differs (draw/i in r29/r31 are swapped, and the inlined
+// ChangeTexture's pointer arguments evaluate right-to-left instead of the original's left-to-right; calls,
+// constants and instruction stream are otherwise identical).
+void materialProc(s32 shapeId, s32 field_0x28) {
+    CameraEntry* camera;
+    AnimationPoseData* data;
+    AnimPoseShape *shapes, *shape;
+    AnimPoseShapeDraw *draws, *draw;
+    s32 dispMode, drawId;
+    s32 texCount;
+    Mtx* mtx;
+    GXTexObj* texObj;
+    BOOL texChange1, check1;
+    GXTexObj* currTexObj;
+    Vec lightPos, lightPos2;
+    Mtx camMtx, invCamMtx;
+    s32 drawCount;
+    int i;
+
+    if (shapeId != -1) {
+        camera = camGetCurPtr();
+        MTXConcat(camera->view, *g_modeling_mtx, camMtx);
+        GXLoadPosMtxImm(camMtx, 0);
+        MTXInvXpose(camMtx, invCamMtx);
+        GXLoadNrmMtxImm(invCamMtx, 0);
+        GXSetCurrentMtx(0);
+
+        data = wp->mpCurPoseData;
+        shapes = data->shapes;
+        draws = data->draws;
+        shape = &shapes[shapeId];
+        dispMode = shape->dispMode;
+        drawId = shape->shapeDrawStart;
+        drawCount = shape->shapeDrawCount;
+        draw = &draws[drawId];
+
+        if ((dispMode == 0 && wp->currDispMode == 2) || dispMode == wp->currDispMode ||
+            wp->mpCurPose->materialColor.a != 0xFF || wp->mpCurPose->materialColor2.a != 0xFF) {
+            GXSetCullMode(tbl[shape->cullMode]);
+            for (i = 0; i < drawCount; i++, draw++) {
+                texCount = draw->texCount;
+                if ((u32)wp->mpCurPose->disableDraw == 0) {
+                    lightPos = vec3_802c2db0[0];
+                    MTXMultVec(*g_modeling_mtx, &lightPos, &lightPos);
+                    lightPos2 = lightPos;
+                    mapSetMaterialLight(wp->mpCurPose->materialLightFlag, lightPos2);
+                    animSetMaterial_Texture(draw->texCount, draw->texDataIds, wp->mpCurPoseData->texData,
+                                            wp->mpCurPose->mpTexAnimEntries, wp->mpCurPoseData->texBindCount,
+                                            wp->mpCurPoseData->texBinds,
+                                            &wp->textures[wp->files[wp->mpCurPose->fileId].textureId]);
+                    mapSetMaterialLastStageBlend(wp->mpCurPose->materialFlag, wp->mpCurPose->materialColor,
+                                                 wp->mpCurPose->materialColor2);
+                    camera = camGetPtr(CAMERA_3D);
+                    if (camGetCurPtr() == camera) {
+                        mapSetMaterialFog();
+                    }
+                    mapSetMaterialTev(texCount, draw->drawMode, wp->mpCurPose->materialFlag, *g_modeling_mtx);
+                }
+                if ((u32)wp->mpCurPose->typeFlags != 0) {
+                    texChange1 = animSetMaterial_ChangeTexture(wp->mpCurPoseData, draw, wp->mpCurPose, *wp->paperMtxPtr[0],
+                                                               wp->mpTexDatas[0], wp->mpTexObjs[0], 1);
+                    check1 = texChange1;
+                    if (!texChange1) {
+                        check1 = animSetMaterial_ChangeTexture(wp->mpCurPoseData, draw, wp->mpCurPose, *wp->paperMtxPtr[1],
+                                                               wp->mpTexDatas[1], wp->mpTexObjs[1], 2);
+                    }
+                    if (check1 && !draw->drawMode) {
+                        currTexObj = wp->mpCurTexObj;
+                        if (currTexObj) {
+                            smartTexObj(currTexObj, wp->mpCurTexData);
+                            if (wp->currDispMode != 3) {
+                                GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+                                GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+                                GXSetZCompLoc(GX_FALSE);
+                                GXSetAlphaCompare(GX_GEQUAL, 0x80u, GX_AOP_OR, GX_NEVER, 0);
+                            }
+                            texObj = wp->mpTexObjs[texChange1 == 0];
+                            if (texObj) {
+                                GXLoadTexObj(texObj, GX_TEXMAP0);
+                                GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE,
+                                                  GX_PTIDENTITY);
+                                GXLoadTexMtxImm(*wp->paperMtxPtr[texChange1 == 0], GX_TEXMTX0, GX_MTX2x4);
+                            }
+                            GXLoadTexObj(currTexObj, GX_TEXMAP1);
+                            GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE,
+                                              GX_PTIDENTITY);
+                            GXLoadTexMtxImm(*wp->paperMtxPtr[2], GX_TEXMTX1, GX_MTX2x4);
+                            mapSetMaterialTev(2, 12, wp->mpCurPose->materialFlag, *g_modeling_mtx);
+                        }
+                    }
+                }
+
+                if (wp->mpCurPose->flags & 0x10) {
+                    texObj = wp->mpTexObjs[0];
+                    if (texObj) {
+                        mtx = wp->paperMtxPtr[0];
+                        if (mtx) {
+                            animSetMaterial_ChangeTexture(wp->mpCurPoseData, draw, wp->mpCurPose, *mtx, wp->mpTexDatas[0],
+                                                          texObj, 1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 // I'm so sorry, whoever gets tasked with matching this function
 // note: I detect at least 8 inlined functions here, good luck finding the separation

@@ -4,6 +4,7 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "math_ext.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
@@ -15,6 +16,24 @@ const f64 double_to_int_802fb4b0 = 4503601774854144.0;
 
 // .rodata: effect type name.
 const char str_802FB4B8[] = "RappaN64";
+
+// .data: one effVtxArray (0x38 bytes) for the textured quad.
+static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
+	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008,
+	0xFFF80000, 0x04000000, 0x000000FF, 0x00080008,
+	0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000,
+	0x00000400, 0x000000FF,
+};
+
+// .sdata: byte-indexed color rotation table (36 bytes).
+static u8 color_rotation_data[36] = {
+	0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,
+	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
+	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
+};
+
+// .sbss2: shared scratch GXColor, only its bytes are overwritten (see eff_small_star_n64.c).
+GXColor unk_80423230;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_sstar.c).
 inline Vec initializeVec(Vec* input) {
@@ -128,4 +147,80 @@ void effRappaMain(EffectEntry* effect) {
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRappaDisp, e);
+}
+
+// Building the TEV colour in an inlined helper allocates it at r1+0x8 and word-copies it to the
+// outgoing arg slot at r1+0xc (the original's layout); building it directly in effRappaDisp puts
+// it at r1+0xc (the known GXColor temp/pass swap, see eff_onpu_n64.c).
+static inline void rappaSetColor(s32 idx1, s32 idx2, s32 idx3, s32 alpha) {
+	GXColor color = unk_80423230;
+
+	color.r = color_rotation_data[idx1 % 36];
+	color.g = color_rotation_data[idx2 % 36];
+	color.b = color_rotation_data[idx3 % 36];
+	color.a = alpha;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+
+void effRappaDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	s32 idx1;
+	s32 idx2;
+	s32 idx3;
+	effRappaData* data;
+	s32 base;
+	s32 i;
+	s32 alpha;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	Mtx mtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	f32 scale;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	alpha = data->alpha;
+	base = (data->counter - 1) * 3;
+	base %= 36;
+
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	PSMTXScale(scaleMtx, float_0p0625_8041fad8, float_0p03125_8041fadc, float_0_8041fae0);
+	GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
+	effGetTexObjN64(0x1D, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
+	GXSetCullMode(GX_CULL_NONE);
+	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+
+	idx1 = base + 3;
+	idx2 = base + 4;
+	idx3 = base + 5;
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		rappaSetColor(idx1, idx2, idx3, alpha);
+
+		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
+		PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fae4 * -camGetPtr(CAMERA_3D)->viewYaw);
+		scale = data->field_0x24;
+		PSMTXScale(scaleMtx, scale, scale, float_1_8041fae8);
+		PSMTXConcat(mtx, rotMtx, mtx);
+		PSMTXConcat(mtx, scaleMtx, mtx);
+		PSMTXConcat(cam->view, mtx, mtx);
+		GXLoadPosMtxImm(mtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+
+		idx1 += 3;
+		idx2 += 3;
+		idx3 += 3;
+	}
 }

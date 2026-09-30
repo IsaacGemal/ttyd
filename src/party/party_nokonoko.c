@@ -8,7 +8,8 @@
 #include "driver/itemdrv.h"
 #include "pmario_sound.h"
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
+#include "system.h"
 #include "matching.h"
 
 // nokonoko_use sound effect handle (sbss).
@@ -328,6 +329,140 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
             }
         }
     }
+}
+
+// Four floor/wall probes; control flow and constants match, remaining diffs are
+// float register allocation in the probe origins and the normal projection.
+// NONMATCHING (92.6%): see REPORT.md for details.
+HitEntry* ccwall(PartyEntry* party, s32 flag) {
+    u8* p = (u8*)party;
+    HitEntry* hit;
+    f32 sinV, cosV;
+    f32 distance;
+    f32 hitX, hitY, hitZ;
+    f32 hitNX, hitNY, hitNZ;
+    f32 sin2, cos2;
+    f32 sin3, cos3;
+    f32 sin4, cos4;
+    f32 y;
+    f32 f31;
+    f32 nx, nz;
+    f32 dot;
+    f32 oy;
+    f32 x, z;
+
+    y = 10.0f;
+
+    oy = party->position.y + *(f32*)(p + 0xF0) + y;
+    distance = *(f32*)(p + 0xF0) + 30.0f;
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, party->position.x, oy,
+                         party->position.z, 0.0f, -1.0f, 0.0f);
+    if (((hitGetAttr(hit) >> 9) & 1) == 1) {
+        hit = NULL;
+    }
+    *(HitEntry**)((u8*)party + 0x138) = hit;
+    if (hit != NULL) {
+        f32 py;
+        hitY = (f32)(s32)(100.0f * hitY + 0.5f) / 100.0f;
+        py = (f32)(s32)(100.0f * party->position.y + 0.5f) / 100.0f;
+        if (__fabsf(py - hitY) <= 11.0f) {
+            if (py <= hitY) {
+                if (flag == 0) {
+                    party->position.y = hitY;
+                    if (__fabsf(py - hitY) >= 1.0f) {
+                        *(s16*)(p + 0x17E) |= 0x2;
+                    }
+                }
+            } else {
+                if ((*(s16*)(p + 0x17E) & 0x2) != 0 && flag == 1) {
+                    party->position.y = hitY;
+                }
+                if (__fabsf(py - hitY) <= 6.0f) {
+                    party->position.y = hitY;
+                }
+            }
+        }
+    }
+
+    *(HitEntry**)((u8*)party + 0x130) = NULL;
+    *(HitEntry**)((u8*)party + 0x12C) = NULL;
+    y += 1.0f;
+
+    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
+    x = party->position.x;
+    z = party->position.z;
+    oy = party->position.y + y;
+    sincosf(&sinV, &cosV, party->dir);
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, 0.0f, cosV);
+    if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
+        sincosf(&sin2, &cos2, party->dir + 180.0f);
+        party->position.x = hitX + 0.5f * (*(f32*)(p + 0xF4) * sin2);
+        party->position.z = hitZ + 0.5f * (*(f32*)(p + 0xF4) * cos2);
+        nx = hitNX;
+        nz = hitNZ;
+        dot = party->speed * sinV * nx + party->speed * cosV * nz;
+        party->position.x += 0.5f * (party->speed * sinV - dot * nx);
+        party->position.z += 0.5f * (party->speed * cosV - dot * nz);
+        if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
+            *(HitEntry**)((u8*)party + 0x130) = hit;
+        }
+        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        return hit;
+    }
+
+    f31 = 0.4f * *(f32*)(p + 0xF4);
+    z = party->position.z + f31 * (f32)cos((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
+    x = party->position.x + f31 * (f32)sin((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
+    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
+    oy = party->position.y + y;
+    sincosf(&sinV, &cosV, party->dir);
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, 0.0f, cosV);
+    if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
+        sincosf(&sin3, &cos3, party->dir + 180.0f);
+        party->position.x = hitX + 0.5f * (*(f32*)(p + 0xF4) * sin3);
+        party->position.z = hitZ + 0.5f * (*(f32*)(p + 0xF4) * cos3);
+        party->position.z -= f31 * (f32)cos((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
+        party->position.x -= f31 * (f32)sin((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
+        nx = hitNX;
+        nz = hitNZ;
+        dot = party->speed * sinV * nx + party->speed * cosV * nz;
+        party->position.x += 0.5f * (party->speed * sinV - dot * nx);
+        party->position.z += 0.5f * (party->speed * cosV - dot * nz);
+        if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
+            *(HitEntry**)((u8*)party + 0x130) = hit;
+        }
+        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->position.x = hitX;
+        return hit;
+    }
+
+    f31 = 0.4f * *(f32*)(p + 0xF4);
+    z = party->position.z + f31 * (f32)cos((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
+    x = party->position.x + f31 * (f32)sin((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
+    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
+    y = party->position.y + y;
+    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
+    sincosf(&sinV, &cosV, party->dir);
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, sinV, 0.0f, cosV);
+    if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
+        sincosf(&sin4, &cos4, party->dir + 180.0f);
+        party->position.x = hitX + 0.5f * (*(f32*)(p + 0xF4) * sin4);
+        party->position.z = hitZ + 0.5f * (*(f32*)(p + 0xF4) * cos4);
+        party->position.z -= f31 * (f32)cos((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
+        party->position.x -= f31 * (f32)sin((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
+        nx = hitNX;
+        nz = hitNZ;
+        dot = party->speed * sinV * nx + party->speed * cosV * nz;
+        party->position.x += 0.5f * (party->speed * sinV - dot * nx);
+        party->position.z += 0.5f * (party->speed * cosV - dot * nz);
+        if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
+            *(HitEntry**)((u8*)party + 0x130) = hit;
+        }
+        *(HitEntry**)((u8*)party + 0x12C) = hit;
+        party->position.x = hitX;
+        return hit;
+    }
+    return NULL;
 }
 
 void nokotaro_hold_cancel(PartyEntry* party) {

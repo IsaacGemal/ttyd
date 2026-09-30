@@ -1,11 +1,26 @@
 #include "eff/eff_nice.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "mario/mariost.h"
 #include "memory.h"
+#include "pmario_sound.h"
+#include "system.h"
 #include <string.h>
 
 extern GlobalWork* gp;
+
+// acrobatMain mixes the two local Vecs: `disp` is zeroed then overwritten from the
+// first entry, and a second `position` local is copied from it before dispCalcZ.
+// vec3_802f3748 is this unit's data (retail .rodata:0xb0); the compiler pools the zero
+// for `disp` and the int->float 2^52 double right behind it, so define it to keep those
+// pool entries at vec3_802f3754 (0xbc), str_802F3760 (0xc8) and double_to_int (0xe0).
+extern const f32 float_500_8041cbbc;
+extern const f32 float_0p4_8041cbc0;
+extern const f32 float_1p5_8041cbc4;
+extern const f32 float_0p2_8041cbc8;
+extern const f32 float_0p1_8041cbcc;
+extern const f32 float_2_8041cbd0;
 
 // .sdata2 named float constants
 extern const f32 float_0p017453_8041cba4;
@@ -40,6 +55,9 @@ const char** anim_tbl[2] = { anim_jp, anim_us };
 s32 acrobat_jp[] = {179, 180, 181, 182, 183, 184, 185};
 s32 acrobat_us[] = {183, 184, 185, 186, 187, 188}; //includes nonexistant textures
 s32* acrobal_tbl[2] = { acrobat_jp, acrobat_us };
+
+// retail effNiceMain's zero Vec (it is not decompiled yet); defined here for the .rodata layout.
+const Vec vec3_802f3748 = { 0.0f, 0.0f, 0.0f };
 
 //forward declarations
 static void rendermodeFunc(s32 wXluStage);
@@ -154,6 +172,127 @@ void effNiceDisp(CameraId camId, void* param) {
 	animPoseDrawMtx(data->poseId, mtxFinal, 1, float_0_8041cbb0, float_1_8041cbb8);
 	animPoseDrawMtx(data->poseId, mtxFinal, 2, float_0_8041cbb0, float_1_8041cbb8);
 	animPoseDrawMtx(data->poseId, mtxFinal, 3, float_0_8041cbb0, float_1_8041cbb8);
+}
+
+// The control flow, values and jump table all match: (1) the string address is materialised as
+// `addi r0,...; mr r29,r0` instead of a direct `addi r29`; (2) the int->float magic in case 2
+// lands in f1 (original f2) and some lfs loads are scheduled in the opposite order; (3) the
+// prologue initialises x/y before i. Needs the rest of the unit's .sdata2/.rodata before the
+// anonymous pool offsets all resolve.
+// NONMATCHING (87.05%): string address rematerialised through r0, case-2 int->float in f1 not f2, prologue x/y before i.
+void acrobatMain(EffectEntry* effect) {
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch and copies it into a second local
+	   before dispCalcZ; a single local folds the copy away. */
+	Vec position;
+#endif
+	Vec disp = { 0 };
+	s32 x;
+	s32 y;
+	const char* sfx = "SFX_SYSTEM_ACROBAT1";
+	NiceEffectWork* data = effect->userdata;
+	s32 i;
+	s32 done = 0;
+
+	x = 4;
+	y = 0xC;
+
+	disp.x = data->position.x;
+	disp.y = data->position.y;
+	disp.z = data->position.z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++, x += 4, y += 0xC) {
+		switch (data->field_0x28) {
+		case 0:
+			data->field_0x20 = x;
+			data->field_0x28++;
+			if (i == 1) {
+				psndSFXOn(sfx);
+			}
+			break;
+		case 1:
+			data->field_0x20--;
+			if (data->field_0x20 < 0) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 2:
+			data->position.x = intplGetValue(0xC, ++data->field_0x20, 0x1E, float_500_8041cbbc, (f32)x);
+			if (data->field_0x20 >= 0x1E) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 3:
+			data->field_0x10 = intplGetValue(0xC, ++data->field_0x20, 8, float_1_8041cbb8, float_0p4_8041cbc0);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 8, float_1_8041cbb8, float_1p5_8041cbc4);
+			if (data->field_0x20 >= 8) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 4:
+			data->field_0x20++;
+			if (data->field_0x20 > (effect->count - i - 1) * 4) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 5:
+			data->position.x = intplGetValue(8, ++data->field_0x20, 0x1E, (f32)x, (f32)y);
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0x1E, float_0p2_8041cbc8, float_1_8041cbb8);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0x1E, float_1p5_8041cbc4, float_1_8041cbb8);
+			if (data->field_0x20 >= 0x1E) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 6:
+			data->field_0x20++;
+			if (data->field_0x20 > 0x10) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 7:
+			data->field_0x10 = intplGetValue(0xC, ++data->field_0x20, 0xF, float_1_8041cbb8, float_1p5_8041cbc4);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, float_1_8041cbb8, float_0p1_8041cbcc);
+			if (data->field_0x20 >= 0xF) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 8:
+			data->field_0x10 = intplGetValue(0xC, ++data->field_0x20, 0xF, float_1p5_8041cbc4, float_0p1_8041cbcc);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, float_0p1_8041cbcc, float_2_8041cbd0);
+			if (data->field_0x20 >= 0xF) {
+				data->field_0x20 = 0;
+				data->field_0x28++;
+			}
+			break;
+		case 9:
+			data->field_0x18 = 0.0f;
+			data->field_0x14 = 0.0f;
+			data->field_0x10 = 0.0f;
+			done++;
+			break;
+		}
+	}
+	if (done >= effect->count - 1) {
+		effDelete(effect);
+	}
+	else {
+#ifdef MUST_MATCH
+		dispEntry(4, dispCalcZ(&position), 8, effAcrobatDisp, effect);
+#else
+		dispEntry(4, dispCalcZ(&disp), 8, effAcrobatDisp, effect);
+#endif
+	}
 }
 
 #pragma opt_common_subs off // without it MWCC CSEs the repeated float_0/float_1 pool loads in the GX vertex block

@@ -1,10 +1,14 @@
 #include "eff/n64/eff_balloon_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <dolphin/os/OSCache.h>
 #include <math.h>
+#include <string.h>
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_magic2.c).
 inline Vec initializeVec(Vec* input) {
@@ -88,5 +92,129 @@ void effBalloonMain(EffectEntry* effect) {
 			*(f32*)&data->pad[0xA4] = 1.2f * radius;
 		}
 		dispEntry(4, dispCalcZ(&position), 2, effBalloonDisp, effect);
+	}
+}
+
+// A 14-byte N64 vertex (matches effFlameVtx); the shared table is defined below in .data.
+typedef struct BalloonVtx {
+	s16 pos[3]; // 0x0, XYZ
+	s16 tex[2]; // 0x6, ST
+	u8 clr[4];  // 0xA, RGBA8
+} BalloonVtx;    // 0xE
+
+extern BalloonVtx balloon_vtx[];
+
+// .sdata2 constants that belong to this unit (named in the original's symbol table).
+extern const f32 float_0p0625_8041e940;
+extern const f32 float_0_8041e944;
+extern const f32 float_deg2rad_8041e948;
+
+// Retail inlines a per-vertex helper; each inlining gets its own Vec stack slot and its
+// own memcpy, exactly as in effFlameDisp's effFlameSetVtx.
+static inline void effBalloonSetVtx(BalloonVtx* vtx, Mtx mtx, s32 idx, BalloonVtx* src) {
+	Vec v;
+
+	memcpy(&vtx[idx], src, sizeof(BalloonVtx));
+	v.x = vtx[idx].pos[0];
+	v.y = vtx[idx].pos[1];
+	v.z = vtx[idx].pos[2];
+	PSMTXMultVec(mtx, &v, &v);
+	vtx[idx].pos[0] = v.x;
+	vtx[idx].pos[1] = v.y;
+	vtx[idx].pos[2] = v.z;
+}
+
+// The control flow, constants and GX calls match, but MWCC 2.6 lowers the s16<->f32 vertex
+// conversion as lha/fctiwz instead of the original's psq_l/psq_st (GQR2-5 setup + psq pairs).
+// No source form, pragma or compiler version here reproduces the psq path, so the f23-f31 saves,
+// the 0x210 frame and the register colours differ. tri1 also takes the header's 3 u16 args, so
+// the target's 4th argument and its lack of clrlwi need include/eff/eff_n64.h and
+// src/effect/n64/eff_n64.c to declare 4 s32 args.
+// NONMATCHING (60%): s16<->f32 conversion uses lha/fctiwz, not psq; tri1 takes 4 s32 args.
+void effBalloonDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	CameraEntry* cam;
+	CameraEntry* cam2;
+	effBalloonN64Data* data;
+	BalloonVtx* vtx;
+	BalloonSeg* segs;
+	GXTexObj texObj;
+	Mtx texMtx;
+	Mtx transMtx;
+	Mtx rotMtx;
+	Mtx concatMtx;
+	Mtx resultMtx;
+	s32 life;
+	s32 i;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	vtx = smartAlloc(0x1C0, 3)->address;
+	life = data->field_0x1C;
+
+	if (life == 0) {
+		effGetTexObjN64(0x5F, &texObj);
+		GXLoadTexObj(&texObj, 0);
+	} else if (life == 1) {
+		effGetTexObjN64(0x5E, &texObj);
+		GXLoadTexObj(&texObj, 0);
+	} else {
+		effGetTexObjN64(0x5D, &texObj);
+		GXLoadTexObj(&texObj, 0);
+	}
+
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	PSMTXScale(texMtx, float_0p0625_8041e940, float_0p0625_8041e940, float_0_8041e944);
+	GXLoadTexMtxImm(texMtx, 0x1E, 1);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xC);
+	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+
+	PSMTXTrans(transMtx, data->x, data->y, data->z);
+	effBalloonSetVtx(vtx, transMtx, 0, &balloon_vtx[1]);
+
+	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e948 * data->field_0x10);
+	PSMTXConcat(transMtx, rotMtx, concatMtx);
+	cam2 = camGetPtr(CAMERA_3D);
+	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041e948 * -cam2->viewYaw);
+	PSMTXTrans(transMtx, *(f32*)&data->pad[0xA0], *(f32*)&data->pad[0xA4], float_0_8041e944);
+	PSMTXConcat(rotMtx, transMtx, resultMtx);
+	PSMTXConcat(concatMtx, resultMtx, resultMtx);
+	effBalloonSetVtx(vtx, resultMtx, 1, &balloon_vtx[0]);
+
+	segs = (BalloonSeg*)data->pad;
+	for (i = 0; i < 20; i++) {
+		PSMTXTrans(transMtx, segs[i].x, segs[i].y, float_0_8041e944);
+		PSMTXConcat(resultMtx, transMtx, transMtx);
+		effBalloonSetVtx(vtx, transMtx, i + 2, &balloon_vtx[i + 2]);
+	}
+
+	DCFlushRange(vtx, 0x1C0);
+	GXInvalidateVtxCache();
+	GXLoadPosMtxImm(cam->view, 0);
+	GXSetCurrentMtx(0);
+	GXSetCullMode(0);
+	effSetVtxDescN64((effVtxArray*)vtx);
+
+	if (life < 100) {
+		GXBegin(0x90, 0, 3);
+		tri1(0x15, 2, 1);
+		for (i = 0; i < 19; i++) {
+			GXBegin(0x90, 0, 3);
+			tri1(1, i + 2, i + 3);
+		}
+	} else {
+		GXBegin(0x90, 0, 6);
+		tri1(0, 1, 2);
+		tri1(0, 0x15, 1);
+		for (i = 0; i < 19; i++) {
+			GXBegin(0x90, 0, 3);
+			tri1(1, i + 2, i + 3);
+		}
 	}
 }

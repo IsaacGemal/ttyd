@@ -1582,6 +1582,62 @@ void SoundSSStopCh(s32 chan) {
     sound.unk104 = -1;
 }
 
+// The original allocates the inlined helpers' stream offset to r26 and the loop counter to r28; this build
+// swaps them (r28/r26), and the outer offset/helper pointer land in r29/r30 instead of r30/r29.
+// NONMATCHING (99.05%): instruction stream and all constants identical; only induction-variable registers differ.
+void SoundSSMain(void) {
+    SoundStream* stream;
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        stream = &sound.streams[i];
+        if (!(stream->flags & 8)) {
+            continue;
+        }
+        if (stream->flags & 2) {
+            continue;
+        }
+        if (stream->flags & 4) {
+            stream->flags &= ~4;
+            SoundSSStopCh(i);
+            continue;
+        }
+        if (stream->flags & 0x40) {
+            if (stream->unk10 == 0.0f) {
+                stream->flags |= 2;
+                stream->flags &= ~0x40;
+                continue;
+            }
+            stream->unk10 -= stream->unk14;
+            if (stream->unk10 <= 0.0f) {
+                stream->unk10 = 0.0f;
+            }
+            SoundSSSetPanCh(i, (u8)stream->pan);
+        }
+        if (stream->flags & 0x20) {
+            if (stream->unk10 == 0.0f) {
+                stream->flags &= ~0x20;
+                SoundSSStopCh(i);
+                continue;
+            }
+            stream->unk10 -= stream->unk14;
+            if (stream->unk10 <= 0.0f) {
+                stream->unk10 = 0.0f;
+            }
+            SoundSSSetPanCh(i, (u8)stream->pan);
+        }
+        if (stream->flags & 0x10) {
+            stream->unk10 += stream->unk14;
+            if (stream->unk10 >= stream->vol) {
+                stream->unk10 = stream->vol;
+                stream->unk14 = 0.0f;
+                stream->flags &= ~0x10;
+            }
+            SoundSSSetPanCh(i, (u8)stream->pan);
+        }
+    }
+}
+
 // dont_inline keeps SoundSSMainInt out of SoundMainInt (the original keeps a
 // stack frame and real call sequence).
 #pragma dont_inline on

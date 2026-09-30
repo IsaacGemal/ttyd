@@ -53,6 +53,11 @@ extern char str_802F3CB8[];
 extern f32 float_45_8041cd2c;
 extern f32 float_neg80_8041cd3c;
 extern f32 float_neg45_8041cd4c;
+extern f32 float_90_8041cd08;
+extern Vec vec3_802f3bc4;
+extern char str_802F3D0C[];
+extern char str_802F3D24[];
+extern char str_802F3D3C[];
 
 // LOCAL_PROTO(windowDispGX_Waku_col): match-only. The original passes the GXColor by value like every caller (a
 // stack copy); this by-pointer declaration only steers register allocation (see the exceptions file).
@@ -948,6 +953,134 @@ USER_FUNC(_bgset_kemuri_effect) {
 	return EVT_RETURN_DONE;
 }
 #pragma opt_propagation on
+
+// The whole body, control flow, constants and every memory access match. What is left is MWCC's callee-saved
+// register choice: the original keeps event=r29, wp=r28, base=r27, changed=r26; here the allocator gives
+// event=r26, changed=r28, wp=r29 (base already r27), a 3-cycle that also rotates the loop counter/string
+// temporaries. The int->float conversion constant is also materialised as a fresh `@N@` .rodata literal with its
+// own base instead of `0x168(r30)` (the unit's rodata is provided out of band, so MWCC cannot fold it onto the
+// vec3_802f3ac8 base; `_fall_frame` in this file has the same object-file artefact). Tried: every pragma in the
+// file (opt_propagation/common_subs/dead_assignments/global_optimizer/peephole/scheduling/optimize_for_size),
+// declaration order, local event copy, float temporaries; none moves event off r26.
+// NONMATCHING (95.85%): but for the event/wp/changed register cycle and the conversion constant base.
+USER_FUNC(_set_mobj_rotate_x) {
+	BattleStageObject* obj;
+	s32 i;
+	s32 changed = 0;
+	u8* base;
+	BattleWork* wp;
+	u8* vec;
+	s32 layer;
+
+	wp = _battleWorkPointer;
+	base = (u8*)wp + 0x20000;
+	vec = (u8*)vec3_802f3ac8;
+	layer = evtGetValue(event, *event->args);
+
+	if (isFirstCall) {
+		switch (layer) {
+			case 0:
+			case 1:
+				for (i = 0; i < 32; i++) {
+					obj = &wp->stageObjects[i];
+					if (obj->id > 0 && obj->data->mLayer == layer) {
+						obj->mNumFramesToStartFalling = obj->data->mNumFramesToStartFalling;
+						obj->mNumFramesFalling = 0;
+					}
+				}
+				break;
+			case 2:
+				event->userdata[1] = 0;
+				event->userdata[2] = 0x3C;
+				event->field_84 = 0;
+				break;
+		}
+	}
+
+	switch (layer) {
+		case 0:
+		case 1: {
+#ifdef MUST_MATCH
+			// The original reaches the two SFX through the vec3_802f3ac8 base (addi r29,r30,0x244 etc.).
+			u8* s0 = vec + 0x244; // str_802F3D0C
+			u8* s1 = vec + 0x25C; // str_802F3D24
+#else
+			char* s0 = str_802F3D0C;
+			char* s1 = str_802F3D24;
+#endif
+
+			for (i = 0; i < 32; i++) {
+				obj = &wp->stageObjects[i];
+				if (obj->id > 0 && obj->data->mLayer == layer) {
+					if (obj->mNumFramesToStartFalling != 0) {
+						obj->mNumFramesToStartFalling--;
+						changed = 1;
+						_mobj_shake_main(obj);
+					} else {
+						if (obj->mNumFramesFalling == 0) {
+							if (layer == 0) {
+								psndSFXOn_3D((char*)s0, &obj->mPosition);
+							} else {
+								psndSFXOn_3D((char*)s1, &obj->mPosition);
+							}
+						}
+#ifdef MUST_MATCH
+						// Named endpoints make MWCC hoist the two lfs into the target's slots.
+						{
+							f32 end = float_90_8041cd08;
+							f32 start = obj->mShakeAngle;
+							obj->mNumFramesFalling++;
+							obj->mRotation.x = intpl_sub(2, obj->mNumFramesFalling, obj->data->mNumFramesToFall,
+							                             start, end);
+						}
+#else
+						obj->mNumFramesFalling++;
+						obj->mRotation.x = intpl_sub(2, obj->mNumFramesFalling, obj->data->mNumFramesToFall,
+						                             obj->mShakeAngle, float_90_8041cd08);
+#endif
+						if ((u32)obj->mNumFramesFalling < (u32)obj->data->mNumFramesToFall) {
+							changed = 1;
+						}
+					}
+				}
+			}
+			break;
+		}
+		case 2:
+			if (event->userdata[1] != 0) {
+				event->userdata[1]--;
+				changed = 1;
+			} else {
+				if ((s32)event->field_84 == 0) {
+#ifdef MUST_MATCH
+					Vec v = *(Vec*)(vec + 0xFC); // vec3_802f3bc4
+					psndSFXOn_3D((char*)(vec + 0x274), &v); // str_802F3D3C
+#else
+					Vec v = vec3_802f3bc4;
+					psndSFXOn_3D(str_802F3D3C, &v);
+#endif
+				}
+#ifdef MUST_MATCH
+				{
+					f32 lo = float_0_8041cd04;
+					f32 hi = float_90_8041cd08;
+					event->field_84++;
+					*(f32*)(base - 0x7F3C) = (s32)intpl_sub(2, event->field_84, event->userdata[2], lo, hi);
+				}
+#else
+				// 0x180C4 is inside BattleWork.field_180C0 (padding; no named field yet).
+				event->field_84++;
+				*(f32*)((u8*)wp + 0x180C4) = (s32)intpl_sub(2, event->field_84, event->userdata[2],
+				                                             float_0_8041cd04, float_90_8041cd08);
+#endif
+				if ((s32)event->field_84 < (s32)event->userdata[2]) {
+					changed = 1;
+				}
+			}
+			break;
+	}
+	return changed ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
 
 USER_FUNC(_mobj_set_alpha) {
 	s32* args = event->args;

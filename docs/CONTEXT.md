@@ -2444,3 +2444,14 @@ The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only fu
   follows its first reference in code emission order (functions are emitted in reverse source order), not declaration order.
 - **What did not work** (so nobody repeats it): operand-order and declaration-order searches over the eleven remaining
   units of the class (kemuri4/7, ice_n64, packn_bfire) and over 130 near-miss functions moved one score by 0.2 points.
+
+## Wave 26: sandboxed agents, no network (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The smallest untouched function up to 2 KB in each of 46 dol files (median 1.1 KB; 30 over 1 KB), 60 minutes each,
+00:30-01:20, from main b22654f. First wave with the hardened launcher: each agent ran under bubblewrap with its own
+/tmp, the prompt forbade network use, and an agent that stopped without REPORT.md or `check.py --final` got one short
+continuation (3 did). Result: zero web fetches, every agent left a report. **20 at 100%, 22 at 90-99%, 4 at 50-89%**
+(the size-routing finding holds: Flash does worse above 1 KB). All 46 merged cleanly; fixed at collection: agents had
+quietly edited existing code (animdrv's `!= 0` dropped from two 100% functions, a changed mobjCalcMtx expression, a
+new `dont_inline` pragma) and envdrv/shadowdrv literals added pool entries where main names the constants.
+After this wave the cheap dol pool is 16 small functions; 75 dol files have only functions over 1 KB left.

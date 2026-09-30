@@ -1,10 +1,21 @@
 #include "eff/n64/eff_thruhammer_n64.h"
 #include "eff/eff_n64.h"
+#include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <math.h>
+
+extern const f32 float_deg2rad_8041ffe0;
+extern effVtxArray stg_thruhammer_v;
+extern u32 unk_80423298;
+extern u32 unk_8042329c;
+extern u32 unk_804232a0;
+extern u32 unk_804232a4;
+
+static void main_dl(EffectEntry* effect, Mtx matrix);
 
 const char str_802FB858[] = "ThruHammerN64";
 
@@ -115,4 +126,123 @@ void effThruHammerMain(EffectEntry* effect) {
 		}
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effThruHammerDisp, effect);
+}
+
+#ifdef MUST_MATCH
+/* MUST_MATCH: building the colour through an inline that returns it makes MWCC pass the
+   caller's local directly (retail's by-value slot) instead of a separate copy slot. */
+static inline GXColor thruColor4(u32* base, u8 r, u8 g, u8 b, s32 a) {
+	GXColor c = *(GXColor*)base;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor thruColor3(u32* base, u8 r, u8 g, u8 b) {
+	GXColor c = *(GXColor*)base;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	return c;
+}
+#endif
+
+// NONMATCHING (99.88%): only the four GXColor stack slots differ.  Retail puts each
+// caller local 8 bytes apart (0x24/0x1c/0x14/0xc) with the inline build temp just below
+// it; this MWCC groups the four locals (0x24/0x20/0x1c/0x18) and the temps separately.
+void effThruHammerDisp(CameraId camId, void* param) {
+	CameraEntry* cam = camGetPtr(camId);
+	EffectEntry* effect = param;
+	EffThruHammerData* data = effect->userdata;
+	GXTexObj texObj;
+	Mtx trans;
+	Mtx rot;
+	Mtx work;
+	GXColor color1;
+	GXColor color2;
+	GXColor color3;
+	GXColor color4;
+	s32 ca;
+	u8 cr = data->field_0x50;
+	u8 cg = data->field_0x51;
+	u8 cb = data->field_0x52;
+	u8 cr2 = data->field_0x53;
+	u8 cg2 = data->field_0x54;
+	u8 cb2 = data->field_0x55;
+
+	GXSetNumChans(0);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
+	GXSetTevOrder(0, 0, 0, 0xff);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 0xf);
+	GXSetTevAlphaIn(0, 7, 1, 4, 7);
+	GXSetTevOrder(1, 1, 1, 0xff);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 4, 2, 8, 0xf);
+	GXSetTevAlphaIn(1, 7, 7, 7, 0);
+	effGetTexObjN64(0x23, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	effGetTexObjN64(0x24, &texObj);
+	GXLoadTexObj(&texObj, 1);
+	effSetVtxDescN64(&stg_thruhammer_v);
+
+	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXRotRad(rot, 'y', float_deg2rad_8041ffe0 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(trans, rot, trans);
+	PSMTXConcat(cam->view, trans, work);
+
+	ca = data->field_0x38;
+#ifdef MUST_MATCH
+	color1 = thruColor4(&unk_80423298, cr, cg, cb, ca);
+#else
+	color1 = *(GXColor*)&unk_80423298;
+	color1.r = cr;
+	color1.g = cg;
+	color1.b = cb;
+	color1.a = ca;
+#endif
+	GXSetTevColor(1, color1);
+
+#ifdef MUST_MATCH
+	color2 = thruColor3(&unk_8042329c, cr2, cg2, cb2);
+#else
+	color2 = *(GXColor*)&unk_8042329c;
+	color2.r = cr2;
+	color2.g = cg2;
+	color2.b = cb2;
+#endif
+	GXSetTevColor(2, color2);
+
+	GXSetCullMode(2);
+	main_dl(effect, work);
+
+#ifdef MUST_MATCH
+	color3 = thruColor4(&unk_804232a0, cr, cg, cb, ca);
+#else
+	color3 = *(GXColor*)&unk_804232a0;
+	color3.r = cr;
+	color3.g = cg;
+	color3.b = cb;
+	color3.a = ca;
+#endif
+	GXSetTevColor(1, color3);
+
+#ifdef MUST_MATCH
+	color4 = thruColor3(&unk_804232a4, cr2, cg2, cb2);
+#else
+	color4 = *(GXColor*)&unk_804232a4;
+	color4.r = cr2;
+	color4.g = cg2;
+	color4.b = cb2;
+#endif
+	GXSetTevColor(2, color4);
+
+	GXSetCullMode(1);
+	main_dl(effect, work);
 }

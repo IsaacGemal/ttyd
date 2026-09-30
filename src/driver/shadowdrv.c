@@ -4,12 +4,15 @@
 #include "driver/mobjdrv.h"
 #include "driver/offscreendrv.h"
 #include "eff/eff_n64.h"
+#include "mario/mariost.h"
 #include "system.h"
 #include <string.h>
 
 extern const Vec vec3_802c1a90;
 extern const Vec vec3_802c1acc;
 extern const Vec vec3_802c1ae4;
+extern GXColor dat_804198e4;
+extern GXColor dat_804198e8;
 extern Vec testKagePosArray[];
 extern GXColor unk_80422f98;
 extern GXColor unk_80422f9c;
@@ -20,6 +23,7 @@ extern u8 cube_dl_bottom[0x20];
 extern u8 cube_dl_side[0x20];
 extern const f32 float_0_804198f4;
 extern const f32 float_0p5_804198f8;
+extern const f32 float_0p2_8041990c;
 extern const f32 float_1_80419904;
 extern const f32 float_150_80419920;
 extern const f32 float_1p5_80419924;
@@ -508,7 +512,7 @@ void shadowCharShadowDisp_Texture(CameraId camId) {
     GXColor color;
     GXTexObj texObj;
     Mtx mtx;
-    f32 zero = 0.0f;
+    f32 zero = float_0_804198f4;
     f32 size = 2.5f;
     f32 negSize = -size;
     s32 i;
@@ -642,6 +646,162 @@ void shadowCharShadowDisp_Polygon(CameraId camId) {
             GXReadBoundingBox(&left, &top, &right, &bottom);
             offscreenAddBoundingBox(entry->unk18, left, top, right, bottom);
         }
+    }
+}
+
+#ifdef MUST_MATCH
+// MUST_MATCH: retail builds the modified GXColor in one scratch slot and then copies it to the argument
+// slot; returning it from an inline reproduces that instead of writing the channels in place.
+static inline GXColor shadowProjColor(u8 v) {
+    GXColor c = dat_804198e8;
+
+    c.r = c.g = c.b = v;
+    return c;
+}
+#endif
+
+// NONMATCHING (93.08%): body and control flow match. Remaining diffs are mwcc allocation choices: the
+// GXColor argument scratch slots, the work/config register swap (r30/r29), the C_MTXLookAt Vec copies
+// (original loads all nine words then stores, ours interleaves) and two .sdata2 pool labels.
+void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
+    CharShadowWork* work;
+    ShadowConfigFields* config;
+    ShadowEntry* entry;
+    const u8* vecs;
+    f32 (*view)[4];
+    u8 alpha;
+    Mtx mtx;
+    Mtx44 projMtx;
+    Mtx lookAt;
+    Vec camPos;
+    Vec camUp;
+    Vec camTarget;
+    f32 w;
+    f32 d;
+    f32 we;
+    f32 de;
+    f32 zero;
+    s32 i;
+
+    (void)camId;
+    (void)param;
+    work = cswp;
+    vecs = (const u8*)&vec3_802c1a90;
+    config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
+    entry = work->entries;
+    view = camGetCurPtr()->view;
+    alpha = cswp->unk100.a;
+
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetChanMatColor(4, cswp->unk100);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0xFF, 0xFF, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+    GXSetTevAlphaIn(0, 7, 1, 5, 7);
+    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZMode(1, 3, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXSetArray(9, testKagePosArray, 0xC);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 2);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetBlendMode(0, 4, 5, 0);
+    if (gp->inBattle != 0) {
+        GXSetChanMatColor(4, dat_804198e4);
+    }
+    else {
+#ifdef MUST_MATCH
+        GXSetChanMatColor(4, shadowProjColor(alpha));
+#else
+        GXColor color = dat_804198e8;
+
+        color.r = color.g = color.b = alpha;
+        GXSetChanMatColor(4, color);
+#endif
+    }
+    GXSetZMode(0, 3, 0);
+    for (i = 0; i < cswp->unk104; i++, entry++) {
+        if (entry->size == float_0_804198f4) {
+            continue;
+        }
+        if (entry->unk2 != 3) {
+            continue;
+        }
+        if (!(entry->flags & 2)) {
+            continue;
+        }
+        PSMTXConcat(view, entry->matrix, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 6);
+        GXPosition1x8(0);
+        GXPosition1x8(1);
+        GXPosition1x8(2);
+        GXPosition1x8(3);
+        GXPosition1x8(4);
+        GXPosition1x8(5);
+        work->unk4++;
+    }
+    if (work->unk4 != 0) {
+        C_MTXOrtho(projMtx, config->unk2C, -config->unk2C, config->unk28, -config->unk28, config->unk30, config->unk34);
+        GXSetProjection(projMtx, 1);
+        GXSetBlendMode(1, 4, 5, 0);
+        GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+        camPos = *(const Vec*)(vecs + 0xC);
+        camUp = *(const Vec*)(vecs + 0x18);
+        camTarget = *(const Vec*)(vecs + 0x24);
+        C_MTXLookAt(lookAt, &camPos, &camUp, &camTarget);
+        GXLoadPosMtxImm(lookAt, 0);
+        w = -config->unk28;
+        d = config->unk2C;
+        de = d * float_0p2_8041990c;
+        we = w * float_0p2_8041990c;
+        zero = float_0_804198f4;
+        GXBegin(GX_QUADS, GX_VTXFMT0, 16);
+        GXPosition3f32(zero - w, zero, zero - d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32(zero + w, zero, zero - d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32(zero + w, zero, de + (zero - d));
+        GXColor4u8(0, 0, 0, 0);
+        GXPosition3f32(zero - w, zero, de + (zero - d));
+        GXColor4u8(0, 0, 0, 0);
+        GXPosition3f32(zero - w, zero, zero + d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32(zero + w, zero, zero + d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32(zero + w, zero, (zero + d) - de);
+        GXColor4u8(0, 0, 0, 0);
+        GXPosition3f32(zero - w, zero, (zero + d) - de);
+        GXColor4u8(0, 0, 0, 0);
+        GXPosition3f32(zero - w, zero, zero - d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32(zero - w, zero, zero + d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32(we + (zero - w), zero, zero + d);
+        GXColor4u8(0, 0, 0, 0);
+        GXPosition3f32(we + (zero - w), zero, zero - d);
+        GXColor4u8(0, 0, 0, 0);
+        GXPosition3f32(zero + w, zero, zero - d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32(zero + w, zero, zero + d);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3f32((zero + w) - we, zero, zero + d);
+        GXColor4u8(0, 0, 0, 0);
+        GXPosition3f32((zero + w) - we, zero, zero - d);
+        GXColor4u8(0, 0, 0, 0);
     }
 }
 

@@ -1,9 +1,11 @@
 #include "eff/n64/eff_pokopi_pipo_n64.h"
 #include "driver/dispdrv.h"
 #include "eff/eff_n64.h"
+#include "memory.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <stdlib.h>
 
 typedef struct effPokopiPipoData {
 	s32 type;           // 0x0
@@ -42,6 +44,8 @@ extern const f32 float_neg1_8041fa04;
 extern const f32 float_neg4_8041fa08;
 extern const f32 float_14p286_8041fa0c;
 extern const f32 float_neg20_8041fa10;
+extern const f32 float_neg0p1_8041fa14;
+extern const f32 float_1_8041fa18;
 
 // .sdata
 u8 w_scale_data[8] = { 0x6E, 0x96, 0x82, 0x6E, 0x64, 0x5F, 0x64, 0x00 };
@@ -55,6 +59,56 @@ static u32 size32x32_tex32x32_vtx[0xE] = {
 	0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010, 0xFFF00000, 0x04000000, 0x000000FF,
 	0x00100010, 0x00000400, 0x04000000, 0x00FFFFF0, 0x00100000, 0x00000400, 0x000000FF
 };
+
+EffectEntry* effPokopiPipoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 scale) {
+	EffectEntry* effect;
+	effPokopiPipoData* data;
+
+	effect = effEntry();
+	effect->type = "PokopiPipoN64";
+	effect->count = 1;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effPokopiPipoData));
+	effect->userdata = data;
+	effect->callback = effPokopiPipoMain;
+	effect->flags |= 2;
+
+	data->type = type;
+	data->timer = 0;
+	if (count <= 0) {
+		data->lifetime = 1000;
+	} else {
+		data->lifetime = count + 60;
+	}
+	data->field_0x68 = count;
+	data->field_0x3C = 0xff;
+	data->field_0x10[0] = x;
+	data->field_0x10[1] = y;
+	data->field_0x10[2] = z;
+	data->field_0x10[3] = x2;
+	data->field_0x10[4] = y2;
+	data->field_0x10[5] = z2;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->field_0x44 = (x2 - x) / (f32)count;
+	data->field_0x48 = (y2 - y) / (f32)count - float_neg0p1_8041fa14 * (f32)count;
+	data->field_0x4C = (z2 - z) / (f32)count;
+	if (y2 - y < float_0_8041f9f4) {
+		data->field_0x64 = 1;
+	} else {
+		data->field_0x64 = 0;
+	}
+	data->field_0x40 = scale;
+	data->field_0x30 = 0x46;
+	data->field_0x34 = 0xb4;
+	data->field_0x38 = 0x78;
+	data->field_0x50 = (f32)(rand() % 360);
+	data->field_0x54 = (f32)(rand() % 10 + 5);
+	data->field_0x60 = -1;
+	data->field_0x58 = float_1_8041fa18;
+	data->field_0x5C = float_1_8041fa18;
+	return effect;
+}
 
 void effPokopiPipoMain(EffectEntry* effect) {
 #ifdef MUST_MATCH

@@ -3,6 +3,7 @@
 #include "eff/n64/eff_stardust_n64.h"
 #include "mario/mariost.h"
 #include "memory.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/types.h>
 
@@ -17,6 +18,10 @@ typedef struct BreakEffect {
     s32 field_0x1C; // 0x1C
     f32 field_0x20; // 0x20
 } BreakEffect;
+
+static u32 tex_jp[6] = { 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2 };
+static u32 tex_us[6] = { 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6 };
+static u32* texid_tbl[2] = { tex_jp, tex_us };
 
 const char str_804210C4[] = "Break";
 extern const f32 float_0_804210b0;
@@ -149,5 +154,66 @@ void effBreakMain(EffectEntry* effect) {
         effDelete(effect);
     } else {
         dispEntry(8, dispCalcZ(&position), 2, effBreakDisp, effect);
+    }
+}
+
+// NONMATCHING (99.89%): everything matches except the order of the two independent loop-latch
+// increments. The original emits `addi r30,r30,4` (the texid index, i-1) before `addi r28,r28,1`
+// (i); MWCC emits them the other way round. The volatile 1.0 texcoord reload is handled above.
+void effBreakDisp(CameraId cameraId, void* param) {
+    EffectEntry* effect = param;
+    BreakEffect* data = effect->userdata;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx mtxB8;
+    Mtx mtx88;
+    Mtx mtx58;
+    Mtx mtx28;
+    f32 scale;
+    s32 i;
+
+    cam = camGetPtr(cameraId);
+    scale = data->field_0x20;
+    PSMTXTrans(mtxB8, data->x, data->y, data->z);
+    PSMTXRotRad(mtx88, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_804210a8);
+    PSMTXConcat(mtxB8, mtx88, mtxB8);
+    PSMTXConcat(cam->view, mtxB8, mtx28);
+
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xff);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xd, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
+
+    data++;
+    for (i = 1; i < effect->count; i++, data++) {
+        effGetTexObj(texid_tbl[gp->language != 0][i - 1], &texObj);
+        GXLoadTexObj(&texObj, 0);
+        PSMTXTrans(mtxB8, 0.0f, data->field_0x14, 0.0f);
+        GXLoadTexMtxImm(mtxB8, 0x1e, 1);
+        PSMTXTrans(mtxB8, data->x, data->y, data->z);
+        PSMTXScale(mtx58, scale, scale, scale);
+        PSMTXConcat(mtx28, mtxB8, mtxB8);
+        PSMTXConcat(mtxB8, mtx58, mtxB8);
+        GXLoadPosMtxImm(mtxB8, 0);
+        GXSetCurrentMtx(0);
+        GXBegin(0x80, 0, 4);
+        GXPosition3f32(-float_48_804210ac * float_0p5_804210b4, float_24_804210b8, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(float_24_804210b8, float_24_804210b8, 0.0f);
+        GXTexCoord2f32(float_1_804210bc, 0.0f);
+        GXPosition3f32(float_24_804210b8, -float_48_804210ac * float_0p5_804210b4, 0.0f);
+        GXTexCoord2f32(float_1_804210bc, float_1_804210bc);
+        GXPosition3f32(-float_48_804210ac * float_0p5_804210b4, -float_48_804210ac * float_0p5_804210b4, 0.0f);
+        GXTexCoord2f32(0.0f, float_1_804210bc);
     }
 }

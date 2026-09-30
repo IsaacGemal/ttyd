@@ -28,3 +28,6 @@ typedef struct effFireworksData {
 EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8);
 void effFireworksMain(EffectEntry* effect);
 void effFireworksDisp(CameraId camId, void* param);
+// .sbss2 scratch GXColors the original builds its TEV colours from.
+extern GXColor unk_80423108;
+extern GXColor unk_8042310c;

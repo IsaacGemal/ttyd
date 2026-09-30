@@ -2,6 +2,8 @@
 
 #include <dolphin/types.h>
 #include "driver/effdrv.h"
+extern u32 dat_8041eec8;
+extern u32 dat_8041eecc;
 typedef struct effFireFlowerData {
 	s32 type;       // 0x00
 	s32 state;      // 0x04

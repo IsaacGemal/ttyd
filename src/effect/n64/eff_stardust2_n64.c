@@ -2,7 +2,10 @@
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
+#include "matching.h"
 
+#include <stdlib.h>
+#include <math.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -20,14 +23,27 @@ extern const f32 float_0p8_8041fea8;
 extern const f32 float_0p7_8041feac;
 extern const f32 float_1p4_8041feb0;
 
-// .rodata constant (named after its original address).
+// .rodata constants (in the original's order, named after their addresses).
+const Vec vec3_802fb740 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_mask_802fb750 = 4503599627370496.0;
+const f64 double_to_int_802fb758 = 4503601774854144.0;
 
 // .sdata colour rotation table, local to this file.
 static u8 color_rotation_data[36] = {
     0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,
     0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
     0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
+};
+
+// .sdata speed/scale tables, local to this file.
+static u8 speed_data[16] = {
+    0x1E, 0x3C, 0x5A, 0x64, 0x68, 0x6A, 0x6C, 0x6E,
+    0x70, 0x71, 0x71, 0x6E, 0x6B, 0x67, 0x00, 0x00,
+};
+
+static u8 scale_data[16] = {
+    0x1E, 0x3C, 0x5A, 0x64, 0x68, 0x6A, 0x6C, 0x6E,
+    0x70, 0x71, 0x71, 0x6E, 0x6B, 0x67, 0x00, 0x00,
 };
 
 // .data vertex strips, local to this file.
@@ -70,6 +86,143 @@ typedef struct EffStardust2Data {
     s32 field_28;   // 0x28
     s32 drawCam;    // 0x2C
 } EffStardust2Data;
+
+inline Vec makeVec(f32 x, f32 y, f32 z) {
+    Vec temp = vec3_802fb740;
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
+
+void effStardust2Main(EffectEntry* effect) {
+    EffStardust2Data* data;
+    Vec position2;
+    Vec position;
+    s32 i;
+    s16 type;
+    s32 active;
+    s32 colorIndex;
+    s32 drawCam;
+    f32 rad;
+    f32 one;
+
+    data = effect->userdata;
+    position = makeVec(data->x, data->y, data->z);
+    position2 = position;
+    drawCam = data->drawCam;
+    data->field_24--;
+    data->field_20++;
+    colorIndex = data->field_20;
+    type = data->type;
+    active = 0;
+    if ((u32)type <= 1 || type == 3 || type >= 10) {
+        if (data->field_24 < 0) {
+            effDelete(effect);
+            return;
+        }
+    }
+    i = 0;
+    data++;
+    for (; i < effect->count - 1; i++, data++) {
+        switch (type) {
+        case 0:
+        case 1:
+            data->field_28 = (colorIndex + i) & 7;
+            data->field_18 += float_neg0p02_8041feb4;
+            if (colorIndex - 1 < 14) {
+                f32 val = float_0p01_8041feb8 * speed_data[colorIndex - 1];
+                data->x = data->field_10 * val;
+                data->y = data->field_14 * val + data->field_18;
+                data->scale = float_0p01_8041feb8 * scale_data[colorIndex - 1];
+            }
+            else {
+                f32 angle;
+                f32 ratio;
+                one = float_1_8041fe9c;
+                ratio = float_360_8041fec0 / (f32)(effect->count - 1);
+                angle = ratio * (f32)i + float_60_8041febc;
+                if (i & 1) {
+                    angle -= float_120_8041fec4;
+                }
+                rad = float_6p2832_8041fec8 * angle / MATCH_F32(float_360_8041fec0);
+                data->type = 10;
+                data->field_10 = one * (f32)sin(rad);
+                data->field_14 = one * (f32)cos(rad);
+                data->field_18 = float_neg0p05_8041fecc;
+            }
+            break;
+        case 30:
+        case 10:
+            data->field_28 = (colorIndex + i) & 7;
+            data->field_10 *= float_0p96_8041fed0;
+            data->field_14 *= float_0p96_8041fed0;
+            data->field_14 += data->field_18;
+            data->x += data->field_10;
+            data->y += data->field_14;
+            {
+                f32 k = float_0p1_8041fea4;
+                data->scale = k * (k - data->scale) + data->scale;
+            }
+            break;
+        case 3:
+            data->field_28 = (colorIndex + i + i) & 7;
+            if (colorIndex - 1 < 14) {
+                data->scale = float_0p01_8041feb8 * scale_data[colorIndex - 1];
+            }
+            else {
+                data->type = 30;
+            }
+            break;
+        case 2:
+        case 4:
+        case 5:
+        default:
+            data->field_28 = (colorIndex + i + i) & 7;
+            if (data->field_24 < 0) {
+                active++;
+            }
+            data->field_24--;
+            if (data->field_24 > 30 || data->field_24 < 0) {
+                data->field_28 = -1;
+            }
+            else {
+                data->field_20++;
+                colorIndex = data->field_20;
+                if (colorIndex - 1 < 14) {
+                    data->scale = float_0p01_8041feb8 * scale_data[colorIndex - 1];
+                    if (type == 5) {
+                        data->field_14 += data->field_18;
+                        data->y += data->field_14;
+                    }
+                }
+                else {
+                    f32 k = float_0p1_8041fea4;
+                    data->scale = k * (k - data->scale) + data->scale;
+                    data->field_14 += data->field_18;
+                    data->y += data->field_14;
+                }
+                if (type == 4) {
+                    rad = float_6p2832_8041fec8 * (f32)(colorIndex * 12) / float_360_8041fec0;
+                    data->x = data->field_10 * (f32)sin(rad);
+                    data->z = data->field_10 * (f32)cos(rad);
+                }
+                else {
+                    data->x = data->field_10;
+                }
+                data->field_14 *= float_0p96_8041fed0;
+            }
+            break;
+        }
+    }
+    if (!((u32)type <= 1 || type == 3 || type >= 10)) {
+        if (active >= effect->count - 1) {
+            effDelete(effect);
+            return;
+        }
+    }
+    dispEntry(drawCam, dispCalcZ(&position2), 2, effStardust2Disp, effect);
+}
 
 #ifdef MUST_MATCH
 static inline GXColor stardustColor(u8 r, u8 g, u8 b) {

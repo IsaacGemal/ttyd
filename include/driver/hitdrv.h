@@ -68,6 +68,7 @@ HitEntry* hitCheckAttr(s32 user0, f32* hitX, f32* hitY, f32* hitZ, f32* distance
                        f32 x, f32 y, f32 z, f32 nx, f32 ny, f32 nz);
 HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z, f32 distance);
 HitEntry* hitNameToPtr(const char* name);
+HitEntry* hitEntryMOBJ(MapFileJoint* joint, Mtx mtx);
 void hitObjGetPos(const char* name, Vec* position);
 void hitObjGetNormal(const char* name, Vec* normal);
 void hitObjFlagOn(const char* name, u32 mask);

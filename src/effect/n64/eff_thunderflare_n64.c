@@ -1,6 +1,8 @@
 #include "eff/n64/eff_thunderflare_n64.h"
 #include "eff/eff_n64.h"
 #include "memory.h"
+#include "driver/dispdrv.h"
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -8,6 +10,10 @@
 extern const f32 float_deg2rad_80420080;
 extern const f32 float_0p03125_80420084;
 extern const f32 float_0_80420088;
+// .rodata objects owned by this unit.
+const Vec vec3_802fb890 = { 0.0f, 0.0f, 0.0f };
+// The pooled int->float conversion double, named so the `lfd` reloc resolves like the original.
+const f64 double_to_int_802fb8a0 = 4503601774854144.0;
 // .sbss2 data symbols owned by this unit.
 extern GXColor unk_804232a8;
 extern GXColor unk_804232ac;
@@ -118,6 +124,75 @@ static inline void flareSetColor2(s32 r, s32 g, s32 b, s32 a) {
 	color.b = b;
 	color.a = a;
 	GXSetTevColor(1, color);
+}
+
+// Builds the effect position from a zero vector; kept as an inline so the
+// temporary schedules the way the original's does.
+static inline Vec thunderflareMakeVec(f32 x, f32 y, f32 z) {
+	Vec temp = vec3_802fb890;
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// NONMATCHING (97.69%): only FP register allocation differs. The original keeps the loop constants in f24=2*pi, f26=2, f27=255, f28=100, the running radius in f23 and the zero component in f22; ours uses f26=2*pi, f24=100, f27=2, f28=255, f21=radius, f23=zero, which shifts the sin/cos temporaries.
+void effThunderflareMain(EffectEntry* effect) {
+	EffThunderflareData* data;
+	Vec pos;
+	s32 phase;
+	s32 i;
+	s32 counter;
+
+	data = effect->userdata;
+	pos = thunderflareMakeVec(data->x, data->y, data->z);
+
+	if (data->timer < 100) {
+		data->timer--;
+	}
+	data->counter++;
+	if (data->timer < 0) {
+		effDelete(effect);
+		return;
+	}
+	counter = data->counter;
+	if (counter <= 20) {
+		data->alpha = counter * 12;
+	} else {
+		data->alpha = 0xff;
+	}
+	if (counter & 1) {
+		data->alpha = (s32)(float_0p5_8042008c * (f32)data->alpha);
+	}
+
+	phase = data->counter & 1;
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		f32 angle1 = float_6p2832_80420090 * data->angle1 / float_360_80420094;
+		f32 radius = data->radius;
+		f32 angle2 = float_6p2832_80420090 * data->angle2 / float_360_80420094;
+		f32 sin1 = sin(angle1);
+		f32 cos1 = cos(angle1);
+		f32 sin2 = sin(angle2);
+		f32 cos2 = cos(angle2);
+
+		data->x = cos2 * (radius * sin1);
+		data->y = cos2 * (radius * cos1);
+		data->z = radius * sin2;
+		data->alpha = (s32)((float_100_804200a0 - data->radius) * float_255_8042009c * float_2_80420098 / float_100_804200a0);
+		if (data->alpha > 0xff) {
+			data->alpha = 0xff;
+		}
+		data->scale = float_0p2_804200a4 + data->radius / float_80_804200a8;
+		data->radius -= (f32)(2 + (i & 3) * 2);
+		if (data->radius < float_0_80420088) {
+			data->radius = float_0_80420088;
+			data->scale = float_0_80420088;
+		}
+		data->angle1 += phase ? 5 : 2;
+		data->angle2 += phase ? 2 : 5;
+	}
+	dispEntry(4, dispCalcZ(&pos), 2, effThunderflareDisp, effect);
 }
 
 void effThunderflareDisp(CameraId camId, void* param) {

@@ -2026,3 +2026,105 @@ void partyPreDisp(PartyEntry* party) {
         }
     }
 }
+
+// NONMATCHING (94.42%): the leading partyGetNum()/partyGetPtr() inline keeps the
+// partyPtrTbl element load after the index test; the original hoists the load above it
+// and tests the element before the index (the same compiler difference as partyMain).
+void partyDisp(CameraId cameraId, void* param) {
+    PartyEntry* party = param;
+    Mtx scaleMtx;
+    Mtx transMtx;
+    Mtx rotMtx;
+    f32 angle;
+    f32 scale;
+    f32 yOffset;
+
+    if (partyGetNum() != 0) {
+        if (party->flags & 0x200) {
+            PF32(party, 0x88) = float_neg6p8_8041b0d8;
+            PF32(party, 0x8C) = float_6p8_8041b0dc;
+        }
+
+        scale = (party->flags & 0x800000) ? float_1p2_8041b0e0 : float_2_8041b0e4;
+        PSMTXScale(scaleMtx, party->field_70.x * scale, party->field_70.y * scale, party->field_70.z * scale);
+
+        if (!(party->flags2 & 8)) {
+#ifdef MUST_MATCH
+            // MUST_MATCH: loading the constant through a volatile pointer keeps the compiler from
+            // folding it into the ternary else (which emits `fmr` instead of a second `lfs`).
+            f32 one;
+
+            angle = revise360(party->field_10C);
+            one = *(volatile f32*)&float_1_8041b0e8;
+            PSMTXScale(rotMtx, one, one,
+                       (angle >= float_90_8041b0f0 && angle <= float_270_8041b0f4) ? float_neg1_8041b0ec
+                                                                                  : float_1_8041b0e8);
+#else
+            angle = revise360(party->field_10C);
+            PSMTXScale(rotMtx, float_1_8041b0e8, float_1_8041b0e8,
+                       (angle >= float_90_8041b0f0 && angle <= float_270_8041b0f4) ? float_neg1_8041b0ec
+                                                                                  : float_1_8041b0e8);
+#endif
+            PSMTXConcat(rotMtx, scaleMtx, scaleMtx);
+        }
+
+        PSMTXTrans(transMtx, -PF32(party, 0x88), -PF32(party, 0x8C), -PF32(party, 0x90));
+        PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+
+        PSMTXRotRad(transMtx, 'z', float_deg2rad_8041b0f8 * PF32(party, 0x6C));
+        PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+
+        PSMTXRotRad(transMtx, 'x', float_deg2rad_8041b0f8 * PF32(party, 0x64));
+        PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+
+        angle = revise360(party->field_10C - PF32(party, 0xF8));
+        PSMTXRotRad(transMtx, 'y', float_deg2rad_8041b0f8 * angle);
+        PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+
+        if (party->flags2 & 0xC0) {
+            angle = revise360(party->field_10C);
+            if (angle >= float_90_8041b0f0 && angle <= float_270_8041b0f4) {
+                PSMTXRotRad(transMtx, 'y',
+                            float_deg2rad_8041b0f8 * ((party->flags2 & 0x40) ? float_180_8041b0fc : float_0_8041b100));
+                PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+            } else {
+                PSMTXRotRad(transMtx, 'y',
+                            float_deg2rad_8041b0f8 * ((party->flags2 & 0x40) ? float_0_8041b100 : float_180_8041b0fc));
+                PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+            }
+        }
+
+        PSMTXTrans(transMtx, PF32(party, 0x88), PF32(party, 0x8C), PF32(party, 0x90));
+        PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+
+        yOffset = float_0_8041b100;
+        if (party->field_1C != 0) {
+            if (party->currentMemberId == PARTY_MEMBER_YOSHI) {
+                yOffset = float_1_8041b0e8;
+            } else if (party->currentMemberId == PARTY_MEMBER_BOBBERY) {
+                yOffset = float_2_8041b0e4;
+            } else if (party->currentMemberId == PARTY_MEMBER_MS_MOWZ) {
+                yOffset = float_2_8041b0e4;
+            } else if (party->currentMemberId == PARTY_MEMBER_GOOMBELLA) {
+                yOffset = float_2_8041b0e4;
+            } else if (party->currentMemberId == PARTY_MEMBER_FRANKLY) {
+                yOffset = float_3_8041b104;
+            } else if (party->currentMemberId == PARTY_MEMBER_EGG) {
+                yOffset = float_3p5_8041b108;
+            } else if (party->currentMemberId == PARTY_MEMBER_PUNIO) {
+                yOffset = float_4_8041b10c;
+            } else if (party->currentMemberId == PARTY_MEMBER_FLAVIO) {
+                yOffset = float_neg1_8041b0ec;
+            }
+        }
+
+        PSMTXTrans(transMtx, party->position.x + PF32(party, 0x7C),
+                   party->position.y + PF32(party, 0x80) + yOffset, party->position.z + PF32(party, 0x84));
+        PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+
+        animPoseDrawMtx(party->paperAnimGroup, scaleMtx, 2, float_0_8041b100, float_1_8041b0e8);
+        animPoseDrawMtx(party->paperAnimGroup, scaleMtx, 1, float_0_8041b100, float_1_8041b0e8);
+        animPoseSetLocalTimeRate(party->paperAnimGroup,
+                                 (party->flags & 0x80) ? float_0p75_8041b110 : float_1_8041b0e8);
+    }
+}

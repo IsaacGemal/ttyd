@@ -2,6 +2,8 @@
 
 typedef struct EffectEntry EffectEntry;
 #include <dolphin/types.h>
+#include "driver/camdrv.h"
+void effOpukuJetwrainDisp(CameraId camId, void* param);
 EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale);
 typedef struct effOpukuJetwrainData {
 	s32 type;                // 0x00

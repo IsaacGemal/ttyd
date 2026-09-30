@@ -210,3 +210,15 @@ typedef struct PartyData {
 void partySetFamicomMode(PartyEntry* party, s32 mode);
 extern s32 partyCtrlNo;
 extern char* partyPoseTbl[20][15];
+extern const f32 float_neg6p8_8041b0d8;
+extern const f32 float_6p8_8041b0dc;
+extern const f32 float_1p2_8041b0e0;
+extern const f32 float_2_8041b0e4;
+extern const f32 float_1_8041b0e8;
+extern const f32 float_90_8041b0f0;
+extern const f32 float_270_8041b0f4;
+extern const f32 float_deg2rad_8041b0f8;
+extern const f32 float_3_8041b104;
+extern const f32 float_3p5_8041b108;
+extern const f32 float_4_8041b10c;
+extern const f32 float_0p75_8041b110;

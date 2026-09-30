@@ -1,7 +1,9 @@
 #include "eff/n64/eff_gareki_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include "system.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
@@ -31,6 +33,45 @@ typedef struct GarekiOffset {
 } GarekiOffset;
 
 extern GarekiOffset trans_data[];
+
+// .data vertex array, local to this unit in the original.
+static u32 stg__s_v[0x348 / 4] = {
+	0xFFFAFFFA, 0x00000000, 0x0000FFFF, 0xFFFF0006, 0xFFFA0000, 0x04000000,
+	0xFFFFFFFF, 0x00060006, 0x00000400, 0x0600FFFF, 0xFFFFFFFA, 0x00060000,
+	0x00000600, 0xFFFFFFFF, 0xFFFA0006, 0x00000000, 0x0C00FFFF, 0xFFFF0006,
+	0x00060000, 0x04000C00, 0xFFFFFFFF, 0x0006FFFA, 0x00000400, 0x0600FFFF,
+	0xFFFFFFFA, 0xFFFA0000, 0x00000600, 0xFFFFFFFF, 0xFFFFFFFE, 0x00000000,
+	0x0000FFFF, 0xFFFF0003, 0xFFFE0000, 0x01550000, 0xFFFFFFFF, 0xFFFF0004,
+	0x00000000, 0x0300FFFF, 0xFFFFFFFF, 0x00040000, 0x00000900, 0xFFFFFFFF,
+	0x0003FFFE, 0x00000155, 0x0600FFFF, 0xFFFFFFFF, 0xFFFE0000, 0x00000600,
+	0xFFFFFFFF, 0x0001FFFC, 0x00000155, 0x0000FFFF, 0xFFFF0003, 0x00020000,
+	0x02000300, 0xFFFFFFFF, 0xFFFD0002, 0x00000000, 0x0300FFFF, 0xFFFFFFFD,
+	0x00020000, 0x00000900, 0xFFFFFFFF, 0x00030002, 0x00000200, 0x0900FFFF,
+	0xFFFF0001, 0xFFFC0000, 0x01550600, 0xFFFFFFFF, 0xFFFCFFFD, 0x00000155,
+	0x0000FFFF, 0xFFFF0000, 0xFFFD0000, 0x02AB0000, 0xFFFFFFFF, 0x00040003,
+	0x00000400, 0x0300FFFF, 0xFFFFFFFE, 0x00030000, 0x02000300, 0xFFFFFFFF,
+	0xFFFE0003, 0x00000200, 0x0900FFFF, 0xFFFF0004, 0x00030000, 0x04000900,
+	0xFFFFFFFF, 0x0000FFFD, 0x000002AB, 0x0600FFFF, 0xFFFFFFFC, 0xFFFD0000,
+	0x01550600, 0xFFFFFFFF, 0xFFFDFFFE, 0x000002AB, 0x0000FFFF, 0xFFFF0001,
+	0xFFFE0000, 0x04000000, 0xFFFFFFFF, 0x00010004, 0x00000400, 0x0300FFFF,
+	0xFFFF0001, 0x00040000, 0x04000900, 0xFFFFFFFF, 0x0001FFFE, 0x00000400,
+	0x0600FFFF, 0xFFFFFFFD, 0xFFFE0000, 0x02AB0600, 0xFFFFFFFF, 0x0004FFFE,
+	0x00000200, 0x0300FFFF, 0xFFFFFFFE, 0x00040000, 0x00000600, 0xFFFFFFFF,
+	0xFFFEFFFE, 0x00000000, 0x0300FFFF, 0xFFFFFFFE, 0xFFFE0000, 0x00000900,
+	0xFFFFFFFF, 0xFFFE0004, 0x00000000, 0x0C00FFFF, 0xFFFF0004, 0xFFFE0000,
+	0x02000900, 0xFFFFFFFF, 0x0001FFFC, 0x00000200, 0x0300FFFF, 0xFFFF0003,
+	0x00020000, 0x02AB0600, 0xFFFFFFFF, 0xFFFF0002, 0x00000155, 0x0600FFFF,
+	0xFFFFFFFB, 0x00020000, 0x00000600, 0xFFFFFFFF, 0xFFFB0002, 0x00000000,
+	0x0C00FFFF, 0xFFFFFFFF, 0x00020000, 0x01550C00, 0xFFFFFFFF, 0x00030002,
+	0x000002AB, 0x0C00FFFF, 0xFFFF0001, 0xFFFC0000, 0x02000900, 0xFFFFFFFF,
+	0x0003FFFE, 0x00000400, 0x0300FFFF, 0xFFFFFFFF, 0x00040000, 0x02AB0600,
+	0xFFFFFFFF, 0xFFFDFFFE, 0x00000200, 0x0300FFFF, 0xFFFFFFFD, 0xFFFE0000,
+	0x02000900, 0xFFFFFFFF, 0xFFFF0004, 0x000002AB, 0x0C00FFFF, 0xFFFF0003,
+	0xFFFE0000, 0x04000900, 0xFFFFFFFF, 0x0001FFFC, 0x00000400, 0x0300FFFF,
+	0xFFFF0001, 0x00020000, 0x04000600, 0xFFFFFFFF, 0xFFFD0002, 0x000002AB,
+	0x0600FFFF, 0xFFFFFFFD, 0x00020000, 0x02AB0C00, 0xFFFFFFFF, 0x00010002,
+	0x00000400, 0x0C00FFFF, 0xFFFF0001, 0xFFFC0000, 0x04000900, 0xFFFFFFFF,
+};
 static f32 vx_data[8] = { -1.0f, -0.5f, 0.5f, 1.0f, -1.0f, -0.5f, 0.5f, 1.0f };
 
 typedef struct GarekiChild {
@@ -158,5 +199,53 @@ void effGarekiMain(EffectEntry* effect) {
     }
 
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effGarekiDisp, effect);
+}
+
+// NOTE: the original's switch jump table is the local symbol jumptable_8039D3A0; mwcc emits it as an
+// anonymous local @NNN (known pool-naming limitation), which objdiff reports as an arg_mismatch.
+void gareki_dl(s32 type) {
+    GXSetCullMode(GX_CULL_NONE);
+    effSetVtxDescN64((effVtxArray*)stg__s_v);
+    switch (type) {
+    case 0:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
+        tri2(4, 5, 6, 0, 4, 6, 7, 0);
+        break;
+    case 1:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(8, 9, 10, 8, 11, 12, 13, 8);
+        break;
+    case 2:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(14, 15, 16, 14, 17, 18, 19, 14);
+        break;
+    case 3:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+        tri2(20, 21, 22, 20, 20, 22, 23, 20);
+        tri2(24, 25, 26, 20, 24, 26, 27, 20);
+        break;
+    case 4:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(28, 29, 30, 28, 31, 32, 33, 28);
+        break;
+    case 5:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(34, 35, 36, 34, 37, 38, 39, 34);
+        break;
+    case 6:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+        tri2(40, 41, 42, 40, 40, 42, 43, 40);
+        tri2(44, 45, 46, 40, 44, 46, 47, 40);
+        break;
+    case 7:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(48, 49, 50, 48, 51, 52, 53, 48);
+        break;
+    case 8:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(54, 55, 56, 54, 57, 58, 59, 54);
+        break;
+    }
 }
 
