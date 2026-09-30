@@ -729,12 +729,8 @@ BattleUnitType* battle_monosiri_same_tbl[] = {
 	same_tbl_magunum_battender_mkii,
 	same_tbl_moamoa,
 	same_tbl_iron_sinemon,
-	NULL, // terminator
-	NULL, NULL, NULL // 12 zero bytes of padding before lbl_8036BEA0 in the original data
+	NULL // terminator
 };
-
-// The pair {-1.0f, 1.0f} eff_fukidashi (an asm object) reads; the original has 12 zero bytes between the table and it.
-__declspec(section ".data") f32 lbl_8036BEA0[2] = { -1.0f, 1.0f };
 
 TattleEntry* battleGetUnitMonosiriPtr(s32 id) {
 	return &monosiriMessageTable[id];

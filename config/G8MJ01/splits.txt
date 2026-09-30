@@ -819,7 +819,7 @@ data/battle/battle_item_data.c:
 battle/battle_monosiri.c:
 	.text       start:0x80129848 end:0x80129A50
 	.rodata     start:0x802F0158 end:0x802F2FD0
-	.data       start:0x8036A5B8 end:0x8036BEA8
+	.data       start:0x8036A5B8 end:0x8036BE94
 	.sdata      start:0x80411188 end:0x804113B8
 	.sdata2     start:0x8041C540 end:0x8041C568
 
@@ -837,7 +837,7 @@ event/evt_nannpc.c:
 effect/eff_fukidashi.c:
 	.text       start:0x8012C258 end:0x8012E310
 	.rodata     start:0x802F3048 end:0x802F30F8
-	.data       start:0x8036BEA8 end:0x8036C288
+	.data       start:0x8036BEA0 end:0x8036C288 align:16
 	.sdata      start:0x80411400 end:0x80411798
 	.sdata2     start:0x8041C5B0 end:0x8041C670
 	.sbss2      start:0x80422FF8 end:0x80423010

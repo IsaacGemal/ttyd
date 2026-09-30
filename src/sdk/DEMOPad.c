@@ -17,31 +17,31 @@ DEMOPadStatus DemoPad[4];
 void DEMOPadCopy(PADStatus* pad, DEMOPadStatus* dmpad) {
     u16 dirs;
 
-    if (pad->err != -3) {
+    if (pad->err != PAD_ERR_TRANSFER) {
         dirs = 0;
         if (pad->stickX < -0x30) {
-            dirs |= 0x4000;
+            dirs |= DEMO_STICK_LEFT;
         }
         if (pad->stickX > 0x30) {
-            dirs |= 0x8000;
+            dirs |= DEMO_STICK_RIGHT;
         }
         if (pad->stickY < -0x30) {
-            dirs |= 0x2000;
+            dirs |= DEMO_STICK_DOWN;
         }
         if (pad->stickY > 0x30) {
-            dirs |= 0x1000;
+            dirs |= DEMO_STICK_UP;
         }
         if (pad->substickX < -0x30) {
-            dirs |= 0x400;
+            dirs |= DEMO_SUBSTICK_LEFT;
         }
         if (pad->substickX > 0x30) {
-            dirs |= 0x800;
+            dirs |= DEMO_SUBSTICK_RIGHT;
         }
         if (pad->substickY < -0x30) {
-            dirs |= 0x200;
+            dirs |= DEMO_SUBSTICK_DOWN;
         }
         if (pad->substickY > 0x30) {
-            dirs |= 0x100;
+            dirs |= DEMO_SUBSTICK_UP;
         }
 
         dmpad->dirsNew = (dirs & (dmpad->dirs ^ dirs));
@@ -72,9 +72,9 @@ void DEMOPadRead(void) {
     DemoNumValidPads = 0;
 
     for (i = 0; i < 4; i++) {
-        if (Pad[i].err == 0 || Pad[i].err == -3) {
+        if (Pad[i].err == PAD_ERR_NONE || Pad[i].err == PAD_ERR_TRANSFER) {
             DemoNumValidPads++;
-        } else if (Pad[i].err == -1) {
+        } else if (Pad[i].err == PAD_ERR_NO_CONTROLLER) {
             ResetReq |= PadChanMask[i];
         }
 

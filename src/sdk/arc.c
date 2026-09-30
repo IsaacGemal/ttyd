@@ -8,15 +8,9 @@ typedef struct FSTEntry {
 	u32 entrySizeOrNext; //file = size, dir = next entry
 } FSTEntry;
 
-#define entryIsDir(h, i) (((((FSTEntry*)(h)->FSTStart)[i].entryInfo & 0xff000000) == 0) ? FALSE : TRUE)
-#define stringOff(h, i) (((FSTEntry*)(h)->FSTStart)[i].entryInfo & ~0xff000000)
-#define parentDir(h, i) (((FSTEntry*)(h)->FSTStart)[i].entryOffsetOrParent)
-#define nextDir(h, i) (((FSTEntry*)(h)->FSTStart)[i].entrySizeOrNext)
-#define filePosition(h, i) (((FSTEntry*)(h)->FSTStart)[i].entryOffsetOrParent)
-#define fileLength(h, i) (((FSTEntry*)(h)->FSTStart)[i].entrySizeOrNext)
-
 static u32 entryToPath(ARCHandle* handle, u32 entry, char* path, u32 maxlen);
 
+// NONMATCHING (99.98%): same instructions; only register numbers or operands differ.
 BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 	FSTEntry* entry;
 	ARCHeader* header;
@@ -36,7 +30,6 @@ BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 	return TRUE;
 }
 
-// NONMATCHING (97.62%): the original tests the entry number with one compare-and-branch pair less.
 BOOL ARCOpen(ARCHandle* handle, const char* filename, ARCFileInfo* info) {
 	FSTEntry* fst = (FSTEntry*)handle->FSTStart;
 	s32 entry;
@@ -47,7 +40,7 @@ BOOL ARCOpen(ARCHandle* handle, const char* filename, ARCFileInfo* info) {
 		ARCGetCurrentDir(handle, currentDir, 128);
 		return FALSE;
 	}
-	if (((fst[entry].entryInfo & 0xff000000) == 0) ? FALSE : TRUE) {
+	if (0 > entry || (((fst[entry].entryInfo & 0xff000000) == 0) ? FALSE : TRUE)) {
 		return FALSE;
 	}
 	info->handle = handle;

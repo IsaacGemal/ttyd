@@ -7,6 +7,7 @@
 #include <string.h>
 #include "system.h"
 #include <demo/DEMOPad.h>
+#include <demo/DEMOStats.h>
 #include <stdio.h>
 
 char __GXErrorMessage[0x400];
@@ -20,14 +21,7 @@ static GXRenderModeObj* rmode;
 static vu32 FrameCount;
 static u32 FrameMissThreshold;
 static BOOL GPHangWorkaround = FALSE;
-extern u8 DemoStatEnable;
 static GXBool DemoFirstFrame = GX_TRUE;
-
-// LOCAL_PROTO(DEMOUpdateStats): the SDK stats header declares DemoStatEnable as u8; this custom unit uses BOOL.
-extern void DEMOUpdateStats(GXBool inc);
-// LOCAL_PROTO(DEMOPrintStats): the SDK stats header conflicts with the custom DemoStatEnable declaration.
-extern void DEMOPrintStats(void);
-
 
 //internal, inline
 static void __DEMOInitRenderMode(GXRenderModeObj* mode);
@@ -35,7 +29,6 @@ static void __DEMOInitMem(void);
 static void __DEMOInitGX(void);
 static void __DEMOInitVI(void);
 
-// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 void DEMOInit(GXRenderModeObj* mode) {
 	OSInit();
 	DVDInit();
@@ -143,7 +136,6 @@ void DEMOBeforeRender(void) {
 	GXInvalidateTexAll();
 }
 
-// NONMATCHING (97.89%): 2 instructions differ.
 void DEMODoneRender(void) {
 	if (GPHangWorkaround) {
 		__NoHangDoneRender();
@@ -227,7 +219,6 @@ void __NoHangRetraceCallback(u32 count) {
 	}
 }
 
-// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 void __NoHangDoneRender(void) {
 	BOOL abort = FALSE;
 	u16 token = sysGetToken();
@@ -280,7 +271,6 @@ void DEMOSetGPHangMetric(GXBool enable) {
 	}
 }
 
-// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 void __DEMODiagnoseHang(void) {
 	u32 xfTop0, xfBot0, suRdy0, r0Rdy0;
 	u32 xfTop1, xfBot1, suRdy1, r0Rdy1;

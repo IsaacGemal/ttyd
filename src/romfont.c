@@ -270,7 +270,7 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
     }
 }
 
-// NONMATCHING (96.84%): the cached `wp` is r7 here (r6 in the original) and the temporaries around it are shifted.
+// NONMATCHING (98.38%): the cached `wp` is r7 here (r6 in the original) and the halfword load is r6 (r7 in the original).
 s32 romFontGetWidth(const char* message) {
     s32 curX = 0;
     s32 i = 0;
@@ -298,9 +298,7 @@ s32 romFontGetWidth(const char* message) {
             }
             curX = 0;
             i += 1;
-            continue;
         } else {
-            glyph = wp->unk0;
             i += 1;
         }
 

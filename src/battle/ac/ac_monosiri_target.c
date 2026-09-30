@@ -232,7 +232,7 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 			work->actionCommands.result = 0;
 			work->actionCommands.mAcState = 0x3EA;
 		}
-		else if ((s32)BattlePadCheckTrigger(0x100) || autoCommand) {
+		else if (BattlePadCheckTrigger(0x100) || autoCommand) {
 			if (mt->hitFlag != 0) {
 				work->actionCommands.result = 2;
 				work->actionCommands.mResultCount++;

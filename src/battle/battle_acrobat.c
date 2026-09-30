@@ -17,7 +17,6 @@ s32 BattleAcrobatStart(BattleWork* work, s32 unitId, s32 windowStartFrame,
 	return 0; //???
 }
 
-// NONMATCHING (80.82%): 6 instructions differ, 6 missing, 16 extra, plus register differences.
 s32 BattleAcrobatMain(BattleWork* work) {
 	BattleActions* manager;
 	BattleUnit* unit;
