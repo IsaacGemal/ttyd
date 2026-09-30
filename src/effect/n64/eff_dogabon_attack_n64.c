@@ -63,22 +63,6 @@ static s8 y_data[28] = {
     1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 0, 0, 0,
 };
 
-extern const f32 float_0_8041ecf4;
-extern const f32 float_0p03125_8041ecf0;
-extern const f32 float_deg2rad_8041ecf8;
-extern const f32 float_1_8041ecfc;
-extern const f32 float_0p01_8041ed00;
-extern const f32 float_2_8041ed04;
-extern const f32 float_0p5_8041ed08;
-extern const f32 float_6p2832_8041ed0c;
-extern const f32 float_360_8041ed10;
-extern const f32 float_1080_8041ed14;
-extern const f32 float_15_8041ed18;
-extern const f32 float_0p99_8041ed1c;
-extern const f32 float_neg0p1_8041ed20;
-extern const f32 float_0p9_8041ed24;
-extern const f32 float_120_8041ed28;
-
 // .data vertex array for the 12x12 textured quad.
 u32 size12x12_tex32x32_vtx[14] = {
     0xFFFAFFFA, 0x00000000, 0x00000000, 0x00FF0006, 0xFFFA0000, 0x04000000, 0x000000FF,
@@ -86,11 +70,6 @@ u32 size12x12_tex32x32_vtx[14] = {
 };
 
 // .rodata zero vector and the two int->float conversion doubles (named so the pool matches).
-const Vec vec3_802fa4b0 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_mask_802fa4c0 = 4503599627370496.0;
-const f64 double_to_int_802fa4c8 = 4503601774854144.0;
-
-const char str_802FA4D0[20] = "DogabonAttackN64";
 
 EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* effect;
@@ -102,7 +81,7 @@ EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, 
     s32 r;
 
     effect = effEntry();
-    effect->type = str_802FA4D0;
+    effect->type = "DogabonAttackN64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(DogabonAttackData));
     effect->userdata = data;
@@ -125,22 +104,22 @@ EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, 
     data->field_0x20 = 0x78;
 
     for (i = 0; i < 25; i++) {
-        angle = (f32)(i * 1080 / 25) * float_6p2832_8041ed0c / float_360_8041ed10;
+        angle = (f32)(i * 1080 / 25) * 6.2831855f / 360.0f;
         s = (f32)sin(angle);
         c = (f32)cos(angle);
         r = rand();
         data->field_0x478[i] = (f32)(r % 360 - 180);
-        data->field_0x284[i] = float_15_8041ed18 * s;
+        data->field_0x284[i] = 15.0f * s;
         data->field_0x2E8[i] = (f32)(y_data[i] + 10);
-        data->field_0x34C[i] = float_15_8041ed18 * c;
-        data->field_0x158[i] = float_120_8041ed28 * s;
+        data->field_0x34C[i] = 15.0f * c;
+        data->field_0x158[i] = 120.0f * s;
         data->field_0x1BC[i] = (f32)(y_data[i] * 8 + 40);
-        data->field_0x220[i] = float_120_8041ed28 * c;
-        data->field_0x5A4[i] = float_0_8041ecf4;
+        data->field_0x220[i] = 120.0f * c;
+        data->field_0x5A4[i] = 0.0f;
         data->field_0x66C[i] = i * 2 + 1;
         data->field_0x6D0[i] = 0;
         data->field_0x734[i] = 0;
-        data->field_0x4DC[i] = float_0_8041ecf4;
+        data->field_0x4DC[i] = 0.0f;
     }
 
     return effect;
@@ -153,7 +132,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
        dispCalcZ; a single local folds the copy away (same idiom as effGlassMain/effStoneSmokeMain). */
     Vec position;
 #endif
-    Vec disp = vec3_802fa4b0;
+    Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
     s32 i;
     s32 type;
     s32 index;
@@ -189,9 +168,9 @@ void effDogabonAttackMain(EffectEntry* effect) {
     for (i = 0; i < 25; i++) {
         f32 scale;
 
-        scale = float_0p01_8041ed00 * (f32)scale_data[index];
+        scale = 0.01f * (f32)scale_data[index];
         data->field_0x414[i] = scale;
-        data->field_0x3B0[i] = float_2_8041ed04 - scale;
+        data->field_0x3B0[i] = 2.0f - scale;
 
         x0 = data->field_0x158[i];
         y0 = data->field_0x1BC[i];
@@ -207,7 +186,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
             } else {
                 f32 s;
                 data->field_0x6D0[i] = 1;
-                s = float_0p01_8041ed00 * (f32)scale_data_2[data->field_0x734[i]];
+                s = 0.01f * (f32)scale_data_2[data->field_0x734[i]];
                 data->field_0x414[i] = s;
                 data->field_0x3B0[i] = s;
                 data->field_0x734[i]++;
@@ -215,7 +194,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
             break;
         case 1:
             {
-                f32 s = float_0p01_8041ed00 * (f32)scale_data_2[data->field_0x734[i]];
+                f32 s = 0.01f * (f32)scale_data_2[data->field_0x734[i]];
                 data->field_0x414[i] = s;
                 data->field_0x3B0[i] = s;
                 data->field_0x734[i]++;
@@ -231,31 +210,31 @@ void effDogabonAttackMain(EffectEntry* effect) {
             break;
         case 20:
             {
-                f32 s = float_0p01_8041ed00 * (f32)move_data_hazure[data->field_0x734[i]];
+                f32 s = 0.01f * (f32)move_data_hazure[data->field_0x734[i]];
                 data->field_0x2C[i] = (data->field_0x284[i] - x0) * s + x0;
                 data->field_0x90[i] = (data->field_0x2E8[i] - y0) * s + y0;
                 data->field_0xF4[i] = (data->field_0x34C[i] - z0) * s + z0;
             }
-            data->field_0x414[i] = float_1_8041ecfc;
-            data->field_0x3B0[i] = float_1_8041ecfc;
+            data->field_0x414[i] = 1.0f;
+            data->field_0x3B0[i] = 1.0f;
             data->field_0x734[i]++;
             if (data->field_0x734[i] >= 20) {
                 data->field_0x6D0[i] = 5;
                 data->field_0x734[i] = 0;
-                data->field_0x540[i] = float_0p5_8041ed08 * data->field_0x284[i];
-                data->field_0x5A4[i] = float_0p5_8041ed08 * data->field_0x2E8[i];
-                data->field_0x608[i] = float_0p5_8041ed08 * data->field_0x34C[i];
+                data->field_0x540[i] = 0.5f * data->field_0x284[i];
+                data->field_0x5A4[i] = 0.5f * data->field_0x2E8[i];
+                data->field_0x608[i] = 0.5f * data->field_0x34C[i];
             }
             break;
         case 2:
             {
-                f32 s = float_0p01_8041ed00 * (f32)move_data_1[data->field_0x734[i]];
+                f32 s = 0.01f * (f32)move_data_1[data->field_0x734[i]];
                 data->field_0x2C[i] = (data->field_0x284[i] - x0) * s + x0;
                 data->field_0x90[i] = (data->field_0x2E8[i] - y0) * s + y0;
                 data->field_0xF4[i] = (data->field_0x34C[i] - z0) * s + z0;
             }
-            data->field_0x414[i] = float_1_8041ecfc;
-            data->field_0x3B0[i] = float_1_8041ecfc;
+            data->field_0x414[i] = 1.0f;
+            data->field_0x3B0[i] = 1.0f;
             data->field_0x734[i]++;
             if (data->field_0x734[i] >= 15) {
                 data->field_0x6D0[i] = 3;
@@ -295,20 +274,20 @@ void effDogabonAttackMain(EffectEntry* effect) {
             break;
         case 4:
             {
-                f32 t = float_0p01_8041ed00 * (f32)move_data_2[data->field_0x734[i]];
+                f32 t = 0.01f * (f32)move_data_2[data->field_0x734[i]];
                 f32 sinAng;
                 f32 ang;
                 f32 cosAng;
                 f32 factor;
-                f32 cosVal = (f32)cos(float_6p2832_8041ed0c * (f32)(i * 180 / 25) / float_360_8041ed10);
-                f32 amp = float_0p5_8041ed08 * (float_1080_8041ed14 * (float_1_8041ecfc - t));
+                f32 cosVal = (f32)cos(6.2831855f * (f32)(i * 180 / 25) / 360.0f);
+                f32 amp = 0.5f * (1080.0f * (1.0f - t));
 
-                ang = float_6p2832_8041ed0c
+                ang = 6.2831855f
                     * ((f32)(i * 1080 / 25) + amp * cosVal)
-                    / float_360_8041ed10;
+                    / 360.0f;
                 sinAng = (f32)sin(ang);
                 cosAng = (f32)cos(ang);
-                factor = float_15_8041ed18 / t / t;
+                factor = 15.0f / t / t;
                 data->field_0x2C[i] = sinAng * factor;
                 data->field_0x90[i] = (f32)(y_data[i] + 10);
                 data->field_0xF4[i] = cosAng * factor;
@@ -317,25 +296,25 @@ void effDogabonAttackMain(EffectEntry* effect) {
             if (data->field_0x734[i] >= 70) {
                 data->field_0x6D0[i] = 5;
                 data->field_0x734[i] = 0;
-                data->field_0x540[i] = float_0p5_8041ed08 * data->field_0x284[i];
-                data->field_0x5A4[i] = float_0p5_8041ed08 * data->field_0x2E8[i];
-                data->field_0x608[i] = float_0p5_8041ed08 * data->field_0x34C[i];
+                data->field_0x540[i] = 0.5f * data->field_0x284[i];
+                data->field_0x5A4[i] = 0.5f * data->field_0x2E8[i];
+                data->field_0x608[i] = 0.5f * data->field_0x34C[i];
             }
             break;
         case 5:
             data->field_0x2C[i] += data->field_0x540[i];
             data->field_0x90[i] += data->field_0x5A4[i];
             data->field_0xF4[i] += data->field_0x608[i];
-            data->field_0x540[i] *= float_0p99_8041ed1c;
-            data->field_0x5A4[i] *= float_0p99_8041ed1c;
-            data->field_0x608[i] *= float_0p99_8041ed1c;
-            data->field_0x5A4[i] += float_neg0p1_8041ed20;
+            data->field_0x540[i] *= 0.99f;
+            data->field_0x5A4[i] *= 0.99f;
+            data->field_0x608[i] *= 0.99f;
+            data->field_0x5A4[i] += -0.1f;
             data->field_0x734[i]++;
             if (data->field_0x734[i] > 16) {
                 data->field_0x734[i] = 0;
                 data->field_0x6D0[i] = 6;
             }
-            data->field_0x478[i] *= float_0p9_8041ed24;
+            data->field_0x478[i] *= 0.9f;
             break;
         case 6:
             {
@@ -346,13 +325,13 @@ void effDogabonAttackMain(EffectEntry* effect) {
                 f32 y;
                 f32 z;
 
-                PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041ecf8 * data->field_0x4DC[i]);
+                PSMTXRotRad(rotMtx, 'y', 0.017453292f * data->field_0x4DC[i]);
                 PSMTXTrans(transMtx, data->field_0x2C[i], data->field_0x90[i], data->field_0xF4[i]);
                 PSMTXConcat(rotMtx, transMtx, transMtx);
                 x = data->x + transMtx[0][3];
                 y = data->y + transMtx[1][3];
                 z = data->z + transMtx[2][3];
-                smokeEffect = effStoneSmokeN64Entry(0, 0x10, x, y, z, float_1_8041ecfc);
+                smokeEffect = effStoneSmokeN64Entry(0, 0x10, x, y, z, 1.0f);
                 ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x28 = 100;
                 ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x2C = 0;
                 ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x30 = 0;
@@ -404,7 +383,7 @@ void effDogabonAttackDisp(CameraId camId, void* param) {
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
-    PSMTXScale(scaleMtx, float_0p03125_8041ecf0, float_0p03125_8041ecf0, float_0_8041ecf4);
+    PSMTXScale(scaleMtx, 0.03125f, 0.03125f, 0.0f);
     GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
     effGetTexObjN64(0x8C, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -415,14 +394,14 @@ void effDogabonAttackDisp(CameraId camId, void* param) {
         if (data->field_0x6D0[i] == 0 || data->field_0x6D0[i] == 7) {
             continue;
         }
-        PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041ecf8 * data->field_0x4DC[i]);
+        PSMTXRotRad(rotMtx, 'y', 0.017453292f * data->field_0x4DC[i]);
         PSMTXTrans(transMtx, data->field_0x2C[i], data->field_0x90[i], data->field_0xF4[i]);
         PSMTXConcat(rotMtx, transMtx, transMtx);
-        PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041ecf8 * -data->field_0x4DC[i]);
+        PSMTXRotRad(rotMtx, 'y', 0.017453292f * -data->field_0x4DC[i]);
         PSMTXConcat(transMtx, transMtx, transMtx);
-        PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041ecf8 * data->field_0x478[i]);
+        PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x478[i]);
         PSMTXConcat(transMtx, rotMtx, transMtx);
-        PSMTXScale(scaleMtx, data->field_0x3B0[i], data->field_0x414[i], float_1_8041ecfc);
+        PSMTXScale(scaleMtx, data->field_0x3B0[i], data->field_0x414[i], 1.0f);
         PSMTXConcat(transMtx, scaleMtx, transMtx);
         PSMTXConcat(baseMtx, transMtx, transMtx);
         GXLoadPosMtxImm(transMtx, GX_PNMTX0);

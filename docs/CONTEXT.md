@@ -2381,3 +2381,28 @@ copied), from Rainchus/ttyd-decomp-us and Peeeech/TTYDRelDecomp (no license), an
 (GPL-3.0), mostly without saying so in REPORT.md; the yoshi agent disclosed taking a function signature from the
 GPL project. A per-agent TMPDIR didn't keep agents out of /tmp (31 still wrote there by absolute path), and some
 read other agents' workspaces; the next launcher runs each agent under bubblewrap with its own /tmp.
+
+## Grind 21 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3"): pool-literal finisher, near-miss sweep
+
+- **Units whose code was 100% but that failed at link** (undefined extern `.sdata2` constants) link once the constants are
+  literals in the code, so the compiler builds the pool in first-use order: `float_*` externs become `1.0f`-style literals, the
+  named `double_to_int_*`, `vec3_*` (zero vectors: `(Vec){ 0, 0, 0 }`) and `str_*` definitions go away, a `dat_*` colour
+  becomes `(GXColor){ r, g, b, a }`, and a zero `.sbss2` scratch `GXColor` (`unk_*`) becomes `(GXColor){ 0, 0, 0, 0 }`
+  (the compiler pools zero colour literals into `.sbss2`). `MATCH_F32` / volatile wrappers around the constants go too. The
+  same trick, applied by a script over the unit, linked: eff_miss_star, eff_treasure_map, eff_laser, eff_dogabon_attack_n64,
+  eff_coin_n64, eff_fire_ring_n64, eff_guruguru_n64, eff_rothammer_success_n64, eff_holography_n64, eff_freeze_n64,
+  battle_message, eff_torch. Vertex tables the unit owns (`.data`) come from `tools/dol_gen.py`; a `u32` table where the code
+  indexes a byte array needs `(u8*)` in the pointer arithmetic (holography: `ach_01_v + i * 0x134`).
+- **Still open in that class**: eff_ice, eff_mizutama, eff_machinegun, eff_bush, eff_crystal, eff_kemuri4/6/7, eff_onpu,
+  eff_packn_bfire, eff_rubble, eff_snowman, eff_ice_n64, evt_snd (each needs its own `.data`/`lbl_` object or has a
+  pool-order or size mismatch), and hw_aramdma.
+- **hw_aramdma `.bss` order** (parked): the target has `aramQueueLo` then `aramQueueHi`; ours emits Hi first whatever the
+  declaration order. Tried: swapping the two declarations, swapping the two stores in the inline `aramQueueInit`, taking
+  `&aramQueueHi` first, one wrapper struct holding both (changes the addressing: +8 bytes of `.text`), `__declspec(section
+  ".bss")` (does not compile). Nothing moved Lo first.
+- **Near-miss list**: `effKemuri2Main` (the `userdata` pointer lands in r31 instead of r7), `itemDelete` /
+  `btlUnitItemDisp2` / `kpa_fall_80213C38` (the target lays `if (x >= a && x < b)` as `bge X; b Y` with the then-block after
+  the `b`; no source form found), `lightGetNearObj` (`cmplwi` on the tail-loop count, casts made it worse), `sndCheckEmitter`
+  (reads `flags` at 0xc where our `SND_EMITTER` has it at 0x10; library version difference), iconDispGx `s16`→`u16` (changes
+  the dol checksum). Matches: effFallDispInseki (`rad` temp under `MUST_MATCH`), mario_kemuri_landon (`!x` keeps the compare
+  order), mapGrpSetOffScreen (locals instead of a nested call), evt_nannpc_move_position2 (declaration order).

@@ -6,21 +6,12 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-extern const char str_802FE770[];
-const char str_804213E4[] = "Z_1";
-extern const f32 float_1_804213e8;
-extern const f32 float_1p1_804213d0;
-extern const f32 float_1p06_804213d4;
-extern const f32 float_deg2rad_804213d8;
-extern const f32 float_0_804213dc;
-extern const f32 float_10_804213e0;
-
 EffectEntry* effTreasureMapEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	EffTreasureMapData* data;
 
 	entry = effEntry();
-	entry->type = str_802FE770;
+	entry->type = "Treasure_Map";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffTreasureMapData));
 	entry->userdata = data;
@@ -32,8 +23,8 @@ EffectEntry* effTreasureMapEntry(s32 type, f32 x, f32 y, f32 z) {
 	data->z = z;
 	data->timer = 1000;
 	data->alpha = 0xff;
-	data->scale = float_1_804213e8;
-	data->angle = float_0_804213dc;
+	data->scale = 1.0f;
+	data->angle = 0.0f;
 	data->animId = -1;
 	data->cameraId = 4;
 	return entry;
@@ -57,7 +48,7 @@ void effTreasureMapMain(EffectEntry* effect) {
 			return;
 		}
 		data->animId = animPoseEntry("EFF_treasure_map", inBattle);
-		animPoseSetAnim(data->animId, str_804213E4, TRUE);
+		animPoseSetAnim(data->animId, "Z_1", TRUE);
 	}
 
 	if (effect->flags & 4) {
@@ -98,11 +89,11 @@ void effTreasureMapDisp(CameraId camId, void* param) {
 		return;
 	}
 	for (i = 0; i < 2; i++) {
-		baseScale = float_1p1_804213d0 * data->scale;
+		baseScale = 1.1f * data->scale;
 		if (i == 0) {
 			PSMTXTrans(trans, data->x, data->y, data->z);
-			PSMTXScale(scale, float_1p06_804213d4 * baseScale, float_1p06_804213d4 * baseScale, float_1p06_804213d4 * baseScale);
-			PSMTXRotRad(rot, 'y', float_deg2rad_804213d8 * data->angle);
+			PSMTXScale(scale, 1.06f * baseScale, 1.06f * baseScale, 1.06f * baseScale);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->angle);
 			PSMTXConcat(trans, scale, mtx);
 			PSMTXConcat(mtx, rot, mtx);
 			animPoseSetMaterialFlagOn(data->animId, 0x40);
@@ -111,15 +102,15 @@ void effTreasureMapDisp(CameraId camId, void* param) {
 		else {
 			PSMTXTrans(trans, data->x, data->y, data->z);
 			PSMTXScale(scale, baseScale, baseScale, baseScale);
-			PSMTXRotRad(rot, 'y', float_deg2rad_804213d8 * data->angle);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->angle);
 			PSMTXConcat(trans, scale, mtx);
 			PSMTXConcat(mtx, rot, mtx);
 			animPoseSetMaterialFlagOn(data->animId, 0x40);
 			animPoseSetMaterialEvtColor(data->animId, (GXColor){ 0xFF, 0xFF, 0xFF, data->alpha });
 		}
 		animPoseMain(data->animId);
-		animPoseDrawMtx(data->animId, mtx, 1, float_0_804213dc, float_10_804213e0);
-		animPoseDrawMtx(data->animId, mtx, 2, float_0_804213dc, float_10_804213e0);
-		animPoseDrawMtx(data->animId, mtx, 3, float_0_804213dc, float_10_804213e0);
+		animPoseDrawMtx(data->animId, mtx, 1, 0.0f, 10.0f);
+		animPoseDrawMtx(data->animId, mtx, 2, 0.0f, 10.0f);
+		animPoseDrawMtx(data->animId, mtx, 3, 0.0f, 10.0f);
 	}
 }
