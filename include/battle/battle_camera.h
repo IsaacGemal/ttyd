@@ -85,4 +85,3 @@ USER_FUNC(evt_btl_camera_set_moveto);
 USER_FUNC(evt_btl_camera_set_posoffset);
 USER_FUNC(evt_btl_camera_set_prilimit);
 USER_FUNC(evt_btl_camera_shake_w);
-USER_FUNC(evt_btl_camera_set_homing_unit_audience);
