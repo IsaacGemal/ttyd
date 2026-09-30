@@ -2139,4 +2139,6 @@ MusyX synthvoice.c: retail splits `voiceAllocate` into a static `voiceAllocateFi
 the stolen voice's allocId). voiceAllocate is inlined into `voiceBlock`, which sets `allocId = 0xFFFFFFFF`. Also
 written: `vidGetPublicId`, `synthKillVoicesBySampleReferences` (sampleId, MusyX >= 2.0.1); `vidRemoveVoiceReferences`
 updates the master list's root too; `vidMakeNew` restarts the list walk when a fresh vid ends up below the current
-node (`goto` label after the `vidRoot` load, so the compiler keeps `vidRoot` in a register).
+node (`goto retry` to the start of the walk; the compiler reuses the `vidRoot` it already loaded). The new code
+is gated like upstream: the split at MusyX >= 2.0.1 (Peek at 2.0.3), vidGetPublicId, the restart and the master-list
+root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, untested (the project builds 2.0.3).

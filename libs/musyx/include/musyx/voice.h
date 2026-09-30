@@ -255,6 +255,9 @@ void voiceRemovePriority(SYNTH_VOICE* svoice);
 
 void vidInit();
 u32 vidGetInternalId(SND_VOICEID id);
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+u32 vidGetPublicId(u32 vid);
+#endif
 void vidRemoveVoiceReferences(SYNTH_VOICE* svoice);
 u32 vidMakeNew(SYNTH_VOICE* svoice, u32 isMaster);
 u32 vidMakeRoot(SYNTH_VOICE* svoice);
