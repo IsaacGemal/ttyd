@@ -288,3 +288,24 @@ void effMagic3Disp(CameraId camId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041f700 = 0xFFFFFF00;
+const f32 float_0p015625_8041f704 = 0.015625f;
+const f32 float_0p03125_8041f708 = 0.03125f;
+const f32 float_0_8041f70c = 0.0f;
+const f32 float_deg2rad_8041f710 = 0.017453292f;
+const f32 float_1_8041f714 = 1.0f;
+const f32 float_6p2832_8041f718 = 6.2831855f;
+const f32 float_0p8_8041f71c = 0.8f;
+const f32 float_0p4_8041f720 = 0.4f;
+const f32 float_360_8041f724 = 360.0f;
+const f32 float_3_8041f728 = 3.0f;
+const f32 float_0p6_8041f72c = 0.6f;
+const f32 float_0p7_8041f730 = 0.7f;
+const f32 float_30_8041f734 = 30.0f;
+const f32 float_neg1_8041f738 = -1.0f;
+const f32 float_18_8041f73c = 18.0f;
+const f32 float_0p25_8041f744 = 0.25f;
+const f32 float_50_8041f748 = 50.0f;
+const f32 float_0p5_8041f74c = 0.5f;

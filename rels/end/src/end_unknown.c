@@ -1411,13 +1411,10 @@ char* dat_ptr_end_00005034 = "c_n_moa_a";
 
 char* dat_ptr_end_00005038 = "S_1";
 
-// NONMATCHING (89.95%): the original reloads work->idx from memory for the counters
-// indexing and keeps the counters slot address (not the pointer) live; ours caches both.
 void unk_end_000006f8(void) {
     ExtPose* pose = extGetPosePtr();
     CreditsPoseState* work = (CreditsPoseState*)unk_end_bss00000000[0];
     s32 i;
-    s32 groupCount = dat_80419a28;
 
     for (i = 0; i < extGetPoseNum(); i++) {
         pose->flags |= 5;
@@ -1430,15 +1427,16 @@ void unk_end_000006f8(void) {
             pos.z = unk_end_000008bc(-10.0f, 10.0f);
             work->position = pos;
         }
-        work->idx = i % groupCount;
-        work->counter = ((s32*)unk_end_bss00000008[0])[work->idx];
-        ((s32*)unk_end_bss00000008[0])[work->idx]++;
+        work->idx = i % dat_80419a28;
+        work->counter = ((s32*)unk_end_bss00000008[0])[work->idx]++;
         work++;
         pose++;
     }
 }
 
-// NONMATCHING (92.62%): Mtx stack slots and register allocation differ; constant symbols differ.
+// NONMATCHING (96.78%): logic matches; only register allocation differs (our work pointer is r26
+// where the original uses r24, loop counter the other way round) plus one constant load scheduled
+// differently.
 void unk_end_00000440(void) {
     NpcEntry* npc = npcNameToPtr("モアモア");
     AnimationPose* pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
@@ -1446,8 +1444,8 @@ void unk_end_00000440(void) {
     CreditsPoseState* work;
     ExtPose* extPose;
     Mtx mtx1;
-    Mtx mtx2;
     Mtx mtx3;
+    Mtx mtx2;
     Vec offset;
     Vec tmp;
     s32 i;
@@ -1455,8 +1453,8 @@ void unk_end_00000440(void) {
     if (positions == NULL) {
         return;
     }
-    work = (CreditsPoseState*)unk_end_bss00000000[0];
     extPose = extGetPosePtr();
+    work = (CreditsPoseState*)unk_end_bss00000000[0];
     for (i = 0; i < extGetPoseNum(); i++) {
         s32 p0 = ((s32*)unk_end_bss0000000c[0])[work->idx * 2 + 0];
         s32 p1 = ((s32*)unk_end_bss0000000c[0])[work->idx * 2 + 1];

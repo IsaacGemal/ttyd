@@ -801,7 +801,7 @@ static USER_FUNC(barriern_zanzou3) {
     return barriern_zanzou_sub(isFirstCall, unit, zanzou3_scale, 2);
 }
 
-// NONMATCHING (97.85%): the always-phase temp-array/zanzou_count address registers are permuted.
+// NONMATCHING (97.86%): the always-phase temp-array/zanzou_count address registers are permuted.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
     f32 temp2[5];
@@ -1271,7 +1271,9 @@ static EVT_BEGIN(damage_check_event_sub)
     RETURN
 EVT_END()
 
-// NONMATCHING (89.9%): the whole register assignment is shifted by one relative to the original.
+// NONMATCHING (98.05%): the first intplGetValue sets zanzou_count[0] and 1.0f up in swapped
+// registers, and the always-phase loop loads zanzou_count before temp2/temp1 (original loads the
+// temporaries first).
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
                                          s32 index, s32 mode) {
     BattleUnitPart* part;
@@ -1316,8 +1318,9 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         a = 1;
         break;
     }
+    index = index + 1;
     if (isFirstCall) {
-        zanzou_count[index + 1] = 0;
+        zanzou_count[index] = 0;
         BtlUnit_GetPos(unit, &x, &y, &z);
         BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 1.0f, 1.0f, 1.0f);
         for (i = 2, j = 0; i <= 6; i++, j++) {
@@ -1331,15 +1334,15 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         }
     }
     part = BtlUnit_GetPartsPtr(unit, 1);
-    s = intplGetValue(a, zanzou_count[0], num, 1.0f, base);
+    s = intplGetValue(4, zanzou_count[0], num, 1.0f, base);
     BtlUnit_SetPartsScale(part, s, s, 1.0f);
     for (i = 2, j = 0; i <= 6; i++, j++) {
         part = BtlUnit_GetPartsPtr(unit, i);
-        s = intplGetValue(a, zanzou_count[index + 1], num, temp2[j], temp1[j]);
+        s = intplGetValue(a, zanzou_count[index], num, temp2[j], temp1[j]);
         BtlUnit_SetPartsScale(part, s, s, 1.0f);
-        part->color.a = (u8)intplGetValue(0, zanzou_count[index + 1], num, (f32)alphaA, (f32)alphaB);
+        part->color.a = (u8)intplGetValue(0, zanzou_count[index], num, (f32)alphaA, (f32)alphaB);
     }
-    if (zanzou_count[index + 1] >= num) {
+    if (zanzou_count[index] >= num) {
         part = BtlUnit_GetPartsPtr(unit, 1);
         BtlUnit_SetPartsScale(part, 1.0f, 1.0f, 1.0f);
         part->color.a = 0xff;
@@ -1348,7 +1351,7 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         }
         return 2;
     }
-    zanzou_count[index + 1]++;
+    zanzou_count[index]++;
     return 0;
 }
 
@@ -1473,7 +1476,8 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
 }
 
 // overall structure and calls match.
-// NONMATCHING (88.28%): the original spills the preloaded spline-table addresses to the stack (frame 0xa0, ours 0x90).
+// NONMATCHING (88.29%): the twenty preloaded spline-table addresses are spilled/allocated in a
+// different order than the original (the frame is already 0xa0).
 static USER_FUNC(barriernSatelliteToInside) {
     s32* args;
     s32 id;
@@ -1962,27 +1966,30 @@ static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BtlUnit_GetPartsPtr(satellite, 1)->work[2] = (s32)spline;
 }
 
-// NONMATCHING (88.25%): count stays in r30 instead of volatile r4/r25, and xs/ys bases are r7/r5 instead of r8/r6.
+// NONMATCHING (97.45%): args += 2 is scheduled after the second evtSetValue call; the original
+// puts it before the call.
 static USER_FUNC(barriern_wawawa_set_target) {
     s32* args;
     s32 xs[12];
     s32 ys[10];
-    s32 count;
     s32 i;
+    s32 count;
+    s32 n;
 
     args = event->args;
+    i = 0;
     _battleWorkPointer->field_428[0xab7] = 0;
     barriern_wawawa_get_target(&xs[0], &ys[0]);
-    count = 0;
     for (;;) {
-        if (xs[count] == -1) {
+        if (xs[i] == -1) {
+            count = i;
             break;
         }
-        count++;
-        barriern_wawawa_get_next_target(&xs[count], &ys[count]);
+        i++;
+        barriern_wawawa_get_next_target(&xs[i], &ys[i]);
     }
     for (i = 0; i < 5; i++) {
-        s32 n = irand(count);
+        n = irand(count);
 
         evtSetValue(event, args[0], xs[n]);
         evtSetValue(event, args[1], ys[n]);

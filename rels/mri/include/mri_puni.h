@@ -10,79 +10,111 @@
 
 typedef struct PuniWork {
     s32 field_0x0;                      // 0x0
-    u8 unk4[0x328 - 0x4];               // 0x4
+    u8 unk4[0x324 - 0x4];               // 0x4
+    s32 field_0x324;                    // 0x324
     s32 unk328;                         // 0x328
-    u8 unk32C[0x340 - 0x32C];           // 0x32C
+    f32 field_0x32C;                    // 0x32C
+    f32 field_0x330;                    // 0x330
+    f32 field_0x334;                    // 0x334
+    f32 field_0x338;                    // 0x338
+    s32 field_0x33C;                    // 0x33C
     s32 field_0x340;                    // 0x340
-    s32 field_0x344;                    // 0x344
-    s32 field_0x348;                    // 0x348
-    s32 field_0x34C;                    // 0x34C
-    u8 unk350[0x43C - 0x350];           // 0x350
+    Vec field_0x344;                    // 0x344
+    f32 field_0x350;                    // 0x350
+    f32 field_0x354;                    // 0x354
+    f32 field_0x358;                    // 0x358
+    f32 field_0x35C;                    // 0x35C
+    s32 field_0x360;                    // 0x360
+    s32 field_0x364;                    // 0x364
+    s32 field_0x368;                    // 0x368
+    s32 field_0x36C;                    // 0x36C
+    s32 field_0x370;                    // 0x370
+    s32 field_0x374;                    // 0x374
+    Vec field_0x378;                    // 0x378
+    s32 field_0x384;                    // 0x384
+    u8 unk388[0x43C - 0x388];           // 0x388
     s32 field_0x43C;                    // 0x43C
-    u8 unk440[0x444 - 0x440];           // 0x440
+    s32 field_0x440;                    // 0x440
     BOOL showPuniCounter;               // 0x444
     BOOL unk448;                        // 0x448
     s32 puniCounterAlpha;               // 0x44C
-    u8 unk450[0x45C - 0x450];           // 0x450
+    s32 field_0x450;                    // 0x450
+    s32 field_0x454;                    // 0x454
+    s32 field_0x458;                    // 0x458
     s32 field_0x45C;                    // 0x45C
     s32 field_0x460;                    // 0x460
     u8 unk464[0x468 - 0x464];           // 0x464
     s32 field_0x468;                    // 0x468
-    u8 unk46C[0x470 - 0x46C];           // 0x46C
+    s32 field_0x46C;                    // 0x46C
     s32 field_0x470;                    // 0x470
     s32 field_0x474;                    // 0x474
-    u8 unk478[0x47C - 0x478];           // 0x478
+    s32 field_0x478;                    // 0x478
     s32 field_0x47C;                    // 0x47C
-    f32 field_0x480;                    // 0x480
-    f32 field_0x484;                    // 0x484
-    f32 field_0x488;                    // 0x488
-    f32 field_0x48C;                    // 0x48C
-    f32 field_0x490;                    // 0x490
-    f32 field_0x494;                    // 0x494
+    Vec field_0x480;                    // 0x480
+    Vec field_0x48C;                    // 0x48C
     u8 unk498[0x4B0 - 0x498];           // 0x498
     f32 field_0x4B0;                    // 0x4B0
     f32 field_0x4B4;                    // 0x4B4
     u8 unk4B8[0x4C0 - 0x4B8];           // 0x4B8
     s32 field_0x4C0;                    // 0x4C0
     s32 field_0x4C4;                    // 0x4C4
-    u8 unk4C8[0x4D0 - 0x4C8];           // 0x4C8
-} PuniWork; // 0x4D0
+    u8 unk4C8[0x4CC - 0x4C8];           // 0x4C8
+    s32 field_0x4CC;                    // 0x4CC
+} PuniWork;  // 0x4D0
 
 typedef struct PuniData {
-    u8 unk0[0x4 - 0x0];                 // 0x0
+    s32 field_0x0;                      // 0x0
     s32 unk4;                           // 0x4
-    u8 unk8[0xC - 0x8];                 // 0x8
+    s32 field_0x8;                      // 0x8
     u16 unkC;                           // 0xC
     s16 field_0xE;                      // 0xE
     u8 unk10[0x114 - 0x10];             // 0x10
-    s16 field_0x114;                    // 0x114
+    u16 field_0x114;                    // 0x114
     s16 field_0x116;                    // 0x116
     s16 field_0x118;                    // 0x118
     s16 field_0x11A;                    // 0x11A
     u16 field_0x11C;                    // 0x11C
     s16 field_0x11E;                    // 0x11E
-    u8 unk120[0x12C - 0x120];           // 0x120
+    u8 unk120[0x121 - 0x120];           // 0x120
+    u8 field_0x121;                     // 0x121
+    u8 unk122[0x124 - 0x122];           // 0x122
+    s32 field_0x124;                    // 0x124
+    s32 field_0x128;                    // 0x128
     Vec field_0x12C;                    // 0x12C
-    s32 field_0x138;                    // 0x138
-    s32 field_0x13C;                    // 0x13C
-    s32 field_0x140;                    // 0x140
-    u8 unk144[0x148 - 0x144];           // 0x144
+    Vec field_0x138;                    // 0x138
+    f32 field_0x144;                    // 0x144
     f32 field_0x148;                    // 0x148
-    u8 unk14C[0x15C - 0x14C];           // 0x14C
-    s32 field_0x15C;                    // 0x15C
-    s32 field_0x160;                    // 0x160
-    s32 field_0x164;                    // 0x164
-    u8 unk168[0x180 - 0x168];           // 0x168
+    f32 field_0x14C;                    // 0x14C
+    u8 unk150[0x15C - 0x150];           // 0x150
+    Vec field_0x15C;                    // 0x15C
+    u8 unk168[0x174 - 0x168];           // 0x168
+    f32 field_0x174;                    // 0x174
+    u8 unk178[0x180 - 0x178];           // 0x178
     f32 field_0x180;                    // 0x180
     f32 field_0x184;                    // 0x184
     f32 field_0x188;                    // 0x188
-    u8 unk18C[0x1C8 - 0x18C];           // 0x18C
+    f32 field_0x18C;                    // 0x18C
+    f32 field_0x190;                    // 0x190
+    f32 field_0x194;                    // 0x194
+    f32 field_0x198;                    // 0x198
+    u8 unk19C[0x1A0 - 0x19C];           // 0x19C
+    f32 field_0x1A0;                    // 0x1A0
+    f32 field_0x1A4;                    // 0x1A4
+    f32 field_0x1A8;                    // 0x1A8
+    f32 field_0x1AC;                    // 0x1AC
+    f32 field_0x1B0;                    // 0x1B0
+    s32 field_0x1B4;                    // 0x1B4
+    f32 field_0x1B8;                    // 0x1B8
+    s32 field_0x1BC;                    // 0x1BC
+    f32 field_0x1C0;                    // 0x1C0
+    u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
     s32 field_0x1C8;                    // 0x1C8
     s32 field_0x1CC;                    // 0x1CC
     s32 field_0x1D0;                    // 0x1D0
     s32 field_0x1D4;                    // 0x1D4
     s32 field_0x1D8;                    // 0x1D8
-    u8 unk1DC[0x1E4 - 0x1DC];           // 0x1DC
+    s32 field_0x1DC;                    // 0x1DC
+    u8 unk1E0[0x1E4 - 0x1E0];           // 0x1E0
     s32 field_0x1E4;                    // 0x1E4
     u8 unk1E8[0x1EC - 0x1E8];           // 0x1E8
     f32 field_0x1EC;                    // 0x1EC
@@ -90,13 +122,35 @@ typedef struct PuniData {
     u8 unk1F4[0x1F8 - 0x1F4];           // 0x1F4
     Vec field_0x1F8;                    // 0x1F8
     Vec field_0x204;                    // 0x204
-    u8 unk210[0x218 - 0x210];           // 0x210
+    s32 field_0x210;                    // 0x210
+    s32 field_0x214;                    // 0x214
     s32 field_0x218;                    // 0x218
-    u8 unk21C[0x56C - 0x21C];           // 0x21C
+    u8 unk21C[0x560 - 0x21C];           // 0x21C
+    s32 field_0x560;                    // 0x560
+    s32 field_0x564;                    // 0x564
+    s32 field_0x568;                    // 0x568
     s32 field_0x56C;                    // 0x56C
     s32 field_0x570;                    // 0x570
-    u8 unk574[0x5A8 - 0x574];           // 0x574
-} PuniData; // 0x5A8
+    s16 field_0x574;                    // 0x574
+    s16 field_0x576;                    // 0x576
+    s16 field_0x578;                    // 0x578
+    s16 field_0x57A;                    // 0x57A
+    s16 field_0x57C;                    // 0x57C
+    s16 field_0x57E;                    // 0x57E
+    s16 field_0x580;                    // 0x580
+    s16 field_0x582;                    // 0x582
+    s16 field_0x584;                    // 0x584
+    s16 field_0x586;                    // 0x586
+    s16 field_0x588;                    // 0x588
+    s16 field_0x58A;                    // 0x58A
+    s32 field_0x58C;                    // 0x58C
+    s32 field_0x590;                    // 0x590
+    s32 field_0x594;                    // 0x594
+    s32 field_0x598;                    // 0x598
+    s32 field_0x59C;                    // 0x59C
+    s32 field_0x5A0;                    // 0x5A0
+    s32 field_0x5A4;                    // 0x5A4
+} PuniData;  // 0x5A8
 
 typedef struct PuniTexInfo {
     char* unk0; // 0x0

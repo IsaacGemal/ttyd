@@ -8,14 +8,11 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .rodata: zero vector the per-effect position helper starts from.
-const Vec vec3_802fb4a0 = { 0.0f, 0.0f, 0.0f };
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_80423234_sbss2;
+__declspec(section ".sdata") GXColor unk_80423230;
 
-// .rodata: int->float conversion magic double.
-const f64 double_to_int_802fb4b0 = 4503601774854144.0;
-
-// .rodata: effect type name.
-const char str_802FB4B8[] = "RappaN64";
 
 // .data: one effVtxArray (0x38 bytes) for the textured quad.
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
@@ -25,15 +22,18 @@ static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
 	0x00000400, 0x000000FF,
 };
 
+__declspec(section ".data") u32 lbl_803A4A60[2] = {
+    0xBF800000, 0x3F800000,
+};
+
 // .sdata: byte-indexed color rotation table (36 bytes).
-static u8 color_rotation_data[36] = {
+static u8 color_rotation_data[40] = {
 	0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,
 	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
 
 // .sbss2: shared scratch GXColor, only its bytes are overwritten (see eff_small_star_n64.c).
-GXColor unk_80423230;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_sstar.c).
 inline Vec initializeVec(Vec* input) {
@@ -72,7 +72,7 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, 
 	if (count == 0) {
 		return NULL;
 	}
-	effect->type = str_802FB4B8;
+	effect->type = "RappaN64";
 	effect->count = count + 1;
 	data = __memAlloc(HEAP_EFFECT, (count + 1) * sizeof(effRappaData));
 	effect->userdata = data;
@@ -230,3 +230,17 @@ void effRappaDisp(CameraId camId, void* param) {
 		idx3 += 3;
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p0625_8041fad8 = 0.0625f;
+const f32 float_0p03125_8041fadc = 0.03125f;
+const f32 float_0_8041fae0 = 0.0f;
+const f32 float_deg2rad_8041fae4 = 0.017453292f;
+const f32 float_1_8041fae8 = 1.0f;
+const f32 float_0p8_8041faec = 0.8f;
+const f32 float_0p9_8041faf0 = 0.9f;
+const f32 float_10_8041faf4 = 10.0f;
+const f32 float_6p2832_8041faf8 = 6.2831855f;
+const f32 float_5_8041fafc = 5.0f;
+const f32 float_0p25_8041fb00 = 0.25f;
+const f32 float_360_8041fb04 = 360.0f;
