@@ -87,7 +87,7 @@ static u32 stg_thruhammer_v[0x118 / 4] = {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
 inline Vec initializeVec(Vec* input) {
-    Vec temp = vec3_802faa00;
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
     temp.x = input->x;
     temp.y = input->y;
     temp.z = input->z;

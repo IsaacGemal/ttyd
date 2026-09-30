@@ -55,7 +55,7 @@ EffectEntry* effSweatN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 	data->position.z = z;
 	p = data + 1;
 	for (i = 1; i < effect->count; i++, p++) {
-		Vec temp = vec3_802fb810;
+		Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 		temp.x = (f32)sin(float_0_8041ffbc);
 		temp.z = -(f32)cos(float_0_8041ffbc);
 		axis = temp;

@@ -31,7 +31,7 @@ const f64 double_to_int_802fb728 = 4503601774854144.0;
 // Inline copy of the file-local helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
-    Vec temp = vec3_802fb718;
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
     temp.x = input->x;
     temp.y = input->y;
     temp.z = input->z;

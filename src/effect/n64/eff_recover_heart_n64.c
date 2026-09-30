@@ -103,7 +103,7 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_guruguru.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = vec3_802fb4c8;
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
