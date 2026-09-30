@@ -2003,3 +2003,281 @@ returning a pointer (the original's callers read r3) while src/driver/npcdrv.c d
 copy of evt_nannpc.c's NanNpcEntry/NanNpcWork (breaks once evt_nannpc.c links); ~83 bare `return 0/1/2` in event
 functions; several tables tools/struct_render.py could now type (unit_mahorn, gundan_zako_group3, unit_kamec_*,
 battle_database_las's 180 arrays).
+
+## Sep 29 evening: pushing the autonomous setup (Isaac; written up by TTYD Claude #1)
+
+Isaac's directive for the night (18:47): push the autonomous agents as far as they go before ~23:00, then review
+how many waves ran and what a fully autonomous flow should look like. The goal is unchanged: a matching decomp with
+reasonably clean code. Roles: TTYD Claude #1 (Opus 5.5, session "Ambitious work session") orchestrates two agent
+waves at a time, its own and TTYD Claude #2's, launching the next from the backlog when one finishes, and merges
+reviewed, CI-clean PRs (merging delegated Sep 29 afternoon); TTYD Claude #3 (Sonnet 5.5) works for Claude #1 on
+code, the hard grind of linking functions (code over data: data has become mechanical). Usage headroom is ample
+(resets Thursday). The knowledge base is growing (this ledger, the brief, the tools) and the reference decomps
+of other games are there for agents to learn from. One concern to watch: agents poking around on the web;
+Claude #1 checks each workspace's provenance.txt at collection and surfaces anything outside the repo.
+Size estimate asked for tonight: the finished decomp is roughly 0.8-1.2 million lines (about 450k today: src 157k,
+rels 183k, libs 99k, include 12k), about half of it event scripts and data tables.
+
+## Wave 21: one untouched function per agent (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Isaac's idea: skip the scaffolding, give each agent one function nobody had touched, and see. The queue was the
+smallest 0% function of each dol game file up to 1.5 KB (200 files, median 342 bytes; 136 files had no source, so
+the agent created the file with just that function). 24 agents at a time, 30 minutes each, 17:44-19:32, from a
+fresh base on the tower (with its own copy of build/tools: rebuilding a base re-downloads the tools, and
+overwriting the shared ones fails while other agents run them). **158 of 200 functions at 100%, 32 at 90-99%, 9 at
+50-89%, 1 dropped** (eff_syuryou: its data struct clashed with the one wave 19 put in eff_syuryou.h). **Functions
+5,465 -> 5,623.** Small functions took 2-5 minutes.
+
+Collected in one batch (all files, header additions unioned, one build, scores from the report) rather than
+merge_agent.sh per unit, which runs CI 200 times. Fixed at collection: two agents declared effHokoriN64Entry with
+different argument orders (ABI-identical; kept the order its caller uses); one agent's mobjdrv.c edit dropped three
+other functions from 99.9% to 84-88% (the file keeps main's version; its mobjCalcMtx attempt was 83.6%).
+Web access: 33 agents fetched other TTYD decomps (doldecomp/ttyd, MIT; one also cloned Rainchus/ttyd-decomp-us,
+whose license we haven't checked) to see whether a function already existed upstream; their reports say nothing
+was copied. Several also listed or read paths outside their workspace (~/ttyd, other agents' workspaces), which the
+brief forbids; the per-agent provenance.txt files in scratch/wave21 have the details. Worth tightening in the
+prompt: say what's allowed to fetch.
+Near-misses (90-99%) for Claude #3: scratch/wave21/scores.json.
+
+**Review of PR #37** (one fresh Claude): no wrong code in the 17 partial functions checked against the asm; no
+function scores lower than on main; all 239 new declarations in the defining file's header; nothing copied. Fixed:
+8 missing or stale NONMATCHING labels (all from the 12 agents that wrote no REPORT.md); a duplicate new header
+include/driver/himo.h (vivihimo is in himo.h) and include/sequence/seq_gameover.h (folded into seq/seq_gameover.h).
+Follow-ups: data reached as offsets past another symbol (brief rule 13) in battle_seq.c:284 (_rule_disp),
+sac_genki.c:49, sac_deka.c:132, battle_status_icon.c:112-117; item_data.h's ItemDataView shadow of ItemData; two
+different effKemuri2Data structs (eff_kemuri.h, eff_kemuri2_n64.c); unmarked match tricks (static volatile const
+Vec in battle_disp.c, const volatile data in eff_blow_n64.c, a base+0x34 pointer in eff_rothammer_fail_n64.c, an
+unreset opt_propagation off there); dont_inline pragmas agents wrapped around neighbouring existing functions in 7
+battle files. Six battle files now carry optimize_for_size pragmas (battle_information, battle_message,
+battle_pad, battle_unit_event, battle_seq, battle_damage): candidates for -O4,s in configure.py instead.
+What agents fetched, fully: doldecomp/ttyd and several MIT forks, AxioDL/musyx (MIT), SeekyCt/spm-decomp (CC0),
+jdaster64/ttyd-tot (GPL-3.0, one header read), Rainchus/ttyd-decomp-us (no license: off-limits), sourcegraph and
+decomp.me; nothing borrowed. 48 agents also used /tmp, which the brief forbids; wave 23's prompt says to stay
+inside the workspace.
+
+## Grind 9-10: MusyX/TRK/MSL linked, battle_database units, tooling (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Dol near-miss and fully-matched-but-unlinked units. Linked: StdReverb/reverb, hw_memory, hw_dolphin, snd_service,
+synthmacros, synth_dbtab, dsp_import, TRK targimpl, MSL float.c; plus grind-9's jon_06, end, dokugassun and the
+battle_database units of jon/eki/gon/gor/gra/hei/jin/mri/tou2.
+
+- **`symbols.txt` name.** `U_HandleReverb` was the name of a function that is `HandleReverb` in the source; the
+  mismatch scored a matching function 0%. Renamed.
+- **SAL_HOOKS has three slots** (malloc, mallocPhysical, free), not SND_HOOKS's two: `salHooks` is 0xC bytes and
+  `sndSetHooks` copies malloc into both of the first two. salInitDspCtrl and salInitAi call `salMallocPhysical`; the
+  DSP PB is 0xC4 bytes (a low-pass block `_PBLPF` at 0xBA, `streamLoopCnt` moved to 0xC2).
+- **Two `align:32` data splits** (dsp_import, hw_dspctrl). An asm neighbour's `.data` start is 32-aligned in the
+  original (it holds a 32-aligned object); without the split flag the object before it was 0x10/0x18 short and every
+  later `.bss` address moved. `tools/dol_diff.py` shows this as a run of words differing by the same delta.
+- **hw_dolphin** keeps `salWaitForDSPThreadQueue` as a zero-initialized `u64` cast to `OSThreadQueue*`: a real
+  `OSThreadQueue` with an initializer goes to `.sdata`, without one to the end of `.sbss`, and the original has it
+  between `hwIrqLevel` and `salDspInitIsDone`.
+- **Report 100% is not link-ready.** synthmacros had two switch cases (0x5e/0x5f) calling swapped functions: the
+  jump table is in `.data`, which the code score doesn't see. The dsp_import DSP microcode in the tree was another
+  MusyX revision (7488 B; retail is 7872 B), so the unit was 100% of the wrong data.
+- **targimpl** builds with `-inline auto,deferred`: non-asm functions are emitted in reverse source order, asm ones in
+  place, and literals pool in source order, so the source order is reconstructed from the retail addresses (asm
+  first, then the C functions reversed). The four TRKTarget helpers the retail build inlines and never emits
+  (Versions, SupportMask, CPUType, FlushCache) are deleted from the file, not kept: msghndlr.c (NonMatching) is the
+  only caller and links from the asm object. The TRKPPCAccess* helpers are `static`, so they inline and vanish. The
+  asm bodies were moved, not written (MetroTRK's own).
+- **hw_dspctrl** `salBuildCommandList` 83.1 -> 84.7%: the retail mix control uses per-channel bits (0x1/0x2/0x4,
+  0x10/0x20/0x80, 0x200/0x400/0x1000) and compType 6; the first-time setup and the update path (roughly source lines
+  760-960) still need porting. `HandleDepopVoice` matches. `hwRemoveSample` (99.1%) keeps `len` in r6 where we use r5;
+  HARDWARE stays NonMatching for it.
+- **extend_data ids** (`tools/ci.py`, per rels/<mod>/src): two files of one REL with the same `extend_data(id)`
+  produce one `forcedata<id>` inline; the linker merges them and the second one's constants vanish (jon_06's ids
+  0-2 against another jon file's, found as a gor/jon `.data` size shortfall). Ids in shared units are `<unit>_<n>`.
+- **battle_database_jon** is typed now (struct_render pipeline run on that file alone). Grind 9 left it raw because
+  the render stopped compiling; the pass that fixes references and casts (run_all) was what it needed. v2
+  unit_dokugassun is typed the same way; `struct_render.asm_path` resolves `rels/common/src/vN/` variants through
+  configure.py's `source=`.
+- **Tools:** `tools/dol_diff.py` (changed words with the symbol they fall in), `place_fns.py`, `mod_gen.py`
+  (base unit of a REL: refuses to overwrite).
+- **CI baseline** `build/ci/accepted.json` is per worktree and goes stale when the worktree changes branches:
+  `python3 tools/ci.py --init` on a clean checkout of main before trusting a ratchet failure.
+
+## Real asm in the original libraries (Sep 29, Isaac asked for a note; written by TTYD Claude #1)
+
+The rule "no inline asm: a match produced by pasting assembly is worthless" (brief) has one legitimate exception:
+functions the ORIGINAL library was written in asm. PR #36 is the first to rely on it and needed `ci.py
+--allow-asm`: MetroTRK's targimpl.c has 9 `asm` functions (they are asm in the original MetroTRK; they moved, their
+bodies are unchanged), and MusyX's reverb.c `DoCrossTalk` is `static asm` in AxioDL/musyx (MIT) too, so its edit
+there is legitimate. The review checked every asm block against that standard and found no paste.
+How to tell the difference: an asm function is legitimate only in library code (libs/: MetroTRK, the runtime, the
+SDK, MusyX), and only when another source of that library (a public decomp such as AxioDL/musyx, or the SDK's own
+sources) writes the same function in asm; hand-scheduled code with no compiler prologue pattern is a hint, not
+proof. Game code (src/, rels/) was compiled C: asm there is always a paste. Reviews of any PR that needs
+`--allow-asm` should name, for each asm function, the source that shows it's asm in the original.
+(Also on this date: linked data passed 50%, 50.77% at 0e624af.)
+
+## Grind 11-12: -O4,s battle files, four more links, hw_dspctrl (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **The six optimize_for_size files** (battle_information, battle_message, battle_pad, battle_unit_event, battle_seq,
+  battle_damage) are built with per-Object `extra_cflags=["-O4,s"]`, like battle_detect and its neighbours; the
+  pragmas are gone. Every function scores the same or better (battle_pad 32 -> 73%, battle_unit_event 91 -> 99.75%).
+- **Linked:** eff_confetti, evt_env (autolink), seq_gameover (the evt data appended with dol_gen; `sys_00` and the
+  empty string must be defined/used where the original pools them: `""` is a sdata2 literal, not an object),
+  unit_object_switch (data appended with dol_gen; `_data` sits between damage_event and defence).
+- **hw_dspctrl `salBuildCommandList` 99.5%** (was 83.1): the retail mixer control is per-channel (0x1/0x2/0x4 L/R/S,
+  0x8 delta; 0x10/0x20/0x80 AuxA with 0x40/0x100 delta; 0x200/0x400/0x1000 AuxB with 0x800/0x2000 delta; 0x4000 for
+  the non-STD studio), the low-pass block is updated on changed bits 0x400/0x800, cycles use `dspMixerCyclesMain`
+  indexed three ways (+0x229 when the low-pass is on), and a compressor command (0x12 with `compressorTable`, 6720 B
+  of `.data`) follows the master-studio loop. What is left is register colouring: `endAddr` is r7 in the original
+  (r5 here) in every loop case, and the compType 6 loop-buffer end address associates `(len + base) - 1` differently.
+  A declaration-position search for `endAddr` changed nothing.
+- **Not fixed (wave 21 near-misses):** BattleInformationSetDropMaterial (the `i = field_0x8` load is scheduled into the
+  compare block in the original; hoisting it in the source did not do it), cylinderShadowDraw (GXColor temporaries
+  swap slots and the display-list calls end in a different branch shape), _lvup_spot_move (intplGetValue argument
+  scheduling, as before).
+
+## Grind 13: synthvoice linked (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+MusyX synthvoice.c: retail splits `voiceAllocate` into a static `voiceAllocateFind` (returns the voice with direct
+`return voice` at each exit, one shared fail label for the priority check, `-1` as s32) and two thin callers,
+`voiceAllocate` (unlinks the voice from the free list and adjusts the running counts) and `voiceAllocatePeek` (returns
+the stolen voice's allocId). voiceAllocate is inlined into `voiceBlock`, which sets `allocId = 0xFFFFFFFF`. Also
+written: `vidGetPublicId`, `synthKillVoicesBySampleReferences` (sampleId, MusyX >= 2.0.1); `vidRemoveVoiceReferences`
+updates the master list's root too; `vidMakeNew` restarts the list walk when a fresh vid ends up below the current
+node (`goto retry` to the start of the walk; the compiler reuses the `vidRoot` it already loaded). The new code
+is gated like upstream: the split at MusyX >= 2.0.1 (Peek at 2.0.3), vidGetPublicId, the restart and the master-list
+root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, untested (the project builds 2.0.3).
+
+## Grind 14: HARDWARE linked, aram/vsamples ported to the 2.0.2 API (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **HARDWARE.C linked.** Three functions the source lacked: `hwGetSampleExtraData`, `hwSetFilter` (filter on/coefs and
+  changed bits 0xC00/0x800/0x400) and `hwLowPassFrqToCoef` (needs `musyx/snd.h`, or `sndCos` is an implicit int
+  function; the constant is exactly 2*pi = 6.2831855f, and the clamp is one nested ternary). `hwRemoveSample`'s
+  `aramInfo` parameter was live: `aramRemoveData(data, len, aramInfo)`. Gates: `hwGetSampleExtraData` 2.0.2,
+  `hwSetFilter`/`hwLowPassFrqToCoef` 2.0.1 (as the header).
+- **hw_aramdma** (>= 2.0.2): `aramStoreData`/`aramRemoveData` take the `ARAMInfo*` (no `aramWrite` global; the stream
+  buffer allocator reads `dataARAMDefaultGetInfo()->aramWrite`, declared in synthdata.h), `aramGetUserBytes` and
+  `aramGetFirstUserAddress` are new, `aramInit` uses the physical allocator; the older API stays under `#else`. The
+  aram side is gated at 2.0.2 because `hwRemoveSample`'s `aramInfo` parameter is gated there in this tree (upstream
+  gates the aram side at 2.0.1). `aramStoreData`'s loop waits on the queue first (`aramSyncTransferQueue()`, >= 2.0.1),
+  which took it from 94% to 100%: all 14 functions match. The unit stays NonMatching on layout only: the original's
+  `aramUploadData` sits right after `aramQueueCallback` (ours is emitted after `aramStoreData`, where it is first
+  inlined) and `aramQueueLo` precedes `aramQueueHi` in `.bss` (ours the reverse; declaration order and first-reference
+  order made no difference). `aramExit` is gone for >= 2.0.2 (the retail build has none), `aramQueueInit` is inline.
+- **synth_vsamples**: `SND_VIRTUALSAMPLE_INFO` gains `vid` and `seqID` after `instID` and the union grows a `start`
+  member (`extraData`), so `VS_BUFFER` is 0x2C (info is 0x1C long, the union at +0xC); compType 6 (16-bit PCM,
+  `off1 = last * 2`) in `vsUpdateBuffer`; `vsSampleUpdates` called `voiceInStartup` (no such function) where the
+  original calls `hwVoiceInStartup`. `vsSampleStartNotify` fills the start info and frees the buffer when the
+  callback returns non-zero; it is 95.6%: the original keeps three copies of the voice id (raw r29, u8 r27, a
+  re-extended r30) and one more callee-saved register (`_savegpr_26`); a `u8 voice` plus a `u8`/`u32 hwVoice` copy did
+  not reproduce it. The unit stays NonMatching for that one function.
+- **snd3d** (not started): 0/12 functions match; the emitter/room structs are another MusyX revision (flags at 0xC, no
+  room/door roots).
+
+## Grind 15: synthdata linked, small game-code links (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **synthdata (and s_data) had no source paired with them.** dtk named their splits `data/musyx/runtime/synthdata.c` and
+  `data/musyx/runtime/s_data.c`, so objdiff compared the original object against nothing (0% for all 26 functions)
+  while `libs/musyx/src/.../synthdata.c` compiled to an unrelated unit name. Renamed both splits to
+  `musyx/runtime/...` (config/splits.txt is a protected path: the rename is the only edit): synthdata is 26/26 at 100%
+  and linked (7.4 KB). s_data is another MusyX revision (the group stack with `gsDefault`/`ARAMInfo` at +0x60c:
+  `dataInitStack` 15%, `sndSeqPlayEx` 68%, `seqPlaySong` 73%, `sndPushGroup`/`sndPopGroup` 91%); it stays NonMatching.
+- **unit_object_tree** linked: `_rumble_tree` (same as `_rumble_switch` on `mPosition.y`), the unit data generated with
+  dol_gen and typed with struct_render; with `-inline deferred` the source order is the reverse of the text order
+  (`_rumble_tree` above `_turn_tree`).
+- **effSmallStarCamChg** written (forwarder): eff_small_star linked. **evt_paper_entry** 99.2% (r30/r31 swap of
+  `name`/`inBattle`), **mot_yoshi_post** 76% (the two rodata Vec copies are scheduled differently; a non-const source
+  Vec would explain it but lands in .data), **evt_twoddisp** `twoddisp_disp` 95.3 -> 98.9% by declaration order (the
+  rest: an `extsh` on the icon id and the GXColor temporaries' stack slots; changing `iconDispGx` to a `u16` id fixes
+  it there and regresses ac_timing_wide and others).
+
+## Grind 16: SDK units and small unwritten game functions (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **DEMOInit linked.** `DEMOGetCurrentBuffer` was named `L_DEMOGetCurrentBuffer` in symbols.txt (renamed: a protected-path
+  edit, the only one). Fixes: the non-AA pixel format is `GX_PF_RGBA6_Z24`, the two hang-message buffers are both 4096
+  bytes with `fullmsg` declared last, `DemoStatEnable` is `u8`, the "invalid TV format" panic reports line 518 (the retail
+  file was longer: `#line 518`), and the uninitialized statics are declared in the reverse of their `.sbss` order.
+- **DEMOPad linked** from the reference SDK source (`DEMOPadCopy` is global in the original; the reference declares
+  `DemoNumValidPads` before `Pad` so the uninitialized statics come out in retail order).
+- **arc.c** (the ARC archive reader): `ARCConvertEntrynumToPath`, `ARCGetCurrentDir`, `entryToPath`, `myStrncpy` and the
+  getters are written from the DVD reference (`dvdfs.c`) with the FST/strings pointers cached in locals; the
+  `myStrncpy` char is `signed char` (the dol builds `-char unsigned`, the SDK signed). 8/10 at 100%; `ARCInitHandle` 99.98%
+  (registers); `ARCConvertPathToEntrynum` 72.7% (the original keeps far fewer registers live). `ARCOpen` keeps the SDK's
+  `0 > entry ||` (the retail build has the extra `blt`). `ARCClose` takes the file info now.
+- **BattleInformationInit** matches: the four setters are `dont_inline` (they are real calls in retail, including
+  `BattleInformationSetResult`, which is defined after `Init`). **romFontGetWidth** 98.4% (the `wp` and halfword loads swap r6/r7). Retail adds the previous glyph's width after a newline or an
+  unknown byte (a bug in the original), so neither branch has its own continue or load.
+- **battle_monosiri** and **battle_acrobat** linked (Claude #3). Acrobat: `-O4,s` for the stmw prologue; the window test is
+  `cur > start && cur <= end` (not a chained compare); `BattlePadCheckTrigger`/`RecordTrigger` return `s32` (the tests are
+  `cmpwi`). `btlataudGetMoveEventPtr` matches (`case 0: break;`); `_attack_aud` 99.7% (`args` lands in r31, target r29).
+- **battle_monosiri**'s table is 0xC4 with no padding: `eff_fukidashi`'s `.data` starts at 0x8036BEA0 with `align:16` (the
+  12 bytes before it are that alignment). The `{-1, 1}` pair is `eff_fukidashi`'s.
+- **mot_hip** linked (`14.0f * marioGetScale() / 2.0f` gives the target's operand order).
+
+## Grind 17 (Claude #3)
+
+- **battle_unit_event** linked: `BattleRunPhaseEvent` entered the event only when the code pointer was NULL (`if (!code)`); retail has `if (code)`. Declaration order `valid` before `i` in `BattleCheckEndUnitInitEvent`.
+- **eff_scanning**, **eff_uranoko**, **eff_peach_fukidashi** linked. `effScanningMain` calls `animGroupBaseAsync` (the
+  commented-out call was real); `effScanningDisp` written. Under `MUST_MATCH`: the `fmuls f1, f0, f1` operand order of
+  `-cam->viewYaw * deg2rad` comes from a `rad` temp (`rad = -cam->viewYaw; rad = deg * rad;`), `f32 k = 0.125f;` fixes
+  uranoko's pool order (1.0 before 0.125), and scanning builds `disp` from a second `Vec` local. peach_fukidashi's `.sdata2`
+  pool is plain literals (the colour is a `static const GXColor` at the top of `effPeachFukidashiDisp`), with the functions in
+  reverse address order in the source. Its `vec3_802fdc28`/`dat_802fdc34` rodata are still stand-ins.
+## Review routine from Sep 29 evening (Isaac: "use your judgement"; written by TTYD Claude #1)
+
+Every PR: one fresh Claude (Opus) review, fixes, then the merger rebuilds (all sources compile, 32 checksums, ci)
+and merges. Risky PRs also get a Codex review (GPT-6.1 Sol, `gpt-6.1-sol`, effort medium, read-only): tool
+changes, compiler-flag or split changes, shared struct/header reworks, and waves with many unproven partial
+functions. Plus a periodic Codex audit of everything merged since the last one (about daily), because the Sep 29
+audit of 802807f..0f455e3 found nine tool bugs the per-PR Claude reviews had missed (it ran the tools on crafted
+inputs rather than reading diffs): scratch/codex-audit/. Fixes after a review aren't re-reviewed, only rebuilt and
+checked, so reviews should be asked to say which findings need a second look after fixing.
+
+## Wave 23: the next untouched function per dol file (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Wave 21's recipe again, on the next 0% function of 179 dol files (median 576 bytes, nearly all in existing files),
+45 minutes each, 19:48-21:40; the prompt now told agents to stay inside their workspace. **129 at 100%, 41 at
+90-99%, 6 at 50-89%, 3 unchanged. Functions 5,724 -> 5,851.** Main had moved during the wave (Claude #3's PRs touched
+some of the same files), so collection was a three-way merge per file (base: main at launch, ce513a4): 175 clean,
+1 new, 3 kept main's version on conflict (mot_yoshi, unit_object_tree, battle_damage). Fixed at collection: agents'
+duplicate prototypes where the definition says otherwise (tri2, SoundSSPlayChEx, effFallLeafN64Entry,
+effFlowerN64Entry, effGlassN64Entry); eff_pturn_n64 kept at main's version (its header's struct merged badly);
+evt_paper_entry defined by both #41 and an agent (kept the agent's, which is at 100% and in the right order). Lesson: a per-file three-way merge makes a wave
+safe to collect onto a moving main; the remaining conflicts are prototypes two writers guessed differently.
+
+Review (Claude + Codex) found no wrong logic in the 47 partials, but a merge regression and four rule breaks,
+all fixed before merge: the agent's `#pragma optimize_for_size` pair in battle_message.c survived main's move of
+that file to `-O4,s`, and its `off` dropped btlevtcmd_AnnounceSetParam to 72%; `nanNPCWork` is global in the
+original but was `static` in evt_nannpc.c; star_control and winItemDisp read Vecs as offsets past a string (now
+the named vec3 symbols, 88.5 -> 77.5% and 90.0 -> 65.9% until those units' .rodata is decompiled); envDisp_FF's
+invented seed globals are literals again (97.9 -> 94.3%). Agents still left their workspaces: 43 of 179 used
+the tower's shared /tmp (same file names at the same time) and 21 read the tower's ~/ttyd, which they didn't
+write to. Next waves give each agent its own TMPDIR.
+
+## Grind 18 (Claude #3)
+
+- **win_mario**: `unk_8016af5c` and `winZenkakuStr` match (only pool symbol names differ): the digit table and the `"-"`, `""`, `"%d"` strings are literals (they pool into `.sdata2`/`.rodata` by themselves), the `char` buffer is `signed char`, `winZenkakuStr`'s index is `u32` (`unk_8016af5c` keeps `s32 i`), and the static buffer is used directly instead of through an `out` pointer.
+- **battle_event_cmd**: the `btlevtcmd_*` handlers that fetch a unit match with `BattleWork* wp = _battleWorkPointer;` declared (after `args`) and the call nested as `BattleGetUnitPtr(wp, BattleTransID(event, id))` (no `id` temp); 7 more at 100%. `btlevtcmd_SpawnUnit` is an early return on NULL. `btlevtcmd_onoff_battleflag` reads `args[1]` and `wp` after the call (97.9%).
+
+## Grind 19 (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3"; near-miss list from waves 21 and 23)
+
+- **Zero-Vec temp**: the `effXxxMain` functions that open with `position = vec3_...; position.x = ...` need the copy to come
+  from an inline that builds the temp from a literal `(Vec){ 0, 0, 0 }` (`makeVec(x, y, z)` / `initializeVec`), not from a
+  named rodata `vec3_...`: the scheduler then keeps the `userdata` load ahead of the copy. The literal's pool entry is
+  anonymous, so it replaces the named `vec3_...` object only where the unit's `.rodata` score does not drop (kemuri10, vapor,
+  hokori, peach_dust; the helper sits above the unit's other rodata so the literal lands at offset 0). In units that also carry
+  the extra anonymous 2^52 double pool (rappa, kemuri9, kemuri11, opuku_wgun/wprotect, recover_heart, star_power) the section
+  score fell 5 to 40 points against main with the literal, so those keep the named `vec3_...` and the old code shape
+  (rappa's `Main` reaches 100% with the literal; it stays at 98.29% here until the pool duplication is solved).
+- **`tri2` takes `s32` arguments**: none of the 520 call sites masks or sign-extends an argument, so the parameters are
+  int-wide (the callee stores halfwords, so the asm cannot show signed or not; `s32` it is). pikkyolo and thunderflare `Disp`
+  match, jetwrain `Disp` improves.
+- **Blend expression**: `(C - v) * k + v` wants a temp for `C - v` under `MUST_MATCH` (`f32 t = C - v; v = t * k + v;`,
+  eff_mahorn). A `for` loop that steps two pointers wants the stepping in the header (`i++, data++`) when the target steps
+  `i` first (starpoint). peach_dust `Main` also wants `colorIndex - 1` in the range test and the scale product written
+  `0.01 * value * 0.4`.
+- Three units the wave 23 branch had matched but not linked were linked with `tools/autolink.py`: evt_paper, evt_ext, evt_urouro.
+
+## Grind 20 (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **By-value `GXColor` stack slots**: a `GXColor` built as `color = <global>; color.a = ...;` and passed by value lands its
+  local at the higher slot (target: local at the lower slot, the by-value copy above it). Building the colour in an inline that
+  returns it (`static inline GXColor f(u8 a) { GXColor c = <global>; c.a = a; return c; }`, `color = f(a);`) puts them the
+  other way round. Under `MUST_MATCH` (see eff_sandars): effBattenDisp2, effButterflyDisp and effStardust2Disp match;
+  akari_pose, booboo and batten `Disp` improve. It does not help when the function passes several by-value colours
+  (shadowdrv, itemget, envDisp_Blur) or a colour built without a base.

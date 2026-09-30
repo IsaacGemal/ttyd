@@ -247,26 +247,3 @@ void tri1(u16 x, u16 y, u16 z) {
 	GXWGFifo.u16 = z;
 	GXWGFifo.u16 = z;
 }
-
-/*
-void tri2(u16 x1, u16 y1, u16 z1, u16 x2, u16 y2, u16 z2) {
-	GXWGFifo.u16 = x1;
-	GXWGFifo.u16 = x1;
-	GXWGFifo.u16 = x1;
-	GXWGFifo.u16 = y1;
-	GXWGFifo.u16 = y1;
-	GXWGFifo.u16 = y1;
-	GXWGFifo.u16 = z1;
-	GXWGFifo.u16 = z1;
-	GXWGFifo.u16 = z1;
-	GXWGFifo.u16 = x2;
-	GXWGFifo.u16 = x2;
-	GXWGFifo.u16 = x2;
-	GXWGFifo.u16 = y2;
-	GXWGFifo.u16 = y2;
-	GXWGFifo.u16 = y2;
-	GXWGFifo.u16 = z2;
-	GXWGFifo.u16 = z2;
-	GXWGFifo.u16 = z2;
-}
-*/

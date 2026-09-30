@@ -57,3 +57,4 @@ f32 unk_800c9f48(s32 id, f32 y);
 f32 partyGetTargetMovespd2(PartyEntry* party);
 void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir);
 void partyMoveWalk(PartyEntry* party);
+void partyClearJumpPara(PartyEntry* party);

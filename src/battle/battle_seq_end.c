@@ -26,6 +26,26 @@ static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall);  // local to
 
 extern s32 btlevtcmd_RunDataEventChild[];
 
+// .sdata2 constants this file loads by name.
+extern const f32 float_3_80420c6c;
+extern const f32 float_4_80420c78;
+extern const f32 float_0_80420c7c;
+extern const f32 float_255_80420c88;
+extern const f32 float_0p5_80420c8c;
+extern const f32 float_neg20_80420c90;
+extern const f32 float_50_80420c94;
+extern const f32 float_1p1_80420c98;
+extern const f32 float_25_80420c9c;
+extern const f32 float_90_80420ca0;
+extern const f32 float_2p5_80420ca4;
+extern const f32 float_65_80420ca8;
+extern const f32 float_180_80420cac;
+extern const f32 float_7p5_80420cb0;
+extern const f32 float_270_80420cb4;
+extern const f32 float_4p5_80420cb8;
+extern const f32 float_neg25_80420cbc;
+extern const f32 float_128_80420cc0;
+
 //.data
 RankUpData _rank_up_data[] = {
     {1, 0, "msg_menu_mario_name_0", "butai_01"},
@@ -197,6 +217,77 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     entry->field_28 = 0xFFFFFFFF;
     entry->flags |= 2;
     return 2;
+}
+
+// NONMATCHING (98.92%): logic and instructions match. Two pool constants are unnamed @N in our object
+// where the original has globals (the int->float magic double and the GXColor word dat_80420c2c), and
+// the color word store and intplGetValue timer load are scheduled in the opposite order.
+s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
+    BattleSpotWork* spot = BatSpotGetPtr();
+    BattleSpotEntry* entry;
+    s32 code;
+
+    code = evtGetValue(event, event->args[0]);
+    entry = &spot->entries[code];
+
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+        event->userdata[1] = 0;
+        event->userdata[2] = (s32)entry->field_4.x;
+        event->field_84 = (s32)entry->field_4.y;
+        *(s32*)&event->wInterpRelatedTime = 0;
+    }
+
+    event->userdata[0]++;
+    switch (event->userdata[1]) {
+    case 0:
+        event->userdata[0] = 1;
+        event->userdata[1]++;
+    case 1:
+        switch (code) {
+        case 0:
+            entry->field_4.x = float_0p5_80420c8c * BattleGetMarioPtr(_battleWorkPointer)->mPosition.x;
+            entry->field_4.y = float_neg20_80420c90;
+            break;
+        case 1:
+            entry->field_4.x = float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]))) + (f32)event->userdata[2];
+            entry->field_4.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
+            break;
+        case 2:
+            entry->field_4.x = float_65_80420ca8 * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_180_80420cac)) + (f32)event->userdata[2];
+            entry->field_4.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_7p5_80420cb0 * (f32)event->userdata[0]) + float_90_80420ca0));
+            break;
+        case 3:
+            entry->field_4.x = (f32)event->userdata[2] - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_4_80420c78 * (f32)event->userdata[0])));
+            entry->field_4.y = (f32)((s32)event->field_84 + 25) - float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_2p5_80420ca4 * (f32)event->userdata[0]) + float_90_80420ca0));
+            break;
+        case 4:
+            entry->field_4.x = (f32)(event->userdata[2] - 50) - float_50_80420c94 * sinfd(reviseAngle(float_1p1_80420c98 * (float_3_80420c6c * (f32)event->userdata[0]) + float_270_80420cb4));
+            entry->field_4.y = (f32)((s32)event->field_84 - 25) + float_25_80420c9c * sinfd(reviseAngle(float_1p1_80420c98 * (float_4p5_80420cb8 * (f32)event->userdata[0]) + float_90_80420ca0));
+            break;
+        }
+        break;
+    case 2:
+        *(s32*)&event->wInterpRelatedTime = 20;
+        event->userdata[2] = (s32)entry->field_4.x;
+        event->field_84 = (s32)entry->field_4.y;
+        event->userdata[1]++;
+    case 3:
+        --*(s32*)&event->wInterpRelatedTime;
+        entry->field_4.x = intplGetValue(2, *(s32*)&event->wInterpRelatedTime, 21, float_0_80420c7c, (f32)event->userdata[2]);
+        entry->field_4.y = intplGetValue(2, *(s32*)&event->wInterpRelatedTime, 21, float_neg25_80420cbc, (f32)(s32)event->field_84);
+        {
+            GXColor color = {0xFF, 0xFF, 0xFF, 0x00};
+
+            ((u8*)&color)[3] = (s32)intplGetValue(0, *(s32*)&event->wInterpRelatedTime, 21, float_255_80420c88, float_128_80420cc0);
+            entry->field_28 = *(u32*)&color;
+        }
+        if (*(s32*)&event->wInterpRelatedTime <= 0) {
+            event->userdata[1]++;
+        }
+        break;
+    }
+    return (event->userdata[1] < 4) ? 0 : 2;
 }
 
 // NONMATCHING (99.76%): same instructions; only register numbers or operands differ.

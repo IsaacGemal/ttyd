@@ -247,7 +247,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 return 0;
             }
             if (dec->field_0x08 == 0) {
-                if ((s32)BattlePadCheckTrigger(0x40000) != 0) {
+                if (BattlePadCheckTrigger(0x40000) != 0) {
                     dec->field_0x08 = 1;
                 }
             }
@@ -258,7 +258,7 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 }
             }
             if (dec->field_0x0A == 0) {
-                if ((s32)BattlePadCheckTrigger(0x800000) != 0) {
+                if (BattlePadCheckTrigger(0x800000) != 0) {
                     dec->field_0x0A = 1;
                 }
             }

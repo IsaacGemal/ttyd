@@ -10,3 +10,4 @@ typedef struct EffSyuryouData {
     f32 scale;    // 0x10
 } EffSyuryouData;
 EffectEntry* effSyuryouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z);
+void effSyuryouMain(EffectEntry* effect);

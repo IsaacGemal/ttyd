@@ -5,8 +5,6 @@
 #include "memory.h"
 #include "system.h"
 
-extern const f32 float_0p125_80422330;
-
 EffectEntry* effUranokoEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effUranokoData* data;
@@ -77,14 +75,20 @@ void effUranokoMain(EffectEntry* effect) {
 	}
 	else {
 		f32 t;
+#ifdef MUST_MATCH
+		f32 k = 0.125f;
+#endif
 		data->field_0x18++;
 		t = 1.0f - data->scale;
-		data->scale = t * float_0p125_80422330 + data->scale;
+#ifdef MUST_MATCH
+		data->scale = t * k + data->scale;
+#else
+		data->scale = t * 0.125f + data->scale;
+#endif
 		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effUranokoDisp, effect);
 	}
 }
 
-// NONMATCHING (99.87%): same instructions; only register numbers or operands differ.
 void effUranokoDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effUranokoData* data = effect->userdata;
@@ -93,6 +97,9 @@ void effUranokoDisp(CameraId camId, void* param) {
 	Mtx scale;
 	Mtx rot;
 	f32 deg;
+#ifdef MUST_MATCH
+	f32 rad;
+#endif
 	f32 s;
 
 	if (data->animId == -1) {
@@ -103,8 +110,15 @@ void effUranokoDisp(CameraId camId, void* param) {
 	s = data->scale * data->baseScale;
 	PSMTXScale(scale, s, s, s);
 	cam = camGetPtr(camId);
+#ifdef MUST_MATCH
+	rad = -cam->viewYaw;
+	deg = 0.017453292f;
+	rad = deg * rad;
+	PSMTXRotRad(rot, 'y', rad);
+#else
 	deg = 0.017453292f;
 	PSMTXRotRad(rot, 'y', -cam->viewYaw * deg);
+#endif
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	animPoseSetMaterialFlagOn(data->animId, 0x40);

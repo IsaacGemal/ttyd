@@ -7,6 +7,7 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/eff_starstone.h"
 #include "driver/icondrv.h"
 #include "driver/offscreendrv.h"
 #include "manager/evtmgr_cmd.h"
@@ -50,6 +51,15 @@ extern f32 float_neg300_80421778;
 extern f32 float_300_8042177c;
 extern f32 float_neg200_80421780;
 extern f32 float_200_80421784;
+extern f32 float_37_804217a0;
+extern f32 float_2_804217a4;
+extern f32 float_2160_804217a8;
+extern f32 float_1p5_804217ac;
+extern const Vec vec3_802ff59c;
+extern const Vec vec3_802ff5a8;
+extern const Vec vec3_802ff5b4;
+extern const Vec vec3_802ff5c0;
+extern const Vec vec3_802ff5cc;
 extern char str_802FF648[];
 extern u32 dat_80421718;
 extern u32 dat_8042171c;
@@ -103,7 +113,16 @@ typedef struct ScissorWork {
     void* field_0x118;            // 0x118
     s32 state;                    // 0x11C
     s32 field_0x120;              // 0x120
-    u8 field_0x124[0x30];         // 0x124
+    f32 field_0x124;              // 0x124
+    f32 field_0x128;              // 0x128
+    f32 field_0x12C;              // 0x12C
+    f32 field_0x130;              // 0x130
+    f32 field_0x134;              // 0x134
+    f32 field_0x138;              // 0x138
+    f32 field_0x13C;              // 0x13C
+    f32 field_0x140;              // 0x140
+    f32 field_0x144;              // 0x144
+    u8 field_0x148[0x0C];         // 0x148
     f32 field_0x154;              // 0x154
     f32 field_0x158;              // 0x158
     f32 field_0x15C;              // 0x15C
@@ -113,6 +132,30 @@ typedef struct ScissorWork {
     EffectEntry* field_0x16C;     // 0x16C
     smartEntry* field_0x170;      // 0x170
 } ScissorWork;
+
+// Star trail area reached through a work+0x9C pointer in the original.
+// No header declares it; fields are listed in REPORT.md.
+typedef struct StarTrail {
+    u8 field_0x00[0x18];  // 0x00
+    f32 velX;             // 0x18
+    f32 velY;             // 0x1C
+    u8 field_0x20[0x20];  // 0x20
+    f32 trailX[4];        // 0x40
+    f32 trailY[4];        // 0x50
+} StarTrail;
+
+// Star-stone effect userdata written at the end of star_control.
+// No header declares it; fields are listed in REPORT.md.
+typedef struct ScissorEffectData {
+    u8 field_0x00[0x8];  // 0x00
+    f32 posX;            // 0x08
+    f32 posY;            // 0x0C
+    f32 posZ;            // 0x10
+    f32 scale;           // 0x14
+    f32 rotX;            // 0x18
+    f32 rotY;            // 0x1C
+    f32 rotZ;            // 0x20
+} ScissorEffectData;
 
 
 
@@ -676,6 +719,140 @@ void star_disp2D(void) {
     }
 }
 
+// NONMATCHING (77.45%): the original addresses the five vectors from one common base; the int->float magic double is an anonymous pool copy (@863) instead
+// of the folded double_to_int_802ff638, which shifts the FP registers through case 1;
+// intplGetValue also loads r4 before f1/f2. See REPORT.md.
+s32 star_control(void) {
+    ScissorWork* work = GetScissorPtr();
+    StarTrail* star = (StarTrail*)((u8*)work + 0x9C);
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    f32 f;
+    s32 i;
+
+    if ((gp->retraceCount & 3) == 0) {
+        for (i = 3; i > 0; i--) {
+            star->trailX[i] = star->trailX[i - 1];
+            star->trailY[i] = star->trailY[i - 1];
+        }
+        star->trailX[0] = star->velX;
+        star->trailY[0] = star->velY;
+    }
+    switch (work->state) {
+    case 1:
+        {
+            f32 zero = float_0_80421734;
+            f32 neg = float_neg1000_8042179c;
+            f32 one = float_1_80421754;
+
+            work->state = 2;
+            work->field_0x120 = 0;
+            work->field_0x16C = effStarStoneEntry(3, zero, neg, zero, one);
+        }
+        BtlUnit_GetPos(mario, &work->field_0x124, &work->field_0x128, &work->field_0x12C);
+        work->field_0x128 = work->field_0x128 +
+            (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804217a0);
+        *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
+        *(Vec*)&work->field_0x13C = *(Vec*)&work->field_0x124;
+        work->field_0x140 += float_50_80421770;
+        work->field_0x144 += float_neg1_80421750;
+        *(Vec*)&work->field_0x154 = vec3_802ff59c;
+        *(Vec*)&work->field_0x160 = vec3_802ff5a8;
+        /* fallthrough */
+    case 2:
+        work->field_0x120++;
+        if (work->field_0x120 <= 0x64) {
+            work->field_0x124 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x130, work->field_0x13C);
+            work->field_0x128 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x134, work->field_0x140);
+            work->field_0x12C = intplGetValue(0, work->field_0x120, 0x64, work->field_0x138, work->field_0x144);
+            f = intplGetValue(0, work->field_0x120, 0x64, float_0_80421734, float_2_804217a4);
+            work->field_0x15C = f;
+            work->field_0x158 = f;
+            work->field_0x154 = f;
+        } else {
+            f32 two = float_2_804217a4;
+
+            work->field_0x124 = work->field_0x13C;
+            work->field_0x128 = work->field_0x140;
+            work->field_0x12C = work->field_0x144;
+            work->field_0x15C = two;
+            work->field_0x158 = two;
+            work->field_0x154 = two;
+        }
+        work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, float_0_80421734, float_2160_804217a8);
+        if (work->field_0x120 >= 0x78) {
+            work->state = 3;
+            work->field_0x120 = 0;
+            *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
+            work->field_0x140 = float_300_8042177c;
+        }
+        break;
+    case 3:
+        work->field_0x120++;
+        work->field_0x128 = intplGetValue(1, work->field_0x120, 0x3C, work->field_0x134, work->field_0x140);
+        if (work->field_0x120 >= 0x3C) {
+            work->state = 4;
+            work->field_0x120 = 0;
+            {
+                f32 neg = float_neg1000_8042179c;
+                f32 zero = float_0_80421734;
+
+                *(Vec*)&work->field_0x124 = vec3_802ff5b4;
+                *(Vec*)&work->field_0x154 = vec3_802ff5c0;
+                *(Vec*)&work->field_0x160 = vec3_802ff5cc;
+                work->field_0x134 = work->field_0x128;
+                work->field_0x140 = zero;
+                star->velX = work->field_0x124;
+                star->velY = work->field_0x128;
+                for (i = 0; i < 4; i++) {
+                    star->trailX[i] = zero;
+                    star->trailY[i] = neg;
+                }
+            }
+        }
+        break;
+    case 4:
+        work->field_0x120++;
+        work->field_0x128 = intplGetValue(4, work->field_0x120, 0x3C, work->field_0x134, work->field_0x140);
+        star->velX = work->field_0x124;
+        star->velY = work->field_0x128;
+        if (work->field_0x120 >= 0x3C) {
+            work->state = 5;
+            work->field_0x120 = 0;
+        }
+        break;
+    case 5:
+    case 6:
+        break;
+    }
+    if (work->field_0x16C != NULL) {
+        ScissorEffectData* data = work->field_0x16C->userdata;
+
+        if (work->state >= 4) {
+            f32 zero = float_0_80421734;
+
+            data->posX = zero;
+            data->posY = float_neg1000_8042179c;
+            data->posZ = zero;
+        } else {
+            data->posX = work->field_0x124;
+            data->posY = work->field_0x128;
+            data->posZ = work->field_0x12C;
+        }
+        {
+            f32 s = float_1p5_804217ac;
+
+            data->rotX = work->field_0x160;
+            data->rotY = work->field_0x164;
+            data->rotZ = work->field_0x168;
+            data->scale = s * work->field_0x154;
+        }
+    }
+    if (work->state >= 4 && work->state <= 6) {
+        dispEntry(8, float_0_80421734, 2, (DispCallback)star_disp2D, NULL);
+    }
+    return 0;
+}
+
 s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
     ScissorWork* work = GetScissorPtr();
     s32 i;
@@ -758,6 +935,122 @@ s32 scissor_tess(void) {
     return 2;
 }
 
+// Matches the original byte-for-byte.
+s32 scissor_cross(f32* a, f32* b, f32* c, s32 n) {
+    f32 xs[0x200];
+    f32 ys[0x200];
+    f32 ox;
+    f32 oy;
+    f32 tx;
+    f32 ty;
+    f32 one;
+    f32* p;
+    f32* q;
+    s32 count;
+    s32 i;
+    s32 j;
+    s32 m;
+
+    for (i = 0; i < n; i++) {
+        s32 k = (i + 1) % n;
+        if (scissor_intersection2(a[0], a[1], b[0], b[1],
+                                  c[i * 2], c[i * 2 + 1],
+                                  c[k * 2], c[k * 2 + 1],
+                                  &ox, &oy) != 0) {
+            return 0;
+        }
+    }
+    xs[0] = float_neg1000_8042179c;
+    count = 1;
+    ys[0] = float_neg1000_8042179c;
+    one = float_1_80421754;
+    for (i = 0; i < n; i++) {
+        s32 k = (i + 1) % n;
+        p = &c[i * 2];
+        q = &c[k * 2];
+        if (scissor_intersection4(one + a[0], a[1],
+                                  one + b[0], b[1],
+                                  p[0], p[1],
+                                  q[0], q[1],
+                                  &ox, &oy) != 0) {
+            s32 flag = 0;
+            if (p[0] == ox && p[1] == oy) {
+                f32* prev = (i == 0) ? &c[(n - 1) * 2] : &c[(i - 1) * 2];
+                if (scissor_intersection3(a[0], a[1], b[0], b[1],
+                                          prev[0], prev[1],
+                                          q[0], q[1],
+                                          &tx, &ty) != 0) {
+                    flag = 1;
+                }
+            }
+            if (flag == 1) {
+                for (m = 0; m < n; m++) {
+                    if (xs[m] == ox && ys[m] == oy) {
+                        break;
+                    }
+                }
+                if (m == n) {
+                    xs[count] = ox;
+                    ys[count] = oy;
+                    count++;
+                }
+            } else {
+                xs[count] = ox;
+                ys[count] = oy;
+                count++;
+            }
+        }
+    }
+    xs[count] = float_1000_804217b0;
+    ys[count] = float_1000_804217b0;
+    if (a[0] != b[0]) {
+        for (i = 0; i < count; i++) {
+            for (j = i + 1; j < count + 1; j++) {
+                if (xs[i] > xs[j]) {
+                    f32 t;
+                    t = xs[i];
+                    xs[i] = xs[j];
+                    xs[j] = t;
+                    t = ys[i];
+                    ys[i] = ys[j];
+                    ys[j] = t;
+                }
+            }
+        }
+        {
+            f32 mid = (a[0] + b[0]) * float_0p5_80421748;
+            for (i = 0; i < count; i++) {
+                if (mid >= xs[i] && mid < xs[i + 1]) {
+                    return i & 1;
+                }
+            }
+        }
+    } else {
+        for (i = 0; i < count; i++) {
+            for (j = i + 1; j < count + 1; j++) {
+                if (ys[i] > ys[j]) {
+                    f32 t;
+                    t = xs[i];
+                    xs[i] = xs[j];
+                    xs[j] = t;
+                    t = ys[i];
+                    ys[i] = ys[j];
+                    ys[j] = t;
+                }
+            }
+        }
+        {
+            f32 mid = (a[1] + b[1]) * float_0p5_80421748;
+            for (i = 0; i < count; i++) {
+                if (mid >= ys[i] && mid < ys[i + 1]) {
+                    return i & 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 // Keep scissor_intersection3 out of line: the original issues a call (bl) to it
 // from scissor_intersection4 rather than inlining the body.
 #pragma dont_inline on
@@ -816,6 +1109,9 @@ s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
 }
 #pragma dont_inline reset
 
+// Keep scissor_intersection2 out of line: scissor_cross calls (bl) it in the
+// original rather than inlining its body.
+#pragma dont_inline on
 s32 scissor_intersection2(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     if (ax == cx && ay == cy) {
         return 0;
@@ -831,6 +1127,7 @@ s32 scissor_intersection2(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     }
     return scissor_intersection(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
+#pragma dont_inline reset
 
 // Keep GetScissorPtr out of line: the original issues a call (bl) to it.
 #pragma dont_inline on

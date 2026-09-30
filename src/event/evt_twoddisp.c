@@ -174,11 +174,11 @@ USER_FUNC(twoddisp_main) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.32%): 1 missing, 2 extra, plus register differences.
+// NONMATCHING (98.85%): the icon id passes through an extra `extsh`, and the GXColor temporaries sit in different stack slots.
 void twoddisp_disp(CameraId cameraId, void* param) {
-	TwoDDisplayer* entry;
 	s32 offset;
 	s32 i;
+	TwoDDisplayer* entry;
 	Vec pos;
 	GXColor color;
 	GXColor textColor;

@@ -9,19 +9,31 @@
 extern BattleWork* _battleWorkPointer;
 extern ItemData itemDataTable[];
 
-// NONMATCHING (0.00%): 3 instructions differ, 29 extra, plus register differences.
+// dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
+#pragma dont_inline on
+// The original keeps this 16-iteration loop rolled; at -O4,p the compiler unrolls it 4x.
+#pragma optimize_for_size on
+
 BattleIcon* BtlIconGetPtr(s32 index) {
 	BattleIcon* icon;
 	int i;
 
 	for (i = 0; i < 16; i++) {
 		icon = &_battleWorkPointer->icons[i];
+#ifdef MUST_MATCH
+		// BattleWorkIcon.flags is u16 in the original (lhz); the header declares it s16, so reinterpret
+		// to emit the unsigned load without editing the existing header line.
+		if (*(u16*)&icon->flags & 1 && icon->index == index) {
+#else
 		if (icon->flags & 1 && icon->index == index) {
+#endif
 			return icon; //TODO: redo bwp->iconWork?
 		}
 	}
 	return NULL;
 }
+#pragma optimize_for_size reset
+#pragma dont_inline reset
 
 // NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
 void BattleIconInit(void) {
@@ -95,6 +107,9 @@ BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
 	}
 }
 
+// dont_inline keeps BtlIcon_Delete a real `bl` from the evt commands as in retail.
+#pragma dont_inline on
+
 // NONMATCHING (90.53%): 3 instructions differ.
 void BtlIcon_Delete(BattleIcon* icon) {
 	if (icon->flags & 1) {
@@ -102,6 +117,7 @@ void BtlIcon_Delete(BattleIcon* icon) {
 		icon->flags &= ~1;
 	}
 }
+#pragma dont_inline reset
 
 //s32 iconId, f32 x, f32 y, f32 z, s32 evtIndex
 // NONMATCHING (0.00%): 4 instructions differ, 1 missing, 104 extra, plus register differences.
@@ -140,7 +156,6 @@ USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 }
 
 //s32 index for BtlIconGetPtr
-// NONMATCHING (0.00%): 2 instructions differ, 52 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconDelete) {
 	BattleIcon* icon;
 	s32 value;

@@ -9,8 +9,15 @@
 #include <string.h>
 #include "driver/fadedrv.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 extern GlobalWork* gp;
+
+// .sdata2
+const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041e514 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041e518 = { 0xFF, 0xFF, 0xFF, 0xA0 };
+const GXColor dat_8041e51c = { 0x7F, 0x7F, 0x7F, 0x00 };
 
 //.data
 EnvironmentGlare envGlare0 = {
@@ -827,6 +834,95 @@ void envDisp_DepthOfField(void) {
     }
 }
 
+// NONMATCHING (99.98%): only the if-branch GXColor temporary differs: the original builds the local at
+// sp+0xC and copies it to the by-value argument at sp+0x10; MWCC puts the local at sp+0x10 and the argument
+// at sp+0xC. Everything else (alpha math, all GX calls, the vertex math) is byte-identical.
+void envDisp_Blur(void) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
+    GXColor color;
+    CameraEntry* cam;
+    s32 alpha;
+    f32 ratio;
+    u64 elapsed;
+    s32 duration;
+
+    if ((wp->flags & 0x40000000) && (wp->flags & 8)) {
+        cam = camGetPtr(CAMERA_2D);
+        GXSetProjection(camGetPtr(CAMERA_2D)->projection, cam->projType);
+        GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXSetNumChans(0);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_ZERO);
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
+        GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
+
+        duration = blur->unk10;
+        if (duration != 0) {
+            elapsed = gp->renderTime - blur->renderTime;
+            ratio = (f32)(elapsed / (OS_TIMER_CLOCK / 1000)) / (f32)duration;
+            if (ratio > 1.0f) {
+                ratio = 1.0f;
+            }
+            if (blur->flags & 1) {
+                alpha = (s32)(255.0f * (1.0f - ratio));
+            } else {
+                alpha = (s32)(120.0f * (1.0f - ratio) + 128.0f);
+            }
+            color = dat_8041e514;
+            color.a = alpha;
+            GXSetTevKColor(GX_KCOLOR0, color);
+        } else {
+            GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
+        }
+
+        GXLoadTexObj(&wp->envBlurObj, GX_TEXMAP0);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetZCompLoc(GX_TRUE);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GXClearVtxDesc();
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+#ifdef MUST_MATCH
+        // MWCC puts 0.5f in f3 and the int->float mask double in f4 only when the
+        // factor is a named local; with the literal the two swap and ~14
+        // fmuls/fsubs differ. The natural form is under #else.
+        {
+            f32 half = 0.5f;
+            GXPosition3f32(-gp->fbWidth * half, gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(0.0f, 0.0f);
+            GXPosition3f32(gp->fbWidth * half, gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(1.0f, 0.0f);
+            GXPosition3f32(gp->fbWidth * half, -gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(1.0f, 1.0f);
+            GXPosition3f32(-gp->fbWidth * half, -gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(0.0f, 1.0f);
+        }
+#else
+        GXPosition3f32(-gp->fbWidth * 0.5f, gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(gp->fbWidth * 0.5f, gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(gp->fbWidth * 0.5f, -gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-gp->fbWidth * 0.5f, -gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+#endif
+    }
+}
 
 
 
@@ -921,6 +1017,175 @@ void envGlareFilterZ(f32 z) {
     filter->zscale = z;
     filter->flags |= 1;
 }
+
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_NAN;
+            } else {
+                return FP_INFINITE;
+            }
+            break;
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_SUBNORMAL;
+            } else {
+                return FP_ZERO;
+            }
+            break;
+        default:
+            return FP_NORMAL;
+    }
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+
+// opt_propagation off is required or MWCC rematerialises the polynomial coefficients into
+// every branch instead of hoisting them (same as evt_sub.c).
+#pragma opt_propagation off
+// NONMATCHING (94.30%): FPR allocator permutation, and the literal seeds hoist the accumulators out of the loop (target sinv=f20, cosv=f22, scale=f25,
+// sinC1=f21, cosC1=f23, one=f24, pi=f29; ours results f20/f21, scale f26, coeffs f22-f25),
+// which shifts the inline-sqrt block by one register. Frame and every opcode match.
+void envDisp_FF(void) {
+    EnvironmentWork* wp = envGetWork();
+    CameraEntry* cam;
+    f32 scale, f0, f1, sinv, cosv, rnd;
+    s32 i;
+
+    if (wp->flags & 0x10000000) {
+        GXSetNumChans(GX_FALSE);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+        GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        GXLoadTexObj(&wp->captureObj, GX_TEXMAP0);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetZCompLoc(GX_TRUE);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GXSetLineWidth(0x10, GX_TO_ZERO);
+        cam = camGetPtr(CAMERA_2D);
+        GXLoadPosMtxImm(cam->view, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXClearVtxDesc();
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+        scale = sqrtf(gp->fbWidth / 2 * gp->fbWidth / 2 + gp->efbHeight / 2 * gp->efbHeight / 2);
+
+        GXBegin(GX_LINES, GX_VTXFMT0, 2000);
+        for (i = 0; i < 1000; i++) {
+            f32 angle = (TWO_PI * (f32)i) / 1000.0f;
+            f32 cosC1 = 0.4967f;
+            f32 one = 1.0f;
+            f32 pi = 3.1415927f;
+            f32 sinC1 = 0.16605f;
+
+            cosv = 0.03705f;
+            if (angle <= pi) {
+                if (angle <= 1.5707964f) {
+                    f0 = angle * angle;
+                    cosv = cosv * f0 - cosC1;
+                    cosv = cosv * f0 + one;
+                } else {
+                    f0 = angle - 1.5707964f;
+                    f0 = 1.5707964f - f0;
+                    f0 = f0 * f0;
+                    cosv = cosv * f0 - cosC1;
+                    cosv = cosv * f0 + one;
+                    cosv = -cosv;
+                }
+            } else if (angle < 4.712389f) {
+                f0 = angle - pi;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - cosC1;
+                cosv = cosv * f0 + one;
+                cosv = -cosv;
+            } else {
+                f0 = angle - 4.712389f;
+                f0 = 1.5707964f - f0;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - cosC1;
+                cosv = cosv * f0 + one;
+            }
+
+            sinv = 0.00761f;
+            if (angle <= pi) {
+                if (angle <= 1.5707964f) {
+                    f0 = angle * angle;
+                    sinv = sinv * f0 - sinC1;
+                    sinv = sinv * f0 + one;
+                    sinv = sinv * angle;
+                } else {
+                    f0 = angle - 1.5707964f;
+                    f1 = 1.5707964f - f0;
+                    f0 = f1 * f1;
+                    sinv = sinv * f0 - sinC1;
+                    sinv = sinv * f0 + one;
+                    sinv = sinv * f1;
+                }
+            } else if (angle < 4.712389f) {
+                f1 = angle - pi;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - sinC1;
+                sinv = sinv * f0 + one;
+                sinv = sinv * f1;
+                sinv = -sinv;
+            } else {
+                f0 = angle - 4.712389f;
+                f1 = 1.5707964f - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - sinC1;
+                sinv = sinv * f0 + one;
+                sinv = sinv * f1;
+                sinv = -sinv;
+            }
+
+            rnd = (f32)(rand() % 10) / 100.0f;
+
+            GXPosition3f32(sinv * scale, cosv * scale, 0.0f);
+            GXTexCoord2f32(sinv * 0.5f + 0.5f + rnd, -cosv * 0.5f + 0.5f + rnd);
+            GXPosition3f32(0.0f, 0.0f, 0.0f);
+            GXTexCoord2f32(0.5f, 0.5f);
+        }
+    }
+}
+#pragma opt_propagation reset
+
 
 // NONMATCHING (92.73%): gp is kept in a different register (r9/r11) and the filter base in r11/r12; the rounding and clamp logic matches.
 void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {

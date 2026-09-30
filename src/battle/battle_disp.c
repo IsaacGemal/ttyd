@@ -27,7 +27,11 @@ s32 _status_pose_table[] = {
 
 
 //.rodata
-static Vec vec3_802eddd0 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802eddd0 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802edddc = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802edde8 = { -1.0f, 1.0f, 1.0f };
+const Vec vec3_802eddf4 = { -1.0f, -1.0f, 1.0f };
+const Vec vec3_802ede00 = { 1.0f, -1.0f, 1.0f };
 
 extern double double_to_int_802ede28;
 extern f32 float_4_8041bf3c;
@@ -265,6 +269,8 @@ void btlDispTexPlane3(Mtx mtx, u32 id, GXColor color0, GXColor color1, GXColor c
 	btlDispTexPlainGX(id, color0, color1, color2, color3);
 }
 
+// Keep btlDispGetTexSize out of line: the original calls it rather than inlining.
+#pragma dont_inline on
 void btlDispGetTexSize(u32 id, u16* width, u16* height) {
 	GXTexObj texobj;
 
@@ -272,6 +278,7 @@ void btlDispGetTexSize(u32 id, u16* width, u16* height) {
 	*width = GXGetTexObjWidth(&texobj);
 	*height = GXGetTexObjHeight(&texobj);
 }
+#pragma dont_inline reset
 
 void btlDispInit(void) {
 	BattleWork* wp = _battleWorkPointer;
@@ -693,6 +700,51 @@ void BattleStockExpDisp(void) {
 	}
 }
 
+// .rodata
+static volatile const Vec vec3_802ede0c = { 0.0f, 0.0f, -100.0f };
+static volatile const Vec vec3_802ede18 = { 0.0f, 0.0f, -100.0f };
+
+// .sbss
+static f32 y_1185;
+static f32 x_1184;
+
+double double_to_int_802ede28 = 4503601774854144.0;
+
+// NONMATCHING (91.05%): instructions differ; see check.py
+void _btlStockExpDisp(CameraId cameraId, void* param) {
+	BattleWork* wp = _battleWorkPointer;
+	s32 exp;
+	s32 value;
+	s32 tens;
+	s32 ones;
+	s32 i;
+	Vec pos1;
+	Vec pos2;
+
+	exp = *(s32*)((char*)wp + 0xf04);
+	if (exp <= 0) {
+		return;
+	}
+	value = exp;
+	if (value > 100) {
+		value = 100;
+	}
+	tens = value / 10;
+	ones = value - tens * 10;
+	for (i = 0; i < ones; i++) {
+		pos1 = vec3_802ede0c;
+		pos1.x = (308.0f + x_1184) - 3.5f - 13.0f * (f32)i;
+		pos1.y = y_1185 - 220.0f;
+		iconDispGx(&pos1, 0x10, 0x18c, 0.35f);
+	}
+	for (i = 0; i < tens; i++) {
+		pos2 = vec3_802ede18;
+		pos2.x = (308.0f + x_1184) - 10.0f - 20.0f * (f32)i + 4.0f;
+		pos2.y = (y_1185 - 220.0f) + 16.0f;
+		iconDispGx(&pos2, 0x10, 0x18c, 0.5f);
+	}
+}
+
 extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
 
@@ -749,6 +801,47 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 
 extern f32 float_deg2rad_8041bf54;
 
+const double double_to_int_mask_802ede30 = 4503599627370496.0;
+
+static void _btlDispTex4Sub(s32 id, Vec trans, Vec scale, Vec rot, Vec pos, Vec scale2, GXColor color) {
+	_btlDispTex4(id, &trans, &scale, &rot, &pos, &scale2, &color);
+}
+
+// The value copies and stack slots match, but the target's common base is vec3_802eddd0 (ours is the
+// section base ...rodata.0), it keeps the 15 copied words in r14-r25 (ours spills through volatile
+// registers and saves from r23), and it hoists the base before btlDispGetTexSize.
+// NONMATCHING (64.06%): register allocation and common-base symbol still differ.
+void btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, GXColor* color) {
+	u16 width;
+	u16 height;
+	f32 halfW;
+	f32 halfH;
+	Vec pos;
+
+	pos.z = float_0_8041bf58;
+	btlDispGetTexSize(id, &width, &height);
+	halfW = float_0p5_8041bf4c * ((f32)width * scale->x);
+	halfH = float_0p5_8041bf4c * ((f32)height * scale->y);
+
+	pos.x = -halfW;
+	pos.y = halfH;
+	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802edddc, *color);
+
+	pos.x = halfW;
+	pos.y = halfH;
+	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802edde8, *color);
+
+	pos.x = halfW;
+	pos.y = -halfH;
+	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802eddf4, *color);
+
+	pos.x = -halfW;
+	pos.y = -halfH;
+	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802ede00, *color);
+}
+
+// Keep _btlDispTex4 out of line: the original calls it rather than inlining.
+#pragma dont_inline on
 void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scale2, GXColor* color) {
 	Mtx mtx;
 	Mtx transM;
@@ -776,3 +869,4 @@ void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scal
 	PSMTXConcat(transM, mtx, mtx);
 	btlDispTexPlane2(mtx, id, *color, 0);
 }
+#pragma dont_inline reset

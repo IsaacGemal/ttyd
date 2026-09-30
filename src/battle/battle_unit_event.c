@@ -1,11 +1,9 @@
-//finished, need to check 1:1
 #include "battle/battle_unit_event.h"
 
-// NONMATCHING (98.71%): same instructions; only register numbers or operands differ.
 BOOL BattleCheckEndUnitInitEvent(BattleWork* wp) {
     BattleUnit* unit;
-    s32 i, eventId;
     BOOL valid;
+    s32 i, eventId;
 
     valid = TRUE;
     for (i = 0; i < 64; i++) {
@@ -25,7 +23,8 @@ BOOL BattleCheckEndUnitInitEvent(BattleWork* wp) {
     return valid;
 }
 
-// NONMATCHING (77.84%): 1 instruction differs, 2 missing, 8 extra, plus register differences.
+// dont_inline keeps BattleRunHitEventDirect a real `bl` from BattleRunHitEvent as in retail.
+#pragma dont_inline on
 s32 BattleRunHitEventDirect(BattleUnit* unit, s32 damageCode, void* code) {
     EventEntry* evt;
     s32 id, newId;
@@ -64,16 +63,16 @@ s32 BattleRunHitEventDirect(BattleUnit* unit, s32 damageCode, void* code) {
     }
     return newId;
 }
+#pragma dont_inline reset
 
-// NONMATCHING (0.00%): 8 instructions differ, 2 missing, 39 extra, plus register differences.
 s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     void* code;
-    BOOL valid;
     s32 id;
+    BOOL valid;
 
     id = 0;
     valid = TRUE;
-    if (damageCode == 0x28 && !BtlUnit_CheckData(unit, 0x2E)) {
+    if ((u8)damageCode == 0x28 && !BtlUnit_CheckData(unit, 0x2E)) {
         valid = FALSE;
     }
     if (!valid) {
@@ -86,7 +85,6 @@ s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     return id;
 }
 
-// NONMATCHING (81.22%): 3 instructions differ, 2 missing, 4 extra, plus register differences.
 s32 BattleRunPhaseEvent(BattleUnit* unit, BOOL isUnison) {
     EventEntry* evt = NULL;
     s32 id = 0;
@@ -94,13 +92,13 @@ s32 BattleRunPhaseEvent(BattleUnit* unit, BOOL isUnison) {
 
     if (isUnison) {
         code = unit->unisonPhaseEventCode;
-        if (!code) {
+        if (code) {
             evt = evtEntry(code, 0xA, 0x20);
         }
     }
     else {
         code = unit->phaseEventCode;
-        if (!code) {
+        if (code) {
             evt = evtEntry(code, 0xA, 0x20);
         }
     }

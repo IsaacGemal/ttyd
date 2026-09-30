@@ -1,5 +1,6 @@
 #include "manager/fontmgr.h"
 #include "evt/evt_shop.h"
+#include "evt/evt_case.h"
 #include "mario/mariost.h"
 #include "mario/mario_pouch.h"
 #include "manager/evtmgr.h"
@@ -16,6 +17,7 @@
 #include "driver/swdrv.h"
 #include "driver/msgdrv.h"
 #include "driver/mapdrv.h"
+#include "window/win_mario.h"
 
 extern GlobalWork* gp;
 
@@ -79,6 +81,27 @@ extern const f32 float_0p8_8041bc4c;
 extern const f32 float_124_8041bc50;
 extern const f32 float_38_8041bc54;
 extern WinMgrDesc list_desc[];
+extern WinMgrDesc window_desc[];
+extern const char str_802ECDE8[];
+extern const char str_8041BC1C[6];
+extern const f32 float_6_8041bc24;
+extern u32 shopper_talk_evt[];
+extern u32 main_evt[4];
+extern u32 evt_shoplist[10];
+extern const char str_802ECDF8[];
+extern const char str_802ECE10[];
+extern const char str_8041BC28[];
+extern u32 dat_8041bbf0;
+extern u32 dat_8041bbf4;
+extern u32 dat_8041bbf8;
+extern u32 dat_8041bbfc;
+extern u32 dat_8041bc00;
+extern u32 dat_8041bc04;
+extern u32 dat_8041bc08;
+extern u32 dat_8041bc0c;
+extern const f32 float_0p6_8041bc2c;
+extern const f32 float_40_8041bc30;
+extern const f32 float_0p64_8041bc38;
 
 s32 evtShopIsActive(void) {
 	s32 active;
@@ -391,6 +414,99 @@ void title_disp(WinMgrEntry* entry) {
 	}
 }
 
+// NONMATCHING (88.49%): i/bit/p land in a cyclic permutation of the original loop registers;
+// the message x arithmetic is reassociated; the int->float constants load on f28/f30 swapped.
+void list_disp(WinMgrEntry* entry) {
+	PouchData* pouch;
+	GXColor color0;
+	GXColor color1;
+	GXColor color2;
+	GXColor color3;
+	GXColor color4;
+	GXColor color5;
+	GXColor color6;
+	GXColor color7;
+	const char* msg;
+	s32 y;
+	s32 i;
+	ShopPointEntry* p;
+	ItemData* item;
+	u16 width;
+	char buf[0x100];
+	Mtx mtx;
+	Mtx scale;
+
+	if (entry->flags & 4) {
+		return;
+	}
+
+	pouch = pouchGetPtr();
+
+	msg = msgSearch(str_802ECDF8);
+	FontDrawStart();
+	FontDrawEdge();
+	*(u32*)&color0 = dat_8041bbf0;
+	FontDrawColor(&color0);
+	width = FontGetMessageWidth(msg);
+	FontDrawMessage(entry->field_0x18 + (100 - width) / 2 + 10, entry->field_0x1C + 13, msg);
+	FontDrawEdgeOff();
+
+	msg = msgSearch(str_802ECE10);
+	FontDrawStart();
+	FontDrawEdge();
+	*(u32*)&color1 = dat_8041bbf4;
+	FontDrawColor(&color1);
+	width = FontGetMessageWidth(msg);
+	FontDrawMessage(entry->field_0x18 + (entry->field_0x20 / 2 - 10) + (100 - width) / 2, entry->field_0x1C + 13, msg);
+	FontDrawEdgeOff();
+
+	FontDrawStart();
+	for (i = 0, y = 0, p = shopPointList; p->price != -1; i++, y += 26, p++) {
+		item = &itemDataTable[p->item];
+		FontDrawStart();
+		if (pouch->field_0x5B4 & (1 << i)) {
+			*(u32*)&color2 = dat_8041bbf8;
+			FontDrawColor(&color2);
+		}
+		else {
+			*(u32*)&color3 = dat_8041bbfc;
+			FontDrawColor(&color3);
+		}
+		sprintf(buf, "%s", winZenkakuStr(p->price));
+		width = FontGetMessageWidth(buf);
+		FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - width - 90, entry->field_0x1C - 20 - y, buf);
+
+		FontDrawStart();
+		if (pouch->field_0x5B4 & (1 << i)) {
+			*(u32*)&color4 = dat_8041bc00;
+			FontDrawColor(&color4);
+		}
+		else {
+			*(u32*)&color5 = dat_8041bc04;
+			FontDrawColor(&color5);
+		}
+		msg = msgSearch(str_802ECDF8);
+		sprintf(buf, "%s", msg);
+		width = FontGetMessageWidth(buf);
+		PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - 0.6f * width) - 40.0f, entry->field_0x1C - 28 - y, 0.0f);
+		PSMTXScale(scale, 0.64f, 0.64f, 0.64f);
+		PSMTXConcat(mtx, scale, mtx);
+		FontDrawMessageMtx(mtx, buf);
+
+		msg = msgSearch(item->name);
+		FontDrawStart();
+		if (pouch->field_0x5B4 & (1 << i)) {
+			*(u32*)&color6 = dat_8041bc08;
+			FontDrawColor(&color6);
+		}
+		else {
+			*(u32*)&color7 = dat_8041bc0c;
+			FontDrawColor(&color7);
+		}
+		FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10, entry->field_0x1C - 20 - y, msg);
+	}
+}
+
 void point_disp(WinMgrEntry* entry) {
 	ShopWork* wp = (ShopWork*)_wp;
 	PouchData* pouch = pouchGetPtr();
@@ -482,4 +598,72 @@ USER_FUNC(disp_list) {
 		return 1;
 	}
 	return 0;
+}
+
+USER_FUNC(evt_shop_setup) {
+	s32* args;
+	s32 v0;
+	s32 v1;
+	s32 v2;
+	s32 v3;
+	NpcEntry* npc;
+	s32 i;
+	ShopWork* wp;
+
+	args = event->args;
+	v0 = evtGetValue(event, args[0]);
+	v1 = evtGetValue(event, args[1]);
+	v2 = evtGetValue(event, args[2]);
+	v3 = evtGetValue(event, args[3]);
+
+	wp = (ShopWork*)_mapAlloc(0xD8);
+	memset(wp, 0, 0xD8);
+	_wp = (evt_shop_work*)wp;
+	strncpy(mapname, gp->currentMapName, 15);
+	wp->field_0x4 = (void*)v0;
+	wp->field_0x8 = (s32*)v1;
+	wp->field_0xC = (void*)v2;
+	wp->field_0x10 = (void*)v3;
+	wp->field_0x20 = 6;
+
+	for (i = 0; i < wp->field_0x20; i++) {
+		Vec pos;
+		char buf[0x20];
+
+		mapObjGetPos(*(const char**)((u8*)wp->field_0x4 + i * 8), &pos);
+		mapObjFlagOn(*(const char**)((u8*)wp->field_0x4 + i * 8), 0x4000);
+		sprintf(buf, str_8041BC1C, i);
+		iconEntry(buf, *(u16*)&itemDataTable[wp->field_0x8[i * 2]].icon_id);
+		iconSetPos(buf, pos.x, float_6_8041bc24 + pos.y, pos.z);
+		iconFlagOn(buf, 0x40);
+		wp->field_0x14[i] = 0;
+		if (wp->field_0x8[i * 2] == 0x33 && (s32)pouchCheckItem(0x33) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x37 && (s32)pouchCheckItem(0x37) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x38 && (s32)pouchCheckItem(0x38) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x39 && (s32)pouchCheckItem(0x39) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x3A && (s32)pouchCheckItem(0x3A) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x3B && (s32)pouchCheckItem(0x3B) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+	}
+	npc = npcNameToPtr(*(const char**)v2);
+	npc->talkEvt = shopper_talk_evt;
+	wp->field_0x24 = evtEntryType(main_evt, 0, 0x20, 0);
+	wp->field_0x24->lwData[0] = (s32)wp;
+	for (i = 0; i < 3; i++) {
+		(&wp->field_0x50)[i] = winMgrEntry(&window_desc[i]);
+	}
+	wp->field_0xD0 = -1;
+	evtRunCaseEntry(9, 1, (s32)str_802ECDE8, 0, (s32*)evt_shoplist, 0);
+	return EVT_RETURN_DONE;
 }

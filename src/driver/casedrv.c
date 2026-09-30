@@ -1,4 +1,6 @@
 #include "driver/casedrv.h"
+#include "driver/hitdrv.h"
+#include "mario/mariost.h"
 #include "memory.h"
 #include <string.h>
 
@@ -64,4 +66,39 @@ void caseDelete(s32 caseId) {
 // NONMATCHING (0.26%): empty placeholder, not decompiled yet.
 void caseMain(void) {
 
+}
+
+CaseEntry* caseCheckHitObj(void* obj) {
+	CaseEntry* entry;
+	int i;
+	HitEntry* hit = obj;
+
+	if (gp->inBattle != 0) {
+		return NULL;
+	}
+
+	for (i = 0, entry = wp->entries; i < wp->count; i++, entry++) {
+		if (!(entry->flags & 1)) {
+			continue;
+		}
+		if (entry->activeConditionId == 0x11) {
+			continue;
+		}
+		if ((u32)(entry->activeConditionId - 0x12) <= 1) {
+			continue;
+		}
+		if (strcmp(hitGetName(hit), entry->hitObjName) == 0) {
+			return entry;
+		}
+	}
+	return NULL;
+}
+
+CaseEntry* caseIdToPtr(s32 caseId) {
+	CaseEntry* entry = &wp->entries[caseId];
+
+	if (entry->flags & 1) {
+		return entry;
+	}
+	return NULL;
 }

@@ -38,18 +38,6 @@
     "reason": "Retail evt_party_cloud_breathout consumes the result as s32 without masking; the implementation/header return u8."
   },
   {
-    "path": "src/sdk/DEMOInit.c",
-    "name": "DEMOUpdateStats",
-    "declaration": "extern void DEMOUpdateStats(GXBool inc);",
-    "reason": "the SDK stats header declares DemoStatEnable as u8; this custom unit uses BOOL."
-  },
-  {
-    "path": "src/sdk/DEMOInit.c",
-    "name": "DEMOPrintStats",
-    "declaration": "extern void DEMOPrintStats(void);",
-    "reason": "the SDK stats header conflicts with the custom DemoStatEnable declaration."
-  },
-  {
     "path": "src/battle/battle_damage.c",
     "name": "_getRegistStatus",
     "declaration": "u8 _getRegistStatus(BattleUnit* unit, s32 type);",

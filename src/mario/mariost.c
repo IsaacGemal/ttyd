@@ -75,7 +75,7 @@ GlobalWork* gp = &marioSt;
 //.sbss
 OSTime none_key;
 s32 _mariostSystemLevel;
-BOOL DvdCheckThreadOn; //DvdCheckTreadOn
+BOOL DvdCheckTreadOn;
 
 //.data
 GXRenderModeObj GXNtsc480ProgMarioSt = {
@@ -214,7 +214,7 @@ void marioStInit(void) {
 	VISetPostRetraceCallback(viPostCallback);
 	romFontInit();
 	OSCreateThread(&DvdCheckThread, gcDvdCheckThread, NULL, (void*)((u32)&stack + sizeof(stack)), sizeof(stack), 16, OS_THREAD_ATTR_DETACH);
-	DvdCheckThreadOn = TRUE;
+	DvdCheckTreadOn = TRUE;
 	OSResumeThread(&DvdCheckThread);
 	DVDMgrInit();
 	psndInit();
@@ -303,7 +303,7 @@ void marioStMain(void) {
 	nameEntMain();
 	winMgrMain();
 	effMain();
-	gcResetCheck();
+	L_gcResetCheck();
 	if (gp->flags & 0x1000) {
 		for (i = 0; i < 4; i++) {
 			if (gp->dirs[i]) break;
@@ -505,7 +505,7 @@ void* gcDvdCheckThread(void* param) {
 			}
 			DEMODoneRender();
 			makeKey();
-			gcResetCheck();
+			L_gcResetCheck();
 		}
 		OSYieldThread();
 	}
@@ -529,7 +529,7 @@ void gcRumbleCheck(void) {
 	}*/
 }
 
-void gcResetCheck(void) {
+void L_gcResetCheck(void) {
 	u32 code;
 
 	if (gp->resetType) {
@@ -540,9 +540,9 @@ void gcResetCheck(void) {
 		VIWaitForRetrace();
 		psndExit();
 		DVDMgrDelete();
-		if ((OSGetCurrentThread() != &DvdCheckThread) && DvdCheckThreadOn) {
+		if ((OSGetCurrentThread() != &DvdCheckThread) && DvdCheckTreadOn) {
 			OSCancelThread(&DvdCheckThread);
-			DvdCheckThreadOn = FALSE;
+			DvdCheckTreadOn = FALSE;
 		}
 		while (cardIsExec()) {
 			cardMain();

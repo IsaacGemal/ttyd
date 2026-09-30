@@ -92,6 +92,37 @@ def lint(base, allow_pragma, allow_protected, allow_configure, allow_asm=False):
     print(f"ok   [lint] {len(names)} changed file(s) vs {base}")
 
 
+def extend_data_ids():
+    """extend_data(id) is an inline function forcedata<id>: two files linked into one module with the same id are
+    merged by the linker and the second one's constants vanish. Ids must be unique among the sources each REL links
+    (objdiff.json's source paths, shared rels/common units included), and among everything linked into the dol."""
+    import json, re
+    r = run([sys.executable, "configure.py"])
+    if r.returncode:
+        fail("extend_data", "configure.py failed:\n" + r.stderr[-2000:])
+    rels = {d.name for d in (ROOT / "rels").iterdir() if d.is_dir() and d.name != "common"}
+    sources = {}
+    for u in json.load(open(ROOT / "objdiff.json"))["units"]:
+        path = u.get("metadata", {}).get("source_path")
+        if path:
+            module = u["name"].split("/", 1)[0]
+            sources.setdefault(module if module in rels else "dol", set()).add(path)
+    problems = []
+    for module, paths in sorted(sources.items()):
+        seen = {}
+        for path in sorted(paths):
+            f = ROOT / path
+            if not f.exists():
+                continue
+            for ident in set(re.findall(r"extend_data\s*\(\s*(\w+)\s*,", f.read_text(errors="replace"))):
+                if ident in seen and seen[ident] != path:
+                    problems.append(f"{module}: extend_data({ident}) in {path} and {seen[ident]}")
+                seen[ident] = path
+    if problems:
+        fail("extend_data", "\n  " + "\n  ".join(problems))
+    print(f"ok   [extend_data] ids unique within each of {len(sources)} modules' linked sources")
+
+
 def build():
     r = run([sys.executable, "configure.py"])
     if r.returncode:
@@ -123,12 +154,34 @@ def ratchet(allowed=()):
         cmp(unit["name"], unit, UNIT_KEYS)
         for fn in unit.get("functions", []):
             cmp(f"{unit['name']}:{fn['name']}", fn, FUNC_KEYS)
+    # Data sections of units that aren't linked yet: `changes` leaves them out, and a function can reach 100% while
+    # the unit's .rodata/.sdata2 gets worse (e.g. a named constant left behind next to the literal that replaced it).
+    def sections(report):
+        scores, units = {}, set()
+        for u in json.loads(report.read_text()).get("units") or []:
+            if (u.get("metadata") or {}).get("complete"):
+                continue  # linked: the checksum is the check, and some linked units have imperfect data scores
+            units.add(u["name"])
+            seen = {}
+            for s in u.get("sections") or []:
+                n = seen[s["name"]] = seen.get(s["name"], 0) + 1
+                if s["name"] != ".text":  # objdiff omits the score when it's 0
+                    scores[(u["name"], s["name"] + (f"#{n}" if n > 1 else ""))] = s.get("fuzzy_match_percent") or 0.0
+        return scores, units
+
+    (before, units_before), (after, units_now) = sections(ACCEPTED), sections(current)
+    for key in before.keys() | after.keys():
+        if key[0] not in units_now or key[0] not in units_before:
+            continue  # unit linked, removed or new: the checksum and the unit measures cover it
+        a, b = before.get(key, 0.0), after.get(key, 0.0)
+        (worse if b < a else better if b > a else []).append((f"{key[0]}[{key[1]}]", "fuzzy_match_percent", a, b))
     if allowed:
         # A name is a function (its fuzzy drop, while below 100%, excuses its unit's and the total's fuzzy drop)
         # or a unit path such as MarioSt/event/evt_eff (any of its measures, and the total's same measure).
-        named = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100) or w[0] in allowed]
-        units = {n.split(":", 1)[0] for n, _, _, _ in named}
-        keys = {k for n, k, _, _ in named if ":" not in n}
+        named = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100) or w[0] in allowed
+                 or w[0].split("[")[0] in allowed]
+        units = {n.split(":", 1)[0] for n, _, _, _ in named if "[" not in n}
+        keys = {k for n, k, _, _ in named if ":" not in n and "[" not in n}
         excused = named + [w for w in worse if w not in named and (
             (w[1] == "fuzzy_match_percent" and (w[0] == "TOTAL" or w[0] in units))
             or (w[0] == "TOTAL" and w[1] in keys))]
@@ -192,6 +245,7 @@ def main():
     if problems:
         fail("prototypes", "\n  " + "\n  ".join(problems))
     print(f"ok   [prototypes] {count} documented exceptions; no other external local prototypes")
+    extend_data_ids()
     build()
     ratchet(set(a.allow_regress))
     summary()

@@ -67,3 +67,4 @@ void U_shadowSetMode(s32 id, s32 mode);
 s32 shadowEntryMode(s32 mode, f32 x, f32 y, f32 z, f32 size);
 void shadowSetCamId(s32 id, s32 camId);
 void shadowFlagOn(s32 id, u16 flag);
+void cylinderShadowDraw(CameraId camId, void* param);

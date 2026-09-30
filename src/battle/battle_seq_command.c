@@ -1,5 +1,6 @@
 #include "battle/battle_seq_command.h"
 #include "battle/battle.h"
+#include "battle/battle_mario.h"
 #include "battle/battle_monosiri.h"
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
@@ -22,8 +23,6 @@
 #include <stdio.h>
 #include "battle/battle_database_common.h"
 
-extern BattleWeapon badgeWeapon_2KaiItem;
-extern BattleWeapon badgeWeapon_3KaiItem;
 extern ItemData itemDataTable[];
 
 
@@ -50,6 +49,17 @@ extern f32 float_60_8041c314;
 extern u32 dat_8041c2d8;
 extern u32 dat_8041c2c0;
 extern u32 dat_8041c2c4;
+extern u32 dat_8041c2c8;
+extern u32 dat_8041c2cc;
+extern u32 dat_8041c2d0;
+extern u32 dat_8041c2d4;
+extern f32 float_neg240_8041c328;
+extern f32 float_86_8041c32c;
+extern f32 float_16_8041c330;
+extern f32 float_neg232_8041c334;
+extern f32 float_83_8041c338;
+extern f32 float_118_8041c33c;
+extern f32 float_115_8041c340;
 extern f32 float_neg30_8041c344;
 extern f32 float_30_8041c348;
 extern f32 float_65_8041c34c;
@@ -62,6 +72,25 @@ extern f32 float_neg13_8041c364;
 extern f32 float_neg38_8041c368;
 extern f32 float_neg40_8041c36c;
 extern f32 float_900_8041c370;
+
+// Sampling work block lives inside BattleWork at offset 0x428 (same layout as the
+// local BattleSampling struct in battle_detect.c).
+typedef struct BattleTargetEntry {
+    s16 unitId;   // 0x0
+    s16 partId;   // 0x2
+    s16 x;        // 0x4
+    s16 y;        // 0x6
+    s16 z;        // 0x8
+    u8 pad_0xA[0x24 - 0xA];
+} BattleTargetEntry;
+
+typedef struct BattleTargetSampling {
+    BattleWeapon* weapon;           // 0x0
+    u8 entries[0xA6C - 0x4];        // 0x4, BattleTargetEntry[]
+    s8 count;                       // 0xA6C
+    s8 order[0xAB7 - 0xA6D];        // 0xA6D
+    s8 selectIdx;                   // 0xAB7
+} BattleTargetSampling;
 
 // NONMATCHING (19.37%): 116 missing, plus register differences.
 void BattleDrawEnemyHP(CameraId camId, void* param) {
@@ -221,7 +250,7 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 			goto after;
 		}
 	} else {
-		if ((s32)BattlePadCheckTrigger(0x20000)) {
+		if (BattlePadCheckTrigger(0x20000)) {
 			cursor->field_0 = 0;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 			goto after;
@@ -234,16 +263,16 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 			goto after;
 		}
 	} else {
-		if ((s32)BattlePadCheckTrigger(0x10000)) {
+		if (BattlePadCheckTrigger(0x10000)) {
 			cursor->field_0 = cursor->unk8 - 1;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 		}
 	}
 after:
-	if ((s32)BattlePadCheckTrigger(0x200)) {
+	if (BattlePadCheckTrigger(0x200)) {
 		done = 1;
 		cancel = 0;
-	} else if ((s32)BattlePadCheckTrigger(0x100)) {
+	} else if (BattlePadCheckTrigger(0x100)) {
 		done = 1;
 		if (cursor->field_0 == 0) {
 			cancel = 1;
@@ -277,7 +306,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	s32 result = 0;
 
 	_btlcmd_GetCursorPtr(cmd, 0xE, &cursor);
-	if ((s32)BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
+	if (BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
 		psndSFXOn((char*)0x9D8);
 		BattleCommandDisplay_ActMenuEnd(wp);
 		*(s32*)&cmd->unk540[0] = 9;
@@ -333,7 +362,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 				*(s32*)&wp->commandMenu.unk540[0x14] = 0;
 			}
 		}
-		if ((s32)BattlePadCheckTrigger(0x100) || wp->commandMenu.unk540[0x18] != 0) {
+		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.unk540[0x18] != 0) {
 			if (wcmd->mActionTable[cursor->field_0].mEnabled) {
 				psndSFXOn((char*)0x9D8);
 				*(s32*)&cmd->unk540[0] = wcmd->mActionTable[cursor->field_0].mType;
@@ -404,7 +433,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		if (BattleCommandAttackAudienceCheck()) {
 			goto end;
 		}
-		if ((s32)BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
+		if (BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
 			psndSFXOn((char*)0x9D8);
 			BattleCommandDisplay_ActMenuEnd(wp);
 			*(s32*)&cmd->unk540[0] = 9;
@@ -886,6 +915,127 @@ void BattleCommandDisplay_TargetSelectMenuSetup(BattleWork* wp) {
 	BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), 0x28);
 }
 
+// NONMATCHING (99.09%): the single-target path matches, but the compiler keeps `wp` in r26 where
+// the original keeps it in r29; the multi-target loop's sampling/i/yoff then shift from r28/r27/r26
+// to r29/r28/r27. The `double_to_int_*` reloc names are the known pool artifact.
+void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp) {
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
+	BattleCursor* cursor;
+	BattleWeapon* weapon;
+	Vec iconPos;
+
+	_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
+	weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
+	if (weapon->targetClassFlags & 0x01000000) {
+		BattleTargetSampling* sampling = (BattleTargetSampling*)wp->field_428;
+		BattleUnit* unit;
+		BattleUnitPart* part;
+		BattleTargetEntry* entry;
+		char* name;
+		f32 width;
+		Vec pos;
+		Vec screen;
+
+		entry = (BattleTargetEntry*)((u8*)sampling + 4 + sampling->order[sampling->selectIdx] * 0x24);
+		unit = BattleGetUnitPtr(wp, entry->unitId);
+		part = BtlUnit_GetPartsPtr(unit, entry->partId);
+		pos.x = entry->x;
+		pos.y = entry->y;
+		pos.z = entry->z;
+		if ((unit->mAttributeFlags & 2) == 0) {
+			btlGetScreenPoint(&pos, &screen);
+			iconPos.x = screen.x;
+			iconPos.y = screen.y;
+			iconPos.z = float_0_8041c2f0;
+			iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
+			if (unit->currentKind == 0xE2) {
+				name = pouchGetYoshiName();
+			} else {
+				name = (char*)msgSearch(part->partName);
+			}
+			width = (f32)FontGetMessageWidth(name);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c8, float_neg240_8041c328, float_86_8041c32c,
+			                      float_16_8041c330 + width, float_32_8041c30c, float_10_8041c2e4);
+			FontDrawStart();
+			FontDrawString(name, float_neg232_8041c334, float_83_8041c338);
+		} else {
+			btlGetScreenPoint(&pos, &screen);
+			iconPos.x = screen.x;
+			iconPos.y = screen.y;
+			iconPos.z = float_0_8041c2f0;
+			iconDispGx(&iconPos, 0x18, 0x1EF, float_1_8041c2f4);
+			if (unit->currentKind == 0xE2) {
+				name = pouchGetYoshiName();
+			} else {
+				name = (char*)msgSearch(part->partName);
+			}
+			width = (f32)FontGetMessageWidth(name);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2cc, float_neg240_8041c328, float_86_8041c32c,
+			                      float_16_8041c330 + width, float_32_8041c30c, float_10_8041c2e4);
+			FontDrawStart();
+			FontDrawString(name, float_neg232_8041c334, float_83_8041c338);
+		}
+	} else {
+		BattleTargetSampling* sampling = (BattleTargetSampling*)wp->field_428;
+		BattleUnit* unit;
+		BattleUnitPart* part;
+		BattleTargetEntry* entry;
+		char* name;
+		f32 width;
+		Vec pos;
+		Vec screen;
+		s32 i;
+		s32 yoff;
+
+		yoff = 0;
+		for (i = 0; i < sampling->count; i++, yoff += 0x20) {
+			entry = (BattleTargetEntry*)((u8*)sampling + 4 + sampling->order[i] * 0x24);
+			unit = BattleGetUnitPtr(wp, entry->unitId);
+			part = BtlUnit_GetPartsPtr(unit, entry->partId);
+			pos.x = entry->x;
+			pos.y = entry->y;
+			pos.z = entry->z;
+			if ((unit->mAttributeFlags & 2) == 0) {
+				btlGetScreenPoint(&pos, &screen);
+				iconPos.x = screen.x;
+				iconPos.y = screen.y;
+				iconPos.z = float_0_8041c2f0;
+				iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
+				if (unit->currentKind == 0xE2) {
+					name = pouchGetYoshiName();
+				} else {
+					name = (char*)msgSearch(part->partName);
+				}
+				width = (f32)FontGetMessageWidth(name);
+				windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d0, float_neg240_8041c328,
+				                      float_118_8041c33c - (f32)yoff, float_16_8041c330 + width,
+				                      float_32_8041c30c, float_10_8041c2e4);
+				FontDrawStart();
+				FontDrawString(name, float_neg232_8041c334, float_115_8041c340 - (f32)yoff);
+			} else {
+				btlGetScreenPoint(&pos, &screen);
+				iconPos.x = screen.x;
+				iconPos.y = screen.y;
+				iconPos.z = float_0_8041c2f0;
+				iconDispGx(&iconPos, 0x18, 0x1EF, float_1_8041c2f4);
+				if (unit->currentKind == 0xE2) {
+					name = pouchGetYoshiName();
+				} else {
+					name = (char*)msgSearch(part->partName);
+				}
+				width = (f32)FontGetMessageWidth(name);
+				windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d4, float_neg240_8041c328,
+				                      float_118_8041c33c - (f32)yoff, float_16_8041c330 + width,
+				                      float_32_8041c30c, float_10_8041c2e4);
+				FontDrawStart();
+				FontDrawString(name, float_neg232_8041c334, float_115_8041c340 - (f32)yoff);
+			}
+		}
+	}
+	btl_camera_set_mode(0, 0);
+}
+
 void BattleCommandDisplay_ProtectPartnerSelectMenuSetup(BattleWork* wp) {
 	BattleUnit* unit;
 
@@ -1361,6 +1511,145 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 		}
 	}
 	return 0;
+}
+
+// NONMATCHING (99.97%): only the eight pooled string offsets differ (the target's
+// str_802EF640 base vs this file's local .rodata pool, all shifted 0xa8); they should
+// line up once the rest of the file's string literals are present.
+void _btlcmd_MakeOperationTable(BattleWork* wp) {
+	BattleWeapon* weapon;
+	NpcBattleInfo* setup;
+	BattleUnit* mario;
+	BattleCommand* cmd;
+	PouchData* pouch;
+	BattleWorkCommand* wcmd;
+	BattleCursor* cursor;
+	BattleUnit* party;
+	s32 count;
+	s32 escapeIdx;
+
+	mario = BattleGetUnitPtr(wp, wp->activeUnitId);
+	cmd = &wp->commandMenu;
+	setup = wp->fbatInfo->setup;
+	pouch = pouchGetPtr();
+	wcmd = (BattleWorkCommand*)cmd;
+
+	if (cmd == NULL) {
+		return;
+	}
+	_btlcmd_GetCursorPtr(cmd, 5, &cursor);
+	count = 0;
+	if (_btlcmd_MakePartyTable(wp) >= 2) {
+		wcmd->mOperationTable[0].mType = 0;
+		if (mario->flippedTurns) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		} else {
+			wcmd->mOperationTable[0].mEnabled = 1;
+			wcmd->mOperationTable[0].field_0x8 = 0;
+		}
+		wcmd->mOperationTable[0].mName = (char*)msgSearch("btl_cmd_op_chg_party");
+		party = mario;
+		if (!(mario->currentKind >= 0xE0 && mario->currentKind < 0xE7)) {
+			party = BattleGetPartnerPtr(wp, mario);
+		}
+		BtlUnit_CanActStatus(party);
+		wcmd->mOperationTable[0].mIcon = _battleGetPartyIcon(party->currentKind);
+		wcmd->mOperationTable[0].mDescription = "btl_hlp_cmd_operation_changeparty";
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		}
+		if (setup->field_4 & 0x04000000) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		}
+		wcmd->mOperationTable[0].mWeaponCost = 0;
+		count = 1;
+	}
+	if (pouch->mStarPowersObtained != 0) {
+		wcmd->mOperationTable[count].mType = 5;
+		wcmd->mOperationTable[count].mEnabled = 1;
+		wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_appeal");
+		wcmd->mOperationTable[count].mIcon = 0x164;
+		wcmd->mOperationTable[count].field_0x8 = 0;
+		wcmd->mOperationTable[count].mWeaponCost = 0;
+		wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_appeal";
+		count++;
+	}
+	if (mario->badgesEquipped.Charge) {
+		weapon = mario->currentKind == 0xDE ? &badgeWeapon_Charge : &badgeWeapon_ChargeP;
+		wcmd->mOperationTable[count].mType = 1;
+		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (wcmd->mOperationTable[count].mEnabled != 0) {
+			wcmd->mOperationTable[count].field_0x8 = 0;
+		} else {
+			wcmd->mOperationTable[count].field_0x8 = 1;
+		}
+		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
+		wcmd->mOperationTable[count].mIcon = 0x166;
+		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[count].mEnabled = 0;
+			wcmd->mOperationTable[count].field_0x8 = 3;
+		}
+		count++;
+	}
+	if (mario->badgesEquipped.SuperCharge) {
+		weapon = mario->currentKind == 0xDE ? &badgeWeapon_SuperCharge : &badgeWeapon_SuperChargeP;
+		wcmd->mOperationTable[count].mType = 2;
+		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (wcmd->mOperationTable[count].mEnabled != 0) {
+			wcmd->mOperationTable[count].field_0x8 = 0;
+		} else {
+			wcmd->mOperationTable[count].field_0x8 = 1;
+		}
+		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
+		wcmd->mOperationTable[count].mIcon = 0x167;
+		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[count].mEnabled = 0;
+			wcmd->mOperationTable[count].field_0x8 = 3;
+		}
+		count++;
+	}
+	wcmd->mOperationTable[count].mType = 6;
+	wcmd->mOperationTable[count].mEnabled = 1;
+	wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_defend");
+	wcmd->mOperationTable[count].mIcon = 0x165;
+	wcmd->mOperationTable[count].field_0x8 = 0;
+	wcmd->mOperationTable[count].mWeaponCost = 0;
+	wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_defend";
+	if (mario->mAttributeFlags & 0x10) {
+		wcmd->mOperationTable[count].mEnabled = 0;
+		wcmd->mOperationTable[count].field_0x8 = 3;
+	}
+	escapeIdx = count + 1;
+	wcmd->mOperationTable[escapeIdx].mType = 3;
+	wcmd->mOperationTable[escapeIdx].mEnabled = BtlUnit_CanActStatus(mario);
+	wcmd->mOperationTable[escapeIdx].mName = (char*)msgSearch("btl_cmd_op_escape");
+	wcmd->mOperationTable[escapeIdx].mIcon = 0x163;
+	wcmd->mOperationTable[escapeIdx].mWeaponCost = 0;
+	if (wcmd->mOperationTable[escapeIdx].mEnabled != 0) {
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 0;
+	} else {
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 1;
+	}
+	wcmd->mOperationTable[escapeIdx].mDescription = "btl_hlp_cmd_operation_escape";
+	if (mario->mAttributeFlags & 0x10) {
+		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+	}
+	if (wp->fbatInfo->setup->field_4 & 0x10) {
+		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+	}
+	cursor->unk8 = count + 2;
+	if (cursor->field_0 >= cursor->unk8) {
+		cursor->field_0 = cursor->unk8 - 1;
+	}
 }
 
 // Keeping the original `bl _battleGetPartyIcon` needs the dont_inline pragma on that callee.

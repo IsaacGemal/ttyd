@@ -38,3 +38,20 @@ USER_FUNC(pre_kurio_use) {
 
     
 }
+
+// .sdata2 constants
+extern const f32 float_24_8041b45c;
+extern const f32 float_26_8041b460;
+
+void kuribo_init_800C23B4(PartyEntry* party) {
+    party->field_33 = 1;
+    party->field_32 = 0;
+    *(f32*)((u8*)party + 0xF0) = float_24_8041b45c;
+    *(f32*)((u8*)party + 0xF4) = float_26_8041b460;
+    msg_ep = 0;
+}
+
+void kuribo_use_post(PartyEntry* party) {
+    party->flags &= ~0x04000000;
+    party->flags &= ~0x02000000;
+}

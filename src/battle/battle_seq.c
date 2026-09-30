@@ -3,14 +3,20 @@
 #include "battle/battle_actrecord.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
+#include "battle/battle_damage_split.h"
 #include "driver/animdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/windowdrv.h"
 #include "eff/eff_nice.h"
 #include "mario/mario_party.h"
+#include "manager/fontmgr.h"
 #include "party.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <math.h>
+#include <stdio.h>
 #include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
 
 extern BattleWork* _battleWorkPointer;
 
@@ -49,8 +55,6 @@ const char str_802EF62C[] = "SFX_BTL_PINCH1";
 
 //local prototypes
 
-// Needed: -O4,p unrolls this loop 4x; the original is not unrolled.
-#pragma optimize_for_size on
 void _mapobj_data_touch_scale(s32 kind) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	s32 i;
@@ -62,10 +66,7 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 		}
 	}
 }
-#pragma optimize_for_size off
 
-// Needed: -O4,p inlines btlseqInit into this function; the original calls it.
-#pragma optimize_for_size on
 // NONMATCHING (79.18%): switch dispatch matches, but btlseqFirstAct/btlseqTurn are still stubs, so the
 // compiler inlines them away and the case-3 compare/branch tree differs.
 void BattleSequenceManager(void) { //1:1
@@ -88,11 +89,8 @@ void BattleSequenceManager(void) { //1:1
 			break;
 	}
 }
-#pragma optimize_for_size off
 
-// Needed: -O4,p drops stmw; the original saves r28-r31 with stmw.
-#pragma optimize_for_size on
-void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) { //1:1, needs stmw forced
+void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 	BattleUnit* unit;
 	BOOL v6;
 	int i;
@@ -171,13 +169,10 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) { //1:1, needs stmw forc
 		}
 	}
 }
-#pragma optimize_for_size off
 
-// Needed: without dont_inline, -O4,p inlines this whole body into BattleSequenceManager.
+// Needed: without dont_inline this whole body is inlined into BattleSequenceManager; the original calls it.
 #pragma dont_inline on
-// Needed: -O4,p saves r30/r31 with two stw; the original uses stmw.
-#pragma optimize_for_size on
-void btlseqInit(BattleWork* wp) { //1:1, needs stmw
+void btlseqInit(BattleWork* wp) {
 	const char* base = (const char*)N_weapon_lucky_start;
 	MarioWork* mario;
 	PartyEntry* party;
@@ -225,7 +220,6 @@ void btlseqInit(BattleWork* wp) { //1:1, needs stmw
 			break;
 	}
 }
-#pragma optimize_for_size off
 #pragma dont_inline reset
 
 extern BattleWeapon marioDefaultWeapon_Jump;
@@ -265,17 +259,139 @@ void btlseqFirstAct(BattleWork* wp) {
 	}
 }
 
+extern const char str_802EF5C8[];
+
+// _set_effect_luck is an EVT command (nanika_luck_event) returning 2. The four comma initializers are
+// match-only: `(0, x)` computes the same value as `x`, but it makes MWCC assign the callee-saved
+// registers r30=&weapon, r29=&z, r28=&y, r27=sfxName as the original does. Without them the string
+// address is copied through r0 (one extra `mr`), so the natural forms are under #else.
+s32 _set_effect_luck(void) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleWeapon weapon = *(BattleWeapon*)N_weapon_lucky_start;
+	f32 z, y, x;
+#ifdef MUST_MATCH
+	BattleWeapon* weaponPtr = (0, &weapon);
+	f32* pz = (0, &z);
+	f32* py = (0, &y);
+	const char* sfxName = (0, str_802EF5C8);
+#else
+	BattleWeapon* weaponPtr = &weapon;
+	f32* pz = &z;
+	f32* py = &y;
+	const char* sfxName = str_802EF5C8;
+#endif
+	BattleUnit* unit;
+	BattleUnitPart* part;
+	s32 i;
+	EffectEntry* eff;
+	for (i = 0; i < 64; i++) {
+		unit = BattleGetUnitPtr(wp, i);
+
+		if (unit == NULL) {
+			continue;
+		}
+		if (unit->badgesEquipped.LuckyStart == 0) {
+			continue;
+		}
+		if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+			continue;
+		}
+		switch (irand(4)) {
+		case 0:
+			weapon.dodgyChance = 0;
+			weapon.dodgyTime = 0;
+			weapon.hpRegenTime = 0;
+			weapon.hpRegenStrength = 0;
+			weapon.fpRegenTime = 0;
+			weapon.fpRegenStrength = 0;
+			break;
+		case 1:
+			weapon.electricChance = 0;
+			weapon.electricTime = 0;
+			weapon.hpRegenTime = 0;
+			weapon.hpRegenStrength = 0;
+			weapon.fpRegenTime = 0;
+			weapon.fpRegenStrength = 0;
+			break;
+		case 2:
+			weapon.electricChance = 0;
+			weapon.electricTime = 0;
+			weapon.dodgyChance = 0;
+			weapon.dodgyTime = 0;
+			weapon.fpRegenTime = 0;
+			weapon.fpRegenStrength = 0;
+			break;
+		default:
+			weapon.electricChance = 0;
+			weapon.electricTime = 0;
+			weapon.dodgyChance = 0;
+			weapon.dodgyTime = 0;
+			weapon.hpRegenTime = 0;
+			weapon.hpRegenStrength = 0;
+			break;
+		}
+		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+		BattleSetStatusDamageFromWeapon(BattleGetSystemPtr(wp), unit, part, weaponPtr, 0x100);
+		BtlUnit_GetPos(unit, &x, py, pz);
+		psndSFXOn(sfxName);
+		eff = effNiceEntry(6, x - float_45_8041c2b0, float_60_8041c2b4 + y, z);
+		((NiceEffectWork*)eff->userdata)->field_0x1C = float_0p75_8041c2b8;
+	}
+	return 2;
+}
+
 // NONMATCHING (0.05%): empty placeholder, not decompiled yet.
 void btlseqTurn(BattleWork* wp) {
 
+}
+
+// The three rule-message pointer tables are the 0x110-byte arrays the original addresses as
+// lbl_80360FE0+0x40 (2bu), +0x150 (1bu) and +0x260 (after); one base register is shared.
+// The pooled int->float double is a local @770 here instead of the original's shared
+// double_to_int_802ef590 because this file's other int->float users are not written yet (MWCC then
+// pools a local constant), and it lands at a different .rodata offset because the rule-message
+// strings are also not in the file.
+extern f32 lbl_80360FE0[];
+extern GXColor dat_8041c26c;
+
+// The table loads use `add base,idx*4; lwz off(base)` where the original uses `addi base,off; lwzx`;
+// the pooled int->float double is a local @770, not double_to_int_802ef590 (the file's other
+// int->float users are not written yet); and MWCC swaps two temps (r6/r7). Control flow matches.
+// NONMATCHING (92.77%): see the three differences above.
+void _rule_disp(void) {
+	u8* base = (u8*)lbl_80360FE0;
+	BattleWork* wp = _battleWorkPointer;
+	FieldBattleInfo* info = wp->fbatInfo;
+	u16 lines;
+	u16 width;
+	f32 x;
+	char buf[0x100];
+
+	if (evtGetValue(NULL, 0xF5DE0180) < 0xAC) {
+		if (evtGetValue(NULL, 0xF5DE03C4) < 0xB) {
+			sprintf(buf, msgSearch(((const char**)(base + 0x150))[*(u8*)((u8*)info + 0x18)]),
+				*(u8*)((u8*)info + 0x1a));
+		} else {
+			sprintf(buf, msgSearch(((const char**)(base + 0x40))[*(u8*)((u8*)info + 0x18)]),
+				*(u8*)((u8*)info + 0x1a));
+		}
+	} else {
+		sprintf(buf, msgSearch(((const char**)(base + 0x260))[*(u8*)((u8*)info + 0x18)]),
+			*(u8*)((u8*)info + 0x1a));
+	}
+	width = FontGetMessageWidthLine(buf, &lines);
+	lines++;
+	x = float_0_8041c280 - (f32)(width >> 1);
+	windowDispGX_Waku_col(0, dat_8041c26c, x - float_10_8041c2a0, float_94_8041c2a4,
+		(f32)(width + 20), (f32)(lines * 29 + 3), float_10_8041c2a0);
+	FontDrawStart();
+	FontDrawMessage((s32)x, (s32)float_120_8041c2a8 - 29, buf);
 }
 
 void btlseqEnd(BattleWork* wp) {
 
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
-#pragma optimize_for_size on
 BOOL BattlePhaseEndCheck(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* unit;
@@ -297,7 +413,6 @@ BOOL BattlePhaseEndCheck(void) { //1:1
 	}
 	return FALSE;
 }
-#pragma optimize_for_size off
 
 void btlseqPhase(BattleWork* wp) { //1:1
 	switch (BattleGetSeq(wp, SEQ_PHASE)) {
@@ -319,8 +434,6 @@ void btlseqPhase(BattleWork* wp) { //1:1
 	}
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
-#pragma optimize_for_size on
 void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	BattleUnitKind* kind;
 	s32 i;
@@ -351,10 +464,7 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	}
 	BattleFogEndCheck();
 }
-#pragma optimize_for_size off
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
-#pragma optimize_for_size on
 // NONMATCHING (80.03%): control-flow layout of the four event-id ifs differs (the original checks the condition
 // after the body) and wp/i land in r28/r30 instead of r30/r28; logic is verified against the asm.
 s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
@@ -407,7 +517,6 @@ s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 	}
 	return result;
 }
-#pragma optimize_for_size off
 
 BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
 	u8* p = (u8*)wp + 0x20000;
@@ -449,8 +558,6 @@ BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
 	return TRUE;
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
-#pragma optimize_for_size on
 void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 	BattleUnit* unit;
 	BattleUnitPart* part;
@@ -493,15 +600,12 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 	battleSortPhaseMoveTable(wp, count);
 	battleMakePhaseEvtTable(wp);
 }
-#pragma optimize_for_size off
 
 typedef struct PhaseEvtEntry {
 	s32 unitIndex; //0x0
 	s32 value;     //0x4
 } PhaseEvtEntry;
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
-#pragma optimize_for_size on
 void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 	PhaseEvtEntry* table = (PhaseEvtEntry*)((u8*)wp + 0x220);
 	BattleUnit* unit;
@@ -545,10 +649,7 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 		}
 	}
 }
-#pragma optimize_for_size off
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
-#pragma optimize_for_size on
 // NONMATCHING (94.40%): logic matches; the original keeps wp in r31 and adds 0x120 to the loop offset
 // (r0 = offset + 0x120; lwzx r0, wp, r0) while mine hoists order = wp + 0x120 into r31, and uses one
 // fewer saved register (stmw r22 vs r23).
@@ -597,9 +698,8 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
 		}
 	}
 }
-#pragma optimize_for_size off
 
-// NONMATCHING (94.43%): logic and field offsets match; callee-saved registers are rotated (wp r28 vs
+// NONMATCHING (96.72%): logic and field offsets match; callee-saved registers are rotated (wp r28 vs
 // r27, ret r30 vs r31, offset r27 vs r30) so the whole body shifts by one register.
 BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	BattleUnit* unit;

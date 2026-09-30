@@ -1,8 +1,11 @@
 #include "window/win_item.h"
 #include "window/win_root.h"
+#include "window/win_main.h"
 #include "win/win_main.h"
 #include "manager/winmgr.h"
 #include "manager/filemgr.h"
+#include "manager/fontmgr.h"
+#include "driver/msgdrv.h"
 #include "mario/mario_pouch.h"
 #include "system.h"
 
@@ -20,9 +23,32 @@ extern const f32 float_neg275_8041d554;
 extern const f32 float_320_8041d528;
 extern const f32 float_neg240_8041d4f4;
 extern const f32 float_0_8041d4ac;
+extern const f32 float_20_8041d4e8;
+extern const f32 float_105_8041d4fc;
+extern const f32 float_120_8041d530;
+extern const f32 float_150_8041d52c;
+extern const f32 float_210_8041d538;
+extern const f32 float_215_8041d53c;
+extern const f32 float_415_8041d534;
+extern const f32 float_4_8041d540;
+extern const GXColor dat_8041d468;
+extern const GXColor dat_8041d46c;
+extern const GXColor dat_8041d470;
+
+extern const Vec vec3_802f5288;
+extern const Vec vec3_802f5294;
+extern const Vec vec3_802f52a0;
+extern const Vec vec3_802f52ac;
+extern const Vec vec3_802f52b8;
+extern const Vec vec3_802f52c4;
 extern const char str_802F560C[];
 extern const char str_802F5620[];
 extern const char str_802F5638[];
+extern const char str_802F55C4[];
+extern const f32 float_0p5_8041d4a8;
+extern const Vec vec3_802f55ac;
+extern const Vec vec3_802f55b8;
+extern const GXColor dat_8041d4a4;
 
 typedef struct ItemWorkTail {
     u8 pad[0x2E8];
@@ -49,6 +75,61 @@ void winItemMain2(WindowWork* work) {
 
     WW_F32(work, 0x264) = (f32)(WW_S32(work, 0x25C) * 200);
     WW_F32(work, 0x260) += (WW_F32(work, 0x264) - WW_F32(work, 0x260)) * float_0p25_8041d548;
+}
+
+// The original reaches the six Vecs and the int->float double through one base register
+// (r31 = str_802F4CE8) plus displacements, which MWCC only does once win_item's .rodata is
+// defined in this unit; declared extern, each symbol gets its own lis/addi.
+// NONMATCHING (65.91%): only the .rodata addressing and the register/stack shifts it causes differ.
+void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
+    GXColor color = dat_8041d468;
+    f32 c;
+    f32 b;
+    f32 a;
+    f32 x = WW_F32(work, idx * 0x14 + 0xC4);
+    f32 y = WW_F32(work, idx * 0x14 + 0xC8);
+    s32 ofs;
+    s32 i;
+
+    winBgGX(work, 2, x, y);
+    winKirinukiGX(work, 0, x - float_150_8041d52c, float_20_8041d4e8 + (float_120_8041d530 + y), float_415_8041d534,
+                  float_210_8041d538);
+
+    a = float_105_8041d4fc + y;
+    b = float_4_8041d540 + a;
+    c = (x - float_215_8041d53c) - float_4_8041d540;
+
+    for (i = 0, ofs = 0; i < 2; i++, ofs += 0x28) {
+        if (i == WW_S32(work, 0x210)) {
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            {
+                Vec translate = vec3_802f5288;
+
+                translate.x = x - float_215_8041d53c;
+                translate.y = float_20_8041d4e8 + (a - (f32)ofs);
+                winTexSet(0xB3, translate, vec3_802f5294, dat_8041d46c);
+            }
+            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            {
+                Vec translate = vec3_802f52a0;
+
+                translate.x = c;
+                translate.y = float_20_8041d4e8 + (b - (f32)ofs);
+                winTexSet_x2(i + 0x18, 0xB3, translate, vec3_802f52ac, color);
+            }
+        } else {
+            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            {
+                Vec translate = vec3_802f52b8;
+
+                translate.x = x - float_215_8041d53c;
+                translate.y = float_20_8041d4e8 + (a - (f32)ofs);
+                winTexSet_x2(i + 0x18, 0xB3, translate, vec3_802f52c4, dat_8041d470);
+            }
+        }
+    }
+
+    item_disp(work, x, y);
 }
 
 void winItemExit(WindowWork* work) {
@@ -182,6 +263,44 @@ void winMakeSkipList(WindowWork* work) {
             w->skipList[w->count] = item;
             w->count++;
         }
+    }
+}
+
+// The original reaches vec3_802f55ac/b8, str_802F4CE8 and the two int->float doubles through one base
+// register (r31 = str_802F4CE8) plus displacements (0x8c4, 0x8d0, ...). MWCC only does that when the
+// symbols are defined in this unit (known section offsets); declared extern it emits lis/addi per symbol,
+// so entry lands in r31 instead of r29 and the frame is 0x60 instead of 0x70. Resolves once win_item's
+// .rodata is decompiled.
+// NONMATCHING (68.23%): only the .rodata addressing and the register/frame shift it causes differ.
+void itemUseDisp2(WinMgrEntry* entry) {
+    WindowWork* work = winGetPtr();
+    s32 id = WW_S32(work, 0x120C);
+    const char* msg;
+    f32 width;
+    Vec scale;
+#ifdef MUST_MATCH
+    Vec tmp;
+#endif
+    Vec pos;
+    GXColor color;
+
+    color = dat_8041d4a4;
+    if (!winMgrAction(id)) {
+        msg = msgSearch(str_802F55C4);
+        width = (f32)FontGetMessageWidth(msg);
+        winFontInit();
+        scale = vec3_802f55b8;
+#ifdef MUST_MATCH
+        // A separate temp plus the struct copy is what reproduces the original's 0x1c scratch and
+        // the lwz/stw (not lfs/stfs) copy of pos into its final slot.
+        tmp = vec3_802f55ac;
+        tmp.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
+        pos = tmp;
+#else
+        pos = vec3_802f55ac;
+        pos.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
+#endif
+        winFontSet(&pos, &scale, &color, msg);
     }
 }
 

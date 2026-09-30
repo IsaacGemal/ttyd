@@ -13,6 +13,7 @@
 #include "party/party_move.h"
 #include "party/party_hit.h"
 #include "driver/mobjdrv.h"
+#include "driver/npcdrv.h"
 #include "party/party_motion.h"
 #include "party/party_cloud.h"
 #include "party/party_vivian.h"
@@ -1186,6 +1187,106 @@ Footmark* partyGetFootmarkPtr(u32 index) {
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
 }
 
+// The compiler does not pool the .rodata constants for this function, so it keeps two
+// pool-base registers live across the loop instead of the original's one. That shifts
+// every callee-saved register by one (stmw r20 vs r21) and leaves the four Vec/angle
+// literal offsets (@749/@755/@757/@761/@763) unnamed instead of
+// str_802CDB20+0x41c/0x440/0x44c/0x458/0x464. All opcodes and stack offsets otherwise match.
+// NONMATCHING (89.61%): one extra callee-saved register and unpooled constant relocations.
+BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
+    MarioWork* player = party->playerPtr;
+    f32 unk1AC = *(f32*)((u8*)player + 0x1AC);
+    f32 targetDist = 30.0f + *(f32*)((u8*)party + 0xF4);
+    HitCheckQuery query;
+    s32 angles[9] = {45, 135, -135, 315, -315, 180, -180, 90, -90};
+    HitEntry* hit;
+    NpcEntry* npc;
+    f32 bestX;
+    f32 bestY;
+    f32 bestZ;
+    f32 bestDist = -1.0f;
+    f32 sinv;
+    f32 cosv;
+    Vec hitNormal;
+    f32 angle;
+    u32 i;
+
+    position->x = player->position.x;
+    position->y = player->position.y;
+    position->z = player->position.z;
+
+    for (i = 0; i < 9; i++) {
+        angle = toMovedir2(unk1AC, (f32)angles[i]);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit != NULL) {
+            continue;
+        }
+
+        position->x = player->position.x;
+        position->y = player->position.y;
+        position->z = player->position.z;
+        movePos(&position->x, &position->z, 30.0f, angle);
+
+        query.targetDistance = 87.0f;
+        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+        query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            continue;
+        }
+        if (unk_800c8dd0(hit) != 0) {
+            continue;
+        }
+        {
+            hitNormal = query.hitNormal;
+            if (partyNrmToAngle(&hitNormal) > 60.0f) {
+                continue;
+            }
+        }
+        {
+            BOOL proceed;
+            if (hit == NULL) {
+                proceed = FALSE;
+            } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                proceed = FALSE;
+            } else if (unk_800c8dd0(hit) != 0) {
+                proceed = FALSE;
+            } else {
+                proceed = TRUE;
+            }
+            if (!proceed) {
+                continue;
+            }
+        }
+
+        npc = npcNearDistCheck(position->x, position->y, position->z, *(f32*)((u8*)party + 0xF4));
+        if (npc != NULL) {
+            if (bestDist < PSVECDistance(&npc->position, position)) {
+                bestDist = PSVECDistance(&npc->position, position);
+                bestX = position->x;
+                bestY = position->y;
+                bestZ = position->z;
+            }
+        } else {
+            position->y = query.hitPos.y;
+            marioChkWallAround(position, 1, 2.0f, 0.0f, *(f32*)((u8*)party + 0xF4),
+                               *(f32*)((u8*)party + 0xF0));
+            return TRUE;
+        }
+    }
+    if (bestDist >= 0.0f) {
+        position->x = bestX;
+        position->y = bestY;
+        position->z = bestZ;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 // NONMATCHING (72.32%): the Vec-literal stack layout differs.
 BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
@@ -2041,4 +2142,110 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         work->field_36 = 0;
         work->field_8 |= 2;
     }
+}
+
+static void flyMain(PartyEntry* party);
+
+// Inlined footmark writer for partyFlyMain (same ring logic as partyWalkFootmarkSub).
+static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
+    Footmark* f;
+    s32 id;
+
+    marioGetPtr();
+    id = writeId[slot];
+    f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
+    if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
+        if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
+#ifdef MUST_MATCH
+            /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
+            s32 readIdx = readId[slot];
+            if (readIdx != id + 1) {
+#else
+            if (readId[slot] != id + 1) {
+#endif
+                writeId[slot]++;
+                if (writeId[slot] >= 0x50) {
+                    writeId[slot] = 0;
+                }
+                f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
+#ifdef MUST_MATCH
+                /* the original copies the position a word at a time; float assignments give stfs */
+                {
+                    u32* src = (u32*)pos;
+
+                    ((u32*)&f->x)[0] = src[0];
+                    ((u32*)&f->x)[1] = src[1];
+                    ((u32*)&f->x)[2] = src[2];
+                }
+#else
+                f->x = pos->x;
+                f->y = pos->y;
+                f->z = pos->z;
+#endif
+                if (flags & 1) {
+                    f->field_0 |= 1;
+                } else {
+                    f->field_0 &= ~1;
+                }
+                if (flags & 4) {
+                    f->field_0 |= 4;
+                } else {
+                    f->field_0 &= ~4;
+                }
+            }
+        }
+    }
+}
+
+void partyFlyMain(PartyEntry* party) {
+    PartyEntry* target;
+    s32 flags;
+
+    if (party->currentSlotId == 0) {
+        Vec pos;
+#ifdef MUST_MATCH
+        /* the named temp makes the compiler load mario's flags before clearing flags */
+        s32 marioFlags = marioGetPtr()->flags;
+
+        flags = 0;
+        if (marioFlags & 0x10000) {
+            flags = 1;
+        }
+#else
+        flags = (marioGetPtr()->flags & 0x10000) != 0;
+#endif
+        pos = marioGetPtr()->position;
+        partyFlyFootmarkSub(&pos, flags, 0);
+    } else {
+#ifdef MUST_MATCH
+        /* the original calls anotherPartyGetPtr and discards its result */
+        target = anotherPartyGetPtr(party->currentSlotId);
+#endif
+        target = partyGetPtr(0);
+        if (target != NULL) {
+            Vec pos;
+
+            flags = 0;
+            if (target->flags & PARTY_FLAG_IS_JUMPING) {
+                flags = 1;
+            }
+            pos = target->position;
+            partyFlyFootmarkSub(&pos, flags, 1);
+        } else {
+            Vec pos;
+#ifdef MUST_MATCH
+            s32 marioFlags = marioGetPtr()->flags;
+
+            flags = 0;
+            if (marioFlags & 0x10000) {
+                flags = 1;
+            }
+#else
+            flags = (marioGetPtr()->flags & 0x10000) != 0;
+#endif
+            pos = marioGetPtr()->position;
+            partyFlyFootmarkSub(&pos, flags, 0);
+        }
+    }
+    flyMain(party);
 }

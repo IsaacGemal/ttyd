@@ -136,13 +136,10 @@ static asm void DoCrossTalk(s32* a, s32* b, f32 start, f32 end) {
   stw r5, 0x20(r1)
   ps_merge00 f3, f2, f1
   ps_merge00 f4, f1, f2
-  lis r5, value0_6@ha
-  lfs f5, value0_6@l(r5)
   li r5, 0x4f
   mtctr r5
   li r10, -0x8
   li r11, -0x4
-  ps_muls0 f4, f4, f5
   lwz r6, 0x0(r3)
   lwz r7, 0x0(r4)
   xoris r6, r6, 0x8000

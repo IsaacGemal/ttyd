@@ -3,6 +3,12 @@
 #include "memory.h"
 #include "system.h"
 
+void N_setupErrorHandler(void) {
+	OSSetErrorHandler(OS_ERROR_DSI, (OSErrorHandler)N_systemErrorHandler);
+	OSSetErrorHandler(OS_ERROR_ISI, (OSErrorHandler)N_systemErrorHandler);
+	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
+}
+
 #ifdef __MWERKS__
 u8 wakka_dl_0_0[] ATTRIBUTE_ALIGN(32) = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command

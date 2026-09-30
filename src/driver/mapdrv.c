@@ -13,6 +13,7 @@
 #include "driver/lightdrv.h"
 #include "driver/envdrv.h"
 #include "manager/arammgr.h"
+#include "matching.h"
 #include <stdio.h>
 
 extern s32 texmtx_tbl[];
@@ -56,6 +57,10 @@ extern f32 float_1000_80419874;
 extern f32 float_10_80419864;
 extern f32 float_deg2rad_80419868;
 extern f32 float_1_80419860;
+extern f32 float_2_80419858;
+extern f32 float_3_8041984c;
+extern f32 float_neg2_804198a0;
+extern f32 float_1Eneg08_804198b8;
 extern Vec vec3_802c18f4[];
 extern Vec vec3_802c1900[];
 extern const char str_8041986C[];
@@ -1237,6 +1242,152 @@ void mapLoad(const char* map) {
 	wp->entries[0].count = 1;
 }
 
+// in-file layout for the animation key records mapCalcAnimMatrix walks
+// (the joint pointer passed by hitdrv.c points at an array of these)
+typedef struct MapAnimChannel {
+	f32 value;  // 0x0
+	f32 unk4;   // 0x4
+	f32 unk8;   // 0x8
+	f32 unkC;   // 0xC
+	s32 flag;   // 0x10
+} MapAnimChannel;
+
+typedef struct MapAnimKey {
+	f32 time;                 // 0x0
+	MapAnimChannel chan[9];   // 0x4
+	u8 unk[0xF0];            // 0xB8
+} MapAnimKey;
+
+typedef struct MapAnimData {
+	u8 unk0[0x4];   // 0x0
+	f32 base[6];    // 0x4
+	f32 div[3];     // 0x1C
+	u8 unk28[0x30]; // 0x28
+	s32 count;      // 0x58
+	MapAnimKey key[]; // 0x5C
+} MapAnimData;
+
+// NONMATCHING (93.45%): first pass
+void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
+	MapAnimData* joint = (MapAnimData*)jointPtr;
+	MapAnimKey* key;
+	MapAnimKey* next;
+	f32 out[24];
+	Mtx trans;
+	Mtx scale;
+	Mtx rotX;
+	Mtx rotY;
+	Mtx rotZ;
+	Mtx local;
+	f32 f31, f30, f29, f28, f27, f23;
+	f32 f26, f25, f24;
+	s32 count;
+	s32 i, k;
+
+	count = joint->count;
+	for (i = 1; i < count; i++) {
+		f32 t;
+
+		key = &joint->key[i - 1];
+		next = &joint->key[i];
+		if (*(f32*)((u8*)anim + 0x10) <= next->time) {
+			t = *(f32*)((u8*)anim + 0x10);
+		}
+		else if (i == count - 1) {
+			t = next->time;
+		}
+		else {
+			continue;
+		}
+
+		for (k = 0; k < 9; k++) {
+			MapAnimChannel* ch = &key->chan[k];
+			MapAnimChannel* chn = &next->chan[k];
+
+			if (ch->flag != 0) {
+				out[k] = ch->value;
+			}
+			else {
+				f32 k0 = key->time;
+				f32 k1 = next->time;
+				f32 dt = t - k0;
+				f32 d = k1 - k0;
+				f32 tan1 = chn->unk4;
+				f32 value1 = chn->value;
+				f32 tan0 = ch->unk8;
+				f32 value0 = ch->value;
+				f32 den;
+				s32 flag;
+				f32 u, u2, u3, a, b, c, h10, h00, h01, h11;
+
+				flag = (d != MATCH_F32(float_0_80419850));
+				if (flag) {
+					den = d;
+				}
+				else {
+					den = float_1Eneg08_804198b8;
+				}
+				u = dt / den;
+				u2 = u * u;
+				u3 = u2 * u;
+				a = float_3_8041984c * u2;
+				b = u3 - float_2_80419858 * u2;
+				c = float_2_80419858 * u3 - a;
+				h10 = u + b;
+				h00 = float_1_80419860 + c;
+				h01 = float_neg2_804198a0 * u3 + a;
+				h11 = u3 - u2;
+				out[k] = tan0 * (d * h10)
+				       + value0 * h00
+				       + value1 * h01
+				       + tan1 * (d * h11);
+			}
+		}
+
+		f31 = out[0] - joint->base[0];
+		f30 = out[1] - joint->base[1];
+		f29 = out[2] - joint->base[2];
+		f28 = out[3] - joint->base[3];
+		f27 = out[4] - joint->base[4];
+		f23 = out[5] - joint->base[5];
+		f26 = out[6] / joint->div[0];
+		f25 = out[7] / joint->div[1];
+		f24 = out[8] / joint->div[2];
+
+		if (f31 != float_0_80419850 || f30 != float_0_80419850 || f29 != float_0_80419850) {
+			PSMTXTrans(trans, f31, f30, f29);
+		}
+		if (f28 != float_0_80419850) {
+			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * f28);
+		}
+		if (f27 != float_0_80419850) {
+			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * f27);
+		}
+		if (f23 != float_0_80419850) {
+			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * f23);
+		}
+		PSMTXScale(scale, f26, f25, f24);
+		PSMTXIdentity(local);
+		if (f31 != float_0_80419850 || f30 != float_0_80419850 || f29 != float_0_80419850) {
+			PSMTXConcat(local, trans, local);
+		}
+		if (f23 != float_0_80419850) {
+			PSMTXConcat(local, rotZ, local);
+		}
+		if (f27 != float_0_80419850) {
+			PSMTXConcat(local, rotY, local);
+		}
+		if (f28 != float_0_80419850) {
+			PSMTXConcat(local, rotX, local);
+		}
+		if (f26 != float_0_80419850 || f25 != float_0_80419850 || f24 != float_0_80419850) {
+			PSMTXConcat(local, scale, local);
+		}
+		PSMTXConcat(inMtx, local, outMtx);
+		break;
+	}
+}
+
 // NONMATCHING (96.54%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0
 void bmapLoad(const char* map1, const char* map2) {
 	s32 offset;
@@ -1676,6 +1827,170 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 
 
+
+static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
+	BOOL recalc;
+
+	recalc = FALSE;
+	if (flags & 0x200) {
+		recalc = TRUE;
+	}
+	if (force) {
+		recalc = TRUE;
+	}
+	return recalc;
+}
+
+void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
+	u32* flags = (u32*)obj->field_0x0;
+	MapObject* child;
+	MapObject* next;
+	BOOL recalc;
+
+	recalc = FALSE;
+	if ((*flags) & 0x200) {
+		recalc = TRUE;
+	}
+	if (force) {
+		recalc = TRUE;
+	}
+
+	if (recalc) {
+		if ((*flags) & 0x2000) {
+			PSMTXConcat(mtx, (MtxPtr)((u8*)obj + 0x7C), obj->modelWorldMtx);
+		}
+		else {
+			PSMTXConcat(mtx, (MtxPtr)((u8*)obj + 0x4C), obj->modelWorldMtx);
+		}
+		if ((*flags) & 0x200000) {
+			PSMTXConcat(obj->modelWorldMtx, obj->unkAC, obj->modelWorldMtx);
+		}
+		(*flags) &= ~0x200;
+
+		child = obj->child;
+		if (child != NULL) {
+			u32* cflags = (u32*)child->field_0x0;
+
+			if ((*cflags) & 0x2000) {
+				PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x7C), child->modelWorldMtx);
+			}
+			else {
+				PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x4C), child->modelWorldMtx);
+			}
+			if ((*cflags) & 0x200000) {
+				PSMTXConcat(child->modelWorldMtx, child->unkAC, child->modelWorldMtx);
+			}
+			(*cflags) &= ~0x200;
+
+			if (child->child != NULL) {
+				mapReCalcMatrix(child->child, child->modelWorldMtx, 1);
+			}
+			if (child->next != NULL) {
+				mapReCalcMatrix(child->next, obj->modelWorldMtx, 1);
+			}
+		}
+
+		next = obj->next;
+		if (next != NULL) {
+			u32* nflags = (u32*)next->field_0x0;
+
+			if (mapReCalcMatrixCheck(force, *nflags)) {
+				if ((*nflags) & 0x2000) {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x7C), next->modelWorldMtx);
+				}
+				else {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x4C), next->modelWorldMtx);
+				}
+				if ((*nflags) & 0x200000) {
+					PSMTXConcat(next->modelWorldMtx, next->unkAC, next->modelWorldMtx);
+				}
+				(*nflags) &= ~0x200;
+
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, 1);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+			else {
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, force);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+		}
+	}
+	else {
+		child = obj->child;
+		if (child != NULL) {
+			u32* cflags = (u32*)child->field_0x0;
+
+			if (mapReCalcMatrixCheck(force, *cflags)) {
+				if ((*cflags) & 0x2000) {
+					PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x7C), child->modelWorldMtx);
+				}
+				else {
+					PSMTXConcat(obj->modelWorldMtx, (MtxPtr)((u8*)child + 0x4C), child->modelWorldMtx);
+				}
+				if ((*cflags) & 0x200000) {
+					PSMTXConcat(child->modelWorldMtx, child->unkAC, child->modelWorldMtx);
+				}
+				(*cflags) &= ~0x200;
+
+				if (child->child != NULL) {
+					mapReCalcMatrix(child->child, child->modelWorldMtx, 1);
+				}
+				if (child->next != NULL) {
+					mapReCalcMatrix(child->next, obj->modelWorldMtx, force);
+				}
+			}
+			else {
+				if (child->child != NULL) {
+					mapReCalcMatrix(child->child, child->modelWorldMtx, force);
+				}
+				if (child->next != NULL) {
+					mapReCalcMatrix(child->next, obj->modelWorldMtx, force);
+				}
+			}
+		}
+
+		next = obj->next;
+		if (next != NULL) {
+			u32* nflags = (u32*)next->field_0x0;
+
+			if (mapReCalcMatrixCheck(force, *nflags)) {
+				if ((*nflags) & 0x2000) {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x7C), next->modelWorldMtx);
+				}
+				else {
+					PSMTXConcat(mtx, (MtxPtr)((u8*)next + 0x4C), next->modelWorldMtx);
+				}
+				if ((*nflags) & 0x200000) {
+					PSMTXConcat(next->modelWorldMtx, next->unkAC, next->modelWorldMtx);
+				}
+				(*nflags) &= ~0x200;
+
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, 1);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+			else {
+				if (next->child != NULL) {
+					mapReCalcMatrix(next->child, next->modelWorldMtx, force);
+				}
+				if (next->next != NULL) {
+					mapReCalcMatrix(next->next, mtx, force);
+				}
+			}
+		}
+	}
+}
 
 // NONMATCHING (0.07%): only a stub is present
 void mapMain(void) {

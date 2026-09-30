@@ -819,7 +819,7 @@ data/battle/battle_item_data.c:
 battle/battle_monosiri.c:
 	.text       start:0x80129848 end:0x80129A50
 	.rodata     start:0x802F0158 end:0x802F2FD0
-	.data       start:0x8036A5B8 end:0x8036BEA8
+	.data       start:0x8036A5B8 end:0x8036BE94
 	.sdata      start:0x80411188 end:0x804113B8
 	.sdata2     start:0x8041C540 end:0x8041C568
 
@@ -837,7 +837,7 @@ event/evt_nannpc.c:
 effect/eff_fukidashi.c:
 	.text       start:0x8012C258 end:0x8012E310
 	.rodata     start:0x802F3048 end:0x802F30F8
-	.data       start:0x8036BEA8 end:0x8036C288
+	.data       start:0x8036BEA0 end:0x8036C288 align:16
 	.sdata      start:0x80411400 end:0x80411798
 	.sdata2     start:0x8041C5B0 end:0x8041C670
 	.sbss2      start:0x80422FF8 end:0x80423010
@@ -3092,7 +3092,7 @@ musyx/runtime/stream.c:
 	.sbss       start:0x80418CD8 end:0x80418CE8
 	.sdata2     start:0x80422BD0 end:0x80422BE8
 
-data/musyx/runtime/synthdata.c:
+musyx/runtime/synthdata.c:
 	.text       start:0x80277808 end:0x802794F4
 	.bss        start:0x803F54E0 end:0x803FFD18
 	.sbss       start:0x80418CE8 end:0x80418D38
@@ -3125,7 +3125,7 @@ musyx/runtime/synth_vsamples.c:
 	.text       start:0x80280B44 end:0x802814DC
 	.bss        start:0x80400CF8 end:0x80401848
 
-data/musyx/runtime/s_data.c:
+musyx/runtime/s_data.c:
 	.text       start:0x802814DC end:0x802820EC
 	.bss        start:0x80401848 end:0x80401E60
 	.sbss       start:0x80418D70 end:0x80418D80
@@ -3133,7 +3133,7 @@ data/musyx/runtime/s_data.c:
 musyx/runtime/hw_dspctrl.c:
 	.text       start:0x802820EC end:0x8028567C
 	.rodata     start:0x803028F0 end:0x80302928
-	.data       start:0x803B8E40 end:0x803BA898
+	.data       start:0x803B8E40 end:0x803BA898 align:32
 	.bss        start:0x80401E60 end:0x80402540
 	.sbss       start:0x80418D80 end:0x80418DC0
 
@@ -3178,7 +3178,7 @@ musyx/runtime/HARDWARE.C:
 	.sdata2     start:0x80422D00 end:0x80422D28
 
 musyx/runtime/dsp_import.c:
-	.data       start:0x803BB360 end:0x803BD220
+	.data       start:0x803BB360 end:0x803BD220 align:32
 	.sdata      start:0x804181E8 end:0x804181F0
 
 musyx/runtime/hw_aramdma.c:

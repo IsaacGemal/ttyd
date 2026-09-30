@@ -19,7 +19,7 @@
 //   nannpc_ext_*              - this unit's draw callbacks
 typedef struct NanNpcEntry NanNpcEntry;
 
-typedef struct NanNpcWork {
+struct NanNpcWork {
     NanNpcEntry* entries;   // 0x0
     ExtSortEntry* sortList; // 0x4
     s16* field_0x8;         // 0x8
@@ -28,7 +28,7 @@ typedef struct NanNpcWork {
     void (*subfunc0)(void); // 0x14
     void (*subfunc1)(void); // 0x18
     void (*subfunc2)(void); // 0x1C
-} NanNpcWork;
+};
 
 struct NanNpcEntry {
     char name[16];                  // 0x0
@@ -57,7 +57,7 @@ struct NanNpcEntry {
     GXColor color;                  // 0xBC
 };
 
-static NanNpcWork* nanNPCWork;
+NanNpcWork* nanNPCWork;
 static char makestring[0x10];
 static Mtx mt_544 = {
     {10.0f, 0.0f, 0.0f, 0.0f},

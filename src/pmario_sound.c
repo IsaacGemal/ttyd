@@ -1,4 +1,5 @@
 #include "pmario_sound.h"
+#include "matching.h"
 #include "sound.h"
 #include "mario/mariost.h"
 #include <string.h>
@@ -4558,6 +4559,65 @@ BOOL psndENVOff(u32 r3) { //probably "id"
 	return psndENVOff_f_d(r3, 0x3E8, 0);
 }
 
+// per-env work item at psnd + (id & 0xF) * 0xC
+// (not in a header; the original's layout is not declared there yet)
+typedef struct PaperSoundEnvWork {
+	u8 unk0;   // 0x0
+	u8 unk1;   // 0x1
+	s16 unk2;  // 0x2
+	s16 unk4;  // 0x4
+	u8 unk6;   // 0x6
+	u8 unk7;   // 0x7
+	s16 unk8;  // 0x8
+	s16 unkA;  // 0xa
+} PaperSoundEnvWork;
+
+extern s32 silent_tbl[10];
+extern const f64 double_to_int_mask_802e56c0;
+extern const f32 float_16p667_8041b69c;
+
+s32 psndENVOff_f_d(s32 id, s32 value, s32 flag) {
+	s32 silent = silent_tbl[(id >> 12) & 0xF];
+	u16* active = (u16*)&psnd.unk18 + (id & 0xF);
+	PaperSoundEnvWork* work;
+
+	if (active[0] == 0) {
+		return 0;
+	}
+	work = (PaperSoundEnvWork*)((u8*)&psnd + (id & 0xF) * 0xC);
+
+	if (id & 0x200) {
+		if (work->unk0 == 2) {
+		}
+		else if (work->unk0 != 4) {
+			work->unk0 = 2;
+			work->unk2 = (s16)((u32)value / MATCH_F32(float_16p667_8041b69c));
+			work->unk4 = work->unk2;
+		}
+		else {
+			work->unk0 = 2;
+		}
+	}
+	else if (id & 0x400) {
+		if (work->unk0 != 2 && work->unk0 != 4) {
+			work->unk0 = 4;
+			work->unk2 = (s16)((u32)value / MATCH_F32(float_16p667_8041b69c));
+			work->unk4 = work->unk2;
+		}
+	}
+	else if (id & 0x800) {
+		work->unk6 = 8;
+		work->unk8 = (s16)((u32)value / MATCH_F32(float_16p667_8041b69c));
+		work->unkA = work->unk8;
+		work->unk7 = silent;
+	}
+	else {
+		psndENV_stop(active[0]);
+		active[0] = 0;
+	}
+	return 1;
+}
+
 void psndSFXAllOff(void) {
 	u8* p = (u8*)&psnd;
 	int i;
@@ -4576,6 +4636,18 @@ void psndSFXAllOff(void) {
 	}
 }
 
+
+void L_psndBGM_stop(void) {
+	s32 i;
+
+	psnd.unk56 &= ~0x10;
+	for (i = 0; i < 40; i++) {
+		if ((u32)pssfx[i].unk0 == -1) continue;
+		if (!(((u16*)&pssfx[i])[3] & 0x10)) continue;
+		if (((u16*)&pssfx[i])[3] & 0x820) continue;
+		psndSFXOff(i);
+	}
+}
 
 s32 psndSFXOn(const char* sfx_name) {
 	return __psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);

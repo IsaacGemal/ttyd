@@ -31,6 +31,15 @@ f32 float_0p5_8041c3d8 = 0.5f;
 const f64 double_to_int_802efab8 = 4503601774854144.0;
 const f64 double_2_802efad0 = 2.0;
 
+// 30-byte status block copied between BattleWorkPartyInfo::field_4 and BattleUnit::mSleepTurns.
+#ifdef MUST_MATCH
+// For the struct-copy below: MWCC emits the original's lwzu/stwu copy loop for a struct
+// assignment, but a plain memcpy of the 30-byte blob compiles to a call.
+typedef struct UnitStatusBlock {
+    s16 v[15]; // 0x0
+} UnitStatusBlock;
+#endif
+
 
 //local prototypes
 
@@ -151,6 +160,41 @@ void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2) {
     }
 }
 
+void BtlUnit_SetParamFromPouch(BattleUnit* unit) {
+    BattleWork* wp = _battleWorkPointer;
+    PouchData* pouch = pouchGetPtr();
+
+    if (unit->currentKind == UNIT_MARIO) {
+        unit->currentHp = pouch->currentHP;
+        unit->currentFp = pouch->currentFP;
+        BtlUnit_ReviseHpFp(unit);
+    } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+        BattleWorkPartyInfo* info;
+
+#ifdef MUST_MATCH
+        // The single PouchPartyData subscript folds into one indexed `lhax` load here; the
+        // pointer form below makes MWCC materialize the party pointer and use `lha` displacement.
+        unit->currentHp = ((s16*)pouch->partyData)[BattleTransPartyId(unit->currentKind) * 7 + 3];
+#else
+        unit->currentHp = pouch->partyData[BattleTransPartyId(unit->currentKind)].currentHP;
+#endif
+        BtlUnit_ReviseHpFp(unit);
+        info = &wp->partyInfo[unit->currentKind - TYPE_PARTNER_MIN];
+        unit->mSizeMultiplier = info->field_0;
+        unit->mStatusFlags = info->field_24;
+#ifdef MUST_MATCH
+        *(UnitStatusBlock*)&unit->mSleepTurns = *(UnitStatusBlock*)info->field_4;
+#else
+        memcpy(&unit->mSleepTurns, info->field_4, sizeof(info->field_4));
+#endif
+        if (unit->currentHp <= 0) {
+            BtlUnit_SetStatus(unit, STATUS_INSTANT_KILL, 1, 1);
+        }
+    }
+}
+
+// Keep BtlUnit_ReviseHpFp out of line: the original calls it rather than inlining.
+#pragma dont_inline on
 void BtlUnit_ReviseHpFp(BattleUnit* unit) {
     PouchData* pouch = pouchGetPtr();
 
@@ -185,6 +229,7 @@ void BtlUnit_ReviseHpFp(BattleUnit* unit) {
         }
     }
 }
+#pragma dont_inline reset
 
 // NONMATCHING (97.50%): gauge type now matches (`lhz` + `cmpwi`, field_0 is u16); the then/else block
 // layout still differs (target `beq then; b else`, ours `bne else`).
@@ -293,6 +338,19 @@ void BtlUnit_ChangeStayAnim(s32 unitId) {
 
     btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, ((BattleUnitAnimFields*)unit)->mBodyPartsId),
                        ((BattleUnitAnimFields*)unit)->mStayPoseName, FALSE);
+}
+
+void BtlUnit_GetTalkTogePos(s32 unitId, f32* x, f32* y, f32* z) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+    f32 x2, y2, z2;
+
+    BtlUnit_GetPos(unit, &x2, &y2, &z2);
+    x2 += (unit->mKindParams->talkTogeBaseOffset.x + unit->togeOffset.x) * (f32)unit->faceDirection;
+    y2 += unit->mKindParams->talkTogeBaseOffset.y + unit->togeOffset.y;
+    z2 += unit->mKindParams->talkTogeBaseOffset.z + unit->togeOffset.z;
+    *x = x2;
+    *y = y2;
+    *z = z2;
 }
 
 void BtlUnit_ChangeTalkAnim(s32 unitId) {

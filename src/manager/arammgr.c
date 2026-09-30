@@ -10,3 +10,23 @@ static ARAMWork* wp;
 void aramMgrInit(void) {
 
 }
+
+void arqCallbackToAram(u32 request) {
+	ARAMWorkNode* work = wp->nodes;
+
+	while (work != NULL) {
+		if (request == (u32)work + 4) {
+			break;
+		}
+		work = work->next;
+	}
+	work->flags |= 4;
+}
+
+void* aramMgrToAram(void* data, u32 size) {
+	void* work = aramMgrToAramAsync(data, size);
+
+	while (!(*(volatile u16*)work & 4)) {
+	}
+	return work;
+}

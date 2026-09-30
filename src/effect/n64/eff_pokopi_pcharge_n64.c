@@ -270,7 +270,7 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (83.27%): 18 instructions differ, 4 missing, 36 extra, plus register differences.
+// NONMATCHING (85.65%): 18 instructions differ, 4 missing, 36 extra, plus register differences.
 void effPokopiPchargeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effPokopiPchargeData* data = effect->userdata;

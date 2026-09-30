@@ -359,7 +359,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 			hit = 1;
 		}
 
-		if ((s32)BattlePadCheckTrigger(dec->trigger) != 0 || hit != 0) {
+		if (BattlePadCheckTrigger(dec->trigger) != 0 || hit != 0) {
 			work->actionCommands.outputParams[0] = 1;
 			work->actionCommands.result = 2;
 			work->actionCommands.mResultCount++;

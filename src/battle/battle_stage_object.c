@@ -44,6 +44,15 @@ extern f32 float_30_8041cd5c;
 extern f32 float_neg117_8041cd58;
 extern f32 float_neg120_8041cd60;
 extern const char str_802F3C84[];
+extern char str_802F3B88[];
+extern char str_802F3B94[];
+extern char str_802F3BA0[];
+extern char str_802F3CA0[];
+extern char str_802F3CAC[];
+extern char str_802F3CB8[];
+extern f32 float_45_8041cd2c;
+extern f32 float_neg80_8041cd3c;
+extern f32 float_neg45_8041cd4c;
 
 // LOCAL_PROTO(windowDispGX_Waku_col): match-only. The original passes the GXColor by value like every caller (a
 // stack copy); this by-pointer declaration only steers register allocation (see the exceptions file).
@@ -67,6 +76,8 @@ s32 _bgset_audience_bgset_access(void) {
 	return EVT_RETURN_DONE;
 }
 
+// Keep _rate_mix/_rate_mix_3 out of the inliner: the original emits a `bl` to each from _combine_nozzle_weapon.
+#pragma dont_inline on
 void _rate_mix(u8* a, u8* b, s8* c, u8* d) {
 	if (*c > 0) {
 		if (*c > (s8)*a) {
@@ -89,6 +100,77 @@ void _rate_mix_3(u8* a, u8* b, u8* c, s8* d, u8* e, u8* f) {
 		}
 	}
 }
+
+void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
+	s32 i;
+
+	if (mode != 0) {
+		*(BattleWeapon*)dst_ = *(BattleWeapon*)src_;
+	} else {
+		((BattleWeapon*)dst_)->baseFpCost += ((BattleWeapon*)src_)->baseFpCost;
+		((BattleWeapon*)dst_)->baseSpCost += ((BattleWeapon*)src_)->baseSpCost;
+		if (((BattleWeapon*)dst_)->hpDamageFn == NULL) {
+			((BattleWeapon*)dst_)->hpDamageFn = ((BattleWeapon*)src_)->hpDamageFn;
+		}
+		for (i = 0; i < 8; i++) {
+			((BattleWeapon*)dst_)->hpDamageWork[i] += ((BattleWeapon*)src_)->hpDamageWork[i];
+		}
+		((BattleWeapon*)dst_)->element = ((BattleWeapon*)src_)->element;
+#ifdef MUST_MATCH
+		// Status block: byte pointers so mwcc derives the +0x80 base once into r31 (dst) / r30 (src), matching
+		// the original. With named fields (the natural form under #else) mwcc keeps the full struct base live
+		// instead and re-adds 0x80 at every call, which no longer matches.
+		{
+			u8* d = (u8*)dst_ + 0x80;
+			u8* s = (u8*)src_ + 0x80;
+			_rate_mix(d + 0x00, d + 0x01, (s8*)(s + 0x00), s + 0x01);
+			_rate_mix(d + 0x02, d + 0x03, (s8*)(s + 0x02), s + 0x03);
+			_rate_mix(d + 0x04, d + 0x05, (s8*)(s + 0x04), s + 0x05);
+			_rate_mix(d + 0x06, d + 0x07, (s8*)(s + 0x06), s + 0x08);
+			_rate_mix(d + 0x09, d + 0x0A, (s8*)(s + 0x09), s + 0x0A);
+			_rate_mix(d + 0x0B, d + 0x0C, (s8*)(s + 0x0B), s + 0x0C);
+			_rate_mix(d + 0x0D, d + 0x0E, (s8*)(s + 0x0D), s + 0x0E);
+			_rate_mix(d + 0x0F, d + 0x10, (s8*)(s + 0x0F), s + 0x10);
+			_rate_mix(d + 0x11, d + 0x12, (s8*)(s + 0x11), s + 0x12);
+			_rate_mix_3(d + 0x13, d + 0x14, d + 0x15, (s8*)(s + 0x13), s + 0x14, s + 0x15);
+			_rate_mix_3(d + 0x19, d + 0x1A, d + 0x1B, (s8*)(s + 0x19), s + 0x1A, s + 0x1B);
+			_rate_mix(d + 0x1C, d + 0x1D, (s8*)(s + 0x1C), s + 0x1D);
+			d[0x1F] += s[0x1F];
+			_rate_mix(d + 0x20, d + 0x21, (s8*)(s + 0x20), s + 0x21);
+			_rate_mix(d + 0x22, d + 0x23, (s8*)(s + 0x22), s + 0x23);
+			d[0x2A] += s[0x2A];
+			d[0x2B] += s[0x2B];
+			d[0x2C] += s[0x2C];
+			d[0x2D] += s[0x2D];
+		}
+#else
+		BattleWeapon* d = (BattleWeapon*)dst_;
+		BattleWeapon* s = (BattleWeapon*)src_;
+		_rate_mix(&d->sleepChance, (u8*)&d->sleepTime, (s8*)&s->sleepChance, (u8*)&s->sleepTime);
+		_rate_mix(&d->stopChance, (u8*)&d->stopTime, (s8*)&s->stopChance, (u8*)&s->stopTime);
+		_rate_mix(&d->dizzyChance, (u8*)&d->dizzyTime, (s8*)&s->dizzyChance, (u8*)&s->dizzyTime);
+		_rate_mix(&d->poisonChance, (u8*)&d->poisonTime, (s8*)&s->poisonChance, (u8*)&s->poisonStrength);
+		_rate_mix(&d->confuseChance, (u8*)&d->confuseTime, (s8*)&s->confuseChance, (u8*)&s->confuseTime);
+		_rate_mix(&d->electricChance, (u8*)&d->electricTime, (s8*)&s->electricChance, (u8*)&s->electricTime);
+		_rate_mix(&d->dodgyChance, (u8*)&d->dodgyTime, (s8*)&s->dodgyChance, (u8*)&s->dodgyTime);
+		_rate_mix(&d->burnChance, (u8*)&d->burnTime, (s8*)&s->burnChance, (u8*)&s->burnTime);
+		_rate_mix(&d->freezeChance, (u8*)&d->freezeTime, (s8*)&s->freezeChance, (u8*)&s->freezeTime);
+		_rate_mix_3(&d->sizeChangeChance, (u8*)&d->sizeChangeTime, (u8*)&d->sizeChangeStrength,
+		            (s8*)&s->sizeChangeChance, (u8*)&s->sizeChangeTime, (u8*)&s->sizeChangeStrength);
+		_rate_mix_3(&d->defChangeChance, (u8*)&d->defChangeTime, (u8*)&d->defChangeStrength,
+		            (s8*)&s->defChangeChance, (u8*)&s->defChangeTime, (u8*)&s->defChangeStrength);
+		_rate_mix(&d->allergicChance, (u8*)&d->allergicTime, (s8*)&s->allergicChance, (u8*)&s->allergicTime);
+		d->chargeStrength += s->chargeStrength;
+		_rate_mix(&d->fastChance, (u8*)&d->fastTime, (s8*)&s->fastChance, (u8*)&s->fastTime);
+		_rate_mix(&d->slowChance, (u8*)&d->slowTime, (s8*)&s->slowChance, (u8*)&s->slowTime);
+		d->hpRegenTime += s->hpRegenTime;
+		d->hpRegenStrength += s->hpRegenStrength;
+		d->fpRegenTime += s->fpRegenTime;
+		d->fpRegenStrength += s->fpRegenStrength;
+#endif
+	}
+}
+#pragma dont_inline reset
 
 extern f32 float_0_8041cd04;
 extern f32 float_15_8041cd18;
@@ -615,6 +697,119 @@ s32 _nozzle_work_attack_set(void) {
 		}
 	}
 	return 2;
+}
+
+// Register-allocation/scheduling detail: (1) first timer, mwcc keeps the `frame = userdata[2]+1` temp in r4
+// and passes it directly, while the target materializes it in r0 and reloads event->userdata[2] into r4 before
+// intpl_sub (passing event->userdata[2] restores r0/reload but then schedules the two `lfs` after call setup).
+// (2) final event-slot store, the target rotates scratch regs (byte ptr r6, loaded value r5, base+unitId*4 r4);
+// mwcc uses r5 / r4 / r6. Any form that forces a materialized base+unitId*4 pointer either folds to `stwx` or
+// shifts the whole function's callee-saved allocation.
+// NONMATCHING (97.61%): first intpl_sub timer temp register (r0+reload vs r4) and final event-slot store
+// scratch-register rotation; all instructions/control flow/constants match.
+USER_FUNC(_nozzle_turn) {
+	u8* base = (u8*)_battleWorkPointer + 0x180C0;
+	s32 unitId = event->unitId;
+	char* vec = vec3_802f3ac8;
+	const char* name;
+	f32 angle1;
+	f32 angle2;
+
+	if (isFirstCall) {
+		u8* p = base;
+
+		p += unitId;
+		event->userdata[2] = 0;
+		event->field_84 = 0;
+		if (p[0x1C4] != 0) {
+			event->userdata[2] = 0x1E;
+		}
+	}
+
+	switch (unitId) {
+		case 0:
+			name = vec + 0xC0;
+			break;
+		case 1:
+			name = vec + 0xCC;
+			break;
+		case 2:
+			name = vec + 0xD8;
+			break;
+		default:
+			return 2;
+	}
+	BattleSearchObjectPtr(name);
+
+	if (event->userdata[2] < 0x1E) {
+		s32 frame;
+
+		frame = event->userdata[2] + 1;
+		event->userdata[2] = frame;
+		angle1 = intpl_sub(2, frame, 0x1E, float_0_8041cd04, float_neg80_8041cd3c);
+	} else {
+		angle1 = float_neg80_8041cd3c;
+	}
+
+	if ((s32)event->field_84 < 0x1E) {
+		f32 oldAngle;
+		f32 newAngle;
+
+		event->field_84++;
+		switch (*(u8*)(base + unitId + 0x1C4)) {
+			case 1:
+				oldAngle = float_45_8041cd2c;
+				break;
+			case 2:
+				oldAngle = float_0_8041cd04;
+				break;
+			case 3:
+				oldAngle = float_neg45_8041cd4c;
+				break;
+			case 0:
+			default:
+				oldAngle = float_0_8041cd04;
+				break;
+		}
+		switch (*(u8*)(base + unitId + 0x1C7)) {
+			case 1:
+				newAngle = float_45_8041cd2c;
+				break;
+			case 2:
+				newAngle = float_0_8041cd04;
+				break;
+			case 3:
+				newAngle = float_neg45_8041cd4c;
+				break;
+			case 0:
+			default:
+				newAngle = float_0_8041cd04;
+				break;
+		}
+		angle2 = intpl_sub(0xC, event->field_84, 0x1E, oldAngle, newAngle);
+	}
+
+	switch (unitId) {
+		case 0:
+			mapObjRotate(vec + 0x1D8, angle1, angle2, float_0_8041cd04);
+			break;
+		case 1:
+			mapObjRotate(vec + 0x1E4, angle1, angle2, float_0_8041cd04);
+			break;
+		case 2:
+			mapObjRotate(vec + 0x1F0, angle1, angle2, float_0_8041cd04);
+			break;
+	}
+
+	if (event->userdata[2] >= 0x1E && (s32)event->field_84 >= 0x1E) {
+		u32* slot = (u32*)base;
+
+		*(u8*)(base + unitId + 0x1C4) = *(u8*)(base + unitId + 0x1C7);
+		slot += unitId;
+		slot[0x73] = 0;
+		return 2;
+	}
+	return 0;
 }
 
 #pragma dont_inline on

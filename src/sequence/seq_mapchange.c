@@ -1,13 +1,34 @@
 #include "seq/seq_mapchange.h"
 #include "data/mapdata.h"
+#include "driver/animdrv.h"
 #include "driver/bgdrv.h"
+#include "driver/casedrv.h"
+#include "driver/effdrv.h"
+#include "driver/extdrv.h"
+#include "driver/icondrv.h"
+#include "driver/imgdrv.h"
+#include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
+#include "driver/mobjdrv.h"
 #include "driver/msgdrv.h"
+#include "driver/npcdrv.h"
+#include "driver/offscreendrv.h"
+#include "driver/swdrv.h"
+#include "driver/windowdrv.h"
 #include "evt/evt_badgeshop.h"
+#include "evt/evt_nannpc.h"
+#include "manager/evtmgr.h"
+#include "manager/winmgr.h"
+#include "mario/mario.h"
+#include "mario/mario_cam.h"
 #include "mario/mario_party.h"
 #include "mario/mariost.h"
+#include "memory.h"
 #include "party.h"
 #include "pmario_sound.h"
+#include "statuswindow.h"
+#include "system.h"
+#include "win/win_main.h"
 #include <stdio.h>
 #include <string.h>
 #include "database.h"
@@ -107,6 +128,57 @@ void seq_mapChangeInit(SequenceWork* work) {
     }
 }
 
+// The remaining diff is the .rodata string-pool base offset for the three strcmp literals; it is the
+// layout of the whole TU's .rodata before those literals (table_802C1028 + 4 zero vec3s +
+// seq_mapChangeMain's "tou_03"/"%s/rel/%s.rel" + double_to_int), only present once the other,
+// not-yet-decompiled functions emit their rodata. The body itself is byte-identical.
+// NONMATCHING (99.97%): string-pool base offset 0x24/0x2c/0x34 vs 0x80/0x88/0x90.
+void _unload(const char* prevMapName, const char* newMapName, const char* arg2) {
+    BOOL unload;
+    s32 i;
+
+    unload = FALSE;
+    if (prevMapName != NULL && newMapName != NULL && strncmp(prevMapName, newMapName, 3) != 0) {
+        unload = TRUE;
+    }
+    marioReInit();
+    marioInitCamId();
+    mapUnLoad();
+    npcReset(FALSE);
+    extReset();
+    mobjReset(FALSE);
+    offscreenReset(FALSE);
+    imgAutoRelease(0);
+    effAutoRelease(FALSE);
+    animPoseAutoRelease(0);
+    evtmgrReInit();
+    caseReInit();
+    itemReInit();
+    iconReInit();
+    windowReInit();
+    winReInit();
+    statusWinReInit();
+    bgReInit();
+    winMgrReInit();
+    if (seqGetPrevSeq() != SEQ_LOAD && seqGetPrevSeq() != SEQ_TITLE &&
+        strcmp(prevMapName, "sys_00") != 0 &&
+        strcmp(prevMapName, "sys_01") != 0 &&
+        strcmp(prevMapName, "dig_00") != 0) {
+        fadeReset(1);
+        gp->flags &= ~0x10;
+    }
+    for (i = 0; i < 4; i++) {
+        padRumbleHardOff(i);
+    }
+    if (unload) {
+        swReInit();
+    }
+    memClear(HEAP_MALLOC);
+    memClear(HEAP_EXT);
+    smartAutoFree(1);
+    nanNPCWork = NULL;
+}
+
 // NONMATCHING (31.83%): 208 missing, 1 extra, plus register differences.
 void _load(const char* prevMapName, const char* newMapName, const char* beroName) {
     MapData* map;
@@ -146,5 +218,16 @@ void _load(const char* prevMapName, const char* newMapName, const char* beroName
         extraPartyId = marioGetExtraPartyId();
         extraParty = partyGetPtr(extraPartyId);
         mario->field_EC = mario->position = gp->savePlayerPos;
+    }
+}
+
+void _relUnLoad(void) {
+    if (gp->relocationBase) {
+        ((void (*)(void))((OSModuleHeader*)gp->relocationBase)->epilog)();
+        OSUnlink(gp->relocationBase);
+        if (gp->relocationBase != gp->mapAlloc) {
+            _mapFree(gp->relocationBase);
+        }
+        gp->relocationBase = NULL;
     }
 }

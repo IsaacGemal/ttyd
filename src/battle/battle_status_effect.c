@@ -173,7 +173,7 @@ BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
 			unit = BattleGetUnitPtr(wp, entry->field_0x4);
 			if (entry->field_0x2 != 0) {
 				entry->field_0x2--;
-				if ((s32)BattlePadCheckTrigger(0x300) != 0) {
+				if (BattlePadCheckTrigger(0x300) != 0) {
 					entry->field_0x2 = 0;
 				}
 				if (entry->field_0x2 == 0) {

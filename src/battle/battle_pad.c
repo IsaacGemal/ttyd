@@ -10,7 +10,6 @@
 extern BattleWork* _battleWorkPointer;
 extern GlobalWork* gp;
 
-// NONMATCHING (0.00%): 8 instructions differ, 4 missing, 41 extra, plus register differences.
 void BattlePadInit(void) {
 	int i;
 
@@ -19,7 +18,6 @@ void BattlePadInit(void) {
 	}
 }
 
-// NONMATCHING (76.50%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void BattlePadManager(void) {
 	int i;
 
@@ -28,7 +26,8 @@ void BattlePadManager(void) {
 	}
 }
 
-// NONMATCHING (4.30%): 6 instructions differ, 17 missing, 20 extra, plus register differences.
+// dont_inline keeps BtlPad_WorkInit a real `bl` from BattlePadInit as in retail.
+#pragma dont_inline on
 void BtlPad_WorkInit(BattleWorkPad* pad) {
 	int i;
 
@@ -54,8 +53,9 @@ void BtlPad_WorkInit(BattleWorkPad* pad) {
 	pad->mHoldRepeatState = 0;
 	pad->mHoldRepeatFrameCounter = 0;
 }
+#pragma dont_inline reset
 
-// NONMATCHING (17.14%): 6 instructions differ, 23 missing, 126 extra, plus register differences.
+// NONMATCHING (70.98%): 6 instructions differ, 23 missing, 126 extra, plus register differences.
 void BtlPad_WorkUpdate(BattleWorkPad* pad, s32 chan) {
 	int i, repeat;
 
@@ -153,17 +153,17 @@ u32 BattlePadGetNow(void) {
 }
 
 // NONMATCHING (22.00%): 3 instructions differ, 6 missing.
-u32 BattlePadCheckTrigger(s32 mask) {
+s32 BattlePadCheckTrigger(s32 mask) {
 	return BattlePadMultiCheckTrigger(0, mask);
 }
 
-u32  BattlePadMultiCheckTrigger(s32 chan, s32 mask) {
+s32 BattlePadMultiCheckTrigger(s32 chan, s32 mask) {
 	u32* history = _battleWorkPointer->padWork[chan].mButtonsPressedHistory;
 	return history[0] & mask;
 }
 
 // NONMATCHING (1.82%): 3 instructions differ, 7 missing, 2 extra.
-u32 BattlePadCheckRecordTrigger(s32 frame, s32 mask) {
+s32 BattlePadCheckRecordTrigger(s32 frame, s32 mask) {
 	return BattlePadMultiCheckRecordTrigger(0, frame, mask);
 }
 
@@ -178,7 +178,7 @@ u32 BattlePadCheckNow(s32 mask) {
 	return BattlePadMultiCheckNow(0, mask);
 }
 
-u32 BattlePadMultiCheckNow(s32 chan, s32 mask) {
+s32 BattlePadMultiCheckNow(s32 chan, s32 mask) {
 	u32* history = _battleWorkPointer->padWork[chan].mButtonsHistory;
 	return history[0] & mask;
 }

@@ -24,14 +24,14 @@ void BtlPad_WorkUpdate(BattleWorkPad* pad, s32 chan);
 u32 BattlePadGetTrigger(void);
 u32 BattlePadGetNow(void);
 
-u32 BattlePadCheckTrigger(s32 mask);
-u32 BattlePadMultiCheckTrigger(s32 chan, s32 mask);
+s32 BattlePadCheckTrigger(s32 mask);
+s32 BattlePadMultiCheckTrigger(s32 chan, s32 mask);
 
-u32 BattlePadCheckRecordTrigger(s32 frame, s32 mask);
+s32 BattlePadCheckRecordTrigger(s32 frame, s32 mask);
 u32 BattlePadMultiCheckRecordTrigger(s32 chan, s32 frame, s32 mask);
 
 u32 BattlePadCheckNow(s32 mask);
-u32 BattlePadMultiCheckNow(s32 chan, s32 mask);
+s32 BattlePadMultiCheckNow(s32 chan, s32 mask);
 
 u32 BattlePadCheckUp(s32 mask);
 u32 BattlePadMultiCheckUp(s32 chan, s32 mask);

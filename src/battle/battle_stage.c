@@ -17,6 +17,9 @@ s32 batSpotEntry_28;
 //.sdata
 static BattleSpotWork* wp = &work;
 
+//.sdata (local to this file in the original)
+static u32 inta_tex[8] = {0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000};
+
 //.sdata2
 s32 dat_8041c7ec = -1;
 
@@ -24,9 +27,16 @@ extern Vec vec3_802f31a8[];
 extern Vec vec3_802f31b4[];
 extern Vec vec3_802f31c0[];
 extern Vec vec3_802f31cc[];
-extern f32 float_0_8041c7f0;
-extern f32 float_1_8041c7f4;
-extern f32 float_1000_8041c814;
+extern const f32 float_0_8041c7f0;
+extern const f32 float_1_8041c7f4;
+extern const f32 float_0p25_8041c7f8;
+extern const f32 float_60_8041c7fc;
+extern const f32 float_4p75_8041c800;
+extern const f32 float_3p75_8041c804;
+extern const f32 float_16_8041c808;
+extern const f32 float_6_8041c80c;
+extern const f32 float_100_8041c810;
+extern const f32 float_1000_8041c814;
 extern f32 float_neg1_8041c818;
 extern f32 float_32767_8041c81c;
 extern f32 float_5000_8041c84c;
@@ -44,6 +54,8 @@ extern f32 float_30_8041c828;
 extern f32 float_neg640_8041c840;
 extern f32 float_640_8041c844;
 extern f32 float_105_8041c848;
+extern f32 float_2_8041c838;
+extern f32 float_0p34907_8041c83c;
 
 typedef struct BattleStageDark {
 	u32 field_0;  //0x0
@@ -343,11 +355,15 @@ typedef struct ScreenWork {
 extern ScreenWork* screen_wp;
 extern u32 screen_evt[7];
 
+// dont_inline: without it the compiler inlines randf into tou_gamen_screen_tev
+// (the original leaves it as a call).
+#pragma dont_inline on
 f32 randf(f32 min, f32 max) {
 	f32 r = (f32)rand() / float_32767_8041c81c;
 	f32 d = max - min;
 	return r * d + min;
 }
+#pragma dont_inline reset
 
 s32 screen_evt_func(void) {
 	dispEntry(8, 1000.0f, 0, screen_capture, NULL);
@@ -395,6 +411,141 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 
 	evtEntry(screen_evt, 0, 0);
 	return 2;
+}
+
+// Event param struct: the original passes the event pointer as a typed struct
+// with 32-bit fields at 0xC/0x10/0x14 (same shape as battle/sac/sac_suki.c's
+// SukiTevParam).
+typedef struct ScreenTevParam {
+	u8 pad[0xC];
+	s32 field_C;  // 0xC
+	s32 field_10; // 0x10
+	s32 field_14; // 0x14
+} ScreenTevParam;
+
+// In the texture-generation loop the original keeps i/4 (r31) and i%4 (r30) live
+// and rematerialises (i/4)*0x100 (r4) / (i%4)*8 (r3) at each use; ours keeps the
+// two scaled terms live (r30/r31) instead, which shifts the loop's whole register
+// allocation. The ratio in the min-clamp also lands in f0 where the original uses
+// f1. Everything else matches; the code is functionally identical.
+// NONMATCHING (97.05%): register allocation only.
+void tou_gamen_screen_tev(void* param) {
+	GXTexObj texObj;
+	Mtx mtx;
+	Mtx mtxScale;
+	Mtx mtxTrans;
+	ScreenTevParam* tev = (ScreenTevParam*)param;
+
+	if (screen_wp->field_0x4 == 0) {
+		return;
+	}
+
+	if (screen_wp->field_0x24 != 0) {
+		u8* buf = (u8*)screen_wp->field_0x0;
+		s32 i;
+		s32 j;
+		s32 k;
+
+		for (i = 0; i < 0x40; i++) {
+			for (j = 0; j < 0x40; j++) {
+				int idx = (i / 4) * 0x100;
+				int col = (i % 4) * 8;
+				idx += (j / 8) * 0x20;
+				idx += (j % 8);
+				buf[idx + col] = (i & 1) ? 0xFF : 0;
+			}
+			{
+				s32 count = 100 + rand() % 100;
+				for (k = 0; k < count; k++) {
+					s32 len = rand() % 4 + 2;
+					s32 start = rand() % (0x41 - len);
+					u8 val = rand() % 0x100;
+					s32 m;
+					for (m = start; m < start + len; m++) {
+						s32 idx = (i / 4) * 0x100;
+						s32 col = (i % 4) * 8;
+						idx += (m / 8) * 0x20;
+						idx += (m % 8);
+						buf[idx + col] = val;
+					}
+				}
+			}
+		}
+		DCFlushRange(buf, 0x1000);
+		GXInitTexObj(&texObj, buf, 0x40, 0x40, 1, 1, 1, 0);
+		GXInitTexObjLOD(&texObj, 0, 0, float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0, 0, 0, 0);
+		GXLoadTexObj(&texObj, 0);
+	} else {
+		GXInitTexObj(&texObj, screen_wp->field_0x0, 0x130, 0xF0, 4, 0, 0, 0);
+		GXInitTexObjLOD(&texObj, 0, 0, float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0, 0, 0, 0);
+	}
+	GXLoadTexObj(&texObj, 0);
+
+	GXInitTexObj(&texObj, inta_tex, 4, 8, 0, 1, 1, 0);
+	GXInitTexObjLOD(&texObj, 1, 1, float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0, 0, 0, 0);
+	GXLoadTexObj(&texObj, 1);
+
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+	GXSetTevAlphaIn(0, 7, 7, 7, 7);
+	GXSetTevOrder(1, 1, 1, 0xFF);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 0xF, 8, 0, 0xF);
+	GXSetTevAlphaIn(1, 7, 7, 7, 6);
+
+	if (screen_wp->field_0x24 == 0) {
+		screen_wp->field_0x20++;
+		if (screen_wp->field_0x20 % 200 == 0) {
+			switch (rand() % 3) {
+			case 0:
+				screen_wp->field_0x14 = randf(float_0_8041c7f0, (float_1_8041c7f4 - screen_wp->field_0x8) / screen_wp->field_0x8);
+				screen_wp->field_0x1C = randf(float_0_8041c7f0, (float_1_8041c7f4 - screen_wp->field_0x8) / screen_wp->field_0x8);
+				break;
+			case 1:
+				screen_wp->field_0xC = randf(float_1_8041c7f4, float_0p25_8041c7f8);
+				break;
+			case 2:
+				break;
+			}
+		}
+		screen_wp->field_0x8 += (screen_wp->field_0xC - screen_wp->field_0x8) / float_60_8041c7fc;
+		screen_wp->field_0x10 += (screen_wp->field_0x14 - screen_wp->field_0x10) / float_60_8041c7fc;
+		screen_wp->field_0x18 += (screen_wp->field_0x1C - screen_wp->field_0x18) / float_60_8041c7fc;
+		PSMTXScale(mtxScale, screen_wp->field_0x8, screen_wp->field_0x8, float_1_8041c7f4);
+		{
+			f32 ratio = (float_1_8041c7f4 - screen_wp->field_0x8) / screen_wp->field_0x8;
+			f32 y = screen_wp->field_0x18;
+			if (y > ratio) {
+				y = ratio;
+			}
+			{
+				f32 x = screen_wp->field_0x10;
+				if (x > ratio) {
+					x = ratio;
+				}
+				PSMTXTrans(mtxTrans, x, y, float_0_8041c7f0);
+			}
+		}
+		PSMTXConcat(mtxScale, mtxTrans, mtx);
+	} else {
+		PSMTXScale(mtx, float_4p75_8041c800, float_3p75_8041c804, float_0_8041c7f0);
+	}
+
+	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	GXLoadTexMtxImm(mtx, 0x1E, 1);
+	{
+		CameraEntry* cam = camGetPtr(4);
+		PSMTXScale(mtx, float_1_8041c7f4, float_6_8041c80c * ((float_100_8041c810 - cam->cameraPos.z) / float_1000_8041c814) + float_16_8041c808, float_1_8041c7f4);
+	}
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	GXLoadTexMtxImm(mtx, 0x21, 1);
+
+	tev->field_C = 2;
+	tev->field_14 = 2;
+	tev->field_10 = 2;
 }
 
 
@@ -797,4 +948,93 @@ void BattleStageDispDark(CameraId camId, void* param) {
 	}
 	GXSetZMode(1, 1, 0);
 	DarkBySquare(stage->stgDark.field_4, float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848);
+}
+
+void BattleStageDispLight(CameraId camId, void* param) {
+	s32 i;
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	CameraEntry* cam = camGetPtr(4);
+
+	GXSetCullMode(2);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetBlendMode(1, 2, 1, 5);
+	GXSetZMode(1, 3, 0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xB, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(2, 0, 1, 1, 0, 2, 2);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaIn(0, 7, 7, 7, 7);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXLoadPosMtxImm(cam->view, 0);
+
+	for (i = 0; i < 12; i++) {
+		if (stage->lights[i].flags & 1) {
+			Mtx mtx;
+			Vec up;
+			Vec axis;
+			Vec dir;
+			Vec base;
+			Vec p1;
+			Vec p2;
+			f32 width;
+			f32 two;
+			s32 j;
+			u8 r, g, b;
+
+			dir = vec3_802f31a8[0];
+			dir.x = stage->lights[i].targetCur.x - stage->lights[i].posCur.x;
+			dir.y = stage->lights[i].targetCur.y - stage->lights[i].posCur.y;
+			dir.z = stage->lights[i].targetCur.z - stage->lights[i].posCur.z;
+			axis = dir;
+			width = stage->lights[i].widthCur;
+			up = stage->lights[i].upCur;
+			two = float_2_8041c838;
+
+			for (j = 0; j < 18; j++) {
+				f32 px = stage->lights[i].posCur.x;
+				f32 py = stage->lights[i].posCur.y;
+				f32 pz = stage->lights[i].posCur.z;
+				f32 tx = stage->lights[i].targetCur.x;
+				f32 ty = stage->lights[i].targetCur.y;
+				f32 tz = stage->lights[i].targetCur.z;
+
+				base.x = px + two * (tx - px);
+				base.y = py + two * (ty - py);
+				base.z = pz + two * (tz - pz);
+
+				p1.x = base.x + up.x * width;
+				p1.y = base.y + up.y * width;
+				p1.z = base.z + up.z * width;
+
+				PSMTXRotAxisRad(mtx, &axis, float_0p34907_8041c83c);
+				PSMTXMultVec(mtx, &up, &up);
+				PSVECNormalize(&up, &up);
+
+				p2.x = base.x + up.x * width;
+				p2.y = base.y + up.y * width;
+				p2.z = base.z + up.z * width;
+
+				r = stage->lights[i].colorCur.r;
+				g = stage->lights[i].colorCur.g;
+				b = stage->lights[i].colorCur.b;
+
+				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
+				GXPosition3f32(px, py, pz);
+				GXColor4u8(r, g, b, 0);
+				GXPosition3f32(p1.x, p1.y, p1.z);
+				GXColor4u8(r, g, b, 0);
+				GXPosition3f32(p2.x, p2.y, p2.z);
+				GXColor4u8(r, g, b, 0);
+			}
+		}
+	}
 }

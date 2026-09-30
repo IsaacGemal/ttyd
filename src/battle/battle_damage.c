@@ -1,5 +1,6 @@
 #include "battle/battle_damage.h"
 #include "battle/battle.h"
+#include "battle/battle_mario.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
 #include "battle/battle_disp.h"
@@ -45,8 +46,6 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     return 0;
 }
 
-// The original uses size-oriented prologues (stmw/lmw) and -O4,s scheduling; the file wants -O4,s.
-#pragma optimize_for_size on
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                             BattleWeapon* weapon, s32* damageCode, s32 flags) {
     s32 damage = 0;
@@ -83,10 +82,7 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
     }
     return damage;
 }
-#pragma optimize_for_size off
 
-// The original uses an stmw/lmw size prologue; the file wants -O4,s.
-#pragma optimize_for_size on
 // NONMATCHING (99.86%): one `cmpw` has its operands swapped (r4,r0 vs r0,r4); everything else matches.
 void BattleAttackDeclareAll(BattleWork* wp) {
     s32 i;
@@ -121,10 +117,7 @@ void BattleAttackDeclareAll(BattleWork* wp) {
     }
     sampling[0xab7] = 0;
 }
-#pragma optimize_for_size off
 
-// The original uses an stmw/lmw size prologue; the file wants -O4,s.
-#pragma optimize_for_size on
 void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
     s32 i;
     BattleUnit* unit;
@@ -184,10 +177,7 @@ void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
         *out2 = part->mKindPartParams->partNum;
     }
 }
-#pragma optimize_for_size off
 
-// The original uses an stmw/lmw size prologue; the file wants -O4,s.
-#pragma optimize_for_size on
 void BattleAttackDeclare(s32* out1, s32* out2) {
     s32 i;
     BattleUnit* unit;
@@ -244,7 +234,6 @@ void BattleAttackDeclare(s32* out1, s32* out2) {
         *out2 = part->mKindPartParams->partNum;
     }
 }
-#pragma optimize_for_size off
 
 u8 _getRegistStatus(BattleUnit* unit, s32 type) {
     BattleVulnerableStatus* vuln = unit->vulnStatus;
@@ -299,8 +288,6 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
     }
 }
 
-// The original uses a size-oriented prologue and keeps `weights` on the stack; the file wants -O4,s.
-#pragma optimize_for_size on
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     BattleWork* wp = _battleWorkPointer;
     s32 weights[5] = { 0 };
@@ -377,10 +364,7 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     }
     return result;
 }
-#pragma optimize_for_size off
 
-// Size-op: the original's instruction selection here matches -O4,s (see the header note for this file).
-#pragma optimize_for_size on
 // NONMATCHING (96.87%): the GALE_FORCE compare is `cmpwi r8,0` vs `extsb. r0,r8`; the rest is register/relocation naming.
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
@@ -441,8 +425,205 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
 
 }
 
-// Size-op: the original's instruction selection here matches -O4,s (see the header note for this file).
-#pragma optimize_for_size on
+void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2) {
+    s32 param1;
+    s32 param2;
+    s32 item;
+    s32 count;
+    u32 utype = (u32)type;
+
+    switch (type) {
+    case STATUS_SLEEP:
+        param1 = param2 = weapon->sleepTime;
+        break;
+    case STATUS_STOP:
+        param1 = param2 = weapon->stopTime;
+        break;
+    case STATUS_DIZZY:
+        param1 = param2 = weapon->dizzyTime;
+        break;
+    case STATUS_POISON:
+        param1 = weapon->poisonTime;
+        param2 = weapon->poisonStrength;
+        break;
+    case STATUS_CONFUSE:
+        param1 = param2 = weapon->confuseTime;
+        break;
+    case STATUS_ELECTRIC:
+        param1 = param2 = weapon->electricTime;
+        break;
+    case STATUS_DODGY:
+        param1 = param2 = weapon->dodgyTime;
+        break;
+    case STATUS_BURN:
+        param1 = param2 = weapon->burnTime;
+        break;
+    case STATUS_FREEZE:
+        param1 = param2 = weapon->freezeTime;
+        break;
+    case STATUS_HUGE:
+        if (weapon->sizeChangeStrength > 0) {
+            param1 = weapon->sizeChangeTime;
+            param2 = weapon->sizeChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_TINY:
+        if (weapon->sizeChangeStrength < 0) {
+            param1 = weapon->sizeChangeTime;
+            param2 = weapon->sizeChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ATTACK_UP:
+        if (weapon->atkChangeStrength > 0) {
+            param1 = weapon->atkChangeTime;
+            param2 = weapon->atkChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ATTACK_DOWN:
+        if (weapon->atkChangeStrength < 0) {
+            param1 = weapon->atkChangeTime;
+            param2 = weapon->atkChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_DEFENSE_UP:
+        if (weapon->defChangeStrength > 0) {
+            param1 = weapon->defChangeTime;
+            param2 = weapon->defChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_DEFENSE_DOWN:
+        if (weapon->defChangeStrength < 0) {
+            param1 = weapon->defChangeTime;
+            param2 = weapon->defChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ALLERGIC:
+        param1 = param2 = weapon->allergicTime;
+        break;
+    case STATUS_FAST:
+        param1 = param2 = weapon->fastTime;
+        break;
+    case STATUS_SLOW:
+        param1 = param2 = weapon->slowTime;
+        break;
+    case STATUS_INSTANT_KILL:
+#ifdef MUST_MATCH
+        // The original sign-extends the byte at 0x9E, but battle_database_common.h declares ohkoChance u8.
+        param1 = param2 = ((s8*)weapon)[0x9E];
+#else
+        param1 = param2 = weapon->ohkoChance;
+#endif
+        break;
+    case STATUS_INVISIBLE:
+        param1 = param2 = weapon->invisibleTime;
+        break;
+    case STATUS_HP_REGEN:
+        param1 = weapon->hpRegenTime;
+        param2 = weapon->hpRegenStrength;
+        break;
+    case STATUS_FP_REGEN:
+        param1 = weapon->fpRegenTime;
+        param2 = weapon->fpRegenStrength;
+        break;
+    case STATUS_CHARGE:
+        param1 = weapon->chargeStrength;
+        param2 = weapon->chargeStrength;
+        break;
+    case STATUS_PAYBACK:
+        param1 = param2 = weapon->paybackTime;
+        break;
+    case STATUS_HOLD_FAST:
+        param1 = param2 = weapon->holdFastTime;
+        break;
+    default:
+        param1 = param2 = 0;
+        break;
+    }
+
+    item = weapon->item;
+    count = 0;
+    if (item >= BADGE_MIN && item < BADGE_MAX) {
+        count = pouchEquipCheckBadge(item);
+    }
+    if (count > 0) {
+        switch (item) {
+        case ITEM_SHRINK_STOMP:
+            if (utype == STATUS_TINY) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_SLEEPY_STOMP:
+            if (utype == STATUS_SLEEP) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_SOFT_STOMP:
+            if (utype == STATUS_DEFENSE_DOWN) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_HEAD_RATTLE:
+            if (utype == STATUS_CONFUSE) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_ICE_SMASH:
+            if (utype == STATUS_FREEZE) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_UNUSED_DEFEND_BADGE:
+        case ITEM_UNUSED_DEFEND_BADGE_P:
+            if (utype == STATUS_DEFENSE_UP && unit->badgesEquipped.DefendUnused >= 2) {
+                param2 += unit->badgesEquipped.DefendUnused - 1;
+            }
+            break;
+        }
+    }
+
+    if (utype == STATUS_CHARGE) {
+        s32 n;
+
+        if (weapon == &badgeWeapon_Charge || weapon == &badgeWeapon_ChargeP) {
+            if (unit->currentKind == UNIT_MARIO) {
+                n = pouchEquipCheckBadge(ITEM_CHARGE);
+            } else {
+                n = pouchEquipCheckBadge(ITEM_CHARGE_P);
+            }
+            if (n >= 2) {
+                param2 += n - 1;
+            }
+        } else if (weapon == &badgeWeapon_SuperCharge || weapon == &badgeWeapon_SuperChargeP) {
+            if (unit->currentKind == UNIT_MARIO) {
+                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE);
+            } else {
+                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE_P);
+            }
+            if (n >= 2) {
+                param2 += (n - 1) * 2;
+            }
+        }
+        if (param2 >= 10) {
+            param2 = 9;
+        }
+    }
+
+    *out1 = param1;
+    *out2 = param2;
+}
+
 s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
     u8* w = (u8*)weapon;
 
@@ -502,10 +683,7 @@ s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
     }
     return 0;
 }
-#pragma optimize_for_size off
 
-// Size-op: the original's instruction selection here matches -O4,s (see the header note for this file).
-#pragma optimize_for_size on
 // NONMATCHING (99.80%): the (s32)((f32)rate * 0.5f) conversion allocates f1/f2 for the constants,
 // whereas the original uses f2/f0; every other byte matches.
 s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a) {
@@ -591,4 +769,3 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     }
     return 1;
 }
-#pragma optimize_for_size off

@@ -1,0 +1,36 @@
+#pragma once
+
+#include <dolphin/types.h>
+#include "driver/camdrv.h"
+#include "driver/effdrv.h"
+typedef struct EffThruHammerData {
+	s16 type;        //0x00
+	f32 x;           //0x04
+	f32 y;           //0x08
+	f32 z;           //0x0C
+	f32 field_0x10;  //0x10
+	f32 field_0x14;  //0x14
+	f32 field_0x18;  //0x18
+	f32 field_0x1C;  //0x1C
+	f32 field_0x20;  //0x20
+	f32 field_0x24;  //0x24
+	s32 field_0x28;  //0x28
+	s32 field_0x2C;  //0x2C
+	f32 field_0x30;  //0x30
+	f32 field_0x34;  //0x34
+	s32 field_0x38;  //0x38
+	f32 field_0x3C;  //0x3C
+	f32 field_0x40;  //0x40
+	f32 field_0x44;  //0x44
+	f32 field_0x48;  //0x48
+	s32 field_0x4C;  //0x4C
+	u8 field_0x50;   //0x50
+	u8 field_0x51;   //0x51
+	u8 field_0x52;   //0x52
+	u8 field_0x53;   //0x53
+	u8 field_0x54;   //0x54
+	u8 field_0x55;   //0x55
+} EffThruHammerData; //0x58
+void effThruHammerMain(EffectEntry* effect);
+void effThruHammerDisp(CameraId camId, void* param);
+EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle);

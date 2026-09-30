@@ -44,6 +44,9 @@ extern f32 float_10_8041a1a4;
 extern f32 float_0p8_8041a1b0;
 extern f32 float_0p125_8041a1b4;
 extern f32 float_0p99_8041a1b8;
+extern const f32 float_1p4_8041a208;
+extern const f32 float_1p2_8041a20c;
+extern f32 float_5_8041a210;
 extern const char str_802C46E4[];
 extern Vec vec3_802c3dc8[];
 extern Vec vec3_802c3dd4[];
@@ -469,6 +472,83 @@ s32 fire_func(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
+s32 mobj_koopa_sango_evt(MapObjectEntry* obj) {
+    s32 sp10 = 0;
+    EventEntry* event;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                switch (kpaGetLevel()) {
+                    case 0:
+                    case 1:
+                    case 2:
+                        if (obj->unk1E0 == 0x20000000) {
+                            sp10 = 1;
+                        }
+                        break;
+                    case 3:
+                        sp10 = 1;
+                        break;
+                }
+                if (sp10 == 0) {
+                    obj->flags &= ~0x8;
+                    break;
+                }
+                mobjRunEvent(obj, obj->unk1D4);
+                evtSetValue(NULL, obj->unk1E4, 1);
+                if (obj->unk1E0 == 0x04000000) {
+                    npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
+                }
+                if (obj->hitObj[0].hitObject != NULL) {
+                    obj->hitObj[0].hitObject->flags |= 1;
+                }
+                obj->flags |= 2;
+                kpaAddScore(kpaMutekiCheck() ? 0x1f4 : 0x190);
+                obj->unk1DC = 0xa;
+            }
+            break;
+        case 0xa:
+            if (obj->unk1E0 == 0x20000000) {
+                psndSFXOn_3D((const char*)0xb67, &obj->position);
+            }
+            event = evtEntry(evt_fire, 0, 0);
+            event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+            event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+            event->lwData[2] = (s32)(1024.0f * (obj->position.z + 10.0f)) + 0xF24A7A80;
+            event->lwData[3] = 0x5a;
+            obj->unk1DC++;
+            break;
+        case 0x14:
+            event = evtEntry(evt_fire, 0, 0);
+            event->lwData[0] = (s32)(1024.0f * (obj->position.x + 10.0f)) + 0xF24A7A80;
+            event->lwData[1] = (s32)(1024.0f * (obj->position.y + 30.0f)) + 0xF24A7A80;
+            event->lwData[2] = (s32)(1024.0f * (obj->position.z + 10.0f)) + 0xF24A7A80;
+            event->lwData[3] = 0x50;
+            obj->unk1DC++;
+            break;
+        case 0x1e:
+            event = evtEntry(evt_fire, 0, 0);
+            event->lwData[0] = (s32)(1024.0f * (obj->position.x - 10.0f)) + 0xF24A7A80;
+            event->lwData[1] = (s32)(1024.0f * (obj->position.y + 60.0f)) + 0xF24A7A80;
+            event->lwData[2] = (s32)(1024.0f * (obj->position.z + 10.0f)) + 0xF24A7A80;
+            event->lwData[3] = 0x46;
+            obj->unk1DC++;
+            break;
+        case 0x62:
+            effMObjBrokenEntry(7, obj->position.x, obj->position.y, obj->position.z + 10.0f);
+            obj->unk1DC++;
+            break;
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+        default:
+            obj->unk1DC++;
+            break;
+    }
+    return 0;
+}
+
 s32 kpa_powerup(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     Vec pos;
@@ -836,6 +916,100 @@ s32 evt_mobj_check(EventEntry* event, BOOL isFirstCall) {
 
 s32 evt_mobj_delete(EventEntry* event, BOOL isFirstCall) {
     mobjDelete((const char*)evtGetValue(event, event->args[0]));
+    return 2;
+}
+
+s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
+    u8* base = (u8*)vec3_802c3dc8;
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    s32 type = evtGetValue(event, args[4]);
+    s32 unk1D4 = evtGetValue(event, args[5]);
+    s32 unk1D8 = evtGetValue(event, args[6]);
+    s32 unk1E4 = args[7];
+    BOOL inBattle = gp->inBattle != 0;
+    const char* modelName;
+    MapObjectEntry* obj;
+
+    switch (type) {
+        case 0:
+            modelName = (const char*)(base + 0x6A0);
+            break;
+        case 1:
+            modelName = (const char*)(base + 0x6B4);
+            break;
+        case 2:
+            modelName = (const char*)(base + 0x6C8);
+            break;
+        case 3:
+            modelName = (const char*)(base + 0x6E0);
+            break;
+        case 4:
+        default:
+            modelName = (const char*)(base + 0x6F8);
+            break;
+    }
+    if (!animGroupBaseAsync(modelName, inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, modelName);
+    obj = mobjNameToPtr(name);
+    mobjHitEntry(obj, 2);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->unk1D0 = mobj_itembox;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = (s32*)unk1D8;
+    obj->flags |= 0x64;
+    obj->flags |= 0x40000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    mobjCalcMtx(obj);
+    if (evtGetValue(event, unk1E4) != 0) {
+        AnimationPoseData* animData = animPoseGetAnimBaseDataPtr(obj->poseId);
+        Vec maxTmp;
+        Vec minTmp;
+        Vec bboxMax;
+        Vec bboxMin;
+
+        minTmp = *(Vec*)(base + 0x210);
+        minTmp.x = animData->bboxMin.x;
+        minTmp.y = animData->bboxMin.y;
+        minTmp.z = animData->bboxMin.z;
+        bboxMin = minTmp;
+        maxTmp = *(Vec*)(base + 0x21C);
+        maxTmp.x = animData->bboxMax.x;
+        maxTmp.y = animData->bboxMax.y;
+        maxTmp.z = animData->bboxMax.z;
+        bboxMax = maxTmp;
+        bboxMin.z = bboxMin.z - *(f64*)(base + 0x710) * __fabsf(bboxMax.y - bboxMin.y);
+        PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
+        PSVECScale(&obj->translation, &obj->translation, float_0p5_8041a15c);
+        PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
+        obj->translation.y = float_0_8041a150;
+        obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
+        obj->scale2.z = obj->scale2.z * float_1p2_8041a20c;
+        mobjCalcMtx2(obj);
+        obj->unk1DC = 0x63;
+    }
+    {
+        f32 hitX;
+        f32 hitY;
+        f32 hitZ;
+        f32 distance = float_5_8041a210 + (f32)__fabs(obj->unk5C.y);
+        f32 hitNX;
+        f32 hitNY;
+        f32 hitNZ;
+
+        if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                           obj->position.x, float_1_8041a160 + obj->position.y, obj->position.z,
+                           float_0_8041a150, float_neg1_8041a214, float_0_8041a150) != NULL) {
+            obj->flags |= 2;
+            obj->flags &= ~0x40;
+        }
+    }
     return 2;
 }
 
