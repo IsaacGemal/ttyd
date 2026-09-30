@@ -1,5 +1,6 @@
 #include <dolphin/pad.h>
 #include <demo/DEMOPad.h>
+#include "sdk/DEMOPad.h"
 
 static u32 PadChanMask[4] = {
     PAD_CHAN0_BIT,
@@ -13,10 +14,7 @@ u32 DemoNumValidPads;
 static PADStatus Pad[4];
 DEMOPadStatus DemoPad[4];
 
-// prototypes
-static void DEMOPadCopy(PADStatus* pad, DEMOPadStatus* dmpad);
-
-static void DEMOPadCopy(PADStatus* pad, DEMOPadStatus* dmpad) {
+void DEMOPadCopy(PADStatus* pad, DEMOPadStatus* dmpad) {
     u16 dirs;
 
     if (pad->err != -3) {
