@@ -100,14 +100,14 @@ EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z) {
         data->targetY = 1.0f;
         break;
     case 1:
-        data->velX = 0.100000001f * (f32)(rand() % 11) + -5.0f;
-        data->velY = 0.100000001f * (f32)(rand() % 11) + 0.5f;
+        data->velX = 0.1f * (f32)(rand() % 11) + -5.0f;
+        data->velY = 0.1f * (f32)(rand() % 11) + 0.5f;
         data->targetX = 0.0f;
         data->targetY = 0.0f;
         break;
     default:
-        data->velX = 5.0f - 0.100000001f * (f32)(rand() % 11);
-        data->velY = 0.100000001f * (f32)(rand() % 11) + 1.0f;
+        data->velX = 5.0f - 0.1f * (f32)(rand() % 11);
+        data->velY = 0.1f * (f32)(rand() % 11) + 1.0f;
         data->targetX = 0.0f;
         data->targetY = 0.0f;
         break;
@@ -132,16 +132,16 @@ void effOnpuMain(EffectEntry* effect) {
         return;
     }
     if (lifetime > 5) {
-        data->alpha = (s32)(0.300000012f * (f32)(255 - data->alpha) + (f32)data->alpha);
-        data->scale = 0.300000012f * (1.0f - data->scale) + data->scale;
+        data->alpha = (s32)(0.3f * (f32)(255 - data->alpha) + (f32)data->alpha);
+        data->scale = 0.3f * (1.0f - data->scale) + data->scale;
     }
     if (lifetime < 10) {
         data->alpha = lifetime * 25;
     }
     data->position.x += data->velX;
     data->position.y += data->velY;
-    data->velX += 0.0399999991f * (data->targetX - data->velX);
-    data->velY += 0.0399999991f * (data->targetY - data->velY);
+    data->velX += 0.04f * (data->targetX - data->velX);
+    data->velY += 0.04f * (data->targetY - data->velY);
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOnpuDisp, effect);
 }
 
@@ -168,12 +168,12 @@ void effOnpuDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
-    PSMTXScale(scaleMtx, 0.0625f, 0.00446428591f, 0.0f);
+    PSMTXScale(scaleMtx, 0.0625f, 0.004464286f, 0.0f);
     PSMTXTrans(mtx, 0.0f, (f32)(randIndex * 32), 0.0f);
     PSMTXConcat(scaleMtx, mtx, scaleMtx);
     GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 
-    PSMTXScale(scaleMtx, 0.0625f, 0.00446428591f, 0.0f);
+    PSMTXScale(scaleMtx, 0.0625f, 0.004464286f, 0.0f);
     PSMTXTrans(mtx, 0.0f, (f32)(randIndex * 32), 0.0f);
     PSMTXConcat(scaleMtx, mtx, scaleMtx);
     GXLoadTexMtxImm(scaleMtx, GX_TEXMTX1, GX_MTX2x4);
@@ -198,7 +198,7 @@ void effOnpuDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, GX_TEXMAP1);
 
     PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(rotMtx, 'y', 0.0174532924f * -camGetPtr(CAMERA_3D)->viewYaw);
+    PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(mtx, rotMtx, mtx);
     PSMTXScale(scaleMtx, data->scale, data->scale, 0.0f);
     PSMTXConcat(mtx, scaleMtx, mtx);

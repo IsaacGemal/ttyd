@@ -110,16 +110,16 @@ void effKemuri6Main(EffectEntry* effect) {
             else {
                 active = 1;
                 data->field_0x30 = reviseAngle(12.0f + data->field_0x30);
-                #ifdef MUST_MATCH
-{
+#ifdef MUST_MATCH
+                {
                     f32 t = (f32)sin(6.2831855f * data->field_0x30 / 360.0f);
                     data->field_0x1C = 0.1f * t + data->field_0x28;
                 }
 #else
                 data->field_0x1C = 0.1f * (f32)sin(6.2831855f * data->field_0x30 / 360.0f) + data->field_0x28;
 #endif
-                #ifdef MUST_MATCH
-{
+#ifdef MUST_MATCH
+                {
                     f32 t = (f32)cos(6.2831855f * data->field_0x30 / 360.0f);
                     data->field_0x20 = 0.1f * t + data->field_0x2C;
                 }
