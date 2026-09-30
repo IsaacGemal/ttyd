@@ -40,3 +40,7 @@ void countDownEnd(void) {
 void countDownFlagOn(u16 flag) {
     wp->flags |= flag;
 }
+
+void countDownFlagOff(u16 flag) {
+    wp->flags &= ~flag;
+}

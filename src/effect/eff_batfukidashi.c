@@ -1,10 +1,30 @@
 #include "eff/eff_batfukidashi.h"
+#include "driver/camdrv.h"
 #include "driver/dispdrv.h"
+#include "driver/effdrv.h"
+#include "manager/fontmgr.h"
 #include "memory.h"
+
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <stdio.h>
 
 extern const f32 float_0_80420478;
 extern const f32 float_1_8042047c;
 extern const f32 float_100_80420494;
+
+const u32 dat_80420468 = 0xFFFFFF00;
+const f32 float_deg2rad_8042046c = 0.017453292f;
+const f32 float_0p4_80420470 = 0.4f;
+const f32 float_0p5_80420474 = 0.5f;
+const f32 float_0_80420478 = 0.0f;
+const f32 float_1_8042047c = 1.0f;
+const char str_80420480[] = "%d";
+const f32 float_3_80420484 = 3.0f;
+const f32 float_neg28_80420488 = -28.0f;
+const f32 float_28_8042048c = 28.0f;
+const f32 float_34_80420490 = 34.0f;
+const f32 float_100_80420494 = 100.0f;
 
 const Vec vec3_802fd498 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_mask_802fd4a8 = 4503599627370496.0;
@@ -105,4 +125,79 @@ void effCoinFukidashiMain(EffectEntry* effect) {
 #else
     dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effCoinFukidashiDisp, effect);
 #endif
+}
+
+// NONMATCHING (99.77%): the only remaining differences are register/stack allocation: the GXColor
+// argument sits at r1+0x08 (retail r1+0x0C) and f0/f1 are swapped for -w and the 0.5f uses.
+void effCoinFukidashiDisp(CameraId cameraId, void* param) {
+    EffectEntry* effect = param;
+    CameraEntry* cam;
+    CoinFukidashiData* data;
+    GXTexObj tex;
+    GXColor color;
+    Mtx m0, m1, m2;
+    f32 w, h;
+    f32 textW;
+    s32 alpha;
+    char buf[0x40];
+
+    cam = camGetPtr(cameraId);
+    data = effect->userdata;
+    alpha = data->alpha;
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3c, 0, 0x7d);
+    effGetTexObj(0x25, &tex);
+    GXLoadTexObj(&tex, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    color = *(GXColor*)&dat_80420468;
+    color.a = alpha;
+    GXSetChanMatColor(4, color);
+
+    PSMTXTrans(m0, data->position.x, data->position.y + data->field_0x10, data->position.z);
+    PSMTXScale(m1, data->scale, data->scale, data->scale);
+    PSMTXRotRad(m2, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_8042046c);
+    PSMTXConcat(m0, m1, m0);
+    PSMTXConcat(m0, m2, m0);
+    PSMTXConcat(cam->view, m0, m0);
+    GXLoadPosMtxImm(m0, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xd, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
+
+    GXBegin(0x80, 0, 4);
+    w = float_0p4_80420470 * (f32)GXGetTexObjWidth(&tex);
+    h = float_0p4_80420470 * (f32)GXGetTexObjHeight(&tex);
+    GXPosition3f32(-w * float_0p5_80420474, h, float_0_80420478);
+    GXTexCoord2f32(float_0_80420478, float_0_80420478);
+    GXPosition3f32(w * float_0p5_80420474, h, float_0_80420478);
+    GXTexCoord2f32(float_1_8042047c, float_0_80420478);
+    GXPosition3f32(w * float_0p5_80420474, float_0_80420478, float_0_80420478);
+    GXTexCoord2f32(float_1_8042047c, float_1_8042047c);
+    GXPosition3f32(-w * float_0p5_80420474, float_0_80420478, float_0_80420478);
+    GXTexCoord2f32(float_0_80420478, float_1_8042047c);
+
+    sprintf(buf, str_80420480, data->field_0x14);
+    textW = data->scale * (f32)FontGetMessageWidth(buf) / float_3_80420484;
+    PSMTXTrans(m0, -textW * float_0p5_80420474, float_neg28_80420488, float_0_80420478);
+    PSMTXScale(m1, data->scale / float_3_80420484, data->scale / float_3_80420484, data->scale / float_3_80420484);
+    PSMTXConcat(m0, m1, m1);
+    PSMTXTrans(m0, textW * float_0p5_80420474, float_28_8042048c, float_0_80420478);
+    PSMTXConcat(m1, m0, m1);
+    PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
+    PSMTXRotRad(m2, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_8042046c);
+    PSMTXConcat(m0, m2, m2);
+    PSMTXTrans(m0, float_3_80420484, float_34_80420490 + data->field_0x10, float_0_80420478);
+    PSMTXConcat(m2, m0, m0);
+    PSMTXConcat(m0, m1, m0);
+    FontDrawStart_alpha(alpha);
+    GXSetZMode(1, 3, 0);
+    FontDrawStringMtx(m0, buf);
 }

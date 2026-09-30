@@ -76,6 +76,9 @@ void BattleIconEnd(void) {
 	}
 }
 
+// dont_inline keeps BtlIcon_Entry a real `bl` from the evt commands as in retail.
+#pragma dont_inline on
+
 // NONMATCHING (7.59%): 7 instructions differ, 4 missing, 62 extra, plus register differences.
 BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
 	BattleIcon* icon;
@@ -106,6 +109,7 @@ BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
 		return NULL;
 	}
 }
+#pragma dont_inline reset
 
 // dont_inline keeps BtlIcon_Delete a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
@@ -119,8 +123,11 @@ void BtlIcon_Delete(BattleIcon* icon) {
 }
 #pragma dont_inline reset
 
+// This unit's original is built for size: at -O4,p mwcc emits individual stw in the
+// prologue where retail has stmw, so use the size pragma for this function.
+#pragma optimize_for_size on
+
 //s32 iconId, f32 x, f32 y, f32 z, s32 evtIndex
-// NONMATCHING (0.00%): 4 instructions differ, 1 missing, 104 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconEntry) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -132,13 +139,22 @@ USER_FUNC(btlevtcmd_BtlIconEntry) {
 	y = (f32)evtGetValue(event, args[2]);
 	z = (f32)evtGetValue(event, args[3]);
 	index = args[4];
+#ifdef MUST_MATCH
+	// The header declares BtlIcon_Entry's id as s16, but retail narrows it with clrlwi (zero-extend,
+	// not extsh), so the original parameter is u16. Call through a cast pointer to emit the unsigned
+	// narrowing without editing the existing header line; see REPORT.md.
+	icon = ((BattleIcon* (*)(u16, f32, f32, f32))BtlIcon_Entry)(iconId, x, y, z);
+#else
 	icon = BtlIcon_Entry(iconId, x, y, z);
+#endif
 	evtSetValue(event, index, icon->index);
 	return EVT_RETURN_DONE;
 }
+#pragma optimize_for_size off
 
 //s32 itemId (index for itemDataTable) , f32 x, f32 y, f32 z, s32 evtIndex
-// NONMATCHING (0.00%): 10 instructions differ, 2 missing, 106 extra, plus register differences.
+// NONMATCHING (89.92%): the prologue needs the file's size form (stmw/lmw), itemDataTable[].icon_id
+// is u16 (lhz, not lha), and the pooled int->float double stays anonymous.
 USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 	s32* args = event->args;
 	BattleIcon* icon;

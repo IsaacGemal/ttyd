@@ -29,6 +29,10 @@
 #include "party/party_cloud.h"
 #include "math_ext.h"
 #include "mario/mario_motion.h"
+#include "battle/battle.h"
+#include "driver/seqdrv.h"
+
+extern char _evt_majinai_coin_up_effect[];
 
 extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
@@ -1023,6 +1027,215 @@ void fbatTalkMode(void) {
                 fbatData->mode = 1;
                 wp = gp->inBattle ? &work.battle : &work.field;
                 wp->field_0x10 = NULL;
+            }
+            break;
+    }
+}
+
+// NONMATCHING (98.86%): every instruction matches; only callee-saved register numbers differ. The original
+// keeps pouch=r31, fbatData=r30, entry=r29, mario=r27; MWCC here picks fbatData=r28, entry=r29, pouch=r30, mario=r31.
+void fbatBattleMode(void) {
+    PouchData* pouch;
+    NpcEntry* entry;
+    FieldBattleData* fbatData;
+    s32 i;
+    s32 total;
+    s32 result;
+    NpcEntry* npc;
+    NpcWork* wp;
+    EventEntry* evt;
+    FieldBattleInfo* info;
+    MarioWork* mario;
+
+    fbatData = gp->fbatData;
+    entry = fbatData->target;
+    pouch = pouchGetPtr();
+    mario = marioGetPtr();
+    entry->rotation.y = 0.0f;
+
+    switch (fbatData->field_2[0]) {
+        case 0:
+            if (dbg_battleskip == 1) {
+                fbatData->mode = 1;
+            } else if (entry->battleInfo.groupSetup == NULL) {
+                fbatData->mode = 1;
+            } else if (gp->systemLevelFlags & 0x10) {
+                fbatData->mode = 1;
+            } else if (entry->deadEvent == NULL) {
+                fbatData->mode = 1;
+            } else {
+                s32 flagA;
+                s32 flagB;
+
+                *(s32*)fbatData->target->field_140 &= 0xF00;
+                evtStopID(fbatData->target->regularEvtId);
+                info = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                if (!(entry->battleInfo.field_4 & 0x10000000)) {
+                    if (pouchEquipCheckBadge(ITEM_BUMP_ATTACK) &&
+                        entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
+                        flagA = TRUE;
+                        flagB = TRUE;
+                        goto afterStrike;
+                    }
+                    if (pouchEquipCheckBadge(ITEM_FIRST_ATTACK) &&
+                        (*(s32*)((u8*)fbatData + 0x10) & 0x01FE0000) &&
+                        entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
+                        flagA = TRUE;
+                        flagB = TRUE;
+                        goto afterStrike;
+                    }
+                }
+                if (dbg_battleskip == 2) {
+                    flagA = TRUE;
+                    flagB = TRUE;
+                } else {
+                    flagA = FALSE;
+                    flagB = FALSE;
+                }
+            afterStrike:
+                if (flagA == 0) {
+                    if (flagB == 0) {
+                        gp->fbatData->firstStrike.enabled = TRUE;
+                    }
+                    marioFBattlePrepare();
+                    seqSetSeq(SEQ_BATTLE, NULL, NULL);
+                    if (*(s32*)((u8*)fbatData + 0x10) == 0x10000000) {
+                        unk_80058374();
+                    }
+                    fbatData->field_2[0] = 1;
+                } else {
+                    if (flagB) {
+                        BattleInformationSetResult(info, 2);
+                    } else {
+                        BattleInformationSetResult(info, 5);
+                    }
+                    fbatData->field_2[0] = 4;
+                }
+            }
+            break;
+        case 1:
+            if (gp->inBattle) {
+                fbatData->field_2[0]++;
+            }
+            break;
+        case 2:
+            if (!gp->inBattle) {
+                fbatData->field_54C[0] = 0;
+                info = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                result = BattleInformationGetResult(info);
+                if (pouch->mMerleeNextCurseType == 4 && result == 1) {
+                    fbatData->field_2[0] = 3;
+                    fbatData->field_54C[0] = 1;
+                    evt = evtEntry(_evt_majinai_coin_up_effect, 0, 0);
+                    *(s32*)((u8*)fbatData + 0x48) = evt->eventId;
+                    BattleMajinaiDone();
+                    marioKeyOff();
+                    wp = gp->inBattle ? &work.battle : &work.field;
+                    total = wp->total;
+                    for (i = 0, npc = wp->entries; i < total; i++, npc++) {
+                        if (npc != NULL && (npc->flags & 2) && (npc->flags & 0x10000000)) {
+                            npc->jumpFlags |= 0x10000;
+                            evtStopID(npc->regularEvtId);
+                            animPoseSetLocalTimeRate(npc->poseId, 0.0f);
+                        }
+                    }
+                } else {
+                    marioFBattlePost();
+                    fbatData->field_2[0] = 4;
+                }
+            }
+            break;
+        case 3:
+            if (!evtCheckID(*(s32*)((u8*)fbatData + 0x48))) {
+                marioKeyOn();
+                marioFBattlePost();
+                *(s32*)((u8*)fbatData + 0x48) = 0;
+                fbatData->field_2[0] = 4;
+                wp = gp->inBattle ? &work.battle : &work.field;
+                total = wp->total;
+                for (i = 0, npc = wp->entries; i < total; i++, npc++) {
+                    if (npc != NULL && (npc->flags & 2) && (npc->flags & 0x10000000) && (npc->jumpFlags & 0x10000)) {
+                        npc->jumpFlags &= ~0x10000;
+                        evtStartID(npc->regularEvtId);
+                        animPoseSetLocalTimeRate(npc->poseId, 1.0f);
+                    }
+                }
+            }
+            break;
+        case 4:
+            marioChgMoveMotion();
+            if (!gp->inBattle) {
+                s32 hasStolen;
+                s32 mult;
+
+                info = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                result = BattleInformationGetResult(info);
+                hasStolen = FALSE;
+                if (entry->battleInfo.stolenItems[0] != 0) {
+                    hasStolen = TRUE;
+                } else if (entry->battleInfo.stolenItems[1] != 0) {
+                    hasStolen = TRUE;
+                } else if (entry->battleInfo.stolenItems[2] != 0) {
+                    hasStolen = TRUE;
+                } else if (entry->battleInfo.stolenItems[3] != 0) {
+                    hasStolen = TRUE;
+                } else if (entry->battleInfo.stolenItems[4] != 0) {
+                    hasStolen = TRUE;
+                } else if (entry->battleInfo.stolenItems[5] != 0) {
+                    hasStolen = TRUE;
+                } else if (entry->battleInfo.stolenItems[6] != 0) {
+                    hasStolen = TRUE;
+                } else if (entry->battleInfo.stolenItems[7] != 0) {
+                    hasStolen = TRUE;
+                }
+                fbatData->mode = 1;
+                if (result == 1 || result == 2) {
+                    mult = 1;
+                    if ((s32)BattleInformationGetResult(info) == 1) {
+                        entry->btlCoinDropCount = *(u32*)&info->field_0x14[0];
+                    } else if (result == 1) {
+                        entry->btlCoinDropCount = entry->field_316;
+                    } else {
+                        mult = 0;
+                        entry->btlCoinDropCount = 0;
+                        goto after;
+                    }
+                    if (fbatData->field_54C[0]) {
+                        mult = 3;
+                    }
+                    if (pouchEquipCheckBadge(ITEM_MONEY_MONEY)) {
+                        mult += pouchEquipCheckBadge(ITEM_MONEY_MONEY);
+                    }
+                    if (entry->battleInfo.field_4 & 0x100) {
+                        mult++;
+                    }
+                after:
+                    entry->btlCoinDropCount *= mult;
+                    if (!hasStolen) {
+                        npcGroupDead(entry, 0);
+                    } else {
+                        if (entry->flags & 0x400) {
+                            entry->field_108 = 0;
+                        }
+                        entry->wFbatHitCheckRelated = 0x5A;
+                        *(s32*)entry->field_140 &= ~0x100;
+                        *(s32*)entry->field_140 |= 0x10000000;
+                        if (entry->flags & 0x200) {
+                            animPoseSetAnim(entry->poseId, entry->currentAnim, TRUE);
+                        }
+                        npcGetBackItemEntry(entry);
+                    }
+                } else if (result == 4) {
+                    if (entry->flags & 0x400) {
+                        entry->field_108 = 0;
+                    }
+                    *(s32*)entry->field_140 |= 0x10000000;
+                    marioSetMutekiTime(3000);
+                    *(s16*)((u8*)mario + 0x2C0) = sysMsec2Frame(3000);
+                    if (entry->flags & 0x200) {
+                        animPoseSetAnim(entry->poseId, entry->currentAnim, TRUE);
+                    }
+                }
             }
             break;
     }

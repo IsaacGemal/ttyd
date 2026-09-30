@@ -71,8 +71,67 @@ extern Vec vec3_803011e8[];
 // -1 sentinel written to entry+0x3C.
 extern s32 dat_804221f8;
 extern s32 dat_804221f4;
+extern s32 dat_804221f0;
 extern f32 float_0_80422214;
 extern f32 float_4_80422218;
+
+BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
+	Vec* vec = vec3_803011e8;
+	s32 type = disp->id;
+	s32 turnCount;
+	s8 turns;
+	s8 strength;
+
+	if (_battleWorkPointer->flags & 0x10000) {
+		if (type != 1) {
+#ifdef MUST_MATCH
+			if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+			if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
+				return FALSE;
+			}
+		}
+		if (!(unit->currentKind >= 1 && unit->currentKind < 0xD8) &&
+		    !(unit->currentKind >= 0xDE && unit->currentKind < 0xE0) &&
+		    !(unit->currentKind >= 0xE0 && unit->currentKind < 0xE7)) {
+			return FALSE;
+		}
+	}
+	else {
+#ifdef MUST_MATCH
+		if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+		if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
+			return FALSE;
+		}
+	}
+
+#ifdef MUST_MATCH
+	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
+	*(s32*)((u8*)entry + 0x0) = type;
+#ifdef MUST_MATCH
+	turnCount = -turns;
+	if (turns >= 0) {
+		turnCount = turns;
+	}
+#else
+	turnCount = turns < 0 ? -turns : turns;
+#endif
+	*(s32*)((u8*)entry + 0x4) = turnCount;
+	*(s32*)((u8*)entry + 0x8) = disp->something;
+	*(Vec*)((u8*)entry + 0xC) = vec[0];
+	*(Vec*)((u8*)entry + 0x18) = vec[1];
+	*(Vec*)((u8*)entry + 0x24) = vec[2];
+	*(s32*)((u8*)entry + 0x3C) = dat_804221f0;
+	*(s32*)((u8*)entry + 0x40) = disp->something2;
+	*(Vec*)((u8*)entry + 0x30) = vec[3];
+	return TRUE;
+}
 
 BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	Vec* vec = vec3_803011e8;

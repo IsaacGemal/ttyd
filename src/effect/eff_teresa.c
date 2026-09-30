@@ -4,6 +4,7 @@
 #include "eff/eff_kemutest.h"
 #include "memory.h"
 #include "pmario_sound.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 const char str_802FE944[] = "Teresa";
@@ -18,6 +19,11 @@ extern const f32 float_30_8042157c;
 extern const f32 float_3_80421580;
 extern const f32 float_0p98_80421584;
 extern const f32 float_0_8042155c;
+GXColor unk_80423328;
+const GXColor dat_80421548 = { 0xFF, 0xFF, 0xFF, 0 };
+const f32 float_deg2rad_8042154c = 0.01745329252f;
+const f32 float_32_80421550 = 32.0f;
+const f32 float_0p5_80421554 = 0.5f;
 
 EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -99,4 +105,79 @@ void effTeresaMain(EffectEntry* effect) {
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effTeresaDisp, effect);
+}
+
+// The original loads these .sdata2 constants at runtime; a plain read lets MWCC
+// fold them into immediates. The volatile read is a MUST_MATCH device only.
+#ifdef MUST_MATCH
+#define READ_RODATA(x) (*(volatile const f32*)&x)
+#else
+#define READ_RODATA(x) (x)
+#endif
+
+// NONMATCHING (99.98%): the type==0 GXSetChanMatColor color local and its outgoing argument
+// copy live in stack slots 0x14/0x10 here; the original uses 0x10/0x14 (everything else matches).
+void effTeresaDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	EffTeresaData* data = effect->userdata;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	GXColor color;
+	Mtx mtx98;
+	Mtx mtx68;
+	Mtx mtx38;
+	s32 type;
+	f32 negSize;
+	f32 posSize;
+
+	cam = camGetPtr(camId);
+	type = data->type;
+	effGetTexObj(0x45, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	if (type == 0) {
+		color = dat_80421548;
+		color.a = data->alpha;
+		GXSetChanMatColor(4, color);
+	} else {
+		color = unk_80423328;
+		color.a = data->alpha;
+		GXSetChanMatColor(4, color);
+	}
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaIn(0, 7, 5, 4, 7);
+	PSMTXTrans(mtx98, data->x, data->y, data->z);
+	PSMTXRotRad(mtx68, 'y', READ_RODATA(float_deg2rad_8042154c) * -camGetPtr(camId)->viewYaw);
+	PSMTXConcat(mtx98, mtx68, mtx98);
+	PSMTXScale(mtx38, data->scale, data->scale, data->scale);
+	PSMTXConcat(mtx98, mtx38, mtx98);
+	PSMTXRotRad(mtx68, 'z', READ_RODATA(float_deg2rad_8042154c) * data->angle);
+	PSMTXConcat(mtx98, mtx68, mtx98);
+	PSMTXConcat(cam->view, mtx98, mtx98);
+	GXLoadPosMtxImm(mtx98, 0);
+	GXSetCurrentMtx(0);
+	GXSetCullMode(0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xD, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXBegin(0x80, 0, 4);
+	negSize = -READ_RODATA(float_32_80421550) * READ_RODATA(float_0p5_80421554);
+	posSize = 16.0f;
+	GXPosition3f32(negSize, posSize, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(posSize, posSize, 0.0f);
+	GXTexCoord2f32(2.0f, 0.0f);
+	GXPosition3f32(posSize, negSize, 0.0f);
+	GXTexCoord2f32(2.0f, 2.0f);
+	GXPosition3f32(negSize, negSize, 0.0f);
+	GXTexCoord2f32(0.0f, 2.0f);
 }

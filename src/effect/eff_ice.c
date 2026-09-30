@@ -1,7 +1,11 @@
 #include "eff/eff_ice.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/eff_kemutest.h"
+#include "mario/mariost.h"
 #include "memory.h"
+#include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -32,8 +36,7 @@ typedef struct IceMayaAnim {
 	u16 flags;                  // 0x00
 	u8 pad_02[2];               // 0x02
 	f32 frame;                  // 0x04
-	u32 timeLo;                 // 0x08
-	u32 timeHi;                 // 0x0C
+	OSTime time;                // 0x08
 	IceAnimData* animData;      // 0x10
 	IceMayaAnimEntry entries[]; // 0x14
 } IceMayaAnim;
@@ -62,6 +65,10 @@ extern const f32 float_30_8041e3f8;
 extern const f32 float_8_8041e3fc;
 extern const f32 float_191p25_8041e400;
 extern const f32 float_127p5_8041e404;
+extern const f32 float_1000_8041e408;
+extern const f32 float_40_8041e40c;
+extern const f32 float_0p99_8041e410;
+extern const f32 float_1p005_8041e414;
 
 extern const char str_8041E418[];
 extern u32 ice_effAnimRSTDt[];
@@ -70,6 +77,8 @@ __declspec(section ".sdata") u32 ice_effAnimDt[] = { 0x00000000, 0x42EE0000, (u3
 
 // effIceMain is local to this file in the original object (.fn effIceMain, local).
 static void effIceMain(EffectEntry* effect);
+// effIceDisp is local to this file in the original object (.fn effIceDisp, local).
+static void effIceDisp(CameraId cameraId, void* param);
 
 EffectEntry* effIceEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
@@ -100,6 +109,84 @@ EffectEntry* effIceEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
 	data->anim = effMayaAnimAlloc(ice_effAnimDt);
 	effPlayMayaAnim(data->anim);
 	return effect;
+}
+
+// effIceMain is local to this file in the original object (.fn effIceMain, local).
+static void effIceMain(EffectEntry* effect) {
+	Vec pos;
+	Vec disp = { 0 };
+	OSTime time;
+	u64 msecPerFrame;
+	IceData* data = effect->userdata;
+
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
+	pos = disp;
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->frame = 90;
+		data->state = 1;
+		if (gp->inBattle != 0) {
+			time = gp->renderTime;
+		} else {
+			time = gp->renderFieldTime;
+		}
+		msecPerFrame = (u64)(float_1000_8041e408 / (f32)gp->framerate);
+		data->anim->time = OSTicksToMilliseconds(time) - msecPerFrame * data->frame;
+	}
+
+	switch (data->state) {
+	case 0:
+		if (data->timer < 1000) {
+			data->timer--;
+		}
+		if (data->timer == 0) {
+			data->state = 1;
+		}
+		if (data->frame < 90) {
+			data->frame++;
+			effCalcMayaAnim(data->anim);
+		}
+		break;
+	case 1:
+		data->frame++;
+		effCalcMayaAnim(data->anim);
+		break;
+	case 2:
+		data->frame++;
+		if (data->frame % 30 == 0) {
+			f32 argx = data->x + (f32)(20 - irand((s32)(float_40_8041e40c * data->scale)));
+
+			effKemuTestEntry(1, argx,
+				data->y - float_30_8041e3f8 * (float_1_8041e3f4 - data->scaleY), data->z, float_1_8041e3f4);
+		}
+		data->scaleY *= float_0p99_8041e410;
+		data->scaleX *= float_1p005_8041e414;
+		data->scaleZ *= float_0p99_8041e410;
+		break;
+	}
+
+	switch (data->state) {
+	case 0:
+	case 1:
+		if ((f32)data->frame > data->anim->animData->unk04) {
+			effDeleteMayaAnim(data->anim);
+			effDelete(effect);
+			return;
+		}
+		break;
+	case 2:
+		if (data->frame > 200) {
+			effDeleteMayaAnim(data->anim);
+			effDelete(effect);
+			return;
+		}
+		break;
+	}
+
+	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effIceDisp, effect);
 }
 
 // effIceDisp is local to this file in the original object (.fn effIceDisp, local).

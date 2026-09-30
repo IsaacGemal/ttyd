@@ -20,6 +20,9 @@
 #include "battle/sac/sac_deka.h"
 #include "eff/n64/eff_stamp_n64.h"
 #include "eff/eff_stardust.h"
+#include "eff/n64/eff_stardust_n64.h"
+#include "eff/eff_hit.h"
+#include "pmario_sound.h"
 static void main_base(void);  // local to this file in the original
 static void disp_3D(CameraId cameraId, void* param);  // local to this file in the original
 
@@ -47,6 +50,7 @@ extern f32 float_neg1000_80421d88;
 extern f32 float_1_80421d74;
 extern f32 float_901_80421e28;
 extern const f32 vec3_803002b0[];
+extern const Vec vec3_803002bc;
 extern f32 float_37_80421d8c;
 extern f32 float_50_80421d90;
 extern f32 float_neg1_80421d94;
@@ -74,6 +78,9 @@ extern f32 float_28_80421dec;
 extern f32 float_0p15_80421df0;
 extern f32 float_250_80421df4;
 extern f32 float_1E07_80421df8;
+extern f32 float_344_80421dfc;
+extern f32 float_576_80421e00;
+extern f32 float_1296_80421e04;
 extern f32 float_1p125_80421e08;
 extern char str_80300470[];
 
@@ -116,24 +123,19 @@ typedef struct GenkiObject {
     u8 pad_18[0x2C - 0x18];     // 0x18
 } GenkiObject;                  // 0x2C
 
+typedef struct GenkiEffect {
+    s32 field_0;                // 0x0
+    s32 field_4;                // 0x4
+    s32 field_8;                // 0x8
+    s32 field_C;                // 0xC
+    f32 field_10;               // 0x10
+} GenkiEffect;                  // 0x14
+
 typedef struct GenkiWeapon {
     s32 field_0;                // 0x0
     s32 field_4;                // 0x4
-    f32 field_8;                // 0x8
-    f32 field_C;                // 0xC
-    f32 field_10;               // 0x10
-    f32 field_14;               // 0x14
-    f32 field_18;               // 0x18
-    f32 field_1C;               // 0x1C
-    f32 field_20;               // 0x20
-    f32 field_24;               // 0x24
-    f32 field_28;               // 0x28
-    f32 field_2C;               // 0x2C
-    f32 field_30;               // 0x30
-    f32 field_34;               // 0x34
-    f32 field_38;               // 0x38
-    f32 field_3C;               // 0x3C
-    f32 field_40;               // 0x40
+    Vec pos[4];                 // 0x8, current position then 3 trail positions
+    Vec vel;                    // 0x38
     EffectEntry* field_44;      // 0x44
     EffectEntry* field_48[3];   // 0x48
 } GenkiWeapon;                  // 0x54
@@ -166,7 +168,10 @@ typedef struct GenkiWork {
     s32 field_68;               // 0x68
     f32 field_6C;               // 0x6C
     f32 field_70;               // 0x70
-    u8 pad_74[0x10C - 0x74];    // 0x74
+    s32 field_74;               // 0x74
+    s32 field_78;               // 0x78
+    s32 field_7C;               // 0x7C
+    GenkiEffect field_80[7];    // 0x80
     GenkiWeapon weapon[7];      // 0x10C
     GenkiObject objects[10];    // 0x358
     GenkiStar stars[7];         // 0x510
@@ -468,6 +473,238 @@ void main_mario(void) {
         break;
     case 5:
         break;
+    }
+}
+
+// The file's incomplete .rodata pool (same limitation as main_star1) makes MWCC emit the
+// int->float magic double and the two switch jump tables as anonymous `@...@` entries instead of
+// double_to_int_80300468 / jumptable_803B3C40 / jumptable_803B3C24. All other differences are
+// register allocation and instruction scheduling.
+// NONMATCHING (91.58%): the anonymous pool entries listed above.
+void main_weapon(s32 idx) {
+    const f32* vec = vec3_803002b0;
+    GenkiWork* genki = get_ptr();
+    GenkiWeapon* weapon = &genki->weapon[idx];
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    f32 angle = float_3p1416_80421d48 * (float_2_80421d70 * genki->field_6C) / float_360_80421de8;
+    s32 audienceNum = BattleAudience_GetAudienceNum();
+    s32 i;
+
+    for (i = 2; i > 0; i--) {
+        weapon->pos[i + 1] = weapon->pos[i];
+    }
+    weapon->pos[1] = weapon->pos[0];
+
+    switch (weapon->field_0) {
+    case 0:
+        weapon->pos[0] = *(const Vec*)&vec[0];
+        break;
+    case 1:
+        weapon->field_4--;
+        if (weapon->field_4 >= 0) {
+            break;
+        }
+        weapon->field_0 = 2;
+        BtlUnit_GetPos(mario, &weapon->pos[0].x, &weapon->pos[0].y, &weapon->pos[0].z);
+        weapon->pos[0].x += float_20_80421d78 * mario->mSizeMultiplier;
+        weapon->pos[0].y += float_28_80421dec * mario->mSizeMultiplier;
+        {
+            Vec vel = vec3_803002bc;
+
+            vel.x = float_10_80421d54 * (f32)cos(angle);
+            vel.y = float_10_80421d54 * (f32)sin(angle);
+            weapon->vel = vel;
+        }
+        for (i = 0; i < 7; i++) {
+            GenkiEffect* eff = &genki->field_80[i];
+
+            if (eff->field_0 <= 0) {
+                eff->field_0 = 0x1E;
+                eff->field_4 = genki->field_74;
+                eff->field_8 = genki->field_78;
+                eff->field_C = genki->field_7C;
+                eff->field_10 = float_2_80421d70 * (f32)genki->field_68;
+                break;
+            }
+        }
+        BtlUnit_snd_se(mario, str_80300470, 0xF1194D80, 0);
+        /* fallthrough */
+    case 2:
+        weapon->pos[0].x += weapon->vel.x;
+        weapon->pos[0].y += weapon->vel.y;
+        weapon->vel.y -= float_0p15_80421df0;
+        {
+            f32 x, y, z;
+
+            BtlUnit_GetPos(mario, &x, &y, &z);
+            if (weapon->pos[0].x >= float_250_80421df4 || weapon->pos[0].y >= float_180_80421d4c ||
+                weapon->pos[0].y <= y) {
+                weapon->field_0 = 3;
+                break;
+            }
+            {
+                GenkiObject* obj;
+                f32 best = float_1E07_80421df8;
+                s32 found = -1;
+                f32 wx = weapon->pos[0].x;
+                f32 wy = weapon->pos[0].y;
+
+                for (i = 0; i < 10; i++) {
+                    obj = &genki->objects[i];
+
+                    if (obj->field_0 == 2) {
+                        f32 dy = wy - obj->field_10;
+                        f32 dx = wx - obj->field_C;
+                        f32 d = dy * dy + dx * dx;
+
+                        if (d < best) {
+                            best = d;
+                            found = i;
+                        }
+                    }
+                }
+                if (found == -1) {
+                    break;
+                }
+                obj = &genki->objects[found];
+                {
+                    f32 threshold;
+
+                    switch (obj->field_8) {
+                    case 6:
+                        threshold = float_344_80421dfc;
+                        break;
+                    case 0:
+                    case 2:
+                    case 4:
+                        threshold = float_576_80421e00;
+                        break;
+                    default:
+                        threshold = float_1296_80421e04;
+                        break;
+                    }
+                    if (best <= threshold && obj->field_10 <= float_200_80421d9c) {
+                        weapon->field_0 = 3;
+                        obj->field_0 = 3;
+                effStardustN64Entry(5, obj->field_C, obj->field_10, obj->field_14,
+                                    float_10_80421d54);
+                effHitEntry(0, 5, obj->field_C, obj->field_10, obj->field_14, float_1_80421d74);
+                switch (obj->field_8) {
+                case 0:
+                    psndSFXOn_3D((const char*)0xA64, &weapon->pos[0]);
+                    genki->score[0] += 1;
+                    if (genki->score[0] >= 99) {
+                        genki->score[0] = 99;
+                    }
+                    break;
+                case 1:
+                    psndSFXOn_3D((const char*)0xA66, &weapon->pos[0]);
+                    genki->score[0] += 3;
+                    if (genki->score[0] >= 99) {
+                        genki->score[0] = 99;
+                    }
+                    break;
+                case 2:
+                    psndSFXOn_3D((const char*)0xA64, &weapon->pos[0]);
+                    genki->score[1] += 1;
+                    if (genki->score[1] >= 99) {
+                        genki->score[1] = 99;
+                    }
+                    break;
+                case 3:
+                    psndSFXOn_3D((const char*)0xA66, &weapon->pos[0]);
+                    genki->score[1] += 3;
+                    if (genki->score[1] >= 99) {
+                        genki->score[1] = 99;
+                    }
+                    break;
+                case 4:
+                    psndSFXOn_3D((const char*)0xA65, &weapon->pos[0]);
+                    genki->score[2] += 1;
+                    if (genki->score[2] >= 99) {
+                        genki->score[2] = 99;
+                    }
+                    break;
+                case 5:
+                    psndSFXOn_3D((const char*)0xA67, &weapon->pos[0]);
+                    genki->score[2] += 3;
+                    if (genki->score[2] >= 99) {
+                        genki->score[2] = 99;
+                    }
+                    break;
+                case 6:
+                    psndSFXOn_3D((const char*)0xA68, &weapon->pos[0]);
+                    genki->field_44 = 3;
+                    break;
+                }
+                switch (obj->field_8) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                    if (audienceNum >= 1 && audienceNum <= 0x31) {
+                        BattleAudienceSoundCallKind(1);
+                    }
+                    if (audienceNum >= 0x32 && audienceNum <= 0x63) {
+                        BattleAudienceSoundCallKind(1);
+                        BattleAudienceSoundHandBeat();
+                    }
+                    if (audienceNum >= 0x64 && audienceNum <= 0x95) {
+                        BattleAudienceSoundCallKind(2);
+                    }
+                    if (audienceNum >= 0x96) {
+                        BattleAudienceSoundCallKind(2);
+                        BattleAudienceSoundHandBeat();
+                    }
+                    break;
+                case 6:
+                    if (audienceNum >= 1 && audienceNum <= 0x31) {
+                        BattleAudienceSoundBooingKind(1);
+                    }
+                    if (audienceNum >= 0x32 && audienceNum <= 0x63) {
+                        BattleAudienceSoundBooingKind(1);
+                    }
+                    if (audienceNum >= 0x64 && audienceNum <= 0x95) {
+                        BattleAudienceSoundBooingKind(2);
+                    }
+                    if (audienceNum >= 0x96) {
+                        BattleAudienceSoundBooingKind(3);
+                    }
+                    break;
+                }
+                }
+            }
+        }
+        }
+        break;
+    case 3:
+        weapon->field_0 = 0;
+        break;
+    }
+
+    {
+        f32 scale = float_1p125_80421e08;
+
+        if (weapon->field_44 != NULL) {
+            effStarStoneData* data = (effStarStoneData*)weapon->field_44->userdata;
+
+            data->field_0x8 = weapon->pos[0].x;
+            data->field_0xC = weapon->pos[0].y;
+            data->field_0x10 = weapon->pos[0].z;
+            data->field_0x14 = scale;
+            data->field_0x5F = 0xFF;
+        }
+        for (i = 0; i < 3; i++) {
+            effStarStoneData* data = (effStarStoneData*)weapon->field_48[i]->userdata;
+
+            data->field_0x8 = weapon->pos[i + 1].x;
+            data->field_0xC = weapon->pos[i + 1].y;
+            data->field_0x10 = weapon->pos[i + 1].z;
+            data->field_0x14 = scale;
+            data->field_0x5F = 0xFF - (i + 1) * 0x32;
+        }
     }
 }
 

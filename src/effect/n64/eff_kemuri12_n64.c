@@ -1,13 +1,25 @@
 #include "eff/n64/eff_kemuri12_n64.h"
 #include "driver/dispdrv.h"
+#include "eff/eff_n64.h"
 #include "memory.h"
 #include "system.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 // .sdata2 float constants (named after their original addresses).
+const f32 float_256_8041f548 = 256.0f;
+const f32 float_deg2rad_8041f54c = 0.017453292f;
+const f32 float_0p34907_8041f550 = 0.34906584f;
+const f32 float_0p0039062_8041f554 = 0.00390625f;
+const f32 float_0p03125_8041f558 = 0.03125f;
 extern const f32 float_0_8041f55c;
+const f32 float_32_8041f560 = 32.0f;
 const f32 float_8_8041f564 = 8.0f;
+
+// .sbss2 zero GXColor scratch objects the original builds its TEV colors from.
+GXColor unk_80423190;
+GXColor unk_80423194;
 
 // .rodata constants (named after their original addresses).
 const Vec vec3_802faa28 = { 0.0f, 0.0f, 0.0f };
@@ -25,6 +37,22 @@ typedef struct effKemuri12Data {
     f32 field_0x20;  // 0x20
     u8 color[4];     // 0x24
 } effKemuri12Data;
+
+// .data vertex data for the two Kemuri12 quad meshes. The original keeps the
+// first object local and the second global; kept as words and cast at the call.
+static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
+    0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010, 0xFFF00000, 0xFC000000, 0x000000FF,
+    0x00100010, 0x0000FC00, 0x04000000, 0x00FFFFF0, 0x00100000, 0x00000400, 0x000000FF,
+};
+
+u32 size32x32_tex32x32_yougan_vtx[0xA8 / 4] = {
+    0xFFF0FFF0, 0x000F0000, 0x00000000, 0x00FF0010, 0xFFF0000F, 0xFC000000, 0x000000FF,
+    0x00100010, 0x000FFC00, 0x04000000, 0x00FFFFF0, 0x0010000F, 0x00000400, 0x000000FF,
+    0xFFFAFFF0, 0xFFF10000, 0x00000000, 0x00FF001A, 0xFFF0FFF1, 0xFC000000, 0x000000FF,
+    0x001A0010, 0xFFF1FC00, 0x04000000, 0x00FFFFFA, 0x0010FFF1, 0x00000400, 0x000000FF,
+    0xFFE6FFF0, 0xFFF10000, 0x00000000, 0x00FF0006, 0xFFF0FFF1, 0xFC000000, 0x000000FF,
+    0x00060010, 0xFFF1FC00, 0x04000000, 0x00FFFFE6, 0x0010FFF1, 0x00000400, 0x000000FF,
+};
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 static inline Vec initializeVec(Vec* input) {
@@ -96,4 +124,120 @@ void effKemuri12Main(EffectEntry* effect) {
     }
 
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri12Disp, e);
+}
+
+// NONMATCHING (98.31%): the two GXColor temps get 4-byte local/arg stack slots
+// (original builds each as an 8-byte local+arg pair at r1+0x8/0xc and 0x10/0x14),
+// and the else-branch PSMTXTrans int->float conversion schedules addi/xoris/lis differently.
+void effKemuri12Disp(CameraId camId, void* param) {
+    EffectEntry* effect;
+    effKemuri12Data* data;
+    CameraEntry* cam;
+    GXTexObj texobj;
+    Mtx m0, m1, m2;
+    GXColor color[2];
+    s32 type;
+    s32 ia;
+    s32 scaled;
+    s32 frac256;
+    s32 isLast;
+    u32* vtx;
+
+    effect = param;
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+    type = data->type;
+    ia = (s32)data->field_0x20;
+    frac256 = (s32)(float_256_8041f548 * (data->field_0x20 - (f32)ia));
+    isLast = (ia == 7) ? 1 : 0;
+
+    GXSetNumChans(0);
+    GXSetNumTevStages(3);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A1, GX_CA_ZERO);
+    GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+    effGetTexObjN64(0xE, &texobj);
+    GXLoadTexObj(&texobj, GX_TEXMAP0);
+    GXLoadTexObj(&texobj, GX_TEXMAP1);
+
+    PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
+    PSMTXRotRad(m2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041f54c);
+    PSMTXScale(m1, data->field_0x10, data->field_0x10, data->field_0x10);
+    PSMTXConcat(m0, m2, m0);
+    PSMTXConcat(m0, m1, m0);
+    PSMTXRotRad(m2, 'z', float_0p34907_8041f550);
+    PSMTXConcat(m0, m2, m0);
+    PSMTXConcat(cam->view, m0, m0);
+    GXLoadPosMtxImm(m0, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
+
+    color[0] = unk_80423190;
+    color[0].r = data->color[0];
+    color[0].g = data->color[1];
+    color[0].b = data->color[2];
+    color[0].a = data->color[3];
+    GXSetTevColor(GX_TEVREG0, color[0]);
+    color[1] = unk_80423194;
+    color[1].a = frac256;
+    GXSetTevColor(GX_TEVREG1, color[1]);
+
+    GXSetNumTexGens(2);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
+
+    scaled = ia * 32;
+    PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
+    PSMTXTrans(m0, (f32)scaled, float_0_8041f55c, float_0_8041f55c);
+    PSMTXConcat(m1, m0, m1);
+    GXLoadTexMtxImm(m1, GX_TEXMTX0, GX_MTX2x4);
+    if (isLast) {
+        PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
+        PSMTXTrans(m0, (f32)(scaled + 32), float_32_8041f560, float_0_8041f55c);
+        PSMTXConcat(m1, m0, m1);
+        GXLoadTexMtxImm(m1, GX_TEXMTX1, GX_MTX2x4);
+    }
+    else {
+        PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
+        PSMTXTrans(m0, (f32)(scaled + 32), float_0_8041f55c, float_0_8041f55c);
+        PSMTXConcat(m1, m0, m1);
+        GXLoadTexMtxImm(m1, GX_TEXMTX1, GX_MTX2x4);
+    }
+
+    switch (type) {
+    case 0:
+    case 2:
+        vtx = size32x32_tex32x32_vtx;
+        break;
+    default:
+        vtx = size32x32_tex32x32_yougan_vtx;
+        break;
+    }
+    GXSetCullMode(GX_CULL_NONE);
+    effSetVtxDescN64((effVtxArray*)vtx);
+
+    switch (type) {
+    case 0:
+    case 2:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
+        break;
+    default:
+        GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x12);
+        tri2(8, 9, 10, 0, 8, 10, 11, 0);
+        tri2(4, 5, 6, 0, 4, 6, 7, 0);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
+        break;
+    }
 }

@@ -1,8 +1,12 @@
 #include "eff/n64/eff_timestamp_n64.h"
 #include "driver/dispdrv.h"
+#include "eff/eff_n64.h"
 #include "memory.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <dolphin/os/OSCache.h>
+#include <math.h>
 
 typedef struct effTimestampN64Data {
 	s32 type;            // 0x0
@@ -30,8 +34,23 @@ typedef struct effTimestampN64Data {
 
 // .rodata / .sdata2 constants (float constants referenced through the linker)
 const f64 double_to_int_802fb8c8 = 4503601774854144.0;
-extern const f32 float_0_804200b8;
-extern const f32 float_1_804200d4;
+const f64 double_to_int_mask_802fb8d0 = 4503599627370496.0;
+
+// .sdata local tables used only by effTimestampDisp.
+static u8 scale_data[4] = { 0x78, 0x50, 0x28, 0x3C };
+static u8 colr[20] = {
+	0xFF, 0xFF, 0xFF, 0xC6, 0x8A, 0x82, 0x82, 0x82, 0x82, 0x82,
+	0xAF, 0xD7, 0xFA, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00,
+};
+static u8 colg[20] = {
+	0x82, 0x82, 0x82, 0x82, 0x82, 0xA5, 0xD5, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xE1, 0xC6, 0x9F, 0x82, 0x00, 0x00, 0x00,
+};
+static u8 colb[20] = {
+	0x82, 0xC4, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xCA, 0x90,
+	0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x00, 0x00, 0x00,
+};
+
 
 // .rodata
 const char str_802FB8D8[16] = "TimestampN64";
@@ -163,4 +182,128 @@ void effTimestampMain(EffectEntry* effect) {
 #else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effTimestampDisp, effect);
 #endif
+}
+
+// NONMATCHING (96.63%): integer register allocation differs; the s32->f32 and /255 constants are
+// pool-loaded instead of double_to_int_802fb8c8 and lis 0x8081/subi 0x7f7f; tri2's u16 prototype forces clrlwi. See REPORT.md.
+void effTimestampDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	CameraEntry* cam = camGetPtr(camId);
+	s32 timer;
+	s32 texT;
+	s32 counter;
+	effTimestampN64Data* data;
+	effTimestampVtx* base;
+	s32 angleA;
+	s32 i;
+	s32 offset;
+	s32 angleB;
+	effTimestampVtx* vtx;
+	Mtx trans;
+	Mtx scale;
+	Mtx rot;
+	Mtx work;
+	GXTexObj texObj;
+	GXColor colorDisp;
+	GXColor color;
+	smartEntry* entry;
+	s32 j;
+	f32 scaleF;
+	s32 valA;
+	s32 valB;
+
+	data = effect->userdata;
+	timer = data->field_0x14;
+	counter = data->field_0x24;
+	PSMTXTrans(trans, data->x, data->y, data->z);
+	scaleF = data->scale;
+	PSMTXScale(scale, scaleF, scaleF, scaleF);
+	PSMTXConcat(trans, scale, work);
+	PSMTXRotRad(rot, 'y', float_deg2rad_804200b0 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(work, rot, work);
+	PSMTXConcat(cam->view, work, work);
+	GXSetNumChans(0);
+	GXSetNumTevStages(2);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_ONE, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ONE, GX_CC_A1, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_TEXA, GX_CA_A0, GX_CA_ZERO);
+	effGetTexObjN64(0x5A, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	effGetTexObjN64(0x5B, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	scaleF = float_0p015625_804200b4;
+	PSMTXScale(scale, scaleF, scaleF, float_0_804200b8);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+	color = unk_804232b0;
+	color.a = data->field_0x2c;
+	GXSetTevColor(GX_TEVREG1, color);
+	entry = smartAlloc(0x1C0, HEAP_EFFECT);
+	base = entry->address;
+	vtx = base;
+	angleA = timer * 10;
+	angleB = angleA;
+	offset = 0;
+	texT = 0;
+	for (i = 0; i < 16; i++, vtx += 2) {
+		scaleF = data->field_0x30;
+		valA = (s32)(scaleF * (float_500_804200c4 * (f32)sin(float_6p2832_804200bc * (f32)angleA / float_360_804200c0)));
+		valB = (s32)(scaleF * (float_200_804200c8 * (f32)sin(float_6p2832_804200bc * (f32)angleB / float_360_804200c0)));
+		vtx[0].x = valA - 3200;
+		vtx[0].y = valB + offset - 3000;
+		vtx[0].z = 0;
+		vtx[0].s = 0;
+		vtx[0].t = texT;
+		vtx[1].x = valA + 3200;
+		vtx[1].y = valB + offset - 3000;
+		vtx[1].z = 0;
+		vtx[1].s = 0x800;
+		vtx[1].t = texT;
+		angleA += 60;
+		angleB += 6;
+		offset += 400;
+		texT += 0x80;
+	}
+	DCFlushRange(base, 0x1C0);
+	GXInvalidateVtxCache();
+	GXSetCullMode(GX_CULL_NONE);
+	effSetVtxDescN64((effVtxArray*)base);
+	for (i = 0; i < 10; i++) {
+		PSMTXTrans(trans, data->posX[i], data->posY[i], data->posZ[i]);
+		scaleF = float_0p01_804200cc * (f32)scale_data[i % 4];
+		PSMTXScale(scale, scaleF, scaleF, scaleF);
+		PSMTXConcat(trans, scale, trans);
+		PSMTXRotRad(rot, 'x', float_deg2rad_804200b0 * data->rotX[i]);
+		PSMTXConcat(trans, rot, trans);
+		PSMTXRotRad(rot, 'y', float_deg2rad_804200b0 * data->rotY[i]);
+		PSMTXConcat(trans, rot, trans);
+		PSMTXRotRad(rot, 'z', float_deg2rad_804200b0 * data->rotZ[i]);
+		PSMTXConcat(trans, rot, trans);
+		scaleF = float_0p01_804200cc;
+		PSMTXScale(scale, scaleF, scaleF, scaleF);
+		PSMTXConcat(trans, scale, trans);
+		PSMTXConcat(work, trans, trans);
+		GXLoadPosMtxImm(trans, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		colorDisp = unk_804232b4;
+		colorDisp.r = colr[i];
+		colorDisp.g = colg[i];
+		colorDisp.b = colb[i];
+		colorDisp.a = (counter * data->field_0x124[i]) / 255;
+		GXSetTevColor(GX_TEVREG0, colorDisp);
+		texT = 0;
+		for (j = 0; j < 15; j++, texT += 2) {
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+			tri2(texT, texT + 2, texT + 1, texT, texT + 1, texT + 2, texT + 3, texT);
+		}
+	}
 }

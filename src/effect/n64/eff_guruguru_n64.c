@@ -1,10 +1,22 @@
 #include "eff/n64/eff_guruguru_n64.h"
 #include "driver/dispdrv.h"
+#include "eff/eff_n64.h"
 #include "memory.h"
 #include "system.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <math.h>
+
+// .sdata2 constants belonging to this unit, referenced by name in the original asm.
+extern const f32 float_deg2rad_8041f0ac;
+extern const GXColor dat_8041f0a8;
+
+// .data: retail 16x16 quad vertex array used by effGuruguruDisp.
+static u32 size16x16_tex32x32_vtx[14] = {
+    0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x00400000, 0x000000FF,
+    0x00080008, 0x00000040, 0x00200000, 0x00FFFFF8, 0x00080000, 0x00000020, 0x000000FF,
+};
 
 // .rodata: scratch vector the original zeroes before filling in the effect position.
 const Vec vec3_802fa720 = { 0.0f, 0.0f, 0.0f };
@@ -86,5 +98,63 @@ void effGuruguruMain(EffectEntry* effect) {
         }
 
         dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effGuruguruDisp, effect);
+    }
+}
+
+void effGuruguruDisp(CameraId camId, void* param) {
+    EffectEntry* effect;
+    EffGuruguruData* data;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    GXColor color;
+    Mtx mtx0;
+    Mtx mtx1;
+    Mtx scaleMtx;
+    Mtx mtx2;
+    f32 deg2rad;
+    s32 i;
+
+    effect = param;
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+
+    if (data->field_0x28 != 0) {
+        GXSetNumChans(0);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3c, GX_FALSE, 0x7d);
+        effGetTexObjN64(0x1d, &texObj);
+        GXLoadTexObj(&texObj, GX_TEXMAP0);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+        GXSetCullMode(GX_CULL_NONE);
+        effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+
+        PSMTXTrans(mtx0, data->field_0x04, data->field_0x08, data->field_0x0C);
+        PSMTXRotRad(mtx1, 'y', float_deg2rad_8041f0ac * -camGetPtr(CAMERA_3D)->viewYaw);
+        PSMTXScale(scaleMtx, data->field_0x2C, data->field_0x2C, data->field_0x2C);
+        PSMTXConcat(mtx0, mtx1, mtx2);
+        PSMTXConcat(mtx2, scaleMtx, mtx2);
+        PSMTXConcat(cam->view, mtx2, mtx2);
+
+        color = dat_8041f0a8;
+        GXSetTevColor(GX_TEVREG0, color);
+
+        deg2rad = float_deg2rad_8041f0ac;
+        i = 1;
+        data++;
+        for (; i < effect->count; i++, data++) {
+            PSMTXTrans(mtx0, data->field_0x04, data->field_0x08, data->field_0x0C);
+            PSMTXRotRad(mtx1, 'z', deg2rad * data->field_0x18);
+            PSMTXConcat(mtx0, mtx1, mtx0);
+            PSMTXConcat(mtx2, mtx0, mtx0);
+            GXLoadPosMtxImm(mtx0, GX_PNMTX0);
+            GXSetCurrentMtx(GX_PNMTX0);
+            GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+            tri2(0, 1, 2, 0, 0, 2, 3, 0);
+        }
     }
 }

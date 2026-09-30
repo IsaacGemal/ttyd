@@ -1,6 +1,19 @@
 #include "battle/battle_ac_help.h"
 #include "battle/battle.h"
 #include "battle/battle_audience.h"
+#include "driver/msgdrv.h"
+#include "driver/windowdrv.h"
+#include "manager/fontmgr.h"
+
+// Pooled constants shared with battle_seq_end.c; the original object references these by name.
+extern u32 dat_80420d60;
+extern f32 float_0_80420d64;
+extern f32 float_20_80420d68;
+extern f32 float_neg145_80420d6c;
+extern f32 float_10_80420d70;
+extern f32 float_neg148_80420d74;
+
+const char str_802FE1D8[28] = "\202\337\202\301\202\271\201[\202\266\202\252\202\335\202\302\202\251\202\350\202\334\202\271\202\361";
 
 void BattleAcHelpSetHelp(const char* msg) {
     // field_18FF0 is where the move-described help message pointer is kept.
@@ -27,3 +40,38 @@ void BattleAcHelpInit(void) {
 void BattleAcHelpMain(void) {
 
 }
+
+// This function wants -O4,s (its stmw r30 prologue and signed div-by-2 only come out right with it);
+// the ledger replaces such pragmas with a file-level -O4,s.
+#pragma optimize_for_size on
+// NONMATCHING (98.68%): the fallback string address is materialized through r0 with an extra `mr` instead of `addi r31, r3, str@l`, and the GXColor local is in stack slot 0x10 with its outgoing copy at 0xc (the original has the two swapped).
+void _ac_help_disp(CameraId camera, void* param) {
+    BattleWork* wp = _battleWorkPointer;
+    const char** helpMsg = (const char**)&wp->field_18FF0;
+    s32* dispType = (s32*)&wp->field_18FF0[4];
+    u16 lines;
+    GXColor color;
+    s32 width;
+    f32 x;
+    const char* msg;
+    u8 alpha;
+
+    alpha = 0xFF;
+    if (*dispType == 1) {
+        alpha = 0x80;
+    }
+    msg = msgSearch(*helpMsg);
+    if (msg == NULL) {
+        msg = str_802FE1D8;
+    }
+    width = FontGetMessageWidthLine(msg, &lines);
+    lines++;
+    *(u32*)&color = dat_80420d60;
+    color.a = alpha;
+    x = float_0_80420d64 - (f32)(width / 2);
+    windowDispGX_Waku_col(0, color, x - float_20_80420d68, float_neg145_80420d6c + (f32)((lines - 1) * 0x1D),
+                          (f32)(width + 0x28), (f32)(lines * 0x1D + 1), float_10_80420d70);
+    FontDrawStart_alpha(alpha);
+    FontDrawMessage((s32)x, (s32)float_neg148_80420d74 + (lines - 1) * 0x1D, msg);
+}
+#pragma optimize_for_size off

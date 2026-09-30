@@ -3,6 +3,7 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "system.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 typedef struct MissStarData {
@@ -179,4 +180,60 @@ void effMissStarMain(EffectEntry* effect) {
     }
 
     dispEntry(CAMERA_3D, dispCalcZ(&position), 1, effMissStarDisp, effect);
+}
+
+void effMissStarDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    MissStarData* data = effect->userdata;
+    GXTexObj texObj;
+    Mtx mtxB8;
+    Mtx mtx88;
+    Mtx mtx58;
+    Mtx mtx28;
+    s32 i;
+
+    effGetTexObj(0x18, &texObj);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetNumChans(0);
+    GXSetChanCtrl(GX_COLOR0A0, GX_DISABLE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 60, GX_FALSE, GX_PTIDENTITY);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+    for (i = 0; i < effect->count; i++, data++) {
+        if (data->field_0x28 != 0) {
+            break;
+        }
+
+        PSMTXTrans(mtxB8, data->position.x, data->position.y, data->position.z);
+        PSMTXRotRad(mtx58, 'y', MTXDegToRad(-camGetPtr(CAMERA_3D)->viewYaw));
+        PSMTXRotRad(mtx28, 'z', MTXDegToRad(data->angle));
+        PSMTXScale(mtx88, data->scale, data->scale, data->scale);
+        PSMTXConcat(mtx58, mtxB8, mtxB8);
+        PSMTXConcat(mtxB8, mtx28, mtxB8);
+        PSMTXConcat(mtxB8, mtx88, mtxB8);
+        PSMTXConcat(camGetPtr(CAMERA_3D)->view, mtxB8, mtxB8);
+        GXLoadPosMtxImm(mtxB8, 0);
+        GXSetCurrentMtx(0);
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+        GXPosition3f32(-16.0f, 16.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(16.0f, 16.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(16.0f, -16.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-16.0f, -16.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+    }
 }

@@ -6,6 +6,7 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <math.h>
 #include <stdlib.h>
 
 // .sdata2 colour the original copies and then overwrites the alpha byte of (volatile: per-element reload).
@@ -15,6 +16,21 @@ extern const f32 float_deg2rad_8041f19c;
 extern const f32 float_0p015625_8041f1a0;
 extern const f32 float_0_8041f1a4;
 extern const f32 float_0p03125_8041f1a8;
+
+// effIceMain's .rodata origin vector and int->float conversion constant.
+extern const Vec vec3_802fa820;
+extern const f64 double_to_int_802fa830;
+// effIceMain's .sdata2 particle-motion constants (named after their original addresses).
+extern const f32 float_0p3_8041f1ac;
+extern const f32 float_0p8_8041f1b0;
+extern const f32 float_6p2832_8041f1b4;
+extern const f32 float_2_8041f1b8;
+extern const f32 float_360_8041f1bc;
+extern const f32 float_neg0p05_8041f1c0;
+extern const f32 float_0p2_8041f1c4;
+extern const f32 float_0p92_8041f1c8;
+extern const f32 float_10_8041f1cc;
+extern const f32 float_0p5_8041f1d0;
 
 // .data vertex arrays passed to effSetVtxDescN64.
 extern effVtxArray ice_vtx;
@@ -68,6 +84,58 @@ EffectEntry* effIceN64Entry(s32 type, f32 x, f32 y, f32 z) {
         ptr->field_0x14 = 2.0f;
     }
     return effect;
+}
+
+static void effIceDisp(CameraId camId, void* param);
+
+static void effIceMain(EffectEntry* effect) {
+    effIceData* data = effect->userdata;
+    Vec position2;
+    Vec position;
+    s32 counter;
+    s32 life;
+    s32 idx;
+    s32 i;
+    f32 s;
+    f32 t;
+
+    position = vec3_802fa820;
+    position.x = data->x;
+    position.y = data->y;
+    position.z = data->z;
+    position2 = position;
+
+    data->field_0x28--;
+    data->field_0x2C++;
+    if (data->field_0x28 < 0) {
+        effDelete(effect);
+        return;
+    }
+    counter = data->field_0x2C;
+    life = data->field_0x28;
+    if (counter < 10) {
+        data->field_0x24 = (s32)(float_0p3_8041f1ac * (f32)(0xFF - data->field_0x24) + (f32)data->field_0x24);
+    }
+    if (life < 10) {
+        data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041f1b0);
+    }
+    idx = life + 20;
+    i = 1;
+    data++;
+    for (; i < effect->count; idx += 20, i++, data++) {
+        s = (f32)sin(float_6p2832_8041f1b4 * (float_2_8041f1b8 * data->field_0x18) / float_360_8041f1bc);
+        data->field_0x14 += float_neg0p05_8041f1c0;
+        t = float_0p2_8041f1c4 * s;
+        data->field_0x10 += t;
+        data->field_0x14 += float_neg0p05_8041f1c0;
+        data->field_0x10 *= float_0p92_8041f1c8;
+        data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
+        data->field_0x18 += float_10_8041f1cc * (f32)sin(float_6p2832_8041f1b4 * data->field_0x1C / float_360_8041f1bc);
+        data->field_0x20 += float_10_8041f1cc * (f32)cos(float_6p2832_8041f1b4 * (data->field_0x1C * float_0p5_8041f1d0) / float_360_8041f1bc);
+        data->x += data->field_0x10;
+        data->y += data->field_0x14;
+    }
+    dispEntry(4, dispCalcZ(&position2), 2, effIceDisp, effect);
 }
 
 static inline void iceSetColor(u8 a) {

@@ -92,6 +92,171 @@ typedef struct PoleWork {
 
 PoleWork* psw;
 
+// Anchor for the .data addresses below (kpa_pole and friends live at fixed offsets past it).
+#ifdef MUST_MATCH
+__declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
+#endif
+
+s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
+#ifdef MUST_MATCH
+    u8* base = (u8*)negone_one_374;
+#endif
+    MarioWork* mario = marioGetPtr();
+    NpcWork* wp;
+    NpcEntry* entry;
+    s32 next = 0;
+    s32 score;
+    s32 i;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (!(obj->flags & 8)) {
+                break;
+            }
+            if (mario->characterId != 2) {
+                obj->flags &= ~8;
+                break;
+            }
+            switch (kpaGetLevel()) {
+                case 0:
+                case 1:
+                    if (mario->position.y < float_25_8041a140) {
+                        obj->flags &= ~8;
+                    } else {
+                        next = 0xa;
+                    }
+                    break;
+                case 2:
+                case 3:
+                    next = 0x32;
+                    break;
+            }
+            if (next == 0) {
+                break;
+            }
+            for (i = 0; i < npcGetWorkPtr()->total; i++) {
+                entry = &npcGetWorkPtr()->entries[i];
+                if (!(entry->flags & 1)) {
+                    continue;
+                }
+                if (entry->jumpFlags & 4) {
+                    continue;
+                }
+                if (!(entry->flags & 0x08000000)) {
+                    continue;
+                }
+                if (!(entry->flags & 8)) {
+                    continue;
+                }
+                npcGroupDead(entry, 0x20);
+            }
+            marioKeyOff();
+            evtSetValue(NULL, obj->unk1E4, 1);
+            *(s16*)mario->unk78 = 0;
+            obj->unk1DC = next;
+            break;
+        case 0xa:
+            mario = marioGetPtr();
+            score = 0;
+            if (kpaGetLevel() == 3) {
+                kpaAddScore(0x7d0);
+            } else if (kpaGetLevel() >= 2) {
+                kpaAddScore(0x3e8);
+            } else {
+                if (mario->position.y >= float_170_8041a144) {
+                    score = 1000;
+                } else if (mario->position.y >= float_100_8041a148) {
+                    score = 500;
+                } else if (mario->position.y >= float_50_8041a14c) {
+                    score = 200;
+                } else {
+                    score = 100;
+                }
+                kpaAddScore(score);
+            }
+#ifdef MUST_MATCH
+            mobjRunEvent(obj, (s32*)(base + 0x230))->lwData[0] = score;
+#else
+            mobjRunEvent(obj, kpa_pole)->lwData[0] = score;
+#endif
+            obj->unk1DC++;
+            break;
+        case 0xb:
+            if (evtCheckID(obj->eventId) == 1) {
+                break;
+            }
+            obj->unk1DC = 0x5a;
+            break;
+        case 0x32:
+            mario = marioGetPtr();
+            if (kpaGetLevel() == 3) {
+                kpaAddScore(0x7d0);
+            } else if (kpaGetLevel() >= 2) {
+                kpaAddScore(0x3e8);
+            } else {
+                if (mario->position.y >= float_170_8041a144) {
+                    score = 1000;
+                } else if (mario->position.y >= float_100_8041a148) {
+                    score = 500;
+                } else if (mario->position.y >= float_50_8041a14c) {
+                    score = 200;
+                } else {
+                    score = 100;
+                }
+                kpaAddScore(score);
+            }
+#ifdef MUST_MATCH
+            mobjRunEvent(obj, (s32*)(base + 0x690));
+#else
+            mobjRunEvent(obj, kpa_pole_move);
+#endif
+            obj->unk1DC++;
+            break;
+        case 0x33:
+            if (evtCheckID(obj->eventId) == 1) {
+                break;
+            }
+            obj->unk1DC = 0x5a;
+            break;
+        case 0x5a:
+#ifdef MUST_MATCH
+            mobjRunEvent(obj, (s32*)(base + 0x8ec));
+#else
+            mobjRunEvent(obj, kpa_move_to_toride);
+#endif
+            obj->unk1DC++;
+            break;
+        case 0x5b:
+            if (evtCheckID(obj->eventId) == 1) {
+                break;
+            }
+            obj->eventId = 0;
+            obj->unk1DC++;
+            break;
+        case 0x5c:
+            mobjRunEvent(obj, obj->unk1D8);
+            obj->unk1DC++;
+            break;
+        case 0x5d:
+            if (evtCheckID(obj->eventId) == 1) {
+                break;
+            }
+            obj->eventId = 0;
+            obj->unk1DC++;
+            // fallthrough
+        case 0x5e:
+            mobjRunEvent(obj, obj->unk1D4);
+            obj->unk1DC++;
+            break;
+#ifdef MUST_MATCH
+        case 0x5f:
+#endif
+        default:
+            break;
+    }
+    return 0;
+}
+
 // NONMATCHING (96.88%): MWCC CSEs `obj + 0x1B8` into r25 (r25 is dead there) and reuses it for
 // strcpy/strcat/mobjEntry; retail recomputes the addi each time. Everything else matches.
 s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {

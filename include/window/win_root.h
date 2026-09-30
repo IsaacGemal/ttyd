@@ -40,6 +40,7 @@ s32 winSortWait(WindowWork* work);
 void winMailDisp(WindowWork* work);
 void winMsgDisp(WindowWork* work, f32 x, f32 y);
 void winSortGX(WindowWork* work);
+void winBookGX(WindowWork* work, s32 type);
 // Menu-display rodata block that starts at the msg_menu_* strings.  winRootDisp
 // reads the Vec constants at the listed offsets through this one base so MWCC
 // emits the same single lis/addi + offset loads as the original.

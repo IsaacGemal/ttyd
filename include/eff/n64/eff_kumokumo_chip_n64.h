@@ -26,3 +26,4 @@ typedef struct effKumokumoChipData {
 } effKumokumoChipData;
 void effKumokumoChipMain(EffectEntry* effect);
 void effKumokumoChipDisp(CameraId camId, void* param);
+EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 spacing, f32 scale);

@@ -1,10 +1,12 @@
 #include "eff/n64/eff_kemuri4_n64.h"
 #include "eff/eff_n64.h"
+#include "driver/dispdrv.h"
+#include "mario/mario.h"
+#include "math_ext.h"
 #include "memory.h"
 #include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
 #include <stdlib.h>
 
 
@@ -17,14 +19,11 @@ extern const f32 float_neg0p07_8041f344;
 extern const f32 float_0p003_8041f348;
 extern const f32 float_6p2832_8041f34c;
 extern const f32 float_360_8041f350;
+extern const f32 float_deg2rad_8041f334;
 // .sdata2 word constant (named after its original address).
 extern const u32 dat_8041f328;
 // .data vertex array of this unit (named after its original symbol).
 extern u8 flowers_v[];
-// .rodata constants (named after their original addresses).
-const char str_802FA904[] = "Kemuri4N64";
-const f64 double_to_int_802fa910 = 4503601774854144.0;
-
 
 EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	EffectEntry* effect;
@@ -33,7 +32,7 @@ EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	s32 i;
 
 	effect = effEntry();
-	effect->type = str_802FA904;
+	effect->type = "Kemuri4N64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri4Data));
 	effect->userdata = data;
@@ -69,6 +68,78 @@ EffectEntry* effKemuri4N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	}
 	return effect;
 }
+
+// Local copy of system.c's inline helper so it inlines here as in the original.
+inline Vec initializeVec(Vec* input) {
+	Vec temp = { 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
+#pragma opt_common_subs off // without it MWCC reuses the compare's float_0 load across the marioGetPtr call, changing FPR allocation
+void effKemuri4Main(EffectEntry* effect) {
+	effKemuri4Data* data;
+	Vec position;
+	Mtx rotZ;
+	Mtx rotY;
+	Mtx rotX;
+	Mtx trans;
+	Mtx scale;
+	s32 i;
+	s32 active;
+
+	data = effect->userdata;
+	position = initializeVec(&data->position);
+	active = 0;
+
+	for (i = 0; i < effect->count; i++, data++) {
+		if (data->field_0x00 == 0) {
+			continue;
+		}
+		if (--data->field_0x06 <= 0) {
+			data->field_0x00 = 0;
+			continue;
+		}
+		active = 1;
+
+		if (data->type == 0 && data->field_0x68 != float_0_8041f330
+		    && marioGetPtr()->currMotionId == MARIO_MOTION_STAY) {
+			data->field_0x06++;
+		}
+		else {
+			data->field_0x78 += data->field_0x7C;
+			data->field_0x74 += data->field_0x78;
+			data->field_0x70 += data->field_0x74;
+			data->field_0x2C = data->field_0x70 * data->field_0x60 + data->field_0x2C;
+			data->position.x -= data->field_0x80 * (data->field_0x70 * data->field_0x64);
+			data->position.z -= data->field_0x84 * (data->field_0x70 * data->field_0x64);
+			data->field_0x08 -= 12;
+			if (data->field_0x70 < float_0_8041f330) {
+				data->field_0x68 = float_0_8041f330;
+			}
+		}
+
+		PSMTXRotRad(rotX, 'x', float_deg2rad_8041f334 * data->field_0x24);
+		PSMTXRotRad(rotY, 'y', float_deg2rad_8041f334 * data->field_0x28);
+		PSMTXRotRad(rotZ, 'z', float_deg2rad_8041f334 * data->field_0x2C);
+		PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+		PSMTXScale(scale, data->field_0x18, data->field_0x1C, data->field_0x20);
+		PSMTXConcat(rotX, rotZ, rotZ);
+		PSMTXConcat(rotY, rotZ, rotZ);
+		PSMTXConcat(rotZ, scale, scale);
+		PSMTXConcat(trans, scale, data->field_0x30);
+	}
+
+	if (active == 0) {
+		effDelete(effect);
+	}
+	else {
+		dispEntry(CAMERA_3D, dispCalcZ(&position), 1, effKemuri4Disp, effect);
+	}
+}
+#pragma opt_common_subs on
 
 void effKemuri4Disp(CameraId camId, void* param) {
 	EffectEntry* effect;

@@ -220,6 +220,7 @@ BOOL marioChkKey(void);
 BOOL marioChkCtrl(void);
 s32 mario8005B5A8(void);
 void marioFBattlePrepare(void);
+void unk_80058374(void);
 void marioFBattlePost(void);
 s32 marioCtrlOffChk(void);
 s32 marioKeyOffChk(void);

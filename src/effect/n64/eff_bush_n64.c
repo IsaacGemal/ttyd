@@ -2,8 +2,10 @@
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
+#include "mario/mario.h"
 #include "memory.h"
 #include <stdlib.h>
+#include <math.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -13,6 +15,12 @@ extern const f32 float_deg2rad_8041eb1c;
 extern const f32 float_4_8041eb20;
 extern const f32 float_1_8041eb24;
 extern const f32 float_0_8041eb28;
+
+// .sdata2 constants used by effBushMain
+extern const f32 float_0p8_8041eb30;
+
+// .rodata: zero Vec copied into the local position before the particle fields are set
+const Vec vec3_802fa378 = { 0.0f, 0.0f, 0.0f };
 
 const f64 double_to_int_802fa388 = 4503601774854144.0;
 
@@ -128,4 +136,83 @@ void effBushDisp(CameraId camId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		tri2(6, 5, 4, 4, 7, 6, 4, 4);
 	}
+}
+
+void effBushMain(EffectEntry* effect) {
+	BushN64Data* data = effect->userdata;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+	   local before dispCalcZ; a single local folds the copy away. */
+	Vec position;
+#endif
+	Vec disp = vec3_802fa378;
+	s32 type;
+	s32 life;
+	s32 i;
+	f32 s;
+	f32 move;
+
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	type = data->type;
+	if (data->field_0x2c >= 5 && data->field_0x2c < 15) {
+		switch (type) {
+		case 0:
+			if (marioGetPtr()->currMotionId == MARIO_MOTION_STAY) {
+				return;
+			}
+			break;
+		case 1:
+			break;
+		}
+	}
+
+	data->lifetime--;
+	data->field_0x2c++;
+	if (data->field_0x2c > 324000) {
+		data->field_0x2c = 256;
+	}
+	life = data->lifetime;
+	if (life < 0) {
+		effDelete(effect);
+		return;
+	}
+
+	if (data->field_0x2c < 10) {
+		data->field_0x24 = (s32)(0.3f * (255 - data->field_0x24) + data->field_0x24);
+	}
+	if (life < 10) {
+		data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041eb30);
+	}
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		s = (f32)sin(6.2831855f * (2.0f * data->field_0x18) / 360.0f);
+		data->field_0x14 += -0.05f;
+		move = 0.2f * s;
+		data->field_0x10 += move;
+		if (type == 0) {
+			data->field_0x10 *= 0.94f;
+			s = (f32)sin(6.2831855f * data->field_0x18 / 360.0f);
+			data->field_0x14 *= 0.95f + 0.05f * s;
+		} else {
+			data->field_0x14 += -0.05f;
+			data->field_0x10 *= 0.92f;
+		}
+		data->field_0x1c += (f32)(rand() % 50) - 25.0f;
+		data->field_0x18 += 10.0f * (f32)sin(6.2831855f * data->field_0x1c / 360.0f);
+		data->field_0x20 += 10.0f * (f32)cos(6.2831855f * (data->field_0x1c / 2.0f) / 360.0f);
+		data->x += data->field_0x10;
+		data->y += data->field_0x14;
+	}
+#ifdef MUST_MATCH
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effBushDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effBushDisp, effect);
+#endif
 }

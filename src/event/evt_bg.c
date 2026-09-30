@@ -20,3 +20,11 @@ USER_FUNC(evt_bg_auto_scroll_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
+USER_FUNC(evt_bg_set_scrl_offset) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    bgSetScrlOffset(x, y);
+    return EVT_RETURN_DONE;
+}

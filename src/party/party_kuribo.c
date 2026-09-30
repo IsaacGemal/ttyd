@@ -55,3 +55,13 @@ void kuribo_use_post(PartyEntry* party) {
     party->flags &= ~0x04000000;
     party->flags &= ~0x02000000;
 }
+
+void kuribo_bye(PartyEntry* party) {
+    if (party->field_8 & 0x8) {
+        party->field_8 &= ~0x8;
+        partyGoodbyeInit(party);
+    }
+    if (partyGoodbyeMain(party)) {
+        partyChgRunMode(party, 0xE);
+    }
+}

@@ -3,7 +3,23 @@
 #include "sound.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mariost.h"
+#include "mario/mario_pouch.h"
 #include "seq/seq_gameover.h"
+#include "driver/camdrv.h"
+#include "win/win_main.h"
+
+void seq_gameOverInit(SequenceWork* work) {
+    winReInit();
+    camDispOn(4);
+    psndStopAllFadeOut();
+    psndSetReverb(0);
+    L_psndBGM_stop();
+    psndClearFlag(0x80);
+    psndClearFlag(0x20);
+    psndClearFlag(0x40);
+    N_pouchUnEquipBadgeID(0x143);
+    marioStSystemLevel(4);
+}
 
 void seq_gameOverExit(SequenceWork* work) {
     psndStopAllFadeOut();

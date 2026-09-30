@@ -3,9 +3,25 @@
 #pragma opt_propagation off
 
 #include "eff/n64/eff_rothammer_fail_n64.h"
+#include "eff/eff_n64.h"
+#include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include <math.h>
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+
+// .sdata2/.rodata/.data objects defined by the original unit's split map.
+
+extern const f32 float_256_8041fbcc;
+extern const f32 float_deg2rad_8041fbd0;
+extern const f32 float_0p0044643_8041fbd4;
+extern const f32 float_0p03125_8041fbd8;
+extern const f32 float_0_8041fbdc;
+extern const f32 float_32_8041fbe0;
+extern GXColor dat_8041fbc8;
+extern GXColor unk_80423250;
+extern u32 size24x24_tex32x32_vtx[];
 
 typedef struct effRotHammerFailParticle {
 	u8 field_0x00[4];    // 0x00
@@ -132,4 +148,99 @@ void effRotHammerFailMain(EffectEntry* effect) {
 #else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effRotHammerFailDisp, effect);
 #endif
+}
+
+static inline void hammerSetColor(u8 a) {
+	GXColor color = unk_80423250;
+	color.a = a;
+	GXSetTevColor(GX_TEVREG1, color);
+}
+
+// NONMATCHING (99.97%): the flag==0 branch's `offset + 32` is materialised in place
+// (`addi r27, r27, 0x20`) because MWCC coalesces the dead `offset`; the target keeps
+// `offset` and adds into a fresh r3. The read form `(f32)(offset + 32)` lands in r0.
+void effRotHammerFailDisp(CameraId cameraId, void* param) {
+	EffectEntry* effect = param;
+	effRotHammerFailRecord* data;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	Mtx trans;
+	Mtx scale;
+	Mtx rot;
+	Mtx work;
+	s32 flag;
+	s32 i;
+	s32 whole;
+	s32 offset;
+	s32 frac;
+
+	cam = camGetPtr(cameraId);
+	data = effect->userdata;
+
+	whole = (s32)data->field_0x30;
+	frac = (s32)(float_256_8041fbcc * (data->field_0x30 - (f32)whole));
+	flag = (whole == 6);
+
+	GXSetNumChans(0);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7d);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 0x7d);
+	effGetTexObjN64(0xd, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
+	GXSetNumTevStages(3);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A1, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
+	GXSetCullMode(GX_CULL_NONE);
+	effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_vtx);
+
+	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXRotRad(rot, 'y', float_deg2rad_8041fbd0 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(trans, rot, trans);
+	PSMTXConcat(cam->view, trans, work);
+
+	GXSetTevColor(GX_TEVREG0, dat_8041fbc8);
+	hammerSetColor(frac);
+
+	offset = whole * 32;
+	PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
+	PSMTXTrans(trans, (f32)offset, float_0_8041fbdc, float_0_8041fbdc);
+	PSMTXConcat(scale, trans, trans);
+	GXLoadTexMtxImm(trans, GX_TEXMTX0, GX_MTX2x4);
+
+	if (flag != 0) {
+		PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
+		PSMTXTrans(trans, (f32)(offset + 32), float_32_8041fbe0, float_0_8041fbdc);
+		PSMTXConcat(scale, trans, trans);
+		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
+	} else {
+		PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
+		offset = offset + 32;
+		PSMTXTrans(trans, (f32)offset, float_0_8041fbdc, float_0_8041fbdc);
+		PSMTXConcat(scale, trans, trans);
+		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
+	}
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		PSMTXTrans(trans, data->x, data->y, data->z);
+		PSMTXConcat(work, trans, trans);
+		GXLoadPosMtxImm(trans, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	}
 }

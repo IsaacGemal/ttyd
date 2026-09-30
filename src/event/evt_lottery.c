@@ -67,3 +67,41 @@ USER_FUNC(evt_lottery_todaynum) {
 	evtSetValue(event, args[0], *(s16*)((u8*)&gp->mLotteryInfo + 0x10));
 	return EVT_RETURN_DONE;
 }
+
+USER_FUNC(evt_lottery_error_check) {
+	s32* args = event->args;
+	lottery_info* info = &gp->mLotteryInfo;
+	OSTime time = OSGetTime();
+	u16 flags = info->mFlags;
+	BOOL error = FALSE;
+
+	if (flags & 4) {
+		error = TRUE;
+	}
+	if ((flags & 2) && (time < *(OSTime*)((u8*)info + 0x18))) {
+		error = TRUE;
+	}
+	if (time < *(OSTime*)((u8*)info + 0x30)) {
+		error = TRUE;
+	}
+	if (time < *(OSTime*)((u8*)info + 0x38)) {
+		error = TRUE;
+	}
+	if (time < *(OSTime*)((u8*)info + 0x08)) {
+		error = TRUE;
+	}
+	if (flags & 8) {
+		if (time > *(OSTime*)((u8*)info + 0x18)) {
+			OSCalendarTime ct1;
+			OSCalendarTime ct2;
+
+			OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18), &ct1);
+			OSTicksToCalendarTime(time, &ct2);
+			if (ct1.year != ct2.year || ct1.mon != ct2.mon || ct1.mday != ct2.mday) {
+				error = FALSE;
+			}
+		}
+	}
+	evtSetValue(event, args[0], error);
+	return EVT_RETURN_DONE;
+}

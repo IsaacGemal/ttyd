@@ -19,6 +19,7 @@
 #include <math.h>
 #include "pmario_sound.h"
 #include "eff/eff_starstone.h"
+#include "eff/eff_small_star.h"
 #include "battle/battle_camera.h"
 #include "battle/sac/sac_deka.h"
 #include "battle/sac/sac_genki.h"
@@ -467,6 +468,107 @@ void main_enemy(void) {
     for (j = count; j < 10; j++) {
         p->unitIds[j] = -1;
     }
+}
+
+// .text:0x11A0 | 0x80244198 | size: 0x404
+// NONMATCHING (99.82%): instruction sequence matches; the FP temporaries in the opening
+// velocity/clamp block are permuted (target f1=1.25, f0=250, f2=velocity; ours f0/f2/f1)
+// and the int->float magic is a local @587 instead of double_to_int_80300630 (folded pool).
+void main_enemy_sub(BattleUnit* unit, s32* count) {
+    DekaWork* p = get_ptr();
+    DekaYukaMesh* mesh = p->matEntry->address;
+    f32 x;
+    f32 cx;
+    s32 j;
+
+    unit->mRotationOffset = unit->offsetCenter;
+    p->enemyVel[*count].y -= float_1p25_80421ea4;
+
+    x = unit->mPosition.x;
+    if (x >= float_250_80421ea8) {
+        cx = float_250_80421ea8;
+    }
+    else if (x <= float_0_80421e8c) {
+        cx = float_0_80421e8c;
+    }
+    else {
+        cx = x;
+    }
+
+    for (j = 0x40; j < 0x81; j++) {
+        f32 step = (f32)p->width * float_0p0078125_80421eac;
+        f32 xj = p->plane0.x + step * (f32)j;
+
+        if (cx >= xj) {
+            if (cx < xj + step) {
+                f32 groundY = mesh->disp[0][j].y + (cx - xj) / step * (mesh->disp[0][j + 1].y - mesh->disp[0][j].y);
+
+                if (unit->mPosition.y < groundY) {
+                    if ((unit->mAttributeFlags & kCeiling) && groundY < float_120_80421eb0) {
+                        break;
+                    }
+                    if (mesh->normal[0][j].y > float_0_80421e8c) {
+                        BattleUnitPart* part;
+                        s32 partId;
+
+                        if (p->enemyVel[*count].y < float_0_80421e8c) {
+                            p->enemyVel[*count].y = float_0_80421e8c;
+                        }
+                        unit->mPosition.y = groundY;
+#ifdef MUST_MATCH
+                        // Loading 0.5f into a local here makes MWCC issue the lfs before
+                        // the two stores, as the original does; the natural form below
+                        // schedules it after them.
+                        {
+                            f32 half = float_0p5_80421e54;
+                            unit->mRotation.z = float_0_80421e8c;
+                            p->enemyUnk[*count] = float_0_80421e8c;
+                            p->enemyVel[*count].y += half * mesh->normal[0][j].y;
+                        }
+#else
+                        unit->mRotation.z = float_0_80421e8c;
+                        p->enemyUnk[*count] = float_0_80421e8c;
+                        p->enemyVel[*count].y += float_0p5_80421e54 * mesh->normal[0][j].y;
+#endif
+
+                        partId = BtlUnit_GetBodyPartsId(unit);
+                        part = BtlUnit_GetPartsPtr(unit, partId);
+                        if (!(part->attributes & kUnk_ImmuneToDamageOrStatus) && !(part->attributes & kUnknown_0x4000)) {
+                            if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+                                BtlUnit_SetAnimType(part, 0x27);
+                            }
+                            effSmallStarEntry(0, 2, cx, unit->mPosition.y, unit->mPosition.z, float_0_80421e8c, float_neg1_80421e94, float_0_80421e8c);
+                            BtlUnit_snd_se(unit, unit->mKindParams->damageSfxName, 0xF1194D80, 0);
+                            if (!(unit->mAttributeFlags & 0x200000) && !(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+                                p->enemyUnk[*count] = float_20_80421e74;
+                                if (irand(2) == 0) {
+                                    p->enemyUnk[*count] *= float_neg1_80421e94;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    unit->mPosition.x = x;
+    unit->mPosition.x += p->enemyVel[*count].x;
+    unit->mPosition.y += p->enemyVel[*count].y;
+    unit->mPosition.z += p->enemyVel[*count].z;
+    unit->mRotation.z += p->enemyUnk[*count];
+
+    if (unit->mPosition.y < unit->mHomePosition.y) {
+        unit->mPosition.y = unit->mHomePosition.y;
+        p->enemyVel[*count].y = float_0_80421e8c;
+        if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+            unit->mRotation.z = float_0_80421e8c;
+            p->enemyUnk[*count] = float_0_80421e8c;
+        }
+    }
+
+    p->unitIds[*count] = BtlUnit_GetUnitId(unit);
+    (*count)++;
 }
 
 // .text:0x1EE0 | 0x80244ED8 | size: 0xB8
