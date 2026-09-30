@@ -58,9 +58,19 @@ typedef struct WinDt {
     u8 b1b; //0x1B
 } WinDt;
 
+#ifdef MUST_MATCH
+// loadMain reaches the three window tables from one base (the object before them, lbl_80349DE8, plus 0x40/0x13c/0x200),
+// which is what the original's code does
+#define WDT_TABLE ((WinDt*)(base2 + 0x40))
 #define WDT(i)  (((WinDt*)(base2 + 0x40))[i])
 #define WDT2(i) (((WinDt*)(base2 + 0x13c))[i])
 #define WDT3(i) (((WinDt*)(base2 + 0x200))[i])
+#else
+#define WDT_TABLE ((WinDt*)win_dt)
+#define WDT(i)  (((WinDt*)win_dt)[i])
+#define WDT2(i) (((WinDt*)win_dt2)[i])
+#define WDT3(i) (((WinDt*)win_dt3)[i])
+#endif
 
 static LoadWork work;
 static LoadWork* wp = &work;
@@ -70,7 +80,9 @@ extern s32 evt_memcard_start[];
 extern s32 evt_memcard_delete[];
 extern s32 evt_memcard_copy[];
 extern s32 evt_memcard_save[];
+#ifdef MUST_MATCH
 extern f32 lbl_80349DE8[];
+#endif
 u32 gap_80349DF0[14] = {
     0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000, 0xBF800000, 0x3F800000,
     0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000,
@@ -203,19 +215,19 @@ const f32 float_1000_8041be84 = 1000.0f;
 
 s32 stone_id[] = { 0x197, 0x198, 0x19A, 0x19C, 0x19D, 0x199, 0x19B };
 
-static s32 evt_shake[] = {
-    0x0003005B, (s32)evt_sub_rumble_onoff, 0x00000000, 0x00000000,
-    0x0001000A, 0x00000096,
-    0x0003005B, (s32)evt_sub_rumble_onoff, 0x00000001, 0x00000000,
-    0x00000002, 0x00000001,
-};
+static EVT_BEGIN(evt_shake)
+    CALL(evt_sub_rumble_onoff, 0, 0)
+    WAIT_MS(150)
+    CALL(evt_sub_rumble_onoff, 1, 0)
+    RETURN
+EVT_END()
 
-s32 evt_continue[] = {
-    0x0002005B, (s32)evt_sub_animgroup_async, (s32)(void*)str_802ED848,
-    0x0002005B, (s32)evt_sub_animgroup_async, (s32)(void*)str_802ED85C,
-    0x0002005B, (s32)evt_sub_animgroup_async, (s32)(void*)str_802ED870,
-    0x00000002, 0x00000001,
-};
+EVT_BEGIN(evt_continue)
+    CALL(evt_sub_animgroup_async, PTR((char*)str_802ED848))
+    CALL(evt_sub_animgroup_async, PTR((char*)str_802ED85C))
+    CALL(evt_sub_animgroup_async, PTR((char*)str_802ED870))
+    RETURN
+EVT_END()
 
 // The original addresses these .rodata objects as offsets from one base symbol.
 #ifdef MUST_MATCH
@@ -463,7 +475,9 @@ s32 unk_800f2398(EventEntry* event, BOOL isFirstCall) {
 // win_dt/win_dt2/win_dt3 accesses (compiler folds 0x40/0x13c/0x200 into the load displacement) and
 // the s32->f32 magic double (anonymous @NNN instead of double_to_int_802ed9c8).
 void loadMain(SequenceWork* workArg) {
+#ifdef MUST_MATCH
     const char* base2 = (const char*)&lbl_80349DE8;
+#endif
     const char* base = (const char*)&vec3_802ed670;
     u32 btn = keyGetButtonTrg(0);
     u32 rep = keyGetButtonRep(0);
@@ -533,7 +547,7 @@ void loadMain(SequenceWork* workArg) {
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
-                wd = (WinDt*)(base2 + 0x40);
+                wd = WDT_TABLE;
                 wp->field_0x20 = wd[sel].b18;
             } else if (dir & 0x2000) {
                 wp->field_0x20 = WDT(sel).b19;
@@ -629,7 +643,7 @@ void loadMain(SequenceWork* workArg) {
                     psndSFXOn((const char*)5);
                 }
             }
-            wd = (WinDt*)(base2 + 0x40);
+            wd = WDT_TABLE;
             wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
             wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
             break;

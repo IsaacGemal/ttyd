@@ -3044,7 +3044,12 @@ the wrong field for success, computed the gauge ratio from the unclamped value (
 button; ac_signal_timing's u8 states never compared equal to -1, so the NG mark never drew. Also retail-exact floats
 (0.59999996f, 0.16000001f, 0.080000006f) and eff_sstar's first rotation angle. Stubs carried over from main remain:
 fadeMain (4.3 KB) and BattleBreakSlot_Main (5.6 KB).
-
+Codex's review of #106: seq_load reached win_dt/win_dt2/win_dt3 through npc_event's lbl_80349DE8 plus fixed offsets;
+that stays only under MUST_MATCH, with the named tables in #else; evt_shake and evt_continue are EVT macros (the latter
+passing the file's named strings, which keeps .sdata at 100%). Every changed file compiles without MUST_MATCH. Normal
+for NonMatching units and noted here: eight of this wave's units still reference data their split owns through
+undefined stand-ins (they link only after tools/finish_unit.py), and seq_load's loadDraw is registered but still a
+TODO.
 Wave 40 follow-ups (Sep 30, Claude #2): arcdrv links once its functions are in rule 18's reverse order (every
 function had moved by 0x54 with each at 100%); eff_thunderflare_n64 links once effThunderflareN64Entry loads the
 named float_0_80420088 instead of a pooled 0.0f (tools/dol_diff.py showed the one word). tools/finish_unit.py took
