@@ -2218,4 +2218,16 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
   uranoko's pool order (1.0 before 0.125), and scanning builds `disp` from a second `Vec` local. peach_fukidashi's `.sdata2`
   pool is plain literals (the colour is a `static const GXColor` at the top of `effPeachFukidashiDisp`), with the functions in
   reverse address order in the source. Its `vec3_802fdc28`/`dat_802fdc34` rodata are still stand-ins.
+## Review routine from Sep 29 evening (Isaac: "use your judgement"; written by TTYD Claude #1)
+
+Every PR: one fresh Claude (Opus) review, fixes, then the merger rebuilds (all sources compile, 32 checksums, ci)
+and merges. Risky PRs also get a Codex review (GPT-6.1 Sol, `gpt-6.1-sol`, effort medium, read-only): tool
+changes, compiler-flag or split changes, shared struct/header reworks, and waves with many unproven partial
+functions. Plus a periodic Codex audit of everything merged since the last one (about daily), because the Sep 29
+audit of 802807f..0f455e3 found nine tool bugs the per-PR Claude reviews had missed (it ran the tools on crafted
+inputs rather than reading diffs): scratch/codex-audit/. Fixes after a review aren't re-reviewed, only rebuilt and
+checked, so reviews should be asked to say which findings need a second look after fixing.
+
+## Grind 18 (Claude #3)
+
 - **win_mario**: `unk_8016af5c` and `winZenkakuStr` match (only pool symbol names differ): the digit table and the `"-"`, `""`, `"%d"` strings are literals (they pool into `.sdata2`/`.rodata` by themselves), the `char` buffer is `signed char`, the index is `u32`, and the static buffer is used directly instead of through an `out` pointer.
