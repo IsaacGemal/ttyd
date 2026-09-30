@@ -202,8 +202,8 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
 
     return effect;
 }
+#pragma opt_common_subs reset
 
-// NONMATCHING (97.02%): only the prologue's load order differs. MWCC hoists the
 // NONMATCHING (97.02%): only the prologue's load order differs. MWCC hoists the
 // three vec3_802fa9c0 loads above the r30/r31 saves; the original issues the
 // data-pointer load (lwz r4, 0xc(r3)) first, then the vec3 loads.

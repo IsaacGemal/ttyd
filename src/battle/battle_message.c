@@ -9,7 +9,6 @@
 f32 float_900_8041e850 = 900.0f;
 
 // The original saves r25-r31 with stmw/lmw (size-oriented prologue); battle_message.c wants -O4,s.
-#pragma optimize_for_size on
 //s32 kind, s32 x, s32 y, const char* tag, s32 duration
 USER_FUNC(btlevtcmd_AnnounceMessage) {
     BattleWork* wp = _battleWorkPointer;
@@ -50,7 +49,6 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
     event->userdata[0]--;
     return event->userdata[0] <= 0;
 }
-#pragma optimize_for_size off
 
 //s32 index, s32 value
 USER_FUNC(btlevtcmd_AnnounceSetParam) {

@@ -12,7 +12,7 @@ void aramMgrInit(void) {
 }
 
 void arqCallbackToAram(u32 request) {
-	ARAMWorkNode* work = ((ARAMWorkNode*)wp)->next;
+	ARAMWorkNode* work = wp->nodes;
 
 	while (work != NULL) {
 		if (request == (u32)work + 4) {

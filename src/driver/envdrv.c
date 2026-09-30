@@ -405,7 +405,7 @@ void envDisp_DepthOfField(void) {
                 f0 = (f31 * f0);
                 f3 = f0 * f29;
                 if (f3 <= f28) {
-                    f1 = 1.5707964f;
+                    f1 = MTXDegToRad(90.0f);
                     if (f3 <= f1) {
                         f0 = f3 * f3;
                         f2 = (f2 * f0) - f26;
@@ -422,10 +422,10 @@ void envDisp_DepthOfField(void) {
                     }
                 }
                 else {
-                    f0 = 4.712389f;
+                    f0 = MTXDegToRad(270.0f);
                     if (f3 <= f0) {
                         f0 = f3 - f0;
-                        f1 = 1.5707964f;
+                        f1 = MTXDegToRad(90.0f);
                         f1 = f1 - f0;
                         f0 = f1 * f1;
                         f2 = (f2 * f0) - f26;
@@ -444,10 +444,10 @@ void envDisp_DepthOfField(void) {
                 }
                 f4 = 0.03705f;
                 if (f3 > f28) {
-                    f0 = 4.712389f;
+                    f0 = MTXDegToRad(270.0f);
                     if (f3 >= f1) {
                         f0 = f3 - f0;
-                        f1 = 1.5707964f;
+                        f1 = MTXDegToRad(90.0f);
                         f0 = f1 - f0;
                         f0 = f0 * f0;
                         f4 = (f4 * f0) - f25;
@@ -463,7 +463,7 @@ void envDisp_DepthOfField(void) {
 
                 }
                 else {
-                    f1 = 1.5707964f;
+                    f1 = MTXDegToRad(90.0f);
                     if (f3 > f1) {
                         f0 = f3 - f1;
                         f0 = f1 - f0;
@@ -497,38 +497,38 @@ void envDisp_DepthOfField(void) {
             v81 = (f32)i;
             v26 = (v15 * v81) * v18;
             if (v26 <= v23) {
-            if (v26 <= 1.5707964f) {
+            if (v26 <= MTXDegToRad(90.0f)) {
             v27 = (((((0.00761f * (v26 * v26)) - v20) * (v26 * v26)) + v22) * v26);
             }
             else {
-            v28 = (1.5707964f - (((v15 * v81) * v18) - 1.5707964f));
+            v28 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(90.0f)));
             v27 = (((((0.00761f * (v28 * v28)) - v20) * (v28 * v28)) + v22) * v28);
             }
             }
             else {
-            if (v26 < 4.712389f) {
+            if (v26 < MTXDegToRad(270.0f)) {
             v27 = -(((((0.00761f * ((v26 - v23) * (v26 - v23))) - v20) * ((v26 - v23) * (v26 - v23))) + v22) * (v26 - v23));
             }
             else {
-            v29 = (1.5707964f - (((v15 * v81) * v18) - 4.712389f));
+            v29 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(270.0f)));
             v27 = -(((((0.00761f * (v29 * v29)) - v20) * (v29 * v29)) + v22) * v29);
             }
             }
             if (v26 <= v23) {
-            if (v26 <= 1.5707964f) {
+            if (v26 <= MTXDegToRad(90.0f)) {
             v30 = ((((0.03705f * (v26 * v26)) - v24) * (v26 * v26)) + v22);
             }
             else {
-            v31 = (1.5707964f - (((v15 * v81) * v18) - 1.5707964f));
+            v31 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(90.0f)));
             v30 = -((((0.03705f * (v31 * v31)) - v24) * (v31 * v31)) + v22);
             }
             }
             else {
-            if (v26 < 4.712389f) {
+            if (v26 < MTXDegToRad(270.0f)) {
             v30 = -((((0.03705f * ((v26 - v23) * (v26 - v23))) - v24) * ((v26 - v23) * (v26 - v23))) + v22);
             }
             else {
-            v32 = (1.5707964f - (((v15 * v81) * v18) - 4.712389f));
+            v32 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(270.0f)));
             v30 = ((((0.03705f * (v32 * v32)) - v24) * (v32 * v32)) + v22);
             }
             }
@@ -584,7 +584,7 @@ void envDisp_DepthOfField(void) {
             var_f2 = ((((temp_f2 * temp_f0_2) - temp_f26) * temp_f0_2) + temp_f27) * temp_f1_2;
             }
             } else {
-            temp_f0_3 = 4.712389f;
+            temp_f0_3 = MTXDegToRad(270.0f);
             if (temp_f3 < temp_f0_3) {
             temp_f1_3 = temp_f3 - temp_f28;
             temp_f0_4 = temp_f1_3 * temp_f1_3;
@@ -607,7 +607,7 @@ void envDisp_DepthOfField(void) {
             var_f4 = -((((temp_f4 * temp_f0_8) - temp_f25) * temp_f0_8) + temp_f27);
             }
             } else {
-            temp_f0_9 = 4.712389f;
+            temp_f0_9 = MTXDegToRad(270.0f);
             if (temp_f3 < temp_f0_9) {
             temp_f0_10 = temp_f3 - temp_f28;
             temp_f0_11 = temp_f0_10 * temp_f0_10;
@@ -713,7 +713,7 @@ void envDisp_DepthOfField(void) {
                         var_f2_2 = ((((temp_f2_2 * temp_f0_16) - temp_f26_2) * temp_f0_16) + temp_f25_2) * temp_f1_7;
                     }
                 } else {
-                    temp_f0_17 = 4.712389f;
+                    temp_f0_17 = MTXDegToRad(270.0f);
                     if (temp_f3_3 < temp_f0_17) {
                         temp_f1_8 = temp_f3_3 - temp_f31_2;
                         temp_f0_18 = temp_f1_8 * temp_f1_8;
@@ -736,7 +736,7 @@ void envDisp_DepthOfField(void) {
                         var_f4_2 = -((((temp_f4_2 * temp_f0_22) - temp_f27_2) * temp_f0_22) + temp_f25_2);
                     }
                 } else {
-                    temp_f0_23 = 4.712389f;
+                    temp_f0_23 = MTXDegToRad(270.0f);
                     if (temp_f3_3 < temp_f0_23) {
                         temp_f0_24 = temp_f3_3 - temp_f31_2;
                         temp_f0_25 = temp_f0_24 * temp_f0_24;

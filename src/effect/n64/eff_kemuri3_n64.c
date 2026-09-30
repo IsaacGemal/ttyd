@@ -161,6 +161,6 @@ void effKemuri3Main(EffectEntry* effect) {
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri3Disp, effect);
     }
 }
-#pragma opt_common_subs on
+#pragma opt_common_subs reset
 
 const char str_802FA8E4[] = "Kemuri3N64";
