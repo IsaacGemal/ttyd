@@ -622,7 +622,7 @@ config.libs = [
             Object(NonMatching, "effect/n64/eff_magic2_n64.c"),
             Object(NonMatching, "effect/n64/eff_magic3_n64.c"),
             Object(NonMatching, "effect/n64/eff_magic_horao_n64.c"),
-            Object(NonMatching, "effect/n64/eff_n64.c"),
+            Object(Matching, "effect/n64/eff_n64.c"),
             Object(Matching, "effect/n64/eff_onpu_n64.c"),
             Object(NonMatching, "effect/n64/eff_opuku_jetw_n64.c"),
             Object(NonMatching, "effect/n64/eff_opuku_jetwrain_n64.c"),
