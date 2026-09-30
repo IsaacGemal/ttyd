@@ -2548,22 +2548,6 @@ Vec nowv;
 
 
 
-static const Vec VecData[10] = {
-    { 38.0f, 45.0f, 5.0f },
-    { 38.0f, 45.0f, 5.0f },
-    { -38.0f, 45.0f, 5.0f },
-    { 0.0f, 83.0f, 5.0f },
-    { 38.0f, 7.0f, 5.0f },
-    { -38.0f, 7.0f, 5.0f },
-    { 38.0f, 83.0f, 5.0f },
-    { -38.0f, 83.0f, 5.0f },
-    { 38.0f, 7.0f, 5.0f },
-    { -38.0f, 7.0f, 5.0f },
-};
-
-
-
-
 // clang-format on
 
 
@@ -2811,6 +2795,18 @@ USER_FUNC(check_satellite) {
 
 // NONMATCHING (99.88%): `wp` gets r29 (reused for `unit`) instead of the original r26.
 USER_FUNC(battleGetBattenSatelliteInitPos) {
+    static const Vec VecData[10] = {
+        { 38.0f, 45.0f, 5.0f },
+        { 38.0f, 45.0f, 5.0f },
+        { -38.0f, 45.0f, 5.0f },
+        { 0.0f, 83.0f, 5.0f },
+        { 38.0f, 7.0f, 5.0f },
+        { -38.0f, 7.0f, 5.0f },
+        { 38.0f, 83.0f, 5.0f },
+        { -38.0f, 83.0f, 5.0f },
+        { 38.0f, 7.0f, 5.0f },
+        { -38.0f, 7.0f, 5.0f },
+    };
     s32* args = event->args;
     BattleUnit* unit;
     BattleWork* wp;

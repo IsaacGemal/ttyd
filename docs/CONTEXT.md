@@ -2731,3 +2731,8 @@ A fresh Claude review of the three found five real bugs, all fixed: `montemedalz
 the script and header use the global. batten_leader's `maer`/`nowv` are global as in retail. Follow-ups: gor_03's
 `vec3_gor_0001a234/0001a240` may be local Vec initializers rather than objects; batten_leader's `VecData` should be
 a function-static (retail `VecData$634`); `minigameselect_msg_set` compares unsigned where retail is signed.
+
+Follow-ups done (Sep 30, Claude #2): evt_lect_muj links: its named `zero_muj_*`/`float_*_muj_*` externs became
+literals, and `lect_itemget_kesan`'s `field * 0.5f` is written `/ 2.0f` (the same register-order idiom as
+moo_04), which was the last two bytes. batten_leader's `VecData` is a static inside
+`battleGetBattenSatelliteInitPos`, as retail's `VecData$634` shows (only the `$N` suffix and one register differ).
