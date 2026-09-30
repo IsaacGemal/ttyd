@@ -2879,3 +2879,19 @@ finishing it. A fresh Claude review found no regression and three bugs on main t
 `firebar_entry` had its loop-sound check inverted; rsh `rsh_window_tev` passed the frustum's left/right with the
 wrong sign, and read through NULL where retail walks its ancestors; unit_barriern_z passed `a` where retail's
 first `intplGetValue` takes 4. Labels and agent notes cleaned up after it.
+
+## mri_puni structs (2026-09-30, Claude Opus 5.5 "TTYD Claude #2")
+
+PuniWork and PuniData are rebuilt from every access the mri asm makes through Punigp and Punidat elements:
+tools/mripuni/scan.py tracks registers per function (the globals loaded directly or through `addi G@l` + `lwz 0`,
+`lwzu`, mulli/add 0x5A8 indexing and += 0x5A8 steps, `mr` copies, the puniGetPunidat/puniGetPunigp results, callee
+parameters at any offset, state merged at branch targets) and structs.py renders typed fields: a Vec where a
+PSVEC* call takes a pointer there, or where three words are copied as words and read as floats (triples whose
+three members all show it win), f32 for any word read as a float, else s32/s16/u16 by access; upstream's names
+kept. PuniWork is 0x4D0 bytes, as evt_puni_mem_init allocates (upstream's padding array ran to 0x448 while its
+comments put showPuniCounter at 0x444, making it 0x4D4); with the fix evt_puni_mem_init matches. Codex's review of
+the first version (#90) found the scanner missed `addi`-then-`lwz` global loads, interior pointers passed to
+callees and state across branches (PuniWork 24 -> 53 offsets, PuniData 39 -> 85 after the fix), which had left
+PuniWork 0x344-0x34C and PuniData 0x138-0x140 and 0x15C-0x164 as ints: they're Vecs. Fields are field_0xNNN until a
+function shows what they are; wave agents use them and write a commented raw offset for anything else, which
+collection promotes (rerun scan.py and structs.py).
