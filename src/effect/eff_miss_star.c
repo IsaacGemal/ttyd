@@ -24,9 +24,6 @@ typedef struct MissStarData {
     f32 field_0x40; // 0x40
 } MissStarData;
 
-const Vec vec3_802f3678 = { 0.0f, 0.0f, 0.0f };
-const char str_802F3684[] = "SmallStar";
-const f64 double_to_int_802f3690 = 4503601774854144.0;
 
 // .data: initial velocity vectors used to fan the stars out.
 Vec spd_tbl[15] = {
@@ -47,14 +44,6 @@ Vec scale_tbl[15] = {
 };
 
 // .sdata2
-extern const f32 float_0_8041cb6c;
-extern const f32 float_1_8041cb70;
-extern const f32 float_0p8_8041cb74;
-extern const f32 float_0p5_8041cb78;
-extern const f32 float_0p4_8041cb7c;
-extern const f32 float_0p7_8041cb80;
-extern const f32 float_2_8041cb84;
-extern const f32 float_255_8041cb88;
 
 EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 angle) {
     EffectEntry* entry;
@@ -65,12 +54,12 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 a
     f32 speed;
 
     entry = effEntry();
-    scale = float_0p8_8041cb74;
-    speed = float_1_8041cb70;
+    scale = 0.800000012f;
+    speed = 1.0f;
     if (type <= 0) {
         type = 1;
-        scale = float_0p4_8041cb7c;
-        speed = float_0p7_8041cb80;
+        scale = 0.400000006f;
+        speed = 0.699999988f;
     }
 
     sign = 1;
@@ -93,7 +82,7 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 a
     }
 #endif
 
-    entry->type = str_802F3684;
+    entry->type = "SmallStar";
     entry->count = type;
     data = __memAlloc(HEAP_EFFECT, type * sizeof(MissStarData));
     entry->userdata = data;
@@ -103,9 +92,9 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 a
         data->position.x = x;
         data->position.y = y;
         data->position.z = z;
-        data->dvx = speed * ((f32)sign * (float_2_8041cb84 * spd_tbl[angle % 8].x));
-        data->dvy = speed * (float_2_8041cb84 * spd_tbl[angle % 8].y);
-        data->dvz = speed * (float_2_8041cb84 * spd_tbl[angle % 8].z);
+        data->dvx = speed * ((f32)sign * (2.0f * spd_tbl[angle % 8].x));
+        data->dvy = speed * (2.0f * spd_tbl[angle % 8].y);
+        data->dvz = speed * (2.0f * spd_tbl[angle % 8].z);
         data->vx = speed * ((f32)sign * spd_tbl[angle % 8].x);
         data->vy = speed * spd_tbl[angle % 8].y;
         data->vz = speed * spd_tbl[angle % 8].z;
@@ -113,13 +102,13 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 a
         // original's scheduler emits the addi (before the scale lookup).
         angle++;
         data->scale = scale * scale_tbl[i % 8].x;
-        data->angle = float_0_8041cb6c;
+        data->angle = 0.0f;
         data->angleVel = (f32)(sign * 107);
         data->field_0x34 = -camGetPtr(CAMERA_3D)->viewYaw;
         data->field_0x24 = 14;
         data->field_0x28 = lifetime;
         data->field_0x3C = 10;
-        data->field_0x40 = float_255_8041cb88;
+        data->field_0x40 = 255.0f;
     }
 
     return entry;
@@ -134,12 +123,12 @@ void effMissStarMain(EffectEntry* effect) {
 
     data = effect->userdata;
 
-    disp = vec3_802f3678;
+    disp = (Vec){ 0.0f, 0.0f, 0.0f };
     disp.x = data->position.x;
     disp.y = data->position.y;
     disp.z = data->position.z;
     position = disp;
-    angleVelScale = float_0p8_8041cb74;
+    angleVelScale = 0.800000012f;
 
     for (i = 0; i < effect->count; i++, data++) {
         if (data->field_0x28 != 0) {
@@ -161,9 +150,9 @@ void effMissStarMain(EffectEntry* effect) {
         data->angleVel *= angleVelScale;
 
         if (data->field_0x24 < 10) {
-            data->vx *= float_0p5_8041cb78;
-            data->vy *= float_0p5_8041cb78;
-            data->vz *= float_0p5_8041cb78;
+            data->vx *= 0.5f;
+            data->vy *= 0.5f;
+            data->vz *= 0.5f;
             data->dvx = data->vx;
             data->dvy = data->vy;
             data->dvz = data->vz;
