@@ -23,6 +23,45 @@ s32 _yoshi_slide_move_sound(BattleUnit* unit, PoseSoundEntry* entry) {
     return BtlUnit_snd_se(unit, entry->soundName, 0xF1194D80, (s16)(unit->work[4] * unit->work[5] / 100));
 }
 
+// NONMATCHING (92.80%): same instruction sequence; the callee-saved registers are assigned in a different order
+// (target: event r29, args r27, work r28; ours r31, r29, r30).
+USER_FUNC(_get_nomikomi_hit_position) {
+    f32 y;
+    s32 outY;
+    f32 scale;
+    s32 outX;
+    s32 outZ;
+    f32 z;
+    f32 x;
+    BattleWork* work;
+    s32* args;
+    s32 id1;
+    s32 id2;
+    s32 dir;
+    BattleUnit* unit;
+
+    args = event->args;
+    work = _battleWorkPointer;
+    id1 = evtGetValue(event, args[0]);
+    id2 = evtGetValue(event, args[1]);
+    evtGetValue(event, args[2]);
+    outX = args[3];
+    outY = args[4];
+    outZ = args[5];
+    BattleGetUnitPtr(work, BattleTransID(event, id1));
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id2));
+    dir = unit->faceDirection;
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    scale = unit->mSizeMultiplier;
+    x += (f32)dir * (unit->bintaHitOffset.x * scale);
+    y += unit->bintaHitOffset.y * scale;
+    z += unit->bintaHitOffset.z * scale;
+    evtSetFloat(event, outX, x);
+    evtSetFloat(event, outY, y);
+    evtSetFloat(event, outZ, z);
+    return EVT_RETURN_DONE;
+}
+
 USER_FUNC(_get_swallow_param) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -36,6 +75,47 @@ USER_FUNC(_get_swallow_param) {
     index = args[1];
     unit = BattleGetUnitPtr(work, id);
     evtSetValue(event, index, unit->swallowRate);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_check_swallow_attribute) {
+    BattleWork* work;
+    BattleUnit* unit;
+    s32 val;
+    u16 mask;
+    s32* args;
+    s32 index;
+    s32 id;
+
+    args = event->args;
+    work = _battleWorkPointer;
+    val = evtGetValue(event, args[0]);
+    id = BattleTransID(event, val);
+    mask = args[1];
+    index = args[2];
+    unit = BattleGetUnitPtr(work, id);
+    if ((u8)unit->swallowAttribute & mask) {
+        evtSetValue(event, index, 1);
+    } else {
+        evtSetValue(event, index, 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_wait_yoshig_run) {
+    BattleUnit* unit;
+    s32 val;
+    f32* area;
+
+    val = evtGetValue(event, event->args[0]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, val));
+    area = *(f32**)((u8*)unit + 0x310);
+    if (area == NULL) {
+        return 0;
+    }
+    if (*(f32*)((u8*)area + 0x3008) <= 0.0f) {
+        return 0;
+    }
     return EVT_RETURN_DONE;
 }
 

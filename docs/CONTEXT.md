@@ -2458,3 +2458,23 @@ The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only fu
 - **eff_itemget**: reordering alone brings its `.sdata2` pool to four differing words (the -21.333334 / 42.666668 / 2.0 / 0.5
   first-use order in effItemUseDisp) but the two GXColor stack slots (black and white temp, inline or local) and the FP
   register naming of the `-f * 0.5f` init were not solved, so it is not in this change.
+
+## Grind 25 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **eff_n64 links**: the five functions that were unwritten (`tri2`, `effGetTexObjN64`, `effGetSetN64`, `effSetVtxDescN64`,
+  `effTexSetupN64`) and the unit's `.data` tables (`eff_set_n64`, `_rand_table`) came from the dead `src/effect/eff_n64.c`,
+  which is deleted. Two things fixed the last words: the polarity of the two `if` tests (`if (!loaded) { ... } else { ... }`
+  as the target lays them) and the function-local `dummy`, which the target has in `.sdata` at a 32-byte offset. That takes
+  `static u8 dummy ATTRIBUTE_ALIGN(32) = 0;` under `#pragma explicit_zero_data on` (the same idiom as `effGetTexObj` in
+  effdrv.c): without the pragma a zero initialiser goes to `.sbss`.
+- **Matches by shape**: chuchurina `mono_off`, `mono_capture`, `_make_madowase_weapon`, `_get_itemsteal_param`, yoshi
+  `_wait_yoshig_run`, `_check_swallow_attribute` (100%). `_check_swallow_attribute` needed only a declaration-order search
+  (`tools/perm_decls.py`, plain declaration lines with the assignments after them). `_get_binta_hit_position` and
+  `_get_nomikomi_hit_position` are the same function in two units; both stop at 92 to 93% on callee-saved register
+  assignment (event/args/work), decls searched with 150 shuffles.
+- **battle_sub**: `btlMovePos` written (80.67%). The original is built `-O4,s`; a flag sweep gives 91.51% for it and 89.05%
+  for `btlsubResetMoveColorLvAll`. The flag change is in its own PR.
+- **Flag sweep over every unit with a function below 100%** (295 units, `--quick`: -O4,p / -O4,s, pragmas kept or dropped):
+  only -O4,s helps, in battle_sub, battle_status_icon (BattleStatusIconMain 86.59 -> 88.55), party_kuribo (7.49 -> 7.66) and
+  eff_kemuri1_n64 (17.27 -> 17.88), besides the fourteen files of the earlier sweep. No unit prefers -O4,p over its
+  current flags.
