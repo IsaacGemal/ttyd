@@ -90,11 +90,6 @@ const Vec vec3_muj_000141a4 = {0.0f, -2016.0f, 0.0f};
 
 // Pooled scalar constants live in the REL's generated rodata objects, not in this unit.
 extern const f64 double_to_int_muj_00014350;
-extern const f32 zero_muj_00014358;
-extern const f32 float_0p5_muj_0001435c;
-extern const f32 zero_muj_00014364;
-extern const f32 float_neg15_muj_00014368;
-extern const f32 float_1_muj_0001436c;
 
 // clang-format off
 extend_data(116,
@@ -203,10 +198,10 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
             case 0x7B:
             case 0x7C:
             case 0x7D:
-                yOff = float_neg15_muj_00014368;
+                yOff = -15.0f;
                 break;
             default:
-                yOff = zero_muj_00014358;
+                yOff = 0.0f;
                 break;
             }
 #ifdef MUST_MATCH
@@ -215,7 +210,7 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
             pos = btn->position;
 #endif
             pos.y += yOff;
-            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, float_1_muj_0001436c);
+            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
         }
     }
 }
@@ -262,7 +257,7 @@ static USER_FUNC(lecture_button_rtn) {
     if (done >= 2) {
         return EVT_RETURN_DONE;
     }
-    dispEntry(CAMERA_2D, zero_muj_00014364, 1, lecture_button_disp, NULL);
+    dispEntry(CAMERA_2D, 0.0f, 1, lecture_button_disp, NULL);
     return EVT_RETURN_BLOCK;
 }
 static USER_FUNC(lecture_button_set_icon_id) {
@@ -609,13 +604,13 @@ static USER_FUNC(lect_itemget_kesan) {
     dist = evtGetFloat(event, args[1]);
     cam = camGetPtr(CAMERA_3D);
     if (party == NULL) {
-        evtSetFloat(event, args[2], zero_muj_00014358);
-        evtSetFloat(event, args[3], zero_muj_00014358);
-        evtSetFloat(event, args[4], zero_muj_00014358);
+        evtSetFloat(event, args[2], 0.0f);
+        evtSetFloat(event, args[3], 0.0f);
+        evtSetFloat(event, args[4], 0.0f);
         return EVT_RETURN_DONE;
     }
     pos = party->position;
-    pos.y += *(f32*)((u8*)party + 0xF0) * float_0p5_muj_0001435c;
+    pos.y += *(f32*)((u8*)party + 0xF0) / 2.0f;
     PSVECSubtract(&pos, &cam->cameraPos, &dir);
     PSVECNormalize(&dir, &dir);
     PSVECScale(&dir, &dir, dist);
