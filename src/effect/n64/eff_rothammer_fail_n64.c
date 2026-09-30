@@ -11,6 +11,11 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_80423254_sbss2;
+__declspec(section ".sdata") GXColor unk_80423250;
+
 u32 size24x24_tex32x32_vtx[14] = {
     0xFFF4FFF4, 0x00000000, 0x00000000, 0x00FF000C,
     0xFFF40000, 0xFC000000, 0x000000FF, 0x000C000C,
@@ -20,8 +25,7 @@ u32 size24x24_tex32x32_vtx[14] = {
 
 // .sdata2/.rodata/.data objects defined by the original unit's split map.
 
-extern GXColor dat_8041fbc8;
-GXColor unk_80423250;
+extern const GXColor dat_8041fbc8;
 
 typedef struct effRotHammerFailParticle {
 	u8 field_0x00[4];    // 0x00
@@ -245,3 +249,5 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 #pragma opt_common_subs reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+const GXColor dat_8041fbc8 = { 0xE6, 0xDE, 0xDE, 0x82 };

@@ -641,7 +641,7 @@ config.libs = [
             Object(NonMatching, "effect/n64/eff_recover_heart_n64.c"),
             Object(NonMatching, "effect/n64/eff_release_n64.c"),
             Object(NonMatching, "effect/n64/eff_ripple_n64.c"),
-            Object(NonMatching, "effect/n64/eff_rothammer_fail_n64.c"),
+            Object(Matching, "effect/n64/eff_rothammer_fail_n64.c"),
             Object(Matching, "effect/n64/eff_rothammer_success_n64.c"),
             Object(Matching, "effect/n64/eff_rubble_n64.c"),
             Object(NonMatching, "effect/n64/eff_shock_n64.c"),
