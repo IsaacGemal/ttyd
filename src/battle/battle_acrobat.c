@@ -36,14 +36,14 @@ s32 BattleAcrobatMain(BattleWork* work) {
 		work->mStylishResult = 1;
 		return EVT_RETURN_YIELD;
 	}
-	if ((work->badgeEquippedFlags & 4) && (work->mStylishWindowStart < work->mStylishCurFrame <= work->mStylishWindowEnd)) {
+	if ((work->badgeEquippedFlags & 4) && (work->mStylishCurFrame > work->mStylishWindowStart && work->mStylishCurFrame <= work->mStylishWindowEnd)) {
 		Vec v11 = { 0 };
 		v11.x = unit->mPosition.x;
 		v11.y = unit->mPosition.y;
 		v11.z = 15.0f + unit->mPosition.z;
 		dispEntry(CAMERA_3D, dispCalcZ(&v11), 1, _accrobat_timing_icon_disp, unit);
 	}
-	if (unit->badgesEquipped.AutoCommand && (work->mStylishWindowStart < work->mStylishCurFrame <= work->mStylishWindowEnd)) {
+	if (unit->badgesEquipped.AutoCommand && (work->mStylishCurFrame > work->mStylishWindowStart && work->mStylishCurFrame <= work->mStylishWindowEnd)) {
 		doSimplified = TRUE;
 	}
 	if (work->mStylishCurFrame <= 1 && work->mStylishEarlyFrames > 0) {
@@ -59,21 +59,21 @@ s32 BattleAcrobatMain(BattleWork* work) {
 			work->mStylishResult = -1;
 			return EVT_RETURN_YIELD;
 		}
-		else if (work->mStylishCurFrame > work->mStylishWindowEnd) {
-			work->mStylishResult = -2;
-			return EVT_RETURN_YIELD;
-		}
-		else {
+		else if (work->mStylishCurFrame <= work->mStylishWindowEnd) {
 			work->mStylishResult = 2;
 			return EVT_RETURN_YIELD;
 		}
+		else {
+			work->mStylishResult = -2;
+			return EVT_RETURN_YIELD;
+		}
 	}
-	else if (work->mStylishCurFrame < work->mStylishEndFrame) {
-		return EVT_RETURN_BLOCK;
-	}
-	else {
+	else if (work->mStylishCurFrame >= work->mStylishEndFrame) {
 		work->mStylishResult = 1;
 		return EVT_RETURN_YIELD;
+	}
+	else {
+		return EVT_RETURN_BLOCK;
 	}
 }
 

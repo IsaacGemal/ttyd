@@ -153,7 +153,7 @@ u32 BattlePadGetNow(void) {
 }
 
 // NONMATCHING (22.00%): 3 instructions differ, 6 missing.
-u32 BattlePadCheckTrigger(s32 mask) {
+s32 BattlePadCheckTrigger(s32 mask) {
 	return BattlePadMultiCheckTrigger(0, mask);
 }
 
@@ -163,7 +163,7 @@ u32  BattlePadMultiCheckTrigger(s32 chan, s32 mask) {
 }
 
 // NONMATCHING (1.82%): 3 instructions differ, 7 missing, 2 extra.
-u32 BattlePadCheckRecordTrigger(s32 frame, s32 mask) {
+s32 BattlePadCheckRecordTrigger(s32 frame, s32 mask) {
 	return BattlePadMultiCheckRecordTrigger(0, frame, mask);
 }
 

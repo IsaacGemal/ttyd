@@ -2201,3 +2201,6 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
   original keeps far fewer registers live). `ARCClose` takes the file info now.
 - **BattleInformationInit** matches: the four setters are `dont_inline` (they are real calls in retail, including
   `BattleInformationSetResult`, which is defined after `Init`). **romFontGetWidth** 96.8% (the cached `wp` register).
+- **battle_monosiri** and **battle_acrobat** linked (Claude #3). Acrobat: `-O4,s` for the stmw prologue; the window test is
+  `cur > start && cur <= end` (not a chained compare); `BattlePadCheckTrigger`/`RecordTrigger` return `s32` (the tests are
+  `cmpwi`). `btlataudGetMoveEventPtr` matches (`case 0: break;`); `_attack_aud` 99.7% (`args` lands in r31, target r29).

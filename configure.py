@@ -369,7 +369,7 @@ config.libs = [
             Object(NonMatching, "battle/battle_weapon_power.c", extra_cflags=["-O4,s", "-inline none"]),
             Object(Matching, "battle/battle_actrecord.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_audience_kinopio.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/battle_acrobat.c"),
+            Object(Matching, "battle/battle_acrobat.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_status_effect.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_audience.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_icon.c"),
