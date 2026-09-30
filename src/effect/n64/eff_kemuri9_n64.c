@@ -157,13 +157,14 @@ void effKemuri9Main(EffectEntry* effect) {
     dispEntry(4, dispCalcZ(&position), 2, effKemuri9Disp, effect);
 }
 
-// NONMATCHING (88.47%): setup, GX state and TEV sequence match; the loop's float register allocation
-// differs. MWCC keeps the corner constants 0.0/1.0 live in f30/f29 (frame 0x150, three saved FPRs)
-// where the target reloads them per vertex, and it CSEs the four `size * 0.5` corners into two.
+// The two locals `size`/`size2` are deliberate: MWCC only emits the target's duplicate `fmr` of the
+// half-size and the four separate `size * 0.5` corners when the value is assigned to two variables in
+// each branch. The vertex coords use `0.0f`/`1.0f` literals so MWCC reloads them per store instead of
+// hoisting them into two extra FPRs (frame 0x130, f31 only, matches the target). Both quirks live under
+// MUST_MATCH, with the natural single-variable/named-constant form under #else.
 void effKemuri9Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effKemuri9Data* data;
-    effKemuri9Particle* p;
     CameraEntry* cam;
     GXTexObj texObj;
     Mtx mtxWork;
@@ -171,16 +172,17 @@ void effKemuri9Disp(CameraId camId, void* param) {
     Mtx mtxRot;
     Mtx mtxView;
     s32 field30;
-    s32 field34;
     s32 type;
     s32 i;
     f32 size;
+    f32 size2;
+    s32 field34;
 
     cam = camGetPtr(camId);
     data = effect->userdata;
-    type = data->type;
     field30 = data->field_0x30;
     field34 = data->field_0x34;
+    type = data->type;
 
     PSMTXTrans(mtxWork, data->x, data->y, data->z);
     PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041f47c);
@@ -198,12 +200,12 @@ void effKemuri9Disp(CameraId camId, void* param) {
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
     GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
 
-    PSMTXTrans(mtxWork, (f32)field30 * float_0p0625_8041f484, float_0_8041f488, float_0_8041f488);
+    PSMTXTrans(mtxWork, float_0p0625_8041f484 * (f32)field30, float_0_8041f488, float_0_8041f488);
     PSMTXScale(mtxScale, float_0p0625_8041f484, float_1_8041f480, float_1_8041f480);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x1E, 1);
 
-    PSMTXTrans(mtxWork, (f32)field34 * float_0p0625_8041f484, float_0_8041f488, float_0_8041f488);
+    PSMTXTrans(mtxWork, float_0p0625_8041f484 * (f32)field34, float_0_8041f488, float_0_8041f488);
     PSMTXScale(mtxScale, float_0p0625_8041f484, float_1_8041f480, float_1_8041f480);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x21, 1);
@@ -231,19 +233,35 @@ void effKemuri9Disp(CameraId camId, void* param) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 13, 1, 4, 0);
 
-    p = (effKemuri9Particle*)(data + 1);
-    for (i = 1; i < effect->count; i++, p++) {
-        PSMTXTrans(mtxWork, p->x, p->y, p->z);
+    data++;
+    for (i = 1; i < effect->count; i++, data++) {
+        PSMTXTrans(mtxWork, data->x, data->y, data->z);
         PSMTXConcat(mtxView, mtxWork, mtxWork);
         GXLoadPosMtxImm(mtxWork, 0);
         GXSetCurrentMtx(0);
         GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+        // Assigned to two variables so MWCC emits the target's duplicate `fmr` and its four separate
+        // `size * 0.5` corners; the 0.0/1.0 literals make it reload them per store instead of hoisting
+        // them into two extra FPRs (the frame stays 0x130 with only f31 saved).
         if (type != 0) {
             size = float_16_8041f48c;
+            size2 = size;
         }
         else {
             size = float_32_8041f490;
+            size2 = size;
         }
+        GXPosition3f32(-size2 * float_0p5_8041f494, size * float_0p5_8041f494, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(size2 * float_0p5_8041f494, size * float_0p5_8041f494, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(size2 * float_0p5_8041f494, -size * float_0p5_8041f494, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-size2 * float_0p5_8041f494, -size * float_0p5_8041f494, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+#else
+        size = (type != 0) ? float_16_8041f48c : float_32_8041f490;
         GXPosition3f32(-size * float_0p5_8041f494, size * float_0p5_8041f494, float_0_8041f488);
         GXTexCoord2f32(float_0_8041f488, float_0_8041f488);
         GXPosition3f32(size * float_0p5_8041f494, size * float_0p5_8041f494, float_0_8041f488);
@@ -252,5 +270,6 @@ void effKemuri9Disp(CameraId camId, void* param) {
         GXTexCoord2f32(float_1_8041f480, float_1_8041f480);
         GXPosition3f32(-size * float_0p5_8041f494, -size * float_0p5_8041f494, float_0_8041f488);
         GXTexCoord2f32(float_0_8041f488, float_1_8041f480);
+#endif
     }
 }

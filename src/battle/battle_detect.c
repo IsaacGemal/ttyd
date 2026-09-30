@@ -24,21 +24,6 @@ const f32 float_1_8041bf1c = 1.0f;
 const f32 float_0p05_8041bf20 = 0.05f;
 const f32 float_5_8041bf24 = 5.0f;
 
-// Sampling work block lives inside BattleWork at offset 0x428 (wp->field_428).
-typedef struct BattleSampling {
-    BattleWeapon* weapon;          // 0x0
-    u8 entries[0xA6C - 0x4];       // 0x4, 74 entries of 0x24 bytes
-    s8 count;                      // 0xA6C
-    u8 order[0xAB7 - 0xA6D];       // 0xA6D
-    s8 selectIdx;                  // 0xAB7
-    s32 unitId;                    // 0xAB8
-    s8 belong;                     // 0xABC
-    u8 pad_0xABD[0xAC0 - 0xABD];  // 0xABD
-    u32 field_0xAC0;               // 0xAC0
-    u32 field_0xAC4;               // 0xAC4
-    s8 attackDirection;            // 0xAC8
-} BattleSampling;
-
 typedef struct BattleSamplingEntry {
     s16 unitId;      // 0x0
     s16 partId;      // 0x2
@@ -55,6 +40,21 @@ typedef struct BattleSamplingEntry {
     u8 pad_0x1E[2];  // 0x1E
     s32 field_0x20;  // 0x20
 } BattleSamplingEntry;
+
+// Sampling work block lives inside BattleWork at offset 0x428 (wp->field_428).
+typedef struct BattleSampling {
+    BattleWeapon* weapon;          // 0x0
+    BattleSamplingEntry entries[74]; // 0x4
+    s8 count;                      // 0xA6C
+    u8 order[0xAB7 - 0xA6D];       // 0xA6D
+    s8 selectIdx;                  // 0xAB7
+    s32 unitId;                    // 0xAB8
+    s8 belong;                     // 0xABC
+    u8 pad_0xABD[0xAC0 - 0xABD];  // 0xABD
+    u32 field_0xAC0;               // 0xAC0
+    u32 field_0xAC4;               // 0xAC4
+    s8 attackDirection;            // 0xAC8
+} BattleSampling;
 
 // NONMATCHING (71.30%): logic follows the asm (checked in review); register allocation is globally shifted
 // (sampling r31 vs r30, wp r26 vs r31) and the int->double pool constant is an anonymous @N@ symbol.
@@ -373,28 +373,20 @@ void BattleSamplingEnemyUpdate(u8* sampling) {
     _btlSamplingEnemy(sampling);
 }
 
-// NONMATCHING (88.06%): same logic/control flow; register allocation differs globally (params/flags land
-// in r15-r18/r19-r24 vs retail r16-r19/r14,r23-r28), so most instructions differ only by register.
+// Remaining diffs: (1) the `e = order[n]` load uses r0 instead of r15 (lbzx r0; extsb r15,r0 vs
+// lbzx r15; extsb r15,r15); (2) f-register/stack-slot choices in the default itemDataTable FP block;
+// (3) sp_restored is s8 in ItemData.h so it emits `lbz; extsb.` where retail's `lbz; cmplwi` shows u8.
+// NONMATCHING (99.44%): logic, integer register allocation and switch order match; diffs listed above.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
+    s32 n;
+    s32 e;
+    BattleUnit* unit;
+    f32 rate;
     BattleWork* wp = _battleWorkPointer;
-    BattleSampling* s = (BattleSampling*)sampling;
     s32 weights[74];
     BattleUnit* baseUnit;
-    BattleUnit* unit;
-    s32 n;
+    BattleSampling* s = (BattleSampling*)sampling;
     s32 i;
-    s32 e;
-    u32 f0x1;
-    u32 f0x2;
-    u32 f0x4;
-    u32 f0x8;
-    u32 f0x10;
-    u32 f0x20;
-    u32 f0x100;
-    u32 f0x200;
-    u32 f0x400;
-    u32 f0x800;
-    u32 f0x1000;
 
     *outId = -1;
     *outPartId = 0;
@@ -404,68 +396,56 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
 
     baseUnit = BattleGetUnitPtr(wp, s->unitId);
     n = (s8)s->order[0];
-    *outId = (*(BattleSamplingEntry*)(sampling + 4 + n * 0x24)).unitId;
-    *outPartId = (*(BattleSamplingEntry*)(sampling + 4 + n * 0x24)).partId;
+    *outId = s->entries[n].unitId;
+    *outPartId = s->entries[n].partId;
 
     for (i = 0; i < 74; i++) {
         weights[i] = 0;
     }
     weights[(s8)s->order[0]] += 10;
 
-    f0x1 = flags & 0x1;
-    f0x2 = flags & 0x2;
-    f0x4 = flags & 0x4;
-    f0x8 = flags & 0x8;
-    f0x10 = flags & 0x10;
-    f0x20 = flags & 0x20;
-    f0x100 = flags & 0x100;
-    f0x200 = flags & 0x200;
-    f0x400 = flags & 0x400;
-    f0x800 = flags & 0x800;
-    f0x1000 = flags & 0x1000;
-
     for (n = 0; n < s->count; n++) {
         e = (s8)s->order[n];
 
-        unit = BattleGetUnitPtr(wp, (*(BattleSamplingEntry*)(sampling + 4 + e * 0x24)).unitId);
+        unit = BattleGetUnitPtr(wp, s->entries[e].unitId);
         weights[e] += 100;
-        if (f0x1 && unit->currentKind == 0xDE) {
+        if ((flags & 0x1) && unit->currentKind == 0xDE) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
-        if (f0x2 && unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
+        if ((flags & 0x2) && unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
-        if (f0x4) {
-            weights[e] = (s32)((f32)weights[e] *
-                               ((f32)(s->count - n) * float_0p4_8041bf10 + float_0p1_8041bf0c));
+        if ((flags & 0x4)) {
+            rate = (f32)(s->count - n) * float_0p4_8041bf10;
+            weights[e] = (s32)((f32)weights[e] * (float_0p1_8041bf0c + rate));
         }
-        if (f0x8) {
-            weights[e] = (s32)((f32)weights[e] *
-                               ((f32)n * float_0p4_8041bf10 + float_0p5_8041bf14));
+        if ((flags & 0x8)) {
+            rate = float_0p4_8041bf10 * (f32)n;
+            weights[e] = (s32)((float_0p5_8041bf14 + rate) * (f32)weights[e]);
         }
-        if (f0x10 && baseUnit->mAlliance == unit->mAlliance) {
+        if ((flags & 0x10) && baseUnit->mAlliance == unit->mAlliance) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
-        if (f0x20 && baseUnit->mAlliance != unit->mAlliance && unit->mAlliance != 2) {
+        if ((flags & 0x20) && baseUnit->mAlliance != unit->mAlliance && unit->mAlliance != 2) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
-        if (f0x100) {
-            weights[e] = (s32)((f32)weights[e] *
-                               (float_2_8041bf18 - (f32)unit->currentHp / (f32)unit->maxHp));
+        if ((flags & 0x100)) {
+            weights[e] = (s32)((float_2_8041bf18 - (f32)unit->currentHp / (f32)unit->maxHp) *
+                               (f32)weights[e]);
         }
-        if (f0x200) {
-            weights[e] = (s32)((f32)weights[e] *
-                               (float_1_8041bf1c + (f32)unit->currentHp / (f32)unit->maxHp));
+        if ((flags & 0x200)) {
+            weights[e] = (s32)((float_1_8041bf1c + (f32)unit->currentHp / (f32)unit->maxHp) *
+                               (f32)weights[e]);
         }
-        if (f0x400) {
-            weights[e] = (s32)((f32)weights[e] *
-                               (float_1p5_8041bf08 - (f32)unit->currentHp * float_0p05_8041bf20));
+        if ((flags & 0x400)) {
+            weights[e] = (s32)((float_1p5_8041bf08 - (f32)unit->currentHp * float_0p05_8041bf20) *
+                               (f32)weights[e]);
         }
-        if (f0x800) {
-            weights[e] = (s32)((f32)weights[e] *
-                               (float_1_8041bf1c + (f32)unit->currentHp * float_0p05_8041bf20));
+        if ((flags & 0x800)) {
+            weights[e] = (s32)((float_1_8041bf1c + (f32)unit->currentHp * float_0p05_8041bf20) *
+                               (f32)weights[e]);
         }
-        if (f0x1000 && unit->currentHp <= unit->mKindParams->mPerilHP) {
+        if ((flags & 0x1000) && unit->currentHp <= unit->mKindParams->mPerilHP) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
 
@@ -474,6 +454,21 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                 weights[e] = 1;
             }
             switch (s->weapon->item) {
+                case 0x8E:
+                    if (BtlUnit_CanActStatus(unit) == 0 ||
+                        BtlUnit_CheckStatus(unit, 0x0A)) {
+                        weights[e] = 1;
+                    }
+                    break;
+                case 0x92:
+                    if (BtlUnit_CheckStatus(unit, 0x0B)) weights[e] = 1;
+                    break;
+                case 0x93:
+                    if (BtlUnit_CheckStatus(unit, 0x0F)) weights[e] = 1;
+                    break;
+                case 0x8F:
+                    if (BtlUnit_CheckStatus(unit, 0x0E)) weights[e] = 1;
+                    break;
                 case 0x86:
                     if (BtlUnit_CheckStatus(unit, 0x12)) weights[e] = 1;
                     break;
@@ -485,22 +480,6 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                     break;
                 case 0x89:
                     if (BtlUnit_CheckStatus(unit, 0x05)) weights[e] = 1;
-                    break;
-                case 0x8E:
-                    if (BtlUnit_CanActStatus(unit) == 0) {
-                        weights[e] = 1;
-                    } else if (BtlUnit_CheckStatus(unit, 0x0A)) {
-                        weights[e] = 1;
-                    }
-                    break;
-                case 0x8F:
-                    if (BtlUnit_CheckStatus(unit, 0x0E)) weights[e] = 1;
-                    break;
-                case 0x92:
-                    if (BtlUnit_CheckStatus(unit, 0x0B)) weights[e] = 1;
-                    break;
-                case 0x93:
-                    if (BtlUnit_CheckStatus(unit, 0x0F)) weights[e] = 1;
                     break;
                 case 0x99:
                     if (BtlUnit_CheckStatus(unit, 0x01) == 0 &&
@@ -519,22 +498,22 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                 case 0x0:
                     break;
                 default: {
-                    s32 id = s->weapon->item;
                     s32 maxFp;
 
-                    if (itemDataTable[id].fp_restored == 0) {
+                    if (itemDataTable[s->weapon->item].fp_restored == 0) {
                         break;
                     }
                     maxFp = BtlUnit_GetMaxFp(unit);
                     if (BtlUnit_GetFp(unit) < maxFp) {
-                        s32 curFp = BtlUnit_GetFp(unit);
+                        s32 curFp;
                         maxFp = BtlUnit_GetMaxFp(unit);
+                        curFp = BtlUnit_GetFp(unit);
                         weights[e] = (s32)((f32)weights[e] *
                                            (float_1_8041bf1c +
                                             float_0p1_8041bf0c * (f32)(maxFp - curFp)));
                     } else {
-                        if (itemDataTable[id].hp_restored == 0 &&
-                            itemDataTable[id].sp_restored == 0) {
+                        if (itemDataTable[s->weapon->item].hp_restored == 0 &&
+                            itemDataTable[s->weapon->item].sp_restored == 0) {
                             weights[e] = 1;
                         }
                     }
@@ -554,8 +533,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                 bestWeight = weights[i];
             }
         }
-        *outId = (*(BattleSamplingEntry*)(sampling + 4 + best * 0x24)).unitId;
-        *outPartId = (*(BattleSamplingEntry*)(sampling + 4 + best * 0x24)).partId;
+        *outId = s->entries[best].unitId;
+        *outPartId = s->entries[best].partId;
     } else {
         s32 sum = 0;
         s32 pick;
@@ -570,8 +549,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                 break;
             }
         }
-        *outId = (*(BattleSamplingEntry*)(sampling + 4 + i * 0x24)).unitId;
-        *outPartId = (*(BattleSamplingEntry*)(sampling + 4 + i * 0x24)).partId;
+        *outId = s->entries[i].unitId;
+        *outPartId = s->entries[i].partId;
     }
 }
 

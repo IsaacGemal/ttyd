@@ -195,8 +195,6 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 	return effect;
 }
 
-// NONMATCHING (98.83%): one instruction scheduled differently (the data->timer reload is placed after
-// the first if instead of before its branch) and a register-name difference.
 void effPokopiPchargeMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
@@ -206,6 +204,11 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 	Vec disp = { 0.0f, 0.0f, 0.0f };
 	effPokopiPchargeData* data = effect->userdata;
 	s32 i;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: caching data->timer in a local makes the compiler load it before the first
+	   branch, matching retail's scheduling. */
+	s32 timer;
+#endif
 
 	disp.x = data->x;
 	disp.y = data->y;
@@ -226,12 +229,22 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
+#ifdef MUST_MATCH
+	timer = data->timer;
+	if (data->lifetime < 16) {
+		data->a = data->lifetime << 4;
+	}
+	if (timer < 16) {
+		data->a = (timer << 4) + 0xf;
+	}
+#else
 	if (data->lifetime < 16) {
 		data->a = data->lifetime << 4;
 	}
 	if (data->timer < 16) {
 		data->a = (data->timer << 4) + 0xf;
 	}
+#endif
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {

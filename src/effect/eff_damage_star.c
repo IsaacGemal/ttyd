@@ -16,7 +16,8 @@ const f64 double_to_int_802f3458 = 4503601774854144.0;
 const f64 double_to_int_mask_802f3460 = 4503599627370496.0;
 const char str_802F3468[] = "DamageStar";
 
-// .data
+// .sdata2/sbss2 globals used by effDamageStarDisp's colour build.
+GXColor unk_80423038;
 u32 damageStar_effHermit_0[312] = {
 	0x0000FD80, 0x00000008, 0x00000000, 0x0000000C, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000040, 0x00000000,
@@ -343,44 +344,45 @@ void effDamageStarMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
 }
 
-// NONMATCHING (85.47%): 4 instructions differ, 102 missing, 11 extra, plus register differences.
+// NONMATCHING (99.69%): only the two by-value GXColor argument-copy stack slots are swapped (retail's mat colour local 0x10 / ambcolour 0x14; ours 0x14 / 0x10), which also reassigns one mulhw destination and the alpha load; the trailing int->float conversion uses f0/f1 not retail's f4/f1 (same ops, pooled anonymous constants).
 void effDamageStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     DamageStarData* data;
     CameraEntry* cam;
     GXTexObj texObj;
     GXColor color;
-    Mtx mtx58;
-    Mtx mtx88;
-    Mtx mtxB8;
-    Mtx mtxE8;
-    Mtx mtx118;
-    Mtx mtx148;
-    Mtx mtx178;
-    Mtx mtx1A8;
-    Mtx mtx1D8;
-    Mtx mtx208;
-    Mtx mtx238;
-    Mtx mtx268;
     Mtx mtx298;
-    s32 type;
-    s32 frame;
-    s32 count;
+    Mtx mtx268;
+    Mtx mtx238;
+    Mtx mtx208;
+    Mtx mtx1D8;
+    Mtx mtx1A8;
+    Mtx mtx178;
+    Mtx mtx148;
+    Mtx mtx118;
+    Mtx mtxE8;
+    Mtx mtxB8;
+    Mtx mtx88;
+    Mtx mtx58;
     s32 flag;
     f32 angle;
+    DamageStarData* elem;
     s32 i;
-    char buf[16];
+    s32 frame;
+    s32 count;
+    s32 type;
+    char buf[32];
 
     cam = camGetPtr(camId);
     data = effect->userdata;
     angle = data->angle;
     frame = data->frame;
+    count = data->field_0x3C;
     if (angle > 0.0f) {
         flag = 1;
     } else {
         flag = 0;
     }
-    count = data->field_0x3C;
     type = data->type;
 
     PSMTXRotRad(mtx268, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
@@ -411,6 +413,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     GXSetVtxDesc(0xD, 1);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
+    elem = &((DamageStarData*)effect->userdata)[2];
     GXSetBlendMode(0, 1, 0, 0);
     GXSetZCompLoc(0);
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
@@ -427,14 +430,16 @@ void effDamageStarDisp(CameraId camId, void* param) {
         GXLoadTexObj(&texObj, 2);
     }
 
-    for (i = 2; i < effect->count; i++) {
-        DamageStarData* elem = &data[i];
-        s32 idx = (i + frame) % 12;
+    for (i = 2; i < effect->count; i++, elem++) {
+        s32 idx;
+
+        color = unk_80423038;
+        color.a = elem->alpha;
+        idx = (i + frame) % 12;
 
         color.r = color_rotation_data[idx * 3 + 0];
         color.g = color_rotation_data[idx * 3 + 1];
         color.b = color_rotation_data[idx * 3 + 2];
-        color.a = elem->alpha;
         GXSetChanMatColor(4, color);
 
         PSMTXIdentity(mtx1D8);
@@ -445,7 +450,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
         PSMTXScale(mtx178, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx1D8, mtx178, mtx1D8);
         PSMTXConcat(mtx298, mtx1D8, mtx178);
-        PSMTXConcat(cam->view, mtx178, mtx178);
+        PSMTXConcat(camGetPtr(camId)->view, mtx178, mtx178);
         GXLoadPosMtxImm(mtx178, 0);
         GXSetCurrentMtx(0);
 
@@ -479,10 +484,11 @@ void effDamageStarDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx88, mtxB8, mtx148);
     if (flag == 0) {
         PSMTXScale(mtx58, 12.0f, 12.0f, 12.0f);
+        PSMTXConcat(mtx148, mtx58, mtx148);
     } else {
         PSMTXScale(mtx58, -12.0f, 12.0f, 12.0f);
+        PSMTXConcat(mtx148, mtx58, mtx148);
     }
-    PSMTXConcat(mtx148, mtx58, mtx148);
     PSMTXTrans(mtx88, 10.0f, -1.5f, 0.0f);
     PSMTXConcat(mtx148, mtx88, mtx148);
     {
@@ -511,17 +517,25 @@ void effDamageStarDisp(CameraId camId, void* param) {
         effGetTexObj(0x27, &texObj);
         GXLoadTexObj(&texObj, 3);
         GXBegin(0x80, 0, 4);
+        GXPosition3f32(-2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 0.0f);
+        GXPosition3f32(2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 1.0f);
+        GXPosition3f32(-2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
     } else {
         GXBegin(0x80, 0, 4);
+        GXPosition3f32(-2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 0.0f);
+        GXPosition3f32(2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 1.0f);
+        GXPosition3f32(-2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
     }
-    GXPosition3f32(-2.0f, 2.0f, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(2.0f, 2.0f, 0.0f);
-    GXTexCoord2f32(2.0f, 0.0f);
-    GXPosition3f32(2.0f, -2.0f, 0.0f);
-    GXTexCoord2f32(2.0f, 1.0f);
-    GXPosition3f32(-2.0f, -2.0f, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
 
     PSMTXConcat(cam->view, mtx148, mtx118);
     GXLoadPosMtxImm(mtx118, 0);
@@ -537,17 +551,25 @@ void effDamageStarDisp(CameraId camId, void* param) {
         GXLoadTexObj(&texObj, 2);
         GXSetTevOp(0, 3);
         GXBegin(0x80, 0, 4);
+        GXPosition3f32(-2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
     } else {
         GXBegin(0x80, 0, 4);
+        GXPosition3f32(-2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(2.0f, 2.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-2.0f, -2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
     }
-    GXPosition3f32(-2.0f, 2.0f, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(2.0f, 2.0f, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(2.0f, -2.0f, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(-2.0f, -2.0f, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
 
     mtxGetRotationElement(mtx148, mtxE8, 'y', 'x');
     PSMTXInverse(mtxE8, mtxE8);

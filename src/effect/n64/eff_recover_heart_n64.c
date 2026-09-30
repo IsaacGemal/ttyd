@@ -11,8 +11,12 @@
 
 // .rodata
 const Vec vec3_802fb4c8 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb4d8 = 4503601774854144.0;
-const char str_802FB4E0[] = "RecoverHeartN64";
+// The int-to-float magic double is MWCC's own pool entry; declaring it (rather than
+// defining it) keeps the pool at the original's .rodata offset (0x10) so objdiff
+// resolves the @NNN local to the original's symbol. effRecoverHeartN64Entry passes
+// "RecoverHeartN64" as a literal for the same reason: a named char array would be
+// emitted before the pool and push it to 0x20.
+extern const f64 double_to_int_802fb4d8;
 
 // .sdata
 f32 scale_w_dat[7] = { 0.25f, 0.5f, 0.75f, 1.0f, 0.9f, 1.1f, 1.0f };
@@ -34,6 +38,16 @@ extern const f32 float_0p0026042_8041fb18;
 
 // uninitialized GXColor (alpha is filled in per particle)
 extern u32 unk_80423238;
+
+// .data base the retail effRecoverHeartDisp reaches its vertex arrays from; it is
+// defined in eff_rappa_n64.c (the previous unit's last object) and only its address
+// is used here.
+#ifdef MUST_MATCH
+extern u32 lbl_803A4A60[];
+#define VTX(off, name) ((effVtxArray*)(dataBase + (off)))
+#else
+#define VTX(off, name) ((effVtxArray*)(name))
+#endif
 
 // .data
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
@@ -106,7 +120,7 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 	RecoverHeartData* data;
 
 	effect = effEntry();
-	effect->type = str_802FB4E0;
+	effect->type = "RecoverHeartN64";
 	effect->count = 2;
 	data = __memAlloc(HEAP_EFFECT, 0x90);
 	effect->userdata = data;
@@ -220,12 +234,23 @@ void effRecoverHeartMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRecoverHeartDisp, effect);
 }
 
+#ifdef MUST_MATCH
+// The original builds the GXColor in the inline's own frame slot and passes the
+// pointer to GXSetTevColor; doing the build and the call in one inline puts the
+// local and the outgoing copy in the original's stack slots.
+static inline void recoverHeartSetColor(RecoverHeartData* d) {
+	GXColor color = *(GXColor*)&unk_80423238;
+	color.a = d->field_0x28;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+#endif
+
 // Keep this the last function in the file: MWCC reads global_optimizer when the unit is finalized, so a
 // trailing `global_optimizer reset` drops the setting for this function too (95.5%).
 #pragma global_optimizer off // needed so MWCC keeps the loop-invariant tile-offset arithmetic inside the loop and emits the two independent life/10 and life%10 divisions (without it: 96.9%)
-// NONMATCHING (99.97%): only the .data base symbol (lbl_803A4A60 vs this build's local section symbol,
-// so seven tile-array addis read +0x38 instead of +0x40), the pooled int->float magic
-// (double_to_int_802fb4d8 vs a local @260) and the GXSetTevColor GXColor stack slot differ; see REPORT.md.
+// The vertex arrays are reached as offsets from the previous unit's last .data object
+// (lbl_803A4A60); the int->float magic is the compiler's own pool entry. See the notes
+// on these at the top of the file.
 void effRecoverHeartDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 unknown;
@@ -246,6 +271,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	Mtx work;
 	Mtx mtx;
 	Mtx finalMtx;
+#ifdef MUST_MATCH
+	u8* dataBase = (u8*)lbl_803A4A60;
+#endif
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -270,15 +298,19 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	quotient = life / 10;
 
 	for (i = 1; i < effect->count; i++, data++) {
-		GXColor color;
-
 		if (data->field_0x34 > 0) {
 			continue;
 		}
 
-		color = *(GXColor*)&unk_80423238;
-		color.a = data->field_0x28;
-		GXSetTevColor(GX_TEVREG0, color);
+#ifdef MUST_MATCH
+		recoverHeartSetColor(data);
+#else
+		{
+			GXColor color = *(GXColor*)&unk_80423238;
+			color.a = data->field_0x28;
+			GXSetTevColor(GX_TEVREG0, color);
+		}
+#endif
 
 		if (data->field_0x28 == 0xff) {
 			GXSetNumTevStages(1);
@@ -317,7 +349,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rot, finalMtx);
 
 		if (i == 1 && type != 2) {
-			effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_heart_vtx);
+			effSetVtxDescN64(VTX(0x40, size32x32_tex32x32_heart_vtx));
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
@@ -339,9 +371,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_heart_vtx);
+					effSetVtxDescN64(VTX(0xb0, size24x24_tex32x32_heart_vtx));
 				} else {
-					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_flower_vtx);
+					effSetVtxDescN64(VTX(0x158, size24x24_tex32x32_flower_vtx));
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -357,9 +389,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_heart_vtx);
+					effSetVtxDescN64(VTX(0x120, size16x24_tex32x32_r_heart_vtx));
 				} else {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_flower_vtx);
+					effSetVtxDescN64(VTX(0x1c8, size16x24_tex32x32_r_flower_vtx));
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -372,9 +404,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_heart_vtx);
+					effSetVtxDescN64(VTX(0xe8, size16x24_tex32x32_l_heart_vtx));
 				} else {
-					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_flower_vtx);
+					effSetVtxDescN64(VTX(0x190, size16x24_tex32x32_l_flower_vtx));
 				}
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -383,7 +415,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
-			effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_heart_vtx);
+			effSetVtxDescN64(VTX(0x78, size16x16_tex32x32_heart_vtx));
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		}

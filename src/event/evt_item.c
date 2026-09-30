@@ -425,8 +425,7 @@ USER_FUNC(evt_item_delete) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (80.71%): all instructions are present; only the schedule of
-// `clrlwi r5, r31, 16` and the two float-conversion temp registers differ.
+// itemEntry's third parameter is u16 (retail stores it with `sth` and masks it with `clrlwi`).
 USER_FUNC(evt_item_entry) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -437,10 +436,6 @@ USER_FUNC(evt_item_entry) {
 	s32 a3 = evtGetValue(event, args[5]);
 	s32 evtId = args[6];
 	s32 a5 = evtGetValue(event, args[7]);
-	f32 f6 = (f32)a6;
-	f32 f7 = (f32)a7;
-	f32 f8 = (f32)a8;
-
-	itemEntry((char*)name, type, (u16)a3, evtId, a5, f6, f7, f8);
+	itemEntry((char*)name, type, (u16)a3, evtId, a5, (f32)a6, (f32)a7, (f32)a8);
 	return EVT_RETURN_DONE;
 }

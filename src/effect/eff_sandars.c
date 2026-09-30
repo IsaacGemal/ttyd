@@ -160,9 +160,9 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	return entry;
 }
 
-// NONMATCHING (95.44%): the `type == 5` test emits `bne` where retail emits `beq; b`, the vec3 copy is
-// scheduled before the `userdata` load, one `mr` arg move is reversed, and the unsigned int->float magic is
-// pooled as `@300` rather than `double_to_int_mask_80300158`.
+// opt_common_subs off required: with CSE on MWCC interleaves the vec3/data x and y stores in the opposite
+// order (f1/f2 and r4/r5 swapped vs retail).
+#pragma opt_common_subs off
 void effSandarsMain(EffectEntry* effect) {
 	effSandarsData* data = effect->userdata;
 	Vec position;
@@ -172,10 +172,19 @@ void effSandarsMain(EffectEntry* effect) {
 	s32 type;
 	s32 i;
 
+#ifdef MUST_MATCH
+	/* MUST_MATCH: the zero literal (not the named vec3_80300138) keeps MWCC from hoisting the vec3 copy before
+	   the userdata load. It does not pool with the named vector: it adds a duplicate 12-byte Vec in .rodata. */
+	disp = (Vec){ 0.0f, 0.0f, 0.0f };
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
+#else
 	disp = vec3_80300138;
 	disp.x = data->x;
 	disp.y = data->y;
 	disp.z = data->z;
+#endif
 	position = disp;
 
 	inBattle = gp->inBattle != 0;
@@ -191,7 +200,8 @@ void effSandarsMain(EffectEntry* effect) {
 		return;
 	}
 
-	if (type == 5) {
+	switch (type) {
+	case 5:
 		data->timer--;
 		if (data->timer < 0) {
 			effDelete(effect);
@@ -210,7 +220,8 @@ void effSandarsMain(EffectEntry* effect) {
 			}
 		}
 		dispEntry(camId, dispCalcZ(&position), 2, effSandarsDisp2, effect);
-	} else {
+		break;
+	default:
 		switch (data->state) {
 		case 0:
 			effBombN64SetCamId(effBombN64Entry(data->bombType, data->x, data->y, data->z), camId);
@@ -244,8 +255,11 @@ void effSandarsMain(EffectEntry* effect) {
 		}
 
 		dispEntry(camId, dispCalcZ(&position), 2, effSandarsDisp, effect);
+		break;
 	}
 }
+
+#pragma opt_common_subs reset
 
 void effSandarsDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;

@@ -199,9 +199,19 @@ void effBrokenBarrierDisp(CameraId camId, EffectEntry* effect) {
     main_dl(effect, view);
 }
 
-// NONMATCHING (99.95%): all instructions match except that mwcc builds the by-value GXSetTevColor
-// GXColor temporary at r1+0xC and its outgoing copy at r1+0x8, while the original has them at
-// r1+0x8 and r1+0xC (the known mwcc stack-temp quirk of effBoobooDisp / shadowCharShadowDisp_Polygon).
+// main_dl: build the by-value GXSetTevColor GXColor in an inline so mwcc places the named colour at
+// r1+0x8 and its outgoing copy at r1+0xC (a direct build swaps the two stack slots).
+#ifdef MUST_MATCH
+static inline GXColor effBrokenBarrierBarrierColor(u8 r, u8 g, u8 b, u8 a) {
+    GXColor c = unk_804230bc;
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = a;
+    return c;
+}
+#endif
+
 static void main_dl(EffectEntry* effect, Mtx matrix) {
     effBrokenBarrierData* data;
     Mtx mtx, scale, rot;
@@ -231,11 +241,15 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
         PSMTXConcat(matrix, mtx, mtx);
         GXLoadPosMtxImm(mtx, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+        color = effBrokenBarrierBarrierColor(c0, c1, c2, (u8)((f32)data->field_0x4C * alphaScale));
+#else
         color = unk_804230bc;
         color.r = c0;
         color.g = c1;
         color.b = c2;
         color.a = (u8)((f32)data->field_0x4C * alphaScale);
+#endif
         GXSetTevColor(GX_TEVREG0, color);
         switch (i & 7) {
             case 0:

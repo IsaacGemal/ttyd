@@ -145,20 +145,16 @@ USER_FUNC(evt_party_set_camid) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (91.90%): party/mario land in swapped callee-saved regs, the marioGetScreenPos
-// out slots (sx/sy/sz, Vec temporaries) sit 4 bytes lower, 100.0f/50.0f land in f31/f30
-// instead of f30/f31, the loop in-screen test uses `beq`+a duplicated return instead of a
-// `bne` to the shared return, and the partyHitCheck Vec argument slots differ.
 USER_FUNC(evt_party_force_reset_outofscreen) {
     s32* args = event->args;
     MarioWork* mario;
     PartyEntry* party;
-    f32 dist;
-    Vec hitNormal;
-    Vec hitPos;
-    Vec dir;
     Vec tmp;
+    Vec dir;
+    Vec hitPos;
+    Vec hitNormal;
     f32 sx, sy, sz;
+    f32 dist;
     f32 angle;
     f32 up;
     f32 maxDist;
@@ -179,19 +175,20 @@ USER_FUNC(evt_party_force_reset_outofscreen) {
     while (TRUE) {
         marioGetScreenPos(party->position, &sx, &sy, &sz);
         if (marioChkInScreen((s32)sx, (s32)sy)) {
-            return EVT_RETURN_DONE;
+            break;
         }
         angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
         movePos(&party->position.x, &party->position.z, float_1_8041bb10, angle);
+        dist = maxDist;
         tmp = party->position;
         tmp.y += up;
-        dist = maxDist;
         if (partyHitCheck(party, &tmp, &dir, &hitPos, &hitNormal, &dist)) {
             party->position.y = hitPos.y;
         } else {
             party->position.y = mario->position.y;
         }
     }
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_party_outofscreen) {

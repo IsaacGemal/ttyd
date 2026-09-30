@@ -257,10 +257,13 @@ void effMahojinMain(EffectEntry* effect) {
 }
 
 
-// All logic, constants and call arguments match. The target's `dist[]`/`order[]` initialiser keeps the `j`
-// induction variable in a register and emits indexed `stwx`/`stfsx` stores; this MWCC build constant-folds
-// `j` into immediate `stw`/`stfs` stores, which also disturbs the surrounding register allocation.
-// NONMATCHING (82.60%): the dist[]/order[] init constant-folding described above.
+// The target keeps `j` live in a register and uses indexed `stwx`/`stfsx` stores in the dist[]/order[]
+// initialiser. Writing `order[j++] = 0/1` (index expression, constant value) instead of `order[j] = j; j++`
+// stops MWCC constant-folding the index, and continuing the fill loop from that j (`for (; j < ...)`) keeps
+// it live, which reproduces the init exactly.
+// NONMATCHING (95.57%): init and call arguments match; the fill loop's `order[j] = j` is still strength-
+// reduced to a pointer here, while the target keeps the base+offset `stwx` form. That extra pointer shifts
+// the callee-saved allocation (params land in r18/r19, target r20/r21).
 void effMahojinDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     MahojinWork* data = effect->userdata;
@@ -281,21 +284,17 @@ void effMahojinDisp(CameraId camId, void* param) {
         j = 0;
         if (i == 0) {
             dist[j] = -9999.0f;
-            order[j] = j;
-            j++;
+            order[j++] = 0;
             dist[j] = -10000.0f;
-            order[j] = j;
-            j++;
+            order[j++] = 1;
         } else {
             dist[j] = -10000.0f;
-            order[j] = j;
-            j++;
+            order[j++] = 0;
             dist[j] = 10000.0f;
-            order[j] = j;
-            j++;
+            order[j++] = 1;
         }
 
-        for (j = 2; j < effect->count; j++) {
+        for (; j < effect->count; j++) {
             dist[j] = dispCalcZ(&pos_tbl[j - 2]);
             order[j] = j;
         }

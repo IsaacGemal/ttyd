@@ -40,12 +40,11 @@ static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
     0x00000020, 0x000000FF,
 };
 
-// The cosine scratch register is coloured f2 here, where the original uses f1, and the
-// accumulator in the two negated quadrants lands in f2 instead of f5. Everything else
-// (constants, rad in f6, branches, int->float conversions) matches; this is an MWCC
-// float-register-colouring choice that did not move for any arrangement of the variables
-// or the polynomial expression that was tried.
-// NONMATCHING (99.22%): cosine scratch temp in f2 (original f1); accumulator f2 not f5.
+// MWCC's default lifetime analysis coalesces the cosine accumulator into the square's
+// register (f2) instead of f5; opt_lifetimes off restores the original colouring. Reusing
+// `rad` as the quadrant base keeps it in f6 and squares into f1 as the original does
+// (rad is dead after this point); the natural form is under #else.
+#pragma opt_lifetimes off // default lifetime analysis loses f1/f5, this fixes the FPR colouring
 void effSmallStarMain(EffectEntry* effect) {
     effSmallStarN64Data* data;
     Vec position2;
@@ -85,23 +84,42 @@ void effSmallStarMain(EffectEntry* effect) {
             if (rad <= float_3p1416_8041fc98) {
                 if (rad <= float_1p5708_8041fc9c) {
                     t = rad * rad;
-                    wave = (wave * t - c1) * t + c2;
+                    wave = wave * t - c1;
+                    wave = wave * t + c2;
                 } else {
+#ifdef MUST_MATCH
+                    rad = float_1p5708_8041fc9c - (rad - float_1p5708_8041fc9c);
+                    t = rad * rad;
+#else
                     t = float_1p5708_8041fc9c - (rad - float_1p5708_8041fc9c);
                     t = t * t;
-                    wave = (wave * t - c1) * t + c2;
+#endif
+                    wave = wave * t - c1;
+                    wave = wave * t + c2;
                     wave = -wave;
                 }
             } else {
                 if (rad < float_4p7124_8041fca0) {
+#ifdef MUST_MATCH
+                    rad = rad - float_3p1416_8041fc98;
+                    t = rad * rad;
+#else
                     t = rad - float_3p1416_8041fc98;
                     t = t * t;
-                    wave = (wave * t - c1) * t + c2;
+#endif
+                    wave = wave * t - c1;
+                    wave = wave * t + c2;
                     wave = -wave;
                 } else {
+#ifdef MUST_MATCH
+                    rad = float_1p5708_8041fc9c - (rad - float_4p7124_8041fca0);
+                    t = rad * rad;
+#else
                     t = float_1p5708_8041fc9c - (rad - float_4p7124_8041fca0);
                     t = t * t;
-                    wave = (wave * t - c1) * t + c2;
+#endif
+                    wave = wave * t - c1;
+                    wave = wave * t + c2;
                 }
             }
             data->velY = float_4_8041fca4 * wave;
@@ -138,6 +156,7 @@ void effSmallStarMain(EffectEntry* effect) {
     dispEntry(((effSmallStarN64Data*)effect->userdata)->camera, dispCalcZ(&position2), 2, effSmallStarDisp, effect);
 }
 
+#pragma opt_lifetimes reset
 void effSmallStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     s32 idx1;
