@@ -36,156 +36,6 @@ const Vec vec3_802fe908 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fe918 = 4503601774854144.0;
 const char str_8042150C[] = "Mist";
 
-// NONMATCHING (97.68%): instruction sequence and data match; only GPR/FPR register numbers differ
-// and the compiler emits the int->float magic constant as an anonymous @240 instead of
-// double_to_int_802fe918 (known pool-naming limitation).
-void effMistDisp(CameraId cameraId, void* param) {
-	EffectEntry* entry = param;
-	MistWork* work = entry->userdata;
-	CameraEntry* cam;
-	GXTexObj texObj;
-	Mtx mtxTrans;
-	Mtx mtxRot;
-	Mtx mtxScale;
-	Mtx mtxView;
-	GXColor color;
-	s32 alpha;
-	s32 type;
-	s32 i;
-	f32 half;
-	f32 size;
-
-	cam = camGetPtr(cameraId);
-	alpha = (s32)work->alpha;
-	type = work->type;
-	if (type == 4) {
-		if (mapGetWork()->entries[0].flags & 2) {
-			return;
-		}
-	}
-	effGetTexObj(0x44, &texObj);
-	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXSetNumChans(1);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
-	PSMTXTrans(mtxTrans, work->x, work->y, work->z);
-	PSMTXRotRad(mtxRot, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_804214e0);
-	PSMTXConcat(mtxTrans, mtxRot, mtxView);
-	PSMTXConcat(cam->view, mtxView, mtxView);
-	GXSetCullMode(GX_CULL_NONE);
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	half = -float_32_804214e4 * float_0p5_804214ec;
-	size = float_16_804214f0;
-	work++;
-	for (i = 1; i < entry->count; i++, work++) {
-		PSMTXTrans(mtxTrans, work->x, work->y, work->z);
-		PSMTXScale(mtxScale, work->scaleX, work->scaleY, work->scaleZ);
-		PSMTXConcat(mtxTrans, mtxScale, mtxTrans);
-		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
-		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
-		GXSetCurrentMtx(GX_PNMTX0);
-		color = unk_80423320;
-		color.r = work->r;
-		color.g = work->g;
-		color.b = work->b;
-		color.a = (s32)(work->alpha * (f32)alpha / float_255_804214e8);
-		GXSetChanMatColor(GX_COLOR0A0, color);
-		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(half, size, 0.0f);
-		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(size, size, 0.0f);
-		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(size, half, 0.0f);
-		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(half, half, 0.0f);
-		GXTexCoord2f32(0.0f, 1.0f);
-	}
-}
-
-// NONMATCHING (95.64%): register allocation and the Vec setup instruction schedule differ; the
-// int->float magic constant is @240 instead of double_to_int_802fe918 (known pool-naming limitation).
-void effMistMain(EffectEntry* effect) {
-	MistWork* work = effect->userdata;
-	Vec pos;
-	Vec sp;
-	MistWork* ptr;
-	s32 type = work->type;
-	s32 i;
-
-	sp = vec3_802fe908;
-	sp.x = work->x;
-	sp.y = work->y;
-	sp.z = work->z;
-	pos = sp;
-	if (effect->flags & 4) {
-		effect->flags &= ~4;
-		work->life = 0x20;
-	}
-	if (work->life < 1000) {
-		work->life--;
-	}
-	work->counter++;
-	if (work->life < 0) {
-		effDelete(effect);
-		return;
-	}
-	if (work->life < 0x20) {
-		work->alpha = (f32)(work->life * 8);
-	}
-	for (i = 1, ptr = work + 1; i < effect->count; i++, ptr++) {
-		switch (type) {
-		case 4:
-			ptr->x += ptr->velX;
-			ptr->y += ptr->velY;
-			ptr->z += ptr->velZ;
-			ptr->velX *= float_0p9_804214fc;
-			ptr->velY *= float_0p88_80421500;
-			ptr->velZ *= float_0p9_804214fc;
-			ptr->y += ptr->field_0x28;
-			ptr->field_0x28 += ptr->field_0x2C;
-			ptr->field_0x2C *= ptr->field_0x30;
-			ptr->scaleX *= float_1p02_80421504;
-			ptr->scaleY *= float_1p02_80421504;
-			ptr->scaleZ *= float_1p02_80421504;
-			ptr->alpha -= float_2_80421508;
-			if (ptr->alpha < float_0_804214f4) {
-				ptr->alpha = float_0_804214f4;
-			}
-			break;
-		default:
-			if (ptr->counter < 0xff) {
-				ptr->counter += irand(5);
-				ptr->alpha = (f32)ptr->counter;
-				if (ptr->alpha > float_255_804214e8) {
-					ptr->alpha = float_255_804214e8;
-				}
-			} else {
-				ptr->alpha -= (f32)irand(5);
-				if (ptr->alpha < float_0_804214f4) {
-					ptr->counter = 0;
-					ptr->alpha = float_0_804214f4;
-				}
-			}
-			ptr->x += ptr->velX;
-			ptr->y += ptr->velY;
-			ptr->z += ptr->velZ;
-			break;
-		}
-	}
-	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMistDisp, effect);
-}
-
 // NONMATCHING (98.59%): register allocation differs, the int->float magic constant is @240 instead
 // of double_to_int_802fe918, and the generated jump table symbol is anonymous (known pool-naming
 // limitation).
@@ -282,4 +132,154 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 		}
 	}
 	return entry;
+}
+
+// NONMATCHING (95.64%): register allocation and the Vec setup instruction schedule differ; the
+// int->float magic constant is @240 instead of double_to_int_802fe918 (known pool-naming limitation).
+void effMistMain(EffectEntry* effect) {
+	MistWork* work = effect->userdata;
+	Vec pos;
+	Vec sp;
+	MistWork* ptr;
+	s32 type = work->type;
+	s32 i;
+
+	sp = vec3_802fe908;
+	sp.x = work->x;
+	sp.y = work->y;
+	sp.z = work->z;
+	pos = sp;
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		work->life = 0x20;
+	}
+	if (work->life < 1000) {
+		work->life--;
+	}
+	work->counter++;
+	if (work->life < 0) {
+		effDelete(effect);
+		return;
+	}
+	if (work->life < 0x20) {
+		work->alpha = (f32)(work->life * 8);
+	}
+	for (i = 1, ptr = work + 1; i < effect->count; i++, ptr++) {
+		switch (type) {
+		case 4:
+			ptr->x += ptr->velX;
+			ptr->y += ptr->velY;
+			ptr->z += ptr->velZ;
+			ptr->velX *= float_0p9_804214fc;
+			ptr->velY *= float_0p88_80421500;
+			ptr->velZ *= float_0p9_804214fc;
+			ptr->y += ptr->field_0x28;
+			ptr->field_0x28 += ptr->field_0x2C;
+			ptr->field_0x2C *= ptr->field_0x30;
+			ptr->scaleX *= float_1p02_80421504;
+			ptr->scaleY *= float_1p02_80421504;
+			ptr->scaleZ *= float_1p02_80421504;
+			ptr->alpha -= float_2_80421508;
+			if (ptr->alpha < float_0_804214f4) {
+				ptr->alpha = float_0_804214f4;
+			}
+			break;
+		default:
+			if (ptr->counter < 0xff) {
+				ptr->counter += irand(5);
+				ptr->alpha = (f32)ptr->counter;
+				if (ptr->alpha > float_255_804214e8) {
+					ptr->alpha = float_255_804214e8;
+				}
+			} else {
+				ptr->alpha -= (f32)irand(5);
+				if (ptr->alpha < float_0_804214f4) {
+					ptr->counter = 0;
+					ptr->alpha = float_0_804214f4;
+				}
+			}
+			ptr->x += ptr->velX;
+			ptr->y += ptr->velY;
+			ptr->z += ptr->velZ;
+			break;
+		}
+	}
+	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMistDisp, effect);
+}
+
+// NONMATCHING (97.68%): instruction sequence and data match; only GPR/FPR register numbers differ
+// and the compiler emits the int->float magic constant as an anonymous @240 instead of
+// double_to_int_802fe918 (known pool-naming limitation).
+void effMistDisp(CameraId cameraId, void* param) {
+	EffectEntry* entry = param;
+	MistWork* work = entry->userdata;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	Mtx mtxTrans;
+	Mtx mtxRot;
+	Mtx mtxScale;
+	Mtx mtxView;
+	GXColor color;
+	s32 alpha;
+	s32 type;
+	s32 i;
+	f32 half;
+	f32 size;
+
+	cam = camGetPtr(cameraId);
+	alpha = (s32)work->alpha;
+	type = work->type;
+	if (type == 4) {
+		if (mapGetWork()->entries[0].flags & 2) {
+			return;
+		}
+	}
+	effGetTexObj(0x44, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
+	PSMTXTrans(mtxTrans, work->x, work->y, work->z);
+	PSMTXRotRad(mtxRot, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_804214e0);
+	PSMTXConcat(mtxTrans, mtxRot, mtxView);
+	PSMTXConcat(cam->view, mtxView, mtxView);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	half = -float_32_804214e4 * float_0p5_804214ec;
+	size = float_16_804214f0;
+	work++;
+	for (i = 1; i < entry->count; i++, work++) {
+		PSMTXTrans(mtxTrans, work->x, work->y, work->z);
+		PSMTXScale(mtxScale, work->scaleX, work->scaleY, work->scaleZ);
+		PSMTXConcat(mtxTrans, mtxScale, mtxTrans);
+		PSMTXConcat(mtxView, mtxTrans, mtxTrans);
+		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		color = unk_80423320;
+		color.r = work->r;
+		color.g = work->g;
+		color.b = work->b;
+		color.a = (s32)(work->alpha * (f32)alpha / float_255_804214e8);
+		GXSetChanMatColor(GX_COLOR0A0, color);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+		GXPosition3f32(half, size, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(size, size, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(size, half, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(half, half, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
+	}
 }

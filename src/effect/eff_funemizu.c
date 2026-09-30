@@ -55,6 +55,28 @@ extern u8 gor_fune_dl_1_size_tbl[];
 
 const f64 double_to_int_802fe8b0 = 4503601774854144.0;
 
+u32 unk_80224298(void) {
+	FunemizuMapEntry* p;
+
+	for (p = unk_803b0640; p; p++) {
+		if (p->name == NULL) {
+			break;
+		}
+		if (strcmp(p->name, gp->currentMapName) == 0) {
+			return p->value;
+		}
+	}
+	for (p = unk_803b0640; p; p++) {
+		if (p->name == NULL) {
+			break;
+		}
+		if (strncmp(p->name, gp->currentMapName, 3) == 0) {
+			return p->value;
+		}
+	}
+	return dat_80421468;
+}
+
 // NONMATCHING (98.80%): same instructions; only the d/e float register allocation (f28/f26 vs f26/f27),
 // the entry register (r30 vs r31) and the compiler-generated double_to_int constant differ.
 EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
@@ -212,82 +234,6 @@ void effFunemizuMain(EffectEntry* effect) {
 	}
 	else {
 		dispEntry(camId, dispCalcZ(&pos2), 2, effFunemizuShibukiDisp, effect);
-	}
-}
-
-// NONMATCHING (92.28%): GX immediate-mode float reloads are scheduled differently and the GXColor
-// temporary lands in the other stack slot; the rest matches.
-void effFunemizuShibukiDisp(CameraId camId, void* param) {
-	EffectEntry* effect;
-	EffFunemizuData* data;
-	EffFunemizuData* ptr;
-	CameraEntry* cam;
-	Mtx mtx90;
-	Mtx mtx60;
-	Mtx mtx30;
-	GXColor color;
-	GXTexObj texObj;
-	s32 i;
-	f32 sz;
-
-	effect = param;
-	data = effect->userdata;
-	cam = camGetPtr(camId);
-
-	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-	GXSetZCompLoc(GX_TRUE);
-	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-
-	PSMTXTrans(mtx90, data->x, data->y, data->z);
-	PSMTXRotRad(mtx60, 'y',
-	            float_deg2rad_80421470 * (data->field_0x14 - camGetPtr(camId)->viewYaw));
-	PSMTXConcat(mtx90, mtx60, mtx90);
-	PSMTXConcat(cam->view, mtx90, mtx30);
-
-	GXSetNumChans(1);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3c, GX_FALSE, GX_PTIDENTITY);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
-	effGetTexObj(0x40, &texObj);
-	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXSetCullMode(GX_CULL_NONE);
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-
-	sz = -float_3_80421474;
-	i = 1;
-	ptr = data + 1;
-	for (; i < effect->count; i++, ptr++) {
-		if (ptr->field_0x3C != 0) {
-			continue;
-		}
-		if (ptr->y < float_0_80421478) {
-			continue;
-		}
-		color = *(GXColor*)&dat_8042146c;
-		color.a = ptr->field_0x40;
-		GXSetChanMatColor(GX_COLOR0A0, color);
-		PSMTXTrans(mtx90, ptr->x, ptr->y, ptr->z);
-		PSMTXConcat(mtx30, mtx90, mtx90);
-		GXLoadPosMtxImm(mtx90, 0);
-		GXSetCurrentMtx(0);
-		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(sz * float_0p5_8042147c, float_1p5_80421480, float_0_80421478);
-		GXTexCoord2f32(float_0_80421478, float_0_80421478);
-		GXPosition3f32(float_1p5_80421480, float_1p5_80421480, float_0_80421478);
-		GXTexCoord2f32(float_1_80421484, float_0_80421478);
-		GXPosition3f32(float_1p5_80421480, sz * float_0p5_8042147c, float_0_80421478);
-		GXTexCoord2f32(float_1_80421484, float_1_80421484);
-		GXPosition3f32(sz * float_0p5_8042147c, sz * float_0p5_8042147c, float_0_80421478);
-		GXTexCoord2f32(float_0_80421478, float_1_80421484);
-		GXEnd();
 	}
 }
 
@@ -477,24 +423,78 @@ found:
 	}
 }
 
-u32 unk_80224298(void) {
-	FunemizuMapEntry* p;
+// NONMATCHING (92.28%): GX immediate-mode float reloads are scheduled differently and the GXColor
+// temporary lands in the other stack slot; the rest matches.
+void effFunemizuShibukiDisp(CameraId camId, void* param) {
+	EffectEntry* effect;
+	EffFunemizuData* data;
+	EffFunemizuData* ptr;
+	CameraEntry* cam;
+	Mtx mtx90;
+	Mtx mtx60;
+	Mtx mtx30;
+	GXColor color;
+	GXTexObj texObj;
+	s32 i;
+	f32 sz;
 
-	for (p = unk_803b0640; p; p++) {
-		if (p->name == NULL) {
-			break;
+	effect = param;
+	data = effect->userdata;
+	cam = camGetPtr(camId);
+
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+
+	PSMTXTrans(mtx90, data->x, data->y, data->z);
+	PSMTXRotRad(mtx60, 'y',
+	            float_deg2rad_80421470 * (data->field_0x14 - camGetPtr(camId)->viewYaw));
+	PSMTXConcat(mtx90, mtx60, mtx90);
+	PSMTXConcat(cam->view, mtx90, mtx30);
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3c, GX_FALSE, GX_PTIDENTITY);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+	effGetTexObj(0x40, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+	sz = -float_3_80421474;
+	i = 1;
+	ptr = data + 1;
+	for (; i < effect->count; i++, ptr++) {
+		if (ptr->field_0x3C != 0) {
+			continue;
 		}
-		if (strcmp(p->name, gp->currentMapName) == 0) {
-			return p->value;
+		if (ptr->y < float_0_80421478) {
+			continue;
 		}
+		color = *(GXColor*)&dat_8042146c;
+		color.a = ptr->field_0x40;
+		GXSetChanMatColor(GX_COLOR0A0, color);
+		PSMTXTrans(mtx90, ptr->x, ptr->y, ptr->z);
+		PSMTXConcat(mtx30, mtx90, mtx90);
+		GXLoadPosMtxImm(mtx90, 0);
+		GXSetCurrentMtx(0);
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+		GXPosition3f32(sz * float_0p5_8042147c, float_1p5_80421480, float_0_80421478);
+		GXTexCoord2f32(float_0_80421478, float_0_80421478);
+		GXPosition3f32(float_1p5_80421480, float_1p5_80421480, float_0_80421478);
+		GXTexCoord2f32(float_1_80421484, float_0_80421478);
+		GXPosition3f32(float_1p5_80421480, sz * float_0p5_8042147c, float_0_80421478);
+		GXTexCoord2f32(float_1_80421484, float_1_80421484);
+		GXPosition3f32(sz * float_0p5_8042147c, sz * float_0p5_8042147c, float_0_80421478);
+		GXTexCoord2f32(float_0_80421478, float_1_80421484);
+		GXEnd();
 	}
-	for (p = unk_803b0640; p; p++) {
-		if (p->name == NULL) {
-			break;
-		}
-		if (strncmp(p->name, gp->currentMapName, 3) == 0) {
-			return p->value;
-		}
-	}
-	return dat_80421468;
 }

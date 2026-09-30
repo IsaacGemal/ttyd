@@ -120,183 +120,57 @@ u8 rectangle_vtx[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x02, 0x80, 0x01, 0xE0,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x01, 0xE0, 0x00, 0x00,
 	0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-};// .text
-
-// NONMATCHING (99.59%): only the .data base symbol (lbl_803A4C60 vs the local section
-// symbol), the GXColor stack-slot layout (target interleaves each color with its by-value
-// copy; this build groups the copies separately) and one switch-dispatch branch differ.
-void effReleaseDisp(CameraId camId, void* param) {
-    EffectEntry* effect = param;
+};EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
+    EffectEntry* effect;
     effReleaseN64Data* data;
-    CameraEntry* cam = camGetPtr(camId);
-    s32 type;
-    Mtx trans;
-    Mtx scale;
-    Mtx rot;
-    Mtx mtx;
-    Mtx44 ortho;
-    GXTexObj texObj;
-    f32 projv[7];
-    s32 i;
-    s32 alpha;
+    s32 typeLo;
 
-    data = effect->userdata;
-    type = data->field_0x4;
-
-    PSMTXTrans(trans, data->x, data->y, data->z);
-    PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fb3c);
-    PSMTXScale(scale, data->field_0x3C, data->field_0x3C, data->field_0x3C);
-    PSMTXConcat(trans, rot, trans);
-    PSMTXConcat(trans, scale, mtx);
-
-    GXSetNumChans(0);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C1, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-
-    {
-    GXColor color;
-    color = *(GXColor*)&unk_80423240;
-    color.r = data->field_0x2C;
-    color.g = data->field_0x30;
-    color.b = data->field_0x34;
-    color.a = data->field_0x38;
-    GXSetTevColor(GX_TEVREG1, color);
+    effect = effEntry();
+    effect->type = str_802FB510;
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, 0x78);
+    effect->userdata = data;
+    effect->callback = effReleaseMain;
+    data->field_0x0 = type & 0xFF00;
+    typeLo = type & 0xFF;
+    data->field_0x4 = typeLo;
+    data->field_0x18 = 0;
+    if (duration <= 0) {
+        data->field_0x14 = 1000;
+    } else {
+        data->field_0x14 = duration;
     }
-    GXSetCullMode(GX_CULL_NONE);
-
-    for (i = 0; i < 4; i++) {
-        GXColor color2;
-        if (type == 1 && i == 2) {
-            continue;
-        }
-        if (float_0_8041fb40 == data->scales[i]) {
-            continue;
-        }
-        if (data->alphas[i] == 0) {
-            continue;
-        }
-        PSMTXScale(scale, data->scales[i], data->scales[i], data->scales[i]);
-        PSMTXConcat(mtx, scale, scale);
-        PSMTXConcat(cam->view, scale, scale);
-        GXLoadPosMtxImm(scale, GX_PNMTX0);
-        GXSetCurrentMtx(GX_PNMTX0);
-        color2 = *(GXColor*)&unk_80423244;
-        color2.r = data->field_0x1C;
-        color2.g = data->field_0x20;
-        color2.b = data->field_0x24;
-        color2.a = data->alphas[i];
-        GXSetTevColor(GX_TEVREG0, color2);
-
-        switch (i) {
-            case 0:
-                effGetTexObjN64(0x44, &texObj);
-                GXLoadTexObj(&texObj, GX_TEXMAP0);
-                PSMTXScale(scale, float_0p03125_8041fb44, float_0p03125_8041fb44, float_0_8041fb40);
-                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
-                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-                tri2(0, 1, 2, 0, 0, 2, 3, 0);
-                break;
-            case 1:
-                effGetTexObjN64(0x45, &texObj);
-                GXLoadTexObj(&texObj, GX_TEXMAP0);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex256x32_vtx);
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_0_8041fb40, float_0_8041fb40);
-                PSMTXConcat(scale, trans, scale);
-                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
-                tri2(0, 1, 2, 0, 0, 2, 3, 0);
-                tri2(0x1C, 0x1D, 0x1E, 0x1C, 0x1C, 0x1E, 0x1F, 0x1C);
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_32_8041fb4c, float_0_8041fb40);
-                PSMTXConcat(scale, trans, scale);
-                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
-                tri2(4, 5, 6, 4, 4, 6, 7, 4);
-                tri2(0x18, 0x19, 0x1A, 0x18, 0x18, 0x1A, 0x1B, 0x18);
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_64_8041fb50, float_0_8041fb40);
-                PSMTXConcat(scale, trans, scale);
-                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
-                tri2(8, 9, 10, 8, 8, 10, 11, 8);
-                tri2(0x14, 0x15, 0x16, 0x14, 0x14, 0x16, 0x17, 0x14);
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_96_8041fb54, float_0_8041fb40);
-                PSMTXConcat(scale, trans, scale);
-                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
-                tri2(0xC, 0xD, 0xE, 0xC, 0xC, 0xE, 0xF, 0xC);
-                tri2(0x10, 0x11, 0x12, 0x10, 0x10, 0x12, 0x13, 0x10);
-                break;
-            case 2:
-                effGetTexObjN64(0x46, &texObj);
-                GXLoadTexObj(&texObj, GX_TEXMAP0);
-                PSMTXScale(scale, float_0p015625_8041fb58, float_0p015625_8041fb58, float_0_8041fb40);
-                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex128x128_vtx);
-                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-                tri2(0, 1, 2, 0, 0, 2, 3, 0);
-                break;
-            case 3:
-                effGetTexObjN64(0x47, &texObj);
-                GXLoadTexObj(&texObj, GX_TEXMAP0);
-                PSMTXScale(scale, float_0p015625_8041fb58, float_0p03125_8041fb44, float_0_8041fb40);
-                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-                effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_0_vtx);
-                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
-                tri2(0, 1, 2, 0, 0, 2, 3, 0);
-                tri2(4, 5, 6, 4, 4, 6, 7, 4);
-                break;
-            default:
-                break;
-        }
+    data->field_0x28 = 0xFF;
+    data->x = x;
+    data->y = y;
+    data->z = z;
+    data->field_0x3C = scale;
+    data->field_0x1C = 0xFF;
+    data->field_0x20 = 0xFF;
+    data->field_0x24 = 0xFF;
+    data->field_0x2C = 0xFF;
+    data->field_0x30 = 0xFF;
+    data->field_0x34 = 0xFF;
+    data->field_0x38 = 0xFF;
+    data->field_0x60 = 0;
+    data->field_0x64 = 0;
+    data->field_0x68 = 0;
+    data->field_0x6C = 0;
+    data->scales[0] = float_1_8041fb64;
+    data->scales[1] = float_0_8041fb40;
+    data->scales[2] = float_0_8041fb40;
+    data->scales[3] = float_0_8041fb40;
+    data->alphas[0] = 0xFF;
+    data->alphas[1] = 0;
+    data->alphas[2] = 0;
+    data->alphas[3] = 0;
+    if (typeLo == 3) {
+        data->field_0x70 = 1;
+    } else {
+        data->field_0x70 = 0;
     }
-
-    if (type == 2 || type == 3) {
-        alpha = 0;
-        if (data->field_0x70 == 1 || data->field_0x70 == 0x64) {
-            if (data->field_0x74 > 2 && data->field_0x74 <= 10) {
-                alpha = 0xFF - (data->field_0x74 - 2) * 30;
-            }
-        }
-        if (data->field_0x70 == 5) {
-            if (data->field_0x74 > 0 && data->field_0x74 <= 8) {
-                alpha = 0xFF - data->field_0x74 * 30;
-            }
-        }
-        if (alpha > 0) {
-            GXColor color3;
-            GXGetProjectionv(projv);
-            C_MTXOrtho(ortho, float_0_8041fb40, float_480_8041fb5c, float_0_8041fb40, float_608_8041fb60, float_0_8041fb40, float_1_8041fb64);
-            GXSetProjection(ortho, GX_ORTHOGRAPHIC);
-            GXSetNumChans(1);
-            GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-            color3 = *(GXColor*)&dat_8041fb38;
-            color3.a = alpha;
-            GXSetChanMatColor(GX_COLOR0A0, color3);
-            GXSetNumTevStages(1);
-            GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-            GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-            GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
-            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-            PSMTXIdentity(trans);
-            GXLoadPosMtxImm(trans, GX_PNMTX0);
-            GXSetCurrentMtx(GX_PNMTX0);
-            effSetVtxDescN64((effVtxArray*)rectangle_vtx);
-            GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-            tri2(0, 1, 2, 0, 0, 2, 3, 0);
-            GXSetProjectionv(projv);
-        }
-    }
+    data->field_0x74 = 0;
+    return effect;
 }
 
 // NONMATCHING (92.84%): the switch bodies are byte-identical in structure; what differs is
@@ -482,55 +356,181 @@ void effReleaseMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effReleaseDisp, effect);
 }
 
-EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
-    EffectEntry* effect;
-    effReleaseN64Data* data;
-    s32 typeLo;
+// .text
 
-    effect = effEntry();
-    effect->type = str_802FB510;
-    effect->count = 1;
-    data = __memAlloc(HEAP_EFFECT, 0x78);
-    effect->userdata = data;
-    effect->callback = effReleaseMain;
-    data->field_0x0 = type & 0xFF00;
-    typeLo = type & 0xFF;
-    data->field_0x4 = typeLo;
-    data->field_0x18 = 0;
-    if (duration <= 0) {
-        data->field_0x14 = 1000;
-    } else {
-        data->field_0x14 = duration;
+// NONMATCHING (99.59%): only the .data base symbol (lbl_803A4C60 vs the local section
+// symbol), the GXColor stack-slot layout (target interleaves each color with its by-value
+// copy; this build groups the copies separately) and one switch-dispatch branch differ.
+void effReleaseDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effReleaseN64Data* data;
+    CameraEntry* cam = camGetPtr(camId);
+    s32 type;
+    Mtx trans;
+    Mtx scale;
+    Mtx rot;
+    Mtx mtx;
+    Mtx44 ortho;
+    GXTexObj texObj;
+    f32 projv[7];
+    s32 i;
+    s32 alpha;
+
+    data = effect->userdata;
+    type = data->field_0x4;
+
+    PSMTXTrans(trans, data->x, data->y, data->z);
+    PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fb3c);
+    PSMTXScale(scale, data->field_0x3C, data->field_0x3C, data->field_0x3C);
+    PSMTXConcat(trans, rot, trans);
+    PSMTXConcat(trans, scale, mtx);
+
+    GXSetNumChans(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C1, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+
+    {
+    GXColor color;
+    color = *(GXColor*)&unk_80423240;
+    color.r = data->field_0x2C;
+    color.g = data->field_0x30;
+    color.b = data->field_0x34;
+    color.a = data->field_0x38;
+    GXSetTevColor(GX_TEVREG1, color);
     }
-    data->field_0x28 = 0xFF;
-    data->x = x;
-    data->y = y;
-    data->z = z;
-    data->field_0x3C = scale;
-    data->field_0x1C = 0xFF;
-    data->field_0x20 = 0xFF;
-    data->field_0x24 = 0xFF;
-    data->field_0x2C = 0xFF;
-    data->field_0x30 = 0xFF;
-    data->field_0x34 = 0xFF;
-    data->field_0x38 = 0xFF;
-    data->field_0x60 = 0;
-    data->field_0x64 = 0;
-    data->field_0x68 = 0;
-    data->field_0x6C = 0;
-    data->scales[0] = float_1_8041fb64;
-    data->scales[1] = float_0_8041fb40;
-    data->scales[2] = float_0_8041fb40;
-    data->scales[3] = float_0_8041fb40;
-    data->alphas[0] = 0xFF;
-    data->alphas[1] = 0;
-    data->alphas[2] = 0;
-    data->alphas[3] = 0;
-    if (typeLo == 3) {
-        data->field_0x70 = 1;
-    } else {
-        data->field_0x70 = 0;
+    GXSetCullMode(GX_CULL_NONE);
+
+    for (i = 0; i < 4; i++) {
+        GXColor color2;
+        if (type == 1 && i == 2) {
+            continue;
+        }
+        if (float_0_8041fb40 == data->scales[i]) {
+            continue;
+        }
+        if (data->alphas[i] == 0) {
+            continue;
+        }
+        PSMTXScale(scale, data->scales[i], data->scales[i], data->scales[i]);
+        PSMTXConcat(mtx, scale, scale);
+        PSMTXConcat(cam->view, scale, scale);
+        GXLoadPosMtxImm(scale, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        color2 = *(GXColor*)&unk_80423244;
+        color2.r = data->field_0x1C;
+        color2.g = data->field_0x20;
+        color2.b = data->field_0x24;
+        color2.a = data->alphas[i];
+        GXSetTevColor(GX_TEVREG0, color2);
+
+        switch (i) {
+            case 0:
+                effGetTexObjN64(0x44, &texObj);
+                GXLoadTexObj(&texObj, GX_TEXMAP0);
+                PSMTXScale(scale, float_0p03125_8041fb44, float_0p03125_8041fb44, float_0_8041fb40);
+                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+                effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);
+                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+                tri2(0, 1, 2, 0, 0, 2, 3, 0);
+                break;
+            case 1:
+                effGetTexObjN64(0x45, &texObj);
+                GXLoadTexObj(&texObj, GX_TEXMAP0);
+                effSetVtxDescN64((effVtxArray*)size16x16_tex256x32_vtx);
+                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
+                PSMTXTrans(trans, float_0_8041fb40, float_0_8041fb40, float_0_8041fb40);
+                PSMTXConcat(scale, trans, scale);
+                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+                tri2(0, 1, 2, 0, 0, 2, 3, 0);
+                tri2(0x1C, 0x1D, 0x1E, 0x1C, 0x1C, 0x1E, 0x1F, 0x1C);
+                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
+                PSMTXTrans(trans, float_0_8041fb40, float_32_8041fb4c, float_0_8041fb40);
+                PSMTXConcat(scale, trans, scale);
+                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+                tri2(4, 5, 6, 4, 4, 6, 7, 4);
+                tri2(0x18, 0x19, 0x1A, 0x18, 0x18, 0x1A, 0x1B, 0x18);
+                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
+                PSMTXTrans(trans, float_0_8041fb40, float_64_8041fb50, float_0_8041fb40);
+                PSMTXConcat(scale, trans, scale);
+                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+                tri2(8, 9, 10, 8, 8, 10, 11, 8);
+                tri2(0x14, 0x15, 0x16, 0x14, 0x14, 0x16, 0x17, 0x14);
+                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
+                PSMTXTrans(trans, float_0_8041fb40, float_96_8041fb54, float_0_8041fb40);
+                PSMTXConcat(scale, trans, scale);
+                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+                tri2(0xC, 0xD, 0xE, 0xC, 0xC, 0xE, 0xF, 0xC);
+                tri2(0x10, 0x11, 0x12, 0x10, 0x10, 0x12, 0x13, 0x10);
+                break;
+            case 2:
+                effGetTexObjN64(0x46, &texObj);
+                GXLoadTexObj(&texObj, GX_TEXMAP0);
+                PSMTXScale(scale, float_0p015625_8041fb58, float_0p015625_8041fb58, float_0_8041fb40);
+                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+                effSetVtxDescN64((effVtxArray*)size16x16_tex128x128_vtx);
+                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+                tri2(0, 1, 2, 0, 0, 2, 3, 0);
+                break;
+            case 3:
+                effGetTexObjN64(0x47, &texObj);
+                GXLoadTexObj(&texObj, GX_TEXMAP0);
+                PSMTXScale(scale, float_0p015625_8041fb58, float_0p03125_8041fb44, float_0_8041fb40);
+                GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+                effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_0_vtx);
+                GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+                tri2(0, 1, 2, 0, 0, 2, 3, 0);
+                tri2(4, 5, 6, 4, 4, 6, 7, 4);
+                break;
+            default:
+                break;
+        }
     }
-    data->field_0x74 = 0;
-    return effect;
+
+    if (type == 2 || type == 3) {
+        alpha = 0;
+        if (data->field_0x70 == 1 || data->field_0x70 == 0x64) {
+            if (data->field_0x74 > 2 && data->field_0x74 <= 10) {
+                alpha = 0xFF - (data->field_0x74 - 2) * 30;
+            }
+        }
+        if (data->field_0x70 == 5) {
+            if (data->field_0x74 > 0 && data->field_0x74 <= 8) {
+                alpha = 0xFF - data->field_0x74 * 30;
+            }
+        }
+        if (alpha > 0) {
+            GXColor color3;
+            GXGetProjectionv(projv);
+            C_MTXOrtho(ortho, float_0_8041fb40, float_480_8041fb5c, float_0_8041fb40, float_608_8041fb60, float_0_8041fb40, float_1_8041fb64);
+            GXSetProjection(ortho, GX_ORTHOGRAPHIC);
+            GXSetNumChans(1);
+            GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+            color3 = *(GXColor*)&dat_8041fb38;
+            color3.a = alpha;
+            GXSetChanMatColor(GX_COLOR0A0, color3);
+            GXSetNumTevStages(1);
+            GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+            GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+            GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
+            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+            PSMTXIdentity(trans);
+            GXLoadPosMtxImm(trans, GX_PNMTX0);
+            GXSetCurrentMtx(GX_PNMTX0);
+            effSetVtxDescN64((effVtxArray*)rectangle_vtx);
+            GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+            tri2(0, 1, 2, 0, 0, 2, 3, 0);
+            GXSetProjectionv(projv);
+        }
+    }
 }

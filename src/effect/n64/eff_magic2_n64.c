@@ -68,93 +68,105 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-void magic2_4_dl(void) {
-	GXTexObj texObj;
+EffectEntry* effMagic2N64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
+	EffectEntry* effect;
+	effMagic2Data* data;
 
-	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
-	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
-	effGetTexObjN64(0x12, &texObj);
-	GXLoadTexObj(&texObj, 0);
-	effGetTexObjN64(0x13, &texObj);
-	GXLoadTexObj(&texObj, 1);
-	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 1, 0, 0, 1, 3);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 4, 8, 0xC);
-	GXSetTevAlphaIn(0, 7, 2, 4, 7);
-	GXSetTevOrder(1, 1, 1, 0xFF);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xF, 2, 8, 2);
-	GXSetTevAlphaIn(1, 7, 0, 1, 7);
-	GXSetTevOrder(2, 1, 1, 0xFF);
-	GXSetTevColorOp(2, 1, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0xF, 8, 6, 0);
-	GXSetTevAlphaIn(2, 7, 4, 1, 0);
-	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)stg_magic2_1_v);
-	GXBegin(0x90, 0, 0x48);
-	tri2(0, 1, 2, 0, 0, 2, 3, 0);
-	tri2(4, 5, 1, 0, 4, 1, 0, 0);
-	tri2(3, 2, 6, 0, 3, 6, 7, 0);
-	tri2(8, 9, 5, 0, 8, 5, 4, 0);
-	tri2(10, 11, 9, 0, 10, 9, 8, 0);
-	tri2(12, 13, 11, 0, 12, 11, 10, 0);
-	tri2(7, 6, 14, 0, 7, 14, 15, 0);
-	tri2(16, 17, 18, 0, 16, 18, 19, 0);
-	tri2(19, 18, 20, 0, 19, 20, 21, 0);
-	tri2(22, 23, 17, 0, 22, 17, 16, 0);
-	tri2(24, 25, 23, 0, 24, 23, 22, 0);
-	tri2(15, 14, 25, 0, 15, 25, 24, 0);
+	effect = effEntry();
+	effect->type = "Magic2N64";
+	effect->count = 1;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effMagic2Data));
+	effect->userdata = data;
+	effect->callback = effMagic2Main;
+	data->type = type;
+	data->life = a1;
+	data->timer = 0;
+	data->alpha = 0;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->rotSpeed = 0;
+	data->rot = 0;
+	data->rot2Speed = 0;
+	data->rot2 = 0;
+	data->uSpeed = 0;
+	data->uOffset = 0;
+	data->vSpeed = 0;
+	data->vOffset = 0;
+	data->vx = x;
+	data->vy = y;
+	data->vz = z;
+	data->scale = 10.0f;
+	data->scale3 = (f32)(rand() % 360);
+	data->scale3Speed = 4.0f;
+	data->scale2 = 0.0f;
+	data->scale2Speed = 0.0f;
+	if (type == 1) {
+		data->vSpeed = 0x60;
+		data->scaleMul = a2;
+	} else {
+		data->rotSpeed = -2;
+		data->rot2Speed = -4;
+		data->scaleMul = 0.2f * a2;
+	}
+	return effect;
 }
 
-void magic2_2_line_dl(void) {
-	GXTexObj texObj;
+// NONMATCHING (99.54%): only register allocation differs in the sin/scale block
+// (frsp f2,f1 vs f1,f1 and swapped f1/f2/f3); every opcode and operand order matches.
+void effMagic2Main(EffectEntry* effect) {
+	effMagic2Data* data = effect->userdata;
+	Vec pos;
+	Vec v;
+	s32 life;
+	s32 i;
+	f32 s;
 
-	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
-	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
-	effGetTexObjN64(0x11, &texObj);
-	GXLoadTexObj(&texObj, 0);
-	GXLoadTexObj(&texObj, 1);
-	GXSetNumTevStages(3);
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 1, 0, 0, 1, 3);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 4, 8, 0xC);
-	GXSetTevAlphaIn(0, 7, 2, 4, 7);
-	GXSetTevOrder(1, 1, 1, 4);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xF, 2, 8, 2);
-	GXSetTevAlphaIn(1, 7, 0, 5, 7);
-	GXSetTevOrder(2, 1, 1, 4);
-	GXSetTevColorOp(2, 1, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0xF, 8, 6, 0);
-	GXSetTevAlphaIn(2, 7, 4, 5, 0);
-	GXSetCullMode(0);
-	effSetVtxDescN64((effVtxArray*)stg_magic2_2_line_v);
-	GXBegin(0x90, 0, 0x48);
-	tri2(0, 1, 2, 0, 0, 2, 3, 0);
-	tri2(4, 5, 1, 0, 4, 1, 0, 0);
-	tri2(3, 2, 6, 0, 3, 6, 7, 0);
-	tri2(8, 9, 5, 0, 8, 5, 4, 0);
-	tri2(10, 11, 9, 0, 10, 9, 8, 0);
-	tri2(12, 13, 11, 0, 12, 11, 10, 0);
-	tri2(7, 6, 14, 0, 7, 14, 15, 0);
-	tri2(16, 17, 18, 0, 16, 18, 19, 0);
-	tri2(19, 18, 20, 0, 19, 20, 21, 0);
-	tri2(22, 23, 17, 0, 22, 17, 16, 0);
-	tri2(24, 25, 23, 0, 24, 23, 22, 0);
-	tri2(15, 14, 25, 0, 15, 25, 24, 0);
+	pos = initializeVec((Vec*)&data->x);
+	data->life--;
+	data->timer++;
+	life = data->life;
+	if (life < 0) {
+		effDelete(effect);
+		return;
+	}
+	if (data->timer <= 10) {
+		data->alpha = data->timer * 0xFF / 10;
+	}
+	if (life < 6) {
+		data->alpha = life * 0xFF / 6;
+	}
+	if (life < 10 && data->type == 0) {
+		data->scale *= 0.7f;
+	}
+	if (data->type == 1) {
+		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
+		data->scale = data->scale + 0.4f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
+	} else {
+		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
+		data->scale = data->scale + 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
+	}
+	v = initializeVec((Vec*)&data->vx);
+	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &v, &v);
+	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &v, &v);
+	data->x = 304.0f * v.x;
+	data->y = 240.0f * v.y;
+	data->z = 0.0f;
+	for (i = 0; i < effect->count; i++, data++) {
+		data->scale3 += data->scale3Speed;
+		data->scale2 += data->scale2Speed;
+		data->uOffset += data->uSpeed;
+		data->vOffset += data->vSpeed;
+		data->rot += data->rotSpeed;
+		data->rot2 += data->rot2Speed;
+		if (data->rot < 0) {
+			data->rot += 0x100;
+		}
+		if (data->rot2 < 0) {
+			data->rot2 += 0x100;
+		}
+	}
+	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMagic2Disp, effect);
 }
 
 // NONMATCHING (95.74%): structure matches; remaining diffs are callee-saved register
@@ -253,103 +265,91 @@ void effMagic2Disp(CameraId camId, void* param) {
 	GXSetScissorBoxOffset(0, 0);
 }
 
-// NONMATCHING (99.54%): only register allocation differs in the sin/scale block
-// (frsp f2,f1 vs f1,f1 and swapped f1/f2/f3); every opcode and operand order matches.
-void effMagic2Main(EffectEntry* effect) {
-	effMagic2Data* data = effect->userdata;
-	Vec pos;
-	Vec v;
-	s32 life;
-	s32 i;
-	f32 s;
+void magic2_2_line_dl(void) {
+	GXTexObj texObj;
 
-	pos = initializeVec((Vec*)&data->x);
-	data->life--;
-	data->timer++;
-	life = data->life;
-	if (life < 0) {
-		effDelete(effect);
-		return;
-	}
-	if (data->timer <= 10) {
-		data->alpha = data->timer * 0xFF / 10;
-	}
-	if (life < 6) {
-		data->alpha = life * 0xFF / 6;
-	}
-	if (life < 10 && data->type == 0) {
-		data->scale *= 0.7f;
-	}
-	if (data->type == 1) {
-		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
-		data->scale = data->scale + 0.4f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
-	} else {
-		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
-		data->scale = data->scale + 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
-	}
-	v = initializeVec((Vec*)&data->vx);
-	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &v, &v);
-	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &v, &v);
-	data->x = 304.0f * v.x;
-	data->y = 240.0f * v.y;
-	data->z = 0.0f;
-	for (i = 0; i < effect->count; i++, data++) {
-		data->scale3 += data->scale3Speed;
-		data->scale2 += data->scale2Speed;
-		data->uOffset += data->uSpeed;
-		data->vOffset += data->vSpeed;
-		data->rot += data->rotSpeed;
-		data->rot2 += data->rot2Speed;
-		if (data->rot < 0) {
-			data->rot += 0x100;
-		}
-		if (data->rot2 < 0) {
-			data->rot2 += 0x100;
-		}
-	}
-	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMagic2Disp, effect);
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	effGetTexObjN64(0x11, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, 1);
+	GXSetNumTevStages(3);
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 1, 0, 0, 1, 3);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 4, 8, 0xC);
+	GXSetTevAlphaIn(0, 7, 2, 4, 7);
+	GXSetTevOrder(1, 1, 1, 4);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 0xF, 2, 8, 2);
+	GXSetTevAlphaIn(1, 7, 0, 5, 7);
+	GXSetTevOrder(2, 1, 1, 4);
+	GXSetTevColorOp(2, 1, 0, 0, 1, 0);
+	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(2, 0xF, 8, 6, 0);
+	GXSetTevAlphaIn(2, 7, 4, 5, 0);
+	GXSetCullMode(0);
+	effSetVtxDescN64((effVtxArray*)stg_magic2_2_line_v);
+	GXBegin(0x90, 0, 0x48);
+	tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	tri2(4, 5, 1, 0, 4, 1, 0, 0);
+	tri2(3, 2, 6, 0, 3, 6, 7, 0);
+	tri2(8, 9, 5, 0, 8, 5, 4, 0);
+	tri2(10, 11, 9, 0, 10, 9, 8, 0);
+	tri2(12, 13, 11, 0, 12, 11, 10, 0);
+	tri2(7, 6, 14, 0, 7, 14, 15, 0);
+	tri2(16, 17, 18, 0, 16, 18, 19, 0);
+	tri2(19, 18, 20, 0, 19, 20, 21, 0);
+	tri2(22, 23, 17, 0, 22, 17, 16, 0);
+	tri2(24, 25, 23, 0, 24, 23, 22, 0);
+	tri2(15, 14, 25, 0, 15, 25, 24, 0);
 }
 
-EffectEntry* effMagic2N64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
-	EffectEntry* effect;
-	effMagic2Data* data;
+void magic2_4_dl(void) {
+	GXTexObj texObj;
 
-	effect = effEntry();
-	effect->type = "Magic2N64";
-	effect->count = 1;
-	data = __memAlloc(HEAP_EFFECT, sizeof(effMagic2Data));
-	effect->userdata = data;
-	effect->callback = effMagic2Main;
-	data->type = type;
-	data->life = a1;
-	data->timer = 0;
-	data->alpha = 0;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->rotSpeed = 0;
-	data->rot = 0;
-	data->rot2Speed = 0;
-	data->rot2 = 0;
-	data->uSpeed = 0;
-	data->uOffset = 0;
-	data->vSpeed = 0;
-	data->vOffset = 0;
-	data->vx = x;
-	data->vy = y;
-	data->vz = z;
-	data->scale = 10.0f;
-	data->scale3 = (f32)(rand() % 360);
-	data->scale3Speed = 4.0f;
-	data->scale2 = 0.0f;
-	data->scale2Speed = 0.0f;
-	if (type == 1) {
-		data->vSpeed = 0x60;
-		data->scaleMul = a2;
-	} else {
-		data->rotSpeed = -2;
-		data->rot2Speed = -4;
-		data->scaleMul = 0.2f * a2;
-	}
-	return effect;
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	effGetTexObjN64(0x12, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	effGetTexObjN64(0x13, &texObj);
+	GXLoadTexObj(&texObj, 1);
+	GXSetNumTevStages(3);
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 1, 0, 0, 1, 3);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 4, 8, 0xC);
+	GXSetTevAlphaIn(0, 7, 2, 4, 7);
+	GXSetTevOrder(1, 1, 1, 0xFF);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 0xF, 2, 8, 2);
+	GXSetTevAlphaIn(1, 7, 0, 1, 7);
+	GXSetTevOrder(2, 1, 1, 0xFF);
+	GXSetTevColorOp(2, 1, 0, 0, 1, 0);
+	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(2, 0xF, 8, 6, 0);
+	GXSetTevAlphaIn(2, 7, 4, 1, 0);
+	GXSetCullMode(0);
+	effSetVtxDescN64((effVtxArray*)stg_magic2_1_v);
+	GXBegin(0x90, 0, 0x48);
+	tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	tri2(4, 5, 1, 0, 4, 1, 0, 0);
+	tri2(3, 2, 6, 0, 3, 6, 7, 0);
+	tri2(8, 9, 5, 0, 8, 5, 4, 0);
+	tri2(10, 11, 9, 0, 10, 9, 8, 0);
+	tri2(12, 13, 11, 0, 12, 11, 10, 0);
+	tri2(7, 6, 14, 0, 7, 14, 15, 0);
+	tri2(16, 17, 18, 0, 16, 18, 19, 0);
+	tri2(19, 18, 20, 0, 19, 20, 21, 0);
+	tri2(22, 23, 17, 0, 22, 17, 16, 0);
+	tri2(24, 25, 23, 0, 24, 23, 22, 0);
+	tri2(15, 14, 25, 0, 15, 25, 24, 0);
 }

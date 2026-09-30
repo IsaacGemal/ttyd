@@ -24,6 +24,80 @@ GXColor unk_80423070;
 const Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
 const char str_802F8E98[] = "TogeFlush";
 
+EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
+	EffectEntry* entry;
+	effTogeFlushData* data;
+
+	entry = effEntry();
+	entry->type = str_802F8E98;
+	entry->count = 1;
+	data = __memAlloc(HEAP_EFFECT, 0x34);
+	entry->userdata = data;
+	entry->callback = effTogeFlushMain;
+	data->field_0x0 = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->field_0x2C = life;
+	data->field_0x30 = 0;
+	data->field_0x24 = 0;
+	data->field_0x10 = 0.0f;
+	if (type == 0 || type == 3) {
+		data->field_0x14 = 30.0f;
+	} else {
+		data->field_0x14 = 0.0f;
+	}
+	data->field_0x18 = 0.0f;
+	data->field_0x1C = 0.8f;
+	data->field_0x28 = 0;
+	data->field_0x20 = 0.0f;
+	return entry;
+}
+
+// NONMATCHING (95.82%): register allocation, both int->float alpha conversions and the float integrator
+// (0x10/0x14/0x18/0x1C) match. The compiler hoists the three `vec3_802f8e80` loads above the second
+// `fctiwz`; the original schedules them after the `stw r0, 0x28(r30)` that stores the colour index.
+void effTogeFlushMain(EffectEntry* effect) {
+	s32 life;
+	effTogeFlushData* data = effect->userdata;
+	s32 frame;
+	Vec pos;
+	f32 angle;
+
+	data->field_0x2C--;
+	data->field_0x30++;
+	life = data->field_0x2C;
+	if (life < 0) {
+		effDelete(effect);
+		return;
+	}
+
+	frame = data->field_0x30;
+	if (frame <= 6) {
+		data->field_0x24 = (s32)(0.5f * (218 - data->field_0x24) + data->field_0x24);
+	}
+	if (frame > 6) {
+		data->field_0x24 *= 0.78f;
+	}
+
+	data->field_0x18 += data->field_0x1C;
+	data->field_0x1C += 0.29f;
+	data->field_0x10 += data->field_0x14;
+	data->field_0x14 *= 0.93f;
+	angle = 6.2831855f * (f32)(life * 50) / 360.0f;
+	data->field_0x20 = 0.5f * (f32)sin(angle) + 0.9f;
+	angle = 6.2831855f * (f32)(life * 40) / 360.0f;
+	data->field_0x28 = (s32)(64.0f * (f32)sin(angle) + 144.0f);
+
+	{
+		pos = vec3_802f8e80;
+		pos.x = data->x;
+		pos.y = data->y;
+		pos.z = data->z;
+		dispEntry(4, dispCalcZ(&pos), 2, effTogeFlushDisp, effect);
+	}
+}
+
 // NONMATCHING (99.90%): every opcode matches; the only diffs are the compiler colouring the per-case
 // `GXColor color` temp and the by-value argument copy to different stack slots (ours: temp 0x44/0x08..0x14,
 // arg 0x40/0x38.. ; original: an 8-byte block per case at 0x40/0x38/0x30/0x28/0x20/0x18/0x10/0x08).
@@ -160,78 +234,4 @@ void effTogeFlushDisp(CameraId cameraId, void* param) {
 		GXPosition3f32(-4.0f, -4.0f, 0.0f);
 		GXTexCoord2f32(0.0f, 2.0f);
 	}
-}
-
-// NONMATCHING (95.82%): register allocation, both int->float alpha conversions and the float integrator
-// (0x10/0x14/0x18/0x1C) match. The compiler hoists the three `vec3_802f8e80` loads above the second
-// `fctiwz`; the original schedules them after the `stw r0, 0x28(r30)` that stores the colour index.
-void effTogeFlushMain(EffectEntry* effect) {
-	s32 life;
-	effTogeFlushData* data = effect->userdata;
-	s32 frame;
-	Vec pos;
-	f32 angle;
-
-	data->field_0x2C--;
-	data->field_0x30++;
-	life = data->field_0x2C;
-	if (life < 0) {
-		effDelete(effect);
-		return;
-	}
-
-	frame = data->field_0x30;
-	if (frame <= 6) {
-		data->field_0x24 = (s32)(0.5f * (218 - data->field_0x24) + data->field_0x24);
-	}
-	if (frame > 6) {
-		data->field_0x24 *= 0.78f;
-	}
-
-	data->field_0x18 += data->field_0x1C;
-	data->field_0x1C += 0.29f;
-	data->field_0x10 += data->field_0x14;
-	data->field_0x14 *= 0.93f;
-	angle = 6.2831855f * (f32)(life * 50) / 360.0f;
-	data->field_0x20 = 0.5f * (f32)sin(angle) + 0.9f;
-	angle = 6.2831855f * (f32)(life * 40) / 360.0f;
-	data->field_0x28 = (s32)(64.0f * (f32)sin(angle) + 144.0f);
-
-	{
-		pos = vec3_802f8e80;
-		pos.x = data->x;
-		pos.y = data->y;
-		pos.z = data->z;
-		dispEntry(4, dispCalcZ(&pos), 2, effTogeFlushDisp, effect);
-	}
-}
-
-EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
-	EffectEntry* entry;
-	effTogeFlushData* data;
-
-	entry = effEntry();
-	entry->type = str_802F8E98;
-	entry->count = 1;
-	data = __memAlloc(HEAP_EFFECT, 0x34);
-	entry->userdata = data;
-	entry->callback = effTogeFlushMain;
-	data->field_0x0 = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->field_0x2C = life;
-	data->field_0x30 = 0;
-	data->field_0x24 = 0;
-	data->field_0x10 = 0.0f;
-	if (type == 0 || type == 3) {
-		data->field_0x14 = 30.0f;
-	} else {
-		data->field_0x14 = 0.0f;
-	}
-	data->field_0x18 = 0.0f;
-	data->field_0x1C = 0.8f;
-	data->field_0x28 = 0;
-	data->field_0x20 = 0.0f;
-	return entry;
 }

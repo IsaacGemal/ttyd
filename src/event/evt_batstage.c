@@ -44,27 +44,77 @@ typedef struct Blob60 {
 u8 unk_80423030[4];
 u8 gap_10_80423034_sbss2[4];
 
-s32 evt_batstage_light_set_player_off(EventEntry* event, BOOL isFirstCall) {
-	s32 lightNo;
+s32 evt_batstage_set_stg_dark(EventEntry* event, BOOL isFirstCall) {
+	s32* args = event->args;
+	u8 a;
+	s32 frames;
+	s32 ease;
 
-	BattleStageReturnAudDarkBase(0, 0);
-	BattleStageReturnStgDarkBase(0x1e, 0);
+	a = evtGetValue(event, args[0]);
+	frames = evtGetValue(event, args[1]);
+	ease = evtGetValue(event, args[2]);
+	BattleStageSetStgDark(a, frames, ease);
+	return EVT_RETURN_DONE;
+}
 
-	lightNo = BattleStageGetLightNumberByName("sys_activeUnit_1");
-	if (lightNo != -1) {
-		BattleStageLightRelease(lightNo, 0x1e, 0);
-	}
+s32 evt_batstage_set_stg_dark_base(EventEntry* event, BOOL isFirstCall) {
+	s32* args = event->args;
+	u8 a;
+	s32 frames;
+	s32 ease;
 
-	lightNo = BattleStageGetLightNumberByName("sys_activeUnit_2");
-	if (lightNo != -1) {
-		BattleStageLightRelease(lightNo, 0x1e, 0);
-	}
+	a = evtGetValue(event, args[0]);
+	frames = evtGetValue(event, args[1]);
+	ease = evtGetValue(event, args[2]);
+	BattleStageSetStgDarkBase(a, frames, ease);
+	return EVT_RETURN_DONE;
+}
 
-	lightNo = BattleStageGetLightNumberByName("sys_activeUnit_3");
-	if (lightNo != -1) {
-		BattleStageLightRelease(lightNo, 0x1e, 0);
-	}
+s32 evt_batstage_return_stg_dark_base(EventEntry* event, BOOL isFirstCall) {
+	s32* args = event->args;
+	s32 frames;
+	s32 ease;
 
+	frames = evtGetValue(event, args[0]);
+	ease = evtGetValue(event, args[1]);
+	BattleStageReturnStgDarkBase(frames, ease);
+	return EVT_RETURN_DONE;
+}
+
+s32 evt_batstage_set_aud_dark(EventEntry* event, BOOL isFirstCall) {
+	s32* args = event->args;
+	u8 a;
+	s32 frames;
+	s32 ease;
+
+	a = evtGetValue(event, args[0]);
+	frames = evtGetValue(event, args[1]);
+	ease = evtGetValue(event, args[2]);
+	BattleStageSetAudDark(a, frames, ease);
+	return EVT_RETURN_DONE;
+}
+
+s32 evt_batstage_set_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
+	s32* args = event->args;
+	u8 a;
+	s32 frames;
+	s32 ease;
+
+	a = evtGetValue(event, args[0]);
+	frames = evtGetValue(event, args[1]);
+	ease = evtGetValue(event, args[2]);
+	BattleStageSetAudDarkBase(a, frames, ease);
+	return EVT_RETURN_DONE;
+}
+
+s32 evt_batstage_return_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
+	s32* args = event->args;
+	s32 frames;
+	s32 ease;
+
+	frames = evtGetValue(event, args[0]);
+	ease = evtGetValue(event, args[1]);
+	BattleStageReturnAudDarkBase(frames, ease);
 	return EVT_RETURN_DONE;
 }
 
@@ -134,76 +184,26 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	return EVT_RETURN_DONE;
 }
 
-s32 evt_batstage_return_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
-	s32* args = event->args;
-	s32 frames;
-	s32 ease;
+s32 evt_batstage_light_set_player_off(EventEntry* event, BOOL isFirstCall) {
+	s32 lightNo;
 
-	frames = evtGetValue(event, args[0]);
-	ease = evtGetValue(event, args[1]);
-	BattleStageReturnAudDarkBase(frames, ease);
-	return EVT_RETURN_DONE;
-}
+	BattleStageReturnAudDarkBase(0, 0);
+	BattleStageReturnStgDarkBase(0x1e, 0);
 
-s32 evt_batstage_set_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
-	s32* args = event->args;
-	u8 a;
-	s32 frames;
-	s32 ease;
+	lightNo = BattleStageGetLightNumberByName("sys_activeUnit_1");
+	if (lightNo != -1) {
+		BattleStageLightRelease(lightNo, 0x1e, 0);
+	}
 
-	a = evtGetValue(event, args[0]);
-	frames = evtGetValue(event, args[1]);
-	ease = evtGetValue(event, args[2]);
-	BattleStageSetAudDarkBase(a, frames, ease);
-	return EVT_RETURN_DONE;
-}
+	lightNo = BattleStageGetLightNumberByName("sys_activeUnit_2");
+	if (lightNo != -1) {
+		BattleStageLightRelease(lightNo, 0x1e, 0);
+	}
 
-s32 evt_batstage_set_aud_dark(EventEntry* event, BOOL isFirstCall) {
-	s32* args = event->args;
-	u8 a;
-	s32 frames;
-	s32 ease;
+	lightNo = BattleStageGetLightNumberByName("sys_activeUnit_3");
+	if (lightNo != -1) {
+		BattleStageLightRelease(lightNo, 0x1e, 0);
+	}
 
-	a = evtGetValue(event, args[0]);
-	frames = evtGetValue(event, args[1]);
-	ease = evtGetValue(event, args[2]);
-	BattleStageSetAudDark(a, frames, ease);
-	return EVT_RETURN_DONE;
-}
-
-s32 evt_batstage_return_stg_dark_base(EventEntry* event, BOOL isFirstCall) {
-	s32* args = event->args;
-	s32 frames;
-	s32 ease;
-
-	frames = evtGetValue(event, args[0]);
-	ease = evtGetValue(event, args[1]);
-	BattleStageReturnStgDarkBase(frames, ease);
-	return EVT_RETURN_DONE;
-}
-
-s32 evt_batstage_set_stg_dark_base(EventEntry* event, BOOL isFirstCall) {
-	s32* args = event->args;
-	u8 a;
-	s32 frames;
-	s32 ease;
-
-	a = evtGetValue(event, args[0]);
-	frames = evtGetValue(event, args[1]);
-	ease = evtGetValue(event, args[2]);
-	BattleStageSetStgDarkBase(a, frames, ease);
-	return EVT_RETURN_DONE;
-}
-
-s32 evt_batstage_set_stg_dark(EventEntry* event, BOOL isFirstCall) {
-	s32* args = event->args;
-	u8 a;
-	s32 frames;
-	s32 ease;
-
-	a = evtGetValue(event, args[0]);
-	frames = evtGetValue(event, args[1]);
-	ease = evtGetValue(event, args[2]);
-	BattleStageSetStgDark(a, frames, ease);
 	return EVT_RETURN_DONE;
 }
