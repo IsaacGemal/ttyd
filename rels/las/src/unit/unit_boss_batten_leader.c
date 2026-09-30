@@ -2705,25 +2705,23 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     struct BattleUnit* sat;
     f32 pos[3];
     f32 spline[3];
-    u8* p;
-    p = (u8*)unit + index * 4;
-    if (*(s32*)(p + 0x238) == -1) {
+    if (unit->work[9 + index] == -1) {
         return 0;
     }
-    data = *(u8**)(p + 0x248);
+    data = (u8*)unit->work[13 + index];
     if (data == NULL) {
         return 0;
     }
     if (*(s32*)(data + 0x58) >= 0x3C) {
         if (data != NULL) {
             __memFree(4, data);
-            *(s32*)(p + 0x248) = 0;
+            unit->work[13 + index] = 0;
         }
         return 0;
     }
     spline_getvalue(spline, *(s32*)(data + 0x0), *(s32*)(data + 0x4), (s32)(data + 8), (s32)(data + 0x1C),
                     intplGetValue(4, *(s32*)(data + 0x58), 0x3C, 0.0f, 1.0f));
-    sat = BattleGetUnitPtr(_battleWorkPointer, *(s32*)(p + 0x238));
+    sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
     if (sat == NULL) {
         return 0;
     }
@@ -2739,16 +2737,16 @@ s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
     u8* data;
     struct BattleUnit* sat;
     data = (u8*)__memAlloc(4, 0x5C);
-    if (*(s32*)((u8*)unit + index * 4 + 0x238) == -1) {
+    if (unit->work[9 + index] == -1) {
         return 0;
     }
-    *(s32*)((u8*)unit + index * 4 + 0x248) = (s32)data;
+    unit->work[13 + index] = (s32)data;
     *(s32*)(data + 0x0) = 5;
     *(s32*)(data + 0x4) = (s32)table;
     *(s32*)(data + 0x58) = 0;
     spline_maketable(5, (s32)table, (s32*)(data + 8), (s32*)(data + 0x1C));
-    sat = BattleGetUnitPtr(_battleWorkPointer, *(s32*)((u8*)unit + index * 4 + 0x238));
-    *(s32*)((u8*)BtlUnit_GetPartsPtr(sat, 1) + 0x134) = (s32)table;
+    sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
+    BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
     return 1;
 }
 

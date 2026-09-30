@@ -211,27 +211,16 @@ ExtKyakuData ext_kyaku_data[51] = {
 EVT_BEGIN(x)
 EVT_END()
 
-// TODO: write ext_kyaku_dispent (global, 0x40 bytes) here:
 void ext_kyaku_dispent(void) {
     dispEntry(4, 0.0f, 1, kyaku_disp, NULL);
 }
 
-// TODO: write ext_kyaku_main (global, 0x20 bytes) here:
 void ext_kyaku_main(void) {
     pose_main();
 }
 
-// NONMATCHING (partial): only the allocation/init preamble is written; the per-pose hit-check placement
-// search (hitCheckFilter / angleABf / irand switch) is still TODO.
-void ext_kyaku_init(void) {
-    kyaku_wp = _mapAlloc(0x510);
-    memset(kyaku_wp, 0, 0x510);
-    kyaku_wp->count1 = extGetPoseNum();
-    kyaku_wp->array1 = _mapAlloc(kyaku_wp->count1 * 0x20);
-    memset(kyaku_wp->array1, 0, kyaku_wp->count1 * 0x20);
-    pose_init();
-    __tou_srand(0x25B0E2B);
-}
+// TODO: write ext_kyaku_init (global, 0x558 bytes) here:
+// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_kyaku)
     CALL(evt_npc_entry, STRING("kyaku1"), STRING("c_kinopio"))
@@ -3940,16 +3929,8 @@ EVT_BEGIN(evt_kyaku_8)
     RETURN
 EVT_END()
 
-// NONMATCHING (2.38%): not decompiled yet. The `screen_wp->field_0x4 == 0` early-out is the only part
-// recovered; the GX tev/tex copy setup is still TODO.
-void screen_tev(void) {
-    if (screen_wp->field_0x4 == 0) {
-        return;
-    }
-    if (screen_wp->field_0x24 != 0 && screen_wp->field_0x2C != NULL) {
-        return;
-    }
-}
+// TODO: write screen_tev (global, 0x698 bytes) here:
+// its asm is in build/G8MJ01/tou2/asm/tou_03.s; this is where the original has it, just before the first script that uses it
 
 static s32 screen_evt(EventEntry* event, BOOL isFirstCall) {
     dispEntry(8, 1000.0f, 0, screen_capture, NULL);

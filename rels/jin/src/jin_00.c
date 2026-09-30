@@ -42,7 +42,6 @@ extern s32 evt_usu_kagemario_party_kill_14_data_AF00[];
 static void senteresa_ext_shadow_disp(void);
 static void senteresa_ext_disp(void);
 static void senteresa_ext_dispent(void);
-static void senteresa_ext_main(void);
 static void senteresa_ext_init(void);
 static void computePos(TeresaEntry* p, Vec* out);
 static f32 randf(f32 min, f32 max);
@@ -1405,10 +1404,8 @@ static void senteresa_ext_init(void) {
     g_vecRotCenter.z = mario->position.z;
 }
 
-// NONMATCHING (0.03%): the full 0x278c-byte teresa extension state machine was not
-// reconstructed from asm in this session. Stubbed so the unit links.
-static void senteresa_ext_main(void) {
-}
+// TODO: write senteresa_ext_main (static, 0x278c bytes) here:
+// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
 
 static void senteresa_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);

@@ -59,7 +59,6 @@ extend_data(65,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write tegami (global, 0xe0 bytes) here:
 
 EVT_BEGIN(tegami_init_evt)
     CALL(evt_snd_envoff, 1024)

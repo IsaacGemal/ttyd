@@ -74,3 +74,4 @@ EVT_DEF(temae_teresa_init);
 EVT_DEF(atomic_teresa_init);
 EVT_DEF(senteresa_evt);
 EVT_DEF(jin_00_init_evt);
+void senteresa_ext_main(void);  // static in the original; declared here until it is written

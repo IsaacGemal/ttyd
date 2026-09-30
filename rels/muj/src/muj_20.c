@@ -638,7 +638,7 @@ static u32 elmos_animtbl[11] = {
     0x00100011, 0x00120013, 0xFFFF0000,
 };
 
-// NONMATCHING (62.82%): MWCC did not hoist the loop-invariant float constants
+// NONMATCHING (60.48%): MWCC did not hoist the loop-invariant float constants
 // (90/6.2832/360/0.9/100/0.5) into f25-f31, so register allocation and scheduling differ.
 USER_FUNC(elmos1000tai_init) {
     NanNpcWork* work;
@@ -666,7 +666,7 @@ USER_FUNC(elmos1000tai_init) {
         } else {
             *(s32*)entry->field_0x74 += irand(330);
         }
-        entry->position.x = 0.9f * (f32)*(s32*)entry->field_0x74 * sin(6.2832f * (f32)r / 360.0f);
+        entry->position.x = 0.9f * ((f32)*(s32*)entry->field_0x74 * (f32)sin(6.2832f * (f32)r / 360.0f));
         entry->position.y = 100.0f;
         entry->position.z = 0.5f * (f32)*(s32*)entry->field_0x74 * cos(6.2832f * (f32)r / 360.0f) - 100.0f;
     }

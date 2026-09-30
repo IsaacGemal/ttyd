@@ -1848,14 +1848,6 @@ static EVT_BEGIN(wait_event_r)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 jumptable_0002B350[16] = {
-    (u32)((u8*)&aud_target_mark + 0x17c), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c),
-    (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x238), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c),
-    (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x2f4), (u32)((u8*)&aud_target_mark + 0x42c),
-    (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x42c), (u32)((u8*)&aud_target_mark + 0x3f0),
-};
-
 // clang-format on
 
 // NONMATCHING (99.03%): register naming and literal symbol names

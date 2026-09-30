@@ -595,12 +595,6 @@ void errper_set_rtn(ErrPer* p) {
     }
 }
 
-// TODO: type
-static u32 jumptable_00006074[8] = {
-    (u32)((u8*)&errper_set_rtn + 0x104), (u32)((u8*)&errper_set_rtn + 0x3c), (u32)((u8*)&errper_set_rtn + 0xa0), (u32)((u8*)&errper_set_rtn + 0x3c),
-    (u32)((u8*)&errper_set_rtn + 0xa0), (u32)((u8*)&errper_set_rtn + 0x3c), (u32)((u8*)&errper_set_rtn + 0xa0), (u32)((u8*)&errper_set_rtn + 0x104),
-};
-
 
 void yuunpc_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();

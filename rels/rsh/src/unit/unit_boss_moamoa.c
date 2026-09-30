@@ -419,7 +419,6 @@ char* MOAMOA_TAIJOU[4] = {
 // TODO: write moamoa_guruguru (global, 0x25c bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write evt_moamoa_mainUnitIdClear (global, 0x1c bytes) here:
 USER_FUNC(evt_moamoa_mainUnitIdClear) {
     wp->mainUnitId = -1;
     return EVT_RETURN_DONE;
@@ -580,7 +579,6 @@ EVT_BEGIN(moamoa_tentacl_on)
     RETURN
 EVT_END()
 
-// TODO: write moamoa2_on (global, 0x1ac bytes) here:
 // NONMATCHING (78.48%): WIP reconstruction; see REPORT.md.
 USER_FUNC(moamoa2_on) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
@@ -811,7 +809,6 @@ static u32 ext_moamoa_data[267] = {
 // TODO: write ext_moamoa_main (static, 0x68c bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/unit/unit_boss_moamoa.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write ext_moamoa_init (static, 0x134 bytes) here:
 // NONMATCHING (98.44%): body and control flow match; MWCC assigns the callee-saved registers in a
 // different order than the original (ours: &wp=r30,i=r27,group_tbl=r31,j=r26,name=r25,sub=r24).
 static void ext_moamoa_init(void) {
@@ -889,7 +886,6 @@ static u32 group_tbl[22] = {
     (u32)"c_n_moa_a", (u32)"S_2",
 };
 
-// TODO: write moamoa_set_bodyScale (global, 0xdc bytes) here:
 USER_FUNC(moamoa_set_bodyScale) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
     s32 num = 0;
@@ -920,7 +916,6 @@ EVT_BEGIN(MOAMOA_SET_BODYSCALE)
     RETURN
 EVT_END()
 
-// TODO: write moamoa_draw (global, 0x34 bytes) here:
 void moamoa_draw(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -930,7 +925,6 @@ void moamoa_draw(void) {
     extLoadTextureExit();
 }
 
-// TODO: write moamoa_pose (global, 0xe0 bytes) here:
 // NONMATCHING (90.89%): logic matches; MWCC assigns the callee-saved registers differently
 // (ours: i=r27,name=r29,anim=r26 vs orig: i=r28,name=r26,anim=r29).
 void moamoa_pose(void* poseArg) {
@@ -951,19 +945,16 @@ void moamoa_pose(void* poseArg) {
     }
 }
 
-// TODO: write moamoa_mainUnitIdClear (global, 0x18 bytes) here:
 void moamoa_mainUnitIdClear(void) {
     wp->mainUnitId = -1;
 }
 
-// TODO: write randf (static, 0x7c bytes) here:
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
     f32 d = max - min;
     return r * d + min;
 }
 
-// TODO: write boss_moamoa_check_zenei_kouei (global, 0xa8 bytes) here:
 // NONMATCHING (97.5%): one extra `mr r0,r3` before passing evtGetValue()'s result to BattleTransID
 // (ours `mr r0,r3; mr r4,r0`, orig `mr r4,r3`).
 USER_FUNC(boss_moamoa_check_zenei_kouei) {

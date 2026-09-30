@@ -661,8 +661,7 @@ void display_func(CameraId cameraId, void* param) {
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 }
 
-// NONMATCHING (93.27%): the int->float conversion's scheduler emits different registers around the entry-fill
-// loop and the outer switch uses a range check instead of the original's two compares.
+// NONMATCHING (97.05%): 47 of 260 instructions differ: 40 with different operands, 2 replaced, 1 missing, 3 extra, 1 with a different opcode
 USER_FUNC(display) {
     s32 value = evtGetValue(event, event->args[0]);
     SysWork* work;
@@ -679,8 +678,8 @@ USER_FUNC(display) {
             work->count++;
         }
         for (i = 0; i < work->count; i++) {
-            work->entries[i].x = (f32)((work->count - 1) * 0x24) * float_0p5_sys_00001ae0 -
-                                 float_36_sys_00001adc * (f32)i;
+            work->entries[i].x = float_36_sys_00001adc * (f32)i -
+                                 (f32)((work->count - 1) * 0x24) * float_0p5_sys_00001ae0;
             work->entries[i].y = float_40_sys_00001ae4;
             work->entries[i].z = zero_sys_00001ad8;
             work->entries[i].angle = float_90_sys_00001ae8;

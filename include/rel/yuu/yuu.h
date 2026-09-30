@@ -17,6 +17,6 @@ void yuuminigame_disp_4slit(CameraId cameraId, void* param);
 extern void* yuunpc_yuuminigame4_ptr;
 void yuunpc_wp_flag_off(u16 mask);
 void ext_yuunpc_minigame4_init_sub(void);
-void yuucounter_flag_on(s32 flag);
+void yuucounter_flag_on(u32 mask);
 s32 yuucounter_get_data(void);
 extern f32 yuusintbl[];

@@ -267,7 +267,7 @@ void demo_img(CameraId cameraId, void* param) {
     GXTexCoord2f32(0.0f, 1.0f);
 }
 
-// NONMATCHING (88.59%): GXColor now matches (compound literal); the mtx stack slots and the f29/f30
+// NONMATCHING (92.88%): GXColor now matches (compound literal); the mtx stack slots and the f29/f30
 // width/height temps differ (ours also spills f28), and the vertex constants schedule differently.
 void demo_book(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(8);
@@ -333,6 +333,10 @@ void demo_book(CameraId cameraId, void* param) {
     GXTexCoord2f32(0.0f, 1.0f);
     GXPosition3f32(0.0f, bottom, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
+    w = (f32)(u16)GXGetTexObjWidth(&texObj);
+    h = (f32)(u16)GXGetTexObjHeight(&texObj);
+    GXLoadPosMtxImm(m2, 0);
+    GXSetCurrentMtx(0);
     if (wp->field_0x08 >= 0) {
         TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x24->data[0], &texObj, wp->field_0x08 + 3);
         GXLoadTexObj(&texObj, 0);

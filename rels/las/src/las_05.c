@@ -319,7 +319,6 @@ USER_FUNC(kurokaron_move_position) {
         return EVT_RETURN_DONE;
     }
 
-// NONMATCHING (90.85%): 40 of 180 instructions differ: 25 with different operands, 5 missing, 10 extra
     if (kurokaron_move2(npc, mario) != 0) {
         return EVT_RETURN_DONE;
     }
@@ -507,7 +506,6 @@ USER_FUNC(party_hit) {
     s32* args = event->args;
     f32 dir;
 
-// NONMATCHING (99.15%): 2 of 130 instructions differ: 1 missing, 1 with a different opcode
     if (party_hit_check(&dir, npc->position.x, npc->position.z) != 0 &&
         (party->currentMemberId == 2 || party->currentMemberId == 3)) {
         evtSetValue(event, args[0], 1);
@@ -1121,6 +1119,7 @@ static void senkaron_ext_disp(CameraId cameraId, void* param) {
     extLoadTextureExit();
 }
 
+// NONMATCHING (99.15%): 2 of 130 instructions differ: 1 missing, 1 with a different opcode
 s32 party_hit_check(f32* out, f32 x, f32 z) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     s32 result = 0;
@@ -1258,6 +1257,7 @@ void _kurokaron_next_move_index(void) {
     }
 }
 
+// NONMATCHING (90.85%): 40 of 180 instructions differ: 25 with different operands, 5 missing, 10 extra
 s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
     static s32 flag;
     static s32 count;

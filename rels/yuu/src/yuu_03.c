@@ -114,7 +114,7 @@ EVT_BEGIN(unk_evt_yuu_00015fe0)
     RETURN
 EVT_END()
 
-// NONMATCHING (73.37%): evt_ryushi; needs register/allocation scheduling work
+// NONMATCHING (77.57%): evt_ryushi; needs register/allocation scheduling work
 USER_FUNC(evt_ryushi) {
     YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
     Yuuminigame4Data* data = work2->data;
@@ -133,6 +133,20 @@ USER_FUNC(evt_ryushi) {
     f20 = camGetPtr(4)->cameraAt.x;
     f22 = 0.0f;
     f21 = f22;
+    switch (data->unk10) {
+    case 2:
+    case 3:
+    case 4:
+        f22 = 2.9166667f;
+        f21 = 1.0f;
+        break;
+    case 6:
+    case 7:
+    case 8:
+        f22 = 2.9166667f;
+        f21 = 1.0f;
+        break;
+    }
     switch (data->unk10) {
     case 1:
     case 5:
@@ -664,27 +678,6 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
     }
     return 0;
 }
-
-// TODO: type
-static u32 jumptable_00001654[9] = {
-    (u32)((u8*)&yuuminigame4_gamerule + 0x5e8), (u32)((u8*)&yuuminigame4_gamerule + 0x26c), (u32)((u8*)&yuuminigame4_gamerule + 0x26c), (u32)((u8*)&yuuminigame4_gamerule + 0x310),
-    (u32)((u8*)&yuuminigame4_gamerule + 0x388), (u32)((u8*)&yuuminigame4_gamerule + 0x42c), (u32)((u8*)&yuuminigame4_gamerule + 0x42c), (u32)((u8*)&yuuminigame4_gamerule + 0x4d0),
-    (u32)((u8*)&yuuminigame4_gamerule + 0x548),
-};
-
-// TODO: type
-static u32 jumptable_00001678[9] = {
-    (u32)((u8*)&yuuminigame4_gamerule + 0x54), (u32)((u8*)&yuuminigame4_gamerule + 0xd8), (u32)((u8*)&yuuminigame4_gamerule + 0xf4), (u32)((u8*)&yuuminigame4_gamerule + 0x128),
-    (u32)((u8*)&yuuminigame4_gamerule + 0x148), (u32)((u8*)&yuuminigame4_gamerule + 0x190), (u32)((u8*)&yuuminigame4_gamerule + 0x1b0), (u32)((u8*)&yuuminigame4_gamerule + 0x1e4),
-    (u32)((u8*)&yuuminigame4_gamerule + 0x204),
-};
-
-// TODO: type
-static u32 jumptable_0000169C[9] = {
-    (u32)((u8*)&evt_ryushi + 0x208), (u32)((u8*)&evt_ryushi + 0x160), (u32)((u8*)&evt_ryushi + 0x19c), (u32)((u8*)&evt_ryushi + 0x208),
-    (u32)((u8*)&evt_ryushi + 0x1d8), (u32)((u8*)&evt_ryushi + 0x160), (u32)((u8*)&evt_ryushi + 0x19c), (u32)((u8*)&evt_ryushi + 0x208),
-    (u32)((u8*)&evt_ryushi + 0x1d8),
-};
 
 // TODO: type
 // (globals declared above)

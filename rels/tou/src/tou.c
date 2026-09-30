@@ -3398,7 +3398,7 @@ static USER_FUNC(evt_tou_get_fighter_name2) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (51.37%): rank sort re-implemented; split matches, later passes differ
+// NONMATCHING (54.6%): rank sort re-implemented; split matches, later passes differ
 static void rankingControll(void) {
     s32 win[32];
     s32 lose[32];
@@ -3413,7 +3413,6 @@ static void rankingControll(void) {
     s32 k;
     s32 j;
     s32 temp;
-    s32 target;
 
     for (i = 0, e = entries; i < rw->count; i++, e++) {
         if (!(e->flags & 4)) {
@@ -3464,10 +3463,16 @@ static void rankingControll(void) {
             }
             if (k < loseCount) {
                 temp = lose[k];
-                for (j = k; j > 0; j--) {
-                    lose[j] = lose[j - 1];
+                if (k < 1) {
+                    for (j = k; j < 1; j++) {
+                        lose[j] = lose[j + 1];
+                    }
+                } else {
+                    for (j = k; j > 1; j--) {
+                        lose[j] = lose[j - 1];
+                    }
                 }
-                lose[0] = temp;
+                lose[1] = temp;
             }
         }
         {
@@ -3498,9 +3503,8 @@ static void rankingControll(void) {
             }
         }
         if (swGet(0x9e4)) {
-            target = swByteGet(0x1fb);
             k = 0;
-            while (k < loseCount && entries[lose[k]].id != target) {
+            while (k < loseCount && lose[k] != swByteGet(0x1fb)) {
                 k++;
             }
             if (k < loseCount) {
@@ -3552,7 +3556,7 @@ static void rankingControll(void) {
             }
             if (k < winCount) {
                 j = 0;
-                while (j < winCount && !(((u16*)fighterDt)[entries[win[j]].id * 14] & 4)) {
+                while (j < winCount && !(((u16*)fighterDt)[entries[win[j]].id * 14] & 2)) {
                     j++;
                 }
                 if (j < winCount && j > 0) {
@@ -3571,17 +3575,22 @@ static void rankingControll(void) {
             }
         }
         if (swGet(0x9e4)) {
-            target = swByteGet(0x1fb);
             k = 0;
-            while (k < winCount && entries[win[k]].id != target) {
+            while (k < winCount && win[k] != swByteGet(0x1fb)) {
                 k++;
             }
             if (k < winCount) {
                 temp = win[k];
-                for (j = k; j < winCount - 1; j++) {
-                    win[j] = win[j + 1];
+                if (k < 0) {
+                    for (j = k; j < 0; j++) {
+                        win[j] = win[j + 1];
+                    }
+                } else {
+                    for (j = k; j > 0; j--) {
+                        win[j] = win[j - 1];
+                    }
                 }
-                win[winCount - 1] = temp;
+                win[0] = temp;
             }
         }
     }
