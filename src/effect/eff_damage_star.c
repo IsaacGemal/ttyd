@@ -142,6 +142,207 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
+// NONMATCHING (75.42%): control flow/order match; the original keeps count in r27 and origCount in r30,
+// ours swaps them (r28/r27), and the s32->f32 conversion uses this TU's pool copy not the named symbol.
+// described in REPORT.md
+EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {
+    EffectEntry* entry;
+    DamageStarData* data;
+    s32 num;
+    s32 origCount;
+    s32 i;
+    f32 f0, f1, f2, f3, f4, sinv, cosv;
+
+    entry = effEntry();
+    origCount = count;
+    if (count > 20) {
+        count = 20;
+    }
+    entry->type = str_802F3468;
+    num = count + 2;
+    entry->count = num;
+    data = __memAlloc(HEAP_EFFECT, num * sizeof(DamageStarData));
+    entry->userdata = data;
+    memset(data, 0, num * sizeof(DamageStarData));
+    entry->callback = effDamageStarMain;
+    data->anim = effMayaAnimAlloc(damageStar_effAnimDt);
+    effPlayMayaAnim(data->anim);
+    data->type = type;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->rot = speed;
+    data->angle = angle;
+    data->field_0x24 = 99;
+    data->frame = 0;
+    data->field_0x3C = origCount;
+    data->field_0x40 = gp->retraceCount;
+
+    f4 = 30.0f - (f32)num;
+    i = 1;
+    data = &data[1];
+    for (; i < num; i++, data++) {
+        s32 spiral = i * ((i & 1) * 2 - 1) / 2;
+        f32 a = f4 * (f32)spiral + angle;
+        f32 rad = (6.2831855f * a) / 360.0f;
+
+        data->angle = a;
+        data->position.x = 0.0f;
+        data->position.y = 0.0f;
+        data->position.z = 0.0f;
+
+        // sin
+        sinv = 0.00761f;
+        if (rad <= 3.1415927f) {
+            if (rad <= 1.5707964f) {
+                f0 = rad * rad;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * rad;
+            } else {
+                f0 = rad - 1.5707964f;
+                f1 = 1.5707964f - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f1;
+            }
+        } else {
+            if (rad < 4.712389f) {
+                f1 = rad - 3.1415927f;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f1;
+                sinv = -sinv;
+            } else {
+                f0 = rad - 4.712389f;
+                f1 = 1.5707964f - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f1;
+                sinv = -sinv;
+            }
+        }
+        data->vx = 1.5f * (speed * -sinv);
+
+        // cos
+        cosv = 0.03705f;
+        if (rad <= 3.1415927f) {
+            if (rad <= 1.5707964f) {
+                f0 = rad * rad;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+            } else {
+                f0 = rad - 1.5707964f;
+                f0 = 1.5707964f - f0;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+                cosv = -cosv;
+            }
+        } else {
+            if (rad < 4.712389f) {
+                f0 = rad - 3.1415927f;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+                cosv = -cosv;
+            } else {
+                f0 = rad - 4.712389f;
+                f0 = 1.5707964f - f0;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+            }
+        }
+        data->vy = 1.5f * (speed * cosv);
+
+        data->vz = 0.0f;
+        data->rot = 0.0f;
+        data->alpha = 0xFF;
+        data->scaleX = 0.2f;
+        data->scaleY = 0.2f;
+        data->scaleZ = 0.2f;
+    }
+
+    return entry;
+}
+
+void effDamageStarMain(EffectEntry* effect) {
+    DamageStarData* data;
+    Vec position;
+    Vec disp;
+    u32 count = 0;
+    s32 i;
+
+    data = effect->userdata;
+
+    disp = vec3_802f3448;
+    disp.x = data->position.x;
+    disp.y = data->position.y;
+    disp.z = data->position.z;
+    position = disp;
+
+    effCalcMayaAnim(data->anim);
+
+    if (gp->retraceCount > (u32)data->field_0x40) {
+        count = gp->retraceCount - data->field_0x40;
+    }
+    if (count < 1) {
+        count = 1;
+    }
+
+    while (count--) {
+        data = effect->userdata;
+        if (data->field_0x24 < 100) {
+            data->field_0x24--;
+        }
+        data->frame++;
+        if (data->field_0x24 < 0) {
+            effDeleteMayaAnim(data->anim);
+            effDelete(effect);
+            return;
+        }
+        {
+            s32 frame = data->frame;
+
+            i = 2;
+            data = &data[2];
+            for (; i < effect->count; i++, data++) {
+                if (frame < 0x14) {
+                    f32 v = 0.01f * (f32)scale_data[frame];
+
+                    data->scaleX = data->scaleY = data->scaleZ = v;
+                } else if (frame < 0x28) {
+                    data->rot = intplGetValue(0xB, frame - 0x14, 0x13, 0.0f, 720.0f);
+                } else if (frame < 0x32) {
+                    data->scaleX = intplGetValue(4, frame - 0x28, 9, 1.0f, 1.5f);
+                    data->scaleY = intplGetValue(4, frame - 0x28, 9, 1.0f, 0.5f);
+                } else if (frame < 0x3C) {
+                    data->scaleX = intplGetValue(1, frame - 0x32, 9, 1.5f, 0.1f);
+                    data->scaleY = intplGetValue(1, frame - 0x32, 9, 0.5f, 1.0f);
+                    data->position.y = intplGetValue(1, frame - 0x32, 9, data->position.y, 10.0f + data->position.y);
+                } else {
+                    data->scaleX = data->scaleY = data->scaleZ = 0.0f;
+                }
+
+                data->vx *= 0.75f;
+                data->vy *= 0.75f;
+                data->vz *= 0.75f;
+                data->position.x += data->vx;
+                data->position.y += data->vy;
+                data->position.z += data->vz;
+            }
+        }
+    }
+
+    data = effect->userdata;
+    data->field_0x40 = gp->retraceCount;
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
+}
+
 // NONMATCHING (85.47%): 4 instructions differ, 102 missing, 11 extra, plus register differences.
 void effDamageStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -366,205 +567,4 @@ void effDamageStarDisp(CameraId camId, void* param) {
         PSMTXConcat(mtx148, mtx88, mtx118);
         effNumberGX(&mtx118, 2, count, 0xFF, 1);
     }
-}
-
-void effDamageStarMain(EffectEntry* effect) {
-    DamageStarData* data;
-    Vec position;
-    Vec disp;
-    u32 count = 0;
-    s32 i;
-
-    data = effect->userdata;
-
-    disp = vec3_802f3448;
-    disp.x = data->position.x;
-    disp.y = data->position.y;
-    disp.z = data->position.z;
-    position = disp;
-
-    effCalcMayaAnim(data->anim);
-
-    if (gp->retraceCount > (u32)data->field_0x40) {
-        count = gp->retraceCount - data->field_0x40;
-    }
-    if (count < 1) {
-        count = 1;
-    }
-
-    while (count--) {
-        data = effect->userdata;
-        if (data->field_0x24 < 100) {
-            data->field_0x24--;
-        }
-        data->frame++;
-        if (data->field_0x24 < 0) {
-            effDeleteMayaAnim(data->anim);
-            effDelete(effect);
-            return;
-        }
-        {
-            s32 frame = data->frame;
-
-            i = 2;
-            data = &data[2];
-            for (; i < effect->count; i++, data++) {
-                if (frame < 0x14) {
-                    f32 v = 0.01f * (f32)scale_data[frame];
-
-                    data->scaleX = data->scaleY = data->scaleZ = v;
-                } else if (frame < 0x28) {
-                    data->rot = intplGetValue(0xB, frame - 0x14, 0x13, 0.0f, 720.0f);
-                } else if (frame < 0x32) {
-                    data->scaleX = intplGetValue(4, frame - 0x28, 9, 1.0f, 1.5f);
-                    data->scaleY = intplGetValue(4, frame - 0x28, 9, 1.0f, 0.5f);
-                } else if (frame < 0x3C) {
-                    data->scaleX = intplGetValue(1, frame - 0x32, 9, 1.5f, 0.1f);
-                    data->scaleY = intplGetValue(1, frame - 0x32, 9, 0.5f, 1.0f);
-                    data->position.y = intplGetValue(1, frame - 0x32, 9, data->position.y, 10.0f + data->position.y);
-                } else {
-                    data->scaleX = data->scaleY = data->scaleZ = 0.0f;
-                }
-
-                data->vx *= 0.75f;
-                data->vy *= 0.75f;
-                data->vz *= 0.75f;
-                data->position.x += data->vx;
-                data->position.y += data->vy;
-                data->position.z += data->vz;
-            }
-        }
-    }
-
-    data = effect->userdata;
-    data->field_0x40 = gp->retraceCount;
-    dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
-}
-
-// NONMATCHING (75.42%): control flow/order match; the original keeps count in r27 and origCount in r30,
-// ours swaps them (r28/r27), and the s32->f32 conversion uses this TU's pool copy not the named symbol.
-// described in REPORT.md
-EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {
-    EffectEntry* entry;
-    DamageStarData* data;
-    s32 num;
-    s32 origCount;
-    s32 i;
-    f32 f0, f1, f2, f3, f4, sinv, cosv;
-
-    entry = effEntry();
-    origCount = count;
-    if (count > 20) {
-        count = 20;
-    }
-    entry->type = str_802F3468;
-    num = count + 2;
-    entry->count = num;
-    data = __memAlloc(HEAP_EFFECT, num * sizeof(DamageStarData));
-    entry->userdata = data;
-    memset(data, 0, num * sizeof(DamageStarData));
-    entry->callback = effDamageStarMain;
-    data->anim = effMayaAnimAlloc(damageStar_effAnimDt);
-    effPlayMayaAnim(data->anim);
-    data->type = type;
-    data->position.x = x;
-    data->position.y = y;
-    data->position.z = z;
-    data->rot = speed;
-    data->angle = angle;
-    data->field_0x24 = 99;
-    data->frame = 0;
-    data->field_0x3C = origCount;
-    data->field_0x40 = gp->retraceCount;
-
-    f4 = 30.0f - (f32)num;
-    i = 1;
-    data = &data[1];
-    for (; i < num; i++, data++) {
-        s32 spiral = i * ((i & 1) * 2 - 1) / 2;
-        f32 a = f4 * (f32)spiral + angle;
-        f32 rad = (6.2831855f * a) / 360.0f;
-
-        data->angle = a;
-        data->position.x = 0.0f;
-        data->position.y = 0.0f;
-        data->position.z = 0.0f;
-
-        // sin
-        sinv = 0.00761f;
-        if (rad <= 3.1415927f) {
-            if (rad <= 1.5707964f) {
-                f0 = rad * rad;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
-                sinv = sinv * rad;
-            } else {
-                f0 = rad - 1.5707964f;
-                f1 = 1.5707964f - f0;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
-                sinv = sinv * f1;
-            }
-        } else {
-            if (rad < 4.712389f) {
-                f1 = rad - 3.1415927f;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
-                sinv = sinv * f1;
-                sinv = -sinv;
-            } else {
-                f0 = rad - 4.712389f;
-                f1 = 1.5707964f - f0;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
-                sinv = sinv * f1;
-                sinv = -sinv;
-            }
-        }
-        data->vx = 1.5f * (speed * -sinv);
-
-        // cos
-        cosv = 0.03705f;
-        if (rad <= 3.1415927f) {
-            if (rad <= 1.5707964f) {
-                f0 = rad * rad;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
-            } else {
-                f0 = rad - 1.5707964f;
-                f0 = 1.5707964f - f0;
-                f0 = f0 * f0;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
-                cosv = -cosv;
-            }
-        } else {
-            if (rad < 4.712389f) {
-                f0 = rad - 3.1415927f;
-                f0 = f0 * f0;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
-                cosv = -cosv;
-            } else {
-                f0 = rad - 4.712389f;
-                f0 = 1.5707964f - f0;
-                f0 = f0 * f0;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
-            }
-        }
-        data->vy = 1.5f * (speed * cosv);
-
-        data->vz = 0.0f;
-        data->rot = 0.0f;
-        data->alpha = 0xFF;
-        data->scaleX = 0.2f;
-        data->scaleY = 0.2f;
-        data->scaleZ = 0.2f;
-    }
-
-    return entry;
 }

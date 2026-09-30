@@ -2455,3 +2455,17 @@ continuation (3 did). Result: zero web fetches, every agent left a report. **20 
 quietly edited existing code (animdrv's `!= 0` dropped from two 100% functions, a changed mobjCalcMtx expression, a
 new `dont_inline` pragma) and envdrv/shadowdrv literals added pool entries where main names the constants.
 After this wave the cheap dol pool is 16 small functions; 75 dol files have only functions over 1 KB left.
+
+## Grind 24 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Function-order sweep**: `tools/fn_order.py UNIT [--write]` compares a unit's target `.text` symbol order with the source
+  and moves each function (with its comment lines) into the slot that emits the target order (source lists functions from
+  the highest target address to the lowest). 147 units had a different order; of the 60 that are complete (every target
+  function written), 36 could be reordered with no function scoring lower and the built order now equals the target's.
+  Left alone: units that then fail to build because a `static` function is called before it is defined (would need a
+  forward declaration), units where a function score drops (the reorder changes what `-inline auto,deferred` inlines:
+  ac_monosiri_target, battle_status_effect, eff_particle, evt_item, koopa_motion), and two where `.sdata2` got worse
+  (eff_mobj_broken, evt_shop). The reorder changes pool first-use order, so the section scores of 21 units improve.
+- **eff_itemget**: reordering alone brings its `.sdata2` pool to four differing words (the -21.333334 / 42.666668 / 2.0 / 0.5
+  first-use order in effItemUseDisp) but the two GXColor stack slots (black and white temp, inline or local) and the FP
+  register naming of the `-f * 0.5f` init were not solved, so it is not in this change.

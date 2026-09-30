@@ -9,7 +9,6 @@
 #include <math.h>
 
 extern const f32 float_deg2rad_8041ffe0;
-extern effVtxArray stg_thruhammer_v;
 extern u32 unk_80423298;
 extern u32 unk_8042329c;
 extern u32 unk_804232a0;
@@ -20,6 +19,19 @@ static void main_dl(EffectEntry* effect, Mtx matrix);
 const char str_802FB858[] = "ThruHammerN64";
 
 const f64 double_to_int_802fb850 = 4503601774854144.0;
+
+static u32 stg_thruhammer_v[0x118 / 4] = {
+    0xFFDEFFFE, 0x001410AB, 0x0400FFFF, 0xFFFFFFCC, 0x00320000, 0x0F000800, 0xFFFFFF00,
+    0xFFDEFFFE, 0xFFEC0D55, 0x0400FFFF, 0xFFFFFFCC, 0x0032FFE2, 0x0D550800, 0xFFFFFF00,
+    0xFFE60032, 0xFFD30BAB, 0x0800FFFF, 0xFF000000, 0xFFFEFFD8, 0x0A000400, 0xFFFFFFFF,
+    0x00000032, 0xFFC40A00, 0x0800FFFF, 0xFF00001A, 0x0032FFD3, 0x08550800, 0xFFFFFF00,
+    0x0022FFFE, 0xFFEC06AB, 0x0400FFFF, 0xFFFFFFCC, 0x0032001E, 0x10AB0800, 0xFFFFFF00,
+    0xFFE60032, 0x002D1255, 0x0800FFFF, 0xFF000000, 0xFFFE0028, 0x14000400, 0xFFFFFFFF,
+    0x00000032, 0x003C1400, 0x0800FFFF, 0xFF00001A, 0x0032002D, 0x15AB0800, 0xFFFFFF00,
+    0x00340032, 0xFFE206AB, 0x0800FFFF, 0xFF000034, 0x00320000, 0x05000800, 0xFFFFFF00,
+    0x0022FFFE, 0x00140355, 0x0400FFFF, 0xFFFF0034, 0x0032001E, 0x03550800, 0xFFFFFF00,
+    0x001A0032, 0x002D01AB, 0x0800FFFF, 0xFF000000, 0xFFFE0028, 0x00000400, 0xFFFFFFFF,
+};
 
 EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	EffectEntry* effect;
@@ -190,7 +202,7 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 	effGetTexObjN64(0x24, &texObj);
 	GXLoadTexObj(&texObj, 1);
-	effSetVtxDescN64(&stg_thruhammer_v);
+	effSetVtxDescN64((effVtxArray*)stg_thruhammer_v);
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXRotRad(rot, 'y', float_deg2rad_8041ffe0 * -camGetPtr(CAMERA_3D)->viewYaw);

@@ -331,9 +331,9 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     }
 }
 
-// Four floor/wall probes; control flow and constants match, remaining diffs are
-// float register allocation in the probe origins and the normal projection.
-// NONMATCHING (92.6%): see REPORT.md for details.
+// Four floor/wall probes; remaining diffs are float register allocation in the probe
+// origins and the normal projection, plus anonymous pool literals.
+// NONMATCHING (92.68%): see REPORT.md for details.
 HitEntry* ccwall(PartyEntry* party, s32 flag) {
     u8* p = (u8*)party;
     HitEntry* hit;
@@ -413,7 +413,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     f31 = 0.4f * *(f32*)(p + 0xF4);
     z = party->position.z + f31 * (f32)cos((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
     x = party->position.x + f31 * (f32)sin((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
-    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
+    distance = 0.4f * *(f32*)(p + 0xF4) + party->speed;
     oy = party->position.y + y;
     sincosf(&sinV, &cosV, party->dir);
     hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, 0.0f, cosV);
@@ -439,9 +439,8 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     f31 = 0.4f * *(f32*)(p + 0xF4);
     z = party->position.z + f31 * (f32)cos((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
     x = party->position.x + f31 * (f32)sin((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
-    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
+    distance = 0.4f * *(f32*)(p + 0xF4) + party->speed;
     y = party->position.y + y;
-    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
     sincosf(&sinV, &cosV, party->dir);
     hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, sinV, 0.0f, cosV);
     if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {

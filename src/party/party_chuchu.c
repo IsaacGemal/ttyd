@@ -35,173 +35,29 @@ typedef struct ChuchuSearchEntry {
 extern ChuchuSearchEntry unk_8038bb34[];
 extern u32 msg_evt[];
 
-void chuchu_use(PartyEntry* party) {
-    MarioWork* player = party->playerPtr;
+USER_FUNC(search_result) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
 
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
-        party->useMotionId = 0;
-        marioStSystemLevel(1);
-    }
-
-    switch (party->useMotionId) {
-    case 0: {
-        Vec appear;
-        partyGetAppearPos3(party, &appear);
-        *(Vec*)((u8*)party + 0x94) = appear;
-        *(s32*)((u8*)party + 0x24) = 4;
-        party->field_FC = angleABf(party->position.x, party->position.z,
-                                   *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
-        party->dir = party->field_FC;
-        party->field_10C = player->unk1A8;
-        party->field_110 = player->unk1A8;
-        party->speed = distABf(party->position.x, party->position.z,
-                               *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C))
-                       / (f32)*(s32*)((u8*)party + 0x24);
-        party->jumpPara1 = 0.0f;
-        party->useMotionId = 1;
-        break;
-    }
-    case 1: {
-        Vec appear;
-        partyGetAppearPos3(party, &appear);
-        *(Vec*)((u8*)party + 0x94) = appear;
-        party->position.x += (((Vec*)((u8*)party + 0x94))->x - party->position.x) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.y += (((Vec*)((u8*)party + 0x94))->y - party->position.y) / (f32)*(s32*)((u8*)party + 0x24);
-        party->position.z += (((Vec*)((u8*)party + 0x94))->z - party->position.z) / (f32)*(s32*)((u8*)party + 0x24);
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
-            return;
+    if (isFirstCall) {
+        if ((u32)event->lwData[0] == 0 || event->lwData[1] == 0) {
+            return EVT_RETURN_DONE;
         }
-        partyChgPoseId(party, 1);
-        party->speed = 0.0f;
-        party->useMotionId = 10;
-        break;
-    }
-    case 10:
-        party->field_110 = *(f32*)((u8*)player + 0x1AC);
-        party->field_FC = toMovedir(party->field_110);
-        party->dir = party->field_FC;
-        party->useMotionId = 20;
-        *(s32*)((u8*)party + 0x24) = 25;
-        break;
-    case 20:
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
-            break;
+        if (event->lwData[1] == 1) {
+            if (party != NULL) {
+                effFukidashiEntry(6, 0, -2, sysMsec2Frame(0x5DC), 0.0f, 18.0f, 0.0f, 0.0f, 0.0f);
+            }
+            return EVT_RETURN_DONE;
         }
-        psndSFXOn_3D((const char*)0x944, &party->position);
-        partyChgPose(party, "PCH_A2_1");
-        party->useMotionId = 21;
-        *(s32*)((u8*)party + 0x24) = 30;
-        // fallthrough
-    case 21:
-        if (--*(s32*)((u8*)party + 0x24) > 0) {
-            break;
-        }
-        partyChgPoseId(party, 1);
-        evtEntryType(msg_evt, 0, 0, 0x1A);
-        party->useMotionId = 22;
-        break;
-    case 23:
-        partyChgPoseId(party, 1);
-        party->useMotionId = 0x50;
-        break;
-    default:
-        break;
-    }
-
-    switch ((s8)party->useMotionId) {
-    case 0x50:
-        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-        partyChgRunMode(party, 2);
-        party->field_3B = 0;
-        marioChgMot(0);
-        marioStSystemLevel(0);
-        break;
+        psndSFXOn_3D((const char*)0x945, &party->position);
+        event->field_84 = 0x2A;
+        partyChgPose(party, "PCH_Y_1");
     }
     partyChkGnd(party);
-}
-
-void chuchu_move(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
-        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
-        partyWalkInit(party, 1);
+    if (--*(s32*)&event->field_84 > 0) {
+        return 0;
     }
-    unk_800c92c4(party);
-    partyWalkMain(party);
-}
-
-void chuchu_exit(PartyEntry* party) {
-}
-
-void chuchu_reinit(PartyEntry* party) {
-}
-
-void chuchu_init(PartyEntry* party) {
-    party->field_33 = 7;
-    party->field_32 = 0;
-    *(f32*)((u8*)party + 0xF0) = 20.0f;
-    *(f32*)((u8*)party + 0xF4) = 24.0f;
-}
-
-// NONMATCHING (97.26%): stack frame and instruction sequence match; the loop prologue only differs in
-// scheduling (`addi r0;mr r31` vs `addi r31`) and `li r29,0;li r28,0` vs `mr r28,r29`.
-// `Vec pos = tmp;` (a separate zero-init temp plus a whole-struct copy) is what reproduces the
-// original's 0x14 scratch and the `lwz/stw` (not `lfs/stfs`) copy of pos to 0x8.
-BOOL chuchu_searchObject(void) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-    MarioWork* player = party->playerPtr;
-    ChuchuSearchEntry* entry;
-    MarioWork* loopPlayer;
-    BOOL found;
-    u32 i;
-    f32 minDist;
-
-    if (itemNearDistCheck(player->position.x, player->position.y, player->position.z, 150.0f) != NULL) {
-        return TRUE;
-    }
-    if (mobjNearDistCheck2(player->position.x, player->position.y, player->position.z, 150.0f, mobj_list) != NULL) {
-        return TRUE;
-    }
-
-    found = FALSE;
-    loopPlayer = party->playerPtr;
-    entry = unk_8038bb34;
-    minDist = 10000.0f;
-    for (i = 0; i < 0x28; i++, entry++) {
-        if (strcmp(gp->currentMapName, entry->name) != 0) {
-            continue;
-        }
-        if (evtGetValue(NULL, entry->evtId) != 0) {
-            continue;
-        }
-        {
-            Vec tmp = { 0.0f, 0.0f, 0.0f };
-            Vec pos;
-            f32 dist;
-            tmp.x = (f32)entry->x;
-            tmp.y = (f32)entry->y;
-            tmp.z = (f32)entry->z;
-            pos = tmp;
-            dist = PSVECDistance(&loopPlayer->position, &pos);
-            if (150.0f < dist) {
-                continue;
-            }
-            if (minDist > dist) {
-                minDist = dist;
-                found = TRUE;
-            }
-        }
-    }
-    return found != 0;
-}
-
-USER_FUNC(post_msg) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-
-    event->lwData[0] = 0;
     if (party != NULL) {
-        party->useMotionId++;
+        effFukidashiEntry(6, 0, -2, sysMsec2Frame(0x5DC), 0.0f, 18.0f, 0.0f, 0.0f, 0.0f);
     }
     return EVT_RETURN_DONE;
 }
@@ -339,31 +195,175 @@ USER_FUNC(set_msg) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(search_result) {
+USER_FUNC(post_msg) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
-    if (isFirstCall) {
-        if ((u32)event->lwData[0] == 0 || event->lwData[1] == 0) {
-            return EVT_RETURN_DONE;
-        }
-        if (event->lwData[1] == 1) {
-            if (party != NULL) {
-                effFukidashiEntry(6, 0, -2, sysMsec2Frame(0x5DC), 0.0f, 18.0f, 0.0f, 0.0f, 0.0f);
-            }
-            return EVT_RETURN_DONE;
-        }
-        psndSFXOn_3D((const char*)0x945, &party->position);
-        event->field_84 = 0x2A;
-        partyChgPose(party, "PCH_Y_1");
-    }
-    partyChkGnd(party);
-    if (--*(s32*)&event->field_84 > 0) {
-        return 0;
-    }
+    event->lwData[0] = 0;
     if (party != NULL) {
-        effFukidashiEntry(6, 0, -2, sysMsec2Frame(0x5DC), 0.0f, 18.0f, 0.0f, 0.0f, 0.0f);
+        party->useMotionId++;
     }
     return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (97.26%): stack frame and instruction sequence match; the loop prologue only differs in
+// scheduling (`addi r0;mr r31` vs `addi r31`) and `li r29,0;li r28,0` vs `mr r28,r29`.
+// `Vec pos = tmp;` (a separate zero-init temp plus a whole-struct copy) is what reproduces the
+// original's 0x14 scratch and the `lwz/stw` (not `lfs/stfs`) copy of pos to 0x8.
+BOOL chuchu_searchObject(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    MarioWork* player = party->playerPtr;
+    ChuchuSearchEntry* entry;
+    MarioWork* loopPlayer;
+    BOOL found;
+    u32 i;
+    f32 minDist;
+
+    if (itemNearDistCheck(player->position.x, player->position.y, player->position.z, 150.0f) != NULL) {
+        return TRUE;
+    }
+    if (mobjNearDistCheck2(player->position.x, player->position.y, player->position.z, 150.0f, mobj_list) != NULL) {
+        return TRUE;
+    }
+
+    found = FALSE;
+    loopPlayer = party->playerPtr;
+    entry = unk_8038bb34;
+    minDist = 10000.0f;
+    for (i = 0; i < 0x28; i++, entry++) {
+        if (strcmp(gp->currentMapName, entry->name) != 0) {
+            continue;
+        }
+        if (evtGetValue(NULL, entry->evtId) != 0) {
+            continue;
+        }
+        {
+            Vec tmp = { 0.0f, 0.0f, 0.0f };
+            Vec pos;
+            f32 dist;
+            tmp.x = (f32)entry->x;
+            tmp.y = (f32)entry->y;
+            tmp.z = (f32)entry->z;
+            pos = tmp;
+            dist = PSVECDistance(&loopPlayer->position, &pos);
+            if (150.0f < dist) {
+                continue;
+            }
+            if (minDist > dist) {
+                minDist = dist;
+                found = TRUE;
+            }
+        }
+    }
+    return found != 0;
+}
+
+void chuchu_init(PartyEntry* party) {
+    party->field_33 = 7;
+    party->field_32 = 0;
+    *(f32*)((u8*)party + 0xF0) = 20.0f;
+    *(f32*)((u8*)party + 0xF4) = 24.0f;
+}
+
+void chuchu_reinit(PartyEntry* party) {
+}
+
+void chuchu_exit(PartyEntry* party) {
+}
+
+void chuchu_move(PartyEntry* party) {
+    if (party->field_8 & 0x8) {
+        party->field_8 &= ~0x8;
+        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
+        partyWalkInit(party, 1);
+    }
+    unk_800c92c4(party);
+    partyWalkMain(party);
+}
+
+void chuchu_use(PartyEntry* party) {
+    MarioWork* player = party->playerPtr;
+
+    if (party->field_8 & 0x8) {
+        party->field_8 &= ~0x8;
+        party->useMotionId = 0;
+        marioStSystemLevel(1);
+    }
+
+    switch (party->useMotionId) {
+    case 0: {
+        Vec appear;
+        partyGetAppearPos3(party, &appear);
+        *(Vec*)((u8*)party + 0x94) = appear;
+        *(s32*)((u8*)party + 0x24) = 4;
+        party->field_FC = angleABf(party->position.x, party->position.z,
+                                   *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
+        party->dir = party->field_FC;
+        party->field_10C = player->unk1A8;
+        party->field_110 = player->unk1A8;
+        party->speed = distABf(party->position.x, party->position.z,
+                               *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C))
+                       / (f32)*(s32*)((u8*)party + 0x24);
+        party->jumpPara1 = 0.0f;
+        party->useMotionId = 1;
+        break;
+    }
+    case 1: {
+        Vec appear;
+        partyGetAppearPos3(party, &appear);
+        *(Vec*)((u8*)party + 0x94) = appear;
+        party->position.x += (((Vec*)((u8*)party + 0x94))->x - party->position.x) / (f32)*(s32*)((u8*)party + 0x24);
+        party->position.y += (((Vec*)((u8*)party + 0x94))->y - party->position.y) / (f32)*(s32*)((u8*)party + 0x24);
+        party->position.z += (((Vec*)((u8*)party + 0x94))->z - party->position.z) / (f32)*(s32*)((u8*)party + 0x24);
+        if (--*(s32*)((u8*)party + 0x24) > 0) {
+            return;
+        }
+        partyChgPoseId(party, 1);
+        party->speed = 0.0f;
+        party->useMotionId = 10;
+        break;
+    }
+    case 10:
+        party->field_110 = *(f32*)((u8*)player + 0x1AC);
+        party->field_FC = toMovedir(party->field_110);
+        party->dir = party->field_FC;
+        party->useMotionId = 20;
+        *(s32*)((u8*)party + 0x24) = 25;
+        break;
+    case 20:
+        if (--*(s32*)((u8*)party + 0x24) > 0) {
+            break;
+        }
+        psndSFXOn_3D((const char*)0x944, &party->position);
+        partyChgPose(party, "PCH_A2_1");
+        party->useMotionId = 21;
+        *(s32*)((u8*)party + 0x24) = 30;
+        // fallthrough
+    case 21:
+        if (--*(s32*)((u8*)party + 0x24) > 0) {
+            break;
+        }
+        partyChgPoseId(party, 1);
+        evtEntryType(msg_evt, 0, 0, 0x1A);
+        party->useMotionId = 22;
+        break;
+    case 23:
+        partyChgPoseId(party, 1);
+        party->useMotionId = 0x50;
+        break;
+    default:
+        break;
+    }
+
+    switch ((s8)party->useMotionId) {
+    case 0x50:
+        party->flags &= ~PARTY_FLAG_IS_BEING_USED;
+        partyChgRunMode(party, 2);
+        party->field_3B = 0;
+        marioChgMot(0);
+        marioStSystemLevel(0);
+        break;
+    }
+    partyChkGnd(party);
 }
 char* mobj_list[] = {
     "MOBJ_TreasureBox",

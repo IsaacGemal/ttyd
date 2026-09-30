@@ -937,12 +937,12 @@ void envDisp_Blur(void) {
 }
 
 
-// Full logic and the texture loop are exact; what still differs is global register allocation.
+// The map-object flag tests and the texture loop match; what still differs is global register allocation.
 // The target keeps the map object in r3 and its flags in r4 (mine swaps them), so the bbox lands
 // in r21-r18 (mine r24-r21) and the loop counters/base/fp constants shift by a few registers
 // (i: r23/r19, j: r22/r18, base r24/r20). The entry block also lays out the wrong way (target:
 // `beq F4; b E4`, mine: `bne E4` + fall-through); constant-pool symbols show as @NNN.
-// NONMATCHING (90.89%): register allocation / block layout only.
+// NONMATCHING (91.19%): register allocation / block layout only.
 void envSetWater(s32 arg0, void* arg1) {
     EnvironmentYami* yami = (EnvironmentYami*)arg0;
     MapObject* obj;
@@ -971,8 +971,8 @@ void envSetWater(s32 arg0, void* arg1) {
     unk18 = yami->unk18;
 
     if ((*(u32*)obj->field_0x0 & 0x20) == 0) {
-        if ((*(u32*)obj->field_0x0 & 4) == 0) {
-            *(u32*)obj->field_0x0 |= 0x2000;
+        if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
+            *(u32*)obj->field_0x0 |= 0x20000000;
             return;
         }
     }
@@ -985,8 +985,8 @@ void envSetWater(s32 arg0, void* arg1) {
             if ((*(u32*)obj->field_0x0 & 0x10) == 0) {
                 continue;
             }
-            if ((*(u32*)obj->field_0x0 & 4) == 0) {
-                *(u32*)obj->field_0x0 |= 0x2000;
+            if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
+                *(u32*)obj->field_0x0 |= 0x20000000;
                 return;
             }
             break;

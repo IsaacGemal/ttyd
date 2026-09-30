@@ -231,6 +231,8 @@ extern const Vec vec3_802c58a4;
 // strings/rodata with no home header (addressed from the rodata base symbol)
 extern const u8 vec3_802c5730[];
 extern const u8 vec3_802c573c[];
+extern const Vec vec3_802c58b0;
+extern const Vec vec3_802c58bc;
 
 BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
@@ -1234,10 +1236,12 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
 // diffs: the original keeps 7 callee-saved GPRs (r25=second marioGetPtr result,
 // r26-r28=out args, r29=hit, r30=base, r31=wp) vs 5 here (r27-r31), and it emits a
 // second `if (hit != NULL)` after the rounding block instead of CSE-ing it with the first.
-// NONMATCHING (73.92%): int->float magic double not folded into the rodata base pool;
+// NONMATCHING (73.93%): int->float magic double not folded into the rodata base pool;
 // callee-saved GPR set/assignment differs; redundant second hit test CSEd away.
 HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
+#ifdef MUST_MATCH
     const u8* base = vec3_802c5730;
+#endif
     MarioWork* wp = marioGetPtr();
     HitCheckQuery query;
     HitEntry* hit;
@@ -1284,7 +1288,11 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     c = (f32)cos((f64)rad);
     px = wp->position.x;
     py = wp->position.y;
+#ifdef MUST_MATCH
     v = *(const Vec*)(base + 0x180);
+#else
+    v = vec3_802c58b0;
+#endif
     {
         f32 t = off * s;
         v.x = px + t;
@@ -1294,7 +1302,11 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
         v.z = pz + t;
     }
     query.targetPos = v;
+#ifdef MUST_MATCH
     query.targetDir = *(const Vec*)(base + 0x18c);
+#else
+    query.targetDir = vec3_802c58bc;
+#endif
     query.targetDistance = float_0p1_8041a7e4 + (float_11_8041a7ac + h);
     if (marioGetPtr()->currMotionId == 0x1C) {
         hit = hitCheckVecFilter(&query, chkfilterVecVivian);
@@ -1326,7 +1338,7 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
         }
         *outY = hitPos.y;
         *outDist = float_0_8041a7a4;
-        *outAngle = angleABf(px, pz, n.x, n.z);
+        *outAngle = angleABf(px, pz, hitPos.x, hitPos.z);
         return hit;
     }
     return NULL;

@@ -9,6 +9,9 @@
 #include <string.h>
 
 extern const Vec vec3_802c1a90;
+extern const Vec vec3_802c1a9c;
+extern const Vec vec3_802c1aa8;
+extern const Vec vec3_802c1ab4;
 extern const Vec vec3_802c1acc;
 extern const Vec vec3_802c1ae4;
 extern GXColor dat_804198e4;
@@ -512,7 +515,7 @@ void shadowCharShadowDisp_Texture(CameraId camId) {
     GXColor color;
     GXTexObj texObj;
     Mtx mtx;
-    f32 zero = float_0_804198f4;
+    f32 zero = 0.0f;
     f32 size = 2.5f;
     f32 negSize = -size;
     s32 i;
@@ -667,7 +670,9 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     CharShadowWork* work;
     ShadowConfigFields* config;
     ShadowEntry* entry;
+#ifdef MUST_MATCH
     const u8* vecs;
+#endif
     f32 (*view)[4];
     u8 alpha;
     Mtx mtx;
@@ -686,7 +691,9 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     (void)camId;
     (void)param;
     work = cswp;
+#ifdef MUST_MATCH
     vecs = (const u8*)&vec3_802c1a90;
+#endif
     config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
     entry = work->entries;
     view = camGetCurPtr()->view;
@@ -759,9 +766,15 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXSetVtxAttrFmt(0, 9, 1, 4, 0);
         GXSetVtxDesc(0xB, 1);
         GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+#ifdef MUST_MATCH
         camPos = *(const Vec*)(vecs + 0xC);
         camUp = *(const Vec*)(vecs + 0x18);
         camTarget = *(const Vec*)(vecs + 0x24);
+#else
+        camPos = vec3_802c1a9c;
+        camUp = vec3_802c1aa8;
+        camTarget = vec3_802c1ab4;
+#endif
         C_MTXLookAt(lookAt, &camPos, &camUp, &camTarget);
         GXLoadPosMtxImm(lookAt, 0);
         w = -config->unk28;

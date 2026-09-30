@@ -33,7 +33,7 @@ extern const f32 float_0p02_80420100;
 extern const f32 float_neg1p5_80420104;
 extern const f32 float_1_80420108;
 
-// effVaporDisp's .sdata2/.rodata/.sbss2 data, and the .data table base it indexes.
+// effVaporDisp's .sdata2/.rodata/.sbss2 data.
 extern const f32 float_deg2rad_804200d8;
 extern const f32 float_0p01_804200e0;
 extern const f32 float_0_804200e4;
@@ -47,15 +47,3 @@ extern const f64 double_to_int_802fb8f8;
 extern const f64 double_to_int_mask_802fb900;
 extern GXColor unk_804232b8;
 extern GXColor unk_804232bc;
-
-// The original builds all of this unit's .data tables off one base pointer,
-// lbl_803A85F8 (defined in eff_timestamp_n64.c).
-typedef struct EffVaporN64DispData {
-	u8 gap_0[0x40];      // lbl_803A85F8 itself plus the pair constants
-	s8 dx_data[0x5C];    // 0x40
-	u8 scale_data[0x5C]; // 0x9C
-	u8 seq_data[0x5C];   // 0xF8
-	u8 rz_data[0x5C];    // 0x154
-	u8 vtx[0x118];       // 0x1B0
-} EffVaporN64DispData;
-extern EffVaporN64DispData lbl_803A85F8;

@@ -25,7 +25,7 @@ GXColor unk_80423144;
 
 // Float pairs that precede the vertex arrays in the retail unit's .data; kept so
 // the unit's data section is complete. The arrays themselves are reached through
-// lbl_8039D5D0 (declared in the header) in effHokoriDisp.
+// lbl_8039D5D0 (declared in the header) in effHokoriDisp under MUST_MATCH.
 static f32 negone_one_374[2] = { -1.0f, 1.0f };
 f32 lbl_8039D5E0[2] = { 1.0f, -1.0f };
 static f32 one_negone_373[2] = { 1.0f, -1.0f };
@@ -35,7 +35,7 @@ f32 lbl_8039D600[2] = { 1.0f, -1.0f };
 static f32 one_negone_359[2] = { 1.0f, -1.0f };
 
 // .data vertex arrays.
-static u32 size16x32_tex32x64_vtx[14] = {
+u32 size16x32_tex32x64_vtx[14] = {
 	0xFFF8FFE0, 0x00000000, 0x04000000, 0x00FF0008,
 	0xFFE00000, 0x04000400, 0x000000FF, 0x00080000,
 	0x00000400, 0x0BE00000, 0x00FFFFF8, 0x00000000,
@@ -186,11 +186,12 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 	Mtx rot;
 	Mtx work;
 	effVtxArray* vtx;
-	u8* vtxBase;
+#ifdef MUST_MATCH
+	u8* vtxBase = (u8*)lbl_8039D5D0;
+#endif
 	s32 i;
 	s32 type;
 
-	vtxBase = (u8*)lbl_8039D5D0;
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
 
@@ -244,12 +245,24 @@ void effHokoriDisp(CameraId cameraId, void* param) {
 		GXSetCurrentMtx(0);
 		if (type <= 1) {
 			if (i & 1) {
+#ifdef MUST_MATCH
 				vtx = (effVtxArray*)(vtxBase + 0x40);
+#else
+				vtx = (effVtxArray*)size16x32_tex32x64_vtx;
+#endif
 			} else {
+#ifdef MUST_MATCH
 				vtx = (effVtxArray*)(vtxBase + 0x78);
+#else
+				vtx = (effVtxArray*)size16x16_tex32x32_vtx;
+#endif
 			}
 		} else {
+#ifdef MUST_MATCH
 			vtx = (effVtxArray*)(vtxBase + 0xb0);
+#else
+			vtx = (effVtxArray*)size8x8_tex32x32_vtx;
+#endif
 		}
 		effSetVtxDescN64(vtx);
 		GXBegin(0x90, 0, 6);

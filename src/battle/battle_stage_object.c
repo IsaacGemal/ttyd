@@ -149,6 +149,7 @@ void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
 			d[0x2D] += s[0x2D];
 		}
 #else
+		{
 		BattleWeapon* d = (BattleWeapon*)dst_;
 		BattleWeapon* s = (BattleWeapon*)src_;
 		_rate_mix(&d->sleepChance, (u8*)&d->sleepTime, (s8*)&s->sleepChance, (u8*)&s->sleepTime);
@@ -172,6 +173,7 @@ void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
 		d->hpRegenStrength += s->hpRegenStrength;
 		d->fpRegenTime += s->fpRegenTime;
 		d->fpRegenStrength += s->fpRegenStrength;
+		}
 #endif
 	}
 }

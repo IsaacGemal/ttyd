@@ -24,7 +24,6 @@
 #include "battle/battle_database_common.h"
 #include "battle/battle_actrecord.h"
 #include "battle/battle_attack_audience.h"
-#include "battle/battle_seq_command_abi.h"
 #include "battle/battle_event_default.h"
 
 extern ItemData itemDataTable[];

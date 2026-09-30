@@ -36,63 +36,45 @@ extern const f32 float_65_804222b8;
 
 extern GXColor unk_80423350;
 
-// NONMATCHING (91.99%): the vertex-block constants are reloaded by the original for 0.0/2.0 but kept in
-// registers here; the s32->f32 conversion also uses this TU's anonymous pool copy of double_to_int, not the
-// named symbol; the color local and its outgoing-argument copy are at 0x8/0xc swapped.
-void effSpiritDisp(CameraId camId, void* param) {
-    EffectEntry* effect = param;
-    effSpiritData* data = effect->userdata;
-    CameraEntry* cam;
-    GXColor color;
-    GXTexObj texObj;
-    Mtx mtx90;
-    Mtx mtx60;
-    Mtx mtx30;
-    f32 scale;
+EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 targetX, f32 targetY, f32 targetZ,
+                            f32 scale) {
+    EffectEntry* entry;
+    effSpiritData* data;
 
-    cam = camGetPtr(camId);
-    PSMTXTrans(mtx90, data->x, data->y, data->z);
-    PSMTXRotRad(mtx60, 'y', float_deg2rad_80422270 * -camGetPtr(camId)->viewYaw);
-    scale = data->scale * data->scaleBase;
-    PSMTXScale(mtx30, scale, scale, scale);
-    PSMTXConcat(mtx90, mtx60, mtx60);
-    PSMTXConcat(mtx60, mtx30, mtx30);
-    PSMTXConcat(cam->view, mtx30, mtx30);
-    GXLoadPosMtxImm(mtx30, 0);
-    GXSetCurrentMtx(0);
-    effGetTexObj(0x83, &texObj);
-    GXLoadTexObj(&texObj, 0);
-    GXSetNumChans(1);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-    color = *(GXColor*)&unk_80423350;
-    color.r = data->colorR;
-    color.g = data->colorG;
-    color.b = data->colorB;
-    color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
-    GXSetChanMatColor(4, color);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 4);
-    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-    GXSetTevAlphaIn(0, 7, 7, 7, 4);
-    GXSetCullMode(0);
-    GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(-float_8_80422278 * float_0p5_8042227c, float_4_80422280, float_0_80422284);
-    GXTexCoord2f32(float_0_80422284, float_0_80422284);
-    GXPosition3f32(float_4_80422280, float_4_80422280, float_0_80422284);
-    GXTexCoord2f32(float_2_80422288, float_0_80422284);
-    GXPosition3f32(float_4_80422280, -float_4_80422280, float_0_80422284);
-    GXTexCoord2f32(float_2_80422288, float_2_80422288);
-    GXPosition3f32(-float_4_80422280, -float_4_80422280, float_0_80422284);
-    GXTexCoord2f32(float_0_80422284, float_2_80422288);
+    entry = effEntry();
+    entry->type = str_80301338;
+    entry->count = 1;
+    data = __memAlloc(HEAP_EFFECT, sizeof(effSpiritData));
+    entry->userdata = data;
+    entry->callback = effSpiritMain;
+    entry->flags |= 2;
+    data->type = type;
+    data->x = x;
+    data->y = y;
+    data->z = z;
+    data->scale = scale;
+    data->scaleBase = 1.0f;
+    data->tick = 0;
+    data->lifetime = 1000;
+    data->state = 0;
+    data->velX = 0.0f;
+    data->velY = 2.0f;
+    data->velZ = 0.0f;
+    data->startX = data->x;
+    data->startY = data->y;
+    data->startZ = data->z;
+    data->targetX = targetX;
+    data->targetY = targetY;
+    data->targetZ = targetZ;
+    data->colorR = 0xFF;
+    data->colorG = 0xF2;
+    data->colorB = 0;
+    data->alpha = 0xCC;
+    data->colorState = 0;
+    data->colorStep = 0;
+    data->step = 0;
+    data->duration = duration;
+    return entry;
 }
 
 // NONMATCHING (92.55%): the s32->f32 conversions use this TU's anonymous pool copy of double_to_int instead of
@@ -188,43 +170,61 @@ void effSpiritMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSpiritDisp, effect);
 }
 
-EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 targetX, f32 targetY, f32 targetZ,
-                            f32 scale) {
-    EffectEntry* entry;
-    effSpiritData* data;
+// NONMATCHING (91.99%): the vertex-block constants are reloaded by the original for 0.0/2.0 but kept in
+// registers here; the s32->f32 conversion also uses this TU's anonymous pool copy of double_to_int, not the
+// named symbol; the color local and its outgoing-argument copy are at 0x8/0xc swapped.
+void effSpiritDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effSpiritData* data = effect->userdata;
+    CameraEntry* cam;
+    GXColor color;
+    GXTexObj texObj;
+    Mtx mtx90;
+    Mtx mtx60;
+    Mtx mtx30;
+    f32 scale;
 
-    entry = effEntry();
-    entry->type = str_80301338;
-    entry->count = 1;
-    data = __memAlloc(HEAP_EFFECT, sizeof(effSpiritData));
-    entry->userdata = data;
-    entry->callback = effSpiritMain;
-    entry->flags |= 2;
-    data->type = type;
-    data->x = x;
-    data->y = y;
-    data->z = z;
-    data->scale = scale;
-    data->scaleBase = 1.0f;
-    data->tick = 0;
-    data->lifetime = 1000;
-    data->state = 0;
-    data->velX = 0.0f;
-    data->velY = 2.0f;
-    data->velZ = 0.0f;
-    data->startX = data->x;
-    data->startY = data->y;
-    data->startZ = data->z;
-    data->targetX = targetX;
-    data->targetY = targetY;
-    data->targetZ = targetZ;
-    data->colorR = 0xFF;
-    data->colorG = 0xF2;
-    data->colorB = 0;
-    data->alpha = 0xCC;
-    data->colorState = 0;
-    data->colorStep = 0;
-    data->step = 0;
-    data->duration = duration;
-    return entry;
+    cam = camGetPtr(camId);
+    PSMTXTrans(mtx90, data->x, data->y, data->z);
+    PSMTXRotRad(mtx60, 'y', float_deg2rad_80422270 * -camGetPtr(camId)->viewYaw);
+    scale = data->scale * data->scaleBase;
+    PSMTXScale(mtx30, scale, scale, scale);
+    PSMTXConcat(mtx90, mtx60, mtx60);
+    PSMTXConcat(mtx60, mtx30, mtx30);
+    PSMTXConcat(cam->view, mtx30, mtx30);
+    GXLoadPosMtxImm(mtx30, 0);
+    GXSetCurrentMtx(0);
+    effGetTexObj(0x83, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    color = *(GXColor*)&unk_80423350;
+    color.r = data->colorR;
+    color.g = data->colorG;
+    color.b = data->colorB;
+    color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
+    GXSetChanMatColor(4, color);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+    GXSetTevAlphaIn(0, 7, 7, 7, 4);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(-float_8_80422278 * float_0p5_8042227c, float_4_80422280, float_0_80422284);
+    GXTexCoord2f32(float_0_80422284, float_0_80422284);
+    GXPosition3f32(float_4_80422280, float_4_80422280, float_0_80422284);
+    GXTexCoord2f32(float_2_80422288, float_0_80422284);
+    GXPosition3f32(float_4_80422280, -float_4_80422280, float_0_80422284);
+    GXTexCoord2f32(float_2_80422288, float_2_80422288);
+    GXPosition3f32(-float_4_80422280, -float_4_80422280, float_0_80422284);
+    GXTexCoord2f32(float_0_80422284, float_2_80422288);
 }

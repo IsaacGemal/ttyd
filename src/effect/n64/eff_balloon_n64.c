@@ -130,7 +130,7 @@ static inline void effBalloonSetVtx(BalloonVtx* vtx, Mtx mtx, s32 idx, BalloonVt
 // the 0x210 frame and the register colours differ. tri1 also takes the header's 3 u16 args, so
 // the target's 4th argument and its lack of clrlwi need include/eff/eff_n64.h and
 // src/effect/n64/eff_n64.c to declare 4 s32 args.
-// NONMATCHING (60%): s16<->f32 conversion uses lha/fctiwz, not psq; tri1 takes 4 s32 args.
+// NONMATCHING (60.06%): s16<->f32 conversion uses lha/fctiwz, not psq; tri1 takes 4 s32 args.
 void effBalloonDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;

@@ -10,6 +10,38 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// .data float pairs and vertex arrays, in the original's order.
+static f32 negone_one_374[2] = { -1.0f, 1.0f };
+f32 lbl_8039CA20[2] = { 1.0f, -1.0f };
+static f32 one_negone_373[2] = { 1.0f, -1.0f };
+f32 lbl_8039CA30[2] = { -1.0f, 1.0f };
+static f32 negone_one_360[2] = { -1.0f, 1.0f };
+f32 lbl_8039CA40[2] = { 1.0f, -1.0f };
+static f32 one_negone_359[2] = { 1.0f, -1.0f };
+u32 size4x4_tex4x4_vtx[14] = {
+	0xFFFEFFFE, 0x00000000, 0x0000FF00, 0x00FF0002,
+	0xFFFE0000, 0x02000000, 0xFF0000FF, 0x00020002,
+	0x00000200, 0x0200FF00, 0x00FFFFFE, 0x00020000,
+	0x00000200, 0xFF0000FF,
+};
+static u32 size16x16_tex16x16_vtx[14] = {
+	0xFFF8FFF8, 0x00000000, 0x0000FFFF, 0xFFFF0008,
+	0xFFF80000, 0x02000000, 0xFFFFFFFF, 0x00080008,
+	0x00000200, 0x0200FFFF, 0xFFFFFFF8, 0x00080000,
+	0x00000200, 0xFFFFFFFF,
+};
+static u32 size32x32_tex32x32_vtx[14] = {
+	0xFFF00000, 0x00020000, 0x0000FFFF, 0xFFFF0010,
+	0x00000002, 0x04000000, 0xFFFFFFFF, 0x00100020,
+	0x00020400, 0x0400FFFF, 0xFFFFFFF0, 0x00200002,
+	0x00000400, 0xFFFFFFFF,
+};
+
+#ifdef MUST_MATCH
+// The original reaches the three vertex arrays from the address 8 bytes before its .data.
+extern u8 lbl_8039CA10[];
+#endif
+
 // .sdata scale table indexed by data->timer in state 1 (signed bytes: loaded with extsb).
 static s8 scale_data[] = "27<AFKPUZ_dgigd";
 
@@ -237,9 +269,9 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	f32 scaleVal;
 	f32 field28;
 	f32 field2C;
-	u8* vtx;
-
-	vtx = lbl_8039CA10;
+#ifdef MUST_MATCH
+	u8* vtx = lbl_8039CA10;
+#endif
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -291,9 +323,17 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
 			if (data->type != 0) {
+#ifdef MUST_MATCH
 				effSetVtxDescN64((effVtxArray*)(vtx + 0x78));
+#else
+				effSetVtxDescN64((effVtxArray*)size16x16_tex16x16_vtx);
+#endif
 			} else {
+#ifdef MUST_MATCH
 				effSetVtxDescN64((effVtxArray*)(vtx + 0x40));
+#else
+				effSetVtxDescN64((effVtxArray*)size4x4_tex4x4_vtx);
+#endif
 			}
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -338,7 +378,11 @@ void effFireFlowerDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, trans, trans);
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
 	effSetVtxDescN64((effVtxArray*)(vtx + 0xb0));
+#else
+	effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_vtx);
+#endif
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

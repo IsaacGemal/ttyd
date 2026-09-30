@@ -87,7 +87,7 @@ typedef struct EffStardust2Data {
     s32 drawCam;    // 0x2C
 } EffStardust2Data;
 
-inline Vec makeVec(f32 x, f32 y, f32 z) {
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
     Vec temp = vec3_802fb740;
     temp.x = x;
     temp.y = y;

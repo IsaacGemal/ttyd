@@ -92,7 +92,7 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	return effect;
 }
 
-inline Vec initializeVec(Vec* input) {
+static inline Vec initializeVec(Vec* input) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;

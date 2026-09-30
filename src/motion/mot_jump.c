@@ -69,155 +69,146 @@ const f32 float_neg0p03_8041abf0 = -0.03f;
 const f32 float_0p04_8041abf4 = 0.04f;
 const f32 float_neg1_8041abf8 = -1.0f;
 
-void mot_land(void) {
+void marioPreJump(void) {
+    MarioWork* mario = marioGetPtr();
+
+    mario->flags &= ~0x20000;
+    mario->flags |= 0x10000;
+    mario->airTimer = 0;
+    MWS16(mario, 0x52) = 0;
+    mario->hitobjJumpFrom = mario->hitobjStandOn;
+    clear_hitobj_ride();
+    marioSetJumpPara();
+    *(Vec*)((u8*)mario + 0x11C) = mario->position;
+}
+
+f32 marioGetJumpHeight(void) {
+    MarioWork* mario = marioGetPtr();
+
+    return MWF32(mario, 0x2B8);
+}
+
+// NONMATCHING (99.44%): 2 instructions differ, plus register differences.
+void mot_jumpStand(void) {
     MarioWork* mario = marioGetPtr();
 
     if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
+        MarioWork* mario2;
+
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        mario->flags &= ~0xF0000;
-        mario->airTimer = 0;
-        MWS16(mario, 0x52) = 0;
+        mario->baseSpeed = 0.0f;
+        mario2 = marioGetPtr();
+        mario2->flags &= ~0x20000;
+        mario2->flags |= 0x10000;
+        mario2->airTimer = 0;
+        MWS16(mario2, 0x52) = 0;
+        mario2->hitobjJumpFrom = mario2->hitobjStandOn;
+        clear_hitobj_ride();
+        marioSetJumpPara();
+        *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
+        MWF32(mario, 0x2B0) = 0.0f;
         mario->currSubMotionId = 0;
-        mario->baseSpeed = MATCH_F32(float_0_8041abb8);
-        marioResetCamFollowRate();
-        if (MW(mario, 0x280) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x280));
-            MW(mario, 0x280) = 0xFFFFFFFFu;
-        }
+        mario->multiTimer = 0;
     }
 
-    switch (mario->currSubMotionId) {
+    switch ((s32)mario->currSubMotionId) {
         case 0:
-            marioChgMot(0);
+            if (++mario->multiTimer >= 3) {
+                mario->currSubMotionId = 4;
+                MWF32(mario, 0x7C) = marioJumpStandData[0];
+                MWF32(mario, 0x80) = marioJumpStandData[1];
+                MWF32(mario, 0x84) = marioJumpStandData[2];
+                MWF32(mario, 0x88) = marioJumpStandData[3];
+                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
+                    marioChgPose(str_802C5C80);
+                }
+            }
             break;
-        case 1:
-            if ((s32)--mario->multiTimer <= 0) {
-                marioChgMot(0);
+        case 4: {
+            f32 old = MWF32(mario, 0x7C);
+
+            marioMakeJumpPara();
+            if (old >= MWF32(mario, 0x7C)) {
+                mario->currSubMotionId = 6;
+            }
+            mario->position.y += MWF32(mario, 0x7C);
+            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
+            break;
+        }
+        case 6:
+            mario->position.y += MWF32(mario, 0x7C);
+            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
+            if (MWF32(mario, 0x2B0) >= MWF32(mario, 0x2B8) * marioJumpStandData[9]) {
+                mario->currSubMotionId = 8;
+            }
+            if (MWF32(mario, 0x7C) <= 0.0f) {
+                mario->currSubMotionId = 8;
+            }
+            break;
+        case 8:
+            MWF32(mario, 0x7C) = (float_neg1_8041abf8 - MWF32(mario, 0x7C))
+                                     * marioJumpStandData[8]
+                                 + MWF32(mario, 0x7C);
+            mario->position.y += MWF32(mario, 0x7C);
+            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
+            if (MWF32(mario, 0x7C) <= 0.0f) {
+                mario->currSubMotionId = 10;
+                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
+                    marioChgPose(str_802C5C70);
+                }
+                marioSetPeakYpos();
+                MWF32(mario, 0x7C) = marioJumpStandData[4];
+                MWF32(mario, 0x80) = marioJumpStandData[5];
+                MWF32(mario, 0x84) = marioJumpStandData[6];
+                MWF32(mario, 0x88) = marioJumpStandData[7];
+                mario->flags &= ~0x10000;
+                mario->flags |= 0x20000;
+                mario->currSubMotionId = 0x14;
             }
             break;
         case 10:
+            marioMakeJumpPara();
+            if (MWF32(mario, 0x7C) <= 0.0f) {
+                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
+                    marioChgPose(str_802C5C70);
+                }
+                marioSetPeakYpos();
+                MWF32(mario, 0x7C) = marioJumpStandData[4];
+                MWF32(mario, 0x80) = marioJumpStandData[5];
+                MWF32(mario, 0x84) = marioJumpStandData[6];
+                MWF32(mario, 0x88) = marioJumpStandData[7];
+                mario->flags &= ~0x10000;
+                mario->flags |= 0x20000;
+                mario->currSubMotionId = 0x14;
+            }
+            mario->position.y += MWF32(mario, 0x7C);
+            break;
+        case 20:
             if ((s32)--mario->multiTimer <= 0) {
-                marioChgMot(0);
+                mario->baseSpeed = 0.0f;
+                mario->currSubMotionId = 0x1E;
             }
             break;
     }
-}
 
-void mot_fall_post(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (MW(mario, 0x280) != 0xFFFFFFFFu) {
-        psndSFXOff(MW(mario, 0x280));
-        MW(mario, 0x280) = 0xFFFFFFFFu;
+    mario->airTimer++;
+    if (marioSlitButton() != 2) {
+        marioSlitForceCancel();
     }
 }
 
-void mot_fall(void) {
+// NONMATCHING (89.45%): 11 instructions differ, 8 missing, 11 extra, plus register differences.
+void mot_jumpSw(void) {
     JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
-    if (mario->characterId == 2) {
-        kpa_fall_80213C38();
-        return;
-    }
-
     if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
+        MarioWork* mario2;
+
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        mario->flags &= ~0x10000;
-        mario->flags |= 0x20000;
-        if (MW(mario, 0x280) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x280));
-            MW(mario, 0x280) = 0xFFFFFFFFu;
-        }
         marioResetCamFollowRate();
-        mario->currSubMotionId = 0;
-        if (mario->currMotionId != 0xB) {
-            if (mario->characterId == 2) {
-                kpaChgPose(JUMP_RODATA(char*, 0x18, str_802C5C58), JUMP_RODATA(char*, 0x24, str_802C5C64));
-            } else if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                marioChgPose(JUMP_RODATA(char*, 0x30, str_802C5C70));
-            }
-        } else {
-            mario->flags |= 0x80;
-        }
-        if (mario->airTimer == 0) {
-            *(Vec*)((u8*)mario + 0xD4) = mario->position;
-        }
-    }
-
-    switch ((s32)mario->currSubMotionId) {
-        case 0:
-            if (mario->position.y <= MWF32(mario, 0x120)) {
-                if (!marioBgmodeChk()) {
-                    camFollowYOn();
-                }
-                mario->currSubMotionId = 0xA;
-            }
-            break;
-    }
-
-    mario->airTimer++;
-    if (mario->unk16C >= 0x1AE) {
-        f32 rate;
-
-        rate = marioGetCamFollowRate();
-        rate += float_0p1_8041abbc;
-        if (rate >= float_0p8_8041abc0) {
-            rate = float_0p8_8041abc0;
-        }
-        marioSetCamFollowRate(rate);
-    }
-}
-
-void mot_upstairs(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
-        mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        mario->flags |= 0x40000;
         mario->flags |= 0x80;
-        marioClearJumpPara();
-        mario->multiTimer = 3;
-        MWF32(mario, 0x7C) = (MWF32(mario, 0x1C4) - mario->position.y)
-                             / (f32)(s32)mario->multiTimer;
-        mario->currSubMotionId = 0;
-    }
-
-    switch ((s32)mario->currSubMotionId) {
-        case 0:
-            mario->position.y += MWF32(mario, 0x7C);
-            if ((s32)--mario->multiTimer <= 0) {
-                mario->flags &= ~0x80;
-                mario->flags &= ~0x40;
-                mario->flags &= ~0x40000;
-                if (mario->flags & 0x100000) {
-                    motSlitContinue();
-                } else if (mario->dispFlags & 0x1000000) {
-                    marioChgMot2(0x15);
-                } else {
-                    marioChgMotAuto();
-                }
-            }
-            break;
-    }
-}
-
-void mot_jumpSmall(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->characterId == 2) {
-        kpa_jump();
-        return;
-    }
-
-    if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
-        MarioWork* mario2;
-
-        mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        marioResetCamFollowRate();
-        mario->flags |= 0x80000;
-        mario->multiTimer = 2;
-        mario->currSubMotionId = 0;
+        camFollowYOff();
         mario2 = marioGetPtr();
         mario2->flags &= ~0x20000;
         mario2->flags |= 0x10000;
@@ -227,114 +218,88 @@ void mot_jumpSmall(void) {
         clear_hitobj_ride();
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
-        if (mario->currMotionId != 8) {
-            camFollowYOff();
-        }
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(str_802C5C80);
+            marioChgPose(JUMP_RODATA(const char*, 0x40, str_802C5C80));
         }
-        if (mario->currMotionId != 8) {
-            s32 r = irand(0x2710);
-            s32 id;
+        if (mario->hitobjJumpFrom != NULL) {
+            if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
+                MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
+                f32 dist;
+                Vec pos;
+                Vec tmp = *JUMP_RODATA(const Vec*, 0x0, vec3_802c5c40);
 
-            if (r < 0x7D0) {
-                id = 0x9D;
-            } else if (r < 0xFA0) {
-                id = 0x9E;
-            } else if (r < 0x1770) {
-                id = 0x9F;
-            } else if (r < 0x1F40) {
-                id = 0xA0;
-            } else {
-                id = 0xA1;
-            }
-            psndSFXOn_3D((const char*)id, &mario->position);
-        }
-        psndSFXOn_3D((const char*)0x14D, &mario->position);
-        if (mario->airTimer == 0) {
-            *(Vec*)((u8*)mario + 0xD4) = mario->position;
-        }
-        mario->trigFlags &= ~0x10000;
-    }
-
-    switch ((s32)mario->currSubMotionId) {
-        case 0:
-            if ((s32)--mario->multiTimer <= 0) {
-                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C80);
+                MWF32(mario, 0x2B4) = obj->position.x;
+                MWF32(mario, 0x2B8) = obj->position.z;
+                tmp.x = obj->position.x;
+                tmp.y = obj->position.y + 0.5f * mario->wPlayerCollisionBox.y;
+                tmp.z = obj->position.z;
+                pos = tmp;
+                if (marioChkFront(&dist, &pos, mario->directionView,
+                                  5.0f * mario->wPlayerCollisionBox.x)) {
+                    if (dist >= 0.0f
+                        && dist <= 0.5f * mario->wPlayerCollisionBox.x + 30.0f) {
+                        mario->directionView = revise360(180.0f + mario->directionView);
+                        *(f32*)((u8*)mario + 0x19C) = mario->directionView;
+                    }
                 }
-                mario->currSubMotionId = 0xA;
+                {
+                    f32 sinv;
+                    f32 cosv;
+                    f32 x;
+                    f32 z;
+
+                    sincosf(&sinv, &cosv, mario->directionView);
+                    x = 30.0f * sinv + obj->position.x;
+                    z = 30.0f * cosv + obj->position.z;
+                    mario->multiTimer = 0x14;
+                    mario->baseSpeed =
+                        distABf(mario->position.x, mario->position.z, x, z)
+                        / (f32)(s32)mario->multiTimer;
+                }
             }
-            break;
-    }
-
-    mario->airTimer++;
-}
-
-void mot_jump(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->characterId == 2) {
-        kpa_jump();
-        return;
-    }
-
-    if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
-        MarioWork* mario2;
-
-        mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        marioResetCamFollowRate();
-        mario->flags |= 0x80000;
-        mario->multiTimer = 2;
-        mario->currSubMotionId = 0;
-        mario2 = marioGetPtr();
-        mario2->flags &= ~0x20000;
-        mario2->flags |= 0x10000;
-        mario2->airTimer = 0;
-        MWS16(mario2, 0x52) = 0;
-        mario2->hitobjJumpFrom = mario2->hitobjStandOn;
-        clear_hitobj_ride();
-        marioSetJumpPara();
-        *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
-        if (mario->currMotionId == 8) {
-            camFollowYOn();
         } else {
-            camFollowYOff();
-        }
-        if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(str_802C5C80);
-        }
-        if (mario->currMotionId != 8) {
-            s32 r = irand(0x2710);
-            s32 id;
+            f32 dir;
+            f32 sinv;
+            f32 cosv;
+            f32 x;
+            f32 z;
 
-            if (r < 0x7D0) {
-                id = 0x9D;
-            } else if (r < 0xFA0) {
-                id = 0x9E;
-            } else if (r < 0x1770) {
-                id = 0x9F;
-            } else if (r < 0x1F40) {
-                id = 0xA0;
-            } else {
-                id = 0xA1;
-            }
-            psndSFXOn_3D((const char*)id, &mario->position);
+            dir = revise360(180.0f + mario->directionView);
+            sincosf(&sinv, &cosv, dir);
+            x = 30.0f * sinv + mario->position.x;
+            z = 30.0f * cosv + mario->position.z;
+            mario->multiTimer = 0x14;
+            mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z)
+                               / (f32)(s32)mario->multiTimer;
+            mario->directionView = dir;
+            *(f32*)((u8*)mario + 0x19C) = dir;
         }
-        psndSFXOn_3D((const char*)0x14D, &mario->position);
-        if (mario->airTimer == 0) {
-            *(Vec*)((u8*)mario + 0xD4) = mario->position;
-        }
-        mario->trigFlags &= ~0x10000;
+        mario->currSubMotionId = 0;
     }
 
     switch ((s32)mario->currSubMotionId) {
         case 0:
-            if ((s32)--mario->multiTimer <= 0) {
+            mario->multiTimer--;
+            marioMakeJumpPara();
+            if (MWF32(mario, 0x7C) <= 0.0f) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C80);
+                    marioChgPose(JUMP_RODATA(const char*, 0x30, str_802C5C70));
                 }
+                marioSetPeakYpos();
+                MWF32(mario, 0x7C) = marioJumpSwData[4];
+                MWF32(mario, 0x80) = marioJumpSwData[5];
+                MWF32(mario, 0x84) = marioJumpSwData[6];
+                MWF32(mario, 0x88) = marioJumpSwData[7];
+                mario->flags &= ~0x10000;
+                mario->flags |= 0x20000;
                 mario->currSubMotionId = 0xA;
+            }
+            mario->position.y += MWF32(mario, 0x7C);
+            break;
+        case 10:
+            if ((s32)--mario->multiTimer <= 0) {
+                mario->baseSpeed = 0.0f;
+                mario->currSubMotionId = 0x14;
             }
             break;
     }
@@ -471,18 +436,22 @@ void mot_jumpNpc(void) {
     mario->airTimer++;
 }
 
-// NONMATCHING (89.45%): 11 instructions differ, 8 missing, 11 extra, plus register differences.
-void mot_jumpSw(void) {
-    JUMP_RODATA_BASE
+void mot_jump(void) {
     MarioWork* mario = marioGetPtr();
+
+    if (mario->characterId == 2) {
+        kpa_jump();
+        return;
+    }
 
     if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
         MarioWork* mario2;
 
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
         marioResetCamFollowRate();
-        mario->flags |= 0x80;
-        camFollowYOff();
+        mario->flags |= 0x80000;
+        mario->multiTimer = 2;
+        mario->currSubMotionId = 0;
         mario2 = marioGetPtr();
         mario2->flags &= ~0x20000;
         mario2->flags |= 0x10000;
@@ -492,88 +461,45 @@ void mot_jumpSw(void) {
         clear_hitobj_ride();
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
-        if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(JUMP_RODATA(const char*, 0x40, str_802C5C80));
-        }
-        if (mario->hitobjJumpFrom != NULL) {
-            if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
-                MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
-                f32 dist;
-                Vec pos;
-                Vec tmp = *JUMP_RODATA(const Vec*, 0x0, vec3_802c5c40);
-
-                MWF32(mario, 0x2B4) = obj->position.x;
-                MWF32(mario, 0x2B8) = obj->position.z;
-                tmp.x = obj->position.x;
-                tmp.y = obj->position.y + 0.5f * mario->wPlayerCollisionBox.y;
-                tmp.z = obj->position.z;
-                pos = tmp;
-                if (marioChkFront(&dist, &pos, mario->directionView,
-                                  5.0f * mario->wPlayerCollisionBox.x)) {
-                    if (dist >= 0.0f
-                        && dist <= 0.5f * mario->wPlayerCollisionBox.x + 30.0f) {
-                        mario->directionView = revise360(180.0f + mario->directionView);
-                        *(f32*)((u8*)mario + 0x19C) = mario->directionView;
-                    }
-                }
-                {
-                    f32 sinv;
-                    f32 cosv;
-                    f32 x;
-                    f32 z;
-
-                    sincosf(&sinv, &cosv, mario->directionView);
-                    x = 30.0f * sinv + obj->position.x;
-                    z = 30.0f * cosv + obj->position.z;
-                    mario->multiTimer = 0x14;
-                    mario->baseSpeed =
-                        distABf(mario->position.x, mario->position.z, x, z)
-                        / (f32)(s32)mario->multiTimer;
-                }
-            }
+        if (mario->currMotionId == 8) {
+            camFollowYOn();
         } else {
-            f32 dir;
-            f32 sinv;
-            f32 cosv;
-            f32 x;
-            f32 z;
-
-            dir = revise360(180.0f + mario->directionView);
-            sincosf(&sinv, &cosv, dir);
-            x = 30.0f * sinv + mario->position.x;
-            z = 30.0f * cosv + mario->position.z;
-            mario->multiTimer = 0x14;
-            mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z)
-                               / (f32)(s32)mario->multiTimer;
-            mario->directionView = dir;
-            *(f32*)((u8*)mario + 0x19C) = dir;
+            camFollowYOff();
         }
-        mario->currSubMotionId = 0;
+        if (!(mario->flags & 0x2000) && mario->characterId == 0) {
+            marioChgPose(str_802C5C80);
+        }
+        if (mario->currMotionId != 8) {
+            s32 r = irand(0x2710);
+            s32 id;
+
+            if (r < 0x7D0) {
+                id = 0x9D;
+            } else if (r < 0xFA0) {
+                id = 0x9E;
+            } else if (r < 0x1770) {
+                id = 0x9F;
+            } else if (r < 0x1F40) {
+                id = 0xA0;
+            } else {
+                id = 0xA1;
+            }
+            psndSFXOn_3D((const char*)id, &mario->position);
+        }
+        psndSFXOn_3D((const char*)0x14D, &mario->position);
+        if (mario->airTimer == 0) {
+            *(Vec*)((u8*)mario + 0xD4) = mario->position;
+        }
+        mario->trigFlags &= ~0x10000;
     }
 
     switch ((s32)mario->currSubMotionId) {
         case 0:
-            mario->multiTimer--;
-            marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= 0.0f) {
-                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(JUMP_RODATA(const char*, 0x30, str_802C5C70));
-                }
-                marioSetPeakYpos();
-                MWF32(mario, 0x7C) = marioJumpSwData[4];
-                MWF32(mario, 0x80) = marioJumpSwData[5];
-                MWF32(mario, 0x84) = marioJumpSwData[6];
-                MWF32(mario, 0x88) = marioJumpSwData[7];
-                mario->flags &= ~0x10000;
-                mario->flags |= 0x20000;
-                mario->currSubMotionId = 0xA;
-            }
-            mario->position.y += MWF32(mario, 0x7C);
-            break;
-        case 10:
             if ((s32)--mario->multiTimer <= 0) {
-                mario->baseSpeed = 0.0f;
-                mario->currSubMotionId = 0x14;
+                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
+                    marioChgPose(str_802C5C80);
+                }
+                mario->currSubMotionId = 0xA;
             }
             break;
     }
@@ -581,15 +507,22 @@ void mot_jumpSw(void) {
     mario->airTimer++;
 }
 
-// NONMATCHING (99.44%): 2 instructions differ, plus register differences.
-void mot_jumpStand(void) {
+void mot_jumpSmall(void) {
     MarioWork* mario = marioGetPtr();
+
+    if (mario->characterId == 2) {
+        kpa_jump();
+        return;
+    }
 
     if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
         MarioWork* mario2;
 
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        mario->baseSpeed = 0.0f;
+        marioResetCamFollowRate();
+        mario->flags |= 0x80000;
+        mario->multiTimer = 2;
+        mario->currSubMotionId = 0;
         mario2 = marioGetPtr();
         mario2->flags &= ~0x20000;
         mario2->flags |= 0x10000;
@@ -599,112 +532,179 @@ void mot_jumpStand(void) {
         clear_hitobj_ride();
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
-        MWF32(mario, 0x2B0) = 0.0f;
-        mario->currSubMotionId = 0;
-        mario->multiTimer = 0;
+        if (mario->currMotionId != 8) {
+            camFollowYOff();
+        }
+        if (!(mario->flags & 0x2000) && mario->characterId == 0) {
+            marioChgPose(str_802C5C80);
+        }
+        if (mario->currMotionId != 8) {
+            s32 r = irand(0x2710);
+            s32 id;
+
+            if (r < 0x7D0) {
+                id = 0x9D;
+            } else if (r < 0xFA0) {
+                id = 0x9E;
+            } else if (r < 0x1770) {
+                id = 0x9F;
+            } else if (r < 0x1F40) {
+                id = 0xA0;
+            } else {
+                id = 0xA1;
+            }
+            psndSFXOn_3D((const char*)id, &mario->position);
+        }
+        psndSFXOn_3D((const char*)0x14D, &mario->position);
+        if (mario->airTimer == 0) {
+            *(Vec*)((u8*)mario + 0xD4) = mario->position;
+        }
+        mario->trigFlags &= ~0x10000;
     }
 
     switch ((s32)mario->currSubMotionId) {
         case 0:
-            if (++mario->multiTimer >= 3) {
-                mario->currSubMotionId = 4;
-                MWF32(mario, 0x7C) = marioJumpStandData[0];
-                MWF32(mario, 0x80) = marioJumpStandData[1];
-                MWF32(mario, 0x84) = marioJumpStandData[2];
-                MWF32(mario, 0x88) = marioJumpStandData[3];
+            if ((s32)--mario->multiTimer <= 0) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose(str_802C5C80);
                 }
-            }
-            break;
-        case 4: {
-            f32 old = MWF32(mario, 0x7C);
-
-            marioMakeJumpPara();
-            if (old >= MWF32(mario, 0x7C)) {
-                mario->currSubMotionId = 6;
-            }
-            mario->position.y += MWF32(mario, 0x7C);
-            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
-            break;
-        }
-        case 6:
-            mario->position.y += MWF32(mario, 0x7C);
-            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
-            if (MWF32(mario, 0x2B0) >= MWF32(mario, 0x2B8) * marioJumpStandData[9]) {
-                mario->currSubMotionId = 8;
-            }
-            if (MWF32(mario, 0x7C) <= 0.0f) {
-                mario->currSubMotionId = 8;
-            }
-            break;
-        case 8:
-            MWF32(mario, 0x7C) = (float_neg1_8041abf8 - MWF32(mario, 0x7C))
-                                     * marioJumpStandData[8]
-                                 + MWF32(mario, 0x7C);
-            mario->position.y += MWF32(mario, 0x7C);
-            MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
-            if (MWF32(mario, 0x7C) <= 0.0f) {
-                mario->currSubMotionId = 10;
-                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C70);
-                }
-                marioSetPeakYpos();
-                MWF32(mario, 0x7C) = marioJumpStandData[4];
-                MWF32(mario, 0x80) = marioJumpStandData[5];
-                MWF32(mario, 0x84) = marioJumpStandData[6];
-                MWF32(mario, 0x88) = marioJumpStandData[7];
-                mario->flags &= ~0x10000;
-                mario->flags |= 0x20000;
-                mario->currSubMotionId = 0x14;
-            }
-            break;
-        case 10:
-            marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= 0.0f) {
-                if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C70);
-                }
-                marioSetPeakYpos();
-                MWF32(mario, 0x7C) = marioJumpStandData[4];
-                MWF32(mario, 0x80) = marioJumpStandData[5];
-                MWF32(mario, 0x84) = marioJumpStandData[6];
-                MWF32(mario, 0x88) = marioJumpStandData[7];
-                mario->flags &= ~0x10000;
-                mario->flags |= 0x20000;
-                mario->currSubMotionId = 0x14;
-            }
-            mario->position.y += MWF32(mario, 0x7C);
-            break;
-        case 20:
-            if ((s32)--mario->multiTimer <= 0) {
-                mario->baseSpeed = 0.0f;
-                mario->currSubMotionId = 0x1E;
+                mario->currSubMotionId = 0xA;
             }
             break;
     }
 
     mario->airTimer++;
-    if (marioSlitButton() != 2) {
-        marioSlitForceCancel();
+}
+
+void mot_upstairs(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
+        mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
+        mario->flags |= 0x40000;
+        mario->flags |= 0x80;
+        marioClearJumpPara();
+        mario->multiTimer = 3;
+        MWF32(mario, 0x7C) = (MWF32(mario, 0x1C4) - mario->position.y)
+                             / (f32)(s32)mario->multiTimer;
+        mario->currSubMotionId = 0;
+    }
+
+    switch ((s32)mario->currSubMotionId) {
+        case 0:
+            mario->position.y += MWF32(mario, 0x7C);
+            if ((s32)--mario->multiTimer <= 0) {
+                mario->flags &= ~0x80;
+                mario->flags &= ~0x40;
+                mario->flags &= ~0x40000;
+                if (mario->flags & 0x100000) {
+                    motSlitContinue();
+                } else if (mario->dispFlags & 0x1000000) {
+                    marioChgMot2(0x15);
+                } else {
+                    marioChgMotAuto();
+                }
+            }
+            break;
     }
 }
 
-f32 marioGetJumpHeight(void) {
+void mot_fall(void) {
+    JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
-    return MWF32(mario, 0x2B8);
+    if (mario->characterId == 2) {
+        kpa_fall_80213C38();
+        return;
+    }
+
+    if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
+        mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
+        mario->flags &= ~0x10000;
+        mario->flags |= 0x20000;
+        if (MW(mario, 0x280) != 0xFFFFFFFFu) {
+            psndSFXOff(MW(mario, 0x280));
+            MW(mario, 0x280) = 0xFFFFFFFFu;
+        }
+        marioResetCamFollowRate();
+        mario->currSubMotionId = 0;
+        if (mario->currMotionId != 0xB) {
+            if (mario->characterId == 2) {
+                kpaChgPose(JUMP_RODATA(char*, 0x18, str_802C5C58), JUMP_RODATA(char*, 0x24, str_802C5C64));
+            } else if (!(mario->flags & 0x2000) && mario->characterId == 0) {
+                marioChgPose(JUMP_RODATA(char*, 0x30, str_802C5C70));
+            }
+        } else {
+            mario->flags |= 0x80;
+        }
+        if (mario->airTimer == 0) {
+            *(Vec*)((u8*)mario + 0xD4) = mario->position;
+        }
+    }
+
+    switch ((s32)mario->currSubMotionId) {
+        case 0:
+            if (mario->position.y <= MWF32(mario, 0x120)) {
+                if (!marioBgmodeChk()) {
+                    camFollowYOn();
+                }
+                mario->currSubMotionId = 0xA;
+            }
+            break;
+    }
+
+    mario->airTimer++;
+    if (mario->unk16C >= 0x1AE) {
+        f32 rate;
+
+        rate = marioGetCamFollowRate();
+        rate += float_0p1_8041abbc;
+        if (rate >= float_0p8_8041abc0) {
+            rate = float_0p8_8041abc0;
+        }
+        marioSetCamFollowRate(rate);
+    }
 }
 
-void marioPreJump(void) {
+void mot_fall_post(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->flags &= ~0x20000;
-    mario->flags |= 0x10000;
-    mario->airTimer = 0;
-    MWS16(mario, 0x52) = 0;
-    mario->hitobjJumpFrom = mario->hitobjStandOn;
-    clear_hitobj_ride();
-    marioSetJumpPara();
-    *(Vec*)((u8*)mario + 0x11C) = mario->position;
+    if (MW(mario, 0x280) != 0xFFFFFFFFu) {
+        psndSFXOff(MW(mario, 0x280));
+        MW(mario, 0x280) = 0xFFFFFFFFu;
+    }
+}
+
+void mot_land(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
+        mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
+        mario->flags &= ~0xF0000;
+        mario->airTimer = 0;
+        MWS16(mario, 0x52) = 0;
+        mario->currSubMotionId = 0;
+        mario->baseSpeed = MATCH_F32(float_0_8041abb8);
+        marioResetCamFollowRate();
+        if (MW(mario, 0x280) != 0xFFFFFFFFu) {
+            psndSFXOff(MW(mario, 0x280));
+            MW(mario, 0x280) = 0xFFFFFFFFu;
+        }
+    }
+
+    switch (mario->currSubMotionId) {
+        case 0:
+            marioChgMot(0);
+            break;
+        case 1:
+            if ((s32)--mario->multiTimer <= 0) {
+                marioChgMot(0);
+            }
+            break;
+        case 10:
+            if ((s32)--mario->multiTimer <= 0) {
+                marioChgMot(0);
+            }
+            break;
+    }
 }

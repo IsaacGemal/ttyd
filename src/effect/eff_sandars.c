@@ -66,125 +66,86 @@ static inline GXColor effSandarsColorDisp2(u8 alpha) {
 }
 #endif
 
-void effSandarsDisp2(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	effSandarsData* data = effect->userdata;
-	CameraEntry* cam;
-	GXTexObj texObj;
-#ifndef MUST_MATCH
-	GXColor color;
-#endif
-	Mtx mtxC0;
-	Mtx mtx90;
-	Mtx mtx60;
-	Mtx mtx30;
+// NONMATCHING (96.61%): the int->float magic is pooled as `@260` rather than `double_to_int_80300168`, and the
+// loop-invariant `float_0`/`float_0p2`/`float_51` land in f29/f27/f28 rather than retail's f27/f28/f29.
+EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
+	EffectEntry* entry;
+	effSandarsData* data;
+	BOOL inBattle;
+	s32 count;
 	s32 i;
-	f32 deg;
-	f32 negSize;
-	f32 posSize;
+	f32 angle;
+	f32 zero;
 
-	cam = camGetPtr(camId);
-	PSMTXTrans(mtxC0, data->x, data->y, data->z);
-	PSMTXRotRad(mtx90, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80421ba0);
-	PSMTXScale(mtx60, data->scale, data->scale, data->scale);
-	PSMTXConcat(mtxC0, mtx90, mtxC0);
-	PSMTXConcat(mtxC0, mtx60, mtxC0);
-	PSMTXConcat(cam->view, mtxC0, mtx30);
+	entry = effEntry();
+	inBattle = gp->inBattle != 0;
+	count = 1;
+	if (type == 5) {
+		count = 6;
+	}
+	entry->type = str_80300160;
+	entry->count = count;
+	data = __memAlloc(HEAP_EFFECT, count * sizeof(effSandarsData));
+	entry->userdata = data;
+	entry->callback = effSandarsMain;
+	entry->flags |= 2;
 
-	GXSetNumChans(1);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
-	effGetTexObj(0x44, &texObj);
-	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXSetCullMode(GX_CULL_NONE);
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	data->type = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->scale = float_1_80421bb4;
+	data->state = 0;
+	data->timer = 0;
+	data->poseId = -1;
+	data->camId = 4;
 
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail materialises the quad half-size through the 32 and 0.5 pool entries. */
-	deg = float_deg2rad_80421ba0;
-	posSize = float_16_80421bac;
-	negSize = -float_32_80421ba4 * float_0p5_80421ba8;
-#else
-	deg = float_deg2rad_80421ba0;
-	posSize = 16.0f;
-	negSize = -16.0f;
-#endif
+	switch (type) {
+	case 0:
+	case 4:
+		data->bombType = 1;
+		data->animScale = float_1_80421bb4;
+		break;
+	case 1:
+	case 2:
+	case 3:
+		data->bombType = 2;
+		data->animScale = float_4_80421bb8;
+		break;
+	case 5:
+		data->timer = 0x64;
+		data->field_0x30 = a;
+		break;
+	}
 
+	if (data->type == 3 || data->type == 4) {
+		animGroupBaseAsync(str_80300144, inBattle, NULL);
+		data->poseId = -1;
+		data->alpha = 0xff;
+	}
+
+	angle = (float_6p2832_80421bc4 * a) / float_360_80421bc8;
+	zero = float_0_80421bb0;
 	data = &data[1];
-	for (i = 1; i < effect->count; i++, data++) {
-		PSMTXTrans(mtxC0, data->x, data->y, data->z);
-		PSMTXRotRad(mtx90, 'z', deg * data->rot);
-		PSMTXScale(mtx60, data->scale * data->scaleRate, data->scale * data->scaleRate, data->scale * data->scaleRate);
-		PSMTXConcat(mtxC0, mtx90, mtxC0);
-		PSMTXConcat(mtxC0, mtx60, mtxC0);
-		PSMTXConcat(mtx30, mtxC0, mtxC0);
-		GXLoadPosMtxImm(mtxC0, 0);
-		GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
-		GXSetChanMatColor(GX_COLOR0A0, effSandarsColorDisp2(data->alpha));
-#else
-		color = *(GXColor*)&dat_80421b9c;
-		color.a = data->alpha;
-		GXSetChanMatColor(GX_COLOR0A0, color);
-#endif
-		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(negSize, posSize, float_0_80421bb0);
-		GXTexCoord2f32(float_0_80421bb0, float_0_80421bb0);
-		GXPosition3f32(posSize, posSize, float_0_80421bb0);
-		GXTexCoord2f32(float_1_80421bb4, float_0_80421bb0);
-		GXPosition3f32(posSize, negSize, float_0_80421bb0);
-		GXTexCoord2f32(float_1_80421bb4, float_1_80421bb4);
-		GXPosition3f32(negSize, negSize, float_0_80421bb0);
-		GXTexCoord2f32(float_0_80421bb0, float_1_80421bb4);
-	}
-}
-
-void effSandarsDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	effSandarsData* data = effect->userdata;
-#ifndef MUST_MATCH
-	GXColor color;
-#endif
-	Mtx mtxA0;
-	Mtx mtx70;
-	Mtx mtx40;
-	Mtx mtx10;
-
-	camGetPtr(camId);
-	if (data->poseId == -1) {
-		return;
+	for (i = 1; i < entry->count; i++, data++) {
+		data->x = (f32)(i * 10) * (f32)cos(angle);
+		data->y = (f32)(i * 10) * (f32)sin(angle);
+		data->z = zero;
+		data->scale = zero;
+		data->scaleRate = float_0p2_80421bcc * (f32)i;
+		data->alpha = (s32)(float_51_80421bd0 * (f32)i);
+		data->field_0x34 = (i - 1) * 5;
+		data->timer = 0;
+		data->rot = zero;
+		data->rotSpeed = zero;
+		if (i == entry->count - 1) {
+			data->scaleRate = float_1p1_80421bd4;
+			data->alpha = 0xCC;
+			data->rotSpeed = float_15_80421bd8;
+		}
 	}
 
-	PSMTXTrans(mtxA0, data->x, data->y, data->z);
-	PSMTXRotRad(mtx70, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80421ba0);
-	PSMTXScale(mtx40, data->scale, data->scale, data->scale);
-	PSMTXConcat(mtxA0, mtx70, mtxA0);
-	PSMTXConcat(mtxA0, mtx40, mtx10);
-	PSMTXScale(mtx40, data->animScale, data->animScale, data->animScale);
-	PSMTXConcat(mtx10, mtx40, mtx10);
-	animPoseSetMaterialFlagOn(data->poseId, 0x40);
-#ifdef MUST_MATCH
-	animPoseSetMaterialEvtColor(data->poseId, effSandarsColorAnim(data->alpha));
-#else
-	color = *(GXColor*)&dat_80421b98;
-	color.a = data->alpha;
-	animPoseSetMaterialEvtColor(data->poseId, color);
-#endif
-	animPoseMain(data->poseId);
-	animPoseDrawMtx(data->poseId, mtx10, 1, float_0_80421bb0, float_4_80421bb8);
-	animPoseDrawMtx(data->poseId, mtx10, 2, float_0_80421bb0, float_4_80421bb8);
-	animPoseDrawMtx(data->poseId, mtx10, 3, float_0_80421bb0, float_4_80421bb8);
+	return entry;
 }
 
 // NONMATCHING (95.44%): the `type == 5` test emits `bne` where retail emits `beq; b`, the vec3 copy is
@@ -274,84 +235,123 @@ void effSandarsMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (96.61%): the int->float magic is pooled as `@260` rather than `double_to_int_80300168`, and the
-// loop-invariant `float_0`/`float_0p2`/`float_51` land in f29/f27/f28 rather than retail's f27/f28/f29.
-EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
-	EffectEntry* entry;
-	effSandarsData* data;
-	BOOL inBattle;
-	s32 count;
+void effSandarsDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effSandarsData* data = effect->userdata;
+#ifndef MUST_MATCH
+	GXColor color;
+#endif
+	Mtx mtxA0;
+	Mtx mtx70;
+	Mtx mtx40;
+	Mtx mtx10;
+
+	camGetPtr(camId);
+	if (data->poseId == -1) {
+		return;
+	}
+
+	PSMTXTrans(mtxA0, data->x, data->y, data->z);
+	PSMTXRotRad(mtx70, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80421ba0);
+	PSMTXScale(mtx40, data->scale, data->scale, data->scale);
+	PSMTXConcat(mtxA0, mtx70, mtxA0);
+	PSMTXConcat(mtxA0, mtx40, mtx10);
+	PSMTXScale(mtx40, data->animScale, data->animScale, data->animScale);
+	PSMTXConcat(mtx10, mtx40, mtx10);
+	animPoseSetMaterialFlagOn(data->poseId, 0x40);
+#ifdef MUST_MATCH
+	animPoseSetMaterialEvtColor(data->poseId, effSandarsColorAnim(data->alpha));
+#else
+	color = *(GXColor*)&dat_80421b98;
+	color.a = data->alpha;
+	animPoseSetMaterialEvtColor(data->poseId, color);
+#endif
+	animPoseMain(data->poseId);
+	animPoseDrawMtx(data->poseId, mtx10, 1, float_0_80421bb0, float_4_80421bb8);
+	animPoseDrawMtx(data->poseId, mtx10, 2, float_0_80421bb0, float_4_80421bb8);
+	animPoseDrawMtx(data->poseId, mtx10, 3, float_0_80421bb0, float_4_80421bb8);
+}
+
+void effSandarsDisp2(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effSandarsData* data = effect->userdata;
+	CameraEntry* cam;
+	GXTexObj texObj;
+#ifndef MUST_MATCH
+	GXColor color;
+#endif
+	Mtx mtxC0;
+	Mtx mtx90;
+	Mtx mtx60;
+	Mtx mtx30;
 	s32 i;
-	f32 angle;
-	f32 zero;
+	f32 deg;
+	f32 negSize;
+	f32 posSize;
 
-	entry = effEntry();
-	inBattle = gp->inBattle != 0;
-	count = 1;
-	if (type == 5) {
-		count = 6;
-	}
-	entry->type = str_80300160;
-	entry->count = count;
-	data = __memAlloc(HEAP_EFFECT, count * sizeof(effSandarsData));
-	entry->userdata = data;
-	entry->callback = effSandarsMain;
-	entry->flags |= 2;
+	cam = camGetPtr(camId);
+	PSMTXTrans(mtxC0, data->x, data->y, data->z);
+	PSMTXRotRad(mtx90, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80421ba0);
+	PSMTXScale(mtx60, data->scale, data->scale, data->scale);
+	PSMTXConcat(mtxC0, mtx90, mtxC0);
+	PSMTXConcat(mtxC0, mtx60, mtxC0);
+	PSMTXConcat(cam->view, mtxC0, mtx30);
 
-	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->scale = float_1_80421bb4;
-	data->state = 0;
-	data->timer = 0;
-	data->poseId = -1;
-	data->camId = 4;
+	GXSetNumChans(1);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
+	effGetTexObj(0x44, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-	switch (type) {
-	case 0:
-	case 4:
-		data->bombType = 1;
-		data->animScale = float_1_80421bb4;
-		break;
-	case 1:
-	case 2:
-	case 3:
-		data->bombType = 2;
-		data->animScale = float_4_80421bb8;
-		break;
-	case 5:
-		data->timer = 0x64;
-		data->field_0x30 = a;
-		break;
-	}
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail materialises the quad half-size through the 32 and 0.5 pool entries. */
+	deg = float_deg2rad_80421ba0;
+	posSize = float_16_80421bac;
+	negSize = -float_32_80421ba4 * float_0p5_80421ba8;
+#else
+	deg = float_deg2rad_80421ba0;
+	posSize = 16.0f;
+	negSize = -16.0f;
+#endif
 
-	if (data->type == 3 || data->type == 4) {
-		animGroupBaseAsync(str_80300144, inBattle, NULL);
-		data->poseId = -1;
-		data->alpha = 0xff;
-	}
-
-	angle = (float_6p2832_80421bc4 * a) / float_360_80421bc8;
-	zero = float_0_80421bb0;
 	data = &data[1];
-	for (i = 1; i < entry->count; i++, data++) {
-		data->x = (f32)(i * 10) * (f32)cos(angle);
-		data->y = (f32)(i * 10) * (f32)sin(angle);
-		data->z = zero;
-		data->scale = zero;
-		data->scaleRate = float_0p2_80421bcc * (f32)i;
-		data->alpha = (s32)(float_51_80421bd0 * (f32)i);
-		data->field_0x34 = (i - 1) * 5;
-		data->timer = 0;
-		data->rot = zero;
-		data->rotSpeed = zero;
-		if (i == entry->count - 1) {
-			data->scaleRate = float_1p1_80421bd4;
-			data->alpha = 0xCC;
-			data->rotSpeed = float_15_80421bd8;
-		}
+	for (i = 1; i < effect->count; i++, data++) {
+		PSMTXTrans(mtxC0, data->x, data->y, data->z);
+		PSMTXRotRad(mtx90, 'z', deg * data->rot);
+		PSMTXScale(mtx60, data->scale * data->scaleRate, data->scale * data->scaleRate, data->scale * data->scaleRate);
+		PSMTXConcat(mtxC0, mtx90, mtxC0);
+		PSMTXConcat(mtxC0, mtx60, mtxC0);
+		PSMTXConcat(mtx30, mtxC0, mtxC0);
+		GXLoadPosMtxImm(mtxC0, 0);
+		GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+		GXSetChanMatColor(GX_COLOR0A0, effSandarsColorDisp2(data->alpha));
+#else
+		color = *(GXColor*)&dat_80421b9c;
+		color.a = data->alpha;
+		GXSetChanMatColor(GX_COLOR0A0, color);
+#endif
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+		GXPosition3f32(negSize, posSize, float_0_80421bb0);
+		GXTexCoord2f32(float_0_80421bb0, float_0_80421bb0);
+		GXPosition3f32(posSize, posSize, float_0_80421bb0);
+		GXTexCoord2f32(float_1_80421bb4, float_0_80421bb0);
+		GXPosition3f32(posSize, negSize, float_0_80421bb0);
+		GXTexCoord2f32(float_1_80421bb4, float_1_80421bb4);
+		GXPosition3f32(negSize, negSize, float_0_80421bb0);
+		GXTexCoord2f32(float_0_80421bb0, float_1_80421bb4);
 	}
-
-	return entry;
 }
