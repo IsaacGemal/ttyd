@@ -229,6 +229,9 @@ void seqContinue(SND_SEQID seqId);
 void seqMute(SND_SEQID seqId, u32 mask1, u32 mask2);
 void seqKillInstancesByGroupID(SND_GROUPID sgid);
 void seqKillAllInstances();
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+u32 seqGetInstanceForVoice(u32 vid);
+#endif
 void seqHandle(u32 deltaTime);
 
 u8 inpTranslateExCtrl(u8 ctrl);

@@ -2,6 +2,7 @@
 #include "musyx/assert.h"
 #include "musyx/s3d.h"
 #include "musyx/sal.h"
+#include "musyx/snd.h"
 #include "musyx/seq.h"
 #include "musyx/stream.h"
 #include "musyx/synth.h"
@@ -248,6 +249,10 @@ u8 hwGetSampleType(u32 voice) { return dspVoice[voice].smp_info.compType; }
 
 u16 hwGetSampleID(u32 voice) { return dspVoice[voice].smp_id; }
 
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+void* hwGetSampleExtraData(u32 v) { return dspVoice[v].smp_info.extraData; }
+#endif
+
 void hwSetStreamLoopPS(u32 voice, u8 ps) { dspVoice[voice].streamLoopPS = ps; }
 
 void hwStart(u32 v, u8 studio) {
@@ -293,6 +298,47 @@ static void SetupITD(DSPvoice* dsp_vptr, u8 pan) {
   dsp_vptr->itdShiftR = 32 - itdOffTab[pan];
   dsp_vptr->changed[0] |= 0x200;
 }
+
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+void hwLowPassFrqToCoef(u32 frq, u16* _a0, u16* _b1) {
+  f32 a0;
+  f32 b0;
+  f32 c;
+  f32 x;
+
+  c = 2.f - sndCos(6.2831855f * (f32)frq / 32000.f);
+  if (c > 1.f) {
+    x = sndSqrt(c * c - 1.f) - c;
+  } else {
+    x = -1.f;
+  }
+  x = (x > 1.f) ? 1.f : ((x < -1.f) ? -1.f : x);
+  a0 = 32768.f * (1.f + x);
+  b0 = 32768.f * -x;
+  *_a0 = (s16)a0;
+  *_b1 = (s16)b0;
+}
+
+void hwSetFilter(u32 v, u8 mode, u16 coefA, u16 coefB) {
+  DSPvoice* dv = &dspVoice[v];
+
+  if (dv->filter.on == 0) {
+    if (mode == 1) {
+      dv->filter.on = 1;
+      dv->filter.coefA = coefA;
+      dv->filter.coefB = coefB;
+      dv->changed[0] |= 0xC00;
+    }
+  } else if (mode == 1) {
+    dv->filter.coefA = coefA;
+    dv->filter.coefB = coefB;
+    dv->changed[0] |= 0x800;
+  } else {
+    dv->filter.on = 0;
+    dv->changed[0] |= 0x400;
+  }
+}
+#endif
 
 void hwSetITDMode(u32 v, u8 mode) {
   if (!mode) {
@@ -496,7 +542,11 @@ void hwSaveSample(void* header, void* data
   u32 len = ((u32*)*((u32*)header))[1] & 0xFFFFFF;
   u8 type = ((u32*)*((u32*)header))[1] >> 0x18;
   len = convert_length(len, type);
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+  *((u32*)data) = (u32)aramStoreData((void*)*((u32*)data), len, aramInfo);
+#else
   *((u32*)data) = (u32)aramStoreData((void*)*((u32*)data), len);
+#endif
 #endif
 }
 
@@ -518,7 +568,11 @@ void hwRemoveSample(void* header, void* data
   u8 type = (((u32*)header))[1] >> 0x18;
   u32 len = convert_length((((u32*)header))[1] & 0xFFFFFF, type);
 #endif
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+  aramRemoveData(data, len, aramInfo);
+#else
   aramRemoveData(data, len);
+#endif
 }
 
 void hwSyncSampleMem() { aramSyncTransferQueue(); }
