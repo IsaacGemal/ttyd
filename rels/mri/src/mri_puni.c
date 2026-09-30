@@ -4560,7 +4560,7 @@ void puniModeFunbari(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (98.55%): the compiler emits its own anonymous int->float pool double and a cheaper
+// NONMATCHING (98.65%): the compiler emits its own anonymous int->float pool double and a cheaper
 // small-range conversion instead of the original's xoris + 4503601774854144.0 sequence
 // (same limitation noted for display() in sys.c).
 void puniModeWater(PuniData* punidat) {
@@ -4578,11 +4578,7 @@ void puniModeWater(PuniData* punidat) {
         case 2: {
             Vec dir;
             f32 f0;
-            {
-                OSTime now = gp->renderTime;
-                punidat->field_0x1CC = (u32)(now >> 32);
-                punidat->field_0x1C8 = (u32)now;
-            }
+            *(OSTime*)&punidat->field_0x1C8 = gp->renderTime;
             punidat->field_0x1F8 = punidat->field_0x12C;
             punidat->field_0x1EC = -80.0f;
             f0 = *(f32*)((u8*)punidat + 0x154) - punidat->field_0x1F8.y;
