@@ -229,3 +229,19 @@ void effBreakDisp(CameraId cameraId, void* param) {
 }
 
 #pragma opt_common_subs reset
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802fe610 = { 0.0f, 0.0f, 0.0f };
+const f32 float_deg2rad_804210a8 = 0.017453292f;
+const f32 float_48_804210ac = 48.0f;
+const f32 float_0_804210b0 = 0.0f;
+const f32 float_0p5_804210b4 = 0.5f;
+const f32 float_24_804210b8 = 24.0f;
+#ifdef MUST_MATCH
+const volatile f32 float_1_804210bc = 1.0f;
+#else
+const f32 float_1_804210bc = 1.0f;
+#endif
+const f32 float_20_804210c0 = 20.0f;
+const f32 float_2_804210cc = 2.0f;
+const f32 float_10_804210d0 = 10.0f;
