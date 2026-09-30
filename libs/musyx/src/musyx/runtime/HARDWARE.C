@@ -249,7 +249,7 @@ u8 hwGetSampleType(u32 voice) { return dspVoice[voice].smp_info.compType; }
 
 u16 hwGetSampleID(u32 voice) { return dspVoice[voice].smp_id; }
 
-#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
 void* hwGetSampleExtraData(u32 v) { return dspVoice[v].smp_info.extraData; }
 #endif
 
@@ -299,6 +299,7 @@ static void SetupITD(DSPvoice* dsp_vptr, u8 pan) {
   dsp_vptr->changed[0] |= 0x200;
 }
 
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
 void hwLowPassFrqToCoef(u32 frq, u16* _a0, u16* _b1) {
   f32 a0;
   f32 b0;
@@ -337,6 +338,7 @@ void hwSetFilter(u32 v, u8 mode, u16 coefA, u16 coefB) {
     dv->changed[0] |= 0x400;
   }
 }
+#endif
 
 void hwSetITDMode(u32 v, u8 mode) {
   if (!mode) {

@@ -2148,15 +2148,23 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
 - **HARDWARE.C linked.** Three functions the source lacked: `hwGetSampleExtraData`, `hwSetFilter` (filter on/coefs and
   changed bits 0xC00/0x800/0x400) and `hwLowPassFrqToCoef` (needs `musyx/snd.h`, or `sndCos` is an implicit int
   function; the constant is exactly 2*pi = 6.2831855f, and the clamp is one nested ternary). `hwRemoveSample`'s
-  `aramInfo` parameter was live: `aramRemoveData(data, len, aramInfo)`.
-- **hw_aramdma** (MusyX >= 2.0.2): `aramStoreData`/`aramRemoveData` take the `ARAMInfo*` (no `aramWrite` global; the stream
-  buffer allocator reads `dataARAMDefaultGetInfo()->aramWrite`), `aramGetUserBytes` and `aramGetFirstUserAddress` are new,
-  `aramInit` uses the physical allocator. The older API stays under `#else`. `aramStoreData` is 94.1%: the register
-  numbering of its two inlined `aramUploadData` copies is off by one (the queue base is r22 in the loop copy in the
-  original), so hw_aramdma stays NonMatching.
-- **synth_vsamples**: `SND_VIRTUALSAMPLE_INFO` has 8 reserved bytes after `instID` and the union grows a `start` member
-  (vid, seqInstance, extraData), so `VS_BUFFER` is 0x2C; compType 6 (16-bit PCM, `off1 = last * 2`) in
-  `vsUpdateBuffer`; `vsSampleStartNotify` fills the start info and frees the buffer when the callback returns non-zero.
-  StartNotify is 95.6% (the u8 copy of `voice` is r27 in the original).
+  `aramInfo` parameter was live: `aramRemoveData(data, len, aramInfo)`. Gates: `hwGetSampleExtraData` 2.0.2,
+  `hwSetFilter`/`hwLowPassFrqToCoef` 2.0.1 (as the header).
+- **hw_aramdma** (>= 2.0.2): `aramStoreData`/`aramRemoveData` take the `ARAMInfo*` (no `aramWrite` global; the stream
+  buffer allocator reads `dataARAMDefaultGetInfo()->aramWrite`, declared in synthdata.h), `aramGetUserBytes` and
+  `aramGetFirstUserAddress` are new, `aramInit` uses the physical allocator; the older API stays under `#else`. The
+  aram side is gated at 2.0.2 because `hwRemoveSample`'s `aramInfo` parameter is gated there in this tree (upstream
+  gates the aram side at 2.0.1). `aramStoreData`'s loop waits on the queue first (`aramSyncTransferQueue()`, >= 2.0.1),
+  which took it from 94% to 100%: all 14 functions match. The unit stays NonMatching on layout only: the original's
+  `aramUploadData` sits right after `aramQueueCallback` (ours is emitted after `aramStoreData`, where it is first
+  inlined) and `aramQueueLo` precedes `aramQueueHi` in `.bss` (ours the reverse; declaration order and first-reference
+  order made no difference). `aramExit` is gone for >= 2.0.2 (the retail build has none), `aramQueueInit` is inline.
+- **synth_vsamples**: `SND_VIRTUALSAMPLE_INFO` gains `vid` and `seqID` after `instID` and the union grows a `start`
+  member (`extraData`), so `VS_BUFFER` is 0x2C (info is 0x1C long, the union at +0xC); compType 6 (16-bit PCM,
+  `off1 = last * 2`) in `vsUpdateBuffer`; `vsSampleUpdates` called `voiceInStartup` (no such function) where the
+  original calls `hwVoiceInStartup`. `vsSampleStartNotify` fills the start info and frees the buffer when the
+  callback returns non-zero; it is 95.6%: the original keeps three copies of the voice id (raw r29, u8 r27, a
+  re-extended r30) and one more callee-saved register (`_savegpr_26`); a `u8 voice` plus a `u8`/`u32 hwVoice` copy did
+  not reproduce it. The unit stays NonMatching for that one function.
 - **snd3d** (not started): 0/12 functions match; the emitter/room structs are another MusyX revision (flags at 0xC, no
   room/door roots).

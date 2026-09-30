@@ -2,6 +2,8 @@
 #include "musyx/musyx.h"
 #include "musyx/platform.h"
 #include "musyx/hardware.h"
+#include "musyx/synthdata.h"
+
 typedef struct STREAM_BUFFER {
   // total size: 0x10
   struct STREAM_BUFFER* next; // offset 0x0, size 0x4
@@ -53,7 +55,7 @@ static STREAM_BUFFER* aramIdleStreamBuffers;
 
 static void InitStreamBuffers();
 
-static void aramQueueInit() {
+static inline void aramQueueInit() {
   aramQueueLo.write = aramQueueLo.valid = 0;
   aramQueueHi.write = aramQueueHi.valid = 0;
 }
@@ -159,9 +161,17 @@ void aramInit(unsigned long length) {
   MUSY_DEBUG("MusyX ARAM handler initialized\n");
 }
 
+#if MUSY_VERSION < MUSY_VERSION_CHECK(2, 0, 2)
 void aramExit() {}
+#endif
 
 unsigned long aramGetZeroBuffer() { return ARGetBaseAddress(); }
+
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+u32 aramGetFirstUserAddress() { return ARGetBaseAddress() + sizeof(s16) * 640; }
+
+u32 aramGetUserBytes(u32 total) { return total - sizeof(s16) * 640; }
+#endif
 
 void aramSetUploadCallback(void* (*callback)(unsigned long, unsigned long),
                            unsigned long chunckSize) {
@@ -200,6 +210,9 @@ void* aramStoreData(void* src, unsigned long len, ARAMInfo* aramInfo) {
   }
 
   while (len != 0) {
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+    aramSyncTransferQueue();
+#endif
     blkSize = len >= aramUploadChunkSize ? aramUploadChunkSize : len;
     buffer = (void*)aramUploadCallback((u32)src, blkSize);
 #line 297
@@ -219,9 +232,6 @@ void aramRemoveData(void* aram, unsigned long len, ARAMInfo* aramInfo) {
   aramInfo->aramWrite -= len;
 }
 
-u32 aramGetUserBytes(u32 total) { return total - sizeof(s16) * 640; }
-
-u32 aramGetFirstUserAddress() { return ARGetBaseAddress() + sizeof(s16) * 640; }
 #else
 void* aramStoreData(void* src, unsigned long len) {
   unsigned long addr;    // r26
@@ -460,9 +470,15 @@ unsigned long aramGetZeroBuffer() { return 0; }
 void aramSetUploadCallback(void* (*callback)(unsigned long, unsigned long),
                            unsigned long chunckSize) {}
 
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+void* aramStoreData(void* src, unsigned long len, ARAMInfo* aramInfo) {}
+
+void aramRemoveData(void* aram, unsigned long len, ARAMInfo* aramInfo) {}
+#else
 void* aramStoreData(void* src, unsigned long len) {}
 
 void aramRemoveData(void* aram, unsigned long len) {}
+#endif
 
 static void InitStreamBuffers() {}
 
