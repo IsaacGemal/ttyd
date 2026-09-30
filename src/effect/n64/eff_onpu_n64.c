@@ -10,24 +10,19 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+u32 size16x32_tex16x32_vtx[14] = {
+    0xFFF80000, 0x00000000, 0x00000000, 0x00FF0008,
+    0x00000000, 0x02000000, 0x000000FF, 0x00080020,
+    0x00000200, 0x04000000, 0x00FFFFF8, 0x00200000,
+    0x00000400, 0x000000FF,
+};
+__declspec(section ".data") f32 lbl_803A33D8[2] = { -1.0f, 1.0f };
+
 // .sdata2 float constants (named after their original addresses).
-extern const f32 float_0p0625_8041f790;
-extern const f32 float_0p0044643_8041f794;
-extern const f32 float_0_8041f798;
-extern const f32 float_deg2rad_8041f79c;
-extern const f32 float_0p3_8041f7a0;
-extern const f32 float_1_8041f7a4;
-extern const f32 float_0p04_8041f7a8;
-extern const f32 float_neg5_8041f7ac;
-extern const f32 float_0p1_8041f7b0;
-extern const f32 float_0p5_8041f7b4;
-extern const f32 float_5_8041f7b8;
 
 // .rodata
-extern const char str_802FB218[];
 
 // .data: one effVtxArray (0x38 bytes) for the textured quad used by effOnpuDisp.
-extern u32 size16x32_tex16x32_vtx[];
 
 // .sdata: byte-indexed color rotation table (36 bytes).
 static u8 color_rotation_data[36] = {
@@ -37,11 +32,9 @@ static u8 color_rotation_data[36] = {
 };
 
 // .sbss2: shared scratch GXColor, only its bytes are overwritten (see eff_small_star_n64.c).
-extern GXColor unk_804231c0;
 
 // Pooled int->double conversion constant for the (f32)(rand() % 11) casts. Non-const so the compiler
 // references it by name instead of folding it to an anonymous @NNN literal (as in eff_akari_pose_n64.c).
-f64 double_to_int_802fb210 = 4503601774854144.0;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
 inline Vec initializeVec(Vec* input) {
@@ -55,7 +48,7 @@ inline Vec initializeVec(Vec* input) {
 // Building the TEV colour in an inlined helper allocates it at r1+0x8 (the original's slot);
 // building it directly in effOnpuDisp puts it at r1+0xc (the known GXColor temp/pass swap).
 static inline void onpuSetColor(s32 offset, s32 alpha) {
-    GXColor color = unk_804231c0;
+    GXColor color = (GXColor){ 0, 0, 0, 0 };
 
     color.r = color_rotation_data[offset];
     color.g = color_rotation_data[offset + 1];
@@ -83,7 +76,7 @@ EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z) {
     effOnpuData* data;
 
     effect = effEntry();
-    effect->type = str_802FB218;
+    effect->type = "OnpuN64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(effOnpuData));
     effect->userdata = data;
@@ -93,7 +86,7 @@ EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z) {
     data->position.x = x;
     data->position.y = y;
     data->position.z = z;
-    data->scale = float_0_8041f798;
+    data->scale = 0.0f;
     data->lifetime = 0x40;
     data->alpha = 0;
     data->counter = 0;
@@ -101,22 +94,22 @@ EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z) {
 
     switch (type) {
     case 0:
-        data->velX = float_0_8041f798;
-        data->targetX = float_0_8041f798;
-        data->velY = float_1_8041f7a4;
-        data->targetY = float_1_8041f7a4;
+        data->velX = 0.0f;
+        data->targetX = 0.0f;
+        data->velY = 1.0f;
+        data->targetY = 1.0f;
         break;
     case 1:
-        data->velX = float_0p1_8041f7b0 * (f32)(rand() % 11) + float_neg5_8041f7ac;
-        data->velY = float_0p1_8041f7b0 * (f32)(rand() % 11) + float_0p5_8041f7b4;
-        data->targetX = float_0_8041f798;
-        data->targetY = float_0_8041f798;
+        data->velX = 0.100000001f * (f32)(rand() % 11) + -5.0f;
+        data->velY = 0.100000001f * (f32)(rand() % 11) + 0.5f;
+        data->targetX = 0.0f;
+        data->targetY = 0.0f;
         break;
     default:
-        data->velX = float_5_8041f7b8 - float_0p1_8041f7b0 * (f32)(rand() % 11);
-        data->velY = float_0p1_8041f7b0 * (f32)(rand() % 11) + float_1_8041f7a4;
-        data->targetX = float_0_8041f798;
-        data->targetY = float_0_8041f798;
+        data->velX = 5.0f - 0.100000001f * (f32)(rand() % 11);
+        data->velY = 0.100000001f * (f32)(rand() % 11) + 1.0f;
+        data->targetX = 0.0f;
+        data->targetY = 0.0f;
         break;
     }
 
@@ -139,16 +132,16 @@ void effOnpuMain(EffectEntry* effect) {
         return;
     }
     if (lifetime > 5) {
-        data->alpha = (s32)(float_0p3_8041f7a0 * (f32)(255 - data->alpha) + (f32)data->alpha);
-        data->scale = float_0p3_8041f7a0 * (float_1_8041f7a4 - data->scale) + data->scale;
+        data->alpha = (s32)(0.300000012f * (f32)(255 - data->alpha) + (f32)data->alpha);
+        data->scale = 0.300000012f * (1.0f - data->scale) + data->scale;
     }
     if (lifetime < 10) {
         data->alpha = lifetime * 25;
     }
     data->position.x += data->velX;
     data->position.y += data->velY;
-    data->velX += float_0p04_8041f7a8 * (data->targetX - data->velX);
-    data->velY += float_0p04_8041f7a8 * (data->targetY - data->velY);
+    data->velX += 0.0399999991f * (data->targetX - data->velX);
+    data->velY += 0.0399999991f * (data->targetY - data->velY);
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOnpuDisp, effect);
 }
 
@@ -175,13 +168,13 @@ void effOnpuDisp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
-    PSMTXScale(scaleMtx, float_0p0625_8041f790, float_0p0044643_8041f794, float_0_8041f798);
-    PSMTXTrans(mtx, float_0_8041f798, (f32)(randIndex * 32), float_0_8041f798);
+    PSMTXScale(scaleMtx, 0.0625f, 0.00446428591f, 0.0f);
+    PSMTXTrans(mtx, 0.0f, (f32)(randIndex * 32), 0.0f);
     PSMTXConcat(scaleMtx, mtx, scaleMtx);
     GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 
-    PSMTXScale(scaleMtx, float_0p0625_8041f790, float_0p0044643_8041f794, float_0_8041f798);
-    PSMTXTrans(mtx, float_0_8041f798, (f32)(randIndex * 32), float_0_8041f798);
+    PSMTXScale(scaleMtx, 0.0625f, 0.00446428591f, 0.0f);
+    PSMTXTrans(mtx, 0.0f, (f32)(randIndex * 32), 0.0f);
     PSMTXConcat(scaleMtx, mtx, scaleMtx);
     GXLoadTexMtxImm(scaleMtx, GX_TEXMTX1, GX_MTX2x4);
 
@@ -205,9 +198,9 @@ void effOnpuDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, GX_TEXMAP1);
 
     PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041f79c * -camGetPtr(CAMERA_3D)->viewYaw);
+    PSMTXRotRad(rotMtx, 'y', 0.0174532924f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(mtx, rotMtx, mtx);
-    PSMTXScale(scaleMtx, data->scale, data->scale, float_0_8041f798);
+    PSMTXScale(scaleMtx, data->scale, data->scale, 0.0f);
     PSMTXConcat(mtx, scaleMtx, mtx);
     PSMTXConcat(cam->view, mtx, mtx);
     GXLoadPosMtxImm(mtx, GX_PNMTX0);
