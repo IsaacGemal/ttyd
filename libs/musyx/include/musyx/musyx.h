@@ -388,7 +388,8 @@ typedef struct SND_VIRTUALSAMPLE_INFO {
   SND_VSID smpID;    // ID of sample to be streamed
   SND_INSTID instID; // ID of this instance of the stream
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
-  u32 reserved[2];
+  u32 vid;   // public voice ID (filled in when the stream starts)
+  u32 seqID; // sequence instance of that voice, or -1
 #endif
 
   union vsData {
@@ -399,9 +400,7 @@ typedef struct SND_VIRTUALSAMPLE_INFO {
       u32 len2;
     } update;
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
-    struct vsStart { // Instance info handed to the callback when the stream starts
-      u32 vid;
-      u32 seqInstance;
+    struct vsStart { // Sample info handed to the callback when the stream starts
       void* extraData;
     } start;
 #endif

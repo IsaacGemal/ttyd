@@ -3,6 +3,7 @@
 #include "musyx/assert.h"
 #include "musyx/hardware.h"
 #include "musyx/macros.h"
+#include "musyx/seq.h"
 #include "musyx/snd.h"
 #include "musyx/voice.h"
 
@@ -85,12 +86,11 @@ u32 vsSampleStartNotify(
     vs.streamBuffer[sb].info.smpID = hwGetSampleID(voice);
     vs.streamBuffer[sb].info.instID = vsNewInstanceID();
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
-    vs.streamBuffer[sb].info.data.start.vid = vidGetPublicId(voiceId);
-    if (vs.streamBuffer[sb].info.data.start.vid != 0xFFFFFFFF) {
-      vs.streamBuffer[sb].info.data.start.seqInstance =
-          seqGetInstanceForVoice(vs.streamBuffer[sb].info.data.start.vid);
+    vs.streamBuffer[sb].info.vid = vidGetPublicId(voiceId);
+    if (vs.streamBuffer[sb].info.vid != 0xFFFFFFFF) {
+      vs.streamBuffer[sb].info.seqID = seqGetInstanceForVoice(vs.streamBuffer[sb].info.vid);
     } else {
-      vs.streamBuffer[sb].info.data.start.seqInstance = 0xFFFFFFFF;
+      vs.streamBuffer[sb].info.seqID = 0xFFFFFFFF;
     }
     vs.streamBuffer[sb].info.data.start.extraData = hwGetSampleExtraData(voice);
 #endif
@@ -101,8 +101,7 @@ u32 vsSampleStartNotify(
       return (vs.streamBuffer[sb].info.instID << 8) | voice;
     }
     hwSetVirtualSampleLoopBuffer(voice, 0, 0);
-    vs.streamBuffer[sb].state = 0;
-    vs.voices[vs.streamBuffer[sb].voice] = 0xFF;
+    vsFreeBuffer(sb);
 #else
     if (vs.callback != NULL) {
       vs.callback(0, &vs.streamBuffer[sb].info);

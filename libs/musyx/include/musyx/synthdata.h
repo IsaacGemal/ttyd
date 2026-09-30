@@ -233,6 +233,9 @@ FX_TAB* dataGetFX(u16 fid);
 void* dataGetLayer(u16 cid, u16* n);
 void* dataGetKeymap(u16 cid);
 MSTEP* dataGetMacro(u16 mid);
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+ARAMInfo* dataARAMDefaultGetInfo(void);
+#endif
 
 #ifdef __cplusplus
 }

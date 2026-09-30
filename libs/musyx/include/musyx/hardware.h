@@ -97,10 +97,10 @@ void hwSyncSampleMem();
 void hwSetAUXProcessingCallbacks(u8 studio, SND_AUX_CALLBACK auxA, void* userA,
                                  SND_AUX_CALLBACK auxB, void* userB);
 void hwSetMesgCallback(SND_MESSAGE_CALLBACK callback);
-#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
-#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
 void* hwGetSampleExtraData(u32 v);
 #endif
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
 void hwSetFilter(u32 v, unsigned char mode, unsigned short coefA, unsigned short coefB);
 void hwLowPassFrqToCoef(u32 frq, unsigned short* _a0, unsigned short* _b1);
 void hwEnableCompressor();
@@ -143,7 +143,6 @@ void* aramStoreData(void* src, u32 len, ARAMInfo* aramInfo);
 void aramRemoveData(void* aram, u32 len, ARAMInfo* aramInfo);
 u32 aramGetUserBytes(u32 total);
 u32 aramGetFirstUserAddress(void);
-ARAMInfo* dataARAMDefaultGetInfo(void);
 #else
 void* aramStoreData(void* src, u32 len);
 void aramRemoveData(void* aram, u32 len);
