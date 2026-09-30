@@ -579,11 +579,23 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
-// NONMATCHING (99.98%): same instructions; only register numbers or operands differ.
+// Building the fog colour inside an inlined helper gives the fog by-value temp the
+// lower stack slot and the later GXSetTevColor temp the higher one, matching the target;
+// written inline the two temps swap slots.
+#ifdef MUST_MATCH
+static inline void winIconGraySetFog(void) {
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+}
+#endif
+
 void winIconGrayInit(void) {
     winTexTpl = NULL;
     GXSetCullMode(GX_CULL_NONE);
+#ifdef MUST_MATCH
+    winIconGraySetFog();
+#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+#endif
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);
@@ -603,7 +615,7 @@ void winIconGrayInit(void) {
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_ALPHA);
     GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_GREEN, GX_CH_GREEN, GX_CH_GREEN, GX_CH_ALPHA);
     GXSetTevSwapModeTable(GX_TEV_SWAP3, GX_CH_BLUE, GX_CH_BLUE, GX_CH_BLUE, GX_CH_ALPHA);
-    GXSetTevColor(GX_TEVREG1, (GXColor){ 0xFF, 0x55, 0x55, 0x55 });
+    GXSetTevColor(GX_TEVREG1, (GXColor){ 0x55, 0x55, 0x55, 0xFF });
     GXSetNumTevStages(4);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);

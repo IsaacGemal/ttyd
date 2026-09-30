@@ -41,6 +41,93 @@ SDATA2_CONST GXColor dat_8041e450 = { 0xFF, 0xFF, 0xFF, 0xFF };
 SDATA2_CONST GXColor dat_8041e454 = { 0xFF, 0xFF, 0xFF, 0x30 };
 SDATA2_CONST char str_8041E478[8] = "Bomb";
 
+// Local to this file in the original (`.fn effBombMain, local`).
+static void effBombMain(EffectEntry* effect);
+// Local to this file in the original (`.fn effBombDisp, local`).
+static void effBombDisp(CameraId camId, void* param);
+
+EffectEntry* effBombEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
+	EffectEntry* entry;
+	effBombData* data;
+	effBombData* work;
+	s32 i;
+	f32 radius;
+
+	entry = effEntry();
+	entry->type = str_8041E478;
+	entry->count = 9;
+	data = __memAlloc(3, entry->count * 0x28);
+	entry->userdata = data;
+	entry->callback = effBombMain;
+	radius = 10.0f * scale;
+	data->type = type;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+	data->scale = scale;
+	data->counter = 0;
+	data->texOffset = 0;
+	work = data + 1;
+	for (i = 1; i < entry->count; i++, work++) {
+		work->angle = 90.0f * (f32)(i - 1) + ((i > 4) ? 45.0f : 0.0f);
+		work->position.x = radius * (f32)sin(0.017453292f * work->angle);
+		work->position.y = radius * (f32)cos(0.017453292f * work->angle);
+		work->position.z = 0.0f;
+		work->scaleX = 0.0f;
+		work->scaleY = 0.0f;
+		work->texOffset = 0;
+		work->counter = 0;
+	}
+	effConfettiEntry(4, 0x28, x, y, z);
+	return entry;
+}
+static void effBombMain(EffectEntry* effect) {
+#ifdef MUST_MATCH
+	Vec position;
+#endif
+	effBombData* data = effect->userdata;
+	Vec disp = { 0 };
+	s32 i;
+	s32 counter;
+	s32 idx;
+
+	disp.x = data->position.x;
+	disp.y = data->position.y;
+	disp.z = data->position.z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+	counter = data->counter;
+	data->counter = counter + 1;
+	if (data->counter > 0x24) {
+		effDelete(effect);
+		return;
+	}
+	idx = counter * 3;
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (i < 5) {
+			if ((u32)counter < 0x36) {
+				data->texOffset = scale_dt[idx];
+				data->scaleX = (f32)scale_dt[idx + 1] / 100.0f;
+				data->scaleY = (f32)scale_dt[idx + 2] / 100.0f;
+			}
+		}
+		else {
+			if ((u32)counter < 0x36) {
+				data->texOffset = scale_dt2[idx];
+				data->scaleX = (f32)scale_dt2[idx + 1] / 100.0f;
+				data->scaleY = (f32)scale_dt2[idx + 2] / 100.0f;
+			}
+		}
+	}
+#ifdef MUST_MATCH
+	dispEntry(4, dispCalcZ(&position), 2, effBombDisp, effect);
+#else
+	dispEntry(4, dispCalcZ(&disp), 2, effBombDisp, effect);
+#endif
+}
+
 // NONMATCHING (99.86%): the quad half-width ends up in f28 instead of f31, shifting the
 // loop-hoisted float constants by one register (f29/f30/f31 vs f28/f29/f30). 6 instructions.
 static void effBombDisp(CameraId camId, void* param) {
@@ -131,85 +218,3 @@ static void effBombDisp(CameraId camId, void* param) {
 	}
 }
 
-static void effBombMain(EffectEntry* effect) {
-#ifdef MUST_MATCH
-	Vec position;
-#endif
-	effBombData* data = effect->userdata;
-	Vec disp = { 0 };
-	s32 i;
-	s32 counter;
-	s32 idx;
-
-	disp.x = data->position.x;
-	disp.y = data->position.y;
-	disp.z = data->position.z;
-#ifdef MUST_MATCH
-	position = disp;
-#endif
-	counter = data->counter;
-	data->counter = counter + 1;
-	if (data->counter > 0x24) {
-		effDelete(effect);
-		return;
-	}
-	idx = counter * 3;
-	data++;
-	for (i = 1; i < effect->count; i++, data++) {
-		if (i < 5) {
-			if ((u32)counter < 0x36) {
-				data->texOffset = scale_dt[idx];
-				data->scaleX = (f32)scale_dt[idx + 1] / 100.0f;
-				data->scaleY = (f32)scale_dt[idx + 2] / 100.0f;
-			}
-		}
-		else {
-			if ((u32)counter < 0x36) {
-				data->texOffset = scale_dt2[idx];
-				data->scaleX = (f32)scale_dt2[idx + 1] / 100.0f;
-				data->scaleY = (f32)scale_dt2[idx + 2] / 100.0f;
-			}
-		}
-	}
-#ifdef MUST_MATCH
-	dispEntry(4, dispCalcZ(&position), 2, effBombDisp, effect);
-#else
-	dispEntry(4, dispCalcZ(&disp), 2, effBombDisp, effect);
-#endif
-}
-
-EffectEntry* effBombEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
-	EffectEntry* entry;
-	effBombData* data;
-	effBombData* work;
-	s32 i;
-	f32 radius;
-
-	entry = effEntry();
-	entry->type = str_8041E478;
-	entry->count = 9;
-	data = __memAlloc(3, entry->count * 0x28);
-	entry->userdata = data;
-	entry->callback = effBombMain;
-	radius = 10.0f * scale;
-	data->type = type;
-	data->position.x = x;
-	data->position.y = y;
-	data->position.z = z;
-	data->scale = scale;
-	data->counter = 0;
-	data->texOffset = 0;
-	work = data + 1;
-	for (i = 1; i < entry->count; i++, work++) {
-		work->angle = 90.0f * (f32)(i - 1) + ((i > 4) ? 45.0f : 0.0f);
-		work->position.x = radius * (f32)sin(0.017453292f * work->angle);
-		work->position.y = radius * (f32)cos(0.017453292f * work->angle);
-		work->position.z = 0.0f;
-		work->scaleX = 0.0f;
-		work->scaleY = 0.0f;
-		work->texOffset = 0;
-		work->counter = 0;
-	}
-	effConfettiEntry(4, 0x28, x, y, z);
-	return entry;
-}

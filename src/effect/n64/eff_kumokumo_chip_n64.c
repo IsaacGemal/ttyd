@@ -82,22 +82,18 @@ static inline f32 chip_sqrtf(f32 x) {
 	return x;
 }
 
-// The original's reverse-source-order position puts this entry point first in the .c (rule 18).
+// This entry point sits first in the .c (rule 18: reverse source order).
 //
-// Remaining gap (99.93%, 5 instructions), all pooling artifacts, no wrong logic or
-// constants:
-//  * effKumokumoChipMain's `pos = (Vec){0,0,0}` makes MWCC emit a dead 12-byte anonymous
-//    zero Vec in .rodata at vec3+0x1c, so this function's pooled sqrtf doubles land at
-//    +0x28 instead of the original +0x20 (the four `lfd` offsets differ). Every source
-//    form that drops the anonymous Vec also drops Main to 97.83% (the scheduler hoists
-//    the vec3 load; only the compound literal reproduces Main's byte order), and Main
-//    must stay at 100%, so the offsets are left.
-//  * `if (dist != 0.0f)` emits `fcmpu cr0, f3, f7` where the original has
-//    `fcmpu cr0, f7, f3`. The pooled 0.0f itself resolves to float_0_8041f56c once
-//    float_1_8041f570 is defined (the .sdata2 layout lets objdiff name it), so only the
-//    operand order differs; writing `float_0_8041f56c` in the source swaps the operands
-//    right but moves the live zero from f3 to f4 and costs more overall.
-// NONMATCHING (99.93%): pool offsets + one swapped fcmpu operand, see the block above.
+// `if (dist)` reproduces the original's `fcmpu cr0, f7, f3` + `beq`; writing
+// `if (dist != 0.0f)` makes MWCC emit `fcmpu cr0, f3, f7`. The truth test is equivalent
+// for every float (NaN included).
+//
+// The unit's pooled sqrtf doubles must sit at vec3+0x20. effKumokumoChipMain used to build
+// its zero Vec from a compound literal, which made MWCC emit a dead 12-byte anonymous Vec
+// in .rodata at vec3+0x1c and pushed the doubles to +0x28 (four wrong `lfd` offsets). Main
+// now reads its userdata and the zero Vec through volatile lvalues under MUST_MATCH (the
+// lwz/stw bytes are unchanged); that keeps the scheduler from hoisting the vec3 copy and
+// leaves no literal object, so the doubles land at +0x20 and the whole file matches.
 EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 spacing, f32 scale) {
 	EffectEntry* effect;
 	effKumokumoChipData* data;
@@ -121,7 +117,7 @@ EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 
 	dy = y2 - y;
 	dz = z2 - z;
 	dist = dx * dx + dy * dy + dz * dz;
-	if (dist != 0.0f) {
+	if (dist) {
 		dist = chip_sqrtf(dist);
 	}
 
@@ -181,8 +177,16 @@ void effKumokumoChipMain(EffectEntry* effect) {
 	Vec pos2;
 	Vec pos;
 
+#ifdef MUST_MATCH
+	// Volatile lvalues (same lwz bytes as the plain forms) stop the scheduler hoisting the
+	// vec3 copy and stop MWCC emitting a dead anonymous zero Vec, so the unit's pool doubles
+	// stay at vec3+0x20. See the comment above effKumokumoChipN64Entry.
+	data = ((volatile EffectEntry*)effect)->userdata;
+	pos = *(volatile Vec*)&vec3_802faa50;
+#else
 	data = effect->userdata;
-	pos = (Vec){ 0.0f, 0.0f, 0.0f };
+	pos = vec3_802faa50;
+#endif
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;

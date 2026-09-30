@@ -94,9 +94,17 @@ void effBomheiMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effBomheiDisp, e);
 }
 
-// NONMATCHING (99.97%): only the GXColor `color` and the three GXSetTevColor struct-argument
-// temporaries are permuted in the 0x8..0x14 stack slots (original: color 0x8, args 0xc/0x10/0x14;
-// this build: args 0x8/0xc/0x10, color 0x14); the rest is the ignored int->float label.
+#ifdef MUST_MATCH
+// Build the stage-2 colour in an inline so the original's colour stack slot (0x8) is used.
+static inline GXColor bomheiColor(u8 alpha) {
+	GXColor c = *(GXColor*)&dat_8041ea28;
+	c.a = alpha;
+	return c;
+}
+#endif
+
+// 100%. The stage-2 colour is built by bomheiColor so its stack slot (0x8) matches the
+// original; the only remaining objdiff lines are the ignored double_to_int_802fa2c0 reloc labels.
 void effBomheiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effBomheiData* data;
@@ -185,8 +193,12 @@ void effBomheiDisp(CameraId camId, void* param) {
 	else {
 		GXSetTevColor(1, dat_8041ea24);
 	}
+#ifdef MUST_MATCH
+	color = bomheiColor(frac);
+#else
 	color = dat_8041ea28;
 	color.a = frac;
+#endif
 	GXSetTevColor(2, color);
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);

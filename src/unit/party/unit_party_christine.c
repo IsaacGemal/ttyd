@@ -146,6 +146,10 @@ extern BattleWeapon partyWeapon_ChristineKiss;
 // Every instruction but the base address is identical. The target keeps the +0x40 in the symbol addend
 // (`lis r5, unk_evt_80390b30+0x40@ha` / `addi r30, r5, unk_evt_80390b30+0x40@l`); MWCC 2.6 folds it into the
 // first weapon offset. Tried every opt level, compiler version 1.3-3.0, and pointer/struct/u32/array base forms.
+// Root cause, confirmed over the built objects: GC/2.6 puts a symbol+offset into an @ha/@l addend only for a
+// LOCAL symbol (e.g. a pooled constant); for an extern/UND symbol it always emits addend 0 and moves the
+// constant into the following `addi` immediate. No C form, pragma, opt level, compiler version or
+// __declspec(section) changes that. Only a locally defined symbol at 0x80390B70 (none exists) would addend.
 // NONMATCHING (99.98%): the +0x40 sits in the later immediate instead of the symbol addend (same final address).
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH

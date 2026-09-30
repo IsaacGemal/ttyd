@@ -126,16 +126,32 @@ void effKemuri12Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri12Disp, e);
 }
 
-// NONMATCHING (98.31%): the two GXColor temps get 4-byte local/arg stack slots
-// (original builds each as an 8-byte local+arg pair at r1+0x8/0xc and 0x10/0x14),
-// and the else-branch PSMTXTrans int->float conversion schedules addi/xoris/lis differently.
+// Building each GXColor *inside* the inline and calling GXSetTevColor there makes MWCC
+// allocate each colour's local+outgoing-arg pair adjacently (r1+0x10/0x14, r1+0x8/0xc),
+// as the original does.
+#ifdef MUST_MATCH
+static inline void setKemuriColor(GXTevRegID id, u8 r, u8 g, u8 b, u8 a) {
+    GXColor c = unk_80423190;
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = a;
+    GXSetTevColor(id, c);
+}
+
+static inline void setKemuriAlphaColor(GXTevRegID id, u8 a) {
+    GXColor c = unk_80423194;
+    c.a = a;
+    GXSetTevColor(id, c);
+}
+#endif
+
 void effKemuri12Disp(CameraId camId, void* param) {
     EffectEntry* effect;
     effKemuri12Data* data;
     CameraEntry* cam;
     GXTexObj texobj;
     Mtx m0, m1, m2;
-    GXColor color[2];
     s32 type;
     s32 ia;
     s32 scaled;
@@ -183,15 +199,24 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXLoadPosMtxImm(m0, GX_PNMTX0);
     GXSetCurrentMtx(GX_PNMTX0);
 
-    color[0] = unk_80423190;
-    color[0].r = data->color[0];
-    color[0].g = data->color[1];
-    color[0].b = data->color[2];
-    color[0].a = data->color[3];
-    GXSetTevColor(GX_TEVREG0, color[0]);
-    color[1] = unk_80423194;
-    color[1].a = frac256;
-    GXSetTevColor(GX_TEVREG1, color[1]);
+#ifdef MUST_MATCH
+    setKemuriColor(GX_TEVREG0, data->color[0], data->color[1], data->color[2], data->color[3]);
+    setKemuriAlphaColor(GX_TEVREG1, frac256);
+#else
+    {
+        GXColor color = unk_80423190;
+        color.r = data->color[0];
+        color.g = data->color[1];
+        color.b = data->color[2];
+        color.a = data->color[3];
+        GXSetTevColor(GX_TEVREG0, color);
+    }
+    {
+        GXColor color = unk_80423194;
+        color.a = frac256;
+        GXSetTevColor(GX_TEVREG1, color);
+    }
+#endif
 
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
@@ -210,7 +235,13 @@ void effKemuri12Disp(CameraId camId, void* param) {
     }
     else {
         PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
+#ifdef MUST_MATCH
+        // The literal makes MWCC keep the int->float conversion's `scaled + 32` in r3
+        // (the named float_0 constant lands it in r0 and schedules the loads differently).
+        PSMTXTrans(m0, (f32)(scaled + 32), 0.0f, 0.0f);
+#else
         PSMTXTrans(m0, (f32)(scaled + 32), float_0_8041f55c, float_0_8041f55c);
+#endif
         PSMTXConcat(m1, m0, m1);
         GXLoadTexMtxImm(m1, GX_TEXMTX1, GX_MTX2x4);
     }

@@ -174,7 +174,18 @@ USER_FUNC(twoddisp_main) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.85%): the icon id passes through an extra `extsh`, and the GXColor temporaries sit in different stack slots.
+#ifdef MUST_MATCH
+// Match-only stack shape: passing the font colour by value makes the compiler place all four GXColor
+// argument copies in the outgoing-argument area, matching the original's 0x14/0x10/0xc/0x8 slots; the
+// natural address-taken locals below land in the other half of the frame.
+static inline void twoddisp_fontColor(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
+// NONMATCHING (99.39%): only `clrlwi r5, r0, 16` (original) vs `extsh r5, r0` (ours) differs. The icon id
+// is u16 in the original, but include/driver/icondrv.h and src/driver/icondrv.c declare iconDispGx's third
+// parameter as s16. Reported, not worked around.
 void twoddisp_disp(CameraId cameraId, void* param) {
 	s32 offset;
 	s32 i;
@@ -182,8 +193,10 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 	Vec pos;
 	GXColor color;
 	GXColor textColor;
+#ifndef MUST_MATCH
 	GXColor color1;
 	GXColor color2;
+#endif
 	char text[0x100];
 
 	offset = 0;
@@ -201,18 +214,26 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			pos.y = entry->baseY + entry->y;
 			pos.z = float_0_8041ccb0;
 			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, color);
-			iconDispGx(&pos, 0x10, (u16)entry->field_0x24, entry->scale);
+			iconDispGx(&pos, 0x10, entry->field_0x24, entry->scale);
 		} else {
 			FontDrawStart();
 			FontDrawScale(entry->scale);
 			textColor = unk_8042304c;
 			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, textColor);
 			sprintf(text, (char*)entry->field_0x24);
+#ifdef MUST_MATCH
+			twoddisp_fontColor(dat_8041cca8);
+#else
 			color1 = dat_8041cca8;
 			FontDrawColor(&color1);
+#endif
 			FontDrawString(text, entry->baseX + entry->x, entry->baseY + entry->y);
+#ifdef MUST_MATCH
+			twoddisp_fontColor(dat_8041ccac);
+#else
 			color2 = dat_8041ccac;
 			FontDrawColor(&color2);
+#endif
 			FontDrawString(text, entry->baseX + entry->x + float_1_8041ccb4, entry->baseY + entry->y - float_1_8041ccb4);
 		}
 	}

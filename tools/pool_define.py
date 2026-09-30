@@ -76,28 +76,35 @@ for addr, sec, size, name, words, fl, db, body in objs:
         bits = struct.unpack(">Q", struct.pack(">d", float(db[0])))[0]
         defs[name] = ("f64", fmt_double(bits), bits)
 
-ext_re = re.compile(r"^extern const (volatile )?(f32|f64|u32|GXColor|Vec) (\w+);\n", re.M)
-found = [(m.start(), m.end(), (m.group(1) or "") + m.group(2), m.group(3)) for m in ext_re.finditer(text)
-         if m.group(3) in defs and not m.group(3).startswith("double_to_int")]  # the compiler pools its own conversion constants
+ext_re = re.compile(r"^extern ((?:const |volatile )+)(f32|f64|u32|GXColor|Vec) (\w+);\n", re.M)
+found = [(m.start(), m.end(), ("volatile " if "volatile" in m.group(1) else "") + m.group(2), m.group(3)) for m in ext_re.finditer(text)
+         if m.group(3) in defs and "const" in m.group(1) and not m.group(3).startswith("double_to_int")]  # the compiler pools its own conversion constants
 if not found:
     sys.exit(f"{unit}: no extern pool constants to define")
 order = {name: i for i, (_, _, _, _, _, _, _, _) in enumerate(objs) for name in [objs[i][3]]}
 names = sorted({n for _, _, _, n in found}, key=lambda n: order[n])
+volatile = {n for _, _, ty, n in found if ty.startswith("volatile ")}  # a match-only view of the object under MUST_MATCH
 lines = []
 for n in names:
     t, val, bits = defs[n]
-    declared = next(ty for _, _, ty, nm in found if nm == n)
-    if declared == "Vec":
-        lines.append(f"const Vec {n} = {{ {val} }};")
-    elif declared.startswith("volatile "):
-        base = declared.split()[1]  # a volatile extern is only a match-view of the object: define it plain
-        lines.append(f"const {base} {n} = " + (f"0x{bits:08X};" if base == "u32" else f"{val};"))
-    elif declared == "GXColor":
-        lines.append(f"const GXColor {n} = {{ 0x{bits >> 24:02X}, 0x{(bits >> 16) & 255:02X}, 0x{(bits >> 8) & 255:02X}, 0x{bits & 255:02X} }};")
-    elif declared == "u32":
-        lines.append(f"const u32 {n} = 0x{bits:08X};")
+    decls = [ty for _, _, ty, nm in found if nm == n]
+    plain = [ty for ty in decls if not ty.startswith("volatile ")]
+    declared = plain[0] if plain else decls[0].split()[1]
+
+    def define(qual):
+        if declared == "Vec":
+            return f"const {qual}Vec {n} = {{ {val} }};"
+        if declared == "GXColor":
+            return (f"const {qual}GXColor {n} = {{ 0x{bits >> 24:02X}, 0x{(bits >> 16) & 255:02X}, "
+                    f"0x{(bits >> 8) & 255:02X}, 0x{bits & 255:02X} }};")
+        if declared == "u32":
+            return f"const {qual}u32 {n} = 0x{bits:08X};"
+        return f"const {qual}{declared} {n} = {val};"
+
+    if n in volatile:
+        lines.append("#ifdef MUST_MATCH\n" + define("volatile ") + "\n#else\n" + define("") + "\n#endif")
     else:
-        lines.append(f"const {declared} {n} = {val};")
+        lines.append(define(""))
 text = text.rstrip("\n") + "\n\n// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).\n" + "\n".join(lines) + "\n"
 open(src, "w").write(text)
 print(f"{unit}: defined {len(names)} constants")

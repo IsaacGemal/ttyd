@@ -175,12 +175,12 @@ s32 battleAcResult_MonosiriTarget(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// NONMATCHING (96.74%): only callee-saved register allocation and the trigger compare differ.
+// NONMATCHING (97.22%): only callee-saved register allocation and the trigger compare differ.
 s32 battleAcMain_MonosiriTarget(BattleWork* work) {
+	BattleUnitPart* part;
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	BattleUnit* unit;
-	BattleUnitPart* part;
 	s32 autoCommand = 0;
 
 	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {

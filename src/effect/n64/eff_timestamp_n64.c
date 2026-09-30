@@ -184,8 +184,26 @@ void effTimestampMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (96.63%): integer register allocation differs; the s32->f32 and /255 constants are
-// pool-loaded instead of double_to_int_802fb8c8 and lis 0x8081/subi 0x7f7f; tri2's u16 prototype forces clrlwi. See REPORT.md.
+// The two by-value GXColor builds live in helpers so the compiler gives their temporaries the
+// same stack slots as the original (same shape as effFireDustSetColor/effFireDustSetVtxColor).
+static inline void effTimestampSetColor(effTimestampN64Data* data) {
+	GXColor color = unk_804232b0;
+	color.a = data->field_0x2c;
+	GXSetTevColor(GX_TEVREG1, color);
+}
+
+static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counter, s32 i) {
+	GXColor color = unk_804232b4;
+	color.r = colr[i];
+	color.g = colg[i];
+	color.b = colb[i];
+	color.a = (counter * data->field_0x124[i]) / 255;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+
+#pragma opt_lifetimes off // the default lifetime analysis picks a different, worse-matching register assignment
+// NONMATCHING (97.2%): every instruction shape and the stack frame match; only the integer/FP
+// register allocation differs (cam r24 vs the target's r22, base r29 vs r24, ang/loop regs permuted).
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -193,19 +211,17 @@ void effTimestampDisp(CameraId camId, void* param) {
 	s32 texT;
 	s32 counter;
 	effTimestampN64Data* data;
-	effTimestampVtx* base;
 	s32 angleA;
+	effTimestampVtx* base;
 	s32 i;
 	s32 offset;
-	s32 angleB;
 	effTimestampVtx* vtx;
+	s32 angleB;
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
 	Mtx work;
 	GXTexObj texObj;
-	GXColor colorDisp;
-	GXColor color;
 	smartEntry* entry;
 	s32 j;
 	f32 scaleF;
@@ -244,15 +260,13 @@ void effTimestampDisp(CameraId camId, void* param) {
 	scaleF = float_0p015625_804200b4;
 	PSMTXScale(scale, scaleF, scaleF, float_0_804200b8);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
-	color = unk_804232b0;
-	color.a = data->field_0x2c;
-	GXSetTevColor(GX_TEVREG1, color);
+	effTimestampSetColor(data);
 	entry = smartAlloc(0x1C0, HEAP_EFFECT);
-	base = entry->address;
-	vtx = base;
 	angleA = timer * 10;
-	angleB = angleA;
+	base = entry->address;
 	offset = 0;
+	angleB = angleA;
+	vtx = base;
 	texT = 0;
 	for (i = 0; i < 16; i++, vtx += 2) {
 		scaleF = data->field_0x30;
@@ -294,12 +308,7 @@ void effTimestampDisp(CameraId camId, void* param) {
 		PSMTXConcat(work, trans, trans);
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		colorDisp = unk_804232b4;
-		colorDisp.r = colr[i];
-		colorDisp.g = colg[i];
-		colorDisp.b = colb[i];
-		colorDisp.a = (counter * data->field_0x124[i]) / 255;
-		GXSetTevColor(GX_TEVREG0, colorDisp);
+		effTimestampSetVtxColor(data, counter, i);
 		texT = 0;
 		for (j = 0; j < 15; j++, texT += 2) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
@@ -307,3 +316,4 @@ void effTimestampDisp(CameraId camId, void* param) {
 		}
 	}
 }
+#pragma opt_lifetimes reset
