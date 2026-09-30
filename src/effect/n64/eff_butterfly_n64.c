@@ -283,3 +283,17 @@ void effButterflyDisp(CameraId camId, void* param) {
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     tri2(3, 4, 0, 0, 3, 5, 4, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041eb68 = 0x000000FF;
+const f32 float_0p3_8041eb6c = 0.3f;
+const f32 float_deg2rad_8041eb70 = 0.017453292f;
+const f32 float_0p02_8041eb74 = 0.02f;
+const f32 float_0p03125_8041eb78 = 0.03125f;
+const f32 float_0p015625_8041eb7c = 0.015625f;
+const f32 float_0_8041eb80 = 0.0f;
+const f32 float_6p2832_8041eb84 = 6.2831855f;
+const f32 float_360_8041eb88 = 360.0f;
+const f32 float_1_8041eb8c = 1.0f;
+const f32 float_50_8041eb90 = 50.0f;
+const f32 float_30_8041eb94 = 30.0f;

@@ -36,6 +36,8 @@ for m in re.finditer(r"# \.(?:sdata2|rodata):0x[0-9A-F]+ \| 0x[0-9A-F]+ \| size:
     size, name, body = int(m.group(1), 16), m.group(2), m.group(3)
     words = re.findall(r"\.4byte (0x[0-9A-Fa-f]+)", body)
     fl = re.findall(r"\.float (\S+)", body)
+    if name.startswith("dat_"):
+        continue  # a GXColor/word constant, not a float
     if size == 4 and len(fl) == 1 and fl[0] not in ("inf", "-inf", "nan"):
         words = ["0x%08X" % struct.unpack(">I", struct.pack(">f", float(fl[0])))[0]]
     if size == 4 and len(words) == 1 and not name.startswith("double_to_int"):

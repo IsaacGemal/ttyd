@@ -5,9 +5,26 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423104;
+__declspec(section ".sdata") GXColor unk_80423100;
+
+
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdlib.h>
+
+u32 size4x4_tex32x32_vtx[14] = {
+    0xFFFEFFFE, 0x00000000, 0x00000000, 0x00FF0002,
+    0xFFFE0000, 0x04000000, 0x000000FF, 0x00020002,
+    0x00000400, 0x04000000, 0x00FFFFFE, 0x00020000,
+    0x00000400, 0x000000FF,
+};
+
+__declspec(section ".data") u32 lbl_8039CA10[2] = {
+    0xBF800000, 0x3F800000,
+};
 
 typedef struct effFireSparkData {
     s32 type;             // 0x00
@@ -43,7 +60,6 @@ typedef struct effFireSparkData {
 // .sdata2 and .rodata constants named after their original addresses (defined by the split map).
 extern const f32 float_30_8041eec0;
 extern const f32 float_0p5_8041eeac;
-extern const char str_802FA5C8[];
 extern const f32 float_deg2rad_8041ee9c;
 extern const f32 float_0p03125_8041eea0;
 extern const f32 float_0p0078125_8041eea4;
@@ -53,7 +69,6 @@ extern const f32 float_0p1_8041eeb4;
 extern const f32 float_0p3_8041eeb8;
 extern const f32 float_0p04_8041eebc;
 extern const Vec vec3_802fa5b0;
-const f64 double_to_int_802fa5c0 = 4503601774854144.0;
 
 // Local to this unit in the original (`.obj scale_data, local`).
 static f32 scale_data[30] = {
@@ -62,9 +77,6 @@ static f32 scale_data[30] = {
     1.0f,  0.95f, 0.8f, 0.65f, 0.5f, 0.35f, 0.2f, 0.1f, 0.05f, 0.01f,
 };
 extern const GXColor dat_8041ee98;
-extern GXColor unk_80423100;
-extern GXColor unk_80423104;
-extern u32 size4x4_tex32x32_vtx[];
 
 EffectEntry* effFireSparkN64Entry(s32 type, s32 count, s32 life, f32 a4, f32 a5, f32 a6, f32 a7, f32 a8, f32 a9, f32 a10, f32 a11) {
     EffectEntry* effect;
@@ -74,7 +86,7 @@ EffectEntry* effFireSparkN64Entry(s32 type, s32 count, s32 life, f32 a4, f32 a5,
     s32 i;
 
     effect = effEntry();
-    effect->type = str_802FA5C8;
+    effect->type = "FireSparkN64";
     effect->count = count;
     data = __memAlloc(HEAP_EFFECT, sizeof(effFireSparkData) * count);
     effect->userdata = data;
@@ -342,3 +354,17 @@ void effFireSparkDisp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802fa5b0 = { 0.0f, 0.0f, 0.0f };
+const GXColor dat_8041ee98 = { 0x7F, 0x7F, 0x7F, 0x00 };
+const f32 float_deg2rad_8041ee9c = 0.017453292f;
+const f32 float_0p03125_8041eea0 = 0.03125f;
+const f32 float_0p0078125_8041eea4 = 0.0078125f;
+const f32 float_0_8041eea8 = 0.0f;
+const f32 float_0p5_8041eeac = 0.5f;
+const f32 float_0p05_8041eeb0 = 0.05f;
+const f32 float_0p1_8041eeb4 = 0.1f;
+const f32 float_0p3_8041eeb8 = 0.3f;
+const f32 float_0p04_8041eebc = 0.04f;
+const f32 float_30_8041eec0 = 30.0f;
