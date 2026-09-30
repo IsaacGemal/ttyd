@@ -2880,6 +2880,15 @@ finishing it. A fresh Claude review found no regression and three bugs on main t
 wrong sign, and read through NULL where retail walks its ancestors; unit_barriern_z passed `a` where retail's
 first `intplGetValue` takes 4. Labels and agent notes cleaned up after it.
 
+## Wave 33: near-misses (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The next 48 dol near-miss files (closest function at 85% or better, units with one or two open functions), 13:43-15:20,
+from main b369036. **18 of 48 reached 100%, 16 improved, 14 unchanged, 0 worse.** Lower than waves 28-31: the queue now
+reaches into the 85-90% band. Fixed at collection: rothammer_fail had extern'd constants its unit pools itself;
+battle_mario's `_hammer_star_effect` pinned its load order with extern'd constants, which cost the unit's .sdata2,
+so it is back to main's version.
+Header follow-ups: iconDispGx's icon id should be u16 (twoddisp, lst_rc_keep and battle_menu_disp cast around it), romfont.h's glyph width should be u16, and the battle_pad.h return types should be signed (timing_wide casts to s32).
+
 ## mri_puni structs (2026-09-30, Claude Opus 5.5 "TTYD Claude #2")
 
 PuniWork and PuniData are rebuilt from every access the mri asm makes through Punigp and Punidat elements:

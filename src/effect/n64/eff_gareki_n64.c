@@ -116,16 +116,15 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-// NONMATCHING (99.86%): byte-identical except the order of the two loop-preheader pointer
-// setups. The target emits the trans pre-bias (addi r29, r5, 0x8) before p = data->children
-// (addi r26, r30, 0x40); MWCC emits them in the opposite order. Register allocation is
-// otherwise exactly the target's (i=24, 0x6667=25, p=26, effect=27, vx=28, trans=29,
-// data=30, 0x4330=31). Reordering attempts all changed the score or the coloring; see REPORT.md.
+// The trans/vx read pointers are pre-biased by one element and stepped with the loop
+// (`t++`, `t[-1]`) rather than indexed as `data[i-1]`: the explicit pointer form emits
+// MWCC's pre-bias in the target's order and keeps the target's register colouring.
 EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
+    GarekiOffset* trans;
+    f32* vx;
     EffectEntry* effect;
     GarekiData* data;
     GarekiChild* p;
-    GarekiOffset* trans;
     s32 i;
 
     effect = effEntry();
@@ -148,15 +147,16 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     data->angleVelZ = float_0p25_8041f070 * data->angleVelX;
     data->timer = 20;
 
+    trans = trans_data + 1;
+    vx = vx_data + 1;
     p = data->children;
-    trans = trans_data;
-    for (i = 1; i < 9; i++, p++) {
-        p->offsetX = trans[i - 1].x;
-        p->offsetY = trans[i - 1].y;
+    for (i = 1; i < 9; i++, p++, trans++, vx++) {
+        p->offsetX = trans[-1].x;
+        p->offsetY = trans[-1].y;
         p->x = float_0_8041f048;
         p->y = float_0_8041f048;
         p->z = float_0_8041f048;
-        p->vx = float_2_8041f074 * vx_data[i - 1];
+        p->vx = float_2_8041f074 * vx[-1];
         p->vy = float_2_8041f074 * ((f32)(rand() % 10) * float_0p1_8041f07c) + float_1_8041f078;
         p->angleX = float_0_8041f048;
         p->angleZ = float_0_8041f048;

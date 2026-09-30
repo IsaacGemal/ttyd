@@ -731,13 +731,31 @@ extern u8 lbl_803B70C0[];
 #define DATA_AT(off, sym) ((u8*)(sym))
 #endif
 
-// NONMATCHING (99.70%): same instructions, including the lbl_803B70C0 .data anchor; only callee-saved register numbers differ (camId r24 vs r25, cached data->unk0 r27 vs r24, inner table pointers shift by one). Local declaration order and split variables do not move it.
+// MUST_MATCH: splitting the 20-entry display-list loop into this inline function gives it the
+// original's callee-saved colouring for the loop (dlptr/size_tbl/j in r27/r28/r29); inlined at
+// the call site the compiler instead colours them r28/r29/r27. The natural form is the #else loop.
+#ifdef MUST_MATCH
+static inline void wakkaDrawDL(u8* base) {
+    u32 j;
+    for (j = 0; j < 20; j++) {
+        GXCallDisplayList(((u8**)DATA_AT(0x1e8, wakka_dl_0_tbl))[j], wakka_dl_0_size_tbl[j] * 32);
+    }
+}
+#else
+static inline void wakkaDrawDL(void) {
+    u32 j;
+    for (j = 0; j < 20; j++) {
+        GXCallDisplayList(wakka_dl_0_tbl[j], wakka_dl_0_size_tbl[j] * 32);
+    }
+}
+#endif
+
 void effUltraHammerDisp(enum CameraId camId, void *param) {
     EffectEntry *effect;
     CameraEntry *temp_r31;
-    s32 temp_r24;
     EffUltraHammerData *data;
     int i;
+    s32 temp_r24;
 #ifdef MUST_MATCH
     u8* base;
 #endif
@@ -746,7 +764,6 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
     Mtx sp60;
     Mtx sp30;
     GXTexObj sp10;
-    u32 j;
     
     effect = param;
 #ifdef MUST_MATCH
@@ -809,9 +826,11 @@ void effUltraHammerDisp(enum CameraId camId, void *param) {
             GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
             GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA4, 13);
             GXSetArray(GX_VA_TEX0, DATA_AT(0x140, wakka_texcoord0_tbl), 4);
-            for (j = 0; j < 20; j++) {
-                GXCallDisplayList(((u8**)DATA_AT(0x1e8, wakka_dl_0_tbl))[j], wakka_dl_0_size_tbl[j] * 32);
-            }
+#ifdef MUST_MATCH
+            wakkaDrawDL(base);
+#else
+            wakkaDrawDL();
+#endif
         }
     }
 }

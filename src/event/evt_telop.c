@@ -1,4 +1,5 @@
 #include "evt/evt_cmd.h"
+#include "evt/evt_telop.h"
 #include "manager/evtmgr_cmd.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
@@ -72,14 +73,78 @@ static inline GXColorS10 telopMakeColorS10(s16 a) {
 }
 #endif
 
+USER_FUNC(evt_telop_entry) {
+    s32* args = event->args;
+
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+        memset(wp, 0, sizeof(TelopWork));
+        wp->msgId = evtGetValue(event, args[0]);
+        if (swGet(wp->msgId + 0x28)) {
+            return EVT_RETURN_DONE;
+        }
+        swSet(wp->msgId + 0x28);
+    }
+
+    switch (event->userdata[0]) {
+        case 0:
+            wp->start = event->lifetime;
+            event->userdata[0]++;
+            break;
+
+        case 1: {
+            u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
+
+            if (elapsed < 1000) {
+                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, float_neg256_8041e7e4, float_256_8041e7e8);
+            } else {
+                wp->start = event->lifetime;
+                event->userdata[0]++;
+            }
+            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
+            break;
+        }
+
+        case 2: {
+            u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
+
+            if (elapsed > 5000) {
+                wp->start = event->lifetime;
+                event->userdata[0]++;
+            }
+            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
+            break;
+        }
+
+        case 3: {
+            u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
+
+            if (elapsed < 1000) {
+                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, float_256_8041e7e8, float_neg256_8041e7e4);
+            } else {
+                event->userdata[0]++;
+            }
+            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
+            break;
+        }
+
+        case 4:
+            return EVT_RETURN_DONE;
+
+        default:
+            break;
+    }
+
+    return EVT_RETURN_BLOCK;
+}
+
 // (1) the by-value GXColor temporaries in the quad loop and for FontDrawColor land in
 //     different stack slots (loop temps 0x10/0xc vs 0x14/0x10, colour copy 0x14 vs 0xc);
-// (2) the ratio's int->float mask and the "width - 100" subtraction come out in
-//     swapped FP registers (f1/f2) and the branch is `blt` to the join where the original
-//     emits `bge` to the body plus a `b` over it;
-// (3) the font PSMTXTrans y/scale expression keeps 0.5 in f6 and msgWidth in f5, the
+// (2) the font PSMTXTrans y/scale expression keeps 0.5 in f6 and msgWidth in f5, the
 //     original the other way round.
-// NONMATCHING (99.62%): the three points above.
+// NONMATCHING (99.91%): the two points above. The ratio register/branch differences were fixed
+// by `#pragma opt_common_subs off` plus an empty then-block (see below).
+#pragma opt_common_subs off // needed: without it the ratio's int->float mask lands in f1, not f2
 void telop(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(cameraId);
     GXColor color;
@@ -212,15 +277,22 @@ void telop(CameraId cameraId, void* param) {
 
         scale = float_1_8041e7cc;
 #ifdef MUST_MATCH
+        // Match-only: the empty then-block makes MWCC lay the assignment out of line, emitting the
+        // original's `bge body; b join`; the natural `>=` test gives a `cror`/`bne` pair instead.
         if ((u32)gp->language != 0) {
-            if (!((f32)msgWidth / (width - float_100_8041e7d8) < scale)) {
-#else
-        if (gp->language != 0) {
-            if ((f32)msgWidth / (width - float_100_8041e7d8) >= scale) {
-#endif
+            if ((f32)msgWidth / (width - float_100_8041e7d8) < scale) {
+                scale = scale;
+            } else {
                 scale = (width - float_100_8041e7d8) / (f32)msgWidth;
             }
         }
+#else
+        if (gp->language != 0) {
+            if ((f32)msgWidth / (width - float_100_8041e7d8) >= scale) {
+                scale = (width - float_100_8041e7d8) / (f32)msgWidth;
+            }
+        }
+#endif
 
         alpha = wp->alpha;
         if (alpha < 0) {
@@ -255,67 +327,4 @@ void telop(CameraId cameraId, void* param) {
     }
 }
 
-USER_FUNC(evt_telop_entry) {
-    s32* args = event->args;
-
-    if (isFirstCall) {
-        event->userdata[0] = 0;
-        memset(wp, 0, sizeof(TelopWork));
-        wp->msgId = evtGetValue(event, args[0]);
-        if (swGet(wp->msgId + 0x28)) {
-            return EVT_RETURN_DONE;
-        }
-        swSet(wp->msgId + 0x28);
-    }
-
-    switch (event->userdata[0]) {
-        case 0:
-            wp->start = event->lifetime;
-            event->userdata[0]++;
-            break;
-
-        case 1: {
-            u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
-
-            if (elapsed < 1000) {
-                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, float_neg256_8041e7e4, float_256_8041e7e8);
-            } else {
-                wp->start = event->lifetime;
-                event->userdata[0]++;
-            }
-            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
-            break;
-        }
-
-        case 2: {
-            u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
-
-            if (elapsed > 5000) {
-                wp->start = event->lifetime;
-                event->userdata[0]++;
-            }
-            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
-            break;
-        }
-
-        case 3: {
-            u32 elapsed = ((s32)event->lifetime - (s32)wp->start) / (OS_TIMER_CLOCK / 1000);
-
-            if (elapsed < 1000) {
-                wp->alpha = (s32)intplGetValue(0xB, elapsed, 1000, float_256_8041e7e8, float_neg256_8041e7e4);
-            } else {
-                event->userdata[0]++;
-            }
-            dispEntry(CAMERA_2D, float_300_8041e7ec, 0, telop, NULL);
-            break;
-        }
-
-        case 4:
-            return EVT_RETURN_DONE;
-
-        default:
-            break;
-    }
-
-    return EVT_RETURN_BLOCK;
-}
+#pragma opt_common_subs reset

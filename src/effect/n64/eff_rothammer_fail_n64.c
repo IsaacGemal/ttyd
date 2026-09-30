@@ -69,17 +69,15 @@ typedef struct effRotHammerFailRecord {
 	f32 field_0x30;  // 0x30
 } effRotHammerFailRecord; // 0x34
 
-// The target keeps the header base in volatile r3 and materializes `particle = data + 0x34` in
-// r30 (addi r30, r3, 0x34); MWCC folds the particle pointer back into the live data base, so
-// this version reloads userdata (lwz r30, 0xc(r31)) and uses data+0x38/... instead of
-// particle+0x4/... . Everything else (FPR saves, header stores, call sequence, epilogue) matches.
-// NONMATCHING (88.74%): see above; particle base/offset pair is the only real difference.
+// The two 0x34-byte records are the header (index 0) and the particle (index 1). The original
+// walks to the particle with the same `data++` the Main callback uses; the loop shape is what
+// makes MWCC keep the header base in r3 and materialize the particle base in r30
+// (addi r30, r3, 0x34) for the sin/cos stores.
 EffectEntry* effRotHammerFailN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
-	effRotHammerFailData* data;
-	effRotHammerFailParticle* particle;
-	u8* base;
+	effRotHammerFailRecord* data;
 	f32 zero;
+	s32 j;
 
 	effect = effEntry();
 	effect->type = "RotHammerFailN64";
@@ -88,21 +86,22 @@ EffectEntry* effRotHammerFailN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f
 	effect->userdata = data;
 	effect->callback = effRotHammerFailMain;
 	zero = 0.0f;
-	base = (u8*)effect->userdata;
-	particle = (effRotHammerFailParticle*)(base + 0x34);
+	data->field_0x24 = life;
+	data->field_0x28 = 0;
+	data->field_0x2C = life;
+	data->field_0x30 = zero;
 	data->type = type;
 	data->x = x;
 	data->y = y;
 	data->z = z;
 	data->field_0x1C = 10.0f;
 	data->field_0x20 = 30.0f;
-	data->field_0x24 = life;
-	data->field_0x28 = 0;
-	data->field_0x2C = life;
-	particle->z = particle->y = particle->x = data->field_0x30 = zero;
-	particle->field_0x10 = sin(zero);
-	particle->field_0x14 = zero;
-	particle->field_0x18 = cos(zero);
+	for (j = 1, data++; j < 2; j++, data++) {
+		data->z = data->y = data->x = zero;
+		data->field_0x10 = sin(zero);
+		data->field_0x14 = zero;
+		data->field_0x18 = cos(zero);
+	}
 	return effect;
 }
 

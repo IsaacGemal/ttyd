@@ -295,7 +295,9 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
     }
 }
 
-// NONMATCHING (98.38%): the cached `wp` is r7 here (r6 in the original) and the halfword load is r6 (r7 in the original).
+// NONMATCHING (99.26%): the halfword `glyph->width` load is fixed (was `lha`, now `lhz`). The remaining
+// difference is register allocation only: the cached `wp` is r7 here (r6 in the original) and the loop-top
+// halfword load is r6 (r7 in the original); every instruction and every other operand is identical.
 s32 romFontGetWidth(const char* message) {
     s32 curX = 0;
     s32 i = 0;
@@ -327,7 +329,11 @@ s32 romFontGetWidth(const char* message) {
             i += 1;
         }
 
+#ifdef MUST_MATCH
+        curX += *(u16*)&glyph->width; // header types width s16; the real field is u16 (asm uses lhz)
+#else
         curX += glyph->width;
+#endif
     }
     return maxX;
 }

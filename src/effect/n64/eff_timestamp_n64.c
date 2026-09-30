@@ -201,22 +201,27 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
+#pragma opt_common_subs off // with CSE on MWCC folds the constants differently and the integer colouring drifts further
 #pragma opt_lifetimes off // the default lifetime analysis picks a different, worse-matching register assignment
-// NONMATCHING (97.2%): every instruction shape and the stack frame match; only the integer/FP
-// register allocation differs (cam r24 vs the target's r22, base r29 vs r24, ang/loop regs permuted).
+// The target's field_0x30 scale and the transform scale must be separate locals: splitting them fixed
+// most of the colouring. The first-loop `data`/`i` pair is still swapped (ours data=r28 i=r26, target
+// data=r26 i=r28), the first-loop FP constants are rotated (ours 360=f27 500=f28 200=f29 6.2832=f30
+// double=f31, target 6.2832=f27 double=f28 200=f29 500=f30 360=f31), and the second loop swaps the
+// colr/data pointers and the j/texT pair. Separate loop counters were tried: no change or worse.
+// NONMATCHING (98.94%): instruction shapes and frame match; only the register colours differ (above).
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
-	s32 timer;
-	s32 texT;
-	s32 counter;
-	effTimestampN64Data* data;
-	s32 angleA;
-	effTimestampVtx* base;
 	s32 i;
+	s32 counter;
+	s32 timer;
+	s32 angleA;
+	effTimestampN64Data* data;
 	s32 offset;
-	effTimestampVtx* vtx;
 	s32 angleB;
+	effTimestampVtx* vtx;
+	effTimestampVtx* base;
+	s32 texT;
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
@@ -225,8 +230,10 @@ void effTimestampDisp(CameraId camId, void* param) {
 	smartEntry* entry;
 	s32 j;
 	f32 scaleF;
+	f32 fieldScale;
 	s32 valA;
 	s32 valB;
+
 
 	data = effect->userdata;
 	timer = data->field_0x14;
@@ -265,13 +272,13 @@ void effTimestampDisp(CameraId camId, void* param) {
 	angleA = timer * 10;
 	base = entry->address;
 	offset = 0;
-	angleB = angleA;
 	vtx = base;
+	angleB = angleA;
 	texT = 0;
 	for (i = 0; i < 16; i++, vtx += 2) {
-		scaleF = data->field_0x30;
-		valA = (s32)(scaleF * (float_500_804200c4 * (f32)sin(float_6p2832_804200bc * (f32)angleA / float_360_804200c0)));
-		valB = (s32)(scaleF * (float_200_804200c8 * (f32)sin(float_6p2832_804200bc * (f32)angleB / float_360_804200c0)));
+		fieldScale = data->field_0x30;
+		valA = (s32)(fieldScale * (float_500_804200c4 * (f32)sin(float_6p2832_804200bc * (f32)angleA / float_360_804200c0)));
+		valB = (s32)(fieldScale * (float_200_804200c8 * (f32)sin(float_6p2832_804200bc * (f32)angleB / float_360_804200c0)));
 		vtx[0].x = valA - 3200;
 		vtx[0].y = valB + offset - 3000;
 		vtx[0].z = 0;

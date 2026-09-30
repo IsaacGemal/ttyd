@@ -183,9 +183,11 @@ static inline void twoddisp_fontColor(GXColor color) {
 }
 #endif
 
-// NONMATCHING (99.39%): only `clrlwi r5, r0, 16` (original) vs `extsh r5, r0` (ours) differs. The icon id
-// is u16 in the original, but include/driver/icondrv.h and src/driver/icondrv.c declare iconDispGx's third
-// parameter as s16. Reported, not worked around.
+// The original's translation unit saw `iconDispGx` with a `u16` iconId: the call site zero-extends
+// (`clrlwi r5, r0, 16`). This repo's include/driver/icondrv.h declares the third parameter `s16`, which
+// makes the call sign-extend (`extsh r5, r0`). Cast through the signature the original used so the call
+// site emits the original's zero-extension. Reported in REPORT.md; the header itself is not changed
+// because other call sites (ac_timing_wide) rely on the `s16` declaration.
 void twoddisp_disp(CameraId cameraId, void* param) {
 	s32 offset;
 	s32 i;
@@ -214,7 +216,12 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			pos.y = entry->baseY + entry->y;
 			pos.z = float_0_8041ccb0;
 			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, color);
+#ifdef MUST_MATCH
+			// Match-only: original call site passes a u16 icon id (clrlwi); the header's s16 would extsh.
+			((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, entry->field_0x24, entry->scale);
+#else
 			iconDispGx(&pos, 0x10, entry->field_0x24, entry->scale);
+#endif
 		} else {
 			FontDrawStart();
 			FontDrawScale(entry->scale);

@@ -175,34 +175,39 @@ static inline GXColor makeHoraoColor2(u8 a) {
 }
 #endif
 
-// Code, constants, control flow, the vertex stores and colour2's stack slot match. The remaining
-// diffs are MWCC register allocation: alpha is f29 where the target has f31, and the generated-vertex
-// loop's registers are rotated (target off1/vtx/i/vp/off2/v/y = r28/r27/r26/r31/r30/r24/r29; here
-// r27/r28/r30/r24/r31/r26/r29). The draw loop keeps i/j in r23/r24 where the target has r24/r23, and
-// the int->float magic is pooled (@NNN) instead of the named double_to_int_802faba0 symbol.
-// NONMATCHING (98.32%): register-allocation and int->float-pool differences above.
+// Register allocation is the only thing left. The local declaration order below is tuned so MWCC's
+// GPR allocator reproduces the original's loop registers; moving a line changes which register each
+// loop variable gets, so only reorder them together with a check. Remaining diffs: alpha is f29 where
+// the target has f31 and the vertex loop's FPRs are rotated (target 2pi/magic/360/500/200 = f26-f30 and
+// alpha f31; here alpha f29, 2pi/magic f30/f31, 360/500/200 f26/f27/f28); the first colour's local sits
+// at 0x14 (target 0x10), so its argument copy is at 0x10 (target 0x14) and colour.a stores before the
+// first fmadds; the vertex loop's i/off2/v are rotated (target i/off2/v = r26/r30/r24) and the draw
+// loop keeps i/j in r23/r24 (target r24/r23); the int->float magic is pooled (@NNN) instead of the named
+// double_to_int_802faba0 symbol because of the unit's extra compiler-emitted sqrt statics.
+#pragma opt_lifetimes off // without it MWCC's lifetime analysis picks a worse register assignment here
+// NONMATCHING (98.51%): FPR/GPR register-allocation and first-colour stack-slot differences above.
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
-	MagicHoraoVtx* vp;
 	effMagicHoraoData* data;
-	s32 i;
 	Mtx mtx1;
-	Mtx mtx2;
-	s32 counter;
-	GXColor color;
 	GXColor color2;
-	s32 y;
+	MagicHoraoVtx* vp;
 	GXTexObj texObj;
-	s32 off1;
-	MagicHoraoVtx* vtx;
-	s16 v;
-	CameraEntry* cam;
-	s32 angleBase;
 	f32 alpha;
 	s32 j;
 	s32 off2;
+	s32 y;
+	s32 off1;
+	s32 counter;
+	Mtx mtx2;
+	GXColor color;
 	f32 angle;
+	MagicHoraoVtx* vtx;
+	s32 i;
+	s32 angleBase;
 	EffectEntry* effect;
 	s32 colorAlpha;
+	CameraEntry* cam;
+	s16 v;
 
 	cam = camGetPtr(cameraId);
 	effect = param;
@@ -336,3 +341,4 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		}
 	}
 }
+#pragma opt_lifetimes reset

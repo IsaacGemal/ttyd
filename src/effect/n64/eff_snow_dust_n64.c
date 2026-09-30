@@ -145,13 +145,14 @@ static u8 a_data[32] = {
 extern const Vec vec3_802fb968;
 
 
-// MWCC splits the callee-saved FP live ranges so they stay permuted (f29/f25/f26/f28/f27/f31/f30),
-// which also re-schedules the pooled arithmetic; the implicit int->float conversions emit anonymous
-// @310/@367 rodata instead of double_to_int_802fb978/double_to_int_mask_802fb980 (compiler-generated,
-// same limitation as eff_cloud). Reordering the float declarations, opt_propagation off, and naming
-// every float/double constant did not change either.
-// NONMATCHING (99.36%): only the callee-saved FP register permutation and those two anonymous
-// conversion-constant names differ; all GPR operands, the stack frame and the loop init match.
+// MWCC's default lifetime analysis and common-subexpression elimination each pick a different
+// callee-saved / volatile FPR colouring for this function's seven live f32 values. Turning both off
+// and declaring them in reverse (f31..f25) reproduces the target's f29/f25/f28/f27/f26/f31/f30 order;
+// splitting the distABf*0.97 multiply and hoisting the 0.5f scale fix the volatile FPRs in the
+// int->float conversion block. The two compiler-generated int->float magic doubles keep anonymous
+// pool names (@307/@367) instead of the target's double_to_int_*; objdiff ignores those relocs.
+#pragma opt_lifetimes off // default lifetime analysis picks a different, worse-matching FPR assignment
+#pragma opt_common_subs off // CSE of the pooled constant loads picks different volatile FPRs
 void effSnowDustMain(EffectEntry* effect) {
 	s32 r31;
 	s32 r30;
@@ -165,8 +166,13 @@ void effSnowDustMain(EffectEntry* effect) {
 	s32 camera;
 	Vec position2;
 	Vec position;
+	f32 f31;
+	f32 f30;
+	f32 f29;
+	f32 f28;
+	f32 f27;
+	f32 f26;
 	f32 f25;
-	f32 f26, f27, f28, f29, f30, f31;
 
 	data = effect->userdata;
 	position = vec3_802fb968;
@@ -203,8 +209,8 @@ void effSnowDustMain(EffectEntry* effect) {
 	r24 = data->field_0x40;
 	r23 = data->field_0x44;
 	r31 = (s32)f29;
+	f29 = f29 * 0.5f;
 	r30 = (s32)f25;
-	f29 *= 0.5f;
 	i = 1;
 	data = data + 1;
 	for (; i < effect->count; i++, data++) {
@@ -289,7 +295,8 @@ void effSnowDustMain(EffectEntry* effect) {
 					data->field_0x60 += 0.2f;
 					data->field_0x64 += 0.6f;
 					data->field_0x1C = 0.04f * (data->field_0x28 - data->field_0x1C) + data->field_0x1C;
-					f25 = distABf(position2.x, position2.z, data->x, data->z) * 0.97f;
+					f25 = distABf(position2.x, position2.z, data->x, data->z);
+					f25 *= 0.97f;
 					data->x = f25 * (f32)sin(6.2831855f * (f32)data->field_0x38 / 360.0f) + position2.x;
 					data->z = f25 * (f32)cos(6.2831855f * (f32)data->field_0x38 / 360.0f) + position2.z;
 					data->field_0x38 += 4;
@@ -317,6 +324,8 @@ void effSnowDustMain(EffectEntry* effect) {
 	}
 	dispEntry(camera, dispCalcZ(&position2), 2, effSnowDustDisp, effect);
 }
+#pragma opt_common_subs reset
+#pragma opt_lifetimes reset
 
 //.data
 u32 size8x8_tex64x64_vtx[14] = {

@@ -167,9 +167,9 @@ void effBreakMain(EffectEntry* effect) {
 
 #pragma opt_propagation reset
 
-// NONMATCHING (99.89%): everything matches except the order of the two independent loop-latch
-// increments. The original emits `addi r30,r30,4` (the texid index, i-1) before `addi r28,r28,1`
-// (i); MWCC emits them the other way round. The volatile 1.0 texcoord reload is handled above.
+// The default common-subexpression pass reorders the two independent loop-latch induction
+// increments (i before the i-1 texid index); disabling it keeps the target's order.
+#pragma opt_common_subs off // keeps the i-1 texid induction increment before the i increment in the loop latch
 void effBreakDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     BreakEffect* data = effect->userdata;
@@ -227,3 +227,5 @@ void effBreakDisp(CameraId cameraId, void* param) {
         GXTexCoord2f32(0.0f, float_1_804210bc);
     }
 }
+
+#pragma opt_common_subs reset

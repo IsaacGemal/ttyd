@@ -149,9 +149,8 @@ USER_FUNC(evt_cloud_init) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.91%): everything matches except the FP register numbering in
-// the mode-2 screen-space math; original uses f6=sum, f4=fbWidth, f3=0.5 while
-// MWCC assigns that set as the rotation f4, f3, f6.
+// NONMATCHING (99.91%): the FP register numbering in the mode-2 screen-space math differs; the original
+// uses f6=sum, f4=fbWidth, f3=0.5 while MWCC assigns that set as the rotation f4, f3, f6.
 static USER_FUNC(evt_cloud_main) {
 	CloudEntry* cp = (CloudEntry*)event->lwData[0];
 	s32 inBattle = (gp->inBattle != 0);
