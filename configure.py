@@ -594,7 +594,7 @@ config.libs = [
             Object(Matching, "effect/n64/eff_flower_n64.c"),
             Object(Matching, "effect/n64/eff_freeze_n64.c"),
             Object(NonMatching, "effect/n64/eff_gareki_n64.c"),
-            Object(NonMatching, "effect/n64/eff_glass_n64.c"),
+            Object(Matching, "effect/n64/eff_glass_n64.c"),
             Object(Matching, "effect/n64/eff_guruguru_n64.c"),
             Object(NonMatching, "effect/n64/eff_hagetaka_flush_n64.c"),
             Object(NonMatching, "effect/n64/eff_hit_n64.c"),

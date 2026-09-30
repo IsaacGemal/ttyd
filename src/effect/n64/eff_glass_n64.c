@@ -7,6 +7,12 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2 zero GXColor scratch objects (declared in reverse: they are placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042312c;
+__declspec(section ".sdata") GXColor unk_80423128;
+__declspec(section ".sdata") GXColor unk_80423124;
+__declspec(section ".sdata") GXColor unk_80423120;
 
 // .data vertex arrays, local to this file.
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
@@ -66,14 +72,14 @@ EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 		break;
 	}
 
-	data->angle = float_0_8041f094;
+	data->angle = 0.0f;
 	data->angleVel = (0.1f * (f32)(rand() % 5) + 0.1f) * (0.25f * (f32)(rand() % 2 * 2 - 1));
 	data->rot = (f32)(rand() % 360);
 	data->velX = (f32)(rand() % 11 - 5);
 	data->velY = (f32)(rand() % 11 - 5);
 	data->velZ = (f32)(rand() % 11 - 5);
 	data->rotVel = (f32)(rand() % 41 - 20);
-	data->gravity = float_neg0p1_8041f0a4;
+	data->gravity = -0.1f;
 	return entry;
 }
 
@@ -114,11 +120,11 @@ void effGlassMain(EffectEntry* effect) {
 	}
 
 	data->angle += data->angleVel;
-	if (data->angle < float_0_8041f094) {
-		data->angle += float_1_8041f098;
+	if (data->angle < 0.0f) {
+		data->angle += 1.0f;
 	}
-	if (data->angle > float_1_8041f098) {
-		data->angle = data->angle - float_1_8041f098;
+	if (data->angle > 1.0f) {
+		data->angle = data->angle - 1.0f;
 	}
 
 	data->velY += data->gravity;
@@ -195,12 +201,12 @@ void effGlassDisp(CameraId camId, void* param) {
 	type = data->type;
 
 	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041f080 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	PSMTXConcat(cam->view, trans, viewMtx);
-	PSMTXRotRad(rot, 'z', float_deg2rad_8041f080 * data->rot);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->rot);
 	PSMTXConcat(viewMtx, rot, trans);
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
@@ -231,20 +237,20 @@ void effGlassDisp(CameraId camId, void* param) {
 
 	type = type % 2;
 #ifdef MUST_MATCH
-	frame = effGlassFrame(float_4_8041f084 * data->angle);
+	frame = effGlassFrame(4.0f * data->angle);
 #else
-	frame = (s32)(float_4_8041f084 * data->angle);
+	frame = (s32)(4.0f * data->angle);
 #endif
-	tileAlpha = (s32)(float_256_8041f088 * (float_4_8041f084 * data->angle - (f32)((s32)data->angle * 4)));
+	tileAlpha = (s32)(256.0f * (4.0f * data->angle - (f32)((s32)data->angle * 4)));
 
 	typeOffset = type * 0x20;
 	frameOffset = frame * 0x20;
-	PSMTXScale(scale, float_0p015625_8041f08c, float_0p0078125_8041f090, float_0_8041f094);
-	PSMTXTrans(trans, (f32)typeOffset, (f32)frameOffset, float_0_8041f094);
+	PSMTXScale(scale, 0.015625f, 0.0078125f, 0.0f);
+	PSMTXTrans(trans, (f32)typeOffset, (f32)frameOffset, 0.0f);
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, 0x1e, 1);
-	PSMTXScale(scale, float_0p015625_8041f08c, float_0p0078125_8041f090, float_0_8041f094);
-	PSMTXTrans(trans, (f32)typeOffset, (f32)(frameOffset + 0x20), float_0_8041f094);
+	PSMTXScale(scale, 0.015625f, 0.0078125f, 0.0f);
+	PSMTXTrans(trans, (f32)typeOffset, (f32)(frameOffset + 0x20), 0.0f);
 	PSMTXConcat(scale, trans, scale);
 	GXLoadTexMtxImm(scale, 0x21, 1);
 
@@ -270,7 +276,7 @@ void effGlassDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
-	if (type == 1 && (s32)(float_4_8041f084 * data->angle) == 3) {
+	if (type == 1 && (s32)(4.0f * data->angle) == 3) {
 #ifdef MUST_MATCH
 		effGlassSetColor3(data, dataAlpha * tileAlpha / 255);
 #else

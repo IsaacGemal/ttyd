@@ -46,8 +46,8 @@ for m in re.finditer(r"# \.(?:sdata2|rodata):0x[0-9A-F]+ \| 0x[0-9A-F]+ \| size:
 n = 0
 for name, lit in vals.items():
     pat = rf"^(?:extern )?const f32 {name}(?: = [^;]+)?;\n"
-    if not re.search(pat, text, re.M):
-        continue
+    if not re.search(pat, text, re.M) and not re.search(rf"\b{name}\b", text):
+        continue  # neither declared nor used here
     text = re.sub(pat, "", text, flags=re.M)
     text = re.sub(rf"\b{name}\b", lit, text)
     n += 1
