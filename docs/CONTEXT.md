@@ -2544,3 +2544,14 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
 - kemuri7 `effKemuri7Disp`: `if (data->field_0x60 == 0.0f)` with the pool constant loaded before the field needs
   `{ f32 z = 0.0f; if (data->field_0x60 == z) ... }` under MUST_MATCH once the constant is a literal; with `pool_define` the
   code is unchanged and none of it is needed.
+
+## Grind 30 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **arammgr links** (all eight functions): `ARAMWork`/`ARAMWorkNode` named field by field (the header had unnamed tails), `wp` is
+  `static ARAMWork* wp = &work;` (`.sdata`, not `.sbss`). `aramMgrGarbage` (a defragmenter: wait for pending nodes, unlink
+  freed ones, then copy each moved block through a 32 KB bounce buffer) matched after: `*(volatile u16*)node & N` for each flag test
+  (two loads, no CSE), a separate loop variable for the third loop, `(chunk - 1 + size) / chunk` (the compiler
+  reassociates `chunk + size - 1`), and `for (i = 0, offset = 0; ...)` (register order of the two counters).
+- icondrv `iconNumberDispGx`/`iconNumberDispGx3D` written (92%): digits by `/` and `%` (the target keeps a separate quotient
+  for the `%`, so `rem % 100000` then `rem /= ...` is not the same as subtracting `q * 100000`), the top digit tested
+  against the original number, six digits shown as five; return type is `s32` (the header said `f32`; every caller ignores it).

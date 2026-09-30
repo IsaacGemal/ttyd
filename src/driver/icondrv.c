@@ -23,6 +23,9 @@ extern const char str_804197C4[];
 extern const f32 float_deg2rad_804197c0;
 extern const f32 float_1_804197ac;
 extern const f32 float_10_80419794;
+extern const f32 float_8_80419798;
+extern const f32 float_16_804197a4;
+extern const f32 float_20_804197a0;
 extern const f32 float_200_804197c8;
 extern const f32 float_0_8041979c;
 extern u32 dat_80419780;
@@ -641,10 +644,107 @@ void iconSetAlpha(const char* name, u8 alpha) {
     }
 }
 
-// NONMATCHING (0.62%): 160 missing.
-f32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
+// NONMATCHING (92.1%): the digit table, division and loop are the same; the temp GXColor copy is emitted after the
+// icon-id select (retail before it) and the callee-saved registers are assigned in another order.
+s32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
+    BOOL big;
+    s32 width;
+    s32 i;
+    s32 id;
+    s32 digits[5];
+    s32 rem;
+    f32 spacing;
+    Mtx mtx2;
+    s32 count;
+
+    width = 0;
+    big = (small == 0);
+    spacing = big ? float_20_804197a0 : float_16_804197a4;
+
+    rem = number % 100000;
+    digits[4] = rem / 10000;
+    rem %= 10000;
+    digits[3] = rem / 1000;
+    rem %= 1000;
+    digits[2] = rem / 100;
+    rem %= 100;
+    digits[1] = rem / 10;
+    digits[0] = rem % 10;
+    if (number / 100000 != 0) {
+        count = 5;
+    } else if (digits[4] != 0) {
+        count = 5;
+    } else if (digits[3] != 0) {
+        count = 4;
+    } else if (digits[2] != 0) {
+        count = 3;
+    } else if (digits[1] != 0) {
+        count = 2;
+    } else {
+        count = 1;
+    }
+    for (i = 0; i < count; i++) {
+        PSMTXTrans(mtx2, (f32)(-i) * spacing, 0.0f, 0.0f);
+        PSMTXConcat(mtx, mtx2, mtx2);
+        if (big) {
+            id = suuji[digits[i]];
+        } else {
+            id = suuji_s[digits[i]];
+        }
+        iconDispGxCol(mtx2, 0x10, id, color);
+        width = (s32)((f32)width + spacing);
+    }
+    return width;
 }
 
-// NONMATCHING (0.62%): 160 missing.
-f32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
+// NONMATCHING: same as iconNumberDispGx (spacing 10/8, flags 0).
+s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
+    BOOL big;
+    s32 width;
+    s32 i;
+    s32 id;
+    s32 digits[5];
+    s32 rem;
+    f32 spacing;
+    Mtx mtx2;
+    s32 count;
+
+    width = 0;
+    big = (small == 0);
+    spacing = big ? float_10_80419794 : float_8_80419798;
+
+    rem = number % 100000;
+    digits[4] = rem / 10000;
+    rem %= 10000;
+    digits[3] = rem / 1000;
+    rem %= 1000;
+    digits[2] = rem / 100;
+    rem %= 100;
+    digits[1] = rem / 10;
+    digits[0] = rem % 10;
+    if (number / 100000 != 0) {
+        count = 5;
+    } else if (digits[4] != 0) {
+        count = 5;
+    } else if (digits[3] != 0) {
+        count = 4;
+    } else if (digits[2] != 0) {
+        count = 3;
+    } else if (digits[1] != 0) {
+        count = 2;
+    } else {
+        count = 1;
+    }
+    for (i = 0; i < count; i++) {
+        PSMTXTrans(mtx2, (f32)(-i) * spacing, 0.0f, 0.0f);
+        PSMTXConcat(mtx, mtx2, mtx2);
+        if (big) {
+            id = suuji[digits[i]];
+        } else {
+            id = suuji_s[digits[i]];
+        }
+        iconDispGxCol(mtx2, 0, id, color);
+        width = (s32)((f32)width + spacing);
+    }
+    return width;
 }
