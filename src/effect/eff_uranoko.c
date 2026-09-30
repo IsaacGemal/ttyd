@@ -5,7 +5,6 @@
 #include "memory.h"
 #include "system.h"
 
-extern const f32 float_0p125_80422330;
 
 EffectEntry* effUranokoEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
@@ -77,14 +76,14 @@ void effUranokoMain(EffectEntry* effect) {
 	}
 	else {
 		f32 t;
+		f32 k = 0.125f;
 		data->field_0x18++;
 		t = 1.0f - data->scale;
-		data->scale = t * float_0p125_80422330 + data->scale;
+		data->scale = t * k + data->scale;
 		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effUranokoDisp, effect);
 	}
 }
 
-// NONMATCHING (99.87%): same instructions; only register numbers or operands differ.
 void effUranokoDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effUranokoData* data = effect->userdata;
@@ -93,6 +92,7 @@ void effUranokoDisp(CameraId camId, void* param) {
 	Mtx scale;
 	Mtx rot;
 	f32 deg;
+	f32 rad;
 	f32 s;
 
 	if (data->animId == -1) {
@@ -103,8 +103,10 @@ void effUranokoDisp(CameraId camId, void* param) {
 	s = data->scale * data->baseScale;
 	PSMTXScale(scale, s, s, s);
 	cam = camGetPtr(camId);
+	rad = -cam->viewYaw;
 	deg = 0.017453292f;
-	PSMTXRotRad(rot, 'y', -cam->viewYaw * deg);
+	rad = deg * rad;
+	PSMTXRotRad(rot, 'y', rad);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, trans);
 	animPoseSetMaterialFlagOn(data->animId, 0x40);

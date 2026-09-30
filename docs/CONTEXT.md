@@ -2212,3 +2212,9 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
 ## Grind 17 (Claude #3)
 
 - **battle_unit_event** linked: `BattleRunPhaseEvent` entered the event only when the code pointer was NULL (`if (!code)`); retail has `if (code)`. Declaration order `valid` before `i` in `BattleCheckEndUnitInitEvent`.
+- **eff_scanning**, **eff_uranoko**, **eff_peach_fukidashi** linked. `effScanningMain` calls `animGroupBaseAsync` (the
+  commented-out call was real) and copies its `Vec` through a second local; `effScanningDisp` written. The `fmuls f1, f0, f1`
+  operand order of `-cam->viewYaw * deg2rad` comes from `rad = -cam->viewYaw; rad = deg * rad;` (a `rad` temp). A pooled
+  constant order (1.0 before 0.125) came from `f32 k = 0.125f;` (uranoko). Named `.sdata2` constants: `extern const f32` in the
+  uses, then the definitions in address order after the last function, so the code loads them by symbol and the section
+  matches; the functions go in reverse address order in the source (peach_fukidashi).
