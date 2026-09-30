@@ -1318,6 +1318,7 @@ BattleUnitDefense queen_defence = { { 1, 1, 1, 1, 1 } };
 
 BattleUnitDefenseAttr queen_defence_attr = { { 0, 0, 0, 0, 0 } };
 
+
 BattleVulnerableStatus queen_regist = {
     30,  // sleepRate
     30,  // stopRate
@@ -4431,37 +4432,10 @@ EVT_BEGIN(queen_hand_small_wait_event)
 EVT_END()
 
 // TODO: type
-u32 hand_wp[1] = {
-    0x00000000,
-};
+u32 hand_wp[1];
 
 // TODO: type
-u32 hand_data[96] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+u32 hand_data[96];
 
 // TODO: write queen_hand_small_drag_4_evt (global, 0x180 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
@@ -4588,7 +4562,7 @@ typedef struct ShadowQueenData {
                     ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));                         \
                     ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));                         \
                     if (elem->field_0x00 != 0) {                                                           \
-                        ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;                        \
+                        ((f32*)pose->matrix)[0] *= -1.0f;                                                 \
                     }                                                                                     \
                 }                                                                                         \
                 HAND->field_0x4AC++;                                                                      \
@@ -4712,6 +4686,8 @@ USER_FUNC(make_pattern) {
     return EVT_RETURN_DONE;
 }
 
+// dont_inline keeps pose_init a real `bl` from hand_init as in retail.
+#pragma dont_inline on
 static void pose_init(void) {
     char name1[0x20];
     char name2[0x20];
@@ -4749,6 +4725,7 @@ static void pose_init(void) {
     } while (data->str1 != NULL);
     HAND->field_0x4A4++;
 }
+#pragma dont_inline reset
 
 static void pose_main(void) {
     ExtPose* pose;
@@ -4787,6 +4764,7 @@ static void pose_main(void) {
     }
 }
 
+// NONMATCHING (98.47%): register allocation and scheduling differ.
 static void hand_init(void) {
     s32 i;
     ExtPose* pose;
@@ -4821,7 +4799,7 @@ void hand_draw(void) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (98.9%): 43 of 166 instructions differ in operands only (registers or offsets)
+// NONMATCHING (98.97%): 43 of 166 instructions differ in operands only (registers or offsets)
 void hand_main(void) {
     ExtPose* pose;
     HandElem* elem;
@@ -4846,7 +4824,7 @@ void hand_main(void) {
             ((f32*)pose->matrix)[11] = elem->field_0x20;
         } else {
             BattleUnit* unit;
-            f32 x, y, z, hx, hy, hz;
+            f32 hz, hy, hx, z, y, x;
             BattleGetUnitPtr(_battleWorkPointer, unitId);
             unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
             BtlUnit_GetPos(unit, &x, &y, &z);
@@ -4930,7 +4908,6 @@ USER_FUNC(eff_queen_set_alpha_evt) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.96%): 23 of 279 instructions differ in operands only (registers or offsets)
 USER_FUNC(peach_hand1000_dark_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -4963,7 +4940,7 @@ USER_FUNC(peach_hand1000_dark_drag_1_evt) {
                 ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
                 ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->field_0x00 != 0) {
-                    ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;
+                    ((f32*)pose->matrix)[0] *= -1.0f;
                 }
             }
             HAND->field_0x4AC++;
@@ -5039,7 +5016,6 @@ USER_FUNC(queen_get_aud_num) {
 
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_1_evt, 0.0f, -80.0f)
 
-// NONMATCHING (99.95%): 21 of 226 instructions differ in operands only (registers or offsets)
 USER_FUNC(queen_hp_drain_2_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5073,7 +5049,7 @@ USER_FUNC(queen_hp_drain_2_evt) {
                 ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
                 ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->field_0x00 != 0) {
-                    ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;
+                    ((f32*)pose->matrix)[0] *= -1.0f;
                 }
             }
             HAND->field_0x4AC++;
@@ -5172,7 +5148,11 @@ USER_FUNC(slot_init) {
 
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_entry_evt)
 
-// NONMATCHING (99.96%): 26 of 295 instructions differ in operands only (registers or offsets)
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_dead_evt, 0.0f, -80.0f)
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_4_evt, 0.0f, -80.0f)
+DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_drag_3_evt)
+DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_2_evt, 0.0f, -80.0f)
+
 USER_FUNC(queen_hand_small_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5205,7 +5185,7 @@ USER_FUNC(queen_hand_small_drag_1_evt) {
                 ((f32*)pose->matrix)[0] = 50.0f / (50.0f + (f32)irand(0x32));
                 ((f32*)pose->matrix)[5] = 50.0f / (50.0f + (f32)irand(0x32));
                 if (elem->field_0x00 != 0) {
-                    ((f32*)pose->matrix)[0] = ((f32*)pose->matrix)[0] * -1.0f;
+                    ((f32*)pose->matrix)[0] *= -1.0f;
                 }
             }
             HAND->field_0x4AC++;
@@ -5265,15 +5245,6 @@ USER_FUNC(queen_hand_small_drag_1_evt) {
     }
     return EVT_RETURN_BLOCK;
 }
-
-DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_2_evt, 0.0f, -80.0f)
-
-DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_drag_3_evt)
-
-DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_4_evt, 0.0f, -80.0f)
-
-DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_dead_evt, 0.0f, -80.0f)
-
 USER_FUNC(queen_hand_small_1000hand_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5305,7 +5276,7 @@ USER_FUNC(queen_hand_small_1000hand_1_evt) {
             for (i = 0; i < HAND->count; i++, elem++) {
                 if ((i % 10) <= HAND->field_0x4A8 / 3) {
                     elem->field_0x18 -= 3.0f;
-                    elem->field_0x1C -= 0.3f * (f32)cos((f32)elem->field_0x12 / 6.0f);
+                    elem->field_0x1C -= (f32)cos((f32)elem->field_0x12 / 6.0f) * 0.3f;
                     elem->field_0x12++;
                     if (elem->field_0x12 >= 0x870) {
                         elem->field_0x12 -= 0x870;

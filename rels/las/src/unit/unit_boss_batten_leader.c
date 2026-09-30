@@ -19,10 +19,13 @@
 #include "manager/evtmgr_cmd.h"
 #include "driver/animdrv.h"
 #include "eff/n64/eff_pokopi_thunder_n64.h"
+#include "eff/n64/eff_glass_n64.h"
 #include "memory.h"
 #include "driver/mapdrv.h"
 #include "system.h"
 #include "eff/eff_syuryou.h"
+#include "math_ext.h"
+#include <stdlib.h>
 
 #pragma pool_data off
 
@@ -1217,47 +1220,10 @@ EVT_BEGIN(light_rod_anim_rtn)
     RETURN
 EVT_END()
 
-// NONMATCHING (92.18%): register allocation swaps args/unitId (orig r30/r31, ours r31/r30) and the
-// original emits `mr r0,r3; mr r4,r0` around the BattleTransID call.
-USER_FUNC(btlevtcmd_AnimeGetPose) {
-    s32* args = event->args;
-    s32 unitId = BattleTransID(event, evtGetValue(event, args[0]));
-    evtSetValue(event, args[2],
-                (s32)animPoseGetCurrentAnim(*(s32*)((u8*)BattleGetUnitPartsPtr(unitId, evtGetValue(event, args[1])) + 0x1C0)));
-    return EVT_RETURN_DONE;
-}
 
-static USER_FUNC(enzan_lw_save) {
-    s32 i;
-    for (i = 0; i < 16; i++) {
-        xlw[i] = event->lwData[i];
-    }
-    return EVT_RETURN_DONE;
-}
 
-static USER_FUNC(enzan_lw_load) {
-    s32 i;
-    for (i = 0; i < 16; i++) {
-        event->lwData[i] = xlw[i];
-    }
-    return EVT_RETURN_DONE;
-}
 
-USER_FUNC(enzan_lw_save2) {
-    s32 i;
-    for (i = 0; i < 16; i++) {
-        xlw2[i] = event->lwData[i];
-    }
-    return EVT_RETURN_DONE;
-}
 
-USER_FUNC(enzan_lw_load2) {
-    s32 i;
-    for (i = 0; i < 16; i++) {
-        event->lwData[i] = xlw2[i];
-    }
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(light_pose_change)
     CALL(enzan_lw_save2)
@@ -1381,17 +1347,6 @@ EVT_BEGIN(light_pose_change)
     RETURN
 EVT_END()
 
-USER_FUNC(datastrcopy) {
-    s8* src = (s8*)evtGetValue(event, event->args[0]);
-    s8* dst = (s8*)xmemo;
-    s32 i = 0;
-    while (i < 16 && src[i] != 0) {
-        dst[i] = src[i];
-        i++;
-    }
-    ((s8*)xmemo)[i] = 0;
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(maiframeanimcheck)
     LOOP(0)
@@ -1405,47 +1360,8 @@ EVT_BEGIN(maiframeanimcheck)
     RETURN
 EVT_END()
 
-// NONMATCHING (98.25%): only the `mr r0,r3; mr r4,r0` shuffle before BattleGetUnitPtr differs.
-USER_FUNC(_set_draw_callback) {
-    BattleWork* wp;
-    BattleUnit* unit;
-    BattleUnitPart *part1, *part3, *part4, *part5, *part6, *part7;
-    wp = _battleWorkPointer;
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, -2));
-    part1 = BtlUnit_GetPartsPtr(unit, 1);
-    animPoseSetDispCallBack(*(s32*)((u8*)part1 + 0x1C0), _light_point_callback, part1);
-    part3 = BtlUnit_GetPartsPtr(unit, 3);
-    part4 = BtlUnit_GetPartsPtr(unit, 4);
-    part5 = BtlUnit_GetPartsPtr(unit, 5);
-    part6 = BtlUnit_GetPartsPtr(unit, 6);
-    part7 = BtlUnit_GetPartsPtr(unit, 7);
-    part3->attributes |= 0x01000000;
-    part4->attributes |= 0x01000000;
-    part5->attributes |= 0x01000000;
-    part6->attributes |= 0x01000000;
-    part7->attributes |= 0x01000000;
-    return EVT_RETURN_DONE;
-}
 
-// NONMATCHING (91.93%): same register allocation / `mr r0,r3` difference as btlevtcmd_AnimeGetPose.
-USER_FUNC(btl_hitoffsetx) {
-    s32* args = event->args;
-    s32 unitId = BattleTransID(event, evtGetValue(event, args[0]));
-    BattleUnitPart* part = BattleGetUnitPartsPtr(unitId, evtGetValue(event, args[1]));
-    part->field_0x1A0 = evtGetValue(event, args[2]);
-    return EVT_RETURN_DONE;
-}
 
-USER_FUNC(pose_check_evt_run) {
-    xevt[0] = evtEntryType(maiframeanimcheck, event->priority, 0, event->type);
-    xevt[0]->unitId = event->unitId;
-    xevt[0]->ownerNPC = event->ownerNPC;
-    ((u8*)xmemo)[0] = 0;
-    xevt[0]->lwData[0] = (s32)xmemo;
-    xevt[0]->uwBase = event->uwBase;
-    xevt[0]->ufBase = event->ufBase;
-    return EVT_RETURN_DONE;
-}
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
@@ -1491,24 +1407,7 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: write check_satellite (global, 0x418 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
 
-// NONMATCHING (96.9%): _battleWorkPointer load order and one float register differ.
-static USER_FUNC(eff_staff) {
-    s32* args = event->args;
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, evtGetValue(event, args[0])));
-    u8* data = (u8*)effSyuryouEntry(0, 0x5A, 0.0f, -1000.0f, 0.0f)->userdata;
-    f32 x, y, z;
-    f32 faceDir;
-    BtlUnit_GetPos(unit, &x, &y, &z);
-    faceDir = (f32)unit->faceDirection;
-    *(f32*)(data + 0x4) = 6.0f * (*(f32*)((u8*)unit + 0x114) * faceDir) + x;
-    *(f32*)(data + 0x8) = 68.0f * *(f32*)((u8*)unit + 0x114) + y;
-    *(f32*)(data + 0xC) = 5.0f + z;
-    *(f32*)(data + 0x10) = *(f32*)((u8*)unit + 0x114);
-    return EVT_RETURN_DONE;
-}
 
 static EVT_BEGIN(entry_event)
     CALL(btlevtcmd_StatusWindowOnOff, 0)
@@ -1560,19 +1459,6 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// NONMATCHING (95.53%): only the `mr r0,r3; mr r4,r0` shuffle before BattleTransID differs.
-USER_FUNC(unk_las_0000d538) {
-    s32* args;
-    BattleWork* wp;
-    BattleUnit* unit;
-    args = event->args;
-    wp = _battleWorkPointer;
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, evtGetValue(event, args[0])));
-    if (unit != NULL) {
-        unit->hpGauge.field_0x2 |= 1;
-    }
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(damage_sub_event)
     CALL(btlevtcmd_CheckDamageCode, LW(10), 256, LW(0))
@@ -1705,10 +1591,6 @@ EVT_BEGIN(monster_before_phase_event)
     RETURN
 EVT_END()
 
-USER_FUNC(pose_check_evt_stop) {
-    evtDeleteID(xevt[0]->eventId);
-    return EVT_RETURN_DONE;
-}
 
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_WaitAttackEnd)
@@ -1954,8 +1836,6 @@ static EVT_BEGIN(satellite_blur_off)
     RETURN
 EVT_END()
 
-// TODO: write battenSatelliteToOutside (global, 0x914 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(sub_call_satellite)
     CALL(btlevtcmd_GetUnitId, -2, LW(4))
@@ -1988,8 +1868,6 @@ EVT_BEGIN(sub_call_satellite)
     RETURN
 EVT_END()
 
-// TODO: write battenSatelliteToInside (global, 0x830 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(player_before_phase_event)
     CALL(btlevtcmd_StopWaitEvent, -2)
@@ -2115,18 +1993,6 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-USER_FUNC(evt_eff_pokopi_thunder) {
-    s32* args = event->args;
-    f32 f31;
-    f32 f30 = evtGetFloat(event, args[0]);
-    f32 f29 = evtGetFloat(event, args[1]);
-    f32 f28 = evtGetFloat(event, args[2]);
-    f31 = 250.0f + f29;
-    effPokopiThunderN64Entry(0, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
-    effPokopiThunderN64Entry(1, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
-    effPokopiThunderN64Entry(1, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(batten_leader_thunder_attack_event)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_SRYO_STUFF_PUTOUT1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -2664,41 +2530,507 @@ static EVT_BEGIN(wait_event)
 EVT_END()
 
 // TODO: type
-EventEntry* xevt[1] = {
-    NULL,
-};
+EventEntry* xevt[1];
 
 // TODO: type
-u32 xmemo[5] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
-};
+u32 xmemo[5];
 
 // TODO: type
-u32 xlw2[16] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
+u32 xlw2[16];
 
 // TODO: type
-static u32 xlw[16] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static u32 xlw[16];
+
+f32 maer;
+
+Vec nowv;
+
+
+
+
+static const Vec VecData[10] = {
+    { 38.0f, 45.0f, 5.0f },
+    { 38.0f, 45.0f, 5.0f },
+    { -38.0f, 45.0f, 5.0f },
+    { 0.0f, 83.0f, 5.0f },
+    { 38.0f, 7.0f, 5.0f },
+    { -38.0f, 7.0f, 5.0f },
+    { 38.0f, 83.0f, 5.0f },
+    { -38.0f, 83.0f, 5.0f },
+    { 38.0f, 7.0f, 5.0f },
+    { -38.0f, 7.0f, 5.0f },
 };
 
-// TODO: type
-u32 maer[1] = {
-    0x00000000,
-};
 
-// TODO: type
-u32 nowv[3] = {
-    0x00000000, 0x00000000, 0x00000000,
-};
+
+
+// clang-format on
+
+
+
+USER_FUNC(evt_eff_pokopi_thunder) {
+    s32* args = event->args;
+    f32 f31;
+    f32 f30 = evtGetFloat(event, args[0]);
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f28 = evtGetFloat(event, args[2]);
+    f31 = 250.0f + f29;
+    effPokopiThunderN64Entry(0, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
+    effPokopiThunderN64Entry(1, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
+    effPokopiThunderN64Entry(1, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_eff_colorchange00) {
+    EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
+    *(s32*)((u8*)effect->userdata + 0x18) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x1C) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x20) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x28) = 0xFF;
+    *(s32*)((u8*)effect->userdata + 0x2C) = 0xF5;
+    *(s32*)((u8*)effect->userdata + 0x30) = 0;
+    *(f32*)((u8*)effect->userdata + 0x8) = 65.0f + *(f32*)((u8*)effect->userdata + 0x8);
+    *(f32*)((u8*)effect->userdata + 0xC) = 10.0f + *(f32*)((u8*)effect->userdata + 0xC);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_eff_barriersizechange) {
+    s32* args = event->args;
+    EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, args[0]));
+    *(f32*)((u8*)effect->userdata + 0x10) = evtGetFloat(event, args[1]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_eff_firechange00) {
+    s32* args = event->args;
+    EffectEntry* eff;
+    s32 mode;
+    Vec target;
+    Vec pos;
+    Vec v;
+    Mtx mtx;
+    BOOL flag;
+    f32 angle;
+    f32 tmp2;
+
+    eff = effNameToPtr((const char*)evtGetValue(event, args[0]));
+    mode = evtGetValue(event, args[1]);
+    target.x = (f32)evtGetValue(event, args[2]);
+    target.y = (f32)evtGetValue(event, args[3]);
+    target.z = 0.0f;
+    pos.x = *(f32*)((u8*)eff->userdata + 0x38);
+    pos.y = *(f32*)((u8*)eff->userdata + 0x3C);
+    pos.z = 0.0f;
+    if (isFirstCall) {
+        event->field_84 = 0;
+        if (mode == 0) {
+            PSVECSubtract(&target, &pos, &nowv);
+            PSVECNormalize(&nowv, &nowv);
+            maer = (f32)((rand() % 60) - 30);
+            maer += (f32)((maer < 0.0f) ? -30 : 31);
+            *(s32*)((u8*)eff->userdata + 0x18) = 0xFF;
+            *(s32*)((u8*)eff->userdata + 0x1C) = 0xFF;
+            *(s32*)((u8*)eff->userdata + 0x20) = 0xFF;
+            *(s32*)((u8*)eff->userdata + 0x28) = 0xFF;
+            *(s32*)((u8*)eff->userdata + 0x2C) = 0x41;
+            *(s32*)((u8*)eff->userdata + 0x30) = 0x14;
+        }
+    }
+    switch (event->field_84) {
+        case 0:
+            break;
+        case 1:
+            target.x = -2700.0f;
+            break;
+    }
+    PSVECSubtract(&target, &pos, &v);
+    flag = 0;
+    if (PSVECSquareMag(&v) > 2500.0f) {
+        maer += (f32)((rand() % 41) - 20);
+        if (maer > 80.0f || maer < -80.0f || (maer < 20.0f && maer > -20.0f)) {
+            maer = (f32)((rand() % 60) - 30);
+            maer += (f32)((maer < 0.0f) ? -30 : 31);
+            flag = 1;
+        }
+        PSMTXRotRad(mtx, 'Z', 0.017453292f * maer);
+        PSMTXMultVec(mtx, &v, &v);
+    } else {
+        flag = 1;
+    }
+    PSVECNormalize(&v, &v);
+    angle = angleABf(0.0f, 0.0f, nowv.x, nowv.y);
+    tmp2 = angleABf(0.0f, 0.0f, v.x, v.y);
+    angle = compAngle(angle, tmp2);
+    if (flag == 0) {
+        f32 absangle = (angle >= 0.0f) ? angle : -angle;
+        if (absangle > 15.0f) {
+            angle = angle > 0.0f ? 15.0f : -15.0f;
+        }
+    }
+    PSMTXRotRad(mtx, 'Z', 0.017453292f * angle);
+    PSMTXMultVec(mtx, &nowv, &nowv);
+    PSVECScale(&nowv, &v, 15.0f);
+    PSVECAdd(&pos, &v, &pos);
+    if (pos.y < 10.0f) {
+        if (*(f32*)((u8*)eff->userdata + 0x3C) >= 10.0f) {
+            nowv.y = -nowv.y;
+        } else if (nowv.y < 0.0f) {
+            nowv.y = -nowv.y;
+        }
+    }
+    *(f32*)((u8*)eff->userdata + 0x38) = pos.x;
+    *(f32*)((u8*)eff->userdata + 0x3C) = pos.y;
+    switch (event->field_84) {
+        case 0:
+            if (PSVECSquareDistance(&pos, &target) < 225.0f) {
+                if (mode != 0) {
+                    event->field_84 = 1;
+                } else {
+                    return 1;
+                }
+            }
+            break;
+        case 1:
+            if (pos.x <= -270.0f) {
+                effSoftDelete(eff);
+                return 1;
+            }
+            break;
+    }
+    return 0;
+}
+
+static USER_FUNC(eff_staff) {
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 id;
+    u8* data;
+    f32 x, y, z;
+    f32 faceDir;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    data = (u8*)effSyuryouEntry(0, 0x5A, 0.0f, -1000.0f, 0.0f)->userdata;
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    faceDir = (f32)unit->faceDirection;
+    *(f32*)(data + 0x4) = 6.0f * (*(f32*)((u8*)unit + 0x114) * faceDir) + x;
+    *(f32*)(data + 0x8) = 68.0f * *(f32*)((u8*)unit + 0x114) + y;
+    *(f32*)(data + 0xC) = 5.0f + z;
+    *(f32*)(data + 0x10) = *(f32*)((u8*)unit + 0x114);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(check_satellite) {
+    BattleWork* wp;
+    BattleUnit* unit;
+    s32 count;
+    s32 i;
+    s32 haveAll;
+    s32 id;
+    id = BattleTransID(event, -2);
+    wp = _battleWorkPointer;
+    unit = BattleGetUnitPtr(wp, id);
+    count = 0;
+    haveAll = 0;
+    if (unit == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    for (i = 9; i < 13; i++) {
+        if (unit->work[i] != -1) {
+            if (BattleGetUnitPtr(_battleWorkPointer, unit->work[i]) != NULL) {
+                count++;
+            } else {
+                unit->work[i] = -1;
+            }
+        }
+    }
+    if (count >= 4) {
+        haveAll = 1;
+    }
+    if (haveAll == 0) {
+        BattleUnitPart* bodyPart = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+        BattleUnitPart* part2 = BtlUnit_GetPartsPtr(unit, 2);
+        f32 x, y, z;
+        if (bodyPart->attributes & 0x40000000) {
+            EventEntry* evt = evtEntryType(hakai_snd_event, event->priority, 0, event->type);
+            evt->unitId = event->unitId;
+            evt->ownerNPC = event->ownerNPC;
+            for (i = 0; i < 16; i++) {
+                evt->lwData[i] = event->lwData[i];
+            }
+            for (i = 0; i < 3; i++) {
+                evt->lfData[i] = event->lfData[i];
+            }
+            evt->uwBase = event->uwBase;
+            evt->ufBase = event->ufBase;
+            effDelete((EffectEntry*)unit->work[8]);
+            unit->work[8] = 0;
+            BtlUnit_GetPos(unit, &x, &y, &z);
+            for (i = 0; i < 20; i++) {
+                s32 w = BtlUnit_GetWidth(unit) + 15;
+                s32 h = BtlUnit_GetHeight(unit) + 15;
+                s32 rx = irand(w) - w / 2;
+                s32 ry = irand(h) - h / 2;
+                effGlassN64Entry(2, 0x3C, x + (f32)rx, y + (f32)ry, z, 1.0f);
+            }
+        }
+        bodyPart->attributes &= ~0x40000000;
+        part2->attributes &= ~0x20000000;
+        bodyPart->defenseAttr = &defence_attr;
+        for (i = 0; i < 5; i++) {
+            bodyPart->defense->defenses[i] = defencecopy[i];
+        }
+        bodyPart->defense->defenses[0] += count;
+    } else {
+        BattleUnitPart* bodyPart = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+        BattleUnitPart* part2 = BtlUnit_GetPartsPtr(unit, 2);
+        f32 a, b, c;
+        f32 x, y, z;
+        if (!(bodyPart->attributes & 0x40000000)) {
+            BtlUnit_snd_se(unit, "SFX_BOSS_SRYO_LIGHT_ROUND1", 0xF1194D80, 0);
+            BtlUnit_GetPos(unit, &a, &b, &c);
+            unit->work[8] = (s32)effSyuryouEntry(1, 0x3E8, 0.0f, -1000.0f, 0.0f);
+        }
+        if (unit->work[8] != 0) {
+            u8* data = (u8*)((EffectEntry*)unit->work[8])->userdata;
+            BtlUnit_GetPos(unit, &x, &y, &z);
+            *(f32*)(data + 0x4) = x;
+            *(f32*)(data + 0x8) = y - 12.5f * *(f32*)((u8*)unit + 0x114);
+            *(f32*)(data + 0xC) = z + 10.0f;
+            *(f32*)(data + 0x10) = 2.5f * *(f32*)((u8*)unit + 0x114);
+        }
+        bodyPart->attributes |= 0x40000000;
+        part2->attributes |= 0x20000000;
+        bodyPart->defenseAttr = &defence_attr_muteki;
+        for (i = 0; i < 5; i++) {
+            bodyPart->defense->defenses[i] = defencecopy[i];
+        }
+        bodyPart->defense->defenses[0] += count;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.88%): `wp` gets r29 (reused for `unit`) instead of the original r26.
+USER_FUNC(battleGetBattenSatelliteInitPos) {
+    s32* args = event->args;
+    BattleUnit* unit;
+    BattleWork* wp;
+    s32 a, c;
+    s32 i, j;
+    s32 arg0, arg3, arg4, arg5;
+    const Vec* data;
+    wp = _battleWorkPointer;
+    arg0 = evtGetValue(event, args[0]);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, arg0));
+    a = evtGetValue(event, args[1]);
+    c = evtGetValue(event, args[2]);
+    arg3 = args[3];
+    arg4 = args[4];
+    arg5 = args[5];
+    data = VecData;
+    for (i = 0; i < a; i++) {
+        for (j = 0; j < i; j++) {
+            data++;
+        }
+    }
+    for (i = 0; i < c; i++) {
+        data++;
+    }
+    evtSetValue(event, arg3, (s32)(data->x * (f32)unit->faceDirection));
+    evtSetValue(event, arg4, (s32)data->y);
+    evtSetValue(event, arg5, (s32)data->z);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(btlevtcmd_AnimeGetPose) {
+    s32 unitId;
+    s32 arg0, arg1;
+    s32* args;
+    args = event->args;
+    arg0 = evtGetValue(event, args[0]);
+    unitId = BattleTransID(event, arg0);
+    arg1 = evtGetValue(event, args[1]);
+    evtSetValue(event, args[2],
+                (s32)animPoseGetCurrentAnim(*(s32*)((u8*)BattleGetUnitPartsPtr(unitId, arg1) + 0x1C0)));
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_lw_save) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        xlw[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_lw_load) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(enzan_lw_save2) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        xlw2[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(enzan_lw_load2) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw2[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(datastrcopy) {
+    s8* src = (s8*)evtGetValue(event, event->args[0]);
+    s8* dst = (s8*)xmemo;
+    s32 i = 0;
+    while (i < 16 && src[i] != 0) {
+        dst[i] = src[i];
+        i++;
+    }
+    ((s8*)xmemo)[i] = 0;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(pose_check_evt_run) {
+    xevt[0] = evtEntryType(maiframeanimcheck, event->priority, 0, event->type);
+    xevt[0]->unitId = event->unitId;
+    xevt[0]->ownerNPC = event->ownerNPC;
+    ((u8*)xmemo)[0] = 0;
+    xevt[0]->lwData[0] = (s32)xmemo;
+    xevt[0]->uwBase = event->uwBase;
+    xevt[0]->ufBase = event->ufBase;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(pose_check_evt_stop) {
+    evtDeleteID(xevt[0]->eventId);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(btl_hitoffsetx) {
+    s32 unitId;
+    BattleUnitPart* part;
+    s32 arg0, arg1, arg2;
+    s32* args;
+    args = event->args;
+    arg0 = evtGetValue(event, args[0]);
+    unitId = BattleTransID(event, arg0);
+    arg1 = evtGetValue(event, args[1]);
+    part = BattleGetUnitPartsPtr(unitId, arg1);
+    arg2 = evtGetValue(event, args[2]);
+    part->field_0x1A0 = arg2;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_set_draw_callback) {
+    BattleWork* wp;
+    BattleUnit* unit;
+    BattleUnitPart *part1, *part3, *part4, *part5, *part6, *part7;
+    s32 id;
+    wp = _battleWorkPointer;
+    id = BattleTransID(event, -2);
+    unit = BattleGetUnitPtr(wp, id);
+    part1 = BtlUnit_GetPartsPtr(unit, 1);
+    animPoseSetDispCallBack(*(s32*)((u8*)part1 + 0x1C0), _light_point_callback, part1);
+    part3 = BtlUnit_GetPartsPtr(unit, 3);
+    part4 = BtlUnit_GetPartsPtr(unit, 4);
+    part5 = BtlUnit_GetPartsPtr(unit, 5);
+    part6 = BtlUnit_GetPartsPtr(unit, 6);
+    part7 = BtlUnit_GetPartsPtr(unit, 7);
+    part3->attributes |= 0x01000000;
+    part4->attributes |= 0x01000000;
+    part5->attributes |= 0x01000000;
+    part6->attributes |= 0x01000000;
+    part7->attributes |= 0x01000000;
+    return EVT_RETURN_DONE;
+}
+
+void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx) {
+    BattleUnit* unit = part->mOwner;
+    s32 pose = *(s32*)((u8*)part + 0x1C0);
+    s32 idx;
+    if (strcmp("locator6", animPoseGetGroupName(pose, group)) == 0) {
+        idx = 0;
+    } else if (strcmp("locator9", animPoseGetGroupName(pose, group)) == 0) {
+        idx = 1;
+    } else if (strcmp("locator8", animPoseGetGroupName(pose, group)) == 0) {
+        idx = 2;
+    } else if (strcmp("locator7", animPoseGetGroupName(pose, group)) == 0) {
+        idx = 3;
+    } else if (strcmp("locator5", animPoseGetGroupName(pose, group)) == 0) {
+        idx = 4;
+    } else {
+        idx = -1;
+    }
+    switch (idx) {
+    case 0: {
+        s32 pose3 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 3) + 0x1C0);
+        s32 shape = animPoseGetShapeIdx(pose3, "pPlaneShape34");
+        animPoseDrawShape(pose3, shape);
+        break;
+    }
+    case 1: {
+        s32 pose4 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 4) + 0x1C0);
+        s32 shape = animPoseGetShapeIdx(pose4, "pPlaneShape37");
+        animPoseDrawShape(pose4, shape);
+        break;
+    }
+    case 2: {
+        s32 pose5 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 5) + 0x1C0);
+        s32 shape = animPoseGetShapeIdx(pose5, "pPlaneShape36");
+        animPoseDrawShape(pose5, shape);
+        break;
+    }
+    case 3: {
+        s32 pose6 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 6) + 0x1C0);
+        s32 shape = animPoseGetShapeIdx(pose6, "pPlaneShape35");
+        animPoseDrawShape(pose6, shape);
+        break;
+    }
+    case 4: {
+        s32 pose7 = *(s32*)((u8*)BtlUnit_GetPartsPtr(unit, 7) + 0x1C0);
+        s32 shape = animPoseGetShapeIdx(pose7, "pPlaneShape36");
+        animPoseDrawShape(pose7, shape);
+        break;
+    }
+    }
+}
+
+// NONMATCHING (99.28%): `_battleWorkPointer` scratch register is r5 in ours, r4 in the original (args load uses the other).
+USER_FUNC(unk_las_0000d538) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    s32 arg = evtGetValue(event, event->args[0]);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, arg));
+    if (unit != NULL) {
+        unit->hpGauge.field_0x2 |= 1;
+    }
+    return EVT_RETURN_DONE;
+}
+
+s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
+    u8* data;
+    struct BattleUnit* sat;
+    data = (u8*)__memAlloc(4, 0x5C);
+    if (unit->work[9 + index] == -1) {
+        return 0;
+    }
+    unit->work[13 + index] = (s32)data;
+    *(s32*)(data + 0x0) = 5;
+    *(s32*)(data + 0x4) = (s32)table;
+    *(s32*)(data + 0x58) = 0;
+    spline_maketable(5, *(s32*)(data + 0x4), (s32*)(data + 8), (s32*)(data + 0x1C));
+    sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
+    BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
+    return 1;
+}
 
 s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     u8* data;
@@ -2732,51 +3064,160 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (90%): data init register scheduling (data in r7 vs r4) differs.
-s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
-    u8* data;
-    struct BattleUnit* sat;
-    data = (u8*)__memAlloc(4, 0x5C);
-    if (unit->work[9 + index] == -1) {
-        return 0;
-    }
-    unit->work[13 + index] = (s32)data;
-    *(s32*)(data + 0x0) = 5;
-    *(s32*)(data + 0x4) = (s32)table;
-    *(s32*)(data + 0x58) = 0;
-    spline_maketable(5, (s32)table, (s32*)(data + 8), (s32*)(data + 0x1C));
-    sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
-    BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
-    return 1;
-}
-
-// TODO: write _light_point_callback (global, 0x238 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write battleGetBattenSatelliteInitPos (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_eff_firechange00 (global, 0x58c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_batten_leader.s; this is where the original has it, just before the first script that uses it
-
-USER_FUNC(evt_eff_barriersizechange) {
+// NONMATCHING (84.2%): the original tests each satellite case with independent `if`s where ours chains them with
+// else-if, and it hoists the spline-table addresses out of the loop.
+USER_FUNC(battenSatelliteToInside) {
     s32* args = event->args;
-    EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, args[0]));
-    *(f32*)((u8*)effect->userdata + 0x10) = evtGetFloat(event, args[1]);
-    return EVT_RETURN_DONE;
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 i;
+    u8 haveAll;
+    s32 id;
+    s32 table;
+
+    id = evtGetValue(event, args[0]);
+    evtGetValue(event, args[1]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
+    if (isFirstCall) {
+        for (i = 0; i < 4; i++) {
+            if (unit->work[9 + i] == -1) {
+                continue;
+            }
+            part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + i]), 1);
+            table = part->work[1];
+            if (table == (s32)splineTableOut1_1) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn1_1);
+            } else if (table == (s32)splineTableOut2_1) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn2_1);
+            } else if (table == (s32)splineTableOut2_2) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn2_2);
+            } else if (table == (s32)splineTableOut3_1) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_1);
+            } else if (table == (s32)splineTableOut3_2) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_2);
+            } else if (table == (s32)splineTableOut3_3) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_3);
+            } else if (table == (s32)splineTableOut4_1) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_1);
+            } else if (table == (s32)splineTableOut4_2) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_2);
+            } else if (table == (s32)splineTableOut4_3) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_3);
+            } else if (table == (s32)splineTableOut4_4) {
+                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_4);
+            }
+        }
+    }
+    haveAll = 0;
+    for (i = 0; i < 4; i++) {
+        if ((u8)battenSatelliteTo_Main(unit, i) == 1) {
+            haveAll = 1;
+        }
+    }
+    return haveAll == 0 ? EVT_RETURN_DONE : 0;
 }
 
-// NONMATCHING (99.1%): only f0/f1 are swapped for the 10.0f/65.0f constants.
-USER_FUNC(evt_eff_colorchange00) {
-    EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
-    *(s32*)((u8*)effect->userdata + 0x18) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x1C) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x20) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x28) = 0xFF;
-    *(s32*)((u8*)effect->userdata + 0x2C) = 0xF5;
-    *(s32*)((u8*)effect->userdata + 0x30) = 0;
-    *(f32*)((u8*)effect->userdata + 0x8) += 65.0f;
-    *(f32*)((u8*)effect->userdata + 0xC) += 10.0f;
-    return EVT_RETURN_DONE;
+// NONMATCHING (90.61%): the inlined battenSatelliteTo_Init keeps `data` in r4 (original: r7) and reuses r25 for the table (original re-materialises it).
+USER_FUNC(battenSatelliteToOutside) {
+    s32* args = event->args;
+    s32 id;
+    s32 type;
+    BattleUnit* unit;
+    s32 i;
+    u8 haveAll;
+
+    id = evtGetValue(event, args[0]);
+    type = evtGetValue(event, args[1]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
+    if (isFirstCall) {
+        switch (type) {
+            case 1:
+                i = 0;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut1_1) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                break;
+            case 2:
+                i = 0;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut2_1) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                i++;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut2_2) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                break;
+            case 3:
+                i = 0;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut3_1) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                i++;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut3_2) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                i++;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut3_3) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                break;
+            case 4:
+                i = 0;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_1) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                i++;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_2) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                i++;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_3) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                i++;
+                for (;;) {
+                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_4) == 1) {
+                        break;
+                    }
+                    i++;
+                }
+                break;
+            default:
+                return EVT_RETURN_DONE;
+        }
+    }
+    haveAll = 0;
+    for (i = 0; i < 4; i++) {
+        if ((u8)battenSatelliteTo_Main(unit, i) == 1) {
+            haveAll = 1;
+        }
+    }
+    return haveAll == 0 ? EVT_RETURN_DONE : 0;
 }
-// clang-format on
