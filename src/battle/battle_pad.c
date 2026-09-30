@@ -174,7 +174,7 @@ u32 BattlePadMultiCheckRecordTrigger(s32 chan, s32 frame, s32 mask) {
 }
 
 // NONMATCHING (22.00%): 3 instructions differ, 6 missing.
-s32 BattlePadCheckNow(s32 mask) {
+u32 BattlePadCheckNow(s32 mask) {
 	return BattlePadMultiCheckNow(0, mask);
 }
 
