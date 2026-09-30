@@ -3019,6 +3019,12 @@ rounds twice as retail does instead of one fused multiply-subtract. puniModeAway
 inline them (42% -> 99.9%, 97.4%; the one exception to "no pragma without a match", since it states a fact about
 retail). Labels that blamed the wrong cause are rewritten.
 
+## Grind 40: eff_sandars linked; the named-prefix rule; two permuter wins (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **`eff_sandars` linked** by keeping the first constants named (`dat` x2, deg2rad, 32, 0.5, 16, i.e. up to the last one the original loads by name) and turning every later constant, the `Z_1` string and the `0.0f`/`1.0f` `MATCH_VOLATILE` views into literals: the literals pool in first-use order after the named ones, which is the original's interleaving, and a literal zero/one load then reads its own pool slot instead of a named slot at another offset (one byte in the dol). `tools/pool_prefix.py UNIT [--apply]` tries k = 0..n named constants (after `pool_define`) and reports the worst function and whether `.sdata2` is equal; `tools/pool_floats.py --keep=` does the conversion. For `eff_break`, `eff_mist2`, `eff_magic3`, `eff_peach_dust`, `eff_kemuri9` no k gives 100% with an equal pool (kemuri9: k>=7 is 100% but leaves the `0.0f`/`1.0f` literals of the vertex writes as extra entries; k=0..6 is 99.88%, an operand-order swap of the hoisted 0.5).
+- **Definitions before the code fold, after the code do not.** `mot_dokan` defines its named floats before the code (function 100%, but a second copy of every literal lands in `.sdata2`); moving the definitions after the code gives the right pool (with the `M_Z_1` string defined after `float_0`) but `mot_dokan` drops to 99.52% (hoisted loads in other registers). `countdown`: the `dat_` colours must be `extern const u32` + defined after the code, the zero word in `.sbss` is a `u32` declared before `wp`; a literal 300.0f (the pool needs it after the 0.5) drops `countDownMain` to 97.81%.
+- Permuter wins: `checkOneRevolution` 100% (a pointer to the ring head taken before the loop, `MUST_MATCH`), `unk_8017599c` 99.96% (scale `pos.y` before `pos.x`).
+
 ## Wave 40: DOL whole-file pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 At Claude #1's suggestion, the DOL files its near-miss waves leave behind: every open function either untouched and

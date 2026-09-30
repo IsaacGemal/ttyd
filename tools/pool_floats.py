@@ -51,7 +51,7 @@ n = 0
 for name, lit in vals.items():
     if name in keep:
         continue
-    pat = rf"^(?:extern )?const f32 {name}(?: = [^;]+)?;\n"
+    pat = rf"^(?:extern )?const (?:(?:MATCH_VOLATILE|volatile) )?f32 {name}(?: = [^;]+)?;\n"
     if not re.search(pat, text, re.M) and not re.search(rf"\b{name}\b", text):
         continue  # neither declared nor used here
     text = re.sub(pat, "", text, flags=re.M)

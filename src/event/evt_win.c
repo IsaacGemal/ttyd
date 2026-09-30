@@ -497,7 +497,7 @@ void unk_80175710(WinMgrEntry* entry) {
 	}
 }
 
-// NONMATCHING (99.74%): itemDataTable[].discount_price is s16 in the header but
+// NONMATCHING (99.96%): itemDataTable[].discount_price is s16 in the header but
 // the original uses lhz (u16); the two loads use a u16* cast. Remaining: int-to-
 // double literal names (@368/@369) and f2/f3/f4 float-register allocation.
 void unk_8017599c(WinMgrEntry* entry) {
@@ -526,8 +526,8 @@ void unk_8017599c(WinMgrEntry* entry) {
 		pos.y += float_30_8041dbf0;
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
-		pos.x *= (f32)gp->fbWidth * float_0p5_8041db60;
 		pos.y *= (f32)gp->efbHeight * float_0p5_8041db60;
+		pos.x *= (f32)gp->fbWidth * float_0p5_8041db60;
 #ifdef MUST_MATCH
 		sprintf(buf, str_8041DBAC, *(u16*)&itemDataTable[wp->field_0x8[i]].discount_price);
 #else
