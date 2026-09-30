@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "mri.h"
 #include <dolphin/mtx.h>
 #include <stdlib.h>
@@ -32,14 +33,6 @@
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 evt_puni_all_save[];
-extern s32 evt_puni_get_lsw_index[];
-extern s32 evt_puni_get_mode[];
-extern s32 evt_puni_get_trap_index[];
-extern s32 evt_puni_init_puni[];
-extern s32 evt_puni_set_lsw_index[];
-extern s32 evt_puni_set_position[];
-extern s32 evt_puni_set_trap_index[];
 
 // clang-format off
 extend_data(2,

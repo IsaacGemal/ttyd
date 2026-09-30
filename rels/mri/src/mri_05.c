@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "mri_05.h"
 #include "driver/effdrv.h"
 #include "eff/eff_puniballoon.h"
@@ -27,7 +28,6 @@
 #pragma force_active on
 extern s32 evt_mri_door_close[];
 extern s32 evt_mri_door_open[];
-extern s32 evt_target_set_soko[];
 
 // clang-format off
 extend_data(24,
