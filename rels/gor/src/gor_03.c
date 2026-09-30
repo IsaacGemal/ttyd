@@ -4940,8 +4940,6 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     }
 }
 
-// TODO: write slot_rotate_sub (global, 0x2e8 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
 // NONMATCHING (74.24%): constant address materialisation and angle address mode scheduled differently.
 s32 slot_rotate_sub(s32 arg0, u8* data, s32 index) {
     f32* slot = (f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4);
@@ -5003,8 +5001,6 @@ done:
     return changed;
 }
 
-// TODO: write slot_neon_sub (global, 0x42c bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_03.s; this is where the original has it, just before the first script that uses it
 // NONMATCHING (92.16%): register allocation of loop counters and lbzx vs lbz+offset differ.
 void slot_neon_sub(s32 arg0, u8* data, s32 arg2) {
     s32 i;

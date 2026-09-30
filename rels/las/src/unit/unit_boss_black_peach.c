@@ -1501,15 +1501,6 @@ u32 hair_offset[36] = {
     0x00000000, 0x41500000, 0x00000000, 0xC1A80000,
 };
 
-// TODO: write hand_main (global, 0x298 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write hand_init (static, 0x154 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write make_pattern (global, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(shadow_queen_1000)
     CALL(evt_npc_entry, STRING("dummy"), STRING("c_s_hand"))
     CALL(evt_npc_set_anim, STRING("dummy"), STRING("KRT_S_1"))
@@ -1871,12 +1862,6 @@ BattleUnitSetup entry_shadow_hand_small[1] = {
     { &unit_boss_shadow_hand_small, 1, 0x04000004, { 95.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: write peach_talk_synchro_shadow_head_evt (global, 0x260 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shadow_queen_connect (global, 0x1b8 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(peach_init_event)
     SET_VALUE(GW(8), -1)
     SET_VALUE(GW(9), -1)
@@ -1930,9 +1915,6 @@ EVT_BEGIN(peach_init_event)
     RETURN
 EVT_END()
 
-// TODO: write unk_las_0000af38 (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(peach_entry_event)
     WAIT_MS(2000)
     CALL(btlevtcmd_StatusWindowOnOff, 0)
@@ -1960,9 +1942,6 @@ EVT_BEGIN(peach_damage_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
-// TODO: write eff_queen_set_alpha_evt (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(peach_change_evt)
     CALL(btlevtcmd_StatusWindowOnOff, 0)
@@ -2124,9 +2103,6 @@ EVT_BEGIN(peach_dead_event)
     RETURN
 EVT_END()
 
-// TODO: write queen_thunder (global, 0x1c0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(peack_attack_black_thunder)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_peach_black_thunder_attack))
@@ -2213,9 +2189,6 @@ EVT_BEGIN(peack_attack_black_energy)
     CALL(btlevtcmd_CheckDamage, -2, -2, 1, PTR(&weapon_peach_black_energy_attack), 256, LW(5))
     RETURN
 EVT_END()
-
-// TODO: write peach_hand1000_dark_drag_1_evt (global, 0x45c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(peack_attack_dark_drag)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -2352,9 +2325,6 @@ EVT_BEGIN(peack_attack_dark_drag)
     CALL(evt_btl_camera_set_mode, 0, 0)
     RETURN
 EVT_END()
-
-// TODO: write queen_drain (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(peack_attack_drain)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -2541,9 +2511,6 @@ EVT_BEGIN(peach_wait_event)
     CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
     RETURN
 EVT_END()
-
-// TODO: write queen_kankyaku_delete_evt (global, 0x6c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(queen_init_event)
     CALL(btlevtcmd_GetMaxHp, -2, LW(0))
@@ -2795,19 +2762,10 @@ EVT_END()
 // TODO: write queen_hp_drain_5_evt (global, 0x370 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write queen_hp_drain_4_evt (global, 0x18c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write queen_hp_drain_3_evt (global, 0x180 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write queen_hp_drain_2_evt (global, 0x388 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write queen_hp_drain_1_evt (global, 0x180 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write queen_get_aud_num (global, 0x48 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(queen_hp_drain_evt)
@@ -3799,9 +3757,6 @@ EVT_BEGIN(queen_wait_event)
     RETURN
 EVT_END()
 
-// TODO: write slot_init (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(queen_entry_event)
     WAIT_MS(2000)
     CALL(btlevtcmd_StatusWindowOnOff, 0)
@@ -4227,9 +4182,6 @@ EVT_BEGIN(queen_hand_small_init_event)
     RETURN
 EVT_END()
 
-// TODO: write queen_hand_small_drag_1_evt (global, 0x49c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write queen_hand_small_drag_2_evt (global, 0x180 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
@@ -4333,9 +4285,6 @@ EVT_END()
 // TODO: write queen_hand_small_1000hand_2_evt (global, 0x370 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write queen_hand_small_1000hand_1_evt (global, 0x1fc bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(queen_hand_small_1000hand_attack)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_peach_black_1000hand_attack))
@@ -4437,9 +4386,6 @@ EVT_BEGIN(queen_hand_small_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write queen_hand_small_1000hand_set_offset_evt (global, 0xfc bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(queen_hand_small_damage_event)
     IF_INT_EQUAL(GW(18), 0)
         SET_VALUE(GW(18), 1)
@@ -4518,21 +4464,6 @@ u32 hand_data[96] = {
 };
 
 // TODO: write queen_hand_small_drag_4_evt (global, 0x180 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write peach_shock_evt (global, 0x118 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write change_pose (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write hand_draw (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write pose_main (static, 0x274 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write pose_init (static, 0x1c8 bytes) here:
 // its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
 
 typedef struct HandElem {

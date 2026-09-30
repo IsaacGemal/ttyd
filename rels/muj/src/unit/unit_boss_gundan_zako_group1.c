@@ -254,18 +254,6 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: write zakogun_end_sukima (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_start_sukima (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_damage_pose_cancel (global, 0xcc bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_damage_pose (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(damage_event)
     SET_VALUE(LW(10), -2)
     SET_VALUE(LW(11), 1)
@@ -325,9 +313,6 @@ EVT_BEGIN(damage_event_kaiten_hammer)
     RETURN
 EVT_END()
 
-// TODO: write zakogun_dead1 (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_SetUnitWork, -2, 1, 1)
     CALL(zakogun_dead1)
@@ -364,12 +349,6 @@ static EVT_BEGIN(dead_event)
     END_IF
     RETURN
 EVT_END()
-
-// TODO: write zakogun_attack1 (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_set_target_id (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
@@ -490,12 +469,6 @@ u32 zakogun_ext_entry_data[147] = {
     0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: write zakogun_ext_main (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_ext_init (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(zakogun_entry)
     CALL(evt_npc_entry, STRING("ext_zakogun"), STRING("c_zako_n"))
     CALL(evt_npc_set_position, STRING("ext_zakogun"), 0, -1000, 0)
@@ -510,36 +483,13 @@ ZakogunWork* work_20_bss_6C;
 // TODO: type
 ZakogunEntry* zakogun;
 
-// TODO: write zakogun_escape1 (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_ext_init123_common (global, 0x108 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_ext_init1 (global, 0x16c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_get_kanbu_id (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_get_kanbu_id_evtcmd (global, 0x80 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_ext_disp (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_get_ptr (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write zakogun_set_pose (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group1.s; this is where the original has it, just before the first script that uses it
 // clang-format on
 
 // clang-format off
 
 s32 zakogun_set_target_id(EventEntry* event, BOOL isFirstCall) {
     work_20_bss_6C->targetId = evtGetValue(event, event->args[0]);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 void zakogun_set_pose(ZakogunEntry* entry, s32 poseStart, s32 poseCount, s32 poseDiv) {
@@ -575,7 +525,7 @@ s32 zakogun_damage_pose(EventEntry* event, BOOL isFirstCall) {
             }
         }
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 zakogun_damage_pose_cancel(EventEntry* event, BOOL isFirstCall) {
@@ -609,7 +559,7 @@ s32 zakogun_damage_pose_cancel(EventEntry* event, BOOL isFirstCall) {
             }
         }
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 BattleUnit* zakogun_get_ptr(void) {
@@ -686,7 +636,7 @@ s32 zakogun_get_kanbu_id_evtcmd(EventEntry* event, BOOL isFirstCall) {
         }
     }
     evtSetValue(event, args[0], id);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 zakogun_get_kanbu_id(void) {
@@ -714,7 +664,7 @@ s32 zakogun_ext_init1(EventEntry* event, BOOL isFirstCall) {
     for (i = 0; i < 6; i++, pose++) {
         zakogun_ext_init123_common(pose, i);
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 void zakogun_ext_init123_common(ExtPose* pose, s32 index) {
@@ -1348,7 +1298,7 @@ s32 zakogun_dead1(EventEntry* event, BOOL isFirstCall) {
     for (i = 0; i < 6; i++) {
         zakogun[i].state = 0x50;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 zakogun_escape1(EventEntry* event, BOOL isFirstCall) {
@@ -1392,7 +1342,7 @@ s32 zakogun_start_sukima(EventEntry* event, BOOL isFirstCall) {
             }
         }
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 zakogun_end_sukima(EventEntry* event, BOOL isFirstCall) {
@@ -1405,7 +1355,7 @@ s32 zakogun_end_sukima(EventEntry* event, BOOL isFirstCall) {
             entry->state = 0x14;
         }
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // clang-format on

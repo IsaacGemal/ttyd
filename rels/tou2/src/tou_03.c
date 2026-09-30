@@ -1274,7 +1274,7 @@ s32 burst_chain(EventEntry* event, BOOL isFirstCall) {
             next->position.y = 60.0f;
         }
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 EVT_BEGIN(burst_chain_entry)
@@ -3109,11 +3109,11 @@ s32 item_jump(EventEntry* event, BOOL isFirstCall) {
         pos.y = y;
         pos.z = z;
         psndSFXOn_3D("stone", &pos);
-        return 1;
+        return EVT_RETURN_YIELD;
     }
     event->userdataf[0] = dist;
     event->userdataf[1] = v;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static EVT_BEGIN(evt_boss)

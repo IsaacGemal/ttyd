@@ -869,7 +869,7 @@ USER_FUNC(shadow_scale_small) {
         return EVT_RETURN_DONE;
     }
     unit->work[1]++;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(shadow_scale_return) {
@@ -892,7 +892,7 @@ USER_FUNC(shadow_scale_return) {
         return EVT_RETURN_DONE;
     }
     unit->work[1]++;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 #pragma opt_propagation reset
 

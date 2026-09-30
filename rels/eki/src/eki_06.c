@@ -373,7 +373,7 @@ USER_FUNC(sw_entry) {
     Vec pos;
 
     if (!animGroupBaseAsync(name, gp->inBattle != 0, NULL)) {
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
     mobjEntry(name, name);
     obj = mobjNameToPtr(name);

@@ -324,8 +324,6 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void
                                         f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
 void animPoseAutoRelease(s32 type);
 void animPoseVivianMain(s32 poseId, Vec* pos);
-void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData);
-void animPoseDrawShape(s32 poseId, s32 shapeId);
 void materialProc(s32 shapeId, s32 field_0x28);
 typedef struct MoamoaChainEntry {
     char* name; // 0x0

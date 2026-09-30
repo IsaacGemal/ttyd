@@ -2506,7 +2506,7 @@ s32 evt_raster(EventEntry* event, BOOL isFirstCall) {
     eventf[0] += 0.2f;
     eventf[1] += 0.01f;
     dispEntry(CAMERA_2D, 0.0f, 3, raster_disp, event);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 // NONMATCHING (99.46%): r4/r5 register allocation for enemy_100/npcTribe differs.
@@ -2538,14 +2538,14 @@ s32 enemy_info(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, args[1], (s32)tribe->modelName);
     evtSetValue(event, args[2], (s32)name);
     evtSetValue(event, args[3], kind);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 yattukeFlag(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("敵");
 
     npc->battleInfo.field_4 |= 0x10000000;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 setup_npc_ex_para(EventEntry* event, BOOL isFirstCall) {
@@ -2554,7 +2554,7 @@ s32 setup_npc_ex_para(EventEntry* event, BOOL isFirstCall) {
 
     npc->territoryLoiter.y = 50.0f;
     npc->territoryHoming.y = 180.0f;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // NONMATCHING (98.47%): int->float magic and npcEnt_wanwan address register
@@ -2569,7 +2569,7 @@ s32 wanwan_set_home_pos(EventEntry* event, BOOL isFirstCall) {
     setup->territoryBase.x = (f32)x;
     setup->territoryBase.y = (f32)y;
     setup->territoryBase.z = (f32)z;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 shikakeFlag(EventEntry* event, BOOL isFirstCall) {
@@ -2590,7 +2590,7 @@ s32 shikakeFlag(EventEntry* event, BOOL isFirstCall) {
         npc->battleInfo.field_4 |= 0x00000100;
         break;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 iri_12_paper_init(EventEntry* event, BOOL isFirstCall) {
@@ -2598,7 +2598,7 @@ s32 iri_12_paper_init(EventEntry* event, BOOL isFirstCall) {
 
     animPosePaperPeraOff(npc->poseId);
     animPoseSetMaterialLightFlagOff(npc->poseId, 1);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 iri_12_makkino_set_y(EventEntry* event, BOOL isFirstCall) {
@@ -2606,16 +2606,16 @@ s32 iri_12_makkino_set_y(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("マッキノ");
 
     npc->position.y = y;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 wait_landon(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("マッキノ");
 
     if (!(npc->flags & 0x10) || *(u32*)npc->field_300 != 0) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 void iri_12_msgcb(s32 type, smartEntry* smart) {

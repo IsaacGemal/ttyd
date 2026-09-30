@@ -910,7 +910,7 @@ static USER_FUNC(_icon_jump_icon) {
         obj->pos = obj->target;
     }
     dispEntry(CAMERA_3D, 900.0f, 1, _disp_icon, event);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static EVT_BEGIN(hip_attack_event)

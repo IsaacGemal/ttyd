@@ -308,7 +308,7 @@ USER_FUNC(kurokaron_move_position) {
     if (kurokaron_stop_cnt != 0) {
         npc->jumpFlags &= ~0x10;
         kurokaron_stop_cnt--;
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
 
     if (!(kurokaron_move_flag & 2) && vivianGetStatus() != 1 && vivianGetStatus() != 2 && vivianGetStatus() != 3 &&
@@ -316,12 +316,12 @@ USER_FUNC(kurokaron_move_position) {
         kurokaron_move_index = _kurokaron_run_away(npc->position.x, npc->position.z, mario->position.x, mario->position.z);
         kurokaron_move_flag |= 2;
         kurokaron_run_cnt = 350;
-        return 2;
+        return EVT_RETURN_DONE;
     }
 
 // NONMATCHING (90.85%): 40 of 180 instructions differ: 25 with different operands, 5 missing, 10 extra
     if (kurokaron_move2(npc, mario) != 0) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
     if (kurokaron_run_cnt != 0) {
         kurokaron_run_cnt--;
@@ -364,7 +364,7 @@ USER_FUNC(kurokaron_move_position) {
             kurokaron_move_index = kurokaron_move_index + 1;
             kurokaron_move_index = kurokaron_move_index % 6;
         }
-        return 2;
+        return EVT_RETURN_DONE;
     }
 
     if ((npc->jumpFlags & 2) != 0 && npc->moveSpeed > float_0p1_las_000122e4) {
@@ -395,7 +395,7 @@ USER_FUNC(kurokaron_move_position) {
     if (npc->footstepSfxB != NULL || npc->footstepToggle != 0) {
         npc->footstepAccum += float_1000_las_000122e8 * npc->moveDt;
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(kurokaron_get_move_pos) {

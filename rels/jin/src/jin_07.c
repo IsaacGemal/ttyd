@@ -290,8 +290,6 @@ static void senteresa_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);
 }
 
-// NONMATCHING (78.20%): same Hermite-basis scheduling mismatch as
-// computePosHermite; the state machine and the finish block match.
 static void senteresa_ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();

@@ -47,7 +47,6 @@ void itemStatusOn(ItemEntry* item, u32 mask);
 void itemFlagOff(ItemEntry* item, u16 flag);
 u16 itemFlag(ItemEntry* item, u16 flag);
 void itemModeChange(ItemEntry* item, u16 mode);
-void itemSetPosition(ItemEntry* item, f32 x, f32 y, f32 z);
 void itemForceGet(ItemEntry* item);
 ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist);
 void itemNokoForceGet(ItemEntry* item);

@@ -867,11 +867,9 @@ static EVT_BEGIN(satellite_blur_off)
     RETURN
 EVT_END()
 
-// NONMATCHING (0%): not yet written.
 // TODO: write barriernSatelliteToOutside (static, 0x8f4 bytes) here:
 // its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
 
-// NONMATCHING (0%): not yet written.
 // TODO: write barriernSatelliteToInside (static, 0x810 bytes) here:
 // its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
 
@@ -951,8 +949,6 @@ static EVT_BEGIN(unison_phase_event)
     RETURN
 EVT_END()
 
-// TODO: write _check_satellite (static, 0x308 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
 // NONMATCHING (95.55%): stack frame 0x60 vs 0x70, x/y/z slots and the work[4..8] loop branch layout differ.
 static USER_FUNC(_check_satellite) {
     s32* args;
@@ -1769,8 +1765,6 @@ static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BtlUnit_GetPartsPtr(satellite, 1)->work[2] = (s32)spline;
 }
 
-// TODO: write barriernSatelliteTo_Main (static, 0x1b4 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
 static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     BarriernSatelliteTo* work;
     BattleUnit* satellite;
@@ -1805,8 +1799,6 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// TODO: write barriernSatelliteTo_Init (static, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
 static s32 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, s32 id) {
     BarriernSatelliteTo* work;
 

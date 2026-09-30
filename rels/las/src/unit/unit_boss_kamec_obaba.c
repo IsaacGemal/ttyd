@@ -1061,7 +1061,7 @@ static USER_FUNC(eff_staff) {
     }
     eff = (EffectEntry*)unit->work[3];
     if ((eff->flags & 1) == 0) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
     data = eff->userdata;
     data[0x28 / 4] = unit->mSizeMultiplier;
@@ -1069,7 +1069,7 @@ static USER_FUNC(eff_staff) {
     data[0x8 / 4] = 30.0f * unit->mSizeMultiplier * unit->faceDirection + x;
     data[0xC / 4] = 35.0f * unit->mSizeMultiplier + y;
     data[0x10 / 4] = z + 5.0f;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static USER_FUNC(eff_magic) {
@@ -1092,7 +1092,7 @@ static USER_FUNC(eff_magic) {
     unit->work[4] = (s32)eff;
     data = eff->userdata;
     data[0x28 / 4] = unit->mSizeMultiplier;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static EVT_BEGIN(ground_magic_common_event1)
@@ -1224,7 +1224,7 @@ static USER_FUNC(eff_magic_get_posX) {
     f32* data = eff->userdata;
 
     evtSetFloat(event, args[1], data[0x10 / 4]);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(eff_magic_support) {
@@ -1249,7 +1249,7 @@ USER_FUNC(eff_magic_support) {
             effStardustEntry(6, 5, 0x1E, x, y, z, 40.0f, 40.0f);
             break;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static EVT_BEGIN(attack_magic_event)

@@ -230,7 +230,7 @@ static f32 view_dy;
 static s32 view_trg;
 static TegamiWork* wp;
 
-// NONMATCHING (88.35%): the local `color` and the winTexSet outgoing copy swap stack slots
+// NONMATCHING (99.89%): the local `color` and the winTexSet outgoing copy swap stack slots
 // (target: local at 0x8, outgoing at 0xc; ours: outgoing at 0x8, local at 0xc).
 static void draw(CameraId cameraId, void* param) {
     winTexInit((TEXPalette*)wp->file->data[0]);
@@ -254,23 +254,17 @@ USER_FUNC(tegami) {
         wp->unk0 = 0x80;
     }
     dispEntry(8, 0.0f, 0, draw, wp);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (86.25%): 3 of 17 instructions differ: 2 replaced, 1 extra
 void tegami_delete(void) {
     if (wp != NULL && wp->file != NULL) {
         fileFree(wp->file);
     }
 }
 
-// NONMATCHING (96.72%): .text size, frame, saved registers and .rodata layout now match. What is
-// left is register numbering for the loop-invariant constants (target f23-f31 order, ours permuted)
-// and the compiler's `@NNN` pool symbol names vs the generator's file-scope names. `opt_propagation
-// off` plus volatile coefficient reads stop the loop-invariant hoisting that otherwise turns the
-// running accumulators into extra callee-saved registers.
 #pragma global_optimizer off
-// NONMATCHING (93.76%): 118 of 392 instructions differ: 98 with different operands, 4 replaced, 8 missing, 7 extra, 1 with a different opcode
+// NONMATCHING (72.23%): 118 of 392 instructions differ: 98 with different operands, 4 replaced, 8 missing, 7 extra, 1 with a different opcode
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
@@ -415,11 +409,11 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXTexCoord2s16(0, 1);
     sysWaitDrawSync();
 }
-#pragma opt_propagation reset
+#pragma global_optimizer reset
 
 USER_FUNC(depth) {
     dispEntry(8, 1200.0f, 0, depthDisp, NULL);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 void mabutaDisp(CameraId cameraId, void* param) {
@@ -455,7 +449,7 @@ void mabutaDisp(CameraId cameraId, void* param) {
 
 USER_FUNC(mabuta) {
     dispEntry(8, 1100.0f, 0, mabutaDisp, NULL);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(cam_yure) {
@@ -476,6 +470,6 @@ USER_FUNC(cam_yure) {
             view_trg = 0;
         }
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 // clang-format on

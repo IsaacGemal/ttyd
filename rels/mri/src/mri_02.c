@@ -126,7 +126,7 @@ USER_FUNC(moveSwitch) {
 
     mapObjTranslate("S_sui_l", 0.0f, unk[3], 0.0f);
     hitBindUpdate("A_sui_l");
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 f32 getMri02Yuka(void) {
@@ -218,7 +218,7 @@ EVT_END()
 
 USER_FUNC(setPuniWeight) {
     mri02switch[1] = evtGetFloat(event, event->args[0]);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static EVT_BEGIN(yuka_move)
@@ -372,7 +372,7 @@ USER_FUNC(getSwitch) {
         result = 1;
     }
     evtSetValue(event, args[0], result);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // clang-format on

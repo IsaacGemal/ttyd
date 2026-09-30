@@ -5191,7 +5191,7 @@ static USER_FUNC(fune_eff) {
     if (dist > 1.0f && gp->retraceCount % 15 == 0) {
         effWaterDamageN64Entry(5, 30, pos.x - 150.0f * sign, pos.y - 50.0f, pos.z, 2.0f);
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static USER_FUNC(alpha_init_func) {

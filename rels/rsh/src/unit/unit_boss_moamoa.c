@@ -912,7 +912,7 @@ USER_FUNC(moamoa_set_bodyScale) {
         num++;
     }
     wp->field_0x7BC = 0.333f * (num - 3) + 1.0f;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 EVT_BEGIN(MOAMOA_SET_BODYSCALE)

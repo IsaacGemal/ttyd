@@ -1204,9 +1204,6 @@ EVT_BEGIN(mario_momikucha_msg)
     RETURN
 EVT_END()
 
-// TODO: write ext_fan_dispent (global, 0x1a0 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; implemented below in source order
-
 // TODO: write ext_fan_main (global, 0xfcc bytes) here:
 
 // TODO: write ext_fan_init (global, 0x670 bytes) here:

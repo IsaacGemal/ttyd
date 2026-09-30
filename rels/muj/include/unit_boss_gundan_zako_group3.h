@@ -54,10 +54,10 @@ typedef struct ZakogunWork {
 
 extern ZakogunEntry* zakogun;
 extern ZakogunWork* work_20_bss_6C;
-extern s32 zakogun_damage_pose[];
+USER_FUNC(zakogun_damage_pose);
 extern s32 zakogun_damage_pose_cancel[];
 extern s32 zakogun_get_kanbu_id_evtcmd[];
-extern s32 zakogun_set_target_id[];
+USER_FUNC(zakogun_set_target_id);
 
 BattleUnit* zakogun_get_ptr(void);
 void zakogun_set_pose(ZakogunEntry* entry, s32 poseStart, s32 poseCount, s32 poseDiv);

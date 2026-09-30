@@ -690,7 +690,7 @@ USER_FUNC(irai_main_func) {
         return EVT_RETURN_DONE;
     }
     dispEntry(8, 300.0f, 0, irai_window_disp, work);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(irai_check_func) {

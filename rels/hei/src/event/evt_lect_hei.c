@@ -30,7 +30,6 @@
 #include "party.h"
 #include "pmario_sound.h"
 #include "statuswindow.h"
-#include "driver/icondrv.h"
 
 #pragma pool_data off
 
@@ -67,6 +66,8 @@ static USER_FUNC(lect_status_on);
 static USER_FUNC(lect_status_off);
 static USER_FUNC(lect_mario_ido_sum);
 static f32 lect_mario_ido_sub(f32, f32, f32, f32);
+
+void iconDispGxAlpha(Vec* position, s16 flags, u16 iconId, u8 alpha, f32 scale);
 
 
 typedef struct LectureButton {
@@ -194,13 +195,13 @@ USER_FUNC(x_flag_wait) {
     return (x_flag_data[index] == value) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (95.85%): the iconId/alpha test's branch layout differs by 18 bytes.
+// NONMATCHING (95.84%): the iconId/alpha test's branch layout differs by 18 bytes.
 // Target: `cmpwi 0x75; bge neg15; b neg15` (branch-to-then); MWCC 2.6 emits
 // `cmpwi 0x75; blt zero` plus a hoisted `addi r5, r9, 0x40` CSE of the iconId
 // address. Every source form tried (flat &&, not-and, nested if, ge/lt, casts,
 // struct vs raw access, all -O4 flag orders, GC/1.3 and GC/2.6) yields one of
 // those two shapes; none reproduces both the size (0xd0) and the branch.
-// NONMATCHING (88.63%): 10 of 55 instructions differ: 3 with different operands, 1 replaced, 2 missing, 3 extra, 1 with a different opcode
+// NONMATCHING (95.84%): 4 of 53 instructions differ: 1 with different operands, 1 missing, 1 extra, 1 with a different opcode
 void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 

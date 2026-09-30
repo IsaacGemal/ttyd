@@ -193,9 +193,6 @@ EVT_BEGIN(move_left_right)
     RETURN
 EVT_END()
 
-// TODO: write unk_aji_000035a0 (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_13.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(move_up_down)
     SET_VALUE(LW(5), LW(0))
     SET_VALUE(LW(6), LW(1))
@@ -381,9 +378,6 @@ u32 r_tbl[77] = {
     0x00000000, 0x00000168, 0x00000BB8, 0x00000000,
     0x00000000,
 };
-
-// TODO: write mario_chk (static, 0x52c bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_13.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(shikake_init)
     SET_VALUE(GF(0), 0)
@@ -571,9 +565,6 @@ static EVT_BEGIN(evt_door_msg)
     RETURN
 EVT_END()
 
-// TODO: write bg_cam_chk (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_13.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(aji_13_init_evt)
     CALL(evt_snd_bgmon, 512, STRING("BGM_STG7_DUN2"))
     CALL(evt_snd_envon, 272, STRING("ENV_STG7_AJI7"))
@@ -641,12 +632,6 @@ EVT_BEGIN(aji_13_init_evt)
     END_INLINE_EVENT
     RETURN
 EVT_END()
-
-// TODO: write hitIsGroup (static, 0x24 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_13.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _hitIsGroupSub (static, 0x530 bytes) here:
-// its asm is in build/G8MJ01/aji/asm/aji_13.s; this is where the original has it, just before the first script that uses it
 
 // The original emits functions in reverse source order, so the functions below are in the reverse
 // of their order in build/G8MJ01/aji/asm/aji_13.s (_hitIsGroupSub, hitIsGroup, mario_chk,

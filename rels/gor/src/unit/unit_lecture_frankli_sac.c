@@ -213,7 +213,11 @@ static USER_FUNC(lecture_init) {
     }
     return EVT_RETURN_DONE;
 }
+#pragma opt_dead_assignments reset
+#pragma opt_common_subs reset
+#pragma opt_propagation reset
 
+// NONMATCHING (98.75%): 4 of 16 instructions differ in operands only (registers or offsets)
 static USER_FUNC(_battle_set_lecture_unit_id) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -241,7 +245,6 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.68%): 20 of 110 instructions differ in operands only (registers or offsets)
 USER_FUNC(spot_square) {
     s32* args = event->args;
     s32 a;
@@ -549,7 +552,7 @@ s32 darkCount = 0;
 
 u8 dark = 0;
 
-// NONMATCHING (75.59%): 148 of 254 instructions differ: 94 with different operands, 4 replaced, 24 missing, 26 extra
+// NONMATCHING (79.45%): 148 of 254 instructions differ: 94 with different operands, 4 replaced, 24 missing, 26 extra
 void spot_square_disp(CameraId cameraId, void* param) {
     Mtx mtx;
     CameraEntry* cam;

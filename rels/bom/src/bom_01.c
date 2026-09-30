@@ -223,16 +223,10 @@ EVT_END()
 
 static ExtTableEntry ext_data[31] = {0};
 
-// TODO: write ext_dispent (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write ext_main (static, 0x1494 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write ext_init (static, 0x50c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write make_ext_table (global, 0x124 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_bom1000)
@@ -274,9 +268,6 @@ EVT_BEGIN(mario_tobideru)
     END_IF
     RETURN
 EVT_END()
-
-// TODO: write taihou_r (global, 0xec bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(mario_shot)
     SPAWN_EVENT(mario_tobideru)
@@ -327,9 +318,6 @@ static EVT_BEGIN(mario_kemuri)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write depth (static, 0x44 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_depth)
     CALL(depth)
@@ -446,16 +434,7 @@ char* oh_data[8] = {
     "stg7_bom_65_d",
 };
 
-// TODO: write make_name (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write bom_fall (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write bom_flag (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write sight_dir (global, 0x3c bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(evt_taihou)
@@ -1408,13 +1387,7 @@ static u32 npcEnt[161] = {
     0x00000000,
 };
 
-// TODO: write ext_dispent_minnnanokoe (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write ext_init_minnnanokoe (global, 0x318 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write make_ext_table_minnnanokoe (global, 0x124 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(bom1000_minnnanokoe)
@@ -1425,25 +1398,7 @@ EVT_BEGIN(bom1000_minnnanokoe)
     RETURN
 EVT_END()
 
-// TODO: write starstone_set_ry (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write starstone_set_pos (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write starstone_entry (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write anim_tevcallback (static, 0x70 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write yami_view (static, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write bom1000_jump (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write bom1000_msg (global, 0xfc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(minnnanokoe_evt)
@@ -1590,9 +1545,6 @@ static EVT_BEGIN(evt_door)
     RETURN
 EVT_END()
 
-// TODO: write sight (global, 0x190 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(bom_01_init_evt)
     SET_VALUE(LW(0), PTR(bero_entry_data))
     CALL(evt_bero_get_info)
@@ -1679,9 +1631,6 @@ u32 lp[1] = {
 
 SightWork* sight_wp;
 
-// TODO: write ext_disp_minnnanokoe (global, 0xb4 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write jump_minnnanokoe (global, 0x1cc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
@@ -1691,16 +1640,7 @@ SightWork* sight_wp;
 // TODO: write jump (global, 0x250 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write ext_disp (static, 0x34 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write pose_change (static, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
 // TODO: write pose_main (static, 0x180 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write pose_init (static, 0xfc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write disp_sight (global, 0x16fc bytes) here:

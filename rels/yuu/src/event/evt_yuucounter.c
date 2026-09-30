@@ -69,7 +69,7 @@ USER_FUNC(unk_yuu_00009d5c) {
     } else {
         work->flags2 &= ~mask;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // NONMATCHING (95.65%): 174 of 502 instructions differ: 160 with different operands, 1 replaced, 7 missing, 6 extra
@@ -262,10 +262,10 @@ USER_FUNC(evt_yuucounter_main_func) {
 
     if (work->flags & 1) {
         work->flags |= 2;
-        return 2;
+        return EVT_RETURN_DONE;
     }
     dispEntry(CAMERA_2D, 1000.0f, 0, evt_yuucounter_disp_func, work);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(evt_yuucounter_alloc) {
@@ -298,24 +298,24 @@ USER_FUNC(evt_yuucounter_alloc) {
     } else {
         unk_8022439c((s32)unk_evt_yuu_00019740);
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_yuucounter_free) {
     YuuCounterWork* work = _wp;
 
     if (work == NULL) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
     if (isFirstCall != 0) {
         work->flags |= 1;
     }
     if (!(work->flags & 2)) {
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
     _mapFree(_wp);
     _wp = NULL;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 s32 yuucounter_get_data(void) {

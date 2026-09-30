@@ -382,7 +382,7 @@ USER_FUNC(ss_ch_check) {
     f32 value = (f32)ssf[index];
 
     evtSetFloat(event, args[1], value);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 
@@ -392,7 +392,7 @@ USER_FUNC(ss_ch_set) {
     s32 value = evtGetValue(event, args[1]);
 
     ssf[index] = value;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 EVT_BEGIN(dummy1_jump)
@@ -427,7 +427,7 @@ USER_FUNC(fade_alpha) {
     s32 a = evtGetValue(event, args[3]);
 
     fadeEntry(0xd, 0, (GXColor){r, g, b, a});
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 EVT_BEGIN(clouda_nakama)
@@ -1386,7 +1386,7 @@ USER_FUNC(evt_flower_init) {
     data->count = 0x37;
     data->flowers = _mapAlloc(data->count * 0x18);
     event->lwData[10] = (s32)data;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_flower) {
@@ -1424,7 +1424,7 @@ USER_FUNC(evt_flower) {
         }
     }
     dispEntry(CAMERA_2D, 1000.0f, 0, flower_disp, data);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_flower_end) {
@@ -1435,7 +1435,7 @@ USER_FUNC(evt_flower_end) {
     for (i = 0; i < data->count; i++, flower++) {
         flower->state = 0;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_flower_end_main) {
@@ -1457,7 +1457,7 @@ USER_FUNC(evt_flower_end_main) {
         }
     }
     dispEntry(CAMERA_2D, 1000.0f, 0, flower_disp, data);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 EVT_BEGIN(flower_event)
@@ -1554,6 +1554,6 @@ USER_FUNC(flower_pos_report) {
 
     for (i = 0; i < data->count; i++) {
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 // clang-format on

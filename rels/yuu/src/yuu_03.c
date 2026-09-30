@@ -959,7 +959,7 @@ static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall) {
         }
     }
     if (!marioRollKeyDisable()) {
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
     return (mario->dispFlags & 0x01000000) ? 0 : 2;
 }

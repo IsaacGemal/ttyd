@@ -2176,11 +2176,9 @@ f32 mapAnimRate[4];
 
 MarcoShip* marcoship;
 
-// NONMATCHING (0%): not yet written.
 // TODO: write draw (static, 0x1ac bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
-// NONMATCHING (0%): not yet written.
 // TODO: write pressStartGX (static, 0x4d8 bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 

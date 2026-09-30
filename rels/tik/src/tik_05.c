@@ -2368,7 +2368,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (65.41%): logic follows the asm; register/stack allocation and the sqrtf/sincos constant pool differ.
+// NONMATCHING (65.63%): 438 of 548 instructions differ: 278 with different operands, 17 replaced, 62 missing, 76 extra, 5 with a different opcode
 USER_FUNC(tiz_broken) {
     s32 active = 0;
     BrokenWork* work;
@@ -2390,7 +2390,7 @@ USER_FUNC(tiz_broken) {
         for (i = 0; i < 0x1E; i++) {
             for (j = 0; j < 0x26; j++) {
                 f3 = (f32)j / 37.0f - 0.5f;
-                f4 = 0.5f + (f32)i / 29.0f;
+                f4 = 0.5f + (f32)(-i) / 29.0f;
                 if (f4 > 0.0f) {
                     entry->field_0x8 = (f3 >= 0.0f) ? 1 : 0;
                 } else {

@@ -425,8 +425,7 @@ s32 getLightColor(f32 angle) {
     return 0xFF - result * 2;
 }
 
-// NONMATCHING (81.06%): every GX/matrix/font call is in the right order and the function size matches; the
-// remaining diffs are register allocation and the loop-invariant strlen scheduling.
+// NONMATCHING (82%): 517 of 1139 instructions differ: 318 with different operands, 32 replaced, 102 missing, 64 extra, 1 with a different opcode
 void display_func(CameraId cameraId, void* param) {
     SysWork* work = param;
     CameraEntry* cam = camGetPtr(cameraId);
@@ -459,7 +458,7 @@ void display_func(CameraId cameraId, void* param) {
     }
 
     color = *(GXColor*)&dat_sys_000019b8;
-    GXSetChanAmbColor(GX_COLOR1A1, color);
+    GXSetChanAmbColor(GX_COLOR0A0, color);
 
     pos = vec3_sys_000019bc;
     PSMTXMultVec((MtxPtr)&cam->view, &pos, &pos);
@@ -470,17 +469,17 @@ void display_func(CameraId cameraId, void* param) {
     GXLoadLightObjImm(&light, GX_LIGHT0);
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(GX_GEQUAL, 0, GX_AOP_AND, GX_GEQUAL, 0);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
     GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR1A1, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -500,7 +499,7 @@ void display_func(CameraId cameraId, void* param) {
     lightColor = getLightColor(float_90_sys_00001ae8 + work->field_0x8);
     color = *(GXColor*)&dat_sys_000019cc;
     color.r = color.g = color.b = lightColor;
-    GXSetChanMatColor(GX_COLOR1A1, color);
+    GXSetChanMatColor(GX_COLOR0A0, color);
 
     PSMTXTrans(mtx, zero_sys_00001ad8, zero_sys_00001ad8, zero_sys_00001ad8);
     PSMTXRotRad(mtx3, 'y', float_deg2rad_sys_00001b38 * (float_90_sys_00001ae8 + work->field_0x8));
@@ -556,13 +555,13 @@ void display_func(CameraId cameraId, void* param) {
 
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(GX_GEQUAL, 0, GX_AOP_AND, GX_GEQUAL, 0);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
     GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR1A1, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT0, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTexGens(2);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_POS, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -573,12 +572,12 @@ void display_func(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     GXSetNumTevStages(4);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_COMP_RGB8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_COMP_A8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(GX_TEVSTAGE0, 8, 0xf, 8, 0xf);
     GXSetTevAlphaIn(GX_TEVSTAGE0, 4, 7, 4, 7);
-    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP1);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_RED);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP1, GX_TEV_SWAP1);
     GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
     GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -588,10 +587,10 @@ void display_func(CameraId cameraId, void* param) {
     GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
     GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE2, 0xf, 0xa, 0, 0xf);
-    GXSetTevAlphaIn(GX_TEVSTAGE2, 7, 5, 0, 7);
+    GXSetTevColorIn(GX_TEVSTAGE2, 2, 0, 1, 0xf);
+    GXSetTevAlphaIn(GX_TEVSTAGE2, 7, 7, 7, 4);
+    GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_sys_000019d0);
     GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_sys_000019d0);
     GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
     GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -613,7 +612,7 @@ void display_func(CameraId cameraId, void* param) {
         lightColor = getLightColor(entry->angle);
         color = *(GXColor*)&dat_sys_000019d4;
         color.r = color.g = color.b = lightColor;
-        GXSetChanMatColor(GX_COLOR1A1, color);
+        GXSetChanMatColor(GX_COLOR0A0, color);
         if (gp->language != 0) {
             PSMTXScale(mtx3, float_0p8_sys_00001b08, float_0p8_sys_00001b08, float_0p8_sys_00001b08);
         } else {
@@ -646,7 +645,7 @@ void display_func(CameraId cameraId, void* param) {
         PSMTXConcat(mtx2, mtx, mtx);
         PSMTXTrans(mtx3, (f32)-frame, zero_sys_00001ad8, zero_sys_00001ad8);
         PSMTXConcat(mtx, mtx3, mtx);
-        GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX3x4);
+        GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         GXPosition3f32(-float_44_sys_00001b48 * float_0p5_sys_00001ae0, float_22_sys_00001b60, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
@@ -746,7 +745,7 @@ USER_FUNC(start) {
 
     gp->flags |= 0x10;
     if (work->state < 1) {
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
     work->state++;
     return EVT_RETURN_DONE;

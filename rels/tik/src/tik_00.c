@@ -281,7 +281,7 @@ void uranai_cap(CameraId cameraId, void* param) {
     GXCopyTex(uranai_wp->buffer->address, 1);
     GXPixModeSync();
     GXInitTexObj(&uranai_wp->texObj, uranai_wp->buffer->address, width, height, 5, 0, 0, 0);
-    GXInitTexObjLOD(&uranai_wp->texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXInitTexObjLOD(&uranai_wp->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(proj);
     GXSetScissor(left, top, wd, ht);

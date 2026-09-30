@@ -973,7 +973,7 @@ static USER_FUNC(proj_on) {
     animPoseSetMaterialFlagOn(mario->paperAnimGroupId[2], 0x400);
     party = partyGetPtr(marioGetPartyId());
     animPoseSetMaterialFlagOn(party->paperAnimGroup, 0x400);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(proj_off) {
@@ -988,7 +988,7 @@ static USER_FUNC(proj_off) {
     animPoseSetMaterialFlagOff(mario->paperAnimGroupId[2], 0x400);
     party = partyGetPtr(marioGetPartyId());
     animPoseSetMaterialFlagOff(party->paperAnimGroup, 0x400);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 void make_gonbaba_projection(CameraId cameraId, void* param) {
@@ -1052,7 +1052,7 @@ USER_FUNC(make_gonbaba_projection_evt) {
     GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     mapSetProjTexObj(&work->texObj, work->texBuffer);
     dispEntry(CAMERA_SHADOW, 0.0f, 3, make_gonbaba_projection, work);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(proj_mtx) {
@@ -1090,7 +1090,7 @@ USER_FUNC(proj_mtx) {
     PSMTXConcat(proj, lookAt, proj);
     PSMTXConcat(proj, rot, proj);
     mapSetProjMtx(proj);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(shake) {
@@ -1110,14 +1110,14 @@ USER_FUNC(shake) {
     } else {
         cam->viewOffset.z = 0.0f;
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(shake_reset) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
 
     cam->viewOffset.z = 0.0f;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // `#pragma opt_common_subs off` required: with common-subexpression elimination on, the compiler
@@ -1161,7 +1161,7 @@ USER_FUNC(cam_test) {
     event->lwData[3] = (s32)(midX + work.at.x);
     event->lwData[4] = (s32)(work.at.y);
     event->lwData[5] = (s32)(midZ + work.at.z);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(cam_test2) {
@@ -1202,7 +1202,7 @@ USER_FUNC(cam_test2) {
     event->lwData[3] = (s32)(midX + work.at.x);
     event->lwData[4] = (s32)(work.at.y);
     event->lwData[5] = (s32)(midZ + work.at.z);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 #pragma opt_common_subs reset
@@ -1215,12 +1215,12 @@ USER_FUNC(dist_check) {
     pos = vec3_hei_000060d4;
     event->lwData[0] = 0;
     if (party == NULL) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
     if (PSVECDistance(&pos, &party->position) < 100.0f) {
         event->lwData[0] = 1;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(unk_hei_000002a8) {
@@ -1231,7 +1231,7 @@ USER_FUNC(unk_hei_000002a8) {
     } else {
         evtSetValue(event, args[0], 0);
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // clang-format on

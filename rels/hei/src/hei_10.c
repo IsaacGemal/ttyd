@@ -405,7 +405,7 @@ USER_FUNC(evt_chorobon_escape) {
         entry->field_0x24 = 1;
         entry++;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_chorobon_wait) {
@@ -416,12 +416,12 @@ USER_FUNC(evt_chorobon_wait) {
     entry = wp->entries;
     for (i = 0; i < wp->count; i++) {
         if (entry->state != 99) {
-            return 0;
+            return EVT_RETURN_BLOCK;
         }
         entry++;
     }
     extReset();
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // Frame (0x90, f28-f31) and prologue match; `volatile` puts b/speed in stack
@@ -507,12 +507,12 @@ static USER_FUNC(npc_jump) {
             pos.y = ty;
             pos.z = tz;
             npc->position = pos;
-            return 1;
+            return EVT_RETURN_YIELD;
         }
         event->userdataf[0] = counter;
         event->userdataf[1] = vel;
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 #pragma opt_propagation reset
 
@@ -521,9 +521,9 @@ USER_FUNC(wait_anim_frame) {
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("ゴールドチョロボン")->poseId);
 
     if (((AnimPoseField24*)pose)->field_0x24 < frame) {
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 USER_FUNC(wait_anim_end) {
@@ -533,9 +533,9 @@ USER_FUNC(wait_anim_end) {
         event->lwData[15] = (s32)animPoseGetLoopTimes(npc->poseId);
     }
     if (event->lwData[15] == (s32)animPoseGetLoopTimes(npc->poseId)) {
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 EVT_BEGIN(golden_se)

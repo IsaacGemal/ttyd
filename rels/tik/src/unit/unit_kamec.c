@@ -1093,7 +1093,7 @@ static USER_FUNC(eff_staff1) {
     *(f32*)(data + 0x08) = 22.5f * unit->mSizeMultiplier * unit->faceDirection + x;
     *(f32*)(data + 0x0C) = 40.0f * unit->mSizeMultiplier + y;
     *(f32*)(data + 0x10) = 5.0f + z;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static USER_FUNC(eff_staff2) {
@@ -1120,7 +1120,7 @@ static USER_FUNC(eff_staff2) {
     data->x = 22.5f * unit->mSizeMultiplier * unit->faceDirection + x;
     data->y = 40.0f * unit->mSizeMultiplier + y;
     data->z = 5.0f + z;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 // effect->userdata is an effMagic1 data block; there is no header for it, so 0x28 is addressed by offset.

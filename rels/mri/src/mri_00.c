@@ -588,9 +588,6 @@ static char* capturemap[4] = {
     "S_non", "S_ha_10_07", "S_kesu", (char*)&zero_capturemap,
 };
 
-// TODO: write evt_cloud_main (static, 0x658 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_00.s; this is where the original has it, just before the first script that uses it
-
 static void _img_alloc_capture(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7) {
     EventEntry event;
     s32 args[10];

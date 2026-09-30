@@ -54,8 +54,6 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write camera_yure (global, 0x19c bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra_00.s; this is where the original has it, just before the first script that uses it
 // NONMATCHING (98.78%): 18 of 103 instructions differ in operands only (registers or offsets)
 USER_FUNC(camera_yure) {
     s32 count;
@@ -84,9 +82,9 @@ USER_FUNC(camera_yure) {
     cam2->viewOffset.z = vec.z;
     event->userdata[0]++;
     if (event->userdata[0] > event->userdata[1]) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 EVT_BEGIN(evt_yabure_on)
@@ -162,7 +160,7 @@ static USER_FUNC(zoom) {
     evtSetFloat(event, args[3], cam->cameraAt.x);
     evtSetFloat(event, args[4], cam->cameraAt.y);
     evtSetFloat(event, args[5], cam->cameraAt.z);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 EVT_BEGIN(name_seikai)
@@ -607,8 +605,6 @@ EVT_BEGIN(gra_00_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write msg_callback (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra_00.s; this is where the original has it, just before the first script that uses it
 void msg_callback(s32 state, smartEntry* smart) {
     MessageData* data = smart->address;
     EventEntry* event = data->event;
@@ -650,6 +646,6 @@ static USER_FUNC(cam_r) {
         cam->cameraPos.y = 97.0f;
         cam->cameraAt.y = 45.0f;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 // clang-format on

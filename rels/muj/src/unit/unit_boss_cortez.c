@@ -3044,7 +3044,5 @@ EVT_BEGIN(mode_change_event)
     RETURN
 EVT_END()
 
-BattleUnitSetup entry_honeduka[1] = {
-    { NULL, 0, 0, { 0.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
-};
+BattleUnitSetup entry_honeduka[1];
 // clang-format on

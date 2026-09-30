@@ -88,7 +88,6 @@ typedef struct PiantaParlorWork {
 void monteCountDisp(void);
 
 void yuugijou_init(void);
-void monteCountDisp(void);
 
 struct EventEntry* evtYuuWindow(void);
 BOOL evtYuuWindowEndChk(void);
@@ -103,5 +102,4 @@ USER_FUNC(yuugijou_montemedal_keep);
 USER_FUNC(yuugijou_montemedal_return);
 USER_FUNC(yuugijou_montemedal_wait);
 USER_FUNC(yuugijou_set_yupflag);
-void monteCountDisp(void);
 void unk_8022439c(s32 value);

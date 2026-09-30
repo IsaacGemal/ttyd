@@ -603,7 +603,7 @@ USER_FUNC(make_monitor) {
         work->field_2C = 0;
     }
     if (npc == NULL) {
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
     work = (GansWork*)event->userdata[0];
     gans_wp[0] = (u32)work;
@@ -623,7 +623,7 @@ USER_FUNC(make_monitor) {
         }
     }
     dispEntry((CameraId)2, zero_tou_0000a82c, 3, gans_tex, work);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 EVT_BEGIN(evt_tou_monitor_init)
@@ -1373,11 +1373,11 @@ static USER_FUNC(evt_tou_print_ranking) {
         evtGetValue(NULL, 0xf5de0180);
         for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
         }
-        return 0;
+        return EVT_RETURN_BLOCK;
     }
     if (keyGetButtonTrg(0) & 0x200) {
         psndSFXOn((const char*)0x13);
-        return 1;
+        return EVT_RETURN_YIELD;
     }
     if (((DispWork*)dwp[0])->field_08 > 0 && (keyGetButtonTrg(0) & 0x40)) {
         psndSFXOn((const char*)5);
@@ -1391,7 +1391,7 @@ static USER_FUNC(evt_tou_print_ranking) {
     ((DispWork*)dwp[0])->field_00 =
         (((DispWork*)dwp[0])->field_04 - ((DispWork*)dwp[0])->field_00) * float_0p125_tou_0000a888 + ((DispWork*)dwp[0])->field_00;
     dispEntry((CameraId)8, float_300_tou_0000a88c, 0, disp_proc, NULL);
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
@@ -3143,7 +3143,7 @@ after:
         ((BeltData*)handle->userdata)->pos.y = float_neg1000_tou_0000a85c;
         ((BeltData*)handle->userdata)->pos.z = 0.0f;
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static f32 camGetRy(void) {

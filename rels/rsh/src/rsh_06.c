@@ -1418,8 +1418,6 @@ static u32 jumptable_000183EC[66] = {
 // TODO: type
 // static MoamoaWork* wp;  // moved to top (needed before the functions that use it)
 
-// TODO: write moamoa_joint_position (global, 0x108 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_06.s; this is where the original has it, just before the first script that uses it
 void moamoa_joint_position(void* entry_, Vec* out) {
     MoamoaEntry* entry = entry_;
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("base")->poseId);

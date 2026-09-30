@@ -1998,7 +1998,7 @@ static USER_FUNC(kamec_get_live_num) {
         }
     }
     evtSetValue(event, args[0], count);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(kamec_get_bunsin) {
@@ -2023,7 +2023,7 @@ static USER_FUNC(kamec_get_bunsin) {
         }
     }
     evtSetValue(event, *args, num);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(kamec_shuffle) {
@@ -2059,7 +2059,7 @@ static USER_FUNC(kamec_shuffle) {
         a->mHomePosition.z = b->mHomePosition.z;
         b->mHomePosition.z = tmp;
     }
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(kamec_copy_status) {
@@ -2078,7 +2078,7 @@ static USER_FUNC(kamec_copy_status) {
     ratio = (f32)dst->currentHp / (f32)dst->maxHp;
     dst->hpGauge.field_0x18 = ratio;
     dst->hpGauge.field_0x14 = ratio;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(eff_staff1) {
@@ -2094,7 +2094,7 @@ static USER_FUNC(eff_staff1) {
     }
     eff = (EffectEntry*)unit->work[4];
     if ((eff->flags & 1) == 0) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
     data = eff->userdata;
     data[0x28 / 4] = unit->mSizeMultiplier;
@@ -2102,7 +2102,7 @@ static USER_FUNC(eff_staff1) {
     data[0x8 / 4] = 22.5f * unit->mSizeMultiplier * unit->faceDirection + x;
     data[0xC / 4] = 40.0f * unit->mSizeMultiplier + y;
     data[0x10 / 4] = z + 5.0f;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static USER_FUNC(eff_staff2) {
@@ -2118,7 +2118,7 @@ static USER_FUNC(eff_staff2) {
     }
     eff = (EffectEntry*)unit->work[4];
     if ((eff->flags & 1) == 0) {
-        return 2;
+        return EVT_RETURN_DONE;
     }
     data = eff->userdata;
     data[0x34 / 4] = unit->mSizeMultiplier;
@@ -2126,7 +2126,7 @@ static USER_FUNC(eff_staff2) {
     data[0x4 / 4] = 22.5f * unit->mSizeMultiplier * unit->faceDirection + x;
     data[0x8 / 4] = 40.0f * unit->mSizeMultiplier + y;
     data[0xC / 4] = z + 5.0f;
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 static USER_FUNC(eff_magic) {
@@ -2149,7 +2149,7 @@ static USER_FUNC(eff_magic) {
     unit->work[5] = (s32)eff;
     data = eff->userdata;
     data[0x28 / 4] = unit->mSizeMultiplier;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 static USER_FUNC(eff_magic_get_posX) {
@@ -2160,7 +2160,7 @@ static USER_FUNC(eff_magic_get_posX) {
     f32* data = eff->userdata;
 
     evtSetFloat(event, args[1], data[0x10 / 4]);
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // clang-format on

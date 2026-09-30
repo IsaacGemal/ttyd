@@ -1398,7 +1398,6 @@ void unk_end_0000039c(CameraId cameraId, void* param) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (99.68%): fmadds operand order differs (f0/f1 swapped); lone relocation symbols differ.
 f32 unk_end_000008bc(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
 
