@@ -582,7 +582,6 @@ static void monte_disp(CameraId cameraId, void* param) {
 // source-level value the compiler kept live). Referencing the target's named .rodata globals
 // (zero_yuu_00014548, float_20/100/1_yuu_*, str_00000550) instead of literals does not change these, so
 // the literal version is kept.
-// NONMATCHING (95.62%): see the block comment above.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;

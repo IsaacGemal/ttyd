@@ -283,7 +283,8 @@ USER_FUNC(hoshi_r) {
 #pragma opt_propagation off
 // NONMATCHING (87.42%): the first-call block and the sin/cos accumulators now match retail
 // (0.00761->f4, pi->f1), but the radian still lands in f0 vs f5 and 0.16605/1.0 take f5/f3 vs
-// f3/f2. The `half` slot and the stack-spilled event->userdataf stores now match.
+// f3/f2. The `half` slot and the first-call stores of event->userdataf match; at the end retail writes
+// the decremented values back through their stack slots with lwz/stw where ours stores the floats directly.
 USER_FUNC(hoshi_jump) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
     effStarStoneData* data = entry->userdata;

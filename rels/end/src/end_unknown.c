@@ -1411,8 +1411,6 @@ char* dat_ptr_end_00005034 = "c_n_moa_a";
 
 char* dat_ptr_end_00005038 = "S_1";
 
-// 100%: the original uses dat_80419a28 directly (no groupCount local), which also
-// fixes the reload/register allocation of work->idx; post-increment matches the asm order.
 void unk_end_000006f8(void) {
     ExtPose* pose = extGetPosePtr();
     CreditsPoseState* work = (CreditsPoseState*)unk_end_bss00000000[0];

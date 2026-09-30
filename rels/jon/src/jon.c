@@ -2400,8 +2400,7 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
-// NONMATCHING (89.1%): callee-saved register permutation (original row=r31, ours r27) and the
-// GXBegin vertex constant schedule (two extra instructions); loop body shape now matches.
+// NONMATCHING (91.4%): callee-saved register allocation and the GXBegin vertex constant schedule differ.
 void raster_disp(CameraId camera, void* param) {
     s32 row;
     s32 col;

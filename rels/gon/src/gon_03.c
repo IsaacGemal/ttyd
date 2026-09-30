@@ -950,9 +950,9 @@ static void senkaron_ext_main(void) {
 
 #ifdef MUST_MATCH
 #undef sfxLanding
+#endif
 #undef sfxFly0
 #undef sfxFly1
-#endif
 
 static void senkaron_ext_dispent(void) {
     dispEntry(4, 0.0f, 1, (DispCallback)senkaron_ext_disp, NULL);

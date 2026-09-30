@@ -1166,8 +1166,11 @@ USER_FUNC(img_wait) {
     return EVT_RETURN_YIELD;
 }
 
-// Data externs for this function's literals (see report).
-// NONMATCHING (83.86%): 316 instructions; the loop/branch layout and the coordinate math match. Left: `obj`/flag temp land r6/r5 (original r5/r6), so every flag access shifts; width/height and the two `width/2` halves get r20/r19/r21/r22 (original r21/r22/r19/r20); the int->float block feeding C_MTXLightFrustum is scheduled in a different order with a different stack-slot order; and MWCC emits the int->float magic as local @NNN@ doubles, matching the original's local `.rodata` offsets but not its symbol names.
+// NONMATCHING (83.86%): 316 instructions; the loop/branch layout and the coordinate math match. Left: `obj`/flag
+// temp land r6/r5 (original r5/r6), so every flag access shifts; width/height and the two `width/2` halves get
+// r20/r19/r21/r22 (original r21/r22/r19/r20); the int->float block feeding C_MTXLightFrustum is scheduled in a
+// different order with a different stack-slot order; and MWCC emits the int->float magic as local @NNN@ doubles,
+// matching the original's local `.rodata` offsets but not its symbol names.
 void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     MapObject* obj;
     s32 stage;
