@@ -45,8 +45,9 @@ GXColor unk_804232f0;
 GXColor unk_804232f4;
 GXColor unk_804232f8;
 
-// NONMATCHING (99.89%): the -21.333334*0.5 fneg/fmuls schedules a different temp (f0/f1
-// vs f2/f0) and the two GXSetChanMatColor temporaries land 8 bytes lower than the original.
+// NONMATCHING (99.90%): the -21.333334/2.0f negate lands in f1 and the 42.666668 load in f2;
+// the target wants them swapped (negate f2, 42.666668 f1); the 0.5 load and fmuls now match, and
+// the two GXSetChanMatColor temporaries still land 8 bytes lower. The /2.0f is a MUST_MATCH nudge.
 void effItemUseDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -97,10 +98,17 @@ void effItemUseDisp(CameraId camId, void* param) {
 		f32 f = 42.666668f;
 		f30 = -f;
 	}
+#ifdef MUST_MATCH
+	{
+		f32 f = 21.333334f;
+		f31 = -f / 2.0f;
+	}
+#else
 	{
 		f32 f = 21.333334f;
 		f31 = -f * 0.5f;
 	}
+#endif
 	f29 = 10.666667f;
 	i = 1;
 	data++;

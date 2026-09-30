@@ -36,11 +36,9 @@ static s32 leftRight482;   // .sbss
 // Forward declarations (functions are defined in reverse .text order so that
 // Metrowerks emits them in the original order).
 
-// `if (currMotionId == 0x1D) return;` is laid out in the reference as
-// `cmplwi 0x1D; bne body; b epilogue` (then-block placed out of line), but mwcc
-// here folds it to a single `beq epilogue`; the two branches jump to the same
-// place, so this is layout only.
-// NONMATCHING (99.04%): `== 0x1D` return block placement differs.
+// The `flags` and `currMotionId == 0x1D` guards are one `||` condition in the
+// original: mwcc then emits `bne body; b epilogue` for the second test instead
+// of folding it to a single `beq epilogue`.
 void mario_kemuri_80130474(void) {
     MarioWork* mario = marioGetPtr();
     s32 attr = 0;
@@ -50,10 +48,7 @@ void mario_kemuri_80130474(void) {
     if ((u32)marioStGetSystemLevel() != 0) {
         return;
     }
-    if (mario->flags & 0x01000000) {
-        return;
-    }
-    if (mario->currMotionId == 0x1D) {
+    if ((mario->flags & 0x01000000) || mario->currMotionId == 0x1D) {
         return;
     }
     if (mario->currMotionId != 3) {

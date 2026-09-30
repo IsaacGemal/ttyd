@@ -112,8 +112,6 @@ EffectEntry* effMagic2N64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
 	return effect;
 }
 
-// NONMATCHING (99.54%): only register allocation differs in the sin/scale block
-// (frsp f2,f1 vs f1,f1 and swapped f1/f2/f3); every opcode and operand order matches.
 void effMagic2Main(EffectEntry* effect) {
 	effMagic2Data* data = effect->userdata;
 	Vec pos;
@@ -141,10 +139,10 @@ void effMagic2Main(EffectEntry* effect) {
 	}
 	if (data->type == 1) {
 		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
-		data->scale = data->scale + 0.4f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
+		data->scale += 0.4f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
 	} else {
 		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
-		data->scale = data->scale + 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
+		data->scale += 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
 	}
 	v = initializeVec((Vec*)&data->vx);
 	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &v, &v);

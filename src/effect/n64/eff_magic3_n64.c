@@ -188,10 +188,11 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// The life<5 scale block is one float-register colouring off. Retail keeps float_3/the fmadds
-// accumulator in f0, double_to_int in f3 and float_30 in f2; our allocator uses f3/f2/f0 for the
-// same three values, so the fmadds destination is the only real difference and the rest cascades.
-// NONMATCHING (99.77%): that one volatile-FPR colouring block; every opcode/constant/order matches.
+// The life<5 scale block: MWCC's FPR allocator only keeps float_3/the fmadds accumulator in f0
+// (with double_to_int in f3 and float_30 in f2) when the angle sin, alpha sin and division term
+// are computed into named temporaries before the sum is formed. The single expression gives the
+// same instructions with f0/f3/f2 rotated. MUST_MATCH keeps the allocator-steering temp form; the
+// natural expression is under #else.
 void effMagic3Main(EffectEntry* effect) {
 	s32 life;
 	effMagic3Data* data;
@@ -222,7 +223,16 @@ void effMagic3Main(EffectEntry* effect) {
 			data->vx *= float_0p7_8041f730;
 			data->vy *= float_0p7_8041f730;
 			data->vz *= float_0p7_8041f730;
+#ifdef MUST_MATCH
+			{
+				f32 sg = (f32)sin(angle / float_360_8041f724);
+				f32 sa = (f32)sin(float_6p2832_8041f718 * (f32)(data->alpha / 2) / float_360_8041f724);
+				f32 extra = (f32)(255 - data->alpha) / float_30_8041f734;
+				data->scale = float_3_8041f728 * sa + sg + extra;
+			}
+#else
 			data->scale = float_3_8041f728 * (f32)sin(float_6p2832_8041f718 * (f32)(data->alpha / 2) / float_360_8041f724) + (f32)sin(angle / float_360_8041f724) + (f32)(255 - data->alpha) / float_30_8041f734;
+#endif
 		}
 		data->x += data->vx;
 		data->y += data->vy;

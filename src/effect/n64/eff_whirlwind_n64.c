@@ -54,9 +54,8 @@ typedef struct EffWhirlwindData {
 	u8 field_0x47;    //0x47
 } EffWhirlwindData; //0x48
 
-// NONMATCHING (99.91%): in the type>=8 branch the (f32)(i-1) int->float conversion is allocated to f0
-// instead of the original's f1 (3 register-only diffs: lfd/fsubs f1->f0 and the 0.25f constant f0->f1).
-// Every other instruction matches.
+// Note: under MUST_MATCH the `(f32)(i - 1) / 4.0f` is exact and compiles to a multiply by 0.25; writing it as
+// `* 0.25f` makes MWCC allocate the int->float conversion to f0 instead of the original's f1.
 EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 	s32 v31;
 	s32 v30;
@@ -132,7 +131,11 @@ EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4) {
 			p->field_0x38 = (f32)(((rand() % 2) * 2 - 1) * 4);
 			p->field_0x3C = 0.0f;
 			p->field_0x40 = (f32)(((rand() % 2) * 2 - 1) * 4);
+#ifdef MUST_MATCH
+			p->field_0x14 = ((f32)(i - 1) / 4.0f) * 0.5f + 0.5f;
+#else
 			p->field_0x14 = 0.5f * ((f32)(i - 1) * 0.25f) + 0.5f;
+#endif
 			p->field_0x2C = (f32)v29;
 			p->field_0x30 = (f32)((i - 1) * 360 / 4);
 			p->field_0x34 = (f32)(360 - v28);

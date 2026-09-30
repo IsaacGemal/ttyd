@@ -41,30 +41,21 @@ typedef struct CraneTimingWork {
 	s32 delay;     // 0x2C, end-of-command delay
 } CraneTimingWork;
 
-void battleAcDelete_CraneTiming(BattleWork* work) {
-	work->actionCommands.mAcState = 0x3EA;
-}
-
-// No-op in the original (just blr).
-void battleAcDisp_CraneTiming(CameraId camId, void* param) {
-}
-
-s32 battleAcResult_CraneTiming(BattleWork* work) {
-	return work->actionCommands.result;
-}
-
 // optimize_for_size: the original battleAcMain saves r27-r31 with `stmw`; the size model reproduces
 // its prologue. Scope the pragma to that one function.
 #pragma optimize_for_size on
-// NONMATCHING (98.87%): identical instruction sequence and count; MWCC 2.6 merges two of the three
-// base pointers. The original materialises work=r28, dec=r31 (work+0x1F4C, offsets 0x0..) and
-// disp=r27 (work+0x1F20, offsets 0x14..); ours materialises work=r28 and disp=r31 and folds dec as
-// 0x2C(r31). Deriving dec from work instead folds dec into work (97.10%); every other form tried
-// (opt_propagation/opt_common_subs/opt_lifetimes/opt_strength_reduction off, GC/1.3.2r, GC/2.0,
-// -O3,p, register, Vec-copy, member-array cast) gives the same merge or worse.
 s32 battleAcMain_CraneTiming(BattleWork* work) {
+#ifdef MUST_MATCH
+	// MWCC 2.6 folds two of the three base pointers (dec into disp) when both are derived directly
+	// from `work`; deriving both from the `ac` intermediate keeps work=r28, dec=r31 and disp=r27 in
+	// their own registers, as the original does.
+	BattleActions* ac = &work->actionCommands;
+	CraneTimingWork* dec = (CraneTimingWork*)&ac->field_0x2BC[0];
+	BattleACDispParams* disp = &ac->dispParams;
+#else
+	CraneTimingWork* dec = (CraneTimingWork*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
-	CraneTimingWork* dec = (CraneTimingWork*)((u8*)disp + 0x2C);
+#endif
 	BattleUnit* unit;
 	s32 flag;
 	s32 nearCenter;
@@ -156,7 +147,7 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 			break;
 		}
 		work->actionCommands.mAcState = 0x3EC;
-		// fallthrough
+		break;
 	case 0x3EC:
 		work->actionCommands.maincb = NULL;
 		work->actionCommands.dispcb = NULL;
@@ -169,3 +160,15 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 	return 1;
 }
 #pragma optimize_for_size reset
+
+s32 battleAcResult_CraneTiming(BattleWork* work) {
+	return work->actionCommands.result;
+}
+
+// No-op in the original (just blr).
+void battleAcDisp_CraneTiming(CameraId camId, void* param) {
+}
+
+void battleAcDelete_CraneTiming(BattleWork* work) {
+	work->actionCommands.mAcState = 0x3EA;
+}

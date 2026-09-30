@@ -172,12 +172,13 @@ static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 
 }
 
 // .text:0x0 | 0x8018DB2C | size: 0x45C
-// NONMATCHING (99.53%): same instructions; only register numbers or operands differ.
 void effUpdownDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
-	u8 alpha;
-	CameraEntry* cam;
 	EffUpdownWork* work = effect->userdata;
+	s32 field18;
+	s32 alpha;
+	CameraEntry* cam;
+	s32 type;
 	GXTexObj texObj;
 	Mtx mtxPos;
 	Mtx mtxRot;
@@ -185,8 +186,6 @@ void effUpdownDisp(CameraId cameraId, void* param) {
 	Mtx mtxA;
 	Mtx mtxB;
 	Mtx mtxC;
-	s32 type;
-	s32 field18;
 
 	cam = camGetPtr(cameraId);
 	field18 = work->field18;

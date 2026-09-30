@@ -37,7 +37,14 @@ GXColor unk_80423230;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_sstar.c).
 inline Vec initializeVec(Vec* input) {
+#ifdef MUST_MATCH
+	// Match-only trick: the anonymous zero-vector literal makes MWCC schedule the userdata load before
+	// the vec words, as in the original; the named vector hoists the vec loads into the prologue slots.
+	// The original loads vec3_802fb4a0, so this adds a duplicate zero vector to .rodata.
+	Vec temp = { 0.0f, 0.0f, 0.0f };
+#else
 	Vec temp = vec3_802fb4a0;
+#endif
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -112,7 +119,6 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, 
 	return effect;
 }
 
-// NONMATCHING (98.29%): the original loads effect->userdata into r7 before the vec3_802fb4a0 words; MWCC GC/2.6 hoists the first two global loads into the prologue slots instead. Everything else matches.
 void effRappaMain(EffectEntry* effect) {
 	EffectEntry* e;
 	effRappaData* data;

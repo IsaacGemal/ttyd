@@ -35,3 +35,4 @@ typedef struct effReleaseN64Data {
 EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale);
 void effReleaseMain(EffectEntry* effect);
 void effReleaseDisp(CameraId camId, void* param);
+extern f32 lbl_803A4C60[];

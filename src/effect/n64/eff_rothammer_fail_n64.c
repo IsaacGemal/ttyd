@@ -156,9 +156,9 @@ static inline void hammerSetColor(u8 a) {
 	GXSetTevColor(GX_TEVREG1, color);
 }
 
-// NONMATCHING (99.97%): the flag==0 branch's `offset + 32` is materialised in place
-// (`addi r27, r27, 0x20`) because MWCC coalesces the dead `offset`; the target keeps
-// `offset` and adds into a fresh r3. The read form `(f32)(offset + 32)` lands in r0.
+// Without this, MWCC CSEs the two branches' identical `offset + 32` and the flag==0 copy
+// reuses a dead register (addi r27, r27, 0x20) instead of the target's fresh r3.
+#pragma opt_common_subs off
 void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effRotHammerFailRecord* data;
@@ -228,8 +228,7 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	} else {
 		PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
-		offset = offset + 32;
-		PSMTXTrans(trans, (f32)offset, float_0_8041fbdc, float_0_8041fbdc);
+		PSMTXTrans(trans, (f32)(offset + 32), float_0_8041fbdc, float_0_8041fbdc);
 		PSMTXConcat(scale, trans, trans);
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	}
@@ -244,3 +243,4 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+#pragma opt_common_subs reset

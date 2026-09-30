@@ -76,6 +76,9 @@ u32 size16x24_tex32x32_r_flower_vtx[14] = {
 	0x00100009, 0x00000400, 0x040024BE, 0x14FFFFFC, 0x00090000, 0x00000400, 0x24BE14FF,
 };
 
+// Last object of this unit's .data; effReleaseDisp reaches its own .data through it.
+__declspec(section ".data") f32 lbl_803A4C60[2] = { -1.0f, 1.0f };
+
 typedef struct RecoverHeartData {
 	s32 type;       // 0x00
 	f32 x;          // 0x04

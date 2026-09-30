@@ -244,12 +244,14 @@ static inline GXColor akariColor(u8 alpha) {
 }
 #endif
 
-// (1) The original emits `li r31,1` (i) before `addi r30,r30,0x38` (part = data->part); mwcc here
-//     always schedules the pointer advance first.
-// (2) GXSetTevColor's GXColor is built at r1+0x8 and word-copied to the outgoing arg at r1+0xc;
-//     here the local lands at r1+0xc and is copied to r1+0x8 (same known quirk as eff_booboo_n64.c,
-//     eff_batten.c, eff_irekaeru.c).
-// NONMATCHING (99.25%): only those two scheduler/allocation artifacts differ.
+// The original emits `li r31,1` (i = 1) before `addi r30,r30,0x38` (part = data->part) in the
+// loop preheader. mwcc (every version from GC/1.3 to GC/2.7 here) always schedules the pointer
+// advance first, in every source shape tried (separate statements, for-header comma, array-index
+// form, goto-labelled loop, integer-cast address). Turning scheduling off restores the order but
+// reorders ~20 other instructions, so it cannot be used.
+// The MUST_MATCH `akariColor` inline above fixes the GXColor stack slot the natural assignment
+// produces (local at r1+0xc vs the target's r1+0x8; the same quirk as eff_booboo_n64.c).
+// NONMATCHING (99.25%): only the preheader `li`/`addi` order differs.
 void effAkariPoseDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effAkariPoseData* data;
