@@ -2450,7 +2450,7 @@ The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only fu
 - **Function-order sweep**: `tools/fn_order.py UNIT [--write]` compares a unit's target `.text` symbol order with the source
   and moves each function (with its comment lines) into the slot that emits the target order (source lists functions from
   the highest target address to the lowest). 147 units had a different order; of the 60 that are complete (every target
-  function written), 35 could be reordered with no function scoring lower and the built order now equals the target's.
+  function written), 36 could be reordered with no function scoring lower and the built order now equals the target's.
   Left alone: units that then fail to build because a `static` function is called before it is defined (would need a
   forward declaration), units where a function score drops (the reorder changes what `-inline auto,deferred` inlines:
   ac_monosiri_target, battle_status_effect, eff_particle, evt_item, koopa_motion), and two where `.sdata2` got worse
