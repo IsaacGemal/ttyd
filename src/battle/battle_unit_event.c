@@ -4,8 +4,8 @@
 // NONMATCHING (98.71%): same instructions; only register numbers or operands differ.
 BOOL BattleCheckEndUnitInitEvent(BattleWork* wp) {
     BattleUnit* unit;
-    s32 i, eventId;
     BOOL valid;
+    s32 i, eventId;
 
     valid = TRUE;
     for (i = 0; i < 64; i++) {
@@ -95,13 +95,13 @@ s32 BattleRunPhaseEvent(BattleUnit* unit, BOOL isUnison) {
 
     if (isUnison) {
         code = unit->unisonPhaseEventCode;
-        if (!code) {
+        if (code) {
             evt = evtEntry(code, 0xA, 0x20);
         }
     }
     else {
         code = unit->phaseEventCode;
-        if (!code) {
+        if (code) {
             evt = evtEntry(code, 0xA, 0x20);
         }
     }

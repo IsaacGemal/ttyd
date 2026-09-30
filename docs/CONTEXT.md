@@ -2208,3 +2208,7 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
 - **battle_monosiri**'s table is 0xC4 with no padding: `eff_fukidashi`'s `.data` starts at 0x8036BEA0 with `align:16` (the
   12 bytes before it are that alignment). The `{-1, 1}` pair is `eff_fukidashi`'s.
 - **mot_hip** linked (`14.0f * marioGetScale() / 2.0f` gives the target's operand order).
+
+## Grind 17 (Claude #3)
+
+- **battle_unit_event** linked: `BattleRunPhaseEvent` entered the event only when the code pointer was NULL (`if (!code)`); retail has `if (code)`. Declaration order `valid` before `i` in `BattleCheckEndUnitInitEvent`.
