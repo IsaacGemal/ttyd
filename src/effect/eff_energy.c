@@ -3,6 +3,11 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 
+// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042335C_sbss2;
+__declspec(section ".sdata") GXColor unk_80423358;
+
 typedef struct EnergyData {
     s32 type;       // 0x00
     f32 x;          // 0x04
