@@ -8,10 +8,14 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423274;
+__declspec(section ".sdata") GXColor unk_80423270;
+
+
 // .rodata
 const Vec vec3_802fb6f0 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb700 = 4503601774854144.0;
-const char str_802FB708[0xC] = "StampN64";
 
 // .sdata2 shared float pool
 extern const f32 float_deg2rad_8041fde0;
@@ -33,8 +37,6 @@ extern const f32 float_1_8041fdec;
 extern const f32 float_0_8041fde8;
 
 // .sbss2 GXColor scratch globals used to seed the TEV colours.
-extern GXColor unk_80423270;
-extern GXColor unk_80423274;
 
 // .data
 u32 size16x16_tex64x32_vtx[0x38 / 4] = {
@@ -76,7 +78,7 @@ EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z) {
     s32 i;
 
     effect = effEntry();
-    effect->type = str_802FB708;
+    effect->type = "StampN64";
     effect->count = 8;
     data = __memAlloc(HEAP_EFFECT, 0x200);
     effect->userdata = data;
