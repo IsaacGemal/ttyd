@@ -26,18 +26,8 @@ typedef struct effCoinN64Spawn {
 	s32 scale; // 0x10
 } effCoinN64Spawn;
 
-const f64 double_to_int_802fa428 = 4503601774854144.0;
-const f32 float_0p01_8041ebec = 0.01f;
-const char str_802FA430[] = "CoinN64";
 
 // .sdata2 constants of this unit, referenced by effCoinDisp (names from the original).
-extern const u32 dat_8041ebd0;
-extern const f32 float_deg2rad_8041ebd4;
-extern const f32 float_1_8041ebd8;
-extern const f32 float_0p03125_8041ebdc;
-extern const f32 float_0p00625_8041ebe0;
-extern const f32 float_0_8041ebe4;
-extern const f32 float_32_8041ebe8;
 
 static effCoinN64Spawn _data[4] = {
 	{ 2, 0, 0, 0, 100 },
@@ -62,7 +52,7 @@ EffectEntry* effCoinN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 	s32 i;
 
 	effect = effEntry();
-	effect->type = str_802FA430;
+	effect->type = "CoinN64";
 	effect->count = 5;
 	data = __memAlloc(HEAP_EFFECT, 0xb4);
 	effect->userdata = data;
@@ -81,7 +71,7 @@ EffectEntry* effCoinN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 		p->position.z = (f32)src->z;
 		p->anim = -1;
 		p->timer = src->timer;
-		p->field_0x1C = scale * (f32)src->scale * float_0p01_8041ebec;
+		p->field_0x1C = scale * (f32)src->scale * 0.00999999978f;
 	}
 	return effect;
 }
@@ -146,7 +136,7 @@ void effCoinDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	PSMTXTrans(mtx0, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(mtx1, 'y', float_deg2rad_8041ebd4 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(mtx1, 'y', 0.0174532924f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtx0, mtx1, mtx2);
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
@@ -161,7 +151,7 @@ void effCoinDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
-	GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041ebd0);
+	GXSetTevColor(GX_TEVREG0, (GXColor){ 0xFF, 0xFF, 0x0F, 0xFF });
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -170,16 +160,16 @@ void effCoinDisp(CameraId camId, void* param) {
 		}
 		scale = data->field_0x1C;
 		PSMTXTrans(mtx0, data->position.x, data->position.y, data->position.z);
-		if (float_1_8041ebd8 != scale) {
-			PSMTXScale(scaleMtx, scale, scale, float_1_8041ebd8);
+		if (1.0f != scale) {
+			PSMTXScale(scaleMtx, scale, scale, 1.0f);
 			PSMTXConcat(mtx0, scaleMtx, mtx0);
 		}
 		PSMTXConcat(mtx2, mtx0, mtx0);
 		PSMTXConcat(cam->view, mtx0, mtx0);
 		GXLoadPosMtxImm(mtx0, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		PSMTXScale(scaleMtx, float_0p03125_8041ebdc, float_0p00625_8041ebe0, float_0_8041ebe4);
-		PSMTXTrans(mtx0, float_0_8041ebe4, float_32_8041ebe8 * (f32)(4 - (data->anim >> 1)), float_0_8041ebe4);
+		PSMTXScale(scaleMtx, 0.03125f, 0.00625000009f, 0.0f);
+		PSMTXTrans(mtx0, 0.0f, 32.0f * (f32)(4 - (data->anim >> 1)), 0.0f);
 		PSMTXConcat(scaleMtx, mtx0, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);

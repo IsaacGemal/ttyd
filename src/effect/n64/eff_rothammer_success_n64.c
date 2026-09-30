@@ -5,8 +5,6 @@
 #include <math.h>
 
 // .sdata2 scratch GXColor (only its bytes are copied into the TEV register).
-extern const u32 dat_8041fc00;
-extern const f32 float_deg2rad_8041fc04;
 
 // .data vertex array for the textured quad (local to this file in the original).
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
@@ -131,16 +129,16 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
     effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
     PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fc04);
+    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.0174532924f);
     PSMTXConcat(mtx, rotMtx, mtx);
     PSMTXConcat(cam->view, mtx, viewMtx);
 
-    color = *(GXColor*)&dat_8041fc00;
+    color = (GXColor){ 0xDC, 0xDC, 0x28, 0xE6 };
     GXSetTevColor(1, color);
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-        PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041fc04 * data->angle);
+        PSMTXRotRad(rotMtx, 'z', 0.0174532924f * data->angle);
         PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);

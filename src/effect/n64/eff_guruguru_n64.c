@@ -9,8 +9,6 @@
 #include <math.h>
 
 // .sdata2 constants belonging to this unit, referenced by name in the original asm.
-extern const f32 float_deg2rad_8041f0ac;
-extern const GXColor dat_8041f0a8;
 
 // .data: retail 16x16 quad vertex array used by effGuruguruDisp.
 static u32 size16x16_tex32x32_vtx[14] = {
@@ -19,12 +17,11 @@ static u32 size16x16_tex32x32_vtx[14] = {
 };
 
 // .rodata: scratch vector the original zeroes before filling in the effect position.
-const Vec vec3_802fa720 = { 0.0f, 0.0f, 0.0f };
 
 // Inline copy of system.c's helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
-    Vec temp = vec3_802fa720;
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
     temp.x = input->x;
     temp.y = input->y;
     temp.z = input->z;
@@ -134,16 +131,16 @@ void effGuruguruDisp(CameraId camId, void* param) {
         effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
         PSMTXTrans(mtx0, data->field_0x04, data->field_0x08, data->field_0x0C);
-        PSMTXRotRad(mtx1, 'y', float_deg2rad_8041f0ac * -camGetPtr(CAMERA_3D)->viewYaw);
+        PSMTXRotRad(mtx1, 'y', 0.0174532924f * -camGetPtr(CAMERA_3D)->viewYaw);
         PSMTXScale(scaleMtx, data->field_0x2C, data->field_0x2C, data->field_0x2C);
         PSMTXConcat(mtx0, mtx1, mtx2);
         PSMTXConcat(mtx2, scaleMtx, mtx2);
         PSMTXConcat(cam->view, mtx2, mtx2);
 
-        color = dat_8041f0a8;
+        color = (GXColor){ 0xDC, 0xDC, 0x28, 0xFF };
         GXSetTevColor(GX_TEVREG0, color);
 
-        deg2rad = float_deg2rad_8041f0ac;
+        deg2rad = 0.0174532924f;
         i = 1;
         data++;
         for (; i < effect->count; i++, data++) {
