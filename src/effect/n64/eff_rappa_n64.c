@@ -10,21 +10,9 @@
 
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
 #pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_80423234_sbss2;
 __declspec(section ".sdata") GXColor unk_80423230;
 
-
-__declspec(section ".data") u32 lbl_803A4A60[2] = {
-    0xBF800000, 0x3F800000,
-};
-
-// .rodata: zero vector the per-effect position helper starts from.
-const Vec vec3_802fb4a0 = { 0.0f, 0.0f, 0.0f };
-
-// .rodata: int->float conversion magic double.
-const f64 double_to_int_802fb4b0 = 4503601774854144.0;
-
-// .rodata: effect type name.
-const char str_802FB4B8[] = "RappaN64";
 
 // .data: one effVtxArray (0x38 bytes) for the textured quad.
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
@@ -34,8 +22,12 @@ static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
 	0x00000400, 0x000000FF,
 };
 
+__declspec(section ".data") u32 lbl_803A4A60[2] = {
+    0xBF800000, 0x3F800000,
+};
+
 // .sdata: byte-indexed color rotation table (36 bytes).
-static u8 color_rotation_data[36] = {
+static u8 color_rotation_data[40] = {
 	0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,
 	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
@@ -80,7 +72,7 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, 
 	if (count == 0) {
 		return NULL;
 	}
-	effect->type = str_802FB4B8;
+	effect->type = "RappaN64";
 	effect->count = count + 1;
 	data = __memAlloc(HEAP_EFFECT, (count + 1) * sizeof(effRappaData));
 	effect->userdata = data;
