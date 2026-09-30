@@ -5,6 +5,8 @@
 #include "mario/mario_pouch.h"
 #include "system.h"
 
+// dont_inline keeps the setters real `bl`s from BattleInformationInit as in retail.
+#pragma dont_inline on
 void BattleInformationSetMode(FieldBattleInfo* info, u32 mode) {
 	info->mode = mode;
 }
@@ -17,18 +19,30 @@ void BattleInformationSetFirstAttack(FieldBattleInfo* info, u32 partyId) {
 	info->partyId = partyId;
 }
 
-// NONMATCHING (3.57%): empty placeholder, not decompiled yet.
-void BattleInformationInit(FieldBattleInfo* info) {
+#pragma dont_inline reset
 
+void BattleInformationInit(FieldBattleInfo* info) {
+	BattleInformationSetMode(info, 0);
+	BattleInformationSetParty(info, 0);
+	BattleInformationSetFirstAttack(info, 0);
+	BattleInformationSetResult(info, 0);
+	info->setup = NULL;
+	*(u32*)&info->field_0x14[0] = 0;
+	info->field_0x14[4] = 0;
+	info->field_0x14[5] = 0;
+	info->field_0x14[6] = 0;
+	info->field_0x14[7] = 0;
 }
 
 void BattleInfomationSetBattleSetupInfo(FieldBattleInfo* info, NpcBattleInfo* setup) {
 	info->setup = setup;
 }
 
+#pragma dont_inline on
 void BattleInformationSetResult(FieldBattleInfo* info, u32 result) {
 	info->result = result;
 }
+#pragma dont_inline reset
 
 u32 BattleInformationGetResult(FieldBattleInfo* info) {
 	return info->result;

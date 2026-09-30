@@ -39,7 +39,7 @@ void* arcOpen(const char* filename, void** addr, u32* length) {
 			if (length) {
 				*length = ARCGetLength(&info);
 			}
-			ARCClose();
+			ARCClose(&info);
 			return startAddr;
 		}
 	}

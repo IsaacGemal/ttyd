@@ -27,12 +27,11 @@ typedef struct ARCFileInfo {
 } ARCFileInfo;
 
 s32 ARCConvertPathToEntrynum(ARCHandle* handle, const char* path);
+BOOL ARCConvertEntrynumToPath(ARCHandle* handle, s32 entrynum, char* path, u32 maxlen);
+BOOL ARCGetCurrentDir(ARCHandle* handle, char* path, u32 maxlen);
 BOOL ARCOpen(ARCHandle* handle, const char* filename, ARCFileInfo* info);
 BOOL ARCInitHandle(void* arcStart, ARCHandle* handle);
-
-
-
 void* ARCGetStartAddrInMem(ARCFileInfo* info);
 u32 ARCGetLength(ARCFileInfo* info);
-void ARCClose(void);
-
+BOOL ARCClose(ARCFileInfo* info);
+u32 myStrncpy(char* dest, signed char* src, u32 maxlen);

@@ -220,7 +220,7 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 			goto after;
 		}
 	} else {
-		if ((s32)BattlePadCheckTrigger(0x20000)) {
+		if (BattlePadCheckTrigger(0x20000)) {
 			cursor->field_0 = 0;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 			goto after;
@@ -233,16 +233,16 @@ s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 			goto after;
 		}
 	} else {
-		if ((s32)BattlePadCheckTrigger(0x10000)) {
+		if (BattlePadCheckTrigger(0x10000)) {
 			cursor->field_0 = cursor->unk8 - 1;
 			psndSFXOn("SFX_BTL_CURSOR_MOVE2");
 		}
 	}
 after:
-	if ((s32)BattlePadCheckTrigger(0x200)) {
+	if (BattlePadCheckTrigger(0x200)) {
 		done = 1;
 		cancel = 0;
-	} else if ((s32)BattlePadCheckTrigger(0x100)) {
+	} else if (BattlePadCheckTrigger(0x100)) {
 		done = 1;
 		if (cursor->field_0 == 0) {
 			cancel = 1;
@@ -276,7 +276,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	s32 result = 0;
 
 	_btlcmd_GetCursorPtr(cmd, 0xE, &cursor);
-	if ((s32)BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
+	if (BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
 		psndSFXOn((char*)0x9D8);
 		BattleCommandDisplay_ActMenuEnd(wp);
 		*(s32*)&cmd->unk540[0] = 9;
@@ -332,7 +332,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 				*(s32*)&wp->commandMenu.unk540[0x14] = 0;
 			}
 		}
-		if ((s32)BattlePadCheckTrigger(0x100) || wp->commandMenu.unk540[0x18] != 0) {
+		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.unk540[0x18] != 0) {
 			if (wcmd->mActionTable[cursor->field_0].mEnabled) {
 				psndSFXOn((char*)0x9D8);
 				*(s32*)&cmd->unk540[0] = wcmd->mActionTable[cursor->field_0].mType;
@@ -403,7 +403,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		if (BattleCommandAttackAudienceCheck()) {
 			goto end;
 		}
-		if ((s32)BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
+		if (BattlePadCheckTrigger(0x800) && BattleCommandCheckChangePositionEnable(wp)) {
 			psndSFXOn((char*)0x9D8);
 			BattleCommandDisplay_ActMenuEnd(wp);
 			*(s32*)&cmd->unk540[0] = 9;
