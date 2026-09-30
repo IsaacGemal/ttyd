@@ -15,6 +15,13 @@ __declspec(section ".sdata") GXColor unk_80423100;
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// Local to this unit in the original (`.obj scale_data, local`).
+static f32 scale_data[30] = {
+    0.01f, 0.05f, 0.1f, 0.2f, 0.35f, 0.5f, 0.65f, 0.8f, 0.95f, 1.0f,
+    1.0f,  1.0f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  1.0f, 1.0f,  1.0f,
+    1.0f,  0.95f, 0.8f, 0.65f, 0.5f, 0.35f, 0.2f, 0.1f, 0.05f, 0.01f,
+};
+
 u32 size4x4_tex32x32_vtx[14] = {
     0xFFFEFFFE, 0x00000000, 0x00000000, 0x00FF0002,
     0xFFFE0000, 0x04000000, 0x000000FF, 0x00020002,
@@ -58,24 +65,11 @@ typedef struct effFireSparkData {
 } effFireSparkData;
 
 // .sdata2 and .rodata constants named after their original addresses (defined by the split map).
-extern const f32 float_30_8041eec0;
-extern const f32 float_0p5_8041eeac;
 extern const f32 float_deg2rad_8041ee9c;
 extern const f32 float_0p03125_8041eea0;
 extern const f32 float_0p0078125_8041eea4;
-extern const f32 float_0_8041eea8;
-extern const f32 float_0p05_8041eeb0;
-extern const f32 float_0p1_8041eeb4;
-extern const f32 float_0p3_8041eeb8;
-extern const f32 float_0p04_8041eebc;
 extern const Vec vec3_802fa5b0;
 
-// Local to this unit in the original (`.obj scale_data, local`).
-static f32 scale_data[30] = {
-    0.01f, 0.05f, 0.1f, 0.2f, 0.35f, 0.5f, 0.65f, 0.8f, 0.95f, 1.0f,
-    1.0f,  1.0f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  1.0f, 1.0f,  1.0f,
-    1.0f,  0.95f, 0.8f, 0.65f, 0.5f, 0.35f, 0.2f, 0.1f, 0.05f, 0.01f,
-};
 extern const GXColor dat_8041ee98;
 
 EffectEntry* effFireSparkN64Entry(s32 type, s32 count, s32 life, f32 a4, f32 a5, f32 a6, f32 a7, f32 a8, f32 a9, f32 a10, f32 a11) {
@@ -117,8 +111,8 @@ EffectEntry* effFireSparkN64Entry(s32 type, s32 count, s32 life, f32 a4, f32 a5,
     data->field_0x38 = 0;
     data->field_0x3C = 0xff;
 
-    ratio = float_30_8041eec0 / (f32)(count - 1);
-    ratio *= float_0p5_8041eeac;
+    ratio = 30.f / (f32)(count - 1);
+    ratio *= 0.5f;
     ptr = data + 1;
     for (i = 1; i < count; i++, ptr++) {
         ptr->field_0x64 = (s32)(-(f32)i * ratio) - 1;
@@ -180,7 +174,7 @@ void effFireSparkMain(EffectEntry* effect) {
     }
 
     rangeX = (s32)data->field_0x10;
-    half = float_0p5_8041eeac * data->field_0x10;
+    half = 0.5f * data->field_0x10;
     rangeY = (s32)data->field_0x14;
     v68 = data->field_0x68;
     v6C = data->field_0x6C;
@@ -197,13 +191,13 @@ void effFireSparkMain(EffectEntry* effect) {
         if (data->field_0x64 == 0) {
             data->field_0x04 = (f32)(rand() % rangeX) - half;
             data->field_0x08 = (f32)(rand() % rangeY);
-            data->field_0x0C = float_0_8041eea8;
-            data->field_0x44 = float_0p05_8041eeb0 * (f32)(rand() % 20 - 10);
-            data->field_0x48 = float_0p05_8041eeb0 * (v68 * (f32)(rand() % 40 - 1));
-            data->field_0x4C = float_0_8041eea8;
-            data->field_0x50 = float_0p05_8041eeb0 * (f32)(rand() % 20 - 10);
-            data->field_0x54 = float_0p05_8041eeb0 * (v6C * (f32)(rand() % 30 - 1));
-            data->field_0x58 = float_0_8041eea8;
+            data->field_0x0C = 0.0f;
+            data->field_0x44 = 0.05f * (f32)(rand() % 20 - 10);
+            data->field_0x48 = 0.05f * (v68 * (f32)(rand() % 40 - 1));
+            data->field_0x4C = 0.0f;
+            data->field_0x50 = 0.05f * (f32)(rand() % 20 - 10);
+            data->field_0x54 = 0.05f * (v6C * (f32)(rand() % 30 - 1));
+            data->field_0x58 = 0.0f;
             data->field_0x5C = (f32)(rand() % 16);
             data->field_0x60 = (f32)(rand() % 16);
         }
@@ -211,11 +205,11 @@ void effFireSparkMain(EffectEntry* effect) {
         data->field_0x04 += data->field_0x44;
         data->field_0x08 += data->field_0x48;
         data->field_0x0C += data->field_0x4C;
-        data->field_0x5C += float_0p1_8041eeb4;
-        data->field_0x60 += float_0p3_8041eeb8;
-        data->field_0x44 += float_0p04_8041eebc * (data->field_0x50 - data->field_0x44);
-        data->field_0x48 += float_0p04_8041eebc * (data->field_0x54 - data->field_0x48);
-        data->field_0x4C += float_0p04_8041eebc * (data->field_0x58 - data->field_0x4C);
+        data->field_0x5C += 0.1f;
+        data->field_0x60 += 0.3f;
+        data->field_0x44 += 0.04f * (data->field_0x50 - data->field_0x44);
+        data->field_0x48 += 0.04f * (data->field_0x54 - data->field_0x48);
+        data->field_0x4C += 0.04f * (data->field_0x58 - data->field_0x4C);
     }
 
 #ifdef MUST_MATCH
@@ -336,18 +330,18 @@ void effFireSparkDisp(CameraId camId, void* param) {
         PSMTXConcat(viewMtx, m0, m0);
         GXLoadPosMtxImm(m0, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
-        PSMTXScale(m2, float_0p03125_8041eea0, float_0p0078125_8041eea4, float_0_8041eea8);
+        PSMTXScale(m2, float_0p03125_8041eea0, float_0p0078125_8041eea4, 0.0f);
 #ifdef MUST_MATCH
-        // Match-only: literal 0.0f instead of the named float_0_8041eea8 makes the signed i%4*32 conversion
+        // Match-only: literal 0.0f instead of the named 0.0f makes the signed i%4*32 conversion
         // schedule its constant loads as the original does. It adds an anonymous 0.0 to .sdata2.
         PSMTXTrans(m0, 0.0f, (f32)(i % 4 * 32), 0.0f);
 #else
-        PSMTXTrans(m0, float_0_8041eea8, (f32)(i % 4 * 32), float_0_8041eea8);
+        PSMTXTrans(m0, 0.0f, (f32)(i % 4 * 32), 0.0f);
 #endif
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
-        PSMTXScale(m2, float_0p03125_8041eea0, float_0p03125_8041eea0, float_0_8041eea8);
-        PSMTXTrans(m0, data->field_0x5C, data->field_0x60, float_0_8041eea8);
+        PSMTXScale(m2, float_0p03125_8041eea0, float_0p03125_8041eea0, 0.0f);
+        PSMTXTrans(m0, data->field_0x5C, data->field_0x60, 0.0f);
         PSMTXConcat(m2, m0, m2);
         GXLoadTexMtxImm(m2, GX_TEXMTX1, GX_MTX2x4);
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
@@ -361,10 +355,3 @@ const GXColor dat_8041ee98 = { 0x7F, 0x7F, 0x7F, 0x00 };
 const f32 float_deg2rad_8041ee9c = 0.017453292f;
 const f32 float_0p03125_8041eea0 = 0.03125f;
 const f32 float_0p0078125_8041eea4 = 0.0078125f;
-const f32 float_0_8041eea8 = 0.0f;
-const f32 float_0p5_8041eeac = 0.5f;
-const f32 float_0p05_8041eeb0 = 0.05f;
-const f32 float_0p1_8041eeb4 = 0.1f;
-const f32 float_0p3_8041eeb8 = 0.3f;
-const f32 float_0p04_8041eebc = 0.04f;
-const f32 float_30_8041eec0 = 30.0f;
