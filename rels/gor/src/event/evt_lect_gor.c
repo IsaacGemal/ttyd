@@ -22,7 +22,6 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/hitdrv.h"
-#include "driver/icondrv.h"
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/npcdrv.h"
@@ -198,32 +197,40 @@ static USER_FUNC(x_flag_wait) {
     return (value == x_flag_data[idx]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (85.88%: only the button/position pointer register (r9/r4 vs r6/r9) and the position load order differ.)
+// The iconId 0x75..0x7D range test is a switch: MWCC lowers the grouped cases to the
+// original's `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain.
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
+        LectureButton* b = &lbtn[i];
+#ifdef MUST_MATCH
+        Vec* ppos = (Vec*)((u8*)b + 8);
+        u8* pposb;
+#endif
+        f32 yoff;
+        Vec pos;
 
-        if (!(btn->flags & 1)) {
-            f32 y;
-
-            if (btn->iconId < 0x7E) {
-                if (btn->iconId < 0x75) {
-                    y = 0.0f;
-                } else {
-                    y = -15.0f;
-                }
-            } else {
-                y = 0.0f;
-            }
-            {
-                Vec pos = btn->position;
-
-                pos.y += y;
-                iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
-            }
+        if (b->flags & 1) {
+            continue;
         }
+        switch (b->iconId) {
+            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
+            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
+                yoff = -15.0f;
+                break;
+            default:
+                yoff = 0.0f;
+                break;
+        }
+#ifdef MUST_MATCH
+        pposb = (u8*)ppos + 4;
+        pos = *(Vec*)pposb;
+#else
+        pos = b->position;
+#endif
+        pos.y += yoff;
+        iconDispGxAlpha(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
     }
 }
 

@@ -2194,7 +2194,7 @@ USER_FUNC(aud_fire_hit) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.25%): register scheduling
+
 USER_FUNC(aud_fire_no_hit) {
     s32* args = event->args;
     s32 transId1;
@@ -2207,7 +2207,10 @@ USER_FUNC(aud_fire_no_hit) {
     EffectEntry* effect;
     BattleAudienceMember* aud;
     EventEntry* ev;
-    Vec pos;
+    Vec position;
+    f32 posx;
+    f32 posy;
+    f32 posz;
     f32 hx;
     f32 hy;
     f32 hz;
@@ -2217,10 +2220,10 @@ USER_FUNC(aud_fire_no_hit) {
     start = evtGetValue(event, args[2]);
     if (isFirstCall) {
     unit = BattleGetUnitPtr(_battleWorkPointer, transId1);
-    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-    pos.x += 10.0f;
-    pos.y += 78.0f;
-    effect = effKemuTestEntry(11, pos.x - 50.0f, pos.y + 20.0f, pos.z + 50.0f, 0.75f);
+    BtlUnit_GetPos(unit, &posx, &posy, &posz);
+    posx += 10.0f;
+    posy += 78.0f;
+    effect = effKemuTestEntry(11, posx - 50.0f, posy + 20.0f, posz + 50.0f, 0.75f);
     effKemuTestSetRxRz(effect, 40.0f, 110.0f);
     unit2 = BattleGetUnitPtr(_battleWorkPointer, transId2);
     parts = BtlUnit_GetPartsPtr(unit2, BtlUnit_GetBodyPartsId(unit2));
@@ -2228,17 +2231,21 @@ USER_FUNC(aud_fire_no_hit) {
     for (i = start; i < start + 2; i++) {
         aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
         BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
-        aud->position = (Vec){ pos.x, pos.y, pos.z };
+        position = (Vec){0.0f, 0.0f, 0.0f};
+        position.x = posx;
+        position.y = posy;
+        position.z = posz;
+        aud->position = position;
         aud->interpFramesTotal = 0;
         *(s32*)aud->field_0x8 = 0;
         aud->mRotation.y = 0.0f;
-        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
         *(f32*)(aud->field_0x54 + 0x10) = 1.0f;
+        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
         aud->flags |= 4;
         ev = evtEntry(aud_hit_event, 0, 0x20);
         ev->lwData[0] = ((s32*)list[0])[i];
         ev->lwData[1] = FLOAT(-275.0f);
-        ev->lwData[2] = FLOAT(hy - 20.0f);
+        ev->lwData[2] = FLOAT((hy - 20.0f));
         ev->lwData[3] = FLOAT(hz);
         ev->lwData[4] = 0;
         ev->lwData[5] = irand(3) + 10;

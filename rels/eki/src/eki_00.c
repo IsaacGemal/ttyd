@@ -1205,8 +1205,6 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
 
 #pragma opt_propagation reset
 
-// NONMATCHING (95.8%): only the int->float `0x4330` block schedules the `lfd` magic, `lfs 0.5`
-// and the `fadds 180+angle` in a different order; all instructions and values are equal.
 static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5) {
     f32 hitX;
     f32 hitY;
@@ -1248,7 +1246,7 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32
     dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->position.x, pose->position.z);
     angle = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->position.x, pose->position.z);
     pose->field_0x18 = (s16)(dist / pose->field_0x1C);
-    pose->field_0x14 = pose->field_0x20 * (f32)pose->field_0x18 * 0.5f + ty / (f32)pose->field_0x18;
+    pose->field_0x14 = pose->field_0x20 * (f32)pose->field_0x18 / 2.0f + ty / (f32)pose->field_0x18;
     pose->field_0x02 = 3;
     pose->field_0x24 = b;
     ep->field_0x4 = angle + 180.0f;

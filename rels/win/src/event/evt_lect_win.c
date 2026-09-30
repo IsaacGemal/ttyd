@@ -15,7 +15,6 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/hitdrv.h"
-#include "driver/icondrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
 #include "eff/eff_fukidashi.h"
@@ -48,10 +47,6 @@ typedef struct LectureButton {
     s16 alpha;                  // 0x42
 } LectureButton;                // 0x44
 
-extern const f32 zero_win_00006230;
-extern const f32 float_0p5_win_00006234;
-extern const f32 float_neg15_win_00006240;
-extern const f32 float_1_win_00006244;
 extern const Vec vec3_win_00006060;
 extern const Vec vec3_win_0000606c;
 
@@ -87,6 +82,10 @@ static USER_FUNC(lecture_button_set_alpha);
 static USER_FUNC(lecture_button_set_icon_id);
 static USER_FUNC(lecture_button_rtn);
 static void lecture_button_disp(CameraId cameraId, void* param);
+// iconDispGxAlpha's definition takes the icon id as s16, but this unit's original passes it
+// zero-extended (u16); declare it with the width this file's asm passes (see
+// tools/local_prototype_exceptions.json).
+void iconDispGxAlpha(Vec* position, s16 flags, u16 iconId, u8 alpha, f32 scale);
 static USER_FUNC(x_flag_wait);
 static USER_FUNC(x_flag_get);
 static USER_FUNC(x_flag_add);
@@ -185,35 +184,47 @@ static USER_FUNC(x_flag_wait) {
     return ((u32)(val - x_flag_data[idx]) <= 0) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (85.88%): the branches are right (bge zero / bge neg15 / b zero) and the loop registers
-// match (r29 lbtn, r30 byte offset, r31 i), but the button address lands in r6 instead of r9, so the
-// compiler does not emit the separate `addi r4, r9, 0x8` position base and reads pos off r6; the inner
-// `< 0x75` test also leaves one extra `lfs 0.0` in the fall-through. Same wall as the gor sibling.
+// The iconId 0x75..0x7D range is a switch: MWCC lowers the grouped cases to the original's
+// `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. Writing it as
+// `if (a < 0x7E && a >= 0x75)` instead makes MWCC invert the second branch (`blt zero`).
+// `ppos` reproduces the original's separate `addi r4, r9, 0x8` position base (see MUST_MATCH).
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
+        LectureButton* b = &lbtn[i];
+#ifdef MUST_MATCH
+        u8* ppos = (u8*)b + 8;
+#endif
+        f32 yoff;
+        Vec pos;
 
-        if (!(btn->flags & 1)) {
-            f32 y;
-
-            if (btn->iconId < 0x7E) {
-                if (btn->iconId < 0x75) {
-                    y = zero_win_00006230;
-                } else {
-                    y = float_neg15_win_00006240;
-                }
-            } else {
-                y = zero_win_00006230;
-            }
-            {
-                Vec pos = btn->position;
-
-                pos.y += y;
-                iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, float_1_win_00006244);
-            }
+        if (b->flags & 1) {
+            continue;
         }
+        switch (b->iconId) {
+            case 0x75:
+            case 0x76:
+            case 0x77:
+            case 0x78:
+            case 0x79:
+            case 0x7A:
+            case 0x7B:
+            case 0x7C:
+            case 0x7D:
+                yoff = -15.0f;
+                break;
+            default:
+                yoff = 0.0f;
+                break;
+        }
+#ifdef MUST_MATCH
+        pos = *(Vec*)(ppos + 4);
+#else
+        pos = b->position;
+#endif
+        pos.y += yoff;
+        iconDispGxAlpha(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
     }
 }
 
@@ -263,7 +274,7 @@ static USER_FUNC(lecture_button_rtn) {
     if (done >= 2) {
         return EVT_RETURN_DONE;
     }
-    dispEntry(8, zero_win_00006230, 1, lecture_button_disp, NULL);
+    dispEntry(8, 0.0f, 1, lecture_button_disp, NULL);
     return EVT_RETURN_BLOCK;
 }
 
@@ -445,15 +456,15 @@ static USER_FUNC(lect_itemget_kesan) {
     f32 dist = evtGetFloat(event, args[1]);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     if (party == NULL) {
-        evtSetFloat(event, args[2], zero_win_00006230);
-        evtSetFloat(event, args[3], zero_win_00006230);
-        evtSetFloat(event, args[4], zero_win_00006230);
+        evtSetFloat(event, args[2], 0.0f);
+        evtSetFloat(event, args[3], 0.0f);
+        evtSetFloat(event, args[4], 0.0f);
         return EVT_RETURN_DONE;
     }
     {
         Vec pos = party->position;
         Vec out;
-        pos.y += *(f32*)((u8*)party + 0xF0) * float_0p5_win_00006234;  // TODO: unnamed field, padding in party.h
+        pos.y += *(f32*)((u8*)party + 0xF0) / 2.0f;  // TODO: unnamed field, padding in party.h
         PSVECSubtract(&pos, &cam->cameraPos, &out);
         PSVECNormalize(&out, &out);
         PSVECScale(&out, &out, dist);
@@ -724,8 +735,4 @@ EVT_BEGIN(all_party_lecture_30_data_192D4)
     RETURN
 EVT_END()
 
-const f32 zero_win_00006230 = 0.0f;
-const f32 float_0p5_win_00006234 = 0.5f;
-const f32 float_neg15_win_00006240 = -15.0f;
-const f32 float_1_win_00006244 = 1.0f;
 // clang-format on

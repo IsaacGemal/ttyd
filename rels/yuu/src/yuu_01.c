@@ -649,9 +649,9 @@ static inline f32 monte_rand(f32 min, f32 max) {
     return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
 }
 
-// NONMATCHING (95.35%): the dead proximity loop now uses the original's 0x38 stride and +8 entry
-// base; the remaining diff is register allocation / scheduling in the generation loop (x/z pointer
-// temporaries r26/r27 swapped, an extra `mr` for the psndSFX string). Logic matches.
+// NONMATCHING (99.44%): base[2]=0.0f is set before the do-while and base[4]=1.0f after it, matching the
+// target's store layout. Only register ties remain: the z min/max pointers land in r26/r27 reversed (z
+// subtraction in f0, not f1) and the psndSFX string address gets an extra `mr` into r21 instead of r26.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -693,8 +693,8 @@ static USER_FUNC(fall_rtn) {
             f32 min;
             f32 max;
 
+            base[2] = 0.0f;
             do {
-                base[2] = 0.0f;
                 lo = montetable[tableIdx].xmin;
                 hi = montetable[tableIdx].xmax;
                 if (lo < hi) {
@@ -732,9 +732,8 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
+    sfx = "SFX_EVT_GAME_MONTE_COUNT1";
     {
-        const char* sfx2 = "SFX_EVT_GAME_MONTE_COUNT1";
-        sfx = sfx2;
         for (i = 0; i < monte_p->count; i++) {
             MonteEntry* p = &monte_p[i];
             switch (p->unk4) {

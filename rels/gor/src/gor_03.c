@@ -5326,7 +5326,6 @@ USER_FUNC(goryuugijo_main_slot) {
     }
 }
 
-// NONMATCHING (99.19%): iconDispGx2 third param is s16 in the header (matches src/driver/icondrv.c), so MWCC emits extsh; original emits only clrlwi (the real param is u16).
 void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     u8* p = (u8*)((void**)param)[7];
     u32 tbl[3] = {0x1f3, 0x1f3, 0x1f3};
@@ -5361,7 +5360,12 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
             iconDispGx2(mtx, 0x10, 0x1f2);
             PSMTXTrans(trans, -304.0f + sx, 31.35f + (240.0f - sy), 0.0f);
             PSMTXConcat(trans, scale, mtx);
+#ifdef MUST_MATCH
+            // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
+            ((void (*)(Mtx, s16, u16))iconDispGx2)(mtx, 0x10, (u16)tbl[i]);
+#else
             iconDispGx2(mtx, 0x10, (u16)tbl[i]);
+#endif
         }
     }
 }

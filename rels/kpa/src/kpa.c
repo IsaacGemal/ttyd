@@ -708,20 +708,23 @@ USER_FUNC(kpa_pole_hitoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (87.11%): only the two float literals' load order/registers differ
-// (ours loads -140 into r4 base and 40 via addi+0; the original loads 40 into r4 and
-// -140 via addi+0(r5)). Pure scheduling/addressing.
+#pragma opt_propagation off // the default propagation assigns the -140/40 address bases to the opposite registers
 void kpa_stageclear_disp(CameraId cameraId, void* param) {
     GXColor color;
+    f32 x;
+    f32 y;
 
     FontDrawStart();
     FontDrawScale(2.0f);
     FontDrawEdge();
     color = dat_kpa_000015cc;
     FontDrawColor(&color);
-    FontDrawString("ゴールイン！！", -140.0f, 40.0f);
+    x = -140.0f;
+    y = 40.0f;
+    FontDrawString("ゴールイン！！", x, y);
     FontDrawEdgeOff();
 }
+#pragma opt_propagation reset
 
 USER_FUNC(kpa_stageclear_disp_entry) {
     dispEntry(8, 1000.0f, 0, kpa_stageclear_disp, NULL);

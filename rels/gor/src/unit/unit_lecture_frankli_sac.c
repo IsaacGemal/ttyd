@@ -191,12 +191,16 @@ EVT_END()
 #pragma opt_dead_assignments off
 #pragma opt_common_subs off
 #pragma opt_propagation off
-// NONMATCHING (94.56%): 16 of 62 instructions differ: 13 with different operands, 1 replaced, 2 missing
 static USER_FUNC(lecture_init) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleAudience* aud = BattleAudienceBaseGetPtr();
     s32 ids[11] = { 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0x30 };
     s32 i;
+#ifdef MUST_MATCH
+    s32 id = 0; // dead store: keeps id in r29 and the loop counter in r28
+#else
+    s32 id;
+#endif
 
     *(s32*)slot |= 1;
     aud->flags |= 0x40000;
@@ -204,12 +208,13 @@ static USER_FUNC(lecture_init) {
         BattleAudience_Delete(i);
     }
     for (i = 0; i < 11; i++) {
-            if (ids[i] != 0x30) {
-                BattleAudience_Entry(ids[i], 0, 0);
-            } else {
-                BattleAudience_Entry(ids[i], 3, 0);
-                BattleAudienceGetPtr(ids[i])->flags |= 0x200;
-            }
+        id = ids[i];
+        if (id != 0x30) {
+            BattleAudience_Entry(id, 0, 0);
+        } else {
+            BattleAudience_Entry(id, 3, 0);
+            BattleAudienceGetPtr(id)->flags |= 0x200;
+        }
     }
     return EVT_RETURN_DONE;
 }

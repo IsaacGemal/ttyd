@@ -818,7 +818,6 @@ static ChorogunExtEntry chorogun_ext_entry_data[21] = {
 };
 
 
-// NONMATCHING (99.84%): callee-saved register assignment and the read-only float/vec pool differ.
 USER_FUNC(chorogun_dive_target) {
     s32 ids[1000];
     s32 i;
@@ -834,7 +833,6 @@ USER_FUNC(chorogun_dive_target) {
     f32 tz;
     f32 delayF;
     f32 px;
-    f32 pz;
     f32 d2;
     f32 y;
     f32 t;
@@ -857,10 +855,9 @@ USER_FUNC(chorogun_dive_target) {
     BtlUnit_GetPos(unit, &x, &y, &z);
     sel = &pose[idx];
     px = (*sel->matrix)[0][3];
-    pz = (*sel->matrix)[2][3];
-    t = y - pz;
+    t = y - (*sel->matrix)[2][3];
     d2 = 2.0f * delayF;
-    tz = z - pz;
+    tz = z - (*sel->matrix)[2][3];
     entry->position.x = (x - px) / delayF;
     entry->position.y = (2.0f * t - (-0.5f * delayF * delayF)) / d2;
     entry->position.z = tz / delayF;

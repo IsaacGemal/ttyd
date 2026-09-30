@@ -4,7 +4,6 @@
 #include "driver/effdrv.h"
 #include "driver/fadedrv.h"
 #include "driver/hitdrv.h"
-#include "driver/icondrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
 #include "eff/eff_itemget.h"
@@ -132,23 +131,42 @@ static USER_FUNC(x_flag_wait) {
     return value == x_flag_data[index] ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (90.21%): the button Vec is based off &lbtn[i]+0x8 in the target and the iconId<0x7e/>=0x75
-// branch block layout differs (bge vs blt); same instructions otherwise.
 static void lecture_button_disp(CameraId camId, void* param) {
     s32 i;
     for (i = 0; i < 2; i++) {
-        if (!(lbtn[i].flags & 1)) {
-            s16 iconId = lbtn[i].iconId;
-            f32 yofs;
+        LectureButton* btn = &lbtn[i];
+#ifdef MUST_MATCH
+        // The original addresses the button Vec off &lbtn[i] + 8 with a +4 displacement; matching MWCC's
+        // base register needs the pointer built the same way. The natural btn->position scores lower.
+        u8* ppos = (u8*)&lbtn[i] + 8;
+#endif
+        if (!(btn->flags & 1)) {
             Vec pos;
-            if (iconId < 0x7e && iconId >= 0x75) {
-                yofs = -15.0f;
-            } else {
-                yofs = 0.0f;
+            f32 yOff;
+
+            switch (btn->iconId) {
+            case 0x75:
+            case 0x76:
+            case 0x77:
+            case 0x78:
+            case 0x79:
+            case 0x7A:
+            case 0x7B:
+            case 0x7C:
+            case 0x7D:
+                yOff = -15.0f;
+                break;
+            default:
+                yOff = 0.0f;
+                break;
             }
-            pos = lbtn[i].position;
-            pos.y += yofs;
-            iconDispGxAlpha(&pos, 0x50, iconId, lbtn[i].alpha, 1.0f);
+#ifdef MUST_MATCH
+            pos = *(Vec*)(ppos + 4);
+#else
+            pos = btn->position;
+#endif
+            pos.y += yOff;
+            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
         }
     }
 }

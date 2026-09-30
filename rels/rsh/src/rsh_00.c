@@ -379,11 +379,11 @@ void moamoa_main(void) {
 void moamoa_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)ext_disp, NULL);
 }
-// NONMATCHING (94.76%, 328 B vs 332 B): MWCC folds the single global read of `wp` into the
-// displacement (`lwz rD, wp@l(rB)`) where the original materialises the address
-// (`addi rB, rB, wp@l; lwz rD, 0(rB)`), and it schedules the `extGetPosePtr` return copy after the load
-// instead of before, so `pose`/`entry` land in r31/r29 (retail r29/r31). Everything else is identical;
-// the missing instruction shifts every later function.
+// MWCC normally folds the single global read of `wp` into the displacement
+// (`lwz rD, wp@l(rB)`) where the original materialises the address
+// (`addi rB, rB, wp@l; lwz rD, 0(rB)`). Under MUST_MATCH a one-iteration loop keeps the address
+// materialised (LICM hoists `&wp` out of the loop before unrolling it).
+// NONMATCHING (99.1%): register colouring of `event` and `id` differs.
 USER_FUNC(evt_moamoa_set_one) {
     ExtPose* pose;
     MoamoaEntry* entry;
@@ -394,7 +394,19 @@ USER_FUNC(evt_moamoa_set_one) {
     f32 z = evtGetFloat(event, args[3]);
 
     pose = extGetPosePtr();
+#ifdef MUST_MATCH
+    {
+        s32 i;
+
+        // A one-iteration loop: LICM hoists `&wp` out before the loop is unrolled, leaving the
+        // `addi;lwz` materialisation retail has instead of the folded `lwz wp@l(rB)`.
+        for (i = 0; i < 1; i++) {
+            entry = &wp->entries[id];
+        }
+    }
+#else
     entry = &wp->entries[id];
+#endif
 
     entry->state = 3;
     {

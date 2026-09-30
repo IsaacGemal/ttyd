@@ -1957,7 +1957,10 @@ USER_FUNC(bom1000_msg) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (87.15%): original keeps 3 float temps live (f29/f30/f31); this keeps 2
+// keeps the three float temps and the schedule the target has (see the NONMATCHING note)
+#pragma opt_common_subs off
+// NONMATCHING (99.66%): the first block loads float_100 into r4 and zero into r3;
+// the target has float_100 in r3 and zero in r4 (f29/f30/f31 and the second block match).
 USER_FUNC(taihou_r) {
     f32 c;
     f32 s;
@@ -1972,6 +1975,7 @@ USER_FUNC(taihou_r) {
     effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
     return EVT_RETURN_DONE;
 }
+#pragma opt_common_subs reset
 
 // clang-format on
 
