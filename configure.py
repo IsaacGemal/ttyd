@@ -397,7 +397,7 @@ config.libs = [
             Object(NonMatching, "battle/ac/ac_repeatedly_lv.c"),
             Object(NonMatching, "battle/ac/ac_stick_rotate.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/ac/ac_button_down.c"),
-            Object(NonMatching, "battle/ac/ac_timing_wide.c"),
+            Object(Matching, "battle/ac/ac_timing_wide.c"),
             Object(NonMatching, "battle/ac/ac_pendulum_crane_timing.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/ac/ac_air_gauge.c"),
             Object(Matching, "battle/ac/ac_crane_timing.c"),
