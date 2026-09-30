@@ -143,11 +143,38 @@ void effSunlightMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSunlightDisp, effect);
 }
 
-// NONMATCHING (96.78%): the target keeps one r31 base across the function and reaches the three Vecs
-// and the int->float double as offsets from it, while mwcc addresses vec3_802fb7d4/e0/ec and
-// double_to_int_802fb7f8 separately; the userdata pointer and the 0x4330 constant / loop counter swap
-// r30/r31, and the GXColor locals land at 0x14/0x10 and are copied to 0xc/0x8 where the target builds
-// at 0x10/0x8 and copies to 0x14/0xc.
+// Matched by pooling the three view Vecs as file-local consts right after effSunlightMain's zero Vec,
+// so mwcc keeps one r31 base and reaches target/eye/up and the int->float double as offsets from it.
+// The colours are built and passed by inlined helpers: a helper that returns the GXColor leaves the
+// inlined local and the by-value copy in the wrong two stack slots when two colours are passed, while
+// inlining the whole GXSetTevColor call (helper builds the colour, then calls) reproduces the target
+// slots. `alpha` is declared before `type` to put them in r29/r28.
+static const Vec effSunlightTarget = { 0.0f, 0.0f, 0.0f };
+static const Vec effSunlightEye = { 0.0f, 0.0f, 100.0f };
+static const Vec effSunlightUp = { 0.0f, 1.0f, 0.0f };
+
+#ifdef MUST_MATCH
+/* MUST_MATCH: inlining the whole call keeps the colour and its by-value copy in the target's two
+   stack slots; a helper that returns the GXColor puts them the other way round and mis-matches
+   when the function passes two colours. */
+static inline void effSunlightSetColor1(GXTevRegID id, effSunlightData* data, s32 alpha) {
+	GXColor c = unk_80423290;
+	c.r = data->r0;
+	c.g = data->g0;
+	c.b = data->b0;
+	c.a = alpha >> 1;
+	GXSetTevColor(id, c);
+}
+static inline void effSunlightSetColor2(GXTevRegID id, effSunlightData* data) {
+	GXColor c = unk_80423294;
+	c.r = data->r1;
+	c.g = data->g1;
+	c.b = data->b1;
+	c.a = data->a1;
+	GXSetTevColor(id, c);
+}
+#endif
+
 void effSunlightDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
 	effSunlightData* data;
@@ -160,10 +187,10 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	Vec target;
 	Vec eye;
 	Vec up;
-	GXColor color2;
 	GXColor color1;
-	s32 type;
+	GXColor color2;
 	s32 alpha;
+	s32 type;
 	s32 i;
 
 	effect = param;
@@ -172,9 +199,9 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	type = data->type;
 	alpha = data->field_0x38;
 
-	target = vec3_802fb7d4;
-	eye = vec3_802fb7e0;
-	up = vec3_802fb7ec;
+	target = effSunlightTarget;
+	eye = effSunlightEye;
+	up = effSunlightUp;
 
 	if (alpha == 0) {
 		return;
@@ -192,6 +219,10 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(lookAt, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
+#ifdef MUST_MATCH
+	effSunlightSetColor1(GX_TEVREG0, data, alpha);
+	effSunlightSetColor2(GX_TEVREG1, data);
+#else
 	color1 = unk_80423290;
 	color1.r = data->r0;
 	color1.g = data->g0;
@@ -204,6 +235,7 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	color2.b = data->b1;
 	color2.a = data->a1;
 	GXSetTevColor(GX_TEVREG1, color2);
+#endif
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);

@@ -134,12 +134,16 @@ static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// Only register allocation/instruction scheduling differs: the original keeps the per-particle -0.2*dir
-// accelerations in f20-f22 and the loop-persistent float_0/deg2rad/double_to_int in f27-f29, while this
-// build swaps those groups; the 2*dir velocities also land in the opposite register order, the second
-// mag==0 check reuses float_0 instead of reloading it, and the .rodata+0 zero Vec resolves to the section
-// symbol instead of the target's named vec3_802fa250.
-// NONMATCHING (98.05%): see above and REPORT.md.
+// The first mag/sqrt block only matches with opt_common_subs off: without it MWCC CSEs the
+// float_0/float_1 pool loads across the two normalization blocks and the whole first half shifts
+// (same idiom as effKemuri10N64Entry). What remains is a register-allocation tie-break in the loop
+// preheader: the original keeps the per-element -0.2*dir accelerations in f20-f22 and the
+// loop-persistent float_0/deg2rad/double_to_int in f27-f29, while this build swaps the two groups;
+// the 2*dir velocities also land in the opposite f23-f25 order, and the int->float conversion's
+// integer temps and stack slots differ too (original r7/r6/r5 at 0x5c/0x10/0x14/0x18, this build
+// r6/r5/r0). The .rodata+0 zero Vec resolves to the section symbol instead of vec3_802fa250.
+// NONMATCHING (98.45%): see above and REPORT.md.
+#pragma opt_common_subs off // without it MWCC CSEs the float_0/float_1 pool loads and the first mag/sqrt block shifts
 EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
 	EffectEntry* effect;
 	effBlowParticle* data;
@@ -159,7 +163,7 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 		return NULL;
 	}
 
-	mag = dirX * dirX + dirY * dirY + dirZ * dirZ;
+	mag = dirZ * dirZ + (dirX * dirX + dirY * dirY);
 	if (mag == float_0_8041e988) {
 		return NULL;
 	}
@@ -249,6 +253,7 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 
 	return effect;
 }
+#pragma opt_common_subs reset
 
 void effBlowMain(EffectEntry* effect) {
 	effBlowParticle* data;

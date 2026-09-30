@@ -28,8 +28,13 @@
 // .rodata / .sdata2 data referenced by this file's functions.
 const Vec vec3_802ccf48 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ccf54 = {0.0f, -1.0f, 0.0f};
+const s32 dat_802ccf60[8] = {0, 45, -45, 90, -90, 135, -135, 180};
 const Vec vec3_802ccf80 = {0.0f, -1.0f, 0.0f};
 const char str_802CCF8C[] = "MOBJ_BombRock";
+// int->float conversion pool used by check_front/partyGetReturnPos; declared so the
+// .rodata offsets of the strings below match the original object.
+const f64 double_to_int_802ccfa0 = 4503601774854144.0;
+const f64 double_to_int_mask_802ccfa8 = 4503599627370496.0;
 const char str_802CCFB0[] = "muj_05";
 const char str_802CCFB8[] = "A_dokuro_bero";
 const char str_802CCFC8[] = "MOBJ_RedJumpStand";
@@ -306,9 +311,9 @@ BOOL mario_bomhei_keychk(void) {
 // bomhei_use_main (TODO)
 
 // .text:0x2138 | 0x800BF170 | size: 0x604
-// NONMATCHING (99.98%): the six jump-stand string references use base
-// `...rodata.0` (+0x34) where the original pools them off vec3_802ccf48 (+0x68);
-// the object puts the string/const-pool data in a different .rodata region. Logic matches.
+// Matches: the six jump-stand string references pool off vec3_802ccf48 (+0x68)
+// once dat_802ccf60 and the int->float doubles below occupy their original
+// .rodata slots.
 void bomhei_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     PartyEntry* p2;
@@ -320,7 +325,7 @@ void bomhei_use(PartyEntry* party) {
             partyChkGnd(party);
             if (party->flags & PARTY_FLAG_IS_GROUNDED) {
                 partyChgMot(party, 0);
-                *(f32*)((u8*)party + 0x114) = 0.0f;
+                party->jumpPara1 = 0.0f;
             }
             if (strcmp(gp->currentMapName, str_802CCFB0) == 0) {
                 if (party->field_138 != NULL && strcmp(hitGetName(party->field_138), str_802CCFB8) == 0) {

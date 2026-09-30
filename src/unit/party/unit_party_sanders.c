@@ -180,9 +180,14 @@ extern BattleWeapon partyWeapon_SandersSuperBombAttack;
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
     (*count)++;
 
-// NONMATCHING (99.98%): the 2^52-style base is materialised as attack_audience_event_803845A8 with the
-// +0x330 folded into each entry (+0x980/+0xa40/+0xb00/+0xbc0) instead of keeping +0x330 in the
-// lis/addi and using +0x650/+0x710/+0x7d0/+0x890; every other instruction matches.
+// NONMATCHING (99.98%): every instruction but the base address matches. The target keeps the +0x330 in the
+// symbol addend (`lis r5, attack_audience_event_803845A8+0x330@ha` / `addi r30, r5, ...+0x330@l`, then
+// +0x650/+0x710/+0x7d0/+0x890); MWCC 2.6 folds it into the later immedates instead (+0x980/+0xa40/+0xb00/
+// +0xbc0). Same final addresses. Tried: opt_propagation/opt_common_subs/global_optimizer/peephole/
+// opt_dead_assignments off, optimization_level 1-4, pointer/struct/u8*/u32/array/union/const-pointer base
+// forms, and the same trick with an existing symbol (lbl_803848DC-4, which folds the -4 the same way).
+// unit_party_christine.c has the identical shape and the same 99.98%; the only matching siblings
+// (clauda/vivian/chuchurina/nokotarou/yoshi) have a lbl_XXXX symbol sitting exactly on the base address.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH
     u8* weaponBase = attack_audience_event_803845A8 + 0x330;

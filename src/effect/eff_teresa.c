@@ -115,8 +115,24 @@ void effTeresaMain(EffectEntry* effect) {
 #define READ_RODATA(x) (x)
 #endif
 
-// NONMATCHING (99.98%): the type==0 GXSetChanMatColor color local and its outgoing argument
-// copy live in stack slots 0x14/0x10 here; the original uses 0x10/0x14 (everything else matches).
+#ifdef MUST_MATCH
+// The original builds the alpha-patched colour inside a helper, which places its
+// local below the by-value copy (effThunderDisp/effIrekaeru do the same).
+static inline void teresaColor0(u8 alpha) {
+	GXColor color = dat_80421548;
+
+	color.a = alpha;
+	GXSetChanMatColor(4, color);
+}
+
+static inline void teresaColor1(u8 alpha) {
+	GXColor color = unk_80423328;
+
+	color.a = alpha;
+	GXSetChanMatColor(4, color);
+}
+#endif
+
 void effTeresaDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffTeresaData* data = effect->userdata;
@@ -137,13 +153,21 @@ void effTeresaDisp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 	if (type == 0) {
+#ifdef MUST_MATCH
+		teresaColor0(data->alpha);
+#else
 		color = dat_80421548;
 		color.a = data->alpha;
 		GXSetChanMatColor(4, color);
+#endif
 	} else {
+#ifdef MUST_MATCH
+		teresaColor1(data->alpha);
+#else
 		color = unk_80423328;
 		color.a = data->alpha;
 		GXSetChanMatColor(4, color);
+#endif
 	}
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);

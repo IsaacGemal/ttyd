@@ -2155,8 +2155,8 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.97%): 1 missing, plus register differences.
 s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
+    u8* base = (u8*)vec3_802c3dc8;
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
@@ -2171,14 +2171,14 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-            asyncName = "MOBJ_BlueSwitch";
+            asyncName = (const char*)(base + 0x9d8);
             break;
         case 1:
-            asyncName = "MOBJ_BlackSwitch";
+            asyncName = (const char*)(base + 0x9e8);
             break;
         case 2:
         default:
-            asyncName = "HOBJ_BlueSwitch";
+            asyncName = (const char*)(base + 0x9fc);
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {

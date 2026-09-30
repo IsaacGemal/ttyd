@@ -6,11 +6,15 @@
 #include <stdio.h>
 #include <string.h>
 
-// Register allocation and switch dispatch still differ from the target.
-// NONMATCHING (98.58%): the switch dispatch and every instruction now match; only register
-// allocation differs (the target keeps value/color/cam in r14/r17/r18 and the eight colour bytes in
-// r20-r27; here cam is r14, value r17, color r18, and the bytes are r19-r25 plus r31). Local
-// declaration order does not change it.
+// NONMATCHING (98.58%): every instruction and the switch dispatch match; only register allocation
+// differs. The target keeps value/color/cam in r14/r17/r18, then end/half/len reuse value/color/type
+// (r14/r17/r19) and the eight colour bytes get r20-r27. Here cam is r14, value r17, color r18, so
+// end/half reuse value/color (r18/r17), one colour byte takes r19 and len moves to r26. Reversing
+// the r14/r17/r18 rotation is what is left. Local declaration order shifts value only between r16
+// and r17 (never r14); a GXColor-returning inline shifts colour to r17 but changes the emitted code;
+// -O4,s/optimize_for_size, opt_propagation/opt_common_subs/opt_lifetimes and register/volatile hints
+// all score lower. All equivalent formattings tried (loop condition, i*2 temporaries, sprintf
+// helpers) sink back to the same IR.
 void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	CameraEntry* cam;
 	GXColor colors[2];

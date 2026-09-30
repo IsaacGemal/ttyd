@@ -10,14 +10,13 @@ typedef struct FSTEntry {
 
 static u32 entryToPath(ARCHandle* handle, u32 entry, char* path, u32 maxlen);
 
-// NONMATCHING (99.98%): same instructions; only register numbers or operands differ.
 BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 	FSTEntry* entry;
 	ARCHeader* header;
 
 	header = (ARCHeader*)arcStart;
 	if (header->magic != 0x55AA382D) {
-		OSHalt("ARCInitHandle: bad archive format");
+		OSPanic(__FILE__, 0x46, "ARCInitHandle: bad archive format");
 	}
 	handle->archiveStartAddr = arcStart;
 	entry = (FSTEntry*)((u32)arcStart + header->fstStart);
