@@ -7,6 +7,12 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042319c;
+__declspec(section ".sdata") GXColor unk_80423198;
+
+
 __declspec(section ".data") u32 lbl_803A2280[2] = {
     0xBF800000, 0x3F800000,
 };
@@ -29,8 +35,6 @@ static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
 };
 
 // .sbss2 colour scratch, global to this unit's asm
-GXColor unk_80423198;
-GXColor unk_8042319c;
 
 const Vec vec3_802faa50 = { 0.0f, 0.0f, 0.0f };
 const char str_802FAA5C[] = "KumokumoChipN64";

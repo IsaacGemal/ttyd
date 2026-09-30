@@ -7,13 +7,17 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423130;
+
+
 // .sdata2 constants (defined in the original unit's data section).
 extern const f32 float_deg2rad_8041f0c8;
 extern const f32 float_0p03125_8041f0cc;
 extern const f32 float_0_8041f0d0;
 
 // .sbss2 shared scratch GXColor, only its bytes are overwritten.
-GXColor unk_80423130;
 
 // .sdata byte-indexed color rotation table (24 bytes).
 static u8 color_rotation_data[24] = {
