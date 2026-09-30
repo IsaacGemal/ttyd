@@ -189,6 +189,7 @@ void effTexSetupN64(void) {
 	}
 }
 
+// The original keeps this zero-initialised function-local dummy in .sdata; without the pragma it lands in .sbss.
 #pragma explicit_zero_data on
 void effGetTexObjN64(u32 id, GXTexObj* obj) {
 	static u8 dummy ATTRIBUTE_ALIGN(32) = 0;

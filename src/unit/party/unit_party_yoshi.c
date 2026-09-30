@@ -6,6 +6,10 @@
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_disp.h"
+#include "driver/animdrv.h"
+#include "driver/msgdrv.h"
+#include "mario/mario_pouch.h"
+#include "mario/mario_party.h"
 
 // A pose-sound table entry. No header declares this type; the layout matches the
 // 0x14-byte entries of `posesound_normal_attack` and the fields BtlUnit_ControlPoseSoundMain
@@ -18,6 +22,115 @@ typedef struct PoseSoundEntry {
     s16 pitch;                                              // 0x10
     u16 flags;                                              // 0x12
 } PoseSoundEntry;
+
+// NONMATCHING (98.40%): the args pointer is loaded into r5 instead of r6 and the transID result goes through r0
+// (one extra move); the rest, including the seven-entry jump table, matches.
+USER_FUNC(yoshi_original_color_anim_set) {
+    s32 val;
+    s32 id;
+    const char* name;
+    BattleWork* work;
+    s32* args;
+    BattleUnitPart* part;
+
+    args = event->args;
+    work = _battleWorkPointer;
+    val = evtGetValue(event, args[0]);
+    id = BattleTransID(event, val);
+    BattleGetUnitPtr(work, id);
+    switch (pouchGetPartyColor(4)) {
+    case 0:
+        name = "c_babyyoshi2";
+        break;
+    case 1:
+        name = "c_babyyoshi3";
+        break;
+    case 2:
+        name = "c_babyyoshi4";
+        break;
+    case 3:
+        name = "c_babyyoshi5";
+        break;
+    case 4:
+        name = "c_babyyoshi6";
+        break;
+    case 5:
+        name = "c_babyyoshi7";
+        break;
+    case 6:
+    default:
+        name = NULL;
+        break;
+    }
+    if (isFirstCall) {
+        if (name == NULL) {
+            return EVT_RETURN_DONE;
+        }
+        part = BattleGetUnitPartsPtr(id, 1);
+        animPoseGetAnimPosePtr(*(s32*)((u8*)part + 0x1C0));
+        if (*(s32*)((u8*)part + 0x1C0) != -1) {
+            animPoseRelease(*(s32*)((u8*)part + 0x1C0));
+            *(s32*)((u8*)part + 0x1C0) = -1;
+        }
+    }
+    if (animEffectAsync(name, 1)) {
+        part = BattleGetUnitPartsPtr(id, 1);
+        *(s32*)((u8*)part + 0x1C0) = animPoseEntry(name, 1);
+        return EVT_RETURN_DONE;
+    }
+    return 0;
+}
+
+extern BattleWeapon partyWeapon_YoshiNormalAttack;
+extern BattleWeapon partyWeapon_YoshiNomikomi_Shot;
+extern BattleWeapon partyWeapon_YoshiEggAttack_Minimini;
+extern BattleWeapon partyWeapon_YoshiCallGuard;
+extern u8 lbl_80379A00[]; // this unit's .data weapon tables
+
+#define TECH_MENU_ENTRY(table)                                                        \
+    cmd->mWeaponTable[*count].mIndex = -1;                                            \
+    cmd->mWeaponTable[*count].mItem = 0;                                              \
+    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
+    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
+    cmd->mWeaponTable[*count].mIcon =                                                 \
+        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                    \
+    cmd->mWeaponTable[*count].mName =                                                 \
+        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
+    (*count)++;
+
+// The original addresses the four weapons from one base register (addi r30, r5, lbl_80379A00@l, then
+// +0x624/+0x6E4/+0xAA4/+0xB64); naming each weapon directly does not reproduce that.
+static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+#ifdef MUST_MATCH
+    u8* const weaponBase = lbl_80379A00;
+#endif
+    s32 techLv = partyGetTechLv(
+        BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
+
+#ifdef MUST_MATCH
+    TECH_MENU_ENTRY(weaponBase + 0x624);  // partyWeapon_YoshiNormalAttack
+    if (techLv >= 0) {
+        TECH_MENU_ENTRY(weaponBase + 0x6E4); // partyWeapon_YoshiNomikomi_Shot
+    }
+    if (techLv >= 1) {
+        TECH_MENU_ENTRY(weaponBase + 0xAA4); // partyWeapon_YoshiEggAttack_Minimini
+    }
+    if (techLv >= 2) {
+        TECH_MENU_ENTRY(weaponBase + 0xB64); // partyWeapon_YoshiCallGuard
+    }
+#else
+    TECH_MENU_ENTRY(&partyWeapon_YoshiNormalAttack);
+    if (techLv >= 0) {
+        TECH_MENU_ENTRY(&partyWeapon_YoshiNomikomi_Shot);
+    }
+    if (techLv >= 1) {
+        TECH_MENU_ENTRY(&partyWeapon_YoshiEggAttack_Minimini);
+    }
+    if (techLv >= 2) {
+        TECH_MENU_ENTRY(&partyWeapon_YoshiCallGuard);
+    }
+#endif
+}
 
 s32 _yoshi_slide_move_sound(BattleUnit* unit, PoseSoundEntry* entry) {
     return BtlUnit_snd_se(unit, entry->soundName, 0xF1194D80, (s16)(unit->work[4] * unit->work[5] / 100));

@@ -2489,3 +2489,13 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
   only -O4,s helps, in battle_sub, battle_status_icon (BattleStatusIconMain 86.59 -> 88.55), party_kuribo (7.49 -> 7.66) and
   eff_kemuri1_n64 (17.27 -> 17.88), besides the fourteen files of the earlier sweep. No unit prefers -O4,p over its
   current flags.
+
+## Grind 26 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **`__makeTechMenuFunc`** written for yoshi, chuchurina (100%) and nokotarou (100%; its first two entries carry the icon as a
+  compile-time constant, `TECH_MENU_ENTRY_ICON`, because those weapons are defined in that unit's own `.data`; the other two
+  read it from memory). Same MUST_MATCH base-register trick as clauda/vivian/sanders/christine.
+- **Header note**: `BattleActions.mAcDifficulty` is declared `s8` (battle_ac.h:41) but the asm reads it with `lbz` (zero-extend):
+  `_get_itemsteal_param` and ac_lst_rc_keep want it as `u8`. `_get_itemsteal_param` casts at the use.
+- yoshi `yoshi_original_color_anim_set` (98.4%): six strings through one base register and a seven-entry jump table (`case 6:`
+  falling into `default:` is what gives the table its seventh slot).
