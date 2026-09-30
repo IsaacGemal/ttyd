@@ -7,7 +7,14 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
+
+u32 foot_vtx[14] = {
+    0xFFFB0000, 0xFFFB0000, 0x04000000, 0x00FF0005,
+    0x0000FFFB, 0x04000400, 0x000000FF, 0x00050000,
+    0x00050400, 0x00000000, 0x00FFFFFB, 0x00000005,
+    0x00000000, 0x000000FF,
+};
 
 // .sdata2 constants (defined by this unit in the original).
 extern const u32 dat_8041f3e8;
@@ -24,11 +31,8 @@ extern const f32 float_360_8041f410;
 extern const f32 float_45_8041f414;
 extern const f32 float_5_8041f418;
 
-// .rodata string defined by this unit.
-const char str_802FA964[] = "Kemuri7N64";
 
 // .data vertex array defined by this unit.
-extern effVtxArray foot_vtx;
 
 // Build the TEV register colour as the original does; the inline keeps the GXColor
 // local at r1+0x8 with its outgoing copy at r1+0xc.
@@ -82,7 +86,7 @@ EffectEntry* effKemuri7N64Entry(f32 x, f32 y, f32 z, f32 angle, f32 scale) {
     s32 i;
 
     effect = effEntry();
-    effect->type = str_802FA964;
+    effect->type = "Kemuri7N64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, 0x88);
     effect->userdata = data;
@@ -181,7 +185,7 @@ void effKemuri7Disp(CameraId camId, void* param) {
     effGetTexObjN64(0x4f, &texObj);
     GXLoadTexObj(&texObj, 0);
     GXSetCullMode(0);
-    effSetVtxDescN64(&foot_vtx);
+    effSetVtxDescN64((effVtxArray*)foot_vtx);
 
     for (i = 0; i < effect->count; i++, data++) {
         if (data->field_0x0 == 0) {
@@ -198,3 +202,18 @@ void effKemuri7Disp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
+
+// The pool constants, defined after the code that loads them (defined before, the compiler folds them).
+const u32 dat_8041f3e8 = 0x70601800;
+const f32 float_0p03125_8041f3ec = 0.03125f;
+const f32 float_0_8041f3f0 = 0.0f;
+const f32 float_neg1_8041f3f4 = -1.0f;
+const f32 float_1_8041f3f8 = 1.0f;
+const f32 float_deg2rad_8041f3fc = 0.017453292f;
+const f32 float_30_8041f400 = 30.0f;
+const f32 float_15_8041f404 = 15.0f;
+const f32 float_180_8041f408 = 180.0f;
+const f32 float_6p2832_8041f40c = 6.2831855f;
+const f32 float_360_8041f410 = 360.0f;
+const f32 float_45_8041f414 = 45.0f;
+const f32 float_5_8041f418 = 5.0f;

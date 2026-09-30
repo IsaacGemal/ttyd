@@ -2517,3 +2517,30 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
   unconverted.
 - evt_snd.c carried two dead stubs (`evt_snd_bgmon`, `evt_snd_sfxon_3d`) that party_motion.c defines for real: multiply-defined
   at link. They were not in the unit's target, so they are gone.
+
+## Grind 29 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Seven more units link**: eff_ice_n64, eff_kemuri4_n64, eff_kemuri7_n64, eff_kemuri10_n64, eff_fire_dust_n64,
+  eff_packn_bfire_n64, eff_mahorn. Their functions were 100% since the earlier waves; what was left was the pool and data.
+- **`tools/pool_define.py UNIT`** (new): defines the `extern const f32/f64/u32/GXColor/Vec NAME;` pool constants from the
+  disassembly, in the original address order, *after the code that loads them*. This is the safe alternative to
+  `pool_literals.py` (which replaces the names by literals and moved the FP loads of functions that were 100%): the code keeps
+  loading the same named objects, so no function changes, and the unit's `.sdata2` becomes 100%. Defined before the code the
+  compiler folds the values (`x * 0.03125f` becomes a constant) and the functions drop; a non-const `__declspec(section
+  ".sdata2")` definition changes the code as well. `tools/pool_data.py` does the vertex tables (`.data`) first.
+- **Other pool pitfalls seen while doing it**: (a) `#include <math.h>` pulls in the `fake_tgmath.h` `sqrt` inline whose
+  function-local `static const double _half/_three` are emitted into `.rodata` (two extra doubles and a shifted unit): use
+  `#include "math_ext.h"` (only the prototypes) as eff_kemuri2 does. (b) The int-to-float magic double
+  (`double_to_int_XXXXXXXX`, 0x4330000080000000) is the compiler's own pool entry: an extern *and* a definition of it
+  duplicates it; leave it out (pool_define skips it). (c) A string that is a named `const char[]` object is placed before the
+  compiler's pooled constants; the target has the pooled double first, so use the literal (`effect->type = "FireDustN64";`).
+  (d) A leftover literal (`ptr->z = 10.0f;` where retail loads `float_10_...`) pools a second copy: use the named constant.
+  (e) A 0.0f the retail loop loads through the name of a `volatile`-declared pool object (eff_mahorn): read it once into a local
+  under MUST_MATCH.
+- **`.sbss2` zero GXColor objects**: `#pragma section ".sdata" ".sbss2"` then `__declspec(section ".sdata") GXColor unk_...;`
+  (the eff_queen2 idiom). They are placed in the *reverse* of their declaration order, so declare the higher address first
+  (fire_dust: `unk_804230fc` then `unk_804230f8`); with the wrong order the code loads the neighbouring object and the dol
+  differs by two bytes at the two `lwz ...@sda21` sites.
+- kemuri7 `effKemuri7Disp`: `if (data->field_0x60 == 0.0f)` with the pool constant loaded before the field needs
+  `{ f32 z = 0.0f; if (data->field_0x60 == z) ... }` under MUST_MATCH once the constant is a literal; with `pool_define` the
+  code is unchanged and none of it is needed.
