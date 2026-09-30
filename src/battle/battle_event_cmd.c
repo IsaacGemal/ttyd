@@ -3848,19 +3848,20 @@ USER_FUNC(btlevtcmd_InterruptStop) {
 extern s32 subsetevt_confuse_flustered[];
 
 //s32* battleId, s32* retIndex, s32* dir
-// NONMATCHING (76.84%): 1 instruction differs, 4 missing, 5 extra, plus register differences.
+// NONMATCHING (80.39%): 1 instruction differs, 4 missing, 5 extra, plus register differences.
 USER_FUNC(btlevtcmd_FaceDirectionAdd) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, id, retIndex, dir;
+    s32 btlId, id, retIndex, dir, delta;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     retIndex = args[1];
     dir = evtGetValue(event, args[2]);
     unit = BattleGetUnitPtr(wp, id);
-    evtSetValue(event, retIndex, evtGetValue(event, retIndex) + dir * unit->faceDirection);
+    delta = dir * unit->faceDirection;
+    evtSetValue(event, retIndex, evtGetValue(event, retIndex) + delta);
     return EVT_RETURN_DONE;
 }
 
@@ -3886,19 +3887,20 @@ USER_FUNC(btlevtcmd_PartsFaceDirectionSub) {
 }
 
 //s32* battleId, s32* retIndex, s32* dir
-// NONMATCHING (79.87%): 1 instruction differs, 4 missing, 4 extra, plus register differences.
+// NONMATCHING (93.82%): 1 instruction differs, 4 missing, 4 extra, plus register differences.
 USER_FUNC(btlevtcmd_FaceDirectionSub) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, id, retIndex, dir;
+    s32 btlId, id, retIndex, dir, delta;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     retIndex = args[1];
     dir = evtGetValue(event, args[2]);
     unit = BattleGetUnitPtr(wp, id);
-    evtSetValue(event, retIndex, evtGetValue(event, retIndex) - dir * unit->faceDirection);
+    delta = dir * unit->faceDirection;
+    evtSetValue(event, retIndex, evtGetValue(event, retIndex) - delta);
     return EVT_RETURN_DONE;
 }
 
