@@ -1606,7 +1606,7 @@ config.libs = [
             Object(Matching, "gon_06.c"),
             Object(Matching, "gon_12.c"),
             Object(Matching, "gon.c"),
-            Object(NonMatching, "gon_03.c"),
+            Object(Matching, "gon_03.c"),
             Object(Matching, "gon_11.c"),
             Object(Matching, "unit/unit_boss_gonbaba.c"),
             Object(Matching, "event/evt_lect_gon.c"),

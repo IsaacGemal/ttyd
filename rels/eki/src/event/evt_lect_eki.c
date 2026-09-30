@@ -200,9 +200,9 @@ static USER_FUNC(x_flag_wait) {
     return (val == x_flag_data[index]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (81.11%): the second iconId test emits `blt zero` (MWCC falls through to the neg15 block)
-// where the original keeps an explicit `bge neg15; b zero`, and the iconId/alpha argument loads are
-// scheduled in the opposite order.
+// The iconId 0x75..0x7D range test must be a switch: MWCC lowers the grouped cases to the original's
+// `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. An `if (a < 0x7E && a >= 0x75)` makes
+// MWCC invert the second branch (`blt zero`).
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
@@ -212,11 +212,25 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
         if (!(btn->flags & 1)) {
             Vec pos;
             f32 yOff;
-            yOff = (btn->iconId >= 0x7E) ? zero_eki_0000a6b4
-                 : (btn->iconId >= 0x75) ? float_neg15_eki_0000a6c0 : zero_eki_0000a6b4;
+
+            switch (btn->iconId) {
+            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
+            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
+                yOff = float_neg15_eki_0000a6c0;
+                break;
+            default:
+                yOff = zero_eki_0000a6b4;
+                break;
+            }
             pos = p->position;
             pos.y += yOff;
-            iconDispGxAlpha(&pos, 0x50, (s16)btn->iconId, (u8)btn->alpha, float_1_eki_0000a6c4);
+#ifdef MUST_MATCH
+            // iconDispGxAlpha's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
+            ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)btn->iconId, (u8)btn->alpha,
+                                                                 float_1_eki_0000a6c4);
+#else
+            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, float_1_eki_0000a6c4);
+#endif
         }
     }
 }

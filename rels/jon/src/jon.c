@@ -2400,10 +2400,10 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
-// NONMATCHING (89.1%): callee-saved register permutation (original row=r31, ours r27) and the
-// GXBegin vertex constant schedule (two extra instructions); loop body shape now matches.
+// NONMATCHING (91.4%): callee-saved register allocation and the GXBegin vertex constant schedule differ.
 void raster_disp(CameraId camera, void* param) {
     s32 row;
+    s32 col;
     CameraEntry* cam = camGetPtr(camera);
     EventEntry* event = param;
     f32* eventf = (f32*)&event->lwData[0];
@@ -2425,9 +2425,11 @@ void raster_disp(CameraId camera, void* param) {
     phase = 6.2831855f * phase;
 
     for (i = 0; i < 0x40; i++) {
-        row = (i / 4) * 32;
+        s32 q = i / 4;
+        col = i % 4;
+        row = q * 32;
         for (j = 0; j < 0x40; j++) {
-            s32 off = row + (j / 4) * 512 + ((i % 4) + (j % 4) * 4) * 2;
+            s32 off = row + (j / 4) * 512 + (col + (j % 4) * 4) * 2;
             image[off] = (s32)(amplitude * (f32)sin((f32)j + ((f32)gp->retraceCount * 0.25f + phase)) + 128.0f);
             image[off + 1] = 0x80;
         }
@@ -2484,14 +2486,18 @@ void raster_disp(CameraId camera, void* param) {
     GXSetCurrentMtx(GX_PNMTX0);
 
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition3f32(-608.0f / 2.0f, 240.0f, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(304.0f, 240.0f, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(304.0f, -480.0f / 2.0f, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(-608.0f / 2.0f, -480.0f / 2.0f, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
+    {
+        f32 w = 608.0f;
+        f32 h = 480.0f;
+        GXPosition3f32(-w / 2.0f, 240.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(304.0f, 240.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(304.0f, -h / 2.0f, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-w / 2.0f, -h / 2.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+    }
     GXSetNumIndStages(0);
     GXSetTevDirect(GX_TEVSTAGE0);
 }
@@ -2557,18 +2563,15 @@ s32 setup_npc_ex_para(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.47%): int->float magic and npcEnt_wanwan address register
-// allocation differ.
 s32 wanwan_set_home_pos(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 x = evtGetValue(event, args[0]);
     s32 y = evtGetValue(event, args[1]);
     s32 z = evtGetValue(event, args[2]);
-    NpcSetupInfo* setup = (NpcSetupInfo*)npcEnt_wanwan;
 
-    setup->territoryBase.x = (f32)x;
-    setup->territoryBase.y = (f32)y;
-    setup->territoryBase.z = (f32)z;
+    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.x = (f32)x;
+    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.y = (f32)y;
+    ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.z = (f32)z;
     return EVT_RETURN_DONE;
 }
 

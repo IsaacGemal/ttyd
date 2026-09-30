@@ -896,7 +896,7 @@ void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
     monteCountDisp();
 }
 
-// NONMATCHING (96.12%): yuuminigame4_gamerule; needs register/allocation scheduling work
+// NONMATCHING (97.07%): yuuminigame4_gamerule; case 3/7 (unk18/unk1C += 36.0f) still schedule lis 0x4330 / stw conversion setup differently
 s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
     MarioWork* mario = marioGetPtr();
     EventEntry* e;
@@ -1013,13 +1013,16 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
     }
 
     if (mario->position.x < 1500.0f) {
+        s32 unk10 = data->unk10;
         f = 0.0f;
-        switch (data->unk10) {
+        switch (unk10) {
         case 2:
         case 3:
         case 4:
             if (mario->dispFlags & 0x01000000) {
                 if (mario->flags & 0x00100000) {
+                    f = 0.0f;
+                } else {
                     f = 0.0f;
                 }
             } else {
@@ -1040,8 +1043,11 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
             }
             break;
         }
-        if (data->unk10 == 2 || data->unk10 == 6) {
+        switch (unk10) {
+        case 2:
+        case 6:
             f = f * (f32)(0x3C - data->unk14) / 60.0f;
+            break;
         }
         mario->riderDelta.z += f;
     }

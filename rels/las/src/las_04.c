@@ -511,13 +511,14 @@ void _firebar_trans(FirebarEntry* entry) {
     }
 }
 
-// NONMATCHING (79.29%): the original spills `entry` to 0x8(r1) and uses r25-r31;
-// ours keeps it in r31 and uses r23-r31. Everything except this function's
-// prologue/entry accesses and the particle-loop scheduling matches.
+// NONMATCHING (84.86%): the original spills `entry` to 0x8(r1), reloading it into
+// registers for the loops; MWCC keeps it in r31 throughout, which shifts the
+// callee-saved register allocation and the int->float conversion stack slots.
 USER_FUNC(firebar_entry) {
     s32* args = event->args;
     FirebarDesc* desc = (FirebarDesc*)evtGetValue(event, args[0]);
     FirebarEntry* entry;
+    FirebarSegment* seg;
     s32 i;
 
     if (isFirstCall) {
@@ -559,11 +560,17 @@ USER_FUNC(firebar_entry) {
         entry->segments = _mapAlloc(entry->count << 4);
         memset(entry->segments, 0, entry->count << 4);
         {
-            FirebarSegment* seg = entry->segments;
+            seg = entry->segments;
             for (i = 0; i < entry->count; i++, seg++) {
                 seg->poseId = animPoseEntry("c_fireber", 0);
                 animPosePeraOn(seg->poseId);
+                // The original reloads the zero vector's words from .rodata on
+                // every iteration instead of hoisting the const copy out of the loop.
+#ifdef MUST_MATCH
+                seg->position = *(volatile Vec*)&vec3_las_00011ee0;
+#else
                 seg->position = vec3_las_00011ee0;
+#endif
                 animPoseSetAnim(seg->poseId, "FRB_S_1", 1);
             }
         }
@@ -576,16 +583,23 @@ USER_FUNC(firebar_entry) {
             psndSFXOff(entry->sfxId);
             entry->sfxId = -1;
         }
-        for (i = 0; i < 3; i++) {
-            s32 index = (entry->count + 1) * i / 3;
-            FirebarSegment* seg = &entry->segments[index];
-            f32 x = seg->position.x + (f32)(rand() % 16 - 8);
-            f32 y = seg->position.y + 10.0f;
+        {
+            FirebarSegment* base = entry->segments;
+            for (i = 0; i < 3; i++) {
+                s32 index = (entry->count + 1) * i / 3;
+                s32 r = rand();
+                f32 x;
+                f32 y;
 
-            effKemuTestEntry(0, x, y, seg->position.z + (f32)(rand() % 5 + 3), 1.0f);
+                seg = &base[index];
+                x = seg->position.x + (f32)(r % 16 - 8);
+                y = seg->position.y + 10.0f;
+
+                effKemuTestEntry(0, x, y, seg->position.z + (f32)(rand() % 5 + 3), 1.0f);
+            }
         }
         {
-            FirebarSegment* seg = entry->segments;
+            seg = entry->segments;
             for (i = 0; i < entry->count; i++, seg++) {
                 animPoseRelease(seg->poseId);
             }
@@ -604,11 +618,11 @@ USER_FUNC(firebar_entry) {
             entry->flags &= ~4;
         }
         if (__fabsf(mario->position.x - entry->position.x) < 120.0f) {
-            if (psndSFXChk(entry->sfxId) == 0) {
+            if (psndSFXChk(entry->sfxId) != 0) {
                 entry->sfxId = psndSFXOn_3D((const char*)0x1CD, &entry->position);
             }
         } else {
-            if (psndSFXChk(entry->sfxId) != 0) {
+            if (psndSFXChk(entry->sfxId) == 0) {
                 psndSFXOff(entry->sfxId);
                 entry->sfxId = -1;
             }

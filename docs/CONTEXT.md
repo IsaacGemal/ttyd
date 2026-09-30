@@ -2866,3 +2866,16 @@ Tower batch 2 (`~/permuter/runs.log`) found, and these were re-expressed by hand
 - `BattleAudienceCtrlProcessKinopioDamage` 97.50 -> 99.76: the 270.0f constant is loaded into a local before the stores (`f32 angle = float_270...`).
 - Not applied: `kpaSwimMove` (220 -> 90) adds a duplicate `f31 = ... * fabs(speed)` statement inside a clamp; it is not natural code.
 - Pitfalls: `perm_prepare` needs the tower's `build.ninja` to be the Mac's (copy it over `~/ttyd-perm/build.ninja`), and `mwcc -E` output holds Shift-JIS bytes (decoded with `errors="replace"`). `prepare-failed` lines in the log mean one of those two. The supervisor stopped once at load 20 (other waves), as designed.
+
+## Wave 34: REL files outside #87, whole-file finishing (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+The 20 REL files with open functions that #87 didn't touch, one agent per file on all of its open functions
+(closest first), wave 30's safety recipe, 45-120 minutes by work (scratch/wave34). gon_03 links; 12 functions reach
+100% and 20 improve, none lower (7,907 -> 7,912 with what was kept). Left out: hei_10, rsh_05, yuu_02 (a section
+score drops), gor_10 and usu_00 (a pragma without a match), and unit_boss_gundan_zako_group2: 7 of its 9 unwritten
+functions match, but while zakogun_ext_main2 (3.6 KB) is missing its scripts and jump table point into a short
+.text and the unit's matched_data falls from 88.7% to 0; its agent file stays in scratch/wave34 as the start for
+finishing it. A fresh Claude review found no regression and three bugs on main the wave fixes: las_04
+`firebar_entry` had its loop-sound check inverted; rsh `rsh_window_tev` passed the frustum's left/right with the
+wrong sign, and read through NULL where retail walks its ancestors; unit_barriern_z passed `a` where retail's
+first `intplGetValue` takes 4. Labels and agent notes cleaned up after it.
