@@ -28,6 +28,15 @@ BOOL arcDataCheck(void* data) {
 	}
 	return FALSE;
 }
+void arcEntry(s32 id, void* data, u32 size) {
+	ArchiveEntry* entry = &work[id];
+
+	entry->data = data;
+	entry->size = size;
+	ARCInitHandle(entry->data, &entry->handle);
+	entry->flags |= 1;
+}
+
 void arcDelete(s32 id) {
 	memset(&work[id], 0, sizeof(ArchiveEntry));
 }
@@ -73,12 +82,4 @@ void* arcOpen(const char* filename, void** addr, u32* length) {
 		*length = 0;
 	}
 	return NULL;
-}
-void arcEntry(s32 id, void* data, u32 size) {
-	ArchiveEntry* entry = &work[id];
-
-	entry->data = data;
-	entry->size = size;
-	ARCInitHandle(entry->data, &entry->handle);
-	entry->flags |= 1;
 }

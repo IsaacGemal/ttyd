@@ -7,37 +7,18 @@
 #include <dolphin/gx.h>
 #include "math_ext.h"
 
-extern const f32 float_0_8041fe2c;
-extern const f32 float_0p015625_8041fe28;
-extern const f32 float_deg2rad_8041fe30;
-extern const f32 float_0p4_8041fe34;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423284;
+__declspec(section ".sdata") GXColor unk_80423280;
+__declspec(section ".sdata") GXColor unk_8042327c;
+__declspec(section ".sdata") GXColor unk_80423278;
+
+
 
 // .data: retail vertex array for this unit (two effVtxArray entries, 0x118 bytes apart).
 extern u8 testsrc_akari_v[];
 // .sbss2 scratch GXColors the original copies its TEV colours into before overwriting every byte.
-extern GXColor unk_80423278;
-extern GXColor unk_8042327c;
-extern GXColor unk_80423280;
-extern GXColor unk_80423284;
-extern const f32 float_4_8041fe3c;
-extern const f32 float_0p4953_8041fe38;
-extern const f32 float_0p2234_8041fe40;
-extern const f32 float_6p2832_8041fe44;
-extern const f32 float_7p1234_8041fe48;
-extern const f32 float_360_8041fe4c;
-extern const f32 float_128_8041fe50;
-extern const f32 float_127_8041fe54;
-extern const f32 float_1p231_8041fe58;
-extern const f32 float_215_8041fe5c;
-extern const f32 float_0p531_8041fe60;
-extern const f32 float_3p231_8041fe64;
-extern const f32 float_0p298_8041fe68;
-extern const f32 float_188_8041fe6c;
-extern const f32 float_0p831_8041fe70;
-extern const f32 float_2p231_8041fe74;
-extern const f32 float_2p044_8041fe78;
-extern const f32 float_0p7_8041fe7c;
-extern const f32 float_0p3_8041fe80;
 
 #ifdef MUST_MATCH
 // Non-const and forced into .rodata: with a plain `const` MWCC hoists two of the three
@@ -86,9 +67,9 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     data->field_0x30 = 0;
     data->color2A = 0xFF;
     data->color1A = 0xFF;
-    data->field_0x3C = float_0_8041fe2c;
-    data->field_0x40 = float_0_8041fe2c;
-    data->field_0x44 = float_0_8041fe2c;
+    data->field_0x3C = 0.0f;
+    data->field_0x40 = 0.0f;
+    data->field_0x44 = 0.0f;
     return effect;
 }
 
@@ -145,24 +126,24 @@ void effStarPowerMain(EffectEntry* effect) {
                form under #else rotates the FPRs (fold f3, product f4, counter*4 f3). */
             f32 f7;
             data->field_0x3C = (f32)(counter * 4);
-            data->field_0x40 = float_0p4953_8041fe38 * (f7 = float_4_8041fe3c * (f32)counter);
-            data->field_0x44 = float_0p2234_8041fe40 * f7;
+            data->field_0x40 = 0.4953f * (f7 = 4.0f * (f32)counter);
+            data->field_0x44 = 0.2234f * f7;
 #else
             f32 f7;
             data->field_0x3C = (f32)(counter * 4);
-            f7 = float_4_8041fe3c * (f32)counter;
-            data->field_0x40 = float_0p4953_8041fe38 * f7;
-            data->field_0x44 = float_0p2234_8041fe40 * f7;
+            f7 = 4.0f * (f32)counter;
+            data->field_0x40 = 0.4953f * f7;
+            data->field_0x44 = 0.2234f * f7;
 #endif
             data->color1A = 0xFF;
-            data->color2A = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_7p1234_8041fe48 * (f32)counter) / float_360_8041fe4c) + float_128_8041fe50);
-            data->color1R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_1p231_8041fe58 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);
-            data->color1G = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p531_8041fe60 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);
-            data->color1B = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_3p231_8041fe64 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);
-            data->color2R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p298_8041fe68 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
-            data->color2G = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_0p831_8041fe70 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
-            data->field_0x30 = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_2p231_8041fe74 * (f32)counter) / float_360_8041fe4c) + float_188_8041fe6c);
-            data->field_0x38 = float_0p3_8041fe80 * (f32)sin(float_6p2832_8041fe44 * (float_2p044_8041fe78 * (f32)counter) / float_360_8041fe4c) + float_0p7_8041fe7c;
+            data->color2A = (u8)(127.0f * (f32)sin(6.2831855f * (7.12343f * (f32)counter) / 360.f) + 128.0f);
+            data->color1R = (u8)(127.0f * (f32)sin(6.2831855f * (1.231f * (f32)counter) / 360.f) + 215.0f);
+            data->color1G = (u8)(127.0f * (f32)sin(6.2831855f * (0.531f * (f32)counter) / 360.f) + 215.0f);
+            data->color1B = (u8)(127.0f * (f32)sin(6.2831855f * (3.231f * (f32)counter) / 360.f) + 215.0f);
+            data->color2R = (u8)(127.0f * (f32)sin(6.2831855f * (0.298f * (f32)counter) / 360.f) + 188.0f);
+            data->color2G = (u8)(127.0f * (f32)sin(6.2831855f * (0.831f * (f32)counter) / 360.f) + 188.0f);
+            data->field_0x30 = (u8)(127.0f * (f32)sin(6.2831855f * (2.231f * (f32)counter) / 360.f) + 188.0f);
+            data->field_0x38 = 0.3f * (f32)sin(6.2831855f * (2.044f * (f32)counter) / 360.f) + 0.7f;
         }
         if (counter == 1) {
             *(f32*)&data->field_0x48 = data->field_0x3C;
@@ -271,7 +252,7 @@ void effStarPowerDisp(CameraId camId, void* param) {
     GXSetNumChans(0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-    PSMTXScale(scale, float_0p015625_8041fe28, float_0p015625_8041fe28, float_0_8041fe2c);
+    PSMTXScale(scale, 0.015625f, 0.015625f, 0.0f);
     GXLoadTexMtxImm(scale, 0x1e, 1);
     effGetTexObjN64(0x49, &texObj);
     GXLoadTexObj(&texObj, 0);
@@ -279,16 +260,16 @@ void effStarPowerDisp(CameraId camId, void* param) {
 
     if (color2A != 0) {
         PSMTXTrans(trans, data->x, data->y, data->z);
-        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * -camGetPtr(CAMERA_3D)->viewYaw);
-        scaleVal = float_0p4_8041fe34 * *(f32*)&data->field_0x54;
+        PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+        scaleVal = 0.4f * *(f32*)&data->field_0x54;
         PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(trans, scale, trans);
-        PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * *(f32*)&data->field_0x48);
+        PSMTXRotRad(rot, 'x', 0.017453292f * *(f32*)&data->field_0x48);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * *(f32*)&data->field_0x4C);
+        PSMTXRotRad(rot, 'y', 0.017453292f * *(f32*)&data->field_0x4C);
         PSMTXConcat(trans, rot, trans);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * *(f32*)&data->field_0x50);
+        PSMTXRotRad(rot, 'z', 0.017453292f * *(f32*)&data->field_0x50);
         PSMTXConcat(trans, rot, trans);
         PSMTXConcat(cam->view, trans, work);
         GXLoadPosMtxImm(work, 0);
@@ -334,16 +315,16 @@ void effStarPowerDisp(CameraId camId, void* param) {
     }
 
     PSMTXTrans(trans, data->x, data->y, data->z);
-    PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * -camGetPtr(CAMERA_3D)->viewYaw);
-    scaleVal = float_0p4_8041fe34 * data->field_0x38;
+    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+    scaleVal = 0.4f * data->field_0x38;
     PSMTXScale(scale, scaleVal, scaleVal, scaleVal);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(trans, scale, trans);
-    PSMTXRotRad(rot, 'x', float_deg2rad_8041fe30 * data->field_0x3C);
+    PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x3C);
     PSMTXConcat(trans, rot, trans);
-    PSMTXRotRad(rot, 'y', float_deg2rad_8041fe30 * data->field_0x40);
+    PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x40);
     PSMTXConcat(trans, rot, trans);
-    PSMTXRotRad(rot, 'z', float_deg2rad_8041fe30 * data->field_0x44);
+    PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x44);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(cam->view, trans, work);
     GXLoadPosMtxImm(work, 0);
@@ -403,26 +384,3 @@ void effStarPowerDisp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0p015625_8041fe28 = 0.015625f;
-const f32 float_0_8041fe2c = 0.0f;
-const f32 float_deg2rad_8041fe30 = 0.017453292f;
-const f32 float_0p4_8041fe34 = 0.4f;
-const f32 float_0p4953_8041fe38 = 0.4953f;
-const f32 float_4_8041fe3c = 4.0f;
-const f32 float_0p2234_8041fe40 = 0.2234f;
-const f32 float_6p2832_8041fe44 = 6.2831855f;
-const f32 float_7p1234_8041fe48 = 7.12343f;
-const f32 float_360_8041fe4c = 360.0f;
-const f32 float_128_8041fe50 = 128.0f;
-const f32 float_127_8041fe54 = 127.0f;
-const f32 float_1p231_8041fe58 = 1.231f;
-const f32 float_215_8041fe5c = 215.0f;
-const f32 float_0p531_8041fe60 = 0.531f;
-const f32 float_3p231_8041fe64 = 3.231f;
-const f32 float_0p298_8041fe68 = 0.298f;
-const f32 float_188_8041fe6c = 188.0f;
-const f32 float_0p831_8041fe70 = 0.831f;
-const f32 float_2p231_8041fe74 = 2.231f;
-const f32 float_2p044_8041fe78 = 2.044f;
-const f32 float_0p7_8041fe7c = 0.7f;
-const f32 float_0p3_8041fe80 = 0.3f;

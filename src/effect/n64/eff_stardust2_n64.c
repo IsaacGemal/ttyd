@@ -10,6 +10,16 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+extern const f32 float_0p4_8041fed4;
+extern const f32 float_10_8041fed8;
+extern const f32 float_90_8041fedc;
+extern const f32 float_0p03_8041fee0;
+extern const f32 float_0p04_8041fee4;
+extern const f32 float_0p005_8041fee8;
+extern const Vec vec3_802fb740;
+extern const f64 double_to_int_mask_802fb750;
+extern const f64 double_to_int_802fb758;
+
 // .sdata2 constants (named after their original addresses; defined by the
 // not-yet-written Entry function of this unit).
 extern const GXColor dat_8041fe88;

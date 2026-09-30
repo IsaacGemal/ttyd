@@ -16,12 +16,3 @@ extern const f32 float_6p2832_8041fec8;
 extern const f32 float_neg0p05_8041fecc;
 extern const f32 float_0p96_8041fed0;
 // constants used by effStardust2N64Entry (data externs; the definitions are at the bottom of the unit)
-extern const f32 float_0p4_8041fed4;
-extern const f32 float_10_8041fed8;
-extern const f32 float_90_8041fedc;
-extern const f32 float_0p03_8041fee0;
-extern const f32 float_0p04_8041fee4;
-extern const f32 float_0p005_8041fee8;
-extern const Vec vec3_802fb740;
-extern const f64 double_to_int_mask_802fb750;
-extern const f64 double_to_int_802fb758;

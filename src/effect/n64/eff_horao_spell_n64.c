@@ -10,6 +10,11 @@
 #include <math.h>
 #include <string.h>
 
+extern GXColor unk_80423150;
+extern GXColor unk_80423154;
+extern GXColor unk_80423158;
+extern effHoraoSpellVtx horao_spell_vtx[];
+
 // .rodata
 const Vec vec3_802fa7f8 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fa808 = 4503601774854144.0;

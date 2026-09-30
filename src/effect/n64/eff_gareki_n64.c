@@ -28,8 +28,6 @@ extern const f32 float_1_8041f078;
 extern const f32 float_0p1_8041f07c;
 
 // .rodata / .data constants (named after their original addresses).
-const f64 double_to_int_802fa6e0 = 4503601774854144.0;
-extern const char str_802FA6E8[];
 
 // trans_data is a run of (offsetX, offsetY) pairs; typed as a pair struct so the
 // loop's induction variable strength-reduces to a pre-biased pointer.
@@ -134,7 +132,7 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     s32 i;
 
     effect = effEntry();
-    effect->type = str_802FA6E8;
+    effect->type = "GarekiN64";
     effect->count = 9;
     data = __memAlloc(HEAP_EFFECT, 0x240);
     effect->userdata = data;
