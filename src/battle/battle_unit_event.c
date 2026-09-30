@@ -1,7 +1,5 @@
-//finished, need to check 1:1
 #include "battle/battle_unit_event.h"
 
-// NONMATCHING (98.71%): same instructions; only register numbers or operands differ.
 BOOL BattleCheckEndUnitInitEvent(BattleWork* wp) {
     BattleUnit* unit;
     BOOL valid;
@@ -87,7 +85,6 @@ s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     return id;
 }
 
-// NONMATCHING (99.72%): 3 instructions differ, 2 missing, 4 extra, plus register differences.
 s32 BattleRunPhaseEvent(BattleUnit* unit, BOOL isUnison) {
     EventEntry* evt = NULL;
     s32 id = 0;
