@@ -30,15 +30,15 @@ void mot_yoshi(void) {
 const Vec vec3_802f32e0 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f32ec = { 0.0f, 0.0f, 0.0f };
 
-// NONMATCHING (75.94%): the two Vec copies are scheduled differently (the original copies each after the flag
-// updates, one 3-word block at a time) and the constants are named vec3_*, as in the original.
+// NONMATCHING (75.94%): the two Vec copies are scheduled differently: the original copies both after the flag
+// clears, with their address loads hoisted above them.
 void mot_yoshi_post(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     MarioWork* mario = marioGetPtr();
 
-    if (*(u32*)((u8*)party + 0x168) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)party + 0x168));
-        *(s32*)((u8*)party + 0x168) = -1;
+    if ((u32)party->yoshiPsndSFXId != 0xFFFFFFFF) {
+        psndSFXOff(party->yoshiPsndSFXId);
+        party->yoshiPsndSFXId = -1;
     }
     bero_clear_Offset();
     mario->dispFlags &= ~0x4;
