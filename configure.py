@@ -400,7 +400,7 @@ config.libs = [
             Object(NonMatching, "battle/ac/ac_timing_wide.c"),
             Object(NonMatching, "battle/ac/ac_pendulum_crane_timing.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/ac/ac_air_gauge.c"),
-            Object(NonMatching, "battle/ac/ac_crane_timing.c"),
+            Object(Matching, "battle/ac/ac_crane_timing.c"),
             Object(NonMatching, "battle/ac/ac_power_gauge.c"),
             Object(NonMatching, "battle/ac/ac_power_gauge_lv.c"),
             Object(NonMatching, "battle/ac/ac_signal_timing.c"),
