@@ -22,17 +22,6 @@
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 evt_puni_flag_onoff[];
-extern s32 evt_puni_get_flag[];
-extern s32 evt_puni_get_mode[];
-extern s32 evt_puni_get_position[];
-extern s32 evt_puni_set_anim[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_mode[];
-extern s32 evt_puni_set_yuka[];
-extern s32 evt_puni_winddisable_onoff[];
-extern s32 evt_target_flag_onoff[];
-extern s32 evt_target_set_position[];
 extern s32 mri_countdown[];
 extern s32 mri_hikari_color[];
 extern s32 mri_puni_init[];

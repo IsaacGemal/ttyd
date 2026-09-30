@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_case.h"
 #include "evt/evt_cmd.h"
@@ -13,12 +14,6 @@
 #include "party/party_motion.h"
 
 #pragma force_active on
-extern s32 evt_puni_all_fall_check[];
-extern s32 evt_puni_mem_init[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_yuka[];
-extern s32 evt_target_flag_onoff[];
-extern s32 evt_target_set_position[];
 extern s32 mri_countdown[];
 extern s32 mri_puni_init[];
 extern s32 mri_punipuni_itemremove[];

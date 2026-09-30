@@ -114,7 +114,11 @@ while i<len(data):
         b=as_bytes(o)
         todo.append(o['name']); bytes_objs.add(o['name'])
         table=f"{st}u8 {o['name']}[{len(b)}] = {{\n    "+',\n    '.join(', '.join(f'0x{x:02X}' for x in b[j:j+16]) for j in range(0,len(b),16))+",\n};"
-        out.append("// TODO: type\n"+table)
+        if '$' in o['name']:
+            out.append(f"// TODO: {o['name']} is a static local of a function: move it inside that function as\n"
+                       f"// `static` with this data (it's here at its place in .data)\n"+'\n'.join('// '+l for l in table.split('\n')))
+        else:
+            out.append("// TODO: type\n"+table)
     else:
         words=[]
         for m in re.finditer(r'^\s*\.(4byte|float|string|byte|2byte|double|rel|skip) (.*)$',o['body'],re.M):
