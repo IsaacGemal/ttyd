@@ -20,6 +20,9 @@ names = []
 for m in re.finditer(r"# \.sdata2:0x[0-9A-F]+ \| 0x[0-9A-F]+ \| size: 0x4\n\.obj (float_\w+), ", asm):
     names.append(m.group(1))
 orig = open(src).read()
+if "--no-define" not in sys.argv:  # the named constants must have definitions (defined after the code) before the search
+    subprocess.run(["python3", "tools/pool_define.py", unit], capture_output=True, text=True)
+    orig = open(src).read()
 
 
 def run(k):
