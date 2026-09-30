@@ -97,7 +97,7 @@ void mot_hip(void) {
         dy = marioGetScale() * -2.0f;
         dy *= 0.5f;
         mario->position.y += dy;
-        dx = 14.0f * marioGetScale() * 0.5f;
+        dx = 14.0f * marioGetScale() / 2.0f;
         *(f32*)((u8*)mario + 0xB4) += dx;
         *(f32*)((u8*)mario + 0xA8) = 0.0f;
         mario->currSubMotionId = 0;

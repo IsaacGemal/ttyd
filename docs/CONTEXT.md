@@ -2204,3 +2204,4 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
 - **battle_monosiri** and **battle_acrobat** linked (Claude #3). Acrobat: `-O4,s` for the stmw prologue; the window test is
   `cur > start && cur <= end` (not a chained compare); `BattlePadCheckTrigger`/`RecordTrigger` return `s32` (the tests are
   `cmpwi`). `btlataudGetMoveEventPtr` matches (`case 0: break;`); `_attack_aud` 99.7% (`args` lands in r31, target r29).
+- **mot_hip** linked (`14.0f * marioGetScale() / 2.0f` gives the target's operand order).
