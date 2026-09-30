@@ -23,10 +23,16 @@ name = os.path.basename(unit)
 cfg = open("configure.py").read()
 head, tail = cfg.split('        "common",', 1)
 end = tail.index("        ],\n")  # end of the common object list
+# Everything is read, resolved and checked first; files change only once the whole migration is known to work.
+plan = []  # (src, dst, text, header move, configure lines)
 for gi, mods in enumerate(groups):
     src = f"rels/{mods[0]}/src/{unit}.c"
     dst_rel = unit if len(groups) == 1 else f"v{gi + 1}/{unit}"
     dst = f"rels/common/src/{dst_rel}.c"
+    if not os.path.exists(src):
+        sys.exit(f"{src} doesn't exist")
+    if os.path.exists(dst):
+        sys.exit(f"{dst} already exists")
     s = open(src).read()
     m = re.search(rf"\b({name}_\d+_data_[0-9A-F]+)\b", s)
     if m:
@@ -47,28 +53,42 @@ for gi, mods in enumerate(groups):
         return f"extend_data({name}_{k - 1},"
 
     s = re.sub(r"extend_data\(\w+,", bump, s)
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    open(dst, "w").write(s)
-    os.remove(src)
     hsrc = f"rels/{mods[0]}/include/{name}.h"
+    hdst = f"rels/common/include/{name}.h"
+    hmove = None
     if os.path.exists(hsrc):
-        hdst = f"rels/common/include/{name}.h"
-        if os.path.exists(hdst):
-            os.remove(hsrc)
-        else:
-            shutil.move(hsrc, hdst)
+        if os.path.exists(hdst) and open(hdst).read() != open(hsrc).read():
+            sys.exit(f"{hdst} exists and differs from {hsrc}: merge them by hand first")
+        hmove = (hsrc, hdst)
     lines = []
     for mod in mods:
-        asm = open(f"build/G8MJ01/{mod}/asm/{unit}.s").read()
+        apath = f"build/G8MJ01/{mod}/asm/{unit}.s"
+        if not os.path.exists(apath):
+            sys.exit(f"{apath} doesn't exist (build {mod} first)")
+        asm = open(apath).read()
         g = re.search(rf"\.obj ({name}_\d+_data_[0-9A-F]+), global", asm)
         sym = g.group(1) if g else f"{name}_local_data"
         srcopt = f', source="{dst_rel}.c"' if dst_rel != unit else ""
         flags = [f"-DUNIT_DATA_SYM={sym}"]
         for r in refs:
-            flags.append(f"-DUNIT_REF_{r[5:].upper()}=" + re.search(rf"\b{r}_\d+_data_[0-9A-F]+\b", asm).group(0))
+            rm = re.search(rf"\b{r}_\d+_data_[0-9A-F]+\b", asm)
+            if not rm:
+                sys.exit(f"{apath}: no {r}_<id>_data_<offset> symbol for UNIT_REF_{r[5:].upper()}")
+            flags.append(f"-DUNIT_REF_{r[5:].upper()}=" + rm.group(0))
         flag_text = ", ".join(f'"{f}"' for f in flags)
         lines.append(f'            Object(NonMatching, "{unit}.c", modules=["{mod}"]{srcopt}, extra_cflags=[{flag_text}]),\n')
+    plan.append((src, dst, s, hmove, lines))
+for src, dst, s, hmove, lines in plan:
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    open(dst, "w").write(s)
     tail = tail[:end] + "".join(lines) + tail[end:]
     end += sum(len(l) for l in lines)
 open("configure.py", "w").write(head + '        "common",' + tail)
+for src, dst, s, hmove, lines in plan:  # the originals go last, once the new files and configure.py are written
+    os.remove(src)
+    if hmove:
+        if os.path.exists(hmove[1]):
+            os.remove(hmove[0])
+        else:
+            shutil.move(*hmove)
 print("shared", unit, groups)

@@ -5,7 +5,7 @@ Greedy: puts the first function at the top-level position that matches the origi
 at the end of the file), fixes it, then the next, and so on; applies the result and prints the final compare."""
 import re, subprocess, sys, json
 path, mod, unit, *fns = sys.argv[1:]
-text = open(path).read()
+text = original = open(path).read()
 obj = next(u["base_path"] for u in json.load(open("objdiff.json"))["units"] if u["name"] == f"{mod}/{unit}")
 def grab(t, fn):
     m = re.search(rf"(?:#pragma dont_inline on\n)?(?:static )?(?:USER_FUNC\({fn}\)|\w+ {fn}\([^)]*\)) \{{\n.*?\n\}}\n(?:#pragma dont_inline reset\n)?", t, re.S)
@@ -13,6 +13,8 @@ def grab(t, fn):
 blocks = {}
 for fn in fns:
     m = grab(text, fn)
+    if not m:
+        sys.exit(f"{fn}: no definition found in {path}")
     blocks[fn] = m.group(0)
     text = text[:m.start()] + text[m.end():]
 def orig_rodata():
@@ -27,8 +29,10 @@ def ours_rodata():
     return s.data() if s else b""
 want = orig_rodata()
 def build(t):
+    """The trial's .rodata, or None if it doesn't build (a stale object must not be scored)."""
     open(path, "w").write(t)
-    subprocess.run(["ninja", obj], capture_output=True)
+    if subprocess.run(["ninja", obj], capture_output=True).returncode:
+        return None
     return ours_rodata()
 def prefix(a, b):
     n = 0
@@ -51,16 +55,22 @@ try:
             trial[fn] = c
             for later in fns[k + 1:]:
                 trial[later] = len(text)
-            p = prefix(want, build(assemble(trial)))
+            got = build(assemble(trial))
+            p = -1 if got is None else prefix(want, got)
             if p > best[0]:
                 best = (p, c)
             if p == len(want):
                 break
+        if best[1] is None:
+            sys.exit(f"{fn}: no position builds")
         placed[fn] = best[1]
         print(fn, "at line", text[:best[1]].count("\n") + 1, "prefix", best[0], "of", len(want), flush=True)
     final = assemble({**placed})
     open(path, "w").write(final)
+    done = True
 finally:
-    pass
-subprocess.run(["ninja", obj], capture_output=True)
+    if not globals().get("done"):
+        open(path, "w").write(original)  # interrupted or failed: leave the source as it was
+if subprocess.run(["ninja", obj], capture_output=True).returncode:
+    sys.exit("the chosen placement doesn't build")
 print(subprocess.run(["python3", "tools/rel_cmp.py", mod, unit], capture_output=True, text=True).stdout.strip()[:300])

@@ -244,8 +244,11 @@ def split_source(text):
             if depth == 0 and '}' in code:
                 chunks.append(cur)
                 cur = []
+    lead = first
     while first is not None and first > 0 and (lines[first - 1].startswith('//') or lines[first - 1].startswith('#pragma')):
         first -= 1
+    if chunks and first is not None and first < lead:
+        chunks[0] = lines[first:lead] + chunks[0]  # comments and pragmas that lead into the first function stay with it
     pre = '\n'.join(lines[:first]) if first is not None else text
     out = []
     for c in chunks:
@@ -422,7 +425,11 @@ if APPEND:
     inc = ''.join(f'#include "{h}"\n' for h in sorted(hdrs) if f'#include "{h}"' not in text)
     text = text[:m.end()] + inc + text[m.end():]
     body = ('\n#pragma force_active on\n' if FORCE else '\n') + (decl + '\n\n' if decl else '') + '// clang-format off\n' + src + '\n// clang-format on\n' + ('#pragma force_active off\n' if FORCE else '')
-    sys.stdout.write(text.rstrip('\n') + '\n' + body)
+    tail = APPEND_TAIL.strip('\n')
+    if re.sub(r'(?m)^\s*(//.*|#pragma.*|/\*.*?\*/)?\s*$', '', tail).strip():
+        print('WARNING: the source after its last function holds more than comments and pragmas; it is kept at the end '
+              'of the file, check it against the data written here', file=sys.stderr)
+    sys.stdout.write(text.rstrip('\n') + '\n' + body + ('\n' + tail + '\n' if tail else ''))
 else:
     out = pre + ('\n#pragma force_active on\n' if FORCE else '\n') + (decl + '\n\n' if decl else '') + '// clang-format off\n' + src + '\n// clang-format on\n' + ('#pragma force_active off\n' if FORCE else '')
     sys.stdout.write(out)

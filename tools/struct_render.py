@@ -447,16 +447,39 @@ def update_externs(typed, roots=('include', 'src', 'rels')):
 
 
 def fix_index(src, sym, old_size, stride):
-    """`&sym[N]`, `sym[N]` and `sym + N` counted in the old raw element size, rewritten for the new type:
-    `&sym[k]` where N lands on an element, otherwise a byte offset."""
-    def conv(n, want_addr):
+    """Uses of SYM counted in the old raw element size, rewritten for the new type: `&sym[N]`, `sym[N]` and
+    `sym + N` / `sym - N` (N decimal or hex, any spacing) become `&sym[k]` / `sym[k]` where N lands on an element,
+    otherwise a byte offset. Any other index or arithmetic on SYM (a variable index, a cast) raises: its meaning
+    changes with the type and nothing here can tell what it should be."""
+    num = r'(0[xX][0-9A-Fa-f]+|\d+)'
+    code = re.compile(r'//[^\n]*|/\*.*?\*/|"(?:[^"\\\n]|\\.)*"|(&\s*)?\b' + re.escape(sym) + r'\b(\s*\[\s*' + num +
+                      r'\s*\]|\s*([-+])\s*' + num + r'\b|\s*\[|\s*[-+](?![>=]))?', re.S)
+    decl = re.compile(r'^\s*(?:extern |static |const |struct )*[A-Za-z_]\w*\s*\*?\s*' + re.escape(sym) + r'\s*\[')
+    out, pos = [], 0
+    for m in code.finditer(src):
+        if not m.group(0).lstrip('&').lstrip().startswith(sym) or not m.group(2):
+            continue  # a comment or string, or a plain use of SYM
+        line_start = src.rfind('\n', 0, m.start()) + 1
+        if decl.match(src[line_start:m.end()]):
+            continue  # its declaration or definition
+        amp, idx, sign, add = m.group(1), m.group(3), m.group(4), m.group(5)
+        if idx is None and add is None:
+            raise ValueError(f'{sym}: an index or arithmetic fix_index can\'t convert near {m.group(0)!r}')
+        n = int(idx if idx is not None else add, 0) * (-1 if sign == '-' else 1)
         off = n * old_size
-        if off % stride == 0:
-            return f'&{sym}[{off // stride}]' if want_addr else f'{sym}[{off // stride}]'
-        return f'(void*)((u8*){sym} + 0x{off:X})'
-    src = re.sub(r'&' + re.escape(sym) + r'\[(\d+)\]', lambda m: conv(int(m.group(1)), True), src)
-    src = re.sub(r'(?<![&\w])' + re.escape(sym) + r' \+ (\d+)\b', lambda m: conv(int(m.group(1)), True), src)
-    return src
+        if idx is not None and not amp:  # sym[N]: an element
+            if off % stride:
+                raise ValueError(f'{sym}[{idx}] is not a whole element of the new type')
+            rep = f'{sym}[{off // stride}]'
+        elif amp and idx is None:
+            raise ValueError(f'{sym}: `&{sym} +/- N` near {m.group(0)!r}')
+        else:  # &sym[N], sym + N: an address
+            rep = f'&{sym}[{off // stride}]' if off % stride == 0 and off >= 0 else f'(void*)((u8*){sym} + {off:#x})'
+        out.append(src[pos:m.start()])
+        out.append(rep)
+        pos = m.end()
+    out.append(src[pos:])
+    return ''.join(out)
 
 
 def fix_refs(src, sym, now_array):
@@ -740,7 +763,11 @@ def run_all(skip=()):
     for (f, sym), (old_size, stride, static) in RETYPED.items():
         for p in ([f] if static else [p for p in everything if sym in open(p, errors='replace').read()]):
             text = open(p, errors='replace').read()
-            new = fix_index(text, sym, old_size, stride)
+            try:
+                new = fix_index(text, sym, old_size, stride)
+            except ValueError as e:
+                print('FIX BY HAND', p, e)  # nothing is written for this file
+                continue
             if new != text:
                 open(p, 'w').write(new)
     for (f, sym), (arr, static) in RESHAPED.items():
