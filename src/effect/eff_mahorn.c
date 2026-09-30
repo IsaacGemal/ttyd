@@ -56,9 +56,6 @@ EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ
     return effect;
 }
 
-// NONMATCHING (99.85%): in the field_0x14 decay retail loads float_20 into f1 and float_0p125 into
-// f0, so the subtraction reuses f1; this build swaps the pair (f0/f1), which is the only remaining
-// difference (the two lfs and the fsubs). Every other instruction, including the data symbols, matches.
 void effMahornMain(EffectEntry* effect) {
     effMahornData* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -101,7 +98,10 @@ void effMahornMain(EffectEntry* effect) {
                 scale = (f32)scale_dt2[(u32)data->counter % 21] / float_100_80422260;
             }
             data->scale = scale;
-            data->field_0x14 = (float_20_80422264 - data->field_0x14) * float_0p125_80422268 + data->field_0x14;
+            {
+                f32 t = float_20_80422264 - data->field_0x14;
+                data->field_0x14 = t * float_0p125_80422268 + data->field_0x14;
+            }
             data->alpha += -data->alpha / 64;
         }
     }
