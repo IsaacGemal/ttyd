@@ -10,3 +10,16 @@ USER_FUNC(evt_paper_delete) {
 	animPaperPoseRelease(animPaperPoseGetId((const char*)name, gp->inBattle != 0));
 	return EVT_RETURN_DONE;
 }
+
+// NONMATCHING (99.19%): only the callee-saved registers of `name` and `inBattle` are swapped (r30/r31).
+USER_FUNC(evt_paper_entry) {
+	s32* args = event->args;
+	const char* name = (const char*)evtGetValue(event, args[0]);
+	BOOL inBattle = gp->inBattle != 0;
+
+	if (!animGroupBaseAsync(name, inBattle, NULL)) {
+		return EVT_RETURN_BLOCK;
+	}
+	animPaperPoseEntry(name, inBattle);
+	return EVT_RETURN_DONE;
+}

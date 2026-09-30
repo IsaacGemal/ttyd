@@ -2168,3 +2168,20 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
   not reproduce it. The unit stays NonMatching for that one function.
 - **snd3d** (not started): 0/12 functions match; the emitter/room structs are another MusyX revision (flags at 0xC, no
   room/door roots).
+
+## Grind 15: synthdata linked, small game-code links (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **synthdata (and s_data) had no source paired with them.** dtk named their splits `data/musyx/runtime/synthdata.c` and
+  `data/musyx/runtime/s_data.c`, so objdiff compared the original object against nothing (0% for all 26 functions)
+  while `libs/musyx/src/.../synthdata.c` compiled to an unrelated unit name. Renamed both splits to
+  `musyx/runtime/...` (config/splits.txt is a protected path: the rename is the only edit): synthdata is 26/26 at 100%
+  and linked (7.4 KB). s_data is another MusyX revision (the group stack with `gsDefault`/`ARAMInfo` at +0x60c:
+  `dataInitStack` 15%, `sndSeqPlayEx` 68%, `seqPlaySong` 73%, `sndPushGroup`/`sndPopGroup` 91%); it stays NonMatching.
+- **unit_object_tree** linked: `_rumble_tree` (same as `_rumble_switch` on `mPosition.y`), the unit data generated with
+  dol_gen and typed with struct_render; with `-inline deferred` the source order is the reverse of the text order
+  (`_rumble_tree` above `_turn_tree`).
+- **effSmallStarCamChg** written (forwarder): eff_small_star linked. **evt_paper_entry** 99.2% (r30/r31 swap of
+  `name`/`inBattle`), **mot_yoshi_post** 76% (the two rodata Vec copies are scheduled differently; a non-const source
+  Vec would explain it but lands in .data), **evt_twoddisp** `twoddisp_disp` 95.3 -> 98.9% by declaration order (the
+  rest: an `extsh` on the icon id and the GXColor temporaries' stack slots; changing `iconDispGx` to a `u16` id fixes
+  it there and regresses ac_timing_wide and others).
