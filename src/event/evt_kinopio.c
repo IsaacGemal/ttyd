@@ -30,12 +30,12 @@ static USER_FUNC(paper_on);  // local to this file in the original
 // itemEntry is defined in driver/itemdrv.c but not declared in any header yet.
 
 // shared .sdata2 constants (named by their original addresses)
-extern const char str_8041BC68[];
-extern const f32 float_6p2832_8041bc70;
-extern const f32 float_90_8041bc74;
-extern const f32 float_360_8041bc78;
-extern const char str_8041BC7C[];
-extern const f32 float_0p2_8041bc84;
+char str_8041BC68[] = "mario";
+f32 float_6p2832_8041bc70 = 6.2831855f;
+f32 float_90_8041bc74 = 90.0f;
+f32 float_360_8041bc78 = 360.0f;
+char str_8041BC7C[] = "M_S_1";
+f32 float_0p2_8041bc84 = 0.2f;
 
 // shared .rodata string pool (named by their original addresses)
 const char str_802ECE50[0x14] = "BGM_FF_GO_SLEEPING1";
@@ -53,9 +53,7 @@ const char str_802ECECC[0x18] = "SFX_VOICE_MARIO_FIND1";
 const char str_802ECEE4[0x1C] = "SFX_EVT_50_HOTEL_SHUTTER1";
 const char str_802ECF00[0x0C] = "breakfast";
 const char str_802ECF0C[0x08] = "p_slit";
-#pragma force_active on
-const char str_802ECF14[0x0C] = "PM_S_3A";
-#pragma force_active reset
+const char str_802ECF14[0x08] = "PM_S_3A";
 
 // event function prototypes referenced by the script tables
 
@@ -181,7 +179,7 @@ s32 kinopio_house_talk_evt[] = {
 	0xFE363C82, 0x0004005B, (s32)evt_mario_set_pos, 0xFE363C80,
 	0xFE363C81, 0xFE363C82, 0x0002005B, (s32)get_npcname,
 	0xFE363C80, 0x0003005B, (s32)evt_set_dir_to_target, 0xFE363C80,
-	(s32)(char*)str_8041BC68, 0x0002005B, (s32)evt_mario_set_dir_npc, 0xFE363C80,
+	(s32)str_8041BC68, 0x0002005B, (s32)evt_mario_set_dir_npc, 0xFE363C80,
 	0x0003005B, (s32)evt_party_set_dir_npc, 0x00000000, 0xFE363C80,
 	0x0003005B, (s32)evt_party_set_dir_npc, 0x00000001, 0xFE363C80,
 	0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, 0xFE363C80,
@@ -246,8 +244,8 @@ s32 evt_50[] = {
 	0xFE363C80, (s32)(char*)str_802ECEB8, 0x0005005B, (s32)evt_npc_set_position,
 	(s32)(char*)str_802ECE64, 0x0000010C, 0x00000000, 0xFFFFFF2E,
 	0x00000021, 0x0003005B, (s32)evt_set_dir_to_target, (s32)(char*)str_802ECE64,
-	(s32)(char*)str_8041BC68, 0x0003005B, (s32)evt_set_dir_to_target, 0xFE363C8A,
-	(s32)(char*)str_8041BC68, 0x0002005B, (s32)evt_mario_set_dir_npc, (s32)(char*)str_802ECE64,
+	(s32)str_8041BC68, 0x0003005B, (s32)evt_set_dir_to_target, 0xFE363C8A,
+	(s32)str_8041BC68, 0x0002005B, (s32)evt_mario_set_dir_npc, (s32)(char*)str_802ECE64,
 	0x0003005B, (s32)evt_party_set_dir_npc, 0x00000000, (s32)(char*)str_802ECE64,
 	0x0003005B, (s32)msg_no, 0x00000009, 0xFE363C80,
 	0x0005005B, (s32)evt_msg_print, 0x00000000, 0xFE363C80,
@@ -311,12 +309,11 @@ s32 evt_50[] = {
 	(s32)evt_fade_end_wait, 0x0002005B, (s32)evt_npc_check_delete, (s32)(char*)str_802ECE64,
 	0x0005005B, (s32)evt_npc_set_position, 0xFE363C8A, 0xFE363C8D,
 	0xFE363C8E, 0xFE363C8F, 0x0003005B, (s32)evt_set_dir_to_target,
-	0xFE363C8A, (s32)(char*)str_8041BC68, 0x0006005B, (s32)evt_fade_entry,
+	0xFE363C8A, (s32)str_8041BC68, 0x0006005B, (s32)evt_fade_entry,
 	0x00000009, 0x000003E8, 0x00000000, 0x00000000,
 	0x00000000, 0x0001005B, (s32)evt_fade_end_wait, 0x0002005B,
 	(s32)evt_party_run, 0x00000000, 0x0002005B, (s32)evt_mario_key_onoff,
 	0x00000001, 0x00000002, 0x00000001,
-	0,
 };
 
 
@@ -351,11 +348,7 @@ typedef struct KinopioData {
 } KinopioData;
 
 static KinopioData* work;
-static u32 gap_08_8041894C_sbss;
 static KinopioData** wp = &work;
-#pragma explicit_zero_data on
-static u32 gap_07_8041083C_sdata = 0;
-#pragma explicit_zero_data reset
 USER_FUNC(N_cameraman_on) {
     animPoseSetMaterialFlagOn(npcNameToPtr(str_802ECE64)->poseId, 0x1800);
     return EVT_RETURN_DONE;
@@ -563,10 +556,3 @@ USER_FUNC(evt_kinopio_setup) {
     *wp = data;
     return EVT_RETURN_DONE;
 }
-
-const char str_8041BC68[] = "mario";
-const f32 float_6p2832_8041bc70 = 6.2831855f;
-const f32 float_90_8041bc74 = 90.0f;
-const f32 float_360_8041bc78 = 360.0f;
-const char str_8041BC7C[] = "M_S_1";
-const f32 float_0p2_8041bc84 = 0.2f;
