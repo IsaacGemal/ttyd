@@ -2593,6 +2593,7 @@ party_bomhei and evt_nannpc named constants where main's literals pool correctly
 drops 95.82 -> 94.12 only because effHibashiraMain's zero Vec is now an anonymous literal: the bytes match the
 original's, and main already carries the extra 2^52 double at the end.
 The wave also fixed three bugs on main: evt_npc's moveFlags read args[10], win_main's TEVREG1 colour had its bytes in the wrong order, and evt_telop wrote .b instead of .a.
+
 ## Wave 27: the REL finishing pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 Scope, per Claude #1's directive after #51, picked by `scratch/wave27/pick_units.py`: NonMatching REL sources with
