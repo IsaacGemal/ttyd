@@ -92,9 +92,6 @@ EffectEntry* effIceEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
 
 	effect = effEntry();
 	effect->type = "Ice";
-#ifdef MUST_MATCH
-	(void)"\0\0\0"; /* the original .sdata2 ends with four zero bytes after "Ice" */
-#endif
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x30);
 	effect->userdata = data;
@@ -1218,10 +1215,6 @@ u32 ice_effAnimRSTDt[2] = {
 u32 ice_effAnimDt[3] = {
     0x00000000, 0x42EE0000, (u32)&ice_effAnimRSTDt,
 };
-#pragma explicit_zero_data on
-__declspec(section ".data") u32 ice_padData[6] = { 0 };
-__declspec(section ".sdata") u32 ice_padSdata = 0;
-#pragma explicit_zero_data reset
 #pragma force_active off
 // clang-format on
 
