@@ -2544,3 +2544,55 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
 - kemuri7 `effKemuri7Disp`: `if (data->field_0x60 == 0.0f)` with the pool constant loaded before the field needs
   `{ f32 z = 0.0f; if (data->field_0x60 == z) ... }` under MUST_MATCH once the constant is a literal; with `pool_define` the
   code is unchanged and none of it is needed.
+
+## Wave 27: the REL finishing pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+Scope, per Claude #1's directive after #51, picked by `scratch/wave27/pick_units.py`: NonMatching REL sources with
+an unwritten function, a function under 97%, or functions out of rule 18's order, plus six new shared units
+(barriern v1/v2, barriern_z, monochrome_pakkun v1-v3, pakkun_flower v1/v2, piders v1-v3, super_mahorn; generated
+with rel_gen + share_unit), dig.c (was empty) and tou2.c (upstream's partial file, kept, with a generated copy as
+reference for its data). 48 units, 817 functions. Left out: near-misses at 97%+ with nothing else wrong (Claude
+#3's), the older shared units, mri_puni (188 functions, too big for one agent), gundan_zako_group2 (needs its
+ZakogunEntry renamed first), the shared events evt_shuryolight/evt_yuuranking/evt_kagemario (need per-module
+symbol macros) and purple_teresa. 24 agents at a time, 00:42-02:44, time by work left (30-150 minutes).
+
+New in the launcher: the prompt forbids the network and reading outside the workspace (no network command in any
+log this time; a few agents read the base copy, one left and removed a backup file in ~), and a resume loop
+restarts an agent that stops on its own before LINKED, up to three times within its budget (48 first rounds, 68
+restarts; 9 agents ran out of time).
+
+**Result:** 39 units collected, 12 objects linked (dig.c, dig_00, gra_00, moo.c, moo_03, mri_13, mri_16,
+unit_super_mahorn in jon and las, unit_piders v1/v2/v3), +173 functions over main (7,559 -> 7,732). Nine units that
+lowered a measure in the collected tree were left out: gor_03, gor_10, hei_10, bom_01, black_peach, batten_leader,
+lecture_frankli_sac, rsh_05, muj_20. unit_churantalar links with its .rodata extended to 0x7858 (the five
+constants at 0x7840-0x7858 are its own; dtk had put them in an auto split): a splits change, so it's its own PR
+(#57) for Isaac, and the wave keeps the unit NonMatching.
+
+**Found on the way:**
+- Shared objects in gon and mri must be built without deferred inlining like the rest of those modules
+  (`cflags=[*cflags_rel_nodefer, "-i rels/common/include"]`, as unit_kuriboo v2 already was). share_unit.py didn't
+  write it, so the four new mri objects built with deferral while the prompt told their agents to use source order.
+  The mri piders agent fixed its own configure.py line (which collection doesn't pick up); share_unit.py now writes
+  the flag for gon and mri.
+- rel_link.py marks a unit Matching in configure.py when it links, and addunit.py adds a module-level Object line
+  rather than switching a shared unit's line: shared units are switched by hand at collection.
+- rel_gen wrote `void atan2f(void)`-style placeholders for a REL's own copies of SDK functions (tou2's atan2f, the
+  GX inlines in piders), which clash with the SDK header; it now includes the header instead. struct_render's
+  fix_index took `static T x = {` definitions for uses. local_prototypes finds a shared unit's asm through the
+  first module configure.py builds it for.
+
+**Review** (one fresh Claude, with a script comparing calls, call constants, pool floats, strings, field offsets
+and compare signedness per function; 69 of 107 partial functions differ only in registers/scheduling). Fixed:
+moamoa_on's randf range, senteresa_ext_main (two randf ranges, `% 8`, s32 counters), ext_fan_main (GF(10), not
+GF(65546); position.z), eki_00 (retail writes z over matrix[0][3] in ext_moamoa_init; moamoa_hit_check reads .y),
+evt_ryushi_clr (missing per-entry clear, y/z jitter fields), item_jump's sound name and 2π, gansColor (white, not
+cyan: a 100% function with a wrong constant), las_05's integer `rand() % 1000 + 1`, and constants (3.14f, 1/225,
+57.29579f, 8/15, -50/3). Tool fixes: fix_index's keyword guard, rel_gen's prototype-only SDK match, a loud error in
+local_prototypes.
+
+**Follow-ups:** end_unknown `_prolog` has size 0x50 in config/G8MJ01/end/symbols.txt but is 0x60 (config change,
+for Isaac); las_05 uses 25 more `float_*_las_*` externs nothing defines and tou.c 28 more of its own named floats
+(the pool order is unsolved); `zanzou_count` (aji barriern_custom, v1 barriern) and jin_07's `g_nNumOutBox` should
+be .bss; data sections below 100% in evt_yuunpc (.rodata 35%), mri barriern and eki_00 weren't reviewed; unwritten:
+ext_moamoa_main in eki_00 and rsh_06 and two minigame4 functions in evt_yuunpc; the nine left-out units have work
+in scratch/wave27/<unit>/final.c worth salvaging function by function.
