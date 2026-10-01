@@ -1287,6 +1287,7 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
+#ifdef MUST_MATCH
 // envDisp_FF's copy of the unit's sqrtf: MWCC colours the last Newton step's `guess` into
 // f0 (matching the target) only when the last iteration is written as a returned expression
 // instead of a third assignment followed by `return x * guess;`. The shared sqrtf above is
@@ -1307,6 +1308,7 @@ static inline f32 envFF_Sqrtf(f32 x) {
     }
     return x;
 }
+#endif
 
 // `opt_propagation off` is required or MWCC rematerialises the polynomial coefficients into
 // every branch instead of hoisting them (same as evt_sub.c).
@@ -1362,7 +1364,11 @@ void envDisp_FF(void) {
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
+#ifdef MUST_MATCH
         scale = envFF_Sqrtf(gp->fbWidth / 2 * gp->fbWidth / 2 + gp->efbHeight / 2 * gp->efbHeight / 2);
+#else
+        scale = sqrtf(gp->fbWidth / 2 * gp->fbWidth / 2 + gp->efbHeight / 2 * gp->efbHeight / 2);
+#endif
 
         GXBegin(GX_LINES, GX_VTXFMT0, 2000);
         for (i = 0; i < 1000; i++) {

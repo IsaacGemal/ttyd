@@ -245,6 +245,7 @@ static inline void hitUpdateActiveList(void) {
 // zero initialisations separately (`li r5, 0` for prev) instead of coalescing prev onto
 // i's zero (`mr r5, r8`). Chaining `prev = lbl_80418408 = NULL;` and letting i follow keeps
 // them apart and schedules both `li`s before the store, as retail does.
+#ifdef MUST_MATCH
 static inline void hitDeleteUpdateActiveList(void) {
     MapWork* wp = mapGetWork();
     MapEntry* map;
@@ -253,14 +254,8 @@ static inline void hitDeleteUpdateActiveList(void) {
     HitEntry* hit;
     HitEntry* prev;
 
-#ifdef MUST_MATCH
     prev = lbl_80418408 = NULL;
     i = 0;
-#else
-    i = 0;
-    prev = NULL;
-    lbl_80418408 = NULL;
-#endif
     map = wp->entries;
     for (; i < wp->entries->count; map++, i++) {
         hit = map->hitEntries;
@@ -280,6 +275,7 @@ static inline void hitDeleteUpdateActiveList(void) {
         prev->siblingActive = NULL;
     }
 }
+#endif
 
 void hitDelete(const char* name) {
     MapEntry* map;
@@ -293,7 +289,11 @@ void hitDelete(const char* name) {
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (!(hit->flags & 0x80) && !strcmp(name, hit->joint->name)) {
                 hit->flags |= 0x80;
+#ifdef MUST_MATCH
                 hitDeleteUpdateActiveList();
+#else
+                hitUpdateActiveList();
+#endif
                 return;
             }
         }
