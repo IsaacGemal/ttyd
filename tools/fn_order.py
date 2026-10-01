@@ -5,8 +5,9 @@
 
 MWCC emits non-asm functions in reverse source order, so the source lists them from the highest target address to the lowest.
 Prints the order the unit has now and the order it should have. With --write, moves each function (with the comment lines
-right above it) into the slot the right order gives it and leaves everything else (data, helpers, declarations) where it is.
-Units with `#pragma` or `#if` lines between functions are left alone: check them by hand. Rebuild afterwards with
+right above it, and a `#pragma NAME ...` / `#pragma NAME reset` pair that encloses only that function) into the slot the right order
+gives it and leaves everything else (data, helpers, declarations) where it is. A pragma above a function whose `reset` does not
+directly follow it stops --write: move those by hand. `#if` lines between functions are left alone: check them by hand. Rebuild afterwards with
 tools/agent_check.py UNIT, and keep the change only if no function's score dropped."""
 import os
 import re
@@ -108,13 +109,25 @@ for k in range(0, len(segs), 2):
     # extend upward over contiguous comment/pragma lines
     before = text[:fstart].split("\n")
     take = 0
+    opened = []  # `#pragma NAME ...` lines directly above (not `reset`): their reset must follow the function
     for ln in reversed(before[:-1]):
         t = ln.strip()
-        if t.startswith("//") or t.startswith("/*") or t.startswith("*") or t.endswith("*/"):
+        pm = re.match(r"#\s*pragma\s+(\w+)\s*(\w*)", t)
+        if pm:
+            if pm.group(2) != "reset":
+                opened.append(pm.group(1))
+            take += 1
+        elif t.startswith("//") or t.startswith("/*") or t.startswith("*") or t.endswith("*/"):
             take += 1
         else:
             break
     fstart -= sum(len(l) + 1 for l in before[len(before) - 1 - take:len(before) - 1])
+    if opened:
+        for name_ in opened:
+            m2 = re.match(rf"[ \t]*\n?[ \t]*#\s*pragma\s+{name_}\s+reset[^\n]*\n?", text[end:])
+            if not m2:
+                sys.exit(f"{unit}: `#pragma {name_}` above a function without its `reset` right after it: move it by hand")
+            end += m2.end()
     # a function's leading text must start at a line start
     ls = text.rfind("\n", 0, fstart) + 1
     if text[ls:fstart].strip() == "":
