@@ -345,10 +345,6 @@ static EVT_BEGIN(explosion_event)
 EVT_END()
 
 // TODO: type
-__declspec(section ".data") u32 lbl_80398960[2] = {
-    0xBF800000, 0x3F800000,
-};
-
 static BattleDataEntry data_table[4] = {
     { 0x31, dead_event },
     { 0x35, explosion_event },

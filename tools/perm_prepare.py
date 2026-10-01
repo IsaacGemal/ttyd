@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create a decomp-permuter input directory for one function of a dol unit.
 
-    python3 tools/perm_prepare.py UNIT FUNC [OUTDIR]       e.g. effect/eff_hibashira effHibashiraMain
+    python3 tools/perm_prepare.py UNIT FUNC [OUTDIR] [--keep-all]       e.g. effect/eff_hibashira effHibashiraMain
 
 Writes OUTDIR (default $PERM_ROOT/inputs/UNIT__FUNC, PERM_ROOT default ~/permuter) with
   base.c         the unit's source, preprocessed with the unit's flags, every other function reduced to a prototype
@@ -20,8 +20,10 @@ PERMUTER = os.environ.get("PERM_HOME", os.path.expanduser("~/permuter/decomp-per
 sys.path.insert(0, PERMUTER)
 from strip_other_fns import strip_other_fns  # noqa: E402
 
-unit, func = sys.argv[1], sys.argv[2]
-out = sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.environ.get("PERM_ROOT", os.path.expanduser("~/permuter")), "inputs", unit.replace("/", "_") + "__" + func)
+KEEP_ALL = "--keep-all" in sys.argv
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+unit, func = args[0], args[1]
+out = args[2] if len(args) > 2 else os.path.join(os.environ.get("PERM_ROOT", os.path.expanduser("~/permuter")), "inputs", unit.replace("/", "_") + "__" + func)
 os.makedirs(out, exist_ok=True)
 ninja = open(os.path.join(ROOT, "build.ninja")).read()
 m = re.search(rf"^build build/G8MJ01/src/{re.escape(unit)}\.o: mwcc\w* .*?\n  cflags = (.*?)\n  basedir", ninja, re.M | re.S)
@@ -38,7 +40,7 @@ if pre.returncode:
 text = re.sub(r"__declspec\s*\((?:[^()]|\([^()]*\))*\)", "", pre.stdout)  # the parser cannot read it; it only places data
 text = text.replace("__typeof__(sizeof(0))", "unsigned long")  # the permuter prints it back as `typeof`, which MWCC rejects
 text = re.sub(r"\bsizeof\s*\((\w+)\)", r"(sizeof(\1))", text)  # `sizeof(T) + x` parses as sizeof((T)(+x)) when T is a typedef
-src = strip_other_fns(text, func)
+src = text if KEEP_ALL else strip_other_fns(text, func)  # --keep-all: constants pooled by the other functions change how this one compiles
 open(os.path.join(out, "base.c"), "w").write(src)
 target = os.path.join(ROOT, "build/G8MJ01/obj", unit + ".o")
 if not os.path.exists(target):

@@ -113,7 +113,7 @@ driver/lightdrv.c:
 driver/mapdrv.c:
 	.text       start:0x8001BEA8 end:0x8002AEB4
 	.rodata     start:0x802C16D8 end:0x802C1A90
-	.data       start:0x803032E0 end:0x80303468
+	.data       start:0x803032E0 end:0x80303460
 	.bss        start:0x803C5C30 end:0x803C60B0
 	.sdata      start:0x8040F3D0 end:0x8040F400
 	.sbss       start:0x80418440 end:0x804184C0
@@ -123,7 +123,7 @@ driver/mapdrv.c:
 driver/shadowdrv.c:
 	.text       start:0x8002AEB4 end:0x8002DBC0
 	.rodata     start:0x802C1A90 end:0x802C1BE8
-	.data       start:0x80303468 end:0x80303A10
+	.data       start:0x80303460 end:0x80303A10
 	.bss        start:0x803C60B0 end:0x803C63D8
 	.sdata      start:0x8040F400 end:0x8040F4B0
 	.sbss       start:0x804184C0 end:0x80418558
@@ -650,7 +650,7 @@ event/evt_kinopio.c:
 npc_event.c:
 	.text       start:0x800ECD0C end:0x800EE814
 	.rodata     start:0x802ECF20 end:0x802ED668
-	.data       start:0x8033CA68 end:0x80349DF0
+	.data       start:0x8033CA68 end:0x80349DE8
 	.sdata      start:0x80410840 end:0x80410C18
 	.sbss       start:0x80418950 end:0x80418970
 	.sdata2     start:0x8041BC88 end:0x8041BD40
@@ -665,7 +665,7 @@ cam_shift.c:
 sequence/seq_load.c:
 	.text       start:0x800EED20 end:0x800F23D8
 	.rodata     start:0x802ED670 end:0x802EDA48
-	.data       start:0x80349DF0 end:0x8034A0C0
+	.data       start:0x80349DE8 end:0x8034A0C0
 	.bss        start:0x803DB7E8 end:0x803DB838
 	.sdata      start:0x80410C20 end:0x80410CA0
 	.sdata2     start:0x8041BD68 end:0x8041BE88
@@ -747,7 +747,7 @@ battle/battle_menu_disp.c:
 	.sbss2      start:0x80422FF0 end:0x80422FF8
 
 battle/battle_party.c:
-	.data       start:0x80360E90 end:0x80360FE8
+	.data       start:0x80360E90 end:0x80360FE0
 
 battle/battle_pad.c:
 	.text       start:0x80114B18 end:0x801150A8
@@ -755,7 +755,7 @@ battle/battle_pad.c:
 battle/battle_seq.c:
 	.text       start:0x801150A8 end:0x80119DF4
 	.rodata     start:0x802EF250 end:0x802EF640
-	.data       start:0x80360FE8 end:0x80361560
+	.data       start:0x80360FE0 end:0x80361560
 	.sdata      start:0x80410F78 end:0x80410FB8
 	.sdata2     start:0x8041C268 end:0x8041C2C0
 
@@ -1000,13 +1000,13 @@ effect/eff_breath_fire.c:
 battle/battle_attack_audience.c:
 	.text       start:0x80140B9C end:0x801412AC
 	.rodata     start:0x802F3A90 end:0x802F3AC8
-	.data       start:0x80371354 end:0x80371498
+	.data       start:0x80371354 end:0x80371490
 	.sdata2     start:0x8041CCC0 end:0x8041CCE8
 
 battle/battle_stage_object.c:
 	.text       start:0x801412AC end:0x8014519C
 	.rodata     start:0x802F3AC8 end:0x802F3D60
-	.data       start:0x80371498 end:0x80374870
+	.data       start:0x80371490 end:0x80374870
 	.sdata      start:0x80411DE0 end:0x80411F40
 	.sdata2     start:0x8041CCE8 end:0x8041CD80
 
@@ -1081,7 +1081,7 @@ event/evt_win.c:
 window/win_main.c:
 	.text       start:0x80175BFC end:0x80178F54
 	.rodata     start:0x802F68C0 end:0x802F6B28
-	.data       start:0x80375608 end:0x80376328
+	.data       start:0x80375608 end:0x80376320
 	.sbss       start:0x80418A10 end:0x80418A20
 	.sdata2     start:0x8041DC00 end:0x8041DCD0
 
@@ -1096,21 +1096,21 @@ event/evt_cloud.c:
 unit/party/unit_party_clauda.c:
 	.text       start:0x80179950 end:0x8017A310
 	.rodata     start:0x802F6B98 end:0x802F6F38
-	.data       start:0x80376328 end:0x80379A08
+	.data       start:0x80376320 end:0x80379A00
 	.sdata      start:0x80412238 end:0x804122B0
 	.sdata2     start:0x8041DCF0 end:0x8041DD20
 
 unit/party/unit_party_yoshi.c:
 	.text       start:0x8017A310 end:0x8017B6E8
 	.rodata     start:0x802F6F38 end:0x802F7490
-	.data       start:0x80379A08 end:0x8037EC18
+	.data       start:0x80379A00 end:0x8037EC10
 	.sdata      start:0x804122B0 end:0x80412360
 	.sdata2     start:0x8041DD20 end:0x8041DDA0
 
 unit/party/unit_party_chuchurina.c:
 	.text       start:0x8017B6E8 end:0x8017C458
 	.rodata     start:0x802F7490 end:0x802F7940
-	.data       start:0x8037EC18 end:0x803848E0
+	.data       start:0x8037EC10 end:0x803848E0
 	.sdata      start:0x80412360 end:0x804123B8
 	.sbss       start:0x80418A28 end:0x80418A30
 	.sdata2     start:0x8041DDA0 end:0x8041DDD8
@@ -1118,14 +1118,14 @@ unit/party/unit_party_chuchurina.c:
 unit/party/unit_party_sanders.c:
 	.text       start:0x8017C458 end:0x8017CCA8
 	.rodata     start:0x802F7940 end:0x802F7C30
-	.data       start:0x803848E0 end:0x80388870
+	.data       start:0x803848E0 end:0x80388868
 	.sdata      start:0x804123B8 end:0x80412440
 	.sdata2     start:0x8041DDD8 end:0x8041DE78
 
 unit/party/unit_party_vivian.c:
 	.text       start:0x8017CCA8 end:0x8017DD38
 	.rodata     start:0x802F7C30 end:0x802F8068
-	.data       start:0x80388870 end:0x8038BA08
+	.data       start:0x80388868 end:0x8038BA08
 	.sdata      start:0x80412440 end:0x804124A0
 	.sdata2     start:0x8041DE78 end:0x8041DEC0
 
@@ -1264,7 +1264,7 @@ effect/eff_bomb.c:
 
 unit/unit_bomzou.c:
 	.rodata     start:0x802F9210 end:0x802F92B8
-	.data       start:0x80398188 end:0x80398968
+	.data       start:0x80398188 end:0x80398960
 	.sdata      start:0x80412998 end:0x80412A98
 	.sdata2     start:0x8041E490 end:0x8041E4A8
 
@@ -1285,14 +1285,14 @@ event/evt_env.c:
 driver/envdrv.c:
 	.text       start:0x80193418 end:0x801983C4
 	.rodata     start:0x802F9338 end:0x802F93E0
-	.data       start:0x80398968 end:0x80398D20
+	.data       start:0x80398960 end:0x80398D20
 	.bss        start:0x803E0EF8 end:0x803E10E0
 	.sbss       start:0x80418A70 end:0x80418A90
 	.sdata2     start:0x8041E510 end:0x8041E5D0
 
 unit/unit_koura.c:
 	.rodata     start:0x802F93E0 end:0x802F94E0
-	.data       start:0x80398D20 end:0x80399948
+	.data       start:0x80398D20 end:0x80399940
 	.sdata      start:0x80412A98 end:0x80412B80
 	.sdata2     start:0x8041E5D0 end:0x8041E5D8
 
@@ -1305,7 +1305,7 @@ battle/ac/ac_lst_rc_keep.c:
 battle/battle_audience.c:
 	.text       start:0x80198DA8 end:0x801A2724
 	.rodata     start:0x802F9578 end:0x802F9E20
-	.data       start:0x80399948 end:0x80399F60
+	.data       start:0x80399940 end:0x80399F60
 	.sdata      start:0x80412BB0 end:0x80412C40
 	.sdata2     start:0x8041E608 end:0x8041E720
 	.sbss2      start:0x80423080 end:0x80423088
@@ -1410,13 +1410,13 @@ effect/n64/eff_bomb_n64.c:
 effect/n64/eff_bomhei_n64.c:
 	.text       start:0x801AAC6C end:0x801AB350
 	.rodata     start:0x802FA2B0 end:0x802FA2D8
-	.data       start:0x8039A9A8 end:0x8039A9E8
+	.data       start:0x8039A9A8 end:0x8039A9E0
 	.sdata2     start:0x8041EA20 end:0x8041EA58
 
 effect/n64/eff_booboo_n64.c:
 	.text       start:0x801AB350 end:0x801AC974
 	.rodata     start:0x802FA2D8 end:0x802FA2F0
-	.data       start:0x8039A9E8 end:0x8039B1E8
+	.data       start:0x8039A9E0 end:0x8039B1E8
 	.sdata      start:0x80412D80 end:0x80413828
 	.sdata2     start:0x8041EA58 end:0x8041EA80
 	.sbss2      start:0x804230A8 end:0x804230B0
@@ -1526,21 +1526,21 @@ effect/n64/eff_fire_ring_n64.c:
 effect/n64/eff_fire_spark_n64.c:
 	.text       start:0x801B799C end:0x801B85D8
 	.rodata     start:0x802FA5B0 end:0x802FA5D8
-	.data       start:0x8039C960 end:0x8039CA18
+	.data       start:0x8039C960 end:0x8039CA10
 	.sdata2     start:0x8041EE98 end:0x8041EEC8
 	.sbss2      start:0x80423100 end:0x80423108
 
 effect/n64/eff_fireflower_n64.c:
 	.text       start:0x801B85D8 end:0x801B9310
 	.rodata     start:0x802FA5D8 end:0x802FA600
-	.data       start:0x8039CA18 end:0x8039CB18
+	.data       start:0x8039CA10 end:0x8039CB18
 	.sdata      start:0x80413968 end:0x80413978
 	.sdata2     start:0x8041EEC8 end:0x8041EF28
 
 effect/n64/eff_fireworks_n64.c:
 	.text       start:0x801B9310 end:0x801BA024
 	.rodata     start:0x802FA600 end:0x802FA660
-	.data       start:0x8039CB18 end:0x8039CDB0
+	.data       start:0x8039CB18 end:0x8039CDA8
 	.sdata      start:0x80413978 end:0x80413990
 	.sbss       start:0x80418AA0 end:0x80418AA8
 	.sdata2     start:0x8041EF28 end:0x8041EF68
@@ -1549,7 +1549,7 @@ effect/n64/eff_fireworks_n64.c:
 effect/n64/eff_flame_n64.c:
 	.text       start:0x801BA024 end:0x801BC570
 	.rodata     start:0x802FA660 end:0x802FA688
-	.data       start:0x8039CDB0 end:0x8039CF38
+	.data       start:0x8039CDA8 end:0x8039CF38
 	.sdata2     start:0x8041EF68 end:0x8041EFC8
 	.sbss2      start:0x80423110 end:0x80423118
 
@@ -1597,7 +1597,7 @@ effect/n64/eff_hagetaka_flush_n64.c:
 effect/n64/eff_hit_n64.c:
 	.text       start:0x801BFAEC end:0x801C0548
 	.rodata     start:0x802FA778 end:0x802FA7A8
-	.data       start:0x8039D4B8 end:0x8039D5D8
+	.data       start:0x8039D4B8 end:0x8039D5D0
 	.sdata      start:0x804139C8 end:0x80413A00
 	.sdata2     start:0x8041F0E0 end:0x8041F108
 	.sbss2      start:0x80423138 end:0x80423140
@@ -1605,7 +1605,7 @@ effect/n64/eff_hit_n64.c:
 effect/n64/eff_hokori_n64.c:
 	.text       start:0x801C0548 end:0x801C0DB8
 	.rodata     start:0x802FA7A8 end:0x802FA7D0
-	.data       start:0x8039D5D8 end:0x8039D6B8
+	.data       start:0x8039D5D0 end:0x8039D6B8
 	.sdata2     start:0x8041F108 end:0x8041F138
 	.sbss2      start:0x80423140 end:0x80423148
 
@@ -1713,14 +1713,14 @@ effect/n64/eff_kemuri12_n64.c:
 effect/n64/eff_kumokumo_chip_n64.c:
 	.text       start:0x801CB1F8 end:0x801CB93C
 	.rodata     start:0x802FAA50 end:0x802FAA90
-	.data       start:0x803A2238 end:0x803A2288
+	.data       start:0x803A2238 end:0x803A2280
 	.sdata2     start:0x8041F568 end:0x8041F578
 	.sbss2      start:0x80423198 end:0x804231A0
 
 effect/n64/eff_kumokumo_n64.c:
 	.text       start:0x801CB93C end:0x801CD31C
 	.rodata     start:0x802FAA90 end:0x802FAAC8
-	.data       start:0x803A2288 end:0x803A2A00
+	.data       start:0x803A2280 end:0x803A2A00
 	.sdata      start:0x80413A80 end:0x80413B50
 	.sdata2     start:0x8041F578 end:0x8041F5D0
 	.sbss2      start:0x804231A0 end:0x804231A8
@@ -1769,7 +1769,7 @@ effect/n64/eff_n64.c:
 effect/n64/eff_onpu_n64.c:
 	.text       start:0x801D1A18 end:0x801D2230
 	.rodata     start:0x802FB200 end:0x802FB220
-	.data       start:0x803A33A0 end:0x803A33E0
+	.data       start:0x803A33A0 end:0x803A33D8
 	.sdata      start:0x80413BA8 end:0x80413BD0
 	.sdata2     start:0x8041F790 end:0x8041F7C0
 	.sbss2      start:0x804231C0 end:0x804231C8
@@ -1777,7 +1777,7 @@ effect/n64/eff_onpu_n64.c:
 effect/n64/eff_opuku_jetw_n64.c:
 	.text       start:0x801D2230 end:0x801D29C0
 	.rodata     start:0x802FB220 end:0x802FB248
-	.data       start:0x803A33E0 end:0x803A3830
+	.data       start:0x803A33D8 end:0x803A3830
 	.sdata      start:0x80413BD0 end:0x80413BF0
 	.sdata2     start:0x8041F7C0 end:0x8041F7D8
 	.sbss2      start:0x804231C8 end:0x804231D8
@@ -1849,7 +1849,7 @@ effect/n64/eff_pokopi_pipo_n64.c:
 effect/n64/eff_pokopi_thunder_n64.c:
 	.text       start:0x801D95E8 end:0x801DA424
 	.rodata     start:0x802FB400 end:0x802FB450
-	.data       start:0x803A4580 end:0x803A4798
+	.data       start:0x803A4580 end:0x803A4790
 	.sdata      start:0x80413C70 end:0x80413C78
 	.sdata2     start:0x8041FA20 end:0x8041FA60
 	.sbss2      start:0x80423220 end:0x80423228
@@ -1857,7 +1857,7 @@ effect/n64/eff_pokopi_thunder_n64.c:
 effect/n64/eff_pturn_n64.c:
 	.text       start:0x801DA424 end:0x801DB1F8
 	.rodata     start:0x802FB450 end:0x802FB478
-	.data       start:0x803A4798 end:0x803A48B0
+	.data       start:0x803A4790 end:0x803A48B0
 	.sdata      start:0x80413C78 end:0x80413CA0
 	.sdata2     start:0x8041FA60 end:0x8041FA90
 	.sbss2      start:0x80423228 end:0x80423230
@@ -1872,7 +1872,7 @@ effect/n64/eff_radiation_n64.c:
 effect/n64/eff_rappa_n64.c:
 	.text       start:0x801DC144 end:0x801DC8F8
 	.rodata     start:0x802FB4A0 end:0x802FB4C8
-	.data       start:0x803A4A28 end:0x803A4A68
+	.data       start:0x803A4A28 end:0x803A4A60
 	.sdata      start:0x80413CD0 end:0x80413CF8
 	.sdata2     start:0x8041FAD8 end:0x8041FB08
 	.sbss2      start:0x80423230 end:0x80423238
@@ -1880,7 +1880,7 @@ effect/n64/eff_rappa_n64.c:
 effect/n64/eff_recover_heart_n64.c:
 	.text       start:0x801DC8F8 end:0x801DD49C
 	.rodata     start:0x802FB4C8 end:0x802FB4F0
-	.data       start:0x803A4A68 end:0x803A4C68
+	.data       start:0x803A4A60 end:0x803A4C60
 	.sdata      start:0x80413CF8 end:0x80413D30
 	.sdata2     start:0x8041FB08 end:0x8041FB38
 	.sbss2      start:0x80423238 end:0x80423240
@@ -1888,7 +1888,7 @@ effect/n64/eff_recover_heart_n64.c:
 effect/n64/eff_release_n64.c:
 	.text       start:0x801DD49C end:0x801DE594
 	.rodata     start:0x802FB4F0 end:0x802FB520
-	.data       start:0x803A4C68 end:0x803A5068
+	.data       start:0x803A4C60 end:0x803A5068
 	.sdata2     start:0x8041FB38 end:0x8041FB98
 	.sbss2      start:0x80423240 end:0x80423248
 
@@ -1950,14 +1950,14 @@ effect/n64/eff_snowfall_n64.c:
 effect/n64/eff_snowman_n64.c:
 	.text       start:0x801E2F90 end:0x801E3778
 	.rodata     start:0x802FB688 end:0x802FB6B8
-	.data       start:0x803A5BF8 end:0x803A5C98
+	.data       start:0x803A5BF8 end:0x803A5C90
 	.sdata      start:0x80413D58 end:0x80413D88
 	.sdata2     start:0x8041FD40 end:0x8041FD78
 
 effect/n64/eff_sstar_n64.c:
 	.text       start:0x801E3778 end:0x801E4930
 	.rodata     start:0x802FB6B8 end:0x802FB6F0
-	.data       start:0x803A5C98 end:0x803A5DE0
+	.data       start:0x803A5C90 end:0x803A5DE0
 	.sdata2     start:0x8041FD78 end:0x8041FE28
 
 effect/n64/eff_stamp_n64.c:
@@ -2030,7 +2030,7 @@ effect/n64/eff_thunderflare_n64.c:
 effect/n64/eff_timestamp_n64.c:
 	.text       start:0x801ECDB4 end:0x801ED7E0
 	.rodata     start:0x802FB8B8 end:0x802FB8E8
-	.data       start:0x803A8580 end:0x803A8600
+	.data       start:0x803A8580 end:0x803A85F8
 	.sdata      start:0x80413E18 end:0x80413E58
 	.sdata2     start:0x804200B0 end:0x804200D8
 	.sbss2      start:0x804232B0 end:0x804232B8
@@ -2038,7 +2038,7 @@ effect/n64/eff_timestamp_n64.c:
 effect/n64/eff_vapor_n64.c:
 	.text       start:0x801ED7E0 end:0x801EE27C
 	.rodata     start:0x802FB8E8 end:0x802FB918
-	.data       start:0x803A8600 end:0x803A88C0
+	.data       start:0x803A85F8 end:0x803A88C0
 	.sdata2     start:0x804200D8 end:0x80420110
 	.sbss2      start:0x804232B8 end:0x804232C0
 
@@ -2053,13 +2053,13 @@ effect/n64/eff_wangflush_n64.c:
 effect/n64/eff_water_damage_n64.c:
 	.text       start:0x801EE940 end:0x801EFE78
 	.rodata     start:0x802FB940 end:0x802FB968
-	.data       start:0x803A8900 end:0x803A8AA8
+	.data       start:0x803A8900 end:0x803A8AA0
 	.sdata2     start:0x80420150 end:0x804201B0
 
 effect/n64/eff_snow_dust_n64.c:
 	.text       start:0x801EFE78 end:0x801F1968
 	.rodata     start:0x802FB968 end:0x802FB998
-	.data       start:0x803A8AA8 end:0x803A8C08
+	.data       start:0x803A8AA0 end:0x803A8C08
 	.sdata      start:0x80413E70 end:0x80413ED0
 	.sdata2     start:0x804201B0 end:0x80420200
 	.sbss2      start:0x804232C8 end:0x804232D8
@@ -2135,7 +2135,7 @@ countdown.c:
 battle/ac/ac_stick_rotate.c:
 	.text       start:0x801FCB10 end:0x801FD918
 	.rodata     start:0x802FD560 end:0x802FD5D0
-	.data       start:0x803AB0F0 end:0x803AB120
+	.data       start:0x803AB0F0 end:0x803AB118
 	.sdata2     start:0x804204D0 end:0x804204E8
 
 battle/ac/ac_button_down.c:
@@ -2152,7 +2152,7 @@ battle/ac/ac_timing_wide.c:
 battle/battle_break_slot.c:
 	.text       start:0x801FEE20 end:0x80200DC0
 	.rodata     start:0x802FD6C0 end:0x802FD9A8
-	.data       start:0x803AB120 end:0x803AB8F0
+	.data       start:0x803AB118 end:0x803AB8F0
 	.sdata      start:0x80414070 end:0x80414148
 	.sbss       start:0x80418B30 end:0x80418B38
 	.sdata2     start:0x80420520 end:0x80420598
@@ -2160,7 +2160,7 @@ battle/battle_break_slot.c:
 nameent.c:
 	.text       start:0x80200DC0 end:0x80204F48
 	.rodata     start:0x802FD9A8 end:0x802FDB78
-	.data       start:0x803AB8F0 end:0x803ABCE8
+	.data       start:0x803AB8F0 end:0x803ABCE0
 	.bss        start:0x803E1898 end:0x803E1900
 	.sdata      start:0x80414148 end:0x80414160
 	.sdata2     start:0x80420598 end:0x80420958
@@ -2196,13 +2196,13 @@ effect/eff_peach_fukidashi.c:
 battle/ac/ac_air_gauge.c:
 	.text       start:0x80207BE0 end:0x8020846C
 	.rodata     start:0x802FDC68 end:0x802FDC88
-	.data       start:0x803ABCE8 end:0x803ABEE0
+	.data       start:0x803ABCE0 end:0x803ABEE0
 	.sdata2     start:0x80420A70 end:0x80420AB0
 
 effect/eff_kemutest.c:
 	.text       start:0x8020846C end:0x8020A1D4
 	.rodata     start:0x802FDC88 end:0x802FDD38
-	.data       start:0x803ABEE0 end:0x803AC088
+	.data       start:0x803ABEE0 end:0x803AC080
 	.sdata      start:0x804141D0 end:0x80414220
 	.sdata2     start:0x80420AB0 end:0x80420B30
 	.sbss2      start:0x804232D8 end:0x804232E0
@@ -2215,7 +2215,7 @@ battle/ac/ac_crane_timing.c:
 effect/eff_starstone.c:
 	.text       start:0x8020A620 end:0x8020C9A4
 	.rodata     start:0x802FDD50 end:0x802FDDA8
-	.data       start:0x803AC088 end:0x803ACB18
+	.data       start:0x803AC080 end:0x803ACB10
 	.sdata      start:0x80414220 end:0x804159B8
 	.sdata2     start:0x80420B48 end:0x80420B98
 	.sbss2      start:0x804232E0 end:0x804232F0
@@ -2230,7 +2230,7 @@ effect/eff_itemget.c:
 battle/battle_seq_end.c:
 	.text       start:0x8020DCA4 end:0x80211A94
 	.rodata     start:0x802FDDF0 end:0x802FE1D8
-	.data       start:0x803ACB18 end:0x803ADA18
+	.data       start:0x803ACB10 end:0x803ADA18
 	.sdata      start:0x80415A00 end:0x80415A58
 	.sdata2     start:0x80420C00 end:0x80420D80
 
@@ -2268,14 +2268,14 @@ effect/eff_pointget.c:
 effect/eff_stageclear.c:
 	.text       start:0x80216964 end:0x8021775C
 	.rodata     start:0x802FE3C0 end:0x802FE418
-	.data       start:0x803ADC60 end:0x803ADD28
+	.data       start:0x803ADC60 end:0x803ADD20
 	.sdata      start:0x80415BA8 end:0x80415C40
 	.sdata2     start:0x80420F10 end:0x80420F48
 
 effect/eff_fall.c:
 	.text       start:0x8021775C end:0x8021AA24
 	.rodata     start:0x802FE418 end:0x802FE5A0
-	.data       start:0x803ADD28 end:0x803AE098
+	.data       start:0x803ADD20 end:0x803AE098
 	.sdata      start:0x80415C40 end:0x80415D20
 	.sdata2     start:0x80420F48 end:0x80421080
 
@@ -2301,14 +2301,14 @@ effect/eff_mobj_broken.c:
 effect/eff_mahojin.c:
 	.text       start:0x8021CAD4 end:0x8021D56C
 	.rodata     start:0x802FE670 end:0x802FE6B8
-	.data       start:0x803AE1A0 end:0x803AE268
+	.data       start:0x803AE1A0 end:0x803AE260
 	.sbss       start:0x80418B48 end:0x80418B50
 	.sdata2     start:0x80421150 end:0x80421230
 
 effect/eff_nozle.c:
 	.text       start:0x8021D56C end:0x8021E628
 	.rodata     start:0x802FE6B8 end:0x802FE6D8
-	.data       start:0x803AE268 end:0x803AFEA0
+	.data       start:0x803AE260 end:0x803AFEA0
 	.sdata      start:0x80415DC0 end:0x80416080
 	.sdata2     start:0x80421230 end:0x80421270
 	.sbss2      start:0x80423300 end:0x80423308
@@ -2342,7 +2342,7 @@ effect/eff_treasure_map.c:
 effect/eff_kiss.c:
 	.text       start:0x80221BB0 end:0x80223104
 	.rodata     start:0x802FE780 end:0x802FE7A0
-	.data       start:0x803B0138 end:0x803B0208
+	.data       start:0x803B0138 end:0x803B0200
 	.sdata      start:0x80416200 end:0x80416260
 	.sdata2     start:0x804213F0 end:0x80421468
 	.sbss2      start:0x80423310 end:0x80423320
@@ -2350,7 +2350,7 @@ effect/eff_kiss.c:
 effect/eff_funemizu.c:
 	.text       start:0x80223104 end:0x80224348
 	.rodata     start:0x802FE7A0 end:0x802FE8C8
-	.data       start:0x803B0208 end:0x803B0748
+	.data       start:0x803B0200 end:0x803B0748
 	.sdata      start:0x80416260 end:0x804163C0
 	.sdata2     start:0x80421468 end:0x804214B0
 
@@ -2462,7 +2462,7 @@ battle/ac/ac_gauge_timing2.c:
 effect/eff_naniga.c:
 	.text       start:0x8023AA24 end:0x8023BAC0
 	.rodata     start:0x803000A8 end:0x80300138
-	.data       start:0x803B2EE0 end:0x803B2FA8
+	.data       start:0x803B2EE0 end:0x803B2FA0
 	.sdata2     start:0x80421B48 end:0x80421B98
 
 effect/eff_sandars.c:
@@ -2495,7 +2495,7 @@ effect/eff_scanning.c:
 effect/eff_toiki.c:
 	.text       start:0x8023DAC4 end:0x8023E260
 	.rodata     start:0x80300230 end:0x80300248
-	.data       start:0x803B2FA8 end:0x803B3338
+	.data       start:0x803B2FA0 end:0x803B3338
 	.sdata      start:0x80417A00 end:0x80417BC0
 	.sdata2     start:0x80421C68 end:0x80421CA8
 	.sbss2      start:0x80423338 end:0x80423340
@@ -2532,14 +2532,14 @@ battle/sac/sac_common.c:
 battle/sac/sac_deka.c:
 	.text       start:0x80242FF8 end:0x80245DF8
 	.rodata     start:0x803004F8 end:0x803006C0
-	.data       start:0x803B4030 end:0x803B4868
+	.data       start:0x803B4030 end:0x803B4860
 	.sdata      start:0x80417C20 end:0x80417C40
 	.sdata2     start:0x80421E40 end:0x80421F00
 
 effect/eff_ibuki.c:
 	.text       start:0x80245DF8 end:0x80246DCC
 	.rodata     start:0x803006C0 end:0x803006D8
-	.data       start:0x803B4868 end:0x803B4A80
+	.data       start:0x803B4860 end:0x803B4A80
 	.sdata      start:0x80417C40 end:0x80417C88
 	.sdata2     start:0x80421F00 end:0x80421F50
 
@@ -2685,7 +2685,7 @@ gxsub.c:
 event/evt_memcard.c:
 	.text       start:0x8025613C end:0x80256544
 	.rodata     start:0x80301540 end:0x80301920
-	.data       start:0x803B5FB0 end:0x803B70C8
+	.data       start:0x803B5FB0 end:0x803B70C0
 
 effect/eff_majinai.c:
 	.text       start:0x80256544 end:0x80256AF8
@@ -2700,7 +2700,7 @@ effect/eff_mahorn2.c:
 effect/eff_ultra_hammer.c:
 	.text       start:0x802577C0 end:0x8025854C
 	.rodata     start:0x803019B0 end:0x803019E0
-	.data       start:0x803B70C8 end:0x803B7360
+	.data       start:0x803B70C0 end:0x803B7360
 	.sdata      start:0x80417EC0 end:0x80418198
 	.sdata2     start:0x804225E0 end:0x80422600
 

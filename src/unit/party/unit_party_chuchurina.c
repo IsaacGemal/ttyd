@@ -13,6 +13,9 @@
 #include <dolphin/gx.h>
 #include <string.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_8037EC10[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 USER_FUNC(_chuchu_make_extra_work_area) {
     BattleWork* work = _battleWorkPointer;
     BattleUnit* unit;
@@ -28,7 +31,6 @@ extern BattleWeapon partyWeapon_ChuchurinaNormalAttackLeftLast;
 extern BattleWeapon partyWeapon_ChuchurinaItemSteal;
 extern BattleWeapon partyWeapon_ChuchurinaMadowaseAttack;
 extern BattleWeapon partyWeapon_ChuchurinaKiss;
-extern u8 lbl_8037EC10[]; // this unit's .data weapon tables
 
 #define TECH_MENU_ENTRY(table)                                                        \
     cmd->mWeaponTable[*count].mIndex = -1;                                            \

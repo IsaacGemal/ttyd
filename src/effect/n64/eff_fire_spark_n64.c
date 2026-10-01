@@ -29,10 +29,6 @@ u32 size4x4_tex32x32_vtx[14] = {
     0x00000400, 0x000000FF,
 };
 
-__declspec(section ".data") u32 lbl_8039CA10[2] = {
-    0xBF800000, 0x3F800000,
-};
-
 typedef struct effFireSparkData {
     s32 type;             // 0x00
     f32 field_0x04;       // 0x04

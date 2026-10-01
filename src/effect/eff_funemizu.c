@@ -10,6 +10,9 @@
 #include <math.h>
 #include <string.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_803B0200[2] = { 0xBF800000, 0x3F800000 };
+
 typedef struct FunemizuMapEntry {
 	const char* name;
 	u32 value;

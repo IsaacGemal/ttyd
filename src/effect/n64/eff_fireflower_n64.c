@@ -10,6 +10,9 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_8039CA10[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 // .data float pairs and vertex arrays, in the original's order.
 static f32 negone_one_374[2] = { -1.0f, 1.0f };
 f32 lbl_8039CA20[2] = { 1.0f, -1.0f };
@@ -39,7 +42,6 @@ static u32 size32x32_tex32x32_vtx[14] = {
 
 #ifdef MUST_MATCH
 // The original reaches the three vertex arrays from the address 8 bytes before its .data.
-extern u8 lbl_8039CA10[];
 #endif
 
 // .sdata scale table indexed by data->timer in state 1 (signed bytes: loaded with extsb).

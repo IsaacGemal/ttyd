@@ -8,6 +8,9 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_803A33D8[2] = { 0xBF800000, 0x3F800000 };
+
 // .data
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 __declspec(section ".data") f32 lbl_803A33E8[2] = { 1.0f, -1.0f };

@@ -4,6 +4,9 @@
 #include "driver/dispdrv.h"
 #include "math_ext.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_803A4790[2] = { 0xBF800000, 0x3F800000 };
+
 // .rodata and .sdata2 constants (named after their original addresses in the asm).
 extern const char str_802FB468[];
 extern const f32 float_1_8041fa64;

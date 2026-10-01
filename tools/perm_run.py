@@ -3,7 +3,7 @@
 
     python3 tools/perm_run.py QUEUE [--minutes 20] [--jobs 2] [--threads 4] [--log ~/permuter/runs.log]
 
-QUEUE: one `UNIT FUNC` per line (e.g. `koopa_motion kpa_jump`; `#` comments). For each line it runs tools/perm_prepare.py, then
+QUEUE: one `UNIT FUNC [+all]` per line (+all: keep the other functions in base.c) (e.g. `koopa_motion kpa_jump`; `#` comments). For each line it runs tools/perm_prepare.py, then
 the permuter with `--stop-on-zero --best-only -j THREADS` under `nice -n 15`. JOBS runs go at once; JOBS x THREADS is capped
 at 8 (the tower's budget while waves run). Nothing outlives this process:
   - every run is its own process group inside this supervisor's session; a run older than MINUTES (+60 s grace) is killed
@@ -48,8 +48,8 @@ items = []
 for ln in open(a.queue):
     ln = ln.split("#")[0].strip()
     if ln:
-        unit, func = ln.split()[:2]
-        items.append((unit, func))
+        parts = ln.split()
+        items.append((parts[0], parts[1], "+all" in parts[2:]))
 
 running = {}  # pid -> dict(unit, func, start, dir, base)
 stop_reason = None
@@ -104,8 +104,8 @@ def log(r, reason):
                            str(secs), reason]) + "\n")
 
 
-def launch(unit, func):
-    p = subprocess.run([sys.executable, os.path.join(ROOT, "tools/perm_prepare.py"), unit, func], capture_output=True, text=True, cwd=ROOT)
+def launch(unit, func, keep_all=False):
+    p = subprocess.run([sys.executable, os.path.join(ROOT, "tools/perm_prepare.py"), unit, func] + (["--keep-all"] if keep_all else []), capture_output=True, text=True, cwd=ROOT)
     d = os.path.join(PERM_ROOT, "inputs", unit.replace("/", "_") + "__" + func)
     r = {"unit": unit, "func": func, "start": time.time(), "dir": d}
     if p.returncode:

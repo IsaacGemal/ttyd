@@ -22,6 +22,9 @@
 #include <string.h>
 #include <math.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") f32 lbl_80349DE8[2] = { -1.0f, 1.0f };
+
 typedef struct LoadWork {
     u16 field_0x0; //0x0
     u8 field_0x2[0x4 - 0x2];
@@ -81,7 +84,6 @@ extern s32 evt_memcard_delete[];
 extern s32 evt_memcard_copy[];
 extern s32 evt_memcard_save[];
 #ifdef MUST_MATCH
-extern f32 lbl_80349DE8[];
 #endif
 u32 gap_80349DF0[14] = {
     0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000, 0xBF800000, 0x3F800000,

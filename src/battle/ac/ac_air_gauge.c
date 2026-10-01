@@ -8,6 +8,9 @@
 #include <string.h>
 #include "battle/ac/ac_air_gauge.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803ABCE0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 
 const Vec vec3_802fdc68 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fdc74 = {0.0f, 0.0f, 0.0f};
@@ -30,7 +33,6 @@ const f32 float_0p47_80420aa4 = 0.47f;
 const f32 float_0p5_80420aa8 = 0.5f;
 const f32 float_0_80420aac = 0.0f;
 
-extern u8 lbl_803ABCE0[];
 
 static void actionCommandDisp(f32, f32);
 

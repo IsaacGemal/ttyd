@@ -8,6 +8,9 @@
 #include "system.h"
 #include <string.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_80303460[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 extern const Vec vec3_802c1a90;
 extern const Vec vec3_802c1a9c;
 extern const Vec vec3_802c1aa8;
@@ -53,7 +56,6 @@ u32 tmp_sci[4];
 f32 tmp_vp[6];
 
 extern u8 shadowConfig[];
-extern u8 lbl_80303460[];
 
 //.bss
 CharShadowWork char_shadow_work;

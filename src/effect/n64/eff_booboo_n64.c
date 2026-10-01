@@ -7,6 +7,9 @@
 #include <dolphin/mtx.h>
 #include <math.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_8039A9E0[2] = { 0xBF800000, 0x3F800000 };
+
 // .rodata
 const char str_802FA2E0[12] = "BoobooN64";
 

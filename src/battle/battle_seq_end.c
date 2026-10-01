@@ -19,6 +19,9 @@
 #include "driver/mapdrv.h"
 #include "eff/n64/eff_pokopi_pcharge_n64.h"
 #include <stdio.h>
+
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_803ACB10[2] = { 0xBF800000, 0x3F800000 };
 static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for functions that are not declared in a shared header.

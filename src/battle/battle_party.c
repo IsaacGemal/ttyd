@@ -26,4 +26,3 @@ BattleUnitSetup entryunit_party[7] = {
 
 // Without this the 8-byte array lands in .sdata; the original has it in .data (see evt_memcard.c for the
 // same __declspec(section ...) idiom).
-__declspec(section ".data") f32 lbl_80360FE0[2] = { -1.0f, 1.0f };

@@ -9,10 +9,12 @@
 #include <math.h>
 #include <stdlib.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803B4860[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 extern const Vec vec3_803006c0;
 extern const GXColor dat_80421f00;
 extern const GXColor dat_80421f04;
-extern u8 lbl_803B4860[];
 // The original reaches this file's tables from its .data section anchor, lbl_803B4860.
 #ifdef MUST_MATCH
 #define DATA_AT(off, sym) (base + (off))

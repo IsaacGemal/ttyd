@@ -20,6 +20,9 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") f32 lbl_80360FE0[2] = { -1.0f, 1.0f };
+
 extern BattleWork* _battleWorkPointer;
 
 // Weapon stat table for ITEM_LUCKY_START; _set_effect_luck copies it and btlseqInit uses it as the
@@ -359,7 +362,6 @@ void btlseqTurn(BattleWork* wp) {
 // double_to_int_802ef590 because this file's other int->float users are not written yet (MWCC then
 // pools a local constant), and it lands at a different .rodata offset because the rule-message
 // strings are also not in the file.
-extern f32 lbl_80360FE0[];
 extern GXColor dat_8041c26c;
 
 // The table loads use `add base,idx*4; lwz off(base)` where the original uses `addi base,off; lwzx`;

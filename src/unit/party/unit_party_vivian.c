@@ -16,6 +16,9 @@
 #include <dolphin/mtx.h>
 #include <string.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_80388868[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 // sdata2 float constants live in this file's .sdata2 (see the original's data).
 extern const f32 float_0_8041de8c;
 extern const f32 float_1p2_8041de90;
@@ -31,7 +34,6 @@ extern const f32 float_500_8041deb4;
 extern const f32 float_200_8041deb8;
 extern const f32 float_0p66667_8041debc;
 
-extern u8 lbl_80388868[]; // this unit's .data weapon tables
 extern BattleWeapon partyWeapon_VivianNormalAttack;
 extern BattleWeapon partyWeapon_VivianShadowGuard;
 extern BattleWeapon partyWeapon_VivianMagicalPowder;

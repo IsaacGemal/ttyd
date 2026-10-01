@@ -8,6 +8,9 @@
 #include <math.h>
 #include <stdlib.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803A8AA0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 typedef struct effSnowDustData {
 	s32 type;       // 0x00
 	f32 x;          // 0x04
@@ -360,7 +363,6 @@ static u32 size32x32_tex32x32_vtx[18] = {
 	0x0000FFFF, 0xFFFF0000,
 };
 
-extern u8 lbl_803A8AA0[];
 
 //.sbss2
 GXColor unk_804232c8;

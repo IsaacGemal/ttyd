@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_803AB118[2] = { 0xBF800000, 0x3F800000 };
+
 extern s32 kinoko_effect[];
 extern s32 flower_effect[];
 extern s32 shine_effect[];
