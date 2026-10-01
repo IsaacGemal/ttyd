@@ -2,6 +2,7 @@
 
 #include <dolphin/types.h>
 void marioReInit_slit(void);
+void marioForceSlitAnime(void);
 void marioSlitForceCancel(void);
 BOOL marioSlitKeyDisable(void);
 void N_marioSlitSetAfterLand(void);

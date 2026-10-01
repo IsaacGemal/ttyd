@@ -3,6 +3,7 @@
 #include "mario/mario_hit.h"
 #include "mario/mario_sbr.h"
 #include "mario/mario_party.h"
+#include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include "driver/camdrv.h"
@@ -1394,15 +1395,150 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     return FALSE;
 }
 
-// The angle table and the two Vec templates land in this file's .rodata pool, but the original
-// pools them at str_802CDB20+0x5a4 / +0x5d4 / +0x5f0 and addresses angles, templates and the
-// 2^52 int-to-float double off that one base register. Because the rest of party_move.c is still
-// unwritten, our pool offsets differ and the compiler keeps the angle base and the template base
-// in separate registers, so every callee-saved GPR is assigned differently (same stmw r25 set,
-// different roles). The stack frame, opcodes and control flow match exactly: `u32 i` for the
-// `cmplwi` loop test, component-wise `position->x/y/z = pos.x/y/z` for the lfs/stfs copy, and
-// `if (i >= 12)` for the post-loop `cmplwi; blt`.
-// NONMATCHING (85.22%): pool-layout blocker only; opcodes and stack shape match.
+// The original pools the five angle tables into one interleaved .rodata blob (base
+// str_802CDB20) and copies them with a sliding-window scheduler; ours emits five separate
+// declaration-order tables and a register-batch copy, shifting the stack frame (0x270 vs
+// 0x290) and most of the prologue/copy block. Declaring the tables E,D,C,B,A (V,W,Z,Y,X) and
+// giving targetDir a separate `(Vec){0,-1,0}` temp (so 0.0f is not hoisted) recovers the
+// original's five callee-saved FPRs (f27-f31) and the loop body. 0x54 is an unnamed angle
+// field PartyEntry does not declare, so it is read as a raw offset. Like the original, the
+// fallback loop reads one entry past the end of each angle table on its last pass (the neighbour
+// it lands in differs from retail's for anglesE).
+// NONMATCHING (77.78%): interleaved angle-table pool and sliding-window copy differ.
+BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
+    MarioWork* player = party->playerPtr;
+    PartyEntry* other = NULL;
+    f32 sinv;
+    f32 cosv;
+    Vec pos1 = (Vec){0.0f, 0.0f, 0.0f};
+    Vec dir1 = (Vec){0.0f, 0.0f, 0.0f};
+    Vec dir2 = (Vec){0.0f, -1.0f, 0.0f};
+    Vec pos2 = (Vec){0.0f, 0.0f, 0.0f};
+    s32 anglesE[11] = {180, 150, -150, 120, -120, 90, -90, 60, -60, 30, -30};
+    s32 anglesD[11] = {150, -150, 120, -120, 90, -90, 60, -60, 30, -30, 180};
+    s32 anglesC[11] = {-150, 150, -120, 120, -90, 90, -60, 60, -30, 30, -180};
+    s32 anglesB[13] = {180, 180, 150, -150, 120, -120, 90, -90, 60, -60, 30, -30, 0};
+    s32 anglesA[13] = {45, 60, 15, 75, 0, 90, -15, 105, -30, 120, -45, 135, -60};
+    HitCheckQuery query;
+    HitEntry* hit;
+    NpcEntry* npc;
+    f32 dist;
+    f32 targetDist;
+    f32 baseAngle;
+    f32 angle;
+    s32 count;
+    s32 i;
+
+    if (party->currentMemberId == PARTY_MEMBER_FLURRIE) {
+        dist = 32.0f;
+    } else if (party->field_8 & 0x200000) {
+        dist = 28.0f;
+    } else {
+        dist = 26.0f;
+    }
+    targetDist = dist + party->field_F4;
+    baseAngle = revise360(180.0f + *(f32*)((u8*)party + 0x54));
+
+    if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
+        position->x = player->position.x;
+        position->y = player->position.y;
+        position->z = player->position.z;
+    } else {
+        other = anotherPartyGetPtr(party->currentSlotId);
+        if (other != NULL) {
+            position->x = other->position.x;
+            position->z = other->position.z;
+            position->y = other->position.y;
+        } else {
+            position->x = player->position.x;
+            position->z = player->position.z;
+            position->y = player->position.y;
+        }
+    }
+
+    count = 11;
+    if (party->field_8 & 0x200000) {
+        count = 13;
+    }
+
+    for (i = 0; i <= count; i++) {
+        query.targetDistance = targetDist;
+        if (i == 0) {
+            angle = *(f32*)((u8*)party + 0x54);
+        } else if (party->field_8 & 0x200000) {
+            if (strcmp(gp->currentMapName, "usu_00") == 0) {
+                angle = toMovedir2(*(f32*)((u8*)party + 0x54), (f32)anglesA[i]);
+            } else {
+                angle = toMovedir2(*(f32*)((u8*)party + 0x54), (f32)anglesB[i]);
+            }
+        } else if (other == NULL) {
+            angle = toMovedir2(baseAngle, (f32)anglesE[i]);
+        } else if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
+            angle = toMovedir2(baseAngle, (f32)anglesD[i]);
+        } else {
+            angle = toMovedir2(baseAngle, (f32)anglesC[i]);
+        }
+
+        sincosf(&sinv, &cosv, angle);
+        pos1.x = position->x;
+        pos1.y = position->y + 37.0f;
+        pos1.z = position->z;
+        query.targetPos = pos1;
+        dir1.x = sinv;
+        dir1.z = cosv;
+        query.targetDir = dir1;
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit != NULL) {
+            continue;
+        }
+
+        movePos(&position->x, &position->z, dist, angle);
+        query.targetDistance = 87.0f;
+        pos2.x = position->x;
+        pos2.y = position->y + 37.0f;
+        pos2.z = position->z;
+        query.targetPos = pos2;
+        query.targetDir = dir2;
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            continue;
+        }
+        {
+            BOOL proceed;
+            if (hit == NULL) {
+                proceed = FALSE;
+            } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                proceed = FALSE;
+            } else if (unk_800c8dd0(hit) != 0) {
+                proceed = FALSE;
+            } else {
+                proceed = TRUE;
+            }
+            if (!proceed) {
+                continue;
+            }
+        }
+
+        npc = npcNearDistCheck(position->x, position->y, position->z, party->field_F4);
+        if (npc != NULL) {
+            continue;
+        }
+        position->y = query.hitPos.y;
+        marioChkWallAround(position, 1, 0.0f, 0.0f, 28.0f, 5.0f);
+        if (party->field_32 == 1 && position->y < player->position.y) {
+            position->y = player->position.y + 5.0f;
+        }
+        return TRUE;
+    }
+
+    partyGetAppearPos(party, position);
+    if (party->field_32 == 1 && position->y < player->position.y) {
+        position->y = player->position.y + 5.0f;
+    }
+    return FALSE;
+}
+
+// NONMATCHING (85.22%): the Vec-literal stack layout differs.
 BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
     MapObjectEntry* obj;

@@ -31,6 +31,21 @@ typedef struct effCloudData {
 	s32 field_0x2A8;      // 0x2A8
 	f32 field_0x2AC[30];  // 0x2AC
 } effCloudData;
+
+// One GX vertex in this unit's interleaved format (see effVtxArray): 14 bytes of
+// position/texcoord/colour; effCloudDisp writes two per live ring entry.
+typedef struct cloudVtx {
+	s16 x;
+	s16 y;
+	s16 z;
+	s16 u;
+	s16 v;
+	u8 r;
+	u8 g;
+	u8 b;
+	u8 a;
+} cloudVtx;
+
 EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale);
 void effCloudMain(EffectEntry* effect);
 #include "driver/camdrv.h"

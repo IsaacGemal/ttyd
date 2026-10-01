@@ -3317,3 +3317,34 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
   compares written as `(u32)` casts outside MUST_MATCH in casedrv, effdrv, evt_nannpc, battle_menu_disp; ac_shot's
   six vec3 objects stay one array (separate objects cost `actionCommandDisp` its match); gor_03's raw byte offsets
   stay (its work struct isn't declared).
+
+## Wave 51, batch 2, and wave 52 (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Batch 2** (wave 51's other 47 agents, collected onto main 0a750ff): +3 functions (8,582 -> 8,585) and code
+  fuzzy +0.73 from partial functions. Main had moved under these files since the agents' base (2ecf9a4), so eight
+  files no longer built after the merge (battle_audience, battle_unit, animdrv, party, seq_title, win_item,
+  win_log, evt_mobj) and five lost a function or section (party_hit, imgdrv, battle_seq_command,
+  ac_repeatedly_lv, mario_hit, whose new code also used MUST_MATCH-only helpers unconditionally): all as on main.
+  **Lesson:** a long wave should be collected in batches from the start; the later the batch, the older its base.
+- Review (`scratch/wave51/review2.md`) found no behaviour defects. mapDisp transforms one bounding-box corner
+  through the model matrix twice in retail (a game bug); the C had that only under MUST_MATCH and now keeps it in
+  every build. partyHelloMain returns s32 (every path sets r3 = 1; callers ignore it), so include/party.h's line
+  changes from void.
+- Folded in from Claude #1's review of #142: battle_unit's unused PoseSound typedefs out and its two .sdata2
+  floats const; effdrv's unused Maya key structs out; battle_icon's no-op optimize_for_size pairs out (the file is
+  -O4,s already); battle_sub's file-wide optimize_for_size now closes at the end of the file. Noted:
+  include/manager/filemgr.h:39 changed an existing field from u8 to s32 in #142 (the asm reads a word).
+  Still open: raw offsets where the header names the field (battle_unit `pouch->partyData[party].currentHP`,
+  filemgr `file->references`; both need s16 semantics the u16 headers lack) and btlsubResetMoveColorLvAll's
+  aliases / btlMovePos's declaration order, which belong under MUST_MATCH.
+- Claude #1's second review of #144: winMsgDisp had nested the name-plate block (+0x140) inside the +0x138
+  block where retail has them as siblings (the plate never drew when +0x138 <= 0), and reached named objects
+  through `str_802F3FE8 + offset`; battle_audience_kinopio had replaced named vec3s with base+offset; mapdrv's
+  new mapSetMaterial read texwrap_tbl/lightid_tbl through vec3_802c16d8 + offset with local structs that overlap
+  MapMaterialTex. win_root and battle_audience_kinopio (no new 100%) are back to main and mapSetMaterial (86%) is
+  unwritten again. FontDrawMessage adds `x + (iw * scale + offset)` as retail's fmadds/fadds. Pre-existing rule 14
+  issue: pmario_sound's psndBGMOff_f_d is still an empty `{}` placeholder (its 0x200-byte body is unwritten).
+- **Wave 52** (launched 07:26 on a fresh base, main 0a750ff): every unclaimed game file's below-80% functions up
+  to 2.5 KB, grouped as in wave 51, 61 agents capped at 90 minutes, nothing started after 08:45. The launcher
+  also brings back `rels/*/include` edits as a patch (wave 50 lost three units' header edits to the tower's
+  workspace pruning).

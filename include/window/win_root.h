@@ -38,6 +38,7 @@ void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
 void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b);
 s32 winSortWait(WindowWork* work);
 void winMailDisp(WindowWork* work);
+void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y);
 void winMsgDisp(WindowWork* work, f32 x, f32 y);
 void winSortGX(WindowWork* work);
 void winBookGX(WindowWork* work, s32 type);

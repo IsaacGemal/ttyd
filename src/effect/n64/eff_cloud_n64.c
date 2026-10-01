@@ -1,16 +1,40 @@
 #include "eff/n64/eff_cloud_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/eff_n64.h"
+#include "math_ext.h"
 #include "memory.h"
+#include "system.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <dolphin/os/OSCache.h>
 #include <stdlib.h>
+#include <string.h>
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
 
-const f32 float_0p015625_8041eb98 = 0.015625f;
-const f32 float_0p03125_8041eb9c = 0.03125f;
+// .sdata2 constants owned by this unit; declared extern here and defined after the functions so the
+// front end references the symbols by name instead of folding the literals into fresh pool entries.
+extern const f32 float_0p015625_8041eb98;
+extern const f32 float_0p03125_8041eb9c;
 extern const f32 float_0_8041eba0;
+extern const f32 float_6p2832_8041eba4;
+extern const f32 float_360_8041eba8;
+extern const f32 float_255_8041ebac;
+extern const f32 float_180_8041ebb0;
+extern const f32 float_neg180_8041ebb4;
+extern const f32 float_0p5_8041ebb8;
+extern const f32 float_16_8041ebbc;
+extern const f32 float_3_8041ebc0;
+extern const f32 float_24_8041ebc4;
+extern const f32 float_0p8_8041ebc8;
+extern const f32 float_0p4_8041ebcc;
+
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804230c4;
+__declspec(section ".sdata") GXColor unk_804230c0;
 
 #define FP_NAN 1
 #define FP_INFINITE 2
@@ -183,17 +207,11 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// effCloudDisp is missing from this unit; in the original it is emitted first and seeds the
-// .rodata pool with vec3 then the compiler-generated double_to_int (its int->float magic, used
-// by its rand conversions). Without it MWCC pools this function's sqrtf doubles before Main's
-// own int->float conversion, so the conversion loads at 0x28(r31) instead of 0x10(r31) and the
-// three sqrtf doubles shift from 0x18/0x20/0x28 to 0x10/0x18/0x20. The outer `if (dist)` (not
-// `dist != 0.0f`) gets MWCC to emit the original's `fcmpu cr0, f4, f0`; declaring the two earlier
-// .sdata2 floats keeps the pooled 0.0 at 0x8, and together with the literal `0.0f` in the
-// inlined sqrtf restores the original's FPR allocation in the ring-buffer block (px/py/pz
-// f3/f4/f5, dist accumulator f1, zero f0). This function is byte-identical (100%) with
-// effCloudSeed below, which is emitted first (reverse source order) and makes the same two
-// pool entries effCloudDisp would have; without it the pool order is wrong and it scores 99.98%.
+// effCloudDisp is emitted first in the original (last in this file), which seeds the .rodata pool
+// with vec3 then the compiler-generated double_to_int used by both functions' int->float
+// conversions. The outer `if (dist)` (not `dist != 0.0f`) gets MWCC to emit the original's
+// `fcmpu cr0, f4, f0`, and the literal `0.0f` in the inlined sqrtf keeps the original's FPR
+// allocation in the ring-buffer block (px/py/pz f3/f4/f5, dist accumulator f1, zero f0).
 void effCloudMain(EffectEntry* effect) {
 	effCloudData* data = effect->userdata;
 	Vec position;
@@ -278,16 +296,241 @@ void effCloudMain(EffectEntry* effect) {
 #endif
 }
 
+// NONMATCHING (98.99%): all logic, constants, GX calls and the register set match; the rest is
+// graph-colouring/spill choice (type r22/r18, vtx r28/r22, alpha r18/r31), four stack slots sitting
+// 4 bytes lower, the strength-reduced i*180 increment's placement, and the @NNN magic double.
+void effCloudDisp(CameraId cameraId, void* param) {
+	effCloudData* data;
+	s32 frame;
+	f32 fscale;
+	s32 count;
+	s32 type;
+	CameraEntry* cam;
+	effVtxArray* base;
+	s32 firstActive;
+	s32 fadeG;
+	GXTexObj texObj;
+	f32 cy;
+	cloudVtx* vtx;
+	f32 dir;
+	s32 alpha;
+	s32 v;
+	f32 px, py, pz;
+	smartEntry* entry;
+	s32 texU;
+	f32 angle;
+	s32 fadeR;
+	Mtx mtx;
+	f32 width;
+	f32 a;
+	f32 sx;
+	s32 age;
+	GXColor color;
+	EffectEntry* effect;
+	s32 fadeB;
+	s32 alpha0;
+	f32 wobble;
+	s32 j;
+	f32 b;
+	s32 texBase;
+	s32 i;
+	s32 k;
+	s32 prev;
 
-#ifdef MUST_MATCH
-// Match-only pool seed: the original's effCloudDisp (missing from this decomp) is emitted first
-// and puts vec3, then the compiler's int->float double, into .rodata; Main then loads that double
-// at 0x10. This uncalled static helper is emitted before Main (functions come out in reverse
-// source order) and makes the same two pool entries, so Main's conversion reuses them. It is
-// never called: the body only exists to make the constant pool match. Remove it and Main drops
-// to 99.98% (the conversion pools at 0x28).
-static f64 effCloudSeed(s32 x) {
-	Vec v = makeVec((f32)x, 0.0f, 0.0f);
-	return (f64)v.x;
+	effect = param;
+	cam = camGetPtr(cameraId);
+	data = effect->userdata;
+	frame = data->field_0x14;
+	alpha0 = data->field_0x24;
+	type = data->type;
+	fscale = data->scale;
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+
+	if (type >= 2) {
+		GXSetNumTevStages(2);
+		GXSetTevOrder(0, 0, 0, 4);
+		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(0, 4, 10, 8, 15);
+		GXSetTevAlphaIn(0, 7, 5, 4, 7);
+		GXSetTevOrder(1, 0xff, 0xff, 0xff);
+		GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(1, 15, 15, 15, 0);
+		GXSetTevAlphaIn(1, 7, 0, 1, 7);
+	} else {
+		GXSetNumTevStages(2);
+		GXSetTevOrder(0, 0, 0, 4);
+		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(0, 4, 2, 8, 15);
+		GXSetTevAlphaIn(0, 7, 5, 4, 7);
+		GXSetTevOrder(1, 0xff, 0xff, 0xff);
+		GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(1, 15, 15, 15, 0);
+		GXSetTevAlphaIn(1, 7, 0, 1, 7);
+	}
+
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	PSMTXScale(mtx, float_0p015625_8041eb98, float_0p03125_8041eb9c, float_0_8041eba0);
+	GXLoadTexMtxImm(mtx, 0x1e, 1);
+	effGetTexObjN64(0x83, &texObj);
+	GXLoadTexObj(&texObj, 0);
+
+	color = *(GXColor*)&unk_804230c0;
+	color.r = data->field_0x18;
+	color.g = data->field_0x1C;
+	color.b = data->field_0x20;
+	color.a = alpha0;
+	GXSetTevColor(1, color);
+
+	color = *(GXColor*)&unk_804230c4;
+	color.r = data->field_0x28;
+	color.g = data->field_0x2C;
+	color.b = data->field_0x30;
+	GXSetTevColor(2, color);
+
+	GXLoadPosMtxImm(cam->view, 0);
+	GXSetCurrentMtx(0);
+	GXSetCullMode(0);
+
+	entry = smartAlloc(0x690, 3);
+	base = (effVtxArray*)entry->address;
+	memset(base, 0, 0x690);
+	effSetVtxDescN64(base);
+
+	texBase = (frame & 0x3F) << 5;
+
+	firstActive = -1;
+	count = 0;
+	for (i = 0; i < 30; i++) {
+		if (data->field_0x230[(1 + data->field_0x2A8 + i) % 30] != 0) {
+			count++;
+		}
+	}
+
+	if (count - 1 > 0) {
+		vtx = (cloudVtx*)base;
+		for (i = 0; i < 30; i++) {
+			j = (1 + data->field_0x2A8 + i) % 30;
+			alpha = (s32)(float_255_8041ebac * (f32)sin((f32)((i * 180) / (count - 1)) * float_6p2832_8041eba4 / float_360_8041eba8));
+			if (alpha > 200) {
+				alpha = 200;
+			}
+			if (data->field_0x230[j] != 0) {
+				if (firstActive == -1) {
+					k = j + 1;
+					if (k >= 30) {
+						k = 0;
+					}
+					dir = -angleABf(data->field_0xC8[k], -data->field_0x50[k], data->field_0xC8[j], -data->field_0x50[j]);
+					firstActive = i;
+				} else if (i != 29) {
+					k = j + 1;
+					if (k >= 30) {
+						k = 0;
+					}
+					prev = j - 1;
+					if (prev < 0) {
+						prev = 29;
+					}
+					a = -angleABf(data->field_0xC8[k], -data->field_0x50[k], data->field_0xC8[j], -data->field_0x50[j]);
+					b = -angleABf(data->field_0xC8[j], -data->field_0x50[j], data->field_0xC8[prev], -data->field_0x50[prev]);
+					if (b - a > float_180_8041ebb0) {
+						a += float_360_8041eba8;
+					} else if (b - a < float_neg180_8041ebb4) {
+						b += float_360_8041eba8;
+					}
+					dir = a + b;
+					dir *= float_0p5_8041ebb8;
+				}
+
+				age = frame - data->field_0x1B8[j];
+				px = data->field_0x50[j];
+				py = data->field_0xC8[j];
+				pz = data->field_0x140[j];
+				wobble = (f32)sin((f32)((frame - data->field_0x1B8[j] * 80) * 4) * float_6p2832_8041eba4 / float_360_8041eba8);
+				width = (f32)age + (float_3_8041ebc0 * wobble + float_16_8041ebbc);
+				width *= fscale;
+
+				if (type == 0) {
+					s32 t = (s32)(float_24_8041ebc4 * data->field_0x2AC[j]);
+					texU = t + texBase;
+				} else {
+					s32 t = (s32)(float_24_8041ebc4 * data->field_0x2AC[j]);
+					texU = t + texBase;
+				}
+
+				fadeR = 0xff;
+				fadeG = 0xff;
+				fadeB = 0xff - age * 100;
+				if (fadeB < 0) {
+					s32 t = (s32)(float_0p8_8041ebc8 * (f32)fadeB);
+					fadeB = 0;
+					fadeG = t + 0xff;
+					if (fadeG < 0) {
+						s32 t2 = (s32)(float_0p4_8041ebcc * (f32)fadeG);
+						fadeG = 0;
+						fadeR = t2 + 0xff;
+						if (fadeR < 0) {
+							fadeR = 0;
+						}
+					}
+				}
+
+				angle = float_6p2832_8041eba4 * dir / float_360_8041eba8;
+				sx = width * (f32)sin(angle);
+				cy = width * (f32)cos(angle);
+
+				vtx[0].x = (s16)(px + sx);
+				vtx[0].y = (s16)(py + cy);
+				vtx[0].z = (s16)(pz + float_0_8041eba0);
+				vtx[0].u = texU;
+				vtx[0].v = 0x400;
+				vtx[0].r = fadeR;
+				vtx[0].g = fadeG;
+				vtx[0].b = fadeB;
+				vtx[0].a = alpha;
+
+				vtx[1].x = (s16)(px - sx);
+				vtx[1].y = (s16)(py - cy);
+				vtx[1].z = (s16)(pz + float_0_8041eba0);
+				vtx[1].u = texU;
+				vtx[1].v = 0;
+				vtx[1].r = fadeR;
+				vtx[1].g = fadeG;
+				vtx[1].b = fadeB;
+				vtx[1].a = alpha;
+			}
+			vtx += 2;
+		}
+
+		DCFlushRange(base, 0x690);
+		GXInvalidateVtxCache();
+		v = firstActive * 2;
+		for (i = firstActive; i < 29; i++, v += 2) {
+			GXBegin(0x90, 0, 6);
+			tri2(v, v + 2, v + 1, v, v + 1, v + 2, v + 3, v);
+		}
+	}
 }
-#endif
+
+// .sdata2 constants owned by this unit (see config/G8MJ01/splits.txt).
+const f32 float_0p015625_8041eb98 = 0.015625f;
+const f32 float_0p03125_8041eb9c = 0.03125f;
+const f32 float_0_8041eba0 = 0.0f;
+const f32 float_6p2832_8041eba4 = 6.2831855f;
+const f32 float_360_8041eba8 = 360.0f;
+const f32 float_255_8041ebac = 255.0f;
+const f32 float_180_8041ebb0 = 180.0f;
+const f32 float_neg180_8041ebb4 = -180.0f;
+const f32 float_0p5_8041ebb8 = 0.5f;
+const f32 float_16_8041ebbc = 16.0f;
+const f32 float_3_8041ebc0 = 3.0f;
+const f32 float_24_8041ebc4 = 24.0f;
+const f32 float_0p8_8041ebc8 = 0.8f;
+const f32 float_0p4_8041ebcc = 0.4f;

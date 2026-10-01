@@ -183,7 +183,7 @@ s32 partyEntryMain(s32 memberId);
 void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode);
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk);
 void driveParty(PartyEntry* party);
-void partyHelloMain(PartyEntry* party);
+s32 partyHelloMain(PartyEntry* party);
 void getRidePos(PartyEntry* party, Vec* pos);
 s32 partyDoWork(void);
 void partyHello(PartyEntry* party);

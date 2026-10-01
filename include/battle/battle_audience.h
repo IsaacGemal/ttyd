@@ -278,6 +278,8 @@ void BattleAudience_Case_JumpNewRecord(void);
 s32 BattleAudience_GetPresentItemNo(void);
 s32 BattleAudience_GetPresentTargetUnitId(void);
 void BattleAudience_SetPresentItemNo(s32 itemNo);
+void BattleAudience_SetPresentItemType(s32 value);
+void BattleAudience_SetPresentTargetUnitId(s32 value);
 void BattleAudience_Case_GreatVictory(void);
 void BattleAudience_Case_FastVictory(f32 value);
 void BattleAudience_Case_HaikeiSet(void);

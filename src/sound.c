@@ -1439,9 +1439,212 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
     return in;
 }
 
-// NONMATCHING (0.20%): empty placeholder, not decompiled yet.
+#ifdef MUST_MATCH
+// MUST_MATCH: separate register-homed copies of buffer1 so MWCC picks the retail registers for the
+// zero-fill and byte-copy loops. The #else keeps the natural code (same names, no hint).
+#define SS_CB_REG register
+#else
+#define SS_CB_REG
+#endif
+// Register colouring only: MWCC homes buffer1 in r9 instead of retail r6, which then reshuffles the
+// prologue (`li r0,0x0`/`mulli r8`/`lwz r9,...` vs `mulli r3`/`lwz r10,...`). The `register` copies of
+// buffer1 below re-home the three loop pointers to the retail registers (98.73 vs 97.56 without). The
+// R4a/R5 `src` setup and the DPCM `in` setup still colour temporaries differently (r10 vs r7).
+// SoundStream has no write-position field; it lives at +0x24 and is written raw. SoundStreamEntry at
+// +0x2c is loadBuffer[?] and +0x38..0x60 is unk38/unk4C; all accessed raw here.
+// NONMATCHING (95.94%): every path and branch structure matches; only buffer1's home register
+// (r9 vs retail r6) and the prologue/temporary colouring it cascades into differ.
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
+    SoundStream* stream = &sound.streams[user & 0xFF];
+    SS_CB_REG void* t1 = buffer1;
+    SS_CB_REG void* t3 = buffer1;
+    SS_CB_REG void* t5 = buffer1;
+    u8* ep;
+    u32 i;
+
+    *(u32*)(stream->unk1C + 8) = 0;
+
+    if ((stream->flags & 0x8006) || sound.unk214) {
+        if (!(stream->flags & 0x100)) {
+            for (i = 0; i != len1; i++) {
+                *(s16*)t1 = 0;
+                t1 = (s16*)t1 + 1;
+                *(u32*)(stream->unk1C + 8) += 1;
+            }
+            for (i = 0; i != len2; i++) {
+                *(s16*)buffer2 = 0;
+                buffer2 = (s16*)buffer2 + 1;
+                *(u32*)(stream->unk1C + 8) += 1;
+            }
+            return *(u32*)(stream->unk1C + 8);
+        }
+        {
+            s32 n;
+            s32 j;
+
+            n = len1 / 7 * 4 & ~7;
+            n /= 2;
+            for (j = 0; j != n; j++) {
+                *(u16*)t3 = 0;
+                t3 = (void*)((u16*)t3 + 1);
+            }
+            n = len2 / 7 * 4 & ~7;
+            n /= 2;
+            for (j = 0; j != n; j++) {
+                *(u16*)buffer2 = 0;
+                buffer2 = (void*)((u16*)buffer2 + 1);
+            }
+        }
+        return len1 + len2;
+    }
+
+    ep = (u8*)((user & 0x100) ? &stream->entries[1] : &stream->entries[0]);
+
+    if (stream->flags & 0x80) {
+        u8* in;
+
+        in = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + *(u32*)(ep + 0x44));
+        in = ssDecodeDPCM(stream, (SoundStreamEntry*)ep, (s16*)buffer1, len1, in);
+        ssDecodeDPCM(stream, (SoundStreamEntry*)ep, (s16*)buffer2, len2, in);
+        return *(u32*)(stream->unk1C + 8);
+    }
+
+    if (stream->flags & 0x100) {
+        u8* src;
+        u8* dst;
+        u32 count;
+
+        src = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + *(u32*)(ep + 0x44));
+        dst = (u8*)t5;
+        count = (len1 + 13) / 7 * 4 & ~7;
+        while (count != 0) {
+            *dst++ = *src++;
+            count--;
+            *(u32*)(ep + 0x44) += 1;
+            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
+                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
+                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
+                    *(u32*)(ep + 0x44) = 0;
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                    continue;
+                } else {
+                    *(s16*)(ep + 0x54) = 0;
+                    *(u32*)(ep + 0x44) = 0;
+                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                }
+            }
+            *(u32*)(ep + 0x38) += 1;
+            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
+                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+                if (!(stream->flags & 0x200)) {
+                    stream->flags |= 4;
+                    break;
+                }
+            }
+        }
+        dst = (u8*)buffer2;
+        count = (len2 + 13) / 7 * 4 & ~7;
+        while (count != 0) {
+            *dst++ = *src++;
+            count--;
+            *(u32*)(ep + 0x44) += 1;
+            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
+                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
+                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
+                    *(u32*)(ep + 0x44) = 0;
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                    continue;
+                } else {
+                    *(s16*)(ep + 0x54) = 0;
+                    *(u32*)(ep + 0x44) = 0;
+                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                }
+            }
+            *(u32*)(ep + 0x38) += 1;
+            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
+                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+                if (!(stream->flags & 0x200)) {
+                    stream->flags |= 4;
+                    break;
+                }
+            }
+        }
+        *(u32*)(stream->unk1C + 8) = len1 + len2;
+        return len1 + len2;
+    }
+
+    {
+        u8* src;
+        s16* dst;
+        u32 count;
+
+        dst = (s16*)buffer1;
+        count = len1;
+        src = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + (*(u32*)(ep + 0x44) & ~1));
+        while (count != 0) {
+            *dst++ = *(s16*)src;
+            src += 2;
+            count--;
+            *(u32*)(stream->unk1C + 8) += 1;
+            *(u32*)(ep + 0x44) += 2;
+            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
+                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
+                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
+                    *(u32*)(ep + 0x44) = 0;
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                    continue;
+                } else {
+                    *(s16*)(ep + 0x54) = 0;
+                    *(u32*)(ep + 0x44) = 0;
+                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                }
+            }
+            *(u32*)(ep + 0x38) += 2;
+            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
+                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+                if (!(stream->flags & 0x200)) {
+                    stream->flags |= 4;
+                    break;
+                }
+            }
+        }
+        count = len2;
+        dst = (s16*)buffer2;
+        while (count != 0) {
+            *dst++ = *(s16*)src;
+            src += 2;
+            count--;
+            *(u32*)(stream->unk1C + 8) += 1;
+            *(u32*)(ep + 0x44) += 2;
+            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
+                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
+                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
+                    *(u32*)(ep + 0x44) = 0;
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                    continue;
+                } else {
+                    *(s16*)(ep + 0x54) = 0;
+                    *(u32*)(ep + 0x44) = 0;
+                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
+                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                }
+            }
+            *(u32*)(ep + 0x38) += 2;
+            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
+                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+                if (!(stream->flags & 0x200)) {
+                    stream->flags |= 4;
+                    break;
+                }
+            }
+        }
+    }
+    return *(u32*)(stream->unk1C + 8);
 }
+#undef SS_CB_REG
 
 // Returns void: the original never writes r3, and an s32 definition (or header prototype!) shifts the tail to r4.
 #ifdef MUST_MATCH

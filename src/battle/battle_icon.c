@@ -221,9 +221,7 @@ USER_FUNC(btlevtcmd_BtlIconDelete) {
 }
 
 //s32 index for BtlIconGetPtr, f32 x, f32 y, f32 z
-// Individual component stores avoid a (Vec){...} stack temp; the size form is needed
-// for the prologue's stmw r29.
-#pragma optimize_for_size on
+// Individual component stores avoid a (Vec){...} stack temp.
 USER_FUNC(btlevtcmd_BtlIconSetPosition) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -240,11 +238,8 @@ USER_FUNC(btlevtcmd_BtlIconSetPosition) {
 	icon->position.z = z;
 	return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 //s32 index for BtlIconGetPtr, f32 fallAccel
-// The size form is needed for the prologue's stmw r30 / epilogue's lmw.
-#pragma optimize_for_size on
 USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 	s32* args = event->args;
 	s32 index = evtGetValue(event, args[0]);
@@ -252,13 +247,11 @@ USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 	icon->fallAccel = evtGetFloat(event, args[1]);
 	return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // All logic and almost every instruction match. Remaining: the second `&&` comparison loads
 // field_0x30/field_0x3C into f1/f0 instead of f0/f1, and the 0.5f pool entry keeps a local
 // symbol name (@279) instead of the original's float_0p5_8041e7b0.
 // NONMATCHING (98.65%): see above.
-// `opt_common_subs off`: with CSE on MWCC hoists icon+0x2C/0x34 across btlMovePos into r29/r30.
 // Using `icon->fallAccel * (f32)count / 2.0f` (not `(f32)count * icon->fallAccel * 0.5f`)
 // is what makes MWCC pick the original's fmuls/fmadds register allocation.
 USER_FUNC(btlevtcmd_BtlIconJumpPosition) {

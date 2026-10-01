@@ -219,3 +219,7 @@ extern SoundWork sound;
 void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3);
 void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo);
 void SoundSSSetPanCh(s32 chan, u8 pan);
+void SoundSSPlayCh(s32 chan, u32 a2);
+void SoundSSMuteOn(s32 chan);
+void SoundSSContinueCh(s32 chan);
+void SoundSSSetSrndPanCh(s32 chan, u8 span);
