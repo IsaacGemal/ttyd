@@ -2865,12 +2865,6 @@ BattleWeapon ItemWeaponData_Stop_Watch = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// The original loads the two float constants before the two `userdata` fields. The comma expression
-// below (its volatile cast has no effect on an rvalue) orders the constant loads first, as in
-// `src/countdown.c`; the two file-scope floats are this file's original data symbols.
-f32 float_720_8041c53c = 720.0f;
-f32 float_0_8041c51c = 0.0f;
-
 s32 _cam_rot(EventEntry* event, BOOL isFirstCall) {
     f32 angle;
 
@@ -2878,18 +2872,11 @@ s32 _cam_rot(EventEntry* event, BOOL isFirstCall) {
         event->userdata[0] = sysMsec2Frame(2000);
         event->userdata[1] = event->userdata[0];
     }
-#ifdef MUST_MATCH
-    // MUST_MATCH: force MWCC to emit the float-constant loads before the `userdata` loads.
-    angle = intplGetValue(4, ((volatile f32)float_0_8041c51c, event->userdata[0]),
-                          ((volatile f32)float_720_8041c53c, event->userdata[1]), float_720_8041c53c,
-                          float_0_8041c51c);
-#else
     angle = intplGetValue(4, event->userdata[0], event->userdata[1], 720.0f, 0.0f);
-#endif
     camGetPtr(CAMERA_3D)->rollAngle = angle;
     event->userdata[0] -= 1;
     if (event->userdata[0] <= 0) {
-        angle = float_0_8041c51c;
+        angle = 0.0f;
         camGetPtr(CAMERA_3D)->rollAngle = angle;
         return 1;
     }
@@ -3895,6 +3882,21 @@ BattleWeapon ItemWeaponData_Jiwajiwa_Syrup = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
+s32 _hpfp_change_declare_1(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 type = evtGetValue(event, event->args[0]);
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
+
+    if (unit != NULL) {
+        if (unit->currentKind == UNIT_MARIO) {
+            BattleStatusWindowSystemOn();
+        } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+            BattleStatusWindowSystemOn();
+        }
+    }
+    return 2;
+}
+
 s32 _hpfp_change_declare_2(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     s32 type = evtGetValue(event, event->args[0]);
@@ -3909,21 +3911,6 @@ s32 _hpfp_change_declare_2(EventEntry* event, BOOL isFirstCall) {
             N_statusClearBlink();
             statusPartyHPBlink(0x78);
             statusFPBlink(0x78);
-        }
-    }
-    return 2;
-}
-
-s32 _hpfp_change_declare_1(EventEntry* event, BOOL isFirstCall) {
-    BattleWork* wp = _battleWorkPointer;
-    s32 type = evtGetValue(event, event->args[0]);
-    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
-
-    if (unit != NULL) {
-        if (unit->currentKind == UNIT_MARIO) {
-            BattleStatusWindowSystemOn();
-        } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-            BattleStatusWindowSystemOn();
         }
     }
     return 2;
@@ -6073,31 +6060,30 @@ BattleWeapon ItemWeaponData_FutarideForever = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-s32 _nancy_mirage(EventEntry* event, BOOL isFirstCall) {
+s32 _get_throw_first_pos(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
-    f32 x = evtGetFloat(event, args[0]);
-    f32 y = evtGetFloat(event, args[1]);
-    f32 z = evtGetFloat(event, args[2]);
+    s32 type = evtGetValue(event, args[0]);
+    BattleUnit* unit;
+    Vec pos;
+    s32 outIdx1 = args[1];
+    s32 outIdx2 = args[2];
+    s32 outIdx3 = args[3];
 
-    if (isFirstCall) {
-        event->userdata[0] = 60;
-        event->userdata[1] = animPoseEntry("c_cook", 1);
-        event->userdata[2] = 0;
-        event->field_84 = (s32)x;
-        ((s32*)&event->wInterpRelatedTime)[0] = (s32)y;
-        ((s32*)&event->wInterpRelatedTime)[1] = (s32)z;
-        animPoseSetAnim(event->userdata[1], "A_2", 1);
-        animPoseSetEffectAnim(event->userdata[1], "PM_Y_1A", 1);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    pos.y += 10.0f;
+    if (!(unit->mAttributeFlags & kVeiled)) {
+        if (unit->mAttributeFlags & kCeiling) {
+            pos.y -= 5.0f;
+        } else {
+            pos.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit);
+        }
     }
-    event->userdata[0] -= 1;
-    if (event->userdata[0] < 0) {
-        animPoseSetEffect(event->userdata[1], NULL, 0);
-        animPoseRelease(event->userdata[1]);
-        return 2;
-    }
-    animPoseMain(event->userdata[1]);
-    dispEntry(CAMERA_3D, z, 2, _nancy_disp, event);
-    return 0;
+    evtSetFloat(event, outIdx1, pos.x);
+    evtSetFloat(event, outIdx2, pos.y);
+    evtSetFloat(event, outIdx3, pos.z);
+    return 2;
 }
 
 s32 _throw_item_icon(EventEntry* event, BOOL isFirstCall) {
@@ -6157,30 +6143,18 @@ s32 _throw_item_icon(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-s32 _get_throw_first_pos(EventEntry* event, BOOL isFirstCall) {
-    BattleWork* wp = _battleWorkPointer;
-    s32* args = event->args;
-    s32 type = evtGetValue(event, args[0]);
-    BattleUnit* unit;
-    Vec pos;
-    s32 outIdx1 = args[1];
-    s32 outIdx2 = args[2];
-    s32 outIdx3 = args[3];
+void _disp_item_icon(CameraId camera, void* param) {
+    EventEntry* event = param;
 
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
-    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-    pos.y += 10.0f;
-    if (!(unit->mAttributeFlags & kVeiled)) {
-        if (unit->mAttributeFlags & kCeiling) {
-            pos.y -= 5.0f;
-        } else {
-            pos.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit);
-        }
-    }
-    evtSetFloat(event, outIdx1, pos.x);
-    evtSetFloat(event, outIdx2, pos.y);
-    evtSetFloat(event, outIdx3, pos.z);
-    return 2;
+#ifdef MUST_MATCH
+    // Match-only: the original passes a u16 icon id (no extsh); the header's s16 iconDispGx would extsh.
+    ((void (*)(Vec*, s16, u16, f32))iconDispGx)((Vec*)((u8*)event->userdata[0] + 0xc), 0,
+                                                itemDataTable[event->userdata[1]].icon_id,
+                                                1.0f);
+#else
+    iconDispGx((Vec*)((u8*)event->userdata[0] + 0xc), 0, itemDataTable[event->userdata[1]].icon_id,
+               1.0f);
+#endif
 }
 
 EVT_BEGIN(ItemEvent_ThrowAttack)
@@ -6724,16 +6698,34 @@ BattleWeapon ItemWeaponData_PoisonKinoko = {
     { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
 };
 
-s32 _full_ap_recover(EventEntry* event, BOOL isFirstCall) {
-    BattleWork* wp = _battleWorkPointer;
-    s32 type = evtGetValue(event, event->args[0]);
-    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
+s32 _nancy_mirage(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
 
-    if (BtlUnit_GetBelong(unit) == 0) {
-        pouchSetAP(pouchGetMaxAP());
+    if (isFirstCall) {
+        event->userdata[0] = 60;
+        event->userdata[1] = animPoseEntry("c_cook", 1);
+        event->userdata[2] = 0;
+        event->field_84 = (s32)x;
+        ((s32*)&event->wInterpRelatedTime)[0] = (s32)y;
+        ((s32*)&event->wInterpRelatedTime)[1] = (s32)z;
+        animPoseSetAnim(event->userdata[1], "A_2", 1);
+        animPoseSetEffectAnim(event->userdata[1], "PM_Y_1A", 1);
     }
-    return 2;
+    event->userdata[0] -= 1;
+    if (event->userdata[0] < 0) {
+        animPoseSetEffect(event->userdata[1], NULL, 0);
+        animPoseRelease(event->userdata[1]);
+        return 2;
+    }
+    animPoseMain(event->userdata[1]);
+    dispEntry(CAMERA_3D, z, 2, _nancy_disp, event);
+    return 0;
 }
+
+__declspec(section ".sdata2") const GXColor dat_8041c504 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 EVT_BEGIN(ItemEvent_LastDinner)
     SET_VALUE(LW(12), PTR(&ItemWeaponData_PoisonKinoko))
@@ -6961,17 +6953,14 @@ void _nancy_disp(CameraId camera, void* param) {
     animPoseDrawMtx(event->userdata[1], mtx, 3, 0.0f, 2.0f);
 }
 
-void _disp_item_icon(CameraId camera, void* param) {
-    EventEntry* event = param;
+s32 _full_ap_recover(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 type = evtGetValue(event, event->args[0]);
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
 
-#ifdef MUST_MATCH
-    // Match-only: the original passes a u16 icon id (no extsh); the header's s16 iconDispGx would extsh.
-    ((void (*)(Vec*, s16, u16, f32))iconDispGx)((Vec*)((u8*)event->userdata[0] + 0xc), 0,
-                                                itemDataTable[event->userdata[1]].icon_id,
-                                                1.0f);
-#else
-    iconDispGx((Vec*)((u8*)event->userdata[0] + 0xc), 0, itemDataTable[event->userdata[1]].icon_id,
-               1.0f);
-#endif
+    if (BtlUnit_GetBelong(unit) == 0) {
+        pouchSetAP(pouchGetMaxAP());
+    }
+    return 2;
 }
 // clang-format on

@@ -899,7 +899,7 @@ config.libs = [
             Object(NonMatching, "statuswindow.c"),
             Object(Matching, "data/battle/battle_database_common.c"),
             Object(NonMatching, "data/database.c"),
-            Object(NonMatching, "data/battle/battle_item_data.c"),
+            Object(Matching, "data/battle/battle_item_data.c"),
             Object(Matching, "system.c"),
             Object(Matching, "unk_0x8025de70.c"),
         ],
