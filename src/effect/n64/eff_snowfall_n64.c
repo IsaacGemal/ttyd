@@ -18,7 +18,10 @@ extern const f64 double_to_int_802fb680;
 extern u32 eff_snowfall_v[];
 
 // .sbss2 scratch GXColor the blend path builds its TEV colour from
-extern GXColor unk_80423268;
+// the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423268;
+__declspec(section ".sdata") u32 gap_after_unk_80423268; // dtk's gap_10_8042326C_sbss2
 
 // .sdata2
 extern const f32 float_0p03125_8041fd14;
@@ -32,7 +35,6 @@ extern const f32 float_0p05_8041fd2c;
 extern const f32 float_10_8041fd30;
 extern const f32 float_neg1p2_8041fd34;
 extern const f32 float_0p01_8041fd38;
-extern const f32 float_0p5_8041fd3c;
 
 typedef struct effSnowfallData {
 	s32 field_0x00;  // 0x00
@@ -109,7 +111,7 @@ void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 		data->position.y = cy - b + i;
 	} else if (i < -b) {
 		if (c < 100) {
-			data->velocity.y = 0.0f;
+			data->velocity.y = float_0_8041fd18;
 			data->field_0x28 = 0;
 		} else {
 			i = -i;
@@ -161,9 +163,9 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 		particle->velocity.y = float_neg1p2_8041fd34 - (f32)(rand() % 80) * float_0p01_8041fd38;
 		particle->velocity.z = ((f32)(rand() % 20) - float_10_8041fd30) * float_0p05_8041fd2c;
 		particle->field_0x28 = 0xFF;
-		particle->velocity.x *= float_0p5_8041fd3c;
-		particle->velocity.y *= float_0p5_8041fd3c;
-		particle->velocity.z *= float_0p5_8041fd3c;
+		particle->velocity.x *= 0.5f;
+		particle->velocity.y *= 0.5f;
+		particle->velocity.z *= 0.5f;
 		particle->timer = 0;
 	}
 	return effect;
@@ -356,4 +358,5 @@ const f32 float_0p05_8041fd2c = 0.05f;
 const f32 float_10_8041fd30 = 10.0f;
 const f32 float_neg1p2_8041fd34 = -1.2f;
 const f32 float_0p01_8041fd38 = 0.01f;
-const f32 float_0p5_8041fd3c = 0.5f;
+
+const char str_802FB674[] = "SnowfallN64";
