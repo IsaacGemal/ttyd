@@ -947,7 +947,6 @@ static s32 bgm_start_wait(void) {
 }
 
 
-// NONMATCHING (99.27%): same instructions; only register numbers or operands differ.
 USER_FUNC(evt_sub_check_intersect) {
 	s32* args = event->args;
 	f32 a, b, c, d, e, f, g, h;
@@ -986,15 +985,15 @@ USER_FUNC(evt_sub_check_intersect) {
 	}
 
 	{
-		f32 t1 = (b - d) * (a - e) + (a - c) * (f - b);
-		f32 t2 = (b - d) * (a - g) + (a - c) * (h - b);
+		f32 t1 = (a - c) * (f - b) + (b - d) * (a - e);
+		f32 t2 = (a - c) * (h - b) + (b - d) * (a - g);
 		if (t1 * t2 > 0.0f) {
 			evtSetValue(event, args[8], 0);
 			return 2;
 		}
 		{
-			f32 t3 = (f - h) * (e - a) + (e - g) * (b - f);
-			f32 t4 = (f - h) * (e - c) + (e - g) * (d - f);
+			f32 t3 = (e - g) * (b - f) + (f - h) * (e - a);
+			f32 t4 = (e - g) * (d - f) + (f - h) * (e - c);
 			if (t3 * t4 > 0.0f) {
 				evtSetValue(event, args[8], 0);
 				return 2;

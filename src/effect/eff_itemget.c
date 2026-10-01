@@ -195,8 +195,17 @@ void effItemGetMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (99.68%): MWCC reuses f29 (dead scale) for the cos result instead of f31, and
-// the GXSetChanMatColor temporaries sit at different stack offsets.
+#ifdef MUST_MATCH
+// builds the colour in the same stack temp the original GXSetChanMatColor call used
+static inline GXColor itemColor0(u8 a, GXColor c) {
+	c.a = a;
+	return c;
+}
+#endif
+
+// NONMATCHING (99.76%): MWCC reuses f29 (the dead scale) for the cos result instead of f31; everything
+// downstream (f30/f31 for the loop's +/- sizes) shifts a register. The .sdata2 2.0/0.5 slots are created
+// by effItemUseDisp first, so they cannot be fixed from here. The GXColor temporaries match via itemColor0.
 void effItemGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -212,8 +221,8 @@ void effItemGetDisp(CameraId camId, void* param) {
 	Vec vecA;
 	Vec vecB;
 	Vec vecC;
-	s32 alphaA;
 	s32 alphaB;
+	s32 alphaA;
 	s32 field;
 	s32 i;
 	s32 j;
@@ -286,19 +295,29 @@ void effItemGetDisp(CameraId camId, void* param) {
 	}
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
-			GXColor c;
 			PSMTXConcat(cam->view, mtxBase, mtxTrans);
 			PSMTXTrans(mtxRot, 2.0f, -2.0f, 0.0f);
 			PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
-			c = unk_804232f0;
-			c.a = alphaA;
-			GXSetChanMatColor(4, c);
+#ifdef MUST_MATCH
+			GXSetChanMatColor(4, itemColor0(alphaA, unk_804232f0));
+#else
+			{
+				GXColor c = unk_804232f0;
+				c.a = alphaA;
+				GXSetChanMatColor(4, c);
+			}
+#endif
 		} else {
-			GXColor c;
 			PSMTXConcat(cam->view, mtxBase, mtxTrans);
-			c = dat_80420b98;
-			c.a = alphaB;
-			GXSetChanMatColor(4, c);
+#ifdef MUST_MATCH
+			GXSetChanMatColor(4, itemColor0(alphaB, dat_80420b98));
+#else
+			{
+				GXColor c = dat_80420b98;
+				c.a = alphaB;
+				GXSetChanMatColor(4, c);
+			}
+#endif
 		}
 		GXLoadPosMtxImm(mtxTrans, 0);
 		GXSetCurrentMtx(0);
@@ -332,7 +351,6 @@ void effItemGetDisp(CameraId camId, void* param) {
 	for (; i < effect->count; i++, data++) {
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-				GXColor c;
 				alphaA = data->field_0x34 * 128 / 255;
 				if (data->field_0x34 != 0xFF) {
 					alphaA -= 20;
@@ -346,18 +364,29 @@ void effItemGetDisp(CameraId camId, void* param) {
 				PSMTXConcat(mtxTex, mtxTrans, mtxTex);
 				PSMTXRotRad(mtxRot, 'z', data->field_0x30);
 				PSMTXConcat(mtxTex, mtxRot, mtxTex);
-				c = unk_804232f4;
-				c.a = alphaA;
-				GXSetChanMatColor(4, c);
+#ifdef MUST_MATCH
+				GXSetChanMatColor(4, itemColor0(alphaA, unk_804232f4));
+#else
+				{
+					GXColor c = unk_804232f4;
+					c.a = alphaA;
+					GXSetChanMatColor(4, c);
+				}
+#endif
 			} else {
-				GXColor c;
 				PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(mtxBase, mtxTrans, mtxTex);
 				PSMTXRotRad(mtxRot, 'z', data->field_0x30);
 				PSMTXConcat(mtxTex, mtxRot, mtxTex);
-				c = dat_80420b9c;
-				c.a = data->field_0x34 * 255 / 255;
-				GXSetChanMatColor(4, c);
+#ifdef MUST_MATCH
+				GXSetChanMatColor(4, itemColor0(data->field_0x34 * 255 / 255, dat_80420b9c));
+#else
+				{
+					GXColor c = dat_80420b9c;
+					c.a = data->field_0x34 * 255 / 255;
+					GXSetChanMatColor(4, c);
+				}
+#endif
 			}
 			PSMTXConcat(cam->view, mtxTex, mtxTrans);
 			GXLoadPosMtxImm(mtxTrans, 0);

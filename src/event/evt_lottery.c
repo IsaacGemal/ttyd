@@ -15,9 +15,7 @@ lottery_info* lotteryGetPtr(void) {
 	return &gp->mLotteryInfo;
 }
 
-// NONMATCHING (99.93%): 8 register-allocation mismatches, no logical differences.
-// The zero-prize-time store keeps the constant in r4/base in r3 (mine r3/r4); the four
-// closing calendar calls keep info18's low word in r24 (mine only the first two).
+#pragma opt_propagation off // needed: with propagation on, the last two calendar calls at the end keep info18's low word in r25 instead of the target's r24
 USER_FUNC(evt_lottery) {
 	lottery_info* info;
 	s32* args = event->args;
@@ -75,12 +73,15 @@ USER_FUNC(evt_lottery) {
 		}
 	} else {
 #ifdef MUST_MATCH
-		// Match only: splitting the 64-bit zero into two 32-bit stores keeps the
-		// address base as info+arg1*8, as the original does.
-		s32* q = (s32*)((u8*)info + arg1 * 8);
+		// Match only: declaring the pointer and the zero separately lets the allocator
+		// keep the pointer in r3 and the constant in r4, as the original does.
+		s32* q;
+		s32 z;
 
-		q[13] = 0;
-		q[12] = 0;
+		q = (s32*)((u8*)info + arg1 * 8);
+		z = 0;
+		q[13] = z;
+		q[12] = z;
 #else
 		*(OSTime*)((u8*)info + arg1 * 8 + 0x30) = 0;
 #endif
@@ -213,6 +214,7 @@ USER_FUNC(evt_lottery) {
 	}
 	return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 USER_FUNC(evt_lottery_buy) {
 	s32* args = event->args;
 	OSTime time = OSGetTime();

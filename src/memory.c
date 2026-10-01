@@ -37,11 +37,25 @@ void* heapEnd[6];
 void* heapStart[6];
 OSHeapHandle heapHandle[6];
 
-//local prototypes
-
-// NONMATCHING (99.27%): same instructions; only register numbers or operands differ.
-void memInit(void) { //almost 1:1, stubborn regalloc at the end
+// Map-allocator bookkeeping for the malloc heap, kept in an inlined helper: with the
+// helper's `entry` declared before `size` MWCC colors them r23/r22, as the original does.
+static inline void mapInitEntry(void) {
     MapAllocEntry* entry;
+    u32 size = ((u32)heapEnd[1] - (u32)heapStart[1]) - 0x20;
+    entry = OSAllocFromHeap(heapHandle[1], size);
+    if (entry) {
+        memset(entry, 0, size);
+        DCFlushRange(entry, size);
+    }
+    entry->next = 0;
+    entry->size = size - 0x20;
+    entry->inuse = 0;
+    mapalloc_base_ptr = entry;
+    mapalloc_size = size;
+    count = 0;
+}
+
+void memInit(void) {
     void* arenaLo;
     void* arenaHi;
     u32 temp_r31;
@@ -84,18 +98,7 @@ void memInit(void) { //almost 1:1, stubborn regalloc at the end
         OSDestroyHeap(heapHandle[i]);
         OSCreateHeap(heapStart[i], heapEnd[i]);
         if (i == 1) {
-            size = ((u32)heapEnd[1] - (u32)heapStart[1]) - 0x20;
-            entry = OSAllocFromHeap(heapHandle[1], size);
-            if (entry) {
-                memset(entry, 0, size);
-                DCFlushRange(entry, size);
-            }
-            entry->next = 0;
-            entry->size = size - 0x20;
-            entry->inuse = 0;
-            mapalloc_base_ptr = entry;
-            mapalloc_size = size;
-            count = 0;
+            mapInitEntry();
         }
     }
 }

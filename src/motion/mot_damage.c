@@ -230,13 +230,10 @@ s32 marioWaitDamageReturnFall(void) {
 // one instruction too early). That fix is worth 0.80% and is guarded by MUST_MATCH (rule 7).
 // What still differs:
 //   - case 0x14 swaps f30/f31 (original spd=f31, floorY=f30; ours the reverse) - the allocator picks the
-//     free register for floorY rather than spd. Worth ~0.078%; no source shape found that flips it.
-//   - the compiler emits its own 2^52 conversion double instead of reusing double_to_int_802f32b0, so
-//     the second `lfd` reads 0xA8(r30) instead of 0x78(r30). Worth ~0.002% (known project-wide issue).
-//     The original object's `.comment` is 02040201 (1.3.x) while this unit builds with GC/2.6
-//     (02040701), but 1.3.2/1.3.2r reproduce the same wrong register assignment, so the compiler
-//     version is not the cause.
-// NONMATCHING (99.92%): case 0x14 f30/f31 swap and the anonymous 2^52 magic double; see above.
+//     free register for floorY rather than spd. Worth ~0.078%; no source shape found that flips it
+//     (declaration order, scope, naming, self-assignments, inlining the value, -O4,s and GC/1.3-2.5 all
+//     give the same swap).
+// NONMATCHING (99.92%): case 0x14 f30/f31 swap; see above.
 void mot_damage(void) {
 	MarioWork* mario;
 	HitEntry* hit;

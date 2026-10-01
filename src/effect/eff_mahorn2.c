@@ -265,15 +265,27 @@ void effMahorn2Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMahorn2Disp, effect);
 }
 
-// Remaining differences are compiler scheduling/allocation, not values: (1) the texture switch
-// dispatches the default before the >=2 check where retail does the reverse (2 insts); (2)
-// GXSetChanMatColor builds/copies the GXColor at stack 0xc/0x8 where retail uses 0x8/0xc; (3)
-// the quad's -w and 0.5f temporaries land in f1/f2 swapped from retail; (4) the type-3
-// top/bottom temporaries land in f0/f1 swapped; (5) the two local array-init templates are
-// objdiff-named @239/@240 because the pre-existing Entry/Main .rodata (extra 0.5/3.0 doubles)
-// shifts them past retail's dat_8030196c/84; (6) the type-3 2.0f literal pools into @305 instead
-// of float_2_804225a4.
-// NONMATCHING (99.44%): all logic matches; remaining are scheduling/frame/symbol-name differences.
+// Remaining differences are compiler register allocation and symbol naming, not values:
+// (1) the quad's -w and 0.5f temporaries land in f1/f2 swapped from retail (the four products
+// and four stfs keep the same order; only the temp FPRs differ); (2) the type-3 -h/0.5f temps
+// land in f0/f1 swapped (the fmuls f30 encoding is fixed by multiplying the constant first);
+// (3) the two local array-init templates are objdiff-named @252/@253 instead of retail's
+// dat_8030196c/84 (addresses and bytes are identical: they are a function-local aggregate init
+// and MWCC gives its .rodata an anonymous @N label); (4) the type-3 2.0f literal pools into @324
+// instead of float_2_804225a4 (sourcing it from the named constant rescues that load but shifts
+// the whole f24-f31 allocation down one and scores lower).
+#ifdef MUST_MATCH
+// MUST_MATCH: retail builds the GXColor in a 0x8-based temp and copies it to the 0xc outgoing arg;
+// assigning the field inline makes MWCC use 0xc for the temp and 0x8 for the outgoing copy.
+static inline GXColor mahorn2ChanColor(u8 a) {
+    GXColor c = *(GXColor*)&dat_80422598;
+    c.a = a;
+    return c;
+}
+#endif
+
+// NONMATCHING (99.78%): all logic matches; the texture switch dispatch and GXColor stack copy are
+// fixed, what remains is the quad/type-3 temp-FPR allocation and the anonymous .rodata symbols.
 void effMahorn2Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effMahorn2Data* data = effect->userdata;
@@ -323,6 +335,8 @@ void effMahorn2Disp(CameraId camId, void* param) {
             continue;
         }
         switch (data->type) {
+        case 0:
+            break;
         case 1:
             effGetTexObj(0x8F, &texObj);
             GXLoadTexObj(&texObj, 0);
@@ -334,8 +348,12 @@ void effMahorn2Disp(CameraId camId, void* param) {
             GXLoadTexObj(&texObj, 0);
             break;
         }
+#ifdef MUST_MATCH
+        color = mahorn2ChanColor((data->alpha * headerAlpha) / 255);
+#else
         color = *(GXColor*)&dat_80422598;
         color.a = (data->alpha * headerAlpha) / 255;
+#endif
         GXSetChanMatColor(4, color);
 
         PSMTXTrans(mtxFinal, data->position.x, data->position.y, data->position.z);
@@ -391,7 +409,13 @@ void effMahorn2Disp(CameraId camId, void* param) {
         }
         else {
             top = h * float_0p5_804225ac;
+#ifdef MUST_MATCH
+            // MUST_MATCH: multiplying with the constant first keeps the fmuls operand encoding while the
+            // allocator holds -h and 0.5f in the opposite FPRs from `-h * 0.5f`.
+            bottom = float_0p5_804225ac * -h;
+#else
             bottom = -h * float_0p5_804225ac;
+#endif
 
             for (j = 0; j < 3; j++) {
                 GXBegin(0x80, 0, 4);

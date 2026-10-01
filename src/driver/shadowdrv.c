@@ -56,6 +56,10 @@ u32 tmp_sci[4];
 f32 tmp_vp[6];
 
 extern u8 shadowConfig[];
+extern GXColor dat_804198e0;
+extern GXColor dat_804198ec;
+extern GXColor dat_804198f0;
+extern const f32 float_20_80419928;
 
 //.bss
 CharShadowWork char_shadow_work;
@@ -325,7 +329,6 @@ s32 shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     return id;
 }
 
-// NONMATCHING (99.31%): body is identical; only FP scratch register allocation differs.
 void cylinder(ShadowEntry* entry) {
     u8* base = lbl_80303460;
 
@@ -336,8 +339,15 @@ void cylinder(ShadowEntry* entry) {
         GXCallDisplayList(base + 0x1C0, 0x40);
     } else {
         f32 alpha = (f32)cswp->unk100.a;
+#ifdef MUST_MATCH
+        // MUST_MATCH: declaring the fade clamp before the alpha ramp makes MWCC keep the u8->f32
+        // conversion scratch in f3 and reuse it, giving retail's FP register allocation.
+        f32 f31 = 1.0f - entry->decayZ;
+        f32 f2 = alpha * entry->decayX / 255.0f;
+#else
         f32 f2 = alpha * entry->decayX / 255.0f;
         f32 f31 = 1.0f - entry->decayZ;
+#endif
         f32 f1 = f2 * entry->decayY;
 
         if (f31 < 0.0f) {

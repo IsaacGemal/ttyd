@@ -1427,7 +1427,18 @@ void disp_maku(CameraId camId, void* param) {
 	sysWaitDrawSync();
 }
 
-// NONMATCHING (99.96%): being reconstructed.
+// MUST_MATCH: a by-value GXColor built as `color = (GXColor){0,0,0,0}; color.a = a;` and then passed
+// lands its local at the higher slot (sp+0x14 here) and the argument copy at sp+0x8, the wrong way round.
+// Building the colour in an inline that returns it puts the colour at sp+0x8 and the argument at sp+0xC,
+// as the original does. The plain form is under #else.
+#ifdef MUST_MATCH
+static inline GXColor makeFadeTevColor(u8 a) {
+	GXColor c = (GXColor){0, 0, 0, 0};
+	c.a = a;
+	return c;
+}
+#endif
+
 void disp_tec(CameraId camId, void* param) {
 	CameraEntry* camera;
 	GXTexObj texObj;
@@ -1480,8 +1491,12 @@ void disp_tec(CameraId camId, void* param) {
 				wp->flags &= ~0x3000;
 			}
 		}
+#ifdef MUST_MATCH
+		color = makeFadeTevColor((u8)(255.0f * wp->field_0x354));
+#else
 		color = (GXColor){0, 0, 0, 0};
 		color.a = (u8)(255.0f * wp->field_0x354);
+#endif
 		GXSetTevColor(GX_TEVREG1, color);
 		GXSetNumTevStages(2);
 		GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);

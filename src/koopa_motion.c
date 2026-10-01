@@ -479,7 +479,8 @@ void kpaSwimMove(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.24%): the folded double_to_int_802fe278 conversion and the `if (currSubMotionId == 0) {...return;} if (--multiTimer > 0) return;` branch layout.
+// The currSubMotionId dispatcher is a two-case switch in the original (the target emits `beq case0; b default`);
+// writing it as `if (...) {...return;} else if (--multiTimer > 0) return;` folds the two branches into one `bne`.
 void kpa_powdown(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -511,13 +512,17 @@ void kpa_powdown(void) {
         marioChgMot(0);
         return;
     }
-    if ((s32)mario->currSubMotionId == 0) {
+    switch ((s32)mario->currSubMotionId) {
+    case 0:
         mario->multiTimer = 5;
         mario->currSubMotionId = 1;
         psndSFXOn_3D((char*)0x824, &mario->position);
         return;
-    } else if (--mario->multiTimer > 0) {
-        return;
+    default:
+        if (--mario->multiTimer > 0) {
+            return;
+        }
+        break;
     }
     f2 = scaleDt[mario->currSubMotionId - 1];
     mario->multiTimer = 5;
@@ -545,7 +550,6 @@ void kpa_powdown(void) {
     }
 }
 
-// NONMATCHING (99.28%): the folded double_to_int_802fe278 conversion and the `if (currSubMotionId == 0) {...return;} if (--multiTimer > 0) return;` branch layout.
 void kpa_powup(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -577,13 +581,17 @@ void kpa_powup(void) {
         marioChgMot(0);
         return;
     }
-    if ((s32)mario->currSubMotionId == 0) {
+    switch ((s32)mario->currSubMotionId) {
+    case 0:
         mario->multiTimer = 5;
         mario->currSubMotionId = 1;
         psndSFXOn_3D((char*)0x823, &mario->position);
         return;
-    } else if (--mario->multiTimer > 0) {
-        return;
+    default:
+        if (--mario->multiTimer > 0) {
+            return;
+        }
+        break;
     }
     f2 = scaleDt[mario->currSubMotionId - 1];
     mario->multiTimer = 5;
@@ -739,7 +747,6 @@ void kpa_hip(void) {
     }
 }
 
-// NONMATCHING (99.08%): only the outer `if (currSubMotionId == 0 && y <= x)` layout differs (target `beq body; b skip`, ours `bne skip`).
 void kpa_fall_80213C38(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -763,16 +770,18 @@ void kpa_fall_80213C38(void) {
             *(Vec*)mario->field_0xD4 = mario->position;
         }
     }
-    if ((s32)mario->currSubMotionId != 0) {
-        /* not falling */
-    } else if (mario->position.y <= MW_F32(mario, 0x120)) {
-        if (mario->position.y <= float_75_80420e44) {
-            if ((u32)(mario->dispFlags |= 0x00020000) != 0) {
-                camFollowYOn();
+    switch ((s32)mario->currSubMotionId) {
+    case 0:
+        if (mario->position.y <= MW_F32(mario, 0x120)) {
+            if (mario->position.y <= float_75_80420e44) {
+                if ((u32)(mario->dispFlags |= 0x00020000) != 0) {
+                    camFollowYOn();
+                }
             }
+            kpaCamFollow();
+            mario->currSubMotionId = 0xA;
         }
-        kpaCamFollow();
-        mario->currSubMotionId = 0xA;
+        break;
     }
     mario->airTimer++;
     if (kpaGetStageType() == 1 && kpaGetBodyStatus() <= 1) {
@@ -794,7 +803,7 @@ void kpa_fall_80213C38(void) {
     }
 }
 
-// NONMATCHING (99.72%): only the second `MW_F32(mario,0x7C) <= 0` test, whose field/zero land in f0/f1 instead of the target f1/f0.
+#pragma opt_common_subs off // needed so the second compare's field/zero stay in the original f1/f0 (default CSE swaps them)
 void kpa_jump(void) {
     MarioWork* mario = marioGetPtr();
     f32 f31;
@@ -822,8 +831,7 @@ void kpa_jump(void) {
         marioMakeJumpPara();
         f1 = MW_F32(mario, 0x7C);
         if (f1 > float_0_80420da0 && mario->airTimer >= 4 && !(MW_U16(mario, 0x246) & (1 << 8))) {
-            f1 = f1 + float_neg0p526_80420e48;
-            MW_F32(mario, 0x7C) = f1;
+            MW_F32(mario, 0x7C) = f1 + float_neg0p526_80420e48;
         }
         if (MW_F32(mario, 0x7C) <= float_0_80420da0) {
             if (f31 > float_0_80420da0) {
@@ -837,6 +845,7 @@ void kpa_jump(void) {
         mario->position.y += MW_F32(mario, 0x7C);
     }
 }
+#pragma opt_common_subs reset
 
 // NONMATCHING (97.02%): the folded double_to_int_mask_802fe2e8 conversion and an extrwi-vs-srawi for `poseTime = MW_U16(0x2A0) >> 1`; the
 // stick-magnitude compare is unsigned here and signed (cmpwi) in the original (an s32 `angle` scores lower).

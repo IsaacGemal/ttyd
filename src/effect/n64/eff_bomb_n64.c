@@ -45,11 +45,8 @@ extern const f32 float_0p0625_8041e9dc;
 extern const f32 float_0_8041e9e0;
 extern const f32 float_1_8041e9e4;
 extern const f32 float_0p4_8041e9e8;
-extern const f32 float_0p6_8041e9ec;
 extern const f32 float_255_8041e9f0;
-extern const f32 float_0p9_8041e9f4;
 extern const f32 float_0p1_8041e9f8;
-extern const f32 float_0p5_8041e9fc;
 extern const f32 float_3_8041ea00;
 extern const f32 float_9p9_8041ea04;
 extern const f32 float_1p6_8041ea08;
@@ -138,8 +135,8 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (99.49%): the two `timer >= 8` else-blocks compute the product in f0 instead of f1, rotating the
-// int->float double and 0.9 temporaries (build f1/f2; target f2/f0). Tried `=`/reversed operands/temps and pragmas.
+// The two `timer >= 8` else-blocks only put their `*= k` products in f1 (as the original does) when the
+// multiplier is a local assigned before use rather than a literal in the expression.
 static void effBombMain(EffectEntry* effect) {
 	effBombN64Data* data = effect->userdata;
 	Vec position = initializeVec((Vec*)&data->x);
@@ -172,8 +169,10 @@ static void effBombMain(EffectEntry* effect) {
 		data->field_0x68 += (type == 2) ? 1.0f : 0.4f;
 		data->field_0x7C = 0.6f * (255.0f - (f32)data->field_0x7C);
 	} else {
-		data->field_0x68 *= 0.6f;
-		data->field_0x7C = (f32)data->field_0x7C * 0.9f;
+		f32 k6 = 0.6f;
+		f32 k9 = 0.9f;
+		data->field_0x68 *= k6;
+		data->field_0x7C = (f32)data->field_0x7C * k9;
 	}
 
 	if (timer >= 3) {
@@ -187,8 +186,10 @@ static void effBombMain(EffectEntry* effect) {
 		if (timer < 6) {
 			data->field_0xAC += 0.1f;
 		} else {
-			data->field_0xAC *= 0.5f;
-			data->field_0xC0 = (f32)data->field_0xC0 * 0.9f;
+			f32 half = 0.5f;
+			f32 k9 = 0.9f;
+			data->field_0xAC *= half;
+			data->field_0xC0 = (f32)data->field_0xC0 * k9;
 		}
 	}
 

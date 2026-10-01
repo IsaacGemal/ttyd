@@ -183,15 +183,13 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwrainDisp, effect);
 }
 
-// The vtx/field/x/descriptor shuffles below are match-only (the natural positions are under
-// #else); they change mwcc's live ranges so it matches the target's callee-saved allocation.
-// Original: vtx=r31, magic 0x4330=r29, xoris temp=r30, iPos=r24, fieldBase=r26, fieldEnd=r25,
-// xBase=r3, xEnd=r0. Ours: every instruction's opcode, order and stack slot match; only xBase
-// and xEnd land in each other's volatile register (ours xBase=r0, xEnd=r3) and the operand order
-// of xEnd += iPos follows from it. All callee-saved registers (vtx, magic, xoris, iPos, fieldBase,
-// fieldEnd, x, jPos, i, j) now match. Declaration-order, arithmetic-order, pragma, type and
-// statement-position sweeps did not move xBase/xEnd.
-// NONMATCHING (99.78%): xBase/xEnd volatile-register swap (r0/r3 vs r3/r0).
+// Match-only: mwcc's allocator gives xBase r3 and xEnd r4 only when the field offsets are
+// computed as the target does. The natural form (fieldBase/fieldEnd assigned after the loop
+// update, under #else) makes mwcc swap them into r0/r3. Under MUST_MATCH, fieldBase/fieldEnd
+// are assigned in the inner-loop body (hoisted) and fieldEnd is built inline as
+// (iPos + xEnd + 0x10) << 2, which keeps xEnd a pure source and yields the target's
+// addi r0,r4,0x10 / add r3,r24,r3 / add r0,r24,r0 sequence. All callee-saved registers
+// (vtx=r31, magic 0x4330=r29, xoris=r30, iPos=r24, fieldBase=r26, fieldEnd=r25) match.
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;
@@ -231,7 +229,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	data = effect->userdata;
 	alpha = data->field_0x1F;
 	GXGetProjectionv(proj);
-	C_MTXOrtho(orthoMtx, float_0_8041f7d8, float_480_8041f7dc, float_0_8041f7d8, float_608_8041f7e0, float_1_8041f7e4, float_32768_8041f7e8);
+	C_MTXOrtho(orthoMtx, 0.0f, 480.f, 0.0f, 608.0f, 1.0f, 32768.0f);
 	GXSetProjection(orthoMtx, GX_ORTHOGRAPHIC);
 	GXSetZMode(0, GX_ALWAYS, 0);
 	entry = smartAlloc(GXGetTexBufferSize(304, 240, GX_TF_RGB565, 0, 0), HEAP_EFFECT);
@@ -241,7 +239,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXCopyTex(tex, 0);
 	GXPixModeSync();
 	GXInitTexObj(&texObj, tex, 304, 240, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, 0);
-	GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_8041f7d8, float_0_8041f7d8, float_0_8041f7d8, 0, 0, GX_ANISO_1);
+	GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, 0, 0, GX_ANISO_1);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, 0, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
@@ -254,7 +252,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 	color = makeTevColor(data->field_0x1C, data->field_0x1D, data->field_0x1E, alpha >> 1);
 #else
-	color = unk_804231d8;
+	color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->field_0x1C;
 	color.g = data->field_0x1D;
 	color.b = data->field_0x1E;
@@ -265,9 +263,9 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)opuku_jetwrain_vtx);
-	up = vec3_802fb254;
-	target = vec3_802fb260;
-	eye = vec3_802fb26c;
+	up = (Vec){ 0.0f, 1.0f, 0.0f };
+	target = (Vec){ 304.0f, 240.f, 0.0f };
+	eye = (Vec){ 304.0f, 240.f, 100.f };
 	C_MTXLookAt(lookAtMtx, &eye, &up, &target);
 	GXLoadPosMtxImm(lookAtMtx, 0);
 	GXSetCurrentMtx(0);
@@ -287,9 +285,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 		}
 		iPos = 0x18 + i * 0x10;
 #ifdef MUST_MATCH
-		xEnd += 0x10;
 		xBase = iPos + xBase;
-		xEnd += iPos;
 #else
 		xBase += iPos;
 		xEnd += iPos + 0x10;
@@ -301,7 +297,7 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 		for (j = 0; j < 18; j++) {
 #ifdef MUST_MATCH
 			fieldBase = xBase << 2;
-			fieldEnd = xEnd << 2;
+			fieldEnd = (iPos + xEnd + 0x10) << 2;
 #endif
 			innerEdge = 0;
 			if (j == 0) {
@@ -318,13 +314,13 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			}
 			jPos = 0x10 + j * 0x10;
 
-			PSMTXScale(texMtx, float_0p0039062_8041f7ec, float_0p0039062_8041f7ec, float_1_8041f7e4);
+			PSMTXScale(texMtx, 0.00390625f, 0.00390625f, 1.0f);
 #ifdef MUST_MATCH
 			x = jPos + x;
 #else
 			x += jPos;
 #endif
-			PSMTXTrans(transMtx, (f32)x, (f32)xBase, float_0_8041f7d8);
+			PSMTXTrans(transMtx, (f32)x, (f32)xBase, 0.0f);
 			PSMTXConcat(texMtx, transMtx, texMtx);
 			GXLoadTexMtxImm(texMtx, GX_TEXMTX0, GX_MTX2x4);
 

@@ -786,9 +786,6 @@ USER_FUNC(evt_npc_jump_position) {
     return EVT_RETURN_YIELD;
 }
 
-// NONMATCHING (99.79%): the unsigned `divwu` result for `elapsed` is allocated to r29 here but
-// lands in r4 in the original (which then does `mr r29, r4` to keep it across the intplGetValue
-// calls). Signedness and logic are correct; only this intermediate register differs.
 USER_FUNC(evt_npc_jump_position_nohit) {
     s32* args = event->args;
 
@@ -800,7 +797,14 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     s32 duration = evtGetValue(event, *args++);
     f32 arcHeight = (f32)evtGetValue(event, *args++);
     s32 sfxFlag;
+#ifdef MUST_MATCH
+    // `int` instead of the codebase's `s32` (= `signed long`, but also 32-bit): the Metrowerks
+    // allocator then leaves the `divwu` result in r4 (the next intplGetValue argument register)
+    // and copies it to r29 later, exactly as the original does. With `s32` it is born in r29.
+    int elapsed;
+#else
     s32 elapsed;
+#endif
     f32 t;
     Vec endPos;
 
@@ -2395,8 +2399,7 @@ USER_FUNC(evt_npc_change_interrupt) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.51%): only the scheduling of the two argument setup instructions differs;
-// the original computes npc->description (r3) before &color (r4), MWCC here does the reverse.
+#pragma opt_propagation off // needed: with it on MWCC emits &color (r4) before npc->description (r3); the original sets up the name argument first
 USER_FUNC(evt_npc_set_color) {
     GXColor color;
     GXColor tmp;
@@ -2426,6 +2429,7 @@ USER_FUNC(evt_npc_set_color) {
 #endif
     return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 USER_FUNC(evt_npc_battle_start) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);

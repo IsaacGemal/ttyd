@@ -574,12 +574,9 @@ static void disp_3D(CameraId camera, void* param) {
 }
 
 // .text:0x66C | 0x80249F8C | size: 0x1F0
-// NONMATCHING (99.52%): the only difference is `extsh r5, r31` where the original has `mr r5, r31`
-// at the iconDispGx call. The original's prototype for iconDispGx/iconDispGxAlpha takes the icon id
-// as s32 (callers pass s32 without sign-extending, and the wrapper does not convert), but the header
-// declares it s16, so this build must sign-extend. With iconDispGx and iconDispGxAlpha changed to s32
-// in include/driver/icondrv.h and src/driver/icondrv.c this function is 100% (verified) with no
-// regressions; that edit is outside the one allowed source file, so it is reported instead.
+// The iconDispGx call site is cast through the original's s32 iconId signature under MUST_MATCH: the
+// header declares it s16 (include/driver/icondrv.h), which would sign-extend, but iconDispGxAlpha's
+// prologue is `mr r28, r5` and this call site's original is `mr r5, r31` (no extsh). Report in REPORT.md.
 void N__disp_2D(s32 type, s32 index) {
     SukiWork* work = get_ptr();
     SukiButton* button;
@@ -660,7 +657,14 @@ void N__disp_2D(s32 type, s32 index) {
     pos.x = button->pos.x;
     pos.y = button->pos.y + yoff + work->alpha + float_60_804220ec;
     pos.z = button->pos.z;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original's iconDispGx takes an s32 icon id (iconDispGxAlpha's prologue is
+    // `mr r28, r5`, no extsh), but include/driver/icondrv.h declares it s16 and would emit `extsh`.
+    // Cast through the signature the original used; still a direct `bl iconDispGx`.
+    ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&pos, 0x10, iconId, float_1_804220d8);
+#else
     iconDispGx(&pos, 0x10, iconId, float_1_804220d8);
+#endif
 }
 // .text:0x85C | 0x8024A17C | size: 0x180
 // NONMATCHING (82.40%): 8 instructions differ, 8 missing, 4 extra, plus register differences.

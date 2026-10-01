@@ -166,14 +166,9 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	return effect;
 }
 
-// Every instruction is byte-identical except the order of the last two loop-setup float loads:
-// retail loads f31 (10.0) then f24 (0.5), this compiler emits the 0.5 load one slot earlier.
-// Retail's allocator hands the 8 loop constants f25..f31 and wraps the last (0.5) into f24;
-// MWCC 2.6 instead hands them f24..f31, so without help every constant operand is one register
-// low. `half` (MUST_MATCH) pins 0.5 to f24; its definition has to sit before the `field_0x18` sin
-// call so the value stays live and is kept in a callee-saved FPR, which is also what schedules it
-// ahead of the 10.0 load.
-// NONMATCHING (99.96%): the f24 (0.5) and f31 (10.0) loop-setup loads are swapped.
+// The `cos` result is stored in `t` before the `+=` (rather than writing the cos directly in the
+// += statement): that makes the compiler pool the cos-argument constants after the statement's
+// 10.0, reproducing retail's FPR assignment (f24=0.5, f31=10.0) and the loop-setup load order.
 #ifdef MUST_MATCH
 void effFallLeafMain(EffectEntry* effect) {
 	effFallLeafMainData* data = effect->userdata;
@@ -187,9 +182,7 @@ void effFallLeafMain(EffectEntry* effect) {
 	f32 s;
 	f32 t;
 #ifdef MUST_MATCH
-	// MUST_MATCH: `half` pins 0.5 to f24 and `sn` pins the case-branch blend to the target's
-	// scratch registers; both only exist to reproduce the original allocation (see above).
-	f32 half;
+	// MUST_MATCH: `sn` pins the case-branch blend to the target's scratch registers.
 	f32 sn;
 #endif
 
@@ -241,15 +234,9 @@ void effFallLeafMain(EffectEntry* effect) {
 			break;
 		}
 		data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
-#ifdef MUST_MATCH
-		half = float_0p5_8041ee04;
-#endif
 		data->field_0x18 += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * data->field_0x1C / float_360_8041ede4);
-#ifdef MUST_MATCH
-		data->field_0x20 += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (data->field_0x1C * half) / float_360_8041ede4);
-#else
-		data->field_0x20 += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (data->field_0x1C * float_0p5_8041ee04) / float_360_8041ede4);
-#endif
+		t = (f32)cos(float_6p2832_8041eddc * (data->field_0x1C * float_0p5_8041ee04) / float_360_8041ede4);
+		data->field_0x20 += float_10_8041ee00 * t;
 		data->x += data->field_0x10;
 		data->y += data->field_0x14;
 	}

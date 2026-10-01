@@ -209,7 +209,7 @@ void BattleAudience_Init(void) {
 	memset(audience, 0, sizeof(BattleAudience));
 	BattleAudienceSettingAudience();
 	audience->normalTex = tplRead(str_802F9DE8);
-	BattleAudienceGuestTPLRead(0, AUDIENCE_LUIGI, "audience_luigi.tpl");
+	BattleAudienceGuestTPLRead(0, AUDIENCE_LUIGI, str_802F9E0C);
 	BattleAudienceSetThrowItemMax();
 
 	audience->mTurnEndPhaseEventChance = 0;
@@ -1053,9 +1053,6 @@ s32 BattleAudience_GetPPAudienceNum_L(void) {
 	return BattleAudience_GetPPAudienceNum_RL_Sub(0);
 }
 
-// NONMATCHING (99.48%): register allocation and add-operand order of the index differ. MWCC emits
-// `add r29,r31` (j+akk) then `add r27,r3` (offset+...) where the original emits `add r31,r27`
-// (akk+offset) then `add r29,r3` (j+...). Everything else (saved regs, loop bodies, compare) matches.
 s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 akk;
@@ -1065,7 +1062,12 @@ s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
 	count = 0;
 	for (i = 0, akk = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
+// MUST_MATCH: this operand order makes MWCC emit `akk+offset` then `j+...`, as the original does.
+#ifdef MUST_MATCH
+			if (BattleAudience_GetPPAudienceNum_Sub(j + akk + offset) == 1) {
+#else
 			if (BattleAudience_GetPPAudienceNum_Sub(akk + (offset + j)) == 1) {
+#endif
 				count++;
 			}
 		}
@@ -1497,13 +1499,22 @@ void BattleAudience_Case_FinalAttack(void) {
 void BattleAudience_Case_Escape(void) {
 }
 
-// NONMATCHING (99.85%): MWCC names the int->float magic double `@1313@` instead of the named
-// `double_to_int_802f9a00`, and the final fmuls has its two source operands swapped.
+// The assignment's operand order is load-bearing: MWCC emits the target's
+// `fmuls f0, f1, f0` (converted value first) only when the int->float conversion is
+// held in a named temp, and only keeps the audience field in r0 and writes the
+// result back through r0 when the sum is written as `(v + 0x19) + field`. The
+// natural compound assignment is the #else arm.
 void BattleAudience_Case_Appeal(BattleUnit* unit) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 
 	if ((f32)BattleAudience_GetPPAudienceNum() > float_0_8041e618) {
+#ifdef MUST_MATCH
+		f32 num = (f32)BattleAudience_GetPPAudienceNum();
+		s32 v = (s32)(num * float_0p25_8041e63c);
+		*(s32*)((u8*)audience + 0x137C4) = (v + 0x19) + *(s32*)((u8*)audience + 0x137C4);
+#else
 		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_0p25_8041e63c * (f32)BattleAudience_GetPPAudienceNum()) + 0x19;
+#endif
 		if (unit->badgesEquipped.SuperAppeal != 0) {
 			*(s32*)((u8*)audience + 0x137C4) += unit->badgesEquipped.SuperAppeal * 0x19;
 		}

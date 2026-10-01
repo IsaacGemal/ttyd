@@ -41,16 +41,19 @@ USER_FUNC(_set_hustle) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.34%): instruction sequence is identical; only the callee-saved register split differs
-// (target: work=r28, args=r30, id1=r31, id2=r30; ours: work=r30, args=r31, id1=r29, id2=r28).
+// 100%: the instruction sequence was already identical; only MWCC's callee-saved register split
+// differed. The declaration order below is what makes the allocator pick the original's split
+// (id1=r31, args=r30, id2 reusing r30, state=r29, work=r28, ptr reusing event's r27); declaring them
+// in read order (work, args, ...) gives work=r30/args=r31/id1=r29/id2=r28. Declaration order does not
+// change the emitted statement order here.
 USER_FUNC(_dictionary) {
-    BattleWork* work = _battleWorkPointer;
-    s32* args = event->args;
     s32 id1;
+    s32* args = event->args;
     s32 id2;
+    s32 state;
     s32 value;
     BattleUnit* unit;
-    s32 state;
+    BattleWork* work = _battleWorkPointer;
     s32 ptr;
 
     id1 = BattleTransID(event, -2);
