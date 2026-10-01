@@ -150,8 +150,8 @@ When the instructions match but the stack slots, register allocation or scheduli
   and within a function in expression-tree order, with a call's argument constants pooled after the other constants of
   the statement that holds the call: `a = 0.04f * sinf(6.28f * x / 360.f) + 0.5f;` pools 0.5, 0.04, 6.28, 360, while
   `f32 s = sinf(6.28f * x / 360.f); a = 0.04f * s + 0.5f;` pools 6.28, 360, 0.5, 0.04 and compiles to the same code.
-  When a unit's `.sdata2` differs from the target only in the order of some constants, a temp for the call result
-  (or the reverse, folding it back) changes the pool without changing any instruction.
+  A temp for the call result, or inlining it back into the expression, therefore changes the pool order without
+  changing any instruction.
 - **A product of two literals folds** (`-16.0f * 0.5f` becomes `-8.0f`), so the target's two separate constants
   vanish: `f32 sixteen = 16.0f; f32 half = 0.5f; f = -sixteen * half;` keeps both.
 
