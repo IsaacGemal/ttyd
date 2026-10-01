@@ -18,25 +18,17 @@ extern const f32 float_16_804204f8;
 extern const f32 float_neg300_804204fc;
 extern const f32 float_0_80420500;
 
-// Vec literals the original unit emitted into .rodata (offsets listed in REPORT.md). They are one
-// contiguous array; the individual obj names in the original .s are aliases at 0xC offsets.
-const Vec vec3_802fd5d0[5] = {
-    {0.0f, 0.0f, -2.0f},
-    {0.0f, 0.0f, -2.0f},
-    {0.0f, 0.0f, -2.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-};
-
-// The int->float magic constant (2^52) the original unit emitted into .rodata at +0x40. Declared so the
-// unit's .rodata layout matches; the cast below still uses a compiler-generated pool copy (see NONMATCHING).
-const f64 double_to_int_802fd610 = 4503601774854144.0;
+// Vec literals the original unit emitted into .rodata (offsets listed in REPORT.md). The original .s
+// has five separate 0xC objects.
+const Vec vec3_802fd5d0 = {0.0f, 0.0f, -2.0f};
+const Vec vec3_802fd5dc = {0.0f, 0.0f, -2.0f};
+const Vec vec3_802fd5e8 = {0.0f, 0.0f, -2.0f};
+const Vec vec3_802fd5f4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fd600 = {0.0f, 0.0f, 0.0f};
 
 // The seven button masks, used for the "pick a unique button" modes.
 u32 _button_table[7] = {0x100, 0x200, 0x400, 0x800, 0x40, 0x20, 0x10};
 
-// SFX name the original unit emitted into .rodata.
-const char str_802FD618[] = "SFX_AC_BUTTON_PUSH1";
 
 // Button-down action-command work area at _battleWorkPointer + 0x1F4C. No header declares it yet;
 // two parallel per-button arrays and a timer.
@@ -48,136 +40,6 @@ typedef struct ButtonDownWork {
     s32 field_0x70;  // 0x70, post-AC timer
 } ButtonDownWork;
 
-// The original ac_button_down unit was compiled with -O4,s (optimize for size): the prologues use
-// stmw/lmw, which -O4,p never emits. The file has no per-Object flag in configure.py, so scope the
-// pragma to the two functions that need it.
-#pragma optimize_for_size on
-#pragma opt_lifetimes off // needed: the default lifetime pass assigns limit/i/work to different callee-saved GPRs than the target
-#pragma opt_propagation off // needed: with propagation on limit drops to r29 and iconX/iconY swap FPRs
-
-// NONMATCHING (95.17%): the int->float conversion's 2^52 constant is emitted as an anonymous pool entry
-// (lis/addi), where the target reuses the named double_to_int_802fd610 at 0x40(r31); the final loop's
-// button/address temporaries are also swapped (button r4 vs the target's r3).
-static void actionCommandDisp(s32 type, f32 x, f32 y) {
-    BattleWork* work = _battleWorkPointer;
-    ButtonDownWork* bd;
-    s32 flags;
-    s32 i;
-    s32 j;
-    s32 limit;
-    f32 baseX = float_neg200_804204e8 + x;
-    f32 iconY;
-    f32 iconX;
-    const Vec* vec = vec3_802fd5d0;
-
-    iconX = baseX - float_40_804204ec;
-    iconY = float_70_804204f0 + y;
-    limit = *(s32*)&work->actionCommands.field_34[0x0C] * 3 + 2;
-    bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
-
-    {
-        Vec t = vec[0];
-        t.x = iconX;
-        t.y = iconY;
-        iconDispGx(&t, 0x10, 0x8F, float_1_804204f4);
-    }
-
-    iconX += float_16_804204f8;
-    for (j = 1; j < limit; j++) {
-#ifdef MUST_MATCH
-        // volatile: stops MWCC hoisting the const vec[1] load out of the loop, which the target does not do.
-        Vec t = *(volatile Vec*)&vec[1];
-#else
-        Vec t = vec[1];
-#endif
-        t.x = iconX;
-        t.y = iconY;
-        iconDispGx(&t, 0x10, 0x8E, float_1_804204f4);
-        iconX += float_16_804204f8;
-    }
-
-    {
-        Vec t = vec[2];
-        t.x = iconX;
-        t.y = iconY;
-        iconDispGx(&t, 0x10, 0x90, float_1_804204f4);
-    }
-
-    flags = *(s32*)&work->actionCommands.field_34[0x00];
-    if (flags & 1) {
-        limit = 0;
-        for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-            if (bd->states[i] == 0) {
-                break;
-            }
-            limit++;
-        }
-        if (limit < *(s32*)&work->actionCommands.field_34[0x0C]) {
-            limit++;
-        }
-    } else {
-        limit = *(s32*)&work->actionCommands.field_34[0x0C];
-    }
-
-    for (i = 0; i < limit; i++) {
-        u32 button = bd->buttons[i];
-        s16 pressed;
-        s16 released;
-
-        if (button == 0) {
-            continue;
-        }
-        switch (button) {
-            case 0x100:
-                pressed = 0x65;
-                released = 0x64;
-                break;
-            case 0x200:
-                pressed = 0x67;
-                released = 0x66;
-                break;
-            case 0x400:
-                pressed = 0x69;
-                released = 0x68;
-                break;
-            case 0x800:
-                pressed = 0x6b;
-                released = 0x6a;
-                break;
-            case 0x40:
-                pressed = 0x7f;
-                released = 0x7e;
-                break;
-            case 0x20:
-                pressed = 0x81;
-                released = 0x80;
-                break;
-            case 0x10:
-                pressed = 0x83;
-                released = 0x82;
-                break;
-            case 0x40000:
-            default:
-                pressed = 0x78;
-                released = 0x79;
-                break;
-        }
-        if (bd->states[i] != 0) {
-            Vec v = vec[3];
-            v.x = baseX + (f32)(i * 0x30);
-            v.y = iconY;
-            iconDispGx(&v, 0x10, pressed, float_1_804204f4);
-        } else {
-            Vec v = vec[4];
-            v.x = baseX + (f32)(i * 0x30);
-            v.y = iconY;
-            iconDispGx(&v, 0x10, released, float_1_804204f4);
-        }
-    }
-}
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
-#pragma optimize_for_size reset
 
 void battleAcDelete_ButtonDown(BattleWork* work) {
     work->actionCommands.mAcState = 1003;
@@ -228,7 +90,9 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
         smooth = 1;
     }
-    sfx = str_802FD618;
+    // Literal, not a named str_802FD618: the compiler pools it after actionCommandDisp's
+    // generated int->float double, which is what puts the double at vec+0x40 (see below).
+    sfx = "SFX_AC_BUTTON_PUSH1";
 
     do {
         cont = 0;
@@ -422,4 +286,133 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
 
     return 1;
 }
+#pragma optimize_for_size reset
+
+// 100%: the five .rodata Vecs above must stay five separate objects, not one Vec[5] array. Only
+// then does MWCC anchor its generated int->float 2^52 pool double at vec+0x40 and reach it as
+// `lfd f1, 0x40(r31)`; with one array it emits a fresh lis/addi and the score is 95.17%. The banner
+// string battleAcMain uses must pool after that double, so battleAcMain writes it as a literal (a
+// declared str_802FD618 emits first and pushes the double to +0x50, 99.99%).
+// Using bd->buttons[i] directly in the zero test and the switch (no `button` temp) is what gives the
+// target's r3 = button / r4 = row base split through the switch.
+#pragma optimize_for_size on
+#pragma opt_lifetimes off // needed: the default lifetime pass assigns limit/i/work to different callee-saved GPRs than the target
+#pragma opt_propagation off // needed: with propagation on limit drops to r29 and iconX/iconY swap FPRs
+static void actionCommandDisp(s32 type, f32 x, f32 y) {
+    BattleWork* work = _battleWorkPointer;
+    ButtonDownWork* bd;
+    s32 flags;
+    s32 i;
+    s32 j;
+    s32 limit;
+    f32 baseX = float_neg200_804204e8 + x;
+    f32 iconY;
+    f32 iconX;
+
+    iconX = baseX - float_40_804204ec;
+    iconY = float_70_804204f0 + y;
+    limit = *(s32*)&work->actionCommands.field_34[0x0C] * 3 + 2;
+    bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
+
+    {
+        Vec t = vec3_802fd5d0;
+        t.x = iconX;
+        t.y = iconY;
+        iconDispGx(&t, 0x10, 0x8F, float_1_804204f4);
+    }
+
+    iconX += float_16_804204f8;
+    for (j = 1; j < limit; j++) {
+#ifdef MUST_MATCH
+        // volatile: stops MWCC hoisting the const vec3_802fd5dc load out of the loop, which the target does not do.
+        Vec t = *(volatile Vec*)&vec3_802fd5dc;
+#else
+        Vec t = vec3_802fd5dc;
+#endif
+        t.x = iconX;
+        t.y = iconY;
+        iconDispGx(&t, 0x10, 0x8E, float_1_804204f4);
+        iconX += float_16_804204f8;
+    }
+
+    {
+        Vec t = vec3_802fd5e8;
+        t.x = iconX;
+        t.y = iconY;
+        iconDispGx(&t, 0x10, 0x90, float_1_804204f4);
+    }
+
+    flags = *(s32*)&work->actionCommands.field_34[0x00];
+    if (flags & 1) {
+        limit = 0;
+        for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
+            if (bd->states[i] == 0) {
+                break;
+            }
+            limit++;
+        }
+        if (limit < *(s32*)&work->actionCommands.field_34[0x0C]) {
+            limit++;
+        }
+    } else {
+        limit = *(s32*)&work->actionCommands.field_34[0x0C];
+    }
+
+    for (i = 0; i < limit; i++) {
+        s16 pressed;
+        s16 released;
+
+        if (bd->buttons[i] == 0) {
+            continue;
+        }
+        switch (bd->buttons[i]) {
+            case 0x100:
+                pressed = 0x65;
+                released = 0x64;
+                break;
+            case 0x200:
+                pressed = 0x67;
+                released = 0x66;
+                break;
+            case 0x400:
+                pressed = 0x69;
+                released = 0x68;
+                break;
+            case 0x800:
+                pressed = 0x6b;
+                released = 0x6a;
+                break;
+            case 0x40:
+                pressed = 0x7f;
+                released = 0x7e;
+                break;
+            case 0x20:
+                pressed = 0x81;
+                released = 0x80;
+                break;
+            case 0x10:
+                pressed = 0x83;
+                released = 0x82;
+                break;
+            case 0x40000:
+            default:
+                pressed = 0x78;
+                released = 0x79;
+                break;
+        }
+        if (bd->states[i] != 0) {
+            Vec v = vec3_802fd5f4;
+            v.x = baseX + (f32)(i * 0x30);
+            v.y = iconY;
+            iconDispGx(&v, 0x10, pressed, float_1_804204f4);
+        } else {
+            Vec v = vec3_802fd600;
+            v.x = baseX + (f32)(i * 0x30);
+            v.y = iconY;
+            iconDispGx(&v, 0x10, released, float_1_804204f4);
+        }
+    }
+}
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
 #pragma optimize_for_size reset

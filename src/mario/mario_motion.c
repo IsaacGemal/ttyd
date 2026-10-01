@@ -51,6 +51,14 @@ const char str_802C59FC[] = "win_03";
 const char str_802C5A04[] = "win_01";
 const char str_802C5A0C[] = "tik_01";
 extern f32 marioJumpSwData[];
+extern const f32 float_1p7_8041a924;
+extern const f32 float_1_8041a8a4;
+extern const f32 float_neg0p526_8041a928;
+extern const f32 float_0p34_8041a8bc;
+extern const f32 float_neg0p002_8041a8c0;
+extern const f32 float_neg0p01_8041a8c4;
+extern const f32 float_neg0p03_8041a92c;
+extern const f32 float_neg0p02_8041a930;
 
 // From other units not decompiled yet: no header declares them.
 
@@ -1002,7 +1010,6 @@ void marioChgMoveMotion(void) {
     }
 }
 
-// NONMATCHING (98.55%): 1 missing, plus register differences.
 void mot_talk(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* npc;
@@ -1029,7 +1036,8 @@ void mot_talk(void) {
             camYaw = camGetPtr(4)->viewYaw;
             angle = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
             angle = angle - camYaw;
-            d = 270.0f - (f32)(s32)(angle * 10.0f + 0.5f) / 10.0f;
+            angle = (f32)(s32)(angle * 10.0f + 0.5f) / 10.0f;
+            d = 270.0f - angle;
             r = revise360(d);
             if (r >= 90.0f && r <= 270.0f) {
                 *(f32*)((u8*)mario + 0x19C) = toMovedir(90.0f);
@@ -1065,20 +1073,11 @@ void mot_talk(void) {
             mario->currSubMotionId = 11;
         }
         break;
-    default:
+    case 11:
         break;
     }
 }
 
-// NONMATCHING (99.41%): the range guard over currMotionId emits the original's branch shape
-// (`beq body; blt body; bge body; b return`) only if the compiler does not invert the last test;
-// every source order tried (&& early return, !OR, goto, two ifs, a local copy, OR-form positive)
-// gives `blt return` + fallthrough instead. Register differences elsewhere were fixed by reading
-// the if-block through `mario` instead of `mario2` (same pointer, original keeps it in r30).
-// A non-trivial then block keeps the failure-branch layout (`bge body; b return`) but adds real
-// code (a dead store); a trivial `return` is always jump-threaded. `if (cond) {} else return;`
-// scores 99.92% only because objdiff does not compare branch targets: it inverts the control
-// flow (branches go to the epilogue instead of the body), so it is not a match.
 void marioJump(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1090,9 +1089,18 @@ void marioJump(void) {
     if (getRollEvtFlag() != 0) {
         return;
     }
-    if ((s32)mario->currMotionId != MARIO_MOTION_JUMP_NPC && (s32)mario->currMotionId >= MARIO_MOTION_JUMP_NPC &&
-        (s32)mario->currMotionId < MARIO_MOTION_JUMP_SMALL) {
+    // The explicit JUMP_NPC case makes MWCC emit the original's split compare (`beq 4; blt 4`)
+    // ahead of the 5..8 range instead of a `subi`/`cmplwi` range check.
+    switch ((s32)mario->currMotionId) {
+    case MARIO_MOTION_JUMP_NPC:
+        break;
+    case MARIO_MOTION_JUMP_SW:
+    case MARIO_MOTION_JUMP_STAND:
+    case MARIO_MOTION_JUMP_2:
+    case MARIO_MOTION_JUMP_3:
         return;
+    default:
+        break;
     }
     if ((s32)mario->currSubMotionId < 10) {
         return;
@@ -1100,14 +1108,14 @@ void marioJump(void) {
     oldVy = *(f32*)((u8*)mario + 0x7C);
 
     mario2 = marioGetPtr();
-    grav = (mario2->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) ? 1.7f : 1.0f;
+    grav = (mario2->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) ? float_1p7_8041a924 : float_1_8041a8a4;
     *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88) / grav;
     *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84) / grav;
     *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80) / grav;
 
     if (*(f32*)((u8*)mario + 0x7C) > 0.0f) {
         if (mario->airTimer >= 4 && !(*(u16*)((u8*)mario + 0x246) & (1 << 8))) {
-            *(f32*)((u8*)mario + 0x7C) += -0.526f;
+            *(f32*)((u8*)mario + 0x7C) += float_neg0p526_8041a928;
         }
     }
     if (*(f32*)((u8*)mario + 0x7C) <= 0.0f) {
@@ -1124,14 +1132,14 @@ void marioJump(void) {
         *(f32*)((u8*)mario2 + 0x80) = p[1];
         *(f32*)((u8*)mario2 + 0x84) = p[2];
         *(f32*)((u8*)mario2 + 0x88) = p[3];
-        if (mario2->playerGravity != 1.0f) {
-            *(f32*)((u8*)mario2 + 0x7C) = 0.34f;
-            *(f32*)((u8*)mario2 + 0x80) = -0.002f;
-            *(f32*)((u8*)mario2 + 0x84) = -0.01f;
+        if (float_1_8041a8a4 != mario2->playerGravity) {
+            *(f32*)((u8*)mario2 + 0x7C) = float_0p34_8041a8bc;
+            *(f32*)((u8*)mario2 + 0x80) = float_neg0p002_8041a8c0;
+            *(f32*)((u8*)mario2 + 0x84) = float_neg0p01_8041a8c4;
             *(f32*)((u8*)mario2 + 0x88) = 0.0f;
         }
         mario2 = marioGetPtr();
-        grav = (mario2->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) ? 1.7f : 1.0f;
+        grav = (mario2->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) ? float_1p7_8041a924 : float_1_8041a8a4;
         *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88) / grav;
         *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84) / grav;
         *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80) / grav;
@@ -1154,10 +1162,10 @@ void marioJump(void) {
                 mario3->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
             }
         } else {
-            *(f32*)((u8*)mario + 0x7C) = -0.03f;
-            *(f32*)((u8*)mario + 0x80) = -0.02f;
-            *(f32*)((u8*)mario + 0x84) = -0.02f;
-            *(f32*)((u8*)mario + 0x88) = -0.002f;
+            *(f32*)((u8*)mario + 0x7C) = float_neg0p03_8041a92c;
+            *(f32*)((u8*)mario + 0x80) = float_neg0p02_8041a930;
+            *(f32*)((u8*)mario + 0x84) = float_neg0p02_8041a930;
+            *(f32*)((u8*)mario + 0x88) = float_neg0p002_8041a8c0;
             mario->flags &= ~MARIO_FLAG_IS_JUMPING;
             mario->flags |= MARIO_FLAG_IS_FALLING;
         }
@@ -1347,7 +1355,8 @@ void mot_bottomless(void) {
     }
 }
 
-// NONMATCHING (98.33%): 1 missing, 2 extra, plus register differences.
+// The ROLL case sets up the array base pointer before the 1.0f comparison constant is loaded;
+// the const pointer keeps the compiler from sinking that setup below the first array load.
 void marioSetJumpPara(void) {
     MarioWork* mario = marioGetPtr();
     f32* p;
@@ -1403,11 +1412,17 @@ void marioSetJumpPara(void) {
         *(f32*)((u8*)mario + 0x84) = -0.01f;
         *(f32*)((u8*)mario + 0x88) = -0.003f;
         break;
-    case MARIO_MOTION_ROLL:
-        *(f32*)((u8*)mario + 0x7C) = marioJumpData[0];
-        *(f32*)((u8*)mario + 0x80) = marioJumpData[1];
-        *(f32*)((u8*)mario + 0x84) = marioJumpData[2];
-        *(f32*)((u8*)mario + 0x88) = marioJumpData[3];
+    case MARIO_MOTION_ROLL: {
+#ifdef MUST_MATCH
+        // const pointer: pins the base-pointer setup ahead of the 1.0f load (see report)
+        f32* const q = marioJumpData;
+#else
+        f32* q = marioJumpData;
+#endif
+        *(f32*)mario->field_0x7C = q[0];
+        *(f32*)(mario->field_0x7C + 4) = q[1];
+        *(f32*)(mario->field_0x7C + 8) = q[2];
+        *(f32*)(mario->field_0x7C + 12) = q[3];
         if (mario->playerGravity != 1.0f) {
             *(f32*)((u8*)mario + 0x7C) = 2.7f;
             *(f32*)((u8*)mario + 0x80) = -0.002f;
@@ -1415,6 +1430,7 @@ void marioSetJumpPara(void) {
             *(f32*)((u8*)mario + 0x88) = -0.002f;
         }
         break;
+    }
     default:
         break;
     }

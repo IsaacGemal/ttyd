@@ -695,13 +695,21 @@ void mot_ship(void) {
             }
         }
         {
+            f32 dy;
             mario->baseSpeed = distABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z) / 36.0f;
             mario->directionView = angleABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z);
             *(f32*)((u8*)mario + 0x19C) = mario->directionView;
             f30 = SHIP_DATA->unk3C.y;
             SHIP_DATA->unk04 = f30;
+#ifdef MUST_MATCH
+            // The original doubles the distance with `d + d`, not `2.0f * d`.
+            dy = SHIP_DATA->unk3C.y - mario->position.y;
+            *(f32*)((u8*)mario + 0x7C) = 0.0f;
+            *(f32*)((u8*)mario + 0x80) = (dy + dy) / 306.0f;
+#else
             *(f32*)((u8*)mario + 0x7C) = 0.0f;
             *(f32*)((u8*)mario + 0x80) = 2.0f * (SHIP_DATA->unk3C.y - mario->position.y) / 306.0f;
+#endif
             *(f32*)((u8*)mario + 0x84) = 0.0f;
             *(f32*)((u8*)mario + 0x88) = 0.0f;
             mario->multiTimer = 0x24;
@@ -776,11 +784,13 @@ void mot_ship(void) {
             mario->multiTimer = 4;
             mario->currSubMotionId = 0x20;
         }
+        f30 = 1.6f;
         {
-            MarioWork* m = marioGetPtr();
-            f30 = 1.6f;
+            MarioWork* m;
+            f32 zero = 0.0f;
+            m = marioGetPtr();
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x4) = m->position.x;
-            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + 0.0f;
+            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + zero;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0xC) = m->position.z;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x10) = f30;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x14) = m->unk1A8;
@@ -792,6 +802,7 @@ void mot_ship(void) {
         }
         /* fall through */
     case 40: {
+        marioGetPtr();
         if (marioGetPtr()->motStruct != NULL && SHIP_DATA->sfxId != 0xFFFFFFFF) {
             psndSFXOff(SHIP_DATA->sfxId);
             SHIP_DATA->sfxId = 0xFFFFFFFF;
@@ -955,6 +966,8 @@ void mot_ship(void) {
     }
     case 47: {
         s32 r27 = 0;
+        marioGetPtr();
+        marioGetPtr();
         f30 = (SHIP_DATA->flags & 1) ? 4.0f : -4.0f;
         {
             MotionShipData* d = SHIP_DATA;
@@ -1018,6 +1031,7 @@ void mot_ship(void) {
             f30 = mario->baseSpeed;
             m = marioGetPtr();
             if (f30 == 0.0f) {
+                marioGetPtr();
                 { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; f30 = b ? 0.3f : 0.6f; }
                 {
                     MotionShipData* d = SHIP_DATA;
@@ -1027,9 +1041,10 @@ void mot_ship(void) {
                 }
             }
             {
+                f32 zero = 0.0f;
 
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x4) = m->position.x;
-                *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + 0.0f;
+                *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + zero;
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0xC) = m->position.z;
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x10) = f30;
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x14) = m->unk1A8;
@@ -1093,9 +1108,11 @@ void mot_ship(void) {
         }
         {
             MarioWork* m;
+            f32 zero = 0.0f;
             f30 = mario->baseSpeed;
             m = marioGetPtr();
             if (f30 == 0.0f) {
+                marioGetPtr();
                 { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; f30 = b ? 0.3f : 0.6f; }
                 {
                     MotionShipData* d = SHIP_DATA;
@@ -1105,7 +1122,7 @@ void mot_ship(void) {
                 }
             }
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x4) = m->position.x;
-            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + 0.0f;
+            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + zero;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0xC) = m->position.z;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x10) = f30;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x14) = m->unk1A8;

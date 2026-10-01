@@ -404,7 +404,8 @@ void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (97.87%): u16 status fields loaded signed (lha) instead of lhz, plus constant pool/control-flow differences
+// NOTE: mBurnDamageFlameState/mbBurnDamageFlameActive are declared s16 in battle_unit.h, but the
+// original loads them with lhz and tests them unsigned (cmplwi); cast to u16 to match. Header likely wrong.
 BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 	BattleUnitPart* part;
 	BattleEffectPosScale* work;
@@ -421,8 +422,6 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 	switch (*(u16*)&unit->mbBurnDamageFlameActive) {
 	case 1:
 		switch (*(u16*)&unit->mBurnDamageFlameState) {
-		case 0:
-			break;
 		case 1:
 			*(u16*)&unit->mBurnDamageFlameState += 1;
 			unit->mBurnDamageFlameScale = 1.0f;
@@ -430,7 +429,7 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 			z += 5.0f;
 			unit->mBurnDamageFlameEff = effFireEntry(0, 0, x, y, z, unit->mBurnDamageFlameScale);
 			unit->mBurnDamageFlameAnimTimer = 0;
-			return TRUE;
+			break;
 		case 2:
 			work = unit->mBurnDamageFlameEff->userdata;
 			unit->mBurnDamageFlameAnimTimer += 1;
@@ -440,7 +439,7 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 			if (unit->mBurnDamageFlameAnimTimer >= 60) {
 				*(u16*)&unit->mBurnDamageFlameState += 1;
 			}
-			return TRUE;
+			break;
 		case 3:
 			effDelete(unit->mBurnDamageFlameEff);
 			unit->mBurnDamageFlameEff = NULL;
@@ -448,13 +447,15 @@ BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
 			if (!BtlUnit_CheckShadowGuard(unit)) {
 				BattleDamageDirect(-5, unit, 0, 1, 0, 0x118, 0, 1);
 			}
-			return FALSE;
+		case 0:
 		default:
 			return FALSE;
 		}
+		break;
 	default:
 		return FALSE;
 	}
+	return TRUE;
 }
 
 void BSE_TurnFirstProcessEffectEntry(BattleUnit* unit, s16 active) {

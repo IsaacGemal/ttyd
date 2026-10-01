@@ -92,9 +92,11 @@ static inline Vec getStageClearCamPos(void) {
 }
 
 #pragma opt_common_subs off // without it MWCC CSEs the repeated float_0 pool loads in the GX vertex block
-// NONMATCHING (94.35%): the anonymous int-to-double pool double (0x4330000080000000) makes Disp's base+offset
-// `lfd`s point at 0x58/0x68 instead of 0x38/0x30 and colours the r/f registers differently; frame, Vec copies,
-// matrices and GX state match.
+// Frame, Vec copies, matrices and GX state match. What still differs is the FP register colouring for the
+// -24/1/24 and int->float-magic values (target f29/f31/f28/f30, ours f30/f29/f31/f28) and the GX vertex
+// block's interleaved float_0 reloads that follow from it; the anonymous int->float magic also lands at
+// 0x58 instead of the named slot at 0x38. Register-allocation level, left for the permuter.
+// NONMATCHING (97.31%): only the FP register colouring and the anonymous int->float magic slot differ.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStageClearWork* data = effect->userdata;
@@ -108,6 +110,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 	f32 f27;
 	f32 f28;
 	f32 f29;
+	f32 f30;
 	f32 f31;
 	GXTexObj tex;
 	f32 proj[7];
@@ -122,11 +125,18 @@ void effStageClearDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	scale = float_1p7_80420f1c * data->scale;
 	scale = float_0p9_80420f18 * scale;
+#ifdef MUST_MATCH
+	// match-only assignment order: type before field1C makes MWCC colour them r19/r22 like the target
+	// (the natural order is the #else arm, which is what the original source read like)
+	type = data->type;
 	field1C = data->field_0x1C;
+#else
+	field1C = data->field_0x1C;
+	type = data->type;
+#endif
 	if ((u32)gp->language != 0) {
 		scale = scale * float_0p6_80420f20;
 	}
-	type = data->type;
 	GXGetProjectionv(proj);
 	GXGetViewportv(viewport);
 	cam2 = camGetPtr(CAMERA_2D);
@@ -148,16 +158,31 @@ void effStageClearDisp(CameraId camId, void* param) {
 	GXSetVtxDesc(0xD, 1);
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-	f28 = float_24_80420f3c;
-	f31 = float_1_80420f2c;
-	f29 = -float_48_80420f24 * float_0p5_80420f38;
 	shadow = type % 10;
+#ifdef MUST_MATCH
+	// match-only: assigning the loop-invariant i*4/-i*4 offsets and the 24/-24/1 constants inside the
+	// inner loop makes MWCC hoist them together with the int->float magic, reproducing the target's FP
+	// load order; the natural form is the #else arm (same values, just outside the loop)
+	for (i = 1; i >= 0; i--) {
+		effStageClearWork* work = &((effStageClearWork*)effect->userdata)[1];
+
+		for (j = 1; j < effect->count; j++, work++) {
+			f27 = (f32)(i * 4);
+			f26 = (f32)(-i * 4);
+			f29 = -float_48_80420f24 * float_0p5_80420f38;
+			f31 = float_1_80420f2c;
+			f28 = float_24_80420f3c;
+#else
+	f29 = -float_48_80420f24 * float_0p5_80420f38;
+	f31 = float_1_80420f2c;
+	f28 = float_24_80420f3c;
 	for (i = 1; i >= 0; i--) {
 		effStageClearWork* work = &data[1];
 
-		f27 = (f32)(i * 4);
-		f26 = (f32)(-i * 4);
 		for (j = 1; j < effect->count; j++, work++) {
+			f27 = (f32)(i * 4);
+			f26 = (f32)(-i * 4);
+#endif
 			if (i != 0) {
 				if (shadow == 0) {
 					u32* tbl = texid_tbl[(u32)gp->language * 2 + 1];

@@ -232,9 +232,6 @@ s32 marioSlitButton(void) {
     return 0;
 }
 
-// NONMATCHING (96.36%): the GXColor is built in a stack temporary at +0xC and
-// word-copied to +0x8; we build it directly. The controlStickSensitivity
-// compare also loads the constant into f1 instead of the field.
 void marioReInit_slit(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2 = marioGetPtr();
@@ -250,16 +247,30 @@ void marioReInit_slit(void) {
     mario2->dispFlags |= 4;
     mario2->dispFlags |= 0x01000000;
     if (mario2->paperPoseId == -1) {
+#ifdef MUST_MATCH
+        GXColor tmp;
         GXColor color;
-        color = (GXColor){ 0, 0, 0, 255 };
-        color.r = 168;
-        color.g = 168;
-        color.b = 168;
+
+        // The original builds the colour in a temporary at +0xC and
+        // word-copies it into the argument at +0x8.
+        tmp = (GXColor){ 0, 0, 0, 255 };
+        tmp.r = 168;
+        tmp.g = 168;
+        tmp.b = 168;
+        color = tmp;
+#else
+        GXColor color = (GXColor){ 168, 168, 168, 255 };
+#endif
         mapSetPaperAmbColor(&color);
         marioPaperOn("p_slit");
     }
-    if (0.0f == mario2->controlStickSensitivity) {
-        marioChgPose("M_S_1");
+    // A named local makes MWCC load the field into f1 and the pool constant
+    // into f0, matching the original's compare order.
+    {
+        f32 zero = 0.0f;
+        if (mario2->controlStickSensitivity == zero) {
+            marioChgPose("M_S_1");
+        }
     }
     marioChgPaper("PM_S_1A");
     mario->trigFlags &= ~1u;
@@ -277,13 +288,42 @@ void marioReInit_slit(void) {
     allPartySlitOn();
 }
 
-// NONMATCHING (97.03%): emits the default `state = 0` block twice (dispFlags
-// branch and final else) instead of sharing one; everything else matches.
 s32 U_marioSlitContinueChk(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2 = marioGetPtr();
     s32 state;
 
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original shares a single `state = 0` tail between the
+    // `!dispFlags` branch and the final else, so both jump to a common `zero`
+    // label. Written as the plain nested if/else below, MWCC emits that block
+    // twice (97.03%).
+    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
+        state = 0;
+    } else if (marioKeyOffChk()) {
+        state = 0;
+    } else if (marioBgmodeChk() == 1) {
+        state = 0;
+    } else if (!(mario2->dispFlags & (1 << 24))) {
+        if (MW_U16(mario2, 0x246) & 0x20) {
+            state = 1;
+        } else {
+            goto zero;
+        }
+    } else {
+        if (MW_U16(mario2, 0x246) & 0x20) {
+            state = 2;
+        } else if (MW_U8(mario2, 0x253) >= 0x32) {
+            state = 2;
+        } else {
+            goto zero;
+        }
+    }
+    goto done;
+zero:
+    state = 0;
+done:
+#else
     if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
         state = 0;
     } else if (marioKeyOffChk()) {
@@ -305,6 +345,7 @@ s32 U_marioSlitContinueChk(void) {
             state = 0;
         }
     }
+#endif
     if (state != 0) {
         return 1;
     }

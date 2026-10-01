@@ -232,7 +232,12 @@ s32 marioWaitDamageReturnFall(void) {
 //   - case 0x14 swaps f30/f31 (original spd=f31, floorY=f30; ours the reverse) - the allocator picks the
 //     free register for floorY rather than spd. Worth ~0.078%; no source shape found that flips it
 //     (declaration order, scope, naming, self-assignments, inlining the value, -O4,s and GC/1.3-2.5 all
-//     give the same swap).
+//     give the same swap). Also tried: local constant for the -10.0f clamp, if/else form of the floorY
+//     ternary, ternary form of the clamp, a separate case-0x14 fall-speed variable, an inline floorY
+//     helper, pre-initialising floorY, case-scope declarations, a case-scope hit pointer, and the
+//     opt_lifetimes/opt_dead_assignments/global_optimizer/opt_propagation/opt_common_subs/
+//     optimize_for_size/scheduling/peephole pragmas, each independently and with if/else: same swap or
+//     worse. decomp-permuter ran ~17.6k iterations (score stuck at 45) and found nothing.
 // NONMATCHING (99.92%): case 0x14 f30/f31 swap; see above.
 void mot_damage(void) {
 	MarioWork* mario;

@@ -200,19 +200,15 @@ void extLoadTextureExit(void) {
 	GXTexModeSync();
 }
 
-// NONMATCHING (94.53%): 2 extra, plus register differences.
 void extLoadTexture(void) {
 	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;
-	u32 total = 0;
 	s32 i;
+	u32 total = 0;
 
 	GXInvalidateTexAll();
-	for (i = 0; i < wp->texCount; i++) {
-		u32 fmt = GXGetTexObjFmt(&tex->texObj);
-		u16 h = GXGetTexObjHeight(&tex->texObj);
-		u16 w = GXGetTexObjWidth(&tex->texObj);
-		u32 size = GXGetTexBufferSize(w, h, fmt, 0, 0);
+	for (i = 0; i < wp->texCount; i++, tex++) {
+		u32 size = GXGetTexBufferSize(GXGetTexObjWidth(&tex->texObj), GXGetTexObjHeight(&tex->texObj), GXGetTexObjFmt(&tex->texObj), 0, 0);
 
 		if (total < 0x80000 && total + size >= 0x80000) {
 			total = 0x80000;
@@ -220,7 +216,6 @@ void extLoadTexture(void) {
 		GXInitTexPreLoadRegion(&tex->region, total, size, 0, 0);
 		GXPreLoadEntireTexture(smartTexObj(&tex->texObj, tex->image), &tex->region);
 		total += size;
-		tex++;
 	}
 	wp->texSize = total;
 	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);

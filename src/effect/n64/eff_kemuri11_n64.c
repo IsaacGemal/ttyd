@@ -316,9 +316,17 @@ void effKemuri11Disp(CameraId camId, void* param) {
     main_dl(effect, m2);
 }
 
-// NONMATCHING (93.85%): outer type check compiles to `blt` instead of the
-// original `bge`, and several float/stack-slot registers differ (sin/cos
-// temporaries, the 0.5p/0.94 constants, the int->float stack scratch pairs).
+// The original's zero-Vec temp comes from a compound literal, not the named
+// vec3_802faa00: the literal is what keeps the pool load from being scheduled
+// above the userdata load (same idiom as eff_vapor_n64's makeVec).
+static inline Vec kemuri11MakeVec(effKemuri11Data* data) {
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    temp.x = data->position.x;
+    temp.y = data->position.y;
+    temp.z = data->position.z;
+    return temp;
+}
+
 void effKemuri11Main(EffectEntry* effect) {
     EffectEntry* e;
     effKemuri11Data* data;
@@ -330,7 +338,7 @@ void effKemuri11Main(EffectEntry* effect) {
 
     e = effect;
     data = e->userdata;
-    position = initializeVec(&data->position);
+    position = kemuri11MakeVec(data);
     data->field_0x2C++;
     data->field_0x28--;
     if (data->field_0x28 < 0) {
@@ -340,17 +348,21 @@ void effKemuri11Main(EffectEntry* effect) {
 
     type = data->type;
     t = data->field_0x2C;
-    if (type < 2 && type >= 0) {
+    switch (type) {
+    case 0:
+    case 1:
         if (t >= 8) {
             data->field_0x38 = (f32)data->field_0x38 * float_0p8_8041f508;
         }
-    }
-    else {
+        break;
+    default:
         if (t >= 8) {
             data->field_0x38 = (f32)data->field_0x38 * float_0p94_8041f50c;
         }
+        break;
     }
 
+    data++;
     for (i = 1; i < e->count; i++, data++) {
         data->field_0x4C++;
         if (data->field_0x4C < 0) {
@@ -360,8 +372,10 @@ void effKemuri11Main(EffectEntry* effect) {
             data->position.x = float_0_8041f4fc;
             data->position.y = float_0_8041f4fc;
             data->position.z = float_0_8041f4fc;
-            data->field_0x10 = -(f32)sin(float_6p2832_8041f510 * data->field_0x34 / float_360_8041f514) * float_0p5_8041f518;
-            data->field_0x14 = float_0p5_8041f518 * (f32)cos(float_6p2832_8041f510 * data->field_0x34 / float_360_8041f514);
+            v = (f32)sin(float_6p2832_8041f510 * data->field_0x34 / float_360_8041f514);
+            data->field_0x10 = float_0p5_8041f518 * -v;
+            v = (f32)cos(float_6p2832_8041f510 * data->field_0x34 / float_360_8041f514);
+            data->field_0x14 = float_0p5_8041f518 * v;
             data->field_0x18 = float_0_8041f4fc;
             data->field_0x3C = float_32_8041f51c;
             data->field_0x40 = float_32_8041f51c;
@@ -376,14 +390,12 @@ void effKemuri11Main(EffectEntry* effect) {
                 break;
             case 2:
             case 5:
-                v = (f32)(i + 2);
-                data->field_0x1C = v;
-                data->field_0x24 = float_0p5_8041f518 * v;
+                data->field_0x1C = (f32)(i + 2);
+                data->field_0x24 = float_0p5_8041f518 * (f32)(i + 2);
                 break;
             case 3:
-                v = (f32)(i + 3);
-                data->field_0x1C = v;
-                data->field_0x24 = float_0p5_8041f518 * v;
+                data->field_0x1C = (f32)(i + 3);
+                data->field_0x24 = float_0p5_8041f518 * (f32)(i + 3);
                 data->field_0x3C = float_16_8041f524;
                 data->field_0x40 = float_16_8041f524;
                 data->field_0x48 = float_16_8041f524;
@@ -429,10 +441,12 @@ void effKemuri11Main(EffectEntry* effect) {
             }
             break;
         }
-        data->field_0x1C *= float_1p002_8041f540;
-        data->field_0x24 *= float_1p002_8041f540;
-        if (data->field_0x3C > float_128_8041f544) {
-            data->field_0x3C = float_128_8041f544;
+        // Literal pool constants (not the named float_1p002/float_128 externs):
+        // this is the form that gives the original's f1/f2/f0 register split.
+        data->field_0x1C *= 1.002f;
+        data->field_0x24 *= 1.002f;
+        if (data->field_0x3C > 128.0f) {
+            data->field_0x3C = 128.0f;
         }
     }
 

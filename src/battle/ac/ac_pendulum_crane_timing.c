@@ -214,10 +214,11 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// NONMATCHING (95.60%): the implicit int->float magic double compiles to a local `@343`/`@346` symbol instead
-// of the named `double_to_int_802fdbb8`/`double_to_int_mask_802fdbd8`; the L/R-trigger clamp keeps 1.0f in f4
-// instead of reusing f0; a few state-0 loads are scheduled differently. The sfx-id and BattlePadCheckTrigger tests both use `cmpwi` (via a
-// `(u32)`/`(s32)` cast) to match the original's `addis`/`cmplwi` and signed tests.
+// 100%: the action-command state machine. The state-0 literals are read directly (not through MATCH_F32) so
+// 0.0f/3.0f share the FPRs the target uses; `span` holds field_34[0x14]*2 in one value to get the target's
+// r4 allocation; `bw`/`delta` are read before the direction test so the global and 0.0f loads hoist as they do
+// in the target; the `k` temp (guarded below) fixes the final product's fmuls operand order. The sfx-id and
+// BattlePadCheckTrigger tests use a `(u32)`/`(s32)` cast to match the original's `addis`/`cmplwi` and signed tests.
 s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)((u8*)work + 0x1F4C);
@@ -240,14 +241,14 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	switch (work->actionCommands.mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
-		disp->iconX = MATCH_F32(float_neg300_804209a4);
-		disp->iconY = MATCH_F32(float_0_80420978);
+		disp->iconX = float_neg300_804209a4;
+		disp->iconY = float_0_80420978;
 		disp->counter = 0x14;
 		dec->frame = 0;
-		dec->angle = MATCH_F32(float_0_80420978);
+		dec->angle = float_0_80420978;
 		dec->accum = *(s32*)&work->actionCommands.field_34[0x14];
 		dec->accum2 = 0;
-		dec->amplitude = MATCH_F32(float_3_804209ac);
+		dec->amplitude = float_3_804209ac;
 		dec->lastDir = -1;
 		dec->trigger = 0x100;
 		work->actionCommands.outputParams[0] = 0;
@@ -274,12 +275,16 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		s32 span;
 		f32 delta;
 		s32 rem;
+		BattleWork* bw;
 
 		dec->frame++;
-		span = *(s32*)&work->actionCommands.field_34[0x14];
-		rem = (dec->accum + dec->accum2) % (span * 2);
-		dec->angle2 = (f32)(rem * 360 / (span * 2));
+		span = *(s32*)&work->actionCommands.field_34[0x14] * 2;
+		rem = (dec->accum + dec->accum2) % span;
+		dec->angle2 = (f32)(rem * 360 / span);
 		dec->angle = reviseAngle(sinfd(dec->angle2) * MATCH_F32(float_45_8042097c));
+
+		bw = _battleWorkPointer;
+		delta = float_0_80420978;
 
 		if (dec->angle2 >= MATCH_F32(float_90_80420984) && dec->angle2 < MATCH_F32(float_270_804209b4)) {
 			dirF = MATCH_F32(float_neg1_804209b8);
@@ -288,30 +293,40 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 			dirF = MATCH_F32(float_1_80420990);
 		}
 
-		delta = MATCH_F32(float_0_80420978);
-
 		if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
-			PADStatus* pad = &_battleWorkPointer->padWork[0].mPadData[0];
+			PADStatus* pad = &bw->padWork[0].mPadData[0];
 			f32 t;
-			f32 limit;
+#ifdef MUST_MATCH
+			// Match-only temp: splitting the product gives the target's fmuls operand order (f0 * f2).
+			f32 k;
+#endif
 
-			limit = MATCH_F32(float_1_80420990);
 			if (pad->triggerRight > 10 && pad->triggerLeft < 10) {
 				if (dirF < MATCH_F32(float_0_80420978)) {
 					t = (f32)pad->triggerRight * MATCH_F32(float_0p0078125_804209bc);
-					if (t > limit) {
-						t = limit;
+					if (t > float_1_80420990) {
+						t = float_1_80420990;
 					}
+#ifdef MUST_MATCH
+					k = MATCH_F32(float_0p95_804209c0) * -dec->amplitude;
+					delta = k * t;
+#else
 					delta = (MATCH_F32(float_0p95_804209c0) * -dec->amplitude) * t;
+#endif
 				}
 			}
 			else if (pad->triggerRight < 10 && pad->triggerLeft > 10) {
 				if (dirF > MATCH_F32(float_0_80420978)) {
 					t = (f32)pad->triggerLeft * MATCH_F32(float_0p0078125_804209bc);
-					if (t > limit) {
-						t = limit;
+					if (t > float_1_80420990) {
+						t = float_1_80420990;
 					}
+#ifdef MUST_MATCH
+					k = MATCH_F32(float_0p95_804209c0) * -dec->amplitude;
+					delta = k * t;
+#else
 					delta = (MATCH_F32(float_0p95_804209c0) * -dec->amplitude) * t;
+#endif
 				}
 			}
 		}
@@ -327,12 +342,12 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 
 		dec->accum += dec->amplitude;
 
-		span = *(s32*)&work->actionCommands.field_34[0x14];
-		rem = (dec->accum + dec->accum2) % (span * 2);
-		dec->angle2 = (f32)(rem * 360 / (span * 2));
+		span = *(s32*)&work->actionCommands.field_34[0x14] * 2;
+		rem = (dec->accum + dec->accum2) % span;
+		dec->angle2 = (f32)(rem * 360 / span);
 		dec->angle = reviseAngle(sinfd(dec->angle2) * MATCH_F32(float_45_8042097c));
 
-		zero = MATCH_F32(float_0_80420978);
+		zero = float_0_80420978;
 		BtlUnit_SetRotate(unit, zero, zero, dec->angle);
 
 		if (dec->angle2 >= MATCH_F32(float_90_80420984) && dec->angle2 < MATCH_F32(float_270_804209b4)) {

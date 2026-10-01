@@ -83,7 +83,7 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original saves r28-r31 with `stmw` and keeps `work` in r29.
 #pragma optimize_for_size on
-// NONMATCHING (94.38%): newly written; remaining diffs are constant-pool labels and branch polarity,
+// NONMATCHING (98.75%): case-0 -300/0 loads f0/f1 swapped, the int->float multiply pools/schedules differently, and the two `field_34[0] & 2` tests emit one branch where the original emits `bne body; beq skip`.
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
 #ifdef MUST_MATCH
     // MWCC folds two bases derived directly from `work` into one register; deriving both from
@@ -106,10 +106,14 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         break;
     case 0:
         memset(disp, 0, 0x2C);
-        disp->iconX = float_neg300_804218c0;
-        disp->iconY = float_0_80421890;
-        disp->counter = 0x14;
-        disp->value = float_0_80421890;
+        {
+            f32 neg = MATCH_F32(float_neg300_804218c0);
+            f32 zero = MATCH_F32(float_0_80421890);
+            disp->iconX = neg;
+            disp->iconY = zero;
+            disp->counter = 0x14;
+            disp->value = zero;
+        }
         disp->field_0xC = dat_80421870;
         dec->frame = 0;
         dec->field_0x08 = 0;
@@ -140,11 +144,14 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             work->actionCommands.outputParams[0] = 1;
             break;
         }
-        if (*(s32*)&work->actionCommands.field_34[0x0C] == 1) {
+        switch (*(s32*)&work->actionCommands.field_34[0x0C]) {
+        case 1:
             dec->field_0x04 = MATCH_F32(float_0_80421890);
             *(s32*)&work->actionCommands.field_34[0x14] &= ~1;
-        } else {
+            break;
+        default:
             dec->field_0x04 = MATCH_F32(float_50_804218c8);
+            break;
         }
         break;
     case 0x64:
@@ -201,18 +208,21 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 dec->field_0x04 = MATCH_F32(float_0_80421890);
                 work->actionCommands.mAcState = 0x3EB;
                 work->actionCommands.outputParams[0] = 2;
+                break;
             }
-            break;
-        }
-        if (dec->frame > dec->field_0x0C) {
+        } else if (dec->frame > dec->field_0x0C) {
             work->actionCommands.result = 0;
             work->actionCommands.mAcState = 0x3EB;
+            break;
+        }
+        if (work->actionCommands.mAcState == 0x3E8) {
             break;
         }
         if (dec->field_0x1C <= 0) {
             dec->field_0x08++;
         }
-        if (*(s32*)&work->actionCommands.field_34[0x0C] == 1) {
+        switch (*(s32*)&work->actionCommands.field_34[0x0C]) {
+        case 1: {
             f32 angle = reviseAngle(
                 (f32)(dec->field_0x08 * 0x168 / *(s32*)&work->actionCommands.field_34[0x14]));
             if (angle <= float_90_804218cc) {
@@ -235,8 +245,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     dec->field_0x10 = 0;
                     goto tail;
                 }
-            }
-            if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+            } else if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
                 if ((s32)dec->field_0x04 <= 0) {
                     dec->field_0x20++;
                     dec->field_0x04 = MATCH_F32(float_0_80421890);
@@ -254,7 +263,9 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             } else {
                 dec->field_0x10 = 0;
             }
-        } else {
+            break;
+        }
+        default: {
             if (dec->field_0x1C > 0) {
                 dec->field_0x1C--;
                 if (dec->field_0x1C > 0) {
@@ -267,9 +278,10 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                                   (f32)dec->field_0x08 +
                               MATCH_F32(float_50_804218c8);
             if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
+                s32 v = (s32)dec->field_0x04;
                 if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
-                    if ((s32)dec->field_0x04 / 100 > dec->field_0x20) {
-                        dec->field_0x20 = (s32)dec->field_0x04 / 100;
+                    if (v / 100 > dec->field_0x20) {
+                        dec->field_0x20 = v / 100;
                         dec->field_0x04 = MATCH_F32(float_0_80421890);
                         dec->field_0x10 = 0;
                         if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
@@ -280,13 +292,15 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                         goto tail;
                     }
                 }
-                dec->field_0x04 = (f32)((s32)dec->field_0x04 % 100);
+                dec->field_0x04 = (f32)(v % 100);
             }
             if (__fabsf(dec->field_0x04 - MATCH_F32(float_50_804218c8)) <= double_12_802ff938) {
                 dec->field_0x10 = 1;
             } else {
                 dec->field_0x10 = 0;
             }
+            break;
+        }
         }
     tail:
         if (autoFlag != 0 && dec->field_0x10 != 0) {
@@ -323,7 +337,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         work->actionCommands.field_0x30 |= 1;
         dec->field_0x28 = 0x3C;
         work->actionCommands.mAcState = 0x3ED;
-        if (dec->field_0x24 != -1) {
+        if ((u32)dec->field_0x24 != 0xFFFFFFFF) {
             psndSFXOff(dec->field_0x24);
         }
         // fallthrough
@@ -335,8 +349,8 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         break;
     case 0x3EE:
         work->actionCommands.maincb = NULL;
-        work->actionCommands.resultcb = NULL;
         work->actionCommands.dispcb = NULL;
+        work->actionCommands.resultcb = NULL;
         work->actionCommands.deletecb = NULL;
         return 0;
     default:

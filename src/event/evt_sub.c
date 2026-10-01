@@ -298,7 +298,10 @@ USER_FUNC(evt_sub_spline_init) {
 }
 
 
-// NONMATCHING (94.29%): 4 missing, 4 extra, plus register differences.
+// The original called intplGetValue through a prototype that listed the two float bounds
+// before the step/duration words, so MWCC evaluates (and schedules) the float constants
+// before the int words. The ABI is identical (ints->r3-r5, floats->f1-f2); only the source
+// argument order differs. Same shape as battleAcMain_PowerGauge.
 USER_FUNC(evt_sub_spline_get_value) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
@@ -306,6 +309,15 @@ USER_FUNC(evt_sub_spline_get_value) {
 	f32 f31;
 	f32 out[3];
 
+#ifdef MUST_MATCH
+	if (work->timeBased == 0) {
+		f1 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(work->mode, 0.0f, 1.0f, work->step, work->steps);
+	} else {
+		u64 diff = (u64)event->lifetime - (u64)work->time;
+		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
+		f1 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(work->mode, 0.0f, 1.0f, (s32)f31, work->field_1C);
+	}
+#else
 	if (work->timeBased == 0) {
 		f1 = intplGetValue(work->mode, work->step, work->steps, 0.0f, 1.0f);
 	} else {
@@ -313,6 +325,7 @@ USER_FUNC(evt_sub_spline_get_value) {
 		f31 = (f32)(diff / (OS_TIMER_CLOCK / 1000));
 		f1 = intplGetValue(work->mode, (s32)f31, work->field_1C, 0.0f, 1.0f);
 	}
+#endif
 	spline_getvalue(out, work->type, work->field_8, work->field_4, work->field_C, f1);
 	evtSetValue(event, args[0], (s32)(1024.0f * out[0]) + 0xF24A7A80);
 	evtSetValue(event, args[1], (s32)(1024.0f * out[1]) + 0xF24A7A80);
@@ -697,11 +710,88 @@ void coingetDisp(WinMgrEntry* entry) {
 
 extern WinMgrDesc coinget_window_desc;
 
-// NONMATCHING (98.20%): polynomial-coefficient registers differ (target uses f4/f3/f2 for
-// 0.00761/0.16605/1.0 and f1 for the 1.5708 pivot; ours uses f5/f4/f2 and f0). Base instruction
-// sequence matches. `#pragma opt_propagation off` is required: with propagation on the compiler
-// rematerialises the coefficients into every branch and the diff is ~24 instructions larger.
+static inline f32 evt_sub_sin_approx(f32 angle) {
+	f32 v = 0.00761f;
+	f32 b = 0.16605f;
+	f32 one = 1.0f;
+	f32 t, u;
+
+	if (angle <= 3.1415927f) {
+		if (angle <= 1.5707964f) {
+			t = angle * angle;
+			v = v * t - b;
+			v = v * t + one;
+			v = v * angle;
+		} else {
+			t = angle - 1.5707964f;
+			u = 1.5707964f - t;
+			t = u * u;
+			v = v * t - b;
+			v = v * t + one;
+			v = v * u;
+		}
+	} else if (angle < 4.712389f) {
+		t = angle - 3.1415927f;
+		u = t * t;
+		v = v * u - b;
+		v = v * u + one;
+		v = v * t;
+		v = -v;
+	} else {
+		t = angle - 4.712389f;
+		u = 1.5707964f - t;
+		t = u * u;
+		v = v * t - b;
+		v = v * t + one;
+		v = v * u;
+		v = -v;
+	}
+	return v;
+}
+
+static inline f32 evt_sub_cos_approx(f32 angle) {
+	f32 v = 0.03705f;
+	f32 b = 0.4967f;
+	f32 one = 1.0f;
+	f32 t, u;
+
+	if (angle <= 3.1415927f) {
+		if (angle <= 1.5707964f) {
+			t = angle * angle;
+			v = v * t - b;
+			v = v * t + one;
+		} else {
+			t = angle - 1.5707964f;
+			u = 1.5707964f - t;
+			t = u * u;
+			v = v * t - b;
+			v = v * t + one;
+			v = -v;
+		}
+	} else if (angle < 4.712389f) {
+		t = angle - 3.1415927f;
+		t = t * t;
+		v = v * t - b;
+		v = v * t + one;
+		v = -v;
+	} else {
+		t = angle - 4.712389f;
+		u = 1.5707964f - t;
+		t = u * u;
+		v = v * t - b;
+		v = v * t + one;
+	}
+	return v;
+}
+
 #pragma opt_propagation off
+#pragma opt_lifetimes off
+// The two static inline helpers above reproduce the target's polynomial instruction sequence.
+// opt_propagation off stops MWCC rematerialising the coefficients into every branch; opt_lifetimes
+// off stops the default lifetime pass from shifting the seed/coefficient FPRs. Every FPR matches
+// except the scratch pair: the target has the angle^2 scratch in f0 and the 1.5708 pivot/wrapped
+// angle in f1; ours swaps them in both helpers.
+// NONMATCHING (99.18%): scratch pair f0/f1 swapped (target f0 scratch / f1 pivot, ours f0 pivot / f1 scratch).
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;
 	s32 coin = evtGetValue(event, args[0]);
@@ -723,85 +813,8 @@ USER_FUNC(evt_sub_get_coin) {
 	f2 = 6.2831855f * reviseAngle(f1);
 	f6 = f2 / 360.0f;
 
-	f4 = 0.00761f;
-	f3 = 0.16605f;
-	f2 = 1.0f;
-	f1 = 3.1415927f;
-	if (f6 <= f1) {
-		f1 = 1.5707964f;
-		if (f6 <= f1) {
-			f0 = f6 * f6;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f6;
-		} else {
-			f0 = f6 - f1;
-			f1 = f1 - f0;
-			f0 = f1 * f1;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f1;
-		}
-	} else {
-		f0 = 4.712389f;
-		if (f6 < f0) {
-			f1 = f6 - f1;
-			f0 = f1 * f1;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f1;
-			f4 = -f4;
-		} else {
-			f0 = f6 - f0;
-			f1 = 1.5707964f;
-			f1 = f1 - f0;
-			f0 = f1 * f1;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f1;
-			f4 = -f4;
-		}
-	}
-
-	f1 = 3.1415927f;
-	f0 = 10.0f;
-	f5 = 0.03705f;
-	f4 = f0 * f4;
-	f3 = 0.4967f;
-	f2 = 1.0f;
-	if (f6 <= f1) {
-		f1 = 1.5707964f;
-		if (f6 <= f1) {
-			f0 = f6 * f6;
-			f5 = f5 * f0 - f3;
-			f5 = f5 * f0 + f2;
-		} else {
-			f0 = f6 - f1;
-			f0 = f1 - f0;
-			f0 = f0 * f0;
-			f5 = f5 * f0 - f3;
-			f5 = f5 * f0 + f2;
-			f5 = -f5;
-		}
-	} else {
-		f0 = 4.712389f;
-		if (f6 < f0) {
-			f0 = f6 - f1;
-			f0 = f0 * f0;
-			f5 = f5 * f0 - f3;
-			f5 = f5 * f0 + f2;
-			f5 = -f5;
-		} else {
-			f0 = f6 - f0;
-			f1 = 1.5707964f;
-			f0 = f1 - f0;
-			f0 = f0 * f0;
-			f5 = f5 * f0 - f3;
-			f5 = f5 * f0 + f2;
-		}
-	}
-	f0 = 10.0f;
-	f5 = f0 * f5;
+	f4 = evt_sub_sin_approx(f6) * 10.0f;
+	f5 = evt_sub_cos_approx(f6) * 10.0f;
 
 	pos1.x += f4;
 	pos1.z -= f5;
@@ -879,6 +892,7 @@ USER_FUNC(evt_sub_get_coin) {
 		return 2;
 	}
 }
+#pragma opt_lifetimes reset
 
 
 USER_FUNC(stone_ry) {

@@ -310,9 +310,10 @@ void npcDisp_xlu(CameraId cameraId, void* param) {
     animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
 }
 
-// NONMATCHING (98.81%): npcDisp_xlu plus a dispGetCurWork()->renderMode switch; case 0 does the
-// color/billboard setup and part 1, cases 1/2 draw parts 2/3. Remaining diffs are MWCC register
-// allocation and literal-pool symbol names.
+#pragma opt_lifetimes off // keeps `anim` in the target's r29
+// NONMATCHING (98.87%): remaining diffs are MWCC register allocation. The pragma above puts
+// `anim` in r29 (target r29), but MWCC still spills the animPoseGetCurrentAnim result through r0
+// (one extra `mr r29,r0`) and assigns the loop vars as i=r28/ptr=r30 instead of i=r30/ptr=r28.
 void npcDisp(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -386,10 +387,70 @@ void npcDisp(CameraId camId, void* param) {
             break;
     }
 }
+#pragma opt_lifetimes reset
 
-// NONMATCHING (98.76%): npcDisp_xlu with a sysWaitDrawSync/GXClearBoundingBox prologue and a
-// GXReadBoundingBox + offscreenAddBoundingBox(entry->field_110, ...) epilogue. Remaining diffs
-// are register allocation and literal-pool symbol names.
+#ifdef MUST_MATCH
+// MUST_MATCH: the original does the colour + billboard work through an inlined helper. Inlining the
+// whole block makes MWCC put the GXColor local at r1+0x10 and its by-value copy at r1+0x14 (the
+// out-of-line shape swaps them), and allocates anim/animPose/i to retail's callee-saved registers
+// (r29/r30/r30) instead of emitting the extra `mr r0,r3` save.
+static inline void npcOffscreenSetup(NpcEntry* entry) {
+    GXColor color;
+    AnimTableEntry* anim;
+    AnimationPose* animPose;
+    CameraEntry* camera;
+    f32 dx, dz;
+    f32 angle;
+    u32 i;
+
+    color = entry->color;
+    if (entry->jumpFlags & 0x400000) {
+        color.r /= 2;
+        color.g /= 2;
+        color.b /= 2;
+        animPoseSetMaterialEvtColor(entry->poseId, color);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    }
+
+    if (entry->flags & 0x800000) {
+        anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+        animPose = animPoseGetAnimPosePtr(entry->poseId);
+        anim = animPoseGetCurrentAnim(entry->poseId);
+
+        camera = camGetPtr(CAMERA_3D);
+        dx = camera->cameraAt.x - camera->cameraPos.x;
+        dz = camera->cameraAt.z - camera->cameraPos.z;
+        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        if (angle < 0.0f) {
+            angle += 360.0f;
+        }
+        angle = reviseAngle((angle - animPose->rotationY));
+
+        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][0], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+            }
+        } else {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][1], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+            }
+        }
+    }
+}
+#endif
+
+// 1:1: npcDisp_xlu with a sysWaitDrawSync/GXClearBoundingBox prologue and a
+// GXReadBoundingBox + offscreenAddBoundingBox(entry->field_110, ...) epilogue.
 void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -402,6 +463,9 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     rotY = reviseAngle(-entry->direction);
     mtx_setup(entry, mtx, -1);
 
+#ifdef MUST_MATCH
+    npcOffscreenSetup(entry);
+#else
     color = entry->color;
     if (entry->jumpFlags & 0x400000) {
         color.r /= 2;
@@ -410,7 +474,6 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
         animPoseSetMaterialEvtColor(entry->poseId, color);
         animPoseSetMaterialFlagOn(entry->poseId, 0x40);
     }
-
     if (entry->flags & 0x800000) {
         AnimTableEntry* anim;
         AnimationPose* animPose;
@@ -452,6 +515,7 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
             }
         }
     }
+#endif
     animPoseMain(entry->poseId);
     animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
     animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
@@ -461,8 +525,10 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     offscreenAddBoundingBox(entry->field_110, left, top, right, bottom);
 }
 
-// NONMATCHING (98.85%): npcDisp with the offscreen bounding-box prologue/epilogue; remaining
-// diffs are register allocation and literal-pool symbol names.
+// NONMATCHING (98.85%): npcDisp with the offscreen bounding-box prologue/epilogue. Remaining diffs:
+// the by-value GXColor local lands at 0x14 and its call copy at 0x10 (target: 0x10/0x14); anim sits in
+// r28 and the pose-search pointer/counter in r30/r29 (target: anim r29, i r30, pointer r28, and a direct
+// mr r29,r3 instead of the extra mr r0,r3). The float-pool symbols differ but do not affect the score.
 void npcDisp_offscreen(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -1032,8 +1098,11 @@ void fbatTalkMode(void) {
     }
 }
 
-// NONMATCHING (98.86%): every instruction matches; only callee-saved register numbers differ. The original
-// keeps pouch=r31, fbatData=r30, entry=r29, mario=r27; MWCC here picks fbatData=r28, entry=r29, pouch=r30, mario=r31.
+// Scoping `info` and each list loop to its own case (ordinary per-block locals) recovered the case-2/3/4
+// temporaries (98.86->99.23). The four function-wide pointers cannot be recoloured by declaration order,
+// initializer form, expression form or opt_lifetimes/opt_common_subs/opt_propagation/optimize_for_size.
+// NONMATCHING (99.23%): every instruction matches; only callee-saved register numbers differ. The original
+// keeps fbatData=r30, entry=r29, pouch=r31, mario=r27; MWCC here picks fbatData=r28, entry=r29, pouch=r30, mario=r31.
 void fbatBattleMode(void) {
     PouchData* pouch;
     NpcEntry* entry;
@@ -1044,7 +1113,6 @@ void fbatBattleMode(void) {
     NpcEntry* npc;
     NpcWork* wp;
     EventEntry* evt;
-    FieldBattleInfo* info;
     MarioWork* mario;
 
     fbatData = gp->fbatData;
@@ -1066,10 +1134,11 @@ void fbatBattleMode(void) {
             } else {
                 s32 flagA;
                 s32 flagB;
+                FieldBattleInfo* info0;
 
                 *(s32*)fbatData->target->field_140 &= 0xF00;
                 evtStopID(fbatData->target->regularEvtId);
-                info = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                info0 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
                 if (!(entry->battleInfo.field_4 & 0x10000000)) {
                     if (pouchEquipCheckBadge(ITEM_BUMP_ATTACK) &&
                         entry->battleInfo.groupSetup->enemyData->mUnitKindParams->mLevel < pouch->level) {
@@ -1105,9 +1174,9 @@ void fbatBattleMode(void) {
                     fbatData->field_2[0] = 1;
                 } else {
                     if (flagB) {
-                        BattleInformationSetResult(info, 2);
+                        BattleInformationSetResult(info0, 2);
                     } else {
-                        BattleInformationSetResult(info, 5);
+                        BattleInformationSetResult(info0, 5);
                     }
                     fbatData->field_2[0] = 4;
                 }
@@ -1120,9 +1189,14 @@ void fbatBattleMode(void) {
             break;
         case 2:
             if (!gp->inBattle) {
+                FieldBattleInfo* info2;
+                NpcWork* wp2;
+                NpcEntry* npc2;
+                s32 total2;
+                s32 i2;
                 fbatData->field_54C[0] = 0;
-                info = (FieldBattleInfo*)((u8*)fbatData + 0x20);
-                result = BattleInformationGetResult(info);
+                info2 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                result = BattleInformationGetResult(info2);
                 if (pouch->mMerleeNextCurseType == 4 && result == 1) {
                     fbatData->field_2[0] = 3;
                     fbatData->field_54C[0] = 1;
@@ -1130,13 +1204,13 @@ void fbatBattleMode(void) {
                     *(s32*)((u8*)fbatData + 0x48) = evt->eventId;
                     BattleMajinaiDone();
                     marioKeyOff();
-                    wp = gp->inBattle ? &work.battle : &work.field;
-                    total = wp->total;
-                    for (i = 0, npc = wp->entries; i < total; i++, npc++) {
-                        if (npc != NULL && (npc->flags & 2) && (npc->flags & 0x10000000)) {
-                            npc->jumpFlags |= 0x10000;
-                            evtStopID(npc->regularEvtId);
-                            animPoseSetLocalTimeRate(npc->poseId, 0.0f);
+                    wp2 = gp->inBattle ? &work.battle : &work.field;
+                    total2 = wp2->total;
+                    for (i2 = 0, npc2 = wp2->entries; i2 < total2; i2++, npc2++) {
+                        if (npc2 != NULL && (npc2->flags & 2) && (npc2->flags & 0x10000000)) {
+                            npc2->jumpFlags |= 0x10000;
+                            evtStopID(npc2->regularEvtId);
+                            animPoseSetLocalTimeRate(npc2->poseId, 0.0f);
                         }
                     }
                 } else {
@@ -1147,17 +1221,21 @@ void fbatBattleMode(void) {
             break;
         case 3:
             if (!evtCheckID(*(s32*)((u8*)fbatData + 0x48))) {
+                NpcWork* wp3;
+                NpcEntry* npc3;
+                s32 total3;
+                s32 i3;
                 marioKeyOn();
                 marioFBattlePost();
                 *(s32*)((u8*)fbatData + 0x48) = 0;
                 fbatData->field_2[0] = 4;
-                wp = gp->inBattle ? &work.battle : &work.field;
-                total = wp->total;
-                for (i = 0, npc = wp->entries; i < total; i++, npc++) {
-                    if (npc != NULL && (npc->flags & 2) && (npc->flags & 0x10000000) && (npc->jumpFlags & 0x10000)) {
-                        npc->jumpFlags &= ~0x10000;
-                        evtStartID(npc->regularEvtId);
-                        animPoseSetLocalTimeRate(npc->poseId, 1.0f);
+                wp3 = gp->inBattle ? &work.battle : &work.field;
+                total3 = wp3->total;
+                for (i3 = 0, npc3 = wp3->entries; i3 < total3; i3++, npc3++) {
+                    if (npc3 != NULL && (npc3->flags & 2) && (npc3->flags & 0x10000000) && (npc3->jumpFlags & 0x10000)) {
+                        npc3->jumpFlags &= ~0x10000;
+                        evtStartID(npc3->regularEvtId);
+                        animPoseSetLocalTimeRate(npc3->poseId, 1.0f);
                     }
                 }
             }
@@ -1167,9 +1245,10 @@ void fbatBattleMode(void) {
             if (!gp->inBattle) {
                 s32 hasStolen;
                 s32 mult;
+                FieldBattleInfo* info4;
 
-                info = (FieldBattleInfo*)((u8*)fbatData + 0x20);
-                result = BattleInformationGetResult(info);
+                info4 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
+                result = BattleInformationGetResult(info4);
                 hasStolen = FALSE;
                 if (entry->battleInfo.stolenItems[0] != 0) {
                     hasStolen = TRUE;
@@ -1191,8 +1270,8 @@ void fbatBattleMode(void) {
                 fbatData->mode = 1;
                 if (result == 1 || result == 2) {
                     mult = 1;
-                    if ((s32)BattleInformationGetResult(info) == 1) {
-                        entry->btlCoinDropCount = *(u32*)&info->field_0x14[0];
+                    if ((s32)BattleInformationGetResult(info4) == 1) {
+                        entry->btlCoinDropCount = *(u32*)&info4->field_0x14[0];
                     } else if (result == 1) {
                         entry->btlCoinDropCount = entry->field_316;
                     } else {

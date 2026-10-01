@@ -134,21 +134,30 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	return entry;
 }
 
-// NONMATCHING (95.64%): register allocation and the Vec setup instruction schedule differ; the
-// int->float magic constant is @240 instead of double_to_int_802fe918 (known pool-naming limitation).
+static inline Vec mistMakeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// opt_common_subs off: with CSE on MWCC colours the default branch's int->float conversion
+// registers f1/f2/f0 instead of the target's f2/f1/f0 (the rest of the function matches either way).
+#pragma opt_common_subs off
+// Matches the original: the Vec copy is built through mistMakeVec so its word loads are not hoisted
+// into the prologue, `work` doubles as the loop pointer, and `type`/`i` land in r29/r30.
 void effMistMain(EffectEntry* effect) {
-	MistWork* work = effect->userdata;
+	MistWork* work;
 	Vec pos;
 	Vec sp;
-	MistWork* ptr;
-	s32 type = work->type;
 	s32 i;
+	s32 type;
 
-	sp = vec3_802fe908;
-	sp.x = work->x;
-	sp.y = work->y;
-	sp.z = work->z;
+	work = effect->userdata;
+	sp = mistMakeVec(work->x, work->y, work->z);
 	pos = sp;
+	type = work->type;
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
 		work->life = 0x20;
@@ -164,48 +173,49 @@ void effMistMain(EffectEntry* effect) {
 	if (work->life < 0x20) {
 		work->alpha = (f32)(work->life * 8);
 	}
-	for (i = 1, ptr = work + 1; i < effect->count; i++, ptr++) {
+	for (i = 1, work = work + 1; i < effect->count; i++, work++) {
 		switch (type) {
 		case 4:
-			ptr->x += ptr->velX;
-			ptr->y += ptr->velY;
-			ptr->z += ptr->velZ;
-			ptr->velX *= float_0p9_804214fc;
-			ptr->velY *= float_0p88_80421500;
-			ptr->velZ *= float_0p9_804214fc;
-			ptr->y += ptr->field_0x28;
-			ptr->field_0x28 += ptr->field_0x2C;
-			ptr->field_0x2C *= ptr->field_0x30;
-			ptr->scaleX *= float_1p02_80421504;
-			ptr->scaleY *= float_1p02_80421504;
-			ptr->scaleZ *= float_1p02_80421504;
-			ptr->alpha -= float_2_80421508;
-			if (ptr->alpha < float_0_804214f4) {
-				ptr->alpha = float_0_804214f4;
+			work->x += work->velX;
+			work->y += work->velY;
+			work->z += work->velZ;
+			work->velX *= float_0p9_804214fc;
+			work->velY *= float_0p88_80421500;
+			work->velZ *= float_0p9_804214fc;
+			work->y += work->field_0x28;
+			work->field_0x28 += work->field_0x2C;
+			work->field_0x2C *= work->field_0x30;
+			work->scaleX *= float_1p02_80421504;
+			work->scaleY *= float_1p02_80421504;
+			work->scaleZ *= float_1p02_80421504;
+			work->alpha -= float_2_80421508;
+			if (work->alpha < float_0_804214f4) {
+				work->alpha = float_0_804214f4;
 			}
 			break;
 		default:
-			if (ptr->counter < 0xff) {
-				ptr->counter += irand(5);
-				ptr->alpha = (f32)ptr->counter;
-				if (ptr->alpha > float_255_804214e8) {
-					ptr->alpha = float_255_804214e8;
+			if (work->counter < 0xff) {
+				work->counter += irand(5);
+				work->alpha = (f32)work->counter;
+				if (work->alpha > float_255_804214e8) {
+					work->alpha = float_255_804214e8;
 				}
 			} else {
-				ptr->alpha -= (f32)irand(5);
-				if (ptr->alpha < float_0_804214f4) {
-					ptr->counter = 0;
-					ptr->alpha = float_0_804214f4;
+				work->alpha -= (f32)irand(5);
+				if (work->alpha < float_0_804214f4) {
+					work->counter = 0;
+					work->alpha = float_0_804214f4;
 				}
 			}
-			ptr->x += ptr->velX;
-			ptr->y += ptr->velY;
-			ptr->z += ptr->velZ;
+			work->x += work->velX;
+			work->y += work->velY;
+			work->z += work->velZ;
 			break;
 		}
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMistDisp, effect);
 }
+#pragma opt_common_subs reset
 
 #ifdef MUST_MATCH
 // Build the GXColor in a helper so the by-value argument lands in stack 0xc, as retail does.

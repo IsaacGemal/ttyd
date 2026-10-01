@@ -213,11 +213,10 @@ static inline void bombSetColor2(u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (99.92%): color1's seed load and alpha load use r0/r5 where the original uses r5/r0
-// (4 instructions). Everything else matches, including the stack slots and camera/timer registers.
-#pragma opt_propagation off // default propagation puts camera/timer in r31/r30, the reverse of the target
+// The local declaration order is the shape MWCC needs to colour the callee-saved GPRs like the
+// original (data r29, camera r30, timer r31). The natural order (timer first) makes mwcc put timer in
+// r30 and camera in r31, ten instructions apart; with this order no #pragma is required.
 static void effBombDisp(CameraId camId, void* param) {
-	s32 timer;
 	effBombN64Data* data;
 	CameraEntry* camera;
 	Mtx mtx;
@@ -227,6 +226,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXTexObj texObj;
 	GXColor color2;
 	s32 alpha;
+	s32 timer;
 	s32 blue;
 	s32 tmp;
 
@@ -323,4 +323,3 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
-#pragma opt_propagation reset

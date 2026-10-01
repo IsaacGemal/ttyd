@@ -295,12 +295,24 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
     }
 }
 
-// NONMATCHING (99.26%): the halfword `glyph->width` load is fixed (was `lha`, now `lhz`). The remaining
-// difference is register allocation only: the cached `wp` is r7 here (r6 in the original) and the loop-top
-// halfword load is r6 (r7 in the original); every instruction and every other operand is identical.
-// Declaration order/type, address forms, find-helper shapes and pragmas were all tried; see REPORT.md.
-// This is an MWCC colouring tie-break: c16 always takes r6, so wp takes r7 (the two interfere only in the
-// SJIS branch, and both need r6/r7; the only way to move wp earlier in the IR changes the emitted code).
+// Same lookup as romFontFindChar above, but with the local initialised by its own `wp->unk0` load.
+// MWCC CSEs the two loads, yet the form swaps its colouring of the cached `wp` and the loop's `c16`
+// to the original's (wp r6, c16 r7); the table load and every other instruction are unchanged.
+static inline RomFontChar* romFontFindCharW(u16 code) {
+    RomFontChar* table = wp->unk0;
+#ifdef MUST_MATCH
+    RomFontChar* cur = wp->unk0; // deliberate second load; steers MWCC's register colouring
+#else
+    RomFontChar* cur = table;
+#endif
+    s32 n;
+    for (n = 0; n < wp->uniqueChars; n++, cur++) {
+        if (cur->code == code)
+            return cur;
+    }
+    return table;
+}
+
 s32 romFontGetWidth(const char* message) {
     s32 curX = 0;
     s32 i = 0;
@@ -312,10 +324,10 @@ s32 romFontGetWidth(const char* message) {
         u16 c16 = *(u16*)&message[i];
 
         if (c >= 0x20 && c < 0x80) {
-            glyph = romFontFindChar(c & 0xFFFF);
+            glyph = romFontFindCharW(c & 0xFFFF);
             i += 1;
         } else if ((c >= 0x80 && c < 0xA0) || c >= 0xE0) {
-            glyph = romFontFindChar(c16);
+            glyph = romFontFindCharW(c16);
             i += 2;
         } else if (c == 0x00) {
             if (maxX < curX) {

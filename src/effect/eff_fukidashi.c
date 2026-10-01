@@ -326,7 +326,18 @@ void effFukidashiMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (94.33%): 26 instructions differ, 33 missing, 29 extra, plus register differences.
+// The remaining differences are stack layout, .data addressing and a little scheduling. The original
+// frame is 0x80 larger: it gives each of the 15 GXColor call sites its own 8-byte [color, arg] slot and
+// keeps 10 distinct Mtx slots, while this build reuses one GXColor slot and 8 Mtx slots. The original
+// also reaches moja_model_vertex_tbl / moja_model_normal_tbl / moja_model_dl_0_tbl / chuchu_dt through
+// one base register (r29 = lbl_8036BEA0); those arrays are extern here, so the compiler emits lis/addi
+// pairs instead. Case 2's Vec build and a few GXColor stores also schedule differently. Matched via:
+// s32 alpha (the original lwz's 0x48 and clrlwi's before FontDrawStart_alpha); camGetPtr(camId)->viewYaw
+// inline (keeps the outer cam for cam->view); gp->retraceCount read directly twice; the
+// FontGetMessageWidth result held in a float before the case-3 matrices; and a u32 counter for the
+// display-list loop (cmplwi, not cmpwi).
+// NONMATCHING (96.41%): stack frame 0x80 smaller, the original's .data base register can't be formed
+// from the extern moja_model_*/chuchu_dt, and case-2 Vec plus a few GXColor stores schedule differently.
 void effFukidashiDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFukidashiData* data = effect->userdata;
@@ -337,11 +348,13 @@ void effFukidashiDisp(CameraId camId, void* param) {
 	Mtx m0, m1, m2, m3;
 	Mtx m4, m5, m6, m7, m8;
 	Vec vec;
-	u8 alpha;
+	s32 alpha;
 	s32 alphaA, alphaB;
 	s32 count;
 	s32 i, j;
+	u32 n;
 	s32 lang;
+	f32 width;
 	char buf[0x20];
 
 	alpha = data->field_0x48;
@@ -361,8 +374,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 
 	for (i = 0; i < count; i++) {
 		PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
-		cam = camGetPtr(camId);
-		PSMTXRotRad(m1, 'y', MTXDegToRad(-cam->viewYaw));
+		PSMTXRotRad(m1, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
 		PSMTXConcat(m0, m1, m2);
 		PSMTXScale(m3, 0.8f, 0.8f, 0.8f);
 		PSMTXConcat(m2, m3, m2);
@@ -542,13 +554,11 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				color = *(GXColor*)&dat_8041c5c0;
 				color.a = alphaB;
 				GXSetChanAmbColor(GX_COLOR0A0, color);
-				lang = gp->retraceCount;
 				vec = *(Vec*)&vec3_802f3090;
-				vec.x = data->position.x + 10.0f * cos((f32)lang / 10.0f);
+				vec.x = data->position.x + 10.0f * (f32)cos((f32)gp->retraceCount / 10.0f);
 				vec.y = data->position.y;
-				vec.z = data->position.z - 10.0f * sin((f32)lang / 10.0f);
-				cam = camGetPtr(camId);
-				PSMTXMultVec(cam->view, &vec, &vec);
+				vec.z = data->position.z - 10.0f * (f32)sin((f32)gp->retraceCount / 10.0f);
+				PSMTXMultVec(camGetPtr(camId)->view, &vec, &vec);
 				GXInitLightPos(&light, vec.x, vec.y, vec.z);
 				color = *(GXColor*)&dat_8041c5c4;
 				color.a = alphaB;
@@ -577,17 +587,18 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 				GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 				GXSetArray(GX_VA_CLR0, moja_model_color0_tbl, 4);
-				for (j = 0; j < 0x15; j++) {
-					GXCallDisplayList((void*)moja_model_dl_0_tbl[j], moja_model_dl_0_size_tbl[j] << 5);
+				for (n = 0; n < 0x15; n++) {
+					GXCallDisplayList((void*)moja_model_dl_0_tbl[n], moja_model_dl_0_size_tbl[n] << 5);
 				}
 				break;
 
 			case 3:
 				if (data->field_0x3C >= 0 && data->field_0x3C <= 0x63) {
 					sprintf(buf, "%d", data->field_0x3C);
+					width = 10.0f + (f32)FontGetMessageWidth(buf);
 					PSMTXRotRad(m4, 'y', MTXDegToRad(data->field_0x24));
 					PSMTXScale(m3, 0.5f, 0.5f, 0.5f);
-					PSMTXTrans(m0, -(10.0f + (f32)FontGetMessageWidth(buf)) * 0.5f, -10.0f, 0.0f);
+					PSMTXTrans(m0, -width * 0.5f, -10.0f, 0.0f);
 					PSMTXConcat(m2, m4, m8);
 					PSMTXConcat(m8, m3, m8);
 					PSMTXConcat(m8, m0, m8);

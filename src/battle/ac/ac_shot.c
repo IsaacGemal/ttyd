@@ -100,10 +100,18 @@ static inline void _acShotAppendHistory(AcShotWork* aw, BattleWork* work) {
     work->actionCommands.outputParams[3]++;
 }
 
-// NONMATCHING (99.65%): all instructions and their order match; only the aw->field_0x1C FPR
-// colouring and a one-instruction prologue `addi`/`mr` spelling differ.
+// optimize_for_size: the original keeps the 3-iteration history-init loop as a `bdnz` loop.
+#pragma optimize_for_size on
+// The `f32 r = g + one` temp keeps the sum out of the 1.0f register so MWCC emits the original
+// `fadds f1, f2, f1`; the `f32 sum` temp in the 0x3E9 branch likewise pins the first addend to f2.
 s32 battleAcMain_Shot(BattleWork* work) {
+#ifdef MUST_MATCH
+    // Match-only comma: forces MWCC to materialise str_802F9300 into r31 after `stmw` (`addi r31,r4,@l`)
+    // instead of the shorter-but-different `addi r0,r4,@l; ...; mr r31,r0`.
+    const char* sfx = (str_802F9300, str_802F9300);
+#else
     const char* sfx = str_802F9300;
+#endif
     BattleActions* ac = &work->actionCommands;
     AcShotWork* aw = (AcShotWork*)&ac->field_0x2BC[0];
     BattleUnit* unit;
@@ -128,7 +136,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 work->actionCommands.field_0x8 = 0x1E;
                 unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x04]);
                 BtlUnit_GetPos(unit, &aw->x, &aw->y, &aw->z);
-                aw->y += 0.5 * ((f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier);
+                aw->y += double_0p5_802f9318 * ((f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier);
                 work->actionCommands.outputParams[0] = 0;
                 work->actionCommands.outputParams[3] = 0;
                 for (i = 0; i < 3; i++) {
@@ -235,15 +243,18 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 }
                 {
                     f32 g = aw->field_0x1C;
-                    g = g + float_1_8041e4bc;
-                    aw->field_0x1C = g;
-                    if (aw->field_0x1C > float_100_8041e4d8) {
-                        aw->field_0x1C = float_100_8041e4d8;
+                    f32 one = 1.0f;
+                    f32 r = g + one;
+                    aw->field_0x1C = r;
+                    if (aw->field_0x1C > 100.0f) {
+                        aw->field_0x1C = 100.0f;
                     }
                 }
                 if (*(s32*)&work->actionCommands.field_34[0] & 1) {
-                    work->actionCommands.outputParams[1] =
-                        (s32)((aw->field_0x0C + aw->field_0x10) * float_0p5_8041e4fc);
+                    {
+                        f32 sum = aw->field_0x0C + aw->field_0x10;
+                        work->actionCommands.outputParams[1] = (s32)(sum * float_0p5_8041e4fc);
+                    }
                     _acShotAppendHistory(aw, work);
                     if (aw->index >= *(s32*)&work->actionCommands.field_34[0x08]) {
                         work->actionCommands.mAcState = 0x3EA;
@@ -301,6 +312,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
     dispEntry(8, float_900_8041e500, 1, _disp_target_mark_afterimage, work);
     return 1;
 }
+#pragma optimize_for_size reset
 
 s32 battleAcResult_Shot(BattleWork* work) {
     return work->actionCommands.result;
