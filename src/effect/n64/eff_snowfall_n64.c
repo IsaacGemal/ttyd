@@ -8,16 +8,20 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
 #include <stdlib.h>
+#include "evt/evt_cmd.h"
 
 // .rodata
 extern const char str_802FB674[];
 extern const f64 double_to_int_802fb680;
 
 // .data vertex array (32 vertices, 14 bytes each)
-extern effVtxArray eff_snowfall_v[];
+extern u32 eff_snowfall_v[];
 
 // .sbss2 scratch GXColor the blend path builds its TEV colour from
-extern GXColor unk_80423268;
+// the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423268;
+__declspec(section ".sdata") u32 gap_after_unk_80423268; // dtk's gap_10_8042326C_sbss2
 
 // .sdata2
 extern const f32 float_0p03125_8041fd14;
@@ -31,7 +35,6 @@ extern const f32 float_0p05_8041fd2c;
 extern const f32 float_10_8041fd30;
 extern const f32 float_neg1p2_8041fd34;
 extern const f32 float_0p01_8041fd38;
-extern const f32 float_0p5_8041fd3c;
 
 typedef struct effSnowfallData {
 	s32 field_0x00;  // 0x00
@@ -44,6 +47,42 @@ typedef struct effSnowfallData {
 	s32 count;       // 0x2C
 	s32 timer;       // 0x30
 } effSnowfallData;
+
+
+// clang-format off
+
+// The position Vec is built by this makeVec inline (the plain `Vec position = vec3_802fb668;` plus three
+// field stores schedules the loads worse).  `data++` rather than a byte-cast add is what makes mwcc colour
+// data r31 and the effect parameter r30 as the original does; together they give a byte-exact match.
+static inline Vec effSnowfallMakeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+
+// MUST_MATCH: the original builds GXSetTevColor's by-value GXColor argument in a scratch slot and word-copies
+// it up into the outgoing argument slot.  Building it in a plain local makes mwcc put the build in the higher of
+// the two slots (the known GXColor quirk); when the build and the call both live in an inline, mwcc keeps the
+// scratch below the outgoing copy, as the original does.  Natural form under #else.
+#ifdef MUST_MATCH
+static inline void effSnowfallSetBlendColor(GXColor* blend, s32 alpha) {
+	GXColor c = unk_80423268;
+	c.r = blend->r * 0xFF;
+	c.g = blend->g * 0xFF;
+	c.b = blend->b * 0xFF;
+	c.a = alpha * blend->a;
+	GXSetTevColor(1, c);
+}
+
+static inline void effSnowfallSetPlainColor(s32 alpha) {
+	GXColor c = dat_8041fd10;
+	c.a = alpha;
+	GXSetTevColor(1, c);
+}
 
 void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 	effSnowfallData* data = p;
@@ -72,7 +111,7 @@ void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 		data->position.y = cy - b + i;
 	} else if (i < -b) {
 		if (c < 100) {
-			data->velocity.y = 0.0f;
+			data->velocity.y = float_0_8041fd18;
 			data->field_0x28 = 0;
 		} else {
 			i = -i;
@@ -91,6 +130,7 @@ void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 		data->position.z = cz + a - i;
 	}
 }
+
 
 EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 	EffectEntry* effect;
@@ -123,25 +163,14 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 		particle->velocity.y = float_neg1p2_8041fd34 - (f32)(rand() % 80) * float_0p01_8041fd38;
 		particle->velocity.z = ((f32)(rand() % 20) - float_10_8041fd30) * float_0p05_8041fd2c;
 		particle->field_0x28 = 0xFF;
-		particle->velocity.x *= float_0p5_8041fd3c;
-		particle->velocity.y *= float_0p5_8041fd3c;
-		particle->velocity.z *= float_0p5_8041fd3c;
+		particle->velocity.x *= 0.5f;
+		particle->velocity.y *= 0.5f;
+		particle->velocity.z *= 0.5f;
 		particle->timer = 0;
 	}
 	return effect;
 }
 
-// The position Vec is built by this makeVec inline (the plain `Vec position = vec3_802fb668;` plus three
-// field stores schedules the loads worse).  `data++` rather than a byte-cast add is what makes mwcc colour
-// data r31 and the effect parameter r30 as the original does; together they give a byte-exact match.
-static inline Vec effSnowfallMakeVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
 
 void effSnowfallMain(EffectEntry* effect) {
 	effSnowfallData* data = effect->userdata;
@@ -185,24 +214,6 @@ void effSnowfallMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 10, effSnowfallDisp, effect);
 }
 
-// MUST_MATCH: the original builds GXSetTevColor's by-value GXColor argument in a scratch slot and word-copies
-// it up into the outgoing argument slot.  Building it in a plain local makes mwcc put the build in the higher of
-// the two slots (the known GXColor quirk); when the build and the call both live in an inline, mwcc keeps the
-// scratch below the outgoing copy, as the original does.  Natural form under #else.
-#ifdef MUST_MATCH
-static inline void effSnowfallSetBlendColor(GXColor* blend, s32 alpha) {
-	GXColor c = unk_80423268;
-	c.r = blend->r * 0xFF;
-	c.g = blend->g * 0xFF;
-	c.b = blend->b * 0xFF;
-	c.a = alpha * blend->a;
-	GXSetTevColor(1, c);
-}
-static inline void effSnowfallSetPlainColor(s32 alpha) {
-	GXColor c = dat_8041fd10;
-	c.a = alpha;
-	GXSetTevColor(1, c);
-}
 #endif
 
 // (1) The original builds the blend/flat GXColor in a scratch slot and copies it to the outgoing argument slot
@@ -276,7 +287,7 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 #endif
 	}
 	GXSetCullMode(0);
-	effSetVtxDescN64(eff_snowfall_v);
+	effSetVtxDescN64((effVtxArray*)eff_snowfall_v);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fd20 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(cam->view, rotMtx, rotMtx);
 	data++;
@@ -301,3 +312,51 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 		}
 	}
 }
+
+// TODO: type
+u32 eff_snowfall_v[112] = {
+    0xFFB20003, 0xFFDA0000, 0x0800FFFF, 0xFFFFFFBC,
+    0x0003FFDA, 0x08000800, 0xFFFFFFFF, 0xFFBC000C,
+    0xFFDA0800, 0x0000FFFF, 0xFFFFFFB2, 0x000CFFDA,
+    0x00000000, 0xFFFFFFFF, 0xFFDFFFDF, 0xFFC20000,
+    0x0800FFFF, 0xFFFFFFE9, 0xFFDFFFC2, 0x08000800,
+    0xFFFFFFFF, 0xFFE9FFE8, 0xFFC20800, 0x0000FFFF,
+    0xFFFFFFDF, 0xFFE8FFC2, 0x00000000, 0xFFFFFFFF,
+    0xFFE20027, 0xFFF20000, 0x0800FFFF, 0xFFFFFFEC,
+    0x0027FFF2, 0x08000800, 0xFFFFFFFF, 0xFFEC0030,
+    0xFFF20800, 0x0000FFFF, 0xFFFFFFE2, 0x0030FFF2,
+    0x00000000, 0xFFFFFFFF, 0xFFF3FFBE, 0xFFDA0000,
+    0x0800FFFF, 0xFFFFFFFD, 0xFFBEFFDA, 0x08000800,
+    0xFFFFFFFF, 0xFFFDFFC7, 0xFFDA0800, 0x0000FFFF,
+    0xFFFFFFF3, 0xFFC7FFDA, 0x00000000, 0xFFFFFFFF,
+    0xFFFBFFFC, 0x00000000, 0x0800FFFF, 0xFFFF0005,
+    0xFFFC0000, 0x08000800, 0xFFFFFFFF, 0x00050005,
+    0x00000800, 0x0000FFFF, 0xFFFFFFFB, 0x00050000,
+    0x00000000, 0xFFFFFFFF, 0x004CFFF3, 0xFFD20000,
+    0x0800FFFF, 0xFFFF0056, 0xFFF3FFD2, 0x08000800,
+    0xFFFFFFFF, 0x0056FFFC, 0xFFD20800, 0x0000FFFF,
+    0xFFFF004C, 0xFFFCFFD2, 0x00000000, 0xFFFFFFFF,
+    0x002D0025, 0xFFF30000, 0x0800FFFF, 0xFFFF0037,
+    0x0025FFF3, 0x08000800, 0xFFFFFFFF, 0x0037002E,
+    0xFFF30800, 0x0000FFFF, 0xFFFF002D, 0x002EFFF3,
+    0x00000000, 0xFFFFFFFF, 0x001BFFCB, 0xFFC70000,
+    0x0800FFFF, 0xFFFF0025, 0xFFCBFFC7, 0x08000800,
+    0xFFFFFFFF, 0x0025FFD4, 0xFFC70800, 0x0000FFFF,
+    0xFFFF001B, 0xFFD4FFC7, 0x00000000, 0xFFFFFFFF,
+};
+// clang-format on
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041fd10 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const f32 float_0p03125_8041fd14 = 0.03125f;
+const f32 float_0_8041fd18 = 0.0f;
+const f32 float_2_8041fd1c = 2.0f;
+const f32 float_deg2rad_8041fd20 = 0.017453292f;
+const f32 float_166_8041fd24 = 166.0f;
+const f32 float_1000_8041fd28 = 1000.0f;
+const f32 float_0p05_8041fd2c = 0.05f;
+const f32 float_10_8041fd30 = 10.0f;
+const f32 float_neg1p2_8041fd34 = -1.2f;
+const f32 float_0p01_8041fd38 = 0.01f;
+
+const char str_802FB674[] = "SnowfallN64";
