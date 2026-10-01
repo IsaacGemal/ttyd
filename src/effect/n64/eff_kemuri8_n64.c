@@ -2,39 +2,21 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423174;
+__declspec(section ".sdata") GXColor unk_80423170;
+
+
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
 // .sdata2 constants (defined by this unit in the original), named after their asm addresses.
 extern const GXColor dat_8041f420;
-extern const f32 float_deg2rad_8041f424;
-extern const f32 float_1_8041f428;
-extern const f32 float_0p0625_8041f42c;
-extern const f32 float_0_8041f430;
-extern const f32 float_2_8041f434;
-extern const f32 float_0p8_8041f438;
-extern const f32 float_0p4_8041f43c;
-extern const f32 float_32_8041f440;
-extern const f32 float_24_8041f444;
-extern const f32 float_0p5_8041f448;
-extern const f32 float_16_8041f44c;
-extern const f32 float_14_8041f450;
-extern const f32 float_28_8041f454;
-extern const f32 float_42_8041f458;
-extern const f32 float_neg3_8041f45c;
-extern const f32 float_0p2_8041f460;
-extern const f32 float_1p75_8041f464;
-extern const f32 float_neg0p16_8041f468;
-extern const f32 float_6p2832_8041f46c;
-extern const f32 float_360_8041f470;
 
 // .sbss2 zero GXColor scratch objects the original builds its material colors from.
-extern GXColor unk_80423170;
-extern GXColor unk_80423174;
 
 // .rodata constants of this unit.
-extern const char str_802FA988[];
-extern const f64 double_to_int_802fa980;
 
 // One 0x5C-byte element of this effect's userdata array.
 typedef struct effKemuri8Particle {
@@ -98,19 +80,19 @@ EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 	}
 	switch (type) {
 	case 0:
-		scale = float_14_8041f450;
+		scale = 14.0f;
 		count = 7;
 		break;
 	case 1:
-		scale = float_28_8041f454;
+		scale = 28.0f;
 		count = 9;
 		break;
 	default:
 		count = 11;
-		scale = float_42_8041f458;
+		scale = 42.0f;
 		break;
 	}
-	effect->type = str_802FA988;
+	effect->type = "Kemuri8N64";
 	effect->count = count;
 	data = __memAlloc(HEAP_EFFECT, count * 0x5C);
 	effect->userdata = data;
@@ -129,20 +111,20 @@ EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 
 	p = data + 1;
 	for (i = 1; i < count; i++, p++) {
-		p->field_0x10 = float_neg3_8041f45c;
-		p->field_0x14 = float_0p2_8041f460;
-		p->field_0x18 = float_0_8041f430;
-		p->field_0x1C = float_0_8041f430;
-		p->field_0x20 = float_1p75_8041f464;
-		p->field_0x24 = float_neg0p16_8041f468;
-		p->field_0x28 = float_0_8041f430;
-		p->field_0x2C = float_0_8041f430;
-		angle = float_6p2832_8041f46c * (f32)(((i - 1) * 360) / (count - 1)) / float_360_8041f470;
+		p->field_0x10 = -3.0f;
+		p->field_0x14 = 0.19999999f;
+		p->field_0x18 = 0.0f;
+		p->field_0x1C = 0.0f;
+		p->field_0x20 = 1.75f;
+		p->field_0x24 = -0.16f;
+		p->field_0x28 = 0.0f;
+		p->field_0x2C = 0.0f;
+		angle = 6.2831855f * (f32)(((i - 1) * 360) / (count - 1)) / 360.f;
 		sinAngle = (f32)sin(angle);
 		p->position.x = scale * -sinAngle;
 		cosAngle = (f32)cos(angle);
 		p->position.y = scale * -cosAngle;
-		p->position.z = float_0_8041f430;
+		p->position.z = 0.0f;
 		p->field_0x30 = (f32)sin(angle);
 		p->field_0x34 = (f32)cos(angle);
 		p->field_0x50 = flag;
@@ -173,8 +155,8 @@ void effKemuri8Main(EffectEntry* effect) {
 
 	position = initializeVec(&data->position);
 	camId = data->camId;
-	b = (s32)(float_16_8041f44c * (f32)data->field_0x3C / (f32)data->field_0x4C);
-	a = (s32)(float_16_8041f44c * (f32)(data->field_0x3C + 1) / (f32)data->field_0x4C);
+	b = (s32)(16.0f * (f32)data->field_0x3C / (f32)data->field_0x4C);
+	a = (s32)(16.0f * (f32)(data->field_0x3C + 1) / (f32)data->field_0x4C);
 	data->field_0x3C++;
 	if (a > 15) {
 		a = 15;
