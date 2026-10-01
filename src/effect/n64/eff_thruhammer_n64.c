@@ -8,10 +8,14 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-extern u32 unk_80423298;
-extern u32 unk_8042329c;
-extern u32 unk_804232a0;
-extern u32 unk_804232a4;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 unk_804232a4;
+__declspec(section ".sdata") u32 unk_804232a0;
+__declspec(section ".sdata") u32 unk_8042329c;
+__declspec(section ".sdata") u32 unk_80423298;
+
+
 
 static void main_dl(EffectEntry* effect, Mtx matrix);
 

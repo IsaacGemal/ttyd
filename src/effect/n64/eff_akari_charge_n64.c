@@ -7,32 +7,33 @@
 #include "math_ext.h"
 #include "system.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423094;
+__declspec(section ".sdata") GXColor unk_80423090;
+
+
 #include <stdlib.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+u32 size2x8_tex8x16_vtx[14] = {
+    0xFFFCFFFC, 0x00000000, 0x0000FFFF, 0xFFFF0004,
+    0xFFFC0000, 0x02000000, 0x000000FF, 0x00040014,
+    0x00000200, 0x04000000, 0x00FFFFFC, 0x00140000,
+    0x00000400, 0xFF0000FF,
+};
+
 // .sdata2 float constants (named after their original addresses).
-extern const f32 float_deg2rad_8041e8a8;
-extern const f32 float_0_8041e8ac;
 #ifdef MUST_MATCH
-// Match-only: defining float_0_8041e8ac here makes the compiler fold its uses to 0.0 immediates, as the
+// Match-only: defining 0.0f here makes the compiler fold its uses to 0.0 immediates, as the
 // original's code does, and objdiff pairs the named object. The original has one 0.0 in .sdata2; this
 // adds an anonymous duplicate next to it.
-const f32 float_0_8041e8ac = 0.0f;
 #endif
-extern const f32 float_0p0625_8041e8b0;
-extern const f32 float_1_8041e8b4;
-extern const f32 float_0p0039062_8041e8b8;
-extern const f32 float_0p03125_8041e8bc;
-extern const f32 float_6p2832_8041e8c0;
-extern const f32 float_360_8041e8c4;
-extern const f32 float_1024_8041e8c8;
 
 // .rodata double used for the integer-to-float conversion.
-extern const f64 double_to_int_802fa188;
 
 // .rodata zero vector and the double constants the inlined sqrtf pools after it.
-extern const Vec vec3_802fa178;
 extern const f64 double_0p5_802fa190;
 extern const f64 double_3_802fa198;
 extern const f64 double_0_802fa1a0;
@@ -75,7 +76,7 @@ static inline f32 sqrtf(f32 x) {
 	const f64 _half = .5;
 	const f64 _three = 3.0;
 
-	if (x > float_0_8041e8ac) {
+	if (x > 0.0f) {
 		f64 guess = __frsqrte(x);
 		guess = _half * guess * (_three - guess * guess * x);
 		guess = _half * guess * (_three - guess * guess * x);
@@ -90,11 +91,8 @@ static inline f32 sqrtf(f32 x) {
 }
 
 // .sbss2 scratch GXColors the original builds its TEV colours from.
-extern GXColor unk_80423090;
-extern GXColor unk_80423094;
 
 // .data vertex array, local to this file.
-extern u32 size2x8_tex8x16_vtx[];
 
 typedef struct EffAkariChargeParticle {
 	s32 field_0x0;  //0x0
@@ -206,6 +204,7 @@ void effAkariChargeMain(EffectEntry* effect) {
 	f32 y;
 	f32 dx;
 	f32 dy;
+	f32 s;
 #ifdef MUST_MATCH
 	f32 zero;
 #endif
@@ -250,8 +249,8 @@ void effAkariChargeMain(EffectEntry* effect) {
 			p->life = rand() % 50 + 20;
 			p->counter = 0;
 			p->angle = (f32)(rand() % 360);
-			p->field_0x4 = float_0_8041e8ac;
-			p->field_0x8 = float_0_8041e8ac;
+			p->field_0x4 = 0.0f;
+			p->field_0x8 = 0.0f;
 		}
 		if (rand() % 100 <= 50) {
 			x = p->field_0x4;
@@ -262,23 +261,22 @@ void effAkariChargeMain(EffectEntry* effect) {
 			p[1] = p[0];
 			p->field_0x4 = x + dx;
 			p->field_0x8 = y + dy;
-			p->angle = angleABf(float_0_8041e8ac, float_0_8041e8ac, dx, dy);
+			p->angle = angleABf(0.0f, 0.0f, dx, dy);
 #ifdef MUST_MATCH
 			// Match-only: comparing against a local copy of the constant makes mwcc put dx/dy first in
 			// the fcmpu, as the original does; the named constant is compared the other way round.
-			zero = float_0_8041e8ac;
+			zero = 0.0f;
 			if (dx != zero || dy != zero) {
 #else
-			if (dx != float_0_8041e8ac || dy != float_0_8041e8ac) {
+			if (dx != 0.0f || dy != 0.0f) {
 #endif
 				p->scale = sqrtf(dx * dx + dy * dy);
 			} else {
-				p->scale = float_0_8041e8ac;
+				p->scale = 0.0f;
 			}
 		}
-		p->field_0x24 = (s32)(float_1024_8041e8c8 *
-		                     (f32)sin(float_6p2832_8041e8c0 * (f32)((p->counter * 180) / p->life) /
-		                              float_360_8041e8c4));
+		s = (f32)sin(6.2831855f * (f32)((p->counter * 180) / p->life) / 360.f);
+		p->field_0x24 = (s32)(1024.0f * s);
 		if (p->field_0x24 > 255) {
 			p->field_0x24 = 255;
 		}
@@ -328,7 +326,7 @@ static inline GXColor akariColorPart(s32 r, s32 g, s32 b, s32 a) {
 }
 #endif
 
-// Naming float_0_8041e8ac in the two integer-to-float PSMTXTrans calls would make mwcc hoist it into a fourth
+// Naming 0.0f in the two integer-to-float PSMTXTrans calls would make mwcc hoist it into a fourth
 // fpr, which grows the frame and shifts every local, so they use 0.0f literals.
 // The original reuses the work pointer as the particle cursor (`data++` here and in the for-increment, as
 // effAkariPoseDisp does); because work ends in a flexible particle array, `data++` steps 0x44. A separate
@@ -352,6 +350,7 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	s32 colB;
 	f32 proj[7];
 	f32 viewport[6];
+	f32 k = 0.0625f;
 
 	cam = camGetPtr(CAMERA_3D);
 	data = effect->userdata;
@@ -369,7 +368,7 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	}
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e8a8);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXScale(scaleMtx, data->field_0x38, data->field_0x38, data->field_0x38);
 	PSMTXConcat(mtx, scaleMtx, viewMtx);
@@ -418,22 +417,22 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 #endif
 		GXSetTevColor(1, color2);
 
-		PSMTXTrans(mtx, part->field_0x4, part->field_0x8, float_0_8041e8ac);
-		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e8a8 * part->angle);
+		PSMTXTrans(mtx, part->field_0x4, part->field_0x8, 0.0f);
+		PSMTXRotRad(rotMtx, 'z', 0.017453292f * part->angle);
 		PSMTXConcat(mtx, rotMtx, mtx);
-		PSMTXScale(scaleMtx, part->scale * float_0p0625_8041e8b0, part->scale * float_0p0625_8041e8b0,
-		           float_1_8041e8b4);
+		PSMTXScale(scaleMtx, part->scale * k, part->scale * k,
+		           1.0f);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		PSMTXConcat(viewMtx, mtx, mtx);
 		GXLoadPosMtxImm(mtx, 0);
 		GXSetCurrentMtx(0);
 
-		PSMTXScale(scaleMtx, float_0p0039062_8041e8b8, float_0p03125_8041e8bc, float_0_8041e8ac);
+		PSMTXScale(scaleMtx, 0.00390625f, 0.03125f, 0.0f);
 		PSMTXTrans(mtx, (f32)(part->index << 4), 0.0f, 0.0f);
 		PSMTXConcat(scaleMtx, mtx, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
 
-		PSMTXScale(scaleMtx, float_0p0039062_8041e8b8, float_0p03125_8041e8bc, float_0_8041e8ac);
+		PSMTXScale(scaleMtx, 0.00390625f, 0.03125f, 0.0f);
 		PSMTXTrans(mtx, (f32)(field14 * 3), 0.0f, 0.0f);
 		PSMTXConcat(scaleMtx, mtx, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, 0x21, 1);
@@ -447,3 +446,5 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 		GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
