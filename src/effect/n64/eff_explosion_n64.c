@@ -105,9 +105,6 @@ static inline void explosionSetColorAlt(s32 a) {
 	GXSetTevColor(GX_TEVREG1, c);
 }
 
-// NONMATCHING (98.91%): the type-0 TEV colour temp/argument stack slots and the type!=0 branch's
-// first GXSetTevColor argument are 4 bytes off (the else's first colour gets 0x28 instead of 0x10),
-// and the texture-matrix offset uses r29 instead of r28.
 void effExplosionDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effExplosionN64Data* data;
@@ -118,6 +115,7 @@ void effExplosionDisp(CameraId camId, void* param) {
 	Mtx m1;
 	Mtx viewMtx;
 	f32 colorScale;
+	s32 frameOffset;
 	s32 type;
 	s32 lastFrame;
 	s32 frame;
@@ -182,7 +180,7 @@ void effExplosionDisp(CameraId camId, void* param) {
 		GXSetTevKColorSel(GX_TEVSTAGE3, GX_TEV_KCSEL_K0);
 	}
 	else {
-		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041ed60);
+		explosionSetColorAlt0();
 
 		explosionSetColorAlt(frac);
 
@@ -209,8 +207,9 @@ void effExplosionDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
+	frameOffset = frame * 32;
 	PSMTXScale(m2, 0.00390625f, 0.03125f, 0.0f);
-	PSMTXTrans(m0, (f32)(frame * 32), 0.0f, 0.0f);
+	PSMTXTrans(m0, (f32)frameOffset, 0.0f, 0.0f);
 	PSMTXConcat(m2, m0, m2);
 	GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
 
@@ -220,7 +219,7 @@ void effExplosionDisp(CameraId camId, void* param) {
 	}
 	else {
 		PSMTXScale(m2, 0.00390625f, 0.03125f, 0.0f);
-		PSMTXTrans(m0, (f32)(frame * 32 + 32), 0.0f, 0.0f);
+		PSMTXTrans(m0, (f32)(frameOffset + 32), 0.0f, 0.0f);
 		PSMTXConcat(m2, m0, m2);
 		GXLoadTexMtxImm(m2, GX_TEXMTX1, GX_MTX2x4);
 	}

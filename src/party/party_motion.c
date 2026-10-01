@@ -1657,9 +1657,11 @@ skip_target:
     }
 }
 
-// NONMATCHING (97.30%): the third wall-probe result lands in f29 instead of f28, and each hitCheckFilter
-// scratch block schedules its 1000.0f / -1.0f constant loads one slot earlier (into f3/f5) than the original
-// (f0/f5). The remaining `lfs float_*` diffs are unresolved pool symbols and don't affect the score.
+// Retail stages the y probe argument in a named temp with constant propagation off, so
+// mwcc schedules the hd = 1000.0f load after the y add (into f0, not f3); the second wall
+// probe uses a fresh local `w` so its height lands in f28 rather than f29. Both shapes
+// are MUST_MATCH-only.
+#pragma opt_propagation off // keep constant-load scheduling so hd's 1000.0f load stays after the y add
 void party_motion_behind_mario(PartyEntry* party) {
     MarioWork* mario;
     MarioWork* mario2;
@@ -1671,6 +1673,9 @@ void party_motion_behind_mario(PartyEntry* party) {
     f32 fWall;
     Vec appear;
     f32 hnz, hny, hnx, hd, hz, hy, hx;
+#ifdef MUST_MATCH
+    f32 ytmp;
+#endif
 
     mario = party->playerPtr;
     if (party->field_8 & 0x2) {
@@ -1733,8 +1738,14 @@ void party_motion_behind_mario(PartyEntry* party) {
     x = appear.x;
     z = appear.z;
     f31 = angleABf(party->position.x, party->position.z, appear.x, appear.z);
+#ifdef MUST_MATCH
+    ytmp = f30 + touch_wall_ct;
+    hd = 1000.0f;
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+#else
     hd = 1000.0f;
     hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+#endif
     if (hit == NULL) {
         f29 = -2000.0f;
     } else {
@@ -1763,8 +1774,14 @@ void party_motion_behind_mario(PartyEntry* party) {
             z = party->position.z;
             movePos(&x, &z, f29, f31);
             angleABf(party->position.x, party->position.z, x, z);
+#ifdef MUST_MATCH
+            ytmp = f30 + touch_wall_ct;
+            bhd = 1000.0f;
+            hit = hitCheckFilter(NULL, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+#else
             bhd = 1000.0f;
             hit = hitCheckFilter(NULL, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+#endif
             if (hit == NULL) {
                 fWall = -2000.0f;
             } else {
@@ -1779,11 +1796,33 @@ void party_motion_behind_mario(PartyEntry* party) {
                 return;
             }
         } else if (f30 > party->position.y) {
+#ifdef MUST_MATCH
+            f32 chnz, chny, chnx, chd, chz, chy, chx, w;
+#else
             f32 chnz, chny, chnx, chd, chz, chy, chx;
+#endif
             x = party->position.x;
             z = party->position.z;
             movePos(&x, &z, f29, f31);
             angleABf(party->position.x, party->position.z, x, z);
+#ifdef MUST_MATCH
+            ytmp = f30 + touch_wall_ct;
+            chd = 1000.0f;
+            hit = hitCheckFilter(NULL, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+            if (hit == NULL) {
+                w = -2000.0f;
+            } else {
+                w = (f32)(s32)(100.0f * chy + 0.5f) / 100.0f;
+                hitGetAttr(hit);
+            }
+            if (fabsf(party->position.y - w) > 1.0f) {
+                *(f32*)((u8*)party + 0x94) = x;
+                *(f32*)((u8*)party + 0x98) = w;
+                *(f32*)((u8*)party + 0x9C) = z;
+                partyChgMot(party, 2);
+                return;
+            }
+#else
             chd = 1000.0f;
             hit = hitCheckFilter(NULL, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
             if (hit == NULL) {
@@ -1799,6 +1838,7 @@ void party_motion_behind_mario(PartyEntry* party) {
                 partyChgMot(party, 2);
                 return;
             }
+#endif
         }
         hit = partySearchGround(party, 10.0f, 0.0f);
         if (hit != NULL) {
@@ -1840,6 +1880,7 @@ void party_motion_behind_mario(PartyEntry* party) {
         party->field_8 = (party->field_8 & ~0x40000);
     }
 }
+#pragma opt_propagation reset
 
 // NONMATCHING (81.24%): original copies the appear position through a scratch Vec seeded from vec3_802f3e40+0x18 (a compiler struct-assignment idiom) which this elides; frame size differs.
 void party_motion_jump(PartyEntry* party) {

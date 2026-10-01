@@ -369,7 +369,7 @@ void iconDisp(CameraId camId, void* param) {
     iconGX(mtx, entry);
 }
 
-// NONMATCHING (98.56%): `data` is in r3 vs r4 in retail; all loop temps shift by one register.
+// NONMATCHING (99.87%): data/bin match now, but id is in r3 vs retail's r5 and the colour temp r4 vs r3.
 // dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
 #pragma dont_inline on
 void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
@@ -378,10 +378,11 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
     IconBinaryEntry* data;
     IconEntry entry;
     GXColor color;
-    IconEntry* entryp = &entry;
+    IconEntry* entryp;
     Mtx transmtx, scalemtx, rotmtx, mtx;
 
     camera = camGetCurPtr();
+    entryp = &entry;
     if (!icon_tpl_ok || !icon_bin_ok)
         return;
     MTXTrans(transmtx, position->x, position->y, position->z);
@@ -396,7 +397,7 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
     entryp->color = color;
     entryp->iconId = iconId;
     {
-        u16 id = (u16)iconId;
+        u16 id = entryp->iconId;
         IconBinary* bin = icon_bin;
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
@@ -435,7 +436,10 @@ void iconDispGx(Vec* position, s16 flags, s16 iconId, f32 scale) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 
-// NONMATCHING (96.00%): register allocation of data/loop temps and the branch layout differ.
+// NONMATCHING (96.00%): only register allocation differs. Retail's lookup assigns id=r6/bin=r5 and
+// data=r4 (reusing the scratch reg); ours gets id=r5/bin=r6 and data=r6, which also moves the `gp` load
+// to r4 and schedules the `entryp = &entry` addi before the prologue stores. Branch layout and the loop
+// (numIcons=r8, frames=r7, temps r5/r6) already match.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -485,24 +489,28 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (95.50%): register allocation of data/loop temps and the branch layout differ.
+// NONMATCHING (97.71%): every instruction and register matches except `data`, which lands in r6
+// (id's freed register) where retail keeps it in r4 (icon_bin_ok's freed register).
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
-    IconEntry* entryp = &entry;
+    IconEntry* entryp;
     Mtx view;
+    IconBinary* bin;
+    u16 id;
 
     camera = camGetCurPtr();
+    entryp = &entry;
     if (!icon_tpl_ok || !icon_bin_ok)
         return;
     entryp->flags = flags;
     entryp->color = color;
-    entryp->iconId = iconId;
+    bin = icon_bin;
+    id = (u16)iconId;
+    entryp->iconId = id;
     {
-        u16 id = (u16)iconId;
-        IconBinary* bin = icon_bin;
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {

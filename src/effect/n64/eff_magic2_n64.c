@@ -177,10 +177,22 @@ static inline GXColor magic2Color2(s32 alpha) {
 }
 #endif
 
+#ifdef MUST_MATCH
+// Match-only: building each colour through an inline return puts its local and its
+// by-value argument copy where the original does (a plain local lands in the other
+// slot). color1's helper takes the base colour by value, as the original's shape does.
+static inline GXColor magic2Color1(GXColor c, u8* ptr, s32 alpha) {
+	c.r = ptr[0];
+	c.b = ptr[2];
+	c.a = alpha;
+	return c;
+}
+#endif
+
 // The declaration order below is tuned so MWCC assigns the original's callee-saved registers
-// (data=r29, i=r28, idx=r27, alpha=r26, type=r25, rot=r24, vOffset=r23, rot2=r22).
-// NONMATCHING (96.24%): structure and instruction count match. effect and uOffset still swap
-// callee-saved registers (target effect=r21/uOffset=r20).
+// (data=r29, i=r28, idx=r27, alpha=r26, type=r25, rot=r24, vOffset=r23, rot2=r22,
+// effect=r21, uOffset=r20). The four uOffset/rot/vOffset/rot2 loads sit after the
+// GXSetTevColor calls, as in the original.
 void effMagic2Disp(CameraId camId, void* param) {
 	effMagic2Data* data;
 	s32 i;
@@ -229,18 +241,18 @@ void effMagic2Disp(CameraId camId, void* param) {
 		GXColor color2;
 		GXColor color1;
 
-		uOffset = data->uOffset;
-		rot = data->rot;
-		vOffset = data->vOffset;
-		rot2 = data->rot2;
 		idx += 30;
 		idx %= 24;
 		ptr = (u8*)color_rotation_data + idx;
+#ifdef MUST_MATCH
+		GXSetTevColor(1, magic2Color1(unk_804231b0, ptr, alpha));
+#else
 		color1 = unk_804231b0;
 		color1.r = ptr[0];
 		color1.b = ptr[2];
 		color1.a = alpha;
 		GXSetTevColor(1, color1);
+#endif
 #ifdef MUST_MATCH
 		color2 = magic2Color2(alpha);
 #else
@@ -248,6 +260,10 @@ void effMagic2Disp(CameraId camId, void* param) {
 		color2.a = alpha / 2;
 #endif
 		GXSetTevColor(2, color2);
+		uOffset = data->uOffset;
+		rot = data->rot;
+		vOffset = data->vOffset;
+		rot2 = data->rot2;
 		if (type == 0) {
 			PSMTXScale(mtxE, 0.015625f, 0.015625f, 1.0f);
 			PSMTXTrans(mtxD, (f32)(uOffset / 4), (f32)(rot / 4), 0.0f);

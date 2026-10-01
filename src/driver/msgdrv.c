@@ -79,9 +79,10 @@ const char* language_dir[2] = {"msg", "emsg"};
 
 // NONMATCHING (99.94%): the code itself is byte-identical. The only differences are the three
 // computed string offsets (0x208/0x210/0x218 vs 0x13c/0x144/0x14c): this file's .rodata pool is
-// 0xCC bytes short because the strings of the not-yet-decompiled functions (msgAnalize, msgDisp,
-// etc.) aren't emitted yet. Nothing inside msgInit can move them; it will reach 100% once those
-// functions contribute their literals.
+// 0xCC bytes short because the string literals of the not-yet-decompiled functions (msgAnalize's
+// "keyxon".."/paper" block, msgDisp, etc.) aren't emitted yet. The pool follows .text order, so
+// msgInit (last function) is hit. Nothing inside msgInit can move them; it will reach 100% once
+// those functions contribute their literals.
 void msgInit(void) {
 	msgw->poseId = animPoseEntry("hoshi_2", 2);
 	animPoseSetAnim(msgw->poseId, "HOS_C_1", TRUE);

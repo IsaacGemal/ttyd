@@ -1294,12 +1294,25 @@ static inline f32 sqrtf(f32 x) {
 // shifting the whole loop allocation by one register.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// NONMATCHING (98.08%): only a permutation of the five loop FPRs remains (target sinv=f20,
-// sinC1=f21, cosv=f22, cosC1=f23, one=f24, pi=f29; ours sinv=f24, sinC1=f21, cosv=f23, cosC1=f22, one=f20, pi=f29); sqrtf .rodata base 0x20 vs 0x68.
+// The five loop FPRs now match the target (sinv=f20, sinC1=f21, cosv=f22, cosC1=f23,
+// one=f24, pi=f29). Getting them there needs this declaration order (one, cosC1, cosv,
+// sinC1, sinv) and the seed assignments in the order cosC1, one, cosv, with sinC1 assigned
+// down beside sinv (that swap moves pi into f29 and fixes the preheader load order).
+// What still differs is one scratch-register swap: the angle-squared temp is f0 in the
+// original but f1 here, and the pooled 1.5708 constant is f1 in the original but f0 here,
+// through both polynomial blocks; the sqrtf inline's last `guess` result lands in f1 here
+// vs f0 in the original, and the two trailing `fmadds` (sinv*0.5 vs 0.5*sinv) follow from
+// the same choice. The sqrtf `.rodata` base differs only by symbol name.
+// NONMATCHING (99.02%): f0/f1 scratch swap in the polynomial temps (see REPORT.md).
 void envDisp_FF(void) {
     EnvironmentWork* wp = envGetWork();
     CameraEntry* cam;
-    f32 scale, f0, f1, sinv, cosv, rnd;
+    f32 scale, f0, f1, rnd;
+    f32 one;
+    f32 cosC1;
+    f32 cosv;
+    f32 sinC1;
+    f32 sinv;
     s32 i;
 
     if (wp->flags & 0x10000000) {
@@ -1331,14 +1344,10 @@ void envDisp_FF(void) {
         GXBegin(GX_LINES, GX_VTXFMT0, 2000);
         for (i = 0; i < 1000; i++) {
             f32 angle = (TWO_PI * (f32)i) / 1000.0f;
-            f32 cosC1;
-            f32 sinC1;
-            f32 one;
 
-            sinC1 = 0.16605f;
+            cosC1 = 0.4967f;
             one = 1.0f;
             cosv = 0.03705f;
-            cosC1 = 0.4967f;
             if (angle <= 3.1415927f) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;
@@ -1366,6 +1375,7 @@ void envDisp_FF(void) {
                 cosv = cosv * f0 + one;
             }
             sinv = 0.00761f;
+            sinC1 = 0.16605f;
             if (angle <= 3.1415927f) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;
@@ -1459,23 +1469,24 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
 
 // envGlare was matched with opt_lifetimes off (needed: its register colouring regresses with the default pass)
 #pragma opt_lifetimes off
-// NONMATCHING (99.39%): all instructions match; the remaining diffs are callee-saved register
-// colours in the TEV setup/inner loop (target r19-r31 vs ours) and the pooled u16->f32 double
-// (local @528 vs double_to_int_mask_802f93a8, which this unit does not define).
+// NONMATCHING (99.55%): every instruction is present; the remaining diffs are callee-saved register
+// colours (target y/2=r20/capture=r19, var_r22=r22/unkC=r20; ours y/2=r23/capture=r20,
+// var_r22=r20/unkC=r22) and the pooled @NNN symbols vs the named .sdata2/double ones.
 void envGlare(EnvironmentGlare* glare) {
     GXTevStageID var_r23;
     u16 temp_r8;
     u32 temp_r20;
     GXTevKColorSel temp_r20_2;
+    u32 var_r22_2;
     Mtx44 sp88;
     EnvironmentGlareFilter* temp_r30;
     EnvironmentWork* var_r4 = envGetWork();
     s32 temp_r30_2;
     GXTevKColorSel temp_r21_2;
+    EnvironmentGlare* var_r21;
     GXTevStageID var_r22;
     s32 temp_r29;
     s32 var_r28;
-    EnvironmentGlare* var_r21;
     u32 var_r23_2;
     u16 temp_r27;
     s32 temp_r31;
@@ -1486,7 +1497,6 @@ void envGlare(EnvironmentGlare* glare) {
     EnvironmentGlare* var_r22_3;
     Mtx sp58;
     Mtx sp28;
-    u32 var_r22_2;
     s32 var_r19_3;
     GXTexObj sp8;
     int i;

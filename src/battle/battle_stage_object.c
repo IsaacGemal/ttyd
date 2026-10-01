@@ -40,7 +40,7 @@ extern char str_802F3CF4[];
 extern char vec3_802f3ac8[];
 extern const u32 dat_8041ccf8;
 extern f64 double_to_int_802f3c30;
-extern f32 float_0_8041cd04;
+extern const f32 float_0_8041cd04;
 extern f32 float_10_8041cd34;
 extern f32 float_20_8041cd40;
 extern f32 float_30_8041cd5c;
@@ -54,7 +54,7 @@ extern char str_802F3CA0[];
 extern char str_802F3CAC[];
 extern char str_802F3CB8[];
 extern f32 float_45_8041cd2c;
-extern f32 float_neg80_8041cd3c;
+extern const f32 float_neg80_8041cd3c;
 extern f32 float_neg45_8041cd4c;
 extern f32 float_90_8041cd08;
 extern Vec vec3_802f3bc4;
@@ -182,7 +182,7 @@ void _combine_nozzle_weapon(s32 mode, void* dst_, void* src_) {
 }
 #pragma dont_inline reset
 
-extern f32 float_0_8041cd04;
+extern const f32 float_0_8041cd04;
 extern f32 float_15_8041cd18;
 extern f32 float_30_8041cd5c;
 extern f32 float_neg45_8041cd4c;
@@ -706,14 +706,14 @@ s32 _nozzle_work_attack_set(void) {
 	return 2;
 }
 
-// Register-allocation/scheduling detail: (1) first timer, mwcc keeps the `frame = userdata[2]+1` temp in r4
-// and passes it directly, while the target materializes it in r0 and reloads event->userdata[2] into r4 before
-// intpl_sub (passing event->userdata[2] restores r0/reload but then schedules the two `lfs` after call setup).
-// (2) final event-slot store, the target rotates scratch regs (byte ptr r6, loaded value r5, base+unitId*4 r4);
-// mwcc uses r5 / r4 / r6. Any form that forces a materialized base+unitId*4 pointer either folds to `stwx` or
-// shifts the whole function's callee-saved allocation.
-// NONMATCHING (97.61%): first intpl_sub timer temp register (r0+reload vs r4) and final event-slot store
-// scratch-register rotation; all instructions/control flow/constants match.
+// MATCHING. Three non-obvious requirements: (1) the two float pool symbols (float_0_8041cd04,
+// float_neg80_8041cd3c) must be declared `extern const f32`; as plain `extern f32` mwcc can't hoist the two
+// `lfs` above the userdata[2] store and the first intpl_sub timer temp lands in r4 instead of r0+reload.
+// (2) the two `switch`es read `base[unitId + 0x1C4]` / `base[unitId + 0x1C7]` through array syntax, which
+// makes mwcc recompute `base+unitId` (the extra `add r3`) instead of reusing the previous pointer.
+// (3) the final event-slot store uses `slot[unitId + 0x73] = 0` on a `u32* slot = (u32*)base` (with a separate
+// `u8* p = &base[unitId]` for the byte copy); folding `slot += unitId` into the same statement gives the target
+// register rotation (byte ptr r6, loaded value r5, base+unitId*4 r4) whereas every other form swaps r4/r5.
 USER_FUNC(_nozzle_turn) {
 	u8* base = (u8*)_battleWorkPointer + 0x180C0;
 	s32 unitId = event->unitId;
@@ -749,11 +749,8 @@ USER_FUNC(_nozzle_turn) {
 	BattleSearchObjectPtr(name);
 
 	if (event->userdata[2] < 0x1E) {
-		s32 frame;
-
-		frame = event->userdata[2] + 1;
-		event->userdata[2] = frame;
-		angle1 = intpl_sub(2, frame, 0x1E, float_0_8041cd04, float_neg80_8041cd3c);
+		event->userdata[2]++;
+		angle1 = intpl_sub(2, event->userdata[2], 0x1E, float_0_8041cd04, float_neg80_8041cd3c);
 	} else {
 		angle1 = float_neg80_8041cd3c;
 	}
@@ -763,7 +760,7 @@ USER_FUNC(_nozzle_turn) {
 		f32 newAngle;
 
 		event->field_84++;
-		switch (*(u8*)(base + unitId + 0x1C4)) {
+		switch (base[unitId + 0x1C4]) {
 			case 1:
 				oldAngle = float_45_8041cd2c;
 				break;
@@ -778,7 +775,7 @@ USER_FUNC(_nozzle_turn) {
 				oldAngle = float_0_8041cd04;
 				break;
 		}
-		switch (*(u8*)(base + unitId + 0x1C7)) {
+		switch (base[unitId + 0x1C7]) {
 			case 1:
 				newAngle = float_45_8041cd2c;
 				break;
@@ -810,10 +807,10 @@ USER_FUNC(_nozzle_turn) {
 
 	if (event->userdata[2] >= 0x1E && (s32)event->field_84 >= 0x1E) {
 		u32* slot = (u32*)base;
+		u8* p = &base[unitId];
 
-		*(u8*)(base + unitId + 0x1C4) = *(u8*)(base + unitId + 0x1C7);
-		slot += unitId;
-		slot[0x73] = 0;
+		p[0x1C4] = p[0x1C7];
+		slot[unitId + 0x73] = 0;
 		return 2;
 	}
 	return 0;
@@ -963,7 +960,11 @@ USER_FUNC(_bgset_kemuri_effect) {
 // own base instead of `0x168(r30)` (the unit's rodata is provided out of band, so MWCC cannot fold it onto the
 // vec3_802f3ac8 base; `_fall_frame` in this file has the same object-file artefact). Tried: every pragma in the
 // file (opt_propagation/common_subs/dead_assignments/global_optimizer/peephole/scheduling/optimize_for_size),
-// declaration order, local event copy, float temporaries; none moves event off r26.
+// declaration order, local event copy, float temporaries; none moves event off r26. Also tried (this session):
+// #pragma opt_lifetimes off (event->r25, changed->r27, base->r26) and global_optimizer off (event->r25), the
+// other pragma on/off pairs, defining the double in-file (MWCC still emits its own `@N@` int->float magic),
+// removing the `base`/`vec` variables, relocating the s0/s1 SFX temporaries, and s32/BOOL/u32 changed: none
+// reproduces event=r29/wp=r28/changed=r26. `--final` PASSes with the file unchanged.
 // NONMATCHING (95.85%): but for the event/wp/changed register cycle and the conversion constant base.
 USER_FUNC(_set_mobj_rotate_x) {
 	BattleStageObject* obj;

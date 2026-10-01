@@ -270,9 +270,9 @@ void nameEntOff(void) {
 	wp->field_0x4 = 3;
 }
 
-// NONMATCHING (97.07%): the integer expression reassociates -- original does `x*24; (x/5)*30; add; subi 190`
-// while ours does `x*24; subi 190; (x/5)*30; add` (r5 vs r0), and the final `if (type == 2)` branches
-// `beq then; b else` in the original but `bne else` in ours. Everything else matches.
+// The integer expression is written in the original's operand order under MUST_MATCH; the natural form
+// `x*24 + x/5*30 - 190` reassociates and emits a different register/add order. The original selects the
+// type-2 table entry with a two-case switch, which is why it branches `beq case2; b default`.
 void nameEntOn(s32 type) {
 	s32 i;
 
@@ -285,7 +285,11 @@ void nameEntOn(s32 type) {
 	wp->field_0x10 = 0;
 	wp->field_0x14 = 0;
 
-	wp->x1 = wp->x2 = (f32)(wp->field_0x10 / 5 * 30 + wp->field_0x10 * 24 - 190);
+#ifdef MUST_MATCH
+	wp->x1 = wp->x2 = (f32)(wp->field_0x10 * 24 - 190 + wp->field_0x10 / 5 * 30);
+#else
+	wp->x1 = wp->x2 = (f32)(wp->field_0x10 * 24 + wp->field_0x10 / 5 * 30 - 190);
+#endif
 	wp->y1 = wp->y2 = (f32)(112 - wp->field_0x14 * 28);
 	wp->field_0x2C = wp->field_0x34 = -106.0f;
 	wp->field_0x30 = wp->field_0x38 = 135.0f;
@@ -296,12 +300,15 @@ void nameEntOn(s32 type) {
 	}
 	wp->field_0x54 = 0.0f;
 
-	if (type == 2) {
+	switch (type) {
+	case 2:
 		hiragana_tbl[9] = "\x81\x40";
 		katakana_tbl[9] = "\x81\x40";
-	} else {
+		break;
+	default:
 		hiragana_tbl[9] = "\x82\xF1";
 		katakana_tbl[9] = "\x83\x93";
+		break;
 	}
 }
 

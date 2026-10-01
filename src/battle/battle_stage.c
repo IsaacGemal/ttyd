@@ -226,8 +226,11 @@ BattleSpotWork* BatSpotGetPtr(void) {
 
 #pragma dont_inline on
 // NONMATCHING (96.08%): only the compiler-generated int->float conversion
-// double differs: original folds `lfd f30, 0x78(r31)` (vec3 rodata and double
-// share one TU), ours emits `lis @422; lfd @422@l`; same blocker as party_yoshi.c.
+// double differs: original folds `lfd f30, 0x78(r31)` (vec3 .rodata and the
+// double share one pool), ours emits `lis @533; lfd @533@l`.  The pool only
+// anchors to the first .rodata symbol, and here weak sqrtf/sqrt local statics
+// (from tou_gamen_screen_tev's PSVECNormalize, see math.h) precede
+// vec3_802f31a8, so @533 gets its own base.  See REPORT.md.
 void batSpotInit(void) {
 	Vec* g = vec3_802f31a8;
 	int i;
@@ -418,16 +421,22 @@ typedef struct ScreenTevParam {
 	s32 field_14; // 0x14
 } ScreenTevParam;
 
-// In the texture-generation loop the original keeps i/4 (r31) and i%4 (r30) live
-// across the rand() calls and recomputes (i/4)*0x100 (r4/r25) and (i%4)*8 (r3/r26)
-// in each inner loop; the scaled terms otherwise get CSE'd into callee-saved
-// registers (r30/r31) and the whole generation loop's register assignment rotates
-// (param lands in r25 instead of r27, k/count in r26/r27 instead of r30/r31). The
-// second loop's shifts defeat that CSE (see the MUST_MATCH block). With
-// opt_propagation off the base/col add into the byte index as the original does
-// instead of folding into a buf+col pointer. The ratio in the min-clamp still lands
-// in f0 where the original uses f1; the code is otherwise identical.
-// NONMATCHING (97.78%): integer and float register allocation only.
+// The original keeps i/4 (r31) and i%4 (r30) live across the rand() calls and
+// recomputes the scaled terms in each inner loop. The second loop's `sgrow`/`sgcol`
+// are precomputed with shifts before the count loop so they land in the callee-saved
+// registers the original uses; the first loop keeps the `(i/4)*0x100`/`(i%4)*8`
+// multiplies (using shifts there rotates the whole loop's register assignment) and
+// accumulates into `col` (`col += idx; buf[col]`) which is what makes the first
+// loop's schedule/registers come out. `buf` is declared first for the same reason.
+// With opt_propagation off the base/col add into the byte index as the original
+// does instead of folding into a buf+col pointer. The min-clamp's `x = (ratio > x)
+// ? x : ratio;` reproduces the original's two-branch select. The remaining
+// differences are only integer and float register allocation: param lands in r25
+// (original r27), the second loop's scaled row in r27 (original r25), the first
+// loop's base/col in r7/r8 (original r4/r3), the first loop schedules its (j%8)
+// before (j/8)*0x20 in the target (reversed here), and the clamp ratio sits in f0
+// (original f1); instructions and structure are otherwise identical.
+// NONMATCHING (99.35%): integer and float register allocation only.
 #pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
 void tou_gamen_screen_tev(void* param) {
 	GXTexObj texObj;
@@ -441,8 +450,8 @@ void tou_gamen_screen_tev(void* param) {
 	}
 
 	if (screen_wp->field_0x24 != 0) {
-		s32 i;
 		u8* buf = (u8*)screen_wp->field_0x0;
+		s32 i;
 		s32 j;
 		s32 k;
 
@@ -452,26 +461,20 @@ void tou_gamen_screen_tev(void* param) {
 				int col = (i % 4) * 8;
 				idx += (j / 8) * 0x20;
 				idx += (j % 8);
-				buf[idx + col] = (i & 1) ? 0xFF : 0;
+				col += idx;
+				buf[col] = (i & 1) ? 0xFF : 0;
 			}
 			{
 				s32 count = 100 + rand() % 100;
+				s32 sgrow = (i / 4) << 8;
+				s32 sgcol = (i % 4) << 3;
 				for (k = 0; k < count; k++) {
 					s32 len = rand() % 4 + 2;
 					s32 start = rand() % (0x41 - len);
 					u8 val = rand() % 0x100;
 					for (j = start; j < start + len; j++) {
-#ifdef MUST_MATCH
-						// MUST_MATCH: shifts, not the multiplies below. Using different operations in the two
-						// loops stops MWCC CSE-ing the scaled terms and keeping them in the callee-saved
-						// registers the original uses for i/4 and i%4 (see the NONMATCHING note).
-						s32 idx = (i / 4) << 8;
-						s32 col = (i % 4) << 3;
-#else
-						s32 idx = (i / 4) * 0x100;
-						s32 col = (i % 4) * 8;
-#endif
-						idx += (j / 8) * 0x20;
+						s32 idx = (j / 8) * 0x20 + sgrow;
+						s32 col = sgcol;
 						idx += (j % 8);
 						buf[idx + col] = val;
 					}
@@ -530,9 +533,7 @@ void tou_gamen_screen_tev(void* param) {
 			}
 			{
 				f32 x = screen_wp->field_0x10;
-				if (x > ratio) {
-					x = ratio;
-				}
+				x = (ratio > x) ? x : ratio;
 				PSMTXTrans(mtxTrans, x, y, float_0_8041c7f0);
 			}
 		}

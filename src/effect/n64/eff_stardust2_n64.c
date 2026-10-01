@@ -103,29 +103,36 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
     return temp;
 }
 
-// The argument moves (x=f18/y=f22/z=f15), the loop angle/sin/cos (angle=f22, sin=f23, rad=f15) and
-// the dispatch all match. What differs is a register-allocation tie-break in the preheader: this build
-// puts stepA/stepB in f25/f24 and angleScale/yScale in f20/f19 (original f21/f19 and f27/f31), and
-// 2pi/10/90 land one register higher (f29/f30/f31 vs f28/f29/f30). The int->float pool constant also
-// resolves to an anonymous .rodata entry because Main/Disp pool two extra double literals there.
-// NONMATCHING (98.24%): see above.
+// The argument moves (x=f18/y=f22/z=f15), the loop angle/sin/cos (angle=f22, sin=f23, rad=f15), the
+// step/base FPRs (stepA=f21, stepB=f19, baseA=f20, baseB=f18), angleScale/yScale (f27/f31) and the
+// 2pi/10/90 temps (f28/f29/f30) all match. Making angleScale/yScale the two free preheader FPRs (rather
+// than block-allocating them) needs them hoisted from the two `float_360 / denom` divisions instead of
+// declared; the k1/k4 constant locals and `field_24 += i + i` reproduce the multiply/add operand order.
+// What still differs is a volatile-register tie-break in the preheader: this build loads 0.4 into f2 and
+// the int->float conversion double into f0 (original f0/f2), keeps (count+1) in f0 (original f1) and
+// schedules `li r5, 0` before the 1.0 load; `y = (360/denom) * (f32)i` also emits
+// `fmuls f22, f0, f27` where the original has `fmuls f22, f27, f0` (same value, swapped operands).
+// The int->float pool constant also resolves to an anonymous .rodata entry because Main/Disp pool two
+// extra double literals there.
+// NONMATCHING (98.59%): see above.
 EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 scaleA, f32 scaleB) {
     EffectEntry* effect;
     EffStardust2Data* data;
     EffStardust2Data* ptr;
-    f32 stepA;
-    f32 stepB;
     f32 s;
     f32 c;
-    f32 angleScale;
+    f32 stepA;
     f32 baseA;
-    f32 yScale;
+    f32 stepB;
     f32 baseB;
+    f32 denom;
     f32 rad;
     f32 t;
     f32 vA;
     f32 vB;
     f32 yStep;
+    f32 k1;
+    f32 k4;
     s32 i;
     s32 r;
 
@@ -144,12 +151,14 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
         data->flags = 0;
     }
 
-    stepA = float_0p1_8041fea4 * scaleA;
-    stepB = float_0p1_8041fea4 * scaleB;
-    baseA = float_0p4_8041fed4 * scaleA;
+    k1 = float_0p1_8041fea4;
+    stepA = k1 * scaleA;
+    stepB = k1 * scaleB;
+    k4 = float_0p4_8041fed4;
+    baseA = k4 * scaleA;
 
     data->x = x;
-    baseB = float_0p4_8041fed4 * scaleB;
+    baseB = k4 * scaleB;
     data->y = y;
     data->z = z;
     data->field_20 = 0;
@@ -157,12 +166,11 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
     data->field_24 = life;
     data->drawCam = 4;
 
-    angleScale = float_360_8041fec0 / ((f32)(count + 1) - float_1_8041fe9c);
-    yScale = scaleB / ((f32)(count + 1) - float_1_8041fe9c);
+    denom = (f32)(count + 1) - float_1_8041fe9c;
 
     ptr = data + 1;
     for (i = 1; i < count + 1; i++, ptr++) {
-        y = angleScale * (f32)i;
+        y = (float_360_8041fec0 / denom) * (f32)i;
         if (type > 1) {
             r = rand() % 360;
         }
@@ -179,7 +187,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
         ptr->field_24 = i + 30;
         ptr->field_20 = 0;
         ptr->scale = float_1_8041fe9c;
-        yStep = ((f32)i - float_1_8041fe9c) * yScale;
+        yStep = ((f32)i - float_1_8041fe9c) * (scaleB / denom);
 
         switch (type) {
         case 0:
@@ -204,7 +212,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
             ptr->field_14 = float_0_8041fe98;
             ptr->field_10 = float_0_8041fe98;
             ptr->field_18 = float_0_8041fe98;
-            ptr->field_24 = ptr->field_24 + i + i;
+            ptr->field_24 += i + i;
             break;
         default:
             ptr->field_10 = s * vA;

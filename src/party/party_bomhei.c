@@ -55,23 +55,36 @@ const char str_8041B2B0[] = "M_R_1";
 const char str_8041B2B8[] = "M_S_1";
 
 // .text:0x0 | 0x800BCE50 | size: 0x3FC
-// NONMATCHING (97.12%): each of the three `check hit` blocks emits its own
-// `li r0,0; b` for the strcmp else where the original branches to the shared
-// false block shared with the caseCheck else. Logic and all other instructions match.
+// NONMATCHING (99.80%): the compiler's int->float helper double pools as an @NNN@
+// at .rodata 0xd8 instead of the named double_to_int_802ccfa0 at 0x58 (whole-file
+// data layout); everything else matches.
 HitEntry* check_front(PartyEntry* party) {
+#ifdef MUST_MATCH
+    s32 angles[8];
+#else
     s32 angles[8] = {0, 45, -45, 90, -90, 135, -135, 180};
+#endif
     HitCheckQuery query;
-    HitEntry* hit;
     HitEntry* hit2;
+    HitEntry* field138;
+    HitEntry* hit;
     HitEntry* ret = NULL;
     HitEntry* ret2 = NULL;
-    HitEntry* field138;
     CameraEntry* cam;
     u32 i;
     f32 base;
     f32 f29;
     f32 limit;
 
+#ifdef MUST_MATCH
+    // Match-only: a 32-byte struct copy makes MWCC emit the stack copy straight
+    // from the named dat_802ccf60 array; the plain array initializer emits a
+    // second anonymous template at .rodata 0xd8.
+    {
+        typedef struct { s32 v[8]; } S32x8;
+        *(S32x8*)angles = *(const S32x8*)dat_802ccf60;
+    }
+#endif
     f29 = 0.8f * *(f32*)((u8*)party + 0xF0);
     base = partyToMovedir(party, party->field_10C);
     for (i = 0; i < 8; i++) {
@@ -90,6 +103,34 @@ HitEntry* check_front(PartyEntry* party) {
                 limit = 30.0f;
             }
             if (query.targetDistance <= limit) {
+#ifdef MUST_MATCH
+                // Match-only: the do-while's breaks make MWCC share one FALSE
+                // block between the strcmp else and the caseCheck else; the
+                // plain if/else duplicates the `li r0,0; b`.
+                s32 accepted;
+                do {
+                    s32 attr;
+                    CaseEntry* cs;
+                    if (hit == NULL) {
+                        accepted = FALSE;
+                        break;
+                    }
+                    attr = hitGetAttr(hit);
+                    if (attr & 0x80000000) {
+                        if (strcmp(mobjHitObjPtrToPtr(hit)->animName, str_802CCF8C) == 0) {
+                            accepted = TRUE;
+                            break;
+                        }
+                    } else {
+                        cs = caseCheckHitObj2(hit);
+                        if (cs != NULL && cs->activeConditionId == 0xF) {
+                            accepted = TRUE;
+                            break;
+                        }
+                    }
+                    accepted = FALSE;
+                } while (0);
+#else
                 s32 accepted;
                 if (hit == NULL) {
                     accepted = FALSE;
@@ -110,6 +151,7 @@ HitEntry* check_front(PartyEntry* party) {
                         }
                     }
                 }
+#endif
                 if (accepted) {
                     return hit;
                 }
@@ -122,6 +164,31 @@ HitEntry* check_front(PartyEntry* party) {
     query.targetDistance = 2.0f + f29;
     hit2 = hitCheckVecFilter(&query, NULL);
     if (hit2 != NULL) {
+#ifdef MUST_MATCH
+        s32 accepted;
+        do {
+            s32 attr;
+            CaseEntry* cs;
+            if (hit2 == NULL) {
+                accepted = FALSE;
+                break;
+            }
+            attr = hitGetAttr(hit2);
+            if (attr & 0x80000000) {
+                if (strcmp(mobjHitObjPtrToPtr(hit2)->animName, str_802CCF8C) == 0) {
+                    accepted = TRUE;
+                    break;
+                }
+            } else {
+                cs = caseCheckHitObj2(hit2);
+                if (cs != NULL && cs->activeConditionId == 0xF) {
+                    accepted = TRUE;
+                    break;
+                }
+            }
+            accepted = FALSE;
+        } while (0);
+#else
         s32 accepted;
         if (hit2 == NULL) {
             accepted = FALSE;
@@ -142,6 +209,7 @@ HitEntry* check_front(PartyEntry* party) {
                 }
             }
         }
+#endif
         if (accepted) {
             return hit2;
         }
@@ -149,6 +217,31 @@ HitEntry* check_front(PartyEntry* party) {
     }
     field138 = party->field_138;
     if (field138 != NULL) {
+#ifdef MUST_MATCH
+        s32 accepted;
+        do {
+            s32 attr;
+            CaseEntry* cs;
+            if (field138 == NULL) {
+                accepted = FALSE;
+                break;
+            }
+            attr = hitGetAttr(field138);
+            if (attr & 0x80000000) {
+                if (strcmp(mobjHitObjPtrToPtr(field138)->animName, str_802CCF8C) == 0) {
+                    accepted = TRUE;
+                    break;
+                }
+            } else {
+                cs = caseCheckHitObj2(field138);
+                if (cs != NULL && cs->activeConditionId == 0xF) {
+                    accepted = TRUE;
+                    break;
+                }
+            }
+            accepted = FALSE;
+        } while (0);
+#else
         s32 accepted;
         if (field138 == NULL) {
             accepted = FALSE;
@@ -169,6 +262,7 @@ HitEntry* check_front(PartyEntry* party) {
                 }
             }
         }
+#endif
         if (accepted) {
             return field138;
         }

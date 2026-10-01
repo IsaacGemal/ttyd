@@ -487,9 +487,11 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     return 0;
 }
 
-// NONMATCHING (98.52%): interpolation constant/accumulator registers differ (orig 1.0=f4,
-// 2.0=f5, 0.5=f2, 0.500001=f1; ours f4/f2/f5/f0); body, angle and the 3.141592*t*1+0
-// fmadds match. The named sdata2 floats are loaded through local @N pools here.
+// opt_propagation off: without it the interpolation constants get the wrong FP registers.
+#pragma opt_propagation off
+// NONMATCHING (99.58%): only the interpolation accumulator's FP register differs: the target
+// keeps `1.0f - f30`/the accumulator in f0 and the 0.500001 constant in f1, ours has them in
+// f1/f0; instruction order, the atan2 result (frsp f0 + fmr f30) and the 3.141592*t*1+0 fmadds match.
 void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoadState* c, CamRoadState* out) {
     f32 f31;
     f32 f30;
@@ -520,7 +522,13 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
         out->y = b->y;
         out->z = b->z;
     }
+#ifdef MUST_MATCH
+    // the original converts the first atan2 result in a scratch then copies it to angle
+    t0 = (f32)atan2(a->unk_34, a->unk_3C);
+    angle = t0;
+#else
     angle = (f32)atan2(a->unk_34, a->unk_3C);
+#endif
     angleB = (f32)atan2(b->unk_34, b->unk_3C);
     while (angle - angleB > 3.1415927f) {
         angle -= 6.2831855f;
@@ -537,6 +545,7 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
     out->unk_48 = a->unk_48 + f31 * (b->unk_48 - a->unk_48);
     out->unk_5C = a->unk_5C + f31 * (b->unk_5C - a->unk_5C);
 }
+#pragma opt_propagation reset
 
 void calcCurrentCamState(f32* dst) {
     Vec* src = (Vec*)wp->map->unk_E8;

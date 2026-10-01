@@ -62,11 +62,12 @@ const Vec vec3_802f3748 = { 0.0f, 0.0f, 0.0f };
 //forward declarations
 static void rendermodeFunc(s32 wXluStage);
 
-// NONMATCHING (98.91%): same instructions; only register numbers or operands differ.
+// The declaration order matters: `valid` must be declared after `i` so the
+// compiler gives valid r28 and i r29, matching the original.
 BOOL effNiceAsync(s32 group) {
 	const char* name;
-	BOOL valid;
 	int i;
+	BOOL valid;
 
 	valid = TRUE;
 	for (i = 0; i < 7; i++) {
@@ -88,7 +89,10 @@ static void rendermodeFunc(s32 wXluStage) {
 	wp->currDispMode = wXluStage;
 }
 
-// NONMATCHING (96.93%): 4 instructions differ, 2 missing, plus register differences.
+// 100% match: MWCC emits the `beq body; b else` shape for a single-case switch (not the if/else
+// `bne else`), so both type==7 blocks are switches; the language test is unsigned (`(u32)`), and
+// the animPoseEntry boolean is a ternary (`? 1 : 0`), which lands the gp/anim_tbl temporaries in
+// the original registers (a `!= 0` there gives the same bool with them swapped).
 EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	NiceEffectWork *userdata, *ptr;
 	EffectEntry* effect;
@@ -99,16 +103,18 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	if (type == 5) { //guard for unused slot
 		type = 0;
 	}
-	if (type == 7) {
-		if (gp->language) { //TODO: ternary?
-			count = 7;
-		}
-		else {
+	switch (type) {
+	case 7:
+		if ((u32)gp->language == 0) {
 			count = 8;
 		}
-	}
-	else {
+		else {
+			count = 7;
+		}
+		break;
+	default:
 		count = 1;
+		break;
 	}
 	effect->type = "Nice";
 	size = sizeof(NiceEffectWork) * count;
@@ -127,7 +133,8 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	userdata->field_0x18 = 1.0f;
 	userdata->field_0x1C = 1.0f;
 	userdata->poseId = -1;
-	if (type == 7) { //initialize other entries
+	switch (type) { //initialize other entries
+	case 7:
 		ptr = userdata + 1;
 		for (i = 1; i < effect->count; i++, ptr++) {
 			ptr->position.x = 1000.0f;
@@ -139,12 +146,13 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 			ptr->field_0x28 = 0;
 			ptr->field_0x20 = 0;
 		}
-	}
-	else {
-		userdata->poseId = animPoseEntry(anim_tbl[gp->language][type], gp->inBattle != 0);
+		break;
+	default:
+		userdata->poseId = animPoseEntry(anim_tbl[gp->language][type], gp->inBattle ? 1 : 0);
 		animPoseSetAnim(userdata->poseId, "A_1", TRUE);
 		animPoseSetMaterialFlagOn(userdata->poseId, 0x1800);
 		animPoseSetGXFunc(userdata->poseId, rendermodeFunc, FALSE);
+		break;
 	}
 	return effect;
 }

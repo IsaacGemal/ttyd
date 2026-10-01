@@ -272,37 +272,36 @@ void object_entry(void) {
     }
 }
 
-// NONMATCHING (98.93%): the instruction sequence is identical; only the callee-saved
-// allocation differs. The target uses found=r28, genki=r29, offsets-byte-offset=r30,
-// mario/parts=r31; MWCC 2.6 emits found=r28, mario/parts=r29, genki=r30, offset=r31.
-// No source shape (declaration order, scoping, types, pragmas, loop/array form) changes it.
+// The trailing block scope puts mario/parts in r31 and genki in r29, matching the original;
+// at function scope MWCC cycles those two callee-saved registers.
 void weapon_entry(void) {
     GenkiWork* genki = get_ptr();
     s32 offsets[10];
-    BattleUnit* mario;
     s32 found = 0;
-    BattleUnitPart* parts;
     s32 i;
     s32 idx;
     s32 count;
 
-    mario = BattleGetMarioPtr(_battleWorkPointer);
-    parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
-    count = genki->field_58;
-    for (i = 0; i < count; i++) {
-        if (genki->weapon[i].field_0 == 0) {
-            offsets[found++] = i;
-        }
-    }
-    if (found >= 1) {
-        idx = offsets[irand(found)];
-        {
-            GenkiWeapon* wep = &genki->weapon[idx];
+    {
+        BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+        BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
 
-            wep->field_0 = 1;
-            wep->field_4 = 7;
+        count = genki->field_58;
+        for (i = 0; i < count; i++) {
+            if (genki->weapon[i].field_0 == 0) {
+                offsets[found++] = i;
+            }
         }
-        BtlUnit_SetAnim(parts, str_8030045C);
+        if (found >= 1) {
+            idx = offsets[irand(found)];
+            {
+                GenkiWeapon* wep = &genki->weapon[idx];
+
+                wep->field_0 = 1;
+                wep->field_4 = 7;
+            }
+            BtlUnit_SetAnim(parts, str_8030045C);
+        }
     }
 }
 
@@ -707,13 +706,13 @@ void main_weapon(s32 idx) {
     }
 }
 
-// The int->float magic double is an anonymous `@693@` pool literal instead of the named
-// `double_to_int_80300468` (file-wide incomplete-.rodata-pool issue, see main_weapon), and 8
-// instructions of the `effStardustEntry` argument setup are scheduled differently (this MWCC groups
-// the three `li` constants where the original interleaves them with the float loads). Keeping
-// `float_15 + y` in the `fifteen` variable fixed the compare's f1/f2 assignment; the if/else that
-// builds `limit` fixed the case-1 integer register allocation.
-// NONMATCHING (96.96%): the two issues above.
+// Matches. The file's incomplete .rodata pool (see main_weapon) leaves the int->float magic double
+// as an anonymous `@693@` and the 30.0f literal as `@959@` instead of the named
+// `double_to_int_80300468` / `float_30_80421d80`; objdiff does not score those symbol names. The
+// `30.0f` literal, rather than the named `float_30_80421d80` (same value), is what makes MWCC emit
+// the original's interleaved `li`/`lfs` argument setup. Keeping `fifteen` in a variable fixed the
+// compare's f1/f2 assignment; the if/else that builds `limit` fixed the case-1 integer register
+// allocation.
 void main_object(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiObject* obj = (GenkiObject*)((u8*)genki + 0x358 + idx * 0x2C);
@@ -796,7 +795,7 @@ void main_object(s32 idx) {
             {
                 f32 fifteen = float_15_80421de4;
                 if (obj->field_10 <= fifteen + y) {
-                    f32 thirty = float_30_80421d80;
+                    f32 thirty = 30.0f;
                     obj->field_0 = 3;
                     effStardustEntry(5, 0xA, 0x3C, obj->field_C, fifteen + y, obj->field_14,
                                      thirty, thirty);

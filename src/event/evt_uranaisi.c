@@ -437,25 +437,23 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     return count;
 }
 
-// NONMATCHING (99.04%): instruction stream and control flow match; only the callee-saved colouring remains
-// (target keeps type in r20, so "enddata" reuses r20 and storyId lands in r27; ours keeps prefix in r20).
-// Declaration-order, pragma and mwcc 2.5/2.6/2.7 sweeps all stop at 99.04.
 s32 uranaisi_data_make_next(const char* prefix, s32 type) {
-    s32 mbbpos;
+    UranaiWork* wp = &_udt;
     char label[64];
-    s32 labelId;
+    char tag[64];
+    // Declaration order below is the original's: Metrowerks gives the
+    // later-declared locals the lower callee-saved registers.
+    s32 storyId;
+    s32 mbbpos;
     s32 tagNum;
     BOOL tagdone;
-    char* tagdata;
-    char tag[64];
+    const s8* tagdata;
     s32 count;
-    s32 storyId;
-    UranaiWork* wp;
-    const s8* msg;
     s32 maxLabel;
+    const s8* msg;
+    s32 labelId;
 
-    wp = &_udt;
-    maxLabel = evtGetValue(NULL, -170000000);
+    maxLabel = evtGetValue(0, -170000000);
     if (type & 1) {
         if (wp->next == -1) {
             return 0;
@@ -466,22 +464,21 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
 
     count = 0;
     storyId = 0;
-    while (TRUE) {
+    while (1) {
         sprintf(label, "%s_%04d", prefix, storyId);
         msg = (const s8*)msgSearch(label);
         if (msg[0] != '<') {
             break;
         }
-        tagdata = (char*)msg + 2;
+        tagdata = msg + 2;
         if (msg[1] != '!') {
             break;
         }
-
         tagNum = 0;
         mbbpos = 0;
         tagdone = FALSE;
         while (!tagdone) {
-            if (_ismbblead((s8)*tagdata)) {
+            if (_ismbblead(*tagdata)) {
                 if (tagNum == 0) {
                     tag[mbbpos++] = tagdata[0];
                     tag[mbbpos++] = tagdata[1];
@@ -491,7 +488,7 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
                     tagdata += 2;
                 }
             } else {
-                switch ((s8)tagdata[0]) {
+                switch (tagdata[0]) {
                     case '>':
                         tagdone = TRUE;
                         // fallthrough
@@ -520,52 +517,29 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
         }
         if (strcmp(tag, zero_80420460)) {
             labelId = search_evt_no(tag);
-#ifdef MUST_MATCH
-// The original merges both count++ into one shared block after the type branch; the compiler only
-// tail-merges them when the two paths reach it as breaks out of a do/while. The natural form is #else.
-            if (labelId != -1) {
-                do {
-                    if (type & 1) {
-                        if (labelId != wp->next) {
-                            break;
-                        }
-                        wp->info[count].labelId = (s16)labelId;
-                        wp->info[count].unk4 = (s16)storyId;
-                    } else {
-                        if (labelId > maxLabel) {
-                            break;
-                        }
-                        if (labelId < wp->next) {
-                            break;
-                        }
-                        if (labelId > wp->next) {
-                            wp->next = labelId;
-                            count = 0;
-                        }
-                    }
-                    count++;
-                } while (0);
-            }
-#else
             if (labelId != -1) {
                 if (type & 1) {
-                    if (labelId == wp->next) {
-                        wp->info[count].labelId = (s16)labelId;
-                        wp->info[count].unk4 = (s16)storyId;
-                        count++;
+                    if (labelId != wp->next) {
+                        goto next;
                     }
-                } else if (labelId <= maxLabel) {
-                    if (labelId >= wp->next) {
-                        if (labelId > wp->next) {
-                            wp->next = labelId;
-                            count = 0;
-                        }
-                        count++;
+                    wp->info[count].labelId = (s16)labelId;
+                    wp->info[count].unk4 = (s16)storyId;
+                } else {
+                    if (labelId > maxLabel) {
+                        goto next;
+                    }
+                    if (labelId < wp->next) {
+                        goto next;
+                    }
+                    if (labelId > wp->next) {
+                        wp->next = labelId;
+                        count = 0;
                     }
                 }
+                count++;
             }
-#endif
         }
+    next:
         storyId++;
     }
     return count;

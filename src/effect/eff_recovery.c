@@ -683,9 +683,9 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 // The f27/f28 declarations are reversed so the +-20 pair lands in the target's registers, and the +-20
 // assignments sit inside the loop under MUST_MATCH because above the loop they are hoisted into the preheader
 // and scheduled before the int->float magic load, which the target does not do.
-// NONMATCHING (99.91%): only the 108.0f load in the -108*0.5 block lands in f2 instead of the target's f1 (the
-// fneg/fmuls/fadds pair swaps with it); every other byte matches. The 0.0f/1.0f and int->float-magic pool
-// entries are emitted as anonymous @NNN symbols instead of the target's named constants, which objdiff ignores.
+// NONMATCHING (99.97%): the 108.0f load lands in f1 as in the target, but the negation result goes to f30
+// instead of the target's scratch f2 (fneg f30,f1 / fmuls f30,f30,f0 vs fneg f2,f1 / fmuls f30,f2,f0).
+// Every other byte matches; the 0.0f/1.0f and int->float-magic pool entries are anonymous @NNN, which objdiff ignores.
 void effRecoveryDisp3(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -733,7 +733,8 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	f30 = -float_108_8041cafc * float_0p5_8041caec;
+	f30 = -float_108_8041cafc;
+	f30 = f30 * float_0p5_8041caec;
 	f29 = f30 + float_108_8041cafc;
 #ifndef MUST_MATCH
 	f27 = float_20_8041cb00;

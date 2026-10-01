@@ -367,18 +367,17 @@ extern f32 lbl_80360FE0[];
 
 // `#pragma opt_propagation off` is required: with propagation on, MWCC folds each branch's
 // `tbl = (const char**)(base + 0x150); tbl[i]` into `add base,i*4; lwz 0x150(base)`, where the
-// original keeps the table address in a register (`addi base,off; lwzx base,i*4`). Off, the three
-// loads match and only the two prologue temporaries for wp/base swap r5/r6 (see report).
+// original keeps the table address in a register (`addi base,off; lwzx base,i*4`).
 #pragma opt_propagation off
 
-// NONMATCHING (99.82%): r5/r6 are swapped for the `_battleWorkPointer`/`lbl_80360FE0` prologue
-// temporaries; every other instruction matches (the local @NNN int->float double is a relocation
-// name only, cf. battle_attack_audience.c's _get_item_announce_disp).
+// 100%: the local @NNN int->float double is a relocation name only (the .rodata value and its
+// offset are the original's double_to_int_802ef590; cf. battle_attack_audience.c's
+// _get_item_announce_disp). Using _battleWorkPointer->fbatInfo directly, rather than a wp temp,
+// keeps it and lbl_80360FE0 in the original's r5/r6 prologue registers.
 void _rule_disp(void) {
 	u8* base = (u8*)lbl_80360FE0;
 	const char** tbl;
-	BattleWork* wp = _battleWorkPointer;
-	FieldBattleInfo* info = wp->fbatInfo;
+	FieldBattleInfo* info = _battleWorkPointer->fbatInfo;
 	GXColor color;
 	u16 lines;
 	u16 width;

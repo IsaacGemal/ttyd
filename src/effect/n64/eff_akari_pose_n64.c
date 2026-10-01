@@ -148,20 +148,19 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     return effect;
 }
 
-// Only register allocation of the `data` pointer differs. The original coalesces `data` into the loop
-// pointer's callee-saved r28; mwcc (GC/2.6 and 1.3.x both) keeps the pre-loop `data` in caller-saved r6
-// and the loop pointer in r28 (the live range is not split, it is just coloured r6), which also shifts
-// `type`/`i` to r27/r26. The only other diff is that each `if (type == 0)` compiles to `bne else` here vs
-// the target's `beq then; b else` (2 op_mismatch instructions). Every other instruction, GPR and FPR
-// matches, including the sinusoid, the alpha/scale tables and dispCalcZ.
-// NONMATCHING (98.43%): the `data` pointer register (r6 vs r28) and the two `if (type == 0)` branch layouts.
+// The original reuses the header pointer as the parts cursor: `data++` steps it past the 0x38-byte header
+// and the loop steps it once per part, so the part cursor is `data` cast to the part type. Keeping `data`
+// live across the loop also colours it into the target's callee-saved r28 (with `i`/`type` in r27/r26); a
+// separate `part = data->part` cursor leaves the pre-loop `data` in caller-saved r6 instead.
+// Both type tests are written as `switch (type) { case 0: ...; break; default: ...; }` because that makes
+// mwcc emit the target's `beq then; b else` layout; a plain `if (type == 0) ... else ...` comes out as
+// `bne else` and mismatches two branches per test.
 void effAkariPoseMain(EffectEntry* effect) {
     effAkariPoseData* data;
-    effAkariPosePart* part;
     Vec position;
     Vec position2;
-    s32 type;
     s32 i;
+    s32 type;
     s32 unk2c;
     f32 velScale;
     f32 lerpScale;
@@ -188,15 +187,19 @@ void effAkariPoseMain(EffectEntry* effect) {
     if (data->field_0x28 < 0x10) {
         data->field_0x30 = data->field_0x28 << 4;
     }
-    part = data->part;
-    if (type == 0) {
+    data++;
+    switch (type) {
+    case 0:
         velScale = float_0p1_8041e8dc;
         lerpScale = float_0p2_8041e8e0;
-    } else {
+        break;
+    default:
         velScale = float_0p2_8041e8e0;
         lerpScale = velScale;
+        break;
     }
-    for (i = 1; i < effect->count; i++, part++) {
+    for (i = 1; i < effect->count; i++, data++) {
+        effAkariPosePart* part = (effAkariPosePart*)data;
         part->field_0x20++;
         if (part->field_0x20 >= max_seq_num[type]) {
             part->field_0x20 = 0;
@@ -216,12 +219,15 @@ void effAkariPoseMain(EffectEntry* effect) {
             part->field_0x24 = -angle - float_45_8041e8f0;
             part->field_0x34 = float_1_8041e8f4;
         }
-        if (type == 0) {
+        switch (type) {
+        case 0:
             part->field_0x30 = a_data[part->field_0x20];
             part->field_0x34 = scale_data[part->field_0x20];
-        } else {
+            break;
+        default:
             part->field_0x30 = a_data2[part->field_0x20];
             part->field_0x34 = scale_data2[part->field_0x20];
+            break;
         }
         if ((unk2c & 1) == (i & 1)) {
             part->x += part->vx;
