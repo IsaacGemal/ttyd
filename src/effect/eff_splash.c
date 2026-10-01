@@ -229,9 +229,14 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-// NONMATCHING (98.91%): top schedules two vec3 words before the data load (5
-// insns); type==3 trans puts 0.125f in f2 / double_to_int in f1 (target f1/f2);
-// the double_to_int, 0.125f and 0.5f slots are shifted by effSplashDisp.
+// NONMATCHING (99.83%): the instructions are the target's except where symbols other
+// functions in this unit lay down decide. The zero-Vec literal below keeps the target's
+// schedule (switching to the named vec3_802fe728 makes MWCC hoist the first vector load
+// two instructions early), but it resolves to .rodata+0x2C instead of vec3_802fe728 at
+// +0x0, so objdiff flags it; extra _half$/_three$ doubles emitted before it push vec3 down.
+// double_to_int_mask/double_to_int are shifted the same way, effSplashDisp's -8.0f*0.5f
+// fold puts -4.0f where the target has 8.0f (shifting the 0.5f slot), and the type==3 trans
+// block assigns 0.125f to f2 / double_to_int to f1 (target f1/f2).
 void effSplashMain(EffectEntry* effect) {
 	SplashData* data = effect->userdata;
 	Vec position;

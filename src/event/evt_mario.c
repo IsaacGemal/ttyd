@@ -1023,9 +1023,16 @@ USER_FUNC(N_evt_mario_party_door_halve_hitbox) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.29%): the case-0 int->float magic double lands in f5 instead of f2, so the speed
-// division goes to f2 and the final `fmr f2, f29` is folded away. The screen-pos compares match once the
-// 0.0 bound is a literal (the target's float_0_8041b8ac is the same pool entry).
+// NONMATCHING (99.29%): only the case-0 int->float regalloc differs. The target keeps the magic
+// double in f2 (ours f5) and materialises `speed / (f32)gp->framerate` in f29 with a final `fmr f2, f29`
+// (ours computes it straight into f2 and folds the move). Every other instruction matches. Naming the
+// third argument's own variable (f32 spd/speed=, compound /=, assignment expression, volatile, a temp
+// for the frames, `#pragma opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments off`,
+// `optimize_for_size on`, inline conversion helpers) reproduces the f29+fmr but always shifts
+// `tmp`/the double to f4/f3 and the second conversion slot, scoring 97-99.1%, so keep this shape.
+// The screen-pos compares need the 0.0 bound as the literal here; the target's float_0_8041b8ac and our
+// anonymous @constant resolve to the same pool slot and the symbol-name mismatch does not cost score
+// (see evt_mario_mov_pos2 at 100% with the same @1304/jumptable names).
 USER_FUNC(evt_mario_party_door_move) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();

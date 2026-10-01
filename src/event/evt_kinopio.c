@@ -30,13 +30,15 @@ static USER_FUNC(paper_on);  // local to this file in the original
 // itemEntry is defined in driver/itemdrv.c but not declared in any header yet.
 
 // shared .sdata2 constants (named by their original addresses)
-char str_8041BC68[] = "mario";
-f32 float_6p2832_8041bc70 = 6.2831855f;
-f32 float_90_8041bc74 = 90.0f;
-f32 float_360_8041bc78 = 360.0f;
-char str_8041BC7C[] = "M_S_1";
-f32 float_0p2_8041bc84 = 0.2f;
+__declspec(section ".sdata2") char str_8041BC68[8] = "mario";
+__declspec(section ".sdata2") f32 float_6p2832_8041bc70 = 6.2831855f;
+__declspec(section ".sdata2") f32 float_90_8041bc74 = 90.0f;
+__declspec(section ".sdata2") f32 float_360_8041bc78 = 360.0f;
+__declspec(section ".sdata2") char str_8041BC7C[8] = "M_S_1";
+__declspec(section ".sdata2") f32 float_0p2_8041bc84 = 0.2f;
 
+// force_active: these strings are referenced only through the unit's other data (and by other units), the linker would drop the rest.
+#pragma force_active on
 // shared .rodata string pool (named by their original addresses)
 const char str_802ECE50[0x14] = "BGM_FF_GO_SLEEPING1";
 const char str_802ECE64[0x14] = "\217h\211\256\202\314\203J\203\201\203\211\203}\203\223";
@@ -54,6 +56,7 @@ const char str_802ECEE4[0x1C] = "SFX_EVT_50_HOTEL_SHUTTER1";
 const char str_802ECF00[0x0C] = "breakfast";
 const char str_802ECF0C[0x08] = "p_slit";
 const char str_802ECF14[0x08] = "PM_S_3A";
+#pragma force_active reset
 
 // event function prototypes referenced by the script tables
 
@@ -349,51 +352,119 @@ typedef struct KinopioData {
 
 static KinopioData* work;
 static KinopioData** wp = &work;
-USER_FUNC(N_cameraman_on) {
-    animPoseSetMaterialFlagOn(npcNameToPtr(str_802ECE64)->poseId, 0x1800);
+USER_FUNC(evt_kinopio_setup) {
+    KinopioData* data = (KinopioData*)evtGetValue(event, event->args[0]);
+    NpcEntry* npc = npcNameToPtr(data->npcname);
+
+    if (animGroupBaseAsync(str_802ECF0C, 0, NULL) == 0) {
+        return 0;
+    }
+    npc->talkEvt = kinopio_house_talk_evt;
+    *wp = data;
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(snd_on) {
-    psndClearFlag(0x80);
+USER_FUNC(msg_no) {
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], (*wp)->msgs[id]);
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(snd_off) {
-    psndSetFlag(0x80);
-    return EVT_RETURN_DONE;
-}
+USER_FUNC(power_chk) {
+    s32* args = event->args;
+    PouchData* pouch = pouchGetPtr();
+    BOOL full = TRUE;
+    s32 i;
 
-USER_FUNC(breakfast) {
-    ItemEntry* item = itemNameToPtr((char*)str_802ECF00);
-    if (item == NULL || !(item->flags & 1)) {
-        if ((*wp)->field_0 != 0) {
-            itemEntry(str_802ECF00, (*wp)->field_0, 0x10, -1, 0, (*wp)->field_4, (*wp)->field_8, (*wp)->field_C);
+    for (i = 0; i < 8; i++) {
+        if (pouch->partyData[i].flags & 1) {
+            if (pouch->partyData[i].currentHP != pouch->partyData[i].maximumHP) {
+                full = FALSE;
+                break;
+            }
         }
+    }
+    if (pouchGetHP() == pouchGetMaxHP() && (*(s32(*)(void))pouchGetFP)() == pouchGetMaxFP() && (*(s32(*)(void))pouchGetAP)() == pouchGetMaxAP() && full) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 0);
     }
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(offset) {
+USER_FUNC(coin_chk) {
     s32* args = event->args;
-    f32 val = evtGetFloat(event, args[0]);
-    CameraEntry* cam = camGetPtr(CAMERA_3D);
-    f32 deg;
-    f32 s;
-    f32 c;
 
-    deg = cam->viewYaw;
-    deg = float_90_8041bc74 + deg;
-    deg = float_6p2832_8041bc70 * deg / float_360_8041bc78;
-    s = sin(deg);
-    evtSetFloat(event, args[1], val * -s);
-    c = cos(deg);
-    evtSetFloat(event, args[2], val * c);
+    if (pouchGetCoin() < (*wp)->ryoukin) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 0);
+    }
     return EVT_RETURN_DONE;
 }
 
-static USER_FUNC(paper_off) {
-    marioPaperOff();
+USER_FUNC(get_ryoukin) {
+    evtSetValue(event, event->args[0], (*wp)->ryoukin);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_npcname) {
+    evtSetValue(event, event->args[0], (s32)(*wp)->npcname);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_bed) {
+    s32* args = event->args;
+
+    evtSetFloat(event, args[0], (*wp)->bedX);
+    evtSetFloat(event, args[1], (*wp)->bedY);
+    evtSetFloat(event, args[2], (*wp)->bedZ);
+    return EVT_RETURN_DONE;
+}
+USER_FUNC(get_bedside) {
+    s32* args = event->args;
+
+    evtSetFloat(event, args[0], (*wp)->bedsideX);
+    evtSetFloat(event, args[1], (*wp)->bedsideY);
+    evtSetFloat(event, args[2], (*wp)->bedsideZ);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_beddeg) {
+    evtSetFloat(event, event->args[0], (*wp)->beddeg);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_npctalk) {
+    s32* args = event->args;
+
+    evtSetFloat(event, args[0], (*wp)->npctalkX);
+    evtSetFloat(event, args[1], (*wp)->npctalkY);
+    evtSetFloat(event, args[2], (*wp)->npctalkZ);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_cam) {
+    s32* args = event->args;
+
+    evtSetFloat(event, args[0], (*wp)->camX);
+    evtSetFloat(event, args[1], (*wp)->camY);
+    evtSetFloat(event, args[2], (*wp)->camZ);
+    evtSetFloat(event, args[3], (*wp)->camX2);
+    evtSetFloat(event, args[4], (*wp)->camY2);
+    evtSetFloat(event, args[5], (*wp)->camZ2);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_to_bed_evt) {
+    evtSetValue(event, event->args[0], (*wp)->to_bed_evt);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_from_bed_evt) {
+    evtSetValue(event, event->args[0], (*wp)->from_bed_evt);
     return EVT_RETURN_DONE;
 }
 
@@ -440,119 +511,62 @@ static USER_FUNC(paper_on) {
 }
 #pragma opt_propagation reset
 
-USER_FUNC(get_from_bed_evt) {
-    evtSetValue(event, event->args[0], (*wp)->from_bed_evt);
+
+static USER_FUNC(paper_off) {
+    marioPaperOff();
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(get_to_bed_evt) {
-    evtSetValue(event, event->args[0], (*wp)->to_bed_evt);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_cam) {
+USER_FUNC(offset) {
     s32* args = event->args;
+    f32 val = evtGetFloat(event, args[0]);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 deg;
+    f32 s;
+    f32 c;
 
-    evtSetFloat(event, args[0], (*wp)->camX);
-    evtSetFloat(event, args[1], (*wp)->camY);
-    evtSetFloat(event, args[2], (*wp)->camZ);
-    evtSetFloat(event, args[3], (*wp)->camX2);
-    evtSetFloat(event, args[4], (*wp)->camY2);
-    evtSetFloat(event, args[5], (*wp)->camZ2);
+    deg = cam->viewYaw;
+    deg = float_90_8041bc74 + deg;
+    deg = float_6p2832_8041bc70 * deg / float_360_8041bc78;
+    s = sin(deg);
+    evtSetFloat(event, args[1], val * -s);
+    c = cos(deg);
+    evtSetFloat(event, args[2], val * c);
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(get_npctalk) {
-    s32* args = event->args;
-
-    evtSetFloat(event, args[0], (*wp)->npctalkX);
-    evtSetFloat(event, args[1], (*wp)->npctalkY);
-    evtSetFloat(event, args[2], (*wp)->npctalkZ);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_beddeg) {
-    evtSetFloat(event, event->args[0], (*wp)->beddeg);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_bedside) {
-    s32* args = event->args;
-
-    evtSetFloat(event, args[0], (*wp)->bedsideX);
-    evtSetFloat(event, args[1], (*wp)->bedsideY);
-    evtSetFloat(event, args[2], (*wp)->bedsideZ);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_bed) {
-    s32* args = event->args;
-
-    evtSetFloat(event, args[0], (*wp)->bedX);
-    evtSetFloat(event, args[1], (*wp)->bedY);
-    evtSetFloat(event, args[2], (*wp)->bedZ);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_npcname) {
-    evtSetValue(event, event->args[0], (s32)(*wp)->npcname);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_ryoukin) {
-    evtSetValue(event, event->args[0], (*wp)->ryoukin);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(coin_chk) {
-    s32* args = event->args;
-
-    if (pouchGetCoin() < (*wp)->ryoukin) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(power_chk) {
-    s32* args = event->args;
-    PouchData* pouch = pouchGetPtr();
-    BOOL full = TRUE;
-    s32 i;
-
-    for (i = 0; i < 8; i++) {
-        if (pouch->partyData[i].flags & 1) {
-            if (pouch->partyData[i].currentHP != pouch->partyData[i].maximumHP) {
-                full = FALSE;
-                break;
-            }
+USER_FUNC(breakfast) {
+    ItemEntry* item = itemNameToPtr((char*)str_802ECF00);
+    if (item == NULL || !(item->flags & 1)) {
+        if ((*wp)->field_0 != 0) {
+            itemEntry(str_802ECF00, (*wp)->field_0, 0x10, -1, 0, (*wp)->field_4, (*wp)->field_8, (*wp)->field_C);
         }
     }
-    if (pouchGetHP() == pouchGetMaxHP() && (*(s32(*)(void))pouchGetFP)() == pouchGetMaxFP() && (*(s32(*)(void))pouchGetAP)() == pouchGetMaxAP() && full) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(msg_no) {
-    s32* args = event->args;
-    s32 id = evtGetValue(event, args[0]);
-
-    evtSetValue(event, args[1], (*wp)->msgs[id]);
+USER_FUNC(snd_off) {
+    psndSetFlag(0x80);
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_kinopio_setup) {
-    KinopioData* data = (KinopioData*)evtGetValue(event, event->args[0]);
-    NpcEntry* npc = npcNameToPtr(data->npcname);
-
-    if (animGroupBaseAsync(str_802ECF0C, 0, NULL) == 0) {
-        return 0;
-    }
-    npc->talkEvt = kinopio_house_talk_evt;
-    *wp = data;
+USER_FUNC(snd_on) {
+    psndClearFlag(0x80);
     return EVT_RETURN_DONE;
 }
+
+USER_FUNC(N_cameraman_on) {
+    animPoseSetMaterialFlagOn(npcNameToPtr(str_802ECE64)->poseId, 0x1800);
+    return EVT_RETURN_DONE;
+}
+
+// 4-byte zero words that end the unit's .data, .sdata and .sbss: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_8033CA64_data = 0;
+__declspec(section ".sdata") u32 gap_07_8041083C_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+#pragma force_active on
+u32 gap_08_8041894C_sbss;
+#pragma force_active reset

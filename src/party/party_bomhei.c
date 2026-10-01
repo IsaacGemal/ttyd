@@ -55,9 +55,6 @@ const char str_8041B2B0[] = "M_R_1";
 const char str_8041B2B8[] = "M_S_1";
 
 // .text:0x0 | 0x800BCE50 | size: 0x3FC
-// NONMATCHING (99.80%): the compiler's int->float helper double pools as an @NNN@
-// at .rodata 0xd8 instead of the named double_to_int_802ccfa0 at 0x58 (whole-file
-// data layout); everything else matches.
 HitEntry* check_front(PartyEntry* party) {
 #ifdef MUST_MATCH
     s32 angles[8];
@@ -70,7 +67,6 @@ HitEntry* check_front(PartyEntry* party) {
     HitEntry* hit;
     HitEntry* ret = NULL;
     HitEntry* ret2 = NULL;
-    CameraEntry* cam;
     u32 i;
     f32 base;
     f32 f29;
@@ -85,7 +81,7 @@ HitEntry* check_front(PartyEntry* party) {
         *(S32x8*)angles = *(const S32x8*)dat_802ccf60;
     }
 #endif
-    f29 = 0.8f * *(f32*)((u8*)party + 0xF0);
+    f29 = 0.8f * *(f32*)&party->field_E8[0x8];
     base = partyToMovedir(party, party->field_10C);
     for (i = 0; i < 8; i++) {
         sincosf(&query.targetDir.x, &query.targetDir.z, base + (f32)angles[i]);
@@ -95,8 +91,7 @@ HitEntry* check_front(PartyEntry* party) {
         query.targetDistance = 100.0f;
         hit = hitCheckVecFilter(&query, NULL);
         if (hit != NULL) {
-            cam = camGetPtr(4);
-            limit = revise360(base + (f32)angles[i] - cam->viewYaw);
+            limit = revise360(base + (f32)angles[i] - camGetPtr(4)->viewYaw);
             if ((limit >= 60.0f && limit <= 120.0f) || (limit >= 240.0f && limit <= 300.0f)) {
                 limit = 50.0f;
             } else {

@@ -283,10 +283,23 @@ void effBrokenBarrierMain(EffectEntry* effect) {
         break;
     }
     i = 1;
+#ifdef MUST_MATCH
+    /* MUST_MATCH: a literal 0.5f keeps the constant in f1, so rangeX's fctiwz takes f2 and rangeY's
+       takes f0 (retail's colouring). The named extern is rematerialised after the first fctiwz, which
+       swaps the two; the load and the arithmetic are identical either way. */
+    {
+    f32 k = 0.5f;
+    rangeX = (s32)spreadX;
+    halfX = k * spreadX;
+    rangeY = (s32)spreadY;
+    halfY = k * spreadY;
+    }
+#else
     rangeX = (s32)spreadX;
     rangeY = (s32)spreadY;
     halfX = float_0p5_8041ead8 * spreadX;
     halfY = float_0p5_8041ead8 * spreadY;
+#endif
     data++;
     for (; i < effect->count; i++, data++) {
         data->field_0x30++;

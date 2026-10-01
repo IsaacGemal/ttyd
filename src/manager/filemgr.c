@@ -242,16 +242,39 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 	}
 }
 
-// NONMATCHING (99.81%): case 4's loop counter `i` is r5 (retail r4) and the `(u16)i * 8` index
-// temp is r4 (retail r5); the descriptorArray base is r3 as retail has it and everything else
-// matches. The `img`/`pal` locals are what moved the base from r4 to r3.
+// case 4's TPL walk lives in this helper: as a separate inline its loop counter
+// colours to the original's r4 (with the body inline it takes r5).
+static inline void fileUnpackTpl(TEXPalette* tpl) {
+	u16 i;
+	if (tpl->versionNumber != 0x0020AF30) {
+		OSPanic("filemgr.c", 106, "invalid version number for texture palette");
+	}
+	if ((u32)tpl->descriptorArray < (u32)tpl) {
+		tpl->descriptorArray = (TEXDescriptor*)((u32)tpl->descriptorArray + (u32)tpl);
+		for (i = 0; i < tpl->numDescriptors; i++) {
+			if (tpl->descriptorArray[i].textureHeader) {
+				tpl->descriptorArray[i].textureHeader = (TEXHeader*)((u32)tpl->descriptorArray[i].textureHeader + (u32)tpl);
+				if (!tpl->descriptorArray[i].textureHeader->unpacked) {
+					tpl->descriptorArray[i].textureHeader->data = (char*)((u32)tpl + (u32)tpl->descriptorArray[i].textureHeader->data);
+					tpl->descriptorArray[i].textureHeader->unpacked = TRUE;
+				}
+			}
+			if (tpl->descriptorArray[i].CLUTHeader) {
+				tpl->descriptorArray[i].CLUTHeader = (CLUTHeader*)((u32)tpl->descriptorArray[i].CLUTHeader + (u32)tpl);
+				if (!tpl->descriptorArray[i].CLUTHeader->unpacked) {
+					tpl->descriptorArray[i].CLUTHeader->data = (char*)((u32)tpl + (u32)tpl->descriptorArray[i].CLUTHeader->data);
+					tpl->descriptorArray[i].CLUTHeader->unpacked = TRUE;
+				}
+			}
+		}
+	}
+}
+
 void fileGarbageDataAdrSet(void* data, s32 type) {
 	u16 i;
 	s32 j;
 	s32 count;
 	TEXPalette* tpl;
-	TEXHeader* img;
-	CLUTHeader* pal;
 
 	switch (type) {
 		case 1:
@@ -302,30 +325,7 @@ void fileGarbageDataAdrSet(void* data, s32 type) {
 			break;
 		case 4:
 			tpl = (TEXPalette*)data;
-			if (tpl->versionNumber != 0x0020AF30) {
-				OSPanic("filemgr.c", 106, "invalid version number for texture palette");
-			}
-			if ((u32)tpl->descriptorArray < (u32)tpl) {
-				tpl->descriptorArray = (TEXDescriptor*)((u32)tpl->descriptorArray + (u32)tpl);
-				for (i = 0; i < tpl->numDescriptors; i++) {
-					if (tpl->descriptorArray[i].textureHeader) {
-						tpl->descriptorArray[i].textureHeader = (TEXHeader*)((u32)tpl->descriptorArray[i].textureHeader + (u32)tpl);
-						img = tpl->descriptorArray[i].textureHeader;
-						if (!img->unpacked) {
-							img->data = (char*)((u32)tpl + (u32)img->data);
-							tpl->descriptorArray[i].textureHeader->unpacked = TRUE;
-						}
-					}
-					if (tpl->descriptorArray[i].CLUTHeader) {
-						tpl->descriptorArray[i].CLUTHeader = (CLUTHeader*)((u32)tpl->descriptorArray[i].CLUTHeader + (u32)tpl);
-						pal = tpl->descriptorArray[i].CLUTHeader;
-						if (!pal->unpacked) {
-							pal->data = (char*)((u32)tpl + (u32)pal->data);
-							tpl->descriptorArray[i].CLUTHeader->unpacked = TRUE;
-						}
-					}
-				}
-			}
+			fileUnpackTpl(tpl);
 			break;
 		case 5:
 			if (*(u32*)((u8*)data + 0x14C) < (u32)data) {

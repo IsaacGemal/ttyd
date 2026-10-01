@@ -40,21 +40,6 @@ typedef struct effBombN64Data {
 } effBombN64Data;
 
 // .sdata2 float constants, named after their original addresses.
-extern const f32 float_deg2rad_8041e9d8;
-extern const f32 float_0p0625_8041e9dc;
-extern const f32 float_0_8041e9e0;
-extern const f32 float_1_8041e9e4;
-extern const f32 float_0p4_8041e9e8;
-extern const f32 float_255_8041e9f0;
-extern const f32 float_0p1_8041e9f8;
-extern const f32 float_3_8041ea00;
-extern const f32 float_9p9_8041ea04;
-extern const f32 float_1p6_8041ea08;
-extern const f32 float_13p9_8041ea0c;
-extern const f32 float_2p4_8041ea10;
-extern const f32 float_17p8_8041ea14;
-extern const f32 float_3p2_8041ea18;
-extern const f32 float_30_8041ea1c;
 
 // .sdata2 GXColor seeds the original builds its TEV colours from.
 extern const GXColor dat_8041e9d0;
@@ -104,26 +89,26 @@ EffectEntry* effBombN64Entry(s32 type, f32 x, f32 y, f32 z) {
 	data->camId = 4;
 	data->field_0x44 = (type == 0) ? -1 : type;
 	data->field_0x7C = 0;
-	data->field_0x64 = (type == 1) ? float_1_8041e9e4 : float_3_8041ea00;
-	data->field_0x68 = (type == 1) ? float_1_8041e9e4 : float_3_8041ea00;
+	data->field_0x64 = (type == 1) ? 1.0f : 3.0f;
+	data->field_0x68 = (type == 1) ? 1.0f : 3.0f;
 	data->field_0x88 = type;
 	data->field_0xC0 = 0xFF;
 	switch (type) {
 	case 0:
-		data->field_0xA8 = float_9p9_8041ea04;
-		data->field_0xAC = float_1p6_8041ea08;
+		data->field_0xA8 = 9.9f;
+		data->field_0xAC = 1.6f;
 		break;
 	case 1:
-		data->field_0xA8 = float_13p9_8041ea0c;
-		data->field_0xAC = float_2p4_8041ea10;
+		data->field_0xA8 = 13.9f;
+		data->field_0xAC = 2.4f;
 		break;
 	case 2:
-		data->field_0xA8 = float_17p8_8041ea14;
-		data->field_0xAC = float_3p2_8041ea18;
+		data->field_0xA8 = 17.8f;
+		data->field_0xAC = 3.2f;
 		break;
 	}
-	data->field_0xB0 = float_0_8041e9e0;
-	data->field_0xB4 = float_30_8041ea1c;
+	data->field_0xB0 = 0.0f;
+	data->field_0xB4 = 30.f;
 	return effect;
 }
 
@@ -235,7 +220,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	timer = data->field_0x34;
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041e9d8 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtx, rotMtx, outMtx);
 	PSMTXConcat(camera->view, outMtx, outMtx);
 
@@ -248,7 +233,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(mtx, float_0p0625_8041e9dc, float_0p0625_8041e9dc, float_0_8041e9e0);
+	PSMTXScale(mtx, 0.0625f, 0.0625f, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
@@ -265,7 +250,7 @@ static void effBombDisp(CameraId camId, void* param) {
 			GXSetTevColor(GX_TEVREG0, color1);
 		}
 #endif
-		PSMTXScale(scaleMtx, data->field_0x64, data->field_0x64, float_1_8041e9e4);
+		PSMTXScale(scaleMtx, data->field_0x64, data->field_0x64, 1.0f);
 		PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
@@ -299,7 +284,7 @@ static void effBombDisp(CameraId camId, void* param) {
 #endif
 
 	PSMTXScale(scaleMtx, data->field_0xA8, data->field_0xA8, data->field_0xA8);
-	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e9d8 * data->field_0xB0);
+	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0xB0);
 	PSMTXConcat(rotMtx, scaleMtx, scaleMtx);
 	PSMTXConcat(outMtx, scaleMtx, scaleMtx);
 	GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
@@ -323,3 +308,7 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041e9d0 = { 0xFF, 0xFF, 0xF0, 0x00 };
+const GXColor dat_8041e9d4 = { 0xFF, 0xFF, 0x00, 0x00 };

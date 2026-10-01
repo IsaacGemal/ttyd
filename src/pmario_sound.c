@@ -4944,7 +4944,12 @@ u8 psndSFX_get_vol(s32 id) {
 // `addi r30,r4,psenv@l` directly. env still lands in r30 and the body is byte-for-byte
 // identical otherwise. The index form (`env = &psenv[i]` inside the loop) does give
 // the direct addi, but MWCC then colours the induction variable r31 and sfx r30,
-// swapping the two callee-saved registers.
+// swapping the two callee-saved registers. Putting the whole loop in a static inline
+// helper + `#pragma inline on` also gives the direct `addi r30` AND the right body,
+// but colours i r31 / sfx r29 (only i/sfx swapped, 36 diffs); the counter always
+// takes r31 there, and no declaration order or opt_* pragma moves it. The `addi r0`
+// is MWCC scheduling the address before the callee-save stores: making the address
+// depend on i (psenv+i, &psenv[id&0], ...) is constant-folded away again.
 void psndENV_stop(u32 id) {
 	PaperSoundEffect* sfx;
 	SoundEffectEntry* entry;
