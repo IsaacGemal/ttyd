@@ -51,15 +51,17 @@ static inline u8 getAllOrNothing(BattleUnit* unit) {
     return unit->badgesEquipped.AllOrNothing;
 }
 
-// NONMATCHING (99.49%): the getAllOrNothing inline above fixes the damage-block register pressure; `result * -1u`
-// gives the original's `mulli`. What is left is the flags2/defenseAttr pair (MWCC: flags2 r27 / defenseAttr r31,
-// original the reverse), which also adds a `mr r28` and puts the element index in r5 instead of r0.
+// `int flags2` (not `s32`, which is `signed long` here) and reading the defense tables through `s8*` are what
+// reproduce the original's register allocation: flags2 in r31 and defenseAttr in r27. The tables are declared
+// `u8` in battle_unit.h but the original sign-extends them (`extsb`), so they are really signed bytes; the
+// `s8*` view is the only way to say that without editing the header. The getAllOrNothing inline above likewise
+// keeps the damage-block register pressure right, and `result * -1u` gives the original's `mulli`.
 s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon,
                           s32* damageCode, s32 flags) {
     BattleWork* wp = _battleWorkPointer;
     s32 damage;
     s32 defense;
-    s32 flags2;
+    int flags2;
     s32 defenseAttr;
     u8 element;
     s32 result;
@@ -172,8 +174,8 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
         damage = 0;
     }
 calculate_defense:
-    defense = (s8)part->defense->defenses[element];
-    defenseAttr = (s8)part->defenseAttr->defenseAttrs[element];
+    defense = ((s8*)part->defense->defenses)[element];
+    defenseAttr = ((s8*)part->defenseAttr->defenseAttrs)[element];
     switch (element) {
     case 1:
         *damageCode = flags | 0x18;
@@ -187,6 +189,7 @@ calculate_defense:
     case 3:
         *damageCode = flags | 0x19;
         break;
+    default:
     case 0:
         *damageCode = flags | 0x17;
         break;

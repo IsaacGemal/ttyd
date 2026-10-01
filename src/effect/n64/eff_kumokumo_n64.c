@@ -395,9 +395,17 @@ static inline void effKumokumoSetMatColorB(s32 a) {
 }
 #endif
 
-// NONMATCHING (99.78%): everything matches except the register allocation of the four GXCallDisplayList
-// loops (original: cloud k=r26/size=r25, case3-inner k=r25/size=r24/dl=r23; ours: cloud k=r22/r23,
-// case3-inner k=r23).
+// The four display-list loops must live in an inlined helper, not inline in effKumokumoDisp: with the
+// loops inline MWCC colours their counters k=r22/r23 instead of the target's r26/r25 (the rest of the
+// function is byte-identical).
+static inline void effKumokumoCallDL(void** dl, const u8* size) {
+	u32 k;
+
+	for (k = 0; k < 4; k++) {
+		GXCallDisplayList(dl[k], size[k] << 5);
+	}
+}
+
 void effKumokumoDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKumokumoData* data = effect->userdata;
@@ -416,7 +424,6 @@ void effKumokumoDisp(CameraId camId, void* param) {
 	s32 type;
 	s32 i;
 	s32 j;
-	u32 k;
 
 	tbl = lbl_803A2280;
 	cam = camGetPtr(camId);
@@ -523,9 +530,7 @@ void effKumokumoDisp(CameraId camId, void* param) {
 			GXSetVtxDesc(14, 2);
 			GXSetVtxAttrFmt(0, 14, 1, 3, 0xe);
 			GXSetArray(14, tbl + 0x1c0, 4);
-			for (k = 0; k < 4; k++) {
-				GXCallDisplayList(cloud_dl_0_tbl[k], cloud_dl_0_size_tbl[k] << 5);
-			}
+			effKumokumoCallDL(cloud_dl_0_tbl, cloud_dl_0_size_tbl);
 			break;
 		case 2:
 			GXClearVtxDesc();
@@ -544,9 +549,7 @@ void effKumokumoDisp(CameraId camId, void* param) {
 			GXSetVtxDesc(14, 2);
 			GXSetVtxAttrFmt(0, 14, 1, 3, 0xe);
 			GXSetArray(14, tbl + 0x560, 4);
-			for (k = 0; k < 4; k++) {
-				GXCallDisplayList(batten_dl_0_tbl[k], batten_dl_0_size_tbl[k] << 5);
-			}
+			effKumokumoCallDL(batten_dl_0_tbl, batten_dl_0_size_tbl);
 			break;
 		case 3:
 			for (j = 0; j < 5; j++) {
@@ -572,9 +575,7 @@ void effKumokumoDisp(CameraId camId, void* param) {
 				GXSetVtxDesc(14, 2);
 				GXSetVtxAttrFmt(0, 14, 1, 3, 0xe);
 				GXSetArray(14, tbl + 0x1c0, 4);
-				for (k = 0; k < 4; k++) {
-					GXCallDisplayList(cloud_dl_0_tbl[k], cloud_dl_0_size_tbl[k] << 5);
-				}
+				effKumokumoCallDL(cloud_dl_0_tbl, cloud_dl_0_size_tbl);
 			}
 			break;
 		case 4:
@@ -595,9 +596,7 @@ void effKumokumoDisp(CameraId camId, void* param) {
 			GXSetVtxDesc(14, 2);
 			GXSetVtxAttrFmt(0, 14, 1, 3, 0xe);
 			GXSetArray(14, tbl + 0x1c0, 4);
-			for (k = 0; k < 4; k++) {
-				GXCallDisplayList(cloud_dl_0_tbl[k], cloud_dl_0_size_tbl[k] << 5);
-			}
+			effKumokumoCallDL(cloud_dl_0_tbl, cloud_dl_0_size_tbl);
 			break;
 	}
 

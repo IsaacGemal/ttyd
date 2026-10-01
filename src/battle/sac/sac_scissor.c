@@ -443,17 +443,18 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
     }
 }
 
-// NONMATCHING (99.63%): same instructions; only two register colours differ: damage is r25 here
-// but r21 in the original, and the loop's unit/i are r21 here but r25 there. Declaring battleWork
-// before mario and count after out fixed the other swap; the damage/unit+i pair did not move.
+// Match note: the declaration order and hoisting unit/i to function scope are what steer MWCC to
+// colour damage r21 and unit/i r25. The code is otherwise the natural form.
 s32 scissor_damage(EventEntry* event, s32 unused) {
+    BattleUnit* unit;
     ScissorWork* work;
-    s32 damage;
     s32 audienceNum;
     BattleWork* battleWork;
     BattleUnit* mario;
+    s32 i;
     s32* args;
     s32 unitIndex;
+    s32 damage;
     s32 out;
     s32 count;
     s32 allHit;
@@ -468,7 +469,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
     damage = 0;
 
     for (unitIndex = 0; unitIndex < 0x40; unitIndex++) {
-        BattleUnit* unit = BattleGetUnitPtr(battleWork, unitIndex);
+        unit = BattleGetUnitPtr(battleWork, unitIndex);
         if (unit == NULL) {
             continue;
         }
@@ -498,10 +499,8 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
     if (count == 0) {
         allHit = 0;
     }
-    {
-        s32 i;
     for (i = 0; i < count; i++) {
-        BattleUnit* unit;
+        BattleUnit* target;
         BattleUnitPart* part;
 
         if (work->field_0x18[i] == -1) {
@@ -510,11 +509,10 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
         if (work->field_0x58[i] < 1) {
             continue;
         }
-        unit = BattleGetUnitPtr(battleWork, work->field_0x18[i]);
-        part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-        BattleCheckDamage(mario, unit, part, &weapon_scissor, 0);
+        target = BattleGetUnitPtr(battleWork, work->field_0x18[i]);
+        part = BtlUnit_GetPartsPtr(target, BtlUnit_GetBodyPartsId(target));
+        BattleCheckDamage(mario, target, part, &weapon_scissor, 0);
         damage = 1;
-    }
     }
     if (allHit == 1) {
         s32 value;

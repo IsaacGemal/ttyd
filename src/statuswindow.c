@@ -107,8 +107,10 @@ void statusWinReInit(void) {
 // The three negated `wp->field_0x4 & 0x11` tests materialise the boolean and branch `bne skip` in the
 // original; a plain if folds the materialisation and a switch lowers `case 0` out of line (`beq` +
 // extra b), so they use the `(x ? 1 : 0)` shape under MUST_MATCH.
-// NONMATCHING (99.81%): only FPR allocation in the cos()/lerp tail differs -- the compiler keeps `c`
-// in f2 (target f1), which shifts the surrounding f0/f1/f2 uses and puts the lerp 1.0 in f2 (target f1).
+// The cos()/lerp tail keeps the wrong FPRs: a plain `f32 c` rounds the cos() result into f2
+// (target f1) and the compiler then swaps the lerp's 1.0 and field_0x18 between f0/f2, leaving 6
+// FP instructions with the wrong register. Everything else is byte-identical.
+// NONMATCHING (99.88%): only FPR allocation in the cos()/lerp tail differs.
 void statusWinMain(void) {
     MarioWork* mario;
 
@@ -266,18 +268,33 @@ void statusWinMain(void) {
                 wp->field_0x4 &= ~0x100;
             }
         } else {
+#ifdef MUST_MATCH
+            // The original's cos() result is rounded in place in f1 (frsp f1,f1), which a plain
+            // `f32 c` does not reproduce; keeping it in an f64 temp does. The `cc = cc;` SSA copy is
+            // what makes MWCC put the lerp's 1.0/0.5 in f0 like the original (without it they land
+            // in f2). Both are codegen-only; the #else is the plain form with identical semantics.
+            f64 c;
+            f32 cc;
+
+            c = cos(3.1415927f * wp->field_0x8 / wp->field_0xC);
+            cc = 1.0f - (f32)c;
+            cc = cc;
+            wp->field_0x10 = (wp->field_0x18 - *(f32*)wp->field_0x14) * cc * 0.5f + *(f32*)wp->field_0x14;
+#else
             f32 c;
 
             c = (f32)cos(3.1415927f * wp->field_0x8 / wp->field_0xC);
-            wp->field_0x10 = (wp->field_0x18 - *(f32*)((u8*)wp + 0x14)) * (1.0f - c) * 0.5f + *(f32*)((u8*)wp + 0x14);
+            wp->field_0x10 = (wp->field_0x18 - *(f32*)wp->field_0x14) * (1.0f - c) * 0.5f + *(f32*)wp->field_0x14;
+#endif
         }
 
         {
 #ifdef MUST_MATCH
-            // The original writes `t` first and subtracts; that keeps 1.0 in f1 and t in f2.
+            // The original materialises `t = 1.0f` (f1) and then `t = 1.0f - x` (result f2); with a
+            // plain `t -= x` MWCC reuses one register and the 1.0 load lands in f2. Codegen-only.
             f32 t = 1.0f;
             f32 x = wp->field_0x10;
-            t -= x;
+            t = 1.0f - x;
 #else
             f32 x = wp->field_0x10;
             f32 t = 1.0f - x;

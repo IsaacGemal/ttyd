@@ -142,28 +142,26 @@ void effExpBomMain(EffectEntry* effect) {
 	}
 }
 
-// The colours go through inlines that return a GXColor by value: that is what produces the
-// build-then-copy sequence the original has.
-static inline GXColor effExpBomColor1(s32 alpha) {
-	GXColor c = unk_804230e0;
-	c.a = alpha;
-	return c;
+#ifdef MUST_MATCH
+// The colours go through void helpers that call GXSetTevColor themselves: that is what makes the
+// by-value argument copy land in the stack slot adjacent to the helper's local, as in bushSetColor.
+static inline void effExpBomSetColor1(s32 alpha) {
+	GXColor color = unk_804230e0;
+	color.a = alpha;
+	GXSetTevColor(GX_TEVREG0, color);
 }
 
-static inline GXColor effExpBomColor2(s32 count) {
-	GXColor c = unk_804230e4;
-	c.a = (count * 210) >> 4;
-	return c;
+static inline void effExpBomSetColor2(s32 count) {
+	GXColor color = unk_804230e4;
+	color.a = (count * 210) >> 4;
+	GXSetTevColor(GX_TEVREG1, color);
 }
+#endif
 
-// NONMATCHING (99.99%): 5 instructions differ. The two GXSetTevColor struct-by-value calls build their
-// GXColor temporaries in different stack slots: original colour1 0x10->arg 0x14 and colour2 0x8->arg 0xc;
-// ours colour1 0xc->arg 0x14 and colour2 0x8->arg 0x10. Only the slot offsets differ.
 void effExpBomDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effExpBomData* data;
 	CameraEntry* camera;
-	GXColor color;
 	GXTexObj texobj;
 	Mtx m0;
 	Mtx m1;
@@ -220,11 +218,21 @@ void effExpBomDisp(CameraId camId, void* param) {
 				type = (s32)s;
 			}
 
-			color = effExpBomColor1(alpha);
-			GXSetTevColor(GX_TEVREG0, color);
+#ifdef MUST_MATCH
+			effExpBomSetColor1(alpha);
 
-			color = effExpBomColor2(count);
-			GXSetTevColor(GX_TEVREG1, color);
+			effExpBomSetColor2(count);
+#else
+			{
+				GXColor color1 = unk_804230e0;
+				GXColor color2 = unk_804230e4;
+
+				color1.a = alpha;
+				GXSetTevColor(GX_TEVREG0, color1);
+				color2.a = (count * 210) >> 4;
+				GXSetTevColor(GX_TEVREG1, color2);
+			}
+#endif
 
 			GXSetNumChans(0);
 			GXSetNumTexGens(2);

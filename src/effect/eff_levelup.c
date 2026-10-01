@@ -54,7 +54,6 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (99.35%): everything matches except the `elem` pointer and the table byte-offset induction swap registers (target r6/r5, ours r5/r6), and the compiler's anonymous @N pool entries stand in for the named double/table symbols (objdiff resolves data by section offset).
 EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effLevelupData* data;
@@ -75,12 +74,12 @@ EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	data->timer = count;
 	data->state = 0;
 
-	for (i = 1; i < entry->count; i++) {
+	elem = data + 1;
+	for (i = 1; i < entry->count; i++, elem++) {
 		s32 tbl[2][5] = {
 			{ 0x00000000, 0x00000040, 0x000000BC, 0x00000104, 0x00000088 },
 			{ 0x00000000, 0x00000058, 0x000000D2, 0x00000100, 0x00000086 }
 		};
-		elem = &data[i];
 
 		elem->position.x = (f32)(tbl[(!gp->language) ? 0 : 1][i] - tbl[(!gp->language) ? 0 : 1][4]);
 		elem->position.y = (f32)y_trans[0];
@@ -166,27 +165,23 @@ void effLevelupMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (99.59%): `effect->count` is re-read at the top of the outer loop (there is no `count` local), which fixes the extra callee-saved register and cascades through the whole allocation. With the 2D `texid_tbl[2][6]`, the per-branch GXSetChanMatColor calls, and the `((effLevelupData*)effect->userdata)[i]` element base, the layout and instruction selection all match. Remaining: the outer-loop `layer` and inner-loop `elem` base swap (target r22/r24, ours r24/r22), the `viewYaw`/deg2rad FPR swap in PSMTXRotRad, and the two loop-latch decrements are scheduled in the opposite order.
+// NONMATCHING (99.71%): inlining the second camGetPtr into the PSMTXRotRad yaw expression fixes the deg2rad FPR swap. Reusing the dead `camId` parameter as the outer loop counter (dropping the separate `layer`) makes the allocator put the induction variables in the target's r22/r24, but it pushes `effect`/`i`/`xBaseI` to r23/r25/r21 (target r21/r23/r25); a separate `layer` local instead keeps effect/i/xBaseI right but puts the induction pair in r24/r22 (99.69%). Also remaining: the two inner-loop-latch decrements (`i--` and the `i*0x24` offset) are scheduled in the opposite order.
 void effLevelupDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effLevelupData* data = effect->userdata;
 	CameraEntry* camView;
-	CameraEntry* cam;
 	Mtx mtxTrans;
 	Mtx mtxRot;
 	Mtx mtxScale;
 	Mtx mtxView;
 	GXTexObj texObj;
-	s32 count;
-	s32 layer;
 	s32 i;
 	f32 halfConst = 0.5f;
 	f32 yConst = 48.0f;
 
 	camView = camGetPtr(camId);
 	PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
-	cam = camGetPtr(camId);
-	PSMTXRotRad(mtxRot, 'y', 0.017453292f * -cam->viewYaw);
+	PSMTXRotRad(mtxRot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
 	PSMTXConcat(camView->view, mtxTrans, mtxView);
 
@@ -206,10 +201,10 @@ void effLevelupDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
-	for (layer = 1; layer >= 0; layer--) {
+	for (camId = 1; camId >= 0; camId--) {
 		for (i = effect->count - 1; i >= 1; i--) {
-			s32 xBaseI = layer * 4;
-			s32 yBaseI = -layer * 4;
+			s32 xBaseI = camId * 4;
+			s32 yBaseI = -camId * 4;
 			f32 xBase = (f32)xBaseI;
 			f32 yBase = (f32)yBaseI;
 			effLevelupData* elem = &((effLevelupData*)effect->userdata)[i];
@@ -217,7 +212,7 @@ void effLevelupDisp(CameraId camId, void* param) {
 			f32 half;
 			f32 neghalf;
 
-			if (layer != 0) {
+			if (camId != 0) {
 				effGetTexObj(texid_tbl[gp->language != 0][i + 2], &texObj);
 				GXLoadTexObj(&texObj, 0);
 				GXSetChanMatColor(4, dat_80421080);

@@ -130,7 +130,15 @@ u32 HSV2RGB(GXColor* hsv) {
 	return *(u32*)&out;
 }
 
-// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
+#ifdef MUST_MATCH
+// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
+// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
+// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
+static inline void FontDrawCodeMtx_ColorA(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
 void FontDrawCodeMtx(Mtx mtx, u16 code) {
 	CameraEntry* cam;
 
@@ -142,7 +150,11 @@ void FontDrawCodeMtx(Mtx mtx, u16 code) {
 		GXColor c2;
 		GXColor saved = fontColor;
 		GXColor c = fontColTbl[0];
+#ifdef MUST_MATCH
+		FontDrawCodeMtx_ColorA(c);
+#else
 		FontDrawColor(&c);
+#endif
 		_JUTFont_DrawPos(code, -2, 0);
 		_JUTFont_DrawPos(code, 2, 0);
 		_JUTFont_DrawPos(code, 0, -2);

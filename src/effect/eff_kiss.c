@@ -96,9 +96,10 @@ extern u32 unk_80423314;
 extern u32 unk_80423318;
 extern u32 unk_8042331c;
 
-// 100% matched. The constants are loaded by name (see the block at the top of this file), as `const`
-// definitions, so MWCC gives effKissEntry retail's const scheduling; writable globals would reload them after sin/cos. `t` splits
-// the shared twoPi/360 division out of the sin/cos arguments so it is computed once, as retail does.
+// 100% matched. The const declarations make MWCC schedule the constants as retail does (writable
+// globals would reload them after sin/cos); `t` splits the shared twoPi/360 division out of the
+// sin/cos arguments so it is computed once, as retail does. In case 5 the `negOne` local hoists the
+// -1.0f load into retail's f0 (MUST_MATCH; natural form in the #else).
 EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	EffectEntry* entry;
 	KissEffectWork* data;
@@ -165,6 +166,19 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 			data->scaleX = float_1_80421404;
 			break;
 		case 5:
+#ifdef MUST_MATCH
+		{
+			/* MUST_MATCH: the local hoists the -1.0f load into retail's f0 (the natural form is in #else). */
+			f32 negOne = float_neg1_80421464;
+			data->scaleY = float_1p5_80421418;
+			data->scaleX = float_1p5_80421418;
+			data->rot = float_360_80421444 * (f32)i / (f32)(entry->count - 1);
+			data->velX = float_3_80421460 * (f32)sin(float_6p2832_80421438 * data->rot / float_360_80421444);
+			data->velY = float_3_80421460 * (f32)cos(float_6p2832_80421438 * data->rot / float_360_80421444);
+			data->rot = data->rot * negOne;
+			break;
+		}
+#else
 			data->scaleY = float_1p5_80421418;
 			data->scaleX = float_1p5_80421418;
 			data->rot = float_360_80421444 * (f32)i / (f32)(entry->count - 1);
@@ -172,17 +186,19 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 			data->velY = float_3_80421460 * (f32)cos(float_6p2832_80421438 * data->rot / float_360_80421444);
 			data->rot = data->rot * float_neg1_80421464;
 			break;
+#endif
 		}
 	}
 	return entry;
 }
 
-// The radius-product split below only nudges MWCC's FPR allocator; the natural single expression is in
-// the #else branch. Every other source shape tried gives the same or a worse allocation -- see REPORT.md.
-//
-// NONMATCHING (99.64%): all instructions, branches and calls match in order; only FPR numbers differ
-// (case 1 coalesces the u8->f32 conversion into radius f29 where retail uses a temp f3, and case 2
-// rotates base/radius through f29/f31 instead of f31/f29).
+// The radius-product split below nudges MWCC's FPR allocator; the natural single expression is in
+// the #else branch. `t` is declared without an initializer and assigned after the radius multiplies
+// so this function's .sdata2 constants pool in the target order (0.03125, 1.2, then 360); assigning
+// them in `t`'s declaration would pool 360 first. Both changes leave the .text identical. The target's
+// named pool relocations (float_*, double_to_int_*) need the whole file's .sdata2/.rodata layout fixed;
+// this function's own constants are in the target order.
+// NONMATCHING (99.64%): only FPR numbers differ (case 1 coalesces the u8->f32 conversion into f29 vs retail's temp f3; case 2 rotates base/radius f29/f31 vs f31/f29).
 void effKissMain(EffectEntry* effect) {
 	KissEffectWork* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -238,18 +254,19 @@ void effKissMain(EffectEntry* effect) {
 	}
 	case 1: {
 		f32 base = 6.2831855f * angle;
+		f32 t;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 24) {
-				f32 t = base / 360.0f;
+				f32 radius = (f32)kuri_kiss[data->frame * 3];
 #ifdef MUST_MATCH
 				/* MUST_MATCH: split the product so MWCC emits retail's two
 				   fmuls-into-radius instead of a continuation temp. */
-				f32 radius = (f32)kuri_kiss[data->frame * 3];
 				radius *= 0.03125f;
 				radius *= 1.2f;
 #else
-				f32 radius = (f32)kuri_kiss[data->frame * 3] * 0.03125f * 1.2f;
+				radius = radius * 0.03125f * 1.2f;
 #endif
+				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
 				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] * 0.03125f;
@@ -262,17 +279,18 @@ void effKissMain(EffectEntry* effect) {
 	}
 	case 2: {
 		f32 base = 6.2831855f * angle;
+		f32 t;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 39) {
-#ifdef MUST_MATCH
-				f32 t = base / 360.0f;
 				f32 radius = (f32)kura_kiss[data->frame * 3];
+#ifdef MUST_MATCH
+				/* MUST_MATCH: same split as case 1. */
 				radius *= 0.03125f;
 				radius *= 1.2f;
 #else
-				f32 radius = (f32)kura_kiss[data->frame * 3] * 0.03125f * 1.2f;
-				f32 t = base / 360.0f;
+				radius = radius * 0.03125f * 1.2f;
 #endif
+				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
 				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] * 0.03125f;
