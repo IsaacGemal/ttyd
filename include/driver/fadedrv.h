@@ -35,8 +35,7 @@ typedef struct FadeEntry {
 	FadeType type; //0x4
 	s32 field_0x8; //0x8
 	u8 field_0xC[0x10 - 0xC]; //0xC
-	s32 field_0x10; //0x10
-	s32 field_0x14; //0x14
+	s64 duration; //0x10
 	GXColor color; //0x18
 	f32 fadeSpotX; //0x1C
 	f32 fadeSpotY; //0x20
@@ -58,7 +57,7 @@ typedef struct FadeEntry {
 	u8 field_0x94[0x9C - 0x94]; //0x94
 	OffscreenCallback callback; //0x9C
 	void* offparam; //0xA0
-	u32 field_0xA4; //0xA4
+	s32 field_0xA4; //0xA4
 } FadeEntry;
 
 typedef struct FadeWork {
