@@ -216,7 +216,7 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
 // The control flow and every call argument match; MWCC's stack-slot assignment
 // (our `winTexSet` by-value copies land in the outgoing-argument area, so the
 // frame is 0x630 instead of 0x620), the int->float pool doubles and the FPR
-// allocation in the arrow blocks still differ. See REPORT.md.
+// allocation in the arrow blocks still differ.
 // NONMATCHING (69.15%): stack slots, pool doubles and arrow FPRs, see above.
 void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     char buf[0x400];

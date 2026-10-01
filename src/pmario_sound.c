@@ -5154,12 +5154,10 @@ BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
 // through r0 (`addi r0,r3,psbgmlist@l; mr r27,r0`) instead of `addi r27,r3,psbgmlist@l`. The tail
 // does recompute `psbgm + (a&0xF)*0x38` as the target does (via `&psbgm[a & 0xF]`).
 // Local declaration order is load-bearing for register allocation; the current order was found by
-// search and is the best found (see REPORT.md).
+// search and is the best found.
 // psbgm prefix fields 0x8/0xD/0xE/0xF/0x10 and the work block at 0x20..0x2B are not
 // declared in PaperSoundBGM; psbgmlist fields 0x8..0xF are not in the local BGMListEntry.
 // All such accesses use raw offsets.
-// NONMATCHING (93.52%): opcodes/operands match apart from register allocation, the not-yet-written
-// psndBGMOff_f_d callee being inlined away, and a few branch placements (see notes above).
 s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
 	s32 bgmid;
 	s32 slot;

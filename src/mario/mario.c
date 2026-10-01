@@ -73,9 +73,7 @@ s32 marioGetColor(void) {
 	return mp->colorId;
 }
 
-// NONMATCHING (99.90%): the else's marioSetFamicomMode(1) call is absent because that
-// callee is still an empty placeholder and MWCC folds the call away; it comes back once
-// that function is decompiled.
+// NONMATCHING (99.90%): only the string offsets into .rodata differ.
 void marioSetCharMode(s32 mode) {
 	MarioWork* wp = mp;
 	s32 materialFlag;

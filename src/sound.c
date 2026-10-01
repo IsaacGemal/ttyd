@@ -1645,8 +1645,6 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     return *(u32*)(stream->unk1C + 8);
 }
 #undef SS_CB_REG
-#ifdef MUST_MATCH
-#endif
 
 // Returns void: the original never writes r3, and an s32 definition (or header prototype!) shifts the tail to r4.
 #ifdef MUST_MATCH

@@ -16,4 +16,3 @@ typedef struct WindowWork WindowWork;
 void monoshiriGX(WindowWork* work, f32 x, f32 y);
 void winLogDisp(CameraId camId, WindowWork* work, s32 idx);
 void mapGX(WindowWork* work, f32 x, f32 y);
-void monoshiriGX(WindowWork* work, f32 x, f32 y);

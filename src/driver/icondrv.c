@@ -379,6 +379,7 @@ void iconDisp(CameraId camId, void* param) {
 
 // dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
 #pragma dont_inline on
+// NONMATCHING (99.87%)
 void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
     ICON_FRAMES_DECL
     CameraEntry* camera;

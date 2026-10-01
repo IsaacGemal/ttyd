@@ -333,5 +333,4 @@ typedef struct MoamoaChainEntry {
 extern MoamoaChainEntry g_moamoa_chain_tbl[47];
 extern const s32 dat_80419a28;
 extern Vec vec3_802c2db0[];
-void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);
 void evalProc(s32 parentGroupId, s32 groupId);

@@ -2257,8 +2257,7 @@ void mapDisp(void) {
 				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMin.z)
 				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMax.z)
 				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMax.z)
-#ifdef MUST_MATCH
-				/* the original transforms this corner through the model matrix twice */
+				/* the original transforms this corner through the model matrix twice (a bug kept as is) */
 				clipPos.x = joint->bboxMax.x;
 				clipPos.y = joint->bboxMax.y;
 				clipPos.z = joint->bboxMin.z;
@@ -2273,9 +2272,6 @@ void mapDisp(void) {
 						if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible;
 					}
 				}
-#else
-				CLIP_TEST(joint->bboxMax.x, joint->bboxMax.y, joint->bboxMin.z)
-#endif
 				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMax.z)
 				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMin.z)
 				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMin.z)

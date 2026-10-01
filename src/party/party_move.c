@@ -1401,7 +1401,9 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 // 0x290) and most of the prologue/copy block. Declaring the tables E,D,C,B,A (V,W,Z,Y,X) and
 // giving targetDir a separate `(Vec){0,-1,0}` temp (so 0.0f is not hoisted) recovers the
 // original's five callee-saved FPRs (f27-f31) and the loop body. 0x54 is an unnamed angle
-// field PartyEntry does not declare, so it is read as a raw offset.
+// field PartyEntry does not declare, so it is read as a raw offset. Like the original, the
+// fallback loop reads one entry past the end of each angle table on its last pass (the neighbour
+// it lands in differs from retail's for anglesE).
 // NONMATCHING (77.78%): interleaved angle-table pool and sliding-window copy differ.
 BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;

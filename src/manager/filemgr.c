@@ -242,8 +242,6 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 	}
 }
 
-#pragma dont_inline reset
-
 // NONMATCHING (99.81%): case 4's loop counter `i` is r5 (retail r4) and the `(u16)i * 8` index
 // temp is r4 (retail r5); the descriptorArray base is r3 as retail has it and everything else
 // matches. The `img`/`pal` locals are what moved the base from r4 to r3.
