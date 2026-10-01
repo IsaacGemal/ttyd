@@ -19,6 +19,10 @@ unit = sys.argv[1]
 write = "--write" in sys.argv
 src = f"src/{unit}.c"
 target = f"build/G8MJ01/obj/{unit}.o"
+_mod, _, _rest = unit.partition("/")
+if _rest and os.path.isdir(f"rels/{_mod}/src"):  # a REL unit: MOD/UNIT
+    src = f"rels/{_mod}/src/{_rest}.c"
+    target = f"build/G8MJ01/{_mod}/obj/{_rest}.o"
 
 
 def text_order(path):
