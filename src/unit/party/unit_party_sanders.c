@@ -168,7 +168,6 @@ extern BattleWeapon partyWeapon_SandersNormalAttack;
 extern BattleWeapon partyWeapon_SandersTimeBombSet;
 extern BattleWeapon partyWeapon_SandersCounterSet;
 extern BattleWeapon partyWeapon_SandersSuperBombAttack;
-extern u8 lbl_803848D8[];
 
 #define TECH_MENU_ENTRY(table)                                                             \
     cmd->mWeaponTable[*count].mIndex = -1;                                                 \
@@ -181,12 +180,21 @@ extern u8 lbl_803848D8[];
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
     (*count)++;
 
-// 100%: the base the original materialises is the addend-0 label 0x803848D8 (see above); the four weapon
-// offsets then stay plain immediates. Under MUST_MATCH only; the natural code below names the four weapon
-// symbols directly.
+// NONMATCHING (99.98%): the only difference is where the +0x330 sits. The target materializes it in the base
+// (`lis r5, attack_audience_event_803845A8+0x330@ha` / `addi r30, r5, ...+0x330@l`) and then uses the four
+// +0x650/+0x710/+0x7d0/+0x890 offsets; MWCC 2.6 folds `sym + 0x330` into the later immediates
+// (+0x980/+0xa40/+0xb00/+0xbc0) and leaves addend 0 in the @ha/@l reloc, so the base register and the four
+// immediates differ even though every final address is right. 0x803848D8 is the `{ -1.0f, 1.0f }` pair that is
+// the last 8 bytes of unit_party_chuchurina.c's attack_audience_event; sanders' `.data` split starts at
+// 0x803848E0, so the pair has no symbol of its own and dtk names the target reference as
+// attack_audience_event+0x330. The real fix is tools/split_scan.py's fix for sanders (move the
+// chuchurina/sanders `.data` boundary down 8 bytes and let sanders own the pair), same as the nokotarou fix in
+// Grind 28. unit_party_christine.c has the same shape (it scores 100 with an in-file `lbl_80390B70` base); the
+// matching siblings (clauda/vivian/chuchurina/nokotarou/yoshi) have their own `lbl_XXXX` pair symbol directly
+// on the base.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH
-    u8* const weaponBase = lbl_803848D8;
+    u8* weaponBase = attack_audience_event_803845A8 + 0x330;
 #endif
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));

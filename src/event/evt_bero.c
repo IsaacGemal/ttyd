@@ -814,9 +814,6 @@ USER_FUNC(bero_get_position_pipe_pure) {
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (98.29%): the local names[] template is emitted as an anonymous .rodata
-	// symbol (@NNN) instead of jumptable_802C4970, and the enter/exitEvent ternaries branch
-	// with beq/b instead of the original's bne (register allocation / branch layout).
 // NOTE (100%): the local names[] backing store is emitted as an anonymous .rodata symbol
 // (@NNN) instead of the original's local jumptable_802C4970; objdiff scores this 100% but
 // still flags the two relocations. The enter/exitEvent null-checks are shaped for match
