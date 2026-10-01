@@ -390,7 +390,7 @@ config.libs = [
         "objects": [
             Object(Matching, "battle/ac/ac_table.c"),
             Object(NonMatching, "battle/ac/ac_stick_keep_left.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/ac/ac_timing_a.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/ac/ac_timing_a.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/ac/ac_repeatedly.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/ac/ac_shot.c"),
             Object(Matching, "battle/ac/ac_lst_rc_keep.c", extra_cflags=["-O4,s"]),
