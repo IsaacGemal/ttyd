@@ -3451,3 +3451,9 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - `~/ttyd-refs/<project>` on the Mac, rsynced to `~/ttyd-refs` on the tower (pop-os): ac-decomp, spm-decomp, tp, tww (all CC0-1.0) and musyx (MIT), shallow clones; `~/ttyd-refs/README.md` lists each repo's URL, commit and license (checked against its LICENSE file and the GitHub API). Anything else is deleted, never added. Wave agents have no network: prompts point at the local copy. `docs/AGENT_BRIEF.md` rule 16 says so.
 - Every port PR names the project and file it took code from.
 
+
+## Grind 67: MSL FILE_POS, ansi_fp, mbstring from tp (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `FILE_POS.C` (`fseek`, `_fseek`, `ftell`) is zeldaret/tp `libs/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/FILE_POS.c` (CC0): TTYD's version has the text-mode newline adjustment in `_ftell` and the critical region in `ftell`, which the ac-decomp-derived file lacked. New header `libs/metrowerks/include/MSL_C/critical_regions.h` (the enum and prototypes from tp's `critical_regions.h`). 3/3 at 100%, Matching, linked.
+- `ansi_fp.c`: `__equals_dec` and `__minus_dec` are tp's `MSL_Common_Embedded/Src/ansi_fp.c` (GCN branch of `#if PLATFORM_GCN`), 100% on the first build; `__two_exp` takes `long exp` and `__num2dec_internal` has `long num_bits_extract` as in tp (the `short` made an `extsh`); 5 of 7 functions 100%. Still not matching: `__two_exp` 98.38% (the target tests the cases with jump-table range checks `bgt`/`blt`, ours compares in a chain with the same cases) and `__dec2num` (4224 bytes, absent from the sources; tp only has the Wii version).
+- `mbstring.c`: `wcstombs` is now 100% with tp's `unicode_to_UTF8(char*, wchar_t)` (the original's `wchar_t` argument) and an inline `wctomb`; `mbtowc` stays at 98.47% (the target tests `if (!s)` as `bne over; b end`; `if (!s) return 0`, `else { result = 0; }` and `else { }` all score the same or worse).

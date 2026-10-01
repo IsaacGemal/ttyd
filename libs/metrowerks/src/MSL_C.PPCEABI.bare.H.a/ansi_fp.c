@@ -192,71 +192,71 @@ void __str2dec(decimal* d, const char* s, short exp) {
 }
 
 // NONMATCHING (97.70%): 14 instructions differ, 23 missing, 9 extra, plus register differences.
-void __two_exp(decimal* result, short exp) {
+void __two_exp(decimal* result, long exp) {
     switch (exp) {
-        case -64:
-            __str2dec(result, "542101086242752217003726400434970855712890625", -20);
-            return;
-        case -53:
-            __str2dec(result, "11102230246251565404236316680908203125", -16);
-            return;
-        case -32:
-            __str2dec(result, "23283064365386962890625", -10);
-            return;
-        case -16:
-            __str2dec(result, "152587890625", -5);
-            return;
-        case -8:
-            __str2dec(result, "390625", -3);
-            return;
-        case -7:
-            __str2dec(result, "78125", -3);
-            return;
-        case -6:
-            __str2dec(result, "15625", -2);
-            return;
-        case -5:
-            __str2dec(result, "3125", -2);
-            return;
-        case -4:
-            __str2dec(result, "625", -2);
-            return;
-        case -3:
-            __str2dec(result, "125", -1);
-            return;
-        case -2:
-            __str2dec(result, "25", -1);
-            return;
-        case -1:
-            __str2dec(result, "5", -1);
-            return;
-        case 0:
-            __str2dec(result, "1", 0);
-            return;
-        case 1:
-            __str2dec(result, "2", 0);
-            return;
-        case 2:
-            __str2dec(result, "4", 0);
-            return;
-        case 3:
-            __str2dec(result, "8", 0);
-            return;
-        case 4:
-            __str2dec(result, "16", 1);
-            return;
-        case 5:
-            __str2dec(result, "32", 1);
-            return;
-        case 6:
-            __str2dec(result, "64", 1);
-            return;
-        case 7:
-            __str2dec(result, "128", 2);
-            return;
-        case 8:
-            __str2dec(result, "256", 2);
-            return;
+    case -64:
+        __str2dec(result, "542101086242752217003726400434970855712890625", -20);
+        return;
+    case -53:
+        __str2dec(result, "11102230246251565404236316680908203125", -16);
+        return;
+    case -32:
+        __str2dec(result, "23283064365386962890625", -10);
+        return;
+    case -16:
+        __str2dec(result, "152587890625", -5);
+        return;
+    case -8:
+        __str2dec(result, "390625", -3);
+        return;
+    case -7:
+        __str2dec(result, "78125", -3);
+        return;
+    case -6:
+        __str2dec(result, "15625", -2);
+        return;
+    case -5:
+        __str2dec(result, "3125", -2);
+        return;
+    case -4:
+        __str2dec(result, "625", -2);
+        return;
+    case -3:
+        __str2dec(result, "125", -1);
+        return;
+    case -2:
+        __str2dec(result, "25", -1);
+        return;
+    case -1:
+        __str2dec(result, "5", -1);
+        return;
+    case 0:
+        __str2dec(result, "1", 0);
+        return;
+    case 1:
+        __str2dec(result, "2", 0);
+        return;
+    case 2:
+        __str2dec(result, "4", 0);
+        return;
+    case 3:
+        __str2dec(result, "8", 0);
+        return;
+    case 4:
+        __str2dec(result, "16", 1);
+        return;
+    case 5:
+        __str2dec(result, "32", 1);
+        return;
+    case 6:
+        __str2dec(result, "64", 1);
+        return;
+    case 7:
+        __str2dec(result, "128", 2);
+        return;
+    case 8:
+        __str2dec(result, "256", 2);
+        return;
     }
 
     {
@@ -268,21 +268,164 @@ void __two_exp(decimal* result, short exp) {
         if (exp & 1) {
             temp = *result;
             if (exp > 0) {
-                decimal temp2;
-                __str2dec(&temp2, "2", 0);
-                __timesdec(result, &temp, &temp2);
+                __str2dec(&x2, "2", 0);
             } else {
-                decimal temp2;
-                __str2dec(&temp2, "5", -1);
-                __timesdec(result, &temp, &temp2);
+                __str2dec(&x2, "5", -1);
             }
+            __timesdec(result, &temp, &x2);
         }
     }
 }
 
-// NONMATCHING (98.02%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
+int __equals_dec(const decimal* x, const decimal* y) {
+    if (x->sig.text[0] == 0) {
+        if (y->sig.text[0] == 0)
+            return 1;
+        return 0;
+    }
+    if (y->sig.text[0] == 0) {
+        if (x->sig.text[0] == 0)
+            return 1;
+        return 0;
+    }
+
+    if (x->exp == y->exp) {
+        int i;
+        int l = x->sig.length;
+
+        if (l > y->sig.length) {
+            l = y->sig.length;
+        }
+
+        for (i = 0; i < l; i++) {
+            if (x->sig.text[i] != y->sig.text[i]) {
+                return 0;
+            }
+        }
+
+                if (l == x->sig.length) {
+            for (; i < y->sig.length; ++i) {
+                if (y->sig.text[i] != 0) {
+                    return 0;
+                }
+            }
+        } else {
+            for (; i < x->sig.length; ++i) {
+                if (x->sig.text[i] != 0) {
+                    return 0;
+                }
+            }
+        }
+        
+        return 1;
+    }
+    return 0;
+}
+
+
+void __minus_dec(decimal* z, const decimal* x, const decimal* y) {
+    int zlen, dexp;
+    unsigned char *ib, *i, *ie;
+    unsigned char const *jb, *j, *jn;
+
+    *z = *x;
+
+    if (y->sig.text[0] == 0)
+        return;
+
+    zlen = z->sig.length;
+    if (zlen < y->sig.length)
+        zlen = y->sig.length;
+
+    dexp = z->exp - y->exp;
+    zlen += dexp;
+
+    if (zlen > SIGDIGLEN)
+        zlen = SIGDIGLEN;
+
+    while (z->sig.length < zlen) {
+        z->sig.text[z->sig.length++] = 0;
+    }
+
+    ib = z->sig.text;
+    i = ib + zlen;
+
+    if (y->sig.length + dexp < zlen) {
+        i = ib + (y->sig.length + dexp);
+    }
+
+    jb = y->sig.text;
+    j = jb + (i - ib - dexp);
+    jn = j;
+
+    while (i > ib && j > jb) {
+        i--;
+        j--;
+        if (*i < *j) {
+            unsigned char* k = i - 1;
+            while (*k == 0)
+                k--;
+            while (k != i) {
+                --*k;
+                *++k += 10;
+            }
+        }
+        *i -= *j;
+    }
+
+    if (jn - jb < y->sig.length) {
+        int round_down = 0;
+        if (*jn < 5)
+            round_down = 1;
+        else if (*jn == 5) {
+            unsigned char const* ibPtr = y->sig.text + y->sig.length;
+
+            for (j = jn + 1; j < ibPtr; j++) {
+                if (*j != 0)
+                    goto done;
+            }
+            i = ib + (jn - jb) + dexp - 1;
+            if (*i & 1)
+                round_down = 1;
+        }
+        if (round_down) {
+            if (*i < 1) {
+                unsigned char* k = i - 1;
+                while (*k == 0)
+                    k--;
+                while (k != i) {
+                    --*k;
+                    *++k += 10;
+                }
+            }
+            *i -= 1;
+        }
+    }
+done:
+    for (i = ib; *i == 0; ++i) {
+    }
+
+    if (i > ib) {
+        unsigned char dl = (unsigned char)(i - ib);
+        z->exp -= dl;
+        ie = ib + z->sig.length;
+        for (; i < ie; ++i, ++ib)
+            *ib = *i;
+        z->sig.length -= dl;
+    }
+
+    ib = z->sig.text;
+    for (i = ib + z->sig.length; i > ib;) {
+        i--;
+        if (*i != 0)
+            break;
+    }
+    z->sig.length = (unsigned char)(i - ib + 1);
+}
+
+
 void __num2dec_internal(decimal* d, double x) {
-    char sign = (char)(signbit(x) != 0);
+    signed char sign = (signed char)(signbit(x) != 0);
 
     if (x == 0) {
         d->sign = sign;
@@ -307,7 +450,7 @@ void __num2dec_internal(decimal* d, double x) {
     {
         int exp;
         double frac = frexp(x, &exp);
-        short num_bits_extract = DBL_MANT_DIG - __count_trailing_zero(frac);
+        long num_bits_extract = DBL_MANT_DIG - __count_trailing_zero(frac);
         double integer;
         decimal int_d, pow2_d;
 
