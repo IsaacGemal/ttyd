@@ -6,44 +6,19 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 
 // .sdata2 constants live in this translation unit
 // (see config/G8MJ01/symbols.txt).
-extern const f32 float_60_8041f614;
-extern const f32 float_0p1_8041f628;
-extern const f32 float_6p2832_8041f62c;
-extern const f32 float_90_8041f630;
-extern const f32 float_70_8041f634;
-extern const f32 float_10_8041f638;
-extern const f32 float_360_8041f63c;
-extern const f32 float_255_8041f640;
-extern const f32 float_80_8041f644;
-extern const f32 float_0p4_8041f648;
-extern const f32 float_0p95_8041f5e8;
-extern const f32 float_deg2rad_8041f5ec;
-extern const f32 float_0p0625_8041f5f0;
-extern const f32 float_0_8041f5f4;
-extern const f32 float_0p03125_8041f5f8;
-extern const f32 float_0p0078125_8041f5fc;
-extern const f32 float_5_8041f600;
-extern const f32 float_2p3_8041f604;
-extern const f32 float_14_8041f608;
-extern const f32 float_20_8041f60c;
-extern const f32 float_0p05_8041f610;
-extern const f32 float_1_8041f618;
-extern const f32 float_2_8041f61c;
-extern const f32 float_34_8041f620;
-extern const f32 float_15_8041f624;
 
 // .sdata2 GXColor tints
-extern GXColor dat_8041f5d0;
-extern GXColor dat_8041f5d4;
-extern GXColor dat_8041f5d8;
-extern GXColor dat_8041f5dc;
-extern GXColor dat_8041f5e0;
-extern GXColor dat_8041f5e4;
+extern const GXColor dat_8041f5d0;
+extern const GXColor dat_8041f5d4;
+extern const GXColor dat_8041f5d8;
+extern const GXColor dat_8041f5dc;
+extern const GXColor dat_8041f5e0;
+extern const GXColor dat_8041f5e4;
 
 // .data vertex arrays, local to this file.
 static u32 size48x48_tex32x32_vtx[0x38 / 4] = {
@@ -63,7 +38,6 @@ static u32 size10x10_tex32x32_vtx[0xE0 / 4] = {
 
 // .rodata
 const Vec vec3_802faac8 = { 0.0f, 0.0f, 0.0f };
-const char str_802FAAE0[16] = "LensflareN64";
 EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
     EffectEntry* effect;
     LensflareData* data;
@@ -71,7 +45,7 @@ EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2)
     s32 i;
 
     effect = effEntry();
-    effect->type = str_802FAAE0;
+    effect->type = "LensflareN64";
     effect->count = 6;
     data = __memAlloc(HEAP_EFFECT, sizeof(LensflareData));
     effect->userdata = data;
@@ -93,8 +67,8 @@ EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2)
     for (i = 1; i < 6; i++) {
         entry->field_20 = (f32)(rand() % 360);
         entry->field_2C = (f32)((i * 2) % 20 + 60);
-        entry->field_28 = float_0p1_8041f628 * (f32)(rand() % 16) + float_0p4_8041f648;
-        entry->field_30 = float_0p1_8041f628 * (f32)(rand() % 11) + float_0p1_8041f628;
+        entry->field_28 = 0.1f * (f32)(rand() % 16) + 0.4f;
+        entry->field_30 = 0.1f * (f32)(rand() % 11) + 0.1f;
         entry++;
     }
     return effect;
@@ -113,6 +87,7 @@ void effLensflareMain(EffectEntry* effect) {
 #endif
     Vec disp = vec3_802faac8;
     f32 angle;
+    f32 c;
     s32 i;
 #ifdef MUST_MATCH
     /* MUST_MATCH: reading field_18 and field_1C once each keeps them in r0 and r3 as the original does;
@@ -161,19 +136,20 @@ void effLensflareMain(EffectEntry* effect) {
 #endif
 
     for (i = 1, data++; i < effect->count; i++, data++) {
-        angle = float_6p2832_8041f62c * (float_90_8041f630 * (data->field_2C - float_70_8041f634) / float_10_8041f638) / float_360_8041f63c;
+        angle = 6.2831855f * (90.f * (data->field_2C - 70.f) / 10.f) / 360.f;
         // field_14 is inside LensflareEntry's padding; the overlapping LensflareData layout names it.
-        ((LensflareData*)data)->field_14 = (s32)(float_255_8041f640 * (f32)cos(angle));
+        c = (f32)cos(angle);
+        ((LensflareData*)data)->field_14 = (s32)(255.0f * c);
         data->field_2C += data->field_30;
-        if (data->field_2C > float_80_8041f644) {
-            data->field_2C = float_60_8041f614;
-            data->field_28 = float_0p1_8041f628 * (f32)(rand() % 16) + float_0p4_8041f648;
+        if (data->field_2C > 80.f) {
+            data->field_2C = 60.f;
+            data->field_28 = 0.1f * (f32)(rand() % 16) + 0.4f;
 #ifdef MUST_MATCH
             /* MUST_MATCH: the natural extern form below makes MWCC CSE 0.1f across the rand() call into
                a callee-saved f24, which grows the frame by 0x10. The literal rematerialises instead. */
             data->field_30 = 0.1f * (f32)(rand() % 11) + 0.1f;
 #else
-            data->field_30 = float_0p1_8041f628 * (f32)(rand() % 11) + float_0p1_8041f628;
+            data->field_30 = 0.1f * (f32)(rand() % 11) + 0.1f;
 #endif
             data->field_20 = (f32)(rand() % 360);
         }
@@ -231,6 +207,7 @@ static inline void lensflareSetColor6(void) {
 // base, texObj) fixes the stack slots, so the GPR declarations are interleaved
 // among them rather than grouped.
 void effLensflareDisp(CameraId cameraId, void* param) {
+	f32 zero = 0.0f;
     CameraEntry* cam;
     EffectEntry* effect = param;
     Mtx trans;
@@ -249,10 +226,10 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     frame = ((LensflareData*)data)->field_1C;
     alpha = ((LensflareData*)data)->field_14;
     if (frame & 1) {
-        alpha = (s32)(float_0p95_8041f5e8 * (f32)alpha);
+        alpha = (s32)(0.95f * (f32)alpha);
     }
     PSMTXTrans(trans, ((LensflareData*)data)->x, ((LensflareData*)data)->y, ((LensflareData*)data)->z);
-    PSMTXRotRad(rot, 'y', float_deg2rad_8041f5ec * -camGetPtr(CAMERA_3D)->viewYaw);
+    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(trans, rot, base);
     PSMTXConcat(cam->view, base, base);
 #ifdef MUST_MATCH
@@ -264,7 +241,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXSetTevColor(1, color);
     }
 #endif
-    PSMTXRotRad(rot, 'z', float_deg2rad_8041f5ec * (f32)(frame + (frame & 1) * 2));
+    PSMTXRotRad(rot, 'z', 0.017453292f * (f32)(frame + (frame & 1) * 2));
     PSMTXConcat(base, rot, rot);
     GXLoadPosMtxImm(rot, 0);
     GXSetCurrentMtx(0);
@@ -278,7 +255,7 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     GXSetTevAlphaIn(0, 7, 1, 4, 7);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-    PSMTXScale(scale, float_0p0625_8041f5f0, float_0p0625_8041f5f0, float_0_8041f5f4);
+    PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
     GXLoadTexMtxImm(scale, 0x1e, 1);
     effGetTexObjN64(0x6f, &texObj);
     GXLoadTexObj(&texObj, 0);
@@ -296,13 +273,13 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     tri2(0, 1, 2, 0, 0, 2, 3, 0);
     effGetTexObjN64(0x86, &texObj);
     GXLoadTexObj(&texObj, 0);
-    PSMTXScale(scale, float_0p03125_8041f5f8, float_0p0078125_8041f5fc, float_0_8041f5f4);
+    PSMTXScale(scale, 0.03125f, 0.0078125f, 0.0f);
     GXLoadTexMtxImm(scale, 0x1e, 1);
     effSetVtxDescN64((effVtxArray*)size10x10_tex32x32_vtx);
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         f30 = data->field_28;
-        if (f30 == float_0_8041f5f4) {
+        if (f30 == zero) {
             continue;
         }
 #ifdef MUST_MATCH
@@ -320,8 +297,8 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
         GXSetTevColorIn(0, 15, 15, 15, 2);
         GXSetTevAlphaIn(0, 7, 1, 4, 7);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041f5ec * data->field_20);
-        PSMTXTrans(trans, data->field_2C, float_0_8041f5f4, float_0_8041f5f4);
+        PSMTXRotRad(rot, 'z', 0.017453292f * data->field_20);
+        PSMTXTrans(trans, data->field_2C, 0.0f, 0.0f);
         PSMTXConcat(rot, trans, trans);
         PSMTXScale(scale, f30, f30, f30);
         PSMTXConcat(trans, scale, trans);
@@ -331,10 +308,10 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXBegin(0x90, 0, 6);
         tri2(12, 13, 14, 0, 12, 14, 15, 0);
 
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041f5ec * data->field_20);
-        PSMTXTrans(trans, float_5_8041f600 + data->field_2C, float_0_8041f5f4, float_0_8041f5f4);
+        PSMTXRotRad(rot, 'z', 0.017453292f * data->field_20);
+        PSMTXTrans(trans, 5.0f + data->field_2C, 0.0f, 0.0f);
         PSMTXConcat(rot, trans, trans);
-        PSMTXScale(scale, float_2p3_8041f604 - f30, float_2p3_8041f604 - f30, float_2p3_8041f604 - f30);
+        PSMTXScale(scale, 2.3f - f30, 2.3f - f30, 2.3f - f30);
         PSMTXConcat(trans, scale, trans);
         PSMTXConcat(base, trans, trans);
         GXLoadPosMtxImm(trans, 0);
@@ -359,14 +336,14 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
         GXSetTevColorIn(0, 2, 4, 8, 15);
         GXSetTevAlphaIn(0, 7, 1, 4, 7);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041f5ec * (float_14_8041f608 + data->field_20));
-        PSMTXRotRad(trans, 'y', float_deg2rad_8041f5ec * (f32)(frame + (i * 10) % 45));
+        PSMTXRotRad(rot, 'z', 0.017453292f * (14.0f + data->field_20));
+        PSMTXRotRad(trans, 'y', 0.017453292f * (f32)(frame + (i * 10) % 45));
         PSMTXConcat(rot, trans, rot);
-        PSMTXTrans(trans, float_20_8041f60c, float_0_8041f5f4, float_0_8041f5f4);
+        PSMTXTrans(trans, 20.f, 0.0f, 0.0f);
         PSMTXConcat(rot, trans, trans);
         {
-            f32 t = float_0p05_8041f610 * (data->field_2C - float_60_8041f614);
-            PSMTXScale(scale, float_1_8041f618 + t, float_2_8041f61c - t, float_1_8041f618);
+            f32 t = 0.05f * (data->field_2C - 60.f);
+            PSMTXScale(scale, 1.0f + t, 2.0f - t, 1.0f);
         }
         PSMTXConcat(trans, scale, trans);
         PSMTXConcat(base, trans, trans);
@@ -385,15 +362,15 @@ void effLensflareDisp(CameraId cameraId, void* param) {
         }
 #endif
         {
-            f32 a = float_34_8041f620 + data->field_20;
-            PSMTXRotRad(rot, 'z', float_deg2rad_8041f5ec * (a + (f32)frame));
+            f32 a = 34.0f + data->field_20;
+            PSMTXRotRad(rot, 'z', 0.017453292f * (a + (f32)frame));
         }
-        PSMTXRotRad(trans, 'y', float_deg2rad_8041f5ec * (f32)(i * 35));
+        PSMTXRotRad(trans, 'y', 0.017453292f * (f32)(i * 35));
         PSMTXConcat(rot, trans, rot);
-        PSMTXTrans(trans, float_15_8041f624, float_0_8041f5f4, float_0_8041f5f4);
+        PSMTXTrans(trans, 15.0f, 0.0f, 0.0f);
         PSMTXConcat(rot, trans, trans);
-        PSMTXScale(scale, float_0p1_8041f628 * (data->field_2C - float_60_8041f614) + float_2_8041f61c,
-                   float_1_8041f618, float_1_8041f618);
+        PSMTXScale(scale, 0.1f * (data->field_2C - 60.f) + 2.0f,
+                   1.0f, 1.0f);
         PSMTXConcat(trans, scale, trans);
         PSMTXConcat(base, trans, trans);
         GXLoadPosMtxImm(trans, 0);
@@ -404,28 +381,11 @@ void effLensflareDisp(CameraId cameraId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0p95_8041f5e8 = 0.95f;
-const f32 float_deg2rad_8041f5ec = 0.017453292f;
-const f32 float_0p0625_8041f5f0 = 0.0625f;
-const f32 float_0_8041f5f4 = 0.0f;
-const f32 float_0p03125_8041f5f8 = 0.03125f;
-const f32 float_0p0078125_8041f5fc = 0.0078125f;
-const f32 float_5_8041f600 = 5.0f;
-const f32 float_2p3_8041f604 = 2.3f;
-const f32 float_14_8041f608 = 14.0f;
-const f32 float_20_8041f60c = 20.0f;
-const f32 float_0p05_8041f610 = 0.05f;
-const f32 float_60_8041f614 = 60.0f;
-const f32 float_1_8041f618 = 1.0f;
-const f32 float_2_8041f61c = 2.0f;
-const f32 float_34_8041f620 = 34.0f;
-const f32 float_15_8041f624 = 15.0f;
-const f32 float_0p1_8041f628 = 0.1f;
-const f32 float_6p2832_8041f62c = 6.2831855f;
-const f32 float_90_8041f630 = 90.0f;
-const f32 float_70_8041f634 = 70.0f;
-const f32 float_10_8041f638 = 10.0f;
-const f32 float_360_8041f63c = 360.0f;
-const f32 float_255_8041f640 = 255.0f;
-const f32 float_80_8041f644 = 80.0f;
-const f32 float_0p4_8041f648 = 0.4f;
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041f5d0 = { 0xFF, 0x40, 0x40, 0x00 };
+const GXColor dat_8041f5d4 = { 0xFF, 0x40, 0x40, 0x00 };
+const GXColor dat_8041f5d8 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041f5dc = { 0xFF, 0x00, 0xFF, 0x00 };
+const GXColor dat_8041f5e0 = { 0xFF, 0x80, 0xFF, 0x00 };
+const GXColor dat_8041f5e4 = { 0xFF, 0x40, 0x40, 0x00 };

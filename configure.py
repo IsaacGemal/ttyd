@@ -617,7 +617,7 @@ config.libs = [
             Object(Matching, "effect/n64/eff_kemuri12_n64.c"),
             Object(Matching, "effect/n64/eff_kumokumo_chip_n64.c"),
             Object(NonMatching, "effect/n64/eff_kumokumo_n64.c"),
-            Object(NonMatching, "effect/n64/eff_lensflare_n64.c"),
+            Object(Matching, "effect/n64/eff_lensflare_n64.c"),
             Object(NonMatching, "effect/n64/eff_magic1_n64.c"),
             Object(NonMatching, "effect/n64/eff_magic2_n64.c"),
             Object(NonMatching, "effect/n64/eff_magic3_n64.c"),
