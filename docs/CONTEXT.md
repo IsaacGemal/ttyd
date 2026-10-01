@@ -3271,3 +3271,8 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
 - `math.h` pools two sqrt doubles (0.5, 3.0) twice that this unit does not have; `math_ext.h` plus `#define fabs(x) __fabs(x)` keeps the `fabs` intrinsic without them.
 - `double_15` is only reached through the vector base under `MUST_MATCH`: `#pragma force_active` or the linker drops it (the dol came out 32 bytes short in `.rodata`).
 - `tools/fn_order.py --write` moves the function bodies but leaves the `#pragma` blocks and comments where they were; the `opt_common_subs`/`dont_inline` pragmas had to be put back around their functions by hand (the lint then reports them as new: `--allow-pragma`).
+
+## Grind 51: eff_toiki links; dol_gen `.byte` tables (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `tools/dol_gen.py` stops with `unsupported .byte` on an object made only of `.byte` lines; the patch that writes it as a `u8` array is a separate PR (the file is a protected path: needs Isaac). This unit's data was generated with that patch.
+- `effect/eff_toiki`: the unit's data (28 objects, one of them `queen_toiki_dl_0_size_tbl`, a `u8[16]`) via `dol_gen --append`, then by hand: the pair `lbl_803B2FA0` was defined twice (the source's old anchor definition went, the generated one stays with an `extern` above the code), `negone_one$374` style names to `negone_one_374` (as in clauda/christine), `#pragma force_active` around the tables (all but the first are reached through one base pointer, the linker dropped 928 bytes of `.data`/`.sdata`), and the static `color_tbl` moved after `queen_toiki_dl_0_size_tbl` (a forward `static GXColor color_tbl[3];` above) because it is the last object of the original `.sdata`.
