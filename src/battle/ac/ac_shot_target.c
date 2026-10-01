@@ -6,7 +6,9 @@
 #include "battle/battle_unit.h"
 #include "pmario_sound.h"
 #include "system.h"
-#include <math.h>
+#include "math_ext.h"
+// math.h pools two sqrt doubles this unit does not have; only its fabs intrinsic is needed.
+#define fabsf(x) __fabsf(x)
 #include <string.h>
 
 // Per-action-command work area at BattleWork + 0x1F4C (inside BattleActions.field_0x2BC).
@@ -44,6 +46,14 @@ const Vec vec3_802ff950[9] = {
 
 const char str_802FF9BC[] = "SFX_AC_CURSOR_MOVE1";
 
+// The original reads the nine .rodata vectors through a single vec3_802ff950 base register.
+// MUST_MATCH reaches them through one `vecs` base; the natural form names each symbol.
+#ifdef MUST_MATCH
+#define RODATA_VEC(i, name) (vecs[i])
+#else
+#define RODATA_VEC(i, name) (name)
+#endif
+
 // Data constants declared extern before use so MWCC references them by name instead of folding their
 // values into the instruction stream. They are defined at the bottom of this file. The original unit
 // emitted all of them; the definitions keep the .rodata/.sdata2 layout and byte values.
@@ -71,52 +81,91 @@ extern const f32 float_10_80421940;
 
 // dont_inline: the original keeps actionCommandDisp as its own local function.
 #pragma dont_inline on
-// NONMATCHING (64.05%): the original materialises st (work+0x1F4C) and the vec3 base in registers;
-// MWCC folds st into the work base and reloads the vec base per call (frame 0x90 vs 0xF0).
+// The by-value temporaries copied into the btlDispTex4 argument slots are what the original does:
+// every call gets its own trans/scale/rot/color copies (like ac_monosiri_target's actionCommandDisp).
+// opt_common_subs off: with it on, the last screen2 update's 4.0f lands in f2 (original uses f1).
+// NONMATCHING (99.70%): using the `ac` intermediate for the state read and deriving st from
+// `ac->field_0x2BC[0]` stops MWCC folding st into `work`, so st is materialised in r30. The only
+// remaining diff is the prologue temp register swap (work r3/vec r4 original, reversed here).
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
-    ShotTargetWork* st = (ShotTargetWork*)((u8*)work + 0x1F4C);
+    BattleActions* ac = &work->actionCommands;
+    s32 state = ac->mAcState;
+#ifdef MUST_MATCH
+    Vec* vecs = (Vec*)vec3_802ff950;
+#endif
+    ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
     Vec screen;
-    Vec scale;
-    Vec rot;
-    GXColor color;
-    s32 state = work->actionCommands.mAcState;
+    Vec screen2;
 
-    if ((state >= 1000 && state < 1003) || state == 100) {
+    if (state < 1000) {
+        if (state != 100) {
+            return;
+        }
+    } else {
+        if (state >= 1003) {
+            return;
+        }
+    }
+    {
         st->field_0x24 += float_2_8042190c;
         btlGetScreenPoint(&st->pos, &screen);
         {
-            Vec s = vec3_802ff950[1];
-            Vec r = vec3_802ff950[2];
-            GXColor c = *(GXColor*)&dat_804218fc;
-            btlDispTex4(0x42, &screen, &s, &r, &c);
+            Vec trans;
+            Vec scale;
+            Vec rot;
+            GXColor color;
+            color = *(const GXColor*)&dat_804218fc;
+            rot = RODATA_VEC(2, vec3_802ff950[2]);
+            scale = RODATA_VEC(1, vec3_802ff950[1]);
+            trans = screen;
+            btlDispTex4(0x42, &trans, &scale, &rot, &color);
         }
         screen.x += float_4_80421910;
         screen.y -= float_4_80421910;
         screen.z -= float_2_8042190c;
         {
-            Vec s = vec3_802ff950[3];
-            Vec r = vec3_802ff950[4];
-            GXColor c = *(GXColor*)&dat_80421900;
-            btlDispTex4(0x42, &screen, &s, &r, &c);
+            Vec trans;
+            Vec scale;
+            Vec rot;
+            GXColor color;
+            color = *(const GXColor*)&dat_80421900;
+            rot = RODATA_VEC(4, vec3_802ff950[4]);
+            scale = RODATA_VEC(3, vec3_802ff950[3]);
+            trans = screen;
+            btlDispTex4(0x42, &trans, &scale, &rot, &color);
         }
-        btlGetScreenPoint(&st->target, &screen);
+        btlGetScreenPoint(&st->target, &screen2);
         {
-            Vec s = vec3_802ff950[5];
-            Vec r = vec3_802ff950[6];
-            GXColor c = *(GXColor*)&dat_80421904;
-            r.z = st->field_0x24;
-            btlDispTex4(0x41, &screen, &s, &r, &c);
+            Vec trans;
+            Vec scale;
+            Vec rot;
+            Vec tmp;
+            GXColor color;
+            color = *(const GXColor*)&dat_80421904;
+            tmp = RODATA_VEC(6, vec3_802ff950[6]);
+            tmp.z = st->field_0x24;
+            rot = tmp;
+            scale = RODATA_VEC(5, vec3_802ff950[5]);
+            trans = screen2;
+            btlDispTex4(0x41, &trans, &scale, &rot, &color);
         }
-        screen.x += float_4_80421910;
-        screen.y -= float_4_80421910;
-        screen.z -= float_2_8042190c;
+        screen2.x += float_4_80421910;
+        screen2.y -= float_4_80421910;
+        screen2.z -= float_2_8042190c;
         {
-            Vec s = vec3_802ff950[7];
-            Vec r = vec3_802ff950[8];
-            GXColor c = *(GXColor*)&dat_80421908;
-            r.z = st->field_0x24;
-            btlDispTex4(0x41, &screen, &s, &r, &c);
+            Vec trans;
+            Vec scale;
+            Vec rot;
+            Vec tmp;
+            GXColor color;
+            color = *(const GXColor*)&dat_80421908;
+            tmp = RODATA_VEC(8, vec3_802ff950[8]);
+            tmp.z = st->field_0x24;
+            rot = tmp;
+            scale = RODATA_VEC(7, vec3_802ff950[7]);
+            trans = screen2;
+            btlDispTex4(0x41, &trans, &scale, &rot, &color);
         }
     }
 }
@@ -185,6 +234,7 @@ s32 battleAcResult_ShotTarget(BattleWork* work) {
     return work->actionCommands.result;
 }
 
+// dont_inline: the original keeps _ac_rumble_param_set as a real call (`bl _ac_rumble_param_set`).
 void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
     *period = irand(0x78) + 0x78;
     *timer = *period - 1;
@@ -219,18 +269,30 @@ void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
     }
 }
 
-// NONMATCHING (8.29%): state machine and logic match, but MWCC folds the work-area pointer
-// (work+0x1F4C) into the work base and uses different callee-saved registers (work=r27 vs r23), so
-// nearly every instruction differs in its register field.
+// Logic and switch map are complete; MWCC folds the work-area pointer (st = work+0x1F4C) into the
+// BattleWork base instead of materialising it in its own register (r27), so nearly every work-area
+// access differs in its base/offset. The int->float magic now matches at the original's vec3 base
+// + 0x90 (the doubles are referenced by name so the pool shares the vec3 base); the vec3 base
+// symbol itself is emitted as `...rodata.0` instead of `vec3_802ff950`.
+// NONMATCHING (17.67%): work-area base folded; vec3 base symbol name differs.
 s32 battleAcMain_ShotTarget(BattleWork* work) {
+#ifdef MUST_MATCH
+    Vec* vecs = (Vec*)vec3_802ff950;
+    BattleActions* ac = &work->actionCommands;
+    ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
+#else
     ShotTargetWork* st = (ShotTargetWork*)((u8*)work + 0x1F4C);
+#endif
+#ifdef MUST_MATCH
+    // The original reaches the SFX string through the vec3 base (it sits at vec3+0x6C).
+    const char* sfx = (const char*)((u8*)vecs + 0x6C);
+#else
     const char* sfx = str_802FF9BC;
+#endif
     s32 smooth = 0;
     s32 rumbleType;
     s32 cont;
-    f32 hx;
-    f32 hy;
-    f32 hz;
+    Vec hit;
     BattleUnit* unit;
     BattleUnitPart* part;
 
@@ -247,12 +309,10 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 work->actionCommands.result = 1;
                 unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x04]);
                 part = BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x08]);
-                BtlUnit_GetHitPos(unit, part, &hx, &hy, &hz);
-                st->target.x = hx;
-                st->target.y = hy;
-                st->target.z = hz;
+                BtlUnit_GetHitPos(unit, part, &hit.x, &hit.y, &hit.z);
+                st->target = hit;
                 st->field_0x20 = 0;
-                st->pos = vec3_802ff950[0];
+                st->pos = RODATA_VEC(0, vec3_802ff950[0]);
                 st->field_0x24 = float_0_80421918;
                 _ac_rumble_param_set(rumbleType, &st->field_0x28, &st->field_0x2a, &st->field_0x2C);
                 _ac_rumble_param_set(rumbleType, &st->field_0x30, &st->field_0x32, &st->field_0x34);
@@ -345,7 +405,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
             case 1003:
                 st->field_0x04 = 0x3C;
                 work->actionCommands.mAcState = 1004;
-                if (st->field_0x38 != -1) {
+                if ((u32)st->field_0x38 != 0xFFFFFFFFu) {
                     psndSFXOff(st->field_0x38);
                 }
                 break;

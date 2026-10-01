@@ -8,17 +8,24 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
+#include <dolphin/os/OSFastCast.h>
 #include <stdlib.h>
+
+
+// NONMATCHING (80.80%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
+// retail (the store saturates); they need inline asm, so here they lower to lha/xoris/lfd/fsubs loads
+// and a __fsel clamp + fctiwz/sth store. The GQR2-5 blocks (OSInitFastCast, MUST_MATCH) match retail
+// byte-for-byte, but the loop body still needs ~4 more instructions per component, keeps one fewer
+// callee-saved FPR (f29-f31 vs f28-f31), uses an extra GPR (r25) and so a 0x120 frame instead of
+// 0x110, which shifts every local slot and the GPRs the vertex-build and triangle loops use. Verified:
+// every GC compiler here (1.0-3.0a5.2) lowers a scalar cast to the integer path and there is no
+// fastcast pragma/flag/builtin; __vec2x32float__ emits qr0 psq_lx/psq_stx, not the W=1 qr5 form.
 
 // Retail stores the transformed vertex through psq_st (GQR5, s16), which saturates to the s16 range.
 static inline s16 clampS16(f32 value) {
-	if (value > 32767.0f) {
-		return 32767;
-	}
-	if (value < -32768.0f) {
-		return -32768;
-	}
-	return (s16)value;
+	f32 hi = 32767.0f;
+	f32 lo = -32768.0f;
+	return (s16)__fsel(value - hi, hi, __fsel(value - lo, value, lo));
 }
 
 // .rodata
@@ -112,10 +119,8 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-// NONMATCHING (75.15%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
-// retail (the store saturates, which clampS16 reproduces); they need inline asm, so here they lower to
-// xoris/lfd/fsubs loads and compare/fctiwz/sth stores. That changes the transform loop body, the saved
-// FPRs and every local stack offset; tri2's u16 prototype also adds a clrlwi the retail call lacks.
+// NONMATCHING (80.80%): the s16<->f32 psq_l/psq_st fastcast (GQR5) cannot be emitted from C; the
+// __fsel clamp reproduces the store's saturation but the loop body, frame and registers still differ.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -191,10 +196,16 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	{
 		OpukuWcurtainVtx* p = vtx;
 		for (j = 0; j < i * 2; j++, p++) {
+#ifdef MUST_MATCH
+			OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the s16->f32 reads */
+#endif
 			v.x = p->x;
 			v.y = p->y;
 			v.z = p->z;
 			PSMTXMultVec(transMtx, &v, &v);
+#ifdef MUST_MATCH
+			OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the f32->s16 writes */
+#endif
 			p->x = clampS16(v.x);
 			p->y = clampS16(v.y);
 			p->z = clampS16(v.z);

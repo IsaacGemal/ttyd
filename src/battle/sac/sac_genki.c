@@ -27,61 +27,62 @@ static void main_base(void);  // local to this file in the original
 static void disp_3D(CameraId cameraId, void* param);  // local to this file in the original
 
 extern char str_8030045C[];
-extern f32 float_30_80421d80;
-extern f32 float_1p25_80421d6c;
+const f32 float_30_80421d80 = 30.0f;
+const f32 float_1p25_80421d6c = 1.25f;
 extern f64 double_to_int_80300468;
-extern f32 float_360_80421de8;
-extern f32 float_60_80421d50;
-extern f32 float_neg1p25_80421e0c;
-extern f32 float_0_80421d84;
+const f32 float_360_80421de8 = 360.0f;
+const f32 float_60_80421d50 = 60.0f;
+const f32 float_neg1p25_80421e0c = -1.25f;
+const f32 float_0_80421d84 = 0.0f;
 const char str_8030048C[] = "M_C_2A";
 const char str_80300494[] = "M_C_2B";
 const char str_80421D3C[] = "M_I_Y";
 const char str_80421E10[] = "M_S_1";
 const char str_80421E18[] = "M_D_1";
 const char str_80421E20[] = "M_X_1";
-extern f32 float_20_80421d78;
-extern f32 float_10_80421d54;
+const f32 float_20_80421d78 = 20.0f;
+const f32 float_10_80421d54 = 10.0f;
 const s32 dat_803002c8[3] = {0, 4, 2};
-extern f32 float_1p32_80421ddc;
-extern f32 float_1p98_80421de0;
-extern f32 float_15_80421de4;
-extern f32 float_neg1000_80421d88;
-extern f32 float_1_80421d74;
-extern f32 float_901_80421e28;
-extern const f32 vec3_803002b0[];
+const f32 float_1p32_80421ddc = 1.32f;
+const f32 float_1p98_80421de0 = 1.98f;
+const f32 float_15_80421de4 = 15.0f;
+const f32 float_neg1000_80421d88 = -1000.0f;
+const f32 float_1_80421d74 = 1.0f;
+const f32 float_901_80421e28 = 901.0f;
+// First .rodata symbol of this unit; its presence anchors MWCC's literal pool.
+const f32 vec3_803002b0[3] = {0.0f, -1000.0f, 0.0f};
 extern const Vec vec3_803002bc;
-extern f32 float_37_80421d8c;
-extern f32 float_50_80421d90;
-extern f32 float_neg1_80421d94;
-extern f32 float_2160_80421d98;
-extern f32 float_200_80421d9c;
-extern f32 float_32767_80421da0;
-extern f32 float_720_80421da4;
-extern f32 float_120_80421da8;
-extern f32 float_0p2_80421dac;
-extern f32 float_neg2_80421db0;
-extern f32 float_3_80421db4;
-extern f32 float_neg3_80421db8;
-extern f32 float_0p1_80421dbc;
-extern f32 float_6p2832_80421dc0;
-extern f32 float_1p5_80421dc4;
-extern f32 float_180_80421d4c;
-extern f32 float_2_80421d70;
-extern f32 float_7_80421dc8;
-extern f32 float_40_80421dcc;
-extern f32 float_0p75_80421dd0;
-extern f32 float_0p01_80421dd4;
-extern f32 float_0p05_80421dd8;
-extern f32 float_3p1416_80421d48;
-extern f32 float_28_80421dec;
-extern f32 float_0p15_80421df0;
-extern f32 float_250_80421df4;
-extern f32 float_1E07_80421df8;
-extern f32 float_344_80421dfc;
-extern f32 float_576_80421e00;
-extern f32 float_1296_80421e04;
-extern f32 float_1p125_80421e08;
+const f32 float_37_80421d8c = 37.0f;
+const f32 float_50_80421d90 = 50.0f;
+const f32 float_neg1_80421d94 = -1.0f;
+const f32 float_2160_80421d98 = 2160.0f;
+const f32 float_200_80421d9c = 200.0f;
+const f32 float_32767_80421da0 = 32767.0f;
+const f32 float_720_80421da4 = 720.0f;
+const f32 float_120_80421da8 = 120.0f;
+const f32 float_0p2_80421dac = 0.2f;
+const f32 float_neg2_80421db0 = -2.0f;
+const f32 float_3_80421db4 = 3.0f;
+const f32 float_neg3_80421db8 = -3.0f;
+const f32 float_0p1_80421dbc = 0.1f;
+const f32 float_6p2832_80421dc0 = 6.283184f;
+const f32 float_1p5_80421dc4 = 1.5f;
+const f32 float_180_80421d4c = 180.0f;
+const f32 float_2_80421d70 = 2.0f;
+const f32 float_7_80421dc8 = 7.0f;
+const f32 float_40_80421dcc = 40.0f;
+const f32 float_0p75_80421dd0 = 0.75f;
+const f32 float_0p01_80421dd4 = 0.01f;
+const f32 float_0p05_80421dd8 = 0.05f;
+const f32 float_3p1416_80421d48 = 3.141592f;
+const f32 float_28_80421dec = 28.0f;
+const f32 float_0p15_80421df0 = 0.15f;
+const f32 float_250_80421df4 = 250.0f;
+const f32 float_1E07_80421df8 = 10000000.0f;
+const f32 float_344_80421dfc = 344.0f;
+const f32 float_576_80421e00 = 576.0f;
+const f32 float_1296_80421e04 = 1296.0f;
+const f32 float_1p125_80421e08 = 1.125f;
 extern char str_80300470[];
 
 
@@ -364,7 +365,6 @@ static void main_star(void) {
     }
 }
 
-// NONMATCHING (92.01%): 1 instruction differs, 3 missing, 6 extra, plus register differences.
 void main_target(void) {
     GenkiWork* genki = get_ptr();
 
@@ -478,7 +478,7 @@ void main_mario(void) {
 // int->float magic double and the two switch jump tables as anonymous `@...@` entries instead of
 // double_to_int_80300468 / jumptable_803B3C40 / jumptable_803B3C24. All other differences are
 // register allocation and instruction scheduling.
-// NONMATCHING (91.58%): the anonymous pool entries listed above.
+// NONMATCHING (94.81%): the anonymous pool entries listed above.
 void main_weapon(s32 idx) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -1030,7 +1030,12 @@ static void main_base(void) {
     }
 }
 
-// NONMATCHING (61.75%): 55 instructions differ, 60 missing, 124 extra, plus register differences.
+// The callee-saved register assignment is shifted (star/vec/genki land in r29/r30/r31
+// here, r30/r31/r27 in the original) and the int->float magic double is an anonymous
+// local loaded with its own `lis` instead of the original's vec3+0x1b8 offset; the
+// intplGetValue argument setup is ordered differently.
+// NONMATCHING (87.67%): register assignment and the pooled magic double/schedule.
+// Logic and constants match the assembly.
 void main_star0(s32 idx) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -1045,39 +1050,30 @@ void main_star0(s32 idx) {
     case 1:
         star->field_0 = 2;
         star->field_4 = 0;
-        star->field_60 = effStarStoneEntry(idx, float_0_80421d84, float_neg1000_80421d88,
-                                           float_0_80421d84, float_1_80421d74);
+        star->field_60 = effStarStoneEntry(idx, 0.0f, -1000.0f, 0.0f, 1.0f);
         BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
         star->field_10 = star->field_10 +
-            (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421d8c);
-        star->field_18 = star->field_C;
-        star->field_1C = star->field_10;
-        star->field_20 = star->field_14;
-        star->field_24 = star->field_C;
-        star->field_28 = star->field_10;
-        star->field_2C = star->field_14;
-        star->field_28 += float_30_80421d80;
-        star->field_58 = float_6p2832_80421dc0 * (f32)idx / float_7_80421dc8;
-        star->field_3C = vec[0x24 / 4];
-        star->field_40 = vec[0x28 / 4];
-        star->field_44 = vec[0x2C / 4];
-        star->field_48 = vec[0x30 / 4];
-        star->field_4C = vec[0x34 / 4];
-        star->field_50 = vec[0x38 / 4];
-        star->field_54 = float_0_80421d84;
-        star->field_5C = float_0p1_80421dbc;
+            (mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f);
+        *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
+        *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
+        star->field_28 += 30.0f;
+        star->field_58 = 6.283184f * (f32)idx / 7.0f;
+        *(Vec*)&star->field_3C = *(const Vec*)&vec[0x24 / 4];
+        *(Vec*)&star->field_48 = *(const Vec*)&vec[0x30 / 4];
+        star->field_54 = 0.0f;
+        star->field_5C = 0.1f;
         /* fallthrough */
     case 2:
         star->field_4++;
         if (star->field_4 <= 0x64) {
             star->field_10 = intplGetValue(0, star->field_4, 0x64, star->field_1C, star->field_28);
             BtlUnit_GetPos(mario, &x, &y, &z);
-            star->field_54 = intplGetValue(0, star->field_4, 0x64, float_0_80421d84,
-                                           float_40_80421dcc);
+            star->field_54 = intplGetValue(0, star->field_4, 0x64, 0.0f,
+                                           40.0f);
             star->field_58 += star->field_5C;
             star->field_C = x + star->field_54 * (f32)cos(star->field_58);
             star->field_14 = z + star->field_54 * (f32)sin(star->field_58);
-            f = intplGetValue(0, star->field_4, 0x64, float_0_80421d84, float_0p75_80421dd0);
+            f = intplGetValue(0, star->field_4, 0x64, 0.0f, 0.75f);
             star->field_44 = f;
             star->field_40 = f;
             star->field_3C = f;
@@ -1087,68 +1083,65 @@ void main_star0(s32 idx) {
             star->field_58 += star->field_5C;
             star->field_C = x + star->field_54 * (f32)cos(star->field_58);
             star->field_14 = z + star->field_54 * (f32)sin(star->field_58);
-            star->field_44 = float_0p75_80421dd0;
-            star->field_40 = float_0p75_80421dd0;
-            star->field_3C = float_0p75_80421dd0;
+            star->field_44 = 0.75f;
+            star->field_40 = 0.75f;
+            star->field_3C = 0.75f;
         }
-        star->field_4C = intplGetValue(4, star->field_4, 0x78, float_0_80421d84,
-                                       float_2160_80421d98);
+        star->field_4C = intplGetValue(4, star->field_4, 0x78, 0.0f,
+                                       2160.0f);
         if (star->field_4 >= 0x78) {
+            Vec v;
+
             star->field_0 = 3;
             star->field_4 = 0;
-            star->field_18 = star->field_C;
-            star->field_1C = star->field_10;
-            star->field_20 = star->field_14;
-            star->field_24 = float_200_80421d9c * (f32)rand() / float_32767_80421da0;
-            star->field_28 = vec[0x40 / 4];
-            star->field_2C = star->field_20;
-            star->field_30 = vec[0x48 / 4];
-            star->field_34 = vec[0x4C / 4];
-            star->field_38 = vec[0x50 / 4];
-            star->field_34 = (float_2_80421d70 * (star->field_28 - star->field_1C) -
-                              (float_60_80421d50 * float_60_80421d50 *
-                               (float_0p2_80421dac - float_0p01_80421dd4 * (f32)idx))) /
-                             float_120_80421da8;
+            *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
+            v = *(const Vec*)&vec[0x3C / 4];
+            v.x = 200.0f * (f32)rand() / 32767.0f;
+            v.z = star->field_20;
+            *(Vec*)&star->field_24 = v;
+            *(Vec*)&star->field_30 = *(const Vec*)&vec[0x48 / 4];
+            star->field_34 = (2.0f * (star->field_28 - star->field_1C) -
+                              (60.0f * 60.0f *
+                               (0.2f - 0.01f * (f32)idx))) /
+                             120.0f;
         }
         break;
     case 3:
         star->field_4++;
         star->field_C = intplGetValue(4, star->field_4, 0x3C, star->field_18, star->field_24);
         star->field_10 += star->field_34;
-        star->field_34 += float_0p2_80421dac - float_0p01_80421dd4 * (f32)idx;
-        star->field_4C = float_0_80421d84;
-        star->field_44 = float_0p75_80421dd0;
-        star->field_40 = float_0p75_80421dd0;
-        star->field_3C = float_0p75_80421dd0;
+        star->field_34 += 0.2f - 0.01f * (f32)idx;
+        star->field_4C = 0.0f;
+        star->field_44 = 0.75f;
+        star->field_40 = 0.75f;
+        star->field_3C = 0.75f;
         if (star->field_4 >= 0x3C) {
             star->field_0 = 4;
             star->field_4 = 0;
             if (irand(2) == 0) {
-                star->field_30 = float_neg2_80421db0 - float_0p05_80421dd8 * (f32)idx;
+                star->field_30 = -2.0f - 0.05f * (f32)idx;
             }
-            star->field_30 = float_2_80421d70 + float_0p05_80421dd8 * (f32)idx;
-            star->field_34 = float_0_80421d84;
+            star->field_30 = 2.0f + 0.05f * (f32)idx;
+            star->field_34 = 0.0f;
         }
         break;
     case 4:
         star->field_C += star->field_30;
-        if (star->field_C < float_0_80421d84) {
-            star->field_30 = float_3_80421db4 + float_0p05_80421dd8 * (f32)idx;
+        if (star->field_C < 0.0f) {
+            star->field_30 = 3.0f + 0.05f * (f32)idx;
         }
-        if (star->field_C > float_200_80421d9c) {
-            star->field_30 = float_neg3_80421db8 - float_0p05_80421dd8 * (f32)idx;
+        if (star->field_C > 200.0f) {
+            star->field_30 = -3.0f - 0.05f * (f32)idx;
         }
-        star->field_34 += float_0p1_80421dbc + float_0p01_80421dd4 * (f32)idx;
-        if (star->field_34 >= float_6p2832_80421dc0) {
-            star->field_34 -= float_6p2832_80421dc0;
+        star->field_34 += 0.1f + 0.01f * (f32)idx;
+        if (star->field_34 >= 6.283184f) {
+            star->field_34 -= 6.283184f;
         }
-        star->field_10 = float_10_80421d54 * (f32)sin(star->field_34) + float_180_80421d4c;
+        star->field_10 = 10.0f * (f32)sin(star->field_34) + 180.0f;
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
-            star->field_C = vec[0x54 / 4];
-            star->field_10 = vec[0x58 / 4];
-            star->field_14 = vec[0x5C / 4];
+            *(Vec*)&star->field_C = *(const Vec*)&vec[0x54 / 4];
         }
         break;
     case 5:
@@ -1163,18 +1156,15 @@ void main_star0(s32 idx) {
         p[0x18 / 4] = star->field_48;
         p[0x1C / 4] = star->field_4C;
         p[0x20 / 4] = star->field_50;
-        p[0x14 / 4] = float_1p5_80421dc4 * star->field_3C;
+        p[0x14 / 4] = 1.5f * star->field_3C;
     }
 }
 
-// Two things differ. (1) The int->float magic double is pooled as an anonymous
-// local `@589@` instead of the shared double_to_int_80300468 reached as
-// vec3_803002b0+0x1b8; the file's .rodata pool is incomplete in this unit, so
-// MWCC cannot fold it into the vec3 base. (2) MWCC schedules differently: it
-// hoists the field_3C/48 Vec loads into r7-r0 and loads float_50/float_neg1 at
-// their use, where the original loads the Vec fields late (reusing r3/r0) and
-// hoists the two float constants. Logic and constants match the assembly.
-// NONMATCHING (71.95%): the pooled magic double and MWCC's schedule, per above.
+// The int->float magic double is pooled as an anonymous local and loaded through a
+// fresh `lis` instead of the original's `lfd 0x1b8(r30)`; the intplGetValue argument
+// setup orders the field_4 load before the two float loads where the original loads it
+// last. Logic and constants match the assembly.
+// NONMATCHING (95.37%): the pooled magic double and intplGetValue arg ordering.
 void main_star1(void) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -1188,8 +1178,7 @@ void main_star1(void) {
     case 1:
         star->field_0 = 2;
         star->field_4 = 0;
-        star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88,
-                                           float_0_80421d84, float_1_80421d74);
+        star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84, float_1_80421d74);
         BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
         star->field_10 = star->field_10 +
             (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421d8c);

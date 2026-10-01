@@ -5518,11 +5518,11 @@ void* iri_09_item_tbl[1] = {
     0x00000000,
 };
 
-// The target lays chk_cook_eff_type out as a branchy tree and inlines it into cook_effect /
-// chk_cook_msg. Auto-inlining drops the branchy source (too big), so it lives in a static inline
-// helper that both the global wrapper and the callers inline through.
+// The original lays chk_cook_eff_type out as a branchy tree (two sparse switches) and inlines it
+// into cook_effect / chk_cook_msg. Auto-inlining drops the branchy source (too big as a plain
+// function), so it lives in a static inline helper that both the global wrapper and the callers
+// inline through.
 static inline s32 cook_eff_type_impl(s32 itemId) {
-    s32 result;
     if (itemId < 0x94) {
         return 1;
     }
@@ -5530,48 +5530,33 @@ static inline s32 cook_eff_type_impl(s32 itemId) {
         return 0;
     }
     if (itemId < 0xB3) {
-        if (itemId < 0xB1) {
-            if (itemId < 0xA5) {
-                result = 1;
-            } else {
-                result = 0;
-            }
-        } else {
-            if (itemId < 0xB3) {
-                result = 1;
-            } else {
-                result = 0;
-            }
+        switch (itemId) {
+        case 0xA1:
+        case 0xA2:
+        case 0xA3:
+        case 0xA4:
+        case 0xB1:
+        case 0xB2:
+            return 1;
         }
-        return result;
+        return 0;
     }
     if (itemId < 0xEC) {
-        if (itemId < 0xCC) {
-            if (itemId == 0xC4) {
-                result = 1;
-            } else if (itemId < 0xC4) {
-                result = 0;
-            } else if (itemId >= 0xCA) {
-                result = 1;
-            } else {
-                result = 0;
-            }
-        } else {
-            result = itemId == 0xD1;
+        switch (itemId) {
+        case 0xC4:
+        case 0xCA:
+        case 0xCB:
+        case 0xD1:
+            return 1;
         }
-        return result;
+        return 0;
     }
     return 0;
 }
 
-// NONMATCHING (70% chk_cook_eff_type: the target has a redundant `cmpwi 0xA1` leaf and shares its
-// ret0/ret1 tail blocks with the big arm; ours omits that leaf and duplicates the tails. Wrapping
-// the tree in the inlined helper above raises the callers, which call through it.)
 s32 chk_cook_eff_type(s32 itemId) {
     return cook_eff_type_impl(itemId);
 }
-// NONMATCHING (92% cook_effect: inlined chk_cook_eff_type differs (see chk_cook_eff_type) plus the
-// pooled str_00004880/@1250@ string symbol)
 USER_FUNC(cook_effect) {
     s32 item = evtGetValue(event, event->args[0]);
 
@@ -5595,7 +5580,6 @@ USER_FUNC(cook_effect) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89% chk_cook_msg: inlined chk_cook_eff_type differs (see chk_cook_eff_type))
 USER_FUNC(chk_cook_msg) {
     s32* args = event->args;
     s32 item = evtGetValue(event, args[0]);

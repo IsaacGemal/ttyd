@@ -5,6 +5,7 @@
 #include "mario/mariost.h"
 #include "memory.h"
 #include "system.h"
+#include "matching.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdio.h>
@@ -15,6 +16,22 @@ const Vec vec3_802f3448 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802f3458 = 4503601774854144.0;
 const f64 double_to_int_mask_802f3460 = 4503599627370496.0;
 const char str_802F3468[] = "DamageStar";
+
+// .sdata2 constants used by effDamageStarEntry's inlined sin/cos polynomial.
+extern const f32 float_0_8041c990;
+extern const f32 float_1_8041c9a8;
+extern const f32 float_1p5_8041c9e0;
+extern const f32 float_30_8041c9ec;
+extern const f32 float_6p2832_8041c9f0;
+extern const f32 float_360_8041c9f4;
+extern const f32 float_0p00761_8041c9f8;
+extern const f32 float_0p16605_8041c9fc;
+extern const f32 float_3p1416_8041ca00;
+extern const f32 float_1p5708_8041ca04;
+extern const f32 float_4p7124_8041ca08;
+extern const f32 float_0p03705_8041ca0c;
+extern const f32 float_0p4967_8041ca10;
+extern const f32 float_0p2_8041ca14;
 
 // .sdata2/sbss2 globals used by effDamageStarDisp's colour build.
 GXColor unk_80423038;
@@ -143,6 +160,8 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
+// opt_lifetimes off: without it MWCC splits the seed load from the first polynomial accumulate,
+// so the sin/cos loop FPRs differ (75.42% -> 96.99%); reset after this function.
 // NONMATCHING (75.42%): control flow/order match; the original keeps count in r27 and origCount in r30,
 // ours swaps them (r28/r27), and the s32->f32 conversion uses this TU's pool copy not the named symbol.
 // described in REPORT.md
@@ -270,6 +289,7 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
 
     return entry;
 }
+
 
 void effDamageStarMain(EffectEntry* effect) {
     DamageStarData* data;

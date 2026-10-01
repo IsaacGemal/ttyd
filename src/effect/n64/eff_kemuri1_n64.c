@@ -2,6 +2,8 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
+#include "math_ext.h"
+#include "system.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -19,6 +21,27 @@ extern const f32 float_2_8041f24c;
 extern const f32 float_16_8041f250;
 extern const f32 float_24_8041f254;
 extern const f32 float_32_8041f258;
+extern const f32 float_neg3_8041f25c;
+extern const f32 float_0p3_8041f260;
+extern const f32 float_1p75_8041f264;
+extern const f32 float_neg0p16_8041f268;
+extern const f32 float_4_8041f26c;
+extern const f32 float_90_8041f270;
+extern const f32 float_180_8041f274;
+extern const f32 float_6p2832_8041f278;
+extern const f32 float_360_8041f27c;
+extern const f32 float_2p3562_8041f280;
+extern const f32 float_25_8041f284;
+extern const f32 float_0p95_8041f288;
+extern const f32 float_neg0p04_8041f28c;
+extern const f32 float_0p94_8041f290;
+extern const f32 float_neg2p3562_8041f294;
+extern const f32 float_0p85_8041f298;
+extern const f32 float_0p34907_8041f29c;
+extern const f32 float_10_8041f2a0;
+extern const f32 float_0p75_8041f2a4;
+extern const f32 float_0p93_8041f2a8;
+extern const f32 float_0p1_8041f2ac;
 extern GXColor dat_8041f230;
 extern GXColor dat_8041f234;
 extern GXColor unk_80423168;
@@ -27,7 +50,16 @@ typedef struct effKemuri1Data {
 	u16 type; //0x0
 	u8 align_2[2]; //0x2, TODO: verify align
 	Vec position; //0x4
-	u8 field_0x10[0x38 - 0x10]; //0x10
+	f32 field_0x10; //0x10
+	f32 field_0x14; //0x14
+	f32 field_0x18; //0x18
+	f32 field_0x1C; //0x1C
+	f32 field_0x20; //0x20
+	f32 field_0x24; //0x24
+	f32 field_0x28; //0x28
+	f32 field_0x2C; //0x2C
+	f32 field_0x30; //0x30
+	f32 field_0x34; //0x34
 	s32 field_0x38; //0x38
 	s32 field_0x3C; //0x3C
 	s32 field_0x40; //0x40
@@ -41,11 +73,25 @@ typedef struct effKemuri1Data {
 
 //local prototypes
 
-// NONMATCHING (17.27%): 2 instructions differ, 300 missing, 2 extra, plus register differences.
+// The type 4-7 preheader and loop are instruction-for-instruction identical to the original; only the
+// callee-saved FPR colours differ. The 5th float param `a5` is saved to f24 instead of f31, which rotates
+// the nine loop constants into f25-f31/f22/f23 instead of f22-f30 and puts `angle` in f21 instead of f20.
+// Forcing the load into a named local (preheader or loop body), `MATCH_F32`, and the
+// opt_lifetimes/opt_common_subs/opt_propagation/global_optimizer/scheduling pragmas all leave a5 at
+// f22-f24 or scramble the load order, so the register assignment is left to the compiler. objdiff also
+// names the pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of
+// str_802FA8A0/double_to_int_802fa898; those names are unscored.
+// NONMATCHING (99.62%): type 4-7 FPR colouring only; the instruction sequence matches.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
-	s32 effCount;
 	effKemuri1Data* data;
+	effKemuri1Data* entry;
+	s32 effCount;
+	s32 i;
+	f32 angle;
+	f32 sinAngle;
+	f32 cosAngle;
+	f32 k94;
 
 	effect = effEntry();
 	switch (type) {
@@ -55,7 +101,7 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		case 3:
 			effCount = 4;
 			break;
-		case 4: //TODO: -strict off, case 4 ... 7:?
+		case 4:
 		case 5:
 		case 6:
 		case 7:
@@ -84,7 +130,8 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		case 3:
 			data->field_0x38 = 2;
 			data->field_0x4C = 129;
-		case 4: //TODO: -strict off, case 4 ... 7:?
+			break;
+		case 4:
 		case 5:
 		case 6:
 		case 7:
@@ -94,11 +141,204 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		default:
 			break;
 	}
+
+	data->field_0x3C = 0;
+	data->type = type;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+
+	entry = data + 1;
+	switch (type) {
+		case 0:
+		case 1:
+			for (i = 1; i < effCount; i++, entry++) {
+				entry->field_0x10 = float_neg3_8041f25c;
+				entry->field_0x14 = float_0p3_8041f260;
+				entry->field_0x18 = float_0_8041f248;
+				entry->field_0x1C = float_0_8041f248;
+				entry->field_0x20 = float_1p75_8041f264;
+				entry->field_0x24 = float_neg0p16_8041f268;
+				entry->field_0x28 = float_0_8041f248;
+				entry->field_0x2C = float_0_8041f248;
+				entry->position.x = float_0_8041f248;
+				entry->position.y = float_0_8041f248;
+				entry->position.z = float_4_8041f26c;
+				angle = float_6p2832_8041f278 * reviseAngle(float_180_8041f274 * (f32)(i - 1) + float_90_8041f270) / float_360_8041f27c;
+				entry->field_0x30 = sin(angle);
+				entry->field_0x34 = cos(angle);
+				entry->field_0x44 = 0xFF;
+				entry->field_0x45 = 0xFF;
+				entry->field_0x46 = 0xFF;
+			}
+			break;
+		case 3:
+			for (i = 1; i < effCount; i++, entry++) {
+				switch (i - 1) {
+				case 0:
+					sinAngle = (f32)sin(float_2p3562_8041f280);
+					entry->position.x = float_25_8041f284 * -sinAngle;
+					entry->position.y = float_0_8041f248;
+					cosAngle = (f32)cos(float_2p3562_8041f280);
+					entry->position.z = float_25_8041f284 * -cosAngle;
+					entry->field_0x20 = float_0p95_8041f288;
+					entry->field_0x24 = float_neg0p04_8041f28c;
+					k94 = float_0p94_8041f290;
+				entry->field_0x28 = k94;
+					break;
+				case 1:
+					sinAngle = (f32)sin(float_neg2p3562_8041f294);
+					entry->position.x = float_25_8041f284 * -sinAngle;
+					entry->position.y = float_4_8041f26c;
+					cosAngle = (f32)cos(float_neg2p3562_8041f294);
+					entry->position.z = float_25_8041f284 * -cosAngle;
+					entry->field_0x20 = float_0p85_8041f298;
+					entry->field_0x24 = float_neg0p04_8041f28c;
+					k94 = float_0p94_8041f290;
+				entry->field_0x28 = k94;
+					break;
+				case 2:
+					sinAngle = (f32)sin(float_0p34907_8041f29c);
+					entry->position.x = float_25_8041f284 * -sinAngle;
+					entry->position.y = float_10_8041f2a0;
+					cosAngle = (f32)cos(float_0p34907_8041f29c);
+					entry->position.z = float_25_8041f284 * -cosAngle;
+					entry->field_0x20 = float_0p75_8041f2a4;
+					entry->field_0x24 = float_neg0p04_8041f28c;
+					k94 = float_0p94_8041f290;
+				entry->field_0x28 = k94;
+					break;
+				}
+				entry->field_0x30 = float_0_8041f248;
+				entry->field_0x34 = float_0_8041f248;
+				entry->field_0x44 = 0xFF;
+				entry->field_0x45 = 0xFF;
+				entry->field_0x46 = 0xFF;
+			}
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			for (i = 1; i < effCount; i++, entry++) {
+				entry->field_0x10 = float_neg3_8041f25c;
+				entry->field_0x14 = float_0p93_8041f2a8;
+				entry->field_0x20 = float_0_8041f248;
+				entry->field_0x24 = float_0p1_8041f2ac;
+				k94 = float_0p94_8041f290;
+				entry->field_0x28 = k94;
+				entry->field_0x2C = k94;
+				angle = float_6p2832_8041f278 * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / float_360_8041f27c;
+				sinAngle = (f32)sin(angle);
+				entry->position.x = float_10_8041f2a0 * -sinAngle;
+				entry->position.y = float_0_8041f248;
+				cosAngle = (f32)cos(angle);
+				entry->position.z = float_10_8041f2a0 * -cosAngle;
+				entry->field_0x30 = sin(angle);
+				entry->field_0x34 = cos(angle);
+				switch (type) {
+				case 4:
+				case 7:
+					entry->field_0x44 = 0xFF;
+					entry->field_0x45 = 0xFF;
+					entry->field_0x46 = 0xFF;
+					break;
+				case 5:
+					entry->field_0x44 = 0xDD;
+					entry->field_0x45 = 0xB7;
+					entry->field_0x46 = 0x05;
+					break;
+				case 6:
+					entry->field_0x44 = 0x21;
+					entry->field_0x45 = 0x8C;
+					entry->field_0x46 = 0x8D;
+					break;
+				}
+			}
+			break;
+	}
+
+	return effect;
 }
 
-// NONMATCHING (0.52%): empty placeholder, not decompiled yet.
-void effKemuri1Main(EffectEntry* effect) {
+// Builds the stored position through a zero-Vec scratch, as the original does.
+inline Vec kemuri1InitVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
 
+// Advances the frame counter and the per-particle smoke physics, then queues the draw.
+void effKemuri1Main(EffectEntry* effect) {
+	effKemuri1Data* data = effect->userdata;
+	Vec position;
+	s32 type;
+	s32 b;
+	s32 a;
+	s32 i;
+
+	position = kemuri1InitVec(&data->position);
+
+	type = data->type;
+	b = (s32)(float_16_8041f250 * (f32)data->field_0x3C / (f32)data->field_0x4C);
+	a = (s32)(float_16_8041f250 * (f32)(data->field_0x3C + 1) / (f32)data->field_0x4C);
+	data->field_0x3C++;
+	if (a > 15) {
+		a = 15;
+	}
+	if (b > 15) {
+		effDelete(effect);
+		return;
+	}
+	data->field_0x40 = b;
+	data->field_0x48 = a;
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		switch (type) {
+		case 0:
+		case 1:
+			data->field_0x18 += data->field_0x1C;
+			data->field_0x14 += data->field_0x18;
+			data->field_0x10 += data->field_0x14;
+			data->position.x += data->field_0x10 * data->field_0x30;
+			data->position.z += data->field_0x10 * data->field_0x34;
+			data->field_0x28 += data->field_0x2C;
+			data->field_0x24 += data->field_0x28;
+			data->field_0x20 += data->field_0x24;
+			data->position.y += data->field_0x20;
+			break;
+		case 3:
+			data->position.y += data->field_0x20;
+			data->field_0x20 += data->field_0x24;
+			data->field_0x24 *= data->field_0x28;
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			data->position.x += data->field_0x10 * data->field_0x30;
+			data->position.z += data->field_0x10 * data->field_0x34;
+			data->field_0x10 *= data->field_0x14;
+			data->position.y += data->field_0x20;
+			data->field_0x20 += data->field_0x24;
+			data->field_0x24 *= data->field_0x28;
+			data->field_0x20 *= data->field_0x2C;
+			break;
+		}
+	}
+
+	if (effect->count - 1 <= 0) {
+		effDelete(effect);
+		return;
+	}
+	#ifdef MUST_MATCH
+	dispEntry(4, dispCalcZ(&position), 2, effKemuri1Disp, effect);
+#else
+	dispEntry(4, dispCalcZ(&position), 2, effKemuri1Disp, effect);
+#endif
 }
 
 // Draws every live entry as a camera-facing textured quad.

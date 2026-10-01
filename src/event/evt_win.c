@@ -120,21 +120,26 @@ USER_FUNC(unitwin_setmariolevel) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (77.77%): the original keeps id*0xe in r30 and defers `pouch+offset`;
-// folding the base+offset via `&pouch->partyData[id]` before the second evtGetValue
-// changes the scheduled stores.
+// The original keeps the byte offset (id * sizeof(PouchPartyData)) in r30 and
+// recomputes the final `pouch + id * sizeof` in a volatile register after the
+// pouchRevisePartyParam call, rather than caching a single element pointer.
 USER_FUNC(unitwin_setpartylank) {
+	s32 id;
+	s32 offset;
+	s32 lank;
 	s32* args = event->args;
 	PouchData* pouch = pouchGetPtr();
-	s32 id = evtGetValue(event, args[0]);
-	PouchPartyData* party = &pouch->partyData[id];
-	s32 lank = evtGetValue(event, args[1]);
 
-	party->techLevel = lank;
-	party->attackLevel = lank;
-	party->HPLevel = lank;
+	id = evtGetValue(event, args[0]);
+	offset = id * sizeof(PouchPartyData);
+	lank = evtGetValue(event, args[1]);
+
+	((PouchPartyData*)((u8*)pouch + offset))->techLevel = lank;
+	((PouchPartyData*)((u8*)pouch + offset))->attackLevel = lank;
+	((PouchPartyData*)((u8*)pouch + offset))->HPLevel = lank;
 	pouchRevisePartyParam();
-	party->currentHP = party->maximumHP;
+	((PouchPartyData*)((u8*)pouch + id * sizeof(PouchPartyData)))->currentHP =
+	    ((PouchPartyData*)((u8*)pouch + id * sizeof(PouchPartyData)))->maximumHP;
 	return EVT_RETURN_DONE;
 }
 

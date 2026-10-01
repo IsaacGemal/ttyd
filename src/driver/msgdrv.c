@@ -9,6 +9,7 @@
 #include "manager/fontmgr.h"
 #include "mario/mariost.h"
 #include "pmario_sound.h"
+#include "math_ext.h"
 #include "memory.h"
 #include "system.h"
 #include <string.h>
@@ -17,6 +18,30 @@
 
 extern GlobalWork* gp;
 extern GXColor unk_80422fe4;
+extern GXColor unk_80422fe0;
+extern u32 dat_8041a510;
+extern f32 float_0_8041a514;
+extern f32 float_30_8041a518;
+extern f32 float_40_8041a51c;
+extern f32 float_25_8041a520;
+extern f32 float_2_8041a524;
+extern f32 float_0p3_8041a528;
+extern f32 float_1_8041a52c;
+extern f32 float_0p5_8041a534;
+extern f32 float_10_8041a538;
+extern f32 float_240_8041a53c;
+extern f32 float_36_8041a540;
+extern f32 float_62_8041a544;
+extern f32 float_80_8041a548;
+extern f32 float_60_8041a54c;
+extern f32 float_28_8041a550;
+extern f32 float_6_8041a554;
+extern f32 float_8_8041a558;
+extern f32 float_50_8041a55c;
+extern f32 float_52_8041a560;
+extern f32 float_31_8041a564;
+extern f32 float_180_8041a568;
+extern f32 float_5_8041a56c;
 extern f32 float_0p36_8041a6a0;
 extern f32 float_0p6_8041a570;
 extern s32 msgWindowOpen_SE_Data[12][2];
@@ -466,6 +491,7 @@ BOOL _ismbblead(u32 a1) {
 
 
 // NONMATCHING (0.16%): empty placeholder, not decompiled yet.
+// dont_inline keeps `msgDisp` a real bl from msgWindow_Disp and selectWindow_Disp (retail emits one).
 BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 
 }
@@ -1126,6 +1152,12 @@ s32 msgIconStr2ID(const char* str) {
 	return -1;
 }
 
+static inline GXColor wakuColor(u8 a) {
+	GXColor c = *(GXColor*)&dat_8041a510;
+	c.a = a;
+	return c;
+}
+
 // NONMATCHING (79.26%): full body written. The `msgDisp` call is elided because the current msgDisp is an
 // empty stub the compiler inlines away; once msgDisp has a real body the call should reappear. The
 // GXSetFog/waku setup also allocates its stack temps differently.
@@ -1149,3 +1181,4 @@ void selectWindow_Disp(CameraId camId, void* param) {
 
 	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, 1.0f);
 }
+

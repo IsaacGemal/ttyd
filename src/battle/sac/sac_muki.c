@@ -117,17 +117,19 @@ static BattleWeapon weapon;
 
 const f64 double_to_int_80300828 = 4503601774854144.0;
 
-extern f32 float_0_80421fb4;
-extern f32 float_neg1000_80421fe8;
-extern f32 float_1_80421fc4;
+// The original's .sdata2 defines these as global constants; defining them here (rather
+// than extern) lets MWCC fold their values into the schedules several functions expect.
+const f32 float_0_80421fb4 = 0.0f;
+const f32 float_neg1000_80421fe8 = -1000.0f;
+const f32 float_1_80421fc4 = 1.0f;
 extern f32 float_901_80422050;
-extern f32 float_2_80421fa4;
-extern f32 float_37_80421fec;
-extern f32 float_50_80421ff0;
-extern f32 float_neg1_80421fc8;
-extern f32 float_2160_80421ff4;
-extern f32 float_300_80421ff8;
-extern f32 float_1p5_80421ffc;
+const f32 float_2_80421fa4 = 2.0f;
+const f32 float_37_80421fec = 37.0f;
+const f32 float_50_80421ff0 = 50.0f;
+const f32 float_neg1_80421fc8 = -1.0f;
+const f32 float_2160_80421ff4 = 2160.0f;
+const f32 float_300_80421ff8 = 300.0f;
+const f32 float_1p5_80421ffc = 1.5f;
 extern f32 float_180_80422000;
 extern f32 float_1080_80422004;
 extern f32 float_255_80422008;
@@ -353,7 +355,7 @@ static void disp_3D(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (81.26%): the stack frame is 0x10 smaller (one fewer saved temp) and the
+// NONMATCHING (81.28%): the stack frame is 0x10 smaller (one fewer saved temp) and the
 // Vec copy from .rodata is materialised differently; bodies otherwise match.
 // .text:0x908 | 0x802475F4 | size: 0x6EC
 static void disp_2D(CameraId cameraId, void* param) {
@@ -485,8 +487,12 @@ s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (55.91%): the init case's float loads and the vector copies are scheduled
-// differently, and the int->float magic constant uses an anonymous pool symbol.
+// The four intplGetValue calls that follow the first load work->field_3B8 (r4) issue that
+// reload one instruction before the original (which places it immediately before the bl);
+// the source-shaped literal constants and the int->float double pool as anonymous @NNN@
+// entries because this file's .sdata2 is not yet reconstructed.
+// NONMATCHING (95.38%): only the per-call r4 placement and the @NNN@ pool labels differ;
+// same source shape as sac_zubastar.c main_star (also 95.5%).
 // .text:0xF80 | 0x80247D4C | size: 0x320
 static void main_star(void) {
     MukiWork* work = get_ptr();
@@ -498,22 +504,29 @@ static void main_star(void) {
     case 0:
         break;
     case 1:
-        work->field_3B4 = 2;
-        work->field_3B8 = 0;
-        work->starStone = effStarStoneEntry(2, float_0_80421fb4, float_neg1000_80421fe8,
-                                             float_0_80421fb4, float_1_80421fc4);
+        {
+            f32 zero = 0.0f;
+
+            work->field_3B4 = 2;
+            {
+                f32 neg = -1000.0f;
+
+                work->field_3B8 = 0;
+                {
+                    f32 one = 1.0f;
+
+                    work->starStone = effStarStoneEntry(2, zero, neg, zero, one);
+                }
+            }
+        }
         BtlUnit_GetPos(mario, &work->posX, &work->posY, &work->posZ);
-        work->posY += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421fec;
-        work->startX = work->posX;
-        work->startY = work->posY;
-        work->startZ = work->posZ;
-        work->endX = work->posX;
-        work->endY = work->posY;
-        work->endZ = work->posZ;
-        work->endY += float_50_80421ff0;
-        work->endZ += float_neg1_80421fc8;
-        memcpy(&work->scale, &vec3_8030075c, sizeof(Vec));
-        memcpy(&work->scale2, &vec3_80300768, sizeof(Vec));
+        work->posY += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
+        *(Vec*)&work->startX = *(Vec*)&work->posX;
+        *(Vec*)&work->endX = *(Vec*)&work->posX;
+        work->endY += 50.0f;
+        work->endZ += -1.0f;
+        work->scale = (Vec){ 0.0f, 0.0f, 0.0f };
+        work->scale2 = (Vec){ 0.0f, 0.0f, 0.0f };
         /* fallthrough */
     case 2:
         work->field_3B8++;
@@ -521,27 +534,27 @@ static void main_star(void) {
             work->posX = intplGetValue(0, work->field_3B8, 0x64, work->startX, work->endX);
             work->posY = intplGetValue(0, work->field_3B8, 0x64, work->startY, work->endY);
             work->posZ = intplGetValue(0, work->field_3B8, 0x64, work->startZ, work->endZ);
-            f = intplGetValue(0, work->field_3B8, 0x64, float_0_80421fb4, float_2_80421fa4);
+            f = intplGetValue(0, work->field_3B8, 0x64, 0.0f, 2.0f);
             work->scale.z = f;
             work->scale.y = f;
             work->scale.x = f;
         }
         else {
+            f32 two = 2.0f;
+
             work->posX = work->endX;
             work->posY = work->endY;
             work->posZ = work->endZ;
-            work->scale.z = float_2_80421fa4;
-            work->scale.y = float_2_80421fa4;
-            work->scale.x = float_2_80421fa4;
+            work->scale.z = two;
+            work->scale.y = two;
+            work->scale.x = two;
         }
-        work->scale2.y = intplGetValue(4, work->field_3B8, 0x78, float_0_80421fb4, float_2160_80421ff4);
+        work->scale2.y = intplGetValue(4, work->field_3B8, 0x78, 0.0f, 2160.0f);
         if (work->field_3B8 >= 0x78) {
             work->field_3B4 = 3;
             work->field_3B8 = 0;
-            work->startX = work->posX;
-            work->startY = work->posY;
-            work->startZ = work->posZ;
-            work->endY = float_300_80421ff8;
+            *(Vec*)&work->startX = *(Vec*)&work->posX;
+            work->endY = 300.0f;
         }
         break;
     case 3:
@@ -558,6 +571,8 @@ static void main_star(void) {
     }
 
     if (work->starStone != NULL) {
+        f32 s = 1.5f;
+
         data = work->starStone->userdata;
         data[2] = work->posX;
         data[3] = work->posY;
@@ -565,11 +580,11 @@ static void main_star(void) {
         data[6] = work->scale2.x;
         data[7] = work->scale2.y;
         data[8] = work->scale2.z;
-        data[5] = float_1p5_80421ffc * work->scale.x;
+        data[5] = s * work->scale.x;
     }
 }
 
-// NONMATCHING (81.46%): float argument loads are hoisted before the field_04 stores in the
+// NONMATCHING (88.03%): float argument loads are hoisted before the field_04 stores in the
 // original; only scheduling differs.
 // .text:0x12A0 | 0x8024806C | size: 0x288
 void main_icon(s32 index) {
@@ -659,7 +674,7 @@ void main_icon(s32 index) {
 #endif
 
 
-// NONMATCHING (81.87%): the stack frame is 0x10 smaller (the int->float temporaries are laid
+// NONMATCHING (84.63%): the stack frame is 0x10 smaller (the int->float temporaries are laid
 // out differently); instructions otherwise match.
 // .text:0x1528 | 0x802482F4 | size: 0x2AC
 void main_point(s32 index) {
@@ -745,7 +760,7 @@ void main_point(s32 index) {
     }
 }
 
-// NONMATCHING (84.28%): the original hoists `str_80300830` into r29 for the whole
+// NONMATCHING (84.76%): the original hoists `str_80300830` into r29 for the whole
 // function; the rest differs only in register/scheduling choices.
 // .text:0x14BC | 0x802485A0 | size: 0x638
 void main_cursor(void) {
@@ -933,7 +948,7 @@ void main_cursor(void) {
     }
 }
 
-// NONMATCHING (87.05%): float-constant loads are scheduled differently throughout;
+// NONMATCHING (91.44%): float-constant loads are scheduled differently throughout;
 // the switch/jump table and calls match.
 // .text:0x1D0C | 0x80248BD8 | size: 0x484
 static void main_base(void) {

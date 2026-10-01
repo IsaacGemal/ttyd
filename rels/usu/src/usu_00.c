@@ -1938,13 +1938,12 @@ u32 kpaSen_ext_entry_data[117] = {
 
 const Vec vec3_usu_000049ac = {85.0f, 0.0f, 75.0f};
 
-// NONMATCHING (79%): the original keeps r25/r26/r27 live in the i<100 branch (frame 0x80 vs 0x70) and
-// schedules the int->float conversions slightly differently; structure and constants match.
 void kpaSen_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
     Vec pos = vec3_usu_000049ac;
     f32 f30;
     f32 f31;
+    f32 c;
     s32 i;
     s32 offset;
 
@@ -1964,8 +1963,16 @@ void kpaSen_ext_init(void) {
             (*pose->matrix)[0][3] = f30;
             kpaSen[i].field_C = 0.0f;
             (*pose->matrix)[1][3] = 0.0f;
+#ifdef MUST_MATCH
+            // Match-only: the local keeps the value in a register (the original stores it to both places
+            // from one register); the natural form reloads field_10.
+            c = pos.z + 20.0f * (i % 10 - 5);
+            kpaSen[i].field_10 = c;
+            (*pose->matrix)[2][3] = c;
+#else
             kpaSen[i].field_10 = pos.z + 20.0f * (i % 10 - 5);
             (*pose->matrix)[2][3] = kpaSen[i].field_10;
+#endif
             kpaSen[i].timer = (i / 10) * 3 + 1;
             kpaSen[i].field_20 = 0;
             kpaSen[i].field_21 = 5;
@@ -1974,15 +1981,27 @@ void kpaSen_ext_init(void) {
         }
         else {
             pose->field_0x4 = 270.0f;
+#ifdef MUST_MATCH
+            // Match-only: the original multiplies by the -30.0 constant and fuses; `pos.x - 30.0f * ...`
+            // makes the compiler emit fnmsubs with the +30.0 constant.
+            kpaSen[i].field_14 = -30.0f * ((i - 100) / 10.0f) + pos.x - 150.0f;
+#else
             kpaSen[i].field_14 = pos.x - 30.0f * ((i - 100) / 10.0f) - 150.0f;
+#endif
             kpaSen[i].field_18 = 0.0f;
             kpaSen[i].field_1C = pos.z + 50.0f * ((i - 100) % 10 - 5);
             kpaSen[i].field_8 = pos.x - 350.0f;
             (*pose->matrix)[0][3] = pos.x - 350.0f;
             kpaSen[i].field_C = 0.0f;
             (*pose->matrix)[1][3] = 0.0f;
+#ifdef MUST_MATCH
+            c = pos.z + 20.0f * ((i - 100) % 10 - 5);
+            kpaSen[i].field_10 = c;
+            (*pose->matrix)[2][3] = c;
+#else
             kpaSen[i].field_10 = pos.z + 20.0f * ((i - 100) % 10 - 5);
             (*pose->matrix)[2][3] = kpaSen[i].field_10;
+#endif
             kpaSen[i].timer = ((i - 100) / 10) * 3 + 1;
             switch (rand() % 3) {
             case 0:
@@ -2029,7 +2048,7 @@ s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
 // the test. The 5 remaining instructions differ only in register allocation: the original keeps 10 in r0 and puts
 // the quotient in r4 / the calcPose remainder in r5, while this source lets the compiler reuse r0 for the
 // quotient and emit `mulli` (the rest of the function matches).
-// NONMATCHING (99.54%): only that register assignment differs.
+// NONMATCHING (99.55%): only that register assignment differs.
 void kpaSen_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 i;

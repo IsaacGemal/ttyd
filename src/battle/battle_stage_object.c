@@ -9,6 +9,8 @@
 #include "driver/mapdrv.h"
 #include "battle/battle_sub.h"
 #include "eff/n64/eff_kemuri1_n64.h"
+#include "eff/eff_nozle.h"
+#include "eff/n64/eff_confetti_n64.h"
 #include "driver/msgdrv.h"
 #include "pmario_sound.h"
 
@@ -188,7 +190,12 @@ extern f32 float_30_8041cd5c;
 extern f32 float_neg45_8041cd4c;
 extern f32 float_neg135_8041cd50;
 extern f32 float_neg90_8041cd54;
+extern f32 float_12_8041cd38;
+extern f32 float_8_8041cd44;
+extern f32 float_1_8041cd48;
 
+// Keep _get_nozzle_dir out of line: _nozzle_work_effect's original emits a `bl` to it.
+#pragma dont_inline on
 f32 _get_nozzle_dir(s32 index) {
 	u8* w = (u8*)_battleWorkPointer + 0x20000;
 	s32 dir = w[index - 0x7D7C];
@@ -202,6 +209,132 @@ f32 _get_nozzle_dir(s32 index) {
 			return float_neg90_8041cd54;
 	}
 }
+#pragma dont_inline reset
+
+// One nozzle's per-frame setup. The original is fully unrolled for the three nozzles, so this macro is
+// expanded three times with the nozzle's name/dir/sfx/effect constants (offsets from the base/event as the asm).
+#define NOZZLE_WORK_BODY(IDX, NAMEOFF, DIROFF, SFXLV, EFFLV)                                                       \
+	obj = BattleSearchObjectPtr(vec + (NAMEOFF));                                                                     \
+	angle = _get_nozzle_dir(IDX);                                                                                     \
+	if (*(u8*)(base + (DIROFF)) != 0) {                                                                               \
+		if (sfx != NULL) {                                                                                               \
+			(SFXLV) = psndSFXOn_3D(sfx, &obj->mPosition);                                                                   \
+		} else {                                                                                                         \
+			(SFXLV) = -1;                                                                                                   \
+		}                                                                                                                \
+		(EFFLV) =                                                                                                        \
+		    (s32)effNozleEntry(index, 0x5A, obj->mPosition.x - float_10_8041cd34 * cosfd(angle),                         \
+		                       float_12_8041cd38 + obj->mPosition.y,                                                     \
+		                       float_10_8041cd34 * sinfd(angle) + obj->mPosition.z, float_neg80_8041cd3c,                \
+		                       reviseAngle(float_90_8041cd08 + angle));                                                  \
+	} else {                                                                                                          \
+		if (sfx != NULL) {                                                                                               \
+			(SFXLV) = psndSFXOn_3D(sfx, &obj->mPosition);                                                                   \
+		} else {                                                                                                         \
+			(SFXLV) = -1;                                                                                                   \
+		}                                                                                                                \
+		(EFFLV) =                                                                                                        \
+		    (s32)effNozleEntry(index, 0x5A, obj->mPosition.x,                                                            \
+		                       float_20_8041cd40 + obj->mPosition.y, float_8_8041cd44 + obj->mPosition.z,                \
+		                       float_0_8041cd04, float_0_8041cd04);                                                      \
+		if (val == 0) {                                                                                                  \
+			effConfettiN64Entry(4, 0x5A, obj->mPosition.x, float_20_8041cd40 + obj->mPosition.y,                            \
+			                    float_8_8041cd44 + obj->mPosition.z, float_1_8041cd48);                                     \
+		}                                                                                                                \
+	}
+
+USER_FUNC(_nozzle_work_effect) {
+	BattleWork* wp = _battleWorkPointer;
+	s32* args = event->args;
+	char* vec = vec3_802f3ac8;
+	u8* base = (u8*)wp + 0x20000;
+	BattleStageObject* obj;
+	char* sfx;
+	f32 angle;
+	s32 index = 0;
+	s32 val;
+	s32 dst;
+	s32 done;
+	s32 type;
+
+	val = evtGetValue(event, args[0]);
+	dst = args[1];
+	done = 0;
+
+	if (isFirstCall) {
+		if (BattleCheckConcluded(wp)) {
+			evtSetValue(event, dst, 0);
+			return 2;
+		}
+		event->userdata[0] = 0x5A;
+		type = *(s8*)(base - 0x7D76);
+		switch (type) {
+			case 1:
+				sfx = vec + 0x170;
+				index = 0;
+				break;
+			case 2:
+				sfx = NULL;
+				index = 1;
+				break;
+			case 3:
+				sfx = vec + 0x188;
+				index = 2;
+				break;
+		}
+		switch (type) {
+			case 1:
+			case 2:
+			case 3:
+				NOZZLE_WORK_BODY(0, 0xC0, -0x7D7C, *(s32*)((u8*)event + 0x8C), event->userdata[1])
+				NOZZLE_WORK_BODY(1, 0xCC, -0x7D7B, event->field_0x90[0], event->userdata[2])
+				NOZZLE_WORK_BODY(2, 0xD8, -0x7D7A, event->field_0x90[1], event->field_84)
+				done = 1;
+				break;
+			default:
+				if (val != 0 && *(u32*)(base - 0x7D60) == 0) {
+					event->userdata[0] = 0x78;
+					event->userdata[1] = 0;
+					event->field_84 = 0;
+					event->userdata[2] = 0;
+					*(s32*)(base - 0x7D60) =
+					    (s32)effNozleEntry(3, 0x3E8, float_0_8041cd04, float_0_8041cd04, float_0_8041cd04,
+					                       float_0_8041cd04, float_0_8041cd04);
+					event->field_84 = *(s32*)(base - 0x7D60);
+					*(s32*)(base - 0x7D64) = 2;
+					obj = BattleSearchObjectPtr(vec + 0xCC);
+					*(s32*)((u8*)event + 0x8C) = psndSFXOn_3D(vec + 0x19C, &obj->mPosition);
+					event->field_0x90[0] = -1;
+					event->field_0x90[1] = -1;
+					done = 1;
+				}
+				break;
+		}
+		if (!done) {
+			evtSetValue(event, dst, 0);
+			return 2;
+		}
+	}
+
+	if (event->userdata[0] > 0) {
+		event->userdata[0]--;
+		if ((s32)event->userdata[0] <= 0) {
+			if ((u32)*(s32*)((u8*)event + 0x8C) != 0xFFFFFFFFu) {
+				psndSFXOff(*(s32*)((u8*)event + 0x8C));
+			}
+			if (event->field_0x90[0] != 0xFFFFFFFFu) {
+				psndSFXOff(event->field_0x90[0]);
+			}
+			if (event->field_0x90[1] != 0xFFFFFFFFu) {
+				psndSFXOff(event->field_0x90[1]);
+			}
+		}
+		return 0;
+	}
+	evtSetValue(event, dst, 1);
+	return 2;
+}
+#undef NOZZLE_WORK_BODY
 
 BOOL BattleFogForceStop(void) {
 	BattleWork* wp = _battleWorkPointer;
@@ -965,7 +1098,7 @@ USER_FUNC(_bgset_kemuri_effect) {
 // other pragma on/off pairs, defining the double in-file (MWCC still emits its own `@N@` int->float magic),
 // removing the `base`/`vec` variables, relocating the s0/s1 SFX temporaries, and s32/BOOL/u32 changed: none
 // reproduces event=r29/wp=r28/changed=r26. `--final` PASSes with the file unchanged.
-// NONMATCHING (95.85%): but for the event/wp/changed register cycle and the conversion constant base.
+// NONMATCHING (97.01%): but for the event/wp/changed register cycle and the conversion constant base.
 USER_FUNC(_set_mobj_rotate_x) {
 	BattleStageObject* obj;
 	s32 i;
@@ -1209,7 +1342,111 @@ void BattleObjectConfig(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (0.37%): 269 missing.
+// BattleStageObjectMain: per-object transform bookkeeping.
 void BattleStageObjectMain(void) {
+	BattleWork* wp = _battleWorkPointer;
+	u8* base = (u8*)wp + 0x20000;
+	BattleStageObject* obj;
+	s32 i;
+	s32 changed;
 
+	for (i = 0; i < 32; i++) {
+		obj = &wp->stageObjects[i];
+		if (obj->id <= 0) {
+			continue;
+		}
+
+		changed = 0;
+		if (obj->mPosition.x != obj->field_0x34.x || obj->mPosition.y != obj->field_0x34.y
+		    || obj->mPosition.z != obj->field_0x34.z) {
+			obj->field_0x34 = obj->mPosition;
+			changed = 1;
+		}
+		if (obj->field_0x10.x != obj->field_0x40.x || obj->field_0x10.y != obj->field_0x40.y
+		    || obj->field_0x10.z != obj->field_0x40.z) {
+			obj->field_0x40 = obj->field_0x10;
+			changed = 1;
+		}
+		if (obj->field_0x28.x != obj->field_0x58.x || obj->field_0x28.y != obj->field_0x58.y
+		    || obj->field_0x28.z != obj->field_0x58.z) {
+			obj->field_0x58 = obj->field_0x28;
+			changed = 1;
+		}
+		if (obj->mRotation.x != obj->field_0x4C.x || obj->mRotation.y != obj->field_0x4C.y
+		    || obj->mRotation.z != obj->field_0x4C.z) {
+			obj->field_0x4C = obj->mRotation;
+			changed = 1;
+		}
+
+		if (obj->mFlags & 2) {
+			obj->mFlags &= ~2;
+			changed = 1;
+		}
+
+		switch (obj->data->mLayer) {
+			case 2: {
+				// 0x180C4/0x180D0 are inside BattleWork.field_180C0 (padding; no named fields yet).
+				Vec* a = (Vec*)(base - 0x7F3C);
+				Vec* b = (Vec*)(base - 0x7F30);
+				if (a->x != b->x || a->y != b->y || a->z != b->z) {
+					*b = *a;
+					changed = 1;
+				}
+				break;
+			}
+		}
+
+		switch (obj->data->mLayer) {
+			case 0:
+			case 1:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+				if (changed) {
+					mapObjTranslate(obj->data->name,
+					                obj->mPosition.x + obj->field_0x10.x + obj->field_0x28.x,
+					                obj->mPosition.y + obj->field_0x10.y + obj->field_0x28.y,
+					                obj->mPosition.z + obj->field_0x10.z + obj->field_0x28.z);
+					mapObjRotate(obj->data->name, obj->mRotation.x, obj->mRotation.y,
+					             obj->mRotation.z);
+				}
+				break;
+			case 2:
+				if (changed) {
+					mapObjTranslate(obj->data->name,
+					                obj->mPosition.x + obj->field_0x10.x + obj->field_0x28.x,
+					                obj->mPosition.y + obj->field_0x10.y + obj->field_0x28.y,
+					                obj->mPosition.z + obj->field_0x10.z + obj->field_0x28.z);
+					mapObjTranslate(obj->data->name, float_0_8041cd04, -obj->field_0x10.y, float_0_8041cd04);
+					mapObjRotate(obj->data->name, ((Vec*)(base - 0x7F3C))->x, ((Vec*)(base - 0x7F3C))->y,
+					             ((Vec*)(base - 0x7F3C))->z);
+					mapObjTranslate(obj->data->name, float_0_8041cd04, obj->field_0x10.y, float_0_8041cd04);
+				}
+				break;
+			case 3:
+				if (changed) {
+					mapObjTranslate(obj->data->name,
+					                obj->mPosition.x + obj->field_0x10.x + obj->field_0x28.x,
+					                obj->mPosition.y + obj->field_0x10.y + obj->field_0x28.y,
+					                obj->mPosition.z + obj->field_0x10.z + obj->field_0x28.z);
+					mapObjTranslate(obj->data->name, float_0_8041cd04, -obj->mPosition.y, float_0_8041cd04);
+					mapObjRotate(obj->data->name, obj->mRotation.x, obj->mRotation.y,
+					             obj->mRotation.z);
+					mapObjTranslate(obj->data->name, float_0_8041cd04, obj->mPosition.y, float_0_8041cd04);
+				}
+				break;
+		}
+
+		if (obj->mFlags & 1) {
+			if (!(*(u32*)mapGetMapObj(obj->data->name)->field_0x0 & 1)) {
+				mapGrpFlagOn(obj->data->name, 1);
+			}
+		} else {
+			if (*(u32*)mapGetMapObj(obj->data->name)->field_0x0 & 1) {
+				mapGrpFlagOff(obj->data->name, 1);
+			}
+		}
+	}
+	BattleObjectConfig();
 }

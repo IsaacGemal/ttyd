@@ -1,3 +1,6 @@
+// Needed: this file is built with inlining disabled (see REPORT.md); without this MWCC inlines
+// small helpers such as BattleWaitAllActiveEvtEnd into btlseqMove/BattleSequenceManager.
+#pragma dont_inline on
 #include "battle/battle_seq.h"
 #include "battle/battle.h"
 #include "battle/battle_actrecord.h"
@@ -6,6 +9,8 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
 #include "battle/battle_damage_split.h"
+#include "battle/battle_mario.h"
+#include "battle/battle_status_effect.h"
 #include "driver/animdrv.h"
 #include "driver/msgdrv.h"
 #include "driver/windowdrv.h"
@@ -78,8 +83,6 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 }
 #pragma dont_inline reset
 
-// NONMATCHING (79.18%): switch dispatch matches, but btlseqFirstAct/btlseqTurn are still stubs, so the
-// compiler inlines them away and the case-3 compare/branch tree differs.
 void BattleSequenceManager(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	switch (BattleGetSeq(wp, SEQ_UNKNOWN)) {
@@ -97,6 +100,8 @@ void BattleSequenceManager(void) { //1:1
 			break;
 		case 3:
 			btlseqEnd(wp);
+			break;
+		case 4: // empty: the original's switch has a 5th case, producing its extra bound compare
 			break;
 	}
 }
@@ -181,8 +186,6 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 	}
 }
 
-// Needed: without dont_inline this whole body is inlined into BattleSequenceManager; the original calls it.
-#pragma dont_inline on
 void btlseqInit(BattleWork* wp) {
 	const char* base = (const char*)N_weapon_lucky_start;
 	MarioWork* mario;
@@ -231,7 +234,6 @@ void btlseqInit(BattleWork* wp) {
 			break;
 	}
 }
-#pragma dont_inline reset
 
 extern BattleWeapon marioDefaultWeapon_Jump;
 extern BattleWeapon marioWeapon_KururinJump;
@@ -456,6 +458,254 @@ void btlseqPhase(BattleWork* wp) { //1:1
 			BattleSetSeq(wp, SEQ_PHASE, 0x4000000);
 			break;
 	}
+}
+
+// NONMATCHING (99.93%): only the case 0x5000006 loop index differs (r27 here, r25 in the original; it
+// wants a separate colour from the shared case-4/case-8 counter `i`). The other two diffs are the
+// jump-table relocation, which needs btlseqAct/btlseqTurn written before the table lands at its offset.
+void btlseqMove(BattleWork* wp) {
+	BattleUnit* unit;
+	s32 j;
+	s32 i;
+	BOOL changed;
+
+	do {
+		changed = FALSE;
+		switch (BattleGetSeq(wp, SEQ_MOVE)) {
+		case 0x5000000:
+			btlseqPhaseFirstProcess(wp);
+			BattleIncSeq(wp, SEQ_MOVE);
+			changed = TRUE;
+			break;
+		case 0x5000001:
+			BattleIncSeq(wp, SEQ_MOVE);
+			changed = TRUE;
+			break;
+		case 0x5000002: {
+			PouchData* pouch = pouchGetPtr();
+			BattleUnit* mario = BattleGetMarioPtr(wp);
+			if (pouch->mMerleeNextCurseType != 2 ||
+				BattleGetSeq(wp, SEQ_PHASE) != 0x4000004)
+			{
+				BattleIncSeq(wp, SEQ_MOVE);
+				BattleIncSeq(wp, SEQ_MOVE);
+				changed = TRUE;
+				break;
+			}
+			wp->field_18FE1[0] = 2;
+			BattleMajinaiDone();
+			BattleMajinaiEndCheck();
+			{
+				EventEntry* event = evtEntry(marioAttackEvent_MajinaiDefenceUp, 0xa, 0);
+				event->unitId = mario->unitId;
+				mario->attackEventId = event->eventId;
+			}
+			BattleIncSeq(wp, SEQ_MOVE);
+			// falls through
+		}
+		case 0x5000003:
+			if (BattleWaitAllActiveEvtEnd(wp)) {
+				BattleIncSeq(wp, SEQ_MOVE);
+				changed = TRUE;
+			}
+			break;
+		case 0x5000004: {
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL && unit->unisonPhaseEventCode != NULL) {
+					BattleRunPhaseEvent(unit, TRUE);
+				}
+			}
+			BattleIncSeq(wp, SEQ_MOVE);
+			changed = TRUE;
+			break;
+		}
+		case 0x5000005:
+			if (BattleWaitAllActiveEvtEnd(wp)) {
+				BattleIncSeq(wp, SEQ_MOVE);
+				changed = TRUE;
+			}
+			break;
+		case 0x5000006: {
+			s32 id;
+			for (j = 0; j < 64; j++) {
+				id = *(s32*)(wp->field_120 + 0x100 + j * 8);
+				if (id == -1) {
+					continue;
+				}
+				unit = BattleGetUnitPtr(wp, id);
+				if (unit != NULL && unit->phaseEventCode != NULL) {
+					break;
+				}
+			}
+			if (j < 64) {
+				BattleRunPhaseEvent(unit, FALSE);
+				*(s32*)(wp->field_120 + 0x100 + j * 8) = -1;
+				BattleIncSeq(wp, SEQ_MOVE);
+			}
+			else {
+				BattleSetSeq(wp, SEQ_MOVE, 0x500000A);
+				changed = TRUE;
+			}
+			break;
+		}
+		case 0x5000007:
+			if (BattleWaitAllActiveEvtEnd(wp)) {
+				if (BattleCheckConcluded(wp)) {
+					BattleSetSeq(wp, SEQ_UNKNOWN, 3);
+					BattleSetSeq(wp, SEQ_END, 0x7000000);
+				}
+				else {
+					BattleSetSeq(wp, SEQ_MOVE, 0x5000006);
+					changed = TRUE;
+				}
+			}
+			break;
+		case 0x5000008: {
+			s32 id;
+			PouchData* pouch;
+			memset(&wp->impendingBonuses, 0, sizeof(StarPowerInfo));
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					unit->mTokenFlags &= 0x80002000;
+					unit->totalHpDamageTaken = 0;
+					unit->hpDamageTaken = 0;
+					unit->hpDamageCount = 0;
+					((s8*)unit->field_0x26E)[1] = 0;
+					*(s32*)unit->field_0x264 = 0;
+					unit->fpDamageTaken = 0;
+					*(s32*)(unit->field_0x264 + 4) = 0;
+					((s8*)unit->field_0x26E)[0] = 0;
+					*(s32*)unit->field_0x27C = 0;
+				}
+			}
+			for (i = 0; i < 64; i++) {
+				id = *(s32*)(wp->field_120 + i * 4);
+				if (id == -1) {
+					continue;
+				}
+				unit = BattleGetUnitPtr(wp, id);
+				if (unit == NULL) {
+					continue;
+				}
+				if (unit->movesRemaining <= 0) {
+					continue;
+				}
+				{
+					s32 moveState = unit->moveState;
+					if (moveState == 10) {
+						continue;
+					}
+					if (BtlUnit_CheckStatus(unit, 0x1B) && !(unit->mAttributeFlags & 0x10000)) {
+						continue;
+					}
+					if (moveState != 1) {
+						break;
+					}
+				}
+				unit->moveState = 0;
+			}
+			wp->activeUnitId = id;
+			unit = BattleGetUnitPtr(wp, id);
+			unit->mTokenFlags |= 0x1000;
+			BattleIncSeq(wp, SEQ_MOVE);
+			BattleSetSeq(wp, SEQ_ACT, 0x6000000);
+			for (i = 0; i < 64; i++) {
+				id = *(s32*)(wp->field_120 + i * 4);
+				if (id == -1) {
+					continue;
+				}
+				unit = BattleGetUnitPtr(wp, id);
+				if (unit == NULL) {
+					continue;
+				}
+				if (unit->moveState != 1) {
+					continue;
+				}
+				unit->moveState = 0;
+			}
+			unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+			if (unit->currentKind != 0xDE) {
+				break;
+			}
+			pouch = pouchGetPtr();
+			wp->flags |= 0x600;
+			for (i = 0; i < MAX_BADGES; i++) {
+				if (pouch->equippedBadges[i] >= 0xF0 && pouch->equippedBadges[i] < 0xF7) {
+					wp->flags &= ~0x200;
+					break;
+				}
+			}
+			if (pouch->jumpLevel >= 2) {
+				wp->flags &= ~0x200;
+			}
+			for (i = 0; i < MAX_BADGES; i++) {
+				if (pouch->equippedBadges[i] >= 0xF7 && pouch->equippedBadges[i] < 0xFE) {
+					wp->flags &= ~0x400;
+					break;
+				}
+			}
+			if (pouch->hammerLevel >= 2) {
+				wp->flags &= ~0x400;
+			}
+			break;
+		}
+		case 0x5000009:
+			btlseqAct(wp);
+			break;
+		case 0x500000A: {
+			if (BattleCheckConcluded(wp)) {
+				BattleSetSeq(wp, SEQ_UNKNOWN, 3);
+				BattleSetSeq(wp, SEQ_END, 0x7000000);
+				break;
+			}
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					BtlUnit_SetTotalHitDamage(unit, 0);
+					unit->mTokenFlags &= ~0x1000;
+				}
+			}
+			{
+			BOOL end = BattlePhaseEndCheck();
+			if (wp->flags & 0x2000) {
+				end = TRUE;
+			}
+			if (end) {
+				if (wp->field_18FE1[0] == 2) {
+					wp->field_18FE1[0] = 0;
+				}
+				BattleAudience_PerPhase(BattleGetSeq(wp, SEQ_PHASE));
+				BattleIncSeq(wp, SEQ_MOVE);
+			}
+			else {
+				BattleSetSeq(wp, SEQ_MOVE, 0x5000008);
+			}
+			}
+			break;
+		}
+		case 0x500000B:
+			if ((u8)BattleAudience_CheckReactionPerPhase() == 0 && BattleWaitAllActiveEvtEnd(wp)) {
+				BattleIncSeq(wp, SEQ_MOVE);
+			}
+			break;
+		case 0x500000C: {
+			if ((BattleStatusChangeAnnouceMain(wp) | BattleStatusChangeMsgMain(wp)) == 0) {
+				BattleIncSeq(wp, SEQ_PHASE);
+				BattleSetSeq(wp, SEQ_MOVE, 0x5000000);
+			}
+			break;
+		}
+		case 0x500000D:
+			BattleIncSeq(wp, SEQ_MOVE);
+			break;
+		case 0x500000E:
+			BattleIncSeq(wp, SEQ_PHASE);
+			BattleSetSeq(wp, SEQ_MOVE, 0x5000000);
+			break;
+		}
+	} while (changed);
 }
 
 void btlseqTurnFirstProcess(BattleWork* wp) { //1:1

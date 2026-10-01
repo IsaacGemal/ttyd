@@ -4,6 +4,7 @@
 #include "battle/battle_database_common.h"
 extern BattleWeapon marioWeapon_KaitenHammerInvolved;
 extern BattleWeapon marioWeapon_UltraHammerInvolved;
+extern s32 marioAttackEvent_MajinaiDefenceUp[];
 
 USER_FUNC(_whirlwind_effect);
 USER_FUNC(_jump_star_effect);

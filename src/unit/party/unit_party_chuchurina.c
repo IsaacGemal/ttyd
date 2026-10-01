@@ -6,10 +6,12 @@
 #include "battle/battle.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_sub.h"
+#include "battle/battle_disp.h"
 #include "driver/dispdrv.h"
 #include "driver/msgdrv.h"
 #include "mario/mario_party.h"
 #include "memory.h"
+#include "system.h"
 #include <dolphin/gx.h>
 #include <string.h>
 
@@ -151,6 +153,86 @@ USER_FUNC(_get_itemsteal_param) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (90.68%): the drop-table selection matches instruction-for-instruction (the redundant `else if (list != NULL)` reproduces the target's dead `beq`); only the callee-saved colouring differs.
+// Target event r26, args/id/item/list r27, unit r28, out r29, work r30, flag r31; ours event r27, args/flag r26, unit r28, out r29, work r30, item r31, list r25.
+// Seven saved regs / 0x30 frame vs six / 0x20; decl-order shuffles, an `evt` alias, inlined args and every pragma leave the event/args swap in place.
+USER_FUNC(_chuchu_item_steal) {
+    u16 item;
+    BattleWork* work;
+    s32 id, out, flag;
+    s32* args;
+    BattleUnit* unit;
+    ItemDropData* list;
+    ItemDropData* d;
+    s32 sum;
+    s32 pick;
+
+    work = _battleWorkPointer;
+    args = event->args;
+    id = evtGetValue(event, args[0]);
+    out = args[1];
+    flag = evtGetValue(event, args[2]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
+    item = unit->heldItem;
+    if (item == 0) {
+        if (unit->dropTable != NULL) {
+            irand(100);
+        }
+        list = unit->dropTable;
+        if (list == NULL) {
+            item = 0;
+        } else if (list != NULL) {
+            d = list;
+            sum = 0;
+            while (d->holdWeight > 0 || d->type != 0) {
+                sum += d->holdWeight;
+                d++;
+            }
+            if (sum > 0) {
+                pick = irand(sum);
+                while ((pick -= list->holdWeight) >= 0) {
+                    list++;
+                }
+                item = list->type;
+            } else {
+                item = 0;
+            }
+        }
+        if (item == 0) {
+            item = 0x79;
+        }
+    }
+    if (!(flag & 2)) {
+        evtSetValue(event, out, 0);
+        return EVT_RETURN_DONE;
+    }
+    if (pouchGetItem(item) == 0) {
+        evtSetValue(event, out, 0);
+        return EVT_RETURN_DONE;
+    }
+    unit->heldItem = 0;
+    if (BtlUnit_CheckUnitFlag(unit, 0x4000)) {
+        BtlUnit_OffUnitFlag(unit, 0x4000);
+        if (unit->groupSetupId >= 0) {
+            work->fbatInfo->setup->heldItems[unit->groupSetupId] = 0;
+            work->fbatInfo->setup->stolenItems[unit->groupSetupId] = 0;
+        }
+    } else if (unit->groupSetupId >= 0) {
+        work->fbatInfo->setup->heldItems[unit->groupSetupId] = 0;
+    }
+    if (item >= 0xF0 && item < 0x153) {
+        if (unit->currentKind == 0xDE) {
+            BtlUnit_EquipItem(unit, 3, 0);
+        } else if (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
+            BtlUnit_EquipItem(unit, 5, 0);
+        } else {
+            BtlUnit_EquipItem(unit, 1, 0);
+        }
+    }
+    evtSetValue(event, out, item);
+    return EVT_RETURN_DONE;
+}
+
 // .sbss:0x0 | 0x80418A28
 s32 mono_alpha;
 
@@ -165,6 +247,80 @@ void mono_capture(CameraId cameraId, void* param) {
     GXPixModeSync();
     *(u32*)((u8*)parts + 0x204) &= ~0x100;
 }
+
+// opt_common_subs on folds the repeated quad vertex constants into registers; the original reloads each.
+#pragma opt_common_subs off
+
+// Building the colour in an inline keeps the GXColor temporary in the slot the original uses.
+static inline GXColor monoColor(u8 alpha) {
+    GXColor color = *(GXColor*)&dat_8041ddb8;
+    color.a = alpha;
+    return color;
+}
+
+void mono_disp(CameraId cameraId, void* param) {
+    BattleUnit* unit = param;
+    CameraEntry* camera;
+    GXTexObj texObj;
+    smartEntry* entry;
+    void* tex;
+    BattleUnit* party;
+    BattleUnitPart* parts;
+    CameraId prev;
+
+    camera = camGetPtr(cameraId);
+    entry = *(smartEntry**)((u8*)unit + 0x318);
+    tex = NULL;
+    if (entry != NULL) {
+        tex = entry->address;
+    }
+    if (tex == NULL) {
+        return;
+    }
+    GXInitTexObj(&texObj, tex, 0x260, 0x1E0, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_8041ddc0, float_0_8041ddc0, float_0_8041ddc0, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXLoadPosMtxImm(camera->view, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXSetTevColor(GX_TEVREG0, monoColor(mono_alpha));
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(float_neg304_8041ddc4, float_240_8041ddc8, float_0_8041ddc0);
+    GXTexCoord2f32(float_0_8041ddc0, float_0_8041ddc0);
+    GXPosition3f32(float_304_8041ddcc, float_240_8041ddc8, float_0_8041ddc0);
+    GXTexCoord2f32(float_1_8041ddd0, float_0_8041ddc0);
+    GXPosition3f32(float_304_8041ddcc, float_neg240_8041ddd4, float_0_8041ddc0);
+    GXTexCoord2f32(float_1_8041ddd0, float_1_8041ddd0);
+    GXPosition3f32(float_neg304_8041ddc4, float_neg240_8041ddd4, float_0_8041ddc0);
+    GXTexCoord2f32(float_0_8041ddc0, float_1_8041ddd0);
+    party = BattleGetPartyPtr(_battleWorkPointer);
+    if (party != NULL) {
+        parts = BtlUnit_GetPartsPtr(party, 1);
+        prev = camGetCurNo();
+        camSetCurNo(CAMERA_3D);
+        btlUnitPartsDisp(CAMERA_3D, parts);
+        camSetCurNo(prev);
+    }
+}
+#pragma opt_common_subs reset
 
 USER_FUNC(mono_main) {
     BattleUnit* unit;

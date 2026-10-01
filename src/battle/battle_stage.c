@@ -1,5 +1,6 @@
 #include "battle/battle_stage.h"
 #include "battle/battle.h"
+#include "system.h"
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <string.h>
@@ -41,10 +42,6 @@ extern f32 float_neg1_8041c818;
 extern f32 float_32767_8041c81c;
 extern f32 float_5000_8041c84c;
 extern f32 float_6000_8041c850;
-extern f32 float_290_8041c854;
-extern f32 float_200_8041c858;
-extern f32 float_90_8041c85c;
-extern f32 float_neg50_8041c860;
 extern u32 unk_80423018;
 extern u32 unk_8042301c;
 extern u32 unk_80423028;
@@ -66,12 +63,12 @@ typedef struct BattleStageDark {
 	u8 field_8;   //0x8
 	u8 field_9;   //0x9
 	u8 pad_A[2];  //0xA
-	u32 field_C;  //0xC
-	u32 field_10; //0x10
-	u32 field_14; //0x14
-	u32 field_18; //0x18
-	u8 field_1C;  //0x1C
-	u8 field_1D;  //0x1D
+	s32 field_C;  //0xC
+	s32 field_10; //0x10
+	s32 field_14; //0x14
+	s32 field_18; //0x18
+	s8 field_1C;  //0x1C
+	s8 field_1D;  //0x1D
 	u8 pad_1E[2]; //0x1E
 } BattleStageDark;
 
@@ -90,35 +87,35 @@ typedef struct BattleStageLight {
 	BattleStageColor colorTo;   //0x2C
 	s32 colorFrames;        //0x30
 	s32 colorFramesTotal;   //0x34
-	u8 colorEase;           //0x38
+	s8 colorEase;           //0x38
 	u8 pad_39[3];           //0x39
 	f32 widthCur;           //0x3C
 	f32 widthFrom;          //0x40
 	f32 widthTo;            //0x44
 	s32 widthFrames;        //0x48
 	s32 widthFramesTotal;   //0x4C
-	u8 widthEase;           //0x50
+	s8 widthEase;           //0x50
 	u8 pad_51[3];           //0x51
 	Vec posCur;             //0x54
 	Vec posFrom;            //0x60
 	Vec posTo;              //0x6C
 	s32 posFrames;          //0x78
 	s32 posFramesTotal;     //0x7C
-	u8 posEase;             //0x80
+	s8 posEase;             //0x80
 	u8 pad_81[3];           //0x81
 	Vec targetCur;          //0x84
 	Vec targetFrom;         //0x90
 	Vec targetTo;           //0x9C
 	s32 targetFrames;       //0xA8
 	s32 targetFramesTotal;  //0xAC
-	u8 targetEase;          //0xB0
+	s8 targetEase;          //0xB0
 	u8 pad_B1[3];           //0xB1
 	Vec upCur;              //0xB4
 	Vec upFrom;             //0xC0
 	Vec upTo;               //0xCC
 	s32 upFrames;           //0xD8
 	s32 upFramesTotal;      //0xDC
-	u8 upEase;              //0xE0
+	s8 upEase;              //0xE0
 	u8 pad_E1[3];           //0xE1
 	void* spline;           //0xE4
 } BattleStageLight;
@@ -142,24 +139,24 @@ BattleStage* BattleStageGetPtr(void) {
     return &_battleWorkPointer->stage;
 }
 
-// NONMATCHING (76.11%): 7 missing, 6 extra, plus register differences.
+// NONMATCHING (95.88%): loop offset/null registers swapped (orig offset=r3 from
+// null=r4 via `mr`; ours null=r3/offset=r4). The four .sda2 floats are `const`
+// in the header so MWCC hoists all four lfs, matching the B24/B38 stores.
 void BattleStageInit(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
-
+	u32 offset;
+	u32 null;
 	memset(stage, 0, 0xB3C);
 	stage->field_0 = 0;
-
-	{
-		s32 offset = 0;
-		for (i = 0; i < 12; i++) {
-			BattleStageLight* light = (BattleStageLight*)((u8*)stage->lights + offset);
-			light->flags = 0;
-			light->spline = NULL;
-			offset += 0xe8;
-		}
+	null = 0;
+	offset = 0;
+	for (i = 0; i < 12; i++) {
+		BattleStageLight* light = (BattleStageLight*)((u8*)stage + offset + 4);
+		light->flags = 0;
+		light->spline = (void*)null;
+		offset += 0xe8;
 	}
-
 	stage->stgDark.field_0 = 1;
 	stage->stgDark.field_5 = 0;
 	stage->stgDark.field_4 = 0;
@@ -176,25 +173,150 @@ void BattleStageInit(void) {
 	stage->audDark.field_C = 0;
 	stage->audDark.field_14 = 0;
 
-	{
-		f32 f90 = float_90_8041c85c;
-		f32 fn50 = float_neg50_8041c860;
-		f32 f200 = float_200_8041c858;
-		f32 f290 = float_290_8041c854;
-		stage->field_B24 = f290;
-		stage->field_B28 = f200;
-		stage->field_B2C = f90;
-		stage->field_B30 = stage->field_B24;
-		stage->field_B34 = fn50;
-		stage->field_B38 = f200;
-	}
-
+	stage->field_B24 = float_290_8041c854;
+	stage->field_B28 = float_200_8041c858;
+	stage->field_B2C = float_90_8041c85c;
+	stage->field_B30 = stage->field_B24;
+	stage->field_B34 = float_neg50_8041c860;
+	stage->field_B38 = float_200_8041c858;
 	BattleStageObjectInit();
 	batSpotInit();
 }
 
-// NONMATCHING (0.25%): 397 missing.
+// NONMATCHING (99.62%): only register allocation - the first colour channel and
+// the four dark blocks load from/to into r4/r0 instead of r0/r4, and the
+// unsigned int->float pool constant is the local @841 not the named mask.
 void BattleStageMain(void) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	s32 offset;
+	s32 i;
+	BattleStageLight* light;
+
+	batSpotMain();
+
+	i = 0;
+	offset = 0;
+	for (; i < 12; i++, offset += 0xe8) {
+		light = (BattleStageLight*)((u8*)stage + offset + 4);
+
+		if (light->flags & 1) {
+			if (light->colorFrames > 0) {
+				light->colorFrames--;
+				light->colorCur.r = intplGetValue(light->colorEase,
+					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal,
+					light->colorFrom.r, light->colorTo.r);
+				light->colorCur.g = intplGetValue(light->colorEase,
+					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal,
+					light->colorFrom.g, light->colorTo.g);
+				light->colorCur.b = intplGetValue(light->colorEase,
+					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal,
+					light->colorFrom.b, light->colorTo.b);
+				if ((light->flags & 2) && light->colorCur.r == 0 && light->colorCur.g == 0 && light->colorCur.b == 0) {
+					light->flags = 0;
+					continue;
+				}
+			}
+
+			if (light->widthFrames > 0) {
+				light->widthFrames--;
+				light->widthCur = intplGetValue(light->widthEase,
+					light->widthFramesTotal - light->widthFrames, light->widthFramesTotal,
+					light->widthFrom, light->widthTo);
+			}
+
+			if (light->posFrames > 0) {
+				light->posFrames--;
+				light->posCur.x = intplGetValue(light->posEase,
+					light->posFramesTotal - light->posFrames, light->posFramesTotal,
+					light->posFrom.x, light->posTo.x);
+				light->posCur.y = intplGetValue(light->posEase,
+					light->posFramesTotal - light->posFrames, light->posFramesTotal,
+					light->posFrom.y, light->posTo.y);
+				light->posCur.z = intplGetValue(light->posEase,
+					light->posFramesTotal - light->posFrames, light->posFramesTotal,
+					light->posFrom.z, light->posTo.z);
+			}
+
+			if (light->flags & 4) {
+				s32* spline = (s32*)light->spline;
+
+				light->targetCur.x = getSpline((f32*)(spline + 9), (f32*)(spline + 17), (f32*)(spline + 25),
+					(f32*)(spline + 33), spline + 1, spline[0], light->targetFrames);
+				light->targetCur.y = getSpline((f32*)(spline + 41), (f32*)(spline + 49), (f32*)(spline + 57),
+					(f32*)(spline + 65), spline + 1, spline[0], light->targetFrames);
+				light->targetCur.z = getSpline((f32*)(spline + 73), (f32*)(spline + 81), (f32*)(spline + 89),
+					(f32*)(spline + 97), spline + 1, spline[0], light->targetFrames);
+				light->targetFrames++;
+				if (light->targetFrames >= spline[spline[0]]) {
+					if (light->flags & 8) {
+						light->targetFrames -= spline[spline[0]];
+					} else {
+						light->targetFrames = spline[spline[0]];
+					}
+				}
+			} else {
+				if (light->targetFrames > 0) {
+					light->targetFrames--;
+					light->targetCur.x = intplGetValue(light->targetEase,
+						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal,
+						light->targetFrom.x, light->targetTo.x);
+					light->targetCur.y = intplGetValue(light->targetEase,
+						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal,
+						light->targetFrom.y, light->targetTo.y);
+					light->targetCur.z = intplGetValue(light->targetEase,
+						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal,
+						light->targetFrom.z, light->targetTo.z);
+				}
+				if (light->spline != NULL) {
+					__memFree(HEAP_BATTLE, light->spline);
+					light->spline = NULL;
+				}
+			}
+
+			if (light->upFrames > 0) {
+				light->upFrames--;
+				light->upCur.x = intplGetValue(light->upEase,
+					light->upFramesTotal - light->upFrames, light->upFramesTotal,
+					light->upFrom.x, light->upTo.x);
+				light->upCur.y = intplGetValue(light->upEase,
+					light->upFramesTotal - light->upFrames, light->upFramesTotal,
+					light->upFrom.y, light->upTo.y);
+				light->upCur.z = intplGetValue(light->upEase,
+					light->upFramesTotal - light->upFrames, light->upFramesTotal,
+					light->upFrom.z, light->upTo.z);
+			}
+		} else {
+			if (light->spline != NULL) {
+				__memFree(HEAP_BATTLE, light->spline);
+				light->spline = NULL;
+			}
+		}
+	}
+
+	if (stage->stgDark.field_C > 0) {
+		stage->stgDark.field_C--;
+		stage->stgDark.field_4 = intplGetValue(stage->stgDark.field_1C,
+			stage->stgDark.field_14 - stage->stgDark.field_C, stage->stgDark.field_14,
+			stage->stgDark.field_6, stage->stgDark.field_8);
+	}
+	if (stage->stgDark.field_10 > 0) {
+		stage->stgDark.field_10--;
+		stage->stgDark.field_5 = intplGetValue(stage->stgDark.field_1D,
+			stage->stgDark.field_18 - stage->stgDark.field_10, stage->stgDark.field_18,
+			stage->stgDark.field_7, stage->stgDark.field_9);
+	}
+	if (stage->audDark.field_C > 0) {
+		stage->audDark.field_C--;
+		stage->audDark.field_4 = intplGetValue(stage->audDark.field_1C,
+			stage->audDark.field_14 - stage->audDark.field_C, stage->audDark.field_14,
+			stage->audDark.field_6, stage->audDark.field_8);
+	}
+	if (stage->audDark.field_10 > 0) {
+		stage->audDark.field_10--;
+		stage->audDark.field_5 = intplGetValue(stage->audDark.field_1D,
+			stage->audDark.field_18 - stage->audDark.field_10, stage->audDark.field_18,
+			stage->audDark.field_7, stage->audDark.field_9);
+	}
 }
 
 // NONMATCHING (91.67%): only the `offset`/`null` register choice is swapped
@@ -635,6 +757,8 @@ void BattleStageOnLightEnemyInCommand(void) {
 void BattleStageOffLightEnemyInCommand(void) {
 }
 
+// dont_inline: without it the compiler inlines getSpline into BattleStageMain
+#pragma dont_inline on
 f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) {
 	s32 i;
 
@@ -649,6 +773,7 @@ f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) 
 		return a[i] + t * (b[i] + t * (c[i] + t * d[i]));
 	}
 }
+#pragma dont_inline reset
 
 // ------------------------------------------------------------ light setters
 #pragma opt_propagation off
