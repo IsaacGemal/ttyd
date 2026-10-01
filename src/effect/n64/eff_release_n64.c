@@ -7,12 +7,15 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
+// .sbss2 zero scratch words (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 unk_80423244;
+__declspec(section ".sdata") u32 unk_80423240;
+
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") f32 lbl_803A4C60[2] = { -1.0f, 1.0f };
 
 extern const u32 dat_8041fb38;
-extern const u32 unk_80423240;
-extern const u32 unk_80423244;
 
 // .rodata
 // The zero Vec (vec3_802fb4f0), the two int->float magic doubles (double_to_int_802fb500,
@@ -22,6 +25,8 @@ extern const u32 unk_80423244;
 // .data
 // lbl_803A4C60 belongs to the previous unit (eff_recover_heart_n64); effReleaseDisp reaches
 // its own .data through it as an offset base. Declared in the header.
+// The unit reads these tables through the first .data object (lbl_803A4C60 + offset); nothing names them.
+#pragma force_active on
 __declspec(section ".data") static f32 negone_one_374[2] = {-1.0f, 1.0f};
 __declspec(section ".data") f32 lbl_803A4C70[2] = {1.0f, -1.0f};
 __declspec(section ".data") static f32 one_negone_373[2] = {1.0f, -1.0f};
@@ -102,6 +107,7 @@ u8 rectangle_vtx[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x01, 0xE0, 0x00, 0x00,
 	0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
 };
+#pragma force_active reset
 
 EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* effect;
@@ -208,7 +214,10 @@ void effReleaseMain(EffectEntry* effect) {
         case 0:
             data->field_0x74++;
             data->alphas[0] = 200 + (counter & 3) * 30;
-            data->scales[0] = 0.04f * (f32)sin(6.2831855f * (f32)(counter * 20) / 360.f) + 0.5f;
+            {
+                f32 s = (f32)sin(6.2831855f * (f32)(counter * 20) / 360.f);
+                data->scales[0] = 0.04f * s + 0.5f;
+            }
             if ((s32)data->field_0x0 != 0) {
                 data->x += (f32)sin(6.2831855f * (f32)counter / 360.f);
                 data->y += (f32)cos(6.2831855f * (1.235631f * (f32)counter) / 360.f);
