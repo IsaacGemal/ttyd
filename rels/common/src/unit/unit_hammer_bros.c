@@ -843,60 +843,54 @@ typedef struct HammerBrosSampling {
     HammerBrosSamplingEntry entries[1]; // 0x4
 } HammerBrosSampling;
 
-#pragma dont_inline on
-// NONMATCHING (68.52%): the register assignment of the locals and the loop shape differ; the helpers below carry the same
-// "addi before lbz" scheduling difference.
+#pragma dont_inline on  // the original keeps these as real calls in hammer_bros_nagemakuri_set_target, not inlined
 static USER_FUNC(hammer_bros_nagemakuri_set_target) {
-    s32* args;
+    BattleWork* wp = _battleWorkPointer;
+    EventEntry* evt = event;
+    s32* args = evt->args;
     s32 unitIds[20];
     s32 partIds[20];
-    s32 i;
-    s32 count;
-    s32 total;
-    s32 n;
-    s32 pick;
+    s32 i = 0;
+    s32 count = 0;
 
-    i = 0;
-    count = 0;
-    args = event->args;
-    *((u8*)_battleWorkPointer + 0xEDF) = i;
-    hammer_bros_get_target(unitIds, partIds);
-    while (unitIds[i] != -1) {
+    ((s8*)wp)[0xEDF] = 0;
+    hammer_bros_get_target(&unitIds[0], &partIds[0]);
+    while (1) {
+        if (unitIds[i] == -1) {
+            count = i;
+            break;
+        }
         i++;
-        count++;
         hammer_bros_get_next_target(&unitIds[i], &partIds[i]);
     }
-    total = count;
-    for (n = 0; n < 5; n++) {
-        pick = irand(total);
-        evtSetValue(event, args[n * 2], unitIds[pick]);
-        evtSetValue(event, args[n * 2 + 1], partIds[pick]);
+    for (i = 0; i < 5; i++) {
+        s32 pick = irand(count);
+        evtSetValue(evt, *(args++), unitIds[pick]);
+        evtSetValue(evt, *(args++), partIds[pick]);
     }
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (88.24%): the original computes wp+0x428 before loading the selected index (lbz 0xedf); ours loads first.
 static void hammer_bros_get_target(s32* unitId, s32* partId) {
     BattleWork* wp = _battleWorkPointer;
-    u8* base = (u8*)wp + 0x428;
-    HammerBrosSamplingEntry* entry;
+    u8* sampling = wp->field_428;
+    s32 idx = (s8)sampling[0xAB7];
+    s16* entry = (s16*)(sampling + (s8)sampling[0xA6D + idx] * 0x24 + 4);
 
-    entry = (HammerBrosSamplingEntry*)(base + 4 + (s8)base[0xA6D + (s8)((u8*)wp)[0xEDF]] * 0x24);
-    *unitId = entry->unitId;
-    *partId = entry->partId;
+    *unitId = entry[0];
+    *partId = entry[1];
 }
 
-// NONMATCHING (89.31%): same scheduling difference, and the original loads _battleWorkPointer with lis/addi/lwz.
 static void hammer_bros_get_next_target(s32* unitId, s32* partId) {
     BattleWork* wp = _battleWorkPointer;
-    u8* base = (u8*)wp + 0x428;
-    HammerBrosSamplingEntry* entry;
+    u8* sampling = wp->field_428;
+    s16* entry;
 
-    base[0xAB7] = ((u8*)wp)[0xEDF] + 1;
-    if ((s8)base[0xAB7] < (s8)base[0xA6C]) {
-        entry = (HammerBrosSamplingEntry*)(base + 4 + (s8)base[0xA6D + (s8)base[0xAB7]] * 0x24);
-        *unitId = entry->unitId;
-        *partId = entry->partId;
+    sampling[0xAB7]++;
+    if ((s8)sampling[0xAB7] < (s8)sampling[0xA6C]) {
+        entry = (s16*)(sampling + (s8)sampling[0xA6D + (s8)sampling[0xAB7]] * 0x24 + 4);
+        *unitId = entry[0];
+        *partId = entry[1];
     } else {
         *unitId = -1;
         *partId = 0;

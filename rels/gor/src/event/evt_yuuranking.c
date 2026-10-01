@@ -9,6 +9,8 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "driver/dispdrv.h"
+#include "driver/icondrv.h"
+#include "driver/windowdrv.h"
 #include "evt/evt_yuugijou.h"
 #include <dolphin/mtx.h>
 #include <string.h>
@@ -17,6 +19,28 @@ extern const f32 float_1000_gor_0001cd80;
 extern const f32 zero_gor_0001cdd4;
 extern const f64 double_to_int_mask_gor_0001d038;
 extern const f64 double_to_int_gor_0001d040;
+extern const u32 dat_gor_0001cd30;
+extern const u32 dat_gor_0001cd34;
+extern const u32 dat_gor_0001cd38;
+extern const u32 dat_gor_0001cd3c;
+extern const u32 dat_gor_0001cd40;
+extern const u32 dat_gor_0001cd44;
+extern const u32 dat_gor_0001cd48;
+extern const u32 dat_gor_0001cd4c;
+extern const u32 dat_gor_0001cd50;
+extern const u32 dat_gor_0001cd54;
+extern const u32 dat_gor_0001cd58;
+extern const u32 dat_gor_0001cd5c;
+extern const u32 dat_gor_0001cd60;
+extern const u32 dat_gor_0001cd64;
+extern const u32 dat_gor_0001cd68;
+extern const u32 dat_gor_0001cd6c;
+extern const u32 dat_gor_0001cd70;
+extern const u32 dat_gor_0001cd74;
+extern const u32 dat_gor_0001cd78;
+extern const u32 dat_gor_0001cd7c;
+
+const u32 dat_gor_0001cc40 = 0xFFFFFFFF;
 
 typedef struct YuRankWork {
     s32 field_00;  // 0x0
@@ -342,7 +366,7 @@ USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
         ELSE_CODE                                                                                                        \
     }
 
-// NONMATCHING (83.83%): mode switch register (r0 vs r5), stwx/add+stw addressing and the missing
+// NONMATCHING (83.84%): mode switch register (r0 vs r5), stwx/add+stw addressing and the missing
 // peeled yuu_kesan check tail; see the macro comment above.
 USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
     s32* args = event->args;
@@ -455,8 +479,372 @@ static s32 yuu_kesan(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
     return total;
 }
 
-// TODO: write evt_yuuranking_disp_func (static, 0x2580 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/event/evt_yuuranking.s; this is where the original has it, just before the first script that uses it
+#define A14(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x14 + (i) * 4))
+#define A74(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x74 + (i) * 4))
+#define AD4(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0xd4 + (i) * 4))
+
+// NONMATCHING (73.93%): same asm shape as rels/yuu/src/event/evt_yuuranking.c's disp_func and ported from
+// it. Still differs: float/string constants pool anonymously, one register short (target stmw r24-r31 vs
+// r25-r31), GXColor temps at 0x14 not 0x48-0x54, and the inlined fontlenpitch blocks schedule differently.
+static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
+    YuRankWork* work = param;
+    const char* titleTbl[4] = {
+        "menu_title_minigame1", "menu_title_minigame4", "menu_title_minigame3", "menu_title_minigame2",
+    };
+    const char* scoreTbl[4] = {
+        "menu_title_score", "menu_title_score", "menu_title_score", "menu_title_score",
+    };
+    const char* subTbl[6] = {
+        "\x81\x40\x82\x50", "\x81\x40\x82\x51", "\x81\x40\x82\x52",
+        "\x81\x40\x82\x53", "\x81\x40\x82\x54", "menu_subtitle2_rankgai",
+    };
+    char buf[32];
+    const char* msg;
+    s32 i;
+    s32 j;
+    f32 w;
+    f32 sc;
+    f32 y;
+    GXColor c19;
+    GXColor c18;
+    GXColor c17;
+    GXColor c16;
+    GXColor c15;
+    GXColor c14;
+    GXColor c13;
+    GXColor c12;
+    GXColor c11;
+    GXColor c10;
+    GXColor c9;
+    GXColor c8;
+    GXColor c7;
+    GXColor c6;
+    GXColor c5;
+    GXColor c4;
+    GXColor c3;
+    GXColor c2;
+    GXColor c1;
+    GXColor c0;
+
+    c0 = *(GXColor*)&dat_gor_0001cd30;
+    windowDispGX_Waku_col(0, c0, work->field_0C + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
+    switch (work->field_18) {
+    case 0:
+        msg = msgSearch(scoreTbl[work->field_14]);
+        break;
+    case 1:
+    case 2:
+        msg = msgSearch(titleTbl[work->field_14]);
+        break;
+    }
+    c1 = *(GXColor*)&dat_gor_0001cd34;
+    w = (f32)FontGetMessageWidth(msg);
+    sc = w + 50.0f;
+    w = (f32)FontGetMessageWidth(msg);
+    windowDispGX_Waku_col(0, c1, work->field_0C - (w - 50.0f) * 0.5f, work->field_10 + 128.0f + 1.0f, sc, 28.0f, 8.0f);
+    FontDrawStart();
+    FontDrawScale(1.0f);
+    c2 = *(GXColor*)&dat_gor_0001cd38;
+    FontDrawColor(&c2);
+    w = (f32)FontGetMessageWidth(msg);
+    FontDrawMessage((s32)(work->field_0C - w * 0.5f), (s32)(work->field_10 + 128.0f), msg);
+
+    if (work->field_18 != 0) {
+        goto rank;
+    }
+
+    switch (work->field_14) {
+    case 0:
+        FontDrawStart();
+        FontDrawScale(1.0f);
+        c3 = *(GXColor*)&dat_gor_0001cd3c;
+        FontDrawColor(&c3);
+        msg = msgSearch("menu_subtitle1_minigame1");
+        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
+        if (work->field_38 < 0) {
+            c4 = *(GXColor*)&dat_gor_0001cd48;
+            FontDrawColor(&c4);
+            msg = msgSearch("menu_error_minigame1");
+            sprintf(buf, msg);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            goto end;
+        }
+        msg = msgSearch("menu_decimal_point");
+        sprintf(buf, "%3d%s%02d", work->field_38 / 1000, msg, (work->field_38 % 1000) / 10);
+        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+        if (work->field_30 >= 4) {
+            FontDrawStart();
+            FontDrawScale(1.0f);
+            c5 = *(GXColor*)&dat_gor_0001cd40;
+            FontDrawColor(&c5);
+            msg = msgSearch("menu_subtitle4_getmonte");
+            unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
+            sprintf(buf, "%4d", work->field_20);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
+        }
+        if (work->field_30 >= 7) {
+            FontDrawStart();
+            FontDrawScale(1.0f);
+            c6 = *(GXColor*)&dat_gor_0001cd44;
+            FontDrawColor(&c6);
+            if (work->field_24 > 1) {
+                msg = msgSearch("menu_subtitle2_minigame1");
+                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                if (work->field_24 < 0x100) {
+                    msg = msgSearch("menu_subtitle4_minigame1");
+                    sprintf(buf, msg, work->field_24);
+                } else {
+                    sprintf(buf, "%2d", work->field_24 - 0x100);
+                }
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+            } else if (work->field_24 < 0) {
+                msg = msgSearch("menu_subtitle5_minigame1");
+                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                msg = msgSearch("menu_subtitle6_minigame1");
+                sprintf(buf, msg, -work->field_24);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+            }
+        }
+        goto end;
+
+    case 2:
+    case 3:
+        FontDrawStart();
+        c7 = *(GXColor*)&dat_gor_0001cd4c;
+        FontDrawColor(&c7);
+        if (work->field_14 == 3) {
+            msg = msgSearch("menu_subtitle1_minigame2");
+        } else {
+            msg = msgSearch("menu_subtitle1_minigame3");
+        }
+        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
+        FontDrawScale(1.0f);
+        if (work->field_38 < 0) {
+            c8 = *(GXColor*)&dat_gor_0001cd58;
+            FontDrawColor(&c8);
+            if (work->field_14 == 3) {
+                sprintf(buf, msgSearch("menu_error_minigame2"));
+            } else {
+                sprintf(buf, msgSearch("menu_error_minigame3"));
+            }
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            goto end;
+        }
+        i = work->field_38 / 1000;
+        j = i / 60;
+        i = i - j * 60;
+        msg = msgSearch("menu_colon");
+        sprintf(buf, "%1d%s%02d%s%02d", j, msg, i, msgSearch("menu_colon"), (work->field_38 % 1000) / 10);
+        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+        if (work->field_30 >= 4) {
+            FontDrawStart();
+            FontDrawScale(1.0f);
+            c9 = *(GXColor*)&dat_gor_0001cd50;
+            FontDrawColor(&c9);
+            msg = msgSearch("menu_subtitle4_getmonte");
+            unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
+            sprintf(buf, "%4d", work->field_20);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
+            if (work->field_30 >= 7) {
+                FontDrawStart();
+                FontDrawScale(1.0f);
+                c10 = *(GXColor*)&dat_gor_0001cd54;
+                FontDrawColor(&c10);
+                if (work->field_24 > 1) {
+                    if (work->field_14 == 3) {
+                        msg = msgSearch("menu_subtitle2_minigame2");
+                    } else {
+                        msg = msgSearch("menu_subtitle2_minigame3");
+                    }
+                    unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    if (work->field_24 < 0x100) {
+                        msg = msgSearch("menu_subtitle4_minigame1");
+                        sprintf(buf, msg, work->field_24);
+                    } else {
+                        sprintf(buf, "%2d", work->field_24 - 0x100);
+                    }
+                    FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                } else if (work->field_24 < 0) {
+                    msg = msgSearch("menu_subtitle5_minigame1");
+                    unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    msg = msgSearch("menu_subtitle6_minigame1");
+                    sprintf(buf, msg, -work->field_24);
+                    FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                }
+            }
+        }
+        goto end;
+
+    case 1:
+        FontDrawStart();
+        FontDrawScale(1.0f);
+        c11 = *(GXColor*)&dat_gor_0001cd5c;
+        FontDrawColor(&c11);
+        msg = msgSearch("menu_subtitle1_minigame4");
+        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
+        if (work->field_38 >= work->field_2C) {
+            c12 = *(GXColor*)&dat_gor_0001cd64;
+            FontDrawColor(&c12);
+            sprintf(buf, msgSearch("menu_error_minigame4"));
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            goto end;
+        }
+        sprintf(buf, "%4d", work->field_38 + 1);
+        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+        if (work->field_30 >= 7) {
+            FontDrawStart();
+            FontDrawScale(1.0f);
+            c13 = *(GXColor*)&dat_gor_0001cd60;
+            FontDrawColor(&c13);
+            if (work->field_24 > 1) {
+                msg = msgSearch("menu_subtitle2_minigame4");
+                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                if (work->field_24 < 0x100) {
+                    msg = msgSearch("menu_subtitle4_minigame1");
+                    sprintf(buf, msg, work->field_24);
+                } else {
+                    sprintf(buf, "%2d", work->field_24 - 0x100);
+                }
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+            } else if (work->field_24 < 0) {
+                msg = msgSearch("menu_subtitle5_minigame1");
+                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                msg = msgSearch("menu_subtitle6_minigame1");
+                sprintf(buf, msg, -work->field_24);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+            }
+        }
+        goto end;
+
+    default:
+        goto end;
+    }
+
+end:
+    FontDrawStart();
+    FontDrawScale(1.0f);
+    c14 = *(GXColor*)&dat_gor_0001cd68;
+    FontDrawColor(&c14);
+    msg = msgSearch("menu_subtitle3_totalmonte");
+    unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + -40.0f, 1.0f);
+    {
+        Mtx m;
+        s32 ix = (s32)(work->field_0C + 10.399994f + 70.0f);
+        s32 iy = (s32)(work->field_10 + -40.0f - 24.0f);
+
+        PSMTXTrans(m, (f32)(ix - 10), (f32)(iy + 2), 0.0f);
+        c15 = *(GXColor*)&dat_gor_0001cd6c;
+        iconDispGxCol(m, 16, 0x13f, c15);
+        PSMTXTrans(m, (f32)(ix + 60), (f32)(iy + 2), 0.0f);
+        c16 = *(GXColor*)&dat_gor_0001cd70;
+        iconNumberDispGx(m, work->field_34, 0, c16);
+    }
+    goto finish;
+
+rank:
+    FontDrawStart();
+    FontDrawScale(1.0f);
+    msg = msgSearch("menu_subtitle5_rank");
+    FontDrawMessage((s32)(work->field_0C + -150.4f), (s32)(work->field_10 + 80.0f), msg);
+    msg = msgSearch("menu_subtitle1_monte");
+    FontDrawMessage((s32)(work->field_0C + 75.19998f), (s32)(work->field_10 + 80.0f), msg);
+    c17 = *(GXColor*)&dat_gor_0001cd74;
+    FontDrawColor(&c17);
+    switch (work->field_14) {
+    case 0:
+        msg = msgSearch("menu_subtitle1_minigame1");
+        break;
+    case 1:
+        msg = msgSearch("menu_subtitle1_minigame4");
+        break;
+    case 2:
+        msg = msgSearch("menu_subtitle1_minigame3");
+        break;
+    case 3:
+        msg = msgSearch("menu_subtitle1_minigame2");
+        break;
+    }
+    FontDrawMessage((s32)(work->field_0C + -75.200005f), (s32)(work->field_10 + 80.0f), msg);
+
+    for (i = 0; i < 6; i++) {
+        if (A14(i) == 0) {
+            continue;
+        }
+        y = 2.0f + (f32)i;
+        if (i == 5) {
+            y += 0.5f;
+        }
+        FontDrawStart();
+        FontDrawScale(1.0f);
+        if (i != work->field_28) {
+            c18 = *(GXColor*)&dat_gor_0001cd78;
+            FontDrawColor(&c18);
+        } else {
+            c19 = *(GXColor*)&dat_gor_0001cd7c;
+            FontDrawColor(&c19);
+        }
+        msg = subTbl[i];
+        if (msg[0] == 'm' && msg[1] == 'e' && msg[2] == 'n' && msg[3] == 'u' && msg[4] == '_') {
+            msg = msgSearch(msg);
+        }
+        if (i == 5) {
+            FontDrawMessage((s32)(work->field_0C + -188.0f + 18.8f),
+                            (s32)(work->field_10 + (104.0f - 24.0f * y)), msg);
+        } else {
+            FontDrawStringPitch(msg, work->field_0C + -150.4f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+        }
+        if (work->field_14 == 1) {
+            if (A74(i) < work->field_2C) {
+                sprintf(buf, "%4d", A74(i) + 1);
+                FontDrawStringPitch(buf, work->field_0C + -37.600006f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+                sprintf(buf, "%4d", AD4(i));
+                FontDrawStringPitch(buf, work->field_0C + 75.19998f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+            } else {
+                sprintf(buf, msgSearch("menu_error_minigame4"));
+                FontDrawMessage((s32)(work->field_0C + -75.200005f),
+                                (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
+            }
+        } else if (work->field_14 == 0) {
+            if (A74(i) >= 0) {
+                msg = msgSearch("menu_decimal_point");
+                sprintf(buf, "%3d%s%02d", A74(i) / 1000, msg, (A74(i) % 1000) / 10);
+                FontDrawStringPitch(buf, work->field_0C + -75.200005f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+                sprintf(buf, "%4d", AD4(i));
+                FontDrawStringPitch(buf, work->field_0C + 75.19998f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+            } else {
+                sprintf(buf, msgSearch("menu_error_minigame1"));
+                FontDrawMessage((s32)(work->field_0C + -75.200005f),
+                                (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
+            }
+        } else if (work->field_14 == 2 || work->field_14 == 3) {
+            if (A74(i) >= 0) {
+                s32 sec = A74(i) / 1000;
+                s32 min = sec / 60;
+
+                sec = sec - min * 60;
+                msg = msgSearch("menu_colon");
+                sprintf(buf, "%1d%s%02d%s%02d", min, msgSearch("menu_colon"), sec, msg, (A74(i) % 1000) / 10);
+                FontDrawStringPitch(buf, work->field_0C + -75.200005f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+                sprintf(buf, "%4d", AD4(i));
+                FontDrawStringPitch(buf, work->field_0C + 75.19998f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+            } else {
+                if (work->field_14 == 3) {
+                    sprintf(buf, msgSearch("menu_error_minigame2"));
+                } else {
+                    sprintf(buf, msgSearch("menu_error_minigame3"));
+                }
+                FontDrawMessage((s32)(work->field_0C + -75.200005f),
+                                (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
+            }
+        }
+    }
+
+finish:
+    ;
+}
+#undef AD4
+#undef A74
+#undef A14
 void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     Mtx trans;
     Mtx scale;
@@ -494,6 +882,26 @@ static s32 fontlenpitch(s8* text, s32 pitch) {
     }
 }
 
+const u32 dat_gor_0001cd30 = 0xFFFFFFFF;
+const u32 dat_gor_0001cd34 = 0x2BA3FFFF;
+const u32 dat_gor_0001cd38 = 0xFFFFFFFF;
+const u32 dat_gor_0001cd3c = 0x000000FF;
+const u32 dat_gor_0001cd40 = 0x000000FF;
+const u32 dat_gor_0001cd44 = 0x000000FF;
+const u32 dat_gor_0001cd48 = 0xFF3F3FFF;
+const u32 dat_gor_0001cd4c = 0x000000FF;
+const u32 dat_gor_0001cd50 = 0x000000FF;
+const u32 dat_gor_0001cd54 = 0x000000FF;
+const u32 dat_gor_0001cd58 = 0xFF3F3FFF;
+const u32 dat_gor_0001cd5c = 0x000000FF;
+const u32 dat_gor_0001cd60 = 0x000000FF;
+const u32 dat_gor_0001cd64 = 0xFF3F3FFF;
+const u32 dat_gor_0001cd68 = 0x000000FF;
+const u32 dat_gor_0001cd6c = 0xFFFFFFFF;
+const u32 dat_gor_0001cd70 = 0xFFFFFFFF;
+const u32 dat_gor_0001cd74 = 0x000000FF;
+const u32 dat_gor_0001cd78 = 0x000000FF;
+const u32 dat_gor_0001cd7c = 0xFF3F3FFF;
 const f32 float_1000_gor_0001cd80 = 1000.0f;
 const f32 zero_gor_0001cdd4 = 0.0f;
 const f64 double_to_int_mask_gor_0001d038 = 4503599627370496.0;

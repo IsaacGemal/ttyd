@@ -158,6 +158,7 @@ void allPartyForceRideOn(void);
 void partyDokanEnd(s32 index, s32 unk);
 void allPartyRideShip(void);
 void allPartyRideOff(void);
+void allPartyRideOff2(void);
 s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z);
 s32 partyEntry2Hello(s32 memberId);
 void partyPreDisp(PartyEntry* party);

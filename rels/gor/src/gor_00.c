@@ -2828,7 +2828,9 @@ u32 nannpc_entry_data01[123] = {
     0x00000000, 0x00000000, 0x00000000,
 };
 
-const Vec vec3_gor_00013858 = {0.0f, -1000.0f, 0.0f};
+// Non-const on purpose: MWCC schedules the 12-byte copy in suifu100taikikan_seq01 case 99 as the
+// original only when the source object is mutable, but the original symbol lives in .rodata, so pin it there.
+__declspec(section ".rodata") Vec vec3_gor_00013858 = {0.0f, -1000.0f, 0.0f};
 
 // TODO: type
 static u32 suifu_animtbl[21] = {
@@ -5563,10 +5565,6 @@ void suifu100taikikan_seq00(NanNpcEntry* entry) {
     entry->field_0x68 = 0;
 }
 
-// NONMATCHING (99.37%): the `entry->position = vec3_gor_00013858` Vec copy in case 99
-// schedules its int temps as r0/r3 and hoists the third lwz one slot earlier; the original
-// uses r3/r0 and keeps lwz 0x8 after the first two stores. A local Vec, field-wise u32
-// copies, and a cast through Vec* all give the same schedule.
 void suifu100taikikan_seq01(NanNpcEntry* entry) {
     switch (entry->field_0x68) {
     case 0:

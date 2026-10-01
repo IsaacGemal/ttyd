@@ -736,7 +736,10 @@ static USER_FUNC(barriern_zanzou3) {
     barriern_zanzou_sub(isFirstCall, unit, zanzou3_scale, 2);
 }
 
-// NONMATCHING (97.92%): register allocation / constant-pool symbol differs in the always-body.
+// NONMATCHING (98.57%): the always-body's first intplGetValue(4, zanzou_count[0], ...) puts the
+// zanzou_count address in a scratch register and materialises the 0.8f address into a full
+// register, where the original keeps the count address in r4 and folds the 0.8f @l into the
+// load. The second loop's scheduling is fixed by the volatile-comma below in MUST_MATCH builds.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
     f32 temp1[5];
@@ -801,7 +804,13 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
     BtlUnit_SetPartsScale(part, s, s, 1.0f);
     for (i = 2, j = 0; i <= 6; i++, j++) {
         part = BtlUnit_GetPartsPtr(unit, i);
+#ifdef MUST_MATCH
+        // volatile-comma forces both temp float loads before the count load, as in the original.
+        s = intplGetValue(a, ((volatile f32)temp1[j], (volatile f32)temp2[j], zanzou_count[0]), num,
+                          temp1[j], temp2[j]);
+#else
         s = intplGetValue(a, zanzou_count[0], num, temp1[j], temp2[j]);
+#endif
         BtlUnit_SetPartsScale(part, s, s, 1.0f);
         part->color.a = (u8)intplGetValue(0, zanzou_count[0], num, (f32)alpha1, (f32)alpha2);
     }
@@ -818,10 +827,12 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
     return 0;
 }
 
-// NONMATCHING (97.87%): one extra mr r0,r3 register shuffle before the tail call.
 static USER_FUNC(barriern_satellite_zanzou) {
     s32 index;
     BattleUnit* unit;
+#ifdef MUST_MATCH
+    BattleUnit* p;
+#endif
     s32* args;
     s32 id;
     BattleWork* wp;
@@ -831,14 +842,21 @@ static USER_FUNC(barriern_satellite_zanzou) {
     index = evtGetValue(event, args[1]);
     wp = _battleWorkPointer;
     unit = BattleGetUnitPtr(wp, id);
-    barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
-                                  satellite_zanzou_scale, index, 0);
+#ifdef MUST_MATCH
+    return barriern_satellite_zanzou_sub(isFirstCall, (p = BattleGetUnitPtr(wp, unit->work[4 + index]), p),
+                                         satellite_zanzou_scale, index, 0);
+#else
+    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
+                                         satellite_zanzou_scale, index, 0);
+#endif
 }
 
-// NONMATCHING (97.87%): one extra mr r0,r3 register shuffle before the tail call.
 static USER_FUNC(barriern_satellite_zanzou2) {
     s32 index;
     BattleUnit* unit;
+#ifdef MUST_MATCH
+    BattleUnit* p;
+#endif
     s32* args;
     s32 id;
     BattleWork* wp;
@@ -848,11 +866,19 @@ static USER_FUNC(barriern_satellite_zanzou2) {
     index = evtGetValue(event, args[1]);
     wp = _battleWorkPointer;
     unit = BattleGetUnitPtr(wp, id);
-    barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
-                                  satellite_zanzou2_scale, index, 1);
+#ifdef MUST_MATCH
+    return barriern_satellite_zanzou_sub(isFirstCall, (p = BattleGetUnitPtr(wp, unit->work[4 + index]), p),
+                                         satellite_zanzou2_scale, index, 1);
+#else
+    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
+                                         satellite_zanzou2_scale, index, 1);
+#endif
 }
 
-// NONMATCHING (91.57%): register allocation and constant-pool symbol (@547 vs float_0p8) differ.
+// NONMATCHING (98.65%): in the always-body the compiler materialises the 0.8f address into a full
+// register and puts the zanzou_count address in a scratch register in the first intplGetValue, where
+// the original keeps the count address in r4 and folds the 0.8f @l into the load. The second loop's
+// scheduling is fixed by the volatile-comma below in MUST_MATCH builds.
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
                                          s32 index, s32 mode) {
     BattleUnitPart* part;
@@ -897,8 +923,9 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         a = 1;
         break;
     }
+    index = index + 1;
     if (isFirstCall) {
-        zanzou_count[index + 1] = 0;
+        zanzou_count[index] = 0;
         BtlUnit_GetPos(unit, &x, &y, &z);
         BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 0.8f, 0.8f, 1.0f);
         for (i = 2, j = 0; i <= 6; i++, j++) {
@@ -906,21 +933,27 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
             BtlUnit_SetPartsPos(part, x, y, z + (f32)i * step);
             BtlUnit_SetPartsScale(part, temp1[j], temp1[j], 1.0f);
             BtlUnit_SetPartsRotate(part, 0.0f, 0.0f, 0.0f);
-            part->color.a = alpha2;
+            part->color.a = alpha1;
             BtlUnit_SetAnim(part, "Z_2");
             part->attributes &= ~0x01000000;
         }
     }
     part = BtlUnit_GetPartsPtr(unit, 1);
-    s = intplGetValue(a, zanzou_count[index + 1], num, 0.8f, base);
+    s = intplGetValue(4, zanzou_count[0], num, 0.8f, base);
     BtlUnit_SetPartsScale(part, s, s, 1.0f);
     for (i = 2, j = 0; i <= 6; i++, j++) {
         part = BtlUnit_GetPartsPtr(unit, i);
-        s = intplGetValue(a, zanzou_count[index + 1], num, temp1[j], temp2[j]);
+#ifdef MUST_MATCH
+        // volatile-comma forces both temp float loads before the count load, as in the original.
+        s = intplGetValue(a, ((volatile f32)temp1[j], (volatile f32)temp2[j], zanzou_count[index]), num,
+                          temp1[j], temp2[j]);
+#else
+        s = intplGetValue(a, zanzou_count[index], num, temp1[j], temp2[j]);
+#endif
         BtlUnit_SetPartsScale(part, s, s, 1.0f);
-        part->color.a = (u8)intplGetValue(0, zanzou_count[index + 1], num, (f32)alpha1, (f32)alpha2);
+        part->color.a = (u8)intplGetValue(0, zanzou_count[index], num, (f32)alpha1, (f32)alpha2);
     }
-    if (zanzou_count[index + 1] >= num) {
+    if (zanzou_count[index] >= num) {
         part = BtlUnit_GetPartsPtr(unit, 1);
         BtlUnit_SetPartsScale(part, 0.8f, 0.8f, 1.0f);
         part->color.a = 0xff;
@@ -929,10 +962,32 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         }
         return 2;
     }
-    zanzou_count[index + 1]++;
+    zanzou_count[index]++;
     return 0;
 }
 
+// Separate inline copy of barriernSatelliteTo_Init used by Inside/Outside. Storing unitId before
+// type changes the inliner's register allocation to match the original; the standalone Init keeps
+// its own order (see its NONMATCHING note). Natural build calls the standalone directly.
+#ifdef MUST_MATCH
+static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, s32 id) {
+    BarriernSatelliteTo* work;
+
+    if (unit->work[4 + index] == -1) {
+        return 0;
+    }
+    work = __memAlloc(4, 0x5c);
+    unit->work[10 + index] = (s32)work;
+    work->unitId = id;
+    work->type = 5;
+    work->field_58 = 0;
+    spline_maketable(5, work->unitId, work->points, work->field_1C);
+    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = id;
+    return 1;
+}
+#else
+#define barriernSatelliteTo_InitInline(unit, index, id) barriernSatelliteTo_Init(unit, index, id)
+#endif
 static u8 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, s32 id) {
     BarriernSatelliteTo* work;
 
@@ -983,16 +1038,18 @@ static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (88.39%): the inlined barriernSatelliteTo_Init nearly matches but the original
-// rematerializes the spline table address for `work->unitId = id` (lis/addi into r4) where ours
-// reuses the caller's cached table register, permuting registers through the whole function.
+// NONMATCHING (89.36%): the inlined barriernSatelliteTo_InitInline (see above) now gets `work` in r7
+// like the original, but still keeps the id in the caller's cached table register for `work->unitId`
+// where the original rematerialises it (`lis/addi` into r4), permuting registers through the function.
+// `found` is a `u8`, which matches the original's `clrlwi` on the return value, but the compiler still
+// chooses `subfic` where the original used `subic` for the found->0/2 conversion.
 static USER_FUNC(barriernSatelliteToInside) {
     s32* args;
     s32 id;
     s32 type;
     BattleUnit* unit;
     s32 i;
-    s32 found;
+    u8 found;
 
     args = event->args;
     id = evtGetValue(event, args[0]);
@@ -1008,34 +1065,34 @@ static USER_FUNC(barriernSatelliteToInside) {
             }
             table = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2];
             if (table == (s32)splineTableOut1_1) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn1_1);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn1_1);
             }
             if (table == (s32)splineTableOut2_1) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn2_1);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn2_1);
             }
             if (table == (s32)splineTableOut2_2) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn2_2);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn2_2);
             }
             if (table == (s32)splineTableOut3_1) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn3_1);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn3_1);
             }
             if (table == (s32)splineTableOut3_2) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn3_2);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn3_2);
             }
             if (table == (s32)splineTableOut3_3) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn3_3);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn3_3);
             }
             if (table == (s32)splineTableOut4_1) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn4_1);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_1);
             }
             if (table == (s32)splineTableOut4_2) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn4_2);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_2);
             }
             if (table == (s32)splineTableOut4_3) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn4_3);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_3);
             }
             if (table == (s32)splineTableOut4_4) {
-                barriernSatelliteTo_Init(unit, i, (s32)splineTableIn4_4);
+                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_4);
             }
         }
     }
@@ -1048,16 +1105,17 @@ static USER_FUNC(barriernSatelliteToInside) {
     return found ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (92.25%): same inlined barriernSatelliteTo_Init rematerialization as
-// barriernSatelliteToInside; the original materializes the table address for `work->unitId = id`
-// instead of reusing the caller's cached register.
+// NONMATCHING (93.02%): same inlined barriernSatelliteTo_InitInline rematerialisation as
+// barriernSatelliteToInside; the original materialises the table address for `work->unitId = id`
+// instead of reusing the caller's cached register. `found` is a `u8` (matching the original's
+// `clrlwi`), with the same `subic`/`subfic` peephole difference on the return value.
 static USER_FUNC(barriernSatelliteToOutside) {
     s32* args;
     s32 id;
     s32 type;
     BattleUnit* unit;
     s32 i;
-    s32 found;
+    u8 found;
 
     args = event->args;
     id = evtGetValue(event, args[0]);
@@ -1068,64 +1126,64 @@ static USER_FUNC(barriernSatelliteToOutside) {
         switch (type) {
         case 1:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut1_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut1_1) == 1) {
                     break;
                 }
             }
             break;
         case 2:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut2_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut2_1) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut2_2) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut2_2) == 1) {
                     break;
                 }
             }
             break;
         case 3:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut3_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut3_1) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut3_2) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut3_2) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut3_3) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut3_3) == 1) {
                     break;
                 }
             }
             break;
         case 4:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut4_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_1) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut4_2) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_2) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut4_3) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_3) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_Init(unit, i, (s32)splineTableOut4_4) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_4) == 1) {
                     break;
                 }
             }
@@ -1204,30 +1262,41 @@ static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BtlUnit_GetPartsPtr(satellite, 1)->work[2] = (s32)spline;
 }
 
-// NONMATCHING (81.05%): the loop counter and its byte offset land in swapped volatile registers
-// (original i=r4/offset=r5, ours i=r5/offset=r4) and the xs base is cached in r6 instead of r8.
+// The args increment is written before the second call so the scheduler emits the addi there,
+// as the original does; args[-1] is the pre-increment args[1].
 static USER_FUNC(barriern_wawawa_set_target) {
     s32* args;
     s32 xs[12];
     s32 ys[10];
-    s32 count;
     s32 i;
+    s32 count;
     s32 n;
 
     args = event->args;
+    i = 0;
     _battleWorkPointer->field_428[0xab7] = 0;
     barriern_wawawa_get_target(&xs[0], &ys[0]);
-    i = 0;
-    while (xs[i] != -1) {
+    for (;;) {
+        if (xs[i] == -1) {
+            count = i;
+            break;
+        }
         i++;
         barriern_wawawa_get_next_target(&xs[i], &ys[i]);
     }
-    count = i;
-    for (i = 0; i < 5; i++) {
+    i = 0;
+    while (i < 5) {
         n = irand(count);
+
         evtSetValue(event, args[0], xs[n]);
+#ifdef MUST_MATCH
+        args += 2;
+        evtSetValue(event, args[-1], ys[n]);
+#else
         evtSetValue(event, args[1], ys[n]);
         args += 2;
+#endif
+        i++;
     }
     return EVT_RETURN_DONE;
 }
@@ -1256,27 +1325,17 @@ static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
     }
 }
 
-// NONMATCHING (99.56%): effGlass loop registers differ (original i=r23/w=r24/h=r25, ours
-// i=r25/w=r23/h=r22); battleGetBarriernSatelliteInitPos arg setup now matches.
 static USER_FUNC(_check_satellite) {
     BattleUnit* unit;
-    BattleUnit* satellite;
     s32* args;
+    BattleUnit* satellite;
     BattleUnitPart* part;
-    BarriernSatelliteToData* data;
+    s32 id;
+    s32 i;
+    s32 hasSat;
     f32 x;
     f32 y;
     f32 z;
-    f32 x2;
-    f32 y2;
-    f32 z2;
-    s32 dx;
-    s32 dy;
-    s32 i;
-    s32 hasSat;
-    s32 w;
-    s32 h;
-    s32 id;
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -1296,13 +1355,19 @@ static USER_FUNC(_check_satellite) {
         }
     }
     if (hasSat == 0) {
+        s32 j;
+        s32 w;
+        s32 h;
+        s32 dx;
+        s32 dy;
+
         part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
         if (part->attributes & 0x20000000) {
             effDelete((EffectEntry*)unit->work[3]);
             unit->work[3] = 0;
             BtlUnit_snd_se(unit, "SFX_ENM_BARRI_BARRIER_BREAK1", -250000000, 0);
             BtlUnit_GetPos(unit, &x, &y, &z);
-            for (i = 0; i < 20; i++) {
+            for (j = 0; j < 20; j++) {
                 w = BtlUnit_GetWidth(unit) + 0xf;
                 h = BtlUnit_GetHeight(unit) + 0xf;
                 dx = irand(w) - w / 2;
@@ -1313,15 +1378,21 @@ static USER_FUNC(_check_satellite) {
         part->attributes &= ~0x20000000;
         evtSetValue(event, args[0], 0);
     } else {
+        f32 ex;
+        f32 ey;
+        f32 ez;
+
         part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
         if (!(part->attributes & 0x20000000)) {
             BtlUnit_snd_se(unit, "SFX_ENM_BARRI_BARRIER1", -250000000, 0);
-            BtlUnit_GetPos(unit, &x2, &y2, &z2);
+            BtlUnit_GetPos(unit, &ex, &ey, &ez);
             unit->work[3] = (s32)effSyuryouEntry(1, 0x3e8, 0.0f, -1000.0f, 0.0f);
         }
         part->attributes |= 0x20000000;
         evtSetValue(event, args[0], 1);
         if (unit->work[3] != 0) {
+            BarriernSatelliteToData* data;
+
             data = (BarriernSatelliteToData*)((EffectEntry*)unit->work[3])->userdata;
             BtlUnit_GetPos(unit, &x, &y, &z);
             data->x = x;

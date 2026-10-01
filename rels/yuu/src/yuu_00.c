@@ -20,9 +20,11 @@
 #include "evt_yuuminigame.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
-#include "math.h"
 #include "mario/mario.h"
 #include "mario/mario_motion.h"
+// math.h is deliberately not included: its `extern inline sqrtf` emits the static _half/_three
+// doubles into .rodata in every TU, shifting this unit's rodata 0x20 past the target's, which has
+// none. get_monte_check uses the compiler intrinsic __fabsf instead of the fabsf macro.
 #include "memory.h"
 #include "party.h"
 #include "pmario_sound.h"
@@ -552,7 +554,7 @@ USER_FUNC(unk_yuu_00004250) {
 }
 
 static s32 get_monte_check(Vec* a, Vec* b) {
-    if (PSVECDistance(a, b) < 20.0f && fabsf(a->y - b->y) < 20.0) {
+    if (PSVECDistance(a, b) < 20.0f && __fabsf(a->y - b->y) < 20.0) {
         return 1;
     }
     return 0;
@@ -573,11 +575,14 @@ static void monte_disp(CameraId cameraId, void* param) {
 
 // Setting base[3]=0.0f before the do-while (not at its top) matched the target's store layout, and
 // expanding the y-range monte_rand with `max -= min` (MUST_MATCH) made its subtraction reuse max's
-// register (f1), as the target does. The only remaining difference is the sfx string address: the
-// compiler materialises it as `addi r0,r4,str@l` and copies it to r21, where the target forms it
-// directly in r26 (an extra `mr` plus a register difference at the psndSFXOn_3D call). Referencing the
-// target's named .rodata globals instead of literals does not change this.
-// NONMATCHING (99.53%): only the sfx register difference above remains.
+// register (f1), as the target does. The remaining difference is the sfx string address: a plain
+// `const char*` assignment makes MWCC emit `addi r0,r4,str@l` plus an extra `mr`. Folding the
+// literal through a comma (`sfx = (0, "...")`, MUST_MATCH) removes the `mr` and materialises the
+// address directly, but the allocator then picks r29 where the target picks r26 (the first loop
+// leaves both r26 and r29 dead; the target's compiler frees them in the other order). The same
+// quirk hits hei_10's ext_main. No source form or opt pragma tried changed the choice (see
+// REPORT.md). Two instructions (the addi and the `mr r3` at the call), 3 bytes, still differ.
+// NONMATCHING (99.96%): sfx in r29 vs the target's r26.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -659,7 +664,13 @@ static USER_FUNC(fall_rtn) {
     }
 
     {
+#ifdef MUST_MATCH
+        // match-only: folding the literal through a comma makes MWCC materialise the address
+        // directly (no extra `mr`); the target's compiler puts it in r26, ours in r29 (see above).
+        sfx = (0, "SFX_EVT_GAME_MONTE_COUNT1");
+#else
         sfx = "SFX_EVT_GAME_MONTE_COUNT1";
+#endif
         for (i = 0; i < monte_p->count; i++) {
             YuuMonte* p = &monte_p[i];
             switch (p->state) {

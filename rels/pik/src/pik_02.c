@@ -281,10 +281,12 @@ USER_FUNC(hoshi_r) {
 // `pragma opt_propagation off` is required or MWCC rematerialises the sin/cos coefficients per branch.
 // See evt_sub_get_coin / evt_item_get_important_item for the same FPR-colouring gap.
 #pragma opt_propagation off
-// NONMATCHING (87.42%): the first-call block and the sin/cos accumulators now match retail
-// (0.00761->f4, pi->f1), but the radian still lands in f0 vs f5 and 0.16605/1.0 take f5/f3 vs
-// f3/f2. The `half` slot and the first-call stores of event->userdataf match; at the end retail writes
-// the decremented values back through their stack slots with lwz/stw where ours stores the floats directly.
+// NONMATCHING (89.47%): declaring the temps `f0,f4,f2,f5,f3,f1` and leaving `half` a
+// plain local (only v0/v1 stay volatile) fixes the fp frame and coefficient colouring
+// (0.00761->f4, 0.16605->f3, 1.0->f2, pi->f1, half slot 0xc). The radian still lands
+// in f6 vs retail's f5; that one split cascades through both polynomials and the tail,
+// and the first-call `t`/`v0` slots and the final userdataf stores still differ.
+// NONMATCHING (89.47%): radian f6 vs retail f5; a few first-call slots and stores differ.
 USER_FUNC(hoshi_jump) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
     effStarStoneData* data = entry->userdata;
@@ -292,15 +294,15 @@ USER_FUNC(hoshi_jump) {
     f32 nx = npc->position.x;
     f32 ny = npc->position.y + 50.0f;
     f32 nz = npc->position.z;
-    f32 f0, f1, f2, f3, f4, f5;
+    f32 f0, f4, f2, f5, f3, f1;
 #ifdef MUST_MATCH
     // MUST_MATCH: the int bit-cast stores below need a named temp; the natural #else form writes
     // event->userdataf directly and has no temp.
     f32 t;
 #endif
-    volatile f32 v1;
-    volatile f32 half;
     volatile f32 v0;
+    volatile f32 v1;
+    f32 half;
 
 #ifdef MUST_MATCH
     // MUST_MATCH: retail scales by a volatile 0.5 `half` (so the divide reads the stack slot) and

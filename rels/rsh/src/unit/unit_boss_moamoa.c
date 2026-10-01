@@ -852,14 +852,14 @@ static MoamoaAnimData ext_moamoa_data[89] = {
     { 0, 0, 0.0f },
 };
 
-// NONMATCHING (99.61%): no instruction differences; in the first retrace loop MWCC swaps the
-// callee-saved registers for `pose` and `extPose` (ours extPose=r29,pose=r30 vs orig extPose=r30,
-// pose=r29). Both loops' `++` order matches the original (extPose before pose).
+// The retrace loop uses its own pointer (`pose2`) because a shared `pose` makes MWCC colour
+// pose/extPose the other way round (r30/r29 instead of r29/r30); the original keeps them in r29/r30.
 USER_FUNC(moamoa_bomb) {
 
 
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
     ExtPose* extPose;
+    MoamoaWorkPose* pose2;
     s32 j;
     s32 count;
     s32 i;
@@ -880,18 +880,18 @@ USER_FUNC(moamoa_bomb) {
     if (!(gp->retraceCount & 1)) {
         extPose = extGetPosePtr();
         count = 0;
-        pose = wp->poses;
-        for (j = 0; j < wp->countA; j++, extPose++, pose++) {
+        pose2 = wp->poses;
+        for (j = 0; j < wp->countA; j++, extPose++, pose2++) {
             if ((*extPose->matrix)[1][3] >= 0.0f) {
-                if (!(pose->field_0x0 & 1)) {
-                    pose->field_0x0 |= 1;
-                    if (pose->field_0x0 & 1) {
-                        pose->field_0x34[0] = randf(0.0f, 60.0f) - 30.0f;
-                        pose->field_0x34[1] = randf(0.0f, 35.0f);
-                        pose->field_0x34[2] = randf(0.0f, 30.0f) + 60.0f;
-                        pose->field_0x40[0] = (*extPose->matrix)[0][3];
-                        pose->field_0x40[1] = (*extPose->matrix)[1][3];
-                        pose->field_0x40[2] = (*extPose->matrix)[2][3];
+                if (!(pose2->field_0x0 & 1)) {
+                    pose2->field_0x0 |= 1;
+                    if (pose2->field_0x0 & 1) {
+                        pose2->field_0x34[0] = randf(0.0f, 60.0f) - 30.0f;
+                        pose2->field_0x34[1] = randf(0.0f, 35.0f);
+                        pose2->field_0x34[2] = randf(0.0f, 30.0f) + 60.0f;
+                        pose2->field_0x40[0] = (*extPose->matrix)[0][3];
+                        pose2->field_0x40[1] = (*extPose->matrix)[1][3];
+                        pose2->field_0x40[2] = (*extPose->matrix)[2][3];
                         count++;
                     }
                 }
@@ -1244,12 +1244,22 @@ static void ext_moamoa_init(void) {
     }
 }
 
-// NONMATCHING (96.19%): instructions match up to register allocation. The part loop keeps its
-// counters in r22/r23/r21 in the original but r25/r22/r21 here; the animation loop cycles
-// pose/extPose/i by one register. `vtx[p0].y`/`vtx[p1].y` load into `y0`/`y1` before the compare.
+// The part/retrace/third loops need their own counters (`iF`/`iR`/`iT`): a single shared `i`
+// costs several more mismatches. The retrace takes the two joint addresses as `Vec*`
+// (`vp0`/`vp1`) and tests `vp0->y`/`vp1->y` inline, which lets MWCC keep `float_1@ha` in r4 and
+// colour `p0`/`p1` r5/r0 (named `y0`/`y1` locals instead force a stray `addi &float_1` and shift
+// every later branch by 4). Each `0.5f` matrix update is written
+// `{ f32 half = 0.5f; f32 d = off - M; M += d * half; }`: the named `half` stops MWCC
+// canonicalising the product to `0.5f * d` and yields the target's `fmadds f0,f0,f2,f1`.
+// Declaration permutations and all counter permutations do not move the animation-loop pair.
+// NONMATCHING (99.90%): only the animation loop's `extF`/`i` are coloured the other way (ours r22/r24).
 static void ext_moamoa_main(void) {
     MoamoaWorkPose* pose;
+    s32 iR;
+    s32 iT;
     ExtPose* extPose;
+    ExtPose* extF;
+    s32 iF;
     MoamoaWorkAnim* anim;
     s32 i;
     AnimationPose* animPose;
@@ -1272,9 +1282,9 @@ static void ext_moamoa_main(void) {
     }
     wp->field_0x7C0 += 0.1f * (wp->field_0x7BC - wp->field_0x7C0);
 
-    extPose = extGetPosePtr();
+    extF = extGetPosePtr();
     pose = wp->poses;
-    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+    for (i = 0; i < wp->countA; i++, extF++, pose++) {
         anim = &wp->anims[pose->field_0x10];
         f = (f32)gp->framerate * (f32)OSTicksToMilliseconds((u64)(gp->renderTime - pose->field_0x18)) / 1000.0f / anim->field_0x18;
         if (f >= 1.0f) {
@@ -1285,25 +1295,24 @@ static void ext_moamoa_main(void) {
         if (frame >= anim->field_0x20) {
             frame = anim->field_0x20 - 1;
         }
-        extPose->field_0x10 = anim->field_0x1C + frame;
+        extF->field_0x10 = anim->field_0x1C + frame;
     }
 
     if (wp->mainUnitId != -1) {
         unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
-        for (i = 0; i < 5; i++) {
-            if (i != 0 && unit->work[i + 2] == -1) {
+        for (iF = 0; iF < 5; iF++) {
+            if (iF != 0 && unit->work[iF + 2] == -1) {
                 continue;
             }
-            animPose = animPoseGetAnimPosePtr((s32)wp->field_0x790[i]);
-            j = animPoseGetGroupIdx((s32)wp->field_0x790[i], "joint_core");
+            animPose = animPoseGetAnimPosePtr((s32)wp->field_0x790[iF]);
             vtx = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
-            tmp2[i] = vtx[j];
-            PSVECSubtract(&tmp2[0], &tmp2[i], &tmp1[i]);
+            tmp2[iF] = vtx[animPoseGetGroupIdx((s32)wp->field_0x790[iF], "joint_core")];
+            PSVECSubtract(&tmp2[0], &tmp2[iF], &tmp1[iF]);
         }
 
         extPose = extGetPosePtr();
         pose = wp->poses;
-        for (i = 0; i < wp->countA; i++, pose++, extPose++) {
+        for (iR = 0; iR < wp->countA; iR++, extPose++, pose++) {
             if (*(s32*)pose->field_0x30 == -1) {
                 (*extPose->matrix)[0][3] = 0.0f;
                 (*extPose->matrix)[1][3] = -1000.0f;
@@ -1313,21 +1322,21 @@ static void ext_moamoa_main(void) {
                 f32 inv;
                 f32 y0;
                 f32 y1;
+                Vec* vp0;
+                Vec* vp1;
 
                 animPose = animPoseGetAnimPosePtr((s32)pose->animPose);
                 vtx = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
-                p0 = wp->groupCounts[pose->groupIdx * 2];
-                p1 = wp->groupCounts[pose->groupIdx * 2 + 1];
+                vp0 = &vtx[wp->groupCounts[pose->groupIdx * 2]];
+                vp1 = &vtx[wp->groupCounts[pose->groupIdx * 2 + 1]];
                 t = pose->frame;
                 inv = 1.0f - t;
-                y0 = vtx[p0].y;
-                y1 = vtx[p1].y;
-                if (y0 == -1000.0f || y1 == -1000.0f) {
+                if (vp0->y == -1000.0f || vp1->y == -1000.0f) {
                     offset = (Vec){ 0.0f, -1000.0f, 0.0f };
                     extPose->flags &= ~1;
                 } else {
-                    PSVECScale(&vtx[p0], &offset, t);
-                    PSVECScale(&vtx[p1], &tmp, inv);
+                    PSVECScale(vp0, &offset, t);
+                    PSVECScale(vp1, &tmp, inv);
                     PSVECAdd(&offset, &tmp, &offset);
                     PSVECAdd(&offset, (Vec*)&pose->field_0x4, &offset);
                     extPose->flags |= 1;
@@ -1345,9 +1354,9 @@ static void ext_moamoa_main(void) {
                     (*extPose->matrix)[1][1] = f;
                     (*extPose->matrix)[0][0] = f;
                 }
-                (*extPose->matrix)[0][3] += 0.5f * (offset.x - (*extPose->matrix)[0][3]);
-                (*extPose->matrix)[1][3] += 0.5f * (offset.y - (*extPose->matrix)[1][3]);
-                (*extPose->matrix)[2][3] += 0.5f * (offset.z - (*extPose->matrix)[2][3]);
+                { f32 half = 0.5f; f32 d = offset.x - (*extPose->matrix)[0][3]; (*extPose->matrix)[0][3] += d * half; }
+                { f32 half = 0.5f; f32 d = offset.y - (*extPose->matrix)[1][3]; (*extPose->matrix)[1][3] += d * half; }
+                { f32 half = 0.5f; f32 d = offset.z - (*extPose->matrix)[2][3]; (*extPose->matrix)[2][3] += d * half; }
             }
         }
     } else {
@@ -1361,16 +1370,16 @@ static void ext_moamoa_main(void) {
         }
         extPose = extGetPosePtr();
         pose = wp->poses;
-        for (i = 0; i < wp->countA; i++, pose++, extPose++) {
+        for (iT = 0; iT < wp->countA; iT++, extPose++, pose++) {
             if (pose->field_0x0 & 1) {
                 PSVECSubtract((Vec*)pose->field_0x34, (Vec*)wp->field_0x7A8, &offsetR);
                 PSMTXRotAxisRad(mtx, (Vec*)pose->field_0x40, 0.017453292f * wp->field_0x7B4);
                 PSMTXMultVec(mtx, &offsetR, &offsetR);
                 PSVECScale(&offsetR, &offsetR, wp->field_0x7B8);
                 PSVECAdd(&offsetR, (Vec*)wp->field_0x7A8, &offsetR);
-                (*extPose->matrix)[0][3] += 0.5f * (offsetR.x - (*extPose->matrix)[0][3]);
-                (*extPose->matrix)[1][3] += 0.5f * (offsetR.y - (*extPose->matrix)[1][3]);
-                (*extPose->matrix)[2][3] += 0.5f * (offsetR.z - (*extPose->matrix)[2][3]);
+                { f32 half = 0.5f; f32 d = offsetR.x - (*extPose->matrix)[0][3]; (*extPose->matrix)[0][3] += d * half; }
+                { f32 half = 0.5f; f32 d = offsetR.y - (*extPose->matrix)[1][3]; (*extPose->matrix)[1][3] += d * half; }
+                { f32 half = 0.5f; f32 d = offsetR.z - (*extPose->matrix)[2][3]; (*extPose->matrix)[2][3] += d * half; }
             }
         }
     }

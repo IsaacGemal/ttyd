@@ -44,6 +44,23 @@
 // LOCAL_PROTO: inline MSL sqrtf; the SDK math.h drags in an overloaded sqrt.
 #define FP_NAN 1
 #define NAN (*(f32*)__float_nan)
+static inline int tik_fpclassifyf(float value) {
+    unsigned long integer = *(unsigned long*)&value;
+    switch (integer & 0x7f800000) {
+    case 0x7f800000:
+        if ((integer & 0x7fffff) != 0) {
+            return FP_NAN;
+        }
+        return 2;
+    case 0:
+        if ((integer & 0x7fffff) != 0) {
+            return 5;
+        }
+        return 3;
+    }
+    return 4;
+}
+
 static inline f32 sqrtf(f32 x) {
     if (x > 0.0f) {
         f64 guess = __frsqrte(x);
@@ -53,7 +70,7 @@ static inline f32 sqrtf(f32 x) {
         return x * guess;
     } else if (x < 0.0) {
         return NAN;
-    } else if (__fpclassifyf(x) == FP_NAN) {
+    } else if (tik_fpclassifyf(x) == FP_NAN) {
         return NAN;
     }
     return x;
@@ -1913,12 +1930,12 @@ USER_FUNC(starstone_get_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.66%): instruction sequence matches; only the FPR/GR constant assignment and data-pool refs differ.
 static USER_FUNC(starstone_set_ry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     f32 ry = evtGetFloat(event, args[1]);
-    effStarStoneData* data = ((EffectEntry*)effNameToPtr((char*)name))->userdata;
+    EffectEntry* entry = effNameToPtr((char*)name);
+    effStarStoneData* data = entry->userdata;
 
     data->field_0x1C = ry - 360.0f * (s32)((s32)ry / 360);
     return EVT_RETURN_DONE;
@@ -1944,7 +1961,7 @@ USER_FUNC(starstone_set_scale) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (92.26%): logic and control flow match; the 360.0f temp and a few constant registers are allocated differently.
+#pragma opt_propagation off // keeps the modulo/angle operands in the same registers as the target
 USER_FUNC(starstone_circle_link_func) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -1965,6 +1982,7 @@ USER_FUNC(starstone_circle_link_func) {
     ((effStarStoneData*)entry->userdata)->field_0x10 = -c * radius + z;
     return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 
 USER_FUNC(eff_starstone_sound_off) {
     s32* args = event->args;
@@ -2155,7 +2173,6 @@ static USER_FUNC(cam_kaiten_set_para) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.67%): near-identical; a handful of register assignments differ.
 USER_FUNC(disp_lighteffect_func) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -2164,9 +2181,12 @@ USER_FUNC(disp_lighteffect_func) {
     f32 z = evtGetFloat(event, args[3]);
     f32 angle = evtGetFloat(event, args[4]);
     EffectEntry* entry = effNameToPtr((char*)name);
+    f32 s;
+    f32 c;
     f32 rad = 6.2831855f * -angle / 360.0f;
-    f32 s = (f32)sin(rad);
-    f32 c = (f32)cos(rad);
+
+    s = (f32)sin(rad);
+    c = (f32)cos(rad);
 
     ((MahojinWork*)entry->userdata)->position.x = 30.0f * s + x;
     ((MahojinWork*)entry->userdata)->position.y = y;
@@ -2202,16 +2222,13 @@ USER_FUNC(mahojin_effect_alpha) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.71%): near-identical; a handful of register/stack assignments differ.
 USER_FUNC(effect_position) {
     ItemEntry* item = itemNameToPtr("item00");
-    CameraEntry* cam;
     EffectEntry* entry;
     f32 rad;
     f32 s, c;
 
-    cam = camGetPtr(CAMERA_3D);
-    rad = -(6.2831855f * cam->viewYaw / 360.0f);
+    rad = -(6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f);
     s = 5.0f * (f32)sin(rad);
     c = 5.0f * (f32)cos(rad);
     entry = effNameToPtr("map_wave");
@@ -2227,8 +2244,7 @@ USER_FUNC(effect_position) {
         ((f32*)entry->userdata)[1] = item->position.x + s;
         ((f32*)entry->userdata)[2] = item->position.y;
         ((f32*)entry->userdata)[3] = item->position.z + c;
-        cam = camGetPtr(CAMERA_3D);
-        ((f32*)entry->userdata)[8] = 180.0f - cam->viewYaw;
+        ((f32*)entry->userdata)[8] = 180.0f - camGetPtr(CAMERA_3D)->viewYaw;
         ((s32*)entry->userdata)[5] = evtGetValue(event, GW(11));
         ((f32*)entry->userdata)[4] = 0.9f;
     }
@@ -2243,7 +2259,16 @@ USER_FUNC(effect_position) {
     return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (99.92%): only the stack slot for the local GXColor copy differs (0x8 vs 0xC); instructions otherwise identical.
+// The original builds the colour in one stack slot and copies it into the
+// argument slot, so the build goes through an inline that returns by value.
+#ifdef MUST_MATCH
+static inline GXColor img_alpha_color(u8 a) {
+    GXColor c = *(GXColor*)&dat_tik_00009bb8;
+    c.a = a;
+    return c;
+}
+#endif
+
 USER_FUNC(img_alpha) {
     s32* args = event->args;
     s32 alpha = evtGetValue(event, args[0]);
@@ -2251,12 +2276,17 @@ USER_FUNC(img_alpha) {
     Mtx trans;
     Mtx scale;
     Mtx rot;
-    GXColor color;
 
     animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-    color = *(GXColor*)&dat_tik_00009bb8;
-    color.a = alpha;
-    animPoseSetMaterialEvtColor(entry->poseId, color);
+#ifdef MUST_MATCH
+    animPoseSetMaterialEvtColor(entry->poseId, img_alpha_color(alpha));
+#else
+    {
+        GXColor color = *(GXColor*)&dat_tik_00009bb8;
+        color.a = alpha;
+        animPoseSetMaterialEvtColor(entry->poseId, color);
+    }
+#endif
     PSMTXTrans(trans, 0.0f, 1.5f, 0.0f);
     PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
     PSMTXRotRad(rot, 'x', -0.5235988f);
@@ -2265,11 +2295,12 @@ USER_FUNC(img_alpha) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.85%): only the temp FPR used for (value-2^52)/10000.0f differs (f1 vs f31).
 USER_FUNC(tiz_stone) {
     s32* args = event->args;
-    f32 t = (f32)evtGetValue(event, args[0]) / 10000.0f;
+    f32 t = (f32)evtGetValue(event, args[0]);
     EffectEntry* entry;
+
+    t = t / 10000.0f;
 
     entry = effNameToPtr("tiz_dust");
     if (entry != NULL) {
@@ -2288,8 +2319,6 @@ USER_FUNC(tiz_stone) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.87%): only the scheduling of the loop-increment `entry++` vs the strength-reduced
-// `j * 0x10` accumulator differs; instruction sequence and constants match.
 void tiz_broken_draw(CameraId camId, void* param) {
     CameraEntry* cam = camGetPtr(camId);
     GXTexObj texObj;
@@ -2333,9 +2362,9 @@ void tiz_broken_draw(CameraId camId, void* param) {
     PSMTXIdentity(mtx);
 
     entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->field_0x8->address;
-    for (i = 0; i < 0x1E; i++) {
+    for (i = 0; i < 0x1E; i++, entry++) {
         y = 232.0f - (f32)(i * 0x10);
-        for (j = 0; j < 0x26; j++) {
+        for (j = 0; j < 0x26; j++, entry++) {
             if (entry->field_0x4 == 0) {
                 PSMTXScale(m0, 0.026315789f, 0.033333335f, 1.0f);
                 PSMTXTrans(m1, (f32)j, (f32)i, 0.0f);
@@ -2376,9 +2405,7 @@ void tiz_broken_draw(CameraId camId, void* param) {
                 GXPosition3f32(-8.0f, -8.0f, 0.0f);
                 GXTexCoord2f32(0.0f, 1.0f);
             }
-            entry++;
         }
-        entry++;
     }
 }
 
@@ -2640,20 +2667,23 @@ USER_FUNC(map_bgmode_end) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (91.5%): logic follows the asm; loop-variable and parameter registers are allocated differently.
 USER_FUNC(cam_mahojin_kaiten_main) {
+    s32 duration;
     s32* args = event->args;
     f32 start = evtGetFloat(event, args[0]);
     f32 end = evtGetFloat(event, args[1]);
-    s32 duration = evtGetValue(event, args[2]);
-    s32 frames = sysMsec2Frame(duration);
-    s32 active = 1;
+    s32 frames;
+    s32 active;
     f32 value;
-    f32 curve = 0.0f;
-    f32 step = 0.0f;
+    f32 curve;
+    f32 step;
     s32 i;
     s32 up;
     s32 down;
+
+    duration = evtGetValue(event, args[2]);
+    frames = sysMsec2Frame(duration);
+    active = 1;
 
     if (event->lwData[15] == 0) {
         event->lwData[14] = 0;
@@ -2663,6 +2693,8 @@ USER_FUNC(cam_mahojin_kaiten_main) {
 
     up = frames * 20 / 100;
     down = frames * 80 / 100;
+    curve = 0.0f;
+    step = 0.0f;
     for (i = 0; i < frames; i++) {
         if (i <= up) {
             step += 1.0f;

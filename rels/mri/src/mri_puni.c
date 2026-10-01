@@ -79,6 +79,7 @@ typedef struct PuniPaternData {
 
 
 
+extern f32 float_1E06_mri_000255d0;
 #pragma force_active on
 extern PuniMap* Punimap;
 static f32 randf(f32 min, f32 max);
@@ -102,10 +103,8 @@ static inline s32 puni_rnd(s32 range) {
     s32 s;
     s32 v;
 
-    Punigp->field_0x450 =
-        Punigp->field_0x454 + 0x17340000 + Punigp->field_0x450 - 0x506f;
-    Punigp->field_0x454 =
-        Punigp->field_0x450 + 0x21270000 + Punigp->field_0x454 + 0x3f9c;
+    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
+    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
     s = Punigp->field_0x454;
     v = s;
     if (v < 0) {
@@ -1849,7 +1848,7 @@ void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
     }
 }
 
-// NONMATCHING (80.93%): switch + hoisted pos x/z + `q` neighbour pointer match;
+// NONMATCHING (80.94%): switch + hoisted pos x/z + `q` neighbour pointer match;
 // the loop's register allocation differs (target keeps a byte index and uses
 // lhzx, we recompute the address) as does the saved-register set.
 void puniMapFindbuff(Vec* pos) {
@@ -2205,7 +2204,7 @@ PuniData* PuniSakanobori(PuniData* puni) {
     return puni;
 }
 
-// NONMATCHING (97.87%): the inlined recursion's register colouring is one register lower (we use r27-r31,
+// NONMATCHING (97.88%): the inlined recursion's register colouring is one register lower (we use r27-r31,
 // the target r28-r31); the emitted instructions are otherwise identical.
 void PuniChildHagure(PuniData* puni) {
     PuniData* child = (PuniData*)puni->field_0x1D4;
@@ -2430,8 +2429,8 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     }
 }
 
-// NONMATCHING (85.82%): the `*pos = saved; pos->y += 1` copy and the second hitCheckFilter argument
-// setup schedule differently (the target forwards saved.x/y/z, we reload through pos); the rest matches.
+// NONMATCHING (85.85%): the `*pos = saved; pos->y = saved.y + 1.0f` copy and the second
+// hitCheckFilter argument setup schedule differently; the rest matches.
 void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
     Vec hitP;
     Vec hitN;
@@ -2472,7 +2471,7 @@ void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
             *pos = saved;
-            pos->y += 1.0f;
+            pos->y = saved.y + 1.0f;
             puni->field_0x214 =
                 hitCheckFilter(0, &hitP2x, &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z,
                                     saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
@@ -2484,7 +2483,7 @@ void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
 
 }
 
-// NONMATCHING (95.85%): the stack frame is 0x10 smaller (the target keeps an extra Vec temp for
+// NONMATCHING (95.86%): the stack frame is 0x10 smaller (the target keeps an extra Vec temp for
 // `up = puni->field_0x12C; up.y += 1.0f;`); every instruction otherwise lines up after the shift.
 // Declaring `tmp` before the other Vecs put it at the target's 0x78 slot (+0.07%).
 void puniMoveDecel(PuniData* puni) {
@@ -2568,9 +2567,12 @@ void puniMoveDecel(PuniData* puni) {
     }
 }
 
-// NONMATCHING (86.92%): register allocation and scheduling differ.
+// NONMATCHING (92.47%): the extra `tmp` for PSVECNormalize (copied into `dir`) fixes the stack
+// frame and most of the schedule, and a named `zero` fixes the `mag == 0` compare operand order;
+// the remaining difference is the target's extra copy of `up` (built in a temp then copied).
 void puniMoveLimitedNormal(PuniData* puni) {
     f32 mag = PSVECMag(&puni->field_0x15C);
+    Vec tmp;
     Vec up;
     Vec dir;
     Vec hitN;
@@ -2581,8 +2583,9 @@ void puniMoveLimitedNormal(PuniData* puni) {
     Vec hitP2;
     f32 dist;
     f32 scale;
+    f32 zero = 0.0f;
 
-    if (mag == 0.0f) {
+    if (mag == zero) {
         return;
     }
     if (mag > puni->field_0x174) {
@@ -2592,7 +2595,8 @@ void puniMoveLimitedNormal(PuniData* puni) {
 
     up = puni->field_0x12C;
     up.y += 1.0f;
-    PSVECNormalize(&puni->field_0x15C, &dir);
+    PSVECNormalize(&puni->field_0x15C, &tmp);
+    dir = tmp;
 
     puni->field_0x214 = 0;
     puni->field_0x210 = 0;
@@ -2633,22 +2637,24 @@ void puniMoveLimitedNormal(PuniData* puni) {
     }
 }
 
-// NONMATCHING (89.87%): control flow and calls match; the stack frame is 0x10 smaller
-// (the original keeps an extra Vec copy of `up`/`dir`) and the stack slots are ordered
-// differently. Declaring `tmp` first puts it at the target's 0x78 slot (+0.08%).
+// NONMATCHING (97.10%): the frame size (0xb0) and all Vec slots now match; the `up2 = up`
+// argument copy reproduces the original's second Vec. The remaining diff is `dist`: the
+// original keeps it at 0x20 (between hitP and hitN2), MWCC puts ours at 0x8 regardless of
+// where `dist` is declared, plus the `mag == 0` fcmpu operand order.
 void puniMoveNormal(PuniData* puni) {
     f32 mag = PSVECMag((Vec*)&puni->field_0x15C);
-    Vec tmp;
     Vec up;
+    Vec tmp;
+    Vec up2;
     Vec dir;
-    Vec hitN;
-    Vec hitP;
     Vec saved;
     Vec refl;
     Vec diff;
+    Vec hitN;
+    Vec hitP;
+    f32 dist;
     Vec hitN2;
     Vec hitP2;
-    f32 dist;
     f32 scale;
     f32 moved;
 
@@ -2658,17 +2664,17 @@ void puniMoveNormal(PuniData* puni) {
 
     up = puni->field_0x12C;
     up.y += 1.0f;
-    tmp = *(Vec*)&puni->field_0x15C;
-    PSVECNormalize(&tmp, &tmp);
+    PSVECNormalize((Vec*)&puni->field_0x15C, &tmp);
     dir = tmp;
+    up2 = up;
 
     puni->field_0x214 = 0;
     puni->field_0x210 = 0;
     dist = mag;
     if (puni->unk4 & 0x1000) {
         puni->field_0x210 =
-            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
-                                up.z, dir.x, dir.y, dir.z);
+            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up2.x, up2.y,
+                                up2.z, dir.x, dir.y, dir.z);
     }
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
@@ -2728,9 +2734,6 @@ void puniMoveCustom(PuniData* puni) {
     }
 }
 
-// NONMATCHING (98.98%): the branchless qrnd compare, the `||` combine, both action branches
-// and the chance/span `mr` match; only the inlined-qrnd temporaries pick r6/r7 instead of
-// the target's r7/r8 (chance and span swap one register).
 void puniParaAttack(PuniData* puni, PuniData* other) {
     s16 chance;
     s16 span;
@@ -2763,8 +2766,9 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
 #endif
 
 #ifdef MUST_MATCH
-    // splitting the `||` makes MWCC keep the original's branchless compare + li form
-    flag = chance > (s16)puni_rnd(span);
+    // splitting the `||` makes MWCC keep the original's branchless compare + li form;
+    // writing it as `roll < chance` (not `chance > roll`) is what keeps chance in r6
+    flag = (s16)puni_rnd(span) < chance;
     if (other->unk4 & 0x08000000) {
         flag = 1;
     }
@@ -2894,8 +2898,8 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
     return puni;
 }
 
-// NONMATCHING (95.76%): the LCG/abs now match; the loop counter/index registers are one
-// lower than the target (target i=r5/idx=r4, ours i=r7/idx=r5).
+// NONMATCHING (95.98%): the LCG/abs and the loop tail match; the loop counter/index
+// registers are still one lower than the target (target i=r5/idx=r4, ours i=r7/idx=r5).
 PuniData* puniSearchRandom_Mikata(void) {
     s32 i;
     s32 idx;
@@ -2904,7 +2908,8 @@ PuniData* puniSearchRandom_Mikata(void) {
 
     r = puniQrnd2(101);
     idx = r + 1;
-    for (i = 0;; i++) {
+    i = 0;
+    while (1) {
         if (i == 102) {
             return NULL;
         }
@@ -2915,6 +2920,7 @@ PuniData* puniSearchRandom_Mikata(void) {
         if ((puni->unk4 & 0x400) != 0 && (puni->unk4 & 0x4000) == 0) {
             return puni;
         }
+        i++;
         idx++;
     }
 }
@@ -2924,8 +2930,8 @@ void fn_19_A820(void) {
     (void)0;
 }
 
-// NONMATCHING (95.76%): the LCG/abs now match; the loop counter/index registers are one
-// lower than the target and mwcc emits an extra trailing blr from the infinite loop.
+// NONMATCHING (95.98%): the LCG/abs and the loop tail match; the loop counter/index
+// registers are still one lower than the target (target i=r5/idx=r4, ours i=r7/idx=r5).
 PuniData* puniSearchRandom_Teki(void) {
     PuniData* puni;
     PuniData* base;
@@ -2934,7 +2940,8 @@ PuniData* puniSearchRandom_Teki(void) {
 
     idx = puniQrnd2(99) + 110;
     base = Punidat;
-    for (i = 0;; i++) {
+    i = 0;
+    while (1) {
         if (i == 100) {
             return NULL;
         }
@@ -2945,6 +2952,7 @@ PuniData* puniSearchRandom_Teki(void) {
         if ((puni->unk4 & 0x400) && !(puni->unk4 & 0x4000)) {
             return puni;
         }
+        i++;
         idx++;
     }
 }
@@ -3078,20 +3086,130 @@ PuniData* searchBattleTeki(PuniData* puni) {
     }
     return NULL;
 }
+static inline PuniData* puniSearchTekiNamed(PuniData* puni) {
+    s32 i;
+    PuniData* cur;
+    PuniData* best;
+    f32 bestDist;
+    f32 d;
 
-// NONMATCHING (99.2%): register allocation in the inlined battle searches differs.
+    best = NULL;
+    bestDist = float_1E06_mri_000255d0;
+    cur = &Punidat[0x6E];
+    for (i = 0x6E; i < 0xD2; i++, cur++) {
+        if ((cur->unk4 & 0x400) && !(cur->unk4 & 0x4000) && cur->unkC != 9 && cur->unkC != 0xD) {
+            d = PSVECSquareDistance(&puni->field_0x12C, &cur->field_0x12C);
+            if (d < bestDist) {
+                bestDist = d;
+                best = cur;
+            }
+        }
+    }
+    if (bestDist < float_1E06_mri_000255d0) {
+        return best;
+    }
+    return NULL;
+}
+static inline PuniData* puniSearchMikataNamed(PuniData* puni) {
+    s32 i;
+    PuniData* cur;
+    PuniData* best;
+    f32 bestDist;
+    f32 d;
+
+    best = NULL;
+    bestDist = float_1E06_mri_000255d0;
+    cur = &Punidat[1];
+    for (i = 1; i < 103; i++, cur++) {
+        if ((cur->unk4 & 0x400) && !(cur->unk4 & 0x4000) && cur->unkC != 9 && cur->unkC != 0xD) {
+            d = PSVECSquareDistance(&puni->field_0x12C, &cur->field_0x12C);
+            if (d < bestDist) {
+                bestDist = d;
+                best = cur;
+            }
+        }
+    }
+    if (bestDist < float_1E06_mri_000255d0) {
+        return best;
+    }
+    return NULL;
+}
+
+
+
 void puniSearch(PuniData* puni) {
     if ((s32)(gp->retraceCount & 3) != (puni->field_0x116 & 3)) {
         return;
     }
     if (puni->unk4 & 1) {
-        *(PuniData**)((u8*)puni + 0x1DC) = searchBattleTeki(puni);
+        *(PuniData**)((u8*)puni + 0x1DC) = puniSearchTekiNamed(puni);
     } else {
-        *(PuniData**)((u8*)puni + 0x1DC) = searchBattleMikata(puni);
+        *(PuniData**)((u8*)puni + 0x1DC) = puniSearchMikataNamed(puni);
+    }
+}
+static inline PuniData* puniSearchTekiInlineATK(PuniData* puni) {
+    s32 i;
+    PuniData* cur;
+    PuniData* best;
+    f32 bestDist;
+    f32 d;
+
+    best = NULL;
+    bestDist = 1e+06f;
+    cur = &Punidat[0x6E];
+    for (i = 0x6E; i < 0xD2; i++, cur++) {
+        if ((cur->unk4 & 0x400) && !(cur->unk4 & 0x4000) && cur->unkC != 9 && cur->unkC != 0xD) {
+            d = PSVECSquareDistance(&puni->field_0x12C, &cur->field_0x12C);
+            if (d < bestDist) {
+                bestDist = d;
+                best = cur;
+            }
+        }
+    }
+    {
+        PuniData* result;
+
+        if (bestDist < 1e+06f) {
+            result = best;
+        } else {
+            result = NULL;
+        }
+        return result;
+    }
+}
+static inline PuniData* puniSearchMikataInlineATK(PuniData* puni) {
+    s32 i;
+    PuniData* cur;
+    PuniData* best;
+    f32 bestDist;
+    f32 d;
+
+    best = NULL;
+    bestDist = 1e+06f;
+    cur = &Punidat[1];
+    for (i = 1; i < 103; i++, cur++) {
+        if ((cur->unk4 & 0x400) && !(cur->unk4 & 0x4000) && cur->unkC != 9 && cur->unkC != 0xD) {
+            d = PSVECSquareDistance(&puni->field_0x12C, &cur->field_0x12C);
+            if (d < bestDist) {
+                bestDist = d;
+                best = cur;
+            }
+        }
+    }
+    {
+        PuniData* result;
+
+        if (bestDist < 1e+06f) {
+            result = best;
+        } else {
+            result = NULL;
+        }
+        return result;
     }
 }
 
-// NONMATCHING (96.31%): inlined battle-search loop counters land in swapped registers.
+
+
 void puniModeChangeAttack(void) {
     s32 i;
     PuniData* puni;
@@ -3107,9 +3225,9 @@ void puniModeChangeAttack(void) {
         case 2:
         case 0x1D:
             if (puni->unk4 & 1) {
-                best = searchBattleTeki(puni);
+                best = puniSearchTekiInlineATK(puni);
             } else {
-                best = searchBattleMikata(puni);
+                best = puniSearchMikataInlineATK(puni);
             }
             if (best != NULL) {
                 *(PuniData**)((u8*)puni + 0x1DC) = best;
@@ -3195,6 +3313,9 @@ void puniModeChangeFallCheck(void) {
 // NONMATCHING (97.34%): register allocation and scheduling differ.
 #pragma push
 #pragma dont_inline on
+// NONMATCHING (99.41%): chaining each store with the next loop's counter init
+// (`pN->unkC = i(N+1) = 1`) reproduces the target's coalesced constant/counter; only a
+// one-register rotation is left (puni r21 vs r29, inner counters r29..r23 vs r27..r21).
 void puniFukki(PuniData* puni) {
     s32 i1;
     PuniData* p1;
@@ -3211,23 +3332,23 @@ void puniFukki(PuniData* puni) {
         if ((p1->unk4 & 0x400) && p1->unkC == 0x10 &&
             !(32.0 < __fabsf(puni->field_0x12C.y - p1->field_0x12C.y)) &&
             PSVECSquareDistance(&puni->field_0x12C, &p1->field_0x12C) < 900.0f) {
-            p1->unkC = 1;
-            for (p2 = &Punidat[1], i2 = 1; i2 <= 102; i2++, p2++) {
+            p1->unkC = i2 = 1;
+            for (p2 = &Punidat[1]; i2 <= 102; i2++, p2++) {
                 if ((p2->unk4 & 0x400) && p2->unkC == 0x10 &&
                     !(32.0 < __fabsf(p1->field_0x12C.y - p2->field_0x12C.y)) &&
                     PSVECSquareDistance(&p1->field_0x12C, &p2->field_0x12C) < 900.0f) {
-                    p2->unkC = 1;
-                    for (p3 = &Punidat[1], i3 = 1; i3 <= 102; i3++, p3++) {
+                    p2->unkC = i3 = 1;
+                    for (p3 = &Punidat[1]; i3 <= 102; i3++, p3++) {
                         if ((p3->unk4 & 0x400) && p3->unkC == 0x10 &&
                             !(32.0 < __fabsf(p2->field_0x12C.y - p3->field_0x12C.y)) &&
                             PSVECSquareDistance(&p2->field_0x12C, &p3->field_0x12C) < 900.0f) {
-                            p3->unkC = 1;
-                            for (p4 = &Punidat[1], i4 = 1; i4 <= 102; i4++, p4++) {
+                            p3->unkC = i4 = 1;
+                            for (p4 = &Punidat[1]; i4 <= 102; i4++, p4++) {
                                 if ((p4->unk4 & 0x400) && p4->unkC == 0x10 &&
                                     !(32.0 < __fabsf(p3->field_0x12C.y - p4->field_0x12C.y)) &&
                                     PSVECSquareDistance(&p3->field_0x12C, &p4->field_0x12C) < 900.0f) {
-                                    p4->unkC = 1;
-                                    for (p5 = &Punidat[1], i5 = 1; i5 <= 102; i5++, p5++) {
+                                    p4->unkC = i5 = 1;
+                                    for (p5 = &Punidat[1]; i5 <= 102; i5++, p5++) {
                                         if ((p5->unk4 & 0x400) && p5->unkC == 0x10 &&
                                             !(32.0 < __fabsf(p4->field_0x12C.y - p5->field_0x12C.y)) &&
                                             PSVECSquareDistance(&p4->field_0x12C, &p5->field_0x12C) < 900.0f) {
@@ -3263,14 +3384,17 @@ void puniFukki(PuniData* puni) {
 }
 #pragma pop
 
-// NONMATCHING (97.3%): the original emits an extra unreachable `b` before the case 2 body
-// (as if case 1 existed) and allocates the loop i/pointer in r30/r29-r31 instead of r27/r28.
+// NONMATCHING (97.97%): the outer dispatch only matches with an explicit `case 4: break;` (a
+// semantic no-op). Left: a redundant `mr r0, r29` before the teki loop's `b` (our `best` lands
+// in r0, the target keeps it in r29) and the inlined mikata search using r27/r29/r28 vs r29/r28/r27.
 void puniModeALLCheck(void) {
     s32 i;
     PuniData* puni;
     PuniData* best;
 
     switch (Punigp->field_0x43C) {
+    case 4:
+        break;
     case 2:
         for (puni = &Punidat[1], i = 1; i <= 102; i++, puni++) {
             if (!(puni->unk4 & 0x400)) {
@@ -3308,9 +3432,9 @@ void puniModeALLCheck(void) {
             case 2:
             case 0x1D:
                 if (puni->unk4 & 1) {
-                    best = searchBattleTeki(puni);
+                    best = puniSearchTekiInlineATK(puni);
                 } else {
-                    best = searchBattleMikata(puni);
+                    best = puniSearchMikataInlineATK(puni);
                 }
                 if (best != NULL) {
                     *(PuniData**)((u8*)puni + 0x1DC) = best;
@@ -3753,15 +3877,16 @@ void puniModeSearch(PuniData* puni) {
     puni->field_0x174 = 3.0f;
 }
 
-// NONMATCHING (98.91%): puniQrnd2(3) restores the original's `cmpwi; bge; neg` abs
-// branch; the remaining diffs are pooled-rodata symbol names and the entry-loaded
-// Punigp taking a different register (so the LCG temporaries shift).
 void puniModeMass(PuniData* punidat) {
     u8* p = (u8*)punidat;
     u8* target;
     s32 idx = *(s32*)(p + 0x1B4);
 
-    target = (u8*)Punigp + 0x374 + idx * 0x14;
+    // Reloading 0x1B4 here (instead of using `idx`) makes MWCC materialise `*Punigp` with
+    // `lis; addi; lwz` into r3 and put the `mulli idx*0x14` in r4, as the target does; with the
+    // `idx` variable it folds the load to `lwz r8, Punigp@l(r3)`. The function already reads
+    // this field as `*(s32*)(p + 0x1B4)`, hence the raw form. // PuniData 0x1B4
+    target = (u8*)Punigp + 0x374 + *(s32*)(p + 0x1B4) * 0x14;
 
     if (idx == -1) {
         if (*(u16*)(p + 0xE) == 0x18)
@@ -3991,7 +4116,7 @@ void puniModeAway(PuniData* punidat) {
         PSVECScale(&vec, &punidat->field_0x15C, punidat->field_0x190);
         PSVECAdd(&punidat->field_0x12C, &punidat->field_0x15C, &punidat->field_0x12C);
         pos = punidat->field_0x12C;
-        pos.y += 1.0f;
+        pos.y = 1.0f + pos.y;
         distance = 2.0f;
         vec = (Vec){0.0f, -1.0f, 0.0f};
         pos.y += 0.2f;
@@ -4230,9 +4355,9 @@ void puniModePiyori(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (98.95%): only the `field_0xE = unkC` store in case 0 is scheduled one slot earlier
-// than the target (ours before `li r3, 0xd`, the target after it); reordering the source statements
-// or routing the old unkC through a temporary only makes it worse.
+// The `field_0xE` store must be an unsigned 16-bit access so MWCC schedules `li r3, 0xd`
+// before it (the header declares `field_0xE` as s16); taking the field's address as u16* is the
+// only field-based way to get the target's order.
 void puniModeEscape(PuniData* punidat) {
     s32 i;
     PuniData* p;
@@ -4243,7 +4368,7 @@ void puniModeEscape(PuniData* punidat) {
     switch (punidat->field_0x114) {
     case 0:
         if (punidat->field_0x1A0 > 10.0f) {
-            punidat->field_0xE = punidat->unkC;
+            *(u16*)&punidat->field_0xE = punidat->unkC;
             punidat->field_0x1DC = Punigp->field_0x360;
             punidat->unkC = 13;
             punidat->field_0x114 = 0;
@@ -4495,9 +4620,9 @@ void puniModeWind_kaiten(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (98.91%): the f64 temporary fixes the `frsp`, but the target also spills the unrounded
-// PSVECMag result (`stfs f1,0x8(r1)`) and case 4's hitCheckFilter argument setup keeps two constants
-// in different registers (r8/r10 vs r10/r3). Opcodes, constants and control flow all match.
+// NONMATCHING (99.77%): case 4 matches after evaluating `vec`/`dist` before `pos.y += 0.2f`; the only
+// real diff left is the dead `stfs f1,0x8(r1)` spill of the unrounded PSVECMag result (a register-
+// allocator eviction into `dist`'s slot that no C shape reproduces); the rest is literal-pool offsets.
 void puniModeWind(PuniData* punidat) {
     MarioWork* mario;
     Vec vec;
@@ -4595,9 +4720,9 @@ void puniModeWind(PuniData* punidat) {
     case 4:
         PSVECAdd(&punidat->field_0x12C, (Vec*)((u8*)punidat + 0x15C), &punidat->field_0x12C);  // PuniData 0x15C
         pos = punidat->field_0x12C;
-        pos.y += 0.2f;
         vec = (Vec){0.0f, -1.0f, 0.0f};
         dist = 2.0f;
+        pos.y += 0.2f;
         if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, pos.x, pos.y, pos.z, vec.x, vec.y,
                            vec.z) == NULL) {
             *(Vec*)&punidat->field_0x15C = (Vec){0.0f, 0.0f, 0.0f};
@@ -4639,7 +4764,7 @@ static inline f32 puniRandf2(f32 a, f32 b) {
 }
 
 
-// NONMATCHING (98.04%): one operand-order diff in the swByteGet/swByteSet mask
+// NONMATCHING (99.97%): one operand-order diff in the swByteGet/swByteSet mask
 // (`and r0,r3,r0` vs `and r0,r0,r3`); everything else is symbolic/register naming.
 void puniModeFall(PuniData* punidat) {
     PuniFallTarget* targets = (PuniFallTarget*)((u8*)Punigp + 0x374);
@@ -4749,8 +4874,8 @@ void puniModeFall(PuniData* punidat) {
             if (punidat->field_0x12C.y <= -1000.0f) {
                 *(Vec*)((u8*)punidat + 0x590) = punidat->field_0x12C;
                 punidat->field_0x12C = *(Vec*)&Punigp->field_0x344;
-                punidat->field_0x12C.x += puniRandf2(0.0f, 2.0f);
-                punidat->field_0x12C.z += puniRandf2(0.0f, 2.0f);
+                punidat->field_0x12C.x += puniRandfRecover(0.0f, 2.0f) - 1.0f;
+                punidat->field_0x12C.z += puniRandfRecover(0.0f, 2.0f) - 1.0f;
                 *(Vec*)&punidat->field_0x138 = punidat->field_0x12C;
                 *(Vec*)((u8*)punidat + 0x59C) = punidat->field_0x12C;
                 *(s32*)((u8*)punidat + 0x1E0) = 0x10;
@@ -4789,8 +4914,9 @@ void puniModePreupdraft(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (99.74%): the effect userdata write block swaps the load of `v.y`
-// with the load of the 3.0f constant; everything else is register naming.
+// NONMATCHING (99.95%): opcodes, control flow and register allocation all match. The remaining diffs are
+// the file's rodata/literal-pool offsets (the effect userdata write block computes all three components
+// before storing them, which reproduces the original's `v.z + 3.0f` operand order).
 void puniModeUpdraft(PuniData* punidat) {
     MarioWork* mario = marioGetPtr();
     Vec dir;
@@ -4885,10 +5011,10 @@ void puniModeUpdraft(PuniData* punidat) {
     {
         Vec v = punidat->field_0x12C;
         v.x += punidat->field_0x144;
-        ((f32*)((EffectEntry*)punidat->field_0x218)->userdata)[1] = v.x;
         v.y += 15.0f;
+        v.z = 3.0f + v.z;
+        ((f32*)((EffectEntry*)punidat->field_0x218)->userdata)[1] = v.x;
         ((f32*)((EffectEntry*)punidat->field_0x218)->userdata)[2] = v.y;
-        v.z = v.z + 3.0f;
         ((f32*)((EffectEntry*)punidat->field_0x218)->userdata)[3] = v.z;
     }
 
@@ -5077,19 +5203,20 @@ void puniModeWater(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (82.98%): the frame is 0x10 smaller and the target keeps `pos` on
-// the stack (0xc..0x14) before the hitCheckFilter call where we keep it in registers.
+// NONMATCHING (87.99%): statement order in the case-0 setup now matches the target's pos/normal/dist
+// sequence; the target still keeps `pos` in memory at 0xc..0x14 for the hitCheckFilter call (we forward the
+// stores into registers, so our frame is 0x50 vs the target's 0x60) and folds `Punigp` (`lwz Punigp@l`).
 void puniModePrehagure(PuniData* puni) {
     u8* p = (u8*)puni;
-    f32 dist;
-    Vec pos;
+    Vec hitNor;
+    Vec hitPos;
 #ifdef MUST_MATCH
     volatile Vec normal;
 #else
     Vec normal;
 #endif
-    Vec hitPos;
-    Vec hitNor;
+    Vec pos;
+    f32 dist;
     s32 flag;
     HitEntry* hit;
 
@@ -5107,12 +5234,12 @@ void puniModePrehagure(PuniData* puni) {
             if (flag == 0) {
                 flag = 1;
             } else {
-                dist = 3.0f;
-                pos.x = *(f32*)(p + 0x12C);
                 pos.y = *(f32*)(p + 0x130);
+                pos.x = *(f32*)(p + 0x12C);
                 pos.z = *(f32*)(p + 0x134);
-                normal = (Vec){ 0.0f, -1.0f, 0.0f };
+                dist = 3.0f;
                 pos.y += 1.0f;
+                normal = (Vec){ 0.0f, -1.0f, 0.0f };
                 hit = hitCheckFilter(NULL, &hitPos.x, &hitPos.y, &hitPos.z, &dist, &hitNor.x, &hitNor.y, &hitNor.z,
                                      pos.x, pos.y, pos.z, normal.x, normal.y, normal.z);
                 if (hit == NULL) {
@@ -5125,8 +5252,8 @@ void puniModePrehagure(PuniData* puni) {
                 *(s32*)(p + 0x58C) = flag;
                 *(Vec*)(p + 0x590) = *(Vec*)(p + 0x12C);
                 *(Vec*)(p + 0x12C) = *(Vec*)&Punigp->field_0x344;
-                *(f32*)(p + 0x12C) += puniRandf2(0.0f, 2.0f);
-                *(f32*)(p + 0x134) += puniRandf2(0.0f, 2.0f);
+                *(f32*)(p + 0x12C) += puniRandfRecover(0.0f, 2.0f) - 1.0f;
+                *(f32*)(p + 0x134) += puniRandfRecover(0.0f, 2.0f) - 1.0f;
                 *(Vec*)(p + 0x138) = *(Vec*)(p + 0x12C);
                 *(Vec*)(p + 0x59C) = *(Vec*)(p + 0x12C);
             }
@@ -5425,7 +5552,7 @@ void puniModeEnterSub(PuniData* puni) {
     }
 }
 
-// NONMATCHING (98.61%): the case-3 searchParent loop cursor lands in r6 where the original keeps it in r3
+// NONMATCHING (98.62%): the case-3 searchParent loop cursor lands in r6 where the original keeps it in r3
 // (mine folds the global load to `lwz r6, Punidat@l(r3)`; the original emits `addi r3,r3,Punidat@l; lwz r3,0(r3)`),
 // and the inlined puniQrnd(500) uses r4/r5 for the Punigp base/value where the original uses r5/r6.
 void puniModeEnter(PuniData* puni) {
@@ -5787,8 +5914,8 @@ void puni_puni_init(void) {
 }
 
 // The original unit's rodata is not yet moved into this source; the symbols are declared above.
-// NONMATCHING (99.81%): every instruction's opcode/control flow matches; only stack-temp slots differ
-// (case 15's hitCheckFilter outputs and pos/normal, and case 27's diff Vec, land at different offsets).
+// NONMATCHING (99.84%): sharing case 27's `diff` Vec between both inner cases (hoisted to the case scope)
+// fixed those slots; only case 15's `hitCheckFilter` outputs/pos/normal now land at different stack offsets.
 void unk_mri_00012d58(PuniData* self) {
     switch (self->unkC) {
     case 0:
@@ -5919,6 +6046,8 @@ void unk_mri_00012d58(PuniData* self) {
         case 0: {
             BOOL range = FALSE;
             s32 state;
+            Vec normal;
+            Vec pos;
             f32 top;
             f32 bottom;
             f32 hitZ;
@@ -5928,8 +6057,6 @@ void unk_mri_00012d58(PuniData* self) {
             f32 hitNY;
             f32 hitNX;
             f32 distance;
-            Vec normal;
-            Vec pos;
             PuniWork* gp = Punigp;
             top = gp->field_0x350;
             bottom = gp->field_0x354;
@@ -6043,12 +6170,12 @@ void unk_mri_00012d58(PuniData* self) {
         *(u32*)(*(void**)self) |= 4;
         *(Vec*)&self->field_0x15C = (Vec){0.0f, 0.0f, 0.0f};
         break;
-    case 27:
+    case 27: {
+        Vec diff;
         self->unk4 &= ~0x8000;
         switch (self->field_0x114) {
         case 0:
             if (PSVECSquareDistance((Vec*)&Punigp->field_0x480.x, &self->field_0x12C) > Punigp->field_0x4B0) {
-                Vec diff;
                 PSVECSubtract((Vec*)&Punigp->field_0x480.x, &self->field_0x12C, &diff);
                 PSVECNormalize(&diff, &diff);
                 diff.y = 0.0f;
@@ -6062,7 +6189,6 @@ void unk_mri_00012d58(PuniData* self) {
             break;
         case 1:
             if (PSVECSquareDistance((Vec*)&Punigp->field_0x48C.x, &self->field_0x12C) > Punigp->field_0x4B4) {
-                Vec diff;
                 PSVECSubtract((Vec*)&Punigp->field_0x48C.x, &self->field_0x12C, &diff);
                 PSVECNormalize(&diff, &diff);
                 diff.y = 0.0f;
@@ -6086,6 +6212,7 @@ void unk_mri_00012d58(PuniData* self) {
             break;
         }
         break;
+    }
     case 29:
         self->unk4 &= ~0x8000;
         if ((void*)self->field_0x56C != NULL) {
@@ -6759,9 +6886,10 @@ void puniSound(void) {
     Punigp->field_0x4C4 = 0;
 }
 
-// No structural diff; only register colouring differs (first loop target pd/i = r27/r28, second j/i =
-// r27/r29, else i/pd = r31/r29) and the `debug$` static gets a different generated suffix.
-// NONMATCHING (99.03%): block-scoping the loop vars lifted 94.28% here.
+// No structural diff; only register colouring differs (first loop target pd/i = r27/r28, pose loop
+// target pd/i = r29/r31) and the `debug$` static gets a different generated suffix.
+// NONMATCHING (99.14%): declaring the party loop's locals as `s32 i; PuniData* pd; s32 j;` before
+// the loop fixed that loop; the first and pose loops keep a rotated pd/i.
 void puni_puni_main(void) {
     static PuniData* debug;
     MarioWork* mario;
@@ -6814,13 +6942,14 @@ void puni_puni_main(void) {
     }
 
     if ((Punigp->field_0x324 & 0x20) != 0) {
+        s32 i;
+        PuniData* pd;
         s32 j;
+        PartyEntry* party;
+        PuniSearchEntry* sei;
+        s32 k;
         for (j = 0; j < 2; j++) {
-            PuniData* pd = &Punidat[1];
-            s32 i;
-            PartyEntry* party;
-            PuniSearchEntry* sei;
-            s32 k;
+            pd = &Punidat[1];
             for (i = 1; i < 0xD3; i++, pd++) {
                 if ((pd->unk4 & 0x400) != 0) {
                     if (j == 0) {
@@ -7013,11 +7142,16 @@ USER_FUNC(evt_puni_mem_init) {
     return EVT_RETURN_DONE;
 }
 
-static inline void puniPaternInitAll(PuniPaternData* pp, PuniPaternData* tp) {
+static inline void puniPaternInitAll(void) {
     s32 i;
     s16* ep;
     s32 j;
     s16 v;
+    s16* ep2;
+    s32 j2;
+    s16 v2;
+    PuniPaternData* pp = (PuniPaternData*)((u8*)Punigp + 0x4);
+    PuniPaternData* tp = (PuniPaternData*)((u8*)Punigp + 0x54);
 
     for (i = 0; i < 10; i++) {
         pp->pat[i] = puni_patern_table[i];
@@ -7038,28 +7172,25 @@ static inline void puniPaternInitAll(PuniPaternData* pp, PuniPaternData* tp) {
         pp->num[i] = j;
 
         tp->pat[i] = toge_patern_table[i];
-        ep = &tp->end[i];
-        j = 0;
+        ep2 = &tp->end[i];
+        j2 = 0;
         for (;;) {
-            v = ((s16*)toge_patern_table[i])[j];
-            if (v == -1) {
-                *ep = v;
+            v2 = ((s16*)toge_patern_table[i])[j2];
+            if (v2 == -1) {
+                *ep2 = v2;
                 break;
             }
-            if (v == -2) {
-                *ep = v;
+            if (v2 == -2) {
+                *ep2 = v2;
                 break;
             }
-            j++;
+            j2++;
         }
-        tp->num[i] = j;
+        tp->num[i] = j2;
     }
 }
 
 
-// NONMATCHING (98.81%): the inlined puniPaternInitAll helper reproduces the scan exactly;
-// the only remaining diff is register colouring of the pattern pointers and loop temps
-// (target pp/tp/ep/v/j = r9/r8/r12/r11/r10, ours r11/r12/r10/r9/r8).
 USER_FUNC(evt_puni_init) {
     s32* args = event->args;
     s32 count;
@@ -7067,9 +7198,6 @@ USER_FUNC(evt_puni_init) {
     void (*cb0)(void);
     void (*cb1)(void);
     void (*cb2)(void);
-    PuniPaternData* pp;
-    PuniPaternData* tp;
-
     count = evtGetValue(event, args[0]);
     tex = Punitex;
     cb0 = (void (*)(void))evtGetValue(event, args[1]);
@@ -7081,9 +7209,7 @@ USER_FUNC(evt_puni_init) {
         return EVT_RETURN_BLOCK;
     }
 
-    pp = (PuniPaternData*)((u8*)Punigp + 0x4);
-    tp = (PuniPaternData*)((u8*)Punigp + 0x54);
-    puniPaternInitAll(pp, tp);
+    puniPaternInitAll();
 
     puniAnimationInit2();
     puniEntry(count, tex, cb0, cb1, cb2);
@@ -7227,9 +7353,9 @@ void toge_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
     pd->unk4 |= 0x00101402;
 }
 
-// NONMATCHING (96.4%): the inlined puni_init_posy and both randf calls match; the target
-// materialises posy in f27 (`fmr f27, f29` per case) and keeps rz in f26, while the compiler
-// coalesces posy into the inline's f29 and uses f27 for rz. Pure coalescing.
+// NONMATCHING (97.74%): assigning the inline result to a separate `t` and copying `posy = t` inside
+// each case reproduced the target's per-case `fmr`; only the two registers are swapped (ours
+// t=r=f27 / posy=f29, target t=r=f29 / posy=f27). Splitting moved the inline's `r` from f29 to f27.
 USER_FUNC(evt_puni_rnd_pos) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -7237,17 +7363,20 @@ USER_FUNC(evt_puni_rnd_pos) {
     s32 arg2 = args[2];
     s32 arg3 = args[3];
     f32 x = evtGetFloat(event, arg1);
-    f32 posy = puni_init_posy(evtGetFloat(event, arg2));
+    f32 t = puni_init_posy(evtGetFloat(event, arg2));
     f32 z = evtGetFloat(event, arg3);
+    f32 posy;
     f32 rx;
     f32 rz;
 
     switch (type) {
     case 0:
+        posy = t;
         rx = randf(x - 10.0f, x + 10.0f);
         rz = randf(z - 10.0f, z + 10.0f);
         break;
     case 1:
+        posy = t;
         rx = randf(x - 50.0f, x + 50.0f);
         rz = randf(z - 50.0f, z + 50.0f);
         break;
@@ -7277,9 +7406,9 @@ USER_FUNC(evt_puni_wait_systemmode) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.3%): logic, constants, offsets and control flow all match. Diffs are pooled rodata
+// NONMATCHING (99.49%): logic, constants, offsets and control flow all match. Diffs are pooled rodata
 // symbols (double_to_int_mri_000253a0 and 5 sprintf strings are anonymous @N@ until the unit is done),
-// int->float conversion temps (target r4/r3/r5, ours r3/r5/r6), flag/cond reusing b/c not f/base.
+// int->float temps (target r4/r3/r5, ours r3/r5/r6); `flag` still r28 (target r24), `cond` now r23.
 USER_FUNC(evt_puni_debug_info) {
     char buf[256];
     s32 i;
@@ -7291,16 +7420,16 @@ USER_FUNC(evt_puni_debug_info) {
         f32 x;
         f32 y;
         f32 z;
-        s32 flag;
-        s32 cond;
         s32 a;
-        u8 c;
         u8 b;
+        u8 c;
         u8 d;
         u8 e;
         u8 f;
         u8 g;
         s32 base;
+        s32 flag;
+        s32 cond;
 
         base = (i - 1) * 7;
         a = (u8)_swByteGet(base);
@@ -7566,7 +7695,7 @@ USER_FUNC(evt_puni_setup) {
     return 2;
 }
 
-// NONMATCHING (98.65%): computing the z bounds before the x bounds fixes most of the schedule;
+// NONMATCHING (98.66%): computing the z bounds before the x bounds fixes most of the schedule;
 // what remains is the x/z register colouring (target x=f21, z=f3; ours x=f22, z=f2) and the
 // add-before-sub order of the two bound pairs.
 USER_FUNC(evt_toge_setup) {
@@ -7743,10 +7872,11 @@ void puniHagurePos(PuniData* punidat) {
     }
 }
 
-// The inlined nearest-of-four helper (f28/f29 swapped) and the two scan loops
-// (the original copies the Vec words to a stack temp and rounds in a different
-// order) still differ; the case bodies are emitted in the original's order.
-// NONMATCHING (84.28%): control flow, all call sites and all field writes match.
+// The inlined nearest-of-four helper (f28/f29 swapped), the prologue colouring
+// (event/args) and the rounding of the `else` Vec (the compiler forwards the
+// field loads and drops the original's stack copy) still differ. The main scan
+// loop is now a pointer walk so its `addi 0x5a8` matches.
+// NONMATCHING (84.54%): control flow, all call sites and all field writes match.
 USER_FUNC(evt_puni_exit) {
     s32* args = event->args;
     s32 mode = evtGetValue(event, args[0]);
@@ -7760,6 +7890,7 @@ USER_FUNC(evt_puni_exit) {
     f32 f1;
     s32 cmp;
     s32 i;
+    PuniData* punidat;
 
     evtGetValue(event, args[1]);
     arg2 = evtGetValue(event, args[2]);
@@ -7820,8 +7951,8 @@ USER_FUNC(evt_puni_exit) {
         cmp = 1;
     }
 
-    for (i = 1; i <= 0x66; i++) {
-        PuniData* punidat = &Punidat[i];
+    punidat = &Punidat[1];
+    for (i = 1; i <= 0x66; i++, punidat++) {
 
         if (!(punidat->unk4 & 0x400)) {
             continue;
@@ -7850,7 +7981,7 @@ USER_FUNC(evt_puni_exit) {
                 _swByteSet(base + 6, (u8)((z >> 8) & 0xFF));
             }
         } else {
-            Vec v = { 0.0f, 0.0f, 0.0f };
+            Vec v = punidat->field_0x12C;
             s32 base = (punidat->field_0x116 - 1) * 7;
             s32 x = (s32)v.x;
             s32 y = (s32)v.y;
@@ -8090,7 +8221,7 @@ USER_FUNC(evt_puni_korokoro) {
     }
 }
 
-// NONMATCHING (99.83%): `elapsed` is kept in r29; the original computes the division in r4
+// NONMATCHING (99.84%): `elapsed` is kept in r29; the original computes the division in r4
 // and copies it to r29 across the intplGetValue calls (all other instructions identical).
 USER_FUNC(evt_puni_move_position) {
     s32* args = event->args;
@@ -8272,13 +8403,14 @@ USER_FUNC(evt_puni_dokan_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.28%): original keeps b0 in r27 and hoists `mr r5,r27` before t1, reusing r27 for
-// t1; ours keeps b0 in r29 and computes t1 in r23.
+// NONMATCHING (96.42%): declaring b2/b1/b0 puts b0 back in r27; the original then emits
+// `mr r5,r27` between the (b2<<8) shift and the t1 add and reuses r27 for t1, where ours
+// schedules the mr after t1's sign extension and computes t1 in r23.
 USER_FUNC(evt_puni_get_lsw_index) {
     s32* args = event->args;
-    u8 b0;
-    u8 b1;
     u8 b2;
+    u8 b1;
+    u8 b0;
     u8 b3;
     u8 b4;
     u8 b5;
@@ -8321,8 +8453,8 @@ USER_FUNC(evt_puni_get_lsw_index) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.36%): original saves 6 callee-saved (r26-r31): event=r28, args=r26, index=r27;
-// ours saves 5 (event=r27, args=r28, index=r31).
+// NONMATCHING (98.27%): instruction sequence now matches; only the callee-saved numbering rotates
+// (original event=r28,args=r26,index=r27,i=r30,b0=r31; ours event=r26,args=r28,index=r31,i=r29,b0=r30).
 USER_FUNC(evt_puni_set_lsw_index) {
     s32* args = event->args;
     s32 index = args[0];
@@ -8335,12 +8467,15 @@ USER_FUNC(evt_puni_set_lsw_index) {
     s32 s2 = (s32)v2;
     s32 s3 = (s32)v3;
 
+    s32 h1 = (s1 >> 8) & 0xFF;
+    s32 h2 = (s2 >> 8) & 0xFF;
+
     index += i * 7;
     _swByteSet(index + EVTDAT_LSW_BASE + 0, b0);
     _swByteSet(index + EVTDAT_LSW_BASE + 1, s1 & 0xFF);
-    _swByteSet(index + EVTDAT_LSW_BASE + 2, (s1 >> 8) & 0xFF);
+    _swByteSet(index + EVTDAT_LSW_BASE + 2, h1);
     _swByteSet(index + EVTDAT_LSW_BASE + 3, s2 & 0xFF);
-    _swByteSet(index + EVTDAT_LSW_BASE + 4, (s2 >> 8) & 0xFF);
+    _swByteSet(index + EVTDAT_LSW_BASE + 4, h2);
     _swByteSet(index + EVTDAT_LSW_BASE + 5, s3 & 0xFF);
     _swByteSet(index + EVTDAT_LSW_BASE + 6, (s3 >> 8) & 0xFF);
     return EVT_RETURN_DONE;
@@ -8360,8 +8495,9 @@ USER_FUNC(evt_puni_get_trap_index) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.58%): event/args land in r29/r30 instead of r31/r29, which flips the `and`/`or`
-// operand order (`and r4,r4,r3` vs `and r4,r3,r4`). Declaring `bit` before `div` fixed div/bit (r29/r30).
+// NONMATCHING (99.36%): writing the byte update as separate statements (like puniswTrapSetindex)
+// fixes the `and`/`or` operand order and the clrlwi. Only event/args land in r29/r30 instead of
+// the original r31/r29.
 USER_FUNC(evt_puni_set_trap_index) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -8370,11 +8506,13 @@ USER_FUNC(evt_puni_set_trap_index) {
     if (index < 0x67) {
         s32 bit;
         s32 div = index / 8;
-        s32 mask;
+        s32 byte;
 
         bit = index % 8;
-        mask = 1 << bit;
-        swByteSet(0x28C + div, ((swByteGet(0x28C + div) & (mask ^ 0xFF)) | (value << bit)) & 0xFF);
+        byte = swByteGet(0x28C + div);
+        byte = byte & ((1 << bit) ^ 0xFF);
+        byte = byte | (value << bit);
+        swByteSet(0x28C + div, (u8)byte);
     }
     return EVT_RETURN_DONE;
 }

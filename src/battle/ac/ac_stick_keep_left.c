@@ -5,21 +5,45 @@
 #include "battle/battle_pad.h"
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
+#include "driver/icondrv.h"
+#include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>
+
+// sdata2 float constants used by actionCommandDisp.
+extern const f32 float_neg200_8041c3e8;
+extern const f32 float_70_8041c3ec;
+extern const f32 float_1_8041c3f0;
+extern const f32 float_16_8041c3f4;
+extern const f32 float_12_8041c3f8;
+extern const f32 float_neg288_8041c3fc;
+extern const f32 float_25_8041c400;
+extern const f32 float_33_8041c404;
+extern const f32 float_24p75_8041c408;
+extern const f32 float_neg258_8041c40c;
+extern const f32 float_0p5_8041c410;
+extern const f32 float_neg250_8041c414;
 
 // sdata2 float constants used by the disp function.
 extern const f32 float_neg300_8041c418;
 extern const f32 float_30_8041c41c;
 extern const f32 float_0_8041c420;
 
+// actionCommandDisp's .rodata: the five "_AcSklN" name strings are the compiler's zero-vector
+// literal pool anchor, so they must be .rodata (not the default small-data .sdata).
+__declspec(section ".rodata") const char str_802EFAD8[] = "_AcSkl1";
+__declspec(section ".rodata") const char str_802EFAE0[] = "_AcSkl2";
+__declspec(section ".rodata") const char str_802EFAE8[] = "_AcSkl3";
+__declspec(section ".rodata") const char str_802EFAF0[] = "_AcSkl4";
+__declspec(section ".rodata") const char str_802EFAF8[] = "_AcSkl5";
+
 // sdata table of per-difficulty hit windows, indexed by BattleActionCommandGetDifficulty.
 s32 ac_stickkeepleft_ok_frame[7] = {0x50, 0x46, 0x3C, 0x28, 0x14, 0x0A, 0x05};
 
-// rodata sound-effect names, passed to psndSFXOn (0x802EFBA8/0x802EFBB4 in the original).
-const char str_802EFBA8[] = "SFX_AC_PI1";
-const char str_802EFBB4[] = "SFX_AC_PONE1";
+// The two sound-effect names are written as string literals in battleAcMain rather than as named
+// globals: the literals land in .rodata after the int->float double (the original's order), while a
+// named object would be emitted before it and shift the double away from its 0xC8 slot.
 
 // Local to this file (.fn actionCommandDisp, local in ac_stick_keep_left.s).
 // The original's caller passes a third argument in r3 even though the body
@@ -35,8 +59,6 @@ typedef struct StickKeepLeftWork {
 } StickKeepLeftWork;
 
 // optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too), i.e. built
-// with -O4,s; without this pragma MWCC emits separate stw/lwz for r23-r31.
-#pragma optimize_for_size on
 // 100% via three match-only shapes (all under MUST_MATCH below/inside):
 //  - an array for the two SFX names makes MWCC materialise each address straight into its callee-saved
 //    register (`addi r31/r30, rX, @l`); two separate pointer locals give `addi rX, rX, @l` + `mr`;
@@ -75,8 +97,8 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
         }
     }
 
-    STICK_PI_NAME = str_802EFBA8;
-    STICK_PONE_NAME = str_802EFBB4;
+    STICK_PI_NAME = "SFX_AC_PI1";
+    STICK_PONE_NAME = "SFX_AC_PONE1";
 
     for (;;) {
         stateChanged = 0;
@@ -273,14 +295,11 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
 
 #undef STICK_PI_NAME
 #undef STICK_PONE_NAME
-#pragma optimize_for_size reset
 s32 battleAcResult_StickKeepLeft(BattleWork* work) {
     return work->actionCommands.result;
 }
 
 // optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too), i.e. built
-// with -O4,s; without this pragma MWCC emits separate stw/lwz for r30/r31.
-#pragma optimize_for_size on
 void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
     BattleActions* ac = &((BattleWork*)param)->actionCommands;
     StickKeepLeftWork* dec = (StickKeepLeftWork*)&ac->field_0x2BC[0];
@@ -330,7 +349,153 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
         break;
     }
 }
-#pragma optimize_for_size reset
 void battleAcDelete_StickKeepLeft(BattleWork* work) {
     work->actionCommands.mAcState = 0x3ED;
 }
+
+// The original emits this last (the asm lists it first, and game code is compiled with
+// -inline auto,deferred, which emits functions in reverse source order).
+#ifdef MUST_MATCH
+// match-only: going through an inline keeps the named 25.0f in its own FPR (f31), where the plain
+// `yy = float_25 + y` reuses y's register (f30) and the whole loop body shifts one FPR down.
+static inline f32 stickLeftAdd25(f32 v) { return float_25_8041c400 + v; }
+#endif
+
+// NONMATCHING (98.96%): every draw and offset matches; MWCC colours the compiler pool base in r31
+// and `work` in r30 (original: pool r30, work r31), so ~55 loads differ in that register only; and the
+// variable icon id `i + 0x92` is sign-extended (`extsh`) here where the original zero-extends (`clrlwi`).
+static void actionCommandDisp(f32 x, f32 y, s32 type) {
+    BattleWork* work = _battleWorkPointer;
+    s32 count;
+    s32 idx;
+    s32 i;
+    s32 n;
+    f32 yy;
+    f32 step;
+
+    (void)type;
+    camGetPtr(CAMERA_2D);
+
+    count = *(s32*)&work->actionCommands.field_34[4];
+    idx = ((StickKeepLeftWork*)((u8*)work + 0x1F4C))->field_0x04 - 1;
+
+    switch (work->actionCommands.mAcState) {
+    case 0:
+    case 0x63:
+    case 0x64: {
+        Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+        v.x = float_neg200_8041c3e8 + x;
+        v.y = float_70_8041c3ec + y;
+        iconDispGx(&v, 0x10, 0x79, float_1_8041c3f0);
+        break;
+    }
+    case 0x3E8:
+        if (gp->retraceCount & 8) {
+            Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(&v, 0x10, 0x78, float_1_8041c3f0);
+        }
+        else {
+            Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(&v, 0x10, 0x79, float_1_8041c3f0);
+        }
+        break;
+    default:
+        if (idx < count) {
+            Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(&v, 0x10, 0x78, float_1_8041c3f0);
+        }
+        else {
+            Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+            v.x = float_neg200_8041c3e8 + x;
+            v.y = float_70_8041c3ec + y;
+            iconDispGx(&v, 0x10, 0x79, float_1_8041c3f0);
+        }
+        break;
+    }
+
+    n = 10;
+    if (count >= 4) {
+        n = count * 2 + 3;
+        if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+            n += 2;
+        }
+    }
+
+    step = float_16_8041c3f4;
+    if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+        step = float_12_8041c3f8;
+    }
+
+    {
+        Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+        v.x = float_neg288_8041c3fc + x;
+#ifdef MUST_MATCH
+        v.y = yy = stickLeftAdd25(y);
+#else
+        v.y = yy = float_25_8041c400 + y;
+#endif
+        iconDispGx(&v, 0x10, 0x8F, float_1_8041c3f0);
+    }
+
+    for (i = 1; i < n; i++) {
+        Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+        v.x = x + (step * i + float_neg288_8041c3fc);
+        v.y = yy;
+        iconDispGx(&v, 0x10, 0x8E, float_1_8041c3f0);
+    }
+
+    {
+        Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+        v.x = x + (step * i + float_neg288_8041c3fc);
+        v.y = yy;
+        iconDispGx(&v, 0x10, 0x90, float_1_8041c3f0);
+    }
+
+    step = float_33_8041c404;
+    if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+        step = float_24p75_8041c408;
+    }
+
+    for (i = 0; i < count - 1; i++) {
+        if (i < idx) {
+            if (i < 3) {
+                Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+                v.x = x + (step * i + float_neg258_8041c40c);
+                v.y = yy;
+                iconDispGx(&v, 0x10, i + 0x92, float_1_8041c3f0);
+            }
+            else {
+                Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+                v.x = x + (step * i + float_neg258_8041c40c);
+                v.y = yy;
+                iconDispGx(&v, 0x10, 0x94, float_1_8041c3f0);
+            }
+        }
+        else {
+            Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+            v.x = x + (step * i + float_neg258_8041c40c);
+            v.y = yy;
+            iconDispGx(&v, 0x10, 0x91, float_0p5_8041c410);
+        }
+    }
+
+    if (idx < count) {
+        Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+        v.x = x + (step * (count - 1) + float_neg250_8041c414);
+        v.y = yy;
+        iconDispGx(&v, 0x10, 0x91, float_1_8041c3f0);
+    }
+    else {
+        Vec v = ((Vec){0.0f, 0.0f, 0.0f});
+        v.x = x + (step * (count - 1) + float_neg250_8041c414);
+        v.y = yy;
+        iconDispGx(&v, 0x10, 0x95, float_1_8041c3f0);
+    }
+}
+

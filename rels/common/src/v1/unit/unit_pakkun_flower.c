@@ -593,25 +593,17 @@ static USER_FUNC(shadow_scale_memory) {
 }
 
 // `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
-// double and rematerialises the 0.0f load, so the original fp register allocation and
-// store order are lost; off keeps both as separate .rodata loads.
+// double and rematerialises the 0.0f load, so `shadow_scale_return` loses the original
+// fp register allocation and store order; off keeps both as separate .rodata loads.
 #pragma opt_propagation off
-// NONMATCHING (86.75%): the intplGetValue argument setup schedules differently. Target:
-// `lis r3, zero@ha` before `xoris`, then `stw r0, 0x8`, then `addi r6, double@l`,
-// `addi r4, zero@l`, `stw r5, 0xc`, `li r3`, `lfd f1, double`, `li r5`, `lfd f0, 0x8`,
-// `lfs f2, zero`; ours puts `stw r0, 0x8` before `xoris`, `lis r3` after it, and the
-// `addi`s/loads later. Same instructions and registers (work[0]=r5, double=r4/r6,
-// zero=r3/r4), only the schedule differs. No source form (inline args, start/end order,
-// f64 intermediates, s32 temps), pragma (opt_propagation on/off, opt_common_subs,
-// fp_contract, optimize_for_size) or compiler (2.4.2 through 2.4.7, 1.3/2.0/2.7/3.0a5)
-// changed it; the same mismatch is documented for ice_pakkun.c and mri_16.c.
-// NONMATCHING (86.75%): scheduling around the int-to-float conversion; the zero and int-to-double constants load in another order
+// intplGetValue's real prototype is (s32, s32, s32, f32, f32), which is ABI-identical to
+// this float-first form (r3, f1, f2, r4, r5). The cast makes MWCC materialise the pooled
+// constants and load the int arguments right-to-left, reproducing the retail bytes; the
+// natural argument order under #else is the same call (cf. teresa_intpl/bts_intpl).
 static USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
     s32 id;
-    f32 start;
-    f32 end;
 
     id = BattleTransID(event, evtGetValue(event, event->args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -619,9 +611,11 @@ static USER_FUNC(shadow_scale_small) {
     if (isFirstCall) {
         unit->work[1] = 0;
     }
-    start = (f32)unit->work[0];
-    end = 0.0f;
-    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+#ifdef MUST_MATCH
+    part->field_0x78 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(0, (f32)unit->work[0], 0.0f, unit->work[1], 15);
+#else
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, (f32)unit->work[0], 0.0f);
+#endif
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
     }

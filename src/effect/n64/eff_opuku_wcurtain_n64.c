@@ -8,18 +8,8 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
+#include <dolphin/os/OSFastCast.h>
 #include <stdlib.h>
-
-// Retail stores the transformed vertex through psq_st (GQR5, s16), which saturates to the s16 range.
-static inline s16 clampS16(f32 value) {
-	if (value > 32767.0f) {
-		return 32767;
-	}
-	if (value < -32768.0f) {
-		return -32768;
-	}
-	return (s16)value;
-}
 
 // .rodata
 const char str_802FB2A4[] = "OpukuWcurtainN64";
@@ -112,15 +102,18 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-// NONMATCHING (75.15%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
-// retail (the store saturates, which clampS16 reproduces); they need inline asm, so here they lower to
-// xoris/lfd/fsubs loads and compare/fctiwz/sth stores. That changes the transform loop body, the saved
-// FPRs and every local stack offset; tri2's u16 prototype also adds a clrlwi the retail call lacks.
+// Retail converts the vertex's packed s16 positions with the SDK's OSInitFastCast (GQR2-5) plus
+// immediate psq_l/psq_st through GQR5. MWCC 2.6's gecko_float_typecons pass is the only way to get
+// paired-single casts out of plain C, but it always uses GQR1 with indexed psq_lx/psq_st.
+// NONMATCHING (88.47%): casts are paired-single now, but this compiler emits them through GQR1
+// (indexed, high scratch) while retail uses OSInitFastCast's GQR2-5 + immediate GQR5 psq_l/psq_st
+// with lha; no available compiler/flag emits that form, so the loop body and 0xc layout shift remain.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
 	effOpukuWcurtainData* data = effect->userdata;
 	OpukuWcurtainVtx* vtx;
+	s32 i;
 	smartEntry* entry;
 	GXTexObj texObj;
 	Mtx transMtx;
@@ -128,7 +121,6 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	GXColor color;
 	Vec v;
 	f32 scale;
-	s32 i;
 	s32 j;
 	s32 texS;
 	s32 x;
@@ -188,18 +180,17 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 
-	{
-		OpukuWcurtainVtx* p = vtx;
-		for (j = 0; j < i * 2; j++, p++) {
-			v.x = p->x;
-			v.y = p->y;
-			v.z = p->z;
-			PSMTXMultVec(transMtx, &v, &v);
-			p->x = clampS16(v.x);
-			p->y = clampS16(v.y);
-			p->z = clampS16(v.z);
-		}
+	for (j = 0; j < i * 2; j++) {
+		v.x = vtx[j].x;
+		v.y = vtx[j].y;
+		v.z = vtx[j].z;
+		PSMTXMultVec(transMtx, &v, &v);
+		OSInitFastCast();
+		vtx[j].x = v.x;
+		vtx[j].y = v.y;
+		vtx[j].z = v.z;
 	}
+
 
 	DCFlushRange(vtx, 0x2A0);
 	GXInvalidateVtxCache();

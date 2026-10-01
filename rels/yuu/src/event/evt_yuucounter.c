@@ -71,9 +71,9 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.64%): `work` still lands in r31 (target r24); the case loop's base/digit/skip registers
-// and the GXColor copy's scheduling follow from that. Writing case 0/1 in place (`seconds %= ...`) and case
-// 2 with a separate `rem` coalesces them like the target (`time` is now r20).
+// NONMATCHING (96.72%): all instructions match but MWCC colours `work` r31 (target r24); the case-loop
+// registers, the GXColor copies' scheduling and the final loop's register reuse all follow from that.
+// Writing the loop counters as `for (i = 0, xoff = 0; ...)` fixed the loop-init order (96.65 -> 96.72).
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     s32 digits[4];
     s32 digit0, digit1, digit2;
@@ -164,8 +164,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         digits[2] = seconds % 10;
 
         skip0 = 1;
-        xoff0 = 0;
-        for (i0 = 0; i0 < 3; i0++) {
+        for (i0 = 0, xoff0 = 0; i0 < 3; i0++) {
             digit0 = digits[i0];
             if (digit0 != 0 || i0 == 2) {
                 skip0 = 0;
@@ -185,8 +184,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         digits[1] = seconds / 10;
         digits[2] = seconds % 10;
 
-        xoff1 = 0;
-        for (i1 = 0; i1 < 3; i1++) {
+        for (i1 = 0, xoff1 = 0; i1 < 3; i1++) {
             digit1 = digits[i1];
             PSMTXTrans(mtxTemp, xbase + (f32)xoff1 - (f32)((i1 == 0) << 4), 8.0f, 0.0f);
             PSMTXConcat(mtx, mtxTemp, mtxTemp);
@@ -212,8 +210,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         digits[3] = rem % 10;
 
         skip2 = 1;
-        xoff2 = 0;
-        for (i2 = 0; i2 < 4; i2++) {
+        for (i2 = 0, xoff2 = 0; i2 < 4; i2++) {
             digit2 = digits[i2];
             if (digit2 != 0 || i2 == 3) {
                 skip2 = 0;
@@ -240,8 +237,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     case 1:
         digits[0] = subsec / 100;
         digits[1] = subsec % 100 / 10;
-        xoff3 = 0;
-        for (i3 = 0; i3 < 2; i3++) {
+        for (i3 = 0, xoff3 = 0; i3 < 2; i3++) {
             PSMTXTrans(mtxTemp, 90.0f + xbase + (f32)xoff3, 8.0f, 0.0f);
             PSMTXScale(mtxScale, 0.5f, 0.5f, 0.5f);
             PSMTXConcat(mtxTemp, mtxScale, mtxTemp);

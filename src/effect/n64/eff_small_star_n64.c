@@ -3,6 +3,8 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "eff/eff_n64.h"
+#include "memory.h"
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -24,6 +26,14 @@ extern const f32 float_0_8041fcac;
 extern const f32 float_0p8_8041fcb0;
 extern const f32 float_0p6_8041fcb4;
 extern const f32 float_0p7_8041fcb8;
+extern const f32 float_neg1_8041fcbc;
+extern const f32 float_8_8041fcc0;
+extern const f32 float_100_8041fcc4;
+extern const f32 float_50_8041fcc8;
+extern const f32 float_20_8041fccc;
+extern const f32 float_0p5_8041fcd0;
+extern const f32 float_15_8041fcd4;
+extern const f32 float_deg2rad_8041fc80;
 
 // .sdata: byte-indexed color rotation table (36 bytes).
 static u8 color_rotation_data[36] = {
@@ -39,6 +49,208 @@ static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
     0x00000040, 0x00200000, 0x00FFFFF8, 0x00080000,
     0x00000020, 0x000000FF,
 };
+
+// Inlined MetroWerks sqrtf (same shape as eff_blow_n64.c / eff_sstar_n64.c).
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_NAN;
+            } else {
+                return FP_INFINITE;
+            }
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_SUBNORMAL;
+            } else {
+                return FP_ZERO;
+            }
+        default:
+            return FP_NORMAL;
+    }
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > float_0_8041fcac) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+
+// Each case builds its axis from a zero Vec literal and then writes the fields, so MWCC
+// emits one .rodata zero Vec per case (the original's rodata has four, one shared with Main).
+#pragma opt_common_subs off // original reloads float_0 in each sqrt block rather than CSEing it
+void* effSmallStarN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
+    static f32 kaiten;
+    EffectEntry* effect;
+    effSmallStarN64Data* data;
+    Vec axis;
+    Mtx mtx;
+    f32 mag;
+    f32 norm;
+    f32 px;
+    f32 py;
+    f32 pz;
+    s32 i;
+
+    effect = effEntry();
+    if (count == 0) {
+        return NULL;
+    }
+
+    mag = dirX * dirX + dirY * dirY + dirZ * dirZ;
+    if (mag == float_0_8041fcac) {
+        return NULL;
+    }
+    norm = float_neg1_8041fcbc / sqrtf(mag);
+    dirX *= norm;
+    dirY *= norm;
+    dirZ *= norm;
+
+    if (dirX != float_0_8041fcac) {
+        px = -dirY / dirX;
+        py = float_1_8041fc94;
+        pz = float_0_8041fcac;
+    } else if (dirY != float_0_8041fcac) {
+        px = float_1_8041fc94;
+        py = -dirX / dirY;
+        pz = float_0_8041fcac;
+    } else {
+        px = float_1_8041fc94;
+        py = float_0_8041fcac;
+        pz = -dirX / dirZ;
+    }
+
+    mag = px * px + py * py + pz * pz;
+    if (mag == float_0_8041fcac) {
+        return NULL;
+    }
+    norm = float_1_8041fc94 / sqrtf(mag);
+    px *= norm;
+    py *= norm;
+    pz *= norm;
+
+    dirX *= float_8_8041fcc0;
+    dirY *= float_8_8041fcc0;
+    dirZ *= float_8_8041fcc0;
+    px *= float_8_8041fcc0;
+    py *= float_8_8041fcc0;
+    pz *= float_8_8041fcc0;
+
+    effect->type = "SmallStarN64";
+    effect->count = count;
+    data = __memAlloc(HEAP_EFFECT, count * sizeof(effSmallStarN64Data));
+    effect->userdata = data;
+    effect->callback = effSmallStarMain;
+
+    for (i = 0; i < count; i++, data++) {
+        f32 angle = (float_6p2832_8041fc84 * camGetPtr(CAMERA_3D)->viewYaw) / float_360_8041fc88;
+        data->type = type;
+        data->x = x;
+        data->y = y;
+        data->z = z;
+        data->camera = CAMERA_3D;
+
+        switch (type) {
+        case 0:
+        case 1:
+        case 2: {
+            Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+            temp.x = dirX;
+            temp.y = dirY;
+            temp.z = dirZ;
+            axis = temp;
+            PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041fc80 * (float_360_8041fc88 * (f32)i / (f32)(count - 1)));
+            data->velX = dirX + mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz;
+            data->velY = dirY + mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz;
+            data->velZ = dirZ + mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz;
+            break;
+        }
+        case 3: {
+            Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+            f32 t;
+            temp.x = (f32)sin(angle);
+            temp.z = -(f32)cos(angle);
+            axis = temp;
+            t = count == 1 ? float_0_8041fcac : (float_100_8041fcc4 * (f32)i / (f32)(count - 1)) - float_50_8041fcc8;
+            PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041fc80 * t);
+            data->velX = mtx[0][0] * dirX + mtx[0][1] * dirY + mtx[0][2] * dirZ;
+            data->velY = mtx[1][0] * dirX + mtx[1][1] * dirY + mtx[1][2] * dirZ;
+            data->velZ = mtx[2][0] * dirX + mtx[2][1] * dirY + mtx[2][2] * dirZ;
+            break;
+        }
+        case 4: {
+            Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+            temp.x = (f32)sin(angle);
+            temp.z = -(f32)cos(angle);
+            axis = temp;
+            PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041fc80 * (float_360_8041fc88 * (f32)i / (f32)(count - 1)));
+            data->velX = mtx[0][0] * dirX + mtx[0][1] * dirY + mtx[0][2] * dirZ;
+            data->velY = mtx[1][0] * dirX + mtx[1][1] * dirY + mtx[1][2] * dirZ;
+            data->velZ = mtx[2][0] * dirX + mtx[2][1] * dirY + mtx[2][2] * dirZ;
+            break;
+        }
+        }
+
+        switch (type) {
+        case 0:
+            data->field_0x20 = float_0_8041fcac;
+            data->field_0x28 = 0x18;
+            break;
+        case 1:
+            data->field_0x20 = float_20_8041fccc;
+            data->field_0x28 = 0x18;
+            break;
+        case 2:
+            data->field_0x20 = float_20_8041fccc;
+            data->velX *= float_0p5_8041fcd0;
+            data->velY *= float_0p5_8041fcd0;
+            data->velZ *= float_0p5_8041fcd0;
+            data->field_0x28 = 0x28;
+            break;
+        case 3:
+        case 4:
+            data->field_0x20 = float_20_8041fccc;
+            data->field_0x28 = 0x18;
+            break;
+        }
+
+        data->field_0x1C = float_0_8041fcac;
+        data->field_0x2C = 0;
+        data->field_0x24 = 0xFF;
+    }
+
+    kaiten = kaiten + float_15_8041fcd4;
+    if (kaiten > float_360_8041fc88) {
+        kaiten = float_0_8041fcac;
+    }
+
+    return effect;
+}
+#pragma opt_common_subs reset
 
 // MWCC's default lifetime analysis coalesces the cosine accumulator into the square's
 // register (f2) instead of f5; opt_lifetimes off restores the original colouring. Reusing
@@ -229,3 +441,27 @@ void effSmallStarN64CamChg(EffectEntry* effect, s32 camId) {
         data++;
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_8041fc80 = 0.017453292f;
+const f32 float_6p2832_8041fc84 = 6.2831855f;
+const f32 float_360_8041fc88 = 360.0f;
+const f32 float_0p03705_8041fc8c = 0.03705f;
+const f32 float_0p4967_8041fc90 = 0.4967f;
+const f32 float_1_8041fc94 = 1.0f;
+const f32 float_3p1416_8041fc98 = 3.1415927f;
+const f32 float_1p5708_8041fc9c = 1.5707964f;
+const f32 float_4p7124_8041fca0 = 4.712389f;
+const f32 float_4_8041fca4 = 4.0f;
+const f32 float_0p94_8041fca8 = 0.94f;
+const f32 float_0_8041fcac = 0.0f;
+const f32 float_0p8_8041fcb0 = 0.8f;
+const f32 float_0p6_8041fcb4 = 0.6f;
+const f32 float_0p7_8041fcb8 = 0.7f;
+const f32 float_neg1_8041fcbc = -1.0f;
+const f32 float_8_8041fcc0 = 8.0f;
+const f32 float_100_8041fcc4 = 100.0f;
+const f32 float_50_8041fcc8 = 50.0f;
+const f32 float_20_8041fccc = 20.0f;
+const f32 float_0p5_8041fcd0 = 0.5f;
+const f32 float_15_8041fcd4 = 15.0f;

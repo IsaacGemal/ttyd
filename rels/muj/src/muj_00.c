@@ -583,7 +583,9 @@ void suifu_kyorokyoro_init(NanNpcEntry* entry) {
     entry->callback = suifu_kyorokyoro;
 }
 
-// NONMATCHING (94.81%): remaining r27/r28 int and f27/f28 float register swaps.
+// NONMATCHING (99.74%): `int delta` matches the FP side and using `isFirstCall` as the loop counter
+// (instead of `s32 i`) fixes the entry/args layout. The only diff left is the work/isFirstCall int
+// swap (original work r27/isFirstCall r29, ours the reverse).
 USER_FUNC(dai3_butai_main_func) {
     s32* args = event->args;
     f32 cur = (f32)evtGetValue(event, args[0]);
@@ -591,25 +593,28 @@ USER_FUNC(dai3_butai_main_func) {
     f32 centerX = (f32)evtGetValue(event, args[2]);
     f32 centerZ = (f32)evtGetValue(event, args[3]);
     f32 s;
-    s32 delta = (s32)(target - cur);
-    s32 i;
+    int delta = (s32)(target - cur);
+    NanNpcWork* work = nanNPCWork;
 
-    for (i = 0; i < 100; i++) {
-        NanNpcEntry* entry = &nanNPCWork->entries[i + 0xCD];
+    for (isFirstCall = 0; isFirstCall < 100; isFirstCall++) {
+        NanNpcEntry* entry = &work->entries[isFirstCall + 0xCD];
         f32 radius;
 
         entry->work[0] += delta;
         radius = (f32)entry->work[1];
-        cur = 3.141592f * (f32)entry->work[0] / 180.0f;
-        target = sin(cur);
-        s = cos(cur);
-        entry->position.x = radius * target + centerX;
+        target = 3.141592f * (f32)entry->work[0] / 180.0f;
+        cur = sin(target);
+        s = cos(target);
+        entry->position.x = radius * cur + centerX;
         entry->position.z = radius * s + centerZ;
     }
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.89%): remaining r27/r28 int and f24/f26 float register swaps.
+inline NanNpcEntry* inline_fn(NanNpcWork* arg0, s32 arg1, int arg2) {
+    return &arg0->entries[arg1 + arg2];
+}
+
 USER_FUNC(kaizoku_main_func) {
     s32* args = event->args;
     f32 v0 = (f32)evtGetValue(event, args[0]);
@@ -620,26 +625,27 @@ USER_FUNC(kaizoku_main_func) {
     s32 i;
     f32 s;
     f32 c;
+    NanNpcWork* work = nanNPCWork;
 
     for (i = 0; i < 95; i++) {
-        NanNpcEntry* entry = &nanNPCWork->entries[i + 10];
+        NanNpcEntry* entry = inline_fn(work, i, 10);
         entry->work[0] += delta;
-        v0 = (f32)entry->work[1];
+        s = (f32)entry->work[1];
         v1 = 3.141592f * (f32)entry->work[0] / 180.0f;
-        s = sin(v1);
+        v0 = sin(v1);
         c = cos(v1);
-        entry->position.x = v0 * s + v2;
-        entry->position.z = v0 * c + v3;
+        entry->position.x = s * v0 + v2;
+        entry->position.z = s * c + v3;
     }
     for (i = 0; i < 100; i++) {
-        NanNpcEntry* entry = &nanNPCWork->entries[i + 0x69];
+        NanNpcEntry* entry = inline_fn(work, i, 0x69);
         entry->work[0] += delta;
-        v0 = (f32)entry->work[1];
+        s = (f32)entry->work[1];
         v1 = 3.141592f * (f32)entry->work[0] / 180.0f;
-        s = sin(v1);
+        v0 = sin(v1);
         c = cos(v1);
-        entry->position.x = v0 * s + v2;
-        entry->position.z = v0 * c + v3;
+        entry->position.x = s * v0 + v2;
+        entry->position.z = s * c + v3;
     }
     return EVT_RETURN_DONE;
 }
@@ -686,20 +692,24 @@ USER_FUNC(mario_main_setup_func) {
 #define MARIO_MAIN_UPDATE(idx, obj)                                                              \
     op[idx].angle += delta;                                                                     \
     {                                                                                           \
-        f32 rad;                                                                                \
-        f32 s;                                                                                  \
-        f32 c;                                                                                  \
-        f32 x;                                                                                  \
-        cur = op[idx].dist;                                                                     \
-        rad = 3.141592f * op[idx].angle / 180.0f;                                               \
-        s = sin(rad);                                                                           \
-        x = cur * s + centerX;                                                                  \
-        (obj)->position.x = x;                                                                  \
-        c = cos(rad);                                                                           \
-        (obj)->position.z = cur * c + centerZ;                                                  \
+        f32 d = op[idx].dist;                                                               \
+        c = op[idx].angle;                                                                  \
+        rad = 3.141592f * c / 180.0f;                                                       \
+        s = sin(rad);                                                                       \
+        target = d * s + centerX;                                                           \
+        c = inline_fn2(rad);                                                                       \
+        (obj)->position.x = target;                                                         \
+        (obj)->position.z = d * c + centerZ;                                                \
     }
 
-// NONMATCHING (90.77%): saves 5 floats instead of 6 (the target register is not kept live).
+inline double inline_fn2(f32 arg0) {
+    return cos(arg0);
+}
+
+// Holds `op[idx].dist` in a block-local `f32 d`, captures `op[idx].angle` in `c` before the radians
+// conversion, and calls an inlined cos wrapper. Remaining: cur/target sit one register high and the
+// dist/rad pair is the other way round.
+// NONMATCHING (99.52%)
 USER_FUNC(mario_main_func) {
     s32* args = event->args;
     f32 cur = (f32)evtGetValue(event, args[0]);
@@ -716,6 +726,9 @@ USER_FUNC(mario_main_func) {
     NpcEntry* piton = evtNpcNameToPtr(event, "ピートン");
     NpcEntry* odoodo = evtNpcNameToPtr(event, "オドオド水夫");
     f32 delta = target - cur;
+    f32 rad;
+    f32 s;
+    f32 c;
 
     MARIO_MAIN_UPDATE(0, mario);
     MARIO_MAIN_UPDATE(1, party);
@@ -911,28 +924,25 @@ USER_FUNC(tobikakaru_end) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.07%): only the mr r3,r30 reload is scheduled one slot later than the original.
 USER_FUNC(ship_rotate) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]);
     f32 b = evtGetFloat(event, args[1]);
     f32 c = evtGetFloat(event, args[2]);
     f32 d = evtGetFloat(event, args[3]);
-    f32 angle = angleABf(a, -b, c, -d) - 90.0f;
-
-    evtSetFloat(event, args[4], angle);
+    f32 angle = angleABf(a, -b, c, -d);
+    evtSetFloat(event, args[4], angle - 90.0f);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (92.35%): the 90.0f/180.0f constant loads are picked in the opposite order.
 USER_FUNC(ship_rotate_rev) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]);
     f32 b = evtGetFloat(event, args[1]);
     f32 c = evtGetFloat(event, args[2]);
     f32 d = evtGetFloat(event, args[3]);
-
-    evtSetFloat(event, args[4], angleABf(a, -b, c, -d) - 90.0f + 180.0f);
+    f32 angle = angleABf(a, -b, c, -d);
+    evtSetFloat(event, args[4], angle - 90.0f + 180.0f);
     return EVT_RETURN_DONE;
 }
 
@@ -960,8 +970,12 @@ USER_FUNC(cam_test_init_func) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.54%): needs the extra args+1 int base (frame 0x60 vs 0x50) and the sin/cos swap.
+// Writing the addend of the second set as `rad = (radius * s) * 0.0f;` (a runtime zero) makes MWCC
+// emit the original `fnmsubs` instead of `fmuls`+`fneg`. Still differs: the original keeps a second
+// args+1 int base (frame 0x60 vs our 0x50), and s/rad land in f30/f29 instead of f29/f30.
+// NONMATCHING (95.47%)
 USER_FUNC(cam_test_func) {
+    s32* new_var;
     s32* args = event->args;
     f32 angle = evtGetFloat(event, args[2]);
     f32 radius = evtGetFloat(event, args[3]);
@@ -970,7 +984,9 @@ USER_FUNC(cam_test_func) {
     f32 c = cos(rad);
 
     evtSetValue(event, args[0], (s32)(radius * s + 70.0f));
-    evtSetValue(event, args[1], (s32)(0.0f - radius * c));
+    new_var = &args[1];
+    rad = (radius * s) * 0.0f;
+    evtSetValue(event, *new_var, (s32)(rad - (radius * c)));
     return EVT_RETURN_DONE;
 }
 

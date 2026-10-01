@@ -387,15 +387,19 @@ static inline GXColor noiseTevColor(u8 alpha) {
     return c;
 }
 
-// NONMATCHING (98.99%): the offset arithmetic and the zero-colour relocation now match; what
-// still differs is the callee-saved register allocation (target param/cam/data/i in r25/r30/r26/r28,
-// i/4/i%4 in r31/r29; ours r24/r31/r27/r28 and r30/r29) plus two first-loop schedule slots.
+// Lifting q,r,a,b to function scope and splitting `num = rand()%100; num += 100;` got param/data
+// onto the target's registers (98.99 -> 99.11); declaration-order searches (tools/perm_decls.py)
+// and source-shape variants did not close the rest.
+// NONMATCHING (99.11%): q/a and cam are swapped callee-saved registers (ours q/a r30 / cam r31,
+// target q/a r31 / cam r30) and so are b and num (ours b r27 / num r24, target b r24 / num r27);
+// the first-loop schedule slots follow from q's register. param/data/i/r/start/len match.
 void noiseDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     s32 i, j, k;
     u8 val;
     GXColor color;
     Mtx mtx;
+    s32 q, r, a, b;
     CameraEntry* cam;
     s32 num, len, start;
     u8* data;
@@ -405,18 +409,19 @@ void noiseDisp(CameraId cameraId, void* param) {
     entry = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_I8, GX_FALSE, 0), 3);
     data = (u8*)entry->address;
     for (i = 0; i < 0x40; i++) {
-        s32 q = i / 4;
-        s32 r = i % 4;
+        q = i / 4;
+        r = i % 4;
         for (j = 0; j < 0x40; j++) {
             s32 off = q * 256 + (j / 8) * 32;
             off += j % 8;
             off += r * 8;
             data[off] = (i & 1) ? 0xFF : 0;
         }
-        num = rand() % 100 + 100;
+        num = rand() % 100;
+        num += 100;
         {
-            s32 a = (i / 4) * 256;
-            s32 b = (i % 4) * 8;
+            a = (i / 4) * 256;
+            b = (i % 4) * 8;
             for (j = 0; j < num; j++) {
                 len = rand() % 4 + 2;
                 start = rand() % (0x41 - len);
@@ -1021,6 +1026,7 @@ void peach_capture(CameraId cameraId, void* param) {
     Mtx44 ortho;
     Mtx lookMtx;
     Mtx mtx;
+    s32 q, r, a, b;
     NpcEntry* npc1;
     NpcEntry* npc2;
     NpcEntry* npc;

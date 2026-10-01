@@ -1514,7 +1514,7 @@ static USER_FUNC(barriern_zanzou3) {
     return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 2);
 }
 
-// NONMATCHING (95.68%): typing zanzou_count s32 and declaring end before step fixed both compare and float register assignment; a (r30 vs r28) and the temp1/temp2 stack slots differ.
+// NONMATCHING (97.87%): reordering the locals fixed a (r28) and the f29/f30 split; the final block now reuses part. Temp1/temp2 pointer registers and a few literal-pool address registers still differ.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
     f32 temp2[5];
@@ -1526,11 +1526,11 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
     f32 s;
     f32 step;
     s32 num;
-    s32 a = 4;
     s32 i;
     s32 j;
-    u8 aEnd;
     u8 aStart;
+    u8 aEnd;
+    s32 a = 4;
 
     switch (mode) {
     case 0:
@@ -1584,8 +1584,9 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
         part->color.a = (u8)intplGetValue(0, zanzou_count[0], num, (f32)aStart, (f32)aEnd);
     }
     if (zanzou_count[0] >= num) {
-        BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 0.8f, 0.8f, 1.0f);
-        BtlUnit_GetPartsPtr(unit, 1)->color.a = 0xff;
+        part = BtlUnit_GetPartsPtr(unit, 1);
+        BtlUnit_SetPartsScale(part, 0.8f, 0.8f, 1.0f);
+        part->color.a = 0xff;
         for (i = 2; i <= 6; i++) {
             BtlUnit_GetPartsPtr(unit, i)->attributes |= 0x01000000;
         }
@@ -1629,7 +1630,7 @@ static USER_FUNC(barriern_satellite_zanzou2) {
                                          (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 1);
 }
 
-// NONMATCHING (89.62%): removing initAlpha and typing zanzou_count as s32 fixed the frame and signed compares; zanzou_count index arithmetic and remaining register allocation differ.
+// NONMATCHING (91.86%): same final-block part reuse as barriern_zanzou_sub, with `num` moved last in the locals so the allocation is closest.  unit still lands in r24 (retail r25) because retail keeps the 0x4330 int->float constant in r24, so every callee-saved local shifts; zanzou_count[index+1] is also recomputed instead of kept as a running byte offset.
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
                                          s32 index, s32 mode) {
     BattleUnitPart* part;
@@ -1638,15 +1639,15 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
     f32 x;
     f32 y;
     f32 z;
-    f32 step;
-    f32 s;
     f32 end;
-    s32 num;
-    s32 a = 4;
+    f32 s;
+    f32 step;
     s32 i;
     s32 j;
     u8 aStart;
     u8 aEnd;
+    s32 a = 4;
+    s32 num;
 
     switch (mode) {
     case 0:
@@ -1698,8 +1699,9 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         part->color.a = (u8)intplGetValue(0, zanzou_count[index + 1], num, (f32)aStart, (f32)aEnd);
     }
     if (zanzou_count[index + 1] >= num) {
-        BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 0.8f, 0.8f, 1.0f);
-        BtlUnit_GetPartsPtr(unit, 1)->color.a = 0xff;
+        part = BtlUnit_GetPartsPtr(unit, 1);
+        BtlUnit_SetPartsScale(part, 0.8f, 0.8f, 1.0f);
+        part->color.a = 0xff;
         for (i = 2; i <= 6; i++) {
             BtlUnit_GetPartsPtr(unit, i)->attributes |= 0x01000000;
         }
@@ -1759,20 +1761,20 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (86.72%): the table-dispatch code shape matches; MWCC register allocation / literal pooling differs.
+// NONMATCHING (86.81%): the table-dispatch code shape matches (all 20 spline addresses are hoisted).  Local declaration order is chosen to line up as many registers as possible; retail still maps splineTableOut2_2 onward to a different register/slot sequence, so the whole dispatch shifts.
 static USER_FUNC(barriernSatelliteToInside) {
     s32* args;
     s32 id;
     BattleUnit* unit;
     BarriernSatelliteTo* work;
-    BattleUnit* satellite;
-    f32 pos[3];
     f32 out[3];
+    f32 pos[3];
     f32 t;
-    s32 spline;
     s32 i;
+    s32 spline;
     u8 result;
     u8 updated;
+    BattleUnit* satellite;
 
     args = event->args;
     id = evtGetValue(event, args[0]);
@@ -1929,20 +1931,20 @@ static USER_FUNC(barriernSatelliteToInside) {
     return (updated == 1) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.38%): the search loop now matches the target's flag form; only register allocation differs.
+// NONMATCHING (89.48%): the search loop now matches the target's flag form.  Local declaration order is chosen to line up registers as far as possible; the remaining difference is MWCC's register allocation of the hoisted spline addresses.
 static USER_FUNC(barriernSatelliteToOutside) {
     s32* args;
     s32 id;
     s32 n;
-    BattleUnit* unit;
     BarriernSatelliteTo* work;
     BattleUnit* satellite;
-    f32 pos[3];
     f32 out[3];
+    f32 pos[3];
     f32 t;
     s32 i;
     u8 result;
     u8 updated;
+    BattleUnit* unit;
 
     args = event->args;
     id = evtGetValue(event, args[0]);
@@ -2224,26 +2226,40 @@ static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BtlUnit_GetPartsPtr(satellite, 1)->work[2] = (s32)spline;
 }
 
-// NONMATCHING (66.67%): retail keeps a base pointer plus a running byte offset and a result flag; our indexed loop recomputes the offset each iteration.
+// 100%: retail's second loop schedules the args+=2 before the second evtSetValue; the MUST_MATCH block reproduces that order.
 static USER_FUNC(barriern_wawawa_set_target) {
-    s32* args;
-    s32 xs[13];
+    s32 xs[12];
     s32 ys[10];
     s32 count;
-    s32 i;
+    s32* args;
+    s32 total;
     s32 n;
 
     args = event->args;
+    count = 0;
     _battleWorkPointer->field_428[0xab7] = 0;
     barriern_wawawa_get_target(&xs[0], &ys[0]);
-    for (count = 0; xs[count] != -1; count++) {
-        barriern_wawawa_get_next_target(&xs[count + 1], &ys[count + 1]);
+    while (1) {
+        if (xs[count] == -1) {
+            total = count;
+            break;
+        }
+        count++;
+        barriern_wawawa_get_next_target(&xs[count], &ys[count]);
     }
-    for (i = 0; i < 5; i++) {
-        n = irand(count);
+    for (count = 0; count < 5; count++) {
+        n = irand(total);
         evtSetValue(event, args[0], xs[n]);
+#ifdef MUST_MATCH
+        {
+            s32* a = args;
+            args += 2;
+            evtSetValue(event, a[1], ys[n]);
+        }
+#else
         evtSetValue(event, args[1], ys[n]);
         args += 2;
+#endif
     }
     return EVT_RETURN_DONE;
 }
@@ -2272,24 +2288,26 @@ static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
     }
 }
 
-// NONMATCHING (98.44%): declaring i before hasSat fixed the r23/r24 swap; the first BattleGetUnitPtr still uses r3 (not r5) for the global address, and the second loop's i/w/h land rotated.
+// NONMATCHING (99.82%): a local id for BattleTransID fixed the global-address load, and moving `data` after `hasSat` lines up the rest.  In the glass loop i/w/h still land in r25/r24/r23 instead of retail's r23/r24/r25; `data` shares i's register in both.
 static USER_FUNC(_check_satellite) {
     BattleUnit* unit;
     s32* args;
     BattleUnit* satellite;
+    s32 id;
     BattleUnitPart* part;
-    BarriernSatelliteToData* data;
     f32 x;
     f32 y;
     f32 z;
     s32 dx;
     s32 dy;
     s32 i;
-    s32 hasSat;
     s32 w;
+    s32 hasSat;
+    BarriernSatelliteToData* data;
     s32 h;
 
-    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
+    id = BattleTransID(event, -2);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
     args = event->args;
     hasSat = 0;
     if (unit == NULL) {

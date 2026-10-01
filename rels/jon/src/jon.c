@@ -2399,7 +2399,8 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
-// NONMATCHING (91.39%): callee-saved register allocation and the GXBegin vertex constant schedule differ.
+// NONMATCHING (98.16%): the callee-saved register rotation differs (row/cam/0x4330/gp land in r28/r29/r30/r31
+// vs the target's r31/r28/r29/r30): MWCC schedules row's `slwi` one slot before the `i%4` `add` (target: after).
 void raster_disp(CameraId camera, void* param) {
     s32 row;
     s32 col;
@@ -2425,11 +2426,13 @@ void raster_disp(CameraId camera, void* param) {
 
     for (i = 0; i < 0x40; i++) {
         s32 q = i / 4;
-        col = i % 4;
         row = q * 32;
+        col = i % 4;
         for (j = 0; j < 0x40; j++) {
-            s32 off = row + (j / 4) * 512 + (col + (j % 4) * 4) * 2;
-            image[off] = (s32)(amplitude * (f32)sin((f32)j + ((f32)gp->retraceCount * 0.25f + phase)) + 128.0f);
+            s32 off = row + (col + (j % 4) * 4) * 2 + (j / 4) * 512;
+            f32 k = 0.25f;
+            f32 v = (f32)sin((f32)j + ((f32)gp->retraceCount * k + phase));
+            image[off] = (s32)(amplitude * v + 128.0f);
             image[off + 1] = 0x80;
         }
     }
@@ -2485,18 +2488,36 @@ void raster_disp(CameraId camera, void* param) {
     GXSetCurrentMtx(GX_PNMTX0);
 
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+#ifdef MUST_MATCH
     {
+        // MUST_MATCH: these temporaries pin MWCC's FPR assignment and commutative-operand order;
+        // the #else branch is the natural form and does not match.
         f32 w = 608.0f;
         f32 h = 480.0f;
-        GXPosition3f32(-w / 2.0f, 240.0f, 0.0f);
+        f32 top = 240.0f;
+        f32 right = 304.0f;
+        f32 half = 0.5f;
+        GXPosition3f32(-w * half, top, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(right, top, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(right, -h * half, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-w * half, -h * half, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+    }
+#else
+    {
+        GXPosition3f32(-608.0f * 0.5f, 240.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
         GXPosition3f32(304.0f, 240.0f, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(304.0f, -h / 2.0f, 0.0f);
+        GXPosition3f32(304.0f, -480.0f * 0.5f, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(-w / 2.0f, -h / 2.0f, 0.0f);
+        GXPosition3f32(-608.0f * 0.5f, -480.0f * 0.5f, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
     }
+#endif
     GXSetNumIndStages(0);
     GXSetTevDirect(GX_TEVSTAGE0);
 }

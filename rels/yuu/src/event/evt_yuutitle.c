@@ -44,10 +44,15 @@ const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 // (`fmuls f30, f1, f0`, since MWCC keeps `x / 2.0f` as `x * 0.5` instead of forcing the constant into FRA),
 // which is where the extra 0.10% comes from.  The tail also hoists `lwz r3, wp->msg` one instruction early
 // (original: lfs 0x8, lfs 0xc, fsubs, lwz r3; ours: lfs 0x8, lwz r3, fsubs, lfs 0xc).  Tried:
-// every statement/temporary order, explicit/inline fade and lerp helpers, `opt_lifetimes`/`opt_propagation`/
-// `optimize_for_size`/`defer_codegen` pragmas, and the `/ 2.0f` shape on the blend; none changes the
-// factor/product allocation or the tail.  Same class as shadowdrv.c:cylinder.
-// NONMATCHING (95.75%): fade/first-lerp register allocation and FontDrawString tail scheduling differ.
+// every statement/temporary order, explicit/inline fade and lerp helpers, commuted/split/direct lerp and fade
+// forms, separate lerp temporaries, `t2`/`nt` indirections, named pool constants, `opt_lifetimes`/
+// `opt_propagation`/`opt_dead_code`/`opt_dead_assignments`/`opt_loop_invariants`/`opt_pointer_analysis`/
+// `opt_strength_reduction`/`_strict`/`opt_vectorize_loops`/`schedule`/`scheduling`/`peephole`/
+// `optimization_level`/`inline_bottom_up`/`pool_data`/`pool_strings`/`force_active`/`optimize_for_size`/
+// `defer_codegen` pragmas, and the `/ 2.0f` shape on the blend; none changes the factor/product allocation
+// or the tail.  A standalone compile of the fade expression always puts the FMA result in the addend
+// register; retail overwrites the multiplicand (0.8f).  Same class as shadowdrv.c:cylinder.
+// NONMATCHING (95.76%): fade/first-lerp register allocation and FontDrawString tail scheduling differ.
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     YuuTitleWork* wp = param;
     f32 scale = 2.0f;
