@@ -93,7 +93,7 @@ USER_FUNC(evt_win_item_select) {
         return EVT_RETURN_BLOCK;
     }
     field = unk_80237448(select);
-    winMgrSelectDelete((s32)select);
+    winMgrSelectDelete(select);
     marioKeyOn();
     evtSetValue(event, args[2], result);
     if (flag != 0) {
@@ -116,7 +116,7 @@ USER_FUNC(evt_win_other_select) {
     if (result == 0) {
         return EVT_RETURN_BLOCK;
     }
-    winMgrSelectDelete((s32)select);
+    winMgrSelectDelete(select);
     marioKeyOn();
     if (result == -1) {
         event->lwData[0] = 0;

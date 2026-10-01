@@ -610,9 +610,9 @@ s32 unk_80237448(WinMgrSelect* select) {
 }
 
 // NONMATCHING (82.06%): 2 missing, 1 extra, plus register differences.
-void winMgrSelectDelete(s32 select) {
-    __memFree(HEAP_DEFAULT, (void*)((WinMgrSelect*)select)->field_0x30);
-    __memFree(HEAP_DEFAULT, (void*)select);
+void winMgrSelectDelete(WinMgrSelect* select) {
+    __memFree(HEAP_DEFAULT, (void*)select->field_0x30);
+    __memFree(HEAP_DEFAULT, select);
 }
 
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
