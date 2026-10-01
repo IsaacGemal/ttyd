@@ -2020,9 +2020,9 @@ USER_FUNC(get_aud_num) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.4%): registers and frame now match; remaining diffs are intplGetValue
-// argument scheduling (we load interpFramesLeft/Total before mHomePosition, target after)
-// and the final 1.0f/0.65f constant address materialisation
+// NONMATCHING (94.29% MUST_MATCH / 90.40% natural): marking the loop's float reads volatile moves
+// the mHomePosition load ahead of the interpFramesLeft/Total loads; px/py/pz still load late and
+// the fourth call materialises both 1.0f/0.65f addresses where retail materialises only 1.0f.
 USER_FUNC(aud_suikomi) {
     s32* args = event->args;
     s32 transId = BattleTransID(event, evtGetValue(event, args[0]));
@@ -2090,10 +2090,17 @@ USER_FUNC(aud_suikomi) {
                 count++;
                 aud->flags |= 2;
             }
+#ifdef MUST_MATCH
+            aud->position.x = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, *(volatile f32*)&aud->mHomePosition.x, *(volatile f32*)&px);
+            aud->position.y = intplGetValue(2, aud->interpFramesLeft, aud->interpFramesTotal, *(volatile f32*)&aud->mHomePosition.y, *(volatile f32*)&py);
+            aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, *(volatile f32*)&aud->mHomePosition.z, *(volatile f32*)&pz);
+            v = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, 1.0f, 0.65f);
+#else
             aud->position.x = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.x, px);
             aud->position.y = intplGetValue(2, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.y, py);
             aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.z, pz);
             v = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, 1.0f, 0.65f);
+#endif
             *(f32*)(aud->field_0x54 + 0x10) = v;
             *(f32*)(aud->field_0x54 + 0xC) = v;
             break;
@@ -2102,8 +2109,9 @@ USER_FUNC(aud_suikomi) {
     return (count < 20) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.42%): the screamId load and the unk_aji_bss00000164 store address are
-// scheduled in the opposite order (target folds stb @l(r4), ours does lis+addi+stb)
+// NONMATCHING (96.07% MUST_MATCH / 90.43% natural): the assignment-in-call makes the store
+// precede the call as retail does; the bss address stays addi+stb where retail folds stb @l,
+// and screamId loads direct where retail materialises its base (a 3-insn isel swap).
 USER_FUNC(unk_aji_00007668) {
     s32 timer;
     f32 v;
@@ -2116,8 +2124,12 @@ USER_FUNC(unk_aji_00007668) {
     timer = --unk_aji_bss00000168[0];
     v = intplGetValue(0, 120 - timer, 120, unk_aji_bss00000165, 0.0f);
     vol = (u8)(s32)v;
+#ifdef MUST_MATCH
+    psndSFX_vol(screamId[0], unk_aji_bss00000164 = vol);
+#else
     unk_aji_bss00000164 = vol;
     psndSFX_vol(screamId[0], vol);
+#endif
     if (unk_aji_bss00000168[0] <= 0) {
         return EVT_RETURN_DONE;
     }

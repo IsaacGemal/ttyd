@@ -575,9 +575,9 @@ USER_FUNC(kpa_muteki_check) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (86.21%): iconDispGx's iconId is really u16 (icondrv.h says s16) and
-// pouchGetKpaCoin's header says u8, but the original zero-extends neither, so both calls go
-// through a cast under MUST_MATCH; the rest is register allocation
+// NONMATCHING (93.73%): iconDispGx's iconId is really u16 (icondrv.h says s16) and pouchGetKpaCoin's
+// header says u8; both go through a MUST_MATCH cast. Still differs: the loop-invariant bases of
+// float_1/numeric_id/digits land in a different r27-r30 permutation; the first call schedules gp/float_1 differently.
 void kpa_status_disp(CameraId cameraId, void* param) {
     Vec pos;
     s32 value;
@@ -587,18 +587,26 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     pos.x = -210.0f;
     pos.y = 160.0f;
 #ifdef MUST_MATCH
-    ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, (u32)gp->language != 0 ? 0x210 : 0x206, 1.0f);
+    {
+        u16 iconId;
+        if ((u32)gp->language != 0) {
+            iconId = 0x210;
+        } else {
+            iconId = 0x206;
+        }
+        ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, iconId, 1.0f);
+    }
 #else
     iconDispGx(&pos, 0x10, (u32)gp->language == 0 ? 0x206 : 0x210, 1.0f);
 #endif
     pos.x = 50.0f;
+    pos.y = 160.0f;
     iconDispGx(&pos, 0x10, 0x208, 1.0f);
     pos.x = 220.0f;
+    pos.y = 160.0f;
     iconDispGx(&pos, 0x10, 0x207, 1.0f);
 
     value = pouchGetKpaScore();
-    pos.x = -250.0f;
-    pos.y = 130.0f;
     digits[0] = value / 100000;
     value %= 100000;
     digits[1] = value / 10000;
@@ -608,8 +616,9 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     digits[3] = value / 100;
     value %= 100;
     digits[4] = value / 10;
-    value %= 10;
-    digits[5] = value;
+    digits[5] = value % 10;
+    pos.x = -250.0f;
+    pos.y = 130.0f;
     for (i = 0; i < 6; i++) {
 #ifdef MUST_MATCH
         ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, numeric_id[digits[i]], 1.0f);
@@ -669,8 +678,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     digits[0] = value / 100;
     value %= 100;
     digits[1] = value / 10;
-    value %= 10;
-    digits[2] = value;
+    digits[2] = value % 10;
     for (i = 0; i < 3; i++) {
 #ifdef MUST_MATCH
         ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, numeric_id[digits[i]], 1.0f);

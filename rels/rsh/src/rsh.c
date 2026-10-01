@@ -1165,9 +1165,13 @@ USER_FUNC(img_wait) {
     return EVT_RETURN_YIELD;
 }
 
-// NONMATCHING (84.1%): loop/branch and coordinate math now match (width=r21/height=r22/halfW=r19/halfH=r20:
-// compute `(x1-x0)/2` first, then width/height, and declare `s32 halfHeight, halfWidth;`). Left: obj/flag temp
-// r6/r5 (original r5/r6); swapped float rodata; the int->float block schedule; @NNN doubles; texMtx symbol name.
+// Logic, coordinate math, GX calls and the .rodata pool all match. Two named temporaries carry the work:
+// `angle` (the half-FOV tangent) fixes the pool order and the int->float schedule; `half` (0.5f, shared by
+// the near multiply and the frustum scale) fixes the whole near block. What is left is register allocation
+// and instruction selection only: the object pointer/flags land in r6/r5 (original r5/r6), one `fmuls`
+// reads constant-first (original variable-first), and ++stage/++texCoord/++texMap write a temp (r0/r3)
+// instead of updating r29/r27/r28 in place.
+// NONMATCHING (99.4%): register allocation / instruction selection only.
 void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     MapObject* obj;
     s32 stage;
@@ -1181,6 +1185,12 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     GXTexObj texObj;
     Mtx frustumMtx;
     f32 near;
+    f32 half;
+    f32 angle;
+    f32 top;
+    f32 bottom;
+    f32 left;
+    f32 right;
 
     obj = param->obj;
     stage = param->field_C;
@@ -1248,15 +1258,15 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     GXInitTexObj(&texObj, buf, (u16)halfWidth, (u16)halfHeight, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    near = (f32)gp->efbHeight * 0.5f /
-           (f32)tan(6.2831855f * (camGetPtr(CAMERA_3D)->fovY * 0.5f) / 360.0f);
-    C_MTXLightFrustum(frustumMtx,
-        (f32)(gp->efbHeight / 2 - y1),
-        (f32)(gp->efbHeight / 2 - y0),
-        (f32)(x0 - gp->fbWidth / 2),
-        (f32)(x1 - gp->fbWidth / 2),
-        near,
-        0.5f, 0.5f, 0.4f, 0.6f);
+    half = 0.5f;
+    angle = (f32)tan(6.2831855f * (camGetPtr(CAMERA_3D)->fovY * 0.5f) / 360.0f);
+    top = (f32)(gp->efbHeight / 2 - y1);
+    bottom = (f32)(gp->efbHeight / 2 - y0);
+    left = (f32)(x0 - gp->fbWidth / 2);
+    right = (f32)(x1 - gp->fbWidth / 2);
+    near = (f32)gp->efbHeight * half / angle;
+    C_MTXLightFrustum(frustumMtx, top, bottom, left, right, near,
+        half, half, 0.4f, 0.6f);
     PSMTXConcat(frustumMtx, *(Mtx*)((u8*)camGetCurPtr() + 0x11C), frustumMtx);
     PSMTXConcat(frustumMtx, *(Mtx*)param->field_4, frustumMtx);
 

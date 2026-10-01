@@ -4762,9 +4762,11 @@ static void pose_main(void) {
     }
 }
 
-// NONMATCHING (98.47%): instructions and stack use match; only the callee-saved colouring of the two
-// loop-invariant values differs (&gp: target r26, ours r31; 10000000: target r31, ours r26).  MWCC
-// hoists &gp before the constant here, the original the other way round.
+// The `prod` local and `#pragma opt_propagation off` are both needed: with propagation on MWCC folds
+// the product back into the subtraction and materialises &gp before the 10000000 constant, giving
+// gp=r31 / constant=r26 instead of the target's gp=r26 / constant=r31.  Keeping the product in its
+// own statement (not propagated) makes MWCC materialise the constant first, matching the target.
+#pragma opt_propagation off
 static void hand_init(void) {
     s32 i;
     ExtPose* pose;
@@ -4784,11 +4786,13 @@ static void hand_init(void) {
         elem->field_0x04 = 0;
         {
             OSTime t = (OSTime)irand(0x64);
-            elem->field_0x08 = gp->renderTime - t * (OSTime)10000000;
+            OSTime prod = t * (OSTime)10000000;
+            elem->field_0x08 = gp->renderTime - prod;
         }
         elem->field_0x00 = irand(1);
     }
 }
+#pragma opt_propagation reset
 
 void hand_draw(void) {
     extLoadRenderMode();
@@ -4799,45 +4803,11 @@ void hand_draw(void) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (99.69%): everything matches except the callee-saved colouring of the gp pointer and
-// hp (target gp=r22, hp=r26; ours gp=r26, hp=r22).  Naming the renderTime read as `now` and declaring
-// i before elem/pose (both semantically identical) give the target's colouring for every other web.
+// Matching: the original hand_main is `pose_main(); dispEntry(...)`; with -inline auto,deferred
+// MWCC inlines pose_main's loop here, producing the target's exact code (including the r22/r26
+// callee-saved colouring that an explicitly written-out loop could not reproduce).
 void hand_main(void) {
-    s32 i;
-    HandElem* elem;
-    ExtPose* pose;
-    pose = extGetPosePtr();
-    elem = HAND->elems;
-    i = 0;
-    for (i = 0; i < HAND->count; i++, pose++, elem++) {
-        HandPose* hp = &HAND->poses[elem->field_0x04];
-        s32 unitId;
-        OSTime now = gp->renderTime;
-        f32 f1 = (f32)OSTicksToMilliseconds((u64)(now - elem->field_0x08));
-        f1 = (f32)gp->framerate * f1 / 1000.0f / hp->field_0x18;
-        if (f1 >= 1.0f) {
-            elem->field_0x08 = now;
-            f1 -= 1.0f;
-        }
-        pose->field_0x10 = hp->field_0x1C + (s32)((hp->field_0x20 - 1) * f1);
-        unitId = evtGetValue(NULL, 0xFD050F8A);
-        if (unitId == -1) {
-            ((f32*)pose->matrix)[3] = elem->field_0x18;
-            ((f32*)pose->matrix)[7] = elem->field_0x1C;
-            ((f32*)pose->matrix)[11] = elem->field_0x20;
-        } else {
-            BattleUnit* unit;
-            f32 hz, hy, hx, z, y, x;
-            BattleGetUnitPtr(_battleWorkPointer, unitId);
-            unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
-            BtlUnit_GetPos(unit, &x, &y, &z);
-            unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
-            BtlUnit_GetHomePos(unit, &hx, &hy, &hz);
-            ((f32*)pose->matrix)[3] = elem->field_0x18 + x - hx;
-            ((f32*)pose->matrix)[7] = elem->field_0x1C + y - hy;
-            ((f32*)pose->matrix)[11] = elem->field_0x20 + z - hz;
-        }
-    }
+    pose_main();
     dispEntry(4, 0.0f, 1, (DispCallback)hand_draw, 0);
 }
 

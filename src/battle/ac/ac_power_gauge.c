@@ -2,6 +2,8 @@
 #include "battle/battle.h"
 #include "battle/battle_ac.h"
 #include "battle/battle_unit.h"
+#include "driver/camdrv.h"
+#include "driver/icondrv.h"
 #include "system.h"
 #include <string.h>
 
@@ -19,11 +21,42 @@ __declspec(section ".sdata2") s32 dat_80421588 = -1;
 const s32 dat_80421588 = -1;
 #endif
 extern const f32 float_100_8042158c;
+extern const f32 float_1_80421590;
+extern const f32 float_neg288_80421594;
+extern const f32 float_45_80421598;
+extern const f32 float_120_8042159c;
+extern const f32 float_neg200_804215a0;
+extern const f32 float_12_804215a4;
+extern const f32 float_18_804215a8;
+extern const f32 float_neg225_804215ac;
+extern const f32 float_80_804215b0;
+extern const f32 float_56_804215b4;
+extern const f32 float_28_804215b8;
 extern const f32 float_neg300_804215bc;
 extern const f32 float_30_804215c0;
 extern const f32 float_0_804215c4;
 extern const f32 float_101_804215c8;
 extern const f64 double_to_int_802fea30;
+
+// .rodata zero vectors used as icon positions by actionCommandDisp.
+extern const Vec vec3_802fe958;
+extern const Vec vec3_802fe964;
+extern const Vec vec3_802fe970;
+extern const Vec vec3_802fe97c;
+extern const Vec vec3_802fe988;
+extern const Vec vec3_802fe994;
+extern const Vec vec3_802fe9a0;
+extern const Vec vec3_802fe9ac;
+extern const Vec vec3_802fe9b8;
+extern const Vec vec3_802fe9c4;
+extern const Vec vec3_802fe9d0;
+extern const Vec vec3_802fe9dc;
+extern const Vec vec3_802fe9e8;
+extern const Vec vec3_802fe9f4;
+extern const Vec vec3_802fea00;
+extern const Vec vec3_802fea0c;
+extern const Vec vec3_802fea18;
+extern const Vec vec3_802fea24;
 
 // Runtime work area of the power gauge action command, at BattleWork+0x1F4C (inside
 // BattleActions.field_0x2BC). No header declares it yet.
@@ -305,10 +338,292 @@ void battleAcDelete_PowerGauge(BattleWork* work) {
     }
 }
 
+// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
+// returned by BattleACGetButtonIcon straight through (no `extsh`/`clrlwi`); a differently-typed
+// function pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_gauge_timing.
+#ifdef MUST_MATCH
+#define ICON_DISP(v, f, id, s) (((void (*)(Vec*, s16, s32, f32))iconDispGx)((v), (f), (id), (s)))
+#else
+#define ICON_DISP(v, f, id, s) iconDispGx((v), (f), (id), (s))
+#endif
+
+// The only remaining difference is the FPR colouring of the ratio clamp: the original loads
+// float_100 into f1, gaugePercent into f2 and float_1 into f0; MWCC assigns gaugePercent f0 and
+// float_1 f2. Every instruction is otherwise identical, and the float_100/float_1 symbols are still
+// referenced, so the data section is unchanged.
+// NONMATCHING (99.95%): ratio clamp's FPRs are f0/f2 swapped.
+static void actionCommandDisp(f32 x, f32 y) {
+    BattleWork* work = _battleWorkPointer;
+#ifdef MUST_MATCH
+    // Deriving disp before camGetPtr (and dec after it) keeps work=r31, disp=r24 and dec=r29 as the
+    // original; the BattleActions intermediate keeps them from folding into the BattleWork base.
+    BattleActions* ac = &work->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    PowerGaugeDecWork* dec;
+#else
+    BattleActions* ac = &work->actionCommands;
+    PowerGaugeDecWork* dec;
+    BattleACDispParams* disp = &ac->dispParams;
+#endif
+    s32 iconA;
+    s32 iconB;
+    s32 iconC;
+    s32 iconD;
+    f32 ratio;
+    // Copies of the parameters: using x/y directly lets their argument live ranges (f1/f2) merge
+    // with the body's float temporaries and costs the f30/f31 save (98.96%).
+    f32 px = x;
+    f32 py = y;
+
+    camGetPtr(CAMERA_2D);
+#ifdef MUST_MATCH
+    dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
+#else
+    dec = (PowerGaugeDecWork*)((u8*)work + 0x1f4c);
+#endif
+
+    ratio = float_100_8042158c;
+    ratio = dec->gaugePercent / ratio;
+    if (ratio > float_1_80421590) {
+        ratio = float_1_80421590;
+    }
+    disp->value = ratio;
+
+    if (*(s32*)&ac->field_34[0] & 2) {
+        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 1, 100, 100, 100, 0, ratio);
+    }
+    else {
+        BattleAcDrawGauge((s32)px, (s32)py, 0xb2, 2, *(s32*)&ac->field_34[0x14], 100, 100, 0, ratio);
+    }
+
+    if ((*(s32*)&ac->field_34[0] & 4) == 0) {
+        Vec pos = vec3_802fe958;
+        pos.x = float_neg288_80421594 + px +
+                (f32)(*(s32*)&ac->field_34[0x14] * 0xb0) / float_100_8042158c;
+        pos.y = float_45_80421598 + py;
+        ICON_DISP(&pos, 0x10, 0x96, float_1_80421590);
+    }
+    else {
+        s32 color;
+
+        if (dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
+            dec->gaugePercent <= float_100_8042158c) {
+            color = 0x95;
+        }
+        else {
+            color = 0x91;
+        }
+        if (*(s32*)&ac->field_34[0] & 8) {
+            Vec pos = vec3_802fe964;
+            pos.x = float_neg200_804215a0 + px + float_120_8042159c - float_12_804215a4;
+            pos.y = float_18_804215a8 + py;
+            ICON_DISP(&pos, 0x10, color, float_1_80421590);
+        }
+        else {
+            Vec pos = vec3_802fe970;
+            pos.x = float_neg200_804215a0 + px + float_120_8042159c;
+            pos.y = float_18_804215a8 + py;
+            ICON_DISP(&pos, 0x10, color, float_1_80421590);
+        }
+    }
+
+    switch (*(s32*)&ac->field_34[4]) {
+    case 0:
+        iconA = 0x7f;
+        iconB = 0x7e;
+        iconC = 0x81;
+        iconD = 0x80;
+        break;
+    case 1:
+        iconA = BattleACGetButtonIcon(0x100, 1);
+        iconB = BattleACGetButtonIcon(0x100, 0);
+        iconC = 0;
+        iconD = 0;
+        break;
+    case 2:
+        iconA = BattleACGetButtonIcon(0x100, 1);
+        iconB = BattleACGetButtonIcon(0x100, 0);
+        iconC = 0;
+        iconD = 0;
+        break;
+    case 3:
+        iconA = BattleACGetButtonIcon(0x20, 1);
+        iconB = BattleACGetButtonIcon(0x20, 0);
+        iconC = 0;
+        iconD = 0;
+        break;
+    }
+
+    switch (ac->mAcState) {
+    case 0x63:
+    case 0x64:
+    case 0x3eb:
+    case 0x3ec:
+    case 0x3ed:
+        if ((iconC & 0xffff) != 0) {
+            px = float_neg225_804215ac + px;
+            py = float_80_804215b0 + py;
+            {
+                Vec pos = vec3_802fe97c;
+                pos.x = px;
+                pos.y = py;
+                ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+            }
+            {
+                Vec pos = vec3_802fe988;
+                pos.x = float_56_804215b4 + px;
+                pos.y = py;
+                ICON_DISP(&pos, 0x10, iconD, float_1_80421590);
+            }
+        }
+        else {
+            Vec pos = vec3_802fe994;
+            pos.x = float_neg225_804215ac + px + float_28_804215b8;
+            pos.y = float_80_804215b0 + py;
+            ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+        }
+        break;
+    case 0x3e8:
+    case 0x3e9:
+        if (dec->flag2 != 0) {
+            if (dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
+                dec->gaugePercent <= float_100_8042158c) {
+                if ((iconC & 0xffff) != 0) {
+                    px = float_neg225_804215ac + px;
+                    py = float_80_804215b0 + py;
+                    {
+                        Vec pos = vec3_802fe9a0;
+                        pos.x = px;
+                        pos.y = py;
+                        ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+                    }
+                    {
+                        Vec pos = vec3_802fe9ac;
+                        pos.x = float_56_804215b4 + px;
+                        pos.y = py;
+                        ICON_DISP(&pos, 0x10, iconC, float_1_80421590);
+                    }
+                }
+                else {
+                    Vec pos = vec3_802fe9b8;
+                    pos.x = float_neg225_804215ac + px + float_28_804215b8;
+                    pos.y = float_80_804215b0 + py;
+                    ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+                }
+            }
+            else {
+                if ((iconC & 0xffff) != 0) {
+                    px = float_neg225_804215ac + px;
+                    py = float_80_804215b0 + py;
+                    {
+                        Vec pos = vec3_802fe9c4;
+                        pos.x = px;
+                        pos.y = py;
+                        ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                    }
+                    {
+                        Vec pos = vec3_802fe9d0;
+                        pos.x = float_56_804215b4 + px;
+                        pos.y = py;
+                        ICON_DISP(&pos, 0x10, iconD, float_1_80421590);
+                    }
+                }
+                else {
+                    Vec pos = vec3_802fe9dc;
+                    pos.x = float_neg225_804215ac + px + float_28_804215b8;
+                    pos.y = float_80_804215b0 + py;
+                    ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                }
+            }
+        }
+        else if ((dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
+                  dec->gaugePercent <= float_100_8042158c) ||
+                 ac->outputParams[0] == 0) {
+            if ((iconC & 0xffff) != 0) {
+                px = float_neg225_804215ac + px;
+                py = float_80_804215b0 + py;
+                {
+                    Vec pos = vec3_802fe9e8;
+                    pos.x = px;
+                    pos.y = py;
+                    ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                }
+                {
+                    Vec pos = vec3_802fe9f4;
+                    pos.x = float_56_804215b4 + px;
+                    pos.y = py;
+                    ICON_DISP(&pos, 0x10, iconD, float_1_80421590);
+                }
+            }
+            else {
+                Vec pos = vec3_802fea00;
+                pos.x = float_neg225_804215ac + px + float_28_804215b8;
+                pos.y = float_80_804215b0 + py;
+                ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+            }
+        }
+        else {
+            if ((iconC & 0xffff) != 0) {
+                px = float_neg225_804215ac + px;
+                py = float_80_804215b0 + py;
+                {
+                    Vec pos = vec3_802fea0c;
+                    pos.x = px;
+                    pos.y = py;
+                    ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+                }
+                {
+                    Vec pos = vec3_802fea18;
+                    pos.x = float_56_804215b4 + px;
+                    pos.y = py;
+                    ICON_DISP(&pos, 0x10, iconC, float_1_80421590);
+                }
+            }
+            else {
+                Vec pos = vec3_802fea24;
+                pos.x = float_neg225_804215ac + px + float_28_804215b8;
+                pos.y = float_80_804215b0 + py;
+                ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+            }
+        }
+        break;
+    }
+}
+
+// .rodata definitions of this unit, in the original's order.
+const Vec vec3_802fe958 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe964 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe970 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe97c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe988 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe994 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9a0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9ac = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9b8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9c4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9d0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9dc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9e8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fe9f4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea00 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea0c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea18 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea24 = {0.0f, 0.0f, 0.0f};
+
 // .sdata2 definitions of this unit, in the original's order.
 const f32 float_100_8042158c = 100.0f;
+const f32 float_1_80421590 = 1.0f;
+const f32 float_neg288_80421594 = -288.0f;
+const f32 float_45_80421598 = 45.0f;
+const f32 float_120_8042159c = 120.0f;
+const f32 float_neg200_804215a0 = -200.0f;
+const f32 float_12_804215a4 = 12.0f;
+const f32 float_18_804215a8 = 18.0f;
+const f32 float_neg225_804215ac = -225.0f;
+const f32 float_80_804215b0 = 80.0f;
+const f32 float_56_804215b4 = 56.0f;
+const f32 float_28_804215b8 = 28.0f;
 const f32 float_neg300_804215bc = -300.0f;
 const f32 float_30_804215c0 = 30.0f;
 const f32 float_0_804215c4 = 0.0f;
 const f32 float_101_804215c8 = 101.0f;
-const f64 double_to_int_802fea30 = 4503601774854144.0;

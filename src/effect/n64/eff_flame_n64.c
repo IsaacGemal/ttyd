@@ -261,17 +261,27 @@ void effFlameMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (54.52%): bulk of the difference is in the 24 inlined vertex transforms. Retail
+// NONMATCHING (55.02%): bulk of the difference is in the 24 inlined vertex transforms. Retail
 // converts each s16 position component with scalar paired-single loads/stores (psq_l/psq_st,
 // GQR5 type 7, preceded by an inlined OSInitFastCast GQR2-5 setup) and keeps the intermediate Vecs
 // in callee-saved f14-f31, which also grows the frame to 0x4c0 and places the 24 Vec slots at
 // 0x138-0x24c with the Mtxs at 0x278+. With the OSInitFastCast calls below this build reproduces
 // the GQR setup byte-for-byte, but (GC/2.6, -O4,p) still lowers the `f32 v = s16` casts to the
-// xoris/lfd/fsubs and fctiwz integer paths, so each component costs ~8 more instructions and the
+// xoris/lfd/fsubs and fctiwz integer paths, so each component's load costs ~5 more instructions and
+// its store ~1 more (359 extra instructions over the 1954-instruction original), and the
 // frame stays 0x2c0, shifting every local slot. The __psq_l/__psq_st names are runtime emulation
-// functions, not intrinsics, and no compiler version/flag here emits psq for the cast. The
-// GX/TEV setup, both matrix setups and the draw call sequence otherwise line up.
-// NONMATCHING (54.52%): 24 inlined vertex transforms differ (see the comment above).
+// functions, not intrinsics: every GC compiler here (1.0-3.0a5.2) and every Wii one (1.0-1.7)
+// lowers a scalar s16<->f32 cast to lha/xoris/lfd/fsubs (or fctiwz), and __vec2x32float__ only
+// yields qr0 paired ops (psq_lx/psq_stx, ps_merge00). The compiler has no fast-cast builtin,
+// pragma or flag (checked -help all and the binary's strings), so no source form emits the
+// original W=1 qr5 path. The GX/TEV setup, both matrix setups and the draw call sequence
+// otherwise line up, and the s16 data tables (stg_flame_v etc., base lbl_8039CDA8+0x40) confirm
+// the conversion is real. The TEV stage select now shares its body between type 0 and type 1
+// (`case 0: case 1:`), which is what retail does (its dispatch branches type 1 to the 4-stage
+// setup) and reproduces the original's `cmpwi 2/beq/bge/cmpwi 0/bge/b/b` chain; that recovered
+// 0.5%. The end-of-draw type test still picks the shorter branch polarity (`blt else` vs retail's
+// `bge true; b else`), a single-instruction block-ordering difference MWCC will not reproduce.
+// NONMATCHING (55.02%): 24 inlined vertex transforms differ (see the comment above).
 void effFlameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFlameVtx* flameTbl = (effFlameVtx*)lbl_8039CDA8;
@@ -290,7 +300,9 @@ void effFlameDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
 	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
 
-	if (type == 0) {
+	switch (type) {
+	case 0:
+	case 1:
 		GXSetNumTevStages(4);
 		GXSetTevOrder(0, 0, 0, 0xFF);
 		GXSetTevColorOp(0, 0, 0, 0, 1, 3);
@@ -316,8 +328,8 @@ void effFlameDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&texObj, 0);
 		effGetTexObjN64(0x30, &texObj);
 		GXLoadTexObj(&texObj, 1);
-	}
-	else if (type == 2) {
+		break;
+	case 2:
 		GXSetNumTevStages(5);
 		GXSetTevOrder(0, 0, 0, 0xFF);
 		GXSetTevColorOp(0, 0, 0, 0, 1, 3);
@@ -348,6 +360,7 @@ void effFlameDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&texObj, 0);
 		effGetTexObjN64(0x32, &texObj);
 		GXLoadTexObj(&texObj, 1);
+		break;
 	}
 
 	// first half of the vertices

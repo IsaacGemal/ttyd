@@ -371,7 +371,6 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// NONMATCHING (98.44%): full state machine matches structurally; register allocation and pool slots differ.
 void chorogun_ext_main(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit = chorogun_get_ptr();
@@ -431,9 +430,7 @@ void chorogun_ext_main(void) {
                 }
                 break;
             case 0xA:
-                if ((*pose->matrix)[1][3] > 0.0f) {
-                    entry->position.y += -0.5f;
-                } else {
+                if ((*pose->matrix)[1][3] <= 0.0f) {
                     f32 dx = entry->target.x - (*pose->matrix)[0][3];
                     f32 dz = entry->target.z - (*pose->matrix)[2][3];
                     f32 dist = (f32)sqrt(dx * dx + dz * dz);
@@ -457,6 +454,8 @@ void chorogun_ext_main(void) {
                         entry->position.z = entry->speed * (dz / dist);
                         (*pose->matrix)[1][3] = 0.0f;
                     }
+                } else {
+                    entry->position.y += -0.5f;
                 }
                 break;
             case 0x14:

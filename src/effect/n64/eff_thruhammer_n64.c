@@ -6,9 +6,8 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 
-extern const f32 float_deg2rad_8041ffe0;
 extern u32 unk_80423298;
 extern u32 unk_8042329c;
 extern u32 unk_804232a0;
@@ -16,9 +15,7 @@ extern u32 unk_804232a4;
 
 static void main_dl(EffectEntry* effect, Mtx matrix);
 
-const char str_802FB858[] = "ThruHammerN64";
 
-const f64 double_to_int_802fb850 = 4503601774854144.0;
 
 static u32 stg_thruhammer_v[0x118 / 4] = {
     0xFFDEFFFE, 0x001410AB, 0x0400FFFF, 0xFFFFFFCC, 0x00320000, 0x0F000800, 0xFFFFFF00,
@@ -50,7 +47,7 @@ EffectEntry* effThruHammerN64Entry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 		count = 1;
 		break;
 	}
-	effect->type = str_802FB858;
+	effect->type = "ThruHammerN64";
 	effect->count = count + 1;
 	data = __memAlloc(HEAP_EFFECT, (count + 1) * 0x58);
 	effect->userdata = data;
@@ -209,7 +206,7 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)stg_thruhammer_v);
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041ffe0 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, work);
 
@@ -270,3 +267,52 @@ void effThruHammerDisp(CameraId camId, void* param) {
 	GXSetCullMode(1);
 	main_dl(effect, work);
 }
+
+static void main_dl(EffectEntry* effect, Mtx matrix) {
+	EffThruHammerData* data = effect->userdata;
+	Mtx trans;
+	Mtx work;
+	Mtx rot;
+	s32 i;
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->field_0x4C < 0) {
+			continue;
+		}
+
+		PSMTXTrans(trans, data->x, data->y, data->z);
+		PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x34);
+		PSMTXConcat(trans, rot, trans);
+		PSMTXScale(work, 0.3f * data->field_0x1C, 0.3f * data->field_0x20, 0.3f * data->field_0x24);
+		PSMTXConcat(trans, work, trans);
+		PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x30);
+		PSMTXConcat(trans, rot, trans);
+		PSMTXConcat(matrix, trans, trans);
+		GXLoadPosMtxImm(trans, 0);
+		GXSetCurrentMtx(0);
+
+		PSMTXScale(work, 0.015873017f, 0.032258064f, 0.0f);
+		PSMTXTrans(trans, 0.0f, data->field_0x3C / 4.0f, 0.0f);
+		PSMTXConcat(work, trans, work);
+		GXLoadTexMtxImm(work, 0x1e, 1);
+
+		PSMTXScale(work, 0.12903225f, 0.12903225f, 0.0f);
+		PSMTXTrans(trans, 0.0f, data->field_0x44 / 4.0f, 0.0f);
+		PSMTXConcat(work, trans, work);
+		GXLoadTexMtxImm(work, 0x21, 1);
+
+		GXBegin(0x90, 0, 0x36);
+		tri2(0, 1, 2, 0, 2, 3, 4, 0);
+		tri2(2, 4, 5, 0, 1, 3, 2, 0);
+		tri2(4, 6, 5, 0, 5, 6, 7, 0);
+		tri2(5, 7, 8, 0, 0, 9, 1, 0);
+		tri2(0xa, 9, 0, 0, 0xb, 0xa, 0, 0);
+		tri2(0xb, 0xc, 0xa, 0, 0xd, 0xc, 0xb, 0);
+		tri2(8, 0xe, 0xf, 0, 7, 0xe, 8, 0);
+		tri2(8, 0xf, 0x10, 0, 0xf, 0x11, 0x10, 0);
+		tri2(0x10, 0x11, 0x12, 0, 0x10, 0x12, 0x13, 0);
+	}
+}
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

@@ -221,8 +221,11 @@ EVT_BEGIN(evt_poster_15)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.28%): in the else branch the two `subi` (y0 from 0xEE, x0 from 0xEC) and their
-// `extsh` are scheduled x0-first; the original does y0 first.
+// The original `envGlareFilter` prototype takes `s16` y0/x0/y1/x1, so the caller sign-extends the four
+// values as part of the call and MWCC groups the four `extsh` after the four sign adjustments. The shared
+// `include/driver/envdrv.h` declares them `s32` (its `src/driver/envdrv.c` definition is `s32`), which
+// folds each conversion into its expression and schedules the x0 `subi` before y0's. The cast restores
+// the original call signature for this call only; the values fit in 16 bits, so the code is unchanged.
 static USER_FUNC(test_glare) {
     MapObject* obj = mapGetMapObj("sun");
 
@@ -241,8 +244,16 @@ static USER_FUNC(test_glare) {
         envGlareFilter(0, 0, 0, 0, 0);
     }
     else {
+#ifdef MUST_MATCH
+        // MUST_MATCH: the `s16` call-site signature is what fixes the schedule (see the comment above
+        // the function); passing the same values through the header's `s32` prototype loses it.
+        ((void (*)(s32, s16, s16, s16, s16))envGlareFilter)(
+            1, *(u16*)(obj->field_0xEC + 2) - 0x32, *(u16*)obj->field_0xEC - 0x32,
+            *(u16*)(obj->field_0xEC + 6) + 0x32, *(u16*)(obj->field_0xEC + 4) + 0x32);
+#else
         envGlareFilter(1, (s16)(*(u16*)(obj->field_0xEC + 2) - 0x32), (s16)(*(u16*)obj->field_0xEC - 0x32),
                        (s16)(*(u16*)(obj->field_0xEC + 6) + 0x32), (s16)(*(u16*)(obj->field_0xEC + 4) + 0x32));
+#endif
         envGlareFilterZ(1.148f);
     }
     return 0;

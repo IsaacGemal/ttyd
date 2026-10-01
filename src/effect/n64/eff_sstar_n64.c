@@ -11,6 +11,9 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
+#ifdef MUST_MATCH
+#include <dolphin/os/OSFastCast.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -116,9 +119,14 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-// NONMATCHING (74.94%): control flow/constants/GX state match, but MWCC emits lha/fctiwz for the
-// vertex s16<->f32 conversions where the original uses psq_l/psq_st (GQR2-5 + qr5), so it saves a
-// different register set (f25-f31 vs f31) and a different frame (0x1c0 vs 0x1a0).
+// Control flow, every constant and the GX/TEV state match, the four OSInitFastCast GQR2-5 blocks
+// match, and the triangle loop now schedules like retail. The remaining difference is the vertex
+// s16<->f32 conversion: MWCC 2.6 emits lha/fctiwz while retail uses psq_l/psq_st through GQR5
+// (s16), so retail keeps the psq results in f31/f30/f29/f28/f27/f26 (saved FPR set f25-f31 vs f31
+// here) and its frame is 0x1c0 vs 0x1a0, which shifts every local slot and register colour. No
+// source form, pragma or GC compiler version in this repo emits the psq path (see
+// eff_flame_n64.c / eff_balloon_n64.c / eff_opuku_wgun_n64.c).
+// NONMATCHING (81.78%): s16<->f32 conversion is lha/fctiwz, not retail's psq_l/psq_st.
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     u8* base = (u8*)lbl_803A5C90;
@@ -140,6 +148,7 @@ void effSstarDisp(CameraId camId, void* param) {
     s32 colG;
     s32 colB;
     s32 i;
+    s32 b;
     s32 idx;
 
     cam = camGetPtr(camId);
@@ -241,18 +250,30 @@ void effSstarDisp(CameraId camId, void* param) {
         src = base + 0xC0;
         for (i = 0; i < 5; i++, vtx++, src += 0x1C) {
             memcpy(&vtx->x, src, 0xE);
+#ifdef MUST_MATCH
+            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the s16->f32 reads */
+#endif
             v.x = vtx->x;
             v.y = vtx->y;
             v.z = vtx->z;
             PSMTXMultVec(data->mtx[(idx - i) % 8], &v, &v);
+#ifdef MUST_MATCH
+            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the f32->s16 writes */
+#endif
             vtx->x = v.x;
             vtx->y = v.y;
             vtx->z = v.z;
             memcpy(&vtx->x2, src + 0xE, 0xE);
+#ifdef MUST_MATCH
+            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the s16->f32 reads */
+#endif
             v2.x = vtx->x2;
             v2.y = vtx->y2;
             v2.z = vtx->z2;
             PSMTXMultVec(data->mtx[(idx - i) % 8], &v2, &v2);
+#ifdef MUST_MATCH
+            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the f32->s16 writes */
+#endif
             vtx->x2 = v2.x;
             vtx->y2 = v2.y;
             vtx->z2 = v2.z;
@@ -261,9 +282,9 @@ void effSstarDisp(CameraId camId, void* param) {
         DCFlushRange(data->vtx, 0x8C);
         effSetVtxDescN64((effVtxArray*)data->vtx);
         GXLoadPosMtxImm(cam->view, 0);
-        for (i = 0; i < 4; i++) {
+        for (i = 0, b = 0; i < 4; i++, b += 2) {
             GXBegin(0x90, 0, 6);
-            tri2(i * 2, i * 2 + 1, i * 2 + 2, i * 2, i * 2 + 1, i * 2 + 3, i * 2 + 2, i * 2 + 1);
+            tri2(b, b + 1, b + 2, b, b + 1, b + 3, b + 2, b + 1);
         }
     }
 }
