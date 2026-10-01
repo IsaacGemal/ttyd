@@ -125,12 +125,12 @@ EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 	return entry;
 }
 
-// NONMATCHING (98.89%): logic matches; data/elem sit in r31 instead of r30, the deg2rad multiply and the
-// 1.0+rand/10 scale use a different FPR order, folded int->float magic is an @N.
+// The loop reuses `data` as the element pointer (the original colours both in r30) and the vapor scale is
+// inlined so MWCC keeps the 1.0f in f0 and the 10.0f in f4. The folded int->float magic still pools as an
+// anonymous @N rather than double_to_int_803006d0; that is a relocation-only difference (no score effect).
 void effIbukiMain(EffectEntry* effect) {
 	s32 wait;
 	effIbukiData* data;
-	effIbukiData* elem;
 	Vec dispPos;
 	Vec vaporPos;
 	Vec pos;
@@ -176,69 +176,96 @@ void effIbukiMain(EffectEntry* effect) {
 		vaporPos.y = float_30_80421f2c + (data->positionY + (f32)irand(100));
 		vaporPos.z = data->positionZ;
 		camera = camGetPtr(CAMERA_3D);
-		PSMTXRotRad(mtx, 'y', float_deg2rad_80421f10 * -camera->viewYaw);
+		{
+			f32 t = -camera->viewYaw;
+			t = float_deg2rad_80421f10 * t;
+			PSMTXRotRad(mtx, 'y', t);
+		}
 		PSMTXMultVec(mtx, &vaporPos, &vaporPos);
-		angle = (f32)irand(10);
-		effVaporN64Entry(2, 0x1e, vaporPos.x, vaporPos.y, vaporPos.z, float_1_80421f30 + angle / float_10_80421f34);
+		effVaporN64Entry(2, 0x1e, vaporPos.x, vaporPos.y, vaporPos.z, float_1_80421f30 + (f32)irand(10) / float_10_80421f34);
 	}
 
 	i = 1;
 	wait = 10;
-	elem = &data[1];
-	for (; i < effect->count; i++) {
-		if (elem->wait != 0) {
-			elem->wait--;
+	data = &data[1];
+	for (; i < effect->count; i++, data++) {
+		if (data->wait != 0) {
+			data->wait--;
 		} else {
-			elem->positionX += elem->velocityX;
-			elem->positionY += elem->velocityY;
-			elem->positionZ += elem->velocityZ;
-			elem->rotX += elem->rotVelX;
-			elem->rotY += elem->rotVelY;
-			elem->velocityX *= float_1p01_80421f38;
-			elem->velocityY *= float_1p01_80421f38;
-			elem->velocityZ *= float_1p01_80421f38;
-			elem->rotVelX *= float_1p01_80421f38;
-			elem->rotVelY *= float_1p01_80421f38;
-			elem->alpha += 5;
-			if (elem->alpha > 0xff) {
-				elem->alpha = 0xff;
+			data->positionX += data->velocityX;
+			data->positionY += data->velocityY;
+			data->positionZ += data->velocityZ;
+			data->rotX += data->rotVelX;
+			data->rotY += data->rotVelY;
+			data->velocityX *= float_1p01_80421f38;
+			data->velocityY *= float_1p01_80421f38;
+			data->velocityZ *= float_1p01_80421f38;
+			data->rotVelX *= float_1p01_80421f38;
+			data->rotVelY *= float_1p01_80421f38;
+			data->alpha += 5;
+			if (data->alpha > 0xff) {
+				data->alpha = 0xff;
 			}
-			if (elem->positionX > float_300_80421f3c) {
+			if (data->positionX > float_300_80421f3c) {
 				angle = (f32)(30 - irand(40));
-				elem->positionX = float_0_80421f08;
-				elem->positionY = (f32)irand(30);
-				elem->positionZ = float_0_80421f08;
-				angle = angle * float_6p2832_80421f40 / float_360_80421f44;
-				elem->velocityX = (f32)cos(angle);
-				elem->velocityY = (f32)sin(angle);
-				elem->velocityZ = float_0_80421f08;
-				elem->scale = float_1_80421f30;
-				elem->alpha = 0;
-				elem->wait = wait;
-				elem->rotX = float_0_80421f08;
-				elem->rotY = float_0_80421f08;
+				data->positionX = float_0_80421f08;
+				data->positionY = (f32)irand(30);
+				data->positionZ = float_0_80421f08;
+				angle = (angle = float_6p2832_80421f40 * angle, angle / float_360_80421f44);
+				data->velocityX = (f32)cos(angle);
+				data->velocityY = (f32)sin(angle);
+				data->velocityZ = float_0_80421f08;
+				data->scale = float_1_80421f30;
+				data->alpha = 0;
+				data->wait = wait;
+				data->rotX = float_0_80421f08;
+				data->rotY = float_0_80421f08;
 				if (irand(1000) < 500) {
-					elem->rotVelX = (f32)(irand(10) + 10);
-					elem->rotVelY = float_0_80421f08;
+					data->rotVelX = (f32)(irand(10) + 10);
+					data->rotVelY = float_0_80421f08;
 				} else {
-					elem->rotVelX = float_0_80421f08;
-					elem->rotVelY = (f32)(irand(10) + 10);
+					data->rotVelX = float_0_80421f08;
+					data->rotVelY = (f32)(irand(10) + 10);
 				}
 			}
 		}
 		wait += 10;
-		elem++;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&dispPos), 2, effIbukiDisp, effect);
 }
 
-// NONMATCHING (95.27%): whole body present; callee-saved register allocation differs (fewer regs, 0x120
-// frame vs 0x130), float constants land in a different FPR order, folded int->float magic is an @N.
+#ifdef MUST_MATCH
+// MUST_MATCH: building the GXColor in an inline (rather than assigning the table entry and then .a) puts the
+// colour in the same stack slot as the target.
+static inline GXColor effIbukiColor0(u8 a) {
+	GXColor c = dat_80421f00;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor effIbukiColor1(u8 a) {
+	GXColor c = dat_80421f04;
+	c.a = a;
+	return c;
+}
+#endif
+
+// Logic, call constants and frame size (0x130) match. The callee-saved GPR allocation of the two live
+// parameters is swapped: the original keeps effect (r4, live to the end) in r29 and cameraId (r3, last
+// used at the second camGetPtr) in r28, while MWCC gives effect r28 and cameraId r29 here. That cascades
+// into the display-list loop and final-loop registers and into the first GXColor's stack slot (0x10 vs
+// 0xc). The GX vertex block also CSEs the repeated float_0/float_2 pool loads into f0/f3 where the
+// original reloads them per vertex, and the final loop latch emits elem++/i++ where the original emits
+// i++/elem++.
+// NONMATCHING (96.81%): effect/cameraId callee-saved registers swapped, first GXColor slot 0xc vs 0x10,
+// GX vertex block CSEs float_0/float_2.
 void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effIbukiData* data = effect->userdata;
-	effIbukiData* elem;
 	CameraEntry* camera;
+	s32 alpha;
+	s32 alpha2;
+	effIbukiData* elem;
 	GXColor color;
 	GXColor color2;
 	GXTexObj tex;
@@ -247,8 +274,6 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	Mtx scale;
 	Mtx out;
 	s32 i;
-	s32 alpha;
-	s32 alpha2;
 	f32 tmp;
 	u8* base;
 
@@ -283,8 +308,12 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C0, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
 
+#ifdef MUST_MATCH
+	color = effIbukiColor0((alpha * alpha2) / 255);
+#else
 	color = dat_80421f00;
 	color.a = (alpha * alpha2) / 255;
+#endif
 	GXSetTevColor(GX_TEVREG0, color);
 
 	PSMTXTrans(mtx, data->texU0, data->texV0, float_0_80421f08);
@@ -293,8 +322,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 	PSMTXTrans(mtx, data->positionX, data->positionY, data->positionZ);
-	camera = camGetPtr(cameraId);
-	PSMTXRotRad(rot, 'y', float_deg2rad_80421f10 * -camera->viewYaw);
+	PSMTXRotRad(rot, 'y', float_deg2rad_80421f10 * -camGetPtr(cameraId)->viewYaw);
 	if (data->type != 0) {
 		PSMTXScale(scale, -data->scale, data->scale, data->scale);
 	} else {
@@ -362,8 +390,12 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 			PSMTXConcat(out, mtx, mtx);
 			GXLoadPosMtxImm(mtx, 0);
 			GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+			color2 = effIbukiColor1(alpha2);
+#else
 			color2 = dat_80421f04;
 			color2.a = alpha2;
+#endif
 			GXSetChanMatColor(GX_COLOR0A0, color2);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			GXPosition3f32(tmp * float_0p5_80421f18, float_8_80421f1c, float_0_80421f08);

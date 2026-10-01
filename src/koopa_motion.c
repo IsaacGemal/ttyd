@@ -438,7 +438,8 @@ void kpa_swim(void) {
 
 // dont_inline keeps kpaSwimMove out of kpa_swim (retail emits a real `bl kpaSwimMove`).
 #pragma dont_inline on
-// NONMATCHING (97.07%): only the folded double_to_int_802fe278 conversion magic differs.
+// opt_common_subs off keeps CSE from rotating the int->float magic with the zero (f1/f2); default scores 97.07%.
+#pragma opt_common_subs off
 void kpaSwimMove(void) {
     MarioWork* mario = marioGetPtr();
     f32 stick = (f32)(s8)mario->wStickDir1;
@@ -477,6 +478,7 @@ void kpaSwimMove(void) {
     }
     MW_F32(mario, 0x18C) = f31;
 }
+#pragma opt_common_subs reset
 #pragma dont_inline reset
 
 // The currSubMotionId dispatcher is a two-case switch in the original (the target emits `beq case0; b default`);
@@ -847,13 +849,14 @@ void kpa_jump(void) {
 }
 #pragma opt_common_subs reset
 
-// NONMATCHING (97.02%): the folded double_to_int_mask_802fe2e8 conversion and an extrwi-vs-srawi for `poseTime = MW_U16(0x2A0) >> 1`; the
-// stick-magnitude compare is unsigned here and signed (cmpwi) in the original (an s32 `angle` scores lower).
+// Matched. The `& 0xFFFF` (MUST_MATCH) forces the original's extrwi for `poseTime`; staging the
+// dash speed in a temp issues both table loads before the stores. The u16->f32 conversion still
+// prints as an anonymous @789@ rather than double_to_int_mask_802fe2e8; objdiff scores it 100%.
 void kpa_dash(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
     s32 flag;
-    u32 angle;
+    s32 angle;
 
     if (mario->trigFlags & 1) {
         mario->trigFlags &= ~1;
@@ -889,7 +892,11 @@ void kpa_dash(void) {
         if (MW_U16(mario, 0x2A0) > 0x50) {
             MW_U16(mario, 0x2A0) = 0;
         }
+#ifdef MUST_MATCH
+        mario->poseTime = (MW_U16(mario, 0x2A0) >> 1) & 0xFFFF; // mask forces extrwi like the original
+#else
         mario->poseTime = MW_U16(mario, 0x2A0) >> 1;
+#endif
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)MW_U16(mario, 0x28));
     }
     if (kpaGetBodyStatus() == 0) {
@@ -905,10 +912,12 @@ void kpa_dash(void) {
             mario->baseSpeed = kpaStickSpd(1);
         } else {
             s32 lvl;
+            f32 spd;
             m2 = marioGetPtr();
             lvl = kpaGetLevel();
+            spd = _dashSpdTbl[lvl];
             MW_S32(KPA(m2), 0xD0) = _rateTbl2[lvl];
-            mario->baseSpeed = _dashSpdTbl[lvl];
+            mario->baseSpeed = spd;
         }
     }
     if (kpaGetStageViewType() == 0) {
@@ -927,31 +936,33 @@ void kpa_dash(void) {
     if (kpaGetStageViewType() == 1) {
         mario->directionView = mario->controlStickAngle;
     }
-    angle = (u32)((s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1) +
-            (u32)((s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2);
+    angle = (s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1 +
+            (s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2;
     if (angle <= 0xBD1) {
         marioChgMot(1);
     }
 }
 
-// NONMATCHING (96.79%): the folded double_to_int_802fe278 conversion magic, and kpaGetLevel is called twice
-// where the original calls it once and indexes both tables with the result; the stick-magnitude compare is
-// unsigned here and signed (cmpwi) in the original.
+// Every instruction matches except the u16->f32 conversion's 2^52 pool constant, which
+// MWCC emits as its own anonymous .rodata entry at +0x110 where the original loads
+// double_to_int_mask_802fe2e8 at +0xd0; fixing the slot needs whole-file pooling. The
+// speed/rate locals make both table loads precede their stores.
+// NONMATCHING (99.99%): only the int->f32 magic's .rodata slot differs (+0x110 vs +0xd0).
 void kpa_walk(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
     s32 flag;
-    u32 angle;
+    s32 angle;
 
     if (mario->trigFlags & 1) {
         mario->trigFlags &= ~1;
         mario->flags &= ~0x000F0000;
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
-        if (KPA(mario)->flags & 0x01000000) {
-            kpaChgPose(str_802FE2FC, str_802FE2F0);
-        } else {
+        if (!(KPA(mario)->flags & 0x01000000)) {
             kpaChgPose(str_802FE228, str_802FE2F0);
+        } else {
+            kpaChgPose(str_802FE2FC, str_802FE2F0);
         }
         MW_U16(mario, 0x2A0) = 0;
         MW_U16(mario, 0x2A2) = 0;
@@ -984,7 +995,7 @@ void kpa_walk(void) {
         if (MW_U16(mario, 0x2A0) > 0x50) {
             MW_U16(mario, 0x2A0) = 0;
         }
-        mario->poseTime = MW_U16(mario, 0x2A0) >> 1;
+        mario->poseTime = (MW_U16(mario, 0x2A0) >> 1) & 0xFFFF;
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)MW_U16(mario, 0x28));
         if (kpaGetBodyStatus() == 0) {
             if (mario->multiTimer % 0x28 == 0) {
@@ -1006,9 +1017,15 @@ void kpa_walk(void) {
         if (kpaGetStageViewType() == 0) {
             mario->baseSpeed = kpaStickSpd(0);
         } else {
+            s32 level;
+            f32 speed;
+            s32 rate;
             m2 = marioGetPtr();
-            MW_S32(KPA(m2), 0xD0) = _rateTbl[kpaGetLevel()];
-            mario->baseSpeed = _walkSpdTbl[kpaGetLevel()];
+            level = kpaGetLevel();
+            speed = _walkSpdTbl[level];
+            rate = _rateTbl[level];
+            MW_S32(KPA(m2), 0xD0) = rate;
+            mario->baseSpeed = speed;
         }
     }
     if (kpaGetStageViewType() == 0) {
@@ -1027,8 +1044,8 @@ void kpa_walk(void) {
     if (kpaGetStageViewType() == 1) {
         mario->directionView = mario->controlStickAngle;
     }
-    angle = (u32)((s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1) +
-            (u32)((s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2);
+    angle = (s32)(s8)mario->wStickDir1 * (s32)(s8)mario->wStickDir1 +
+            (s32)(s8)mario->wStickDir2 * (s32)(s8)mario->wStickDir2;
     if (angle > 0xBD1) {
         marioChgMot(2);
     }
@@ -1095,7 +1112,11 @@ void kpa_stay(void) {
     }
 }
 
-// NONMATCHING (96.20%): the folded double_to_int_802fe278 conversion magic.
+// The folded int->float magic pools as double_to_int_802fe278 in the original; MWCC would
+// otherwise hold float_70 in a register across both clamps, so the second load vanished and
+// the conversion FPRs shifted. opt_common_subs off rematerialises it and restores the target
+// allocation (double=f2, const=f0, stack=f1).
+#pragma opt_common_subs off
 f32 kpaStickSpd(s32 arg) {
     MarioWork* mario = marioGetPtr();
     f32 stick = (f32)(s8)mario->wStickDir1;
@@ -1111,7 +1132,11 @@ f32 kpaStickSpd(s32 arg) {
     }
     f30 = MW_F32(mario, 0x2C4);
     if (stick == float_0_80420da0) {
-        f30 += f30 * ((*(void**)((u8*)mario + 0x1F0) != NULL) ? float_neg0p7_80420e58 : float_neg0p2_80420e54);
+        f32 decel = float_neg0p2_80420e54;
+        if (*(void**)((u8*)mario + 0x1F0) != NULL) {
+            decel = float_neg0p7_80420e58;
+        }
+        f30 += f30 * decel;
         if (__fabsf(f30) < float_0p01_80420e14) {
             f30 = float_0_80420da0;
         }
@@ -1150,6 +1175,7 @@ f32 kpaStickSpd(s32 arg) {
     }
     return mario->baseSpeed;
 }
+#pragma opt_common_subs reset
 
 s32 kpaHipAttackOk(void) {
     MarioWork* mario = marioGetPtr();

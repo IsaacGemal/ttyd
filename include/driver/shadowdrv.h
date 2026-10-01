@@ -71,3 +71,6 @@ void shadowFlagOn(s32 id, u16 flag);
 void cylinderShadowDraw(CameraId camId, void* param);
 void shadowCharShadowDisp_Projection(CameraId camId, void* param);
 void shadowSetCollision(s32 id, BOOL value);
+s32 shadowGetCharShadowProjection(void);
+void shadowDepthShadowDrawCountUp(void);
+void shadowProjShadowDrawCountUp(void);

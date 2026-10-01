@@ -3310,7 +3310,6 @@ void puniModeChangeFallCheck(void) {
     }
 }
 
-// NONMATCHING (97.34%): register allocation and scheduling differ.
 #pragma push
 #pragma dont_inline on
 // NONMATCHING (99.41%): chaining each store with the next loop's counter init
@@ -3882,11 +3881,15 @@ void puniModeMass(PuniData* punidat) {
     u8* target;
     s32 idx = *(s32*)(p + 0x1B4);
 
+#ifdef MUST_MATCH
     // Reloading 0x1B4 here (instead of using `idx`) makes MWCC materialise `*Punigp` with
     // `lis; addi; lwz` into r3 and put the `mulli idx*0x14` in r4, as the target does; with the
     // `idx` variable it folds the load to `lwz r8, Punigp@l(r3)`. The function already reads
     // this field as `*(s32*)(p + 0x1B4)`, hence the raw form. // PuniData 0x1B4
     target = (u8*)Punigp + 0x374 + *(s32*)(p + 0x1B4) * 0x14;
+#else
+    target = (u8*)Punigp + 0x374 + idx * 0x14;
+#endif
 
     if (idx == -1) {
         if (*(u16*)(p + 0xE) == 0x18)
@@ -4368,7 +4371,11 @@ void puniModeEscape(PuniData* punidat) {
     switch (punidat->field_0x114) {
     case 0:
         if (punidat->field_0x1A0 > 10.0f) {
+#ifdef MUST_MATCH
             *(u16*)&punidat->field_0xE = punidat->unkC;
+#else
+            punidat->field_0xE = punidat->unkC;
+#endif
             punidat->field_0x1DC = Punigp->field_0x360;
             punidat->unkC = 13;
             punidat->field_0x114 = 0;

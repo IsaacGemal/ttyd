@@ -49,13 +49,17 @@ extern const f32 float_1p75_8041cab4;
 extern const f32 float_neg0p08_8041cab8;
 extern const f32 float_neg3p9_8041cabc;
 
-// NONMATCHING (96.91%): the s32->f32 conversion pools an anonymous @NNN double
-// instead of double_to_int_802f34f0, and the callee-saved FPR assignment differs
-// (args land in f24-f27 instead of f28-f31).
+// 100%: initialises five smoke puffs. The original's callee-saved FPR band is
+// f19-f27 for the pooled constants and f28-f31 for the four arguments; MWCC only
+// colours it that way when the sin() result is held in a temp before the store
+// (see the MUST_MATCH block below).
 EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4) {
 	EffectEntry* entry = effEntry();
 	MugiKemuriWork* work;
 	f32 angle;
+#ifdef MUST_MATCH
+	f32 s;
+#endif
 	s32 i;
 
 	entry->type = str_802F34F8;
@@ -66,39 +70,50 @@ EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4) 
 	entry->callback = effMugiKemuriMain;
 	entry->flags |= 2;
 
-	for (i = 0; i < 5; i++) {
-		work[i].active = 1;
-		work[i].scale = float_0p3_8041cab0;
-		work[i].speed = float_0_8041ca74;
-		work[i].unk38 = float_0_8041ca74;
-		work[i].x = float1;
-		work[i].y = float2;
-		work[i].z = float3;
-		work[i].scaleX = float_0p7_8041ca94;
-		work[i].scaleY = float_0p7_8041ca94;
-		work[i].scaleZ = float_0p7_8041ca94;
-		work[i].alpha = 0xFF;
-		work[i].lifetime = 60;
-		work[i].rotX = float_0_8041ca74;
-		work[i].rotY = float4 + (f32)(i * 72);
-		work[i].rotZ = float_0_8041ca74;
-		work[i].time = float_1p75_8041cab4;
-		work[i].timeAdd = float_neg0p08_8041cab8;
-		work[i].timeVel = float_0_8041ca74;
-		work[i].timeVelAdd = float_0_8041ca74;
-		work[i].scaleSpeed = float_neg3p9_8041cabc;
-		angle = reviseAngle(work[i].rotY);
+	for (i = 0; i < 5; i++, work++) {
+		work->active = 1;
+		work->scale = float_0p3_8041cab0;
+		work->speed = float_0_8041ca74;
+		work->unk38 = float_0_8041ca74;
+		work->x = float1;
+		work->y = float2;
+		work->z = float3;
+		work->scaleX = float_0p7_8041ca94;
+		work->scaleY = float_0p7_8041ca94;
+		work->scaleZ = float_0p7_8041ca94;
+		work->alpha = 0xFF;
+		work->lifetime = 60;
+		work->rotX = float_0_8041ca74;
+		work->rotY = float4 + (f32)(i * 72);
+		work->rotZ = float_0_8041ca74;
+		work->time = float_1p75_8041cab4;
+		work->timeAdd = float_neg0p08_8041cab8;
+		work->timeVel = float_0_8041ca74;
+		work->timeVelAdd = float_0_8041ca74;
+		work->scaleSpeed = float_neg3p9_8041cabc;
+		angle = reviseAngle(work->rotY);
 		angle = float_6p2832_8041caa8 * angle / float_360_8041caac;
-		work[i].sinA = sin(angle);
-		work[i].cosA = cos(angle);
-		work[i].animPose = -1;
+#ifdef MUST_MATCH
+		// Match-only: holding the sin() result in a temp first gives the original's
+		// callee-saved FPR allocation (args f28-f31, constants f19-f27); without it
+		// MWCC rotates the whole band by four (args f24-f27). The natural form is
+		// under #else.
+		s = sin(angle);
+		work->sinA = s;
+#else
+		work->sinA = sin(angle);
+#endif
+		work->cosA = cos(angle);
+		work->animPose = -1;
 	}
 	return entry;
 }
 
-// NONMATCHING (96.78%): the s32->f32 conversions pool an anonymous @NNN double
-// instead of double_to_int_802f34f0, the ±10/±90 ternary branch layout is
-// inverted, and the GPR allocation differs (entry r29 vs r30, work r26/r30 vs r29).
+// The ±10/±90 ternaries must be written `float6 != 0 ? -N : N` (the branch takes the
+// negative case) and the loop must advance `work` itself (`i++, work++` with `work->`),
+// which keeps one web for the pointer; with `work[i]` the allocator splits it and swaps
+// the entry/work callee-saved registers. The int->float magic still pools as a local
+// @NNN@ rather than double_to_int_802f34f0; that symbol name does not affect the score.
 EffectEntry* effMugiKemuri2Entry(s32 int1, f32 float2, f32 float3, f32 float4, f32 float5, f32 float6) {
 	EffectEntry* entry = effEntry();
 	MugiKemuriWork* work;
@@ -113,34 +128,34 @@ EffectEntry* effMugiKemuri2Entry(s32 int1, f32 float2, f32 float3, f32 float4, f
 	entry->callback = effMugiKemuri2Main;
 	entry->flags |= 2;
 
-	for (i = 0; i < 5; i++) {
-		work[i].active = 1;
-		work[i].type = int1;
-		work[i].unk38 = float_0_8041ca74;
-		work[i].x = float2;
-		work[i].y = float3;
-		work[i].z = float4;
-		work[i].scaleX = float_0p7_8041ca94;
-		work[i].scaleY = float_0p7_8041ca94;
-		work[i].scaleZ = float_0p7_8041ca94;
-		work[i].alpha = 0xFF;
-		work[i].speed = float_1_8041ca8c;
-		work[i].scale = float_5p4_8041ca98;
-		work[i].scaleSpeed = (f32)((float6 == float_0_8041ca74) ? 10 : -10);
-		work[i].time = float_0p5_8041ca9c;
-		work[i].timeAdd = float_neg0p07_8041caa0;
-		work[i].timeVel = float_0p003_8041caa4;
-		work[i].timeVelAdd = float_0_8041ca74;
-		work[i].lifetime = 15;
-		work[i].rotY = float5;
-		work[i].rotX = float_0_8041ca74;
-		work[i].rotZ = float_0_8041ca74;
-		work[i].randOff = (f32)(((rand() % 100) >> 4) & 1);
-		angle = reviseAngle(float5 + (f32)((float6 == float_0_8041ca74) ? 90 : -90));
+	for (i = 0; i < 5; i++, work++) {
+		work->active = 1;
+		work->type = int1;
+		work->unk38 = float_0_8041ca74;
+		work->x = float2;
+		work->y = float3;
+		work->z = float4;
+		work->scaleX = float_0p7_8041ca94;
+		work->scaleY = float_0p7_8041ca94;
+		work->scaleZ = float_0p7_8041ca94;
+		work->alpha = 0xFF;
+		work->speed = float_1_8041ca8c;
+		work->scale = float_5p4_8041ca98;
+		work->scaleSpeed = (f32)((float6 != float_0_8041ca74) ? -10 : 10);
+		work->time = float_0p5_8041ca9c;
+		work->timeAdd = float_neg0p07_8041caa0;
+		work->timeVel = float_0p003_8041caa4;
+		work->timeVelAdd = float_0_8041ca74;
+		work->lifetime = 15;
+		work->rotY = float5;
+		work->rotX = float_0_8041ca74;
+		work->rotZ = float_0_8041ca74;
+		work->randOff = (f32)(((rand() % 100) >> 4) & 1);
+		angle = reviseAngle(float5 + (f32)((float6 != float_0_8041ca74) ? -90 : 90));
 		angle = float_6p2832_8041caa8 * angle / float_360_8041caac;
-		work[i].sinA = sin(angle);
-		work[i].cosA = cos(angle);
-		work[i].animPose = -1;
+		work->sinA = sin(angle);
+		work->cosA = cos(angle);
+		work->animPose = -1;
 	}
 	return entry;
 }

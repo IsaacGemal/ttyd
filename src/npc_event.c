@@ -501,7 +501,8 @@ USER_FUNC(limitSpd) {
 // for the pooled `.rodata` zero-Vec/string block and the two `.sdata2` constants. This function's own pool
 // entries have exactly the target's order and spacing, but the whole unit's rodata is 0x1D0 vs the target's
 // 0x748 (sdata2 shift 0x4C), so every reference resolves low (vec3s 0x528, strings 0x578). The missing bytes
-// are other functions' literals; not fixable from here.
+// are the target object's 0xD380 `.data` + 0x3D8 `.sdata` event-script tables (enemy_common_dead_event,
+// nokonoko_move_event, ...) that src/npc_event.c does not define yet; not fixable from this function.
 USER_FUNC(zakoEntryDokan) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     char mobName[32];

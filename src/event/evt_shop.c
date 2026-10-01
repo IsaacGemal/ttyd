@@ -504,9 +504,14 @@ USER_FUNC(chk_shop_point) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.56%): 2 instructions differ, 2 extra, plus register differences.
 USER_FUNC(add_shop_point) {
+#ifdef MUST_MATCH
+	// MUST_MATCH: holding the string base as an integer reproduces the original's base+offset
+	// addressing (addi r4, r27, off); as a const char* MWCC rematerializes the base per use.
+	u32 str = (u32)str_802ECD50;
+#else
 	const char* str = str_802ECD50;
+#endif
 	s32* args = event->args;
 	s32 v0 = evtGetValue(event, args[0]);
 	s32 v1 = evtGetValue(event, args[1]);
@@ -514,13 +519,25 @@ USER_FUNC(add_shop_point) {
 	s32 v3 = evtGetValue(event, args[3]);
 	PouchData* pouch = pouchGetPtr();
 
+#ifdef MUST_MATCH
+	if (strcmp(gp->currentMapName, (const char*)(str + 0x10)) == 0 && swGet(0xFA) && v1 < 900000) {
+#else
 	if (strcmp(gp->currentMapName, str + 0x10) == 0 && swGet(0xFA) && v1 < 900000) {
+#endif
 		v0 *= 2;
 	}
+#ifdef MUST_MATCH
+	if (strcmp(gp->currentMapName, (const char*)(str + 0x28)) == 0 && swGet(0xFB) && v2 < 900000) {
+#else
 	if (strcmp(gp->currentMapName, str + 0x28) == 0 && swGet(0xFB) && v2 < 900000) {
+#endif
 		v0 *= 2;
 	}
+#ifdef MUST_MATCH
+	if (strncmp(gp->currentMapName, (const char*)(str + 0x90), 6) == 0 && swGet(0xFC) && v3 < 900000) {
+#else
 	if (strncmp(gp->currentMapName, str + 0x90, 6) == 0 && swGet(0xFC) && v3 < 900000) {
+#endif
 		v0 *= 2;
 	}
 	pouch->mShopPoints += v0;

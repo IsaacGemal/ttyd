@@ -715,9 +715,8 @@ typedef struct SND_EMITTER {
   struct SND_EMITTER* prev;
   SND_ROOM* room;
 
-  SND_PARAMETER_INFO* paraInfo;
-
   u32 flags;
+
   SND_FVECTOR pos;
   SND_FVECTOR dir; // Speed in units/second
   f32 maxDis;
@@ -736,6 +735,7 @@ typedef struct SND_EMITTER {
   u16 VolLevelCnt; // Used during continous emitter allocation process
   f32 fade;        // Used to fade-in of continous emitters
 
+  SND_PARAMETER_INFO* paraInfo;
 } SND_EMITTER;
 
 #define SND_EMITTER_DEFAULTKEY 0xFF

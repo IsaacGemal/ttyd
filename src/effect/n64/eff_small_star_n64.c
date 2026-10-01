@@ -9,7 +9,7 @@
 #include <dolphin/mtx.h>
 
 // .sbss2: shared scratch GXColor, only its byte 0 is overwritten (see eff_magic2_n64.c).
-GXColor unk_80423260;
+extern GXColor unk_80423260;
 
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_6p2832_8041fc84;
@@ -416,8 +416,8 @@ void effSmallStarDisp(CameraId camId, void* param) {
         GXSetTevColor(GX_TEVREG0, color);
 
         PSMTXTrans(mtx1, data->x, data->y, data->z);
-        PSMTXRotRad(mtx2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
-        PSMTXRotRad(mtx3, 'z', data->field_0x1C * 0.017453292f);
+        PSMTXRotRad(mtx2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fc80);
+        PSMTXRotRad(mtx3, 'z', float_deg2rad_8041fc80 * data->field_0x1C);
         PSMTXConcat(mtx1, mtx2, mtx1);
         PSMTXConcat(mtx1, mtx3, mtx1);
         PSMTXConcat(cam->view, mtx1, mtx1);
@@ -465,3 +465,7 @@ const f32 float_50_8041fcc8 = 50.0f;
 const f32 float_20_8041fccc = 20.0f;
 const f32 float_0p5_8041fcd0 = 0.5f;
 const f32 float_15_8041fcd4 = 15.0f;
+
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423260;

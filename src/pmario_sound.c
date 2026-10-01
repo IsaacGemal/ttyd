@@ -2,6 +2,7 @@
 #include "matching.h"
 #include "sound.h"
 #include "system.h"
+#include "manager/evtmgr_cmd.h"
 #include "mario/mariost.h"
 #include <string.h>
 #include <dolphin/os.h>
@@ -4576,6 +4577,7 @@ typedef struct PaperSoundEnvWork {
 extern s32 silent_tbl[10];
 extern const f64 double_to_int_mask_802e56c0;
 extern const f32 float_16p667_8041b69c;
+extern const char str_802E56C8[];
 
 static inline PaperSoundEnv* psndENVGetFree(void) {
 	s32 i;
@@ -5141,6 +5143,307 @@ s32 psndBGMPlayTime(s32 id) {
 
 BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
 	return psndBGMOn_f_d(a, b, c, 0x2EE, d);
+}
+
+// NONMATCHING (93.52%): all opcodes/operands match except the two `psndBGMOff_f_d` call sites,
+// which are inlined away because that callee is still the empty `{}` placeholder (the original
+// body is 0x200 bytes and will not inline once another agent writes it). The remaining diffs are
+// register allocation (the target maps the params a/b/c/d to r30/r24/r31/r25 and bgm/entry/work to
+// r29/r27/r28; ours picks r25/r29/r26/r28, though bgm/entry/reverb now match) plus a 3-instruction
+// branch layout on the three SoundSSCheck/SoundSongCheck loops, and `psbgmlist` being materialised
+// through r0 (`addi r0,r3,psbgmlist@l; mr r27,r0`) instead of `addi r27,r3,psbgmlist@l`. The tail
+// does recompute `psbgm + (a&0xF)*0x38` as the target does (via `&psbgm[a & 0xF]`).
+// Local declaration order is load-bearing for register allocation; the current order was found by
+// search and is the best found.
+// psbgm prefix fields 0x8/0xD/0xE/0xF/0x10 and the work block at 0x20..0x2B are not
+// declared in PaperSoundBGM; psbgmlist fields 0x8..0xF are not in the local BGMListEntry.
+// All such accesses use raw offsets.
+s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
+	s32 bgmid;
+	s32 slot;
+	s32 index;
+	s32 reverb;
+	u32 u;
+	OSTime time;
+	PaperSoundBGM* bgm;
+	u32 i;
+	s32 vol;
+	u8* work;
+	BGMListEntry* ptr;
+	s32 pan;
+	BGMListEntry* entry;
+
+	if (psnd.unk56 & 1) {
+		return 0;
+	}
+
+	ptr = psbgmlist;
+	if ((s32)b >= 0) {
+		index = (s32)b;
+	}
+	else {
+		for (index = 0; index < 0x106; index++) {
+			if (!strcmp((const char*)ptr->field_0x0, b)) {
+				break;
+			}
+			ptr++;
+		}
+		if (index >= 0x106) {
+			index = 0;
+		}
+	}
+
+	bgmid = index;
+	slot = a & 0xF;
+	work = (u8*)&psbgm[slot] + 0x20;
+
+	if (evtGetValue(0, 0xF5DE0180) >= 0x65 &&
+	    (evtGetValue(0, 0xF5DE0180) < 0x66 || evtGetValue(0, 0xF5DE0180) >= 0x6A)) {
+		if (strcmp(gp->currentMapName, str_802E56C8) != 0 && index == 0x4F) {
+			bgmid = 0x50;
+		}
+	}
+
+	if (evtGetValue(0, 0xF5DE0180) >= 0x101 && evtGetValue(0, 0xF5DE0180) < 0x104) {
+		if (bgmid == 0x5A || bgmid == 0x5B) {
+			bgmid = 0xA4;
+		}
+	}
+
+	if (evtGetValue(0, 0xF5DE0180) >= 0x6D && evtGetValue(0, 0xF5DE0180) < 0x6F) {
+		if (bgmid == 0x4F) {
+			bgmid = 0xA4;
+		}
+		if (bgmid == 0x50) {
+			bgmid = 0xA4;
+		}
+		if (bgmid == 0x7B) {
+			return 0;
+		}
+		if (bgmid == 0x7D) {
+			return 0;
+		}
+		if (bgmid == 0x7E) {
+			return 0;
+		}
+		if (slot == 0 && (a & 0x20) && work[0] != 4) {
+			return 0;
+		}
+		{
+			PaperSoundBGM* bgm0 = &psbgm[0];
+
+			if ((bgmid == 0x90 || bgmid == 0x91) && (u32)bgm0->unk0 == 0xA4) {
+				return 0;
+			}
+			if (bgmid == 0x92 && (u32)bgm0->unk0 == 0xA4) {
+				psndBGMOff_f_d(0x400, 0x2EE, 1);
+			}
+		}
+	}
+
+	if (evtGetValue(0, 0xF5DE0180) >= 0x7F && evtGetValue(0, 0xF5DE0180) < 0xB2) {
+		if (bgmid == 0x8C) {
+			return 0;
+		}
+		{
+			PaperSoundBGM* bgm0 = &psbgm[0];
+
+			if ((bgmid == 0x90 || bgmid == 0x91) && (u32)bgm0->unk0 == 0xC3) {
+				return 0;
+			}
+			if (bgmid == 0 && (u32)bgm0->unk0 == 0xC3 && !(a & 0x20)) {
+				return 0;
+			}
+			if (bgmid == 0x92 && (u32)bgm0->unk0 == 0xC3) {
+				psndBGMOff_f_d(0x400, 0x2EE, 1);
+			}
+		}
+	}
+
+	if (evtGetValue(0, 0xF5DE0180) >= 0xA4 && bgmid == 0x53) {
+		bgmid = 0x54;
+	}
+
+	if (bgmid == 0x90 || bgmid == 0x91) {
+		s32 v = psbgm[1].unk0;
+
+		if ((u32)v == 0x80 || (u32)(v - 0x81) <= 0xB || (u32)v == 0x8E || (u32)v == 0x8D) {
+			return 0;
+		}
+	}
+
+	entry = &psbgmlist[bgmid];
+	bgm = &psbgm[a & 0xF];
+	work = (u8*)bgm + 0x20;
+
+	if (entry->field_0x4 == 0 && !(a & 0x20)) {
+		return 0;
+	}
+
+	SoundSetFadeTime(c & 0xFFFF, c & 0xFFFF);
+
+	if ((u32)bgm->unk0 != (u32)-1) {
+		if (!(a & 0x10)) {
+			if (a & 0x20) {
+				if (*(u32*)((u8*)&psbgmlist[bgm->unk0] + 0x4) & 0x80000000) {
+					SoundSSContinueCh(bgm->streamId);
+				}
+				else {
+					SoundSongContinueCh(bgm->streamId);
+				}
+				if (a & 0x100) {
+					work[0] = 1;
+					*(s16*)(work + 0x2) = (s16)((u32)c / MATCH_F32(float_16p667_8041b69c));
+					*(s16*)(work + 0x4) = 0;
+				}
+				else {
+					work[0] = 0;
+					*(s16*)(work + 0x2) = 1;
+					*(s16*)(work + 0x4) = 1;
+				}
+				if (a & 0x80) {
+					if (work[0x6] == 8) {
+						work[0x6] = 0x10;
+						*(s16*)(work + 0x8) = (s16)((u32)c / MATCH_F32(float_16p667_8041b69c));
+						*(s16*)(work + 0xA) = (s16)((*(s16*)(work + 0x8) * work[0x7]) / 100);
+						if (a & 0x40) {
+							*(u32*)((u8*)bgm + 0x8) |= 0x40;
+						}
+						else {
+							*(u32*)((u8*)bgm + 0x8) &= ~0x40;
+						}
+					}
+				}
+				goto done;
+			}
+			if (*(u32*)&bgm->unk0 == (u32)bgmid) {
+				if (work[0] == 2) {
+				}
+				else {
+					goto done;
+				}
+			}
+			else {
+				if (*(u8*)((u8*)entry + 0xE) != 0 &&
+				    *(u8*)((u8*)entry + 0xE) == *(u8*)((u8*)bgm + 0xD)) {
+					goto done;
+				}
+			}
+		}
+		if (entry->field_0x4 & 0x80000000) {
+			if ((u32)(a & 0x10) != 0) {
+				SoundSetFadeTime(0, 100);
+				SoundSSFadeoutCh(bgm->streamId);
+			}
+			else {
+				SoundSetFadeTime(0, d & 0xFFFF);
+				SoundSSFadeoutCh(bgm->streamId);
+			}
+		}
+		else {
+			SoundSetFadeTime(0, d & 0xFFFF);
+			SoundSongFadeoutCh(bgm->streamId);
+		}
+	}
+
+	if (bgmid == 0) {
+		return 0;
+	}
+
+	vol = *(u8*)((u8*)entry + 0xC);
+	*(u8*)((u8*)bgm + 0xE) = vol;
+	reverb = *(u8*)((u8*)entry + 0xE);
+	bgm->unk0 = bgmid;
+	pan = *(u8*)((u8*)entry + 0xD);
+	*(u32*)((u8*)bgm + 0x8) = a;
+	*(u8*)((u8*)bgm + 0xD) = reverb;
+	*(u8*)((u8*)bgm + 0xF) = pan;
+	if (*(u8*)((u8*)entry + 0xF) == 1) {
+		*(u8*)((u8*)bgm + 0x10) = 0xFF;
+	}
+	else {
+		*(u8*)((u8*)bgm + 0x10) = 0;
+	}
+	time = gp->renderTime;
+	*(OSTime*)((u8*)bgm + 0x30) = time;
+
+	if (entry->field_0x4 & 0x80000000) {
+		for (i = 0; i < 3; i++) {
+			u = SoundSSCheck(i);
+			if (u == 0) {
+				goto ss_found;
+			}
+		}
+		for (i = 0; i < 3; i++) {
+			if (SoundSSCheck(i) & 0x20) {
+				SoundSSStopCh(i);
+			}
+		}
+		for (i = 0; i < 3; i++) {
+			u = SoundSSCheck(i);
+			if (u == 0) {
+				goto ss_found;
+			}
+		}
+		i = -1;
+	ss_found:
+		bgm->streamId = i;
+		if ((u32)bgm->streamId == (u32)-1) {
+			goto no_channel;
+		}
+		SoundSSPlayCh(bgm->streamId, *(u32*)((u8*)entry + 0x8));
+		SoundSSMuteOn(bgm->streamId);
+		SoundSSSetVolCh(bgm->streamId, vol);
+		SoundSSSetPanCh(bgm->streamId, pan);
+		if ((u32)pan == 0x40) {
+			SoundSSSetSrndPanCh(bgm->streamId, 0x40);
+		}
+		else {
+			SoundSSSetSrndPanCh(bgm->streamId, 0);
+		}
+	}
+	else {
+		for (i = 0; i < 4; i++) {
+			u = SoundSongCheck(i);
+			if (u == 0) {
+				goto song_found;
+			}
+		}
+		i = -1;
+	song_found:
+		bgm->streamId = i;
+		if ((u32)bgm->streamId == (u32)-1) {
+			goto no_channel;
+		}
+		SoundSongPlayCh(bgm->streamId, entry->field_0x4 & 0x0FFFFFFF);
+		SoundSongSetVolCh(bgm->streamId, vol);
+	}
+
+	if (a & 0x100) {
+		work[0] = 1;
+		*(s16*)(work + 0x2) = (s16)((u32)c / MATCH_F32(float_16p667_8041b69c));
+		*(s16*)(work + 0x4) = 0;
+		work[0x6] = 0;
+		*(s16*)(work + 0x8) = 1;
+		*(s16*)(work + 0xA) = 1;
+	}
+	else {
+		work[0] = 0;
+		*(s16*)(work + 0x2) = 1;
+		*(s16*)(work + 0x4) = 1;
+		work[0x6] = 0;
+		*(s16*)(work + 0x8) = 1;
+		*(s16*)(work + 0xA) = 1;
+	}
+	goto done;
+
+no_channel:
+	bgm->unk0 = -1;
+	return 0;
+
+done:
+	psndBGMMain();
+	return 1;
 }
 
 // NONMATCHING (10.00%): 9 missing.

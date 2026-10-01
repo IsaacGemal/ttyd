@@ -98,8 +98,6 @@ __declspec(section ".sdata") extern u8 nozle_4_dl_0_size_tbl[];
 __declspec(section ".sdata") extern u8 nozle_4_normal_tbl[];
 __declspec(section ".sdata") extern u8 nozle_4_color0_tbl[];
 
-const Vec vec3_802fe6b8 = {0.0f, 0.0f, 0.0f};
-
 const char str_80421264[] = "Nozle";
 
 // 44 scale entries (22 pairs) indexed by counter/lifetime.
@@ -181,28 +179,33 @@ EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX
 	return effect;
 }
 
-// NONMATCHING (94.25%): the type-3 branch reloads data into r4 in the target where we reuse r3,
-// and several block-local register assignments differ.
+// The Vec temp is built in a returning inline that starts from an anonymous zero literal: MWCC pools
+// that literal as this unit's vec3_802fe6b8 (the file no longer defines it as a named object), and
+// building it directly in `out` schedules the first component load before the userdata load.
+static inline Vec nozleMakeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 void effNozleMain(EffectEntry* effect) {
 	effNozleData* data = effect->userdata;
-	s32 i;
 	s32 type;
-	effNozleEntryData* entry;
+	s32 i;
 	Vec pos;
 	Vec out;
 
-	out = vec3_802fe6b8;
-	out.x = data->position.x;
-	out.y = data->position.y;
-	out.z = data->position.z;
+	out = nozleMakeVec(data->position.x, data->position.y, data->position.z);
 	pos = out;
 
+	type = data->type;
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
 		data->lifetime = 0x20;
 	}
 
-	type = data->type;
 	switch (type) {
 	case 0:
 	case 2:
@@ -218,25 +221,31 @@ void effNozleMain(EffectEntry* effect) {
 		data->field_0x24 += float_neg0p083333_80421244;
 		break;
 	case 3:
-		entry = data->entries;
-		for (i = 1; i < effect->count; i++) {
-			entry->field_0x04 += -entry->field_0x04 / float_300_80421248;
-			if (entry->field_0x38 == 0) {
-				entry->field_0x14 += (float_1p3_8042124c - entry->field_0x14) / float_500_80421250;
-				if (entry->field_0x14 > float_1p2_80421254) {
-					entry->field_0x38 = 1;
+	{
+		// Retail walks the header and the entry array through one pointer: it reloads userdata,
+		// steps it once (data++) into the entries, and reloads it again at the join below. A separate
+		// `entry` pointer makes MWCC spend r6 on the base and emit `addi r4, r3, 0x44`.
+		data = effect->userdata;
+		data++;
+		for (i = 1; i < effect->count; i++, data++) {
+			((effNozleEntryData*)data)->field_0x04 += -((effNozleEntryData*)data)->field_0x04 / float_300_80421248;
+			if (((effNozleEntryData*)data)->field_0x38 == 0) {
+				((effNozleEntryData*)data)->field_0x14 += (float_1p3_8042124c - ((effNozleEntryData*)data)->field_0x14) / float_500_80421250;
+				if (((effNozleEntryData*)data)->field_0x14 > float_1p2_80421254) {
+					((effNozleEntryData*)data)->field_0x38 = 1;
 				}
 			} else {
-				entry->field_0x14 += (float_0p8_80421258 - entry->field_0x14) / float_300_80421248;
+				((effNozleEntryData*)data)->field_0x14 += (float_0p8_80421258 - ((effNozleEntryData*)data)->field_0x14) / float_300_80421248;
 			}
-			entry->field_0x1C += float_0p002_8042125c;
-			entry->field_0x20 += float_0p002_8042125c;
-			entry->field_0x24 += float_0p004_80421260;
-			entry++;
+			((effNozleEntryData*)data)->field_0x1C += float_0p002_8042125c;
+			((effNozleEntryData*)data)->field_0x20 += float_0p002_8042125c;
+			((effNozleEntryData*)data)->field_0x24 += float_0p004_80421260;
 		}
 		break;
 	}
+	}
 
+	data = effect->userdata;
 	if (data->lifetime < 1000) {
 		data->lifetime--;
 	}

@@ -29,15 +29,28 @@ static s32 _sort(const void* a, const void* b);
 
 #define lightGetWork() (mapGetActiveGroup() == 1 ? &work[1] : &work[0])
 
-// NONMATCHING (97.70%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
+// NONMATCHING (99.98%): only the three pooled string addresses differ (r31+0xa4/0xac/0xb8 here vs
+// +0xc8/0xd0/0xdc in the target). They sit after every numeric literal in .rodata, so they move up
+// 0x24 once lightMain emits its four target vec3 literals (the three beyond its current one).
 void lightInit(void) {
 	Mtx scale;
+#ifdef MUST_MATCH
+	LightWork* wp;
+#endif
 
 	work[0].count = LIGHT_ENTRY_COUNT;
 	work[0].entries = __memAlloc(HEAP_DEFAULT, work[0].count * sizeof(LightEntry));
 
+#ifdef MUST_MATCH
+	// MUST_MATCH: without the named pointer MWCC rematerializes &work[1] after the second
+	// __memAlloc instead of holding it in a callee-saved register (the target uses r29).
+	wp = &work[1];
+	wp->count = LIGHT_ENTRY_COUNT;
+	wp->entries = __memAlloc(HEAP_DEFAULT, wp->count * sizeof(LightEntry));
+#else
 	work[1].count = LIGHT_ENTRY_COUNT;
 	work[1].entries = __memAlloc(HEAP_DEFAULT, work[1].count * sizeof(LightEntry));
+#endif
 
 	paperLight3D.flags = LIGHT_NO_DIST_ATTEN | LIGHT_POINT;
 	strcpy(paperLight3D.name, "PAPER");

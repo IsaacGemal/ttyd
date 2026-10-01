@@ -64,7 +64,9 @@ static Mtx mt_544 = {
     {0.0f, 10.0f, 0.0f, 0.1f},
     {0.0f, 0.0f, 10.0f, 0.0f},
 };
-static const Vec vec3_802f2ff8[6] = {
+// Non-const (so the compiler does not hoist the loop loads out of evt_nannpc_init) but forced into
+// .rodata to keep the original's section. Declared global to match the original's symbol linkage.
+__declspec(section ".rodata") Vec vec3_802f2ff8[6] = {
     {0.0f, -1000.0f, 0.0f},
     {0.0f, -1000.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
@@ -72,8 +74,10 @@ static const Vec vec3_802f2ff8[6] = {
     {0.0f, -1000.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
 };
-static const GXColor white_8041c570 = {0xFF, 0xFF, 0xFF, 0xFF};
-static const GXColor white_8041c56c = {0xFF, 0xFF, 0xFF, 0xFF};
+// The original's `dat_8041c5xx` are global, read-only `.sdata2` constants; section is forced so
+// they get the exact symbol names and placement.
+__declspec(section ".sdata2") GXColor dat_8041c570 = {0xFF, 0xFF, 0xFF, 0xFF};
+__declspec(section ".sdata2") GXColor dat_8041c56c = {0xFF, 0xFF, 0xFF, 0xFF};
 
 // Look up an entry by numeric id (formatted as "%06x") or by the string the id
 // points at. Small enough that the original compiler inlined it everywhere.
@@ -377,8 +381,9 @@ USER_FUNC(evt_nannpc_set_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (77.20%): loop callee-saved registers shifted (orig i=r24, offset=r26, name=r25;
-// ours i=r28, offset=r27, name=r26) and the color/return scheduling differs.
+// NONMATCHING (94.72%): the loop callee-saved registers are still permuted (orig
+// vec=r31, args=r24, poses=r28, id=r25, work=r23, mask=r29, name=r27, entry=r30, offset=r26;
+// ours vec=r29, args=r27, poses=r30, id=r26, work=r25, mask=r27, name=r23, entry=r31, offset=r28).
 USER_FUNC(evt_nannpc_entry) {
     Vec* vec = (Vec*)vec3_802f2ff8;
     s32* args = event->args;
@@ -412,23 +417,21 @@ USER_FUNC(evt_nannpc_entry) {
             entry->animCount = 0;
             entry->field_0x60 = 0.0f;
             entry->pose->field_0x4 = -entry->field_0x60;
-            entry->color = white_8041c570;
-            return EVT_RETURN_DONE;
+            entry->color = dat_8041c570;
+            break;
     }
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (83.25%): isFirstCall/args and the extEntry argument registers are shifted by one
-// (orig isFirstCall=r25, args=r24; ours isFirstCall=r24, args=r25).
 USER_FUNC(evt_nannpc_init) {
+    NanNpcWork* work;
     Vec* vec = (Vec*)vec3_802f2ff8;
     s32* args = event->args;
     s32 a0 = evtGetValue(event, args[0]);
-    s32 a1 = evtGetValue(event, args[1]);
-    s32 a2 = evtGetValue(event, args[2]);
-    s32 a3 = evtGetValue(event, args[3]);
+    s16* src = (s16*)evtGetValue(event, args[1]);
+    void (*a2)(void) = (void (*)(void))evtGetValue(event, args[2]);
+    void (*a3)(void) = (void (*)(void))evtGetValue(event, args[3]);
     void (*cb)(void) = nannpc_ext_dispent;
-    NanNpcWork* work;
     s32 i;
 
     if (isFirstCall) {
@@ -445,15 +448,15 @@ USER_FUNC(evt_nannpc_init) {
     work->field_0x8 = _mapAlloc(0x14);
     memset(work->field_0x8, 0, 0x14);
     work->subfunc0 = NULL;
-    work->subfunc1 = nannpc_ext_main_sub;
+    nanNPCWork->subfunc1 = nannpc_ext_main_sub;
     work->subfunc2 = NULL;
-    if (a2 == 0) {
-        a2 = (s32)nannpc_ext_init;
+    if (a2 == NULL) {
+        a2 = nannpc_ext_init;
     }
-    if (a3 == 0) {
-        a3 = (s32)nannpc_ext_main;
+    if (a3 == NULL) {
+        a3 = nannpc_ext_main;
     }
-    extEntry(work->count, (void*)a0, (void (*)(void))a2, (void (*)(void))a3, cb);
+    extEntry(work->count, (void*)a0, a2, a3, cb);
     for (i = 0; i < work->count; i++) {
         NanNpcEntry* entry = &work->entries[i];
 
@@ -472,11 +475,12 @@ USER_FUNC(evt_nannpc_init) {
         entry->animCurrent = 0;
         entry->field_0x60 = 0.0f;
         entry->callback = NULL;
-        entry->color = white_8041c56c;
+        entry->color = dat_8041c56c;
     }
-    if (a1 != 0) {
-        s16* src = (s16*)a1;
-
+    if (src == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    {
         if (src[0] != -1) {
             work->field_0x8[0] = src[0];
             work->field_0x8[1] = src[1];
@@ -697,28 +701,34 @@ void nannpc_ext_dispent(void) {
     }
 }
 
-// NONMATCHING (71.24%): reconstructed behaviour; stack frame/register allocation and
-// the reflection-branch float orderings still differ from the target.
+// Passing the operands as by-value Vecs reproduces the original's struct-copy staging (frame now
+// matches at 0xe0).
+static inline HitEntry* hitCheckFilterVec(HitFilterCallback callback, f32* hitX, f32* hitY, f32* hitZ,
+                                            f32* distance, f32* hitNX, f32* hitNY, f32* hitNZ, Vec pos, Vec dir) {
+    return hitCheckFilter(callback, hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ, pos.x, pos.y, pos.z, dir.x,
+                          dir.y, dir.z);
+}
+
+// The first hitCheckFilter's staged pos/velNorm copies land in local spill slots (0x24/0x30) instead
+// of the original's outgoing-arg area (0x78/0x84); the second ray's scalar hit buffers are declared
+// in reverse (fnz2..fpx2) so their stack slots ascend like the original's.
+// NONMATCHING (91.99%): argument staging location and a few callee-saved registers differ.
 void nanNPCOption(void) {
-    NanNpcWork* work = nanNPCWork;
-    NanNpcEntry* entry;
-    NanNpcEntry* other;
     Vec delta;
     Vec velNorm;
     Vec hitNormal;
     Vec reflect;
     Vec pos;
-    Vec savedPos;
-    Vec move;
-    f32 dist;
-    f32 vlen;
-    f32 hitX;
-    f32 hitY;
-    f32 hitZ;
     f32 hitDist;
-    f32 hitNX;
-    f32 hitNY;
-    f32 hitNZ;
+    f32 fnz2, fny2, fnx2, fpz2, fpy2, fpx2;
+    Vec hitPos;
+    f32 vlen;
+    Vec savedPos;
+    NanNpcEntry* other;
+    BOOL scale;
+    NanNpcEntry* entry;
+    Vec move;
+    NanNpcWork* work = nanNPCWork;
 
     for (entry = work->entries; entry < &work->entries[work->count]; entry++) {
         if (!(entry->flags & 4)) {
@@ -731,19 +741,18 @@ void nanNPCOption(void) {
             if (!(other->flags & 4)) {
                 continue;
             }
-            dist = PSVECDistance(&entry->position, &other->position);
+            vlen = PSVECDistance(&entry->position, &other->position);
             PSVECSubtract(&entry->position, &other->position, &delta);
-            if (dist > entry->field_0x4C) {
-                continue;
+            if (vlen <= entry->field_0x4C) {
+                if (PSVECMag(&delta) == 0.0f) {
+                    delta.x = 1.0f;
+                }
+                PSVECNormalize(&delta, &delta);
+                delta.y = 0.0f;
+                PSVECScale(&delta, &delta, 0.5f);
+                PSVECAdd(&entry->field_0x3C, &delta, &entry->field_0x3C);
+                PSVECSubtract(&other->field_0x3C, &delta, &other->field_0x3C);
             }
-            if (PSVECMag(&delta) == 0.0f) {
-                delta.x = 1.0f;
-            }
-            PSVECNormalize(&delta, &delta);
-            delta.y = 0.0f;
-            PSVECScale(&delta, &delta, 0.5f);
-            PSVECAdd(&entry->field_0x3C, &delta, &entry->field_0x3C);
-            PSVECSubtract(&other->field_0x3C, &delta, &other->field_0x3C);
         }
     }
 
@@ -772,48 +781,49 @@ void nanNPCOption(void) {
             PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 5.0f / vlen);
             vlen = 5.0f;
         }
-        pos.x = entry->position.x;
-        pos.y = entry->position.y + 1.0f;
-        pos.z = entry->position.z;
+        pos = entry->position;
+        pos.y += 1.0f;
         PSVECNormalize(&entry->field_0x3C, &velNorm);
         if (entry->flags & 8) {
             PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
             PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 0.6f);
             continue;
         }
-        entry->work[4] = 0;
         entry->work[5] = 0;
+        entry->work[4] = 0;
+        scale = TRUE;
         hitDist = vlen;
-        entry->work[4] = (s32)hitCheckFilter((HitFilterCallback)0, &hitX, &hitY, &hitZ, &hitDist, &hitNX, &hitNY, &hitNZ,
-                                             pos.x, pos.y, pos.z, velNorm.x, velNorm.y, velNorm.z);
-        if (entry->work[4] == 0) {
+        entry->work[4] = (s32)hitCheckFilterVec((HitFilterCallback)0, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist,
+                                                &hitNormal.x, &hitNormal.y, &hitNormal.z, pos, velNorm);
+        if ((u32)entry->work[4] == 0) {
             PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
-            PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 0.6f);
         } else {
             savedPos = entry->position;
             PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
             if (entry->field_0x3C.y == 0.0f) {
-                hitNY = 0.0f;
+                hitNormal.y = 0.0f;
             }
-            hitNormal.x = hitNX;
-            hitNormal.y = hitNY;
-            hitNormal.z = hitNZ;
             PSVECNormalize(&hitNormal, &hitNormal);
             C_VECReflect(&velNorm, &hitNormal, &reflect);
             PSVECScale(&reflect, &entry->field_0x3C, vlen);
-            PSVECScale(&hitNormal, &hitNormal, PSVECDotProduct(&velNorm, &hitNormal) * (hitDist - vlen) + 0.1f);
+            scale = FALSE;
+            PSVECScale(&hitNormal, &hitNormal, PSVECDotProduct(&velNorm, &hitNormal) * -(vlen - hitDist) + 0.1f);
             PSVECAdd(&entry->position, &hitNormal, &entry->position);
             PSVECSubtract(&entry->position, &savedPos, &move);
-            vlen = PSVECMag(&move);
-            if (vlen > 0.0f) {
+            hitDist = PSVECMag(&move);
+            if (hitDist > 0.0f) {
                 PSVECNormalize(&move, &move);
-                entry->work[5] = (s32)hitCheckFilter((HitFilterCallback)0, &hitX, &hitY, &hitZ, &vlen, &hitNX, &hitNY,
-                                                     &hitNZ, savedPos.x, savedPos.y + 1.0f, savedPos.z, move.x,
-                                                     move.y, move.z);
-                if (entry->work[5] != 0) {
+                entry->work[5] = (s32)hitCheckFilter((HitFilterCallback)0, &fpx2, &fpy2, &fpz2,
+                                                     &hitDist, &fnx2, &fny2, &fnz2,
+                                                     savedPos.x, savedPos.y + 1.0f, savedPos.z, move.x, move.y,
+                                                     move.z);
+                if ((u32)entry->work[5] != 0) {
                     entry->position = savedPos;
                 }
             }
+        }
+        if (scale) {
+            PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 0.6f);
         }
     }
 }

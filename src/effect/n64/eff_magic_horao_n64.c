@@ -172,16 +172,24 @@ static inline GXColor makeHoraoColor2(u8 a) {
 	c.a = a;
 	return c;
 }
+
+static inline GXColor makeHoraoColor(GXColor c, s32 counter, u8 a) {
+	f32 angle = (float_6p2832_8041f75c * (f32)(counter * 30)) / float_360_8041f760;
+	c.r = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
+	c.g = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
+	c.a = a;
+	return c;
+}
 #endif
 
 // The FPR allocation (alpha in f31, the loop's 2pi/magic/360/500/200 in f26-f30) comes from the
 // named `s` temp in the vertex loop, see the MUST_MATCH block there. The source order of the
 // preheader assignments is also tuned: it decides the GPR schedule's load/increment interleave;
-// only reorder together with a check. The vertex writes use the sibling n64 quad layout.
-#pragma opt_lifetimes off // without it MWCC's lifetime analysis picks a worse register assignment here
-// NONMATCHING (98.90%): the first colour's local lands at 0x14 and its by-value copy at 0x10 where the
-// original has 0x10/0x14; `v = 0` and `j = k` compile to `li ...,0` where the original emits `mr`
-// (it copies the already-zero y/i). Everything else matches (FPRs, GPRs, schedule, values).
+// only reorder together with a check. The vertex writes use the sibling n64 quad layout. The first
+// colour is built by the makeHoraoColor inline above, whose base parameter (rather than the global
+// read inside) is what puts its local at 0x10 and the by-value copy at 0x14.
+// NONMATCHING (99.37%): everything matches except the two zero-copies `v = y` and `j = k`, which this
+// build folds to `li` where the original emits `mr` (copies of the already-zero y / k registers).
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	effMagicHoraoData* data;
 	Mtx mtx1;
@@ -196,7 +204,9 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	s32 counter;
 	Mtx mtx2;
 	GXColor color;
+#ifndef MUST_MATCH
 	f32 angle;
+#endif
 	MagicHoraoVtx* vtx;
 	s32 i;
 	s32 k;
@@ -223,12 +233,16 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtx1, 0);
 	GXSetCurrentMtx(0);
 
-	color = dat_8041f750;
+#ifdef MUST_MATCH
+	GXSetTevColor(1, makeHoraoColor(dat_8041f750, counter, colorAlpha));
+#else
 	angle = (float_6p2832_8041f75c * (f32)(counter * 30)) / float_360_8041f760;
+	color = dat_8041f750;
 	color.r = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
-	color.a = colorAlpha;
 	color.g = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
+	color.a = colorAlpha;
 	GXSetTevColor(1, color);
+#endif
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
@@ -294,7 +308,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		i = 0;
 		vp = vtx;
 		off2 = off1;
-		v = 0;
+		v = y;
 		for (; i < 16; i++) {
 			s32 a;
 			s32 b;
@@ -349,4 +363,3 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		}
 	}
 }
-#pragma opt_lifetimes reset

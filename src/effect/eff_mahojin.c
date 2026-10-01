@@ -259,21 +259,21 @@ void effMahojinMain(EffectEntry* effect) {
 
 // The target keeps `j` live in a register and uses indexed `stwx`/`stfsx` stores in the dist[]/order[]
 // initialiser. Writing `order[j++] = 0/1` (index expression, constant value) instead of `order[j] = j; j++`
-// stops MWCC constant-folding the index, and continuing the fill loop from that j (`for (; j < ...)`) keeps
-// it live, which reproduces the init exactly.
-// NONMATCHING (95.57%): init and call arguments match; the fill loop's `order[j] = j` is still strength-
-// reduced to a pointer here, while the target keeps the base+offset `stwx` form. That extra pointer shifts
-// the callee-saved allocation (params land in r18/r19, target r20/r21).
+// stops MWCC constant-folding the index, which reproduces the init exactly.
+// The fill loop uses its own counter `n` while `j` carries on as the byte offset: indexing both arrays with
+// `j` (or reusing the outer `i`) makes MWCC strength-reduce `order` to a pointer instead of the target's
+// base+offset `stwx`. The separate `n` survives the dispCalcZ call in a callee-saved register, and the
+// declaration order (`i, n, j, k`, then `alpha`, `flags`, `mapWork`) is what the allocator wants.
 void effMahojinDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     MahojinWork* data = effect->userdata;
     Mtx mtx;
     f32 dist[16];
     s32 order[16];
-    u16 flags;
+    s32 i, n, j, k;
     s32 alpha;
+    u16 flags;
     MapWork* mapWork;
-    s32 i, j, k;
 
     camGetPtr(camId);
     alpha = data[0].alpha;
@@ -294,9 +294,9 @@ void effMahojinDisp(CameraId camId, void* param) {
             order[j++] = 1;
         }
 
-        for (; j < effect->count; j++) {
-            dist[j] = dispCalcZ(&pos_tbl[j - 2]);
-            order[j] = j;
+        for (n = 2; n < effect->count; n++) {
+            dist[j] = dispCalcZ(&pos_tbl[n - 2]);
+            order[j++] = n;
         }
 
         for (j = 0; j < effect->count - 1; j++) {
@@ -343,3 +343,10 @@ inline Vec initializeVec(Vec* input) {
     temp.z = input->z;
     return temp;
 }
+
+// 24 zero bytes that end the unit's .data: an all-zero object needs explicit_zero_data to stay in .data and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_803AE248_data[6] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset

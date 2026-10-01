@@ -103,9 +103,14 @@ void effPointGetMain(EffectEntry* effect) {
 	dispEntry(8, dispCalcZ(&position), 2, effPointGetDisp, effect);
 }
 
-// NONMATCHING (97.35%): all logic and GX calls match. We save f21-f31/r25-r31,
-// the original f19-f31/r26-r31 (frame 0x1c0 vs 0x1e0). The .sdata2 pool and mtx offsets
-// (0xb8/0x88/0x58) match.
+// The frame (0x1e0), the callee-saved set (f19-f31/r26-r31), the .sdata2 pool order and
+// the mtx offsets (0xb8/0x88/0x58) all match. Only the callee-saved FP colouring differs
+// by a cycle: the original holds 48/32/dconst/half/basehalf in f23/f24/f25/f26/f27 with
+// scale->f19 and s->f20, while ours puts 48/32/dconst/half in f24/f26/f25/f27 and reuses
+// f19 for basehalf. Writing part2's `base * half` as a `base / 2.0f` division stops the
+// compiler CSEing it with the precomputed basehalf, which restores the 13-register frame.
+// The @NNN vs named double_to_int_* pool labels are benign (see window/win_mario.c).
+// NONMATCHING (99.76%): only the callee-saved FP register colouring differs.
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;
@@ -115,19 +120,19 @@ void effPointGetDisp(CameraId camId, void* param) {
 	Mtx mtx88;
 	Mtx mtx58;
 	char buf[32];
-	f32 scale;
-	f32 f20;
-	f32 f21;
-	f32 f22;
-	f32 f23;
-	f32 f24;
-	f32 f26;
-	f32 f27;
-	f32 f28;
-	f32 f30;
 	f32 f31;
-	f32 ox;
 	f32 nx;
+	f32 scale;
+	f32 f23;
+	f32 f22;
+	f32 f24;
+	f32 f28;
+	f32 f20;
+	f32 f26;
+	f32 f21;
+	f32 f30;
+	f32 ox;
+	f32 f27;
 	s32 i;
 
 	cam = camGetPtr(camId);
@@ -155,14 +160,14 @@ void effPointGetDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
 
-	f22 = -(362.0f + f20);
-	f23 = 48.0f;
-	f26 = 0.5f;
-	f24 = 32.0f;
-	f28 = 24.0f;
 	f30 = 10.0f;
-	f31 = 352.0f;
+	f26 = 0.5f;
+	f28 = 24.0f;
+	f24 = 32.0f;
+	f23 = 48.0f;
 	f21 = -f23 * f26;
+	f22 = -(362.0f + f20);
+	f31 = 352.0f;
 	f27 = f22 * f26;
 
 	for (i = 1; i >= 0; i--) {
@@ -218,7 +223,7 @@ void effPointGetDisp(CameraId camId, void* param) {
 		}
 
 		{
-			f32 t = f22 * f26 + f24 * (f32)strlen(buf);
+			f32 t = f22 / 2.0f + f24 * (f32)strlen(buf);
 			t = ox + t;
 			t = f30 + t;
 			PSMTXTrans(mtxB8, t, nx, 0.0f);

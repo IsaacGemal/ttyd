@@ -1,5 +1,6 @@
 #include "battle/battle_seq_end.h"
 #include "battle/battle.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_audience.h"
 #include "battle/battle_stage.h"
 #include "battle/battle_stage_object.h"
@@ -48,6 +49,26 @@ extern const f32 float_270_80420cb4;
 extern const f32 float_4p5_80420cb8;
 extern const f32 float_neg25_80420cbc;
 extern const f32 float_128_80420cc0;
+// sdata2 constants used by the display helpers below.
+extern const f32 float_20_80420c48;
+extern const f32 float_neg145_80420cf8;
+extern const f32 float_10_80420cd8;
+extern const f32 float_neg148_80420cfc;
+extern const GXColor dat_80420c14;
+// sdata2/rodata constants used by _lvup_select_object_disp.
+extern const f32 float_deg2rad_80420c40;
+extern const f32 float_16_80420c44;
+extern const f32 float_2_80420c4c;
+extern const f32 float_8_80420c50;
+extern const f32 float_6_80420c54;
+extern const f32 float_96_80420c58;
+extern const f32 float_5_80420c5c;
+extern const f32 float_0p8_80420c60;
+extern const f32 float_1_80420c64;
+extern const f32 float_1p2_80420c68;
+extern const f32 float_neg0p6_80420c70;
+extern const f32 float_0p6_80420c74;
+extern const f64 double_to_int_802fe050;
 
 //.data
 RankUpData _rank_up_data[] = {
@@ -95,6 +116,7 @@ const char* BattleGetRankNameLabel(s32 level) {
     return found->rankUpName;
 }
 
+// The original keeps _keta_get out of line: _lvup_select_object_disp calls it with bl, not inlined.
 s32 _keta_get(s32 value) {
     s32 digits = 0;
 
@@ -840,7 +862,193 @@ void _ac_help_disp(CameraId camId, void* param) {
 
 }
 
-// NONMATCHING (0.21%): 475 missing.
-void _lvup_select_object_disp(CameraId camId, void* param) {
+// The three level-up select objects live in the sequence-end work at 0x200, stride 0x34.
+typedef struct LvupSelectObj {
+    Vec pos;      // 0x00
+    Vec scale;    // 0x0C
+    Vec rot;      // 0x18
+    u16 value;    // 0x24
+    u16 max;      // 0x26
+    u8 state;     // 0x28
+    u8 counter;   // 0x29
+    u8 pad[2];    // 0x2A
+    s32 flag;     // 0x2C
+    GXColor color;// 0x30
+} LvupSelectObj;
 
+// The 0x200 area of the sequence-end work: three select objects.
+typedef struct BattleSeqEndWorkLvup {
+    u8 unk0[0x200];
+    LvupSelectObj objs[3]; // 0x200..0x29C
+    u8 unk1[0x10];         // 0x29C..0x2AC
+} BattleSeqEndWorkLvup;
+
+// Logic and instruction sequence match, apart from _keta_get, which ours inlines where the original calls it, the
+// stack/matrix layout, the pooled float order and the three btlDispTexPlane calls (the extra trailing zero
+// comes from btlDispTexPlane's missing 8th parameter -- see the report). Remaining: the register/scheduling
+// of the cur!=max position computation and the pooled int->float double is @N instead of
+// double_to_int_802fe050.
+// NONMATCHING (90.48%): see the note above.
+void _lvup_select_object_disp(CameraId camId, void* param) {
+    BattleSeqEndWorkLvup* work = (BattleSeqEndWorkLvup*)_battleWorkPointer->seqEndWork;
+    Mtx mtxMain;
+    Mtx mtxTrans;
+    Mtx mtxScale;
+    Mtx mtxRotX;
+    Mtx mtxRotY;
+    Mtx mtxRotZ;
+    Mtx mtxT2;
+    Mtx mtxT3;
+    Mtx mtxT4;
+    Mtx mtxS2;
+    Vec pos;
+    Vec pos2;
+    Vec pos3;
+    LvupSelectObj* obj;
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        obj = &work->objs[i];
+
+        switch (obj->state) {
+        case 4:
+            obj->state = 5;
+            obj->counter = 1;
+            /* fallthrough */
+        case 5:
+            obj->counter--;
+            if (obj->counter == 0) {
+                obj->counter = 8;
+                if (obj->flag != 0) {
+                    obj->flag = 0;
+                } else {
+                    obj->flag = 1;
+                }
+            }
+            break;
+        default:
+            obj->flag = 1;
+            break;
+        }
+    }
+
+    if (work->objs[0].flag != 0) {
+        PSMTXIdentity(mtxMain);
+        PSMTXTrans(mtxTrans, work->objs[0].pos.x, work->objs[0].pos.y, work->objs[0].pos.z);
+        PSMTXScale(mtxScale, work->objs[0].scale.x, work->objs[0].scale.y, work->objs[0].scale.z);
+        PSMTXRotRad(mtxRotX, 0x78, float_deg2rad_80420c40 * work->objs[0].rot.x);
+        PSMTXRotRad(mtxRotY, 0x79, float_deg2rad_80420c40 * work->objs[0].rot.y);
+        PSMTXRotRad(mtxRotZ, 0x7a, float_deg2rad_80420c40 * work->objs[0].rot.z);
+        PSMTXConcat(mtxRotZ, mtxScale, mtxMain);
+        PSMTXConcat(mtxRotZ, mtxMain, mtxMain);
+        PSMTXConcat(mtxRotX, mtxMain, mtxMain);
+        PSMTXConcat(mtxRotY, mtxMain, mtxMain);
+        PSMTXConcat(mtxTrans, mtxMain, mtxMain);
+        btlDispTexPlane2(mtxMain, 0x24, work->objs[0].color, 0);
+#ifdef MUST_MATCH
+        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
+            work->objs[0].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[0].pos.y,
+            float_2_80420c4c + work->objs[0].pos.z, work->objs[0].scale.x, work->objs[0].scale.y,
+            0x27, work->objs[0].color, 0);
+#else
+        btlDispTexPlane(0x27, work->objs[0].color, work->objs[0].pos.x - float_16_80420c44,
+                        float_20_80420c48 + work->objs[0].pos.y, float_2_80420c4c + work->objs[0].pos.z,
+                        work->objs[0].scale.x, work->objs[0].scale.y);
+#endif
+    }
+
+    if (work->objs[1].flag != 0) {
+        PSMTXIdentity(mtxMain);
+        PSMTXTrans(mtxTrans, work->objs[1].pos.x, work->objs[1].pos.y, work->objs[1].pos.z);
+        PSMTXScale(mtxScale, work->objs[1].scale.x, work->objs[1].scale.y, work->objs[1].scale.z);
+        PSMTXRotRad(mtxRotX, 0x78, float_deg2rad_80420c40 * work->objs[1].rot.x);
+        PSMTXRotRad(mtxRotY, 0x79, float_deg2rad_80420c40 * work->objs[1].rot.y);
+        PSMTXRotRad(mtxRotZ, 0x7a, float_deg2rad_80420c40 * work->objs[1].rot.z);
+        PSMTXConcat(mtxRotZ, mtxScale, mtxMain);
+        PSMTXConcat(mtxRotZ, mtxMain, mtxMain);
+        PSMTXConcat(mtxRotX, mtxMain, mtxMain);
+        PSMTXConcat(mtxRotY, mtxMain, mtxMain);
+        PSMTXConcat(mtxTrans, mtxMain, mtxMain);
+        btlDispTexPlane2(mtxMain, 0x25, work->objs[1].color, 0);
+#ifdef MUST_MATCH
+        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
+            work->objs[1].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[1].pos.y,
+            float_2_80420c4c + work->objs[1].pos.z, work->objs[1].scale.x, work->objs[1].scale.y,
+            0x28, work->objs[1].color, 0);
+#else
+        btlDispTexPlane(0x28, work->objs[1].color, work->objs[1].pos.x - float_16_80420c44,
+                        float_20_80420c48 + work->objs[1].pos.y, float_2_80420c4c + work->objs[1].pos.z,
+                        work->objs[1].scale.x, work->objs[1].scale.y);
+#endif
+    }
+
+    if (work->objs[2].flag != 0) {
+        PSMTXIdentity(mtxMain);
+        PSMTXTrans(mtxTrans, work->objs[2].pos.x, work->objs[2].pos.y, work->objs[2].pos.z);
+        PSMTXScale(mtxScale, work->objs[2].scale.x, work->objs[2].scale.y, work->objs[2].scale.z);
+        PSMTXRotRad(mtxRotX, 0x78, float_deg2rad_80420c40 * work->objs[2].rot.x);
+        PSMTXRotRad(mtxRotY, 0x79, float_deg2rad_80420c40 * work->objs[2].rot.y);
+        PSMTXRotRad(mtxRotZ, 0x7a, float_deg2rad_80420c40 * work->objs[2].rot.z);
+        PSMTXConcat(mtxRotZ, mtxScale, mtxMain);
+        PSMTXConcat(mtxRotZ, mtxMain, mtxMain);
+        PSMTXConcat(mtxRotX, mtxMain, mtxMain);
+        PSMTXConcat(mtxRotY, mtxMain, mtxMain);
+        PSMTXConcat(mtxTrans, mtxMain, mtxMain);
+        btlDispTexPlane2(mtxMain, 0x26, work->objs[2].color, 0);
+#ifdef MUST_MATCH
+        ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
+            work->objs[2].pos.x - float_16_80420c44, float_20_80420c48 + work->objs[2].pos.y,
+            float_2_80420c4c + work->objs[2].pos.z, work->objs[2].scale.x, work->objs[2].scale.y,
+            0x29, work->objs[2].color, 0);
+#else
+        btlDispTexPlane(0x29, work->objs[2].color, work->objs[2].pos.x - float_16_80420c44,
+                        float_20_80420c48 + work->objs[2].pos.y, float_2_80420c4c + work->objs[2].pos.z,
+                        work->objs[2].scale.x, work->objs[2].scale.y);
+#endif
+    }
+
+    for (i = 0; i < 3; i++) {
+        obj = &work->objs[i];
+
+        if (obj->flag == 0) {
+            continue;
+        }
+        if (obj->state == 1) {
+            if (obj->value == obj->max) {
+                continue;
+            }
+            pos2 = obj->pos;
+            pos2.x -= float_8_80420c50; pos2.x -= float_6_80420c54;
+            pos2.y = pos2.y - (float_96_80420c58 * obj->scale.y + float_2_80420c4c);
+            pos2.z = pos2.z + float_5_80420c5c;
+            PSMTXScale(mtxS2, float_0p8_80420c60, float_0p8_80420c60, float_1_80420c64);
+            PSMTXTrans(mtxT2, pos2.x, pos2.y, pos2.z);
+            PSMTXConcat(mtxT2, mtxS2, mtxT2);
+            iconNumberDispGx3D(mtxT2, obj->value, 0, obj->color);
+
+            pos3 = obj->pos;
+            pos3.x = pos3.x + float_1p2_80420c68 * (f32)(_keta_get(obj->max) * 8 + 6);
+            pos3.y = pos3.y - (float_96_80420c58 * obj->scale.y + float_3_80420c6c);
+            pos3.z = pos3.z + float_5_80420c5c;
+            PSMTXTrans(mtxT3, pos3.x, pos3.y, pos3.z);
+            PSMTXScale(mtxS2, float_1p2_80420c68, float_1p2_80420c68, float_1_80420c64);
+            PSMTXConcat(mtxT3, mtxS2, mtxT3);
+            iconNumberDispGx3D(mtxT3, obj->max, 0, obj->color);
+
+            pos = obj->pos;
+            pos.y = pos.y - float_96_80420c58 * obj->scale.y;
+            pos.z = pos.z + float_5_80420c5c;
+            PSMTXTrans(mtxT4, pos.x, pos.y, pos.z);
+            PSMTXScale(mtxS2, float_neg0p6_80420c70, float_0p6_80420c74, float_1_80420c64);
+            PSMTXConcat(mtxT4, mtxS2, mtxT4);
+            iconDispGxCol(mtxT4, 0, 0x163, obj->color);
+        } else if (obj->state == 2 || obj->state == 5) {
+            pos3 = obj->pos;
+            pos3.x = pos3.x + ((f32)(_keta_get(obj->max) * 8 / 2) - float_4_80420c78);
+            pos3.y = pos3.y - (float_96_80420c58 * obj->scale.y + float_2_80420c4c);
+            pos3.z = pos3.z + float_5_80420c5c;
+            PSMTXTrans(mtxT3, pos3.x, pos3.y, pos3.z);
+            iconNumberDispGx3D(mtxT3, obj->max, 0, obj->color);
+        }
+    }
 }

@@ -67,3 +67,6 @@ void tou_gamen_screen_tev(void* param);
 void BattleStageOnLightFriendInCommand(void);
 void BattleStageOnLightEnemyInCommand(void);
 
+void BattleStageOnLightInCommand(void);
+void BattleStageOffLightFriendInCommand(void);
+void BattleStageOffLightEnemyInCommand(void);

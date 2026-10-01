@@ -10,6 +10,7 @@
 #include "party/party_move.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "evt/evt_msg.h"
 
 // data external to this unit
 extern s32 kurio_msg_evt[];
@@ -25,6 +26,17 @@ extern s32 kurio_msg_evt[];
 // .sbss
 u32 msg_ep; //unknown since it only gets written to once and never used
 
+s32 kurio_msg_evt[19];
+
+// clang-format off
+
+// partial view of PartyEntry from 0x94: the appear position written by
+// partyGetAppearPos3 (no named field in include/party.h).
+typedef struct PartyAppearPos {
+    u8 pad[0x94];
+    Vec position;
+} PartyAppearPos;
+
 BOOL christineGetStatus(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     if (!party || party->currentMemberId != PARTY_MEMBER_GOOMBELLA || !(party->flags & 0x100)) {
@@ -32,6 +44,7 @@ BOOL christineGetStatus(void) {
     }
     return TRUE;
 }
+
 
 // Matching. The register-allocation miss was fixed by declaring `party` after `hit`/`msg` (assignment
 // split from the declaration) and by loading `mario = party->playerPtr` before the `event->lwData[0]`
@@ -239,6 +252,7 @@ done:
     return EVT_RETURN_DONE;
 }
 
+
 USER_FUNC(post_kurio_use) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
@@ -254,6 +268,7 @@ USER_FUNC(post_kurio_use) {
     return EVT_RETURN_DONE;
 }
 
+
 // .sdata2 constants
 
 void kuribo_init_800C23B4(PartyEntry* party) {
@@ -264,17 +279,12 @@ void kuribo_init_800C23B4(PartyEntry* party) {
     msg_ep = 0;
 }
 
+
 void kuribo_use_post(PartyEntry* party) {
     party->flags &= ~0x04000000;
     party->flags &= ~0x02000000;
 }
 
-// partial view of PartyEntry from 0x94: the appear position written by
-// partyGetAppearPos3 (no named field in include/party.h).
-typedef struct PartyAppearPos {
-    u8 pad[0x94];
-    Vec position;
-} PartyAppearPos;
 
 // Raw party offsets used (no named field): 0x24 frame counter, 0xEC distance threshold.
 void kuribo_use(PartyEntry* party) {
@@ -374,6 +384,7 @@ void kuribo_use(PartyEntry* party) {
     partyChkGnd(party);
 }
 
+
 void kuribo_bye(PartyEntry* party) {
     if (party->field_8 & 0x8) {
         party->field_8 &= ~0x8;
@@ -383,5 +394,17 @@ void kuribo_bye(PartyEntry* party) {
         partyChgRunMode(party, 0xE);
     }
 }
+
+EVT_BEGIN(kurio_msg_evt)
+    CALL(pre_kurio_use)
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(post_kurio_use)
+        RETURN
+    END_IF
+    CALL(evt_msg_print, 0, LW(0), 0, STRING("party"))
+    CALL(post_kurio_use)
+    RETURN
+EVT_END()
+// clang-format on
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

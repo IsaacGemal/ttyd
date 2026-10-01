@@ -103,26 +103,11 @@ void memInit(void) {
     }
 }
 
-// NONMATCHING (95.20%): 1 missing, 1 extra, plus register differences.
 void memClear(HEAP_TYPE heap) {
-	u32 size;
-	MapAllocEntry* entry;
-
 	OSDestroyHeap(heapHandle[heap]);
 	OSCreateHeap(heapStart[heap], heapEnd[heap]);
 	if (heap == HEAP_MALLOC) {
-		size = (u32)heapEnd[1] - (u32)heapStart[1] - 32;
-		entry = OSAllocFromHeap(heapHandle[1], size);
-		if (entry) {
-			memset(entry, 0, size);
-			DCFlushRange(entry, size);
-		}
-		entry->next = NULL;
-		entry->size = size - 32;
-		entry->inuse = 0;
-		mapalloc_base_ptr = entry;
-		mapalloc_size = size;
-		count = 0;
+		mapInitEntry();
 	}
 }
 
@@ -416,7 +401,7 @@ void smartFree(smartEntry* entry) {
 	wp->waitsync++;
 }
 
-// NONMATCHING (97.76%): 3 instructions differ, 4 missing, plus register differences.
+// 100%: the heap-tail expression needs explicit grouping for mwcc's reassociation.
 smartEntry* smartAlloc(u32 size, u8 type) {
 	smartEntry* entry1, * entry2;
 	u32 size2;
@@ -482,7 +467,12 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 		}
 		wp->field_0xE008 = entry2;
 		if (!entry2->next) {
+#ifdef MUST_MATCH
+			// Grouping that makes mwcc pool heapEnd-heapStart before adding wp->ptr (-32 first).
+			entry2->field_0x10 = ((u32)heapEnd[5] - (u32)heapStart[5]) - 32 + (u32)wp->ptr - (u32)entry2->address - entry2->size;
+#else
 			entry2->field_0x10 = (u32)wp->ptr + (u32)heapEnd[5] - (u32)heapStart[5] - 32 - (u32)entry2->address - entry2->size;
+#endif
 			wp->field_0xE00C = entry2;
 		}
 		return entry2;

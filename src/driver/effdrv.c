@@ -125,7 +125,6 @@ void effInit(void) {
 	effInit64();
 }
 
-// NONMATCHING (83.63%): 2 instructions differ, 5 missing, 5 extra, plus register differences.
 void effTexSetup(void) {
 	DVDEntry* entry;
 	char path[128];
@@ -134,17 +133,17 @@ void effTexSetup(void) {
 	wp->texture = NULL;
 	wp->texLoaded = FALSE;
 	wp->texture = arcOpen("effect.tpl", 0, 0);
-	if (wp->texture) {
-		UnpackTexPalette(wp->texture);
-		wp->texLoaded = TRUE;
-	}
-	else {
+	if (wp->texture == NULL) {
 		sprintf(path, "%s/e/jp/effect.tpl", getMarioStDvdRoot());
 		entry = DVDMgrOpen(path, 2, 0);
 		size = OSRoundUp32B(DVDMgrGetLength(entry));
 		wp->texture = __memAlloc(HEAP_DEFAULT, size);
 		entry->info.cb.userData = entry;
 		DVDMgrReadAsync(entry, wp->texture, size, 0, _callback_tpl);
+	}
+	else {
+		UnpackTexPalette(wp->texture);
+		wp->texLoaded = TRUE;
 	}
 	effTexSetupN64();
 }
@@ -176,13 +175,16 @@ void effGetTexObj(u32 id, GXTexObj* obj) {
 #endif
 }
 
-// NONMATCHING (48.68%): 3 instructions differ, 4 missing, 11 extra, plus register differences.
 void effAutoRelease(BOOL inBattle) {
-	EffectEntry* entry = wp->entries;
 	int i;
+	int count;
+	EffectEntry* entry;
 
-	for (i = 0; i < wp->count; i++, entry++) {
-		if (entry->flags & 1 && entry->inBattle == inBattle && entry && entry->flags) {
+	count = wp->count;
+	entry = wp->entries;
+
+	for (i = 0; i < count; i++, entry++) {
+		if (entry->flags & 1 && (s32)entry->inBattle == inBattle && entry && entry->flags) {
 			__memFree(HEAP_EFFECT, entry->userdata);
 			entry->flags = 0;
 		}
@@ -208,32 +210,38 @@ EffectEntry* effEntry(void) {
 	return entry;
 }
 
-// NONMATCHING (51.61%): 3 instructions differ, 3 missing, 10 extra, plus register differences.
 void effSetName(EffectEntry* effect, const char* name) {
-	EffectEntry* entry = wp->entries;
 	int i;
+	int count;
+	EffectEntry* entry;
 
-	for (i = 0; i < wp->count; i++, entry++) {
-		if (!entry->flags && !strcmp(entry->name, name)) {
+	count = wp->count;
+	entry = wp->entries;
+
+	for (i = 0; i < count; i++, entry++) {
+		if (entry->flags && !strcmp(entry->name, name)) {
 			break;
 		}
 	}
 	strcpy(effect->name, name);
 }
 
-// NONMATCHING (84.22%): 7 instructions differ, 6 missing, 4 extra, plus register differences.
 void effMain(void) {
 	const char *dvdroot, *prefix;
-	EffectEntry* entry = wp->entries;
 	int i;
+	int count;
+	EffectEntry* entry;
 
-	for (i = 0; i < wp->count; i++, entry++) {
+	count = wp->count;
+	entry = wp->entries;
+
+	for (i = 0; i < count; i++, entry++) {
 		if (gp->inBattle) {
-			if (!entry->inBattle) {
+			if ((s32)entry->inBattle != 1) {
 				continue;
 			}
 		}
-		else if (entry->inBattle) {
+		else if ((s32)entry->inBattle != 0) {
 			continue;
 		}
 		if (entry->flags & 1) {
@@ -242,17 +250,16 @@ void effMain(void) {
 			}
 		}
 	}
-	if (wp->language != gp->language) {
+	if ((u32)wp->language != (u32)gp->language) {
 		if (wp->handle) {
 			fileFree(wp->handle);
 			wp->handle = NULL;
 		}
 		prefix = prefix_tbl[gp->language];
 		dvdroot = getMarioStDvdRoot();
-		if (fileAsyncf(4, 0, "%s/e/%s/effect_%s.tpl", dvdroot, prefix, prefix)) {
+		if ((u32)fileAsyncf(4, 0, "%s/e/%s/effect_%s.tpl", dvdroot, prefix, prefix) != 0) {
 			prefix = prefix_tbl[gp->language];
-			dvdroot = getMarioStDvdRoot();
-			wp->handle = fileAllocf(4, "%s/e/%s/effect_%s.tpl", dvdroot, prefix, prefix);
+			wp->handle = fileAllocf(4, "%s/e/%s/effect_%s.tpl", getMarioStDvdRoot(), prefix, prefix);
 			wp->language = gp->language;
 		}
  	}
@@ -276,33 +283,33 @@ void effSoftDelete(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (68.58%): 4 instructions differ, 4 missing, 5 extra, plus register differences.
 EffectEntry* effNameToPtr(const char* name) {
-	EffectEntry* entry = wp->entries;
 	int i;
+	int count;
+	EffectEntry* entry;
 
-	for (i = 0; i < wp->count; i++, entry++) {
-		if (entry->flags && !strcmp(name, entry->name)) {
+	count = wp->count;
+	entry = wp->entries;
+
+	for (i = 0; i < count; i++, entry++) {
+		if (entry->flags && !strcmp(entry->name, name)) {
 			break;
 		}
 	}
-	if (i < wp->count) { //found a match
-		return entry;
-	}
-	else {
+	if (i >= count) { //no match found
 		return NULL;
 	}
+	return entry;
 }
 
-// NONMATCHING (77.38%): 3 instructions differ, 6 missing, plus register differences.
 EffectSet* effGetSet(const char* name) {
-	EffectSet* set = eff_set_table;
+	int i = 0;
 
-	while (set->id != -1) { //run until end of table
-		if (!strcmp(set->name, name)) {
-			return set;
+	while (eff_set_table[i].id != -1) { //run until end of table
+		if (!strcmp(eff_set_table[i].name, name)) {
+			return &eff_set_table[i];
 		}
-		set++;
+		i++;
 	}
 	return NULL;
 }
@@ -321,6 +328,26 @@ typedef struct EffectMayaAnim {
 	EffectMayaAnimData* animData;   // 0x10
 	EffectMayaAnimEntry entries[];  // 0x14
 } EffectMayaAnim;
+
+typedef struct EffectMayaVtx {
+	s16 x; // 0x0
+	s16 y; // 0x2
+	s16 z; // 0x4
+	s16 s; // 0x6
+	s16 t; // 0x8
+} EffectMayaVtx;
+
+typedef struct EffectMayaPoly {
+	s16 count;           // 0x0
+	EffectMayaVtx vtx[]; // 0x2
+} EffectMayaPoly;
+
+typedef struct EffectMayaPolyList {
+	u32 field_0x0;          // 0x0
+	u32 field_0x4;          // 0x4
+	s32 count;              // 0x8
+	EffectMayaPoly** polys; // 0xC
+} EffectMayaPolyList;
 
 void* effMayaAnimAlloc(void* animData) {
 	u32 size = *((EffectMayaAnimData*)animData)->count * 0x34 + 0x18;
@@ -363,5 +390,30 @@ void effCalcMayaAnim(void* animPtr) {
 
 	for (i = 0; i < anim->animData->count[0]; i++) {
 		effCalcMayaAnimMatrix(anim, (u8*)anim->animData->count[1] + i * 0x10, anim->entries[i].mtx, &anim->entries[i].field_0x30);
+	}
+}
+
+void effDrawMayaPoly(void* data_) {
+	EffectMayaPolyList* data = (EffectMayaPolyList*)data_;
+	s32 i;
+	s32 j;
+
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 9);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 9);
+	GXSetCullMode(GX_CULL_NONE);
+
+	for (i = 0; i < data->count; i++) {
+		EffectMayaPoly* poly = data->polys[i];
+		u16 count = poly->count;
+		EffectMayaVtx* vtx = poly->vtx;
+
+		GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, count);
+		for (j = 0; j < count; j++) {
+			GXPosition3s16(vtx[j].x, vtx[j].y, vtx[j].z);
+			GXTexCoord2s16(vtx[j].s, vtx[j].t);
+		}
 	}
 }

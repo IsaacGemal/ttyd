@@ -224,12 +224,15 @@ static inline void hitUpdateActiveList(void) {
         hit = map->hitEntries;
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (hit->joint->partCount != 0 && !(hit->flags & 0x81)) {
+                // `prev = hit` is written in both arms: retail tail-duplicates the update into each
+                // branch, and a single update after the if/else costs the extra `mr r5, r6`.
                 if (prev == NULL) {
                     lbl_80418408 = hit;
+                    prev = hit;
                 } else {
                     prev->siblingActive = hit;
+                    prev = hit;
                 }
-                prev = hit;
             }
         }
     }
@@ -238,7 +241,9 @@ static inline void hitUpdateActiveList(void) {
     }
 }
 
-// NONMATCHING (97.76%): inlined active-list rebuild has a couple of low-register swaps left.
+// NONMATCHING (99.10%): the inlined active-list rebuild's `prev = NULL` coalesces to
+// `mr r5, r8` (reusing i's 0) and the `map = wp->entries` load is scheduled one slot early
+// versus retail's `li r5, 0` / later `mr r9, r3`.
 void hitDelete(const char* name) {
     MapEntry* map;
     MapWork* wp = mapGetWork();
@@ -258,14 +263,16 @@ void hitDelete(const char* name) {
     }
 }
 
-// NONMATCHING (97.33%): main animation pass keeps a different register assignment than retail.
+// NONMATCHING (98.52%): main animation pass keeps a different register assignment than retail
+// (wp lands in r25 instead of r23, which cascades through map/found/anim/i/j/k; the hitNameToPtr
+// inline differs too). Local declaration order is tuned to get as close as the allocator allows.
 void hitMain(void) {
     MapWork* wp = mapGetWork();
     MapEntry* map;
     HitEntry* found;
-    u8* anim;
     s32 i, j, k;
     s32 anyScale;
+    u8* anim;
     Mtx mtx;
 
     hitUpdateActiveList();
@@ -1190,19 +1197,18 @@ HitEntry* hitNameToPtr(const char* name) { // 1:1
     return NULL;
 }
 
-// NONMATCHING (48.35%): 176 missing, plus register differences.
 void hitObjGetPosSub(HitEntry* hit, Vec* position, s32* counter, BOOL recursion) { // 1:1, awful inlining
     Vec sp8;
 
-    if (hit->child != NULL) {
+    if (hit->child) {
         hitObjGetPosSub(hit->child, position, counter, 1);
     } else {
         PSMTXMultVec(hit->worldMtx, &hit->centerLocal, &sp8);
         PSVECAdd(position, &sp8, position);
         (*counter)++;
     }
-    if (recursion != 0) {
-        if (hit->sibling != NULL) {
+    if (recursion) {
+        if (hit->sibling) {
             hitObjGetPosSub(hit->sibling, position, counter, 1);
         }
     }

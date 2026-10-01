@@ -3,12 +3,22 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 
-extern GXColor unk_804230e8;
-extern GXColor unk_804230ec;
-extern GXColor unk_804230f0;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804230f0;
+__declspec(section ".sdata") GXColor unk_804230ec;
+__declspec(section ".sdata") GXColor unk_804230e8;
+
+
+static u32 size32x32_tex32x32_vtx[14] = {
+    0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010,
+    0xFFF00000, 0xFC000000, 0x000000FF, 0x00100010,
+    0x0000FC00, 0x04000000, 0x00FFFFF0, 0x00100000,
+    0x00000400, 0x000000FF,
+};
+
 extern const u32 dat_8041ed60;
 extern const u32 dat_8041ed64;
-extern u32 size32x32_tex32x32_vtx[];
 
 const Vec vec3_802fa510 = { 0.0f, 0.0f, 0.0f };
 
@@ -105,9 +115,6 @@ static inline void explosionSetColorAlt(s32 a) {
 	GXSetTevColor(GX_TEVREG1, c);
 }
 
-// NONMATCHING (98.91%): the type-0 TEV colour temp/argument stack slots and the type!=0 branch's
-// first GXSetTevColor argument are 4 bytes off (the else's first colour gets 0x28 instead of 0x10),
-// and the texture-matrix offset uses r29 instead of r28.
 void effExplosionDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	effExplosionN64Data* data;
@@ -118,6 +125,7 @@ void effExplosionDisp(CameraId camId, void* param) {
 	Mtx m1;
 	Mtx viewMtx;
 	f32 colorScale;
+	s32 frameOffset;
 	s32 type;
 	s32 lastFrame;
 	s32 frame;
@@ -182,7 +190,7 @@ void effExplosionDisp(CameraId camId, void* param) {
 		GXSetTevKColorSel(GX_TEVSTAGE3, GX_TEV_KCSEL_K0);
 	}
 	else {
-		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041ed60);
+		explosionSetColorAlt0();
 
 		explosionSetColorAlt(frac);
 
@@ -209,8 +217,9 @@ void effExplosionDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
+	frameOffset = frame * 32;
 	PSMTXScale(m2, 0.00390625f, 0.03125f, 0.0f);
-	PSMTXTrans(m0, (f32)(frame * 32), 0.0f, 0.0f);
+	PSMTXTrans(m0, (f32)frameOffset, 0.0f, 0.0f);
 	PSMTXConcat(m2, m0, m2);
 	GXLoadTexMtxImm(m2, GX_TEXMTX0, GX_MTX2x4);
 
@@ -220,7 +229,7 @@ void effExplosionDisp(CameraId camId, void* param) {
 	}
 	else {
 		PSMTXScale(m2, 0.00390625f, 0.03125f, 0.0f);
-		PSMTXTrans(m0, (f32)(frame * 32 + 32), 0.0f, 0.0f);
+		PSMTXTrans(m0, (f32)(frameOffset + 32), 0.0f, 0.0f);
 		PSMTXConcat(m2, m0, m2);
 		GXLoadTexMtxImm(m2, GX_TEXMTX1, GX_MTX2x4);
 	}
@@ -231,3 +240,6 @@ void effExplosionDisp(CameraId camId, void* param) {
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041ed60 = 0xFFFF287F;
+const u32 dat_8041ed64 = 0xFFFF8B00;

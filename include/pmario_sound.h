@@ -134,6 +134,7 @@ s32 psndENVOn_f_d(s32 id, s32 a, s32 b, s32 c);
 s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e);
 void psndSFX_pos(s32 id, Vec* position);
 s32 __psndSFXOn(s32, s32, s32, s32, Vec*, s32, s32, s32);
+u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span);
 
 
 

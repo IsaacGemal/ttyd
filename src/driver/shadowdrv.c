@@ -87,11 +87,23 @@ DepthShadowWork* dswp = &depth_shadow_work;
 ProjShadowWork* pswp = &proj_shadow_work;
 CharShadowWork* cswp = &char_shadow_work;
 
-// NONMATCHING (99.47%): body matches. `bufferSize` lands in r31 as the original, but the first assignment has
-// an extra `mr r0,r3; mr r31,r0` and the second `bufferSize`/`ramp16` pair are swapped (r31/r30).
+#ifdef MUST_MATCH
+// MUST_MATCH: returning the size through an inline lets MWCC coalesce the call result into the
+// destination register instead of staging it through r0 (`mr r0,r3; mr rN,r0`). The natural direct-call
+// form is under the #else at each use.
+static inline u32 shadowTexBufferSize(u16 w, u16 h, u32 fmt) {
+    return GXGetTexBufferSize(w, h, fmt, GX_FALSE, 0);
+}
+#endif
+
+// The instruction stream, call sequence and block1 registers match. The block2 ramp rotation differs:
+// MWCC colours `bufferSize2`/`ramp16` r31/r30 where retail has r30/r31 (the loop's sthx base and the
+// second DCFlushRange args follow the swap). Data references use the original symbols, not pool constants.
+// NONMATCHING (99.80%): block2 `bufferSize2`/`ramp16` register swap (r31/r30 vs retail r30/r31).
 void shadowInit(void) { //almost 1:1, minor regalloc
     u32 bufferSize;
     u8* ramp8;
+    u32 bufferSize2;
     u16* ramp16;
     u32 i;
     CharShadowWork* wp;
@@ -114,7 +126,11 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     dswp->unk8 = 0;
     dswp->unk100 = (GXColor){0, 0, 0, 0x40};
 
+#ifdef MUST_MATCH
+    bufferSize = shadowTexBufferSize(0x10, 0x10, GX_TF_I8);
+#else
     bufferSize = GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0);
+#endif
     ramp8 = __memAlloc(HEAP_DEFAULT, GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0));
     for (i = 0; i < 256; i++) {
         ramp8[(((i & 0x3) * 8) + (((i & 0xC) * 16) + (((i & 0x80) / 4) + ((i & 0x70) / 16))))] = i;
@@ -123,14 +139,18 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     GXInitTexObjLOD(&rampTex8, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     DCFlushRange(ramp8, bufferSize);
 
-    bufferSize = GXGetTexBufferSize(0x100, 0x100, GX_TF_IA8, GX_FALSE, 0);
+#ifdef MUST_MATCH
+    bufferSize2 = shadowTexBufferSize(0x100, 0x100, GX_TF_IA8);
+#else
+    bufferSize2 = GXGetTexBufferSize(0x100, 0x100, GX_TF_IA8, GX_FALSE, 0);
+#endif
     ramp16 = __memAlloc(HEAP_DEFAULT, GXGetTexBufferSize(0x100, 0x100, GX_TF_IA8, GX_FALSE, 0));
     for (i = 0; i < 0x10000; i++) {
         ramp16[(((i & 0x3) * 4) + (((i & 0xFC) * 256) + (((i & 0xFC00) / 64) + ((i & 0x300) / 256))))] = i;
     }
     GXInitTexObj(&rampTex16, ramp16, 0x100, 0x100, GX_TF_IA8, GX_CLAMP, GX_REPEAT, GX_FALSE);
     GXInitTexObjLOD(&rampTex16, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    DCFlushRange(ramp16, bufferSize);
+    DCFlushRange(ramp16, bufferSize2);
 
     pswp->unk0 = 2;
     pswp->unk4 = 0;
@@ -396,7 +416,22 @@ void cylinder(ShadowEntry* entry) {
         cylinder(entry);                            \
     } while (0)
 
-// NONMATCHING (98.56%): instructions differ; see check.py
+#ifdef MUST_MATCH
+// MUST_MATCH: building the by-value GXColor inside an inlined helper puts its scratch slot below the
+// GXSetTevColor argument copy and gives the helper's slot the lower address (r1+0x18, argument r1+0x1c),
+// as the original does; written inline the two swap. Same for shadowMatColor: the by-value color is built
+// in the helper so its scratch slot lands where retail's does.
+static inline void shadowTevColor(u8 a) {
+    GXColor c = unk_80422fa0;
+    c.a = a;
+    GXSetTevColor(1, c);
+}
+
+static inline void shadowMatColor(GXColor c) {
+    GXSetChanMatColor(4, c);
+}
+#endif
+
 void cylinderShadowDraw(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
@@ -404,7 +439,9 @@ void cylinderShadowDraw(CameraId camId, void* param) {
     u16 left, top, right, bottom;
     f32 zero;
     s32 i;
+#ifndef MUST_MATCH
     GXColor color;
+#endif
 
     (void)param;
     view = camGetCurPtr()->view;
@@ -428,9 +465,13 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         }
         PSMTXConcat(view, entry->matrix, mtx);
         GXLoadPosMtxImm(mtx, 0);
+#ifdef MUST_MATCH
+        shadowTevColor(entry->mode);
+#else
         color = unk_80422fa0;
         color.a = entry->mode;
         GXSetTevColor(1, color);
+#endif
         GXSetZMode(1, 3, 0);
         GXSetCullMode(2);
         GXSetBlendMode(1, 1, 1, 0);
@@ -444,14 +485,22 @@ void cylinderShadowDraw(CameraId camId, void* param) {
         GXSetBlendMode(0, 4, 5, 0);
         GXSetAlphaUpdate(1);
         GXSetColorUpdate(0);
+#ifdef MUST_MATCH
+        shadowMatColor(unk_80422fa4);
+#else
         GXSetChanMatColor(4, unk_80422fa4);
+#endif
         GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
         SHADOW_ENTRY_DRAW(entry);
         GXSetCullMode(2);
         GXSetBlendMode(1, 6, 7, 0);
         GXSetAlphaUpdate(0);
         GXSetColorUpdate(1);
+#ifdef MUST_MATCH
+        shadowMatColor(cswp->unk100);
+#else
         GXSetChanMatColor(4, cswp->unk100);
+#endif
         SHADOW_ENTRY_DRAW(entry);
         if (camId == 1) {
             sysWaitDrawSync();
@@ -461,12 +510,11 @@ void cylinderShadowDraw(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (96.18%): body matches; remaining diffs are call-argument register scheduling.
 void projShadowEnd(s32 arg0, ProjShadowWork* work) {
     ShadowConfigFields* config;
     CameraEntry* cam;
     Mtx mtx;
-    s32 size;
+    u16 size;
     s32 bufferSize;
 
     cam = camGetCurPtr();
@@ -485,24 +533,24 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
                 bufferSize = GXGetTexBufferSize(size, size, 2, 0, 0);
             }
             work->unkFC = smartAlloc(bufferSize, 3);
-            GXSetTexCopySrc(0, 0, size, size);
-            if (work->unk0 & 4) {
-                GXSetTexCopyDst((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 1);
-            }
-            else {
-                GXSetTexCopyDst(size, size, 2, 0);
-            }
-            GXSetZMode(1, 3, 1);
-            GXCopyTex(work->unkFC->address, 1);
-            GXPixModeSync();
-            if (work->unk0 & 4) {
-                GXInitTexObj(&work->texObj, work->unkFC->address, (size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 0, 0, 0);
-            }
-            else {
-                GXInitTexObj(&work->texObj, work->unkFC->address, size, size, 2, 0, 0, 0);
-            }
-            GXInitTexObjLOD(&work->texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
         }
+        GXSetTexCopySrc(0, 0, size, size);
+        if (work->unk0 & 4) {
+            GXSetTexCopyDst((size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 1);
+        }
+        else {
+            GXSetTexCopyDst(size, size, 2, 0);
+        }
+        GXSetZMode(1, 3, 1);
+        GXCopyTex(work->unkFC->address, 1);
+        GXPixModeSync();
+        if (work->unk0 & 4) {
+            GXInitTexObj(&work->texObj, work->unkFC->address, (size >> 1) & 0x7FFF, (size >> 1) & 0x7FFF, 2, 0, 0, 0);
+        }
+        else {
+            GXInitTexObj(&work->texObj, work->unkFC->address, size, size, 2, 0, 0, 0);
+        }
+        GXInitTexObjLOD(&work->texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
         config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
         if (&work->unk7C != NULL) {
             if (config->unk38 == 0) {
@@ -843,17 +891,23 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (99.77%): body matches; only float-constant pool labels (TU-global .sdata2 layout) and the
-// _filter/_query argument-setup register choice differ.
+// The `q` pointer plus `opt_propagation off` are both required (and only together): with either one
+// missing MWCC materialises `_filter` through r3 and schedules its low addi before `&query`, instead of
+// reserving r3 for `&query` and putting `_filter` straight in r4. The declaration order below then keeps
+// mtx in r29 and i in r30.
+#pragma opt_propagation off // needed, with `q`, so MWCC reserves r3 for &query and puts _filter in r4
 void shadowCharShadowDisp_Collision(void) {
     ShadowEntry* entry = cswp->entries;
+    s32 i;
     HitCheckQuery query;
-    HitEntry* hit;
     f32 (*mtx)[4];
+    HitEntry* hit;
+#ifdef MUST_MATCH
+    HitCheckQuery* q;
+#endif
     f32 size;
     f32 unk14;
     f32 zero;
-    s32 i;
 
     camGetCurPtr();
     zero = float_0_804198f4;
@@ -866,11 +920,20 @@ void shadowCharShadowDisp_Collision(void) {
             continue;
         }
         if (entry->unk2 != 3 && (entry->flags & 1) != 0) {
+#ifdef MUST_MATCH
+            q = &query;
+            q->targetPos = entry->position;
+            q->targetPos.y += 1.0f;
+            q->targetDir = vec3_802c1a90;
+            q->targetDistance = 150.0f;
+            hit = hitCheckVecFilter(q, _filter);
+#else
             query.targetPos = entry->position;
-            query.targetPos.y += float_1_80419904;
+            query.targetPos.y += 1.0f;
             query.targetDir = vec3_802c1a90;
-            query.targetDistance = float_150_80419920;
+            query.targetDistance = 150.0f;
             hit = hitCheckVecFilter(&query, _filter);
+#endif
             if (hit == NULL) {
                 continue;
             }
@@ -899,6 +962,7 @@ void shadowCharShadowDisp_Collision(void) {
         entry->flags |= 2;
     }
 }
+#pragma opt_propagation reset
 
 void shadowMain(void) {
     dispEntry(CAMERA_3D, float_0_804198f4, 9, shadowDisp, NULL);

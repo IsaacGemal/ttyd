@@ -620,7 +620,7 @@ USER_FUNC(dai3_butai_main_func) {
     return EVT_RETURN_DONE;
 }
 
-inline NanNpcEntry* inline_fn(NanNpcWork* arg0, s32 arg1, int arg2) {
+static inline NanNpcEntry* nanNpcEntryAt(NanNpcWork* arg0, s32 arg1, int arg2) {
     return &arg0->entries[arg1 + arg2];
 }
 
@@ -637,7 +637,7 @@ USER_FUNC(kaizoku_main_func) {
     NanNpcWork* work = nanNPCWork;
 
     for (i = 0; i < 95; i++) {
-        NanNpcEntry* entry = inline_fn(work, i, 10);
+        NanNpcEntry* entry = nanNpcEntryAt(work, i, 10);
         entry->work[0] += delta;
         s = (f32)entry->work[1];
         v1 = 3.141592f * (f32)entry->work[0] / 180.0f;
@@ -647,7 +647,7 @@ USER_FUNC(kaizoku_main_func) {
         entry->position.z = s * c + v3;
     }
     for (i = 0; i < 100; i++) {
-        NanNpcEntry* entry = inline_fn(work, i, 0x69);
+        NanNpcEntry* entry = nanNpcEntryAt(work, i, 0x69);
         entry->work[0] += delta;
         s = (f32)entry->work[1];
         v1 = 3.141592f * (f32)entry->work[0] / 180.0f;
@@ -706,12 +706,12 @@ USER_FUNC(mario_main_setup_func) {
         rad = 3.141592f * c / 180.0f;                                                       \
         s = sin(rad);                                                                       \
         target = d * s + centerX;                                                           \
-        c = inline_fn2(rad);                                                                       \
+        c = cosOf(rad);                                                                       \
         (obj)->position.x = target;                                                         \
         (obj)->position.z = d * c + centerZ;                                                \
     }
 
-inline double inline_fn2(f32 arg0) {
+static inline double cosOf(f32 arg0) {
     return cos(arg0);
 }
 

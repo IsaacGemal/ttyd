@@ -197,10 +197,35 @@ void effKemuri8Main(EffectEntry* effect) {
 	dispEntry(camId, dispCalcZ(&position), 2, effKemuri8Disp, effect);
 }
 
-// NONMATCHING (98.51%): compiler stack-slot choice for the three by-value GXColor temporaries
-// (ours 0x10/0x18/0x14 vs 0x18/0x10/0x8) and the vertex-block half-size CSE (original keeps
-// size*0.5 and -size*0.5 in f2/f3/f1/f4; ours folds to f1/f2). See REPORT.md for what was tried.
+// Colour helpers that reproduce the original's by-value stack slots. The TEV colour is returned from an
+// inline (its literal 0x80808080 is what puts the unit's first .sdata2 word at offset 0, so the rest of
+// the function's pooled float literals land on the original addresses); each material colour is built and
+// its GXSetChanMatColor call made inside a void inline, which pairs the local with its outgoing copy
+// (0x8/0xc and 0x10/0x14) as the original does.
+#ifdef MUST_MATCH
+static inline GXColor kemuri8TevColor(void) {
+	GXColor c = (GXColor){ 0x80, 0x80, 0x80, 0x80 };
+	return c;
+}
+
+static inline void kemuri8SetChanMatColorA(u8 a) {
+	GXColor c = unk_80423170;
+	c.a = a;
+	GXSetChanMatColor(4, c);
+}
+
+static inline void kemuri8SetChanMatColorB(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c = unk_80423174;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	GXSetChanMatColor(4, c);
+}
+#endif
+
 void effKemuri8Disp(CameraId cameraId, void* param) {
+	f32 half = 0.5f;
 	EffectEntry* effect = param;
 	effKemuri8Particle* data;
 	CameraEntry* camera;
@@ -214,6 +239,7 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	s32 frameU;
 	s32 frameV;
 	f32 size;
+	f32 size2;
 	s32 type;
 	s32 i;
 	s32 j;
@@ -225,8 +251,8 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	frameV = data->field_0x48;
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041f424 * -camGetPtr(cameraId)->viewYaw);
-	PSMTXScale(scaleMtx, float_1_8041f428, float_1_8041f428, float_1_8041f428);
+	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
+	PSMTXScale(scaleMtx, 1.0f, 1.0f, 1.0f);
 	PSMTXConcat(transMtx, rotMtx, transMtx);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(camera->view, transMtx, outMtx);
@@ -249,7 +275,11 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0, 8, 2, 0xf);
 	GXSetTevAlphaIn(1, 0, 4, 1, 7);
+#ifdef MUST_MATCH
+	GXSetTevColor(1, kemuri8TevColor());
+#else
 	GXSetTevColor(1, dat_8041f420);
+#endif
 	GXSetTevOrder(2, 0xff, 0xff, 4);
 	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
 	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
@@ -262,29 +292,33 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
 
-	uOffset = float_0p0625_8041f42c * (f32)frameU;
-	vOffset = float_0p0625_8041f42c * (f32)frameV;
+	uOffset = 0.0625f * (f32)frameU;
+	vOffset = 0.0625f * (f32)frameV;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		if (data->field_0x40 > 15) {
 			continue;
 		}
-		PSMTXTrans(transMtx, uOffset, float_0_8041f430, float_0_8041f430);
-		PSMTXScale(scaleMtx, float_0p0625_8041f42c, float_1_8041f428, float_1_8041f428);
+		PSMTXTrans(transMtx, uOffset, 0.0f, 0.0f);
+		PSMTXScale(scaleMtx, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(transMtx, scaleMtx, transMtx);
 		GXLoadTexMtxImm(transMtx, 0x1e, 1);
-		PSMTXTrans(transMtx, vOffset, float_0_8041f430, float_0_8041f430);
-		PSMTXScale(scaleMtx, float_0p0625_8041f42c, float_1_8041f428, float_1_8041f428);
+		PSMTXTrans(transMtx, vOffset, 0.0f, 0.0f);
+		PSMTXScale(scaleMtx, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(transMtx, scaleMtx, transMtx);
 		GXLoadTexMtxImm(transMtx, 0x21, 1);
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
+#ifdef MUST_MATCH
+				kemuri8SetChanMatColorA((data->pad_44[3] * 0x60) / 255);
+#else
 				GXColor color = unk_80423170;
 				color.a = (data->pad_44[3] * 0x60) / 255;
 				GXSetChanMatColor(4, color);
-				PSMTXTrans(transMtx, float_2_8041f434 + data->position.x, data->position.y - float_2_8041f434, data->position.z);
+#endif
+				PSMTXTrans(transMtx, 2.0f + data->position.x, data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(outMtx, transMtx, transMtx);
 				GXLoadPosMtxImm(transMtx, 0);
 			} else {
@@ -299,10 +333,10 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 
 					blue = 0xff - data->field_0x54 * 60;
 					if (blue < 0) {
-						green += (s32)(float_0p8_8041f438 * (f32)blue);
+						green += (s32)(0.8f * (f32)blue);
 						blue = 0;
 						if (green < 0) {
-							red += (s32)(float_0p4_8041f43c * (f32)green);
+							red += (s32)(0.4f * (f32)green);
 							green = 0;
 							if (red < 0) {
 								red = 0;
@@ -314,6 +348,10 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 					data->pad_44[2] = blue;
 					data->field_0x54++;
 				}
+#ifdef MUST_MATCH
+				kemuri8SetChanMatColorB(data->pad_44[0], data->pad_44[1],
+					data->pad_44[2], data->pad_44[3]);
+#else
 				{
 					GXColor color = unk_80423174;
 					color.r = data->pad_44[0];
@@ -322,21 +360,43 @@ void effKemuri8Disp(CameraId cameraId, void* param) {
 					color.a = data->pad_44[3];
 					GXSetChanMatColor(4, color);
 				}
+#endif
 				PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(outMtx, transMtx, transMtx);
 				GXLoadPosMtxImm(transMtx, 0);
 			}
 
 			GXBegin(0x80, 0, 4);
-			size = (type != 0) ? float_32_8041f440 : float_24_8041f444;
-			GXPosition3f32(-size * 0.5f, size * 0.5f, 0.0f);
+#ifdef MUST_MATCH
+			// Assigned to two variables so MWCC emits the target's duplicate `fmr` and its four separate
+			// `size * 0.5` corners instead of folding them into two products.
+			if (type != 0) {
+				size = 32.0f;
+				size2 = size;
+			}
+			else {
+				size = 24.0f;
+				size2 = size;
+			}
+			GXPosition3f32(-size2 * half, size * half, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(size * 0.5f, size * 0.5f, 0.0f);
+			GXPosition3f32(size2 * half, size * half, 0.0f);
 			GXTexCoord2f32(1.0f, 0.0f);
-			GXPosition3f32(size * 0.5f, -size * 0.5f, 0.0f);
+			GXPosition3f32(size2 * half, -size * half, 0.0f);
 			GXTexCoord2f32(1.0f, 1.0f);
-			GXPosition3f32(-size * 0.5f, -size * 0.5f, 0.0f);
+			GXPosition3f32(-size2 * half, -size * half, 0.0f);
 			GXTexCoord2f32(0.0f, 1.0f);
+#else
+			size = (type != 0) ? 32.0f : 24.0f;
+			GXPosition3f32(-size * half, size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(size * half, size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(size * half, -size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-size * half, -size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+#endif
 		}
 	}
 }

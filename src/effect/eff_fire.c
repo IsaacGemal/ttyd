@@ -832,12 +832,9 @@ static inline GXColor effFireSmokeColor(effFireSmokeData* data) {
 }
 #endif
 
-// The only remaining difference is the FPR colouring of the two int->float scale conversions: the target
-// keeps the conversion mask in f3, the first result in f2 and the constant in f1; this build puts the
-// mask in f2, the result in f1 and the constant in f3. The sequence, stack slots and every other register
-// are identical. opt_lifetimes/opt_propagation/opt_common_subs, declaration-order and inline-helper
-// variations all leave the colouring unchanged.
-// NONMATCHING (99.81%): FPR colouring of the scale conversion
+// MATCH: writing the scale as / 128.0f (the same value as * 0.0078125f) makes MWCC strength-reduce
+// it to the fmuls with the original's FP register colouring (mask f3, quotient f2, constant f1);
+// the natural multiply leaves the mask in f2, the result in f1 and the constant in f3.
 void effFireSmokeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireSmokeData* data = effect->userdata;
@@ -855,8 +852,13 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 
 	camera = camGetPtr(camId);
 	if ((u32)data->counter * 2 < 0x3C) {
+#ifdef MUST_MATCH
+		scaleX = scale_dt[data->counter * 2] / 128.0f;
+		scaleY = scale_dt[data->counter * 2 + 1] / 128.0f;
+#else
 		scaleX = scale_dt[data->counter * 2] * float_0p0078125_8041e0ec;
 		scaleY = scale_dt[data->counter * 2 + 1] * float_0p0078125_8041e0ec;
+#endif
 	} else {
 		scaleX = float_1p5_8041e0f0;
 		scaleY = float_0p8_8041e0f4;

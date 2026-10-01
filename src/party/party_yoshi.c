@@ -168,23 +168,17 @@ s32 yoshiGetStatus(void) {
     return status;
 }
 
-// NONMATCHING (95.60%): the pose-flag test emits a single `beq end`
-// where the original emits `bne body; b end`.
+// The three early-exit tests must share one `||` (as in yoshiGetStatus): a
+// flat chain keeps them in one condition and makes the flag test emit the
+// original's `bne body; b end` instead of `beq end`.
 void yoshi_jumpStand(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
-    if (party == NULL) {
+    if (party == NULL || party->currentMemberId != PARTY_MEMBER_YOSHI || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
         return;
     }
-    if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-        return;
-    }
-    if (party->flags & PARTY_FLAG_IS_BEING_USED) {
-        if (party->useMotionId < 0x3C || party->useMotionId > 0x42) {
-            party->useMotionId = 0x3C;
-        }
-    } else {
-        return;
+    if (party->useMotionId < 0x3C || party->useMotionId > 0x42) {
+        party->useMotionId = 0x3C;
     }
 }
 
@@ -437,18 +431,18 @@ void L_yoshiFlyMove(PartyEntry* party) {
     *(f32*)((u8*)mario + 0x18C) = f29;
 }
 
-// NONMATCHING (96.19%): the t=f4*f4+f5*f5 association and the float_0p01
-// operand order are reproduced. The else branch now uses one negated-16 temp
-// and subtracts MATCH_F32(float_0) before the fmadds. Remaining: an extra
-// volatile `lfs f2, float_0` (target reuses the top's f2) and thus the
-// 0p01/16 load order.
+// The `zero` local (rather than a literal 0.0f) stops MWCC folding
+// `f5 - 0.0f` away and lets it reuse the float_0 load held in f2 from the
+// `f3 == zero` test, matching the original's else-branch fsubs; it also
+// keeps the negated-16 temp from constant-folding across the comparison.
 void inertia(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 f3 = (f32)(s8)*(u8*)((u8*)party + 0x158);
     f32 f4 = *(f32*)((u8*)mario + 0x2B0);
     f32 f5 = *(f32*)((u8*)mario + 0x2B4);
+    f32 zero = 0.0f;
 
-    if (f3 == 0.0f) {
+    if (f3 == zero) {
         f32 k = float_neg0p07;
         if (*(u32*)mario->field_0x1F0 != 0) {
             k = float_neg0p5;
@@ -475,7 +469,7 @@ void inertia(PartyEntry* party) {
             }
             f5 = f5 - MATCH_F32(float_0);
         } else {
-            f5 = f5 - MATCH_F32(float_0);
+            f5 = f5 - zero;
             f4 = f3 * MATCH_F32(float_0p01) + f4;
             {
                 f32 n = -MATCH_F32(float_16);
@@ -579,8 +573,9 @@ void searchGround2(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (98.20%): the partyChgPose "PYS_S_2" string is referenced via
-// the vec3 rodata base+0x30 in the original instead of its own lis.
+// 100%: the partyChgPose "PYS_S_2" string is pooled at vec3+0x30, so it is
+// reached through the vec3 base register (r31) rather than a fresh lis; the
+// 6-float zero copy is emitted as two Vec copies.
 void searchGround(PartyEntry* party) {
     const Vec* vec = vec3_802cccd0;
     HitEntry* hit = NULL;
@@ -652,7 +647,10 @@ void searchGround(PartyEntry* party) {
         set_damage_root_ypos(mario->position.y - 8.0f);
         {
             MarioWork* pl = party->playerPtr;
-            *(YoshiZeroVec6*)((u8*)pl + 0x98) = *(YoshiZeroVec6*)vec;
+            Vec* dst = (Vec*)((u8*)pl + 0x98);
+
+            dst[0] = vec[0];
+            dst[1] = vec[1];
         }
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
@@ -687,7 +685,13 @@ void searchGround(PartyEntry* party) {
         }
         marioChgMot(0x20);
         party->useMotionId = 0xA;
+#ifdef MUST_MATCH
+        // The pool places PYS_S_2 at vec3+0x30; the original reuses the vec3
+        // base register (r31) for it instead of a fresh lis.
+        partyChgPose(party, (char*)vec + 0x30);
+#else
         partyChgPose(party, "PYS_S_2");
+#endif
         marioChgPose("M_Y_2");
         *(f32*)((u8*)m + 0x2B0) = 0.0f;
         *(f32*)((u8*)m + 0x2B4) = 0.0f;
@@ -723,17 +727,21 @@ void searchGround(PartyEntry* party) {
 
         if (r != 0 && d <= 11.0f && d >= 5.0f && *(f32*)((u8*)party + 0xE0) <= 30.0f) {
             *(f32*)((u8*)party + 0x120) = out1;
-            if (party->speed != 0.0f) {
-                u32 changed;
+            {
+                f32 zero = 0.0f;
 
-                if (party->useMotionId == 5) {
-                    changed = 0;
-                } else {
-                    party->useMotionId = 0x28;
-                    changed = 1;
-                }
-                if (changed != 0) {
-                    goto end;
+                if (party->speed != zero) {
+                    u32 changed;
+
+                    if (party->useMotionId == 5) {
+                        changed = 0;
+                    } else {
+                        party->useMotionId = 0x28;
+                        changed = 1;
+                    }
+                    if (changed != 0) {
+                        goto end;
+                    }
                 }
             }
         }

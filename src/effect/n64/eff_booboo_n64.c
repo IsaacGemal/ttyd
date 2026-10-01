@@ -650,10 +650,17 @@ static inline GXColor boobooColor(u8 v) {
 }
 #endif
 
-// effBoobooDisp: instructions match except mwcc's callee-saved allocation. Building the GXColor with
-// separate .r/.g/.b statements fixed the by-value store order (99.30% -> 99.42%). Using `param` directly
-// instead of a local `effect` fixes effect/camera (r29/r28) but swaps the word/byte induction pointers
-// (word r27, byte r26) and scores 99.29%, below the original, so it is not used.
+// effBoobooDisp: every instruction is byte-identical except the callee-saved colouring of the four
+// loop-carried values effect/camera/word/byte. Building the GXColor with separate .r/.g/.b statements
+// fixed the by-value store order (99.30% -> 99.42%). Storing the sin result in `f32 s` first pools
+// 6.2832/360 before 63.0 as the original's .sdata2 does (no instruction changes). Using `param`
+// directly instead of the local `effect` puts effect/camera in r29/r28 but swaps the word/byte
+// induction pointers to r27/r26 (99.29%), so the local `effect` is kept.
+// Declaration-order (perm_decls over all 10 locals), opt_lifetimes/opt_propagation/opt_common_subs/
+// optimize_for_size/scheduling/global_optimizer/optimization_level pragma and random source-shape
+// searches were all tried; none reach the target rotation. The int->float magic is emitted as an
+// anonymous @NNN label instead of the named double_to_int_802fa2d8 (a project-wide folded-pool issue
+// that objdiff scores as equal).
 // NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
 void effBoobooDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -682,7 +689,8 @@ void effBoobooDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(GX_PNMTX0);
 			if (!texture_dl(effect, i, data->tex[i])) {
 				if (data->tex[i] == 8 || data->tex[i] == 9) {
-					u8 bright = (u8)(63.0f + 63.0f * (f32)sin(6.2831855f * phase / 360.0f));
+					f32 s = (f32)sin(6.2831855f * phase / 360.0f);
+					u8 bright = (u8)(63.0f + 63.0f * s);
 #ifdef MUST_MATCH
 					color = boobooColor(bright);
 #else

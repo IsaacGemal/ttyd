@@ -344,10 +344,49 @@ void effStarStoneMain(EffectEntry* effect) {
 }
 #pragma opt_common_subs reset
 
-// NONMATCHING (95.83%): lbl_803AC080 address is re-materialised instead of kept live; GXColor
-// argument temporaries / local frame sit 4 bytes low; a few branch shapes differ.
+// Passing the constant GXColor in by value keeps the by-value temporary in the slot the original
+// uses; building the colour in the caller puts it 4 bytes low (same shape as effBattenDisp2).
+#ifdef MUST_MATCH
+static inline GXColor starStoneTevColor2(GXColor c, effStarStoneData* data) {
+	c.r = data->field_0x5C;
+	c.g = data->field_0x5D;
+	c.b = data->field_0x5E;
+	c.a = data->field_0x5F;
+	return c;
+}
+#endif
+
+// The original strength-reduces these indexed walks to pointer increments; `ctr = 0; for (;...)`
+// and the `(s32)` cast are what make MWCC allocate the counter and pick cmpwi like the original.
+#ifdef MUST_MATCH
+#define STARSTONE_DL_LOOP2(off, sztbl, n, ctr) \
+	{ \
+		ctr = 0; \
+		for (; ctr < (n); ctr++) { \
+			if ((data->field_0x4 & 1) || (s32)ctr != 0) { \
+				GXCallDisplayList(((void**)(base + (off)))[ctr], (sztbl)[ctr] << 5); \
+			} \
+		} \
+	}
+#else
+#define STARSTONE_DL_LOOP2(off, sztbl, n, ctr) \
+	for ((ctr) = 0; (ctr) < (n); (ctr)++) { \
+		if ((data->field_0x4 & 1) || (ctr) != 0) { \
+			GXCallDisplayList(((void**)(base + (off)))[ctr], (sztbl)[ctr] << 5); \
+		} \
+	}
+#endif
+
+// The `(u32)` cast on the base address is a match-only nudge that keeps it live in r30.
+// NONMATCHING (99.94%): in the first display-list loop the original has the size induction in r23 and
+// the counter in r26; MWCC swaps them (counter r23, size r26). Every other instruction is identical.
+#pragma opt_lifetimes off // the default lifetime analysis uses a different loop-counter register
 void effStarStoneDisp_2(CameraId camId, void* param) {
+#ifdef MUST_MATCH
+	u8* base = (u8*)((u32)lbl_803AC080);
+#else
 	u8* base = lbl_803AC080;
+#endif
 	EffectEntry* effect = param;
 	effStarStoneData* data = effect->userdata;
 	CameraEntry* cam = camGetPtr(camId);
@@ -356,10 +395,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotMtx;
 	GXTexObj texObj;
-	GXColor color;
-	s32 i;
-	void** dl;
-	u8* sz;
+	u32 i;
 
 	mapSetMaterialFog();
 	GXSetArray(0xb, color_tbl[data->field_0x0], 4);
@@ -375,12 +411,18 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
 	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-	color = *(GXColor*)&unk_804232e8;
-	color.r = data->field_0x5C;
-	color.g = data->field_0x5D;
-	color.b = data->field_0x5E;
-	color.a = data->field_0x5F;
-	GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+	GXSetTevColor(1, starStoneTevColor2(*(GXColor*)&unk_804232e8, data));
+#else
+	{
+		GXColor color = *(GXColor*)&unk_804232e8;
+		color.r = data->field_0x5C;
+		color.g = data->field_0x5D;
+		color.b = data->field_0x5E;
+		color.a = data->field_0x5F;
+		GXSetTevColor(1, color);
+	}
+#endif
 	GXSetBlendMode(1, 4, 5, 0);
 	GXSetZCompLoc(1);
 	GXSetAlphaCompare(7, 0, 0, 7, 0);
@@ -411,13 +453,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	dl = (void**)(base + 0x590);
-	sz = diamond_2_2_dl_0_size_tbl;
-	for (i = 0; i < 0x13; i++) {
-		if ((data->field_0x4 & 1) || i != 0) {
-			GXCallDisplayList(dl[i], sz[i] << 5);
-		}
-	}
+	STARSTONE_DL_LOOP2(0x590, diamond_2_2_dl_0_size_tbl, 0x13, i);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->field_0x50, data->field_0xC, data->field_0x10 + data->field_0x54);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
@@ -443,13 +479,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	dl = (void**)(base + 0x5dc);
-	sz = diamond_2_2_dl_1_size_tbl;
-	for (i = 0; i < 0x13; i++) {
-		if ((data->field_0x4 & 1) || i != 0) {
-			GXCallDisplayList(dl[i], sz[i] << 5);
-		}
-	}
+	STARSTONE_DL_LOOP2(0x5dc, diamond_2_2_dl_1_size_tbl, 0x13, i);
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
@@ -467,18 +497,25 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
 	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-	color = *(GXColor*)&unk_804232ec;
-	color.r = data->field_0x5C;
-	color.g = data->field_0x5D;
-	color.b = data->field_0x5E;
-	color.a = data->field_0x5F;
-	GXSetTevColor(1, color);
-	if (type == 2) {
-		effGetTexObj(0x2e, &texObj);
-	} else {
-		effGetTexObj(0x29, &texObj);
+#ifdef MUST_MATCH
+	GXSetTevColor(1, starStoneTevColor2(*(GXColor*)&unk_804232ec, data));
+#else
+	{
+		GXColor color = *(GXColor*)&unk_804232ec;
+		color.r = data->field_0x5C;
+		color.g = data->field_0x5D;
+		color.b = data->field_0x5E;
+		color.a = data->field_0x5F;
+		GXSetTevColor(1, color);
 	}
-	GXLoadTexObj(&texObj, 0);
+#endif
+	if (type != 2) {
+		effGetTexObj(0x29, &texObj);
+		GXLoadTexObj(&texObj, 0);
+	} else {
+		effGetTexObj(0x2e, &texObj);
+		GXLoadTexObj(&texObj, 0);
+	}
 	GXSetBlendMode(1, 4, 5, 0);
 	GXSetZCompLoc(1);
 	GXSetAlphaCompare(7, 0, 0, 7, 0);
@@ -508,13 +545,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	dl = (void**)(base + 0x590);
-	sz = diamond_2_2_dl_0_size_tbl;
-	for (i = 0; i < 0x13; i++) {
-		if ((data->field_0x4 & 1) || i != 0) {
-			GXCallDisplayList(dl[i], sz[i] << 5);
-		}
-	}
+	STARSTONE_DL_LOOP2(0x590, diamond_2_2_dl_0_size_tbl, 0x13, i);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->field_0x50, data->field_0xC, data->field_0x10 + data->field_0x54);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
@@ -540,14 +571,9 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	dl = (void**)(base + 0x5dc);
-	sz = diamond_2_2_dl_1_size_tbl;
-	for (i = 0; i < 0x13; i++) {
-		if ((data->field_0x4 & 1) || i != 0) {
-			GXCallDisplayList(dl[i], sz[i] << 5);
-		}
-	}
+	STARSTONE_DL_LOOP2(0x5dc, diamond_2_2_dl_1_size_tbl, 0x13, i);
 }
+#pragma opt_lifetimes reset
 
 #define STARSTONE_VTX_COMMON(pos, nrm, tex) \
 	GXClearVtxDesc(); \

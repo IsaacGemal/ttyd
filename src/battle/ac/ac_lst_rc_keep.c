@@ -268,13 +268,15 @@ s32 battleAcResult_LstRcKeep(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// The original materialises `disp = param + 0x1F20` in r31 (`addi r31, r4, 0x1f20`) and
-// `dec = param + 0x1F4C` in r3, then uses `0x14/0x18/0x20/0x24(r31)` and `0x4(r3)`; MWCC keeps `param` in
-// r31 and folds disp/dec into `0x1f34..0x1f50(r31)`.
-// NONMATCHING (98.01%): disp/dec base pointers folded into `param`; same wall ac_timing_wide hit.
+// Holding disp and dec as separate pointers (rather than folding them into `param` at each use) makes
+// MWCC materialise `disp = param + 0x1F20` in r31 (`addi r31, r4, 0x1f20`) and `dec = param + 0x1F4C` in
+// r3, exactly as the original does; leaving a `param`-based use inside case 0x3E9 keeps `param` live and
+// folds both into `0x1f34..0x1f50(r31)` instead (same wall ac_timing_wide hit).
 void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
-    BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
-    s32 state = ((BattleWork*)param)->actionCommands.mAcState;
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    LstRcKeepWork* dec = (LstRcKeepWork*)&ac->field_0x2BC[0];
+    s32 state = ac->mAcState;
 
     switch (state) {
     case 0x63:
@@ -289,7 +291,7 @@ void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
         }
         break;
     case 0x3E9:
-        *(s32*)&disp->field_0x24[0] = ((LstRcKeepWork*)((u8*)param + 0x1F4C))->field_0x04 - 1;
+        *(s32*)&disp->field_0x24[0] = dec->field_0x04 - 1;
         disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
                                     float_30_8041e5fc);
         actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
@@ -403,3 +405,16 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
         iconDispGx(&v, 0x10, 0x95, float_1_8041e5e0);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_neg168_8041e5d8 = -168.0f;
+const f32 float_70_8041e5dc = 70.0f;
+const f32 float_1_8041e5e0 = 1.0f;
+const f32 float_neg232_8041e5e4 = -232.0f;
+const f32 float_neg200_8041e5e8 = -200.0f;
+const f32 float_25_8041e5ec = 25.0f;
+const f32 float_0p5_8041e5f0 = 0.5f;
+const f32 float_neg151_8041e5f4 = -151.0f;
+const f32 float_neg300_8041e5f8 = -300.0f;
+const f32 float_30_8041e5fc = 30.0f;
+const f32 float_0_8041e600 = 0.0f;

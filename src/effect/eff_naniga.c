@@ -127,6 +127,7 @@ void effNanigaDisp(CameraId camId, void* param) {
 	u32 scissorTop;
 	u32 scissorWidth;
 	u32 scissorHeight;
+	f32 half;
 	u32 centerX;
 	u32 centerY;
 	u32 size;
@@ -149,8 +150,9 @@ void effNanigaDisp(CameraId camId, void* param) {
 	sizeScale = data->scale;
 	size = (u32)(float_40_80421b6c * sizeScale);
 	extent = float_20_80421b5c * sizeScale;
-	centerY = (u32)((f32)gp->efbHeight * 0.5f - data->field_0x14);
-	centerX = (u32)((f32)gp->fbWidth * 0.5f + data->field_0x10);
+	half = 0.5f;
+	centerY = (u32)((f32)gp->efbHeight * half - data->field_0x14);
+	centerX = (u32)((f32)gp->fbWidth * half + data->field_0x10);
 	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), size, size);
 
 	effGetTexObj(0x57, &tex);

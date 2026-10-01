@@ -375,16 +375,20 @@ void BattleSamplingEnemyUpdate(u8* sampling) {
     _btlSamplingEnemy(sampling);
 }
 
-// Remaining diff (5 insns, all in the default itemDataTable FP block): the int->float magic is
-// loaded into f3 where the original uses f4, and the conversion temp lands in f4 where the original
-// uses f3 (so fsubs/fmadds operands are swapped); the trailing fmuls operand order is commutative
-// (f1,f0 vs f0,f1). Instruction sequence, stack slots, int registers and every other block match.
-// NONMATCHING (99.94%): default block's f3/f4 colouring is swapped vs the original.
+// Remaining diff (4 insns, all in the default itemDataTable FP block): the int->float magic double
+// lands in f3 where the original uses f4 and the first conversion temp in f4 where the original uses
+// f3, so both fsubs and the fmadds feed the wrong register; instruction sequence, stack slots, the
+// integer registers and every other block match. Holding the weights conversion in a temp `w` before
+// the diff conversion and multiplying `w * fpDiff` fixed the trailing fmuls operand order
+// (99.94 -> 99.96); the magic/temp colouring is a MWCC register-allocation tie that no source shape
+// tried (declaration order/scopes, inline helpers, pointers, pragmas, constants as locals) moved.
+// NONMATCHING (99.96%): default block's f3/f4 colouring is swapped vs the original.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
     s32 n;
     s32 e;
     BattleUnit* unit;
     f32 rate;
+    f32 w;
     BattleWork* wp = _battleWorkPointer;
     s32 weights[74];
     BattleUnit* baseUnit;
@@ -512,9 +516,10 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                         f32 fpDiff;
                         maxFp = BtlUnit_GetMaxFp(unit);
                         curFp = BtlUnit_GetFp(unit);
+                        w = (f32)weights[e];
                         fpDiff = (f32)(maxFp - curFp);
                         fpDiff = float_0p1_8041bf0c * fpDiff + float_1_8041bf1c;
-                        weights[e] = (s32)((f32)weights[e] * fpDiff);
+                        weights[e] = (s32)(w * fpDiff);
                     } else {
                         if (itemDataTable[s->weapon->item].hp_restored == 0 &&
                             itemDataTable[s->weapon->item].sp_restored == 0) {

@@ -185,9 +185,82 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	return entry;
 }
 
-// NONMATCHING (0.52%): empty placeholder, not decompiled yet.
+// The count tables are u8 and converted with the unsigned (2^52) mask; the two 1/128 scale factors
+// are written as a division by 128.0f, which is what makes MWCC emit retail's f4=mask / f3=scale
+// register order (a `* 0.0078125f` puts them the other way round).
 void effKemuriMain(EffectEntry* effect) {
+	effKemuriData* data = effect->userdata;
+	s32 i = 1;
+	s32 type;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
+	   dispCalcZ; a single local folds the copy away. */
+	Vec position;
+#endif
+	Vec disp = { 0.0f, 0.0f, 0.0f };
 
+	disp.x = data->field_0x4;
+	disp.y = data->field_0x8;
+	disp.z = data->field_0xC;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	type = data->field_0x0;
+	data++;
+	for (; i < effect->count; i++, data++) {
+		data->field_0x80 = (s32)(float_16_8041c6f4 * (f32)data->field_0x40 / (f32)data->field_0x88);
+		data->field_0x84 = (s32)(float_16_8041c6f4 * (f32)(data->field_0x40 + 1) / (f32)data->field_0x88);
+		if (data->field_0x84 > 15) {
+			data->field_0x84 = 15;
+		}
+		switch (type) {
+		case 0:
+			if ((u32)data->field_0x40 < 30U) {
+#ifdef MUST_MATCH
+				data->field_0x44 = (f32)touchdown_scale[data->field_0x40 * 2] / 128.0f;
+				data->field_0x48 = (f32)touchdown_scale[data->field_0x40 * 2 + 1] / 128.0f;
+#else
+				data->field_0x44 = float_0p0078125_8041c6f8 * (f32)touchdown_scale[data->field_0x40 * 2];
+				data->field_0x48 = float_0p0078125_8041c6f8 * (f32)touchdown_scale[data->field_0x40 * 2 + 1];
+#endif
+			} else {
+				data->field_0x44 = float_1p5_8041c6fc;
+				data->field_0x48 = float_0p8_8041c6f0;
+			}
+			data->field_0x4C *= float_0p85_8041c700;
+			data->field_0x58 += data->field_0x4C;
+			data->field_0x40++;
+			break;
+		case 1:
+			data->field_0x40++;
+			break;
+		case 2:
+			if ((u32)data->field_0x40 < 30U) {
+#ifdef MUST_MATCH
+				data->field_0x44 = (f32)heavy_scale[data->field_0x40 * 2] / 128.0f;
+				data->field_0x48 = (f32)heavy_scale[data->field_0x40 * 2 + 1] / 128.0f;
+#else
+				data->field_0x44 = float_0p0078125_8041c6f8 * (f32)heavy_scale[data->field_0x40 * 2];
+				data->field_0x48 = float_0p0078125_8041c6f8 * (f32)heavy_scale[data->field_0x40 * 2 + 1];
+#endif
+			} else {
+				data->field_0x44 = float_2_8041c704;
+				data->field_0x48 = float_1p2_8041c708;
+			}
+			data->field_0x40++;
+			break;
+		}
+		if (data->field_0x40 >= data->field_0x88) {
+			effDelete(effect);
+			return;
+		}
+	}
+#ifdef MUST_MATCH
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuriDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effKemuriDisp, effect);
+#endif
 }
 
 // All instructions are present; the only differences are register allocation.
@@ -238,9 +311,129 @@ static void effKemuri2Main(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (0.25%): 399 missing.
+// NONMATCHING (99.84%): structure, constants and symbols match, and the GPR colouring matches
+// retail (type r26, camId r27, i r27, j r26); only the hoisted callee-saved floats differ (ours
+// f29/f28/f31/f30 vs retail f28/f31/f29/f30 for 1.0/0.5/double_to_int/20).
 void effKemuriDisp(CameraId camId, void* param) {
-	EffectEntry* entry = param;
+	EffectEntry* effect = param;
+	effKemuriData* data = effect->userdata;
+	s32 i;
+	s32 j;
+	s32 type = data->field_0x0;
+	CameraEntry* camera;
+	GXTexObj texobj;
+	Mtx transMtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	Mtx outMtx;
+	Mtx tmpMtx;
+
+	camera = camGetPtr(camId);
+
+	switch (type) {
+	case 0:
+		effGetTexObj(0x23, &texobj);
+		GXLoadTexObj(&texobj, 0);
+		break;
+	case 1:
+		effGetTexObj(0x24, &texobj);
+		GXLoadTexObj(&texobj, 0);
+		break;
+	case 2:
+		effGetTexObj(0x23, &texobj);
+		GXLoadTexObj(&texobj, 0);
+		break;
+	}
+
+	PSMTXTrans(transMtx, data->field_0x4, data->field_0x8, data->field_0xC);
+	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(camId)->viewYaw);
+	PSMTXScale(scaleMtx, data->field_0x74, data->field_0x74, float_1_8041c6b0);
+	PSMTXConcat(transMtx, rotMtx, outMtx);
+	PSMTXConcat(outMtx, scaleMtx, outMtx);
+	PSMTXConcat(camera->view, outMtx, outMtx);
+
+	GXSetCurrentMtx(0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetChanMatColor(4, dat_8041c670);
+	GXSetNumTevStages(3);
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+	GXSetTevOrder(1, 1, 0, 0xFF);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 0, 8, 2, 0xF);
+	GXSetTevAlphaIn(1, 0, 4, 1, 7);
+	GXSetTevColor(1, dat_8041c674);
+	GXSetTevOrder(2, 0xFF, 0xFF, 4);
+	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(2, 0xF, 0, 0xA, 0xF);
+	GXSetTevAlphaIn(2, 7, 0, 5, 7);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xD, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		for (j = 0; j < 2; j++) {
+			if (j == 0) {
+				GXColor color = dat_8041c678;
+
+				GXSetChanMatColor(4, color);
+			} else {
+				GXColor color = dat_8041c67c;
+
+				GXSetChanMatColor(4, color);
+			}
+
+			{
+				s32 t = 1 - j;
+
+				PSMTXTrans(transMtx, data->field_0x58 + (f32)t, (f32)-t, float_0_8041c6bc);
+			}
+			PSMTXScale(scaleMtx, float_20_8041c694 * data->field_0x44, float_20_8041c694 * data->field_0x48, float_20_8041c694);
+			PSMTXConcat(outMtx, transMtx, tmpMtx);
+			PSMTXConcat(tmpMtx, scaleMtx, tmpMtx);
+			GXLoadPosMtxImm(tmpMtx, 0);
+
+#ifdef MUST_MATCH
+			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, 1.0f, 1.0f);
+#else
+			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
+#endif
+			PSMTXTrans(transMtx, (f32)data->field_0x80, float_neg0p2_8041c6dc, float_0_8041c6bc);
+			PSMTXConcat(scaleMtx, transMtx, transMtx);
+			GXLoadTexMtxImm(transMtx, 0x1E, 1);
+
+#ifdef MUST_MATCH
+			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, 1.0f, 1.0f);
+#else
+			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
+#endif
+			PSMTXTrans(transMtx, (f32)data->field_0x84, float_neg0p2_8041c6dc, float_0_8041c6bc);
+			PSMTXConcat(scaleMtx, transMtx, transMtx);
+			GXLoadTexMtxImm(transMtx, 0x21, 1);
+
+			GXBegin(0x80, 0, 4);
+			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, float_1_8041c6b0, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(float_0p5_8041c6cc, float_1_8041c6b0, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(float_0p5_8041c6cc, 0.0f, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, 0.0f, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+		}
+	}
 }
 
 // Draws a Kemuri2 puff as two camera-facing textured quads. Setup order, constants and stack layout

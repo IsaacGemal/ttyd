@@ -2,6 +2,7 @@
 
 #include <dolphin/types.h>
 BOOL unk_8009f9c8(void);
+void marioForceRollAnime(void);
 void marioReInit_roll(void);
 BOOL marioRollKeyDisable(void);
 void marioResetRollSpd(void);
@@ -14,3 +15,4 @@ void clrRollEvtFlag(void);
 void marioRollForceCancel(void);
 BOOL unk_8009fcbc(void);
 void marioRollFixOn(void);
+void marioSetRollDispDir(void);

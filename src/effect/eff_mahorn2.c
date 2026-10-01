@@ -41,7 +41,6 @@ extern const f32 float_0_804225b0;
 static const Vec vec3_80301948[3] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
 #endif
 
-// NONMATCHING (97.30%): 1 instruction differs, 4 missing, 1 extra, plus register differences.
 EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX, f32 dstY, f32 dstZ, f32 scale, f32 radius) {
     EffectEntry *effect;
     effMahorn2Data *data;
@@ -53,7 +52,7 @@ EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX
     effect->count = 14;
     data = __memAlloc(HEAP_EFFECT, sizeof(effMahorn2Data) * 14);
     effect->userdata = data;
-    //effect->callback = effMahorn2Main;
+    effect->callback = effMahorn2Main;
     data->unused = unused;
     data->unused2 = 0;
     data->intplStep = 0;

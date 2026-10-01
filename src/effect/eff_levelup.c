@@ -30,9 +30,9 @@ u16 y_trans[46] = {
 	0x0005, 0x000A, 0x000F, 0x0014, 0x0019, 0x0014, 0x000F, 0x000A, 0x0004, 0x0000
 };
 
-static u32 texid_tbl[12] = {
-	0x00000092, 0x00000093, 0x00000094, 0x00000095, 0x00000096, 0x00000097,
-	0x00000092, 0x00000093, 0x00000094, 0x00000095, 0x00000096, 0x00000097
+static u32 texid_tbl[2][6] = {
+	{ 0x00000092, 0x00000093, 0x00000094, 0x00000095, 0x00000096, 0x00000097 },
+	{ 0x00000092, 0x00000093, 0x00000094, 0x00000095, 0x00000096, 0x00000097 }
 };
 u8 y_scale[20] = {
 	0x00, 0x0D, 0x28, 0x45, 0x62, 0x7E, 0x95, 0xA6, 0xAF, 0xA5,
@@ -54,10 +54,11 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (70.22%): target copies the 10-word `dat_802fe5a0` table to the stack each iteration and indexes that; we index the global. Frame 0x60 vs 0xa0 (stmw r22) and the `gp->language != 0` bool is neg/or/srwi vs a double cntlzw.
+// NONMATCHING (99.35%): everything matches except the `elem` pointer and the table byte-offset induction swap registers (target r6/r5, ours r5/r6), and the compiler's anonymous @N pool entries stand in for the named double/table symbols (objdiff resolves data by section offset).
 EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effLevelupData* data;
+	effLevelupData* elem;
 	s32 i;
 
 	entry = effEntry();
@@ -75,9 +76,13 @@ EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	data->state = 0;
 
 	for (i = 1; i < entry->count; i++) {
-		effLevelupData* elem = &data[i];
+		s32 tbl[2][5] = {
+			{ 0x00000000, 0x00000040, 0x000000BC, 0x00000104, 0x00000088 },
+			{ 0x00000000, 0x00000058, 0x000000D2, 0x00000100, 0x00000086 }
+		};
+		elem = &data[i];
 
-		elem->position.x = (f32)(dat_802fe5a0[((gp->language != 0) * 5) + i] - dat_802fe5a0[((gp->language != 0) * 5) + 4]);
+		elem->position.x = (f32)(tbl[(!gp->language) ? 0 : 1][i] - tbl[(!gp->language) ? 0 : 1][4]);
 		elem->position.y = (f32)y_trans[0];
 		elem->position.z = 0.0f;
 		elem->xOffset = 0.0f;
@@ -88,7 +93,7 @@ EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	return entry;
 }
 
-// NONMATCHING (95.28%): control flow/states/values match; only the zero Vec (@155 vs vec3_802fe5c8), the u16->f32 mask (@313 vs double_to_int_mask_802fe600), and the `lwz r4,0x14(r31)` scheduling in the two intplGetValue calls differ.
+// NONMATCHING (98.26%): the `s32 t = data->timer;` temp in case 3 fixed the intplGetValue argument order; one `lwz r4,0x14(r31)` is still hoisted above the `bge` (target loads it after the constants) and the anonymous @N pool entries stand in for vec3_802fe5c8/double_to_int_mask_802fe600.
 void effLevelupMain(EffectEntry* effect) {
 	effLevelupData* data = effect->userdata;
 	Vec disp = initializeVec(&data->position);
@@ -133,12 +138,15 @@ void effLevelupMain(EffectEntry* effect) {
 			}
 			break;
 		}
-		case 3:
+		case 3: {
+			s32 t = data->timer;
+
 			if (i < 2) {
-				data->xOffset = intplGetValue(1, data->timer, 0x1E, 0.0f, 400.0f);
+				data->xOffset = intplGetValue(1, t, 0x1E, 0.0f, 400.0f);
 			} else {
-				data->xOffset = intplGetValue(1, data->timer, 0x1E, 0.0f, -400.0f);
+				data->xOffset = intplGetValue(1, t, 0x1E, 0.0f, -400.0f);
 			}
+		}
 			data->timer++;
 			if (data->timer > 0x1E) {
 				data->state++;
@@ -158,18 +166,17 @@ void effLevelupMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (78.24%): target copies the 8-word `dat_802fe5d4` width table to the stack each inner iteration; we index the global. Callee-saved GPR block starts at r23 vs r19 (frame 0x180 vs 0x1b0); f27-f31 FPR block, GX state and quad geometry match.
+// NONMATCHING (99.59%): `effect->count` is re-read at the top of the outer loop (there is no `count` local), which fixes the extra callee-saved register and cascades through the whole allocation. With the 2D `texid_tbl[2][6]`, the per-branch GXSetChanMatColor calls, and the `((effLevelupData*)effect->userdata)[i]` element base, the layout and instruction selection all match. Remaining: the outer-loop `layer` and inner-loop `elem` base swap (target r22/r24, ours r24/r22), the `viewYaw`/deg2rad FPR swap in PSMTXRotRad, and the two loop-latch decrements are scheduled in the opposite order.
 void effLevelupDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effLevelupData* data = effect->userdata;
 	CameraEntry* camView;
 	CameraEntry* cam;
 	Mtx mtxTrans;
-	Mtx mtxView;
-	Mtx mtxScale;
 	Mtx mtxRot;
+	Mtx mtxScale;
+	Mtx mtxView;
 	GXTexObj texObj;
-	GXColor color;
 	s32 count;
 	s32 layer;
 	s32 i;
@@ -199,33 +206,28 @@ void effLevelupDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
-	count = effect->count;
 	for (layer = 1; layer >= 0; layer--) {
-		f32 xBase = (f32)(layer * 4);
-		f32 yBase = (f32)(-layer * 4);
-
-		for (i = count - 1; i >= 1; i--) {
-			effLevelupData* elem = &data[i];
+		for (i = effect->count - 1; i >= 1; i--) {
+			s32 xBaseI = layer * 4;
+			s32 yBaseI = -layer * 4;
+			f32 xBase = (f32)xBaseI;
+			f32 yBase = (f32)yBaseI;
+			effLevelupData* elem = &((effLevelupData*)effect->userdata)[i];
 			f32 tableVal;
 			f32 half;
 			f32 neghalf;
-			s32 texIdx;
 
 			if (layer != 0) {
-				texIdx = ((gp->language != 0) ? 6 : 0) + i + 2;
+				effGetTexObj(texid_tbl[gp->language != 0][i + 2], &texObj);
+				GXLoadTexObj(&texObj, 0);
+				GXSetChanMatColor(4, dat_80421080);
 			} else {
-				texIdx = ((gp->language != 0) ? 6 : 0) + i - 1;
+				effGetTexObj(texid_tbl[gp->language != 0][i - 1], &texObj);
+				GXLoadTexObj(&texObj, 0);
+				GXSetChanMatColor(4, dat_80421084);
 			}
-			effGetTexObj(texid_tbl[texIdx], &texObj);
-			GXLoadTexObj(&texObj, 0);
-			if (layer != 0) {
-				color = dat_80421080;
-			} else {
-				color = dat_80421084;
-			}
-			GXSetChanMatColor(4, color);
 
-			PSMTXTrans(mtxTrans, xBase + (elem->position.x + elem->xOffset), yBase + elem->position.y, elem->position.z);
+			PSMTXTrans(mtxTrans, xBase + (elem->position.x + elem->xOffset), elem->position.y + yBase, elem->position.z);
 			PSMTXConcat(mtxView, mtxTrans, mtxTrans);
 			PSMTXScale(mtxScale, elem->scaleX, elem->scaleY, 1.0f);
 			PSMTXConcat(mtxTrans, mtxScale, mtxTrans);
@@ -233,7 +235,13 @@ void effLevelupDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(0);
 			GXBegin(0x80, 0, 4);
 
-			tableVal = (f32)dat_802fe5d4[((gp->language != 0) ? 4 : 0) + i];
+			{
+				s32 tbl[2][4] = {
+					{ 0x00000000, 0x00000080, 0x00000078, 0x00000018 },
+					{ 0x00000000, 0x000000B0, 0x00000044, 0x00000018 }
+				};
+				tableVal = (f32)tbl[gp->language != 0][i];
+			}
 			half = tableVal * halfConst;
 			neghalf = -tableVal * halfConst;
 			GXPosition3f32(neghalf, yConst, 0.0f);

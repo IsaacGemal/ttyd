@@ -83,17 +83,20 @@ static inline Vec initializeVec(Vec* input) {
 // the four arguments in f23-f26, the four reset constants in f17-f20, 6p2832/360 in f21/f22 and the
 // early loop-invariant constants in f27-f31 (rad in f16). MWCC treats the c34..c30 locals as user locals,
 // so it colours them above the parameters (ours: args f17-f20, 6p2832/360 f21/f22, reset f23-f26, early
-// f27-f31). The declaration order of the MUST_MATCH locals sets their colour order (the last declared
+// f27-f31); the target instead needs the reset values coloured *below* the arguments, as compiler
+// temporaries. The declaration order of the MUST_MATCH locals sets their colour order (the last declared
 // gets the lowest register): declaring c360 then ct last makes 6p2832/360 land in f21/f22 as in the
-// target. Matching the target's args f23-f26 / reset f17-f20 would need the reset values to be compiler
-// temporaries created before the parameters; the direct-store form rematerialises them (reusing one FPR)
-// and the identity-inline form moves the early constants, so neither reproduces it. Reordering the other
-// declarations/statements, the Vec/compound-literal position forms and the
-// opt_common_subs/opt_propagation/opt_lifetimes/optimize_for_size pragmas all leave the colouring
-// unchanged. The int->float magic also emits an anonymous @N entry instead of the named
-// double_to_int_802fa930 (a project-wide folded-pool issue).
+// target, but the args/reset blocks stay swapped. The int->float magic also emits an anonymous @N pool
+// entry instead of the named double_to_int_802fa930; objdiff does not score anonymous pool entries (see
+// win_log.c), so that line is cosmetic.
 // NONMATCHING (99.59%): only the callee-saved FPR colouring differs (the four reset constants are f23-f26
-// instead of f17-f20, and the arguments f17-f20 instead of f23-f26; the rest match).
+// instead of f17-f20, and the arguments f17-f20 instead of f23-f26; the rest match). Tried and rejected
+// (all <= 99.59%): the direct-store form (99.04, the reset temps land in f28-f31), an inline 4-argument
+// setter / pointer / array / struct reset forms (99.09, one FPR reused or memory), reversing and
+// interleaving the reset/ct declarations and stores, moving the reset assignments to the top of the loop
+// or before it (98.83), param copies (MWCC always coalesces them with the incoming args), local
+// `register ... asm("fNN")` pins (ignored by mwcceppc 2.6), and the opt_* pragmas (no change or worse).
+// A 15 minute decomp-permuter run on this function did not beat its base score.
 EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri5Data* data;

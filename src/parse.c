@@ -113,26 +113,29 @@ void parsePopNext(void) {
 
 
 
-// NONMATCHING (93.26%): remaining differences are register allocation. Type 0 reuses tokenStart's register
-// for the loop index where the original keeps a separate one, so src/src2/len land on different scratch
-// registers; the type-3 compare and the end/base r0/r4 swap in the frame-pointer setup differ too.
+// 97.23%: control flow and every instruction shape match; only volatile register names differ.
+// The original puts state=r5, tokenStart=r6, the parse base temp=r7, base=r4, i=r10, end=r0; this version
+// gets base=r4, i=r10, end=r0 but state=r9, tokenStart=r8, parse temp=r5, which cascades into the token-scan
+// scratch registers (r5/r6/r7 vs r7/r8/r9) and case 0's i/src/q/src2 (the original's `mr r10, r6; i =
+// tokenStart` becomes a coalesced copy here). Declaration order is load-bearing (all 7! orders tried).
+// NONMATCHING (97.23%): only the volatile register assignment above still differs.
 BOOL parseGet1Next(s32 type, void* data) {
 	s32 result = 1;
-	s8* base;
 	s32* p;
+	s32 tokenStart;
+	s32 state;
 	s32 i;
 	s32 end;
-	s32 state;
-	s32 tokenStart;
+	s8* base;
 	s32 tokenEnd;
 
-	if (type == 3) {
+	switch (type) {
+	case 3:
 		result *= parseGet1Next(2, data);
 		result *= parseGet1Next(2, (s8*)data + 4);
 		result *= parseGet1Next(2, (s8*)data + 8);
 		return result;
-	}
-	else {
+	default: {
 		p = &((s32*)&parse.field_0x4)[parse.field_0x54];
 		i = p[0];
 		end = ((s32*)&parse.size)[parse.field_0x54];
@@ -148,12 +151,8 @@ BOOL parseGet1Next(s32 type, void* data) {
 						break;
 					}
 				}
-				i++;
 			}
-			else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-				i++;
-			}
-			else {
+			else if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
 				tokenStart = i;
 				state = 1;
 				i++;
@@ -169,6 +168,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 				}
 				break;
 			}
+			i++;
 		}
 
 		if (state <= 1) {
@@ -221,6 +221,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 			break;
 		}
 		return TRUE;
+	}
 	}
 }
 

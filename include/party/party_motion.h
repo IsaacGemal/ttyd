@@ -10,6 +10,7 @@ void allPartyForceSlitOff(void);
 BOOL party_slit(PartyEntry* party);
 s32 party_roll(PartyEntry* party);
 void unk_8014b824(PartyEntry* party);
+void unk_8014c47c(void);
 s32 party_motion_fall(PartyEntry* party);
 void party_motion_beside_mario(PartyEntry* party);
 void party_motion_jump2(PartyEntry* party);

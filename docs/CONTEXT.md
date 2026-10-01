@@ -3238,6 +3238,161 @@ had Flash ahead on near-misses). Files go to whichever wave claims them first in
 - **Lesson:** the launcher's "wave 50 drained" gate counted workspaces on the tower, so the cleanup stalled wave 51
   for three hours; it now gates on the slot count alone.
 
+## Grind 46: eff_break and countdown retries (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+No unit linked in this stretch.
+
+- `eff_break` Disp: `f32 w = 48.0f; f32 h = 0.5f;` at the top (C89: declarations first) stops `-48.0f * 0.5f` folding to -24 but pools 0.5 after 48 and before 0 where the target has 0 before 0.5; adding `f32 z = 0.0f` leaves the pool unchanged and drops Disp to 94.6%. Left for the permuter.
+- `countdown`: only `countDownMain` (95.61%) differs in code; `.sdata2` lacks the trailing 4 zero bytes and `.sbss` is 4 bytes short.
+- The tower permuter's lowest scores so far are prototype or declaration-type changes (`iconDispGx` `char iconId`, `shadowInit` `unsigned long long`), not matches.
+
+## Grind 48: four of the 30 newly fully-matched units link (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_thruhammer_n64`. `event/evt_lottery` linked in its own PR (#132, no source change).
+
+- `eff_fall_leaf_n64`: the colour word `str_8041EDBC` (a 4-byte `.sdata2` object the code loads as a `GXColor`) was not defined; `const u32 str_8041EDBC = 0x7592A600;` with the other `dat_` words.
+- `eff_akari_charge_n64`: the call result in a temp (`s = (f32)sin(...); ... 1024.0f * s`) fixes the pool order (rule from Grind 44); `f32 k = 0.0625f;` assigned at the top of Disp and used as `part->scale * k` restores the operand order of the `fmuls` (the local-constant idiom of Grind 45); a `Vec disp = { 0 }` in code makes the compiler pool the zero vector itself, so `vec3_...` must not also be defined (it duplicated the 12 bytes).
+- `eff_small_star_n64`: the code's two `0.017453292f` literals loaded the constant a second time at the end of `.sdata2`; they use the named `float_deg2rad_8041fc80` (second use written `float_deg2rad * x`); the `.sbss2` GXColor is declared at the end of the file, after the unit's own `.sbss` static (`kaiten`), or the `.sbss` object disappears.
+- `eff_thruhammer_n64`: the four `.sbss2` words are `u32` objects whose address the code takes: the sbss2 idiom with `u32` instead of `GXColor` (`finish_unit`'s step declares `GXColor` and fails the build).
+- **Not needed:** the 4-byte zero words that dtk shows at the end of `.sdata2`/`.rodata` (`gap_09_..._sdata2`) are alignment between units; the linked dol is identical without defining them (they did not link `eff_akari_charge_n64` when defined, because named objects are emitted before the pooled literals).
+- Not linked: `eff_cool_leaf_n64` (data and code 100% after `pool_data` and `(u8*)tbl + 0xA`; the compiler pools its own `4503601774854144.0` after the string where the target has it before), `eff_pturn_n64` (the pool needs 360 before 4.0 in `data->field_0x20 = (type == 0 || type == 1) ? 4.0f * cos(f31 / 360.f) : 0.0f`; an `if`/`else` with a temp fixes the pool but gives effPturnMain 93.8%, a local `d = 360.f` leaves the pool as it was).
+- `ci.py` needs `--allow-pragma` for the new `#pragma section ".sdata" ".sbss2"` in the three units (the idiom of AGENT_BRIEF, each with its why-comment).
+
+## Grind 49: party_kuribo links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`party/party_kuribo`: `tools/dol_gen.py --append` for its one event script, then `finish_unit` (sdata2 pool and string came out right); no hand edits.
+
+## Grind 50: ac_monosiri_target links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`battle/ac/ac_monosiri_target` (note: its `configure.py` entry has `extra_cflags=["-O4,s"]`, so a `sed` on the plain entry text misses it).
+
+- Pools: `pool_data` for `_frame_table`, `pool_define` for the floats/doubles/vectors, plus by hand the five `dat_` GXColors (they sit first in `.sdata2`, defined before the floats) and the string `str_80300910` between the two doubles (named, so it lands between `double_15` and `double_28`).
+- The `MUST_MATCH` code reads the eleven vectors through an array view (`extern const Vec vec3_80300880[11]`), so the definitions are one 11-element array under `MUST_MATCH` and eleven `Vec`s otherwise.
+- `math.h` pools two sqrt doubles (0.5, 3.0) twice that this unit does not have; `math_ext.h` plus `#define fabs(x) __fabs(x)` keeps the `fabs` intrinsic without them.
+- `double_15` is only reached through the vector base under `MUST_MATCH`: `#pragma force_active` or the linker drops it (the dol came out 32 bytes short in `.rodata`).
+- `tools/fn_order.py --write` moves the function bodies but leaves the `#pragma` blocks and comments where they were; the `opt_common_subs`/`dont_inline` pragmas had to be put back around their functions by hand (the lint then reports them as new: `--allow-pragma`).
+
+## Grind 51: eff_toiki links; dol_gen `.byte` tables (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `tools/dol_gen.py` stops with `unsupported .byte` on an object made only of `.byte` lines; the patch that writes it as a `u8` array is a separate PR (the file is a protected path: needs Isaac). This unit's data was generated with that patch.
+- `effect/eff_toiki`: the unit's data (28 objects, one of them `queen_toiki_dl_0_size_tbl`, a `u8[16]`) via `dol_gen --append`, then by hand: the pair `lbl_803B2FA0` was defined twice (the source's old anchor definition went, the generated one stays with an `extern` above the code), `negone_one$374` style names to `negone_one_374` (as in clauda/christine), `#pragma force_active` around the tables (all but the first are reached through one base pointer, the linker dropped 928 bytes of `.data`/`.sdata`), and the static `color_tbl` moved after `queen_toiki_dl_0_size_tbl` (a forward `static GXColor color_tbl[3];` above) because it is the last object of the original `.sdata`.
+
+## Grind 52: snd3d's emitter layout, ac_power_gauge, eff_naniga (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `libs/musyx/include/musyx/musyx.h` `SND_EMITTER` had its fields in the wrong order: the original reads `flags` at 0xC, `pos` at 0x10, `dir` at 0x1C, `maxVol`/`minVol`/`volPush` (all `f32`) at 0x2C/0x30/0x34, `vid` at 0x38, `group` at 0x3C, `fxid` at 0x40; `paraInfo` is not among those (moved to the end). `sndCheckEmitter`, `sndEmitterVoiceID`, `sndRemoveEmitter`, `s3dKillAllEmitter` and `s3dKillEmitterByFXID` are 100% with that (the five 99.9% functions of the queue had one shared cause). The header is a protected path.
+- `ac_power_gauge`: `actionCommandDisp` is 100% with `ratio = dec->gaugePercent / float_100_8042158c; if (ratio > 1.0f) ratio = 1.0f;` (a literal, where the named constant swapped f0/f2); the unit links through the all-literal pool step.
+- `eff_naniga` `effNanigaDisp`: `f32 half = 0.5f;` assigned before `centerY`/`centerX` (the local-constant idiom): 100%. The unit has another function at 94.92%, so it does not link.
+- Many of the 99.9% near-misses are only relocation offsets against data the unit does not define yet (`effOpukuJetwrainDisp`, `winPartyInit`: `lfd f31, 0x30(r29)` vs `0x80(r29)` is the table's place in `.rodata`), not code differences; `tools/agent_check.py` marks them `arg_mismatch`. `unit_party_sanders` needs the same `.data` boundary move as christine (the pair at 0x803848D8 is the tail of `unit_party_chuchurina`'s `.data`): a splits.txt/symbols.txt change beyond the 32 approved units, left for Isaac.
+- Queued for the tower permuter (register-allocation level): `effItemUseDisp`, `effItemGetDisp`, `mot_damage` (spd/floorY in f31/f30 swapped), `BattleChoiceSamplingEnemy`, `evt_cloud_main`, `mobjHitEntry`, `effMistDisp`, `effMahorn2Disp`, `parsePush`, `effSleepDisp`, `effKemuri5N64Entry`.
+
+## Grind 53: eff_peach_dust_n64 links, the first permuter win (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`effPeachDustMain` (98.86% with every hand variant of the `k = 0.1f` hoist) reached score 0 on the tower permuter (`perm_run`, 227 s, `PERM_*` variant of the literal-pool source): a pointer to `data->scale` taken right after `colorIndex = data->counter` (`scalePtr = &data->scale;`) and the old scale read through it in `data->scale = k * (k - data->scale) + *scalePtr;`. It changes the order of the loads in the original's way, so it is under `MUST_MATCH` with the plain expression in `#else`. The unit then links with `finish_unit` (literal pool).
+## Wave 51, batch 1: the mixed DOL files' below-80% functions (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Scope:** the 106 DOL files that have both below-80% functions and near-misses. Agents get the below-80% functions
+  up to 2.5 KB, packed per file into groups of at most 3 KB (156 agents, 87 files, 282 functions); a file whose low
+  functions fit one agent also lists its near-misses as extras. The launcher (`scratch/wave51/launch.py`) claims
+  each file just before its first agent starts and skips files Claude #1's waves hold (40 skipped so far), and starts
+  nothing after 08:00.
+- **Collection** in a separate worktree (`~/ttyd-w51`; Claude #1 and #3 each have their own): most functions here were
+  untouched, with no placeholder to splice into, so `scratch/wave5x/merge_collect.py` merges each agent copy onto
+  the tree in turn (3-way from the wave's base commit; a conflicting hunk takes the agent's side, and the score
+  comparison catches what that breaks). Files that stopped building after a conflicted merge (mariost, party,
+  pmario_sound, seq_mapchange, unit_party_chuchurina, evt_mobj) and units whose data sections stayed below main after
+  the greedy revert (mapdrv, mario, imgdrv, mario_hit, party_nokonoko, eff_kemuri1_n64, sac_muki, sac_suki) are as on
+  main. `tools/ci.py`'s ratchet checks the section scores of unlinked units, so a falling section is a CI failure, not
+  only a policy. `greedy.py` now also takes out functions new to the file; `nm_refresh.py` rewrites NONMATCHING
+  percentages from the merged build (several agents' changes to one file shift each other's scores).
+- **Result** (61 agents): 8,492 -> 8,546 functions on main 6d9598d; casedrv links.
+- **Review** (`scratch/wave51/review1.md`): `effCalcMayaAnimMatrix` (66.78%) read its s16 keys unscaled where retail
+  divides by 64 (`psq_l` through GQR5 = 0x06070607), swapped the interpolation operands and flipped a weight's
+  sign; it is unwritten again. `zubastar_bomb` adds the offset to `field_0x30.x` as retail (an older bug).
+  `#pragma optimize_for_size off` in battle_icon switched size optimisation off for everything after it (the
+  file is built -O4,s); it closes with `reset`.
+- **Needs Isaac:** battle_sub.c opens a file-wide `#pragma optimize_for_size on` standing in for `-O4,s` (a
+  configure.py flag change); `BattleIcon.flags`/`iconId` and `ItemData.icon_id` are declared signed where retail
+  loads them unsigned (`lhz`), worked around with `*(u16*)&` casts in battle_icon.
+- **Follow-up:** `partyGetAppearPos2` returns BOOL in retail (declared void; the one caller ignores it); unsigned
+  compares written as `(u32)` casts outside MUST_MATCH in casedrv, effdrv, evt_nannpc, battle_menu_disp; ac_shot's
+  six vec3 objects stay one array (separate objects cost `actionCommandDisp` its match); gor_03's raw byte offsets
+  stay (its work struct isn't declared).
+
+## Wave 51, batch 2, and wave 52 (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Batch 2** (wave 51's other 47 agents, collected onto main 0a750ff): +3 functions (8,582 -> 8,585) and code
+  fuzzy +0.73 from partial functions. Main had moved under these files since the agents' base (2ecf9a4), so eight
+  files no longer built after the merge (battle_audience, battle_unit, animdrv, party, seq_title, win_item,
+  win_log, evt_mobj) and five lost a function or section (party_hit, imgdrv, battle_seq_command,
+  ac_repeatedly_lv, mario_hit, whose new code also used MUST_MATCH-only helpers unconditionally): all as on main.
+  **Lesson:** a long wave should be collected in batches from the start; the later the batch, the older its base.
+- Review (`scratch/wave51/review2.md`) found no behaviour defects. mapDisp transforms one bounding-box corner
+  through the model matrix twice in retail (a game bug); the C had that only under MUST_MATCH and now keeps it in
+  every build. partyHelloMain returns s32 (every path sets r3 = 1; callers ignore it), so include/party.h's line
+  changes from void.
+- Folded in from Claude #1's review of #142: battle_unit's unused PoseSound typedefs out and its two .sdata2
+  floats const; effdrv's unused Maya key structs out; battle_icon's no-op optimize_for_size pairs out (the file is
+  -O4,s already); battle_sub's file-wide optimize_for_size now closes at the end of the file. Noted:
+  include/manager/filemgr.h:39 changed an existing field from u8 to s32 in #142 (the asm reads a word).
+  Still open: raw offsets where the header names the field (battle_unit `pouch->partyData[party].currentHP`,
+  filemgr `file->references`; both need s16 semantics the u16 headers lack) and btlsubResetMoveColorLvAll's
+  aliases / btlMovePos's declaration order, which belong under MUST_MATCH.
+- Claude #1's second review of #144: winMsgDisp had nested the name-plate block (+0x140) inside the +0x138
+  block where retail has them as siblings (the plate never drew when +0x138 <= 0), and reached named objects
+  through `str_802F3FE8 + offset`; battle_audience_kinopio had replaced named vec3s with base+offset; mapdrv's
+  new mapSetMaterial read texwrap_tbl/lightid_tbl through vec3_802c16d8 + offset with local structs that overlap
+  MapMaterialTex. win_root and battle_audience_kinopio (no new 100%) are back to main and mapSetMaterial (86%) is
+  unwritten again. FontDrawMessage adds `x + (iw * scale + offset)` as retail's fmadds/fadds. Pre-existing rule 14
+  issue: pmario_sound's psndBGMOff_f_d is still an empty `{}` placeholder (its 0x200-byte body is unwritten).
+- **Wave 52** (launched 07:26 on a fresh base, main 0a750ff): every unclaimed game file's below-80% functions up
+  to 2.5 KB, grouped as in wave 51, 61 agents capped at 90 minutes, nothing started after 08:45. The launcher
+  also brings back `rels/*/include` edits as a patch (wave 50 lost three units' header edits to the tower's
+  workspace pruning).
+
+## Grind 54: the newly fully-matched units, a real `.data` gap, REL pool interleaving (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `finish_unit` over the 10 new `autolink --list` units: `ac_lst_rc_keep` (#146) and `eff_explosion_n64` (#147) link as they are; `eff_mahojin` (#148) needed its `.data` gap. Not linked: `battle_sub` (`.rodata` 67%, `.sdata2` 78%), `ac_timing_a` (`.data`/`.sdata` 0%: needs `dol_gen`), `bgdrv` (`.sdata2` 81%), `eff_updown` (`.rodata` 66%), `eff_akari_pose_n64` (`.data`/`.sdata` order and an int-to-double constant that lands in `.sdata`), `eff_magic2_n64` (`.rodata` 87%), `eff_snow_dust_n64` (`.data` 92%, `.rodata` 85%).
+- **Gap objects:** the 4-byte zero gaps dtk lists at section ends are only alignment (Grind 48), but a gap of 8 bytes or more is part of the unit: `eff_mahojin`'s `.data` ends in 24 zero bytes (`gap_05_803AE248_data`) and the dol was 32 bytes short (the 24 plus its smaller siblings) until they were defined (`explicit_zero_data` + `force_active`, `u32[6]`). Gaps of 8 or more in the still-unlinked units: `ac_repeatedly` `.sdata` 0x14, `eff_akari_pose_n64` `.sdata` 0x10, `eff_magic2_n64` `.sdata` 0x8. List them with `grep` on `.obj gap_` in the unit's asm.
+- `ac_repeatedly`: `dat_8041c7a8` (the `-1` word at the start of `.sdata2`) is declared `extern s32` and never defined; defining it `const` (even `volatile` under `MUST_MATCH`) reschedules the load in `battleAcMain_Repeatedly` (98.75%). `float_30_8041c7d4` is declared and unused, and the code has `-300.0f` and `30.0f` as literals next to the named `float_neg300`, so the pool gets both.
+- **REL pools (`gor_02`, `jin_00`, `tik_00`: every function 100%, `.rodata` wrong):** `gor_02` has one 4-byte zero first in the target, that is the compiler's template for `(GXColor){ 0, 0, 0, *ap }` in `alpha_tev`, then the event-script strings, then the function floats; ours puts the template last. Moving the functions in front of the data puts the floats first. So the original source interleaved functions and scripts (floats of a function between the strings of the scripts around it); `jin_00` shows the same (strings, then `200.0f`/`0` floats, then more strings). The fix is a tool that reads the target's `.rodata` order, assigns every item to a function or script, and writes the unit's functions and scripts in that order; not started. `tools/fn_order.py` is dol-only.
+- Tower permuter (this stretch): nothing reached zero for a unit that still needed it; best scores `effGarekiDisp` 420, `effMist2Disp` 375, `countDownMain` 350, `effWaterDamageDisp` 465, `effItemUseDisp` 440, none of them a plain source change. wave46 claims most of the register-allocation list.
+
+## Grind 55: `tools/rel_pool_order.py` and `rels/gor/src/gor_02.c` links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+The REL units that were 100% in code but not linked (Grind 54) have a `.rodata` pool in the wrong order because the generated source is "all scripts, then all functions"; the original interleaved them.
+
+- How MWCC pools (derived from the target's `.rodata`, checked on `gor_02`): strings in data initialisers (scripts, tables) and aggregate templates (a Vec zero, a `(GXColor){...}` compound literal in a function body) are pooled while the source is read, in source order; the strings and float/double constants inside function bodies are pooled when the functions are generated, in text order (= the reverse of the source order), after everything that was read. So the pool starts with the templates and script strings in source order and ends with the function constants.
+- Scripts keep their `.data` order and functions their text order, so the free choice is where the functions that own a parsed item (a template) sit between the scripts: `alpha_tev` (its `(GXColor){ 0, 0, 0, *ap }` template is the first 4 bytes of `.rodata`) is above every script; `enzan_cam_turn_keisan_f` (two zero `Vec`s) sits among them. `tools/rel_pool_order.py MOD/UNIT [--write]` finds those anchors from the unit's asm, keeps the other functions where they were relative to their predecessor, and moves the segments (functions with the `static inline` helper above them, EVT scripts, tables). It refuses when the pool contradicts the text/`.data` orders. It does not add forward declarations.
+- `gor_02` links with it: `.rodata` bytes and everything else byte-identical, data linked +1.21%. `jin_00` is one 8-byte `GXColor` template short (ours pools three 4-byte `-1` words where the target has two) and `tik_00` fails the consistency check (its `.rodata` has parsed items the model does not explain); both left as they are.
+
+## Grind 56: seven more units, and what a `checksum mismatch` with every section at 100% usually is (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked: `jin_00` (#151, with `tools/rel_pool_order.py`), `romfont` (#153), `mario_motion` (#154), `ac_timing_a` (#155), `battle_sub` (#156), `eff_magic2_n64` (#157); `tools/rel_pool_order.py` also takes nested units and treats an `lfs`-loaded `zero_` object as a float (#152).
+
+- **Function order first:** when `finish_unit` ends with `checksum mismatch` but every section scores 100%, run `tools/fn_order.py UNIT` (`battle_sub`, `mario_motion`): the text order of the unit differs and the `bl` targets of other units move. `fn_order --write` leaves comments and `static inline` helpers where they were: move a helper that a moved function calls back above it by hand.
+- **`jin_00`:** `senteresa_setupTev` existed only to imitate `senteresa_loadTev` being inlined into `senteresa_ext_disp`; calling `senteresa_loadTev()` from `senteresa_ext_disp` (the compiler inlines it) shares its `GXColor` template (one `-1` word instead of two); `0.4f * (f32)sin(1.2f * x)` takes a temp (call-argument pool rule).
+- **Templates:** each *expansion* of an inline function with a `(Vec){ 0, 0, 0 }` initialiser merges into one template; the target's two zero `Vec`s in `effMagic2Main` (two calls of `initializeVec`) came from a second copy of the helper (`initializeVec2`). The opposite: `eff_updown` defined a named `vec3_` zero and also built `(Vec){ 0, 0, 0 }` in code under `MUST_MATCH`, which emits both: the named one only in the natural build.
+- **`math.h` pools two sqrt doubles per use site** that a unit without `sqrt` does not have: `math_ext.h` plus `#define fabs(x) __fabs(x)` / `fabsf` (`mario_motion`, `ac_monosiri_target`, `eff_updown`).
+- **A named float/double extern forced first** (`battle_sub`'s `double_0p0001`, `eff_updown`) puts it before the compiler's own int-to-double constant; `f64 eps = 0.0001;` as a local pools it after, `atan2f_safety` stays 100%.
+- **Tables reached only through a base** need `force_active`; the three map names read at `vec3_802c59f0 + 0xC...` in `mario_motion` are defined under `MUST_MATCH` (the natural build keeps the literals). `marioMotTbl` was typed from the `dol_gen` output as `MotTblEntry[41]`.
+- Not done: `eff_mist2` (with the right function order Disp is 100% with `sixteen`/`k255`/`half` locals and the pool is 16, 0.5, 255 where the target has 16, 255, 0.5: the instruction order in the target is 16, 0.5, 255, so the pool order is not the load order), `eff_updown` (pool equal with locals; `effUpdownMain` 99.70% from the register order of `(f32)t * 0.25f`; the temp for `sin` pools right but costs 5%), `tik_00` (all functions 100%, `.rodata` equal after `math_ext.h`; two function-pointer relocations in the dol point at each other's function), `evt_lect_usu` (ours pools 108 bytes of floats the target `.rodata` does not have), `evt_kinopio` (the `.sdata2` constants become `__declspec(section ".sdata2")` objects and `fn_order` is applied, `.sdata2` equal, the dol still differs in `.data`/`.sdata`), `ac_repeatedly` (see Grind 54).
+
+## Grind 57: more linked units, and the parked ones with their exact blockers (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked: `driver/bgdrv` (#159), `eff_snow_dust_n64` (#160), `eff_akari_pose_n64` (#161); `battle_sub`, `eff_magic2_n64`, `ac_timing_a`, `mario_motion`, `romfont`, `jin_00` are in Grind 56.
+
+- **Shared named constants are not per-function templates:** `bgdrv`'s two functions load the same three `GXColor` words (`dat_80419510/14/18`, defined after the code); compound literals made a second set of templates. **PSMTXScale arguments:** `608.0f / w` and `480.0f / h` in the call itself (arguments are evaluated right to left, the constants pooled left to right).
+- **Mutable definitions of pool constants** (`f64 double_to_int_...`, `f32 float_...` without `const`, `eff_akari_pose_n64`, `evt_kinopio`, `battle_item_data`) land in `.sdata`: remove the definition (the compiler's own is in `.rodata`) or give it `__declspec(section ".sdata2")`.
+- **`dol_gen --append` for pair objects** (`eff_snow_dust_n64`): the `lbl_XXXX` u8 anchor definition is replaced by the generated `u32[2]` one, the use casts, and the generated objects go in front of the unit's other `.data`; the vertex tables need `force_active` (all reached through the base).
+- **Parked, with the exact blocker:**
+  - `eff_break`: after `dol_gen` (typed as `f32 ty_data[21]`), the string `str_804210C4` defined between `float_20` and `float_2` (named constants are laid out in definition order, so 2.0 and 10.0 must be named too), every section is 100%; the dol differs by nine `lfs` offsets: the zeros in `GXPosition3f32(.., 0.0f)` are literals (a second `0.0` entry at the end of `.sdata2`) where the target loads `float_0`; with `float_0` named there, `effBreakDisp` drops to 93-96% (the target reloads it before every store).
+  - `eff_mizutama`: one `lfs` offset differs (a literal `0.0f` where the target loads the named `float_0`); a local for it gets `effMizutamaEntry` to 99.87% (f1/f2 swapped). On the tower permuter queue.
+  - `eff_snowfall_n64`: with `dol_gen`, the `/ 2.0f` of `cam_clip_chk` as `* float_0p5` (named: no second `0.5` in the pool) gives 99.90% (f3/f4 and the operand order of one `fmuls`); on the queue.
+  - `countdown`, `battle_item_data`: the float arguments of `intplGetValue` must be loaded before the counter (a comma expression with a volatile cast on a literal gets 95%; locals 97%/86%).
+  - `battle_item_data`: `dat_8041c504` (`ffffff00`) should sit before the string `mist` in `.sdata2` (ours pools it after).
+  - `hw_aramdma`: the two static `ARAMTransferQueue`s are laid out `Hi, Lo` in `.bss` where the target has `Lo, Hi`; neither the declaration order nor the branch order of `aramQueueCallback` changes it; `musyx.h` includes `math.h` (its sqrt statics add 32 bytes of `.sdata2`): `#define _MATH_H_` before the includes removes it.
+  - `evt_lect_usu`: the unit's `.rodata` split ends at 0x2F04 but its functions' constants (`double_to_int_usu_00006728` at 0x2F20, `zero_usu_00006730`, ...) sit after it, in the next unit's range: the split is too short (a `splits.txt` change: needs Isaac); the named `vec3_usu_*`/`dat_usu_*` definitions were wrong (they are the compound-literal templates of the code: removing them gives a `.rodata` equal for the first 716 bytes).
+
 ## Grind 47: unit_party_christine links, with the nokotarou/christine `.data` boundary moved 8 bytes (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 - The `{ -1.0f, 1.0f }` pair at 0x80390B70 was the tail of `unk_evt_80390b30` / `lbl_80390B74` in `unit_party_nokotarou`; `tools/split_scan.py` missed it because the pair is not a `lbl_` object. The `.data` boundary of nokotarou/christine is now 0x80390B70 (the Grind 41 edit for one more pair), `symbols.txt` has `unk_evt_80390b30` at size 0x40 and `lbl_80390B70` (8 bytes) in its place, nokotarou's table lost its last word and the `lbl_80390B74` definition, and christine's source defines the pair as its first `.data` object. The invented `lbl_80390B70` base and the `MUST_MATCH` weapon-offset block in `__makeTechMenuFunc` are gone; the four weapons are named in the unit's own `.data` as in clauda.

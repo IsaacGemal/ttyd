@@ -20,6 +20,7 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3);
 void* marioGetTouchNpcPtr(void);
 s32 checkOneRevolution(s32 dir);
 s32 chkRevolveDir(s32* left, s32* right);
+void marioResetGravity(void);
 void marioGetRubInit(void);
 s32 N_marioGetMovementSpeed(void);
 f32 marioGetMoveRate(f32 angle);

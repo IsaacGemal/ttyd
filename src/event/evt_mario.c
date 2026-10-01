@@ -639,10 +639,9 @@ USER_FUNC(evt_mario_adjust_dir) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.82%): one extra `mr` when materializing the `a_mario_group` address.
 USER_FUNC(evt_mario_set_normal_pose) {
     MarioWork* mario = marioGetPtr();
-    const char** group;
+    s32 i;
     s32 found;
     const char* name;
 
@@ -666,14 +665,12 @@ USER_FUNC(evt_mario_set_normal_pose) {
         mario->animName = dot;
         mario->trigFlags |= 0x1000;
     } else {
-        group = a_mario_group;
         found = TRUE;
-        while (*group != NULL) {
-            if (strcmp(name, *group) == 0) {
+        for (i = 0; a_mario_group[i] != NULL; i++) {
+            if (strcmp(name, a_mario_group[i]) == 0) {
                 found = FALSE;
                 break;
             }
-            group++;
         }
         if (!found) {
             mario->animName = name;
@@ -691,13 +688,26 @@ USER_FUNC(evt_mario_set_normal_pose) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.18%): register allocation for event/args/group/name/found.
+// Returns TRUE if `name` is one of the pose names listed in a_mario_group.
+static inline s32 evt_mario_group_found(const char* name) {
+    s32 found = TRUE;
+    const char** group = a_mario_group;
+
+    while (*group != NULL) {
+        if (strcmp(name, *group) == 0) {
+            found = FALSE;
+            break;
+        }
+        group++;
+    }
+    return found;
+}
+
 USER_FUNC(evt_mario_set_pose) {
-    s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    const char** group;
     s32 found;
     const char* name;
+    s32* args = event->args;
+    MarioWork* mario = marioGetPtr();
 
     if (mario->currMotionId == MARIO_MOTION_PLANE || mario->currMotionId == MARIO_MOTION_SHIP ||
         mario->currMotionId == MARIO_MOTION_ROLL || mario->currMotionId == MARIO_MOTION_SLIT) {
@@ -713,15 +723,7 @@ USER_FUNC(evt_mario_set_pose) {
         mario->animName = dot;
         mario->trigFlags |= 0x1000;
     } else {
-        group = a_mario_group;
-        found = TRUE;
-        while (*group != NULL) {
-            if (strcmp(name, *group) == 0) {
-                found = FALSE;
-                break;
-            }
-            group++;
-        }
+        found = evt_mario_group_found(name);
         if (!found) {
             mario->animName = name;
             mario->trigFlags |= 0x1000;
@@ -1021,7 +1023,9 @@ USER_FUNC(N_evt_mario_party_door_halve_hitbox) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.90%): regalloc on the screen-pos comparisons, two framerate conversions, jump-table symbol.
+// NONMATCHING (99.29%): the case-0 int->float magic double lands in f5 instead of f2, so the speed
+// division goes to f2 and the final `fmr f2, f29` is folded away. The screen-pos compares match once the
+// 0.0 bound is a literal (the target's float_0_8041b8ac is the same pool entry).
 USER_FUNC(evt_mario_party_door_move) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1042,7 +1046,7 @@ USER_FUNC(evt_mario_party_door_move) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             marioGetScreenPos(party->position, &sx, &sy, &sz);
-            if (!(float_0_8041b8ac <= sx && sx <= float_600_8041b8d4 && float_0_8041b8ac <= sy && sy <= float_535_8041b8d8)) {
+            if (!(0.0f <= sx && sx <= float_600_8041b8d4 && 0.0f <= sy && sy <= float_535_8041b8d8)) {
                 party->position = mario->position;
             }
             if (mario->position.y > party->position.y) {
@@ -1056,7 +1060,7 @@ USER_FUNC(evt_mario_party_door_move) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             marioGetScreenPos(party->position, &sx, &sy, &sz);
-            if (!(float_0_8041b8ac <= sx && sx <= float_600_8041b8d4 && float_0_8041b8ac <= sy && sy <= float_535_8041b8d8)) {
+            if (!(0.0f <= sx && sx <= float_600_8041b8d4 && 0.0f <= sy && sy <= float_535_8041b8d8)) {
                 party->position = mario->position;
             }
             if (mario->position.y > party->position.y) {
@@ -1080,8 +1084,7 @@ USER_FUNC(evt_mario_party_door_move) {
             speed *= float_0p4_8041b8dc;
         }
         tmp = dist / speed;
-        speed = speed / (f32)gp->framerate;
-        marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed);
+        marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed / (f32)gp->framerate);
         event->userdata[0] = 2;
         break;
     case 2:

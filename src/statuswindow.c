@@ -104,9 +104,11 @@ void statusWinReInit(void) {
     }
 }
 
-// NONMATCHING (98.84%): the three negated `wp->field_0x4 & 0x11` tests materialise the boolean with
-// `bne skip` in the original, but a source `switch` can only lower `case 0` out of line (`beq`/extra `b`).
-// Remaining: 3 opcode diffs (`bne` vs `beq`) + 3 extra `b`, plus register differences.
+// The three negated `wp->field_0x4 & 0x11` tests materialise the boolean and branch `bne skip` in the
+// original; a plain if folds the materialisation and a switch lowers `case 0` out of line (`beq` +
+// extra b), so they use the `(x ? 1 : 0)` shape under MUST_MATCH.
+// NONMATCHING (99.81%): only FPR allocation in the cos()/lerp tail differs -- the compiler keeps `c`
+// in f2 (target f1), which shifts the surrounding f0/f1/f2 uses and puts the lerp 1.0 in f2 (target f1).
 void statusWinMain(void) {
     MarioWork* mario;
 
@@ -151,24 +153,14 @@ void statusWinMain(void) {
                             if (wp->field_0x74 > gp->framerate * 10) {
                                 wp->field_0x74 = gp->framerate * 10;
 #ifdef MUST_MATCH
-                                if (wp->field_0x7C == 0 && wp->field_0x78 == 0) {
-                                    switch ((wp->field_0x4 & 0x11) != 0) {
-                                    case 0:
-                                        wp->field_0x4 &= ~0xA;
-                                        wp->field_0x4 |= 5;
-                                        wp->field_0x4 |= 0x100;
-                                        break;
-                                    default:
-                                        break;
-                                    }
-                                }
+                                if (wp->field_0x7C == 0 && wp->field_0x78 == 0 && !(wp->field_0x4 & 0x11 ? 1 : 0)) {
 #else
                                 if (wp->field_0x7C == 0 && wp->field_0x78 == 0 && !(wp->field_0x4 & 0x11)) {
+#endif
                                     wp->field_0x4 &= ~0xA;
                                     wp->field_0x4 |= 5;
                                     wp->field_0x4 |= 0x100;
                                 }
-#endif
                             }
                         } else {
                             wp->field_0x74 = 0;
@@ -193,24 +185,10 @@ void statusWinMain(void) {
                         }
                         if (*(u16*)(mario->field_0x245 + 3) & 0x10) {
 #ifdef MUST_MATCH
-                            switch ((wp->field_0x4 & 0x11) != 0) {
-                            case 0:
-                                wp->field_0x4 &= ~0xA;
-                                wp->field_0x4 |= 5;
-                                wp->field_0x78 = gp->framerate * 10;
-                                psndSFXOn((const char*)0x2A);
-                                wp->field_0x4 |= 0x100;
-                                break;
-                            default:
-                                wp->field_0x4 |= 0xA;
-                                wp->field_0x4 &= ~5;
-                                wp->field_0x78 = gp->framerate * 10;
-                                wp->field_0x7C = 1;
-                                psndSFXOn((const char*)0x2B);
-                                break;
-                            }
+                            if (!(wp->field_0x4 & 0x11 ? 1 : 0)) {
 #else
                             if (!(wp->field_0x4 & 0x11)) {
+#endif
                                 wp->field_0x4 &= ~0xA;
                                 wp->field_0x4 |= 5;
                                 wp->field_0x78 = gp->framerate * 10;
@@ -223,25 +201,17 @@ void statusWinMain(void) {
                                 wp->field_0x7C = 1;
                                 psndSFXOn((const char*)0x2B);
                             }
-#endif
                         }
                         if (valueCheck() != 0) {
                             wp->field_0x78 = gp->framerate * 2;
 #ifdef MUST_MATCH
-                            switch ((wp->field_0x4 & 0x11) != 0) {
-                            case 0:
-                                wp->field_0x4 &= ~0xA;
-                                wp->field_0x4 |= 5;
-                                break;
-                            default:
-                                break;
-                            }
+                            if (!(wp->field_0x4 & 0x11 ? 1 : 0)) {
 #else
                             if (!(wp->field_0x4 & 0x11)) {
+#endif
                                 wp->field_0x4 &= ~0xA;
                                 wp->field_0x4 |= 5;
                             }
-#endif
                         }
                     }
                 }
@@ -303,8 +273,15 @@ void statusWinMain(void) {
         }
 
         {
+#ifdef MUST_MATCH
+            // The original writes `t` first and subtracts; that keeps 1.0 in f1 and t in f2.
+            f32 t = 1.0f;
+            f32 x = wp->field_0x10;
+            t -= x;
+#else
             f32 x = wp->field_0x10;
             f32 t = 1.0f - x;
+#endif
             wp->field_0x20 = wp->field_0x30 * x + wp->field_0x40 * t;
             wp->field_0x24 = wp->field_0x34 * x + wp->field_0x44 * t;
         }
@@ -568,25 +545,26 @@ static inline void valueMoveUpdate(s16* cur, s16 target) {
     *cur += step;
 }
 
-// Pins the first party bar's cur/target loads to the original's registers;
-// the plain helper gives them the other way round (see NONMATCHING note).
+// The original inlines valueMove for the first party bar with *cur in r6 and
+// target in r5 (wp is still live in r7). Taking target by pointer makes both
+// operands memory loads, so *cur is loaded first and lands in r6; taking it by
+// value schedules the target load first and swaps the two registers.
 #ifdef MUST_MATCH
-static inline void valueMoveParty(s16* cur, s16 target) {
+static inline void valueMoveParty(s16* cur, s16* target) {
     s16 c = *cur;
-    s32 step = target - c;
+    s16 t = *target;
+    s32 step = t - c;
 
     if (step != 0) {
         step /= 10;
         if (step == 0) {
-            step = (target > c) ? 1 : -1;
+            step = (t > c) ? 1 : -1;
         }
     }
     *cur += step;
 }
 #endif
 
-// NONMATCHING (99.88%): the first party bar's cur/target are in r5/r6 instead
-// of the original's r6/r5 (4 register-only diffs); everything else matches.
 void valueUpdate(void) {
     static s32 count;
 #ifdef MUST_MATCH
@@ -633,7 +611,7 @@ void valueUpdate(void) {
     *(s16*)((u8*)wp + 0x58) = values.partyId;
     if (*(s16*)((u8*)wp + 0x58) != 0) {
 #ifdef MUST_MATCH
-        valueMoveParty((s16*)((u8*)wp + 0x5A), values.partyHp);
+        valueMoveParty((s16*)((u8*)wp + 0x5A), &values.partyHp);
 #else
         valueMoveUpdate((s16*)((u8*)wp + 0x5A), values.partyHp);
 #endif

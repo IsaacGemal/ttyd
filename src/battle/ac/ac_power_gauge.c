@@ -20,23 +20,6 @@ __declspec(section ".sdata2") s32 dat_80421588 = -1;
 #else
 const s32 dat_80421588 = -1;
 #endif
-extern const f32 float_100_8042158c;
-extern const f32 float_1_80421590;
-extern const f32 float_neg288_80421594;
-extern const f32 float_45_80421598;
-extern const f32 float_120_8042159c;
-extern const f32 float_neg200_804215a0;
-extern const f32 float_12_804215a4;
-extern const f32 float_18_804215a8;
-extern const f32 float_neg225_804215ac;
-extern const f32 float_80_804215b0;
-extern const f32 float_56_804215b4;
-extern const f32 float_28_804215b8;
-extern const f32 float_neg300_804215bc;
-extern const f32 float_30_804215c0;
-extern const f32 float_0_804215c4;
-extern const f32 float_101_804215c8;
-extern const f64 double_to_int_802fea30;
 
 // .rodata zero vectors used as icon positions by actionCommandDisp.
 extern const Vec vec3_802fe958;
@@ -103,10 +86,10 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
         break;
     case 0x0:
         memset(disp, 0, 0x2C);
-        disp->iconX = float_neg300_804215bc;
-        disp->iconY = float_0_804215c4;
+        disp->iconX = -300.f;
+        disp->iconY = 0.0f;
         disp->counter = 0x14;
-        disp->value = float_0_804215c4;
+        disp->value = 0.0f;
         disp->field_0xC = dat_80421588;
         dec->frame = 0;
         dec->counter = 0;
@@ -114,7 +97,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
         work->actionCommands.mAcState = 0x63;
         work->actionCommands.result = 1;
         dec->value = *(s32*)((u8*)work + 0x1CCC) + *(s32*)((u8*)work + 0x1CD0);
-        dec->gaugePercent = float_0_804215c4;
+        dec->gaugePercent = 0.0f;
         switch (*(s32*)((u8*)work + 0x1CC8)) {
         case 0:
             dec->flag2 = 1;
@@ -211,7 +194,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             if (dec->frame > 0x78) {
                 dec->frame = 0;
                 work->actionCommands.result = 0;
-                dec->gaugePercent = float_0_804215c4;
+                dec->gaugePercent = 0.0f;
                 work->actionCommands.mAcState = 0x3EB;
                 work->actionCommands.outputParams[0] = 2;
                 break;
@@ -221,16 +204,16 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             if (dec->frame > dec->value) {
                 dec->frame = 0;
                 work->actionCommands.result = 0;
-                dec->gaugePercent = float_101_804215c8;
+                dec->gaugePercent = 101.0f;
                 work->actionCommands.mAcState = 0x3EB;
                 break;
             }
         }
         if (dec->frame <= *(s32*)((u8*)work + 0x1CCC)) {
-            dec->gaugePercent = intplGetValueFM(*(s32*)((u8*)work + 0x1CD4), float_0_804215c4, float_100_8042158c, dec->counter, *(s32*)((u8*)work + 0x1CCC));
+            dec->gaugePercent = intplGetValueFM(*(s32*)((u8*)work + 0x1CD4), 0.0f, 100.f, dec->counter, *(s32*)((u8*)work + 0x1CCC));
         }
         else {
-            dec->gaugePercent = float_100_8042158c;
+            dec->gaugePercent = 100.f;
         }
         BattleAcGaugeSeUpdate(dec->gaugePercent);
         if (autoCommand != 0) {
@@ -306,7 +289,7 @@ void battleAcDisp_PowerGauge(CameraId camId, void* param) {
 
     switch (state) {
     case 0x63:
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_804215bc, float_30_804215c0);
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.f, 30.f);
         // fallthrough
     case 0x64:
     case 0x3e8:
@@ -320,9 +303,9 @@ void battleAcDisp_PowerGauge(CameraId camId, void* param) {
     case 0x3ec:
     case 0x3ed:
         if (disp->counter >= 0x28) {
-            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_804215c0, float_neg300_804215bc);
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.f, -300.f);
         } else {
-            disp->iconX = float_30_804215c0;
+            disp->iconX = 30.f;
         }
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter < 0x3c) {
@@ -382,10 +365,9 @@ static void actionCommandDisp(f32 x, f32 y) {
     dec = (PowerGaugeDecWork*)((u8*)work + 0x1f4c);
 #endif
 
-    ratio = float_100_8042158c;
-    ratio = dec->gaugePercent / ratio;
-    if (ratio > float_1_80421590) {
-        ratio = float_1_80421590;
+    ratio = dec->gaugePercent / 100.f;
+    if (ratio > 1.0f) {
+        ratio = 1.0f;
     }
     disp->value = ratio;
 
@@ -398,16 +380,16 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     if ((*(s32*)&ac->field_34[0] & 4) == 0) {
         Vec pos = vec3_802fe958;
-        pos.x = float_neg288_80421594 + px +
-                (f32)(*(s32*)&ac->field_34[0x14] * 0xb0) / float_100_8042158c;
-        pos.y = float_45_80421598 + py;
-        ICON_DISP(&pos, 0x10, 0x96, float_1_80421590);
+        pos.x = -288.0f + px +
+                (f32)(*(s32*)&ac->field_34[0x14] * 0xb0) / 100.f;
+        pos.y = 45.0f + py;
+        ICON_DISP(&pos, 0x10, 0x96, 1.0f);
     }
     else {
         s32 color;
 
         if (dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
-            dec->gaugePercent <= float_100_8042158c) {
+            dec->gaugePercent <= 100.f) {
             color = 0x95;
         }
         else {
@@ -415,15 +397,15 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
         if (*(s32*)&ac->field_34[0] & 8) {
             Vec pos = vec3_802fe964;
-            pos.x = float_neg200_804215a0 + px + float_120_8042159c - float_12_804215a4;
-            pos.y = float_18_804215a8 + py;
-            ICON_DISP(&pos, 0x10, color, float_1_80421590);
+            pos.x = -200.f + px + 120.f - 12.0f;
+            pos.y = 18.0f + py;
+            ICON_DISP(&pos, 0x10, color, 1.0f);
         }
         else {
             Vec pos = vec3_802fe970;
-            pos.x = float_neg200_804215a0 + px + float_120_8042159c;
-            pos.y = float_18_804215a8 + py;
-            ICON_DISP(&pos, 0x10, color, float_1_80421590);
+            pos.x = -200.f + px + 120.f;
+            pos.y = 18.0f + py;
+            ICON_DISP(&pos, 0x10, color, 1.0f);
         }
     }
 
@@ -461,129 +443,129 @@ static void actionCommandDisp(f32 x, f32 y) {
     case 0x3ec:
     case 0x3ed:
         if ((iconC & 0xffff) != 0) {
-            px = float_neg225_804215ac + px;
-            py = float_80_804215b0 + py;
+            px = -225.0f + px;
+            py = 80.f + py;
             {
                 Vec pos = vec3_802fe97c;
                 pos.x = px;
                 pos.y = py;
-                ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                ICON_DISP(&pos, 0x10, iconB, 1.0f);
             }
             {
                 Vec pos = vec3_802fe988;
-                pos.x = float_56_804215b4 + px;
+                pos.x = 56.0f + px;
                 pos.y = py;
-                ICON_DISP(&pos, 0x10, iconD, float_1_80421590);
+                ICON_DISP(&pos, 0x10, iconD, 1.0f);
             }
         }
         else {
             Vec pos = vec3_802fe994;
-            pos.x = float_neg225_804215ac + px + float_28_804215b8;
-            pos.y = float_80_804215b0 + py;
-            ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+            pos.x = -225.0f + px + 28.0f;
+            pos.y = 80.f + py;
+            ICON_DISP(&pos, 0x10, iconB, 1.0f);
         }
         break;
     case 0x3e8:
     case 0x3e9:
         if (dec->flag2 != 0) {
             if (dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
-                dec->gaugePercent <= float_100_8042158c) {
+                dec->gaugePercent <= 100.f) {
                 if ((iconC & 0xffff) != 0) {
-                    px = float_neg225_804215ac + px;
-                    py = float_80_804215b0 + py;
+                    px = -225.0f + px;
+                    py = 80.f + py;
                     {
                         Vec pos = vec3_802fe9a0;
                         pos.x = px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+                        ICON_DISP(&pos, 0x10, iconA, 1.0f);
                     }
                     {
                         Vec pos = vec3_802fe9ac;
-                        pos.x = float_56_804215b4 + px;
+                        pos.x = 56.0f + px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconC, float_1_80421590);
+                        ICON_DISP(&pos, 0x10, iconC, 1.0f);
                     }
                 }
                 else {
                     Vec pos = vec3_802fe9b8;
-                    pos.x = float_neg225_804215ac + px + float_28_804215b8;
-                    pos.y = float_80_804215b0 + py;
-                    ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+                    pos.x = -225.0f + px + 28.0f;
+                    pos.y = 80.f + py;
+                    ICON_DISP(&pos, 0x10, iconA, 1.0f);
                 }
             }
             else {
                 if ((iconC & 0xffff) != 0) {
-                    px = float_neg225_804215ac + px;
-                    py = float_80_804215b0 + py;
+                    px = -225.0f + px;
+                    py = 80.f + py;
                     {
                         Vec pos = vec3_802fe9c4;
                         pos.x = px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                        ICON_DISP(&pos, 0x10, iconB, 1.0f);
                     }
                     {
                         Vec pos = vec3_802fe9d0;
-                        pos.x = float_56_804215b4 + px;
+                        pos.x = 56.0f + px;
                         pos.y = py;
-                        ICON_DISP(&pos, 0x10, iconD, float_1_80421590);
+                        ICON_DISP(&pos, 0x10, iconD, 1.0f);
                     }
                 }
                 else {
                     Vec pos = vec3_802fe9dc;
-                    pos.x = float_neg225_804215ac + px + float_28_804215b8;
-                    pos.y = float_80_804215b0 + py;
-                    ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                    pos.x = -225.0f + px + 28.0f;
+                    pos.y = 80.f + py;
+                    ICON_DISP(&pos, 0x10, iconB, 1.0f);
                 }
             }
         }
         else if ((dec->gaugePercent >= (f32)*(s32*)&ac->field_34[0x14] &&
-                  dec->gaugePercent <= float_100_8042158c) ||
+                  dec->gaugePercent <= 100.f) ||
                  ac->outputParams[0] == 0) {
             if ((iconC & 0xffff) != 0) {
-                px = float_neg225_804215ac + px;
-                py = float_80_804215b0 + py;
+                px = -225.0f + px;
+                py = 80.f + py;
                 {
                     Vec pos = vec3_802fe9e8;
                     pos.x = px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                    ICON_DISP(&pos, 0x10, iconB, 1.0f);
                 }
                 {
                     Vec pos = vec3_802fe9f4;
-                    pos.x = float_56_804215b4 + px;
+                    pos.x = 56.0f + px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconD, float_1_80421590);
+                    ICON_DISP(&pos, 0x10, iconD, 1.0f);
                 }
             }
             else {
                 Vec pos = vec3_802fea00;
-                pos.x = float_neg225_804215ac + px + float_28_804215b8;
-                pos.y = float_80_804215b0 + py;
-                ICON_DISP(&pos, 0x10, iconB, float_1_80421590);
+                pos.x = -225.0f + px + 28.0f;
+                pos.y = 80.f + py;
+                ICON_DISP(&pos, 0x10, iconB, 1.0f);
             }
         }
         else {
             if ((iconC & 0xffff) != 0) {
-                px = float_neg225_804215ac + px;
-                py = float_80_804215b0 + py;
+                px = -225.0f + px;
+                py = 80.f + py;
                 {
                     Vec pos = vec3_802fea0c;
                     pos.x = px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+                    ICON_DISP(&pos, 0x10, iconA, 1.0f);
                 }
                 {
                     Vec pos = vec3_802fea18;
-                    pos.x = float_56_804215b4 + px;
+                    pos.x = 56.0f + px;
                     pos.y = py;
-                    ICON_DISP(&pos, 0x10, iconC, float_1_80421590);
+                    ICON_DISP(&pos, 0x10, iconC, 1.0f);
                 }
             }
             else {
                 Vec pos = vec3_802fea24;
-                pos.x = float_neg225_804215ac + px + float_28_804215b8;
-                pos.y = float_80_804215b0 + py;
-                ICON_DISP(&pos, 0x10, iconA, float_1_80421590);
+                pos.x = -225.0f + px + 28.0f;
+                pos.y = 80.f + py;
+                ICON_DISP(&pos, 0x10, iconA, 1.0f);
             }
         }
         break;
@@ -611,19 +593,3 @@ const Vec vec3_802fea18 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fea24 = {0.0f, 0.0f, 0.0f};
 
 // .sdata2 definitions of this unit, in the original's order.
-const f32 float_100_8042158c = 100.0f;
-const f32 float_1_80421590 = 1.0f;
-const f32 float_neg288_80421594 = -288.0f;
-const f32 float_45_80421598 = 45.0f;
-const f32 float_120_8042159c = 120.0f;
-const f32 float_neg200_804215a0 = -200.0f;
-const f32 float_12_804215a4 = 12.0f;
-const f32 float_18_804215a8 = 18.0f;
-const f32 float_neg225_804215ac = -225.0f;
-const f32 float_80_804215b0 = 80.0f;
-const f32 float_56_804215b4 = 56.0f;
-const f32 float_28_804215b8 = 28.0f;
-const f32 float_neg300_804215bc = -300.0f;
-const f32 float_30_804215c0 = 30.0f;
-const f32 float_0_804215c4 = 0.0f;
-const f32 float_101_804215c8 = 101.0f;

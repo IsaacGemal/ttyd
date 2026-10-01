@@ -1,5 +1,6 @@
 #include "mario/mario_pouch.h"
 #include "mario/mario_party.h"
+#include "driver/swdrv.h"
 #include "evt/evt_badgeshop.h"
 #include "evt/evt_yuugijou.h"
 #include "data/item_data.h"
@@ -31,8 +32,8 @@ PouchData* pouchGetPtr(void) {
 	return mpp;
 }
 
-// NONMATCHING (62.14%): 2 instructions differ, 29 missing, 83 extra, plus register differences.
 void pouchInit(void) {
+	PouchPartyData* party;
 	int i;
 
 	mpp = __memAlloc(HEAP_DEFAULT, sizeof(PouchData));
@@ -70,12 +71,15 @@ void pouchInit(void) {
 	mpp->jumpLevel = 0;
 	mpp->hammerLevel = 0;
 	for (i = 0; i < 8; i++) {
-		mpp->partyData[i].flags = 0;
-		mpp->partyData[i].baseMaxHP = 10;
-		mpp->partyData[i].maximumHP = mpp->partyData[i].baseMaxHP;
-		mpp->partyData[i].currentHP = mpp->partyData[i].baseMaxHP;
-		mpp->partyData[i].attackLevel = 0;
-		mpp->partyData[i].techLevel = 0;
+		party = &mpp->partyData[i];
+		if (i != PARTNER_NONE) {
+			party->flags = 0;
+			party->baseMaxHP = 10;
+			party->maximumHP = party->baseMaxHP;
+			party->currentHP = party->baseMaxHP;
+			party->attackLevel = 0;
+			party->techLevel = 0;
+		}
 	}
 	strcpy(mpp->yoshiName, "チビヨッシー"); //TODO: US
 }
@@ -166,9 +170,23 @@ s32 pouchGetEmptyKeepItemCnt(void) {
 }
 
 //we have obtained an item, update the appropriate data
-// NONMATCHING (7.44%): 3 instructions differ, 273 missing, plus register differences.
+// The saved-register swap, the loop's pointer temporaries and the found-slot pointer registers
+// now match. What still differs (29 instructions): (1) the common-section zero fill emits
+// `li r29,0`/`li r30,0` where the original reuses r4's zero (`li r4,0; mr r29,r4; mr r30,r4`);
+// (2) the `? :` for the held-item maximum is computed into r0 and moved to r4 instead of loaded
+// straight into r4; (3) in the table2 shift loop the second pointer is r6 and the unroll's
+// remainder counter is a copy `mr r3,r4`, where the original keeps the second pointer in r3 and
+// the remainder on r4. The pointer form of the shift loop (`*p1 = *(p1-1)`, `p1--`) is what took
+// this from 93.55% to 97.21%; moving `table2` before `table1` in the declarations completed the
+// saved-register fix (98.45%).
+// NONMATCHING (98.45%): table2-shift second pointer r6 vs r3, remainder copy, zero-fill/ternary peepholes
 BOOL pouchGetItem(ItemType type) {
-	s32 id;
+	s16* table2;
+	s16* table1;
+	s32 maximum;
+	BOOL valid;
+	s32 partyId;
+	int i, j;
 
 	if (type == ITEM_COIN) {
 		if (mpp->coins < 999) {
@@ -183,27 +201,116 @@ BOOL pouchGetItem(ItemType type) {
 		return TRUE;
 	}
 	if (type == ITEM_HEART) {
-		//id = marioGetParty();
-
+		partyId = marioGetParty();
+		if (mpp->currentHP < mpp->maximumHP) {
+			mpp->currentHP++;
+		}
+		if (partyId != 0) {
+			if (mpp->partyData[partyId].currentHP < mpp->partyData[partyId].maximumHP) {
+				mpp->partyData[partyId].currentHP++;
+			}
+		}
+		return TRUE;
 	}
-	/*
-	switch (type) {
-	case ITEM_COIN:
-		if (mpp->coins < 999) {
-			mpp->coins++;
+	if (type == ITEM_FLOWER) {
+		if (mpp->currentFP < mpp->maximumFP) {
+			mpp->currentFP++;
 		}
 		return TRUE;
-	case kItemPianta:
-		if (yuwp->mPianta < 99999) {
-			yuwp->mPianta++;
-		}
+	}
+	if (type == ITEM_STAR_PIECE) {
+		mpp->mStarPieceCount++;
 		return TRUE;
-		case kItemHeartPickup:
-			if (mpp->mCurrentHP < mpp->mMaxHP) {
-				mpp->mCurrentHP++;
+	}
+	if (type == ITEM_SHINE_SPRITE) {
+		mpp->mShineSpriteCount++;
+		return TRUE;
+	}
+	if (type == ITEM_BOOTS || type == ITEM_SUPER_BOOTS || type == ITEM_ULTRA_BOOTS) {
+		switch (type) {
+		case ITEM_BOOTS:
+			mpp->jumpLevel = 1;
+			break;
+		case ITEM_SUPER_BOOTS:
+			mpp->jumpLevel = 2;
+			break;
+		case ITEM_ULTRA_BOOTS:
+			mpp->jumpLevel = 3;
+			break;
+		}
+	}
+	else if (type == ITEM_HAMMER || type == ITEM_SUPER_HAMMER || type == ITEM_ULTRA_HAMMER) {
+		switch (type) {
+		case ITEM_HAMMER:
+			mpp->hammerLevel = 1;
+			break;
+		case ITEM_SUPER_HAMMER:
+			mpp->hammerLevel = 2;
+			break;
+		case ITEM_ULTRA_HAMMER:
+			mpp->hammerLevel = 3;
+			break;
+		}
+	}
+	else {
+		if (type == ITEM_BOWSER_BROS_MEAT) {
+			return TRUE;
+		}
+		if (type >= BADGE_MIN && type < BADGE_MAX) {
+			swSet(type - 0x70);
+		}
+	}
+	maximum = 0;
+	table1 = NULL;
+	table2 = NULL;
+	if (type >= ITEM_MIN && type < ITEM_MAX) {
+		table1 = mpp->heldItems;
+		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+		valid = TRUE;
+	}
+	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
+		table1 = mpp->keyItems;
+		table2 = NULL;
+		maximum = MAX_KEY_ITEMS;
+		valid = TRUE;
+	}
+	else if (type >= BADGE_MIN && type < BADGE_MAX) {
+		table1 = mpp->badges;
+		table2 = mpp->equippedBadges;
+		maximum = MAX_BADGES;
+		valid = TRUE;
+	}
+	else {
+		valid = FALSE;
+	}
+	if (!valid) {
+		return FALSE;
+	}
+	for (i = maximum - 1; i >= 0; i--) {
+		if (table1[i] == ITEM_NULL) {
+			s16* p1 = &table1[i];
+			s16* p2 = table2 + i;
+			if (table2 != NULL) {
+				while (i-- > 0) {
+					*p1 = *(p1 - 1);
+					*p2 = *(p2 - 1);
+					p1--;
+					p2--;
+				}
+			}
+			else {
+				while (i-- > 0) {
+					*p1 = *(p1 - 1);
+					p1--;
+				}
+			}
+			table1[0] = type;
+			if (table2 != NULL) {
+				table2[0] = ITEM_NULL;
 			}
 			return TRUE;
-	}*/
+		}
+	}
 	return FALSE;
 }
 
@@ -257,8 +364,9 @@ void pouchReceiveMail(s32 mailId) {
 	index = mailId / 32;
 	shift = mailId % 32;
 
+	count = 0;
 	//increment through known IDs to add to mEmailIds
-	for (i = 0, count = 0; i < 99; i++) {
+	for (i = 0; i < 99; i++) {
 		if (mpp->mEmailReceivedFlags[i / 32] & (1 << (i % 32))) {
 			count++;
 		}
@@ -391,7 +499,7 @@ BOOL pouchEquipBadgeIndex(s32 index) {
 	return TRUE;
 }
 
-// NONMATCHING (65.00%): 1 extra, plus register differences.
+// NONMATCHING (65.00%): header include/mario/mario_pouch.h declares u16, forcing a clrlwi on the return; the original's `lha r3, 0x96(r3)` (no clrlwi) shows it returns s16, and callers assign straight to an s16. Header cannot be changed per task rules; see REPORT.
 u16 pouchGetStarPoint(void) {
 	return mpp->mStarPoints;
 }

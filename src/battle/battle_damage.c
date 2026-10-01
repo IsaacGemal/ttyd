@@ -47,8 +47,13 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     return 0;
 }
 
-// NONMATCHING (98.87%): MWCC puts flags2 in r27 / defenseAttr in r31, the original the reverse (plus one `mr`
-// and `neg` vs `mulli ... -1`); 120 declaration orders and several splits/pragmas do not move the pair.
+static inline u8 getAllOrNothing(BattleUnit* unit) {
+    return unit->badgesEquipped.AllOrNothing;
+}
+
+// NONMATCHING (99.49%): the getAllOrNothing inline above fixes the damage-block register pressure; `result * -1u`
+// gives the original's `mulli`. What is left is the flags2/defenseAttr pair (MWCC: flags2 r27 / defenseAttr r31,
+// original the reverse), which also adds a `mr r28` and puts the element index in r5 instead of r0.
 s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon,
                           s32* damageCode, s32 flags) {
     BattleWork* wp = _battleWorkPointer;
@@ -76,7 +81,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
     if (part->attributes & kUnk_ImmuneToDamageOrStatus) {
         return 0;
     }
-    if (unit1 != 0 && ((u32)weapon->special & 1) && unit1->badgesEquipped.AllOrNothing != 0) {
+    if (unit1 != 0 && ((u32)weapon->special & 1) && getAllOrNothing(unit1) != 0) {
         if (!(wp->actionCommands.result & 2) && !(flags & 0x20000)) {
             return 0;
         }
@@ -90,7 +95,7 @@ s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* 
         damage += 3;
     }
     if ((u32)weapon->special & 1) {
-        u8 allOrNothing = unit1->badgesEquipped.AllOrNothing;
+        u8 allOrNothing = getAllOrNothing(unit1);
 
         damage += unit1->badgesEquipped.PowerPlus;
         damage += unit1->badgesEquipped.PUpDDown;
@@ -272,7 +277,7 @@ calculate_defense:
     }
     if (defenseAttr == 3) {
         *damageCode |= 0x2000;
-        return result * -1;
+        return result * -1u;
     }
     if (result <= 0) {
         *damageCode = flags2;
@@ -603,12 +608,20 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     return result;
 }
 
-// NONMATCHING (96.87%): the GALE_FORCE compare is `cmpwi r8,0` vs `extsb. r0,r8`; the rest is register/relocation naming.
+// One instruction pair is scheduled in the other order: the original loads `lwz r6,0x74(r30)`
+// (weapon->special) before `lbz r10,0x11(r1)` (p1), while this build loads p1 first. The `s32 rate`
+// plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8 rate makes the
+// GALE_FORCE test `extsb. r0,r8`). The jump-table reloc name differs; objdiff ignores it.
+// NONMATCHING (97.59%): only the two call-setup loads above are swapped.
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
     s32 work = 0;
     u32 i;
+#ifdef MUST_MATCH
+    s32 rate;
+#else
     s8 rate;
+#endif
     s8 p1;
     s8 p2;
     s32 levelDiff;
@@ -616,7 +629,11 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
     if (!(flags & 0x20000000)) {
         for (i = 0; i < 0x1c; i++) {
             _getSickStatusParam(unit1, weapon, i, &p1, &p2);
+#ifdef MUST_MATCH
+            rate = (s8)_getSickStatusRate(weapon, i);
+#else
             rate = _getSickStatusRate(weapon, i);
+#endif
             levelDiff = 0;
             switch (i) {
             case STATUS_HUGE:
@@ -640,7 +657,11 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
                 }
                 break;
             }
+#ifdef MUST_MATCH
+            if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, (s8)rate, levelDiff, p1, p2)) {
+#else
             if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, rate, levelDiff, p1, p2)) {
+#endif
                 if (i == STATUS_INVISIBLE) {
                     btlDispPoseAnime(part);
                 }

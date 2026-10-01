@@ -9,11 +9,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .rodata
-const Vec vec3_802ffa50 = { 0.0f, 0.0f, 0.0f };
-const char str_802FFA5C[] = "EFF_batten_x";
-const char str_802FFA6C[] = "EFF_batten_rocket";
-
 // .sdata2
 extern u32 str_80421980;
 extern const u32 dat_80421984;
@@ -148,52 +143,56 @@ void effBattenDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (94.66%): vec3 relocates through the section base ...rodata.0 instead of vec3_802ffa50, the
-// int->float double constants sit at 0x38/0x40 not 0x30/0x38, and several r/f registers are named differently
-// (r28/r29 swap, f30/f31 fmadds operand order).
+// Builds the temporary position; the compiler emits the struct copy this way
+// (matches effVaporMain). The anonymous zero literal is deliberate: it must
+// land at .rodata:0 before the two EFF_batten strings.
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 void effBattenMain(EffectEntry* effect) {
 	BattenData* data = effect->userdata;
-	BattenData* elem;
 	Vec pos2;
 	Vec pos;
+	s32 completed = 0;
 	s32 type;
 	s32 inBattle;
-	s32 completed = 0;
 	s32 i;
 
-	pos = vec3_802ffa50;
-	pos.x = data->position.x;
-	pos.y = data->position.y;
-	pos.z = data->position.z;
+	pos = makeVec(data->position.x, data->position.y, data->position.z);
 	pos2 = pos;
 	type = data->type;
 	inBattle = gp->inBattle != 0;
 
 	switch (type) {
 		case 1:
-			if (!animGroupBaseAsync(str_802FFA5C, inBattle, NULL)) {
+			if (!animGroupBaseAsync("EFF_batten_x", inBattle, NULL)) {
 				return;
 			}
 			if (data->animPoseId == -1) {
-				data->animPoseId = animPoseEntry(str_802FFA5C, inBattle);
+				data->animPoseId = animPoseEntry("EFF_batten_x", inBattle);
 				animPoseSetAnim(data->animPoseId, str_804219A0, TRUE);
 			}
 			break;
 		case 2:
-			if (!animGroupBaseAsync(str_802FFA5C, inBattle, NULL)) {
+			if (!animGroupBaseAsync("EFF_batten_x", inBattle, NULL)) {
 				return;
 			}
 			if (data->animPoseId == -1) {
-				data->animPoseId = animPoseEntry(str_802FFA5C, inBattle);
+				data->animPoseId = animPoseEntry("EFF_batten_x", inBattle);
 				animPoseSetAnim(data->animPoseId, str_804219A4, TRUE);
 			}
 			break;
 		case 3:
-			if (!animGroupBaseAsync(str_802FFA6C, inBattle, NULL)) {
+			if (!animGroupBaseAsync("EFF_batten_rocket", inBattle, NULL)) {
 				return;
 			}
 			if (data->animPoseId == -1) {
-				data->animPoseId = animPoseEntry(str_802FFA6C, inBattle);
+				data->animPoseId = animPoseEntry("EFF_batten_rocket", inBattle);
 				animPoseSetAnim(data->animPoseId, str_804219A0, TRUE);
 			}
 			break;
@@ -219,36 +218,38 @@ void effBattenMain(EffectEntry* effect) {
 
 	if (type == 0) {
 		i = 1;
-		elem = &data[1];
-		for (; i < effect->count; i++, elem++) {
-			switch (elem->state) {
+		data++;
+		for (; i < effect->count; i++, data++) {
+			switch (data->state) {
 				case 0:
-					if (--elem->timer < 0) {
-						elem->timer = 0;
-						elem->state++;
+					if (--data->timer < 0) {
+						data->timer = 0;
+						data->state++;
 					}
 					break;
 				case 1:
-					if (elem->timer < 30) {
-						elem->scale += (float_1_804219a8 - elem->scale) * float_0p125_804219ac;
-						elem->alpha += (0x80 - elem->alpha) * float_0p125_804219ac;
-						elem->timer++;
+					if (data->timer < 30) {
+						f32 t = float_1_804219a8 - data->scale;
+						data->scale += t * float_0p125_804219ac;
+						data->alpha += (0x80 - data->alpha) * float_0p125_804219ac;
+						data->timer++;
 					} else {
-						elem->timer = (3 - i) * 10;
-						elem->state++;
+						data->timer = (3 - i) * 10;
+						data->state++;
 					}
 					break;
 				case 2:
-					if (--elem->timer < 0) {
-						elem->timer = 0;
-						elem->state++;
+					if (--data->timer < 0) {
+						data->timer = 0;
+						data->state++;
 					}
 					break;
 				case 3:
-					if (elem->timer < 30) {
-						elem->scale += (float_10_804219b0 - elem->scale) * float_0p125_804219ac;
-						elem->alpha += (0 - elem->alpha) * float_0p125_804219ac;
-						elem->timer++;
+					if (data->timer < 30) {
+						f32 t = float_10_804219b0 - data->scale;
+						data->scale += t * float_0p125_804219ac;
+						data->alpha += (0 - data->alpha) * float_0p125_804219ac;
+						data->timer++;
 					} else {
 						completed++;
 					}

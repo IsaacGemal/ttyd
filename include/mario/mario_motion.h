@@ -27,3 +27,12 @@ void marioChgMot2(s32 motion);
 s32 marioRollChgChk(void);
 BOOL marioChkTalkable(void);
 void marioSetJumpPara(void);
+s32 L_marioChkRub(void);
+void mot_talk(void);
+void mot_getItem(void);
+void mot_kaze(void);
+void mot_shadow(void);
+void mot_partyUse(void);
+void mot_dummy(void);
+void mot_bottomless(void);  // TODO: real signature
+void mot_forceReset(void);

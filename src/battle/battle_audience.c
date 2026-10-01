@@ -9,8 +9,10 @@
 #include "system.h"
 #include <string.h>
 #include "pmario_sound.h"
+#include "statuswindow.h"
 #include "battle/battle_weapon_power.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_80399940[2] = { 0xBF800000, 0x3F800000 };
@@ -155,6 +157,28 @@ f32 float_5_8041e62c = 5.0f;
 f32 float_0p01_8041e628 = 0.01f;
 f32 float_1p5_8041e670 = 1.5f;
 
+// These .sdata2/.sdata objects live in this unit but are not defined yet; the functions that own them
+// (DispWin, DispItem, ...) are still stubs. Declared extern so PerAct/ApSrcCtrlProcess can reference them.
+extern f32 float_neg5_8041e710;
+extern f32 float_25_8041e6dc;
+extern f32 float_40_8041e690;
+extern f32 float_20_8041e6a8;
+extern f32 float_15_8041e6f4;
+extern f32 float_neg15_8041e714;
+extern f32 float_neg20_8041e6a0;
+extern f32 float_neg10_8041e6fc;
+extern f32 float_30_8041e6f0;
+extern f32 float_64_8041e6d4;
+extern f32 float_50_8041e6d8;
+extern f32 float_32767_8041e674;
+extern f32 float_0p9_8041e6e0;
+extern f32 float_0p8_8041e69c;
+extern f32 float_6p2832_8041e6e8;
+extern f32 float_0p2_8041e67c;
+extern f32 float_0p05_8041e6e4;
+extern f32 float_128_8041e6ec;
+extern s32 msg_puni_all_escape[9];
+
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
@@ -271,6 +295,8 @@ void BattleAudience_Main(void) {
 	}
 }
 
+// Keep BattleAudience_ActInit out of line: the original PerAct emits `bl BattleAudience_ActInit`.
+#pragma dont_inline on
 void BattleAudience_ActInit(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	audience->mNumStylishCommandsThisAttack = 0;
@@ -284,13 +310,141 @@ void BattleAudience_ActInit(void) {
 	audience->flags &= ~0x800;
 	audience->flags &= ~0x1000;
 }
+#pragma dont_inline reset
 
-// NONMATCHING (3.28%): 1 instruction differs, 263 missing, plus register differences.
+#pragma opt_common_subs off // needed: with CSE on MWCC keeps audience+0x10000 in a callee-saved register
 void BattleAudience_PerAct(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	StarPowerInfo* info;
+	u32 flags;
+	s32 flag0, flag1, flag2;
+	f32 delta;
+	f32 value;
+	BOOL positive;
+
 	pouchGetPtr();
-	//TODO: finish
+	delta = float_0_8041e618;
+	value = delta;
+	if (audience->flags & 0x100) {
+		if (!(audience->flags & 0x200)) {
+			BattleAudienceCheer(3);
+		}
+	}
+	else {
+		BattleAudienceCheer(2);
+	}
+	if (audience->flags & 0x40000) {
+		return;
+	}
+	if (!(audience->flags & 0x400) && (audience->flags & 0x800)) {
+		delta -= float_5_8041e62c;
+		BattleAudienceAddPhaseEvtList(5);
+	}
+	if (*(StarPowerInfo**)((u8*)audience + 0x137C8) != NULL && ((flag0 = (flags = audience->flags) & 0x10) || (flags & 0x20))) {
+		if (flag0) {
+			positive = TRUE;
+			*(s32*)((u8*)audience + 0x137CC) = *(s32*)((u8*)audience + 0x137CC) + 1;
+			if (*(s32*)((u8*)audience + 0x137CC) > 2) {
+				*(s32*)((u8*)audience + 0x137CC) = 2;
+			}
+			value = (f32)*(s32*)((u8*)audience + 0x137CC) * (*(StarPowerInfo**)((u8*)audience + 0x137C8))->mSpAcSuccessMultiplier;
+			*(s32*)((u8*)audience + 0x137D0) = 0;
+			delta += value;
+		}
+		else {
+			if (!(flags & 0x1000)) {
+				*(s32*)((u8*)audience + 0x137CC) = 0;
+				positive = FALSE;
+				*(s32*)((u8*)audience + 0x137D0) = *(s32*)((u8*)audience + 0x137D0) + 1;
+				if (*(s32*)((u8*)audience + 0x137D0) > 5) {
+					*(s32*)((u8*)audience + 0x137D0) = 5;
+				}
+				value = float_neg5_8041e710;
+				delta += value;
+			}
+		}
+	}
+	if ((flag1 = audience->flags & 0x40) || (audience->flags & 0x80)) {
+		if (flag1) {
+			positive = TRUE;
+			*(s32*)((u8*)audience + 0x137CC) = *(s32*)((u8*)audience + 0x137CC) + 1;
+			if (*(s32*)((u8*)audience + 0x137CC) > 2) {
+				*(s32*)((u8*)audience + 0x137CC) = 2;
+			}
+			value = (f32)*(s32*)((u8*)audience + 0x137CC);
+			*(s32*)((u8*)audience + 0x137D0) = 0;
+			delta += value;
+		}
+		else {
+			*(s32*)((u8*)audience + 0x137CC) = 0;
+			positive = FALSE;
+		}
+	}
+	if (positive == TRUE) {
+		if (value >= float_25_8041e6dc) {
+			BattleAudienceAddPhaseEvtList(0);
+		}
+		if (value >= float_40_8041e690) {
+			BattleAudienceAddPhaseEvtList(3);
+		}
+		if (value >= float_20_8041e6a8) {
+			BattleAudienceAddPhaseEvtList(8);
+		}
+		if (value >= float_15_8041e6f4) {
+			BattleAudienceAddPhaseEvtList(13);
+		}
+	}
+	else {
+		if (value <= float_neg15_8041e714) {
+			BattleAudienceAddPhaseEvtList(1);
+		}
+		if (value <= float_neg20_8041e6a0) {
+			BattleAudienceAddPhaseEvtList(2);
+		}
+		if (value <= float_neg20_8041e6a0) {
+			BattleAudienceAddPhaseEvtList(5);
+		}
+		if (value <= float_neg15_8041e714) {
+			BattleAudienceAddPhaseEvtList(9);
+		}
+		if (value <= float_neg20_8041e6a0) {
+			BattleAudienceAddPhaseEvtList(11);
+		}
+		if (value <= float_neg10_8041e6fc) {
+			BattleAudienceAddPhaseEvtList(13);
+		}
+	}
+	info = *(StarPowerInfo**)((u8*)audience + 0x137C8);
+	if (info != NULL && ((flag2 = audience->flags & 0x100) || (audience->flags & 0x200))) {
+		if (flag2) {
+			value = (f32)(*(u8*)((u8*)info + 8) * (*(s32*)((u8*)audience + 0x137D4) * 2));
+			delta += value;
+			if (value >= float_30_8041e6f0) {
+				BattleAudienceAddPhaseEvtList(0);
+			}
+			if (value >= float_40_8041e690) {
+				BattleAudienceAddPhaseEvtList(3);
+			}
+			if (value >= float_25_8041e6dc) {
+				BattleAudienceAddPhaseEvtList(8);
+			}
+			if (value >= float_20_8041e6a8) {
+				BattleAudienceAddPhaseEvtList(13);
+			}
+			BattleAudienceAddPuni(0xA);
+		}
+		if (audience->flags & 0x200) {
+			delta -= float_5_8041e62c;
+		}
+	}
+	if (audience->flags & 0x8000) {
+		audience->event = evtEntry(msg_puni_all_escape, 0, 0x20);
+		audience->flags &= ~0x8000;
+	}
+	BattleAudienceAddTargetNum(audience->mAudienceDeltaMultiplier * (float_0p01_8041e628 * delta), float_0_8041e618);
+	BattleAudience_ActInit();
 }
+#pragma opt_common_subs reset
 
 BOOL BattleAudience_CheckReaction(void) {
 	BattleAudience* audience;
@@ -573,9 +727,153 @@ void BattleAudienceItemCtrlProcess(void) {
 
 }
 
-// NONMATCHING (0.29%): 348 missing.
+// NONMATCHING (95.60%): functionally complete; only instruction scheduling / FP-register allocation differs.
+// case 0's double_to_int bias lands in f1 not f2; case 5's y-intpl arg order; the vec3 copy uses lwzu;
+// case 10's dx load order; case 15's angle += delta uses f0 not f1. All values/calls/branches match.
 void BattleAudienceApSrcCtrlProcess(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	u8* star;
+	Vec pos;
+	Vec pos2;
+	s32 active;
+	s32 inactive;
+	s32 i;
+	f32 radius;
+	f32 dx;
+	f32 start;
+	f32 end;
+	f32 zero;
 
+	if (!(audience->flags & 2)) {
+		return;
+	}
+	active = 0;
+	for (i = 0; i < 100; i++) {
+		if (*(s32*)((u8*)audience + 0x10E7C + i * 0x60) & 1) {
+			active++;
+		}
+	}
+	if (psndSFXChk(*(s32*)((u8*)audience + 8)) != -1) {
+		psndSFX_vol(*(s32*)((u8*)audience + 8),
+		            (s32)(float_64_8041e6d4 + float_63_8041e644 * (f32)active / float_100_8041e64c));
+	}
+	if (*(s32*)((u8*)audience + 0x137C4) > 0) {
+		if (BattleAudienceApSrcEntry() == 1) {
+			*(s32*)((u8*)audience + 0x137C4) = *(s32*)((u8*)audience + 0x137C4) - 1;
+		}
+		if (active == 0) {
+			if (psndSFXChk(*(s32*)((u8*)audience + 8)) == -1) {
+				*(s32*)((u8*)audience + 8) = psndSFXOn(str_802F9DBC);
+			}
+		}
+	}
+	else {
+		inactive = 0;
+		for (i = 0; i < 100; i++) {
+			if (*(s32*)((u8*)audience + 0x10E7C + i * 0x60) & 1) {
+				break;
+			}
+			inactive++;
+		}
+		if (inactive == 100) {
+			audience->flags &= ~2;
+			psndSFXOff(*(s32*)((u8*)audience + 8));
+			*(s32*)((u8*)audience + 8) = 0;
+			*(s32*)((u8*)audience + 0x137C4) = 0;
+			BattleStatusWindowAPRecoveryOff();
+			return;
+		}
+	}
+	for (i = 0; i < 100; i++) {
+		star = (u8*)audience + 0x10E7C + i * 0x60;
+		pouchGetPtr();
+		if (!(*(s32*)star & 1)) {
+			continue;
+		}
+		switch (*(s32*)(star + 4)) {
+		case 0:
+			*(s32*)(star + 4) = 5;
+			*(Vec*)(star + 0x2C) = *(Vec*)(star + 8);
+			*(Vec*)(star + 0x20) = *(Vec*)(star + 0x2C);
+			*(f32*)(star + 0x2C) += float_50_8041e6d8 * (f32)rand() / float_32767_8041e674 - float_25_8041e6dc;
+			*(f32*)(star + 0x30) += float_25_8041e6dc;
+			*(s32*)(star + 0x44) = 0;
+			*(s32*)(star + 0x48) = 0x1E;
+			// fall through
+		case 5:
+			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
+			start = *(f32*)(star + 0x20);
+			end = *(f32*)(star + 0x2C);
+			*(f32*)(star + 8) = intplGetValue(5, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
+			start = *(f32*)(star + 0x24);
+			end = *(f32*)(star + 0x30);
+			*(f32*)(star + 0xC) = intplGetValue(5, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
+			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48) - 0x14) {
+				*(f32*)(star + 0x3C) = intplGetValue(4, *(s32*)(star + 0x44) - (*(s32*)(star + 0x48) - 0x14), 0xA,
+				                                     float_0p9_8041e6e0, float_0p8_8041e69c);
+			}
+			if (*(s32*)(star + 0x44) < *(s32*)(star + 0x48)) {
+				continue;
+			}
+			*(s32*)(star + 4) = 0xA;
+			*(s32*)(star + 0x44) = 0;
+			*(s32*)(star + 0x48) = irand(0xA) + 0xF;
+			*(Vec*)(star + 0x38) = vec3_802f9744;
+			break;
+		case 10:
+			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
+			if (*(s32*)(star + 0x44) < *(s32*)(star + 0x48)) {
+				continue;
+			}
+			*(s32*)(star + 4) = 0xF;
+			*(s32*)(star + 0x44) = 0;
+			*(s32*)(star + 0x48) = irand(0x14) + 0x14;
+			*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+			pos = statusGetApPos();
+			*(Vec*)(star + 0x2C) = pos;
+			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);
+			dx = *(f32*)(star + 0x2C);
+			dx = *(f32*)(star + 0x20) - dx;
+			*(f32*)(star + 0x4C) = (*(f32*)(star + 0x50) = sqrt(dx * dx + radius * radius));
+			*(f32*)(star + 0x54) = asin(radius / *(f32*)(star + 0x4C));
+			*(f32*)(star + 0x58) = float_0p05_8041e6e4 +
+			                        float_0p2_8041e67c * (f32)rand() / float_32767_8041e674;
+			break;
+		case 15:
+			end = float_0_8041e618;
+			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
+			start = *(f32*)(star + 0x50);
+			*(f32*)(star + 0x4C) = intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
+			zero = float_0_8041e618;
+			start = *(f32*)(star + 0x54) + *(f32*)(star + 0x58);
+			*(f32*)(star + 0x54) = start;
+			if (*(f32*)(star + 0x54) < zero) {
+				*(f32*)(star + 0x54) += float_6p2832_8041e6e8;
+			}
+			*(f32*)(star + 8) = *(f32*)(star + 0x4C) * (f32)cos(*(f32*)(star + 0x54)) + *(f32*)(star + 0x2C);
+			*(f32*)(star + 0xC) = *(f32*)(star + 0x4C) * (f32)sin(*(f32*)(star + 0x54)) + *(f32*)(star + 0x30);
+			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48)) {
+				*(s32*)(star + 4) = 0x14;
+				*(s32*)(star + 0x44) = 0;
+				*(s32*)(star + 0x48) = 0xF;
+				pos2 = statusGetApPos();
+				*(Vec*)(star + 8) = pos2;
+			}
+			break;
+		case 20:
+			start = float_128_8041e6ec;
+			end = float_0_8041e618;
+			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
+			*(u8*)(star + 0x5C) = (u8)intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
+			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48)) {
+				*(s32*)star = 0;
+				pouchAddAP(1);
+			}
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 // NONMATCHING (0.97%): 1 instruction differs, 143 missing.

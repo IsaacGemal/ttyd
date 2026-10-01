@@ -98,6 +98,7 @@ SCALARS = set()
 if APPEND:
     SCALARS = set(re.findall(r'(?m)^\s*(?:s32|u32|f32|s16|u16|s8|u8|BOOL)\s+(\w+)\s*;', open(APPEND).read()))
 NOTSCRIPT = set()   # objects that look like scripts but ttydasm cannot read
+isbytes = lambda o: bool(re.search(r'^\s*\.byte ', o['body'], re.M)) and not re.search(r'^\s*\.(4byte|2byte|float|string|double|rel|skip) ', o['body'], re.M)
 isscript = lambda o: o['name'] not in NOTSCRIPT and bool(re.match(r'\s*\.4byte 0x000[0-9A-F]{5}', o['body'])) and \
     bool(re.search(r'\.4byte 0x00000001(\s*\.4byte 0x00000000)*\s*$', o['body']))
 
@@ -145,6 +146,12 @@ def render(o):
         text = link_external_strings(text, o['body'], lambda lit: f'STRING({lit})', lambda n: f'STRING((void*){n})')
         used = re.findall(r'STRING\(("(?:[^"\\]|\\.)*")\)', text)
         return text, used
+    if isbytes(o):   # a table of `.byte` lines only: u8 elements
+        vals = [v.strip() for l in re.findall(r'^\s*\.byte (.*)$', o['body'], re.M) for v in l.split(',')]
+        if len(vals) != o['size']:
+            sys.exit(f"{o['name']}: {len(vals)} bytes vs {o['size']}")
+        return f"// TODO: type\n{st}u8 {o['name']}[{len(vals)}] = {{\n    " + \
+            ',\n    '.join(', '.join(vals[j:j + 8]) for j in range(0, len(vals), 8)) + ",\n};", used
     words = []
     for m in re.finditer(r'^\s*\.(4byte|float|string|byte|2byte|double|rel|skip) (.*)$', o['body'], re.M):
         k, v = m.group(1), m.group(2).strip()
@@ -370,6 +377,9 @@ for o in emit:
     dpos = min([p for p in (src.find(f'EVT_BEGIN({n})'), src.find(f' {n}[')) if p >= 0] or [0])
     if re.search(rf'[(&]\s*{re.escape(n)}\b', src[:dpos]):
         st = '' if o['scope'] == 'global' else 'static '
+        if isbytes(o):
+            fwd.append(f"{st}u8 {n}[{o['size']}];")
+            continue
         fwd.append(f"{st}s32 {n}[{o['size'] // 4}];" if (isscript(o) or n in NOTSCRIPT or re.search(rf'EVT_DEF\({re.escape(n)}\)', ' '.join(hdrtext.values()))) else f"{st}u32 {n}[{o['size'] // 4}];")
 
 # names the data uses that the unit doesn't define: find the headers that declare them

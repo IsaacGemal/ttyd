@@ -12,10 +12,12 @@
 // coefficients into every branch, as in evt_sub_get_coin. `opt_lifetimes off` is required too:
 // with lifetimes on the frame, stack homes and FPR colouring all shift.
 #pragma opt_propagation off
-// The declaration order below is load-bearing for the allocator.
-// NONMATCHING (98.06%): frame, stack slots 0x8/0xc/0x10 and every instruction match; only FPR
-// choices differ (the if-block divides dist into f1 instead of f3 and reuses `scale` for the
-// fmadd instead of rematerialising 0.5f; the radian product coalesces into f1 instead of f2).
+#pragma opt_lifetimes off // needed: with lifetimes on the FPR colouring and stack homes of this function shift
+// The `f0,f2,f3,f4,f5,f1,half` declaration order below is load-bearing for the allocator; `half`
+// holds a fresh 0.5 so MWCC rematerialises the fmadd constant (as the target does) instead of
+// reusing `scale`'s FPR. NONMATCHING (98.61%): frame, stack slots and the polynomial match; only
+// FPR colouring differs. The if-block puts `d` in f1 instead of f3 and `half` in f3 instead of f1
+// (swapped), and `6.28*angle` coalesces into f1 instead of f2, pushing pi from f1 to f6 throughout.
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -24,15 +26,16 @@ USER_FUNC(evt_item_get_important_item) {
 	f32 my = mario->position.y + *(f32*)((u8*)mario + 0x1B8);
 	f32 mz = mario->position.z;
 	f32 t, scale, d;
-	f32 f4, f2, f3, f5, f1, f0;
+	f32 f0, f2, f3, f4, f5, f1, half;
 
 	scale = 0.5f;
 	if (isFirstCall) {
 		d = distABf(mx, mz, item->position.x, item->position.z) / scale;
+		half = 0.5f;
 		f4 = my - item->position.y;
 		f2 = 0.1f * d;
 		f0 = f4 / d;
-		t = f2 * scale + f0;
+		t = f2 * half + f0;
 		event->userdata[0] = *(s32*)&d;
 		event->userdata[1] = *(s32*)&t;
 		event->userdata[2] = *(s32*)&scale;
@@ -135,6 +138,7 @@ USER_FUNC(evt_item_get_important_item) {
 	event->userdata[1] = *(s32*)&t;
 	return EVT_RETURN_BLOCK;
 }
+#pragma opt_lifetimes reset
 
 #pragma opt_propagation reset
 

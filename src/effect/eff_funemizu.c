@@ -80,13 +80,20 @@ u32 unk_80224298(void) {
 	return dat_80421468;
 }
 
-// NONMATCHING (98.80%): same instructions; only the d/e float register allocation (f28/f26 vs f26/f27),
-// the entry register (r30 vs r31) and the compiler-generated double_to_int constant differ.
+// 100%: the int->float magic pools as an anonymous @418 literal instead of double_to_int_802fe8b0;
+// objdiff does not score the symbol name (same limitation as winMarioMain).  The loop walks `data` with
+// `data++` and computes the loop-invariant `d * 0.5f` into `dz` at the store, which makes MWCC colour
+// d/e/0.0 as the target (f28/f26/f27) and the entry pointer in r30.
 EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 	EffectEntry* entry;
 	EffFunemizuData* data;
 	s32 count;
 	s32 i;
+#ifdef MUST_MATCH
+	// Match-only temp: computing the scale in the loop instead of before it reproduces the original's
+	// FPR colouring.  The plain `d *= 0.5f` form is under #else.
+	f32 dz;
+#endif
 
 	entry = effEntry();
 	count = 1;
@@ -103,7 +110,9 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 	entry->callback = effFunemizuMain;
 
 	data->type = type;
+#ifndef MUST_MATCH
 	d *= float_0p5_8042147c;
+#endif
 	data->x = a;
 	data->y = b;
 	data->z = c;
@@ -117,22 +126,36 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 	data->field_0x44 = float_1_80421484;
 	data->field_0x48 = 4;
 
-	for (i = 1; i < entry->count; i++) {
-		data[i].x = float_0_80421478;
-		data[i].y = float_0_80421478;
-		data[i].z = float_0_80421478;
-		data[i].field_0x10 = d;
-		data[i].field_0x14 = e;
-		data[i].field_0x34 = data[i].field_0x10 + (f32)irand(2);
-		data[i].field_0x38 = (f32)irand(10) / float_100_804214a8 + float_0p1_80421498;
-		data[i].field_0x3C = irand(5);
-		data[i].field_0x40 = 255;
+	for (i = 1, data = data + 1; i < entry->count; i++, data++) {
+		data->x = float_0_80421478;
+		data->y = float_0_80421478;
+		data->z = float_0_80421478;
+#ifdef MUST_MATCH
+		dz = d * float_0p5_8042147c;
+		data->field_0x10 = dz;
+#else
+		data->field_0x10 = d;
+#endif
+		data->field_0x14 = e;
+		data->field_0x34 = data->field_0x10 + (f32)irand(2);
+		data->field_0x38 = (f32)irand(10) / float_100_804214a8 + float_0p1_80421498;
+		data->field_0x3C = irand(5);
+		data->field_0x40 = 255;
 	}
 	return entry;
 }
 
-// NONMATCHING (97.99%): only register numbers/operand order differ (clamp float temps, the angle register
-// and the local vec3_802fe8a0 reference); no structural difference remains.
+static inline f32 clamp01(f32 v) {
+	if (v < float_0_80421478) {
+		v = float_0_80421478;
+	}
+	if (v > float_1_80421484) {
+		v = float_1_80421484;
+	}
+	return v;
+}
+
+// 100%: the clamp above needs opt_common_subs off so each constant test reloads the pool value.
 void effFunemizuMain(EffectEntry* effect) {
 	EffFunemizuData* data;
 	EffFunemizuData* ptr;
@@ -144,7 +167,6 @@ void effFunemizuMain(EffectEntry* effect) {
 	s32 dead;
 	f32 a;
 	f32 b;
-	CameraEntry* cam;
 
 	data = effect->userdata;
 	dead = 0;
@@ -163,13 +185,8 @@ void effFunemizuMain(EffectEntry* effect) {
 
 	if (data->type == 0 || data->type == 2) {
 		a = data->field_0x10;
-		b = data->field_0x10 - float_1_80421484;
-		if (a < float_0_80421478) {
-			a = float_0_80421478;
-		}
-		if (a > float_1_80421484) {
-			a = float_1_80421484;
-		}
+		b = a - float_1_80421484;
+		a = clamp01(a);
 		if (b < float_0_80421478) {
 			b = float_0_80421478;
 		}
@@ -178,26 +195,27 @@ void effFunemizuMain(EffectEntry* effect) {
 		}
 		data->field_0x18 += (a - data->field_0x18) / float_10_80421490;
 		data->field_0x1C += (b - data->field_0x1C) / float_10_80421490;
-		if (data->field_0x10 > float_0_80421478) {
+		if (data->field_0x10 > float_1_80421484) {
 			data->field_0x20 += (a - data->field_0x20) / float_10_80421490;
 			data->field_0x24 += (b - data->field_0x24) / float_10_80421490;
 		}
 		else {
-			data->field_0x20 += (a - data->field_0x20) * float_0p5_8042147c;
-			data->field_0x24 += (b - data->field_0x24) * float_0p5_8042147c;
+			f32 d;
+
+			d = a - data->field_0x20;
+			data->field_0x20 += d * float_0p5_8042147c;
+			d = b - data->field_0x24;
+			data->field_0x24 += d * float_0p5_8042147c;
 		}
 		data->field_0x28 += float_0p05_80421494 * data->field_0x18;
 		data->field_0x2C += float_0p1_80421498 * data->field_0x1C;
 		if (data->field_0x10 > float_0p1_80421498) {
 			if (data->field_0x30 % 10 == 0) {
-				f32 angle;
-				f32 yaw;
 				f32 sn;
 				f32 cs;
+				f32 angle;
 
-				cam = camGetPtr(CAMERA_3D);
-				yaw = cam->viewYaw;
-				angle = float_6p2832_8042149c * (data->field_0x14 - yaw) / float_360_804214a0;
+				angle = float_6p2832_8042149c * (data->field_0x14 - camGetPtr(CAMERA_3D)->viewYaw) / float_360_804214a0;
 				sn = (f32)sin(angle);
 				cs = (f32)cos(angle);
 				effFunemizuEntry(1, data->x - float_14_804214a4 * cs, data->y,
@@ -209,6 +227,8 @@ void effFunemizuMain(EffectEntry* effect) {
 	else {
 		data->field_0x18 = float_1_80421484;
 		for (i = 1, data = data + 1; i < effect->count; i++, data++) {
+			f32 s;
+
 			if (data->y < float_0_80421478) {
 				dead++;
 				continue;
@@ -218,7 +238,8 @@ void effFunemizuMain(EffectEntry* effect) {
 				continue;
 			}
 			data->x += data->field_0x10 * (f32)cos(float_6p2832_8042149c * data->field_0x14 / float_360_804214a0);
-			data->z += data->field_0x10 * -(f32)sin(float_6p2832_8042149c * data->field_0x14 / float_360_804214a0);
+			s = (f32)sin(float_6p2832_8042149c * data->field_0x14 / float_360_804214a0);
+			data->z += data->field_0x10 * -s;
 			data->y += data->field_0x34;
 			data->field_0x34 -= data->field_0x38;
 			data->field_0x40 -= 8;

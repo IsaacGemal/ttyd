@@ -135,25 +135,43 @@ struct ZubaStarWork {
 };
 
 // .text:0x0 | 0x8022E590 | size: 0x368
-// NONMATCHING (77.09%): frame size 0x90 vs 0x80, needs an f31 hoist of float_20, and the iconID
-// computation codegen differs.
+// The original holds work+0x18 in r30 and reaches field_0x018, field_0x020 and field_0x02C
+// through it (the compiler CSEs the base). MWCC here does not, so under MUST_MATCH a local
+// u8* b18 = (u8*)work + 0x18 with Z18/Z20/Z2C(i) forces the same base; the natural struct-field
+// accesses are under #else. All of disp2D's named float constants are now literals (200.0f, 60.0f, ...),
+// which gives MWCC their known values and recovers the original's scheduling; the original TU defined
+// them, so its loads use their names and ours use anonymous pooled entries (arg_mismatch only). Same for
+// the `pos`/vertex zeros. Still differing: the pos word-copy register allocation (r3/r4 swapped) and the
+// two by-value GXColor outgoing stack slots (0x14/0x0c in the original, 0x0c/0x08 here).
+// NONMATCHING (97.99%)
 void zubastar_disp2D(CameraId cameraId, void* param) {
     ZubaStarWork* work = GetZubaStarPtr();
+#ifdef MUST_MATCH
+    u8* b18 = (u8*)work + 0x18;
+#define Z18 (*(s32*)b18)
+#define Z20 ((Vec*)(b18 + 8))
+#define Z2C(i) (((Vec*)(b18 + 0x14)) + (i))
+#else
+#define Z18 (work->field_0x018)
+#define Z20 (&work->field_0x020)
+#define Z2C(i) (&work->field_0x02C[i])
+#endif
+    ZubaStarStar* star;
     s32 i;
     s32 alpha;
-    Vec pos;
     GXColor color;
+    Vec pos;
 
     if (work->field_0x07C >= 5) {
         s32 icon;
 
-        pos = vec3_802ff7c4;
-        pos.x = work->field_0x094 - float_200_804217c8;
-        pos.y = float_60_804217cc + work->field_0x098;
-        icon = 0x64 + (work->field_0x0A1 > 3);
-        iconDispGx(&pos, 0x10, icon, float_1_804217d0);
+        icon = (work->field_0x0A1 <= 3) ? 0x64 : 0x65;
+        pos = (Vec){ 0.0f, 0.0f, 0.0f };
+        pos.x = work->field_0x094 - 200.0f;
+        pos.y = 60.0f + work->field_0x098;
+        iconDispGx(&pos, 0x10, icon, 1.0f);
         BattleAcDrawGauge((s32)work->field_0x094, (s32)work->field_0x098, 0xB1, 4, 0x1A, 0x34, 0x4E,
-                          0, float_0p01_804217d4 * work->field_0x084);
+                          0, 0.01f * work->field_0x084);
     }
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
@@ -171,33 +189,53 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
     GXLoadPosMtxImm(camGetPtr(cameraId)->view, 0);
     GXSetLineWidth(0x18, 0);
     for (i = 0; i < 0x10; i++) {
-        if (work->stars[i].timer <= 0x1E) {
-            alpha = (s32)intplGetValue(0, work->stars[i].timer, 0x1E, float_128_804217d8,
-                                       float_255_804217dc);
+        star = &work->stars[i];
+        if (star->timer <= 0x1E) {
+            alpha = (s32)intplGetValue(0, star->timer, 0x1E, 128.0f,
+                                       255.0f);
         } else {
-            alpha = (s32)intplGetValue(0, work->stars[i].timer - 0x1E, 0x1E, float_255_804217dc,
-                                       float_128_804217d8);
+            alpha = (s32)intplGetValue(0, star->timer - 0x1E, 0x1E, 255.0f,
+                                       128.0f);
         }
-        if (work->stars[i].state == 5) {
-            GXSetChanMatColor(GX_COLOR0A0, (GXColor){alpha, alpha, alpha, 0xFF});
+        if (star->state == 5) {
+            {
+                GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
+
+                c.r = alpha;
+                c.g = alpha;
+                c.b = alpha;
+                GXSetChanMatColor(GX_COLOR0A0, c);
+            }
             GXBegin(0xA8, 0, 2);
-            GXPosition3f32(work->stars[i].x0, work->stars[i].y0, float_0_804217e0);
-            GXPosition3f32(work->stars[i].x1, work->stars[i].y1, float_0_804217e0);
+#ifdef MUST_MATCH
+            // Two separate 0.0f literals: the original reloads float_0_804217e0 for each vertex
+            // (its compiler did not CSE across the GX fifo stores); naming the symbol makes ours
+            // fold the two reads into one.
+            GXPosition3f32(star->x0, star->y0, 0.0f);
+            GXPosition3f32(star->x1, star->y1, 0.0f);
+#else
+            GXPosition3f32(star->x0, star->y0, float_0_804217e0);
+            GXPosition3f32(star->x1, star->y1, float_0_804217e0);
+#endif
         }
     }
-    iconDispGx(&work->field_0x020, 0x10, 0x19D, float_1_804217d0);
-    if (work->field_0x018 >= 0x19 && work->field_0x018 < 0x1E) {
+    iconDispGx(Z20, 0x10, 0x19D, 1.0f);
+    if (Z18 >= 0x19 && Z18 < 0x1E) {
+        f32 yoffset = 20.0f;
+
         for (i = 0; i < 4; i++) {
             Mtx mtx;
 
-            PSMTXTrans(mtx, work->field_0x02C[i].x, work->field_0x02C[i].y - float_20_804217e4,
-                       float_0_804217e0);
-            color = (GXColor){0xFF, 0xFF, 0xFF, 0};
+            PSMTXTrans(mtx, Z2C(i)->x, Z2C(i)->y - yoffset, 0.0f);
+            color = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
             color.a = 0xFF - (i + 1) * 0x32;
             iconDispGxCol(mtx, 0x10, 0x19D, color);
         }
     }
 }
+#undef Z18
+#undef Z20
+#undef Z2C
 
 // .text:0x368 | 0x8022E8F8 | size: 0x35C
 // NONMATCHING (89.81%): GX setup matches; loop-invariant constant register mapping and inner vertex
@@ -300,14 +338,18 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 }
 
 // .text:0x800 | 0x8022ED90 | size: 0x398
-// NONMATCHING (68.52%): state machine transcribed; switch compare order and rodata-base constant access
-// differ.
+// The state machine matches. Every named float constant is a literal (0.0f, 104.0f, 600.0f, 200.0f,
+// 70.0f, 32767.0f, 35.0f, 2.0f, -1.25f) and the two initial vectors are the compound literals
+// (Vec){0,0,0} and (Vec){0,-1000,200} (the original's vec3_802ff7ac/b8 hold exactly those), so MWCC has
+// the known values and recovers the schedule. Still differing: register allocation and the early-out
+// block, which branches around instead of `beq body; b main_loop`.
+// NONMATCHING (88.05%)
 s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
 
     if (isFirstCall) {
-        dispEntry(8, float_0_804217e0, 0, zubastar_capture, NULL);
+        dispEntry(8, 0.0f, 0, zubastar_capture, NULL);
         work->field_0x004 = 0;
         return 0;
     }
@@ -330,14 +372,14 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
         switch (bomb->state) {
         case 0: {
             s32 maxTimer = irand(0x1E) + 0x1E;
-            f32 sx = float_0_804217e0;
-            f32 sy = float_0_804217e0;
-            f32 sz = float_0_804217e0;
+            f32 sx = 0.0f;
+            f32 sy = 0.0f;
+            f32 sz = 0.0f;
             s32 j;
 
             bomb->maxTimer = maxTimer;
-            bomb->field_0x24 = vec3_802ff7ac;
-            bomb->field_0x30 = vec3_802ff7b8;
+            bomb->field_0x24 = (Vec){ 0.0f, 0.0f, 0.0f };
+            bomb->field_0x30 = (Vec){ 0.0f, -1000.0f, 200.0f };
             for (j = 0; j < bomb->count; j++) {
                 sx += bomb->points[j].x;
                 sy += bomb->points[j].y;
@@ -346,20 +388,20 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
             bomb->field_0x18.x = sx / (f32)bomb->count;
             bomb->field_0x18.y = sy / (f32)bomb->count;
             bomb->field_0x18.z = sz / (f32)bomb->count;
-            bomb->field_0x30.y +=
-                (bomb->field_0x18.x - float_104_80421800) * float_600_804217fc / float_200_804217c8;
-            bomb->field_0x3C = float_0_804217e0;
-            bomb->field_0x40 = float_70_80421804 * (f32)rand() / float_32767_80421808 - float_35_8042180c;
+            bomb->field_0x30.x +=
+                (bomb->field_0x18.x - 104.0f) * 600.0f / 200.0f;
+            bomb->field_0x3C = 0.0f;
+            bomb->field_0x40 = 70.0f * (f32)rand() / 32767.0f - 35.0f;
             {
                 f32 t = (f32)maxTimer;
 
-                bomb->field_0x44 = (float_2_80421810 * (bomb->field_0x30.y - bomb->field_0x24.y) -
-                                    (t * (float_neg1p25_80421814 * t))) /
-                                   (float_2_80421810 * t);
+                bomb->field_0x44 = (2.0f * (bomb->field_0x30.y - bomb->field_0x24.y) -
+                                    (t * (-1.25f * t))) /
+                                   (2.0f * t);
             }
             bomb->timer = 0;
             bomb->state = 5;
-            psndSFXOn(str_802FF80C);
+            psndSFXOn("SFX_BTL_SAC_ZUBA_STAR3");
             break;
         }
         case 5:
@@ -369,15 +411,17 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
                 intplGetValue(0, bomb->timer, bomb->maxTimer, bomb->field_0x24.z, bomb->field_0x30.z);
             bomb->field_0x0C.y += bomb->field_0x44;
             bomb->field_0x3C += bomb->field_0x40;
-            bomb->field_0x44 += float_neg1p25_80421814;
+            bomb->field_0x44 += -1.25f;
             bomb->timer++;
             if (bomb->timer > bomb->maxTimer) {
                 bomb->state = 0xA;
             }
             break;
+        case 0xA:
+            break;
         }
     }
-    dispEntry(8, float_0_804217e0, 1, zubastar_disp_bomb, NULL);
+    dispEntry(8, 0.0f, 1, zubastar_disp_bomb, NULL);
     return 0;
 }
 
@@ -582,27 +626,46 @@ typedef struct ZubaStarEffectData {
 } ZubaStarEffectData;
 
 // .text:0x2088 | 0x80230618 | size: 0x33C
-// NONMATCHING (70.73%): int->float cast references an anonymous constant instead of
-// double_to_int_802ff828, and the switch case compare order differs.
+// The switch tree and framing match, and every named float constant in the function is now a literal
+// (37.0f, 50.0f, -1.0f, 2.0f, 2160.0f, 300.0f, 1.5f, 0.0f), so MWCC has their known values and recovers
+// the original's load schedule (95.5% vs 87.9% with the externs). The remaining differences are the
+// anonymous vs named pool symbol on each load, the anonymous @double for the int->float cast (the
+// original's own pool entry), and the per-call placement of the starCounter load around intplGetValue.
+// Case 1's two scale constants are the compound literal (Vec){0,0,0} (the original's vec3_802ff698/6a4
+// are zero vectors).
+// NONMATCHING (95.53%)
 static s32 main_star(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     f32 scale;
 
     switch (work->starState) {
+    case 0:
+        break;
     case 1:
-        work->starState = 2;
-        work->starCounter = 0;
-        work->effect = effStarStoneEntry(6, float_0_804217e0, float_neg1000_80421840,
-                                         float_0_804217e0, float_1_804217d0);
+        {
+            f32 zero = 0.0f;
+
+            work->starState = 2;
+            {
+                f32 neg = -1000.0f;
+
+                work->starCounter = 0;
+                {
+                    f32 one = 1.0f;
+
+                    work->effect = effStarStoneEntry(6, zero, neg, zero, one);
+                }
+            }
+        }
         BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
-        work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421864;
+        work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
         work->starStart = work->starCur;
         work->starEnd = work->starCur;
-        work->starEnd.y += float_50_80421844;
-        work->starEnd.z += float_neg1_8042183c;
-        work->scale1 = vec3_802ff698;
-        work->scale2 = vec3_802ff6a4;
+        work->starEnd.y += 50.0f;
+        work->starEnd.z += -1.0f;
+        work->scale1 = (Vec){ 0.0f, 0.0f, 0.0f };
+        work->scale2 = (Vec){ 0.0f, 0.0f, 0.0f };
         // fallthrough
     case 2:
         work->starCounter++;
@@ -610,22 +673,26 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
             work->starCur.x = intplGetValue(0, work->starCounter, 0x64, work->starStart.x, work->starEnd.x);
             work->starCur.y = intplGetValue(0, work->starCounter, 0x64, work->starStart.y, work->starEnd.y);
             work->starCur.z = intplGetValue(0, work->starCounter, 0x64, work->starStart.z, work->starEnd.z);
-            scale = intplGetValue(0, work->starCounter, 0x64, float_0_804217e0, float_2_80421810);
-            work->scale1.x = scale;
-            work->scale1.y = scale;
+            scale = intplGetValue(0, work->starCounter, 0x64, 0.0f, 2.0f);
             work->scale1.z = scale;
+            work->scale1.y = scale;
+            work->scale1.x = scale;
         } else {
-            work->starCur = work->starEnd;
-            work->scale1.x = float_2_80421810;
-            work->scale1.y = float_2_80421810;
-            work->scale1.z = float_2_80421810;
+            f32 two = 2.0f;
+
+            work->starCur.x = work->starEnd.x;
+            work->starCur.y = work->starEnd.y;
+            work->starCur.z = work->starEnd.z;
+            work->scale1.z = two;
+            work->scale1.y = two;
+            work->scale1.x = two;
         }
-        work->scale2.y = intplGetValue(4, work->starCounter, 0x78, float_0_804217e0, float_2160_80421868);
+        work->scale2.y = intplGetValue(4, work->starCounter, 0x78, 0.0f, 2160.0f);
         if (work->starCounter >= 0x78) {
             work->starState = 3;
             work->starCounter = 0;
             work->starStart = work->starCur;
-            work->starEnd.y = float_300_80421834;
+            work->starEnd.y = 300.0f;
         }
         break;
     case 3:
@@ -636,9 +703,12 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
             work->starCounter = 0;
         }
         break;
+    case 4:
+        break;
     }
     if (work->effect != NULL) {
         ZubaStarEffectData* data = work->effect->userdata;
+        f32 s = 1.5f;
 
         data->positionX = work->starCur.x;
         data->positionY = work->starCur.y;
@@ -646,9 +716,9 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
         data->scaleX = work->scale2.x;
         data->scaleY = work->scale2.y;
         data->scaleZ = work->scale2.z;
-        data->scale = float_1p5_8042186c * work->scale1.x;
+        data->scale = s * work->scale1.x;
     }
-    dispEntry(4, float_0_804217e0, 2, zubaStarDispStar, NULL);
+    dispEntry(4, 0.0f, 2, zubaStarDispStar, NULL);
     return 0;
 }
 

@@ -361,11 +361,12 @@ void battleAcDelete_StickKeepLeft(BattleWork* work) {
 static inline f32 stickLeftAdd25(f32 v) { return float_25_8041c400 + v; }
 #endif
 
-// NONMATCHING (98.96%): every draw and offset matches; MWCC colours the compiler pool base in r31
-// and `work` in r30 (original: pool r30, work r31), so ~55 loads differ in that register only; and the
-// variable icon id `i + 0x92` is sign-extended (`extsh`) here where the original zero-extends (`clrlwi`).
+// The `ac` intermediate (`BattleActions*`, rather than spelling `work->actionCommands.` at every use)
+// is what makes MWCC colour `work` in r31 and the .rodata pool base in r30 as the original; with the
+// direct form the two registers are swapped and ~55 loads differ (same shape as battleAcMain_PowerGaugeLv).
 static void actionCommandDisp(f32 x, f32 y, s32 type) {
     BattleWork* work = _battleWorkPointer;
+    BattleActions* ac = &work->actionCommands;
     s32 count;
     s32 idx;
     s32 i;
@@ -376,10 +377,10 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     (void)type;
     camGetPtr(CAMERA_2D);
 
-    count = *(s32*)&work->actionCommands.field_34[4];
-    idx = ((StickKeepLeftWork*)((u8*)work + 0x1F4C))->field_0x04 - 1;
+    count = *(s32*)&ac->field_34[4];
+    idx = ((StickKeepLeftWork*)&ac->field_0x2BC[0])->field_0x04 - 1;
 
-    switch (work->actionCommands.mAcState) {
+    switch (ac->mAcState) {
     case 0:
     case 0x63:
     case 0x64: {
@@ -422,13 +423,13 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     n = 10;
     if (count >= 4) {
         n = count * 2 + 3;
-        if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+        if (*(s32*)&ac->field_34[0] & 1) {
             n += 2;
         }
     }
 
     step = float_16_8041c3f4;
-    if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+    if (*(s32*)&ac->field_34[0] & 1) {
         step = float_12_8041c3f8;
     }
 
@@ -458,7 +459,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     }
 
     step = float_33_8041c404;
-    if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+    if (*(s32*)&ac->field_34[0] & 1) {
         step = float_24p75_8041c408;
     }
 
@@ -468,7 +469,12 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
                 Vec v = ((Vec){0.0f, 0.0f, 0.0f});
                 v.x = x + (step * i + float_neg258_8041c40c);
                 v.y = yy;
-                iconDispGx(&v, 0x10, i + 0x92, float_1_8041c3f0);
+#ifdef MUST_MATCH
+                // iconDispGx's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
+                ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0x10, (u16)(i + 0x92), float_1_8041c3f0);
+#else
+                iconDispGx(&v, 0x10, (s16)(i + 0x92), float_1_8041c3f0);
+#endif
             }
             else {
                 Vec v = ((Vec){0.0f, 0.0f, 0.0f});
