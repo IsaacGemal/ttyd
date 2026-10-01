@@ -8,6 +8,7 @@
 #include <dolphin/gx.h>
 #include "eff/eff_n64.h"
 #include "math_ext.h"
+#include "evt/evt_cmd.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_803A2280[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
@@ -40,11 +41,11 @@ extern const u32 dat_8041f57c;
 extern u32 cloud_normal_tbl[8];
 extern u32 cloud_color0_tbl[5];
 extern void* cloud_dl_0_tbl[4];
-extern const u8 cloud_dl_0_size_tbl[4];
+extern u8 cloud_dl_0_size_tbl[4];
 extern u32 batten_normal_tbl[8];
 extern u32 batten_color0_tbl[6];
 extern void* batten_dl_0_tbl[4];
-extern const u8 batten_dl_0_size_tbl[4];
+extern u8 batten_dl_0_size_tbl[4];
 
 const f64 double_to_int_802faaa0 = 4503601774854144.0;
 const f64 double_to_int_mask_802faaa8 = 4503599627370496.0;
@@ -59,6 +60,61 @@ u8 rz_tbl[32] = {
 
 const char str_802FAAB8[] = "KumokumoN64";
 
+extern s32 negone_one[];
+extern s32 one_negone[];
+
+// clang-format off
+
+#ifdef MUST_MATCH
+static inline void effKumokumoSetColor1(effKumokumoData* data, s32 alpha) {
+	GXColor color = *(GXColor*)&unk_804231a0;
+
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
+	color.a = alpha;
+	GXSetTevColor(1, color);
+}
+
+
+static inline void effKumokumoSetColor2(effKumokumoData* data) {
+	GXColor color = *(GXColor*)&unk_804231a4;
+
+	color.r = data->color2R;
+	color.g = data->color2G;
+	color.b = data->color2B;
+	color.a = data->color2A;
+	GXSetTevColor(2, color);
+}
+
+
+static inline void effKumokumoSetMatColorA(s32 a) {
+	GXColor color = *(GXColor*)&dat_8041f578;
+
+	color.a = a;
+	GXSetChanMatColor(4, color);
+}
+
+
+static inline void effKumokumoSetMatColorB(s32 a) {
+	GXColor color = *(GXColor*)&dat_8041f57c;
+
+	color.a = a;
+	GXSetChanMatColor(4, color);
+}
+
+#endif
+
+// The four display-list loops must live in an inlined helper, not inline in effKumokumoDisp: with the
+// loops inline MWCC colours their counters k=r22/r23 instead of the target's r26/r25 (the rest of the
+// function is byte-identical).
+static inline void effKumokumoCallDL(void** dl, const u8* size) {
+	u32 k;
+
+	for (k = 0; k < 4; k++) {
+		GXCallDisplayList(dl[k], size[k] << 5);
+	}
+}
 
 // The int->float magic doubles pool as anonymous labels (@392/@393/@447); the target names them
 // double_to_int_802faaa0/double_to_int_mask_802faaa8/double_360_802faab0. The relocation names differ,
@@ -199,6 +255,7 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 	}
 	return effect;
 }
+
 
 // The type-3 respawn's angle must be built in the shared temp f1, not a dedicated local: reusing the
 // variable makes MWCC coalesce the raw (f32)irand(360) and its normalized value into f31, as the target
@@ -359,52 +416,6 @@ void effKumokumoMain(EffectEntry* effect) {
 	dispEntry(camera, dispCalcZ(&pos2), 2, effKumokumoDisp, effect);
 }
 
-#ifdef MUST_MATCH
-static inline void effKumokumoSetColor1(effKumokumoData* data, s32 alpha) {
-	GXColor color = *(GXColor*)&unk_804231a0;
-
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha;
-	GXSetTevColor(1, color);
-}
-
-static inline void effKumokumoSetColor2(effKumokumoData* data) {
-	GXColor color = *(GXColor*)&unk_804231a4;
-
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	color.a = data->color2A;
-	GXSetTevColor(2, color);
-}
-
-static inline void effKumokumoSetMatColorA(s32 a) {
-	GXColor color = *(GXColor*)&dat_8041f578;
-
-	color.a = a;
-	GXSetChanMatColor(4, color);
-}
-
-static inline void effKumokumoSetMatColorB(s32 a) {
-	GXColor color = *(GXColor*)&dat_8041f57c;
-
-	color.a = a;
-	GXSetChanMatColor(4, color);
-}
-#endif
-
-// The four display-list loops must live in an inlined helper, not inline in effKumokumoDisp: with the
-// loops inline MWCC colours their counters k=r22/r23 instead of the target's r26/r25 (the rest of the
-// function is byte-identical).
-static inline void effKumokumoCallDL(void** dl, const u8* size) {
-	u32 k;
-
-	for (k = 0; k < 4; k++) {
-		GXCallDisplayList(dl[k], size[k] << 5);
-	}
-}
 
 void effKumokumoDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -684,3 +695,279 @@ void effKumokumoDisp(CameraId camId, void* param) {
 		GXEnd();
 	}
 }
+
+// TODO: type
+static __declspec(section ".data") u32 negone_one_374[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
+__declspec(section ".data") u32 lbl_803A2290[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+// TODO: type
+static __declspec(section ".data") u32 one_negone_373[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+// TODO: type
+__declspec(section ".data") u32 lbl_803A22A0[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
+static __declspec(section ".data") u32 negone_one_360[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
+__declspec(section ".data") u32 lbl_803A22B0[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+// TODO: type
+static __declspec(section ".data") u32 one_negone_359[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+// TODO: type
+u32 cloud_vertex_tbl[56] = {
+    0x61BF081C, 0x00006A40, 0x19CD0000, 0x6C5F3000,
+    0x0000670F, 0x406A0000, 0x60AF4515, 0x0000571F,
+    0xFDF60000, 0x571F0D58, 0x0000571F, 0x20150000,
+    0x571F32D2, 0x0000571F, 0x42350000, 0x4400F9C8,
+    0x00004400, 0x05DA0000, 0x440013D5, 0x00004400,
+    0x21D00000, 0x44002DE3, 0x00002FD0, 0xF8860000,
+    0x2FD00123, 0x00002FD0, 0x0A7F0000, 0x2FD013DC,
+    0x00002FD0, 0x1C7A0000, 0x1CB0F845, 0x00001CB0,
+    0xFDAA0000, 0x1CB00300, 0x00001CB0, 0x08560000,
+    0x1CB00DBB, 0x00000DCF, 0xF9E80000, 0x0DCFFD27,
+    0x00000DD0, 0x00000000, 0x0DD002D9, 0x00000DD0,
+    0x06180000, 0x0000FCEC, 0x00000000, 0xFEA10000,
+    0x00000000, 0x00000000, 0x015F0000, 0x00000314,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_texcoord0_tbl[40] = {
+    0x0000CCCD, 0x1000CCCD, 0x1000C001, 0x0000C001,
+    0x2000CCCD, 0x2000C001, 0x3000CCCD, 0x3000C001,
+    0x4000CCCD, 0x4000C001, 0x0000D667, 0x1000D667,
+    0x2000D667, 0x3000D667, 0x4000D667, 0x0000E000,
+    0x1000E000, 0x2000E000, 0x3000E000, 0x4000E000,
+    0x0000E99A, 0x1000E99A, 0x2000E99A, 0x3000E99A,
+    0x4000E99A, 0x0000F334, 0x1000F334, 0x2000F334,
+    0x3000F334, 0x4000F334, 0x00000000, 0x10000000,
+    0x20000000, 0x30000000, 0x40000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_texcoord1_tbl[40] = {
+    0x0000CCCD, 0x1000CCCD, 0x1000C001, 0x0000C001,
+    0x2000CCCD, 0x2000C001, 0x3000CCCD, 0x3000C001,
+    0x4000CCCD, 0x4000C001, 0x0000D667, 0x1000D667,
+    0x2000D667, 0x3000D667, 0x4000D667, 0x0000E000,
+    0x1000E000, 0x2000E000, 0x3000E000, 0x4000E000,
+    0x0000E99A, 0x1000E99A, 0x2000E99A, 0x3000E99A,
+    0x4000E99A, 0x0000F334, 0x1000F334, 0x2000F334,
+    0x3000F334, 0x4000F334, 0x00000000, 0x10000000,
+    0x20000000, 0x30000000, 0x40000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_dl_0_0[24] = {
+    0x98000E1E, 0x00001E1E, 0x1F00001F, 0x1F190001,
+    0x19191A00, 0x031A1A14, 0x00011414, 0x15000315,
+    0x150F0001, 0x0F0F1000, 0x0310100A, 0x00010A0A,
+    0x0B00030B, 0x0B050000, 0x00000600, 0x01010100,
+    0x00000303, 0x01000002, 0x02000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_dl_0_1[24] = {
+    0x98000E1F, 0x00001F1F, 0x20000020, 0x201A0003,
+    0x1A1A1B00, 0x041B1B15, 0x00031515, 0x16000416,
+    0x16100003, 0x10101100, 0x0411110B, 0x00030B0B,
+    0x0C00040C, 0x0C060001, 0x01010700, 0x02040401,
+    0x00000202, 0x02000005, 0x05000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_dl_0_2[24] = {
+    0x98000E20, 0x00002020, 0x21000021, 0x211B0004,
+    0x1B1B1C00, 0x031C1C16, 0x00041616, 0x17000317,
+    0x17110004, 0x11111200, 0x0312120C, 0x00040C0C,
+    0x0D00030D, 0x0D070002, 0x04040800, 0x01060602,
+    0x00000505, 0x03000007, 0x07000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_dl_0_3[24] = {
+    0x98000E21, 0x00002121, 0x22000022, 0x221C0003,
+    0x1C1C1D00, 0x011D1D17, 0x00031717, 0x18000118,
+    0x18120003, 0x12121300, 0x0113130D, 0x00030D0D,
+    0x0E00010E, 0x0E080001, 0x06060900, 0x00080803,
+    0x00000707, 0x04000009, 0x09000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_vertex_tbl[56] = {
+    0xC890C3A1, 0x0000DEBD, 0xC1000000, 0x0000BE60,
+    0x00002143, 0xC1000000, 0x3770C3A1, 0x0000D58E,
+    0xCE200000, 0xE689CE20, 0x00000000, 0xCE200000,
+    0x1977CE20, 0x00002A72, 0xCE200000, 0xDEC0D8A0,
+    0x0000EC0D, 0xD8A00000, 0x0000D8A0, 0x000013F3,
+    0xD8A00000, 0x2140D8A0, 0x0000E393, 0xE0800000,
+    0xEEF2E080, 0x00000000, 0xE0800000, 0x110EE080,
+    0x00001C6D, 0xE0800000, 0xE7C3E860, 0x0000F175,
+    0xE8600000, 0x0000E860, 0x00000E8B, 0xE8600000,
+    0x183DE860, 0x0000ED67, 0xF5800000, 0xF4D7F580,
+    0x00000000, 0xF5800000, 0x0B29F580, 0x00001299,
+    0xF5800000, 0xEF430000, 0x0000F5F5, 0x00000000,
+    0x00000000, 0x00000A0B, 0x00000000, 0x10BD0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_texcoord0_tbl[40] = {
+    0x00002AAA, 0x10002AAA, 0x10003000, 0x00003000,
+    0x20002AAA, 0x20003000, 0x30002AAA, 0x30003000,
+    0x40002AAA, 0x40003000, 0x00002555, 0x10002555,
+    0x20002555, 0x30002555, 0x40002555, 0x00002000,
+    0x10002000, 0x20002000, 0x30002000, 0x40002000,
+    0x00001AAA, 0x10001AAA, 0x20001AAA, 0x30001AAA,
+    0x40001AAA, 0x00001555, 0x10001555, 0x20001555,
+    0x30001555, 0x40001555, 0x00001000, 0x10001000,
+    0x20001000, 0x30001000, 0x40001000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_texcoord1_tbl[40] = {
+    0x00002AAA, 0x10002AAA, 0x10003000, 0x00003000,
+    0x20002AAA, 0x20003000, 0x30002AAA, 0x30003000,
+    0x40002AAA, 0x40003000, 0x00002555, 0x10002555,
+    0x20002555, 0x30002555, 0x40002555, 0x00002000,
+    0x10002000, 0x20002000, 0x30002000, 0x40002000,
+    0x00001AAA, 0x10001AAA, 0x20001AAA, 0x30001AAA,
+    0x40001AAA, 0x00001555, 0x10001555, 0x20001555,
+    0x30001555, 0x40001555, 0x00001000, 0x10001000,
+    0x20001000, 0x30001000, 0x40001000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_dl_0_0[24] = {
+    0x98000E1E, 0x00021E1E, 0x1F00021F, 0x1F190000,
+    0x19191A00, 0x041A1A14, 0x00001414, 0x15000415,
+    0x150F0000, 0x0F0F1000, 0x0410100A, 0x00000A0A,
+    0x0B00040B, 0x0B050000, 0x00000600, 0x01010100,
+    0x00020303, 0x01000202, 0x02000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_dl_0_1[24] = {
+    0x98000E1F, 0x00021F1F, 0x20000220, 0x201A0004,
+    0x1A1A1B00, 0x051B1B15, 0x00041515, 0x16000516,
+    0x16100004, 0x10101100, 0x0511110B, 0x00040B0B,
+    0x0C00050C, 0x0C060001, 0x01010700, 0x03040401,
+    0x00020202, 0x02000205, 0x05000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_dl_0_2[24] = {
+    0x98000E20, 0x00022020, 0x21000221, 0x211B0005,
+    0x1B1B1C00, 0x041C1C16, 0x00051616, 0x17000417,
+    0x17110005, 0x11111200, 0x0412120C, 0x00050C0C,
+    0x0D00040D, 0x0D070003, 0x04040800, 0x01060602,
+    0x00020505, 0x03000207, 0x07000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_dl_0_3[24] = {
+    0x98000E21, 0x00022121, 0x22000222, 0x221C0004,
+    0x1C1C1D00, 0x001D1D17, 0x00041717, 0x18000018,
+    0x18120004, 0x12121300, 0x0013130D, 0x00040D0D,
+    0x0E00000E, 0x0E080001, 0x06060900, 0x00080803,
+    0x00020707, 0x04000209, 0x09000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_normal_tbl[8] = {
+    0x00004000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 cloud_color0_tbl[5] = {
+    0xFFFFFF00, 0xFFFFFF33, 0xFFFFFF66, 0xFFFFFF7F,
+    0xFFFFFFCC,
+};
+
+// TODO: type
+void* cloud_dl_0_tbl[4] = {
+    cloud_dl_0_0, cloud_dl_0_1, cloud_dl_0_2, cloud_dl_0_3,
+};
+
+// TODO: type
+u8 cloud_dl_0_size_tbl[4] = {
+    0x03, 0x03, 0x03, 0x03,
+};
+
+// TODO: type
+u32 batten_normal_tbl[8] = {
+    0x00004000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 batten_color0_tbl[6] = {
+    0xFFFFFF33, 0xFFFFFF66, 0xFFFFFF00, 0xFFFFFF99,
+    0xFFFFFF7F, 0xFFFFFFCC,
+};
+
+// TODO: type
+void* batten_dl_0_tbl[4] = {
+    batten_dl_0_0, batten_dl_0_1, batten_dl_0_2, batten_dl_0_3,
+};
+
+// TODO: type
+u8 batten_dl_0_size_tbl[4] = {
+    0x03, 0x03, 0x03, 0x03,
+};
+// clang-format on
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802faa90 = { 0.0f, 0.0f, 0.0f };
+const u32 dat_8041f578 = 0xDBDFE700;
+const u32 dat_8041f57c = 0xFFFFFF00;
+const f32 float_deg2rad_8041f580 = 0.017453292f;
+const f32 float_90_8041f584 = 90.0f;
+const f32 float_neg1_8041f588 = -1.0f;
+const f32 float_0p4_8041f58c = 0.4f;
+const f32 float_0p1_8041f590 = 0.1f;
+const f32 float_0_8041f594 = 0.0f;
+const f32 float_360_8041f598 = 360.0f;
+const f32 float_5_8041f59c = 5.0f;
+const f32 float_1_8041f5a0 = 1.0f;
+const f32 float_2_8041f5a4 = 2.0f;
+const f32 float_3_8041f5ac = 3.0f;
+const f32 float_8_8041f5b0 = 8.0f;
+const f32 float_1p5_8041f5b4 = 1.5f;
+const f32 float_30_8041f5b8 = 30.0f;
+const f32 float_6p2832_8041f5bc = 6.2831855f;
+const f32 float_0p03125_8041f5c0 = 0.03125f;
+const f32 float_200_8041f5c4 = 200.0f;
+const f32 float_0p018182_8041f5c8 = 0.018181818f;
+const f32 float_0p04_8041f5cc = 0.04f;
