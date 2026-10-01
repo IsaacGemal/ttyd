@@ -5,6 +5,11 @@
 #include "driver/icondrv.h"
 #include "system.h"
 #include <string.h>
+#include "battle/ac/ac_table.h"
+#include "battle/battle_ac.h"
+#include "driver/mobjdrv.h"
+#include "evt/evt_cmd.h"
+#include "manager/evtmgr.h"
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -36,6 +41,7 @@ extern const f32 float_neg300_8041c434;
 extern const f32 float_30_8041c438;
 extern const f32 float_0_8041c43c;
 
+// clang-format off
 // opt_propagation off: with copy propagation on MWCC folds the dec pointer into `work+0x1F54`
 // and never materialises it; the original keeps `dec` in r4 (`addi r4, r30, 0x1f4c`) for the
 // four `0x8(r4)` accesses.
@@ -85,6 +91,7 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 	return 1;
 }
 
+
 // The header says `s8`, but the callee returns a zero-extended 4-byte value; a plain call makes
 // MWCC emit `extsb r3, r3` before the `slwi` table index, so this is called through a
 // function pointer under MUST_MATCH (as ac_lst_rc_keep/ac_stick_keep_left do).
@@ -126,6 +133,7 @@ s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	}
 	return result;
 }
+
 #pragma dont_inline reset
 
 s32 battleAcResult_TimingA(BattleWork* work) {
@@ -193,6 +201,7 @@ s32 battleAcResult_TimingA(BattleWork* work) {
 	return ac->result;
 }
 
+
 // Deriving both the state and disp parameters from one BattleActions* (rather than straight from
 // the BattleWork*), state read first, is what makes MWCC materialise the disp base in r31
 // (`addi r31, r4, 0x1f20`) and load the state from r4, as the original does.
@@ -228,9 +237,11 @@ void battleAcDisp_TimingA(CameraId camId, void* param) {
 	}
 }
 
+
 void battleAcDelete_TimingA(BattleWork* work) {
 	work->actionCommands.mAcState = 1000;
 }
+
 
 // optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
 // dont_inline: the original keeps actionCommandDisp as its own local function (callers emit `bl`).
@@ -259,6 +270,85 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	(*(s32*)&disp->field_0x0[0])++;
 }
+
+// TODO: type
+s32 _ac_timing_a_timing_lv_0[14] = {
+    0x00000004, 0x0000000A, 0x00000005, 0x00000009,
+    0x00000006, 0x00000008, 0x00000007, 0x00000007,
+    0x00000008, 0x00000006, 0x00000009, 0x00000005,
+    0x0001869F, 0x00000001,
+};
+
+// TODO: type
+s32 _ac_timing_a_timing_lv_1[22] = {
+    0x00000000, 0x0000000A, 0x00000001, 0x00000009,
+    0x00000002, 0x00000008, 0x00000003, 0x00000007,
+    0x00000004, 0x00000006, 0x00000005, 0x00000005,
+    0x00000006, 0x00000004, 0x00000007, 0x00000004,
+    0x00000008, 0x00000003, 0x00000009, 0x00000002,
+    0x0001869F, 0x00000001,
+};
+
+// TODO: type
+s32 _ac_timing_a_timing_lv_2[22] = {
+    0x00000000, 0x00000009, 0x00000001, 0x00000008,
+    0x00000002, 0x00000007, 0x00000003, 0x00000006,
+    0x00000004, 0x00000005, 0x00000005, 0x00000004,
+    0x00000006, 0x00000003, 0x00000007, 0x00000002,
+    0x00000008, 0x00000001, 0x00000009, 0x00000001,
+    0x0001869F, 0x00000001,
+};
+
+// TODO: type
+s32 _ac_timing_a_timing_lv_3[20] = {
+    0x00000000, 0x00000008, 0x00000001, 0x00000007,
+    0x00000002, 0x00000006, 0x00000003, 0x00000005,
+    0x00000004, 0x00000004, 0x00000005, 0x00000003,
+    0x00000006, 0x00000002, 0x00000008, 0x00000001,
+    0x00000009, 0x00000001, 0x0001869F, 0x00000001,
+};
+
+// TODO: type
+s32 _ac_timing_a_timing_lv_4[18] = {
+    0x00000000, 0x00000007, 0x00000001, 0x00000006,
+    0x00000002, 0x00000005, 0x00000003, 0x00000004,
+    0x00000004, 0x00000003, 0x00000005, 0x00000002,
+    0x00000008, 0x00000001, 0x00000009, 0x00000001,
+    0x0001869F, 0x00000001,
+};
+
+// TODO: type
+s32 _ac_timing_a_timing_lv_5[16] = {
+    0x00000000, 0x00000006, 0x00000001, 0x00000005,
+    0x00000002, 0x00000004, 0x00000003, 0x00000003,
+    0x00000004, 0x00000002, 0x00000008, 0x00000001,
+    0x00000009, 0x00000001, 0x0001869F, 0x00000001,
+};
+
+// TODO: type
+s32 _ac_timing_a_timing_lv_6[14] = {
+    0x00000000, 0x00000005, 0x00000001, 0x00000004,
+    0x00000002, 0x00000003, 0x00000003, 0x00000002,
+    0x00000008, 0x00000001, 0x00000009, 0x00000001,
+    0x0001869F, 0x00000001,
+};
+
+// TODO: type
+AcTimingAEntry* _ac_timing_a_timing_tbl[7] = {
+    (AcTimingAEntry*)_ac_timing_a_timing_lv_0, (AcTimingAEntry*)_ac_timing_a_timing_lv_1, (AcTimingAEntry*)_ac_timing_a_timing_lv_2, (AcTimingAEntry*)_ac_timing_a_timing_lv_3,
+    (AcTimingAEntry*)_ac_timing_a_timing_lv_4, (AcTimingAEntry*)_ac_timing_a_timing_lv_5, (AcTimingAEntry*)_ac_timing_a_timing_lv_6,
+};
+// clang-format on
+
 #pragma dont_inline reset
 #pragma optimize_for_size reset
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802efbc8 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802efbd4 = { 0.0f, 0.0f, 0.0f };
+const f32 float_neg200_8041c428 = -200.0f;
+const f32 float_50_8041c42c = 50.0f;
+const f32 float_1_8041c430 = 1.0f;
+const f32 float_neg300_8041c434 = -300.0f;
+const f32 float_30_8041c438 = 30.0f;
+const f32 float_0_8041c43c = 0.0f;
