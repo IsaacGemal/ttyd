@@ -11,25 +11,15 @@
 // .rodata string; the .sdata2 constants this unit owns, in the original's data order. float_100 and
 // float_1 must be defined (not extern): MWCC colours the second pose's stretch FPRs differently when
 // it knows their values, which is what makes effNokotarouDisp byte-exact.
-const char str_803014B8[] = "Nokotarou";
-const f32 float_0_8042248c = 0.0f;
-const f32 float_100_80422494 = 100.0f;
-const f32 float_1_80422498 = 1.0f;
 // externs for the remaining constants the disp/main read from the original unit's data.
-extern const char str_803014A4[];
-extern const char str_8042249C[4];
-extern const char str_804224A0[4];
 extern const u32 dat_80422480;
 extern const u32 dat_80422484;
-extern const f32 float_deg2rad_80422488;
-extern const f32 float_2_80422490;
-extern const f32 float_0p03125_804224a4;
 
 EffectEntry* effNokotarouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry = effEntry();
 	NokotarouWork* work;
 
-	entry->type = str_803014B8;
+	entry->type = "Nokotarou";
 	entry->count = 1;
 	work = __memAlloc(HEAP_EFFECT, sizeof(NokotarouWork));
 	entry->userdata = work;
@@ -44,7 +34,7 @@ EffectEntry* effNokotarouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 
 	work->y2 = work->y;
 	work->z2 = work->z;
 	work->scale = scale;
-	work->scaleAnim = float_0_8042248c;
+	work->scaleAnim = 0.0f;
 	work->alpha = 0xFF;
 	if (duration <= 0) {
 		work->lifetime = 1000;
@@ -66,6 +56,7 @@ void effNokotarouMain(EffectEntry* effect) {
 	NokotarouWork* work = effect->userdata;
 	Vec disp = { 0 };
 	f32 t;
+	f32 k;
 
 	disp.x = work->x2;
 	disp.y = work->y2;
@@ -76,14 +67,14 @@ void effNokotarouMain(EffectEntry* effect) {
 
 	inBattle = gp->inBattle != 0;
 
-	if (!animGroupBaseAsync(str_803014A4, inBattle, NULL)) {
+	if (!animGroupBaseAsync("MOBJ_EFF_nokotarou3", inBattle, NULL)) {
 		return;
 	}
 	if (work->animPose == -1) {
-		work->animPose = animPoseEntry(str_803014A4, inBattle);
-		animPoseSetAnim(work->animPose, str_8042249C, TRUE);
-		work->animPose2 = animPoseEntry(str_803014A4, inBattle);
-		animPoseSetAnim(work->animPose2, str_804224A0, TRUE);
+		work->animPose = animPoseEntry("MOBJ_EFF_nokotarou3", inBattle);
+		animPoseSetAnim(work->animPose, "S_1", TRUE);
+		work->animPose2 = animPoseEntry("MOBJ_EFF_nokotarou3", inBattle);
+		animPoseSetAnim(work->animPose2, "A_1", TRUE);
 	}
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -103,11 +94,13 @@ void effNokotarouMain(EffectEntry* effect) {
 	} else {
 		if (work->lifetime < 0x20) {
 			work->alpha = work->lifetime << 3;
+			k = 0.03125f;
 			t = -work->scaleAnim;
-			work->scaleAnim += t * float_0p03125_804224a4;
+			work->scaleAnim += t * k;
 		} else {
-			t = float_1_80422498 - work->scaleAnim;
-			work->scaleAnim += t * float_0p03125_804224a4;
+			k = 0.03125f;
+			t = 1.0f - work->scaleAnim;
+			work->scaleAnim += t * k;
 		}
 #ifdef MUST_MATCH
 		dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effNokotarouDisp, effect);
@@ -145,33 +138,37 @@ void effNokotarouDisp(CameraId cameraId, void* param) {
 	}
 	PSMTXTrans(mtx, work->x2, work->y2, work->z2);
 	PSMTXScale(scaleMtx, scale, scale, scale);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_80422488);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
 	animPoseSetMaterialFlagOn(work->animPose, 0x40);
 	nokotarouSetColorMain(work);
 	animPoseMain(work->animPose);
-	animPoseDrawMtx(work->animPose, mtx, 1, float_0_8042248c, float_2_80422490);
-	animPoseDrawMtx(work->animPose, mtx, 2, float_0_8042248c, float_2_80422490);
-	animPoseDrawMtx(work->animPose, mtx, 3, float_0_8042248c, float_2_80422490);
+	animPoseDrawMtx(work->animPose, mtx, 1, 0.0f, 2.0f);
+	animPoseDrawMtx(work->animPose, mtx, 2, 0.0f, 2.0f);
+	animPoseDrawMtx(work->animPose, mtx, 3, 0.0f, 2.0f);
 	if (work->animPose2 != -1) {
-		f32 sx = (work->x2 - work->x) / float_100_80422494;
-		f32 sy = (float_1_80422498 + (work->y2 - work->y) / float_100_80422494);
-		f32 sz = (float_1_80422498 + (work->z2 - work->z) / float_100_80422494);
+		f32 sx = (work->x2 - work->x) / 100.f;
+		f32 sy = (1.0f + (work->y2 - work->y) / 100.f);
+		f32 sz = (1.0f + (work->z2 - work->z) / 100.f);
 
 		sx = sx * work->scale;
 		sy = sy * work->scale;
 		sz = sz * work->scale;
 		PSMTXTrans(mtx, work->x2, work->y2, work->z2);
 		PSMTXScale(scaleMtx, sx, sy, sz);
-		PSMTXRotRad(rotMtx, 'y', -camGetPtr(cameraId)->viewYaw * float_deg2rad_80422488);
+		PSMTXRotRad(rotMtx, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		animPoseSetMaterialFlagOn(work->animPose2, 0x40);
 		nokotarouSetColorSub(work);
 		animPoseMain(work->animPose2);
-		animPoseDrawMtx(work->animPose2, mtx, 1, float_0_8042248c, float_2_80422490);
-		animPoseDrawMtx(work->animPose2, mtx, 2, float_0_8042248c, float_2_80422490);
-		animPoseDrawMtx(work->animPose2, mtx, 3, float_0_8042248c, float_2_80422490);
+		animPoseDrawMtx(work->animPose2, mtx, 1, 0.0f, 2.0f);
+		animPoseDrawMtx(work->animPose2, mtx, 2, 0.0f, 2.0f);
+		animPoseDrawMtx(work->animPose2, mtx, 3, 0.0f, 2.0f);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80422480 = 0xFFFFFF00;
+const u32 dat_80422484 = 0xFFFFFF00;
