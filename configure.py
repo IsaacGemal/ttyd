@@ -894,7 +894,7 @@ config.libs = [
             Object(NonMatching, "party.c"),
             Object(Matching, "peach.c"),
             Object(NonMatching, "pmario_sound.c"),
-            Object(NonMatching, "romfont.c"),
+            Object(Matching, "romfont.c"),
             Object(NonMatching, "sound.c"),
             Object(NonMatching, "statuswindow.c"),
             Object(Matching, "data/battle/battle_database_common.c"),
