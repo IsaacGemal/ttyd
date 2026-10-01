@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 
-extern OSThread dvdmgr_thread;
 
 //.bss
 char _filename[0x400]; //for fileAllocf/fileAsyncf vsprintf

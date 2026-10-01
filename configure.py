@@ -887,7 +887,7 @@ config.libs = [
             Object(NonMatching, "koopa_motion.c"),
             Object(NonMatching, "kpa_act.c"),
             Object(Matching, "main.c"),
-            Object(NonMatching, "memory.c"),
+            Object(Matching, "memory.c"),
             Object(NonMatching, "nameent.c"),
             Object(NonMatching, "npc_event.c"),
             Object(NonMatching, "parse.c"),
