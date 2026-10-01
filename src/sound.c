@@ -1232,8 +1232,107 @@ void SoundDVDMain(void) {
 
 // Keep _ssDVDReadAsync_activeChk out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (0.38%): empty placeholder, not decompiled yet.
 void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
+    SoundStream* stream;
+    SoundStreamEntry* entry;
+    u32* arr;
+    s32 i;
+    s32 j;
+
+    if (!sound.unk20C) {
+        sound.interrupts = OSDisableInterrupts();
+    }
+    sound.unk20C++;
+
+    for (i = 0; i < 3; i++) {
+        stream = &sound.streams[i];
+        if (!stream->flags) {
+            continue;
+        }
+        entry = NULL;
+        j = 0;
+        if (&stream->entries[0].dvd->info == fileInfo) {
+            entry = &stream->entries[0];
+            j = 0;
+        }
+        if (&stream->entries[1].dvd->info == fileInfo) {
+            entry = &stream->entries[1];
+            j = 1;
+        }
+        if (!entry) {
+            continue;
+        }
+        if (result < 0) {
+            goto unlock;
+        }
+        entry->bytesLoaded += entry->requestLength;
+        // entry->unk38[4]: the pair of u32 buffer pointers toggled by the u16 index at entry->unk4C.
+        arr = (u32*)&entry->unk38[4];
+        arr[1 - *(u16*)entry->unk4C] = entry->requestLength;
+        *(u16*)&entry->unk4C[8] = 1;
+        if (entry->bytesLoaded >= *(u32*)&entry->unk4C[0x14]) {
+            entry->bytesLoaded = *(u32*)&entry->unk4C[0x18];
+            if (stream->flags & 0x200) {
+                if (j == 0) {
+                    stream->flags &= ~0x1000;
+                } else {
+                    stream->flags &= ~0x2000;
+                }
+            } else {
+                stream->flags |= 0x4000;
+            }
+        } else if (j == 0) {
+            stream->flags &= ~0x1000;
+        } else {
+            stream->flags &= ~0x2000;
+        }
+        if (stream->count == 2) {
+            if (sound.unk214 == 2 && *(s16*)&stream->entries[0].unk4C[8] == 1 && *(s16*)&stream->entries[1].unk4C[8] == 1) {
+                sound.unk214 = 0;
+            }
+        } else if (sound.unk214 == 2 && *(s16*)&stream->entries[0].unk4C[8] == 1) {
+            sound.unk214 = 0;
+        }
+        break;
+    }
+
+    for (i = 0; i < 3; i++) {
+        stream = &sound.streams[i];
+        if (!stream->flags) {
+            continue;
+        }
+        if (stream->flags & 8) {
+            continue;
+        }
+        if (&stream->entries[0].dvd->info == fileInfo) {
+            *(u16*)&stream->entries[0].unk4C[0xA] = 1;
+        }
+        if (&stream->entries[1].dvd->info == fileInfo) {
+            *(u16*)&stream->entries[1].unk4C[0xA] = 1;
+        }
+        if (stream->count == 2) {
+            if (*(s16*)&stream->entries[0].unk4C[0xA] == 0 || *(s16*)&stream->entries[1].unk4C[0xA] == 0) {
+                continue;
+            }
+        } else if (*(s16*)&stream->entries[0].unk4C[0xA] == 0) {
+            continue;
+        }
+        *(u16*)stream->entries[0].unk4C = 0;
+        *(u16*)stream->entries[1].unk4C = 0;
+        *(u16*)&stream->entries[0].unk4C[8] = 0;
+        *(u16*)&stream->entries[1].unk4C[8] = 0;
+        sndStreamActivate(stream->entries[0].streamId);
+        if (stream->count == 2) {
+            sndStreamActivate(stream->entries[1].streamId);
+        }
+        SoundSSSetPanCh(i, (u8)stream->pan);
+        stream->flags |= 8;
+        break;
+    }
+unlock:
+    if (sound.unk20C && !--sound.unk20C) {
+        OSRestoreInterrupts(sound.interrupts);
+    }
 }
 #pragma dont_inline reset
 

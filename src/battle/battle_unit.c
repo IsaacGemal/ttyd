@@ -7,6 +7,9 @@
 #include "battle/battle_audience.h"
 #include "battle/battle_actrecord.h"
 #include "math_ext.h"
+#include "driver/animdrv.h"
+#include "memory.h"
+#include "manager/evtmgr.h"
 
 // LOCAL_PROTO(psndSFX_get_vol): retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos.
 extern s32 psndSFX_get_vol(s32 id);
@@ -23,6 +26,8 @@ extern u32 _enemy_can_use_item_table[];
 
 const f32 float_0_8041c3bc = 0.0f;
 const f32 float_1_8041c3c0 = 1.0f;
+f32 float_60_8041c3c4 = 60.0f;
+f32 float_neg1_8041c3c8 = -1.0f;
 f32 float_1p1_8041c3cc = 1.1f;
 f32 float_1p3_8041c3d0 = 1.3f;
 f32 float_1p5_8041c3d4 = 1.5f;
@@ -30,6 +35,9 @@ f32 float_0p5_8041c3d8 = 0.5f;
 
 // .rodata integer-conversion / pow constants named by the original pool.
 const f64 double_to_int_802efab8 = 4503601774854144.0;
+// Defined where the original .rodata places it; declared extern so MWCC does not fold 0.7.
+extern const f64 double_0p7_802efac0;
+const f64 double_to_int_mask_802efac8 = 4503599627370496.0;
 const f64 double_2_802efad0 = 2.0;
 
 // 30-byte status block copied between BattleWorkPartyInfo::field_4 and BattleUnit::mSleepTurns.
@@ -69,6 +77,31 @@ typedef struct BattleUnitPartFields {
     u8 pad_3[0x500 - 0x4F4];
 } BattleUnitPartFields;
 
+// A pose-sound table entry; no header declares this type. Layout matches the 0x14-byte
+// entries BtlUnit_ControlPoseSoundMain walks (name 0x0, trigger 0x4, callback 0x8,
+// sound name 0xC, pitch 0x10, flags 0x12).
+typedef struct PoseSoundEntry {
+    const char* poseName;                                        // 0x0
+    f32 volume;                                                  // 0x4
+    s32 (*callback)(BattleUnit*, struct PoseSoundEntry*, void*); // 0x8
+    const char* soundName;                                       // 0xC
+    s16 pitch;                                                   // 0x10
+    u16 flags;                                                   // 0x12
+} PoseSoundEntry;
+
+// The part's pose-sound work block, starting at BattleUnitPart + 0x4D0.
+typedef struct PoseSoundWork {
+    PoseSoundEntry* table; // 0x0
+    s32 frame;             // 0x4
+    f32 prev;              // 0x8
+    f32 cur;               // 0xC
+    s32 count;             // 0x10
+    u8 flag;               // 0x14
+    u8 pad_0[3];
+    s32 eventId;           // 0x18
+    BattleUnit* owner;     // 0x1C
+} PoseSoundWork;
+
 typedef struct HpGaugeLocal {
     u16 field_0;  // 0x0
     u16 field_2;  // 0x2
@@ -92,6 +125,12 @@ void BtlUnit_PoseSoundInit(BattleUnitPart* part) {
     fields->mPoseSoundPrev = 0.0f;
     fields->mPoseSoundCur = 0.0f;
 }
+
+// `opt_propagation off` is required for the volume reduction `(s32)(0x7F * 0.7)`: with propagation on
+// GC/2.6 folds the u32 0x7F into a pooled 127.0 double instead of the retail runtime conversion
+// (`lis 0x4330` + `double_to_int_mask_802efac8`, `fsub`, `fmul`). The `s32 v2` temp pins the
+// conversion before the psndSFX_vol call. `-1.0f` is a literal so the load schedules as retail does.
+
 
 BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit) {
     if (unit->mAttributeFlags & kVeiled) {
@@ -416,6 +455,9 @@ BOOL BtlUnit_Init(void) {
     return TRUE;
 }
 
+// BtlUnit_Entry is emitted out of line in retail; the small placeholder body otherwise
+// inlines into BtlUnit_Spawn (the real function does not), so pin it.
+#pragma dont_inline on
 // NONMATCHING (11.91%): 376 missing, 1 extra, plus register differences.
 BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     BattleWork* wp = _battleWorkPointer;
@@ -447,15 +489,133 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     //TODO: finish
     return NULL;
 }
+#pragma dont_inline reset
 
 // NONMATCHING (1.19%): 1 instruction differs, 116 missing.
 BOOL BtlUnit_Delete(BattleUnit* unit) {
-    return FALSE;
+    BattleWork* wp = _battleWorkPointer;
+    s32 i;
+    s32 j;
+    BattleUnitPart* part;
+    s32 id;
+
+    if (!unit) {
+        return FALSE;
+    }
+    for (i = 0; i < 64; i++) {
+        if (BattleGetUnitPtr(wp, i) == unit) {
+            break;
+        }
+    }
+    if (i >= 64) {
+        return FALSE;
+    }
+    if (unit->waitEventId) {
+        evtDeleteID(unit->waitEventId);
+        unit->waitEventId = 0;
+    }
+    if (unit->phaseEventId) {
+        evtDeleteID(unit->phaseEventId);
+        unit->phaseEventId = 0;
+    }
+    if (unit->damageEventId) {
+        evtDeleteID(unit->damageEventId);
+        unit->damageEventId = 0;
+    }
+    id = unit->unitId;
+    for (j = 0; j < 64; j++) {
+        if (*(s32*)((u8*)wp + 0x120 + j * 4) == id) {
+            *(s32*)((u8*)wp + 0x120 + j * 4) = -1;
+        }
+    }
+    if (unit->flags & 0x40000000) {
+        NpcBattleInfo* setup = wp->fbatInfo->setup;
+
+        if (unit->groupSetupId >= 0) {
+            setup->stolenItems[unit->groupSetupId] = unit->heldItem;
+        }
+    }
+    BattleStatusEffectDelete(unit);
+    BattleStatusIconDelete(unit);
+    // Cleanup hooks the header does not name: +0x310 buffer, +0x314 its destructor, +0x318 smart pointer.
+    if (*(void**)((u8*)unit + 0x310)) {
+        if (*(void**)((u8*)unit + 0x314)) {
+            ((void (*)(BattleUnit*)) * (void**)((u8*)unit + 0x314))(unit);
+        } else {
+            BattleFree(*(void**)((u8*)unit + 0x310));
+        }
+    }
+    if (*(void**)((u8*)unit + 0x318)) {
+        smartFree(*(smartEntry**)((u8*)unit + 0x318));
+        *(void**)((u8*)unit + 0x318) = NULL;
+    }
+    part = unit->mParts;
+    for (; part; part = part->mNextPart) {
+        if (((BattleUnitPartFields*)part)->mPoseSoundEventId != -1) {
+            ((BattleUnitPartFields*)part)->mPoseSoundEventId = -1;
+        }
+        if (*(s32*)((u8*)part + 0x1C0) != -1) {
+            animPoseSetEffect(*(s32*)((u8*)part + 0x1C0), NULL, FALSE);
+            animPoseRelease(*(s32*)((u8*)part + 0x1C0));
+        }
+    }
+    BattleFree(unit->mParts);
+    BattleFree(unit);
+    BattleSetUnitPtr(wp, i, NULL);
+    return TRUE;
 }
 
-// NONMATCHING (2.41%): 1 instruction differs, 56 missing.
+// Logic is byte-identical apart from register allocation. Retail colours unit=r6, id=r5, offset=r3
+// (sharing `li r3,0` for offset and moveState and using `mr. r6,r3` after BtlUnit_Entry); GC/2.6
+// keeps unit=r3, id=r6, offset=r5 and both `add r3,r31,r3; stw ...,0x120(r3)` break-case stores come
+// out as `stwx`. Rearranging declarations/loops does not move the colours.
+// NONMATCHING (86.55%): see above.
 BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
-    return NULL;
+    BattleWork* wp = _battleWorkPointer;
+    s32 id;
+    s32 offset;
+    BattleUnit* unit;
+
+    if (!(unit = BtlUnit_Entry(setup))) {
+        return NULL;
+    }
+    if (flags & 2) {
+        unit->moveState = 0;
+        id = unit->unitId;
+        for (offset = 0; offset < 0x100; offset += 4) {
+            if (id == -1) {
+                break;
+            }
+            if (*(s32*)((u8*)wp + 0x120 + offset) == -1) {
+                *(s32*)((u8*)wp + 0x120 + offset) = id;
+                break;
+            }
+            {
+                s32 prev = *(s32*)((u8*)wp + 0x120 + offset);
+                *(s32*)((u8*)wp + 0x120 + offset) = id;
+                id = prev;
+            }
+        }
+    }
+    else if (flags & 1) {
+        unit->moveState = 0;
+        id = unit->unitId;
+        for (offset = 0xFC; offset >= 0; offset -= 4) {
+            if (id == -1) {
+                break;
+            }
+            if (*(s32*)((u8*)wp + 0x120 + offset) == -1) {
+                *(s32*)((u8*)wp + 0x120 + offset) = id;
+                break;
+            }
+            {
+                s32 prev = *(s32*)((u8*)wp + 0x120 + offset);
+                *(s32*)((u8*)wp + 0x120 + offset) = id;
+                id = prev;
+            }
+        }
+    }
+    return unit;
 }
 
 s32 BtlUnit_GetUnitId(BattleUnit* unit) {
@@ -1381,16 +1541,19 @@ BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
     if (!turns) {
         return FALSE;
     }
-    switch (type) {
+    switch ((s8)type) {
         case STATUS_SLEEP:
-            if (turns <= 1) {
-                turns = 0;
-            }
-            else {
+            if (turns > 1) {
                 turns--;
             }
+            else {
+                turns = 0;
+            }
             unit->mSleepTurns = turns;
-            return turns == 0;
+            if (turns == 0) {
+                return TRUE;
+            }
+            return FALSE;
         case STATUS_ALLERGIC:
         case STATUS_STOP:
         case STATUS_DIZZY:
@@ -1404,73 +1567,89 @@ BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
         case STATUS_SLOW:
         case STATUS_PAYBACK:
         case STATUS_HOLD_FAST:
-            if (turns < 0) {
-                turns++;
-            }
-            else {
+            if (turns >= 0) {
                 turns--;
             }
-            if (strength < 0) {
-                strength++;
+            else {
+                turns++;
+            }
+            if (strength >= 0) {
+                strength--;
             }
             else {
-                strength--;
+                strength++;
             }
             if (!turns) {
                 strength = 0;
             }
             BtlUnit_SetStatus(unit, type, turns, strength);
-            return turns == 0;
+            if (turns == 0) {
+                return TRUE;
+            }
+            return FALSE;
         case STATUS_HUGE:
         case STATUS_TINY:
-            if (turns <= 0) {
-                if (turns >= 0) {
-                    return FALSE;
-                }
-                turns++;
+            if (turns > 0) {
+                turns--;
             }
             else {
-                turns--;
+                if (turns < 0) {
+                    turns++;
+                }
+                else {
+                    return FALSE;
+                }
             }
             if (!turns) {
                 strength = 0;
             }
             unit->mSizeChangeTurns = turns;
             unit->mSizeChangeStrength = strength;
-            return turns == 0;
+            if (turns == 0) {
+                return TRUE;
+            }
+            return FALSE;
         case STATUS_ATTACK_UP:
         case STATUS_ATTACK_DOWN:
-            if (turns <= 0) {
-                if (turns >= 0) {
-                    return FALSE;
-                }
-                turns++;
+            if (turns > 0) {
+                turns--;
             }
             else {
-                turns--;
+                if (turns < 0) {
+                    turns++;
+                }
+                else {
+                    return FALSE;
+                }
             }
             if (!turns) {
                 strength = 0;
             }
             unit->mAtkChangeTurns = turns;
             unit->mAtkChangeStrength = strength;
-            return turns == 0;
+            if (turns == 0) {
+                return TRUE;
+            }
+            return FALSE;
         case STATUS_POISON:
         case STATUS_DEFENSE_UP:
         case STATUS_DEFENSE_DOWN:
         case STATUS_HP_REGEN:
         case STATUS_FP_REGEN:
-            if (turns < 0) {
-                turns++;
+            if (turns >= 0) {
+                turns--;
             }
             else {
-                turns--;
+                turns++;
             }
             if (!turns) {
                 strength = 0;
             }
             BtlUnit_SetStatus(unit, type, turns, strength);
-            return turns == 0;
+            if (turns == 0) {
+                return TRUE;
+            }
+            return FALSE;
         default:
             return FALSE;
     }
@@ -1567,7 +1746,27 @@ char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
 
 // NONMATCHING (1.89%): 52 missing.
 void BtlUnit_SetParamToPouch(BattleUnit* unit) {
+    BattleWork* wp = _battleWorkPointer;
+    PouchData* pouch = pouchGetPtr();
 
+    if (unit->currentKind == UNIT_MARIO) {
+        pouch->currentHP = unit->currentHp;
+        pouch->currentFP = unit->currentFp;
+    } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+        BattleWorkPartyInfo* info;
+        s32 party;
+
+        party = BattleTransPartyId(unit->currentKind);
+        *(s16*)((u8*)pouch + party * 0xE + 6) = unit->currentHp;
+        info = &wp->partyInfo[unit->currentKind - TYPE_PARTNER_MIN];
+        info->field_0 = unit->mSizeMultiplier;
+        info->field_24 = unit->mStatusFlags;
+#ifdef MUST_MATCH
+        *(UnitStatusBlock*)info->field_4 = *(UnitStatusBlock*)&unit->mSleepTurns;
+#else
+        memcpy(info->field_4, &unit->mSleepTurns, sizeof(info->field_4));
+#endif
+    }
 }
 
 
@@ -1873,12 +2072,15 @@ void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16
     se->field_0x18 = -1;
 }
 
+// Keep BtlUnit_snd_se out of line: BtlUnit_ControlPoseSoundMain's original calls it rather than inlining it.
+#pragma dont_inline on
 s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
     Vec pos;
 
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     return BtlUnit_snd_se_pos(unit, name, b, c, &pos);
 }
+#pragma dont_inline reset
 
 
 // NONMATCHING (87.75%): register allocation is rotated (target keeps name in r27/val in r30, ours name in r30/val in r29).
@@ -2036,3 +2238,5 @@ s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     return cost;
 }
 #pragma dont_inline reset
+
+const f64 double_0p7_802efac0 = 0.7;

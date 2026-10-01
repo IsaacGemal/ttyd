@@ -19,5 +19,6 @@ void marioUpdateCam(void);
 BOOL marioCamZoomUpLevelMain(void);
 void marioSetCamId(CameraId camId);
 void marioSetCamFollowRate(f32 followRate);
+void marioResetCamShift(void);
 void marioResetCamShiftRate(void);
 void marioCamZoomOffReq(void);

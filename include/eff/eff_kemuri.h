@@ -1,11 +1,32 @@
 #pragma once
 
 #include "driver/effdrv.h"
+#include "driver/camdrv.h"
 #include <dolphin/types.h>
 
 EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6);
 EffectEntry* effKemuri12N64Entry(s32 int2, s32 int3, f32 float3, f32 float4, f32 float5, f32 float6);
 void effKemuriMain(EffectEntry* effect);
+void effKemuriDisp(CameraId camId, void* param);
+// sdata2/sdata constants of the unit, used by effKemuriMain and effKemuriDisp.
+extern const f32 float_16_8041c6f4;
+extern const f32 float_0p0078125_8041c6f8;
+extern const f32 float_1p5_8041c6fc;
+extern const f32 float_0p85_8041c700;
+extern const f32 float_0p8_8041c6f0;
+extern const f32 float_0p9_8041c6e8;
+extern const f32 float_0p95_8041c6ec;
+extern const f32 float_2_8041c704;
+extern const f32 float_1p2_8041c708;
+extern const f32 float_0p0625_8041c6d8;
+extern const f32 float_neg0p2_8041c6dc;
+extern const f64 double_to_int_mask_802f3118;
+extern const GXColor dat_8041c670;
+extern const GXColor dat_8041c674;
+extern const GXColor dat_8041c678;
+extern const GXColor dat_8041c67c;
+extern const u8 touchdown_scale[60];
+extern const u8 heavy_scale[60];
 EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6, f32 float7);
 typedef struct effKemuri2Data {
 	u8 field_0x0[0x4]; //0x0

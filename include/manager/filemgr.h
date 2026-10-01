@@ -36,7 +36,7 @@ FileEntry* fileAlloc(const char* filename, u8 type);
 void fileFree(FileEntry* handle);
 s32 fileAsyncf(u8 type, FileCallback callback, const char* format, ...);
 void fileSetCurrentArchiveType(s32 type);
-void fileGarbageDataAdrSet(void* data, u8 type);
+void fileGarbageDataAdrSet(void* data, s32 type);
 void fileGarbageDataAdrClear(FileEntry* entry);
 void dvdReadDoneCallBack(s32 error, DVDFileInfo* info);
 s32 fileAsync(const char* filename, u8 type, FileCallback callback);

@@ -204,6 +204,9 @@ void SoundSSMain(void);
 s32 SoundSSCheck(s32);
 void SoundSSSetPlayFreqCh(s32 chan, u16 freq);
 void SoundSSStopCh(s32);
+void SoundSSMuteOff(s32 chan);
+void SoundSSFadeoutCh(s32 chan);
+void SoundSSSetVolCh(s32 chan, u8 vol);
 void* sndMalloc(size_t size);
 void sndFree(void* ptr);
 void* loadDVD_callback(u32 offset, u32 length);
@@ -215,3 +218,4 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
 extern SoundWork sound;
 void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3);
 void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo);
+void SoundSSSetPanCh(s32 chan, u8 pan);

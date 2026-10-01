@@ -1,9 +1,28 @@
 #include "battle/battle_status_icon.h"
 #include "battle/battle.h"
+#include "battle/battle_disp.h"
+#include "driver/icondrv.h"
 #include "system.h"
 #include <string.h>
 
 extern BattleWork* _battleWorkPointer;
+extern GXColor dat_804221e8;
+extern GXColor dat_804221ec;
+extern f32 float_0p8_8042221c;
+extern f32 float_neg0p8_80422220;
+extern f32 float_deg2rad_80422224;
+extern f32 float_21p6_80422228;
+extern f32 float_16_8042222c;
+extern f32 float_13p44_80422230;
+extern f32 float_25p6_80422234;
+extern f32 float_19p2_80422238;
+extern f32 float_901_8042223c;
+extern f32 float_0_80422214;
+extern s32 dat_80422200;
+extern s32 dat_80422204;
+extern f32 float_0p10207_80422208;
+extern s32 dat_8042220c;
+extern s32 dat_80422210;
 
 typedef struct IconDispTableEntry IconDispTableEntry;
 struct IconDispTableEntry {
@@ -23,7 +42,11 @@ void BattleStatusIconInit(BattleUnit* unit) {
 	memset(&unit->mStatusIconWork, 0, sizeof(BattleWorkStatusIcon));
 }
 
-// NONMATCHING (86.59%): 6 instructions differ, 7 missing, 4 extra, plus register differences.
+// NONMATCHING (86.59%): the callback is passed &icon->mIcons[i] here, but the original indexes by
+// icon->mNumStatusIcons (mulli from 0x794(r31)); using the correct index scores 79.74 because the
+// full 23-entry _disp_table changes _disp_table's addressing, so the table below is still truncated
+// to one entry. The rest is register/scheduling differences (the original keeps unit/icon/table/i in
+// r30/r31/r28/r27 and uses stmw).
 void BattleStatusIconMain(BattleUnit* unit) {
 	BattleWorkStatusIcon* icon = &unit->mStatusIconWork;
 	BattleWork* work = _battleWorkPointer;
@@ -62,9 +85,109 @@ void BattleStatusIconDelete(BattleUnit* unit) {
 	; //stubbed in retail
 }
 
-// NONMATCHING (0.46%): 218 missing.
+// NONMATCHING (98.51%): MWCC folds the mIcons array offset 0x20 into the element field offsets
+// (base = icon + off) where the original adds it to the scaled index first (addi r29,r26,0x20; add
+// r29,r30,r29). Same addresses; the int->float 2^52 pool entry is an anonymous @NNL relocation name.
 void BattleStatusIconDisp(CameraId camId, void* param) {
-	BattleUnit* unit = param; //cast to proper type
+	BattleUnit* unit = param;
+	BattleWorkStatusIcon* icon = &unit->mStatusIconWork;
+	BattleWorkStatusIconEntry* entry;
+	Mtx mtx;
+	Mtx mtxPos;
+	Mtx mtxScale;
+	Mtx mtxTransNeg;
+	Mtx mtxTransPos;
+	Mtx mtxRotX;
+	Mtx mtxRotY;
+	Mtx mtxRotZ;
+	Mtx mtx2;
+	Vec screenPos;
+	Vec pos;
+	Vec pos2;
+	GXColor color;
+	s32 i;
+#ifdef MUST_MATCH
+	s32 two;
+	s32 off;
+#endif
+
+	color = dat_804221e8;
+	btlGetScreenPoint(&icon->mPosition, &screenPos);
+#ifdef MUST_MATCH
+	for (i = icon->mNumStatusIcons - 1, off = i * 0x44, two = i * 2; i >= 0; i--, two -= 2, off -= 0x44) {
+		entry = (BattleWorkStatusIconEntry*)((u8*)&icon->mIcons[0] + off);
+#else
+	for (i = icon->mNumStatusIcons - 1; i >= 0; i--) {
+		entry = &icon->mIcons[i];
+#endif
+		pos = screenPos;
+		pos.y = icon->mDistanceBetweenIcons * (f32)i + pos.y;
+		pos.x += icon->mScreenSpaceOffset.x;
+		pos.y += icon->mScreenSpaceOffset.y;
+		pos.z += icon->mScreenSpaceOffset.z;
+#ifdef MUST_MATCH
+		pos.z -= (f32)(-two);
+#else
+		pos.z -= (f32)(i * -2);
+#endif
+
+		if (!(*(s32*)((u8*)entry + 0x40) & 1)) {
+			if (!(icon->mFlags & 1)) {
+#ifdef MUST_MATCH
+				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
+				    0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_0p8_8042221c, 0);
+#else
+				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_0p8_8042221c);
+#endif
+			}
+			else {
+#ifdef MUST_MATCH
+				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
+				    0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_neg0p8_80422220, 0);
+#else
+				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_neg0p8_80422220);
+#endif
+			}
+		}
+
+		if (*(u32*)((u8*)entry + 0x8) != 0) {
+			if (!(*(s32*)((u8*)entry + 0x40) & 2)) {
+				PSMTXTrans(mtxPos, pos.x + *(f32*)((u8*)entry + 0x30),
+				           pos.y + *(f32*)((u8*)entry + 0x34),
+				           pos.z + *(f32*)((u8*)entry + 0x38));
+				PSMTXScale(mtxScale, float_0p8_8042221c * *(f32*)((u8*)entry + 0xC),
+				           float_0p8_8042221c * *(f32*)((u8*)entry + 0x10),
+				           *(f32*)((u8*)entry + 0x14));
+				PSMTXTrans(mtxTransNeg, -*(f32*)((u8*)entry + 0x18),
+				           -*(f32*)((u8*)entry + 0x1C),
+				           -*(f32*)((u8*)entry + 0x20));
+				PSMTXTrans(mtxTransPos, *(f32*)((u8*)entry + 0x18),
+				           *(f32*)((u8*)entry + 0x1C),
+				           *(f32*)((u8*)entry + 0x20));
+				PSMTXRotRad(mtxRotX, 'x', float_deg2rad_80422224 * *(f32*)((u8*)entry + 0x24));
+				PSMTXRotRad(mtxRotY, 'y', float_deg2rad_80422224 * *(f32*)((u8*)entry + 0x28));
+				PSMTXRotRad(mtxRotZ, 'z', float_deg2rad_80422224 * *(f32*)((u8*)entry + 0x2C));
+				PSMTXIdentity(mtx);
+				PSMTXConcat(mtxRotZ, mtxScale, mtx);
+				PSMTXConcat(mtxTransNeg, mtx, mtx);
+				PSMTXConcat(mtxRotZ, mtx, mtx);
+				PSMTXConcat(mtxRotY, mtx, mtx);
+				PSMTXConcat(mtxRotX, mtx, mtx);
+				PSMTXConcat(mtxTransPos, mtx, mtx);
+				PSMTXConcat(mtxPos, mtx, mtx);
+				btlDispTexPlane2(mtx, *(u32*)((u8*)entry + 0x8), *(GXColor*)((u8*)entry + 0x3C), 0);
+			}
+			if (*(s32*)((u8*)entry + 0x4) != 0) {
+				pos2 = pos;
+				pos2.x += float_21p6_80422228;
+				pos2.y -= float_16_8042222c;
+				PSMTXIdentity(mtx2);
+				PSMTXTrans(mtxPos, pos2.x, pos2.y, pos2.z);
+				PSMTXConcat(mtxPos, mtx2, mtx2);
+				iconNumberDispGx(mtx2, *(s32*)((u8*)entry + 0x4), 1, dat_804221ec);
+			}
+		}
+	}
 }
 
 // Icon parameter table base; fields accessed at +0x60..+0x8C are Vec entries 8..11.
@@ -321,5 +444,80 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	*(s32*)((u8*)entry + 0x3C) = dat_804221fc;
 	*(s32*)((u8*)entry + 0x40) = disp->something2;
 	*(Vec*)((u8*)entry + 0x30) = BIRI_VEC(17, vec3_803012b4);
+	return TRUE;
+}
+
+// The remaining differences are the three intplGetValue calls: MWCC materialises the 2^52
+// unsigned-int->float mask via an anonymous pool entry where the original loads it as
+// vec3_803011e8 + 0x108 (lfd 0x108(r31)), and the fctiwz/byte scheduling differs.
+// optimize_for_size: the original's real divw for the modulo only comes out under -O4,s.
+// NONMATCHING (87.21%): under -O4,p MWCC strength-reduces the % 0x2d0 to a magic multiply, but the
+// original emits a real divw (only -O4,s does that), so this function is compiled size-optimised.
+BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
+	Vec* vec = vec3_803011e8;
+	s32 type = disp->id;
+	s16* counter;
+	s32 turnCount;
+	s32 offset;
+	s8 turns;
+	s8 strength;
+	GXColor startColor;
+	GXColor endColor;
+	GXColor color;
+
+	if (type == 0x17) {
+		startColor = *(GXColor*)&dat_80422200;
+		endColor = *(GXColor*)&dat_80422204;
+		counter = (s16*)(unit->mStatusIconWork.field_0x796 + 2);
+	}
+	else if (type == 0x18) {
+		startColor = *(GXColor*)&float_0p10207_80422208;
+		endColor = *(GXColor*)&dat_8042220c;
+		counter = (s16*)(unit->mStatusIconWork.field_0x796 + 4);
+	}
+	else {
+		return FALSE;
+	}
+
+#ifdef MUST_MATCH
+	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+	if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
+		*counter = 0;
+		return FALSE;
+	}
+
+	*counter = *counter + 1;
+	offset = (*counter * 0xc) % 0x2d0;
+	if (offset >= 0x168) {
+		offset = 0x2d0 - offset;
+	}
+#ifdef MUST_MATCH
+	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
+	*(s32*)((u8*)entry + 0x0) = type;
+#ifdef MUST_MATCH
+	turnCount = -turns;
+	if (turns >= 0) {
+		turnCount = turns;
+	}
+#else
+	turnCount = turns < 0 ? -turns : turns;
+#endif
+	*(s32*)((u8*)entry + 0x4) = turnCount;
+	*(s32*)((u8*)entry + 0x8) = disp->something;
+	*(Vec*)((u8*)entry + 0xC) = vec[18];
+	*(Vec*)((u8*)entry + 0x18) = vec[19];
+	*(Vec*)((u8*)entry + 0x24) = vec[20];
+	color = *(GXColor*)&dat_80422210;
+	color.r = intplGetValue(0xb, offset, 0x168, (f32)startColor.r, (f32)endColor.r);
+	color.g = intplGetValue(0xb, offset, 0x168, (f32)startColor.g, (f32)endColor.g);
+	color.b = intplGetValue(0xb, offset, 0x168, (f32)startColor.b, (f32)endColor.b);
+	*(GXColor*)((u8*)entry + 0x3C) = color;
+	*(s32*)((u8*)entry + 0x40) = disp->something2;
+	*(Vec*)((u8*)entry + 0x30) = vec[21];
 	return TRUE;
 }

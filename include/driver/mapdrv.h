@@ -169,6 +169,7 @@ void mapMain(void);
 void mapDisp(void);
 
 void mapSetMaterialLight(s32 flags, Vec position);
+void mapSetMaterial(MapObject* obj, void* material);
 void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2);
 void mapSetMaterialFog(void);
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx);

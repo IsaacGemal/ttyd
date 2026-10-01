@@ -17,4 +17,6 @@ double floor(double x);
 float __fabsf(float x);
 double __fabs(double x);
 double acos(double x);
+double asin(double x);
 double log(double x);
+unsigned __cvt_fp2unsigned(double d);

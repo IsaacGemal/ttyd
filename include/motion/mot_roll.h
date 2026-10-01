@@ -14,3 +14,4 @@ void clrRollEvtFlag(void);
 void marioRollForceCancel(void);
 BOOL unk_8009fcbc(void);
 void marioRollFixOn(void);
+void marioSetRollDispDir(void);

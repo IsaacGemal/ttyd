@@ -11,6 +11,16 @@
 #include "mario/mario_pouch.h"
 #include "system.h"
 
+// These .rodata strings are deliberately NOT defined here: defining them would push the
+// compiler's anonymous int->float pool doubles behind them (0x958 instead of 0x8f0), which
+// breaks the base+offset operands of itemUseDisp2/winItemDisp. They belong inline in the
+// functions that use them (owned by the other agents working on this file).
+// The pool doubles themselves need no declaration: the compiler emits its own @NNN@ entries.
+extern const char str_802F55F4[];
+extern const char str_802F560C[];
+extern const char str_802F5620[];
+extern const char str_802F5638[];
+
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x1210 bytes, so the rest are reached through raw offsets below.
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
@@ -54,38 +64,276 @@ extern const f32 float_220_8041d51c;
 extern const f32 float_92_8041d520;
 extern const f32 float_30_8041d524;
 
-extern const Vec vec3_802f5288;
-extern const Vec vec3_802f5294;
-extern const Vec vec3_802f52a0;
-extern const Vec vec3_802f52ac;
-extern const Vec vec3_802f52b8;
-extern const Vec vec3_802f52c4;
-extern const Vec vec3_802f52d0;
-extern const Vec vec3_802f52dc;
-extern const Vec vec3_802f52e8;
-extern const Vec vec3_802f52f4;
-extern const Vec vec3_802f5300;
-extern const Vec vec3_802f530c;
-extern const Vec vec3_802f5318;
-extern const Vec vec3_802f5324;
-extern const Vec vec3_802f5330;
-extern const Vec vec3_802f533c;
-extern const Vec vec3_802f5348;
-extern const Vec vec3_802f5354;
-extern const Vec vec3_802f5360;
-extern const Vec vec3_802f536c;
-extern const Vec vec3_802f5378;
-extern const Vec vec3_802f5384;
-extern const Vec vec3_802f5390;
-extern const char str_802F55F4[];
-extern const char str_802F560C[];
-extern const char str_802F5620[];
-extern const char str_802F5638[];
-extern const char str_802F55C4[];
 extern const f32 float_0p5_8041d4a8;
-extern const Vec vec3_802f55ac;
-extern const Vec vec3_802f55b8;
 extern const GXColor dat_8041d4a4;
+
+// .rodata prefix of window/win_item: the 60 msg_luigi_book strings and the vec3_802f52xx /
+// vec3_802f55xx aggregate constants. Defining them here (rather than extern) is what lets MWCC
+// address itemUseDisp/winItemDisp's rodata through one base register plus displacements. The tail
+// (str_802F55E8.. and the int->float pool doubles) is intentionally left extern/implicit above.
+// The vec3 names/sizes/order and every constant are taken byte-for-byte from the original .rodata.
+const char str_802F4CE8[24] = "msg_luigi_book1_txt1\000\000\000";
+
+const char str_802F4D00[24] = "msg_luigi_book1_txt2\000\000\000";
+
+const char str_802F4D18[24] = "msg_luigi_book1_txt3\000\000\000";
+
+const char str_802F4D30[24] = "msg_luigi_book1_txt4\000\000\000";
+
+const char str_802F4D48[24] = "msg_luigi_book1_txt5\000\000\000";
+
+const char str_802F4D60[24] = "msg_luigi_book1_txt6\000\000\000";
+
+const char str_802F4D78[24] = "msg_luigi_book1_txt7\000\000\000";
+
+const char str_802F4D90[24] = "msg_luigi_book1_txt8\000\000\000";
+
+const char str_802F4DA8[24] = "msg_luigi_book1_txt9\000\000\000";
+
+const char str_802F4DC0[24] = "msg_luigi_book1_txt10\000\000";
+
+const char str_802F4DD8[24] = "msg_luigi_book1_txt11\000\000";
+
+const char str_802F4DF0[24] = "msg_luigi_book1_txt12\000\000";
+
+const char str_802F4E08[24] = "msg_luigi_book2_txt1\000\000\000";
+
+const char str_802F4E20[24] = "msg_luigi_book2_txt2\000\000\000";
+
+const char str_802F4E38[24] = "msg_luigi_book2_txt3\000\000\000";
+
+const char str_802F4E50[24] = "msg_luigi_book2_txt4\000\000\000";
+
+const char str_802F4E68[24] = "msg_luigi_book2_txt5\000\000\000";
+
+const char str_802F4E80[24] = "msg_luigi_book2_txt6\000\000\000";
+
+const char str_802F4E98[24] = "msg_luigi_book2_txt7\000\000\000";
+
+const char str_802F4EB0[24] = "msg_luigi_book2_txt8\000\000\000";
+
+const char str_802F4EC8[24] = "msg_luigi_book2_txt9\000\000\000";
+
+const char str_802F4EE0[24] = "msg_luigi_book2_txt10\000\000";
+
+const char str_802F4EF8[24] = "msg_luigi_book2_txt11\000\000";
+
+const char str_802F4F10[24] = "msg_luigi_book2_txt12\000\000";
+
+const char str_802F4F28[24] = "msg_luigi_book3_txt1\000\000\000";
+
+const char str_802F4F40[24] = "msg_luigi_book3_txt2\000\000\000";
+
+const char str_802F4F58[24] = "msg_luigi_book3_txt3\000\000\000";
+
+const char str_802F4F70[24] = "msg_luigi_book3_txt4\000\000\000";
+
+const char str_802F4F88[24] = "msg_luigi_book3_txt5\000\000\000";
+
+const char str_802F4FA0[24] = "msg_luigi_book3_txt6\000\000\000";
+
+const char str_802F4FB8[24] = "msg_luigi_book3_txt7\000\000\000";
+
+const char str_802F4FD0[24] = "msg_luigi_book3_txt8\000\000\000";
+
+const char str_802F4FE8[24] = "msg_luigi_book3_txt9\000\000\000";
+
+const char str_802F5000[24] = "msg_luigi_book3_txt10\000\000";
+
+const char str_802F5018[24] = "msg_luigi_book3_txt11\000\000";
+
+const char str_802F5030[24] = "msg_luigi_book3_txt12\000\000";
+
+const char str_802F5048[24] = "msg_luigi_book4_txt1\000\000\000";
+
+const char str_802F5060[24] = "msg_luigi_book4_txt2\000\000\000";
+
+const char str_802F5078[24] = "msg_luigi_book4_txt3\000\000\000";
+
+const char str_802F5090[24] = "msg_luigi_book4_txt4\000\000\000";
+
+const char str_802F50A8[24] = "msg_luigi_book4_txt5\000\000\000";
+
+const char str_802F50C0[24] = "msg_luigi_book4_txt6\000\000\000";
+
+const char str_802F50D8[24] = "msg_luigi_book4_txt7\000\000\000";
+
+const char str_802F50F0[24] = "msg_luigi_book4_txt8\000\000\000";
+
+const char str_802F5108[24] = "msg_luigi_book4_txt9\000\000\000";
+
+const char str_802F5120[24] = "msg_luigi_book4_txt10\000\000";
+
+const char str_802F5138[24] = "msg_luigi_book4_txt11\000\000";
+
+const char str_802F5150[24] = "msg_luigi_book4_txt12\000\000";
+
+const char str_802F5168[24] = "msg_luigi_book5_txt1\000\000\000";
+
+const char str_802F5180[24] = "msg_luigi_book5_txt2\000\000\000";
+
+const char str_802F5198[24] = "msg_luigi_book5_txt3\000\000\000";
+
+const char str_802F51B0[24] = "msg_luigi_book5_txt4\000\000\000";
+
+const char str_802F51C8[24] = "msg_luigi_book5_txt5\000\000\000";
+
+const char str_802F51E0[24] = "msg_luigi_book5_txt6\000\000\000";
+
+const char str_802F51F8[24] = "msg_luigi_book5_txt7\000\000\000";
+
+const char str_802F5210[24] = "msg_luigi_book5_txt8\000\000\000";
+
+const char str_802F5228[24] = "msg_luigi_book5_txt9\000\000\000";
+
+const char str_802F5240[24] = "msg_luigi_book5_txt10\000\000";
+
+const char str_802F5258[24] = "msg_luigi_book5_txt11\000\000";
+
+const char str_802F5270[24] = "msg_luigi_book5_txt12\000\000";
+
+const Vec vec3_802f5288 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5294 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f52a0 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f52ac = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f52b8 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f52c4 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f52d0 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f52dc = { 0.8, 0.8, 0.8 };
+
+const Vec vec3_802f52e8 = { 0.6666667, 0.6666667, 0.6666667 };
+
+const Vec vec3_802f52f4 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5300 = { 0.9, 0.9, 0.9 };
+
+const Vec vec3_802f530c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5318 = { -1.0, -1.0, -1.0 };
+
+const Vec vec3_802f5324 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5330 = { 0.6, 0.6, 0.6 };
+
+const Vec vec3_802f533c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5348 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f5354 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5360 = { 0.6, 0.6, 0.6 };
+
+const Vec vec3_802f536c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5378 = { 0.7, 0.7, 0.7 };
+
+const Vec vec3_802f5384 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5390 = { 0.6, 0.6, 0.6 };
+
+const Vec vec3_802f539c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f53a8 = { 0.65, 0.65, 0.65 };
+
+const Vec vec3_802f53b4 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f53c0 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f53cc = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f53d8 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f53e4 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f53f0 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f53fc = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5408 = { 0.9, 0.9, 0.9 };
+
+const Vec vec3_802f5414 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5420 = { 0.9, 0.9, 0.9 };
+
+const Vec vec3_802f542c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5438 = { 0.8, 0.8, 0.8 };
+
+const Vec vec3_802f5444 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5450 = { 0.8, 0.8, 0.8 };
+
+const Vec vec3_802f545c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5468 = { 0.9, 0.9, 0.9 };
+
+const Vec vec3_802f5474 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5480 = { 0.9, 0.9, 0.9 };
+
+const Vec vec3_802f548c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5498 = { 0.8, 0.8, 0.8 };
+
+const Vec vec3_802f54a4 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f54b0 = { 0.8, 0.8, 0.8 };
+
+const Vec vec3_802f54bc = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f54c8 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f54d4 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f54e0 = { 0.65, 0.65, 0.65 };
+
+const Vec vec3_802f54ec = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f54f8 = { 0.0, 1.0, 1.0 };
+
+const Vec vec3_802f5504 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5510 = { 0.9, 0.9, 0.9 };
+
+const Vec vec3_802f551c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5528 = { 0.9, 0.9, 0.9 };
+
+const Vec vec3_802f5534 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5540 = { 0.8, 0.8, 0.8 };
+
+const Vec vec3_802f554c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5558 = { 0.8, 0.8, 0.8 };
+
+const Vec vec3_802f5564 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5570 = { 0.15, 0.15, 0.15 };
+
+const Vec vec3_802f557c = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f5588 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f5594 = { 0.0, 0.0, 0.0 };
+
+const Vec vec3_802f55a0 = { 1.0, 1.0, 1.0 };
+
+const Vec vec3_802f55ac = { 0.0, 134.0, 0.0 };
+
+const Vec vec3_802f55b8 = { 1.0, 1.0, 1.0 };
+
+const char str_802F55C4[20] = "msg_window_select_5";
+
+
+
 
 typedef struct ItemWorkTail {
     u8 pad[0x2E8];
@@ -135,9 +383,17 @@ void winItemMain2(WindowWork* work) {
 }
 
 // The original reaches the six Vecs and the int->float double through one base register
-// (r31 = str_802F4CE8) plus displacements, which MWCC only does once win_item's .rodata is
-// defined in this unit; declared extern, each symbol gets its own lis/addi.
-// NONMATCHING (65.91%): only the .rodata addressing and the register/stack shifts it causes differ.
+// (r31 = str_802F4CE8) plus displacements; defining win_item's .rodata in this unit is what
+// makes MWCC pool them that way.
+// NONMATCHING (96.78%): every instruction matches, but MWCC colours the callee-saved
+// registers the other way round: `work` lands in r28 (target r29) and the loop counter `i`
+// in r29 (target r28). That cascades into the temporary/stack-slot assignments
+// (translate at 0x78/0x54 etc.). Exhausted: declaration order, loop shape (for/while/do/goto),
+// counters split/aliased, register/volatile qualifiers, pointer forms, texture-id and loop-local
+// copies, and every relevant pragma (opt_dead_assignments off helps but drops to 92%). A full
+// compile-line sweep confirms today's -O4,p -inline auto,deferred is the only flag set that
+// reproduces the unit; the sibling winItemInit (98.90%) shows the same colouring swap, so this is
+// a file-wide mwcc 2.6 allocator-order effect. See REPORT.md for the full list.
 void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
     GXColor color = dat_8041d468;
     f32 c;
@@ -192,10 +448,11 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
 // Draws the item window: the held/key-item grid, the selected item's large
 // icon and name, the overflow arrows and the sort label. The two int->float pool
 // doubles come out as anonymous @NNN@ instead of double_to_int_802f55e0 /
-// double_to_int_mask_802f55d8 (the .rodata block is extern in this unit; same
-// limitation as winItemDisp).
-// NONMATCHING (68.53%): 73 instructions inserted and 54 deleted against the original, plus
-// register colouring (work lands in r22 instead of r31).
+// double_to_int_mask_802f55d8 (defining them makes MWCC emit fresh anonymous copies).
+// The .rodata prefix is now defined in this file, so the Vec/GXColor strings below address
+// through the base register; score went 68.53% -> 83.60% from that alone.
+// NONMATCHING (83.60%): still differs in the loop body's scheduling, register colours
+// (work lands in r22 instead of r31) and the stack slots of the Vec/GXColor temporaries.
 void item_disp(WindowWork* work, f32 x, f32 y) {
     GXColor white = dat_8041d474;
     GXColor dark = dat_8041d478;
@@ -534,41 +791,52 @@ void winMakeSkipList(WindowWork* work) {
     }
 }
 
-// The original reaches vec3_802f55ac/b8, str_802F4CE8 and the two int->float doubles through one base
-// register (r31 = str_802F4CE8) plus displacements (0x8c4, 0x8d0, ...). MWCC only does that when the
-// symbols are defined in this unit (known section offsets); declared extern it emits lis/addi per symbol,
-// so entry lands in r31 instead of r29 and the frame is 0x60 instead of 0x70. Resolves once win_item's
-// .rodata is decompiled.
-// NONMATCHING (68.23%): only the .rodata addressing and the register/frame shift it causes differ.
+// The original reaches vec3_802f55ac/b8, str_802F4CE8 and the two int->float pool doubles through
+// one base register (r31 = str_802F4CE8) plus displacements (0x8c4, 0x8d0, 0x8f0, 0x8f8). Defining
+// the .rodata prefix in this unit is what makes MWCC emit those offsets; the pool doubles must stay
+// un-named so the compiler puts its own @NNN@ entries at 0x8f0/0x8f8 (naming them makes MWCC append
+// fresh copies after the whole section, shifting them to 0x958). The strings after str_802F55C4 are
+// left extern for the same reason; they belong inline in the functions that use them (other agents).
+// 100%: the .rodata prefix plus the MUST_MATCH shapes below (GXColor copied into the 0x8 argument
+// slot from an inner block, the pos temp/struct copy, and the dh0 temp that fixes the FP colours).
 void itemUseDisp2(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
     s32 id = WW_S32(work, 0x120C);
     const char* msg;
     f32 width;
-    Vec scale;
+    GXColor color;
+    Vec pos;
 #ifdef MUST_MATCH
     Vec tmp;
+    f32 dh0;
 #endif
-    Vec pos;
-    GXColor color;
+    Vec scale;
 
     color = dat_8041d4a4;
     if (!winMgrAction(id)) {
         msg = msgSearch(str_802F55C4);
         width = (f32)FontGetMessageWidth(msg);
         winFontInit();
-        scale = vec3_802f55b8;
+        // The original keeps the GXColor in its own 0xc home and copies it to the 0x8 argument
+        // slot for the variadic winFontSet call; declaring the copy in this inner block (after
+        // winFontInit) reproduces both the slot and the copy's schedule.
+        {
+            GXColor c = color;
+            scale = vec3_802f55b8;
 #ifdef MUST_MATCH
-        // A separate temp plus the struct copy is what reproduces the original's 0x1c scratch and
-        // the lwz/stw (not lfs/stfs) copy of pos into its final slot.
-        tmp = vec3_802f55ac;
-        tmp.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
-        pos = tmp;
+            // A separate temp plus the struct copy is what reproduces the original's 0x1c scratch
+            // and the lwz/stw (not lfs/stfs) copy of pos into its final slot. The dh0 temp is what
+            // colours the pool double f3 and 0.5f f1 (target), rather than f2/f3.
+            tmp = vec3_802f55ac;
+            dh0 = (f32)entry->field_0x20 - width;
+            tmp.x = (f32)entry->field_0x18 + dh0 * float_0p5_8041d4a8;
+            pos = tmp;
 #else
-        pos = vec3_802f55ac;
-        pos.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
+            pos = vec3_802f55ac;
+            pos.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
 #endif
-        winFontSet(&pos, &scale, &color, msg);
+            winFontSet(&pos, &scale, &c, msg);
+        }
     }
 }
 

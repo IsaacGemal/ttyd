@@ -74,3 +74,4 @@ BOOL BattleStatusChangeMsgMain(BattleWork* wp);
 BOOL BattleStatusChangeAnnouceMain(BattleWork* wp);
 BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit);
 void _st_chg_msg_disp(CameraId camera, void* param);
+void BattleStatusEffectDelete(BattleUnit* unit);

@@ -60,6 +60,7 @@ s32 kpaFireAttackCheck(void);
 s32 kpaGetBodyStatus(void);
 f32 kpaGetBaseScale(s32 index);
 s32 kpaGetStageViewType(void);
+s32 kpaNoHitEnemyCheck(void);
 void kpaFireAttack(void);
 void kpa_jumpNpc(void);
 s32 kpaGetStageType(void);

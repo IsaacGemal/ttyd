@@ -66,3 +66,4 @@ void statusMarioHPBlink(s32 value);
 void statusFPBlink(s32 value);
 void statusPartyHPBlink(s32 value);
 void N_statusClearBlink(void);
+Vec statusGetApPos(void);
