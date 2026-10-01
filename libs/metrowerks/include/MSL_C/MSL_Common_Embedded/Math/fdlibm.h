@@ -246,6 +246,10 @@ extern unsigned long __float_huge[];
 #ifndef HUGE_VALF
 #define HUGE_VALF (*(float*)__float_huge)
 #endif
+extern int __double_huge[];
+#ifndef HUGE_VAL
+#define HUGE_VAL (*(double*)__double_huge)
+#endif
 
 #ifdef __cplusplus
 };

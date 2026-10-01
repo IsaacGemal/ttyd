@@ -1091,7 +1091,7 @@ config.libs = [
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/scanf.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/string.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/strtold.c"),
-            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/strtoul.c"),
+            Object(Matching, "MSL_C.PPCEABI.bare.H.a/strtoul.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/wchar_io.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/uart_console_io_gcn.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/e_acos.c"),

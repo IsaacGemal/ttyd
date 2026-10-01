@@ -3451,3 +3451,8 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - `~/ttyd-refs/<project>` on the Mac, rsynced to `~/ttyd-refs` on the tower (pop-os): ac-decomp, spm-decomp, tp, tww (all CC0-1.0) and musyx (MIT), shallow clones; `~/ttyd-refs/README.md` lists each repo's URL, commit and license (checked against its LICENSE file and the GitHub API). Anything else is deleted, never added. Wave agents have no network: prompts point at the local copy. `docs/AGENT_BRIEF.md` rule 16 says so.
 - Every port PR names the project and file it took code from.
 
+
+## Grind 70: MSL `__strtoull` from tp; `__strtold` started (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `__strtoull` is zeldaret/tp `MSL_Common/Src/strtoul.c`'s function (CC0) with this tree's `_isspace`/`_isdigit`/`_isalpha`/`_toupper` (the originals are the `_`-prefixed inline functions of `MSL_C/ctype.h`: with the plain names it calls `isspace` etc.) and `value = *chars_scanned = 0;` in the failure branch (the separate `value = 0;` scored one `srawi` off). `strtoul.c` is 2/2 at 100%, Matching, linked.
+- `strtold.c` is new: tp's `__strtold` (`MSL_Common/Src/strtold.c`, CC0) with this tree's includes, `NAN`/`HUGE_VAL` for `nan()` (the target calls no `nan`; it loads `__float_nan`), and `LDBL_*` plus `HUGE_VAL` added to `float.h`/`fdlibm.h` (MWCC 2.6 cannot read tp's hex-float `LDBL_MAX`/`LDBL_MIN`, so they are the decimal values). 75.27% (was 0%) and still NonMatching: the target's frame is 0xb0 bytes (ours 0xc0) and it copies a 0x2C-byte `zero_803025a0` const struct for an initialiser that ours puts in a `@22` literal. Not started: `qsort` (in none of the reference projects), `e_hypot` (same).
