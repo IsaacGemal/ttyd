@@ -154,6 +154,11 @@ When the instructions match but the stack slots, register allocation or scheduli
   changing any instruction.
 - **A product of two literals folds** (`-16.0f * 0.5f` becomes `-8.0f`), so the target's two separate constants
   vanish: `f32 sixteen = 16.0f; f32 half = 0.5f; f = -sixteen * half;` keeps both.
+- **A constant assigned to a local before the variable it multiplies fixes the FP load order and the registers** without
+  touching the pool: `f32 k = 0.03125f; ... x = x * k + y;` (eff_nokotarou), `f32 half = 0.5f;` (eff_kemuri9_n64),
+  `f32 zero = 0.0f; if (f30 == zero)` (eff_lensflare_n64). The literal is still pooled in its place; the local makes
+  the compiler hoist the load the way the target does. Try it when the pool is already right and only the FP loads
+  or one callee-saved register differ.
 
 ## Partial functions
 
