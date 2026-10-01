@@ -406,6 +406,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 	return 1;
 }
 #pragma optimize_for_size reset
+#pragma opt_common_subs reset
 
 // .data: float pairs and gauge tables. The gauge tables are reached from lbl_803ABCE0 (defined in
 // nameent.c) + 0x40, so this block's layout (7 pairs, then 7 tables of 5 records) is load-bearing.

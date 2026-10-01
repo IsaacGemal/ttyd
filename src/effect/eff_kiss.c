@@ -8,7 +8,8 @@
 #include <math.h>
 
 // The original has these constants in .sdata2. Declared const, MWCC folds their values into its own pool;
-// the matching build keeps them writable so the loads reference the original symbols.
+// the matching build keeps the ones marked SDATA2_CONST writable so the loads reference the original symbols
+// (the const ones are those effKissEntry's scheduling needs const).
 #ifdef MUST_MATCH
 #define SDATA2_CONST
 #else
@@ -95,9 +96,8 @@ extern u32 unk_80423314;
 extern u32 unk_80423318;
 extern u32 unk_8042331c;
 
-// 100% matched. The constants are loaded by name (see the block at the top of this file): float_0/float_1
-// as `const` definitions and float_360/float_6p2832/float_3/float_1p5/float_neg1 as `extern const`, so MWCC
-// gives effKissEntry retail's const scheduling; writable globals would reload them after sin/cos. `t` splits
+// 100% matched. The constants are loaded by name (see the block at the top of this file), as `const`
+// definitions, so MWCC gives effKissEntry retail's const scheduling; writable globals would reload them after sin/cos. `t` splits
 // the shared twoPi/360 division out of the sin/cos arguments so it is computed once, as retail does.
 EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	EffectEntry* entry;

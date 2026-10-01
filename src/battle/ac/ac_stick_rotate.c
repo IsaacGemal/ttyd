@@ -203,6 +203,8 @@ static void actionCommandDisp(f32 x, f32 y) {
             break;
     }
 }
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
 
 // dont_inline: the original calls _get_icon_id from both display functions.
 #pragma dont_inline on

@@ -403,8 +403,7 @@ static inline void snowDustSetItemKColor(effSnowDustData* ptr) {
 
 // 100%.  The GXColor arguments are built in the snowDustSet*Color inlines above (scratch slot below
 // the outgoing copy, the known MWCC GXColor quirk).  The loop walks the single `data` pointer as the
-// original does; `(i & 0x1f) * 64` is what emits the target's clrlslwi (plain `i * 64` makes MWCC
-// strength-reduce it to an induction variable and steals a callee-saved register).
+// original does; the texture offset wraps every 32 items (`(i & 0x1f) * 64`, the target's clrlslwi).
 void effSnowDustDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effSnowDustData* data;
@@ -567,11 +566,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 		PSMTXConcat(texMtxB, mtx, mtx);
 		GXLoadTexMtxImm(mtx, 0x21, 1);
 		if (type == 2) {
-#ifdef MUST_MATCH
 			PSMTXTrans(mtx, (f32)((i & 0x1f) * 64), 64.0f, 0.0f);
-#else
-			PSMTXTrans(mtx, (f32)(i * 64), 64.0f, 0.0f);
-#endif
 			PSMTXConcat(texMtxA, mtx, mtx);
 			GXLoadTexMtxImm(mtx, 0x1e, 1);
 		}
