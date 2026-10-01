@@ -3,12 +3,22 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 
-extern GXColor unk_804230e8;
-extern GXColor unk_804230ec;
-extern GXColor unk_804230f0;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804230f0;
+__declspec(section ".sdata") GXColor unk_804230ec;
+__declspec(section ".sdata") GXColor unk_804230e8;
+
+
+static u32 size32x32_tex32x32_vtx[14] = {
+    0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010,
+    0xFFF00000, 0xFC000000, 0x000000FF, 0x00100010,
+    0x0000FC00, 0x04000000, 0x00FFFFF0, 0x00100000,
+    0x00000400, 0x000000FF,
+};
+
 extern const u32 dat_8041ed60;
 extern const u32 dat_8041ed64;
-extern u32 size32x32_tex32x32_vtx[];
 
 const Vec vec3_802fa510 = { 0.0f, 0.0f, 0.0f };
 
@@ -230,3 +240,6 @@ void effExplosionDisp(CameraId camId, void* param) {
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041ed60 = 0xFFFF287F;
+const u32 dat_8041ed64 = 0xFFFF8B00;
