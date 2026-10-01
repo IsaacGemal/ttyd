@@ -596,8 +596,14 @@ USER_FUNC(dai3_butai_main_func) {
     int delta = (s32)(target - cur);
     NanNpcWork* work = nanNPCWork;
 
-    for (isFirstCall = 0; isFirstCall < 100; isFirstCall++) {
-        NanNpcEntry* entry = &work->entries[isFirstCall + 0xCD];
+#ifdef MUST_MATCH
+    // The original counts in the register MWCC gives the unused isFirstCall parameter.
+#define i isFirstCall
+#else
+    s32 i;
+#endif
+    for (i = 0; i < 100; i++) {
+        NanNpcEntry* entry = &work->entries[i + 0xCD];
         f32 radius;
 
         entry->work[0] += delta;
@@ -608,6 +614,9 @@ USER_FUNC(dai3_butai_main_func) {
         entry->position.x = radius * cur + centerX;
         entry->position.z = radius * s + centerZ;
     }
+#ifdef MUST_MATCH
+#undef i
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -975,7 +984,9 @@ USER_FUNC(cam_test_init_func) {
 // args+1 int base (frame 0x60 vs our 0x50), and s/rad land in f30/f29 instead of f29/f30.
 // NONMATCHING (95.47%)
 USER_FUNC(cam_test_func) {
+#ifdef MUST_MATCH
     s32* new_var;
+#endif
     s32* args = event->args;
     f32 angle = evtGetFloat(event, args[2]);
     f32 radius = evtGetFloat(event, args[3]);
@@ -984,9 +995,13 @@ USER_FUNC(cam_test_func) {
     f32 c = cos(rad);
 
     evtSetValue(event, args[0], (s32)(radius * s + 70.0f));
+#ifdef MUST_MATCH
     new_var = &args[1];
     rad = (radius * s) * 0.0f;
     evtSetValue(event, *new_var, (s32)(rad - (radius * c)));
+#else
+    evtSetValue(event, args[1], (s32)(0.0f - radius * c));
+#endif
     return EVT_RETURN_DONE;
 }
 

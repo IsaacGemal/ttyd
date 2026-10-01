@@ -780,7 +780,7 @@ void mot_ship(void) {
             MarioWork* m = marioGetPtr();
             f30 = 1.6f;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x4) = m->position.x;
-            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + (f30 - f30);
+            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + 0.0f;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0xC) = m->position.z;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x10) = f30;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x14) = m->unk1A8;
@@ -1029,7 +1029,7 @@ void mot_ship(void) {
             {
 
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x4) = m->position.x;
-                *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + (f30 - f30);
+                *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + 0.0f;
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0xC) = m->position.z;
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x10) = f30;
                 *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x14) = m->unk1A8;
@@ -1105,7 +1105,7 @@ void mot_ship(void) {
                 }
             }
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x4) = m->position.x;
-            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + (f30 - f30);
+            *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x8) = m->position.y + 0.0f;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0xC) = m->position.z;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x10) = f30;
             *(f32*)((u8*)SHIP_DATA->eff->userdata + 0x14) = m->unk1A8;

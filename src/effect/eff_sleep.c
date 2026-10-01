@@ -229,9 +229,17 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 			GXPosition3f32(negEight * float_0p5_80422434 + s1, one * (f32)(j + 1), float_0_8042243c);
 			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(7 - j));
 			GXPosition3f32(4.0f + s1, one * (f32)(j + 1), float_0_8042243c);
+#ifdef MUST_MATCH
 			GXTexCoord2f32(*(volatile const f32*)&float_1_80422438, 0.125f * (f32)(7 - j));
+#else
+			GXTexCoord2f32(1.0f, 0.125f * (f32)(7 - j));
+#endif
 			GXPosition3f32(4.0f + s0, one * (f32)j, float_0_8042243c);
+#ifdef MUST_MATCH
 			GXTexCoord2f32(*(volatile const f32*)&float_1_80422438, 0.125f * (f32)(8 - j));
+#else
+			GXTexCoord2f32(1.0f, 0.125f * (f32)(8 - j));
+#endif
 			GXPosition3f32(negEight * float_0p5_80422434 + s0, one * (f32)j, float_0_8042243c);
 			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(8 - j));
 		}

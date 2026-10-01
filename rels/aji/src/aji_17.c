@@ -1026,7 +1026,6 @@ void peach_capture(CameraId cameraId, void* param) {
     Mtx44 ortho;
     Mtx lookMtx;
     Mtx mtx;
-    s32 q, r, a, b;
     NpcEntry* npc1;
     NpcEntry* npc2;
     NpcEntry* npc;

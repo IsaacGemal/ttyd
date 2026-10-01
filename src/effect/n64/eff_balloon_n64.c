@@ -7,9 +7,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
-#ifdef MUST_MATCH
-#include <dolphin/os/OSFastCast.h>
-#endif
 #include <math.h>
 #include <string.h>
 
@@ -133,45 +130,22 @@ static inline void effBalloonSetVtx(BalloonVtx* vtx, Mtx mtx, s32 idx, BalloonVt
 	Vec v;
 
 	memcpy(&vtx[idx], src, sizeof(BalloonVtx));
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail ran OSInitFastCast before each set of paired-single conversions. */
-	OSInitFastCast();
-#endif
 	v.x = vtx[idx].pos[0];
 	v.y = vtx[idx].pos[1];
 	v.z = vtx[idx].pos[2];
 	PSMTXMultVec(mtx, &v, &v);
-#ifdef MUST_MATCH
-	OSInitFastCast();
-#endif
 	vtx[idx].pos[0] = v.x;
 	vtx[idx].pos[1] = v.y;
 	vtx[idx].pos[2] = v.z;
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: retail's tri1 callers pass a 4th, unused s32 argument and no u16 truncation
-   (the header's prototype has only three u16 params); call it through an s32 function pointer,
-   as eff_radiation_n64.c does, to reproduce r6 and the missing clrlwi. */
-static inline void tri1WithUnused(s32 x, s32 y, s32 z, s32 unused) {
-	((void (*)(s32, s32, s32, s32))tri1)(x, y, z, unused);
-}
-#else
-static inline void tri1WithUnused(s32 x, s32 y, s32 z, s32 unused) {
-	tri1(x, y, z);
-}
-#endif
-// The control flow, constants, GX calls, tri1 calls and the f23-f31 saves match. With the
-// `#pragma gecko_float_typecons on` below, MWCC 2.6 converts the vertex s16<->f32 through paired
-// singles, but it emits indexed `psq_lx`/`psq_st` with GQR1 (and an explicit `mtspr GQR1` before
-// every load/store) where retail used displacement `psq_l`/`psq_st` with GQR5, the register set by
-// OSInitFastCast. That plus one extra GPR colour leaves the frame at 0x200 not 0x210.
-#ifdef MUST_MATCH
-/* MUST_MATCH: enables MWCC's paired-single integer<->float conversion codegen, the closest thing
-   this toolchain has to retail's psq_l/psq_st (retail used GQR5/displacement; MWCC 2.6 emits
-   GQR1/indexed), so the vertex helper reaches 79.99%. Not a kind used elsewhere yet. */
-#endif
-// NONMATCHING (79.99%): psq_lx/qr1 vs retail's displacement psq_l/qr5.
+// The control flow, constants and GX calls match, but MWCC 2.6 lowers the s16<->f32 vertex
+// conversion as lha/fctiwz instead of the original's psq_l/psq_st (GQR2-5 setup + psq pairs).
+// No source form, pragma or compiler version here reproduces the psq path, so the f23-f31 saves,
+// the 0x210 frame and the register colours differ. tri1 also takes the header's 3 u16 args, so
+// the target's 4th argument and its lack of clrlwi need include/eff/eff_n64.h and
+// src/effect/n64/eff_n64.c to declare 4 s32 args.
+// NONMATCHING (60.06%): s16<->f32 conversion uses lha/fctiwz, not psq; tri1 takes 4 s32 args.
 void effBalloonDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;
@@ -244,23 +218,21 @@ void effBalloonDisp(CameraId camId, void* param) {
 
 	if (life < 100) {
 		GXBegin(0x90, 0, 3);
-		tri1WithUnused(0x15, 2, 1, 0);
+		tri1(0x15, 2, 1);
 		for (i = 0; i < 19; i++) {
 			GXBegin(0x90, 0, 3);
-			tri1WithUnused(1, i + 2, i + 3, 1);
+			tri1(1, i + 2, i + 3);
 		}
 	} else {
 		GXBegin(0x90, 0, 6);
-		tri1WithUnused(0, 1, 2, 0);
-		tri1WithUnused(0, 0x15, 1, 0);
+		tri1(0, 1, 2);
+		tri1(0, 0x15, 1);
 		for (i = 0; i < 19; i++) {
 			GXBegin(0x90, 0, 3);
-			tri1WithUnused(1, i + 2, i + 3, 1);
+			tri1(1, i + 2, i + 3);
 		}
 	}
 }
-#ifdef MUST_MATCH
-#endif
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const f32 float_0p0625_8041e940 = 0.0625f;

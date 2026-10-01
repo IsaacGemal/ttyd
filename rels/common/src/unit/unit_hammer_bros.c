@@ -843,7 +843,9 @@ typedef struct HammerBrosSampling {
     HammerBrosSamplingEntry entries[1]; // 0x4
 } HammerBrosSampling;
 
-#pragma dont_inline on  // the original keeps these as real calls in hammer_bros_nagemakuri_set_target, not inlined
+// dont_inline (kept from main): the original inlines the helpers into hammer_bros_nagemakuri_set_target; ours
+// stays NONMATCHING either way, and inlining them scores far lower.
+#pragma dont_inline on
 static USER_FUNC(hammer_bros_nagemakuri_set_target) {
     BattleWork* wp = _battleWorkPointer;
     EventEntry* evt = event;

@@ -496,7 +496,7 @@ void display_func(CameraId cameraId, void* param) {
     if (work->field_0x8 > float_180_sys_00001b20) {
         work->field_0x8 = zero_sys_00001ad8;
         work->field_0xC++;
-        work->field_0xC %= 8;
+        work->field_0xC %= 4;
     }
 
     lightColor = getLightColor(float_90_sys_00001ae8 + work->field_0x8);

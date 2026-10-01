@@ -2094,9 +2094,9 @@ void kpaSen_ext_disp(void) {
 
 void kpaSen_ext_shadow_disp(void) {
     static Mtx mt = {
-        {20.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 20.0f, 0.0f, 0.1f},
-        {0.0f, 0.0f, 20.0f, 0.0f},
+        {10.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 10.0f, 0.0f, 0.1f},
+        {0.0f, 0.0f, 10.0f, 0.0f},
     };
 
     extLoadShadowMtx(mt);

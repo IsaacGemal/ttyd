@@ -541,7 +541,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     w = (f32)FontGetMessageWidth(msg);
     sc = w + 50.0f;
     w = (f32)FontGetMessageWidth(msg);
-    windowDispGX_Waku_col(0, c1, work->field_0C - (w - 50.0f) * 0.5f, work->field_10 + 128.0f + 1.0f, sc, 28.0f, 8.0f);
+    windowDispGX_Waku_col(0, c1, work->field_0C - (w + 50.0f) * 0.5f, work->field_10 + 128.0f + 1.0f, sc, 28.0f, 8.0f);
     FontDrawStart();
     FontDrawScale(1.0f);
     c2 = *(GXColor*)&dat_gor_0001cd38;

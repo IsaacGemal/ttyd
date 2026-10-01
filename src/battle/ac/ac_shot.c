@@ -346,7 +346,6 @@ void battleAcDelete_Shot(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// dont_inline: retail calls _ac_disp_init from battleAcMain_Shot with a real `bl`.
 static void _ac_disp_init(BattleWork* work) {
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 
@@ -544,8 +543,8 @@ const f32 float_0_8041e4b8 = 0.0f;
 u32 dat_8041e4a8 = 0xFFFFFFFF;
 const f32 float_60_8041e4c0 = 60.0f;
 const GXColor dat_8041e4ac = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041e4b0 = {0xFF, 0xA0, 0x80, 0x90};
-const GXColor dat_8041e4b4 = {0x00, 0xA0, 0x80, 0x90};
+const GXColor dat_8041e4b0 = {0x90, 0x80, 0xA0, 0xFF};
+const GXColor dat_8041e4b4 = {0x90, 0x80, 0xA0, 0x00};
 const f32 float_1_8041e4bc = 1.0f;
 const f32 float_30_8041e4c4 = 30.0f;
 const f32 float_255_8041e4c8 = 255.0f;
