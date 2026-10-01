@@ -1033,8 +1033,8 @@ config.libs = [
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/UDP_Stubs.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/main.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/CircleBuffer.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/MWTrace.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/MWCriticalSection_gc.cpp"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/MWTrace.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/MWCriticalSection_gc.cpp"),
         ],
     },
     {
