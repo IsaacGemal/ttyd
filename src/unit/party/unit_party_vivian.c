@@ -48,7 +48,6 @@ extern const char str_802F8020[]; // "PM_B_1"
 extern const char str_802F8028[]; // "SFX_BTL_VIVIAN_SHADOW1_2"
 extern const char str_802F8044[]; // "SFX_BTL_VIVIAN_SHADOW1_1"
 extern const char str_802F8060[]; // "PM_B_2"
-extern u8 lbl_80388868[]; // this unit's .data weapon tables
 
 // The original compiler emitted this file's string literals into one pool and referenced them
 // relative to the pool base. We are not defining the rest of the pool yet. The natural form is

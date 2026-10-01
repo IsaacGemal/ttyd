@@ -399,6 +399,7 @@ void mapReStartAnimation(const char* name) {
 	}
 }
 
+#ifdef MUST_MATCH
 // Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner
 // allocates the helper's locals in declaration order, and that order is what puts
 // wp in the higher register (r28) in the target, matching the other inline copies.
@@ -420,9 +421,14 @@ static inline MapEntryAnimData* mapFindAnm(const char* animName) {
 	}
 	return NULL;
 }
+#endif
 
 void mapSetPlayRate(const char* name, f32 rate) {
+#ifdef MUST_MATCH
 	MapEntryAnimData* found = mapFindAnm(name);
+#else
+	MapEntryAnimData* found = mapSearchAnmObj(name);
+#endif
 
 	if (found) {
 		*(f32*)((u8*)found + 0x14) = rate;

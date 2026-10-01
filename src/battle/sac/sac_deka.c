@@ -277,7 +277,7 @@ void create_timing(void) {
     DekaTiming* ti;
     f32 times[8];
     f32 tf;
-    s32 i, j, m, n;
+    s32 i, j, n;
     s32 tidx;
     s32 tries;
     f32 f;

@@ -4922,6 +4922,7 @@ s32 psndSFXChk(u32 id) {
 	val = sfx->unk0;
 	return (s32)(~((val + 1) | (-1 - val))) >> 31;
 }
+#pragma opt_propagation reset
 
 u8 psndSFX_get_vol(s32 id) {
 	PaperSoundEffect* sfx;

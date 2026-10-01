@@ -59,9 +59,8 @@ void battleAcDelete_StickRotate(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// Match-only: the header declares _get_icon_id as s32(s32), but the original passes an s8 field raw
-// (`lbz r3`) and passes the s16 icon id straight to iconDispGx (no `extsh`). The cast keeps the call a
-// direct `bl _get_icon_id`; same workaround as ac_gauge_timing/ac_lst_rc_keep.
+// Match-only: the header declares s16 _get_icon_id(u8), but the original passes the s8 field with
+// sign extension (extsb); the s16(*)(s8) cast reproduces that. Same workaround as ac_gauge_timing/ac_lst_rc_keep.
 #ifdef MUST_MATCH
 #define GET_ICON_ID(id) (((s16 (*)(s8))_get_icon_id)((id)))
 #else
@@ -133,6 +132,8 @@ void actionCommandDisp2(f32 x, f32 y) {
             break;
     }
 }
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
 
 // The target keeps the work-area base `work + 0x1F4C` in r5 (`addi r5, r4, 0x1f4c`) and
 // addresses the fields off it; MWCC folds every derived base into the BattleWork r4

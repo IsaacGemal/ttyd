@@ -1016,6 +1016,7 @@ void party_force_reset_outofscreen(PartyEntry* party) {
 
 // Match shapes below are marked MUST_MATCH: the natural forms compile to the
 // same logic but differ in mwcc register allocation / block layout.
+extern const f64 double_180_802f3fa0;
 BOOL party_slit(PartyEntry* party) {
     extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
@@ -1083,10 +1084,10 @@ BOOL party_slit(PartyEntry* party) {
         } else {
             angle = revise360(party->dir - mario->targetYaw);
 #ifdef MUST_MATCH
-            // The original compares against the double 180.0 living at vec+0x160.
+            // retail reads the 180.0 double (double_180_802f3fa0) as vec+0x160
             if (angle >= *(f64*)(vec + 0x160)) {
 #else
-            if (angle >= 180.0) {
+            if (angle >= double_180_802f3fa0) {
 #endif
                 party->flags2 = (party->flags2 | 0x200);
             } else {

@@ -664,9 +664,7 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
 // NONMATCHING (95.04%): declaration order (s32 group split; wp/camera/unit/part before the f32s) fixed the
 // register allocation. Still differs: the f32 stack groups are reversed (x at 0x1c, x2 at 0x08, the two Vec
 // temporaries at 0x2c/0x20; target x 0x2c, x2 0x20, temps 0x14/0x08) and the first block's `unit` spills
-// through r0/r25 instead of staying in r26 (3 inserts, 2 deletes). The Vec zero-vector relocations also land
-// on anonymous symbols because the file's .rodata vectors (vec3_802efc7c/88) need battleCameraMain, unwritten.
-// NONMATCHING
+// through r0/r25 instead of staying in r26 (3 inserts, 2 deletes).
 USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   s32 *args;
   BattleWork *wp;

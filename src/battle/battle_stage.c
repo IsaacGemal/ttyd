@@ -554,6 +554,7 @@ void tou_gamen_screen_tev(void* param) {
 	tev->field_14 = 2;
 	tev->field_10 = 2;
 }
+#pragma opt_propagation reset
 
 
 

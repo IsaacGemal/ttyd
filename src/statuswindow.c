@@ -541,19 +541,6 @@ s32 valueCheck(void) {
     return changed;
 }
 
-static void valueMove(s16* cur, s16 target) {
-    s32 diff = target - *cur;
-    s32 step;
-
-    if (diff != 0) {
-        step = diff / 10;
-        if (step == 0) {
-            step = (target > *cur) ? 1 : -1;
-        }
-        *cur += step;
-    }
-}
-
 static s32 valueMoveAmount(s16 cur, s16 target) {
     s32 diff = target - cur;
     s32 step = diff;

@@ -627,3 +627,4 @@ void effKissDisp2(CameraId camId, void* param) {
 		GXTexCoord2f32(float_0_8042140c, float_1_80421404);
 	}
 }
+#pragma opt_common_subs reset

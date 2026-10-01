@@ -27,7 +27,6 @@ extern const f32 float_6p2832_8041e558;
 extern const f32 float_360_8041e55c;
 extern const f32 float_0p5_8041e538;
 extern const f32 float_0_8041e53c;
-extern u32 lbl_80398960[];
 
 // .sdata2
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -227,6 +226,7 @@ void envDisp2(CameraId camId, void *param) {
             case 0:
                 break;
 #ifdef MUST_MATCH
+            // retail addresses envGlare0..3 as offsets from lbl_80398960 (0x40/0xdc/0x138/0x2f4)
             case 1:
                 envGlare((EnvironmentGlare*)(base + 0x40));
                 break;
@@ -1405,6 +1405,7 @@ void envDisp_FF(void) {
         }
     }
 }
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
 
@@ -1456,6 +1457,8 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
     }
 }
 
+// envGlare was matched with opt_lifetimes off (needed: its register colouring regresses with the default pass)
+#pragma opt_lifetimes off
 // NONMATCHING (99.39%): all instructions match; the remaining diffs are callee-saved register
 // colours in the TEV setup/inner loop (target r19-r31 vs ours) and the pooled u16->f32 double
 // (local @528 vs double_to_int_mask_802f93a8, which this unit does not define).
@@ -1594,6 +1597,7 @@ void envGlare(EnvironmentGlare* glare) {
         GXTexCoord2u16(0, 1);
     }
 }
+#pragma opt_lifetimes reset
 
 void envBlurOff(void) {
     EnvironmentWork* wp = envGetWork();

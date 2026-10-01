@@ -411,6 +411,7 @@ void _rule_disp(void) {
 	FontDrawStart();
 	FontDrawMessage((s32)x, (s32)float_120_8041c2a8 - 29, buf);
 }
+#pragma opt_propagation reset
 
 void btlseqEnd(BattleWork* wp) {
 

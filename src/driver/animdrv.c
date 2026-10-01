@@ -61,8 +61,6 @@ extern const f32 float_0p5_80419a64;
 extern const f32 float_neg1_80419a8c;
 extern const f32 float_neg2_80419ab8;
 extern const f32 float_neg3_80419abc;
-extern const f32 float_2_80419a84;
-extern const f32 float_deg2rad_80419a4c;
 u32 zero_80419a50 = 0;
 
 
@@ -971,9 +969,7 @@ void pushGXModelMtx_TransformNode__(void* node) {
 }
 
 // pushGXModelMtx_JointNode__
-// Matches retail. The two `== 1.0f` tests below are deliberate: retail's block layout
-// branches to the join when z/scaleZ is *not* 1, so the last test has to be inverted to
-// reproduce its branch. The natural condition is the #else. The node fields are read as
+// Matches retail. The node fields are read as
 // truthiness because that is the only form MWCC emits with the value first in `fcmpu`
 // (`fcmpu f5, f0`, not `fcmpu f0, f5`), which retail uses for the zero tests.
 void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
@@ -990,12 +986,8 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
         PSMTXTrans(mTrans, transX, transY, transZ);
         flags |= 1;
     }
-#ifdef MUST_MATCH
-    // Retail branches to the join when z != 1 (natural condition under #else).
+    // retail tests z == 1 here (likely an original bug, kept)
     if (x != 1.0f || y != 1.0f || z == 1.0f) {
-#else
-    if (x != 1.0f || y != 1.0f || z != 1.0f) {
-#endif
         if (x && y && z) {
             PSMTXScale(mJointScale, 1.0f / x, 1.0f / y, 1.0f / z);
         } else {
@@ -1003,12 +995,8 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
         }
         flags |= 2;
     }
-#ifdef MUST_MATCH
-    // Same inversion for the node's own scale.
+    // retail tests scaleZ == 1 here (likely an original bug, kept)
     if (scaleX != 1.0f || scaleY != 1.0f || scaleZ == 1.0f) {
-#else
-    if (scaleX != 1.0f || scaleY != 1.0f || scaleZ != 1.0f) {
-#endif
         PSMTXScale(mScale, scaleX, scaleY, scaleZ);
         flags |= 4;
     }

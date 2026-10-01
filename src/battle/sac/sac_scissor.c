@@ -271,7 +271,9 @@ void scissor_disp_control(CameraId cameraId, void* param) {
     f32* points = work->field_0x114;
     GXColor color;
     GXColor hsv;
+#ifdef MUST_MATCH
     GXColor hsvTmp;
+#endif
     s32 i;
 
     work->field_0x10++;
@@ -301,8 +303,12 @@ void scissor_disp_control(CameraId cameraId, void* param) {
     for (i = 0; i < work->field_0x9C - 1; i++) {
         hsv = *(GXColor*)&dat_8042171c;
         hsv.r = (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1);
+#ifdef MUST_MATCH
         hsvTmp = hsv;
         *(u32*)&color = HSV2RGB(&hsvTmp);
+#else
+        *(u32*)&color = HSV2RGB(&hsv);
+#endif
         GXSetChanMatColor(GX_COLOR0A0, color);
         GXBegin(GX_LINES, GX_VTXFMT0, 2);
         GXPosition3f32(points[i * 2], points[i * 2 + 1], float_0_80421734);
@@ -721,13 +727,19 @@ void star_disp2D_sub(s32 index, s32 alpha) {
     f32 z;
 
     if (work->state >= 6) {
+#ifdef MUST_MATCH
         s32 step;
         f32 start;
+#endif
         work->field_0x120++;
         if (work->field_0x120 > 0x1E) {
             work->field_0x120 = 0x1E;
         }
+#ifdef MUST_MATCH
         alpha = (s32)intplGetValue(0, (step = work->field_0x120, step), 0x1E, (start = (f32)(u8)alpha, start), float_0_80421734);
+#else
+        alpha = (s32)intplGetValue(0, work->field_0x120, 0x1E, (f32)(u8)alpha, float_0_80421734);
+#endif
     }
     *(u32*)&color = dat_80421718;
     color.a = alpha;
