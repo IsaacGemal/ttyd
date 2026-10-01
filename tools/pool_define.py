@@ -99,6 +99,7 @@ found = [(m.start(), m.end(), ("volatile " if "volatile" in m.group(1) else "") 
          if m.group(3) in defs and "const" in m.group(1) and not m.group(3).startswith("double_to_int")
          and referenced(m.group(3), m.end(), m.start())]  # the compiler pools its own conversion constants
 found = found + [f for f in hdr_found if f[3] not in {x[3] for x in found}]
+found = [f for f in found if not re.search(rf"^(?:const |volatile |MATCH_VOLATILE |SDATA2_CONST )*\w+ {re.escape(f[3])}(?:\[\d*\])? = ", text, re.M)]  # already defined here
 if not found:
     sys.exit(f"{unit}: no extern pool constants to define")
 order = {name: i for i, (_, _, _, _, _, _, _, _) in enumerate(objs) for name in [objs[i][3]]}
