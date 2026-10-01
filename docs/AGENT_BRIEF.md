@@ -164,6 +164,19 @@ When the instructions match but the stack slots, register allocation or scheduli
   `f32 zero = 0.0f; if (f30 == zero)` (eff_lensflare_n64). The literal is still pooled in its place; the local makes
   the compiler hoist the load the way the target does. Try it when the pool is already right and only the FP loads
   or one callee-saved register differ.
+- **Arguments are evaluated in the order of the declared parameters, not of the registers.** A callee that takes both
+  integer and float arguments loads them from the call's parameter order, so `f32 f(s32 a, s32 b, f32 x)` loads `a`, `b`,
+  then `x`, while `f32 f(s32 a, f32 x, s32 b)` loads `a`, `x`, `b`: the registers (`r3`, `r4`, `f1`) are the same either
+  way, so the assembly never shows the declared order, only the order of the loads before the call. When a near-miss
+  differs only in where the loads before one callee sit, move the float parameters in the declaration: `intplGetValue`
+  is `(mode, start, end, currStep, steps)` (not `(mode, currStep, steps, start, end)`), which fixed 18 functions in one
+  header change; callers keep writing the old order through a macro in `include/system.h`. Look for the same callee
+  across several near-misses before fixing the call sites one by one.
+- **A cast that only exists to avoid an `extsb` or a signed/unsigned compare means the header type is wrong.** A call
+  followed by `extsb r3, r3` that the target does not have means the function does not return `s8` (and the field it
+  returns is probably `u8`); `cmplwi r3, 0` where the target has `cmpwi r3, 0` means it does not return `u32`.
+  `(s32)BattlePadCheckRepeat(...)` and `((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(...)` were such
+  casts; fix the declaration in the header (and the definition) once instead of casting at every call.
 
 ## Partial functions
 
