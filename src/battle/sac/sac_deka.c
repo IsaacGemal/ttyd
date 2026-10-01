@@ -270,10 +270,22 @@ s32 weaponGetPower_Deka(void) {
 }
 
 // .text:0x4BC | 0x8024327C | size: 0x354
-// NONMATCHING (98.83%): scan outer counter `i` and the pre-compare `tf = times[i]`/inlined `beatPeriod - float_20` each fix a batch of colouring; float_30/20 still come out swapped in f30/f31, the first loop's scratch FPRs are one low (beatPeriod f4 vs f5), scan tm/j/tj are r27/r6/r7 vs r29/r7/r6, and the final `- 7 - 2` uses f1/f0 vs f2/f1.
+// Register allocation only. Loop 1 computes its scratch FPRs one slot low (beatPeriod f4
+// vs f5). The final `- 7 - 2` holds 2 in f0 and 70 in f1 where the original holds 2 in f1
+// and 70 in f0 (same instructions, swapped f-registers). The int->float magic is the
+// compiler's local @668 instead of double_to_int_80300630 (objdiff ignores that reloc).
+// The MUST_MATCH block below is what gets this far: it hoists the two clamp bounds as
+// callee-saved locals (30 in f30, 20 in f31) and gives the scan loop's tm/tj function
+// scope, which reproduces the original's registers.
+// NONMATCHING (99.41%): loop-1 scratch FPRs one low, and the final `- 7 - 2` has 2/70 in f0/f1.
 void create_timing(void) {
     DekaWork* p = get_ptr();
     s32 idx[8];
+#ifdef MUST_MATCH
+    // These take r29/r6 like the original; declared before ti so the allocator agrees.
+    DekaTiming* tm;
+    DekaTiming* tj;
+#endif
     DekaTiming* ti;
     f32 times[8];
     f32 tf;
@@ -281,17 +293,36 @@ void create_timing(void) {
     s32 tidx;
     s32 tries;
     f32 f;
+#ifdef MUST_MATCH
+    // Declared in this order and initialised 30-then-20 they land in f30/f31.
+    f32 c20;
+    f32 c30;
+#endif
 
     memcpy(p->timingCopy, p->timing, 0x1C0);
 
 restart:
     n = p->beatCount + 3;
+#ifdef MUST_MATCH
+    c30 = float_30_80421e70;
+    c20 = float_20_80421e74;
+#endif
     for (i = 0; i < 8; i++) {
         ti = &p->timing[i];
         ti->flag = 0;
         if (i < n) {
+#ifdef MUST_MATCH
+            f32 fr;
+            f32 d;
+#endif
             ti->unk08 = 1;
+#ifdef MUST_MATCH
+            fr = (f32)rand();
+            d = (p->beatPeriod - float_40_80421e68);
+            f = d * fr / float_32767_80421e6c;
+#else
             f = (p->beatPeriod - float_40_80421e68) * (f32)rand() / float_32767_80421e6c;
+#endif
             if (f <= float_30_80421e70) {
                 f = float_30_80421e70;
             }
@@ -308,9 +339,15 @@ restart:
     tries = 0;
 scan:
     for (i = 0; i < n; i++) {
+#ifdef MUST_MATCH
+        tm = &p->timing[i];
+#else
         DekaTiming* tm = &p->timing[i];
+#endif
         for (j = 0; j < n; j++) {
+#ifndef MUST_MATCH
             DekaTiming* tj;
+#endif
             if (i == j) {
                 continue;
             }
@@ -320,12 +357,21 @@ scan:
             }
             if (fabs(tj->time - tm->time) <= double_15p75_80300628) {
                 f = p->beatPeriod * (f32)rand() / float_32767_80421e6c;
+#ifdef MUST_MATCH
+                if (f <= c30) {
+                    f = c30;
+                }
+                if (f >= p->beatPeriod - c20) {
+                    f = p->beatPeriod - c20;
+                }
+#else
                 if (f <= float_30_80421e70) {
                     f = float_30_80421e70;
                 }
                 if (f >= p->beatPeriod - float_20_80421e74) {
                     f = p->beatPeriod - float_20_80421e74;
                 }
+#endif
                 tm->time = f;
                 if (++tries == 100) {
                     tm->state = 0;
@@ -355,7 +401,9 @@ scan:
         }
     }
 
-    p->timing[idx[n - 1]].time = p->beatPeriod - float_7_80421e78 - float_2_80421e7c;
+    f = p->beatPeriod - float_7_80421e78;
+    f = f - float_2_80421e7c;
+    p->timing[idx[n - 1]].time = f;
     if (p->timing[idx[0]].time > float_70_80421e80) {
         p->timing[idx[0]].time = float_70_80421e80;
     }

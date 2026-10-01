@@ -44,9 +44,9 @@ const char str_802FDBEC[] = "StarPoint";
 // opt_lifetimes off: the default lifetime analysis schedules the seed/temp FPRs differently
 // (0.00761 lands in f4 vs f2); this recovers the target's instruction scheduling.
 #pragma opt_lifetimes off
-// NONMATCHING (96.83%): loop constants/seed FPRs now match; only the int->float magic is f31
-// instead of f26, rotating the six top-block values (target cTwo..c0=f31..f27,magic=f26; ours
-// magic=f31,cTwo..c0=f30..f26). Pooled @N double vs double_to_int does not score.
+// NONMATCHING (96.88%): loop constants/seed FPRs match; only the int->float magic is f31 instead of
+// f26, rotating the six top-block values (target cTwo..c0=f31..f27,magic=f26; ours
+// magic=f31,cTwo..c0=f30..f26). Assigning the outer five in the target's load order is +0.05%.
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 lowAlpha;
     EffectEntry* entry;
@@ -67,11 +67,11 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     data->field_0x04 = 60;
     data->field_0x08 = 0;
 
-    cTwo = float_2_804209f0;
-    cPi = float_3p1416_804209e4;
-    c360 = float_360_804209d4;
-    c6 = float_6p2832_804209d0;
     c0 = float_0_804209cc;
+    c6 = float_6p2832_804209d0;
+    c360 = float_360_804209d4;
+    cPi = float_3p1416_804209e4;
+    cTwo = float_2_804209f0;
 
     lowAlpha = 4;
     i = 1;

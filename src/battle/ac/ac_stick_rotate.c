@@ -135,14 +135,18 @@ void actionCommandDisp2(f32 x, f32 y) {
 #pragma opt_propagation reset
 #pragma opt_lifetimes reset
 
-// The target keeps the work-area base `work + 0x1F4C` in r5 (`addi r5, r4, 0x1f4c`) and
-// addresses the fields off it; MWCC folds every derived base into the BattleWork r4
-// (`lbz r3, 0x1f4e(r4)`), so that one instruction and its six displacements differ. This is the
-// same register-allocation wall as battleAcMain_CraneTiming / battleAcDisp_LstRcKeep.
-// NONMATCHING (99.08%): work-area base folded into BattleWork; everything else matches.
+// The target keeps the work-area base `work + 0x1F4C` in r5 (`addi r5, r4, 0x1f4c`). The
+// `GET_ICON_ID` function-pointer cast (see the macro above) is what makes MWCC hold that base:
+// with a plain `_get_icon_id(sr->field_0x02)` call it rematerialises the base per case
+// (`lbz r3, 0x1f4e(r4)`) instead of keeping it live in r5. Same workaround as actionCommandDisp2.
+// opt_lifetimes/opt_propagation: same workaround as actionCommandDisp2, needed to keep the
+// StickRotateWork base (work+0x1F4C) in its own register instead of folding it into BattleWork.
+#pragma opt_lifetimes off // needed: the default lifetime pass folds the StickRotateWork base into the BattleWork base
+#pragma opt_propagation off // needed: with propagation on the same fold happens
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
-    StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
+    BattleActions* ac = &work->actionCommands;
+    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
     STICK_VEC_BASE
 
     switch (work->actionCommands.mAcState) {
@@ -158,7 +162,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec v = STICK_ZERO_VEC(1);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
+            iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
             break;
         }
         case 0x3E9:
@@ -168,20 +172,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     Vec v = STICK_ZERO_VEC(2);
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
-                    iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02),
+                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02),
                                float_1_804204d8);
                 } else {
                     Vec v = STICK_ZERO_VEC(3);
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
-                    iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x01),
+                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x01),
                                float_1_804204d8);
                 }
             } else {
                 Vec v = STICK_ZERO_VEC(4);
                 v.x = float_neg200_804204d0 + x;
                 v.y = float_70_804204d4 + y;
-                iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
+                iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
             }
             break;
         case 0x3EA:

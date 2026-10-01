@@ -157,7 +157,6 @@ USER_FUNC(evt_cam3d_evt_set_at) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.76%): 2 instructions differ, 3 missing, 3 extra, plus register differences.
 USER_FUNC(evt_cam3d_evt_set) {
     s32* args = event->args;
     f32 x = evtGetValue(event, args[0]);
@@ -169,16 +168,9 @@ USER_FUNC(evt_cam3d_evt_set) {
     s32 time = evtGetValue(event, args[6]);
     s32 curve = evtGetValue(event, args[7]);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec sp = makeVecByValue(x, y, z);
+    Vec sa = makeVecByValue2(ax, ay, az);
 
-    Vec sp = (Vec){ 0.0f, 0.0f, 0.0f };
-    Vec sa = (Vec){ 0.0f, 0.0f, 0.0f };
-
-    sp.x = x;
-    sp.y = y;
-    sp.z = z;
-    sa.x = ax;
-    sa.y = ay;
-    sa.z = az;
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;
     cam->storedPos = sp;

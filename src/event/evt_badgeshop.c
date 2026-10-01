@@ -351,13 +351,15 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 }
 
-// NONMATCHING (98.61%): bound check and clamp now match; the target reuses r6 for
-// `bound = index / 4` (addze r6), we get r7 so mask/shift move to r8/r9.
+// NONMATCHING (99.02%): target reuses r6 for `index / 4` (addze r6); a separate
+// `word` temp gets r9 (r6 is held by `bound`), so mask/shift land right but the
+// load/store index and val sign-extend differ; inline forms move the division late.
 s32 badgeShop_set(u8* table, s16 id, s16 val) {
 	s32 bound;
 	s16 index;
-	s32 shift;
 	u8 mask;
+	s32 shift;
+	s32 word;
 
 	if (table == bdsw->bottakuru_table || table == bdsw->bteresa_table) {
 		bound = KEY_ITEM_MIN;
@@ -385,14 +387,14 @@ s32 badgeShop_set(u8* table, s16 id, s16 val) {
 			shift = 6;
 			break;
 	}
-	bound = index / 4;
+	word = index / 4;
 	if (val < 0) {
 		val = 0;
 	}
 	else if (val > 3) {
 		val = 3;
 	}
-	table[bound] = (u8)((u8)(mask & table[bound]) + (u8)(val << shift));
+	table[word] = (u8)((u8)(mask & table[word]) + (u8)(val << shift));
 	return val;
 }
 

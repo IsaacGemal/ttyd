@@ -26,10 +26,13 @@ typedef struct PoseSoundEntry {
     u16 flags;                                              // 0x12
 } PoseSoundEntry;
 
-// NONMATCHING (98.40%): the args pointer is loaded into r5 instead of r6 and the transID result goes through r0
-// (one extra move); the rest, including the seven-entry jump table, matches.
+// Reusing one variable for both evtGetValue and BattleTransID (`id = evtGetValue(...);
+// id = BattleTransID(event, id);`) removed the extra `mr r0` the two-variable form emitted.
+// What still differs is the pool: the string pool base is `r6`/`...rodata.0` (original `r5`/`str_802F6F38`),
+// so args goes through r5 not r6, the six strings sit at +0x8.. not +0x4F8.., and the jump-table base is
+// `@NNN` not `jumptable_8037EBF4`; those bytes belong to the unit's not-yet-written functions.
+// NONMATCHING (99.70%): only the pool base register/symbol and the pool offsets still differ.
 USER_FUNC(yoshi_original_color_anim_set) {
-    s32 val;
     s32 id;
     const char* name;
     BattleWork* work;
@@ -38,8 +41,8 @@ USER_FUNC(yoshi_original_color_anim_set) {
 
     args = event->args;
     work = _battleWorkPointer;
-    val = evtGetValue(event, args[0]);
-    id = BattleTransID(event, val);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     BattleGetUnitPtr(work, id);
     switch (pouchGetPartyColor(4)) {
     case 1:

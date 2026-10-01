@@ -136,22 +136,24 @@ const char str_8041D454[4] = "W_1";
 const char str_8041D458[6] = "M_S_1";
 const char str_8041D460[6] = "M_W_1";
 
-// NONMATCHING (97.09%): every instruction matches; MWCC assigns the fp temporaries f1/f2/f3 for the
-// constants and f4 for the old 0x3F4 value, the target uses f2/f3/f4 for the constants and f1 for the value.
-// 98 B
+// 136 B
 void winBadgeMain2(WindowWork* work) {
     WW_F32(work, 0x3FC) = float_184_8041d418 * (f32)WW_S32(work, 0x3EC);
-    WW_F32(work, 0x3F4) = float_0p25_8041d41c * (WW_F32(work, 0x3FC) - WW_F32(work, 0x3F4)) + WW_F32(work, 0x3F4);
+    WW_F32(work, 0x3F4) += (WW_F32(work, 0x3FC) - WW_F32(work, 0x3F4)) / 4.0f;
     WW_F32(work, 0x400) = float_184_8041d418 * (f32)WW_S32(work, 0x3F0);
-    WW_F32(work, 0x3F8) = float_0p25_8041d41c * (WW_F32(work, 0x400) - WW_F32(work, 0x3F8)) + WW_F32(work, 0x3F8);
+    WW_F32(work, 0x3F8) += (WW_F32(work, 0x400) - WW_F32(work, 0x3F8)) / 4.0f;
 }
 
 extern ItemData itemDataTable[];
 
 // 1752 B
-// NONMATCHING (98.42%): all logic, constants and call arguments match. Remaining diffs are register
-// allocation (sel lands in r27, the target keeps it in r28) and the `add` operand order (idx+work vs
-// work+idx), plus the scratch register in the availableBP >= bp_cost comparison.
+// The `add` operand order (idx+work vs work+idx) is fixed by indexing the
+// 0x3E4/0x3EC/0x404/0x40C arrays with `((s32*)((u8*)work + OFF))[idx]` instead of WW_S32. Remaining
+// diffs are all register allocation: `sel` lands in r27 where the target keeps it in r28 (which also
+// swaps the `work + sel*4` temporary the other way, r28 vs r27), the scratch registers in the
+// availableBP >= bp_cost comparison are r4/r0 swapped, and MWCC schedules the `mr r3, r31` for the two
+// winSortEntry calls after the first `lfs` where the target hoists it above the `cmpwi`.
+// NONMATCHING (98.74%): register allocation (sel r27 vs r28) and one schedule slot.
 s32 winBadgeMain(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
     s32 sel;
@@ -213,7 +215,7 @@ s32 winBadgeMain(WindowWork* work) {
 
             if (work->buttonTrg & 0x100) {
                 if (sel == 0) {
-                    s32 idx = WW_S32(work, sel * 4 + 0x3E4);
+                    s32 idx = ((s32*)((u8*)work + 0x3E4))[sel];
                     if (pouchEquipCheckBadgeIndex(idx)) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
@@ -230,18 +232,18 @@ s32 winBadgeMain(WindowWork* work) {
                     pouchRevisePartyParam();
                     mario_change(work, pouchHaveBadge(idx));
                 } else {
-                    s32 entryIdx = WW_S32(work, sel * 4 + 0x3E4);
-                    s32 idx = WW_S32(work, 0x404 + entryIdx * 0xC + 4);
-                    if (WW_S32(work, 0x404 + entryIdx * 0xC) != 0) {
+                    s32 entryIdx = ((s32*)((u8*)work + 0x3E4))[sel];
+                    s32 idx = ((s32*)((u8*)work))[entryIdx * 3 + 0x102];
+                    if (((s32*)((u8*)work))[entryIdx * 3 + 0x101] != 0) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
-                        WW_S32(work, 0x404 + WW_S32(work, sel * 4 + 0x3E4) * 0xC) = 0;
+                        ((s32*)((u8*)work + 0x404))[((s32*)((u8*)work + 0x3E4))[sel] * 3] = 0;
                     } else {
                         s32 badge = pouchHaveBadge(idx);
                         if (pouch->availableBP >= itemDataTable[badge].bp_cost) {
                             psndSFXOn((const char*)0x20038);
                             pouchEquipBadgeIndex(idx);
-                            WW_S32(work, 0x404 + WW_S32(work, sel * 4 + 0x3E4) * 0xC) = 1;
+                            ((s32*)((u8*)work + 0x404))[((s32*)((u8*)work + 0x3E4))[sel] * 3] = 1;
                         }
                     }
                     pouchReviseMarioParam();
@@ -254,24 +256,24 @@ s32 winBadgeMain(WindowWork* work) {
             } else if (work->buttonTrg & 0x1000) {
                 return -2;
             } else if (work->buttonRep & 0x40) {
-                WW_S32(work, sel * 4 + 0x3EC) = WW_S32(work, sel * 4 + 0x3EC) - 1;
-                if (WW_S32(work, sel * 4 + 0x3EC) < 0) {
-                    WW_S32(work, sel * 4 + 0x3EC) = 0;
+                ((s32*)((u8*)work + 0x3EC))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] - 1;
+                if (((s32*)((u8*)work + 0x3EC))[sel] < 0) {
+                    ((s32*)((u8*)work + 0x3EC))[sel] = 0;
                 }
-                WW_S32(work, sel * 4 + 0x3E4) = WW_S32(work, sel * 4 + 0x3EC) * 8;
+                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
                 psndSFXOn((const char*)0x20035);
             } else if (work->buttonRep & 0x20) {
-                WW_S32(work, sel * 4 + 0x3EC) = WW_S32(work, sel * 4 + 0x3EC) + 1;
-                if (WW_S32(work, sel * 4 + 0x3EC) >= rows) {
-                    WW_S32(work, sel * 4 + 0x3EC) = rows - 1;
+                ((s32*)((u8*)work + 0x3EC))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] + 1;
+                if (((s32*)((u8*)work + 0x3EC))[sel] >= rows) {
+                    ((s32*)((u8*)work + 0x3EC))[sel] = rows - 1;
                 }
-                WW_S32(work, sel * 4 + 0x3E4) = WW_S32(work, sel * 4 + 0x3EC) * 8;
+                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3EC))[sel] * 8;
                 psndSFXOn((const char*)0x20035);
             } else if (work->dirRep & 0x1000) {
-                WW_S32(work, sel * 4 + 0x3E4) = WW_S32(work, sel * 4 + 0x3E4) - 1;
+                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3E4))[sel] - 1;
                 psndSFXOn((const char*)0x20035);
             } else if (work->dirRep & 0x2000) {
-                WW_S32(work, sel * 4 + 0x3E4) = WW_S32(work, sel * 4 + 0x3E4) + 1;
+                ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3E4))[sel] + 1;
                 psndSFXOn((const char*)0x20035);
             } else if (work->buttonTrg & 0x10) {
                 s32 idx = 3;
@@ -284,21 +286,21 @@ s32 winBadgeMain(WindowWork* work) {
                 WW_S32(work, 0x3DC) = 1000;
             }
 
-            if (WW_S32(work, sel * 4 + 0x3E4) < 0) {
-                WW_S32(work, sel * 4 + 0x3E4) = count - 1;
+            if (((s32*)((u8*)work + 0x3E4))[sel] < 0) {
+                ((s32*)((u8*)work + 0x3E4))[sel] = count - 1;
             }
-            if (WW_S32(work, sel * 4 + 0x3E4) >= count) {
-                WW_S32(work, sel * 4 + 0x3E4) = 0;
+            if (((s32*)((u8*)work + 0x3E4))[sel] >= count) {
+                ((s32*)((u8*)work + 0x3E4))[sel] = 0;
             }
-            WW_S32(work, sel * 4 + 0x3EC) = WW_S32(work, sel * 4 + 0x3E4) / 8;
+            ((s32*)((u8*)work + 0x3EC))[sel] = ((s32*)((u8*)work + 0x3E4))[sel] / 8;
             WW_F32(work, 0x158) = float_neg110_8041d428;
-            WW_F32(work, 0x15C) = (f32)(0x6E - (WW_S32(work, sel * 4 + 0x3E4) % 8) * 0x17);
+            WW_F32(work, 0x15C) = (f32)(0x6E - (((s32*)((u8*)work + 0x3E4))[sel] % 8) * 0x17);
             {
                 s32 msgId;
                 if (WW_S32(work, 0x3E0) == 0) {
-                    msgId = pouchHaveBadge(WW_S32(work, sel * 4 + 0x3E4));
+                    msgId = pouchHaveBadge(((s32*)((u8*)work + 0x3E4))[sel]);
                 } else {
-                    msgId = WW_S32(work, 0x40C + WW_S32(work, sel * 4 + 0x3E4) * 0xC);
+                    msgId = ((s32*)((u8*)work + 0x40C))[((s32*)((u8*)work + 0x3E4))[sel] * 3];
                 }
                 winMsgEntry(work, msgId, itemDataTable[msgId].menu_description, 0);
             }

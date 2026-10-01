@@ -65,11 +65,15 @@ typedef struct WinDt {
 // loadMain reaches the three window tables from one base (the object before them, lbl_80349DE8, plus 0x40/0x13c/0x200),
 // which is what the original's code does
 #define WDT_TABLE ((WinDt*)(base2 + 0x40))
-#define WDT(i)  (((WinDt*)(base2 + 0x40))[i])
-#define WDT2(i) (((WinDt*)(base2 + 0x13c))[i])
-#define WDT3(i) (((WinDt*)(base2 + 0x200))[i])
+#define WDT2_TABLE ((WinDt*)(base2 + 0x13c))
+#define WDT3_TABLE ((WinDt*)(base2 + 0x200))
+#define WDT(i)  (wd = WDT_TABLE, wd[i])
+#define WDT2(i) (wd = WDT2_TABLE, wd[i])
+#define WDT3(i) (wd = WDT3_TABLE, wd[i])
 #else
 #define WDT_TABLE ((WinDt*)win_dt)
+#define WDT2_TABLE ((WinDt*)win_dt2)
+#define WDT3_TABLE ((WinDt*)win_dt3)
 #define WDT(i)  (((WinDt*)win_dt)[i])
 #define WDT2(i) (((WinDt*)win_dt2)[i])
 #define WDT3(i) (((WinDt*)win_dt3)[i])
@@ -473,9 +477,12 @@ s32 unk_800f2398(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (96.25%): full reconstruction; remaining diffs are base+offset materialisation for
-// win_dt/win_dt2/win_dt3 accesses (compiler folds 0x40/0x13c/0x200 into the load displacement) and
-// the s32->f32 magic double (anonymous @NNN instead of double_to_int_802ed9c8).
+// Materialise win_dt/win_dt2/win_dt3 as base2+0x40/0x13c/0x200 with a separate addi, as the original does,
+// instead of letting the compiler fold those displacements into the load.
+#pragma opt_propagation off
+// NONMATCHING (98.49%): full reconstruction. Remaining diffs are register colouring (sel in r30 vs the
+// original's r31, wp/wd in r4/r3 vs r3/r4) and the s32->f32 magic double, where the compiler emits an
+// anonymous literal instead of the existing double_to_int_802ed9c8 object (folding float_4/float_30 too).
 void loadMain(SequenceWork* workArg) {
 #ifdef MUST_MATCH
     const char* base2 = (const char*)&lbl_80349DE8;
@@ -484,8 +491,8 @@ void loadMain(SequenceWork* workArg) {
     u32 btn = keyGetButtonTrg(0);
     u32 rep = keyGetButtonRep(0);
     u32 dir = keyGetDirRep(0);
-    s32 code = cardGetCode();
     s32 sel;
+    s32 code = cardGetCode();
     WinDt* wd;
     MarioWork* mario;
     s32 i;
@@ -651,8 +658,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0xa:
-            color = *(GXColor*)&dat_8041bd6c;
-            fadeEntry(0x1b, 0, color);
+            fadeEntry(0x1b, 0, *(GXColor*)&dat_8041bd6c);
             wp->field_0x18++;
             break;
 
@@ -681,8 +687,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x16:
-            color = *(GXColor*)&dat_8041bd70;
-            fadeEntry(0x1b, 0, color);
+            fadeEntry(0x1b, 0, *(GXColor*)&dat_8041bd70);
             psndBGMOff_f_d(0x200, 0x7d0, 0);
             wp->field_0x18++;
             break;
@@ -703,8 +708,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x1e:
-            color = *(GXColor*)&dat_8041bd74;
-            fadeEntry(0x1b, 0, color);
+            fadeEntry(0x1b, 0, *(GXColor*)&dat_8041bd74);
             wp->field_0x18++;
             break;
 
@@ -717,16 +721,14 @@ void loadMain(SequenceWork* workArg) {
         case 0x20:
             if (nameEntPrepare()) {
                 nameEntOn(0);
-                color = *(GXColor*)&dat_8041bd78;
-                fadeEntry(0x1c, 0, color);
+                fadeEntry(0x1c, 0, *(GXColor*)&dat_8041bd78);
                 wp->field_0x18++;
             }
             break;
 
         case 0x21:
             if (fadeIsFinish() && !nameEntWait()) {
-                color = *(GXColor*)&dat_8041bd7c;
-                fadeEntry(0x18, 0, color);
+                fadeEntry(0x18, 0, *(GXColor*)&dat_8041bd7c);
                 if (!nameEntIsCancel()) {
                     psndBGMOff_f_d(0x200, 0xbb8, 0);
                 }
@@ -738,8 +740,7 @@ void loadMain(SequenceWork* workArg) {
             if (fadeIsFinish()) {
                 nameEntOff();
                 if (nameEntIsCancel()) {
-                    color = *(GXColor*)&dat_8041bd80;
-                    fadeEntry(0x1c, 0, color);
+                    fadeEntry(0x1c, 0, *(GXColor*)&dat_8041bd80);
                     wp->field_0x18 = 1;
                 } else {
                     strcpy((char*)gp->field_0x11BC, nameEntGetName());
@@ -809,8 +810,9 @@ void loadMain(SequenceWork* workArg) {
                     psndSFXOn((const char*)9);
                 }
             }
-            wp->field_0x10 = WDT2(wp->field_0x20).x + WDT2(wp->field_0x20).z;
-            wp->field_0x14 = WDT2(wp->field_0x20).y + WDT2(wp->field_0x20).w;
+            wd = WDT2_TABLE;
+            wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
+            wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
             break;
 
         case 0x29:
@@ -872,8 +874,9 @@ void loadMain(SequenceWork* workArg) {
                     psndSFXOn((const char*)9);
                 }
             }
-            wp->field_0x10 = WDT2(wp->field_0x20).x + WDT2(wp->field_0x20).z;
-            wp->field_0x14 = WDT2(wp->field_0x20).y + WDT2(wp->field_0x20).w;
+            wd = WDT2_TABLE;
+            wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
+            wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
             break;
 
         case 0x33:
@@ -882,19 +885,19 @@ void loadMain(SequenceWork* workArg) {
 
             if (dir & 0x1000) {
                 do {
-                    wp->field_0x20 = WDT3(wp->field_0x20).b18;
+                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x18]; }
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (dir & 0x2000) {
                 do {
-                    wp->field_0x20 = WDT3(wp->field_0x20).b19;
+                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x19]; }
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (dir & 0x4000) {
                 do {
-                    wp->field_0x20 = WDT3(wp->field_0x20).b1a;
+                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x1a]; }
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (dir & 0x8000) {
                 do {
-                    wp->field_0x20 = WDT3(wp->field_0x20).b1b;
+                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x1b]; }
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (btn & 0x100) {
                 wp->field_0x18 = 0x34;
@@ -911,8 +914,9 @@ void loadMain(SequenceWork* workArg) {
                 }
             }
             wp->field_0x34 = wp->field_0x20;
-            wp->field_0x10 = WDT2(wp->field_0x20).x + WDT2(wp->field_0x20).z;
-            wp->field_0x14 = WDT2(wp->field_0x20).y + WDT2(wp->field_0x20).w;
+            wd = WDT2_TABLE;
+            wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
+            wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
             break;
 
         case 0x34:
@@ -1050,3 +1054,4 @@ void loadMain(SequenceWork* workArg) {
     wp->field_0x8 += fabsf(float_2_8041be70 * (f32)sin((f32)gp->retraceCount * float_0p125_8041be80));
     dispEntry(4, float_1000_8041be84, 0, (DispCallback)loadDraw, NULL);
 }
+#pragma opt_propagation reset

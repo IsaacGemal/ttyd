@@ -339,13 +339,13 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
 
 // Keep scissor_damage_sub2 out of line: scissor_damage_sub calls (bl) it in the original.
 #pragma dont_inline on
-// The instructions are identical; only the register colouring differs.  Naming the
-// cross-product temporaries reproduces the original's cy=f7, cx=f8 and the whole
-// condition (zero=f1), but MWCC still colours the loop-invariants and loop-temporaries
-// in the opposite group order (ours: sub=f1, ny=f2, min=f3, zero=f4, py=f5; original:
-// sub=f2, py=f3, ny=f4, min=f5, zero=f1, px=f6), and swaps the GPRs for count
+// The instructions are identical; only the register colouring differs.  Assigning the
+// compare constant with the literal 0.0f puts it in f1 like the original (the
+// float_0_80421734 extern version lands in f4); the pool symbol is not scored.  MWCC
+// still rotates the loop values (ours: zero=f1, sub=f2, ny=f3, min=f4, py=f5, px=f6;
+// original: zero=f1, sub=f2, py=f3, ny=f4, min=f5, px=f6) and swaps the GPRs for count
 // (original r9, ours r10) and the &tri[j] temp.
-// NONMATCHING (98.24%): register colouring only; see REPORT.md.
+// NONMATCHING (99.08%): register colouring only; see REPORT.md.
 s32 scissor_damage_sub2(Vec* point) {
     ScissorWork* work = GetScissorPtr();
     f32 cross[3];
@@ -366,7 +366,7 @@ s32 scissor_damage_sub2(Vec* point) {
 
     px = point->x;
     py = point->y;
-    zero = float_0_80421734;
+    zero = 0.0f;
     for (i = 0; i < count; i++) {
         f32* tri = (f32*)((u8*)work->field_0x118 + i * 0x18);
         for (j = 0; j < 3; j++) {
@@ -443,19 +443,19 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
     }
 }
 
-// NONMATCHING (99.39%): same instructions; only register numbers differ: battleWork/count are
-// r30/r24 here but r24/r30 in the original, and damage/the loop's unit+i are r25/r21 here but
-// r21/r25 there. Splitting i into a block-local variable fixed the rest of the allocation.
+// NONMATCHING (99.63%): same instructions; only two register colours differ: damage is r25 here
+// but r21 in the original, and the loop's unit/i are r21 here but r25 there. Declaring battleWork
+// before mario and count after out fixed the other swap; the damage/unit+i pair did not move.
 s32 scissor_damage(EventEntry* event, s32 unused) {
     ScissorWork* work;
     s32 damage;
     s32 audienceNum;
-    s32 count;
+    BattleWork* battleWork;
     BattleUnit* mario;
     s32* args;
     s32 unitIndex;
     s32 out;
-    BattleWork* battleWork;
+    s32 count;
     s32 allHit;
 
     args = event->args;

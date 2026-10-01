@@ -20,22 +20,16 @@ const f32 float_1_8041c014 = 1.0f;
 const f32 float_0p4_8041c018 = 0.4f;
 const f32 float_1p6_8041c01c = 1.6f;
 
-// NONMATCHING (97.04%): transId gets r31 in the target but is
-// rematerialised through r0 in ours, and the float/2^52 literals resolve to
-// unnamed pool symbols because this file's .sdata2/.rodata layout (zero_8041c010
-// and the event-script data) is not reproduced yet.
 USER_FUNC(_backfire) {
-    s32 transId;
     BattleUnit* unit;
     BattleWork* wp = _battleWorkPointer;
-    EffectEntry* eff;
+    effFireData* data;
     s32 id;
-    s32 counter;
-    void* work;
+    s32 result;
 
     id = evtGetValue(event, event->args[0]);
-    transId = BattleTransID(event, id);
-    unit = BattleGetUnitPtr(wp, transId);
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
     if (!unit) {
         return EVT_RETURN_DONE;
     }
@@ -46,19 +40,18 @@ USER_FUNC(_backfire) {
         event->userdata[0] = (s32)effFireEntry(0, 0, x, y, z, float_1_8041c014);
         event->userdata[1] = 0;
     }
-    eff = (EffectEntry*)event->userdata[0];
-    counter = event->userdata[1];
-    work = eff->userdata;
-    event->userdata[1] = counter + 1;
+    data = ((EffectEntry*)event->userdata[0])->userdata;
+    event->userdata[1] = event->userdata[1] + 1;
     if (event->userdata[1] >= 60) {
-        effDelete(eff);
+        effDelete((EffectEntry*)event->userdata[0]);
         BattleDamageDirect(-5, unit, 0, 1, 0, 0x118, 0, 1);
-        if (BattleTransID(event, event->unitId) == transId) {
-            return 0xFF;
+        result = BattleTransID(event, event->unitId);
+        if (result != id) {
+            return EVT_RETURN_DONE;
         }
-        return EVT_RETURN_DONE;
+        return 0xFF;
     }
-    *(f32*)((u8*)work + 0x24) = float_1p6_8041c01c * sinfd((f32)(event->userdata[1] * 3)) + float_0p4_8041c018;
+    data->scale = float_1p6_8041c01c * sinfd((f32)(event->userdata[1] * 3)) + float_0p4_8041c018;
     return EVT_RETURN_BLOCK;
 }
 

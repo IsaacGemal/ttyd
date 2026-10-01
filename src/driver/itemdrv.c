@@ -260,13 +260,11 @@ void itemSetPosition(ItemEntry* item, f32 x, f32 y, f32 z) {
     item->position.z = z;
 }
 
-// The zero check emits a compiler-generated local 0.0 constant (`@...`) with the operands
-// reversed (`fcmpu dirX, 0`) where the original loads float_0_8041af9c and compares
-// `fcmpu 0, dirX`. The reflect block's scratch floats are a 3-register rotation: the
-// original puts hitNZ/0.5/outX in f6/f4/f5, ours in f5/f6/f4 (the `half` local and writing
-// the product on the right are needed to reach this; the natural forms give a worse
-// allocation). The second angleABf's zero load is also hoisted one slot in both branches.
-// NONMATCHING (98.36%): anonymous 0.0 pool symbol, reflect-block FPR rotation, one hoisted load.
+// 100% per objdiff. The zero tests and the reflection's 0.5 are written as literals (0.0f/0.5f)
+// rather than the extern float_0/float_0p5 names: MWCC then pools them into local @ symbols,
+// but only a known-constant value makes it colour the scratch FPRs the way the original does
+// (the externs give pos.x/zero/pos.z f0/f1/f0 and rotate the reflect block f5/f6/f4). objdiff
+// scores the relocation-to-@-symbol difference as a match; semdiff treats the two as equal.
 HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f32 dirX, f32 dirZ) {
     f32 hitX;
     f32 hitY;
@@ -300,14 +298,14 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
                          item->position.x, item->position.y + float_15_8041afb4, item->position.z,
                          sin, float_0_8041af9c, cos);
     if (hit != NULL) {
-        f32 half = float_0p5_8041afb8;
+        f32 half = 0.5f;
         dot = dirX * hitNX + dirZ * hitNZ;
         nx = (dirX - dot * hitNX) * half;
         nz = (dirZ - dot * hitNZ) * half;
         *outX = *outX + nx;
         *outZ = *outZ + nz;
         dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
-        dirX = reviseAngle(angleABf(float_0_8041af9c, float_0_8041af9c, float_100_8041afc0 * hitNX,
+        dirX = reviseAngle(angleABf(0.0f, 0.0f, float_100_8041afc0 * hitNX,
                                     float_100_8041afc0 * hitNZ));
         *angle = (s32)reviseAngle(dirX + reviseAngle(dirX - dirZ));
         return hit;
@@ -318,14 +316,14 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
                              item->position.x, item->position.y + float_15_8041afb4, item->position.z,
                              sin, float_0_8041af9c, cos);
         if (hit != NULL) {
-            f32 half = float_0p5_8041afb8;
+            f32 half = 0.5f;
             dot = dirX * hitNX + dirZ * hitNZ;
             nx = (dirX - dot * hitNX) * half;
             nz = (dirZ - dot * hitNZ) * half;
             *outX = *outX + nx;
             *outZ = *outZ + nz;
             dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
-            dirX = reviseAngle(angleABf(float_0_8041af9c, float_0_8041af9c, float_100_8041afc0 * hitNX,
+            dirX = reviseAngle(angleABf(0.0f, 0.0f, float_100_8041afc0 * hitNX,
                                         float_100_8041afc0 * hitNZ));
             *angle = (s32)reviseAngle(dirX + reviseAngle(dirX - dirZ));
             return hit;

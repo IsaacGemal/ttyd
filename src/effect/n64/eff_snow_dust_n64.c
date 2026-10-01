@@ -369,39 +369,75 @@ GXColor unk_804232c8;
 GXColor unk_804232cc;
 GXColor unk_804232d0;
 
-// NONMATCHING (97.22%): GX/PSMTX call sequence matches; remaining diffs are register
-// allocation, stack-frame slot offsets and two compiler scheduling choices (color init order
-// and a strength-reduced i*64 induction variable replacing the original clrlslwi).
+#ifdef MUST_MATCH
+// MUST_MATCH: the original builds GXSetTevColor/GXSetTevKColor's by-value GXColor argument in a
+// scratch slot and word-copies it up into the outgoing argument slot (local below the copy).  Keeping
+// the build and the call together in an inline reproduces that layout (AGENT_BRIEF GXColor quirk).
+static inline void snowDustSetTopColor(effSnowDustData* data) {
+	GXColor color = unk_804232c8;
+	color.r = data->field_0x4C;
+	color.g = data->field_0x50;
+	color.b = data->field_0x54;
+	color.a = data->field_0x58;
+	GXSetTevColor(2, color);
+}
+
+static inline void snowDustSetItemColor(effSnowDustData* ptr, f32 f31) {
+	GXColor color = unk_804232cc;
+	color.r = ptr->field_0x3C;
+	color.g = ptr->field_0x40;
+	color.b = ptr->field_0x44;
+	color.a = (u8)(s32)(f31 * (f32)ptr->field_0x48);
+	GXSetTevColor(1, color);
+}
+
+static inline void snowDustSetItemKColor(effSnowDustData* ptr) {
+	GXColor kcolor = unk_804232d0;
+	kcolor.r = 0x50 - ptr->field_0x30;
+	kcolor.g = 0x50 - ptr->field_0x30;
+	kcolor.b = 0x50 - ptr->field_0x30;
+	kcolor.a = 0x50 - ptr->field_0x30;
+	GXSetTevKColor(0, kcolor);
+}
+#endif
+
+// 100%.  The GXColor arguments are built in the snowDustSet*Color inlines above (scratch slot below
+// the outgoing copy, the known MWCC GXColor quirk).  The loop walks the single `data` pointer as the
+// original does; `(i & 0x1f) * 64` is what emits the target's clrlslwi (plain `i * 64` makes MWCC
+// strength-reduce it to an induction variable and steals a callee-saved register).
 void effSnowDustDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effSnowDustData* data;
-	effSnowDustData* ptr;
 	CameraEntry* cam;
 	u8* base;
 	GXColor color;
 	GXColor kcolor;
 	GXTexObj texObj;
 	Mtx mtx;
-	Mtx rotMtx;
 	Mtx scaleMtx;
+	Mtx rotMtx;
 	Mtx texMtxA;
 	Mtx texMtxB;
-	s32 type;
 	s32 i;
+	s32 type;
 	f32 f31;
 	f32 f;
 
 	base = lbl_803A8AA0;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
+	f31 = (data->field_0x48 / 255.0f) * data->field_0x5C;
+	type = data->type;
+#ifdef MUST_MATCH
+	snowDustSetTopColor(data);
+#else
 	color = unk_804232c8;
 	color.r = data->field_0x4C;
 	color.g = data->field_0x50;
 	color.b = data->field_0x54;
 	color.a = data->field_0x58;
-	f31 = (data->field_0x48 / 255.0f) * data->field_0x5C;
 	GXSetTevColor(2, color);
-	type = data->type;
+#endif
 	switch (type) {
 		case 0:
 		case 6:
@@ -495,40 +531,49 @@ void effSnowDustDisp(CameraId camId, void* param) {
 	}
 	GXSetCullMode(0);
 	i = 1;
-	ptr = data + 1;
-	for (; i < effect->count; i++, ptr++) {
-		if (ptr->field_0x30 < 0) {
+	data++;
+	for (; i < effect->count; i++, data++) {
+		if (data->field_0x30 < 0) {
 			continue;
 		}
-		PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
+		PSMTXTrans(mtx, data->x, data->y, data->z);
 		PSMTXRotRad(rotMtx, 'y', -camGetPtr(4)->viewYaw * 0.017453292f);
 		PSMTXConcat(mtx, rotMtx, mtx);
-		f = ptr->field_0x5C * f31;
+		f = data->field_0x5C * f31;
 		PSMTXScale(scaleMtx, f, f, f);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		PSMTXConcat(cam->view, mtx, mtx);
 		GXLoadPosMtxImm(mtx, 0);
 		GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+		snowDustSetItemColor(data, f31);
+		snowDustSetItemKColor(data);
+#else
 		color = unk_804232cc;
-		color.r = ptr->field_0x3C;
-		color.g = ptr->field_0x40;
-		color.b = ptr->field_0x44;
-		color.a = (u8)(s32)(f31 * (f32)ptr->field_0x48);
+		color.r = data->field_0x3C;
+		color.g = data->field_0x40;
+		color.b = data->field_0x44;
+		color.a = (u8)(s32)(f31 * (f32)data->field_0x48);
 		GXSetTevColor(1, color);
 		kcolor = unk_804232d0;
-		kcolor.r = 0x50 - ptr->field_0x30;
-		kcolor.g = 0x50 - ptr->field_0x30;
-		kcolor.b = 0x50 - ptr->field_0x30;
-		kcolor.a = 0x50 - ptr->field_0x30;
+		kcolor.r = 0x50 - data->field_0x30;
+		kcolor.g = 0x50 - data->field_0x30;
+		kcolor.b = 0x50 - data->field_0x30;
+		kcolor.a = 0x50 - data->field_0x30;
 		GXSetTevKColor(0, kcolor);
+#endif
 		GXLoadTexMtxImm(texMtxA, 0x1e, 1);
-		PSMTXTrans(mtx, ptr->field_0x60, ptr->field_0x64, 0.0f);
-		PSMTXConcat(texMtxB, mtx, texMtxB);
-		GXLoadTexMtxImm(texMtxB, 0x21, 1);
+		PSMTXTrans(mtx, data->field_0x60, data->field_0x64, 0.0f);
+		PSMTXConcat(texMtxB, mtx, mtx);
+		GXLoadTexMtxImm(mtx, 0x21, 1);
 		if (type == 2) {
+#ifdef MUST_MATCH
+			PSMTXTrans(mtx, (f32)((i & 0x1f) * 64), 64.0f, 0.0f);
+#else
 			PSMTXTrans(mtx, (f32)(i * 64), 64.0f, 0.0f);
-			PSMTXConcat(texMtxA, mtx, texMtxA);
-			GXLoadTexMtxImm(texMtxA, 0x1e, 1);
+#endif
+			PSMTXConcat(texMtxA, mtx, mtx);
+			GXLoadTexMtxImm(mtx, 0x1e, 1);
 		}
 		switch (type) {
 			case 0:

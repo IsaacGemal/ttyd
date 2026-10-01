@@ -97,11 +97,12 @@ void battleAcDelete_AirGauge(BattleWork* work) {
 	work->actionCommands.mAcState = 0x3EA;
 }
 
-// NONMATCHING (98.84%): the work pointer is folded into the BattleWork base (`mr r31, r4`) instead of
-// `addi r31, r4, 0x1f20`.
+// Deriving both the state and disp parameters from one BattleActions* makes MWCC materialise the
+// disp base: `addi r31, r4, 0x1f20`, then 0x14(r31).
 void battleAcDisp_AirGauge(CameraId camId, void* param) {
-	BattleACDispParams* ag = &((BattleWork*)param)->actionCommands.dispParams;
-	s32 state = ((BattleWork*)param)->actionCommands.mAcState;
+	BattleActions* ac = &((BattleWork*)param)->actionCommands;
+	s32 state = ac->mAcState;
+	BattleACDispParams* ag = &ac->dispParams;
 
 	switch (state) {
 	case 0x63:
@@ -204,11 +205,25 @@ f32 _GetGaugeDecValue(void) {
 }
 
 
-// NONMATCHING (96.12%): 3 instructions differ, 3 missing, 3 extra, plus register differences.
+// 100%. The `opt_common_subs`/`difficulty`/`dat_80420a70` shapes are match-only (comments at their uses);
+// the natural forms are under #else.
+#ifdef MUST_MATCH
+// Match-only: with common-subexpression elimination on, MWCC colours the gauge clamp's field/constant
+// the other way round (field in f0) than the original (field in f1).
+#pragma opt_common_subs off
+#endif
 #pragma optimize_for_size on
 s32 battleAcMain_AirGauge(BattleWork* work) {
+#ifdef MUST_MATCH
+	// Match-only: addressing the gauge work through the header's named field keeps `dec` in its own
+	// base register (r31) instead of folding it into the BattleWork base. See ac_monosiri_target.c.
+	BattleActions* ac = &work->actionCommands;
+	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
+	BattleACDispParams* disp = &ac->dispParams;
+#else
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
+#endif
 
 	switch (work->actionCommands.mAcState) {
 	case 0x63:
@@ -251,6 +266,12 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 				case 3:
 					work->actionCommands.field_0x8 = *(s32*)((u8*)work + 0x1cdc) - 1;
 					break;
+#ifdef MUST_MATCH
+				// Match-only empty case 4: sharing the default body makes MWCC pivot the
+				// decision tree on 3 and emit the original's extra `b default`. The natural
+				// source has only `default`.
+				case 4:
+#endif
 				default:
 					work->actionCommands.field_0x8 = *(s32*)((u8*)work + 0x1cdc) + 1;
 					break;
@@ -265,7 +286,7 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		// fallthrough
 	case 0x3E8:
 		dec->frame++;
-		if (BattlePadCheckNow(0x100)) {
+		if ((s32)BattlePadCheckNow(0x100) != 0) {
 			work->actionCommands.outputParams[1] = 1;
 			if (BattlePadCheckTrigger(0x100)) {
 				dec->field_0x8++;
@@ -306,22 +327,39 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		work->actionCommands.result = 2;
 		work->actionCommands.mResultCount++;
 		{
+#ifdef MUST_MATCH
+			// Match-only: assigning the difficulty inside the first `else if` (rather than a plain load)
+			// makes MWCC keep it in r4 across the chain and load it lazily, as the original does.
+			s32 difficulty;
+#endif
 			if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cd4)) {
 				work->actionCommands.outputParams[0] = 1;
 			}
+#ifdef MUST_MATCH
+			else if ((difficulty = *(s32*)((u8*)work + 0x1cd0)) <= 2) {
+#else
 			else if (*(s32*)((u8*)work + 0x1cd0) <= 2) {
+#endif
 				work->actionCommands.outputParams[0] = 2;
 			}
 			else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cd8)) {
 				work->actionCommands.outputParams[0] = 2;
 			}
+#ifdef MUST_MATCH
+			else if (difficulty <= 3) {
+#else
 			else if (*(s32*)((u8*)work + 0x1cd0) <= 3) {
+#endif
 				work->actionCommands.outputParams[0] = 3;
 			}
 			else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1cdc)) {
 				work->actionCommands.outputParams[0] = 3;
 			}
+#ifdef MUST_MATCH
+			else if (difficulty <= 4) {
+#else
 			else if (*(s32*)((u8*)work + 0x1cd0) <= 4) {
+#endif
 				work->actionCommands.outputParams[0] = 4;
 			}
 			else if (dec->gaugePercent < (f32)*(s32*)((u8*)work + 0x1ce0)) {

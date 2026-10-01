@@ -51,7 +51,13 @@ extern const f32 float_6p2832_8041ef28;
 extern const f32 float_360_8041ef2c;
 extern const f32 float_0p5_8041ef30;
 extern const f32 float_480_8041ef34;
+#ifdef MUST_MATCH
+// volatile stops MWCC from keeping the 0.0f in one FPR across the four GXPosition3f32 calls
+// (the original reloads it from .sdata2 into f0 each time).
+extern const volatile f32 float_0_8041ef38;
+#else
 extern const f32 float_0_8041ef38;
+#endif
 extern const f32 float_608_8041ef3c;
 extern const f32 float_1_8041ef40;
 extern const f32 float_32768_8041ef44;
@@ -63,6 +69,9 @@ extern const f32 float_80_8041ef58;
 extern const f32 float_0p1_8041ef5c;
 extern const f32 float_neg1000_8041ef60;
 extern const f32 float_1000_8041ef64;
+extern const Vec vec3_802fa618;
+extern const Vec vec3_802fa624;
+extern const Vec vec3_802fa630;
 
 // .rodata
 const Vec vec3_802fa600 = { 0.0f, 0.0f, 0.0f };
@@ -249,18 +258,36 @@ static inline GXColor effFireworksColor1(effFireworksData* data) {
 }
 #endif
 
-// The remaining mismatches are all codegen. Details:
-// (1) The two GXColor build/copy stack slots are 4 bytes off (color0's return temp
-// at 0xc vs the original's 0x10, color1's arg copy at 0x10 vs 0xc).
-// (2) The two int->float magic doubles are referenced through MWCC's anonymous @NNN
-// copies at r30+0x70/0x78 instead of the named double_to_int_802fa640/_mask at
-// r30+0x40/0x48 (the project-wide folded-pool issue; the extra zero vector that
-// effFireworksMain's makeVec must add to .rodata keeps the anonymous copies off 0x40).
-// (3) In the GXBegin quad, `ey` lands in f0 where the original keeps it in f1, which
-// swaps the register used for the 0.0 vertex constant.
-// The mode==1 s8 rotation (neg+s2*cos as fmsubs), the loop pointer increments, the
-// sflag/salpha statics, and the register allocation all match.
-// NONMATCHING (97.89%): only the GXColor stack slots, the anonymous int->float doubles, and `ey`'s FPR differ.
+#ifdef MUST_MATCH
+// Building the colour and calling GXSetTevColor inside the inline is what puts color0's
+// build temp at 0x10 and color1's argument copy at 0xc; returning a GXColor from the
+// inline put color0's build temp 4 bytes low (at 0xc).
+static inline void effFireworksSetColor0(effFireworksData* data, u8 a) {
+	GXColor c = unk_80423108;
+	c.r = data->color0[0];
+	c.g = data->color0[1];
+	c.b = data->color0[2];
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+
+static inline void effFireworksSetColor1(effFireworksData* data) {
+	GXColor c = unk_8042310c;
+	c.r = data->color0[0];
+	c.g = data->color0[1];
+	c.b = data->color0[2];
+	GXSetTevColor(GX_TEVREG1, c);
+}
+#endif
+
+// The original's codegen shapes this function needs, all under MUST_MATCH below:
+// - The two GXColor helpers build the colour and call GXSetTevColor themselves; that
+//   puts the build temp at 0x10/0x8 and the two argument copies at 0x14/0xc. Returning
+//   the GXColor from an inline put the first build temp 4 bytes low.
+// - width/height go through w/h/t temporaries, and the quad's `ey` is held in `s`
+//   (the scratch f32) so MWCC colours ex/ey in f2/f1 and loads the z constant into f0.
+// - float_0_8041ef38 is `volatile` so the four GXPosition3f32 z loads are not CSE'd
+//   into one register; `zero` keeps the two C_MTXOrtho uses in one register.
 void effFireworksDisp(CameraId camId, void* param) {
 	// Function-local statics so MWCC emits the original's sflag$NNN/salpha$NNN symbols.
 	static s32 salpha;
@@ -277,6 +304,7 @@ void effFireworksDisp(CameraId camId, void* param) {
 	f32 angle;
 	f32 sinA;
 	f32 cosA;
+	f32 zero;
 	f32 baseX;
 	f32 baseY;
 	f32 baseZ;
@@ -291,6 +319,9 @@ void effFireworksDisp(CameraId camId, void* param) {
 	f32 cx;
 	f32 cy;
 	f32 ex;
+	f32 w;
+	f32 h;
+	f32 t;
 	f32 ey;
 	Vec position;
 	Vec target;
@@ -341,24 +372,21 @@ void effFireworksDisp(CameraId camId, void* param) {
 	baseZ = data->z;
 	radius = data->field_0x44;
 #ifdef MUST_MATCH
-	color = effFireworksColor0(data, alpha);
+	effFireworksSetColor0(data, alpha);
+	effFireworksSetColor1(data);
 #else
 	color = unk_80423108;
 	color.r = data->color0[0];
 	color.g = data->color0[1];
 	color.b = data->color0[2];
 	color.a = alpha;
-#endif
 	GXSetTevColor(GX_TEVREG0, color);
-#ifdef MUST_MATCH
-	color = effFireworksColor1(data);
-#else
 	color = unk_8042310c;
 	color.r = data->color0[0];
 	color.g = data->color0[1];
 	color.b = data->color0[2];
-#endif
 	GXSetTevColor(GX_TEVREG1, color);
+#endif
 
 	if (mode == 1) {
 		vp = (void*)vtx_data[type][0];
@@ -391,22 +419,49 @@ void effFireworksDisp(CameraId camId, void* param) {
 		PSMTXMultVec(cam->view, &position, &position);
 		PSMTX44MultVec(cam->projection, &position, &position);
 
+#ifdef MUST_MATCH
+		w = (f32)gp->fbWidth;
+		h = (f32)gp->efbHeight;
+		t = position.x * w;
+		cx = t * float_0p5_8041ef30;
+		t = position.y * h;
+		cy = t * float_0p5_8041ef30;
+#else
 		s = (f32)gp->fbWidth;
 		cx = position.x * s * float_0p5_8041ef30;
 		s = (f32)gp->efbHeight;
 		cy = position.y * s * float_0p5_8041ef30;
+#endif
 
 		target = vec3_802fa618;
 		eye = vec3_802fa624;
 		up = vec3_802fa630;
 		GXGetProjectionv(proj);
+#ifdef MUST_MATCH
+		zero = float_0_8041ef38;
+		C_MTXOrtho(ortho, float_480_8041ef34, zero, zero, float_608_8041ef3c, float_1_8041ef40,
+				   float_32768_8041ef44);
+#else
 		C_MTXOrtho(ortho, float_480_8041ef34, float_0_8041ef38, float_0_8041ef38, float_608_8041ef3c, float_1_8041ef40,
 				   float_32768_8041ef44);
+#endif
 		GXSetProjection(ortho, GX_ORTHOGRAPHIC);
 		C_MTXLookAt(lookAt, &eye, &up, &target);
 		GXLoadPosMtxImm(lookAt, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+#ifdef MUST_MATCH
+		ex = float_8_8041ef48 + cx;
+		s = cy - float_8_8041ef48;
+		GXPosition3f32(cx, cy, float_0_8041ef38);
+		GXTexCoord2s16(0, 1);
+		GXPosition3f32(ex, cy, float_0_8041ef38);
+		GXTexCoord2s16(1, 1);
+		GXPosition3f32(ex, s, float_0_8041ef38);
+		GXTexCoord2s16(1, 0);
+		GXPosition3f32(cx, s, float_0_8041ef38);
+		GXTexCoord2s16(0, 0);
+#else
 		ex = float_8_8041ef48 + cx;
 		ey = cy - float_8_8041ef48;
 		GXPosition3f32(cx, cy, float_0_8041ef38);
@@ -417,6 +472,7 @@ void effFireworksDisp(CameraId camId, void* param) {
 		GXTexCoord2s16(1, 0);
 		GXPosition3f32(cx, ey, float_0_8041ef38);
 		GXTexCoord2s16(0, 0);
+#endif
 		GXSetProjectionv(proj);
 	}
 }
@@ -427,7 +483,11 @@ const f32 float_6p2832_8041ef28 = 6.2831855f;
 const f32 float_360_8041ef2c = 360.0f;
 const f32 float_0p5_8041ef30 = 0.5f;
 const f32 float_480_8041ef34 = 480.0f;
+#ifdef MUST_MATCH
+const volatile f32 float_0_8041ef38 = 0.0f;
+#else
 const f32 float_0_8041ef38 = 0.0f;
+#endif
 const f32 float_608_8041ef3c = 608.0f;
 const f32 float_1_8041ef40 = 1.0f;
 const f32 float_32768_8041ef44 = 32768.0f;

@@ -19,19 +19,24 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// The original keeps the default loop's fourth table load as a separate element index in r8
-// (`addi r8, r8, 2; slwi r0, r8, 2; lwzx`); MWCC folds our `r_data[row + 2]` into the third
-// load's byte base (`add r3, r7, r0; lwz 0x8(r3)`), and the type/flag and row/i nonvolatile
-// register picks are swapped. All other instructions, stores, constants and control flow match.
-// NONMATCHING (98.28%): default loop's 4th table load folded into the 3rd load's byte base.
+// The declaration order `row, n, i, flag, count` and the `n += 2, i++` update order are what
+// match the original's flag/type (r24/r25) and n/i (r9/r10) register picks. What still differs:
+// MWCC folds the default loop's fourth table load `r_data[row + 2]` into the third load's byte
+// base (`add r3, r7, r0; lwz 0x8(r3)`) where the original re-derives the index
+// (`addi r8, r8, 2; slwi r0, r8, 2; lwzx`), and the loop's row/i land in r3/r8 rather than
+// r8/r10. The fold makes our function 956 bytes against the original's 960; the no-fold forms
+// (`row += 2`, a row4 temp, a byte-pointer index) recover 960 bytes but score lower because
+// they shift the int->float conversion scheduling, not the registers.
+// NONMATCHING (98.60%): default loop's 4th table load folded into the 3rd load's byte base;
+// loop row/i nonvolatile register picks swapped.
 EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
 	EffRadiationData* data;
-	s32 flag;
-	s32 count;
-	s32 i;
 	s32 row;
 	s32 n;
+	s32 i;
+	s32 flag;
+	s32 count;
 
 	effect = effEntry();
 	flag = 0;
@@ -86,8 +91,7 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		break;
 	default:
 		data++;
-		n = 32;
-		for (i = 1; i < effect->count; i++, n += 2, data++) {
+		for (i = 1, n = 32; i < effect->count; n += 2, i++, data++) {
 			data->field_0x58 = 0.0f;
 			data->field_0x28 = n;
 			row = (i - 1) * 5;

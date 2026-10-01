@@ -197,15 +197,12 @@ void kpaAddCoin(s32 coins) {
     pouchAddKpaScore(score);
 }
 
-// The copy of unitId/ownerNPC/lwData/lfData/uwBase/ufBase, the `_mapAlloc(0x4B0)` and the
-// 50-entry pool clear are all present and in order. What is left: the target hoists the
-// `_mapAlloc` size load (`li r3, 0x4b0`) to just after `evtEntryType` and has no "at least one
-// iteration" guard, while this build emits a guard before each unrolled copy. The vec3
-// addressing is forced to `.rodata` (lis/addi) with __declspec to match the target.
-// NONMATCHING (96.74%)
+// The vec3 addressing is forced to `.rodata` (lis/addi) with __declspec to match the target;
+// the `u32 i` loops are what let the compiler fully unroll the copies and clear without a
+// pre-loop guard (same shape as evt_twoddisp_init).
 USER_FUNC(kpa_score_disp_init) {
     EventEntry* entry;
-    s32 i;
+    u32 i;
 
     entry = evtEntryType(kpa_score_disp_evt, event->priority, 0, event->type);
     entry->unitId = event->unitId;
@@ -219,7 +216,7 @@ USER_FUNC(kpa_score_disp_init) {
     entry->uwBase = event->uwBase;
     entry->ufBase = event->ufBase;
     ksdp = (KpaScoreDispEntry*)_mapAlloc(0x4B0);
-    for (i = 0; i < 50; i++) {
+    for (i = 0; (s32)i < 50; i++) {
         ksdp[i].text[0] = 0;
         ksdp[i].timer = 0;
         ksdp[i].pos = vec3_802fe200;
