@@ -14,6 +14,9 @@ the dedicated `tools/perm_loop.py` process handles permuter jobs under its share
 
 ## Before writing code
 
+- **Read `check.py FUNC` by its marks.** `!!` is an instruction that really differs. `~~` differs only in the data
+  symbol (the original names `float_0_804210b0`, our unlinked object has `@322` or `...rodata.0`): it goes away when
+  the unit links, so never chase it. The last line counts both; fix the `!!` count to zero and the function is done.
 - **Look up what already exists.** `grep` `include/` for every function, struct and global you use. If a header
   declares it, include the header; don't redeclare it. A local copy with different types is the most common
   review finding.

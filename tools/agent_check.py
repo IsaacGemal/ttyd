@@ -7,7 +7,7 @@
 
 UNIT is the source path without src/ and .c, e.g. driver/mapdrv. 100% means byte-identical.
 """
-import json, subprocess, sys
+import json, re, subprocess, sys
 
 FINAL = sys.argv[1] == "--final"
 if FINAL:
@@ -171,11 +171,32 @@ def insts(side):
 left, right = insts("left"), insts("right")
 if not right:
     print("(not compiled from your source yet: define it)")
+
+
+def no_symbols(text):
+    """A line with the symbol operands blanked: the unit is not linked, so the original names data by symbol
+    (float_0_804210b0@sda21, str_802EF8B0@ha) where our object has a local one (@1910@ha, ...rodata.0@l)."""
+    text = re.sub(r"@\d+(@ha|@l|@sda21)?", "SYM", text)
+    text = re.sub(r"[A-Za-z_.$][\w$.]*@(ha|l|sda21|sda2)", "SYM", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+real = symbol_only = 0
+rows = []
 for i in range(max(len(left), len(right))):
     a = left[i] if i < len(left) else {}
     c = right[i] if i < len(right) else {}
     fa = a.get("instruction", {}).get("formatted", "")
     fc = c.get("instruction", {}).get("formatted", "")
     kind = a.get("diff_kind") or c.get("diff_kind") or ""
-    mark = "  " if not kind or fa == fc else "!!"
-    print(f"{mark} {fa:42} | {fc:42} {kind.replace('DIFF_', '').lower() if mark == '!!' else ''}")
+    if not kind or fa == fc:
+        mark = "  "
+    elif fa and fc and no_symbols(fa) == no_symbols(fc):
+        mark, symbol_only = "~~", symbol_only + 1  # only the symbol differs: not a diff once the unit links
+    else:
+        mark, real = "!!", real + 1
+    rows.append(f"{mark} {fa:42} | {fc:42} {kind.replace('DIFF_', '').lower() if mark == '!!' else 'symbol-only' if mark == '~~' else ''}")
+print("\n".join(rows))
+if f and (real or symbol_only):
+    print(f"-- {real} instruction diff(s) to fix" + (f", {symbol_only} that differ only in the data symbol (!! is real, ~~ is "
+          "not: it disappears when the unit links; do not chase it)" if symbol_only else ""))
