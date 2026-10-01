@@ -542,7 +542,6 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
     out->unk_48 = a->unk_48 + f31 * (b->unk_48 - a->unk_48);
     out->unk_5C = a->unk_5C + f31 * (b->unk_5C - a->unk_5C);
 }
-#pragma opt_propagation reset
 
 void calcCurrentCamState(f32* dst) {
     Vec* src = (Vec*)wp->map->unk_E8;

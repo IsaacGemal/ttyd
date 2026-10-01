@@ -299,9 +299,11 @@ void party_move_mode_stay(PartyEntry* party) {
     }
 }
 
-f32 unk_800c9398(PartyEntry* party, f32 value) {
+// NONMATCHING (99.29%): same instructions; only register numbers or operands differ.
+void unk_800c9398(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
-    f32 speed = value * work->playerPtr->playerGravity;
+    f32 gravity = work->playerPtr->playerGravity;
+    f32 speed = value * gravity;
     f32 scale;
     if (work->flags & 0x80) {
         scale = 0.75f;
@@ -310,7 +312,6 @@ f32 unk_800c9398(PartyEntry* party, f32 value) {
     }
     work->speed2 = speed * scale;
     work->speed = work->speed2;
-    return value;
 }
 
 void partyClearJumpPara(PartyEntry* party) {
