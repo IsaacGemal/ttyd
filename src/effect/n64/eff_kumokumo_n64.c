@@ -34,8 +34,10 @@ extern const f32 float_0p018182_8041f5c8;
 extern const f32 float_0p04_8041f5cc;
 extern const f32 float_5_8041f59c;
 extern const f32 float_0p5_8041f5a8;
-extern u32 unk_804231a0;
-extern u32 unk_804231a4;
+// the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 unk_804231a0;
+__declspec(section ".sdata") u32 unk_804231a4;
 extern const u32 dat_8041f578;
 extern const u32 dat_8041f57c;
 extern u32 cloud_normal_tbl[8];
@@ -47,19 +49,10 @@ extern u32 batten_color0_tbl[6];
 extern void* batten_dl_0_tbl[4];
 extern u8 batten_dl_0_size_tbl[4];
 
-const f64 double_to_int_802faaa0 = 4503601774854144.0;
-const f64 double_to_int_mask_802faaa8 = 4503599627370496.0;
-const f64 double_360_802faab0 = 360.0;
 
-extern const Vec vec3_802faa90;
 
-u8 rz_tbl[32] = {
-	0x00, 0x09, 0x12, 0x1C, 0x25, 0x2F, 0x39, 0x43, 0x4D, 0x57, 0x61, 0x6B, 0x74, 0x7D, 0x86, 0x8F,
-	0x97, 0x9F, 0xA6, 0xAD, 0xB4, 0xB8, 0xB9, 0xB9, 0xB6, 0xB4, 0xB1, 0xAE, 0xAE, 0xAF, 0xB4, 0x00,
-};
 
-const char str_802FAAB8[] = "KumokumoN64";
-
+extern u8 rz_tbl[32];
 extern s32 negone_one[];
 extern s32 one_negone[];
 
@@ -117,7 +110,7 @@ static inline void effKumokumoCallDL(void** dl, const u8* size) {
 }
 
 // The int->float magic doubles pool as anonymous labels (@392/@393/@447); the target names them
-// double_to_int_802faaa0/double_to_int_mask_802faaa8/double_360_802faab0. The relocation names differ,
+// double_to_int_802faaa0/double_to_int_mask_802faaa8/360.0. The relocation names differ,
 // but the instruction bytes are identical.
 EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 scale, f32 a6, f32 a7) {
 	EffectEntry* effect;
@@ -133,7 +126,7 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 	if (type == 2) {
 		scale = float_0_8041f594;
 	}
-	effect->type = str_802FAAB8;
+	effect->type = "KumokumoN64";
 	effect->count = count;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effKumokumoData) * count);
 	effect->userdata = data;
@@ -277,7 +270,7 @@ void effKumokumoMain(EffectEntry* effect) {
 	s32 field14;
 
 	data = effect->userdata;
-	pos = vec3_802faa90;
+	pos = (Vec){ 0.0f, 0.0f, 0.0f };
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
@@ -360,7 +353,7 @@ void effKumokumoMain(EffectEntry* effect) {
 						data->rotation = float_0_8041f594;
 					}
 					data->rotation = (f32)(u32)(rz_tbl[(u32)data->field_0x14 % 31] + ((u32)data->field_0x14 * 180) / 31);
-					data->rotation = (f32)fmod(data->rotation, double_360_802faab0);
+					data->rotation = (f32)fmod(data->rotation, 360.0);
 					break;
 				case 3:
 					data->color1A += (0xc0 - data->color1A) / 4;
@@ -946,10 +939,14 @@ void* batten_dl_0_tbl[4] = {
 u8 batten_dl_0_size_tbl[4] = {
     0x03, 0x03, 0x03, 0x03,
 };
+
+u8 rz_tbl[32] = {
+	0x00, 0x09, 0x12, 0x1C, 0x25, 0x2F, 0x39, 0x43, 0x4D, 0x57, 0x61, 0x6B, 0x74, 0x7D, 0x86, 0x8F,
+	0x97, 0x9F, 0xA6, 0xAD, 0xB4, 0xB8, 0xB9, 0xB9, 0xB6, 0xB4, 0xB1, 0xAE, 0xAE, 0xAF, 0xB4, 0x00,
+};
 // clang-format on
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const Vec vec3_802faa90 = { 0.0f, 0.0f, 0.0f };
 const u32 dat_8041f578 = 0xDBDFE700;
 const u32 dat_8041f57c = 0xFFFFFF00;
 const f32 float_deg2rad_8041f580 = 0.017453292f;
