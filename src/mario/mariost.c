@@ -495,7 +495,7 @@ void* gcDvdCheckThread(void* param) {
 			default:
 				gp->dvdError = FALSE;
 				break;
-			case DVD_STATE_WAITING:
+			case DVD_STATE_BUSY:
 				break;
 		}
 		if (gp->dvdError) {

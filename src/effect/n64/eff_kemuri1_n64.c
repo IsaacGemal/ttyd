@@ -334,11 +334,7 @@ void effKemuri1Main(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-	#ifdef MUST_MATCH
 	dispEntry(4, dispCalcZ(&position), 2, effKemuri1Disp, effect);
-#else
-	dispEntry(4, dispCalcZ(&position), 2, effKemuri1Disp, effect);
-#endif
 }
 
 // Draws every live entry as a camera-facing textured quad.

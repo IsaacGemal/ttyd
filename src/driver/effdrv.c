@@ -5,7 +5,6 @@
 #include "mario/mariost.h"
 #include "memory.h"
 #include "system.h"
-#include <dolphin/mtx.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -349,26 +348,6 @@ typedef struct EffectMayaPolyList {
 	s32 count;              // 0x8
 	EffectMayaPoly** polys; // 0xC
 } EffectMayaPolyList;
-
-typedef struct EffectMayaKeyValue {
-	s16 value;    // 0x0
-	s16 inTan;    // 0x2
-	s16 outTan;   // 0x4
-	s8 field_0x6; // 0x6
-	s8 flag;      // 0x7
-} EffectMayaKeyValue;
-
-typedef struct EffectMayaKeyframe {
-	s16 time;                      // 0x0
-	EffectMayaKeyValue values[22]; // 0x2
-} EffectMayaKeyframe;
-
-typedef struct EffectMayaMatrixData {
-	s32 count;                // 0x0
-	EffectMayaKeyframe* base; // 0x4
-} EffectMayaMatrixData;
-
-
 
 void* effMayaAnimAlloc(void* animData) {
 	u32 size = *((EffectMayaAnimData*)animData)->count * 0x34 + 0x18;

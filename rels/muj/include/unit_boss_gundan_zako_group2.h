@@ -6,7 +6,7 @@ USER_FUNC(zakogun_escape2);
 USER_FUNC(zakogun_dead2);
 USER_FUNC(zakogun_attack2_yusuri);
 USER_FUNC(zakogun_attack2);
-void zakogun_ext_main2(void); // TODO: real signature
+void zakogun_ext_main2(void);  // TODO: real signature
 USER_FUNC(zakogun_ext_init2);
 USER_FUNC(shake_ceil);
 USER_FUNC(up_ceil);

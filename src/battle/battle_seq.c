@@ -1,5 +1,5 @@
-// Needed: this file is built with inlining disabled (see REPORT.md); without this MWCC inlines
-// small helpers such as BattleWaitAllActiveEvtEnd into btlseqMove/BattleSequenceManager.
+// dont_inline: retail calls the file's small helpers (BattleWaitAllActiveEvtEnd and others) with `bl` from
+// btlseqMove/BattleSequenceManager; without it MWCC inlines them.
 #pragma dont_inline on
 #include "battle/battle_seq.h"
 #include "battle/battle.h"
@@ -1173,3 +1173,4 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 	return ret ? 0 : 2;
 }
 
+#pragma dont_inline reset

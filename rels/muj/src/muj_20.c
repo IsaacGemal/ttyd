@@ -662,7 +662,6 @@ USER_FUNC(elmos1000tai_init) {
         s32 d;
         s32 r2;
         f32 s;
-        f32 zero;
     f32 angle;
         f32 v;
         f32 c;
@@ -1539,7 +1538,6 @@ USER_FUNC(kaizoku_fune_eff) {
     f32 x;
     f32 z;
     f32 dist;
-    f32 zero;
     f32 angle;
     f32 dir;
 
@@ -2065,7 +2063,6 @@ USER_FUNC(fune_eff) {
     f32 x;
     f32 z;
     f32 dist;
-    f32 zero;
     f32 angle;
 
     if (isFirstCall) {
@@ -2221,14 +2218,11 @@ f32 mapAnimRate[4];
 
 MarcoShip* marcoship;
 
-static const GXColor logoColor = { 0xFF, 0xFF, 0xFF, 0x00 };
+// TODO: write draw (static, 0x1ac bytes) here:
+// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
-static inline GXColor drawColor(u8 a) {
-    GXColor c = logoColor;
-    c.a = a;
-    return c;
-}
-
+// TODO: write pressStartGX (static, 0x4d8 bytes) here:
+// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
 
 void elmos1000tai_seq00(struct NanNpcEntry* entry) {
