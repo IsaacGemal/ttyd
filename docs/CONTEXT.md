@@ -3451,3 +3451,8 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - `~/ttyd-refs/<project>` on the Mac, rsynced to `~/ttyd-refs` on the tower (pop-os): ac-decomp, spm-decomp, tp, tww (all CC0-1.0) and musyx (MIT), shallow clones; `~/ttyd-refs/README.md` lists each repo's URL, commit and license (checked against its LICENSE file and the GitHub API). Anything else is deleted, never added. Wave agents have no network: prompts point at the local copy. `docs/AGENT_BRIEF.md` rule 16 says so.
 - Every port PR names the project and file it took code from.
 
+
+## Grind 66: TRK MWTrace and MWCriticalSection_gc from tp; why TRK msghndlr is not a port (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `MWTRACE` is zeldaret/tp's `libs/TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c` (CC0) and `MWCriticalSection_gc.cpp` its `utils/gc/MWCriticalSection_gc.c` (CC0, wrapped in `extern "C"` because the unit is C++ here); both 100% and linked.
+- `msghndlr` is not in the reference projects' form: TTYD ships the release TRK, where `TRKDoVersions`/`TRKDoSupportMask` are `li r3, 0; blr` and `TRKDoReset`/`TRKDoOverride`/`TRKDoConnect`/... send one fixed 0x40-byte packet through `TRKWriteUARTN`. The existing `msghndlr.c` (ac-decomp's debug TRK) scores 0% on those 15 functions; they need rewriting from the asm, not porting. `targsupp.s` is the same release build (8-byte stubs).
