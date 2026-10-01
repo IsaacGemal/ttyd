@@ -114,14 +114,6 @@ extend_data(17,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-const Vec vec3_usu_00006440 = {200.0f, -25.0f, 0.0f};
-const Vec vec3_usu_0000644c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_usu_00006458 = {0.0f, 2016.0f, 0.0f};
-const Vec vec3_usu_00006464 = {0.0f, -2016.0f, 0.0f};
-const Vec vec3_usu_00006470 = {0.0f, 0.0f, 0.0f};
-const GXColor dat_usu_0000647c = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_usu_00006480 = {0xFF, 0xFF, 0xFF, 0xFF};
-
 // clang-format off
 static f32 lect_mario_ido_sub(f32 f1, f32 f2, f32 f3, f32 f4) {
     f32 f0 = f1 * f4;
@@ -369,7 +361,7 @@ static USER_FUNC(lecture_button_set_pos) {
     f32 x = evtGetFloat(event, args[1]);
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
-    Vec pos = vec3_usu_0000644c;
+    Vec pos = (Vec){0.0f, 0.0f, 0.0f};
 
     pos.x = x;
     pos.y = y;
@@ -610,7 +602,7 @@ static USER_FUNC(evtflash) {
     }
     switch (event->userdata[2]) {
         case 0:
-            fadeEntry(10, 40, dat_usu_0000647c);
+            fadeEntry(10, 40, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
             event->userdata[2]++;
             // fallthrough
         case 1:
@@ -633,7 +625,7 @@ static USER_FUNC(evtflash) {
             event->userdata[2]++;
             return EVT_RETURN_BLOCK;
         case 3:
-            fadeEntry(9, 40, dat_usu_00006480);
+            fadeEntry(9, 40, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
             event->userdata[2]++;
             // fallthrough
         case 4:

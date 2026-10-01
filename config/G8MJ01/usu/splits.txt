@@ -30,6 +30,6 @@ event/evt_kagemario.c:
 
 event/evt_lect_usu.c:
 	.text       start:0x00001D14 end:0x00003734
-	.rodata     start:0x00002C38 end:0x00002F04
+	.rodata     start:0x00002C38 end:0x00002F40
 	.data       start:0x00010550 end:0x000118A0
 	.bss        start:0x00000010 end:0x000000B8
