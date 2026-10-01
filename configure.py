@@ -838,7 +838,7 @@ config.libs = [
             Object(NonMatching, "unit/party/unit_party_sanders.c"),
             Object(NonMatching, "unit/party/unit_party_vivian.c"),
             Object(Matching, "unit/party/unit_party_nokotarou.c"),
-            Object(NonMatching, "unit/party/unit_party_christine.c"),
+            Object(Matching, "unit/party/unit_party_christine.c"),
         ],
     },
     {
@@ -2129,7 +2129,7 @@ config.libs = [
             Object(Matching, "usu.c"),
             Object(NonMatching, "usu_00.c"),
             Object(Matching, "usu_01.c"),
-            Object(NonMatching, "event/evt_lect_usu.c"),
+            Object(Matching, "event/evt_lect_usu.c"),
             Object(Matching, "event/evt_kagemario.c", modules=["usu"]),
         ],
     ),

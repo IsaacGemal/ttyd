@@ -3428,6 +3428,17 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   `half = 0.5f`), unit_boss_gundan_zako_group2's shake_ceil (`volatile` reads) and its ceil functions' raw-offset
   macros on `work_20_bss_6C`, chuchurina's redundant `else if (list != NULL)`.
 
+## Grind 60: unit_party_christine links, with the nokotarou/christine `.data` boundary moved 8 bytes (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- The `{ -1.0f, 1.0f }` pair at 0x80390B70 was the tail of `unk_evt_80390b30` / `lbl_80390B74` in `unit_party_nokotarou`; `tools/split_scan.py` missed it because the pair is not a `lbl_` object. The `.data` boundary of nokotarou/christine is now 0x80390B70 (the Grind 41 edit for one more pair), `symbols.txt` has `unk_evt_80390b30` at size 0x40 and `lbl_80390B70` (8 bytes) in its place, nokotarou's table lost its last word and the `lbl_80390B74` definition, and christine's source defines the pair as its first `.data` object. The invented `lbl_80390B70` base and the `MUST_MATCH` weapon-offset block in `__makeTechMenuFunc` are gone; the four weapons are named in the unit's own `.data` as in clauda.
+- The rest is `tools/dol_gen.py --append`, `tools/fn_order.py --write` (the text order was off), and `finish_unit`.
+- **Needs Isaac:** the `splits.txt`/`symbols.txt` edit is outside the 32 units he approved in Grind 41; `ci.py` needs `--allow-protected` for it. With the flag everything passes (dol and RELs byte-identical).
+
+## Grind 62: evt_lect_usu links; the usu `.rodata` split end moves to 0x2F40 (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- Approved by Isaac (relayed by the orchestrator, 12:42). `config/G8MJ01/usu/splits.txt`: `event/evt_lect_usu.c` `.rodata` ends at 0x2F40 instead of 0x2F04, so its own constants (`double_to_int_usu_00006728` ... `float_1_usu_00006744`) are no longer two `auto_03_*_rodata` units. `ci.py` needs `--allow-regress usu/auto_03_00002F04_rodata --allow-regress usu/auto_03_00002F20_rodata` because those two units are gone.
+- Source: the named `vec3_usu_*`/`dat_usu_*` definitions are removed; the two remaining uses are compound literals (`(Vec){0.0f, 0.0f, 0.0f}`, `(GXColor){0xFF, 0xFF, 0xFF, 0xFF}`). They are the templates MWCC makes for the code's own compound literals; defining them by name made a second copy (48 bytes). `.rodata` and `.data` are then equal and the unit links (38/38 functions at 100%).
+
 ## Grind 61: unit_party_sanders: the chuchurina/sanders `.data` boundary moves 8 bytes; data written (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 - Approved by Isaac (relayed by the orchestrator, 12:42). The `{ -1.0f, 1.0f }` pair at 0x803848D8 was the tail of chuchurina's `attack_audience_event`; the `.data` boundary is now 0x803848D8, `attack_audience_event` is 0x330 bytes, `lbl_803848D8` (8 bytes) replaces `lbl_803848DC`. Same shape as christine (Grind 60).
