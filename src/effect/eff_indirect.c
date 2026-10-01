@@ -22,28 +22,14 @@ typedef struct IndirectData {
 	smartEntry* texBuffer; // 0x34
 } IndirectData;
 
-extern const char str_8030134C[];
 extern const u32 dat_804222c0;
-extern const f32 float_deg2rad_804222c4;
-extern const f32 float_25_804222c8;
-extern const f32 float_1p2667_804222cc;
-extern const f32 float_0p5_804222d0;
-extern const f32 float_neg0p5_804222d4;
-extern const f32 float_0p505_804222d8;
-extern const f32 float_1_804222dc;
-extern const f32 float_2_804222e0;
-extern const f32 float_32_804222e4;
-extern const f32 float_16_804222e8;
-extern const f32 float_0_804222ec;
-extern const f32 float_neg0p05_804222f4;
-extern const f32 float_neg5_804222f0;
 
 EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	IndirectData* data;
 
 	entry = effEntry();
-	entry->type = str_8030134C;
+	entry->type = "Indirect";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(IndirectData));
 	entry->userdata = data;
@@ -54,15 +40,15 @@ EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->scale = float_0_804222ec;
+	data->scale = 0.0f;
 	data->alpha = 0xFF;
 	data->texBuffer = smartAlloc(GXGetTexBufferSize(0x40, 0x40, 3, 0, 0), 0);
-	data->rotX = float_0_804222ec;
-	data->rotY = float_0_804222ec;
-	data->rotZ = float_0_804222ec;
+	data->rotX = 0.0f;
+	data->rotY = 0.0f;
+	data->rotZ = 0.0f;
 	data->timer = timer;
 	data->field_2C = 0;
-	data->field_30 = float_neg0p05_804222f4;
+	data->field_30 = -0.05f;
 
 	return entry;
 }
@@ -97,8 +83,8 @@ void effIndirectMain(EffectEntry* effect) {
 		if (data->timer < 0x20) {
 			data->alpha = data->timer << 3;
 		}
-		data->rotZ += float_neg5_804222f0;
-		data->scale += float_1_804222dc;
+		data->rotZ += -5.0f;
+		data->scale += 1.0f;
 		break;
 	}
 
@@ -117,10 +103,11 @@ static inline GXColor effIndirectMatColor(u8 alpha) {
 #ifdef MUST_MATCH
 #define IND_VERT_ZERO 0.0f
 #else
-#define IND_VERT_ZERO float_0_804222ec
+#define IND_VERT_ZERO 0.0f
 #endif
 
 void effIndirectDisp(CameraId camId, void* param) {
+	f32 sixteen;
 	EffectEntry* effect = param;
 	IndirectData* data = effect->userdata;
 	CameraEntry* cam;
@@ -164,10 +151,10 @@ void effIndirectDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 1);
 	PSMTXTrans(lightMtx, data->x, data->y, data->z);
 	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
-	PSMTXRotRad(rotMtx, 'y', float_deg2rad_804222c4 * -cam->viewYaw);
+	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -cam->viewYaw);
 	PSMTXConcat(lightMtx, scaleMtx, scaleMtx);
 	PSMTXConcat(scaleMtx, rotMtx, trans);
-	PSMTXRotRad(rotMtx, 'z', float_deg2rad_804222c4 * data->rotZ);
+	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->rotZ);
 	PSMTXConcat(trans, rotMtx, trans);
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
@@ -175,8 +162,8 @@ void effIndirectDisp(CameraId camId, void* param) {
 	GXSetNumTexGens(2);
 	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
 	GXSetTexCoordGen2(1, 0, 0, 0x1E, 0, 0x7D);
-	C_MTXLightPerspective(lightMtx, float_25_804222c8, float_1p2667_804222cc, float_0p5_804222d0, float_neg0p5_804222d4,
-	                      float_0p505_804222d8, float_0p505_804222d8);
+	C_MTXLightPerspective(lightMtx, 25.0f, 1.2666667f, 0.5f, -0.5f,
+	                      0.505f, 0.505f);
 	PSMTXConcat(lightMtx, cam->view, lightMtx);
 	PSMTXConcat(lightMtx, trans, lightMtx);
 	GXLoadTexMtxImm(lightMtx, 0x1E, 0);
@@ -198,31 +185,38 @@ void effIndirectDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(trans, 0);
 	GXSetCurrentMtx(0);
 	GXBegin(0x80, 0, 4);
-	u = float_1_804222dc;
+	u = 1.0f;
 	v = u;
 	switch (type) {
 	case 0:
-		u = float_2_804222e0;
+		u = 2.0f;
 		break;
 	case 1:
-		u = float_2_804222e0;
+		u = 2.0f;
 		v = u;
 		break;
 	}
 #ifdef MUST_MATCH
 	// The two-step form keeps MWCC's FP allocator from folding the fneg into the
 	// constant load; the single expression still differs only in FP registers.
-	half = -float_32_804222e4;
-	half = half * float_0p5_804222d0;
+	{
+		f32 w = 32.0f;
+		f32 h = 0.5f;
+		half = -w * h;
+	}
 #else
-	half = -float_32_804222e4 * float_0p5_804222d0;
+	half = -32.0f * 0.5f;
 #endif
-	GXPosition3f32(half, float_16_804222e8, IND_VERT_ZERO);
+	sixteen = 16.0f;
+	GXPosition3f32(half, sixteen, IND_VERT_ZERO);
 	GXTexCoord2f32(IND_VERT_ZERO, IND_VERT_ZERO);
-	GXPosition3f32(float_16_804222e8, float_16_804222e8, IND_VERT_ZERO);
+	GXPosition3f32(sixteen, sixteen, IND_VERT_ZERO);
 	GXTexCoord2f32(u, IND_VERT_ZERO);
-	GXPosition3f32(float_16_804222e8, half, IND_VERT_ZERO);
+	GXPosition3f32(sixteen, half, IND_VERT_ZERO);
 	GXTexCoord2f32(u, v);
 	GXPosition3f32(half, half, IND_VERT_ZERO);
 	GXTexCoord2f32(IND_VERT_ZERO, v);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_804222c0 = 0xFFFFFF00;
