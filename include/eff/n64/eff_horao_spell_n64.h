@@ -25,10 +25,6 @@ typedef struct effHoraoSpellVtx {
 	s16 tex[2]; // 0x6, ST
 	u8 clr[4];  // 0xA, RGBA8
 } effHoraoSpellVtx;
-extern GXColor unk_80423150;
-extern GXColor unk_80423154;
-extern GXColor unk_80423158;
-extern effHoraoSpellVtx horao_spell_vtx[];
 EffectEntry* effHoraoSpellN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);
 void effHoraoSpellMain(EffectEntry* effect);
 #include "driver/camdrv.h"

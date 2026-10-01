@@ -6,6 +6,12 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804232ac;
+__declspec(section ".sdata") GXColor unk_804232a8;
+
+
 // .sdata2 data symbols owned by this unit.
 extern const f32 float_deg2rad_80420080;
 extern const f32 float_0p03125_80420084;
@@ -13,10 +19,7 @@ extern const f32 float_0_80420088;
 // .rodata objects owned by this unit.
 const Vec vec3_802fb890 = { 0.0f, 0.0f, 0.0f };
 // The pooled int->float conversion double, named so the `lfd` reloc resolves like the original.
-const f64 double_to_int_802fb8a0 = 4503601774854144.0;
 // .sbss2 data symbols owned by this unit.
-extern GXColor unk_804232a8;
-extern GXColor unk_804232ac;
 
 // .data: retail 16x16 quad vertex array (local to this unit).
 static u32 size16x16_tex32x32_vtx[28] = {
@@ -103,7 +106,7 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 
 		for (j = 0; j < 2; j++, elem++) {
 			s32 n = i + j - 1;
 			elem->angle1 = (f32)(n * 0xca8 / 30);
-			elem->angle2 = 0.0f;
+			elem->angle2 = float_0_80420088;
 			elem->radius = (f32)(n * 100 / 30);
 			elem->field_0x00 = 0;
 		}

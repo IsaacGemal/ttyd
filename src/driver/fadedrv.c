@@ -3,12 +3,17 @@
 #include "driver/arcdrv.h"
 #include "driver/camdrv.h"
 #include "driver/imgdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/offscreendrv.h"
+#include "evt/evt_img.h"
+#include "manager/evtmgr.h"
+#include "pmario_sound.h"
 #include "manager/dvdmgr.h"
 #include "mario/mariost.h"
 #include "memory.h"
 #include "system.h"
 #include <dolphin/dvd.h>
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -103,7 +108,7 @@ static inline void fadeEntryReset(FadeEntry* entry) {
 	entry->field_0x90 = 1.0f;
 }
 
-// NONMATCHING (68.46%): being reconstructed.
+// NONMATCHING (94.39%): being reconstructed.
 void fadeEntry(s32 type, s32 duration, GXColor color) {
 	FadeEntry* entry;
 	s32 index;
@@ -496,9 +501,616 @@ void fadeSetOffscreenCallback(OffscreenCallback callback, void* param) {
 	entry->offparam = param;
 }
 
-// NONMATCHING (0.09%): 1070 missing.
 void fadeMain(void) {
+	FadeEntry* entry;
+	s32 i;
 
+	for (i = 0, entry = wp->entries; i < 5; i++, entry++) {
+		if (!(entry->flags & 1)) {
+			continue;
+		}
+
+		switch (entry->type) {
+			case 1:
+			case 3:
+			case 5:
+			case 9:
+			case 11:
+			case 14:
+				switch (entry->field_0x8) {
+					case 0:
+						if (*(s64*)&entry->field_0x10 != 0) {
+#ifdef MUST_MATCH
+							if ((s32)entry->field_0xA4 != 0) {
+#else
+							if (entry->field_0xA4 != 0) {
+#endif
+								entry->field_0xA4--;
+							}
+							else {
+								entry->field_0x5C += 16.666666f;
+							}
+							entry->field_0x24 = entry->field_0x5C / (f32)*(s64*)&entry->field_0x10;
+							entry->field_0x24 = 1.0f - entry->field_0x24;
+							entry->field_0x28 += 10.0f;
+							if (entry->field_0x24 < 0.0f) {
+								entry->field_0x24 = 0.0f;
+								entry->flags |= 2;
+								entry->field_0x8++;
+							}
+						}
+						else {
+							entry->field_0x24 = 0.0f;
+							entry->flags |= 2;
+							entry->field_0x8++;
+						}
+						break;
+				}
+				break;
+			case 2:
+			case 4:
+			case 6:
+			case 10:
+			case 12:
+			case 13:
+			case 15:
+				switch (entry->field_0x8) {
+					case 0:
+						if (*(s64*)&entry->field_0x10 != 0) {
+							entry->field_0x5C += 16.666666f;
+							entry->field_0x24 = entry->field_0x5C / (f32)*(s64*)&entry->field_0x10;
+							entry->field_0x28 -= 10.0f;
+							if (entry->field_0x24 > 1.0f) {
+								entry->field_0x24 = 1.0f;
+								entry->flags |= 2;
+								entry->field_0x8++;
+							}
+						}
+						else {
+							entry->field_0x24 = 1.0f;
+							entry->flags |= 2;
+							entry->field_0x8++;
+						}
+						break;
+				}
+				break;
+			case 41:
+			case 42:
+			case 43:
+			case 44:
+			case 45:
+			case 46:
+			case 47:
+			case 48:
+				switch (entry->field_0x8) {
+					case 0: {
+						s32 args[10];
+						EventEntry event;
+
+						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+							if (entry->field_0x70 < 0 && (entry->type == 42 || entry->type == 44 ||
+							                              entry->type == 46 || entry->type == 48)) {
+								wp->flags |= 0x8000;
+							}
+							break;
+						}
+						wp->flags &= ~0x8000;
+						if (entry->field_0x70 >= 0) {
+							imgRelease(entry->image, entry->imageType);
+							animPaperPoseRelease(entry->field_0x70);
+							entry->field_0x70 = -1;
+							entry->image = NULL;
+						}
+						entry->field_0x70 = animPaperPoseEntry(entry->field_0x60, entry->imageType);
+						imgEntry("fImg_dokan", entry->imageType);
+						entry->image = imgNameToPtr("fImg_dokan", entry->imageType);
+						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
+						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+						entry->image->field_0x108 = (s32)entry->field_0x64;
+						imgClearVirtualPoint(entry->image);
+						event.args = args;
+						args[0] = (s32)"fImg_dokan";
+						args[1] = 0;
+						args[2] = 0;
+						args[3] = 0;
+						args[4] = 0;
+						args[5] = 0;
+						args[6] = 608;
+						args[7] = 480;
+						evt_img_alloc_capture(&event, TRUE);
+						switch (entry->type) {
+							case 45:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AB);
+								break;
+							case 47:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AC);
+								break;
+							case 41:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AD);
+								break;
+							case 43:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AE);
+								break;
+							case 46:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403AF);
+								break;
+							case 48:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403B0);
+								break;
+							case 42:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403B1);
+								break;
+							case 44:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x403B2);
+								break;
+						}
+						entry->field_0x8++;
+						break;
+					}
+					case 1:
+						if (entry->image->field_0x118 >= 1.0f) {
+							entry->flags |= 2;
+							switch (entry->type) {
+								case 42:
+								case 44:
+								case 46:
+								case 48:
+									imgRelease(entry->image, entry->imageType);
+									animPaperPoseRelease(entry->field_0x70);
+									entry->field_0x70 = -1;
+									entry->image = NULL;
+									break;
+							}
+							entry->field_0x8++;
+						}
+						break;
+				}
+				break;
+			case 49:
+			case 52:
+			case 55:
+			case 57:
+			case 59:
+			case 60:
+			case 61:
+			case 62:
+				switch (entry->field_0x8) {
+					case 0:
+						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+							break;
+						}
+						if (entry->field_0x70 >= 0) {
+							imgRelease(entry->image, entry->imageType);
+							animPaperPoseRelease(entry->field_0x70);
+							entry->field_0x70 = -1;
+							entry->image = NULL;
+						}
+						entry->field_0x70 = animPaperPoseEntry(entry->field_0x60, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->field_0x70, 0x1800);
+						imgEntry("fImg_peron", entry->imageType);
+						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
+						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
+						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+						entry->image->field_0x108 = (s32)entry->field_0x64;
+						imgClearVirtualPoint(entry->image);
+						switch (entry->type) {
+							case 52: {
+								s32 args[10];
+								EventEntry event;
+
+								offscreenEntry("fOff_peron");
+								event.args = args;
+								args[0] = (s32)"fImg_peron";
+								args[1] = 0;
+								args[2] = (s32)"fOff_peron";
+								args[3] = 0;
+								args[4] = 0;
+								args[5] = 0;
+								args[6] = 608;
+								args[7] = 480;
+								evt_img_alloc_capture(&event, TRUE);
+								break;
+							}
+							case 55:
+							case 57:
+							case 59: {
+								s32 args[10];
+								EventEntry event;
+
+								event.args = args;
+								args[0] = (s32)"fImg_peron";
+								args[1] = 0;
+								args[2] = 0;
+								args[3] = 2;
+								args[4] = 0;
+								args[5] = 0;
+								args[6] = 608;
+								args[7] = 480;
+								evt_img_alloc_capture(&event, TRUE);
+								entry->image->camId = CAMERA_FADE2;
+								entry->image->field_0x154 = 10;
+								psndSFXOn((const char*)0x403B4);
+								break;
+							}
+							case 60:
+							case 61:
+							case 62: {
+								s32 args[10];
+								EventEntry event;
+
+								event.args = args;
+								args[0] = (s32)"fImg_peron";
+								args[1] = 0;
+								args[2] = 0;
+								args[3] = 2;
+								args[4] = 0;
+								args[5] = 0;
+								args[6] = 608;
+								args[7] = 480;
+								evt_img_alloc_capture(&event, TRUE);
+								entry->image->camId = CAMERA_FADE;
+								entry->image->field_0x154 = 9;
+								break;
+							}
+							default: {
+								s32 args[10];
+								EventEntry event;
+
+								event.args = args;
+								args[0] = (s32)"fImg_peron";
+								args[1] = 0;
+								args[2] = 0;
+								args[3] = 2;
+								args[4] = 0;
+								args[5] = 0;
+								args[6] = 608;
+								args[7] = 480;
+								evt_img_alloc_capture(&event, TRUE);
+								break;
+							}
+						}
+						entry->field_0x8++;
+						break;
+					case 1:
+						if (entry->image->field_0x118 >= 1.0f) {
+							switch (entry->type) {
+								case 55:
+								case 57:
+								case 59:
+								case 60:
+								case 61:
+								case 62:
+									*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+#ifdef MUST_MATCH
+									{
+										const char* anim = "A_2";
+
+										entry->image->field_0x108 = (s32)anim;
+									}
+#else
+									entry->image->field_0x108 = (s32)"A_2";
+#endif
+									break;
+								default:
+									entry->flags |= 2;
+									break;
+							}
+							entry->field_0x8++;
+						}
+						break;
+					case 2:
+						if (entry->image->field_0x118 >= 1.0f) {
+							entry->flags |= 2;
+							entry->field_0x8++;
+						}
+						break;
+				}
+				break;
+			case 50:
+			case 53:
+			case 54:
+			case 56:
+			case 58:
+				switch (entry->field_0x8) {
+					case 0:
+						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
+						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
+						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
+						entry->image->field_0x108 = (s32)entry->field_0x64;
+						imgClearVirtualPoint(entry->image);
+						switch (entry->type) {
+							case 54:
+							case 56:
+							case 58:
+								psndSFXOn((const char*)0x403B5);
+								break;
+							case 50:
+							case 53:
+								psndSFXOn((const char*)0x40365);
+								break;
+						}
+						entry->field_0x8++;
+						break;
+					case 1:
+						if (entry->image->field_0x118 >= 1.0f) {
+							entry->flags |= 2;
+							imgRelease(entry->image, entry->imageType);
+							animPaperPoseRelease(entry->field_0x70);
+							entry->field_0x70 = -1;
+							entry->image = NULL;
+							if (entry->type == 53) {
+								offscreenDelete("fOff_peron");
+							}
+							entry->field_0x8++;
+						}
+						break;
+				}
+				break;
+			case 22:
+				switch (entry->field_0x8) {
+					case 0:
+						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+							break;
+						}
+						if (entry->field_0x6C >= 0) {
+							animPoseRelease(entry->field_0x6C);
+						}
+						entry->field_0x6C = animPoseEntry(entry->field_0x60, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->field_0x6C, 0x1800);
+						animPoseSetAnim(entry->field_0x6C, entry->field_0x64, TRUE);
+						*(GXColor*)entry->field_0x74 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+						animPoseSetMaterialFlagOff(entry->field_0x6C, 0x40);
+						entry->field_0x8++;
+					case 1:
+						animPoseMain(entry->field_0x6C);
+						if (animPoseGetLoopTimes(entry->field_0x6C) >= 1.0f) {
+							entry->flags |= 2;
+							entry->field_0x8++;
+						}
+						break;
+					case 2:
+						animPoseMain(entry->field_0x6C);
+						break;
+				}
+				break;
+			case 23:
+				switch (entry->field_0x8) {
+					case 0:
+						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+							break;
+						}
+						if (entry->field_0x6C >= 0) {
+							animPoseRelease(entry->field_0x6C);
+						}
+						entry->field_0x6C = animPoseEntry(entry->field_0x60, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->field_0x6C, 0x1800);
+						animPoseSetAnim(entry->field_0x6C, entry->field_0x64, TRUE);
+						*(GXColor*)entry->field_0x74 = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+						animPoseSetMaterialFlagOff(entry->field_0x6C, 0x40);
+						entry->field_0x8++;
+					case 1:
+						if (animPoseGetLoopTimes(entry->field_0x6C) >= 0.5f) {
+							entry->field_0x74[0] *= 0.98f;
+							entry->field_0x74[1] *= 0.98f;
+							entry->field_0x74[2] *= 0.98f;
+							animPoseSetMaterialEvtColor(entry->field_0x6C, *(GXColor*)entry->field_0x74);
+							animPoseSetMaterialFlagOn(entry->field_0x6C, 0x40);
+						}
+						animPoseMain(entry->field_0x6C);
+						if (animPoseGetLoopTimes(entry->field_0x6C) >= 1.0f) {
+							entry->flags |= 2;
+							entry->field_0x8++;
+							animPoseRelease(entry->field_0x6C);
+							entry->field_0x6C = -1;
+						}
+						break;
+				}
+				break;
+			case 24:
+			case 25:
+			case 26:
+			case 27:
+			case 28:
+			case 29:
+			case 30:
+			case 31:
+			case 32:
+			case 34:
+			case 35:
+			case 36:
+			case 37:
+			case 38:
+			case 40:
+			case 51:
+			case 63:
+			case 64:
+				switch (entry->field_0x8) {
+					case 0:
+						if (!animGroupBaseAsync(entry->field_0x60, entry->imageType, NULL)) {
+							break;
+						}
+						switch (entry->type) {
+							case 24:
+							case 27:
+							case 63:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40325);
+								break;
+							case 25:
+							case 28:
+							case 64:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40326);
+								break;
+							case 29:
+							case 35:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40321);
+								break;
+							case 30:
+							case 36:
+								*(s32*)&entry->field_0x94[4] = psndSFXOn((const char*)0x40322);
+								break;
+						}
+						if (entry->field_0x6C >= 0) {
+							animPoseRelease(entry->field_0x6C);
+						}
+						entry->field_0x6C = animPoseEntry(entry->field_0x60, entry->imageType);
+						animPoseSetMaterialFlagOn(entry->field_0x6C, 0x1800);
+						animPoseSetAnim(entry->field_0x6C, entry->field_0x64, TRUE);
+						entry->field_0x8++;
+						if (entry->type == 34 || entry->type == 40) {
+							entry->field_0x90 = 3.0f;
+							*(s32*)&entry->field_0x94[0] = 0;
+						}
+					case 1:
+						animPoseMain(entry->field_0x6C);
+						if (entry->type == 34 || entry->type == 40) {
+							if (!(entry->flags & 8)) {
+								if (*(s32*)&entry->field_0x94[0] < 180) {
+									entry->field_0x90 = intplGetValue(12, ++*(s32*)&entry->field_0x94[0], 180, 3.0f, 1.0f);
+								}
+							}
+							else {
+								if (*(s32*)&entry->field_0x94[0] < 90) {
+									entry->field_0x90 = intplGetValue(12, ++*(s32*)&entry->field_0x94[0], 90, 1.5f, 1.0f);
+								}
+							}
+						}
+						if (animPoseGetLoopTimes(entry->field_0x6C) >= 1.0f) {
+							if (entry->type == 34 || entry->type == 40) {
+								if (!(entry->flags & 8)) {
+									if (*(s32*)&entry->field_0x94[0] == 180) {
+										entry->flags |= 2;
+										entry->field_0x8++;
+									}
+								}
+								else {
+									if (*(s32*)&entry->field_0x94[0] == 90) {
+										entry->flags |= 2;
+										entry->field_0x8++;
+									}
+								}
+							}
+							else {
+								entry->flags |= 2;
+								entry->field_0x8++;
+								psndSFXOff(*(s32*)&entry->field_0x94[4]);
+								if (entry->type == 25 || entry->type == 28 || entry->type == 64) {
+									animPoseRelease(entry->field_0x6C);
+									entry->field_0x6C = -1;
+								}
+							}
+						}
+						break;
+					case 2:
+						if (entry->field_0x6C >= 0) {
+							animPoseMain(entry->field_0x6C);
+						}
+						break;
+				}
+				break;
+			case 33:
+			case 39:
+				switch (entry->field_0x8) {
+					case 0:
+						entry->field_0x90 = 1.0f;
+						*(s32*)&entry->field_0x94[0] = 0;
+						entry->field_0x8++;
+					case 1:
+						animPoseMain(entry->field_0x6C);
+						if (*(s32*)&entry->field_0x94[0] < 120) {
+							entry->field_0x90 = intplGetValue(12, ++*(s32*)&entry->field_0x94[0], 120, 1.0f, 3.0f);
+						}
+						else {
+							entry->flags |= 2;
+							entry->field_0x8++;
+							animPoseRelease(entry->field_0x6C);
+							entry->field_0x6C = -1;
+						}
+						break;
+				}
+				break;
+		}
+
+		switch (entry->type) {
+			case 22:
+			case 23:
+			case 35:
+			case 36:
+			case 37:
+			case 38:
+			case 39:
+			case 40:
+				dispEntry(CAMERA_FADE, 0.0f, 0, disp_maku, entry);
+				break;
+			case 27:
+			case 28:
+			case 63:
+			case 64:
+				dispEntry(CAMERA_FADE2, 0.0f, 0, disp_maku, entry);
+				break;
+			case 24:
+			case 25:
+			case 26:
+			case 29:
+			case 30:
+			case 31:
+			case 32:
+			case 33:
+			case 34:
+			case 51:
+				dispEntry(CAMERA_3D_IMAGE, 0.0f, 0, disp_maku, entry);
+				break;
+			case 49:
+			case 50:
+			case 52:
+			case 53:
+			case 54:
+			case 55:
+			case 56:
+			case 57:
+			case 58:
+			case 59:
+			case 60:
+			case 61:
+			case 62:
+				if (entry->field_0x70 >= 0 && entry->callback != NULL) {
+					dispEntry(CAMERA_OFFSCREEN2, 0.0f, 0, entry->callback, entry->offparam);
+				}
+				break;
+			case 11:
+			case 12:
+			case 13:
+				dispEntry(CAMERA_2D, 1000.0f, 0, disp_texture, wp);
+				break;
+			case 5:
+			case 6:
+			case 14:
+			case 15:
+				dispEntry(CAMERA_3D, 0.0f, 7, disp_texture, wp);
+				break;
+			case 41:
+			case 42:
+			case 43:
+			case 44:
+			case 45:
+			case 46:
+			case 47:
+			case 48:
+				break;
+			default:
+				dispEntry(CAMERA_FADE, 0.0f, 0, disp_texture, wp);
+				break;
+		}
+	}
+
+	if (wp->flags & 0x3000) {
+		dispEntry(CAMERA_2D, 999.0f, 0, disp_tec, wp);
+	}
+	if (wp->flags & 0x8000) {
+		dispEntry(CAMERA_FADE, -100.0f, 0, disp_dummy_black, wp);
+	}
+	if (wp->flags & 0x4000) {
+		dispEntry(CAMERA_3D, 1000.0f, 7, disp_dummy_black, wp);
+	}
 }
 
 // NONMATCHING (99.97%): being reconstructed.
