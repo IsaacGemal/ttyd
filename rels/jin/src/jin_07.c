@@ -36,7 +36,7 @@ static void senteresa_ext_dispent(void);
 static void senteresa_ext_main(void);
 static TeresaEntry* pTeresa;
 u32 g_nNumOutBox[1];
-static u32 g_nNumEndProc[1];
+static s32 g_nNumEndProc[1];
 
 // clang-format off
 extend_data(32,
@@ -163,7 +163,6 @@ static f32 randf(f32 min, f32 max) {
 static inline f32 scale(f32 r, f32 min, f32 max) {
     return r * (max - min) + min;
 }
-
 static void senteresa_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count = extGetPoseNum();
@@ -204,7 +203,6 @@ static void senteresa_ext_init(void) {
     g_nNumOutBox[0] = 0;
     g_nNumEndProc[0] = 0;
 }
-
 static f32 computePos(f32 a, f32 b, f32 t) {
     return (1.0f - t) * a + t * b;
 }
@@ -228,9 +226,9 @@ void computePosHermite(ExtPose* pose, f32* p) {
     (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
 }
 
-// NONMATCHING (78.2%): the Hermite math matches; the original keeps t*t in a
-// callee-saved f31 and schedules the basis loads/stores differently. 104 of 224
-// instructions differ, mostly register allocation.
+// NONMATCHING (78.48%): Hermite math matches; 95 of 224 instructions differ,
+// mostly register allocation (the original keeps t*t in callee-saved f31).
+// g_nNumEndProc is signed (final compare is cmpwi, not cmplwi).
 static void senteresa_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count;
@@ -296,11 +294,9 @@ static void senteresa_ext_main(void) {
         extReset();
     }
 }
-
 static void senteresa_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);
 }
-
 static void senteresa_ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -309,7 +305,6 @@ static void senteresa_ext_disp(void) {
     extDraw();
     extLoadTextureExit();
 }
-
 static void senteresa_ext_shadow_disp(void) {
     static Mtx mt_600 = {
         {10.0f, 0.0f, 0.0f, 0.0f},
@@ -323,7 +318,6 @@ static void senteresa_ext_shadow_disp(void) {
     extLoadShadowTev();
     extDrawShadow();
 }
-
 USER_FUNC(senteresa_get_position) {
     s32* args = event->args;
     ExtPose* poses = extGetPosePtr();
@@ -334,7 +328,6 @@ USER_FUNC(senteresa_get_position) {
     evtSetFloat(event, args[3], (*pose->matrix)[2][3]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_okure_move_init) {
     s32* args = event->args;
 
@@ -347,9 +340,9 @@ USER_FUNC(senteresa_okure_move_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (84.14%): the Hermite basis now matches. What differs is GPR
-// allocation: the original keeps the args pointer in r31 (reused for npc) and
-// only saves r30/r31, ours needs a third callee-saved register for args.
+// NONMATCHING (84.23%): the Hermite math and stack slots (vb 0x8, va 0x14, pos
+// 0x20) match; only GPR allocation differs: the original keeps the args pointer
+// in r31 and reuses it for npc, ours needs a third callee-saved register.
 USER_FUNC(senteresa_okure_move) {
     s32* args = event->args;
     NpcEntry* npc = npcNameToPtr("テレサ");
@@ -366,9 +359,9 @@ USER_FUNC(senteresa_okure_move) {
     f32 h11 = (t - 1.0f) * (t * t);
     f32 h10 = t * omt * omt;
     f32 h01 = (3.0f - two_t) * (t * t);
+    Vec pos;
     Vec va = vec3_jin_00007fb4;
     Vec vb = vec3_jin_00007fc0;
-    Vec pos;
 
     pos.x = p0 * h00 + va.x * h10 + vb.x * h11 + p3 * h01;
     pos.y = p1 * h00 + va.y * h10 + vb.y * h11 + p4 * h01;
@@ -612,7 +605,7 @@ u32 g_nNumOutBox[1] = {
     0x00000000,
 };
 
-static u32 g_nNumEndProc[1] = {
+static s32 g_nNumEndProc[1] = {
     0x00000000,
 };
 // clang-format on

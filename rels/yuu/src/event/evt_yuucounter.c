@@ -57,7 +57,6 @@ EVT_END()
 
 static u8 yuunpc_wp[0x4];
 static YuuCounterWork* _wp;
-
 USER_FUNC(unk_yuu_00009d5c) {
     s32* args = event->args;
     s32 flag = evtGetValue(event, args[0]);
@@ -72,7 +71,7 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.65%): `work` still lands in r31 (target r24); the case loop's base/digit/skip registers
+// NONMATCHING (96.64%): `work` still lands in r31 (target r24); the case loop's base/digit/skip registers
 // and the GXColor copy's scheduling follow from that. Writing case 0/1 in place (`seconds %= ...`) and case
 // 2 with a separate `rem` coalesces them like the target (`time` is now r20).
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
@@ -255,7 +254,6 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         break;
     }
 }
-
 USER_FUNC(evt_yuucounter_main_func) {
     YuuCounterWork* work = (YuuCounterWork*)event->lwData[0];
 
@@ -266,7 +264,6 @@ USER_FUNC(evt_yuucounter_main_func) {
     dispEntry(CAMERA_2D, 1000.0f, 0, evt_yuucounter_disp_func, work);
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(evt_yuucounter_alloc) {
     s32* args = event->args;
     YuuCounterWork* work;
@@ -299,7 +296,6 @@ USER_FUNC(evt_yuucounter_alloc) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_yuucounter_free) {
     YuuCounterWork* work = _wp;
 
@@ -316,32 +312,27 @@ USER_FUNC(evt_yuucounter_free) {
     _wp = NULL;
     return EVT_RETURN_DONE;
 }
-
 s32 yuucounter_get_data(void) {
     if (_wp == NULL) {
         return 0;
     }
     return _wp->time;
 }
-
 void yuucounter_set_data(s32 data) {
     if (_wp != NULL) {
         _wp->time = data;
     }
 }
-
 void yuucounter_flag_on(u32 mask) {
     if (_wp != NULL) {
         _wp->flags2 |= mask;
     }
 }
-
 void yuucounter_flag_off(u32 mask) {
     if (_wp != NULL) {
         _wp->flags2 &= ~mask;
     }
 }
-
 s32 yuucounter_flag(s32 mask) {
     if (_wp == NULL) {
         return 0;

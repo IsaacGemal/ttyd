@@ -39,37 +39,45 @@ static f32 randf(f32 min, f32 max);
 static HeiExtWork* wp;
 
 // Inline degree/radian sine and cosine approximations (same polynomials used by
-// the npc blur path), inlined into the jump updaters below.
+// the npc blur path). Assigning the coefficients to non-const locals first
+// (rather than using the literals directly) stops MWCC rematerialising them in
+// every branch, which recovers most of both callers.
 static inline f32 heiSinf(f32 rad) {
-    f32 f0, f1, sinv = 0.00761f;
+    f32 c0, c1, c2, pi;
+    f32 f0, f1, sinv;
 
-    if (rad <= 3.1415927f) {
+    c0 = 0.00761f;
+    c1 = 0.16605f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    sinv = c0;
+    if (rad <= pi) {
         if (rad <= 1.5707964f) {
             f0 = rad * rad;
-            sinv = sinv * f0 - 0.16605f;
-            sinv = sinv * f0 + 1.0f;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
             sinv = sinv * rad;
         } else {
             f0 = rad - 1.5707964f;
             f1 = 1.5707964f - f0;
             f0 = f1 * f1;
-            sinv = sinv * f0 - 0.16605f;
-            sinv = sinv * f0 + 1.0f;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
             sinv = sinv * f1;
         }
     } else if (rad < 4.712389f) {
-        f1 = rad - 3.1415927f;
+        f1 = rad - pi;
         f0 = f1 * f1;
-        sinv = sinv * f0 - 0.16605f;
-        sinv = sinv * f0 + 1.0f;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
         sinv = sinv * f1;
         sinv = -sinv;
     } else {
         f0 = rad - 4.712389f;
         f1 = 1.5707964f - f0;
         f0 = f1 * f1;
-        sinv = sinv * f0 - 0.16605f;
-        sinv = sinv * f0 + 1.0f;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
         sinv = sinv * f1;
         sinv = -sinv;
     }
@@ -77,33 +85,39 @@ static inline f32 heiSinf(f32 rad) {
 }
 
 static inline f32 heiCosf(f32 rad) {
-    f32 f0, cosv = 0.03705f;
+    f32 c0, c1, c2, pi;
+    f32 f0, cosv;
 
-    if (rad <= 3.1415927f) {
+    c0 = 0.03705f;
+    c1 = 0.4967f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    cosv = c0;
+    if (rad <= pi) {
         if (rad <= 1.5707964f) {
             f0 = rad * rad;
-            cosv = cosv * f0 - 0.4967f;
-            cosv = cosv * f0 + 1.0f;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
         } else {
             f0 = rad - 1.5707964f;
             f0 = 1.5707964f - f0;
             f0 = f0 * f0;
-            cosv = cosv * f0 - 0.4967f;
-            cosv = cosv * f0 + 1.0f;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
             cosv = -cosv;
         }
     } else if (rad < 4.712389f) {
-        f0 = rad - 3.1415927f;
+        f0 = rad - pi;
         f0 = f0 * f0;
-        cosv = cosv * f0 - 0.4967f;
-        cosv = cosv * f0 + 1.0f;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
         cosv = -cosv;
     } else {
         f0 = rad - 4.712389f;
         f0 = 1.5707964f - f0;
         f0 = f0 * f0;
-        cosv = cosv * f0 - 0.4967f;
-        cosv = cosv * f0 + 1.0f;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
     }
     return cosv;
 }
@@ -157,13 +171,11 @@ static ExtEntry ext_data[21] = {
     { "c_chorobon", "CBN_W_1", 38.0f },
     { NULL, NULL, 0.0f },
 };
-
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
 
     return r * (max - min) + min;
 }
-
 static void ext_init(void) {
     s32 i;
     ExtPose* pose;
@@ -191,7 +203,6 @@ static void ext_init(void) {
         entry++;
     }
 }
-
 static void ext_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();
     extLoadVertex();
@@ -200,7 +211,6 @@ static void ext_disp(CameraId cameraId, void* param) {
     extDraw();
     extLoadTextureExit();
 }
-
 static void ext_shadow_disp(void) {
     static Mtx mt = {
         {8.0f, 0.0f, 0.0f, 0.0f},
@@ -214,7 +224,6 @@ static void ext_shadow_disp(void) {
     extLoadShadowTev();
     extDrawShadow();
 }
-
 void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 z, f32 v1, f32 v2) {
     Vec pos = { 0 };
     f32 dy;
@@ -237,12 +246,13 @@ void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 
     entry->field_0x24 = field24;
 }
 
-// Structure and the switch dispatch match. MWCC rematerialises the
-// heiSinf/heiCosf coefficients per branch here instead of hoisting them, and
-// the int->float constant is allocated to f2/f1 swapped, which shifts the
-// float/vector register allocation. The `sfx` local is hoisted into a
+// Structure, the switch dispatch and the inlined heiSinf/heiCosf blocks now
+// match. MWCC still picks a different colouring for the loop's live pointers
+// (pose/entry/sfx/i land in r28/r27/r26/r25, the original's r25/r24/r27/r26)
+// and the case-0 randf temporaries sit at 0x34/0x30 instead of 0x3c/0x38,
+// which shifts every later stack slot. The `sfx` local is hoisted into a
 // callee-saved register as in the original.
-// NONMATCHING (54.39%): float-register allocation / constant scheduling.
+// NONMATCHING (72.05%): loop register colouring + case-0 stack slot offsets.
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static void ext_main(void) {
     MarioWork* mario = marioGetPtr();
@@ -389,11 +399,9 @@ static void ext_main(void) {
     }
 }
 #pragma opt_propagation reset
-
 static void ext_dispent(void) {
     dispEntry(4, 0.0f, 1, ext_disp, NULL);
 }
-
 USER_FUNC(evt_chorobon_escape) {
     s32 i;
     HeiExtEntry* entry;
@@ -407,7 +415,6 @@ USER_FUNC(evt_chorobon_escape) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_chorobon_wait) {
     s32 i;
     HeiExtEntry* entry;
@@ -424,12 +431,13 @@ USER_FUNC(evt_chorobon_wait) {
     return EVT_RETURN_DONE;
 }
 
-// Frame (0x90, f28-f31) and prologue match; `volatile` puts b/speed in stack
-// slots. The 4-byte temp for the userdataf[1] result at 0x8 is forced under
-// MUST_MATCH, which puts b/speed at 0xc/0x10 like the original. Remaining:
-// the heiSinf/heiCosf coefficient loads are scheduled per branch and some
-// userdataf reads are not hoisted into the 0x8/0xc/0x10 temps before angleABf.
-// NONMATCHING (59.29%): coefficient scheduling + userdataf read hoisting.
+// Frame (0x90, f28-f31) and prologue match, as do the b/speed branch
+// (b == 0 ? b = dist/speed : speed = dist/b) and the sin/cos polynomials.
+// What is left: because "volatile" puts b/speed at 0xc/0x8 where the original
+// has them at 0xc/0x10 (the userdataf[1] temp owns 0x8 there), the whole
+// stack layout is four bytes low, and the FPR allocator starts at f0 instead
+// of f1 (original rad=f5, c0..c2=f4..f2, pi=f1).
+// NONMATCHING (74.6%): volatile stack slot placement + FPR base register.
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static USER_FUNC(npc_jump) {
     s32* args = event->args;
@@ -515,7 +523,6 @@ static USER_FUNC(npc_jump) {
     return EVT_RETURN_BLOCK;
 }
 #pragma opt_propagation reset
-
 USER_FUNC(wait_anim_frame) {
     f32 frame = evtGetFloat(event, event->args[0]);
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("ゴールドチョロボン")->poseId);
@@ -525,7 +532,6 @@ USER_FUNC(wait_anim_frame) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(wait_anim_end) {
     NpcEntry* npc = npcNameToPtr("ゴールドチョロボン");
 

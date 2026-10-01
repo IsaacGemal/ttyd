@@ -454,7 +454,6 @@ EVT_BEGIN(kpa_stage_clear)
 EVT_END()
 
 u8* kwp;
-
 void _prolog(void) {
     voidfunctionptr* ctor;
 
@@ -470,7 +469,6 @@ void _prolog(void) {
     relSetEvtAddr("kpa_06", kpa_06_init_evt);
     relSetEvtAddr("kpa_07", kpa_07_init_evt);
 }
-
 void _epilog(void) {
     voidfunctionptr* dtor;
 
@@ -478,20 +476,16 @@ void _epilog(void) {
         (*dtor)();
     }
 }
-
 void _unresolved(void) {
 }
-
 USER_FUNC(kpa_status_get_stage) {
     evtSetValue(event, event->args[0], kwp[0]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_mobj_on) {
     mobjKoopaOn();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_make_mobj_name) {
     static s32 no;
     static char name[16];
@@ -502,7 +496,6 @@ USER_FUNC(kpa_make_mobj_name) {
     evtSetValue(event, args[0], (s32)name);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_make_item_name) {
     static s32 no;
     static char name[16];
@@ -528,18 +521,15 @@ USER_FUNC(kpa_add_coin) {
     pouchAddCoin(-1);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_nohitenemy_ct_clear) {
     MarioWork* mario = marioGetPtr();
     *(u16*)&mario->unk78[0] = 0;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(unk_kpa_00000a08) {
     unk_801f8cd0();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_set_scale) {
     f32 scale = evtGetFloat(event, event->args[0]);
     MarioWork* mario = marioGetPtr();
@@ -553,7 +543,6 @@ USER_FUNC(kpa_set_scale) {
     mario->wPlayerCollisionBox.y = 75.0f * scale;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_get_msg) {
     static char msgBuf[16];
     s32* args = event->args;
@@ -570,25 +559,27 @@ USER_FUNC(kpa_get_msg) {
     evtSetValue(event, args[0], (s32)msgBuf);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_muteki_check) {
     event->lwData[0] = kpaMutekiCheck();
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (79.41%): numeric_id is u16 and the original passes it to iconDispGx without
-// sign-extension (lhzx -> bl), i.e. iconDispGx's iconId parameter is u16, but include/driver/
-// icondrv.h declares it s16, so the compiler inserts an extsh. With the header changed to u16
-// the score rises to 83.53%, but the callee-saved register rotation (r27-r31) still differs.
+// NONMATCHING (86.21%): iconDispGx's iconId is really u16 (icondrv.h says s16) and
+// pouchGetKpaCoin's header says u8, but the original zero-extends neither, so both calls go
+// through a cast under MUST_MATCH; the rest is register allocation (see REPORT.md).
 void kpa_status_disp(CameraId cameraId, void* param) {
     Vec pos;
-    s32 digits[6];
-    s32 i;
     s32 value;
+    s32 i;
+    s32 digits[6];
 
     pos.x = -210.0f;
     pos.y = 160.0f;
-    iconDispGx(&pos, 0x10, gp->language == 0 ? 0x206 : 0x210, 1.0f);
+#ifdef MUST_MATCH
+    ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, (u32)gp->language != 0 ? 0x210 : 0x206, 1.0f);
+#else
+    iconDispGx(&pos, 0x10, (u32)gp->language == 0 ? 0x206 : 0x210, 1.0f);
+#endif
     pos.x = 50.0f;
     iconDispGx(&pos, 0x10, 0x208, 1.0f);
     pos.x = 220.0f;
@@ -609,7 +600,11 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     value %= 10;
     digits[5] = value;
     for (i = 0; i < 6; i++) {
+#ifdef MUST_MATCH
+        ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#else
         iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#endif
         pos.x += 20.0f;
     }
     pos.x += 20.0f;
@@ -617,17 +612,31 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     pos.x += 30.0f;
     iconDispGx(&pos, 0x10, 0x1D5, 1.0f);
 
+#ifdef MUST_MATCH
+    // pouchGetKpaCoin's header says u8, but the original does not zero-extend the result
+    // (no clrlwi before the division); call through a u32-returning pointer to match.
+    value = ((u32 (*)(void))pouchGetKpaCoin)();
+#else
     value = pouchGetKpaCoin();
+#endif
     pos.x += 20.0f;
     digits[0] = value / 10;
     digits[1] = value % 10;
     for (i = 0; i < 2; i++) {
+#ifdef MUST_MATCH
+        ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#else
         iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#endif
         pos.x += 20.0f;
     }
 
     pos.x = 50.0f;
+#ifdef MUST_MATCH
+    ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, numeric_id[kwp[0]], 1.0f);
+#else
     iconDispGx(&pos, 0x10, numeric_id[kwp[0]], 1.0f);
+#endif
     pos.x += 20.0f;
     iconDispGx(&pos, 0x10, 0x1EE, 1.0f);
 
@@ -636,7 +645,11 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     digits[0] = value / 10;
     digits[1] = value % 10;
     for (i = (digits[0] == 0); i < 2; i++) {
+#ifdef MUST_MATCH
+        ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#else
         iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#endif
         pos.x += 20.0f;
     }
 
@@ -648,16 +661,18 @@ void kpa_status_disp(CameraId cameraId, void* param) {
     value %= 10;
     digits[2] = value;
     for (i = 0; i < 3; i++) {
+#ifdef MUST_MATCH
+        ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#else
         iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+#endif
         pos.x += 20.0f;
     }
 }
-
 USER_FUNC(kpa_status_main) {
     dispEntry(8, 1000.0f, 0, kpa_status_disp, NULL);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_status_init) {
     EventEntry* newEvent;
     s32* args = event->args;
@@ -684,7 +699,6 @@ USER_FUNC(kpa_status_init) {
     kwp[2] = a2;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_set_time) {
     s32* args = event->args;
     s32 remain;
@@ -698,7 +712,6 @@ USER_FUNC(kpa_set_time) {
     evtSetValue(event, args[2], remain);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_pole_hitoff) {
     MapObjectEntry* entry = mobjNameToPtrNoAssert("pole");
 
@@ -725,12 +738,10 @@ void kpa_stageclear_disp(CameraId cameraId, void* param) {
     FontDrawEdgeOff();
 }
 #pragma opt_propagation reset
-
 USER_FUNC(kpa_stageclear_disp_entry) {
     dispEntry(8, 1000.0f, 0, kpa_stageclear_disp, NULL);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_time_countdown) {
     if (kwp[2] != 0) {
         kwp[2]--;
@@ -739,7 +750,6 @@ USER_FUNC(kpa_time_countdown) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpa_get_cam_pt) {
     s32* args = event->args;
     CameraEntry* cam = camGetPtr(4);

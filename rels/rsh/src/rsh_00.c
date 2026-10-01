@@ -383,7 +383,7 @@ void moamoa_dispent(void) {
 // (`lwz rD, wp@l(rB)`) where the original materialises the address
 // (`addi rB, rB, wp@l; lwz rD, 0(rB)`). Under MUST_MATCH a one-iteration loop keeps the address
 // materialised (LICM hoists `&wp` out of the loop before unrolling it).
-// NONMATCHING (99.1%): register colouring of `event` and `id` differs.
+// NONMATCHING (99.09%): register colouring of `event` and `id` differs.
 USER_FUNC(evt_moamoa_set_one) {
     ExtPose* pose;
     MoamoaEntry* entry;

@@ -311,7 +311,6 @@ EVT_BEGIN(kirimomi)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(marcoship_yure_func) {
     MarcoShip* ship = marcoship;
     s32* args = event->args;
@@ -362,7 +361,6 @@ USER_FUNC(marcoship_yure_func) {
     evtSetValue(event, args[1], ship->field_0xC);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(marcoship_yure_init_func) {
     MarcoShip* ship = _mapAlloc(0x20);
 
@@ -479,18 +477,15 @@ EVT_BEGIN(moya_effect05)
     END_LOOP
     RETURN
 EVT_END()
-
 static USER_FUNC(alpha_set_func) {
     _ap[0] = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(alpha_init_func) {
     _ap = _mapAlloc(1);
     _ap[0] = 0xFF;
     return EVT_RETURN_DONE;
 }
-
 static void alpha_tev(TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* ap = _ap;
@@ -713,7 +708,6 @@ u32 mist_pos[91] = {
     0x00000190, 0x0000001E, 0xFFFFFC18, 0x00000190,
     0x0000001E, 0xFFFFFB50, 0xFFFFD8F0,
 };
-
 USER_FUNC(mist_func) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -776,7 +770,6 @@ EVT_BEGIN(mist_setup)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(marcoship_shizumu_func) {
     f32 value = evtGetFloat(event, event->args[0]);
 
@@ -825,7 +818,6 @@ EVT_BEGIN(marcoship_shizumu)
     CALL(evt_snd_sfxoff, LW(10))
     RETURN
 EVT_END()
-
 USER_FUNC(elmos1000tai_start) {
     s32 i;
     NanNpcEntry* entry;
@@ -839,17 +831,14 @@ USER_FUNC(elmos1000tai_start) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_set_nami_anim_rate) {
     mapAnimRate[3] = evtGetFloat(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_set_fune_anim_rate) {
     mapAnimRate[1] = evtGetFloat(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_map_anim_rate) {
     f32* rate = mapAnimRate;
     f32 diff;
@@ -880,11 +869,9 @@ USER_FUNC(evt_map_anim_rate) {
     mapSetPlayRate("nami_02", rate[2]);
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(marcoship_stop_wait_func) {
     return (marcoship->field_0xC != 0) ? EVT_RETURN_DONE : 0;
 }
-
 USER_FUNC(marcoship_stop_func) {
     marcoship->field_0x10 = EVT_RETURN_DONE;
     return EVT_RETURN_DONE;
@@ -1423,7 +1410,6 @@ EVT_BEGIN(onryo_event)
     CALL(evt_bero_mapchange, STRING("muj_00"), STRING(""))
     RETURN
 EVT_END()
-
 USER_FUNC(splash_eff) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -1509,7 +1495,6 @@ EVT_BEGIN(kaizoku_hata)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(kaizoku_fune_eff) {
     Vec pos;
     EffectEntry* eff;
@@ -1804,7 +1789,6 @@ EVT_BEGIN(anm_yure)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(logo) {
     LogoWork* work;
 
@@ -2023,7 +2007,6 @@ static inline f32 fune_eff_add_x(f32 a, f32 b) {
     return a + b;
 }
 #endif
-
 USER_FUNC(fune_eff) {
     Vec pos;
     EffectEntry* eff1;
@@ -2191,7 +2174,6 @@ MarcoShip* marcoship;
 
 // TODO: write pressStartGX (static, 0x4d8 bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
-
 void elmos1000tai_seq00(struct NanNpcEntry* entry) {
     s32 elapsed;
 

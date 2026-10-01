@@ -289,7 +289,6 @@ static EVT_BEGIN(init_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
 BattleUnit* chorogun_get_ptr(void) {
     s32 i;
     BattleWork* wp = _battleWorkPointer;
@@ -303,7 +302,6 @@ BattleUnit* chorogun_get_ptr(void) {
     }
     return NULL;
 }
-
 void chorogun_ext_init(void) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
@@ -372,13 +370,15 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// NONMATCHING (97.84%): full state machine matches structurally; register allocation and pool slots differ.
+// NONMATCHING (98.44%): full state machine matches structurally; register allocation and pool slots differ.
 void chorogun_ext_main(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit = chorogun_get_ptr();
     ExtPose* pose = extGetPosePtr();
     s32 i;
     s32 alive = 0;
+    ChorogunEntry* entry;
+    f32 tx;
 
     for (i = 0; i < extGetPoseNum(); i++) {
         if (chorogun[i].flags & 1) {
@@ -387,9 +387,8 @@ void chorogun_ext_main(void) {
     }
     alive = 1000 - alive;
     for (i = 0; i < extGetPoseNum(); i++, pose++) {
-        ChorogunEntry* entry = &chorogun[i];
-
         pose->field_0x10 = (gp->retraceCount + i * i) % 20;
+        entry = &chorogun[i];
         (*pose->matrix)[0][3] += entry->position.x;
         (*pose->matrix)[1][3] += entry->position.y;
         (*pose->matrix)[2][3] += entry->position.z;
@@ -434,9 +433,9 @@ void chorogun_ext_main(void) {
                 if ((*pose->matrix)[1][3] > 0.0f) {
                     entry->position.y += -0.5f;
                 } else {
-                    f32 dz = entry->target.z - (*pose->matrix)[2][3];
                     f32 dx = entry->target.x - (*pose->matrix)[0][3];
-                    f32 dist = (f32)sqrt(dz * dz + dx * dx);
+                    f32 dz = entry->target.z - (*pose->matrix)[2][3];
+                    f32 dist = (f32)sqrt(dx * dx + dz * dz);
 
                     if (i % 100 == 0) {
                         Vec pos = vec3_3;
@@ -467,15 +466,17 @@ void chorogun_ext_main(void) {
                 entry->state = 0x15;
                 break;
             case 0x15: {
-                f32 tx = intplGetValue(0, alive, 1000, entry->target.x, unit->mHomePosition.x) +
-                         (unit->mPosition.x - unit->mHomePosition.x);
-                f32 tz = intplGetValue(0, alive, 1000, entry->target.z, unit->mHomePosition.z) +
-                         (unit->mPosition.z - unit->mHomePosition.z);
+                f32 tz;
+
+                tx = intplGetValue(0, alive, 1000, entry->target.x, unit->mHomePosition.x) +
+                     (unit->mPosition.x - unit->mHomePosition.x);
+                tz = intplGetValue(0, alive, 1000, entry->target.z, unit->mHomePosition.z) +
+                     (unit->mPosition.z - unit->mHomePosition.z);
 
                 if ((*pose->matrix)[1][3] <= unit->mPosition.y) {
-                    f32 dz = tz - (*pose->matrix)[2][3];
                     f32 dx = tx - (*pose->matrix)[0][3];
-                    f32 dist = (f32)sqrt(dz * dz + dx * dx);
+                    f32 dz = tz - (*pose->matrix)[2][3];
+                    f32 dist = (f32)sqrt(dx * dx + dz * dz);
 
                     if (i % 100 == 0) {
                         Vec pos = vec3_4;
@@ -513,9 +514,9 @@ void chorogun_ext_main(void) {
             }
             case 0x1F:
                 if ((*pose->matrix)[1][3] <= 0.0f) {
-                    f32 dz = entry->targetZ - (*pose->matrix)[2][3];
                     f32 dx = entry->targetX - (*pose->matrix)[0][3];
-                    f32 dist = (f32)sqrt(dz * dz + dx * dx);
+                    f32 dz = entry->targetZ - (*pose->matrix)[2][3];
+                    f32 dist = (f32)sqrt(dx * dx + dz * dz);
 
                     if (i % 100 == 0) {
                         Vec pos = vec3_5;
@@ -632,7 +633,6 @@ void chorogun_ext_main(void) {
     }
     dispEntry(4, 0.0f, 1, (DispCallback)chorogun_ext_disp, NULL);
 }
-
 void chorogun_ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -641,7 +641,6 @@ void chorogun_ext_disp(void) {
     extDraw();
     extLoadTextureExit();
 }
-
 USER_FUNC(chorogun_get_alive_num) {
     s32* args = event->args;
     s32 i;
@@ -655,12 +654,10 @@ USER_FUNC(chorogun_get_alive_num) {
     evtSetValue(event, args[0], count);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(chorogun_set_target_id) {
     chorogun_targetId = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(chorogun_appear) {
     s32 i;
     s32 count;
@@ -684,7 +681,6 @@ USER_FUNC(chorogun_appear) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(chorogun_approach_target) {
     s32 i;
 
@@ -816,8 +812,6 @@ static ChorogunExtEntry chorogun_ext_entry_data[21] = {
     { "c_chorobon", "CBN_W_1", 38.0f },
     { NULL, NULL, 0.0f },
 };
-
-
 USER_FUNC(chorogun_dive_target) {
     s32 ids[1000];
     s32 i;
@@ -873,8 +867,6 @@ USER_FUNC(chorogun_dive_target) {
     }
     return EVT_RETURN_DONE;
 }
-
-
 USER_FUNC(chorogun_bound_target) {
     s32 id = evtGetValue(event, event->args[0]);
 
@@ -901,14 +893,12 @@ __declspec(section ".rodata") Vec vec3_4 = { 0.0f, 0.0f, 0.0f };
 __declspec(section ".rodata") Vec vec3_5 = { 0.0f, 0.0f, 0.0f };
 __declspec(section ".rodata") Vec vec3_6 = { 0.0f, 0.0f, 0.0f };
 __declspec(section ".rodata") Vec vec3_7 = { 0.0f, 0.0f, 0.0f };
-
 USER_FUNC(chorogun_counterd) {
     s32 id = evtGetValue(event, event->args[0]);
 
     chorogun[id].state = 0x30;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(chorogun_after_attack) {
     s32 i;
 
@@ -921,7 +911,6 @@ USER_FUNC(chorogun_after_attack) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(chorogun_escape) {
     BattleUnit* unit;
     s32 j;
@@ -994,7 +983,6 @@ count_store:
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(chorogun_escape_all) {
     s32 i;
 

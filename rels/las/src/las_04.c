@@ -511,7 +511,7 @@ void _firebar_trans(FirebarEntry* entry) {
     }
 }
 
-// NONMATCHING (84.86%): the original spills `entry` to 0x8(r1), reloading it into
+// NONMATCHING (84.85%): the original spills `entry` to 0x8(r1), reloading it into
 // registers for the loops; MWCC keeps it in r31 throughout, which shifts the
 // callee-saved register allocation and the int->float conversion stack slots.
 USER_FUNC(firebar_entry) {
@@ -646,7 +646,6 @@ USER_FUNC(firebar_entry) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(firebar_disp_evt) {
     if (evtCheckID(event->lwData[0])) {
         FirebarEntry* entry = (FirebarEntry*)evtGetPtrID(event->lwData[0])->userdata[0];
@@ -669,7 +668,6 @@ USER_FUNC(firebar_disp_evt) {
     }
     return EVT_RETURN_DONE;
 }
-
 void firebar_disp(CameraId camera, void* param) {
     FirebarEntry* entry = param;
     FirebarSegment* seg = entry->segments;
@@ -684,7 +682,6 @@ void firebar_disp(CameraId camera, void* param) {
         animPoseDrawMtx(seg->poseId, mtx, 3, 0.0f, 2.0f * entry->scale);
     }
 }
-
 USER_FUNC(coin_entry) {
     s32* args = event->args;
     s32 v0 = evtGetValue(event, args[0]);
@@ -703,7 +700,6 @@ USER_FUNC(coin_entry) {
     *(s32*)(itemBase + 0x54) = v3;
     return EVT_RETURN_DONE;
 }
-
 void firebar_cb(FirebarEntry* entry, s32 kind) {
     MarioWork* mario = marioGetPtr();
 

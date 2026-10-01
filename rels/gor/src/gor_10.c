@@ -240,7 +240,6 @@ static inline GXColor drawColor(u8 a) {
     return c;
 }
 #endif
-
 static void draw(CameraId cameraId, void* param) {
     winTexInit((TEXPalette*)wp->file->data[0]);
     {
@@ -254,7 +253,6 @@ static void draw(CameraId cameraId, void* param) {
         winTexSet(4, vec3_gor_0001da38, vec3_gor_0001da44, color);
     }
 }
-
 USER_FUNC(tegami) {
     if (isFirstCall) {
         wp = _mapAlloc(8);
@@ -269,7 +267,6 @@ USER_FUNC(tegami) {
     dispEntry(8, 0.0f, 0, draw, wp);
     return EVT_RETURN_BLOCK;
 }
-
 void tegami_delete(void) {
     if (wp != NULL && wp->file != NULL) {
         fileFree(wp->file);
@@ -423,12 +420,10 @@ static void depthDisp(CameraId cameraId, void* param) {
     sysWaitDrawSync();
 }
 #pragma global_optimizer reset
-
 USER_FUNC(depth) {
     dispEntry(8, 1200.0f, 0, depthDisp, NULL);
     return EVT_RETURN_BLOCK;
 }
-
 void mabutaDisp(CameraId cameraId, void* param) {
     f32 v;
     CameraEntry* cam;
@@ -459,12 +454,10 @@ void mabutaDisp(CameraId cameraId, void* param) {
     GXPosition3s16(0x130, -0xF0, 0);
     GXPosition3s16(-0x130, -0xF0, 0);
 }
-
 USER_FUNC(mabuta) {
     dispEntry(8, 1100.0f, 0, mabutaDisp, NULL);
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(cam_yure) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
 

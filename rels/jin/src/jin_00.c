@@ -1272,7 +1272,6 @@ EVT_END()
 
 
 // clang-format on
-
 USER_FUNC(get_npc_color) {
     s32* args = event->args;
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, args[0]));
@@ -1283,18 +1282,15 @@ USER_FUNC(get_npc_color) {
     evtSetValue(event, args[4], npc->color.a);
     return EVT_RETURN_DONE;
 }
-
 s32 randn(s32 min, s32 max) {
     return min + rand() % (max - min);
 }
-
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
     f32 d = max - min;
 
     return r * d + min;
 }
-
 f32 computeAngle(ExtPose* pose, NpcEntry* npc) {
     Mtx* m = pose->matrix;
     f32 angle = angleABf(npc->position.x, npc->position.z, (*m)[0][3], (*m)[2][3]);
@@ -1310,7 +1306,6 @@ f32 computeAngle(ExtPose* pose, NpcEntry* npc) {
     }
     return 90.0f + (360.0f - angle);
 }
-
 void computeMtx(ExtPose* pose, f32 angle) {
     Mtx m;
 
@@ -1325,7 +1320,6 @@ void computeMtx(ExtPose* pose, f32 angle) {
     (*pose->matrix)[2][1] = m[2][1];
     (*pose->matrix)[2][2] = m[2][2];
 }
-
 s32 computeAlpha(TeresaEntry* p, NpcEntry* npc, f32 angle) {
     f32 a;
 
@@ -1354,7 +1348,6 @@ s32 computeAlpha(TeresaEntry* p, NpcEntry* npc, f32 angle) {
         }
     }
 }
-
 static void computePos(TeresaEntry* p, Vec* out) {
     Mtx m;
     Vec v;
@@ -1365,7 +1358,6 @@ static void computePos(TeresaEntry* p, Vec* out) {
     PSMTXRotRad(m, 0x59, p->field_0x0C * 0.017453292f);
     PSMTXMultVec(m, &v, out);
 }
-
 static void senteresa_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
     MarioWork* mario = marioGetPtr();
@@ -1829,18 +1821,15 @@ static void senteresa_ext_main(void) {
         }
     }
 }
-
 static void senteresa_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);
 }
-
 void senteresa_loadRenderMode(void) {
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZCompLoc(0);
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
     GXSetZMode(1, 3, 1);
 }
-
 void senteresa_loadTev(void) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -1856,8 +1845,19 @@ void senteresa_loadTev(void) {
     GXSetNumTevStages(1);
 }
 
-// NONMATCHING (99.96%): 4 of 113 instructions differ in stack offsets only (the fog local/temp and the
-// loop's GXSetTevColor temp swap {0x8,0x10}); the other 6 operand diffs are anonymous-pool relocations.
+// Inlined into senteresa_ext_disp so its GXColor fog local lands in retail's 0x8 slot.
+static inline void senteresa_setupTev(void) {
+    GXColor fog = {0xFF, 0xFF, 0xFF, 0xFF};
+
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fog);
+}
 static void senteresa_ext_disp(void) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
     s32 count = extGetPoseNum();
@@ -1869,18 +1869,7 @@ static void senteresa_ext_disp(void) {
     GXSetZMode(1, 3, 1);
     extLoadVertex();
     extLoadTexture();
-    {
-        GXColor fog = {0xFF, 0xFF, 0xFF, 0xFF};
-
-        GXSetTevOrder(0, 0, 0, 4);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaIn(0, 7, 4, 1, 7);
-        GXSetNumChans(0);
-        GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fog);
-    }
+    senteresa_setupTev();
     GXSetNumTexGens(1);
     GXSetNumTevStages(1);
     for (i = 0; i < count; i++) {
@@ -1890,7 +1879,6 @@ static void senteresa_ext_disp(void) {
     }
     extLoadTextureExit();
 }
-
 static void senteresa_ext_shadow_disp(void) {
     static Mtx mt_859 = {
         {10.0f, 0.0f, 0.0f, 0.0f},
@@ -1904,7 +1892,6 @@ static void senteresa_ext_shadow_disp(void) {
     extLoadShadowTev();
     extDrawShadow();
 }
-
 USER_FUNC(senteresa_get_seq) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -1912,7 +1899,6 @@ USER_FUNC(senteresa_get_seq) {
     evtSetValue(event, args[1], pTeresa[idx].field_0x41);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_get_random_position) {
     s32* args = event->args;
     ExtPose* poses = extGetPosePtr();
@@ -1924,7 +1910,6 @@ USER_FUNC(senteresa_get_random_position) {
     evtSetFloat(event, args[2], (*pose->matrix)[2][3]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_tikaduku_stop) {
     s32 count = extGetPoseNum();
     s32 i;
@@ -1970,7 +1955,6 @@ USER_FUNC(senteresa_syugo) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_dispoff) {
     ExtPose* pose = extGetPosePtr();
     s32 count = extGetPoseNum();
@@ -1981,7 +1965,6 @@ USER_FUNC(senteresa_dispoff) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_huttobu) {
     ExtPose* pose = extGetPosePtr();
     NpcEntry* npc = npcNameToPtr("アトミックテレサ");
@@ -2018,7 +2001,6 @@ USER_FUNC(senteresa_huttobu) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_turiageru) {
     s32 n = extGetPoseNum();
     s32 i;
@@ -2033,16 +2015,13 @@ USER_FUNC(senteresa_turiageru) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_end) {
     extReset();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_wait_end_seq) {
     return g_nNumEndProc[0] == 200 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(senteresa_get_rot_center) {
     s32* args = event->args;
 
@@ -2051,7 +2030,6 @@ USER_FUNC(senteresa_get_rot_center) {
     evtSetValue(event, args[2], (s32)g_vecRotCenter.z);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(senteresa_mario_spd) {
     MarioWork* mario = marioGetPtr();
     f32 f = (f32)(20 - (s32)g_nNumHarituku[0]) / 20.0f;
@@ -2063,7 +2041,6 @@ USER_FUNC(senteresa_mario_spd) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(teresa_eff) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);

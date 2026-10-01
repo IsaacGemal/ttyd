@@ -492,7 +492,6 @@ EVT_BEGIN(koburon_talk)
     CALL(evt_npc_set_anim, STRING("me"), STRING("S_1"))
     RETURN
 EVT_END()
-
 static void alpha_tev(TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* ap = _ap;
@@ -505,18 +504,15 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
     param->field_C++;
 }
-
 static USER_FUNC(alpha_init_func) {
     _ap = _mapAlloc(1);
     *_ap = 0xFF;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(alpha_set_func) {
     *_ap = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(koburon_get_encount_info) {
     s32* args = event->args;
     s32 id = args[0];
@@ -525,7 +521,6 @@ USER_FUNC(koburon_get_encount_info) {
     evtSetValue(event, id, *(s32*)((u8*)fbat + 0x10));
     return EVT_RETURN_DONE;
 }
-
 void suifu_kyorokyoro(NanNpcEntry* entry) {
     s32 elapsed;
 
@@ -577,7 +572,6 @@ void suifu_kyorokyoro(NanNpcEntry* entry) {
         break;
     }
 }
-
 void suifu_kyorokyoro_init(NanNpcEntry* entry) {
     entry->field_0x68 = 0;
     entry->callback = suifu_kyorokyoro;
@@ -643,12 +637,10 @@ USER_FUNC(kaizoku_main_func) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(mario_main_init_func) {
     _op = _mapAlloc(0x40);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(mario_main_setup_func) {
     s32* args = event->args;
     f32 x = (f32)evtGetValue(event, args[0]);
@@ -734,7 +726,6 @@ USER_FUNC(mario_main_func) {
     odoodo->prevPosition = odoodo->position;
     return EVT_RETURN_DONE;
 }
-
 NanNpcEntry* random_choice_target(s32 type) {
     NanNpcWork* work = nanNPCWork;
     s32 index;
@@ -755,7 +746,6 @@ NanNpcEntry* random_choice_target(s32 type) {
     }
     return &work->entries[index];
 }
-
 void tobikakari_seq00(NanNpcEntry* entry) {
     void* dat = *(void**)((u8*)entry + 0xA0);
     s32 elapsed;
@@ -849,7 +839,6 @@ void tobikakari_seq00(NanNpcEntry* entry) {
         break;
     }
 }
-
 USER_FUNC(tobikakaru_init) {
     NanNpcWork* work = nanNPCWork;
     u8* dat;
@@ -889,7 +878,6 @@ USER_FUNC(tobikakaru_init) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(tobikakaru_end) {
     NanNpcWork* work = nanNPCWork;
     s32 i;
@@ -935,7 +923,6 @@ USER_FUNC(ship_rotate_rev) {
     evtSetFloat(event, args[4], angleABf(a, -b, c, -d) - 90.0f + 180.0f);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(cam_test_init_func) {
     s32* args = event->args;
     Vec v2;
@@ -973,7 +960,6 @@ USER_FUNC(cam_test_func) {
     evtSetValue(event, args[1], (s32)(0.0f - radius * c));
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(scale_func) {
     s32* args = event->args;
     f32 scale = evtGetFloat(event, args[0]);

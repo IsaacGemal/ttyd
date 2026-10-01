@@ -708,7 +708,6 @@ static u32 splineTableOut4_4[15] = {
     0xBF800000, 0xC1F00000, 0xC1C80000, 0xBF800000,
     0xC1C80000, 0xC1C80000, 0x00000000,
 };
-
 static USER_FUNC(barriern_zanzou) {
     BattleUnit* unit;
     s32 id;
@@ -717,7 +716,6 @@ static USER_FUNC(barriern_zanzou) {
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     barriern_zanzou_sub(isFirstCall, unit, zanzou_scale, 0);
 }
-
 static USER_FUNC(barriern_zanzou2) {
     BattleUnit* unit;
     s32 id;
@@ -809,7 +807,6 @@ static EVT_BEGIN(satellite_blur_off)
     END_LOOP
     RETURN
 EVT_END()
-
 static USER_FUNC(barriern_zanzou3) {
     BattleUnit* unit;
     s32 id;
@@ -819,8 +816,8 @@ static USER_FUNC(barriern_zanzou3) {
     barriern_zanzou_sub(isFirstCall, unit, zanzou3_scale, 2);
 }
 
-// NONMATCHING (97.8%): case0 stfsx registers and the always-phase address registers differ.
-// Fixed: attributes clear mask was ~0x80, must be ~0x01000000; count is signed (cmpw).
+// NONMATCHING (97.85%): the case-0 loop statement order now fixes the stfsx base registers; the always-phase
+// zanzou_count/float_1 address registers and the inner-loop temp load order still differ.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
     f32 temp2[5];
@@ -843,8 +840,8 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
         num = 0x24;
         base = 0.75f;
         for (i = 0; i < 5; i++) {
-            temp1[i] = 0.75f;
             temp2[i] = scale.value[i];
+            temp1[i] = 0.75f;
         }
         step = 0.5f;
         alpha1 = 0;
@@ -901,11 +898,12 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
     zanzou_count[0]++;
     return 0;
 }
-
-// NONMATCHING (97.87%): only the final inner BattleGetUnitPtr return differs (original has mr r0,r3; mr r4,r0).
 static USER_FUNC(barriern_satellite_zanzou) {
     s32 index;
     BattleUnit* unit;
+#ifdef MUST_MATCH
+    BattleUnit* p;
+#endif
     s32* args;
     s32 id;
     BattleWork* wp;
@@ -915,14 +913,20 @@ static USER_FUNC(barriern_satellite_zanzou) {
     index = evtGetValue(event, args[1]);
     wp = _battleWorkPointer;
     unit = BattleGetUnitPtr(wp, id);
+#ifdef MUST_MATCH
+    barriern_satellite_zanzou_sub(isFirstCall, (p = BattleGetUnitPtr(wp, unit->work[4 + index]), p),
+                                  satellite_zanzou_scale, index, 0);
+#else
     barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
                                   satellite_zanzou_scale, index, 0);
+#endif
 }
-
-// NONMATCHING (97.87%): same mr r0,r3 difference as barriern_satellite_zanzou.
 static USER_FUNC(barriern_satellite_zanzou2) {
     s32 index;
     BattleUnit* unit;
+#ifdef MUST_MATCH
+    BattleUnit* p;
+#endif
     s32* args;
     s32 id;
     BattleWork* wp;
@@ -932,12 +936,17 @@ static USER_FUNC(barriern_satellite_zanzou2) {
     index = evtGetValue(event, args[1]);
     wp = _battleWorkPointer;
     unit = BattleGetUnitPtr(wp, id);
+#ifdef MUST_MATCH
+    barriern_satellite_zanzou_sub(isFirstCall, (p = BattleGetUnitPtr(wp, unit->work[4 + index]), p),
+                                  satellite_zanzou2_scale, index, 1);
+#else
     barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
                                   satellite_zanzou2_scale, index, 1);
+#endif
 }
 
-// NONMATCHING (89.85%): register allocation shifted one register vs the original.
-// Fixed: attributes |= 0x10000 -> 0x01000000; part pointer reused after SetPartsScale; count signed (cmpw).
+// NONMATCHING (98.04%): the always-phase zanzou_count/float_1 address registers and the inner-loop temp
+// load order still differ.
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
                                          s32 index, s32 mode) {
     BattleUnitPart* part;
@@ -961,8 +970,8 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         num = 0x24;
         base = 0.75f;
         for (i = 0; i < 5; i++) {
-            temp1[i] = 0.75f;
             temp2[i] = scale.value[i];
+            temp1[i] = 0.75f;
         }
         step = 0.5f;
         alphaA = 0;
@@ -982,8 +991,9 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         a = 1;
         break;
     }
+    index = index + 1;
     if (isFirstCall) {
-        zanzou_count[index + 1] = 0;
+        zanzou_count[index] = 0;
         BtlUnit_GetPos(unit, &x, &y, &z);
         BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 1.0f, 1.0f, 1.0f);
         for (i = 2, j = 0; i <= 6; i++, j++) {
@@ -997,15 +1007,15 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         }
     }
     part = BtlUnit_GetPartsPtr(unit, 1);
-    s = intplGetValue(a, zanzou_count[0], num, 1.0f, base);
+    s = intplGetValue(4, zanzou_count[0], num, 1.0f, base);
     BtlUnit_SetPartsScale(part, s, s, 1.0f);
     for (i = 2, j = 0; i <= 6; i++, j++) {
         part = BtlUnit_GetPartsPtr(unit, i);
-        s = intplGetValue(a, zanzou_count[index + 1], num, temp2[j], temp1[j]);
+        s = intplGetValue(a, zanzou_count[index], num, temp2[j], temp1[j]);
         BtlUnit_SetPartsScale(part, s, s, 1.0f);
-        part->color.a = (u8)intplGetValue(0, zanzou_count[index + 1], num, (f32)alphaA, (f32)alphaB);
+        part->color.a = (u8)intplGetValue(0, zanzou_count[index], num, (f32)alphaA, (f32)alphaB);
     }
-    if (zanzou_count[index + 1] >= num) {
+    if (zanzou_count[index] >= num) {
         part = BtlUnit_GetPartsPtr(unit, 1);
         BtlUnit_SetPartsScale(part, 1.0f, 1.0f, 1.0f);
         part->color.a = 0xff;
@@ -1014,7 +1024,7 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
         }
         return 2;
     }
-    zanzou_count[index + 1]++;
+    zanzou_count[index]++;
     return 0;
 }
 
@@ -1084,7 +1094,6 @@ static EVT_BEGIN(unison_phase_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
 static u8 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, s32* table) {
     BarriernSatelliteTo* work;
 
@@ -1373,7 +1382,6 @@ static EVT_BEGIN(damage_check_event_sub)
     CALL(btlevtcmd_SetPartsPos, -2, LW(15), 0, -1000, 0)
     RETURN
 EVT_END()
-
 static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     BarriernSatelliteTo* work;
     BattleUnit* satellite;
@@ -1408,14 +1416,17 @@ static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (85.53%): inlined barriernSatelliteTo_Init hoists the spline table into a callee-saved register where the original rematerialises it.
+// NONMATCHING (88.39%): the inlined barriernSatelliteTo_Init keeps the spline tables live in callee-saved
+// registers where the original rematerialises each per branch.
 static USER_FUNC(barriernSatelliteToInside) {
-    BattleUnit* unit;
     s32* args;
     s32 id;
     s32 type;
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 spline;
     s32 i;
-    s32 ret;
+    s32 hasSat;
 
     args = event->args;
     id = evtGetValue(event, args[0]);
@@ -1424,50 +1435,50 @@ static USER_FUNC(barriernSatelliteToInside) {
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     if (isFirstCall) {
         for (i = 0; i < 4; i++) {
-            BattleUnitPart* part;
             if (unit->work[4 + i] == -1) {
                 continue;
             }
             part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1);
-            if (part->work[2] == (s32)splineTableOut1_1) {
+            spline = part->work[2];
+            if (spline == (s32)splineTableOut1_1) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn1_1);
             }
-            if (part->work[2] == (s32)splineTableOut2_1) {
+            if (spline == (s32)splineTableOut2_1) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn2_1);
             }
-            if (part->work[2] == (s32)splineTableOut2_2) {
+            if (spline == (s32)splineTableOut2_2) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn2_2);
             }
-            if (part->work[2] == (s32)splineTableOut3_1) {
+            if (spline == (s32)splineTableOut3_1) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_1);
             }
-            if (part->work[2] == (s32)splineTableOut3_2) {
+            if (spline == (s32)splineTableOut3_2) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_2);
             }
-            if (part->work[2] == (s32)splineTableOut3_3) {
+            if (spline == (s32)splineTableOut3_3) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_3);
             }
-            if (part->work[2] == (s32)splineTableOut4_1) {
+            if (spline == (s32)splineTableOut4_1) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_1);
             }
-            if (part->work[2] == (s32)splineTableOut4_2) {
+            if (spline == (s32)splineTableOut4_2) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_2);
             }
-            if (part->work[2] == (s32)splineTableOut4_3) {
+            if (spline == (s32)splineTableOut4_3) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_3);
             }
-            if (part->work[2] == (s32)splineTableOut4_4) {
+            if (spline == (s32)splineTableOut4_4) {
                 barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_4);
             }
         }
     }
-    ret = 0;
+    hasSat = 0;
     for (i = 0; i < 4; i++) {
         if (barriernSatelliteTo_Main(unit, i)) {
-            ret = 1;
+            hasSat = 1;
         }
     }
-    return ret ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+    return hasSat ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
 static EVT_BEGIN(wakka_attack_event)
@@ -1636,34 +1647,45 @@ static USER_FUNC(barriernSatelliteToOutside) {
     }
     return ret ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
-
-// NONMATCHING (58.44%): inlined outSplineTableSet_Sub scheduling/register allocation differs.
 static USER_FUNC(outSplineTableSet) {
     BattleUnit* unit;
+    BattleUnitPart* part;
     s32 id;
     s32 type;
+    s32* args;
 
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    args = event->args;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    type = evtGetValue(event, event->args[1]);
+    type = evtGetValue(event, args[1]);
     switch (type) {
     case 1:
-        outSplineTableSet_Sub(unit, 0, splineTableOut1_1);
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4]), 1);
+        part->work[2] = (s32)splineTableOut1_1;
         break;
     case 2:
-        outSplineTableSet_Sub(unit, 0, splineTableOut2_1);
-        outSplineTableSet_Sub(unit, 1, splineTableOut2_2);
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4]), 1);
+        part->work[2] = (s32)splineTableOut2_1;
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[5]), 1);
+        part->work[2] = (s32)splineTableOut2_2;
         break;
     case 3:
-        outSplineTableSet_Sub(unit, 0, splineTableOut3_1);
-        outSplineTableSet_Sub(unit, 1, splineTableOut3_2);
-        outSplineTableSet_Sub(unit, 2, splineTableOut3_3);
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4]), 1);
+        part->work[2] = (s32)splineTableOut3_1;
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[5]), 1);
+        part->work[2] = (s32)splineTableOut3_2;
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[6]), 1);
+        part->work[2] = (s32)splineTableOut3_3;
         break;
     case 4:
-        outSplineTableSet_Sub(unit, 0, splineTableOut4_1);
-        outSplineTableSet_Sub(unit, 1, splineTableOut4_2);
-        outSplineTableSet_Sub(unit, 2, splineTableOut4_3);
-        outSplineTableSet_Sub(unit, 3, splineTableOut4_4);
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4]), 1);
+        part->work[2] = (s32)splineTableOut4_1;
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[5]), 1);
+        part->work[2] = (s32)splineTableOut4_2;
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[6]), 1);
+        part->work[2] = (s32)splineTableOut4_3;
+        part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[7]), 1);
+        part->work[2] = (s32)splineTableOut4_4;
         break;
     }
     return EVT_RETURN_DONE;
@@ -1674,7 +1696,6 @@ static EVT_BEGIN(wawawa_attack_event_satellite_blur)
     CALL(barriern_satellite_zanzou2, -2, LW(0))
     RETURN
 EVT_END()
-
 static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BattleUnit* satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
 
@@ -1961,33 +1982,41 @@ static s32 zanzou_count[5] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000,
 };
-
-// NONMATCHING (80.98%): target-list build loop register allocation and stack frame (0x90 vs 0x80) differ.
 static USER_FUNC(barriern_wawawa_set_target) {
     s32* args;
-    s32 xs[13];
+    s32 xs[12];
     s32 ys[10];
-    s32 count;
     s32 i;
+    s32 count;
     s32 n;
 
     args = event->args;
+    i = 0;
     _battleWorkPointer->field_428[0xab7] = 0;
     barriern_wawawa_get_target(&xs[0], &ys[0]);
-    count = 0;
-    while (xs[count] != -1) {
-        count++;
-        barriern_wawawa_get_next_target(&xs[count], &ys[count]);
+    for (;;) {
+        if (xs[i] == -1) {
+            count = i;
+            break;
+        }
+        i++;
+        barriern_wawawa_get_next_target(&xs[i], &ys[i]);
     }
     for (i = 0; i < 5; i++) {
         n = irand(count);
+
         evtSetValue(event, args[0], xs[n]);
+#ifdef MUST_MATCH
+        // the original schedules the pointer bump before the second call and reads the old args[1] through it
+        args += 2;
+        evtSetValue(event, args[-1], ys[n]);
+#else
         evtSetValue(event, args[1], ys[n]);
         args += 2;
+#endif
     }
     return EVT_RETURN_DONE;
 }
-
 static void barriern_wawawa_get_target(s32* out1, s32* out2) {
     u8* sampling = _battleWorkPointer->field_428;
     u8* entry = sampling + (s8)sampling[0xa6d + (s8)sampling[0xab7]] * 0x24 + 4;
@@ -1995,7 +2024,6 @@ static void barriern_wawawa_get_target(s32* out1, s32* out2) {
     *out1 = *(s16*)(entry + 0);
     *out2 = *(s16*)(entry + 2);
 }
-
 static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
     u8* sampling = _battleWorkPointer->field_428;
     s32 idx;
@@ -2011,7 +2039,6 @@ static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
         *out2 = 0;
     }
 }
-
 static USER_FUNC(_check_satellite) {
     BattleUnit* unit;
     s32* args;
@@ -2082,7 +2109,6 @@ static USER_FUNC(_check_satellite) {
     }
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(battleGetBarriernSatelliteInitPos) {
     s32* args;
     BattleUnit* unit;

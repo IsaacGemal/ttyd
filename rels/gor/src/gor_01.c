@@ -176,7 +176,6 @@ static EVT_BEGIN(sell_evt)
     GOTO(0)
     RETURN
 EVT_END()
-
 USER_FUNC(unk_gor_00004db4) {
     s32* args = event->args;
 
@@ -612,7 +611,6 @@ EVT_BEGIN(nancy_door_anime)
     SET_VALUE(GF(0), 0)
     RETURN
 EVT_END()
-
 USER_FUNC(nancy_block_init_func) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     f32 z = npc->position.z;
@@ -622,7 +620,6 @@ USER_FUNC(nancy_block_init_func) {
     npc->flags |= 0x400000;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(nancy_block_func) {
     MarioWork* mario = marioGetPtr();
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
@@ -1437,7 +1434,6 @@ EVT_BEGIN(chusan1_dead)
     CALL(evt_npc_return_interrupt, STRING("me"))
     RETURN
 EVT_END()
-
 USER_FUNC(chusan1_alwaysencont) {
     s32* args = event->args;
     NpcWork* work = npcGetWorkPtr();
@@ -1924,12 +1920,10 @@ EVT_BEGIN(thief_init)
     END_SWITCH
     RETURN
 EVT_END()
-
 static USER_FUNC(evt_StatusOpen) {
     statusWinForceOpen();
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(evt_StatusClose) {
     statusWinForceOff();
     return EVT_RETURN_DONE;
@@ -2304,22 +2298,19 @@ typedef struct UnitWinWork {
     void* field_0x20; // 0x20
     s32 index;        // 0x24
 } UnitWinWork;
-
 static USER_FUNC(disp_off) {
     u16* p = (u16*)evtGetValue(event, event->args[0]);
 
     *p &= ~1;
     return EVT_RETURN_DONE;
 }
-
-// NONMATCHING (97% get_value: target loads discount_price with lhz; MWCC 2.6 emits lha+clrlwi for (u16)s16)
 static USER_FUNC(get_value) {
     s32* args = event->args;
     UnitWinWork* work = (UnitWinWork*)evtGetValue(event, args[0]);
 
     evtSetValue(event, args[1], (s32)itemDataTable[work->field_0x8[work->index]].id);
     evtSetValue(event, args[2], work->field_0x8[work->index]);
-    evtSetValue(event, args[3], (u16)itemDataTable[work->field_0x8[work->index]].discount_price);
+    evtSetValue(event, args[3], itemDataTable[work->field_0x8[work->index]].discount_price);
     evtSetValue(event, args[4], itemDataTable[work->field_0x8[work->index]].bp_cost);
     return EVT_RETURN_DONE;
 }
@@ -2387,9 +2378,12 @@ EVT_BEGIN(evt_open_02_01_f2)
     RETURN
 EVT_END()
 
-// NONMATCHING (63% mario_keyoff_wait: target keeps the branchy cntlzw/srwi./beq; ours if-converts to subic/subfe)
+// NONMATCHING (77% mario_keyoff_wait: the cntlzw now matches; the target fuses the value into
+// `srwi. r0,r0,5` and branches, ours re-materialises it with a second cntlzw and if-converts)
 static USER_FUNC(mario_keyoff_wait) {
-    if (!marioChkKey()) {
+    BOOL notKey = !marioChkKey();
+
+    if (notKey) {
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_YIELD;
@@ -2452,7 +2446,6 @@ EVT_END()
 const GXColor dat_gor_000154cc = {0, 0, 0, 0xFF};
 const GXColor dat_gor_000154d0 = {0, 0, 0, 0xFF};
 const GXColor dat_gor_000154d4 = {0, 0, 0, 0xFF};
-
 USER_FUNC(house03_f1_fade_func) {
     s32 value = evtGetValue(event, event->args[0]);
     GXColor c;
@@ -2501,7 +2494,6 @@ EVT_BEGIN(luigi_f2_fade_check)
     END_SWITCH
     RETURN
 EVT_END()
-
 USER_FUNC(house03_f2_fade_func) {
     u8 value = evtGetValue(event, event->args[0]);
     GXColor c;
@@ -2565,7 +2557,6 @@ EVT_BEGIN(house03_suiteki)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(chk_marco_fuki) {
     s32* args = event->args;
     NpcEntry* npc;
@@ -3259,7 +3250,6 @@ EVT_BEGIN(christine_nakama)
     SPAWN_EVENT(christine_nakama_after)
     RETURN
 EVT_END()
-
 USER_FUNC(maffia_kemuri) {
     s32* args = event->args;
     f32 x = evtGetValue(event, args[0]);
@@ -3608,13 +3598,22 @@ EVT_BEGIN(ultrahammer_get)
     RETURN
 EVT_END()
 
-// NONMATCHING (96% evt_osreport: target branches beq BODY; b END; ours emits the inverted bne END)
+// The original's branch layout (beq BODY; b END) is what MWCC emits for
+// `switch (evtGetValue(...)) { case 0: ... }`; the natural `if (x == 0)` gives the inverted `bne END`.
 static USER_FUNC(evt_osreport) {
     s32* args = event->args;
 
+#ifdef MUST_MATCH
+    switch (evtGetValue(event, args[0])) {
+        case 0:
+            evtSetValue(event, args[1], (s32)search_evt_moji(evtGetValue(event, GSW(0))));
+            break;
+    }
+#else
     if (evtGetValue(event, args[0]) == 0) {
         evtSetValue(event, args[1], (s32)search_evt_moji(evtGetValue(event, GSW(0))));
     }
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -3778,7 +3777,6 @@ static EVT_BEGIN(koopa_npc_entry)
     CALL(evt_npc_set_height, STRING("ババ"), 40)
     RETURN
 EVT_END()
-
 static s32 npc_process(void) {
     NpcWork* work = npcGetWorkPtr();
     NpcEntry* npc = work->entries;
@@ -3965,7 +3963,6 @@ static EVT_BEGIN(sekai_yami_npc)
     END_LOOP
     RETURN
 EVT_END()
-
 static USER_FUNC(delete_npc_regl_evt) {
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
@@ -3995,7 +3992,6 @@ static USER_FUNC(yami_view) {
 const Vec vec3_gor_00016020 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_gor_0001602c = {0.0f, 1.0f, 0.0f};
 const Vec vec3_gor_00016038 = {0.0f, 0.0f, 0.0f};
-
 static USER_FUNC(anim_tevcallback) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -4066,7 +4062,6 @@ static EVT_BEGIN(sekai_yami_evt)
     CALL(evt_bero_mapchange, STRING("nok_01"), STRING("sekai_yami1"))
     RETURN
 EVT_END()
-
 static USER_FUNC(anim_tevcallback_mobj) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -4079,7 +4074,6 @@ static USER_FUNC(anim_tevcallback_mobj) {
     animPoseSetMaterialFlagOn(obj->poseId, (mask & 0xF) << 24);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
     f32 s;
@@ -4111,8 +4105,6 @@ static USER_FUNC(starstone_entry) {
     }
     return EVT_RETURN_DONE;
 }
-
-
 static USER_FUNC(starstone_set_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -4137,8 +4129,6 @@ static USER_FUNC(starstone_set_pos) {
     }
     return EVT_RETURN_DONE;
 }
-
-
 static USER_FUNC(starstone_set_ry) {
     f32 ry = evtGetFloat(event, event->args[0]);
     char name[16];
@@ -4279,7 +4269,6 @@ static EVT_BEGIN(minnnanokoe_evt)
     CALL(evt_bero_mapchange, STRING("nok_01"), STRING("minnnanokoe"))
     RETURN
 EVT_END()
-
 USER_FUNC(wait_mahojin) {
     s32 id = *(s32*)((u8*)effNameToPtr("mahojin")->userdata + 0x18);
 
@@ -4297,14 +4286,12 @@ EVT_BEGIN(iri_09_init)
     END_IF
     RETURN
 EVT_END()
-
 USER_FUNC(iri_09_item_tbl_alloc) {
     s32 n = evtGetValue(event, event->args[0]);
 
     iri_09_item_tbl[0] = _mapAlloc((n + 1) * 4);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(iri_09_item_tbl_make) {
     s32* args = event->args;
     s32 n = evtGetValue(event, args[0]);
@@ -4317,7 +4304,6 @@ USER_FUNC(iri_09_item_tbl_make) {
     evtSetValue(event, args[1], (s32)iri_09_item_tbl[0]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(iri_09_item_tbl_free) {
     _mapFree(iri_09_item_tbl[0]);
     iri_09_item_tbl[0] = NULL;
@@ -5022,7 +5008,6 @@ s32 special_cook_list[16] = {
     0x000000D8, 0x000000D9, 0x000000DA, 0x000000DB,
     0x000000DC, 0x000000DD, 0x000000E0, 0xFFFFFFFF,
 };
-
 static USER_FUNC(set_fook_evt) {
     s32* args = event->args;
     void** table = (void**)evtGetValue(event, args[0]);
@@ -5033,7 +5018,6 @@ static USER_FUNC(set_fook_evt) {
 
 const Vec vec3_gor_000169f8 = {-380.0f, 25.0f, -170.0f};
 const Vec vec3_gor_00016a04 = {-380.0f, 60.0f, -170.0f};
-
 s32 naniga_okorukana_cook(void) {
     s32 r = rand() % 100;
 
@@ -5118,7 +5102,6 @@ EVT_END()
 u32 iri_18_item_tbl[2] = {
     0x0000003C, 0xFFFFFFFF,
 };
-
 s32 itemNameToID(const char* name) {
     s32 i;
 
@@ -5185,12 +5168,9 @@ USER_FUNC(cook_chk2) {
     evtSetValue(event, args[2], 0);
     return EVT_RETURN_DONE;
 }
-
-
 s32 chkCookItem(s32 id) {
     return id != 0;
 }
-
 USER_FUNC(make_item_tbl) {
     s32* args = event->args;
     s32 item = evtGetValue(event, args[0]);
@@ -5215,7 +5195,6 @@ USER_FUNC(make_item_tbl) {
     evtSetValue(event, args[1], j);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(get_item_name) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -5601,12 +5580,10 @@ USER_FUNC(chk_cook_msg) {
     evtSetValue(event, args[1], result);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(cooking_flag) {
     swSet(evtGetValue(event, event->args[0]) - 0x72);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(chk_special_cook) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);

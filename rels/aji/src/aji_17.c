@@ -119,6 +119,9 @@ static BeroEntry bero_entry_data[2] = {
     {NULL},
 };
 
+// The shared zero colour; the original keeps it in .rodata at the start of the file.
+__declspec(section ".rodata") GXColor zero_aji_00014dfc = {0, 0, 0, 0};
+
 EVT_BEGIN(evt_emergency)
     IF_INT_NOT_EQUAL(GSW(0), 376)
         LOOP(0)
@@ -139,7 +142,6 @@ EVT_BEGIN(evt_emergency)
     CALL(evt_map_set_blend, 0, 255, 96, 96, 255)
     RETURN
 EVT_END()
-
 static USER_FUNC(viewport) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]);
@@ -380,14 +382,14 @@ EVT_END()
 // Builds the texture's TEV colour; the temporary keeps the zero colour in the
 // original's stack slot instead of the outgoing argument slot.
 static inline GXColor noiseTevColor(u8 alpha) {
-    GXColor c = (GXColor){0, 0, 0, 0};
+    GXColor c = zero_aji_00014dfc;
     c.a = alpha;
     return c;
 }
 
-// NONMATCHING (98.99%): the offset arithmetic now matches; what still differs is the
-// callee-saved register allocation (target param/cam/data/i in r25/r30/r26/r28, i/4/i%4 in
-// r31/r29; ours r24/r31/r27/r28 and r30/r29) plus two first-loop schedule slots.
+// NONMATCHING (98.99%): the offset arithmetic and the zero-colour relocation now match; what
+// still differs is the callee-saved register allocation (target param/cam/data/i in r25/r30/r26/r28,
+// i/4/i%4 in r31/r29; ours r24/r31/r27/r28 and r30/r29) plus two first-loop schedule slots.
 void noiseDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     s32 i, j, k;
@@ -609,7 +611,6 @@ EVT_BEGIN(mail_sousin_se)
     CALL(evt_snd_sfxon_3d, STRING("SFX_PEACH_MAIL_SOUSIN2"), 0, 0, -100, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(noise) {
     s32 value = evtGetValue(event, event->args[0]);
 
@@ -924,7 +925,6 @@ f32 move_pos_list[15][2] = {
     { -75.44623565673828f, -58.21755599975586f },
     { -39.3040885925293f, -74.7188720703125f },
 };
-
 static USER_FUNC(peach_set_pose) {
     char* pose = (char*)evtGetValue(event, event->args[0]);
 
@@ -932,7 +932,6 @@ static USER_FUNC(peach_set_pose) {
     marioChgPose(pose);
     return EVT_RETURN_DONE;
 }
-
 static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXBegin(0x80, 0, 4);
     GXPosition3f32(x, y, 0.0f);
@@ -944,7 +943,6 @@ static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXPosition3f32(x, y - h, 0.0f);
     GXTexCoord2f32(0.0f, v);
 }
-
 void disp_horogram(CameraId cameraId, void* param) {
     NpcEntry* npc = npcNameToPtr("ホログラム");
     GXCullMode cullMode;
@@ -1004,12 +1002,10 @@ void disp_horogram(CameraId cameraId, void* param) {
     polygon(-28.0f, 55.0f, 56.0f, 55.0f, 1.0f, 1.0f);
     GXSetCullMode(cullMode);
 }
-
 USER_FUNC(disp_horogram_evt) {
     dispEntry(4, 0.0f, 2, disp_horogram, NULL);
     return EVT_RETURN_BLOCK;
 }
-
 void peach_capture(CameraId cameraId, void* param) {
     CameraEntry camera = *camGetCurPtr();
     f32 viewport[6];
@@ -1075,12 +1071,10 @@ void peach_capture(CameraId cameraId, void* param) {
     GXSetScissor(scissorLeft, scissorTop, scissorWd, scissorHt);
     horogram_wp->done = 1;
 }
-
 USER_FUNC(horogram_cap_evt) {
     dispEntry(4, 1000.0f, 0, peach_capture, NULL);
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(horogram_init) {
     s32 size = GXGetTexBufferSize(0x260, 0x1e0, 6, 0, 0);
 
@@ -1120,7 +1114,6 @@ EVT_BEGIN(peach_dance_move)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(horogram_flag_onoff) {
     s32* args = event->args;
     s32 on = evtGetValue(event, args[0]);
@@ -1133,7 +1126,6 @@ USER_FUNC(horogram_flag_onoff) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(get_center) {
     s32* args = event->args;
 
@@ -1167,12 +1159,10 @@ EVT_END()
 EVT_BEGIN(peach_dance_action_step)
     RETURN
 EVT_END()
-
 USER_FUNC(get_local_rotate) {
     evtSetFloat(event, event->args[0], dance_dt.rotate);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(set_local_rotate) {
     s32* args = event->args;
     dance_dt.rotate = evtGetFloat(event, args[0]);
@@ -1224,7 +1214,6 @@ EVT_BEGIN(dance_action_turn_sub)
     END_IF
     RETURN
 EVT_END()
-
 USER_FUNC(dance_get_step) {
     evtSetValue(event, event->args[0], dance_dt.step);
     return EVT_RETURN_DONE;
@@ -1236,7 +1225,6 @@ EVT_BEGIN(peach_dance_action_turn)
     CALL(dance_flag_onoff, 2, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_data_init) {
     dance_dt.flags = 0;
     dance_dt.centerX = 0.0f;
@@ -1255,7 +1243,6 @@ EVT_BEGIN(peach_dance_action_reverse)
     CALL(dance_flag_onoff, 2, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_flag_onoff) {
     s32* args = event->args;
     s32 mask = evtGetValue(event, args[0]);
@@ -1280,7 +1267,6 @@ EVT_BEGIN(peach_dance_action_fail)
     CALL(dance_flag_onoff, 2, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_flag_check) {
     s32* args = event->args;
     s32 mask = evtGetValue(event, args[0]);
@@ -1326,7 +1312,6 @@ EVT_BEGIN(dance_btn_disp)
     CALL_CHILD(dance_btn_disp_sub)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_reverse) {
     if (dance_dt.flags & 1) {
         dance_dt.flags &= ~1;
@@ -1427,7 +1412,6 @@ EVT_BEGIN(peach_dance_light)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(move_center) {
     s32* args = event->args;
     f32 startX = evtGetFloat(event, args[0]);
@@ -1459,7 +1443,6 @@ USER_FUNC(move_center) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(compute_move_pos) {
     s32* args = event->args;
 
@@ -1476,7 +1459,6 @@ USER_FUNC(compute_move_pos) {
     evtSetFloat(event, args[1], move_pos_list[dance_dt.moveIdx][1]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(compute_peach_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -1488,7 +1470,6 @@ USER_FUNC(compute_peach_pos) {
     evtSetFloat(event, args[3], y - 5.5f * c);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(compute_horogram_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -1678,15 +1659,12 @@ EVT_BEGIN(peach_evt_dance)
     END_IF
     RETURN
 EVT_END()
-
 s32 wait_action_end(void) {
     return (dance_dt.flags & 2) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
-
 s32 wait_action_begin(void) {
     return (dance_dt.flags & 2) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-
 s32 wait_move_end(void) {
     return (dance_dt.flags & 4) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
@@ -2194,7 +2172,6 @@ QuizData peach_evt_stg4_quiz_data[5] = {
     { "peach_aji_184", "peach_aji_185", "peach_aji_185_sel", 1 },
     { "peach_aji_186", "peach_aji_187", "peach_aji_187_sel", 2 },
 };
-
 USER_FUNC(btn_check) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -3266,7 +3243,6 @@ EVT_END()
 HorogramWork* horogram_wp;
 
 DanceWork dance_dt;
-
 USER_FUNC(set_npc_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -3283,12 +3259,10 @@ USER_FUNC(set_npc_pos) {
     npc->position.z = z;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(peach_dance_after_fail) {
     marioChgPoseTime("P_O_F_1", 20);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_fuki_btn) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -3319,12 +3293,10 @@ USER_FUNC(evt_fuki_btn) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_fuki_btn_set_batu) {
     effSetPeachFukiBatu((const char*)evtGetValue(event, event->args[0]));
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(horogram_set_pose) {
     const char* pose = (const char*)evtGetValue(event, event->args[0]);
     char buf[24];
@@ -3338,11 +3310,9 @@ USER_FUNC(horogram_set_pose) {
     animPoseSetAnim(dummy->poseId, buf, 1);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(bgm_start_wait) {
     return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(peach_evt_stg4_read_quiz_data) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);

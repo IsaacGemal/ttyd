@@ -4784,7 +4784,6 @@ static inline GXColor alphaColor(u8 a) {
     return c;
 }
 #endif
-
 static void alpha_tev(TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* ap = _ap;
@@ -4804,18 +4803,15 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
     param->field_C = param->field_C + 1;
 }
-
 static USER_FUNC(alpha_init_func) {
     _ap = _mapAlloc(1);
     *_ap = 0xFF;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(alpha_set_func) {
     *_ap = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 f32 lineardec_type(s32 target, s32 count, f32 start, f32 end) {
     s32 i;
     s32 init = count * 20 / 100;
@@ -4837,7 +4833,6 @@ f32 lineardec_type(s32 target, s32 count, f32 start, f32 end) {
     }
     return start + (end - start) * result / sum;
 }
-
 static f32 accdec_type(s32 target, s32 count, f32 start, f32 end) {
     s32 i;
     s32 hi = count * 10 / 100;
@@ -4862,7 +4857,6 @@ static f32 accdec_type(s32 target, s32 count, f32 start, f32 end) {
     }
     return start + (end - start) * result / sum;
 }
-
 static USER_FUNC(make_itemsel_table) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
@@ -4905,17 +4899,14 @@ static USER_FUNC(make_itemsel_table) {
     event->lwData[10] = (s32)itemsel_table_ram;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(delete_itemsel_table) {
     _mapFree(itemsel_table_ram);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(fune_yure_func_init) {
     *(f32*)&event->lwData[0] = evtGetFloat(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(fune_yure_func) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -4948,7 +4939,6 @@ USER_FUNC(fune_yure_func) {
     evtSetValue(event, args[3], done);
     return EVT_RETURN_DONE;
 }
-
 void geundan1000tai_circle_pos(Vec* out) {
     f32 s;
     f32 angle;
@@ -4964,7 +4954,6 @@ void geundan1000tai_circle_pos(Vec* out) {
     out->y = 15.0f;
     out->z = 0.5f * (radius * c) - 300.0f;
 }
-
 USER_FUNC(gundan1000tai_circle_pos_func) {
     s32* args = event->args;
     f32 radius;
@@ -4983,8 +4972,9 @@ USER_FUNC(gundan1000tai_circle_pos_func) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.95%): the pooled float constants land two registers higher (lfd f26 vs
-// the original's f28) because the variable registers differ; 250 declaration shuffles found none better
+// Splitting the angle product (marked above) puts the eight pooled float constants in the original's
+// registers; assigning base before field_0x60 puts the 90/-280 and 270/340 address temps in r3/r4.
+// NONMATCHING (99.85%): the second half's angle/s land in f22/f21 instead of the original's f21/f22.
 USER_FUNC(gundan1000tai_init) {
     s32 i;
     NanNpcEntry* entry;
@@ -4999,21 +4989,37 @@ USER_FUNC(gundan1000tai_init) {
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
         radius = (f32)(irand(0xB4) + 0x78);
+// Splitting the product into a named temp makes MWCC pool the eight float constants in the
+// original's f28/f29/f30/f31/f24..f27 order (same maths; marked match-only).
+#ifdef MUST_MATCH
+        {
+            f32 tmp = 6.2831855f * (f32)irand(0x168);
+            angle = tmp / 360.0f;
+        }
+#else
         angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
+#endif
         s = sin(angle);
         c = cos(angle);
         entry->hoseiPosition.x = 0.9f * (radius * s);
         entry->hoseiPosition.y = 15.0f;
         entry->hoseiPosition.z = 0.5f * (radius * c) - 300.0f;
         if (entry->hoseiPosition.x < 30.0f) {
-            entry->field_0x60 = 90.0f;
             base = -280.0f;
+            entry->field_0x60 = 90.0f;
         } else {
-            entry->field_0x60 = 270.0f;
             base = 340.0f;
+            entry->field_0x60 = 270.0f;
         }
         radius = (f32)irand(0x64);
+#ifdef MUST_MATCH
+        {
+            f32 tmp = 6.2831855f * (f32)irand(0x168);
+            angle = tmp / 360.0f;
+        }
+#else
         angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
+#endif
         s = sin(angle);
         c = cos(angle);
         entry->position.x = radius * s + base;
@@ -5025,7 +5031,6 @@ USER_FUNC(gundan1000tai_init) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(gundan1000tai_totsugeki) {
     s32 i;
     NanNpcEntry* entry;
@@ -5039,7 +5044,6 @@ USER_FUNC(gundan1000tai_totsugeki) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(gundan1000tai_areacheck) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -5077,7 +5081,6 @@ USER_FUNC(gundan1000tai_areacheck) {
     evtSetValue(event, args[1], area);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(gundan1000tai_totsuend) {
     s32 i;
     NanNpcWork* work = nanNPCWork;
@@ -5087,7 +5090,6 @@ USER_FUNC(gundan1000tai_totsuend) {
     }
     return EVT_RETURN_DONE;
 }
-
 void gundan1000tai_seq00(NanNpcEntry* entry) {
     marioGetPtr();
     switch (entry->field_0x68) {
@@ -5141,8 +5143,18 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
     }
 }
 
-// NONMATCHING (99.65%): case 20 loads entry->field_0x6C before the two float args of the
-// second intplGetValue call (original loads it after), plus one remaining scheduling difference
+// The original intplGetValue prototype orders the float ranges before the integer step. That order is
+// ABI-identical to include/system.h's declaration but makes MWCC load the float args before the integer
+// steps; the cast selects it.
+#ifdef MUST_MATCH
+static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
+}
+#else
+static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return intplGetValue(mode, step, steps, start, end);
+}
+#endif
 void gundan1000tai_seq01(NanNpcEntry* entry) {
     marioGetPtr();
     switch (entry->field_0x68) {
@@ -5231,7 +5243,7 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
             f32 t = (f32)elapsed / (f32)entry->field_0x6C;
 
             entry->position.x = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.x, entry->field_0x88.x);
-            entry->position.z = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.z, entry->field_0x88.z);
+            entry->position.z = intpl_f(0, entry->hoseiPosition.z, entry->field_0x88.z, elapsed, entry->field_0x6C);
             entry->position.y = entry->hoseiPosition.y + t * (entry->field_0x7C + entry->field_0x78 * t);
         } else {
             entry->position = entry->field_0x88;
@@ -5340,8 +5352,10 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
     }
 }
 
-// NONMATCHING (99%): the atan2 argument temp and its load scheduling differ
-// (f0/f3 and one lfs hoisted); all attempted source forms give the same allocation
+// NONMATCHING (99%): in the first atan2 call the original keeps the b.x-a.x intermediate in f0
+// (fneg f1, f0) and schedules fmr f31,f1 before the loads; ours uses f3 and hoists one lfs.
+// The second (identical) block already matches, so this is allocator state from the preceding
+// code. Named dx/dz temps, an atan2 inline wrapper, and swapped evaluation orders all give f3.
 static USER_FUNC(cam_kaiten_init) {
     s32* args = event->args;
     Vec b;
@@ -5393,7 +5407,6 @@ static USER_FUNC(cam_kaiten_init) {
     ckpw[7] = ckp0[7];
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(cam_kaiten_set_direct) {
     CameraEntry* cam = camGetPtr(4);
     f32 s = sin(6.2831855f * ckpw[6] / 360.0f);
@@ -5411,7 +5424,6 @@ static USER_FUNC(cam_kaiten_set_direct) {
     cam->curveA = 0xB;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(cam_kaiten_get_para) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -5439,7 +5451,6 @@ static USER_FUNC(cam_kaiten_get_para) {
     evtSetFloat(event, args[8], p[7]);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(cam_kaiten_set_para) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -5467,7 +5478,6 @@ static USER_FUNC(cam_kaiten_set_para) {
     p[7] = evtGetFloat(event, args[8]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(hosei_mario_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -5480,7 +5490,6 @@ USER_FUNC(hosei_mario_pos) {
     mario->position.z += z;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(hosei_party_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -5496,7 +5505,6 @@ USER_FUNC(hosei_party_pos) {
     party->position.z += z;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(suifu100taikikan_init) {
     s32 i;
     NanNpcEntry* entry;
@@ -5514,7 +5522,6 @@ USER_FUNC(suifu100taikikan_init) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(suifu100taikikan_away) {
     s32 i;
     NanNpcEntry* entry;
@@ -5530,13 +5537,14 @@ USER_FUNC(suifu100taikikan_away) {
     }
     return EVT_RETURN_DONE;
 }
-
 void suifu100taikikan_seq00(NanNpcEntry* entry) {
     entry->field_0x68 = 0;
 }
 
 // NONMATCHING (99.37%): the `entry->position = vec3_gor_00013858` Vec copy in case 99
-// schedules its int temps as r0/r3 instead of the original's r3/r0
+// schedules its int temps as r0/r3 and hoists the third lwz one slot earlier; the original
+// uses r3/r0 and keeps lwz 0x8 after the first two stores. A local Vec, field-wise u32
+// copies, and a cast through Vec* all give the same schedule.
 void suifu100taikikan_seq01(NanNpcEntry* entry) {
     switch (entry->field_0x68) {
     case 0:
@@ -5620,7 +5628,6 @@ void suifu100taikikan_seq01(NanNpcEntry* entry) {
     }
     }
 }
-
 void gor_stg4_018_cb(s32 type, smartEntry* smart) {
     MessageData* data = smart->address;
 
@@ -5632,7 +5639,6 @@ void gor_stg4_018_cb(s32 type, smartEntry* smart) {
         break;
     }
 }
-
 static USER_FUNC(fune_eff) {
     f32 oldX;
     f32 oldZ;
@@ -5683,7 +5689,6 @@ static USER_FUNC(fune_eff) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(gor_ship_puka_func) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -5692,7 +5697,6 @@ USER_FUNC(gor_ship_puka_func) {
     evtSetFloat(event, args[2], value * gor_ship_puka_data[index & 0xF]);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(scale_func) {
     f32 scale = evtGetFloat(event, event->args[0]);
     MarioWork* mario = marioGetPtr();
@@ -5724,7 +5728,6 @@ static USER_FUNC(scale_func) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(funeflag_save) {
     MapObject* obj0 = mapGetMapObj("S_fune_b");
     MapObject* obj1 = mapGetMapObj("S_fune_c");
@@ -5733,13 +5736,11 @@ USER_FUNC(funeflag_save) {
     event->lwData[9] = *(s32*)obj1->field_0x0 & 1;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(funeflag_reset) {
     mapGrpFlagOn("S_fune_b", 1);
     mapGrpFlagOn("S_fune_c", 1);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(funeflag_load) {
     mapGrpFlagOff("S_fune_b", 1);
     mapGrpFlagOn("S_fune_b", event->lwData[8]);
@@ -5747,21 +5748,18 @@ USER_FUNC(funeflag_load) {
     mapGrpFlagOn("S_fune_c", event->lwData[9]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(funechange_func) {
     s32* args = event->args;
 
     evtSetValue(event, args[0], marioShipChanging());
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(get_yoshi_color) {
     s32* args = event->args;
 
     evtSetValue(event, args[0], pouchGetPartyColor(PARTNER_YOSHI));
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(unk_gor_000006d8) {
     NpcWork* work = npcGetWorkPtr();
     s32 i;

@@ -70,7 +70,6 @@ extend_data(5,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-
 USER_FUNC(unk_yuu_0000371c) {
     camShiftReset();
     return EVT_RETURN_DONE;
@@ -80,7 +79,6 @@ EVT_BEGIN(unk_evt_yuu_00015fe0)
     CALL(unk_yuu_000034bc)
     RETURN
 EVT_END()
-
 void unk_yuu_0000365c(CameraId cameraId, void* param) {
     Yuuminigame4Work* work = param;
     s32 i;
@@ -209,7 +207,6 @@ EVT_BEGIN(yuu_03_kaijo_init2)
     CALL(evt_mario_set_dir, 90, 0, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(unk_yuu_0000341c) {
     Yuuminigame4Work* work = unk_yuu_bss00000010;
     if (work != NULL) {
@@ -262,7 +259,6 @@ EVT_BEGIN(minigame04_start_cam_cancel)
     CALL_CHILD(yuu_03_kaijo_init2)
     RETURN
 EVT_END()
-
 USER_FUNC(yuuminigame4_set_phase) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -270,7 +266,6 @@ USER_FUNC(yuuminigame4_set_phase) {
     data->phase = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_slit_cancel) {
     MarioWork* mario = marioGetPtr();
     if (mario->trigFlags & 1) {
@@ -279,7 +274,6 @@ USER_FUNC(evt_slit_cancel) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(re_init_yuunpc) {
     ext_yuunpc_minigame4_init_sub();
     return EVT_RETURN_DONE;
@@ -321,12 +315,10 @@ EVT_BEGIN(minigame04_start)
     CALL(evt_mario_key_onoff, 1)
     RETURN
 EVT_END()
-
 USER_FUNC(yuunpc_go) {
     yuunpc_wp_flag_off(1);
     return EVT_RETURN_DONE;
 }
-
 static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall) {
     MarioWork* mario = marioGetPtr();
     if (isFirstCall) {
@@ -446,7 +438,6 @@ EVT_BEGIN(yuu_03_init_evt)
     CALL_CHILD(evt_yuunpc_minigame4)
     RETURN
 EVT_END()
-
 USER_FUNC(yuuminigame4_opening_on_off) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -461,7 +452,6 @@ USER_FUNC(yuuminigame4_opening_on_off) {
 
 // TODO: type
 // (globals declared above)
-
 USER_FUNC(yuuminigame4_opening_chk) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -473,7 +463,6 @@ USER_FUNC(yuuminigame4_opening_chk) {
     }
     return EVT_RETURN_DONE;
 }
-
 static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXBegin(0x80, 0, 4);
     GXPosition3f32(x, y, 0.0f);
@@ -570,13 +559,11 @@ void ryushi_disp(CameraId cameraId, void* param) {
         polygon(-8.0f, -8.0f, 16.0f, 16.0f, 1.0f, 1.0f);
     }
 }
-
 static f32 randf(f32 min, f32 max) {
     f32 d = max - min;
     f32 r = (f32)rand() / 32767.0f;
     return r * d + min;
 }
-
 USER_FUNC(evt_ryushi_init) {
     RyushiEntry* wp;
     s32 i;
@@ -763,7 +750,6 @@ USER_FUNC(evt_ryushi) {
     dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
     return EVT_RETURN_DONE;
 }
-
 void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame4Data* data = work->data;
@@ -796,7 +782,6 @@ void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
         wp++;
     }
 }
-
 void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame4Data* data = work->data;
@@ -891,12 +876,11 @@ void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
     mapObjRotate("pera_8", 0.0f, 0.0f, data->unk1C);
     mapObjRotate("pera_9", 0.0f, 0.0f, data->unk1C);
 }
-
 void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
     monteCountDisp();
 }
 
-// NONMATCHING (97.07%): yuuminigame4_gamerule; case 3/7 (unk18/unk1C += 36.0f) still schedule lis 0x4330 / stw conversion setup differently
+// NONMATCHING (97.06%): yuuminigame4_gamerule; case 3/7 (unk18/unk1C += 36.0f) still schedule lis 0x4330 / stw conversion setup differently
 s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
     MarioWork* mario = marioGetPtr();
     EventEntry* e;

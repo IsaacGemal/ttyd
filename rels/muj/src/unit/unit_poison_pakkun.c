@@ -817,7 +817,6 @@ USER_FUNC(eff_poison_breath) {
     data->color2A = 0xFF;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(pakkun_ceil_exist) {
     s32* args = event->args;
     u8 flags = _battleWorkPointer->field_180C0[0x1C];
@@ -829,7 +828,6 @@ USER_FUNC(pakkun_ceil_exist) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(shadow_scale_memory) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -848,7 +846,11 @@ USER_FUNC(shadow_scale_memory) {
 #pragma opt_propagation off
 // NONMATCHING (86.75%): both constants are materialised, but MWCC issues the 0.0f `lis`
 // after `xoris` and orders the `lfd f0`/`li r3`/`lfs f2`/`li r5` 4th-arg setup
-// differently from the original. The instruction set is identical.
+// differently from the original. The instruction set is identical. `#pragma scheduling
+// off` drops to 75%; neither it nor opt_common_subs/opt_lifetimes/opt_dead_assignments/
+// global_optimizer/defer_codegen, inline or struct helpers, or any source permutation
+// changes the schedule. `end = start - start` reaches 90% but computes zero in fp
+// instead of loading zero_muj, so it is a wrong-code trick and not a match.
 USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -871,7 +873,6 @@ USER_FUNC(shadow_scale_small) {
     unit->work[1]++;
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(shadow_scale_return) {
     BattleUnit* unit;
     BattleUnitPart* part;

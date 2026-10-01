@@ -212,7 +212,6 @@ ExtKyakuData ext_kyaku_data[51] = {
 
 EVT_BEGIN(x)
 EVT_END()
-
 s32 _firstattack_setting(EventEntry* event, BOOL isFirstCall) {
     FieldBattleData* fbat = fbatGetPointer();
     *(u32*)((u8*)fbat + 0x10) = 0x10000000;
@@ -3104,7 +3103,6 @@ static EVT_BEGIN(evt_shake)
     END_LOOP
     RETURN
 EVT_END()
-
 void kyaku_disp(CameraId camera, void* param) {
     extLoadRenderMode();
     extLoadVertex();
@@ -3137,19 +3135,12 @@ EVT_BEGIN(evt_boss_stone)
     END_LOOP
     RETURN
 EVT_END()
-
 void ext_kyaku_main(void) {
     pose_main();
 }
-
-
-
 void ext_kyaku_dispent(void) {
     dispEntry(4, 0.0f, 1, kyaku_disp, NULL);
 }
-
-
-
 static void screen_capture(CameraId camId, void* param) {
     GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
     GXSetTexCopyDst(0x130, 0xF0, 4, 1);
@@ -3157,9 +3148,6 @@ static void screen_capture(CameraId camId, void* param) {
     GXPixModeSync();
     screen_wp->field_0x4 = 1;
 }
-
-
-
 s32 screen_init(EventEntry* event, BOOL isFirstCall) {
     u32 size;
     f32 negOne;
@@ -3187,9 +3175,6 @@ s32 screen_init(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_DONE;
 }
-
-
-
 static s32 screen_evt(EventEntry* event, BOOL isFirstCall) {
     dispEntry(8, 1000.0f, 0, screen_capture, NULL);
     return EVT_RETURN_BLOCK;
@@ -4030,8 +4015,10 @@ EVT_BEGIN(evt_kyaku_8)
     RETURN
 EVT_END()
 
-// NONMATCHING (97.31%): texture-fill loop schedules (j/8)*0x20 before j%8 and the min-clamp keeps
-// `ratio` in f0 where retail uses f1, so the function is 3 instructions short.
+// The texture-fill loop keeps i/4 and i%4 in volatile registers where retail uses r31/r30, shifting
+// the whole function's callee-saved assignment (`param` lands in r25, not r27), and the min-clamp
+// computes `ratio` in f0 where retail uses f1. All opcodes match; only registers differ.
+// NONMATCHING (97.33%): register allocation in the texture-fill loop and the min-clamp.
 void screen_tev(TevCallbackParam* param) {
     GXTexObj texObj;
     Mtx mtx;
@@ -4050,9 +4037,8 @@ void screen_tev(TevCallbackParam* param) {
 
         for (i = 0; i < 0x40; i++) {
             for (j = 0; j < 0x40; j++) {
-                s32 idx = (j / 8) * 0x20 + (i / 4) * 0x100;
+                s32 idx = (j % 8) + (j / 8) * 0x20 + (i / 4) * 0x100;
                 s32 col = (i % 4) * 8;
-                idx += (j % 8);
                 buf[idx + col] = (i & 1) ? 0xFF : 0;
             }
             {
@@ -4147,9 +4133,6 @@ void screen_tev(TevCallbackParam* param) {
     param->field_14 = 2;
     param->field_10 = 2;
 }
-
-
-
 s32 tribe_chk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 name1 = evtGetValue(event, args[0]);
@@ -4162,11 +4145,6 @@ s32 tribe_chk(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_DONE;
 }
-
-
-
-// NONMATCHING (99.22%): the four float constants land in different callee-saved registers (retail f29=3,
-// f30=1, f31=10, f28=210); every other instruction matches.
 s32 burst_chain(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -4199,9 +4177,9 @@ s32 burst_chain(EventEntry* event, BOOL isFirstCall) {
         next->position.y -= f3;
         d = PSVECDistance(&cur->position, &next->position);
         t = f1 - f10 / d;
-        next->position.x = t * (cur->position.x - next->position.x) + next->position.x;
-        next->position.y = t * (cur->position.y - next->position.y) + next->position.y;
-        next->position.z = t * (cur->position.z - next->position.z) + next->position.z;
+        next->position.x += t * (cur->position.x - next->position.x);
+        next->position.y += t * (cur->position.y - next->position.y);
+        next->position.z += t * (cur->position.z - next->position.z);
         if (next->position.x > f210 || next->position.x < -210.0f) {
             if (next->position.y < 0.0f) {
                 next->position.y = 0.0f;
@@ -4212,9 +4190,6 @@ s32 burst_chain(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_BLOCK;
 }
-
-
-
 s32 snd_sfx_stop(EventEntry* event, BOOL isFirstCall) {
     psndMapChange();
     return EVT_RETURN_DONE;
@@ -4344,7 +4319,6 @@ EVT_BEGIN(tou_03_init_evt)
 EVT_END()
 
 static ScreenWork* screen_wp;
-
 s32 confupose(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     NpcEntry* npc = npcNameToPtr((char*)evtGetValue(event, args[0]));
@@ -4417,9 +4391,6 @@ s32 item_jump(EventEntry* event, BOOL isFirstCall) {
     event->userdataf[1] = v;
     return EVT_RETURN_BLOCK;
 }
-
-
-
 s32 getY(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("ガンス");
     MapObject* obj = mapGetMapObj("block_5");
@@ -4436,9 +4407,6 @@ s32 getY(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_DONE;
 }
-
-
-
 s32 starstone_sound_onoff(EventEntry* event, BOOL isFirstCall) {
     s32 val = evtGetValue(event, event->args[0]);
     EffectEntry* effect = itemNameToPtr("stone")->effect;
@@ -4452,9 +4420,6 @@ s32 starstone_sound_onoff(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_DONE;
 }
-
-
-
 s32 evt_boss_stone_r(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     EffectEntry* effect = itemNameToPtr("stone")->effect;
@@ -4463,9 +4428,6 @@ s32 evt_boss_stone_r(EventEntry* event, BOOL isFirstCall) {
     *(f32*)((u8*)effect->userdata + 0x1C) = value;
     return EVT_RETURN_DONE;
 }
-
-
-
 s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
     ItemEntry* item = itemNameToPtr("stone");
     EffectEntry* eff1 = effNameToPtr("eff_1");
@@ -4513,9 +4475,6 @@ static void callback(TevCallbackParam* param) {
     param->field_18 = field_18;
     param->field_10 = field_10;
 }
-
-
-
 s32 gans_white_on(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("ガンス");
     if (isFirstCall) {
@@ -4530,9 +4489,6 @@ s32 gans_white_on(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_BLOCK;
 }
-
-
-
 s32 gans_white_off(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("ガンス");
     mapSetTevCallback(0xC, NULL);

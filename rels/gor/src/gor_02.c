@@ -4979,17 +4979,6 @@ EVT_BEGIN(gor_02_init_evt)
     END_IF
     RETURN
 EVT_END()
-
-
-
-
-
-
-
-
-
-
-
 void _door_color_tev(struct TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* door = (u8*)_door[0];
@@ -5002,7 +4991,6 @@ void _door_color_tev(struct TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
     param->field_C++;
 }
-
 void _door_color2_tev(struct TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* door = (u8*)_door[0];
@@ -5015,7 +5003,6 @@ void _door_color2_tev(struct TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
     param->field_C++;
 }
-
 USER_FUNC(_door_color_init_func) {
     u8* door = _mapAlloc(8);
 
@@ -5030,7 +5017,6 @@ USER_FUNC(_door_color_init_func) {
     ((u8*)_door[0])[7] = 0xFF;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_door_color_main_func) {
     s32* args = event->args;
     u8* door = (u8*)_door[0];
@@ -5041,7 +5027,6 @@ USER_FUNC(_door_color_main_func) {
     door[3] = evtGetValue(event, args[3]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_door_color2_main_func) {
     s32* args = event->args;
     u8* door = (u8*)_door[0];
@@ -5052,7 +5037,6 @@ USER_FUNC(_door_color2_main_func) {
     door[7] = evtGetValue(event, args[3]);
     return EVT_RETURN_DONE;
 }
-
 static void alpha_tev(TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* ap = (u8*)_ap[0];
@@ -5065,7 +5049,6 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
     param->field_C++;
 }
-
 static USER_FUNC(alpha_init_func) {
     u8* p = _mapAlloc(1);
 
@@ -5073,14 +5056,12 @@ static USER_FUNC(alpha_init_func) {
     p[0] = 0xFF;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(alpha_set_func) {
     s32 value = evtGetValue(event, event->args[0]);
 
     *(u8*)_ap[0] = value;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(effect_stardust) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -5095,7 +5076,6 @@ static USER_FUNC(effect_stardust) {
     effStardustEntry(type, f, g, a, b, c, d, e);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(wariai_enzan_1) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -5108,7 +5088,6 @@ static USER_FUNC(wariai_enzan_1) {
     evtSetValue(event, args[4], (s32)((num + a * c) / b));
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(wariai_enzan_1f) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -5160,7 +5139,6 @@ static USER_FUNC(wariai_enzan_1f_intpl) {
     evtSetFloat(event, out, rd + (1.0f - result) * c);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(wariai_enzan_0) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -5173,7 +5151,6 @@ static USER_FUNC(wariai_enzan_0) {
     evtSetValue(event, args[4], (s32)((num + a * c) / b));
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(wariai_enzan_0f) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -5186,7 +5163,6 @@ static USER_FUNC(wariai_enzan_0f) {
     evtSetFloat(event, args[4], (num + a * c) / b);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(enzan_cam_turn_keisan) {
     s32* args = event->args;
     f32 angle = (f32)(evtGetValue(event, args[0]) % 360);
@@ -5210,28 +5186,23 @@ static USER_FUNC(enzan_cam_turn_keisan) {
     evtSetValue(event, arg2, (s32)p1.z);
     return EVT_RETURN_DONE;
 }
-
-// NONMATCHING (80.75%): the two Vec temporaries are assigned the opposite stack slots and some float register
-// allocation differs; otherwise the same instructions.
 static USER_FUNC(enzan_cam_turn_keisan_f) {
-    f32 p = evtGetFloat(event, event->args[0]) / 100.0f;
+    f32 ratio = evtGetFloat(event, event->args[0]) / 100.0f;
     CameraEntry* cam = camGetPtr(CAMERA_3D);
-    Vec a = { -362.0f, 37.0f, -200.0f };
-    Vec b;
-    Vec c = { 0.0f, 0.0f, 0.0f };
+    f32 px = -362.0f;
+    f32 py = -62.0f * ratio + 193.0f;
+    f32 pz = -354.0f * ratio + 686.0f;
+    Vec pos = (Vec){px, py, pz};
+    Vec base = (Vec){-362.0f, 37.0f, -200.0f};
     Mtx mtx;
 
-    c.y = -62.0f * p + 193.0f;
-    c.z = -354.0f * p + 686.0f;
-    c.x = -362.0f;
-    b = c;
-    PSVECSubtract(&b, &a, &b);
-    PSMTXRotRad(mtx, 'Y', 0.017453292f * (720.0f * p));
-    PSMTXMultVec(mtx, &b, &b);
-    PSVECAdd(&b, &a, &b);
+    PSVECSubtract(&pos, &base, &pos);
+    PSMTXRotRad(mtx, 'Y', 0.017453292f * (720.0f * ratio));
+    PSMTXMultVec(mtx, &pos, &pos);
+    PSVECAdd(&pos, &base, &pos);
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;
-    cam->storedPos = b;
+    cam->storedPos = pos;
     cam->storedAt = cam->cameraAt;
     cam->startTimeA = gp->renderTime;
     cam->durationA = 0;
@@ -5239,7 +5210,6 @@ static USER_FUNC(enzan_cam_turn_keisan_f) {
     cam->curveA = 0;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(enzan_set_i_f) {
     s32* args = event->args;
     s32 out = args[0];
@@ -5257,7 +5227,6 @@ static USER_FUNC(enzan_set_f_i) {
     evtSetFloat(event, out, (f32)evtGetValue(event, args[1]));
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(enzan_lw_save) {
     s32 i;
 
@@ -5266,7 +5235,6 @@ static USER_FUNC(enzan_lw_save) {
     }
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(enzan_lw_load) {
     s32 i;
 
@@ -5275,7 +5243,6 @@ static USER_FUNC(enzan_lw_load) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_set_bgtpl) {
     char name[0x48];
     const char* tpl = (const char*)evtGetValue(event, event->args[0]);
@@ -5287,7 +5254,6 @@ USER_FUNC(evt_set_bgtpl) {
     bgReEntry(name);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(bgScrollControll) {
     if (evtGetValue(event, event->args[0]) == 0) {
         bgTransOffsetOff();
@@ -5296,16 +5262,13 @@ static USER_FUNC(bgScrollControll) {
     }
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(bgm_start_wait) {
     return psndBGMStartCheck(1) != 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-
 static USER_FUNC(setmertn) {
     event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(stonechangertn) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
 
@@ -5318,7 +5281,6 @@ USER_FUNC(stonechangertn) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(unk_gor_0000574c) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -5326,19 +5288,16 @@ USER_FUNC(unk_gor_0000574c) {
     evtSetFloat(event, args[0], *(f32*)mario->unk1AC);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(status_gauge_force_off) {
     statusWinForceOff();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(set_talk_memory_ry) {
     NpcEntry* npc = npcNameToPtr("サンダース");
 
     *(f32*)npc->field_148 = 270.0f;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(iri_13_make_item_tbl) {
     s32 count = pouchCheckItem(0x6B);
 
@@ -5347,7 +5306,6 @@ USER_FUNC(iri_13_make_item_tbl) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(iri_13_update_item_tbl) {
     s32* args = event->args;
     s32 count = pouchCheckItem(0x6B);
@@ -5363,13 +5321,11 @@ USER_FUNC(iri_13_update_item_tbl) {
     evtSetValue(event, args[1], count);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(iri_13_free_item_tbl) {
     _mapFree((void*)iri_13_item_tbl[0]);
     iri_13_item_tbl[0] = 0;
     return EVT_RETURN_DONE;
 }
-
 void kuragarisan_msgcb(s32 type, void* param) {
     void* p = *(void**)param;
 
@@ -5383,7 +5339,6 @@ void kuragarisan_msgcb(s32 type, void* param) {
         break;
     }
 }
-
 USER_FUNC(evt_gor_door_in_info) {
     s32* args = event->args;
     Vec in = { 0.0f, 0.0f, 0.0f };
@@ -5395,7 +5350,6 @@ USER_FUNC(evt_gor_door_in_info) {
     evtSetValue(event, args[2], (s32)in.z);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_gor_door_out_info) {
     s32* args = event->args;
     Vec in = { 0.0f, 0.0f, 0.0f };
@@ -5407,17 +5361,14 @@ USER_FUNC(evt_gor_door_out_info) {
     evtSetValue(event, args[2], (s32)out.z);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(evt_StatusOpen) {
     statusWinForceOpen();
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(evt_StatusClose) {
     statusWinForceOff();
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(set_depthPlaneOffset) {
     s32* args = event->args;
     u8* obj = (u8*)imgNameToPtr((const char*)evtGetValue(event, args[0]), gp->inBattle != 0);
@@ -5425,7 +5376,6 @@ static USER_FUNC(set_depthPlaneOffset) {
     *(f32*)(obj + 0x11C) = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(lecture) {
     if (isFirstCall) {
         winLectureOn();
@@ -5435,7 +5385,6 @@ USER_FUNC(lecture) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(monosiri_check) {
     s32* args = event->args;
     s32 stage = evtGetValue(event, GSW(0));
@@ -5474,7 +5423,6 @@ USER_FUNC(monosiri_check) {
     evtSetValue(event, args[1], 0);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(monosiri_on) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -5484,7 +5432,6 @@ USER_FUNC(monosiri_on) {
     evtSetValue(event, args[1], (s32)msgSearch(tattle->enemyTag));
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(camera_front_check) {
     s32* args = event->args;
     f32 angle = reviseAngle((100.0f * camGetPtr(CAMERA_3D)->viewYaw + 5.0f) / 100.0f);
@@ -5500,7 +5447,6 @@ USER_FUNC(camera_front_check) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(get_camcurve_init) {
     char* p = _mapAlloc(0x100);
 
@@ -5508,7 +5454,6 @@ USER_FUNC(get_camcurve_init) {
     p[0] = 0;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(get_camcurve) {
     s32* args = event->args;
     struct CamRoadWork* road = camRoadGetWorkPtr();
@@ -5524,7 +5469,6 @@ USER_FUNC(get_camcurve) {
     evtSetValue(event, args[0], flag);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(camera_move_check) {
     f32 angle;
 

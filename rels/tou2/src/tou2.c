@@ -231,7 +231,6 @@ static RankData* rank_wp = &rank_work;
 static DispWork* dwp = &disp_work;
 static const char* suuji[] = { "０", "１", "２", "３", "４", "５", "６", "７", "８", "９" };
 // clang-format on
-
 void _prolog(void) {
     voidfunctionptr* ctor;
 
@@ -242,7 +241,6 @@ void _prolog(void) {
     relSetBtlAddr("tou", btlsetup_tou_tbl, btl_tou_setup_no_tbl);
     rankingInit();
 }
-
 void _epilog(void) {
     voidfunctionptr* dtor;
 
@@ -253,7 +251,6 @@ void _epilog(void) {
         (*dtor)();
     }
 }
-
 void _unresolved(void) {
     (void)0; // bare blr; the null statement keeps lint_patch from flagging an empty stub
 }
@@ -331,7 +328,6 @@ static void rankingInit(void) {
     }
     rankingControll();
 }
-
 static void rankingExit(void) {
     s32 i;
     s32 j;
@@ -350,13 +346,11 @@ static void rankingExit(void) {
     _mapFree(rank_wp->entries);
 }
 #pragma dont_inline reset
-
 static USER_FUNC(evt_rankingReInit) {
     rankingExit();
     rankingInit();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(unk_tou2_00004b50) {
     s32 i;
 
@@ -621,7 +615,6 @@ static void rankingControll(void) {
     }
     swByteSet(580, rank);
 }
-
 USER_FUNC(evt_tou_get_ranking_28_text_4048) {
     s32* args = event->args;
     s32 count = 0;
@@ -640,7 +633,6 @@ USER_FUNC(evt_tou_get_ranking_28_text_4048) {
     evtSetValue(event, args[0], count);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(evt_tou_get_next_match) {
     s32* args = event->args;
     s32 x = evtGetValue(event, 0xf840650b);
@@ -679,7 +671,6 @@ static USER_FUNC(evt_tou_get_next_match) {
     printRanking();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_tou_get_fighter_info_28_text_3E58) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -694,7 +685,6 @@ USER_FUNC(evt_tou_get_fighter_info_28_text_3E58) {
     evtSetValue(event, args[2], fighterDt[idx].setupId);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_tou_get_fighter_name2_28_text_3DD4) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -708,7 +698,6 @@ USER_FUNC(evt_tou_get_fighter_name2_28_text_3DD4) {
     evtSetValue(event, args[1], (s32)msgSearch(dt[idx].title));
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(evt_tou_get_fighter_rank) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -726,7 +715,6 @@ static USER_FUNC(evt_tou_get_fighter_rank) {
     evtSetValue(event, args[1], rank);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_tou_get_fighter_battle_msg_28_text_3CB4) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -741,7 +729,6 @@ USER_FUNC(evt_tou_get_fighter_battle_msg_28_text_3CB4) {
     evtSetValue(event, args[2], (s32)dt[idx].victory);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_tou_get_fighter_num) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -750,7 +737,6 @@ USER_FUNC(evt_tou_get_fighter_num) {
                 btlsetup_tou_tbl[fighterDt[idx].setupId].offLoadouts->setup->numEnemies);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_tou_get_fighter_tribe) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -802,7 +788,6 @@ USER_FUNC(evt_tou_get_fighter_tribe) {
     evtSetValue(event, args[3], (s32)name);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(evt_tou_get_rule_info) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -858,7 +843,6 @@ static USER_FUNC(evt_tou_get_rule_info) {
     evtSetValue(event, args[4], dt[i].field_10);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(evt_tou_get_rule_msg2) {
     s32* args = event->args;
     s32 ruleId = evtGetValue(event, args[0]);
@@ -902,7 +886,6 @@ static USER_FUNC(evt_tou_get_rule_msg2) {
     evtSetValue(event, args[1], (s32)msgSearch(dt[i].msg));
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_tou_set_ranking_win_lose_28_text_35C0) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -951,7 +934,6 @@ USER_FUNC(evt_tou_set_ranking_win_lose_28_text_35C0) {
     rankingControll();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_tou_set_rule_result_28_text_355C) {
     s32 v = evtGetValue(event, event->args[0]);
 
@@ -1092,7 +1074,6 @@ static void disp_proc(CameraId cameraId, void* param) {
         iconDispGx(&pos, 0x10, 0x80, 0.6f);
     }
 }
-
 static USER_FUNC(evt_tou_print_ranking) {
     s32 i;
     s32 c;
@@ -1205,7 +1186,6 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(tou_champion_belt_onoff_28_text_29DC) {
     champion_belt_onoff = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;

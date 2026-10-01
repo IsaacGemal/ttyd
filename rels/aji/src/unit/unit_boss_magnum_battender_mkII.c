@@ -1849,73 +1849,66 @@ static EVT_BEGIN(wait_event_r)
 EVT_END()
 
 // clang-format on
-
-// NONMATCHING (99.03%): register naming and literal symbol names
 static USER_FUNC(waku_main) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    BattleUnitPart* part1;
+    BattleUnitPart* part3;
+    AnimationPose* pose;
+    Vec* positions;
+    u8* tbl;
     s32 id;
     s32 poseId;
-    s32 idx;
-    BattleUnit* unit;
-    BattleUnitPart* parts1;
-    BattleUnitPart* parts3;
-    AnimationPose* pose;
-    CameraEntry* cam;
-    u8* tbl;
-    Vec* vtx;
+    s32 group;
 
-    id = evtGetValue(event, args[0]);
+    id = evtGetValue(event, *args++);
     animGetPtr();
     unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
-    parts1 = BtlUnit_GetPartsPtr(unit, 1);
-    parts3 = BtlUnit_GetPartsPtr(unit, 3);
-    poseId = *(s32*)parts1->field_0x1C0;
+    part1 = BtlUnit_GetPartsPtr(unit, 1);
+    part3 = BtlUnit_GetPartsPtr(unit, 3);
+    poseId = *(s32*)part1->field_0x1C0;
     animPoseWorldPositionEvalOn(poseId);
     animPoseGetAnimBaseDataPtr(poseId);
     pose = animPoseGetAnimPosePtr(poseId);
-    idx = animPoseGetGroupIdx(poseId, "locator17");
+    group = animPoseGetGroupIdx(poseId, "locator17");
     tbl = *(u8**)((u8*)pose + 0x15C);
-    vtx = (Vec*)(*(u8**)tbl);
-    BtlUnit_SetPartsPos(parts3, vtx[idx].x, vtx[idx].y, vtx[idx].z);
-    cam = camGetPtr(4);
-    BtlUnit_SetPartsRotate(parts3, 0.0f, -cam->viewYaw, 0.0f);
+    positions = (Vec*)(*(u8**)tbl);
+    BtlUnit_SetPartsPos(part3, positions[group].x, positions[group].y, positions[group].z);
+    {
+        f32 yaw = camGetPtr(4)->viewYaw;
+        BtlUnit_SetPartsRotate(part3, 0.0f, -yaw, 0.0f);
+    }
     return EVT_RETURN_DONE;
 }
-
-// NONMATCHING (98.98%): argument register swap (r30/r31)
 static USER_FUNC(arm_check) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
-    s32 type = evtGetValue(event, args[0]);
-    s32 i;
+    BattleUnit* unit;
+    s32 value = evtGetValue(event, args[0]);
     s32 result = -1;
+    s32 i;
 
     for (i = 0; i < 64; i++) {
-        BattleUnit* unit = wp->units[i];
-
-        if (unit == NULL) {
-            continue;
-        }
-        if (unit->currentKind != 0x23 && unit->currentKind != 0x7a) {
-            continue;
-        }
-        if (type == 0) {
-            if (unit->work[0] == 0 || unit->work[0] == 2) {
-                result = i;
-                break;
+        unit = wp->units[i];
+        if (unit != NULL && (unit->currentKind == UNIT_X_FIST || unit->currentKind == UNIT_X_PUNCH)) {
+            if (value == 0) {
+                if (unit->work[0] == 0 || unit->work[0] == 2) {
+                    result = i;
+                    break;
+                }
             }
-        } else if (type == 1) {
-            if (unit->work[0] == 1 || unit->work[0] == 3) {
-                result = i;
-                break;
+            if (value == 1) {
+                if (unit->work[0] == 1 || unit->work[0] == 3) {
+                    result = i;
+                    break;
+                }
             }
         }
     }
     evtSetValue(event, args[1], result);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(drill_tor) {
     f32 x;
     f32 y;
@@ -1940,7 +1933,6 @@ USER_FUNC(drill_tor) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(drill_jet) {
     f32 x;
     f32 y;
@@ -1974,15 +1966,14 @@ USER_FUNC(drill_jet) {
     }
     return EVT_RETURN_BLOCK;
 }
-
-// NONMATCHING (98.25%): literal symbol names and register/scheduling
 USER_FUNC(aud_jet) {
     Mtx mtx;
     f32 x;
     f32 y;
     f32 z;
     s32 i;
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, evtGetValue(event, event->args[0])));
+    s32 transId = BattleTransID(event, evtGetValue(event, event->args[0]));
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, transId);
     BattenData* data;
 
     BtlUnit_GetPos(unit, &x, &y, &z);
@@ -2011,12 +2002,10 @@ USER_FUNC(aud_jet) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(aud_jet_end) {
     jetCount[0] = 1;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(get_aud_num) {
     s32* args = event->args;
     s32 num = BattleAudience_GetAudienceNum();
@@ -2025,27 +2014,31 @@ USER_FUNC(get_aud_num) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (87.76%): register scheduling and literal names
+// NONMATCHING (90.4%): registers and frame now match; remaining diffs are intplGetValue
+// argument scheduling (we load interpFramesLeft/Total before mHomePosition, target after)
+// and the final 1.0f/0.65f constant address materialisation
 USER_FUNC(aud_suikomi) {
     s32* args = event->args;
     s32 transId = BattleTransID(event, evtGetValue(event, args[0]));
     s32 count = 0;
     s32 temp[200];
-    s32 found;
-    s32 i;
+    s32 i, found;
     BattleUnit* unit;
     BattleAudienceMember* aud;
     f32 x;
     f32 y;
     f32 z;
     f32 v;
+    f32 px;
+    f32 py;
+    f32 pz;
 
     if (isFirstCall) {
+        found = 0;
         if (list[0] != 0) {
             BattleFree((void*)list[0]);
         }
         list[0] = (u32)BattleAlloc(0x50);
-        found = 0;
         for (i = 0; i < 200; i++) {
             if ((u8)BattleAudience_GetExist(i) == 1) {
                 temp[found] = i;
@@ -2060,14 +2053,13 @@ USER_FUNC(aud_suikomi) {
             temp[b] = tmp;
         }
         for (i = 0; i < 20; i++) {
-            s32 id = temp[i];
-            aud = BattleAudienceGetPtr(id);
+            aud = BattleAudienceGetPtr(temp[i]);
             aud->flags |= 0x10;
-            BattleAudience_SetAnim(id, 9, 0);
+            BattleAudience_SetAnim(temp[i], 9, 0);
             aud->interpFramesTotal = 60 + i * 3;
             *(s32*)aud->field_0x8 = 0;
             aud->mRotation.y = 0.0f;
-            ((s32*)list[0])[i] = id;
+            ((s32*)list[0])[i] = temp[i];
         }
         unit = BattleGetUnitPtr(_battleWorkPointer, transId);
         BtlUnit_GetPos(unit, &x, &y, &z);
@@ -2075,8 +2067,8 @@ USER_FUNC(aud_suikomi) {
         screamId[0] = psndSFXOn("SFX_AUDIENCE_PANIC_SCREAM1");
     }
     unit = BattleGetUnitPtr(_battleWorkPointer, transId);
-    BtlUnit_GetPos(unit, &x, &y, &z);
-    y += 5.0f;
+    BtlUnit_GetPos(unit, &px, &py, &pz);
+    py += 5.0f;
     for (i = 0; i < 200; i++) {
         s32 j;
         for (j = 0; j < 20; j++) {
@@ -2092,9 +2084,9 @@ USER_FUNC(aud_suikomi) {
                 count++;
                 aud->flags |= 2;
             }
-            aud->position.x = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.x, x);
-            aud->position.y = intplGetValue(2, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.y, y);
-            aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.z, z);
+            aud->position.x = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.x, px);
+            aud->position.y = intplGetValue(2, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.y, py);
+            aud->position.z = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, aud->mHomePosition.z, pz);
             v = intplGetValue(4, aud->interpFramesLeft, aud->interpFramesTotal, 1.0f, 0.65f);
             *(f32*)(aud->field_0x54 + 0x10) = v;
             *(f32*)(aud->field_0x54 + 0xC) = v;
@@ -2104,7 +2096,8 @@ USER_FUNC(aud_suikomi) {
     return (count < 20) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.42%): literal symbol names and u8 volume/timer scheduling
+// NONMATCHING (90.42%): the screamId load and the unk_aji_bss00000164 store address are
+// scheduled in the opposite order (target folds stb @l(r4), ours does lis+addi+stb)
 USER_FUNC(unk_aji_00007668) {
     s32 timer;
     f32 v;
@@ -2124,19 +2117,15 @@ USER_FUNC(unk_aji_00007668) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 void aud_get_pod_pos(BattleUnit* unit, f32* x, f32* y, f32* z) {
     BtlUnit_GetPos(unit, x, y, z);
     *x += 10.0f;
     *y += 78.0f;
 }
-
 void aud_fire_eff(f32 x, f32 y, f32 z) {
     EffectEntry* effect = effKemuTestEntry(11, x - 50.0f, y + 20.0f, z + 50.0f, 0.75f);
     effKemuTestSetRxRz(effect, 40.0f, 110.0f);
 }
-
-// NONMATCHING (95.99%): register scheduling and literal names
 USER_FUNC(aud_fire_hit) {
     s32* args = event->args;
     s32 transId1;
@@ -2149,7 +2138,10 @@ USER_FUNC(aud_fire_hit) {
     EffectEntry* effect;
     BattleAudienceMember* aud;
     EventEntry* ev;
-    Vec pos;
+    Vec position;
+    f32 posx;
+    f32 posy;
+    f32 posz;
     f32 hx;
     f32 hy;
     f32 hz;
@@ -2159,10 +2151,10 @@ USER_FUNC(aud_fire_hit) {
     start = evtGetValue(event, args[2]);
     if (isFirstCall) {
     unit = BattleGetUnitPtr(_battleWorkPointer, transId1);
-    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-    pos.x += 10.0f;
-    pos.y += 78.0f;
-    effect = effKemuTestEntry(11, pos.x - 50.0f, pos.y + 20.0f, pos.z + 50.0f, 0.75f);
+    BtlUnit_GetPos(unit, &posx, &posy, &posz);
+    posx += 10.0f;
+    posy += 78.0f;
+    effect = effKemuTestEntry(11, posx - 50.0f, posy + 20.0f, posz + 50.0f, 0.75f);
     effKemuTestSetRxRz(effect, 40.0f, 110.0f);
     unit2 = BattleGetUnitPtr(_battleWorkPointer, transId2);
     parts = BtlUnit_GetPartsPtr(unit2, BtlUnit_GetBodyPartsId(unit2));
@@ -2170,12 +2162,13 @@ USER_FUNC(aud_fire_hit) {
     for (i = start; i < start + 2; i++) {
         aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
         BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
-        aud->position = (Vec){ pos.x, pos.y, pos.z };
+        position = (Vec){ posx, posy, posz };
+        aud->position = position;
         aud->interpFramesTotal = 0;
         *(s32*)aud->field_0x8 = 0;
         aud->mRotation.y = 0.0f;
-        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
         *(f32*)(aud->field_0x54 + 0x10) = 1.0f;
+        *(f32*)(aud->field_0x54 + 0xC) = 1.0f;
         aud->flags |= 4;
         ev = evtEntry(aud_hit_event, 0, 0x20);
         ev->lwData[0] = ((s32*)list[0])[i];
@@ -2184,17 +2177,15 @@ USER_FUNC(aud_fire_hit) {
         ev->lwData[3] = FLOAT(hz);
         ev->lwData[4] = 0;
         ev->lwData[5] = irand(3) + 10;
-        ev->lwData[6] = FLOAT(hx + 200.0f * rand() / 32767.0f - 100.0f);
+        ev->lwData[6] = FLOAT((hx + 200.0f * rand() / 32767.0f - 100.0f));
         ev->lwData[7] = FLOAT(-100.0f);
-        ev->lwData[8] = FLOAT(hz + 100.0f * rand() / 32767.0f - 50.0f);
+        ev->lwData[8] = FLOAT((hz + 100.0f * rand() / 32767.0f - 50.0f));
         ev->lwData[9] = irand(30) + 30;
         ev->lwData[10] = FLOAT(-0.3f);
     }
     }
     return EVT_RETURN_DONE;
 }
-
-
 USER_FUNC(aud_fire_no_hit) {
     s32* args = event->args;
     s32 transId1;
@@ -2254,7 +2245,8 @@ USER_FUNC(aud_fire_no_hit) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.45%): register reload ordering and literal names
+// NONMATCHING (93.45%): the two float args to the second intplGetValue in each case
+// compute in the opposite order (target f1 then f2, ours f2 then f1); values agree
 USER_FUNC(aud_target_mark) {
     s32* args = event->args;
     f32 f31 = (f32)evtGetValue(event, args[0]);
@@ -2316,7 +2308,6 @@ USER_FUNC(aud_target_mark) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 static USER_FUNC(eff_dead) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -2326,24 +2317,23 @@ static USER_FUNC(eff_dead) {
     eff_charge[0] = effAkariChargeN64Entry(0, 1000, x, y, z, 1.5f);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(eff_dead_delete) {
     effDelete(eff_charge[0]);
     return EVT_RETURN_DONE;
 }
-
-// NONMATCHING (99.05%): register naming (r4 vs r5) for the first work[i] reload
 static USER_FUNC(arm_init) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
+        ArmWork* w;
+
         work[i] = BattleAlloc(sizeof(ArmWork));
-        work[i]->field_0xC = (Vec){ 0.0f, 0.0f, 0.0f };
-        work[i]->field_0x0 = work[i]->field_0xC;
+        w = work[i];
+        w->field_0xC = (Vec){ 0.0f, 0.0f, 0.0f };
+        work[i]->field_0x0 = w->field_0xC;
     }
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(arm_init2) {
     s32 idx = evtGetValue(event, event->args[0]);
     ArmWork* w = work[idx];
@@ -2351,42 +2341,49 @@ static USER_FUNC(arm_init2) {
     w->effect = effBattenEntry(3, 1000, 0.0f, -1000.0f, 0.0f, 1.0f);
     return EVT_RETURN_DONE;
 }
-
-// NONMATCHING (97.65%): register allocation
 static USER_FUNC(arm_main) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
-    s32 id = evtGetValue(event, args[0]);
-    ArmWork* w = work[evtGetValue(event, args[1])];
     BattleUnit* unit;
+    ArmWork* w;
     BattenData* data;
-    Vec pos;
-    Vec out;
+    s32 id;
     Mtx mtx74;
     Mtx mtx44;
+    Vec offset;
+    Vec pos;
+    f32 x;
+    f32 y;
+    f32 z;
     f32 rx;
     f32 ry;
     f32 rz;
     f32 bx;
     f32 by;
     f32 bz;
-    f32 dx;
-    f32 dy;
 
+    id = evtGetValue(event, args[0]);
+    w = work[evtGetValue(event, args[1])];
     if (w->effect == NULL) {
         return EVT_RETURN_DONE;
     }
     data = w->effect->userdata;
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
-    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
+    BtlUnit_GetPos(unit, &x, &y, &z);
     w->field_0x0 = w->field_0xC;
-    w->field_0xC = (Vec){ pos.x, pos.y, pos.z };
+    pos = (Vec){ 0.0f, 0.0f, 0.0f };
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    w->field_0xC = pos;
     if (evtCheckID(unit->waitEventId) != 1) {
-        dx = w->field_0xC.x - w->field_0x0.x;
-        dy = w->field_0xC.y - w->field_0x0.y;
+        f32 dx = w->field_0xC.x - w->field_0x0.x;
+        f32 dy = w->field_0xC.y - w->field_0x0.y;
+
         if (dx != 0.0f) {
-            w->field_0x1C = 360.0f * (f32)atan(dy / dx) / 6.2832f;
-            w->field_0x18 += (w->field_0x1C - w->field_0x18) / 3.0f;
+            w->field_0x1C = 360.0f * (f32)atan(dy / dx) / 6.283184f;
+            w->field_0x18 = w->field_0x18 + (w->field_0x1C - w->field_0x18) / 3.0f;
             BtlUnit_GetRotate(unit, &rx, &ry, &rz);
             BtlUnit_SetRotate(unit, rx, ry, w->field_0x18);
         } else {
@@ -2406,13 +2403,13 @@ static USER_FUNC(arm_main) {
     PSMTXRotRad(mtx44, 'z', 0.017453292f * rz);
     PSMTXConcat(mtx44, mtx74, mtx74);
     PSMTXCopy(mtx74, data->matrix);
-    PSMTXMultVec(mtx74, &(Vec){ 0.0f, -18.0f, 0.0f }, &out);
-    data->position.x = w->field_0xC.x + out.x;
-    data->position.y = w->field_0xC.y + out.y;
-    data->position.z = w->field_0xC.z + out.z;
+    offset = (Vec){ 0.0f, -18.0f, 0.0f };
+    PSMTXMultVec(mtx74, &offset, &offset);
+    data->position.x = w->field_0xC.x + offset.x;
+    data->position.y = w->field_0xC.y + offset.y;
+    data->position.z = w->field_0xC.z + offset.z;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(arm_end) {
     s32 idx = evtGetValue(event, event->args[0]);
     ArmWork* w = work[idx];

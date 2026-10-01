@@ -402,12 +402,10 @@ static USER_FUNC(getYoshiColor) {
     evtSetValue(event, args[0], color);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(party_tev) {
     animPoseSetMaterialFlagOff(partyGetPtr(0)->paperAnimGroup, 0x0F000000);
     return EVT_RETURN_DONE;
 }
-
 void kpa_stg5_009_7_cb(s32 type, void* param) {
     u32 data = *(u32*)param;
     switch (type) {
@@ -418,7 +416,6 @@ void kpa_stg5_009_7_cb(s32 type, void* param) {
         break;
     }
 }
-
 static USER_FUNC(booboo_main) {
     u32 i;
     for (i = 0; i < 5; i++) {
@@ -2015,7 +2012,6 @@ void kpaSen_ext_init(void) {
         }
     }
 }
-
 s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
     u32 range = c - b + 1;
     u32 n = (d != 0) ? 6 : 7;
@@ -2029,7 +2025,7 @@ s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
 // the test. The 5 remaining instructions differ only in register allocation: the original keeps 10 in r0 and puts
 // the quotient in r4 / the calcPose remainder in r5, while this source lets the compiler reuse r0 for the
 // quotient and emit `mulli` (the rest of the function matches).
-// NONMATCHING (99.55%): only that register assignment differs.
+// NONMATCHING (99.54%): only that register assignment differs.
 void kpaSen_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 i;
@@ -2082,7 +2078,6 @@ void kpaSen_ext_main(void) {
         }
     }
 }
-
 void kpaSen_ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -2091,7 +2086,6 @@ void kpaSen_ext_disp(void) {
     extDraw();
     extLoadTextureExit();
 }
-
 void kpaSen_ext_shadow_disp(void) {
     static Mtx mt = {
         {20.0f, 0.0f, 0.0f, 0.0f},
@@ -2105,12 +2099,10 @@ void kpaSen_ext_shadow_disp(void) {
     extLoadShadowTev();
     extDrawShadow();
 }
-
 void kpaSen_ext_dispent(void) {
     dispEntry(4, 0.0f, 1, (DispCallback)kpaSen_ext_disp, NULL);
     dispEntry(4, 0.0f, 2, (DispCallback)kpaSen_ext_shadow_disp, NULL);
 }
-
 USER_FUNC(kpaSen_zako_syugo) {
     s32 i;
 
@@ -2119,7 +2111,6 @@ USER_FUNC(kpaSen_zako_syugo) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(kpaSen_toge_syugo) {
     s32 i;
 
@@ -2128,7 +2119,6 @@ USER_FUNC(kpaSen_toge_syugo) {
     }
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(small_star) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -2138,7 +2128,6 @@ static USER_FUNC(small_star) {
     effSmallStarEntry(3, 2, x, y, z, 0.0f, -1.0f, 0.0f);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(bakuhatu_kemuri) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -2148,12 +2137,10 @@ USER_FUNC(bakuhatu_kemuri) {
     effKemuTestDrawCam(effect, 8);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(white_on) {
     fadeWhiteOutOn();
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(white_off) {
     fadeWhiteOutOff();
     return EVT_RETURN_DONE;
@@ -2769,7 +2756,6 @@ EVT_END()
 const Vec vec3_usu_00004d84 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_usu_00004d90 = {0.0f, 1.0f, 0.0f};
 const Vec vec3_usu_00004d9c = {0.0f, 100.0f, 0.0f};
-
 static USER_FUNC(yami_view) {
     Vec camPos;
     Vec up;
@@ -2786,7 +2772,6 @@ static USER_FUNC(yami_view) {
     envSetYamiView(mtx);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(anim_tevcallback) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -2799,7 +2784,6 @@ static USER_FUNC(anim_tevcallback) {
     animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(delete_npc_regl_evt) {
     s32 name = evtGetValue(event, event->args[0]);
     NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
@@ -2913,7 +2897,6 @@ static EVT_BEGIN(minnnanokoe_npc_entry)
     CALL(evt_npc_flag_onoff, 1, STRING("子供３"), 512)
     RETURN
 EVT_END()
-
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -2924,7 +2907,6 @@ static USER_FUNC(starstone_entry) {
     effSetName(effStarStoneEntry(3, x, y, z, 1.0f), (const char*)name);
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(starstone_set_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -2938,7 +2920,6 @@ static USER_FUNC(starstone_set_pos) {
     ((effStarStoneData*)entry->userdata)->field_0x10 = z;
     return EVT_RETURN_DONE;
 }
-
 static USER_FUNC(starstone_set_ry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -3195,7 +3176,6 @@ static EVT_BEGIN(epilogue_evt)
     CALL(evt_bero_mapchange, STRING("muj_20"), STRING(""))
     RETURN
 EVT_END()
-
 static USER_FUNC(npc_process) {
     NpcWork* work = npcGetWorkPtr();
     NpcEntry* npc = work->entries;

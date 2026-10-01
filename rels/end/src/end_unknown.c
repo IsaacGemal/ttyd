@@ -356,7 +356,6 @@ void _prolog(void) {
     }
     relSetEvtAddr("end_00", unk_evt_end_00004690);
 }
-
 void _epilog(void) {
     voidfunctionptr* dtor;
 
@@ -365,14 +364,11 @@ void _epilog(void) {
     }
     unk_end_00000a14();
 }
-
 void _unresolved(void) {
 }
-
 void unk_end_00002508(TevCallbackParam* param) {
     GXSetTevColorIn(param->field_C - 1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
 }
-
 void unk_end_00002494(s32 wXluStage) {
     AnimationWork* anim = animGetPtr();
 
@@ -382,7 +378,6 @@ void unk_end_00002494(s32 wXluStage) {
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
     GXSetZMode(1, 3, 1);
 }
-
 void unk_end_000023ac(CameraId cameraId, void* param) {
     CreditsPoseEntry* entry = (CreditsPoseEntry*)param;
 
@@ -396,7 +391,6 @@ void unk_end_000023ac(CameraId cameraId, void* param) {
         animPoseSetMaterialFlagOff(entry->poseId, 0x1000000);
     }
 }
-
 s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -570,9 +564,9 @@ EVT_BEGIN(unk_evt_end_00004044)
 EVT_END()
 
 #define WORK ((CreditsWork*)dat_ptr_end_00003218[0])
-// NONMATCHING (94.96%): frame is 0x160 vs 0x170 (compiler keeps the u32->f32 mask in f29 and width
-// in f28; original has the mask in f30 and width in f29) and the original copies camPos through a temp
-// (0x38 -> 0x5c) before C_MTXLookAt while ours folds the copy away. Instruction stream and logic match.
+// NONMATCHING (98.72%): mode test compiles to the inverted diamond (`beq then; b else; then` in retail
+// vs `bne else; then` here) and the original copies camPos through a second Vec temp (0x38 -> 0x5c)
+// before C_MTXLookAt; a separate Vec copy fixes the frame but lands the other slots wrong.
 void unk_end_00001324(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(cameraId);
     s32 var1 = evtGetValue(NULL, GW(11));
@@ -639,23 +633,26 @@ void unk_end_00001324(CameraId cameraId, void* param) {
             break;
     }
 
-    if (WORK->mode == 0) {
-        GXSetNumTevStages(1);
-        GXSetTevOrder(0, 0, 0, 4);
-        GXSetTevOp(0, 0);
-        GXSetTevSwapMode(0, 0, 0);
-    } else {
-        GXSetNumTevStages(2);
-        GXSetTevOrder(0, 0, 0, 4);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-        GXSetTevAlphaIn(0, 7, 7, 7, 5);
-        GXSetTevOrder(1, 0, 1, 0xFF);
-        GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(1, 0, 8, 3, 0xF);
-        GXSetTevAlphaIn(1, 7, 7, 7, 0);
+    switch (WORK->mode) {
+        case 0:
+            GXSetNumTevStages(1);
+            GXSetTevOrder(0, 0, 0, 4);
+            GXSetTevOp(0, 0);
+            GXSetTevSwapMode(0, 0, 0);
+            break;
+        default:
+            GXSetNumTevStages(2);
+            GXSetTevOrder(0, 0, 0, 4);
+            GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+            GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+            GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+            GXSetTevAlphaIn(0, 7, 7, 7, 5);
+            GXSetTevOrder(1, 0, 1, 0xFF);
+            GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+            GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+            GXSetTevColorIn(1, 0, 8, 3, 0xF);
+            GXSetTevAlphaIn(1, 7, 7, 7, 0);
+            break;
     }
 
     switch (var2) {
@@ -705,13 +702,13 @@ void unk_end_00001324(CameraId cameraId, void* param) {
         GXBegin(0x80, 0, 4);
         width = (f32)GXGetTexObjWidth(&texObj);
         height = (f32)GXGetTexObjHeight(&texObj);
-        GXPosition3f32(-0.5f * width, 0.5f * height, 0.0f);
+        GXPosition3f32(-width / 2.0f, height / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(0.5f * width, 0.5f * height, 0.0f);
+        GXPosition3f32(width / 2.0f, height / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(0.5f * width, -0.5f * height, 0.0f);
+        GXPosition3f32(width / 2.0f, -height / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(-0.5f * width, -0.5f * height, 0.0f);
+        GXPosition3f32(-width / 2.0f, -height / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
     }
 
@@ -739,13 +736,13 @@ void unk_end_00001324(CameraId cameraId, void* param) {
         GXBegin(0x80, 0, 4);
         width = (f32)GXGetTexObjWidth(&texObj);
         height = (f32)GXGetTexObjHeight(&texObj);
-        GXPosition3f32(-0.5f * width, 0.5f * height, 0.0f);
+        GXPosition3f32(-width / 2.0f, height / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(0.5f * width, 0.5f * height, 0.0f);
+        GXPosition3f32(width / 2.0f, height / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(0.5f * width, -0.5f * height, 0.0f);
+        GXPosition3f32(width / 2.0f, -height / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(-0.5f * width, -0.5f * height, 0.0f);
+        GXPosition3f32(-width / 2.0f, -height / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
     }
 }
@@ -804,27 +801,22 @@ EVT_BEGIN(unk_end_0000410c)
     END_LOOP
     RETURN
 EVT_END()
-
 s32 unk_end_000012e0(EventEntry* event, BOOL isFirstCall) {
     dispEntry(4, 0.0f, 7, unk_end_00001324, NULL);
     return EVT_RETURN_BLOCK;
 }
-
 s32 unk_end_000012a4(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->field_08 = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 s32 unk_end_00001268(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->field_0C = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 s32 unk_end_0000122c(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->mode = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
-
 s32 unk_end_000011f0(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->field_10 = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
@@ -924,8 +916,9 @@ typedef struct CreditsEndingRecord {
     /* 0x18 */ const char* msgB[3];
 } CreditsEndingRecord;
 
-// NONMATCHING (93.75%): 0x14-smaller; record pointer uses lwz instead of lwzu and R_credits_npc_info/
-// unk_end_0000321c bases are cached rather than recomputed (register allocation).
+// NONMATCHING (93.75%): frame is 0x850 vs 0x860 (the original keeps two more callee-saved regs, r19/r20);
+// the record pointer uses lwz instead of lwzu and R_credits_npc_info/unk_end_0000321c bases are cached
+// rather than recomputed (register allocation).
 s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
     s32 state = event->userdata[0];
     s32 index = event->userdata[1];
@@ -1089,7 +1082,6 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
     event->userdata[1] = index;
     return EVT_RETURN_BLOCK;
 }
-
 s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
     s32 flag = (gp->inBattle != 0);
     s32 i;
@@ -1122,7 +1114,6 @@ s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
 
 // dont_inline keeps unk_end_00000a14 a real `bl` from _epilog as in retail.
 #pragma dont_inline on
-
 void unk_end_00000a14(void) {
     CreditsWork* work = (CreditsWork*)dat_ptr_end_00003218[0];
 
@@ -1134,7 +1125,6 @@ void unk_end_00000a14(void) {
 }
 
 #pragma dont_inline reset
-
 s32 unk_end_000009cc(EventEntry* event, BOOL isFirstCall) {
     gp->language = 0;
     JUTFont_Free();
@@ -1142,12 +1132,10 @@ s32 unk_end_000009cc(EventEntry* event, BOOL isFirstCall) {
     psndClearFlag(4);
     return EVT_RETURN_DONE;
 }
-
 s32 unk_end_000009a4(EventEntry* event, BOOL isFirstCall) {
     psndSetFlag(0x1000);
     return EVT_RETURN_DONE;
 }
-
 s32 unk_end_00000938(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
@@ -1156,7 +1144,6 @@ s32 unk_end_00000938(EventEntry* event, BOOL isFirstCall) {
     animPoseSetGXFunc(npc->poseId, unk_end_00002494, FALSE);
     return EVT_RETURN_DONE;
 }
-
 f32 unk_end_000008bc(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
 
@@ -1410,7 +1397,6 @@ EVT_END()
 char* dat_ptr_end_00005034 = "c_n_moa_a";
 
 char* dat_ptr_end_00005038 = "S_1";
-
 void unk_end_000006f8(void) {
     ExtPose* pose = extGetPosePtr();
     CreditsPoseState* work = (CreditsPoseState*)unk_end_bss00000000[0];
@@ -1506,11 +1492,9 @@ void unk_end_0000039c(CameraId cameraId, void* param) {
     extDraw();
     extLoadTextureExit();
 }
-
 void unk_end_0000035c(void) {
     dispEntry(4, 0.0f, 1, unk_end_0000039c, NULL);
 }
-
 s32 unk_end_0000012c(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("モアモア");
     AnimationPose* pose;
@@ -1593,7 +1577,6 @@ EVT_BEGIN(unk_evt_end_0000503c)
     CALL(evt_npc_delete, STRING("モアモア"))
     RETURN
 EVT_END()
-
 s32 unk_end_000000c4(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("モアモア");
 

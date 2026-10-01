@@ -4591,7 +4591,6 @@ typedef struct ShadowQueenData {
         }                                                                                                 \
         return EVT_RETURN_BLOCK;                                                                          \
     }
-
 USER_FUNC(shadow_queen_connect) {
     ShadowQueenData* data;
     BattleUnitPart* part;
@@ -4626,7 +4625,6 @@ USER_FUNC(shadow_queen_connect) {
     BtlUnit_SetPartsPos(part, verts[data->field_0x44 * 3], verts[data->field_0x44 * 3 + 1], verts[data->field_0x44 * 3 + 2]);
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(peach_talk_synchro_shadow_head_evt) {
     BattleUnitPart* part;
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
@@ -4665,7 +4663,6 @@ USER_FUNC(peach_talk_synchro_shadow_head_evt) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(make_pattern) {
     HandData* p;
     NpcEntry* npc;
@@ -4726,7 +4723,6 @@ static void pose_init(void) {
     HAND->field_0x4A4++;
 }
 #pragma dont_inline reset
-
 static void pose_main(void) {
     ExtPose* pose;
     HandElem* elem;
@@ -4764,7 +4760,9 @@ static void pose_main(void) {
     }
 }
 
-// NONMATCHING (98.47%): register allocation and scheduling differ.
+// NONMATCHING (98.47%): instructions and stack use match; only the callee-saved colouring of the two
+// loop-invariant values differs (&gp: target r26, ours r31; 10000000: target r31, ours r26).  MWCC
+// hoists &gp before the constant here, the original the other way round.
 static void hand_init(void) {
     s32 i;
     ExtPose* pose;
@@ -4789,7 +4787,6 @@ static void hand_init(void) {
         elem->field_0x00 = irand(1);
     }
 }
-
 void hand_draw(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -4799,23 +4796,24 @@ void hand_draw(void) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (98.98%): instruction sequence and stack slots match; only the callee-saved register
-// colouring differs (target: elem=r24, i=r25, hp=r26, gp=r22, rt=r20/r21; ours: elem=r22, i=r21,
-// hp=r20, gp=r26, rt=r24/r25).  pose_main's identical loop body gets our colouring, not the target's.
+// NONMATCHING (99.69%): everything matches except the callee-saved colouring of the gp pointer and
+// hp (target gp=r22, hp=r26; ours gp=r26, hp=r22).  Naming the renderTime read as `now` and declaring
+// i before elem/pose (both semantically identical) give the target's colouring for every other web.
 void hand_main(void) {
-    ExtPose* pose;
-    HandElem* elem;
     s32 i;
+    HandElem* elem;
+    ExtPose* pose;
     pose = extGetPosePtr();
     elem = HAND->elems;
     i = 0;
     for (i = 0; i < HAND->count; i++, pose++, elem++) {
         HandPose* hp = &HAND->poses[elem->field_0x04];
         s32 unitId;
-        f32 f1 = (f32)OSTicksToMilliseconds((u64)(gp->renderTime - elem->field_0x08));
+        OSTime now = gp->renderTime;
+        f32 f1 = (f32)OSTicksToMilliseconds((u64)(now - elem->field_0x08));
         f1 = (f32)gp->framerate * f1 / 1000.0f / hp->field_0x18;
         if (f1 >= 1.0f) {
-            elem->field_0x08 = gp->renderTime;
+            elem->field_0x08 = now;
             f1 -= 1.0f;
         }
         pose->field_0x10 = hp->field_0x1C + (s32)((hp->field_0x20 - 1) * f1);
@@ -4839,7 +4837,6 @@ void hand_main(void) {
     }
     dispEntry(4, 0.0f, 1, (DispCallback)hand_draw, 0);
 }
-
 USER_FUNC(change_pose) {
     s32 value = evtGetValue(event, event->args[0]);
     HandElem* elem = HAND->elems;
@@ -4851,7 +4848,6 @@ USER_FUNC(change_pose) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(queen_thunder) {
     s32* args = event->args;
     f32 a;
@@ -4883,7 +4879,6 @@ USER_FUNC(queen_thunder) {
     btl_camera_shake_w(0, 8, 0, 1.0f, 1.0f);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(queen_drain) {
     Vec position;
     s32* args = event->args;
@@ -4897,19 +4892,16 @@ USER_FUNC(queen_drain) {
     effStardust2N64Entry(5, 10, 30, x, y, z, 20.0f, 40.0f);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(unk_las_0000af38) {
     *(u32*)BattleBreakSlotGetPtr() |= 2;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(eff_queen_set_alpha_evt) {
     s32 value = evtGetValue(event, event->args[0]);
     EffectEntry* eff = effNameToPtr("m_q2");
     *(s32*)((u8*)eff->userdata + 0x28) = value;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(peach_hand1000_dark_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -4995,7 +4987,6 @@ USER_FUNC(peach_hand1000_dark_drag_1_evt) {
     }
     return EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(queen_kankyaku_delete_evt) {
     s32 i;
     for (i = 0; i < 200; i++) {
@@ -5006,7 +4997,6 @@ USER_FUNC(queen_kankyaku_delete_evt) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(queen_get_aud_num) {
     s32* args = event->args;
     s32 num;
@@ -5017,7 +5007,6 @@ USER_FUNC(queen_get_aud_num) {
 }
 
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_1_evt, 0.0f, -80.0f)
-
 USER_FUNC(queen_hp_drain_2_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5082,7 +5071,6 @@ USER_FUNC(queen_hp_drain_2_evt) {
 }
 
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_3_evt, -30.0f, -110.0f)
-
 USER_FUNC(queen_hp_drain_4_evt) {
     s32 i;
     if (isFirstCall) {
@@ -5127,7 +5115,6 @@ USER_FUNC(queen_hp_drain_4_evt) {
 }
 
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hp_drain_5_evt)
-
 USER_FUNC(peach_shock_evt) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -5142,7 +5129,6 @@ USER_FUNC(peach_shock_evt) {
     *(s32*)((u8*)eff->userdata + 0x44) = irand(50) + 155;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(slot_init) {
     *(u32*)BattleBreakSlotGetPtr() |= 4;
     return EVT_RETURN_DONE;
@@ -5154,7 +5140,6 @@ DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_dead_evt, 0.0f, -80.0f)
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_4_evt, 0.0f, -80.0f)
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_drag_3_evt)
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_2_evt, 0.0f, -80.0f)
-
 USER_FUNC(queen_hand_small_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5297,7 +5282,6 @@ USER_FUNC(queen_hand_small_1000hand_1_evt) {
 }
 
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_1000hand_2_evt)
-
 USER_FUNC(queen_hand_small_1000hand_set_offset_evt) {
     s32* args = event->args;
     s32 off18;

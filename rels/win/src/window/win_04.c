@@ -384,8 +384,6 @@ USER_FUNC(ss_ch_check) {
     evtSetFloat(event, args[1], value);
     return EVT_RETURN_DONE;
 }
-
-
 USER_FUNC(ss_ch_set) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -418,7 +416,6 @@ EVT_END()
 static u32 item_list[2] = {
     0x0000003F, 0xFFFFFFFF,
 };
-
 USER_FUNC(fade_alpha) {
     s32* args = event->args;
     s32 r = evtGetValue(event, args[0]);
@@ -881,7 +878,6 @@ EVT_BEGIN(touch_door)
     END_SWITCH
     RETURN
 EVT_END()
-
 void mirror_ball(void* param) {
     envAddTev(0xa, param);
 }
@@ -1301,7 +1297,7 @@ u32 rose_table[120] = {
     0x433E0000, 0x43870000, 0x433E0000, 0xC3820000,
 };
 
-// NONMATCHING (99.92%): only the two negation temporaries differ. The original computes left/bottom as
+// NONMATCHING (99.91%): only the two negation temporaries differ. The original computes left/bottom as
 // `fneg f2,f0` (w) and `fneg f1,f1` (h) then `fmuls f29,f2,0.5` / `fmuls f28,f1,0.5`; MWCC 2.6 negates directly into
 // the persistent f29/f28 (`fneg f29,f0` / `fneg f28,f1` / `fmuls f29,f29,0.5`). Every source shape that forces a
 // separate temp (`-w * 0.5f`, `-w / 2.0f`, explicit intermediates, an inline helper) either leaves the pool order
@@ -1375,13 +1371,11 @@ void flower_disp(CameraId camera, void* param) {
         GXTexCoord2f32(1.0f, 0.0f);
     }
 }
-
 static f32 randf(f32 a, f32 b) {
     f32 r = (f32)rand() / 32767.0f;
 
     return a + r * (b - a);
 }
-
 USER_FUNC(evt_flower_init) {
     FlowerData* data = _mapAlloc(8);
 
@@ -1390,7 +1384,6 @@ USER_FUNC(evt_flower_init) {
     event->lwData[10] = (s32)data;
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_flower) {
     FlowerData* data = (FlowerData*)event->lwData[10];
     Flower* flower = data->flowers;
@@ -1428,7 +1421,6 @@ USER_FUNC(evt_flower) {
     dispEntry(CAMERA_2D, 1000.0f, 0, flower_disp, data);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_flower_end) {
     FlowerData* data = (FlowerData*)event->lwData[10];
     Flower* flower = data->flowers;
@@ -1439,7 +1431,6 @@ USER_FUNC(evt_flower_end) {
     }
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_flower_end_main) {
     FlowerData* data = (FlowerData*)event->lwData[10];
     Flower* flower = data->flowers;
@@ -1549,7 +1540,6 @@ EVT_BEGIN(win_04_init_evt)
     CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hika_"), 1)
     RETURN
 EVT_END()
-
 USER_FUNC(flower_pos_report) {
     FlowerData* data = (FlowerData*)event->lwData[10];
     s32 i;
