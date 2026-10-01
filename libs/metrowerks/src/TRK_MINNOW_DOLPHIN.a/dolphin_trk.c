@@ -30,6 +30,13 @@ static u32 TRK_ISR_OFFSETS[15] = { PPC_SystemReset,
 	                               PPC_SystemManagementInterrupt,
 	                               PPC_ThermalManagementInterrupt };
 
+// the 4 bytes after the table in the target's .data (dtk's gap_05_803B7474_data)
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") static u32 gap_after_isr_offsets = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
 __declspec(section ".init") void __TRK_reset()
 {
 	OSResetSystem(OS_RESET_RESTART, 0, FALSE);
@@ -147,128 +154,37 @@ bbaCommTableSuccess:
 #endif // clang-format on
 }
 
-// NONMATCHING (87.28%): the original's two `dcbi` on the stack buffer are written as `__dcbf`, since GC/2.6
-// has no `__dcbi` intrinsic (it emits `bl __dcbi`). The range check branches the other way (`ble`/`b` in the
-// original, `bgt` here), the original recomputes `clrlwi. r24,r31,27` after __ARGetInterruptStatus where this
-// reuses aramOff, and the cache loop allocates registers differently.
-void TRK__write_aram(u8* buf, u32 aram, u32* size)
+#define __dcbi(a, b) asm { dcbi a, b }
+#define __dcbfASM(a, b) asm { dcbf a, b }
+
+/*
+ * --INFO--
+ * Address:	8021FEF4
+ * Size:	000020
+ */
+void EnableMetroTRKInterrupts(void)
 {
-	u32 aramOff;
-	u32 alignedAram;
-	u32 len;
-	u32 aramEnd;
-	u32 i;
-	u32 lastAram;
-	u32 intr;
-	u8 stack[32] __attribute__((aligned(32)));
-
-	if (aram < 0x4000) {
-		return;
-	}
-	if (aram + *size > 0x08000000U) {
-		return;
-	}
-
-	aramOff = aram & 31;
-	alignedAram = aram & ~31;
-	len = *size + aramOff;
-	len = (len + 31) & ~31;
-
-	for (i = 0; i < len; i += 32) {
-		__dcbf(buf, i);
-	}
-
-	while (ARGetDMAStatus() != 0) {
-	}
-
-	intr = __ARGetInterruptStatus();
-	lastAram = 0x08000000;
-
-	if (aramOff != 0) {
-		lastAram = alignedAram;
-		__dcbf(stack, 0);
-		__ARClearInterrupt();
-		ARStartDMA(1, (u32)stack, alignedAram, 32);
-		while ((__ARGetInterruptStatus() & 0xffff) == 0) {
-		}
-		TRK_memcpy(buf, stack, aramOff);
-		__dcbf(buf, 0);
-	}
-
-	aramEnd = aram + *size;
-	if ((aramEnd & 31) != 0) {
-		u32 tailAram = aramEnd & ~31;
-		if (tailAram != lastAram) {
-			__dcbf(stack, 0);
-			__ARClearInterrupt();
-			ARStartDMA(1, (u32)stack, tailAram, 32);
-			while ((__ARGetInterruptStatus() & 0xffff) == 0) {
-			}
-		}
-		TRK_memcpy(buf + aramEnd, stack + (aramEnd & 31), 32 - (aramEnd & 31));
-		__dcbf(buf + aramEnd, 0);
-	}
-
-	__sync();
-	__ARClearInterrupt();
-	ARStartDMA(0, (u32)buf, alignedAram, len);
-	if ((intr & 0xffff) == 0) {
-		while ((__ARGetInterruptStatus() & 0xffff) == 0) {
-		}
-		__ARClearInterrupt();
-	}
-}
-
-// NONMATCHING (87.34%): the compiler has no `__dcbi` intrinsic. The data-cache invalidates compile as `dcbf`
-// instead of `dcbi`; the remaining diff is register allocation in the invalidate loop.
-void TRK__read_aram(u8* buf, u32 aram, u32* size)
-{
-	u32 aramOff;
-	u32 alignedAram;
-	u32 len;
-	u32 i;
-	u32 intr;
-
-	if (aram < 0x4000) {
-		return;
-	}
-	if (aram + *size > 0x08000000U) {
-		return;
-	}
-
-	aramOff = aram & 31;
-	alignedAram = aram & ~31;
-	len = *size + aramOff;
-	len = (len + 31) & ~31;
-
-	for (i = 0; i < len; i += 32) {
-		__dcbf(buf, i);
-	}
-
-	while (ARGetDMAStatus() != 0) {
-	}
-
-	intr = __ARGetInterruptStatus();
-	__ARClearInterrupt();
-	ARStartDMA(1, (u32)buf, alignedAram, len);
-	while ((__ARGetInterruptStatus() & 0xffff) == 0) {
-	}
-	if ((intr & 0xffff) == 0) {
-		__ARClearInterrupt();
-	}
+	EnableEXI2Interrupts();
 }
 
 /*
  * --INFO--
- * Address:	80220050
- * Size:	000050
+ * Address:	8021FF14
+ * Size:	000048
  */
-DSError TRKInitializeTarget()
+u32 TRKTargetTranslate(u32 param_0)
 {
-	gTRKState.isStopped = TRUE;
-	gTRKState.msr       = __TRK_get_MSR();
-	lc_base             = 0xE0000000;
-	return DS_NoError;
+	if (param_0 >= lc_base) {
+		if ((param_0 < lc_base + 0x4000) && ((gTRKCPUState.Extended1.DBAT3U_ & 3) != 0)) {
+			return param_0;
+		}
+	}
+
+	if (param_0 >= 0x7E000000U && param_0 <= 0x80000000U) {
+		return param_0;
+	}
+
+	return param_0 & 0x3FFFFFFF | 0x80000000;
 }
 
 /*
@@ -276,7 +192,7 @@ DSError TRKInitializeTarget()
  * Address:	8021FF5C
  * Size:	000060
  */
-void TRK_copy_vector(u32 offset)
+static void TRK_copy_vector(u32 offset)
 {
 	void* destPtr = (void*)TRKTargetTranslate(offset);
 	TRK_memcpy(destPtr, gTRKInterruptVectorTable + offset, 0x100);
@@ -304,30 +220,132 @@ void __TRK_copy_vectors(void)
 
 /*
  * --INFO--
- * Address:	8021FF14
- * Size:	000048
+ * Address:	80220050
+ * Size:	000050
  */
-u32 TRKTargetTranslate(u32 param_0)
+DSError TRKInitializeTarget()
 {
-	if (param_0 >= lc_base) {
-		if ((param_0 < lc_base + 0x4000) && ((gTRKCPUState.Extended1.DBAT3U_ & 3) != 0)) {
-			return param_0;
-		}
-	}
-
-	if (param_0 >= 0x7E000000U && param_0 <= 0x80000000U) {
-		return param_0;
-	}
-
-	return param_0 & 0x3FFFFFFF | 0x80000000;
+	gTRKState.isStopped = TRUE;
+	gTRKState.msr       = __TRK_get_MSR();
+	lc_base             = 0xE0000000;
+	return DS_NoError;
 }
 
-/*
- * --INFO--
- * Address:	8021FEF4
- * Size:	000020
- */
-void EnableMetroTRKInterrupts(void)
-{
-	EnableEXI2Interrupts();
+void TRK__read_aram(register int c, register u32 p2, void* p3) {
+    u32 err;
+    int i;
+    register int counter;
+    u32 r;
+    u32 g;
+    u32 x;
+    u32 size;
+
+    if ((size_t)p2 < 0x4000 || p2 + *(u32*)p3 > 0x8000000) {
+        return;
+    }
+
+    x = p2 & ~0x1F;
+    size = *(u32*)p3 + (p2 & 0x1F);
+    size = (size + 31) & ~31;
+    counter = 0;
+
+    for (i = 0; i < size; i += 0x20) {
+        __dcbi(counter, c);
+        counter += 0x20;
+    }
+
+    do {
+        err = ARGetDMAStatus();
+    } while (err);
+
+    r = __ARGetInterruptStatus();
+    g = 0x8000000;
+    __ARClearInterrupt();
+
+    ARStartDMA(1, c, x, size);
+
+    while (!(u16)__ARGetInterruptStatus()) {
+    }
+
+    if (!(u16)r) {
+        __ARClearInterrupt();
+    }
+}
+
+void TRK__write_aram(register int c, register u32 p2, void* p3) {
+    u8 buff[32] __attribute__((aligned(32)));
+    u32 err;
+    register int count = c;
+    register u32 bf;
+    u32 uVar1;
+    u32 size;
+    u32 r;
+    register u32 g;
+    register int counter;
+    u32 i;
+
+    if ((size_t)p2 < 0x4000 || p2 + *(u32*)p3 > 0x8000000) {
+        return;
+    }
+
+    uVar1 = p2 & ~0x1f;
+    counter = 0;
+    size = *(u32*)p3 + (p2 & 0x1f);
+    size = (size + 31) & ~31;
+
+    for (i = 0; i < size; i += 0x20) {
+        __dcbf((void*)counter, count);
+        counter += 0x20;
+    }
+
+    do {
+        err = ARGetDMAStatus();
+    } while (err);
+
+    r = __ARGetInterruptStatus();
+    g = 0x8000000;
+
+    counter = p2 & 0x1f;
+    if (counter) {
+        g = uVar1;
+        bf = (u32)buff;
+        __dcbi(r0, bf);
+        __ARClearInterrupt();
+
+        ARStartDMA(1, bf, uVar1, 0x20);
+
+        while (!(u16)__ARGetInterruptStatus()) {
+        }
+
+        TRK_memcpy((void*)c, buff, counter);
+        __dcbfASM(r0, c);
+    }
+
+    p2 += *(u32*)p3;
+    counter = p2 & 0x1f;
+    if (counter) {
+        u32 val = p2 & ~0x1F;
+        if (val != g) {
+            bf = (u32)buff;
+            __dcbi(r0, bf);
+            __ARClearInterrupt();
+            ARStartDMA(1, bf, val, 0x20);
+
+            while (!(u16)__ARGetInterruptStatus()) {
+            }
+        }
+        g = c + p2;
+        TRK_memcpy((void*)g, (void*)(buff + counter), 0x20 - counter);
+
+        __dcbfASM(r0, g);
+    }
+    __sync();
+    __ARClearInterrupt();
+    ARStartDMA(0, c, uVar1, size);
+    if (!(u16)r) {
+        while (!(u16)__ARGetInterruptStatus()) {
+        }
+
+        __ARClearInterrupt();
+    }
 }
