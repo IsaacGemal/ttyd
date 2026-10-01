@@ -21,6 +21,7 @@ Steps, stopping at the first failure:
    fully matched but not yet linked.
 """
 import argparse
+import os
 import local_prototypes
 import json
 import re
@@ -128,7 +129,9 @@ def build():
     if r.returncode:
         fail("build", "configure.py failed:\n" + r.stderr[-2000:])
     ninja = shutil.which("ninja") or str(ROOT / ".venv" / "bin" / "ninja")
-    r = run([ninja])
+    # Several sessions share one Mac: cap parallel compiles (CI_JOBS, default 4) and run them at low priority.
+    jobs = os.environ.get("CI_JOBS", "4")
+    r = run(["nice", "-n", "10", ninja, "-j", jobs])
     if r.returncode:
         fail("build", "ninja failed (compile error, or a linked module no longer matches build.sha1):\n"
              + (r.stdout + r.stderr)[-3000:])
