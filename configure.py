@@ -446,7 +446,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "driver/bgdrv.c"),
+            Object(Matching, "driver/bgdrv.c"),
             Object(Matching, "driver/camdrv.c"),
             Object(Matching, "driver/dispdrv.c", cflags=cflags_static_nodefer),
             Object(NonMatching, "driver/fadedrv.c"),
