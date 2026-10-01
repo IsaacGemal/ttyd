@@ -105,7 +105,7 @@ typedef struct BattleMenuWeaponEntry {
 extern BattleWeapon ItemWeaponData_CookingItem;
 
 extern Vec vec3_802ef168;
-extern Vec vec3_802ef174;
+extern const Vec vec3_802ef174;
 // In .rodata: `const` makes MWCC emit lis/addi instead of @sda21 loads.
 extern const Vec vec3_802ef180;
 extern Vec vec3_802ef18c;
@@ -130,7 +130,7 @@ typedef struct BattleMenuDispScratch {
 
 // The Disp wrappers must emit a real call, not an inline expansion of these.
 #pragma dont_inline on
-// NONMATCHING (0.00%): 9 instructions differ, 4 missing, 91 extra, plus register differences.
+// NONMATCHING (87.33%): 9 instructions differ, 4 missing, 91 extra, plus register differences.
 void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -224,39 +224,57 @@ void DrawChangePartyWin(void) {
     }
 }
 
-// NONMATCHING (0.00%): 23 instructions differ, 6 missing, 96 extra, plus register differences.
+// This declaration order, and the function-scope `entry`, are what make MWCC
+// pack the frame at the original offsets (outX/outY at 0x14/0x10, arr88 at 0x88,
+// ...) and hand r10/r9 to i/entry; the natural order does not.
 void DrawOperationWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
     BattleMenuDispEntryOp* entries;
-    BattleMenuDispScratch scratch;
-    s32 i;
+    f32 scales[5];
+    s32 arr88[7];
+    s32 arr6C[7];
+    Vec centers[5];
+    u16 arr24[7];
+    f32 outX;
+    Mtx rot[7];
+    s32 arr50[7];
+    Mtx mats[5];
+    s32 arr34[7];
+    Vec vec;
+    f32 outY;
 
+    BattleMenuDispEntryOp* entry;
+    s32 i;
     BattleGetUnitPtr(wp, wp->activeUnitId);
     entries = (BattleMenuDispEntryOp*)((u8*)wp + 0x19e8);
-    DrawSubMenuCommonProcess(&scratch.out0x14, &scratch.out0x10, scratch.mats, scratch.centers, scratch.scales, scratch.rot);
+    DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->field_0x98 + i;
         if (idx < cursor->unk8) {
-            BattleMenuDispEntryOp* entry = &entries[idx];
-            scratch.arr88[i] = entry->field_0x4;
-            scratch.arr24[i] = entries[i].field_0x10 != 0 ? entry->field_0x10 : 0x18B;
-            scratch.arr6C[i] = entry->field_0xC;
-            scratch.arr50[i] = entry->field_0x18;
-            scratch.arr34[i] = 0;
+            entry = &entries[idx];
+            arr88[i] = entry->field_0x4;
+            if (entries[i].field_0x10 != 0) {
+                arr24[i] = entry->field_0x10;
+            } else {
+                arr24[i] = 0x18B;
+            }
+            arr6C[i] = entry->field_0xC;
+            arr50[i] = entry->field_0x18;
+            arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), scratch.mats, scratch.centers, scratch.scales);
-    DrawSubIcon(window, scratch.rot, scratch.arr88, scratch.arr24, scratch.arr6C, scratch.arr50, scratch.arr34, 0, 0);
-    scratch.pos = vec3_802ef174;
-    DrawMenuCursorAndScrollArrow(&scratch.pos);
-    if (entries[cursor->field_0].field_0x14 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x14, scratch.out0x14, scratch.out0x10);
+    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
+    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
+    vec = vec3_802ef174;
+    DrawMenuCursorAndScrollArrow(&vec);
+    if ((u32)entries[cursor->field_0].field_0x14 != 0) {
+        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x14, outX, outY);
     }
 }
 
-// NONMATCHING (30.09%): 8 instructions differ, 9 missing, 90 extra, plus register differences.
+// NONMATCHING (88.37%): 8 instructions differ, 9 missing, 90 extra, plus register differences.
 void DrawWeaponWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;

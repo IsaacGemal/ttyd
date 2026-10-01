@@ -3288,3 +3288,32 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
 ## Grind 53: eff_peach_dust_n64 links, the first permuter win (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 `effPeachDustMain` (98.86% with every hand variant of the `k = 0.1f` hoist) reached score 0 on the tower permuter (`perm_run`, 227 s, `PERM_*` variant of the literal-pool source): a pointer to `data->scale` taken right after `colorIndex = data->counter` (`scalePtr = &data->scale;`) and the old scale read through it in `data->scale = k * (k - data->scale) + *scalePtr;`. It changes the order of the loads in the original's way, so it is under `MUST_MATCH` with the plain expression in `#else`. The unit then links with `finish_unit` (literal pool).
+## Wave 51, batch 1: the mixed DOL files' below-80% functions (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Scope:** the 106 DOL files that have both below-80% functions and near-misses. Agents get the below-80% functions
+  up to 2.5 KB, packed per file into groups of at most 3 KB (156 agents, 87 files, 282 functions); a file whose low
+  functions fit one agent also lists its near-misses as extras. The launcher (`scratch/wave51/launch.py`) claims
+  each file just before its first agent starts and skips files Claude #1's waves hold (40 skipped so far), and starts
+  nothing after 08:00.
+- **Collection** in a separate worktree (`~/ttyd-w51`; Claude #1 and #3 each have their own): most functions here were
+  untouched, with no placeholder to splice into, so `scratch/wave5x/merge_collect.py` merges each agent copy onto
+  the tree in turn (3-way from the wave's base commit; a conflicting hunk takes the agent's side, and the score
+  comparison catches what that breaks). Files that stopped building after a conflicted merge (mariost, party,
+  pmario_sound, seq_mapchange, unit_party_chuchurina, evt_mobj) and units whose data sections stayed below main after
+  the greedy revert (mapdrv, mario, imgdrv, mario_hit, party_nokonoko, eff_kemuri1_n64, sac_muki, sac_suki) are as on
+  main. `tools/ci.py`'s ratchet checks the section scores of unlinked units, so a falling section is a CI failure, not
+  only a policy. `greedy.py` now also takes out functions new to the file; `nm_refresh.py` rewrites NONMATCHING
+  percentages from the merged build (several agents' changes to one file shift each other's scores).
+- **Result** (61 agents): 8,492 -> 8,546 functions on main 6d9598d; casedrv links.
+- **Review** (`scratch/wave51/review1.md`): `effCalcMayaAnimMatrix` (66.78%) read its s16 keys unscaled where retail
+  divides by 64 (`psq_l` through GQR5 = 0x06070607), swapped the interpolation operands and flipped a weight's
+  sign; it is unwritten again. `zubastar_bomb` adds the offset to `field_0x30.x` as retail (an older bug).
+  `#pragma optimize_for_size off` in battle_icon switched size optimisation off for everything after it (the
+  file is built -O4,s); it closes with `reset`.
+- **Needs Isaac:** battle_sub.c opens a file-wide `#pragma optimize_for_size on` standing in for `-O4,s` (a
+  configure.py flag change); `BattleIcon.flags`/`iconId` and `ItemData.icon_id` are declared signed where retail
+  loads them unsigned (`lhz`), worked around with `*(u16*)&` casts in battle_icon.
+- **Follow-up:** `partyGetAppearPos2` returns BOOL in retail (declared void; the one caller ignores it); unsigned
+  compares written as `(u32)` casts outside MUST_MATCH in casedrv, effdrv, evt_nannpc, battle_menu_disp; ac_shot's
+  six vec3 objects stay one array (separate objects cost `actionCommandDisp` its match); gor_03's raw byte offsets
+  stay (its work struct isn't declared).

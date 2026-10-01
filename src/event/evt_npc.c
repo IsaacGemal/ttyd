@@ -30,6 +30,12 @@ s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u
 // From driver/npcdrv.c (not yet decompiled)
 extern GXColor unk_80422fc0;
 
+// Named sdata2 constants from the original .sdata2 pool (see config/G8MJ01/symbols.txt).
+extern const f32 float_0_80419cac;
+extern const f32 float_0p1_80419cbc;
+extern const f32 float_1000_80419cb8;
+extern const f32 float_3p1416_80419ccc;
+
 // TODO: need to figure out better flags, since I've had to use dont_inline in a couple places, this
 // might just be -inline deferred? No auto
 #pragma pool_data on
@@ -77,7 +83,7 @@ static inline f32 sqrtf(f32 x) {
     const f64 _half = .5;
     const f64 _three = 3.0;
 
-    if (x > 0.0f) {
+    if (x > float_0_80419cac) {
         f64 guess = __frsqrte(x);
         guess = _half * guess * (_three - guess * guess * x);
         guess = _half * guess * (_three - guess * guess * x);
@@ -857,14 +863,20 @@ USER_FUNC(evt_npc_jump_position_nohit) {
 // Full translation; only the callee-saved register assignment differs from the original: ours
 // puts targetY/targetZ/moveTime in f29/f27/f28 and speed/arcHeight in f30/f31, the original uses
 // f27/f28/f29/f31/f30. The rest of the mismatches cascade from those register choices.
-// NONMATCHING (40.44%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
+// Full translation. The original's two `_intplGetFloat` arguments are both computed before the
+// first call; MWCC here sinks the second division past it, which keeps moveTime/delta in
+// callee-saved f27/f26 and shifts the whole per-frame block. Writing the b call first recovers
+// most of the original register assignment. The remaining differences are constant-pool symbols
+// and the b/a register swap.
+// NONMATCHING (99.15%): the second quotient is computed after the first call, so moveTime/delta
+// land in f27/f26 instead of f2/f4; three `float_*` sda21 symbols and the sin/cos blocks differ.
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
     const char* npcName = (const char*)evtGetValue(event, args[0]);
     f32 targetX = evtGetFloat(event, args[1]);
     f32 targetY = evtGetFloat(event, args[2]);
     f32 targetZ = evtGetFloat(event, args[3]);
-    f32 moveTime = (f32)evtGetValue(event, args[4]) / 1000.0f;
+    f32 moveTime = (f32)evtGetValue(event, args[4]) / float_1000_80419cb8;
     f32 speed = evtGetFloat(event, args[5]);
     f32 arcHeight = evtGetFloat(event, args[6]);
     s32 intplType = evtGetValue(event, args[7]);
@@ -896,21 +908,21 @@ USER_FUNC(evt_npc_glide_position) {
         npc->jumpStartPos = npc->position;
         VECSubtract(&npc->jumpTargetPos, &npc->jumpStartPos, &diff);
         dist = sqrtf(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-        if (moveTime <= 0.0f) {
-            if (speed == 0.0f) {
+        if (moveTime <= float_0_80419cac) {
+            if (float_0_80419cac == speed) {
                 return EVT_RETURN_YIELD;
             }
-            if (dist == 0.0f) {
+            if (float_0_80419cac == dist) {
                 return EVT_RETURN_YIELD;
             }
             moveTime = dist / speed;
         }
         npc->moveTime = moveTime;
         npc->moveSpeed = speed;
-        if (speed <= 0.1f) {
+        if (npc->moveSpeed <= float_0p1_80419cbc) {
             npc->moveSpeed = dist / npc->moveTime;
         }
-        npc->footstepAccum = 0.0f;
+        npc->footstepAccum = float_0_80419cac;
         npc->footstepToggle = 1;
         return EVT_RETURN_BLOCK;
     }
@@ -927,14 +939,15 @@ USER_FUNC(evt_npc_glide_position) {
         flag = 1;
         if (dy > t) {
             delta = delta - (t - dy);
-            if (delta <= 0.0f) {
+            if (delta <= float_0_80419cac) {
                 return EVT_RETURN_DONE;
             }
         }
     }
 
+    delta = dy - delta;
+    b = _intplGetFloat(intplType, delta / t);
     a = _intplGetFloat(intplType, dy / t);
-    b = _intplGetFloat(intplType, (dy - delta) / t);
     dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
     dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
     delta = a - b;
@@ -942,19 +955,19 @@ USER_FUNC(evt_npc_glide_position) {
     npc->moveOffset.z += dz * delta;
 
     if (npc->jumpFlags & 2) {
-        if (dx != 0.0f || dz != 0.0f) {
+        if (dx != float_0_80419cac || dz != float_0_80419cac) {
             if (npc != fbatGetPointer()->target ||
                 (fbatGetPointer()->mode != 5 && fbatGetPointer()->mode != 6)) {
-                npcTuningRy(npc, angleABf(0.0f, 0.0f, dx, dx));
+                npcTuningRy(npc, angleABf(float_0_80419cac, float_0_80419cac, dx, dx));
             }
         }
     }
 
     dy = npc->jumpTargetPos.y - npc->jumpStartPos.y;
     npc->moveOffset.y += dy * delta;
-    t = (f32)sin(3.1415927f * b);
-    a = (f32)sin(3.1415927f * a);
-    npc->moveOffset.y += arcHeight * (a - t);
+    t = (f32)sin(float_3p1416_80419ccc * b);
+    a = (f32)sin(float_3p1416_80419ccc * a);
+    npc->moveOffset.y += arcHeight * a - arcHeight * t;
 
     sfxFlag = 0;
     if (psndGetFlag() & 0x100) {
@@ -962,7 +975,7 @@ USER_FUNC(evt_npc_glide_position) {
             sfxFlag = 0x10000;
         }
     }
-    if ((f32)npc->footstepStride / npc->moveSpeed < npc->footstepAccum) {
+    if (npc->footstepAccum > (f32)npc->footstepStride / npc->moveSpeed) {
         if (npc->footstepToggle != 0) {
             if (npc->footstepSfxA != NULL) {
                 psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxA)), &npc->position, 0xff, 0xff, 0, 8);
@@ -972,11 +985,11 @@ USER_FUNC(evt_npc_glide_position) {
                 psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxB)), &npc->position, 0xff, 0xff, 0, 8);
             }
         }
-        npc->footstepAccum = 0.0f;
+        npc->footstepAccum = float_0_80419cac;
         npc->footstepToggle = (s8)(1 - npc->footstepToggle);
     }
     if (npc->footstepSfxB != NULL || npc->footstepToggle != 0) {
-        npc->footstepAccum += 1000.0f * npc->moveDt;
+        npc->footstepAccum += float_1000_80419cb8 * npc->moveDt;
     }
     if (flag) {
         return EVT_RETURN_YIELD;
@@ -2581,11 +2594,15 @@ USER_FUNC(evt_npc_set_ry_lr) {
 }
 
 // The file's MWCC keeps `1.0f - tt` live in f31 and hoists it across the cos() calls in cases
-// 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Cases 4/5/6 now
-// use an explicit `f32 a = 1.0f - tt;` temporary, which lets MWCC fuse the final multiply into
-// fnmsubs and matches those cases (86.12% -> 90.25%). Cases 7/8/10 still fuse where the original
-// does two separate fmuls, and the case 11/12 operand register differs; logic is equivalent.
-// NONMATCHING (94.67%): 2 instructions differ, 4 missing, 1 extra, plus register differences.
+// 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Cases 4/5/6 use
+// an explicit `f32 a = 1.0f - tt;` temporary, which lets MWCC fuse the final multiply into fnmsubs
+// and matches those cases. Case 7/8 use `f32 v = a * (a * c); return 1.0f - v;` to keep the two
+// separate fmuls. The remaining mismatch is the sda21 constant pool layout (objdiff names ours
+// `@N` where the original has `float_*` symbols) plus the pre-clamp copy propagation.
+// dont_inline keeps this out of the other functions in the file; the original calls it with a
+// real `bl` (glide_position relies on that).
+// NONMATCHING (97.33%): sda21 constants are unnamed locals, `tt > 1.0f` compares t (f1) instead
+// of the copy (f31), and case 12/13/11 scheduling differs; logic is equivalent.
 f32 _intplGetFloat(s32 type, f32 t) {
     f32 tt = t;
     if (tt > 1.0f) {
@@ -2603,12 +2620,14 @@ f32 _intplGetFloat(s32 type, f32 t) {
         case 7: {
             f32 c = (f32)cos(4.0f * (tt / 3.1415927f));
             f32 a = 1.0f - tt;
-            return 1.0f - a * (a * c);
+            f32 v = a * (a * c);
+            return 1.0f - v;
         }
         case 8: {
             f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 15.0f);
             f32 a = 1.0f - tt;
-            return 1.0f - a * (a * c);
+            f32 v = a * (a * c);
+            return 1.0f - v;
         }
         case 4: {
             f32 a = 1.0f - tt;
@@ -2640,3 +2659,4 @@ f32 _intplGetFloat(s32 type, f32 t) {
     }
     return 0.0f;
 }
+

@@ -398,6 +398,8 @@ void partyClearFootmark(void) {
 }
 #endif
 
+// dont_inline keeps this a real `bl` from partyRecordFootmark, as in retail.
+#pragma dont_inline on
 // NONMATCHING (87.37%): shares the clear loop's redundant loop-entry test with partyClearFootmark;
 // the mario/target copy is otherwise matched.
 void partyClearFootmark2(void) {
@@ -437,6 +439,7 @@ void partyClearFootmark2(void) {
     writeId[1] = 0;
     readId[1] = 0;
 }
+#pragma dont_inline reset
 
 f32 unk_800c92c4(PartyEntry* party) {
     PartyEntry* work = party;
@@ -1188,6 +1191,109 @@ Footmark* partyGetFootmarkPtr(u32 index) {
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
 }
 
+// HEADER PROBLEM: the asm returns BOOL (`li r3,0x1` / `li r3,0x0` before both epilogues,
+// e.g. 800C3D18 and 800C407C), but include/party/party_move.h:32 declares this function `void`
+// and bulk agents may not change existing header lines. The definition is therefore `void` and
+// the eight `li r3` return-value instructions are missing; the header should become
+// `BOOL partyGetAppearPos2(PartyEntry* party, Vec* pos);` (the only caller, party.c:1105,
+// ignores the result).
+// The compiler also pools this function's Vec compound-literal templates into per-literal local
+// .rodata symbols (@752/@754/...) instead of the original's str_802CDB20+0x38c... blob, so it
+// keeps only three callee-saved GPRs (r29-r31) instead of four (r28-r31). All other opcodes,
+// stack offsets and control flow match.
+// NONMATCHING (74.24%): wrong header return type + pool-layout blocker.
+void partyGetAppearPos2(PartyEntry* party, Vec* position) {
+    MarioWork* player = party->playerPtr;
+    HitCheckQuery query;
+    f32 unk1A8;
+    f32 targetDist = 30.0f + party->field_F4;
+    f32 moveDist = 30.0f;
+    f32 angle;
+    f32 sinv;
+    f32 cosv;
+    HitEntry* hit;
+
+    revise360(180.0f + player->unk1A8);
+    unk1A8 = player->unk1A8;
+    position->x = player->position.x;
+    position->y = player->position.y;
+    position->z = player->position.z;
+
+    if (player->currPartySlotId[1] < 0) {
+        angle = toMovedir(180.0f + player->unk1A8);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit != NULL) {
+            return;
+        }
+
+        angle = toMovedir(player->unk1A8);
+        movePos(&position->x, &position->z, -moveDist, angle);
+        query.targetDistance = 38.0f;
+        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+        query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            return;
+        }
+        position->y = query.hitPos.y;
+        return;
+    }
+
+    position->x = player->position.x;
+    position->y = player->position.y;
+    position->z = player->position.z;
+    angle = toMovedir2(unk1A8, -90.0f);
+    sincosf(&sinv, &cosv, angle);
+    query.targetDistance = targetDist;
+    query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+    query.targetDir = (Vec){sinv, 0.0f, cosv};
+    hit = hitCheckVecFilter(&query, NULL);
+    if (hit == NULL) {
+        position->x = player->position.x;
+        position->y = player->position.y;
+        position->z = player->position.z;
+        angle = toMovedir2(unk1A8, party->currentSlotId == 0 ? 20.0f : -20.0f);
+        movePos(&position->x, &position->z, -moveDist, angle);
+        query.targetDistance = 38.0f;
+        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+        query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit != NULL) {
+            position->y = query.hitPos.y;
+            return;
+        }
+    }
+
+    angle = toMovedir2(unk1A8, 90.0f);
+    sincosf(&sinv, &cosv, angle);
+    query.targetDistance = targetDist;
+    query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+    query.targetDir = (Vec){sinv, 0.0f, cosv};
+    hit = hitCheckVecFilter(&query, NULL);
+    if (hit != NULL) {
+        return;
+    }
+
+    position->x = player->position.x;
+    position->y = player->position.y;
+    position->z = player->position.z;
+    angle = toMovedir2(unk1A8, party->currentSlotId == 0 ? -20.0f : 20.0f);
+    movePos(&position->x, &position->z, -moveDist, angle);
+    query.targetDistance = 38.0f;
+    query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+    query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+    hit = hitCheckVecFilter(&query, NULL);
+    if (hit == NULL) {
+        return;
+    }
+    position->y = query.hitPos.y;
+    return;
+}
+
 // The compiler does not pool the .rodata constants for this function, so it keeps two
 // pool-base registers live across the loop instead of the original's one. That shifts
 // every callee-saved register by one (stmw r20 vs r21) and leaves the four Vec/angle
@@ -1288,7 +1394,15 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     return FALSE;
 }
 
-// NONMATCHING (72.32%): the Vec-literal stack layout differs.
+// The angle table and the two Vec templates land in this file's .rodata pool, but the original
+// pools them at str_802CDB20+0x5a4 / +0x5d4 / +0x5f0 and addresses angles, templates and the
+// 2^52 int-to-float double off that one base register. Because the rest of party_move.c is still
+// unwritten, our pool offsets differ and the compiler keeps the angle base and the template base
+// in separate registers, so every callee-saved GPR is assigned differently (same stmw r25 set,
+// different roles). The stack frame, opcodes and control flow match exactly: `u32 i` for the
+// `cmplwi` loop test, component-wise `position->x/y/z = pos.x/y/z` for the lfs/stfs copy, and
+// `if (i >= 12)` for the post-loop `cmplwi; blt`.
+// NONMATCHING (85.22%): pool-layout blocker only; opcodes and stack shape match.
 BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
     MapObjectEntry* obj;
@@ -1300,7 +1414,7 @@ BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     f32 sinv;
     f32 cosv;
     HitEntry* h;
-    s32 i;
+    u32 i;
 
     if (hit == NULL) {
         return FALSE;
@@ -1314,28 +1428,26 @@ BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     pos.y = 50.0f + obj->position.y;
     for (i = 0; i < 12; i++) {
         sincosf(&sinv, &cosv, party->dir + (f32)angles[i]);
-        dir.x = sinv;
-        dir.y = 0.0f;
-        dir.z = cosv;
+        dir = (Vec){sinv, 0.0f, cosv};
         dist = 50.0f;
         h = partyHitCheck(party, &pos, &dir, &hitPos, &hitNormal, &dist);
         if (h == NULL) {
             dist = 150.0f;
             pos.x = obj->position.x + sinv * 50.0f;
             pos.z = obj->position.z + cosv * 50.0f;
-            dir.x = 0.0f;
-            dir.y = -1.0f;
-            dir.z = 0.0f;
+            dir = (Vec){0.0f, -1.0f, 0.0f};
             h = partyHitCheck(party, &pos, &dir, &hitPos, &hitNormal, &dist);
             if (h == NULL || !(hitGetAttr(h) & 0x200)) {
                 break;
             }
         }
     }
-    if (i == 12) {
+    if (i >= 12) {
         return FALSE;
     }
-    *position = pos;
+    position->x = pos.x;
+    position->y = pos.y;
+    position->z = pos.z;
     return TRUE;
 }
 
@@ -1772,19 +1884,18 @@ static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags
     s32 id;
 
     marioGetPtr();
+    f = (Footmark*)(footmarkBuf + slot * 0x500);
     id = writeId[slot];
-    f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
+    f = &f[id];
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
         if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
-            if (readId[slot] != id + 1) {
-                writeId[slot] = id + 1;
+            if (readId[slot] != writeId[slot] + 1) {
+                writeId[slot]++;
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
                 }
                 f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
-                f->x = pos->x;
-                f->y = pos->y;
-                f->z = pos->z;
+                *(Vec*)&f->x = *pos;
                 if (flags & 1) {
                     f->field_0 |= 1;
                 } else {
@@ -1800,17 +1911,25 @@ static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags
     }
 }
 
-// NONMATCHING (56.40%): register allocation and the redundant loop-entry test differ; the
-// `flags |= (cond) ? 1 : 0` sequences fold differently (extrwi/mr instead of rlwinm./li r3).
 void partyRecordFootmark(PartyEntry* party) {
-    MarioWork* player = party->playerPtr;
-    PartyEntry* target;
-    s32 flags = 0;
-    s32 flag;
     Vec pos;
+    Vec pos2;
+    Vec pos3;
+    Vec mp;
+    PartyEntry* target;
+    s32 flag;
+    MarioWork* player = party->playerPtr;
+    s32 flags = 0;
 
     if (party->currentSlotId == 0) {
-        flags |= (marioGetPtr()->flags & 0x10000) != 0;
+        MarioWork* m = marioGetPtr();
+        s32 jump = 0;
+        if (m->flags & MARIO_FLAG_IS_JUMPING) {
+            jump = 1;
+        }
+        if (jump) {
+            flags |= 1;
+        }
         if (marioChkSlitThrouh() != 0) {
             flags |= 4;
         }
@@ -1825,40 +1944,52 @@ void partyRecordFootmark(PartyEntry* party) {
                 flag = 1;
             }
         }
-        if (target == NULL || flag != 0) {
-            if (*(s8*)((u8*)party + 0x51) == 1) {
-                *(s8*)((u8*)party + 0x51) = 0;
-                partyClearFootmark2();
-            }
-            flags = 0;
-            flags |= (marioGetPtr()->flags & 0x10000) != 0;
-            if (marioChkSlitThrouh() != 0) {
-                flags |= 4;
-            }
-            pos = player->position;
-            partyRecordFootmarkSub(party, &pos, flags);
-        } else {
-            if (*(s8*)((u8*)party + 0x51) == 0) {
-                s32 i;
-                Vec mp = marioGetPtr()->position;
-                Footmark* f = (Footmark*)footmarkBuf;
-                *(s8*)((u8*)party + 0x51) = 1;
+        if (target != NULL && flag == 0) {
+            if (*(s8*)(party->field_4D + 4) == 0) {
+                u32 i;
+                Footmark* f;
+                *(s8*)(party->field_4D + 4) = 1;
+                mp = marioGetPtr()->position;
+                f = (Footmark*)footmarkBuf;
                 for (i = 0; i < 0x50; i++) {
-                    f->x = mp.x;
-                    f->y = mp.y;
-                    f->z = mp.z;
+                    *(Vec*)&f->x = mp;
                     f->field_0 = 0;
                     f++;
                 }
                 writeId[0] = 0;
                 readId[0] = 0;
             }
-            flags = 0;
-            if (target->flags & PARTY_FLAG_IS_JUMPING) {
-                flags |= 1;
+            {
+                s32 jump = 0;
+                if (target->flags & PARTY_FLAG_IS_JUMPING) {
+                    jump = 1;
+                }
+                if (jump) {
+                    flags |= 1;
+                }
             }
-            pos = target->position;
-            partyRecordFootmarkSub(party, &pos, flags);
+            pos2 = target->position;
+            partyRecordFootmarkSub(party, &pos2, flags);
+        } else {
+            if (*(s8*)(party->field_4D + 4) == 1) {
+                *(s8*)(party->field_4D + 4) = 0;
+                partyClearFootmark2();
+            }
+            {
+                MarioWork* m = marioGetPtr();
+                s32 jump = 0;
+                if (m->flags & MARIO_FLAG_IS_JUMPING) {
+                    jump = 1;
+                }
+                if (jump) {
+                    flags |= 1;
+                }
+            }
+            if (marioChkSlitThrouh() != 0) {
+                flags |= 4;
+            }
+            pos3 = player->position;
+            partyRecordFootmarkSub(party, &pos3, flags);
         }
     }
 }

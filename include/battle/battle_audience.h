@@ -299,3 +299,5 @@ void BattleAudience_Case_Appeal(BattleUnit* unit);
 s32 BattleAudience_GetPresentItemType(void);
 void BattleAudience_Case_AcrobatGood(void);
 void BattleAudience_Case_AcrobatBad(void);
+void BattleAudience_Case_ActionCommandGood(void);
+void BattleAudience_Case_ActionCommandBad(void* arg);

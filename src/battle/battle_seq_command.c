@@ -25,6 +25,9 @@
 #include "battle/battle_actrecord.h"
 #include "battle/battle_attack_audience.h"
 #include "battle/battle_event_default.h"
+#include "battle/battle_event_subset.h"
+#include "battle/battle_ac_help.h"
+#include "system.h"
 
 extern ItemData itemDataTable[];
 
@@ -172,6 +175,207 @@ void BattleCommandInit(BattleWork* wp) {
 	wp->flags |= 0x80;
 }
 
+
+// NONMATCHING (99.98%): code matches instruction for instruction; the seven string
+// addends are a uniform 0x24 below the original (`addi r3, r29, 0x3b8` vs `0x3dc`), the
+// .rodata pool still missing the strings of the two unwritten functions before it.
+void _btlcmd_MakeActClassTable(BattleWork* wp) {
+	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
+	PouchData* pouch = pouchGetPtr();
+	BattleWorkCommandCursor* cursor;
+	s32 count;
+	NpcBattleInfo* setup = wp->fbatInfo->setup;
+
+	if (cmd == NULL) {
+		return;
+	}
+	if (mario->currentKind == 0xDE) {
+		cursor = &wcmd->mCursors[0];
+	} else {
+		cursor = &wcmd->mCursors[1];
+	}
+	count = 0;
+	if (mario->currentKind == 0xDE) {
+		wcmd->mActionTable[0].mType = 0;
+		wcmd->mActionTable[0].mEnabled = 1;
+		wcmd->mActionTable[0].field_0x10 = 0;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mActionTable[0].mEnabled = 0;
+			wcmd->mActionTable[0].field_0x10 = 3;
+		}
+		if (pouch->jumpLevel < 1) {
+			wcmd->mActionTable[0].mEnabled = 0;
+		}
+		if (mario->badgesEquipped.Hammerman != 0) {
+			wcmd->mActionTable[0].mEnabled = 0;
+			wcmd->mActionTable[0].field_0x10 = 3;
+		}
+		if (*(s32*)&wp->field_18FF0[0x48] /* 0x19038 */ > 0) {
+			wcmd->mActionTable[0].mEnabled = 0;
+			wcmd->mActionTable[0].field_0x10 = 3;
+		}
+		if (setup->field_4 & 0x01000000) {
+			wcmd->mActionTable[0].mEnabled = 0;
+			wcmd->mActionTable[0].field_0x10 = 3;
+		}
+		if (wp->flags & 0x06800000) {
+			wcmd->mActionTable[0].mEnabled = 0;
+			wcmd->mActionTable[0].field_0x10 = 3;
+		}
+		wcmd->mActionTable[0].mName = (char*)msgSearch("btl_cmd_act_jump");
+		switch (pouch->jumpLevel) {
+		case 1:
+			wcmd->mActionTable[0].mIcon = 0x146;
+			break;
+		case 2:
+			wcmd->mActionTable[0].mIcon = 0x147;
+			break;
+		default:
+			wcmd->mActionTable[0].mIcon = 0x148;
+			break;
+		}
+		count = 1;
+	}
+	if (mario->currentKind >= 0xE0 && mario->currentKind < 0xE7) {
+		wcmd->mActionTable[count].mType = 6;
+		if (mario->flippedTurns) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		} else {
+			wcmd->mActionTable[count].mEnabled = 1;
+			wcmd->mActionTable[count].field_0x10 = 0;
+		}
+		if (*(s32*)&wp->field_18FF0[0x54] /* 0x19044 */ > 0) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		if (wp->flags & 0x04800000) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_tech_party");
+		wcmd->mActionTable[count].mIcon = 0x14F;
+		count++;
+	}
+	if (mario->currentKind == 0xDE && pouch->hammerLevel >= 1) {
+		wcmd->mActionTable[count].mType = 1;
+		wcmd->mActionTable[count].mEnabled = 1;
+		wcmd->mActionTable[count].field_0x10 = 0;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		if (pouch->hammerLevel < 1) {
+			wcmd->mActionTable[count].mEnabled = 0;
+		}
+		if (mario->badgesEquipped.Jumpman != 0) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		if (*(s32*)&wp->field_18FF0[0x4C] /* 0x1903C */ > 0) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		if (setup->field_4 & 0x02000000) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		if (wp->flags & 0x05800000) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_hammer");
+		switch (pouch->hammerLevel) {
+		case 1:
+			wcmd->mActionTable[count].mIcon = 0x149;
+			break;
+		case 2:
+			wcmd->mActionTable[count].mIcon = 0x14A;
+			break;
+		default:
+			wcmd->mActionTable[count].mIcon = 0x14B;
+			break;
+		}
+		count++;
+	}
+	if (mario->currentKind == 0xDE || (mario->currentKind >= 0xE0 && mario->currentKind < 0xE7)) {
+		wcmd->mActionTable[count].mType = 2;
+		if (mario->flippedTurns) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		} else {
+			wcmd->mActionTable[count].mEnabled = 1;
+			wcmd->mActionTable[count].field_0x10 = 0;
+		}
+		if (mario->currentKind == 0xDE) {
+			if (*(s32*)&wp->field_18FF0[0x50] /* 0x19040 */ > 0) {
+				wcmd->mActionTable[count].mEnabled = 0;
+				wcmd->mActionTable[count].field_0x10 = 3;
+			}
+		} else {
+			if (*(s32*)&wp->field_18FF0[0x58] /* 0x19048 */ > 0) {
+				wcmd->mActionTable[count].mEnabled = 0;
+				wcmd->mActionTable[count].field_0x10 = 3;
+			}
+		}
+		if (wp->flags & 0x1F800000) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
+		wcmd->mActionTable[count].mIcon = 0x14C;
+		count++;
+	}
+	if (mario->currentKind == 0xDE && pouch->mStarPowersObtained != 0) {
+		wcmd->mActionTable[count].mType = 4;
+		wcmd->mActionTable[count].mEnabled = 1;
+		wcmd->mActionTable[count].field_0x10 = 0;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		if (wp->flags & 0x1B800000) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_super_action");
+		wcmd->mActionTable[count].mIcon = 0x14D;
+		count++;
+	}
+	if (!(wp->flags & 0x08000000)) {
+		wcmd->mActionTable[count].mType = 5;
+		wcmd->mActionTable[count].mEnabled = 1;
+		wcmd->mActionTable[count].field_0x10 = 0;
+		if (wp->flags & 0x1F800000) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_operation");
+		wcmd->mActionTable[count].mIcon = 0x14E;
+		count++;
+	}
+	if (wp->flags & 0x08000000) {
+		wcmd->mActionTable[count].mType = 0xD;
+		wcmd->mActionTable[count].mEnabled = 1;
+		wcmd->mActionTable[count].field_0x10 = 0;
+		wcmd->mActionTable[count].mName = (char*)msgSearch("btl_cmd_act_lecture_end");
+		wcmd->mActionTable[count].mIcon = 0x14E;
+		if (wp->flags & 0x10800000) {
+			wcmd->mActionTable[count].mEnabled = 0;
+			wcmd->mActionTable[count].field_0x10 = 3;
+		}
+		count++;
+	}
+	cursor->mNumOptions = count;
+	// The original compares these signed (cmpw), though the header declares them u32.
+	if ((s32)cursor->mAbsolutePos >= (s32)cursor->mNumOptions) {
+		cursor->mAbsolutePos = cursor->mNumOptions - 1;
+	}
+}
+
+
 #pragma dont_inline on
 void BattleCommandDisplay_AllEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x111111;
@@ -239,7 +443,7 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	iconDispGx(&pos, 0x14, 0x1F0, float_1_8041c2f4);
 }
 
-// NONMATCHING (94.16%): register allocation (cursor folded into 0x1c50(wp)) and cmplwi vs cmpwi.
+// NONMATCHING (96.45%): register allocation (cursor folded into 0x1c50(wp)) and cmplwi vs cmpwi.
 s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 	BattleCursor* cursor = &wp->commandMenu.cursor[13];
 	s32 done = 0;
@@ -303,7 +507,7 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (96.67%): 11 instructions differ, 4 missing, plus register differences.
+// NONMATCHING (97.29%): 11 instructions differ, 4 missing, plus register differences.
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -460,7 +664,7 @@ void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (59.31%): 8 instructions differ, 1 missing, 79 extra, plus register differences.
+// NONMATCHING (92.16%): 8 instructions differ, 1 missing, 79 extra, plus register differences.
 s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -567,7 +771,7 @@ void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (94.09%): switch body layout, cmplwi vs cmpwi, pooled labels.
+// NONMATCHING (95.43%): switch body layout, cmplwi vs cmpwi, pooled labels.
 s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -668,7 +872,7 @@ void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (96.60%): cmplwi vs cmpwi, pooled labels, missing mr r3 before MultiItem_Main.
+// NONMATCHING (98.17%): cmplwi vs cmpwi, pooled labels, missing mr r3 before MultiItem_Main.
 s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -753,7 +957,7 @@ void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) 
 	wp->commandMenu.field_4 |= 0x01001000;
 }
 
-// NONMATCHING (96.64%): cmplwi vs cmpwi, pooled labels, missing mr r3 before ChangePartySelect_Main.
+// NONMATCHING (98.39%): cmplwi vs cmpwi, pooled labels, missing mr r3 before ChangePartySelect_Main.
 s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -1680,8 +1884,203 @@ BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 	return unit->flippedTurns <= 0;
 }
 
+// The three later candidate loops declare their counter in a local block. With the
+// function-scope `i`, MWCC folds `i = 0` into `mr r7, r6` and schedules the hoisted
+// `addi r3, r1, 0xc` (candidates) after the inits; the local counter makes it emit
+// `li r7, 0` and puts the address first, matching the original.
+void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
+	BattleCursor* cursor;
+	s16 candidates[24];
+	u8 count;
+	u8 i;
+	BattleWeapon* weapon;
+
+	if (unit->moveState == 3) {
+		unit->moveState = 0;
+	}
+	BattleAcHelpSetDispType(0);
+	if (unit->mAlliance != 0) {
+		return subsetevt_confuse_flustered;
+	}
+	if (!(unit->currentKind == 0xDE || (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7))) {
+		return subsetevt_confuse_flustered;
+	}
+	_btlcmd_MakeActClassTable(wp);
+	_btlcmd_GetCursorPtr(cmd, 0xE, &cursor);
+	count = 0;
+	for (i = 0; i < cursor->unk8; i++) {
+		if (wcmd->mActionTable[i].mEnabled == 0) {
+			continue;
+		}
+		if ((s32)wcmd->mActionTable[i].mType == 4) {
+			continue;
+		}
+		if ((s32)wcmd->mActionTable[i].mType == 2) {
+			continue;
+		}
+		candidates[count++] = i;
+	}
+	candidates[count] = -1;
+	if (count != 0) {
+		cursor->field_0 = candidates[irand(count)];
+	} else {
+		return subsetevt_confuse_flustered;
+	}
+	*(s32*)&cmd->unk540[0] = wcmd->mActionTable[cursor->field_0].mType;
+	if (wcmd->mActionTable[cursor->field_0].mEnabled == 0) {
+		return subsetevt_confuse_flustered;
+	}
+	switch (*(s32*)&cmd->unk540[0]) {
+	case 0:
+	case 1:
+	case 2:
+	case 4:
+	case 6:
+	case 7:
+	case 8:
+		_btlcmd_MakeSelectWeaponTable(wp, (void*)*(s32*)&cmd->unk540[0]);
+		_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
+		count = 0;
+		{
+			u8 n;
+
+			for (n = 0; n < cursor->unk8; n++) {
+				weapon = wcmd->mWeaponTable[n].mWeaponParams;
+				if ((s32)wcmd->mWeaponTable[n].field_0x4 == 0) {
+					continue;
+				}
+				if (!(weapon->special & 0x10000)) {
+					continue;
+				}
+				if (weapon->targetClassFlags & 0x02000000) {
+					continue;
+				}
+				if (!(weapon->targetClassFlags & 0x01000000)) {
+					continue;
+				}
+				candidates[count++] = n;
+			}
+		}
+		candidates[count] = -1;
+		if (count != 0) {
+			cursor->field_0 = candidates[irand(count)];
+		} else {
+			return NULL;
+		}
+		if ((s32)wcmd->mWeaponTable[cursor->field_0].field_0x4 == 0) {
+			return subsetevt_confuse_flustered;
+		}
+		_btlcmd_SelectWeaponDecide(wp, *(s32*)&cmd->unk540[0], cursor->field_0);
+		weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
+		if (!(weapon->special & 0x10000)) {
+			return subsetevt_confuse_flustered;
+		}
+		if ((weapon->targetClassFlags & 0x02000000) || !(weapon->targetClassFlags & 0x01000000)) {
+			return subsetevt_confuse_flustered;
+		}
+		{
+			s8 numConfused = *(s8*)&wp->field_428[0xA6C]; // 0xE94
+
+			if (numConfused <= 0) {
+				return subsetevt_confuse_flustered;
+			}
+			*(u8*)&wp->field_428[0xAB7] = irand(numConfused); // 0xEDF
+		}
+		wp->flags |= 4;
+		return weapon->mAttackEvtScript;
+	case 5:
+		_btlcmd_MakeOperationTable(wp);
+		_btlcmd_GetCursorPtr(cmd, 5, &cursor);
+		count = 0;
+		{
+			u8 n;
+
+			for (n = 0; n < cursor->unk8; n++) {
+				if ((s32)wcmd->mOperationTable[n].mEnabled == 0) {
+					continue;
+				}
+				if ((s32)wcmd->mOperationTable[n].mType != 0 && (s32)wcmd->mOperationTable[n].mType != 6 &&
+				    (s32)wcmd->mOperationTable[n].mType != 3) {
+					continue;
+				}
+				candidates[count++] = n;
+			}
+		}
+		candidates[count] = -1;
+		if (count != 0) {
+			cursor->field_0 = candidates[irand(count)];
+		} else {
+			return subsetevt_confuse_flustered;
+		}
+		if ((s32)wcmd->mOperationTable[cursor->field_0].mEnabled == 0) {
+			return subsetevt_confuse_flustered;
+		}
+		*(s32*)&cmd->unk540[8] = wcmd->mOperationTable[cursor->field_0].mType;
+		switch (*(s32*)&cmd->unk540[8]) {
+		case 6:
+			if (unit->currentKind == 0xDE) {
+				return btldefaultevt_Defend;
+			}
+			return btldefaultevt_DefendParty;
+		case 5:
+			return btldefaultevt_Appeal;
+		case 7:
+			return btldefaultevt_Wait;
+		case 3:
+			return btldefaultevt_Escape;
+		case 1:
+			if (unit->currentKind == 0xDE) {
+				return badgeWeapon_Charge.mAttackEvtScript;
+			}
+			return badgeWeapon_ChargeP.mAttackEvtScript;
+		case 2:
+			if (unit->currentKind == 0xDE) {
+				return badgeWeapon_SuperCharge.mAttackEvtScript;
+			}
+			return badgeWeapon_SuperChargeP.mAttackEvtScript;
+		case 8:
+			return BtlUnit_GetData(unit, 2);
+		case 0:
+			_btlcmd_GetCursorPtr(cmd, 0xA, &cursor);
+			count = 0;
+			{
+				u8 n;
+
+				for (n = 0; n < cursor->unk8; n++) {
+					if ((s32)wcmd->mPartyTable[n].mEnabled == 0) {
+						continue;
+					}
+					candidates[count++] = n;
+				}
+			}
+			candidates[count] = -1;
+			if (count != 0) {
+				cursor->field_0 = candidates[irand(count)];
+			} else {
+				return NULL;
+			}
+			if ((s32)wcmd->mPartyTable[cursor->field_0].mEnabled == 0) {
+				return subsetevt_confuse_flustered;
+			}
+			*(s32*)&cmd->unk540[0xC] = wcmd->mPartyTable[cursor->field_0].mPartyId;
+			wcmd->mCursors[1].mAbsolutePos = 0;
+			return btldefaultevt_ChangeParty;
+		case 4:
+			return subsetevt_confuse_flustered;
+		default:
+			return subsetevt_confuse_flustered;
+		}
+	default:
+		return subsetevt_confuse_flustered;
+	}
+}
+
+
 // Raw offsets into the enemy-sampling buffer `wp->field_428` (battle_detect owns the layout):
 // 0xA6C sample count, 0xA6D.. unit-index codes, entry size 0x24 with s16 unitId at +4, 0xAB7 result.
+#pragma dont_inline on // the original calls _btlcmd_SelectWeaponDecide out of line from BattleSetConfuseAct
 s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	u8* work = wp->field_428;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
@@ -1732,6 +2131,7 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	}
 	return 0;
 }
+#pragma dont_inline reset
 
 // NONMATCHING (99.97%): the code is byte-for-byte right; all eight pooled string offsets
 // are 0xa8 short of the target (this function's literals land at .rodata+0x25c instead of

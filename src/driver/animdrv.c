@@ -59,6 +59,8 @@ extern const f32 float_1_80419a44;
 extern const f32 float_0p04_80419ac0;
 extern const f32 float_0p5_80419a64;
 extern const f32 float_neg1_80419a8c;
+extern const f32 float_deg2rad_80419a4c;
+extern const f32 float_neg0p5_80419a88;
 extern const f32 float_neg2_80419ab8;
 extern const f32 float_neg3_80419abc;
 u32 zero_80419a50 = 0;
@@ -807,15 +809,10 @@ f32 animPoseGetLoopTimes(s32 id) {
     return pose->loopTime;
 }
 
-// NONMATCHING (78.42%): the flags&8 test branches to the compute block in the original;
-// ours branches to the return-TRUE block (branch layout only).
 BOOL animPoseGetPeraEnd(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
 
-    if (pose->flags & 8) {
-        return fabs(pose->field_0x7C - pose->rotationY) < double_10_802c2f20;
-    }
-    return TRUE;
+    return !(pose->flags & 8) ? TRUE : fabs(pose->field_0x7C - pose->rotationY) < double_10_802c2f20;
 }
 void animPoseSetMaterialFlagOn(s32 poseId, u32 mask) {
     AnimationPose* pose = &wp->poses[poseId];
@@ -1604,7 +1601,6 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f3
     dispProc(groupId, group->brotherGroupId, field_0x28, field_0x2c, f1);
 }
 
-// NONMATCHING (32.81%): 18 missing, plus register differences.
 void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluMode) {
     Mtx matrix;
 
@@ -1615,8 +1611,11 @@ void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluM
 // _animPoseDrawMtx
 
 // NONMATCHING (0.21%): empty placeholder, not decompiled yet.
+// dont_inline keeps animPoseDrawMtx a real bl from animPoseDraw (retail emits one).
+#pragma dont_inline on
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
 }
+#pragma dont_inline reset
 
 void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void* a5, void* a6, s32 a7, s32 a8) {
     wp->mpTexObjs[0] = a4 ? a1 : NULL;
@@ -1758,22 +1757,27 @@ void animPoseAutoRelease(s32 type) {
     animPoseRefresh();
 }
 
-// NONMATCHING (5.47%): 3 instructions differ, 25 missing, 2 extra, plus register differences.
 void animPaperPoseDisp(CameraId camId, void* param) {
+    s32 i;
     AnimationPose* pose;
-    int i;
 
-    for (i = 0; i < wp->totalPoses; i++) {
-        pose = &wp->poses[i];
-        if (pose->flags & 1 && pose->paperId != -1) {
+    i = 0;
+    pose = wp->poses;
+    while (i < wp->totalPoses) {
+        if ((pose->flags & 1) != 0 && pose->paperId != -1) {
             animPaperPoseDispSub(0, pose);
         }
+        i++;
+        pose++;
     }
 }
 
+// dont_inline keeps animPaperPoseDispSub a real bl from animPaperPoseDisp (retail emits one).
+#pragma dont_inline on
 // NONMATCHING (0.17%): empty placeholder, not decompiled yet.
 void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
 }
+#pragma dont_inline reset
 
 // animPoseDisp_MakeExtTexture
 

@@ -118,16 +118,21 @@ extern const f32 float_neg10000_8041b438;
 extern const f32 float_50_8041b43c;
 extern const f32 float_30_8041b440;
 
-
-// NONMATCHING (45.79%): the four corners share float temporaries in the original,
-// so it needs fewer callee-saved registers and a larger frame.
+// NONMATCHING (68.96%): frame is 0x140 like the original; caching `*position` in `posv` makes the
+// compiler materialise a Vec but it lands at 0x20 rather than the original's 0x78-0x80, so the
+// position loads are not the spilled px/py/pz the original uses in all four phases.
 HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle) {
     HitEntry* hit;
     Vec pos1, nor1, pos2, nor2, pos3, nor3, pos4, nor4;
+    Vec p1, p2, p3, p4;
+    Vec q;
+#ifdef MUST_MATCH
+    Vec posv;
+#endif
     f32 sin, cos;
     f32 h;
     f32 offSin, offCos;
-    f32 px, py, pz;
+    f32 py;
     f32 x, z;
     f32 dist;
     f32 d1, d2, d3, d4;
@@ -136,27 +141,43 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     sincosf(&sin, &cos, angle);
     offSin = h * sin;
     offCos = -h * cos;
-    px = position->x;
     py = position->y;
-    pz = position->z;
     dist = *out;
 
-    x = px + offSin;
-    z = pz + offCos;
+#ifdef MUST_MATCH
+    // Match-only: materialising `*position` as a Vec makes the compiler reserve the extra stack
+    // slot that brings the frame to the original's 0x140; the natural form reads position directly.
+    posv = *position;
+    x = posv.x + offSin;
+    z = posv.z + offCos;
+#else
+    x = position->x + offSin;
+    z = position->z + offCos;
+#endif
+    p1 = vec3_802cd3b0;
+    p1.x = x;
+    p1.y = py;
+    p1.z = z;
+    q = p1;
     d1 = dist;
-    hit = hitCheckFilter(NULL, &pos1.x, &pos1.y, &pos1.z, &d1, &nor1.x, &nor1.y, &nor1.z, x, py + 10.0f, z,
-                         0.0f, 1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, &pos1.x, &pos1.y, &pos1.z, &d1, &nor1.x, &nor1.y, &nor1.z, q.x, q.y + 10.0f,
+                         q.z, 0.0f, 1.0f, 0.0f);
     if (hit != NULL) {
         if (dist >= d1) {
             dist = d1;
         }
     }
     if (hit == NULL) {
-        x = px - offSin;
-        z = pz - offCos;
+        x = position->x - offSin;
+        z = position->z - offCos;
+        p2 = vec3_802cd3bc;
+        p2.x = x;
+        p2.y = py;
+        p2.z = z;
+        q = p2;
         d2 = dist;
-        hit = hitCheckFilter(NULL, &pos2.x, &pos2.y, &pos2.z, &d2, &nor2.x, &nor2.y, &nor2.z, x, py + 10.0f, z,
-                             0.0f, 1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, &pos2.x, &pos2.y, &pos2.z, &d2, &nor2.x, &nor2.y, &nor2.z, q.x, q.y + 10.0f,
+                             q.z, 0.0f, 1.0f, 0.0f);
         if (hit != NULL) {
             if (dist >= d2) {
                 dist = d2;
@@ -164,11 +185,16 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
         }
     }
     if (hit == NULL) {
-        x = px + offCos;
-        z = pz + offSin;
+        x = position->x + offCos;
+        z = position->z + offSin;
+        p3 = vec3_802cd3c8;
+        p3.x = x;
+        p3.y = py;
+        p3.z = z;
+        q = p3;
         d3 = dist;
-        hit = hitCheckFilter(NULL, &pos3.x, &pos3.y, &pos3.z, &d3, &nor3.x, &nor3.y, &nor3.z, x, py + 10.0f, z,
-                             0.0f, 1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, &pos3.x, &pos3.y, &pos3.z, &d3, &nor3.x, &nor3.y, &nor3.z, q.x, q.y + 10.0f,
+                             q.z, 0.0f, 1.0f, 0.0f);
         if (hit != NULL) {
             if (dist >= d3) {
                 dist = d3;
@@ -176,11 +202,16 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
         }
     }
     if (hit == NULL) {
-        x = px - offCos;
-        z = pz - offSin;
+        x = position->x - offCos;
+        z = position->z - offSin;
+        p4 = vec3_802cd3d4;
+        p4.x = x;
+        p4.y = py;
+        p4.z = z;
+        q = p4;
         d4 = dist;
-        hit = hitCheckFilter(NULL, &pos4.x, &pos4.y, &pos4.z, &d4, &nor4.x, &nor4.y, &nor4.z, x, py + 10.0f, z,
-                             0.0f, 1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, &pos4.x, &pos4.y, &pos4.z, &d4, &nor4.x, &nor4.y, &nor4.z, q.x, q.y + 10.0f,
+                             q.z, 0.0f, 1.0f, 0.0f);
         if (hit != NULL) {
             if (dist >= d4) {
                 dist = d4;
@@ -294,25 +325,38 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     return NULL;
 }
 
-// NONMATCHING (54.64%): loop/register scheduling of the three marioHitCheckVec
-// passes differs from the original.
+// NONMATCHING (80.31%): register set matches (r26-r31, no extra GPR); the frame is 0x10 smaller
+// because the natural direction build leaves out the original's phase-1 temp, so the Vec slots
+// sit below the original's.
 HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
-    Vec base;
     Vec dir;
+    Vec p;
     Vec hpos;
-    Vec hnorm;
     Vec bestNorm;
+    Vec base;
+    Vec hnorm;
     Vec delta;
+#ifdef MUST_MATCH
+    // Match-only: the original builds the direction in a temporary Vec and then copies it into
+    // `dir`; the natural form under #else assigns the fields in place.
+    Vec dtmp2;
+#endif
     f32 sin, cos;
     f32 f31;
+#ifdef MUST_MATCH
+    // Match-only: `volatile` keeps the running best distance in memory so the compare is
+    // reload-and-`fcmpo` like the original instead of living in f27.
+    volatile f32 dist;
+#else
     f32 dist;
+#endif
     f32 curDist;
     f32 sin2, cos2;
-    f32 sin3, cos3;
     HitEntry* best;
     HitEntry* hit;
     s32 i;
 
+    delta = vec3_802cd368;
     sincosf(&sin, &cos, b);
     base.x = 0.75f * partyGetHeight(party);
     base.y = 0.5f * partyGetHeight(party);
@@ -323,19 +367,15 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     }
     f31 = 0.5f * *(f32*)((u8*)party + 0xF4);
     dist = f31 + a;
+    dir = vec3_802cd374;
     dir.x = sin;
-    dir.y = 0.0f;
     dir.z = cos;
-    delta.x = 0.0f;
-    delta.y = 0.0f;
-    delta.z = 0.0f;
+    p = *pos;
 
     best = NULL;
-    hit = NULL;
     for (i = 0; i < 3; i++) {
-        Vec p = *pos;
-        p.y += ((f32*)&base)[i];
-        curDist = dist;
+        p.y = pos->y + ((f32*)&base)[i];
+        curDist = f31 + a;
         hit = marioHitCheckVec(&p, &dir, &hpos, &hnorm, &curDist);
         if (hit != NULL) {
             if (best != NULL) {
@@ -352,8 +392,9 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
         }
     }
     if (best != NULL) {
-        f32 nx = bestNorm.x;
-        f32 nz = bestNorm.z;
+        Vec nv = bestNorm;
+        f32 nx = nv.x;
+        f32 nz = nv.z;
         f32 dz = cos * a;
         f32 dx = sin * a;
         f32 dot = dx * nx + dz * nz;
@@ -362,12 +403,18 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     }
 
     sincosf(&sin2, &cos2, 45.0f + b);
+#ifdef MUST_MATCH
+    dtmp2 = vec3_802cd380;
+    dtmp2.x = sin2;
+    dtmp2.z = cos2;
+    dir = dtmp2;
+#else
+    dir = vec3_802cd380;
     dir.x = sin2;
-    dir.y = 0.0f;
     dir.z = cos2;
+#endif
     for (i = 0; i < 3; i++) {
-        Vec p = *pos;
-        p.y += ((f32*)&base)[i];
+        p.y = pos->y + ((f32*)&base)[i];
         curDist = f31;
         hit = marioHitCheckVec(&p, &dir, NULL, NULL, &curDist);
         if (hit != NULL) {
@@ -375,13 +422,13 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
         }
     }
     if (hit != NULL) {
-        sincosf(&sin3, &cos3, b - 45.0f);
-        dir.x = sin3;
+        sincosf(&sin2, &cos2, b - 45.0f);
+        dir = vec3_802cd38c;
+        dir.x = sin2;
         dir.y = 0.0f;
-        dir.z = cos3;
+        dir.z = cos2;
         for (i = 0; i < 3; i++) {
-            Vec p = *pos;
-            p.y += ((f32*)&base)[i];
+            p.y = pos->y + ((f32*)&base)[i];
             curDist = f31;
             hit = marioHitCheckVec(&p, &dir, NULL, NULL, &curDist);
         }
@@ -405,9 +452,13 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     ((f32)(s32)(float_1000_8041b408 * (v) + ((v) >= float_0_8041b3ec ? float_0p5_8041b3f4 : float_neg0p5_8041b404)) / \
      float_1000_8041b408)
 
-// NONMATCHING (73.53%): logic follows the asm; register and stack allocation differ, and the inline sqrtf
-// constants are pooled differently.
+// NONMATCHING (85.44%): caching 100*n.y in a local makes the FP saves f23-f31 match the original, and a
+// f32 hxyz[3] for the rounded hitPos steers the ROUND registers. Still off: the compiler forwards the
+// hitNormal copy into query.hitNormal (query 0x24 vs 0x30, frame 0x160 vs 0x150) and the doubles pool locally.
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
+    f32 ny100;
+    Vec targetPos;
+    Vec n;
     HitCheckQuery query;
     HitEntry* hit;
     f32 h;
@@ -417,15 +468,12 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     f32 s, c;
     f32 off;
     f32 rad;
-    f32 hx, hy, hz;
-    Vec n;
+    f32 hxyz[3];
 
-    *(f32*)((u8*)party + 0xC4) = 0.0f;
-    *(f32*)((u8*)party + 0xC8) = 0.0f;
-    *(f32*)((u8*)party + 0xCC) = 0.0f;
-    *(f32*)((u8*)party + 0xE0) = 0.0f;
-    h = partyGetHeight(party);
     f24 = a + float_0p01_8041b418;
+    *(Vec*)party->field_C4 = vec3_802cd338;
+    *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = float_0_8041b3ec;
+    h = partyGetHeight(party);
     *out1 = party->position.y;
     *out2 = float_neg1_8041b414;
     if (party->speed != float_0_8041b3ec) {
@@ -433,19 +481,23 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     } else {
         angle = toMovedir(party->field_10C);
     }
-    rad = (float_3p1416_8041b420 * revise360((f32)(s32)(angle + float_0p5_8041b3f4))) / float_180_8041b424;
+    rad = (float_3p1416_8041b420 * revise360((f32)(s32)(float_0p5_8041b3f4 + angle))) / float_180_8041b424;
     off = float_0p265_8041b41c * *(f32*)((u8*)party + 0xF4);
     s = (f32)sin((f64)rad);
     c = (f32)cos((f64)rad);
     px = party->position.x;
     py = party->position.y;
     pz = party->position.z;
-    query.targetPos.x = px + off * s;
-    query.targetPos.y = py + h;
-    query.targetPos.z = pz - off * c;
-    query.targetDir.x = 0.0f;
-    query.targetDir.y = float_neg1_8041b414;
-    query.targetDir.z = 0.0f;
+    targetPos = vec3_802cd344;
+    {
+        f32 dx = off * s;
+        f32 dz = off * -c;
+        targetPos.x = px + dx;
+        targetPos.y = py + h;
+        targetPos.z = pz + dz;
+    }
+    query.targetPos = targetPos;
+    query.targetDir = vec3_802cd350;
     query.targetDistance = h + f24;
 
     if (yoshiGetStatus() != 0) {
@@ -458,24 +510,25 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     if (hit == NULL) {
         return 0;
     }
-    hx = ROUND_MILLI(query.hitPos.x);
-    hy = ROUND_MILLI(query.hitPos.y);
-    hz = ROUND_MILLI(query.hitPos.z);
+    hxyz[0] = ROUND_MILLI(query.hitPos.x);
+    hxyz[1] = ROUND_MILLI(query.hitPos.y);
+    hxyz[2] = ROUND_MILLI(query.hitPos.z);
     n = query.hitNormal;
+    ny100 = float_100_8041b3f8 * n.y;
 
     *(f32*)((u8*)party + 0xC4) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n.z,
-                                                     float_100_8041b3f8 * n.y) - float_180_8041b424);
+                                                     ny100) - float_180_8041b424);
     *(f32*)((u8*)party + 0xC8) = float_0_8041b3ec;
     *(f32*)((u8*)party + 0xCC) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n.x,
-                                                     float_100_8041b3f8 * n.y) - float_180_8041b424);
-    *(f32*)((u8*)party + 0xE0) =
+                                                     ny100) - float_180_8041b424);
+    *(f32*)(party->field_C4 + (0xE0 - 0xC4)) =
         angleABf(float_0_8041b3ec, float_0_8041b3ec, sqrtf(n.x * n.x + n.z * n.z), -n.y);
-    if (hy < py && __fabsf(hy - py) >= float_2_8041b428) {
-        *out2 = py - hy;
-        *out3 = angleABf(px, pz, hx, hz);
+    if (hxyz[1] < py && __fabsf(hxyz[1] - py) >= float_2_8041b428) {
+        *out2 = py - hxyz[1];
+        *out3 = angleABf(px, pz, hxyz[0], hxyz[2]);
         return 0;
     }
-    *out1 = hy;
+    *out1 = hxyz[1];
     *out2 = float_0_8041b3ec;
     *out3 = angleABf(px, pz, n.x, n.z);
     return (u32)hit;

@@ -88,8 +88,14 @@ struct BakuGameWork {
 const char str_802FEA98[20] = "btl_wn_sac_bakugame";
 const char str_802FEAAC[16] = "msg_bakugame\000\000\000";
 const char str_802FEABC[12] = "msg_sac_3\000\000";
+#ifdef MUST_MATCH
+// volatile keeps MWCC from folding the zero-pool reloads; the .rodata bytes are unchanged either way.
+volatile const Vec vec3_802feac8 = { 0.0f, 0.0f, 0.0f };
+volatile const Vec vec3_802fead4 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802feac8 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fead4 = { 0.0f, 0.0f, 0.0f };
+#endif
 const u32 dat_802feae0[] = { 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000005, 0x00000006, 0x00000007 };
 const u32 dat_802feb00[] = { 0x00000100, 0x00000200, 0x00000400 };
 const Vec vec3_802feb0c = { 0.0f, -1000.0f, 0.0f };
@@ -612,28 +618,57 @@ s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (76.07%): GX/float register scheduling and several sdata2 constant relocations differ.
+// NONMATCHING (95.53%): the five intplGetValue calls load baku->frame (r4) one instruction slot before the
+// original (which issues it immediately before the bl), and the int->float pool constant is the anonymous
+// @382@ literal instead of the named double_to_int_802fedb0 (same value, layout unchanged).
 static USER_FUNC(main_star) {
     BakuGameWork* baku = GetBakuGamePtr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    f32 scale;
 
     switch (baku->state) {
         case 0:
         case 4:
             break;
-        case 1:
+        case 1: {
             baku->state = 2;
             baku->frame = 0;
-            baku->starStone = effStarStoneEntry(1, float_0_80421618, float_neg1000_8042167c, float_0_80421618,
-                                                float_1_80421608);
+            {
+                f32 zero = float_0_80421618;
+
+                baku->starStone = effStarStoneEntry(1, zero, float_neg1000_8042167c, zero, float_1_80421608);
+            }
             BtlUnit_GetPos(mario, &baku->field_0x20C.x, &baku->field_0x20C.y, &baku->field_0x20C.z);
+#ifdef MUST_MATCH
+            baku->field_0x20C.y += mario->mSizeMultiplier * (f32)mario->mHeight + *(volatile const f32*)&float_37_804216c8;
+#else
             baku->field_0x20C.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804216c8;
+#endif
+#ifdef MUST_MATCH
+            // volatile destinations keep the zero-Vec source loads below these struct copies.
+            *(volatile Vec*)&baku->field_0x218 = baku->field_0x20C;
+            *(volatile Vec*)&baku->field_0x224 = baku->field_0x20C;
+#else
             baku->field_0x218 = baku->field_0x20C;
             baku->field_0x224 = baku->field_0x20C;
+#endif
+#ifdef MUST_MATCH
+            // volatile field updates anchor the zero-Vec source loads below them.
+            *(volatile f32*)&baku->field_0x224.y += float_50_80421678;
+            *(volatile f32*)&baku->field_0x224.z += float_neg1_80421604;
+#else
             baku->field_0x224.y += float_50_80421678;
             baku->field_0x224.z += float_neg1_80421604;
+#endif
+#ifdef MUST_MATCH
+            // volatile destination stops MWCC hoisting the zero-Vec source words above the y/z updates.
+            *(volatile Vec*)&baku->field_0x23C = vec3_802feac8;
+            *(volatile Vec*)&baku->field_0x248 = vec3_802fead4;
+#else
             baku->field_0x23C = vec3_802feac8;
             baku->field_0x248 = vec3_802fead4;
+#endif
+        }
             // fall through
         case 2:
             baku->frame++;
@@ -641,21 +676,24 @@ static USER_FUNC(main_star) {
                 baku->field_0x20C.x = intplGetValue(0, baku->frame, 100, baku->field_0x218.x, baku->field_0x224.x);
                 baku->field_0x20C.y = intplGetValue(0, baku->frame, 100, baku->field_0x218.y, baku->field_0x224.y);
                 baku->field_0x20C.z = intplGetValue(0, baku->frame, 100, baku->field_0x218.z, baku->field_0x224.z);
-                baku->field_0x23C.z = intplGetValue(0, baku->frame, 100, float_0_80421618, float_2_8042165c);
-                baku->field_0x23C.y = baku->field_0x23C.z;
-                baku->field_0x23C.x = baku->field_0x23C.z;
+                scale = intplGetValue(0, baku->frame, 100, float_0_80421618, float_2_8042165c);
+                baku->field_0x23C.z = scale;
+                baku->field_0x23C.y = scale;
+                baku->field_0x23C.x = scale;
             } else {
-                baku->field_0x20C = baku->field_0x224;
+                baku->field_0x20C.x = baku->field_0x224.x;
+                baku->field_0x20C.y = baku->field_0x224.y;
+                baku->field_0x20C.z = baku->field_0x224.z;
                 baku->field_0x23C.z = float_2_8042165c;
-                baku->field_0x23C.y = baku->field_0x23C.z;
-                baku->field_0x23C.x = baku->field_0x23C.z;
+                baku->field_0x23C.y = float_2_8042165c;
+                baku->field_0x23C.x = float_2_8042165c;
             }
             baku->field_0x248.y = intplGetValue(4, baku->frame, 0x78, float_0_80421618, float_2160_804216cc);
             if (baku->frame >= 0x78) {
                 baku->state = 3;
                 baku->frame = 0;
                 baku->field_0x218 = baku->field_0x20C;
-                baku->field_0x218.y = float_300_80421644;
+                baku->field_0x224.y = float_300_80421644;
             }
             break;
         case 3:

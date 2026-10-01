@@ -447,7 +447,8 @@ void _pose_def(BattleUnitPart* part) {
 #endif
 }
 
-// NONMATCHING (78.24%): target keeps the string base in r31 and `part` in r30; ours folds each string into its own @ha/@l and puts `part` in r31.
+// _pose_one_pattern matches 100% once the strings are referenced as literals: MWCC pools
+// them and common-bases the .rodata references off vec3_802eddd0.
 void _pose_one_pattern(BattleUnitPart* part) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: one-case switch reproduces the original `beq body; b end` guard. */
@@ -456,16 +457,16 @@ void _pose_one_pattern(BattleUnitPart* part) {
 		*(u8*)((char*)part + 0x214) = 1;
 		switch (*(u8*)((char*)part + 0x215)) {
 		case 2:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE48, 1);
+			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
+			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1A", 1);
 			break;
 		case 3:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE68, 1);
+			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
+			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_1A", 1);
 			break;
 		case 7:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE70, 1);
+			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
+			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1A", 1);
 			break;
 		}
 		break;
@@ -492,7 +493,9 @@ void _pose_one_pattern(BattleUnitPart* part) {
 #endif
 }
 
-// NONMATCHING (76.61%): 9 instructions differ, 28 missing, 11 extra, plus register differences.
+// _pose_two_pattern matches 100% once the strings are referenced as literals (see
+// _pose_one_pattern). The three separate state-2 cases and the scoped `n` that fixes the
+// mullw operand order are also required.
 #pragma dont_inline on
 void _pose_two_pattern(BattleUnitPart* part) {
 	s32 t;
@@ -502,19 +505,22 @@ void _pose_two_pattern(BattleUnitPart* part) {
 		*(u8*)((char*)part + 0x214) = 1;
 		switch (*(u8*)((char*)part + 0x215)) {
 		case 4:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE40, 1);
+			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
+			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1B", 1);
 			*(u16*)((char*)part + 0x216) = sysMsec2Frame(0x898);
 			break;
 		case 5:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE48, 1);
+			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
+			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1A", 1);
 			t = sysMsec2Frame(0x898);
-			*(u16*)((char*)part + 0x216) = (irand(4) + 6) * t;
+			{
+				s32 n = irand(4) + 6;
+				*(u16*)((char*)part + 0x216) = n * t;
+			}
 			break;
 		case 6:
-			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
-			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE50, 1);
+			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), "p_b_st", 1);
+			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_2", 1);
 			*(u16*)((char*)part + 0x216) = (irand(4) + 7) * 0x16;
 			break;
 		}
@@ -524,7 +530,7 @@ void _pose_two_pattern(BattleUnitPart* part) {
 		case 4:
 			*(u16*)((char*)part + 0x216) -= 1;
 			if (*(u16*)((char*)part + 0x216) == 0) {
-				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE40, 1);
+				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_Y_1B", 1);
 				*(u16*)((char*)part + 0x216) = sysMsec2Frame(0x898);
 			}
 			break;
@@ -532,7 +538,7 @@ void _pose_two_pattern(BattleUnitPart* part) {
 			*(u16*)((char*)part + 0x216) -= 1;
 			if (*(u16*)((char*)part + 0x216) == 0) {
 				*(u8*)((char*)part + 0x214) = 2;
-				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE58, 1);
+				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_C_1B", 1);
 				*(u16*)((char*)part + 0x216) = 0x16;
 			}
 			break;
@@ -540,7 +546,7 @@ void _pose_two_pattern(BattleUnitPart* part) {
 			*(u16*)((char*)part + 0x216) -= 1;
 			if (*(u16*)((char*)part + 0x216) == 0) {
 				*(u8*)((char*)part + 0x214) = 2;
-				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE60, 1);
+				animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), "PM_F_1B", 1);
 				*(u16*)((char*)part + 0x216) = 0x16;
 			}
 			break;
@@ -549,7 +555,19 @@ void _pose_two_pattern(BattleUnitPart* part) {
 	case 2:
 		switch (*(u8*)((char*)part + 0x215)) {
 		case 4:
+			*(u16*)((char*)part + 0x216) -= 1;
+			if (*(u16*)((char*)part + 0x216) == 0) {
+				*(u8*)((char*)part + 0x214) = 0;
+				_pose_two_pattern(part);
+			}
+			break;
 		case 5:
+			*(u16*)((char*)part + 0x216) -= 1;
+			if (*(u16*)((char*)part + 0x216) == 0) {
+				*(u8*)((char*)part + 0x214) = 0;
+				_pose_two_pattern(part);
+			}
+			break;
 		case 6:
 			*(u16*)((char*)part + 0x216) -= 1;
 			if (*(u16*)((char*)part + 0x216) == 0) {
@@ -759,7 +777,12 @@ static volatile const Vec vec3_802ede18 = { 0.0f, 0.0f, -100.0f };
 static f32 y_1185;
 static f32 x_1184;
 
+// Declaring these explicitly made the compiler emit a second copy of its u32->f32 conversion
+// doubles in .rodata, which shifted the pooled strings by 8 bytes and broke every function that
+// common-bases .rodata. The compiler already emits both doubles; see REPORT.md.
+#if 0
 double double_to_int_802ede28 = 4503601774854144.0;
+#endif
 
 // NONMATCHING (91.05%): instructions differ; see check.py
 void _btlStockExpDisp(CameraId cameraId, void* param) {
@@ -852,16 +875,37 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 
 extern f32 float_deg2rad_8041bf54;
 
+// See the note on double_to_int_802ede28 above.
+#if 0
 const double double_to_int_mask_802ede30 = 4503599627370496.0;
+#endif
 
-static void _btlDispTex4Sub(s32 id, Vec trans, Vec scale, Vec rot, Vec pos, Vec scale2, GXColor color) {
+// The redundant copy inside the helper forces the target's "load every argument into registers,
+// then store the whole frame" scheduling instead of the interleaved loads/stores the plain
+// pass-through form produces. The local declaration order matters too: declaring the colour
+// first flips the compiler's argument block to the target's right-to-left order, and
+// `c, p, s2, r, s, t` is the best-scoring permutation of the five value copies.
+// NONMATCHING (75.93%): see the note on btlDispTex4.
+static inline void _btlDispTex4Sub(s32 id, Vec trans, Vec scale, Vec rot, Vec pos, Vec scale2, GXColor color) {
+#ifdef MUST_MATCH
+	GXColor c = color;
+	Vec p = pos;
+	Vec s2 = scale2;
+	Vec r = rot;
+	Vec s = scale;
+	Vec t = trans;
+	_btlDispTex4(id, &t, &s, &r, &p, &s2, &c);
+#else
 	_btlDispTex4(id, &trans, &scale, &rot, &pos, &scale2, &color);
+#endif
 }
 
-// The value copies and stack slots match, but the target's common base is vec3_802eddd0 (ours is the
-// section base ...rodata.0), it keeps the 15 copied words in r14-r25 (ours spills through volatile
-// registers and saves from r23), and it hoists the base before btlDispGetTexSize.
-// NONMATCHING (64.06%): register allocation and common-base symbol still differ.
+// NONMATCHING (75.93%): the value-copy declaration order inside the helper (`c, p, s2, r, s, t`)
+// flips the compiler's argument block into the target's right-to-left layout and makes it load the
+// whole block before storing, but the frame is 0x230 instead of 0x1a0: the inlined by-value helper
+// still spills a dead parameter copy of the first three Vecs (rot, scale, trans) at 0x178-0x198.
+// The copies use r14-r25 as in the target; the remaining differences are the load order and the
+// .rodata 0x58/0x60 conversion-double order.
 void btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, GXColor* color) {
 	u16 width;
 	u16 height;

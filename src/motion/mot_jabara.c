@@ -312,34 +312,29 @@ end:
     ;
 }
 
-// NONMATCHING (59.09%): register allocation and float load ordering differ; the original calls marioGetPtr a
-// second time for the 0x148/0x158 stores and keeps vec3_802c5b88 in a base register for the Vec copies.
+// `switch` here, not an if-chain: the original's compare tree (9, then 3/12)
+// is exactly CodeWarrior's codegen for a sparse switch.
 void mot_jabara_post(void) {
+    const Vec* vec = &vec3_802c5b88;
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
-    f32 f20;
-    f32 f37;
-    f32 t;
 
     mario->flags &= ~MARIO_FLAG_WALLS_DISABLED;
-    mario->unk148 = MATCH_F32(float_0_8041aac4);
-    MW_F32(mario, 0x158) = MATCH_F32(float_0p01_8041aaf0);
+    mario2 = marioGetPtr();
+    mario2->unk148 = MATCH_F32(float_0_8041aac4);
+    mario2->unk150.z = MATCH_F32(float_0p01_8041aaf0);
     if (mario->dispFlags & 0x40000000) {
         marioPaperOff();
     }
     allPartyRideOff();
     mario2 = marioGetPtr();
-    f20 = MATCH_F32(float_20_8041aaf4);
-    t = MW_F32(mario2, 0x2A4);
-    f37 = MATCH_F32(float_37_8041aaf8);
-    MW_F32(mario2, 0x1A8) = t;
-    t = MW_F32(mario2, 0x2A4);
-    MW_F32(mario2, 0x1AC) = t;
-    MW_VEC(mario2, 0xB0) = vec3_802c5b94;
-    MW_VEC(mario2, 0x98) = vec3_802c5ba0;
-    MW_VEC(mario2, 0xBC) = vec3_802c5bac;
-    mario2->wPlayerCollisionBox.x = f20;
-    mario2->wPlayerCollisionBox.y = f37;
+    mario2->unk1A8 = MW_F32(mario2, 0x2A4);
+    MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
+    MW_VEC(mario2, 0xB0) = vec[1];
+    MW_VEC(mario2, 0x98) = vec[2];
+    MW_VEC(mario2, 0xBC) = vec[3];
+    mario2->wPlayerCollisionBox.x = MATCH_F32(float_20_8041aaf4);
+    mario2->wPlayerCollisionBox.y = MATCH_F32(float_37_8041aaf8);
     marioAdjustMoveDir();
     mario2->dispFlags &= ~(1 << 2);
     mario2->dispFlags &= ~(1 << 8);
@@ -347,8 +342,19 @@ void mot_jabara_post(void) {
         __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
         marioGetPtr()->motStruct = NULL;
     }
-    if (mario->currMotionId == 9 || mario->currMotionId < 3 || mario->currMotionId >= 12) {
+    switch (mario->currMotionId) {
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 10:
+    case 11:
+        break;
+    default:
         marioClearJumpPara();
+        break;
     }
 }
 

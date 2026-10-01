@@ -1,7 +1,10 @@
 #include "battle/ac/ac_timing_a.h"
+#include "battle/battle_pad.h"
+#include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
 #include "system.h"
+#include <string.h>
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -31,23 +34,73 @@ extern AcTimingAEntry* _ac_timing_a_timing_tbl[7];
 // .sdata2 interpolation endpoints.
 extern const f32 float_neg300_8041c434;
 extern const f32 float_30_8041c438;
+extern const f32 float_0_8041c43c;
 
-// NONMATCHING (1.54%): 64 missing.
+// opt_propagation off: with copy propagation on MWCC folds the dec pointer into `work+0x1F54`
+// and never materialises it; the original keeps `dec` in r4 (`addi r4, r30, 0x1f4c`) for the
+// four `0x8(r4)` accesses.
 s32 battleAcMain_TimingA(BattleWork* work) {
-	switch (work->actionCommands.mAcState) { //decimal values
-		case 0:
-			break;
+	BattleActions* ac = &work->actionCommands;
+	AcTimingADecWork* dec = (AcTimingADecWork*)&ac->field_0x2BC[0];
+	BattleACDispParams* disp = &ac->dispParams;
+
+	switch (ac->mAcState) {
+	case 0:
+		memset(disp, 0, 0x2C);
+		disp->iconX = float_neg300_8041c434;
+		disp->iconY = float_0_8041c43c;
+		disp->counter = 0x14;
+		ac->mAcState = 0x63;
+#ifdef MUST_MATCH
+		// Match-only: the original reads the work-area flags with `lwz r3, 0x1f50(r30)` (work base),
+		// not through the dec pointer, which keeps dec out of the memset call's live range so it can
+		// live in volatile r4. `dec->flags` (below) makes dec live across the call and forces r31.
+		*(u32*)&ac->field_0x2BC[4] &= ~1;
+#else
+		dec->flags &= ~1;
+#endif
+		ac->outputParams[0] = 0;
+		break;
+	case 0x64:
+		break;
+	case 0x3E8:
+		dec->field_0x08 = 0x3C;
+		ac->mAcState = 0x3E9;
+		// fallthrough
+	case 0x3E9:
+		dec->field_0x08--;
+		if (dec->field_0x08 <= 0) {
+			ac->mAcState = 0x3EA;
+		}
+		break;
+	case 0x3EA:
+		ac->maincb = NULL;
+		ac->dispcb = NULL;
+		ac->resultcb = NULL;
+		ac->deletecb = NULL;
+		return 0;
+	default:
+		break;
 	}
+	return 1;
 }
 
-// optimize_for_size: ac_timing_a is built with -O4,s (its other functions use stmw/lmw prologues);
-// without it this loop is rotated and the original's is not.
-#pragma optimize_for_size on
-// NONMATCHING (88.39%): the header's s8 return makes MWCC emit an extra `extsb r3, r3` before the table index (the original is plain `slwi`; the definition is u8 `lbz; blr`, so this caller used full width), which also reorders the next two loads.
+// The header says `s8`, but the callee returns a zero-extended 4-byte value; a plain call makes
+// MWCC emit `extsb r3, r3` before the `slwi` table index, so this is called through a
+// function pointer under MUST_MATCH (as ac_lst_rc_keep/ac_stick_keep_left do).
+// dont_inline: battleAcResult_TimingA calls this with `bl`; without it MWCC inlines the body.
+#pragma dont_inline on
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	AcTimingADecWork* dec = (AcTimingADecWork*)((u8*)work + 0x1F4C);
-	s32 difficulty = BattleActionCommandGetDifficulty(work);
-	AcTimingAEntry* entry = _ac_timing_a_timing_tbl[difficulty];
+	AcTimingAEntry* entry = _ac_timing_a_timing_tbl[
+#ifdef MUST_MATCH
+	    // Match-only: the header says `s8`, but the callee returns a zero-extended 4-byte value;
+	    // a plain call makes MWCC emit `extsb r3, r3` before the `slwi` table index.
+	    ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)
+#else
+	    BattleActionCommandGetDifficulty(work)
+#endif
+	];
 	s32 frame = work->actionCommands.mResultCount;
 	s32 result = entry->value;
 
@@ -73,7 +126,72 @@ s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	}
 	return result;
 }
-#pragma optimize_for_size reset
+#pragma dont_inline reset
+
+s32 battleAcResult_TimingA(BattleWork* work) {
+	BattleActions* ac = &work->actionCommands;
+	s32 successFrame = battleAcTimingA_GetSuccessFrame(work);
+	s32 count = 0;
+	s32 i;
+
+	if ((ac->field_0x4 & 1) && (ac->mAcUnit->mTokenFlags & kConfusedAction)) {
+		if (irand(100) >= 0) {
+			ac->result = 0;
+		}
+		else {
+			ac->result = 2;
+			ac->mResultCount++;
+		}
+		return ac->result;
+	}
+
+	if (ac->mAcUnit->badgesEquipped.AutoCommand != 0) {
+		ac->result = 2;
+		ac->mResultCount++;
+		return ac->result;
+	}
+
+	ac->result = 0;
+
+	if (work->flags & 0x01000000) {
+		ac->outputParams[0] = 3;
+		ac->result = 2;
+		ac->mResultCount++;
+		return ac->result;
+	}
+
+	for (i = 0; i < 0x14; i++) {
+		if (BattlePadCheckRecordTrigger(i, 0x100)) {
+			count++;
+		}
+	}
+
+	if (count >= 2) {
+		ac->outputParams[0] = 1;
+		return ac->result;
+	}
+
+	for (i = 0; i < successFrame; i++) {
+		if (BattlePadCheckRecordTrigger(i, 0x100)) {
+			break;
+		}
+	}
+
+	if (i >= successFrame) {
+		if (count > 0) {
+			ac->outputParams[0] = 1;
+		}
+		else {
+			ac->outputParams[0] = 2;
+		}
+		return ac->result;
+	}
+
+	ac->outputParams[0] = 3;
+	ac->result = 2;
+	ac->mResultCount++;
+	return ac->result;
+}
 
 // Deriving both the state and disp parameters from one BattleActions* (rather than straight from
 // the BattleWork*), state read first, is what makes MWCC materialise the disp base in r31
