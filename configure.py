@@ -1497,7 +1497,7 @@ config.libs = [
             Object(Matching, "gor.c"),
             Object(NonMatching, "gor_00.c"),
             Object(NonMatching, "gor_01.c"),
-            Object(NonMatching, "gor_02.c"),
+            Object(Matching, "gor_02.c"),
             Object(NonMatching, "gor_03.c"),
             Object(Matching, "gor_irai.c"),
             Object(NonMatching, "gor_10.c"),
