@@ -3,7 +3,7 @@
 #include "driver/dispdrv.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 #include "memory.h"
 
@@ -76,10 +76,8 @@ extern const f32 float_10_8041ee00;
 extern const f32 float_0p5_8041ee04;
 extern const f32 float_0_8041ee08;
 
-extern const char str_802FA550[];
 
 const Vec vec3_802fa538 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fa548 = 4503601774854144.0;
 
 static inline void leafSetColor0(u8 a) {
 	GXColor color = *(GXColor*)&dat_8041edb0;
@@ -123,7 +121,7 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	s32 i;
 
 	effect = effEntry();
-	effect->type = str_802FA550;
+	effect->type = "FallLeafN64";
 	effect->count = 5;
 	data = __memAlloc(HEAP_EFFECT, 0xF0);
 	effect->userdata = data;
@@ -396,3 +394,28 @@ void effFallLeafDisp(CameraId cameraId, void* param) {
 		tri2(6, 5, 4, 4, 7, 6, 4, 4);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041edb0 = 0x14641400;
+const u32 dat_8041edb4 = 0x32913C00;
+const u32 dat_8041edb8 = 0xFFFFFF00;
+const u32 str_8041EDBC = 0x7592A600;
+const f32 float_deg2rad_8041edc0 = 0.017453292f;
+const f32 float_0p03125_8041edc4 = 0.03125f;
+const f32 float_0p0078125_8041edc8 = 0.0078125f;
+const f32 float_1_8041edcc = 1.0f;
+const f32 float_0p015625_8041edd0 = 0.015625f;
+const f32 float_0p3_8041edd4 = 0.3f;
+const f32 float_0p8_8041edd8 = 0.8f;
+const f32 float_6p2832_8041eddc = 6.2831855f;
+const f32 float_2_8041ede0 = 2.0f;
+const f32 float_360_8041ede4 = 360.0f;
+const f32 float_neg0p05_8041ede8 = -0.05f;
+const f32 float_0p2_8041edec = 0.2f;
+const f32 float_0p94_8041edf0 = 0.94f;
+const f32 float_0p95_8041edf4 = 0.95f;
+const f32 float_0p05_8041edf8 = 0.05f;
+const f32 float_0p92_8041edfc = 0.92f;
+const f32 float_10_8041ee00 = 10.0f;
+const f32 float_0p5_8041ee04 = 0.5f;
+const f32 float_0_8041ee08 = 0.0f;

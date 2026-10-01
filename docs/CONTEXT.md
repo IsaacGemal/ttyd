@@ -3245,3 +3245,15 @@ No unit linked in this stretch.
 - `eff_break` Disp: `f32 w = 48.0f; f32 h = 0.5f;` at the top (C89: declarations first) stops `-48.0f * 0.5f` folding to -24 but pools 0.5 after 48 and before 0 where the target has 0 before 0.5; adding `f32 z = 0.0f` leaves the pool unchanged and drops Disp to 94.6%. Left for the permuter.
 - `countdown`: only `countDownMain` (95.61%) differs in code; `.sdata2` lacks the trailing 4 zero bytes and `.sbss` is 4 bytes short.
 - The tower permuter's lowest scores so far are prototype or declaration-type changes (`iconDispGx` `char iconId`, `shadowInit` `unsigned long long`), not matches.
+
+## Grind 48: four of the 30 newly fully-matched units link (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_thruhammer_n64`. `event/evt_lottery` linked in its own PR (#132, no source change).
+
+- `eff_fall_leaf_n64`: the colour word `str_8041EDBC` (a 4-byte `.sdata2` object the code loads as a `GXColor`) was not defined; `const u32 str_8041EDBC = 0x7592A600;` with the other `dat_` words.
+- `eff_akari_charge_n64`: the call result in a temp (`s = (f32)sin(...); ... 1024.0f * s`) fixes the pool order (rule from Grind 44); `f32 k = 0.0625f;` assigned at the top of Disp and used as `part->scale * k` restores the operand order of the `fmuls` (the local-constant idiom of Grind 45); a `Vec disp = { 0 }` in code makes the compiler pool the zero vector itself, so `vec3_...` must not also be defined (it duplicated the 12 bytes).
+- `eff_small_star_n64`: the code's two `0.017453292f` literals loaded the constant a second time at the end of `.sdata2`; they use the named `float_deg2rad_8041fc80` (second use written `float_deg2rad * x`); the `.sbss2` GXColor is declared at the end of the file, after the unit's own `.sbss` static (`kaiten`), or the `.sbss` object disappears.
+- `eff_thruhammer_n64`: the four `.sbss2` words are `u32` objects whose address the code takes: the sbss2 idiom with `u32` instead of `GXColor` (`finish_unit`'s step declares `GXColor` and fails the build).
+- **Not needed:** the 4-byte zero words that dtk shows at the end of `.sdata2`/`.rodata` (`gap_09_..._sdata2`) are alignment between units; the linked dol is identical without defining them (they did not link `eff_akari_charge_n64` when defined, because named objects are emitted before the pooled literals).
+- Not linked: `eff_cool_leaf_n64` (data and code 100% after `pool_data` and `(u8*)tbl + 0xA`; the compiler pools its own `4503601774854144.0` after the string where the target has it before), `eff_pturn_n64` (the pool needs 360 before 4.0 in `data->field_0x20 = (type == 0 || type == 1) ? 4.0f * cos(f31 / 360.f) : 0.0f`; an `if`/`else` with a temp fixes the pool but gives effPturnMain 93.8%, a local `d = 360.f` leaves the pool as it was).
+- `ci.py` needs `--allow-pragma` for the new `#pragma section ".sdata" ".sbss2"` in the three units (the idiom of AGENT_BRIEF, each with its why-comment).
