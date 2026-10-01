@@ -612,19 +612,29 @@ USER_FUNC(evt_sub_get_language) {
 }
 
 
-// NONMATCHING (95.00%): only the zero-test branch layout differs: the original emits
-// `cmpwi; bne default` with the case 0 body as fall-through, this switch emits
-// `cmpwi; beq case0; b default`. Same instructions otherwise.
+// The original keeps the zero-test as a branch rather than folding it into a branchless
+// bool-to-int. The one-iteration loop (removed by the optimizer) stops the peephole that would
+// fold it. Without the loop this scores 82%.
 USER_FUNC(evt_sub_animgroup_async) {
 	s32* args = event->args;
 	const char* name = (const char*)evtGetValue(event, args[0]);
-	s32 ret = animGroupBaseAsync(name, gp->inBattle != 0, NULL);
+	BOOL ret = animGroupBaseAsync(name, gp->inBattle != 0, NULL);
+#ifdef MUST_MATCH
+	s32 i;
+	for (i = 0; i < 1; i++) {
+		if (ret == 0) {
+			return EVT_RETURN_BLOCK;
+		}
+	}
+	return EVT_RETURN_DONE;
+#else
 	switch (ret) {
 	default:
 		return EVT_RETURN_DONE;
 	case 0:
 		return EVT_RETURN_BLOCK;
 	}
+#endif
 }
 
 

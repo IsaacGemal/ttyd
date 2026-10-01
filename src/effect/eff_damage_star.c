@@ -344,7 +344,10 @@ void effDamageStarMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
 }
 
-// NONMATCHING (99.69%): only the two by-value GXColor argument-copy stack slots are swapped (retail's mat colour local 0x10 / ambcolour 0x14; ours 0x14 / 0x10), which also reassigns one mulhw destination and the alpha load; the trailing int->float conversion uses f0/f1 not retail's f4/f1 (same ops, pooled anonymous constants).
+// The int->float conversion registers now match; the conversion's magic double still references the
+// compiler's anonymous @345 copy rather than double_to_int_802f3458, but objdiff resolves data by
+// section offset so those two diffs do not score.
+// NONMATCHING (99.99%): only the two by-value GXColor argument-copy stack slots are swapped (retail's mat colour local 0x10 / ambcolour temp 0x14; ours 0x14 / 0x10).
 void effDamageStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     DamageStarData* data;
@@ -434,12 +437,11 @@ void effDamageStarDisp(CameraId camId, void* param) {
         s32 idx;
 
         color = unk_80423038;
-        color.a = elem->alpha;
         idx = (i + frame) % 12;
-
         color.r = color_rotation_data[idx * 3 + 0];
         color.g = color_rotation_data[idx * 3 + 1];
         color.b = color_rotation_data[idx * 3 + 2];
+        color.a = elem->alpha;
         GXSetChanMatColor(4, color);
 
         PSMTXIdentity(mtx1D8);
@@ -564,9 +566,9 @@ void effDamageStarDisp(CameraId camId, void* param) {
         GXPosition3f32(-2.0f, 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
         GXPosition3f32(2.0f, 2.0f, 0.0f);
-        GXTexCoord2f32(1.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 0.0f);
         GXPosition3f32(2.0f, -2.0f, 0.0f);
-        GXTexCoord2f32(1.0f, 1.0f);
+        GXTexCoord2f32(2.0f, 1.0f);
         GXPosition3f32(-2.0f, -2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
     }
@@ -581,7 +583,14 @@ void effDamageStarDisp(CameraId camId, void* param) {
     sprintf(buf, "%d", count);
     {
         s32 len = strlen(buf);
+#ifdef MUST_MATCH
+        // Naming 0.5f keeps MWCC's int->float magic double in f4 (matches retail);
+        // with the literal it lands in f1 and six fsubs/fmuls registers differ.
+        f32 f05 = 0.5f;
+        f32 x = 24.0f * (f32)(-(len - 1)) * f05;
+#else
         f32 x = 24.0f * (f32)(-(len - 1)) * 0.5f;
+#endif
 
         PSMTXScale(mtx58, 0.04f, 0.04f, 0.04f);
         PSMTXTrans(mtx88, x, 0.0f, 0.0f);

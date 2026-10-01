@@ -95,15 +95,30 @@ typedef struct ItemWorkTail {
 
 static WinMgrDesc window_desc[2];
 
-// NONMATCHING (99.58%): the int->float magic constant is still the local @169@
-// instead of double_to_int_802f55e0 (resolves once the pool is complete), and
-// three fmadds have their two multiplicands swapped (register allocation).
+// MUST_MATCH: retail keeps the blend difference in a temp so MWCC contracts it as
+// `diff * 0.25f + old` rather than `0.25f * diff + old`; using the same temp for the
+// 190.0f scale also makes the allocator colour that value f5, as retail does. The natural
+// form is under #else.
 void winItemMain2(WindowWork* work) {
+#ifdef MUST_MATCH
+    f32 t;
+
+    t = float_190_8041d544;
+    WW_F32(work, 0x22C) = t * (f32)WW_S32(work, 0x21C);
+    t = WW_F32(work, 0x22C) - WW_F32(work, 0x224);
+    WW_F32(work, 0x224) = t * float_0p25_8041d548 + WW_F32(work, 0x224);
+
+    t = float_190_8041d544;
+    WW_F32(work, 0x230) = t * (f32)WW_S32(work, 0x220);
+    t = WW_F32(work, 0x230) - WW_F32(work, 0x228);
+    WW_F32(work, 0x228) = t * float_0p25_8041d548 + WW_F32(work, 0x228);
+#else
     WW_F32(work, 0x22C) = float_190_8041d544 * (f32)WW_S32(work, 0x21C);
     WW_F32(work, 0x224) += (WW_F32(work, 0x22C) - WW_F32(work, 0x224)) * float_0p25_8041d548;
 
     WW_F32(work, 0x230) = float_190_8041d544 * (f32)WW_S32(work, 0x220);
     WW_F32(work, 0x228) += (WW_F32(work, 0x230) - WW_F32(work, 0x228)) * float_0p25_8041d548;
+#endif
 
     WW_F32(work, 0x234) += (WW_F32(work, 0x238) - WW_F32(work, 0x234)) / float_6_8041d54c;
     WW_F32(work, 0x23C) += (WW_F32(work, 0x240) - WW_F32(work, 0x23C)) / float_6_8041d54c;
@@ -111,7 +126,12 @@ void winItemMain2(WindowWork* work) {
     WW_F32(work, 0x24C) += (WW_F32(work, 0x250) - WW_F32(work, 0x24C)) / float_6_8041d54c;
 
     WW_F32(work, 0x264) = (f32)(WW_S32(work, 0x25C) * 200);
+#ifdef MUST_MATCH
+    t = WW_F32(work, 0x264) - WW_F32(work, 0x260);
+    WW_F32(work, 0x260) += t * float_0p25_8041d548;
+#else
     WW_F32(work, 0x260) += (WW_F32(work, 0x264) - WW_F32(work, 0x260)) * float_0p25_8041d548;
+#endif
 }
 
 // The original reaches the six Vecs and the int->float double through one base register

@@ -865,13 +865,13 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// NONMATCHING (99.38%): 2 missing, 4 extra, plus register differences.
 static void main_base(void) {
     GenkiWork* genki = get_ptr();
     s32 i;
     s32 a;
     s32 b;
     s32 t;
+    s32 k;
 
     if (genki->field_1C > (f32)genki->score[0]) {
         genki->field_1C -= float_1_80421d74;
@@ -916,7 +916,7 @@ static void main_base(void) {
         genki->field_64 = 1;
         genki->field_60 = 0;
         if (genki->field_C == 0) {
-            s32 k = 0;
+            k = 0;
             for (i = 0; i < 7; i++) {
                 genki->field_5C[k++] = 0;
             }
@@ -937,7 +937,7 @@ static void main_base(void) {
                 genki->field_5C[b] = t;
             }
         } else {
-            s32 k = 0;
+            k = 0;
             for (i = 0; i < 12; i++) {
                 genki->field_5C[k++] = 0;
             }

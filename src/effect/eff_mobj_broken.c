@@ -200,21 +200,21 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 }
 
 // opt_lifetimes off is required for the polynomial accumulators: the default lifetime analysis
-// splits the seed load (f4) from the first fmsubs result (f1) instead of accumulating in place
-// (seed f2, fmsubs f2,f2); with it on the function scores 99.06%.
+// splits the seed load from the first fmsubs result instead of accumulating in place; with it
+// on the function scores 98.33%. Note that with lifetimes off the early-release loop's pointer
+// only lands in r27 (not type's r30) when `work` is declared in the later group of locals, next
+// to `type`; declared with the other pointers, MWCC reuses type's r30 for it. Declaration order
+// drives MWCC's web ordering here.
 #pragma opt_lifetimes off
-// NONMATCHING (99.93%): instruction sequence matches except the early-release loop's work pointer
-// lands in r30; retail copies data into r27 (the only registers the off-lifetime analyser cannot
-// split back).
 void effMObjBrokenMain(EffectEntry* effect) {
 	MobjBrokenWork* data = effect->userdata;
-	MobjBrokenWork* work;
 	MobjBrokenWork* work2;
 	s32 j;
 	Vec position;
 	Vec disp;
 	s32 i;
 	s32 type;
+	MobjBrokenWork* work;
 	s32 inBattle;
 	s32 done = 0;
 	f32 d;

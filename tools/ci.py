@@ -135,6 +135,34 @@ def build():
     print("ok   [build] ninja clean; linked modules match build.sha1")
 
 
+def natural(base):
+    """Changed C files must also compile without MUST_MATCH (rule 7: the #else holds the natural code)."""
+    import tempfile
+    names = [n for n in run(["git", "diff", "--name-only", base]).stdout.split() if n.endswith(".c") and (ROOT / n).exists()]
+    ninja = shutil.which("ninja") or str(ROOT / ".venv" / "bin" / "ninja")
+    targets = {}
+    for line in run([ninja, "-t", "targets", "all"]).stdout.splitlines():
+        t = line.split(":")[0]
+        if t.endswith(".o") and "/src/" in t:
+            targets.setdefault(t.split("/src/", 1)[1].rsplit(".", 1)[0], t)
+    problems = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in names:
+            stem = name.split("/src/", 1)[1] if "/src/" in name else name.removeprefix("src/")
+            target = targets.get(stem.rsplit(".", 1)[0])
+            if not target:
+                continue
+            cmd = run([ninja, "-t", "commands", target]).stdout.strip().splitlines()[-1]
+            cmd = cmd.split(" && ")[0].replace(" -DMUST_MATCH", "")
+            cmd = cmd.replace(" -o " + target.rsplit("/", 1)[0], " -o " + tmp).replace(" -MMD", "")
+            r = subprocess.run(cmd, shell=True, cwd=ROOT, text=True, capture_output=True)
+            if r.returncode:
+                problems.append(f"{name}: doesn't compile without MUST_MATCH:\n" + (r.stdout + r.stderr)[-800:])
+    if problems:
+        fail("natural", "\n  " + "\n  ".join(problems))
+    print(f"ok   [natural] {len(names)} changed C file(s) compile without MUST_MATCH")
+
+
 def ratchet(allowed=()):
     current = BUILD / "report.json"
     changes = CI_DIR / "changes.json"
@@ -247,6 +275,7 @@ def main():
     print(f"ok   [prototypes] {count} documented exceptions; no other external local prototypes")
     extend_data_ids()
     build()
+    natural(a.base)
     ratchet(set(a.allow_regress))
     summary()
     unlinked()

@@ -149,13 +149,14 @@ void effTexSetup(void) {
 	effTexSetupN64();
 }
 
-// NONMATCHING (98.67%): 1 instruction differs, plus register differences.
+// The original keeps these zero-initialised function-local dummies in .sdata, 32 bytes apart; without the
+// pragma they land in .sbss. The original compares id as a signed value (cmpwi), not unsigned (cmplwi).
 void effGetTexObj(u32 id, GXTexObj* obj) {
 #ifdef __MWERKS__
 #pragma explicit_zero_data on
-	if (id < 146) { //number of images in effect.tpl
+	if ((s32)id < 146) { //number of images in effect.tpl
 		if (!wp->texLoaded) {
-			static char dummy ATTRIBUTE_ALIGN(8) = '\0';
+			static char dummy ATTRIBUTE_ALIGN(32) = '\0';
 			GXInitTexObj(obj, &dummy, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 		}
 		else {
@@ -163,7 +164,7 @@ void effGetTexObj(u32 id, GXTexObj* obj) {
 		}
 	}
 	else {
-		static char dummy ATTRIBUTE_ALIGN(8) = '\0';
+		static char dummy ATTRIBUTE_ALIGN(32) = '\0';
 		if (!wp->handle) {
 			GXInitTexObj(obj, &dummy, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 		}
