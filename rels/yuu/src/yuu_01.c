@@ -623,6 +623,7 @@ USER_FUNC(unk_yuu_00005268) {
     camShiftReset();
     return EVT_RETURN_DONE;
 }
+
 static BOOL get_monte_check(Vec* a, Vec* b) {
     if (PSVECDistance(a, b) < 20.0f && __fabs(a->y - b->y) < 20.0) {
         return TRUE;
@@ -752,6 +753,7 @@ static USER_FUNC(fall_rtn) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(re_fall_rtn) {
     if (monte_p != NULL) {
         Yuuminigame2Data* data = ((YuuminigameWork*)((MonteEntry*)monte_p)->work)->data;
@@ -765,6 +767,7 @@ static USER_FUNC(re_fall_rtn) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(yuuminigame2_set_phase) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -772,6 +775,7 @@ USER_FUNC(yuuminigame2_set_phase) {
     data->phase = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(yuuminigame2_get_name) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -780,6 +784,7 @@ USER_FUNC(yuuminigame2_get_name) {
     evtSetValue(event, args[3], turn_tbl[index]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(yuuminigame2_opening_on_off) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -791,6 +796,7 @@ USER_FUNC(yuuminigame2_opening_on_off) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(yuuminigame2_opening_chk) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -802,6 +808,7 @@ USER_FUNC(yuuminigame2_opening_chk) {
     }
     return EVT_RETURN_DONE;
 }
+
 void yuuminigame_init_2fune(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame2Data* data = work->data;
@@ -811,6 +818,7 @@ void yuuminigame_init_2fune(EventEntry* event, BOOL isFirstCall) {
     data->flags |= 1;
     marioChgShipMotion();
 }
+
 void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame2Data* data = work->data;
@@ -848,6 +856,7 @@ void yuuminigame_main_2fune(EventEntry* event, BOOL isFirstCall) {
         break;
     }
 }
+
 void yuuminigame_disp_2fune(CameraId cameraId, void* param) {
     monteCountDisp();
 }

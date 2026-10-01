@@ -199,6 +199,7 @@ static char* group_tbl[11][2] = {
     {"c_konari", "G_1"},
     {"c_n_moa_a", "S_1"},
 };
+
 static void ext_moamoa_dispent(void) {
     if (wp->flags & 1) {
         dispEntry(4, 0.0f, 1, (DispCallback)ext_disp, NULL);
@@ -277,6 +278,7 @@ static void ext_moamoa_init(void) {
         ext_moamoa_main();
     }
 }
+
 static USER_FUNC(evt_moamoa_target_off) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -291,6 +293,7 @@ static USER_FUNC(evt_moamoa_target_off) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_flag_onoff) {
     s32* args = event->args;
     s32 onoff = evtGetValue(event, args[0]);
@@ -322,6 +325,7 @@ static EVT_BEGIN(evt_moamoa_init)
     END_IF
     RETURN
 EVT_END()
+
 static USER_FUNC(evt_moamoa_ry_reset) {
     ExtPose* pose = extGetPosePtr();
     s32 i;
@@ -454,6 +458,7 @@ EVT_BEGIN(evt_moamoa_escape1)
     CALL(evt_npc_change_interrupt, STRING("車掌"), 6, PTR(talk_syashou))
     RETURN
 EVT_END()
+
 static USER_FUNC(evt_moamoa_end_wait) {
     s32 i;
     MoamoaPose* pose;
@@ -468,6 +473,7 @@ static USER_FUNC(evt_moamoa_end_wait) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_exit) {
     extReset();
     return EVT_RETURN_DONE;
@@ -837,6 +843,7 @@ static u32 jumptable_00014F3C[66] = {
 
 // TODO: write moamoa_jump (static, 0x270 bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+
 static void ext_shadow_disp(s32 camId) {
     static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
     u16 left, top, right, bottom;
@@ -855,6 +862,7 @@ static void ext_shadow_disp(s32 camId) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
+
 static void ext_disp(s32 camId) {
     u16 left, top, right, bottom;
 
@@ -875,11 +883,13 @@ static void ext_disp(s32 camId) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 value = (f32)rand() / 32767.0f;
 
     return value * (max - min) + min;
 }
+
 static USER_FUNC(evt_moamoa_fusion_debug) {
     s32 i;
     ExtPose* extPose = extGetPosePtr();
@@ -900,6 +910,7 @@ static USER_FUNC(evt_moamoa_fusion_debug) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_blow) {
     s32 i;
     MoamoaPose* pose;
@@ -914,6 +925,7 @@ static USER_FUNC(evt_moamoa_blow) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_kind_onoff) {
     s32* args = event->args;
     s32 on = evtGetValue(event, args[0]);
@@ -951,6 +963,7 @@ static USER_FUNC(evt_moamoa_kind_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_fusion) {
     ExtPose* extPose;
     s32 i;
@@ -995,6 +1008,7 @@ static USER_FUNC(evt_moamoa_fusion) {
     }
     return EVT_RETURN_DONE;
 }
+
 static void moamoa_pose_change(MoamoaPose* pose, char* name1, char* name2) {
     MoamoaGroup* group = wp->groups;
     s32 i;
@@ -1027,6 +1041,7 @@ static void moamoa_pose_change(MoamoaPose* pose, char* name1, char* name2) {
         pose->time = gp->renderTime;
     }
 }
+
 static void moamoa_pose_main(void) {
     MoamoaGroup* group;
     s32 i;

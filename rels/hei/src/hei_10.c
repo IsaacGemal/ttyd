@@ -176,6 +176,7 @@ static f32 randf(f32 min, f32 max) {
 
     return r * (max - min) + min;
 }
+
 static void ext_init(void) {
     s32 i;
     ExtPose* pose;
@@ -203,6 +204,7 @@ static void ext_init(void) {
         entry++;
     }
 }
+
 static void ext_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();
     extLoadVertex();
@@ -211,6 +213,7 @@ static void ext_disp(CameraId cameraId, void* param) {
     extDraw();
     extLoadTextureExit();
 }
+
 static void ext_shadow_disp(void) {
     static Mtx mt = {
         {8.0f, 0.0f, 0.0f, 0.0f},
@@ -224,6 +227,7 @@ static void ext_shadow_disp(void) {
     extLoadShadowTev();
     extDrawShadow();
 }
+
 void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 z, f32 v1, f32 v2) {
     Vec pos = { 0 };
     f32 dy;
@@ -402,6 +406,7 @@ static void ext_main(void) {
 static void ext_dispent(void) {
     dispEntry(4, 0.0f, 1, ext_disp, NULL);
 }
+
 USER_FUNC(evt_chorobon_escape) {
     s32 i;
     HeiExtEntry* entry;
@@ -415,6 +420,7 @@ USER_FUNC(evt_chorobon_escape) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_chorobon_wait) {
     s32 i;
     HeiExtEntry* entry;
@@ -532,6 +538,7 @@ USER_FUNC(wait_anim_frame) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(wait_anim_end) {
     NpcEntry* npc = npcNameToPtr("ゴールドチョロボン");
 

@@ -4803,15 +4803,18 @@ static void alpha_tev(TevCallbackParam* param) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
     param->field_C = param->field_C + 1;
 }
+
 static USER_FUNC(alpha_init_func) {
     _ap = _mapAlloc(1);
     *_ap = 0xFF;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(alpha_set_func) {
     *_ap = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 f32 lineardec_type(s32 target, s32 count, f32 start, f32 end) {
     s32 i;
     s32 init = count * 20 / 100;
@@ -4833,6 +4836,7 @@ f32 lineardec_type(s32 target, s32 count, f32 start, f32 end) {
     }
     return start + (end - start) * result / sum;
 }
+
 static f32 accdec_type(s32 target, s32 count, f32 start, f32 end) {
     s32 i;
     s32 hi = count * 10 / 100;
@@ -4857,6 +4861,7 @@ static f32 accdec_type(s32 target, s32 count, f32 start, f32 end) {
     }
     return start + (end - start) * result / sum;
 }
+
 static USER_FUNC(make_itemsel_table) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
@@ -4899,14 +4904,17 @@ static USER_FUNC(make_itemsel_table) {
     event->lwData[10] = (s32)itemsel_table_ram;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(delete_itemsel_table) {
     _mapFree(itemsel_table_ram);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(fune_yure_func_init) {
     *(f32*)&event->lwData[0] = evtGetFloat(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(fune_yure_func) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -4939,6 +4947,7 @@ USER_FUNC(fune_yure_func) {
     evtSetValue(event, args[3], done);
     return EVT_RETURN_DONE;
 }
+
 void geundan1000tai_circle_pos(Vec* out) {
     f32 s;
     f32 angle;
@@ -4954,6 +4963,7 @@ void geundan1000tai_circle_pos(Vec* out) {
     out->y = 15.0f;
     out->z = 0.5f * (radius * c) - 300.0f;
 }
+
 USER_FUNC(gundan1000tai_circle_pos_func) {
     s32* args = event->args;
     f32 radius;
@@ -5031,6 +5041,7 @@ USER_FUNC(gundan1000tai_init) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(gundan1000tai_totsugeki) {
     s32 i;
     NanNpcEntry* entry;
@@ -5044,6 +5055,7 @@ USER_FUNC(gundan1000tai_totsugeki) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(gundan1000tai_areacheck) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -5081,6 +5093,7 @@ USER_FUNC(gundan1000tai_areacheck) {
     evtSetValue(event, args[1], area);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(gundan1000tai_totsuend) {
     s32 i;
     NanNpcWork* work = nanNPCWork;
@@ -5090,6 +5103,7 @@ USER_FUNC(gundan1000tai_totsuend) {
     }
     return EVT_RETURN_DONE;
 }
+
 void gundan1000tai_seq00(NanNpcEntry* entry) {
     marioGetPtr();
     switch (entry->field_0x68) {
@@ -5407,6 +5421,7 @@ static USER_FUNC(cam_kaiten_init) {
     ckpw[7] = ckp0[7];
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(cam_kaiten_set_direct) {
     CameraEntry* cam = camGetPtr(4);
     f32 s = sin(6.2831855f * ckpw[6] / 360.0f);
@@ -5424,6 +5439,7 @@ static USER_FUNC(cam_kaiten_set_direct) {
     cam->curveA = 0xB;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(cam_kaiten_get_para) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -5451,6 +5467,7 @@ static USER_FUNC(cam_kaiten_get_para) {
     evtSetFloat(event, args[8], p[7]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(cam_kaiten_set_para) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -5478,6 +5495,7 @@ static USER_FUNC(cam_kaiten_set_para) {
     p[7] = evtGetFloat(event, args[8]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hosei_mario_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -5490,6 +5508,7 @@ USER_FUNC(hosei_mario_pos) {
     mario->position.z += z;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hosei_party_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -5505,6 +5524,7 @@ USER_FUNC(hosei_party_pos) {
     party->position.z += z;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(suifu100taikikan_init) {
     s32 i;
     NanNpcEntry* entry;
@@ -5522,6 +5542,7 @@ USER_FUNC(suifu100taikikan_init) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(suifu100taikikan_away) {
     s32 i;
     NanNpcEntry* entry;
@@ -5537,6 +5558,7 @@ USER_FUNC(suifu100taikikan_away) {
     }
     return EVT_RETURN_DONE;
 }
+
 void suifu100taikikan_seq00(NanNpcEntry* entry) {
     entry->field_0x68 = 0;
 }
@@ -5628,6 +5650,7 @@ void suifu100taikikan_seq01(NanNpcEntry* entry) {
     }
     }
 }
+
 void gor_stg4_018_cb(s32 type, smartEntry* smart) {
     MessageData* data = smart->address;
 
@@ -5639,6 +5662,7 @@ void gor_stg4_018_cb(s32 type, smartEntry* smart) {
         break;
     }
 }
+
 static USER_FUNC(fune_eff) {
     f32 oldX;
     f32 oldZ;
@@ -5689,6 +5713,7 @@ static USER_FUNC(fune_eff) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(gor_ship_puka_func) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -5697,6 +5722,7 @@ USER_FUNC(gor_ship_puka_func) {
     evtSetFloat(event, args[2], value * gor_ship_puka_data[index & 0xF]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(scale_func) {
     f32 scale = evtGetFloat(event, event->args[0]);
     MarioWork* mario = marioGetPtr();
@@ -5728,6 +5754,7 @@ static USER_FUNC(scale_func) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(funeflag_save) {
     MapObject* obj0 = mapGetMapObj("S_fune_b");
     MapObject* obj1 = mapGetMapObj("S_fune_c");
@@ -5736,11 +5763,13 @@ USER_FUNC(funeflag_save) {
     event->lwData[9] = *(s32*)obj1->field_0x0 & 1;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(funeflag_reset) {
     mapGrpFlagOn("S_fune_b", 1);
     mapGrpFlagOn("S_fune_c", 1);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(funeflag_load) {
     mapGrpFlagOff("S_fune_b", 1);
     mapGrpFlagOn("S_fune_b", event->lwData[8]);
@@ -5748,18 +5777,21 @@ USER_FUNC(funeflag_load) {
     mapGrpFlagOn("S_fune_c", event->lwData[9]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(funechange_func) {
     s32* args = event->args;
 
     evtSetValue(event, args[0], marioShipChanging());
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(get_yoshi_color) {
     s32* args = event->args;
 
     evtSetValue(event, args[0], pouchGetPartyColor(PARTNER_YOSHI));
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(unk_gor_000006d8) {
     NpcWork* work = npcGetWorkPtr();
     s32 i;

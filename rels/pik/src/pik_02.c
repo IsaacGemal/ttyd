@@ -243,6 +243,7 @@ static NpcSetupInfo npc_data[7] = {
 
 
 const Vec vec3_pik_00002b80 = { 0.0f, 0.0f, 0.0f };
+
 static USER_FUNC(npc_set_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -259,14 +260,17 @@ static USER_FUNC(npc_set_pos) {
     npc->position = npc->prevPosition;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hoshi) {
     event->lwData[10] = (s32)effStarStoneEntry(5, 0.0f, 60.0f, -950.0f, 1.0f);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hoshi_delete) {
     effSoftDelete((EffectEntry*)event->lwData[10]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hoshi_r) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
 
@@ -612,6 +616,7 @@ static EVT_BEGIN(evt_daiza)
     CALL(evt_mario_key_onoff, 1)
     RETURN
 EVT_END()
+
 USER_FUNC(get_starstone_seq) {
     s32* args = event->args;
     effStarStoneData* data = effNameToPtr((const char*)evtGetValue(event, args[0]))->userdata;
@@ -619,12 +624,14 @@ USER_FUNC(get_starstone_seq) {
     evtSetValue(event, args[1], data->field_0x3C);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_fall) {
     effStarStoneData* data = effNameToPtr((const char*)evtGetValue(event, event->args[0]))->userdata;
 
     data->field_0x3C = 1;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(set_starstone_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -638,6 +645,7 @@ static USER_FUNC(set_starstone_pos) {
     ((effStarStoneData*)entry->userdata)->field_0x10 = z;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(get_starstone_pos) {
     s32* args = event->args;
     EffectEntry* entry = effNameToPtr((const char*)evtGetValue(event, args[0]));
@@ -647,6 +655,7 @@ static USER_FUNC(get_starstone_pos) {
     evtSetFloat(event, args[3], ((effStarStoneData*)entry->userdata)->field_0x10);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -661,6 +670,7 @@ static USER_FUNC(starstone_entry) {
     ((effStarStoneData*)entry->userdata)->field_0x4 |= 0x10;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(stone_bg) {
     effStarStoneData* data = effNameToPtr("sub_bg")->userdata;
 
@@ -670,6 +680,7 @@ static USER_FUNC(stone_bg) {
     marioSetCamId(5);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(reset_stone_cam) {
     effStarStoneData* data = effNameToPtr("nise")->userdata;
 

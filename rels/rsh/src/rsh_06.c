@@ -998,6 +998,7 @@ static void moamoa_pose_change(MoamoaEntry* entry, char* name, char* anim) {
     entry->field_0x3C = i;
     entry->field_0x40 = gp->renderTime;
 }
+
 static USER_FUNC(evt_moamoa_flag_onoff) {
     s32* args = event->args;
     s32 on = evtGetValue(event, args[0]);
@@ -1010,10 +1011,12 @@ static USER_FUNC(evt_moamoa_flag_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_exit) {
     extReset();
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_ry_reset) {
     ExtPose* pose = extGetPosePtr();
     s32 i;
@@ -1084,6 +1087,7 @@ static USER_FUNC(evt_moamoa_end_wait) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_fusion) {
     if (isFirstCall) {
         s32 i;
@@ -1128,6 +1132,7 @@ static USER_FUNC(evt_moamoa_fusion) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_kind_onoff) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -1157,6 +1162,7 @@ static USER_FUNC(evt_moamoa_kind_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_blow) {
     s32 i;
     MoamoaEntry* entry;
@@ -1596,6 +1602,7 @@ static USER_FUNC(evt_moamoa_target_off) {
     }
     return EVT_RETURN_DONE;
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
 
@@ -1665,6 +1672,7 @@ static void ext_moamoa_init(void) {
         ext_moamoa_main();
     }
 }
+
 static void ext_disp(CameraId cameraId, void* param) {
     u16 left, top, right, bottom;
 
@@ -1685,6 +1693,7 @@ static void ext_disp(CameraId cameraId, void* param) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
+
 static void ext_shadow_disp(CameraId cameraId, void* param) {
     static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
     u16 left, top, right, bottom;
@@ -1959,6 +1968,7 @@ static void ext_moamoa_dispent(void) {
         dispEntry(CAMERA_OFFSCREEN2, -5000.0f, 2, ext_shadow_disp, NULL);
     }
 }
+
 void moamoa_joint_position(void* entry_, Vec* out) {
     MoamoaEntry* entry = entry_;
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("base")->poseId);
@@ -1972,6 +1982,7 @@ void moamoa_joint_position(void* entry_, Vec* out) {
     PSVECScale(py, &tmp, 1.0f - t);
     PSVECAdd(out, &tmp, out);
 }
+
 static USER_FUNC(ramp_r) {
     f32 value = __fabsf(evtGetFloat(event, GW(0)));
     f32 wave = (f32)sin((f32)gp->retraceCount / 15.0f);
@@ -1979,9 +1990,11 @@ static USER_FUNC(ramp_r) {
     evtSetFloat(event, LW(10), 1.8f * value * wave);
     return EVT_RETURN_DONE;
 }
+
 static void resha_tev(void* param) {
     envAddTev(7, param);
 }
+
 USER_FUNC(npc_anim_wait) {
     return (animPoseGetLoopTimes(npcNameToPtr("base")->poseId) >= 1.0f) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }

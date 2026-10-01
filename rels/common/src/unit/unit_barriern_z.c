@@ -698,6 +698,7 @@ static USER_FUNC(barriern_zanzou) {
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     return barriern_zanzou_sub(isFirstCall, unit, zanzou_scale, 0);
 }
+
 static USER_FUNC(barriern_zanzou2) {
     BattleUnit* unit;
     s32 id;
@@ -879,6 +880,7 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
     zanzou_count[0]++;
     return 0;
 }
+
 static USER_FUNC(barriern_satellite_zanzou) {
     s32 index;
     BattleUnit* unit;
@@ -1349,6 +1351,7 @@ static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, Bar
     zanzou_count[index]++;
     return 0;
 }
+
 static u8 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, s32 id) {
     BarriernSatelliteTo* work;
 
@@ -1951,6 +1954,7 @@ static USER_FUNC(outSplineTableSet) {
     }
     return EVT_RETURN_DONE;
 }
+
 static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BattleUnit* satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
 
@@ -1995,6 +1999,7 @@ static USER_FUNC(barriern_wawawa_set_target) {
     }
     return EVT_RETURN_DONE;
 }
+
 static void barriern_wawawa_get_target(s32* out1, s32* out2) {
     u8* sampling = _battleWorkPointer->field_428;
     u8* entry = sampling + (s8)sampling[0xa6d + (s8)sampling[0xab7]] * 0x24 + 4;
@@ -2002,6 +2007,7 @@ static void barriern_wawawa_get_target(s32* out1, s32* out2) {
     *out1 = *(s16*)(entry + 0);
     *out2 = *(s16*)(entry + 2);
 }
+
 static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
     u8* sampling = _battleWorkPointer->field_428;
     s32 idx;
@@ -2017,6 +2023,7 @@ static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
         *out2 = 0;
     }
 }
+
 static USER_FUNC(_check_satellite) {
     BattleUnit* unit;
     BattleUnit* p;
@@ -2096,6 +2103,7 @@ static USER_FUNC(_check_satellite) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(battleGetBarriernSatelliteInitPos) {
     s32* args;
     BattleUnit* unit;

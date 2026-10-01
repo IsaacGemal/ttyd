@@ -1895,6 +1895,7 @@ static USER_FUNC(wariai_enzan_1) {
     evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(wariai_enzan_1f) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1942,6 +1943,7 @@ static USER_FUNC(wariai_enzan_1f_intpl) {
     evtSetFloat(event, out, (1.0f - r) * c + r * d);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(wariai_enzan_1f_intpl_w) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1979,6 +1981,7 @@ USER_FUNC(wariai_enzan_1f_intpl_w) {
     evtSetFloat(event, out, c * (1.0f - r) + d * r);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(wariai_enzan_0) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1989,6 +1992,7 @@ static USER_FUNC(wariai_enzan_0) {
     evtSetValue(event, args[4], (s32)((a * c + d * (b - a)) / b));
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(wariai_enzan_0f) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1999,6 +2003,7 @@ static USER_FUNC(wariai_enzan_0f) {
     evtSetFloat(event, args[4], (a * c + d * (b - a)) / b);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_set) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -2007,6 +2012,7 @@ static USER_FUNC(x_flag_set) {
     x_flag_data[index] = value;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_add) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -2015,6 +2021,7 @@ static USER_FUNC(x_flag_add) {
     x_flag_data[index] += value;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_get) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -2022,6 +2029,7 @@ static USER_FUNC(x_flag_get) {
     evtSetValue(event, args[1], x_flag_data[index]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_wait) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);

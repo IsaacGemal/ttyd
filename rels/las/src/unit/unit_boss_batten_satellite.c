@@ -542,6 +542,7 @@ USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
     evtSetFloat(event, dest, f27 * t + f30 * f1);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(bts_wariai_enzan_0) {
     s32* args = event->args;
     f32 f30 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
@@ -551,6 +552,7 @@ USER_FUNC(bts_wariai_enzan_0) {
     evtSetValue(event, args[4], (s32)((f30 * f31 + f1 * (f29 - f30)) / f29));
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(bts_wariai_enzan_0f) {
     s32* args = event->args;
     f32 f30 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
@@ -560,21 +562,25 @@ USER_FUNC(bts_wariai_enzan_0f) {
     evtSetFloat(event, args[4], (f30 * f31 + f1 * (f29 - f30)) / f29);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(bts_x_flag_set) {
     s32* args = event->args;
     bts_x_flag_data[0] = evtGetValue(event, args[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(bts_x_flag_add) {
     s32* args = event->args;
     bts_x_flag_data[0] += evtGetValue(event, args[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(bts_x_flag_get) {
     s32* args = event->args;
     evtSetValue(event, args[0], bts_x_flag_data[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(bts_x_flag_wait) {
     s32* args = event->args;
     return (evtGetValue(event, args[0]) - bts_x_flag_data[0]) == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;

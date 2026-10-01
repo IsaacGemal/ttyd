@@ -2293,6 +2293,7 @@ void _hikariEntry(const char* name, s32 type, f32 scale) {
     ((effFireData*)effect->userdata)->field_0x7C = scale;
     effSetName(effect, name);
 }
+
 static USER_FUNC(rousoku_init) {
     s32 cond = evtGetValue(event, event->args[0]);
     s32 type = 3;
@@ -2315,6 +2316,7 @@ static USER_FUNC(rousoku_init) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(rou_hikari_front_onoff) {
     s32* args = event->args;
     s32 on = evtGetValue(event, args[0]);
@@ -2336,6 +2338,7 @@ USER_FUNC(rou_hikari_front_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hikari_set_scale) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -2349,6 +2352,7 @@ USER_FUNC(hikari_set_scale) {
     ((effFireData*)effect->userdata)->field_0x7C = scale;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hikari_change) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -2367,6 +2371,7 @@ USER_FUNC(hikari_change) {
     effSetName(effect, name);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hikari_se) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -2392,6 +2397,7 @@ USER_FUNC(hikari_se) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hikari_onoff) {
     s32* evt;
     s32* args = event->args;
@@ -2419,6 +2425,7 @@ USER_FUNC(hikari_onoff) {
     evtSetValue(event, args[5], i);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(all_hikari_change_kuro) {
     s32 idx = evtGetValue(event, event->args[0]);
     s32 i;
@@ -2455,6 +2462,7 @@ USER_FUNC(all_hikari_change_kuro) {
     }
     return EVT_RETURN_DONE;
 }
+
 void map_color_tev(void* work) {
     MapColorTevWork* w = work;
 
@@ -2472,6 +2480,7 @@ void map_color_tev(void* work) {
     w->field_0x14 = 0;
     w->field_0x10 = 0;
 }
+
 USER_FUNC(all_hikari_onoff) {
     s32 on = evtGetValue(event, event->args[0]);
     f32 scale = on ? 0.0f : 0.5f;
@@ -2488,6 +2497,7 @@ USER_FUNC(all_hikari_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(b_peach_thunder) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -2503,6 +2513,7 @@ USER_FUNC(b_peach_thunder) {
     ((EffPokopiThunderData*)effect->userdata)->field_0x48 = 0x14;
     return EVT_RETURN_DONE;
 }
+
 void b_peach_msgcb(s32 state) {
     switch (state) {
     case 0:
@@ -2515,6 +2526,7 @@ void b_peach_msgcb(s32 state) {
         break;
     }
 }
+
 USER_FUNC(add_vy) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -2531,6 +2543,7 @@ USER_FUNC(add_vy) {
 #endif
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(radiation_entry) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2543,6 +2556,7 @@ USER_FUNC(radiation_entry) {
     effSetName(effect, name);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(radiation_set_pos) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2556,6 +2570,7 @@ USER_FUNC(radiation_set_pos) {
     ((EffRadiationData*)effect->userdata)->z = z;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(pcharge_entry) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2567,6 +2582,7 @@ USER_FUNC(pcharge_entry) {
     effSetName(effect, name);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(pcharge_set_pos) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2612,6 +2628,7 @@ static USER_FUNC(starstone_entry) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_pos) {
     s32* args = event->args;
     f32 x0 = evtGetFloat(event, args[0]);
@@ -2643,6 +2660,7 @@ static USER_FUNC(starstone_set_pos) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_ry) {
     f32 ry = evtGetFloat(event, event->args[0]);
     s32 i;
@@ -2657,6 +2675,7 @@ static USER_FUNC(starstone_set_ry) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(make_koe_label) {
     static char name[32];
     s32* args = event->args;
@@ -2670,6 +2689,7 @@ USER_FUNC(make_koe_label) {
     evtSetValue(event, args[1], (s32)name);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(make_koe_pos) {
     s32* args = event->args;
     s32 x;
@@ -2694,11 +2714,13 @@ USER_FUNC(make_koe_pos) {
     evtSetValue(event, args[2], 0);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(slowturnoff_check) {
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
     return (npc->flags & 0x8000) ? 0 : 2;
 }
+
 USER_FUNC(eff_b_peach_ripple) {
     NpcEntry* npc = npcNameToPtr("ブラックピーチ");
     EffectEntry* effect = effRippleEntry(3, npc->position.x, npc->position.y + 30.0f, npc->position.z);
@@ -2726,6 +2748,7 @@ USER_FUNC(eff_b_peach_mist) {
     effMistEntry(6, 300, npc->position.x + px, npc->position.y + 30.0f, npc->position.z + pz, 0.0f);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(make_mist_name) {
     static char name[8];
     s32* args = event->args;
@@ -2734,6 +2757,7 @@ USER_FUNC(make_mist_name) {
     evtSetValue(event, args[1], (s32)name);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(mist_add_vy) {
     f32 vy = evtGetFloat(event, event->args[0]);
     s32 i;

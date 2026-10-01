@@ -1144,6 +1144,7 @@ void _prolog(void) {
     }
     relSetBtlAddr("rsh", btlsetup_rsh_tbl, btl_rsh_setup_no_tbl);
 }
+
 void _epilog(void) {
     voidfunctionptr* dtor;
 
@@ -1151,8 +1152,10 @@ void _epilog(void) {
         (*dtor)();
     }
 }
+
 void _unresolved(void) {
 }
+
 USER_FUNC(img_wait) {
     ImageEntry* img = imgNameToPtr("capture_img", gp->inBattle != 0);
 
@@ -1272,6 +1275,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     param->field_18 = field18;
     param->field_10 = ++texMap;
 }
+
 USER_FUNC(evt_rsh_get_rnd_npc) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1337,6 +1341,7 @@ USER_FUNC(evt_rsh_get_rnd_npc) {
     evtSetValue(event, args[2], value);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_rsh_set_rnd_npc) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1460,6 +1465,7 @@ USER_FUNC(evt_rsh_get_rnd_npc_data) {
     evtSetValue(event, args[4], data[1]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_rsh_get_rnd_npc_talk_evt) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1470,6 +1476,7 @@ USER_FUNC(evt_rsh_get_rnd_npc_talk_evt) {
     evtSetValue(event, args[3], data[2]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_rsh_set_rnd_npc_talk_evt) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -1479,6 +1486,7 @@ USER_FUNC(evt_rsh_set_rnd_npc_talk_evt) {
     npc->talkEvt = (void*)evt;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(debug_print_func) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);

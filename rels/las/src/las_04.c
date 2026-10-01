@@ -646,6 +646,7 @@ USER_FUNC(firebar_entry) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(firebar_disp_evt) {
     if (evtCheckID(event->lwData[0])) {
         FirebarEntry* entry = (FirebarEntry*)evtGetPtrID(event->lwData[0])->userdata[0];
@@ -668,6 +669,7 @@ USER_FUNC(firebar_disp_evt) {
     }
     return EVT_RETURN_DONE;
 }
+
 void firebar_disp(CameraId camera, void* param) {
     FirebarEntry* entry = param;
     FirebarSegment* seg = entry->segments;
@@ -682,6 +684,7 @@ void firebar_disp(CameraId camera, void* param) {
         animPoseDrawMtx(seg->poseId, mtx, 3, 0.0f, 2.0f * entry->scale);
     }
 }
+
 USER_FUNC(coin_entry) {
     s32* args = event->args;
     s32 v0 = evtGetValue(event, args[0]);
@@ -700,6 +703,7 @@ USER_FUNC(coin_entry) {
     *(s32*)(itemBase + 0x54) = v3;
     return EVT_RETURN_DONE;
 }
+
 void firebar_cb(FirebarEntry* entry, s32 kind) {
     MarioWork* mario = marioGetPtr();
 

@@ -254,6 +254,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         break;
     }
 }
+
 USER_FUNC(evt_yuucounter_main_func) {
     YuuCounterWork* work = (YuuCounterWork*)event->lwData[0];
 
@@ -264,6 +265,7 @@ USER_FUNC(evt_yuucounter_main_func) {
     dispEntry(CAMERA_2D, 1000.0f, 0, evt_yuucounter_disp_func, work);
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(evt_yuucounter_alloc) {
     s32* args = event->args;
     YuuCounterWork* work;
@@ -296,6 +298,7 @@ USER_FUNC(evt_yuucounter_alloc) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_yuucounter_free) {
     YuuCounterWork* work = _wp;
 
@@ -312,27 +315,32 @@ USER_FUNC(evt_yuucounter_free) {
     _wp = NULL;
     return EVT_RETURN_DONE;
 }
+
 s32 yuucounter_get_data(void) {
     if (_wp == NULL) {
         return 0;
     }
     return _wp->time;
 }
+
 void yuucounter_set_data(s32 data) {
     if (_wp != NULL) {
         _wp->time = data;
     }
 }
+
 void yuucounter_flag_on(u32 mask) {
     if (_wp != NULL) {
         _wp->flags2 |= mask;
     }
 }
+
 void yuucounter_flag_off(u32 mask) {
     if (_wp != NULL) {
         _wp->flags2 &= ~mask;
     }
 }
+
 s32 yuucounter_flag(s32 mask) {
     if (_wp == NULL) {
         return 0;

@@ -1881,6 +1881,7 @@ static USER_FUNC(waku_main) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(arm_check) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -1909,6 +1910,7 @@ static USER_FUNC(arm_check) {
     evtSetValue(event, args[1], result);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(drill_tor) {
     f32 x;
     f32 y;
@@ -1933,6 +1935,7 @@ USER_FUNC(drill_tor) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(drill_jet) {
     f32 x;
     f32 y;
@@ -1966,6 +1969,7 @@ USER_FUNC(drill_jet) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(aud_jet) {
     Mtx mtx;
     f32 x;
@@ -2002,10 +2006,12 @@ USER_FUNC(aud_jet) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(aud_jet_end) {
     jetCount[0] = 1;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(get_aud_num) {
     s32* args = event->args;
     s32 num = BattleAudience_GetAudienceNum();
@@ -2117,15 +2123,18 @@ USER_FUNC(unk_aji_00007668) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 void aud_get_pod_pos(BattleUnit* unit, f32* x, f32* y, f32* z) {
     BtlUnit_GetPos(unit, x, y, z);
     *x += 10.0f;
     *y += 78.0f;
 }
+
 void aud_fire_eff(f32 x, f32 y, f32 z) {
     EffectEntry* effect = effKemuTestEntry(11, x - 50.0f, y + 20.0f, z + 50.0f, 0.75f);
     effKemuTestSetRxRz(effect, 40.0f, 110.0f);
 }
+
 USER_FUNC(aud_fire_hit) {
     s32* args = event->args;
     s32 transId1;
@@ -2186,6 +2195,7 @@ USER_FUNC(aud_fire_hit) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(aud_fire_no_hit) {
     s32* args = event->args;
     s32 transId1;
@@ -2308,6 +2318,7 @@ USER_FUNC(aud_target_mark) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(eff_dead) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -2317,10 +2328,12 @@ static USER_FUNC(eff_dead) {
     eff_charge[0] = effAkariChargeN64Entry(0, 1000, x, y, z, 1.5f);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(eff_dead_delete) {
     effDelete(eff_charge[0]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(arm_init) {
     s32 i;
 
@@ -2334,6 +2347,7 @@ static USER_FUNC(arm_init) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(arm_init2) {
     s32 idx = evtGetValue(event, event->args[0]);
     ArmWork* w = work[idx];
@@ -2341,6 +2355,7 @@ static USER_FUNC(arm_init2) {
     w->effect = effBattenEntry(3, 1000, 0.0f, -1000.0f, 0.0f, 1.0f);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(arm_main) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -2410,6 +2425,7 @@ static USER_FUNC(arm_main) {
     data->position.z = w->field_0xC.z + offset.z;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(arm_end) {
     s32 idx = evtGetValue(event, event->args[0]);
     ArmWork* w = work[idx];

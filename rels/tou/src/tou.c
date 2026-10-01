@@ -613,6 +613,7 @@ void _epilog(void) {
         }
     }
 }
+
 void _unresolved(void) {
     (void)0; // bare blr; the null statement keeps lint_patch from flagging an empty stub
 }
@@ -1143,6 +1144,7 @@ USER_FUNC(unk_tou_00002e24) {
     rankingInit();
     return EVT_RETURN_DONE;
 }
+
 static void insert(s32* arr, s32 unused, s32 from, s32 to) {
     s32 i;
     s32 val;
@@ -1378,6 +1380,7 @@ static void rankingControll(void) {
     }
     swByteSet(0x244, rank);
 }
+
 static USER_FUNC(evt_tou_get_ranking_27_text_1ED4) {
     RankWork* rw = (RankWork*)rank_wp[0];
     s32* args = event->args;
@@ -1396,6 +1399,7 @@ static USER_FUNC(evt_tou_get_ranking_27_text_1ED4) {
     evtSetValue(event, args[0], count);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_tou_get_next_match) {
     s32* args = event->args;
     s32 x = evtGetValue(event, 0xf840650b);
@@ -1576,6 +1580,7 @@ static USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8) {
     evtSetValue(event, args[2], ((FighterEntry*)fighterDt)[idx].field_0C);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_tou_get_fighter_name2) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -1589,6 +1594,7 @@ static USER_FUNC(evt_tou_get_fighter_name2) {
     evtSetValue(event, args[1], (s32)msgSearch(dt[idx].name2));
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_tou_get_fighter_rank) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -2697,6 +2703,7 @@ static USER_FUNC(evt_tou_get_fighter_battle_msg) {
     evtSetValue(event, args[2], dt[idx].battle2);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_tou_get_rule_info) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -2752,6 +2759,7 @@ static USER_FUNC(evt_tou_get_rule_info) {
     evtSetValue(event, args[4], dt[i].field_10);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_tou_get_rule_msg2_27_text_182C) {
     s32* args = event->args;
     s32 ruleId = evtGetValue(event, args[0]);
@@ -3351,6 +3359,7 @@ static USER_FUNC(evt_tou_set_rule_result) {
     }
     return EVT_RETURN_DONE;
 }
+
 static void printRanking(void) {
     s32 i;
 
@@ -3664,21 +3673,25 @@ void monitor_tev(void* param) {
         p->field_10 = 2;
     }
 }
+
 USER_FUNC(onoff) {
     ((GansWork*)gans_wp[0])->field_24 = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(getYoshiColor) {
     s32* args = event->args;
     s32 color = pouchGetPartyColor(4);
     evtSetValue(event, args[0], color);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chk) {
     s32* args = event->args;
     evtSetValue(event, args[0], partyChkJoin(4) != 0);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(unk_tou_0000063c) {
     MarioWork* mario = marioGetPtr();
 
@@ -3695,6 +3708,7 @@ USER_FUNC(unk_tou_0000063c) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(unk_tou_000005d0) {
     s32* args = event->args;
     if (marioKeyOffChk() || marioCtrlOffChk()) {
@@ -3704,6 +3718,7 @@ USER_FUNC(unk_tou_000005d0) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(octo_stop) {
     NpcEntry* npc = npcNameToPtr_NoAssert("オクトール");
 
@@ -3715,6 +3730,7 @@ USER_FUNC(octo_stop) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(octo_start) {
     NpcEntry* npc = npcNameToPtr_NoAssert("オクトール");
 
@@ -3723,6 +3739,7 @@ USER_FUNC(octo_start) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(fight_money) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -3742,6 +3759,7 @@ USER_FUNC(fight_money) {
     evtSetValue(event, args[2], v);
     return EVT_RETURN_DONE;
 }
+
 static f32 camGetRy(void) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 ry = reviseAngle((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)) *
@@ -3819,6 +3837,7 @@ after:
     }
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(tou_champion_belt_onoff) {
     champion_belt_onoff[0] = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;

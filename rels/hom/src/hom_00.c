@@ -621,6 +621,7 @@ s32 tokei(EventEntry* event, BOOL isFirstCall) {
     event->lwData[1] = (s32)(1024.0f * -(360.0f * ((f32)total / 60.0f) / 60.0f)) - 0x0DB58580;
     return EVT_RETURN_DONE;
 }
+
 static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     MapObject* obj = mapGetMapObj("sun");
 

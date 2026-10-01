@@ -202,6 +202,7 @@ static void moamoa_pose_main(void) {
         pose->field_0x10 = seq->startFrame + (s32)((f32)(seq->frameCount - 1) * f);
     }
 }
+
 static void moamoa_pose_change(MoamoaEntry* entry, const char* name1, const char* name2) {
     MoamoaPose* pose;
     s32 i;
@@ -220,6 +221,7 @@ static void moamoa_pose_change(MoamoaEntry* entry, const char* name1, const char
         entry->time = gp->renderTime;
     }
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 frac = (f32)rand() / 32767.0f;
 
@@ -318,6 +320,7 @@ void moamoa_init(void) {
         }
     }
 }
+
 static void ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -326,6 +329,7 @@ static void ext_disp(void) {
     extDraw();
     extLoadTextureExit();
 }
+
 void moamoa_main(void) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
@@ -376,6 +380,7 @@ void moamoa_main(void) {
     }
     moamoa_pose_main();
 }
+
 void moamoa_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)ext_disp, NULL);
 }
@@ -426,6 +431,7 @@ USER_FUNC(evt_moamoa_set_one) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_moamoa_set_seq_all) {
     s32 seq = evtGetValue(event, event->args[0]);
     s32 i;

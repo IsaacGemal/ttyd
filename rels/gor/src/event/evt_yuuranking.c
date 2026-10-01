@@ -49,6 +49,7 @@ static inline s32 yuu_kesan_chk(s32 type, s32 value, s32 bonus, s32 mult, s32 ma
     }
     return yuu_kesan(type, value, bonus, mult, max);
 }
+
 static USER_FUNC(evt_yuuranking_main_func);
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param);
 static s32 fontlenpitch(s8* str, s32 pitch);
@@ -256,6 +257,7 @@ static USER_FUNC(yuuranking_get_monte) {
     evtSetValue(event, event->args[0], wp->field_34);
     return 2;
 }
+
 USER_FUNC(yuuranking_wait_button_10_text_A37C) {
     YuRankWork* wp = (YuRankWork*)_wp;
 
@@ -271,6 +273,7 @@ USER_FUNC(yuuranking_wait_button_10_text_A37C) {
     }
     return 0;
 }
+
 USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
     YuRankWork* wp = (YuRankWork*)_wp;
 
@@ -470,6 +473,7 @@ void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     PSMTXConcat(trans, scale, out);
     FontDrawMessageMtx(out, msg);
 }
+
 static s32 fontlenpitch(s8* text, s32 pitch) {
     if (pitch != 0) {
         s8* str = text;

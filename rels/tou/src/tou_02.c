@@ -1543,6 +1543,7 @@ static void pose_init(void) {
     } while (data->name != NULL);
     fan_wp->groupCount++;
 }
+
 static void pose_main(void) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
@@ -1560,6 +1561,7 @@ static void pose_main(void) {
         pose->field_0x10 = group->start + (s32)((f32)(group->count - 1) * ratio);
     }
 }
+
 static void pose_change(FanPose* pose, const char* name, const char* motion) {
     PoseGroup* group = &fan_wp->groups[0];
     s32 i;
@@ -1574,6 +1576,7 @@ static void pose_change(FanPose* pose, const char* name, const char* motion) {
         pose->time = gp->renderTime;
     }
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
     return r * (max - min) + min;
@@ -1629,6 +1632,7 @@ void ext_fan_init(void) {
         fan_wp->volume = psndSFX_get_vol(fan_wp->sfxId);
     }
 }
+
 void fan_disp(void) {
     extLoadRenderMode();
     extLoadVertex();

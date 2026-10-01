@@ -402,10 +402,12 @@ static USER_FUNC(getYoshiColor) {
     evtSetValue(event, args[0], color);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(party_tev) {
     animPoseSetMaterialFlagOff(partyGetPtr(0)->paperAnimGroup, 0x0F000000);
     return EVT_RETURN_DONE;
 }
+
 void kpa_stg5_009_7_cb(s32 type, void* param) {
     u32 data = *(u32*)param;
     switch (type) {
@@ -416,6 +418,7 @@ void kpa_stg5_009_7_cb(s32 type, void* param) {
         break;
     }
 }
+
 static USER_FUNC(booboo_main) {
     u32 i;
     for (i = 0; i < 5; i++) {
@@ -2012,6 +2015,7 @@ void kpaSen_ext_init(void) {
         }
     }
 }
+
 s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
     u32 range = c - b + 1;
     u32 n = (d != 0) ? 6 : 7;
@@ -2078,6 +2082,7 @@ void kpaSen_ext_main(void) {
         }
     }
 }
+
 void kpaSen_ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -2086,6 +2091,7 @@ void kpaSen_ext_disp(void) {
     extDraw();
     extLoadTextureExit();
 }
+
 void kpaSen_ext_shadow_disp(void) {
     static Mtx mt = {
         {20.0f, 0.0f, 0.0f, 0.0f},
@@ -2099,10 +2105,12 @@ void kpaSen_ext_shadow_disp(void) {
     extLoadShadowTev();
     extDrawShadow();
 }
+
 void kpaSen_ext_dispent(void) {
     dispEntry(4, 0.0f, 1, (DispCallback)kpaSen_ext_disp, NULL);
     dispEntry(4, 0.0f, 2, (DispCallback)kpaSen_ext_shadow_disp, NULL);
 }
+
 USER_FUNC(kpaSen_zako_syugo) {
     s32 i;
 
@@ -2111,6 +2119,7 @@ USER_FUNC(kpaSen_zako_syugo) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpaSen_toge_syugo) {
     s32 i;
 
@@ -2119,6 +2128,7 @@ USER_FUNC(kpaSen_toge_syugo) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(small_star) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -2128,6 +2138,7 @@ static USER_FUNC(small_star) {
     effSmallStarEntry(3, 2, x, y, z, 0.0f, -1.0f, 0.0f);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(bakuhatu_kemuri) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -2137,10 +2148,12 @@ USER_FUNC(bakuhatu_kemuri) {
     effKemuTestDrawCam(effect, 8);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(white_on) {
     fadeWhiteOutOn();
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(white_off) {
     fadeWhiteOutOff();
     return EVT_RETURN_DONE;
@@ -2772,6 +2785,7 @@ static USER_FUNC(yami_view) {
     envSetYamiView(mtx);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(anim_tevcallback) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -2784,6 +2798,7 @@ static USER_FUNC(anim_tevcallback) {
     animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(delete_npc_regl_evt) {
     s32 name = evtGetValue(event, event->args[0]);
     NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
@@ -2907,6 +2922,7 @@ static USER_FUNC(starstone_entry) {
     effSetName(effStarStoneEntry(3, x, y, z, 1.0f), (const char*)name);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -2920,6 +2936,7 @@ static USER_FUNC(starstone_set_pos) {
     ((effStarStoneData*)entry->userdata)->field_0x10 = z;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_ry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);

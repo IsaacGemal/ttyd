@@ -385,6 +385,7 @@ static inline void yuunpc_pose_change_sub(YuunpcEntry* entry, s16 animIndex, f32
 void ext_yuunpc_minigame1_main(void) {
     yuunpc_pose_minigame1_main();
 }
+
 void ext_yuunpc_dispent(void) {
     dispEntry(4, 0.0f, 1, yuunpc_disp, NULL);
 }
@@ -609,6 +610,7 @@ EVT_END()
 void ext_yuunpc_minigame4_main(void) {
     yuunpc_pose_minigame4_main();
 }
+
 void ext_yuunpc_minigame4_init(void) {
     yuunpc_wp = _mapAlloc(0xA94);
     memset(yuunpc_wp, 0, 0xA94);
@@ -794,6 +796,7 @@ void errper_set_rtn(ErrPer* p) {
             break;
     }
 }
+
 void yuunpc_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();
     extLoadVertex();
@@ -802,6 +805,7 @@ void yuunpc_disp(CameraId cameraId, void* param) {
     extDraw();
     extLoadTextureExit();
 }
+
 s32 yuunpc_juni(Vec* pos) {
     f32 value = pos->x;
     YuunpcEntry* entry = yuunpc_wp->entries;
@@ -815,15 +819,19 @@ s32 yuunpc_juni(Vec* pos) {
     }
     return count;
 }
+
 u16 yuunpc_wp_flag_check(u16 mask) {
     return yuunpc_wp->flags & mask;
 }
+
 void yuunpc_wp_flag_off(u16 mask) {
     yuunpc_wp->flags &= ~mask;
 }
+
 void yuunpc_wp_flag_on(u16 mask) {
     yuunpc_wp->flags |= mask;
 }
+
 s32 goalincheck(YuunpcMapWork* p) {
     f32 dx = p->field_24.x - p->field_18.x;
     f32 dz = p->field_24.z - p->field_18.z;
@@ -838,6 +846,7 @@ s32 goalincheck(YuunpcMapWork* p) {
     }
     return 0;
 }
+
 s32 fallcheck(YuunpcMapWork* p) {
     BOOL outOfRange;
     s32 height;
@@ -863,6 +872,7 @@ s32 fallcheck(YuunpcMapWork* p) {
     }
     return 0;
 }
+
 s32 hitcheck(YuunpcMapWork* p) {
     Vec disp;
     Vec out;
@@ -1256,6 +1266,7 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
     }
     return f31;
 }
+
 void yuunpc_set_jump_pose(const char* name, const char* anim, f32 value) {
     s32 idx = yuunpc_pose_check(name, anim);
     if (idx >= 0) {
@@ -1447,6 +1458,7 @@ void ext_yuunpc_minigame1_init(void) {
 #endif
     }
 }
+
 s32 yuunpc_pose_check(const char* name, const char* anim) {
     YuunpcPoseEntry* entry = yuunpc_wp->poseEntries;
     s32 i;

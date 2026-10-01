@@ -105,6 +105,7 @@ USER_FUNC(demo_init) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 void demo_exit(void) {
     CameraEntry* cam = camGetPtr(8);
     if (wp->field_0x24 != 0) {
@@ -118,6 +119,7 @@ void demo_exit(void) {
     cam->viewport[3] = 480.0f;
     statusWinDispOn();
 }
+
 void demo_cap(void) {
     if (wp->field_0x08 == 4) {
         if (wp->field_0x0C == 0) {
@@ -134,6 +136,7 @@ void demo_cap(void) {
         }
     }
 }
+
 void demo_desk(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(8);
     GXTexObj texObj;
@@ -293,6 +296,7 @@ void demo_img(CameraId cameraId, void* param) {
     GXPosition3f32(a, b, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
 }
+
 void demo_book(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(8);
     GXTexObj texObj;
@@ -410,6 +414,7 @@ void demo_book(CameraId cameraId, void* param) {
     GXPosition3f32(0.0f, -h / 2.0f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
 }
+
 void demo_window(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(cameraId);
     Mtx m1;
@@ -473,6 +478,7 @@ void demo_window(CameraId cameraId, void* param) {
     GXPosition3f32(left, bottom, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
 }
+
 USER_FUNC(demo_draw) {
     dispEntry(4, 9.0f, 7, demo_desk, 0);
     dispEntry(4, 8.0f, 7, demo_book, 0);
@@ -482,10 +488,12 @@ USER_FUNC(demo_draw) {
     dispEntry(8, 0.0f, 3, demo_window, 0);
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(demo_winonoff) {
     wp->field_0x28 = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(demo_scale) {
     OSTime time = event->lifetime;
     f32 t;
@@ -501,14 +509,17 @@ USER_FUNC(demo_scale) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(book_r) {
     wp->field_0x04 = evtGetFloat(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(next) {
     wp->field_0x08++;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(adjust) {
     f32 angle = evtGetFloat(event, event->args[0]);
     ImageEntry* img = imgNameToPtr("img4", gp->inBattle != 0);
@@ -526,11 +537,13 @@ USER_FUNC(adjust) {
     PSMTXConcat(m1, m2, img->field_0x120);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(eff_cam) {
     *(s32*)((u8*)effNameToPtr("eff0")->userdata + 0x38) = 5;
     *(s32*)((u8*)effNameToPtr("eff1")->userdata + 0x38) = 5;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(eff_cam1) {
     *(s32*)((u8*)effNameToPtr("eff2")->userdata + 0x98) = 5;
     return EVT_RETURN_DONE;

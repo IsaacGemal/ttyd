@@ -1734,11 +1734,13 @@ USER_FUNC(minigameselect_msg_set) {
     evtSetValue(event, args[1], exchange_msgp[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_exchange_msg_alloc) {
     exchange_msgp[0] = (u32)_mapAlloc(0x100);
     memset((void*)exchange_msgp[0], 0, 0x100);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_exchange_msg_free) {
     if (exchange_msgp[0] == 0) {
         return EVT_RETURN_DONE;
@@ -1747,6 +1749,7 @@ USER_FUNC(evt_exchange_msg_free) {
     exchange_msgp[0] = 0;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(setmertn) {
     event->ownerNPC = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
     return EVT_RETURN_DONE;
@@ -2163,6 +2166,7 @@ USER_FUNC(goryuugijo_get_slot_phase) {
     evtSetValue(event, args[1], *(s32*)((u8*)work->data + 0x04));
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(goryuugijo_set_slot_phase) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
@@ -2171,6 +2175,7 @@ USER_FUNC(goryuugijo_set_slot_phase) {
     *(s32*)(data + 0x04) = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_goryuugijo_set_nowslot) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
@@ -2179,6 +2184,7 @@ USER_FUNC(evt_goryuugijo_set_nowslot) {
     *(s32*)(data + 0x60) = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(goryuugijo_get_dataadr) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -2360,6 +2366,7 @@ USER_FUNC(evt_exchange_msg_set) {
     evtSetValue(event, args[2], exchange_msgp[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(exchange_ryokin_medal) {
     s32* args = event->args;
     s32 sel = evtGetValue(event, args[0]);
@@ -3196,6 +3203,7 @@ USER_FUNC(get_mario_dispReqDir) {
     evtSetValue(event, args[0], (s32) * (f32*)((u8*)mario + 0x1AC));
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(desk_talk_func) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -3215,6 +3223,7 @@ USER_FUNC(desk_talk_func) {
     npc[0]->position.z = (f32)z;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(desk_talk_init_func) {
     npc[0] = (NpcEntry*)_mapAlloc(0x340);
     eff[0] = (EffectEntry*)_mapAlloc(0x28);
@@ -4136,6 +4145,7 @@ void kuji_bomb_055_callback(s32 type, s32* param) {
         break;
     }
 }
+
 static USER_FUNC(viewport) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]);
@@ -4770,6 +4780,7 @@ static USER_FUNC(enzan_lw_load) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(enzan_lw_save) {
     s32 i;
     for (i = 0; i < 16; i++) {
@@ -4820,6 +4831,7 @@ USER_FUNC(evt_goryuugijo_set_caseid) {
     data[index + 0x19] = value;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(goryuugijo_set_dataadr) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -5315,6 +5327,7 @@ USER_FUNC(goryuugijo_main_slot) {
     }
     }
 }
+
 void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     u8* p = (u8*)((void**)param)[7];
     u32 tbl[3] = {0x1f3, 0x1f3, 0x1f3};
@@ -5526,16 +5539,19 @@ USER_FUNC(goryuugijo_init_slot) {
     *(s32*)(data + 0x6c) = 0;
     *(u32*)data &= ~1;
 }
+
 void goryuugijo_upsidewindow_disp_sub(s32 a, s32 b) {
     mapGrpFlagOn(drumname[a][b * 3 + 5], 1);
     mapGrpFlagOn(drumname[a][b * 3 + 6], 1);
     mapGrpFlagOn(drumname[a][b * 3 + 7], 1);
 }
+
 void goryuugijo_upsidewindow_dispoff_sub(s32 a, s32 b) {
     mapGrpFlagOn(drumname[a][b * 3 + 5], 1);
     mapGrpFlagOn(drumname[a][b * 3 + 6], 1);
     mapGrpFlagOn(drumname[a][b * 3 + 7], 1);
 }
+
 static void monte_disp(CameraId cameraId, void* param) {
     u8* p = (u8*)param;
     s32 i;
@@ -5546,6 +5562,7 @@ static void monte_disp(CameraId cameraId, void* param) {
         }
     }
 }
+
 static s32 get_monte_check(Vec* a, Vec* b) {
     if (PSVECDistance(a, b) < 20.0f) {
         if (fabs(a->y - b->y) < 20.0) {
@@ -5554,6 +5571,7 @@ static s32 get_monte_check(Vec* a, Vec* b) {
     }
     return 0;
 }
+
 USER_FUNC(evt_goryuugijo_get_caseid) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
@@ -5563,16 +5581,20 @@ USER_FUNC(evt_goryuugijo_get_caseid) {
     evtSetValue(event, args[2], data[index + 0x19]);
     return EVT_RETURN_DONE;
 }
+
 void goryuugijo_disp_montemedal(CameraId cameraId, void* param) {
     monteCountDisp();
 }
+
 USER_FUNC(goryuugijo_main_montemedal) {
 }
+
 USER_FUNC(goryuugijo_init_montemedal) {
     if (evtGetValue(event, GSWF(1229)) == 0) {
         yuugijou_montemedal_keep(event, isFirstCall);
     }
 }
+
 s32 exchange_ret_tbl_no(void) {
     s32 value = evtGetValue(NULL, GSW(0));
     s32 ret = 0;

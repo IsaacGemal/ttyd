@@ -469,6 +469,7 @@ void _prolog(void) {
     relSetEvtAddr("kpa_06", kpa_06_init_evt);
     relSetEvtAddr("kpa_07", kpa_07_init_evt);
 }
+
 void _epilog(void) {
     voidfunctionptr* dtor;
 
@@ -476,16 +477,20 @@ void _epilog(void) {
         (*dtor)();
     }
 }
+
 void _unresolved(void) {
 }
+
 USER_FUNC(kpa_status_get_stage) {
     evtSetValue(event, event->args[0], kwp[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_mobj_on) {
     mobjKoopaOn();
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_make_mobj_name) {
     static s32 no;
     static char name[16];
@@ -496,6 +501,7 @@ USER_FUNC(kpa_make_mobj_name) {
     evtSetValue(event, args[0], (s32)name);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_make_item_name) {
     static s32 no;
     static char name[16];
@@ -521,15 +527,18 @@ USER_FUNC(kpa_add_coin) {
     pouchAddCoin(-1);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_nohitenemy_ct_clear) {
     MarioWork* mario = marioGetPtr();
     *(u16*)&mario->unk78[0] = 0;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(unk_kpa_00000a08) {
     unk_801f8cd0();
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_set_scale) {
     f32 scale = evtGetFloat(event, event->args[0]);
     MarioWork* mario = marioGetPtr();
@@ -543,6 +552,7 @@ USER_FUNC(kpa_set_scale) {
     mario->wPlayerCollisionBox.y = 75.0f * scale;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_get_msg) {
     static char msgBuf[16];
     s32* args = event->args;
@@ -559,6 +569,7 @@ USER_FUNC(kpa_get_msg) {
     evtSetValue(event, args[0], (s32)msgBuf);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_muteki_check) {
     event->lwData[0] = kpaMutekiCheck();
     return EVT_RETURN_DONE;
@@ -566,7 +577,7 @@ USER_FUNC(kpa_muteki_check) {
 
 // NONMATCHING (86.21%): iconDispGx's iconId is really u16 (icondrv.h says s16) and
 // pouchGetKpaCoin's header says u8, but the original zero-extends neither, so both calls go
-// through a cast under MUST_MATCH; the rest is register allocation (see REPORT.md).
+// through a cast under MUST_MATCH; the rest is register allocation
 void kpa_status_disp(CameraId cameraId, void* param) {
     Vec pos;
     s32 value;
@@ -669,10 +680,12 @@ void kpa_status_disp(CameraId cameraId, void* param) {
         pos.x += 20.0f;
     }
 }
+
 USER_FUNC(kpa_status_main) {
     dispEntry(8, 1000.0f, 0, kpa_status_disp, NULL);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_status_init) {
     EventEntry* newEvent;
     s32* args = event->args;
@@ -699,6 +712,7 @@ USER_FUNC(kpa_status_init) {
     kwp[2] = a2;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_set_time) {
     s32* args = event->args;
     s32 remain;
@@ -712,6 +726,7 @@ USER_FUNC(kpa_set_time) {
     evtSetValue(event, args[2], remain);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_pole_hitoff) {
     MapObjectEntry* entry = mobjNameToPtrNoAssert("pole");
 
@@ -742,6 +757,7 @@ USER_FUNC(kpa_stageclear_disp_entry) {
     dispEntry(8, 1000.0f, 0, kpa_stageclear_disp, NULL);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_time_countdown) {
     if (kwp[2] != 0) {
         kwp[2]--;
@@ -750,6 +766,7 @@ USER_FUNC(kpa_time_countdown) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kpa_get_cam_pt) {
     s32* args = event->args;
     CameraEntry* cam = camGetPtr(4);

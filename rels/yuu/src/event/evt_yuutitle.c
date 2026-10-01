@@ -126,6 +126,7 @@ USER_FUNC(evt_yuutitle_alloc) {
     wp->entry->lwData[0] = (s32)wp;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_yuutitle_free) {
     YuuTitleWork* wp = _wp;
 

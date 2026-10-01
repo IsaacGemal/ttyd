@@ -2561,6 +2561,7 @@ USER_FUNC(evt_eff_pokopi_thunder) {
     effPokopiThunderN64Entry(1, 0x1E, f30, f31, f28, f30, f29, f28, 1.0f);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_eff_colorchange00) {
     EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, event->args[0]));
     *(s32*)((u8*)effect->userdata + 0x18) = 0xFF;
@@ -2573,12 +2574,14 @@ USER_FUNC(evt_eff_colorchange00) {
     *(f32*)((u8*)effect->userdata + 0xC) = 10.0f + *(f32*)((u8*)effect->userdata + 0xC);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_eff_barriersizechange) {
     s32* args = event->args;
     EffectEntry* effect = effNameToPtr((const char*)evtGetValue(event, args[0]));
     *(f32*)((u8*)effect->userdata + 0x10) = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_eff_firechange00) {
     s32* args = event->args;
     EffectEntry* eff;
@@ -2677,6 +2680,7 @@ USER_FUNC(evt_eff_firechange00) {
     }
     return 0;
 }
+
 static USER_FUNC(eff_staff) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -2695,6 +2699,7 @@ static USER_FUNC(eff_staff) {
     *(f32*)(data + 0x10) = *(f32*)((u8*)unit + 0x114);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(check_satellite) {
     BattleWork* wp;
     BattleUnit* unit;
@@ -2784,6 +2789,7 @@ USER_FUNC(check_satellite) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(battleGetBattenSatelliteInitPos) {
     s32* args;
     BattleUnit* unit;
@@ -2834,6 +2840,7 @@ USER_FUNC(battleGetBattenSatelliteInitPos) {
     evtSetValue(event, indexZ, (s32)p->z);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(btlevtcmd_AnimeGetPose) {
     s32 unitId;
     s32 arg0, arg1;
@@ -2846,6 +2853,7 @@ USER_FUNC(btlevtcmd_AnimeGetPose) {
                 (s32)animPoseGetCurrentAnim(*(s32*)((u8*)BattleGetUnitPartsPtr(unitId, arg1) + 0x1C0)));
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(enzan_lw_save) {
     s32 i;
     for (i = 0; i < 16; i++) {
@@ -2853,6 +2861,7 @@ static USER_FUNC(enzan_lw_save) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(enzan_lw_load) {
     s32 i;
     for (i = 0; i < 16; i++) {
@@ -2860,6 +2869,7 @@ static USER_FUNC(enzan_lw_load) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(enzan_lw_save2) {
     s32 i;
     for (i = 0; i < 16; i++) {
@@ -2867,6 +2877,7 @@ USER_FUNC(enzan_lw_save2) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(enzan_lw_load2) {
     s32 i;
     for (i = 0; i < 16; i++) {
@@ -2874,6 +2885,7 @@ USER_FUNC(enzan_lw_load2) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(datastrcopy) {
     s8* src = (s8*)evtGetValue(event, event->args[0]);
     s8* dst = (s8*)xmemo;
@@ -2885,6 +2897,7 @@ USER_FUNC(datastrcopy) {
     ((s8*)xmemo)[i] = 0;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(pose_check_evt_run) {
     xevt[0] = evtEntryType(maiframeanimcheck, event->priority, 0, event->type);
     xevt[0]->unitId = event->unitId;
@@ -2895,10 +2908,12 @@ USER_FUNC(pose_check_evt_run) {
     xevt[0]->ufBase = event->ufBase;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(pose_check_evt_stop) {
     evtDeleteID(xevt[0]->eventId);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(btl_hitoffsetx) {
     s32 unitId;
     BattleUnitPart* part;
@@ -2913,6 +2928,7 @@ USER_FUNC(btl_hitoffsetx) {
     part->field_0x1A0 = arg2;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(_set_draw_callback) {
     BattleWork* wp;
     BattleUnit* unit;
@@ -2935,6 +2951,7 @@ USER_FUNC(_set_draw_callback) {
     part7->attributes |= 0x01000000;
     return EVT_RETURN_DONE;
 }
+
 void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx) {
     BattleUnit* unit = part->mOwner;
     s32 pose = *(s32*)((u8*)part + 0x1C0);
@@ -2997,6 +3014,7 @@ USER_FUNC(unk_las_0000d538) {
     }
     return EVT_RETURN_DONE;
 }
+
 s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
     u8* data;
     struct BattleUnit* sat;
@@ -3013,6 +3031,7 @@ s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
     BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)table;
     return 1;
 }
+
 s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     u8* data;
     struct BattleUnit* sat;

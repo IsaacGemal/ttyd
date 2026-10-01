@@ -428,10 +428,12 @@ USER_FUNC(boss_moamoa_check_zenei_kouei) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_moamoa_mainUnitIdClear) {
     wp->mainUnitId = -1;
     return EVT_RETURN_DONE;
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
     f32 d = max - min;
@@ -929,6 +931,7 @@ USER_FUNC(moamoa_bomb) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(moamoa1_on) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
     MoamoaWorkPose* pose;
@@ -980,6 +983,7 @@ USER_FUNC(moamoa1_on) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(moamoa2_on) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
     BattleUnitPart* part = BattleGetUnitPartsPtr(unit->work[6], 1);
@@ -1210,6 +1214,7 @@ void moamoa_pose(void* poseArg) {
         pose->field_0x18 = gp->renderTime;
     }
 }
+
 static void ext_moamoa_init(void) {
     s32 i;
     ExtPose* extPose = extGetPosePtr();
@@ -1371,6 +1376,7 @@ static void ext_moamoa_main(void) {
     }
     dispEntry(4, 0.0f, 1, (DispCallback)moamoa_draw, NULL);
 }
+
 void moamoa_draw(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -1379,6 +1385,7 @@ void moamoa_draw(void) {
     extDraw();
     extLoadTextureExit();
 }
+
 USER_FUNC(moamoa_set_bodyScale) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
     s32 num = 0;

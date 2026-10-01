@@ -1672,6 +1672,7 @@ extern const f32 float_800_bom_0000711c;
 const Vec vec3_bom_00006ebc = {0.0f, 100.0f, 0.0f};
 const Vec vec3_bom_00006ec8 = {0.0f, 1.0f, 0.0f};
 const Vec vec3_bom_00006ed4 = {0.0f, 0.0f, 0.0f};
+
 USER_FUNC(make_ext_table) {
     s32 i;
 
@@ -1689,6 +1690,7 @@ USER_FUNC(make_ext_table) {
     ext_data[30].name = NULL;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(make_ext_table_minnnanokoe) {
     s32 i;
 
@@ -1706,6 +1708,7 @@ USER_FUNC(make_ext_table_minnnanokoe) {
     ext_data[30].name = NULL;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_ry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -1715,6 +1718,7 @@ static USER_FUNC(starstone_set_ry) {
     ((effStarStoneData*)entry->userdata)->field_0x1C = value;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -1728,6 +1732,7 @@ static USER_FUNC(starstone_set_pos) {
     ((effStarStoneData*)entry->userdata)->field_0x10 = z;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -1738,6 +1743,7 @@ static USER_FUNC(starstone_entry) {
     effSetName(effStarStoneEntry(6, x, y, z, float_1_bom_00006ffc), (const char*)name);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(anim_tevcallback) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -1750,6 +1756,7 @@ static USER_FUNC(anim_tevcallback) {
     animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(yami_view) {
     Vec camPos;
     Vec up;
@@ -1766,6 +1773,7 @@ static USER_FUNC(yami_view) {
     envSetYamiView(mtx);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(make_name) {
     static char name[0x40];
     s32* args = event->args;
@@ -1775,10 +1783,12 @@ static USER_FUNC(make_name) {
     evtSetValue(event, args[1], (s32)name);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(depth) {
     dispEntry(CAMERA_2D, float_1000_bom_0000705c, 0, depthDisp, NULL);
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(sight) {
     s32 i;
 
@@ -1808,12 +1818,14 @@ static USER_FUNC(sight) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(sight_dir) {
     s32 value = evtGetValue(event, event->args[0]);
 
     sight_wp->state = value;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(bom_flag) {
     s32* args = event->args;
     s32 onoff = evtGetValue(event, args[0]);
@@ -1827,6 +1839,7 @@ static USER_FUNC(bom_flag) {
     }
     return EVT_RETURN_DONE;
 }
+
 static void ext_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();
     extLoadVertex();
@@ -1835,6 +1848,7 @@ static void ext_disp(CameraId cameraId, void* param) {
     extDraw();
     extLoadTextureExit();
 }
+
 static void ext_dispent(void) {
     u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
 
@@ -1842,9 +1856,11 @@ static void ext_dispent(void) {
         dispEntry(CAMERA_3D, zero_bom_00007004, 1, ext_disp, NULL);
     }
 }
+
 void ext_dispent_minnnanokoe(void) {
     dispEntry(CAMERA_3D, zero_bom_00007004, 1, ext_disp_minnnanokoe, NULL);
 }
+
 void ext_disp_minnnanokoe(CameraId cameraId, void* param) {
     EnvironmentYami yami;
     EnvironmentYami* pyami = &yami;
@@ -1871,6 +1887,7 @@ void ext_disp_minnnanokoe(CameraId cameraId, void* param) {
     }
     extLoadTextureExit();
 }
+
 static void pose_change(s32 index, const char* name) {
     PoseData* pd = ((PoseRoot*)lp[0])->data;
     PoseEntry* e = pd->entries;
@@ -1888,6 +1905,7 @@ static void pose_change(s32 index, const char* name) {
         }
     }
 }
+
 static void pose_init(void) {
     char buf[0x28];
     PoseData* pd = ((PoseRoot*)lp[0])->data;

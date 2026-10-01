@@ -274,6 +274,7 @@ USER_FUNC(spot_square) {
     dispEntry(8, 500.0f, 2, spot_square_disp, 0);
     return (darkCount >= b + 2 * a) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(blinkAP) {
     statusAPBlink(0xA0);
     return EVT_RETURN_DONE;
@@ -315,6 +316,7 @@ USER_FUNC(aud_attack_end) {
     *(s32*)&_battleWorkPointer->field_19064[0x1C] |= 1;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(aud_attack_init) {
     BattleWork* wp = _battleWorkPointer;
 
@@ -322,6 +324,7 @@ USER_FUNC(aud_attack_init) {
     *(s32*)&wp->field_19064[0x20] = event->printWindowId;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(hammer_on) {
     BattleAudience* base = BattleAudienceBaseGetPtr();
     BattleAudienceMember* member = BattleAudienceGetPtr(0x30);
@@ -334,22 +337,27 @@ USER_FUNC(hammer_on) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(aud_dec) {
     BattleAudienceAddAudienceNum(-5);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(aud_inc) {
     BattleAudienceAddAudienceNum(5);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(aud_joy) {
     BattleAudienceJoySACLecture();
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(get_ac_result) {
     evtSetValue(event, event->args[0], _battleWorkPointer->field_19064[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(get_actkind) {
     evtSetValue(event, event->args[0], *(s32*)&_battleWorkPointer->commandMenu.unk540[0]);
     return EVT_RETURN_DONE;
@@ -589,6 +597,7 @@ void spot_square_disp(CameraId cameraId, void* param) {
     Quads2D(point[2], point[1], 320.0f, point[3]);
     Quads2D(-320.0f, point[3], 320.0f, -240.0f);
 }
+
 void Quads2D(f32 x0, f32 y0, f32 x1, f32 y1) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(x0, y0, 0.0f);

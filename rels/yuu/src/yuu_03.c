@@ -94,6 +94,7 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
         }
     }
 }
+
 // NONMATCHING (88.26%): unk_yuu_000034bc; needs register/allocation scheduling work
 USER_FUNC(unk_yuu_000034bc) {
     s32 prev = 0;
@@ -266,6 +267,7 @@ USER_FUNC(yuuminigame4_set_phase) {
     data->phase = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_slit_cancel) {
     MarioWork* mario = marioGetPtr();
     if (mario->trigFlags & 1) {
@@ -274,6 +276,7 @@ USER_FUNC(evt_slit_cancel) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(re_init_yuunpc) {
     ext_yuunpc_minigame4_init_sub();
     return EVT_RETURN_DONE;
@@ -319,6 +322,7 @@ USER_FUNC(yuunpc_go) {
     yuunpc_wp_flag_off(1);
     return EVT_RETURN_DONE;
 }
+
 static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall) {
     MarioWork* mario = marioGetPtr();
     if (isFirstCall) {
@@ -463,6 +467,7 @@ USER_FUNC(yuuminigame4_opening_chk) {
     }
     return EVT_RETURN_DONE;
 }
+
 static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXBegin(0x80, 0, 4);
     GXPosition3f32(x, y, 0.0f);
@@ -559,11 +564,13 @@ void ryushi_disp(CameraId cameraId, void* param) {
         polygon(-8.0f, -8.0f, 16.0f, 16.0f, 1.0f, 1.0f);
     }
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 d = max - min;
     f32 r = (f32)rand() / 32767.0f;
     return r * d + min;
 }
+
 USER_FUNC(evt_ryushi_init) {
     RyushiEntry* wp;
     s32 i;
@@ -750,6 +757,7 @@ USER_FUNC(evt_ryushi) {
     dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
     return EVT_RETURN_DONE;
 }
+
 void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame4Data* data = work->data;
@@ -782,6 +790,7 @@ void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
         wp++;
     }
 }
+
 void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     Yuuminigame4Data* data = work->data;
@@ -876,6 +885,7 @@ void yuuminigame_main_4slit(EventEntry* event, BOOL isFirstCall) {
     mapObjRotate("pera_8", 0.0f, 0.0f, data->unk1C);
     mapObjRotate("pera_9", 0.0f, 0.0f, data->unk1C);
 }
+
 void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
     monteCountDisp();
 }

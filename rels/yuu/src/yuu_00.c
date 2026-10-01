@@ -545,16 +545,19 @@ EVT_END()
 static inline f32 monte_rand(f32 min, f32 max) {
     return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
 }
+
 USER_FUNC(unk_yuu_00004250) {
     camShiftReset();
     return EVT_RETURN_DONE;
 }
+
 static s32 get_monte_check(Vec* a, Vec* b) {
     if (PSVECDistance(a, b) < 20.0f && fabsf(a->y - b->y) < 20.0) {
         return 1;
     }
     return 0;
 }
+
 static void monte_disp(CameraId cameraId, void* param) {
     YuuMonte* monte = param;
     s32 i;
@@ -679,6 +682,7 @@ static USER_FUNC(fall_rtn) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(re_fall_rtn) {
     if (monte_p != NULL) {
         YuuMinigame1Data* data = ((YuuminigameWork*)monte_p->work)->data;
@@ -692,16 +696,19 @@ static USER_FUNC(re_fall_rtn) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_change_plane) {
     marioChgMot(0x18);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(yuuminigame1_set_phase) {
     s32* args = event->args;
     YuuMinigame1Data* data = ((YuuminigameWork*)evtGetValue(event, args[0]))->data;
     data->phase = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(yuuminigame1_opening_on_off) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -713,6 +720,7 @@ USER_FUNC(yuuminigame1_opening_on_off) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(yuuminigame1_opening_chk) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -723,6 +731,7 @@ USER_FUNC(yuuminigame1_opening_chk) {
     }
     return EVT_RETURN_DONE;
 }
+
 void yuuminigame_init_1hikoki(EventEntry* event, BOOL isFirstCall) {
     YuuMinigame1Data* data = ((YuuminigameWork*)event->lwData[0])->data;
 
@@ -730,6 +739,7 @@ void yuuminigame_init_1hikoki(EventEntry* event, BOOL isFirstCall) {
     data->event->lwData[0] = event->lwData[0];
     data->flags |= 1;
 }
+
 void yuuminigame_main_1hikoki(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     YuuMinigame1Data* data = work->data;
@@ -761,9 +771,11 @@ void yuuminigame_main_1hikoki(EventEntry* event, BOOL isFirstCall) {
             break;
     }
 }
+
 void yuuminigame_disp_1hikoki(CameraId cameraId, void* param) {
     monteCountDisp();
 }
+
 s32 yuuminigame1_gamerule(EventEntry* event, BOOL isFirstCall, YuuminigameWork* work, YuuMinigame1Data* data) {
     MarioWork* mario = marioGetPtr();
     u16 motion;

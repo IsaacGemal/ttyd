@@ -4625,6 +4625,7 @@ USER_FUNC(shadow_queen_connect) {
     BtlUnit_SetPartsPos(part, verts[data->field_0x44 * 3], verts[data->field_0x44 * 3 + 1], verts[data->field_0x44 * 3 + 2]);
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(peach_talk_synchro_shadow_head_evt) {
     BattleUnitPart* part;
     part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
@@ -4663,6 +4664,7 @@ USER_FUNC(peach_talk_synchro_shadow_head_evt) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(make_pattern) {
     HandData* p;
     NpcEntry* npc;
@@ -4787,6 +4789,7 @@ static void hand_init(void) {
         elem->field_0x00 = irand(1);
     }
 }
+
 void hand_draw(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -4837,6 +4840,7 @@ void hand_main(void) {
     }
     dispEntry(4, 0.0f, 1, (DispCallback)hand_draw, 0);
 }
+
 USER_FUNC(change_pose) {
     s32 value = evtGetValue(event, event->args[0]);
     HandElem* elem = HAND->elems;
@@ -4848,6 +4852,7 @@ USER_FUNC(change_pose) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(queen_thunder) {
     s32* args = event->args;
     f32 a;
@@ -4879,6 +4884,7 @@ USER_FUNC(queen_thunder) {
     btl_camera_shake_w(0, 8, 0, 1.0f, 1.0f);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(queen_drain) {
     Vec position;
     s32* args = event->args;
@@ -4892,16 +4898,19 @@ USER_FUNC(queen_drain) {
     effStardust2N64Entry(5, 10, 30, x, y, z, 20.0f, 40.0f);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(unk_las_0000af38) {
     *(u32*)BattleBreakSlotGetPtr() |= 2;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(eff_queen_set_alpha_evt) {
     s32 value = evtGetValue(event, event->args[0]);
     EffectEntry* eff = effNameToPtr("m_q2");
     *(s32*)((u8*)eff->userdata + 0x28) = value;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(peach_hand1000_dark_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -4987,6 +4996,7 @@ USER_FUNC(peach_hand1000_dark_drag_1_evt) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(queen_kankyaku_delete_evt) {
     s32 i;
     for (i = 0; i < 200; i++) {
@@ -4997,6 +5007,7 @@ USER_FUNC(queen_kankyaku_delete_evt) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(queen_get_aud_num) {
     s32* args = event->args;
     s32 num;
@@ -5129,6 +5140,7 @@ USER_FUNC(peach_shock_evt) {
     *(s32*)((u8*)eff->userdata + 0x44) = irand(50) + 155;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(slot_init) {
     *(u32*)BattleBreakSlotGetPtr() |= 4;
     return EVT_RETURN_DONE;
@@ -5232,6 +5244,7 @@ USER_FUNC(queen_hand_small_drag_1_evt) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(queen_hand_small_1000hand_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;

@@ -620,6 +620,7 @@ USER_FUNC(nancy_block_init_func) {
     npc->flags |= 0x400000;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(nancy_block_func) {
     MarioWork* mario = marioGetPtr();
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
@@ -1924,6 +1925,7 @@ static USER_FUNC(evt_StatusOpen) {
     statusWinForceOpen();
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_StatusClose) {
     statusWinForceOff();
     return EVT_RETURN_DONE;
@@ -2304,6 +2306,7 @@ static USER_FUNC(disp_off) {
     *p &= ~1;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(get_value) {
     s32* args = event->args;
     UnitWinWork* work = (UnitWinWork*)evtGetValue(event, args[0]);
@@ -4074,6 +4077,7 @@ static USER_FUNC(anim_tevcallback_mobj) {
     animPoseSetMaterialFlagOn(obj->poseId, (mask & 0xF) << 24);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
     f32 s;
@@ -4105,6 +4109,7 @@ static USER_FUNC(starstone_entry) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_pos) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -4129,6 +4134,7 @@ static USER_FUNC(starstone_set_pos) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(starstone_set_ry) {
     f32 ry = evtGetFloat(event, event->args[0]);
     char name[16];
@@ -4292,6 +4298,7 @@ USER_FUNC(iri_09_item_tbl_alloc) {
     iri_09_item_tbl[0] = _mapAlloc((n + 1) * 4);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(iri_09_item_tbl_make) {
     s32* args = event->args;
     s32 n = evtGetValue(event, args[0]);
@@ -4304,6 +4311,7 @@ USER_FUNC(iri_09_item_tbl_make) {
     evtSetValue(event, args[1], (s32)iri_09_item_tbl[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(iri_09_item_tbl_free) {
     _mapFree(iri_09_item_tbl[0]);
     iri_09_item_tbl[0] = NULL;
@@ -5168,9 +5176,11 @@ USER_FUNC(cook_chk2) {
     evtSetValue(event, args[2], 0);
     return EVT_RETURN_DONE;
 }
+
 s32 chkCookItem(s32 id) {
     return id != 0;
 }
+
 USER_FUNC(make_item_tbl) {
     s32* args = event->args;
     s32 item = evtGetValue(event, args[0]);
@@ -5195,6 +5205,7 @@ USER_FUNC(make_item_tbl) {
     evtSetValue(event, args[1], j);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(get_item_name) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -5580,10 +5591,12 @@ USER_FUNC(chk_cook_msg) {
     evtSetValue(event, args[1], result);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(cooking_flag) {
     swSet(evtGetValue(event, event->args[0]) - 0x72);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chk_special_cook) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);

@@ -128,6 +128,7 @@ static f32 lect_mario_ido_sub(f32 f1, f32 f2, f32 f3, f32 f4) {
     f32 f5 = f2 - f1;
     return (f5 * f3 + f0) / f2;
 }
+
 static USER_FUNC(lect_mario_ido_sum) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -165,14 +166,17 @@ static USER_FUNC(lect_mario_ido_sum) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(lect_status_off) {
     statusWinForceClose();
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lect_status_on) {
     statusWinForceCloseClear();
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_set) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -181,6 +185,7 @@ static USER_FUNC(x_flag_set) {
     x_flag_data[idx] = value;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_add) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -189,6 +194,7 @@ static USER_FUNC(x_flag_add) {
     x_flag_data[idx] += value;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_get) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -196,6 +202,7 @@ static USER_FUNC(x_flag_get) {
     evtSetValue(event, args[1], x_flag_data[idx]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(x_flag_wait) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -249,6 +256,7 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
 #endif
     }
 }
+
 static USER_FUNC(lecture_button_rtn) {
     s32 i;
     LectureButton* btn;
@@ -294,6 +302,7 @@ static USER_FUNC(lecture_button_rtn) {
     dispEntry(CAMERA_2D, 0.0f, 1, lecture_button_disp, NULL);
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(lecture_button_set_icon_id) {
     s32* args = event->args;
 
@@ -302,6 +311,7 @@ static USER_FUNC(lecture_button_set_icon_id) {
     btn->iconId = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lecture_button_set_alpha) {
     s32* args = event->args;
 
@@ -310,6 +320,7 @@ static USER_FUNC(lecture_button_set_alpha) {
     btn->alpha = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lecture_button_flag_on_off) {
     s32* args = event->args;
 
@@ -324,6 +335,7 @@ static USER_FUNC(lecture_button_flag_on_off) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lecture_button_set_seq) {
     s32* args = event->args;
 
@@ -332,6 +344,7 @@ static USER_FUNC(lecture_button_set_seq) {
     btn->seq = evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lecture_button_get_icon_id) {
     s32* args = event->args;
 
@@ -340,6 +353,7 @@ static USER_FUNC(lecture_button_get_icon_id) {
     evtSetValue(event, args[1], btn->seq);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lecture_button_seq_wait) {
     s32* args = event->args;
 
@@ -348,6 +362,7 @@ static USER_FUNC(lecture_button_seq_wait) {
     LectureButton* btn = &lbtn[idx];
     return (btn->seq != seq) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lecture_button_set_pos) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -370,6 +385,7 @@ static USER_FUNC(lecture_button_set_pos) {
 #endif
     return EVT_RETURN_DONE;
 }
+
 static void lect_map_cam_chg_sub(MapObject* obj, s32 camId, s32 arg) {
     *(u8*)((u8*)obj + 5) = camId;
     if (obj->child != NULL) {
@@ -379,6 +395,7 @@ static void lect_map_cam_chg_sub(MapObject* obj, s32 camId, s32 arg) {
         lect_map_cam_chg_sub(obj->next, camId, 1);
     }
 }
+
 static USER_FUNC(lect_map_cam_chg) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -390,6 +407,7 @@ static USER_FUNC(lect_map_cam_chg) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(effitemgetchange_cam) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -399,6 +417,7 @@ static USER_FUNC(effitemgetchange_cam) {
     *(s32*)((u8*)eff->userdata + 0x38) = camId;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(effitemgetchange_cam_ptr) {
     s32* args = event->args;
     EffectEntry* eff = (EffectEntry*)evtGetValue(event, args[0]);
@@ -407,6 +426,7 @@ static USER_FUNC(effitemgetchange_cam_ptr) {
     *(s32*)((u8*)eff->userdata + 0x38) = camId;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(effitemget_open) {
     s32 name = evtGetValue(event, event->args[0]);
     EffectEntry* eff = effNameToPtr((const char*)name);
@@ -414,12 +434,14 @@ static USER_FUNC(effitemget_open) {
     *(s32*)((u8*)eff->userdata + 0x20) = 1;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(effitemget_open_ptr) {
     EffectEntry* eff = (EffectEntry*)evtGetValue(event, event->args[0]);
 
     *(s32*)((u8*)eff->userdata + 0x20) = 1;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(effitemget_busaiku) {
     s32 flag = evtGetValue(event, event->args[0]);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
@@ -440,6 +462,7 @@ static USER_FUNC(effitemget_busaiku) {
     cam->curveA = 0xB;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lect_mobj_hit_nasi) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     MapObjectEntry* mobj;
@@ -457,6 +480,7 @@ static USER_FUNC(lect_mobj_hit_nasi) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lect_itemget_kesan) {
     s32* args = event->args;
     s32 id = 1;
@@ -491,6 +515,7 @@ static USER_FUNC(lect_itemget_kesan) {
     evtSetFloat(event, args[4], dir.z);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lect_npc_balloon_on_off) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -505,6 +530,7 @@ static USER_FUNC(lect_npc_balloon_on_off) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(efffukidashichange_cam) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -513,10 +539,12 @@ static USER_FUNC(efffukidashichange_cam) {
     ((effFukidashiData*)effect->userdata)->field_0x4C = cam;
     return EVT_RETURN_DONE;
 }
+
 static f32 lect_party_ido_sub(f32 a, f32 b, f32 c, f32 d) {
     f32 t = b - a;
     return (t * c + a * d) / b;
 }
+
 static USER_FUNC(lect_party_ido_sum) {
     s32* args = event->args;
     PartyEntry* party = partyGetPtr(args[0] ? 1 : partyCtrlNo);
@@ -542,6 +570,7 @@ static USER_FUNC(lect_party_ido_sum) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 static USER_FUNC(dai_moveti_set) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -551,6 +580,7 @@ static USER_FUNC(dai_moveti_set) {
     daiv = (Vec){x, y, z};
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(dai_moveti_get) {
     s32* args = event->args;
 
@@ -559,6 +589,7 @@ static USER_FUNC(dai_moveti_get) {
     evtSetFloat(event, args[2], daiv.z);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(lect_slit_check) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -570,6 +601,7 @@ static USER_FUNC(lect_slit_check) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evtflash) {
     u32 ticks;
     u32 elapsed;
@@ -623,6 +655,7 @@ static USER_FUNC(evtflash) {
             return EVT_RETURN_DONE;
     }
 }
+
 static USER_FUNC(lect_push_r_check) {
     s32* args = event->args;
     u32 button = keyGetButton(0);
@@ -634,6 +667,7 @@ static USER_FUNC(lect_push_r_check) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_nomal_cange) {
     MarioWork* mario = marioGetPtr();
 
@@ -649,6 +683,7 @@ static USER_FUNC(evt_nomal_cange) {
     }
     return (mario->dispFlags & 0x01000000) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
+
 static USER_FUNC(set_dir) {
     s32* args = event->args;
     s32 dir = evtGetValue(event, args[0]);
@@ -661,6 +696,7 @@ static USER_FUNC(set_dir) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(bgm_start_wait) {
     return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }

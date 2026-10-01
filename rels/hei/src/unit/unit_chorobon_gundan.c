@@ -302,6 +302,7 @@ BattleUnit* chorogun_get_ptr(void) {
     }
     return NULL;
 }
+
 void chorogun_ext_init(void) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
@@ -633,6 +634,7 @@ void chorogun_ext_main(void) {
     }
     dispEntry(4, 0.0f, 1, (DispCallback)chorogun_ext_disp, NULL);
 }
+
 void chorogun_ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -641,6 +643,7 @@ void chorogun_ext_disp(void) {
     extDraw();
     extLoadTextureExit();
 }
+
 USER_FUNC(chorogun_get_alive_num) {
     s32* args = event->args;
     s32 i;
@@ -654,10 +657,12 @@ USER_FUNC(chorogun_get_alive_num) {
     evtSetValue(event, args[0], count);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chorogun_set_target_id) {
     chorogun_targetId = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chorogun_appear) {
     s32 i;
     s32 count;
@@ -681,6 +686,7 @@ USER_FUNC(chorogun_appear) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(chorogun_approach_target) {
     s32 i;
 
@@ -867,6 +873,7 @@ USER_FUNC(chorogun_dive_target) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chorogun_bound_target) {
     s32 id = evtGetValue(event, event->args[0]);
 
@@ -899,6 +906,7 @@ USER_FUNC(chorogun_counterd) {
     chorogun[id].state = 0x30;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chorogun_after_attack) {
     s32 i;
 
@@ -911,6 +919,7 @@ USER_FUNC(chorogun_after_attack) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chorogun_escape) {
     BattleUnit* unit;
     s32 j;
@@ -983,6 +992,7 @@ count_store:
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chorogun_escape_all) {
     s32 i;
 

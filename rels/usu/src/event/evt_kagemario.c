@@ -67,6 +67,7 @@ static void callback(TevCallbackParam* param) {
     param->field_18 = field_18;
     param->field_10 = field_10;
 }
+
 static s32 color_change_evt(s32 onoff) {
     s32 i;
 
@@ -85,6 +86,7 @@ static s32 color_change_evt(s32 onoff) {
     }
     return 0;
 }
+
 static USER_FUNC(check) {
     if (partyGetPtr(0) != NULL) {
         animPoseSetMaterialFlagOff(partyGetPtr(0)->paperAnimGroup, 0xA000000);
@@ -108,10 +110,12 @@ USER_FUNC(evt_kagemario_init_29_text_1A0C) {
     }
     return 2;
 }
+
 static USER_FUNC(evt_kagemario_change) {
     color_change_evt(event->args[0]);
     return 2;
 }
+
 static USER_FUNC(test) {
     marioGetPtr()->prevPartyMemberId[0] = 0;
     marioGetPtr()->prevPartyMemberId[1] = 0;

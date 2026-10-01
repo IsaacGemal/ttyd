@@ -356,6 +356,7 @@ void _prolog(void) {
     }
     relSetEvtAddr("end_00", unk_evt_end_00004690);
 }
+
 void _epilog(void) {
     voidfunctionptr* dtor;
 
@@ -364,11 +365,14 @@ void _epilog(void) {
     }
     unk_end_00000a14();
 }
+
 void _unresolved(void) {
 }
+
 void unk_end_00002508(TevCallbackParam* param) {
     GXSetTevColorIn(param->field_C - 1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ONE);
 }
+
 void unk_end_00002494(s32 wXluStage) {
     AnimationWork* anim = animGetPtr();
 
@@ -378,6 +382,7 @@ void unk_end_00002494(s32 wXluStage) {
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
     GXSetZMode(1, 3, 1);
 }
+
 void unk_end_000023ac(CameraId cameraId, void* param) {
     CreditsPoseEntry* entry = (CreditsPoseEntry*)param;
 
@@ -391,6 +396,7 @@ void unk_end_000023ac(CameraId cameraId, void* param) {
         animPoseSetMaterialFlagOff(entry->poseId, 0x1000000);
     }
 }
+
 s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -805,18 +811,22 @@ s32 unk_end_000012e0(EventEntry* event, BOOL isFirstCall) {
     dispEntry(4, 0.0f, 7, unk_end_00001324, NULL);
     return EVT_RETURN_BLOCK;
 }
+
 s32 unk_end_000012a4(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->field_08 = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 s32 unk_end_00001268(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->field_0C = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 s32 unk_end_0000122c(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->mode = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 s32 unk_end_000011f0(EventEntry* event, BOOL isFirstCall) {
     ((CreditsWork*)dat_ptr_end_00003218[0])->field_10 = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
@@ -1082,6 +1092,7 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
     event->userdata[1] = index;
     return EVT_RETURN_BLOCK;
 }
+
 s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
     s32 flag = (gp->inBattle != 0);
     s32 i;
@@ -1132,10 +1143,12 @@ s32 unk_end_000009cc(EventEntry* event, BOOL isFirstCall) {
     psndClearFlag(4);
     return EVT_RETURN_DONE;
 }
+
 s32 unk_end_000009a4(EventEntry* event, BOOL isFirstCall) {
     psndSetFlag(0x1000);
     return EVT_RETURN_DONE;
 }
+
 s32 unk_end_00000938(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
@@ -1144,6 +1157,7 @@ s32 unk_end_00000938(EventEntry* event, BOOL isFirstCall) {
     animPoseSetGXFunc(npc->poseId, unk_end_00002494, FALSE);
     return EVT_RETURN_DONE;
 }
+
 f32 unk_end_000008bc(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
 
@@ -1492,9 +1506,11 @@ void unk_end_0000039c(CameraId cameraId, void* param) {
     extDraw();
     extLoadTextureExit();
 }
+
 void unk_end_0000035c(void) {
     dispEntry(4, 0.0f, 1, unk_end_0000039c, NULL);
 }
+
 s32 unk_end_0000012c(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("モアモア");
     AnimationPose* pose;

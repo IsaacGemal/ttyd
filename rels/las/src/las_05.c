@@ -354,6 +354,7 @@ USER_FUNC(kurokaron_flag_check) {
     evtSetValue(event, args[1], kurokaron_move_flag & mask);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(kurokaron_get_move_pos) {
     s32* args = event->args;
 
@@ -361,6 +362,7 @@ USER_FUNC(kurokaron_get_move_pos) {
     evtSetFloat(event, args[1], kurokaron_move_list[kurokaron_move_index * 2 + 1]);
     return EVT_RETURN_DONE;
 }
+
 s32 _kurokaron_run_away(f32 x1, f32 z1, f32 x2, f32 z2) {
     s32 candidates[6];
     u8 index;
@@ -484,6 +486,7 @@ s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
     }
     return 0;
 }
+
 void _kurokaron_next_move_index(void) {
     if (kurokaron_move_flag & 1) {
         if (kurokaron_move_index == 0) {
@@ -634,11 +637,13 @@ USER_FUNC(kurokaron_move_position) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
     f32 d = max - min;
     return r * d + min;
 }
+
 static void senkaron_ext_init(void) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
@@ -715,6 +720,7 @@ void calc_area(s32 index, f32 x, f32 z) {
 
     entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
 }
+
 s32 party_hit_check(f32 x, f32 z, f32* out) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     s32 result = 0;
@@ -1167,10 +1173,12 @@ static void senkaron_ext_main(void) {
         }
     }
 }
+
 static void senkaron_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, senkaron_ext_disp, NULL);
     dispEntry(CAMERA_3D, 0.0f, 2, senkaron_ext_shadow_disp, NULL);
 }
+
 static void senkaron_ext_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();
     extLoadVertex();
@@ -1179,6 +1187,7 @@ static void senkaron_ext_disp(CameraId cameraId, void* param) {
     extDraw();
     extLoadTextureExit();
 }
+
 static void senkaron_ext_shadow_disp(CameraId cameraId, void* param) {
     static Mtx mt = {
         {10.0f, 0.0f, 0.0f, 0.0f},
@@ -1591,22 +1600,27 @@ static USER_FUNC(senkaronToEscape) {
     skwp->escape = 1;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(senkaronFlagOnMesPushing) {
     skwp->mesPushing = 1;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(senkaronFlagOffMesPushing) {
     skwp->mesPushing = 0;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(senkaronAttackStart) {
     skwp->attackStart = 1;
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(senkaronGetMarioPushedFlag) {
     evtSetValue(event, event->args[0], skwp->marioPushed);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(get_mario_y_pos) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1614,12 +1628,14 @@ USER_FUNC(get_mario_y_pos) {
     evtSetFloat(event, args[0], mario->position.y);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(set_mario_y_pos) {
     f32 y = evtGetFloat(event, event->args[0]);
 
     marioGetPtr()->position.y = y;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(get_party_y_pos) {
     s32* args = event->args;
     PartyEntry* party = partyGetPtr(partyCtrlNo);
@@ -1629,6 +1645,7 @@ USER_FUNC(get_party_y_pos) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(set_party_y_pos) {
     f32 y = evtGetFloat(event, event->args[0]);
     PartyEntry* party = partyGetPtr(partyCtrlNo);
@@ -1638,6 +1655,7 @@ static USER_FUNC(set_party_y_pos) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(mario_land_on) {
     MarioWork* mario = marioGetPtr();
 
@@ -1646,6 +1664,7 @@ USER_FUNC(mario_land_on) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(party_land_on) {
     PartyEntry* party = partyGetPtr(partyCtrlNo);
 
@@ -1656,12 +1675,14 @@ USER_FUNC(party_land_on) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(chk_mario_ctrloff) {
     s32* args = event->args;
 
     evtSetValue(event, args[0], marioCtrlOffChk());
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(party_hit) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     NpcEntry* npc = npcNameToPtr("黒カロン");

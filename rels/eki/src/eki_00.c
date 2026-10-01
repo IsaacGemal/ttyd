@@ -426,6 +426,7 @@ static EVT_BEGIN(evt_origami)
     CALL(evt_exit_case_evt)
     RETURN
 EVT_END()
+
 static void ext_moamoa_dispent(void) {
     if (wp->field_0x00 & 0x1) {
         dispEntry(CAMERA_3D, 0.0f, 1, ext_disp, NULL);
@@ -613,6 +614,7 @@ static EVT_BEGIN(evt_meet_moamoa)
     CALL(evt_party_run, 0)
     RETURN
 EVT_END()
+
 static USER_FUNC(evt_moamoa_end_wait) {
     MoamoaPose* pose;
     s32 i;
@@ -627,6 +629,7 @@ static USER_FUNC(evt_moamoa_end_wait) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_exit) {
     extReset();
     return EVT_RETURN_DONE;
@@ -679,6 +682,7 @@ static EVT_BEGIN(evt_elv_init)
     SET_VALUE(GF(0), 0)
     RETURN
 EVT_END()
+
 USER_FUNC(img_set_color) {
     s32* args = event->args;
     const char* name;
@@ -698,6 +702,7 @@ USER_FUNC(img_set_color) {
     animPoseSetMaterialEvtColor(entry->poseId, makeColor(r, g, b, a));
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_flag_onoff) {
     s32* args = event->args;
     s32 on;
@@ -1199,6 +1204,7 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
 }
 
 #pragma opt_propagation reset
+
 static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5) {
     f32 hitX;
     f32 hitY;
@@ -1248,6 +1254,7 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32
     ep->flags |= 0x10;
     ep->flags &= ~0x4;
 }
+
 static void ext_shadow_disp(CameraId cameraId, void* param) {
     static Mtx mt = {
         {8.0f, 0.0f, 0.0f, 0.0f},
@@ -1273,6 +1280,7 @@ static void ext_shadow_disp(CameraId cameraId, void* param) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
+
 static void ext_disp(CameraId cameraId, void* param) {
     u16 left;
     u16 top;
@@ -1296,11 +1304,13 @@ static void ext_disp(CameraId cameraId, void* param) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
+
 static f32 randf(f32 min, f32 max) {
     f32 t = (f32)rand() / 32767.0f;
 
     return t * (max - min) + min;
 }
+
 static USER_FUNC(evt_moamoa_target_off) {
     s32 index = evtGetValue(event, event->args[0]);
     Vec* vecs = &wp->field_0x14;
@@ -1314,6 +1324,7 @@ static USER_FUNC(evt_moamoa_target_off) {
     }
     return EVT_RETURN_DONE;
 }
+
 static s32 evt_moamoa_fusion_debug(void) {
     s32 i;
     ExtPose* ep = extGetPosePtr();
@@ -1330,6 +1341,7 @@ static s32 evt_moamoa_fusion_debug(void) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_blow) {
     s32 i;
     MoamoaPose* pose;
@@ -1344,6 +1356,7 @@ static USER_FUNC(evt_moamoa_blow) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_kind_onoff) {
     s32* args = event->args;
     s32 on = evtGetValue(event, args[0]);
@@ -1375,6 +1388,7 @@ static USER_FUNC(evt_moamoa_kind_onoff) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_moamoa_fusion) {
     s32 i;
     ExtPose* ep;
@@ -1411,6 +1425,7 @@ static USER_FUNC(evt_moamoa_fusion) {
     }
     return EVT_RETURN_DONE;
 }
+
 static s32 evt_moamoa_ry_reset(void) {
     ExtPose* pose = extGetPosePtr();
     s32 i;
@@ -1422,6 +1437,7 @@ static s32 evt_moamoa_ry_reset(void) {
     }
     return EVT_RETURN_DONE;
 }
+
 static void moamoa_pose_change(MoamoaPose* pose, const char* name, const char* anim) {
     static const char* group_tbl[11][2] = {
         {"c_n_moa_a", "S_1"},
@@ -1462,6 +1478,7 @@ static void moamoa_pose_change(MoamoaPose* pose, const char* name, const char* a
         }
     }
 }
+
 static void moamoa_pose_main(void) {
     s32 i;
     ExtPose* ep;

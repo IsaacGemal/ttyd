@@ -2387,6 +2387,7 @@ void _prolog(void) {
     relSetEvtAddr("jon_06", jon_init_evt);
     relSetBtlAddr("jon", btlsetup_jon_tbl, btl_jon_setup_no_tbl);
 }
+
 void _epilog(void) {
     voidfunctionptr* dtor;
 
@@ -2394,6 +2395,7 @@ void _epilog(void) {
         (*dtor)();
     }
 }
+
 void _unresolved(void) {
 }
 
@@ -2498,6 +2500,7 @@ void raster_disp(CameraId camera, void* param) {
     GXSetNumIndStages(0);
     GXSetTevDirect(GX_TEVSTAGE0);
 }
+
 s32 evt_raster(EventEntry* event, BOOL isFirstCall) {
     f32* eventf = (f32*)&event->lwData[0];
 
@@ -2542,12 +2545,14 @@ s32 enemy_info(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, args[3], kind);
     return EVT_RETURN_DONE;
 }
+
 s32 yattukeFlag(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("敵");
 
     npc->battleInfo.field_4 |= 0x10000000;
     return EVT_RETURN_DONE;
 }
+
 s32 setup_npc_ex_para(EventEntry* event, BOOL isFirstCall) {
     s32 name = evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, (const char*)name);
@@ -2556,6 +2561,7 @@ s32 setup_npc_ex_para(EventEntry* event, BOOL isFirstCall) {
     npc->territoryHoming.y = 180.0f;
     return EVT_RETURN_DONE;
 }
+
 s32 wanwan_set_home_pos(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 x = evtGetValue(event, args[0]);
@@ -2567,6 +2573,7 @@ s32 wanwan_set_home_pos(EventEntry* event, BOOL isFirstCall) {
     ((NpcSetupInfo*)npcEnt_wanwan)->territoryBase.z = (f32)z;
     return EVT_RETURN_DONE;
 }
+
 s32 shikakeFlag(EventEntry* event, BOOL isFirstCall) {
     s32 flag = evtGetValue(event, event->args[0]);
     NpcEntry* npc = npcNameToPtr("敵");
@@ -2587,6 +2594,7 @@ s32 shikakeFlag(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_DONE;
 }
+
 s32 iri_12_paper_init(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("マッキノ");
 
@@ -2594,6 +2602,7 @@ s32 iri_12_paper_init(EventEntry* event, BOOL isFirstCall) {
     animPoseSetMaterialLightFlagOff(npc->poseId, 1);
     return EVT_RETURN_DONE;
 }
+
 s32 iri_12_makkino_set_y(EventEntry* event, BOOL isFirstCall) {
     f32 y = evtGetFloat(event, event->args[0]);
     NpcEntry* npc = npcNameToPtr("マッキノ");
@@ -2601,6 +2610,7 @@ s32 iri_12_makkino_set_y(EventEntry* event, BOOL isFirstCall) {
     npc->position.y = y;
     return EVT_RETURN_DONE;
 }
+
 s32 wait_landon(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("マッキノ");
 
@@ -2609,6 +2619,7 @@ s32 wait_landon(EventEntry* event, BOOL isFirstCall) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 void iri_12_msgcb(s32 type, smartEntry* smart) {
     void* data = smart->address;
 
@@ -2616,6 +2627,7 @@ void iri_12_msgcb(s32 type, smartEntry* smart) {
         evtEntry(iri_12_makkino_okiru, 0, 0);
     }
 }
+
 static s32 gonbaba_wait_landon(EventEntry* event, BOOL isFirstCall) {
     NpcEntry* npc = npcNameToPtr("敵");
 

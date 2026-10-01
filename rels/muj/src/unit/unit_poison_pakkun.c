@@ -817,6 +817,7 @@ USER_FUNC(eff_poison_breath) {
     data->color2A = 0xFF;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(pakkun_ceil_exist) {
     s32* args = event->args;
     u8 flags = _battleWorkPointer->field_180C0[0x1C];
@@ -828,6 +829,7 @@ USER_FUNC(pakkun_ceil_exist) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(shadow_scale_memory) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -873,6 +875,7 @@ USER_FUNC(shadow_scale_small) {
     unit->work[1]++;
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(shadow_scale_return) {
     BattleUnit* unit;
     BattleUnitPart* part;

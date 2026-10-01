@@ -150,10 +150,12 @@ static USER_FUNC(ss_check) {
 #endif
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(ss_set) {
     ssf[0] = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_uranaisi_msg_free) {
     if (uranaisi_msgp == NULL) {
         return EVT_RETURN_DONE;
@@ -162,11 +164,13 @@ USER_FUNC(evt_uranaisi_msg_free) {
     uranaisi_msgp = NULL;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_uranaisi_msg_alloc) {
     uranaisi_msgp = _mapAlloc(0x100);
     memset(uranaisi_msgp, 0, 0x100);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_uranaisi_msg_set) {
     s32* args = event->args;
     const char* msg = msgSearch((const char*)evtGetValue(event, args[0]));
@@ -175,6 +179,7 @@ USER_FUNC(evt_uranaisi_msg_set) {
     evtSetValue(event, args[1], (s32)uranaisi_msgp);
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(evt_osreport) {
     s32* args = event->args;
 
@@ -185,6 +190,7 @@ static USER_FUNC(evt_osreport) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(uranai_init_func) {
     char name[64];
     s32 i;
@@ -206,6 +212,7 @@ USER_FUNC(uranai_init_func) {
     uranai_wp->field_0xE8 = evtEntry(evt_uranai_cap, 0, 0);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(uranai_exit_func) {
     memcpy(event->lwData, uranai_wp, 0x40);
     memcpy(evtGetWork()->gwData, (u8*)uranai_wp + 0x40, 0x80);
@@ -284,10 +291,12 @@ void uranai_cap(CameraId cameraId, void* param) {
     GXSetScissor(left, top, wd, ht);
     uranai_wp->field_0xE4 = 1;
 }
+
 USER_FUNC(uranai_cap_evt) {
     dispEntry(CAMERA_SHADOW, 0.0f, 3, uranai_cap, NULL);
     return EVT_RETURN_BLOCK;
 }
+
 void card_tev(TevCallbackParam* param) {
     if (uranai_wp->field_0xE4 != 0) {
         GXLoadTexObj(smartTexObj(&uranai_wp->texObj, (void**)uranai_wp->buffer), GX_TEXMAP0);
@@ -308,6 +317,7 @@ void card_tev(TevCallbackParam* param) {
         param->field_10 = 1;
     }
 }
+
 USER_FUNC(uranai_bbox) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);
@@ -321,6 +331,7 @@ USER_FUNC(uranai_bbox) {
     uranai_wp->field_0xF8 = value;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(card_xlu) {
     GXColor c;
     GXColor color;
@@ -339,6 +350,7 @@ USER_FUNC(card_xlu) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(card_camid) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -349,20 +361,24 @@ USER_FUNC(card_camid) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(unk_tik_000005e8) {
     MapObject* obj = mapGetMapObj("supotto");
 
     *(u8*)((u8*)obj + 4) = 10;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(unk_tik_000005c0) {
     psndSetFlag(0x80);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(unk_tik_00000598) {
     psndClearFlag(0x80);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(mario_key_onoff_wait) {
     marioGetPtr();
     switch (!marioChkKey()) {
@@ -373,6 +389,7 @@ USER_FUNC(mario_key_onoff_wait) {
     }
     return EVT_RETURN_DONE;
 }
+
 static USER_FUNC(scale_func) {
     f32 scale = evtGetFloat(event, event->args[0]);
     MarioWork* mario = marioGetPtr();

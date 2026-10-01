@@ -163,6 +163,7 @@ static f32 randf(f32 min, f32 max) {
 static inline f32 scale(f32 r, f32 min, f32 max) {
     return r * (max - min) + min;
 }
+
 static void senteresa_ext_init(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count = extGetPoseNum();
@@ -203,6 +204,7 @@ static void senteresa_ext_init(void) {
     g_nNumOutBox[0] = 0;
     g_nNumEndProc[0] = 0;
 }
+
 static f32 computePos(f32 a, f32 b, f32 t) {
     return (1.0f - t) * a + t * b;
 }
@@ -294,9 +296,11 @@ static void senteresa_ext_main(void) {
         extReset();
     }
 }
+
 static void senteresa_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);
 }
+
 static void senteresa_ext_disp(void) {
     extLoadRenderMode();
     extLoadVertex();
@@ -305,6 +309,7 @@ static void senteresa_ext_disp(void) {
     extDraw();
     extLoadTextureExit();
 }
+
 static void senteresa_ext_shadow_disp(void) {
     static Mtx mt_600 = {
         {10.0f, 0.0f, 0.0f, 0.0f},
@@ -318,6 +323,7 @@ static void senteresa_ext_shadow_disp(void) {
     extLoadShadowTev();
     extDrawShadow();
 }
+
 USER_FUNC(senteresa_get_position) {
     s32* args = event->args;
     ExtPose* poses = extGetPosePtr();
@@ -328,6 +334,7 @@ USER_FUNC(senteresa_get_position) {
     evtSetFloat(event, args[3], (*pose->matrix)[2][3]);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(senteresa_okure_move_init) {
     s32* args = event->args;
 

@@ -384,6 +384,7 @@ USER_FUNC(ss_ch_check) {
     evtSetFloat(event, args[1], value);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(ss_ch_set) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -1371,11 +1372,13 @@ void flower_disp(CameraId camera, void* param) {
         GXTexCoord2f32(1.0f, 0.0f);
     }
 }
+
 static f32 randf(f32 a, f32 b) {
     f32 r = (f32)rand() / 32767.0f;
 
     return a + r * (b - a);
 }
+
 USER_FUNC(evt_flower_init) {
     FlowerData* data = _mapAlloc(8);
 
@@ -1384,6 +1387,7 @@ USER_FUNC(evt_flower_init) {
     event->lwData[10] = (s32)data;
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_flower) {
     FlowerData* data = (FlowerData*)event->lwData[10];
     Flower* flower = data->flowers;
@@ -1421,6 +1425,7 @@ USER_FUNC(evt_flower) {
     dispEntry(CAMERA_2D, 1000.0f, 0, flower_disp, data);
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_flower_end) {
     FlowerData* data = (FlowerData*)event->lwData[10];
     Flower* flower = data->flowers;
@@ -1431,6 +1436,7 @@ USER_FUNC(evt_flower_end) {
     }
     return EVT_RETURN_DONE;
 }
+
 USER_FUNC(evt_flower_end_main) {
     FlowerData* data = (FlowerData*)event->lwData[10];
     Flower* flower = data->flowers;
