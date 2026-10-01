@@ -259,8 +259,7 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 	entry->flags = 0;
 	entry->flags |= 1;
 	entry->type = type;
-	entry->field_0x14 = duration;
-	entry->field_0x10 = duration >> 31;
+	entry->duration = duration;
 	entry->color = color;
 	entry->field_0x24 = 0;
 	entry->field_0x28 = 0;
@@ -519,18 +518,14 @@ void fadeMain(void) {
 			case 14:
 				switch (entry->field_0x8) {
 					case 0:
-						if (*(s64*)&entry->field_0x10 != 0) {
-#ifdef MUST_MATCH
-							if ((s32)entry->field_0xA4 != 0) {
-#else
+						if (entry->duration != 0) {
 							if (entry->field_0xA4 != 0) {
-#endif
 								entry->field_0xA4--;
 							}
 							else {
 								entry->field_0x5C += 16.666666f;
 							}
-							entry->field_0x24 = entry->field_0x5C / (f32)*(s64*)&entry->field_0x10;
+							entry->field_0x24 = entry->field_0x5C / (f32)entry->duration;
 							entry->field_0x24 = 1.0f - entry->field_0x24;
 							entry->field_0x28 += 10.0f;
 							if (entry->field_0x24 < 0.0f) {
@@ -556,9 +551,9 @@ void fadeMain(void) {
 			case 15:
 				switch (entry->field_0x8) {
 					case 0:
-						if (*(s64*)&entry->field_0x10 != 0) {
+						if (entry->duration != 0) {
 							entry->field_0x5C += 16.666666f;
-							entry->field_0x24 = entry->field_0x5C / (f32)*(s64*)&entry->field_0x10;
+							entry->field_0x24 = entry->field_0x5C / (f32)entry->duration;
 							entry->field_0x28 -= 10.0f;
 							if (entry->field_0x24 > 1.0f) {
 								entry->field_0x24 = 1.0f;
@@ -606,7 +601,7 @@ void fadeMain(void) {
 						entry->image = imgNameToPtr("fImg_dokan", entry->imageType);
 						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
 						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
-						entry->image->field_0x108 = (s32)entry->field_0x64;
+						entry->image->animName = entry->field_0x64;
 						imgClearVirtualPoint(entry->image);
 						event.args = args;
 						args[0] = (s32)"fImg_dokan";
@@ -691,7 +686,7 @@ void fadeMain(void) {
 						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
 						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
 						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
-						entry->image->field_0x108 = (s32)entry->field_0x64;
+						entry->image->animName = entry->field_0x64;
 						imgClearVirtualPoint(entry->image);
 						switch (entry->type) {
 							case 52: {
@@ -785,10 +780,10 @@ void fadeMain(void) {
 									{
 										const char* anim = "A_2";
 
-										entry->image->field_0x108 = (s32)anim;
+										entry->image->animName = anim;
 									}
 #else
-									entry->image->field_0x108 = (s32)"A_2";
+									entry->image->animName = "A_2";
 #endif
 									break;
 								default:
@@ -816,7 +811,7 @@ void fadeMain(void) {
 						entry->image = imgNameToPtr("fImg_peron", entry->imageType);
 						entry->image->poseId = animPaperPoseGetId(entry->field_0x60, entry->imageType);
 						*(OSTime*)((u8*)entry->image + 0x110) = animTimeGetTime(entry->imageType);
-						entry->image->field_0x108 = (s32)entry->field_0x64;
+						entry->image->animName = entry->field_0x64;
 						imgClearVirtualPoint(entry->image);
 						switch (entry->type) {
 							case 54:

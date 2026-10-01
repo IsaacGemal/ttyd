@@ -77,7 +77,7 @@ USER_FUNC(evt_img_set_paper_anim) {
 	s32 type = gp->inBattle != 0;
 	ImageEntry* entry = imgNameToPtr((const char*)name, type);
 
-	entry->field_0x108 = anim;
+	entry->animName = (const char*)anim;
 	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
 	return EVT_RETURN_DONE;
 }

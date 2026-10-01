@@ -2038,7 +2038,7 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
             evt_img_alloc_capture(&tmpEvent2, 1);
             img = imgNameToPtr(imgName, inBattle);
             img->poseId = animPaperPoseGetId((const char*)(base + 0x5C0), inBattle);
-            img->field_0x108 = (s32)"A_1";
+            img->animName = "A_1";
             *(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
             imgSetShadow(img, 2);
             psndSFXOn_3D((const char*)0x1B8, &obj->position);

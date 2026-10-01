@@ -275,7 +275,7 @@ static USER_FUNC(evt_cloud_main) {
 	case 3:
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->flags &= ~2;
-		img->field_0x108 = (s32)str_8041DCE0;
+		img->animName = str_8041DCE0;
 		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
 		mapGrpFlagOn(cp->mapGrpName, 1);
 		cp->field_0xB8 = 0x1E;
@@ -321,7 +321,7 @@ static USER_FUNC(evt_cloud_main) {
 			evtEntry(cp->field_0xB4, 0, 0);
 		}
 		img = imgNameToPtr(cp->imgName, inBattle);
-		img->field_0x108 = (s32)str_8041DCE8;
+		img->animName = str_8041DCE8;
 		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
 		hitObjFlagOn(cp->hitName, 1);
 		cp->field_0xB8 = 0x3C;
