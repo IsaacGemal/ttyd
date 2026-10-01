@@ -664,7 +664,7 @@ config.libs = [
             Object(NonMatching, "effect/n64/eff_vapor_n64.c"),
             Object(Matching, "effect/n64/eff_wangflush_n64.c"),
             Object(NonMatching, "effect/n64/eff_water_damage_n64.c"),
-            Object(NonMatching, "effect/n64/eff_snow_dust_n64.c"),
+            Object(Matching, "effect/n64/eff_snow_dust_n64.c"),
         ],
     },
     {
