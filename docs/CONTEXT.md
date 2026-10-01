@@ -3257,3 +3257,13 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
 - **Not needed:** the 4-byte zero words that dtk shows at the end of `.sdata2`/`.rodata` (`gap_09_..._sdata2`) are alignment between units; the linked dol is identical without defining them (they did not link `eff_akari_charge_n64` when defined, because named objects are emitted before the pooled literals).
 - Not linked: `eff_cool_leaf_n64` (data and code 100% after `pool_data` and `(u8*)tbl + 0xA`; the compiler pools its own `4503601774854144.0` after the string where the target has it before), `eff_pturn_n64` (the pool needs 360 before 4.0 in `data->field_0x20 = (type == 0 || type == 1) ? 4.0f * cos(f31 / 360.f) : 0.0f`; an `if`/`else` with a temp fixes the pool but gives effPturnMain 93.8%, a local `d = 360.f` leaves the pool as it was).
 - `ci.py` needs `--allow-pragma` for the new `#pragma section ".sdata" ".sbss2"` in the three units (the idiom of AGENT_BRIEF, each with its why-comment).
+
+## Grind 50: ac_monosiri_target links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`battle/ac/ac_monosiri_target` (note: its `configure.py` entry has `extra_cflags=["-O4,s"]`, so a `sed` on the plain entry text misses it).
+
+- Pools: `pool_data` for `_frame_table`, `pool_define` for the floats/doubles/vectors, plus by hand the five `dat_` GXColors (they sit first in `.sdata2`, defined before the floats) and the string `str_80300910` between the two doubles (named, so it lands between `double_15` and `double_28`).
+- The `MUST_MATCH` code reads the eleven vectors through an array view (`extern const Vec vec3_80300880[11]`), so the definitions are one 11-element array under `MUST_MATCH` and eleven `Vec`s otherwise.
+- `math.h` pools two sqrt doubles (0.5, 3.0) twice that this unit does not have; `math_ext.h` plus `#define fabs(x) __fabs(x)` keeps the `fabs` intrinsic without them.
+- `double_15` is only reached through the vector base under `MUST_MATCH`: `#pragma force_active` or the linker drops it (the dol came out 32 bytes short in `.rodata`).
+- `tools/fn_order.py --write` moves the function bodies but leaves the `#pragma` blocks and comments where they were; the `opt_common_subs`/`dont_inline` pragmas had to be put back around their functions by hand (the lint then reports them as new: `--allow-pragma`).
