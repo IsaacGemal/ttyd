@@ -3337,6 +3337,13 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
   Still open: raw offsets where the header names the field (battle_unit `pouch->partyData[party].currentHP`,
   filemgr `file->references`; both need s16 semantics the u16 headers lack) and btlsubResetMoveColorLvAll's
   aliases / btlMovePos's declaration order, which belong under MUST_MATCH.
+- Claude #1's second review of #144: winMsgDisp had nested the name-plate block (+0x140) inside the +0x138
+  block where retail has them as siblings (the plate never drew when +0x138 <= 0), and reached named objects
+  through `str_802F3FE8 + offset`; battle_audience_kinopio had replaced named vec3s with base+offset; mapdrv's
+  new mapSetMaterial read texwrap_tbl/lightid_tbl through vec3_802c16d8 + offset with local structs that overlap
+  MapMaterialTex. win_root and battle_audience_kinopio (no new 100%) are back to main and mapSetMaterial (86%) is
+  unwritten again. FontDrawMessage adds `x + (iw * scale + offset)` as retail's fmadds/fadds. Pre-existing rule 14
+  issue: pmario_sound's psndBGMOff_f_d is still an empty `{}` placeholder (its 0x200-byte body is unwritten).
 - **Wave 52** (launched 07:26 on a fresh base, main 0a750ff): every unclaimed game file's below-80% functions up
   to 2.5 KB, grouped as in wave 51, 61 agents capped at 90 minutes, nothing started after 08:45. The launcher
   also brings back `rels/*/include` edits as a patch (wave 50 lost three units' header edits to the tower's

@@ -1092,7 +1092,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 						GXColor c = fontColTbl[0];
 						FontDrawColor(&c);
 					}
-					x = (s32)((f32)x + (f32)iw * scale + (f32)offset);
+					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
 #ifdef MUST_MATCH // retail emits `cmpwi r0,0x2f / bne / cmplwi r0,0x2f72`; the second test is always
                  // false (r0 is a sign-extended byte), so this disjunct is a no-op. Natural form is below.

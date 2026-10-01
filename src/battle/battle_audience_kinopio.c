@@ -30,9 +30,6 @@ static f32 y_874;
 static f32 z_875;
 
 // .rodata
-const Vec vec3_802f8c78 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f8c84 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f8c90 = { 0.0f, 0.0f, 0.0f };
 const s32 dat_802f8c9c[24][2] = {
     { 0, 3 },   { -1, 2 },  { 0, 2 },   { 1, 2 },   { -2, 1 },  { -1, 1 },
     { 0, 1 },   { 1, 1 },   { 2, 1 },   { -3, 0 },  { -2, 0 },  { -1, 0 },
@@ -40,12 +37,12 @@ const s32 dat_802f8c9c[24][2] = {
     { 1, -1 },  { 2, -1 },  { -1, -2 }, { 0, -2 },  { 1, -2 },  { 0, -3 },
 };
 
-const f64 double_to_int_802f8d60 = 4503601774854144.0;
-const char str_802F8D68[] = "SFX_AUDIENCE_HEIHO_MOVE1";
-const f64 double_450_802f8d88 = 450.0;
-const f64 double_300_802f8d90 = 300.0;
-
 extern u8 weapon_teresa_trans[];
+extern const Vec vec3_802f8c84;
+extern const Vec vec3_802f8c90;
+extern const char str_802F8D68[];
+extern const f64 double_450_802f8d88;
+extern const f64 double_300_802f8d90;
 static s32 intrudeSound;
 
 const char str_802F8D98[] = "SFX_AUDIENCE_TELESA_MOVE1";
@@ -1096,7 +1093,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	}
 }
 
-// NONMATCHING (88.30%): register allocation only — the vector math, both distance blocks and all stores now match instruction-for-instruction, but the .rodata base symbol is `...rodata.0` not `vec3_802f8c78`, the f64 pool constants are anonymous copies, the pool-vec3 stores carry an extra `addi` base copy, the jump table is `@1055` not `jumptable_80394A98`, and the f30/f31 and `f0`/`f1` pairs land in different registers.
+// NONMATCHING (67.22%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	BattleWork* work = _battleWorkPointer;
 	BattleAudienceMember* member;
@@ -1125,26 +1122,15 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		member->field_0x4 = 0x32;
 		break;
 	case 3: {
-		f32 dir;
-		f32 t;
-		f32 dz;
-		f32 dx;
-		f32 len;
+		f32 dir = *(f32*)((u8*)member + 0xc);
+		f32 dx = float_25_8041e1ac * dir - member->position.x;
+		f32 dz = float_110_8041e1b0 - member->position.z;
+		f32 len = (f32)sqrt(dx * dx + dz * dz);
 		member->field_0x4 = 5;
-		dir = *(f32*)((u8*)member + 0xc);
-		t = float_25_8041e1ac * dir;
-		dx = t - member->position.x;
-		dz = float_110_8041e1b0 - member->position.z;
-		len = (f32)sqrt(dx * dx + dz * dz);
-		{
-			f32 vx = float_5_8041e1a0 * (dx / len);
-			f32 vz = float_5_8041e1a0 * (dz / len);
-			f32 vz0 = float_0_8041e178;
-			*(f32*)((u8*)member + 0x78) = vx;
-			*(f32*)((u8*)member + 0x7c) = vz0;
-			*(f32*)((u8*)member + 0x88) = vz0;
-			*(f32*)((u8*)member + 0x80) = vz;
-		}
+		*(f32*)((u8*)member + 0x78) = float_5_8041e1a0 * (dx / len);
+		*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
+		*(f32*)((u8*)member + 0x88) = float_0_8041e178;
+		*(f32*)((u8*)member + 0x80) = float_5_8041e1a0 * (dz / len);
 		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
@@ -1162,30 +1148,19 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	case 0xa:
 		if (*(f32*)((u8*)member + 0x7c) <= float_0_8041e178 &&
 		    member->position.y <= float_0_8041e178) {
-			f32 dir;
-			f32 t;
-			f32 dz;
-			f32 dx;
-			f32 len;
+			f32 dir = *(f32*)((u8*)member + 0xc);
+			f32 dx = float_300_8041e1c0 * dir - member->position.x;
+			f32 dz = float_0_8041e178 - member->position.z;
+			f32 len = (f32)sqrt(dx * dx + dz * dz);
 			member->field_0x4 = 0xf;
 			member->position.y = float_0_8041e178;
 			*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
 			*(f32*)((u8*)member + 0x88) = float_0_8041e178;
-			dir = *(f32*)((u8*)member + 0xc);
-			t = float_300_8041e1c0 * dir;
-			dx = t - member->position.x;
-			dz = float_0_8041e178 - member->position.z;
-			len = (f32)sqrt(dx * dx + dz * dz);
-			{
-				f32 vx = float_5_8041e1a0 * (dx / len);
-				f32 vz = float_5_8041e1a0 * (dz / len);
-				*(f32*)((u8*)member + 0x78) = vx;
-				*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
-				*(f32*)((u8*)member + 0x80) = vz;
-			}
+			*(f32*)((u8*)member + 0x78) = float_5_8041e1a0 * (dx / len);
+			*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
+			*(f32*)((u8*)member + 0x80) = float_5_8041e1a0 * (dz / len);
 			btl_camera_set_mode(0, 3);
-			btl_camera_set_moveto(0, 0x1e, 4,
-			    float_698_8041e1c4 * *(f32*)((u8*)member + 0xc),
+			btl_camera_set_moveto(0, 0x1e, 4, float_698_8041e1c4 * dir,
 			    float_100_8041e1a8, float_0_8041e178, float_0_8041e178,
 			    float_60_8041e184, float_0_8041e178);
 			intrudeSound = psndSFXOn(str_802F8D68);
@@ -1196,9 +1171,9 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		if (__fabs(member->position.x) >= double_450_802f8d88) {
 			member->field_0x4 = 0x10;
 			*(s32*)member->field_0x8 = 0x23;
-			*(u32*)((u8*)member + 0x78) = *(u32*)((u8*)&vec3_802f8c78 + 0xc);
-			*(u32*)((u8*)member + 0x7c) = *(u32*)((u8*)&vec3_802f8c78 + 0x10);
-			*(u32*)((u8*)member + 0x80) = *(u32*)((u8*)&vec3_802f8c78 + 0x14);
+			*(u32*)((u8*)member + 0x78) = *(u32*)&vec3_802f8c84.x;
+			*(u32*)((u8*)member + 0x7c) = *(u32*)&vec3_802f8c84.y;
+			*(u32*)((u8*)member + 0x80) = *(u32*)&vec3_802f8c84.z;
 		}
 		break;
 	case 0x10:
@@ -1228,7 +1203,9 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			member->field_0x4 = 0x14;
 			btl_camera_set_moveSpeedLv(0, 1);
 		}
-		// fallthrough
+		member->field_0x12C = BattleStage_ObjectFallCheck();
+		member->field_0x4 = 0x19;
+		break;
 	case 0x14:
 		member->field_0x12C = BattleStage_ObjectFallCheck();
 		member->field_0x4 = 0x19;
@@ -1243,26 +1220,15 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		BattleAudience_ChangeStatus(index, 0xb);
 		break;
 	case 0x32: {
-		f32 dir;
-		f32 t;
-		f32 dz;
-		f32 dx;
-		f32 len;
+		f32 dir = *(f32*)((u8*)member + 0xc);
+		f32 dx = float_25_8041e1ac * dir - member->position.x;
+		f32 dz = float_110_8041e1b0 - member->position.z;
+		f32 len = (f32)sqrt(dx * dx + dz * dz);
 		member->field_0x4 = 0x37;
-		dir = *(f32*)((u8*)member + 0xc);
-		t = float_25_8041e1ac * dir;
-		dx = t - member->position.x;
-		dz = float_110_8041e1b0 - member->position.z;
-		len = (f32)sqrt(dx * dx + dz * dz);
-		{
-			f32 vx = float_5_8041e1a0 * (dx / len);
-			f32 vz = float_5_8041e1a0 * (dz / len);
-			f32 vz0 = float_0_8041e178;
-			*(f32*)((u8*)member + 0x78) = vx;
-			*(f32*)((u8*)member + 0x7c) = vz0;
-			*(f32*)((u8*)member + 0x88) = vz0;
-			*(f32*)((u8*)member + 0x80) = vz;
-		}
+		*(f32*)((u8*)member + 0x78) = float_5_8041e1a0 * (dx / len);
+		*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
+		*(f32*)((u8*)member + 0x88) = float_0_8041e178;
+		*(f32*)((u8*)member + 0x80) = float_5_8041e1a0 * (dz / len);
 		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
@@ -1319,34 +1285,24 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		}
 		break;
 	case 0x46: {
-		f32 dir;
-		f32 t;
-		f32 dz;
-		f32 dx;
-		f32 len;
+		f32 dir = *(f32*)((u8*)member + 0xc);
+		f32 dx = float_300_8041e1c0 * dir - member->position.x;
+		f32 dz = float_0_8041e178 - member->position.z;
+		f32 len = (f32)sqrt(dx * dx + dz * dz);
 		BattleStage_NozzleWorkCheck(1);
 		member->field_0x12C = *(s32*)((u8*)work + 0x18298);
 		member->field_0x4 = 0x4b;
-		dir = *(f32*)((u8*)member + 0xc);
-		t = float_300_8041e1c0 * dir;
-		dx = t - member->position.x;
-		dz = float_0_8041e178 - member->position.z;
-		len = (f32)sqrt(dx * dx + dz * dz);
-		{
-			f32 vx = float_5_8041e1a0 * (dx / len);
-			f32 vz = float_5_8041e1a0 * (dz / len);
-			*(f32*)((u8*)member + 0x78) = vx;
-			*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
-			*(f32*)((u8*)member + 0x80) = vz;
-		}
+		*(f32*)((u8*)member + 0x78) = float_5_8041e1a0 * (dx / len);
+		*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
+		*(f32*)((u8*)member + 0x80) = float_5_8041e1a0 * (dz / len);
 	}
 		break;
 	case 0x4b:
 		if (__fabs(member->position.x) >= double_300_802f8d90) {
 			member->field_0x4 = 0x50;
-			*(u32*)((u8*)member + 0x78) = *(u32*)((u8*)&vec3_802f8c78 + 0x18);
-			*(u32*)((u8*)member + 0x7c) = *(u32*)((u8*)&vec3_802f8c78 + 0x1c);
-			*(u32*)((u8*)member + 0x80) = *(u32*)((u8*)&vec3_802f8c78 + 0x20);
+			*(u32*)((u8*)member + 0x78) = *(u32*)&vec3_802f8c90.x;
+			*(u32*)((u8*)member + 0x7c) = *(u32*)&vec3_802f8c90.y;
+			*(u32*)((u8*)member + 0x80) = *(u32*)&vec3_802f8c90.z;
 			psndSFXOff(intrudeSound);
 		}
 		break;
