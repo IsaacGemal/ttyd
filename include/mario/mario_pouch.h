@@ -483,7 +483,7 @@ s32 pouchGetJumpLv(void);
 s32 pouchGetHammerLv(void);
 s32 pouchGetPartyAttackLv(PartyId partyId);
 BOOL pouchAddKeepItem(s32 id);
-BOOL pouchRemoveKeepItem(s32 id, s32 index);
+BOOL pouchRemoveKeepItem(s32 id, int index);
 void pouchReviseMarioParam(void);
 void pouchRevisePartyParam(void);
 u16 pouchGetStarPoint(void);
