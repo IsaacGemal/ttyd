@@ -5,3 +5,5 @@
 void _get_item_announce_disp(CameraId camera, void* param);
 s32* btlataudGetAttackEventPtr(s32 index);
 void* btlataudGetMoveEventPtr(s32 unitId);
+s32 _attack_aud(EventEntry* event);
+s32 _get_attack_aud_no(EventEntry* event);

@@ -31,7 +31,6 @@ static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local 
 // Prototypes for helpers that have no header yet. See REPORT.md.
 
 extern s32 btlevtcmd_ACHelpSet[];
-extern s32 btlevtcmd_AcGetDifficulty[];
 extern s32 btlevtcmd_AnimeChangePaperAnime[];
 extern s32 btlevtcmd_AnimeChangePaperGroup[];
 extern s32 btlevtcmd_FallPartsPosition[];

@@ -18,6 +18,7 @@
 #include "party/party_motion.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_attack_audience.h"
 
 
 #define TECH_MENU_ENTRY(table)                                                        \
@@ -41,18 +42,12 @@
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
     (*count)++;
 
-extern s32 _attack_aud[];
-extern s32 _get_attack_aud_no[];
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
 extern BattleUnitKind unit_koura;
 extern s32 weaponGetACOutputParam[];
 extern s32 weaponGetPowerFromPartyAttackLv[];
-extern s32 evt_btl_camera_set_homing_unit_audience[];
-extern s32 btlevtcmd_AcGetDifficulty[];
-extern s32 btlevtcmd_AcSetGaugeParam[];
-extern s32 btlevtcmd_AudienceAppeal[];
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count);
 static USER_FUNC(_check_guard_koura);
 static s32 init_event[78];
