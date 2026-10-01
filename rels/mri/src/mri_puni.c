@@ -7873,10 +7873,10 @@ void puniHagurePos(PuniData* punidat) {
 }
 
 // The inlined nearest-of-four helper (f28/f29 swapped), the prologue colouring
-// (event/args) and the rounding of the `else` Vec (the compiler forwards the
-// field loads and drops the original's stack copy) still differ. The main scan
-// loop is now a pointer walk so its `addi 0x5a8` matches.
-// NONMATCHING (84.54%): control flow, all call sites and all field writes match.
+// (event/args) and the rounding of the `else` branch's zero Vec (the original
+// copies vec3_mri_00025b20 to a stack temp) still differ. The main scan loop is
+// now a pointer walk so its `addi 0x5a8` matches.
+// NONMATCHING (84.53%): control flow, all call sites and all field writes match.
 USER_FUNC(evt_puni_exit) {
     s32* args = event->args;
     s32 mode = evtGetValue(event, args[0]);
@@ -7981,7 +7981,7 @@ USER_FUNC(evt_puni_exit) {
                 _swByteSet(base + 6, (u8)((z >> 8) & 0xFF));
             }
         } else {
-            Vec v = punidat->field_0x12C;
+            Vec v = { 0.0f, 0.0f, 0.0f };
             s32 base = (punidat->field_0x116 - 1) * 7;
             s32 x = (s32)v.x;
             s32 y = (s32)v.y;

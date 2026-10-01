@@ -843,9 +843,9 @@ typedef struct HammerBrosSampling {
     HammerBrosSamplingEntry entries[1]; // 0x4
 } HammerBrosSampling;
 
-// dont_inline (kept from main): the original inlines the helpers into hammer_bros_nagemakuri_set_target; ours
-// stays NONMATCHING either way, and inlining them scores far lower.
+// dont_inline: tou2's original calls the two helpers below with `bl` (100% there); tik's inlines them.
 #pragma dont_inline on
+// NONMATCHING (48.75% in tik, 100% in tou2): tik's original inlines the two helpers below.
 static USER_FUNC(hammer_bros_nagemakuri_set_target) {
     BattleWork* wp = _battleWorkPointer;
     EventEntry* evt = event;

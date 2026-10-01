@@ -100,7 +100,6 @@ static inline void _acShotAppendHistory(AcShotWork* aw, BattleWork* work) {
     work->actionCommands.outputParams[3]++;
 }
 
-// optimize_for_size: battleAcMain_Shot's prologue saves r27-r31 with `stmw`; the size model reproduces it.
 // NONMATCHING (99.65%): all instructions and their order match; only the aw->field_0x1C FPR
 // colouring and a one-instruction prologue `addi`/`mr` spelling differ.
 s32 battleAcMain_Shot(BattleWork* work) {
@@ -439,7 +438,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 // dont_inline: the original keeps _draw_target_mark as its own function and calls it with `bl` from
 // _disp_target_mark and _disp_target_mark_afterimage.
 #pragma dont_inline on
-// optimize_for_size: _draw_target_mark's prologue saves r27-r31 with `stmw`.
 // The original passes the vectors and colour by value to an inlined wrapper, which copies them
 // into the btlDispTex4 argument slots.
 static inline void _drawTargetMarkQuad(s32 id, Vec trans, Vec scale, Vec rot, GXColor color) {
