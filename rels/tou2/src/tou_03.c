@@ -4352,9 +4352,9 @@ static f32 cosf(f32 x) {
 #pragma dont_inline reset
 
 
-
-// NONMATCHING (50.75%): the float copy of the branch-carried locals is the remaining problem;
-// MWCC keeps x/y/z/d/dist/v in callee-saved float regs instead of spilling dist/v/angle like retail.
+// The 1.0f/0.5f constants are locals (the brief's eff_nokotarou shape): the original loads them
+// from the unit's named .rodata instead of folding them, and the reset copies the position vector
+// through a second Vec before the sound call.
 s32 item_jump(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -4362,40 +4362,47 @@ s32 item_jump(EventEntry* event, BOOL isFirstCall) {
     f32 z = evtGetFloat(event, args[2]);
     ItemEntry* item = itemNameToPtr("stone");
     f32 d;
-    f32 dist;
+    f32 one = 1.0f;
+    f32 half = 0.5f;
+    f32 t;
     f32 v;
+    f32 dist;
     f32 angle;
 
     if (isFirstCall) {
         d = y - item->position.y;
-        dist = distABf(x, z, item->position.x, item->position.z) / 1.0f;
-        v = 0.5f * dist * 0.5f + d / dist;
+        dist = distABf(x, z, item->position.x, item->position.z) / one;
+        t = half * dist;
+        v = t * half + d / dist;
         angle = angleABf(item->position.x, item->position.z, x, z);
-        event->userdataf[0] = dist;
-        event->userdataf[1] = v;
-        event->userdataf[2] = angle;
+        event->userdata[0] = *(s32*)&dist;
+        event->userdata[1] = *(s32*)&v;
+        event->userdata[2] = *(s32*)&angle;
     }
     dist = event->userdataf[0];
     v = event->userdataf[1];
     angle = event->userdataf[2];
-    item->position.x += sinf(6.2831855f * angle / 360.0f);
-    item->position.z -= cosf(6.2831855f * angle / 360.0f);
+    item->position.x += one * sinf(6.2831855f * angle / 360.0f);
+    item->position.z -= one * cosf(6.2831855f * angle / 360.0f);
     item->position.y += v;
-    dist = dist - 1.0f;
-    v = v - 0.5f;
+    v = v - half;
+    dist = dist - one;
     if (dist < 0.0f) {
-        Vec pos = {0.0f, 0.0f, 0.0f};
+        Vec pos2;
+        Vec pos;
         item->position.x = x;
         item->position.y = y;
         item->position.z = z;
+        pos = (Vec){0.0f, 0.0f, 0.0f};
         pos.x = item->position.x;
         pos.y = item->position.y;
         pos.z = item->position.z;
-        psndSFXOn_3D("SFX_EVT_STARSTONE_JUMP1", &pos);
+        pos2 = pos;
+        psndSFXOn_3D("SFX_EVT_STARSTONE_JUMP1", &pos2);
         return EVT_RETURN_YIELD;
     }
-    event->userdataf[0] = dist;
-    event->userdataf[1] = v;
+    event->userdata[0] = *(s32*)&dist;
+    event->userdata[1] = *(s32*)&v;
     return EVT_RETURN_BLOCK;
 }
 

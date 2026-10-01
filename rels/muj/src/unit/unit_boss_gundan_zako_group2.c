@@ -1,5 +1,11 @@
 #include "unit_boss_gundan_zako_group2.h"
+#include "unit_boss_gundan_zako_group3.h"
+#include "battle/battle.h"
 #include "battle/battle_camera.h"
+#include "battle/battle_stage_object.h"
+#include "driver/extdrv.h"
+#include "pmario_sound.h"
+#include "system.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -16,9 +22,19 @@
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 zakogun_damage_pose[];
-extern s32 zakogun_damage_pose_cancel[];
-extern s32 zakogun_set_target_id[];
+extern Vec vec3_muj_0001323c;
+extern Vec vec3_muj_00013248;
+extern Vec vec3_muj_00013254;
+extern Vec vec3_muj_00013260;
+extern Vec vec3_muj_0001326c;
+extern Vec vec3_muj_00013278;
+extern f32 float_130_muj_00013340;
+
+// The group-2 control block reuses bytes the shared ZakogunWork leaves as padding for its
+// per-sequence interpolation fields (see the offsets listed in REPORT.md).
+#define WORK_VEC(off) (*(Vec*)((u8*)work_20_bss_6C + (off)))
+#define WORK_F32(off) (*(f32*)((u8*)work_20_bss_6C + (off)))
+#define WORK_S32(off) (*(s32*)((u8*)work_20_bss_6C + (off)))
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[3];
 static BattleUnitKindPart parts[1];
@@ -367,11 +383,39 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: write zakogun_dead2 (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+s32 zakogun_dead2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
 
-// TODO: write up_ceil (global, 0x154 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < 25; i++) {
+        zakogun[i].state = 0x50;
+    }
+    return 2;
+}
+
+s32 up_ceil(EventEntry* event, BOOL isFirstCall) {
+    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
+    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
+    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
+    f32 value;
+
+    if (isFirstCall) {
+        WORK_VEC(0x48) = vec3_muj_00013254;
+        WORK_VEC(0x54) = vec3_muj_00013260;
+        WORK_S32(0x60) = 0x78;
+        WORK_S32(0x64) = 0x78;
+        flag[0] |= 0x20;
+        WORK_S32(0x6C) = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
+    }
+    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
+    obj2->mPosition.y = value;
+    obj->mPosition.y = value;
+    WORK_S32(0x60) -= 1;
+    if (WORK_S32(0x60) < 0) {
+        psndSFXOff(WORK_S32(0x6C));
+        return 2;
+    }
+    return 0;
+}
 
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_SetUnitWork, -2, 2, 1)
@@ -429,8 +473,25 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-// TODO: write zakogun_attack2 (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+s32 zakogun_attack2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
+
+    if (isFirstCall) {
+        work_20_bss_6C->field_0x68 = 0;
+        for (i = 0; i < 25; i++) {
+            zakogun[i].state = 0x14;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 25; i++) {
+        if (zakogun[i].state == 0xA) {
+            count++;
+        }
+    }
+    return count == 25 ? 2 : 0;
+}
 
 EVT_BEGIN(fall_attack_event)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
@@ -465,12 +526,60 @@ EVT_BEGIN(fall_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write zakogun_attack2_yusuri (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+s32 zakogun_attack2_yusuri(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
 
-// TODO: write shake_ceil (global, 0x11c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        for (i = 0; i < 25; i++) {
+            zakogun[i].state = 0x3C;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 25; i++) {
+        if (zakogun[i].state == 0xA) {
+            count++;
+        }
+    }
+    return count == 25 ? 2 : 0;
+}
 
+// The original loads the work pointer in r4 and reads field_0x4c/field_0x58 before field_0x60
+// (addi r4,r4,work@l; lwz r4,0(r4); lfs f1,0x4c(r4); lfs f2,0x58(r4); lwz r4,0x60(r4)).
+// Plain WORK_* reads let MWCC -O4,s fold the pointer load into `lwz rX,work@l(rY)` and hoist
+// field_0x60 first. Reading the three fields through volatile pointers pins the load order to
+// 0x4C, 0x58, 0x60, which keeps the pointer in r4 and materialises the address as addi+lwz.
+s32 shake_ceil(EventEntry* event, BOOL isFirstCall) {
+    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
+    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
+    f32 start;
+    f32 end;
+    s32 step;
+    f32 value;
+
+    if (isFirstCall) {
+        WORK_VEC(0x48) = vec3_muj_0001326c;
+        WORK_VEC(0x54) = vec3_muj_00013278;
+        WORK_S32(0x60) = 0;
+    }
+    start = *(volatile f32*)((u8*)work_20_bss_6C + 0x4C);
+    end = *(volatile f32*)((u8*)work_20_bss_6C + 0x58);
+    step = *(volatile s32*)((u8*)work_20_bss_6C + 0x60);
+
+    value = intplGetValue(4, step, 9, start, end);
+    obj2->mPosition.y = value;
+    obj->mPosition.y = value;
+    WORK_S32(0x60) += 1;
+    if (WORK_S32(0x60) > 0x11) {
+        f32 last = float_130_muj_00013340;
+
+        obj2->mPosition.y = last;
+        obj->mPosition.y = last;
+        return 2;
+    }
+    return 0;
+}
 static EVT_BEGIN(shake_attack_event)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
     SET_VALUE(LW(9), PTR(&weapon_gundan_zako_group2_yusuri_attack))
@@ -660,12 +769,61 @@ static u32 jumptable_00031360[91] = {
     (u32)((u8*)&zakogun_ext_main2 + 0xc90), (u32)((u8*)&zakogun_ext_main2 + 0xcd4), (u32)((u8*)&zakogun_ext_main2 + 0xd2c),
 };
 
-// TODO: write zakogun_escape2 (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+s32 zakogun_escape2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
 
-// TODO: write zakogun_ext_init2 (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+    if (isFirstCall) {
+        for (i = 0; i < 25; i++) {
+            zakogun[i].state = 0x5A;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 25; i++) {
+        if (zakogun[i].state == -1) {
+            count++;
+        }
+    }
+    return count == 25 ? 2 : 0;
+}
 
-// TODO: write down_ceil_20_text_9C8C (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
+s32 zakogun_ext_init2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+
+    work_20_bss_6C->field_0x0 = 1;
+    for (i = 0; i < 25; i++, pose++) {
+        zakogun_ext_init123_common(pose, i);
+    }
+    return 2;
+}
+
+s32 down_ceil_20_text_9C8C(EventEntry* event, BOOL isFirstCall) {
+    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
+    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
+    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
+    s32 id;
+    f32 value;
+
+    if (isFirstCall) {
+        WORK_VEC(0x48) = vec3_muj_0001323c;
+        WORK_VEC(0x54) = vec3_muj_00013248;
+        WORK_S32(0x60) = 0x78;
+        WORK_S32(0x64) = 0x78;
+        flag[0] &= ~0x20;
+        id = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
+        WORK_S32(0x6C) = id;
+        WORK_S32(0x6C) = id;
+    }
+    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
+    obj2->mPosition.y = value;
+    obj->mPosition.y = value;
+    WORK_S32(0x60) -= 1;
+    if (WORK_S32(0x60) < 0) {
+        psndSFXOff(WORK_S32(0x6C));
+        return 2;
+    }
+    return 0;
+}
 // clang-format on

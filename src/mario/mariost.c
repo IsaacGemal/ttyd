@@ -68,8 +68,6 @@ OSThread DvdCheckThread;
 static u8 stack[0x1000];
 
 //.sdata
-static OSTime off_time[4] = {0, 0, 0, 0};
-static BOOL off_trg[4] = {FALSE, FALSE, FALSE, FALSE};
 GlobalWork* gp = &marioSt;
 
 //.sbss
@@ -264,7 +262,6 @@ void marioStInit(void) {
 	}
 }
 
-// NONMATCHING (64.05%): 51 extra, plus register differences.
 void marioStMain(void) {
 	int i;
 
@@ -465,12 +462,11 @@ exitcheck:
 	psndMainInt();
 }
 
-//TODO: fuck up float conversions for 1:1 cuz this is cleaner
-// NONMATCHING (38.75%): 5 instructions differ, 14 missing, 55 extra, plus register differences.
 void* gcDvdCheckThread(void* param) {
 	const char* message;
 	s32 msgId;
-	f32 width;
+	s32 width;
+	f32 half;
 	Mtx44 mtx;
 
 	while (1) {
@@ -499,7 +495,7 @@ void* gcDvdCheckThread(void* param) {
 			default:
 				gp->dvdError = FALSE;
 				break;
-			case DVD_STATE_WAITING:
+			case DVD_STATE_BUSY:
 				break;
 		}
 		if (gp->dvdError) {
@@ -520,7 +516,8 @@ void* gcDvdCheckThread(void* param) {
 				width = (f32)romFontGetWidth(message);
 				MTXPerspective(mtx, 25.0f, 1.2666667f, 1.0f, 10000.0f);
 				GXSetProjection(mtx, GX_PERSPECTIVE);
-				romFontPrintGX(-width * 0.5f, 60.0f, 1.0f, &(GXColor){0xFF, 0xFF, 0xFF, 0xFF}, message);
+				half = 0.5f;
+				romFontPrintGX(-width * half, 60.0f, 1.0f, &(GXColor){0xFF, 0xFF, 0xFF, 0xFF}, message);
 			}
 			DEMODoneRender();
 			makeKey();
@@ -548,6 +545,8 @@ void gcRumbleCheck(void) {
 	}*/
 }
 
+// dont_inline keeps L_gcResetCheck a real `bl` from marioStMain/gcDvdCheckThread, as in retail.
+#pragma dont_inline on
 void L_gcResetCheck(void) {
 	u32 code;
 
@@ -587,3 +586,4 @@ void L_gcResetCheck(void) {
 		while (1) {}
 	}
 }
+#pragma dont_inline reset

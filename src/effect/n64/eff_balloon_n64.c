@@ -3,10 +3,14 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
+#include "matching.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
+#ifdef MUST_MATCH
+#include <dolphin/os/OSFastCast.h>
+#endif
 #include <math.h>
 #include <string.h>
 
@@ -125,27 +129,58 @@ extern const f32 float_0_8041e944;
 extern const f32 float_deg2rad_8041e948;
 
 // Retail inlines a per-vertex helper; each inlining gets its own Vec stack slot and its
-// own memcpy, exactly as in effFlameDisp's effFlameSetVtx.
+// own memcpy, exactly as in effFlameDisp's effFlameSetVtx. Retail re-runs OSInitFastCast
+// before the s16->f32 reads and before the f32->s16 writes, so the GQR2-5 setup matches;
+// MWCC 2.6 still lowers the casts to the integer path (see eff_flame_n64.c).
+#ifdef MUST_MATCH
+// Retail's paired-single path reserves a second 12-byte Vec slot per inlining, giving the
+// original's 0x48 low scratch and putting texObj/matrices at their real stack offsets.
+#define BALLOON_VTX_VECS 2
+#else
+#define BALLOON_VTX_VECS 1
+#endif
 static inline void effBalloonSetVtx(BalloonVtx* vtx, Mtx mtx, s32 idx, BalloonVtx* src) {
-	Vec v;
+	Vec v[BALLOON_VTX_VECS];
 
 	memcpy(&vtx[idx], src, sizeof(BalloonVtx));
-	v.x = vtx[idx].pos[0];
-	v.y = vtx[idx].pos[1];
-	v.z = vtx[idx].pos[2];
-	PSMTXMultVec(mtx, &v, &v);
-	vtx[idx].pos[0] = v.x;
-	vtx[idx].pos[1] = v.y;
-	vtx[idx].pos[2] = v.z;
+#ifdef MUST_MATCH
+	OSInitFastCast();
+#endif
+	v[0].x = vtx[idx].pos[0];
+	v[0].y = vtx[idx].pos[1];
+	v[0].z = vtx[idx].pos[2];
+	PSMTXMultVec(mtx, &v[0], &v[0]);
+#ifdef MUST_MATCH
+	OSInitFastCast();
+#endif
+	vtx[idx].pos[0] = v[0].x;
+	vtx[idx].pos[1] = v[0].y;
+	vtx[idx].pos[2] = v[0].z;
 }
 
-// The control flow, constants and GX calls match, but MWCC 2.6 lowers the s16<->f32 vertex
-// conversion as lha/fctiwz instead of the original's psq_l/psq_st (GQR2-5 setup + psq pairs).
-// No source form, pragma or compiler version here reproduces the psq path, so the f23-f31 saves,
-// the 0x210 frame and the register colours differ. tri1 also takes the header's 3 u16 args, so
-// the target's 4th argument and its lack of clrlwi need include/eff/eff_n64.h and
-// src/effect/n64/eff_n64.c to declare 4 s32 args.
-// NONMATCHING (60.06%): s16<->f32 conversion uses lha/fctiwz, not psq; tri1 takes 4 s32 args.
+// The retail tri1 keeps a 4th, unused argument (eff_balloon_n64.s passes 0 for the fixed
+// triangles and 1 for the loop ones). The header declares only three u16 parameters; the
+// cast to four s32 parameters also keeps the caller from truncating i+2/i+3 with clrlwi.
+#ifdef MUST_MATCH
+static inline void tri1WithUnused(s32 x, s32 y, s32 z, s32 unused) {
+	((void (*)(s32, s32, s32, s32))tri1)(x, y, z, unused);
+}
+#endif
+
+// The control flow, constants, GX/TEV state, matrix math and the six OSInitFastCast GQR2-5
+// blocks match; tri1WithUnused reproduces the original's 4th (unused) tri1 argument and its
+// lack of a clrlwi on i+2/i+3; and with the Vec[2] padding and transMtx/texMtx declaration
+// order, texObj (0x50) and all six matrices (0x70-0x160) land at retail's offsets.
+// The remaining gap is the s16<->f32 vertex conversion: retail loads/stores each position
+// component with psq_l/psq_st (GQR5, s16), while MWCC 2.6 lowers the same `v = vtx->pos[n]`
+// / `vtx->pos[n] = v` source to the lha/xoris/lfd+fsubs and fctiwz integer path. That leaves
+// retail with f23-f31 live (frame 0x210) where we keep only f31 (frame 0x1f0), so the save
+// area, the low Vec slots (retail 0x2c/0x38/0x44 vs ours 0x8/0x20/0x38) and every register
+// colour differ. No source form, pragma or GC compiler version here emits the psq path (see
+// eff_flame_n64.c / eff_opuku_wcurtain_n64.c), so this cannot reach 100% with the current
+// toolchain. tri1's 4-argument form is not in include/eff/eff_n64.h or src/effect/n64/eff_n64.c
+// (both declare 3 u16 args); the local tri1WithUnused helper casts around that.
+// NONMATCHING (67.72%): s16<->f32 conversion uses lha/fctiwz, not retail's psq_l/psq_st.
 void effBalloonDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;
@@ -154,8 +189,10 @@ void effBalloonDisp(CameraId camId, void* param) {
 	BalloonVtx* vtx;
 	BalloonSeg* segs;
 	GXTexObj texObj;
-	Mtx texMtx;
+	// Declaration order is transMtx before texMtx so MWCC lays the two out at retail's
+	// offsets (texMtx 0x100, transMtx 0x130); the usage order below is unchanged.
 	Mtx transMtx;
+	Mtx texMtx;
 	Mtx rotMtx;
 	Mtx concatMtx;
 	Mtx resultMtx;
@@ -196,7 +233,7 @@ void effBalloonDisp(CameraId camId, void* param) {
 	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e948 * data->field_0x10);
 	PSMTXConcat(transMtx, rotMtx, concatMtx);
 	cam2 = camGetPtr(CAMERA_3D);
-	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041e948 * -cam2->viewYaw);
+	PSMTXRotRad(rotMtx, 'y', -cam2->viewYaw * float_deg2rad_8041e948);
 	PSMTXTrans(transMtx, *(f32*)&data->pad[0xA0], *(f32*)&data->pad[0xA4], float_0_8041e944);
 	PSMTXConcat(rotMtx, transMtx, resultMtx);
 	PSMTXConcat(concatMtx, resultMtx, resultMtx);
@@ -218,18 +255,35 @@ void effBalloonDisp(CameraId camId, void* param) {
 
 	if (life < 100) {
 		GXBegin(0x90, 0, 3);
+#ifdef MUST_MATCH
+		tri1WithUnused(0x15, 2, 1, 0);
+#else
 		tri1(0x15, 2, 1);
+#endif
 		for (i = 0; i < 19; i++) {
 			GXBegin(0x90, 0, 3);
+#ifdef MUST_MATCH
+			tri1WithUnused(1, i + 2, i + 3, 1);
+#else
 			tri1(1, i + 2, i + 3);
+#endif
 		}
 	} else {
 		GXBegin(0x90, 0, 6);
+#ifdef MUST_MATCH
+		tri1WithUnused(0, 1, 2, 0);
+		tri1WithUnused(0, 0x15, 1, 0);
+#else
 		tri1(0, 1, 2);
 		tri1(0, 0x15, 1);
+#endif
 		for (i = 0; i < 19; i++) {
 			GXBegin(0x90, 0, 3);
+#ifdef MUST_MATCH
+			tri1WithUnused(1, i + 2, i + 3, 1);
+#else
 			tri1(1, i + 2, i + 3);
+#endif
 		}
 	}
 }

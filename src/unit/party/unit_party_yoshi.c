@@ -10,6 +10,12 @@
 #include "driver/msgdrv.h"
 #include "mario/mario_pouch.h"
 #include "mario/mario_party.h"
+#include "system.h"
+#include "eff/n64/eff_sweat_n64.h"
+#include "eff/eff_kemutest.h"
+#include "driver/dispdrv.h"
+#include "pmario_sound.h"
+#include <string.h>
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_80379A00[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
@@ -135,6 +141,172 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
         TECH_MENU_ENTRY(&partyWeapon_YoshiCallGuard);
     }
 #endif
+}
+
+// .sdata2 constants used by the yoroyoro jump functions.
+extern const f32 float_0_8041dd44;
+extern const f32 float_1_8041dd68;
+extern const f32 float_5_8041dd70;
+extern const f32 float_10_8041dd7c;
+extern const f32 float_180_8041dd80;
+extern const f32 float_360_8041dd84;
+extern const f32 float_90_8041dd88;
+extern const f32 float_75_8041dd8c;
+extern const f32 float_25_8041dd90;
+extern const f32 float_neg50_8041dd94;
+extern const f32 float_50_8041dd98;
+extern const f32 float_0p5_8041dd9c;
+
+// Matched: the `if (tx - px > 0.0f)` comparison must use the literal `0.0f` (pooled as its own
+// symbol) rather than the `float_0_8041dd44` extern; that flips the FP load/compare registers to
+// the target's. The remaining `double_to_int_802f7410` relocation names are objdiff-normalised.
+USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
+    BattleWork* work;
+    s32* args;
+    f32 tx;
+    f32 ty;
+    f32 tz;
+    f32 px;
+    f32 py;
+    f32 pz;
+    f32 speed;
+    s32 id;
+    BattleUnit* unit;
+    s32 val;
+    s32 speedVar;
+    s32 frameVar;
+
+    work = _battleWorkPointer;
+    args = event->args;
+    val = evtGetValue(event, args[0]);
+    id = BattleTransID(event, val);
+    tx = (f32)evtGetValue(event, args[1]);
+    ty = (f32)evtGetValue(event, args[2]);
+    tz = (f32)evtGetValue(event, args[3]);
+    speedVar = args[4];
+    speed = evtGetFloat(event, speedVar);
+    unit = BattleGetUnitPtr(work, id);
+    frameVar = args[5];
+    if (speed > float_0_8041dd44) {
+        unit->mMoveSpeedXZ = speed;
+    }
+    if (unit->mMoveSpeedXZ <= float_0_8041dd44) {
+        unit->mMoveSpeedXZ = float_1_8041dd68;
+    }
+    BtlUnit_SetMoveTargetPos(unit, tx, ty, tz);
+    BtlUnit_GetPos(unit, &px, &py, &pz);
+    BtlUnit_SetMoveStartPos(unit, px, py, pz);
+    BtlUnit_SetMoveCurrentPos(unit, px, py, pz);
+    *(f32*)((u8*)unit + 0x178) = angleABf(px, pz, tx, tz);
+    *(f32*)((u8*)unit + 0x17C) = distABf(px, pz, tx, tz);
+    if (tx - px > 0.0f) {
+        unit->moveDirection = 1;
+    } else if (tx - px < 0.0f) {
+        unit->moveDirection = -1;
+    }
+    *(f32*)((u8*)unit + 0x17C) = __fabs(tx - px);
+    *(s32*)((u8*)unit + 0x168) = 180;
+    *(f32*)((u8*)unit + 0x180) = (f32)*(s32*)((u8*)unit + 0x168);
+    unit->mMoveSpeedY = float_0_8041dd44;
+    unit->mMoveSpeedXZ = *(f32*)((u8*)unit + 0x17C) / (f32)*(s32*)((u8*)unit + 0x168);
+    evtSetFloat(event, speedVar, unit->mMoveSpeedXZ);
+    evtSetValue(event, frameVar, *(s32*)((u8*)unit + 0x168));
+    return 2;
+}
+
+// NONMATCHING (98.89%): left is the second block's `0.5f`/`mSizeMultiplier` FP registers swapped
+// (target f2/f1, ours f1/f2) and one `lwz effect` / `mr r3,unit` scheduling slot around the
+// `userdata[1] < 16` branch. `height` must stay an `f32` local for the first block to match.
+USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
+    s32 id;
+    BattleWork* work;
+    BattleUnit* unit;
+    s32* args;
+    EffectEntry* effect;
+    f32 newSpeedY;
+    f32 height;
+    s32 val;
+
+    work = _battleWorkPointer;
+    args = event->args;
+    val = evtGetValue(event, args[0]);
+    id = BattleTransID(event, val);
+    evtGetValue(event, args[1]);
+    evtGetValue(event, args[2]);
+    evtGetValue(event, args[3]);
+    evtGetFloat(event, args[4]);
+    unit = BattleGetUnitPtr(work, id);
+    evtGetValue(event, args[5]);
+    if (isFirstCall) {
+        event->blocked = 1;
+        event->userdata[1] = 20;
+        event->userdata[2] = 0;
+    }
+    if (unit->mMoveCurrentPos.x != unit->mMoveTargetPos.x) {
+        if (__fabs(unit->mMoveTargetPos.x - unit->mMoveCurrentPos.x) < unit->mMoveSpeedXZ) {
+            unit->mMoveCurrentPos.x = unit->mMoveTargetPos.x;
+        } else {
+            unit->mMoveCurrentPos.x += unit->mMoveSpeedXZ * (f32)unit->moveDirection;
+        }
+    }
+    if (unit->mMoveCurrentPos.z != unit->mMoveTargetPos.z) {
+        if (__fabs(unit->mMoveTargetPos.z - unit->mMoveCurrentPos.z) < unit->mMoveSpeedXZ) {
+            unit->mMoveCurrentPos.z = unit->mMoveTargetPos.z;
+        } else if (unit->mMoveTargetPos.z - unit->mMoveStartPos.z > float_0_8041dd44) {
+            unit->mMoveCurrentPos.z += unit->mMoveSpeedXZ;
+        } else {
+            unit->mMoveCurrentPos.z -= unit->mMoveSpeedXZ;
+        }
+    }
+    newSpeedY = float_10_8041dd7c *
+                sinfd(float_180_8041dd80 +
+                      float_360_8041dd84 *
+                          (*(f32*)((u8*)unit + 0x180) -
+                           (f32)(*(s32*)((u8*)unit + 0x168) % 90)) /
+                          float_90_8041dd88);
+    BtlUnit_GetPartsPtr(unit, 1);
+    unit->mMoveCurrentPos.y =
+        unit->mMoveSpeedY +
+        (unit->mMoveStartPos.y +
+         (unit->mMoveTargetPos.y - unit->mMoveStartPos.y) *
+             (*(f32*)((u8*)unit + 0x180) - (f32)*(s32*)((u8*)unit + 0x168)) /
+             *(f32*)((u8*)unit + 0x180));
+    unit->mMoveSpeedY = newSpeedY;
+    unit->work[5] =
+        (s32)(float_75_8041dd8c -
+              float_25_8041dd90 *
+                  sinfd(float_360_8041dd84 *
+                            (*(f32*)((u8*)unit + 0x180) -
+                             (f32)(*(s32*)((u8*)unit + 0x168) % 90)) /
+                        float_90_8041dd88));
+    BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
+    event->userdata[1]++;
+    if (event->userdata[1] > 20) {
+        event->userdata[1] = 0;
+        if (unit->moveDirection >= 0) {
+            newSpeedY = float_neg50_8041dd94;
+        } else {
+            newSpeedY = float_50_8041dd98;
+        }
+        height = BtlUnit_GetHeight(unit);
+        event->userdata[2] = (s32)effSweatN64Entry(
+            1, 16, unit->mMoveCurrentPos.x,
+            unit->mSizeMultiplier * (float_0p5_8041dd9c * height) + unit->mMoveCurrentPos.y,
+            unit->mMoveCurrentPos.z, float_5_8041dd70 * unit->mSizeMultiplier, newSpeedY);
+    } else if (event->userdata[1] < 16) {
+        effect = (EffectEntry*)event->userdata[2];
+        ((effSweatData*)effect->userdata)->position.x = unit->mMoveCurrentPos.x;
+        height = BtlUnit_GetHeight(unit);
+        ((effSweatData*)effect->userdata)->position.y =
+            unit->mSizeMultiplier * (float_0p5_8041dd9c * height) + unit->mMoveCurrentPos.y;
+        ((effSweatData*)effect->userdata)->position.z = unit->mMoveCurrentPos.z;
+    }
+    *(s32*)((u8*)unit + 0x168) -= 1;
+    if (*(s32*)((u8*)unit + 0x168) <= 0) {
+        BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
+        return 2;
+    }
+    return 0;
 }
 
 s32 _yoshi_slide_move_sound(BattleUnit* unit, PoseSoundEntry* entry) {
@@ -270,6 +442,150 @@ extern const f32 float_0p4_8041dd3c;
 extern const f32 float_neg0p4_8041dd40;
 extern const f32 float_0_8041dd44;
 extern const f32 float_20_8041dd48;
+
+extern const f32 float_0p1_8041dd50;
+extern const f32 float_3_8041dd4c;
+extern const f32 float_0p001_8041dd54;
+extern const f32 float_80_8041dd58;
+extern const f32 float_neg1_8041dd5c;
+extern const f32 float_neg80_8041dd60;
+extern const f32 float_300_8041dd64;
+extern const f32 float_0p05_8041dd6c;
+extern const f32 float_65_8041dd74;
+extern const f32 float_0p0039062_8041dd78;
+
+// The 0x300C-byte allocation `_gundan_yoshi_run_effect` keeps at unit+0x310: a state word,
+// 256 0x30-byte particles, and a trailing accumulator. No header declares it.
+typedef struct YoshiGundanArea {
+    s32 state;                // 0x0
+    u8 pad_0x4[0x3008 - 0x4]; // 0x4
+    f32 field_0x3008;         // 0x3008
+} YoshiGundanArea;
+
+// Matched. The zone constants must be literals (`80.0f`/`-80.0f`/`300.0f`) while `-1.0f` stays the
+// `float_neg1_8041dd5c` extern, and `active` must be reached with a `goto` label placed after the
+// `default:` case so MWCC shares the r0 `li` block instead of tail-duplicating it.
+USER_FUNC(_gundan_yoshi_run_effect) {
+    BattleUnit* unit;
+    YoshiGundanArea* area;
+    YoshiGundanDispWork* work;
+    Vec pos;
+    f32 scale;
+    s32 val;
+    s32 active;
+    s32 i;
+    s32 done;
+
+    val = evtGetValue(event, event->args[0]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, val));
+    if (isFirstCall) {
+        area = BattleAlloc(0x300C);
+        *(YoshiGundanArea**)((u8*)unit + 0x310) = area;
+        memset(area, 0, 0x300C);
+        area->state = 0;
+        area->field_0x3008 = 0.0f;
+        event->userdata[0] = 0;
+        event->userdata[1] = psndSFXOn("SFX_BTL_YOSHI_TAIGUN1");
+    } else {
+        area = *(YoshiGundanArea**)((u8*)unit + 0x310);
+    }
+    switch (area->state) {
+    case 0:
+        area->state++;
+        // fallthrough
+    case 1:
+        done = 1;
+        area->field_0x3008 = 0.0f;
+        for (i = 0; i < 256; i++) {
+            work = (YoshiGundanDispWork*)((u8*)area + 4 + i * 0x30);
+            work->field_0x24++;
+            if (work->field_0x24 > 2) {
+                work->field_0x24 = 0;
+                work->field_0x25++;
+                if (work->field_0x25 >= 6) {
+                    work->field_0x25 = 0;
+                }
+            }
+            switch (work->field_0x2c) {
+            case 0:
+                work->field_0x2c++;
+                work->field_0x28 = irand(3);
+                work->field_0x00 = (f32)(-(30 * (i / 16) + 300) + irand(10));
+                work->field_0x04 = 0.0f;
+                work->field_0x08 = (f32)((i % 16) * 10 - 80);
+                work->field_0x25 = irand(6);
+                work->field_0x24 = irand(5);
+                work->field_0x0c = float_3_8041dd4c + float_0p1_8041dd50 * (f32)irand(10);
+                work->field_0x10 = 0.0f;
+                work->field_0x14 = float_0p001_8041dd54 * (f32)(irand(2000) - 1000);
+                // fallthrough
+            case 1:
+                if (work->field_0x28 > 0) {
+                    work->field_0x28--;
+                    goto yoshi_active;
+                }
+                // fallthrough
+            case 2:
+                work->field_0x08 += work->field_0x14;
+                if (work->field_0x08 >= 80.0f) {
+                    work->field_0x08 = 80.0f;
+                    work->field_0x14 = work->field_0x14 * float_neg1_8041dd5c;
+                }
+                if (work->field_0x08 <= -80.0f) {
+                    work->field_0x08 = -80.0f;
+                    work->field_0x14 = work->field_0x14 * float_neg1_8041dd5c;
+                }
+                work->field_0x00 += work->field_0x0c;
+                if (work->field_0x00 >= 300.0f) {
+                    work->field_0x00 = 300.0f;
+                    work->field_0x0c = 0.0f;
+                    work->field_0x2c = 999;
+                }
+                goto yoshi_active;
+            default:
+                active = 0;
+                break;
+            yoshi_active:
+                active = 1;
+                break;
+            }
+            if (active) {
+                done = 0;
+            }
+            area->field_0x3008 += work->field_0x00;
+        }
+        if (event->userdata[0] > 0) {
+            event->userdata[0]--;
+        } else {
+            work = (YoshiGundanDispWork*)((u8*)area + 4 + irand(256) * 0x30);
+            scale = float_1_8041dd68 + float_0p05_8041dd6c * (f32)irand(20);
+            effKemuTestEntry(0, work->field_0x00,
+                             float_5_8041dd70 + work->field_0x04 + (f32)irand(15),
+                             float_65_8041dd74, scale);
+        }
+        area->field_0x3008 = area->field_0x3008 * float_0p0039062_8041dd78;
+        pos.x = area->field_0x3008;
+        pos.y = 0.0f;
+        pos.z = 0.0f;
+        psndSFX_pos(event->userdata[1], &pos);
+        if (done) {
+            area->state = 999;
+        }
+        break;
+    case 999:
+        psndSFXOff(event->userdata[1]);
+        BattleFree(*(YoshiGundanArea**)((u8*)unit + 0x310));
+        *(YoshiGundanArea**)((u8*)unit + 0x310) = NULL;
+        return 2;
+    default:
+        break;
+    }
+    for (i = 0; i < 256; i++) {
+        dispEntry(4, dispCalcZ((Vec*)work), 2, _btlYoshiDisp,
+                  (YoshiGundanDispWork*)((u8*)area + 4 + i * 0x30));
+    }
+    return 0;
+}
 
 void _btlYoshiDisp(CameraId cameraId, void* param) {
     YoshiGundanDispWork* work = param;

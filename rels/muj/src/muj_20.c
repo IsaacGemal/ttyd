@@ -27,6 +27,7 @@
 #include "eff/eff_splash.h"
 #include "manager/evtmgr_cmd.h"
 #include "manager/filemgr.h"
+#include "win/win_main.h"
 #include "mario/mariost.h"
 #include "math_ext.h"
 #include "memory.h"
@@ -66,7 +67,7 @@ extern s32 muj_npc_fuwafuwa[];
 extern s32 muj_npc_guruguru[];
 extern s32 muj_ship_puka[];
 static void draw(CameraId cameraId, void* param);
-static void pressStartGX(void);  // TODO: real signature
+static void pressStartGX(LogoWork* work, s32 alpha, f32 x, f32 y);
 static USER_FUNC(fune_eff);
 static USER_FUNC(alpha_set_func);
 static USER_FUNC(alpha_init_func);
@@ -209,7 +210,7 @@ EVT_BEGIN(urouro)
     RETURN
 EVT_END()
 
-// NONMATCHING (89.45%): first-branch `pos` is allocated at stack+0x8; original uses stack+0x14
+// NONMATCHING (89.46%): first-branch `pos` is allocated at stack+0x8; original uses stack+0x14
 // (separate SSA slot per branch), rest of the tail matches.
 USER_FUNC(urouro_fuwafuwa_func) {
     s32* args = event->args;
@@ -638,37 +639,58 @@ static u32 elmos_animtbl[11] = {
     0x00100011, 0x00120013, 0xFFFF0000,
 };
 
-// NONMATCHING (60.48%): MWCC did not hoist the loop-invariant float constants
-// (90/6.2832/360/0.9/100/0.5) into f25-f31, so register allocation and scheduling differ.
+// Matching note: the loop-invariant float literals are named locals so MWCC hoists them into
+// f25-f31; `(f32)r` is computed once into `rf` before the second `irand`; the field_0x74 add is
+// one `irand` with the 330 default loaded before the `d < 70` branch; and the declaration order
+// `work, i, entry, offset, r` is what lands i/entry/offset in r29/r28/r27.
 USER_FUNC(elmos1000tai_init) {
     NanNpcWork* work;
-    NanNpcEntry* entry;
     s32 i;
+    NanNpcEntry* entry;
     s32 offset;
     s32 r;
+    f32 c90 = 90.0f;
+    f32 c6p2832 = 6.2832f;
+    f32 c360 = 360.0f;
+    f32 c0p9 = 0.9f;
+    f32 c100 = 100.0f;
+    f32 c0p5 = 0.5f;
 
     work = nanNPCWork;
     work->flags |= 1;
     for (i = 0, offset = 0; i < work->count; i++, offset += sizeof(NanNpcEntry)) {
+        s32 d;
+        s32 r2;
+        f32 s;
+    f32 angle;
+        f32 v;
+        f32 c;
+        f32 rf;
         entry = (NanNpcEntry*)((u8*)work->entries + offset);
         *(s32*)entry->pose |= 4;
         entry->color.a = 0;
-        entry->field_0x60 = 90.0f;
+        entry->field_0x60 = c90;
         entry->field_0x70 = i;
-        if (i % 3 == 0) {
-            r = irand(360);
-        } else {
+        if (i % 3 != 0) {
             r = irand(140) + 110;
-        }
-        *(s32*)entry->field_0x74 = 250;
-        if (abs(180 - r) < 70) {
-            *(s32*)entry->field_0x74 += irand((70 - abs(180 - r)) * 1000 / 70 + 330);
         } else {
-            *(s32*)entry->field_0x74 += irand(330);
+            r = irand(360);
         }
-        entry->position.x = 0.9f * ((f32)*(s32*)entry->field_0x74 * (f32)sin(6.2832f * (f32)r / 360.0f));
-        entry->position.y = 100.0f;
-        entry->position.z = 0.5f * (f32)*(s32*)entry->field_0x74 * cos(6.2832f * (f32)r / 360.0f) - 100.0f;
+        rf = (f32)r;
+        *(s32*)entry->field_0x74 = 250;
+        d = abs(180 - r);
+        r2 = 330;
+        if (d < 70) {
+            r2 = (70 - d) * 1000 / 70 + 330;
+        }
+        *(s32*)entry->field_0x74 += irand(r2);
+        angle = c6p2832 * rf / c360;
+        v = (f32)*(s32*)entry->field_0x74;
+        s = (f32)sin(angle);
+        c = (f32)cos(angle);
+        entry->position.x = c0p9 * (v * s);
+        entry->position.y = c100;
+        entry->position.z = c0p5 * (v * c) - c100;
     }
     return EVT_RETURN_DONE;
 }
@@ -1737,18 +1759,28 @@ EVT_BEGIN(anm_neji)
     RETURN
 EVT_END()
 
-// NONMATCHING (69.13%): local declaration order/scheduling differ; original initialises the
-// Vec zero constant after the angle computation and swaps f29/f31 for x/y.
+// All instructions match; the compiler keeps 5 FP callee-saved regs (angle f27, x f28, y f29,
+// z f30, speed f31) where the original uses 4 (angle f28, x f29, z f30, y f31 with speed reusing
+// f31 after pos.y). A named `zero` local for the zero-Vec literal got the pos stores closer.
+// NONMATCHING (89.90%): 5 vs 4 FP callee-saved registers; the rest is stack offsets.
 USER_FUNC(unk_muj_00004328) {
     Mtx m1;
     Mtx m2;
     Mtx m3;
-    Vec pos = { 0.0f, 0.0f, 0.0f };
-    f32 x = evtGetFloat(event, GW(0));
-    f32 y = evtGetFloat(event, GW(1));
-    f32 z = evtGetFloat(event, GW(2));
-    f32 speed = evtGetFloat(event, LW(0));
-    f32 angle = 5.0f * x / -6000.0f;
+    Vec pos;
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 speed;
+    f32 zero;
+    f32 angle;
+    x = evtGetFloat(event, GW(0));
+    y = evtGetFloat(event, GW(1));
+    z = evtGetFloat(event, GW(2));
+    zero = 0.0f;
+    speed = evtGetFloat(event, LW(0));
+    pos = *(Vec*)&(Vec){ zero, zero, zero };
+    angle = 5.0f * x / -6000.0f;
 
     pos.x = x;
     pos.y = y;
@@ -2191,6 +2223,7 @@ MarcoShip* marcoship;
 
 // TODO: write pressStartGX (static, 0x4d8 bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
+
 
 void elmos1000tai_seq00(struct NanNpcEntry* entry) {
     s32 elapsed;

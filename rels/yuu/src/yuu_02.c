@@ -216,124 +216,173 @@ static void monte_disp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (68.93%): register allocation/stack frame differ; the collision loop uses an unexplained 0x38 stride.
+static inline f32 monte_rand(f32 min, f32 max) {
+    return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
+}
+
 USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
+    s32 wasAllocated = 0;
     YuuMinigame3Data* data = (YuuMinigame3Data*)work->data;
-    s32 already = 0;
-    s32 i, j, k;
-    s32 seg;
     s32 total;
-    s32 inner;
+    s32 i;
+    s32 tableIdx;
+    s32 pointIdx;
     s32 placed;
-    Vec cur, prev, d;
-    HitCheckQuery query;
-    s32 n;
-    s32 r;
-    f32 lo, hi;
+    s32 allocSize;
 
     if (isFirstCall) {
         if (unk_yuu_bss00000004 != NULL) {
-            already = 1;
+            wasAllocated = 1;
         }
         total = 0;
-        for (seg = 0; montetable[seg].type != 0; seg++) {
-            total += montetable[seg].count;
+        i = 0;
+        while (montetable[i].type != 0) {
+            total += montetable[i].count;
+            i++;
         }
-        unk_yuu_bss00000004 = (MonteEntry*)_mapAlloc(total * 0x44);
-        memset(unk_yuu_bss00000004, 0, total * 0x44);
+        allocSize = total * 0x44;
+        unk_yuu_bss00000004 = (MonteEntry*)_mapAlloc(allocSize);
+        memset(unk_yuu_bss00000004, 0, allocSize);
         unk_yuu_bss00000004->count = total;
         unk_yuu_bss00000004->work = work;
         data->field_24 = 0;
 
-        seg = 0;
-        inner = 0;
+        tableIdx = 0;
+        pointIdx = 0;
         placed = 0;
         for (i = 0; i < unk_yuu_bss00000004->count; i++) {
-            unk_yuu_bss00000004[i].pos.y = 210.0f;
-            for (j = 0; j < 500; j++) {
-                lo = montetable[seg].x0 < montetable[seg].x1 ? montetable[seg].x0 : montetable[seg].x1;
-                hi = montetable[seg].x0 < montetable[seg].x1 ? montetable[seg].x1 : montetable[seg].x0;
-                unk_yuu_bss00000004[i].pos.x = lo + (f32)irand((s32)(100.0f * (hi - lo))) / 100.0f;
-                lo = montetable[seg].z0 < montetable[seg].z1 ? montetable[seg].z0 : montetable[seg].z1;
-                hi = montetable[seg].z0 < montetable[seg].z1 ? montetable[seg].z1 : montetable[seg].z0;
-                unk_yuu_bss00000004[i].pos.z = lo + (f32)irand((s32)(100.0f * (hi - lo))) / 100.0f;
+            s32 k;
+            s32 j;
+            f32* base = (f32*)((u8*)&unk_yuu_bss00000004[i] + 8);
+            f32 min;
+            f32 max;
+            Vec d;
+            Vec cur;
+            Vec prev;
+            HitCheckQuery query;
+            Vec hit;
 
-                cur = unk_yuu_bss00000004[i].pos;
+            base[2] = 210.0f;
+            j = 0;
+            do {
+                j++;
+                if (j > 500) {
+                    *(Vec*)(base + 1) = (Vec){0.0f, 0.0f, 0.0f};
+                    break;
+                }
+                if (montetable[tableIdx].x0 < montetable[tableIdx].x1) {
+                    min = montetable[tableIdx].x0;
+                    max = montetable[tableIdx].x1;
+                } else {
+                    min = montetable[tableIdx].x1;
+                    max = montetable[tableIdx].x0;
+                }
+                base[1] = monte_rand(min, max);
+                if (montetable[tableIdx].z0 < montetable[tableIdx].z1) {
+                    min = montetable[tableIdx].z0;
+                    max = montetable[tableIdx].z1;
+                } else {
+                    min = montetable[tableIdx].z1;
+                    max = montetable[tableIdx].z0;
+                }
+                max = max - min;
+                base[3] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
+
+                cur = *(Vec*)(base + 1);
                 cur.y = 0.0f;
-                for (k = 0; k < inner; k++) {
-                    u8* p = (u8*)&unk_yuu_bss00000004[i].pos - 4 - (k + 1) * 0x38;
-                    prev.x = *(f32*)(p + 4);
+                for (k = 0; k < pointIdx; k++) {
+                    u8* prevp = (u8*)base - (k + 1) * 0x38 + 4;
+                    prev = *(Vec*)prevp;
                     prev.y = 0.0f;
-                    prev.z = *(f32*)(p + 0xC);
                     PSVECSubtract(&cur, &prev, &d);
                     if (PSVECMag(&d) < 20.0f) {
                         break;
                     }
                 }
-                if (k != inner) {
+                if (k != pointIdx) {
                     continue;
                 }
 
-                query.targetPos = unk_yuu_bss00000004[i].pos;
-                query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
-                query.targetDistance = 220.0f;
-                if (hitCheckVecFilter(&query, NULL) == NULL) {
-                    continue;
-                }
                 {
-                    Vec hit = query.hitPos;
-                    query.targetPos.x -= 9.0f;
-                    if (hitCheckVecFilter(&query, NULL) != NULL) {
-                        if (query.hitPos.y > hit.y + 1.0f) {
+                    HitCheckQuery* q = &query;
+                    q->targetPos = *(Vec*)(base + 1);
+                    q->targetDistance = 220.0f;
+                    q->targetDir = (Vec){0.0f, -1.0f, 0.0f};
+                    if (hitCheckVecFilter(q, NULL) == NULL) {
+                        continue;
+                    }
+                    q->targetPos.x -= 9.0f;
+                    hit = q->hitPos;
+                    if (hitCheckVecFilter(q, NULL) != NULL) {
+                        if (q->hitPos.y > hit.y + 1.0f) {
                             continue;
                         }
                     }
-                    unk_yuu_bss00000004[i].pos.y = query.hitPos.y;
+                    base[2] = q->hitPos.y;
                 }
                 break;
-            }
-            if (j == 500) {
-                unk_yuu_bss00000004[i].pos = (Vec){0.0f, 0.0f, 0.0f};
-            }
-            unk_yuu_bss00000004[i].scale = 1.0f;
-            inner++;
+            } while (1);
+            pointIdx++;
             placed++;
-            if (inner >= montetable[seg].count) {
-                if (montetable[seg].type == 2) {
+            if (pointIdx >= montetable[tableIdx].count) {
+                if (montetable[tableIdx].type == 2) {
+                    s32 n;
+                    s32 r;
                     for (n = 0; n < placed; n++) {
                         unk_yuu_bss00000004[i - n].active = 1;
                         unk_yuu_bss00000004[i - n].hit = 1;
                     }
-                    for (n = 0; n < montetable[seg].count;) {
-                        r = irand(placed);
-                        if (unk_yuu_bss00000004[i - r].active != 0) {
-                            unk_yuu_bss00000004[i - r].active = 0;
-                            unk_yuu_bss00000004[i - r].hit = 0;
-                            n++;
-                        }
+                    n = 0;
+                    while (n < montetable[tableIdx].count) {
+                        do {
+                            r = irand(placed);
+                        } while (unk_yuu_bss00000004[i - r].active == 0);
+                        unk_yuu_bss00000004[i - r].active = 0;
+                        unk_yuu_bss00000004[i - r].hit = 0;
+                        n++;
                     }
                     placed = 0;
                 }
-                inner = 0;
-                seg++;
+                pointIdx = 0;
+                tableIdx++;
             }
+            base[4] = 1.0f;
         }
     }
 
-    for (i = 0; i < unk_yuu_bss00000004->count; i++) {
-        if (unk_yuu_bss00000004[i].hit == 0) {
-            MarioWork* mario = marioGetPtr();
-            if (get_monte_check(&unk_yuu_bss00000004[i].pos, &mario->position)) {
-                data->field_24++;
-                mario = marioGetPtr();
-                psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", &mario->position);
-                unk_yuu_bss00000004[i].active = 1;
-                unk_yuu_bss00000004[i].hit = 1;
+    {
+#ifdef MUST_MATCH
+        // match-only: the union member makes MWCC materialise the address directly (no `mr`); the plain pointer
+        // is the natural form (see yuu_01.c fall_rtn).
+        union { const char* p; u32 u; } sfx;
+        sfx.p = "SFX_EVT_GAME_MONTE_COUNT1";
+#else
+        const char* sfx = "SFX_EVT_GAME_MONTE_COUNT1";
+#endif
+        for (i = 0; i < unk_yuu_bss00000004->count; i++) {
+            MonteEntry* p = &unk_yuu_bss00000004[i];
+            switch (p->hit) {
+            case 0:
+                if (get_monte_check(&p->pos, &marioGetPtr()->position) == 1) {
+                    data->field_24++;
+                    psndSFXOn_3D(
+#ifdef MUST_MATCH
+                        (const char*)(u32)sfx.p,
+#else
+                        sfx,
+#endif
+                        &marioGetPtr()->position);
+                    p->active = 1;
+                    p->hit = 1;
+                }
+                break;
+            case 1:
+                break;
             }
         }
     }
-    if (already == 0) {
+    if (wasAllocated == 0) {
         dispEntry(4, 0.0f, 1, monte_disp, unk_yuu_bss00000004);
     }
     return EVT_RETURN_BLOCK;

@@ -3411,3 +3411,19 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Needs Isaac (outside the approved scope):** PR #131 (`unit_party_christine`; the nokotarou/christine `.data` boundary and `symbols.txt`), `unit_party_sanders` (the same pair at 0x803848D8 is the tail of `unit_party_chuchurina`'s `.data`: a boundary move of a not-yet-linked pair of units), `evt_lect_usu` (the unit's `.rodata` split ends at 0x2F04, its functions' constants `double_to_int_usu_00006728` (0x2F20), `zero_usu_00006730`, ... sit in the next unit's range: the end should move to cover them; with the named `vec3_usu_*`/`dat_usu_*` definitions removed its first 716 `.rodata` bytes are already equal).
 - **`gor/unit/unit_lecture_frankli_sac`** (REL): functions in text order (the reverse of what the generated source had, `fn_order.py` for RELs; the `opt_*` pragma block must stay around `_battle_set_lecture_unit_id` and `lecture_init`), `defence`/`defence_attr` defined after `unit_lecture_frankli_sac` (the target lays them out behind it), `init_event` before `phase_event`, the initialised `f32 point[4]` removed (it is `.bss`), the 4-byte `.data` gap: every section is equal, all 15 functions 100%; the link still differs in 30 `.data` relocations that point at text offsets 0x150-0x164 of the module (ours 0x10 off): not found.
 - Still parked (see Grind 54-58): `driver/fadedrv` (`lbl_802C1538`, `.sdata2` order), `eff_updown`, `eff_break`, `eff_bomb`, `eff_mist2`, `eff_mizutama`, `countdown`, `eff_snowfall_n64` (`cam_clip_chk` 99.90%; 64 operand-order variants of its two sums do not reach 100%), `battle_item_data`, `hw_aramdma`, `tik_00`, `unit_boss_black_peach`, `eff_cool_leaf_n64`, `eff_magic3_n64`, `eff_pturn_n64`, `mot_dokan`.
+## Wave 52, batch 1 (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- 41 of wave 52's 61 agents (see "Wave 51, batch 2, and wave 52"), collected at 09:15 onto main b0396e7 by
+  sequential merges: 8,627 -> 8,659 functions. unit_boss_gundan_zako_group2 gets 8 (its file had been left out of
+  wave 50 for lost header edits; the launcher now brings `rels/*/include` back as a patch). bom/bom_01's header
+  signature changes broke bom.c, so both stay as on main; the greedy revert cleared seven section drops for three
+  functions.
+- Review (`scratch/wave52/review1.md`): an agent rewrote effCalcMayaAnimMatrix with the same defects #142 removed
+  (unscaled s16 keys, a weight's sign), so it is unwritten again; **an agent prompt should list functions a review
+  took out, or the next wave writes them back**. `_chuchu_item_steal` tested and cleared unit flag 0x4000 where
+  retail uses 0x40000000 (`lis r4, 0x4000`). sac_genki multiplies by 60 twice as retail (one fold to 3600 differs
+  by an ulp). evt_cam, hitdrv, eff_opuku_wcurtain, msgdrv, battle_ac and jin_07 had nothing new at 100% and
+  carried unused helpers, externs or wrong notes: as on main.
+- **Follow-up (form, behaviour equal):** match-only shapes outside MUST_MATCH in gcDvdCheckThread (`s32 width`,
+  `half = 0.5f`), unit_boss_gundan_zako_group2's shake_ceil (`volatile` reads) and its ceil functions' raw-offset
+  macros on `work_20_bss_6C`, chuchurina's redundant `else if (list != NULL)`.
