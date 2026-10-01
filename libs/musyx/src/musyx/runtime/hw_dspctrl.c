@@ -15,6 +15,8 @@
 
 
 */
+// <math.h> (pulled in by musyx.h) pools two sqrt doubles in .sdata2 of every file that includes it; the original has none.
+#define _MATH_H_
 #include "dolphin/os/OSCache.h"
 #include "musyx/assert.h"
 #include "musyx/dspvoice.h"
@@ -52,6 +54,8 @@ u16* dspCmdPtr = NULL;
 u16 dspCmdFirstSize = 0;
 
 u16* dspCmdList = NULL;
+
+u32 dspCompressorOn = 0;
 
 u32 dspHRTFOn = FALSE;
 
@@ -233,7 +237,7 @@ void salActivateStudio(u8 studio, u32 isMaster, SND_STUDIO_TYPE type) {
   dspStudio[studio].auxAHandler = dspStudio[studio].auxBHandler = NULL;
 }
 
-u16 compressorTable[3360] = {
+u16 compressorTable[3360] __attribute__((aligned(32))) = {
     0x7FA1, 0x7F43, 0x7EE6, 0x7E88, 0x7E2B, 0x7DCE, 0x7D72, 0x7D16, 0x7CBA, 0x7C5E, 0x7C02, 0x7BA7,
     0x7B4C, 0x7AF1, 0x7A97, 0x7A3D, 0x79E3, 0x7989, 0x7930, 0x78D6, 0x787E, 0x7825, 0x77CD, 0x7774,
     0x771C, 0x76C5, 0x766D, 0x7616, 0x75BF, 0x7569, 0x7512, 0x74BC, 0x7466, 0x7411, 0x73BB, 0x7366,

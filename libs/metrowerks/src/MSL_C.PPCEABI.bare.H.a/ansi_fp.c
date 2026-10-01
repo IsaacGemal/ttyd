@@ -1,6 +1,6 @@
 #include "MSL_C/ansi_fp.h"
 #include "MSL_C/MSL_Common/float.h"
-#include "ctype.h"
+#include "MSL_C/ctype.h"
 #include "limits.h"
 
 static int __count_trailing_zerol(unsigned long x) {
@@ -323,6 +323,46 @@ int __equals_dec(const decimal* x, const decimal* y) {
 }
 
 
+static int __less_dec(const decimal* x, const decimal* y) {
+    if (x->sig.text[0] == 0) {
+        if (y->sig.text[0] != 0)
+            return 1;
+        return 0;
+    }
+
+    if (y->sig.text[0] == 0) {
+        return 0;
+    }
+
+    if (x->exp == y->exp) {
+        int i;
+        int l = x->sig.length;
+
+        if (l > y->sig.length) {
+            l = y->sig.length;
+        }
+
+        for (i = 0; i < l; i++) {
+            if (x->sig.text[i] < y->sig.text[i]) {
+                return 1;
+            } else if (y->sig.text[i] < x->sig.text[i]) {
+                return 0;
+            }
+        }
+
+        if (l == x->sig.length) {
+            for (; i < y->sig.length; i++) {
+                if (y->sig.text[i] != 0) {
+                    return 1;
+                }
+            }
+        }
+        return 0;
+    }
+
+    return x->exp < y->exp;
+}
+
 void __minus_dec(decimal* z, const decimal* x, const decimal* y) {
     int zlen, dexp;
     unsigned char *ib, *i, *ie;
@@ -524,11 +564,180 @@ void __num2dec(const decform* form, double x, decimal* d) {
     }
 }
 
-// @unused
-// NONMATCHING (5.94%): 1 instruction differs, 992 missing, plus register differences.
-double __dec2num(const decimal* d)
-{
-    decimal max;
+double __dec2num(const decimal* d) {
+    if (d->sig.length <= 0) {
+        return copysign(0.0, d->sign == 0 ? 1.0 : -1.0);
+    }
 
-	__str2dec(&max, "179769313486231580793729011405303420", 308);
+    switch (d->sig.text[0]) {
+        case '0':
+            return copysign(0.0, d->sign == 0 ? 1.0 : -1.0);
+        case 'I':
+            return copysign((double)HUGE_VALF, d->sign == 0 ? 1.0 : -1.0);
+        case 'N': {
+            double result;
+            unsigned long long* ll = (unsigned long long*)&result;
+
+            *ll = 0x7FF0000000000000;
+            if (d->sign)
+                *ll |= 0x8000000000000000;
+
+            if (d->sig.length == 1) {
+                *ll |= 0x8000000000000;
+            } else {
+                int i;
+                int ndig = d->sig.length;
+                unsigned char* p = (unsigned char*)ll + 1;
+                int nonzero = 0;
+                int high = 1;
+
+                if (ndig > 14)
+                    ndig = 14;
+
+                for (i = 1; i < ndig; i++) {
+                    unsigned char c = d->sig.text[i];
+                    unsigned char n = _isdigit(c) ? c - '0' : _tolower(c) - 'a' + 10;
+
+                    if (n)
+                        nonzero = 1;
+
+                    if (high) {
+                        *p++ |= n;
+                    } else {
+                        *p = n << 4;
+                    }
+                    high = !high;
+                }
+
+                if (!nonzero)
+                    *ll |= 0x8000000000000;
+            }
+
+            return result;
+        }
+    }
+
+    {
+        static double pow_10[8] = {1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8};
+
+        decimal dec = *d;
+        unsigned char* i = dec.sig.text;
+        unsigned char* e = i + dec.sig.length;
+        double first_guess;
+        int exponent;
+
+        for (; i < e; ++i)
+            *i -= '0';
+        dec.exp += dec.sig.length - 1;
+        exponent = dec.exp;
+
+        {
+            decimal max;
+
+            __str2dec(&max, "179769313486231580793729011405303420", 308);
+            if (__less_dec(&max, &dec)) {
+                return copysign((double)HUGE_VALF, d->sign == 0 ? 1.0 : -1.0);
+            }
+        }
+
+        i = dec.sig.text;
+        first_guess = *i++;
+
+        while (i < e) {
+            unsigned long ival = 0;
+            int j;
+            double temp1, temp2;
+            int ndig = (int)(e - i) % 8;
+
+            if (ndig == 0)
+                ndig = 8;
+
+            for (j = 0; j < ndig; ++j, ++i) {
+                ival = ival * 10 + *i;
+            }
+
+            temp1 = first_guess * pow_10[ndig - 1];
+            temp2 = temp1 + ival;
+
+            if (ival != 0 && temp1 == temp2)
+                break;
+
+            first_guess = temp2;
+            exponent -= ndig;
+        }
+
+        if (exponent < 0) {
+            first_guess /= pow(5.0, -exponent);
+        } else {
+            first_guess *= pow(5.0, exponent);
+        }
+
+        first_guess = ldexp(first_guess, exponent);
+
+        if (fpclassify(first_guess) == 2) {
+            first_guess = LDBL_MAX;
+        }
+
+        {
+            decimal feedback1, feedback2, difflow, diffhigh;
+            double next_guess;
+            unsigned long long* ull = (unsigned long long*)&next_guess;
+            int guessed_low = 0;
+
+            __num2dec_internal(&feedback1, first_guess);
+
+            if (__equals_dec(&feedback1, &dec)) {
+                goto done;
+            }
+            if (__less_dec(&feedback1, &dec)) {
+                guessed_low = 1;
+            }
+
+            next_guess = first_guess;
+
+            while (1) {
+                if (guessed_low) {
+                    ++*ull;
+                    if (fpclassify(next_guess) == 2) {
+                        goto done;
+                    }
+                } else {
+                    --*ull;
+                }
+
+                __num2dec_internal(&feedback2, next_guess);
+                if (guessed_low && !__less_dec(&feedback2, &dec)) {
+                    break;
+                } else if (!guessed_low && !__less_dec(&dec, &feedback2)) {
+                    difflow = feedback1;
+                    feedback1 = feedback2;
+                    feedback2 = difflow;
+                    {
+                        double temp = first_guess;
+                        first_guess = next_guess;
+                        next_guess = temp;
+                    }
+                    break;
+                }
+                feedback1 = feedback2;
+                first_guess = next_guess;
+            }
+
+            __minus_dec(&difflow, &dec, &feedback1);
+            __minus_dec(&diffhigh, &feedback2, &dec);
+
+            if (__equals_dec(&difflow, &diffhigh)) {
+                if (*(unsigned long long*)&first_guess & 1) {
+                    first_guess = next_guess;
+                }
+            } else if (!__less_dec(&difflow, &diffhigh)) {
+                first_guess = next_guess;
+            }
+        }
+    done:
+        if (dec.sign) {
+            first_guess = -first_guess;
+        }
+        return first_guess;
+    }
 }
