@@ -3438,3 +3438,9 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 
 - Approved by Isaac (relayed by the orchestrator, 12:42). `config/G8MJ01/usu/splits.txt`: `event/evt_lect_usu.c` `.rodata` ends at 0x2F40 instead of 0x2F04, so its own constants (`double_to_int_usu_00006728` ... `float_1_usu_00006744`) are no longer two `auto_03_*_rodata` units. `ci.py` needs `--allow-regress usu/auto_03_00002F04_rodata --allow-regress usu/auto_03_00002F20_rodata` because those two units are gone.
 - Source: the named `vec3_usu_*`/`dat_usu_*` definitions are removed; the two remaining uses are compound literals (`(Vec){0.0f, 0.0f, 0.0f}`, `(GXColor){0xFF, 0xFF, 0xFF, 0xFF}`). They are the templates MWCC makes for the code's own compound literals; defining them by name made a second copy (48 bytes). `.rodata` and `.data` are then equal and the unit links (38/38 functions at 100%).
+
+## Grind 61: unit_party_sanders: the chuchurina/sanders `.data` boundary moves 8 bytes; data written (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- Approved by Isaac (relayed by the orchestrator, 12:42). The `{ -1.0f, 1.0f }` pair at 0x803848D8 was the tail of chuchurina's `attack_audience_event`; the `.data` boundary is now 0x803848D8, `attack_audience_event` is 0x330 bytes, `lbl_803848D8` (8 bytes) replaces `lbl_803848DC`. Same shape as christine (Grind 60).
+- `unit_party_sanders.c` has its whole `.data` (`dol_gen --append`); the four weapons are named in the unit's own `.data`, so the `MUST_MATCH` base-offset block of `__makeTechMenuFunc` is gone and it is 100% in the natural form.
+- Not linked: `_get_bomb_hit_position` is still 92.86% (callee-saved map shifted: outX/outY take r31/r30 in the target, and the `double_to_int` constant is loaded by name where we pool it).
