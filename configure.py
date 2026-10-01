@@ -876,7 +876,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "cam_road.c", cflags=cflags_static_nodefer),
             Object(Matching, "cam_shift.c"),
-            Object(NonMatching, "countdown.c"),
+            Object(Matching, "countdown.c"),
             Object(NonMatching, "database.c"),
             Object(NonMatching, "error_handler.c"),
             Object(Matching, "event.c"),
