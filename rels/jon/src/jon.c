@@ -2372,7 +2372,6 @@ typedef void (*voidfunctionptr)(void);
 
 extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
-
 void _prolog(void) {
     voidfunctionptr* ctor;
 
@@ -2400,7 +2399,7 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
-// NONMATCHING (91.4%): callee-saved register allocation and the GXBegin vertex constant schedule differ.
+// NONMATCHING (91.39%): callee-saved register allocation and the GXBegin vertex constant schedule differ.
 void raster_disp(CameraId camera, void* param) {
     s32 row;
     s32 col;

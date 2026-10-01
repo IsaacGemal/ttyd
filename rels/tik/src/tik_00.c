@@ -130,7 +130,6 @@ static char* shopper_data[38] = {
     "tik_shop_23", "tik_shop_24", "tik_shop_25", "tik_shop_26", "tik_shop_27", "tik_shop_28",
     "tik_shop_29", "shop_30", "shop_31", "shop_32", "shop_33", "shop_34",
 };
-
 static USER_FUNC(setmertn) {
     s32 name = evtGetValue(event, event->args[0]);
 
@@ -143,7 +142,6 @@ static USER_FUNC(setmertn) {
 // int->float register allocation (value in r5, conversion double address in r6, event->args in r4).
 static inline f32 ss_check_to_f(volatile s32* p) { return (f32)*p; }
 #endif
-
 static USER_FUNC(ss_check) {
 #ifdef MUST_MATCH
     evtSetFloat(event, event->args[0], ss_check_to_f(ssf));
@@ -223,7 +221,9 @@ USER_FUNC(uranai_exit_func) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (81.48%): 196 of 337 instructions differ: 126 with different operands, 19 replaced, 39 missing, 12 extra
+// NONMATCHING (97.92%): the code is byte-for-byte right except the tan/z block: MWCC
+// keeps the tan result in f0 and 0.5f in f4, the original keeps tan in f4 and 0.5f in f0,
+// so frsp/fmuls/fdivs come out with the two registers swapped.
 void uranai_cap(CameraId cameraId, void* param) {
     CameraEntry cam;
     f32 viewport[6];
@@ -231,18 +231,17 @@ void uranai_cap(CameraId cameraId, void* param) {
     Mtx44 persp;
     Mtx lookMtx;
     Mtx mtx;
+    Vec min;
+    Vec max;
     Vec camPos;
     Vec camUp;
     Vec camTarget;
-    Vec min;
-    Vec max;
-    Vec bboxMin;
-    Vec bboxMax;
     AnimationPoseData* anim;
     NpcEntry* npc;
     f32 ratio;
-    s32 height;
-    s32 width;
+    f64 tanValue;
+    u16 width;
+    u16 height;
     u32 left;
     u32 top;
     u32 wd;
@@ -258,20 +257,19 @@ void uranai_cap(CameraId cameraId, void* param) {
     GXSetScissor(1, 1, width - 2, height - 2);
     C_MTXPerspective(persp, 25.0f, (f32)(width / height), 1.0f, 1000.0f);
     GXSetProjection(persp, GX_PERSPECTIVE);
+    camTarget = (Vec){0.0f, 0.0f, 0.0f};
+    camTarget.y = (f32)height / 3.0f;
     camUp = (Vec){0.0f, 1.0f, 0.0f};
     camPos = (Vec){0.0f, 0.0f, 0.0f};
-    camTarget = (Vec){0.0f, 0.0f, 0.0f};
-    camPos.y = (f32)height / 3.0f;
-    camTarget.y = camPos.y;
-    camPos.z = 0.7f * ((f32)height * 0.5f / (f32)tan(0.21816615760326385));
+    camPos.y = camTarget.y;
+    tanValue = tan(0.21816615760326385);
+    camPos.z = 0.7f * ((f32)height * 0.5f / (f32)tanValue);
     C_MTXLookAt(lookMtx, &camPos, &camUp, &camTarget);
     cam = *camGetPtr(cameraId);
     npc = npcNameToPtr("うらない師");
     anim = animPoseGetAnimBaseDataPtr(npc->poseId);
-    bboxMin = anim->bboxMin;
-    bboxMax = anim->bboxMax;
-    min = bboxMin;
-    max = bboxMax;
+    min = (Vec){ anim->bboxMin.x, anim->bboxMin.y, anim->bboxMin.z };
+    max = (Vec){ anim->bboxMax.x, anim->bboxMax.y, anim->bboxMax.z };
     ratio = (f32)width / (2.0f * (max.x - min.x));
     PSMTXCopy(lookMtx, camGetCurPtr()->view);
     animPosePeraOff(npc->poseId);

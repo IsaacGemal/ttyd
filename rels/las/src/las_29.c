@@ -2294,16 +2294,18 @@ void _hikariEntry(const char* name, s32 type, f32 scale) {
     effSetName(effect, name);
 }
 
-// NONMATCHING (98.25%)
 static USER_FUNC(rousoku_init) {
-    s32 type = evtGetValue(event, event->args[0]) ? 8 : 3;
+    s32 cond = evtGetValue(event, event->args[0]);
+    s32 type = 3;
     s32 i;
     char name[8];
     Vec pos;
 
+    if (cond) {
+        type = 8;
+    }
     for (i = 1; i <= 0x42; i++) {
         EffectEntry* effect;
-
         sprintf(name, "hi%d", i);
         mapGrpFlagOn(name, 1);
         mapObjGetPos(name, &pos);
@@ -2396,20 +2398,18 @@ USER_FUNC(hikari_se) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.31%)
 USER_FUNC(hikari_onoff) {
+    s32* evt;
     s32* args = event->args;
     s32* data = (s32*)args[0];
     s32 a = evtGetValue(event, args[1]);
     s32 onoff = evtGetValue(event, args[2]);
     s32 index = evtGetValue(event, args[3]);
     s32 limit = evtGetValue(event, args[4]);
-    void* evt;
     s32 value = data[index * 2];
     s32 i;
 
     evt = onoff ? hikari_off_evt : hikari_on_evt;
-
     if (value == -999) {
         evtSetValue(event, args[5], -1);
         return EVT_RETURN_DONE;
@@ -2426,33 +2426,32 @@ USER_FUNC(hikari_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (82.71%)
 USER_FUNC(all_hikari_change_kuro) {
     s32 idx = evtGetValue(event, event->args[0]);
     s32 i;
+    s32 value;
     char name[8];
     Vec pos2;
     Vec pos;
     EffectEntry* effect;
 
     if (idx != -1) {
-        s32* d = (s32*)&hikari_data[idx * 2];
-
-        while (d[0] != -999) {
-            sprintf(name, "hi%d", d[1]);
+        i = idx;
+        value = (s32)hikari_data[i * 2];
+        while (value != -999) {
+            sprintf(name, "hi%d", (s32)hikari_data[i * 2 + 1]);
             effDelete(effNameToPtr(name));
             mapObjGetPos(name, &pos2);
             effect = effFireEntry(8, 1000, pos2.x, pos2.y - 7.0f, pos2.z, 1.0f);
             ((effFireData*)effect->userdata)->field_0x78 = 0.5f;
             ((effFireData*)effect->userdata)->field_0x7C = 0.5f;
             effSetName(effect, name);
-            d += 2;
+            i++;
+            value = (s32)hikari_data[i * 2];
         }
     }
     for (i = 0x27; i <= 0x42; i++) {
-        if (i == 0x40 || i == 0x42) {
-            continue;
-        }
+        if (i == 0x40 || i == 0x42) continue;
         sprintf(name, "hi%d", i);
         effDelete(effNameToPtr(name));
         mapObjGetPos(name, &pos);
@@ -2463,7 +2462,6 @@ USER_FUNC(all_hikari_change_kuro) {
     }
     return EVT_RETURN_DONE;
 }
-
 
 void map_color_tev(void* work) {
     MapColorTevWork* w = work;
@@ -2529,7 +2527,6 @@ void b_peach_msgcb(s32 state) {
     }
 }
 
-// NONMATCHING (98.57%)
 USER_FUNC(add_vy) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -2538,7 +2535,12 @@ USER_FUNC(add_vy) {
     f32 step = a ? 0.01f : -0.01f;
     NpcEntry* npc = npcNameToPtr("ブラックピーチ");
 
+#ifdef MUST_MATCH
+    base = step * (f32)b + base;
+    npc->moveOffset.y += base;
+#else
     npc->moveOffset.y += (f32)b * step + base;
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -2627,7 +2629,6 @@ static USER_FUNC(starstone_entry) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.59%)
 static USER_FUNC(starstone_set_pos) {
     s32* args = event->args;
     f32 x0 = evtGetFloat(event, args[0]);
@@ -2635,8 +2636,8 @@ static USER_FUNC(starstone_set_pos) {
     f32 z0 = evtGetFloat(event, args[2]);
     f32 angle = evtGetFloat(event, args[3]);
     f32 radius = evtGetFloat(event, args[4]);
-    f32 a;
     f32 c;
+    f32 a;
     f32 s;
     s32 i;
     char name[16];
@@ -2728,19 +2729,18 @@ USER_FUNC(eff_b_peach_ripple) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.11%)
+// `deg` is a real temp: it makes MWCC pool 180 before 6.2831855 while keeping the same code.
 USER_FUNC(eff_b_peach_mist) {
     NpcEntry* npc = npcNameToPtr("ピーチ姫");
-    CameraEntry* cam = camGetPtr(CAMERA_3D);
-    f32 angle;
     f32 s;
+    f32 angle;
     f32 c;
     f32 px;
     f32 pz;
+    f32 deg;
 
-    angle = 180.0f + cam->viewYaw;
-    angle = angle * 6.2831855f;
-    angle = angle / 360.0f;
+    deg = 180.0f + camGetPtr(CAMERA_3D)->viewYaw;
+    angle = deg * 6.2831855f / 360.0f;
     s = sin(angle);
     c = cos(angle);
     px = 20.0f * s;

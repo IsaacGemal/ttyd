@@ -1885,8 +1885,6 @@ static EVT_BEGIN(wait_event)
 EVT_END()
 
 static s32 x_flag_data[2];
-
-
 static USER_FUNC(wariai_enzan_1) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1922,7 +1920,6 @@ static inline f32 gance_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps)
     return intplGetValue(mode, step, steps, start, end);
 }
 #endif
-
 static USER_FUNC(wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1947,8 +1944,6 @@ static USER_FUNC(wariai_enzan_1f_intpl) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (92.67%): same intplGetValue call-setup difference as wariai_enzan_1f_intpl
-// (folded constant load + reversed int-arg load order) at all four call sites.
 USER_FUNC(wariai_enzan_1f_intpl_w) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]) - 1.0f;
@@ -1968,9 +1963,9 @@ USER_FUNC(wariai_enzan_1f_intpl_w) {
             evtSetFloat(event, out, c);
             return EVT_RETURN_DONE;
         }
-        r1 = 1.0f - intplGetValue((s32)t, (s32)(b - a), (s32)b, 1.0f, 0.0f);
+        r1 = 1.0f - gance_intpl((s32)t, 1.0f, 0.0f, (s32)(b - a), (s32)b);
     } else {
-        r1 = intplGetValue((s32)t, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+        r1 = gance_intpl((s32)t, 0.0f, 1.0f, (s32)(b - a), (s32)b);
     }
     if (u >= 14.0f) {
         f32 t2 = t - 14.0f;
@@ -1978,9 +1973,9 @@ USER_FUNC(wariai_enzan_1f_intpl_w) {
             evtSetFloat(event, out, c);
             return EVT_RETURN_DONE;
         }
-        r2 = 1.0f - intplGetValue((s32)t2, (s32)(b - a), (s32)b, 1.0f, 0.0f);
+        r2 = 1.0f - gance_intpl((s32)t2, 1.0f, 0.0f, (s32)(b - a), (s32)b);
     } else {
-        r2 = intplGetValue((s32)u, (s32)(b - a), (s32)b, 0.0f, 1.0f);
+        r2 = gance_intpl((s32)u, 0.0f, 1.0f, (s32)(b - a), (s32)b);
     }
     r = r1 * r2;
     evtSetFloat(event, out, c * (1.0f - r) + d * r);

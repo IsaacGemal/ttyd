@@ -4591,7 +4591,6 @@ typedef struct ShadowQueenData {
         }                                                                                                 \
         return EVT_RETURN_BLOCK;                                                                          \
     }
-
 USER_FUNC(shadow_queen_connect) {
     ShadowQueenData* data;
     BattleUnitPart* part;
@@ -4726,7 +4725,6 @@ static void pose_init(void) {
     HAND->field_0x4A4++;
 }
 #pragma dont_inline reset
-
 static void pose_main(void) {
     ExtPose* pose;
     HandElem* elem;
@@ -4764,7 +4762,9 @@ static void pose_main(void) {
     }
 }
 
-// NONMATCHING (98.47%): register allocation and scheduling differ.
+// NONMATCHING (98.47%): instructions and stack use match; only the callee-saved colouring of the two
+// loop-invariant values differs (&gp: target r26, ours r31; 10000000: target r31, ours r26).  MWCC
+// hoists &gp before the constant here, the original the other way round.
 static void hand_init(void) {
     s32 i;
     ExtPose* pose;
@@ -4799,23 +4799,24 @@ void hand_draw(void) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (98.98%): instruction sequence and stack slots match; only the callee-saved register
-// colouring differs (target: elem=r24, i=r25, hp=r26, gp=r22, rt=r20/r21; ours: elem=r22, i=r21,
-// hp=r20, gp=r26, rt=r24/r25).  pose_main's identical loop body gets our colouring, not the target's.
+// NONMATCHING (99.69%): everything matches except the callee-saved colouring of the gp pointer and
+// hp (target gp=r22, hp=r26; ours gp=r26, hp=r22).  Naming the renderTime read as `now` and declaring
+// i before elem/pose (both semantically identical) give the target's colouring for every other web.
 void hand_main(void) {
-    ExtPose* pose;
-    HandElem* elem;
     s32 i;
+    HandElem* elem;
+    ExtPose* pose;
     pose = extGetPosePtr();
     elem = HAND->elems;
     i = 0;
     for (i = 0; i < HAND->count; i++, pose++, elem++) {
         HandPose* hp = &HAND->poses[elem->field_0x04];
         s32 unitId;
-        f32 f1 = (f32)OSTicksToMilliseconds((u64)(gp->renderTime - elem->field_0x08));
+        OSTime now = gp->renderTime;
+        f32 f1 = (f32)OSTicksToMilliseconds((u64)(now - elem->field_0x08));
         f1 = (f32)gp->framerate * f1 / 1000.0f / hp->field_0x18;
         if (f1 >= 1.0f) {
-            elem->field_0x08 = gp->renderTime;
+            elem->field_0x08 = now;
             f1 -= 1.0f;
         }
         pose->field_0x10 = hp->field_0x1C + (s32)((hp->field_0x20 - 1) * f1);
@@ -5017,7 +5018,6 @@ USER_FUNC(queen_get_aud_num) {
 }
 
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_1_evt, 0.0f, -80.0f)
-
 USER_FUNC(queen_hp_drain_2_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5082,7 +5082,6 @@ USER_FUNC(queen_hp_drain_2_evt) {
 }
 
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hp_drain_3_evt, -30.0f, -110.0f)
-
 USER_FUNC(queen_hp_drain_4_evt) {
     s32 i;
     if (isFirstCall) {
@@ -5127,7 +5126,6 @@ USER_FUNC(queen_hp_drain_4_evt) {
 }
 
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hp_drain_5_evt)
-
 USER_FUNC(peach_shock_evt) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -5154,7 +5152,6 @@ DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_dead_evt, 0.0f, -80.0f)
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_4_evt, 0.0f, -80.0f)
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_drag_3_evt)
 DEF_QUEEN_HAND_SMALL_SCROLL_EVT(queen_hand_small_drag_2_evt, 0.0f, -80.0f)
-
 USER_FUNC(queen_hand_small_drag_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5247,6 +5244,7 @@ USER_FUNC(queen_hand_small_drag_1_evt) {
     }
     return EVT_RETURN_BLOCK;
 }
+
 USER_FUNC(queen_hand_small_1000hand_1_evt) {
     if (isFirstCall) {
         HAND->field_0x4AC = 0;
@@ -5297,7 +5295,6 @@ USER_FUNC(queen_hand_small_1000hand_1_evt) {
 }
 
 DEF_QUEEN_HAND_SMALL_SETUP_EVT(queen_hand_small_1000hand_2_evt)
-
 USER_FUNC(queen_hand_small_1000hand_set_offset_evt) {
     s32* args = event->args;
     s32 off18;

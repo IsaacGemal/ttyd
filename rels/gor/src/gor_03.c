@@ -1478,7 +1478,6 @@ s32 exchange_ryokin_medal_tbl[9][3][2] = {
     0x00000003, 0x00000001, 0x0000000F, 0x00000005,
     0x0000001E, 0x0000000A,
 };
-
 USER_FUNC(mario_walkpoint_enzan) {
     s32* args = event->args;
     Vec a;
@@ -1666,7 +1665,7 @@ EVT_BEGIN(bteresa_talk_sub_keihin)
     RETURN
 EVT_END()
 
-// NONMATCHING (84.01%): register allocation of the two copy loops; logic matches.
+// NONMATCHING (87.78%): copy-loop register allocation differs; the '>'/' ' scans need (s8*) for signed cmpwi.
 USER_FUNC(minigameselect_msg_set) {
     s32* args = event->args;
     s8* msg = (s8*)msgSearch((const char*)evtGetValue(event, args[0]));
@@ -1722,10 +1721,10 @@ USER_FUNC(minigameselect_msg_set) {
     ((char*)exchange_msgp[0])[pos] = msg[src];
 
     i = 0;
-    while (((char*)exchange_msgp[0])[i] != '>') {
+    while (((s8*)exchange_msgp[0])[i] != '>') {
         i++;
     }
-    while (((char*)exchange_msgp[0])[i] != ' ') {
+    while (((s8*)exchange_msgp[0])[i] != ' ') {
         i--;
     }
     num = 0x50 - (4 - count) * 12;
@@ -2160,7 +2159,6 @@ EVT_BEGIN(slot_fall_monte)
     CALL(fall_rtn)
     RETURN
 EVT_END()
-
 USER_FUNC(goryuugijo_get_slot_phase) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
@@ -2338,7 +2336,6 @@ EVT_BEGIN(ranking_set)
     CALL(evt_mario_key_onoff, 1)
     RETURN
 EVT_END()
-
 USER_FUNC(evt_exchange_msg_set) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -3071,11 +3068,12 @@ char* door_data_02_0_npc[6] = {
     "バニーテレサ", "客１", "客４", "キノピオ女Ａ", "マフィアボスカジノ", NULL,
 };
 
-// NONMATCHING (76.78%): MWCC folds if(!x) return 0; return 1; branchlessly; original keeps cntlzw; srwi.; branch.
+// Matches with a switch on the negated key check (an if/else if-converts; the switch keeps cntlzw/srwi.).
 static USER_FUNC(mario_keyoff_wait) {
-    BOOL notKey = !marioChkKey();
-
-    if (notKey) {
+    switch (!marioChkKey()) {
+    case 0:
+        break;
+    default:
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_YIELD;
@@ -3115,7 +3113,6 @@ EVT_BEGIN(door_data_02_0_open_sub)
     CALL(mario_keyoff_wait)
     RETURN
 EVT_END()
-
 USER_FUNC(teresa_badge_item_list_init) {
     badgeShop_bteresaGeneration();
     return EVT_RETURN_DONE;
@@ -3199,7 +3196,6 @@ EVT_END()
 char* door_data_02_1_npc[6] = {
     "マフィアボス", "マフィア１", "マフィア２", "モニー", "ピートン", NULL,
 };
-
 USER_FUNC(get_mario_dispReqDir) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -3791,7 +3787,6 @@ static u32 shopper_data[38] = {
     (u32)"gor_shop2_29", (u32)"gor_shop2_30", (u32)"gor_shop2_31", (u32)"gor_shop2_32",
     (u32)"gor_shop2_33", (u32)"gor_shop2_34",
 };
-
 USER_FUNC(dummy_shadow) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -4114,7 +4109,6 @@ EVT_BEGIN(kuzi_bomb_talk_normal)
     CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_1"), STRING("T_1"))
     RETURN
 EVT_END()
-
 void kuji_bomb_055_callback(s32 type, s32* param) {
     NpcEntry* npc;
     u8* p;
@@ -4483,7 +4477,6 @@ EVT_BEGIN(kuzi_bomb_bomb)
     CALL(evt_snd_sfxon_3d, STRING("SFX_PARTY_PBM_DOWN1"), LW(2), 0, LW(4), 0)
     RETURN
 EVT_END()
-
 USER_FUNC(kuzi_get_keihin) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -4667,7 +4660,6 @@ EVT_BEGIN(kuzi_keiziban_entry)
     CALL(evt_unitwin_free)
     RETURN
 EVT_END()
-
 USER_FUNC(gor_npc_fuwafuwa) {
     s32* args = event->args;
     NpcEntry* npc;
@@ -4781,7 +4773,6 @@ EVT_BEGIN(debug_event_mode)
     END_IF
     RETURN
 EVT_END()
-
 static USER_FUNC(enzan_lw_load) {
     s32 i;
     for (i = 0; i < 16; i++) {
@@ -4830,7 +4821,6 @@ EVT_BEGIN(monte_evt_door_entry)
     END_IF
     RETURN
 EVT_END()
-
 USER_FUNC(evt_goryuugijo_set_caseid) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
@@ -4981,8 +4971,8 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (76.19%): the original checks the stop button inside a three-case switch with a keyGetButtonTrg call
-// per case, where ours tests it once; register allocation of event/work/data also differs.
+// NONMATCHING (77.78%): the stop-button three-case switch (keyGetButtonTrg per case) is now reconstructed;
+// the remaining difference is register allocation of event/work/data (ours shifts them by one).
 USER_FUNC(goryuugijo_main_slot) {
     GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
     u8* data = (u8*)work->data;
@@ -5063,7 +5053,19 @@ USER_FUNC(goryuugijo_main_slot) {
                 continue;
             }
             if (i == *(s16*)(data + 0x74)) {
-                if ((keyGetButtonTrg(0) & 0x100) != 0 && *(s8*)(data + i + 0x30) == 2) {
+                s32 stop = 0;
+                switch (i) {
+                case 0:
+                    stop = (keyGetButtonTrg(0) & 0x100) != 0;
+                    break;
+                case 1:
+                    stop = (keyGetButtonTrg(0) & 0x100) != 0;
+                    break;
+                case 2:
+                    stop = (keyGetButtonTrg(0) & 0x100) != 0;
+                    break;
+                }
+                if (stop && *(s8*)(data + i + 0x30) == 2) {
                     *(s8*)(data + i + 0x30) = 3;
                     if (*(u32*)data & 2) {
                         *(s8*)(data + i + 0x39) = 0;

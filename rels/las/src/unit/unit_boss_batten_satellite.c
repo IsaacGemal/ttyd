@@ -239,7 +239,6 @@ static BattleDataEntry data_table[15] = {
     { 0x32, dead_event },
     { 0x00, NULL },
 };
-
 USER_FUNC(bts_wariai_enzan_1) {
     s32* args = event->args;
     f32 f29 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
@@ -452,7 +451,6 @@ EVT_END()
 // TODO: type
 // Uninitialised so it lands in .bss like the original (not .data).
 u32 bts_x_flag_data[1];
-
 USER_FUNC(bts_wariai_enzan_1f) {
     s32* args = event->args;
     f32 f29 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
@@ -476,7 +474,6 @@ static inline f32 bts_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
     return intplGetValue(mode, step, steps, start, end);
 }
 #endif
-
 USER_FUNC(bts_wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
@@ -503,13 +500,12 @@ USER_FUNC(bts_wariai_enzan_1f_intpl) {
     return EVT_RETURN_DONE;
 }
 
-// The second if tests f31 but subtracts 14 from f26 into a fresh `f2`, as in the original;
-// declaring the result first and using `t` for the final expression got closest.
-// NONMATCHING (92.18%): the intpl constant addresses are folded, and the seven live floats
-// still land one register higher than the original (arg1 f30 vs f29, arg6 f25 vs f31).
+// The second if tests f31 but subtracts 14 from f26 into a fresh `f2`, as in the original.
+// Three things were needed on top of bts_intpl: declaring `f25` after the evtGetFloat arg loads (so the
+// allocator gives the low group f26/f27/f28 and the intermediate f25, not one register lower), and writing
+// the final term as `f30 * f1` so MWCC emits `fmuls f0, f30, f2` in the original's operand order.
 USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
     s32* args = event->args;
-    f32 f25;
     f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
     f32 f29 = evtGetFloat(event, args[1]);
     f32 f27 = evtGetFloat(event, args[2]);
@@ -517,6 +513,7 @@ USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
     s32 dest = args[4];
     f32 f26 = evtGetFloat(event, args[5]);
     f32 f31 = evtGetFloat(event, args[6]);
+    f32 f25;
     f32 f1;
     f32 f2;
     f32 t;
@@ -526,9 +523,9 @@ USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
             evtSetFloat(event, dest, f27);
             return EVT_RETURN_DONE;
         }
-        f25 = float_1_las_000192cc - intplGetValue((s32)f26, (s32)(f29 - f28), (s32)f29, float_1_las_000192cc, zero_las_000192d4);
+        f25 = float_1_las_000192cc - bts_intpl((s32)f26, float_1_las_000192cc, zero_las_000192d4, (s32)(f29 - f28), (s32)f29);
     } else {
-        f25 = intplGetValue((s32)f26, (s32)(f29 - f28), (s32)f29, zero_las_000192d4, float_1_las_000192cc);
+        f25 = bts_intpl((s32)f26, zero_las_000192d4, float_1_las_000192cc, (s32)(f29 - f28), (s32)f29);
     }
     if (f31 >= float_14_las_000192d0) {
         f2 = f26 - float_14_las_000192d0;
@@ -536,13 +533,13 @@ USER_FUNC(bts_wariai_enzan_1f_intpl_w) {
             evtSetFloat(event, dest, f27);
             return EVT_RETURN_DONE;
         }
-        f1 = float_1_las_000192cc - intplGetValue((s32)f2, (s32)(f29 - f28), (s32)f29, float_1_las_000192cc, zero_las_000192d4);
+        f1 = float_1_las_000192cc - bts_intpl((s32)f2, float_1_las_000192cc, zero_las_000192d4, (s32)(f29 - f28), (s32)f29);
     } else {
-        f1 = intplGetValue((s32)f31, (s32)(f29 - f28), (s32)f29, zero_las_000192d4, float_1_las_000192cc);
+        f1 = bts_intpl((s32)f31, zero_las_000192d4, float_1_las_000192cc, (s32)(f29 - f28), (s32)f29);
     }
     f1 = f25 * f1;
     t = float_1_las_000192cc - f1;
-    evtSetFloat(event, dest, f27 * t + f1 * f30);
+    evtSetFloat(event, dest, f27 * t + f30 * f1);
     return EVT_RETURN_DONE;
 }
 

@@ -829,7 +829,6 @@ static char* pika_tbl_rsh_06[10] = {
     "pika_1_1", "pika_1_2", "pika_1_3", "pika_1_4", "pika_2", "pika_3", "pika_4", "pika_5",
     "pika_6", NULL,
 };
-
 static void moamoa_pose_main(void) {
     s32 i;
     ExtPose* pose;
@@ -966,7 +965,6 @@ static BeroEntry bero_data_a[2] = {
     {"w_bero", 0, 8, 0x02, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_05_a", "w_bero", 1, 1},
     {NULL},
 };
-
 static void moamoa_pose_change(MoamoaEntry* entry, char* name, char* anim) {
     MoamoaPose* pose = wp->poses;
     s32 i;
@@ -1076,7 +1074,6 @@ static EVT_BEGIN(evt_moamoa_init)
     END_INLINE_EVENT
     RETURN
 EVT_END()
-
 static USER_FUNC(evt_moamoa_end_wait) {
     MoamoaEntry* entry;
     s32 i;
@@ -1363,7 +1360,6 @@ EVT_END()
 char* pose_name[8] = {
     "Z_1", "H_1", "S_1", "U_1", "H_2", "S_2", "P_1", "S_3",
 };
-
 static USER_FUNC(evt_moamoa_fusion_debug) {
     s32 i;
     ExtPose* pose;
@@ -1540,7 +1536,6 @@ static u32 jumptable_000183EC[66] = {
 
 // TODO: type
 // static MoamoaWork* wp;  // moved to top (needed before the functions that use it)
-
 void evalOn(void) {
     NpcEntry* npc = npcNameToPtr("base");
     AnimationPose* pose;
@@ -1595,7 +1590,6 @@ void evalOn(void) {
             }
         }
     }}
-
 static USER_FUNC(evt_moamoa_target_off) {
     s32 index = evtGetValue(event, event->args[0]);
 
@@ -1608,7 +1602,6 @@ static USER_FUNC(evt_moamoa_target_off) {
     }
     return EVT_RETURN_DONE;
 }
-
 
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
@@ -1719,7 +1712,6 @@ static void ext_shadow_disp(CameraId cameraId, void* param) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
-
 static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4,
                         f32 p5) {
     if (flag) {
@@ -1830,12 +1822,23 @@ static inline f32 moamoa_cos(f32 r) {
     return c;
 }
 
-// NONMATCHING (53.9%): reconstructed from the assembly; sin/cos FPR colouring and the
-// stacked Vec temporaries still differ.
+// The original builds each temporary Vec from a named zero vector and passes it by
+// value through an inline; MWCC keeps the inline's return temp alongside the local.
+static inline Vec moamoa_vec(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+// NONMATCHING (67.83%): reconstructed from the assembly; the Vec temporaries match the retail
+// 0xf0 frame now, the sin/cos FPR colouring still differs.
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
     MarioWork* mario = marioGetPtr();
-    CameraEntry* cam;
     PartyEntry* party;
+    CameraEntry* cam;
     f32 f29, f30, f31;
 
     if (mario->position.y > 20.0f + (*pose->matrix)[1][3])
@@ -1846,8 +1849,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
     {
         f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], mario->position.x, mario->position.z);
 
-        f31 = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
-        if (d < f31) {
+        if (d < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
             if (mario->position.y > 10.0f + (*pose->matrix)[1][3] && (mario->flags & 0x20000) &&
                 !(mario->flags & 0x10000) && wp->field_0x558 < 2) {
                 if (mario->currMotionId != 0x16 && mario->currMotionId != 0x1A)
@@ -1877,59 +1879,45 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
     }
 
     if (mario->currMotionId == 0x13 && mario->currSubMotionId == 0x14) {
-        Vec v = vec3_rsh_00013d34;
+        Vec v65 = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                             &vec3_rsh_00013d34);
 
-        v.x = (*pose->matrix)[0][3];
-        v.y = (*pose->matrix)[1][3];
-        v.z = (*pose->matrix)[2][3];
-        if (PSVECDistance(&mario->position, &v) < 65.0f)
+        if (PSVECDistance(&mario->position, &v65) < 65.0f)
             return 2;
     }
 
     if (wp->field_0x55C >= 0.0f) {
-        Vec v = vec3_rsh_00013d40;
+        Vec v55c = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                              &vec3_rsh_00013d40);
 
-        v.x = (*pose->matrix)[0][3];
-        v.y = (*pose->matrix)[1][3];
-        v.z = (*pose->matrix)[2][3];
-        if (PSVECDistance(&wp->field_0x564, &v) < 30.0f)
+        if (PSVECDistance(&wp->field_0x564, &v55c) < 30.0f)
             return 3;
     }
 
     party = partyGetPtr(0);
     if (nokonokoGetStatus(party) == 2) {
-        Vec v = vec3_rsh_00013d4c;
+        Vec vnoko = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                               &vec3_rsh_00013d4c);
 
-        v.x = (*pose->matrix)[0][3];
-        v.y = (*pose->matrix)[1][3];
-        v.z = (*pose->matrix)[2][3];
-        if (PSVECDistance(&partyGetPtr(0)->position, &v) < 30.0f)
+        if (PSVECDistance(&partyGetPtr(0)->position, &vnoko) < 30.0f)
             return 2;
     }
 
     party = partyGetPtr(0);
     if (party->currentMemberId == 3 && partyGetPtr(0)->useMotionId == 0x46) {
-        Vec v = vec3_rsh_00013d58;
+        Vec vparty = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                                &vec3_rsh_00013d58);
 
-        v.x = (*pose->matrix)[0][3];
-        v.y = (*pose->matrix)[1][3];
-        v.z = (*pose->matrix)[2][3];
-        if (PSVECDistance(&partyGetPtr(0)->position, &v) < 50.0f)
+        if (PSVECDistance(&partyGetPtr(0)->position, &vparty) < 50.0f)
             return 4;
     }
 
     {
-        Vec mpos = vec3_rsh_00013d64;
-        Vec pvec = vec3_rsh_00013d70;
-        f32 rad;
-        f32 s, c;
+        Vec mpos = moamoa_vec(mario->position.x, (*pose->matrix)[1][3], mario->position.z,
+                              &vec3_rsh_00013d64);
+        Vec pvec = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                              &vec3_rsh_00013d70);
 
-        mpos.x = mario->position.x;
-        mpos.y = (*pose->matrix)[1][3];
-        mpos.z = mario->position.z;
-        pvec.x = (*pose->matrix)[0][3];
-        pvec.y = (*pose->matrix)[1][3];
-        pvec.z = (*pose->matrix)[2][3];
         f31 = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
         if (PSVECDistance(&mpos, &pvec) >= f31)
             return 0;
@@ -1937,11 +1925,9 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
         (*pose->matrix)[0][3] = entry->field_0x28;
         (*pose->matrix)[2][3] = entry->field_0x2C;
         {
-            Vec pv2 = vec3_rsh_00013d7c;
+            Vec pv2 = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                                 &vec3_rsh_00013d7c);
 
-            pv2.x = (*pose->matrix)[0][3];
-            pv2.y = (*pose->matrix)[1][3];
-            pv2.z = (*pose->matrix)[2][3];
             f29 = PSVECDistance(&mpos, &pv2);
         }
         if (f29 >= f31)
@@ -1949,12 +1935,16 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 
         f30 = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
         if (__fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
+            f32 rad, s, c;
+
             rad = 6.2831855f * mario->directionView / 360.0f;
             s = moamoa_sin(rad);
             mario->riderDelta.x = -((f31 - f29) * s);
             c = moamoa_cos(6.2831855f * mario->directionView / 360.0f);
             mario->riderDelta.z = (f31 - f29) * c;
         } else {
+            f32 rad, s, c;
+
             rad = 6.2831855f * f30 / 360.0f;
             s = moamoa_sin(rad);
             mario->riderDelta.x = ((*pose->matrix)[0][3] - f31 * s) - mario->position.x;
@@ -1968,7 +1958,6 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 
 // TODO: write ext_moamoa_main (static, 0x2fdc bytes) here:
 // its asm is in build/G8MJ01/rsh/asm/rsh_06.s; this is where the original has it, just before the first script that uses it
-
 static void ext_moamoa_dispent(void) {
     if (wp->flags & 1) {
         dispEntry(CAMERA_3D, 0.0f, 1, ext_disp, NULL);

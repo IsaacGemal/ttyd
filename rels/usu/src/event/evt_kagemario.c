@@ -67,6 +67,7 @@ static void callback(TevCallbackParam* param) {
     param->field_18 = field_18;
     param->field_10 = field_10;
 }
+
 static s32 color_change_evt(s32 onoff) {
     s32 i;
 
@@ -85,6 +86,7 @@ static s32 color_change_evt(s32 onoff) {
     }
     return 0;
 }
+
 static USER_FUNC(check) {
     if (partyGetPtr(0) != NULL) {
         animPoseSetMaterialFlagOff(partyGetPtr(0)->paperAnimGroup, 0xA000000);
@@ -96,50 +98,24 @@ static EVT_BEGIN(evt_check)
     CALL(check)
     RETURN
 EVT_END()
-
-// NONMATCHING (98.94%): the on-branch loop's induction init is `li r31, 0`; the target has
-// `mr r31, r30`. Same one-instruction MWCC artifact as evt_kagemario_change.
 USER_FUNC(evt_kagemario_init_29_text_1A0C) {
-    s32 i;
     s32 sw = swByteGet(0);
 
     if (sw >= 201 && sw < 212) {
-        mapSetTevCallback(10, callback);
-        for (i = 0; i < 3; i++) {
-            animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[i], 0xA000000);
-        }
-        marioGetPtr()->flags |= MARIO_FLAG_IS_SHADOW_MARIO;
+        color_change_evt(1);
         evtEntry(evt_check, 0, 0);
     }
     else {
-        for (i = 0; i < 3; i++) {
-            animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[i], 0xA000000);
-        }
-        marioGetPtr()->flags &= ~MARIO_FLAG_IS_SHADOW_MARIO;
+        color_change_evt(0);
     }
     return 2;
 }
 
-// NONMATCHING (98.77%): the off-branch loop's induction init is `li r31, 0`; the target has
-// `mr r31, r30` (MWCC strength-reduction artifact). The loop body and everything else match.
 static USER_FUNC(evt_kagemario_change) {
-    s32 i;
-
-    if (event->args[0] == 0) {
-        for (i = 0; i < 3; i++) {
-            animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[i], 0xA000000);
-        }
-        marioGetPtr()->flags &= ~MARIO_FLAG_IS_SHADOW_MARIO;
-    }
-    else {
-        mapSetTevCallback(10, callback);
-        for (i = 0; i < 3; i++) {
-            animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[i], 0xA000000);
-        }
-        marioGetPtr()->flags |= MARIO_FLAG_IS_SHADOW_MARIO;
-    }
+    color_change_evt(event->args[0]);
     return 2;
 }
+
 static USER_FUNC(test) {
     marioGetPtr()->prevPartyMemberId[0] = 0;
     marioGetPtr()->prevPartyMemberId[1] = 0;

@@ -4784,7 +4784,6 @@ static inline GXColor alphaColor(u8 a) {
     return c;
 }
 #endif
-
 static void alpha_tev(TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* ap = _ap;
@@ -4983,8 +4982,9 @@ USER_FUNC(gundan1000tai_circle_pos_func) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.95%): the pooled float constants land two registers higher (lfd f26 vs
-// the original's f28) because the variable registers differ; 250 declaration shuffles found none better
+// Splitting the angle product (marked above) puts the eight pooled float constants in the original's
+// registers; assigning base before field_0x60 puts the 90/-280 and 270/340 address temps in r3/r4.
+// NONMATCHING (99.85%): the second half's angle/s land in f22/f21 instead of the original's f21/f22.
 USER_FUNC(gundan1000tai_init) {
     s32 i;
     NanNpcEntry* entry;
@@ -4999,21 +4999,37 @@ USER_FUNC(gundan1000tai_init) {
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
         radius = (f32)(irand(0xB4) + 0x78);
+// Splitting the product into a named temp makes MWCC pool the eight float constants in the
+// original's f28/f29/f30/f31/f24..f27 order (same maths; marked match-only).
+#ifdef MUST_MATCH
+        {
+            f32 tmp = 6.2831855f * (f32)irand(0x168);
+            angle = tmp / 360.0f;
+        }
+#else
         angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
+#endif
         s = sin(angle);
         c = cos(angle);
         entry->hoseiPosition.x = 0.9f * (radius * s);
         entry->hoseiPosition.y = 15.0f;
         entry->hoseiPosition.z = 0.5f * (radius * c) - 300.0f;
         if (entry->hoseiPosition.x < 30.0f) {
-            entry->field_0x60 = 90.0f;
             base = -280.0f;
+            entry->field_0x60 = 90.0f;
         } else {
-            entry->field_0x60 = 270.0f;
             base = 340.0f;
+            entry->field_0x60 = 270.0f;
         }
         radius = (f32)irand(0x64);
+#ifdef MUST_MATCH
+        {
+            f32 tmp = 6.2831855f * (f32)irand(0x168);
+            angle = tmp / 360.0f;
+        }
+#else
         angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
+#endif
         s = sin(angle);
         c = cos(angle);
         entry->position.x = radius * s + base;
@@ -5141,8 +5157,18 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
     }
 }
 
-// NONMATCHING (99.65%): case 20 loads entry->field_0x6C before the two float args of the
-// second intplGetValue call (original loads it after), plus one remaining scheduling difference
+// The original intplGetValue prototype orders the float ranges before the integer step. That order is
+// ABI-identical to include/system.h's declaration but makes MWCC load the float args before the integer
+// steps; the cast selects it.
+#ifdef MUST_MATCH
+static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
+}
+#else
+static inline f32 intpl_f(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return intplGetValue(mode, step, steps, start, end);
+}
+#endif
 void gundan1000tai_seq01(NanNpcEntry* entry) {
     marioGetPtr();
     switch (entry->field_0x68) {
@@ -5231,7 +5257,7 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
             f32 t = (f32)elapsed / (f32)entry->field_0x6C;
 
             entry->position.x = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.x, entry->field_0x88.x);
-            entry->position.z = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.z, entry->field_0x88.z);
+            entry->position.z = intpl_f(0, entry->hoseiPosition.z, entry->field_0x88.z, elapsed, entry->field_0x6C);
             entry->position.y = entry->hoseiPosition.y + t * (entry->field_0x7C + entry->field_0x78 * t);
         } else {
             entry->position = entry->field_0x88;
@@ -5340,8 +5366,10 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
     }
 }
 
-// NONMATCHING (99%): the atan2 argument temp and its load scheduling differ
-// (f0/f3 and one lfs hoisted); all attempted source forms give the same allocation
+// NONMATCHING (99%): in the first atan2 call the original keeps the b.x-a.x intermediate in f0
+// (fneg f1, f0) and schedules fmr f31,f1 before the loads; ours uses f3 and hoists one lfs.
+// The second (identical) block already matches, so this is allocator state from the preceding
+// code. Named dx/dz temps, an atan2 inline wrapper, and swapped evaluation orders all give f3.
 static USER_FUNC(cam_kaiten_init) {
     s32* args = event->args;
     Vec b;
@@ -5536,7 +5564,9 @@ void suifu100taikikan_seq00(NanNpcEntry* entry) {
 }
 
 // NONMATCHING (99.37%): the `entry->position = vec3_gor_00013858` Vec copy in case 99
-// schedules its int temps as r0/r3 instead of the original's r3/r0
+// schedules its int temps as r0/r3 and hoists the third lwz one slot earlier; the original
+// uses r3/r0 and keeps lwz 0x8 after the first two stores. A local Vec, field-wise u32
+// copies, and a cast through Vec* all give the same schedule.
 void suifu100taikikan_seq01(NanNpcEntry* entry) {
     switch (entry->field_0x68) {
     case 0:

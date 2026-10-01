@@ -211,25 +211,50 @@ static USER_FUNC(x_flag_wait) {
     return x_flag_data[idx] == value ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (90.21%): 19 of 52 instructions differ: 13 with different operands, 1 replaced, 4 missing, 1 with a different opcode
+// The iconId 0x75..0x7D range test is a switch: MWCC lowers the grouped cases to the
+// original's `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. Writing it as
+// `if (a < 0x7E && a >= 0x75)` instead makes MWCC invert the second branch (`blt zero`).
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
-    for (i = 0; i < 2; i++) {
-        if (!(lbtn[i].flags & 1)) {
-            s16 iconId = lbtn[i].iconId;
-            f32 yofs;
-            Vec pos;
-            if (iconId < 0x7e && iconId >= 0x75) {
-                yofs = -15.0f;
-            } else {
-                yofs = 0.0f;
-            }
-            pos = lbtn[i].position;
-            pos.y += yofs;
-            iconDispGxAlpha(&pos, 0x50, iconId, lbtn[i].alpha, 1.0f);
-        }
-    }
 
+    for (i = 0; i < 2; i++) {
+        LectureButton* b = &lbtn[i];
+#ifdef MUST_MATCH
+        // The original addresses the button Vec off a base of &lbtn[i] + 8 with a +4
+        // displacement (`addi r4, r9, 8` then loads at 4/8/0xc); the natural
+        // `b->position` scores lower.
+        Vec* ppos = (Vec*)((u8*)b + 8);
+#endif
+        f32 yoff;
+        Vec pos;
+
+        if (b->flags & 1) {
+            continue;
+        }
+        switch (b->iconId) {
+            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
+            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
+                yoff = -15.0f;
+                break;
+            default:
+                yoff = 0.0f;
+                break;
+        }
+#ifdef MUST_MATCH
+        pos = *(Vec*)((u8*)ppos + 4);
+#else
+        pos = b->position;
+#endif
+        pos.y += yoff;
+#ifdef MUST_MATCH
+        // The header declares iconDispGxAlpha's iconId `s16`, but the original passes a
+        // zero-extended u16 (`clrlwi r5, 16`, no `extsh`); the function-pointer cast forces
+        // the zero-extension and still emits a direct `bl iconDispGxAlpha`.
+        ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
+#else
+        iconDispGxAlpha(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
+#endif
+    }
 }
 
 static USER_FUNC(lecture_button_rtn) {

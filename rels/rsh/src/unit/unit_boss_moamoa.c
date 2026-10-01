@@ -412,7 +412,6 @@ EVT_END()
 char* MOAMOA_TAIJOU[4] = {
     "S_1_2", NULL, "L_1_4", NULL,
 };
-
 USER_FUNC(boss_moamoa_check_zenei_kouei) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -544,7 +543,6 @@ EVT_END()
 char* moamoa2_change_tbl[7] = {
     "L_2_1", "L_2_3", NULL, "L_2_4", "L_2_5", "S_2", NULL,
 };
-
 void moamoa_mainUnitIdClear(void) {
     wp->mainUnitId = -1;
 }
@@ -596,9 +594,6 @@ EVT_BEGIN(moamoa_tentacl_on)
     CALL(btlevtcmd_AnimeWaitPlayComplete, LW(6), 1)
     RETURN
 EVT_END()
-
-// NONMATCHING (99.8%): body exact; MWCC picks a different temp register for `wp` (r4 vs the
-// original's r5) in the two `wp->poses` loads (the `zero` constant takes the other).
 USER_FUNC(moamoa_guruguru) {
     BattleUnit* unit;
     Vec vec;
@@ -632,8 +627,8 @@ USER_FUNC(moamoa_guruguru) {
     wp->field_0x7B8 = 2.0f;
 
     extPose = extGetPosePtr();
-    angle = 0.0f;
     pose = wp->poses;
+    angle = 0.0f;
     for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         if (pose->field_0x0 & 1) {
             pose->field_0x34[0] = (*extPose->matrix)[0][3];
@@ -857,8 +852,9 @@ static MoamoaAnimData ext_moamoa_data[89] = {
     { 0, 0, 0.0f },
 };
 
-// NONMATCHING (99.6%): no instruction differences; MWCC swaps the callee-saved registers for
-// `pose` and `extPose` in the second loop (ours extPose=r29,pose=r30 vs orig extPose=r30,pose=r29).
+// NONMATCHING (99.61%): no instruction differences; in the first retrace loop MWCC swaps the
+// callee-saved registers for `pose` and `extPose` (ours extPose=r29,pose=r30 vs orig extPose=r30,
+// pose=r29). Both loops' `++` order matches the original (extPose before pose).
 USER_FUNC(moamoa_bomb) {
 
 
@@ -885,7 +881,7 @@ USER_FUNC(moamoa_bomb) {
         extPose = extGetPosePtr();
         count = 0;
         pose = wp->poses;
-        for (j = 0; j < wp->countA; j++, pose++, extPose++) {
+        for (j = 0; j < wp->countA; j++, extPose++, pose++) {
             if ((*extPose->matrix)[1][3] >= 0.0f) {
                 if (!(pose->field_0x0 & 1)) {
                     pose->field_0x0 |= 1;
@@ -908,7 +904,7 @@ USER_FUNC(moamoa_bomb) {
 
     extPose = extGetPosePtr();
     pose = wp->poses;
-    for (i = 0; i < wp->countA; i++, pose++, extPose++) {
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         if (pose->field_0x0 & 1) {
             if (pose->field_0x40[1] >= -500.0f) {
                 pose->field_0x40[0] += pose->field_0x34[0];
@@ -1067,7 +1063,6 @@ static u32 group_tbl[22] = {
     (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
     (u32)"c_n_moa_a", (u32)"S_2",
 };
-
 USER_FUNC(moamoa_on) {
     s32 i;
     MoamoaWorkPose* pose;
@@ -1198,7 +1193,6 @@ EVT_BEGIN(MOAMOA_SET_BODYSCALE)
     CALL(moamoa_set_bodyScale)
     RETURN
 EVT_END()
-
 void moamoa_pose(void* poseArg) {
     MoamoaPoseArg* pose = poseArg;
     MoamoaWorkAnim* anim;
@@ -1250,10 +1244,9 @@ static void ext_moamoa_init(void) {
     }
 }
 
-// NONMATCHING (95.83%): body instruction-perfect except register allocation; the part loop keeps
-// its counter/offsets in r22/r23/r21 in the original but r25/r22/r21 here, and the animation loop
-// cycles pose/extPose/i by one register. `.text` size already matches (0x1bb4); 166 `.text` bytes
-// and a few `.rodata` pool references still differ.
+// NONMATCHING (96.19%): instructions match up to register allocation. The part loop keeps its
+// counters in r22/r23/r21 in the original but r25/r22/r21 here; the animation loop cycles
+// pose/extPose/i by one register. `vtx[p0].y`/`vtx[p1].y` load into `y0`/`y1` before the compare.
 static void ext_moamoa_main(void) {
     MoamoaWorkPose* pose;
     ExtPose* extPose;
@@ -1318,6 +1311,8 @@ static void ext_moamoa_main(void) {
             } else {
                 f32 t;
                 f32 inv;
+                f32 y0;
+                f32 y1;
 
                 animPose = animPoseGetAnimPosePtr((s32)pose->animPose);
                 vtx = (Vec*)((smartEntry*)*(void**)((u8*)animPose + 0x15C))->address;
@@ -1325,7 +1320,9 @@ static void ext_moamoa_main(void) {
                 p1 = wp->groupCounts[pose->groupIdx * 2 + 1];
                 t = pose->frame;
                 inv = 1.0f - t;
-                if (vtx[p0].y == -1000.0f || vtx[p1].y == -1000.0f) {
+                y0 = vtx[p0].y;
+                y1 = vtx[p1].y;
+                if (y0 == -1000.0f || y1 == -1000.0f) {
                     offset = (Vec){ 0.0f, -1000.0f, 0.0f };
                     extPose->flags &= ~1;
                 } else {

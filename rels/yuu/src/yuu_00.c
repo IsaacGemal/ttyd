@@ -571,17 +571,13 @@ static void monte_disp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (95.62%): the monte-table sum loop and FPR allocation match. Reading the montetable
-// bounds straight from their fields (rather than copying them into lo/hi first) fixed the yMin/yMax
-// pointer-register swap (r26/r27) and the second monte_rand. What remains is integer scheduling and
-// register allocation in the constant-setup block: the original forms &zero_yuu_00014548 with an extra
-// `addi r8, r7, zero@l` (so its second monte_p load goes to r9, ours reuses r8), computes the montetable
-// base (r30) and the li r24/r18/r21/r17 sequence in a different order, and schedules the z-store before
-// the x/y pointer setup. The sfx string address still lands in r21 via an extra `mr` instead of r26, and
-// the second monte_rand subtracts into f0 where the original uses f1 (differing only in the
-// source-level value the compiler kept live). Referencing the target's named .rodata globals
-// (zero_yuu_00014548, float_20/100/1_yuu_*, str_00000550) instead of literals does not change these, so
-// the literal version is kept.
+// Setting base[3]=0.0f before the do-while (not at its top) matched the target's store layout, and
+// expanding the y-range monte_rand with `max -= min` (MUST_MATCH) made its subtraction reuse max's
+// register (f1), as the target does. The only remaining difference is the sfx string address: the
+// compiler materialises it as `addi r0,r4,str@l` and copies it to r21, where the target forms it
+// directly in r26 (an extra `mr` plus a register difference at the psndSFXOn_3D call). Referencing the
+// target's named .rodata globals instead of literals does not change this.
+// NONMATCHING (99.53%): only the sfx register difference above remains.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -621,8 +617,8 @@ static USER_FUNC(fall_rtn) {
             f32 min;
             f32 max;
 
+            base[3] = 0.0f;
             do {
-                base[3] = 0.0f;
                 if (montetable[tableIdx].xMin < montetable[tableIdx].xMax) {
                     min = montetable[tableIdx].xMin;
                     max = montetable[tableIdx].xMax;
@@ -638,7 +634,13 @@ static USER_FUNC(fall_rtn) {
                     min = montetable[tableIdx].yMax;
                     max = montetable[tableIdx].yMin;
                 }
+#ifdef MUST_MATCH
+                // match-only: the in-place range makes MWCC keep it in max's register (f1)
+                max -= min;
+                base[2] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
+#else
                 base[2] = monte_rand(min, max);
+#endif
                 for (j = 0; j < pointIdx; j++) {
                     Vec diff;
                     PSVECSubtract((Vec*)(base + 1), (Vec*)((u8*)base - (j + 1) * 0x38 + 4), &diff);

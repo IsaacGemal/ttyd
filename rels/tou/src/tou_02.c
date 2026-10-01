@@ -42,6 +42,10 @@
 
 #pragma force_active on
 extern s32 evt_tou_get_ranking_27_text_1ED4[];
+// volatile: keeps MWCC from hoisting these zero-vec loads out of ext_fan_init's loop
+extern const volatile Vec vec3_tou_0000d028;
+extern const volatile Vec vec3_tou_0000d034;
+extern const volatile Vec vec3_tou_0000d040;
 u8 psndSFX_get_vol(s32 id);
 void psndSFX_vol(s32 id, u8 vol);
 
@@ -1508,7 +1512,6 @@ EVT_BEGIN(tou_02_init_evt)
 EVT_END()
 
 ExtFanWork* fan_wp;
-
 static void pose_init(void) {
     ExtFanData* data = (ExtFanData*)ext_fan_data;
     char name[0x20];
@@ -1579,8 +1582,8 @@ static f32 randf(f32 min, f32 max) {
     return r * (max - min) + min;
 }
 
-// NONMATCHING (90.94%): written from the asm; the inlined pose_init/pose_change leave a
-// 0x110-byte frame instead of 0x100 and the general-purpose registers are allocated differently.
+// NONMATCHING (97.49%): volatile on the zero-vec externals stops MWCC hoisting the
+// loop-invariant loads (retail reloads each iteration; frame stays 0x100).
 void ext_fan_init(void) {
     s32 i;
     ExtPose* pose;
@@ -1596,7 +1599,6 @@ void ext_fan_init(void) {
     fan = fan_wp->poses;
     for (i = 0; i < fan_wp->poseNum; i++, pose++, fan++) {
         Vec pos;
-        Vec vel;
         s32 type;
 
         pose->flags |= 7;
@@ -1618,20 +1620,14 @@ void ext_fan_init(void) {
             break;
         }
         fan->field_0x2 = 0;
+        pos = vec3_tou_0000d028;
         pos.x = randf(-100.0f, 100.0f);
-        pos.y = 0.0f;
         pos.z = randf(-100.0f, 100.0f);
         fan->position = pos;
-        vel.x = 0.0f;
-        vel.y = 0.0f;
-        vel.z = 0.0f;
-        fan->velocity = vel;
+        fan->velocity = vec3_tou_0000d034;
     }
     {
-        Vec pos;
-        pos.x = 0.0f;
-        pos.y = 0.0f;
-        pos.z = 0.0f;
+        Vec pos = vec3_tou_0000d040;
         fan_wp->sfxId = psndSFXOn_3D("SFX_STG3_AUDIENCE_FAN1", &pos);
         fan_wp->volume = psndSFX_get_vol(fan_wp->sfxId);
     }
@@ -1907,20 +1903,21 @@ void ext_fan_main(void) {
     psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->field_0x510 / fan_wp->poseNum));
 }
 #pragma opt_propagation reset
-
-// NONMATCHING (98.79%): only general-purpose register allocation differs from the original.
 void ext_fan_dispent(void) {
-    ExtPose* pose = extGetPosePtr();
-    FanPose* fan = fan_wp->poses;
+    FanPose* fan;
+    ExtPose* pose;
     s32 i;
 
+    pose = extGetPosePtr();
+    fan = fan_wp->poses;
     for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
-        PoseGroup* group = (PoseGroup*)((u8*)gp + 0xC + fan->groupIndex * 0x28);
-        f32 ratio = (f32)OSTicksToMilliseconds((u64)gp->renderTime - (u64)fan->time);
+        PoseGroup* group = &fan_wp->groups[fan->groupIndex];
+        OSTime now = gp->renderTime;
+        f32 ratio = (f32)OSTicksToMilliseconds((u64)now - (u64)fan->time);
 
         ratio = (60.0f * ratio) / 1000.0f / group->scale;
         if (ratio >= 1.0f) {
-            fan->time = gp->renderTime;
+            fan->time = now;
             ratio = 0.0f;
         }
         pose->field_0x10 = group->start + (s32)((f32)(group->count - 1) * ratio);
@@ -2056,7 +2053,6 @@ s32 check_hammer(FanPose* pose) {
     return 0;
 }
 #pragma opt_propagation reset
-
 USER_FUNC(evt_end_count) {
     evtSetValue(event, event->args[0], fan_wp->field_0x510);
     return EVT_RETURN_DONE;

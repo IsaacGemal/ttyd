@@ -2029,7 +2029,7 @@ s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
 // the test. The 5 remaining instructions differ only in register allocation: the original keeps 10 in r0 and puts
 // the quotient in r4 / the calcPose remainder in r5, while this source lets the compiler reuse r0 for the
 // quotient and emit `mulli` (the rest of the function matches).
-// NONMATCHING (99.55%): only that register assignment differs.
+// NONMATCHING (99.54%): only that register assignment differs.
 void kpaSen_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 i;
@@ -2769,7 +2769,6 @@ EVT_END()
 const Vec vec3_usu_00004d84 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_usu_00004d90 = {0.0f, 1.0f, 0.0f};
 const Vec vec3_usu_00004d9c = {0.0f, 100.0f, 0.0f};
-
 static USER_FUNC(yami_view) {
     Vec camPos;
     Vec up;
@@ -2913,7 +2912,6 @@ static EVT_BEGIN(minnnanokoe_npc_entry)
     CALL(evt_npc_flag_onoff, 1, STRING("子供３"), 512)
     RETURN
 EVT_END()
-
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -3195,7 +3193,6 @@ static EVT_BEGIN(epilogue_evt)
     CALL(evt_bero_mapchange, STRING("muj_20"), STRING(""))
     RETURN
 EVT_END()
-
 static USER_FUNC(npc_process) {
     NpcWork* work = npcGetWorkPtr();
     NpcEntry* npc = work->entries;

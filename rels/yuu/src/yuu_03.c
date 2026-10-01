@@ -70,7 +70,6 @@ extend_data(5,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-
 USER_FUNC(unk_yuu_0000371c) {
     camShiftReset();
     return EVT_RETURN_DONE;
@@ -80,7 +79,6 @@ EVT_BEGIN(unk_evt_yuu_00015fe0)
     CALL(unk_yuu_000034bc)
     RETURN
 EVT_END()
-
 void unk_yuu_0000365c(CameraId cameraId, void* param) {
     Yuuminigame4Work* work = param;
     s32 i;
@@ -96,6 +94,7 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
         }
     }
 }
+
 // NONMATCHING (88.26%): unk_yuu_000034bc; needs register/allocation scheduling work
 USER_FUNC(unk_yuu_000034bc) {
     s32 prev = 0;
@@ -209,7 +208,6 @@ EVT_BEGIN(yuu_03_kaijo_init2)
     CALL(evt_mario_set_dir, 90, 0, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(unk_yuu_0000341c) {
     Yuuminigame4Work* work = unk_yuu_bss00000010;
     if (work != NULL) {
@@ -262,7 +260,6 @@ EVT_BEGIN(minigame04_start_cam_cancel)
     CALL_CHILD(yuu_03_kaijo_init2)
     RETURN
 EVT_END()
-
 USER_FUNC(yuuminigame4_set_phase) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -321,7 +318,6 @@ EVT_BEGIN(minigame04_start)
     CALL(evt_mario_key_onoff, 1)
     RETURN
 EVT_END()
-
 USER_FUNC(yuunpc_go) {
     yuunpc_wp_flag_off(1);
     return EVT_RETURN_DONE;
@@ -446,7 +442,6 @@ EVT_BEGIN(yuu_03_init_evt)
     CALL_CHILD(evt_yuunpc_minigame4)
     RETURN
 EVT_END()
-
 USER_FUNC(yuuminigame4_opening_on_off) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -461,7 +456,6 @@ USER_FUNC(yuuminigame4_opening_on_off) {
 
 // TODO: type
 // (globals declared above)
-
 USER_FUNC(yuuminigame4_opening_chk) {
     s32* args = event->args;
     YuuminigameWork* work = (YuuminigameWork*)evtGetValue(event, args[0]);
@@ -896,7 +890,7 @@ void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
     monteCountDisp();
 }
 
-// NONMATCHING (97.07%): yuuminigame4_gamerule; case 3/7 (unk18/unk1C += 36.0f) still schedule lis 0x4330 / stw conversion setup differently
+// NONMATCHING (97.06%): yuuminigame4_gamerule; case 3/7 (unk18/unk1C += 36.0f) still schedule lis 0x4330 / stw conversion setup differently
 s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
     MarioWork* mario = marioGetPtr();
     EventEntry* e;

@@ -47,7 +47,7 @@ const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 // every statement/temporary order, explicit/inline fade and lerp helpers, `opt_lifetimes`/`opt_propagation`/
 // `optimize_for_size`/`defer_codegen` pragmas, and the `/ 2.0f` shape on the blend; none changes the
 // factor/product allocation or the tail.  Same class as shadowdrv.c:cylinder.
-// NONMATCHING (95.76%): fade/first-lerp register allocation and FontDrawString tail scheduling differ.
+// NONMATCHING (95.75%): fade/first-lerp register allocation and FontDrawString tail scheduling differ.
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     YuuTitleWork* wp = param;
     f32 scale = 2.0f;
@@ -88,7 +88,6 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     FontDrawEdgeOff();
 }
 #pragma opt_common_subs on
-
 USER_FUNC(evt_yuutitle_main_func) {
     YuuTitleWork* wp = (YuuTitleWork*)event->lwData[0];
 
@@ -106,7 +105,6 @@ static EVT_BEGIN(main_evt)
 EVT_END()
 
 static YuuTitleWork* _wp;
-
 USER_FUNC(evt_yuutitle_alloc) {
     s32* args = event->args;
     YuuTitleWork* wp = _mapAlloc(0x28);

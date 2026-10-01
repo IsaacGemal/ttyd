@@ -4979,17 +4979,6 @@ EVT_BEGIN(gor_02_init_evt)
     END_IF
     RETURN
 EVT_END()
-
-
-
-
-
-
-
-
-
-
-
 void _door_color_tev(struct TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* door = (u8*)_door[0];
@@ -5211,27 +5200,23 @@ static USER_FUNC(enzan_cam_turn_keisan) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (80.75%): the two Vec temporaries are assigned the opposite stack slots and some float register
-// allocation differs; otherwise the same instructions.
 static USER_FUNC(enzan_cam_turn_keisan_f) {
-    f32 p = evtGetFloat(event, event->args[0]) / 100.0f;
+    f32 ratio = evtGetFloat(event, event->args[0]) / 100.0f;
     CameraEntry* cam = camGetPtr(CAMERA_3D);
-    Vec a = { -362.0f, 37.0f, -200.0f };
-    Vec b;
-    Vec c = { 0.0f, 0.0f, 0.0f };
+    f32 px = -362.0f;
+    f32 py = -62.0f * ratio + 193.0f;
+    f32 pz = -354.0f * ratio + 686.0f;
+    Vec pos = (Vec){px, py, pz};
+    Vec base = (Vec){-362.0f, 37.0f, -200.0f};
     Mtx mtx;
 
-    c.y = -62.0f * p + 193.0f;
-    c.z = -354.0f * p + 686.0f;
-    c.x = -362.0f;
-    b = c;
-    PSVECSubtract(&b, &a, &b);
-    PSMTXRotRad(mtx, 'Y', 0.017453292f * (720.0f * p));
-    PSMTXMultVec(mtx, &b, &b);
-    PSVECAdd(&b, &a, &b);
+    PSVECSubtract(&pos, &base, &pos);
+    PSMTXRotRad(mtx, 'Y', 0.017453292f * (720.0f * ratio));
+    PSMTXMultVec(mtx, &pos, &pos);
+    PSVECAdd(&pos, &base, &pos);
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;
-    cam->storedPos = b;
+    cam->storedPos = pos;
     cam->storedAt = cam->cameraAt;
     cam->startTimeA = gp->renderTime;
     cam->durationA = 0;

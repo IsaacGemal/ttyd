@@ -119,6 +119,9 @@ static BeroEntry bero_entry_data[2] = {
     {NULL},
 };
 
+// The shared zero colour; the original keeps it in .rodata at the start of the file.
+__declspec(section ".rodata") GXColor zero_aji_00014dfc = {0, 0, 0, 0};
+
 EVT_BEGIN(evt_emergency)
     IF_INT_NOT_EQUAL(GSW(0), 376)
         LOOP(0)
@@ -139,7 +142,6 @@ EVT_BEGIN(evt_emergency)
     CALL(evt_map_set_blend, 0, 255, 96, 96, 255)
     RETURN
 EVT_END()
-
 static USER_FUNC(viewport) {
     s32* args = event->args;
     f32 a = evtGetFloat(event, args[0]);
@@ -380,14 +382,14 @@ EVT_END()
 // Builds the texture's TEV colour; the temporary keeps the zero colour in the
 // original's stack slot instead of the outgoing argument slot.
 static inline GXColor noiseTevColor(u8 alpha) {
-    GXColor c = (GXColor){0, 0, 0, 0};
+    GXColor c = zero_aji_00014dfc;
     c.a = alpha;
     return c;
 }
 
-// NONMATCHING (98.99%): the offset arithmetic now matches; what still differs is the
-// callee-saved register allocation (target param/cam/data/i in r25/r30/r26/r28, i/4/i%4 in
-// r31/r29; ours r24/r31/r27/r28 and r30/r29) plus two first-loop schedule slots.
+// NONMATCHING (98.99%): the offset arithmetic and the zero-colour relocation now match; what
+// still differs is the callee-saved register allocation (target param/cam/data/i in r25/r30/r26/r28,
+// i/4/i%4 in r31/r29; ours r24/r31/r27/r28 and r30/r29) plus two first-loop schedule slots.
 void noiseDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     s32 i, j, k;
@@ -609,7 +611,6 @@ EVT_BEGIN(mail_sousin_se)
     CALL(evt_snd_sfxon_3d, STRING("SFX_PEACH_MAIL_SOUSIN2"), 0, 0, -100, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(noise) {
     s32 value = evtGetValue(event, event->args[0]);
 
@@ -924,7 +925,6 @@ f32 move_pos_list[15][2] = {
     { -75.44623565673828f, -58.21755599975586f },
     { -39.3040885925293f, -74.7188720703125f },
 };
-
 static USER_FUNC(peach_set_pose) {
     char* pose = (char*)evtGetValue(event, event->args[0]);
 
@@ -1120,7 +1120,6 @@ EVT_BEGIN(peach_dance_move)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(horogram_flag_onoff) {
     s32* args = event->args;
     s32 on = evtGetValue(event, args[0]);
@@ -1167,7 +1166,6 @@ EVT_END()
 EVT_BEGIN(peach_dance_action_step)
     RETURN
 EVT_END()
-
 USER_FUNC(get_local_rotate) {
     evtSetFloat(event, event->args[0], dance_dt.rotate);
     return EVT_RETURN_DONE;
@@ -1224,7 +1222,6 @@ EVT_BEGIN(dance_action_turn_sub)
     END_IF
     RETURN
 EVT_END()
-
 USER_FUNC(dance_get_step) {
     evtSetValue(event, event->args[0], dance_dt.step);
     return EVT_RETURN_DONE;
@@ -1236,7 +1233,6 @@ EVT_BEGIN(peach_dance_action_turn)
     CALL(dance_flag_onoff, 2, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_data_init) {
     dance_dt.flags = 0;
     dance_dt.centerX = 0.0f;
@@ -1255,7 +1251,6 @@ EVT_BEGIN(peach_dance_action_reverse)
     CALL(dance_flag_onoff, 2, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_flag_onoff) {
     s32* args = event->args;
     s32 mask = evtGetValue(event, args[0]);
@@ -1280,7 +1275,6 @@ EVT_BEGIN(peach_dance_action_fail)
     CALL(dance_flag_onoff, 2, 0)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_flag_check) {
     s32* args = event->args;
     s32 mask = evtGetValue(event, args[0]);
@@ -1326,7 +1320,6 @@ EVT_BEGIN(dance_btn_disp)
     CALL_CHILD(dance_btn_disp_sub)
     RETURN
 EVT_END()
-
 USER_FUNC(dance_reverse) {
     if (dance_dt.flags & 1) {
         dance_dt.flags &= ~1;
@@ -1427,7 +1420,6 @@ EVT_BEGIN(peach_dance_light)
     END_LOOP
     RETURN
 EVT_END()
-
 USER_FUNC(move_center) {
     s32* args = event->args;
     f32 startX = evtGetFloat(event, args[0]);
@@ -1678,7 +1670,6 @@ EVT_BEGIN(peach_evt_dance)
     END_IF
     RETURN
 EVT_END()
-
 s32 wait_action_end(void) {
     return (dance_dt.flags & 2) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
@@ -2194,7 +2185,6 @@ QuizData peach_evt_stg4_quiz_data[5] = {
     { "peach_aji_184", "peach_aji_185", "peach_aji_185_sel", 1 },
     { "peach_aji_186", "peach_aji_187", "peach_aji_187_sel", 2 },
 };
-
 USER_FUNC(btn_check) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
@@ -3266,7 +3256,6 @@ EVT_END()
 HorogramWork* horogram_wp;
 
 DanceWork dance_dt;
-
 USER_FUNC(set_npc_pos) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);

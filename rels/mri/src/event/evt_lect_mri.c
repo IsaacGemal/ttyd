@@ -105,22 +105,17 @@ extend_data(145,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-
 static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
     f32 t = b - a;
 
     return (t * c + a * d) / b;
 }
 
-// NONMATCHING (98.67%): wwstart's low word is loaded into r7 instead of r5; the divisor-high
-// zero is scheduled before the subtraction rather than after.
 static USER_FUNC(lect_mario_ido_sum) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 total = evtGetValue(event, args[0]);
     s32 count;
-    s32 diff;
-    u32 ticks;
 
     if (isFirstCall) {
         wwstart = event->lifetime;
@@ -128,9 +123,7 @@ static USER_FUNC(lect_mario_ido_sum) {
         evtSetFloat(event, LW(1), mario->position.y);
         evtSetFloat(event, LW(2), mario->position.z);
     }
-    diff = (s32)(((s32*)&event->lifetime)[1] - ((s32*)&wwstart)[1]);
-    ticks = OS_TIMER_CLOCK / 1000;
-    count = (s32)((u64)(s32)diff / (u64)ticks);
+    count = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
     if (count > total) {
         count = total;
     }
@@ -185,20 +178,42 @@ static USER_FUNC(x_flag_wait) {
     return (target == x_flag_data[idx]) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (85.78%): MWCC copies lbtn[i].pos through a base four bytes early (addi r4,r9,8)
-// and lays the dy=0/dy=-15 constant blocks out differently.
+// The iconId 0x75..0x7D range test is a switch: MWCC lowers the grouped cases to the
+// original's `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. Writing it as
+// `if (a < 0x7E && a >= 0x75)` instead makes MWCC invert the second branch (`blt zero`).
 static void lecture_button_disp(CameraId camId, void* param) {
     s32 i;
     for (i = 0; i < 2; i++) {
-        if (!(lbtn[i].flag & 1)) {
-            Vec pos;
-            f32 dy;
-            if (lbtn[i].iconId < 0x7e && lbtn[i].iconId >= 0x75) dy = -15.0f;
-            else dy = 0.0f;
-            pos = lbtn[i].pos;
-            pos.y += dy;
-            iconDispGxAlpha(&pos, 0x50, lbtn[i].iconId, lbtn[i].alpha, 1.0f);
+        LectureButton* b = &lbtn[i];
+#ifdef MUST_MATCH
+        u8* ppos = (u8*)b + 8;
+#endif
+        f32 dy;
+        Vec pos;
+
+        if (b->flag & 1) {
+            continue;
         }
+        switch (b->iconId) {
+            case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
+            case 0x7A: case 0x7B: case 0x7C: case 0x7D:
+                dy = -15.0f;
+                break;
+            default:
+                dy = 0.0f;
+                break;
+        }
+#ifdef MUST_MATCH
+        // The original addresses the button position Vec off &lbtn[i] + 8 with a +4 displacement;
+        // matching MWCC's base register needs the pointer built the same way.
+        pos = *(Vec*)(ppos + 4);
+#else
+        pos = b->pos;
+#endif
+        pos.y += dy;
+        // iconDispGxAlpha's header declares iconId `s16`, but the original passes a zero-extended
+        // u16 (`clrlwi`, no `extsh`); the function-pointer cast makes the call site zero-extend.
+        ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)b->iconId, (u8)b->alpha, 1.0f);
     }
 }
 

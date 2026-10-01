@@ -511,7 +511,7 @@ void _firebar_trans(FirebarEntry* entry) {
     }
 }
 
-// NONMATCHING (84.86%): the original spills `entry` to 0x8(r1), reloading it into
+// NONMATCHING (84.85%): the original spills `entry` to 0x8(r1), reloading it into
 // registers for the loops; MWCC keeps it in r31 throughout, which shifts the
 // callee-saved register allocation and the int->float conversion stack slots.
 USER_FUNC(firebar_entry) {

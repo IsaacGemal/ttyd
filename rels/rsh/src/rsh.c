@@ -1090,7 +1090,6 @@ EVT_END()
 
 
 // clang-format on
-
 void _prolog(void) {
     voidfunctionptr* ctor;
 
@@ -1166,11 +1165,9 @@ USER_FUNC(img_wait) {
     return EVT_RETURN_YIELD;
 }
 
-// NONMATCHING (83.86%): 316 instructions; the loop/branch layout and the coordinate math match. Left: `obj`/flag
-// temp land r6/r5 (original r5/r6), so every flag access shifts; width/height and the two `width/2` halves get
-// r20/r19/r21/r22 (original r21/r22/r19/r20); the int->float block feeding C_MTXLightFrustum is scheduled in a
-// different order with a different stack-slot order; and MWCC emits the int->float magic as local @NNN@ doubles,
-// matching the original's local `.rodata` offsets but not its symbol names.
+// NONMATCHING (84.1%): loop/branch and coordinate math now match (width=r21/height=r22/halfW=r19/halfH=r20:
+// compute `(x1-x0)/2` first, then width/height, and declare `s32 halfHeight, halfWidth;`). Left: obj/flag temp
+// r6/r5 (original r5/r6); swapped float rodata; the int->float block schedule; @NNN doubles; texMtx symbol name.
 void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     MapObject* obj;
     s32 stage;
@@ -1179,6 +1176,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     s32 field18;
     u16 x0, y0, x1, y1;
     s32 width, height;
+    s32 halfHeight, halfWidth;
     void* buf;
     GXTexObj texObj;
     Mtx frustumMtx;
@@ -1235,17 +1233,19 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
         y1 = gp->efbHeight;
     }
 
+    halfWidth = (x1 - x0) / 2;
+    halfHeight = (y1 - y0) / 2;
     width = x1 - x0;
     height = y1 - y0;
 
-    buf = smartAlloc(GXGetTexBufferSize((u16)(width / 2), (u16)(height / 2), GX_TF_RGB5A3, GX_FALSE, GX_FALSE), HEAP_EFFECT)->address;
+    buf = smartAlloc(GXGetTexBufferSize((u16)halfWidth, (u16)halfHeight, GX_TF_RGB5A3, GX_FALSE, GX_FALSE), HEAP_EFFECT)->address;
     GXSetTexCopySrc((u16)x0, (u16)y0, (u16)width, (u16)height);
-    GXSetTexCopyDst((u16)(width / 2), (u16)(height / 2), GX_TF_RGB5A3, GX_TRUE);
+    GXSetTexCopyDst((u16)halfWidth, (u16)halfHeight, GX_TF_RGB5A3, GX_TRUE);
     GXCopyTex(buf, GX_FALSE);
     GXInvalidateTexAll();
     GXPixModeSync();
     GXTexModeSync();
-    GXInitTexObj(&texObj, buf, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObj(&texObj, buf, (u16)halfWidth, (u16)halfHeight, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
     near = (f32)gp->efbHeight * 0.5f /
@@ -1454,7 +1454,6 @@ void* _get_rnd_npc_data(s32 type, s32 group, s32 index) {
     return (void*)((u8*)data + index * 0xC);
 }
 #pragma dont_inline reset
-
 USER_FUNC(evt_rsh_get_rnd_npc_data) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);

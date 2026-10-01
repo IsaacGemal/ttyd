@@ -1437,7 +1437,7 @@ config.libs = [
             Object(Matching, "mri_05.c"),
             Object(Matching, "driver/punidrv.c"),
             Object(Matching, "unit/unit_boss_magnum_battender.c"),
-            Object(NonMatching, "event/evt_lect_mri.c"),
+            Object(Matching, "event/evt_lect_mri.c"),
             Object(Matching, "data/battle/battle_database_mri.c"),
         ],
     ),
@@ -1475,7 +1475,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_champion.c"),
             Object(Matching, "unit/unit_kamec_red.c"),
             Object(NonMatching, "tou_03.c"),
-            Object(NonMatching, "unit/unit_boss_macho_gance.c"),
+            Object(Matching, "unit/unit_boss_macho_gance.c"),
             Object(Matching, "unit/unit_wanawana.c"),
             Object(Matching, "data/battle/battle_database_tou.c"),
         ]
@@ -1572,7 +1572,7 @@ config.libs = [
             Object(Matching, "dou_11.c"),
             Object(Matching, "dou_10.c"),
             Object(Matching, "dou.c"),
-            Object(NonMatching, "event/evt_lect_dou.c"),
+            Object(Matching, "event/evt_lect_dou.c"),
         ],
     ),
     Rel(
@@ -1786,10 +1786,10 @@ config.libs = [
             Object(NonMatching, "las_04.c"),
             Object(NonMatching, "las_05.c"),
             Object(Matching, "las_14.c"),
-            Object(NonMatching, "las_29.c"),
+            Object(Matching, "las_29.c"),
             Object(NonMatching, "unit/unit_boss_black_peach.c"),
             Object(NonMatching, "unit/unit_boss_batten_leader.c"),
-            Object(NonMatching, "unit/unit_boss_batten_satellite.c"),
+            Object(Matching, "unit/unit_boss_batten_satellite.c"),
             Object(Matching, "event/evt_shuryolight.c", modules=["las"]),
         ],
     ),
@@ -1914,7 +1914,7 @@ config.libs = [
             Object(Matching, "tik_02.c"),
             Object(NonMatching, "tik_05.c"),
             Object(Matching, "tik_11.c"),
-            Object(NonMatching, "event/evt_lect_tik.c"),
+            Object(Matching, "event/evt_lect_tik.c"),
         ],
     ),
     Rel(
@@ -2130,7 +2130,7 @@ config.libs = [
             Object(NonMatching, "usu_00.c"),
             Object(Matching, "usu_01.c"),
             Object(NonMatching, "event/evt_lect_usu.c"),
-            Object(NonMatching, "event/evt_kagemario.c", modules=["usu"]),
+            Object(Matching, "event/evt_kagemario.c", modules=["usu"]),
         ],
     ),
     Rel(
@@ -2148,7 +2148,7 @@ config.libs = [
     Rel(
         "dmo",
         [
-            Object(NonMatching, "dmo_00.c"),
+            Object(Matching, "dmo_00.c"),
             Object(Matching, "dmo.c"),
         ],
     ),

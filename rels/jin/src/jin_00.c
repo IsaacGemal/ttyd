@@ -1272,7 +1272,6 @@ EVT_END()
 
 
 // clang-format on
-
 USER_FUNC(get_npc_color) {
     s32* args = event->args;
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, args[0]));
@@ -1856,8 +1855,20 @@ void senteresa_loadTev(void) {
     GXSetNumTevStages(1);
 }
 
-// NONMATCHING (99.96%): 4 of 113 instructions differ in stack offsets only (the fog local/temp and the
-// loop's GXSetTevColor temp swap {0x8,0x10}); the other 6 operand diffs are anonymous-pool relocations.
+// Inlined into senteresa_ext_disp so its GXColor fog local lands in retail's 0x8 slot.
+static inline void senteresa_setupTev(void) {
+    GXColor fog = {0xFF, 0xFF, 0xFF, 0xFF};
+
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fog);
+}
+
 static void senteresa_ext_disp(void) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
     s32 count = extGetPoseNum();
@@ -1869,18 +1880,7 @@ static void senteresa_ext_disp(void) {
     GXSetZMode(1, 3, 1);
     extLoadVertex();
     extLoadTexture();
-    {
-        GXColor fog = {0xFF, 0xFF, 0xFF, 0xFF};
-
-        GXSetTevOrder(0, 0, 0, 4);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaIn(0, 7, 4, 1, 7);
-        GXSetNumChans(0);
-        GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fog);
-    }
+    senteresa_setupTev();
     GXSetNumTexGens(1);
     GXSetNumTevStages(1);
     for (i = 0; i < count; i++) {

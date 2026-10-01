@@ -3135,3 +3135,23 @@ battle_item_data's 61 item weapons are typed BattleWeapon. The two stubs are gon
 the asm: fadeMain at 100% (and <math.h> -> math_ext.h lifted fadeEntry to 94%), BattleBreakSlot_Main at 98.46%
 (its event scripts are the unit's undecompiled .data). Header types flagged along the way: FadeEntry 0xA4 is
 signed, 0x10/0x14 is one s64 duration, ImageEntry 0x108 is a const char*; mariost.h's language compares unsigned.
+
+## Wave 41: REL whole-file pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+Every REL file with open functions (62 files, 255 functions) at Claude #1's request: one agent per file on all of
+them, mri_puni's 44 split into 7 groups spliced by name; 69 agents, 19:25-20:51 (scratch/wave41).
+
+**Result:** eight units link (dmo_00, evt_lect_dou, las_29, unit_boss_batten_satellite, evt_lect_mri, evt_lect_tik,
+unit_boss_macho_gance, usu evt_kagemario); 8,222 -> 8,267 functions, code linked +0.90%, data linked +1.36%. Undefined
+named-constant externs became literals (scratch/wave38/literalize2.py, now restricted to names a file declares but
+never defines; it had also rewritten constants files define themselves). Left out: ten files where a section or a
+function drops (gundan_zako_group2 reached 8 of 9 but its data still drops while shake_ceil differs), sys, tik_05,
+yuu_02 (pragmas without a match).
+
+**Review** (fresh Claude): evt_yuuranking_disp_func, newly written, reused its row counter for minutes (the time-mode
+rank loop could hang), drew the title frame 50 units off, swapped modes 1 and 3's subtitles, and applied the icon
+offsets before truncating; all fixed against the asm, with retail's exact floats (75.19998f, -75.200005f,
+-37.600006f). The label script dropped the blank line before each function it touched (fixed; eight files that
+changed by nothing else went back to main). Bugs on main this wave fixed: aji arm_main's 2π, barriern_satellite's
+intplGetValue mode, tou's NPC names (ガンス, キノシコワ), tou_02's group pointer off gp, yuunpc's row index and pose
+index. Found in passing, older than the wave: hei_10's 0.2f is 2 * randf(1.0, 1.2) (0.20000005f).

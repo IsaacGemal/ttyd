@@ -382,8 +382,6 @@ static inline void yuunpc_pose_change_sub(YuunpcEntry* entry, s16 animIndex, f32
     }
 }
 #endif
-
-
 void ext_yuunpc_minigame1_main(void) {
     yuunpc_pose_minigame1_main();
 }
@@ -409,12 +407,11 @@ EVT_BEGIN(evt_yuunpc_minigame1)
     CALL(evt_ext_entry, 300, PTR(ext_yuunpc_minigame1_data), PTR(ext_yuunpc_minigame1_init), PTR(ext_yuunpc_minigame1_main), PTR(ext_yuunpc_dispent))
     RETURN
 EVT_END()
-
 void ext_yuunpc_minigame2_main(void) {
     yuunpc_pose_minigame2_main();
 }
 
-// NONMATCHING (88.88%): logic complete; the inlined pose_change now uses the static copy below,
+// NONMATCHING (92%): logic complete; the inlined pose_change now uses the static copy below,
 // so only register allocation differs (the original keeps f23 and r21-r24 live, ours f24-r24).
 // The dat_yuu_00014efc/dat_yuu_00014f0c block copy is byte-identical.
 void ext_yuunpc_minigame2_init(void) {
@@ -447,10 +444,10 @@ void ext_yuunpc_minigame2_init(void) {
         mtx = (MtxPtr)pose->matrix;
         PSMTXIdentity(mtx);
 
-        t = 60.0f * (f32)q - 655.0f;
+        t = 60.0f * (f32)(i % 4) - 655.0f;
         y = 30.0f + t;
         mtx[0][3] = 13.333333f * (f32)q - 500.0f;
-        mtx[1][3] = arr1[(s32)((y + 655.0f) / 60.0f)];
+        mtx[1][3] = arr1[(s32)((y - -655.0f) / 60.0f)];
         mtx[2][3] = y + arr2[q % 8];
 
         pose->field_0x4 = (f32)(irand(2) * 180 + 90);
@@ -510,12 +507,11 @@ EVT_BEGIN(evt_yuunpc_minigame2)
     CALL(evt_ext_entry, 300, PTR(ext_yuunpc_minigame2_data), PTR(ext_yuunpc_minigame2_init), PTR(ext_yuunpc_minigame2_main), PTR(ext_yuunpc_dispent))
     RETURN
 EVT_END()
-
 void ext_yuunpc_minigame3_main(void) {
     yuunpc_pose_minigame3_main();
 }
 
-// NONMATCHING (88.88%): logic complete; the inlined pose_change now uses the static copy below,
+// NONMATCHING (92%): logic complete; the inlined pose_change now uses the static copy below,
 // so only register allocation differs (the original keeps f23 and r21-r24 live, ours f24-r24).
 // The dat_yuu_00014f2c/dat_yuu_00014f3c block copy is byte-identical.
 void ext_yuunpc_minigame3_init(void) {
@@ -548,10 +544,10 @@ void ext_yuunpc_minigame3_init(void) {
         mtx = (MtxPtr)pose->matrix;
         PSMTXIdentity(mtx);
 
-        t = 60.0f * (f32)q - 750.0f;
+        t = 60.0f * (f32)(i % 4) - 750.0f;
         y = 30.0f + t;
         mtx[0][3] = 13.333333f * (f32)q - 600.0f;
-        mtx[1][3] = arr1[(s32)((y + 750.0f) / 60.0f)];
+        mtx[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
         mtx[2][3] = y + arr2[q % 8];
 
         pose->field_0x4 = (f32)(irand(2) * 180 + 90);
@@ -611,7 +607,6 @@ EVT_BEGIN(evt_yuunpc_minigame3)
     CALL(evt_ext_entry, 360, PTR(ext_yuunpc_minigame3_data), PTR(ext_yuunpc_minigame3_init), PTR(ext_yuunpc_minigame3_main), PTR(ext_yuunpc_dispent))
     RETURN
 EVT_END()
-
 void ext_yuunpc_minigame4_main(void) {
     yuunpc_pose_minigame4_main();
 }
@@ -780,7 +775,6 @@ static u32 jumptable_00006054[8] = {
     (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x25b0), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x24e8), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x24e8),
     (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x24e8), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x25b0),
 };
-
 void errper_set_rtn(ErrPer* p) {
     switch (p->field_4) {
         case -1:
@@ -802,7 +796,6 @@ void errper_set_rtn(ErrPer* p) {
             break;
     }
 }
-
 
 void yuunpc_disp(CameraId cameraId, void* param) {
     extLoadRenderMode();
@@ -880,9 +873,6 @@ s32 fallcheck(YuunpcMapWork* p) {
     return 0;
 }
 
-// NONMATCHING (99.23%): logic complete. Only two scheduling differences remain: the final
-// block emits `stfs f31; stfs f30; li r3,0` where the original has `stfs f31; li r3,0; stfs f30`,
-// and the equal path loads `out.x` into r4 (after hoisting li r3,0) where the original uses r3.
 s32 hitcheck(YuunpcMapWork* p) {
     Vec disp;
     Vec out;
@@ -1008,8 +998,8 @@ s32 hitcheck(YuunpcMapWork* p) {
     if (p->field_24.y == (f32)height) {
         p->field_24.x = x;
         p->field_24.z = z;
+        return 0;
     }
-    return 0;
     } else {
     p->field_24 = out;
     }
@@ -1389,7 +1379,7 @@ void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
 }
 
 
-// NONMATCHING (87.09%): logic complete; the inlined pose_change now uses the static copy below,
+// NONMATCHING (91.63%): logic complete; the inlined pose_change now uses the static copy below,
 // so only register allocation differs (the original keeps f23 and r21-r24 live, ours f24-r24).
 // The dat_yuu_00014ec8/dat_yuu_00014edc block copy is byte-identical.
 void ext_yuunpc_minigame1_init(void) {
@@ -1422,10 +1412,10 @@ void ext_yuunpc_minigame1_init(void) {
         mtx = (MtxPtr)pose->matrix;
         PSMTXIdentity(mtx);
 
-        t = 60.0f * (f32)q - 560.0f;
+        t = 60.0f * (f32)(i % 5) - 560.0f;
         y = 30.0f + t;
         mtx[0][3] = 16.666666f * (f32)q - 500.0f;
-        mtx[1][3] = arr1[(s32)((y + 560.0f) / 60.0f)];
+        mtx[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
         mtx[2][3] = y + arr2[q % 8];
 
         pose->field_0x4 = (f32)(irand(2) * 180 + 90);
@@ -1469,7 +1459,6 @@ void ext_yuunpc_minigame1_init(void) {
     }
 }
 
-
 s32 yuunpc_pose_check(const char* name, const char* anim) {
     YuunpcPoseEntry* entry = yuunpc_wp->poseEntries;
     s32 i;
@@ -1485,21 +1474,20 @@ s32 yuunpc_pose_check(const char* name, const char* anim) {
     return i;
 }
 
-// NONMATCHING (96.83%): logic is complete; the remaining diff is the .sdata2/.rodata constant addresses
-// (the empty-string literal and the c_tyusan/CHU_S_1 literals) plus a rotated loop layout. Those pool
-// slots depend on the still-unimplemented pose/init functions, so the addresses cannot settle until
-// the whole file is built.
-// NONMATCHING (96.83%): logic complete; remaining diff is sdata2 pool-label addresses.
+// The first while is a do-while so the loop's `arg++`/`arg->name` test folds into the original's
+// `lwzu`; the final scan uses a fresh counter variable so the allocator picks the original's registers.
+// The chusan index store is `= j` (the matched entry's index), which is what the original stores.
 void yuunpc_pose_init(YuunpcPoseArg* arg) {
     char name[0x20];
     char anim[0x20];
     s32 i = 0;
     s32 idx;
+    s32 j;
 
     strcpy(name, "");
     strcpy(anim, "");
     yuunpc_wp->field_1C = -1;
-    while (arg->name != NULL) {
+    do {
         if (strcmp(arg->name, name) != 0) {
             strcpy(name, arg->name);
             strcpy(anim, "");
@@ -1519,7 +1507,7 @@ void yuunpc_pose_init(YuunpcPoseArg* arg) {
         yuunpc_wp->poseEntries[yuunpc_wp->field_1C].field_30 = 2.0f;
         i++;
         arg++;
-    }
+    } while (arg->name != NULL);
     yuunpc_wp->field_1C += 1;
     yuunpc_wp->field_18 = yuunpc_wp->field_1C;
     arg++;
@@ -1536,15 +1524,15 @@ void yuunpc_pose_init(YuunpcPoseArg* arg) {
         yuunpc_wp->field_1C += 1;
         arg++;
     }
-    for (i = 0; i < yuunpc_wp->field_18; i++) {
-        if (strcmp(yuunpc_wp->poseEntries[i].name, "c_tyusan") == 0 && strcmp(yuunpc_wp->poseEntries[i].anim, "CHU_S_1") == 0) {
-            yuunpc_wp->field_20 = 0;
-            yuunpc_wp->poseEntries[i].field_1C = 224.0f;
+    for (j = 0; j < yuunpc_wp->field_18; j++) {
+        if (strcmp(yuunpc_wp->poseEntries[j].name, "c_tyusan") == 0 && strcmp(yuunpc_wp->poseEntries[j].anim, "CHU_S_1") == 0) {
+            yuunpc_wp->field_20 = j;
+            yuunpc_wp->poseEntries[j].field_1C = 224.0f;
         }
     }
 }
 
-// NONMATCHING (86.45%): register allocation differs and the str_00000EBC rodata address is off because
+// NONMATCHING (86.54%): register allocation differs and the str_00000EBC rodata address is off because
 // ext_yuunpc_minigame4_init_sub (the other user of that literal) is not implemented yet; logic is right.
 void yuunpc_maphit_init(void) {
     s8 str[3] = "\x81\xA1";
@@ -1565,8 +1553,9 @@ void yuunpc_maphit_init(void) {
         yuunpc_wp->map[0 * 72 + i] = value;
     }
     for (i = 0; i < 6; i++) {
+        s8* row = hp + i * 0x90;
         for (j = 0; j < 72; j++) {
-            if (hp[i * 0x90 + j * 2 + 0x120] == str[0] && hp[i * 0x90 + j * 2 + 0x121] == str[1]) {
+            if (row[j * 2 + 0x120] == str[0] && row[j * 2 + 0x121] == str[1]) {
                 yuunpc_wp->map[i * 72 + j] = -500;
             }
         }

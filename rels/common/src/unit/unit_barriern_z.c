@@ -690,7 +690,6 @@ static u32 splineTableOut4_4[15] = {
     0xBF800000, 0xC1F00000, 0xC1C80000, 0xBF800000,
     0xC1C80000, 0xC1C80000, 0x00000000,
 };
-
 static USER_FUNC(barriern_zanzou) {
     BattleUnit* unit;
     s32 id;
@@ -791,7 +790,6 @@ static EVT_BEGIN(satellite_blur_off)
     END_LOOP
     RETURN
 EVT_END()
-
 static USER_FUNC(barriern_zanzou3) {
     BattleUnit* unit;
     s32 id;
@@ -801,7 +799,7 @@ static USER_FUNC(barriern_zanzou3) {
     return barriern_zanzou_sub(isFirstCall, unit, zanzou3_scale, 2);
 }
 
-// NONMATCHING (97.86%): the always-phase temp-array/zanzou_count address registers are permuted.
+// NONMATCHING (97.85%): the always-phase temp-array/zanzou_count address registers are permuted.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
     f32 temp2[5];
@@ -973,7 +971,6 @@ static EVT_BEGIN(unison_phase_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
 static USER_FUNC(barriern_satellite_zanzou2) {
     s32 index;
     BattleUnit* unit;
@@ -1271,7 +1268,7 @@ static EVT_BEGIN(damage_check_event_sub)
     RETURN
 EVT_END()
 
-// NONMATCHING (98.05%): the first intplGetValue sets zanzou_count[0] and 1.0f up in swapped
+// NONMATCHING (98.04%): the first intplGetValue sets zanzou_count[0] and 1.0f up in swapped
 // registers, and the always-phase loop loads zanzou_count before temp2/temp1 (original loads the
 // temporaries first).
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
@@ -1440,7 +1437,6 @@ static EVT_BEGIN(wakka_attack_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
 static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     BarriernSatelliteTo* work;
     BattleUnit* satellite;
@@ -1476,7 +1472,7 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
 }
 
 // overall structure and calls match.
-// NONMATCHING (88.29%): the twenty preloaded spline-table addresses are spilled/allocated in a
+// NONMATCHING (88.28%): the twenty preloaded spline-table addresses are spilled/allocated in a
 // different order than the original (the frame is already 0xa0).
 static USER_FUNC(barriernSatelliteToInside) {
     s32* args;
@@ -1915,7 +1911,6 @@ static EVT_BEGIN(wait_event)
     GOTO(1)
     RETURN
 EVT_END()
-
 static USER_FUNC(outSplineTableSet) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -1966,8 +1961,8 @@ static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BtlUnit_GetPartsPtr(satellite, 1)->work[2] = (s32)spline;
 }
 
-// NONMATCHING (97.45%): args += 2 is scheduled after the second evtSetValue call; the original
-// puts it before the call.
+// The args increment is written before the second call so the scheduler emits the addi there,
+// as the original does; args[-1] is the pre-increment args[1].
 static USER_FUNC(barriern_wawawa_set_target) {
     s32* args;
     s32 xs[12];
@@ -1988,12 +1983,19 @@ static USER_FUNC(barriern_wawawa_set_target) {
         i++;
         barriern_wawawa_get_next_target(&xs[i], &ys[i]);
     }
-    for (i = 0; i < 5; i++) {
+    i = 0;
+    while (i < 5) {
         n = irand(count);
 
         evtSetValue(event, args[0], xs[n]);
+#ifdef MUST_MATCH
+        args += 2;
+        evtSetValue(event, args[-1], ys[n]);
+#else
         evtSetValue(event, args[1], ys[n]);
         args += 2;
+#endif
+        i++;
     }
     return EVT_RETURN_DONE;
 }

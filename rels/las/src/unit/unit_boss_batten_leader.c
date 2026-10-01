@@ -2549,9 +2549,6 @@ Vec nowv;
 
 
 // clang-format on
-
-
-
 USER_FUNC(evt_eff_pokopi_thunder) {
     s32* args = event->args;
     f32 f31;
@@ -3067,17 +3064,18 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (84.2%): the original tests each satellite case with independent `if`s where ours chains them with
-// else-if, and it hoists the spline-table addresses out of the loop.
+// NONMATCHING (86.96%): each of the nine inlined battenSatelliteTo_Init blocks keeps `data` in r4 (original: r7),
+// reuses the preloaded table register for the data+4 store (original re-materialises it), and hoists the
+// comparison/argument table addresses in a different order.
 USER_FUNC(battenSatelliteToInside) {
-    s32* args = event->args;
+    s32* args;
     BattleUnit* unit;
     BattleUnitPart* part;
-    s32 i;
     u8 haveAll;
     s32 id;
     s32 table;
-
+    s32 i;
+    args = event->args;
     id = evtGetValue(event, args[0]);
     evtGetValue(event, args[1]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
@@ -3090,23 +3088,32 @@ USER_FUNC(battenSatelliteToInside) {
             table = part->work[1];
             if (table == (s32)splineTableOut1_1) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn1_1);
-            } else if (table == (s32)splineTableOut2_1) {
+            }
+            if (table == (s32)splineTableOut2_1) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn2_1);
-            } else if (table == (s32)splineTableOut2_2) {
+            }
+            if (table == (s32)splineTableOut2_2) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn2_2);
-            } else if (table == (s32)splineTableOut3_1) {
+            }
+            if (table == (s32)splineTableOut3_1) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_1);
-            } else if (table == (s32)splineTableOut3_2) {
+            }
+            if (table == (s32)splineTableOut3_2) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_2);
-            } else if (table == (s32)splineTableOut3_3) {
+            }
+            if (table == (s32)splineTableOut3_3) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_3);
-            } else if (table == (s32)splineTableOut4_1) {
+            }
+            if (table == (s32)splineTableOut4_1) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_1);
-            } else if (table == (s32)splineTableOut4_2) {
+            }
+            if (table == (s32)splineTableOut4_2) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_2);
-            } else if (table == (s32)splineTableOut4_3) {
+            }
+            if (table == (s32)splineTableOut4_3) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_3);
-            } else if (table == (s32)splineTableOut4_4) {
+            }
+            if (table == (s32)splineTableOut4_4) {
                 battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_4);
             }
         }

@@ -84,7 +84,6 @@ extend_data(2,
 static DemoWork* wp = &work;
 
 // Functions are written in the reverse of their .text order (deferred codegen).
-
 USER_FUNC(demo_init) {
     if (isFirstCall) {
         memset(wp, 0, sizeof(DemoWork));
@@ -204,8 +203,7 @@ void demo_desk(CameraId cameraId, void* param) {
 #endif
 }
 
-// NONMATCHING (85.19%): GXColor now matches (compound literal); frame is 0x110 vs 0x130 (the original
-// keeps the two x/y temps in f30/f31, ours rematerialises them); vp/proj and the GXProject output slots are shifted.
+// demo_img projects the captured frame and duplicates it into two other viewports.
 void demo_img(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(8);
     GXTexObj texObj;
@@ -213,12 +211,19 @@ void demo_img(CameraId cameraId, void* param) {
     Mtx m2;
     f32 proj[7];
     f32 vp[6];
-    f32 x0, y0, z0;
-    f32 x1, y1, z1;
-    f32 x2, y2, z2;
-    f32 x3, y3, z3;
-    f32 a;
+    Vec p0, p1, p2, p3;
     f32 b;
+    f32 a;
+    f32 right = 101.333336f;
+    f32 top = 115.0f;
+#ifdef MUST_MATCH
+    // MUST_MATCH: these locals keep MWCC from folding the edge expressions into a single pool literal;
+    // the original loads 202.66667/0.5 (and 160/0.5/35) and emits fneg/fmuls/fmadds. The #else form is natural.
+    f32 edge_w = 202.66667f;
+    f32 edge_h = 160.0f;
+    f32 half = 0.5f;
+    f32 topoff = 35.0f;
+#endif
 
     if (wp->field_0x08 == -1) {
         return;
@@ -255,28 +260,38 @@ void demo_img(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXGetViewportv(vp);
     GXGetProjectionv(proj);
+#ifdef MUST_MATCH
+    a = -edge_w * half;
+#else
     a = -202.66667f * 0.5f;
-    GXProject(a, 115.0f, 0.0f, m1, proj, vp, &x0, &y0, &z0);
-    GXProject(101.333336f, 115.0f, 0.0f, m1, proj, vp, &x1, &y1, &z1);
+#endif
+    GXProject(a, 115.0f, 0.0f, m1, proj, vp, &p0.x, &p0.y, &p0.z);
+    GXProject(101.333336f, 115.0f, 0.0f, m1, proj, vp, &p1.x, &p1.y, &p1.z);
+#ifdef MUST_MATCH
+    // MUST_MATCH: assigning b inside the call (instead of on its own line) makes MWCC schedule the call's
+    // 101.333336 load and &p2.y setup the way the original does; the #else form is the natural one.
+    GXProject(101.333336f, (b = -edge_h * half + topoff), 0.0f, m1, proj, vp, &p2.x, &p2.y, &p2.z);
+#else
     b = -160.0f * 0.5f + 35.0f;
-    GXProject(101.333336f, b, 0.0f, m1, proj, vp, &x2, &y2, &z2);
-    GXProject(a, b, 0.0f, m1, proj, vp, &x3, &y3, &z3);
+    GXProject(101.333336f, b, 0.0f, m1, proj, vp, &p2.x, &p2.y, &p2.z);
+#endif
+    GXProject(a, b, 0.0f, m1, proj, vp, &p3.x, &p3.y, &p3.z);
     cam = camGetPtr(4);
-    cam->viewport[0] = x0;
-    cam->viewport[1] = y0;
-    cam->viewport[2] = x2 - x0;
-    cam->viewport[3] = y2 - y0;
+    cam->viewport[0] = p0.x;
+    cam->viewport[1] = p0.y;
+    cam->viewport[2] = p2.x - p0.x;
+    cam->viewport[3] = p2.y - p0.y;
     cam = camGetPtr(6);
     cam->viewport[0] = 0.0f;
     cam->viewport[1] = 0.0f;
     cam->viewport[2] = 608.0f;
     cam->viewport[3] = 480.0f;
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(a, 115.0f, 0.0f);
+    GXPosition3f32(a, top, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(101.333336f, 115.0f, 0.0f);
+    GXPosition3f32(right, top, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(101.333336f, b, 0.0f);
+    GXPosition3f32(right, b, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
     GXPosition3f32(a, b, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
@@ -512,7 +527,10 @@ USER_FUNC(adjust) {
     Mtx m2;
 
     wp->field_0x10 = angle;
-    wp->field_0x14 = 1.5f * (f32)sin(1.5707964f * wp->field_0x10) + 1.5f;
+    {
+        f32 s = (f32)sin(1.5707964f * wp->field_0x10);
+        wp->field_0x14 = 1.5f * s + 1.5f;
+    }
     wp->field_0x1C = -105.0f * (f32)sin(1.5707964f * wp->field_0x10);
     PSMTXTrans(m1, wp->field_0x18 / 10.0f, wp->field_0x1C / 10.0f, 0.0f);
     PSMTXScale(m2, wp->field_0x14 / 1.5f, wp->field_0x14 / 1.5f, wp->field_0x14 / 1.5f);

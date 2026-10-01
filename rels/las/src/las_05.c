@@ -347,7 +347,6 @@ u32 move_check_list[20] = {
     0x000001A0, 0x000001CD, 0x000001FE, 0x00000235,
     0x00000274, 0x000002BF, 0x00000326, 0x000003E8,
 };
-
 USER_FUNC(kurokaron_flag_check) {
     s32* args = event->args;
     s32 mask = evtGetValue(event, args[0]);
@@ -427,9 +426,6 @@ s32 _kurokaron_run_away(f32 x1, f32 z1, f32 x2, f32 z2) {
     return result;
 }
 // clang-format on
-
-// NONMATCHING (98.5%): register allocation; the compiler swaps the load/store order around
-// kurokaron_move_flag / kurokaron_move_index and schedules the `li r3, 0` return differently.
 s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
     if (!(kurokaron_move_flag & 2)) {
         flag = 0;
@@ -455,8 +451,8 @@ s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
         } else {
             npc->moveDir = reviseAngle(float_90_las_00012208 + angle);
         }
-        flag = 0;
         kurokaron_move_flag |= 4;
+        flag = 0;
         return 0;
     }
 
@@ -504,7 +500,9 @@ void _kurokaron_next_move_index(void) {
     }
 }
 
-// NONMATCHING (93.89%): 65 of 540 instructions differ: 29 with different operands, 8 replaced, 19 missing, 9 extra
+// NONMATCHING (93.89%): global register allocation diverges from the prologue (target keeps pose in r27,
+// entries in r31); the first PSVECSubtract is followed by a dead vec.x*vec.x+vec.z*vec.z compare, the inline
+// _kurokaron_next_move_index uses a different store shape, and several operand orders differ.
 USER_FUNC(kurokaron_move_position) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -671,7 +669,7 @@ static void senkaron_ext_init(void) {
     }
 }
 
-// NONMATCHING (95.32%): float register scheduling and a couple of operand orders differ
+// NONMATCHING (98.7%): the instruction sequence matches; only the FPR colours of the distance-squared block differ.
 void move_check(ExtPose* pose, s32 index) {
     MarioWork* mario;
     KaronPoseEntry* entries;
@@ -696,16 +694,10 @@ void move_check(ExtPose* pose, s32 index) {
         other = &entries[j];
 
         if (other->type == 1 && other->area == entry->area) {
-            f32 mz = mario->position.z;
-            f32 mx = mario->position.x;
-            f32 dz0 = (*pose->matrix)[2][3] - mz;
-            f32 dz1 = (*nextPose->matrix)[2][3] - mz;
-            f32 dx0 = (*pose->matrix)[0][3] - mx;
-            f32 dx1 = (*nextPose->matrix)[0][3] - mx;
-            f32 d0 = __fabsf(dx0) * __fabsf(dx0) + __fabsf(dz0) * __fabsf(dz0);
-            f32 d1 = __fabsf(dx1) * __fabsf(dx1) + __fabsf(dz1) * __fabsf(dz1);
-
-            if (d0 > d1) {
+            if (__fabsf((*pose->matrix)[0][3] - mario->position.x) * __fabsf((*pose->matrix)[0][3] - mario->position.x) +
+                    __fabsf((*pose->matrix)[2][3] - mario->position.z) * __fabsf((*pose->matrix)[2][3] - mario->position.z) >
+                __fabsf((*nextPose->matrix)[0][3] - mario->position.x) * __fabsf((*nextPose->matrix)[0][3] - mario->position.x) +
+                    __fabsf((*nextPose->matrix)[2][3] - mario->position.z) * __fabsf((*nextPose->matrix)[2][3] - mario->position.z)) {
                 f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
                 f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
 
@@ -719,7 +711,8 @@ void move_check(ExtPose* pose, s32 index) {
     }
 }
 
-// NONMATCHING (82.91%): 22 of 49 instructions differ: 14 with different operands, 2 replaced, 3 missing, 3 extra
+// NONMATCHING (82.91%): every instruction is present but the two (s32) conversions and the 0x4330 double
+// setup interleave differently from the target.
 void calc_area(s32 index, f32 x, f32 z) {
     KaronPoseEntry* entries = skwp->entries;
     u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
@@ -793,7 +786,7 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
     return result;
 }
 
-// NONMATCHING (91.25%): f-register allocation/scheduling; the collision half lands in
+// NONMATCHING (91.95%): f-register allocation/scheduling; the collision half lands in
 // f27 instead of f29, the dir range test lays out its branches differently, and
 // calc_area's constant load order differs.
 static void senkaron_ext_main(void) {
@@ -878,16 +871,10 @@ static void senkaron_ext_main(void) {
         for (k = j + 1; count != 0; count--, k++, nextPose++) {
             other = &entries[k];
             if (other->type == 1 && other->area == entry->area) {
-                f32 mz = m->position.z;
-                f32 mx = m->position.x;
-                f32 dz0 = (*pose->matrix)[2][3] - mz;
-                f32 dz1 = (*nextPose->matrix)[2][3] - mz;
-                f32 dx0 = (*pose->matrix)[0][3] - mx;
-                f32 dx1 = (*nextPose->matrix)[0][3] - mx;
-                f32 d0 = __fabsf(dx0) * __fabsf(dx0) + __fabsf(dz0) * __fabsf(dz0);
-                f32 d1 = __fabsf(dx1) * __fabsf(dx1) + __fabsf(dz1) * __fabsf(dz1);
-
-                if (d0 > d1) {
+                if (__fabsf((*pose->matrix)[0][3] - m->position.x) * __fabsf((*pose->matrix)[0][3] - m->position.x) +
+                        __fabsf((*pose->matrix)[2][3] - m->position.z) * __fabsf((*pose->matrix)[2][3] - m->position.z) >
+                    __fabsf((*nextPose->matrix)[0][3] - m->position.x) * __fabsf((*nextPose->matrix)[0][3] - m->position.x) +
+                        __fabsf((*nextPose->matrix)[2][3] - m->position.z) * __fabsf((*nextPose->matrix)[2][3] - m->position.z)) {
                     f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
                     f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
 
@@ -1186,7 +1173,6 @@ static void senkaron_ext_main(void) {
         }
     }
 }
-
 
 static void senkaron_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, senkaron_ext_disp, NULL);
@@ -1610,7 +1596,6 @@ static EVT_BEGIN(unlock_evt)
     CALL_CHILD(bero_case_switch_on)
     RETURN
 EVT_END()
-
 static USER_FUNC(senkaronToEscape) {
     skwp->escape = 1;
     return EVT_RETURN_DONE;
@@ -1737,7 +1722,6 @@ static EVT_BEGIN(shan_init)
     END_LOOP
     RETURN
 EVT_END()
-
 static USER_FUNC(make_name) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);

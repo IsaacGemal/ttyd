@@ -619,7 +619,6 @@ EVT_END()
 static u32 yuunpc_wp[1] = {
     0x00000000,
 };
-
 USER_FUNC(unk_yuu_00005268) {
     camShiftReset();
     return EVT_RETURN_DONE;
@@ -649,9 +648,13 @@ static inline f32 monte_rand(f32 min, f32 max) {
     return min + (f32)irand((s32)(100.0f * (max - min))) / 100.0f;
 }
 
-// NONMATCHING (99.44%): base[2]=0.0f is set before the do-while and base[4]=1.0f after it, matching the
-// target's store layout. Only register ties remain: the z min/max pointers land in r26/r27 reversed (z
-// subtraction in f0, not f1) and the psndSFX string address gets an extra `mr` into r21 instead of r26.
+// base[2]=0.0f is set before the do-while and base[4]=1.0f after it, matching the target's store layout.
+// Reading the bounds straight from the montetable fields (no lo/hi copies) puts the z min/max pointers in the
+// target's r26/r27, and writing the z range back into `max` (then 100.0f * max) keeps the subtraction in f1.
+// The only remaining difference is the sfx GPR colour: the psndSFX string address lands in r21 with an extra
+// `mr r21, r0` where the target writes r26 directly. Declaration order, block scope, pointer locals and
+// opt_lifetimes/opt_propagation/global_optimizer/peephole/... pragmas were all tried; none move it.
+// NONMATCHING (99.53%): only the sfx GPR colour differs (ours r21 + extra mr, target r26); all else matches.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -688,33 +691,28 @@ static USER_FUNC(fall_rtn) {
         for (i = 0; i < monte_p->count; i++) {
             s32 j;
             f32* base = (f32*)((u8*)&monte_p[i] + 8);
-            f32 lo;
-            f32 hi;
             f32 min;
             f32 max;
 
             base[2] = 0.0f;
             do {
-                lo = montetable[tableIdx].xmin;
-                hi = montetable[tableIdx].xmax;
-                if (lo < hi) {
-                    min = lo;
-                    max = hi;
+                if (montetable[tableIdx].xmin < montetable[tableIdx].xmax) {
+                    min = montetable[tableIdx].xmin;
+                    max = montetable[tableIdx].xmax;
                 } else {
-                    min = hi;
-                    max = lo;
+                    min = montetable[tableIdx].xmax;
+                    max = montetable[tableIdx].xmin;
                 }
                 base[1] = monte_rand(min, max);
-                lo = montetable[tableIdx].zmin;
-                hi = montetable[tableIdx].zmax;
-                if (lo < hi) {
-                    min = lo;
-                    max = hi;
+                if (montetable[tableIdx].zmin < montetable[tableIdx].zmax) {
+                    min = montetable[tableIdx].zmin;
+                    max = montetable[tableIdx].zmax;
                 } else {
-                    min = hi;
-                    max = lo;
+                    min = montetable[tableIdx].zmax;
+                    max = montetable[tableIdx].zmin;
                 }
-                base[3] = monte_rand(min, max);
+                max = max - min;
+                base[3] = min + (f32)irand((s32)(100.0f * max)) / 100.0f;
                 for (j = 0; j < pointIdx; j++) {
                     Vec tmp;
                     PSVECSubtract((Vec*)(base + 1), (Vec*)((u8*)base - (j + 1) * 0x38 + 4), &tmp);

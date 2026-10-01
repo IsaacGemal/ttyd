@@ -606,7 +606,6 @@ EVT_BEGIN(evt_hom_touchaku_nidome)
     CALL(evt_bero_mapchange, STRING("rsh_02_b"), STRING("hom_touchaku"))
     RETURN
 EVT_END()
-
 s32 tokei(EventEntry* event, BOOL isFirstCall) {
     OSCalendarTime td;
     u32 total;
@@ -655,7 +654,13 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// NONMATCHING (98.81%): register allocation and scheduling differ.
+// The only difference is the outer-loop prologue: the `(i / 4) * 32` `slwi` is scheduled one slot
+// before the `i % 4` `add` where the original schedules it after, which rotates the prologue's `gp` /
+// `0x4330` / row-base values into r31 / r30 / r29 instead of r30 / r29 / r31. Everything else,
+// including the whole inner loop, is byte-identical. Source order, expression association, the pointer
+// form, an inline helper, declaration-order permutations and the scheduling / optimizer pragmas all
+// leave the schedule unchanged.
+// NONMATCHING (98.81%): outer-prologue `slwi`/`i%4` schedule and the rotated registers (r31/r30/r29 vs r30/r29/r31).
 static void sun_tev(TevCallbackParam* param) {
     s32 field_C = param->field_C;
     s32 field_10 = param->field_10;

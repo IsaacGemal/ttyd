@@ -97,7 +97,6 @@ extend_data(149,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-
 static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
     f32 diff = b - a;
 
@@ -181,35 +180,50 @@ static USER_FUNC(x_flag_wait) {
     return target == x_flag_data[idx] ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (88.84%): the iconId range check's block layout differs. The original keeps the -15.0f block
-// inline with an explicit branch to a shared 0.0f block; ours shares/inverts the second branch instead.
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
         LectureButton* btn = &lbtn[i];
-        Vec* ppos = &btn->position;
+#ifdef MUST_MATCH
+        // The original addresses the button Vec off &lbtn[i] + 8 with a +4 displacement; building the
+        // pointer the same way reproduces MWCC's base register and load offsets.
+        u8* ppos = (u8*)&lbtn[i] + 8;
+#endif
 
         if (!(btn->flags & 1)) {
             Vec pos;
-            f32 offset;
+            f32 yOff;
 
-            if (btn->iconId >= 0x7E) {
-                goto l_zero;
+            switch (btn->iconId) {
+            case 0x75:
+            case 0x76:
+            case 0x77:
+            case 0x78:
+            case 0x79:
+            case 0x7A:
+            case 0x7B:
+            case 0x7C:
+            case 0x7D:
+                yOff = -15.0f;
+                break;
+            default:
+                yOff = 0.0f;
+                break;
             }
-            if (btn->iconId >= 0x75) {
-                goto l_neg;
-            }
-            goto l_zero;
-        l_neg:
-            offset = -15.0f;
-            goto l_done;
-        l_zero:
-            offset = 0.0f;
-        l_done:
-            pos = *ppos;
-            pos.y += offset;
+#ifdef MUST_MATCH
+            pos = *(Vec*)(ppos + 4);
+#else
+            pos = btn->position;
+#endif
+            pos.y += yOff;
+#ifdef MUST_MATCH
+            // iconDispGxAlpha's header declares iconId s16, but the original passes a zero-extended u16
+            // (`clrlwi r5, 16`); the cast makes the call site zero-extend while still emitting a direct bl.
+            ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)btn->iconId, btn->alpha, 1.0f);
+#else
             iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
+#endif
         }
     }
 }
