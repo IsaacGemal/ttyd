@@ -3434,6 +3434,12 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - The rest is `tools/dol_gen.py --append`, `tools/fn_order.py --write` (the text order was off), and `finish_unit`.
 - **Needs Isaac:** the `splits.txt`/`symbols.txt` edit is outside the 32 units he approved in Grind 41; `ci.py` needs `--allow-protected` for it. With the flag everything passes (dol and RELs byte-identical).
 
+## Grind 61: unit_party_sanders: the chuchurina/sanders `.data` boundary moves 8 bytes; data written (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- Approved by Isaac (relayed by the orchestrator, 12:42). The `{ -1.0f, 1.0f }` pair at 0x803848D8 was the tail of chuchurina's `attack_audience_event`; the `.data` boundary is now 0x803848D8, `attack_audience_event` is 0x330 bytes, `lbl_803848D8` (8 bytes) replaces `lbl_803848DC`. Same shape as christine (Grind 60).
+- `unit_party_sanders.c` has its whole `.data` (`dol_gen --append`); the four weapons are named in the unit's own `.data`, so the `MUST_MATCH` base-offset block of `__makeTechMenuFunc` is gone and it is 100% in the natural form.
+- Not linked: `_get_bomb_hit_position` is still 92.86% (callee-saved map shifted: outX/outY take r31/r30 in the target, and the `double_to_int` constant is loaded by name where we pool it).
+
 ## Grind 62: evt_lect_usu links; the usu `.rodata` split end moves to 0x2F40 (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 - Approved by Isaac (relayed by the orchestrator, 12:42). `config/G8MJ01/usu/splits.txt`: `event/evt_lect_usu.c` `.rodata` ends at 0x2F40 instead of 0x2F04, so its own constants (`double_to_int_usu_00006728` ... `float_1_usu_00006744`) are no longer two `auto_03_*_rodata` units. `ci.py` needs `--allow-regress usu/auto_03_00002F04_rodata --allow-regress usu/auto_03_00002F20_rodata` because those two units are gone.
@@ -3444,3 +3450,4 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - Approved by Isaac (relayed by the orchestrator, 12:42): library ports from the MIT/CC0 reference decomps, with each repo downloaded exactly once into a shared read-only place.
 - `~/ttyd-refs/<project>` on the Mac, rsynced to `~/ttyd-refs` on the tower (pop-os): ac-decomp, spm-decomp, tp, tww (all CC0-1.0) and musyx (MIT), shallow clones; `~/ttyd-refs/README.md` lists each repo's URL, commit and license (checked against its LICENSE file and the GitHub API). Anything else is deleted, never added. Wave agents have no network: prompts point at the local copy. `docs/AGENT_BRIEF.md` rule 16 says so.
 - Every port PR names the project and file it took code from.
+

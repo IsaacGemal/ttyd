@@ -1110,7 +1110,7 @@ unit/party/unit_party_yoshi.c:
 unit/party/unit_party_chuchurina.c:
 	.text       start:0x8017B6E8 end:0x8017C458
 	.rodata     start:0x802F7490 end:0x802F7940
-	.data       start:0x8037EC10 end:0x803848E0
+	.data       start:0x8037EC10 end:0x803848D8
 	.sdata      start:0x80412360 end:0x804123B8
 	.sbss       start:0x80418A28 end:0x80418A30
 	.sdata2     start:0x8041DDA0 end:0x8041DDD8
@@ -1118,7 +1118,7 @@ unit/party/unit_party_chuchurina.c:
 unit/party/unit_party_sanders.c:
 	.text       start:0x8017C458 end:0x8017CCA8
 	.rodata     start:0x802F7940 end:0x802F7C30
-	.data       start:0x803848E0 end:0x80388868
+	.data       start:0x803848D8 end:0x80388868
 	.sdata      start:0x804123B8 end:0x80412440
 	.sdata2     start:0x8041DDD8 end:0x8041DE78
 
