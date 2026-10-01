@@ -1396,6 +1396,7 @@ const f32 float_neg10_8041dd14 = -10.0f;
 const f32 float_25_8041dd18 = 25.0f;
 const f32 float_2_8041dd1c = 2.0f;
 
+// 4-byte zero word that ends the unit's .sdata: an all-zero object needs explicit_zero_data to stay in .sdata and force_active to survive the linker.
 #pragma explicit_zero_data on
 #pragma force_active on
 __declspec(section ".sdata") u32 gap_07_804122AC_sdata = 0;
