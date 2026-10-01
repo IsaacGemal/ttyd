@@ -120,6 +120,17 @@ typedef struct GSTACK {
   void* prjAddr;       // offset 0x8, size 0x4
 } GSTACK;
 
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+typedef struct GSTACK_INST {
+  // total size: 0x618
+  struct GSTACK_INST* next; // offset 0x0, size 0x4
+  unsigned long id;         // offset 0x4, size 0x4
+  signed short sp;          // offset 0x8, size 0x2
+  struct GSTACK gs[128];    // offset 0xC, size 0x600
+  struct ARAMInfo aramInfo; // offset 0x60C, size 0xC
+} GSTACK_INST;
+#endif
+
 typedef struct LAYER {
   // total size: 0xC
   u16 id;         // offset 0x0, size 0x2
@@ -233,8 +244,9 @@ FX_TAB* dataGetFX(u16 fid);
 void* dataGetLayer(u16 cid, u16* n);
 void* dataGetKeymap(u16 cid);
 MSTEP* dataGetMacro(u16 mid);
-#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
-ARAMInfo* dataARAMDefaultGetInfo(void);
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+ARAMInfo* dataARAMGetInfo();
+ARAMInfo* dataARAMDefaultGetInfo();
 #endif
 
 #ifdef __cplusplus

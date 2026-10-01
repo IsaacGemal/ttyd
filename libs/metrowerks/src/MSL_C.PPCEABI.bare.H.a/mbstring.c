@@ -4,69 +4,68 @@
 int is_utf8_complete(const char* str, size_t n);
 int mbtowc(wchar_t* pwc, const char* s, size_t n);
 
-// `(wchar_t)r4 >> 6` (below) and the `& 0xFFFF` masks in mbtowc are not
-// behaviour changes: the values always fit in 16 bits, but the explicit 16-bit
-// type makes MWCC emit the original's rlwinm/extrwi instead of a 32-bit shift.
-static size_t unicode_to_UTF8(char* r3, unsigned int r4) {
-    const unsigned char lut[] = { 0, 0, 0xC0, 0xE0 };
-    int r5;
-    char* r6;
+inline static int unicode_to_UTF8(char* s, wchar_t wchar) {
+    int number_of_bytes;
+    wchar_t wide_char;
+    char* target_ptr;
+    char first_byte_mark[4] = { 0x00, 0x00, 0xc0, 0xe0 };
 
-    if (!r3)
-        return 0;
+    if (!s)
+        return (0);
 
-    if (r4 < 0x80)
-        r5 = 1;
-    else if (r4 < 0x800)
-        r5 = 2;
+    wide_char = wchar;
+    if (wide_char < 0x0080)
+        number_of_bytes = 1;
+    else if (wide_char < 0x0800)
+        number_of_bytes = 2;
     else
-        r5 = 3;
+        number_of_bytes = 3;
 
-    r6 = r3 + r5;
-    switch (r5) {
-        case 3:
-            *--r6 = (r4 & 0x3F) | 0x80;
-            r4 = (wchar_t)r4 >> 6;
-        case 2:
-            *--r6 = (r4 & 0x3F) | 0x80;
-            r4 = (wchar_t)r4 >> 6;
-        case 1:
-            *--r6 = r4 | lut[r5];
+    target_ptr = s + number_of_bytes;
+
+    switch (number_of_bytes) {
+    case 3:
+        *--target_ptr = (wide_char & 0x003f) | 0x80;
+        wide_char >>= 6;
+    case 2:
+        *--target_ptr = (wide_char & 0x003f) | 0x80;
+        wide_char >>= 6;
+    case 1:
+        *--target_ptr = wide_char | first_byte_mark[number_of_bytes];
     }
-    return r5;
+
+    return number_of_bytes;
 }
 
-// NONMATCHING (98.36%): the inlined unicode_to_UTF8 adds one clrlwi that
-// converts the wchar_t argument to the helper's unsigned int parameter, and the
-// `i + num > n` test uses r3 instead of r31.
+inline static int wctomb(char* s, wchar_t wchar) {
+    return (unicode_to_UTF8(s, wchar));
+}
+
 size_t wcstombs(char* s, const wchar_t* pwcs, size_t n) {
-    char decoded[4];
-    wchar_t w;
-    size_t num;
-    int i = 0;
-    const wchar_t* p;
+    int chars_written = 0;
+    int result;
+    char temp[3];
+    wchar_t* source;
 
     if (!s || !pwcs)
-        return 0;
+        return (0);
 
-    p = pwcs;
-    while (i <= n) {
-        w = *p;
-
-        if (!w) {
-            s[i] = 0;
+    source = (wchar_t*)pwcs;
+    while (chars_written <= n) {
+        if (!*source) {
+            *(s + chars_written) = '\0';
             break;
+        } else {
+            result = wctomb(temp, *source++);
+            if ((chars_written + result) <= n) {
+                strncpy(s + chars_written, temp, result);
+                chars_written += result;
+            } else
+                break;
         }
-        ++p;
-        num = unicode_to_UTF8(decoded, w);
-
-        if (i + num > n)
-            break;
-
-        strncpy(s + i, decoded, num);
-        i += num;
     }
-    return i;
+
+    return chars_written;
 }
 
 // NONMATCHING (98.47%): every instruction matches except the first test: the original compiles
