@@ -5,57 +5,67 @@
 #endif
 
 #include "MSL_C/ansi_files.h"
+#include "MSL_C/critical_regions.h"
 #include "errno.h"
 
-// define standard C file pointer location names
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
 
 int _ftell(FILE* file) {
-	int charsInUndoBuffer = 0;
-	int position;
+    int charsInUndoBuffer = 0;
+    int position;
 
-	u8 tmp_kind = file->file_mode.file_kind;
-	if (!(tmp_kind == __disk_file || tmp_kind == __console_file) || file->file_state.error) {
-		errno = 0x28;
-		return -1;
-	}
+    unsigned char tmp_kind = file->file_mode.file_kind;
+    if (!(tmp_kind == __disk_file || tmp_kind == __console_file) || file->file_state.error) {
+        errno = 0x28;
+        return -1;
+    }
 
-	if (file->file_state.io_state == __neutral)
-		return (file->position);
+    if (file->file_state.io_state == __neutral)
+        return (file->position);
 
-	position = file->buffer_position + (file->buffer_ptr - file->buffer);
+    position = file->buffer_position + (file->buffer_ptr - file->buffer);
 
-	if (file->file_state.io_state >= __rereading) {
-		charsInUndoBuffer = file->file_state.io_state - __rereading + 1;
-		position -= charsInUndoBuffer;
-	}
+    if (file->file_state.io_state >= __rereading) {
+        charsInUndoBuffer = file->file_state.io_state - __rereading + 1;
+        position -= charsInUndoBuffer;
+    }
 
-	return (position);
+    if (!file->file_mode.binary_io) {
+        int n = file->buffer_ptr - file->buffer - charsInUndoBuffer;
+        unsigned char* p = (unsigned char*)file->buffer;
+
+        while (n--)
+            if (*p++ == '\n')
+                position++;
+    }
+
+    return (position);
 }
 
-// NONMATCHING (44.30%)
-int ftell(FILE* stream) {
-	int retval;
+long ftell(FILE* stream) {
+    int retval;
 
-	retval = (s32)_ftell(stream);
-	return retval;
+    __begin_critical_region(stdin_access);
+    retval = (long)_ftell(stream);
+    __end_critical_region(stdin_access);
+    return retval;
 }
 
-// NONMATCHING (91.41%)
-int _fseek(FILE* file, u32 offset, int whence) {
-    int adjust;
-    u32 state;
-    int buffLen;
-    
+int _fseek(FILE* file, unsigned long offset, int whence) {
+    int bufferCode;
+    int pos;
+
+    unsigned char* ptr;
+
     if (file->file_mode.file_kind != 1 || file->file_state.error != 0) {
         errno = 0x28;
         return -1;
     }
 
     if (file->file_state.io_state == 1) {
-        if (__flush_buffer(file, nullptr) != 0) {
+        if (__flush_buffer(file, NULL) != 0) {
             file->file_state.error = 1;
             file->buffer_length = 0;
             errno = 0x28;
@@ -65,31 +75,18 @@ int _fseek(FILE* file, u32 offset, int whence) {
 
     if (whence == SEEK_CUR) {
         whence = SEEK_SET;
-        if ((file->file_mode.file_kind != 1 && file->file_mode.file_kind != 2) || file->file_state.error != 0) {
-            errno = 0x28;
-            adjust = -1;
-        } else {
-            state = file->file_state.io_state;
-            if (state == 0) {
-                adjust = file->position;
-            } else {
-                adjust = file->buffer_position + (u32)(file->buffer_ptr - file->buffer);
-                if ((state >= 3)) {
-                    adjust -= (state - 2);
-                }
-            }
-        }
-        offset += adjust;
-    } 
-    
-    if ((whence != SEEK_END) &&
-            (file->file_mode.io_mode != 3) &&
-            (file->file_state.io_state == 2 || file->file_state.io_state == 3)) {
+        pos = _ftell(file);
+        offset += pos;
+    }
+
+    if ((whence != SEEK_END) && (file->file_mode.io_mode != 3) &&
+        (file->file_state.io_state == 2 || file->file_state.io_state == 3))
+    {
         if ((offset >= file->position) || !(offset >= file->buffer_position)) {
             file->file_state.io_state = 0;
         } else {
             file->buffer_ptr = file->buffer + (offset - file->buffer_position);
-            file->buffer_length =  file->position - offset;
+            file->buffer_length = file->position - offset;
             file->file_state.io_state = 2;
         }
     } else {
@@ -97,7 +94,9 @@ int _fseek(FILE* file, u32 offset, int whence) {
     }
 
     if (file->file_state.io_state == 0) {
-        if (file->position_fn != nullptr && (int)file->position_fn(file->handle, &offset, whence, file->idle_fn)) {
+        if (file->position_fn != NULL &&
+            (int)file->position_fn(file->handle, &offset, whence, file->idle_fn))
+        {
             file->file_state.error = 1;
             file->buffer_length = 0;
             errno = 0x28;
@@ -107,15 +106,15 @@ int _fseek(FILE* file, u32 offset, int whence) {
             file->position = offset;
             file->buffer_length = 0;
         }
-    } 
-    
+    }
+
     return 0;
 }
 
-// NONMATCHING (29.33%)
-int fseek(FILE* stream, u32 offset, int whence) {
-	int code;
-
-	code = _fseek(stream, offset, whence); // 0 if successful, -1 if error
-	return code;
+int fseek(FILE* stream, unsigned long offset, int whence) {
+    int code;
+    __begin_critical_region(stdin_access);
+    code = _fseek(stream, offset, whence);  // 0 if successful, -1 if error
+    __end_critical_region(stdin_access);
+    return code;
 }
