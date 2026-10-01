@@ -15,28 +15,12 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 }
 
 // .rodata
-const f64 double_to_int_mask_802fb350 = 4503599627370496.0;
 
 // .rodata effect type name.
-const char str_802FB358[16] = "PeachDustN64";
 
 // .rodata int->float conversion bias.
-const f64 double_to_int_802fb368 = 4503601774854144.0;
 
 // .sdata2
-extern const f32 float_0p01_8041f968;
-extern const f32 float_0p4_8041f964;
-extern const f32 float_0p1_8041f96c;
-extern const f32 float_0p0056818_8041f94c;
-extern const f32 float_0p045455_8041f950;
-extern const f32 float_0_8041f954;
-extern const f32 float_deg2rad_8041f958;
-extern const f32 float_1p4_8041f95c;
-extern const f32 float_0p7_8041f960;
-extern const f32 float_6p2832_8041f970;
-extern const f32 float_360_8041f974;
-extern const f32 float_0p04_8041f978;
-extern const f32 float_0p001_8041f97c;
 
 // .sdata2 word constant the original copies before filling the RGB fields.
 const GXColor dat_8041f948 = { 0, 0, 0, 0xFF };
@@ -104,7 +88,7 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 	f32 radius;
 
 	effect = effEntry();
-	effect->type = str_802FB358;
+	effect->type = "PeachDustN64";
 	effect->count = 0x65;
 	work = __memAlloc(HEAP_EFFECT, 0x115C);
 	effect->userdata = work;
@@ -115,7 +99,7 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 	work->counter = 0;
 	work->field_0x00 = type;
 	work->life = 0x50;
-	angle = float_6p2832_8041f970 * a5;
+	angle = 6.2831855f * a5;
 	table = &data[type * 0x100];
 	count = 1;
 	particle = work + 1;
@@ -124,14 +108,14 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 			if (table[(0xF - i) * 0x10 + j] == '.') {
 				continue;
 			}
-			radius = (f32)((j - 8) * 2) + float_0p1_8041f96c * (f32)(rand() % 20 - 10);
-			rad = angle / float_360_8041f974;
+			radius = (f32)((j - 8) * 2) + 0.1f * (f32)(rand() % 20 - 10);
+			rad = angle / 360.f;
 			particle->x = radius * (f32)cos(rad);
-			particle->y = (f32)(i * 2) + float_0p1_8041f96c * (f32)(rand() % 20 - 10);
+			particle->y = (f32)(i * 2) + 0.1f * (f32)(rand() % 20 - 10);
 			particle->z = radius * (f32)sin(rad);
-			particle->vx = float_0p04_8041f978 * particle->x;
-			particle->vy = float_0p04_8041f978 * particle->y;
-			particle->gravity = float_0p001_8041f97c * (f32)(rand() % 10);
+			particle->vx = 0.04f * particle->x;
+			particle->vy = 0.04f * particle->y;
+			particle->gravity = 0.001f * (f32)(rand() % 10);
 			particle->life = rand() % 7 + 0x1E;
 			particle->counter = 0;
 			particle++;
@@ -145,13 +129,13 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 		}
 	}
 	for (; count < 0x65; count++, particle++) {
-		particle->scale = float_0_8041f954;
-		particle->gravity = float_0_8041f954;
-		particle->vy = float_0_8041f954;
-		particle->vx = float_0_8041f954;
-		particle->z = float_0_8041f954;
-		particle->y = float_0_8041f954;
-		particle->x = float_0_8041f954;
+		particle->scale = 0.0f;
+		particle->gravity = 0.0f;
+		particle->vy = 0.0f;
+		particle->vx = 0.0f;
+		particle->z = 0.0f;
+		particle->y = 0.0f;
+		particle->x = 0.0f;
 		particle->life = -1;
 		particle->counter = 0;
 	}
@@ -160,6 +144,9 @@ EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5)
 
 void effPeachDustMain(EffectEntry* effect) {
 	PeachDustParticle* data;
+#ifdef MUST_MATCH
+	f32* scalePtr;
+#endif
 	Vec position2;
 	Vec position;
 	s32 colorIndex;
@@ -186,12 +173,20 @@ void effPeachDustMain(EffectEntry* effect) {
 		else {
 			data->counter++;
 			colorIndex = data->counter;
+#ifdef MUST_MATCH
+			scalePtr = &data->scale;
+#endif
 			if (colorIndex - 1 < 25) {
-				data->scale = float_0p01_8041f968 * (f32)scale_data[colorIndex - 1] * float_0p4_8041f964;
+				data->scale = 0.01f * (f32)scale_data[colorIndex - 1] * 0.4f;
 			}
 			else {
-				f32 k = float_0p1_8041f96c;
+				f32 k = 0.1f;
+#ifdef MUST_MATCH
+				// Match-only: reading the old scale through a pointer taken earlier keeps the load order of the original.
+				data->scale = k * (k - data->scale) + *scalePtr;
+#else
 				data->scale = k * (k - data->scale) + data->scale;
+#endif
 			}
 			data->x += data->vx;
 			data->y += data->vy;
@@ -251,7 +246,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	PSMTXScale(texMtx, float_0p0056818_8041f94c, float_0p045455_8041f950, float_0_8041f954);
+	PSMTXScale(texMtx, 0.0056818184f, 0.045454547f, 0.0f);
 	GXLoadTexMtxImm(texMtx, 0x1E, 1);
 	effGetTexObjN64(0x20, &texObj);
 	GXLoadTexObj(&texObj, 0);
@@ -264,7 +259,7 @@ void effPeachDustDisp(CameraId camId, void* param) {
 	GXSetCullMode(0);
 	colorIndex = (data->counter - 1) * 3;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041f958 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtx, rot, view);
 	PSMTXConcat(camera->view, view, view);
 	data++;
@@ -285,13 +280,13 @@ void effPeachDustDisp(CameraId camId, void* param) {
 			colorIndex = 0;
 		}
 #ifdef MUST_MATCH
-		r = scaleColor(color_rotation_data, colorIndex++, float_1p4_8041f95c);
+		r = scaleColor(color_rotation_data, colorIndex++, 1.4f);
 		g = scaleColor(color_rotation_data, colorIndex++, 0.7f);
 		b = scaleColor(color_rotation_data, colorIndex++, 0.7f);
 #else
-		r = (s32)(color_rotation_data[colorIndex++] * float_1p4_8041f95c);
-		g = (s32)(color_rotation_data[colorIndex++] * float_0p7_8041f960);
-		b = (s32)(color_rotation_data[colorIndex++] * float_0p7_8041f960);
+		r = (s32)(color_rotation_data[colorIndex++] * 1.4f);
+		g = (s32)(color_rotation_data[colorIndex++] * 0.7f);
+		b = (s32)(color_rotation_data[colorIndex++] * 0.7f);
 #endif
 		if (r > 0xFF) {
 			r = 0xFF;
@@ -342,3 +337,5 @@ void effPeachDustDisp(CameraId camId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
