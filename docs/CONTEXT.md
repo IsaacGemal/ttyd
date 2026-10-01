@@ -3193,3 +3193,11 @@ Linked `eff_release_n64` and `eff_toge_flush`; found the rule behind most of the
 - A constant folded away that the target keeps (`-16.0f * 0.5f`, `eff_mist2`) stays unfolded with `f32 sixteen = 16.0f; f32 half = 0.5f; f28 = -sixteen * half;` (Disp 100%); the pool then has 0.5 before 255 where the target has it after: left to the permuter.
 - `.data` tables only reached through the first object are unreferenced to the linker: `#pragma force_active on/off` around them (`eff_release_n64`: 800 bytes were dropped from the dol).
 - Queued for the tower permuter (hand-prepared variants in `~/ttyd-perm/src`): `effShockMain`, `effPeachDustMain`, `effLensflareDisp` (one `fcmpu` operand order), `effBombDisp`, `effGarekiDisp`/`Main`, `effMist2Disp`.
+
+## Grind 45: constants in locals (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked `eff_nokotarou`, `eff_shock_n64`, `eff_lensflare_n64` (the near-misses that the literal pool leaves at 99.4-99.98%).
+
+- With the literals pooled in the target's order (Grind 44) the remaining difference in a function is often only the **order of the FP loads**: the constant is loaded after the variable it multiplies, where the original loads it first. A local that holds the constant, assigned before the variable is read, moves the load: `f32 k = 0.03125f; ... scaleAnim += t * k;` (`effNokotarouMain`, the blend `(C - v) * k + v` with the constant in a local), `f32 k9 = 0.9f; f32 k8 = 0.8f;` at the top of `effShockMain`, `f32 zero = 0.0f; if (f30 == zero)` in `effLensflareDisp` (the compare's operand order follows). The pool does not change.
+- Strings that the code names through extern objects (`str_803014A4`, `str_8042249C`) are literals at their uses: an undefined name leaves the string out of `.rodata`/`.sdata2`.
+- Not enough: `effPeachDustMain` (`k = 0.1f` hoisted to the function top, to the loop start, or after the counter: 98.86% in all), `effBombDisp` (the natural `half`/`negHalf` form pools 1.0 and 0.5 before 30; the literal-in-loop form has the right pool and 97.93%).

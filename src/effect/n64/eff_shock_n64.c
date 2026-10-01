@@ -103,11 +103,6 @@ u32 testsrc_shock_v[336] = {
 extern const GXColor dat_8041fc50;
 
 // .sdata2 constants referenced by the original.
-extern const f32 float_1p1_8041fc68;
-extern const f32 float_0p05_8041fc6c;
-extern const f32 float_8_8041fc70;
-extern const f32 float_0p9_8041fc74;
-extern const f32 float_0p8_8041fc78;
 
 // .rodata constants owned by this unit in the original.
 const Vec vec3_802fb5c8 = { 0.0f, 0.0f, 0.0f };
@@ -165,6 +160,8 @@ EffectEntry* effShockN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	return effect;
 }
 void effShockMain(EffectEntry* effect) {
+	f32 k9 = 0.9f;
+	f32 k8 = 0.8f;
 	EffShockData* data;
 	Vec position2;
 	Vec position;
@@ -193,15 +190,15 @@ void effShockMain(EffectEntry* effect) {
 	frame = data->field_0x20;
 	if (type == 2) {
 		if (frame <= 20) {
-			data->field_0x24 *= float_1p1_8041fc68;
+			data->field_0x24 *= 1.1f;
 		}
 	} else {
-		data->field_0x24 += float_0p05_8041fc6c * (float_8_8041fc70 - data->field_0x24);
+		data->field_0x24 += 0.05f * (8.0f - data->field_0x24);
 	}
 
-	data->field_0x14 = (s32)((f32)data->field_0x14 * float_0p9_8041fc74);
+	data->field_0x14 = (s32)((f32)data->field_0x14 * k9);
 	if (life < 5) {
-		data->field_0x18 = (s32)((f32)data->field_0x18 * float_0p8_8041fc78);
+		data->field_0x18 = (s32)((f32)data->field_0x18 * k8);
 	}
 
 	if (frame > 6) {
@@ -380,8 +377,3 @@ void effShockDisp(CameraId cameraId, void* param) {
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const GXColor dat_8041fc50 = { 0xFF, 0xFF, 0x00, 0x00 };
-const f32 float_1p1_8041fc68 = 1.1f;
-const f32 float_0p05_8041fc6c = 0.05f;
-const f32 float_8_8041fc70 = 8.0f;
-const f32 float_0p9_8041fc74 = 0.9f;
-const f32 float_0p8_8041fc78 = 0.8f;
