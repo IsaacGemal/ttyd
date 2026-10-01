@@ -6,6 +6,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdlib.h>
+#include "evt/evt_cmd.h"
 
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_neg0p1_8041f054;
@@ -20,8 +21,8 @@ extern const f32 float_1p5_8041f04c;
 extern const f32 float_deg2rad_8041f050;
 extern const f32 float_0p03125_8041f040;
 extern const f32 float_0p010417_8041f044;
-extern GXColor dat_8041f038;
-extern GXColor dat_8041f03c;
+__declspec(section ".sdata2") GXColor dat_8041f038 = { 0x66, 0x6D, 0x7B, 0x00 };
+__declspec(section ".sdata2") GXColor dat_8041f03c = { 0x96, 0x96, 0xC8, 0x00 };
 extern const f32 float_0p25_8041f070;
 extern const f32 float_2_8041f074;
 extern const f32 float_1_8041f078;
@@ -37,6 +38,18 @@ typedef struct GarekiOffset {
 } GarekiOffset;
 
 extern GarekiOffset trans_data[];
+
+// TODO: type
+GarekiOffset trans_data[8] = {
+    { -5.0f, -4.0f },
+    { -3.0f, -2.0f },
+    { 2.0f, -3.0f },
+    { 5.0f, -4.0f },
+    { -4.0f, 2.0f },
+    { -1.0f, 4.0f },
+    { 3.0f, 2.0f },
+    { 5.0f, 4.0f },
+};
 
 // .data vertex array, local to this unit in the original.
 static u32 stg__s_v[0x348 / 4] = {
@@ -111,6 +124,7 @@ typedef struct GarekiData {
     GarekiChild children[];  // 0x40
 } GarekiData;
 
+// clang-format off
 // Local copy of system.c's inline helper so it inlines here.
 inline Vec initializeVec(Vec* input) {
     Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -119,6 +133,23 @@ inline Vec initializeVec(Vec* input) {
     temp.z = input->z;
     return temp;
 }
+
+
+#ifdef MUST_MATCH
+/* MUST_MATCH: setting each colour inside a void inline reproduces the original's by-value colour
+   slots (var/copy pairs 0x10/0x14 and 0x08/0x0c) instead of assigning a local then passing it. */
+static inline void effGarekiSetColor1(s32 a) {
+    GXColor color = dat_8041f038;
+    color.a = a;
+    GXSetTevColor(1, color);
+}
+
+static inline void effGarekiSetColor2(s32 a) {
+    GXColor color = dat_8041f03c;
+    color.a = a;
+    GXSetTevColor(1, color);
+}
+
 
 // The trans/vx read pointers are pre-biased by one element and stepped with the loop
 // (`t++`, `t[-1]`) rather than indexed as `data[i-1]`: the explicit pointer form emits
@@ -167,6 +198,7 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     }
     return effect;
 }
+
 void effGarekiMain(EffectEntry* effect) {
     GarekiData* data = effect->userdata;
     Vec position;
@@ -207,19 +239,6 @@ void effGarekiMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effGarekiDisp, effect);
 }
 
-#ifdef MUST_MATCH
-/* MUST_MATCH: setting each colour inside a void inline reproduces the original's by-value colour
-   slots (var/copy pairs 0x10/0x14 and 0x08/0x0c) instead of assigning a local then passing it. */
-static inline void effGarekiSetColor1(s32 a) {
-    GXColor color = dat_8041f038;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
-static inline void effGarekiSetColor2(s32 a) {
-    GXColor color = dat_8041f03c;
-    color.a = a;
-    GXSetTevColor(1, color);
-}
 #endif
 void effGarekiDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
@@ -311,6 +330,7 @@ void effGarekiDisp(CameraId camId, void* param) {
     }
 }
 
+
 // NOTE: the original's switch jump table is the local symbol jumptable_8039D3A0; mwcc emits it as an
 // anonymous local @NNN (known pool-naming limitation), which objdiff reports as an arg_mismatch.
 void gareki_dl(s32 type) {
@@ -359,6 +379,8 @@ void gareki_dl(s32 type) {
     }
 }
 
+// clang-format on
+
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const f32 float_0p03125_8041f040 = 0.03125f;
 const f32 float_0p010417_8041f044 = 0.010416667f;
@@ -376,3 +398,4 @@ const f32 float_0p25_8041f070 = 0.25f;
 const f32 float_2_8041f074 = 2.0f;
 const f32 float_1_8041f078 = 1.0f;
 const f32 float_0p1_8041f07c = 0.1f;
+
