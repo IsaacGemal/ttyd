@@ -8,19 +8,6 @@
 
 // .sdata2 constants (named after their original addresses in the asm).
 extern const GXColor dat_8041f478;
-extern const f32 float_deg2rad_8041f47c;
-extern const f32 float_1_8041f480;
-extern const f32 float_0p0625_8041f484;
-extern const f32 float_32_8041f490;
-extern const f32 float_0p5_8041f494;
-extern const f32 float_16_8041f48c;
-extern const f32 float_0p1_8041f498;
-extern const f32 float_0p04_8041f49c;
-extern const f32 float_0p9_8041f4a0;
-extern const f32 float_0_8041f488;
-extern const f32 float_10_8041f4a4;
-extern const f32 float_6p2832_8041f4a8;
-extern const f32 float_360_8041f4ac;
 
 // .rodata: the zero Vec, the int->float conversion double and the "Kemuri9N64" string are all
 // compiler-generated pool entries (like effKemuri8's). Building them as compound/string literals
@@ -80,7 +67,7 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
     data->x = x;
     data->y = y;
     data->z = z;
-    data->scale = float_10_8041f4a4;
+    data->scale = 10.f;
     data->targetScale = a6;
     data->field_0x30 = 0;
     data->field_0x34 = 0;
@@ -89,12 +76,12 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
 
     p = (effKemuri9Particle*)(data + 1);
     for (i = 1; i < count + 1; i++, p++) {
-        p->x = float_0_8041f488;
-        p->y = float_0_8041f488;
-        p->z = float_0_8041f488;
-        angle = float_6p2832_8041f4a8 * (a7 + (f32)(((i - 1) * 360) / count)) / float_360_8041f4ac;
+        p->x = 0.0f;
+        p->y = 0.0f;
+        p->z = 0.0f;
+        angle = 6.2831855f * (a7 + (f32)(((i - 1) * 360) / count)) / 360.f;
         p->field_0x10 = sin(angle);
-        p->field_0x14 = float_0_8041f488;
+        p->field_0x14 = 0.0f;
         p->field_0x18 = cos(angle);
     }
     return effect;
@@ -124,8 +111,8 @@ void effKemuri9Main(EffectEntry* effect) {
     data = effect->userdata;
     position = kemuri9InitializeVec(data);
 
-    field30 = (s32)(float_16_8041f48c * (f32)data->field_0x38 / (f32)data->field_0x3C);
-    field34 = (s32)(float_16_8041f48c * (f32)(data->field_0x38 + 1) / (f32)data->field_0x3C);
+    field30 = (s32)(16.0f * (f32)data->field_0x38 / (f32)data->field_0x3C);
+    field34 = (s32)(16.0f * (f32)(data->field_0x38 + 1) / (f32)data->field_0x3C);
     data->field_0x38++;
     if (field34 > 15) {
         field34 = 15;
@@ -143,12 +130,12 @@ void effKemuri9Main(EffectEntry* effect) {
         return;
     }
 
-    data->scale += (data->targetScale - data->scale) * float_0p1_8041f498;
+    data->scale += (data->targetScale - data->scale) * 0.1f;
     scale = (s32)data->scale;
 
     for (i = 1, data++; i < effect->count; i++, data++) {
-        data->field_0x14 += float_0p04_8041f49c;
-        data->field_0x14 *= float_0p9_8041f4a0;
+        data->field_0x14 += 0.04f;
+        data->field_0x14 *= 0.9f;
         data->x = (f32)scale * data->field_0x10;
         data->y = data->y + data->field_0x14;
         data->z = (f32)scale * data->field_0x18;
@@ -163,6 +150,7 @@ void effKemuri9Main(EffectEntry* effect) {
 // hoisting them into two extra FPRs (frame 0x130, f31 only, matches the target). Both quirks live under
 // MUST_MATCH, with the natural single-variable/named-constant form under #else.
 void effKemuri9Disp(CameraId camId, void* param) {
+	f32 half = 0.5f;
     EffectEntry* effect = param;
     effKemuri9Data* data;
     CameraEntry* cam;
@@ -185,8 +173,8 @@ void effKemuri9Disp(CameraId camId, void* param) {
     type = data->type;
 
     PSMTXTrans(mtxWork, data->x, data->y, data->z);
-    PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041f47c);
-    PSMTXScale(mtxScale, float_1_8041f480, float_1_8041f480, float_1_8041f480);
+    PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+    PSMTXScale(mtxScale, 1.0f, 1.0f, 1.0f);
     PSMTXConcat(mtxWork, mtxRot, mtxWork);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     PSMTXConcat(cam->view, mtxWork, mtxView);
@@ -200,13 +188,13 @@ void effKemuri9Disp(CameraId camId, void* param) {
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
     GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
 
-    PSMTXTrans(mtxWork, float_0p0625_8041f484 * (f32)field30, float_0_8041f488, float_0_8041f488);
-    PSMTXScale(mtxScale, float_0p0625_8041f484, float_1_8041f480, float_1_8041f480);
+    PSMTXTrans(mtxWork, 0.0625f * (f32)field30, 0.0f, 0.0f);
+    PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x1E, 1);
 
-    PSMTXTrans(mtxWork, float_0p0625_8041f484 * (f32)field34, float_0_8041f488, float_0_8041f488);
-    PSMTXScale(mtxScale, float_0p0625_8041f484, float_1_8041f480, float_1_8041f480);
+    PSMTXTrans(mtxWork, 0.0625f * (f32)field34, 0.0f, 0.0f);
+    PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
     PSMTXConcat(mtxWork, mtxScale, mtxWork);
     GXLoadTexMtxImm(mtxWork, 0x21, 1);
 
@@ -245,31 +233,34 @@ void effKemuri9Disp(CameraId camId, void* param) {
         // `size * 0.5` corners; the 0.0/1.0 literals make it reload them per store instead of hoisting
         // them into two extra FPRs (the frame stays 0x130 with only f31 saved).
         if (type != 0) {
-            size = float_16_8041f48c;
+            size = 16.0f;
             size2 = size;
         }
         else {
-            size = float_32_8041f490;
+            size = 32.0f;
             size2 = size;
         }
-        GXPosition3f32(-size2 * float_0p5_8041f494, size * float_0p5_8041f494, 0.0f);
+        GXPosition3f32(-size2 * half, size * half, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(size2 * float_0p5_8041f494, size * float_0p5_8041f494, 0.0f);
+        GXPosition3f32(size2 * half, size * half, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(size2 * float_0p5_8041f494, -size * float_0p5_8041f494, 0.0f);
+        GXPosition3f32(size2 * half, -size * half, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(-size2 * float_0p5_8041f494, -size * float_0p5_8041f494, 0.0f);
+        GXPosition3f32(-size2 * half, -size * half, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
 #else
-        size = (type != 0) ? float_16_8041f48c : float_32_8041f490;
-        GXPosition3f32(-size * float_0p5_8041f494, size * float_0p5_8041f494, float_0_8041f488);
-        GXTexCoord2f32(float_0_8041f488, float_0_8041f488);
-        GXPosition3f32(size * float_0p5_8041f494, size * float_0p5_8041f494, float_0_8041f488);
-        GXTexCoord2f32(float_1_8041f480, float_0_8041f488);
-        GXPosition3f32(size * float_0p5_8041f494, -size * float_0p5_8041f494, float_0_8041f488);
-        GXTexCoord2f32(float_1_8041f480, float_1_8041f480);
-        GXPosition3f32(-size * float_0p5_8041f494, -size * float_0p5_8041f494, float_0_8041f488);
-        GXTexCoord2f32(float_0_8041f488, float_1_8041f480);
+        size = (type != 0) ? 16.0f : 32.0f;
+        GXPosition3f32(-size * half, size * half, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(size * half, size * half, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(size * half, -size * half, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-size * half, -size * half, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
 #endif
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041f478 = { 0xE6, 0xDE, 0xDE, 0xFF };
