@@ -715,7 +715,7 @@ config.libs = [
             Object(Matching, "event/evt_window.c"),
             Object(NonMatching, "event/evt_yuugijou.c"),
             Object(Matching, "event/evt_urouro.c"),
-            Object(NonMatching, "event/evt_lottery.c"),
+            Object(Matching, "event/evt_lottery.c"),
             Object(Matching, "event/evt_lecture.c"),
             Object(Matching, "event/evt_memcard.c"),
         ],
