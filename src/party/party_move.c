@@ -1649,7 +1649,7 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
     }
 }
 
-// The original inlines unk_800c8f24's body here. Writing the call out by hand and holding the speed in a
+// MUST_MATCH: the original inlines unk_800c8f24's body here. Writing the call out by hand and holding the speed in a
 // local and opt_propagation off, MWCC colours speed f1, gravity/down f3 and up f2 as in retail.
 #pragma opt_propagation off // the constant loads/scheduling need to keep the original shape
 void partyForceWalk(PartyEntry* party) {
@@ -1678,6 +1678,7 @@ void partyForceWalk(PartyEntry* party) {
             work->field_28 = 0;
             unk_800ba2dc(work);
         } else {
+#ifdef MUST_MATCH
             {
                 f32 spd = work->speed;
                 if (work->flags2 & 0x100) {
@@ -1708,6 +1709,9 @@ void partyForceWalk(PartyEntry* party) {
                     }
                 }
             }
+#else
+            unk_800c8f24(work, work->speed);
+#endif
             pos = work->position;
             wall = partySearchFrontWall(work, &pos, work->speed, work->dir);
             if (wall != NULL) {
