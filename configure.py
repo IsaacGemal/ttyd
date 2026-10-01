@@ -2129,7 +2129,7 @@ config.libs = [
             Object(Matching, "usu.c"),
             Object(NonMatching, "usu_00.c"),
             Object(Matching, "usu_01.c"),
-            Object(NonMatching, "event/evt_lect_usu.c"),
+            Object(Matching, "event/evt_lect_usu.c"),
             Object(Matching, "event/evt_kagemario.c", modules=["usu"]),
         ],
     ),
