@@ -818,7 +818,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "unit/unit_mario.c"),
+            Object(Matching, "unit/unit_mario.c"),
             Object(Matching, "unit/unit_bomzou.c"),
             Object(Matching, "unit/unit_koura.c"),
             Object(Matching, "unit/unit_object_tree.c"),
