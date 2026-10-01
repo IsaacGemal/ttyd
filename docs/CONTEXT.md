@@ -3201,3 +3201,11 @@ Linked `eff_nokotarou`, `eff_shock_n64`, `eff_lensflare_n64` (the near-misses th
 - With the literals pooled in the target's order (Grind 44) the remaining difference in a function is often only the **order of the FP loads**: the constant is loaded after the variable it multiplies, where the original loads it first. A local that holds the constant, assigned before the variable is read, moves the load: `f32 k = 0.03125f; ... scaleAnim += t * k;` (`effNokotarouMain`, the blend `(C - v) * k + v` with the constant in a local), `f32 k9 = 0.9f; f32 k8 = 0.8f;` at the top of `effShockMain`, `f32 zero = 0.0f; if (f30 == zero)` in `effLensflareDisp` (the compare's operand order follows). The pool does not change.
 - Strings that the code names through extern objects (`str_803014A4`, `str_8042249C`) are literals at their uses: an undefined name leaves the string out of `.rodata`/`.sdata2`.
 - Not enough: `effPeachDustMain` (`k = 0.1f` hoisted to the function top, to the loop start, or after the counter: 98.86% in all), `effBombDisp` (the natural `half`/`negHalf` form pools 1.0 and 0.5 before 30; the literal-in-loop form has the right pool and 97.93%).
+
+## Grind 46: eff_break and countdown retries (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+No unit linked in this stretch.
+
+- `eff_break` Disp: `f32 w = 48.0f; f32 h = 0.5f;` at the top (C89: declarations first) stops `-48.0f * 0.5f` folding to -24 but pools 0.5 after 48 and before 0 where the target has 0 before 0.5; adding `f32 z = 0.0f` leaves the pool unchanged and drops Disp to 94.6%. Left for the permuter.
+- `countdown`: only `countDownMain` (95.61%) differs in code; `.sdata2` lacks the trailing 4 zero bytes and `.sbss` is 4 bytes short.
+- The tower permuter's lowest scores so far are prototype or declaration-type changes (`iconDispGx` `char iconId`, `shadowInit` `unsigned long long`), not matches.
