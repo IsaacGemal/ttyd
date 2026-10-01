@@ -172,6 +172,11 @@ When the instructions match but the stack slots, register allocation or scheduli
   is `(mode, start, end, currStep, steps)` (not `(mode, currStep, steps, start, end)`), which fixed 18 functions in one
   header change; callers keep writing the old order through a macro in `include/system.h`. Look for the same callee
   across several near-misses before fixing the call sites one by one.
+- **A cast that only exists to avoid an `extsb` or a signed/unsigned compare means the header type is wrong.** A call
+  followed by `extsb r3, r3` that the target does not have means the function does not return `s8` (and the field it
+  returns is probably `u8`); `cmplwi r3, 0` where the target has `cmpwi r3, 0` means it does not return `u32`.
+  `(s32)BattlePadCheckRepeat(...)` and `((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(...)` were such
+  casts; fix the declaration in the header (and the definition) once instead of casting at every call.
 
 ## Partial functions
 
