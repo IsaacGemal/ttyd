@@ -5,11 +5,19 @@
 #include "system.h"
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
+#include "evt/evt_cmd.h"
+
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804232d0;
+__declspec(section ".sdata") GXColor unk_804232cc;
+__declspec(section ".sdata") GXColor unk_804232c8;
+
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
-__declspec(section ".data") u8 lbl_803A8AA0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+extern u32 lbl_803A8AA0[2];
 
 typedef struct effSnowDustData {
 	s32 type;       // 0x00
@@ -40,6 +48,153 @@ typedef struct effSnowDustData {
 	f32 field_0x64; // 0x64
 	s32 field_0x68; // 0x68
 } effSnowDustData;
+
+extern s32 negone_one[];
+extern s32 one_negone[];
+
+// clang-format off
+
+//.sdata
+static u8 scale_data[32] = {
+	0x02, 0x04, 0x08, 0x0D, 0x0F, 0x0D, 0x09, 0x06,
+	0x04, 0x03, 0x02, 0x04, 0x08, 0x0D, 0x0F, 0x0D,
+	0x09, 0x06, 0x04, 0x03, 0x02, 0x04, 0x08, 0x0D,
+	0x0F, 0x0D, 0x09, 0x06, 0x04, 0x03, 0x00, 0x00
+};
+
+
+static u8 scale_data2[32] = {
+	0x28, 0x5A, 0x51, 0x48, 0x41, 0x3B, 0x35, 0x2F,
+	0x2B, 0x26, 0x22, 0x1F, 0x1C, 0x19, 0x16, 0x14,
+	0x12, 0x10, 0x0F, 0x0D, 0x0C, 0x0A, 0x09, 0x08,
+	0x07, 0x07, 0x06, 0x05, 0x05, 0x04, 0x00, 0x00
+};
+
+
+static u8 a_data[32] = {
+	0xC8, 0xFA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFA, 0xC8, 0x00, 0x00,
+};
+
+#pragma opt_common_subs reset
+#pragma opt_lifetimes reset
+
+// The vertex tables are reached through the one base pointer, the linker would drop the others.
+#pragma force_active on
+// TODO: type
+__declspec(section ".data") u32 lbl_803A8AA0[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
+static __declspec(section ".data") u32 negone_one_374[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
+__declspec(section ".data") u32 lbl_803A8AB0[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+// TODO: type
+static __declspec(section ".data") u32 one_negone_373[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+// TODO: type
+__declspec(section ".data") u32 lbl_803A8AC0[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
+static __declspec(section ".data") u32 negone_one_360[2] = {
+    0xBF800000, 0x3F800000,
+};
+
+// TODO: type
+__declspec(section ".data") u32 lbl_803A8AD0[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+// TODO: type
+static __declspec(section ".data") u32 one_negone_359[2] = {
+    0x3F800000, 0xBF800000,
+};
+
+//.data
+u32 size8x8_tex64x64_vtx[14] = {
+	0xFFFCFFFC, 0x00000000, 0x00000000, 0x00FF0004,
+	0xFFFC0000, 0x08000000, 0x000000FF, 0x00040004,
+	0x00000800, 0x08000000, 0x00FFFFFC, 0x00040000,
+	0x00000800, 0x000000FF,
+};
+
+u32 size4x4_tex64x64_vtx[14] = {
+	0xFFFEFFFE, 0x00000000, 0x00000000, 0x00FF0002,
+	0xFFFE0000, 0x08000000, 0x000000FF, 0x00020002,
+	0x00000800, 0x08000000, 0x00FFFFFE, 0x00020000,
+	0x00000800, 0x000000FF,
+};
+
+static u32 size12x12_tex64x64_vtx[14] = {
+	0xFFFAFFFA, 0x00000000, 0x00000000, 0x00FF0006,
+	0xFFFA0000, 0x08000000, 0x000000FF, 0x00060006,
+	0x00000800, 0x08000000, 0x00FFFFFA, 0x00060000,
+	0x00000800, 0x000000FF,
+};
+
+static u32 size16x16_tex64x64_vtx[14] = {
+	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008,
+	0xFFF80000, 0x08000000, 0x000000FF, 0x00080008,
+	0x00000800, 0x08000000, 0x00FFFFF8, 0x00080000,
+	0x00000800, 0x000000FF,
+};
+
+static u32 size32x32_tex32x32_vtx[18] = {
+	0xFFE00000, 0x00000000, 0x0000FFFF, 0xFF000000,
+	0xFFE00000, 0x04000000, 0xFFFFFF00, 0x00200000,
+	0x00000400, 0x0400FFFF, 0xFF000000, 0x00200000,
+	0x00000400, 0xFFFFFF00, 0x00000000, 0x00000000,
+	0x0000FFFF, 0xFFFF0000,
+};
+#pragma force_active reset
+
+
+
+//.sbss2
+
+#ifdef MUST_MATCH
+// MUST_MATCH: the original builds GXSetTevColor/GXSetTevKColor's by-value GXColor argument in a
+// scratch slot and word-copies it up into the outgoing argument slot (local below the copy).  Keeping
+// the build and the call together in an inline reproduces that layout (AGENT_BRIEF GXColor quirk).
+static inline void snowDustSetTopColor(effSnowDustData* data) {
+	GXColor color = unk_804232c8;
+	color.r = data->field_0x4C;
+	color.g = data->field_0x50;
+	color.b = data->field_0x54;
+	color.a = data->field_0x58;
+	GXSetTevColor(2, color);
+}
+
+
+static inline void snowDustSetItemColor(effSnowDustData* ptr, f32 f31) {
+	GXColor color = unk_804232cc;
+	color.r = ptr->field_0x3C;
+	color.g = ptr->field_0x40;
+	color.b = ptr->field_0x44;
+	color.a = (u8)(s32)(f31 * (f32)ptr->field_0x48);
+	GXSetTevColor(1, color);
+}
+
+
+static inline void snowDustSetItemKColor(effSnowDustData* ptr) {
+	GXColor kcolor = unk_804232d0;
+	kcolor.r = 0x50 - ptr->field_0x30;
+	kcolor.g = 0x50 - ptr->field_0x30;
+	kcolor.b = 0x50 - ptr->field_0x30;
+	kcolor.a = 0x50 - ptr->field_0x30;
+	GXSetTevKColor(0, kcolor);
+}
 
 EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 life, f32 a6, f32 a7, f32 scale) {
 	EffectEntry* effect;
@@ -125,25 +280,6 @@ EffectEntry* effSnowDustN64Entry(s32 type, f32 x, f32 y, f32 z, s32 count, s32 l
 	return effect;
 }
 
-//.sdata
-static u8 scale_data[32] = {
-	0x02, 0x04, 0x08, 0x0D, 0x0F, 0x0D, 0x09, 0x06,
-	0x04, 0x03, 0x02, 0x04, 0x08, 0x0D, 0x0F, 0x0D,
-	0x09, 0x06, 0x04, 0x03, 0x02, 0x04, 0x08, 0x0D,
-	0x0F, 0x0D, 0x09, 0x06, 0x04, 0x03, 0x00, 0x00
-};
-
-static u8 scale_data2[32] = {
-	0x28, 0x5A, 0x51, 0x48, 0x41, 0x3B, 0x35, 0x2F,
-	0x2B, 0x26, 0x22, 0x1F, 0x1C, 0x19, 0x16, 0x14,
-	0x12, 0x10, 0x0F, 0x0D, 0x0C, 0x0A, 0x09, 0x08,
-	0x07, 0x07, 0x06, 0x05, 0x05, 0x04, 0x00, 0x00
-};
-
-static u8 a_data[32] = {
-	0xC8, 0xFA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFA, 0xC8, 0x00, 0x00,
-};
 
 extern const Vec vec3_802fb968;
 
@@ -327,78 +463,7 @@ void effSnowDustMain(EffectEntry* effect) {
 	}
 	dispEntry(camera, dispCalcZ(&position2), 2, effSnowDustDisp, effect);
 }
-#pragma opt_common_subs reset
-#pragma opt_lifetimes reset
 
-//.data
-u32 size8x8_tex64x64_vtx[14] = {
-	0xFFFCFFFC, 0x00000000, 0x00000000, 0x00FF0004,
-	0xFFFC0000, 0x08000000, 0x000000FF, 0x00040004,
-	0x00000800, 0x08000000, 0x00FFFFFC, 0x00040000,
-	0x00000800, 0x000000FF,
-};
-u32 size4x4_tex64x64_vtx[14] = {
-	0xFFFEFFFE, 0x00000000, 0x00000000, 0x00FF0002,
-	0xFFFE0000, 0x08000000, 0x000000FF, 0x00020002,
-	0x00000800, 0x08000000, 0x00FFFFFE, 0x00020000,
-	0x00000800, 0x000000FF,
-};
-static u32 size12x12_tex64x64_vtx[14] = {
-	0xFFFAFFFA, 0x00000000, 0x00000000, 0x00FF0006,
-	0xFFFA0000, 0x08000000, 0x000000FF, 0x00060006,
-	0x00000800, 0x08000000, 0x00FFFFFA, 0x00060000,
-	0x00000800, 0x000000FF,
-};
-static u32 size16x16_tex64x64_vtx[14] = {
-	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008,
-	0xFFF80000, 0x08000000, 0x000000FF, 0x00080008,
-	0x00000800, 0x08000000, 0x00FFFFF8, 0x00080000,
-	0x00000800, 0x000000FF,
-};
-static u32 size32x32_tex32x32_vtx[18] = {
-	0xFFE00000, 0x00000000, 0x0000FFFF, 0xFF000000,
-	0xFFE00000, 0x04000000, 0xFFFFFF00, 0x00200000,
-	0x00000400, 0x0400FFFF, 0xFF000000, 0x00200000,
-	0x00000400, 0xFFFFFF00, 0x00000000, 0x00000000,
-	0x0000FFFF, 0xFFFF0000,
-};
-
-
-//.sbss2
-GXColor unk_804232c8;
-GXColor unk_804232cc;
-GXColor unk_804232d0;
-
-#ifdef MUST_MATCH
-// MUST_MATCH: the original builds GXSetTevColor/GXSetTevKColor's by-value GXColor argument in a
-// scratch slot and word-copies it up into the outgoing argument slot (local below the copy).  Keeping
-// the build and the call together in an inline reproduces that layout (AGENT_BRIEF GXColor quirk).
-static inline void snowDustSetTopColor(effSnowDustData* data) {
-	GXColor color = unk_804232c8;
-	color.r = data->field_0x4C;
-	color.g = data->field_0x50;
-	color.b = data->field_0x54;
-	color.a = data->field_0x58;
-	GXSetTevColor(2, color);
-}
-
-static inline void snowDustSetItemColor(effSnowDustData* ptr, f32 f31) {
-	GXColor color = unk_804232cc;
-	color.r = ptr->field_0x3C;
-	color.g = ptr->field_0x40;
-	color.b = ptr->field_0x44;
-	color.a = (u8)(s32)(f31 * (f32)ptr->field_0x48);
-	GXSetTevColor(1, color);
-}
-
-static inline void snowDustSetItemKColor(effSnowDustData* ptr) {
-	GXColor kcolor = unk_804232d0;
-	kcolor.r = 0x50 - ptr->field_0x30;
-	kcolor.g = 0x50 - ptr->field_0x30;
-	kcolor.b = 0x50 - ptr->field_0x30;
-	kcolor.a = 0x50 - ptr->field_0x30;
-	GXSetTevKColor(0, kcolor);
-}
 #endif
 
 // 100%.  The GXColor arguments are built in the snowDustSet*Color inlines above (scratch slot below
@@ -422,7 +487,7 @@ void effSnowDustDisp(CameraId camId, void* param) {
 	f32 f31;
 	f32 f;
 
-	base = lbl_803A8AA0;
+	base = (u8*)lbl_803A8AA0;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	f31 = (data->field_0x48 / 255.0f) * data->field_0x5C;
@@ -630,3 +695,8 @@ void effSnowDustDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// clang-format on
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802fb968 = { 0.0f, 0.0f, 0.0f };

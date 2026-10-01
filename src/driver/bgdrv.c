@@ -8,7 +8,7 @@
 #include "memory.h"
 #include "system.h"
 #include "texPalette.h"
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -16,6 +16,9 @@
 #define TWO_PI 6.2831855f
 
 extern GlobalWork* gp;
+extern const GXColor dat_80419510;
+extern const GXColor dat_80419514;
+extern const GXColor dat_80419518;
 
 //.bss
 static BackgroundWork work[2];
@@ -65,13 +68,13 @@ void bgEntry(const char* filename) {
 			bgwork->flags |= 1;
 			bgwork->flags &= ~2;
 			bgwork->flags &= ~4;
-			bgwork->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+			bgwork->color = dat_80419510;
 		}
 		else {
 			bgwork->flags |= 2u;
-			bgwork->multiply = (GXColor){0x00, 0xFF, 0x00, 0xFF};
+			bgwork->multiply = dat_80419514;
 			bgwork->flags |= 1u;
-			bgwork->color = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+			bgwork->color = dat_80419518;
 		}
 	}
 }
@@ -108,13 +111,13 @@ void bgReEntry(const char* filename) {
 			bgwork->flags |= 1;
 			bgwork->flags &= ~2;
 			bgwork->flags &= ~4;
-			bgwork->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+			bgwork->color = dat_80419510;
 		}
 		else {
 			bgwork->flags |= 2u;
-			bgwork->multiply = (GXColor){ 0x00, 0xFF, 0x00, 0xFF };
+			bgwork->multiply = dat_80419514;
 			bgwork->flags |= 1u;
-			bgwork->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+			bgwork->color = dat_80419518;
 		}
 	}
 }
@@ -192,7 +195,6 @@ void bgDisp(CameraId camId, void* param) {
 	GXTexObj texobj;
 	Mtx trans;
 	Mtx scale;
-	f32 scaleY;
 
 	if (bgwork->flags & BG_RENDERING) {
 		GXSetAlphaUpdate(GX_FALSE);
@@ -220,8 +222,7 @@ void bgDisp(CameraId camId, void* param) {
 
 			TEXGetGXTexObjFromPalette(bgwork->data, &texobj, 0);
 			GXLoadTexObj(&texobj, GX_TEXMAP0);
-			scaleY = 480.0f / (f32)GXGetTexObjHeight(&texobj);
-			PSMTXScale(scale, 608.0f / (f32)GXGetTexObjWidth(&texobj), scaleY, 1.0f);
+			PSMTXScale(scale, 608.0f / (f32)GXGetTexObjWidth(&texobj), 480.0f / (f32)GXGetTexObjHeight(&texobj), 1.0f);
 			if (bgwork->flags & BG_NO_AUTOSCROLL) {
 				PSMTXTrans(trans, bgwork->scrl_x, bgwork->scrl_y, 0.0f);
 			}
@@ -263,3 +264,7 @@ void bgDisp(CameraId camId, void* param) {
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
+
+const GXColor dat_80419510 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80419514 = { 0x00, 0xFF, 0x00, 0xFF };
+const GXColor dat_80419518 = { 0xFF, 0xFF, 0xFF, 0xFF };

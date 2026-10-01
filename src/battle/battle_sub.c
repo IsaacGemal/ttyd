@@ -9,18 +9,11 @@
 extern BattleWork* _battleWorkPointer;
 
 // .sdata2 constants emitted by this unit
-extern const f32 float_neg800_8041c380;
-extern const f32 float_800_8041c384;
-extern const f32 float_40_8041c388;
 #ifdef MUST_MATCH
 // volatile: forces atan2f_safety to reload the constants where the original does; without it the
 // register allocator keeps them live and picks different registers (89%).
-extern const volatile f32 float_0_8041c398;
-extern const volatile f32 float_0p0001_8041c3b0;
 extern const volatile f64 double_0p0001_802efab0;
 #else
-extern const f32 float_0_8041c398;
-extern const f32 float_0p0001_8041c3b0;
 extern const f64 double_0p0001_802efab0;
 #endif
 
@@ -34,32 +27,17 @@ f32 cosfd(f32 angle) {
 
 f32 atan2f_safety(f32 y, f32 x) {
 	f32 a;
+	f64 eps = 0.0001;
 
-	a = (x >= float_0_8041c398) ? x : -x;
-	if (a < double_0p0001_802efab0) {
-		x = float_0p0001_8041c3b0;
+	a = (x >= 0.0f) ? x : -x;
+	if (a < eps) {
+		x = 0.0001f;
 	}
-	a = (y >= float_0_8041c398) ? y : -y;
-	if (a < double_0p0001_802efab0) {
-		y = float_0p0001_8041c3b0;
+	a = (y >= 0.0f) ? y : -y;
+	if (a < eps) {
+		y = 0.0001f;
 	}
 	return (f32)atan2(y, x);
-}
-
-// Two aliases of `work` are needed to reproduce the original's register colouring: the compiler
-// then keeps the counter in r29 and the base pointer in r30 (without the aliases it is reversed).
-void btlsubResetMoveColorLvAll(BattleWork* work) {
-	BattleUnit* unit;
-	BattleWork* w = work;
-	BattleWork* w2 = w;
-	int i;
-
-	for (i = 0; i < 64; i++) {
-		unit = BattleGetUnitPtr(w2, i);
-		if (unit) {
-			unit->mMoveColorLv = 0xFF;
-		}
-	}
 }
 
 // fp_contract off: the original keeps `speed * s` and `*x + ...` as separate fmuls/fadds, and
@@ -77,6 +55,7 @@ void btlMovePos(f32* x, f32* z, f32 speed, f32 angle) {
 	*z += -speed * c;
 }
 #pragma fp_contract reset
+
 
 // intplCos: the original routes cos through this trivial inline wrapper. Writing (f32)cos(...)
 // directly lets MWCC reassociate the surrounding float expression and mis-colours it (98.49%);
@@ -123,13 +102,12 @@ f32 intpl_sub(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
 			return 0.0f;
 	}
 }
-
 s32 BtlCompForwardLv(s32 direction, f32 dist) {
 	s32 lv = 0;
 	s32 result;
 
-	if (dist > float_neg800_8041c380) {
-		lv = (s32)((float_800_8041c384 + dist) / float_40_8041c388);
+	if (dist > -800.f) {
+		lv = (s32)((800.f + dist) / 40.f);
 		if (lv > 48) {
 			lv = 48;
 		}
@@ -171,6 +149,22 @@ s32 BattleTransID(EventEntry* evt, s32 type) {
 		}
 	}
 	return type;
+}
+
+// Two aliases of `work` are needed to reproduce the original's register colouring: the compiler
+// then keeps the counter in r29 and the base pointer in r30 (without the aliases it is reversed).
+void btlsubResetMoveColorLvAll(BattleWork* work) {
+	BattleUnit* unit;
+	BattleWork* w = work;
+	BattleWork* w2 = w;
+	int i;
+
+	for (i = 0; i < 64; i++) {
+		unit = BattleGetUnitPtr(w2, i);
+		if (unit) {
+			unit->mMoveColorLv = 0xFF;
+		}
+	}
 }
 
 #pragma optimize_for_size reset
