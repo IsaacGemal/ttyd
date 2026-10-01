@@ -368,7 +368,22 @@ s32 marioStGetSystemLevel(void) {
 	return gp->systemLevelFlags;
 }
 
-// NONMATCHING (95.89%): 5 instructions differ, 6 missing, plus register differences.
+// The 64-bit limit arithmetic only colours to the target's GPRs when it sits in an inlined helper;
+// the plain form under #else is functionally identical but allocates different registers.
+#ifdef MUST_MATCH
+static inline void viClampRetrace(GlobalWork* w) {
+	OSTime check = OSSecondsToTicks((OSTime)359999999);
+	OSTime cur = w->retraceLocalTime;
+	if (check < cur) {
+		cur = check;
+	}
+	w->retraceLocalTime = cur;
+}
+#endif
+
+// NONMATCHING (98.51%): the 64-bit OSSecondsToTicks limit now matches, but the inlined clamp
+// still colours gp/rtl to different GPRs and emits two select moves, and gcRumbleCheck's bl is
+// dropped while its body is an empty placeholder (it returns with the real body).
 void viPostCallback(u32 retraceCount) {
 	OSTime time, check;
 	u32 reset = PAD_BUTTON_B | PAD_BUTTON_X | PAD_BUTTON_START; //TODO: make sure it inlines right
@@ -376,10 +391,14 @@ void viPostCallback(u32 retraceCount) {
 	time = OSGetTime();
 	gp->retraceDeltaTime = time - gp->retraceTime;
 	gp->retraceLocalTime += gp->retraceDeltaTime;
-	check = OSSecondsToTicks(359999999);
+#ifdef MUST_MATCH
+	viClampRetrace(gp);
+#else
+	check = OSSecondsToTicks((OSTime)359999999);
 	if (check < gp->retraceLocalTime) {
 		gp->retraceLocalTime = check;
 	}
+#endif
 	if (!(gp->systemLevelFlags & 8)) {
 		gp->systemLv3Time += gp->retraceDeltaTime;
 	}
@@ -404,14 +423,14 @@ void viPostCallback(u32 retraceCount) {
 		gp->unk127C = FALSE;
 	}
 	else {
-		if (gp->unk127C) {
-			if (!OSGetResetButtonState()) {
-				gp->resetType = 1;
+		if (!gp->unk127C) {
+			if (OSGetResetButtonState()) {
+				gp->unk127C = TRUE;
 			}
 		}
 		else {
-			if (OSGetResetButtonState()) {
-				gp->unk127C = TRUE;
+			if (!OSGetResetButtonState()) {
+				gp->resetType = 1;
 			}
 		}
 		if (gp->unk1324) {

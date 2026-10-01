@@ -437,15 +437,24 @@ void effRecoveryMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (97.16%): only the `effect->userdata` load is scheduled after the
-// vec3_802f3544 copy instead of between the callee-save stores.
+// The two `volatile` reads are required for the original's instruction order: without
+// them MWCC hoists the vec3_802f3544 loads into the callee-save prologue, ahead of the
+// `effect->userdata` load. They emit the same lwz/loads, just ordered (rule 7 trick).
 void effRecoveryMain2(EffectEntry* effect) {
+#ifdef MUST_MATCH
+	RecoveryData* ptr = *(RecoveryData* volatile*)&effect->userdata;
+#else
 	RecoveryData* ptr = effect->userdata;
+#endif
 	Vec disp;
 	Vec pos;
 	s32 i;
 
+#ifdef MUST_MATCH
+	pos = *(const volatile Vec*)&vec3_802f3544;
+#else
 	pos = vec3_802f3544;
+#endif
 	pos.x = ptr->x;
 	pos.y = ptr->y;
 	pos.z = ptr->z;
@@ -671,9 +680,12 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (98.92%): the int->float conversion magic and the 0.0f/1.0f pool entries are emitted as
-// anonymous @NNN symbols instead of double_to_int_802f3550/float_0_8041cadc/float_1_8041cae0, and the
-// +-20 pair lands in f27/f28 swapped.
+// The f27/f28 declarations are reversed so the +-20 pair lands in the target's registers, and the +-20
+// assignments sit inside the loop under MUST_MATCH because above the loop they are hoisted into the preheader
+// and scheduled before the int->float magic load, which the target does not do.
+// NONMATCHING (99.91%): only the 108.0f load in the -108*0.5 block lands in f2 instead of the target's f1 (the
+// fneg/fmuls/fadds pair swaps with it); every other byte matches. The 0.0f/1.0f and int->float-magic pool
+// entries are emitted as anonymous @NNN symbols instead of the target's named constants, which objdiff ignores.
 void effRecoveryDisp3(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -687,8 +699,8 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	s32 i;
 	f32 f30;
 	f32 f29;
-	f32 f27;
 	f32 f28;
+	f32 f27;
 
 	cam = camGetPtr(camId);
 	type = data->type;
@@ -721,10 +733,12 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	f27 = float_20_8041cb00;
-	f28 = float_neg20_8041cb04;
 	f30 = -float_108_8041cafc * float_0p5_8041caec;
 	f29 = f30 + float_108_8041cafc;
+#ifndef MUST_MATCH
+	f27 = float_20_8041cb00;
+	f28 = float_neg20_8041cb04;
+#endif
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
 			effGetTexObj(0x8b, &tex);
@@ -743,6 +757,13 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 		PSMTXConcat(base, mtx, mtx);
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+		// Assigning the loop-invariant +-20 pair inside the loop (not above it) makes the compiler hoist it
+		// together with the int->float magic instead of into the loop preheader, matching the original's
+		// lfd/f27/f28 load order. It changes no value; without it only the load order differs.
+		f27 = float_20_8041cb00;
+		f28 = float_neg20_8041cb04;
+#endif
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(f30, f27, float_0_8041cadc);
 		GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);

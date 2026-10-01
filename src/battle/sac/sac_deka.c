@@ -270,23 +270,24 @@ s32 weaponGetPower_Deka(void) {
 }
 
 // .text:0x4BC | 0x8024327C | size: 0x354
-// NONMATCHING (97.93%): only register-allocation differences remain (i/t-pointer r26/r27, tries, f30/f31).
-// The arrays are idx[8]/times[8] (frame 0xC0) and tries resets at the bottom of each outer pass; both fixed here.
+// NONMATCHING (98.83%): scan outer counter `i` and the pre-compare `tf = times[i]`/inlined `beatPeriod - float_20` each fix a batch of colouring; float_30/20 still come out swapped in f30/f31, the first loop's scratch FPRs are one low (beatPeriod f4 vs f5), scan tm/j/tj are r27/r6/r7 vs r29/r7/r6, and the final `- 7 - 2` uses f1/f0 vs f2/f1.
 void create_timing(void) {
     DekaWork* p = get_ptr();
     s32 idx[8];
+    DekaTiming* ti;
     f32 times[8];
-    s32 i, j, m, n;
+    f32 tf;
+    s32 i, j, n;
+    s32 tidx;
     s32 tries;
     f32 f;
-    f32 lim;
 
     memcpy(p->timingCopy, p->timing, 0x1C0);
 
 restart:
     n = p->beatCount + 3;
     for (i = 0; i < 8; i++) {
-        DekaTiming* ti = &p->timing[i];
+        ti = &p->timing[i];
         ti->flag = 0;
         if (i < n) {
             ti->unk08 = 1;
@@ -294,9 +295,8 @@ restart:
             if (f <= float_30_80421e70) {
                 f = float_30_80421e70;
             }
-            lim = p->beatPeriod - float_20_80421e74;
-            if (f >= lim) {
-                f = lim;
+            if (f >= p->beatPeriod - float_20_80421e74) {
+                f = p->beatPeriod - float_20_80421e74;
             }
             ti->time = f;
             ti->state = 2;
@@ -307,11 +307,11 @@ restart:
 
     tries = 0;
 scan:
-    for (m = 0; m < n; m++) {
-        DekaTiming* tm = &p->timing[m];
+    for (i = 0; i < n; i++) {
+        DekaTiming* tm = &p->timing[i];
         for (j = 0; j < n; j++) {
             DekaTiming* tj;
-            if (m == j) {
+            if (i == j) {
                 continue;
             }
             tj = &p->timing[j];
@@ -323,9 +323,8 @@ scan:
                 if (f <= float_30_80421e70) {
                     f = float_30_80421e70;
                 }
-                lim = p->beatPeriod - float_20_80421e74;
-                if (f >= lim) {
-                    f = lim;
+                if (f >= p->beatPeriod - float_20_80421e74) {
+                    f = p->beatPeriod - float_20_80421e74;
                 }
                 tm->time = f;
                 if (++tries == 100) {
@@ -345,9 +344,9 @@ scan:
     }
     for (i = 0; i < n - 1; i++) {
         for (j = i + 1; j < n; j++) {
-            if (times[i] > times[j]) {
-                f32 tf = times[i];
-                s32 tidx = idx[i];
+            tf = times[i];
+            if (tf > times[j]) {
+                tidx = idx[i];
                 times[i] = times[j];
                 idx[i] = idx[j];
                 idx[j] = tidx;
@@ -363,13 +362,15 @@ scan:
 }
 
 // .text:0x5E4 | 0x802435DC | size: 0x230
-// NONMATCHING (95.59%): 3 missing, 6 extra, plus register differences.
 void yuka_disp(CameraId cameraId, void* param) {
     DekaWork* p = get_ptr();
     CameraEntry* cam = camGetPtr(cameraId);
     GXTexObj texObj;
     u8* base;
     s32 i;
+#ifdef MUST_MATCH
+    s32 j;
+#endif
 
     if (p->texEntry->address == NULL) {
         return;
@@ -396,6 +397,13 @@ void yuka_disp(CameraId cameraId, void* param) {
     GXLoadPosMtxImm(cam->view, 0);
     GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+    // Match trick: standing alone, MWCC emits the GX FIFO base (lis r29,0xcc01) after the
+    // loop's induction-variable inits. Wrapping the loop in a one-iteration outer loop makes
+    // the hoisted address come first, as the original does; the outer loop folds away. The
+    // #else form is the natural single loop.
+    for (j = 0; j < 1; j++) {
+#endif
     for (i = 0; i < 0x80; i++) {
         GXBegin(0x80, 0, 4);
         GXPosition3f32(*(f32*)(base + i * 0xC + 0xC18), *(f32*)(base + i * 0xC + 0xC1C), *(f32*)(base + i * 0xC + 0xC20));
@@ -408,6 +416,9 @@ void yuka_disp(CameraId cameraId, void* param) {
         GXTexCoord2f32(*(f32*)(base + i * 4 + 0x3064), *(f32*)(base + i * 4 + 0x346C));
         GXEnd();
     }
+#ifdef MUST_MATCH
+    }
+#endif
 }
 
 // .text:0x83C | 0x8024380C | size: 0x28C
@@ -647,7 +658,6 @@ void main_timing(s32 idx) {
 
 // .text:0x1F98 | 0x80244F90 | size: 0x190
 #pragma dont_inline reset
-// NONMATCHING (95.57%): 4 instructions differ, 1 missing, 2 extra, plus register differences.
 void main_gauge(void) {
     DekaWork* p = get_ptr();
 
@@ -657,7 +667,13 @@ void main_gauge(void) {
         case 1:
             p->gaugeState = 2;
             p->gaugeTimer = 0;
+#ifdef MUST_MATCH
+            // The same constant as vec3_80300528, but as a compound literal the
+            // scheduler issues the lfs and the vector copy in the original's order.
+            p->gaugePos = (Vec){ -1000.0f, 100.0f, 0.0f };
+#else
             p->gaugePos = vec3_80300528;
+#endif
             p->gaugeWidth = float_500_80421ed8;
             p->gaugeAlpha = 0xFF;
             // fallthrough

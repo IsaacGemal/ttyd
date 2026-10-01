@@ -109,26 +109,35 @@ static inline f32 particle_sqrtf(f32 x) {
 	return x;
 }
 
-// NONMATCHING (93.86%): FP callee-saved numbering and Mtx stack slots differ; retail reloads float_0/float_1 per GX vertex, MWCC CSEs them.
+// What is left: (a) the two volatile FP temporaries in the top/left/bottom init rotate - the target
+// negates float_8 into f1 and keeps 0.5 in f0, MWCC negates the 0.5 literal instead; writing
+// -float_8*float_0p5 gets the negation right but rotates the whole temp set. (b) The GX vertex uses
+// literal 0.0f/1.0f and deg2rad/right use literals, so those loads (plus the compiler's own u32->f32
+// double) reference anonymous .sdata2/.rodata entries instead of float_0/float_1/float_deg2rad/
+// float_2/double_to_int_mask_80300278. Mtx declaration order (trans, rot, scale, local) gives the
+// original stack slots; declaring alpha, i, particle in that order gives the original r24/r25/r26;
+// the literals force the per-vertex reloads the original has.
+// NONMATCHING (99.22%): FP multiply temporaries rotate, and literal constants make the pool
+// relocations anonymous.
 void effParticleDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	ParticleWork* work = effect->userdata;
 	CameraEntry* camera;
 	GXTexObj texObj;
 	Mtx trans;
+	Mtx rot;
 	Mtx scale;
 	Mtx local;
-	Mtx rot;
 	GXColor color;
+	f32 deg2rad;
 	f32 top;
 	f32 left;
 	f32 bottom;
 	f32 right;
-	f32 deg2rad;
 	f32 factor;
-	ParticleEntry* particle;
 	s32 alpha;
 	s32 i;
+	ParticleEntry* particle;
 
 	camera = camGetPtr(camId);
 	alpha = work->alpha;
@@ -156,9 +165,9 @@ void effParticleDisp(CameraId camId, void* param) {
 
 	top = float_4_80421ce0;
 	left = -top * float_0p5_80421cec;
-	bottom = -float_8_80421ce4 * float_0p5_80421cec;
-	right = float_2_80421cf4;
-	deg2rad = float_deg2rad_80421ce8;
+	bottom = -float_0p5_80421cec * float_8_80421ce4;
+	deg2rad = 0.017453292f;
+	right = 2.0f;
 
 	i = work->particles[work->count].next;
 	while (i != work->count + 1) {
@@ -177,14 +186,14 @@ void effParticleDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(left, top, float_0_80421cf0);
-		GXTexCoord2f32(float_0_80421cf0, float_0_80421cf0);
-		GXPosition3f32(right, top, float_0_80421cf0);
-		GXTexCoord2f32(float_1_80421cf8, float_0_80421cf0);
-		GXPosition3f32(right, bottom, float_0_80421cf0);
-		GXTexCoord2f32(float_1_80421cf8, float_1_80421cf8);
-		GXPosition3f32(left, bottom, float_0_80421cf0);
-		GXTexCoord2f32(float_0_80421cf0, float_1_80421cf8);
+		GXPosition3f32(left, top, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(right, top, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(right, bottom, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(left, bottom, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 		i = particle->next;
 	}
 }

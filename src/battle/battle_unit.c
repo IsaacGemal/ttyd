@@ -232,8 +232,8 @@ void BtlUnit_ReviseHpFp(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (97.50%): gauge type now matches (`lhz` + `cmpwi`, field_0 is u16); the then/else block
-// layout still differs (target `beq then; b else`, ours `bne else`).
+// The gauge type is compared with `lhz`/`cmpwi`; a `switch` (not an if/else) reproduces the
+// original's `beq then; b else` dispatch.
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
     f32 ratio;
@@ -246,12 +246,15 @@ void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     ratio = (f32)unit->currentHp / (f32)unit->maxHp;
     gauge->field_14 = ratio;
     gauge->field_18 = ratio;
-    if ((s32)gauge->field_0 == 1) {
+    switch ((s32)gauge->field_0) {
+    case 1:
         gauge->field_6 = 0x28;
         gauge->field_A = gauge->field_6 + 0x1E;
-    } else {
+        break;
+    default:
         gauge->field_6 = 0x14;
         gauge->field_A = gauge->field_6 + 0x1E;
+        break;
     }
 }
 
@@ -345,7 +348,6 @@ s32 BtlUnit_GetACPossibility(BattleUnit* unit) {
 
 // Keep BtlUnit_SetAnimType out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (96.56%): tail `type < 0x1F && type >= 0x1D` compiles to `bge body; b skip`, mine `blt skip`.
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
     const char* animName = BtlUnit_GetPoseNameFromType(part, type);
 
@@ -354,10 +356,13 @@ void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
     } else {
         btlDispChangeAnime(part, animName, FALSE);
     }
-    if (type < 0x1F) {
-        if (type >= 0x1D) {
-            ((BattleUnitPartFields*)part)->mFlags |= 0x10;
-        }
+    // The original emits the two adjacent cases as `cmp 0x1f; cmp 0x1d` with a
+    // redundant branch, which a range test does not; a 2-case switch reproduces it.
+    switch (type) {
+    case 0x1D:
+    case 0x1E:
+        ((BattleUnitPartFields*)part)->mFlags |= 0x10;
+        break;
     }
 }
 #pragma dont_inline reset

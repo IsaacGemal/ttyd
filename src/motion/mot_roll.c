@@ -160,64 +160,81 @@ static f32 rollDispCalcTarget(MarioWork* mario, f32 angle) {
     return revise360(res);
 }
 
-// NONMATCHING (94.25%): 8 instructions differ, 9 missing, 10 extra, plus register differences.
 void marioSetRollDispDir(void) {
     MarioWork* mario = marioGetPtr();
-    f32 f30 = mario->directionView;
-    f32 f31 = *(f32*)((u8*)mario + 0x19C);
-    MarioWork* mario2 = marioGetPtr();
+    MarioWork* mario2;
+    f32 angle;
+    f32 view;
+    view = mario->directionView;
+    angle = *(f32*)mario->unk19C;
+    mario2 = marioGetPtr();
 
-    if (rollDispAngleInRange(f31, f30, 135.0f)) {
-        f31 = revise360(180.0f + f31);
+    if (rollDispAngleInRange(angle, view, 135.0f) == 1) {
+        angle = revise360(180.0f + angle);
     }
     {
         s32 flg;
-        f32 diff;
 
-        if (revise360((f32)(s32)(10.0f * f31) / 10.0f -
-                      (f32)(s32)(10.0f * mario2->targetYaw) / 10.0f) >= 180.0f) {
-            flg = 1;
-        } else {
-            flg = 0;
-        }
-        diff = f31 - f30;
-        if (flg != 0) {
-            if (fabsf(diff) > 90.0f && f30 < f31) {
-                f30 += 360.0f;
-            }
-        } else {
-            if (fabsf(diff) > 90.0f && f30 > f31) {
-                f31 += 360.0f;
-            }
-        }
-    }
-    if (!rollDispAngleInRange(f31, f30, 90.0f)) {
-        if (fabsf(f31 - f30) > 180.0f) {
-            if (f31 > f30) {
-                f31 -= 360.0f;
+#ifdef MUST_MATCH
+        /* The compiler schedules the targetYaw load before the angle multiply and gives it
+           f0; forcing the load through a volatile pointer keeps the natural order so the
+           angle multiply gets f0 and targetYaw gets f1, as the original does. */
+        {
+            f32 a10 = (f32)(s32)(10.0f * angle) / 10.0f;
+            f32 t10 = (f32)(s32)(10.0f * *(volatile f32*)&mario2->targetYaw) / 10.0f;
+
+            if (revise360(a10 - t10) < 180.0f) {
+                flg = 0;
             } else {
-                f30 -= 360.0f;
+                flg = 1;
+            }
+        }
+#else
+        if (revise360((f32)(s32)(10.0f * angle) / 10.0f -
+                      (f32)(s32)(10.0f * mario2->targetYaw) / 10.0f) < 180.0f) {
+            flg = 0;
+        } else {
+            flg = 1;
+        }
+#endif
+        if (flg == 0) {
+            if (fabsf(angle - view) > 90.0f && view > angle) {
+                angle += 360.0f;
+            }
+        } else {
+            if (fabsf(angle - view) > 90.0f && view < angle) {
+                view += 360.0f;
             }
         }
     }
-    f31 = revise360(1.2f * (f30 - f31) + f31);
+    if (!rollDispAngleInRange(angle, view, 90.0f)) {
+        if (fabsf(angle - view) > 180.0f) {
+            if (angle > view) {
+                angle -= 360.0f;
+            } else {
+                view -= 360.0f;
+            }
+        }
+    }
+    angle = 1.2f * (view - angle) + angle;
+    angle = revise360(angle);
     {
         f32 a = toMovedir(mario->unk1A8);
 
         if (*(s8*)((u8*)mario + 0x43) != 0) {
             a = revise360(180.0f + a);
         }
-        if (rollDispAngleInRange(f31, a, 135.0f)) {
+        if (rollDispAngleInRange(angle, a, 135.0f) == 1) {
             *(s8*)((u8*)mario + 0x43) =
                 (*(s8*)((u8*)mario + 0x43) + 1) & 1;
         }
     }
-    mario->unk1A8 = rollDispCalcTarget(mario, f31);
+    mario->unk1A8 = rollDispCalcTarget(mario, angle);
     if (mario->unk1A8 >= 200.0f) {
-        mario->unk1A8 = rollDispCalcTarget(mario, f31);
+        mario->unk1A8 = rollDispCalcTarget(mario, angle);
     }
     if (mario->unk1A8 < 170.0f) {
-        mario->unk1A8 = rollDispCalcTarget(mario, f31);
+        mario->unk1A8 = rollDispCalcTarget(mario, angle);
     }
 }
 

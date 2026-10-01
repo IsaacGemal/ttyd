@@ -110,11 +110,11 @@ void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
     }
 }
 
-// The four probes and the selection logic match structurally; what differs is
-// only register allocation: block 1's rad lands in f28 instead of f31, the mask
-// lands in r5 instead of r4 (so the copy branches use a different scratch), and
-// blocks 2-4 schedule the float_0 load after pos->z.
-// NONMATCHING (96.81%)
+// The four probes, the selection logic and the register mask (r4) match; what
+// still differs is scheduler-only: blocks 2-4 load float_0 after pos->z (the
+// original loads float_0 first), and the final pos copy stores out->x before
+// loading pos->y where the original loads pos->y first.
+// NONMATCHING (98.38%)
 s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
     s32 result;
     Vec v1;
@@ -127,7 +127,6 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
     MarioWork* mario;
     f32 radius;
     f32 angle;
-    f32 rad;
     f32 s;
     f32 c;
     f32 x;
@@ -142,11 +141,10 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
     radius = mario->wPlayerCollisionBox.x;
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_180);
-    rad = float_3p1416 * angle / float_180;
-    s = sin(rad);
+    s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos->x;
     v1.x = x;
-    c = cos(rad);
+    c = cos(float_3p1416 * angle / float_180);
     y = pos->y + height;
     z = pos->z + radius * -c;
     v1.y = pos->y;
@@ -156,11 +154,10 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
                           float_0);
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_90);
-    rad = float_3p1416 * angle / float_180;
-    s = sin(rad);
+    s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos->x;
     v2.x = x;
-    c = cos(rad);
+    c = cos(float_3p1416 * angle / float_180);
     y = pos->y + height;
     z = pos->z + radius * -c;
     v2.y = pos->y;
@@ -170,11 +167,10 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
                           float_0);
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC) + float_90);
-    rad = float_3p1416 * angle / float_180;
-    s = sin(rad);
+    s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos->x;
     v3.x = x;
-    c = cos(rad);
+    c = cos(float_3p1416 * angle / float_180);
     y = pos->y + height;
     z = pos->z + radius * -c;
     v3.y = pos->y;
@@ -184,11 +180,10 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
                           float_0);
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC));
-    rad = float_3p1416 * angle / float_180;
-    s = sin(rad);
+    s = sin(float_3p1416 * angle / float_180);
     x = radius * s + pos->x;
     v4.x = x;
-    c = cos(rad);
+    c = cos(float_3p1416 * angle / float_180);
     y = pos->y + height;
     z = pos->z + radius * -c;
     v4.y = pos->y;
@@ -220,7 +215,7 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
         } else if (hit1) {
             out->x = (v1.x + v2.x) * float_0p5;
             out->z = (v1.z + v2.z) * float_0p5;
-            out->y = pos->y;
+            out->y = v1.y;
             return result;
         } else if (hit2) {
             out->x = (v1.x + v3.x) * float_0p5;
@@ -234,7 +229,6 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
             return result;
         } else {
             *out = v1;
-            return result;
         }
     } else {
         if (hit3) {
@@ -251,17 +245,26 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
             } else {
                 *out = v4;
             }
+        } else {
+            if (hit1) {
+                *out = v2;
+                return result;
+            }
+            if (hit2) {
+                *out = v3;
+                return result;
+            }
         }
-        if (hit1) {
-            *out = v2;
-            return result;
-        }
-        if (hit2) {
-            *out = v3;
-            return result;
-        }
-        *out = *pos;
     }
+#ifdef MUST_MATCH
+    // Word-wise copy keeps `result` in r4 and reuses r4 as the second scratch, as the original does;
+    // the plain struct copy makes the compiler pick r5 for result.  Same three words either way.
+    *(u32*)&out->x = *(u32*)&pos->x;
+    *(u32*)&out->y = *(u32*)&pos->y;
+    *(u32*)&out->z = *(u32*)&pos->z;
+#else
+    *out = *pos;
+#endif
     return result;
 }
 
@@ -329,6 +332,11 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
             }
         }
     }
+}
+
+static inline float fsub32(f32 arg0, f32 arg1)
+{
+  return arg0 - arg1;
 }
 
 // Four floor/wall probes; remaining diffs are float register allocation in the probe

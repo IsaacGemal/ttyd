@@ -305,9 +305,6 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
 
 // prototypes for in-file functions
 
-// NONMATCHING (99.23%): CSEs wp+0x210 into an extra callee-saved register (r30)
-// where the original recomputes addi r3,r31,0x210 per dou10_yoko_yari, dragging
-// r28/r29/r30 through the function.
 void marioCheckWall(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -333,7 +330,13 @@ void marioCheckWall(f32 a, f32 b) {
         }
         *(f32*)((u8*)wp + 0x19C) = *(f32*)((u8*)wp + 0x1CC);
     } else {
+#ifdef MUST_MATCH
+        // volatile forces a fresh float_0 load; without it MWCC CSEs the constant into
+        // f1, which also flips the float_0/float_1000 allocation at the top.
+        *(f32*)&wp->field_0x1C0[0x8] = *(volatile const f32*)&float_0_8041a7a4;
+#else
         *(f32*)((u8*)wp + 0x1C8) = float_0_8041a7a4;
+#endif
     }
 
     if (a == float_0_8041a7a4) {
@@ -975,9 +978,9 @@ extern const f32 float_30_8041a82c;
 extern const f32 float_16p8_8041a830;
 extern const Vec vec3_802c582c;
 
-// NONMATCHING (98.68%): the targetDistance round keeps float_1000 in f3 and out1.x in f1
-// where the original uses f2 and f4 (round-1 FPR scheduling), and the four int->float
-// conversions reference the anonymous @752 pool literal instead of double_to_int_802c5920.
+// NONMATCHING (99.16%): targetDistance round still colours float_1000 f3 / out1.x f1 where
+// the original uses f2 / f4; conversions load anonymous @862 (name only, no score cost).
+// The out1.x MATCH_F32(float_1000) round under MUST_MATCH is the 0.48% (plain: 98.68%).
 void marioCheckWall_roll(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     Vec v;
@@ -1041,9 +1044,17 @@ void marioCheckWall_roll(f32 a, f32 b) {
             {
                 Vec* pOut = &out1;
                 out1 = query.hitPos;
+#ifdef MUST_MATCH
+                // MATCH: the volatile read of 1000 in the x round is what makes MWCC
+                // colour this block's FPRs like the original (the plain form scores 98.68).
+                pOut->x = (f32)(s32)(MATCH_F32(float_1000_8041a7a0) * pOut->x +
+                                     (pOut->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                           MATCH_F32(float_1000_8041a7a0);
+#else
                 pOut->x = (f32)(s32)(float_1000_8041a7a0 * pOut->x +
                                      (pOut->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
                            float_1000_8041a7a0;
+#endif
                 pOut->y = (f32)(s32)(float_1000_8041a7a0 * pOut->y +
                                      (pOut->y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
                            float_1000_8041a7a0;
@@ -1345,13 +1356,13 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
 }
 
 
-// The original schedules each dir vector's y-component load after the sn/cs loads
-// instead of grouping all three component loads first. The `volatile` copy keeps
-// the loads inside the loop: with the (const) table declaration the compiler
-// hoists them as loop-invariant, unlike the original, which reads a non-const
-// table. The MUST_MATCH `hit = hit ? NULL : hit` is the original's redundant
-// "if (hit == NULL) hit = NULL" test.
-// NONMATCHING (98.35%): only the y-component load scheduling of the dir vectors differs.
+// The original copies each dir vector as three raw words in x, z, y order, then
+// overwrites x with sn and z with cs. A plain `dir = *(volatile Vec*)` emits the
+// copy in x, y, z order, so the MUST_MATCH branch does the copy as three u32
+// assignments in the original's order; the `volatile` source keeps the loads
+// inside the loop, since the const table would otherwise be hoisted as
+// loop-invariant. The MUST_MATCH `hit = hit ? NULL : hit` is the original's
+// redundant "if (hit == NULL) hit = NULL" test.
 s32 marioSlitChkWallAround(void) {
     const u8* base = vec3_802c5730;
     MarioWork* wp = marioGetPtr();
@@ -1374,7 +1385,9 @@ s32 marioSlitChkWallAround(void) {
             flags[i] = 0;
             sincosf(&sn, &cs, angle);
 #ifdef MUST_MATCH
-            dir = *(volatile Vec*)(base + 0x1C8);
+            *(u32*)&dir.x = *(volatile u32*)(base + 0x1C8);
+            *(u32*)&dir.z = *(volatile u32*)(base + 0x1D0);
+            *(u32*)&dir.y = *(volatile u32*)(base + 0x1CC);
 #else
             dir = *(const Vec*)(base + 0x1C8);
 #endif
@@ -1412,7 +1425,9 @@ s32 marioSlitChkWallAround(void) {
             if (flags[i] != 1) {
                 sincosf(&sn, &cs, angle);
 #ifdef MUST_MATCH
-                dir = *(volatile Vec*)(base + 0x1D4);
+                *(u32*)&dir.x = *(volatile u32*)(base + 0x1D4);
+                *(u32*)&dir.z = *(volatile u32*)(base + 0x1DC);
+                *(u32*)&dir.y = *(volatile u32*)(base + 0x1D8);
 #else
                 dir = *(const Vec*)(base + 0x1D4);
 #endif
@@ -1451,7 +1466,9 @@ s32 marioSlitChkWallAround(void) {
             if (flags[i] != 1) {
                 sincosf(&sn, &cs, angle);
 #ifdef MUST_MATCH
-                dir = *(volatile Vec*)(base + 0x1E0);
+                *(u32*)&dir.x = *(volatile u32*)(base + 0x1E0);
+                *(u32*)&dir.z = *(volatile u32*)(base + 0x1E8);
+                *(u32*)&dir.y = *(volatile u32*)(base + 0x1E4);
 #else
                 dir = *(const Vec*)(base + 0x1E0);
 #endif
@@ -1597,9 +1614,11 @@ void marioCheckWallShip(f32 a, f32 b) {
 }
 
 
-// NONMATCHING (97.17%): the `beq else; bne then; b join` branch chain after the
-// hit != NULL test is folded to one `beq`; the float->int magic double loads from an
-// anonymous @594 symbol instead of 0x1f0(r30) / double_to_int_802c5920.
+// The original reads the int->float magic double as `lfd f2, 0x1f0(r30)` (the compiler pools
+// it into the vec3_802c5730 .rodata block, where double_to_int_802c5920 lives), while MWCC
+// here emits a separate `lis r3, @865@ha; lfd f2, @865@l(r3)`. A file-wide rodata issue:
+// the base is `extern`, so the compiler cannot anchor its pool to it.
+// NONMATCHING (99.64%): only that float->int magic double load differs.
 f32 marioChkOverhead(void) {
     const u8* base = vec3_802c5730;
     MarioWork* wp = marioGetPtr();
@@ -1641,6 +1660,26 @@ f32 marioChkOverhead(void) {
         MarioWork* wp2;
         s32 ok;
 
+#ifdef MUST_MATCH
+        // Original folds the redundant hit test and the attr test into short-circuit
+        // value branches (`bne then; li r0,0; b join`), so write them as inverted ifs.
+        if (!(hit != NULL)) {
+            ok = 0;
+        } else if (!(hitGetAttr(hit) & 0x80000000)) {
+            ok = 0;
+        } else {
+            u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
+
+            if (strcmp((const char*)(obj + 0x15), RO(base, 0x220, str_802C5950)) == 0 ||
+                strcmp((const char*)(obj + 0x15), RO(base, 0x234, str_802C5964)) == 0 ||
+                strcmp((const char*)(obj + 0x15), RO(base, 0x244, str_802C5974)) == 0 ||
+                strcmp((const char*)(obj + 0x15), RO(base, 0x258, str_802C5988)) == 0) {
+                ok = 1;
+            } else {
+                ok = 0;
+            }
+        }
+#else
         if (hitGetAttr(hit) & 0x80000000) {
             u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
 
@@ -1655,6 +1694,7 @@ f32 marioChkOverhead(void) {
         } else {
             ok = 0;
         }
+#endif
         if (ok) {
             wp->baseSpeed = float_0_8041a7a4;
             wp->flags |= 0x80;

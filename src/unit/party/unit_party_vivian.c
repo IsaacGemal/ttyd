@@ -170,20 +170,32 @@ USER_FUNC(_make_kagenuke_weapon) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.07%): 4 instructions differ, 4 missing, 1 extra, plus register differences.
+// The original keeps the three setValue arg indices live in callee-saved registers, uses one `base`
+// temp for `float_neg30 * unit1->mSizeMultiplier`, and evaluates outZ between outX and outY. The
+// #else form is the natural order and scores 93%. (The pooled int->float conversion double also
+// prints as an anonymous @NNN@ instead of double_to_int_802f8010; objdiff still scores it 100%.)
 USER_FUNC(unk_8017d03c) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
+#ifdef MUST_MATCH
+    s32 a1;
+    s32 a2;
+    s32 a3;
+#endif
     BattleUnit* unit1;
     BattleUnit* unit2;
     f32 sx;
     f32 sy;
     f32 sz;
-    f32 scale1;
     f32 k54;
     f32 k58;
     f32 d1;
     f32 d2;
+#ifdef MUST_MATCH
+    f32 base;
+#else
+    f32 scale1;
+#endif
     s32 t;
     s32 u;
     s32 v0;
@@ -196,17 +208,38 @@ USER_FUNC(unk_8017d03c) {
     f32 floor;
 
     v0 = evtGetValue(event, args[0]);
+#ifdef MUST_MATCH
+    a1 = args[1];
+    v1 = evtGetValue(event, a1);
+    a2 = args[2];
+    v2 = evtGetValue(event, a2);
+    a3 = args[3];
+    v3 = evtGetValue(event, a3);
+#else
     v1 = evtGetValue(event, args[1]);
     v2 = evtGetValue(event, args[2]);
     v3 = evtGetValue(event, args[3]);
+#endif
 
     unit1 = BattleGetUnitPtr(work, BattleTransID(event, -2));
     unit2 = BattleGetUnitPtr(work, BattleTransID(event, v0));
     BtlUnit_GetScale(unit2, &sx, &sy, &sz);
 
+#ifdef MUST_MATCH
+    k54 = unit2->mKindParams->field_0x54;
+    k58 = unit2->mKindParams->field_0x58;
+    d1 = (f32)unit1->faceDirection;
+    d2 = (f32)unit2->faceDirection;
+    t = (s32)(d2 * (k54 * sx));
+    u = (s32)(k58 * sz);
+    base = float_neg30_8041dea4 * unit1->mSizeMultiplier;
+    outX = (s32)((f32)v1 + (base * d1 + (f32)t));
+    outZ = v3 + u;
+    outY = (s32)((f32)v2 - float_20_8041dea8 * unit1->mSizeMultiplier);
+#else
     scale1 = unit1->mSizeMultiplier;
-    k54 = *(f32*)((u8*)unit2->mKindParams + 0x54);
-    k58 = *(f32*)((u8*)unit2->mKindParams + 0x58);
+    k54 = unit2->mKindParams->field_0x54;
+    k58 = unit2->mKindParams->field_0x58;
     d1 = (f32)unit1->faceDirection;
     d2 = (f32)unit2->faceDirection;
     t = (s32)(d2 * (k54 * sx));
@@ -214,13 +247,20 @@ USER_FUNC(unk_8017d03c) {
     outX = (s32)((f32)v1 + ((float_neg30_8041dea4 * scale1) * d1 + (f32)t));
     outY = (s32)((f32)v2 - float_20_8041dea8 * scale1);
     outZ = v3 + u;
+#endif
     floor = BattleGetFloorHeight(work, (f32)outX, (f32)outY, (f32)outZ);
     if (floor > (f32)outY) {
         outY = (s32)floor;
     }
+#ifdef MUST_MATCH
+    evtSetValue(event, a1, outX);
+    evtSetValue(event, a2, outY);
+    evtSetValue(event, a3, outZ);
+#else
     evtSetValue(event, args[1], outX);
     evtSetValue(event, args[2], outY);
     evtSetValue(event, args[3], outZ);
+#endif
     return EVT_RETURN_DONE;
 }
 

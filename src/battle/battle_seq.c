@@ -363,15 +363,23 @@ void btlseqTurn(BattleWork* wp) {
 // pools a local constant), and it lands at a different .rodata offset because the rule-message
 // strings are also not in the file.
 extern GXColor dat_8041c26c;
+extern f32 lbl_80360FE0[];
 
-// The table loads use `add base,idx*4; lwz off(base)` where the original uses `addi base,off; lwzx`;
-// the pooled int->float double is a local @770, not double_to_int_802ef590 (the file's other
-// int->float users are not written yet); and MWCC swaps two temps (r6/r7). Control flow matches.
-// NONMATCHING (92.77%): see the three differences above.
+// `#pragma opt_propagation off` is required: with propagation on, MWCC folds each branch's
+// `tbl = (const char**)(base + 0x150); tbl[i]` into `add base,i*4; lwz 0x150(base)`, where the
+// original keeps the table address in a register (`addi base,off; lwzx base,i*4`). Off, the three
+// loads match and only the two prologue temporaries for wp/base swap r5/r6 (see report).
+#pragma opt_propagation off
+
+// NONMATCHING (99.82%): r5/r6 are swapped for the `_battleWorkPointer`/`lbl_80360FE0` prologue
+// temporaries; every other instruction matches (the local @NNN int->float double is a relocation
+// name only, cf. battle_attack_audience.c's _get_item_announce_disp).
 void _rule_disp(void) {
 	u8* base = (u8*)lbl_80360FE0;
+	const char** tbl;
 	BattleWork* wp = _battleWorkPointer;
 	FieldBattleInfo* info = wp->fbatInfo;
+	GXColor color;
 	u16 lines;
 	u16 width;
 	f32 x;
@@ -379,24 +387,31 @@ void _rule_disp(void) {
 
 	if (evtGetValue(NULL, 0xF5DE0180) < 0xAC) {
 		if (evtGetValue(NULL, 0xF5DE03C4) < 0xB) {
-			sprintf(buf, msgSearch(((const char**)(base + 0x150))[*(u8*)((u8*)info + 0x18)]),
-				*(u8*)((u8*)info + 0x1a));
+			tbl = (const char**)(base + 0x150);
+			sprintf(buf, msgSearch(tbl[info->field_0x14[4]]), info->field_0x14[6]);
 		} else {
-			sprintf(buf, msgSearch(((const char**)(base + 0x40))[*(u8*)((u8*)info + 0x18)]),
-				*(u8*)((u8*)info + 0x1a));
+			tbl = (const char**)(base + 0x40);
+			sprintf(buf, msgSearch(tbl[info->field_0x14[4]]), info->field_0x14[6]);
 		}
 	} else {
-		sprintf(buf, msgSearch(((const char**)(base + 0x260))[*(u8*)((u8*)info + 0x18)]),
-			*(u8*)((u8*)info + 0x1a));
+		tbl = (const char**)(base + 0x260);
+		sprintf(buf, msgSearch(tbl[info->field_0x14[4]]), info->field_0x14[6]);
 	}
 	width = FontGetMessageWidthLine(buf, &lines);
 	lines++;
+	color = dat_8041c26c;
 	x = float_0_8041c280 - (f32)(width >> 1);
-	windowDispGX_Waku_col(0, dat_8041c26c, x - float_10_8041c2a0, float_94_8041c2a4,
+#ifdef MUST_MATCH
+	((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - float_10_8041c2a0,
+		float_94_8041c2a4, (f32)(width + 20), (f32)(lines * 29 + 3), float_10_8041c2a0);
+#else
+	windowDispGX_Waku_col(0, color, x - float_10_8041c2a0, float_94_8041c2a4,
 		(f32)(width + 20), (f32)(lines * 29 + 3), float_10_8041c2a0);
+#endif
 	FontDrawStart();
 	FontDrawMessage((s32)x, (s32)float_120_8041c2a8 - 29, buf);
 }
+#pragma opt_propagation reset
 
 void btlseqEnd(BattleWork* wp) {
 
@@ -660,21 +675,20 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 	}
 }
 
-// NONMATCHING (94.40%): logic matches; the original keeps wp in r31 and adds 0x120 to the loop offset
-// (r0 = offset + 0x120; lwzx r0, wp, r0) while mine hoists order = wp + 0x120 into r31, and uses one
-// fewer saved register (stmw r22 vs r23).
+// NONMATCHING (99.19%): all instructions match except the count/wp callee-saved pair is swapped
+// (target count r30/wp r31, compiler picks count r31/wp r30). Declaration order, raw vs header-field
+// offsets, 128 pragma combos, compilers 1.3-2.7, inline helpers, f32/Vec/array temps and loop forms tried.
 void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
-	s32* order = (s32*)((u8*)wp + 0x120);
-	BattleUnit* a;
-	BattleUnit* b;
 	s32 count = mode;
 	s32 i;
 	s32 j;
+	BattleUnit* a;
+	BattleUnit* b;
 
 	if (count <= 0) {
 		count = 0;
 		for (i = 0; i < 64; i++) {
-			if (order[i] == -1) {
+			if (*(s32*)(wp->field_120 + i * 4) == -1) {
 				break;
 			}
 			count++;
@@ -685,50 +699,61 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
 		for (j = 0; j < count - i - 1; j++) {
 			f32 ax, ay, az;
 			f32 bx, by, bz;
-			a = BattleGetUnitPtr(wp, order[j]);
-			b = BattleGetUnitPtr(wp, order[j + 1]);
+			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
+			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
 			BtlUnit_GetHomePos(a, &ax, &ay, &az);
 			BtlUnit_GetHomePos(b, &bx, &by, &bz);
 			if (fabs(ax) > fabs(bx)) {
-				s32 tmp = order[j];
-				order[j] = order[j + 1];
-				order[j + 1] = tmp;
+				s32 tmp = *(s32*)(wp->field_120 + j * 4);
+				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
+				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
 			}
 		}
 	}
 	for (i = 0; i < count - 1; i++) {
 		for (j = 0; j < count - i - 1; j++) {
-			a = BattleGetUnitPtr(wp, order[j]);
-			b = BattleGetUnitPtr(wp, order[j + 1]);
+			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
+			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
 			if (*(s32*)(a->field_0x27 + 1) < *(s32*)(b->field_0x27 + 1)) {
-				s32 tmp = order[j];
-				order[j] = order[j + 1];
-				order[j + 1] = tmp;
+				s32 tmp = *(s32*)(wp->field_120 + j * 4);
+				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
+				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
 			}
 		}
 	}
 }
 
-// NONMATCHING (96.72%): logic and field offsets match; callee-saved registers are rotated (wp r28 vs
-// r27, ret r30 vs r31, offset r27 vs r30) so the whole body shifts by one register.
+// The field order in this declaration list is deliberate: it drives MWCC's callee-saved register
+// allocation to the original's (wp r28, offset r27, i r29, count r30, alliance r31). The loop base
+// `i * sizeof(BattleAlliance)` lets the compiler strength-reduce the byte offset into its own
+// induction register.
 BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	BattleUnit* unit;
+	s32 j;
+	BattleAlliance* alliance;
 	s32 count;
 	s32 i;
-	s32 j;
-	s32 offset;
 
 	count = 0;
-	offset = 0;
-	for (i = 0; i < 3; i++, offset += sizeof(BattleAlliance)) {
-		BattleAlliance* alliance = (BattleAlliance*)((u8*)wp->alliances + offset);
+	for (i = 0; i < 3; i++) {
+		alliance = (BattleAlliance*)((u8*)wp->alliances + i * sizeof(BattleAlliance));
 		alliance->clearConditionMet = 0;
-		if ((u16)alliance->allianceId == 0) {
+#ifdef MUST_MATCH
+		// The original reads allianceId as an unsigned halfword (`lhz`/`cmplwi`); the header
+		// declares the field s16, whose sign-extending load compiles to `lha`. Natural form in #else.
+		if (*(u16*)&alliance->allianceId == 0) {
+#else
+		if (alliance->allianceId == 0) {
+#endif
 			count++;
 			alliance->clearConditionMet = 1;
 			continue;
 		}
-		if ((u16)alliance->allianceId & 1) {
+#ifdef MUST_MATCH
+		if (*(u16*)&alliance->allianceId & 1) {
+#else
+		if (alliance->allianceId & 1) {
+#endif
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
@@ -745,7 +770,11 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 				continue;
 			}
 		}
-		if ((u16)alliance->allianceId & 2) {
+#ifdef MUST_MATCH
+		if (*(u16*)&alliance->allianceId & 2) {
+#else
+		if (alliance->allianceId & 2) {
+#endif
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&

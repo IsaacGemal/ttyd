@@ -603,15 +603,15 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
     }
 }
 
-// Only register allocation / instruction scheduling differ:
-//  - Top of function: MWCC coalesces the min(cursor->unk8, 6) temp and the value
-//    passed to DrawSubMenuCommonProcessSub1 into one register (r6); the original
-//    keeps the temp in r3, copies it to r6, keeps the saved field_4 in r4 (copy r5)
-//    and field_0 in r7. Ours uses r3/r5 and r4 instead.
-//  - The two intplGetValue calls in the first loop (case 0 and case 0xA) evaluate
-//    their args in a different order: the original loads the `start` float before
-//    the `currStep` word, ours does the reverse.
-// NONMATCHING (97.71%): see the register/scheduling details above.
+// The min(cursor->unk8, 6) is written through a local (`n`) so MWCC materialises
+// the temporaries in r3 and copies to r6, as the original does; the direct
+// ternary/if coalesces them into r6 and loses the extra move.
+// Only instruction scheduling differs now: the `intplGetValue` argument setup.
+// The original loads the `start`/`end` floats before the `currStep` word, ours
+// loads `currStep` first. `#pragma scheduling off`, opt_propagation/lifetimes/
+// global_optimizer, `#pragma dont_inline`, and source permutations all leave the
+// schedule unchanged (the same shape flagged in shadow_scale_small, unit_poison_pakkun).
+// NONMATCHING (98.63%): only the four intplGetValue argument setups are reordered.
 void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* scales, Mtx* mtxC) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -633,7 +633,14 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     } else {
         mainCursor = (BattleCursor*)((u8*)wp + 0x1bc0);
     }
-    maxCount = cursor->unk8 < 6 ? cursor->unk8 : 6;
+    {
+        s32 n = cursor->unk8;
+        if (n < 6) {
+            maxCount = n;
+        } else {
+            maxCount = 6;
+        }
+    }
     idx = cursor->field_4;
     field0 = cursor->field_0;
     if (field0 <= cursor->field_4) {
@@ -816,18 +823,17 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
     }
 }
 
-// NONMATCHING (99.11%): in the non-flag branch MWCC rotates window/idx/i through
-// r8/r6/r7 where the original uses r6/r7/r8; no source form found that fixes it.
 void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32 flags) {
     s32 i;
     s32 idx;
+    BattleMenuWork* w;
 
     if (wp->commandMenu.field_55C) {
         BattleFree(wp->commandMenu.field_55C);
     }
     wp->commandMenu.field_55C = BattleAlloc(0x124);
     if (flags & 1) {
-        BattleMenuWork* w = (BattleMenuWork*)wp->commandMenu.field_55C;
+        w = (BattleMenuWork*)wp->commandMenu.field_55C;
         w->cursor = a;
         w->field_0x4 = b;
         w->field_0xC = 0xA;
@@ -852,7 +858,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
             }
         }
     } else {
-        BattleMenuWork* w = (BattleMenuWork*)wp->commandMenu.field_55C;
+        w = (BattleMenuWork*)wp->commandMenu.field_55C;
         w->cursor = a;
         w->field_0x4 = b;
         w->field_0xC = 0;
@@ -1105,8 +1111,8 @@ void DrawMenuPartyChangeButton(void) {
     }
 }
 
+// dont_inline: keep deferred inlining from pulling same-TU helpers into DrawSubIcon/DrawMainIcon.
 #pragma dont_inline on
-// NONMATCHING (99.38%): same instructions; only register numbers or operands differ.
 void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s32* d, s32* e, void* table, s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor;
@@ -1117,7 +1123,8 @@ void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s
 
     BattleGetUnitPtr(wp, wp->activeUnitId);
     cursor = window->cursor;
-    f31 = (window->field_0x98 - (f32)(s32)window->field_0x98) * 24.0f;
+    f31 = window->field_0x98 - (f32)(s32)window->field_0x98;
+    f31 = f31 * 24.0f;
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->field_0x98 + i;
         if (idx < cursor->unk8) {
@@ -1291,11 +1298,17 @@ extern const GXColor dat_8041c124;
 extern const GXColor dat_8041c128;
 extern const GXColor dat_8041c12c;
 
-// Only the stack slots MWCC picks for the two GXColor arguments differ: our if-branch color is
-// built at 0x18 and copied to 0x10, with the tev temp at 0x14; the original builds at 0x10,
-// copies to 0x14 and has its tev temp at 0x18. Loops, tables, frame and registers all match.
-// NONMATCHING (98.44%): MWCC GXColor temp slots (0x10/0x14/0x18) permuted; the u16 iconId adds two
-// clrlwi the original doesn't have.
+#ifdef MUST_MATCH
+// Passing the colour through this by-value inline helper (instead of a named local) is what
+// makes MWCC place the GXColor argument temp in the original's stack slot. See REPORT.md.
+static inline GXColor MainIconCircleColor(GXColor base, u8 a) {
+    base.r = a;
+    base.g = a;
+    base.b = a;
+    return base;
+}
+#endif
+
 void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* pos, f32 scale) {
     BattleMenuDispEntry* entry = entryPtr;
     BattleWork* wp = _battleWorkPointer;
@@ -1306,14 +1319,13 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     Mtx scaleMtx;
     Mtx transMtx;
     Mtx resultMtx;
-    GXColor color;
     GXTexObj texObj;
     f32 radians;
     f32 offset;
     f32 shadowY;
     f32 size;
     u8 alpha;
-    u16 iconId;
+    s32 iconId;
     s32 i;
     s32 j;
 
@@ -1369,21 +1381,29 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     PSMTXConcat(resultMtx, transMtx, resultMtx);
     iconId = entry->field_0xC;
-    if (iconId == 0) {
+    if ((u16)iconId == 0) {
         iconId = 0x18B;
     }
     if (entry->field_0x4 == 1) {
-        color = dat_8041c128;
+#ifdef MUST_MATCH
+        iconDispGxCol(resultMtx, 0x10, iconId, MainIconCircleColor(dat_8041c128, alpha));
+#else
+        GXColor color = dat_8041c128;
         color.r = alpha;
         color.g = alpha;
         color.b = alpha;
         iconDispGxCol(resultMtx, 0x10, iconId, color);
+#endif
     } else {
-        color = dat_8041c12c;
+#ifdef MUST_MATCH
+        iconDispGxCol(resultMtx, 0x30, iconId, MainIconCircleColor(dat_8041c12c, alpha));
+#else
+        GXColor color = dat_8041c12c;
         color.r = alpha;
         color.g = alpha;
         color.b = alpha;
         iconDispGxCol(resultMtx, 0x30, iconId, color);
+#endif
     }
 }
 

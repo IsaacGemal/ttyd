@@ -104,7 +104,9 @@ void statusWinReInit(void) {
     }
 }
 
-// NONMATCHING (92.73%): 4 instructions differ, 20 missing, 2 extra, plus register differences.
+// NONMATCHING (98.84%): the three negated `wp->field_0x4 & 0x11` tests materialise the boolean with
+// `bne skip` in the original, but a source `switch` can only lower `case 0` out of line (`beq`/extra `b`).
+// Remaining: 3 opcode diffs (`bne` vs `beq`) + 3 extra `b`, plus register differences.
 void statusWinMain(void) {
     MarioWork* mario;
 
@@ -119,53 +121,127 @@ void statusWinMain(void) {
         switch (seqGetSeq()) {
             case SEQ_GAME:
             case SEQ_MAP_CHANGE:
-                if (!(marioChkCtrl() && marioChkKey() && (mario->flags & 1))) {
-                    if (wp->field_0x4 & 0x11) {
-                        wp->field_0x4 |= 0xA;
-                        wp->field_0x4 &= ~5;
-                    }
-                    valueCheck();
-                    wp->field_0x74 = 0;
-                    wp->field_0x78 = 0;
-                } else {
-                    if (PSVECDistance(&wp->field_0x68, &mario->position) < 1.0f) {
-                        wp->field_0x74++;
-                        if (wp->field_0x74 > gp->framerate * 10) {
-                            wp->field_0x74 = gp->framerate * 10;
-                            if (wp->field_0x7C == 0 && wp->field_0x78 == 0 && !(wp->field_0x4 & 0x11)) {
+                {
+                    BOOL notCtrl;
+                    BOOL notKey;
+
+                    notCtrl = !marioChkCtrl();
+                    if (notCtrl || (notKey = !marioChkKey(), notKey) || !(mario->flags & 1)) {
+#ifdef MUST_MATCH
+                        switch ((wp->field_0x4 & 0x11) != 0) {
+                        default:
+                            wp->field_0x4 |= 0xA;
+                            wp->field_0x4 &= ~5;
+                            break;
+                        case 0:
+                            break;
+                        }
+#else
+                        if (wp->field_0x4 & 0x11) {
+                            wp->field_0x4 |= 0xA;
+                            wp->field_0x4 &= ~5;
+                        }
+#endif
+                        valueCheck();
+                        wp->field_0x74 = 0;
+                        wp->field_0x78 = 0;
+                    } else {
+                        if (PSVECDistance(&wp->field_0x68, &mario->position) < 1.0f) {
+                            wp->field_0x74++;
+                            if (wp->field_0x74 > gp->framerate * 10) {
+                                wp->field_0x74 = gp->framerate * 10;
+#ifdef MUST_MATCH
+                                if (wp->field_0x7C == 0 && wp->field_0x78 == 0) {
+                                    switch ((wp->field_0x4 & 0x11) != 0) {
+                                    case 0:
+                                        wp->field_0x4 &= ~0xA;
+                                        wp->field_0x4 |= 5;
+                                        wp->field_0x4 |= 0x100;
+                                        break;
+                                    default:
+                                        break;
+                                    }
+                                }
+#else
+                                if (wp->field_0x7C == 0 && wp->field_0x78 == 0 && !(wp->field_0x4 & 0x11)) {
+                                    wp->field_0x4 &= ~0xA;
+                                    wp->field_0x4 |= 5;
+                                    wp->field_0x4 |= 0x100;
+                                }
+#endif
+                            }
+                        } else {
+                            wp->field_0x74 = 0;
+                            wp->field_0x7C = 0;
+#ifdef MUST_MATCH
+                            if (wp->field_0x78 == 0) {
+                                switch ((wp->field_0x4 & 0x11) != 0) {
+                                default:
+                                    wp->field_0x4 |= 0xA;
+                                    wp->field_0x4 &= ~5;
+                                    break;
+                                case 0:
+                                    break;
+                                }
+                            }
+#else
+                            if (wp->field_0x78 == 0 && (wp->field_0x4 & 0x11)) {
+                                wp->field_0x4 |= 0xA;
+                                wp->field_0x4 &= ~5;
+                            }
+#endif
+                        }
+                        if (*(u16*)(mario->field_0x245 + 3) & 0x10) {
+#ifdef MUST_MATCH
+                            switch ((wp->field_0x4 & 0x11) != 0) {
+                            case 0:
                                 wp->field_0x4 &= ~0xA;
                                 wp->field_0x4 |= 5;
+                                wp->field_0x78 = gp->framerate * 10;
+                                psndSFXOn((const char*)0x2A);
                                 wp->field_0x4 |= 0x100;
+                                break;
+                            default:
+                                wp->field_0x4 |= 0xA;
+                                wp->field_0x4 &= ~5;
+                                wp->field_0x78 = gp->framerate * 10;
+                                wp->field_0x7C = 1;
+                                psndSFXOn((const char*)0x2B);
+                                break;
                             }
+#else
+                            if (!(wp->field_0x4 & 0x11)) {
+                                wp->field_0x4 &= ~0xA;
+                                wp->field_0x4 |= 5;
+                                wp->field_0x78 = gp->framerate * 10;
+                                psndSFXOn((const char*)0x2A);
+                                wp->field_0x4 |= 0x100;
+                            } else {
+                                wp->field_0x4 |= 0xA;
+                                wp->field_0x4 &= ~5;
+                                wp->field_0x78 = gp->framerate * 10;
+                                wp->field_0x7C = 1;
+                                psndSFXOn((const char*)0x2B);
+                            }
+#endif
                         }
-                    } else {
-                        wp->field_0x74 = 0;
-                        wp->field_0x7C = 0;
-                        if (wp->field_0x78 == 0 && (wp->field_0x4 & 0x11)) {
-                            wp->field_0x4 |= 0xA;
-                            wp->field_0x4 &= ~5;
-                        }
-                    }
-                    if (*(u16*)((u8*)mario + 0x248) & 0x10) {
-                        if (!(wp->field_0x4 & 0x11)) {
-                            wp->field_0x4 &= ~0xA;
-                            wp->field_0x4 |= 5;
-                            wp->field_0x78 = gp->framerate * 10;
-                            psndSFXOn((const char*)0x2A);
-                            wp->field_0x4 |= 0x100;
-                        } else {
-                            wp->field_0x4 |= 0xA;
-                            wp->field_0x4 &= ~5;
-                            wp->field_0x78 = gp->framerate * 10;
-                            wp->field_0x7C = 1;
-                            psndSFXOn((const char*)0x2B);
-                        }
-                    }
-                    if (valueCheck() != 0) {
-                        wp->field_0x78 = gp->framerate * 2;
-                        if (!(wp->field_0x4 & 0x11)) {
-                            wp->field_0x4 &= ~0xA;
-                            wp->field_0x4 |= 5;
+                        if (valueCheck() != 0) {
+                            wp->field_0x78 = gp->framerate * 2;
+#ifdef MUST_MATCH
+                            switch ((wp->field_0x4 & 0x11) != 0) {
+                            case 0:
+                                wp->field_0x4 &= ~0xA;
+                                wp->field_0x4 |= 5;
+                                break;
+                            default:
+                                break;
+                            }
+#else
+                            if (!(wp->field_0x4 & 0x11)) {
+                                wp->field_0x4 &= ~0xA;
+                                wp->field_0x4 |= 5;
+                            }
+#endif
                         }
                     }
                 }
@@ -183,10 +259,21 @@ void statusWinMain(void) {
             case SEQ_BATTLE:
                 break;
             default:
+#ifdef MUST_MATCH
+                switch ((wp->field_0x4 & 0x11) != 0) {
+                default:
+                    wp->field_0x4 |= 0xA;
+                    wp->field_0x4 &= ~5;
+                    break;
+                case 0:
+                    break;
+                }
+#else
                 if (wp->field_0x4 & 0x11) {
                     wp->field_0x4 |= 0xA;
                     wp->field_0x4 &= ~5;
                 }
+#endif
                 break;
         }
 
@@ -215,8 +302,12 @@ void statusWinMain(void) {
             wp->field_0x10 = (wp->field_0x18 - *(f32*)((u8*)wp + 0x14)) * (1.0f - c) * 0.5f + *(f32*)((u8*)wp + 0x14);
         }
 
-        wp->field_0x20 = wp->field_0x30 * wp->field_0x10 + wp->field_0x40 * (1.0f - wp->field_0x10);
-        wp->field_0x24 = wp->field_0x34 * wp->field_0x10 + wp->field_0x44 * (1.0f - wp->field_0x10);
+        {
+            f32 x = wp->field_0x10;
+            f32 t = 1.0f - x;
+            wp->field_0x20 = wp->field_0x30 * x + wp->field_0x40 * t;
+            wp->field_0x24 = wp->field_0x34 * x + wp->field_0x44 * t;
+        }
         valueUpdate();
         if (!(wp->field_0x4 & 0x1000)) {
             dispEntry(8, 500.0f, 0, statusWinDisp, NULL);
@@ -450,19 +541,6 @@ s32 valueCheck(void) {
     return changed;
 }
 
-static void valueMove(s16* cur, s16 target) {
-    s32 diff = target - *cur;
-    s32 step;
-
-    if (diff != 0) {
-        step = diff / 10;
-        if (step == 0) {
-            step = (target > *cur) ? 1 : -1;
-        }
-        *cur += step;
-    }
-}
-
 static s32 valueMoveAmount(s16 cur, s16 target) {
     s32 diff = target - cur;
     s32 step = diff;
@@ -476,9 +554,44 @@ static s32 valueMoveAmount(s16 cur, s16 target) {
     return step;
 }
 
-// NONMATCHING (97.54%): 3 missing, plus register differences.
+// Single-variable form: keeps diff and step in the same register, as the
+// original's inlined valueMove does.
+static inline void valueMoveUpdate(s16* cur, s16 target) {
+    s32 step = target - *cur;
+
+    if (step != 0) {
+        step /= 10;
+        if (step == 0) {
+            step = (target > *cur) ? 1 : -1;
+        }
+    }
+    *cur += step;
+}
+
+// Pins the first party bar's cur/target loads to the original's registers;
+// the plain helper gives them the other way round (see NONMATCHING note).
+#ifdef MUST_MATCH
+static inline void valueMoveParty(s16* cur, s16 target) {
+    s16 c = *cur;
+    s32 step = target - c;
+
+    if (step != 0) {
+        step /= 10;
+        if (step == 0) {
+            step = (target > c) ? 1 : -1;
+        }
+    }
+    *cur += step;
+}
+#endif
+
+// NONMATCHING (99.88%): the first party bar's cur/target are in r5/r6 instead
+// of the original's r6/r5 (4 register-only diffs); everything else matches.
 void valueUpdate(void) {
     static s32 count;
+#ifdef MUST_MATCH
+    s16 curCoin;
+#endif
     StatusWindowValue values;
 
     statusGetValue(&values);
@@ -487,29 +600,44 @@ void valueUpdate(void) {
     if (count & 1) {
         return;
     }
-    if (!(wp->field_0x4 & 0x11)) {
+    // The original materialises the statusWinCheck() result; a plain
+    // if (!statusWinCheck()) folds the boolean away, so dispatch on it.
+#ifdef MUST_MATCH
+    switch ((wp->field_0x4 & 0x11) != 0) {
+    default:
+#else
+    if (!statusWinCheck()) {
         return;
     }
-
+#endif
+#ifdef MUST_MATCH
+    curCoin = ((s16*)wp)[0x30];
+    if (valueMoveAmount(curCoin, values.coin) != 0) {
+#else
     if (valueMoveAmount(*(s16*)((u8*)wp + 0x60), values.coin) != 0) {
+#endif
         if (count % 8 == 0) {
             psndSFXOn("SFX_COUNT_COIN1");
         }
     }
 
-    valueMove((s16*)((u8*)wp + 0x50), values.hp);
-    valueMove((s16*)((u8*)wp + 0x52), values.maxHp);
-    valueMove((s16*)((u8*)wp + 0x54), values.fp);
-    valueMove((s16*)((u8*)wp + 0x56), values.maxFp);
-    valueMove(&wp->field_0x62, values.ap);
-    valueMove((s16*)((u8*)wp + 0x64), values.maxAp);
-    valueMove((s16*)((u8*)wp + 0x5E), values.starPoint);
-    valueMove((s16*)((u8*)wp + 0x60), values.coin);
+    valueMoveUpdate((s16*)((u8*)wp + 0x50), values.hp);
+    valueMoveUpdate((s16*)((u8*)wp + 0x52), values.maxHp);
+    valueMoveUpdate((s16*)((u8*)wp + 0x54), values.fp);
+    valueMoveUpdate((s16*)((u8*)wp + 0x56), values.maxFp);
+    valueMoveUpdate(&wp->field_0x62, values.ap);
+    valueMoveUpdate((s16*)((u8*)wp + 0x64), values.maxAp);
+    valueMoveUpdate((s16*)((u8*)wp + 0x5E), values.starPoint);
+    valueMoveUpdate((s16*)((u8*)wp + 0x60), values.coin);
 
     *(s16*)((u8*)wp + 0x58) = values.partyId;
     if (*(s16*)((u8*)wp + 0x58) != 0) {
-        valueMove((s16*)((u8*)wp + 0x5A), values.partyHp);
-        valueMove((s16*)((u8*)wp + 0x5C), values.partyMaxHp);
+#ifdef MUST_MATCH
+        valueMoveParty((s16*)((u8*)wp + 0x5A), values.partyHp);
+#else
+        valueMoveUpdate((s16*)((u8*)wp + 0x5A), values.partyHp);
+#endif
+        valueMoveUpdate((s16*)((u8*)wp + 0x5C), values.partyMaxHp);
     }
     if (*(s16*)((u8*)wp + 0x5E) > 0x63) {
         *(s16*)((u8*)wp + 0x5E) = 0x63;
@@ -517,6 +645,12 @@ void valueUpdate(void) {
     if (*(s16*)((u8*)wp + 0x60) > 0x3E7) {
         *(s16*)((u8*)wp + 0x60) = 0x3E7;
     }
+#ifdef MUST_MATCH
+        break;
+    case 0:
+        return;
+    }
+#endif
 }
 
 // NONMATCHING (15.31%): 15 instructions differ, 448 missing, 2 extra, plus register differences.

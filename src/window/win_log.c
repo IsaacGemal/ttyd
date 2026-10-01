@@ -215,9 +215,9 @@ void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
     return w;
 }
 
-// NONMATCHING (96.98%): every arm but the last is byte-identical; for the final
-// `>= 0x15C` arm the original lays `addi base,0x4FC` before the branch, ours
-// lays it after (same instructions, opposite branch polarity).
+// The last arm's original codegen keeps swByteGet's result in r3 and computes
+// the `>= 0x15C` value before the branch, so the C default-result/override
+// ordering below is needed to reproduce it (see rule 7).
 const char* winGetMapTplName(void) {
     const char* base = str_802F5EB8;
 
@@ -239,10 +239,26 @@ const char* winGetMapTplName(void) {
     if (swByteGet(0) < 0x110) {
         return RO(base, 0x4E4, str_802F639C);
     }
-    if (swByteGet(0) >= 0x15C) {
-        return RO(base, 0x4FC, str_802F63B4);
+    {
+#ifdef MUST_MATCH
+        // Default to the `>= 0x15C` template, then override it on the `<` path;
+        // the original compares r3 before overwriting it and branches on that
+        // earlier compare (rule 7).
+        const char* result;
+        s32 v = swByteGet(0);
+
+        result = RO(base, 0x4FC, str_802F63B4);
+        if (v < 0x15C) {
+            result = RO(base, 0x4F0, str_802F63A8);
+        }
+        return result;
+#else
+        if (swByteGet(0) >= 0x15C) {
+            return RO(base, 0x4FC, str_802F63B4);
+        }
+        return RO(base, 0x4F0, str_802F63A8);
+#endif
     }
-    return RO(base, 0x4F0, str_802F63A8);
 }
 
 // A single tattle-log row inside WindowWork, at 0xD78 with stride 0x20.
@@ -265,15 +281,29 @@ typedef struct WinLogWork {
     WinLogEntry entries[1]; // 0xD78
 } WinLogWork;
 
-// NONMATCHING (95.98%): the original's int->float conversion folds to the global
-// double_to_int_802f62d8 but ours emits an anonymous @271 literal (the project-wide
-// folded-pool issue); remaining diffs are FP register allocation and fmadd order.
+// 100%: advances the tattle-log rows (state machine) and eases the panel
+// springs. The original's int->float conversions reference
+// double_to_int_802f62d8; our object emits an anonymous @271 literal instead,
+// which objdiff does not score (same as winBadgeInit2). The per-block `dN`
+// temps give the diff-first fmadd operand order; `ep` steps the entry base so
+// the prologue copy lands first. The MUST_MATCH `new_var` alias is scheduling
+// shaping only (see its comment).
 void winLogMain2(WindowWork* work) {
     WinLogWork* w = (WinLogWork*)work;
+    u8* ep = (u8*)work;
+#ifdef MUST_MATCH
+    // Match-only second base alias: with one `work` base MWCC hoists the
+    // second int->float fudge store (`stw r0, 0x8(r1)`) one /6 block early;
+    // the natural single-base form is under #else (99.22%).
+    u8* new_var;
+#endif
     s32 i;
+#ifdef MUST_MATCH
+    new_var = (u8*)work;
+#endif
 
-    for (i = 0; i < w->count; i++) {
-        WinLogEntry* e = &w->entries[i];
+    for (i = 0; i < w->count; i++, ep += 0x20) {
+        WinLogEntry* e = (WinLogEntry*)(ep + 0xD78);
 
         switch (e->state) {
 #ifdef MUST_MATCH
@@ -305,8 +335,10 @@ void winLogMain2(WindowWork* work) {
         case 21:
             if (++e->timer > 8) {
                 e->targetX = float_0_8041d7bc;
-                e->targetY = float_45_8041d880 * (f32)w->count * float_0p5_8041d7c8 -
-                             float_45_8041d880 * (f32)i;
+                {
+                    f32 prod = float_45_8041d880 * (f32)w->count;
+                    e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
+                }
                 e->timer = 0;
                 e->state++;
             }
@@ -319,8 +351,10 @@ void winLogMain2(WindowWork* work) {
             break;
         case 40:
             e->targetX = float_0_8041d7bc;
-            e->targetY = float_45_8041d880 * (f32)w->count * float_0p5_8041d7c8 -
-                         float_45_8041d880 * (f32)i;
+            {
+                f32 prod = float_45_8041d880 * (f32)w->count;
+                e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
+            }
             e->timer = 0;
             e->state++;
             break;
@@ -329,16 +363,77 @@ void winLogMain2(WindowWork* work) {
             break;
 #endif
         }
-        e->curX += (e->targetX - e->curX) * float_0p125_8041d890;
-        e->curY += (e->targetY - e->curY) * float_0p125_8041d890;
+        {
+            f32 dx, dy;
+            dx = e->targetX - e->curX;
+            e->curX += dx * float_0p125_8041d890;
+            dy = e->targetY - e->curY;
+            e->curY += dy * float_0p125_8041d890;
+        }
     }
 
-    WW_F32(work, 0xE2C) += (WW_F32(work, 0xE28) - WW_F32(work, 0xE2C)) * double_0p125_802f63c0;
-    WW_F32(work, 0xE34) += (WW_F32(work, 0xE30) - WW_F32(work, 0xE34)) * double_0p125_802f63c0;
-    WW_F32(work, 0xE68) += (WW_F32(work, 0xE64) - WW_F32(work, 0xE68)) * double_0p125_802f63c0;
-    WW_F32(work, 0xE70) += (WW_F32(work, 0xE6C) - WW_F32(work, 0xE70)) * double_0p125_802f63c0;
-    WW_F32(work, 0xE78) += (WW_F32(work, 0xE74) - WW_F32(work, 0xE78)) * double_0p125_802f63c0;
-    WW_F32(work, 0xE80) += (WW_F32(work, 0xE7C) - WW_F32(work, 0xE80)) * float_0p25_8041d8c8;
+#ifdef MUST_MATCH
+    {
+        f32 d1 = WW_F32(new_var, 0xE28) - WW_F32(new_var, 0xE2C);
+        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
+    }
+    {
+        f32 d2 = WW_F32(new_var, 0xE30) - WW_F32(work, 0xE34);
+        WW_F32(new_var, 0xE34) += d2 * double_0p125_802f63c0;
+    }
+    {
+        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
+        WW_F32(new_var, 0xE68) += d3 * double_0p125_802f63c0;
+    }
+    {
+        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
+        WW_F32(new_var, 0xE70) += d4 * double_0p125_802f63c0;
+    }
+    {
+        f32 d5 = WW_F32(new_var, 0xE74) - WW_F32(work, 0xE78);
+        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
+    }
+    {
+        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(new_var, 0xE80);
+        WW_F32(new_var, 0xE80) += d6 * float_0p25_8041d8c8;
+    }
+    WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
+    WW_F32(work, 0xEA0) += (WW_F32(new_var, 0xEA4) - WW_F32(new_var, 0xEA0)) / float_6_8041d81c;
+    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(new_var, 0xE84)) / float_6_8041d81c;
+    WW_F32(new_var, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(new_var, 0xE8C)) / float_6_8041d81c;
+    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(new_var, 0xEA8)) / float_6_8041d81c;
+    WW_F32(new_var, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / float_6_8041d81c;
+    WW_F32(work, 0xFA0) = (f32)(WW_S32(new_var, 0xF98) * 0xE8);
+    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(new_var, 0xF9C)) / float_6_8041d81c;
+    WW_F32(new_var, 0xF80) += (WW_F32(new_var, 0xF84) - WW_F32(new_var, 0xF80)) / float_6_8041d81c;
+    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(new_var, 0xF88)) / float_6_8041d81c;
+    WW_F32(new_var, 0xFA4) += (WW_F32(new_var, 0xFA8) - WW_F32(new_var, 0xFA4)) / float_6_8041d81c;
+    WW_F32(work, 0xFAC) += (WW_F32(new_var, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
+#else
+    {
+        f32 d1 = WW_F32(work, 0xE28) - WW_F32(work, 0xE2C);
+        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
+    }
+    {
+        f32 d2 = WW_F32(work, 0xE30) - WW_F32(work, 0xE34);
+        WW_F32(work, 0xE34) += d2 * double_0p125_802f63c0;
+    }
+    {
+        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
+        WW_F32(work, 0xE68) += d3 * double_0p125_802f63c0;
+    }
+    {
+        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
+        WW_F32(work, 0xE70) += d4 * double_0p125_802f63c0;
+    }
+    {
+        f32 d5 = WW_F32(work, 0xE74) - WW_F32(work, 0xE78);
+        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
+    }
+    {
+        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(work, 0xE80);
+        WW_F32(work, 0xE80) += d6 * float_0p25_8041d8c8;
+    }
     WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
     WW_F32(work, 0xEA0) += (WW_F32(work, 0xEA4) - WW_F32(work, 0xEA0)) / float_6_8041d81c;
     WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(work, 0xE84)) / float_6_8041d81c;
@@ -351,6 +446,7 @@ void winLogMain2(WindowWork* work) {
     WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(work, 0xF88)) / float_6_8041d81c;
     WW_F32(work, 0xFA4) += (WW_F32(work, 0xFA8) - WW_F32(work, 0xFA4)) / float_6_8041d81c;
     WW_F32(work, 0xFAC) += (WW_F32(work, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
+#endif
 }
 
 void winLogExit(WindowWork* work) {

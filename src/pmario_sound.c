@@ -4577,36 +4577,49 @@ extern s32 silent_tbl[10];
 extern const f64 double_to_int_mask_802e56c0;
 extern const f32 float_16p667_8041b69c;
 
-// NONMATCHING (94.39%): register allocation: target keeps index/env/active in r31/r30/r29 and
-// reuses namePtr r27 for the tail's slot*2; ours puts slot*2 in r31 and rotates the three down.
-// The `switch (env->unk6[2])` also makes a pivot-1 tree, not the target's check-2-then-0 chain.
+static inline PaperSoundEnv* psndENVGetFree(void) {
+	s32 i;
+
+	for (i = 0; i < 16; i++) {
+		if (*(u16*)&psenv[i].unk4 == 0) {
+			return &psenv[i];
+		}
+	}
+	return NULL;
+}
+
+static inline s32 psndENVFindName(s32 name) {
+	const char** namePtr;
+	s32 index;
+
+	namePtr = psenvlistname;
+	if (name >= 0) {
+		return name;
+	}
+	for (index = 0; index < 0x76; index++, namePtr++) {
+		if (!strcmp(*namePtr, (char*)name)) {
+			break;
+		}
+	}
+	if (index >= 0x76) {
+		index = 0;
+	}
+	return index;
+}
+
+// NONMATCHING (97.57%): name lookup and free-env scan are inlined static helpers; with them index lands
+// in r31 and env in r30 as the target. Remaining: the target keeps slot*2 in r27 and active in r29, ours
+// swaps them (slot*2 r29, active r27); the empty `case 1`/`case 3` fix the switch's 2-then-0 tree.
 s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 	s32 index;
 	PaperSoundEnv* env;
 	PaperSoundEnvWork* work;
 	u16* active;
-	const char** namePtr;
 	SoundEnvList* list;
 	s32 slot;
-	s32 i;
 
 	list = psenvlist;
-	namePtr = psenvlistname;
-
-	if (name >= 0) {
-		index = name;
-	}
-	else {
-		for (index = 0; index < 0x76; index++) {
-			if (!strcmp(*namePtr, (char*)name)) {
-				break;
-			}
-			namePtr++;
-		}
-		if (index >= 0x76) {
-			index = 0;
-		}
-	}
+	index = psndENVFindName(name);
 
 	slot = id & 0xF;
 	work = (PaperSoundEnvWork*)((u8*)&psnd + slot * 0xC);
@@ -4653,13 +4666,7 @@ s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 			break;
 		}
 		if (list->field_0x0 == index) {
-			env = NULL;
-			for (i = 0; i < 16; i++) {
-				if (*(u16*)&psenv[i].unk4 == 0) {
-					env = &psenv[i];
-					break;
-				}
-			}
+			env = psndENVGetFree();
 			if (env != NULL) {
 				env->unk4 = (s16)list->field_0x0;
 				*(u32*)env->unk0 = list->field_0x2;
@@ -4682,9 +4689,13 @@ s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
+				case 1:
+					break;
 				case 2:
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
+					break;
+				case 3:
 					break;
 				default:
 					break;
@@ -4894,21 +4905,24 @@ void psndBGM_rate(s32 id, u16 rate) {
 	SoundSSSetPlayFreqCh(bgm->streamId, rate);
 }
 
-// NONMATCHING (98.86%): sub is computed into r3 (extra register), so the sfx pointer lands in r4.
+#pragma opt_propagation off // without it the high-part extract reuses r3, so the sfx pointer lands in r4
 s32 psndSFXChk(u32 id) {
 	PaperSoundEffectU16* sfx;
+	u32 high;
 	s32 val;
 
 	if (id == -1) {
 		return -1;
 	}
 	sfx = (PaperSoundEffectU16*)&pssfx[id & 0xFF];
-	if (((id >> 8) & 0xFFFF) != sfx->unk4) {
+	high = (id >> 8) & 0xFFFF;
+	if (high != sfx->unk4) {
 		return -1;
 	}
 	val = sfx->unk0;
 	return (s32)(~((val + 1) | (-1 - val))) >> 31;
 }
+#pragma opt_propagation reset
 
 u8 psndSFX_get_vol(s32 id) {
 	PaperSoundEffect* sfx;
@@ -5244,10 +5258,21 @@ void psndStopAllFadeOut(void) {
 	*(s16*)(p + 0x28) = 0x2D;
 }
 
-// NONMATCHING (98.86%): the loop pointer is set up as `addi r3,...; mr r7,r3` instead of `addi r7,...`.
+// The loop lives in its own inline so MWCC folds the pssfx base address straight
+// into the walking pointer (`addi r7, r3, pssfx@l`) instead of copying it.
+static inline void psndMapChangeMarkAll(void) {
+	PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[0];
+	int i;
+
+	for (i = 0; i < 40; sfx++, i++) {
+		if ((u32)sfx->unk0 != -1 && !(sfx->unk6 & 0xA0)) {
+			sfx->unk6 |= 0x40;
+		}
+	}
+}
+
 void psndMapChange(void) {
 	u8* p;
-	int i;
 
 	if (strcmp(psnd.unk40, gp->currentMapName) != 0) {
 		*(u16*)((u8*)&psnd + 0x52) = 0;
@@ -5255,14 +5280,7 @@ void psndMapChange(void) {
 	strcpy(psnd.unk40, gp->currentMapName);
 	p = (u8*)&psnd;
 	psnd.unk56 &= ~0x100;
-	{
-		PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[0];
-		for (i = 0; i < 40; sfx++, i++) {
-			if ((u32)sfx->unk0 != -1 && !(sfx->unk6 & 0xA0)) {
-				sfx->unk6 |= 0x40;
-			}
-		}
-	}
+	psndMapChangeMarkAll();
 	if (p[0x24] != 2) {
 		p[0x24] = 2;
 		*(s16*)(p + 0x26) = 0x2D;

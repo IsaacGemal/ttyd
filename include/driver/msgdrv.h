@@ -76,6 +76,7 @@ typedef struct MessageWork {
 	s32 poseId; //0x20
 } MessageWork;
 
+extern const f32 float_400_8041a530;
 void msgInit(void);
 void msgLoad(const char* filename, s32 index);
 

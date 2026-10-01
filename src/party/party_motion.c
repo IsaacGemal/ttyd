@@ -506,9 +506,9 @@ void unk_8014bbc8(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (96.44%): the `hitGetAttr` boolean materialisation lands in r30
-// in mine; the original keeps it in r0 with a dead `li r0,0` after the
-// short-circuit branch. Logic and remaining instructions match.
+// The original re-tests `hit` inside the `hit != NULL` guard (the compiler kept the
+// dead inner test and a dead `li r0,0`); the MUST_MATCH body reproduces that
+// materialisation, and the natural short-circuit form is under #else.
 void party_motion_damage(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 x, y, z;
@@ -576,16 +576,30 @@ void party_motion_damage(PartyEntry* party) {
             party->flags = (party->flags & ~0x70);
         }
         {
-            s32 hitFlag = 0;
-            if (*(HitEntry**)((u8*)party + 0x138) != NULL) {
-                if ((hitGetAttr(*(HitEntry**)((u8*)party + 0x138)) & 0x200) == 0) {
+            HitEntry* hit = *(HitEntry**)((u8*)party + 0x138);
+#ifdef MUST_MATCH
+            // MUST_MATCH: retail re-tests the same pointer inside the guard, so the
+            // boolean is materialised into r0 with a dead `li r0,0`.
+            if (hit != NULL) {
+                s32 hitFlag;
+                if (hit == NULL) {
+                    hitFlag = 0;
+                } else if (hitGetAttr(hit) & 0x200) {
                     hitFlag = 1;
+                } else {
+                    hitFlag = 0;
+                }
+                if (hitFlag == 0) {
+                    *(u8*)((u8*)party + 0x38) = 0xC;
+                    *(s32*)((u8*)party + 0x24) = 0x1E;
                 }
             }
-            if (hitFlag != 0) {
+#else
+            if (hit != NULL && !(hitGetAttr(hit) & 0x200)) {
                 *(u8*)((u8*)party + 0x38) = 0xC;
                 *(s32*)((u8*)party + 0x24) = 0x1E;
             }
+#endif
         }
         break;
     case 12:
@@ -1000,7 +1014,9 @@ void party_force_reset_outofscreen(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (97.21%): the `party->speed == 0.0f` test loads the constant/speed in opposite temporaries; the paper-selection branch is laid out differently (equivalent logic).
+// Match shapes below are marked MUST_MATCH: the natural forms compile to the
+// same logic but differ in mwcc register allocation / block layout.
+extern const f64 double_180_802f3fa0;
 BOOL party_slit(PartyEntry* party) {
     extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
@@ -1057,18 +1073,37 @@ BOOL party_slit(PartyEntry* party) {
         }
         break;
     case 0xA:
+#ifdef MUST_MATCH
+        // `!field` makes mwcc load the field into f1 and 0.0f into f0, as the original does.
+        if (!party->speed) {
+#else
         if (party->speed == 0.0f) {
+#endif
             partyChgPaper(party, (char*)(vec + 0x158));
             party->field_10C = 270.0f;
         } else {
             angle = revise360(party->dir - mario->targetYaw);
-            if (angle >= 180.0f) {
+#ifdef MUST_MATCH
+            // retail reads the 180.0 double (double_180_802f3fa0) as vec+0x160
+            if (angle >= *(f64*)(vec + 0x160)) {
+#else
+            if (angle >= double_180_802f3fa0) {
+#endif
                 party->flags2 = (party->flags2 | 0x200);
             } else {
                 party->flags2 = (party->flags2 & ~0x200);
             }
             party->field_10C = (party->flags2 & 0x200) ? 280.0f : 260.0f;
             angle = revise360(party->dir - mario->targetYaw);
+#ifdef MUST_MATCH
+            // One compound test: mwcc shares a single 0x168 body at the end;
+            // the natural if / else-if form duplicates that body.
+            if (angle >= 315.0f || angle <= 45.0f || (angle >= 135.0f && angle <= 225.0f)) {
+                partyChgPaper(party, (char*)(vec + 0x168));
+            } else {
+                partyChgPaper(party, (char*)(vec + 0x170));
+            }
+#else
             if (angle >= 315.0f || angle <= 45.0f) {
                 partyChgPaper(party, (char*)(vec + 0x168));
             } else if (angle < 135.0f || angle > 225.0f) {
@@ -1076,6 +1111,7 @@ BOOL party_slit(PartyEntry* party) {
             } else {
                 partyChgPaper(party, (char*)(vec + 0x168));
             }
+#endif
         }
         if (!(mario->flags & 0x100000)) {
             if (!(hitGetAttr(*(HitEntry**)((u8*)party + 0x12C)) & 0x2000)) {
@@ -1100,7 +1136,14 @@ BOOL party_slit(PartyEntry* party) {
     case 0x15:
         angle = revise360(party->dir - *(f32*)((u8*)party + 0xF8));
         party->field_10C = (angle <= 180.0f) ? 260.0f : 280.0f;
+#ifdef MUST_MATCH
+        // Staging -3.0f in a temp makes mwcc put position.y in f1 and the
+        // constant in f0, matching the original's fadds operand order.
+        angle = -3.0f;
+        party->position.y = party->position.y + angle;
+#else
         party->position.y = party->position.y + -3.0f;
+#endif
         if (--*(s32*)((u8*)party + 0x24) <= 0) {
             party->field_3A = 0x16;
         }
@@ -1415,7 +1458,6 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (96.70%): the mario airTimer/baseSpeed skip test is materialised into r0 by the original but inlined here; `field_8 & 0x20000` uses extrwi vs rlwinm; Vec scratch slots differ.
 void party_motion_stay(PartyEntry* party) {
     extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
@@ -1426,9 +1468,12 @@ void party_motion_stay(PartyEntry* party) {
     f32 f31;
     f32 f30;
     f32 f29;
+    f32 px;
+    f32 pz;
     f32 angle;
     f32 speed;
     Vec pos;
+    Vec targetPos;
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
@@ -1450,7 +1495,7 @@ void party_motion_stay(PartyEntry* party) {
         party->flags = (party->flags & ~0x80000);
     }
     f31 = *(f32*)((u8*)party + 0x40);
-    if (mario->controlStickSensitivity == 0.0f) {
+    if (!mario->controlStickSensitivity) {
         if (mario->baseSpeed < 1.0f) {
             f31 = 100.0f;
         }
@@ -1481,7 +1526,7 @@ void party_motion_stay(PartyEntry* party) {
             party->field_8 = (party->field_8 | 0x20000);
         }
     }
-    if (party->field_8 & 0x20000) {
+    if ((party->field_8 >> 17) & 1) {
         if (party->field_32 == 0) {
             f29 = 18.0f;
         } else if ((s8)party->currentMemberId == 5) {
@@ -1509,9 +1554,12 @@ void party_motion_stay(PartyEntry* party) {
     if (party->field_34 != 0) {
         if (party->currentSlotId == 0 || partyGetPtr(marioGetPartyId()) == NULL) {
             s32 flag;
-            if ((party->playerPtr->airTimer != 0 && party->playerPtr->baseSpeed == 0.0f) ||
-                party->playerPtr->currMotionId == 0x1f || party->playerPtr->currMotionId == 0x20 ||
-                party->playerPtr->currMotionId == 0x10 || party->playerPtr->currMotionId == 0x11) {
+            if (party->playerPtr->airTimer != 0 && party->playerPtr->baseSpeed == 0.0f) {
+                flag = 0;
+            } else if (party->playerPtr->currMotionId == 0x1f ||
+                       party->playerPtr->currMotionId == 0x20 ||
+                       party->playerPtr->currMotionId == 0x10 ||
+                       party->playerPtr->currMotionId == 0x11) {
                 flag = 0;
             } else {
                 flag = 1;
@@ -1520,12 +1568,12 @@ void party_motion_stay(PartyEntry* party) {
                 goto skip_target;
             }
             if (party->field_32 == 0) {
-                pos = party->position;
-                f29 = partyGetTargetDist3D(id, &pos);
+                targetPos = party->position;
+                f29 = partyGetTargetDist3D(id, &targetPos);
                 partyGetTargetDist(id, party->position.x, party->position.z);
             } else {
-                f32 px = party->position.x;
-                f32 pz = party->position.z;
+                px = party->position.x;
+                pz = party->position.z;
                 movePos(&px, &pz, 0.5f * *(f32*)((u8*)party + 0xF4), angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z));
                 f29 = distABf(px, pz, mario->position.x, mario->position.z);
             }
@@ -1537,12 +1585,12 @@ void party_motion_stay(PartyEntry* party) {
         } else {
             other = anotherPartyGetPtr(party->currentSlotId);
             if (other != NULL) {
-                if (nokonokoGetStatus(other) == 3 || PSVECDistance(&party->playerPtr->position, &other->position) >= 150.0f) {
+                if (nokonokoGetStatus(other) == 3 || PSVECDistance(&mario->position, &other->position) >= 150.0f) {
                     if (partyGetTargetDist(id, party->position.x, party->position.z) >= f31) {
                         partyChgMot(party, 1);
                         partyClearFootmark2();
                     }
-                } else if ((s8)other->currentMemberId == 3 && other->field_34 == 3) {
+                } else if (other->currentMemberId == 3 && other->field_34 == 3) {
                     if (mario->currMotionId != 0x1f && mario->currMotionId != 0x10 && mario->currMotionId != 0x11) {
                         if (distABf(party->position.x, party->position.z, mario->position.x, mario->position.z) >= f31) {
                             partyChgMot(party, 1);
@@ -1565,7 +1613,7 @@ skip_target:
     hit = partySearchFrontWall(party, &pos, speed, angle);
     if (hit != NULL) {
         party->field_12C = hit;
-        if (party->speed != 0.0f) {
+        if (party->speed) {
             party->field_134 = hit;
         }
     }
@@ -1584,19 +1632,22 @@ skip_target:
     if ((s8)party->currentMemberId == 7 && !(party->flags2 & 0x8000) && !marioKeyOffChk() && marioChkDeepSleep() != 1 && chuchu_searchObject()) {
         switch (party->useMotionId) {
         case 1:
-            *(s32*)((u8*)party + 0x24) = *(s32*)((u8*)party + 0x24) - 1;
-            if (*(s32*)((u8*)party + 0x24) <= 0) {
+            if (--*(s32*)((u8*)party + 0x24) <= 0) {
                 partyChgPoseId(party, 1);
                 *(s32*)((u8*)party + 0x24) = 0x1e;
                 party->useMotionId = 2;
             }
             break;
         case 2:
-            *(s32*)((u8*)party + 0x24) = *(s32*)((u8*)party + 0x24) - 1;
-            if (*(s32*)((u8*)party + 0x24) <= 0) {
+            if (--*(s32*)((u8*)party + 0x24) <= 0) {
                 party->useMotionId = 0;
             }
             break;
+#ifdef MUST_MATCH
+        // `case 0` is redundant with `default` but is what makes mwcc
+        // build the 3-entry {0,1,2} search tree the original has.
+        case 0:
+#endif
         default:
             partyChgPose(party, (char*)(vec + 0xcc));
             party->useMotionId = 1;
@@ -1606,14 +1657,18 @@ skip_target:
     }
 }
 
-// NONMATCHING (95.42%): register allocation and the duplicated second hitCheckFilter scratch slots; `fadds` operand order.
+// NONMATCHING (97.30%): the third wall-probe result lands in f29 instead of f28, and each hitCheckFilter
+// scratch block schedules its 1000.0f / -1.0f constant loads one slot earlier (into f3/f5) than the original
+// (f0/f5). The remaining `lfs float_*` diffs are unresolved pool symbols and don't affect the score.
 void party_motion_behind_mario(PartyEntry* party) {
     MarioWork* mario;
+    MarioWork* mario2;
     HitEntry* hit;
     PartyEntry* other;
     f32 angle;
     f32 x, z;
     f32 f31, f30, f29, f28;
+    f32 fWall;
     Vec appear;
     f32 hnz, hny, hnx, hd, hz, hy, hx;
 
@@ -1623,17 +1678,23 @@ void party_motion_behind_mario(PartyEntry* party) {
         party->field_8 = (party->field_8 | 0x40000);
         if (!(party->field_8 & 0x100000)) {
             if (!(party->field_8 & 0x10000)) {
+                mario2 = party->playerPtr;
                 if (!(party->flags & 0x8)) {
-                    angle = toMovedir(mario->unk1A8);
+                    angle = toMovedir(mario2->unk1A8);
                 } else {
                     other = partyGetPtr(marioGetPartyId());
                     if (other != NULL) {
                         angle = partyToMovedir(party, other->field_10C);
                     } else {
-                        angle = toMovedir(mario->unk1A8);
+                        angle = toMovedir(mario2->unk1A8);
                     }
                 }
+#ifdef MUST_MATCH
+                angle += 180.0f;
+                angle = revise360(angle);
+#else
                 angle = revise360(angle + 180.0f);
+#endif
             } else {
                 party->field_8 = (party->field_8 & ~0x10000);
                 angle = revise360(180.0f + angleABf(mario->position.x, mario->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C)));
@@ -1648,18 +1709,23 @@ void party_motion_behind_mario(PartyEntry* party) {
     }
     if (!(party->field_8 & 0x100000)) {
         if (marioKeyOffChk()) {
-            mario = party->playerPtr;
+            mario2 = party->playerPtr;
             if (!(party->flags & 0x8)) {
-                angle = toMovedir(mario->unk1A8);
+                angle = toMovedir(mario2->unk1A8);
             } else {
                 other = partyGetPtr(marioGetPartyId());
                 if (other != NULL) {
                     angle = partyToMovedir(party, other->field_10C);
                 } else {
-                    angle = toMovedir(mario->unk1A8);
+                    angle = toMovedir(mario2->unk1A8);
                 }
             }
+#ifdef MUST_MATCH
+            angle += 180.0f;
+            *(f32*)((u8*)party + 0x54) = revise360(angle);
+#else
             *(f32*)((u8*)party + 0x54) = revise360(angle + 180.0f);
+#endif
         }
     }
     partyGetAppearPos4(party, &appear);
@@ -1679,10 +1745,9 @@ void party_motion_behind_mario(PartyEntry* party) {
         f29 = 1.5f * mario->wPlayerCollisionBox.x;
         movePos(&x, &z, f29, toMovedir(mario->unk1A8));
     }
+    f28 = 2.0f;
     if (mario->baseSpeed > 1.0f) {
         f28 = 10.0f;
-    } else {
-        f28 = 2.0f;
     }
     f29 = distABf(party->position.x, party->position.z, x, z);
     *(s32*)((u8*)party + 0x24) = *(s32*)((u8*)party + 0x24) - 1;
@@ -1701,14 +1766,14 @@ void party_motion_behind_mario(PartyEntry* party) {
             bhd = 1000.0f;
             hit = hitCheckFilter(NULL, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
             if (hit == NULL) {
-                f28 = -2000.0f;
+                fWall = -2000.0f;
             } else {
-                f28 = (f32)(s32)(100.0f * bhy + 0.5f) / 100.0f;
+                fWall = (f32)(s32)(100.0f * bhy + 0.5f) / 100.0f;
                 hitGetAttr(hit);
             }
-            if (fabsf(party->position.y - f28) > 1.0f) {
+            if (fabsf(party->position.y - fWall) > 1.0f) {
                 *(f32*)((u8*)party + 0x94) = x;
-                *(f32*)((u8*)party + 0x98) = f28;
+                *(f32*)((u8*)party + 0x98) = fWall;
                 *(f32*)((u8*)party + 0x9C) = z;
                 partyChgMot(party, 2);
                 return;

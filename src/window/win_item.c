@@ -429,9 +429,9 @@ void winItemInit2(WindowWork* work) {
     WW_S32(work, 0x2D4) = 0;
 }
 
-// NONMATCHING (98.90%): instruction sequence matches. Only callee-saved
-// register allocation differs: the key-list loop's counter and table pointer land
-// in r5/r3 instead of the original's r3/r5 (the mail-loop pointer/index are right).
+// The key-list scan walks the skip table with both an index and a pointer; the
+// original increments the pointer before the index, which is what settles MWCC's
+// register choice (pointer r5, index r3).
 void winItemInit(WindowWork* work) {
     u8* p;
     s32 i;
@@ -484,9 +484,16 @@ void winItemInit(WindowWork* work) {
         if (item == 0) {
             continue;
         }
-        for (j = 0; j < 0x12; j++) {
-            if (item == menu_skip_list[j]) {
-                break;
+        {
+            u16* list;
+            j = 0;
+            list = menu_skip_list;
+            while (j < 0x12) {
+                if (item == *list) {
+                    break;
+                }
+                list++;
+                j++;
             }
         }
         if ((u32)j >= 0x12) {

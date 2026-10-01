@@ -514,9 +514,6 @@ void BattleStage_DestroyA1(void) {
 #undef base
 #endif
 
-// NONMATCHING (93.59%): the two-local `color`/`c` idiom now produces the temp-then-copy; only instruction
-// scheduling differs: mwcc hoists the `dat_8041ccfc` load above the `userdata[2] -= 5` store while the target
-// keeps it after, and the userdata value sits in r4 here vs r5 there.
 USER_FUNC(_fall_frame_delete) {
 	u8* w = (u8*)_battleWorkPointer + 0x20000;
 

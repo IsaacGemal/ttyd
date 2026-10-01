@@ -11,6 +11,12 @@
 #include <stdlib.h>
 
 extern GXColor unk_80423064;
+const Vec vec3_802f8c10 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f8c1c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f8c28 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f8c34 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f8c40 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
 extern const f64 double_to_int_mask_802f8c58;
 const f64 double_to_int_802f8c70 = 4503601774854144.0;
 extern const f32 float_0p0078125_8041e0ec;
@@ -59,13 +65,7 @@ extern const f32 float_5_8041e11c;
 extern const f32 float_0p6_8041e120;
 extern const f32 float_13p333_8041e124;
 extern const f32 float_0p33333_8041e128;
-extern const Vec vec3_802f8c1c;
-extern const Vec vec3_802f8c28;
-extern const Vec vec3_802f8c34;
-extern const Vec vec3_802f8c40;
 extern const u8 dat_8041e0b8[];
-extern const Vec vec3_802f8c10;
-extern const Vec vec3_802f8c4c;
 const char str_8041E168[] = "Fire";
 const char str_802F8C60[] = "FireSmoke";
 
@@ -92,7 +92,6 @@ static u32 col_tbl[24] = {
 	0xDEF618FF, 0xA0F606FF, 0xA0F606FF, 0x92E400FF,
 };
 
-// NONMATCHING (95.32%): the alpha store at 0x10 is scheduled after the vec3_802f8c10 loads instead of before.
 EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effFireData* data;
@@ -110,7 +109,13 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	}
 	data->type = type;
 	data->alpha = 0xFF;
+#ifdef MUST_MATCH
+	// Match-only: an anonymous zero literal instead of the named vec3_802f8c10 makes MWCC schedule the
+	// alpha store before the position copy, as the target does (same shape as effFireworksMakeVec).
+	position = (Vec){ 0.0f, 0.0f, 0.0f };
+#else
 	position = vec3_802f8c10;
+#endif
 	position.x = x;
 	position.y = y;
 	position.z = z;
@@ -816,8 +821,23 @@ void effFireSmokeMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&data->position), 2, effFireSmokeDisp, effect);
 }
 
-// NONMATCHING (94.77%): the GXColor argument is built at r1+0xc and passed at r1+0x8; the target builds at
-// r1+0x8 and passes r1+0xc. The FIFO float constants also pool as @nnn instead of the named symbols.
+#ifdef MUST_MATCH
+static inline GXColor effFireSmokeColor(effFireSmokeData* data) {
+	GXColor c = unk_80423064;
+	c.r = data->color.r;
+	c.g = data->color.g;
+	c.b = data->color.b;
+	c.a = data->color.a;
+	return c;
+}
+#endif
+
+// The only remaining difference is the FPR colouring of the two int->float scale conversions: the target
+// keeps the conversion mask in f3, the first result in f2 and the constant in f1; this build puts the
+// mask in f2, the result in f1 and the constant in f3. The sequence, stack slots and every other register
+// are identical. opt_lifetimes/opt_propagation/opt_common_subs, declaration-order and inline-helper
+// variations all leave the colouring unchanged.
+// NONMATCHING (99.81%): FPR colouring of the scale conversion
 void effFireSmokeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireSmokeData* data = effect->userdata;
@@ -831,6 +851,7 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	f32 scaleX;
 	f32 scaleY;
 	f32 scale;
+	f32 negHalf;
 
 	camera = camGetPtr(camId);
 	if ((u32)data->counter * 2 < 0x3C) {
@@ -845,11 +866,15 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&tex, GX_TEXMAP0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+#ifdef MUST_MATCH
+	color = effFireSmokeColor(data);
+#else
 	color = unk_80423064;
 	color.r = data->color.r;
 	color.g = data->color.g;
 	color.b = data->color.b;
 	color.a = data->color.a;
+#endif
 	GXSetChanMatColor(GX_COLOR0A0, color);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, 0x7D);
@@ -874,12 +899,13 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(-0.5f, 0.5f, 0.0f);
+	negHalf = -float_1_8041e100 * float_0p5_8041e104;
+	GXPosition3f32(negHalf, float_0p5_8041e104, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
-	GXPosition3f32(0.5f, 0.5f, 0.0f);
+	GXPosition3f32(float_0p5_8041e104, float_0p5_8041e104, 0.0f);
 	GXTexCoord2f32(1.0f, 0.0f);
-	GXPosition3f32(0.5f, -0.5f, 0.0f);
+	GXPosition3f32(float_0p5_8041e104, negHalf, 0.0f);
 	GXTexCoord2f32(1.0f, 1.0f);
-	GXPosition3f32(-0.5f, -0.5f, 0.0f);
+	GXPosition3f32(negHalf, negHalf, 0.0f);
 	GXTexCoord2f32(0.0f, 1.0f);
 }
