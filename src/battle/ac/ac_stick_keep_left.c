@@ -505,3 +505,19 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
     }
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_neg200_8041c3e8 = -200.0f;
+const f32 float_70_8041c3ec = 70.0f;
+const f32 float_1_8041c3f0 = 1.0f;
+const f32 float_16_8041c3f4 = 16.0f;
+const f32 float_12_8041c3f8 = 12.0f;
+const f32 float_neg288_8041c3fc = -288.0f;
+const f32 float_25_8041c400 = 25.0f;
+const f32 float_33_8041c404 = 33.0f;
+const f32 float_24p75_8041c408 = 24.75f;
+const f32 float_neg258_8041c40c = -258.0f;
+const f32 float_0p5_8041c410 = 0.5f;
+const f32 float_neg250_8041c414 = -250.0f;
+const f32 float_neg300_8041c418 = -300.0f;
+const f32 float_30_8041c41c = 30.0f;
+const f32 float_0_8041c420 = 0.0f;
