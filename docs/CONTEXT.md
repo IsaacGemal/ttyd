@@ -3451,3 +3451,8 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - `~/ttyd-refs/<project>` on the Mac, rsynced to `~/ttyd-refs` on the tower (pop-os): ac-decomp, spm-decomp, tp, tww (all CC0-1.0) and musyx (MIT), shallow clones; `~/ttyd-refs/README.md` lists each repo's URL, commit and license (checked against its LICENSE file and the GitHub API). Anything else is deleted, never added. Wave agents have no network: prompts point at the local copy. `docs/AGENT_BRIEF.md` rule 16 says so.
 - Every port PR names the project and file it took code from.
 
+
+## Grind 64: library ports begin: MSL k_tan, s_tan, e_sqrt from tp (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- Ports use the read-only copies in `~/ttyd-refs` (Grind 63). `__kernel_tan`, `tan` and `__ieee754_sqrt` are zeldaret/tp's `libs/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common_Embedded/Math/Double_precision/{k_tan,s_tan,e_sqrt}.c` (CC0) with the include changed to this repo's `MSL_C/MSL_Common_Embedded/Math/fdlibm.h`; all three are 100% and linked on the first build, no other change.
+- The library units sit in `libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/`; `ci.py` needs `--allow-protected --allow-configure`.
