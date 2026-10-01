@@ -1693,7 +1693,7 @@ config.libs = [
             Object(Matching, "jin_10.c"),
             Object(Matching, "unit/unit_boss_rampell.c"),
             Object(Matching, "jin.c"),
-            Object(NonMatching, "jin_00.c"),
+            Object(Matching, "jin_00.c"),
             Object(NonMatching, "jin_07.c"),
             Object(Matching, "unit/unit_faker_mario.c"),
             Object(Matching, "unit/unit_atmic_teresa.c"),
