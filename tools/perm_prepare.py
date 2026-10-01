@@ -40,6 +40,23 @@ if pre.returncode:
 text = re.sub(r"__declspec\s*\((?:[^()]|\([^()]*\))*\)", "", pre.stdout)  # the parser cannot read it; it only places data
 text = text.replace("__typeof__(sizeof(0))", "unsigned long")  # the permuter prints it back as `typeof`, which MWCC rejects
 text = re.sub(r"\bsizeof\s*\((\w+)\)", r"(sizeof(\1))", text)  # `sizeof(T) + x` parses as sizeof((T)(+x)) when T is a typedef
+
+
+def drop_extern_c(s):
+    """math.h wraps some declarations in `#pragma cplusplus on` / `extern "C" { ... }`; the permuter's C parser rejects it."""
+    while True:
+        m = re.search(r'extern "C"\s*\{', s)
+        if not m:
+            break
+        depth, i = 1, m.end()
+        while depth:
+            depth += {"{": 1, "}": -1}.get(s[i], 0)
+            i += 1
+        s = s[:m.start()] + s[m.end():i - 1] + s[i:]
+    return re.sub(r"^#pragma cplusplus (?:on|reset)\s*$", "", s, flags=re.M)
+
+
+text = drop_extern_c(text)
 src = text if KEEP_ALL else strip_other_fns(text, func)  # --keep-all: constants pooled by the other functions change how this one compiles
 open(os.path.join(out, "base.c"), "w").write(src)
 target = os.path.join(ROOT, "build/G8MJ01/obj", unit + ".o")
