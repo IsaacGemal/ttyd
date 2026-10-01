@@ -317,21 +317,18 @@ s32 U_marioSlitContinueChk(void) {
     }
 }
 
-// NONMATCHING (98.96%): the currMotionId == 8 early return compiles to `beq`
-// where the original has `bne body; b return` (block layout).
 void mot_slit_post(void) {
     MarioWork* mario = marioGetPtr();
 
+    // The `id == 8` return is the second operand of a `||`, so MWCC keeps a
+    // separate `b return` after the `bne` it emits for the short-circuit.
     if (mario->currMotionId == MARIO_MOTION_SLIT) {
         return;
     }
     if ((u16)(mario->currMotionId - 11) <= 1) {
         return;
     }
-    if (mario->currMotionId <= 7) {
-        return;
-    }
-    if (mario->currMotionId == 8) {
+    if (mario->currMotionId <= 7 || mario->currMotionId == 8) {
         return;
     }
     if (!(mario->flags & MARIO_FLAG_PAPER_MODE)) {

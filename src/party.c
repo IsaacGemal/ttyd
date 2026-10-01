@@ -1829,13 +1829,17 @@ s32 partyKill2(s32 index) {
     return 0;
 }
 
-// The three `else if` clamp branches still swap f0/f1: the original reloads field_10C into f1 and
-// the bound into f0; we get the reverse. Field_110 is kept in f3 and the 0.0 compare is ordered
-// first by caching it in `want` inside the comparison (MUST_MATCH; the plain read form scores 99.38%).
-// NONMATCHING (99.64%): see above.
+// A named `want` cache orders the 0.0 compare first (MUST_MATCH; the plain read form scores 99.38%).
+// Caching field_10C in `old` before the outer compare (nothing writes it in between) plus these two
+// optimizer pragmas gives the original arithmetic and clamp FPR allocation (field_10C in f2, field_110
+// in f3, and the clamp reloads in f1): with defaults the three `else if` clamps load the field and
+// bound into f0/f1, and without `old` the common-subexpression pass raises the arithmetic to f3.
+#pragma opt_common_subs off // the clamp/comparison FPRs land in f0/f1 instead of f1/f0 with CSE on
+#pragma opt_lifetimes off // keep the arithmetic's field_10C in f2 and field_110 in f3
 void partyMakeDispDir(PartyEntry* party) {
     f32 angle;
     f32 target;
+    f32 old;
 #ifdef MUST_MATCH
     f32 want;
 #endif
@@ -1869,7 +1873,8 @@ void partyMakeDispDir(PartyEntry* party) {
             return;
         }
     }
-    if (party->field_10C <= float_180_8041b0fc) {
+    old = party->field_10C;
+    if (old <= float_180_8041b0fc) {
 #ifdef MUST_MATCH
         if (float_0_8041b100 == (want = party->field_110)) {
 #else
@@ -1878,8 +1883,8 @@ void partyMakeDispDir(PartyEntry* party) {
             f32 t = (party->field_8 & 0x1000) ? float_20_8041b140 : float_neg40_8041b144;
             f32 s;
 
-            s = float_0p125_8041b13c * (t - party->field_10C);
-            party->field_10C = party->field_10C + s;
+            s = float_0p125_8041b13c * (t - old);
+            party->field_10C = old + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C < float_neg30_8041b148) {
                     party->field_8 |= 0x1000;
@@ -1896,8 +1901,8 @@ void partyMakeDispDir(PartyEntry* party) {
             f32 t = (party->field_8 & 0x1000) ? float_170_8041b138 : float_220_8041b14c;
             f32 s;
 
-            s = float_0p125_8041b13c * (t - party->field_10C);
-            party->field_10C = party->field_10C + s;
+            s = float_0p125_8041b13c * (t - old);
+            party->field_10C = old + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C > float_210_8041b150) {
                     party->field_8 |= 0x1000;
@@ -1907,7 +1912,7 @@ void partyMakeDispDir(PartyEntry* party) {
                 party->field_8 &= ~0x1000;
             }
         }
-    } else if (party->field_10C > float_180_8041b0fc) {
+    } else if (old > float_180_8041b0fc) {
 #ifdef MUST_MATCH
         if (float_0_8041b100 == (want = party->field_110)) {
 #else
@@ -1916,8 +1921,8 @@ void partyMakeDispDir(PartyEntry* party) {
             f32 t = (party->field_8 & 0x1000) ? float_20_8041b140 : float_neg40_8041b144;
             f32 s;
 
-            s = float_0p125_8041b13c * (t - party->field_10C);
-            party->field_10C = party->field_10C + s;
+            s = float_0p125_8041b13c * (t - old);
+            party->field_10C = old + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C < float_neg30_8041b148) {
                     party->field_8 |= 0x1000;
@@ -1934,8 +1939,8 @@ void partyMakeDispDir(PartyEntry* party) {
             f32 t = (party->field_8 & 0x1000) ? float_170_8041b138 : float_220_8041b14c;
             f32 s;
 
-            s = float_0p125_8041b13c * (t - party->field_10C);
-            party->field_10C = party->field_10C + s;
+            s = float_0p125_8041b13c * (t - old);
+            party->field_10C = old + s;
             if (!(party->field_8 & 0x1000)) {
                 if (party->field_10C > float_210_8041b150) {
                     party->field_8 |= 0x1000;
@@ -1947,6 +1952,8 @@ void partyMakeDispDir(PartyEntry* party) {
         }
     }
 }
+#pragma opt_common_subs reset
+#pragma opt_lifetimes reset
 
 // NONMATCHING (92.21%): the compiler's magic unsigned->double constant is `@911` instead of
 // `double_to_int_mask_802ccef8`; float register allocation in the order calculation and the

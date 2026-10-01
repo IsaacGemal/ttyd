@@ -512,14 +512,14 @@ s32 adj;
     return -1;
 }
 
-// NONMATCHING (99.00%): the `invert ? 0 : -stickY` result is written straight to r28 in ours,
-// while the original computes it in r0 and does `mr r28,r0` at the join (li r0,0 / neg r0,r0 / mr).
-// Tried if/else, ternary, !invert, temp local, and all declaration orders.
 void marioGetStick(f32* outAngle, f32* outMag) {
     MarioWork* p = marioGetPtr();
     s32 x;
     s32 invert;
     s32 y2;
+#ifdef MUST_MATCH
+    s32 t;
+#endif
     f32 mag;
     f32 angle;
 
@@ -533,11 +533,27 @@ void marioGetStick(f32* outAngle, f32* outMag) {
     if ((p->flags & 0x02000000) || kpaGetStageViewType() == 0) {
         invert = 1;
     }
+#ifdef MUST_MATCH
+    // The original picks the y value with a separate temp and copies it into r28 at the join
+    // (`li r0,0` / `neg r0,r0` / `mr r28,r0`). The plain if/else below coalesces the temp into
+    // r28; putting the two arms in a switch keeps them separate basic blocks, which reproduces
+    // the temp. `default` must precede `case 0` for mwcc to emit the target's `cmpwi/beq/b` order.
+    switch (invert) {
+    default:
+        t = 0;
+        break;
+    case 0:
+        t = -((s8)p->wStickDir2);
+        break;
+    }
+    y2 = t;
+#else
     if (invert) {
         y2 = 0;
     } else {
         y2 = -((s8)p->wStickDir2);
     }
+#endif
     if (yoshiGetStatus() == 2) {
         y2 = 0;
     }

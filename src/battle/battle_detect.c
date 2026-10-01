@@ -375,10 +375,11 @@ void BattleSamplingEnemyUpdate(u8* sampling) {
     _btlSamplingEnemy(sampling);
 }
 
-// Remaining diff: the default itemDataTable FP block colours its three float temps f3/f4/f2
-// (magic/float_0p1/diff) where the original uses f4/f2/f3; the instruction sequence, stack slots and
-// every other block match. The `e = order[n]` load is fixed (order is s8).
-// NONMATCHING (99.93%): only the default block's f2/f3/f4 colouring differs.
+// Remaining diff (5 insns, all in the default itemDataTable FP block): the int->float magic is
+// loaded into f3 where the original uses f4, and the conversion temp lands in f4 where the original
+// uses f3 (so fsubs/fmadds operands are swapped); the trailing fmuls operand order is commutative
+// (f1,f0 vs f0,f1). Instruction sequence, stack slots, int registers and every other block match.
+// NONMATCHING (99.94%): default block's f3/f4 colouring is swapped vs the original.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
     s32 n;
     s32 e;
@@ -512,8 +513,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                         maxFp = BtlUnit_GetMaxFp(unit);
                         curFp = BtlUnit_GetFp(unit);
                         fpDiff = (f32)(maxFp - curFp);
-                        weights[e] = (s32)((float_1_8041bf1c +
-                                            float_0p1_8041bf0c * fpDiff) * (f32)weights[e]);
+                        fpDiff = float_0p1_8041bf0c * fpDiff + float_1_8041bf1c;
+                        weights[e] = (s32)((f32)weights[e] * fpDiff);
                     } else {
                         if (itemDataTable[s->weapon->item].hp_restored == 0 &&
                             itemDataTable[s->weapon->item].sp_restored == 0) {

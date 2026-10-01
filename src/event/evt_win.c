@@ -152,9 +152,8 @@ USER_FUNC(unitwin_get_work_ptr) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.56%): itemDataTable[].icon_id is s16 in the header but the
-// original uses lhz (u16); a u16* load reproduces it. Address build still differs:
-// original `mulli r0; add r4,r4,r0`, ours `mulli r5; add r4,r0,r5`.
+// itemDataTable[].icon_id is declared s16 in the header, but the original loads it with
+// `lhz` (u16) and its address build only matches through a local u16 view of the field.
 USER_FUNC(set_new_goods_list) {
 	s32* args = event->args;
 	UnitWinWork* wp = (UnitWinWork*)evtGetValue(event, args[0]);
@@ -166,7 +165,8 @@ USER_FUNC(set_new_goods_list) {
 		sprintf(name, str_8041DAC0, wp->index);
 		if (item != 0) {
 #ifdef MUST_MATCH
-			iconChange(name, *(u16*)&itemDataTable[item].icon_id);
+			u16* p = (u16*)&itemDataTable[0].icon_id;
+			iconChange(name, p[item * (sizeof(ItemData) / sizeof(u16))]);
 #else
 			iconChange(name, (u16)itemDataTable[item].icon_id);
 #endif
@@ -194,8 +194,6 @@ USER_FUNC(evt_unitwin_main_func) {
 	return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (99.49%): first !marioChkCtrl() is cntlzw+srwi. via the BOOL; the
-// second !marioChkKey() still merges into srwi + cmpwi instead of srwi. + branch.
 USER_FUNC(unk_80174e98) {
 	UnitWinWork* wp = (UnitWinWork*)event->lwData[0];
 	s32 selected = 0;
@@ -203,7 +201,6 @@ USER_FUNC(unk_80174e98) {
 	PartyEntry* party = partyGetPtr(0);
 	HitEntry* hit = (HitEntry*)mario->hitobjStandOn;
 	s32 buttons;
-	BOOL notCtrl;
 	s32 i;
 
 	if (wp->field_0x54 & 1) {
@@ -212,13 +209,27 @@ USER_FUNC(unk_80174e98) {
 	}
 	wp->flags &= ~1;
 	buttons = keyGetButtonTrg(0);
-	notCtrl = !marioChkCtrl();
-	if (!notCtrl) {
-		notCtrl = !marioChkKey();
+#ifdef MUST_MATCH
+	// The original shares one buttons=0 tail between the two checks; the natural
+	// short-circuit below materialises the second compare instead of branching on it.
+	{
+		BOOL notCtrl = !marioChkCtrl();
+
+		do {
+			if (!notCtrl) {
+				notCtrl = !marioChkKey();
+				if (!notCtrl) {
+					break;
+				}
+			}
+			buttons = 0;
+		} while (0);
 	}
-	if (notCtrl) {
+#else
+	if (!marioChkCtrl() || !marioChkKey()) {
 		buttons = 0;
 	}
+#endif
 
 	if (party != NULL && (party->flags & 0x100)) {
 		if (wp->field_0xE0 != -1) {
@@ -497,9 +508,6 @@ void unk_80175710(WinMgrEntry* entry) {
 	}
 }
 
-// NONMATCHING (99.96%): itemDataTable[].discount_price is s16 in the header but
-// the original uses lhz (u16); the two loads use a u16* cast. Remaining: int-to-
-// double literal names (@368/@369) and f2/f3/f4 float-register allocation.
 void unk_8017599c(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	Mtx mtx;
@@ -526,18 +534,20 @@ void unk_8017599c(WinMgrEntry* entry) {
 		pos.y += float_30_8041dbf0;
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
-		pos.y *= (f32)gp->efbHeight * float_0p5_8041db60;
+#ifdef MUST_MATCH
+		{
+			// The named local keeps 0.5f in f2 and the int->float mask in f3; with the
+			// literal (or the named float symbol) the two swap (cf. envdrv.c).
+			f32 half = 0.5f;
+			pos.x *= (f32)gp->fbWidth * half;
+			pos.y *= (f32)gp->efbHeight * half;
+		}
+#else
 		pos.x *= (f32)gp->fbWidth * float_0p5_8041db60;
-#ifdef MUST_MATCH
-		sprintf(buf, str_8041DBAC, *(u16*)&itemDataTable[wp->field_0x8[i]].discount_price);
-#else
+		pos.y *= (f32)gp->efbHeight * float_0p5_8041db60;
+#endif
 		sprintf(buf, str_8041DBAC, itemDataTable[wp->field_0x8[i]].discount_price);
-#endif
 		PSMTXTrans(mtx, float_12_8041dbfc * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
-#ifdef MUST_MATCH
-		iconNumberDispGx(mtx, *(u16*)&itemDataTable[wp->field_0x8[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
-#else
 		iconNumberDispGx(mtx, itemDataTable[wp->field_0x8[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
-#endif
 	}
 }

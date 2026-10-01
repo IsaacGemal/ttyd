@@ -377,22 +377,26 @@ void mot_jumpNpc(void) {
                 MWF32(mario, 0x2B8) = obj->position.z;
                 tmp = *JUMP_RODATA(const Vec*, 0xC, vec3_802c5c4c);
                 tmp.x = obj->position.x;
-                tmp.y = obj->position.y + 0.5f * mario->wPlayerCollisionBox.y;
+                tmp.y = obj->position.y + MATCH_F32(float_0p5_8041abe0) * mario->wPlayerCollisionBox.y;
                 tmp.z = obj->position.z;
                 pos = tmp;
                 if (marioChkFront(&dist, &pos, mario->directionView,
-                                  5.0f * mario->wPlayerCollisionBox.x)) {
-                    if (dist >= 0.0f
-                        && dist <= 0.5f * mario->wPlayerCollisionBox.x + 30.0f) {
-                        f32 d = revise360(180.0f + mario->directionView);
+                                  MATCH_F32(float_5_8041abe4) * mario->wPlayerCollisionBox.x)) {
+                    if (dist >= MATCH_F32(float_0_8041abb8)
+                        && dist <= MATCH_F32(float_0p5_8041abe0) * mario->wPlayerCollisionBox.x
+                                       + MATCH_F32(float_30_8041abe8)) {
+                        f32 d = revise360(MATCH_F32(float_180_8041abec) + mario->directionView);
 
                         mario->directionView = d;
                         *(f32*)mario->unk19C = d;
                     }
                 }
                 sincosf(&sinv, &cosv, mario->directionView);
-                x = 30.0f * sinv + obj->position.x;
-                z = 30.0f * cosv + obj->position.z;
+                {
+                    f32 c30 = MATCH_F32(float_30_8041abe8);
+                    x = c30 * sinv + obj->position.x;
+                    z = c30 * cosv + obj->position.z;
+                }
                 mario->multiTimer = 0x14;
                 mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z)
                                    / (f32)(s32)mario->multiTimer;
@@ -404,11 +408,14 @@ void mot_jumpNpc(void) {
             f32 x;
             f32 z;
 
-            revise360(180.0f + mario->directionView);
+            revise360(MATCH_F32(float_180_8041abec) + mario->directionView);
             dir = mario->directionView;
             sincosf(&sinv, &cosv, dir);
-            x = 30.0f * sinv + mario->position.x;
-            z = 30.0f * cosv + mario->position.z;
+            {
+                f32 c30 = MATCH_F32(float_30_8041abe8);
+                x = c30 * sinv + mario->position.x;
+                z = c30 * cosv + mario->position.z;
+            }
             mario->directionView = dir;
             *(f32*)mario->unk19C = dir;
             mario->multiTimer = 0x14;
@@ -422,7 +429,7 @@ void mot_jumpNpc(void) {
         case 0:
             mario->multiTimer--;
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose(JUMP_RODATA(const char*, 0x30, str_802C5C70));
                 }

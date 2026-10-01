@@ -203,14 +203,17 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 
 #pragma opt_common_subs off // with CSE on MWCC folds the constants differently and the integer colouring drifts further
 #pragma opt_lifetimes off // the default lifetime analysis picks a different, worse-matching register assignment
-// The target's field_0x30 scale and the transform scale must be separate locals: splitting them fixed
-// most of the colouring. `texT += 0x80` must be the third for-increment (not the loop body's last
-// statement) or the vtx/texT increments are emitted in the wrong order.
-// The first-loop `data`/`i` pair is still swapped (ours data=r28 i=r26, target data=r26 i=r28), the
-// first-loop FP constants are rotated (ours 360=f27 500=f28 200=f29 6.2832=f30 double=f31, target
-// 6.2832=f27 double=f28 200=f29 500=f30 360=f31), and the second loop swaps the colr/data pointers and
-// the j/magic pair. `texT = offset` is folded to `li` by our compiler (`mr` in the target).
-// NONMATCHING (99.00%): instruction shapes and frame match; only the register colours differ (above).
+// The vertex loop's per-iteration sin result must go into a named `s` temp instead of being reused
+// inline: that is what makes MWCC give the loop's 6.2832/double/360/500/200 constants f27-f31 exactly
+// as the original does. `texT += 0x80` must be the third for-increment (not the loop body's last
+// statement) or the vtx/t increments are emitted in the wrong order. The first-loop t coordinate (`v`)
+// and the second loop's tri2 index/counter (`j`/`k`) must be separate locals; sharing one variable
+// makes the second loop's registers land in the wrong slots. The target's field_0x30 scale and the
+// transform scale are also separate locals. `data` still lands in r28 here but r26 in the original
+// (which gives its first-loop `i` r28; this build gives `data` r28 and `i` r26), the second loop's base
+// pointer/colr are r30/r29 here (r29/r30 there), `v = 0` compiles to `li` where the original emits `mr`
+// for its t=offset, and the `valB + offset - 3000` temp is r5/r6 swapped.
+// NONMATCHING (99.40%): instruction shapes and frame match; only register colouring differs.
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -223,7 +226,7 @@ void effTimestampDisp(CameraId camId, void* param) {
 	s32 angleB;
 	effTimestampVtx* vtx;
 	effTimestampVtx* base;
-	s32 texT;
+	s32 v;
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
@@ -233,9 +236,9 @@ void effTimestampDisp(CameraId camId, void* param) {
 	s32 j;
 	f32 scaleF;
 	f32 fieldScale;
+	s32 k;
 	s32 valA;
 	s32 valB;
-
 
 	data = effect->userdata;
 	timer = data->field_0x14;
@@ -276,21 +279,24 @@ void effTimestampDisp(CameraId camId, void* param) {
 	offset = 0;
 	vtx = base;
 	angleB = angleA;
-	texT = 0;
-	for (i = 0; i < 16; i++, vtx += 2, texT += 0x80) {
+	v = 0;
+	for (i = 0; i < 16; i++, vtx += 2, v += 0x80) {
+		f32 s;
 		fieldScale = data->field_0x30;
-		valA = (s32)(fieldScale * (float_500_804200c4 * (f32)sin(float_6p2832_804200bc * (f32)angleA / float_360_804200c0)));
-		valB = (s32)(fieldScale * (float_200_804200c8 * (f32)sin(float_6p2832_804200bc * (f32)angleB / float_360_804200c0)));
+		s = (f32)sin(float_6p2832_804200bc * (f32)angleA / float_360_804200c0);
+		valA = (s32)(fieldScale * (float_500_804200c4 * s));
+		s = (f32)sin(float_6p2832_804200bc * (f32)angleB / float_360_804200c0);
+		valB = (s32)(fieldScale * (float_200_804200c8 * s));
 		vtx[0].x = valA - 3200;
 		vtx[0].y = valB + offset - 3000;
 		vtx[0].z = 0;
 		vtx[0].s = 0;
-		vtx[0].t = texT;
+		vtx[0].t = v;
 		vtx[1].x = valA + 3200;
 		vtx[1].y = valB + offset - 3000;
 		vtx[1].z = 0;
 		vtx[1].s = 0x800;
-		vtx[1].t = texT;
+		vtx[1].t = v;
 		angleA += 60;
 		angleB += 6;
 		offset += 400;
@@ -317,10 +323,9 @@ void effTimestampDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		effTimestampSetVtxColor(data, counter, i);
-		texT = 0;
-		for (j = 0; j < 15; j++, texT += 2) {
+		for (k = 0, j = 0; k < 15; k++, j += 2) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-			tri2(texT, texT + 2, texT + 1, texT, texT + 1, texT + 2, texT + 3, texT);
+			tri2(j, j + 2, j + 1, j, j + 1, j + 2, j + 3, j);
 		}
 	}
 }

@@ -112,13 +112,12 @@ static f32 shadow_vtx[12] = {-1.2f, 0.0f, -1.2f, -1.2f, 0.0f, 1.2f, 1.2f, 0.0f, 
 static f32 shadow_vtx_pad[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 static f32 shadow_coord[8] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
-// NONMATCHING (99.69%): same instructions; only register numbers or operands differ.
 void extDrawShadow(void) {
 	ExtWork* wp = extGetWork();
 	s32 i;
 	ExtSortEntry* sort = &wp->sortList[wp->poseNum - 1];
 
-	for (i = wp->poseNum - 1; i >= 0; i--) {
+	for (i = wp->poseNum - 1; i >= 0; i--, sort--) {
 		ExtPose* pose = &wp->poses[sort->field_0x0];
 
 		if (!(pose->flags & 4)) {
@@ -132,7 +131,6 @@ void extDrawShadow(void) {
 			GXSetCurrentMtx(0);
 			GXCallDisplayList(shadow_dl, 0x20);
 		}
-		sort--;
 	}
 }
 

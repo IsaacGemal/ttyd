@@ -137,15 +137,13 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
     return temp;
 }
 
-// Every instruction is byte-identical except the callee-saved FPRs holding the
-// loop-invariant constants of the type-1 and type-2 loops. The type-1 target uses
-// f28=double, f29=10.0, f30=30.0, f31=0.5; this compiler hands them f31=double,
-// f30=10.0, f29=0.5, f28=30.0. The type-2 target uses f22=0.5, f23=10.0, f24=360.0,
-// f30=double, f31=6.2832; this compiler uses f22=0.5, f28=double, f29=6.2832,
-// f30=360.0, f31=10.0. The type-0 loop (and the rest of the function) matches exactly.
-// Adding a local to pin a constant (as effFallLeafMain does with `half`) shifts the
-// type-0 loop too; opt_common_subs/opt_lifetimes/opt_propagation off make it worse.
-// NONMATCHING (99.81%): the type-1/type-2 loop-constant FPRs are permuted.
+// Feeding the type-2 loop's sin/cos results through the `s` temp (a natural shape,
+// guarded by MUST_MATCH below) changes the allocator's global callee-saved FPR
+// assignment so both the type-1 and type-2 loop-constant groups land on the original's
+// registers; the plain straight-into-the-multiply form scores 99.82%. Previously the
+// type-1 group came out f31=double, f30=10.0, f29=0.5, f28=30.0 (original f28=double,
+// f29=10.0, f30=30.0, f31=0.5) and type-2 f28=double, f29=6.2832, f30=360.0, f31=10.0
+// (original f30=double, f31=6.2832, f23=10.0, f24=360.0).
 void effCoolLeafMain(EffectEntry* effect) {
     effCoolLeafData* data = effect->userdata;
     Vec position;
@@ -297,8 +295,16 @@ void effCoolLeafMain(EffectEntry* effect) {
         idx = counter + 20;
         for (; i < effect->count; idx += 20, i++, data++) {
             data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
+#ifdef MUST_MATCH
+            // Match shape: keeping the call results in `s` pins the loop-constant FPRs to the original's.
+            s = (f32)sin(float_6p2832_8041ec6c * data->field_0x1C / float_360_8041ec74);
+            data->field_0x18 += float_10_8041ec90 * s;
+            s = (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->field_0x1C) / float_360_8041ec74);
+            data->field_0x20 += float_10_8041ec90 * s;
+#else
             data->field_0x18 += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->field_0x1C / float_360_8041ec74);
             data->field_0x20 += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->field_0x1C) / float_360_8041ec74);
+#endif
             data->x += data->field_0x10;
             data->y += data->field_0x14;
         }

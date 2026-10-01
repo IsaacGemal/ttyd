@@ -100,9 +100,8 @@ void FontDrawNoise(void) {
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX1, 0x21, GX_FALSE, 0x7d);
 }
 
-// NONMATCHING (99.57%): correct algorithm; only float-register-allocation/constant-label diffs remain.
 u32 HSV2RGB(GXColor* hsv) {
-	f32 h = hsv->r * 360.0f * 0.00390625f;
+	f32 h = hsv->r * 360.0f / 256.0f;
 	f32 s = hsv->g / 255.0f;
 	f32 v = hsv->b / 255.0f;
 	f32 f = h / 60.0f;
@@ -154,9 +153,17 @@ void FontDrawCodeMtx(Mtx mtx, u16 code) {
 	_JUTFont_DrawPos(code, 0, 0);
 }
 
-// NONMATCHING (99.96%): the two inlined GXSetTevColor by-value argument copies are allocated in the opposite
-// order (ours 0x10 then 0xc; retail 0xc then 0x10). The 0.0f passed to PSMTXTransApply also pools as an anonymous
-// @-label instead of retail's float_0_8041a300 (same value, label only).
+#ifdef MUST_MATCH
+// MUST_MATCH: the first colour goes through a by-value inline, which is the only shape that puts that
+// call's by-value GXSetTevColor argument copy at r1+0xc and the second call's at r1+0x10; the direct
+// `FontDrawColor(&c)` form allocates the two in the opposite order (0x10 then 0xc). The 0.0f passed to
+// PSMTXTransApply pools as an anonymous @-label (same value as retail's float_0_8041a300), which objdiff
+// scores equal, so the function is 100%.
+static inline void FontDrawCode_ColorA(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
 void FontDrawCode(u16 code, f32 x, f32 y) {
 	Mtx mtx;
 	CameraEntry* cam;
@@ -171,7 +178,11 @@ void FontDrawCode(u16 code, f32 x, f32 y) {
 		GXColor c2;
 		GXColor saved = fontColor;
 		GXColor c = fontColTbl[0];
+#ifdef MUST_MATCH
+		FontDrawCode_ColorA(c);
+#else
 		FontDrawColor(&c);
+#endif
 		_JUTFont_DrawPos(code, -2, 0);
 		_JUTFont_DrawPos(code, 2, 0);
 		_JUTFont_DrawPos(code, 0, -2);

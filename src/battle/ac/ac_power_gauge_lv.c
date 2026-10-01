@@ -59,7 +59,16 @@ static void actionCommandDisp(f32, f32);
 // don't_inline: the original keeps actionCommandDisp as its own local function.
 #pragma optimize_for_size on
 #pragma dont_inline on
-// NONMATCHING (98.94%): only the fdivs destination differs (original `fdivs f1, f2, f1` overwrites the divisor, MWCC emits `fdivs f2, f2, f1` overwriting the numerator); the following fctiwz/stfs and argument schedule shift with it.
+// opt_common_subs off: with CSE on MWCC reuses the gauge-percent value it already has in f0 and
+// emits `fdivs f0, f1, f0`; disabling common subexpression elimination gives the original operand
+// registers (numerator f2, divisor f1).
+#pragma opt_common_subs off
+// NONMATCHING (99.13%): only the fdivs destination differs. The original overwrites the divisor
+// (`fdivs f1, f2, f1`, result = f1) and clamps in place; MWCC always coalesces the division result
+// with the numerator (`fdivs f2, f2, f1`) and then folds the clamp to a fresh register. Every
+// source form tried that reaches the divisor destination (chained/pointer assignment, ternary,
+// b = a / b) either adds a store/reload or moves the clamp into a different register; the
+// downstream fctiwz/stfs and the BattleAcDrawGauge argument loads shift with it.
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
 #ifdef MUST_MATCH
@@ -155,6 +164,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
         break;
     }
 }
+#pragma opt_common_subs reset
 #pragma dont_inline reset
 #pragma optimize_for_size reset
 void battleAcDelete_PowerGaugeLv(BattleWork* work) {

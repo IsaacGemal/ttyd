@@ -1246,7 +1246,6 @@ void fbatHitCheckAll(void) {
 }
 
 // The first-strike banner: a frame jittered by up to 4 units, with the message drawn inside it.
-// NONMATCHING (99.62%): same instructions; only register numbers or operands differ.
 void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     FirstStrikeInfo* firstStrike = param;
     const char* message;
@@ -1255,22 +1254,38 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     f32 width;
     f32 frameX;
     f32 frameY;
-    GXColor white;
+#ifdef MUST_MATCH
+    // MWCC canonicalises `value * 0.1f` to `0.1f * value`; a named temp keeps the original's
+    // value-first operand order, and `width / 2.0f` does the same for the 0.5 multiply.
+    f32 k;
+#endif
 
+#ifdef MUST_MATCH
+    k = 0.1f;
+#endif
     message = msgSearch(firstStrike->msg_tag);
     x = firstStrike->field_0x10;
     y = firstStrike->field_0x14;
     width = FontGetMessageWidth(message);
     frameX = x + (f32)(irand(10000) % 5);
     frameY = y + (f32)(irand(10000) % 5);
-    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width * 0.5f), 0.1f * frameY,
-                          0.1f * (20.0f + width), 3.2f, 1.0f);
+#ifdef MUST_MATCH
+    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width / 2.0f), frameY * k,
+                          (20.0f + width) * k, 3.2f, 1.0f);
+#else
+    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width * 0.5f), frameY * 0.1f,
+                          (20.0f + width) * 0.1f, 3.2f, 1.0f);
+#endif
     FontDrawStart();
     FontDrawEdge();
-    white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-    FontDrawColor(&white);
+    // Passing the colour as a compound literal makes MWCC place it in the original's stack slot.
+    FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.1f);
+#ifdef MUST_MATCH
+    FontDrawStringShake(message, 0.1f * (x - width / 2.0f), (y - 3.0f) * k);
+#else
     FontDrawStringShake(message, 0.1f * (x - width * 0.5f), 0.1f * (y - 3.0f));
+#endif
 }
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id) {

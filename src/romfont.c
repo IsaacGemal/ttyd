@@ -298,6 +298,9 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
 // NONMATCHING (99.26%): the halfword `glyph->width` load is fixed (was `lha`, now `lhz`). The remaining
 // difference is register allocation only: the cached `wp` is r7 here (r6 in the original) and the loop-top
 // halfword load is r6 (r7 in the original); every instruction and every other operand is identical.
+// Declaration order/type, address forms, find-helper shapes and pragmas were all tried; see REPORT.md.
+// This is an MWCC colouring tie-break: c16 always takes r6, so wp takes r7 (the two interfere only in the
+// SJIS branch, and both need r6/r7; the only way to move wp earlier in the IR changes the emitted code).
 s32 romFontGetWidth(const char* message) {
     s32 curX = 0;
     s32 i = 0;

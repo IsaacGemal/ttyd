@@ -630,22 +630,33 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-//haven't checked asm, probably very close to 1:1 given patterns on previous functions
-// NONMATCHING (99.09%): callee-saved float regs are rotated by one. Original saves x->f27, y->f28,
-// height->f29, width->f30, a9->f31, a10->f26; ours saves x->f28..width->f31, a9->f27, a10->f26.
+// 100% match; the parameter copies and block-local indices below are MUST_MATCH allocation/branch hints.
 void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, f32 height, f32 width, f32 a9, f32 a10) {
+#ifdef MUST_MATCH
+	// MUST_MATCH: copying the parameters in this order reproduces the original's callee-saved FP
+	// allocation (x->f27, y->f28, height->f29, width->f30, a9->f31, a10->f26). Without them the
+	// allocator gives a9 f27 first and every callee-saved register is rotated.
+	f32 px=x, py=y, ph=height, pw=width, pa9=a9, pa10=a10;
+#else
+	#define px x
+	#define py y
+	#define ph height
+	#define pw width
+	#define pa9 a9
+	#define pa10 a10
+#endif
 	CameraEntry* camera;
 	Mtx trans, scale;
 	Mtx norm_mtx1, norm_mtx2, norm_mtx3, norm_mtx4;
 	Mtx boss_mtx1, boss_mtx2, boss_mtx3, boss_mtx4;
 	Mtx tec_mtx1, tec_mtx2;
 	Mtx majo_mtx1, majo_mtx2, majo_mtx3, majo_mtx4;
-	f32 y2;
+	f32 y2, w;
 
 	camera = camGetCurPtr();
 	GXSetTevColor(GX_TEVREG0, (GXColor){0xFF, 0xFF, 0xFF, alpha});
-	MTXTrans(trans, x, y, 0.0f);
-	MTXScale(scale, height / 560.0f, width / 176.0f, 1.0f);
+	MTXTrans(trans, px, py, 0.0f);
+	MTXScale(scale, ph / 560.0f, pw / 176.0f, 1.0f);
 	MTXConcat(trans, scale, trans);
 	MTXConcat(camera->view, trans, trans);
 	GXLoadPosMtxImm(trans, 0);
@@ -739,9 +750,14 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 			break;
 
 		case WINDOW_TYPE_SMALL: //images 3, 4
-			GXLoadTexObj(&wakuTexObj[dark ? 4 : 3], GX_TEXMAP0);
-			MTXScale(trans, height, width, 1.0f);
-			MTXTransApply(trans, trans, x, y, 0.0f);
+				// MUST_MATCH: a block-local index reproduces the original's branch instead of a select.
+#ifdef MUST_MATCH
+				{ GXTexObj* o = wakuTexObj; s32 i = 3; if (dark) i = 4; GXLoadTexObj(&o[i], GX_TEXMAP0); }
+#else
+				GXLoadTexObj(&wakuTexObj[dark ? 4 : 3], GX_TEXMAP0);
+#endif
+			MTXScale(trans, ph, pw, 1.0f);
+			MTXTransApply(trans, trans, px, py, 0.0f);
 			MTXConcat(camera->view, trans, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4u);
@@ -982,43 +998,64 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 	//TODO: cleanup, rename vars
 	if (a2 & 1) {
 		if (a2 & 4) {
-			x = (0.7f * height) + x;
+			px = (0.7f * ph) + px;
 		}
 		else {
-			x = (0.38f * height) + x;
+			px = (0.38f * ph) + px;
 		}
 		
 		if (a2 & 8) {
-			y2 = -((0.175f * width) - y);
-			y = ((0.225f * width) + y);
-			if (a10 <= y2) return;
+			y2 = -((0.175f * pw) - py);
+			py = ((0.225f * pw) + py);
+			if (y2 >= pa10)
+#ifdef MUST_MATCH
+				goto ret;
+#else
+				return;
+#endif
 		}
 		else {
-			y2 = -((0.8f * width) - y);
-			y = -((1.2f * width) - y);
-			if (y2 <= a10) return;
+			y2 = -((0.8f * pw) - py);
+			py = -((1.2f * pw) - py);
+			if (y2 <= pa10)
+#ifdef MUST_MATCH
+				goto ret;
+#else
+				return;
+#endif
 		}
-		width = (x - (((x - a9) * (y2 - y)) / (y2 - a10)));
-		if (a9 < x) {
-			if (width < a9) {
-				width = a9;
+		w = (px - (((px - pa9) * (y2 - py)) / (y2 - pa10)));
+		if (pa9 >= px) {
+			if (w > pa9) {
+				w = pa9;
 			}
 		}
 		else {
-			if (a9 < width) {
-				width = a9;
+			if (w < pa9) {
+				w = pa9;
 			}
 		}
+		pw = w;
 		
 		switch (type) {
 			case WINDOW_TYPE_NORMAL:
 			case WINDOW_TYPE_SMALL:
 			case WINDOW_TYPE_BOSS:
+				// MUST_MATCH: a block-local index reproduces the original's branch instead of a select.
+#ifdef MUST_MATCH
+				{ GXTexObj* o = wakuTexObj; s32 i = 1; if (dark) i = 2; GXLoadTexObj(&o[i], GX_TEXMAP0); }
+#else
 				GXLoadTexObj(&wakuTexObj[dark ? 2 : 1], GX_TEXMAP0);
+#endif
 				break;
 
 			case WINDOW_TYPE_MAJO:
+				// MUST_MATCH: a block-local index reproduces the original's branch instead of a select.
+#ifdef MUST_MATCH
+				{ GXTexObj* o = wakuTexObj; s32 i = 7; if (dark) i = 8; GXLoadTexObj(&o[i], GX_TEXMAP0); }
+#else
 				GXLoadTexObj(&wakuTexObj[dark ? 8 : 7], GX_TEXMAP0);
+#endif
 				break;
 
 			default:
@@ -1028,21 +1065,32 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 		GXLoadPosMtxImm(camera->view, 0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4u);
 		
-		height = (0.05f * height);
+		ph = (0.05f * ph);
 		
-		GXPosition3f32(x - height, y2, 0.0f);
+		GXPosition3f32(px - ph, y2, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
 		
-		GXPosition3f32(x + height, y2, 0.0f);
+		GXPosition3f32(px + ph, y2, 0.0f);
 		GXTexCoord2f32(1.0f, 0.0f);
 		
-		GXPosition3f32(width + height, y, 0.0f);
+		GXPosition3f32(pw + ph, py, 0.0f);
 		GXTexCoord2f32(1.0f, 1.0f);
 		
-		GXPosition3f32(width - height, y, 0.0f);
+		GXPosition3f32(pw - ph, py, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
+#ifdef MUST_MATCH
+ret:;
+#endif
 }
+#ifndef MUST_MATCH
+#undef px
+#undef py
+#undef ph
+#undef pw
+#undef pa9
+#undef pa10
+#endif
 
 void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, f32 width, f32 a9, f32 a10) {
 	GXSetCullMode(GX_CULL_NONE);
@@ -1265,11 +1313,10 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 widt
 	}
 }
 
-// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx2;
-	f32 fVar1, fVar4, fVar2, fVar6, fVar5, fVar3, dVar10, dVar9; //TODO: rename
+	f32 fVar1, fVar4, fVar2, fVar6, fVar5, fVar3, dVar10, dVar9, half; //TODO: rename
 	f32 oneThird, twoThirds;
 
 	if (unk_804187fc) {
@@ -1281,7 +1328,11 @@ void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y
 		GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 		GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
+#ifdef MUST_MATCH
+		wakuSetFog((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+#else
 		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor) { 0xFF, 0xFF, 0xFF, 0xFF });
+#endif
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 		GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -1299,8 +1350,9 @@ void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y
 		GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 		GXSetCurrentMtx(0);
 		GXSetTevColor(GX_TEVREG0, color);
-		dVar9 = height * 0.5f;
-		dVar10 = -width * 0.5f;
+		half = 0.5f;
+		dVar10 = -width * half;
+		dVar9 = height * half;
 		MTXTrans(mtx2, x - dVar10, y - dVar9, 0.0f);
 		MTXConcat(mtx2, mtx, mtx2);
 		MTXConcat(camera->view, mtx2, mtx2);

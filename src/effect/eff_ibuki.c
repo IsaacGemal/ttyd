@@ -54,9 +54,9 @@ u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
 const f64 double_to_int_803006d0 = 4503601774854144.0;
 const char str_80421F48[] = "Ibuki";
 
-// Only the callee-saved FPR numbers of the loop-invariant constants differ (the target uses
-// f27-f31 in a different order), and the int->float magic is an anonymous @N, not double_to_int_803006d0.
-// NONMATCHING (99.37%): FPR coloring only.
+// The int->float magic pools as an anonymous @N rather than double_to_int_803006d0 (does not affect the
+// match score). The angle normalization needs the match shape guarded by MUST_MATCH below, which keeps
+// the callee-saved FPRs on f27-f31 in the target's order.
 EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 	s32 wait;
 	EffectEntry* entry;
@@ -99,7 +99,9 @@ EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 		elem->positionY = (f32)irand(30);
 		elem->positionZ = float_0_80421f08;
 #ifdef MUST_MATCH
-		angle = float_6p2832_80421f40 * angle / float_360_80421f44;
+		// Match shape: the comma keeps the 6.2832*angle product in a scratch FPR (f0) instead of
+		// coalescing it into angle, and sequences the division, as the target does.
+		angle = (angle = float_6p2832_80421f40 * angle, angle / float_360_80421f44);
 #else
 		angle = angle * float_6p2832_80421f40 / float_360_80421f44;
 #endif
