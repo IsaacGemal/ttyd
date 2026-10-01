@@ -9,6 +9,9 @@ A function is done only when it compiles to exactly the original bytes: 100% in 
 merged only if the whole project still builds, nothing that matched before gets worse, and a review finds no
 tricks. A match produced by a trick is thrown away, and the review looks for tricks.
 
+Wave agents use `check.py` for local iteration. Do not run or install the decomp-permuter in a wave workspace;
+the dedicated `tools/perm_loop.py` process handles permuter jobs under its shared CPU limit.
+
 ## Before writing code
 
 - **Look up what already exists.** `grep` `include/` for every function, struct and global you use. If a header

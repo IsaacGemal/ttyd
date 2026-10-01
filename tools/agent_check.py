@@ -18,9 +18,11 @@ import glob, os
 mod, _, rest = unit_path.partition("/")
 REL = bool(rest) and os.path.isdir(f"config/G8MJ01/{mod}") and mod != "G8MJ01"
 unit = unit_path if REL else "MarioSt/" + unit_path
+# Read the project once; the report and the build target use the same entry.
+project = json.load(open("objdiff.json"))
+entry = next((e for e in project["units"] if e["name"] == unit), None)
 # the unit's source, as objdiff.json names it (libs/<lib>/src/..., any extension); else src/UNIT.c or a library's
-src = next((u.get("metadata", {}).get("source_path") for u in json.load(open("objdiff.json"))["units"]
-            if u["name"] == unit), None) if os.path.exists("objdiff.json") else None
+src = entry.get("metadata", {}).get("source_path") if entry else None
 src = src or next(iter(glob.glob(f"libs/*/src/{unit_path}.[cC]")), None) if not os.path.exists(f"src/{unit_path}.c") else src
 src = src or (f"rels/{mod}/src/{rest}.c" if REL else f"src/{unit_path}.c")
 if os.path.exists(src) and src not in open("build.ninja").read():
@@ -28,8 +30,6 @@ if os.path.exists(src) and src not in open("build.ninja").read():
 # Build and score only this unit: its object, then objdiff's report for a one-unit copy of objdiff.json (the same
 # scoring as the full report, which re-diffs every object in the project: ~95% of a check's CPU with 48 agents).
 # --final also compiles every source (a header change could break another file), and the merge builds everything.
-project = json.load(open("objdiff.json"))
-entry = next((e for e in project["units"] if e["name"] == unit), None)
 target = entry.get("base_path") if entry else None
 jobs = ["-j2"]  # two waves of agents share the tower's 16 cores
 b = subprocess.run(["ninja", *jobs] + ([target] if target else []), capture_output=True, text=True)
@@ -43,17 +43,43 @@ if b.returncode:
 if os.path.exists(src):
     import shutil
     shutil.copy(src, "lastgood.c")  # the last version that built: survives an agent cut off mid-edit
+def signature():
+    # A source edit can compile to identical bytes. The scorer only needs the two objects and project settings.
+    paths = ("objdiff.json", target, entry.get("target_path") if entry else None)
+    return [[p, os.stat(p).st_size, os.stat(p).st_mtime_ns] for p in paths if p and os.path.exists(p)]
+
+
+cache_path = os.path.join(".cache", "check-cache-" + unit.replace("/", "_") + ".json")
+key = signature()
+try:
+    cache = json.load(open(cache_path))
+    if cache.get("key") != key:
+        cache = {"key": key}
+except (OSError, ValueError):
+    cache = {"key": key}
+
+
+def save_cache():
+    os.makedirs(".cache", exist_ok=True)
+    with open(cache_path, "w") as out:
+        json.dump(cache, out)
+
+
 if target:
-    import tempfile
-    one = dict(project, units=[dict(entry, **{k: os.path.abspath(entry[k]) for k in ("target_path", "base_path")
-                                                if entry.get(k)})])
-    with tempfile.TemporaryDirectory() as d:
-        json.dump(one, open(os.path.join(d, "objdiff.json"), "w"))
-        r = subprocess.run(["build/tools/objdiff-cli", "report", "generate", "-p", d, "-o", "-"], capture_output=True,
-                           text=True, env={**os.environ, "RAYON_NUM_THREADS": "1"})
-    if r.returncode:
-        sys.exit("objdiff report failed:\n" + r.stderr[-2000:])
-    report = json.loads(r.stdout)
+    report = cache.get("report")
+    if report is None:
+        import tempfile
+        one = dict(project, units=[dict(entry, **{k: os.path.abspath(entry[k]) for k in ("target_path", "base_path")
+                                                    if entry.get(k)})])
+        with tempfile.TemporaryDirectory() as d:
+            json.dump(one, open(os.path.join(d, "objdiff.json"), "w"))
+            r = subprocess.run(["build/tools/objdiff-cli", "report", "generate", "-p", d, "-o", "-"], capture_output=True,
+                               text=True, env={**os.environ, "RAYON_NUM_THREADS": "1"})
+        if r.returncode:
+            sys.exit("objdiff report failed:\n" + r.stderr[-2000:])
+        report = json.loads(r.stdout)
+        cache["report"] = report
+        save_cache()
 else:
     report = json.load(open("build/G8MJ01/report.json"))  # no source object yet: the full build's report
 u = next((x for x in report["units"] if x["name"] == unit), None)
@@ -116,12 +142,21 @@ func = sys.argv[2]
 f = fns.get(func)
 print(f"{func}: {f.get('fuzzy_match_percent', 0):.2f}% ({f['size']} B)" if f else f"{func}: not in unit report")
 # instructions only: the percentage above comes from the report (objdiff's diff can score a function differently)
-r = subprocess.run(["build/tools/objdiff-cli", "diff", "-p", ".", "-u", unit, func, "-o", "-", "--format", "json"],
-                   capture_output=True, text=True, env={**os.environ, "RAYON_NUM_THREADS": "1"})
-try:
-    d = json.loads(r.stdout) if r.returncode == 0 else None
-except ValueError:
-    d = None
+d = cache.get("diffs", {}).get(func) if target else None
+if d is None:
+    r = subprocess.run(["build/tools/objdiff-cli", "diff", "-p", ".", "-u", unit, func, "-o", "-", "--format", "json"],
+                       capture_output=True, text=True, env={**os.environ, "RAYON_NUM_THREADS": "1"})
+    try:
+        d = json.loads(r.stdout) if r.returncode == 0 else None
+    except ValueError:
+        d = None
+    if d is not None and target:
+        # The CLI returns every symbol in the unit; retain only the requested function's instructions.
+        cache.setdefault("diffs", {})[func] = {
+            side: {"symbols": [s for s in d.get(side, {}).get("symbols", []) if s.get("name") == func]}
+            for side in ("left", "right")
+        }
+        save_cache()
 if d is None:
     sys.exit("objdiff produced no diff (is the function defined in your source?)")
 
