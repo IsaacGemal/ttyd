@@ -1158,14 +1158,14 @@ party/party_chuchu.c:
 unit/party/unit_party_nokotarou.c:
 	.text       start:0x80183040 end:0x80183670
 	.rodata     start:0x802F83F8 end:0x802F8808
-	.data       start:0x8038BEB8 end:0x80390B78
+	.data       start:0x8038BEB8 end:0x80390B70
 	.sdata      start:0x804124E8 end:0x80412590
 	.sdata2     start:0x8041E020 end:0x8041E040
 
 unit/party/unit_party_christine.c:
 	.text       start:0x80183670 end:0x80183D24
 	.rodata     start:0x802F8808 end:0x802F8BC0
-	.data       start:0x80390B78 end:0x80394710
+	.data       start:0x80390B70 end:0x80394710
 	.sdata      start:0x80412590 end:0x804125D8
 	.sdata2     start:0x8041E040 end:0x8041E060
 
