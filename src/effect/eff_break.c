@@ -6,6 +6,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/types.h>
+#include "evt/evt_cmd.h"
 
 typedef struct BreakEffect {
     s32 field_0x00; // 0x00
@@ -23,15 +24,16 @@ static u32 tex_jp[6] = { 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2 };
 static u32 tex_us[6] = { 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6 };
 static u32* texid_tbl[2] = { tex_jp, tex_us };
 
-const char str_804210C4[] = "Break";
+extern const char str_804210C4[];
 extern const f32 float_0_804210b0;
 extern const f32 float_2_804210cc;
 extern const f32 float_10_804210d0;
 extern const f32 float_20_804210c0;
 extern const Vec vec3_802fe610;
-extern const f32 ty_data[21];
-extern const f32 ty_data2[21];
+extern f32 ty_data[21];
+extern f32 ty_data2[21];
 
+// clang-format off
 EffectEntry* effBreakEntry(s32 type, s32 a2, f32 x, f32 y, f32 z) {
     EffectEntry* entry;
     BreakEffect* data;
@@ -74,6 +76,7 @@ EffectEntry* effBreakEntry(s32 type, s32 a2, f32 x, f32 y, f32 z) {
     }
     return entry;
 }
+
 
 #pragma opt_propagation off // without it MWCC rematerialises the scale multiply and swaps f0/f1, losing the target's fmuls operand order
 void effBreakMain(EffectEntry* effect) {
@@ -165,6 +168,7 @@ void effBreakMain(EffectEntry* effect) {
     }
 }
 
+
 #pragma opt_propagation reset
 
 // The default common-subexpression pass reorders the two independent loop-latch induction
@@ -228,4 +232,40 @@ void effBreakDisp(CameraId cameraId, void* param) {
     }
 }
 
+f32 ty_data[21] = {
+    3.0f, 3.0f, 2.7857144f, 2.5714285f,
+    2.357143f, 2.142857f, 1.9285715f, 1.7142857f,
+    1.5f, 1.2857143f, 1.0714285f, 0.85714287f,
+    0.64285713f, 0.42857143f, 0.21428572f, 0.0f,
+    0.083333336f, 0.16666667f, 0.25f, 0.125f,
+    0.0f,
+};
+
+f32 ty_data2[21] = {
+    0.0f, 0.15f, 0.3f, 0.45f,
+    0.6f, 0.75f, 0.9f, 1.05f,
+    1.2f, 1.35f, 1.5f, 1.65f,
+    1.8f, 1.95f, 2.1f, 2.25f,
+    2.4f, 2.55f, 2.7f, 2.85f,
+    3.0f,
+};
+// clang-format on
+
 #pragma opt_common_subs reset
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802fe610 = { 0.0f, 0.0f, 0.0f };
+const f32 float_deg2rad_804210a8 = 0.017453292f;
+const f32 float_48_804210ac = 48.0f;
+const f32 float_0_804210b0 = 0.0f;
+const f32 float_0p5_804210b4 = 0.5f;
+const f32 float_24_804210b8 = 24.0f;
+#ifdef MUST_MATCH
+const volatile f32 float_1_804210bc = 1.0f;
+#else
+const f32 float_1_804210bc = 1.0f;
+#endif
+const f32 float_20_804210c0 = 20.0f;
+const char str_804210C4[] = "Break";
+const f32 float_2_804210cc = 2.0f;
+const f32 float_10_804210d0 = 10.0f;
