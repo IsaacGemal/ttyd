@@ -38,9 +38,9 @@ extern const f32 float_1p2881_8041dee0;
 extern const f32 float_15_8041dee4;
 extern const f64 double_1p2881_802f8078;
 
-u8 Pos[] = {0x01, 0x00, 0x00, 0xFF, 0x00, 0x00};
-u8 Nrm[] = {0x00, 0x00, 0x7F};
-u8 Col[] = {0xFF, 0xFF, 0xFF, 0xFF};
+u8 Pos[] ATTRIBUTE_ALIGN(32) = {0x01, 0x00, 0x00, 0xFF, 0x00, 0x00};
+u8 Nrm[] ATTRIBUTE_ALIGN(32) = {0x00, 0x00, 0x7F};
+u8 Col[] ATTRIBUTE_ALIGN(32) = {0xFF, 0xFF, 0xFF, 0xFF};
 
 #define HIMO_FP_NAN 1
 #define HIMO_FP_INFINITE 2
@@ -333,3 +333,21 @@ void vivihimoDisp(CameraId cameraId, void* data) {
 #undef HIMO_C12881
 
 const f64 double_1p2881_802f8078 = 1.288053035736084;
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p5_8041dec0 = 0.5f;
+const f32 float_0p066667_8041dec4 = 0.06666667f;
+const f32 float_neg1p2881_8041dec8 = -1.288053f;
+const f32 float_0_8041decc = 0.0f;
+const f32 float_10_8041ded0 = 10.0f;
+const f32 float_1_8041ded4 = 1.0f;
+const f32 float_3p1416_8041ded8 = 3.1415927f;
+const f32 float_0p82_8041dedc = 0.82f;
+const f32 float_1p2881_8041dee0 = 1.288053f;
+const f32 float_15_8041dee4 = 15.0f;
+const f32 float_0p1_8041dee8 = 0.1f;
+const f32 float_2p5_8041deec = 2.5f;
+const f32 float_0p25_8041def0 = 0.25f;
+const f32 float_0p2_8041def4 = 0.2f;
+const f32 float_neg1_8041def8 = -1.0f;
+const f32 float_0p33333_8041defc = 0.33333334f;
