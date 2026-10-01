@@ -951,7 +951,7 @@ config.libs = [
             Object(Matching, "musyx/runtime/synth_ac.c"),
             Object(Matching, "musyx/runtime/synth_dbtab.c"),
             Object(Matching, "musyx/runtime/synth_adsr.c"),
-            Object(NonMatching, "musyx/runtime/synth_vsamples.c"),
+            Object(Matching, "musyx/runtime/synth_vsamples.c"),
             Object(Matching, "musyx/runtime/s_data.c"),
             Object(NonMatching, "musyx/runtime/hw_dspctrl.c"),
             Object(Matching, "musyx/runtime/hw_volconv.c"),
