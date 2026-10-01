@@ -3,7 +3,7 @@
 
 Usage: KEY=... SPEC=scratch/wave47/units.json HOSTS=host1,host2 WORKERS=48 python3 tools/wave_launch.py
 WORKERS is the total concurrency, split round-robin across HOSTS. START_STAGGER (seconds) defaults to 2.
-The base checkout must already exist on each host at BASE (default ~/ttyd-w47base).
+The base checkout must already exist on each host at BASE (required). Workspaces are ~/ttyd-agents/w<NN>_<tag>.
 """
 import json, os, queue, shlex, subprocess, sys, threading, time
 from pathlib import Path
@@ -15,7 +15,8 @@ TIMEOUT = 3600
 WORKERS = int(os.environ.get("WORKERS", 24))
 START_STAGGER = float(os.environ.get("START_STAGGER", 2))
 MODEL = "featherless/deepseek-ai/DeepSeek-V4.1-Flash"
-BASE = os.environ.get("BASE", "~/ttyd-w47base")
+BASE = os.environ.get("BASE") or sys.exit("BASE not set (the base checkout on every host, e.g. ~/ttyd-w48base)")
+WS_PREFIX = "w" + HERE.name.removeprefix("wave") + "_"
 ARCHIVE = os.environ.get("ARCHIVE", "~/ttyd-archive/scratch/" + HERE.name)
 SPEC = json.load(open(SPEC_PATH))
 if os.environ.get("ONLY"): SPEC = [x for x in SPEC if x["unit"] in os.environ["ONLY"].split()]
@@ -89,14 +90,14 @@ def ssh(host, cmd, **kw):
 
 def prepare(host, tag, spec):
     unit = spec["unit"]
-    ws = f"~/ttyd-agents/w47_{tag}"
-    # Keep full source and per-agent build objects for --final. Only the task's original asm is needed;
-    # permuter entry points are deliberately absent from wave workspaces (the dedicated loop keeps them).
+    ws = f"~/ttyd-agents/{WS_PREFIX}{tag}"
+    # Keep full source and per-agent build objects for --final. The original asm is read-only and shared: a link
+    # to the base's copy (agents read callers' asm in other units for prototypes). Permuter entry points are
+    # deliberately absent from wave workspaces (the dedicated loop keeps them).
     ssh(host, f"mkdir -p ~/ttyd-agents && rsync -a --delete --delete-excluded --exclude orig/ --exclude .venv/ "
         f"--exclude build/compilers/ --exclude build/tools/ --exclude build/G8MJ01/asm/ "
         f"--exclude 'tools/perm_*.py' --exclude .git/ {BASE}/ {ws}/ "
-        f"&& mkdir -p {ws}/build/G8MJ01/asm/$(dirname {shlex.quote(unit)}) "
-        f"&& cp {BASE}/build/G8MJ01/asm/{unit}.s {ws}/build/G8MJ01/asm/{unit}.s "
+        f"&& ln -sfn {BASE}/build/G8MJ01/asm {ws}/build/G8MJ01/asm "
         f"&& ln -sfn ~/ttyd/orig {ws}/orig && ln -sfn ~/ttyd/.venv {ws}/.venv "
         f"&& ln -sfn ~/ttyd/build/compilers {ws}/build/compilers && ln -sfn {BASE}/build/tools {ws}/build/tools")
     ssh(host, f"cp {ws}/tools/agent_check.py {ws}/check.py && "
@@ -108,7 +109,7 @@ def prepare(host, tag, spec):
 
 
 def run(host, tag, unit, key, log):
-    ws = f"~/ttyd-agents/w47_{tag}"
+    ws = f"~/ttyd-agents/{WS_PREFIX}{tag}"
     t0 = time.time()
     # Each agent sees its own ./tmp as /tmp (bubblewrap; the prompt alone left agents writing the shared /tmp).
     # If it stops without REPORT.md or without running check.py --final, one short continuation asks for just that.
