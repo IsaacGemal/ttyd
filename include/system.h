@@ -9,7 +9,10 @@ f32 reviseAngle(f32 angle);
 f32 distABf(f32 x1, f32 y1, f32 x2, f32 y2);
 f32 compAngle(f32 angle1, f32 angle2);
 f32 angleABf(f32 x1, f32 y1, f32 x2, f32 y2);
-f32 intplGetValue(s32 mode, s32 currStep, s32 steps, f32 start, f32 end);
+f32 intplGetValue(s32 mode, f32 start, f32 end, s32 currStep, s32 steps);
+// Callers write (mode, currStep, steps, start, end). The original evaluates the two f32 arguments before the step
+// counters, which is what the argument order of the declaration above gives; the registers are the same either way.
+#define intplGetValue(mode, currStep, steps, start, end) intplGetValue(mode, start, end, currStep, steps)
 void qqsort(void* base, u32 n, u32 size, int (*compare)(void*, void*));
 void makeKey(void);
 u32 keyGetButton(u32 chan);
