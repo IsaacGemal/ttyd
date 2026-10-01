@@ -139,6 +139,11 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 
 ## Code shapes that fixed near-misses
 
+- Pool and string order in a unit follows the function order in the source, not just each function's text. Run `uv run --with pyelftools python3 tools/fn_order.py UNIT`; if it prints a different `want:` order, `--write` it and rebuild. `battle_item_data` linked once its functions were in the order that emits the target's `.text` order (its `.sdata2` and `.rodata` string order then matched with no other change). Keep the reorder only if no function's score drops.
+- A `volatile` comma hack around `intplGetValue` arguments (`((volatile f32)x, wp->counter)`) is a leftover from before the prototype fix: with the declared parameter order the plain call loads the float arguments first. `countdown` and `battle_item_data` lost the hack and still match.
+- A 4-byte `GXColor` the target keeps in `.sdata2` between strings: define it after the data that holds the strings (`__declspec(section ".sdata2") const GXColor name = {...};`, at the end of the file). Defined at the top it lands before every string.
+- A `.sdata` object the original 32-aligns (GX vertex arrays: `Pos`, `Nrm`, `Col` in `himo`) is `ATTRIBUTE_ALIGN(32)`; the padding the disassembly shows as `gap_*` objects then comes for free.
+
 When the instructions match but the stack slots, register allocation or scheduling differ, try these first:
 - **A `GXColor` passed by value lands in the wrong stack slot** (`color = *(GXColor*)&dat_...;` followed by setting
   some channels): move the build into an inline that returns the colour, setting the same channels the original
