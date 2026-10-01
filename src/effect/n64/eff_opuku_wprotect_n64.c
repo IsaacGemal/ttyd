@@ -5,6 +5,11 @@
 #include "mario/mariost.h"
 #include "memory.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804231f0;
+
+
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
@@ -44,7 +49,6 @@ const Vec vec3_802fb2e8 = { 0.0f, 0.0f, 0.0f };
 const GXColor dat_8041f888 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_8041f88c = { 0x00, 0x00, 0xFF, 0x00 };
 // .sbss2 scratch colour the second pass fills in; the reference reads it before writing.
-GXColor unk_804231f0;
 
 // The 40-point ring the display pass renders: signed 1-byte XYZ (times 10),
 // a 16-bit ST pair and RGB8.
@@ -157,7 +161,44 @@ typedef struct WprotectData {
 	f32 field_0x68[4];  // 0x68
 	f32 field_0x78[4];  // 0x78
 	s32 field_0x88[4];  // 0x88
-} WprotectData;         // 0x98
+} WprotectData;         
+EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
+	EffectEntry* effect;
+	effOpukuWprotectData* data;
+
+	effect = effEntry();
+	effect->type = "OpukuWprotectN64";
+	effect->count = 1;
+	data = __memAlloc(HEAP_EFFECT, 0x98);
+	effect->userdata = data;
+	effect->callback = effOpukuWprotectMain;
+	effect->flags |= 2;
+
+	data->type = type;
+	data->field_0x14 = 0;
+	if (duration <= 0) {
+		data->field_0x10 = 1000;
+	} else {
+		data->field_0x10 = duration;
+	}
+	data->field_0x24 = 0;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->scale = scale;
+	data->field_0x18 = 0x2F;
+	data->field_0x1C = 0x7F;
+	data->field_0x20 = 0xFF;
+	data->field_0x30 = float_0_8041f890;
+	data->field_0x34 = float_0_8041f890;
+	data->field_0x88 = -1;
+	data->field_0x8C = -5;
+	data->field_0x90 = -9;
+	data->field_0x94 = -0xD;
+
+	return effect;
+}
+// 0x98
 void effOpukuWprotectMain(EffectEntry* effect) {
 	WprotectData* data = effect->userdata;
 	Vec pos = initializeVec((Vec*)&data->x);
@@ -263,42 +304,6 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effOpukuWprotectDisp, effect);
-}
-EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
-	EffectEntry* effect;
-	effOpukuWprotectData* data;
-
-	effect = effEntry();
-	effect->type = "OpukuWprotectN64";
-	effect->count = 1;
-	data = __memAlloc(HEAP_EFFECT, 0x98);
-	effect->userdata = data;
-	effect->callback = effOpukuWprotectMain;
-	effect->flags |= 2;
-
-	data->type = type;
-	data->field_0x14 = 0;
-	if (duration <= 0) {
-		data->field_0x10 = 1000;
-	} else {
-		data->field_0x10 = duration;
-	}
-	data->field_0x24 = 0;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->scale = scale;
-	data->field_0x18 = 0x2F;
-	data->field_0x1C = 0x7F;
-	data->field_0x20 = 0xFF;
-	data->field_0x30 = float_0_8041f890;
-	data->field_0x34 = float_0_8041f890;
-	data->field_0x88 = -1;
-	data->field_0x8C = -5;
-	data->field_0x90 = -9;
-	data->field_0x94 = -0xD;
-
-	return effect;
 }
 
 // The display pass: build the 40-point ring from point_data, draw the four drops,
