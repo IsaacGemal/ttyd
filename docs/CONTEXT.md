@@ -3285,6 +3285,9 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
 - Many of the 99.9% near-misses are only relocation offsets against data the unit does not define yet (`effOpukuJetwrainDisp`, `winPartyInit`: `lfd f31, 0x30(r29)` vs `0x80(r29)` is the table's place in `.rodata`), not code differences; `tools/agent_check.py` marks them `arg_mismatch`. `unit_party_sanders` needs the same `.data` boundary move as christine (the pair at 0x803848D8 is the tail of `unit_party_chuchurina`'s `.data`): a splits.txt/symbols.txt change beyond the 32 approved units, left for Isaac.
 - Queued for the tower permuter (register-allocation level): `effItemUseDisp`, `effItemGetDisp`, `mot_damage` (spd/floorY in f31/f30 swapped), `BattleChoiceSamplingEnemy`, `evt_cloud_main`, `mobjHitEntry`, `effMistDisp`, `effMahorn2Disp`, `parsePush`, `effSleepDisp`, `effKemuri5N64Entry`.
 
+## Grind 53: eff_peach_dust_n64 links, the first permuter win (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`effPeachDustMain` (98.86% with every hand variant of the `k = 0.1f` hoist) reached score 0 on the tower permuter (`perm_run`, 227 s, `PERM_*` variant of the literal-pool source): a pointer to `data->scale` taken right after `colorIndex = data->counter` (`scalePtr = &data->scale;`) and the old scale read through it in `data->scale = k * (k - data->scale) + *scalePtr;`. It changes the order of the loads in the original's way, so it is under `MUST_MATCH` with the plain expression in `#else`. The unit then links with `finish_unit` (literal pool).
 ## Wave 51, batch 1: the mixed DOL files' below-80% functions (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 - **Scope:** the 106 DOL files that have both below-80% functions and near-misses. Agents get the below-80% functions
