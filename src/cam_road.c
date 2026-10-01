@@ -487,11 +487,6 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     return 0;
 }
 
-// opt_propagation off: without it the interpolation constants get the wrong FP registers.
-#pragma opt_propagation off
-// NONMATCHING (99.58%): only the interpolation accumulator's FP register differs: the target
-// keeps `1.0f - f30`/the accumulator in f0 and the 0.500001 constant in f1, ours has them in
-// f1/f0; instruction order, the atan2 result (frsp f0 + fmr f30) and the 3.141592*t*1+0 fmadds match.
 void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoadState* c, CamRoadState* out) {
     f32 f31;
     f32 f30;
@@ -500,18 +495,20 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
     f32 t1;
     f32 angle;
     f32 angleB;
+    f32 fa;
 
     f31 = (f32)cos(float_0_8041954c);
     f30 = (f32)cos(float_0_8041954c);
-    f6 = (f32)cos(3.141592f * t * float_1_80419558 + float_0_8041954c);
-    t0 = 2.0f / (1.0f + f31);
-    t1 = 0.5f * (1.0f - f30) + f6;
+    // temp for the cos argument: the original pools its constants through this temp's
+    // register assignment (inlining it back swaps f1/f2 in the f6 fmadds)
+    fa = float_3p1416_80419568 * t;
+    f6 = (f32)cos(fa * float_1_80419558 + float_0_8041954c);
+    t0 = float_2_8041955c / (float_1_80419558 + f31);
+    t1 = float_0p5_8041956c * (float_1_80419558 - f30) + f6;
     t1 = t0 * t1;
-    t1 = 1.0f + t1;
-    t1 = 2.0f - t1;
-    f31 = 0.500001f * t1;
-    if (f31 > 1.0f) {
-        f31 = 1.0f;
+    f31 = float_0p5_80419570 * (float_2_8041955c - (float_1_80419558 + t1));
+    if (f31 > float_1_80419558) {
+        f31 = float_1_80419558;
     }
     if (flag != 0) {
         out->x = a->x + f31 * (b->x - a->x);

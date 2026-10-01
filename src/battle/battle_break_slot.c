@@ -263,9 +263,19 @@ static inline GXColor slotColorB(u8 a) {
 }
 #endif
 
-// NONMATCHING (99.98%): i->f32 pools an anonymous 2^52 double instead of the named
-// double_to_int_802fd930 (cosmetic, not scored); the first built colour's local and the second's
-// outgoing copy are 4 bytes low (0xc/0x10) where the original has them at 0x10/0xc.
+#ifdef MUST_MATCH
+// Returning the colour from an inline (rather than writing the channels in place) makes MWCC lay the
+// local/outgoing GXColor pair out the way the original does; passing the alpha first is what makes the
+// second call's scratch slots come out adjacent to its local (with the colour first the compiler groups
+// the two by-value colours' locals together and the second call's copy lands 4 bytes high).
+static inline GXColor slotColor(u8 a, GXColor c) {
+    c.a = a;
+    return c;
+}
+#endif
+
+// i->f32 pools an anonymous 2^52 double instead of the original's named double_to_int_802fd930; the value
+// and instructions are identical, only the pool label differs (not scored).
 void BattleBreakSlotDispReel(CameraId camId, void* param) {
     s32 i;
     BattleBreakSlotReel* reel;
@@ -331,15 +341,14 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             {
                 u16 tex0 = texList[reel->value];
 #ifdef MUST_MATCH
-                GXColor c0 = slotColorA(reel->field_58);
+                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->field_58, *(GXColor*)&dat_80420528), 0);
 #else
                 GXColor c0;
 
                 *(u32*)&c0 = dat_80420528;
                 c0.a = reel->field_58;
-#endif
-
                 btlDispTexPlane2(mtxFinal, tex0, c0, 0);
+#endif
             }
             if (reel->state <= 0xA && reel->state != 3 && reel->state != 4) {
                 s32 idx = reel->index + 1;
@@ -356,15 +365,14 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
                 PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
                 {
 #ifdef MUST_MATCH
-                    GXColor c1 = slotColorB(reel->field_58);
+                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->field_58, *(GXColor*)&dat_8042052c), 0);
 #else
                     GXColor c1;
 
                     *(u32*)&c1 = dat_8042052c;
                     c1.a = reel->field_58;
-#endif
-
                     btlDispTexPlane2(mtxFinal, tex, c1, 0);
+#endif
                 }
             }
         }

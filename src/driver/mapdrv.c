@@ -2667,7 +2667,13 @@ void* mapSearchDmdJointSub(void* a, void* b) {
 #endif
 
 // NONMATCHING (99.65%): branch-2 loop only: `e` and the compiler-generated i*4 induction
-// accumulate in r30/r31 swapped vs the target. Both pointer walks are otherwise identical.
+// accumulate in r30/r31 swapped vs the target (target branch2 has e=r31, idx=r30; branch-1
+// loop is already exact with e=r30, idx=r31). The target's two `e` webs have different colors,
+// so it likely has a separate pointer per block; splitting `e` (function-scope or block-scope,
+// same or different name) reproduces branch 2 but moves `count` off r28 -- tried ~100 variants
+// (declaration permutations, block scopes, for-init forms, inline helper, pragmas, explicit
+// offsets); all scored below 99.65, so the shared-`e` form was kept. Both walks are otherwise
+// byte-identical.
 s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	Vec pos;
 	s32 count = 0;

@@ -311,10 +311,12 @@ static void effKemuri2Main(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (99.84%): structure, constants and symbols match, and the GPR colouring matches
-// retail (type r26, camId r27, i r27, j r26); only the hoisted callee-saved floats differ (ours
-// f29/f28/f31/f30 vs retail f28/f31/f29/f30 for 1.0/0.5/double_to_int/20).
+// Draws a Kemuri puff as two camera-facing quads. `half`/`twenty` are locals (rather than the
+// named float_0p5_8041c6cc/float_20_8041c694) because the compiler then hoists them into the
+// FPRs retail uses (half f31, twenty f30); the named constants give a different hoist order.
 void effKemuriDisp(CameraId camId, void* param) {
+	f32 half = 0.5f;
+	f32 twenty = 20.0f;
 	EffectEntry* effect = param;
 	effKemuriData* data = effect->userdata;
 	s32 i;
@@ -400,7 +402,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 
 				PSMTXTrans(transMtx, data->field_0x58 + (f32)t, (f32)-t, float_0_8041c6bc);
 			}
-			PSMTXScale(scaleMtx, float_20_8041c694 * data->field_0x44, float_20_8041c694 * data->field_0x48, float_20_8041c694);
+			PSMTXScale(scaleMtx, twenty * data->field_0x44, twenty * data->field_0x48, twenty);
 			PSMTXConcat(outMtx, transMtx, tmpMtx);
 			PSMTXConcat(tmpMtx, scaleMtx, tmpMtx);
 			GXLoadPosMtxImm(tmpMtx, 0);
@@ -424,13 +426,13 @@ void effKemuriDisp(CameraId camId, void* param) {
 			GXLoadTexMtxImm(transMtx, 0x21, 1);
 
 			GXBegin(0x80, 0, 4);
-			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, float_1_8041c6b0, 0.0f);
+			GXPosition3f32(-float_1_8041c6b0 * half, float_1_8041c6b0, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(float_0p5_8041c6cc, float_1_8041c6b0, 0.0f);
+			GXPosition3f32(half, float_1_8041c6b0, 0.0f);
 			GXTexCoord2f32(1.0f, 0.0f);
-			GXPosition3f32(float_0p5_8041c6cc, 0.0f, 0.0f);
+			GXPosition3f32(half, 0.0f, 0.0f);
 			GXTexCoord2f32(1.0f, 1.0f);
-			GXPosition3f32(-float_1_8041c6b0 * float_0p5_8041c6cc, 0.0f, 0.0f);
+			GXPosition3f32(-float_1_8041c6b0 * half, 0.0f, 0.0f);
 			GXTexCoord2f32(0.0f, 1.0f);
 		}
 	}

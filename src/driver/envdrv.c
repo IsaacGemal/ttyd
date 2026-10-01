@@ -1469,14 +1469,14 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
 
 // envGlare was matched with opt_lifetimes off (needed: its register colouring regresses with the default pass)
 #pragma opt_lifetimes off
-// NONMATCHING (99.55%): every instruction is present; the remaining diffs are callee-saved register
-// colours (target y/2=r20/capture=r19, var_r22=r22/unkC=r20; ours y/2=r23/capture=r20,
-// var_r22=r20/unkC=r22) and the pooled @NNN symbols vs the named .sdata2/double ones.
+// NONMATCHING (99.91%): only the loop-invariant sign-extended x0 and the texture matrix index (var_r23_2)
+// get the opposite r20/r23 colours from the original; all instructions and float-pool symbol names otherwise match.
+// (Declaration order, types, pragmas and reusing temp_r20 were tried and don't move them.)
 void envGlare(EnvironmentGlare* glare) {
     GXTevStageID var_r23;
     u16 temp_r8;
-    u32 temp_r20;
-    GXTevKColorSel temp_r20_2;
+    GXTexObj sp8;
+    GXTevStageID var_r22;
     u32 var_r22_2;
     Mtx44 sp88;
     EnvironmentGlareFilter* temp_r30;
@@ -1484,13 +1484,13 @@ void envGlare(EnvironmentGlare* glare) {
     s32 temp_r30_2;
     GXTevKColorSel temp_r21_2;
     EnvironmentGlare* var_r21;
-    GXTevStageID var_r22;
+    GXTevKColorSel temp_r20_2;
     s32 temp_r29;
     s32 var_r28;
     u32 var_r23_2;
     u16 temp_r27;
     s32 temp_r31;
-    void* temp_r19;
+    u32 temp_r20;
     u32 temp_r21;
     u32 size;
     u16 temp_r26;
@@ -1498,7 +1498,7 @@ void envGlare(EnvironmentGlare* glare) {
     Mtx sp58;
     Mtx sp28;
     s32 var_r19_3;
-    GXTexObj sp8;
+    void* temp_r19;
     int i;
     u16 temp_r0;
 
@@ -1506,10 +1506,10 @@ void envGlare(EnvironmentGlare* glare) {
     temp_r30 = &var_r4->filter;
     temp_r27 = var_r4->filter.y0;
     temp_r26 = var_r4->filter.x0;
-    temp_r0 = (u16)(var_r4->filter.y1 - temp_r27);
     temp_r8 = (u16)(var_r4->filter.x1 - temp_r26);
-    temp_r20 = (u32)temp_r0 / 2;
+    temp_r0 = (u16)(var_r4->filter.y1 - temp_r27);
     temp_r21 = (u32)temp_r8 / 2;
+    temp_r20 = (u32)temp_r0 / 2;
     size = GXGetTexBufferSize((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_FALSE, 0);
     temp_r19 = smartAlloc(size, 3)->address;
     GXSetTexCopySrc(temp_r26, temp_r27, temp_r8, temp_r0);
@@ -1548,8 +1548,8 @@ void envGlare(EnvironmentGlare* glare) {
         GXSetTevColorIn(var_r22, 0xF, 4, 0xE, 0);
         GXSetTevKColorSel(var_r22, temp_r21_2);
         GXSetTevSwapMode(var_r22, 0, 0);
-        var_r22 += 2;
         var_r23 += 2;
+        var_r22 += 2;
     }
 
     for (i = 0, var_r22_2 = GX_TEXMTX0; i < 8; i++, var_r22_2 += 3) {

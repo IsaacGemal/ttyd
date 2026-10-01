@@ -168,21 +168,42 @@ static u32 size64x64_tex32x32_vtx[0x118 / 4] = {
 	0x00200040, 0x00020400, 0x10007878, 0x00FFFFE0, 0x00400002, 0x00001000, 0x787800FF,
 };
 
+// Each colour is built and passed in one `static inline void` helper. That shape is what makes
+// MWCC give the two by-value GXSetTevColor GXColor temporaries the original's stack slots
+// (colour1 local 0x10/arg 0x14, colour2 local 0x8/arg 0xc); returning the colour from an inline
+// or building it in place leaves the two slots swapped (the known MWCC quirk). Same as
+// eff_breath_fire_n64's breathSetColor0/1.
+#ifdef MUST_MATCH
+static inline void effVaporSetColor1(effVaporN64Data* data, s32 alpha) {
+	GXColor color = unk_804232b8;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
+	color.a = alpha;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void effVaporSetColor2(effVaporN64Data* data, s32 alpha) {
+	GXColor color = unk_804232bc;
+	color.r = data->color2R;
+	color.g = data->color2G;
+	color.b = data->color2B;
+	color.a = alpha;
+	GXSetTevColor(GX_TEVREG1, color);
+}
+#endif
+
 // The original reaches each table from lbl_803A85F8 and materialises the base before
 // an indexed load; naming the file's arrays (dx_data / scale_data / seq_data / rz_data)
 // and indexing them with type*0x1e + frame reproduces that addi base,off / lbzx shape.
 // opt_common_subs off: with CSE on, MWCC folds the table bases through one register.
-// The two GXColor inline temporaries land in swapped stack slots (the original builds
-// color1 at 0x10 and copies color2's argument to 0xc; this build uses 0xc and 0x10) and
-// the data/frame registers are the allocator's other equivalent colouring (original
-// data r29/frame r30, this build r30/r29).
 #pragma opt_common_subs off
-// NONMATCHING (99.78%): the GXColor temporaries' stack slots and the data/frame pair
-// still differ.
+// The odd position of the `data` declaration in the list below is deliberate: MWCC's callee-saved
+// colouring follows the declaration order, and this order is the one that gives data=r29/frame=r30
+// as the original does (any earlier `data` declaration swaps them).
 void effVaporDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
 	s32 frame;
-	effVaporN64Data* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
 	Mtx mtxA;
@@ -198,6 +219,7 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	s32 alpha1;
 	s32 type;
 	s32 index;
+	effVaporN64Data* data;
 	s32 frac;
 	s32 band;
 	s32 frame2;
@@ -216,8 +238,16 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	PSMTXConcat(mtxA, mtxB, mtxA);
 	PSMTXConcat(cam->view, mtxA, mtxD);
 
-	color = effVaporN64Color1(data, float_0p5_804200dc * (f32)alpha1);
+#ifdef MUST_MATCH
+	effVaporSetColor1(data, float_0p5_804200dc * (f32)alpha1);
+#else
+	color = unk_804232b8;
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
+	color.a = (s32)(float_0p5_804200dc * (f32)alpha1);
 	GXSetTevColor(GX_TEVREG0, color);
+#endif
 
 	switch (type) {
 	case 0:
@@ -309,8 +339,16 @@ void effVaporDisp(CameraId cameraId, void* param) {
 			PSMTXScale(mtxB, float_0p032258_804200f4, float_0p007874_804200f8, float_0_804200e4);
 			GXLoadTexMtxImm(mtxB, GX_TEXMTX1, GX_MTX2x4);
 		}
-		color = effVaporN64Color2(data, frac);
+#ifdef MUST_MATCH
+		effVaporSetColor2(data, frac);
+#else
+		color = unk_804232bc;
+		color.r = data->color2R;
+		color.g = data->color2G;
+		color.b = data->color2B;
+		color.a = frac;
 		GXSetTevColor(GX_TEVREG1, color);
+#endif
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(band * 4, band * 4 + 1, band * 4 + 2, 0, band * 4, band * 4 + 2, band * 4 + 3, 0);
 	}
