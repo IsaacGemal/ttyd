@@ -1287,6 +1287,27 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
+// envDisp_FF's copy of the unit's sqrtf: MWCC colours the last Newton step's `guess` into
+// f0 (matching the target) only when the last iteration is written as a returned expression
+// instead of a third assignment followed by `return x * guess;`. The shared sqrtf above is
+// left as it was (now unused); this is only for envDisp_FF.
+static inline f32 envFF_Sqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * (_half * guess * (_three - guess * guess * x));
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+
 // `opt_propagation off` is required or MWCC rematerialises the polynomial coefficients into
 // every branch instead of hoisting them (same as evt_sub.c).
 // `opt_lifetimes off` keeps the two seed loads (0.03705/0.00761) inside the loop; with the
@@ -1294,16 +1315,18 @@ static inline f32 sqrtf(f32 x) {
 // shifting the whole loop allocation by one register.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// The five loop FPRs now match the target (sinv=f20, sinC1=f21, cosv=f22, cosC1=f23,
+// The five loop FPRs match the target (sinv=f20, sinC1=f21, cosv=f22, cosC1=f23,
 // one=f24, pi=f29). Getting them there needs this declaration order (one, cosC1, cosv,
 // sinC1, sinv) and the seed assignments in the order cosC1, one, cosv, with sinC1 assigned
 // down beside sinv (that swap moves pi into f29 and fixes the preheader load order).
-// What still differs is one scratch-register swap: the angle-squared temp is f0 in the
-// original but f1 here, and the pooled 1.5708 constant is f1 in the original but f0 here,
-// through both polynomial blocks; the sqrtf inline's last `guess` result lands in f1 here
-// vs f0 in the original, and the two trailing `fmadds` (sinv*0.5 vs 0.5*sinv) follow from
-// the same choice. The sqrtf `.rodata` base differs only by symbol name.
-// NONMATCHING (99.02%): f0/f1 scratch swap in the polynomial temps (see REPORT.md).
+// The halfpi constant is assigned to the `f1` local in each branch before the nested
+// compare (the envDisp_DepthOfField shape); that is what puts it in f1 as the target does.
+// The two `angle * angle` squares are written inline so MWCC keeps them in f0. The tail
+// uses `v / 2.0f + 0.5f` (not `v * 0.5f`) so the fused fmadds takes the variable as its
+// first operand. All of this is needed; the remaining diff is only which pool slot each
+// float constant loads from (the unit's .sdata2/.rodata is still missing the objects the
+// other functions in this file define), so objdiff still reports 99.99% here.
+// NONMATCHING (99.99%): only pool slot offsets differ (unit data incomplete), no instr diffs.
 void envDisp_FF(void) {
     EnvironmentWork* wp = envGetWork();
     CameraEntry* cam;
@@ -1339,7 +1362,7 @@ void envDisp_FF(void) {
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-        scale = sqrtf(gp->fbWidth / 2 * gp->fbWidth / 2 + gp->efbHeight / 2 * gp->efbHeight / 2);
+        scale = envFF_Sqrtf(gp->fbWidth / 2 * gp->fbWidth / 2 + gp->efbHeight / 2 * gp->efbHeight / 2);
 
         GXBegin(GX_LINES, GX_VTXFMT0, 2000);
         for (i = 0; i < 1000; i++) {
@@ -1349,13 +1372,13 @@ void envDisp_FF(void) {
             one = 1.0f;
             cosv = 0.03705f;
             if (angle <= 3.1415927f) {
-                if (angle <= 1.5707964f) {
-                    f0 = angle * angle;
-                    cosv = cosv * f0 - cosC1;
-                    cosv = cosv * f0 + one;
+                f1 = 1.5707964f;
+                if (angle <= f1) {
+                    cosv = cosv * (angle * angle) - cosC1;
+                    cosv = cosv * (angle * angle) + one;
                 } else {
-                    f0 = angle - 1.5707964f;
-                    f0 = 1.5707964f - f0;
+                    f0 = angle - f1;
+                    f0 = f1 - f0;
                     f0 = f0 * f0;
                     cosv = cosv * f0 - cosC1;
                     cosv = cosv * f0 + one;
@@ -1369,7 +1392,8 @@ void envDisp_FF(void) {
                 cosv = -cosv;
             } else {
                 f0 = angle - 4.712389f;
-                f0 = 1.5707964f - f0;
+                f1 = 1.5707964f;
+                f0 = f1 - f0;
                 f0 = f0 * f0;
                 cosv = cosv * f0 - cosC1;
                 cosv = cosv * f0 + one;
@@ -1377,14 +1401,14 @@ void envDisp_FF(void) {
             sinv = 0.00761f;
             sinC1 = 0.16605f;
             if (angle <= 3.1415927f) {
-                if (angle <= 1.5707964f) {
-                    f0 = angle * angle;
-                    sinv = sinv * f0 - sinC1;
-                    sinv = sinv * f0 + one;
+                f1 = 1.5707964f;
+                if (angle <= f1) {
+                    sinv = sinv * (angle * angle) - sinC1;
+                    sinv = sinv * (angle * angle) + one;
                     sinv = sinv * angle;
                 } else {
-                    f0 = angle - 1.5707964f;
-                    f1 = 1.5707964f - f0;
+                    f0 = angle - f1;
+                    f1 = f1 - f0;
                     f0 = f1 * f1;
                     sinv = sinv * f0 - sinC1;
                     sinv = sinv * f0 + one;
@@ -1399,7 +1423,8 @@ void envDisp_FF(void) {
                 sinv = -sinv;
             } else {
                 f0 = angle - 4.712389f;
-                f1 = 1.5707964f - f0;
+                f1 = 1.5707964f;
+                f1 = f1 - f0;
                 f0 = f1 * f1;
                 sinv = sinv * f0 - sinC1;
                 sinv = sinv * f0 + one;
@@ -1409,7 +1434,7 @@ void envDisp_FF(void) {
             rnd = (f32)(rand() % 10) / 100.0f;
 
             GXPosition3f32(sinv * scale, cosv * scale, 0.0f);
-            GXTexCoord2f32(sinv * 0.5f + 0.5f + rnd, -cosv * 0.5f + 0.5f + rnd);
+            GXTexCoord2f32(sinv / 2.0f + 0.5f + rnd, -cosv / 2.0f + 0.5f + rnd);
             GXPosition3f32(0.0f, 0.0f, 0.0f);
             GXTexCoord2f32(0.5f, 0.5f);
         }
@@ -1469,9 +1494,6 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
 
 // envGlare was matched with opt_lifetimes off (needed: its register colouring regresses with the default pass)
 #pragma opt_lifetimes off
-// NONMATCHING (99.91%): only the loop-invariant sign-extended x0 and the texture matrix index (var_r23_2)
-// get the opposite r20/r23 colours from the original; all instructions and float-pool symbol names otherwise match.
-// (Declaration order, types, pragmas and reusing temp_r20 were tried and don't move them.)
 void envGlare(EnvironmentGlare* glare) {
     GXTevStageID var_r23;
     u16 temp_r8;
@@ -1485,6 +1507,13 @@ void envGlare(EnvironmentGlare* glare) {
     GXTevKColorSel temp_r21_2;
     EnvironmentGlare* var_r21;
     GXTevKColorSel temp_r20_2;
+#ifdef MUST_MATCH
+    // The target keeps the sign-extended filter x0 in r20 and the texture-matrix index in r23;
+    // caching the cast in x0s and declaring var_r22_3 ahead of var_r23_2 gives those colours
+    // (the natural inline cast and late declaration are under #else).
+    s16 x0s;
+    EnvironmentGlare* var_r22_3;
+#endif
     s32 temp_r29;
     s32 var_r28;
     u32 var_r23_2;
@@ -1494,7 +1523,9 @@ void envGlare(EnvironmentGlare* glare) {
     u32 temp_r21;
     u32 size;
     u16 temp_r26;
+#ifndef MUST_MATCH
     EnvironmentGlare* var_r22_3;
+#endif
     Mtx sp58;
     Mtx sp28;
     s32 var_r19_3;
@@ -1581,6 +1612,9 @@ void envGlare(EnvironmentGlare* glare) {
     temp_r30_2 = temp_r27 + temp_r0;
     temp_r31 = temp_r26 + temp_r8;
     var_r21 = glare;
+#ifdef MUST_MATCH
+    x0s = (s16)temp_r26;
+#endif
     while (var_r28 < temp_r29) {
         var_r22_3 = var_r21;
         var_r19_3 = 0;
@@ -1597,13 +1631,21 @@ void envGlare(EnvironmentGlare* glare) {
         GXSetNumTevStages((u8)(var_r19_3 * 2));
         GXSetNumTexGens((u8)var_r19_3);
         GXBegin(GX_QUADS, GX_VTXFMT7, 4);
+#ifdef MUST_MATCH
+        GXPosition3s16(x0s, (s16)temp_r27, 0);
+#else
         GXPosition3s16((s16)temp_r26, (s16)temp_r27, 0);
+#endif
         GXTexCoord2u16(0, 0);
         GXPosition3s16((s16)temp_r31, (s16)temp_r27, 0);
         GXTexCoord2u16(1, 0);
         GXPosition3s16((s16)temp_r31, (s16)temp_r30_2, 0);
         GXTexCoord2u16(1, 1);
+#ifdef MUST_MATCH
+        GXPosition3s16(x0s, (s16)temp_r30_2, 0);
+#else
         GXPosition3s16((s16)temp_r26, (s16)temp_r30_2, 0);
+#endif
         GXTexCoord2u16(0, 1);
     }
 }

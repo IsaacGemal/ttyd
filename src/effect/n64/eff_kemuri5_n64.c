@@ -96,6 +96,10 @@ static inline Vec initializeVec(Vec* input) {
 // interleaving the reset/ct declarations and stores, moving the reset assignments to the top of the loop
 // or before it (98.83), param copies (MWCC always coalesces them with the incoming args), local
 // `register ... asm("fNN")` pins (ignored by mwcceppc 2.6), and the opt_* pragmas (no change or worse).
+// Also tried (DeepSeek V4.1 Flash): all 64 explicit-local/direct subsets of the six reset+ct locals and
+// every literal/named mix (the args never go above f19-f22; the reset never reaches f17-f20), the
+// optimization_level/optimize_for_size pragmas, statement reordering, and loop-body declarations; the
+// 16 mismatched instructions are always exactly the args (f23-f26) and reset (f17-f20) block swap.
 // A 15 minute decomp-permuter run on this function did not beat its base score.
 EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;

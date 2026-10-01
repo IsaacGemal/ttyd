@@ -1023,16 +1023,10 @@ USER_FUNC(N_evt_mario_party_door_halve_hitbox) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.29%): only the case-0 int->float regalloc differs. The target keeps the magic
-// double in f2 (ours f5) and materialises `speed / (f32)gp->framerate` in f29 with a final `fmr f2, f29`
-// (ours computes it straight into f2 and folds the move). Every other instruction matches. Naming the
-// third argument's own variable (f32 spd/speed=, compound /=, assignment expression, volatile, a temp
-// for the frames, `#pragma opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments off`,
-// `optimize_for_size on`, inline conversion helpers) reproduces the f29+fmr but always shifts
-// `tmp`/the double to f4/f3 and the second conversion slot, scoring 97-99.1%, so keep this shape.
-// The screen-pos compares need the 0.0 bound as the literal here; the target's float_0_8041b8ac and our
-// anonymous @constant resolve to the same pool slot and the symbol-name mismatch does not cost score
-// (see evt_mario_mov_pos2 at 100% with the same @1304/jumptable names).
+// The case-0 first argument must be built as a named float product, cast to s32, and only then is
+// `speed` divided by the framerate: this keeps the two `(f32)gp->framerate` conversions separate and
+// puts the magic double in f2 (the #else order lets MWCC coalesce the third argument into f2 and
+// land the double in f5). See evt_party_move_pos2 for the same idiom.
 USER_FUNC(evt_mario_party_door_move) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1090,8 +1084,22 @@ USER_FUNC(evt_mario_party_door_move) {
         if (mario->flags & MARIO_FLAG_BG_MODE) {
             speed *= float_0p4_8041b8dc;
         }
-        tmp = dist / speed;
-        marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed / (f32)gp->framerate);
+        {
+#ifdef MUST_MATCH
+            // MUST_MATCH: the named float product cast to int, then the speed division, is what
+            // separates the two framerate conversions and lands the double in f2.
+            f32 fr = (f32)gp->framerate * (dist / speed);
+            s32 n;
+
+            n = (s32)fr;
+            speed = speed / (f32)gp->framerate;
+            marioSetForceMove(n, mario->directionView, speed);
+#else
+            tmp = dist / speed;
+            speed = speed / (f32)gp->framerate;
+            marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed);
+#endif
+        }
         event->userdata[0] = 2;
         break;
     case 2:

@@ -183,9 +183,17 @@ void BattleStageInit(void) {
 	batSpotInit();
 }
 
-// NONMATCHING (99.62%): only register allocation - the first colour channel and
-// the four dark blocks load from/to into r4/r0 instead of r0/r4, and the
-// unsigned int->float pool constant is the local @841 not the named mask.
+// The original translation unit called intplGetValue through a prototype listing the two float
+// bounds before the step/steps words, so MWCC evaluates the two int->float conversions first and
+// colours them r0/r4 as retail does; the ABI is unchanged (ints r3-r5, floats f1-f2).
+static inline f32 intplGetValueMain(s32 mode, f32 start, f32 end, s32 currStep, s32 steps) {
+#ifdef MUST_MATCH
+	return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps);
+#else
+	return intplGetValue(mode, currStep, steps, start, end);
+#endif
+}
+
 void BattleStageMain(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 offset;
@@ -202,15 +210,15 @@ void BattleStageMain(void) {
 		if (light->flags & 1) {
 			if (light->colorFrames > 0) {
 				light->colorFrames--;
-				light->colorCur.r = intplGetValue(light->colorEase,
-					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal,
-					light->colorFrom.r, light->colorTo.r);
-				light->colorCur.g = intplGetValue(light->colorEase,
-					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal,
-					light->colorFrom.g, light->colorTo.g);
-				light->colorCur.b = intplGetValue(light->colorEase,
-					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal,
-					light->colorFrom.b, light->colorTo.b);
+				light->colorCur.r = intplGetValueMain(light->colorEase,
+					light->colorFrom.r, light->colorTo.r,
+					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal);
+				light->colorCur.g = intplGetValueMain(light->colorEase,
+					light->colorFrom.g, light->colorTo.g,
+					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal);
+				light->colorCur.b = intplGetValueMain(light->colorEase,
+					light->colorFrom.b, light->colorTo.b,
+					light->colorFramesTotal - light->colorFrames, light->colorFramesTotal);
 				if ((light->flags & 2) && light->colorCur.r == 0 && light->colorCur.g == 0 && light->colorCur.b == 0) {
 					light->flags = 0;
 					continue;
@@ -219,22 +227,22 @@ void BattleStageMain(void) {
 
 			if (light->widthFrames > 0) {
 				light->widthFrames--;
-				light->widthCur = intplGetValue(light->widthEase,
-					light->widthFramesTotal - light->widthFrames, light->widthFramesTotal,
-					light->widthFrom, light->widthTo);
+				light->widthCur = intplGetValueMain(light->widthEase,
+					light->widthFrom, light->widthTo,
+					light->widthFramesTotal - light->widthFrames, light->widthFramesTotal);
 			}
 
 			if (light->posFrames > 0) {
 				light->posFrames--;
-				light->posCur.x = intplGetValue(light->posEase,
-					light->posFramesTotal - light->posFrames, light->posFramesTotal,
-					light->posFrom.x, light->posTo.x);
-				light->posCur.y = intplGetValue(light->posEase,
-					light->posFramesTotal - light->posFrames, light->posFramesTotal,
-					light->posFrom.y, light->posTo.y);
-				light->posCur.z = intplGetValue(light->posEase,
-					light->posFramesTotal - light->posFrames, light->posFramesTotal,
-					light->posFrom.z, light->posTo.z);
+				light->posCur.x = intplGetValueMain(light->posEase,
+					light->posFrom.x, light->posTo.x,
+					light->posFramesTotal - light->posFrames, light->posFramesTotal);
+				light->posCur.y = intplGetValueMain(light->posEase,
+					light->posFrom.y, light->posTo.y,
+					light->posFramesTotal - light->posFrames, light->posFramesTotal);
+				light->posCur.z = intplGetValueMain(light->posEase,
+					light->posFrom.z, light->posTo.z,
+					light->posFramesTotal - light->posFrames, light->posFramesTotal);
 			}
 
 			if (light->flags & 4) {
@@ -257,15 +265,15 @@ void BattleStageMain(void) {
 			} else {
 				if (light->targetFrames > 0) {
 					light->targetFrames--;
-					light->targetCur.x = intplGetValue(light->targetEase,
-						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal,
-						light->targetFrom.x, light->targetTo.x);
-					light->targetCur.y = intplGetValue(light->targetEase,
-						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal,
-						light->targetFrom.y, light->targetTo.y);
-					light->targetCur.z = intplGetValue(light->targetEase,
-						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal,
-						light->targetFrom.z, light->targetTo.z);
+					light->targetCur.x = intplGetValueMain(light->targetEase,
+						light->targetFrom.x, light->targetTo.x,
+						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal);
+					light->targetCur.y = intplGetValueMain(light->targetEase,
+						light->targetFrom.y, light->targetTo.y,
+						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal);
+					light->targetCur.z = intplGetValueMain(light->targetEase,
+						light->targetFrom.z, light->targetTo.z,
+						light->targetFramesTotal - light->targetFrames, light->targetFramesTotal);
 				}
 				if (light->spline != NULL) {
 					__memFree(HEAP_BATTLE, light->spline);
@@ -275,15 +283,15 @@ void BattleStageMain(void) {
 
 			if (light->upFrames > 0) {
 				light->upFrames--;
-				light->upCur.x = intplGetValue(light->upEase,
-					light->upFramesTotal - light->upFrames, light->upFramesTotal,
-					light->upFrom.x, light->upTo.x);
-				light->upCur.y = intplGetValue(light->upEase,
-					light->upFramesTotal - light->upFrames, light->upFramesTotal,
-					light->upFrom.y, light->upTo.y);
-				light->upCur.z = intplGetValue(light->upEase,
-					light->upFramesTotal - light->upFrames, light->upFramesTotal,
-					light->upFrom.z, light->upTo.z);
+				light->upCur.x = intplGetValueMain(light->upEase,
+					light->upFrom.x, light->upTo.x,
+					light->upFramesTotal - light->upFrames, light->upFramesTotal);
+				light->upCur.y = intplGetValueMain(light->upEase,
+					light->upFrom.y, light->upTo.y,
+					light->upFramesTotal - light->upFrames, light->upFramesTotal);
+				light->upCur.z = intplGetValueMain(light->upEase,
+					light->upFrom.z, light->upTo.z,
+					light->upFramesTotal - light->upFrames, light->upFramesTotal);
 			}
 		} else {
 			if (light->spline != NULL) {
@@ -295,27 +303,27 @@ void BattleStageMain(void) {
 
 	if (stage->stgDark.field_C > 0) {
 		stage->stgDark.field_C--;
-		stage->stgDark.field_4 = intplGetValue(stage->stgDark.field_1C,
-			stage->stgDark.field_14 - stage->stgDark.field_C, stage->stgDark.field_14,
-			stage->stgDark.field_6, stage->stgDark.field_8);
+		stage->stgDark.field_4 = intplGetValueMain(stage->stgDark.field_1C,
+			stage->stgDark.field_6, stage->stgDark.field_8,
+			stage->stgDark.field_14 - stage->stgDark.field_C, stage->stgDark.field_14);
 	}
 	if (stage->stgDark.field_10 > 0) {
 		stage->stgDark.field_10--;
-		stage->stgDark.field_5 = intplGetValue(stage->stgDark.field_1D,
-			stage->stgDark.field_18 - stage->stgDark.field_10, stage->stgDark.field_18,
-			stage->stgDark.field_7, stage->stgDark.field_9);
+		stage->stgDark.field_5 = intplGetValueMain(stage->stgDark.field_1D,
+			stage->stgDark.field_7, stage->stgDark.field_9,
+			stage->stgDark.field_18 - stage->stgDark.field_10, stage->stgDark.field_18);
 	}
 	if (stage->audDark.field_C > 0) {
 		stage->audDark.field_C--;
-		stage->audDark.field_4 = intplGetValue(stage->audDark.field_1C,
-			stage->audDark.field_14 - stage->audDark.field_C, stage->audDark.field_14,
-			stage->audDark.field_6, stage->audDark.field_8);
+		stage->audDark.field_4 = intplGetValueMain(stage->audDark.field_1C,
+			stage->audDark.field_6, stage->audDark.field_8,
+			stage->audDark.field_14 - stage->audDark.field_C, stage->audDark.field_14);
 	}
 	if (stage->audDark.field_10 > 0) {
 		stage->audDark.field_10--;
-		stage->audDark.field_5 = intplGetValue(stage->audDark.field_1D,
-			stage->audDark.field_18 - stage->audDark.field_10, stage->audDark.field_18,
-			stage->audDark.field_7, stage->audDark.field_9);
+		stage->audDark.field_5 = intplGetValueMain(stage->audDark.field_1D,
+			stage->audDark.field_7, stage->audDark.field_9,
+			stage->audDark.field_18 - stage->audDark.field_10, stage->audDark.field_18);
 	}
 }
 
@@ -548,17 +556,21 @@ typedef struct ScreenTevParam {
 // are precomputed with shifts before the count loop so they land in the callee-saved
 // registers the original uses; the first loop keeps the `(i/4)*0x100`/`(i%4)*8`
 // multiplies (using shifts there rotates the whole loop's register assignment) and
-// accumulates into `col` (`col += idx; buf[col]`) which is what makes the first
-// loop's schedule/registers come out. `buf` is declared first for the same reason.
-// With opt_propagation off the base/col add into the byte index as the original
-// does instead of folding into a buf+col pointer. The min-clamp's `x = (ratio > x)
-// ? x : ratio;` reproduces the original's two-branch select. The remaining
+// accumulates into `idx` (`idx = (i/4)*0x100; idx += (j/8)*0x20; ...`) which is what
+// makes the first loop's schedule/registers come out. `buf` is declared first for the
+// same reason. With opt_propagation off the base/col add into the byte index as the
+// original does instead of folding into a buf+col pointer. The min-clamp's `x =
+// (ratio > x) ? x : ratio;` reproduces the original's two-branch select. The remaining
 // differences are only integer and float register allocation: param lands in r25
 // (original r27), the second loop's scaled row in r27 (original r25), the first
 // loop's base/col in r7/r8 (original r4/r3), the first loop schedules its (j%8)
 // before (j/8)*0x20 in the target (reversed here), and the clamp ratio sits in f0
-// (original f1); instructions and structure are otherwise identical.
-// NONMATCHING (99.35%): integer and float register allocation only.
+// (original f1); instructions and structure are otherwise identical. Many variants
+// were tried (explicit `base`/`col` locals, shifts vs multiplies, sgrow/sgcol
+// declaration order, opt_lifetimes off, pragma sweeps, reordering the local
+// declarations) and none beat this: the allocator's colouring of the {param, sgrow,
+// sgcol} clique could not be steered from C.
+// NONMATCHING (99.36%): integer and float register allocation only.
 #pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
 void tou_gamen_screen_tev(void* param) {
 	GXTexObj texObj;
@@ -580,11 +592,10 @@ void tou_gamen_screen_tev(void* param) {
 		for (i = 0; i < 0x40; i++) {
 			for (j = 0; j < 0x40; j++) {
 				int idx = (i / 4) * 0x100;
-				int col = (i % 4) * 8;
 				idx += (j / 8) * 0x20;
 				idx += (j % 8);
-				col += idx;
-				buf[col] = (i & 1) ? 0xFF : 0;
+				idx += (i % 4) * 8;
+				buf[idx] = (i & 1) ? 0xFF : 0;
 			}
 			{
 				s32 count = 100 + rand() % 100;
@@ -595,8 +606,9 @@ void tou_gamen_screen_tev(void* param) {
 					s32 start = rand() % (0x41 - len);
 					u8 val = rand() % 0x100;
 					for (j = start; j < start + len; j++) {
-						s32 idx = (j / 8) * 0x20 + sgrow;
+						s32 idx = (j / 8) * 0x20;
 						s32 col = sgcol;
+						idx += sgrow;
 						idx += (j % 8);
 						buf[idx + col] = val;
 					}

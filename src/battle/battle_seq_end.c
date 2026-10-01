@@ -315,10 +315,14 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
     return (event->userdata[1] < 4) ? 0 : 2;
 }
 
-// NONMATCHING (99.76%): every instruction matches; only the .rodata pool offsets differ (ours are 0xD8+,
-// the original's 0x1F0+). The pool literals land earlier in our object because this unit's .rodata still lacks
-// the data-table strings (nozzle/SFX/help) that precede them in the original, so no edit to this function can
-// move them: it needs the rest of the unit's data. Also the three sda21 colour words are anonymous here.
+// NONMATCHING (99.76%): every instruction matches; all 30 objdiff differences are DIFF_ARG_MISMATCH, not
+// opcode/register/scheduling. 27 are the six .rodata Vec pairs + three zero Vecs: ours are at 0xD8+, the
+// original's at 0x1F0+, a constant 0x118 displacement because this unit's .rodata still lacks the data-table
+// strings (nozzle/confetti/levelup/SFX/spotlight) that precede them in the original. The other 3 are the
+// .sdata2 colour words (anonymous @292/@299/@306 here, dat_80420c34/38/3c in the original; same value). No edit
+// to this function can move either pool: both depend on the rest of the unit's functions/data. Verified that
+// naming the colours `extern const GXColor dat_80420c34` regresses to 92.50% (mwcc hoists the load and shifts
+// the registers), and moving the function to its reverse-asm source position only changes 0xD8 -> 0xE4.
 s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     PouchData* pouch = pouchGetPtr();

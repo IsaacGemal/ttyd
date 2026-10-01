@@ -165,7 +165,7 @@ void effLevelupMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (99.71%): inlining the second camGetPtr into the PSMTXRotRad yaw expression fixes the deg2rad FPR swap. Reusing the dead `camId` parameter as the outer loop counter (dropping the separate `layer`) makes the allocator put the induction variables in the target's r22/r24, but it pushes `effect`/`i`/`xBaseI` to r23/r25/r21 (target r21/r23/r25); a separate `layer` local instead keeps effect/i/xBaseI right but puts the induction pair in r24/r22 (99.69%). Also remaining: the two inner-loop-latch decrements (`i--` and the `i*0x24` offset) are scheduled in the opposite order.
+// NONMATCHING (99.93%): the `elem; i; layer` declaration order plus a separate `layer` local puts effect/layer/i/xBaseI/elem in the target's r21/r22/r23/r25/r24. Splitting the element address into `elem = userdata; elem += i;` makes the compiler load userdata straight into elem's r24 instead of a scratch. What is left: the two inner-loop-latch decrements, `i--` (subi r23) and the strength-reduced `i*0x24` offset (subi r27), are scheduled in the opposite order (target runs i-- first, then the offset); every other instruction matches. The local 2x4 table's initializer is an anonymous @218 rodata pool standing in for the named dat_802fe5d4 (both 0x20 bytes, identical here).
 void effLevelupDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effLevelupData* data = effect->userdata;
@@ -175,7 +175,9 @@ void effLevelupDisp(CameraId camId, void* param) {
 	Mtx mtxScale;
 	Mtx mtxView;
 	GXTexObj texObj;
+	effLevelupData* elem;
 	s32 i;
+	s32 layer;
 	f32 halfConst = 0.5f;
 	f32 yConst = 48.0f;
 
@@ -201,18 +203,20 @@ void effLevelupDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
-	for (camId = 1; camId >= 0; camId--) {
+	for (layer = 1; layer >= 0; layer--) {
 		for (i = effect->count - 1; i >= 1; i--) {
-			s32 xBaseI = camId * 4;
-			s32 yBaseI = -camId * 4;
+			s32 xBaseI = layer * 4;
+			s32 yBaseI = -layer * 4;
 			f32 xBase = (f32)xBaseI;
 			f32 yBase = (f32)yBaseI;
-			effLevelupData* elem = &((effLevelupData*)effect->userdata)[i];
 			f32 tableVal;
 			f32 half;
 			f32 neghalf;
 
-			if (camId != 0) {
+			elem = (effLevelupData*)effect->userdata;
+			elem += i;
+
+			if (layer != 0) {
 				effGetTexObj(texid_tbl[gp->language != 0][i + 2], &texObj);
 				GXLoadTexObj(&texObj, 0);
 				GXSetChanMatColor(4, dat_80421080);

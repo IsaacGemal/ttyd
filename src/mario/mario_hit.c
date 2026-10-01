@@ -978,9 +978,13 @@ extern const f32 float_30_8041a82c;
 extern const f32 float_16p8_8041a830;
 extern const Vec vec3_802c582c;
 
-// NONMATCHING (99.16%): targetDistance round still colours float_1000 f3 / out1.x f1 where
-// the original uses f2 / f4; conversions load anonymous @862 (name only, no score cost).
-// The out1.x MATCH_F32(float_1000) round under MUST_MATCH is the 0.48% (plain: 98.68%).
+// The targetDistance round colours float_1000 f3 / the fctiwz double f2 / the early
+// out1.x load f1 where the original uses f2 / f1 / f4 (a global allocation-order
+// difference). The extra MATCH_F32 read of float_1000 on the out1.x divisor recovers
+// the original's per-round reload and 0.62% over the plain form. Conversions reference
+// a local @865 double rather than the shared double_to_int_802c5920 (name only, no score
+// cost; same project-wide limitation noted in window/win_*.c).
+// NONMATCHING (99.30%): only FPR colouring and the local @865 double differ from the original.
 void marioCheckWall_roll(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     Vec v;
@@ -1044,17 +1048,11 @@ void marioCheckWall_roll(f32 a, f32 b) {
             {
                 Vec* pOut = &out1;
                 out1 = query.hitPos;
-#ifdef MUST_MATCH
-                // MATCH: the volatile read of 1000 in the x round is what makes MWCC
-                // colour this block's FPRs like the original (the plain form scores 98.68).
-                pOut->x = (f32)(s32)(MATCH_F32(float_1000_8041a7a0) * pOut->x +
-                                     (pOut->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           MATCH_F32(float_1000_8041a7a0);
-#else
+                // MATCH: the volatile read of the divisor forces MWCC to reload
+                // float_1000 for this round as the original does (plain form: 98.68).
                 pOut->x = (f32)(s32)(float_1000_8041a7a0 * pOut->x +
                                      (pOut->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           float_1000_8041a7a0;
-#endif
+                           MATCH_F32(float_1000_8041a7a0);
                 pOut->y = (f32)(s32)(float_1000_8041a7a0 * pOut->y +
                                      (pOut->y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
                            float_1000_8041a7a0;
@@ -1614,11 +1612,16 @@ void marioCheckWallShip(f32 a, f32 b) {
 }
 
 
-// The original reads the int->float magic double as `lfd f2, 0x1f0(r30)` (the compiler pools
-// it into the vec3_802c5730 .rodata block, where double_to_int_802c5920 lives), while MWCC
-// here emits a separate `lis r3, @865@ha; lfd f2, @865@l(r3)`. A file-wide rodata issue:
-// the base is `extern`, so the compiler cannot anchor its pool to it.
-// NONMATCHING (99.64%): only that float->int magic double load differs.
+// The original reads the int->float magic double as `lfd f2, 0x1f0(r30)` (the pool entry sits
+// 0x1f0 into the vec3_802c5730 .rodata block, where the delinker names it double_to_int_802c5920);
+// ours emits a fresh `lis r3, @865@ha; lfd f2, @865@l(r3)`. MWCC only folds a pool double into an
+// existing base register when that base is the unit's own .rodata (it emits `...rodata.0@ha` and
+// then `lfd f, off(base)`) and the function references several locally-defined .rodata objects;
+// here vec3_802c5730 (and the strings addressed through it) is `extern`, and the magic is the
+// function's only .rodata pool entry, so MWCC keeps it absolute. Identical blocker as
+// party_cloud.c's N__cloud_use (99.68%) and win_item.c's comments; fixing it needs the unit's
+// .rodata prefix (vec3_802c5730..strings/doubles) defined in this file.
+// NONMATCHING (99.64%): only that int->float magic double load differs (one extra `lis`).
 f32 marioChkOverhead(void) {
     const u8* base = vec3_802c5730;
     MarioWork* wp = marioGetPtr();

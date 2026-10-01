@@ -241,9 +241,46 @@ static inline void hitUpdateActiveList(void) {
     }
 }
 
-// NONMATCHING (99.10%): the inlined active-list rebuild's `prev = NULL` coalesces to
-// `mr r5, r8` (reusing i's 0) and the `map = wp->entries` load is scheduled one slot early
-// versus retail's `li r5, 0` / later `mr r9, r3`.
+// Same active-list rebuild as hitUpdateActiveList, but retail's hitDelete pools the two
+// zero initialisations separately (`li r5, 0` for prev) instead of coalescing prev onto
+// i's zero (`mr r5, r8`). Chaining `prev = lbl_80418408 = NULL;` and letting i follow keeps
+// them apart and schedules both `li`s before the store, as retail does.
+static inline void hitDeleteUpdateActiveList(void) {
+    MapWork* wp = mapGetWork();
+    MapEntry* map;
+    s32 i;
+    s32 j;
+    HitEntry* hit;
+    HitEntry* prev;
+
+#ifdef MUST_MATCH
+    prev = lbl_80418408 = NULL;
+    i = 0;
+#else
+    i = 0;
+    prev = NULL;
+    lbl_80418408 = NULL;
+#endif
+    map = wp->entries;
+    for (; i < wp->entries->count; map++, i++) {
+        hit = map->hitEntries;
+        for (j = 0; j < map->hitNumJoints; j++, hit++) {
+            if (hit->joint->partCount != 0 && !(hit->flags & 0x81)) {
+                if (prev == NULL) {
+                    lbl_80418408 = hit;
+                    prev = hit;
+                } else {
+                    prev->siblingActive = hit;
+                    prev = hit;
+                }
+            }
+        }
+    }
+    if (prev != NULL) {
+        prev->siblingActive = NULL;
+    }
+}
+
 void hitDelete(const char* name) {
     MapEntry* map;
     MapWork* wp = mapGetWork();
@@ -256,7 +293,7 @@ void hitDelete(const char* name) {
         for (j = 0; j < map->hitNumJoints; j++, hit++) {
             if (!(hit->flags & 0x80) && !strcmp(name, hit->joint->name)) {
                 hit->flags |= 0x80;
-                hitUpdateActiveList();
+                hitDeleteUpdateActiveList();
                 return;
             }
         }

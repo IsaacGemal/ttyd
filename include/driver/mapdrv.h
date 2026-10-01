@@ -218,7 +218,7 @@ void mapFlgOff(MapObject* obj, u32 flag, s32 a3);
 void mapFlgOn(MapObject* obj, u32 flag, s32 a3);
 void setColor(MapObject* obj, GXColor* color, s32 a3);
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh);
-void _mapDispMapGrp(MapObject* obj, void* a2);
+void _mapDispMapGrp(CameraId camId, MapObject* obj);
 void _mapDispMapObj(CameraId camId, MapObject* obj);
 void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2);
 void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj);

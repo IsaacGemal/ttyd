@@ -288,6 +288,14 @@ static inline void effFireworksSetColor1(effFireworksData* data) {
 //   (the scratch f32) so MWCC colours ex/ey in f2/f1 and loads the z constant into f0.
 // - float_0_8041ef38 is `volatile` so the four GXPosition3f32 z loads are not CSE'd
 //   into one register; `zero` keeps the two C_MTXOrtho uses in one register.
+// NONMATCHING (99.99%): every instruction matches except the two `lfd` displacements of the
+// compiler's int->float magic doubles. The compiler pools its anonymous magic doubles after all
+// user-defined .rodata (the vec3s, the named doubles and str_802FA650) and after effFireworksMain's
+// makeVec anonymous zero Vec, so they land at +0x70/+0x78 from vec3_802fa600 instead of the
+// original's +0x40/+0x48 (where double_to_int_802fa640 / double_to_int_mask_802fa648 sit, unused by
+// the compiler's idiom). Removing the named doubles/string lets the anonymous ones reach +0x48/+0x50,
+// and removing effFireworksMain's makeVec workaround reaches +0x40 exactly (disp then scores 100%),
+// but that drops effFireworksMain to 97.49%, so the two cannot both match in one unit.
 void effFireworksDisp(CameraId camId, void* param) {
 	// Function-local statics so MWCC emits the original's sflag$NNN/salpha$NNN symbols.
 	static s32 salpha;

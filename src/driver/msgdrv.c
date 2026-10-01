@@ -725,15 +725,18 @@ void selectWindow_Main(WindowEntry* window) {
 	dispEntry(8, 400.0f - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
 }
 
-// All control flow and most operands match. Still differs: the original keeps window->userdata in r30
-// and the MessageData pointer in r29 (MWCC 2.6 here swaps them; declaration order, casts, aliases,
-// inline accessors and pragmas were tried), two commutative `and.` operand orders, and the switch
-// jump table is emitted as anonymous @826 instead of jumptable_8030DBA0 (its .data offset differs
-// because msgWindowOpen_SE_Data is extern in this unit rather than defined here).
-// NONMATCHING (99.37%): see above.
+// 100%: the original keeps window->userdata in r30 and the MessageData pointer in r29; this compiler
+// otherwise swaps them, so `value` is hoisted to function scope to steer the allocator (below is the
+// natural per-case scope). The button temp likewise fixes the two commutative `and.` operand orders.
+// The switch jump table is emitted as an anonymous @829 instead of jumptable_8030DBA0 (its .data offset
+// differs because msgWindowOpen_SE_Data is extern in this unit rather than defined here); objdiff does
+// not score that data-symbol name (winMsgMain matches with the same difference).
 void msgWindow_Main(WindowEntry* window) {
 	smartEntry* smart = window->userdata;
 	MessageData* data = smart->address;
+#ifdef MUST_MATCH
+	s32 value;
+#endif
 
 	if (data->field_0x7A50 != 0) {
 		if (data->field_0x7A54 == 0) {
@@ -829,8 +832,17 @@ void msgWindow_Main(WindowEntry* window) {
 		}
 		break;
 	case 3: {
+#ifdef MUST_MATCH
+		u32 mask;
+		u32 button;
+
+		mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		button = keyGetButtonTrg(0);
+		if (button & (mask | 0x200)) {
+#else
 		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		if ((mask | 0x200) & keyGetButtonTrg(0)) {
+		if (keyGetButtonTrg(0) & (mask | 0x200)) {
+#endif
 			*(u16*)window->field_0x0 = 1;
 			*(u16*)((u8*)data + 0xa) = 2;
 			if (keyGetButtonTrg(0) & 0x200) {
@@ -864,7 +876,11 @@ void msgWindow_Main(WindowEntry* window) {
 	// The (MessageData*) cast here is a no-op that stops the compiler CSE-ing field_0x28 across the
 	// OSTicksToMilliseconds call; the original reloads it.
 	case 9: {
-		s32 value = ((s32*)((u8*)data + 0x7844))[*(s32*)((u8*)data + 0x783C)];
+#ifdef MUST_MATCH
+		value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#else
+		s32 value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#endif
 		if (data->field_0x28 < value) {
 			break;
 		}
@@ -879,7 +895,11 @@ void msgWindow_Main(WindowEntry* window) {
 	}
 	// Same no-op cast as case 9, on the field_0x28 update below.
 	case 10: {
-		s32 value = ((s32*)((u8*)data + 0x7844))[*(s32*)((u8*)data + 0x783C)];
+#ifdef MUST_MATCH
+		value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#else
+		s32 value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#endif
 		if (data->field_0x28 > value) {
 			break;
 		}
@@ -899,8 +919,17 @@ void msgWindow_Main(WindowEntry* window) {
 		break;
 	}
 	case 11: {
+#ifdef MUST_MATCH
+		u32 mask;
+		u32 button;
+
+		mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		button = keyGetButtonTrg(0);
+		if (button & mask) {
+#else
 		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		if (mask & keyGetButtonTrg(0)) {
+		if (keyGetButtonTrg(0) & mask) {
+#endif
 			*(u16*)window->field_0x0 = 0xa;
 			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
 			{

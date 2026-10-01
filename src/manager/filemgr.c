@@ -42,10 +42,43 @@ void fileInit(void) {
 	afp->lastavailable->next = NULL;
 }
 
-// Cases 1,2,3,5,6,7,8,9,10 and the type-5 loop match exactly. Case 4 (TPL) is instruction-identical
-// except the loop counter/byte-offset registers are swapped (i is r6 vs r5, the i*8 offset r5 vs r6)
-// and the compiler's anonymous jump table symbol name differs.
-// NONMATCHING (99.79%): case 4 register allocation and jump table symbol only.
+// Clears the file-relative addresses in a TPL (texture palette); the inverse of
+// fileUnpackTpl below. Kept as a separate inline because the TPL walk's loop counter and
+// byte-offset only take the original's r5/r6 when the walk is not expanded inside the switch.
+static inline void fileClearTpl(TEXPalette* tpl) {
+	u16 i;
+
+	if (tpl->versionNumber != 0x0020AF30) {
+		OSPanic("filemgr.c", 147, "invalid version number for texture palette");
+	}
+	if ((u32)tpl->descriptorArray >= (u32)tpl) {
+		for (i = 0; i < tpl->numDescriptors; i++) {
+			TEXHeader* img = tpl->descriptorArray[i].textureHeader;
+			if (img) {
+				if (img->unpacked) {
+					img->unpacked = FALSE;
+					tpl->descriptorArray[i].textureHeader->data -= (u32)tpl;
+				}
+				tpl->descriptorArray[i].textureHeader = (void*)((u32)tpl->descriptorArray[i].textureHeader - (u32)tpl);
+			}
+			if (tpl->descriptorArray[i].CLUTHeader) {
+				CLUTHeader* pal = tpl->descriptorArray[i].CLUTHeader;
+				if (pal->unpacked) {
+					pal->unpacked = FALSE;
+					tpl->descriptorArray[i].CLUTHeader->data -= (u32)tpl;
+				}
+				tpl->descriptorArray[i].CLUTHeader = (void*)((u32)tpl->descriptorArray[i].CLUTHeader - (u32)tpl);
+			}
+		}
+		tpl->descriptorArray = (void*)((u32)tpl->descriptorArray - (u32)tpl);
+	}
+}
+
+// Cases 1,2,3,5,6,7,8,9,10 and the type-5 loop match exactly. Case 4 (TPL) goes through the
+// fileClearTpl inline above so its loop counter/byte offset take the original's r5/r6.
+// NONMATCHING (99.93%): case 4's CLUT pointer fixup loads descriptorArray into r3 where the
+// original uses r4 (and the +4 offset into r4 where the original uses r3); every other
+// instruction, including the jump table, matches.
 void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
 	u8* d = data;
@@ -100,36 +133,10 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 			}
 			break;
 
-		case 4: { // TPL file
-			TEXPalette* tpl = data;
-			u16 i;
-
-			if (tpl->versionNumber != 0x0020AF30) {
-				OSPanic("filemgr.c", 147, "invalid version number for texture palette");
-			}
-			if ((u32)tpl->descriptorArray >= (u32)tpl) {
-				for (i = 0; i < tpl->numDescriptors; i++) {
-					TEXHeader* img = tpl->descriptorArray[i].textureHeader;
-					if (img) {
-						if (img->unpacked) {
-							img->unpacked = FALSE;
-							tpl->descriptorArray[i].textureHeader->data -= (u32)tpl;
-						}
-						tpl->descriptorArray[i].textureHeader = (void*)((u32)tpl->descriptorArray[i].textureHeader - (u32)tpl);
-					}
-					if (tpl->descriptorArray[i].CLUTHeader) {
-						CLUTHeader* pal = tpl->descriptorArray[i].CLUTHeader;
-						if (pal->unpacked) {
-							pal->unpacked = FALSE;
-							tpl->descriptorArray[i].CLUTHeader->data -= (u32)tpl;
-						}
-						tpl->descriptorArray[i].CLUTHeader = (void*)((u32)tpl->descriptorArray[i].CLUTHeader - (u32)tpl);
-					}
-				}
-				tpl->descriptorArray = (void*)((u32)tpl->descriptorArray - (u32)tpl);
-			}
+		case 4:
+			fileClearTpl(data);
 			break;
-		}
+
 		case 5: { // AnimationPoseData?
 			s32 i;
 			s32 count;

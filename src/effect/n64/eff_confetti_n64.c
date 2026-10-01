@@ -346,10 +346,12 @@ static inline void makeConfettiColor1(void) {
 // The instructions, stack slots, GXColor temporaries and the frame/loop register (r26) now all
 // match.  Reading the frame into `seq` (then `seq = (seq >> 1) % 6`) rather than into `i` is what
 // lets the allocator keep `i` in r26.  The only remaining difference is the colouring of the
-// three pre-loop values: the target uses anm_seq r29, divisor r30, seq r31; this build uses
-// seq r29, anm_seq r30, divisor r31 (a 3-cycle).  Both modulos schedule identically, so it is a
-// pure allocator tie-break.  Declaration-order and pragma searches (opt_propagation/opt_lifetimes/
-// opt_common_subs/...) and pointer/helper forms for the anm_seq access did not move it.  The
+// three loop-carried values: the target uses anm_seq r29, divisor r30, seq r31; this build uses
+// seq r29, anm_seq r30, divisor r31 (a 3-cycle).  The divisor matters because MWCC CSEs the
+// 0x2AAAAAAB magic of `(seq >> 1) % 6` with that of `i % 12` in the loop, so it is live across the
+// whole loop rather than just the preheader.  The two modulos schedule identically, so it is a pure
+// allocator tie-break.  Declaration-order, load-order, expression-form, pointer/helper, pragma
+// (opt_*/global_optimizer/scheduling/optimization_level), -g and statement-order searches did not move it.  The
 // implicit int->float constant is also emitted as an anonymous @NNN pool object instead of
 // double_to_int_802fa448 (a duplicate of the file's named .rodata copy).
 // NONMATCHING (99.86%): only the seq/anm_seq/divisor 3-cycle above differs.

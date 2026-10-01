@@ -32,6 +32,9 @@ static s32 _sort(const void* a, const void* b);
 // NONMATCHING (99.98%): only the three pooled string addresses differ (r31+0xa4/0xac/0xb8 here vs
 // +0xc8/0xd0/0xdc in the target). They sit after every numeric literal in .rodata, so they move up
 // 0x24 once lightMain emits its four target vec3 literals (the three beyond its current one).
+// The .bss/.rodata offsets match only with the LightEntry globals declared in the reverse of the
+// original's .bss order (MWCC emits .bss in reverse declaration order) and decay_tbl defined after
+// lightMain (rodata named objects land at their declaration point).
 void lightInit(void) {
 	Mtx scale;
 #ifdef MUST_MATCH

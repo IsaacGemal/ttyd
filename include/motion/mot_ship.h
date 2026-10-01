@@ -3,6 +3,9 @@
 typedef struct HitEntry HitEntry;
 
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
+s32 checkHarbor(Vec* out);
+void shipMove(void);
 void marioReInit_ship(void);
 void marioForceShipAnime(void);
 s32 marioShipChanging(void);

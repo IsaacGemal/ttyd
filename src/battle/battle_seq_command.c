@@ -180,9 +180,12 @@ void BattleCommandInit(BattleWork* wp) {
 // pool base differs, so all seven string addends fall short of the target: six by 0x24
 // (e.g. "btl_cmd_act_jump" at r29+0x3b8 vs +0x3dc) and "btl_cmd_act_item" by 0xa8 (it
 // dedupes into _btlcmd_MakeMultiItemTable's earlier block, +0x228 vs +0x2d0). The pool is
-// missing the literals owned by functions not yet written/ordered here (the 0%
-// _btlcmd_MakeSelectWeaponTable and BattleCommandInput own "btl_wn_dummy_noitem"/
-// "msg_dummy_noitem" and the double/SFX runs), so it cannot be fixed from this function.
+// missing content owned by other functions in this TU: "btl_wn_dummy_noitem" (its first
+// user, _get_msg, currently drops the dead initial assignment and so never emits it),
+// "msg_dummy_noitem" (the static defaultWeapon_Dummy_NoItem data in the 0%
+// _btlcmd_MakeSelectWeaponTable), the double/SFX run, and _btlcmd_MakeMultiItemTable's
+// dedupe anchor for "btl_cmd_act_item". None of it can be fixed from this function; the
+// offsets will land once those functions are written/ordered.
 void _btlcmd_MakeActClassTable(BattleWork* wp) {
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd = &wp->commandMenu;
@@ -1129,10 +1132,15 @@ void BattleCommandDisplay_TargetSelectMenuSetup(BattleWork* wp) {
 	BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), 0x28);
 }
 
-// NONMATCHING (99.09%): the single-target path matches, but the compiler keeps `wp` in r26 where
-// the original keeps it in r29; the multi-target loop's sampling/i/yoff then shift from r28/r27/r26
-// to r29/r28/r27. The `double_to_int_*` reloc names are the known pool artifact.
-void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp) {
+void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param) {
+#ifdef MUST_MATCH
+	// MUST_MATCH: the original's parameter is `void*`, so its typed `BattleWork*` local is not
+	// coalesced with the parameter; the cast keeps them apart and puts wp in r29 (with
+	// `BattleWork* wp = param;` MWCC uses r26 and the whole tail rotates, 99.09%).
+	BattleWork* wp = (BattleWork*)(void*)param;
+#else
+	BattleWork* wp = param;
+#endif
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
@@ -1202,8 +1210,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp) {
 		s32 i;
 		s32 yoff;
 
-		yoff = 0;
-		for (i = 0; i < sampling->count; i++, yoff += 0x20) {
+		for (i = 0, yoff = 0; i < sampling->count; i++, yoff += 0x20) {
 			entry = (BattleTargetEntry*)((u8*)sampling + 4 + sampling->order[i] * 0x24);
 			unit = BattleGetUnitPtr(wp, entry->unitId);
 			part = BtlUnit_GetPartsPtr(unit, entry->partId);

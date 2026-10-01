@@ -81,19 +81,19 @@ extern const f32 float_10_80421940;
 
 // dont_inline: the original keeps actionCommandDisp as its own local function.
 #pragma dont_inline on
+// opt_common_subs off: with it on, the last screen2 update's 4.0f lands in f2 (original uses f1).
+#pragma opt_common_subs off
 // The by-value temporaries copied into the btlDispTex4 argument slots are what the original does:
 // every call gets its own trans/scale/rot/color copies (like ac_monosiri_target's actionCommandDisp).
-// opt_common_subs off: with it on, the last screen2 update's 4.0f lands in f2 (original uses f1).
-// NONMATCHING (99.70%): using the `ac` intermediate for the state read and deriving st from
-// `ac->field_0x2BC[0]` stops MWCC folding st into `work`, so st is materialised in r30. The only
-// remaining diff is the prologue temp register swap (work r3/vec r4 original, reversed here).
+// `vecs` must be declared before `work`: MWCC allocates the two address temps by declaration order
+// (the earlier local gets the higher register), so vecs->r4 and work->r3 as in the original.
 static void actionCommandDisp(f32 x, f32 y) {
-    BattleWork* work = _battleWorkPointer;
-    BattleActions* ac = &work->actionCommands;
-    s32 state = ac->mAcState;
 #ifdef MUST_MATCH
     Vec* vecs = (Vec*)vec3_802ff950;
 #endif
+    BattleWork* work = _battleWorkPointer;
+    BattleActions* ac = &work->actionCommands;
+    s32 state = ac->mAcState;
     ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
     Vec screen;
     Vec screen2;
@@ -169,6 +169,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     }
 }
+#pragma opt_common_subs reset
 #pragma dont_inline reset
 
 // don't_inline: battleAcMain_ShotTarget calls this through the original `bl`.

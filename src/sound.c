@@ -389,8 +389,12 @@ void SoundLoadDVD2Free(void) {
     }
 }
 
-// NONMATCHING (98.96%): same instructions; only register numbers or operands differ.
-BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
+BOOL SoundSLibLoadDVD(const char* path) { // 1:1
+    // Regalloc: give each file read its own pointer/length local and declare the pointers before
+    // entry; with a shared pointer/length, or with entry declared first, MWCC swaps r27/r28 here.
+    void* pointer1;
+    void* pointer2;
+    void* pointer3;
     DVDEntry* entry;
     SoundGroup* temp_r0;
     SoundGroup* iter;
@@ -399,9 +403,8 @@ BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
     u32* var_r27;
     u32 temp_r28;
     u16 id;
-    u32 length;
+    u32 length1, length2, length3;
     void* temp_r0_3;
-    void* pointer;
 
     if (sound.slibId >= 8) {
         return FALSE;
@@ -410,29 +413,29 @@ BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
     sprintf(str, "%s/%s%s", getMarioStDvdRoot(), path, ".slib");
     entry = DVDMgrOpen(str, 2, 0);
     if (entry == NULL) {
-        pointer = NULL;
+        pointer1 = NULL;
     } else {
-        length = DVDMgrGetLength(entry);
-        if (length == 0) {
-            pointer = NULL;
+        length1 = DVDMgrGetLength(entry);
+        if (length1 == 0) {
+            pointer1 = NULL;
         } else {
-            length = OSRoundUp32B(length);
-            pointer = __memAlloc(HEAP_DEFAULT, length);
-            if (pointer == NULL) {
-                pointer = NULL;
-            } else if (DVDMgrRead(entry, pointer, length, 0) <= 0) {
-                __memFree(HEAP_DEFAULT, pointer);
-                pointer = NULL;
+            length1 = OSRoundUp32B(length1);
+            pointer1 = __memAlloc(HEAP_DEFAULT, length1);
+            if (pointer1 == NULL) {
+                pointer1 = NULL;
+            } else if (DVDMgrRead(entry, pointer1, length1, 0) <= 0) {
+                __memFree(HEAP_DEFAULT, pointer1);
+                pointer1 = NULL;
             } else {
                 DVDMgrClose(entry);
             }
         }
     }
-    var_r27 = pointer;
-    if (pointer == NULL) {
+    var_r27 = pointer1;
+    if (pointer1 == NULL) {
         return FALSE;
     }
-    sound.slibData[sound.slibId] = pointer;
+    sound.slibData[sound.slibId] = pointer1;
 
     while (1) {
         temp_r28 = *var_r27;
@@ -459,65 +462,66 @@ BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
         }
         temp_r0_3 = var_r27 + 8;
         group->flags = 1;
-        var_r27 = (u32*)((u32)var_r27 + (u32)temp_r28);
         group->unk2 = id;
         group->groupId = 0;
         group->songId = 0;
         group->arrfile = temp_r0_3;
         group->next = 0;
+        // Advances after the stores: MWCC then keeps the address in r0 and the field constants in r4.
+        var_r27 = (u32*)((u32)var_r27 + (u32)temp_r28);
     }
 
     sprintf(str, "%s/%s%s", getMarioStDvdRoot(), path, ".stbl");
     entry = DVDMgrOpen(str, 2, 0);
     if (entry == NULL) {
-        pointer = NULL;
+        pointer2 = NULL;
     } else {
-        length = DVDMgrGetLength(entry);
-        if (length == 0) {
-            pointer = NULL;
+        length2 = DVDMgrGetLength(entry);
+        if (length2 == 0) {
+            pointer2 = NULL;
         } else {
-            length = OSRoundUp32B(length);
-            pointer = __memAlloc(HEAP_DEFAULT, length);
-            if (pointer == NULL) {
-                pointer = NULL;
-            } else if (DVDMgrRead(entry, pointer, length, 0) <= 0) {
-                __memFree(HEAP_DEFAULT, pointer);
-                pointer = NULL;
+            length2 = OSRoundUp32B(length2);
+            pointer2 = __memAlloc(HEAP_DEFAULT, length2);
+            if (pointer2 == NULL) {
+                pointer2 = NULL;
+            } else if (DVDMgrRead(entry, pointer2, length2, 0) <= 0) {
+                __memFree(HEAP_DEFAULT, pointer2);
+                pointer2 = NULL;
             } else {
                 DVDMgrClose(entry);
             }
         }
     }
-    if (pointer == NULL) {
+    if (pointer2 == NULL) {
         return FALSE;
     }
-    sound.stblData[sound.slibId] = pointer;
+    sound.stblData[sound.slibId] = pointer2;
 
     sprintf(str, "%s/%s%s", getMarioStDvdRoot(), path, ".etbl");
     entry = DVDMgrOpen(str, 2, 0);
     if (entry == NULL) {
-        pointer = NULL;
+        pointer3 = NULL;
     } else {
-        length = DVDMgrGetLength(entry);
-        if (length == 0) {
-            pointer = NULL;
+        length3 = DVDMgrGetLength(entry);
+        if (length3 == 0) {
+            pointer3 = NULL;
         } else {
-            length = OSRoundUp32B(length);
-            pointer = __memAlloc(HEAP_DEFAULT, length);
-            if (pointer == NULL) {
-                pointer = NULL;
-            } else if (DVDMgrRead(entry, pointer, length, 0) <= 0) {
-                __memFree(HEAP_DEFAULT, pointer);
-                pointer = NULL;
+            length3 = OSRoundUp32B(length3);
+            pointer3 = __memAlloc(HEAP_DEFAULT, length3);
+            if (pointer3 == NULL) {
+                pointer3 = NULL;
+            } else if (DVDMgrRead(entry, pointer3, length3, 0) <= 0) {
+                __memFree(HEAP_DEFAULT, pointer3);
+                pointer3 = NULL;
             } else {
                 DVDMgrClose(entry);
             }
         }
     }
-    if (pointer == NULL) {
+    if (pointer3 == NULL) {
         return FALSE;
     }
-    sound.etblData[sound.slibId] = pointer;
+    sound.etblData[sound.slibId] = pointer3;
     sound.slibId++;
     return TRUE;
 }
@@ -1183,10 +1187,21 @@ inline void SoundDVDSetPanCh(s32 chan, u8 pan) { // I think this is the correct 
     AISetStreamVolRight((u8)right);
 }
 
-// NONMATCHING (99.71%): same instructions; only register numbers or operands differ.
+#ifdef MUST_MATCH
+// MUST_MATCH: the original passes the channel to the inlined SoundDVD*Ch helpers as an unsigned
+// value. Returning it through this u32 inline is a no-op in the code but makes MWCC home the
+// helpers' strength-reduced `chan` induction in r27 and the loop counter in r29; passing the plain
+// s32 `i` swaps those two (99.71%). Declaring `i` before `dvd` similarly homes the dvd pointer in r28.
+static inline u32 SoundDVDChan(s32 chan) {
+    return (u32)chan;
+}
+#else
+#define SoundDVDChan(chan) (chan)
+#endif
+
 void SoundDVDMain(void) {
-    SoundDVD* dvd;
     int i;
+    SoundDVD* dvd;
 
     for (i = 0; i < 2; i++) {
         dvd = &sound.dvds[i];
@@ -1194,7 +1209,7 @@ void SoundDVDMain(void) {
             if (dvd->flags & 0x40) {
                 if (dvd->unk8 == 0.0f) {
                     dvd->samples = AIGetStreamSampleCount();
-                    SoundDVDStopCh(i);
+                    SoundDVDStopCh(SoundDVDChan(i));
                     dvd->flags |= 0x2;
                     dvd->flags &= ~0x40;
                     continue;
@@ -1203,19 +1218,19 @@ void SoundDVDMain(void) {
                 if (dvd->unk8 <= 0.0f) {
                     dvd->unk8 = 0.0f;
                 }
-                SoundDVDSetPanCh(i, (u8)dvd->unk2);
+                SoundDVDSetPanCh(SoundDVDChan(i), (u8)dvd->unk2);
             }
             if (dvd->flags & 0x20) {
                 if (dvd->unk8 == 0.0f) {
                     dvd->flags &= ~0x20;
-                    SoundDVDStopCh(i);
+                    SoundDVDStopCh(SoundDVDChan(i));
                     continue;
                 }
                 dvd->unk8 -= dvd->unkC;
                 if (dvd->unk8 <= 0.0f) {
                     dvd->unk8 = 0.0f;
                 }
-                SoundDVDSetPanCh(i, (u8)dvd->unk2);
+                SoundDVDSetPanCh(SoundDVDChan(i), (u8)dvd->unk2);
             }
             if (dvd->flags & 0x10) {
                 dvd->unk8 += dvd->unkC;
@@ -1224,7 +1239,7 @@ void SoundDVDMain(void) {
                     dvd->unkC = 0.0f;
                     dvd->flags &= ~0x10;
                 }
-                SoundDVDSetPanCh(i, (u8)dvd->unk2);
+                SoundDVDSetPanCh(SoundDVDChan(i), (u8)dvd->unk2);
             }
         }
     }

@@ -190,9 +190,13 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 // (iPos + xEnd + 0x10) << 2, which keeps xEnd a pure source and yields the target's
 // addi r0,r4,0x10 / add r3,r24,r3 / add r0,r24,r0 sequence. All callee-saved registers
 // (vtx=r31, magic 0x4330=r29, xoris=r30, iPos=r24, fieldBase=r26, fieldEnd=r25) match.
-// NONMATCHING (full report 99.99686%, per-unit check 100.00%): the int->float magic double pools at
-// .rodata+0x58 instead of the target +0x30; that offset comes from this unit's other data (Main's
-// anonymous zero-Vec and the unused double_to_int_802fb278 declaration), not from this function.
+// NONMATCHING (99.99686%, one `lfd`; check.py rounds it to 100.00%): the compiler's int->float magic
+// double pools at .rodata+0x58 instead of the target +0x30, so the hoisted `lfd f31, 0x58(r29)` differs.
+// It only moves to +0x30 when Main's initializeVec starts from vec3_802fb248 instead of a { 0, 0, 0 }
+// literal (no anonymous zero-Vec) AND Entry assigns the "OpukuJetwrainN64" literal instead of the named
+// str_802FB280; with both, mwcc reuses the named double at +0x30 (its own @NNN copy is not made for this
+// function) and this function scores 100%. Both edits are in other functions, so this is left to the
+// unit's pool finisher rather than made here.
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;

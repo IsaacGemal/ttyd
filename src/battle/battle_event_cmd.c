@@ -3541,12 +3541,10 @@ USER_FUNC(btlevtcmd_SamplingEnemy) {
 }
 
 //s32 retIndex
-// NONMATCHING (96.84%): 1 instruction differs.
 USER_FUNC(btlevtcmd_AcGetDifficulty) {
     s32 index = *event->args;
-    s32 diff = BattleActionCommandGetDifficulty(_battleWorkPointer);
 
-    evtSetValue(event, index, diff);
+    evtSetValue(event, index, BattleActionCommandGetDifficulty(_battleWorkPointer));
     return EVT_RETURN_DONE;
 }
 
@@ -4489,13 +4487,11 @@ USER_FUNC(btlevtcmd_SetPartsFallAccel) {
 }
 
 //s32* battleId, s32* targetBtlId, s32* partId, s32* x, s32* y, s32* z
-// Only `id`/`unit` are swapped: target has id=r24 (reusing the dead `args` register) and unit=r25,
-// this build gives unit=r24 and id=r25 plus an extra `mr r0, r3`. btlId/targetId/partId/indexX/
-// indexY/indexZ callee-saved allocation already matches. Single/2/3 declaration swaps and random
-// sampling all kept the id/unit swap; `double_to_int_802ee038` prints as an anonymous `@NNNN@`
-// constant but objdiff ignores that (FallPartsPosition is 100% likewise).
-// NONMATCHING (99.37%): only the id/unit callee-saved registers and one `mr r0, r3` differ.
-
+// The translated id must reuse the `btlId` variable (not a separate `id`): with a separate variable
+// MWCC colours `unit` into the dead `args` register r24 and stages the BattleTransID result through
+// r0; reusing btlId puts the translated id in r24 and unit in r25 exactly as the target does.
+// `double_to_int_802ee038` prints as an anonymous `@NNNN@` constant but objdiff ignores that
+// (FallPartsPosition is 100% likewise).
 USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -4510,7 +4506,6 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     BattleUnitPart* part;
     s32 targetId;
     s32 partId;
-    s32 id;
     BattleUnit* targetUnit2;
     s8 belong;
     u8 sampling[0xAD0];
@@ -4527,8 +4522,8 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     indexX = args[3];
     indexY = args[4];
     indexZ = args[5];
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(wp, id);
+    btlId = BattleTransID(event, btlId);
+    unit = BattleGetUnitPtr(wp, btlId);
     BtlUnit_GetPos(unit, &unitX, &tmp, &tmp);
     targetId = BattleTransID(event, targetId);
     targetUnit = BattleGetUnitPtr(wp, targetId);
@@ -4537,7 +4532,7 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     BtlUnit_GetHitPos(targetUnit, part, &x, &tmp, &z);
 
     belong = (s8)BtlUnit_GetEnemyBelong(unit);
-    result = BattleSamplingEnemy(sampling, NULL, id, belong, 0x1001240, 0x1000000,
+    result = BattleSamplingEnemy(sampling, NULL, btlId, belong, 0x1001240, 0x1000000,
                                  -wp->alliances[belong].attackDirection);
     BattleChoiceSamplingEnemy(sampling, 4, &outId, &outPartId);
     if (*(s8*)(sampling + 0xA6C) > 0) {

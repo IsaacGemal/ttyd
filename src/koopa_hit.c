@@ -325,13 +325,11 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     return 0;
 }
 
-// NONMATCHING (99.28%): stack layout, the a/b and radius/scale/threshold registers and the inline camGetPtr
-// all match; only the preheader's `li r29,1` / `addi r30,r30,0x50` pair is scheduled in the opposite order
-// (ours emits the node increment before the counter init).
+// Reusing the work pointer as the node cursor (`root++` here and in the for-increment) makes mwcc schedule the
+// preheader `li r29,1` before `addi r30,r30,0x50`; a separate `node` pointer emits them in the opposite order.
 s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     EffectEntry* efp = getKoopaFireEfp();
     KpaFireNode* root;
-    KpaFireNode* node;
     Mtx m2, m0, m1, m3;
     Vec out;
     Vec pos;
@@ -363,16 +361,16 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     }
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m3);
+    root++;
     i = 1;
-    node = (KpaFireNode*)((u8*)root + 0x50);
     threshold = 0.5f * b;
-    for (; i < efp->count; i++, node = (KpaFireNode*)((u8*)node + 0x50)) {
+    for (; i < efp->count; i++, root++) {
         f32 mag;
-        if (node->unk44 != 0) {
+        if (root->unk44 != 0) {
             continue;
         }
-        scale = float_7_80420ec0 * node->unk40;
-        PSMTXTrans(m0, node->pos.x, node->pos.y, node->pos.z);
+        scale = float_7_80420ec0 * root->unk40;
+        PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
         PSMTXScale(m2, scale, scale, scale);
         PSMTXConcat(m0, m2, m0);
         PSMTXConcat(m3, m0, m0);

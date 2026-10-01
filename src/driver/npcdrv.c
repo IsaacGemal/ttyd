@@ -1101,6 +1101,8 @@ void fbatTalkMode(void) {
 // Scoping `info` and each list loop to its own case (ordinary per-block locals) recovered the case-2/3/4
 // temporaries (98.86->99.23). The four function-wide pointers cannot be recoloured by declaration order,
 // initializer form, expression form or opt_lifetimes/opt_common_subs/opt_propagation/optimize_for_size.
+// Confirmed by a re-run this session: all 720 declaration orders of the six live function-wides are either
+// 99.23 or 98.66, and pragma/flag/splitting/aliasing/helper-inline variants keep the same colouring.
 // NONMATCHING (99.23%): every instruction matches; only callee-saved register numbers differ. The original
 // keeps fbatData=r30, entry=r29, pouch=r31, mario=r27; MWCC here picks fbatData=r28, entry=r29, pouch=r30, mario=r31.
 void fbatBattleMode(void) {

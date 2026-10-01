@@ -73,15 +73,15 @@ typedef struct effKemuri1Data {
 
 //local prototypes
 
-// The type 4-7 preheader and loop are instruction-for-instruction identical to the original; only the
-// callee-saved FPR colours differ. The 5th float param `a5` is saved to f24 instead of f31, which rotates
-// the nine loop constants into f25-f31/f22/f23 instead of f22-f30 and puts `angle` in f21 instead of f20.
-// Forcing the load into a named local (preheader or loop body), `MATCH_F32`, and the
-// opt_lifetimes/opt_common_subs/opt_propagation/global_optimizer/scheduling pragmas all leave a5 at
-// f22-f24 or scramble the load order, so the register assignment is left to the compiler. objdiff also
-// names the pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of
-// str_802FA8A0/double_to_int_802fa898; those names are unscored.
-// NONMATCHING (99.62%): type 4-7 FPR colouring only; the instruction sequence matches.
+// The type 4-7 preheader and loop are instruction-for-instruction identical to the original except for the
+// callee-saved FPR colours. The 5th float param `a5` is saved to f24 instead of f31; because a5 and the nine
+// loop-invariant constants form one interference clique over f22-f31, the allocator then rotates every constant
+// (neg3..10 land in f25,f26,f27,f28,f29,f30,f31,f22,f23 instead of f22..f30). Scoping `angle` to the case-4-7 loop
+// (a one-line shadow of the function-scope `angle`) fixes the angle temp to the original's f20 and lifts the
+// score from 99.62% to 99.69%. objdiff names the pooled "Kemuri1N64" string and int->float double anonymous
+// @NNN@ instead of str_802FA8A0/double_to_int_802fa898; those names are unscored.
+// NONMATCHING (99.69%): only the callee-saved FPR colouring of the case-4-7 clique differs (a5 at f24 instead
+// of f31 drags the nine constants around); every instruction and the instruction order match.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
 	effKemuri1Data* data;
@@ -221,6 +221,9 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		case 6:
 		case 7:
 			for (i = 1; i < effCount; i++, entry++) {
+				// Case-4-7 scope: shadowing the function-scope `angle` makes MWCC keep the angle in the
+				// original's f20 (the function-scope one lands in f21 here).
+				f32 angle;
 				entry->field_0x10 = float_neg3_8041f25c;
 				entry->field_0x14 = float_0p93_8041f2a8;
 				entry->field_0x20 = float_0_8041f248;

@@ -89,9 +89,13 @@ static inline s32 marioCharModeColor(BOOL badge1, BOOL badge2) {
 }
 #endif
 
-// NONMATCHING (99.99%): bytes match; the function's string addi offsets are 0x60 low because the other
-// functions split out of this unit (marioSetPaperAnimeLocalTime etc.) have not emitted their .rodata yet.
-// marioCharModeColor reproduces the original's allocation of the colour value to r3.
+// NONMATCHING (99.99%): every instruction matches; the only differences are the 7 `addi r31, 0x...`
+// string-pool offsets (c_peach/c_peach_r/c_zako_n/c_koopa/c_koopa2/KPA_S_1/KPA_T_1), all 0x60 low.
+// They are low because unimplemented functions in this unit have not emitted the .rodata that precedes
+// them yet: marioMove references aji_13, marioMain references moo_00..moo_07, marioPreDisp/marioMakeDispDir
+// use the double_to_int constants, etc. Nothing in this function can move that pool; it resolves once
+// those functions are written. marioCharModeColor reproduces the original's allocation of the colour
+// value to r3.
 void marioSetCharMode(s32 mode) {
 	MarioWork* wp = mp;
 	s32 materialFlag;
@@ -261,8 +265,10 @@ void marioSetCharMode(s32 mode) {
 	}
 }
 
-// NONMATCHING (100.00%): instruction sequence identical; only the shared .rodata base offset for "d_mario"
-// differs because the other functions in this split file (their pool constants/strings) are not written yet.
+// NONMATCHING (99.998%, check.py prints 100.00%): every instruction matches; the only remaining diff is
+// the relocation for "d_mario" (target `addi r3, r31, 0x390`, ours 0x330). The unit's .rodata is 0x60 bytes
+// short because the functions ahead of this one in .text (marioPaperOn/marioMove/marioMain) do not emit
+// their pool constants/strings yet. When those are written "d_mario" lands at 0x390 and this reaches 100%.
 void marioSetFamicomMode(s32 mode) {
 	MarioWork* wp = mp;
 
