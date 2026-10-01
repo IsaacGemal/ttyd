@@ -298,9 +298,8 @@ void party_move_mode_stay(PartyEntry* party) {
     }
 }
 
-// The original preserves f1 (`fmuls f2, f1, f0`), so the function returns its f32 argument;
-// the old header declared it void. Callers all ignore the result.
-f32 unk_800c9398(PartyEntry* party, f32 value) {
+// NONMATCHING (99.29%): same instructions; only register numbers or operands differ.
+void unk_800c9398(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     f32 gravity = work->playerPtr->playerGravity;
     f32 speed = value * gravity;
@@ -312,7 +311,6 @@ f32 unk_800c9398(PartyEntry* party, f32 value) {
     }
     work->speed2 = speed * scale;
     work->speed = work->speed2;
-    return value;
 }
 
 void partyClearJumpPara(PartyEntry* party) {

@@ -1083,6 +1083,14 @@ void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, 
 ret:;
 #endif
 }
+#ifndef MUST_MATCH
+#undef px
+#undef py
+#undef ph
+#undef pw
+#undef pa9
+#undef pa10
+#endif
 
 void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, f32 width, f32 a9, f32 a10) {
 	GXSetCullMode(GX_CULL_NONE);

@@ -21,7 +21,7 @@ s32 unk_800c8dd0(HitEntry* hit);
 void partyChkWall(PartyEntry* party);
 void unk_800c9044(PartyEntry* party);
 void partyMove(PartyEntry* party);
-f32 unk_800c9398(PartyEntry* party, f32 value);
+void unk_800c9398(PartyEntry* party, f32 value);
 s32 partyMoveMain(PartyEntry* party, s32 hosei);
 void unk_800c90d4(PartyEntry* party, s32 value);
 void partySetDir(PartyEntry* party, f32 x, f32 z);

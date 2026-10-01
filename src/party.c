@@ -1953,6 +1953,7 @@ void partyMakeDispDir(PartyEntry* party) {
     }
 }
 #pragma opt_common_subs reset
+#pragma opt_lifetimes reset
 
 // NONMATCHING (92.21%): the compiler's magic unsigned->double constant is `@911` instead of
 // `double_to_int_mask_802ccef8`; float register allocation in the order calculation and the
