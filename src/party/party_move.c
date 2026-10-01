@@ -703,18 +703,18 @@ void unk_800c9044(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (99.77%): the multiply-free add needs `fadds f0, f0, f1` (constant first);
-// this compiler emits the operands in source order, so one operand order stays swapped.
+// Match note: without opt_propagation off, MWCC propagates the 270.0f literal and emits
+// `fadds f0, f1, f0`; keeping the sum in a named temp makes it emit the original `fadds f0, f0, f1`.
+#pragma opt_propagation off // keep the constant load scheduling so fadds takes its operands in the original order
 void unk_800c8e74(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
     f32 angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
 #ifdef MUST_MATCH
-    /* The named temp makes the compiler load cam->viewYaw into f1 before 270.0f into f0. */
     f32 viewYaw = cam->viewYaw;
-    f32 t = 270.0f;
-    f32 result = revise360(viewYaw + t - angle);
+    f32 sum = viewYaw + 270.0f;
+    f32 result = revise360(sum - angle);
 #else
     f32 result = revise360(cam->viewYaw + 270.0f - angle);
 #endif
@@ -725,6 +725,7 @@ void unk_800c8e74(PartyEntry* party) {
     }
     work->field_110 = flag ? 180.0f : 0.0f;
 }
+#pragma opt_propagation reset
 
 void unk_800c7c98(PartyEntry* party) {
     PartyEntry* work = party;

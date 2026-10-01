@@ -804,7 +804,7 @@ config.libs = [
             Object(NonMatching, "sequence/seq_mapchange.c"),
             Object(NonMatching, "sequence/seq_title.c"),
             Object(Matching, "seqdef.c"),
-            Object(NonMatching, "sequence/seq_battle.c"),
+            Object(Matching, "sequence/seq_battle.c"),
             Object(Matching, "sequence/seq_gameover.c"),
             Object(NonMatching, "sequence/seq_logo.c"),
             Object(NonMatching, "sequence/seq_load.c"),
@@ -874,7 +874,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "cam_road.c"),
+            Object(NonMatching, "cam_road.c", cflags=cflags_static_nodefer),
             Object(Matching, "cam_shift.c"),
             Object(NonMatching, "countdown.c"),
             Object(NonMatching, "database.c"),

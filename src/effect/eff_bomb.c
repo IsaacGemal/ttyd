@@ -41,6 +41,9 @@ SDATA2_CONST GXColor dat_8041e450 = { 0xFF, 0xFF, 0xFF, 0xFF };
 SDATA2_CONST GXColor dat_8041e454 = { 0xFF, 0xFF, 0xFF, 0x30 };
 SDATA2_CONST char str_8041E478[8] = "Bomb";
 
+// .sdata2 float constant this function loads by name (its definition lives in the retail object).
+extern const f32 float_0p5_8041e470;
+
 // Local to this file in the original (`.fn effBombMain, local`).
 static void effBombMain(EffectEntry* effect);
 // Local to this file in the original (`.fn effBombDisp, local`).
@@ -128,8 +131,6 @@ static void effBombMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (99.86%): the quad half-width ends up in f28 instead of f31, shifting the
-// loop-hoisted float constants by one register (f29/f30/f31 vs f28/f29/f30). 6 instructions.
 static void effBombDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effBombData* data;
@@ -141,11 +142,13 @@ static void effBombDisp(CameraId camId, void* param) {
 	Mtx work;
 	GXTexObj tex;
 	s32 i;
-	f32 half;
 	f32 radius;
 	f32 size;
 	f32 one;
 	f32 negHalf;
+#ifndef MUST_MATCH
+	f32 half;
+#endif
 
 	data = effect->userdata;
 	radius = data->scale;
@@ -187,8 +190,10 @@ static void effBombDisp(CameraId camId, void* param) {
 	PSMTXConcat(camera->view, view, view);
 	GXSetCurrentMtx(0);
 	one = 1.0f;
+#ifndef MUST_MATCH
 	half = 0.5f;
 	negHalf = -one * half;
+#endif
 	size = 30.0f * radius;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -206,12 +211,25 @@ static void effBombDisp(CameraId camId, void* param) {
 		PSMTXConcat(work, scale, work);
 		PSMTXConcat(view, work, work);
 		GXLoadPosMtxImm(work, 0);
+#ifdef MUST_MATCH
+		// MUST_MATCH: retail hoists the quad half-width into f31; computing negHalf in the loop
+		// lets MWCC hoist the named 0.5f constant there (the natural form is the #else branch).
+		negHalf = -one * float_0p5_8041e470;
+#endif
 		GXBegin(0x80, 0, 4);
 		GXPosition3f32(negHalf, one, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
+#ifdef MUST_MATCH
+		GXPosition3f32(float_0p5_8041e470, one, 0.0f);
+#else
 		GXPosition3f32(half, one, 0.0f);
+#endif
 		GXTexCoord2f32(1.0f, 0.0f);
+#ifdef MUST_MATCH
+		GXPosition3f32(float_0p5_8041e470, 0.0f, 0.0f);
+#else
 		GXPosition3f32(half, 0.0f, 0.0f);
+#endif
 		GXTexCoord2f32(1.0f, 1.0f);
 		GXPosition3f32(negHalf, 0.0f, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);

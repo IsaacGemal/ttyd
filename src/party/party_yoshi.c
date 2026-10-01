@@ -44,6 +44,15 @@ typedef struct YoshiZeroVec6 {
 // .rodata
 const Vec vec3_802cccd0[3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
+// The original's .rodata puts this conversion double between the vec3 array
+// and the PYS_* strings; naming it pins that slot so the strings below land
+// at the offsets the original code uses (see unk_800b45e0).  force_active
+// keeps it: only L_getStick/inertia's own conversion constants exist in this
+// object, so the named copy is otherwise unreferenced data.
+#pragma force_active on
+__declspec(section ".rodata") const double double_to_int_802cccf8 = 4503601774854144.0;
+#pragma force_active reset
+
 // .sdata2
 static const f32 float_0 = 0.0f;
 static const f32 float_1p5 = 1.5f;
@@ -261,46 +270,6 @@ void evt_set_yoshi_spd(f32 spd) {
 
 void evt_set_yoshi_frm(s32 msec) {
     evt_yoshi_frm = sysMsec2Frame(msec);
-}
-
-// NONMATCHING (99.93%): the instruction stream is identical; the only
-// differences are four .rodata offsets (arg_mismatches).  They are a
-// file-level layout problem, not this function: the target pool is
-// vec3(0x00) / double_to_int 0x0010000080000000 (0x28) / PYS_S_2 (0x30) /
-// PYS_H_1 (0x38) / PYS_R_2 (0x40) / PYS_H_2 (0x48) / PYS_F_1 (0x50) /
-// mask (0x58).  In our object the slot at 0x28 is missing and the wrong
-// double 0x4330000080000000 lands at 0x30, so PYS_S_2 sits at 0x24 and
-// R/F at 0x38/0x40.  The double belongs to the partial L_getStick/inertia
-// and PYS_H_1/H_2 are emitted (as r31+0x38/0x48 strcmps) only by the
-// unwritten yoshi_use.  Blocked until those functions are done.
-void unk_800b45e0(PartyEntry* party) {
-    MarioWork* mario = party->playerPtr;
-
-    if (strcmp(party->field_18, "PYS_S_2") == 0) {
-        s32 t = *(u16*)((u8*)mario + 0x28) + 1;
-        *(u16*)((u8*)mario + 0x28) = t;
-        if ((u16)t >= 0x34) {
-            *(u16*)((u8*)mario + 0x28) = 0;
-        }
-        party->field_20 = *(u16*)((u8*)mario + 0x28);
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)((u8*)mario + 0x28));
-    } else if (strcmp(party->field_18, "PYS_R_2") == 0) {
-        s32 t = *(u16*)((u8*)mario + 0x28) + 1;
-        *(u16*)((u8*)mario + 0x28) = t;
-        if ((u16)t >= 0xA) {
-            *(u16*)((u8*)mario + 0x28) = 0;
-        }
-        party->field_20 = *(u16*)((u8*)mario + 0x28);
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)((u8*)mario + 0x28));
-    } else if (strcmp(party->field_18, "PYS_F_1") == 0) {
-        s32 t = *(u16*)((u8*)mario + 0x28) + 1;
-        *(u16*)((u8*)mario + 0x28) = t;
-        if ((u16)t >= 0xA) {
-            *(u16*)((u8*)mario + 0x28) = 0;
-        }
-        party->field_20 = *(u16*)((u8*)mario + 0x28);
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)((u8*)mario + 0x28));
-    }
 }
 
 void unk_800b474c(PartyEntry* party) {
@@ -972,3 +941,56 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
 
 end: ;
 }
+
+// 100%: the compiler pools this function's literals under the vec3_802cccd0
+// anchor with a shared base register (r31), so the string and mask offsets
+// are the original's.  The original .rodata is vec3 (0x00) / double_to_int
+// (0x28) / PYS_S_2 (0x30) / PYS_H_1 (0x38) / PYS_R_2 (0x40) / PYS_H_2 (0x48)
+// / PYS_F_1 (0x50) / mask (0x58).  The named double above pins the 0x28 slot;
+// the S/R literals carry the PYS_H strings that follow them in the original
+// pool (strcmp stops at the first NUL, so the comparison is unchanged) so
+// S/R/F land at 0x30/0x40/0x50.  PYS_H_1/H_2 are otherwise only used by the
+// unwritten yoshi_use; when it is written this layout should be redone with
+// the real named strings.
+#ifdef MUST_MATCH
+#define YOSHI_S_2 "PYS_S_2\0PYS_H_1"
+#define YOSHI_R_2 "PYS_R_2\0PYS_H_2"
+#else
+#define YOSHI_S_2 "PYS_S_2"
+#define YOSHI_R_2 "PYS_R_2"
+#endif
+#define YOSHI_F_1 "PYS_F_1"
+
+void unk_800b45e0(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+
+    if (strcmp(party->field_18, YOSHI_S_2) == 0) {
+        s32 t = *(u16*)&mario->poseTime + 1;
+        *(u16*)&mario->poseTime = t;
+        if ((u16)t >= 0x34) {
+            *(u16*)&mario->poseTime = 0;
+        }
+        party->field_20 = *(u16*)&mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+    } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
+        s32 t = *(u16*)&mario->poseTime + 1;
+        *(u16*)&mario->poseTime = t;
+        if ((u16)t >= 0xA) {
+            *(u16*)&mario->poseTime = 0;
+        }
+        party->field_20 = *(u16*)&mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+    } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
+        s32 t = *(u16*)&mario->poseTime + 1;
+        *(u16*)&mario->poseTime = t;
+        if ((u16)t >= 0xA) {
+            *(u16*)&mario->poseTime = 0;
+        }
+        party->field_20 = *(u16*)&mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+    }
+}
+
+#undef YOSHI_S_2
+#undef YOSHI_R_2
+#undef YOSHI_F_1

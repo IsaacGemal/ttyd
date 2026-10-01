@@ -228,10 +228,9 @@ CamRoadWork* camRoadGetWorkPtr(void) {
 }
 
 // The clamp's literal (see #ifdef below) restores the original's f0 constant / f2 accumulator / f1 result;
-// the named `float_1_80419558` instead puts the constant in f2. The work pointer also differs: the original
-// keeps `wp` in r7 in the interpolation block's `if (wp->unk_C8 != 0)`, this build reloads it into r4.
-// NONMATCHING (99.84%): every instruction matches except that work-pointer r4/r7 colouring (and its
-// else-branch copies).
+// the named `float_1_80419558` instead puts the constant in f2. The extra `w` alias in the final else keeps
+// the original's `wp` in r7 across the state-copy loops; without it MWCC reloads wp into r4 and the copies
+// shift registers.
 void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     u32 result;
 
@@ -315,8 +314,15 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
             wp->unk_C8 = 0;
         }
     } else {
+#ifdef MUST_MATCH
+        // Match-only: the local alias keeps wp in r7 across the copy loops (see the comment above the function).
+        CamRoadWork* w = wp;
+        w->state2 = w->state1;
+        wp->state0 = w->state2;
+#else
         wp->state2 = wp->state1;
         wp->state0 = wp->state2;
+#endif
     }
 
     calcCurrentCamState(dst);

@@ -21,10 +21,6 @@
 extern GlobalWork* gp;
 
 // .rodata constants referenced by this file's original.
-extern const Vec vec3_802c3d10;
-extern const Vec vec3_802c3d1c;
-extern const Vec vec3_802c3cc8;
-extern const Vec vec3_802c3cd4;
 extern const f32 float_0_8041a0c8;
 extern const f32 float_0p5_8041a100;
 extern const f32 float_2p5_8041a0e8;
@@ -85,20 +81,6 @@ inline void calcMtx(MapObjectEntry* entry, Mtx dest, Vec position) { // guessing
     MTXConcat(trans, yrot, trans);
     MTXConcat(trans, xrot, trans);
     MTXConcat(trans, scale, dest);
-}
-
-inline int mobjCheckKururingFloorItem(MapObjectEntry* entry) { // was always inlined in retail but not in demo
-    if (!strcmp(entry->animName, "MOBJ_KururinFloor")) {
-        ItemEntry* item = itemNameToPtr(entry->name);
-        if ((item != NULL && (item->flags & 1) && evtGetValue(0, entry->unk1E4) == 0))
-            return 1;
-        else if ((evtGetValue(0, entry->unk1E4) != 0))
-            return 1;
-        else
-            return 2;
-    } else {
-        return 0;
-    }
 }
 
 void mobjDispXLU(CameraId camId, void* param) {
@@ -212,12 +194,12 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #endif
 
     animData = animPoseGetAnimBaseDataPtr(entry->poseId);
-    minTmp = vec3_802c3cc8;
+    minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     minTmp.x = animData->bboxMin.x;
     minTmp.y = animData->bboxMin.y;
     minTmp.z = animData->bboxMin.z;
     bboxMin = minTmp;
-    maxTmp = vec3_802c3cd4;
+    maxTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     maxTmp.x = animData->bboxMax.x;
     maxTmp.y = animData->bboxMax.y;
     maxTmp.z = animData->bboxMax.z;
@@ -342,7 +324,6 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     }
 }
 
-// NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 s32 mobjEntry(const char* name, const char* animPoseName) {
     MapObjectWork* wp = mobjGetWork();
     s32 entryCount;
@@ -494,10 +475,6 @@ EventEntry* mobjRunEvent(MapObjectEntry* entry, s32* eventCode) {
     return event;
 }
 
-// Original rounds the fabs result into a fresh f1 (frsp f1, f0) and keeps scale.x
-// in f2; ours rounds in place (frsp f0, f0) and keeps scale.x in f1. Everything
-// else (bbox setup, scale2.y/z, HOBJ_ block, MTX concat, hitObj loop) matches.
-// NONMATCHING (93.35%): register allocation in the scale2.x computation differs.
 void mobjCalcMtx(MapObjectEntry* entry) {
     Mtx mtx;
     Mtx zRot;
@@ -516,12 +493,12 @@ void mobjCalcMtx(MapObjectEntry* entry) {
     PSVECAdd(&entry->position, &entry->translation, &position);
     animData = animPoseGetAnimBaseDataPtr(entry->poseId);
 
-    minTmp = vec3_802c3d10;
+    minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     minTmp.x = animData->bboxMin.x;
     minTmp.y = animData->bboxMin.y;
     minTmp.z = animData->bboxMin.z;
     bboxMin = minTmp;
-    maxTmp = vec3_802c3d1c;
+    maxTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     maxTmp.x = animData->bboxMax.x;
     maxTmp.y = animData->bboxMax.y;
     maxTmp.z = animData->bboxMax.z;
@@ -601,7 +578,6 @@ BOOL mobjCheckExec() {
     return FALSE;
 }
 
-// NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
     if (strcmp(entry->animName, "MOBJ_TreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BigTreasureBox") == 0 ||
         strcmp(entry->animName, "MOBJ_GrayTreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BlackTreasureBox") == 0) {
@@ -614,7 +590,13 @@ s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
     }
 }
 
-// NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
+// Unreferenced in the original, but its pool slot shifts the offsets mobjNearDistCheck2 reads.
+#pragma force_active on
+const Vec vec3_802c3d28 = { 0.0f, 0.0f, 0.0f };
+#pragma force_active reset
+
+static int mobjCheckKururingFloorItem(MapObjectEntry* entry);
+
 MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char** names) {
     int entryCount;
     Vec pos;
@@ -673,4 +655,18 @@ MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char**
     }
 
     return ret;
+}
+
+static int mobjCheckKururingFloorItem(MapObjectEntry* entry) { // was always inlined in retail but not in demo
+    if (!strcmp(entry->animName, "MOBJ_KururinFloor")) {
+        ItemEntry* item = itemNameToPtr(entry->name);
+        if ((item != NULL && (item->flags & 1) && evtGetValue(0, entry->unk1E4) == 0))
+            return 1;
+        else if ((evtGetValue(0, entry->unk1E4) != 0))
+            return 1;
+        else
+            return 2;
+    } else {
+        return 0;
+    }
 }

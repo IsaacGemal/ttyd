@@ -386,8 +386,8 @@ static inline GXColor itemColor1(u8 a, GXColor c) {
 
 #endif
 
-// NONMATCHING (99.91%): scheduling only. The 21.333334/42.666668/2.0/0.5 .sdata2 pool entries are in the
-// wrong first-use order, and the -f * 0.5f negate temp is f1 not f2 (42.666668 loads f2 not f1).
+// NONMATCHING (99.96%): .sdata2 2.0/0.5 are swapped (the division's 0.5 registers in the preheader
+// before the loop's 2.0); the -f is fused into fmuls' destination (fneg f30) instead of scratch f2.
 void effItemUseDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -433,13 +433,14 @@ void effItemUseDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 
 	{
+		f32 f = 21.333334f;
+		f31 = -f;
+	}
+	{
 		f32 f = 42.666668f;
 		f30 = -f;
 	}
-	{
-		f32 f = 21.333334f;
-		f31 = -f * 0.5f;
-	}
+	f31 = f31 / 2.0f;
 	f29 = 10.666667f;
 	i = 1;
 	data++;

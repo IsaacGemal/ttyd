@@ -45,6 +45,7 @@ static inline void effCoolLeafSetColor(u8 a) {
     GXSetTevColor(GX_TEVREG0, color);
 }
 
+const Vec vec3_802fa460 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fa470 = 4503601774854144.0;
 const char str_802FA478[] = "CoolLeafN64";
 
@@ -129,7 +130,7 @@ EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
 }
 
 static inline Vec makeVec(f32 x, f32 y, f32 z) {
-    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    Vec temp = vec3_802fa460;
     temp.x = x;
     temp.y = y;
     temp.z = z;

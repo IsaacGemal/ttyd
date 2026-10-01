@@ -15,9 +15,9 @@ lottery_info* lotteryGetPtr(void) {
 	return &gp->mLotteryInfo;
 }
 
-// NONMATCHING (99.87%): 16 register-allocation mismatches, no logical differences.
-// The original keeps time18's low word in r24 (mine r25) in the four closing calendar
-// calls, and today/field20 land in r0/r3 instead of r3/r0 in the zero-match loop.
+// NONMATCHING (99.93%): 8 register-allocation mismatches, no logical differences.
+// The zero-prize-time store keeps the constant in r4/base in r3 (mine r3/r4); the four
+// closing calendar calls keep info18's low word in r24 (mine only the first two).
 USER_FUNC(evt_lottery) {
 	lottery_info* info;
 	s32* args = event->args;
@@ -161,10 +161,18 @@ USER_FUNC(evt_lottery) {
 				} else {
 					do {
 						*(s16*)((u8*)info + 0x10) = rand() % 10000;
+#ifdef MUST_MATCH
+					// Match only: the original evaluates the mod clauses right-to-left.
+					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
+						|| *(s16*)((u8*)info + 0x20) % 1000 == *(s16*)((u8*)info + 0x10) % 1000
+						|| *(s16*)((u8*)info + 0x20) % 100 == *(s16*)((u8*)info + 0x10) % 100
+						|| *(s16*)((u8*)info + 0x20) % 10 == *(s16*)((u8*)info + 0x10) % 10);
+#else
 					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
 						|| *(s16*)((u8*)info + 0x10) % 1000 == *(s16*)((u8*)info + 0x20) % 1000
 						|| *(s16*)((u8*)info + 0x10) % 100 == *(s16*)((u8*)info + 0x20) % 100
 						|| *(s16*)((u8*)info + 0x10) % 10 == *(s16*)((u8*)info + 0x20) % 10);
+#endif
 				}
 			} else {
 				info->mFlags |= 4;
@@ -181,11 +189,27 @@ USER_FUNC(evt_lottery) {
 	evtSetValue(event, args[2], *(s16*)((u8*)info + 0x10));
 	OSTicksToCalendarTime(start, &ct[0]);
 	if (info->mFlags & 2) {
+#ifdef MUST_MATCH
+		// Match only: re-reading info18 through a local variable makes the allocator
+		// keep its low word in r24, as the original does.
+		OSTime t;
+
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18), &ct[0]);
+		t = *(OSTime*)((u8*)info + 0x18);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x22), &ct[0]);
+		t = *(OSTime*)((u8*)info + 0x18);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x24), &ct[0]);
+		t = *(OSTime*)((u8*)info + 0x18);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x26), &ct[0]);
+		t = *(OSTime*)((u8*)info + 0x18);
+		OSTicksToCalendarTime(t + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x28), &ct[0]);
+#else
 		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18), &ct[0]);
 		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x22), &ct[0]);
 		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x24), &ct[0]);
 		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x26), &ct[0]);
 		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x28), &ct[0]);
+#endif
 	}
 	return EVT_RETURN_DONE;
 }

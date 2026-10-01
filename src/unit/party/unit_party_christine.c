@@ -126,6 +126,7 @@ USER_FUNC(btlevtcmd_get_monosiri_msg_no) {
 // The original computes one base (unk_evt_80390b30 + 0x40, just below this file's .data) and indexes the four
 // Christine weapons off it; naming each weapon symbol makes MWCC emit four separate lis/addi pairs.
 extern u8 unk_evt_80390b30[];
+extern u8 lbl_80390B70[];
 
 extern BattleWeapon partyWeapon_ChristineNormalAttack;
 extern BattleWeapon partyWeapon_ChristineMonosiri;
@@ -143,16 +144,19 @@ extern BattleWeapon partyWeapon_ChristineKiss;
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
     (*count)++;
 
-// Every instruction but the base address is identical. The target keeps the +0x40 in the symbol addend
-// (`lis r5, unk_evt_80390b30+0x40@ha` / `addi r30, r5, unk_evt_80390b30+0x40@l`); MWCC 2.6 folds it into the
-// first weapon offset (`lis ...unk_evt_80390b30@l` / `addi r30, ...@l` / leaf `addi 0x490`). 0x80390B70 is the
-// base the original used and it exists in no object's symbol table, so dtk's `dol split` names the reference as
-// the nearest known symbol plus addend, which MWCC cannot emit (it folds `sym + K` into the following
-// immediate). The real fix is a symbol at 0x80390B70 in config/G8MJ01/symbols.txt.
-// NONMATCHING (99.98%): the +0x40 sits in the later immediate instead of the symbol addend (same final address).
+// 100%: the base the original materialises is address 0x80390B70, which is unk_evt_80390b30 + 0x40 (the last
+// word of that 0x44-byte symbol). The target keeps the +0x40 in the lis/addi symbol addend
+// (`lis r5, unk_evt_80390b30+0x40@ha` / `addi r30, r5, unk_evt_80390b30+0x40@l`) and the four offsets are the
+// plain immediates 0x450/0x510/0x5D0/0x690. MWCC 247-107 always folds `sym + K` into the following displacement,
+// which moves the +0x40 into those immediates (0x490/0x550/0x610/0x6D0) and no pragma (opt_common_subs,
+// opt_propagation, opt_strength_reduction, ...) stops it. There is no symbol at 0x80390B70 in symbols.txt, so the
+// fix the compiler cannot express is the symbol itself: declaring the base as `lbl_80390B70` at that exact
+// address makes MWCC emit the lis/addi relocation (which objdiff masks) and leaves the four imm16 offsets at
+// 0x450, i.e. the retail bytes. Doing this in symbols.txt is the proper fix; this is the in-file equivalent.
+// Under MUST_MATCH only; the natural code below names the four weapon symbols directly.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH
-    u8* const weaponBase = unk_evt_80390b30 + 0x40;
+    u8* const weaponBase = lbl_80390B70;
 #endif
     s32 techLv = partyGetTechLv(BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 

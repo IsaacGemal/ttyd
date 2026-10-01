@@ -3534,8 +3534,23 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.95%): only pooled string/float symbol offsets differ.
 s32 mobj_powerupblk(MapObjectEntry* obj) {
+#ifdef MUST_MATCH
+    // Match only: the five strings are addressed as `base + offset` to reach the original's .rodata layout.
+    u8* base = (u8*)vec3_802c3dc8;
+#define PB_DOU02 ((const char*)(base + 0x5EC))
+#define PB_DOU05 ((const char*)(base + 0x5F4))
+#define PB_DOU10 ((const char*)(base + 0x5FC))
+#define PB_BLK1 ((const char*)(base + 0x604))
+#define PB_BLK2 ((const char*)(base + 0x60C))
+#else
+#define PB_DOU02 "dou_02"
+#define PB_DOU05 "dou_05"
+#define PB_DOU10 "dou_10"
+#define PB_BLK1 "pwrblk1"
+#define PB_BLK2 "pwrblk2"
+#endif
+
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
@@ -3543,10 +3558,10 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
                     obj->flags &= ~8;
                 } else {
                     marioKeyOff();
-                    if (strcmp(gp->currentMapName, "dou_02") == 0) {
+                    if (strcmp(gp->currentMapName, PB_DOU02) == 0) {
                         marioCtrlOff();
-                    } else if (strcmp(gp->currentMapName, "dou_05") == 0 ||
-                               strcmp(gp->currentMapName, "dou_10") == 0) {
+                    } else if (strcmp(gp->currentMapName, PB_DOU05) == 0 ||
+                               strcmp(gp->currentMapName, PB_DOU10) == 0) {
                         if (obj->unk1E0 == 0x800000) {
                             marioCtrlOff();
                         }
@@ -3554,8 +3569,8 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
                     gp->systemLevelFlags |= 3;
                     psndSFXOn_3D((const char*)0x201C0, &obj->position);
                     animPoseSetAnim(obj->poseId, "A_1", 1);
-                    itemEntry("pwrblk1", (ItemType)0x57, 0xf, -1, 0, obj->position.x, obj->position.y,
-                              obj->position.z);
+                    itemEntry(PB_BLK1, (ItemType)0x57, 0xf, -1, 0, obj->position.x,
+                              obj->position.y, obj->position.z);
                     obj->unk1DC++;
                 }
             }
@@ -3573,14 +3588,15 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
             if (*(s32*)((u8*)obj + 0x1A4) != 0) {
                 (*(s32*)((u8*)obj + 0x1A4))--;
             } else {
-                itemForceGet(itemEntry("pwrblk2", (ItemType)0x57, 0x11, -1, 0, obj->position.x,
-                                       float_40_8041a1ec + obj->position.y, obj->position.z));
+                itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11, -1, 0,
+                                       obj->position.x, float_40_8041a1ec + obj->position.y,
+                                       obj->position.z));
                 evtSetValue(NULL, obj->unk1E4, 1);
                 marioKeyOn();
-                if (strcmp(gp->currentMapName, "dou_02") == 0) {
+                if (strcmp(gp->currentMapName, PB_DOU02) == 0) {
                     marioCtrlOn();
-                } else if (strcmp(gp->currentMapName, "dou_05") == 0 ||
-                           strcmp(gp->currentMapName, "dou_10") == 0) {
+                } else if (strcmp(gp->currentMapName, PB_DOU05) == 0 ||
+                           strcmp(gp->currentMapName, PB_DOU10) == 0) {
                     if (obj->unk1E0 == 0x800000) {
                         marioCtrlOn();
                     }
@@ -3594,6 +3610,11 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
     }
     return 0;
 }
+#undef PB_DOU02
+#undef PB_DOU05
+#undef PB_DOU10
+#undef PB_BLK1
+#undef PB_BLK2
 
 s32 mobj_10countblk(MapObjectEntry* obj) {
     switch (obj->unk1DC) {

@@ -1194,16 +1194,19 @@ void select_disp2(WinMgrEntry* entry) {
     }
 }
 
-// NONMATCHING (99.87%): just written.
 s32 unk_802399f8(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
     s32 i;
-    s32 count = 0;
-    s32 zeroFlag = 0;
-    s32 nonZeroFlag = 0;
+    s32 count;
+    s32 zeroFlag;
+    s32 nonZeroFlag;
     s32 mode;
     s32 val;
+
+    zeroFlag = 0;
+    count = 0;
+    nonZeroFlag = 0;
 
     for (i = 0; party_id_table[i] != 0; i++) {
         if (partyChkJoin(party_id_table[i])) {

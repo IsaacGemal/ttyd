@@ -72,15 +72,17 @@ void seq_battleExit(SequenceWork* work) {
     battle_exit();
 }
 
-// Every instruction matches except the six `addi rX, r31, off` immediates that name the pool
-// strings. MWCC pools literals in first-use order, and seq_battleMain reaches the four "bti_0N"
-// bmap names (case 3) after the two battle/audience/... names (case 1). The target's .rodata has
-// bti_01..04 (0x14..0x2C) before audience_normal/luigi (0x34/0x58); ours has the audience pair
-// first (0x14/0x38) and the bti names at 0x5C. That order is fixed during pool emission, so it
-// can only be moved by an emitter defined before seq_battleMain (an unused static function does
-// it), which is outside this function. The do-while, the switch(type) (which gives the `bge`/`b`
-// shape) and the function-scope fbat/case-2 store are what got it to 99.98%.
-// NONMATCHING (99.98%): .rodata string-pool order only; all instructions match.
+// The four "bti_0N" bmap names are selected by the static helper below, which is deliberately
+// defined after this function: MWCC emits a file's functions in reverse source order, so the
+// helper is compiled first and its string literals enter the read-only pool before the two
+// battle/audience/... names in case 1. That matches the target's .rodata (bti_01..04 at
+// 0x14..0x2C, audience_normal/luigi at 0x34/0x58); an inline switch here would pool the
+// audience names first and leave six `addi r31, ...` immediates wrong. The helper is inlined at
+// the call site (MWCC also emits an unused out-of-line copy; the linker drops it, autolink passes).
+// The do-while, the switch(type) (which gives the `bge`/`b` shape) and the function-scope
+// fbat/case-2 store are the other shapes this needs.
+static void bmapLoadRank(s32 rank, u8* setup);
+
 void seq_battleMain(SequenceWork* work) {
     FieldBattleData* fbat;
     s32 mode;
@@ -162,21 +164,7 @@ void seq_battleMain(SequenceWork* work) {
                             }
                         }
                     }
-                    switch (pouch->rank) {
-                        case 0:
-                            bmapLoad("bti_01", *(char**)(setup + 0x4));
-                            break;
-                        case 1:
-                            bmapLoad("bti_02", *(char**)(setup + 0x4));
-                            break;
-                        case 2:
-                            bmapLoad("bti_03", *(char**)(setup + 0x4));
-                            break;
-                        case 3:
-                        default:
-                            bmapLoad("bti_04", *(char**)(setup + 0x4));
-                            break;
-                    }
+                    bmapLoadRank(pouch->rank, setup);
                     skip = FALSE;
                 } while (0);
                 if (skip) {
@@ -241,6 +229,26 @@ void seq_battleMain(SequenceWork* work) {
             break;
 
         default:
+            break;
+    }
+}
+
+// See seq_battleMain: keeping this helper after it is what orders the "bti_0N" literals first in
+// .rodata (MWCC emits a file's functions in reverse source order). It is inlined at the call site.
+static void bmapLoadRank(s32 rank, u8* setup) {
+    switch (rank) {
+        case 0:
+            bmapLoad("bti_01", *(char**)(setup + 0x4));
+            break;
+        case 1:
+            bmapLoad("bti_02", *(char**)(setup + 0x4));
+            break;
+        case 2:
+            bmapLoad("bti_03", *(char**)(setup + 0x4));
+            break;
+        case 3:
+        default:
+            bmapLoad("bti_04", *(char**)(setup + 0x4));
             break;
     }
 }

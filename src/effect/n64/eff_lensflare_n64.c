@@ -225,22 +225,24 @@ static inline void lensflareSetColor6(void) {
 }
 #endif
 
-// NONMATCHING (99.87%): every instruction matches except the callee-saved
-// colours of `cam` and `alpha` (target cam r27 / alpha r26, ours cam r26 /
-// alpha r27) and the loop counter that reuses cam's register.
+// MWCC assigns the callee-saved GPRs partly by declaration order: `cam` must be
+// declared before `alpha` so cam lands in r27 and alpha in r26 (the loop counter
+// then reuses cam's r27).  The Mtx/GXTexObj relative order (trans, scale, rot,
+// base, texObj) fixes the stack slots, so the GPR declarations are interleaved
+// among them rather than grouped.
 void effLensflareDisp(CameraId cameraId, void* param) {
-    EffectEntry* effect = param;
-    LensflareEntry* data;
     CameraEntry* cam;
+    EffectEntry* effect = param;
     Mtx trans;
     Mtx scale;
     Mtx rot;
+    LensflareEntry* data;
+    s32 frame;
     Mtx base;
     GXTexObj texObj;
-    s32 frame;
-    s32 alpha;
     f32 f30;
     s32 i;
+    s32 alpha;
 
     cam = camGetPtr(cameraId);
     data = effect->userdata;

@@ -334,6 +334,14 @@ static inline GXColor mugiKemuriColor(u8 alpha) {
 	c.a = alpha;
 	return c;
 }
+
+// Same stack-slot reason as mugiKemuriColor, for the second colour constant used by
+// effMugiKemuri2Disp (its original loads dat_8041ca6c).
+static inline GXColor mugiKemuri2Color(u8 alpha) {
+	GXColor c = dat_8041ca6c;
+	c.a = alpha;
+	return c;
+}
 #endif
 
 void effMugiKemuriDisp(CameraId cameraId, void* param) {
@@ -373,9 +381,6 @@ void effMugiKemuriDisp(CameraId cameraId, void* param) {
 	}
 }
 
-// NONMATCHING (99.95%): everything matches except the GXColor temporary; the
-// original builds it at 0x8 and copies to the outgoing-argument slot at 0xc,
-// ours does the reverse (0xc -> 0x8). Compiler stack-slot choice.
 void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MugiKemuriWork* work = entry->userdata;
@@ -398,8 +403,12 @@ void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 		PSMTXConcat(trans, scale, trans);
 		if (work->animPose != -1) {
 			animPoseSetMaterialFlagOn(work->animPose, 0x40);
+#ifdef MUST_MATCH
+			color = mugiKemuri2Color(work->alpha);
+#else
 			color = dat_8041ca6c;
 			color.a = work->alpha;
+#endif
 			animPoseSetMaterialEvtColor(work->animPose, color);
 			animPoseMain(work->animPose);
 			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, float_15_8041ca78);

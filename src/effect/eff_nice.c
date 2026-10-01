@@ -296,8 +296,12 @@ void acrobatMain(EffectEntry* effect) {
 }
 
 #pragma opt_common_subs off // without it MWCC CSEs the repeated float_0/float_1 pool loads in the GX vertex block
-// NONMATCHING (99.91%): only the two loop-increment stores are scheduled in the opposite order
-// (`addi r29,r29,4` texidx vs `addi r28,r28,0x64` data++); every other instruction is identical.
+#ifdef MUST_MATCH
+#pragma opt_dead_assignments off // needed with texIdx below: without it MWCC folds the redundant index into i's induction and the loop latch order flips (data++ before the i-1 texid increment)
+#endif
+// The `i - 1` texid index makes the compiler synthesise a second induction (r29). With the natural
+// `[i - 1]` its latch increment is scheduled after data++ (99.91%); an explicit texIdx gives the
+// original's order.
 void effAcrobatDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	NiceEffectWork* data = effect->userdata;
@@ -308,6 +312,9 @@ void effAcrobatDisp(CameraId camId, void* param) {
 	Mtx mtxFinal;
 	GXTexObj texObj;
 	s32 i;
+#ifdef MUST_MATCH
+	s32 texIdx;
+#endif
 	f32 max, negSize, min;
 	f32 offsetX, offsetY;
 
@@ -340,8 +347,15 @@ void effAcrobatDisp(CameraId camId, void* param) {
 	negSize = -float_20_8041cba8;
 	min = negSize * float_0p5_8041cbac;
 	i = 1;
+#ifdef MUST_MATCH
+	texIdx = 1;
+#endif
 	data = data + 1;
+#ifdef MUST_MATCH
+	for (; i < effect->count; i++, texIdx++, data++) {
+#else
 	for (; i < effect->count; i++, data++) {
+#endif
 		if (data->field_0x28 < 6) {
 			offsetX = negSize * float_0p5_8041cbac;
 			offsetY = float_0_8041cbb0;
@@ -362,7 +376,11 @@ void effAcrobatDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtxScale, 0);
 		GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+		effGetTexObj(acrobal_tbl[gp->language][texIdx - 1], &texObj);
+#else
 		effGetTexObj(acrobal_tbl[gp->language][i - 1], &texObj);
+#endif
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 		GXPosition3f32(min, max, float_0_8041cbb0);
@@ -376,3 +394,6 @@ void effAcrobatDisp(CameraId camId, void* param) {
 	}
 }
 #pragma opt_common_subs on
+#ifdef MUST_MATCH
+#pragma opt_dead_assignments reset
+#endif
