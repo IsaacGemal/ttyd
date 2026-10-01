@@ -44,7 +44,7 @@ extern const f32 float_0_80421280;
 extern const f32 float_1_80421284;
 #endif
 
-const char str_802FE6E4[12] = "mizutama";
+extern const char str_802FE6E4[12];
 
 EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	s32 timer;
@@ -106,15 +106,18 @@ EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 			data->timer = timer;
 		} else {
 			f32 r = (f32)radius;
+#ifdef MUST_MATCH
+			f32 zero;
+#endif
 
 			irand(360);
 			data->x = (f32)irand((s32)r * 2) - r;
 #ifdef MUST_MATCH
-			/* MUST_MATCH: float_0 is volatile here so Disp reloads it; the literal 0.0f lets MWCC
-			   share a single load for y, z and the compare instead of issuing three. */
-			data->y = 0.0f;
-			data->z = 0.0f;
-			angle = (data->x < 0.0f) ? float_225_804212a4 : float_135_804212a8;
+			/* MUST_MATCH: float_0 is volatile here so Disp reloads it; the chained assignment reads it
+			   once and shares the load between y, z and the compare (found by the permuter). */
+			zero = (data->y = float_0_80421280);
+			data->z = zero;
+			angle = (data->x < zero) ? float_225_804212a4 : float_135_804212a8;
 #else
 			data->y = float_0_80421280;
 			data->z = float_0_80421280;
@@ -246,3 +249,30 @@ void effMizutamaDisp(CameraId camId, void* param) {
 	}
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_8_80421270 = 8.0f;
+const f32 float_360_80421274 = 360.0f;
+const f32 float_0p5_80421278 = 0.5f;
+const f32 float_4_8042127c = 4.0f;
+#ifdef MUST_MATCH
+const volatile f32 float_0_80421280 = 0.0f;
+#else
+const f32 float_0_80421280 = 0.0f;
+#endif
+#ifdef MUST_MATCH
+const volatile f32 float_1_80421284 = 1.0f;
+#else
+const f32 float_1_80421284 = 1.0f;
+#endif
+const f32 float_0p97_80421288 = 0.97f;
+const f32 float_0p3_8042128c = 0.3f;
+const f32 float_0p99_80421290 = 0.99f;
+const f32 float_0p01_80421294 = 0.01f;
+const f32 float_6p2832_80421298 = 6.2831855f;
+const f32 float_2_8042129c = 2.0f;
+const f32 float_100_804212a0 = 100.0f;
+const f32 float_225_804212a4 = 225.0f;
+const f32 float_135_804212a8 = 135.0f;
+
+// Defined after the code: the zero Vec template of effMizutamaMain comes first in .rodata in the target.
+const char str_802FE6E4[12] = "mizutama";
