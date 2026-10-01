@@ -305,32 +305,31 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 // then two indexed passes over the built vertices. Every coordinate conversion is
 // integer magic (fctiwz + lfd/fsubs), so no inline asm is needed.
 #ifdef MUST_MATCH
-// Build each colour inside an inline so the returned by-value temp lands where the
-// original's does (the plain form below puts it in the outgoing-argument area instead).
-static inline GXColor wprotectColor1(s32 a) {
+// Build each colour and make the GXSetTevColor call inside an inline: mwcc then places
+// each colour local and its by-value copy in the original's stack slots. Returning the
+// GXColor and calling outside packs all locals together instead.
+static inline void wprotectColor1(s32 a) {
 	GXColor c = dat_8041f888;
 	c.a = a;
-	return c;
+	GXSetTevColor(GX_TEVREG0, c);
 }
 
-static inline GXColor wprotectColor2(s32 a) {
+static inline void wprotectColor2(s32 a) {
 	GXColor c = dat_8041f88c;
 	c.a = a;
-	return c;
+	GXSetTevColor(GX_TEVREG1, c);
 }
 
-static inline GXColor wprotectColor3(WprotectData* data, s32 a) {
+static inline void wprotectColor3(WprotectData* data, s32 a) {
 	GXColor c = unk_804231f0;
 	c.r = data->field_0x18;
 	c.g = data->field_0x1C;
 	c.b = data->field_0x20;
 	c.a = a;
-	return c;
+	GXSetTevColor(GX_TEVREG0, c);
 }
 #endif
 
-// NONMATCHING (99.98%): only the stack slots of the three by-value GXColor argument
-// copies differ (the original interleaves each local with its copy; MWCC groups them).
 void effOpukuWprotectDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -344,9 +343,11 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	Mtx drop;
 	Mtx scale;
 	Mtx trans;
+#ifndef MUST_MATCH
 	GXColor color1;
 	GXColor color2;
 	GXColor color3;
+#endif
 	s32 counter;
 	f32 s1;
 	f32 px;
@@ -398,19 +399,19 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	}
 
 #ifdef MUST_MATCH
-	color1 = wprotectColor1(alpha);
+	wprotectColor1(alpha);
 #else
 	color1 = dat_8041f888;
 	color1.a = alpha;
-#endif
 	GXSetTevColor(GX_TEVREG0, color1);
+#endif
 #ifdef MUST_MATCH
-	color2 = wprotectColor2(data->field_0x28);
+	wprotectColor2(data->field_0x28);
 #else
 	color2 = dat_8041f88c;
 	color2.a = data->field_0x28;
-#endif
 	GXSetTevColor(GX_TEVREG1, color2);
+#endif
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
@@ -462,15 +463,15 @@ void effOpukuWprotectDisp(CameraId camId, void* param) {
 	PSMTXScale(scale, float_0p0625_8041f8a8, float_0p03125_8041f8a0, float_0_8041f890);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 #ifdef MUST_MATCH
-	color3 = wprotectColor3(data, (s32)(float_0p3_8041f8ac * (f32)alpha));
+	wprotectColor3(data, (s32)(float_0p3_8041f8ac * (f32)alpha));
 #else
 	color3 = unk_804231f0;
 	color3.r = data->field_0x18;
 	color3.g = data->field_0x1C;
 	color3.b = data->field_0x20;
 	color3.a = (s32)(float_0p3_8041f8ac * (f32)alpha);
-#endif
 	GXSetTevColor(GX_TEVREG0, color3);
+#endif
 	GXSetCullMode(GX_CULL_FRONT);
 
 	DCFlushRange(vtx, 0x460);

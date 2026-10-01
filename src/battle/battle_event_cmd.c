@@ -5605,8 +5605,6 @@ USER_FUNC(btlevtcmd_MovePosition) {
 }
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame
-// NONMATCHING (99.86%): correct logic; the `tx - x` direction test is allocated to f0 in our build
-// (target keeps the difference in f1 and 0.0f in f0), a 4-instruction FPR-naming difference.
 USER_FUNC(btlevtcmd_FallPosition) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -5629,11 +5627,21 @@ USER_FUNC(btlevtcmd_FallPosition) {
         BtlUnit_SetMoveTargetPos(unit, tx, ty, tz);
         *(f32*)((u8*)unit + 0x178) = angleABf(x, z, tx, tz);
         *(f32*)((u8*)unit + 0x17C) = distABf(x, z, tx, tz);
+#ifdef MUST_MATCH
+        // the literal 0.0f (not the named float_0_8041bf98) is what puts the difference in f1 and
+        // 0.0f in f0 as the target does; the named constant allocates them the other way round
+        if (tx - x > 0.0f) {
+            unit->moveDirection = 1;
+        } else if (tx - x < 0.0f) {
+            unit->moveDirection = -1;
+        }
+#else
         if (tx - x > float_0_8041bf98) {
             unit->moveDirection = 1;
         } else if (tx - x < float_0_8041bf98) {
             unit->moveDirection = -1;
         }
+#endif
         /* fallthrough */
         y = ty - y;
         if (*(s32*)((u8*)unit + 0x168) == 0) {

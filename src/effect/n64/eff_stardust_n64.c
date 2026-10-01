@@ -53,9 +53,10 @@ extern const f32 float_0p9_8041ff28;
 // opt_common_subs on breaks the two fmadds contractions in the particle update; the original still
 // has them, so keep common subexpression merging off for this function.
 #pragma opt_common_subs off
-// NONMATCHING (99.84%): type-0 random branch: conversion stack slots swapped, shared double in f4
-// not f5 (0.5 in f5 not f4), and `fmuls f1,f2,f1` for `fmuls f1,f1,f2`: 12 instruction diffs.
-// `#pragma opt_propagation off` fixes the slots (8 diffs) but scores 99.78.
+// opt_propagation off is required in the type-0 random branch: with propagation on, MWCC folds the
+// int->float conversion of `rnd` into its uses and the conversion slots/register allocation drift
+// (12 instruction diffs).
+#pragma opt_propagation off
 void effStardustMain(EffectEntry* effect) {
     EffStardustN64Data* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -104,16 +105,16 @@ void effStardustMain(EffectEntry* effect) {
             } else {
                 s32 rnd;
 #ifdef MUST_MATCH
-                /* MUST_MATCH: retail evaluates the signed int->float conversion into a temp and only
-                   divides after the radius; writing it as one expression (the #else form) makes MWCC
-                   coalesce the conversion into the loaded double's register. */
+                /* MUST_MATCH: retail materialises the signed int->float conversion of `rnd` into a
+                   temp before the multiply; writing the angle as one expression (the #else form)
+                   makes MWCC coalesce the conversion into the loaded double's register. */
                 f32 p;
 #endif
                 rnd = effTblRandN64(0x168, i + 0xb1);
 #ifdef MUST_MATCH
-                p = (f32)rnd * float_6p2832_8041ff14;
+                p = (f32)rnd;
                 radius = float_0p5_8041ff10 * (f32)(i & 3) + float_1_8041ff0c;
-                angle = p / float_360_8041ff18;
+                angle = float_6p2832_8041ff14 * p / float_360_8041ff18;
 #else
                 angle = float_6p2832_8041ff14 * (f32)rnd / float_360_8041ff18;
                 radius = float_0p5_8041ff10 * (f32)(i & 3) + float_1_8041ff0c;
@@ -171,6 +172,8 @@ void effStardustMain(EffectEntry* effect) {
     dispEntry(camera, dispCalcZ(&disp), 2, effStardustDisp, effect);
 #endif
 }
+
+#pragma opt_propagation reset
 
 void effStardustN64SetColor(EffectEntry* entry, f32 r, f32 g, f32 b) {
     EffStardustN64Data* data = (EffStardustN64Data*)entry->userdata;

@@ -3155,3 +3155,10 @@ offsets before truncating; all fixed against the asm, with retail's exact floats
 changed by nothing else went back to main). Bugs on main this wave fixed: aji arm_main's 2π, barriern_satellite's
 intplGetValue mode, tou's NPC names (ガンス, キノシコワ), tou_02's group pointer off gp, yuunpc's row index and pose
 index. Found in passing, older than the wave: hei_10's 0.2f is 2 * randf(1.0, 1.2) (0.20000005f).
+
+## Wave 42: the closest near-misses (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The 48 closest open dol functions (99.62-99.99%) outside the permuter's queues, 21:08-22:09, from main c0327be, at
+10 agents at a time while the model benchmark held the rest of the key. **24 of 48 reached 100%, 2 improved,
+11 unchanged, 0 worse; 11 agents produced no output** (they hit the tower's ssh switch from Tailscale SSH to OpenSSH)
+and go into the next wave.

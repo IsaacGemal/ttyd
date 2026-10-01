@@ -1343,9 +1343,15 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
 }
 
-// NONMATCHING (99.91%): only the DVDMgrOpen path materialisation order differs -- MWCC emits
-// `addi r3,r3,str@l; mr r27,r3`, the original `addi r27,r3,str@l; mr r3,r27`. Register scheduling only.
 // Returns void: the original never writes r3, and an s32 definition (or header prototype!) shifts the tail to r4.
+#ifdef MUST_MATCH
+// Forces MWCC to materialise str's address into path's home register (r27) before the copy to r3;
+// writing `path = str;` directly coalesces the address into r3 and copies the other way.
+static inline char* SoundSSPlayChEx_getPath(void) {
+    char* path = str;
+    return path;
+}
+#endif
 void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3) {
     SoundStream* stream = &sound.streams[chan];
     u8* e = (u8*)stream;
@@ -1398,7 +1404,11 @@ void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3) {
     }
 
     sprintf(str, "%s/%s%s", getMarioStDvdRoot(), a2, ".stm");
+#ifdef MUST_MATCH
+    path = SoundSSPlayChEx_getPath();
+#else
     path = str;
+#endif
     if ((stream->entries[0].dvd = DVDMgrOpen(path, 0, 0)) == 0) {
         stream->flags = 0;
         return;

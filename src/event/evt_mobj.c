@@ -3534,8 +3534,11 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.95%): only pooled string/float symbol offsets differ.
+// The five rodata string literals are addressed as `base + offset` (the file's established pattern for
+// reaching the original's .rodata, whose layout MWCC's local pool does not reproduce).
 s32 mobj_powerupblk(MapObjectEntry* obj) {
+    u8* base = (u8*)vec3_802c3dc8;
+
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
@@ -3543,10 +3546,10 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
                     obj->flags &= ~8;
                 } else {
                     marioKeyOff();
-                    if (strcmp(gp->currentMapName, "dou_02") == 0) {
+                    if (strcmp(gp->currentMapName, (const char*)(base + 0x5EC)) == 0) {
                         marioCtrlOff();
-                    } else if (strcmp(gp->currentMapName, "dou_05") == 0 ||
-                               strcmp(gp->currentMapName, "dou_10") == 0) {
+                    } else if (strcmp(gp->currentMapName, (const char*)(base + 0x5F4)) == 0 ||
+                               strcmp(gp->currentMapName, (const char*)(base + 0x5FC)) == 0) {
                         if (obj->unk1E0 == 0x800000) {
                             marioCtrlOff();
                         }
@@ -3554,8 +3557,8 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
                     gp->systemLevelFlags |= 3;
                     psndSFXOn_3D((const char*)0x201C0, &obj->position);
                     animPoseSetAnim(obj->poseId, "A_1", 1);
-                    itemEntry("pwrblk1", (ItemType)0x57, 0xf, -1, 0, obj->position.x, obj->position.y,
-                              obj->position.z);
+                    itemEntry((const char*)(base + 0x604), (ItemType)0x57, 0xf, -1, 0, obj->position.x,
+                              obj->position.y, obj->position.z);
                     obj->unk1DC++;
                 }
             }
@@ -3573,14 +3576,15 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
             if (*(s32*)((u8*)obj + 0x1A4) != 0) {
                 (*(s32*)((u8*)obj + 0x1A4))--;
             } else {
-                itemForceGet(itemEntry("pwrblk2", (ItemType)0x57, 0x11, -1, 0, obj->position.x,
-                                       float_40_8041a1ec + obj->position.y, obj->position.z));
+                itemForceGet(itemEntry((const char*)(base + 0x60C), (ItemType)0x57, 0x11, -1, 0,
+                                       obj->position.x, float_40_8041a1ec + obj->position.y,
+                                       obj->position.z));
                 evtSetValue(NULL, obj->unk1E4, 1);
                 marioKeyOn();
-                if (strcmp(gp->currentMapName, "dou_02") == 0) {
+                if (strcmp(gp->currentMapName, (const char*)(base + 0x5EC)) == 0) {
                     marioCtrlOn();
-                } else if (strcmp(gp->currentMapName, "dou_05") == 0 ||
-                           strcmp(gp->currentMapName, "dou_10") == 0) {
+                } else if (strcmp(gp->currentMapName, (const char*)(base + 0x5F4)) == 0 ||
+                           strcmp(gp->currentMapName, (const char*)(base + 0x5FC)) == 0) {
                     if (obj->unk1E0 == 0x800000) {
                         marioCtrlOn();
                     }

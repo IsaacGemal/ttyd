@@ -296,12 +296,12 @@ static inline void nozleDrawDL4_0(void) {
 	}
 }
 
-// NONMATCHING (99.89%): every instruction matches except the `data` pointer, which MWCC keeps
-// in r28 where the original uses r27.
 void effNozleDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	effNozleData* data;
+	// `entry` is declared before `data` on purpose: MWCC allocates `data` to r27 and reuses r27
+	// for `entry` in the type-3 loop, and swapping the declarations is what makes it do that.
 	effNozleEntryData* entry;
+	effNozleData* data;
 	s32 i;
 	CameraEntry* camera;
 	s32 alpha;

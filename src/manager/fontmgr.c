@@ -154,7 +154,9 @@ void FontDrawCodeMtx(Mtx mtx, u16 code) {
 	_JUTFont_DrawPos(code, 0, 0);
 }
 
-// NONMATCHING (99.96%): same two swapped GXSetTevColor arg stack slots as FontDrawCodeMtx (plus a local float-pool label).
+// NONMATCHING (99.96%): the two inlined GXSetTevColor by-value argument copies are allocated in the opposite
+// order (ours 0x10 then 0xc; retail 0xc then 0x10). The 0.0f passed to PSMTXTransApply also pools as an anonymous
+// @-label instead of retail's float_0_8041a300 (same value, label only).
 void FontDrawCode(u16 code, f32 x, f32 y) {
 	Mtx mtx;
 	CameraEntry* cam;

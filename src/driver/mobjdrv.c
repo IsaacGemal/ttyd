@@ -87,20 +87,6 @@ inline void calcMtx(MapObjectEntry* entry, Mtx dest, Vec position) { // guessing
     MTXConcat(trans, scale, dest);
 }
 
-inline int mobjCheckKururingFloorItem(MapObjectEntry* entry) { // was always inlined in retail but not in demo
-    if (!strcmp(entry->animName, "MOBJ_KururinFloor")) {
-        ItemEntry* item = itemNameToPtr(entry->name);
-        if ((item != NULL && (item->flags & 1) && evtGetValue(0, entry->unk1E4) == 0))
-            return 1;
-        else if ((evtGetValue(0, entry->unk1E4) != 0))
-            return 1;
-        else
-            return 2;
-    } else {
-        return 0;
-    }
-}
-
 void mobjDispXLU(CameraId camId, void* param) {
     MapObjectEntry* entry = param; // cast to correct type
 
@@ -212,12 +198,12 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
 #endif
 
     animData = animPoseGetAnimBaseDataPtr(entry->poseId);
-    minTmp = vec3_802c3cc8;
+    minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     minTmp.x = animData->bboxMin.x;
     minTmp.y = animData->bboxMin.y;
     minTmp.z = animData->bboxMin.z;
     bboxMin = minTmp;
-    maxTmp = vec3_802c3cd4;
+    maxTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     maxTmp.x = animData->bboxMax.x;
     maxTmp.y = animData->bboxMax.y;
     maxTmp.z = animData->bboxMax.z;
@@ -516,12 +502,12 @@ void mobjCalcMtx(MapObjectEntry* entry) {
     PSVECAdd(&entry->position, &entry->translation, &position);
     animData = animPoseGetAnimBaseDataPtr(entry->poseId);
 
-    minTmp = vec3_802c3d10;
+    minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     minTmp.x = animData->bboxMin.x;
     minTmp.y = animData->bboxMin.y;
     minTmp.z = animData->bboxMin.z;
     bboxMin = minTmp;
-    maxTmp = vec3_802c3d1c;
+    maxTmp = (Vec){ 0.0f, 0.0f, 0.0f };
     maxTmp.x = animData->bboxMax.x;
     maxTmp.y = animData->bboxMax.y;
     maxTmp.z = animData->bboxMax.z;
@@ -614,7 +600,13 @@ s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
     }
 }
 
-// NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
+// Unreferenced in the original, but its pool slot shifts the offsets mobjNearDistCheck2 reads.
+#pragma force_active on
+const Vec vec3_802c3d28 = { 0.0f, 0.0f, 0.0f };
+#pragma force_active reset
+
+static int mobjCheckKururingFloorItem(MapObjectEntry* entry);
+
 MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char** names) {
     int entryCount;
     Vec pos;
@@ -673,4 +665,18 @@ MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char**
     }
 
     return ret;
+}
+
+static int mobjCheckKururingFloorItem(MapObjectEntry* entry) { // was always inlined in retail but not in demo
+    if (!strcmp(entry->animName, "MOBJ_KururinFloor")) {
+        ItemEntry* item = itemNameToPtr(entry->name);
+        if ((item != NULL && (item->flags & 1) && evtGetValue(0, entry->unk1E4) == 0))
+            return 1;
+        else if ((evtGetValue(0, entry->unk1E4) != 0))
+            return 1;
+        else
+            return 2;
+    } else {
+        return 0;
+    }
 }

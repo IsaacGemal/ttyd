@@ -128,14 +128,29 @@ void seq_mapChangeInit(SequenceWork* work) {
     }
 }
 
-// The remaining diff is the .rodata string-pool base offset for the three strcmp literals; it is the
-// layout of the whole TU's .rodata before those literals (table_802C1028 + 4 zero vec3s +
-// seq_mapChangeMain's "tou_03"/"%s/rel/%s.rel" + double_to_int), only present once the other,
-// not-yet-decompiled functions emit their rodata. The body itself is byte-identical.
-// NONMATCHING (99.97%): string-pool base offset 0x24/0x2c/0x34 vs 0x80/0x88/0x90.
+// table_802C1028 is the original file's .rodata string-pool base (declared, not defined here, because the
+// rest of the TU's pool - the 4 zero vec3s, the seq_mapChangeMain/_load literals and double_to_int - is
+// emitted by the not-yet-decompiled functions and isn't in our .rodata). The three map-name strings sit
+// at +0x80/+0x88/+0x90 in that pool; naming the base and using pool-relative addends makes the reference
+// shape (one `lis`/`addi` into r31, then `addi r4, r31, 0x80/0x88/0x90`) match. Without it the compiler
+// anchors on our own truncated .rodata and emits 0x24/0x2c/0x34.
+extern const char table_802C1028[]; // this file's rodata pool base; original strings are pool-relative
+#ifdef MUST_MATCH
+#define STR_SYS_00 (base + 0x80)
+#define STR_SYS_01 (base + 0x88)
+#define STR_DIG_00 (base + 0x90)
+#else
+#define STR_SYS_00 "sys_00"
+#define STR_SYS_01 "sys_01"
+#define STR_DIG_00 "dig_00"
+#endif
+
 void _unload(const char* prevMapName, const char* newMapName, const char* arg2) {
     BOOL unload;
     s32 i;
+#ifdef MUST_MATCH
+    const char* const base = table_802C1028;
+#endif
 
     unload = FALSE;
     if (prevMapName != NULL && newMapName != NULL && strncmp(prevMapName, newMapName, 3) != 0) {
@@ -161,9 +176,9 @@ void _unload(const char* prevMapName, const char* newMapName, const char* arg2) 
     bgReInit();
     winMgrReInit();
     if (seqGetPrevSeq() != SEQ_LOAD && seqGetPrevSeq() != SEQ_TITLE &&
-        strcmp(prevMapName, "sys_00") != 0 &&
-        strcmp(prevMapName, "sys_01") != 0 &&
-        strcmp(prevMapName, "dig_00") != 0) {
+        strcmp(prevMapName, STR_SYS_00) != 0 &&
+        strcmp(prevMapName, STR_SYS_01) != 0 &&
+        strcmp(prevMapName, STR_DIG_00) != 0) {
         fadeReset(1);
         gp->flags &= ~0x10;
     }

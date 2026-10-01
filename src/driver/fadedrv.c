@@ -1108,7 +1108,6 @@ void fadeMain(void) {
 	}
 }
 
-// NONMATCHING (99.97%): being reconstructed.
 void disp_texture(CameraId camId, void* param) {
 	CameraEntry* camera;
 	FadeEntry* entry;
@@ -1169,10 +1168,10 @@ void disp_texture(CameraId camId, void* param) {
 				f4 = entry->field_0x24;
 				f31 = 100.0f * f4 * f4 * f4 * f4 * f4;
 				PSMTXTrans(mtx1, 0.5f, 0.5f, 0.0f);
-				PSMTXScale(mtx2, f31, f31, 1.0f);
-				PSMTXTrans(mtx3, -0.5f, -0.5f, 0.0f);
-				PSMTXConcat(mtx1, mtx2, mtx2);
-				PSMTXConcat(mtx2, mtx3, (f32(*)[4])entry->field_0x2C);
+				PSMTXScale(mtx3, f31, f31, 1.0f);
+				PSMTXTrans(mtx2, -0.5f, -0.5f, 0.0f);
+				PSMTXConcat(mtx1, mtx3, mtx3);
+				PSMTXConcat(mtx3, mtx2, (f32(*)[4])entry->field_0x2C);
 			}
 			else if (entry->type == 2) {
 				PSMTXTrans((f32(*)[4])entry->field_0x2C, 1.0f, 1.0f, 0.0f);
@@ -1190,13 +1189,13 @@ void disp_texture(CameraId camId, void* param) {
 				f4 = entry->field_0x24;
 				f31 = 100.0f * f4 * f4 * f4 * f4 * f4;
 				PSMTXTrans(mtx1, 0.5f, 0.5f, 0.0f);
-				PSMTXScale(mtx2, f31, f31, 1.0f);
+				PSMTXScale(mtx3, f31, f31, 1.0f);
 				PSMTXRotRad(mtx4, 'z', 0.017453292f * entry->field_0x28);
-				PSMTXTrans(mtx3, -0.5f - entry->fadeSpotX / (f32)gp->fbWidth,
+				PSMTXTrans(mtx2, -0.5f - entry->fadeSpotX / (f32)gp->fbWidth,
 				           -0.5f + entry->fadeSpotY / (f32)gp->efbHeight, 0.0f);
-				PSMTXConcat(mtx1, mtx2, mtx2);
-				PSMTXConcat(mtx2, mtx4, mtx2);
-				PSMTXConcat(mtx2, mtx3, (f32(*)[4])entry->field_0x2C);
+				PSMTXConcat(mtx1, mtx3, mtx3);
+				PSMTXConcat(mtx3, mtx4, mtx3);
+				PSMTXConcat(mtx3, mtx2, (f32(*)[4])entry->field_0x2C);
 			}
 			else if (entry->type == 4 || entry->type == 6) {
 				PSMTXTrans((f32(*)[4])entry->field_0x2C, 1.0f, 1.0f, 0.0f);

@@ -182,10 +182,16 @@ extern BattleWeapon partyWeapon_SandersSuperBombAttack;
 
 // NONMATCHING (99.98%): the only difference is where the +0x330 sits. The target materializes it in the base
 // (`lis r5, attack_audience_event_803845A8+0x330@ha` / `addi r30, r5, ...+0x330@l`) and then uses the four
-// +0x650/+0x710/+0x7d0/+0x890 offsets; this toolchain always folds the +0x330 into the later immediates
-// (+0x980/+0xa40/+0xb00/+0xbc0) and leaves addend 0 in the @ha/@l reloc. Final addresses are identical.
-// unit_party_christine.c has the same shape and the same 99.98%; the matching siblings
-// (clauda/vivian/chuchurina/nokotarou/yoshi) put a lbl_XXXX symbol directly on the base.
+// +0x650/+0x710/+0x7d0/+0x890 offsets; MWCC 2.6 folds `sym + 0x330` into the later immediates
+// (+0x980/+0xa40/+0xb00/+0xbc0) and leaves addend 0 in the @ha/@l reloc, so the base register and the four
+// immediates differ even though every final address is right. 0x803848D8 is the `{ -1.0f, 1.0f }` pair that is
+// the last 8 bytes of unit_party_chuchurina.c's attack_audience_event; sanders' `.data` split starts at
+// 0x803848E0, so the pair has no symbol of its own and dtk names the target reference as
+// attack_audience_event+0x330. The real fix is tools/split_scan.py's fix for sanders (move the
+// chuchurina/sanders `.data` boundary down 8 bytes and let sanders own the pair), same as the nokotarou fix in
+// Grind 28, which needs symbols.txt/splits.txt edits that this task forbids. unit_party_christine.c has the
+// same shape and the same 99.98%; the matching siblings (clauda/vivian/chuchurina/nokotarou/yoshi) have their
+// own `lbl_XXXX` pair symbol directly on the base.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH
     u8* weaponBase = attack_audience_event_803845A8 + 0x330;

@@ -2539,20 +2539,35 @@ USER_FUNC(evt_npc_add_dirdist) {
     return EVT_RETURN_DONE;
 }
 
-// The original computes `scale * yaw` so 100.0f is in f1 and viewYaw in f2; ours matches those
-// loads and the fdivs. `scale * yaw` moves the constant load into f2 first (97.86%). Commutative.
-// NONMATCHING (99.84%): only the fmadds operand order (original f1,f2; ours f2,f1) differs.
+// The original contracts to `fmadds f0, f1, f2, f0` with viewYaw in f2 and 100.0f in f1. Plain
+// `yaw * scale` loads yaw first but emits `fmadds f0, f2, f1, f0`; plain `scale * yaw` emits the
+// wanted operand order but loads 100.0f first (into f2, 97.86%). The self-assignment pins yaw's
+// load ahead of the constant's while the source keeps `scale * yaw`, giving the original's f1,f2.
 USER_FUNC(evt_npc_set_ry_lr) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     s32 flag = (s32)evtGetFloat(event, args[1]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     CameraEntry* cam = camGetPtr(4);
+#ifdef MUST_MATCH
+    f32 scale = 100.0f;
+    f32 yaw = cam->viewYaw;
+    s32 x;
+    f32 d1;
+    f32 d2;
+    /* MUST_MATCH (operand order): the self-assignment keeps yaw's load before the constant's,
+       so the contracted fmadds uses the original's f1,f2 operand order. */
+    yaw = yaw;
+    x = (s32)reviseAngle((scale * yaw + 5.0f) / scale);
+    d1 = (x - 90) % 360;
+    d2 = (x + 90) % 360;
+#else
     f32 scale = 100.0f;
     f32 yaw = cam->viewYaw;
     s32 x = (s32)reviseAngle((yaw * scale + 5.0f) / scale);
     f32 d1 = (x - 90) % 360;
     f32 d2 = (x + 90) % 360;
+#endif
     if (flag == 0) {
         npc->direction = d1;
     } else {

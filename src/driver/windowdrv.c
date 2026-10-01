@@ -1078,7 +1078,14 @@ void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, 
 	}
 }
 
-// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
+#ifdef MUST_MATCH
+// MUST_MATCH: the fog colour must be passed through a by-value inline so its outgoing argument temp
+// lands at r1+0x8; the direct compound literal lands at r1+0xc, swapping it with the tev colour's temp.
+static inline void wakuSetFog(GXColor color) {
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
+}
+#endif
+
 void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx;
@@ -1094,7 +1101,11 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 widt
 		GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 		GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
+#ifdef MUST_MATCH
+		wakuSetFog((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+#else
 		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+#endif
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 		GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);

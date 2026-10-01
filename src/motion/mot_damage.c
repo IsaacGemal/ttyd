@@ -229,10 +229,15 @@ s32 marioWaitDamageReturnFall(void) {
 // unscheduled per-component load/store order (the plain copy hoists `lwz 0x8(r30)` and `lwz 0xC(r30)`
 // one instruction too early). That fix is worth 0.80% and is guarded by MUST_MATCH (rule 7).
 // What still differs:
-//   - case 0x14 swaps f30/f31 (original spd=f31, floorY=f30; ours the reverse) - the allocator picks the
-//     free register for floorY rather than spd. Worth ~0.078%; no source shape found that flips it.
+//   - case 0x14 swaps f30/f31 (original spd=f31, floorY=f30; ours the reverse). The allocator's
+//     callee-saved preference here is f30 then f31, so it gives f30 to spd (defined first). A
+//     `floorY = mario->position.y; if (hit != NULL) floorY = ...` shape flips the pair to the original,
+//     but sinks the default load out of the else and costs ~0.54% net. Worth ~0.078%.
 //   - the compiler emits its own 2^52 conversion double instead of reusing double_to_int_802f32b0, so
 //     the second `lfd` reads 0xA8(r30) instead of 0x78(r30). Worth ~0.002% (known project-wide issue).
+//     The original object's `.comment` is 02040201 (1.3.x) while this unit builds with GC/2.6
+//     (02040701), but 1.3.2/1.3.2r reproduce the same wrong register assignment, so the compiler
+//     version is not the cause.
 // NONMATCHING (99.92%): case 0x14 f30/f31 swap and the anonymous 2^52 magic double; see above.
 void mot_damage(void) {
 	MarioWork* mario;
