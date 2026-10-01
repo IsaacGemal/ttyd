@@ -7,6 +7,12 @@
 #include <math_ext.h>
 #include <stdlib.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804231b4;
+__declspec(section ".sdata") GXColor unk_804231b0;
+
+
 //.data
 u32 stg_magic2_2_line_v[91] = {
 	0xFFA90032, 0x00001555, 0x0800FFFF, 0xFF00FFA9, 0x0032F830, 0x15550000,
@@ -56,11 +62,17 @@ static GXColor color_rotation_data[6] = {
 };
 
 //.sbss2
-GXColor unk_804231b0;
-GXColor unk_804231b4;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
 inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
+inline Vec initializeVec2(Vec* input) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
@@ -144,7 +156,7 @@ void effMagic2Main(EffectEntry* effect) {
 		s = (f32)sin(6.2831855f * (life * 10) / 360.0f);
 		data->scale += 0.3f * (data->scaleMul * (0.1f * s) + data->scaleMul - data->scale);
 	}
-	v = initializeVec((Vec*)&data->vx);
+	v = initializeVec2((Vec*)&data->vx);
 	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &v, &v);
 	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &v, &v);
 	data->x = 304.0f * v.x;
