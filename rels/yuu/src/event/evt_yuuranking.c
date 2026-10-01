@@ -542,12 +542,12 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             FontDrawColor(&c4);
             msg = msgSearch("menu_error_minigame1");
             sprintf(buf, msg);
-            FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 56.0f, 18.0f);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             goto end;
         }
         msg = msgSearch("menu_decimal_point");
         sprintf(buf, "%3d%s%02d", work->field_38 / 1000, msg, (work->field_38 % 1000) / 10);
-        FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 56.0f, 18.0f);
+        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
         if (work->state >= 4) {
             FontDrawStart();
             FontDrawScale(1.0f);
@@ -556,7 +556,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             msg = msgSearch("menu_subtitle4_getmonte");
             unk_yuu_00008e40(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
             sprintf(buf, "%4d", work->field_20);
-            FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 32.0f, 18.0f);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
         }
         if (work->state >= 7) {
             FontDrawStart();
@@ -572,13 +572,13 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 } else {
                     sprintf(buf, "%2d", work->field_24 - 0x100);
                 }
-                FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 8.0f, 18.0f);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
             } else if (work->field_24 < 0) {
                 msg = msgSearch("menu_subtitle5_minigame1");
                 unk_yuu_00008e40(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
                 msg = msgSearch("menu_subtitle6_minigame1");
                 sprintf(buf, msg, -work->field_24);
-                FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 8.0f, 18.0f);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
             }
         }
         goto end;
@@ -603,7 +603,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             } else {
                 sprintf(buf, msgSearch("menu_error_minigame3"));
             }
-            FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 56.0f, 18.0f);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             goto end;
         }
         i = work->field_38 / 1000;
@@ -611,7 +611,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         i = i - j * 60;
         msg = msgSearch("menu_colon");
         sprintf(buf, "%1d%s%02d%s%02d", j, msg, i, msgSearch("menu_colon"), (work->field_38 % 1000) / 10);
-        FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 56.0f, 18.0f);
+        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
         if (work->state >= 4) {
             FontDrawStart();
             FontDrawScale(1.0f);
@@ -620,7 +620,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             msg = msgSearch("menu_subtitle4_getmonte");
             unk_yuu_00008e40(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
             sprintf(buf, "%4d", work->field_20);
-            FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 32.0f, 18.0f);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
             if (work->state >= 7) {
                 FontDrawStart();
                 FontDrawScale(1.0f);
@@ -639,13 +639,13 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     } else {
                         sprintf(buf, "%2d", work->field_24 - 0x100);
                     }
-                    FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 8.0f, 18.0f);
+                    FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->field_24 < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
                     unk_yuu_00008e40(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->field_24);
-                    FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 8.0f, 18.0f);
+                    FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 }
             }
         }
@@ -662,11 +662,11 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             c12 = *(GXColor*)&dat_yuu_00014ab4;
             FontDrawColor(&c12);
             sprintf(buf, msgSearch("menu_error_minigame4"));
-            FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 56.0f, 18.0f);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             goto end;
         }
         sprintf(buf, "%4d", work->field_38 + 1);
-        FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 56.0f, 18.0f);
+        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
         if (work->state >= 7) {
             FontDrawStart();
             FontDrawScale(1.0f);
@@ -681,13 +681,13 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 } else {
                     sprintf(buf, "%2d", work->field_24 - 0x100);
                 }
-                FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 8.0f, 18.0f);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
             } else if (work->field_24 < 0) {
                 msg = msgSearch("menu_subtitle5_minigame1");
                 unk_yuu_00008e40(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
                 msg = msgSearch("menu_subtitle6_minigame1");
                 sprintf(buf, msg, -work->field_24);
-                FontDrawStringPitch(buf, work->field_0C + 150.4f - (f32)fontlenpitch((s8*)buf, 18), work->field_10 + 8.0f, 18.0f);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
             }
         }
         goto end;
