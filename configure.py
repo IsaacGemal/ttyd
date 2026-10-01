@@ -1159,8 +1159,9 @@ config.libs = [
         "objects": [
             Object(Matching, "Runtime.PPCEABI.H.a/__va_arg.c"),
             Object(Matching, "Runtime.PPCEABI.H.a/global_destructor_chain.c"),
-            Object(NonMatching, "Runtime.PPCEABI.H.a/runtime.c"),
-            Object(NonMatching, "Runtime.PPCEABI.H.a/GCN_mem_alloc.c"),
+            Object(Matching, "Runtime.PPCEABI.H.a/runtime.c"),
+            # the target's strings are readonly and each is padded to 4 (no pooling)
+            Object(Matching, "Runtime.PPCEABI.H.a/GCN_mem_alloc.c", extra_cflags=["-str readonly"]),
             Object(Matching, "Runtime.PPCEABI.H.a/__mem.c"),
         ],
     },

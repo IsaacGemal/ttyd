@@ -3456,3 +3456,8 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 
 - Ports use the read-only copies in `~/ttyd-refs` (Grind 63). `__kernel_tan`, `tan` and `__ieee754_sqrt` are zeldaret/tp's `libs/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common_Embedded/Math/Double_precision/{k_tan,s_tan,e_sqrt}.c` (CC0) with the include changed to this repo's `MSL_C/MSL_Common_Embedded/Math/fdlibm.h`; all three are 100% and linked on the first build, no other change.
 - The library units sit in `libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/`; `ci.py` needs `--allow-protected --allow-configure`.
+
+## Grind 65: Runtime `__cvt_sll_flt` and `__sys_free` from tp (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `__cvt_sll_flt` (runtime.c) is the asm body of zeldaret/tp `libs/PowerPC_EABI_Support/Runtime/Src/runtime.c` (CC0) with its `lbl_` labels renamed; placed before `__cvt_ull_flt` (the target's text order). `runtime.c` is Matching, 15/15 functions. `ci.py` needs `--allow-asm` for it (a ported library's hand-written assembly).
+- `__sys_free` (new `Runtime.PPCEABI.H.a/GCN_mem_alloc.c`) is tp's `GCN_mem_alloc.c`, `<os.h>` -> `<dolphin/os.h>`, Matching. The target's two strings are readonly and each padded to 4 bytes: the unit needs `extra_cflags=["-str readonly"]` (without it they land in `.data`; with `pool` they are not padded).
