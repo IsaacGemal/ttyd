@@ -1,6 +1,7 @@
 #ifndef _ERRNO_H_
 #define _ERRNO_H_
 
+#define EDOM 33
 #define ERANGE 32
 
 extern int errno;

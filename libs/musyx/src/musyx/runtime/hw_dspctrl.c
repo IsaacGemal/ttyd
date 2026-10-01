@@ -977,7 +977,7 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
               } break;
               case 6:
                 loopAddr = (u32)dsp_vptr->vSampleInfo.loopBufferAddr >> 1;
-                endAddr = dsp_vptr->smp_info.loop + (base + dsp_vptr->smp_info.loopLength - 1);
+                endAddr = dsp_vptr->smp_info.loop + dsp_vptr->smp_info.loopLength + base - 1;
                 dsp_vptr->vSampleInfo.inLoopBuffer = 0;
                 break;
               case 2:
@@ -1001,17 +1001,18 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
               case 5: {
                 u32 bn; // r1+0x94
                 u32 bo; // r1+0x90
-                bn = dsp_vptr->smp_info.length / 14;
-                bo = dsp_vptr->smp_info.length - (bn * 0xE);
+                bn = (dsp_vptr->smp_info.length - 1) / 14;
+                bo = (dsp_vptr->smp_info.length - 1) - (bn * 0xE);
                 tmp_addr = base + bn * 16 + 2 + bo;
                 zeroAddr = (dspARAMZeroBuffer * 2) + 2;
               } break;
               case 3:
-                tmp_addr = base + dsp_vptr->smp_info.length;
+                tmp_addr = base + dsp_vptr->smp_info.length - 1;
                 zeroAddr = dspARAMZeroBuffer;
                 break;
               case 2:
-                tmp_addr = base + dsp_vptr->smp_info.length;
+              case 6:
+                tmp_addr = base + dsp_vptr->smp_info.length - 1;
                 zeroAddr = dspARAMZeroBuffer >> 1;
                 break;
               }
@@ -1096,12 +1097,13 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
               pb->addr.endAddressHi = tmp_addr >> 0x10;
               pb->addr.endAddressLo = tmp_addr;
               dsp_vptr->vSampleInfo.inLoopBuffer = 1;
-            } else if ((dsp_vptr->smp_info.compType == 6) &&
-                       (dsp_vptr->vSampleInfo.inLoopBuffer == 0) && (pb->streamLoopCnt != 0)) {
-              tmp_addr = dsp_vptr->vSampleInfo.loopBufferLength +
-                         ((u32)dsp_vptr->vSampleInfo.loopBufferAddr >> 1) - 1;
+            }
+          } else if (dsp_vptr->smp_info.compType == 6) {
+            if ((dsp_vptr->vSampleInfo.inLoopBuffer == 0) && (pb->streamLoopCnt != 0)) {
+              tmp_addr = ((u32)dsp_vptr->vSampleInfo.loopBufferAddr >> 1) +
+                         (dsp_vptr->vSampleInfo.loopBufferLength - 1);
               dsp_vptr->smp_info.addr = dsp_vptr->vSampleInfo.loopBufferAddr;
-              pb->addr.endAddressHi = tmp_addr >> 0x10;
+              pb->addr.endAddressHi = tmp_addr >> 16;
               pb->addr.endAddressLo = tmp_addr;
               dsp_vptr->vSampleInfo.inLoopBuffer = 1;
             }
