@@ -19,7 +19,7 @@ import sys
 
 unit = sys.argv[1]
 write = "--write" in sys.argv
-mod, name = unit.split("/")
+mod, name = unit.split("/", 1)
 src = f"rels/{mod}/src/{name}.c"
 asm = open(f"build/G8MJ01/{mod}/asm/{name}.s", errors="replace").read()
 text = open(src).read()
@@ -157,7 +157,12 @@ if [o for o in src_order if o in fn_names] != F:
     print("note: the functions are not in source order (tools/rel_fn_order is dol-only: reorder them by text order first)", file=sys.stderr)
 
 
-first_gen = next((k for k, r in enumerate(rodata) if re.match(r"(float|double)_", r)), len(rodata))  # the generated constants come after all the parsed ones
+floaty = set()  # constants the code loads with lfs/lfd are float constants whatever their name (a zero is `zero_...`)
+for nm_, (kind_, body_) in owners_body.items():
+    if kind_ == "fn":
+        for m_ in re.finditer(r"\blf[sd]u?x?\s+\w+,\s*(\w+)@", body_):
+            floaty.add(m_.group(1))
+first_gen = next((k for k, r in enumerate(rodata) if re.match(r"(float|double)_", r) or r in floaty), len(rodata))  # the generated constants come after all the parsed ones
 pos_of = {r: k for k, r in enumerate(rodata)}
 
 
