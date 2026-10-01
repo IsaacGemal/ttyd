@@ -690,7 +690,9 @@ typedef struct SND_DOOR {
 typedef struct SND_LISTENER {
   struct SND_LISTENER* next;
   struct SND_LISTENER* prev;
+#if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 0)
   SND_ROOM* room;
+#endif
 
   u32 flags;
   SND_FVECTOR pos;
@@ -704,6 +706,9 @@ typedef struct SND_LISTENER {
   f32 surroundDisBack;
   f32 soundSpeed;
   f32 vol;
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+  float oneMeter;
+#endif
 } SND_LISTENER;
 
 #define SND_LISTENER_DEFAULT 0x00000000 // No special features are activated
@@ -713,10 +718,13 @@ typedef struct SND_LISTENER {
 typedef struct SND_EMITTER {
   struct SND_EMITTER* next;
   struct SND_EMITTER* prev;
+#if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 0)
   SND_ROOM* room;
+#endif
+
+  SND_PARAMETER_INFO* paraInfo;
 
   u32 flags;
-
   SND_FVECTOR pos;
   SND_FVECTOR dir; // Speed in units/second
   f32 maxDis;
@@ -724,8 +732,8 @@ typedef struct SND_EMITTER {
   f32 minVol;
   f32 volPush; // -1.0f = 1/square -> 0.0 = linear -> 1.0 = square
   SND_VOICEID vid;
-  u32 group; // Group ID (by default FXID | 0x80000000) used to do volume priorities for continous
-             // emitters
+  u32 group; // Group ID (by default FXID | 0x80000000) used to do volume
+             // priorities for continous emitters
   SND_FXID fxid;
 
   u8 studio;
@@ -735,7 +743,9 @@ typedef struct SND_EMITTER {
   u16 VolLevelCnt; // Used during continous emitter allocation process
   f32 fade;        // Used to fade-in of continous emitters
 
-  SND_PARAMETER_INFO* paraInfo;
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+  unsigned long userData;
+#endif
 } SND_EMITTER;
 
 #define SND_EMITTER_DEFAULTKEY 0xFF
@@ -761,6 +771,14 @@ typedef struct SND_EMITTER {
              // restart. This disables this behavior
 #define SND_EMITTER_NOSILENTSTART                                                                  \
   0x00000040 // Do not start emitter if the volume would be zero (it will be removed from the active
+typedef void* (*SND_S3D_OCCLUSION_CALLBACK)(SND_EMITTER* emitter, const SND_FVECTOR* listenerPos,
+                                            const SND_FVECTOR* listenerHeading,
+                                            const SND_FVECTOR* listenerUp,
+                                            const SND_FVECTOR* emitterPos,
+                                            const SND_FVECTOR* emitterHeading,
+                                            f32* volOcclusionFactor, f32* frqOcclusionFactor);
+
+void sndSet3DEmitterOcclusionCallback(SND_S3D_OCCLUSION_CALLBACK callback);
              // list in this case)
 
 //
@@ -795,12 +813,30 @@ SND_VOICEID sndAddEmitterParaEx(SND_EMITTER* em_buffer, SND_FVECTOR* pos, SND_FV
 //
 // Listener related functions
 //
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 0)
+typedef struct SND_LISTENER_EXPARAMETER {
+  // total size: 0x4
+  float oneMeter; // offset 0x0, size 0x4
+} SND_LISTENER_EXPARAMETER;
+#endif
+
 bool sndAddListener(SND_LISTENER* li, SND_FVECTOR* pos, SND_FVECTOR* dir, SND_FVECTOR* heading,
                     SND_FVECTOR* up, f32 front_sur, f32 back_sur, f32 soundSpeed, u32 flags, u8 vol,
-                    SND_ROOM* room);
+#if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 0)
+                    SND_ROOM* room
+#else
+                    const SND_LISTENER_EXPARAMETER* exPara
+#endif
+);
 bool sndAddListenerEx(SND_LISTENER* li, SND_FVECTOR* pos, SND_FVECTOR* dir, SND_FVECTOR* heading,
                       SND_FVECTOR* up, f32 front_sur, f32 back_sur, f32 soundSpeed,
-                      f32 volPosOffset, u32 flags, u8 vol, SND_ROOM* room);
+                      f32 volPosOffset, u32 flags, u8 vol,
+#if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 0)
+                      SND_ROOM* room
+#else
+                      const SND_LISTENER_EXPARAMETER* exPara
+#endif
+);
 bool sndUpdateListener(SND_LISTENER* li, SND_FVECTOR* pos, SND_FVECTOR* dir, SND_FVECTOR* heading,
                        SND_FVECTOR* up, u8 vol, SND_ROOM* room);
 bool sndRemoveListener(SND_LISTENER* li);
@@ -838,10 +874,18 @@ typedef struct SND_3DINFO {
   u8 pan;
   u8 span;
   u16 doppler;
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
+  u16 lpfFactor;
+#endif
 } SND_3DINFO;
 
 void sndGet3DParameters(SND_3DINFO* info, SND_FVECTOR* pos, SND_FVECTOR* dir, f32 maxDis, f32 comp,
-                        u8 maxVol, u8 minVol, SND_ROOM* room);
+                        u8 maxVol, u8 minVol
+#if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 0)
+                        ,
+                        SND_ROOM* room
+#endif
+);
 
 // ------------------------- Debug Functions -----------------------
 
