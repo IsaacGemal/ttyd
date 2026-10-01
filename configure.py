@@ -707,7 +707,7 @@ config.libs = [
             Object(NonMatching, "event/evt_win.c"),
             Object(NonMatching, "event/evt_cloud.c"),
             Object(Matching, "event/evt_env.c"),
-            Object(NonMatching, "event/evt_telop.c"),
+            Object(Matching, "event/evt_telop.c"),
             Object(Matching, "event/evt_movefloor.c"),
             Object(NonMatching, "event/evt_badgeshop.c"),
             Object(Matching, "event/evt_johoya.c"),

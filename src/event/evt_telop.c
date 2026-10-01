@@ -348,3 +348,31 @@ void telop(CameraId cameraId, void* param) {
 }
 
 #pragma opt_common_subs reset
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041e7b8 = { 0x00, 0x00, 0x00, 0x60 };
+const GXColor dat_8041e7bc = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041e7c0 = { 0xFF, 0xFF, 0xFF, 0x00 };
+#ifdef MUST_MATCH
+const volatile f32 float_0_8041e7c4 = 0.0f;
+#else
+const f32 float_0_8041e7c4 = 0.0f;
+#endif
+#ifdef MUST_MATCH
+const volatile f32 float_0p2_8041e7c8 = 0.2f;
+#else
+const f32 float_0p2_8041e7c8 = 0.2f;
+#endif
+#ifdef MUST_MATCH
+const volatile f32 float_1_8041e7cc = 1.0f;
+#else
+const f32 float_1_8041e7cc = 1.0f;
+#endif
+const f32 float_neg15_8041e7d0 = -15.0f;
+const f32 float_neg105_8041e7d4 = -105.0f;
+const f32 float_100_8041e7d8 = 100.0f;
+const f32 float_0p5_8041e7dc = 0.5f;
+const f32 float_24_8041e7e0 = 24.0f;
+const f32 float_neg256_8041e7e4 = -256.0f;
+const f32 float_256_8041e7e8 = 256.0f;
+const f32 float_300_8041e7ec = 300.0f;
