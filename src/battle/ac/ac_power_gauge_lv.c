@@ -56,171 +56,6 @@ typedef struct PowerGaugeLvDecWork {
 
 static void actionCommandDisp(f32, f32);
 
-// don't_inline: the original keeps actionCommandDisp as its own local function.
-#pragma optimize_for_size on
-#pragma dont_inline on
-// opt_common_subs off: with CSE on MWCC reuses the gauge-percent value it already has in f0 and
-// emits `fdivs f0, f1, f0`; disabling common subexpression elimination gives the original operand
-// registers (numerator f2, divisor f1).
-#pragma opt_common_subs off
-// The clamp keeps `ratio` in the original's divisor register (f1: `fdivs f1, f2, f1`, `fmr f1, f0`).
-static void actionCommandDisp(f32 f1, f32 f2) {
-    BattleWork* work = _battleWorkPointer;
-#ifdef MUST_MATCH
-    // Deriving disp/dec through the BattleActions intermediate makes MWCC materialise them in their
-    // own registers (work=r30, disp=r29, dec=r28) instead of folding them into the BattleWork base.
-    BattleActions* ac = &work->actionCommands;
-    BattleACDispParams* disp = &ac->dispParams;
-    PowerGaugeLvDecWork* dec;
-#else
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-    PowerGaugeLvDecWork* dec;
-#endif
-    f32 ratio;
-
-    camGetPtr(CAMERA_2D);
-#ifdef MUST_MATCH
-    dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
-#else
-    dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
-#endif
-
-    {
-        Vec pos = vec3_802fea38;
-        pos.x = float_neg200_804215d4 + f1;
-        pos.y = float_25_804215d8 + f2;
-        iconDispGx(&pos, 0x10, 0x8c, float_1_804215dc);
-    }
-
-    ratio = dec->gaugePercent / float_100_804215e0;
-    if (ratio > float_1_804215dc) {
-        ratio = float_1_804215dc;
-    }
-    disp->value = ratio;
-
-#ifdef MUST_MATCH
-    // Match-only: the volatile read keeps `ratio` live across the draw call's argument setup, which
-    // is what makes MWCC reuse the divisor register for the division (`fdivs f1, f2, f1`) instead of
-    // coalescing the result with the numerator; it also produces the original's reload of disp->value
-    // for the last argument. Plain `disp->value` (below) compiles to `fdivs f2, f2, f1`.
-    ratio = *(volatile f32*)&disp->value;
-    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
-                      *(s32*)&work->actionCommands.field_34[0xC],
-                      *(s32*)&work->actionCommands.field_34[0x10],
-                      *(s32*)&work->actionCommands.field_34[0x14], 0, ratio);
-#else
-    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
-                      *(s32*)&work->actionCommands.field_34[0xC],
-                      *(s32*)&work->actionCommands.field_34[0x10],
-                      *(s32*)&work->actionCommands.field_34[0x14], 0, disp->value);
-#endif
-
-    switch (work->actionCommands.mAcState) {
-    case 0x63:
-    case 0x64:
-    case 0x3ea:
-    case 0x3eb:
-    case 0x3ec:
-        f1 = float_neg220_804215e4 + f1;
-        f2 = float_70_804215e8 + f2;
-        {
-            Vec pos = vec3_802fea44;
-            pos.x = f1;
-            pos.y = f2;
-            iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
-        }
-        {
-            Vec pos = vec3_802fea50;
-            pos.x = float_56_804215ec + f1;
-            pos.y = f2;
-            iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
-        }
-        break;
-    case 0x3e8:
-        if (dec->gaugePercent >= (f32)*(s32*)((u8*)work + 0x1cd0) &&
-            dec->gaugePercent <= float_100_804215e0) {
-            f1 = float_neg220_804215e4 + f1;
-            f2 = float_70_804215e8 + f2;
-            {
-                Vec pos = vec3_802fea5c;
-                pos.x = f1;
-                pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x7f, float_1_804215dc);
-            }
-            {
-                Vec pos = vec3_802fea68;
-                pos.x = float_56_804215ec + f1;
-                pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x81, float_1_804215dc);
-            }
-        }
-        else {
-            f1 = float_neg220_804215e4 + f1;
-            f2 = float_70_804215e8 + f2;
-            {
-                Vec pos = vec3_802fea74;
-                pos.x = f1;
-                pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
-            }
-            {
-                Vec pos = vec3_802fea80;
-                pos.x = float_56_804215ec + f1;
-                pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
-            }
-        }
-        break;
-    }
-}
-#pragma opt_common_subs reset
-#pragma dont_inline reset
-#pragma optimize_for_size reset
-void battleAcDelete_PowerGaugeLv(BattleWork* work) {
-    if (!(work->actionCommands.field_0x30 & 1)) {
-        work->actionCommands.mAcState = 0x3eb;
-    }
-}
-
-// The `BattleActions*` intermediate is what makes MWCC materialise `disp` in r31
-// (`addi r31, r4, 0x1f20`) instead of folding it into the BattleWork base
-// (`mr r31, r4` + 0x1fxx offsets); the state is read through `ac` and folds back to r4.
-void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
-    BattleACDispParams* disp = &ac->dispParams;
-    s32 state = ac->mAcState;
-
-    switch (state) {
-    case 0x63:
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_804215f0, float_30_804215f4);
-        // fallthrough
-    case 0x64:
-    case 0x3e8:
-    case 0x3ea:
-        actionCommandDisp(disp->iconX, disp->iconY);
-        if (disp->counter > 0) {
-            disp->counter--;
-        }
-        break;
-    case 0x3eb:
-    case 0x3ec:
-        if (disp->counter >= 0x28) {
-            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_804215f4, float_neg300_804215f0);
-        }
-        else {
-            disp->iconX = float_30_804215f4;
-        }
-        actionCommandDisp(disp->iconX, disp->iconY);
-        if (disp->counter < 0x3c) {
-            disp->counter++;
-        }
-        break;
-    }
-}
-s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
-    return work->actionCommands.result;
-}
-
 // optimize_for_size: the original main saves r29-r31 with `stmw`; the size model reproduces its
 // prologue/register choice for the state machine. The rest of the file does not need it.
 #pragma optimize_for_size on
@@ -353,6 +188,174 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
     }
     return 1;
 }
+#pragma optimize_for_size reset
+s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
+    return work->actionCommands.result;
+}
+
+// The `BattleActions*` intermediate is what makes MWCC materialise `disp` in r31
+// (`addi r31, r4, 0x1f20`) instead of folding it into the BattleWork base
+// (`mr r31, r4` + 0x1fxx offsets); the state is read through `ac` and folds back to r4.
+void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    s32 state = ac->mAcState;
+
+    switch (state) {
+    case 0x63:
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_804215f0, float_30_804215f4);
+        // fallthrough
+    case 0x64:
+    case 0x3e8:
+    case 0x3ea:
+        actionCommandDisp(disp->iconX, disp->iconY);
+        if (disp->counter > 0) {
+            disp->counter--;
+        }
+        break;
+    case 0x3eb:
+    case 0x3ec:
+        if (disp->counter >= 0x28) {
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_804215f4, float_neg300_804215f0);
+        }
+        else {
+            disp->iconX = float_30_804215f4;
+        }
+        actionCommandDisp(disp->iconX, disp->iconY);
+        if (disp->counter < 0x3c) {
+            disp->counter++;
+        }
+        break;
+    }
+}
+#pragma opt_common_subs reset
+#pragma dont_inline reset
+#pragma optimize_for_size reset
+void battleAcDelete_PowerGaugeLv(BattleWork* work) {
+    if (!(work->actionCommands.field_0x30 & 1)) {
+        work->actionCommands.mAcState = 0x3eb;
+    }
+}
+
+// don't_inline: the original keeps actionCommandDisp as its own local function.
+#pragma optimize_for_size on
+#pragma dont_inline on
+// opt_common_subs off: with CSE on MWCC reuses the gauge-percent value it already has in f0 and
+// emits `fdivs f0, f1, f0`; disabling common subexpression elimination gives the original operand
+// registers (numerator f2, divisor f1).
+#pragma opt_common_subs off
+// The clamp keeps `ratio` in the original's divisor register (f1: `fdivs f1, f2, f1`, `fmr f1, f0`).
+static void actionCommandDisp(f32 f1, f32 f2) {
+    BattleWork* work = _battleWorkPointer;
+#ifdef MUST_MATCH
+    // Deriving disp/dec through the BattleActions intermediate makes MWCC materialise them in their
+    // own registers (work=r30, disp=r29, dec=r28) instead of folding them into the BattleWork base.
+    BattleActions* ac = &work->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    PowerGaugeLvDecWork* dec;
+#else
+    BattleACDispParams* disp = &work->actionCommands.dispParams;
+    PowerGaugeLvDecWork* dec;
+#endif
+    f32 ratio;
+
+    camGetPtr(CAMERA_2D);
+#ifdef MUST_MATCH
+    dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
+#else
+    dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
+#endif
+
+    {
+        Vec pos = vec3_802fea38;
+        pos.x = float_neg200_804215d4 + f1;
+        pos.y = float_25_804215d8 + f2;
+        iconDispGx(&pos, 0x10, 0x8c, float_1_804215dc);
+    }
+
+    ratio = dec->gaugePercent / float_100_804215e0;
+    if (ratio > float_1_804215dc) {
+        ratio = float_1_804215dc;
+    }
+    disp->value = ratio;
+
+#ifdef MUST_MATCH
+    // Match-only: the volatile read keeps `ratio` live across the draw call's argument setup, which
+    // is what makes MWCC reuse the divisor register for the division (`fdivs f1, f2, f1`) instead of
+    // coalescing the result with the numerator; it also produces the original's reload of disp->value
+    // for the last argument. Plain `disp->value` (below) compiles to `fdivs f2, f2, f1`.
+    ratio = *(volatile f32*)&disp->value;
+    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
+                      *(s32*)&work->actionCommands.field_34[0xC],
+                      *(s32*)&work->actionCommands.field_34[0x10],
+                      *(s32*)&work->actionCommands.field_34[0x14], 0, ratio);
+#else
+    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
+                      *(s32*)&work->actionCommands.field_34[0xC],
+                      *(s32*)&work->actionCommands.field_34[0x10],
+                      *(s32*)&work->actionCommands.field_34[0x14], 0, disp->value);
+#endif
+
+    switch (work->actionCommands.mAcState) {
+    case 0x63:
+    case 0x64:
+    case 0x3ea:
+    case 0x3eb:
+    case 0x3ec:
+        f1 = float_neg220_804215e4 + f1;
+        f2 = float_70_804215e8 + f2;
+        {
+            Vec pos = vec3_802fea44;
+            pos.x = f1;
+            pos.y = f2;
+            iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
+        }
+        {
+            Vec pos = vec3_802fea50;
+            pos.x = float_56_804215ec + f1;
+            pos.y = f2;
+            iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
+        }
+        break;
+    case 0x3e8:
+        if (dec->gaugePercent >= (f32)*(s32*)((u8*)work + 0x1cd0) &&
+            dec->gaugePercent <= float_100_804215e0) {
+            f1 = float_neg220_804215e4 + f1;
+            f2 = float_70_804215e8 + f2;
+            {
+                Vec pos = vec3_802fea5c;
+                pos.x = f1;
+                pos.y = f2;
+                iconDispGx(&pos, 0x10, 0x7f, float_1_804215dc);
+            }
+            {
+                Vec pos = vec3_802fea68;
+                pos.x = float_56_804215ec + f1;
+                pos.y = f2;
+                iconDispGx(&pos, 0x10, 0x81, float_1_804215dc);
+            }
+        }
+        else {
+            f1 = float_neg220_804215e4 + f1;
+            f2 = float_70_804215e8 + f2;
+            {
+                Vec pos = vec3_802fea74;
+                pos.x = f1;
+                pos.y = f2;
+                iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
+            }
+            {
+                Vec pos = vec3_802fea80;
+                pos.x = float_56_804215ec + f1;
+                pos.y = f2;
+                iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
+            }
+        }
+        break;
+    }
+}
+#pragma opt_common_subs reset
+#pragma dont_inline reset
 #pragma optimize_for_size reset
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
