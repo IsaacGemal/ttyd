@@ -47,59 +47,6 @@ USER_FUNC(evt_cam_get_at) {
     return EVT_RETURN_DONE;
 }
 
-int __float_nan[];
-extern f32 vec3_802c5f38[];
-
-#define EVT_CAM_SHAKE_NAN (*(f32*)__float_nan)
-
-#define EVT_CAM_SHAKE_FP_NAN 1
-#define EVT_CAM_SHAKE_FP_INFINITE 2
-#define EVT_CAM_SHAKE_FP_ZERO 3
-#define EVT_CAM_SHAKE_FP_NORMAL 4
-#define EVT_CAM_SHAKE_FP_SUBNORMAL 5
-
-static inline s32 evt_cam_shake_fpclassify(f32 x) {
-    switch (*(s32*)&x & 0x7F800000) {
-        case 0x7F800000:
-            if (*(s32*)&x & 0x007FFFFF) {
-                return EVT_CAM_SHAKE_FP_NAN;
-            } else {
-                return EVT_CAM_SHAKE_FP_INFINITE;
-            }
-            break;
-        case 0:
-            if (*(s32*)&x & 0x007FFFFF) {
-                return EVT_CAM_SHAKE_FP_SUBNORMAL;
-            } else {
-                return EVT_CAM_SHAKE_FP_ZERO;
-            }
-            break;
-        default:
-            return EVT_CAM_SHAKE_FP_NORMAL;
-    }
-}
-
-// Match-only sqrtf reaching the shared .rodata doubles (0.5 / 3.0 / 0.0 at
-// vec3_802c5f38 + 0xd8) through that symbol as the base register (rule 7).
-#ifdef MUST_MATCH
-static inline f32 evt_cam_shake_sqrtf(f32 x, const f64* pool) {
-    if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        f64 half = pool[0];
-        f64 three = pool[1];
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        return x * guess;
-    } else if (x < pool[2]) {
-        return EVT_CAM_SHAKE_NAN;
-    } else if (evt_cam_shake_fpclassify(x) == EVT_CAM_SHAKE_FP_NAN) {
-        return EVT_CAM_SHAKE_NAN;
-    }
-    return x;
-}
-#endif
-
 // NONMATCHING (71.36%): 11 instructions differ, 47 missing, 14 extra, plus register differences.
 USER_FUNC(evt_cam_shake) {
     s32* args = event->args;

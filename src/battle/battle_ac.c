@@ -127,12 +127,10 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
-// NONMATCHING (32.95%): the `dont_inline` on BattleACPadCheckRecordTrigger below makes the original's `bl`s
-// match. What is left is the first guard-frame copy: retail emits `li r0; lwzu r11, N_normal@l(r6)` and parks
-// r6 as the base, ours hoists `addi r7, r6, @l` into the prologue and then `lwz r6, 0(r7)`, so the loaded word
-// takes the @ha register and that extra live register rotates the whole callee-saved allocation (r26/r27/r28).
-// The second `lwzu`, every store and every loop body match; the tables are declared `volatile` in the
-// MUST_MATCH block below to keep the direct `@l` reads instead of `@sda21`.
+// NONMATCHING (32.95%): ours inlines BattleACPadCheckRecordTrigger, which the original calls with `bl`. Before
+// that: the first guard-frame copy is `lis; addi; lwz` here vs retail's `lwzu`
+// (the loaded word is parked in the base register, blocking the fold), and that extra live register
+// rotates the rest of the callee-saved allocation. The second `lwzu` and all stores match.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;
 	BattleWorkPad* pad = &work->actionCommands.pad;
@@ -245,7 +243,6 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	return work->actionCommands.mDefenseResult;
 }
 
-// dont_inline: retail emits a real `bl` to this helper from BattleActionCommandCheckDefence, not an inline copy.
 u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask) {
 	return _battleWorkPointer->actionCommands.pad.mButtonsPressedHistory[chan] & mask;
 }

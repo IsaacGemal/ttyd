@@ -486,21 +486,17 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
 // dont_inline keeps hitCalcVtxPosition a real `bl` from _hitEnt/hitReCalcMatrix as in retail.
 #pragma dont_inline on
 
-// The unpacked triangle path is reconstructed from the asm and keeps retail's vecOffset/vtx-pointer shape. The
-// packed branch is the blocker: retail reads each s16 position through `psq_lx ...,qr5` after setting GQR5 from
-// the mesh's vertex-format fraction shift (mapGetWork()->entries[mapIndex].field_0x8C + 0x18 -> +0x44), and that
-// setup plus the fast cast cannot be produced by MWCC 2.6 from C (a scalar `(f32)s16` lowers to lha/xoris/stw/lfd/
-// fsubs regardless of OSInitFastCast, flags or pragmas; only `__vec2x32float__` emits psq_lx and that is qr0, and
-// it still does not convert an s16). So each of the 9 packed reads costs ~4 extra instructions, grows the frame
-// from retail's 0x80 to 0xe0 and shifts every stack slot; register colouring differs throughout as a result.
-// NONMATCHING (51.59%): packed s16->f32 reads are lha/fctiwz instead of retail's psq_lx/GQR5 and the GQR5 setup is
-// absent; the surrounding control flow, addressing and PSMTX/PSVEC call sequence match. Register allocation differs.
+// The unpacked triangle path is reconstructed from the asm, but the packed branch's locals inflate the frame
+// and the packed s16->f32 reads lower to the integer xoris/lfd/fsubs path instead of retail's psq_l/psq_st.
+// NONMATCHING (50.32%): the original reads packed s16 vertices with psq_lx through GQR5, scaled by 2^-shift using the map
+// file's fraction shift (mapGetWork()->entries[...] +0xA4 -> +0x44); this reads them as plain s16 and never scales, so
+// packed collision triangles are wrong whenever the shift is nonzero. Register allocation also differs.
 s16 hitCalcVtxPosition(HitEntry* hit) {
     s32 numVectors = 0;
     s32 partIndex;
+    s32 dlIndex;
     s32 triIndex;
     MapFileMesh* mesh;
-    s32 dlIndex;
 
     if (hit->vectors == NULL) {
         return 0;
@@ -515,12 +511,11 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
         if (!mesh->isPackedDisplay) {
             for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
                 u8* base = (u8*)mesh->displayLists.normalLists[dlIndex];
-                s32 vecOffset = numVectors * 0x54;
-                for (triIndex = 0; triIndex < *(s32*)base - 2; triIndex++, vecOffset += 0x54) {
-                    s32 i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
-                    HitVector* vector = (HitVector*)((u8*)hit->vectors + vecOffset);
+                for (triIndex = 0; triIndex < *(s32*)base - 2; triIndex++) {
+                    HitVector* vector = &hit->vectors[numVectors];
                     Vec* vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
                     s32 i0 = *(s16*)(base + triIndex * 0x18 + 4);
+                    s32 i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
                     s32 i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
                     s32 v1i;
                     s32 v2i;
@@ -544,25 +539,23 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                 }
             }
         } else {
-            s32 s;
             u32 mask = mesh->elementMask;
             s32 stride = 0;
-            s32 vecOffset;
+            s32 s;
 
             for (s = 0; s < 12; s++) {
                 stride += (mask >> s) & 1;
             }
             stride *= 2;
 
-            vecOffset = numVectors * 0x54;
             for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
-                s32 offset = vecOffset;
                 u8* list = (u8*)mesh->displayLists.packedLists[dlIndex].offset;
                 s32 triCount = *(u16*)(list + 1) - 2;
                 s32 byteOffset = 0;
+                s32 vecOffset = numVectors * 0x54;
 
                 for (triIndex = 0; triIndex < triCount; triIndex++, byteOffset += stride) {
-                    u8* vtx = (u8*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+                    s16* vtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
                     s32 i0 = *(u16*)(list + byteOffset + 3);
                     s32 i1 = *(u16*)(list + (triIndex + 1) * stride + 3);
                     s32 i2 = *(u16*)(list + (triIndex + 2) * stride + 3);
@@ -571,7 +564,7 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                     Vec v0;
                     Vec v1;
                     Vec v2;
-                    HitVector* vector = (HitVector*)((u8*)hit->vectors + offset);
+                    HitVector* vector = (HitVector*)((u8*)hit->vectors + vecOffset);
 
                     if (triIndex & 1) {
                         v1i = i1;
@@ -581,15 +574,15 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                         v2i = i1;
                     }
 
-                    v0.x = *(s16*)(vtx + (i0 * 3 + 0) * 2);
-                    v0.y = *(s16*)(vtx + (i0 * 3 + 1) * 2);
-                    v0.z = *(s16*)(vtx + (i0 * 3 + 2) * 2);
-                    v1.x = *(s16*)(vtx + (v1i * 3 + 0) * 2);
-                    v1.y = *(s16*)(vtx + (v1i * 3 + 1) * 2);
-                    v1.z = *(s16*)(vtx + (v1i * 3 + 2) * 2);
-                    v2.x = *(s16*)(vtx + (v2i * 3 + 0) * 2);
-                    v2.y = *(s16*)(vtx + (v2i * 3 + 1) * 2);
-                    v2.z = *(s16*)(vtx + (v2i * 3 + 2) * 2);
+                    v0.x = vtx[i0 * 3 + 0];
+                    v0.y = vtx[i0 * 3 + 1];
+                    v0.z = vtx[i0 * 3 + 2];
+                    v1.x = vtx[v1i * 3 + 0];
+                    v1.y = vtx[v1i * 3 + 1];
+                    v1.z = vtx[v1i * 3 + 2];
+                    v2.x = vtx[v2i * 3 + 0];
+                    v2.y = vtx[v2i * 3 + 1];
+                    v2.z = vtx[v2i * 3 + 2];
 
                     PSMTXMultVec(hit->worldMtx, &v0, &vector->v0);
                     PSMTXMultVec(hit->worldMtx, &v1, &vector->v1);
@@ -600,7 +593,6 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                     PSVECCrossProduct(&vector->edge0, &vector->edge1, &vector->normal);
                     if (vector->normal.x != 0.0f || vector->normal.y != 0.0f || vector->normal.z != 0.0f) {
                         numVectors++;
-                        offset += 0x54;
                         vecOffset += 0x54;
                     }
                 }

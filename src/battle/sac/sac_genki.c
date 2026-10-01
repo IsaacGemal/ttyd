@@ -1101,8 +1101,8 @@ void main_star0(s32 idx) {
             *(Vec*)&star->field_24 = v;
             *(Vec*)&star->field_30 = *(const Vec*)&vec[0x48 / 4];
             star->field_34 = (2.0f * (star->field_28 - star->field_1C) -
-                              (60.0f * 60.0f *
-                               (0.2f - 0.01f * (f32)idx))) /
+                              (60.0f * (60.0f *
+                               (0.2f - 0.01f * (f32)idx)))) /
                              120.0f;
         }
         break;

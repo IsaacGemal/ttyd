@@ -211,8 +211,8 @@ USER_FUNC(_chuchu_item_steal) {
         return EVT_RETURN_DONE;
     }
     unit->heldItem = 0;
-    if (BtlUnit_CheckUnitFlag(unit, 0x4000)) {
-        BtlUnit_OffUnitFlag(unit, 0x4000);
+    if (BtlUnit_CheckUnitFlag(unit, 0x40000000)) {
+        BtlUnit_OffUnitFlag(unit, 0x40000000);
         if (unit->groupSetupId >= 0) {
             work->fbatInfo->setup->heldItems[unit->groupSetupId] = 0;
             work->fbatInfo->setup->stolenItems[unit->groupSetupId] = 0;
