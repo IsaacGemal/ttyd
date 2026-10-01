@@ -33,6 +33,11 @@ typedef struct BattleWorkStage {
 
 BattleStage* BattleStageGetPtr(void);
 
+extern const f32 float_290_8041c854;
+extern const f32 float_200_8041c858;
+extern const f32 float_90_8041c85c;
+extern const f32 float_neg50_8041c860;
+
 
 
 void BattleStageInit(void);
@@ -47,6 +52,7 @@ void BattleStageReturnStgDarkBase(s32 frames, s32 ease);
 void BattleStageReturnAudDarkBase(s32 frames, s32 ease);
 void BattleStageOffLightInCommand(s32 arg0, s32 arg1);
 void batSpotInit(void);
+void batSpotMain(void);
 s32 screen_evt_func(void);
 s32 BattleStageGetLightNumberByName(const char* name);
 s32 BattleStageSysLightEntry(const char* name);
@@ -66,6 +72,7 @@ void BattleStageDispLight(CameraId camId, void* param);
 void tou_gamen_screen_tev(void* param);
 void BattleStageOnLightFriendInCommand(void);
 void BattleStageOnLightEnemyInCommand(void);
+f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value);
 
 void BattleStageOnLightInCommand(void);
 void BattleStageOffLightFriendInCommand(void);

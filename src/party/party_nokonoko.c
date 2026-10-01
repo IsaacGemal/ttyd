@@ -66,44 +66,49 @@ void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     *out = *p;
 }
 
-// NONMATCHING (72%): the register allocation of the height argument (original
-// f30, ours f31) and the z multiply/add still differ.
+// NONMATCHING (93.54%): the probe values and control flow match; the remaining
+// difference is that the sin result and x share f27 where the original uses f29,
+// and distance takes f29 where the original uses f27 (c is f1 rather than f3).
 void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
+    f32 s;
+    f32 c;
     f32 distance;
     f32 hitX, hitY, hitZ;
     f32 hitNX, hitNY, hitNZ;
     f32 x;
-    f32 radius;
-    f32 s;
-    f32 c;
     f32 y;
     f32 z;
+    f32 radius;
+    f32 baseY;
 
     radius = marioGetPtr()->wPlayerCollisionBox.x;
-    distance = float_0p1 + height;
     s = sin(MATCH_F32(float_1p5708));
     c = cos(MATCH_F32(float_1p5708));
+    baseY = pos->y;
     x = radius * s;
     x = pos->x + x;
-    y = pos->y + height;
+    y = baseY + height;
     z = radius * -c;
     z = pos->z + z;
+    distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
         out->z = z;
-        out->y = pos->y;
+        out->y = baseY;
     } else {
-        s = sin(MATCH_F32(float_4p7124));
-        c = cos(MATCH_F32(float_4p7124));
-        x = radius * s;
-        x = pos->x + x;
-        y = pos->y + height;
-        z = radius * -c;
-        z = pos->z + z;
+    s = sin(MATCH_F32(float_4p7124));
+    c = cos(MATCH_F32(float_4p7124));
+    baseY = pos->y;
+    y = baseY + height;
+    z = radius * -c;
+    z = pos->z + z;
+    x = radius * s;
+    x = pos->x + x;
+    distance = float_0p1 + height;
         if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
             out->x = x;
             out->z = z;
-            out->y = pos->y;
+            out->y = baseY;
         } else {
             *out = *pos;
         }
@@ -268,7 +273,7 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
     return result;
 }
 
-// NONMATCHING (76%): the pi branch in the original makes dead sin/cos calls
+// NONMATCHING (76.08%): the pi branch in the original makes dead sin/cos calls
 // and register allocation differs.
 void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     f32 distance;

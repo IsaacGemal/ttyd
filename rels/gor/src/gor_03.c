@@ -2036,58 +2036,72 @@ f32 montemedalzpos[2] = {
 const Vec vec3_gor_0001a234 = {-113.0f, 70.0f, 0.0f};
 const Vec vec3_gor_0001a240 = {0.0f, 10.0f, 0.0f};
 
-// NONMATCHING (72.86%): constant-pool register allocation and loop strength-reduction differ from the original.
+// fall_rtn is 100%. The sfx string initialisers use a comma-fold (MUST_MATCH) so MWCC
+// materialises each address directly instead of via an extra `mr`; see the note in
+// rels/yuu/src/yuu_00.c.
 static USER_FUNC(fall_rtn) {
-    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
-    u8* data = (u8*)work->data;
-    u8* p;
-    s32 i;
     s32 j;
-    s32 alive;
+    s32 i;
+    s32 off;
+    s32 alive = 0;
     f32 f23;
     f32 moveX;
     f32 moveZ;
+    Vec tmp;
 
     if (isFirstCall) {
+        u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
         monte_p[0] = (u32)_mapAlloc(*(s32*)(data + 0x5c) * 0x50);
         memset((void*)monte_p[0], 0, *(s32*)(data + 0x5c) * 0x50);
-        p = (u8*)monte_p[0];
-        *(u8**)(p + 0x4c) = data;
+        *(u8**)((u8*)monte_p[0] + 0x4c) = data;
 
-        for (i = 0; i < *(s32*)(data + 0x5c); i++) {
-            u8* e = p + i * 0x50;
+        for (i = 0; i < *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c); i++) {
+            u8* e = (u8*)monte_p[0] + i * 0x50 + 8;
+            f32 spd;
 
-            *(f32*)(e + 0x0c) = vec3_gor_0001a234.x;
-            *(f32*)(e + 0x10) = vec3_gor_0001a234.y;
-            *(f32*)(e + 0x14) = montemedalzpos[*(s32*)(data + 0x60)];
+            Vec pos = {-113.0f, 70.0f, 0.0f};
+            pos.z = montemedalzpos[*(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x60)];
+            *(Vec*)(e + 0x04) = pos;
 
             f23 = (2.0f * (f32)(i & 1) - 1.0f) * ((f32)(rand() % 101) / 10.0f);
-            *(f32*)(e + 0x14) += f23;
-            *(f32*)(e + 0x18) = 1.0f;
+            *(f32*)(e + 0x0c) += f23;
+            *(f32*)(e + 0x10) = 1.0f;
 
-            moveX = 0.0f;
+            spd = 2.0f + (f32)(rand() % 300) / 100.0f;
             moveZ = 0.0f;
-            movePos(&moveX, &moveZ, 2.0f + (f32)(rand() % 300) / 100.0f, 270.0f - 3.0f * f23);
-            *(f32*)(e + 0x40) = moveX;
-            *(f32*)(e + 0x44) = vec3_gor_0001a240.y;
-            *(f32*)(e + 0x48) = moveZ;
+            moveX = 0.0f;
+            movePos(&moveX, &moveZ, spd, 270.0f - 3.0f * f23);
+            {
+                Vec vel = {0.0f, 10.0f, 0.0f};
+                vel.x = moveX;
+                vel.z = moveZ;
+                *(Vec*)((unsigned char*)monte_p[0] + i * 0x50 + 0x40) = vel;
+            }
 
-            *(u16*)(e + 0x02) = (u16)(((rand() % 700) + 100) * 60 / 1000);
+            *(u16*)((unsigned char*)monte_p[0] + i * 0x50 + 0x02) = (u16)(((rand() % 700) + 100) * 60 / 1000);
         }
     }
 
-    alive = 0;
-    for (j = 0; j < *(s32*)(data + 0x5c); j++) {
-        u8* e = (u8*)monte_p[0] + j * 0x50;
-        MarioWork* mario;
-        Vec tmp;
+    for (j = 0, off = 0; j < *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c); j++, off += 0x50) {
+        u8* e = (u8*)monte_p[0] + off;
+#ifdef MUST_MATCH
+        // match-only: folding each literal through a comma makes MWCC materialise its address
+        // directly (no extra `mr`), matching the target.
+        const char* sfx_leap = (0, "SFX_EVT_GAME_MONTE_LEAPED1");
+        const char* sfx_count = (0, "SFX_EVT_GAME_MONTE_COUNT1");
+        const char* sfx_count2 = (0, "SFX_EVT_GAME_MONTE_COUNT1");
+#else
+        const char* sfx_leap = "SFX_EVT_GAME_MONTE_LEAPED1";
+        const char* sfx_count = "SFX_EVT_GAME_MONTE_COUNT1";
+        const char* sfx_count2 = "SFX_EVT_GAME_MONTE_COUNT1";
+#endif
 
         switch (*(u8*)(e + 0x01)) {
         case 0:
-            if (*(s16*)(e + 0x02) != 0) {
+            if ((s32)*(s16*)(e + 0x02) != 0) {
                 *(s16*)(e + 0x02) = *(s16*)(e + 0x02) - 1;
             } else {
-                *(u8*)(e + 0x01) = 1;
+                *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
             }
             break;
         case 1:
@@ -2095,21 +2109,21 @@ static USER_FUNC(fall_rtn) {
             *(f32*)(e + 0x44) = *(f32*)(e + 0x44) - 0.81666666f;
             if (*(f32*)(e + 0x10) <= 0.0f) {
                 *(f32*)(e + 0x10) = 0.0f;
-                psndSFXOn_3D("SFX_EVT_GAME_MONTE_LEAPED1", (Vec*)(e + 0x0c));
+                psndSFXOn_3D(sfx_leap, (Vec*)(e + 0x0c));
                 if (fabs(*(f32*)(e + 0x44)) <= 4.0) {
                     *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
                     *(s16*)(e + 0x04) = 300;
                 } else {
-                    *(f32*)(e + 0x44) = *(f32*)(e + 0x44) * -(0.5f + (f32)(rand() % 21) / 100.0f);
+                    f32 scale;
+                    scale = 0.5f + (f32)(rand() % 21) / 100.0f;
+                    *(f32*)(e + 0x44) = *(f32*)(e + 0x44) * -scale;
                     *(f32*)(e + 0x40) = 0.0f;
                     *(f32*)(e + 0x48) = 0.0f;
                 }
             }
 
-            mario = marioGetPtr();
-            if (PSVECDistance((Vec*)(e + 0x0c), &mario->position) < 20.0f &&
-                fabs(*(f32*)(e + 0x10) - mario->position.y) < 20.0) {
-                psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", (Vec*)(e + 0x0c));
+            if (get_monte_check((Vec*)(e + 0x0c), &marioGetPtr()->position) == 1) {
+                psndSFXOn_3D(sfx_count, (Vec*)(e + 0x0c));
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
@@ -2133,10 +2147,8 @@ static USER_FUNC(fall_rtn) {
 
             tmp = *(Vec*)(e + 0x0c);
             tmp.y = 0.0f;
-            mario = marioGetPtr();
-            if (PSVECDistance(&tmp, &mario->position) < 20.0f &&
-                fabs(tmp.y - mario->position.y) < 20.0) {
-                psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", (Vec*)(e + 0x0c));
+            if (get_monte_check(&tmp, &marioGetPtr()->position) == 1) {
+                psndSFXOn_3D(sfx_count2, (Vec*)(e + 0x0c));
                 if (yuwp->tokens < 0x1869f) {
                     yuwp->tokens++;
                 }
@@ -2150,12 +2162,12 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
-    if (alive < *(s32*)(data + 0x5c)) {
+    if (alive < *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c)) {
         dispEntry(4, 0.0f, 1, monte_disp, (void*)monte_p[0]);
         return 0;
     }
 
-    *(s32*)(data + 0x5c) = 0;
+    *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x5c) = 0;
     *(s32*)(*(u8**)((u8*)monte_p[0] + 0x4c) + 0x6c) = 0;
     _mapFree((void*)monte_p[0]);
     return 2;
@@ -4390,7 +4402,7 @@ EVT_BEGIN(kuzi_bomb_talk_husei)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.03%): one extra mr r3,r0 before npcNameToPtr (string address materialised into r0, original into r3).
+// NONMATCHING (99.04%): one extra mr r3,r0 before npcNameToPtr (string address materialised into r0, original into r3).
 USER_FUNC(kuzi_bomb_bomb_eff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);

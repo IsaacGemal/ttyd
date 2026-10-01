@@ -899,26 +899,26 @@ void party_motion_jump2(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (74.94%): frame is 0x140 (orig 0x120) and the first marioGetScreenPos uses a named Vec where the original copies to a scratch slot; callee-saved GPR set differs.
 void party_force_reset_outofscreen(PartyEntry* party) {
-    extern Vec vec3_802f3ef4;
-    MarioWork* mario;
+    // Declaration order is load-bearing: the Vecs in this order, `dist` before
+    // sx/sy/sz, and `mario` last give the original's frame and callee-saved set.
+    extern Vec vec3_802f3ef4[];
     HitEntry* hit;
+    Vec cur;
+    Vec tmp;
     Vec dir;
     Vec hitPos;
     Vec hitNormal;
-    Vec tmp;
-    Vec cur;
-    Vec screenPos;
+    f32 dist;
     f32 sx, sy, sz;
     f32 angle;
-    f32 dist;
     f32 up;
-    f32 limit;
-    f32 range;
     f32 y;
+    f32 range;
     s32 outer;
+    s32 limit;
     s32 inner;
+    MarioWork* mario;
 
     mario = party->playerPtr;
     if (marioCtrlOffChk() != 0) {
@@ -927,14 +927,14 @@ void party_force_reset_outofscreen(PartyEntry* party) {
     if (marioKeyOffChk() != 0) {
         return;
     }
-    screenPos = party->position;
-    marioGetScreenPos(screenPos, &sx, &sy, &sz);
+    marioGetScreenPos(party->position, &sx, &sy, &sz);
     if (distABf(mario->position.x, mario->position.z, party->position.x, party->position.z) < 20.0f && sy > 800.0f) {
-        partyGetAppearPos3(party, &screenPos);
-        party->position = screenPos;
+        partyGetAppearPos3(party, &cur);
+        party->position = cur;
         return;
     }
-    if (sx >= -100.0f && sx <= 700.0f && sy <= 650.0f) {
+    limit = 100;
+    if (-100.0f <= sx && sx <= 700.0f && sy <= 650.0f) {
         return;
     }
     if (!(party->flags & 0x8)) {
@@ -946,20 +946,18 @@ void party_force_reset_outofscreen(PartyEntry* party) {
     outer = 0;
     cur = party->position;
     if (party->field_32 == 0) {
-        up = *(f32*)((u8*)party + 0xF4);
-        limit = 100.0f;
+        up = party->field_F4;
     } else if (party->currentMemberId == 5) {
         up = 10.0f;
-        limit = 70.0f;
+        limit = 70;
     } else {
         up = 10.0f;
-        limit = 50.0f;
+        limit = 50;
     }
-    dir = vec3_802f3ef4;
+    dir = vec3_802f3ef4[0];
     for (;;) {
-        screenPos = cur;
-        marioGetScreenPos(screenPos, &sx, &sy, &sz);
-        if (sx >= -limit && sx <= limit + 600.0f) {
+        marioGetScreenPos(cur, &sx, &sy, &sz);
+        if (-limit <= sx && sx <= limit + 600) {
             party->position = cur;
             return;
         }
@@ -972,31 +970,63 @@ void party_force_reset_outofscreen(PartyEntry* party) {
         inner = 0;
         y = cur.y;
         for (;;) {
-            tmp.x = cur.x;
-            tmp.y = cur.y + range;
-            tmp.z = cur.z;
             dist = 300.0f;
+            tmp = cur;
+            tmp.y += range;
             hit = partyHitCheck(party, &tmp, &dir, &hitPos, &hitNormal, &dist);
-            if (hit == NULL) {
-                y = mario->position.y;
-            } else {
-                if (!(hitGetAttr(hit) & 0x200)) {
+#ifdef MUST_MATCH
+            // MUST_MATCH: retail re-tests hit inside the guard, materialising the
+            // boolean into r0 with a dead `li r0,0` branch.
+            if (hit != NULL) {
+                s32 hitFlag;
+                if (hit == NULL) {
+                    hitFlag = 0;
+                } else if (hitGetAttr(hit) & 0x200) {
+                    hitFlag = 1;
+                } else {
+                    hitFlag = 0;
+                }
+                if (hitFlag == 0) {
                     y = hitPos.y;
                 }
+            } else {
+                y = mario->position.y;
             }
+#else
+            if (hit == NULL) {
+                y = mario->position.y;
+            } else if (!(hitGetAttr(hit) & 0x200)) {
+                y = hitPos.y;
+            }
+#endif
             tmp.y = y;
             marioGetScreenPos(tmp, &sx, &sy, &sz);
             if (sy > 100.0f) {
-                tmp = cur;
                 dist = 100.0f;
+                tmp = cur;
                 if (cur.y + 74.0f > y) {
-                    tmp.y = cur.y + 74.0f;
+                    tmp.y += 74.0f;
                     hit = partyHitCheck(party, &tmp, &dir, &hitPos, &hitNormal, &dist);
+#ifdef MUST_MATCH
+                    // MUST_MATCH: same redundant pointer re-test as above.
                     if (hit != NULL) {
-                        if (!(hitGetAttr(hit) & 0x200)) {
+                        s32 hitFlag;
+                        if (hit == NULL) {
+                            hitFlag = 0;
+                        } else if (hitGetAttr(hit) & 0x200) {
+                            hitFlag = 1;
+                        } else {
+                            hitFlag = 0;
+                        }
+                        if (hitFlag == 0) {
                             y = hitPos.y;
                         }
                     }
+#else
+                    if (hit != NULL && !(hitGetAttr(hit) & 0x200)) {
+                        y = hitPos.y;
+                    }
+#endif
                 }
                 break;
             }

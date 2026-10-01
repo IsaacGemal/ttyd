@@ -73,7 +73,25 @@ s32 marioGetColor(void) {
 	return mp->colorId;
 }
 
-// NONMATCHING (99.90%): only the string offsets into .rodata differ.
+#ifdef MUST_MATCH
+// MUST_MATCH: folding the colour selection into a helper keeps the value in r3, as the original does.
+static inline s32 marioCharModeColor(BOOL badge1, BOOL badge2) {
+	if (badge1 && !badge2) {
+		return 1;
+	}
+	else if (!badge1 && badge2) {
+		return 2;
+	}
+	else if (badge1 && badge2) {
+		return 3;
+	}
+	return 0;
+}
+#endif
+
+// NONMATCHING (99.99%): bytes match; the function's string addi offsets are 0x60 low because the other
+// functions split out of this unit (marioSetPaperAnimeLocalTime etc.) have not emitted their .rodata yet.
+// marioCharModeColor reproduces the original's allocation of the colour value to r3.
 void marioSetCharMode(s32 mode) {
 	MarioWork* wp = mp;
 	s32 materialFlag;
@@ -158,6 +176,9 @@ void marioSetCharMode(s32 mode) {
 		if (mp->characterId == 0) {
 			BOOL badge1 = pouchEquipCheckBadge(0x147);
 			BOOL badge2 = pouchEquipCheckBadge(0x148);
+#ifdef MUST_MATCH
+			s32 color = marioCharModeColor(badge1, badge2);
+#else
 			s32 color;
 
 			if (badge1 && !badge2) {
@@ -172,6 +193,8 @@ void marioSetCharMode(s32 mode) {
 			else {
 				color = 0;
 			}
+#endif
+
 			if (mp->characterId == 0 && mp->colorId != color) {
 				mp->colorId = color;
 				marioSetCharMode(0);

@@ -379,7 +379,8 @@ void iconDisp(CameraId camId, void* param) {
 
 // dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
 #pragma dont_inline on
-// NONMATCHING (99.87%)
+// The zero-extended icon id and the icon_bin pointer are assigned before the entry's fields
+// (as in iconDispGxCol): that pins this block's register allocation (color r3, bin r4, id r5).
 void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -387,6 +388,8 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
     IconEntry entry;
     GXColor color;
     IconEntry* entryp;
+    IconBinary* bin;
+    u16 id;
     Mtx transmtx, scalemtx, rotmtx, mtx;
 
     camera = camGetCurPtr();
@@ -403,10 +406,10 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
     color.a = alpha;
     entryp->flags = flags;
     entryp->color = color;
-    entryp->iconId = iconId;
+    bin = icon_bin;
+    id = (u16)iconId;
+    entryp->iconId = id;
     {
-        u16 id = entryp->iconId;
-        IconBinary* bin = icon_bin;
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {

@@ -753,6 +753,7 @@ void BtlUnit_RecoverHp(BattleUnit* unit, s32 value);
 void BtlUnit_RecoverFp(BattleUnit* unit, s32 value);
 s32 BtlUnit_GetHitDamage(BattleUnit* unit);
 s32 BtlUnit_GetTotalHitDamage(BattleUnit* unit);
+void BtlUnit_SetTotalHitDamage(BattleUnit* unit, s16 damage);
 void* BtlUnit_GetData(BattleUnit* unit, s32 tag);
 BOOL BtlUnit_CheckData(BattleUnit* unit, s32 tag);
 BOOL BtlUnit_GetEnemyBelong(BattleUnit* unit);

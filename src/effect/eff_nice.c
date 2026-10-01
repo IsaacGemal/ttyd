@@ -31,6 +31,19 @@ extern f32 float_10_8041cbb4;
 extern f32 float_1_8041cbb8;
 extern const f32 float_8_8041cbd4;
 extern const GXColor dat_8041cba0;
+// effNiceMain's fade thresholds and per-type colours
+extern const f32 float_32_8041cbd8;
+extern const f32 float_34_8041cbdc;
+extern const f32 float_255_8041cbe0;
+extern const f32 float_35_8041cbe4;
+extern const f32 float_37_8041cbe8;
+extern const f32 float_45_8041cbec;
+extern const f32 float_40_8041cbf0;
+extern const f32 float_48_8041cbf4;
+extern const GXColor dat_8041cb90;
+extern const GXColor dat_8041cb94;
+extern const GXColor dat_8041cb98;
+extern const GXColor dat_8041cb9c;
 
 //.sdata
 const char* anim_jp[] = {
@@ -157,10 +170,153 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	return effect;
 }
 
-// NONMATCHING (0.41%): empty placeholder, not decompiled yet.
-void effNiceMain(EffectEntry* effect) {
-
+// effNiceMain fades the material colour of the pose as the animation nears its end.
+// The animation end time is read through a pointer at AnimData+0x24 (offset 8) and the
+// current time from AnimationPose+0x24; both offsets fall in header padding, so raw
+// offsets are used. The four fade cases use distinct locals (time/end/base and time2...)
+// because a single shared set makes MWCC put `end` in f3 instead of the original f4.
+#pragma opt_common_subs off // without it MWCC CSEs the per-case `end` loads and puts `end` in f3 instead of f4
+#ifdef MUST_MATCH
+// MUST_MATCH: the plain `color = ...; color.a = ...; call(color);` puts the colour scratch
+// and its outgoing argument copy in the opposite stack slots; returning the colour by value
+// from this helper reproduces retail's slots.
+static inline GXColor niceEvtColor(GXColor color, u8 alpha) {
+	color.a = alpha;
+	return color;
 }
+#endif
+void effNiceMain(EffectEntry* effect) {
+	NiceEffectWork* data = effect->userdata;
+	AnimationPose* pose;
+	AnimData* animData;
+	Vec position;
+	Vec disp = vec3_802f3748;
+	s32 type;
+	f32 time, end, base, alpha;
+	f32 time2, end2, base2;
+	f32 time3, end3, base3;
+	f32 time4, end4, base4;
+
+	disp.x = data->position.x;
+	disp.y = data->position.y;
+	disp.z = data->position.z;
+	position = disp;
+	type = data->type;
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		if (data->poseId != -1) {
+			animPoseRelease(data->poseId);
+		}
+		effDelete(effect);
+		return;
+	}
+	else if (data->poseId != -1) {
+		pose = animPoseGetAnimPosePtr(data->poseId);
+		animData = animPoseGetAnimDataPtr(data->poseId);
+		animPoseMain(data->poseId);
+		switch (type) {
+		case 0:
+		case 1:
+			end = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			base = (u32)gp->language == 0 ? float_32_8041cbd8 : float_34_8041cbdc;
+			time = *(f32*)((u8*)pose + 0x24);
+			if (time > base) {
+				alpha = float_1_8041cbb8 - (time - base) / (end - base);
+				if (alpha < float_0_8041cbb0) {
+					alpha = float_0_8041cbb0;
+				}
+				animPoseSetMaterialFlagOn(data->poseId, 0x40);
+#ifdef MUST_MATCH
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb90, (u8)(s32)(float_255_8041cbe0 * alpha)));
+#else
+				{
+					GXColor color = *(GXColor*)&dat_8041cb90;
+					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					animPoseSetMaterialEvtColor(data->poseId, color);
+				}
+#endif
+			}
+			break;
+		case 2:
+			end2 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			base2 = (u32)gp->language == 0 ? float_35_8041cbe4 : float_37_8041cbe8;
+			time2 = *(f32*)((u8*)pose + 0x24);
+			if (time2 > base2) {
+				alpha = float_1_8041cbb8 - (time2 - base2) / (end2 - base2);
+				if (alpha < float_0_8041cbb0) {
+					alpha = float_0_8041cbb0;
+				}
+				animPoseSetMaterialFlagOn(data->poseId, 0x40);
+#ifdef MUST_MATCH
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb94, (u8)(s32)(float_255_8041cbe0 * alpha)));
+#else
+				{
+					GXColor color = *(GXColor*)&dat_8041cb94;
+					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					animPoseSetMaterialEvtColor(data->poseId, color);
+				}
+#endif
+			}
+			break;
+		case 3:
+			end3 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			base3 = (u32)gp->language == 0 ? float_45_8041cbec : float_40_8041cbf0;
+			time3 = *(f32*)((u8*)pose + 0x24);
+			if (time3 > base3) {
+				alpha = float_1_8041cbb8 - (time3 - base3) / (end3 - base3);
+				if (alpha < float_0_8041cbb0) {
+					alpha = float_0_8041cbb0;
+				}
+				animPoseSetMaterialFlagOn(data->poseId, 0x40);
+#ifdef MUST_MATCH
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb98, (u8)(s32)(float_255_8041cbe0 * alpha)));
+#else
+				{
+					GXColor color = *(GXColor*)&dat_8041cb98;
+					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					animPoseSetMaterialEvtColor(data->poseId, color);
+				}
+#endif
+			}
+			break;
+		case 4:
+			end4 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
+			base4 = (u32)gp->language == 0 ? float_48_8041cbf4 : float_40_8041cbf0;
+			time4 = *(f32*)((u8*)pose + 0x24);
+			if (time4 > base4) {
+				alpha = float_1_8041cbb8 - (time4 - base4) / (end4 - base4);
+				if (alpha < float_0_8041cbb0) {
+					alpha = float_0_8041cbb0;
+				}
+				animPoseSetMaterialFlagOn(data->poseId, 0x40);
+#ifdef MUST_MATCH
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb9c, (u8)(s32)(float_255_8041cbe0 * alpha)));
+#else
+				{
+					GXColor color = *(GXColor*)&dat_8041cb9c;
+					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					animPoseSetMaterialEvtColor(data->poseId, color);
+				}
+#endif
+			}
+			break;
+		case 6:
+			break;
+		}
+		if (animPoseGetLoopTimes(data->poseId) >= float_1_8041cbb8) {
+			animPoseRelease(data->poseId);
+			effDelete(effect);
+			return;
+		}
+	}
+	if (type == 7) {
+		acrobatMain(effect);
+	}
+	else {
+		dispEntry(4, dispCalcZ(&position), 8, effNiceDisp, effect);
+	}
+}
+#pragma opt_common_subs reset
 
 void effNiceDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;

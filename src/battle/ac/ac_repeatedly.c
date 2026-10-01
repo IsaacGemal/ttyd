@@ -33,7 +33,7 @@ const Vec vec3_802f3184 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802f3190 = {0.0f, 0.0f, 0.0f};
 
 // sdata2 word this unit emitted; the original symbol is undefined elsewhere.
-extern s32 dat_8041c7a8;
+__declspec(section ".sdata2") s32 dat_8041c7a8 = -1;
 
 // int->float conversion magic the original unit emitted into .rodata. It must NOT be defined here:
 // defining it forces MWCC to emit a second anonymous copy, which shifts actionCommandDisp's pooled
@@ -380,7 +380,7 @@ void battleAcDisp_Repeatedly(CameraId camId, void* param) {
     case 100:
     case 1000:
     case 1001:
-        disp->iconX = intplGetValue(4, 20 - disp->counter, 20, -300.0f, 30.0f);
+        disp->iconX = intplGetValue(4, 20 - disp->counter, 20, float_neg300_8041c7d0, float_30_8041c7d4);
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter > 0) {
             disp->counter--;
@@ -389,9 +389,9 @@ void battleAcDisp_Repeatedly(CameraId camId, void* param) {
     case 1002:
     case 1003:
         if (disp->counter >= 40) {
-            disp->iconX = intplGetValue(4, disp->counter - 40, 20, 30.0f, -300.0f);
+            disp->iconX = intplGetValue(4, disp->counter - 40, 20, float_30_8041c7d4, float_neg300_8041c7d0);
         } else {
-            disp->iconX = 30.0f;
+            disp->iconX = float_30_8041c7d4;
         }
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter < 60) {
@@ -589,6 +589,14 @@ const f32 float_neg288_8041c7c4 = -288.0f;
 const f32 float_176_8041c7c8 = 176.0f;
 const f32 float_45_8041c7cc = 45.0f;
 const f32 float_neg300_8041c7d0 = -300.0f;
+const f32 float_30_8041c7d4 = 30.0f;
 const f32 float_0_8041c7d8 = 0.0f;
 const f32 float_neg1_8041c7dc = -1.0f;
 const f32 float_10_8041c7e0 = 10.0f;
+
+// 20 zero bytes that end the unit's .sdata: an all-zero object needs explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_804117CC_sdata[5] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset

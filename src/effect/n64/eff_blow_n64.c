@@ -138,14 +138,13 @@ static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
 // float_0/float_1 pool loads across the two normalization blocks and the whole first half shifts
 // (same idiom as effKemuri10N64Entry). Passing the deg2rad*i*360/5 angle straight to
 // PSMTXRotAxisRad instead of through an `angle` temp fixed the angle block's scheduling.
-// What remains is one register-allocation tie-break in the loop preheader: the original assigns the
-// six hoisted computed values to f25..f20 (2*dirX/Y/Z to f25/f24/f23, the -0.2*dir accelerations to
-// f22/f21/f20) and the loop-persistent float_0/deg2rad/double_to_int to f27/f28/f29; this build
-// assigns them the other way (2*dir to f23/f24/f25, acc to f27/f28/f29, constants to f20/f21/f22).
-// The instruction sequence and the int->float conversion's stack slots now match exactly; only
-// these callee-saved FPR numbers differ. The .rodata+0 zero Vec resolves to the section symbol
-// instead of vec3_802fa250 (objdiff does not flag it).
-// NONMATCHING (99.53%): see above.
+// The six loop-invariant values (2*dir and the -0.2*dir accelerations) are hoisted into named
+// locals before the loop and reused inside it; assigning them explicitly (rather than letting
+// MWCC CSE the repeated `2.0f * dirX` expressions) is what gives the original's callee-saved FPR
+// allocation (2*dirX/Y/Z -> f25/f24/f23, accelerations -> f22/f21/f20). Writing the acceleration
+// as `0.05f * -dirX * 4.0f` keeps the first multiply's operands in the original's order (the
+// constant on the left). The .rodata+0 zero Vec resolves to the section symbol instead of
+// vec3_802fa250 (objdiff does not flag it).
 #pragma opt_common_subs off // without it MWCC CSEs the float_0/float_1 pool loads and the first mag/sqrt block shifts
 EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
 	EffectEntry* effect;
@@ -155,6 +154,12 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 	Mtx mtx;
 	f32 mag;
 	f32 norm;
+	f32 twoX;
+	f32 twoY;
+	f32 twoZ;
+	f32 accX;
+	f32 accY;
+	f32 accZ;
 	f32 px;
 	f32 py;
 	f32 pz;
@@ -222,6 +227,12 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 	data->field_0x60 = 0;
 
 	work = data + 1;
+	twoX = float_2_8041e9c4 * dirX;
+	twoY = float_2_8041e9c4 * dirY;
+	twoZ = float_2_8041e9c4 * dirZ;
+	accX = float_0p05_8041e9c8 * -dirX * float_4_8041e994;
+	accY = float_0p05_8041e9c8 * -dirY * float_4_8041e994;
+	accZ = float_0p05_8041e9c8 * -dirZ * float_4_8041e994;
 	for (i = 1; i < count + 1; i++, work++) {
 		work->x = float_0_8041e988;
 		work->y = float_0_8041e988;
@@ -229,15 +240,15 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 		axis = blowInitVec(dirX, dirY, dirZ);
 		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041e98c * (f32)(i * 360 / 5));
 
-		work->field_0x20 = float_2_8041e9c4 * dirX;
-		work->vx = float_2_8041e9c4 * dirX;
-		work->field_0x24 = float_2_8041e9c4 * dirY;
-		work->vy = float_2_8041e9c4 * dirY;
-		work->field_0x28 = float_2_8041e9c4 * dirZ;
-		work->vz = float_2_8041e9c4 * dirZ;
-		work->field_0x38 = -dirX * float_0p05_8041e9c8 * float_4_8041e994;
-		work->field_0x3C = -dirY * float_0p05_8041e9c8 * float_4_8041e994;
-		work->field_0x40 = -dirZ * float_0p05_8041e9c8 * float_4_8041e994;
+		work->field_0x20 = twoX;
+		work->vx = twoX;
+		work->field_0x24 = twoY;
+		work->vy = twoY;
+		work->field_0x28 = twoZ;
+		work->vz = twoZ;
+		work->field_0x38 = accX;
+		work->field_0x3C = accY;
+		work->field_0x40 = accZ;
 		work->field_0x2C = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz));
 		work->field_0x30 = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz));
 		work->field_0x34 = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz));

@@ -176,9 +176,13 @@ void BattleCommandInit(BattleWork* wp) {
 }
 
 
-// NONMATCHING (99.98%): code matches instruction for instruction; the seven string
-// addends are a uniform 0x24 below the original (`addi r3, r29, 0x3b8` vs `0x3dc`), the
-// .rodata pool still missing the strings of the two unwritten functions before it.
+// NONMATCHING (99.98%): the code matches instruction for instruction. Only the .rodata
+// pool base differs, so all seven string addends fall short of the target: six by 0x24
+// (e.g. "btl_cmd_act_jump" at r29+0x3b8 vs +0x3dc) and "btl_cmd_act_item" by 0xa8 (it
+// dedupes into _btlcmd_MakeMultiItemTable's earlier block, +0x228 vs +0x2d0). The pool is
+// missing the literals owned by functions not yet written/ordered here (the 0%
+// _btlcmd_MakeSelectWeaponTable and BattleCommandInput own "btl_wn_dummy_noitem"/
+// "msg_dummy_noitem" and the double/SFX runs), so it cannot be fixed from this function.
 void _btlcmd_MakeActClassTable(BattleWork* wp) {
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd = &wp->commandMenu;

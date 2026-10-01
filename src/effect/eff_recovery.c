@@ -683,9 +683,10 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 // The f27/f28 declarations are reversed so the +-20 pair lands in the target's registers, and the +-20
 // assignments sit inside the loop under MUST_MATCH because above the loop they are hoisted into the preheader
 // and scheduled before the int->float magic load, which the target does not do.
-// NONMATCHING (99.97%): the 108.0f load lands in f1 as in the target, but the negation result goes to f30
-// instead of the target's scratch f2 (fneg f30,f1 / fmuls f30,f30,f0 vs fneg f2,f1 / fmuls f30,f2,f0).
-// Every other byte matches; the 0.0f/1.0f and int->float-magic pool entries are anonymous @NNN, which objdiff ignores.
+// The half-size block below is under MUST_MATCH: writing it as one expression makes MWCC load the pool
+// constant into f2 and negate into f1, swapping the target's f1/f2. Declaring the negated value and giving it
+// a dead use after the fadds extends its live range so MWCC uses the target's f1 (constant) / f2 (negated temp).
+// The dead store compiles away, so no extra instruction is emitted.
 void effRecoveryDisp3(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -733,9 +734,20 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	f30 = -float_108_8041cafc;
-	f30 = f30 * float_0p5_8041caec;
+#ifdef MUST_MATCH
+	{
+		// A dead store after the half-size sum extends the negated value's live range past the fadds;
+		// MWCC then keeps the pool constant in f1 and the negated temp in f2, as in the target. The
+		// store is eliminated, so it emits no instruction; without it only f1/f2 are swapped.
+		f32 negHalf = -float_108_8041cafc;
+		f30 = negHalf * float_0p5_8041caec;
+		f29 = f30 + float_108_8041cafc;
+		f27 = negHalf;
+	}
+#else
+	f30 = -float_108_8041cafc * float_0p5_8041caec;
 	f29 = f30 + float_108_8041cafc;
+#endif
 #ifndef MUST_MATCH
 	f27 = float_20_8041cb00;
 	f28 = float_neg20_8041cb04;
