@@ -3427,3 +3427,9 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Follow-up (form, behaviour equal):** match-only shapes outside MUST_MATCH in gcDvdCheckThread (`s32 width`,
   `half = 0.5f`), unit_boss_gundan_zako_group2's shake_ceil (`volatile` reads) and its ceil functions' raw-offset
   macros on `work_20_bss_6C`, chuchurina's redundant `else if (list != NULL)`.
+
+## Grind 60: unit_party_christine links, with the nokotarou/christine `.data` boundary moved 8 bytes (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- The `{ -1.0f, 1.0f }` pair at 0x80390B70 was the tail of `unk_evt_80390b30` / `lbl_80390B74` in `unit_party_nokotarou`; `tools/split_scan.py` missed it because the pair is not a `lbl_` object. The `.data` boundary of nokotarou/christine is now 0x80390B70 (the Grind 41 edit for one more pair), `symbols.txt` has `unk_evt_80390b30` at size 0x40 and `lbl_80390B70` (8 bytes) in its place, nokotarou's table lost its last word and the `lbl_80390B74` definition, and christine's source defines the pair as its first `.data` object. The invented `lbl_80390B70` base and the `MUST_MATCH` weapon-offset block in `__makeTechMenuFunc` are gone; the four weapons are named in the unit's own `.data` as in clauda.
+- The rest is `tools/dol_gen.py --append`, `tools/fn_order.py --write` (the text order was off), and `finish_unit`.
+- **Needs Isaac:** the `splits.txt`/`symbols.txt` edit is outside the 32 units he approved in Grind 41; `ci.py` needs `--allow-protected` for it. With the flag everything passes (dol and RELs byte-identical).
