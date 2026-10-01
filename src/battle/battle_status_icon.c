@@ -451,7 +451,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 // unsigned-int->float mask via an anonymous pool entry where the original loads it as
 // vec3_803011e8 + 0x108 (lfd 0x108(r31)), and the fctiwz/byte scheduling differs.
 // optimize_for_size: the original's real divw for the modulo only comes out under -O4,s.
-// NONMATCHING (87.21%): under -O4,p MWCC strength-reduces the % 0x2d0 to a magic multiply, but the
+// NONMATCHING (82.84%): under -O4,p MWCC strength-reduces the % 0x2d0 to a magic multiply, but the
 // original emits a real divw (only -O4,s does that), so this function is compiled size-optimised.
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	Vec* vec = vec3_803011e8;

@@ -341,12 +341,9 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 // The state machine matches. Every named float constant is a literal (0.0f, 104.0f, 600.0f, 200.0f,
 // 70.0f, 32767.0f, 35.0f, 2.0f, -1.25f) and the two initial vectors are the compound literals
 // (Vec){0,0,0} and (Vec){0,-1000,200} (the original's vec3_802ff7ac/b8 hold exactly those), so MWCC has
-// the known values and recovers the schedule (79.8% vs 69.2% with the externs). Still differing: the
-// original bases those literals and str_802FF80C on str_802FF668 held in r30 (our TU does not define the
-// unit's .rodata, so MWCC emits a per-symbol lis), so it keeps r30 live and uses the wider r25-r31
-// callee-saved set (frame 0x60 vs our 0x50), and the early-out block branches around instead of
-// `beq body; b main_loop`. Blocked on the unit's data.
-// NONMATCHING (79.83%)
+// the known values and recovers the schedule. Still differing: register allocation and the early-out
+// block, which branches around instead of `beq body; b main_loop`.
+// NONMATCHING (88.05%)
 s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
@@ -391,7 +388,7 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
             bomb->field_0x18.x = sx / (f32)bomb->count;
             bomb->field_0x18.y = sy / (f32)bomb->count;
             bomb->field_0x18.z = sz / (f32)bomb->count;
-            bomb->field_0x30.y +=
+            bomb->field_0x30.x +=
                 (bomb->field_0x18.x - 104.0f) * 600.0f / 200.0f;
             bomb->field_0x3C = 0.0f;
             bomb->field_0x40 = 70.0f * (f32)rand() / 32767.0f - 35.0f;

@@ -76,14 +76,12 @@ void btlMovePos(f32* x, f32* z, f32 speed, f32 angle) {
 	*x += speed * s;
 	*z += -speed * c;
 }
-#pragma fp_contract on
+#pragma fp_contract reset
 
-// opt_common_subs off: without it MWCC hoists the shared (steps-currStep) above the cos call
-// and stores the difference in r30, while the original keeps currStep in r30 and subtracts after cos.
-// inline_fn: the original routes cos through this trivial inline wrapper. Writing (f32)cos(...)
+// intplCos: the original routes cos through this trivial inline wrapper. Writing (f32)cos(...)
 // directly lets MWCC reassociate the surrounding float expression and mis-colours it (98.49%);
 // the extra inline call keeps the original's register/operand choices.
-inline f32 inline_fn(float arg0) {
+static inline f32 intplCos(float arg0) {
 	return (f32)cos(arg0);
 }
 
@@ -98,9 +96,9 @@ f32 intpl_sub(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
 		case 3:
 			return start + (((end - start) * ((f32)(((currStep * currStep) * currStep) * currStep))) / ((f32)(((steps * steps) * steps) * steps)));
 		case 7:
-			return end - (((((end - start) * inline_fn(4.0f * (3.141592f * (((f32)currStep) / ((f32)steps))))) * ((f32)(steps - currStep))) * ((f32)(steps - currStep))) / (((f32)steps) * ((f32)steps)));
+			return end - (((((end - start) * intplCos(4.0f * (3.141592f * (((f32)currStep) / ((f32)steps))))) * ((f32)(steps - currStep))) * ((f32)(steps - currStep))) / (((f32)steps) * ((f32)steps)));
 		case 8:
-			return end - (((((end - start) * inline_fn((4.0f * (3.141592f * (((f32)(currStep * currStep)) / ((f32)steps)))) / 15.0f)) * ((f32)(steps - currStep))) * ((f32)(steps - currStep))) / (((f32)steps) * ((f32)steps)));
+			return end - (((((end - start) * intplCos((4.0f * (3.141592f * (((f32)(currStep * currStep)) / ((f32)steps)))) / 15.0f)) * ((f32)(steps - currStep))) * ((f32)(steps - currStep))) / (((f32)steps) * ((f32)steps)));
 		case 4:
 			return start + (end - start) - (((end - start) * ((f32)((steps - currStep) * (steps - currStep)))) / ((f32)(steps * steps)));
 		case 5:
@@ -108,7 +106,7 @@ f32 intpl_sub(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
 		case 6:
 			return (start + (end - start)) - (((end - start) * ((f32)((((steps - currStep) * (steps - currStep)) * (steps - currStep)) * (steps - currStep)))) / ((f32)(((steps * steps) * steps) * steps)));
 		case 10: {
-			f32 v = ((inline_fn((4.0f * (3.141592f * (((f32)(currStep * currStep)) / ((f32)steps)))) / 40.0f) * ((f32)(steps - currStep))) * ((f32)(steps - currStep))) / (((f32)steps) * ((f32)steps));
+			f32 v = ((intplCos((4.0f * (3.141592f * (((f32)(currStep * currStep)) / ((f32)steps)))) / 40.0f) * ((f32)(steps - currStep))) * ((f32)(steps - currStep))) / (((f32)steps) * ((f32)steps));
 
 			if (v < 0.0f) {
 				v = -v;
@@ -116,11 +114,11 @@ f32 intpl_sub(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
 			return end - (v * (end - start));
 		}
 		case 11:
-			return start + (end - start) * (1.0f - inline_fn((3.141592f * ((f32)currStep)) / ((f32)steps))) / 2.0f;
+			return start + (end - start) * (1.0f - intplCos((3.141592f * ((f32)currStep)) / ((f32)steps))) / 2.0f;
 		case 12:
 			return start + ((end - start) * ((f32)sin((1.570796f * ((f32)currStep)) / ((f32)steps))));
 		case 13:
-			return start + ((end - start) * (1.0f - inline_fn((1.570796f * ((f32)currStep)) / ((f32)steps))));
+			return start + ((end - start) * (1.0f - intplCos((1.570796f * ((f32)currStep)) / ((f32)steps))));
 		default:
 			return 0.0f;
 	}

@@ -40,7 +40,6 @@ void caseReInit(void) {
 	}
 }
 
-// NONMATCHING (81.75%): 3 instructions differ, 3 missing, 6 extra, plus register differences.
 s32 caseEntry(CaseSetup* setup) {
 	CaseEntry* entry;
 	long i;
@@ -74,7 +73,6 @@ void caseDelete(s32 caseId) {
 	wp->entries[caseId].flags &= ~1u;
 }
 
-// NONMATCHING (0.26%): empty placeholder, not decompiled yet.
 void caseMain(void) {
 	MarioWork* mario = marioGetPtr();
 	s32 field;

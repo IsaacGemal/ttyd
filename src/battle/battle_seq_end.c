@@ -883,12 +883,12 @@ typedef struct BattleSeqEndWorkLvup {
     u8 unk1[0x10];         // 0x29C..0x2AC
 } BattleSeqEndWorkLvup;
 
-// Logic and instruction sequence match, including the _keta_get calls (kept out of line above), the
+// Logic and instruction sequence match, apart from _keta_get, which ours inlines where the original calls it, the
 // stack/matrix layout, the pooled float order and the three btlDispTexPlane calls (the extra trailing zero
 // comes from btlDispTexPlane's missing 8th parameter -- see the report). Remaining: the register/scheduling
 // of the cur!=max position computation and the pooled int->float double is @N instead of
 // double_to_int_802fe050.
-// NONMATCHING (97.84%): see the note above.
+// NONMATCHING (90.48%): see the note above.
 void _lvup_select_object_disp(CameraId camId, void* param) {
     BattleSeqEndWorkLvup* work = (BattleSeqEndWorkLvup*)_battleWorkPointer->seqEndWork;
     Mtx mtxMain;

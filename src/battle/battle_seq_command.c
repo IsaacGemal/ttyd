@@ -443,7 +443,7 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	iconDispGx(&pos, 0x14, 0x1F0, float_1_8041c2f4);
 }
 
-// NONMATCHING (94.16%): register allocation (cursor folded into 0x1c50(wp)) and cmplwi vs cmpwi.
+// NONMATCHING (96.45%): register allocation (cursor folded into 0x1c50(wp)) and cmplwi vs cmpwi.
 s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 	BattleCursor* cursor = &wp->commandMenu.cursor[13];
 	s32 done = 0;
@@ -507,7 +507,7 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (96.67%): 11 instructions differ, 4 missing, plus register differences.
+// NONMATCHING (97.29%): 11 instructions differ, 4 missing, plus register differences.
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -664,7 +664,7 @@ void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (59.31%): 8 instructions differ, 1 missing, 79 extra, plus register differences.
+// NONMATCHING (92.16%): 8 instructions differ, 1 missing, 79 extra, plus register differences.
 s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -771,7 +771,7 @@ void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (94.09%): switch body layout, cmplwi vs cmpwi, pooled labels.
+// NONMATCHING (95.43%): switch body layout, cmplwi vs cmpwi, pooled labels.
 s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -872,7 +872,7 @@ void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (96.60%): cmplwi vs cmpwi, pooled labels, missing mr r3 before MultiItem_Main.
+// NONMATCHING (98.17%): cmplwi vs cmpwi, pooled labels, missing mr r3 before MultiItem_Main.
 s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -957,7 +957,7 @@ void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) 
 	wp->commandMenu.field_4 |= 0x01001000;
 }
 
-// NONMATCHING (96.64%): cmplwi vs cmpwi, pooled labels, missing mr r3 before ChangePartySelect_Main.
+// NONMATCHING (98.39%): cmplwi vs cmpwi, pooled labels, missing mr r3 before ChangePartySelect_Main.
 s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;

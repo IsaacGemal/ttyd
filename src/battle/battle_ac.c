@@ -127,7 +127,8 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
-// NONMATCHING (95.26%): the first guard-frame copy is `lis; addi; lwz` here vs retail's `lwzu`
+// NONMATCHING (32.95%): ours inlines BattleACPadCheckRecordTrigger, which the original calls with `bl`. Before
+// that: the first guard-frame copy is `lis; addi; lwz` here vs retail's `lwzu`
 // (the loaded word is parked in the base register, blocking the fold), and that extra live register
 // rotates the rest of the callee-saved allocation. The second `lwzu` and all stores match.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {

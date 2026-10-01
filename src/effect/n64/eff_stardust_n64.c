@@ -104,7 +104,7 @@ extern const f32 float_0p05_8041ff48;
 // type-1/2 and default int->float conversion slots are mirrored (retail 0x2c/0x28 vs here 0x24/0x20); the type-1/2
 // angle divide is hoisted above the `vy` branch; and the int->float pool double is a local @NNN alias instead of
 // named double_to_int_802fb788 (objdiff resolves that by section offset, so it does not score).
-// NONMATCHING (96.21%): see above.
+// NONMATCHING (95.78%): see above.
 EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     f32 angle;
     f32 t2;

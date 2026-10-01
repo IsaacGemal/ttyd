@@ -491,7 +491,6 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (1.19%): 1 instruction differs, 116 missing.
 BOOL BtlUnit_Delete(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
@@ -1524,7 +1523,6 @@ void BtlUnit_ClearStatus(BattleUnit* unit) {
     BattleStatusChangeInfoWorkInit(unit);
 }
 
-// NONMATCHING (75.80%): case bodies/branches in the recovery switch still differ (HP/FP regen, defense).
 BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
     s8 turns, strength;
 
@@ -1744,7 +1742,6 @@ char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
 
 
 
-// NONMATCHING (1.89%): 52 missing.
 void BtlUnit_SetParamToPouch(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
     PouchData* pouch = pouchGetPtr();

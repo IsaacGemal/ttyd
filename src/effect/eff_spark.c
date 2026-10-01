@@ -264,7 +264,7 @@ void effSparkMain(EffectEntry* effect) {
 // Hoisting the loop-invariant -1.0 into the `neg1` local makes MWCC keep it in a register across the
 // unrolled launch loop like the original; routing the 0.9 scale through a local assigned before the
 // position stores and stored after them recovers a little more.
-// NONMATCHING (91.94%): FP register allocation only -- 0.5 lands in f1 (original f0), neg1 in f5
+// NONMATCHING (92.05%): FP register allocation only -- 0.5 lands in f1 (original f0), neg1 in f5
 // (original f2), the conversion magic in f4 (original f5); the 2^52 double pools as @218 not the symbol.
 EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	EffectEntry* entry;

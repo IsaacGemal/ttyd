@@ -1201,7 +1201,7 @@ Footmark* partyGetFootmarkPtr(u32 index) {
 // .rodata symbols (@752/@754/...) instead of the original's str_802CDB20+0x38c... blob, so it
 // keeps only three callee-saved GPRs (r29-r31) instead of four (r28-r31). All other opcodes,
 // stack offsets and control flow match.
-// NONMATCHING (71.95%): wrong header return type + pool-layout blocker.
+// NONMATCHING (74.24%): wrong header return type + pool-layout blocker.
 void partyGetAppearPos2(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;
     HitCheckQuery query;

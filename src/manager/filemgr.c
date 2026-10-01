@@ -537,7 +537,7 @@ s32 fileAsyncf(u8 type, FileCallback callback, const char* format, ...) {
 	return fileAsync(_filename, type, callback);
 }
 
-// NONMATCHING (85.73%): 9 instructions differ, 22 missing, 6 extra, plus register differences.
+// NONMATCHING (92.19%): 9 instructions differ, 22 missing, 6 extra, plus register differences.
 s32 fileAsync(const char* filename, u8 type, FileCallback callback) {
 	FileEntry *search, *newentry, *temp;
 	smartEntry* smart;

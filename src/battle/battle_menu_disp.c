@@ -130,7 +130,7 @@ typedef struct BattleMenuDispScratch {
 
 // The Disp wrappers must emit a real call, not an inline expansion of these.
 #pragma dont_inline on
-// NONMATCHING (0.00%): 9 instructions differ, 4 missing, 91 extra, plus register differences.
+// NONMATCHING (87.33%): 9 instructions differ, 4 missing, 91 extra, plus register differences.
 void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -274,7 +274,7 @@ void DrawOperationWin(void) {
     }
 }
 
-// NONMATCHING (30.09%): 8 instructions differ, 9 missing, 90 extra, plus register differences.
+// NONMATCHING (88.37%): 8 instructions differ, 9 missing, 90 extra, plus register differences.
 void DrawWeaponWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;

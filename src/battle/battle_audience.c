@@ -727,7 +727,7 @@ void BattleAudienceItemCtrlProcess(void) {
 
 }
 
-// NONMATCHING (96.32%): functionally complete; only instruction scheduling / FP-register allocation differs.
+// NONMATCHING (95.60%): functionally complete; only instruction scheduling / FP-register allocation differs.
 // case 0's double_to_int bias lands in f1 not f2; case 5's y-intpl arg order; the vec3 copy uses lwzu;
 // case 10's dx load order; case 15's angle += delta uses f0 not f1. All values/calls/branches match.
 void BattleAudienceApSrcCtrlProcess(void) {
