@@ -229,9 +229,9 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-// NONMATCHING (98.00%): target instruction sequence, but integer register allocation
-// differs (mine data=r7/i=r8/counter=r4/trans=r6,r5 vs target data=r6/i=r7/counter=r8/
-// trans=r5,r4); zero-vec reloc is @159 not vec3_802fe728.
+// NONMATCHING (98.91%): top schedules two vec3 words before the data load (5
+// insns); type==3 trans puts 0.125f in f2 / double_to_int in f1 (target f1/f2);
+// the double_to_int, 0.125f and 0.5f slots are shifted by effSplashDisp.
 void effSplashMain(EffectEntry* effect) {
 	SplashData* data = effect->userdata;
 	Vec position;
@@ -263,20 +263,15 @@ void effSplashMain(EffectEntry* effect) {
 		break;
 	}
 
-	counter = data->counter++;
+	counter = data->counter;
+	data->counter = counter + 1;
 	if (data->counter > i) {
 		effDelete(effect);
 		return;
 	}
 
 	data++;
-#ifdef MUST_MATCH
-	// Match-only order: the target's register allocation depends on the increments
-	// being scheduled data first (see NONMATCHING note).
-	for (i = 1; i < effect->count; data++, i++) {
-#else
 	for (i = 1; i < effect->count; i++, data++) {
-#endif
 		if (data->field_0x28 != 0) {
 			data->field_0x28--;
 			continue;
@@ -304,35 +299,35 @@ void effSplashMain(EffectEntry* effect) {
 					data->position.x = (f32)(geso_trans_dt[counter * 2] + 40) * 0.125f * 10.0f;
 					data->position.y = (f32)(geso_trans_dt[counter * 2 + 1] - 12) * 0.125f * 10.0f;
 				}
+
+				switch (i - 1) {
+				case 0:
+				case 1:
+					data->position.x *= 0.3f;
+					data->position.y *= 0.5f;
+					data->scaleY *= 0.6f;
+					break;
+				case 2:
+				case 3:
+					data->position.x *= 0.9f;
+					break;
+				case 4:
+				case 5:
+					data->position.x *= 1.3f;
+					data->position.y *= 0.3f;
+					data->scaleY *= 0.6f;
+					break;
+				}
+
+				switch (i - 1) {
+				case 1:
+				case 3:
+				case 5:
+					data->scaleX = -1.0f;
+					data->position.x *= -1.0f;
+					break;
+				}
 			}
-			break;
-		}
-
-		switch (i - 1) {
-		case 0:
-		case 1:
-			data->position.x *= 0.3f;
-			data->position.y *= 0.5f;
-			data->scaleY *= 0.6f;
-			break;
-		case 2:
-		case 3:
-			data->position.x *= 0.9f;
-			break;
-		case 4:
-		case 5:
-			data->position.x *= 1.3f;
-			data->position.y *= 0.3f;
-			data->scaleY *= 0.6f;
-			break;
-		}
-
-		switch (i - 1) {
-		case 1:
-		case 3:
-		case 5:
-			data->scaleX = -1.0f;
-			data->position.x *= -1.0f;
 			break;
 		}
 	}

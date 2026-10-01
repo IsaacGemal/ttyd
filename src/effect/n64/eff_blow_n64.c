@@ -136,13 +136,16 @@ static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
 
 // The first mag/sqrt block only matches with opt_common_subs off: without it MWCC CSEs the
 // float_0/float_1 pool loads across the two normalization blocks and the whole first half shifts
-// (same idiom as effKemuri10N64Entry). What remains is a register-allocation tie-break in the loop
-// preheader: the original keeps the per-element -0.2*dir accelerations in f20-f22 and the
-// loop-persistent float_0/deg2rad/double_to_int in f27-f29, while this build swaps the two groups;
-// the 2*dir velocities also land in the opposite f23-f25 order, and the int->float conversion's
-// integer temps and stack slots differ too (original r7/r6/r5 at 0x5c/0x10/0x14/0x18, this build
-// r6/r5/r0). The .rodata+0 zero Vec resolves to the section symbol instead of vec3_802fa250.
-// NONMATCHING (98.45%): see above.
+// (same idiom as effKemuri10N64Entry). Passing the deg2rad*i*360/5 angle straight to
+// PSMTXRotAxisRad instead of through an `angle` temp fixed the angle block's scheduling.
+// What remains is one register-allocation tie-break in the loop preheader: the original assigns the
+// six hoisted computed values to f25..f20 (2*dirX/Y/Z to f25/f24/f23, the -0.2*dir accelerations to
+// f22/f21/f20) and the loop-persistent float_0/deg2rad/double_to_int to f27/f28/f29; this build
+// assigns them the other way (2*dir to f23/f24/f25, acc to f27/f28/f29, constants to f20/f21/f22).
+// The instruction sequence and the int->float conversion's stack slots now match exactly; only
+// these callee-saved FPR numbers differ. The .rodata+0 zero Vec resolves to the section symbol
+// instead of vec3_802fa250 (objdiff does not flag it).
+// NONMATCHING (99.53%): see above.
 #pragma opt_common_subs off // without it MWCC CSEs the float_0/float_1 pool loads and the first mag/sqrt block shifts
 EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
 	EffectEntry* effect;
@@ -223,9 +226,8 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 		work->x = float_0_8041e988;
 		work->y = float_0_8041e988;
 		work->z = float_0_8041e988;
-		angle = float_deg2rad_8041e98c * (f32)(i * 360 / 5);
 		axis = blowInitVec(dirX, dirY, dirZ);
-		PSMTXRotAxisRad(mtx, &axis, angle);
+		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041e98c * (f32)(i * 360 / 5));
 
 		work->field_0x20 = float_2_8041e9c4 * dirX;
 		work->vx = float_2_8041e9c4 * dirX;

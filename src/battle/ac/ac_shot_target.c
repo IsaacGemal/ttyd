@@ -146,14 +146,14 @@ void battleAcDelete_ShotTarget(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EB;
 }
 
-// NONMATCHING (98.78%): only the disp-parameter pointer differs. The original materialises
-// `disp = param + 0x1F20` once and uses `0x20(r31)`; ours keeps `param` in r31 and folds the offset
-// into `0x1f40(r31)` (same known issue as battleAcDisp_ButtonDown/TimingWide).
+// The `BattleActions* ac` local (rather than reading fields through `work`) is what makes MWCC
+// materialise `addi r31, r4, 0x1f20` for disp; reading `&work->actionCommands.dispParams` folded the
+// offset into each access instead.
 void battleAcDisp_ShotTarget(CameraId camId, void* param) {
-    BattleWork* work = (BattleWork*)param;
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
 
-    switch (work->actionCommands.mAcState) {
+    switch (ac->mAcState) {
         case 99:
         case 100:
         case 1000:

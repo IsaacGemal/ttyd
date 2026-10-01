@@ -81,6 +81,9 @@ void effUpdownMain(EffectEntry* effect) {
 	s32 type;
 	s32 renderMode;
 	Vec pos;
+#ifdef MUST_MATCH
+	Vec* p;
+#endif
 
 	type = work->type;
 	if (effect->flags & 4) {
@@ -115,8 +118,15 @@ void effUpdownMain(EffectEntry* effect) {
 #endif
 		}
 	}
+#ifdef MUST_MATCH
+	p = &pos;
+#endif
 	work->frame++;
+#ifdef MUST_MATCH
+	pos = (Vec){ 0.0f, 0.0f, 0.0f };
+#else
 	pos = vec3_802f8e38;
+#endif
 	pos.x = work->x;
 	pos.y = work->y;
 	pos.z = work->z;
@@ -124,7 +134,11 @@ void effUpdownMain(EffectEntry* effect) {
 	if (work->alpha != 0xFF) {
 		renderMode = 2;
 	}
+#ifdef MUST_MATCH
+	dispEntry(CAMERA_3D, dispCalcZ(p), renderMode, effUpdownDisp, effect);
+#else
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), renderMode, effUpdownDisp, effect);
+#endif
 }
 
 static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {

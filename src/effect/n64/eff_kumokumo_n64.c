@@ -359,22 +359,58 @@ void effKumokumoMain(EffectEntry* effect) {
 	dispEntry(camera, dispCalcZ(&pos2), 2, effKumokumoDisp, effect);
 }
 
-// NONMATCHING (97.60%): the 0x180 stack frame comes out 0x1a0 and the local matrices sit 0x4 lower
-// (scale/rot transposed); the per-entry type3/4 body is laid out inline where the original puts it
-// out of line, and the quad vertex block reuses one float_0 load where the original reloads it.
+#ifdef MUST_MATCH
+static inline void effKumokumoSetColor1(effKumokumoData* data, s32 alpha) {
+	GXColor color = *(GXColor*)&unk_804231a0;
+
+	color.r = data->color1R;
+	color.g = data->color1G;
+	color.b = data->color1B;
+	color.a = alpha;
+	GXSetTevColor(1, color);
+}
+
+static inline void effKumokumoSetColor2(effKumokumoData* data) {
+	GXColor color = *(GXColor*)&unk_804231a4;
+
+	color.r = data->color2R;
+	color.g = data->color2G;
+	color.b = data->color2B;
+	color.a = data->color2A;
+	GXSetTevColor(2, color);
+}
+
+static inline void effKumokumoSetMatColorA(s32 a) {
+	GXColor color = *(GXColor*)&dat_8041f578;
+
+	color.a = a;
+	GXSetChanMatColor(4, color);
+}
+
+static inline void effKumokumoSetMatColorB(s32 a) {
+	GXColor color = *(GXColor*)&dat_8041f57c;
+
+	color.a = a;
+	GXSetChanMatColor(4, color);
+}
+#endif
+
+// NONMATCHING (99.78%): everything matches except the register allocation of the four GXCallDisplayList
+// loops (original: cloud k=r26/size=r25, case3-inner k=r25/size=r24/dl=r23; ours: cloud k=r22/r23,
+// case3-inner k=r23).
 void effKumokumoDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKumokumoData* data = effect->userdata;
 	CameraEntry* cam;
 	u8* tbl;
 	Mtx mtx;
-	Mtx rot;
 	Mtx scale;
+	Mtx rot;
 	Mtx view;
 	GXTexObj texObj;
-	GXColor color;
 	f32 halfW;
 	f32 halfH;
+	f32 half = 0.5f;
 	f32 f5;
 	s32 alpha;
 	s32 type;
@@ -413,19 +449,29 @@ void effKumokumoDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(view, 0);
 	GXSetCurrentMtx(0);
 
-	color = *(GXColor*)&unk_804231a0;
-	color.r = data->color1R;
-	color.g = data->color1G;
-	color.b = data->color1B;
-	color.a = alpha;
-	GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+	effKumokumoSetColor1(data, alpha);
+	effKumokumoSetColor2(data);
+#else
+	{
+		GXColor color = *(GXColor*)&unk_804231a0;
 
-	color = *(GXColor*)&unk_804231a4;
-	color.r = data->color2R;
-	color.g = data->color2G;
-	color.b = data->color2B;
-	color.a = data->color2A;
-	GXSetTevColor(2, color);
+		color.r = data->color1R;
+		color.g = data->color1G;
+		color.b = data->color1B;
+		color.a = alpha;
+		GXSetTevColor(1, color);
+	}
+	{
+		GXColor color = *(GXColor*)&unk_804231a4;
+
+		color.r = data->color2R;
+		color.g = data->color2G;
+		color.b = data->color2B;
+		color.a = data->color2A;
+		GXSetTevColor(2, color);
+	}
+#endif
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
@@ -504,7 +550,9 @@ void effKumokumoDisp(CameraId camId, void* param) {
 			break;
 		case 3:
 			for (j = 0; j < 5; j++) {
-				PSMTXRotRad(rot, 'z', float_deg2rad_8041f580 * (float_360_8041f598 * (f32)j) / float_5_8041f59c);
+				float angle = (float_360_8041f598 * (f32)j) / float_5_8041f59c;
+
+				PSMTXRotRad(rot, 'z', float_deg2rad_8041f580 * angle);
 				PSMTXConcat(view, rot, rot);
 				GXLoadPosMtxImm(rot, 0);
 				GXSetCurrentMtx(0);
@@ -529,6 +577,7 @@ void effKumokumoDisp(CameraId camId, void* param) {
 				}
 			}
 			break;
+		case 4:
 		default:
 			GXClearVtxDesc();
 			GXSetVtxDesc(9, 2);
@@ -573,6 +622,7 @@ void effKumokumoDisp(CameraId camId, void* param) {
 			effGetTexObj(0xb, &texObj);
 			GXLoadTexObj(&texObj, 0);
 			break;
+		case 3:
 		default:
 			effGetTexObjN64(7, &texObj);
 			GXLoadTexObj(&texObj, 0);
@@ -590,17 +640,25 @@ void effKumokumoDisp(CameraId camId, void* param) {
 		if (data->lifetime != 0) {
 			continue;
 		}
-		if (type == 3 || type == 4) {
-			GXColor c;
-			c = *(GXColor*)&dat_8041f57c;
+#ifdef MUST_MATCH
+		if (type != 3 && type != 4) {
+			effKumokumoSetMatColorA((data->color1A * alpha) / 255);
+		} else {
+			effKumokumoSetMatColorB((data->color1A * alpha) / 255);
+		}
+#else
+		if (type != 3 && type != 4) {
+			GXColor c = *(GXColor*)&dat_8041f578;
+
 			c.a = (data->color1A * alpha) / 255;
 			GXSetChanMatColor(4, c);
 		} else {
-			GXColor c;
-			c = *(GXColor*)&dat_8041f578;
+			GXColor c = *(GXColor*)&dat_8041f57c;
+
 			c.a = (data->color1A * alpha) / 255;
 			GXSetChanMatColor(4, c);
 		}
+#endif
 		PSMTXTrans(mtx, data->x, data->y, data->z);
 		PSMTXRotRad(rot, 'z', float_deg2rad_8041f580 * data->rotation);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
@@ -612,19 +670,18 @@ void effKumokumoDisp(CameraId camId, void* param) {
 		GXBegin(0x80, 0, 4);
 		halfW = (f32)GXGetTexObjWidth(&texObj);
 		halfH = (f32)GXGetTexObjHeight(&texObj);
+		f5 = float_1_8041f5a0;
 		if (type == 3 || type == 4) {
 			f5 = float_2_8041f5a4;
-		} else {
-			f5 = float_1_8041f5a0;
 		}
-		GXPosition3f32(-halfW * float_0p5_8041f5a8, halfH * float_0p5_8041f5a8, float_0_8041f594);
-		GXTexCoord2f32(float_0_8041f594, float_0_8041f594);
-		GXPosition3f32(halfW * float_0p5_8041f5a8, halfH * float_0p5_8041f5a8, float_0_8041f594);
-		GXTexCoord2f32(f5, float_0_8041f594);
-		GXPosition3f32(halfW * float_0p5_8041f5a8, -halfH * float_0p5_8041f5a8, float_0_8041f594);
+		GXPosition3f32(-halfW * half, halfH * half, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(halfW * half, halfH * half, 0.0f);
+		GXTexCoord2f32(f5, 0.0f);
+		GXPosition3f32(halfW * half, -halfH * half, 0.0f);
 		GXTexCoord2f32(f5, f5);
-		GXPosition3f32(-halfW * float_0p5_8041f5a8, -halfH * float_0p5_8041f5a8, float_0_8041f594);
-		GXTexCoord2f32(float_0_8041f594, f5);
+		GXPosition3f32(-halfW * half, -halfH * half, 0.0f);
+		GXTexCoord2f32(0.0f, f5);
 		GXEnd();
 	}
 }

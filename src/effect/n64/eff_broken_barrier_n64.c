@@ -214,9 +214,24 @@ static inline f32 effBrokenBarrierSqrt(f32 x) {
     return x;
 }
 
-// NONMATCHING (98.47%): body functionally complete; all array/struct accesses, constants, call args and branches
-// match. Remaining diffs are FPR allocation only: the first cos(angle2) temp sits in f24 (target reuses f27 for both
-// calls), shifting f24..f27 and growing the frame 0xd0->0xe0; `fctiwz`/0.5 swap f1/f2; spread-scale block layout.
+// Helper for effBrokenBarrierMain: three Newton-Raphson refinements of __frsqrte with a fresh
+// variable per step. Same math as effBrokenBarrierSqrt above; the distinct names are what let the
+// caller's trailing `fmul` colour the way the original does.
+static inline f32 effBrokenBarrierSqrt2(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+    if (x > float_0_8041eac8) {
+        f64 g1 = __frsqrte(x);
+        f64 g2 = _half * g1 * (_three - g1 * g1 * x);
+        f64 g3 = _half * g2 * (_three - g2 * g2 * x);
+        f64 g4 = _half * g3 * (_three - g3 * g3 * x);
+        return x * g4;
+    }
+    else if (x < 0.0) { return NAN; }
+    else if (isnan(x)) { return NAN; }
+    return x;
+}
+#pragma opt_lifetimes off // default lifetime analysis coalesces the cos temp into f24; off restores the original f25-f27 colouring
 void effBrokenBarrierMain(EffectEntry* effect) {
     s32 rangeX;
     s32 rangeY;
@@ -260,9 +275,12 @@ void effBrokenBarrierMain(EffectEntry* effect) {
 
     spreadX = data->field_0x10;
     spreadY = data->field_0x14;
-    if (type < 4 && type >= 2) {
+    switch (type) {
+    case 2:
+    case 3:
         spreadX *= float_4_8041ead4;
         spreadY *= float_4_8041ead4;
+        break;
     }
     i = 1;
     rangeX = (s32)spreadX;
@@ -284,13 +302,18 @@ void effBrokenBarrierMain(EffectEntry* effect) {
             switch (type) {
             case 0:
             case 2:
+                {
+                f32 p;
                 angle2 = float_6p2832_8041eadc * randB / float_360_8041eae0;
                 c2 = (f32)cos(angle2);
-                angle1 = float_6p2832_8041eadc * randA / float_360_8041eae0;
-                data->x = spreadX * (f32)sin(angle1) * c2;
+                randA = float_6p2832_8041eadc * randA / float_360_8041eae0;
+                p = spreadX * (f32)sin(randA);
+                data->x = p * c2;
                 c2 = (f32)cos(angle2);
-                data->y = spreadY * (f32)cos(angle1) * c2;
+                p = spreadY * (f32)cos(randA);
+                data->y = p * c2;
                 data->z = spreadX * (f32)sin(angle2);
+                }
                 data->field_0x18 = float_0p4_8041eae4 * data->x;
                 data->field_0x1C = float_0p4_8041eae4 * data->y;
                 data->field_0x20 = float_0p4_8041eae4 * data->z;
@@ -317,21 +340,29 @@ void effBrokenBarrierMain(EffectEntry* effect) {
         }
         data->field_0x60 = scale_data[data->field_0x30];
         data->field_0x34 += float_4_8041ead4;
-        if (type < 4 && type >= 2) {
+        switch (type) {
+        case 2:
+        case 3:
             data->field_0x18 = float_0p05_8041eaf4 * -data->x;
             data->field_0x1C = float_0p05_8041eaf4 * -data->y;
             data->field_0x20 = float_0p05_8041eaf4 * -data->z;
-            if (effBrokenBarrierSqrt(data->field_0x18 * data->field_0x18 + data->field_0x1C * data->field_0x1C + data->field_0x20 * data->field_0x20) < float_1_8041eaf8) {
-                randA = (f32)(rand() % 360);
+            if (effBrokenBarrierSqrt2(data->field_0x18 * data->field_0x18 + data->field_0x1C * data->field_0x1C + data->field_0x20 * data->field_0x20) < float_1_8041eaf8) {
+                {
+                f32 a2, aa, p;
+                aa = (f32)(rand() % 360);
                 randB = (f32)(rand() % 360);
-                angle2 = float_6p2832_8041eadc * randB / float_360_8041eae0;
-                c2 = (f32)cos(angle2);
-                angle1 = float_6p2832_8041eadc * randA / float_360_8041eae0;
-                data->x = spreadX * (f32)sin(angle1) * c2;
-                c2 = (f32)cos(angle2);
-                data->y = spreadY * (f32)cos(angle1) * c2;
-                data->z = spreadX * (f32)sin(angle2);
+                a2 = float_6p2832_8041eadc * randB / float_360_8041eae0;
+                c2 = (f32)cos(a2);
+                aa = float_6p2832_8041eadc * aa / float_360_8041eae0;
+                p = spreadX * (f32)sin(aa);
+                data->x = p * c2;
+                c2 = (f32)cos(a2);
+                p = spreadY * (f32)cos(aa);
+                data->y = p * c2;
+                data->z = spreadX * (f32)sin(a2);
+                }
             }
+            break;
         }
         data->x += data->field_0x18;
         data->y += data->field_0x1C;
@@ -344,6 +375,7 @@ void effBrokenBarrierMain(EffectEntry* effect) {
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effBrokenBarrierDisp, effect);
 }
+#pragma opt_lifetimes reset
 
 // Builds the particle colour from the shared zero colour; the inline forces mwcc to
 // keep the named GXColor at r1+0x8 and its outgoing copy at r1+0xC (the original order).

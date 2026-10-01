@@ -214,23 +214,26 @@ BOOL setupDataCheck(void) {
     return TRUE;
 }
 
-// NONMATCHING (95.74%): register allocation differs throughout; the original keeps areaName in r30 and the
-// rodata pool base in r31, and hoists fbat+0x4c / fbat+0x60 into r29/r26 before the first loop.
+// The ai search loop (goto) and the `j = -1` scheduling now reproduce the original exactly. areaName/mapName/fbat
+// match r30/r24/r27 and deadMap is r26, but the string pool base is r28 (target r31), dead is r31 (target r29)
+// and attr is r29 (target r28). The three `lis/addi _map_attr_data` initializers also go through r0
+// (`addi r0; mr`) where the target writes the destination directly.
+// NONMATCHING (98.05%): only register allocation differs; instruction sequence matches.
 void setupDataBase(const char* areaName, const char* mapName) {
     FieldBattleData* fbat;
     NpcDeadInfo* dead;
-    char* deadMap;
     MapAttrData* attr;
+    NpcAiInfo* ai;
     MapAttrData* attr2;
     MapAttrData* attr3;
-    NpcAiInfo* ai;
+    s32 npcIndex;
     NpcTribeInfo* tribe;
     NpcEntry* npc;
     AreaData* area;
     NpcDeadInfo tmp;
-    s32 npcIndex;
-    s32 flag;
     s32 i;
+    char* deadMap;
+    s32 flag;
     s32 j;
     char name[64];
     char tribeName[64];
@@ -250,7 +253,7 @@ void setupDataBase(const char* areaName, const char* mapName) {
     fbat = fbatGetPointer();
     attr = (MapAttrData*)_map_attr_data;
     dead = fbat->deadInfo;
-    deadMap = dead[1].mapName;
+    deadMap = fbat->deadInfo[1].mapName;
 
     for (;; attr++) {
         if (attr->name == NULL) {
@@ -344,24 +347,24 @@ void setupDataBase(const char* areaName, const char* mapName) {
         npc->width = tribe->width;
         npc->height = tribe->height;
         npc->flags &= ~2;
-        for (ai = npc_ai_type_table;; ai++) {
+        for (ai = npc_ai_type_table;;) {
             if (ai->description == NULL) {
-                break;
+                goto no_ai;
             }
             if (strcmp(ai->description, aitype) == 0) {
                 break;
             }
+            ai++;
         }
-        if (ai->description != NULL) {
-            npc->flags |= ai->flags;
-            npc->initEvent = ai->initEvent;
-            npc->moveEvent = ai->moveEvent;
-            npc->deadEvent = ai->deadEvent;
-            npc->findEvent = ai->findEvent;
-            npc->lostEvent = ai->lostEvent;
-            npc->returnEvent = ai->returnEvent;
-            npc->blowEvent = ai->blowEvent;
-        }
+        npc->flags |= ai->flags;
+        npc->initEvent = ai->initEvent;
+        npc->moveEvent = ai->moveEvent;
+        npc->deadEvent = ai->deadEvent;
+        npc->findEvent = ai->findEvent;
+        npc->lostEvent = ai->lostEvent;
+        npc->returnEvent = ai->returnEvent;
+        npc->blowEvent = ai->blowEvent;
+no_ai:
         npc->territoryType = dbGetDefData(npc_define_territory_type, territoryType);
         npc->territoryBase = territoryBase;
         npc->territoryLoiter = territoryLoiter;
@@ -377,8 +380,8 @@ void setupDataBase(const char* areaName, const char* mapName) {
         npc->footstepStride = tribe->footstepStride;
         npc->footstepToggle = 1;
         npc->footstepAccum = 0.0f;
-        area = areaDataPtr(areaName);
         j = -1;
+        area = areaDataPtr(areaName);
         if (strcmp(btlSetupNo, "BTLNO_INVALID") != 0) {
             j = dbGetDefData(area->field_C, btlSetupNo);
         }

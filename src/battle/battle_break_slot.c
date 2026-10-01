@@ -244,9 +244,28 @@ void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
 
-// NONMATCHING (96.91%): first-loop reel is r30 here vs r28 in the original (MWCC keeps r28 for the
-// third-loop tex temp), so the i2f scratch and the three GXColor argument slots land at different
-// stack offsets; the i->f32 conversion also folds its double into an anonymous @N pool entry.
+#ifdef MUST_MATCH
+// Returning the colour from an inline (rather than writing the channels in place) makes MWCC lay the
+// local/outgoing GXColor pair out the way the original does; the direct build puts the two slots the
+// other way round.
+static inline GXColor slotColorA(u8 a) {
+    GXColor c = *(GXColor*)&dat_80420528;
+
+    c.a = a;
+    return c;
+}
+
+static inline GXColor slotColorB(u8 a) {
+    GXColor c = *(GXColor*)&dat_8042052c;
+
+    c.a = a;
+    return c;
+}
+#endif
+
+// NONMATCHING (99.98%): i->f32 pools an anonymous 2^52 double instead of the named
+// double_to_int_802fd930 (cosmetic, not scored); the first built colour's local and the second's
+// outgoing copy are 4 bytes low (0xc/0x10) where the original has them at 0x10/0xc.
 void BattleBreakSlotDispReel(CameraId camId, void* param) {
     s32 i;
     BattleBreakSlotReel* reel;
@@ -260,19 +279,23 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
     Mtx mtxRotZ;
     Mtx mtxFinal;
     u16* texList;
+    u16 tex;
 
     i = 0;
-    reel = BattleBreakSlotReelGetPtr(0);
-    for (; i < 3; i++) {
-        if ((reel->flags & 1) && reel->state >= 1 && reel->state <= 4) {
-            PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
-            {
-                GXColor color = *(GXColor*)&dat_80420524;
+    {
+        BattleBreakSlotReel* reel1 = BattleBreakSlotReelGetPtr(0);
 
-                iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
+        for (; i < 3; i++) {
+            if ((reel1->flags & 1) && reel1->state >= 1 && reel1->state <= 4) {
+                PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
+                {
+                    GXColor color = *(GXColor*)&dat_80420524;
+
+                    iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
+                }
             }
+            reel1++;
         }
-        reel++;
     }
     reel = BattleBreakSlotReelGetPtr(0);
     if (reel->state >= 1 && reel->state <= 4) {
@@ -306,15 +329,20 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             PSMTXConcat(mtxScale, mtxFinal, mtxFinal);
             PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
             {
-                GXColor color;
+                u16 tex0 = texList[reel->value];
+#ifdef MUST_MATCH
+                GXColor c0 = slotColorA(reel->field_58);
+#else
+                GXColor c0;
 
-                *(u32*)&color = dat_80420528;
-                color.a = reel->field_58;
-                btlDispTexPlane2(mtxFinal, texList[reel->value], color, 0);
+                *(u32*)&c0 = dat_80420528;
+                c0.a = reel->field_58;
+#endif
+
+                btlDispTexPlane2(mtxFinal, tex0, c0, 0);
             }
             if (reel->state <= 0xA && reel->state != 3 && reel->state != 4) {
                 s32 idx = reel->index + 1;
-                u16 tex;
 
                 if (idx >= reel->count) {
                     idx = 0;
@@ -327,11 +355,16 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
                 }
                 PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
                 {
-                    GXColor color;
+#ifdef MUST_MATCH
+                    GXColor c1 = slotColorB(reel->field_58);
+#else
+                    GXColor c1;
 
-                    *(u32*)&color = dat_8042052c;
-                    color.a = reel->field_58;
-                    btlDispTexPlane2(mtxFinal, tex, color, 0);
+                    *(u32*)&c1 = dat_8042052c;
+                    c1.a = reel->field_58;
+#endif
+
+                    btlDispTexPlane2(mtxFinal, tex, c1, 0);
                 }
             }
         }
@@ -343,11 +376,16 @@ void BattleBreakSlot_Disp(void) {
     dispEntry(CAMERA_2D, 490.0f, 0, BattleBreakSlotDispReel, NULL);
 }
 
-// NONMATCHING (98.46%): the effect scripts are extern here, so each evtEntry loads its own address instead of
-// using a .data base register (r27), and _battleWorkPointer lands in r4 instead of r5; Main's SFX strings sit
-// before the int-to-float double in .rodata instead of after it; pouchGetAP's s16 return gets an extsh the
-// original doesn't have; gp->language is compared with cmpwi instead of cmplwi; case 3's intplGetValue
-// arguments and case 10's field_50 load are scheduled differently.
+// NONMATCHING (98.50%): the .sdata2 float literals pool into anonymous slots, so objdiff still flags every
+// float load against the original's named symbols (the score counts them as matched, so they are not the
+// remaining gap). What still differs: the effect scripts are extern here, so each evtEntry loads its own
+// address instead of using a .data base register (r27), which in turn leaves _battleWorkPointer in r4 instead
+// of r5; the int-to-float double pools after Main's SFX strings in .rodata (0x2E0) instead of before them
+// (0x270); pouchGetAP's s16 return gets an extsh the original doesn't have (mario_pouch.h declares s16; the
+// target does srawi/addze on r3, so the original is s32); case 3's intplGetValue argument loads and case 9/10's
+// field_50 arithmetic are scheduled with different registers. The gp->language test is now the unsigned
+// compare the target has, and `0.0f != updown` reproduces its load order.
+// NONMATCHING (98.5%): see the note above for what still differs.
 void BattleBreakSlot_Main(void) {
     static f32 updown;
     BattleWork* wp = _battleWorkPointer;
@@ -567,7 +605,7 @@ void BattleBreakSlot_Main(void) {
                 updown = 0.0f;
             }
         }
-        if (slot->field_08 == 209 && updown != 0.0f) {
+        if (slot->field_08 == 209 && 0.0f != updown) {
             BattleAudienceSoundRun(0);
         }
         if (slot->field_08 == 210) {
@@ -600,7 +638,7 @@ void BattleBreakSlot_Main(void) {
             BattleAudienceAddTargetNum(0.0f, updown);
             slot->state = 8;
             slot->flags &= ~4;
-            if (gp->language == 0) {
+            if ((u32)gp->language == 0) {
                 switch (BattleBreakSlotReelGetPtr(0)->value) {
                 case 0:
                     slot->event = evtEntry(msg_hp_max, 0, 0x20);

@@ -168,29 +168,22 @@ static u32 size64x64_tex32x32_vtx[0x118 / 4] = {
 	0x00200040, 0x00020400, 0x10007878, 0x00FFFFE0, 0x00400002, 0x00001000, 0x787800FF,
 };
 
-#ifdef MUST_MATCH
-// The original reaches the tables from the address 8 bytes before its .data.
-#endif
-
-// The original materialises each table base (base+offset) before an indexed load;
-// MWCC 2.6 instead folds the four bases into base+index plus an offset load. The two
-// GXColor inline temporaries also land in swapped stack slots (color1 0x10 / color2
-// 0xc in the original, 0xc / 0x10 here), and the seq*5*0.0039062 multiply keeps the
-// 5.0 and 0.0039062 registers swapped. The int->float pool entries are anonymous
-// @NNN@ locals, which objdiff resolves to the original's double_to_int_* symbols.
-// opt_common_subs off: with CSE on MWCC folds the table bases through one register,
-// costing more instructions than the original's per-base form.
+// The original reaches each table from lbl_803A85F8 and materialises the base before
+// an indexed load; naming the file's arrays (dx_data / scale_data / seq_data / rz_data)
+// and indexing them with type*0x1e + frame reproduces that addi base,off / lbzx shape.
+// opt_common_subs off: with CSE on, MWCC folds the table bases through one register.
+// The two GXColor inline temporaries land in swapped stack slots (the original builds
+// color1 at 0x10 and copies color2's argument to 0xc; this build uses 0xc and 0x10) and
+// the data/frame registers are the allocator's other equivalent colouring (original
+// data r29/frame r30, this build r30/r29).
 #pragma opt_common_subs off
-// NONMATCHING (97.28%): the table address form, the GXColor temporaries' stack slots
-// and the seq multiply's f-registers still differ.
+// NONMATCHING (99.78%): the GXColor temporaries' stack slots and the data/frame pair
+// still differ.
 void effVaporDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
 	s32 frame;
 	effVaporN64Data* data;
 	CameraEntry* cam;
-#ifdef MUST_MATCH
-	u8* disp;
-#endif
 	GXTexObj texObj;
 	Mtx mtxA;
 	Mtx mtxB;
@@ -201,16 +194,15 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	f32 rz;
 	f32 dx;
 	f32 t;
+	f32 seqf;
 	s32 alpha1;
 	s32 type;
 	s32 index;
 	s32 frac;
 	s32 band;
+	s32 frame2;
 
 	effect = param;
-#ifdef MUST_MATCH
-	disp = lbl_803A85F8;
-#endif
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
 	frame = data->field_0x14;
@@ -282,26 +274,15 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	}
 
 	GXSetCullMode(GX_CULL_NONE);
-#ifdef MUST_MATCH
-	effSetVtxDescN64((effVtxArray*)(disp + 0x1B0));
-#else
 	effSetVtxDescN64((effVtxArray*)size64x64_tex32x32_vtx);
-#endif
+	frame2 = frame;
 	if (frame >= 0x1E) {
-		frame = 0x1D;
+		frame2 = 0x1D;
 	}
-	index = type * 0x1E + frame;
-#ifdef MUST_MATCH
-	// The original materialises each table base (base+offset) before the indexed load;
-	// the struct field form below common-subexpresses to base+index and an offset load.
-	scale = float_0p01_804200e0 * *(u8*)(disp + 0x9C + index);
-	rz = -(f32)*(u8*)(disp + 0x154 + index);
-	dx = *(s8*)(disp + 0x40 + index);
-#else
-	scale = float_0p01_804200e0 * scale_data[index];
-	rz = -(f32)rz_data[index];
-	dx = dx_data[index];
-#endif
+	index = type * 0x1E;
+	scale = float_0p01_804200e0 * scale_data[index + frame2];
+	rz = -(f32)rz_data[index + frame2];
+	dx = dx_data[index + frame2];
 	PSMTXTrans(mtxA, dx, float_0_804200e4, float_0_804200e4);
 	PSMTXRotRad(mtxC, 'z', float_deg2rad_804200d8 * rz);
 	PSMTXScale(mtxB, scale, scale, scale);
@@ -311,11 +292,8 @@ void effVaporDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtxA, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
-#ifdef MUST_MATCH
-	t = (f32)*(u8*)(disp + 0xF8 + index) * float_5_804200e8 * float_0p0039062_804200ec;
-#else
-	t = (f32)seq_data[index] * float_5_804200e8 * float_0p0039062_804200ec;
-#endif
+	seqf = float_5_804200e8 * (f32)seq_data[index + frame2];
+	t = seqf * float_0p0039062_804200ec;
 	band = (s32)t;
 	frac = (s32)(float_256_804200f0 * (t - (f32)band));
 	PSMTXScale(mtxB, float_0p032258_804200f4, float_0p007874_804200f8, float_0_804200e4);
