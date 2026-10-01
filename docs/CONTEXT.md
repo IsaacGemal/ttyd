@@ -3237,3 +3237,11 @@ had Flash ahead on near-misses). Files go to whichever wave claims them first in
   size). battle_item_data's two constants stay mutable globals: making them `const` loses `_cam_rot`.
 - **Lesson:** the launcher's "wave 50 drained" gate counted workspaces on the tower, so the cleanup stalled wave 51
   for three hours; it now gates on the slot count alone.
+
+## Grind 46: eff_break and countdown retries (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+No unit linked in this stretch.
+
+- `eff_break` Disp: `f32 w = 48.0f; f32 h = 0.5f;` at the top (C89: declarations first) stops `-48.0f * 0.5f` folding to -24 but pools 0.5 after 48 and before 0 where the target has 0 before 0.5; adding `f32 z = 0.0f` leaves the pool unchanged and drops Disp to 94.6%. Left for the permuter.
+- `countdown`: only `countDownMain` (95.61%) differs in code; `.sdata2` lacks the trailing 4 zero bytes and `.sbss` is 4 bytes short.
+- The tower permuter's lowest scores so far are prototype or declaration-type changes (`iconDispGx` `char iconId`, `shadowInit` `unsigned long long`), not matches.
