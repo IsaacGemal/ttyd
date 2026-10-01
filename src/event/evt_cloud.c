@@ -25,23 +25,8 @@ static USER_FUNC(evt_cloud_main);  // local to this file in the original
 // Prototypes not yet in headers.
 
 // .rodata
-const char str_802F6B28[] = "P_oof_cloud_1";
-const char str_802F6B38[] = "i_name_%1d";
-const char str_802F6B44[] = "o_name_%1d";
-const char str_802F6B50[] = "P_oof_cloud_2";
-const char str_802F6B60[] = "SFX_OFF_CLAUD_WIND2";
-const char str_802F6B74[] = "SFX_OFF_CLAUD_WIND3";
-f64 double_to_int_mask_802f6b88 = 4503599627370496.0;
-f64 double_to_int_802f6b90 = 4503601774854144.0;
 
 // .sdata2
-extern const f32 float_90_8041dcd0;
-extern const f32 float_270_8041dcd4;
-extern const f32 float_1_8041dcd8;
-extern const f32 float_0p5_8041dcdc;
-const char str_8041DCE0[] = "A_1";
-extern const f32 float_0_8041dce4;
-const char str_8041DCE8[] = "A_2";
 
 // Work structure for the "poof" cloud effect, not yet extracted into a header.
 typedef struct CloudEntry {
@@ -65,92 +50,13 @@ typedef struct CloudEntry {
 } CloudEntry;               // 0xC8
 
 static CloudEntry cloud[16];
-CloudEntry* cloud_p;
 static s8 cloud_once_flag;
+CloudEntry* cloud_p;
 
 static u32 evt_cloud_main_evt[] = { 0x0001005B, (u32)evt_cloud_main, 0x2, 0x1 };
 
-USER_FUNC(evt_cloud_get_mode) {
-	s32* args = event->args;
-
-	if (cloud_p == NULL) {
-		evtSetValue(event, args[0], -1);
-		return EVT_RETURN_DONE;
-	} else {
-		evtSetValue(event, args[0], cloud_p->mode);
-		return EVT_RETURN_DONE;
-	}
-}
-
-USER_FUNC(evt_cloud_set_cap_size) {
-	s32* args = event->args;
-	u16 width = evtGetValue(event, args[0]);
-	s32 height = evtGetValue(event, args[1]);
-
-	cloud_p->field_0xC0 = width;
-	cloud_p->field_0xC2 = height;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_cloud_ent) {
-	s32* args = event->args;
-	s32 a = evtGetValue(event, args[0]);
-	s32 b = evtGetValue(event, args[1]);
-	s32 c = evtGetValue(event, args[2]);
-	s32 d = evtGetValue(event, args[3]);
-	CloudEntry* cp;
-	s32 i;
-
-	for (i = 0; i < 16; i++) {
-		if (!(cloud[i].flags & 1)) {
-			break;
-		}
-	}
-	if (i >= 16) {
-		return EVT_RETURN_DONE;
-	}
-
-	cp = &cloud[i];
-	cp->flags |= 1;
-	strncpy(cp->animName, str_802F6B28, 0x20);
-	if (a == 0) {
-		strncpy(cp->mapGrpName, (const char*)b, 0x20);
-	} else {
-		strncpy(cp->mapGrpName, *(const char**)b, 0x20);
-	}
-	strncpy(cp->hitName, (const char*)c, 0x20);
-	cp->field_0xB4 = (void*)d;
-	cp->field_0xA8 = 0xB4;
-	cp->field_0xAC = 0;
-	cp->mode = 0;
-	cp->field_0xB8 = 0;
-	cp->field_0xC0 = 0;
-	cp->field_0xC2 = 0;
-	cp->field_0xB0 = evtEntry(evt_cloud_main_evt, 0, 0);
-	cp->field_0xB0->lwData[0] = (s32)cp;
-	cloud_p = cp;
-	if (a != 0) {
-		cp->field_0xBC = (const char**)b;
-		cp->flags |= 2;
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_cloud_init) {
-	s32 i;
-
-	for (i = 0; i < 16; i++) {
-		cloud[i].flags = 0;
-		sprintf(cloud[i].imgName, str_802F6B38, i);
-		sprintf(cloud[i].offName, str_802F6B44, i);
-	}
-	cloud_p = NULL;
-	cloud_once_flag = 0;
-	return EVT_RETURN_DONE;
-}
-
 // The screen-space math needs the literal 0.5f and separate product temp to keep MWCC's FPR allocation
-// matching the original (t in f6, the screen size in f4, the 0.5f in f3); the named float_0p5_8041dcdc
+// matching the original (t in f6, the screen size in f4, the 0.5f in f3); the named 0.5f
 // or folding the product into one expression rotates the three registers.
 static USER_FUNC(evt_cloud_main) {
 	CloudEntry* cp = (CloudEntry*)event->lwData[0];
@@ -201,10 +107,10 @@ static USER_FUNC(evt_cloud_main) {
 	case 1: {
 		f32 angle = *(f32*)((u8*)mario + 0x1AC);
 
-		if (angle > float_90_8041dcd0 && angle <= float_270_8041dcd4) {
-			strcpy(cp->animName, str_802F6B50);
+		if (angle > 90.f && angle <= 270.f) {
+			strcpy(cp->animName, "P_oof_cloud_2");
 		} else {
-			strcpy(cp->animName, str_802F6B28);
+			strcpy(cp->animName, "P_oof_cloud_1");
 		}
 		if (animGroupBaseAsync(cp->animName, inBattle, NULL)) {
 			cloud_once_flag = 1;
@@ -230,10 +136,10 @@ static USER_FUNC(evt_cloud_main) {
 			PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 			PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
 			half = 0.5f;
-			t = float_1_8041dcd8 + pos.x;
+			t = 1.0f + pos.x;
 			w = t * (f32)gp->fbWidth;
 			pos.x = w * half;
-			t = float_1_8041dcd8 - pos.y;
+			t = 1.0f - pos.y;
 			w = t * (f32)gp->efbHeight;
 			pos.y = w * half;
 			width = cp->field_0xC0;
@@ -281,18 +187,18 @@ static USER_FUNC(evt_cloud_main) {
 	case 3:
 		img = imgNameToPtr(cp->imgName, inBattle);
 		img->flags &= ~2;
-		img->animName = str_8041DCE0;
+		img->animName = "A_1";
 		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
 		mapGrpFlagOn(cp->mapGrpName, 1);
 		cp->field_0xB8 = 0x1E;
 		cp->mode++;
-		cp->field_0xC4 = float_0_8041dce4;
+		cp->field_0xC4 = 0.0f;
 		break;
 
 	case 4:
 		img = imgNameToPtr(cp->imgName, inBattle);
-		if (float_0_8041dce4 == cp->field_0xC4 || float_1_8041dcd8 + cp->field_0xC4 < img->field_0x118) {
-			psndSFXOn_3D(str_802F6B60, &mario->position);
+		if (0.0f == cp->field_0xC4 || 1.0f + cp->field_0xC4 < img->field_0x118) {
+			psndSFXOn_3D("SFX_OFF_CLAUD_WIND2", &mario->position);
 			cp->field_0xC4 = img->field_0x118;
 		}
 		if (mario->currMotionId != 0x1B) {
@@ -322,12 +228,12 @@ static USER_FUNC(evt_cloud_main) {
 		break;
 
 	case 0x14:
-		psndSFXOn_3D(str_802F6B74, &mario->position);
+		psndSFXOn_3D("SFX_OFF_CLAUD_WIND3", &mario->position);
 		if (cp->field_0xB4 != NULL) {
 			evtEntry(cp->field_0xB4, 0, 0);
 		}
 		img = imgNameToPtr(cp->imgName, inBattle);
-		img->animName = str_8041DCE8;
+		img->animName = "A_2";
 		*(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
 		hitObjFlagOn(cp->hitName, 1);
 		cp->field_0xB8 = 0x3C;
@@ -370,3 +276,84 @@ static USER_FUNC(evt_cloud_main) {
 
 	return 0;
 }
+
+USER_FUNC(evt_cloud_init) {
+	s32 i;
+
+	for (i = 0; i < 16; i++) {
+		cloud[i].flags = 0;
+		sprintf(cloud[i].imgName, "i_name_%1d", i);
+		sprintf(cloud[i].offName, "o_name_%1d", i);
+	}
+	cloud_p = NULL;
+	cloud_once_flag = 0;
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_cloud_ent) {
+	s32* args = event->args;
+	s32 a = evtGetValue(event, args[0]);
+	s32 b = evtGetValue(event, args[1]);
+	s32 c = evtGetValue(event, args[2]);
+	s32 d = evtGetValue(event, args[3]);
+	CloudEntry* cp;
+	s32 i;
+
+	for (i = 0; i < 16; i++) {
+		if (!(cloud[i].flags & 1)) {
+			break;
+		}
+	}
+	if (i >= 16) {
+		return EVT_RETURN_DONE;
+	}
+
+	cp = &cloud[i];
+	cp->flags |= 1;
+	strncpy(cp->animName, "P_oof_cloud_1", 0x20);
+	if (a == 0) {
+		strncpy(cp->mapGrpName, (const char*)b, 0x20);
+	} else {
+		strncpy(cp->mapGrpName, *(const char**)b, 0x20);
+	}
+	strncpy(cp->hitName, (const char*)c, 0x20);
+	cp->field_0xB4 = (void*)d;
+	cp->field_0xA8 = 0xB4;
+	cp->field_0xAC = 0;
+	cp->mode = 0;
+	cp->field_0xB8 = 0;
+	cp->field_0xC0 = 0;
+	cp->field_0xC2 = 0;
+	cp->field_0xB0 = evtEntry(evt_cloud_main_evt, 0, 0);
+	cp->field_0xB0->lwData[0] = (s32)cp;
+	cloud_p = cp;
+	if (a != 0) {
+		cp->field_0xBC = (const char**)b;
+		cp->flags |= 2;
+	}
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_cloud_set_cap_size) {
+	s32* args = event->args;
+	u16 width = evtGetValue(event, args[0]);
+	s32 height = evtGetValue(event, args[1]);
+
+	cloud_p->field_0xC0 = width;
+	cloud_p->field_0xC2 = height;
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_cloud_get_mode) {
+	s32* args = event->args;
+
+	if (cloud_p == NULL) {
+		evtSetValue(event, args[0], -1);
+		return EVT_RETURN_DONE;
+	} else {
+		evtSetValue(event, args[0], cloud_p->mode);
+		return EVT_RETURN_DONE;
+	}
+}
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
