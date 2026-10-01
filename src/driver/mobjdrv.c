@@ -21,10 +21,6 @@
 extern GlobalWork* gp;
 
 // .rodata constants referenced by this file's original.
-extern const Vec vec3_802c3d10;
-extern const Vec vec3_802c3d1c;
-extern const Vec vec3_802c3cc8;
-extern const Vec vec3_802c3cd4;
 extern const f32 float_0_8041a0c8;
 extern const f32 float_0p5_8041a100;
 extern const f32 float_2p5_8041a0e8;
@@ -328,7 +324,6 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     }
 }
 
-// NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 s32 mobjEntry(const char* name, const char* animPoseName) {
     MapObjectWork* wp = mobjGetWork();
     s32 entryCount;
@@ -480,10 +475,6 @@ EventEntry* mobjRunEvent(MapObjectEntry* entry, s32* eventCode) {
     return event;
 }
 
-// Original rounds the fabs result into a fresh f1 (frsp f1, f0) and keeps scale.x
-// in f2; ours rounds in place (frsp f0, f0) and keeps scale.x in f1. Everything
-// else (bbox setup, scale2.y/z, HOBJ_ block, MTX concat, hitObj loop) matches.
-// NONMATCHING (93.35%): register allocation in the scale2.x computation differs.
 void mobjCalcMtx(MapObjectEntry* entry) {
     Mtx mtx;
     Mtx zRot;
@@ -587,7 +578,6 @@ BOOL mobjCheckExec() {
     return FALSE;
 }
 
-// NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
     if (strcmp(entry->animName, "MOBJ_TreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BigTreasureBox") == 0 ||
         strcmp(entry->animName, "MOBJ_GrayTreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BlackTreasureBox") == 0) {

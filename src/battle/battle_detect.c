@@ -378,10 +378,7 @@ void BattleSamplingEnemyUpdate(u8* sampling) {
 // Remaining diff: the default itemDataTable FP block colours its three float temps f3/f4/f2
 // (magic/float_0p1/diff) where the original uses f4/f2/f3; the instruction sequence, stack slots and
 // every other block match. The `e = order[n]` load is fixed (order is s8).
-// NONMATCHING (99.93%): only the default block's f2/f3/f4 colouring differs. Every source shape (named,
-// volatile and MATCH_F32 constants, separate locals, inline helpers, compound assignment, all operand
-// orders and declaration scopes), every opt_*/global_optimizer pragma combination, a whole-file -O4,p
-// build (77%) and compilers GC/1.3-2.7 were tried; the one-block tie-break is inside MWCC's allocator.
+// NONMATCHING (99.93%): only the default block's f2/f3/f4 colouring differs.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
     s32 n;
     s32 e;

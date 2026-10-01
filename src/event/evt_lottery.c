@@ -75,10 +75,12 @@ USER_FUNC(evt_lottery) {
 		}
 	} else {
 #ifdef MUST_MATCH
-		// Match only: two 32-bit stores keep the +0x30/+0x34 folded into the store
-		// displacements with the base at info+arg1*8, as the original does.
-		*(s32*)((u8*)info + arg1 * 8 + 0x34) = 0;
-		*(s32*)((u8*)info + arg1 * 8 + 0x30) = 0;
+		// Match only: splitting the 64-bit zero into two 32-bit stores keeps the
+		// address base as info+arg1*8, as the original does.
+		s32* q = (s32*)((u8*)info + arg1 * 8);
+
+		q[13] = 0;
+		q[12] = 0;
 #else
 		*(OSTime*)((u8*)info + arg1 * 8 + 0x30) = 0;
 #endif

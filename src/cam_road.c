@@ -230,11 +230,7 @@ CamRoadWork* camRoadGetWorkPtr(void) {
 // The clamp's literal (see #ifdef below) restores the original's f0 constant / f2 accumulator / f1 result;
 // the named `float_1_80419558` instead puts the constant in f2. The extra `w` alias in the final else keeps
 // the original's `wp` in r7 across the state-copy loops; without it MWCC reloads wp into r4 and the copies
-// shift registers. `defer_codegen off` is what folds the 1.0 literal onto the named float_1_80419558 pool
-// slot instead of a duplicate @nnn constant. This whole file wants non-deferred codegen (the original .s is
-// in source order, our deferred object is reversed); configure.py's cflags_static_nodefer is the proper fix
-// and makes this pragma a no-op (see REPORT.md).
-#pragma defer_codegen off // fold the 1.0 literal onto float_1_80419558 instead of a duplicate @nnn slot
+// shift registers.
 void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     u32 result;
 

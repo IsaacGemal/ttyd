@@ -232,7 +232,7 @@ static inline void lensflareSetColor6(void) {
 // among them rather than grouped.
 void effLensflareDisp(CameraId cameraId, void* param) {
     CameraEntry* cam;
-    EffectEntry* effect;
+    EffectEntry* effect = param;
     Mtx trans;
     Mtx scale;
     Mtx rot;
@@ -244,7 +244,6 @@ void effLensflareDisp(CameraId cameraId, void* param) {
     s32 i;
     s32 alpha;
 
-    effect = param;
     cam = camGetPtr(cameraId);
     data = effect->userdata;
     frame = ((LensflareData*)data)->field_1C;

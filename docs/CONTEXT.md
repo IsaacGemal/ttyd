@@ -3161,4 +3161,6 @@ index. Found in passing, older than the wave: hei_10's 0.2f is 2 * randf(1.0, 1.
 The 48 closest open dol functions (99.62-99.99%) outside the permuter's queues, 21:08-22:09, from main c0327be, at
 10 agents at a time while the model benchmark held the rest of the key. **24 of 48 reached 100%, 2 improved,
 11 unchanged, 0 worse; 11 agents produced no output** (they hit the tower's ssh switch from Tailscale SSH to OpenSSH)
-and go into the next wave.
+and go into the next wave. unit_party_christine's `lbl_80390B70` (0x80390B70, in-file stand-in for a symbol that is
+not in symbols.txt) is the same 8-byte split issue as #68's scan: the `{ -1.0f, 1.0f }` pair at the end of
+`unk_evt_80390b30` needs its own symbol.

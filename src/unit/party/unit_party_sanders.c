@@ -189,9 +189,9 @@ extern BattleWeapon partyWeapon_SandersSuperBombAttack;
 // 0x803848E0, so the pair has no symbol of its own and dtk names the target reference as
 // attack_audience_event+0x330. The real fix is tools/split_scan.py's fix for sanders (move the
 // chuchurina/sanders `.data` boundary down 8 bytes and let sanders own the pair), same as the nokotarou fix in
-// Grind 28, which needs symbols.txt/splits.txt edits that this task forbids. unit_party_christine.c has the
-// same shape and the same 99.98%; the matching siblings (clauda/vivian/chuchurina/nokotarou/yoshi) have their
-// own `lbl_XXXX` pair symbol directly on the base.
+// Grind 28. unit_party_christine.c has the same shape (it scores 100 with an in-file `lbl_80390B70` base); the
+// matching siblings (clauda/vivian/chuchurina/nokotarou/yoshi) have their own `lbl_XXXX` pair symbol directly
+// on the base.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH
     u8* weaponBase = attack_audience_event_803845A8 + 0x330;

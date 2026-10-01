@@ -173,11 +173,6 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 // low. `half` (MUST_MATCH) pins 0.5 to f24; its definition has to sit before the `field_0x18` sin
 // call so the value stays live and is kept in a callee-saved FPR, which is also what schedules it
 // ahead of the 10.0 load.
-// Also tried: moving the `half` assignment before field_0x1C / after field_0x18, comma-expression
-// side effects inside the field_0x18/field_0x20 operands, inline-helper forms, reusing s/sn for 0.5,
-// a `ten` temp, and the opt_lifetimes/opt_propagation/opt_common_subs/opt_dead_assignments/
-// global_optimizer/peephole/scheduling/defer_codegen/optimize_for_size/fp_contract pragmas. All keep
-// the swap or shift the whole constant colouring down one register.
 // NONMATCHING (99.96%): the f24 (0.5) and f31 (10.0) loop-setup loads are swapped.
 #ifdef MUST_MATCH
 void effFallLeafMain(EffectEntry* effect) {

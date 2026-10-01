@@ -725,7 +725,7 @@ void unk_800c8e74(PartyEntry* party) {
     }
     work->field_110 = flag ? 180.0f : 0.0f;
 }
-#pragma opt_propagation on
+#pragma opt_propagation reset
 
 void unk_800c7c98(PartyEntry* party) {
     PartyEntry* work = party;

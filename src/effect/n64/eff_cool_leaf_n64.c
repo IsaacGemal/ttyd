@@ -145,12 +145,7 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // f30=360.0, f31=10.0. The type-0 loop (and the rest of the function) matches exactly.
 // Adding a local to pin a constant (as effFallLeafMain does with `half`) shifts the
 // type-0 loop too; opt_common_subs/opt_lifetimes/opt_propagation off make it worse.
-// This is the allocator picking the other of two equivalent colourings (same pattern as
-// effConfettiDisp/effSnowDustMain): declaration-order shuffling (60 random permutations),
-// operand swaps, `x +=` vs `= x +`, `30.0 > y`, an if/else chain, reordering the case
-// bodies, and rnd/sin/cos inline-helper forms were all tried and none moves the last four
-// type-1 or the type-2 constants; the .text placement is byte-identical either way.
-// NONMATCHING (99.82%): the type-1/type-2 loop-constant FPRs are permuted.
+// NONMATCHING (99.81%): the type-1/type-2 loop-constant FPRs are permuted.
 void effCoolLeafMain(EffectEntry* effect) {
     effCoolLeafData* data = effect->userdata;
     Vec position;

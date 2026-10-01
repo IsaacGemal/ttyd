@@ -301,7 +301,7 @@ void acrobatMain(EffectEntry* effect) {
 #endif
 // The `i - 1` texid index makes the compiler synthesise a second induction (r29). With the natural
 // `[i - 1]` its latch increment is scheduled after data++ (99.91%); an explicit texIdx gives the
-// original's order. Both forms are gated by MUST_MATCH/else so the trick is visible.
+// original's order.
 void effAcrobatDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	NiceEffectWork* data = effect->userdata;
