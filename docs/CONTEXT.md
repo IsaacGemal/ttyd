@@ -3392,3 +3392,20 @@ Linked: `driver/bgdrv` (#159), `eff_snow_dust_n64` (#160), `eff_akari_pose_n64` 
   - `battle_item_data`: `dat_8041c504` (`ffffff00`) should sit before the string `mist` in `.sdata2` (ours pools it after).
   - `hw_aramdma`: the two static `ARAMTransferQueue`s are laid out `Hi, Lo` in `.bss` where the target has `Lo, Hi`; neither the declaration order nor the branch order of `aramQueueCallback` changes it; `musyx.h` includes `math.h` (its sqrt statics add 32 bytes of `.sdata2`): `#define _MATH_H_` before the includes removes it.
   - `evt_lect_usu`: the unit's `.rodata` split ends at 0x2F04 but its functions' constants (`double_to_int_usu_00006728` at 0x2F20, `zero_usu_00006730`, ...) sit after it, in the next unit's range: the split is too short (a `splits.txt` change: needs Isaac); the named `vec3_usu_*`/`dat_usu_*` definitions were wrong (they are the compound-literal templates of the code: removing them gives a `.rodata` equal for the first 716 bytes).
+
+## Wave 52, batch 1 (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- 41 of wave 52's 61 agents (see "Wave 51, batch 2, and wave 52"), collected at 09:15 onto main b0396e7 by
+  sequential merges: 8,627 -> 8,659 functions. unit_boss_gundan_zako_group2 gets 8 (its file had been left out of
+  wave 50 for lost header edits; the launcher now brings `rels/*/include` back as a patch). bom/bom_01's header
+  signature changes broke bom.c, so both stay as on main; the greedy revert cleared seven section drops for three
+  functions.
+- Review (`scratch/wave52/review1.md`): an agent rewrote effCalcMayaAnimMatrix with the same defects #142 removed
+  (unscaled s16 keys, a weight's sign), so it is unwritten again; **an agent prompt should list functions a review
+  took out, or the next wave writes them back**. `_chuchu_item_steal` tested and cleared unit flag 0x4000 where
+  retail uses 0x40000000 (`lis r4, 0x4000`). sac_genki multiplies by 60 twice as retail (one fold to 3600 differs
+  by an ulp). evt_cam, hitdrv, eff_opuku_wcurtain, msgdrv, battle_ac and jin_07 had nothing new at 100% and
+  carried unused helpers, externs or wrong notes: as on main.
+- **Follow-up (form, behaviour equal):** match-only shapes outside MUST_MATCH in gcDvdCheckThread (`s32 width`,
+  `half = 0.5f`), unit_boss_gundan_zako_group2's shake_ceil (`volatile` reads) and its ceil functions' raw-offset
+  macros on `work_20_bss_6C`, chuchurina's redundant `else if (list != NULL)`.
