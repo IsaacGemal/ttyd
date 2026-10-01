@@ -962,7 +962,7 @@ config.libs = [
             Object(Matching, "musyx/runtime/snd_service.c"),
             Object(Matching, "musyx/runtime/HARDWARE.C"),
             Object(Matching, "musyx/runtime/dsp_import.c"),
-            Object(NonMatching, "musyx/runtime/hw_aramdma.c"),
+            Object(Matching, "musyx/runtime/hw_aramdma.c"),
             Object(Matching, "musyx/runtime/hw_dolphin.c"),
             Object(Matching, "musyx/runtime/hw_memory.c"),
             Object(Matching, "musyx/runtime/CheapReverb/creverb_fx.c"),

@@ -55,7 +55,8 @@ static STREAM_BUFFER* aramIdleStreamBuffers;
 
 static void InitStreamBuffers();
 
-static inline void aramQueueInit() {
+// Plain `static` as in the reference, not `static inline`: the .bss order of the two queues follows the first emitted function that uses them.
+static void aramQueueInit() {
   aramQueueLo.write = aramQueueLo.valid = 0;
   aramQueueHi.write = aramQueueHi.valid = 0;
 }
