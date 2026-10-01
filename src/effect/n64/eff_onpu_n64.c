@@ -16,8 +16,6 @@ u32 size16x32_tex16x32_vtx[14] = {
     0x00000200, 0x04000000, 0x00FFFFF8, 0x00200000,
     0x00000400, 0x000000FF,
 };
-__declspec(section ".data") f32 lbl_803A33D8[2] = { -1.0f, 1.0f };
-
 // .sdata2 float constants (named after their original addresses).
 
 // .rodata

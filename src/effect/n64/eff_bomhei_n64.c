@@ -34,10 +34,6 @@ static u32 size32x32_tex32x32_vtx[0xE] = {
 	0x00000400, 0x000000FF,
 };
 
-__declspec(section ".data") u32 lbl_8039A9E0[2] = {
-	0xBF800000, 0x3F800000,
-};
-
 static inline Vec initializeVec(Vec* input) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;

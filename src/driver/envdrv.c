@@ -12,6 +12,9 @@
 #include <stdlib.h>
 #include "math_ext.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_80398960[2] = { 0xBF800000, 0x3F800000 };
+
 extern GlobalWork* gp;
 extern const f32 float_1000_8041e540;
 extern const f32 float_127_8041e544;

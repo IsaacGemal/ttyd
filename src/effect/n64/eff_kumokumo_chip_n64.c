@@ -20,16 +20,19 @@ __declspec(section ".sdata") GXColor unk_80423198;
 // makes every `1.0f` in this TU reference the symbol.
 
 // Local vertex data (0x38 bytes); the original symbol is local to this unit's asm.
-static u32 size32x32_tex32x32_vtx[0x48 / 4] = {
+static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
 	0xFFF00000, 0x00000000, 0x00000000, 0x00FF0010,
 	0x00000000, 0x04000000, 0x000000FF, 0x00100020,
 	0x00000400, 0x04000000, 0x00FFFFF0, 0x00200000,
 	0x00000400, 0x000000FF,
 };
 
-__declspec(section ".data") u32 lbl_803A2280[2] = {
-    0xBF800000, 0x3F800000,
-};
+// 16 zero bytes after the vertex table (an all-zero object needs explicit_zero_data to stay in .data).
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_803A2270_data[4] = { 0, 0, 0, 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // .sbss2 colour scratch, global to this unit's asm
 

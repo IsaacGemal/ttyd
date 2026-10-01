@@ -374,10 +374,6 @@ EVT_BEGIN(destroy_event)
 EVT_END()
 
 // TODO: type
-__declspec(section ".data") u32 lbl_80399940[2] = {
-    0xBF800000, 0x3F800000,
-};
-
 static EVT_BEGIN(damage_event)
     SET_VALUE(LW(10), -2)
     SET_VALUE(LW(11), 1)

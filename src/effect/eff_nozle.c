@@ -8,6 +8,9 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803AE260[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 typedef struct effNozleEntryData {
 	f32 field_0x00; // 0x00
 	f32 field_0x04; // 0x04
@@ -63,7 +66,6 @@ extern const f32 float_0p004_80421260;
 extern const f32 float_20_8042126c;
 extern const u32 unk_80423300;
 
-extern u8 lbl_803AE260[];
 // The original reaches this file's tables from its .data section anchor, lbl_803AE260.
 #ifdef MUST_MATCH
 #define DATA_AT(off, sym) (base + (off))

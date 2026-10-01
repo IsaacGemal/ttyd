@@ -14,7 +14,9 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-extern u8 lbl_803AC080[];
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803AC080[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 extern u8 diamond_1_color0_tbl[];
 extern u8 diamond_2_color0_tbl[];
 extern u8 diamond_3_color0_tbl[];

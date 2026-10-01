@@ -10,6 +10,9 @@
 #include "driver/msgdrv.h"
 #include <string.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_80376320[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 // sdata2 float constants live in this file's .sdata2 (see the original's data).
 extern const f32 float_30_8041dcfc;
 extern const f32 float_15_8041dd00;
@@ -40,7 +43,6 @@ extern BattleWeapon partyWeapon_ClaudaNormalAttack;
 extern BattleWeapon partyWeapon_ClaudaBreathAttack;
 extern BattleWeapon partyWeapon_ClaudaPredationAttack;
 extern BattleWeapon partyWeapon_ClaudaKumogakureAttack;
-extern u8 lbl_80376320[]; // this unit's .data weapon tables
 
 #define TECH_MENU_ENTRY(table)                                                        \
     cmd->mWeaponTable[*count].mIndex = -1;                                            \

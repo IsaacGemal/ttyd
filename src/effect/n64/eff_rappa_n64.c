@@ -27,10 +27,6 @@ static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
 	0x00000400, 0x000000FF,
 };
 
-__declspec(section ".data") u32 lbl_803A4A60[2] = {
-    0xBF800000, 0x3F800000,
-};
-
 // .sdata: byte-indexed color rotation table (36 bytes).
 static u8 color_rotation_data[40] = {
 	0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,

@@ -7,6 +7,9 @@
 #include <dolphin/mtx.h>
 #include <math.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803ADD20[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 extern const f32 float_deg2rad_80420f70;
 extern const f32 float_6p2832_80420fa4;
 extern const f32 float_360_80420fa8;
@@ -44,7 +47,6 @@ extern const f32 float_0p7_80420f9c;
 extern const GXColor dat_80420f64;
 extern const GXColor dat_80420f68;
 extern const GXColor dat_80420f6c;
-extern u8 lbl_803ADD20[];
 extern u8 shibuki_normal_tbl[];
 extern u8 shibuki_color0_tbl[];
 extern u8 shibuki_dl_1_0[];

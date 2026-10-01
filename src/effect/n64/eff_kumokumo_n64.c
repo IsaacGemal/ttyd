@@ -9,6 +9,9 @@
 #include "eff/eff_n64.h"
 #include "math_ext.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803A2280[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 
 extern const f32 float_deg2rad_8041f580;
 extern const f32 float_90_8041f584;
@@ -30,7 +33,6 @@ extern const f32 float_0p018182_8041f5c8;
 extern const f32 float_0p04_8041f5cc;
 extern const f32 float_5_8041f59c;
 extern const f32 float_0p5_8041f5a8;
-extern u8 lbl_803A2280[];
 extern u32 unk_804231a0;
 extern u32 unk_804231a4;
 extern const u32 dat_8041f578;

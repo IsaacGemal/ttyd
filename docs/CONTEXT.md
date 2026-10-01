@@ -3164,3 +3164,12 @@ The 48 closest open dol functions (99.62-99.99%) outside the permuter's queues, 
 and go into the next wave. unit_party_christine's `lbl_80390B70` (0x80390B70, in-file stand-in for a symbol that is
 not in symbols.txt) is the same 8-byte split issue as #68's scan: the `{ -1.0f, 1.0f }` pair at the end of
 `unk_evt_80390b30` needs its own symbol.
+
+## Grind 41: the 8-byte `.data` boundary fixed for the 32 units of split_scan.py (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Isaac approved the splits.txt edit for this line of work (asked in chat; the orchestrator relayed the plan). `tools/split_pair_fix.py` (new) moves, for each of the 32 units `tools/split_scan.py` lists, the end of its `.data` and the start of the next unit's `.data` 8 bytes down: the `{-1.0f, 1.0f}` pair becomes the first object of the next unit's `.data`, as in nokotarou (Grind 28).
+
+- Linked units that defined the pair at the end of their own `.data` (battle_party, eff_bomhei_n64, eff_fire_spark_n64, eff_kumokumo_chip_n64, eff_onpu_n64, eff_rappa_n64, eff_snowman_n64, evt_memcard, unit_bomzou, unit_koura) lose that definition; unlinked sources that carried one lose it too (eff_recover_heart_n64, battle_attack_audience). The next unit's source now defines the pair as its first `.data` object, with the type its `extern`/header declaration used (`u8[8]` for the unit_party_* and eff_* anchors, `f32[2]`, `u32[2]`); the extern anchors in those files are gone. `eff_hokori_n64` (linked) got its first pair this way.
+- A 16-byte and a 12-byte all-zero gap that had been folded into the preceding array (`eff_kumokumo_chip_n64` after its vertex table, `evt_memcard` after `evt_memcard_save`) are separate `explicit_zero_data` + `force_active` objects now: with the shifted split the target's symbol for the array is 8 bytes shorter and objdiff compares per symbol.
+- Evidence: `ci.py` passes with the dol and every REL byte-identical (`build.sha1`), TOTAL matched_data 69.74 -> 69.81. matched_data of the 31 touched units moves by a fraction of a percent (the 8-byte pair changes each unit's data total), excused one by one with `--allow-regress`; none loses bytes.
+- **Needs Isaac / follow-up:** the `weaponBase`/`lbl_ + offset` anchors in the next units' code (unit_party_yoshi/chuchurina/vivian/clauda, eff_* `lbl_` base registers) still read the pair through `lbl_XXXX + 0x...`; with the pair now in the same unit the code can name the objects directly. That is a per-function rewrite (each is a MUST_MATCH hack with a score to protect), not done here.

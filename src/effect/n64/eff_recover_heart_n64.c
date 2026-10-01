@@ -9,6 +9,9 @@
 #include <dolphin/mtx.h>
 #include <math_ext.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_803A4A60[2] = { 0xBF800000, 0x3F800000 };
+
 // .rodata
 const Vec vec3_802fb4c8 = { 0.0f, 0.0f, 0.0f };
 // The int-to-float magic double is MWCC's own pool entry; declaring it (rather than
@@ -43,7 +46,6 @@ extern u32 unk_80423238;
 // defined in eff_rappa_n64.c (the previous unit's last object) and only its address
 // is used here.
 #ifdef MUST_MATCH
-extern u32 lbl_803A4A60[];
 #define VTX(off, name) ((effVtxArray*)(dataBase + (off)))
 #else
 #define VTX(off, name) ((effVtxArray*)(name))
@@ -89,9 +91,6 @@ u32 size16x24_tex32x32_r_flower_vtx[14] = {
 	0xFFFCFFF1, 0x00000000, 0x000024BE, 0x14FF0010, 0xFFF10000, 0x04000000, 0x24BE14FF,
 	0x00100009, 0x00000400, 0x040024BE, 0x14FFFFFC, 0x00090000, 0x00000400, 0x24BE14FF,
 };
-
-// Last object of this unit's .data; effReleaseDisp reaches its own .data through it.
-__declspec(section ".data") f32 lbl_803A4C60[2] = { -1.0f, 1.0f };
 
 typedef struct RecoverHeartData {
 	s32 type;       // 0x00

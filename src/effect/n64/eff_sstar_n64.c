@@ -14,7 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern f32 lbl_803A5C90[];
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") f32 lbl_803A5C90[2] = { -1.0f, 1.0f };
+
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)

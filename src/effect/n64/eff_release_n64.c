@@ -7,6 +7,9 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") f32 lbl_803A4C60[2] = { -1.0f, 1.0f };
+
 extern const u32 dat_8041fb38;
 extern const u32 unk_80423240;
 extern const u32 unk_80423244;

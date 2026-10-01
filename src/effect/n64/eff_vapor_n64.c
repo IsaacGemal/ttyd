@@ -3,6 +3,9 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803A85F8[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effVaporN64Data* data;
@@ -167,7 +170,6 @@ static u32 size64x64_tex32x32_vtx[0x118 / 4] = {
 
 #ifdef MUST_MATCH
 // The original reaches the tables from the address 8 bytes before its .data.
-extern u8 lbl_803A85F8[];
 #endif
 
 // The original materialises each table base (base+offset) before an indexed load;

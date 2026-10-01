@@ -1292,15 +1292,12 @@ s32 evt_memcard_save[] = {
     (s32)evt_msg_continue,
     0x00000002,
     0x00000001,
-    // 12-byte zero gap (0x803B70B4) that would otherwise be dropped as an
-    // unreferenced all-zero object; folded into the save script.
-    0x00000000,
-    0x00000000,
-    0x00000000,
 };
 
-__declspec(section ".data") s32 lbl_803B70C0[] = {
-    0xBF800000,
-    0x3F800000,
-};
+// 12-byte zero gap (0x803B70B4) after the save script: an all-zero object that needs explicit_zero_data to stay in .data.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_803B70B4_data[3] = { 0, 0, 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 

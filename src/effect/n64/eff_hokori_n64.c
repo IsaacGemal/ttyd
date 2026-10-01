@@ -17,6 +17,7 @@
 // lbl_8039D5D0 (declared in the header) in effHokoriDisp under MUST_MATCH.
 // The unit's own .data is reached only through lbl_8039D5D0 (the previous unit's last object), so keep it linked.
 #pragma force_active on
+__declspec(section ".data") u32 lbl_8039D5D0[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 __declspec(section ".data") f32 lbl_8039D5E0[2] = { 1.0f, -1.0f };
 __declspec(section ".data") static f32 one_negone_373[2] = { 1.0f, -1.0f };

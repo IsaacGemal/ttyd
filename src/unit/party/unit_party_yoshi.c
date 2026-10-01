@@ -11,6 +11,9 @@
 #include "mario/mario_pouch.h"
 #include "mario/mario_party.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_80379A00[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 // A pose-sound table entry. No header declares this type; the layout matches the
 // 0x14-byte entries of `posesound_normal_attack` and the fields BtlUnit_ControlPoseSoundMain
 // reads (pose name 0x0, volume 0x4, callback 0x8, sound name 0xC, pitch 0x10, flags 0x12).
@@ -85,7 +88,6 @@ extern BattleWeapon partyWeapon_YoshiNormalAttack;
 extern BattleWeapon partyWeapon_YoshiNomikomi_Shot;
 extern BattleWeapon partyWeapon_YoshiEggAttack_Minimini;
 extern BattleWeapon partyWeapon_YoshiCallGuard;
-extern u8 lbl_80379A00[]; // this unit's .data weapon tables
 
 #define TECH_MENU_ENTRY(table)                                                        \
     cmd->mWeaponTable[*count].mIndex = -1;                                            \

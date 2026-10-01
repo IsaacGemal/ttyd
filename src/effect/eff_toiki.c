@@ -4,6 +4,9 @@
 #include "memory.h"
 #include "math_ext.h"
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_803B2FA0[2] = { 0xBF800000, 0x3F800000 };
+
 const char str_80421C90[] = "Toiki";
 const Vec vec3_80300230 = { 0.0f, 0.0f, 0.0f };
 

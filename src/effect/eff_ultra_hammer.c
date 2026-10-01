@@ -11,6 +11,9 @@
 #include <string.h>
 #include <stdio.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u8 lbl_803B70C0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
 // These error strings and the copy-clear colour live in unk_0x8025de70.c (same data blob).
 extern const char str_803019E0[24];
 extern const char str_803019F8[24];
@@ -725,7 +728,6 @@ inline Vec initializeVec(Vec* input) {
 #ifdef MUST_MATCH
 // lbl_803B70C0 is evt_memcard's last object; the original reaches the wakka tables that follow it
 // as offsets from that symbol.
-extern u8 lbl_803B70C0[];
 #define DATA_AT(off, sym) (base + (off))
 #else
 #define DATA_AT(off, sym) ((u8*)(sym))

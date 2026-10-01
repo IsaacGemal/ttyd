@@ -12,6 +12,9 @@
 #include "battle/battle_weapon_power.h"
 #include <stdio.h>
 
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") u32 lbl_80399940[2] = { 0xBF800000, 0x3F800000 };
+
 #ifdef MUST_MATCH
 // For the struct-copy that BattleAudience_Case_FallObject_Aud uses to load its two const offset
 // tables; MWCC only emits the paired lwzu/stwu copy loop for a struct assignment, not for memcpy.

@@ -9,7 +9,9 @@
 #endif
 #include <string.h>
 
-extern f32 lbl_8039CDA8[];
+// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+__declspec(section ".data") f32 lbl_8039CDA8[2] = { -1.0f, 1.0f };
+
 
 // .sbss2 scratch colors referenced by the original display code.
 GXColor unk_80423110;
