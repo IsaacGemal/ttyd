@@ -953,7 +953,7 @@ config.libs = [
             Object(Matching, "musyx/runtime/synth_adsr.c"),
             Object(Matching, "musyx/runtime/synth_vsamples.c"),
             Object(Matching, "musyx/runtime/s_data.c"),
-            Object(NonMatching, "musyx/runtime/hw_dspctrl.c"),
+            Object(Matching, "musyx/runtime/hw_dspctrl.c"),
             Object(Matching, "musyx/runtime/hw_volconv.c"),
             Object(Matching, "musyx/runtime/snd3d.c"),
             Object(Matching, "musyx/runtime/snd_init.c"),
