@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "manager/dvdmgr.h"
 #include "system.h"
 #include <dolphin/os.h>
 #include <string.h>
@@ -28,14 +29,22 @@ s32 size_table[6][2] = {
 };
 static SmartWork* wp = &smartWork;
 
+// the 4 bytes after wp in the target's .sdata (gap_07_8040F50C_sdata)
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_after_wp = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
 //.sbss
-u16 count;
-BOOL g_bFirstSmartAlloc;
-u32 mapalloc_size;
-void* mapalloc_base_ptr;
-void* heapEnd[6];
-void* heapStart[6];
+// declared last to first: the compiler lays the uninitialised globals out in reverse
 OSHeapHandle heapHandle[6];
+void* heapStart[6];
+void* heapEnd[6];
+void* mapalloc_base_ptr;
+u32 mapalloc_size;
+BOOL g_bFirstSmartAlloc;
+u16 count;
 
 // Map-allocator bookkeeping for the malloc heap, kept in an inlined helper: with the
 // helper's `entry` declared before `size` MWCC colors them r23/r22, as the original does.
@@ -264,8 +273,8 @@ void _mapFree(void* alloc) {
 
 // NONMATCHING (75.04%): 13 instructions differ, 24 missing, 75 extra, plus register differences.
 void smartInit(void) {
-	void* ptr;
 	u32 size;
+	void* ptr;
 	smartEntry* entry;
 	int i;
 
@@ -282,7 +291,7 @@ void smartInit(void) {
 	memset(wp->ptr, 0, (u32)heapEnd[5] - (u32)heapStart[5] - 32);
 	memset(wp->work, 0, sizeof(wp->work));
 	entry = wp->work;
-	for (i = 0; i < 0x800; i++) {
+	for (i = 0x800; i != 0; i--) {
 		entry->next = entry + 1;
 		entry->prev = entry - 1;
 		entry++;
@@ -297,18 +306,16 @@ void smartInit(void) {
 
 // NONMATCHING (59.39%): 1 instruction differs, 9 missing, 24 extra, plus register differences.
 void L_smartReInit(void) {
-	u32 size;
 	smartEntry* entry;
 	int i;
 
 	wp->field_0xE008 = 0;
 	wp->field_0xE00C = 0;
-	size = (u32)heapEnd[5] - (u32)heapStart[5] - 32;
-	wp->bytesLeft = size;
-	memset(wp->ptr, 0, size);
+	wp->bytesLeft = (u32)heapEnd[5] - (u32)heapStart[5] - 32;
+	memset(wp->ptr, 0, (u32)heapEnd[5] - (u32)heapStart[5] - 32);
 	memset(wp->work, 0, sizeof(wp->work));
 	entry = wp->work;
-	for (i = 0; i < 0x800; i++) {
+	for (i = 0x800; i != 0; i--) {
 		entry->next = entry + 1;
 		entry->prev = entry - 1;
 		entry++;
@@ -531,9 +538,52 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 	}
 }
 
-// NONMATCHING (0.88%): empty placeholder, not decompiled yet.
 void smartGarbage(void) {
+	void* src;
+	void* space;
+	smartEntry* cur;
+	smartEntry* prev;
 
+	sysWaitDrawSync();
+	if (wp->field_0xE008 != 0) {
+		wp->bytesLeft = 0;
+	}
+	else {
+		wp->bytesLeft = (u32)heapEnd[5] - (u32)heapStart[5] - 32;
+	}
+	prev = NULL;
+	space = wp->ptr;
+	for (cur = wp->field_0xE008; cur; prev = cur, cur = cur->next) {
+		src = cur->address;
+		if (src != space) {
+			if (cur->field_0x8) {
+				if (cur->field_0x8->state == 3 && cur->field_0x8->entry != 0
+				    && OSGetCurrentThread() != &dvdmgr_thread) {
+					if (prev) {
+						prev->field_0x10 = (u32)src - (u32)space;
+					}
+					else {
+						wp->bytesLeft = (u32)src - (u32)space;
+					}
+					space = (void*)((u32)cur->address + cur->size);
+					cur->field_0x10 = 0;
+					continue;
+				}
+				fileGarbageMoveMem(space, cur->field_0x8);
+			}
+			else {
+				memmove(space, src, cur->size);
+				cur->address = space;
+			}
+		}
+		cur->field_0x10 = 0;
+		space = (void*)((u32)cur->address + cur->size);
+	}
+	if (wp->field_0xE00C) {
+		wp->field_0xE00C->field_0x10 = (u32)wp->ptr + ((u32)heapEnd[5] - (u32)heapStart[5] - 32) - (u32)wp->field_0xE00C->address
+		                              - wp->field_0xE00C->size;
+	}
+	DCFlushRange(wp->ptr, (u32)heapEnd[5] - (u32)heapStart[5] - 32);
 }
 #pragma dont_inline reset
 

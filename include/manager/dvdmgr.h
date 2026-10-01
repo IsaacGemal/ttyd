@@ -1,10 +1,13 @@
 #pragma once
 
 #include <dolphin/dvd.h>
+#include <dolphin/os.h>
 
 #define DVDEntryCount 0x100
 
 typedef BOOL (*DVDMgrCallback)(void);
+
+extern OSThread dvdmgr_thread;
 
 typedef enum DVDFlags {
 	DVDMGR_READING = (1 << 0),
