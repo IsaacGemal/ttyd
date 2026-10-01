@@ -343,3 +343,10 @@ inline Vec initializeVec(Vec* input) {
     temp.z = input->z;
     return temp;
 }
+
+// 24 zero bytes that end the unit's .data: an all-zero object needs explicit_zero_data to stay in .data and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_803AE248_data[6] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
