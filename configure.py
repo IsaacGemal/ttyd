@@ -1014,7 +1014,7 @@ config.libs = [
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/serpoll.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/usr_put.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/dispatch.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/msghndlr.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/msghndlr.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/support.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/mutex_TRK.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/notify.c"),
