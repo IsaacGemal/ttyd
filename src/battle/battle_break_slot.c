@@ -583,7 +583,13 @@ void BattleBreakSlot_Main(void) {
                 BattleAudienceSoundStop(13);
             }
         }
+#ifdef MUST_MATCH
+        // retail tests j here, the audience loop's counter, which is only assigned on a field_08 == 210 frame: on the
+        // frame-220 call it reads an uninitialised local (rule 7: kept only under MUST_MATCH)
         if (slot->field_08 == 220 && j == 200) {
+#else
+        if (slot->field_08 == 220) {
+#endif
             btl_camera_set_mode(0, 0);
             btl_camera_noshake(0);
         }
