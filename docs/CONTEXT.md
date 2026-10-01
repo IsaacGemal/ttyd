@@ -3119,3 +3119,10 @@ TODO.
   gate the remaining battle/ac functions: their gap is register allocation. The wave-24 report of
   battleAcDisp_GaugeTiming2 at 100% under -O2,p does not reproduce (both functions of the unit drop under -O2).
 - **Review needed**: compiler-flag changes wait for Isaac's morning review.
+
+## Standing priority: match first, link later (2026-09-30, Isaac)
+
+Getting every function to 100% is the goal; linking every unit is secondary and comes as a cleanup phase once units
+are fully matched (data, splits and function order are mostly mechanical by then). Waves, the permuter and model
+choices are judged by matched functions; linking work happens when it is cheap (autolink, a unit one fix away) or
+when a unit is already 100% matched.
