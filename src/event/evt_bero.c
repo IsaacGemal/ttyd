@@ -306,12 +306,12 @@ USER_FUNC(evt_bero_get_info) {
 	BeroEntry* entry;
 	HitEntry* hit;
 	s32* switches;
-	s32 num, val;
 	int i;
 
 	for (i = 0; i < 16; i++) {
-		table[i] = 0;
+		*table++ = 0;
 	}
+	table = BeroINFOARR;
 	for (entry = (BeroEntry*)event->lwData[0];; entry++) {
 		hit = hitNameToPtr(entry->hitName);
 		if (!entry->hitName) {
@@ -323,18 +323,18 @@ USER_FUNC(evt_bero_get_info) {
 	}
 	entry = (BeroEntry*)event->lwData[0];
 	switches = BeroSW;
-	num = 0;
+	i = 0;
 	while (1) {
 		if (!entry->hitName) {
 			break;
 		}
 		*table = entry;
-		switches[num] = -1;
+		switches[i] = -1;
 		table++;
-		num++;
+		i++;
 		entry++;
 	}
-	BeroNUM = num;
+	BeroNUM = i;
 	BeroEXEC = 0;
 	return EVT_RETURN_DONE;
 }
@@ -799,20 +799,25 @@ USER_FUNC(bero_get_position_pipe_pure) {
 	a = evtGetValue(event, args[0]);
 	b = (s32)evtGetFloat(event, args[1]);
 	kind = event->lwData[5];
-	bero_get_position_pipe_sub(a, b, event->lwData[3], event->lwData[5], &start, &end);
+	bero_get_position_pipe_sub(a, b, event->lwData[3], kind, &start, &end);
 	BeroSX = start.x;
 	BeroSY = kind == 8 ? start.y - float_37p5_8041a408 : start.y;
 	BeroSZ = start.z;
 	BeroEX = end.x;
-	BeroEY = kind == 8 ? end.y - float_37p5_8041a408 : end.y;
+	if (kind == 8) {
+		BeroEY = end.y - float_37p5_8041a408;
+	} else {
+		BeroEY = end.y;
+	}
 	BeroEZ = end.z;
 	N_marioSetBottomlessRespawnPosOnBeroEntry(BeroEX, BeroEY, BeroEZ);
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (98.29%): the local names[] template is emitted as an anonymous .rodata
-	// symbol (@NNN) instead of jumptable_802C4970, and the enter/exitEvent ternaries branch
-	// with beq/b instead of the original's bne (register allocation / branch layout).
+// NOTE (100%): the local names[] backing store is emitted as an anonymous .rodata symbol
+// (@NNN) instead of the original's local jumptable_802C4970; objdiff scores this 100% but
+// still flags the two relocations. The enter/exitEvent null-checks are shaped for match
+// only (see the MUST_MATCH comments).
 USER_FUNC(evt_bero_get_info_num) {
 	BeroEntry* entry;
 	s32 kind;
@@ -849,7 +854,18 @@ USER_FUNC(evt_bero_get_info_num) {
 	}
 	event->lwData[5] = kind;
 	event->lwData[6] = (s32)&entry->field_0xC;
+#ifdef MUST_MATCH
+	// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+	{
+		s32* ev = entry->enterEvent;
+		if (ev == NULL) {
+			ev = default_entevt;
+		}
+		event->lwData[7] = (s32)ev;
+	}
+#else
 	event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
+#endif
 	event->lwData[8] = 0xffff0000;
 	event->lwData[9] = BeroSW[id];
 	event->lwData[10] = entry->field_0x20;
@@ -872,7 +888,18 @@ USER_FUNC(evt_bero_get_info_num) {
 			break;
 		}
 	}
+#ifdef MUST_MATCH
+	// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+	{
+		s32* ev = entry->exitEvent;
+		if (ev == NULL) {
+			ev = default_outevt;
+		}
+		event->lwData[11] = (s32)ev;
+	}
+#else
 	event->lwData[11] = entry->exitEvent ? (s32)entry->exitEvent : (s32)default_outevt;
+#endif
 	event->lwData[12] = 0xffff0000;
 	event->lwData[13] = (s32)entry->nextareaArg1;
 	event->lwData[14] = (s32)entry->nextareaArg2;
@@ -1017,7 +1044,6 @@ USER_FUNC(bero_get_position_normal) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.83%): 1 instruction differs, 2 extra, plus register differences.
 void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end) {
 	f32 hitX = 0.0f;
 	f32 hitY = 0.0f;
@@ -1026,6 +1052,11 @@ void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end
 	f32 hitNX;
 	f32 hitNY;
 	f32 hitNZ;
+#ifdef MUST_MATCH
+	// MUST_MATCH: keeping hitY in a plain temp stops the compiler from reloading it from its
+	// stack slot between the two stores (the original loads it once); the natural form is below.
+	f32 y;
+#endif
 	f32 off = 20.0f;
 
 	switch (d) {
@@ -1050,8 +1081,14 @@ void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end
 			hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
 			               start->x, start->y, start->z, 0.0f, -1.0f, 0.0f);
 		}
+#ifdef MUST_MATCH
+		y = hitY;
+		start->y = y;
+		end->y = y;
+#else
 		start->y = hitY;
 		end->y = hitY;
+#endif
 		break;
 	case 9:
 		b = -b;
@@ -1069,7 +1106,6 @@ void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end
 		}
 		break;
 	case 7:
-	case 0xA:
 	case 0x2710:
 	default:
 		hitObjGetPos((const char*)c, start);

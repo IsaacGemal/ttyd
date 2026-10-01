@@ -325,21 +325,22 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     return 0;
 }
 
-// NONMATCHING (98.64%): 2 instructions differ, plus register differences.
+// NONMATCHING (99.28%): stack layout, the a/b and radius/scale/threshold registers and the inline camGetPtr
+// all match; only the preheader's `li r29,1` / `addi r30,r30,0x50` pair is scheduled in the opposite order
+// (ours emits the node increment before the counter init).
 s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     EffectEntry* efp = getKoopaFireEfp();
     KpaFireNode* root;
     KpaFireNode* node;
-    CameraEntry* cam;
-    Mtx m0, m1, m2, m3;
-    Vec v;
-    Vec v0;
+    Mtx m2, m0, m1, m3;
     Vec out;
     Vec pos;
     Vec diff;
-    f32 radius;
-    f32 scale;
+    Vec v0;
+    Vec v;
     f32 threshold;
+    f32 scale;
+    f32 radius;
     s32 i;
 
     camGetPtr(4);
@@ -354,8 +355,7 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     root = efp->userdata;
     radius = root->unk40;
     PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
-    cam = camGetPtr(4);
-    PSMTXRotRad(m1, 0x79, (root->unk48 - cam->viewYaw) * float_deg2rad_80420eb4);
+    PSMTXRotRad(m1, 0x79, (root->unk48 - camGetPtr(4)->viewYaw) * float_deg2rad_80420eb4);
     if (root->unk48 > float_90_80420eb8 && root->unk48 < float_270_80420ebc) {
         PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
     } else {

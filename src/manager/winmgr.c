@@ -214,54 +214,80 @@ void winMgrReInit(void) {
     memset(wp->mEntries, 0, wp->mNumEntries * sizeof(WinMgrEntry));
 }
 
-// TODO: finish
-// NONMATCHING (98.56%): 3 missing, plus register differences.
+static inline void winMgrDispWaku1(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
+    GXColor color = *base;
+    color.a = *(s32*)&entry->field_0xC;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + (entry->field_0x20 - 150) / 2),
+                           (f32)(entry->field_0x1C + 14), 150.0f, 28.0f, 8.0f);
+}
+
+static inline void winMgrDispWaku3a(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
+    GXColor color = *base;
+    color.a = *(s32*)&entry->field_0xC;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + 10), (f32)(entry->field_0x1C + 14),
+                           100.0f, 28.0f, 8.0f);
+}
+
+static inline void winMgrDispWaku3b(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
+    GXColor color = *base;
+    color.a = *(s32*)&entry->field_0xC;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + entry->field_0x20 / 2 - 10),
+                           (f32)(entry->field_0x1C + 14), 100.0f, 28.0f, 8.0f);
+}
+
+static inline void winMgrDispWaku4(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
+    GXColor color = *base;
+    color.a = *(s32*)&entry->field_0xC;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)(entry->field_0x18 + (entry->field_0x20 * 3 / 5 - 120) * 2 / 3),
+                           (f32)(entry->field_0x1C + 14), 120.0f, 28.0f, 8.0f);
+}
+
+static inline void winMgrDispWaku5(Mtx mtx, WinMgrEntry* entry, const GXColor* base) {
+    GXColor color = *base;
+    color.a = *(s32*)&entry->field_0xC;
+    windowDispGX2_Waku_col(mtx, 0, color,
+                           (f32)(entry->field_0x18 + entry->field_0x20 * 3 / 5 + (entry->field_0x20 * 2 / 5 - 85) / 3),
+                           (f32)(entry->field_0x1C + 14), 85.0f, 28.0f, 8.0f);
+}
+
+// inlined helpers build the colour first and make the call, keeping the local below the by-value copy
+static inline void winMgrDispWaku0(Mtx mtx, WinMgrEntry* entry) {
+    GXColor color = unk_80423330;
+    color.r = entry->description->field_0x1C[0];
+    color.g = entry->description->field_0x1C[1];
+    color.b = entry->description->field_0x1C[2];
+    color.a = *(s32*)&entry->field_0xC;
+    windowDispGX2_Waku_col(mtx, 0, color, (f32)entry->field_0x18, (f32)entry->field_0x1C,
+                           (f32)entry->field_0x20, (f32)entry->field_0x24, 20.0f);
+}
+
+// The colour must be built from inside the inlined helper that makes the call (helper local below the
+// by-value copy), otherwise the six by-value GXColor stack slots are grouped instead of paired (99.21%).
 void winMgrDisp(CameraId camId, void* param) {
     Mtx rotmtx, scalemtx;
     WinMgrEntry* entry = (WinMgrEntry*)param;
-    GXColor color;
 
     PSMTXRotRad(rotmtx, 'z', entry->rotation * 0.017453292f);
     PSMTXScale(scalemtx, entry->scale, entry->scale, entry->scale);
     PSMTXConcat(rotmtx, scalemtx, scalemtx);
 
-    color = unk_80423330;
-    color.r = entry->description->field_0x1C[0];
-    color.g = entry->description->field_0x1C[1];
-    color.b = entry->description->field_0x1C[2];
-    color.a = *(s32*)&entry->field_0xC;
-    windowDispGX2_Waku_col(scalemtx, 0, color, (f32)entry->field_0x18, (f32)entry->field_0x1C,
-                           (f32)entry->field_0x20, (f32)entry->field_0x24, 20.0f);
+    winMgrDispWaku0(scalemtx, entry);
 
     switch (*(s32*)(entry->description->field_0x0 + 4)) {
+    case 0:
+    case 2:
+        break;
     case 1:
-        color = dat_80421a14;
-        color.a = *(s32*)&entry->field_0xC;
-        windowDispGX2_Waku_col(scalemtx, 0, color, (f32)(entry->field_0x18 + (entry->field_0x20 - 150) / 2),
-                               (f32)(entry->field_0x1C + 14), 150.0f, 28.0f, 8.0f);
+        winMgrDispWaku1(scalemtx, entry, &dat_80421a14);
         break;
     case 3:
-        color = dat_80421a18;
-        color.a = *(s32*)&entry->field_0xC;
-        windowDispGX2_Waku_col(scalemtx, 0, color, (f32)(entry->field_0x18 + 10), (f32)(entry->field_0x1C + 14),
-                               100.0f, 28.0f, 8.0f);
-        color = dat_80421a1c;
-        color.a = *(s32*)&entry->field_0xC;
-        windowDispGX2_Waku_col(scalemtx, 0, color, (f32)(entry->field_0x18 + entry->field_0x20 / 2 - 10),
-                               (f32)(entry->field_0x1C + 14), 100.0f, 28.0f, 8.0f);
+        winMgrDispWaku3a(scalemtx, entry, &dat_80421a18);
+        winMgrDispWaku3b(scalemtx, entry, &dat_80421a1c);
         break;
     case 4:
     case 5:
-        color = dat_80421a20;
-        color.a = *(s32*)&entry->field_0xC;
-        windowDispGX2_Waku_col(scalemtx, 0, color,
-                               (f32)(entry->field_0x18 + (entry->field_0x20 * 3 / 5 - 120) * 2 / 3),
-                               (f32)(entry->field_0x1C + 14), 120.0f, 28.0f, 8.0f);
-        color = dat_80421a24;
-        color.a = *(s32*)&entry->field_0xC;
-        windowDispGX2_Waku_col(scalemtx, 0, color,
-                               (f32)(entry->field_0x18 + entry->field_0x20 * 3 / 5 + (entry->field_0x20 * 2 / 5 - 85) / 3),
-                               (f32)(entry->field_0x1C + 14), 85.0f, 28.0f, 8.0f);
+        winMgrDispWaku4(scalemtx, entry, &dat_80421a20);
+        winMgrDispWaku5(scalemtx, entry, &dat_80421a24);
         break;
     }
 
@@ -803,15 +829,15 @@ void select_main3(WinMgrEntry* entry) {
     }
 }
 
-// NONMATCHING (97.81%): same instructions; only register numbers or operands differ.
 void select_disp3(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
 
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
         WinMgrSelectItem* items = (WinMgrSelectItem*)select->field_0x30;
         u16 id = items[select->field_0xC].field_0x2;
+        ItemData* item = &itemDataTable[id];
 
-        entry->field_0x34 = (s32)msgSearch(itemDataTable[id].description);
+        entry->field_0x34 = (s32)msgSearch(item->description);
         winMgrHelpDraw(entry);
     }
 }
@@ -1311,7 +1337,6 @@ void select_disp3_mario(WinMgrEntry* entry) {
     }
 }
 
-// NONMATCHING (96.72%): just written.
 void select_disp3_party(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     PouchData* pouch = pouchGetPtr();
@@ -1319,12 +1344,14 @@ void select_disp3_party(WinMgrEntry* entry) {
 
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
         WinMgrSelectItem* items = (WinMgrSelectItem*)select->field_0x30;
-        const char* help = str_80421A78;
+        const char* help;
         const char* lank;
         char buf[0x48];
 
         if (items[select->field_0xC].field_0x0 & 2) {
             help = str_802FFD8C;
+        } else {
+            help = str_80421A78;
         }
         if (select->field_0x4 == 6 || select->field_0x4 == 7) {
             lank = str_802FFDB4;
@@ -1332,8 +1359,8 @@ void select_disp3_party(WinMgrEntry* entry) {
             lank = str_802FFDBC;
         }
         id = items[select->field_0xC].field_0x2;
-        sprintf(buf, str_802FFDC8, help, party_labelname_table[id],
-                pouch->partyData[party_id_table[id]].techLevel + 1, lank);
+        sprintf(buf, str_802FFDC8, help, lank,
+                pouch->partyData[party_id_table[id]].techLevel + 1, party_labelname_table[id]);
         entry->field_0x34 = (s32)msgSearch(buf);
         winMgrHelpDraw(entry);
     }

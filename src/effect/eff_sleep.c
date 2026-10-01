@@ -153,9 +153,17 @@ static inline GXColor effSleepColor(u8 alpha) {
 }
 #endif
 
-// NONMATCHING (99.46%): the instruction stream matches apart from one commutative fadds operand order; the rest
-// is callee-saved register allocation (retail: negEight f23, 1.0 f28, first sine f21, sine constants f24-f27,
-// headerAlpha r25, angle r29). See REPORT.md.
+// Materialise negEight*0.5 before the add; an inline helper adding its parameter second pins retail's
+// commutative fadds operand order, which a bare expression does not.
+static inline f32 effSleepVx(f32 nh, f32 s) {
+	return nh + s;
+}
+
+// Remaining diffs are callee-saved allocation -- negEight f21 (retail f23), first sine s0 f23 (retail
+// f21) and its fmuls/fadds, camId r25/headerAlpha r29/angle r25 (retail r26/r25/r29) -- plus four
+// anonymous literal pools (6.2832, 1.0, 0.125, 4.0 load from @265-@268 instead of
+// float_6p2832/float_1/float_0p125/float_4; naming them collapses MWCC's FPR scheduling to ~97%).
+// NONMATCHING (99.75%): instruction stream matches; see REPORT.md.
 void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	CameraEntry* cam;
 	GXTexObj texObj;
@@ -226,7 +234,7 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 			f32 s1 = effSleepSin(gp->retraceCount + (angle + (j + 1) * 10));
 
 			GXBegin(0x80, 0, 4);
-			GXPosition3f32(negEight * float_0p5_80422434 + s1, one * (f32)(j + 1), float_0_8042243c);
+			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s1), one * (f32)(j + 1), float_0_8042243c);
 			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(7 - j));
 			GXPosition3f32(4.0f + s1, one * (f32)(j + 1), float_0_8042243c);
 #ifdef MUST_MATCH
@@ -240,7 +248,7 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 #else
 			GXTexCoord2f32(1.0f, 0.125f * (f32)(8 - j));
 #endif
-			GXPosition3f32(negEight * float_0p5_80422434 + s0, one * (f32)j, float_0_8042243c);
+			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s0), one * (f32)j, float_0_8042243c);
 			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(8 - j));
 		}
 	}

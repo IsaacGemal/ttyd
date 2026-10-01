@@ -7,6 +7,8 @@ typedef struct EffectEntry EffectEntry;
 extern const f32 float_deg2rad_8042015c;
 extern const f32 float_0p0625_80420160;
 extern const f32 float_0_80420164;
+extern u32 dat_80420150;
+extern u32 dat_80420154;
 extern u32 dat_80420158;
 EffectEntry* effWaterDamageN64Entry(s32 int1, s32 int2, f32 float3, f32 float4, f32 float5, f32 float6);
 #include "driver/camdrv.h"

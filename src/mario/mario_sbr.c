@@ -449,20 +449,28 @@ s32* head; // retail reads the ring head through a pointer taken before the loop
     return result;
 }
 
-// NONMATCHING (96.91%): identical instruction sequence but the allocator picks different
-// registers for w, cur, prev, countUp, countDown and idx1/idx2 (e.g. original cur=r30/prev=r29/
-// countUp=r31, ours cur=r31/prev=r30/countUp=r6). Declaration reordering did not help.
+// The hoisted `w->unk0C` CSE temp lands in r9 and idx2/diff in r10, while the original has them
+// swapped (unk0C=r10, idx2/diff=r9); the CSE temp is synthetic, so declaration order cannot move
+// it (the order below is the search's best, giving countDown=r31/cur=r30/prev=r29 and the exact
+// entry order). Making it an explicit local turns it into a callee-saved user variable instead.
+// NONMATCHING (99.31%): only the w->unk0C CSE temp / idx2-diff registers are swapped.
 s32 chkRevolveDir(s32* left, s32* right) {
-RubWork* w = &rubwork;
+s32 adj;
+s32 diff;
 s32 i;
 s32 j;
-s32 cur, prev, diff;
-s32 idx1, idx2;
-s32 countUp = 0;
-s32 countDown = 0;
-s32 adj;
+s32 countDown;
+s32 idx2;
+s32 cur;
+s32 countUp;
+s32 idx1;
+s32 prev;
+RubWork* w;
 
+    w = &rubwork;
     j = 0;
+    countDown = 0;
+    countUp = 0;
     for (i = 0; i < 10; i++) {
         idx1 = w->unk0C + j;
         while (idx1 < 0) {
@@ -646,21 +654,58 @@ void marioUpdateKeyData(void) {
     rubwork.unk3C[20] = (v); \
 } while (0)
 
-// NONMATCHING (94.49%): stick part now matches except the forced-move path keeps angle/mag in
-// f1/f31 instead of f0/f2, and the RUB_SET3C expansion + later `unk3C`/`unk14` handling differ in
-// base pointer/register choice.
-s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
-    MarioWork* p;
-    MarioWork* wp;
+static inline void rubStick(MarioWork* p, f32* outAngle, f32* outMag) {
     s32 x;
     s32 invert;
     s32 y2;
     f32 mag;
     f32 angle;
+
+    if (p->flags & MARIO_FLAG_FORCED_MOVEMENT) {
+        *outAngle = p->directionView;
+        *outMag = p->baseSpeed;
+        return;
+    }
+    x = *(s8*)&p->wStickDir1;
+    invert = 0;
+    if ((p->flags & 0x02000000) || kpaGetStageViewType() == 0) {
+        invert = 1;
+    }
+    if (invert) {
+        y2 = 0;
+    } else {
+        y2 = -((s8)p->wStickDir2);
+    }
+    if (yoshiGetStatus() == 2) {
+        y2 = 0;
+    }
+    y2 = -y2;
+    mag = distABf(0.0f, 0.0f, (f32)x, (f32)y2);
+    if (mag >= 70.0f) {
+        mag = 70.0f;
+    }
+    angle = angleABf(0.0f, 0.0f, (f32)x, (f32)y2);
+    if (!mag) {
+        angle = *(f32*)p->unk19C;
+    }
+    angle = revise360(angle + p->targetYaw);
+    *outAngle = angle;
+    *outMag = mag;
+}
+
+// The stick read moved to rubStick above; everything else matches except the low-magnitude
+// timeout stores rubwork.unk08 through the macro's base (r3) where the original uses w (r30)
+// (using w reorders the store before the RUB_SET3C block), and the two checkOneRevolution blocks
+// schedule the held unk04 increment before the RUB_SET3C expansion instead of after it.
+// NONMATCHING (97.57%): see above.
+s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
+    MarioWork* p;
+    MarioWork* wp;
+    f32 angle;
+    f32 mag;
     s32 chk;
     s32 result = 0;
     s32 r28;
-    s32 v14;
     s32 idx;
     s32 local1;
     s32 local2;
@@ -677,45 +722,19 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
         return -1;
     }
     wp = marioGetPtr();
-    if (wp->flags & MARIO_FLAG_FORCED_MOVEMENT) {
-        angle = wp->directionView;
-        mag = wp->baseSpeed;
-    } else {
-        x = *(s8*)&wp->wStickDir1;
-        invert = 0;
-        if ((wp->flags & 0x02000000) || kpaGetStageViewType() == 0) {
-            invert = 1;
-        }
-        if (invert) {
-            y2 = 0;
-        } else {
-            y2 = -((s8)wp->wStickDir2);
-        }
-        if (yoshiGetStatus() == 2) {
-            y2 = 0;
-        }
-        y2 = -y2;
-        mag = distABf(0.0f, 0.0f, (f32)x, (f32)y2);
-        if (mag >= 70.0f) {
-            mag = 70.0f;
-        }
-        angle = angleABf(0.0f, 0.0f, (f32)x, (f32)y2);
-        if (!mag) {
-            angle = *(f32*)((u8*)wp + 0x19C);
-        }
-        angle = revise360(angle + wp->targetYaw);
-    }
+    rubStick(wp, &angle, &mag);
     r28 = (s32)angle;
     if (mag < 50.0f) {
         if (++w->unk24 > 10) {
             RUB_SET3C(r28);
-            w->unk08 = 0;
+            rubwork.unk08 = 0;
         }
         return -1;
     }
     w->unk24 = 0;
     w->unk3C[w->unk0C] = r28;
-    idx = w->unk0C + 1;
+    idx = rubwork.unk0C;
+    idx = idx + 1;
     while (idx < 0) {
         idx += 20;
     }
@@ -733,10 +752,18 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
         w->unk1C = 0;
         w->unk08++;
         if (checkOneRevolution(0) == 1) {
+#ifdef MUST_MATCH
+            // Holding the incremented value in a local stops mwcc interleaving the unk04 load
+            // into the RUB_SET3C stores; the original loads it after them.
+            s32 _n = w->unk04 + 1;
             result = 1;
-            v14 = w->unk14;
-            RUB_SET3C(v14);
+            RUB_SET3C(w->unk14);
+            w->unk04 = _n;
+#else
+            result = 1;
+            RUB_SET3C(w->unk14);
             w->unk04++;
+#endif
         }
         w->unk10 = 1;
     }
@@ -761,10 +788,18 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
         w->unk1C = 0;
         w->unk08++;
         if (checkOneRevolution(1) == 1) {
+#ifdef MUST_MATCH
+            // Holding the incremented value in a local stops mwcc interleaving the unk04 load
+            // into the RUB_SET3C stores; the original loads it after them.
+            s32 _n = w->unk04 + 1;
             result = 1;
-            v14 = w->unk14;
-            RUB_SET3C(v14);
+            RUB_SET3C(w->unk14);
+            w->unk04 = _n;
+#else
+            result = 1;
+            RUB_SET3C(w->unk14);
             w->unk04++;
+#endif
         }
         w->unk10 = 2;
     }

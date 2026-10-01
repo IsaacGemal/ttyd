@@ -661,52 +661,54 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.04%): declaration order (s32 group split; wp/camera/unit/part before the f32s) fixed the
-// register allocation. Still differs: the f32 stack groups are reversed (x at 0x1c, x2 at 0x08, the two Vec
-// temporaries at 0x2c/0x20; target x 0x2c, x2 0x20, temps 0x14/0x08) and the first block's `unit` spills
-// through r0/r25 instead of staying in r26 (3 inserts, 2 deletes).
+// Wrapping the call in this inline changes MWCC's scheduling of the return-value save
+// (direct `mr r26, r3` instead of the r0 spill) without changing the emitted call.
+static inline BattleUnit *getUnitPtr(BattleWork *wp, s32 id) {
+  return BattleGetUnitPtr(wp, id);
+}
+
 USER_FUNC(evt_btl_camera_set_homing_unitparts) {
-  s32 *args;
   BattleWork *wp;
-  s32 priority;
-  s32 type;
-  s32 partId;
-  s32 type2;
-  s32 partId2;
   BattleCameraWork *camera;
   BattleUnit *unit;
   BattleUnitPart *part;
-  f32 x;
-  f32 y;
-  f32 z;
-  f32 x2;
-  f32 y2;
-  f32 z2;
+  s32 *args = event->args;
+  s32 priority = evtGetValue(event, args[0]);
+  s32 type = evtGetValue(event, args[1]);
+  s32 partId = evtGetValue(event, args[2]);
+  s32 type2 = evtGetValue(event, args[3]);
+  s32 partId2 = evtGetValue(event, args[4]);
+  Vec pos;
+  Vec pos2;
+  Vec home;
+  Vec hit;
 
-  args = event->args;
-  priority = evtGetValue(event, args[0]);
-  type = evtGetValue(event, args[1]);
-  partId = evtGetValue(event, args[2]);
-  type2 = evtGetValue(event, args[3]);
-  partId2 = evtGetValue(event, args[4]);
   wp = _battleWorkPointer;
   camera = &wp->cameraWork;
-
   if (priority < camera->priLimit) {
     return EVT_RETURN_DONE;
   }
   camera->unk10 = BattleTransID(event, type);
   camera->unk18 = partId;
-  unit = BattleGetUnitPtr(wp, camera->unk10);
+  unit = getUnitPtr(wp, camera->unk10);
   part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
-  BtlUnit_GetHomePos(unit, &x, &y, &z);
-  camera->unkBC = (Vec){x, y, z};
+  BtlUnit_GetHomePos(unit, &pos.x, &pos.y, &pos.z);
+  home = vec3_802efc7c;
+  home.x = pos.x;
+  home.y = pos.y;
+  home.z = pos.z;
+  camera->unkBC = home;
   if (type2 != -1) {
     camera->unk14 = BattleTransID(event, type2);
     camera->unk1C = partId2;
-    unit = BattleGetUnitPtr(wp, camera->unk14);
-    BtlUnit_GetHitPos(unit, BattleGetUnitPartsPtr(camera->unk14, camera->unk1C), &x2, &y2, &z2);
-    camera->unkC8 = (Vec){x2, y2, z2};
+    unit = getUnitPtr(wp, camera->unk14);
+    part = BattleGetUnitPartsPtr(camera->unk14, camera->unk1C);
+    BtlUnit_GetHitPos(unit, part, &pos2.x, &pos2.y, &pos2.z);
+    hit = vec3_802efc88;
+    hit.x = pos2.x;
+    hit.y = pos2.y;
+    hit.z = pos2.z;
+    camera->unkC8 = hit;
   }
   return EVT_RETURN_DONE;
 }

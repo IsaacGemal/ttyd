@@ -190,6 +190,9 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 // (iPos + xEnd + 0x10) << 2, which keeps xEnd a pure source and yields the target's
 // addi r0,r4,0x10 / add r3,r24,r3 / add r0,r24,r0 sequence. All callee-saved registers
 // (vtx=r31, magic 0x4330=r29, xoris=r30, iPos=r24, fieldBase=r26, fieldEnd=r25) match.
+// NONMATCHING (full report 99.99686%, per-unit check 100.00%): the int->float magic double pools at
+// .rodata+0x58 instead of the target +0x30; that offset comes from this unit's other data (Main's
+// anonymous zero-Vec and the unused double_to_int_802fb278 declaration), not from this function.
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;
@@ -263,9 +266,9 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetCullMode(GX_CULL_NONE);
 	effSetVtxDescN64((effVtxArray*)opuku_jetwrain_vtx);
-	up = (Vec){ 0.0f, 1.0f, 0.0f };
-	target = (Vec){ 304.0f, 240.f, 0.0f };
-	eye = (Vec){ 304.0f, 240.f, 100.f };
+	up = vec3_802fb254;
+	target = vec3_802fb260;
+	eye = vec3_802fb26c;
 	C_MTXLookAt(lookAtMtx, &eye, &up, &target);
 	GXLoadPosMtxImm(lookAtMtx, 0);
 	GXSetCurrentMtx(0);

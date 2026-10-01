@@ -203,9 +203,16 @@ static inline GXColor itemColor0(u8 a, GXColor c) {
 }
 #endif
 
-// NONMATCHING (99.76%): MWCC reuses f29 (the dead scale) for the cos result instead of f31; everything
-// downstream (f30/f31 for the loop's +/- sizes) shifts a register. The .sdata2 2.0/0.5 slots are created
-// by effItemUseDisp first, so they cannot be fixed from here. The GXColor temporaries match via itemColor0.
+// Six instructions still differ. (1) MWCC puts the cos result in f30, the target in f31 (`frsp f31,f1`
+// and the following `fneg f0,f31`); f31 later holds the +32/+5.33 sizes, so the two live ranges were
+// coloured differently. Splitting the scale into its own `scale` variable moved the cos result from f29
+// to f30, but no source shape tried (a cos/yaw temp, an inline cosf/cos wrapper, a nested/hoisted block,
+// declaration-order permutations, `f64`, `#pragma opt_lifetimes/opt_propagation/opt_common_subs/
+// opt_dead_assignments/scheduling/global_optimizer off`) puts it in f31. (2) In the second-loop preheader
+// the target loads 42.666668 into f1 and negates 10.666667 into f2; we get 42.666668 in f2 and the
+// negation in f1 (4 instructions). A `f32 f = 64.0f; f32 half = 0.5f; f30 = -f * half;` temp keeps the
+// target's scratch fneg instead of folding it into the fmuls. The GXColor temporaries match via itemColor0.
+// NONMATCHING (99.95%): cos result in f30 not f31 (2 insns); second-loop setup scratch f1/f2 swap (4 insns).
 void effItemGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -229,12 +236,13 @@ void effItemGetDisp(CameraId camId, void* param) {
 	f32 f31;
 	f32 f30;
 	f32 f29;
+	f32 scale;
 
 	cam = camGetPtr(camId);
 	vecA = vec3_802fddb4;
 	vecB = vec3_802fddc0;
 	vecC = vec3_802fddcc;
-	f29 = data->field_0x10 * data->field_0x14;
+	scale = data->field_0x10 * data->field_0x14;
 	field = data->field_0x34;
 
 	GXSetBlendMode(1, 4, 5, 0);
@@ -243,7 +251,7 @@ void effItemGetDisp(CameraId camId, void* param) {
 	GXSetZMode(1, 3, 0);
 	PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
-	PSMTXScale(mtxScale, f29, f29, f29);
+	PSMTXScale(mtxScale, scale, scale, scale);
 	PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
 	PSMTXConcat(mtxTrans, mtxScale, mtxBase);
 	f31 = (f32)cos(6.2831855f * camGetPtr(camId)->viewYaw / 360.0f);
@@ -291,7 +299,8 @@ void effItemGetDisp(CameraId camId, void* param) {
 	f31 = 32.0f;
 	{
 		f32 f = 64.0f;
-		f30 = -f * 0.5f;
+		f32 half = 0.5f;
+		f30 = -f * half;
 	}
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
@@ -338,12 +347,11 @@ void effItemGetDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 1);
 
 	{
-		f32 f = 10.666667f;
-		f29 = -f * 0.5f;
-	}
-	{
-		f32 f = 42.666668f;
-		f30 = -f;
+		f32 f10 = 10.666667f;
+		f32 f42 = 42.666668f;
+		f32 half = 0.5f;
+		f30 = -f42;
+		f29 = -f10 * half;
 	}
 	f31 = 5.3333335f;
 	i = 1;

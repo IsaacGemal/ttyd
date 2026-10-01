@@ -200,6 +200,25 @@ void cloud_exit(PartyEntry* party) {
 }
 
 #define cloud ((PartyCloud*)party->useStruct)
+
+#ifdef MUST_MATCH
+// Match-only: stops MWCC CSE-ing party+0x94 into a callee-saved register across the inlined movePos.
+#pragma opt_common_subs off
+static inline void cloudMoveToMarioStep(PartyEntry* party) {
+    MarioWork* pm = party->playerPtr;
+    f32 pa;
+    s32 pf;
+    *(Vec*)((u8*)party + 0x94) = pm->position;
+    pa = *(f32*)pm->unk1AC;
+    pf = (pa < 90.0f || pa >= 270.0f);
+    pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
+    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
+    *(f32*)((u8*)party + 0x98) += 10.0f;
+}
+#define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
+static inline f32 s70(void) { return 70.0f; }
+#define SEVENTY() s70()
+#else
 #define MOVE_TO_MARIO() do { \
     MarioWork* pm = party->playerPtr; \
     f32 pa; \
@@ -211,19 +230,32 @@ void cloud_exit(PartyEntry* party) {
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa); \
     *(f32*)((u8*)party + 0x98) += 10.0f; \
 } while (0)
+#define SEVENTY() 70.0f
+#endif
 
-// NONMATCHING (93.16%): the compiler caches the address of party->[0x94] in a callee-saved register
-// across the inlined cloudMoveToMario body (stmw r27; addi r28), where the original re-materialises it;
-// that register pressure then perturbs several operand registers and the rodata magic-double pool slot.
+#ifdef MUST_MATCH
+// Match-only: the original re-reads party->playerPtr at the cloud->unk8 clamp (lwz r30, 0x160(r29));
+// the natural single load is under #else.
+#define RELOAD_MARIO() (mario = party->playerPtr)
+#else
+#define RELOAD_MARIO() ((void)0)
+#endif
+
+// The three s32->f32 divisor conversions load the compiler's int->float magic double with a fresh
+// `lis r3, @N@ha` instead of the original's `lfd f3, 0x10(r31)` (r31 = vec3_802f8120); the offset
+// is right, only the base register differs (the strings via base+offset keep the magic at 0x10 but
+// leave it as the only pool entry, so MWCC will not fold it into r31). The symbol itself is
+// unscored; the four `addi rN, r31, 0x18/0x20/0x28/0x30` replaces are only objdiff pairing once
+// the `lis` shifts them by one slot. The 70.0f and the clamp's mario reload are reproduced by the
+// SEVENTY()/RELOAD_MARIO() match-only macros above.
+// NONMATCHING (99.68%): only the int->float magic double's base register differs (fresh `lis` vs r31).
 void N__cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     const u8* base = (const u8*)&vec3_802f8120;
     HitEntry* hit;
-    f32 sin1, cos1, sin2, cos2;
-    f32 hitX, hitY, hitZ, dist, hitNX, hitNY, hitNZ;
+    f32 sx, sz, hitNZ, hitNY, hitNX, dist, hitZ, hitY, hitX, cos2, sin2, cos1, sin1;
     f32 angle;
     f32 f31;
-    f32 sx, sz;
     s32 flag;
     s16 seq;
 
@@ -275,16 +307,14 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         party->position = *(Vec*)((u8*)party + 0x94);
         if (*(void**)((u8*)party + 0x178) == NULL) {
-            EffectEntry* eff;
             *(void**)((u8*)party + 0x178) = effKumokumoN64Entry(0, 0, 0.0f, 0.0f, 0.0f, 0.0f, -2.0f, 0.0f);
-            eff = *(EffectEntry**)((u8*)party + 0x178);
-            *(s32*)((u8*)eff->userdata + 0x60) = party->camId;
-            *(s32*)((u8*)eff->userdata + 0x18) = 0x4C;
-            *(s32*)((u8*)eff->userdata + 0x1C) = 0xA7;
-            *(s32*)((u8*)eff->userdata + 0x20) = 0xCA;
-            *(s32*)((u8*)eff->userdata + 0x28) = 0x7D;
-            *(s32*)((u8*)eff->userdata + 0x2C) = 0x1B;
-            *(s32*)((u8*)eff->userdata + 0x30) = 0xF5;
+            *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x60) = party->camId;
+            *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x18) = 0x4C;
+            *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x1C) = 0xA7;
+            *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x20) = 0xCA;
+            *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x28) = 0x7D;
+            *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x2C) = 0x1B;
+            *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x30) = 0xF5;
         }
         marioChgMot(0x1B);
         marioChgPose((const char*)(base + 0x18));
@@ -299,11 +329,10 @@ void N__cloud_use(PartyEntry* party) {
         if ((party->flags & 0x80000000) == 0) {
             mario->unk150.x = 0.03f;
             angle = revise360(270.0f - *(f32*)((u8*)mario + 0x1AC));
-            f31 = (angle <= 180.0f) ? -1.0f : 1.0f;
-            mario->unk138 = 70.0f * f31;
+            mario->unk138 = SEVENTY() * ((angle <= 180.0f) ? -1.0f : 1.0f);
         }
-        if (party->useStruct != NULL && *(s32*)((u8*)party->useStruct + 0x34) == -1) {
-            *(s32*)((u8*)party->useStruct + 0x34) = psndSFXOn_3D((char*)0x930, &mario->position);
+        if (party->useStruct != NULL && *(u32*)((u8*)party->useStruct + 0x34) == 0xFFFFFFFFu) {
+            *(s32*)((u8*)party->useStruct + 0x34) = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
         }
         /* fallthrough */
     case 0xB:
@@ -336,6 +365,7 @@ void N__cloud_use(PartyEntry* party) {
         party->position.y = mario->position.y + 10.0f;
         *(Vec*)((u8*)party + 0x7C) = *(const Vec*)base;
         *(f32*)((u8*)cloud + 0x8) += 2.0f;
+        RELOAD_MARIO();
         if (*(f32*)((u8*)cloud + 0x8) >= *(f32*)((u8*)cloud + 0xC)) {
             *(f32*)((u8*)cloud + 0x8) = *(f32*)((u8*)cloud + 0xC);
         }
@@ -386,8 +416,7 @@ void N__cloud_use(PartyEntry* party) {
         if ((*(u16*)((u8*)party + 0x152) & 0x400) != 0) {
             party->useMotionId = 0xA;
         }
-        *(s32*)((u8*)party + 0x24) = *(s32*)((u8*)party + 0x24) - 1;
-        if (*(s32*)((u8*)party + 0x24) <= 0) {
+        if (--*(s32*)((u8*)party + 0x24) <= 0) {
             party->useMotionId = 0x14;
             break;
         }
@@ -436,6 +465,9 @@ void N__cloud_use(PartyEntry* party) {
     }
 }
 #undef cloud
+#ifdef MUST_MATCH
+#pragma opt_common_subs reset
+#endif
 #undef MOVE_TO_MARIO
 
 // `opt_common_subs off`: with CSE on MWCC hoists party+0x94 across movePos into a

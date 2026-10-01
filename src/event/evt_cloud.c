@@ -149,8 +149,9 @@ USER_FUNC(evt_cloud_init) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.91%): the FP register numbering in the mode-2 screen-space math differs; the original
-// uses f6=sum, f4=fbWidth, f3=0.5 while MWCC assigns that set as the rotation f4, f3, f6.
+// The screen-space math needs the literal 0.5f and separate product temp to keep MWCC's FPR allocation
+// matching the original (t in f6, the screen size in f4, the 0.5f in f3); the named float_0p5_8041dcdc
+// or folding the product into one expression rotates the three registers.
 static USER_FUNC(evt_cloud_main) {
 	CloudEntry* cp = (CloudEntry*)event->lwData[0];
 	s32 inBattle = (gp->inBattle != 0);
@@ -166,6 +167,8 @@ static USER_FUNC(evt_cloud_main) {
 	s32 width;
 	s32 height;
 	f32 t;
+	f32 w;
+	f32 half;
 	HitEntry* h0;
 	HitEntry* h1;
 	HitEntry* h2;
@@ -226,10 +229,13 @@ static USER_FUNC(evt_cloud_main) {
 			mapObjGetPos(cp->mapGrpName, &pos);
 			PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 			PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
+			half = 0.5f;
 			t = float_1_8041dcd8 + pos.x;
-			pos.x = (f32)gp->fbWidth * t * float_0p5_8041dcdc;
+			w = t * (f32)gp->fbWidth;
+			pos.x = w * half;
 			t = float_1_8041dcd8 - pos.y;
-			pos.y = t * (f32)gp->efbHeight * float_0p5_8041dcdc;
+			w = t * (f32)gp->efbHeight;
+			pos.y = w * half;
 			width = cp->field_0xC0;
 			height = cp->field_0xC2;
 			left = (s32)(pos.x - (f32)(cp->field_0xC0 / 2));

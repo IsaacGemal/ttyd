@@ -63,12 +63,7 @@ static void actionCommandDisp(f32, f32);
 // emits `fdivs f0, f1, f0`; disabling common subexpression elimination gives the original operand
 // registers (numerator f2, divisor f1).
 #pragma opt_common_subs off
-// NONMATCHING (99.13%): only the fdivs destination differs. The original overwrites the divisor
-// (`fdivs f1, f2, f1`, result = f1) and clamps in place; MWCC always coalesces the division result
-// with the numerator (`fdivs f2, f2, f1`) and then folds the clamp to a fresh register. Every
-// source form tried that reaches the divisor destination (chained/pointer assignment, ternary,
-// b = a / b) either adds a store/reload or moves the clamp into a different register; the
-// downstream fctiwz/stfs and the BattleAcDrawGauge argument loads shift with it.
+// The clamp keeps `ratio` in the original's divisor register (f1: `fdivs f1, f2, f1`, `fmr f1, f0`).
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
 #ifdef MUST_MATCH
@@ -103,8 +98,22 @@ static void actionCommandDisp(f32 f1, f32 f2) {
     }
     disp->value = ratio;
 
-    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)((u8*)work + 0x1ccc), *(s32*)((u8*)work + 0x1cd0),
-                      *(s32*)((u8*)work + 0x1cd4), *(s32*)((u8*)work + 0x1cd8), 0, disp->value);
+#ifdef MUST_MATCH
+    // Match-only: the volatile read keeps `ratio` live across the draw call's argument setup, which
+    // is what makes MWCC reuse the divisor register for the division (`fdivs f1, f2, f1`) instead of
+    // coalescing the result with the numerator; it also produces the original's reload of disp->value
+    // for the last argument. Plain `disp->value` (below) compiles to `fdivs f2, f2, f1`.
+    ratio = *(volatile f32*)&disp->value;
+    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
+                      *(s32*)&work->actionCommands.field_34[0xC],
+                      *(s32*)&work->actionCommands.field_34[0x10],
+                      *(s32*)&work->actionCommands.field_34[0x14], 0, ratio);
+#else
+    BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[8],
+                      *(s32*)&work->actionCommands.field_34[0xC],
+                      *(s32*)&work->actionCommands.field_34[0x10],
+                      *(s32*)&work->actionCommands.field_34[0x14], 0, disp->value);
+#endif
 
     switch (work->actionCommands.mAcState) {
     case 0x63:

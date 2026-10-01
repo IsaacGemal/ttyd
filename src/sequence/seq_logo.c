@@ -97,12 +97,19 @@ void seq_logoExit(SequenceWork* work) {
 	fileFree(wp->texture);
 }
 
-// NONMATCHING (94.04%): branch layout for the psndPushGroup result and the fileAsyncf return check; size decode still differs.
+// Case 10 only. The original assigns `first`=r28, `size`=r29, `decode`=r30; this source gets
+// `first`=r28, `size`=r30, `decode`=r29 (size/decode swapped). Every structural variant tried (declaration
+// order, block scope, temp for the raw load, inline helper, block-scoped initializers, reordered byte-swap
+// expression) still puts `size` in r30: MWCC special-cases the two-statement load-then-byte-swap so its
+// result takes the highest callee-saved register.
+// NONMATCHING (99.89%): size/decode are assigned r30/r29 where the original has r29/r30.
 void seq_logoMain(SequenceWork* work) {
 	static OSTime time; //time instance 1
-	FileEntry* first;
 	u8* decode;
+	FileEntry* first;
 	u32 size;
+	s32 asyncResult;
+	BOOL result;
 
 	switch (work->state) {
 		case 0:
@@ -175,7 +182,7 @@ void seq_logoMain(SequenceWork* work) {
 			if (keyGetButtonTrg(0) & (PAD_BUTTON_START | PAD_BUTTON_A)) {
 				wp->skipStory = TRUE;
 			}
-			if (psndPushGroup() == 0) {
+			if ((u32)psndPushGroup() == 0) {
 				DVDMgrSetupCallback(NULL);
 				if (fadeIsFinish()) {
 					if (!(gp->flags & 8)) {
@@ -196,26 +203,44 @@ void seq_logoMain(SequenceWork* work) {
 		case 10:
 			VISetBlack(FALSE);
 			VIWaitForRetrace();
-			if (fileAsyncf(0, 0, "%s/b/first", getMarioStDvdRoot()) != 0) {
+			asyncResult = fileAsyncf(0, 0, "%s/b/first", getMarioStDvdRoot());
+#ifdef MUST_MATCH
+			// Reproduce the original's boolean materialization (0 / 1 / 1): the redundant -1 branch is kept.
+			if ((u32)asyncResult == 0) {
+				result = FALSE;
+			}
+			else if (asyncResult == -1) {
+				result = TRUE;
+			}
+			else {
+				result = TRUE;
+			}
+#else
+			result = ((u32)asyncResult != 0);
+#endif
+			if (result) {
 				first = fileAllocf(0, "%s/b/first", getMarioStDvdRoot());
 				if (first) {
 					size = *(u32*)*first->data;
-					size = ((size & 0xFF) << 16) | (size & 0xFF00) | ((size >> 16) & 0xFF); //might need to reverse
+					size = ((size & 0xFF) << 16) | (size & 0xFF00) | ((size >> 16) & 0xFF);
 					decode = __memAlloc(HEAP_DEFAULT, size);
 					LZ77Decode(*first->data, decode);
 					arcEntry(0, decode, size);
 					fileFree(first);
 				}
-				if (gp->flags & 0x1000) {
+				if (!(gp->flags & 0x1000)) {
+					if (!wp->skipStory) { //play story demo
+						seqSetSeq(SEQ_MAP_CHANGE, "dmo_00", NULL);
+					}
+					else { //continue to title screen
+						fadeEntry(FADE_OUT_WHITE, 500, (GXColor){0, 0, 0, 0xFF});
+						work->state++;
+					}
+				}
+				else {
 					seqSetSeq(SEQ_E3, NULL, NULL);
 				}
-				else if (wp->skipStory) { //continue to title screen
-					fadeEntry(FADE_OUT_WHITE, 500, (GXColor){0, 0, 0, 0xFF});
-					work->state++;
-				}
-				else { //play story demo
-					seqSetSeq(SEQ_MAP_CHANGE, "dmo_00", NULL);
-				}
+				return;
 			}
 			break;
 

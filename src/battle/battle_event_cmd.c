@@ -112,13 +112,19 @@ USER_FUNC(btlevtcmd_WaitEventEnd) {
 }
 
 //s32 retIndex, s32 battleFlags
-// NONMATCHING (98.25%): same instructions; only register numbers or operands differ.
+// NONMATCHING (98.50%): same instructions; the target keeps `args` in r5 and `args[1]` in r6, ours take r6/r5.
+// The target's `and. r0, r0, r6` reads the flags operand first, so the commutative test is written in that
+// order under MUST_MATCH; the natural order under #else compiles to the same logic.
 USER_FUNC(btlevtcmd_check_battleflag) {
-    BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
     s32 index = args[0];
 
+#ifdef MUST_MATCH
+    if (args[1] & wp->flags) {
+#else
     if (wp->flags & args[1]) {
+#endif
         evtSetValue(event, index, TRUE);
     }
     else {
@@ -863,12 +869,17 @@ USER_FUNC(btlevtcmd_SetAlpha) {
 }
 
 //s32* battleId, s32* partId, u8* redIndex, u8* greenIndex, u8* blueIndex
-// NONMATCHING (98.38%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetRGB) {
+#ifdef MUST_MATCH
+    // Reading args through a volatile pointer stops the scheduler from hoisting args[3]/args[4]
+    // above args[2] (it otherwise puts the caller-saved args[2] load last); the original loads
+    // them in order, so this reproduces the target's register allocation.
+    volatile s32* args = event->args;
+#else
     s32* args = event->args;
-    s32 btlId, partId;
+#endif
+    s32 btlId, partId, indexR, indexG, indexB;
     BattleUnitPart* part;
-    s32 indexR, indexG, indexB;
 
     btlId = evtGetValue(event, args[0]);
     partId = evtGetValue(event, args[1]);
@@ -2586,16 +2597,24 @@ USER_FUNC(btlevtcmd_OnToken) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.12%): the ANDC operands are swapped; original `andc r0, r0, r4`, ours `andc r0, r4, r0`
-// (semantically identical, only the evaluation/register order differs).
 USER_FUNC(btlevtcmd_OffToken) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 btlId;
+#ifdef MUST_MATCH
+    s32 t;
+#endif
 
     btlId = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
+#ifdef MUST_MATCH
+    // routing args[1] through a temp makes MWCC keep the field as the ANDC destination (`andc r0, r0, r4`)
+    t = args[1];
+    t = unit->mTokenFlags & ~t;
+    unit->mTokenFlags = t;
+#else
     unit->mTokenFlags = unit->mTokenFlags & ~args[1];
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -4470,29 +4489,31 @@ USER_FUNC(btlevtcmd_SetPartsFallAccel) {
 }
 
 //s32* battleId, s32* targetBtlId, s32* partId, s32* x, s32* y, s32* z
-// NONMATCHING (99.06%): complete logic and the stack layout match (locals are allocated in reverse
-// declaration order, so x/y/z/tmp/unitX/hitX/outId/outPartId are declared in that order); only
-// callee-saved register assignment differs: the target keeps args[3..5] in r29/r28/r27 and the
-// second evtGetValue in r26, while our build puts the second evtGetValue in r29. Moving the
-// indexX/Y/Z declarations/assignments around did not reproduce it.
+// Only `id`/`unit` are swapped: target has id=r24 (reusing the dead `args` register) and unit=r25,
+// this build gives unit=r24 and id=r25 plus an extra `mr r0, r3`. btlId/targetId/partId/indexX/
+// indexY/indexZ callee-saved allocation already matches. Single/2/3 declaration swaps and random
+// sampling all kept the id/unit swap; `double_to_int_802ee038` prints as an anonymous `@NNNN@`
+// constant but objdiff ignores that (FallPartsPosition is 100% likewise).
+// NONMATCHING (99.37%): only the id/unit callee-saved registers and one `mr r0, r3` differ.
+
 USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     BattleUnit* targetUnit;
-    BattleUnitPart* part;
+    s32 btlId;
     BattleUnitPart* targetPart;
-    BattleUnit* targetUnit2;
-    u8 sampling[0xAD0];
+    s32 result;
     s32 indexX;
     s32 indexY;
     s32 indexZ;
-    s32 btlId;
+    BattleUnitPart* part;
     s32 targetId;
     s32 partId;
     s32 id;
-    s32 result;
+    BattleUnit* targetUnit2;
     s8 belong;
+    u8 sampling[0xAD0];
     f32 x, y, z;
     f32 tmp;
     f32 unitX;
@@ -4514,6 +4535,7 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
     part = BtlUnit_GetPartsPtr(targetUnit, partId);
     BtlUnit_GetHomePos(unit, &x, &y, &z);
     BtlUnit_GetHitPos(targetUnit, part, &x, &tmp, &z);
+
     belong = (s8)BtlUnit_GetEnemyBelong(unit);
     result = BattleSamplingEnemy(sampling, NULL, id, belong, 0x1001240, 0x1000000,
                                  -wp->alliances[belong].attackDirection);

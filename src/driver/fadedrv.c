@@ -108,7 +108,6 @@ static inline void fadeEntryReset(FadeEntry* entry) {
 	entry->field_0x90 = 1.0f;
 }
 
-// NONMATCHING (94.39%): being reconstructed.
 void fadeEntry(s32 type, s32 duration, GXColor color) {
 	FadeEntry* entry;
 	s32 index;
@@ -149,7 +148,7 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 	else if (type == 8) {
 		type = 4;
 	}
-	else if (((type - 3) <= 2 || type == 6) && duration < 1000) {
+	else if (((u32)(type - 3) <= 2 || type == 6) && duration < 1000) {
 		duration = 1000;
 	}
 
@@ -203,6 +202,7 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 		case 38:
 		case 39:
 		case 40:
+		case 51:
 			entry = &wp->entries[1];
 			index = 1;
 			break;
@@ -243,10 +243,6 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 					break;
 			}
 			break;
-		case 51:
-			entry = &wp->entries[1];
-			index = 1;
-			break;
 		case 63:
 		case 64:
 			entry = &wp->entries[4];
@@ -277,95 +273,22 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 	}
 
 	switch (type) {
-		case 22:
-			entry->field_0x60 = "OFF_d_maku_up_down";
-			entry->field_0x64 = "A_1";
-			entry->imageType = 2;
-			break;
-		case 23:
-			entry->field_0x60 = "OFF_d_maku_up_down";
-			entry->field_0x64 = "A_2";
-			entry->imageType = 2;
-			break;
-		case 24:
-		case 27:
-		case 63:
-			entry->field_0x60 = "OFF_d_maku_left_right";
-			entry->field_0x64 = "A_1";
-			entry->imageType = 2;
-			break;
-		case 25:
-		case 28:
-		case 64:
-			entry->field_0x60 = "OFF_d_maku_left_right";
-			entry->field_0x64 = "A_2";
-			entry->imageType = 2;
-			break;
-		case 26:
-			entry->field_0x60 = "OFF_d_maku_left_right";
-			entry->field_0x64 = "Z_1";
-			entry->imageType = 2;
-			break;
-		case 29:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "A_1";
-			entry->imageType = 2;
-			break;
-		case 30:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "A_2";
-			entry->imageType = 2;
-			break;
-		case 31:
-		case 34:
-		case 37:
-		case 40:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "Z_2";
-			entry->imageType = 2;
-			break;
-		case 32:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "Z_1";
-			entry->imageType = 2;
-			break;
-		case 35:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "A_1";
-			entry->imageType = 2;
-			break;
-		case 36:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "A_2";
-			entry->imageType = 2;
-			break;
-		case 38:
-			entry->field_0x60 = "OFF_d_maku_center";
-			entry->field_0x64 = "Z_1";
-			entry->imageType = 2;
-			break;
-		case 50:
-		case 53:
-			entry->field_0x60 = "OFF_d_meku";
-			entry->field_0x64 = "A_1";
-			entry->imageType = 2;
-			break;
-		case 41:
-			entry->field_0x60 = "OFF_d_dokan_down";
-			entry->field_0x64 = "A_1";
-			entry->imageType = 2;
-			break;
-		case 42:
-			entry->field_0x60 = "OFF_d_dokan_down";
-			entry->field_0x64 = "A_2";
-			entry->imageType = 2;
-			break;
 		case 43:
-			entry->field_0x60 = "OFF_d_dokan_up";
+			entry->field_0x60 = "OFF_d_dokan_down";
 			entry->field_0x64 = "A_1";
 			entry->imageType = 2;
 			break;
 		case 44:
+			entry->field_0x60 = "OFF_d_dokan_down";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 41:
+			entry->field_0x60 = "OFF_d_dokan_up";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 42:
 			entry->field_0x60 = "OFF_d_dokan_up";
 			entry->field_0x64 = "A_2";
 			entry->imageType = 2;
@@ -390,10 +313,71 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 			entry->field_0x64 = "A_2";
 			entry->imageType = 2;
 			break;
+		case 22:
+			entry->field_0x60 = "OFF_d_maku_up_down";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 23:
+			entry->field_0x60 = "OFF_d_maku_up_down";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 24:
+		case 27:
+		case 63:
+			entry->field_0x60 = "OFF_d_maku_left_right";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 26:
+			entry->field_0x60 = "OFF_d_maku_left_right";
+			entry->field_0x64 = "Z_1";
+			entry->imageType = 2;
+			break;
+		case 25:
+		case 28:
+		case 64:
+			entry->field_0x60 = "OFF_d_maku_left_right";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 29:
+		case 35:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 30:
+		case 36:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 31:
+		case 34:
+		case 37:
+		case 40:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "Z_2";
+			entry->imageType = 2;
+			break;
+		case 32:
+		case 38:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "Z_1";
+			entry->imageType = 2;
+			break;
 		case 49:
 		case 52:
 			entry->field_0x60 = "OFF_d_meku";
 			entry->field_0x64 = "Z_1";
+			entry->imageType = 2;
+			break;
+		case 50:
+		case 53:
+			entry->field_0x60 = "OFF_d_meku";
+			entry->field_0x64 = "A_1";
 			entry->imageType = 2;
 			break;
 		case 51:
@@ -1326,7 +1310,6 @@ static void zFill(void) {
 
 
 
-// NONMATCHING (93.04%): being reconstructed.
 void disp_maku(CameraId camId, void* param) {
 	FadeEntry* entry = param;
 	CameraEntry* camera;
@@ -1338,6 +1321,11 @@ void disp_maku(CameraId camId, void* param) {
 	f32 f31;
 	f32 tx;
 	f32 ty;
+	f32 half = 0.5f;
+#ifdef MUST_MATCH
+	// See the note on the `+ zero` below.
+	f32 zero = 0.0f;
+#endif
 
 	camGetPtr(camId);
 
@@ -1387,7 +1375,8 @@ void disp_maku(CameraId camId, void* param) {
 		f32 mag;
 
 		camera = camGetPtr(CAMERA_3D);
-		f30 = (camera->fovY * 0.5f) / 180.0f;
+		f30 = camera->fovY;
+		f30 = f30 * half / 180.0f;
 		f30 = 3.141592f * f30;
 		f30 = 24.0f / (f32)tan(f30);
 		camera = camGetPtr(CAMERA_3D);
@@ -1410,8 +1399,13 @@ void disp_maku(CameraId camId, void* param) {
 		zFill();
 	}
 
-	tx = entry->animOffsetX * f31 + 0.0f;
-	ty = entry->animOffsetY * f31 + 0.0f;
+#ifdef MUST_MATCH
+	tx = entry->animOffsetX * f31 + zero;
+	ty = entry->animOffsetY * f31 + zero;
+#else
+	tx = entry->animOffsetX * f31;
+	ty = entry->animOffsetY * f31;
+#endif
 
 	PSMTXTrans(mtx1, 64.0f * (tx / (f32)gp->fbWidth),
 	           48.0f * (ty / (f32)gp->efbHeight), f30);

@@ -88,9 +88,9 @@ f32 kpaGetBaseScale(s32 index) {
     return baseScaleTbl[index];
 }
 
-// NONMATCHING (95.28%): only the y-offset temp (f2 vs f0) and the PSMTXRotRad camera read (f0 vs f2)
-// differ, and neither responds to source shape. The prologue, f29/f30/f31, r28-r31 and every
-// store/loop instruction match; the file's compiler build stamps .comment 02040701 vs the object's 02040201.
+// NONMATCHING (99.40%): two scheduling/register-allocation quirks remain that don't respond to source shape:
+// PSMTXRotRad's camera read lands in f0 (original f2) with deg2rad in f2 (original f0), and the loop init
+// emits `addi r29,r29,0x50` before `li r28,1` (the original the reverse).  Compiler stamps 02040701/02040201.
 void kpaFireMain(void) {
     MarioWork* mp = marioGetPtr();
     f32 sign;
@@ -110,6 +110,9 @@ void kpaFireMain(void) {
     f32 rootScale;
     f32 py;
     f32 off;
+#ifdef MUST_MATCH
+    MarioWork* mp2;
+#endif
 
     KPA(mp)->unk18 = NULL;
     if (fireefp == NULL) {
@@ -119,8 +122,17 @@ void kpaFireMain(void) {
     level = kpaGetLevel();
     scale = baseScaleTbl[level];
     x = 40.0f * sign * scale + mp->position.x;
+#ifdef MUST_MATCH
+    // MUST_MATCH: taking the flags pointer into a named temp and loading position.y between that call and
+    // the ternary keeps the 0x90 load and 20.0f in the pre-branch block, as the original does; the inline
+    // form pulls both after the branch.
+    mp2 = marioGetPtr();
+    py = mp->position.y;
+    off = (((MW_S32(mp2, 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
+#else
     off = (((MW_S32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) ? 6.0f : 0.0f;
     py = mp->position.y;
+#endif
     y = py + (20.0f * scale + off);
     z = mp->position.z;
     ((KpaFireNode*)((EffectEntry*)fireefp)->userdata)->pos.x = x;
@@ -143,15 +155,14 @@ void kpaFireMain(void) {
     cam = camGetPtr(4);
     PSMTXRotRad(m1, 0x79, 0.017453292f * (root->unk48 - MW_F32(cam, 0x114)));
     if (root->unk48 > 90.0f && root->unk48 < 270.0f) {
-        PSMTXScale(m2, rootScale, rootScale, -rootScale);
+        PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
     } else {
-        PSMTXScale(m2, rootScale, rootScale, rootScale);
+        PSMTXScale(m2, root->unk40, root->unk40, root->unk40);
     }
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m3);
-    i = 1;
     node = (KpaFireNode*)((u8*)root + 0x50);
-    for (; i < efp->count; i++, node = (KpaFireNode*)((u8*)node + 0x50)) {
+    for (i = 1; i < efp->count; i++, node = (KpaFireNode*)((u8*)node + 0x50)) {
         if ((i - 1) & 3) {
             continue;
         }
