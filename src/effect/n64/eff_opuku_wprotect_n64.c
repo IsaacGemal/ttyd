@@ -161,7 +161,7 @@ typedef struct WprotectData {
 	f32 field_0x68[4];  // 0x68
 	f32 field_0x78[4];  // 0x78
 	s32 field_0x88[4];  // 0x88
-} WprotectData;         
+} WprotectData; // 0x98
 EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effOpukuWprotectData* data;

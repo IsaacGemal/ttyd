@@ -832,7 +832,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "unit/party/unit_party_clauda.c"),
+            Object(Matching, "unit/party/unit_party_clauda.c"),
             Object(NonMatching, "unit/party/unit_party_yoshi.c"),
             Object(NonMatching, "unit/party/unit_party_chuchurina.c"),
             Object(NonMatching, "unit/party/unit_party_sanders.c"),
