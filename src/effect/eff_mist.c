@@ -231,6 +231,7 @@ static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
+// NONMATCHING (99.92%): the int->float magic and 0.0f/1.0f vertex literals pool as anonymous @NN symbols (see below).
 // The colour is built through mistColor so its return slot is 0x8 and the by-value argument copy
 // lands at 0xc, as retail. Passing the alpha through (u8) rather than (s32) is what makes MWCC emit
 // the channel loads in address order r,g,b with r->r6/g->r5/b->r0; an (s32) cast rotates the schedule

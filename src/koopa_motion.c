@@ -943,7 +943,8 @@ void kpa_dash(void) {
     }
 }
 
-// Matched (100.00%): every instruction agrees. The u16->f32 conversion's 2^52 magic
+// NONMATCHING (99.99%): the magic int->float double sits at pool +0x110 instead of +0xd0 (see below).
+// Every instruction agrees; only the pool slot differs. The u16->f32 conversion's 2^52 magic
 // pools as its own anonymous .rodata entry at +0x110 where the original's named
 // double_to_int_mask_802fe2e8 sits at +0xd0; objdiff reports that relocation as an
 // arg_mismatch but still scores the function 100%. Defining the double in C makes MWCC

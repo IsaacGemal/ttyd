@@ -788,9 +788,10 @@ static inline f32 evt_sub_cos_approx(f32 angle) {
 #pragma opt_lifetimes off
 // The two static inline helpers above reproduce the target's polynomial instruction sequence.
 // opt_propagation off stops MWCC rematerialising the coefficients into every branch; opt_lifetimes
-// off stops the default lifetime pass from shifting the seed/coefficient FPRs. The sin helper reuses
-// one `p` for the branch pivot so the wrapped angle/scratch pair colours f1/f0; the cos helper uses a
-// separate `x`, which keeps the coefficient seeds in f5/f3/f2 and the squared term in f0.
+// off stops the default lifetime pass from shifting the seed/coefficient FPRs. Every FPR matches
+// except the scratch pair: the target has the angle^2 scratch in f0 and the 1.5708 pivot/wrapped
+// angle in f1; ours swaps them in both helpers.
+// NONMATCHING (99.18%): scratch pair f0/f1 swapped (target f0 scratch / f1 pivot, ours f0 pivot / f1 scratch).
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;
 	s32 coin = evtGetValue(event, args[0]);
