@@ -896,30 +896,38 @@ void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch) {
 	}
 }
 
-// NONMATCHING (79.37%): full command/icon loop reconstructed from asm. Remaining: the compiler keeps a
-// single .rodata base in r29 and names the command strings (str_8041A31C...) whereas ours emit anon @-labels,
-// and the icon block's float schedule / frame layout differs.
+// NONMATCHING (97.27%): rodata format offsets (another function's string is emitted first), iconDispGxAlpha's
+// s16 iconId (header, see sac_suki.c), the inlined FontDrawStart_alpha/FontDrawColor_ schedule and an 8-byte
+// stack pad before ipos still differ.
 void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
-	Mtx trans;
 	Mtx m;
-	s32 x = 0;
-	s32 y = 0;
+	Mtx trans;
 	u16 glyph;
+	s32 x;
+	s32 y;
+#ifdef MUST_MATCH
+	// Retail materialises the newline reset value with an fctiwz of 0.0f (r28), not a `li`.
+	f32 x0 = 0.0f;
+#else
+	s32 x0 = 0;
+#endif
 	char arg1[128];
 	char arg2[128];
 
 	cam = camGetCurPtr();
-	while ((s8)*msg) {
+	x = 0;
+	y = 0;
+	while (*(s8*)msg) {
 		glyph = 0xFFFF;
-		if (_ismbblead((s8)*msg)) {
+		if (_ismbblead(*(s8*)msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
 		else {
-			switch ((s8)*msg) {
+			switch (*(s8*)msg) {
 			case '\n':
-				x = 0;
+				x = x0;
 				y -= 28;
 				msg++;
 				break;
@@ -957,34 +965,26 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					}
 					iconGetWidthHight(&iw, &ih, (u16)id);
 					ipos.x = (f32)x + (0.5f * (f32)iw) * scale + (f32)a1;
-					ipos.y = (f32)y + (0.5f * (f32)ih) * scale + (f32)a2;
+					ipos.y = (f32)y - (f32)ih * scale + (f32)a2;
 					ipos.z = 0.0f;
 					PSMTXMultVec(mtx, &ipos, &ipos);
 					iconDispGxAlpha(&ipos, 0x10, (u16)id, fontAlpha, scale);
-					{
-						GXColor c = fontColTbl[0];
-						fontEdge = FALSE;
-						fontScale.x = 1.0f;
-						fontScale.y = 1.0f;
-						fontScale.z = 1.0f;
-						JUTFont_DrawStart(c);
-					}
-					{
-						GXColor c = fontColTbl[0];
-						FontDrawColor(&c);
-					}
-					x = (s32)((f32)x + (f32)iw * scale + (f32)offset);
+					FontDrawStart_alpha(fontAlpha);
+					FontDrawColor_();
+					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
-				else if (arg1[0] == 'R') {
+				// Retail's `/r` test is dead: the compiler compares the sign-extended
+				// first byte against the two-char constant 0x2f72 ('/r'). Reproduce it.
+				else if ((s8)arg1[0] == 'R' || (s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72) {
 					break;
 				}
-				if (*msg == '\n') {
+				if (*(s8*)msg == '\n') {
 					msg++;
 				}
 				break;
 			default:
-				glyph = JUTFont_CodeToGlyph((s8)*msg);
 				msg++;
+				glyph = JUTFont_CodeToGlyph(*(s8*)(msg - 1));
 				break;
 			}
 		}
@@ -1012,17 +1012,19 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (79.91%): red|/red|col|/col|icon command loop reconstructed from asm; same anon @-label and
-// icon-schedule/frame diffs as FontDrawMessageMtx.
-void FontDrawMessage(s32 x, s32 y, const char* msg) {
-	s32 x0 = x;
+// NONMATCHING (93.81%): unit-wide literal-pool order (sda21/rodata offsets) and stack/frame layout still differ;
+// the allocator leaves the frame 0x224 not 0x230, so a few stack slots, callee-saved registers and scheduling
+// remain. Loop, command dispatch, FP icon math, alpha blend and edge block otherwise match.
+void FontDrawMessage(s32 x0, s32 y, const char* msg) {
+	s32 x = x0;
+	s32 yy = y;
 	u16 glyph;
 	char arg1[128];
 	char arg2[128];
 
-	while ((s8)*msg) {
+	while ((s8)*msg != 0) {
 		glyph = 0xFFFF;
-		if (_ismbblead((s8)*msg)) {
+		if (_ismbblead(msg[0])) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
@@ -1030,7 +1032,7 @@ void FontDrawMessage(s32 x, s32 y, const char* msg) {
 			switch ((s8)*msg) {
 			case '\n':
 				x = x0;
-				y -= 28;
+				yy -= 28;
 				msg++;
 				break;
 			case '<':
@@ -1076,15 +1078,14 @@ void FontDrawMessage(s32 x, s32 y, const char* msg) {
 					}
 					iconGetWidthHight(&iw, &ih, (u16)id);
 					ipos.x = (f32)x + (0.5f * (f32)iw) * scale + (f32)a1;
-					ipos.y = (f32)y + (0.5f * (f32)ih) * scale + (f32)a2;
+					ipos.y = (f32)yy - (f32)ih * scale + (f32)a2;
 					ipos.z = 0.0f;
 					iconDispGxAlpha(&ipos, 0x10, (u16)id, fontAlpha, scale);
 					{
 						GXColor c = fontColTbl[0];
+						c.a = (c.a * fontAlpha) / 255;
 						fontEdge = FALSE;
-						fontScale.x = 1.0f;
-						fontScale.y = 1.0f;
-						fontScale.z = 1.0f;
+						fontScale = vec3_802c48c0;
 						JUTFont_DrawStart(c);
 					}
 					{
@@ -1093,10 +1094,15 @@ void FontDrawMessage(s32 x, s32 y, const char* msg) {
 					}
 					x = (s32)((f32)x + (f32)iw * scale + (f32)offset);
 				}
-				else if (arg1[0] == 'R') {
+#ifdef MUST_MATCH // retail emits `cmpwi r0,0x2f / bne / cmplwi r0,0x2f72`; the second test is always
+                 // false (r0 is a sign-extended byte), so this disjunct is a no-op. Natural form is below.
+				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
+#else
+				else if ((s8)arg1[0] == 'R') {
+#endif
 					break;
 				}
-				if (*msg == '\n') {
+				if ((s8)*msg == '\n') {
 					msg++;
 				}
 				break;
@@ -1113,15 +1119,19 @@ void FontDrawMessage(s32 x, s32 y, const char* msg) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
+			s16 sx;
+			s16 sy;
 			FontDrawColor(&c);
-			_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
-			_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
-			_JUTFont_DrawPos(glyph, (s16)x, (s16)y - 2);
-			_JUTFont_DrawPos(glyph, (s16)x, (s16)y + 2);
+			sx = x;
+			sy = yy;
+			_JUTFont_DrawPos(glyph, sx - 2, sy);
+			_JUTFont_DrawPos(glyph, sx + 2, sy);
+			_JUTFont_DrawPos(glyph, sx, sy - 2);
+			_JUTFont_DrawPos(glyph, sx, sy + 2);
 			c2 = saved;
 			FontDrawColor(&c2);
 		}
-		_JUTFont_DrawPos(glyph, (s16)x, (s16)y);
+		_JUTFont_DrawPos(glyph, (s16)x, (s16)yy);
 		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
 	}
 }

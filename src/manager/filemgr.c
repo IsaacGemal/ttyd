@@ -43,35 +43,86 @@ void fileInit(void) {
 	afp->lastavailable->next = NULL;
 }
 
-#pragma dont_inline on // keeps fileGarbageDataAdrClear a real `bl` from fileGarbageMoveMem, as retail does
-// NONMATCHING (16.42%): 3 instructions differ, 350 missing, 1 extra, plus register differences.
+// Cases 1,2,3,5,6,7,8,9,10 and the type-5 loop match exactly. Case 4 (TPL) is instruction-identical
+// except the loop counter/byte-offset registers are swapped (i is r6 vs r5, the i*8 offset r5 vs r6)
+// and the compiler's anonymous jump table symbol name differs.
+// NONMATCHING (99.79%): case 4 register allocation and jump table symbol only.
 void fileGarbageDataAdrClear(FileEntry* entry) {
-	TEXPalette* tpl;
-	TEXHeader* img;
-	CLUTHeader* pal;
-	int i;
 	void* data = *entry->data;
+	u8* d = data;
+
 	switch (entry->field_0x1) {
-		case 4: //TPL file
-			tpl = data;
+		case 1:
+			if (*(u32*)(d + 0x14C) >= (u32)data) {
+				*(u32*)(d + 0x14C) -= (u32)data;
+				*(u32*)(d + 0x150) -= (u32)data;
+				*(u32*)(d + 0x154) -= (u32)data;
+				*(u32*)(d + 0x158) -= (u32)data;
+				*(u32*)(d + 0x15C) -= (u32)data;
+				*(u32*)(d + 0x160) -= (u32)data;
+				*(u32*)(d + 0x164) -= (u32)data;
+				*(u32*)(d + 0x168) -= (u32)data;
+				*(u32*)(d + 0x16C) -= (u32)data;
+				*(u32*)(d + 0x170) -= (u32)data;
+				*(u32*)(d + 0x174) -= (u32)data;
+				*(u32*)(d + 0x178) -= (u32)data;
+				*(u32*)(d + 0x17C) -= (u32)data;
+				*(u32*)(d + 0x180) -= (u32)data;
+				*(u32*)(d + 0x184) -= (u32)data;
+				*(u32*)(d + 0x188) -= (u32)data;
+				*(u32*)(d + 0x18C) -= (u32)data;
+				*(u32*)(d + 0x190) -= (u32)data;
+				*(u32*)(d + 0x194) -= (u32)data;
+				*(u32*)(d + 0x198) -= (u32)data;
+				*(u32*)(d + 0x19C) -= (u32)data;
+				*(u32*)(d + 0x1A0) -= (u32)data;
+				*(u32*)(d + 0x1A4) -= (u32)data;
+				*(u32*)(d + 0x1A8) -= (u32)data;
+				*(u32*)(d + 0x1AC) -= (u32)data;
+			}
+			break;
+
+		case 2:
+			if (*(u32*)(d + 0x24) >= (u32)data) {
+				*(u32*)(d + 0x24) -= (u32)data;
+				*(u32*)(d + 0x28) -= (u32)data;
+				*(u32*)(d + 0x2C) -= (u32)data;
+				*(u32*)(d + 0x30) -= (u32)data;
+				*(u32*)(d + 0x34) -= (u32)data;
+				*(u32*)(d + 0x38) -= (u32)data;
+				*(u32*)(d + 0x3C) -= (u32)data;
+				*(u32*)(d + 0x40) -= (u32)data;
+			}
+			break;
+
+		case 3:
+			if (*(u32*)(d + 0x48) >= (u32)data) {
+				*(u32*)(d + 0x48) -= (u32)data;
+			}
+			break;
+
+		case 4: { // TPL file
+			TEXPalette* tpl = data;
+			u16 i;
+
 			if (tpl->versionNumber != 0x0020AF30) {
 				OSPanic("filemgr.c", 147, "invalid version number for texture palette");
 			}
 			if ((u32)tpl->descriptorArray >= (u32)tpl) {
 				for (i = 0; i < tpl->numDescriptors; i++) {
-					img = tpl->descriptorArray[i].textureHeader;
+					TEXHeader* img = tpl->descriptorArray[i].textureHeader;
 					if (img) {
 						if (img->unpacked) {
 							img->unpacked = FALSE;
-							img->data -= (u32)tpl;
+							tpl->descriptorArray[i].textureHeader->data -= (u32)tpl;
 						}
 						tpl->descriptorArray[i].textureHeader = (void*)((u32)tpl->descriptorArray[i].textureHeader - (u32)tpl);
 					}
-					pal = tpl->descriptorArray[i].CLUTHeader;
-					if (pal) {
+					if (tpl->descriptorArray[i].CLUTHeader) {
+						CLUTHeader* pal = tpl->descriptorArray[i].CLUTHeader;
 						if (pal->unpacked) {
 							pal->unpacked = FALSE;
-							pal->data -= (u32)tpl;
+							tpl->descriptorArray[i].CLUTHeader->data -= (u32)tpl;
 						}
 						tpl->descriptorArray[i].CLUTHeader = (void*)((u32)tpl->descriptorArray[i].CLUTHeader - (u32)tpl);
 					}
@@ -79,12 +130,116 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 				tpl->descriptorArray = (void*)((u32)tpl->descriptorArray - (u32)tpl);
 			}
 			break;
+		}
+		case 5: { // AnimationPoseData?
+			s32 i;
+			s32 count;
+
+			if (*(u32*)(d + 0x14C) >= (u32)data) {
+				count = *(s32*)(d + 0x148);
+				for (i = 0; i < count; i++) {
+					u32 elem = *(u32*)(d + 0x1AC) + i * 0x40;
+					u32 ptr = *(u32*)(elem + 0x3C);
+
+					*(u32*)(elem + 0x3C) = ptr - (u32)data;
+					if (*(u32*)(ptr + 0x24) >= ptr) {
+						*(u32*)(ptr + 0x24) -= ptr;
+						*(u32*)(ptr + 0x28) -= ptr;
+						*(u32*)(ptr + 0x2C) -= ptr;
+						*(u32*)(ptr + 0x30) -= ptr;
+						*(u32*)(ptr + 0x34) -= ptr;
+						*(u32*)(ptr + 0x38) -= ptr;
+						*(u32*)(ptr + 0x3C) -= ptr;
+						*(u32*)(ptr + 0x40) -= ptr;
+					}
+				}
+				*(u32*)(d + 0x14C) -= (u32)data;
+				*(u32*)(d + 0x150) -= (u32)data;
+				*(u32*)(d + 0x154) -= (u32)data;
+				*(u32*)(d + 0x158) -= (u32)data;
+				*(u32*)(d + 0x15C) -= (u32)data;
+				*(u32*)(d + 0x160) -= (u32)data;
+				*(u32*)(d + 0x164) -= (u32)data;
+				*(u32*)(d + 0x168) -= (u32)data;
+				*(u32*)(d + 0x16C) -= (u32)data;
+				*(u32*)(d + 0x170) -= (u32)data;
+				*(u32*)(d + 0x174) -= (u32)data;
+				*(u32*)(d + 0x178) -= (u32)data;
+				*(u32*)(d + 0x17C) -= (u32)data;
+				*(u32*)(d + 0x180) -= (u32)data;
+				*(u32*)(d + 0x184) -= (u32)data;
+				*(u32*)(d + 0x188) -= (u32)data;
+				*(u32*)(d + 0x18C) -= (u32)data;
+				*(u32*)(d + 0x190) -= (u32)data;
+				*(u32*)(d + 0x194) -= (u32)data;
+				*(u32*)(d + 0x198) -= (u32)data;
+				*(u32*)(d + 0x19C) -= (u32)data;
+				*(u32*)(d + 0x1A0) -= (u32)data;
+				*(u32*)(d + 0x1A4) -= (u32)data;
+				*(u32*)(d + 0x1A8) -= (u32)data;
+				*(u32*)(d + 0x1AC) -= (u32)data;
+			}
+			break;
+		}
+		case 6:
+			if (*(u32*)(d + 0x48) >= (u32)data) {
+				*(u32*)(d + 0x48) -= (u32)data;
+			}
+			break;
+
+		case 7:
+			if (*(u32*)(d + 0x64) >= (u32)data) {
+				*(u32*)(d + 0x64) -= (u32)data;
+				*(u32*)(d + 0x68) -= (u32)data;
+				*(u32*)(d + 0x6C) -= (u32)data;
+			}
+			break;
+
+		case 8:
+			if (*(u32*)(d + 0xC8) >= (u32)data) {
+				*(u32*)(d + 0xC8) -= (u32)data;
+				*(u32*)(d + 0xCC) -= (u32)data;
+				*(u32*)(d + 0xD0) -= (u32)data;
+				*(u32*)(d + 0xD4) -= (u32)data;
+				*(u32*)(d + 0xD8) -= (u32)data;
+				*(u32*)(d + 0xDC) -= (u32)data;
+				*(u32*)(d + 0xE0) -= (u32)data;
+				*(u32*)(d + 0xE4) -= (u32)data;
+				*(u32*)(d + 0xE8) -= (u32)data;
+				*(u32*)(d + 0xEC) -= (u32)data;
+				*(u32*)(d + 0xF0) -= (u32)data;
+				*(u32*)(d + 0xF4) -= (u32)data;
+				*(u32*)(d + 0xF8) -= (u32)data;
+				*(u32*)(d + 0xFC) -= (u32)data;
+				*(u32*)(d + 0x100) -= (u32)data;
+				*(u32*)(d + 0x104) -= (u32)data;
+				*(u32*)(d + 0x108) -= (u32)data;
+				*(u32*)(d + 0x10C) -= (u32)data;
+				*(u32*)(d + 0x110) -= (u32)data;
+				*(u32*)(d + 0x114) -= (u32)data;
+				*(u32*)(d + 0x118) -= (u32)data;
+				*(u32*)(d + 0x11C) -= (u32)data;
+				*(u32*)(d + 0x120) -= (u32)data;
+			}
+			break;
+
+		case 9:
+			if (*(u32*)(d + 0x58) >= (u32)data) {
+				*(u32*)(d + 0x58) -= (u32)data;
+				*(u32*)(d + 0x5C) -= (u32)data;
+				*(u32*)(d + 0x60) -= (u32)data;
+				*(u32*)(d + 0x64) -= (u32)data;
+			}
+			break;
+
+		case 10:
+			if (*(u32*)(d + 0x48) >= (u32)data) {
+				*(u32*)(d + 0x48) -= (u32)data;
+			}
+			break;
 
 		default: break;
 	}
-	//case 0, binary/default, rel
-	//case 4, TEXPalette*, state 1
-	//case 5, AnimationPoseData*, state 1
 }
 
 #pragma dont_inline reset

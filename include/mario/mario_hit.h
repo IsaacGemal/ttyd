@@ -11,6 +11,8 @@ extern const f32 float_0p265_8041a7f4;
 extern const f64 double_0p5_802c5928;
 extern const f64 double_3_802c5930;
 extern const f64 double_0_802c5938;
+extern const Vec vec3_802c57a8;
+extern const Vec vec3_802c57b4;
 
 struct HitEntry;
 
@@ -25,6 +27,7 @@ void marioSearchFrontWall_staying(f32 a);
 s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 void marioChkGnd(void);
 void* marioLandonChk_old(f32* pos, f32 spd);
+void* marioChkLandon2(f32* out, f32 a, f32 b);
 HitEntry* dou10_yoko_yari(f32* p);
 s32 marioSlitChkWallAround(void);
 HitEntry* dou10_yoko_yari2(f32* out);

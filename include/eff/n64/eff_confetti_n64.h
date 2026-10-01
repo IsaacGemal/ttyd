@@ -12,6 +12,7 @@ typedef struct effConfettiN64Data {
 	s32 camId;       // 0x34
 } effConfettiN64Data; // 0x38
 void effConfettiN64SetCamId(EffectEntry* entry, s32 camId);
+void effConfettiMain(EffectEntry* effect);
 void effConfettiDisp(CameraId camId, void* param);
 #include "driver/effdrv.h"
 EffectEntry* effConfettiN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale);

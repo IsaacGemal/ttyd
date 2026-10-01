@@ -8,3 +8,4 @@ void chuchu_exit(PartyEntry* party);
 void chuchu_init(PartyEntry* party);
 void chuchu_move(PartyEntry* party);
 void chuchu_use(PartyEntry* party);
+void chuchu_reinit(PartyEntry* party);

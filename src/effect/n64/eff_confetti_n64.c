@@ -3,8 +3,10 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "eff/eff_n64.h"
+#include "memory.h"
 
 #include <stdlib.h>
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -26,12 +28,25 @@ extern const f32 float_0p05_8041ec20;
 extern const f32 float_10_8041ec24;
 extern const f32 float_0p98_8041ec28;
 extern const f32 float_neg0p5_8041ec2c;
+extern const f32 float_3_8041ec30;
+extern const f32 float_4_8041ec34;
+extern const f32 float_0p5_8041ec38;
+extern const f32 float_6p2832_8041ec3c;
+extern const f32 float_360_8041ec40;
+extern const f32 float_1_8041ec44;
+extern const f32 float_neg0p02_8041ec48;
+extern const f32 float_0p02_8041ec4c;
 
 // .rodata zero vector this unit's particles are laid out from.
 const Vec vec3_802fa438 = { 0.0f, 0.0f, 0.0f };
 
-// .rodata int->float conversion constant the original references by name.
+// .rodata int->float conversion constant the original references by name.  Kept const: the
+// compiler folds it to an anonymous @NNN pool object, but objdiff's function score ignores the
+// reloc-name difference (only `check.py FUNC`'s instruction listing shows it).
 const f64 double_to_int_802fa448 = 4503601774854144.0;
+
+// .rodata effect name the original stores into EffectEntry::type.
+const char str_802FA450[12] = "ConfettiN64";
 
 // .sbss2 scratch GXColor the original builds its TEV colour from.
 extern GXColor unk_804230c8;
@@ -39,12 +54,166 @@ extern GXColor unk_804230c8;
 // .sdata tables and .data vertex arrays belonging to this unit.
 extern u8 color_table[36];
 extern u8 anm_seq[8];
-extern u32 size6x6_tex16x16_vtx[];
-extern u32 size6x6_tex16x16_2_vtx[];
+// .data vertex arrays (retail defines both here, before the Entry jump table).
+u32 size6x6_tex16x16_vtx[14] = {
+	0xFFFDFFFD, 0x00000000, 0x0000FFFF, 0xFFFF0003,
+	0xFFFD0000, 0x02000000, 0xFFFFFFFF, 0x00030003,
+	0x00000200, 0x0200FFFF, 0xFFFFFFFD, 0x00030000,
+	0x00000200, 0xFFFFFFFF,
+};
+u32 size6x6_tex16x16_2_vtx[56] = {
+	0xFFFDFFFD, 0x00000000, 0x0000FFFF, 0xFFFF0003,
+	0xFFFD0000, 0x02000000, 0xFFFFFFFF, 0x00030003,
+	0x00000200, 0x0200FFFF, 0xFFFFFFFD, 0x00030000,
+	0x00000200, 0xFFFFFFFF, 0xFFDE001A, 0x001E0000,
+	0x0800FFFF, 0xFFFFFFE4, 0x001A001E, 0x02000800,
+	0xFFFFFFFF, 0xFFE40020, 0x001E0200, 0x0A00FFFF,
+	0xFFFFFFDE, 0x0020001E, 0x00000A00, 0xFFFFFFFF,
+	0x0010002E, 0x00280000, 0x1000FFFF, 0xFFFF0016,
+	0x002E0028, 0x02001000, 0xFFFFFFFF, 0x00160034,
+	0x00280200, 0x1200FFFF, 0xFFFF0010, 0x00340028,
+	0x00001200, 0xFFFFFFFF, 0xFFF20006, 0xFFCE0000,
+	0x1800FFFF, 0xFFFFFFF8, 0x0006FFCE, 0x02001800,
+	0xFFFFFFFF, 0xFFF8000C, 0xFFCE0200, 0x1A00FFFF,
+	0xFFFFFFF2, 0x000CFFCE, 0x00001A00, 0xFFFFFFFF,
+};
 
 void effConfettiN64SetCamId(EffectEntry* entry, s32 camId) {
 	((effConfettiN64Data*)entry->userdata)->camId = camId;
 }
+
+// Declaring randCount as f32 (so its int->float conversion is the first use of the magic double)
+// and using an explicit `half` temp for radius2 makes the FPR locals land on the target's
+// f6/f21-f27, and the loop-invariant constants on f28=double, f29=0.01, f30=6p2832, f31=360.
+// `opt_common_subs off` is required for that colouring: with CSE on MWCC puts float_360 in f28
+// and double/6p2832 in f30/f31.  All GPRs, the position/velocity math and the type-3 reinit match
+// either way.
+#pragma opt_common_subs off // required for the f28-f31 preheader constant colouring above
+EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
+	s32 timer;
+	s32 type10;
+	EffectEntry* effect;
+	effConfettiN64Data* data;
+	effConfettiN64Data* part;
+	s32 i;
+	s32 count;
+	s32 num;
+	s32 angle0;
+	f32 randCount;
+	f32 sinA;
+	f32 cosA;
+	f32 angle;
+	f32 sinB;
+	f32 radius2;
+	f32 radius;
+	f32 randRadius;
+	f32 cosB;
+	f32 half;
+
+	effect = effEntry();
+	type10 = type % 10;
+	switch (type10) {
+	case 0:
+		count = 12;
+		break;
+	case 1:
+		count = 18;
+		break;
+	case 2:
+		count = 24;
+		break;
+	case 4:
+		count = 12;
+		break;
+	case 5:
+		count = 18;
+		break;
+	case 6:
+		count = 24;
+		break;
+	default:
+		count = 48;
+		break;
+	}
+	switch (type10) {
+	case 0:
+	case 4:
+		radius = float_3_8041ec30;
+		break;
+	case 1:
+	case 5:
+		radius = float_4_8041ec34;
+		break;
+	case 2:
+	case 3:
+	case 6:
+	default:
+		radius = float_5_8041ec14;
+		break;
+	}
+	effect->type = str_802FA450;
+	num = count + 1;
+	effect->count = num;
+	data = __memAlloc(HEAP_EFFECT, num * sizeof(effConfettiN64Data));
+	effect->userdata = data;
+	effect->callback = effConfettiMain;
+	part = data + 1;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	*(s32*)((u8*)data + 0x24) = 0;
+	*(s32*)((u8*)data + 0x20) = lifetime;
+	data->type = type;
+	*(s32*)((u8*)data + 0x2c) = count;
+	*(s32*)((u8*)data + 0x28) = 0xff;
+	data->camId = 4;
+
+	angle0 = rand() % 360;
+	half = float_0p5_8041ec38 * radius;
+	radius2 = half + half;
+
+	for (i = 0, timer = 0; i < count; timer += 3, i++, part++) {
+		randCount = (f32)(rand() % 101);
+		randRadius = float_0p01_8041ec1c * randCount * radius;
+		angle = float_6p2832_8041ec3c *
+			((f32)angle0 + float_360_8041ec40 * (f32)i / (f32)count) / float_360_8041ec40;
+		part->type = type;
+		sinA = (f32)sin(angle);
+		cosA = (f32)cos(angle);
+		sinB = (f32)sin(angle);
+		cosB = (f32)cos(angle);
+		if (type10 == 3) {
+			part->x = float_0p1_8041ec04 * (rand() % 701) - float_35_8041ec08;
+			part->y = float_0_8041ec00;
+			part->z = float_0p1_8041ec04 * (rand() % 301) - float_15_8041ec0c;
+			*(f32*)((u8*)part + 0x10) = float_0p03_8041ec10 *
+				(float_0p1_8041ec04 * (rand() % 101) + part->x - float_5_8041ec14);
+			*(f32*)((u8*)part + 0x14) = float_neg1p7_8041ec18 -
+				float_0p01_8041ec1c * (float_0p1_8041ec04 * (rand() % 801));
+			*(f32*)((u8*)part + 0x18) = float_0p05_8041ec20 *
+				(float_0p1_8041ec04 * (rand() % 201) - float_10_8041ec24);
+			*(s32*)((u8*)part + 0x20) = 0x78;
+			*(s32*)((u8*)part + 0x30) = timer;
+		} else {
+			part->x = cosB * (randRadius * sinA);
+			part->y = cosB * (randRadius * cosA);
+			part->z = randRadius * sinB;
+			*(f32*)((u8*)part + 0x10) = cosB * (radius2 * sinA);
+			*(f32*)((u8*)part + 0x14) = cosB * (radius2 * cosA) + float_1_8041ec44;
+			*(f32*)((u8*)part + 0x18) = radius2 * sinB;
+			if (type10 >= 4) {
+				*(f32*)((u8*)part + 0x1c) = float_neg0p02_8041ec48 -
+					float_0p02_8041ec4c * (f32)((i + 1) % 3);
+			} else {
+				*(f32*)((u8*)part + 0x1c) = float_0_8041ec00;
+			}
+			*(s32*)((u8*)part + 0x30) = i & 3;
+		}
+	}
+	return effect;
+}
+
+#pragma opt_common_subs reset
 
 // MUST_MATCH: retail builds the position Vec in a scratch slot and copies it into a second local
 // before dispCalcZ.  The inline starts from a literal zero vector: a named zero vector's load is
@@ -174,17 +343,16 @@ static inline void makeConfettiColor1(void) {
 }
 #endif
 
-// The instructions, stack slots and GXColor temporaries all match; only the register colouring of the
-// loop-invariant values that live across the loop differs.  Reading the frame counter straight into
-// `seq` (instead of into `i` and then reusing `i` for the loop counter) makes the compiler hand the
-// round-tripped value r26 exactly as the original does.  The tail of the allocation still rotates:
-// the original puts anm_seq in r29, the shared /6 and /12 divisor magic in r30 and the loop-invariant
-// seq in r31; this build uses seq r29, anm_seq r30, magic r31.  Declaration-order (perm_decls) and
-// pragma (opt_propagation/opt_lifetimes/opt_common_subs/optimize_for_size) searches on top of this
-// shape all leave the same rotation.  The implicit int->float constant is emitted as a local @NNN
-// label instead of double_to_int_802fa448; objdiff scores that as equal (same as unit_object_tree),
-// so it is not part of the 0.14%.
-// NONMATCHING (99.86%): anm_seq/divisor/seq are r30/r31/r29; the original has r29/r30/r31.
+// The instructions, stack slots, GXColor temporaries and the frame/loop register (r26) now all
+// match.  Reading the frame into `seq` (then `seq = (seq >> 1) % 6`) rather than into `i` is what
+// lets the allocator keep `i` in r26.  The only remaining difference is the colouring of the
+// three pre-loop values: the target uses anm_seq r29, divisor r30, seq r31; this build uses
+// seq r29, anm_seq r30, divisor r31 (a 3-cycle).  Both modulos schedule identically, so it is a
+// pure allocator tie-break.  Declaration-order and pragma searches (opt_propagation/opt_lifetimes/
+// opt_common_subs/...) and pointer/helper forms for the anm_seq access did not move it.  The
+// implicit int->float constant is also emitted as an anonymous @NNN pool object instead of
+// double_to_int_802fa448 (a duplicate of the file's named .rodata copy).
+// NONMATCHING (99.86%): only the seq/anm_seq/divisor 3-cycle above differs.
 void effConfettiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	s32 type;
@@ -206,7 +374,7 @@ void effConfettiDisp(CameraId camId, void* param) {
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	seq = *(s32*)(data->unk_0x10 + 0x14);
+	seq = *(s32*)((u8*)data + 0x24);
 	type = data->type;
 	count = *(s32*)((u8*)data + 0x2C);
 	alpha = *(s32*)((u8*)data + 0x28);

@@ -4,6 +4,7 @@ typedef struct HitEntry HitEntry;
 
 #include <dolphin/types.h>
 void marioReInit_ship(void);
+void marioForceShipAnime(void);
 s32 marioShipChanging(void);
 s32 marioChkShipPlace(HitEntry* hit);
 s32 N_marioShipGetDir(void);

@@ -1,6 +1,7 @@
 #include "driver/mapdrv.h"
 #include "driver/arcdrv.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/offscreendrv.h"
 #include "manager/dvdmgr.h"
 #include "mario/mariost.h"
@@ -53,6 +54,7 @@ extern GXColor unk_80422f8c;
 extern GXColor unk_80422f90;
 extern GXColor unk_80422f84;
 const f32 float_0_80419850 = 0.0f;
+extern f32 float_0p5_80419854;
 extern f32 float_1000_80419874;
 extern f32 float_10_80419864;
 extern f32 float_deg2rad_80419868;
@@ -60,6 +62,9 @@ const f32 float_1_80419860 = 1.0f;
 extern f32 float_2_80419858;
 extern f32 float_3_8041984c;
 extern f32 float_neg2_804198a0;
+extern f32 float_neg1_804198a8;
+extern f32 float_5000_804198ac;
+extern f32 float_10000_804198b0;
 extern f32 float_1Eneg08_804198b8;
 extern Vec vec3_802c18f4[];
 extern Vec vec3_802c1900[];
@@ -72,6 +77,13 @@ s32 fog_type[5] = {2, 4, 5, 6, 7};
 
 //forward decls for functions defined later in this file
 static MapObject* mapGetMapObjSub(const char* name);
+
+extern f32 float_neg1p0486E06_80419870;
+
+// material rodata blob: the original anchors this whole .rodata region at vec3_802c16d8
+// and reaches the other tables below with constant offsets (0xEC texwrap_tbl, 0x100 lightid_tbl,
+// 0x120..0x150 direction vectors, 0x2C8 int->double mask).
+extern u8 vec3_802c16d8[];
 
 void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor c;
@@ -692,6 +704,122 @@ BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
 		return TRUE;
 	}
 	return FALSE;
+}
+
+extern int __float_nan[];
+#define SPLINE_NAN (*(f32*)__float_nan)
+
+static inline s32 spline_fpclassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+		case 0x7F800000:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_NAN;
+			} else {
+				return FP_INFINITE;
+			}
+			break;
+		case 0:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_SUBNORMAL;
+			} else {
+				return FP_ZERO;
+			}
+			break;
+		default:
+			return FP_NORMAL;
+	}
+}
+
+static inline f32 spline_sqrtf(f32 x) {
+	const f64 _half = .5;
+	const f64 _three = 3.0;
+
+	if (x > float_0_80419850) {
+		f64 guess = __frsqrte(x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		return x * guess;
+	} else if (x < 0.0) {
+		return SPLINE_NAN;
+	} else if (spline_fpclassifyf(x) == FP_NAN) {
+		return SPLINE_NAN;
+	}
+	return x;
+}
+
+// NONMATCHING (88.79%): arithmetic/control flow match instruction-for-instruction; MWCC still rematerializes
+// the inlined sqrtf's double pool (target reserves r31 = vec3_802c16d8 and reads 0x2a8/0x2b0/0x2b8 off it),
+// which recolors the callee-saved GPRs one register low; the `@NNNN` .rodata entries are that same pool.
+void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
+	f32* knots = (f32*)b;
+	Vec* tangents = (Vec*)c;
+	Vec* points = (Vec*)a;
+	f32* dt = (f32*)_mapAlloc(count * 4);
+	Vec* mat = (Vec*)_mapAlloc(count * 0xC);
+	s32 i;
+
+	knots[0] = 0.0f;
+	for (i = 0; i < count - 1; i++) {
+		f32 dx = points[i + 1].x - points[i].x;
+		f32 dy = points[i + 1].y - points[i].y;
+		f32 dz = points[i + 1].z - points[i].z;
+
+		knots[i + 1] = knots[i] + spline_sqrtf(dx * dx + dy * dy + dz * dz);
+	}
+
+	for (i = 1; i < count; i++) {
+		knots[i] = knots[i] / knots[count - 1];
+	}
+
+	tangents[0].x = 0.0f;
+	tangents[0].y = 0.0f;
+	tangents[0].z = 0.0f;
+	tangents[count - 1].x = 0.0f;
+	tangents[count - 1].y = 0.0f;
+	tangents[count - 1].z = 0.0f;
+	for (i = 0; i < count - 1; i++) {
+		dt[i] = knots[i + 1] - knots[i];
+		if (dt[i] == 0.0f) {
+			dt[i] = float_0p0001_8041985c;
+		}
+		mat[i + 1].x = (points[i + 1].x - points[i].x) / dt[i];
+		mat[i + 1].y = (points[i + 1].y - points[i].y) / dt[i];
+		mat[i + 1].z = (points[i + 1].z - points[i].z) / dt[i];
+	}
+
+	tangents[1].x = mat[2].x - mat[1].x;
+	tangents[1].y = mat[2].y - mat[1].y;
+	tangents[1].z = mat[2].z - mat[1].z;
+	mat[1].x = 2.0f * (knots[2] - knots[0]);
+	mat[1].y = 2.0f * (knots[2] - knots[0]);
+	mat[1].z = 2.0f * (knots[2] - knots[0]);
+
+	for (i = 1; i < count - 2; i++) {
+		f32 wx = dt[i] / mat[i].x;
+		f32 wy = dt[i] / mat[i].y;
+		f32 wz = dt[i] / mat[i].z;
+
+		tangents[i + 1].x = (mat[i + 2].x - mat[i + 1].x) - wx * tangents[i].x;
+		tangents[i + 1].y = (mat[i + 2].y - mat[i + 1].y) - wy * tangents[i].y;
+		tangents[i + 1].z = (mat[i + 2].z - mat[i + 1].z) - wz * tangents[i].z;
+		mat[i + 1].x = 2.0f * (knots[i + 2] - knots[i]) - wx * dt[i];
+		mat[i + 1].y = 2.0f * (knots[i + 2] - knots[i]) - wy * dt[i];
+		mat[i + 1].z = 2.0f * (knots[i + 2] - knots[i]) - wz * dt[i];
+	}
+
+	tangents[count - 2].x = tangents[count - 2].x - dt[count - 2] * tangents[count - 1].x;
+	tangents[count - 2].y = tangents[count - 2].y - dt[count - 2] * tangents[count - 1].y;
+	tangents[count - 2].z = tangents[count - 2].z - dt[count - 2] * tangents[count - 1].z;
+
+	for (i = count - 2; i >= 1; i--) {
+		tangents[i].x = (tangents[i].x - dt[i] * tangents[i + 1].x) / mat[i].x;
+		tangents[i].y = (tangents[i].y - dt[i] * tangents[i + 1].y) / mat[i].y;
+		tangents[i].z = (tangents[i].z - dt[i] * tangents[i + 1].z) / mat[i].z;
+	}
+
+	_mapFree(mat);
+	_mapFree(dt);
 }
 
 // NONMATCHING (93.88%): the spline arithmetic and control flow match instruction-for-instruction; only
@@ -2047,9 +2175,145 @@ void mapMain(void) {
 
 }
 
-// NONMATCHING (0.19%): only a stub is present
+// 1:1
 void mapDisp(void) {
+	MapWork* wp;
+	MapEntry* entry;
+	MapObject* obj;
+	CameraEntry* cam;
+	MapFileJoint* joint;
+	Vec clipPos;
+	Vec dispPos;
+	Mtx scale;
+	Mtx mtx;
+	s32 j;
+	s32 i;
+	s32 id;
+	BOOL clip;
+	GXColor color;
+	GXColor matColor;
+	f32 order;
+	f32 clipV;
 
+	wp = &mapWork[activeGroup];
+	cam = camGetPtr(CAMERA_3D);
+#ifdef MUST_MATCH
+	/* the original emits cmpwi, i.e. it treats unk_80418458 as signed */
+	if ((s32)unk_80418458 != 0) {
+#else
+	if (unk_80418458 != 0) {
+#endif
+		return;
+	}
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		if (entry->rootMapObj != NULL) {
+			PSMTXScale(scale, float_10_80419864, float_10_80419864, float_10_80419864);
+			mapReCalcMatrix(entry->rootMapObj, scale, 0);
+		}
+		obj = entry->objects;
+		for (j = 0; j < entry->numJoints; j++, obj++) {
+#define OBJ_FLAGS (*(u32*)obj->field_0x0)
+			if (OBJ_FLAGS & 0x4000) continue;
+			if ((OBJ_FLAGS & 0x1) && !(OBJ_FLAGS & 0x80)) continue;
+			if (OBJ_FLAGS & 0x40) {
+				if (obj->field_0xC[3] == 0) continue;
+			}
+			if (OBJ_FLAGS & 0x20000000) {
+				*(u16*)(obj->field_0xEC + 4) = 0;
+				*(u16*)(obj->field_0xEC + 6) = 0;
+				*(u16*)(obj->field_0xEC + 0) = 0;
+				*(u16*)(obj->field_0xEC + 2) = 0;
+			}
+			if (OBJ_FLAGS & 0x20) continue;
+			if (!(OBJ_FLAGS & 0x10)) {
+				if (obj->joints->partCount < 1) continue;
+			}
+			if (!(OBJ_FLAGS & 0x800)) {
+				if ((entry->flags & 2) && entry->field_0x16[3] == 0) continue;
+			}
+			if (!(OBJ_FLAGS & 0x1000)) {
+				if ((entry->flags & 4) && entry->field_0x16[7] == 0) continue;
+			}
+			PSMTXConcat(cam->view, obj->modelWorldMtx, mtx);
+			if ((OBJ_FLAGS & 0x2) && !mapClipOffFlag) {
+				joint = obj->joints;
+#define CLIP_TEST(cx, cy, cz) \
+	clipPos.x = (cx); \
+	clipPos.y = (cy); \
+	clipPos.z = (cz); \
+	PSMTXMultVec(mtx, &clipPos, &clipPos); \
+	PSMTX44MultVec(cam->projection, &clipPos, &clipPos); \
+	clipV = clipPos.z; \
+	if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) { \
+		clipV = clipPos.x; \
+		if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) { \
+			clipV = clipPos.y; \
+			if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible; \
+		} \
+	}
+				clip = FALSE;
+				CLIP_TEST(joint->bboxMax.x, joint->bboxMax.y, joint->bboxMax.z)
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMin.z)
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMax.z)
+				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMax.z)
+#ifdef MUST_MATCH
+				/* the original transforms this corner through the model matrix twice */
+				clipPos.x = joint->bboxMax.x;
+				clipPos.y = joint->bboxMax.y;
+				clipPos.z = joint->bboxMin.z;
+				PSMTXMultVec(mtx, &clipPos, &clipPos);
+				PSMTXMultVec(mtx, &clipPos, &clipPos);
+				PSMTX44MultVec(cam->projection, &clipPos, &clipPos);
+				clipV = clipPos.z;
+				if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) {
+					clipV = clipPos.x;
+					if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) {
+						clipV = clipPos.y;
+						if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible;
+					}
+				}
+#else
+				CLIP_TEST(joint->bboxMax.x, joint->bboxMax.y, joint->bboxMin.z)
+#endif
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMax.z)
+				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMin.z)
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMin.z)
+#undef CLIP_TEST
+				clip = TRUE;
+			visible:
+				if (clip) continue;
+			}
+#undef OBJ_FLAGS
+			PSMTXMultVec(mtx, (Vec*)(obj->field_0xC + 4), &dispPos);
+			PSMTX44MultVec(cam->projection, &dispPos, &dispPos);
+			order = 5000.0f * dispPos.z + 5000.0f;
+			if (order < float_0_80419850) {
+				order = float_0_80419850;
+			}
+			else if (order > float_10000_804198b0) {
+				order = float_10000_804198b0;
+			}
+			order *= float_neg1_804198a8;
+			id = obj->field_0x0[4];
+			if (obj->joints->partCount > 0) {
+				color = *(GXColor*)obj->field_0xC;
+				matColor = *(GXColor*)((u8*)obj->joints->parts[0].material + 0x10C);
+				if (mapTestXLU(*(u32*)obj->field_0x0, &color, &matColor)) {
+					id = 2;
+				}
+			}
+			if (*(u32*)obj->field_0x0 & 0x20000000) {
+				dispEntry(CAMERA_OFFSCREEN2, float_5000_804198ac, 3, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_bbox : (DispCallback)mapDispMapGrp_bbox, obj);
+			}
+			if (*(u32*)obj->field_0x0 & 0x80) {
+				dispEntry(CAMERA_OFFSCREEN2, order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_off : (DispCallback)mapDispMapGrp_off, obj);
+			}
+			if (!(*(u32*)obj->field_0x0 & 0x1)) {
+				dispEntry(obj->field_0x0[5], order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj : (DispCallback)mapDispMapGrp, obj);
+			}
+		}
+	}
 }
 
 MapObject* mapGetMapObj(const char *name) { // 1:1
@@ -2073,6 +2337,188 @@ MapObject* mapGetMapObj(const char *name) { // 1:1
         }
     }
     return 0;
+}
+
+// per-texture reference stored in the material's array at 0xC
+// (raw layout: only the fields this function touches)
+typedef struct MapMatTexRef {
+	void* field_0x0;  // 0x0, points at the texture name/info block
+	u8 field_0x4[4];  // 0x4
+	u8 wrapS;         // 0x8
+	u8 wrapT;         // 0x9
+} MapMatTexRef;
+
+// material layout (MapMaterialTex only covers 0xB/0x2C onwards)
+typedef struct MapMaterial {
+	u8 field_0x0[4];              // 0x0
+	GXColor color;                // 0x4
+	u8 field_0x8;                 // 0x8
+	u8 field_0x9[2];              // 0x9
+	u8 texCount;                  // 0xB
+	MapMatTexRef* texRefs[8];    // 0xC
+	u8 field_0x2C[0x110 - 0x2C];  // 0x2C
+	u8* field_0x110;              // 0x110
+} MapMaterial;
+
+// Logic, stack frame layout, the light-loop call sequence and the channel setup all match. Every
+// .rodata access is anchored to vec3_802c16d8 with constant offsets (original unit defined the
+// whole blob in this TU). Remaining diffs: the compiler rematerialises vec3_802c16d8 to form the
+// light-id table address instead of `addi r26, r28, 0x100`; the u8->f32 magic double is pooled as
+// a local @NNN@ instead of base+0x2C8 (double_to_int_mask_802c19a0); float_0_80419850 and
+// float_1_80419860 are pooled as @NNN@ instead of the named symbols; the minLOD != maxLOD flag is
+// emitted branchlessly; and several callee-saved registers (i/texMap/lightMask/attn) are coloured
+// differently. The texture-name search is written as a `while` + `goto` so the compiler emits the
+// original's merged loop exit instead of a redundant post-loop bounds check. The local declaration
+// order is chosen (tools/perm_decls.py) to get those registers as close as possible.
+// NONMATCHING (86.09%): see the note above; semantics are correct and the GX call sequence matches.
+void mapSetMaterial(MapObject* obj, void* materialPtr) {
+	s32 i;
+	s32 texMap;
+	MapMaterial* mat;
+	GXLightObj lightObj;
+	Mtx mtxX;
+	Mtx mtxY;
+	Mtx mtxZ;
+	LightEntry* lights[8];
+	GXTexObj texObj;
+	Vec pos;
+	Vec defaultDir;
+	GXColor ambient;
+	GXColor defaultAmbient;
+	u8* base;
+	s32* lightId;
+	u32 lightMask;
+	s32 attn;
+	s32 count;
+
+	mat = materialPtr;
+	base = vec3_802c16d8;
+	lightId = (s32*)(base + 0x100);
+	texMap = 0;
+	attn = 2;
+	defaultAmbient = dat_80419828;
+	count = mapSetLight(obj, lights);
+	lightMask = 0;
+
+	for (i = 0; i < count; i++) {
+
+		defaultDir = *(Vec*)(base + 0x144);
+		if (lights[i]->flags & LIGHT_POINT) {
+			CameraEntry* cam = camGetCurPtr();
+
+			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+			                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+			attn = 1;
+		}
+		else if (lights[i]->flags & LIGHT_SPOT) {
+			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(mtxZ, mtxY, mtxY);
+			PSMTXConcat(mtxY, mtxX, mtxX);
+			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
+			PSVECScale(&defaultDir, &defaultDir, float_neg1p0486E06_80419870);
+			PSVECAdd(&lights[i]->position, &defaultDir, &pos);
+			{
+				CameraEntry* cam = camGetCurPtr();
+
+				PSMTXMultVec(cam->view, &pos, &pos);
+			}
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+			                float_0_80419850, float_0_80419850, float_1_80419860);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+		}
+		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
+			CameraEntry* cam = camGetCurPtr();
+
+			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(mtxZ, mtxY, mtxY);
+			PSMTXConcat(mtxY, mtxX, mtxX);
+			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
+			cam = camGetCurPtr();
+			PSMTXMultVecSR(cam->view, &defaultDir, &defaultDir);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightDir(&lightObj, defaultDir.x, defaultDir.y, defaultDir.z);
+			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, GX_SP_SHARP);
+			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, GX_DA_OFF);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+			attn = 1;
+		}
+		lightMask |= lightId[i];
+	}
+
+	{
+		LightEntry* amb = lightGetAmbient();
+
+		if (amb != NULL) {
+			ambient = amb->color;
+		}
+		else {
+			ambient = defaultAmbient;
+		}
+	}
+	GXSetNumChans(1);
+	GXSetChanAmbColor(GX_COLOR0A0, ambient);
+	GXSetChanMatColor(GX_COLOR0A0, mat->color);
+
+	switch (mat->field_0x8) {
+	case 0:
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+		break;
+	case 1:
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+		break;
+	}
+
+	texMap = 0;
+	for (i = mat->texCount - 1; i >= 0; i--) {
+		MapWork* wp = &mapWork[activeGroup];
+		s32 joint = *(s16*)(obj->field_0xDC + 2);
+		MapMatTexRef* ref = mat->texRefs[i];
+		const char* name = *(const char**)ref->field_0x0;
+		void* table = *(void**)(wp->entries[joint].field_0x8C + 8);
+		TEXDescriptor* desc;
+		TEXHeader* header;
+		s32 idx;
+
+		idx = 0;
+		while (idx < *(s32*)table) {
+			if (strcmp(((char**)table)[idx + 1], name) == 0) {
+				goto found;
+			}
+			idx++;
+		}
+		idx = -1;
+	found:
+		desc = TEXGet(wp->entries[joint].tpl, idx);
+		header = desc->textureHeader;
+		GXInitTexObj(&texObj, header->data, header->width, header->height, header->format,
+		             *(s32*)(base + 0xEC + ref->wrapS * 4),
+		             *(s32*)(base + 0xEC + ref->wrapT * 4),
+		             header->minLOD != header->maxLOD);
+		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, (f32)header->minLOD, (f32)header->maxLOD,
+		                header->LODBias, GX_DISABLE, header->edgeLODEnable, GX_ANISO_1);
+		GXLoadTexObj(&texObj, texMap);
+		texMap++;
+	}
+
+	{
+		u8* drawMode = mat->field_0x110;
+
+		mapSetMaterialTev(mat->texCount, drawMode ? drawMode[0] : 0, *(s32*)obj->field_0x0, obj->modelWorldMtx);
+	}
 }
 
 // NONMATCHING (0.28%): only a stub is present

@@ -26,8 +26,8 @@ extern u32 _enemy_can_use_item_table[];
 
 const f32 float_0_8041c3bc = 0.0f;
 const f32 float_1_8041c3c0 = 1.0f;
-f32 float_60_8041c3c4 = 60.0f;
-f32 float_neg1_8041c3c8 = -1.0f;
+const f32 float_60_8041c3c4 = 60.0f;
+const f32 float_neg1_8041c3c8 = -1.0f;
 f32 float_1p1_8041c3cc = 1.1f;
 f32 float_1p3_8041c3d0 = 1.3f;
 f32 float_1p5_8041c3d4 = 1.5f;
@@ -76,31 +76,6 @@ typedef struct BattleUnitPartFields {
     GXColor color;         // 0x4F0
     u8 pad_3[0x500 - 0x4F4];
 } BattleUnitPartFields;
-
-// A pose-sound table entry; no header declares this type. Layout matches the 0x14-byte
-// entries BtlUnit_ControlPoseSoundMain walks (name 0x0, trigger 0x4, callback 0x8,
-// sound name 0xC, pitch 0x10, flags 0x12).
-typedef struct PoseSoundEntry {
-    const char* poseName;                                        // 0x0
-    f32 volume;                                                  // 0x4
-    s32 (*callback)(BattleUnit*, struct PoseSoundEntry*, void*); // 0x8
-    const char* soundName;                                       // 0xC
-    s16 pitch;                                                   // 0x10
-    u16 flags;                                                   // 0x12
-} PoseSoundEntry;
-
-// The part's pose-sound work block, starting at BattleUnitPart + 0x4D0.
-typedef struct PoseSoundWork {
-    PoseSoundEntry* table; // 0x0
-    s32 frame;             // 0x4
-    f32 prev;              // 0x8
-    f32 cur;               // 0xC
-    s32 count;             // 0x10
-    u8 flag;               // 0x14
-    u8 pad_0[3];
-    s32 eventId;           // 0x18
-    BattleUnit* owner;     // 0x1C
-} PoseSoundWork;
 
 typedef struct HpGaugeLocal {
     u16 field_0;  // 0x0

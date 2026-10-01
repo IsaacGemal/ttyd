@@ -49,6 +49,7 @@ u16 itemFlag(ItemEntry* item, u16 flag);
 void itemModeChange(ItemEntry* item, u16 mode);
 void itemForceGet(ItemEntry* item);
 ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist);
+ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist);
 void itemNokoForceGet(ItemEntry* item);
 #include "driver/hitdrv.h"
 HitEntry* itemHitCheckSide(ItemEntry* item, f32* x, f32* z, s32* angle, f32 dx, f32 dz);

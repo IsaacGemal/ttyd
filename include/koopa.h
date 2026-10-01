@@ -51,6 +51,7 @@ void kpaChgPose(const char* marioPose, const char* kpa2Pose);
 f32 kpaSetJumpPara(void);
 s32 kpaMutekiCheck(void);
 void kpaSetLevel(s32 level);
+void kpaPreInit(void);
 s32 kpaGetLevel(void);
 void kpaAttackStart(void);
 void kpa2DMain(void);

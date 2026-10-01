@@ -1,10 +1,15 @@
 #include "window/win_badge.h"
 #include "window/win_root.h"
+#include "window/win_mario.h"
+#include "window/win_main.h"
 #include "win/win_main.h"
 #include "mario/mario_pouch.h"
 #include "driver/animdrv.h"
+#include "driver/msgdrv.h"
+#include "manager/fontmgr.h"
 #include "pmario_sound.h"
 #include "data/item_data.h"
+#include <stdio.h>
 
 // Extended WindowWork fields used by this unit. win_main.h only declares the
 // first 0x40 bytes, so the rest are reached through raw offsets.
@@ -425,4 +430,277 @@ void winMakeEquipList(WindowWork* work) {
         }
     }
     WW_S32(work, 0xD64) = count;
+}
+
+// 2496 B
+// Every instruction is accounted for; the logic, constants, call arguments and control flow match (no switch,
+// no jump table). The remaining diffs are compiler allocation only: frame 0x300 vs retail 0x330, callee-saved
+// GPRs start at r14 vs retail r16, the outer loop bound/counter sits in r15 vs retail r23, and the .rodata base
+// pools as `...rodata.0` vs retail `vec3_802f4a38` (same address, different symbol). The compiler's int->float
+// double also pools as an anonymous @NNN@ instead of double_to_int_802f4c60 (project-wide limitation). The
+// by-value Vec arguments of winTexSet/winIconSet need the MUST_MATCH copies below, the same shape item_disp
+// in win_item.c uses.
+// NONMATCHING (93.56%): register/stack allocation only, see above.
+void badge_disp(WindowWork* work, f32 x, f32 y) {
+    GXColor iconColor = *(GXColor*)&dat_8041d358;
+    GXColor white;
+    GXColor black;
+    GXColor color;
+    f32 f24;
+    f32 f25;
+    f32 f29;
+    f32 f28;
+    f32 f26;
+    f32 f27;
+    f32 f21;
+    s32 count;
+    s32 i;
+    s32 ofs;
+    u8* entry;
+    s32 gray;
+
+    if (WW_S32(work, 0x3E0) == 0) {
+        count = pouchGetHaveBadgeCnt();
+    } else {
+        count = WW_S32(work, 0xD64);
+    }
+
+    GXSetScissor(0, 0x77, 0x260, 0xB8);
+    f25 = float_110_8041d370 + y;
+    f29 = float_82_8041d374 + x;
+    f28 = float_142_8041d378 + x;
+    f27 = float_160_8041d37c + x;
+
+    for (i = 0, ofs = 0, entry = (u8*)work; i < count; i++, ofs += 0x17, entry += 0xC) {
+        s32 badge;
+        s32 equipped;
+
+        if (WW_S32(work, 0x3E0) == 0) {
+            badge = pouchHaveBadge(i);
+        } else {
+            badge = *(s32*)(entry + 0x40C);
+        }
+        f24 = WW_F32(work, WW_S32(work, 0x3E0) * 4 + 0x3F4);
+        if (WW_S32(work, 0x3E0) == 0) {
+            equipped = pouchEquipCheckBadgeIndex(i);
+        } else {
+            equipped = *(s32*)(entry + 0x404);
+        }
+        f21 = f25 - (f32)ofs;
+        f26 = f24 + f21;
+        if (f26 > float_240_8041d380) {
+            continue;
+        }
+        if (f26 < float_neg240_8041d384) {
+            break;
+        }
+
+        if (equipped) {
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            {
+                Vec translate = vec3_802f4b10;
+                translate.x = f29;
+                translate.y = f26;
+                winTexSet(0x1E, translate, vec3_802f4b1c, *(GXColor*)&dat_8041d35c);
+            }
+        }
+
+        if (equipped == 0 && itemDataTable[badge].bp_cost > pouchGetPtr()->availableBP) {
+            gray = 1;
+            color = *(GXColor*)&dat_8041d360;
+        } else {
+            gray = 0;
+            color = *(GXColor*)&dat_8041d364;
+        }
+        if (!gray) {
+            winIconInit();
+        } else {
+            winIconGrayInit();
+        }
+        {
+            GXColor ccopy = iconColor;
+            Vec translate = vec3_802f4b28;
+            Vec scale = vec3_802f4b34;
+#ifdef MUST_MATCH
+            Vec tcopy;
+#endif
+            translate.x = x - float_75_8041d388;
+            translate.y = f26;
+#ifdef MUST_MATCH
+            tcopy = translate;
+            winIconSet(*(u16*)&itemDataTable[badge].icon_id, &tcopy, &scale, &ccopy);
+#else
+            winIconSet(*(u16*)&itemDataTable[badge].icon_id, &translate, &scale, &iconColor);
+#endif
+        }
+        winFontInit();
+        {
+            GXColor ccopy = color;
+            Vec translate = vec3_802f4b40;
+            Vec scale = vec3_802f4b4c;
+            translate.x = x - float_55_8041d38c;
+            translate.y = f24 + (float_12_8041d390 + f21);
+            f21 = translate.y;
+#ifdef MUST_MATCH
+            {
+                Vec tcopy = translate;
+                winFontSet(&tcopy, &scale, &ccopy, itemDataTable[badge].id);
+            }
+#else
+            winFontSet(&translate, &scale, &color, itemDataTable[badge].id);
+#endif
+        }
+        {
+            char buf[0x40];
+            sprintf(buf, str_8041D394, winZenkakuStr(itemDataTable[badge].bp_cost));
+            {
+                GXColor ccopy = color;
+                Vec translate = vec3_802f4b58;
+                Vec scale = vec3_802f4b64;
+                translate.x = f28 - (f32)((u16)FontGetMessageWidth(buf) / 2);
+                translate.y = f21;
+#ifdef MUST_MATCH
+                {
+                    Vec tcopy = translate;
+                    winFontSet(&tcopy, &scale, &ccopy, buf);
+                }
+#else
+                winFontSet(&translate, &scale, &color, buf);
+#endif
+            }
+        }
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        {
+            s32 j;
+            s32 jofs;
+            for (j = 0, jofs = 0; j < itemDataTable[badge].bp_cost; j++, jofs += 0xD) {
+                s32 tex = 0x1D;
+                Vec translate = vec3_802f4b70;
+                translate.x = f27 + (f32)jofs;
+                translate.y = f26;
+                if (equipped) {
+                    tex = 0x1C;
+                }
+                winTexSet(tex, translate, vec3_802f4b7c, iconColor);
+            }
+        }
+    }
+
+    GXSetScissor(0, 0, 0x260, 0x1E0);
+    white = *(GXColor*)&dat_8041d368;
+    black = *(GXColor*)&dat_8041d36c;
+    if (WW_S32(work, WW_S32(work, 0x3E0) * 4 + 0x3EC) > 0) {
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        f21 = float_250_8041d398 + x;
+        {
+            Vec translate = vec3_802f4b88;
+            Vec scale = vec3_802f4b94;
+            translate.x = f21;
+            translate.y = float_20_8041d39c + (float_18_8041d3a0 + f25);
+            winTexSet(0x17, translate, scale, white);
+        }
+        winIconInit();
+        {
+            GXColor ccopy = white;
+            Vec translate = vec3_802f4ba0;
+            Vec scale = vec3_802f4bac;
+#ifdef MUST_MATCH
+            Vec tcopy;
+#endif
+            translate.x = f21;
+            translate.y = float_20_8041d39c + (float_113_8041d3a4 + y);
+#ifdef MUST_MATCH
+            tcopy = translate;
+            winIconSet(0x7E, &tcopy, &scale, &ccopy);
+#else
+            winIconSet(0x7E, &translate, &scale, &white);
+#endif
+        }
+    }
+    if (count > (WW_S32(work, WW_S32(work, 0x3E0) * 4 + 0x3EC) << 3) + 8) {
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        f21 = float_250_8041d398 + x;
+        {
+            Vec translate = vec3_802f4bb8;
+            Vec scale = vec3_802f4bc4;
+            translate.x = f21;
+            translate.y = float_20_8041d39c + ((y - float_90_8041d3a8) - float_15_8041d3ac);
+            winTexSet(0x17, translate, scale, white);
+        }
+        winIconInit();
+        {
+            GXColor ccopy = white;
+            Vec translate = vec3_802f4bd0;
+            Vec scale = vec3_802f4bdc;
+#ifdef MUST_MATCH
+            Vec tcopy;
+#endif
+            translate.x = f21;
+            translate.y = float_20_8041d39c + (y - float_90_8041d3a8);
+#ifdef MUST_MATCH
+            tcopy = translate;
+            winIconSet(0x80, &tcopy, &scale, &ccopy);
+#else
+            winIconSet(0x80, &translate, &scale, &white);
+#endif
+        }
+    }
+    {
+        const char* msg = msgSearch(str_802F4C30);
+        f32 w = float_0p7_8041d3b0 * (f32)FontGetMessageWidth(msg);
+
+        winFontInit();
+        f21 = x + (float_220_8041d3b4 - w);
+        {
+            GXColor ccopy = black;
+            Vec translate = vec3_802f4be8;
+            Vec scale = vec3_802f4bf4;
+            translate.x = f21;
+            translate.y = float_20_8041d39c + ((y - float_92_8041d3b8) - float_10_8041d3bc);
+#ifdef MUST_MATCH
+            {
+                Vec tcopy = translate;
+                winFontSet(&tcopy, &scale, &ccopy, msgSearch(str_802F4C30));
+            }
+#else
+            winFontSet(&translate, &scale, &black, msgSearch(str_802F4C30));
+#endif
+        }
+        winIconInit();
+        {
+            GXColor ccopy = white;
+            Vec translate = vec3_802f4c00;
+            Vec scale = vec3_802f4c0c;
+#ifdef MUST_MATCH
+            Vec tcopy;
+#endif
+            translate.x = f21 - float_30_8041d3c0;
+            translate.y = float_20_8041d39c + ((y - float_100_8041d3c4) - float_10_8041d3bc);
+#ifdef MUST_MATCH
+            tcopy = translate;
+            winIconSet(0x217, &tcopy, &scale, &ccopy);
+#else
+            winIconSet(0x217, &translate, &scale, &white);
+#endif
+        }
+    }
+    {
+        winFontInit();
+        {
+            GXColor ccopy = black;
+            Vec translate = vec3_802f4c18;
+            Vec scale = vec3_802f4c24;
+
+            translate.x = float_120_8041d3c8 + x;
+            translate.y = float_135_8041d3cc + y;
+#ifdef MUST_MATCH
+            {
+                Vec tcopy = translate;
+                winFontSet(&tcopy, &scale, &ccopy, msgSearch(str_802F4C48));
+            }
+#else
+            winFontSet(&translate, &scale, &black, msgSearch(str_802F4C48));
+#endif
+        }
+    }
 }

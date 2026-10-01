@@ -19,6 +19,9 @@
 #include "motion/mot_slit.h"
 #include "party/party_bomhei.h"
 #include "party/party_nokonoko.h"
+#include "koopa.h"
+#include "peach.h"
+#include "motion/mot_plane.h"
 
 //.data
 const char* dotMarioPose[4][6] = {
@@ -70,14 +73,221 @@ s32 marioGetColor(void) {
 	return mp->colorId;
 }
 
-// NONMATCHING (0.17%): empty placeholder, not decompiled yet.
+// NONMATCHING (99.90%): the else's marioSetFamicomMode(1) call is absent because that
+// callee is still an empty placeholder and MWCC folds the call away; it comes back once
+// that function is decompiled.
 void marioSetCharMode(s32 mode) {
+	MarioWork* wp = mp;
+	s32 materialFlag;
+	s32 lightFlag;
 
+	if (mode == 1) {
+		wp->characterId = 1;
+		peachPreInit();
+		if (wp->paperAnimGroupId[0] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[0]);
+			wp->paperAnimGroupId[0] = -1;
+		}
+		if (wp->paperAnimGroupId[1] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[1]);
+			wp->paperAnimGroupId[1] = -1;
+		}
+		if (wp->paperAnimGroupId[2] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[2]);
+			wp->paperAnimGroupId[2] = -1;
+		}
+		if (!(wp->peachFlags & 0x2000)) {
+			wp->paperAnimGroupId[0] = animPoseEntry("c_peach", 2);
+			wp->paperAnimGroupId[1] = animPoseEntry("c_peach_r", 2);
+			npcSetMarioAutoTalkPose("P_S_1", "P_T_1");
+		}
+		else {
+			wp->paperAnimGroupId[0] = animPoseEntry("c_zako_n", 2);
+			wp->paperAnimGroupId[1] = animPoseEntry("c_peach_r", 2);
+			npcSetMarioAutoTalkPose("S_1", "T_1");
+			wp->wPlayerCollisionBox.y = 30.0f;
+			wp->wPlayerCollisionBox.x = 30.0f;
+		}
+		marioSetSpec();
+		wp->trigFlags |= 0x1000;
+		return;
+	}
+	if (mode == 2) {
+		kpaPreInit();
+		if (wp->paperAnimGroupId[0] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[0]);
+			wp->paperAnimGroupId[0] = -1;
+		}
+		if (wp->paperAnimGroupId[1] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[1]);
+			wp->paperAnimGroupId[1] = -1;
+		}
+		if (wp->paperAnimGroupId[2] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[2]);
+			wp->paperAnimGroupId[2] = -1;
+		}
+		wp->paperAnimGroupId[0] = animPoseEntry(kpaGetStageViewType() == 1 ? "c_koopa" : "c_koopa2", 2);
+		wp->characterId = 2;
+		npcSetMarioAutoTalkPose("KPA_S_1", "KPA_T_1");
+		kpaSetLevel(1);
+		wp->trigFlags |= 0x1000;
+		return;
+	}
+	if (!(wp->flags & 0x80000000)) {
+		s32 id;
+
+		if (wp->dispFlags & 0x10000000) {
+			id = 2;
+		}
+		else if (wp->dispFlags & 0x80000000) {
+			id = 1;
+		}
+		else {
+			id = 0;
+		}
+		materialFlag = animPoseGetMaterialFlag(wp->paperAnimGroupId[id]);
+		if (mp->dispFlags & 0x10000000) {
+			id = 2;
+		}
+		else if (mp->dispFlags & 0x80000000) {
+			id = 1;
+		}
+		else {
+			id = 0;
+		}
+		lightFlag = animPoseGetMaterialLightFlag(wp->paperAnimGroupId[id]);
+		wp->characterId = 0;
+		if (mp->characterId == 0) {
+			BOOL badge1 = pouchEquipCheckBadge(0x147);
+			BOOL badge2 = pouchEquipCheckBadge(0x148);
+			s32 color;
+
+			if (badge1 && !badge2) {
+				color = 1;
+			}
+			else if (!badge1 && badge2) {
+				color = 2;
+			}
+			else if (badge1 && badge2) {
+				color = 3;
+			}
+			else {
+				color = 0;
+			}
+			if (mp->characterId == 0 && mp->colorId != color) {
+				mp->colorId = color;
+				marioSetCharMode(0);
+			}
+		}
+		if (wp->paperAnimGroupId[0] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[0]);
+			wp->paperAnimGroupId[0] = -1;
+		}
+		if (wp->paperAnimGroupId[1] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[1]);
+			wp->paperAnimGroupId[1] = -1;
+		}
+		if (wp->paperAnimGroupId[2] >= 0) {
+			animPoseRelease(wp->paperAnimGroupId[2]);
+			wp->paperAnimGroupId[2] = -1;
+		}
+		wp->paperAnimGroupId[0] = animPoseEntry(marioAnimeGroupData[mp->colorId][0], 2);
+		wp->paperAnimGroupId[1] = animPoseEntry(marioAnimeGroupData[mp->colorId][1], 2);
+		wp->paperAnimGroupId[2] = animPoseEntry(marioAnimeGroupData[mp->colorId][2], 2);
+		animPoseSetMaterialFlagOn(wp->paperAnimGroupId[0], materialFlag);
+		animPoseSetMaterialFlagOn(wp->paperAnimGroupId[1], materialFlag);
+		animPoseSetMaterialFlagOn(wp->paperAnimGroupId[2], materialFlag);
+		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[0], lightFlag);
+		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[1], lightFlag);
+		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[2], lightFlag);
+		npcSetMarioAutoTalkPose("M_S_1", "M_I_2");
+		wp->trigFlags |= 0x1000;
+	}
+	else {
+		marioSetFamicomMode(1);
+	}
+	if (!(wp->flags & 0x2000000)) {
+		MarioMotion motion = wp->currMotionId;
+
+		if (motion == 0x18) {
+			marioForcePlaneAnime();
+			return;
+		}
+		if (motion == 0x19) {
+			marioForceShipAnime();
+			return;
+		}
+		if (motion == 0x16) {
+			marioForceRollAnime();
+			return;
+		}
+		if (wp->dispFlags & 0x01000000) {
+			marioForceSlitAnime();
+			return;
+		}
+		if (motion == 0x1c) {
+			N_marioForceVivianAnime();
+			return;
+		}
+		if (motion == 0x1a) {
+			marioChgPose("M_Y_2");
+			marioChgPose("M_Y_1");
+			return;
+		}
+	}
+	if (wp->currMotionId != 0x18 && wp->currMotionId != 0x19 && wp->currMotionId != 0x14) {
+		marioSetSpec();
+	}
 }
 
-// NONMATCHING (0.17%): empty placeholder, not decompiled yet.
+// NONMATCHING (100.00%): instruction sequence identical; only the shared .rodata base offset for "d_mario"
+// differs because the other functions in this split file (their pool constants/strings) are not written yet.
 void marioSetFamicomMode(s32 mode) {
+	MarioWork* wp = mp;
 
+	if (mode == 1) {
+		if (!(wp->flags & MARIO_FLAG_IS_8_BIT)) {
+			wp->flags |= MARIO_FLAG_IS_8_BIT;
+			marioChgMot(MARIO_MOTION_STAY);
+			if (wp->paperAnimGroupId[0] >= 0) {
+				animPoseRelease(wp->paperAnimGroupId[0]);
+			}
+			if (wp->paperAnimGroupId[1] >= 0) {
+				animPoseRelease(wp->paperAnimGroupId[1]);
+			}
+			wp->paperAnimGroupId[0] = animPoseEntry("d_mario", 2);
+			wp->paperAnimGroupId[1] = animPoseEntry(marioAnimeGroupData[mp->colorId][1], 2);
+			wp->characterId = 0;
+			npcSetMarioAutoTalkPose("M_S_1", "M_I_2");
+			wp->animName = NULL;
+			marioChgPose("M_S_1");
+		}
+		else {
+			wp->animName = NULL;
+			marioChgPose("M_S_1");
+		}
+	}
+	else {
+		if (wp->flags & MARIO_FLAG_IS_8_BIT) {
+			wp->flags &= ~MARIO_FLAG_IS_8_BIT;
+			if (wp->paperAnimGroupId[0] >= 0) {
+				animPoseRelease(wp->paperAnimGroupId[0]);
+			}
+			if (wp->paperAnimGroupId[1] >= 0) {
+				animPoseRelease(wp->paperAnimGroupId[1]);
+			}
+			wp->paperAnimGroupId[0] = animPoseEntry(marioAnimeGroupData[mp->colorId][0], 2);
+			wp->paperAnimGroupId[1] = animPoseEntry(marioAnimeGroupData[mp->colorId][1], 2);
+			wp->characterId = 0;
+			npcSetMarioAutoTalkPose("M_S_1", "M_I_2");
+			wp->animName = NULL;
+			marioChgPose("M_S_1");
+		}
+		else {
+			wp->animName = NULL;
+			marioChgPose("M_S_1");
+		}
+	}
 }
 
 void marioSetSpec(void) {

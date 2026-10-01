@@ -172,3 +172,5 @@ s32 BattleTransID(EventEntry* evt, s32 type) {
 	}
 	return type;
 }
+
+#pragma optimize_for_size reset

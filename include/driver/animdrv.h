@@ -315,6 +315,7 @@ void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void
 void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluMode);
 
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);
+void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 f1, f32 f2);
 void animPoseRefresh(void);
 void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
 void pushGXModelMtx_TransformNode__(void* node);
@@ -332,3 +333,5 @@ typedef struct MoamoaChainEntry {
 extern MoamoaChainEntry g_moamoa_chain_tbl[47];
 extern const s32 dat_80419a28;
 extern Vec vec3_802c2db0[];
+void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);
+void evalProc(s32 parentGroupId, s32 groupId);

@@ -7,7 +7,8 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sbss2 scratch colours (declared in reverse: placed in reverse of declaration order).
+// .sbss2 scratch colours: the original keeps these uninitialised GXColors in .sbss2, reached through
+// .sdata declarations (declared in reverse: placed in reverse of declaration order).
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor unk_804230e4;
 __declspec(section ".sdata") GXColor unk_804230e0;

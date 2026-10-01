@@ -8,6 +8,8 @@
 #include "mario/mariost.h"
 #include <dolphin/types.h>
 #include <string.h>
+#include <stdio.h>
+#include "driver/windowdrv.h"
 #include "driver/mapdrv.h"
 #include "system.h"
 #include "window/win_root.h"
@@ -55,6 +57,28 @@ extern const f32 float_neg160_8041d1c8;
 extern const f32 float_285_8041d1cc;
 extern const f32 float_144_8041d1d0;
 extern const f32 float_neg144_8041d1d4;
+extern const f32 float_250_8041d1a4;
+extern const f32 float_10_8041d1a0;
+extern const f32 float_500_8041d1a8;
+extern const f32 float_80_8041d0b0;
+extern const f32 float_20_8041d0c0;
+extern const f32 float_neg130_8041d1ac;
+extern const f32 float_16_8041d0e4;
+extern const f32 float_120_8041d09c;
+extern const f32 float_8_8041d0a0;
+extern const f32 float_240_8041d0ac;
+extern const f32 float_32_8041d0a4;
+extern const f32 float_4_8041d07c;
+extern const f32 float_14_8041d180;
+extern const f32 float_24_8041d0c8;
+extern const GXColor dat_8041cf28;
+extern const GXColor dat_8041cf2c;
+extern const GXColor dat_8041cf30;
+extern const GXColor dat_8041cf34;
+extern const GXColor dat_8041cf38;
+extern const GXColor dat_8041cf3c;
+extern const GXColor dat_8041cf40;
+extern const GXColor dat_8041cf44;
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x40 bytes, so the rest are reached through raw offsets below.
@@ -84,6 +108,11 @@ extern ItemData itemDataTable[];
 
 static char msgbuf[0x3C];
 
+// This unit owns this .rodata block (the strings below are already here). The two
+// int->float conversion doubles come out as anonymous @NNN@ pool entries rather
+// than these named symbols -- an MWCC limitation also seen in win_badge/win_item.
+const f64 double_to_int_802f44d0 = 4503601774854144.0;
+const f64 double_to_int_mask_802f44c8 = 4503599627370496.0;
 const char str_802F4510[] = "menu_monosiri_%s";
 const char str_802F44F0[] = "btl_un_hatena";
 const char str_802F4500[] = "btl_un_rampell";
@@ -179,6 +208,232 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
             WW_PTR(work, 0x144) = (void*)str;
             strncpy(msgbuf, str, 0x3C);
         }
+    }
+}
+
+// The original passes structs by value / takes font positions by value; the
+// shared headers declare pointers, so copy under MUST_MATCH (same as win_item.c).
+// The control flow and every call argument match; MWCC's stack-slot assignment
+// (our `winTexSet` by-value copies land in the outgoing-argument area, so the
+// frame is 0x630 instead of 0x620), the int->float pool doubles and the FPR
+// allocation in the arrow blocks still differ. See REPORT.md.
+// NONMATCHING (69.15%): stack slots, pool doubles and arrow FPRs, see above.
+void winMsgDisp(WindowWork* work, f32 x, f32 y) {
+    char buf[0x400];
+    Vec* vp = (Vec*)&str_802F3FE8;
+    GXColor white = dat_8041cf28;
+    GXColor black = dat_8041cf2c;
+    GXColor color = dat_8041cf30;
+    f32 f30;
+    f32 f31;
+    f32 f26;
+    f32 f27;
+    Vec tex_t;
+    Vec tex_s;
+    Vec icon1_t;
+    Vec icon1_s;
+    Vec fe_pos;
+    Vec fe_s;
+    Vec fs_pos;
+    Vec fs_s;
+    Vec fl_pos;
+    Vec fl_s;
+    Vec i1_t;
+    Vec i1_s;
+    Vec i2_t;
+    Vec i2_s;
+    Vec i3_t;
+    Vec i3_s;
+    Vec i4_t;
+    Vec i4_s;
+    Vec fin_t;
+    Vec fin_s;
+    GXColor c_icon1;
+    GXColor c_fe;
+    GXColor c_fs;
+    GXColor c_fl;
+    GXColor c_i1;
+    GXColor c_i2;
+    GXColor c_i3;
+    GXColor c_i4;
+    GXColor c_fin;
+
+    f31 = (x - float_250_8041d1a4 + float_10_8041d1a0) - float_10_8041d1a0;
+    f30 = float_40_8041d0e8 + y;
+#ifdef MUST_MATCH
+    ((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(
+        0, &color, f31, f30, float_500_8041d1a8, float_80_8041d0b0, float_20_8041d0c0);
+#else
+    windowDispGX_Waku_col(0, color, f31, f30, float_500_8041d1a8, float_80_8041d0b0,
+                          float_20_8041d0c0);
+#endif
+    if (WW_S32(work, 0x138) != 0 && WW_S32(work, 0x138) > 0) {
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        tex_t = *(Vec*)((u8*)vp + 0x9C);
+        tex_s = *(Vec*)((u8*)vp + 0xA8);
+        tex_t.x = f31;
+        tex_t.y = f30;
+        winTexSet(0x25, tex_t, tex_s, white);
+
+        winIconInit();
+        icon1_t = *(Vec*)((u8*)vp + 0xB4);
+        icon1_t.x = f31;
+        icon1_t.y = f30;
+        icon1_s = *(Vec*)((u8*)vp + 0xC0);
+        c_icon1 = white;
+        {
+#ifdef MUST_MATCH
+            Vec tcopy = icon1_t;
+            winIconSet(*(u16*)&itemDataTable[WW_S32(work, 0x138)].icon_id, &tcopy, &icon1_s, &c_icon1);
+#else
+            winIconSet(*(u16*)&itemDataTable[WW_S32(work, 0x138)].icon_id, &icon1_t, &icon1_s, &c_icon1);
+#endif
+        }
+
+        if (WW_PTR(work, 0x140) != NULL) {
+            const char* msg;
+
+            f31 = (WW_S32(work, 0x138) == -2) ? float_neg130_8041d1ac : float_0_8041d068;
+            msg = msgSearch((const char*)WW_PTR(work, 0x140));
+            f26 = (f32)FontGetMessageWidth(msg);
+            f27 = float_8_8041d0a0 + (float_16_8041d0e4 + f30);
+            winNameGX(work, 1, (x - float_120_8041d09c) + f31, f27, float_240_8041d0ac,
+                      float_32_8041d0a4);
+            winFontInit();
+            fe_pos = *(Vec*)((u8*)vp + 0xCC);
+            fe_pos.x = f31 + ((float_240_8041d0ac - f26) * float_0p5_8041d06c + (x - float_120_8041d09c));
+            fe_pos.y = f27 - float_4_8041d07c;
+            fe_s = *(Vec*)((u8*)vp + 0xD8);
+            c_fe = white;
+#ifdef MUST_MATCH
+            {
+                Vec pcopy = fe_pos;
+                winFontSetEdge(&pcopy, &fe_s, &c_fe, msg);
+            }
+#else
+            winFontSetEdge(&fe_pos, &fe_s, &c_fe, msg);
+#endif
+        }
+    }
+
+    if (WW_PTR(work, 0x13C) != NULL) {
+        f30 = f30 - float_14_8041d180;
+        GXSetScissor(0, (u32)(float_240_8041d0ac - f30), 0x260, 0x38);
+        if (strcmp((const char*)WW_PTR(work, 0x13C), (const char*)((u8*)vp + 0x5D0)) == 0) {
+            s16 num = *(s16*)((u8*)lotteryGetPtr() + 0x20); // lottery_info field past the header
+
+            sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), num);
+            winFontInit();
+            fs_pos = *(Vec*)((u8*)vp + 0xE4);
+            fs_pos.x = (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0;
+            fs_pos.y = f30 + (f32)(WW_S32(work, 0x148) * 0x1C);
+            fs_s = *(Vec*)((u8*)vp + 0xF0);
+            c_fs = black;
+#ifdef MUST_MATCH
+            {
+                Vec pcopy = fs_pos;
+                winFontSet(&pcopy, &fs_s, &c_fs, buf);
+            }
+#else
+            winFontSet(&fs_pos, &fs_s, &c_fs, buf);
+#endif
+        } else {
+            winFontInit();
+            fl_pos = *(Vec*)((u8*)vp + 0xFC);
+            fl_pos.x = (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0;
+            fl_pos.y = f30 + (f32)(WW_S32(work, 0x148) * 0x1C);
+            fl_s = *(Vec*)((u8*)vp + 0x108);
+            c_fl = black;
+#ifdef MUST_MATCH
+            {
+                Vec pcopy = fl_pos;
+                winFontSetLabel(&pcopy, &fl_s, &c_fl, (const char*)WW_PTR(work, 0x13C));
+            }
+#else
+            winFontSetLabel(&fl_pos, &fl_s, &c_fl, (const char*)WW_PTR(work, 0x13C));
+#endif
+        }
+        GXSetScissor(0, 0, 0x260, 0x1E0);
+    }
+
+    if (WW_S32(work, 0x14C) > 2) {
+        winIconInit();
+        if (WW_S32(work, 0x148) == 0) {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                i1_t = *(Vec*)((u8*)vp + 0x114);
+                i1_t.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
+                i1_t.y = (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8;
+                i1_s = *(Vec*)((u8*)vp + 0x120);
+                c_i1 = dat_8041cf34;
+#ifdef MUST_MATCH
+                {
+                    Vec tcopy = i1_t;
+                    winIconSet(0x1B6, &tcopy, &i1_s, &c_i1);
+                }
+#else
+                winIconSet(0x1B6, &i1_t, &i1_s, &c_i1);
+#endif
+            }
+        } else if (WW_S32(work, 0x148) / 2 == (WW_S32(work, 0x14C) + 1) / 2 - 1) {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                i2_t = *(Vec*)((u8*)vp + 0x12C);
+                i2_t.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
+                i2_t.y = float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8));
+                i2_s = *(Vec*)((u8*)vp + 0x138);
+                c_i2 = dat_8041cf38;
+#ifdef MUST_MATCH
+                {
+                    Vec tcopy = i2_t;
+                    winIconSet(0x1B5, &tcopy, &i2_s, &c_i2);
+                }
+#else
+                winIconSet(0x1B5, &i2_t, &i2_s, &c_i2);
+#endif
+            }
+        } else {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                i3_t = *(Vec*)((u8*)vp + 0x144);
+                i3_t.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
+                i3_t.y = float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8));
+                i3_s = *(Vec*)((u8*)vp + 0x150);
+                c_i3 = dat_8041cf3c;
+#ifdef MUST_MATCH
+                {
+                    Vec tcopy = i3_t;
+                    winIconSet(0x1B5, &tcopy, &i3_s, &c_i3);
+                }
+#else
+                winIconSet(0x1B5, &i3_t, &i3_s, &c_i3);
+#endif
+
+                i4_t = *(Vec*)((u8*)vp + 0x15C);
+                i4_t.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
+                i4_t.y = (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8;
+                i4_s = *(Vec*)((u8*)vp + 0x168);
+                c_i4 = dat_8041cf40;
+#ifdef MUST_MATCH
+                {
+                    Vec tcopy = i4_t;
+                    winIconSet(0x1B6, &tcopy, &i4_s, &c_i4);
+                }
+#else
+                winIconSet(0x1B6, &i4_t, &i4_s, &c_i4);
+#endif
+            }
+        }
+        fin_t = *(Vec*)((u8*)vp + 0x174);
+        fin_t.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
+        fin_t.y = float_40_8041d0e8 + (y - float_40_8041d0e8);
+        fin_s = *(Vec*)((u8*)vp + 0x180);
+        c_fin = dat_8041cf44;
+#ifdef MUST_MATCH
+        {
+            Vec tcopy = fin_t;
+            winIconSet(0x70, &tcopy, &fin_s, &c_fin);
+        }
+#else
+        winIconSet(0x70, &fin_t, &fin_s, &c_fin);
+#endif
     }
 }
 

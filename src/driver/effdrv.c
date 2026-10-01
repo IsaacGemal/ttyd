@@ -349,24 +349,6 @@ typedef struct EffectMayaPolyList {
 	EffectMayaPoly** polys; // 0xC
 } EffectMayaPolyList;
 
-typedef struct EffectMayaKeyValue {
-	s16 a; // 0x0
-	s16 b; // 0x2
-	s16 c; // 0x4
-	s16 d; // 0x6
-} EffectMayaKeyValue;
-
-typedef struct EffectMayaKeyframe {
-	s16 time;                      // 0x0
-	EffectMayaKeyValue values[22]; // 0x2
-} EffectMayaKeyframe;
-
-typedef struct EffectMayaMatrixData {
-	s32 count; // 0x0
-	void* base; // 0x4
-} EffectMayaMatrixData;
-
-
 void* effMayaAnimAlloc(void* animData) {
 	u32 size = *((EffectMayaAnimData*)animData)->count * 0x34 + 0x18;
 	EffectMayaAnim* anim = __memAlloc(HEAP_EFFECT, size);
