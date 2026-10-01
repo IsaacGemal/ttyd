@@ -3258,6 +3258,10 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
 - Not linked: `eff_cool_leaf_n64` (data and code 100% after `pool_data` and `(u8*)tbl + 0xA`; the compiler pools its own `4503601774854144.0` after the string where the target has it before), `eff_pturn_n64` (the pool needs 360 before 4.0 in `data->field_0x20 = (type == 0 || type == 1) ? 4.0f * cos(f31 / 360.f) : 0.0f`; an `if`/`else` with a temp fixes the pool but gives effPturnMain 93.8%, a local `d = 360.f` leaves the pool as it was).
 - `ci.py` needs `--allow-pragma` for the new `#pragma section ".sdata" ".sbss2"` in the three units (the idiom of AGENT_BRIEF, each with its why-comment).
 
+## Grind 49: party_kuribo links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`party/party_kuribo`: `tools/dol_gen.py --append` for its one event script, then `finish_unit` (sdata2 pool and string came out right); no hand edits.
+
 ## Grind 50: ac_monosiri_target links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 `battle/ac/ac_monosiri_target` (note: its `configure.py` entry has `extra_cflags=["-O4,s"]`, so a `sed` on the plain entry text misses it).
