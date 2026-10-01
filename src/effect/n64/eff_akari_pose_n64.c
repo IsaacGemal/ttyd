@@ -5,7 +5,12 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 
-#include <math.h>
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423098;
+
+
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -35,22 +40,14 @@ extern const f32 float_0p5_8041e8f8;
 extern const f32 float_neg1_8041e8fc;
 
 // .rodata string and the pooled int->float conversion double (named after their original addresses).
-const char str_802FA1D0[16] = "AkariPoseN64";
 // The compiler only references this by name if it is non-const; a const definition is constant-folded
 // to an anonymous @NNN literal, which no longer matches the original `lfd ... double_to_int_802fa1c8`.
-f64 double_to_int_802fa1c8 = 4503601774854144.0;
 
 // .sdata sequence-length table indexed by the effect type (local to this file in the original).
 static s32 max_seq_num[2] = {0x18, 0x0C};
 
 // .sbss2 scratch GXColor the original builds its TEV colour from.
-extern GXColor unk_80423098;
 
-// .data vertex array, local to this file (0x38 bytes).
-static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
-    0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x04000000, 0x000000FF,
-    0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
-};
 
 // .data per-frame scale tables, local to this file in the original.
 static f32 scale_data[24] = {
@@ -60,6 +57,12 @@ static f32 scale_data[24] = {
 static f32 scale_data2[24] = {
     0.9f, 1.0f, 1.0f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f, 0.4f, 0.3f, 0.2f, 0.1f,
     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+};
+
+// .data vertex array, local to this file (0x38 bytes).
+static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
+    0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x04000000, 0x000000FF,
+    0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
 };
 
 // .sdata per-frame alpha tables, local to this file in the original.
@@ -116,7 +119,7 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
 #endif
 
     effect = effEntry();
-    effect->type = str_802FA1D0;
+    effect->type = "AkariPoseN64";
     effect->count = count + 1;
     data = __memAlloc(HEAP_EFFECT, (count + 1) * 0x38);
     effect->userdata = data;
@@ -315,3 +318,24 @@ void effAkariPoseDisp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_8041e8d0 = 0.017453292f;
+const f32 float_0p03125_8041e8d4 = 0.03125f;
+const f32 float_0_8041e8d8 = 0.0f;
+const f32 float_0p1_8041e8dc = 0.1f;
+const f32 float_0p2_8041e8e0 = 0.2f;
+const f32 float_360_8041e8e4 = 360.0f;
+const f32 float_6p2832_8041e8e8 = 6.2831855f;
+const f32 float_16_8041e8ec = 16.0f;
+const f32 float_45_8041e8f0 = 45.0f;
+const f32 float_1_8041e8f4 = 1.0f;
+const f32 float_0p5_8041e8f8 = 0.5f;
+const f32 float_neg1_8041e8fc = -1.0f;
+
+// 16 zero bytes that end the unit's .sdata: an all-zero object needs explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80412D70_sdata[4] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
