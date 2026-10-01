@@ -3452,6 +3452,27 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - Every port PR names the project and file it took code from.
 
 
+## Grind 64: library ports begin: MSL k_tan, s_tan, e_sqrt from tp (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- Ports use the read-only copies in `~/ttyd-refs` (Grind 63). `__kernel_tan`, `tan` and `__ieee754_sqrt` are zeldaret/tp's `libs/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common_Embedded/Math/Double_precision/{k_tan,s_tan,e_sqrt}.c` (CC0) with the include changed to this repo's `MSL_C/MSL_Common_Embedded/Math/fdlibm.h`; all three are 100% and linked on the first build, no other change.
+- The library units sit in `libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/`; `ci.py` needs `--allow-protected --allow-configure`.
+
+## Grind 65: Runtime `__cvt_sll_flt` and `__sys_free` from tp (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `__cvt_sll_flt` (runtime.c) is the asm body of zeldaret/tp `libs/PowerPC_EABI_Support/Runtime/Src/runtime.c` (CC0) with its `lbl_` labels renamed; placed before `__cvt_ull_flt` (the target's text order). `runtime.c` is Matching, 15/15 functions. `ci.py` needs `--allow-asm` for it (a ported library's hand-written assembly).
+- `__sys_free` (new `Runtime.PPCEABI.H.a/GCN_mem_alloc.c`) is tp's `GCN_mem_alloc.c`, `<os.h>` -> `<dolphin/os.h>`, Matching. The target's two strings are readonly and each padded to 4 bytes: the unit needs `extra_cflags=["-str readonly"]` (without it they land in `.data`; with `pool` they are not padded).
+
+## Grind 66: TRK MWTrace and MWCriticalSection_gc from tp; why TRK msghndlr is not a port (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `MWTRACE` is zeldaret/tp's `libs/TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c` (CC0) and `MWCriticalSection_gc.cpp` its `utils/gc/MWCriticalSection_gc.c` (CC0, wrapped in `extern "C"` because the unit is C++ here); both 100% and linked.
+- `msghndlr` is not in the reference projects' form: TTYD ships the release TRK, where `TRKDoVersions`/`TRKDoSupportMask` are `li r3, 0; blr` and `TRKDoReset`/`TRKDoOverride`/`TRKDoConnect`/... send one fixed 0x40-byte packet through `TRKWriteUARTN`. The existing `msghndlr.c` (ac-decomp's debug TRK) scores 0% on those 15 functions; they need rewriting from the asm, not porting. `targsupp.s` is the same release build (8-byte stubs).
+
+## Grind 67: MSL FILE_POS, ansi_fp, mbstring from tp (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `FILE_POS.C` (`fseek`, `_fseek`, `ftell`) is zeldaret/tp `libs/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/FILE_POS.c` (CC0): TTYD's version has the text-mode newline adjustment in `_ftell` and the critical region in `ftell`, which the ac-decomp-derived file lacked. New header `libs/metrowerks/include/MSL_C/critical_regions.h` (the enum and prototypes from tp's `critical_regions.h`). 3/3 at 100%, Matching, linked.
+- `ansi_fp.c`: `__equals_dec` and `__minus_dec` are tp's `MSL_Common_Embedded/Src/ansi_fp.c` (GCN branch of `#if PLATFORM_GCN`), 100% on the first build; `__two_exp` takes `long exp` and `__num2dec_internal` has `long num_bits_extract` as in tp (the `short` made an `extsh`); 5 of 7 functions 100%. Still not matching: `__two_exp` 98.38% (the target tests the cases with jump-table range checks `bgt`/`blt`, ours compares in a chain with the same cases) and `__dec2num` (4224 bytes, absent from the sources; tp only has the Wii version).
+- `mbstring.c`: `wcstombs` is now 100% with tp's `unicode_to_UTF8(char*, wchar_t)` (the original's `wchar_t` argument) and an inline `wctomb`; `mbtowc` stays at 98.47% (the target tests `if (!s)` as `bne over; b end`; `if (!s) return 0`, `else { result = 0; }` and `else { }` all score the same or worse).
+
 ## Grind 70: MSL `__strtoull` from tp; `__strtold` started (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 - `__strtoull` is zeldaret/tp `MSL_Common/Src/strtoul.c`'s function (CC0) with this tree's `_isspace`/`_isdigit`/`_isalpha`/`_toupper` (the originals are the `_`-prefixed inline functions of `MSL_C/ctype.h`: with the plain names it calls `isspace` etc.) and `value = *chars_scanned = 0;` in the failure branch (the separate `value = 0;` scored one `srawi` off). `strtoul.c` is 2/2 at 100%, Matching, linked.
