@@ -9,10 +9,13 @@
 #include "system.h"
 
 // `#pragma opt_propagation off` required: with it on MWCC rematerialises the polynomial
-// coefficients into every branch, as in evt_sub_get_coin.
+// coefficients into every branch, as in evt_sub_get_coin. `opt_lifetimes off` is required too:
+// with lifetimes on the frame, stack homes and FPR colouring all shift.
 #pragma opt_propagation off
-// NONMATCHING (76.89%): radian lands in f0 vs f5 and the coefficients/accumulator use
-// different FPRs; event->userdataf temporaries are not stack-spilled (frame 0x50 vs 0x60).
+// The declaration order below is load-bearing for the allocator.
+// NONMATCHING (98.06%): frame, stack slots 0x8/0xc/0x10 and every instruction match; only FPR
+// choices differ (the if-block divides dist into f1 instead of f3 and reuses `scale` for the
+// fmadd instead of rematerialising 0.5f; the radian product coalesces into f1 instead of f2).
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -20,18 +23,24 @@ USER_FUNC(evt_item_get_important_item) {
 	f32 mx = mario->position.x;
 	f32 my = mario->position.y + *(f32*)((u8*)mario + 0x1B8);
 	f32 mz = mario->position.z;
-	f32 f0, f1, f2, f3, f4, f5;
+	f32 t, scale, d;
+	f32 f4, f2, f3, f5, f1, f0;
 
+	scale = 0.5f;
 	if (isFirstCall) {
-		f32 d = distABf(mx, mz, item->position.x, item->position.z) / 0.5f;
+		d = distABf(mx, mz, item->position.x, item->position.z) / scale;
 		f4 = my - item->position.y;
-		f0 = f4 / d;
 		f2 = 0.1f * d;
-		event->userdataf[0] = d;
-		event->userdataf[1] = f2 * 0.5f + f0;
-		event->userdataf[2] = 0.5f;
+		f0 = f4 / d;
+		t = f2 * scale + f0;
+		event->userdata[0] = *(s32*)&d;
+		event->userdata[1] = *(s32*)&t;
+		event->userdata[2] = *(s32*)&scale;
 		event->field_84 = 0;
 	}
+	d = event->userdataf[0];
+	t = event->userdataf[1];
+	scale = event->userdataf[2];
 
 	f5 = (6.2831855f * angleABf(item->position.x, item->position.z, mx, mz)) / 360.0f;
 
@@ -74,7 +83,7 @@ USER_FUNC(evt_item_get_important_item) {
 			f4 = -f4;
 		}
 	}
-	item->position.x += event->userdataf[2] * f4;
+	item->position.x += scale * f4;
 
 	f4 = 0.03705f;
 	f3 = 0.4967f;
@@ -111,20 +120,20 @@ USER_FUNC(evt_item_get_important_item) {
 			f4 = f4 * f0 + f2;
 		}
 	}
-	item->position.z -= event->userdataf[2] * f4;
-	item->position.y += event->userdataf[1];
+	item->position.z -= scale * f4;
+	item->position.y += t;
 
-	f1 = event->userdataf[0] - 1.0f;
-	f2 = event->userdataf[1] - 0.1f;
-	if (f1 >= 0.0f) {
-		event->userdataf[0] = f1;
-		event->userdataf[1] = f2;
-		return EVT_RETURN_BLOCK;
+	d = d - 1.0f;
+	t = t - 0.1f;
+	if (d < 0.0f) {
+		item->position.x = mx;
+		item->position.y = my;
+		item->position.z = mz;
+		return EVT_RETURN_DONE;
 	}
-	item->position.x = mx;
-	item->position.y = my;
-	item->position.z = mz;
-	return EVT_RETURN_DONE;
+	event->userdata[0] = *(s32*)&d;
+	event->userdata[1] = *(s32*)&t;
+	return EVT_RETURN_BLOCK;
 }
 
 #pragma opt_propagation reset

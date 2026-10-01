@@ -123,19 +123,12 @@ void* kpaGetHitobj(void) {
     return KPA(mp)->unk1C;
 }
 
-// NONMATCHING (99.66%): same instructions; only register numbers or operands differ.
 void kpaClearHitobjRide(void) {
     MarioWork* mp = marioGetPtr();
-    KPA(mp)->ride[0] = NULL;
-    KPA(mp)->ride[1] = NULL;
-    KPA(mp)->ride[2] = NULL;
-    KPA(mp)->ride[3] = NULL;
-    KPA(mp)->ride[4] = NULL;
-    KPA(mp)->ride[5] = NULL;
-    KPA(mp)->ride[6] = NULL;
-    KPA(mp)->ride[7] = NULL;
-    KPA(mp)->ride[8] = NULL;
-    KPA(mp)->ride[9] = NULL;
+    unsigned i;
+    for (i = 0; i < 10; i++) {
+        KPA(mp)->ride[i] = NULL;
+    }
 }
 
 s32 kpaChkHitobjRide(void) {

@@ -2381,12 +2381,11 @@ EVT_BEGIN(evt_open_02_01_f2)
     RETURN
 EVT_END()
 
-// NONMATCHING (77% mario_keyoff_wait: the cntlzw now matches; the target fuses the value into
-// `srwi. r0,r0,5` and branches, ours re-materialises it with a second cntlzw and if-converts)
 static USER_FUNC(mario_keyoff_wait) {
-    BOOL notKey = !marioChkKey();
-
-    if (notKey) {
+    switch (!marioChkKey()) {
+    case 0:
+        break;
+    default:
         return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_YIELD;
@@ -3977,15 +3976,17 @@ static USER_FUNC(delete_npc_regl_evt) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96% yami_view: target stack slots for target/camPos are swapped relative to ours)
 static USER_FUNC(yami_view) {
     f32 value = evtGetFloat(event, event->args[0]);
-    Vec target = vec3_gor_00016038;
-    Vec camUp = vec3_gor_0001602c;
-    Vec camPos = vec3_gor_00016020;
+    Vec camPos;
+    Vec camUp;
+    Vec target;
     Mtx mtx;
 
+    target = vec3_gor_00016038;
     target.z = value;
+    camUp = vec3_gor_0001602c;
+    camPos = vec3_gor_00016020;
     camPos.z = 100.0f + value;
     C_MTXLookAt(mtx, (Point3d*)&camPos, &camUp, (Point3d*)&target);
     envSetYamiView(mtx);
@@ -5151,7 +5152,7 @@ USER_FUNC(cook_chk) {
 }
 
 
-// NONMATCHING (94% cook_chk2: hoisting ItemData* p = &itemDataTable[item] matched the loop; the inlined naniga_okorukana_cook tail still differs)
+#pragma opt_propagation off // needed: with propagation on MWCC hoists the args load before the inlined naniga_okorukana_cook
 USER_FUNC(cook_chk2) {
     s32* args = event->args;
     s32 item1 = evtGetValue(event, args[0]);
@@ -5161,7 +5162,9 @@ USER_FUNC(cook_chk2) {
     u32 i;
 
     if (item1 == 0xA3 || item2 == 0xA3) {
-        evtSetValue(event, args[2], naniga_okorukana_cook());
+        s32 result = naniga_okorukana_cook();
+
+        evtSetValue(event, args[2], result);
         return EVT_RETURN_DONE;
     }
     for (i = 0; i < 0x121; i++) {
@@ -5169,13 +5172,17 @@ USER_FUNC(cook_chk2) {
              strcmp(p2->id, R_cookbook_recipe_table[i * 3 + 1]) == 0) ||
             (strcmp(p2->id, R_cookbook_recipe_table[i * 3]) == 0 &&
              strcmp(p1->id, R_cookbook_recipe_table[i * 3 + 1]) == 0)) {
-            evtSetValue(event, args[2], itemNameToID(R_cookbook_recipe_table[i * 3 + 2]));
+            s32 id = itemNameToID(R_cookbook_recipe_table[i * 3 + 2]);
+
+            evtSetValue(event, args[2], id);
             return EVT_RETURN_DONE;
         }
     }
     evtSetValue(event, args[2], 0);
     return EVT_RETURN_DONE;
 }
+
+#pragma opt_propagation reset
 
 s32 chkCookItem(s32 id) {
     return id != 0;
@@ -5511,8 +5518,10 @@ void* iri_09_item_tbl[1] = {
     0x00000000,
 };
 
-// NONMATCHING (65% chk_cook_eff_type: target branches on the 0xB1..0xB2 / 0xD1 comparisons into shared return-0/1 blocks; MWCC folds ours to branchless compares)
-s32 chk_cook_eff_type(s32 itemId) {
+// The target lays chk_cook_eff_type out as a branchy tree and inlines it into cook_effect /
+// chk_cook_msg. Auto-inlining drops the branchy source (too big), so it lives in a static inline
+// helper that both the global wrapper and the callers inline through.
+static inline s32 cook_eff_type_impl(s32 itemId) {
     s32 result;
     if (itemId < 0x94) {
         return 1;
@@ -5521,12 +5530,18 @@ s32 chk_cook_eff_type(s32 itemId) {
         return 0;
     }
     if (itemId < 0xB3) {
-        if (itemId >= 0xB1) {
-            result = itemId < 0xB3;
-        } else if (itemId >= 0xA5) {
-            result = 0;
+        if (itemId < 0xB1) {
+            if (itemId < 0xA5) {
+                result = 1;
+            } else {
+                result = 0;
+            }
         } else {
-            result = 1;
+            if (itemId < 0xB3) {
+                result = 1;
+            } else {
+                result = 0;
+            }
         }
         return result;
     }
@@ -5549,7 +5564,14 @@ s32 chk_cook_eff_type(s32 itemId) {
     return 0;
 }
 
-// NONMATCHING (90% cook_effect: inlined chk_cook_eff_type differs (see chk_cook_eff_type))
+// NONMATCHING (70% chk_cook_eff_type: the target has a redundant `cmpwi 0xA1` leaf and shares its
+// ret0/ret1 tail blocks with the big arm; ours omits that leaf and duplicates the tails. Wrapping
+// the tree in the inlined helper above raises the callers, which call through it.)
+s32 chk_cook_eff_type(s32 itemId) {
+    return cook_eff_type_impl(itemId);
+}
+// NONMATCHING (92% cook_effect: inlined chk_cook_eff_type differs (see chk_cook_eff_type) plus the
+// pooled str_00004880/@1250@ string symbol)
 USER_FUNC(cook_effect) {
     s32 item = evtGetValue(event, event->args[0]);
 
@@ -5573,7 +5595,7 @@ USER_FUNC(cook_effect) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (86% chk_cook_msg: inlined chk_cook_eff_type differs (see chk_cook_eff_type))
+// NONMATCHING (89% chk_cook_msg: inlined chk_cook_eff_type differs (see chk_cook_eff_type))
 USER_FUNC(chk_cook_msg) {
     s32* args = event->args;
     s32 item = evtGetValue(event, args[0]);

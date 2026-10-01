@@ -48,3 +48,4 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg);
 s32 _btlcmd_MakePartyTable(BattleWork* wp);
 s32 _check_weapon_type_attack(BattleWeapon* weapon);
 void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd);
+s32 _battleGetPartyIcon(s32 kind);

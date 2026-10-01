@@ -46,6 +46,7 @@ extern s32 evt_tou_get_ranking_27_text_1ED4[];
 extern const volatile Vec vec3_tou_0000d028;
 extern const volatile Vec vec3_tou_0000d034;
 extern const volatile Vec vec3_tou_0000d040;
+extern const Vec vec3_tou_0000d064;
 u8 psndSFX_get_vol(s32 id);
 void psndSFX_vol(s32 id, u8 vol);
 
@@ -1582,8 +1583,9 @@ static f32 randf(f32 min, f32 max) {
     return r * (max - min) + min;
 }
 
-// NONMATCHING (97.49%): volatile on the zero-vec externals stops MWCC hoisting the
-// loop-invariant loads (retail reloads each iteration; frame stays 0x100).
+// The zero-vec externals are volatile so retail reloads them each loop iteration
+// (frame stays 0x100). The volatile stores below are match-only scheduling barriers
+// (MWCC otherwise hoists the next iteration's vector loads above them).
 void ext_fan_init(void) {
     s32 i;
     ExtPose* pose;
@@ -1615,16 +1617,29 @@ void ext_fan_init(void) {
         case 1:
             pose_change(fan, "c_kinopiko", "KNF_W_1");
             break;
+        case 2:
         default:
             pose_change(fan, "c_jugemu", "JGM_W_1");
             break;
         }
+#ifdef MUST_MATCH
+        *(volatile s16*)&fan->field_0x2 = 0;
+#else
         fan->field_0x2 = 0;
+#endif
         pos = vec3_tou_0000d028;
         pos.x = randf(-100.0f, 100.0f);
         pos.z = randf(-100.0f, 100.0f);
+#ifdef MUST_MATCH
+        *(volatile Vec*)&fan->position = pos;
+#else
         fan->position = pos;
+#endif
+#ifdef MUST_MATCH
+        *(volatile Vec*)&fan->velocity = vec3_tou_0000d034;
+#else
         fan->velocity = vec3_tou_0000d034;
+#endif
     }
     {
         Vec pos = vec3_tou_0000d040;
@@ -1642,9 +1657,10 @@ void fan_disp(void) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (85.65%): written from the asm; the check_hammer dispatch order and the
-// register allocation of the case 1/2 trig blocks still differ.
 #pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
+// NONMATCHING (97.13%): body, dispatch, rodata and the pose-loop/clash scoping now match; what
+// is left is register colouring in the case 1 `a` constant loads (2pi/90/135 land in f1/f2/f3
+// shifted) and the flySfx string materialisation (r27 vs retail r30+r29).
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
     FanPose* fan;
@@ -1661,20 +1677,21 @@ void ext_fan_main(void) {
     }
 
     if (evtGetValue(NULL, GF(10))) {
-        pose = extGetPosePtr();
-        fan = fan_wp->poses;
-        i = fan_wp->poseNum;
-        while (i > 0) {
-            if (fan->field_0x2 == 0) {
-                fan->position = mario->position;
-                vec = fan->position;
-                pose->flags &= ~1;
-                fan->flags |= 1;
+        ExtPose* p = extGetPosePtr();
+        FanPose* f = fan_wp->poses;
+        s32 n = fan_wp->poseNum;
+
+        while (n > 0) {
+            if (f->field_0x2 == 0) {
+                f->position = mario->position;
+                vec = f->position;
+                p->flags &= ~1;
+                f->flags |= 1;
                 break;
             }
-            fan++;
-            pose++;
-            i--;
+            f++;
+            p++;
+            n--;
         }
     } else {
         s32 found = 0;
@@ -1742,7 +1759,9 @@ void ext_fan_main(void) {
 
     {
         const char* flySfx = "SFX_STG3_AUDIENCE_FAN_FLY1";
-        fan = fan_wp->poses;
+        FanPose* fan = fan_wp->poses;
+        s32 i;
+
         for (i = 0; i < fan_wp->poseNum; i++, fan++) {
         if (fan->field_0x2 != 0) {
             continue;
@@ -1775,7 +1794,13 @@ void ext_fan_main(void) {
                     f32 ang = angleABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
 
                     fan->field_0x44 = (s16)(dxy / fan->field_0x3C);
+#ifdef MUST_MATCH
+                    // /2.0f makes MWCC fold to the retail `* 0.5` fused-multiply-add colouring;
+                    // the natural `* 0.5f` picks different FPRs.
+                    fan->field_0x38 = fan->field_0x40 * (f32)fan->field_0x44 / 2.0f + dy / (f32)fan->field_0x44;
+#else
                     fan->field_0x38 = fan->field_0x40 * (f32)fan->field_0x44 * 0.5f + dy / (f32)fan->field_0x44;
+#endif
                     (void)ang;
                 }
                 psndSFXOn_3D(flySfx, &fan->position);
@@ -1785,28 +1810,26 @@ void ext_fan_main(void) {
             {
                 f32 ang = angleABf(mario->position.x, mario->position.z, fan->position.x, fan->position.z);
                 f32 breath = cloudGetBreathDir();
-                f32 a;
 
                 fan->field_0x2 = 20;
-                fan->target.x = 0.0f;
-                fan->target.y = 0.0f;
-                fan->target.z = 0.0f;
-                a = (ang + breath) * 0.5f;
-                a = TWO_PI * a / 360.0f;
+                fan->target = vec3_tou_0000d064;
+                ang = (ang + breath) * 0.5f;
                 {
                     f32 scale = 0.1f + (f32)rand() / 32767.0f * 0.1f;
-                    f32 s = fanSinf(a);
+                    f32 s;
                     f32 c;
-
+                    f32 a = TWO_PI * ang / 360.0f;
+                    s = fanSinf(a);
                     fan->field_0x38 = scale * s;
-                    c = fanCosf(a);
                     fan->field_0x3C = 0.03f + (f32)rand() / 32767.0f * 0.03f;
+                    c = fanCosf(a);
                     fan->field_0x40 = -scale * c;
                     fan->field_0x44 = 120;
                 }
                 psndSFXOn_3D(flySfx, &fan->position);
             }
             break;
+        case 0:
         default:
             break;
         }
@@ -1824,13 +1847,10 @@ void ext_fan_main(void) {
                 f32 mag = PSVECMag(&fan->velocity);
                 HitCheckQuery query;
 
-                query.singleSided = 0;
-                query.targetPos.x = fan->position.x;
-                query.targetPos.y = fan->position.y + 4.0f;
-                query.targetPos.z = fan->position.z;
-                query.targetDir.x = fan->velocity.x;
+                query.targetPos = fan->position;
+                query.targetPos.y += 4.0f;
+                query.targetDir = fan->velocity;
                 query.targetDir.y = 0.0f;
-                query.targetDir.z = fan->velocity.z;
                 query.targetDistance = 25.0f + mag;
                 if (hitCheckVecFilter(&query, NULL) != NULL) {
                     C_VECReflect(&fan->velocity, &query.hitNormal, &fan->velocity);
@@ -1864,28 +1884,37 @@ void ext_fan_main(void) {
                 c = fanCosf(a);
                 fan->position.z += fan->field_0x3C * -c;
             }
-            fan->field_0x44--;
-            if (fan->field_0x44 < 0) {
-                fan->field_0x2 = 100;
+            {
+                s16 v = fan->field_0x44 - 1;
+
+                fan->field_0x44 = v;
+                if (v < 0) {
+                    fan->field_0x2 = 100;
+                }
             }
             break;
         case 20:
-            fan->field_0x44--;
-            if (fan->field_0x44 > 0) {
-                fan->target.x += fan->field_0x38;
-                fan->target.y += fan->field_0x3C;
-                fan->target.z += fan->field_0x40;
-                fan->position.x += fan->target.x;
-                fan->position.y += fan->target.y;
-                fan->position.z += fan->target.z;
-            } else {
-                fan->field_0x2 = 100;
+            {
+                s16 v = fan->field_0x44 - 1;
+
+                fan->field_0x44 = v;
+                if (v > 0) {
+                    fan->target.x += fan->field_0x38;
+                    fan->target.y += fan->field_0x3C;
+                    fan->target.z += fan->field_0x40;
+                    fan->position.x += fan->target.x;
+                    fan->position.y += fan->target.y;
+                    fan->position.z += fan->target.z;
+                } else {
+                    fan->field_0x2 = 100;
+                }
             }
             break;
         case 100:
             pose->flags &= ~3;
             fan->field_0x2++;
             break;
+        case 101:
         default:
             break;
         }
@@ -1926,34 +1955,35 @@ void ext_fan_dispent(void) {
 }
 
 static inline f32 fanSinf(f32 rad) {
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
     f32 f0, f1, sinv = 0.00761f;
     f32 c1 = 0.16605f;
     f32 c2 = 1.0f;
 
-    if (rad <= 3.1415927f) {
-        if (rad <= 1.5707964f) {
-            f0 = rad * rad;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            sinv = sinv * (rad * rad) - c1;
+            sinv = sinv * (rad * rad) + c2;
             sinv = sinv * rad;
         } else {
-            f0 = rad - 1.5707964f;
-            f1 = 1.5707964f - f0;
+            f1 = halfpi - (rad - halfpi);
             f0 = f1 * f1;
             sinv = sinv * f0 - c1;
             sinv = sinv * f0 + c2;
             sinv = sinv * f1;
         }
-    } else if (rad < 4.712389f) {
-        f1 = rad - 3.1415927f;
+    } else if (rad < threehalves) {
+        f1 = rad - pi;
         f0 = f1 * f1;
         sinv = sinv * f0 - c1;
         sinv = sinv * f0 + c2;
         sinv = sinv * f1;
         sinv = -sinv;
     } else {
-        f0 = rad - 4.712389f;
-        f1 = 1.5707964f - f0;
+        f0 = rad - threehalves;
+        f1 = halfpi - f0;
         f0 = f1 * f1;
         sinv = sinv * f0 - c1;
         sinv = sinv * f0 + c2;
@@ -1964,32 +1994,31 @@ static inline f32 fanSinf(f32 rad) {
 }
 
 static inline f32 fanCosf(f32 rad) {
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
     f32 f0, cosv = 0.03705f;
     f32 c1 = 0.4967f;
     f32 c2 = 1.0f;
 
-    if (rad <= 3.1415927f) {
-        if (rad <= 1.5707964f) {
-            f0 = rad * rad;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            cosv = cosv * (rad * rad) - c1;
+            cosv = cosv * (rad * rad) + c2;
         } else {
-            f0 = rad - 1.5707964f;
-            f0 = 1.5707964f - f0;
+            f0 = halfpi - (rad - halfpi);
             f0 = f0 * f0;
             cosv = cosv * f0 - c1;
             cosv = cosv * f0 + c2;
             cosv = -cosv;
         }
-    } else if (rad < 4.712389f) {
-        f0 = rad - 3.1415927f;
-        f0 = f0 * f0;
+    } else if (rad < threehalves) {
+        f0 = (rad - pi) * (rad - pi);
         cosv = cosv * f0 - c1;
         cosv = cosv * f0 + c2;
         cosv = -cosv;
     } else {
-        f0 = rad - 4.712389f;
-        f0 = 1.5707964f - f0;
+        f0 = halfpi - (rad - threehalves);
         f0 = f0 * f0;
         cosv = cosv * f0 - c1;
         cosv = cosv * f0 + c2;
@@ -1997,9 +2026,10 @@ static inline f32 fanCosf(f32 rad) {
     return cosv;
 }
 
-// NONMATCHING (93.69%): the body is otherwise identical; only floating-point register
-// allocation differs (the original keeps rad/s/coeffs in f6/f4/f3/f2/f1).
 #pragma opt_propagation off // stop MWCC rematerialising the sin/cos coefficients per branch
+// NONMATCHING (97.90%): byte-identical apart from FPR colouring in the inlined
+// fanSinf/fanCosf (retail reuses f1 for the halfpi inner test, so rad^2 lands in f0;
+// ours keeps pi live). `opt_lifetimes off` is what gets rad/coeffs into f6/f4/f3/f2.
 s32 check_hammer(FanPose* pose) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party;

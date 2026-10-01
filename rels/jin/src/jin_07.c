@@ -209,28 +209,31 @@ static f32 computePos(f32 a, f32 b, f32 t) {
     return (1.0f - t) * a + t * b;
 }
 
-// NONMATCHING (65.34%): the Hermite basis and matrix math are correct, but MWCC
-// schedules the basis multiplies in a different order (the original computes
-// t*t third, before (1+2t)); register allocation of the basis temps differs.
+// NONMATCHING (68.96%): math is correct. Naming t2 = t*t and ordering the
+// basis h10, h00, h11, h01 plus hoisting p1h00 helped, but MWCC still places
+// t*t and the basis temps in different f-registers than the original.
 void computePosHermite(ExtPose* pose, f32* p) {
     f32 t = p[6];
     f32 two_t = 2.0f * t;
     f32 omt = 1.0f - t;
-    f32 h11 = (t - 1.0f) * (t * t);
-    f32 h01 = (3.0f - two_t) * (t * t);
-    f32 h00 = (1.0f + two_t) * omt * omt;
+    f32 t2 = t * t;
     f32 h10 = t * omt * omt;
+    f32 h00 = (1.0f + two_t) * omt * omt;
+    f32 h11 = (t - 1.0f) * t2;
+    f32 h01 = (3.0f - two_t) * t2;
     Vec va = vec3_jin_00007f9c;
     Vec vb = vec3_jin_00007fa8;
 
+    f32 p1h00 = p[1] * h00;
+
     (*pose->matrix)[0][3] = p[0] * h00 + p[9] * h10 + vb.x * h11 + p[3] * h01;
-    (*pose->matrix)[1][3] = p[1] * h00 + 3.4f * p[4] * h10 + vb.y * h11 + p[4] * h01;
+    (*pose->matrix)[1][3] = p1h00 + 3.4f * p[4] * h10 + vb.y * h11 + p[4] * h01;
     (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
 }
 
-// NONMATCHING (78.48%): Hermite math matches; 95 of 224 instructions differ,
-// mostly register allocation (the original keeps t*t in callee-saved f31).
-// g_nNumEndProc is signed (final compare is cmpwi, not cmplwi).
+// NONMATCHING (79.15%): the Hermite is a call to computePosHermite(pose,
+// (f32*)&pTeresa[i]) which MWCC inlines, giving the original's 0x50 frame and
+// f31; remaining diffs are scheduling/register allocation in the inlined body.
 static void senteresa_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count;
@@ -250,28 +253,11 @@ static void senteresa_ext_main(void) {
                 }
                 break;
             case 1: {
-                Vec va = vec3_jin_00007f9c;
-                Vec vb = vec3_jin_00007fa8;
                 f32 t;
-                f32 omt;
-                f32 h00;
-                f32 h10;
-                f32 h11;
-                f32 h01;
 
                 pose->field_0x10 = (gp->retraceCount + i * i) % 3 + 1;
                 t = pTeresa[i].field_0x18;
-                omt = 1.0f - t;
-                h11 = (t - 1.0f) * (t * t);
-                h01 = (3.0f - 2.0f * t) * (t * t);
-                h00 = (1.0f + 2.0f * t) * omt * omt;
-                h10 = t * omt * omt;
-                (*pose->matrix)[0][3] = pTeresa[i].field_0x00 * h00 + pTeresa[i].field_0x24 * h10 + vb.x * h11 +
-                                         pTeresa[i].field_0x0C * h01;
-                (*pose->matrix)[1][3] = pTeresa[i].field_0x04 * h00 + 3.4f * pTeresa[i].field_0x10 * h10 +
-                                         vb.y * h11 + pTeresa[i].field_0x10 * h01;
-                (*pose->matrix)[2][3] =
-                    pTeresa[i].field_0x08 * h00 + va.z * h10 + vb.z * h11 + pTeresa[i].field_0x14 * h01;
+                computePosHermite(pose, (f32*)&pTeresa[i]);
                 pTeresa[i].field_0x18 = t + 0.015f;
                 if (pTeresa[i].field_0x18 >= 1.0f) {
                     pTeresa[i].field_0x00 = (*pose->matrix)[0][3];
@@ -347,9 +333,8 @@ USER_FUNC(senteresa_okure_move_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (84.23%): the Hermite math and stack slots (vb 0x8, va 0x14, pos
-// 0x20) match; only GPR allocation differs: the original keeps the args pointer
-// in r31 and reuses it for npc, ours needs a third callee-saved register.
+// The `pos; va; vb; h01` declaration order is what puts vb at 0x8, va at 0x14 and
+// pos at 0x20 and keeps the args pointer in r31 across npcNameToPtr.
 USER_FUNC(senteresa_okure_move) {
     s32* args = event->args;
     NpcEntry* npc = npcNameToPtr("テレサ");
@@ -365,10 +350,10 @@ USER_FUNC(senteresa_okure_move) {
     f32 h00 = (1.0f + two_t) * omt * omt;
     f32 h11 = (t - 1.0f) * (t * t);
     f32 h10 = t * omt * omt;
-    f32 h01 = (3.0f - two_t) * (t * t);
     Vec pos;
     Vec va = vec3_jin_00007fb4;
     Vec vb = vec3_jin_00007fc0;
+    f32 h01 = (3.0f - two_t) * (t * t);
 
     pos.x = p0 * h00 + va.x * h10 + vb.x * h11 + p3 * h01;
     pos.y = p1 * h00 + va.y * h10 + vb.y * h11 + p4 * h01;

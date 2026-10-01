@@ -338,9 +338,17 @@ static USER_FUNC(shadow_scale_memory) {
 // `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
 // double and rematerialises the 0.0f load, so the argument setup is not the original's.
 #pragma opt_propagation off
-// NONMATCHING (86.75%): the instruction set is identical; MWCC schedules the int-arg setup
-// (`lis zero`, `xoris`, `stw`, `li r3`, `li r5`) around the two lfd/lfs loads in a different
-// order than the original (it fills the lfd delay slots with the li's, ours with the other load).
+// NONMATCHING (86.75%): the instruction multiset and register allocation are identical;
+// MWCC just orders the int->float argument setup differently. The original hoists
+// `lis r3,zero` before `xoris`, puts both `addi` address setups before `stw r5` and
+// interleaves `li r3`/`li r5` with the two lfd/lfs loads; ours stores the exponent first.
+// Exhausted without effect: every GC compiler 1.3-2.7, -O2/-O3/-O4 with and without `,s`,
+// opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments/global_optimizer/
+// peephole/scheduling, inline and struct helpers, and the source permutations of the temp
+// assignments and call order; all give 86.75% or less. `end = start - start` reaches 90%
+// but computes 0.0 into fp instead of loading zero_mri (wrong code), so it is not usable.
+// Compound-literal / stack-temporary forms reach 88.32% only by adding a store+reload, and a
+// `u32` conversion scores 87.00% only because it drops the required `xoris`.
 static USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;

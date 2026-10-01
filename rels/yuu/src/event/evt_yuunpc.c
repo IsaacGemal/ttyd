@@ -355,10 +355,11 @@ static inline void yuunpc_pose_change_sub(YuunpcEntry* entry, s16 animIndex, f32
                 return;
             }
             {
-                u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                 if (oldflags & 4) {
+                    u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     b = 60.0f * (f32)(entry->field_68 / ticks) / 1000.0f / (pe->field_1C * b);
                 } else {
+                    u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     b = 60.0f * (f32)((gp->renderTime - entry->field_68) / ticks) / 1000.0f / (cur->field_1C * b);
                 }
             }
@@ -411,15 +412,15 @@ void ext_yuunpc_minigame2_main(void) {
     yuunpc_pose_minigame2_main();
 }
 
-// NONMATCHING (92%): logic complete; the inlined pose_change now uses the static copy below,
+// NONMATCHING (97.93%): logic complete; the inlined pose_change now uses the static copy below,
 // so only register allocation differs (the original keeps f23 and r21-r24 live, ours f24-r24).
 // The dat_yuu_00014efc/dat_yuu_00014f0c block copy is byte-identical.
 void ext_yuunpc_minigame2_init(void) {
+    s32 i;
     f32 arr1[4] = { 170.0f, 130.0f, 90.0f, 50.0f };
     f32 arr2[8] = { -7.0f, -1.0f, 5.0f, -5.0f, 1.0f, 7.0f, -3.0f, 3.0f };
     ExtPose* pose;
     YuunpcEntry* entry;
-    s32 i;
 
     yuunpc_wp = _mapAlloc(0xA94);
     memset(yuunpc_wp, 0, 0xA94);
@@ -430,56 +431,54 @@ void ext_yuunpc_minigame2_init(void) {
 
     pose = extGetPosePtr();
     entry = yuunpc_wp->entries;
-    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
+    for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         s32 q = i / 4;
         f32 t;
         f32 y;
         s32 idx;
-        MtxPtr mtx;
 
         entry->field_54 = yuunpc_wp->field_1C;
         entry->field_0 = i;
         entry->flags |= 1;
         pose->flags |= 7;
-        mtx = (MtxPtr)pose->matrix;
-        PSMTXIdentity(mtx);
+        PSMTXIdentity((MtxPtr)pose->matrix);
 
         t = 60.0f * (f32)(i % 4) - 655.0f;
         y = 30.0f + t;
-        mtx[0][3] = 13.333333f * (f32)q - 500.0f;
-        mtx[1][3] = arr1[(s32)((y - -655.0f) / 60.0f)];
-        mtx[2][3] = y + arr2[q % 8];
+        ((MtxPtr)pose->matrix)[0][3] = 13.333333f * (f32)q - 500.0f;
+        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -655.0f) / 60.0f)];
+        ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
 
         pose->field_0x4 = (f32)(irand(2) * 180 + 90);
 
         switch (irand(1000) % 4) {
             case 0:
                 idx = yuunpc_pose_check("c_kinopio", "KNP_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 1:
                 idx = yuunpc_pose_check("c_kinopiko", "KNF_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 2:
                 idx = yuunpc_pose_check("c_roten", "S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 3:
                 idx = yuunpc_pose_check("c_jugemu", "JGM_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
         }
 
@@ -511,15 +510,15 @@ void ext_yuunpc_minigame3_main(void) {
     yuunpc_pose_minigame3_main();
 }
 
-// NONMATCHING (92%): logic complete; the inlined pose_change now uses the static copy below,
+// NONMATCHING (97.93%): logic complete; the inlined pose_change now uses the static copy below,
 // so only register allocation differs (the original keeps f23 and r21-r24 live, ours f24-r24).
 // The dat_yuu_00014f2c/dat_yuu_00014f3c block copy is byte-identical.
 void ext_yuunpc_minigame3_init(void) {
+    s32 i;
     f32 arr1[4] = { 200.0f, 160.0f, 120.0f, 80.0f };
     f32 arr2[8] = { -7.0f, -1.0f, 5.0f, -5.0f, 1.0f, 7.0f, -3.0f, 3.0f };
     ExtPose* pose;
     YuunpcEntry* entry;
-    s32 i;
 
     yuunpc_wp = _mapAlloc(0xA94);
     memset(yuunpc_wp, 0, 0xA94);
@@ -530,56 +529,54 @@ void ext_yuunpc_minigame3_init(void) {
 
     pose = extGetPosePtr();
     entry = yuunpc_wp->entries;
-    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
+    for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         s32 q = i / 4;
         f32 t;
         f32 y;
         s32 idx;
-        MtxPtr mtx;
 
         entry->field_54 = yuunpc_wp->field_1C;
         entry->field_0 = i;
         entry->flags |= 1;
         pose->flags |= 7;
-        mtx = (MtxPtr)pose->matrix;
-        PSMTXIdentity(mtx);
+        PSMTXIdentity((MtxPtr)pose->matrix);
 
         t = 60.0f * (f32)(i % 4) - 750.0f;
         y = 30.0f + t;
-        mtx[0][3] = 13.333333f * (f32)q - 600.0f;
-        mtx[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
-        mtx[2][3] = y + arr2[q % 8];
+        ((MtxPtr)pose->matrix)[0][3] = 13.333333f * (f32)q - 600.0f;
+        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -750.0f) / 60.0f)];
+        ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
 
         pose->field_0x4 = (f32)(irand(2) * 180 + 90);
 
         switch (irand(1000) % 4) {
             case 0:
                 idx = yuunpc_pose_check("c_kinopio", "KNP_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 1:
                 idx = yuunpc_pose_check("c_kinopiko", "KNF_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 2:
                 idx = yuunpc_pose_check("c_roten", "S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 3:
                 idx = yuunpc_pose_check("c_jugemu", "JGM_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
         }
 
@@ -1006,15 +1003,15 @@ s32 hitcheck(YuunpcMapWork* p) {
     return 0;
 }
 
-// NONMATCHING (81.66%): logic complete. Remaining diff: f30/f31 allocation, `ble` vs cror loop encodings,
-// and sdata2 constant addresses.
+// NONMATCHING (98.48%): logic complete. Remaining diff: one `lis` register swap, the y-wrap
+// arithmetic result register, and the named sdata2 constant addresses.
 void yuunpc_pose_minigame3_main(void) {
+    s32 i;
     ExtPose* pose;
     MtxPtr mtx;
     YuunpcEntry* entry;
-    s32 i;
-    f32 camX;
     f32 f31;
+    f32 camX;
     f32 f29;
     f32 f28;
     f32 f1;
@@ -1023,45 +1020,45 @@ void yuunpc_pose_minigame3_main(void) {
     pose = extGetPosePtr();
     f31 = 600.0f + camX;
     entry = yuunpc_wp->entries;
-    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
-        mtx = (MtxPtr)pose->matrix;
+    for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         if (entry->flags & 1) {
-            f29 = mtx[0][3];
+            f29 = ((MtxPtr)pose->matrix)[0][3];
             if (f29 > camX) {
+                f32 step = 1200.0f;
                 for (;;) {
-                        if (f29 <= f31) {
-                            break;
-                        }
-                    f29 -= 1200.0f;
-                    mtx[0][3] = f29;
-                    }
+                    if (!(f29 > f31)) break;
+                    f29 -= step;
+                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                }
             } else {
                 f32 low = camX - 600.0f;
+                f32 step = 1200.0f;
                 for (;;) {
-                        if (f29 >= low) {
-                            break;
-                        }
-                    f29 += 1200.0f;
-                    mtx[0][3] = f29;
-                    }
+                    if (!(f29 < low)) break;
+                    f29 += step;
+                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                }
             }
+            mtx = (MtxPtr)pose->matrix;
             f28 = mtx[2][3];
             if (f28 < -570.0f) {
                 f1 = mtx[1][3];
                 if ((f29 >= -1700.0f && f29 <= -1600.0f) || (f29 >= -50.0f && f29 <= 50.0f) ||
                     (f29 >= 1600.0f && f29 <= 1700.0f)) {
                     if (f1 > -500.0f) {
-                        mtx[1][3] = f1 + -1000.0f;
+                        f1 = f1 + -1000.0f;
+                        mtx[1][3] = f1;
                     }
                 } else if (f1 < -500.0f) {
-                    mtx[1][3] = f1 - -1000.0f;
+                    f1 = f1 - -1000.0f;
+                    mtx[1][3] = f1;
                 }
             }
             if (irand(180) == 0) {
-                if (irand(101) > 80) {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
-                } else {
+                if (irand(101) <= 80) {
                     pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                } else {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
                 }
             }
         }
@@ -1069,14 +1066,15 @@ void yuunpc_pose_minigame3_main(void) {
     }
 }
 
-// NONMATCHING (84.62%): logic complete. Remaining diff: f30/f31 allocation, loop encodings, sdata2 addresses.
+// NONMATCHING (98.67%): logic complete. Remaining diff: one `lis` register swap, the y-wrap
+// arithmetic result register, and the named sdata2 constant addresses.
 void yuunpc_pose_minigame2_main(void) {
+    s32 i;
     ExtPose* pose;
     MtxPtr mtx;
     YuunpcEntry* entry;
-    s32 i;
-    f32 camX;
     f32 f31;
+    f32 camX;
     f32 f29;
     f32 f28;
     f32 f1;
@@ -1085,28 +1083,26 @@ void yuunpc_pose_minigame2_main(void) {
     pose = extGetPosePtr();
     f31 = 500.0f + camX;
     entry = yuunpc_wp->entries;
-    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
-        mtx = (MtxPtr)pose->matrix;
+    for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         if (entry->flags & 1) {
-            f29 = mtx[0][3];
+            f29 = ((MtxPtr)pose->matrix)[0][3];
             if (f29 > camX) {
+                f32 step = 1000.0f;
                 for (;;) {
-                        if (f29 <= f31) {
-                            break;
-                        }
-                    f29 -= 1000.0f;
-                    mtx[0][3] = f29;
-                    }
+                    if (!(f29 > f31)) break;
+                    f29 -= step;
+                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                }
             } else {
                 f32 low = camX - 500.0f;
+                f32 step = 1000.0f;
                 for (;;) {
-                        if (f29 >= low) {
-                            break;
-                        }
-                    f29 += 1000.0f;
-                    mtx[0][3] = f29;
-                    }
+                    if (!(f29 < low)) break;
+                    f29 += step;
+                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                }
             }
+            mtx = (MtxPtr)pose->matrix;
             f28 = mtx[2][3];
             if (f28 < -415.0f) {
                 f1 = mtx[1][3];
@@ -1127,10 +1123,10 @@ void yuunpc_pose_minigame2_main(void) {
                 }
             }
             if (irand(150) == 0) {
-                if (irand(101) > 80) {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
-                } else {
+                if (irand(101) <= 80) {
                     pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                } else {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
                 }
             }
         }
@@ -1138,15 +1134,15 @@ void yuunpc_pose_minigame2_main(void) {
     }
 }
 
-// NONMATCHING (81.66%): logic complete (camera-follow x-wrap, y-range wrap, random turn). Remaining diff:
-// f30/f31 register allocation, the `ble` vs `cror eq,lt,eq;beq` encodings, and the sdata2 constant addresses.
+// NONMATCHING (98.48%): logic complete (camera-follow x-wrap, y-range wrap, random turn). Remaining diff:
+// one `lis` register swap, the y-wrap arithmetic result register, and the named sdata2 constant addresses.
 void yuunpc_pose_minigame1_main(void) {
+    s32 i;
     ExtPose* pose;
     MtxPtr mtx;
     YuunpcEntry* entry;
-    s32 i;
-    f32 camX;
     f32 f31;
+    f32 camX;
     f32 f29;
     f32 f28;
     f32 f1;
@@ -1155,45 +1151,45 @@ void yuunpc_pose_minigame1_main(void) {
     pose = extGetPosePtr();
     f31 = 500.0f + camX;
     entry = yuunpc_wp->entries;
-    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
-        mtx = (MtxPtr)pose->matrix;
+    for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         if (entry->flags & 1) {
-            f29 = mtx[0][3];
+            f29 = ((MtxPtr)pose->matrix)[0][3];
             if (f29 > camX) {
+                f32 step = 1000.0f;
                 for (;;) {
-                        if (f29 <= f31) {
-                            break;
-                        }
-                    f29 -= 1000.0f;
-                    mtx[0][3] = f29;
-                    }
+                    if (!(f29 > f31)) break;
+                    f29 -= step;
+                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                }
             } else {
                 f32 low = camX - 500.0f;
+                f32 step = 1000.0f;
                 for (;;) {
-                        if (f29 >= low) {
-                            break;
-                        }
-                    f29 += 1000.0f;
-                    mtx[0][3] = f29;
-                    }
+                    if (!(f29 < low)) break;
+                    f29 += step;
+                    ((MtxPtr)pose->matrix)[0][3] = f29;
+                }
             }
+            mtx = (MtxPtr)pose->matrix;
             f28 = mtx[2][3];
             if (f28 < -260.0f) {
                 f1 = mtx[1][3];
                 if ((f29 >= -5000.0f && f29 <= -1500.0f) || (f29 >= 1700.0f && f29 <= 5000.0f) ||
                     (f29 >= 6000.0f && f29 <= 7000.0f)) {
                     if (f1 > -500.0f) {
-                        mtx[1][3] = f1 + -1000.0f;
+                        f1 = f1 + -1000.0f;
+                        mtx[1][3] = f1;
                     }
                 } else if (f1 < -500.0f) {
-                    mtx[1][3] = f1 - -1000.0f;
+                    f1 = f1 - -1000.0f;
+                    mtx[1][3] = f1;
                 }
             }
             if (irand(150) == 0) {
-                if (irand(101) > 80) {
-                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
-                } else {
+                if (irand(101) <= 80) {
                     pose->field_0x4 = angleABf(camX, 0.0f, f29, f28);
+                } else {
+                    pose->field_0x4 = angleABf(camX, 0.0f, f29 - 2.0f * (f29 - camX), f28);
                 }
             }
         }
@@ -1274,7 +1270,7 @@ void yuunpc_set_jump_pose(const char* name, const char* anim, f32 value) {
     }
 }
 
-// NONMATCHING (84.84%): logic complete; remaining diff is instruction scheduling around
+// NONMATCHING (92.24%): logic complete; remaining diff is instruction scheduling around
 // the oldflags&4 e-computation and the sdata2 constant-pool labels.
 void yuunpc_pose_change2(YuunpcEntry* entry, const char* name, const char* anim, f32 a) {
     f32 b = (f32)rand() / 32767.0f;
@@ -1300,10 +1296,11 @@ void yuunpc_pose_change2(YuunpcEntry* entry, const char* name, const char* anim,
                 return;
             }
             {
-                u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                 if (oldflags & 4) {
+                    u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     b = 60.0f * (f32)(entry->field_68 / ticks) / 1000.0f / (pe->field_1C * b);
                 } else {
+                    u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     b = 60.0f * (f32)((gp->renderTime - entry->field_68) / ticks) / 1000.0f / (cur->field_1C * b);
                 }
             }
@@ -1327,7 +1324,7 @@ void yuunpc_pose_change2(YuunpcEntry* entry, const char* name, const char* anim,
     }
 }
 
-// NONMATCHING (81.28%): logic complete; remaining diff is instruction scheduling around
+// NONMATCHING (90.33%): logic complete; remaining diff is instruction scheduling around
 // the oldflags&4 e-computation and the sdata2 constant-pool labels.
 void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
     YuunpcPoseEntry* cur = &yuunpc_wp->poseEntries[entry->field_54];
@@ -1351,10 +1348,11 @@ void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
                 return;
             }
             {
-                u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                 if (oldflags & 4) {
+                    u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     b = 60.0f * (f32)(entry->field_68 / ticks) / 1000.0f / (pe->field_1C * b);
                 } else {
+                    u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     b = 60.0f * (f32)((gp->renderTime - entry->field_68) / ticks) / 1000.0f / (cur->field_1C * b);
                 }
             }
@@ -1379,15 +1377,15 @@ void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
 }
 
 
-// NONMATCHING (91.63%): logic complete; the inlined pose_change now uses the static copy below,
+// NONMATCHING (97.91%): logic complete; the inlined pose_change now uses the static copy below,
 // so only register allocation differs (the original keeps f23 and r21-r24 live, ours f24-r24).
 // The dat_yuu_00014ec8/dat_yuu_00014edc block copy is byte-identical.
 void ext_yuunpc_minigame1_init(void) {
+    s32 i;
     f32 arr1[5] = { 260.0f, 220.0f, 180.0f, 140.0f, 100.0f };
     f32 arr2[8] = { -7.0f, -1.0f, 5.0f, -5.0f, 1.0f, 7.0f, -3.0f, 3.0f };
     ExtPose* pose;
     YuunpcEntry* entry;
-    s32 i;
 
     yuunpc_wp = _mapAlloc(0xA94);
     memset(yuunpc_wp, 0, 0xA94);
@@ -1398,56 +1396,54 @@ void ext_yuunpc_minigame1_init(void) {
 
     pose = extGetPosePtr();
     entry = yuunpc_wp->entries;
-    for (i = 0; i < yuunpc_wp->count; i++, entry++, pose++) {
+    for (i = 0; i < yuunpc_wp->count; i++, pose++, entry++) {
         s32 q = i / 5;
         f32 t;
         f32 y;
         s32 idx;
-        MtxPtr mtx;
 
         entry->field_54 = yuunpc_wp->field_1C;
         entry->field_0 = i;
         entry->flags |= 1;
         pose->flags |= 7;
-        mtx = (MtxPtr)pose->matrix;
-        PSMTXIdentity(mtx);
+        PSMTXIdentity((MtxPtr)pose->matrix);
 
         t = 60.0f * (f32)(i % 5) - 560.0f;
         y = 30.0f + t;
-        mtx[0][3] = 16.666666f * (f32)q - 500.0f;
-        mtx[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
-        mtx[2][3] = y + arr2[q % 8];
+        ((MtxPtr)pose->matrix)[0][3] = 16.666666f * (f32)q - 500.0f;
+        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
+        ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
 
         pose->field_0x4 = (f32)(irand(2) * 180 + 90);
 
         switch (irand(1000) % 4) {
             case 0:
                 idx = yuunpc_pose_check("c_kinopio", "KNP_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 1:
                 idx = yuunpc_pose_check("c_kinopiko", "KNF_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 2:
                 idx = yuunpc_pose_check("c_roten", "S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
             case 3:
                 idx = yuunpc_pose_check("c_jugemu", "JGM_S_1");
-                entry->field_56 = idx;
-                entry->field_58 = idx;
-                entry->field_5A = idx;
                 entry->field_5C = idx;
+                entry->field_5A = idx;
+                entry->field_58 = idx;
+                entry->field_56 = idx;
                 break;
         }
 
@@ -1532,11 +1528,12 @@ void yuunpc_pose_init(YuunpcPoseArg* arg) {
     }
 }
 
-// NONMATCHING (86.54%): register allocation differs and the str_00000EBC rodata address is off because
+// NONMATCHING (86.55%): register allocation differs and the str_00000EBC rodata address is off because
 // ext_yuunpc_minigame4_init_sub (the other user of that literal) is not implemented yet; logic is right.
 void yuunpc_maphit_init(void) {
     s8 str[3] = "\x81\xA1";
     s8* hp = (s8*)hitdata;
+    s32 k;
     s32 i;
     s32 j;
 

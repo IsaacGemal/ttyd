@@ -176,6 +176,13 @@ void winPartyInit2(WindowWork* work) {
 // constant) and .data (the three switch jump tables). Nothing inside winPartyInit can move
 // them; declaring the strings as named locals instead only perturbs register allocation
 // (99.57%).
+// Confirmed: our object's .rodata/.sdata2/.data are 0x78/0x44/0x54 while the original's are
+// 0x468/0x158/0x188. The missing entries all belong to undecompiled winPartyDisp (0x169C of
+// code) and to winPartyDt: winPartyDt is the .data table at 0x0 (0xFC) that also emits the
+// first ~0x30 .rodata strings and the .sdata waza strings, and winPartyDisp owns the two
+// .data jump tables at 0xFC/0x118 plus most of .sdata2. Until those are decompiled the
+// section-relative offsets of winPartyInit's literals cannot match; no source shape inside
+// this function can change a section's size or another function's data.
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
 #ifndef MUST_MATCH

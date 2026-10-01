@@ -80,28 +80,32 @@ static inline Vec initializeVec(Vec* input) {
 }
 
 // Every instruction and every GPR matches; only the callee-saved FPR colouring differs. The target puts
-// the four arguments in f23-f26, the loop-invariant constants used up to the third rand() in f27-f31 and
-// the ones used after it in f17-f22 (rad in f16). MWCC colours ours with the arguments in f19-f22 and
-// constants f23-f31/f17-f18 (rad f16), i.e. it treats the post-rand constants as long-lived. Reordering
-// declarations/statements, named temporaries, the Vec and compound-literal position forms, and
-// opt_common_subs/opt_propagation/optimize_for_size pragmas all leave the colouring unchanged. The
-// int->float magic also emits an anonymous @N entry instead of the named double_to_int_802fa930 (a
-// project-wide folded-pool issue; it does not lower objdiff's score).
-// NONMATCHING (99.48%): only the callee-saved FPR colouring differs (the four reset constants are f23-f26
-// instead of the target's f17-f20 in forward order, 6p2832/360 are f17/f18 instead of f21/f22, and the
-// arguments are f19-f22 instead of f23-f26).
+// the four arguments in f23-f26, the four reset constants in f17-f20, 6p2832/360 in f21/f22 and the
+// early loop-invariant constants in f27-f31 (rad in f16). MWCC treats the c34..c30 locals as user locals,
+// so it colours them above the parameters (ours: args f17-f20, 6p2832/360 f21/f22, reset f23-f26, early
+// f27-f31). The declaration order of the MUST_MATCH locals sets their colour order (the last declared
+// gets the lowest register): declaring c360 then ct last makes 6p2832/360 land in f21/f22 as in the
+// target. Matching the target's args f23-f26 / reset f17-f20 would need the reset values to be compiler
+// temporaries created before the parameters; the direct-store form rematerialises them (reusing one FPR)
+// and the identity-inline form moves the early constants, so neither reproduces it. Reordering the other
+// declarations/statements, the Vec/compound-literal position forms and the
+// opt_common_subs/opt_propagation/opt_lifetimes/optimize_for_size pragmas all leave the colouring
+// unchanged. The int->float magic also emits an anonymous @N entry instead of the named
+// double_to_int_802fa930 (a project-wide folded-pool issue).
+// NONMATCHING (99.59%): only the callee-saved FPR colouring differs (the four reset constants are f23-f26
+// instead of f17-f20, and the arguments f17-f20 instead of f23-f26; the rest match).
 EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri5Data* data;
     f32 rad;
     s32 i;
 #ifdef MUST_MATCH
-    // MUST_MATCH: these four locals exist only to steer MWCC's FPR allocation (see the comment above);
-    // the natural form is the four inline constants assigned at their stores (#else below).
     f32 c34;
     f32 c38;
     f32 c3C;
     f32 c30;
+    f32 c360;
+    f32 ct;
 #endif
 
     effect = effEntry();
@@ -124,12 +128,12 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
         data->field_0x24 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1_8041f38c;
         data->field_0x28 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1p7_8041f394;
 #ifdef MUST_MATCH
-        // MUST_MATCH: defining the four reset constants here (well before their stores, which stay in
-        // their original order) is what moves MWCC's colouring from the #else form's 99.04% to 99.48%.
         c34 = float_0p5_8041f398;
         c38 = float_neg0p02_8041f39c;
         c3C = float_5Eneg05_8041f3a0;
         c30 = float_neg3p9_8041f3a4;
+        ct = float_6p2832_8041f36c;
+        c360 = float_360_8041f370;
 #endif
         data->field_0x2C = (f32)(rand() % 61);
         data->field_0x6 = 0x1E;
@@ -144,7 +148,11 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
         data->field_0x3C = float_5Eneg05_8041f3a0;
         data->field_0x30 = float_neg3p9_8041f3a4;
 #endif
+#ifdef MUST_MATCH
+        rad = ct * reviseAngle(a4 + (f32)(i * 45)) / c360;
+#else
         rad = float_6p2832_8041f36c * reviseAngle(a4 + (f32)(i * 45)) / float_360_8041f370;
+#endif
         data->field_0x44 = sin(rad);
         data->field_0x48 = cos(rad);
     }
@@ -152,9 +160,9 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     return effect;
 }
 
-// NONMATCHING (98.94%): the cos() result lands in f2 where the original used f3, which then swaps
-// f2/f3 for every later coefficient (0.83 vs 0.006) and the whole tail of position updates. The
-// instruction stream, scheduling and the sin() result register are otherwise identical.
+// Without this the cos() result colours to f2 instead of the original's f3, swapping f2/f3 through
+// the rest of the loop; the pragma is scoped to this function only.
+#pragma opt_common_subs off
 void effKemuri5Main(EffectEntry* effect) {
     effKemuri5Data* data = effect->userdata;
     Vec position;
@@ -199,6 +207,7 @@ void effKemuri5Main(EffectEntry* effect) {
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri5Disp, effect);
 }
+#pragma opt_common_subs reset
 
 static inline void kemuri5SetColor(u8 a) {
     GXColor color = *(GXColor*)&dat_8041f358;

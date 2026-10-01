@@ -1075,6 +1075,10 @@ void mot_talk(void) {
 // every source order tried (&& early return, !OR, goto, two ifs, a local copy, OR-form positive)
 // gives `blt return` + fallthrough instead. Register differences elsewhere were fixed by reading
 // the if-block through `mario` instead of `mario2` (same pointer, original keeps it in r30).
+// A non-trivial then block keeps the failure-branch layout (`bge body; b return`) but adds real
+// code (a dead store); a trivial `return` is always jump-threaded. `if (cond) {} else return;`
+// scores 99.92% only because objdiff does not compare branch targets: it inverts the control
+// flow (branches go to the epilogue instead of the body), so it is not a match.
 void marioJump(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;

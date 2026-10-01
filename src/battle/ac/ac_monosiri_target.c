@@ -31,8 +31,11 @@ typedef struct MonosiriTargetWork {
 #ifdef MUST_MATCH
 // The original reads the eleven .rodata vectors through the vec3_80300880 base.
 extern const Vec vec3_80300880[11];
-#define RODATA_VEC(i, name) (vec3_80300880[i])
+#define RODATA_VEC(i, name) (vecs[i])
+// double_15 (at +0x88) is part of the same base symbol; reading it through vecs keeps r30 live.
+#define RODATA_D15 (*(const f64*)((const u8*)vecs + 0x88))
 #else
+#define RODATA_D15 double_15_80300908
 extern const Vec vec3_80300880;
 extern const Vec vec3_8030088c;
 extern const Vec vec3_80300898;
@@ -75,33 +78,46 @@ extern const f32 float_160_80422094;
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// NONMATCHING (67.78%): stack-slot reuse and FPR/GPR roles differ (frame 0x140 vs 0x170).
+// `opt_common_subs off`: with CSE on MWCC allocates the screen2 x/y update's 4.0f to f2 instead of
+// the original's f1; turning CSE off for this function restores the original FPR allocation.
+#pragma opt_common_subs off
 static void actionCommandDisp(f32 x, f32 y) {
+#ifdef MUST_MATCH
+	Vec* vecs = (Vec*)vec3_80300880;
+#endif
 	BattleWork* work = _battleWorkPointer;
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
 	Vec screen;
 	Vec screen2;
-	Vec trans1, trans2, trans3, trans4, trans5;
-	Vec scale1, scale2, scale3, scale4, scale5;
-	Vec rot1, rot2, rot3, rot4, rot5;
-	GXColor color1, color2, color3, color4, color5;
 	f32 alpha = float_0_8042206c;
 
 	btlGetScreenPoint(&mt->curPos, &screen);
-	trans1 = screen;
-	scale1 = RODATA_VEC(0, vec3_80300880);
-	rot1 = RODATA_VEC(1, vec3_8030088c);
-	color1 = dat_80422058;
-	btlDispTex4(0x42, &trans1, &scale1, &rot1, &color1);
+	{
+		Vec trans;
+		Vec scale;
+		Vec rot;
+		GXColor color;
+		color = dat_80422058;
+		rot = RODATA_VEC(1, vec3_8030088c);
+		scale = RODATA_VEC(0, vec3_80300880);
+		trans = screen;
+		btlDispTex4(0x42, &trans, &scale, &rot, &color);
+	}
 
 	screen.x += float_4_80422070;
 	screen.y -= float_4_80422070;
 	screen.z -= float_2_80422074;
-	trans2 = screen;
-	scale2 = RODATA_VEC(2, vec3_80300898);
-	rot2 = RODATA_VEC(3, vec3_803008a4);
-	color2 = dat_8042205c;
-	btlDispTex4(0x42, &trans2, &scale2, &rot2, &color2);
+	{
+		Vec trans;
+		Vec scale;
+		Vec rot;
+		GXColor color;
+		color = dat_8042205c;
+		rot = RODATA_VEC(3, vec3_803008a4);
+		scale = RODATA_VEC(2, vec3_80300898);
+		trans = screen;
+		btlDispTex4(0x42, &trans, &scale, &rot, &color);
+	}
 
 	if (mt->hitFlag != 0) {
 		s32 rem = mt->counter % 0x1E;
@@ -113,49 +129,81 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	btlGetScreenPoint(&mt->startPos, &screen2);
 
-	trans3 = screen2;
-	scale3 = RODATA_VEC(4, vec3_803008b0);
-	rot3 = RODATA_VEC(5, vec3_803008bc);
-	rot3.z = mt->rotZ;
-	color3 = dat_80422060;
-	btlDispTex4(0x41, &trans3, &scale3, &rot3, &color3);
+	{
+		Vec trans;
+		Vec scale;
+		Vec rot;
+		Vec tmp;
+		GXColor color;
+		color = dat_80422060;
+		tmp = RODATA_VEC(5, vec3_803008bc);
+		tmp.z = mt->rotZ;
+		rot = tmp;
+		scale = RODATA_VEC(4, vec3_803008b0);
+		trans = screen2;
+		btlDispTex4(0x41, &trans, &scale, &rot, &color);
+	}
 
 	if (alpha > float_0_8042206c) {
-		trans4 = screen2;
-		scale4 = RODATA_VEC(6, vec3_803008c8);
-		scale4.x = alpha;
-		scale4.y = alpha;
-		rot4 = RODATA_VEC(7, vec3_803008d4);
-		rot4.z = mt->rotZ;
-		color4 = dat_80422064;
-		btlDispTex4(0x41, &trans4, &scale4, &rot4, &color4);
+		Vec trans;
+		Vec scale;
+		Vec scaleTmp;
+		Vec rot;
+		Vec rotTmp;
+		GXColor color;
+		color = dat_80422064;
+		rotTmp = RODATA_VEC(7, vec3_803008d4);
+		rotTmp.z = mt->rotZ;
+		rot = rotTmp;
+		scaleTmp = RODATA_VEC(6, vec3_803008c8);
+		scaleTmp.x = alpha;
+		scaleTmp.y = alpha;
+		scale = scaleTmp;
+		trans = screen2;
+		btlDispTex4(0x41, &trans, &scale, &rot, &color);
 	}
 
 	screen2.x += float_4_80422070;
 	screen2.y -= float_4_80422070;
 	screen2.z -= float_2_80422074;
-	trans5 = screen2;
-	scale5 = RODATA_VEC(8, vec3_803008e0);
-	rot5 = RODATA_VEC(9, vec3_803008ec);
-	rot5.z = mt->rotZ;
-	color5 = dat_80422068;
-	btlDispTex4(0x41, &trans5, &scale5, &rot5, &color5);
+	{
+		Vec trans;
+		Vec scale;
+		Vec rot;
+		Vec tmp;
+		GXColor color;
+		color = dat_80422068;
+		tmp = RODATA_VEC(9, vec3_803008ec);
+		tmp.z = mt->rotZ;
+		rot = tmp;
+		scale = RODATA_VEC(8, vec3_803008e0);
+		trans = screen2;
+		btlDispTex4(0x41, &trans, &scale, &rot, &color);
+	}
 
 	{
-		s32 pressed = BattleACGetButtonIcon(0x100, 1);
-		s32 icon = BattleACGetButtonIcon(0x100, 0);
+		s32 pressed;
+		s32 icon;
 		Vec v;
 
 		mt->rotZ += float_2_80422074;
-		if (fabs(mt->curPos.x - mt->startPos.x) < double_15_80300908) {
+		pressed = BattleACGetButtonIcon(0x100, 1);
+		icon = BattleACGetButtonIcon(0x100, 0);
+		if (fabs(mt->curPos.x - mt->startPos.x) < RODATA_D15) {
 			icon = pressed;
 		}
 		v = RODATA_VEC(10, vec3_803008f8);
 		v.x = float_neg200_80422080 + x;
 		v.y = float_50_80422084 + y;
+#ifdef MUST_MATCH
+		// Match-only: icondrv.h says s16, but the original passes the icon unextended (no `extsh`).
+		((void (*)(Vec*, s32, s32, f32))iconDispGx)(&v, 0x10, icon, float_1_80422088);
+#else
 		iconDispGx(&v, 0x10, icon, float_1_80422088);
+#endif
 	}
 }
+#pragma opt_common_subs reset
 
 void battleAcDelete_MonosiriTarget(BattleWork* work) {
 	work->actionCommands.mAcState = 0x3EA;
@@ -279,10 +327,14 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 	return 1;
 }
 
-// NONMATCHING (74.58%): `extsb r0, r3` before `slwi`; battle_ac.h wrongly says s8 (real type u8).
 // dont_inline: the original keeps _getmaxcount as a real call (`bl _getmaxcount`), not an inline.
 #pragma dont_inline on
 s32 _getmaxcount(void) {
+#ifdef MUST_MATCH
+	// Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
+	return _frame_table[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(_battleWorkPointer)];
+#else
 	return _frame_table[BattleActionCommandGetDifficulty(_battleWorkPointer)];
+#endif
 }
 #pragma dont_inline reset

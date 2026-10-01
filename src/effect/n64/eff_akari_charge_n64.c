@@ -185,11 +185,10 @@ EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f3
 	return entry;
 }
 
-// The early work pointer lands in r5 instead of the original's r29, so p = work->particles is computed at
-// the top of the early block rather than at loop setup; the same pointer lands in r3 instead of r25 at the
-// bottom, and the two fcmpu operands are swapped. Every other instruction, GPR and FPR matches; this is the
-// same mwcc allocator/coalescing difference documented for the other effect units.
-// NONMATCHING (99.14%): early work pointer r5 not r29; bottom pointer r3 not r25; fcmpu operands swapped.
+// The work header and the first particle are accessed through one EffAkariChargeParticle* and advanced by
+// p++ into the particle array: a separate `p = work->particles` makes mwcc colour the header pointer r5 and
+// the loop cursor r29. The two fcmpu instructions compare against a local copy of the zero constant so the
+// register (dx/dy) operand comes first.
 void effAkariChargeMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
@@ -207,43 +206,44 @@ void effAkariChargeMain(EffectEntry* effect) {
 	f32 y;
 	f32 dx;
 	f32 dy;
-
-	{
-		EffAkariChargeWork* work = effect->userdata;
-		p = work->particles;
-
-		disp.x = work->x;
-		disp.y = work->y;
-		disp.z = work->z;
 #ifdef MUST_MATCH
-		position = disp;
+	f32 zero;
 #endif
 
-		type = work->type;
+	p = effect->userdata;
 
-		if (effect->flags & 4) {
-			effect->flags &= ~4;
-			work->field_0x10 = 16;
-		}
-		if (work->field_0x10 < 1000) {
-			work->field_0x10--;
-		}
-		work->field_0x14++;
+	disp.x = p->field_0x4;
+	disp.y = p->field_0x8;
+	disp.z = p->field_0xC;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
 
-		if (work->field_0x10 < 0) {
-			effDelete(effect);
-			return;
-		}
-		life = work->field_0x10;
-		counter = work->field_0x14;
-		if (life < 16) {
-			work->field_0x24 = life << 4;
-		}
-		if (counter < 16) {
-			work->field_0x24 = (counter << 4) + 15;
-		}
+	type = p->field_0x0;
 
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		p->life = 16;
 	}
+	if (p->life < 1000) {
+		p->life--;
+	}
+	p->counter++;
+
+	if (p->life < 0) {
+		effDelete(effect);
+		return;
+	}
+	life = p->life;
+	counter = p->counter;
+	if (life < 16) {
+		p->field_0x24 = life << 4;
+	}
+	if (counter < 16) {
+		p->field_0x24 = (counter << 4) + 15;
+	}
+
+	p++;
 
 	for (i = 1; i < effect->count; i += 3, p += 3) {
 		if (p->counter >= p->life) {
@@ -263,7 +263,14 @@ void effAkariChargeMain(EffectEntry* effect) {
 			p->field_0x4 = x + dx;
 			p->field_0x8 = y + dy;
 			p->angle = angleABf(float_0_8041e8ac, float_0_8041e8ac, dx, dy);
+#ifdef MUST_MATCH
+			// Match-only: comparing against a local copy of the constant makes mwcc put dx/dy first in
+			// the fcmpu, as the original does; the named constant is compared the other way round.
+			zero = float_0_8041e8ac;
+			if (dx != zero || dy != zero) {
+#else
 			if (dx != float_0_8041e8ac || dy != float_0_8041e8ac) {
+#endif
 				p->scale = sqrtf(dx * dx + dy * dy);
 			} else {
 				p->scale = float_0_8041e8ac;
@@ -278,11 +285,8 @@ void effAkariChargeMain(EffectEntry* effect) {
 		p->counter++;
 	}
 
-	{
-		EffAkariChargeWork* work = effect->userdata;
-
-		p = work->particles;
-	}
+	p = effect->userdata;
+	p++;
 	for (i = 1; i < effect->count; i++, p++) {
 		p->index = rand() % 16;
 	}

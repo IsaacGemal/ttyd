@@ -34,7 +34,6 @@ extern s32 bts_x_flag_add[];
 extern s32 bts_x_flag_set[];
 extern s32 bts_x_flag_wait[];
 extern BattleUnitKind unit_boss_batten_satellite;
-static u32 xlw[16];
 static USER_FUNC(_set_draw_callback);
 static USER_FUNC(enzan_lw_load);
 static USER_FUNC(enzan_lw_save);
@@ -826,6 +825,21 @@ EVT_BEGIN(hakai_snd_event)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_SRYO_BARRIER_BREAK1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     RETURN
 EVT_END()
+
+// MUST_MATCH: file-scope so MWCC emits it into .rodata before the btl_shuryolight_* label
+// strings, matching the original VecData$634 offset.
+static const Vec VecData[10] = {
+    { 38.0f, 45.0f, 5.0f },
+    { 38.0f, 45.0f, 5.0f },
+    { -38.0f, 45.0f, 5.0f },
+    { 0.0f, 83.0f, 5.0f },
+    { 38.0f, 7.0f, 5.0f },
+    { -38.0f, 7.0f, 5.0f },
+    { 38.0f, 83.0f, 5.0f },
+    { -38.0f, 83.0f, 5.0f },
+    { 38.0f, 7.0f, 5.0f },
+    { -38.0f, 7.0f, 5.0f },
+};
 
 BattleUnitSetup entry_batten_satellite[1] = {
     { &unit_boss_batten_satellite, 1, 0x04000004, { 1000.0f, 0.0f, 1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
@@ -2529,21 +2543,22 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-EventEntry* xevt[1];
+// .bss objects are emitted in reverse declaration order by MWCC; listed here so the linked layout is
+// xevt, xmemo, xlw2, xlw, maer, nowv (matching the original object).
+Vec nowv;
 
-// TODO: type
-u32 xmemo[5];
+f32 maer;
+
+static u32 xlw[16];
 
 // TODO: type
 u32 xlw2[16];
 
 // TODO: type
-static u32 xlw[16];
+u32 xmemo[5];
 
-f32 maer;
-
-Vec nowv;
+// TODO: type
+EventEntry* xevt[1];
 
 
 
@@ -2803,19 +2818,6 @@ USER_FUNC(battleGetBattenSatelliteInitPos) {
     s32 indexZ;
     const Vec* p;
     BattleWork* wp;
-    static const Vec VecData[10] = {
-        { 38.0f, 45.0f, 5.0f },
-        { 38.0f, 45.0f, 5.0f },
-        { -38.0f, 45.0f, 5.0f },
-        { 0.0f, 83.0f, 5.0f },
-        { 38.0f, 7.0f, 5.0f },
-        { -38.0f, 7.0f, 5.0f },
-        { 38.0f, 83.0f, 5.0f },
-        { -38.0f, 83.0f, 5.0f },
-        { 38.0f, 7.0f, 5.0f },
-        { -38.0f, 7.0f, 5.0f },
-    };
-
     args = event->args;
     wp = _battleWorkPointer;
     id = evtGetValue(event, args[0]);
@@ -3003,17 +3005,23 @@ void _light_point_callback(struct BattleWorkUnitPart* part, s32 group, void* mtx
     }
 }
 
-// NONMATCHING (99.28%): `_battleWorkPointer` scratch register is r5 in ours, r4 in the original (args load uses the other).
+// MUST_MATCH: both the named `args` temp and `opt_propagation off` are required; with propagation on MWCC
+// pre-colours the evtGetValue argument into r4, pushing the _battleWorkPointer address temp into r5,
+// but the target uses r4 for the table address and r5 for event->args.
+#pragma opt_propagation off
 USER_FUNC(unk_las_0000d538) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
-    s32 arg = evtGetValue(event, event->args[0]);
+    s32* args = event->args;
+    s32 arg = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(wp, BattleTransID(event, arg));
     if (unit != NULL) {
         unit->hpGauge.field_0x2 |= 1;
     }
     return EVT_RETURN_DONE;
 }
+
+#pragma opt_propagation reset
 
 s32 battenSatelliteTo_Init(struct BattleUnit* unit, s32 index, s32* table) {
     u8* data;
@@ -3064,21 +3072,42 @@ s32 battenSatelliteTo_Main(struct BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (86.96%): each of the nine inlined battenSatelliteTo_Init blocks keeps `data` in r4 (original: r7),
-// reuses the preloaded table register for the data+4 store (original re-materialises it), and hoists the
-// comparison/argument table addresses in a different order.
+// MUST_MATCH: same body as battenSatelliteTo_Init, but the spline-table pointer is received through a
+// `volatile` parameter (forcing MWCC to re-materialise the table address for the data+4 store inside each
+// inlined loop iteration) while `inv` keeps a normal copy alive for the later work[1] store. Passing the
+// same symbol twice is behaviourally identical (the pointer never changes) and is required to reproduce the
+// original's register allocation; a plain 3-arg call leaves both functions 80 bytes short.
+static inline s32 battenSatelliteTo_InitInline(struct BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
+    u8* data;
+    struct BattleUnit* sat;
+    data = (u8*)__memAlloc(4, 0x5C);
+    if (unit->work[9 + index] == -1) {
+        return 0;
+    }
+    unit->work[13 + index] = (s32)data;
+    *(s32*)(data + 0x0) = 5;
+    *(s32*)(data + 0x4) = (s32)table;
+    *(s32*)(data + 0x58) = 0;
+    spline_maketable(5, *(s32*)(data + 0x4), (s32*)(data + 8), (s32*)(data + 0x1C));
+    sat = BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + index]);
+    BtlUnit_GetPartsPtr(sat, 1)->work[1] = (s32)inv;
+    return 1;
+}
+
 USER_FUNC(battenSatelliteToInside) {
     s32* args;
     BattleUnit* unit;
     BattleUnitPart* part;
     u8 haveAll;
     s32 id;
-    s32 table;
     s32 i;
+    s32 table;
+    s32 tid;
     args = event->args;
     id = evtGetValue(event, args[0]);
     evtGetValue(event, args[1]);
-    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
+    tid = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, tid);
     if (isFirstCall) {
         for (i = 0; i < 4; i++) {
             if (unit->work[9 + i] == -1) {
@@ -3087,34 +3116,34 @@ USER_FUNC(battenSatelliteToInside) {
             part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[9 + i]), 1);
             table = part->work[1];
             if (table == (s32)splineTableOut1_1) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn1_1);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn1_1, (s32*)splineTableIn1_1);
             }
             if (table == (s32)splineTableOut2_1) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn2_1);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn2_1, (s32*)splineTableIn2_1);
             }
             if (table == (s32)splineTableOut2_2) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn2_2);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn2_2, (s32*)splineTableIn2_2);
             }
             if (table == (s32)splineTableOut3_1) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_1);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn3_1, (s32*)splineTableIn3_1);
             }
             if (table == (s32)splineTableOut3_2) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_2);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn3_2, (s32*)splineTableIn3_2);
             }
             if (table == (s32)splineTableOut3_3) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn3_3);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn3_3, (s32*)splineTableIn3_3);
             }
             if (table == (s32)splineTableOut4_1) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_1);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_1, (s32*)splineTableIn4_1);
             }
             if (table == (s32)splineTableOut4_2) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_2);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_2, (s32*)splineTableIn4_2);
             }
             if (table == (s32)splineTableOut4_3) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_3);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_3, (s32*)splineTableIn4_3);
             }
             if (table == (s32)splineTableOut4_4) {
-                battenSatelliteTo_Init(unit, i, (s32*)splineTableIn4_4);
+                battenSatelliteTo_InitInline(unit, i, (s32*)splineTableIn4_4, (s32*)splineTableIn4_4);
             }
         }
     }
@@ -3127,24 +3156,25 @@ USER_FUNC(battenSatelliteToInside) {
     return haveAll == 0 ? EVT_RETURN_DONE : 0;
 }
 
-// NONMATCHING (90.61%): the inlined battenSatelliteTo_Init keeps `data` in r4 (original: r7) and reuses r25 for the table (original re-materialises it).
 USER_FUNC(battenSatelliteToOutside) {
     s32* args = event->args;
     s32 id;
     s32 type;
+    s32 tid;
     BattleUnit* unit;
     s32 i;
     u8 haveAll;
 
     id = evtGetValue(event, args[0]);
     type = evtGetValue(event, args[1]);
-    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
+    tid = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, tid);
     if (isFirstCall) {
         switch (type) {
             case 1:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut1_1) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut1_1, (s32*)splineTableOut1_1) == 1) {
                         break;
                     }
                     i++;
@@ -3153,14 +3183,14 @@ USER_FUNC(battenSatelliteToOutside) {
             case 2:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut2_1) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_1, (s32*)splineTableOut2_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut2_2) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_2, (s32*)splineTableOut2_2) == 1) {
                         break;
                     }
                     i++;
@@ -3169,21 +3199,21 @@ USER_FUNC(battenSatelliteToOutside) {
             case 3:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut3_1) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_1, (s32*)splineTableOut3_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut3_2) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_2, (s32*)splineTableOut3_2) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut3_3) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_3, (s32*)splineTableOut3_3) == 1) {
                         break;
                     }
                     i++;
@@ -3192,28 +3222,28 @@ USER_FUNC(battenSatelliteToOutside) {
             case 4:
                 i = 0;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_1) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_1, (s32*)splineTableOut4_1) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_2) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_2, (s32*)splineTableOut4_2) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_3) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_3, (s32*)splineTableOut4_3) == 1) {
                         break;
                     }
                     i++;
                 }
                 i++;
                 for (;;) {
-                    if ((u8)battenSatelliteTo_Init(unit, i, (s32*)splineTableOut4_4) == 1) {
+                    if ((u8)battenSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_4, (s32*)splineTableOut4_4) == 1) {
                         break;
                     }
                     i++;

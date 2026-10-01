@@ -567,18 +567,22 @@ s32 marioAnimeId(void) {
 	return id;
 }
 
-// NONMATCHING (99.25%): 1 instruction differs, 1 missing, plus register differences.
 void unk_80058374(void) {
 	MarioWork* wp = mp;
-	MarioMotion mot = wp->currMotionId;
-	s32 flags;
 
-	if (mot != MARIO_MOTION_SHIP && mot != MARIO_MOTION_ROLL && mot != MARIO_MOTION_PLANE && mot != MARIO_MOTION_JABARA && mot != MARIO_MOTION_YOSHI) {
-		flags = wp->dispFlags;
-		if (!(flags & 0x1000000)) {
+	if (wp->currMotionId != MARIO_MOTION_SHIP && wp->currMotionId != MARIO_MOTION_ROLL && wp->currMotionId != MARIO_MOTION_PLANE && wp->currMotionId != MARIO_MOTION_JABARA && wp->currMotionId != MARIO_MOTION_YOSHI) {
+#ifdef MUST_MATCH
+		// original layout is a one-case switch: an `if` compiles to `bne end`, this to `beq body; b end`
+		switch (wp->dispFlags & 0x1000000) {
+		case 0:
+			marioChgPose("M_D_1"); //inline
+			break;
+		}
+#else
+		if (!(wp->dispFlags & 0x1000000)) {
 			marioChgPose("M_D_1"); //inline
 		}
-		return;
+#endif
 	}
 }
 

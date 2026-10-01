@@ -2074,7 +2074,8 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.30%): 2 instructions differ, plus register differences.
+// NONMATCHING (99.35%): the itemEntry argument setup schedules the evtId load before the fadds and the x
+// load after it (target: x load, fadds, z load, evtId load); 2 replaced instructions, otherwise identical.
 s32 mobj_badgeblk(MapObjectEntry* obj) {
     u8* base = (u8*)vec3_802c3dc8;
 
@@ -2096,9 +2097,16 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                     mobjRunEvent(obj, obj->unk1D4);
                 } else if (*(s32*)((u8*)obj + 0x1A0) != 0x79) {
                     ItemEntry* item;
+#ifdef MUST_MATCH
+                    // Two-step sum loads the 0.04 constant into f2 (the target's register) instead of f1.
+                    f32 y = float_40_8041a1ec;
 
+                    y += obj->position.y;
+#else
+                    f32 y = float_40_8041a1ec + obj->position.y;
+#endif
                     itemEntry(obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, obj->unk1E4, 0,
-                              obj->position.x, float_40_8041a1ec + obj->position.y, obj->position.z);
+                              obj->position.x, y, obj->position.z);
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
                     *(f32*)((u8*)item + 0x80) = float_0p7_8041a1c8;
@@ -2852,6 +2860,8 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
 }
 
 extern Vec vec3_802c3ef4[];
+extern const char str_802C41DC[];
+extern const char str_802C41F0[];
 
 s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -3774,7 +3784,6 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.06%): pooled string symbol names differ and one f32 load order is swapped.
 s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
     BOOL flag = FALSE;
 
@@ -3812,10 +3821,10 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
             }
             break;
         case 0xa:
-            if (strcmp(obj->animName, "MOBJ_GreenPipe_ks") == 0) {
+            if (strcmp(obj->animName, str_802C41DC) == 0) {
                 effMObjBrokenEntry(6, obj->position.x, float_25_8041a140 + obj->position.y,
                                    float_25_8041a140 + obj->position.z);
-            } else if (strcmp(obj->animName, "MOBJ_GreenPipe_kl") == 0) {
+            } else if (strcmp(obj->animName, str_802C41F0) == 0) {
                 effMObjBrokenEntry(6, obj->position.x,
                                    float_7p5_8041a1bc + (float_25_8041a140 + obj->position.y),
                                    float_25_8041a140 + obj->position.z);

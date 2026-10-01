@@ -872,7 +872,9 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 // qqsort callback, sub_80237A2C
 // qqsort callback, sub_802379E4
 
-// NONMATCHING (99.10%): just written.
+#pragma opt_common_subs off // needed: with CSE on the int->float mask lands in f2, not f4
+// NONMATCHING (99.71%): same instructions; only the case-0 loop's GPR allocation differs
+// (target: 1 in r3, 0 in r0, the descriptor id in r4; ours: 1 in r4, 0 in r3, id in r0).
 void select_main(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 newIndex;
@@ -990,8 +992,11 @@ void select_main(WinMgrEntry* entry) {
         *(u16*)&select->flags |= 0x1000;
         (*(s32*)select->field_0x8)++;
         break;
+    case 4:
+        break;
     }
 }
+#pragma opt_common_subs reset
 
 // NONMATCHING (92.61%): close, but MWCC folds the `0.0f + (f32)int` copies that the
 // original keeps (which is why the original also spills f29); the SDA/rodata label

@@ -2565,17 +2565,24 @@ USER_FUNC(btlevtcmd_SetPartsBlur) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.60%): only the OR operand order differs (original `or r0, r0, r4`, ours `or r0, r4, r0`);
-// field and args[1] land in the right registers via `args[1] | unit->mTokenFlags` but MWCC emits the
-// expression's left operand first.
 USER_FUNC(btlevtcmd_OnToken) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 btlId;
+#ifdef MUST_MATCH
+    s32 t;
+#endif
 
     btlId = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
+#ifdef MUST_MATCH
+    // routing args[1] through a temp makes MWCC keep the field as the OR destination (`or r0, r0, r4`)
+    t = args[1];
+    t = unit->mTokenFlags | t;
+    unit->mTokenFlags = t;
+#else
     unit->mTokenFlags = args[1] | unit->mTokenFlags;
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -2592,16 +2599,23 @@ USER_FUNC(btlevtcmd_OffToken) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.70%): same instructions; only register numbers or operands differ.
+// The original emits `and. r0, r0, r5` (mTokenFlags in r0, args[1] in r5), so the field must stay the
+// left operand of `&`. Reading args[1] through a volatile pointer pins its load before the field load, as
+// the original does; nothing here is actually volatile (`event->args` is a plain s32*).
 USER_FUNC(btlevtcmd_CheckToken) {
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, index;
+    s32 btlId, index, mask;
 
     btlId = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
+#ifdef MUST_MATCH
+    mask = *(volatile s32*)&args[1];
+#else
+    mask = args[1];
+#endif
     index = args[2];
-    if (args[1] & unit->mTokenFlags) {
+    if (unit->mTokenFlags & mask) {
         evtSetValue(event, index, 1);
     }
     else {
@@ -4733,7 +4747,7 @@ USER_FUNC(btlevtcmd_JumpPartsSetting) {
 
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* b, s32* retIndex
-// NONMATCHING (99.55%): same instructions; only register numbers or operands differ.
+#pragma opt_propagation off // force the a=args[4] load before retIndex=args[5] so retIndex reuses the args register
 USER_FUNC(btlevtcmd_PreCheckDamage) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -4761,6 +4775,7 @@ USER_FUNC(btlevtcmd_PreCheckDamage) {
     }
     return 0xFF;
 }
+#pragma opt_propagation reset
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* retIndex
 USER_FUNC(btlevtcmd_PreCheckCounter) {
@@ -4791,7 +4806,6 @@ USER_FUNC(btlevtcmd_PreCheckCounter) {
 }
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* b, s32* retIndex
-// NONMATCHING (99.55%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_CheckDamage) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -4808,7 +4822,14 @@ USER_FUNC(btlevtcmd_CheckDamage) {
     partId = evtGetValue(event, args[2]);
     part = BtlUnit_GetPartsPtr(target, partId);
     weapon = (BattleWeapon*)evtGetValue(event, args[3]);
+#ifdef MUST_MATCH
+    // The original materializes args[4] before args[5], so MWCC lets retIndex reuse the dying
+    // `args` register (r30); as a plain load the value is rematerialized at the call and retIndex
+    // is pushed to r26. The volatile read pins the load here without changing the instruction.
+    a = ((volatile s32*)args)[4];
+#else
     a = args[4];
+#endif
     retIndex = args[5];
     result = BattleCheckDamage(attacker, target, part, weapon, a);
     if (result < 0) {

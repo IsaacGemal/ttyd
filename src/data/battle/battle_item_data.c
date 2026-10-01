@@ -9,8 +9,23 @@
 #include "evt/evt_mobj.h"
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
+#include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
 #include "battle/battle_database_common.h"
+#include "battle/battle.h"
+#include "battle/battle_detect.h"
+#include "battle/battle_sub.h"
+#include "battle/battle_unit.h"
+#include "data/item_icon_view.h"
+#include "driver/animdrv.h"
+#include "driver/effdrv.h"
+#include "driver/icondrv.h"
+#include "eff/eff_naniga.h"
+#include "mario/mario_pouch.h"
+#include "pmario_sound.h"
+#include "statuswindow.h"
+#include "system.h"
+#include <dolphin/mtx.h>
 
 
 BattleWeapon ItemWeaponData_Pow_Block;
@@ -1588,8 +1603,40 @@ BattleWeapon ItemWeaponData_Kaminari_Gorogoro = {
     { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write _sampling_random_target (global, 0x10c bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+// The sampling entry is 0x24 bytes, so the original computes the byte offset once (`mulli 0x24`)
+// and keeps it in a callee-saved register while recomputing `base + ofs` for each read. Writing the
+// address as `*(s16*)(samp + ofs + 4)` makes MWCC fold `ofs` into the base (`samp += ofs`); indexing
+// an `s16*` view with `e * 0x12 + 2` (e = entry index) yields the original `mulli 0x24`.
+s32 _sampling_random_target(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    BattleWeapon* weapon = (BattleWeapon*)evtGetValue(event, args[0]);
+    u8 sampling[0xACC];
+    s8 belong;
+    s32 id;
+    s32 outIdx1 = args[1];
+    s32 outIdx2 = args[2];
+    u8* samp;
+
+    belong = (s8)evtGetValue(event, args[3]);
+    samp = sampling;
+    id = BattleTransID(event, -2);
+    BattleSamplingEnemy(samp, weapon, id, belong, weapon->targetClassFlags,
+                        weapon->targetPropertyFlags,
+                        -wp->alliances[belong].attackDirection);
+    if ((s8)samp[0xA6C] <= 0) {
+        evtSetValue(event, outIdx1, -1);
+        evtSetValue(event, outIdx2, -1);
+    } else {
+        s32 idx = irand((s8)samp[0xA6C]);
+        s32 e = (s8)samp[idx + 0xA6D];
+        s16* sp = (s16*)samp;
+
+        evtSetValue(event, outIdx1, sp[e * 0x12 + 2]);
+        evtSetValue(event, outIdx2, sp[e * 0x12 + 3]);
+    }
+    return 2;
+}
 
 EVT_BEGIN(ItemEvent_Kirakira_Otoshi_Core)
     CALL(evt_btl_camera_set_mode, 0, 0)
@@ -2818,8 +2865,36 @@ BattleWeapon ItemWeaponData_Stop_Watch = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write _cam_rot (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+// The original loads the two float constants before the two `userdata` fields. The comma expression
+// below (its volatile cast has no effect on an rvalue) orders the constant loads first, as in
+// `src/countdown.c`; the two file-scope floats are this file's original data symbols.
+f32 float_720_8041c53c = 720.0f;
+f32 float_0_8041c51c = 0.0f;
+
+s32 _cam_rot(EventEntry* event, BOOL isFirstCall) {
+    f32 angle;
+
+    if (isFirstCall) {
+        event->userdata[0] = sysMsec2Frame(2000);
+        event->userdata[1] = event->userdata[0];
+    }
+#ifdef MUST_MATCH
+    // MUST_MATCH: force MWCC to emit the float-constant loads before the `userdata` loads.
+    angle = intplGetValue(4, ((volatile f32)float_0_8041c51c, event->userdata[0]),
+                          ((volatile f32)float_720_8041c53c, event->userdata[1]), float_720_8041c53c,
+                          float_0_8041c51c);
+#else
+    angle = intplGetValue(4, event->userdata[0], event->userdata[1], 720.0f, 0.0f);
+#endif
+    camGetPtr(CAMERA_3D)->rollAngle = angle;
+    event->userdata[0] -= 1;
+    if (event->userdata[0] <= 0) {
+        angle = float_0_8041c51c;
+        camGetPtr(CAMERA_3D)->rollAngle = angle;
+        return 1;
+    }
+    return 0;
+}
 
 EVT_BEGIN(ItemEvent_Guruguru_Memawashi)
     SET_VALUE(LW(12), PTR(&ItemWeaponData_Guruguru_Memawashi))
@@ -3234,8 +3309,18 @@ BattleWeapon ItemWeaponData_Suitooru = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write _rank_up (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+s32 _rank_up(EventEntry* event, BOOL isFirstCall) {
+    s32 type = evtGetValue(event, event->args[0]);
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, type));
+
+    if (unit != NULL) {
+        unit->mLevel += 5;
+        if (unit->mLevel > 0x63) {
+            unit->mLevel = 0x63;
+        }
+    }
+    return 2;
+}
 
 EVT_BEGIN(ItemEvent_Teki_Kyouka)
     SET_VALUE(LW(12), PTR(&ItemWeaponData_Teki_Kyouka))
@@ -3810,11 +3895,39 @@ BattleWeapon ItemWeaponData_Jiwajiwa_Syrup = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write _hpfp_change_declare_2 (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+s32 _hpfp_change_declare_2(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 type = evtGetValue(event, event->args[0]);
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
 
-// TODO: write _hpfp_change_declare_1 (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+    if (unit != NULL) {
+        if (unit->currentKind == UNIT_MARIO) {
+            N_statusClearBlink();
+            statusMarioHPBlink(0x78);
+            statusFPBlink(0x78);
+        } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+            N_statusClearBlink();
+            statusPartyHPBlink(0x78);
+            statusFPBlink(0x78);
+        }
+    }
+    return 2;
+}
+
+s32 _hpfp_change_declare_1(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 type = evtGetValue(event, event->args[0]);
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
+
+    if (unit != NULL) {
+        if (unit->currentKind == UNIT_MARIO) {
+            BattleStatusWindowSystemOn();
+        } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+            BattleStatusWindowSystemOn();
+        }
+    }
+    return 2;
+}
 
 EVT_BEGIN(ItemEvent_Irekaeeru)
     SET_VALUE(LW(12), PTR(&ItemWeaponData_Irekaeeru))
@@ -4064,8 +4177,69 @@ BattleWeapon ItemWeaponData_Attiike_Shisshi = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write _naniga_okorukana_check (global, 0x1e8 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+// Hoisting the effect lookup into `EffectEntry* e` fixes both the `lmw` placement (which was
+// hoisted before the return-value computation when the call fed the ternary directly) and the
+// boolean idiom's operand order (`or r3, r4, r3`). The `R_mystery_item_table` scan must use the
+// index form `((s32*)R_mystery_item_table)[count] != 0` to avoid an extra `mr r4, r0`.
+s32 _naniga_okorukana_check(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    s32 type = evtGetValue(event, args[0]);
+    s32 outIdx = args[1];
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
+    Vec pos;
+
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    if (!(unit->mAttributeFlags & kVeiled)) {
+        if (unit->mAttributeFlags & kCeiling) {
+            pos.y -= 5.0f;
+        } else {
+            pos.y += (f32)(BtlUnit_GetHeight(unit) + 0x14);
+        }
+    }
+    if (isFirstCall) {
+        s32 count = 0;
+        s32 item;
+        s8* countA;
+        s8* countB;
+
+        while (((s32*)R_mystery_item_table)[count] != 0) {
+            count++;
+        }
+        item = (s32)R_mystery_item_table[irand(count)];
+        event->userdata[0] = (s32)effNanigaEntry(0, (s32*)R_mystery_item_table, item, pos.x, pos.y,
+                                                 pos.z);
+        effSetName((EffectEntry*)event->userdata[0], "effNaniga");
+        evtSetValue(event, outIdx, item);
+        if (unit->currentKind == UNIT_MARIO) {
+            countA = (s8*)((u8*)wp + 0x16f25);
+            countB = (s8*)((u8*)wp + 0x16f26);
+        } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+            countA = (s8*)((u8*)wp + 0x16f27);
+            countB = (s8*)((u8*)wp + 0x16f28);
+        } else {
+            goto done;
+        }
+        switch (item) {
+        case 0x80:
+        case 0x81:
+        case 0x82:
+        case 0x84:
+        case 0x8C:
+            (*countA)++;
+            break;
+        default:
+            (*countB)++;
+            break;
+        }
+    }
+ done:
+    {
+        EffectEntry* e = (EffectEntry*)effNameToPtr("effNaniga");
+
+        return e ? 0 : 2;
+    }
+}
 
 EVT_BEGIN(ItemEvent_Naniga_Okorukana)
     SET_VALUE(LW(12), PTR(ItemWeaponData_Naniga_Okorukana))
@@ -5899,14 +6073,115 @@ BattleWeapon ItemWeaponData_FutarideForever = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write _nancy_mirage (global, 0x164 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+s32 _nancy_mirage(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
 
-// TODO: write _throw_item_icon (global, 0x34c bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+    if (isFirstCall) {
+        event->userdata[0] = 60;
+        event->userdata[1] = animPoseEntry("c_cook", 1);
+        event->userdata[2] = 0;
+        event->field_84 = (s32)x;
+        ((s32*)&event->wInterpRelatedTime)[0] = (s32)y;
+        ((s32*)&event->wInterpRelatedTime)[1] = (s32)z;
+        animPoseSetAnim(event->userdata[1], "A_2", 1);
+        animPoseSetEffectAnim(event->userdata[1], "PM_Y_1A", 1);
+    }
+    event->userdata[0] -= 1;
+    if (event->userdata[0] < 0) {
+        animPoseSetEffect(event->userdata[1], NULL, 0);
+        animPoseRelease(event->userdata[1]);
+        return 2;
+    }
+    animPoseMain(event->userdata[1]);
+    dispEntry(CAMERA_3D, z, 2, _nancy_disp, event);
+    return 0;
+}
 
-// TODO: write _get_throw_first_pos (global, 0x110 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+s32 _throw_item_icon(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 item = evtGetValue(event, args[0]);
+    f32 x1 = evtGetFloat(event, args[1]);
+    f32 y1 = evtGetFloat(event, args[2]);
+    f32 z1 = evtGetFloat(event, args[3]);
+    f32 x2 = evtGetFloat(event, args[4]);
+    f32 y2 = evtGetFloat(event, args[5]);
+    f32 z2 = evtGetFloat(event, args[6]);
+    ThrowItemWork* work;
+    Vec pos;
+
+    if (isFirstCall) {
+        event->userdata[0] = (s32)BattleAlloc(0x7c);
+        work = (ThrowItemWork*)event->userdata[0];
+        work->target.x = x2;
+        work->target.y = y2;
+        work->target.z = z2;
+        pos.x = x1;
+        pos.y = y1;
+        pos.z = z1;
+        work->pos = pos;
+        work->start = pos;
+        work->counter = (s32)(distABf(work->start.x, work->start.z, work->target.x, work->target.z) /
+                                     15.0f) +
+                        30;
+        work->gravity = 0.5f;
+        work->velY = work->gravity * (f32)work->counter / 2.0f +
+                     (work->target.y - work->start.y) / (f32)work->counter;
+        work->speed = distABf(work->start.x, work->start.z, work->target.x, work->target.z) /
+                      (f32)work->counter;
+        event->userdata[1] = item;
+        event->userdata[2] = 0;
+        event->field_84 = psndSFXOn_3D("SFX_ITEM_COOKING_THROW1", &pos);
+    }
+    work = (ThrowItemWork*)event->userdata[0];
+    if (event->userdata[2] != 0) {
+        psndSFXOff(event->field_84);
+        BattleFree(work);
+        return 2;
+    }
+    work->pos.y += work->velY;
+    work->velY -= work->gravity;
+    if (work->velY < 0.0f && work->pos.y < work->target.y) {
+        work->pos.y = work->target.y;
+    }
+    btlMovePos(&work->pos.x, &work->pos.z, work->speed,
+               angleABf(work->start.x, work->start.z, work->target.x, work->target.z));
+    work->counter -= 1;
+    if (work->counter <= 0) {
+        event->userdata[2] = 1;
+        work->pos = work->target;
+    }
+    dispEntry(CAMERA_3D, 900.0f, 1, _disp_item_icon, event);
+    return 0;
+}
+
+s32 _get_throw_first_pos(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    BattleUnit* unit;
+    Vec pos;
+    s32 outIdx1 = args[1];
+    s32 outIdx2 = args[2];
+    s32 outIdx3 = args[3];
+
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    pos.y += 10.0f;
+    if (!(unit->mAttributeFlags & kVeiled)) {
+        if (unit->mAttributeFlags & kCeiling) {
+            pos.y -= 5.0f;
+        } else {
+            pos.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit);
+        }
+    }
+    evtSetFloat(event, outIdx1, pos.x);
+    evtSetFloat(event, outIdx2, pos.y);
+    evtSetFloat(event, outIdx3, pos.z);
+    return 2;
+}
 
 EVT_BEGIN(ItemEvent_ThrowAttack)
     CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(12))
@@ -6449,8 +6724,16 @@ BattleWeapon ItemWeaponData_PoisonKinoko = {
     { 0, 0, 0, 100, 0, 5, 5, 5, 5, 0, 0, 0 }, // field_B4
 };
 
-// TODO: write _full_ap_recover (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+s32 _full_ap_recover(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 type = evtGetValue(event, event->args[0]);
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, type));
+
+    if (BtlUnit_GetBelong(unit) == 0) {
+        pouchSetAP(pouchGetMaxAP());
+    }
+    return 2;
+}
 
 EVT_BEGIN(ItemEvent_LastDinner)
     SET_VALUE(LW(12), PTR(&ItemWeaponData_PoisonKinoko))
@@ -6632,9 +6915,63 @@ EVT_BEGIN(ItemEvent_Kameno_Noroi)
     RETURN
 EVT_END()
 
-// TODO: write _nancy_disp (global, 0x1a0 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+#ifdef MUST_MATCH
+// Match-only: the colour built through an inline lands the local in the original's stack slot (brief code shape).
+static inline GXColor nancyColor(u8 alpha) {
+    GXColor c = dat_8041c504;
+    c.a = alpha;
+    return c;
+}
+#endif
 
-// TODO: write _disp_item_icon (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/asm/data/battle/battle_item_data.s
+void _nancy_disp(CameraId camera, void* param) {
+    EventEntry* event = param;
+    GXColor color;
+    Mtx mtx;
+    Mtx scale;
+    Mtx trans;
+    f32 scaleValue;
+    u8 alpha;
+    s32 timer = event->userdata[0];
+
+    if (timer < 30) {
+        scaleValue = 0.05f * (f32)(30 - timer) + 4.0f;
+        alpha = 0x80 - (30 - timer) * 4;
+    } else {
+        scaleValue = 4.0f;
+        alpha = 0x80;
+    }
+    PSMTXTrans(trans, (f32)(s32)event->field_84,
+               (f32)((s32*)&event->wInterpRelatedTime)[0],
+               (f32)((s32*)&event->wInterpRelatedTime)[1]);
+    PSMTXScale(scale, scaleValue, scaleValue, 1.0f);
+    PSMTXIdentity(mtx);
+    PSMTXConcat(scale, mtx, mtx);
+    PSMTXConcat(trans, mtx, mtx);
+#ifdef MUST_MATCH
+    color = nancyColor(alpha);
+#else
+    color = dat_8041c504;
+    color.a = alpha;
+#endif
+    animPoseSetMaterialEvtColor(event->userdata[1], color);
+    animPoseSetMaterialFlagOn(event->userdata[1], 0x40);
+    animPoseDrawMtx(event->userdata[1], mtx, 1, 0.0f, 2.0f);
+    animPoseDrawMtx(event->userdata[1], mtx, 2, 0.0f, 2.0f);
+    animPoseDrawMtx(event->userdata[1], mtx, 3, 0.0f, 2.0f);
+}
+
+void _disp_item_icon(CameraId camera, void* param) {
+    EventEntry* event = param;
+
+#ifdef MUST_MATCH
+    // Match-only: the original passes a u16 icon id (no extsh); the header's s16 iconDispGx would extsh.
+    ((void (*)(Vec*, s16, u16, f32))iconDispGx)((Vec*)((u8*)event->userdata[0] + 0xc), 0,
+                                                itemDataTable[event->userdata[1]].icon_id,
+                                                1.0f);
+#else
+    iconDispGx((Vec*)((u8*)event->userdata[0] + 0xc), 0, itemDataTable[event->userdata[1]].icon_id,
+               1.0f);
+#endif
+}
 // clang-format on

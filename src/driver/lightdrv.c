@@ -158,14 +158,13 @@ s32 lightEntry(const char* name, s32 type, Vec position, Vec rotation, GXColor c
 	return i;
 }
 
-// NONMATCHING (99.75%): same instructions; only register numbers or operands differ.
 LightEntry* lightNameToPtr(const char* name) {
 	LightWork* wp = lightGetWork();
 	LightEntry* entry = wp->entries;
 	s32 i;
 
 	for (i = 0; i < wp->count; i++, entry++) {
-		if (entry->flags & 1 && !strcmp(entry->name, name)) {
+		if (entry->flags & 1 && !strcmp(name, entry->name)) {
 			return entry;
 		}
 	}
@@ -196,12 +195,11 @@ s32 _sort(const void* a, const void* b) {
 	}
 }
 
-// NONMATCHING (99.53%): 1 instruction differs.
 s32 lightGetNearObj(Vec position, LightEntry** entries, s32 count, LightEntryFlags flags) {
 	LightWork* wp = lightGetWork();
 	LightNearObj near[32];
 	LightEntry* p;
-	s32 num;
+	u32 num;
 	s32 i;
 	s32 n;
 

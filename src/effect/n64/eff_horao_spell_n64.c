@@ -7,6 +7,9 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
+#ifdef MUST_MATCH
+#include <dolphin/os/OSFastCast.h>
+#endif
 #include <math.h>
 #include <string.h>
 
@@ -168,17 +171,43 @@ static inline void effHoraoSpellSetVtx(effHoraoSpellVtx* vtx, effHoraoSpellVtx* 
 	Vec v;
 
 	memcpy(vtx, src, sizeof(effHoraoSpellVtx));
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail original re-runs OSInitFastCast around the paired-single s16<->f32
+	   conversions; this build lowers the casts to the integer path, so the calls exist only to
+	   reproduce the original GQR2-5 setup. */
+	OSInitFastCast();
+#endif
 	v.x = vtx->pos[0];
 	v.y = vtx->pos[1];
 	v.z = vtx->pos[2];
 	PSMTXMultVec(mtx, &v, &v);
+#ifdef MUST_MATCH
+	OSInitFastCast();
+#endif
 	vtx->pos[0] = v.x;
 	vtx->pos[1] = v.y;
 	vtx->pos[2] = v.z;
 }
 
-// NONMATCHING (73.03%): retail converts the vertex s16 positions through psq_l/psq_st (GQR5); plain C
-// lowers to lha/int->float and fctiwz, so the vertex loop and everything downstream of it differ.
+#ifdef MUST_MATCH
+/* MUST_MATCH: retail's paired-single cast scratch occupies 0x20 below the named locals, so the
+   matrices and texObj in retail sit 0x20 higher. A two-element texObj (using the second element)
+   reserves the same 0x20 and lands the matrices/texObj at retail's offsets; the Vec/colour scratch
+   stays low in both. */
+#define HORAO_TEXOBJ (&texObj[1])
+#else
+#define HORAO_TEXOBJ (&texObj)
+#endif
+
+// NONMATCHING (77.24%): the control flow, GX/TEV state, matrix math and both loops line up. The
+// remaining gap is the s16<->f32 vertex conversion: retail loads/stores each position component with
+// psq_l/psq_st (GQR5, s16) after an inlined OSInitFastCast, while MWCC 2.6 lowers the same
+// `f32 v = vtx->pos[n]` / `vtx->pos[n] = v` source to the lha / xoris+lfd+fsubs / fctiwz integer
+// path. That leaves retail with f17-f31 live (we keep f22-f31) and a 0x2c0 frame with the low
+// Vec/colour scratch 0x20 higher, so every saved register and low scratch slot differs. The
+// explicit OSInitFastCast calls in the helper reproduce retail's GQR2-5 setup byte-for-byte but
+// cannot make this compiler emit psq for the cast.
+// NONMATCHING (77.24%): psq_l/psq_st vertex casts vs our lha/fctiwz; saved FPRs and local offsets differ.
 void effHoraoSpellDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -190,9 +219,14 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	Mtx rotMtx;
 	Mtx resultMtx;
 	Mtx baseMtx;
+#ifdef MUST_MATCH
+	GXTexObj texObj[2];
+#else
 	GXTexObj texObj;
+#endif
 	GXColor color;
 	s32 counter;
+	s32 alpha;
 	s32 i;
 	s32 j;
 	s32 angle;
@@ -200,6 +234,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	f32 scale;
 
 	counter = data->field_0x14;
+	alpha = data->field_0x24;
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041f15c * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(transMtx, rotMtx, transMtx);
@@ -212,7 +247,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	color.r = data->field_0x18;
 	color.g = data->field_0x1C;
 	color.b = data->field_0x20;
-	color.a = data->field_0x24;
+	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 	color = unk_80423154;
 	color.r = data->field_0x28;
@@ -233,8 +268,8 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C0, GX_CC_C1, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-	effGetTexObjN64(0x73, &texObj);
-	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	effGetTexObjN64(0x73, HORAO_TEXOBJ);
+	GXLoadTexObj(HORAO_TEXOBJ, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	PSMTXScale(scaleMtx, float_0p0078125_8041f160, float_0p03125_8041f164, float_0_8041f168);

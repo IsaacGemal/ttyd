@@ -249,6 +249,13 @@ void effKemuriDisp(CameraId camId, void* param) {
 // (they sit below their variable instead of above) and the local @284/@285 pool symbols for 0.0/1.0
 // (retail float_0_8041c6bc/float_1_8041c6b0) differ.
 // NONMATCHING (99.67%): see the five lines above.
+#ifdef MUST_MATCH
+static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
+	c.a = alpha;
+	return c;
+}
+#endif
+
 static void effKemuri2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effKemuri2Data* data = effect->userdata;
@@ -318,15 +325,23 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			effGetTexObj(0xD, &texobj);
 			GXLoadTexObj(&texobj, 0);
 			if (i == 0) {
+#ifdef MUST_MATCH
+				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423010));
+#else
 				GXColor color = unk_80423010;
 
 				color.a = data->alpha;
 				GXSetTevColor(GX_TEVREG0, color);
+#endif
 			} else {
+#ifdef MUST_MATCH
+				GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c680));
+#else
 				GXColor color = dat_8041c680;
 
 				color.a = data->alpha;
 				GXSetTevColor(GX_TEVREG0, color);
+#endif
 			}
 			GXBegin(0x80, 0, 4);
 			GXPosition3f32(negSizeX * float_0p5_8041c6cc, float_4_8041c6d0, 0.0f);
@@ -362,21 +377,29 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		if (i == 0) {
 			effGetTexObj(0xC, &texobj);
 			GXLoadTexObj(&texobj, 0);
+#ifdef MUST_MATCH
+			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, unk_80423014));
+#else
 			{
 				GXColor color = unk_80423014;
 
 				color.a = data->alpha;
 				GXSetTevColor(GX_TEVREG0, color);
 			}
+#endif
 		} else {
 			effGetTexObj(0xB, &texobj);
 			GXLoadTexObj(&texobj, 0);
+#ifdef MUST_MATCH
+			GXSetTevColor(GX_TEVREG0, kemuriTevColor(data->alpha, dat_8041c684));
+#else
 			{
 				GXColor color = dat_8041c684;
 
 				color.a = data->alpha;
 				GXSetTevColor(GX_TEVREG0, color);
 			}
+#endif
 		}
 		GXBegin(0x80, 0, 4);
 		GXPosition3f32(negSize2 * float_0p5_8041c6cc, float_6p4_8041c6d4, 0.0f);

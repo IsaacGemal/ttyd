@@ -174,17 +174,17 @@ static inline void makeConfettiColor1(void) {
 }
 #endif
 
-// The instructions, stack slots and GXColor temporaries now all match; only the register colouring
-// of the pre-loop sequence computation differs.  The original keeps the frame value and the loop
-// counter in the same register (r26) and gives the loop-invariant sequence index a compiler temporary
-// (r31, with divisor r30 and anm_seq r29).  This build instead coalesces seq with the dead frame value
-// in r26 and gives the loop counter r29 (divisor r31, anm_seq r30).  The two modulos schedule
-// identically; the allocator simply picks the other of two equivalent colourings.  Declaration-order
-// and pragma searches (perm_decls, opt_propagation/opt_lifetimes/opt_common_subs) plus inline-helper
-// forms for the seq computation all failed to move it.  The implicit int->float constant is also
-// emitted as a local @NNN label instead of double_to_int_802fa448 (a duplicate of the file's named
-// .rodata copy).
-// NONMATCHING (99.72%): frame/loop in r26 and seq in a r31 temporary (this build: seq r26, loop r29).
+// The instructions, stack slots and GXColor temporaries all match; only the register colouring of the
+// loop-invariant values that live across the loop differs.  Reading the frame counter straight into
+// `seq` (instead of into `i` and then reusing `i` for the loop counter) makes the compiler hand the
+// round-tripped value r26 exactly as the original does.  The tail of the allocation still rotates:
+// the original puts anm_seq in r29, the shared /6 and /12 divisor magic in r30 and the loop-invariant
+// seq in r31; this build uses seq r29, anm_seq r30, magic r31.  Declaration-order (perm_decls) and
+// pragma (opt_propagation/opt_lifetimes/opt_common_subs/optimize_for_size) searches on top of this
+// shape all leave the same rotation.  The implicit int->float constant is emitted as a local @NNN
+// label instead of double_to_int_802fa448; objdiff scores that as equal (same as unit_object_tree),
+// so it is not part of the 0.14%.
+// NONMATCHING (99.86%): anm_seq/divisor/seq are r30/r31/r29; the original has r29/r30/r31.
 void effConfettiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	s32 type;
@@ -206,7 +206,7 @@ void effConfettiDisp(CameraId camId, void* param) {
 	effect = param;
 	cam = camGetPtr(camId);
 	data = effect->userdata;
-	i = *(s32*)((u8*)data + 0x24);
+	seq = *(s32*)(data->unk_0x10 + 0x14);
 	type = data->type;
 	count = *(s32*)((u8*)data + 0x2C);
 	alpha = *(s32*)((u8*)data + 0x28);
@@ -227,7 +227,7 @@ void effConfettiDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
-	seq = (i >> 1) % 6;
+	seq = (seq >> 1) % 6;
 	type %= 10;
 	i = 0;
 	for (; i < count; i++, data++) {

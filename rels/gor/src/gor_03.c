@@ -1665,7 +1665,6 @@ EVT_BEGIN(bteresa_talk_sub_keihin)
     RETURN
 EVT_END()
 
-// NONMATCHING (87.78%): copy-loop register allocation differs; the '>'/' ' scans need (s8*) for signed cmpwi.
 USER_FUNC(minigameselect_msg_set) {
     s32* args = event->args;
     s8* msg = (s8*)msgSearch((const char*)evtGetValue(event, args[0]));
@@ -1681,30 +1680,30 @@ USER_FUNC(minigameselect_msg_set) {
     flags[2] = evtGetValue(event, GSWF(1234));
     flags[3] = evtGetValue(event, GSWF(1233));
 
-    src = 0;
     pos = 0;
-    count = 0;
+    src = 0;
 
     while (msg[src] != '\n') {
-        ((char*)exchange_msgp[0])[pos] = msg[src];
-        src++;
-        pos++;
+        ((char*)exchange_msgp[0])[pos++] = msg[src++];
     }
-    ((char*)exchange_msgp[0])[pos] = msg[src];
+    {
+        char* base = (char*)exchange_msgp[0];
+        base[pos] = msg[src];
+    }
     src++;
     pos++;
 
+    count = 0;
     for (i = 0; i < 4; i++) {
         if (flags[i] != 0) {
             while (msg[src] != '\n') {
-                ((char*)exchange_msgp[0])[pos] = msg[src];
-                src++;
-                pos++;
+                ((char*)exchange_msgp[0])[pos++] = msg[src++];
             }
-            ((char*)exchange_msgp[0])[pos] = msg[src];
-            src++;
-            pos++;
             count++;
+            {
+                char* base = (char*)exchange_msgp[0];
+                base[pos++] = msg[src++];
+            }
         } else {
             while (msg[src] != '\n') {
                 src++;
@@ -1714,22 +1713,29 @@ USER_FUNC(minigameselect_msg_set) {
     }
 
     while (msg[src] != 0) {
-        ((char*)exchange_msgp[0])[pos] = msg[src];
-        src++;
-        pos++;
+        ((char*)exchange_msgp[0])[pos++] = msg[src++];
     }
-    ((char*)exchange_msgp[0])[pos] = msg[src];
+    {
+        char* base = (char*)exchange_msgp[0];
+        base[pos] = msg[src];
+    }
 
-    i = 0;
-    while (((s8*)exchange_msgp[0])[i] != '>') {
-        i++;
-    }
-    while (((s8*)exchange_msgp[0])[i] != ' ') {
-        i--;
+    {
+        u32* base = exchange_msgp;
+        i = 0;
+        while (((s8*)base[0])[i] != '>') {
+            i++;
+        }
+        while (((s8*)base[0])[i] != ' ') {
+            i--;
+        }
     }
     num = 0x50 - (4 - count) * 12;
-    ((char*)exchange_msgp[0])[i + 1] = num / 10 + '0';
-    ((char*)exchange_msgp[0])[i + 2] = num % 10 + '0';
+    {
+        u32* base = exchange_msgp;
+        ((char*)base[0])[i + 1] = num / 10 + '0';
+        ((char*)base[0])[i + 2] = num % 10 + '0';
+    }
 
     evtSetValue(event, args[1], exchange_msgp[0]);
     return EVT_RETURN_DONE;
@@ -3079,7 +3085,8 @@ static USER_FUNC(mario_keyoff_wait) {
     return EVT_RETURN_YIELD;
 }
 
-// NONMATCHING (81.69%): register allocation of loop-invariant constants and counters differs.
+// NONMATCHING (96.89%): byte-offset arithmetic aligned the strength reduction; only the chosen
+// callee-saved register numbers (data r31 vs r17, temporaries) and pool symbol names differ.
 USER_FUNC(goryuugijo_door_init_slot) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
@@ -3097,7 +3104,7 @@ USER_FUNC(goryuugijo_door_init_slot) {
             }
             *angle = 45.0f * irand(8);
             mapObjRotate(drumname[i][j], 0.0f, 0.0f, *angle);
-            *(u8*)(data + i * 3 + j + 0x33) = upsidegara[i * 24 + j * 8 + irand(8)];
+            *(u8*)(data + i * 3 + j + 0x33) = *(u32*)((unsigned char*)upsidegara + i * 0x60 + j * 0x20 + irand(8) * 4);
             mapGrpFlagOn(drumname[i][j * 3 + 5], 1);
             mapGrpFlagOn(drumname[i][j * 3 + 6], 1);
             mapGrpFlagOn(drumname[i][j * 3 + 7], 1);
@@ -4971,8 +4978,9 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (77.78%): the stop-button three-case switch (keyGetButtonTrg per case) is now reconstructed;
-// the remaining difference is register allocation of event/work/data (ours shifts them by one).
+// NONMATCHING (81.43%): inverting the case-2 and dir if/else matched the branch layout; raw stop mask and
+// `(s32)((u8*)data + i)[0x30]` plus an `i` reload matched the addressing. Remaining: one-register
+// callee-saved shift (event/work/data r26/r29/r28 vs r28/r30/r29) and `rlwinm.` vs `rlwinm`.
 USER_FUNC(goryuugijo_main_slot) {
     GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
     u8* data = (u8*)work->data;
@@ -5004,14 +5012,14 @@ USER_FUNC(goryuugijo_main_slot) {
         break;
     case 2:
         slot_neon_sub(work, data);
-        if (*(s32*)(data + 0x54) < 0xf) {
-            *(s32*)(data + 0x54) += 1;
-            *(f32*)(data + 0x08) += 4.0f;
-            mapObjRotate(drumname[*(s32*)(data + 0x60)][3], 0.0f, 0.0f, *(f32*)(data + 0x08));
-        } else {
+        if (*(s32*)(data + 0x54) >= 0xf) {
             *(s32*)(data + 0x54) = 0;
             *(s32*)(data + 0x04) += 1;
             *(s32*)(data + 0x70) = psndSFXOn("SFX_EVT_GAME_SLOT_ROUND1");
+        } else {
+            *(s32*)(data + 0x54) += 1;
+            *(f32*)(data + 0x08) += 4.0f;
+            mapObjRotate(drumname[*(s32*)(data + 0x60)][3], 0.0f, 0.0f, *(f32*)(data + 0x08));
         }
         break;
     case 3:
@@ -5026,12 +5034,13 @@ USER_FUNC(goryuugijo_main_slot) {
             *(s32*)(data + 0x54) += 1;
         }
         i = *(s16*)(data + 0x74);
-        if (*(u8*)(data + i + 0x30) != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
+        if ((s32)((u8*)data + i)[0x30] != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
             s32 dir;
-            if (*(u8*)(data + i + 0x30) == 2) {
-                dir = (keyGetDirRep(0) & 0x4000) ? -1 : 1;
-            } else {
+            i = *(s16*)(data + 0x74);
+            if ((s32)((u8*)data + i)[0x30] != 2) {
                 dir = 1;
+            } else {
+                dir = (keyGetDirRep(0) & 0x4000) ? -1 : 1;
             }
             for (j = 0; j < 3; j++) {
                 i = *(s16*)(data + 0x74) + dir;
@@ -5056,13 +5065,13 @@ USER_FUNC(goryuugijo_main_slot) {
                 s32 stop = 0;
                 switch (i) {
                 case 0:
-                    stop = (keyGetButtonTrg(0) & 0x100) != 0;
+                    stop = keyGetButtonTrg(0) & 0x100;
                     break;
                 case 1:
-                    stop = (keyGetButtonTrg(0) & 0x100) != 0;
+                    stop = keyGetButtonTrg(0) & 0x100;
                     break;
                 case 2:
-                    stop = (keyGetButtonTrg(0) & 0x100) != 0;
+                    stop = keyGetButtonTrg(0) & 0x100;
                     break;
                 }
                 if (stop && *(s8*)(data + i + 0x30) == 2) {
@@ -5372,29 +5381,29 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (74.24%): constant address materialisation and angle address mode scheduled differently.
+// NONMATCHING (90.94%): inlining the slot/tbase address expressions (instead of a CSE'd `f32* slot`)
+// let MWCC recompute them like the original; the remaining diff is lfs+offset vs lfsx with the base/index
+// split the other way round, plus register numbers.
 s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
-    f32* slot = (f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4);
-    f32* tbase = (f32*)(data + index * 4);
     s32 dir = 0;
     s32 changed = 0;
-    s32 steps = (s32)((f32)(s32)slot[3] / 45.0f);
+    s32 steps = (s32)((f32)(s32)(*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) / 45.0f);
     f32 diff;
     s32 next;
 
-    if (tbase[9] > 0.0f) {
+    if ((*(f32*)(data + index * 4 + 0x24)) > 0.0f) {
         next = (steps + 1) & 7;
-        diff = 45.0f * (f32)next - slot[3];
+        diff = 45.0f * (f32)next - (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc));
         if (diff < 0.0f) {
             diff += 360.0f;
         }
-        dir = (diff <= tbase[9]) ? 1 : 0;
+        dir = (diff <= (*(f32*)(data + index * 4 + 0x24))) ? 1 : 0;
     } else {
-        diff = 45.0f * (f32)steps - slot[3];
+        diff = 45.0f * (f32)steps - (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc));
         if (diff > 0.0f) {
             diff -= 360.0f;
         }
-        dir = (diff > tbase[9]) ? -1 : 0;
+        dir = (diff > (*(f32*)(data + index * 4 + 0x24))) ? -1 : 0;
     }
     if ((((s8*)(data + index))[0x30] == 3 || ((s8*)(data + index))[0x30] == 4) && dir != 0) {
         if (((s8*)(data + index))[0x39] != 0) {
@@ -5417,23 +5426,24 @@ s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
         } else {
             ((s8*)(data + index))[0x30] = 0;
             changed = 1;
-            slot[3] = 45.0f * (f32)steps;
+            (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) = 45.0f * (f32)steps;
             goto done;
         }
     }
-    slot[3] += tbase[9];
-    if (slot[3] >= 360.0f) {
-        slot[3] -= 360.0f;
+    (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) += (*(f32*)(data + index * 4 + 0x24));
+    if ((*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) >= 360.0f) {
+        (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) -= 360.0f;
     }
-    if (slot[3] < 0.0f) {
-        slot[3] += 360.0f;
+    if ((*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) < 0.0f) {
+        (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) += 360.0f;
     }
 done:
-    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, slot[3]);
+    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)));
     return changed;
 }
 
-// NONMATCHING (92.19%): register allocation of loop counters and lbzx vs lbz+offset differ.
+// NONMATCHING (99.16%): byte-offset arithmetic and an explicit upsidegara pointer fixed the strength
+// reduction and lbzx mode; only the register chosen for the upsidegara base / d pointer (r5<->r4) differs.
 void slot_neon_sub(void* arg0, u8* data) {
     s32 i;
     s32 r;
@@ -5451,30 +5461,38 @@ void slot_neon_sub(void* arg0, u8* data) {
     if (*(s32*)(data + 0x58) < 0x1b) {
         if (*(s32*)(data + 0x58) & 1) {
             for (i = 0; i < 3; i++) {
+                u8* up;
+                u8* d;
                 r = irand(8);
                 cur = *(s32*)(data + 0x60);
-                while ((s32)upsidegara[cur * 24 + i * 8 + r] == (s8)*(data + cur * 3 + i + 0x33)) {
+                up = (u8*)upsidegara + cur * 0x60 + i * 0x20;
+                d = data + cur * 3 + i + 0x33;
+                while (*(s32*)(up + r * 4) == (s8)*d) {
                     r = (r + 1) & 7;
                 }
-                *(u8*)(data + cur * 3 + i + 0x33) = upsidegara[cur * 24 + i * 8 + r];
+                *d = *(s32*)(up + r * 4);
                 if (*(u32*)data & 2) {
-                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                    int c = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
                 } else {
-                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                    int c = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
                 }
             }
         }
     } else if (*(s32*)(data + 0x58) == 0x1b) {
         for (i = 0; i < 3; i++) {
+            s32 c;
             cur = *(s32*)(data + 0x60);
             *(u8*)(data + cur * 3 + i + 0x33) = i;
-            mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
-            mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
-            mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+            c = *(s32*)(data + 0x60);
+            mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
+            mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
+            mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
         }
         cur = *(s32*)(data + 0x60);
         if (*(s8*)(data + cur * 3 + 0x33) == *(s8*)(data + cur * 3 + 0x34) &&
@@ -5482,17 +5500,17 @@ void slot_neon_sub(void* arg0, u8* data) {
             *(u32*)data |= 4;
         }
         if ((*(u32*)data & 4) && (*(u32*)data & 2)) {
-            *(f32*)(data + 0x24) = 2.8125f;
-            *(f32*)(data + 0x28) = 2.8125f;
             *(f32*)(data + 0x2c) = 2.8125f;
+            *(f32*)(data + 0x28) = 2.8125f;
+            *(f32*)(data + 0x24) = 2.8125f;
         } else {
-            *(f32*)(data + 0x24) = 11.25f;
-            *(f32*)(data + 0x28) = 11.25f;
             *(f32*)(data + 0x2c) = 11.25f;
+            *(f32*)(data + 0x28) = 11.25f;
+            *(f32*)(data + 0x24) = 11.25f;
         }
-        *(s8*)(data + 0x30) = 2;
-        *(s8*)(data + 0x31) = 2;
         *(s8*)(data + 0x32) = 2;
+        *(s8*)(data + 0x31) = 2;
+        *(s8*)(data + 0x30) = 2;
     } else {
         if (*(u32*)data & 4) {
             if (*(s32*)(data + 0x58) == 0x21 || *(s32*)(data + 0x58) == 0x33 || *(s32*)(data + 0x58) == 0x45) {

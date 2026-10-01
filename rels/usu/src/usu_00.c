@@ -2094,9 +2094,9 @@ void kpaSen_ext_disp(void) {
 
 void kpaSen_ext_shadow_disp(void) {
     static Mtx mt = {
-        {20.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 20.0f, 0.0f, 0.1f},
-        {0.0f, 0.0f, 20.0f, 0.0f},
+        {10.0f, 0.0f, 0.0f, 0.0f},
+        {0.0f, 10.0f, 0.0f, 0.1f},
+        {0.0f, 0.0f, 10.0f, 0.0f},
     };
 
     extLoadShadowMtx(mt);
@@ -3047,10 +3047,14 @@ static EVT_BEGIN(minnnanokoe_evt)
     RETURN
 EVT_END()
 
+#ifdef MUST_MATCH
+// Match-only: the non-const declaration makes the compiler emit the original's interleaved 3-word copy
+// (2 loads, 2 stores, load, store); __declspec keeps the object in .rodata as the original has it.
+__declspec(section ".rodata") Vec vec3_usu_00004f64 = {1.0f, 1.0f, 1.0f};
+#else
 const Vec vec3_usu_00004f64 = {1.0f, 1.0f, 1.0f};
+#endif
 
-// NONMATCHING (87.77%): the original interleaves the 3-word copy (2 loads, 2 stores, load, store); here the
-// compiler loads all three before storing.
 USER_FUNC(party_scale) {
     partyGetPtr(0)->field_70 = vec3_usu_00004f64;
     return EVT_RETURN_DONE;

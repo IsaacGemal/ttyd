@@ -1941,18 +1941,19 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 	}
 }
 
-// NONMATCHING (98.94%): same instructions; only register numbers or operands differ.
+// Declaration order is significant here: it fixes the callee-saved register
+// allocation (entry must be declared before the others to land in r26).
 s32 _btlcmd_MakePartyTable(BattleWork* wp) {
+	CheckPartyTable* entry;
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleUnit* partner = BattleGetPartnerPtr(wp, mario);
 	BattleCommand* cmd = &wp->commandMenu;
-	s32 i = 0;
 	s32 count = 0;
 	s32 select = 0;
 	PouchData* pouch = pouchGetPtr();
 	BattleCursor* cursor;
-	CheckPartyTable* entry;
 	PouchPartyData* party;
+	s32 i = 0;
 	s32 kind;
 	char* name;
 

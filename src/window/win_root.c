@@ -950,9 +950,9 @@ extern const f32 float_800_8041d1d8;
 extern const f32 float_640_8041d1dc;
 extern const f32 float_neg640_8041d1e0;
 
-// NONMATCHING (99.27%): 5-page switch over work->0xcc. All bodies match; MWCC's
-// sparse-switch comparison tree differs in the [0,10) subtree (original pivots
-// on 0 then 2, ours on 1 then 0).
+// 5-page switch over work->0xcc. The explicit empty case -1 below (a redirect
+// target of cases 11 and 41) is what makes MWCC pick 0 as the [0,10) search-tree
+// pivot; without it the tree pivots on 1.
 void winBgMain(WindowWork* work) {
     WindowWork* p = work;
     s32 i;
@@ -1030,6 +1030,11 @@ void winBgMain(WindowWork* work) {
                 }
                 break;
             }
+#ifdef MUST_MATCH
+            /* MUST_MATCH: -1 is a redirect target of cases 11/41; the empty case makes
+               MWCC emit the retail search-tree pivot (0 then 2) instead of 1 then 0. */
+            case -1:
+#endif
             case 100:
                 break;
             default:

@@ -107,9 +107,13 @@ void effNanigaDisp2(CameraId camId, void* param) {
 // are the compiler's own pooled literal entries; referencing them by name makes MWCC keep them in callee-saved
 // FPRs (f26+), so the literals stay literal here and pool to anonymous @440-@443 slots at different offsets.
 // The two compiler-generated int<->float magic doubles also sit 8 bytes later in .rodata, because the target's
-// .rodata has two unreferenced zero Vec3 objects before them (a Main/Entry inlining difference).
-// NONMATCHING (99.75%): remaining diffs are only those pool addresses (plus one commutative `fmuls` operand);
-// everything else, including the FPR assignment, matches.
+// .rodata has two unreferenced zero Vec3 objects before them (a Main/Entry inlining difference). Those pool
+// symbol names do not count against the score (objdiff resolves them by value).
+// The size conversion's `fmuls` is fixed by holding data->scale in a local across the conversion call, which
+// also makes MWCC emit the target's `lfs f28`/`lfs f0` order and the `fmuls f1, f0, f28` operand order.
+// NONMATCHING (99.78%): the two u16->f32 conversions (centerY/centerX) get their 2^52 mask, 0.5 and the
+// converted value in different caller-saved FPRs than the original (target f3/f1/f2, ours f2/f3/f1), flipping
+// the `fsubs`/`fmsubs`/`fmadds` registers; reordering operands or using an extern/literal does not change it.
 void effNanigaDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effNanigaData* data = effect->userdata;
@@ -130,6 +134,7 @@ void effNanigaDisp(CameraId camId, void* param) {
 	f32 pos20;
 	f32 halfSize;
 	f32 savedScale;
+	f32 sizeScale;
 	s32 i;
 
 	camera = camGetPtr(camId);
@@ -141,10 +146,11 @@ void effNanigaDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(mtx, scale, base);
 	GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
-	size = (u32)(data->scale * float_40_80421b6c);
-	extent = float_20_80421b5c * data->scale;
-	centerY = (u32)(gp->efbHeight * 0.5f - data->field_0x14);
-	centerX = (u32)(gp->fbWidth * 0.5f + data->field_0x10);
+	sizeScale = data->scale;
+	size = (u32)(float_40_80421b6c * sizeScale);
+	extent = float_20_80421b5c * sizeScale;
+	centerY = (u32)((f32)gp->efbHeight * 0.5f - data->field_0x14);
+	centerX = (u32)((f32)gp->fbWidth * 0.5f + data->field_0x10);
 	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), size, size);
 
 	effGetTexObj(0x57, &tex);

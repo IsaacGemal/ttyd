@@ -498,8 +498,11 @@ void BattleAudienceCtrlProcessKinopioWaitKubiKatamuke(s32 index, s32 kind) {
 	}
 }
 
-// NONMATCHING (99.74%): the two constants land in the opposite float regs (orig f1=5.0/f0=-1.0;
-// ours f0=5.0/f1=-1.0). Two locals make the instruction order match otherwise.
+// The original source writes these four constants as literals, which MWCC pools itself. The
+// file's named float globals are non-const (so they live in .sdata and schedule differently),
+// which colours the 0x1c/0x24 pair f0/f1 instead of the target's f1/f0. Under MUST_MATCH the
+// literals reproduce the original pooling; the named-global form (what the file's other
+// functions use) is the #else. Matches at 100%.
 void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -521,18 +524,24 @@ void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind) {
 		// fallthrough
 	case 1:
 		if (member->type == 7) {
-			f32 w;
-			f32 v;
-			w = float_neg1_8041e18c;
-			v = float_5_8041e1a0;
+#ifdef MUST_MATCH
+			f32 v = 5.0f;
+			f32 w = -1.0f;
+#else
+			f32 v = float_5_8041e1a0;
+			f32 w = float_neg1_8041e18c;
+#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}
 		else {
-			f32 w;
-			f32 v;
-			w = float_neg0p2_8041e208;
-			v = float_3p4_8041e20c;
+#ifdef MUST_MATCH
+			f32 v = 3.4f;
+			f32 w = -0.2f;
+#else
+			f32 v = float_3p4_8041e20c;
+			f32 w = float_neg0p2_8041e208;
+#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}
@@ -752,12 +761,14 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 	}
 }
 
-// NONMATCHING (99.76%): register-allocation / scheduling / symbol-name differences only.
+#pragma opt_propagation off // keep the constant loads after the anim call in the original's order
 void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
-#ifdef MUST_MATCH
-	f32 angle; // the retail code loads 270.0f before the stores
-#endif
 	BattleAudienceMember* member;
+#ifdef MUST_MATCH
+	f32 v;
+	f32 w;
+	f32 a;
+#endif
 
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
@@ -765,14 +776,17 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 	case 0:
 		BattleAudience_SetAnim(index, 9, 0);
 #ifdef MUST_MATCH
-		angle = float_270_8041e170;
-#endif
+		v = float_8_8041e1f4;
+		w = float_neg1_8041e18c;
+		*(f32*)((u8*)member + 0xdc) = v;
+		a = float_270_8041e170;
+		*(f32*)((u8*)member + 0xe4) = w;
+		*(s32*)((u8*)member + 0x30) = 0;
+		member->field_0xE8 = a;
+#else
 		*(f32*)((u8*)member + 0xdc) = float_8_8041e1f4;
 		*(f32*)((u8*)member + 0xe4) = float_neg1_8041e18c;
 		*(s32*)((u8*)member + 0x30) = 0;
-#ifdef MUST_MATCH
-		member->field_0xE8 = angle;
-#else
 		member->field_0xE8 = float_270_8041e170;
 #endif
 		member->field_0x4++;
@@ -803,6 +817,7 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 		break;
 	}
 }
+#pragma opt_propagation reset
 
 // NONMATCHING (84.48%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
@@ -1370,7 +1385,6 @@ void BattleAudienceCtrlProcessKinopioSingSub(s32 index) {
 	}
 }
 
-// NONMATCHING (99.80%): the 0xdc/0xe4 constant pair lands in the opposite float regs as WaitJump.
 void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -1393,8 +1407,15 @@ void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 		break;
 	case 2:
 		{
+#ifdef MUST_MATCH
+			// literals so MWCC pools them and assigns f1/f0 like the original; the
+			// named globals make it load them into the opposite registers
+			f32 v = 5.0f;
+			f32 w = -0.3f;
+#else
 			f32 v = float_5_8041e1a0;
 			f32 w = float_neg0p3_8041e1a4;
+#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}
@@ -1413,8 +1434,15 @@ void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 		break;
 	case 6:
 		{
+#ifdef MUST_MATCH
+			// literals so MWCC pools them and assigns f1/f0 like the original; the
+			// named globals make it load them into the opposite registers
+			f32 v = 5.0f;
+			f32 w = -0.3f;
+#else
 			f32 v = float_5_8041e1a0;
 			f32 w = float_neg0p3_8041e1a4;
+#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}

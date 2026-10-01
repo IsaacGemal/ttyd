@@ -49,7 +49,6 @@ u32 unk_803a8a00[0x20] = {
 	0x8D7A0A92, 0xF5F5F5EC, 0xADFA098B, 0xF555FD25, 0xE77E135A, 0xA0035555, 0xADFA09CE, 0x25D5F5F5
 };
 
-// NONMATCHING (99.81%): case 7 float register allocation of the cos/velocity block differs.
 EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effWaterDamageData* data;
@@ -163,9 +162,9 @@ EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32
 
 			data->position.x = (f32)sin(6.2831855f * (randAngle + (-mario->directionView + camGetPtr(CAMERA_3D)->viewYaw)) / 360.0f);
 			data->position.z = (f32)cos(6.2831855f * (randAngle + (-mario->directionView + camGetPtr(CAMERA_3D)->viewYaw)) / 360.0f);
-			data->velocity.x = mario->baseSpeed * data->position.x * 0.5f;
+			data->velocity.x = mario->baseSpeed * data->position.x / 2.0f;
 			data->velocity.y = (f32)(rand() % 10 + 5) * 0.1f;
-			data->velocity.z = mario->baseSpeed * data->position.z * 0.5f;
+			data->velocity.z = mario->baseSpeed * data->position.z / 2.0f;
 			data->scale = 1.0f;
 			data->field_0x1C = 3 * i;
 			break;
@@ -347,22 +346,32 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 }
 
 
-// NONMATCHING (99.72%): switch chain, MTXDegToRad and loop-index register allocation differ.
+#ifdef MUST_MATCH
+// The original builds the material colour from dat_80420158 and only overwrites .a; MWCC keeps the
+// colour in the 0x8 stack slot and the outgoing copy at 0xc (the reverse of a plain assignment here).
+static inline GXColor effWaterDamageColor(s32 alpha) {
+	GXColor color = *(GXColor*)&dat_80420158;
+	color.a = alpha;
+	return color;
+}
+#endif
+
+// Matches: the original reuses cam's callee-saved register for the loop index, which needs the index
+// declared before the value temporaries here.
 void effWaterDamageDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
 	effWaterDamageData* data = effect->userdata;
-	CameraEntry* cam3d;
 	Mtx mtx;
 	Mtx scale;
 	Mtx rot;
 	Mtx viewMtx;
 	GXTexObj texObj;
 	GXColor color;
+	s32 i;
 	s32 alpha;
 	s32 x;
 	s32 y;
-	s32 i;
 
 	x = (s32)data->position.x;
 	y = (s32)data->position.y;
@@ -374,8 +383,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
 	PSMTXTrans(mtx, (f32)x, (f32)y, data->position.z);
-	cam3d = camGetPtr(CAMERA_3D);
-	PSMTXRotRad(rot, 'y', MTXDegToRad(-cam3d->viewYaw));
+	PSMTXRotRad(rot, 'y', float_deg2rad_8042015c * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXConcat(mtx, rot, mtx);
@@ -384,8 +392,12 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-	color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
+#ifdef MUST_MATCH
+	color = effWaterDamageColor(alpha * data->field_0x30 / 255);
+#else
+	color = *(GXColor*)&dat_80420158;
 	color.a = alpha * data->field_0x30 / 255;
+#endif
 	GXSetChanMatColor(4, color);
 
 	GXSetNumTevStages(1);
@@ -396,7 +408,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	GXSetTevAlphaIn(0, 7, 5, 4, 7);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
-	PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
+	PSMTXScale(scale, float_0p0625_80420160, float_0p0625_80420160, float_0_80420164);
 	GXLoadTexMtxImm(scale, 30, 1);
 	effGetTexObjN64(0x89, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -411,7 +423,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 		PSMTXConcat(mtx, scale, mtx);
 		PSMTXConcat(viewMtx, mtx, mtx);
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
-		kind = ((gp->retraceCount >> 1) + i) & 3;
+		kind = (i + (gp->retraceCount >> 1)) & 3;
 		switch (kind) {
 		case 0:
 		case 2:

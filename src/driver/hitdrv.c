@@ -1064,25 +1064,26 @@ HitEntry* hitCheckAttr(s32 user0, f32* hitX, f32* hitY, f32* hitZ, f32* distance
     return entry;
 }
 
-// NONMATCHING (99.96%): same instructions. The found-flag `var_r29` lives in r29; retail reuses
-// objectId's r28 for it. The base register was won back with the `wp = (MapWork*)&wp->entries[entryId]`
-// in-place reassignment (a separate `map` variable left the base in r29 and the flag in r30).
+// The first loop takes its flags in a separate short-lived `flags`; sharing one variable with the second
+// loop's found flag makes it interfere with objectId and MWCC colours it r29 (retail reuses objectId's r28).
+// The declaration order is tuned so that extra variable still leaves wp/i/var_r31 in r30/r29/r31.
 HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
-                               f32 distance) {
-    int i;
+                               f32 distance) { // 1:1
+    MapEntry* map;
     MapWork* wp;
     MapEntry* var_r31;
-    MapEntry* map;
+    int i;
     Vec sp68;
     int j;
     HitEntry* var_r23;
     HitVector* vector;
     f32 var_f28;
     f32 temp_f1;
-    f32 var_f30;
     f32 var_f31;
     s32 objectId;
+    f32 var_f30;
     s32 var_r29;
+    s32 flags;
     HitCheckQuery temp;
     s32 entryId;
     HitEntry* temp_r27;
@@ -1098,8 +1099,8 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
         var_r23 = var_r31->hitEntries;
         for (j = 0; j < var_r31->hitNumJoints; j++, var_r23++) {
             if ((var_r23->attributes & 0x80000000) && (var_r23->joint->partCount != 0)) {
-                var_r29 = var_r23->flags;
-                if (!(var_r29 & 1) && !(var_r29 & 0x80)) {
+                flags = var_r23->flags;
+                if (!(flags & 1) && !(flags & 0x80)) {
                     temp_f1 = PSVECDistance(&sp68, &var_r23->centerWorld);
                     if (!(temp_f1 > (distance + var_r23->radius))) {
                         if (callback == NULL || callback(query, var_r23)) {

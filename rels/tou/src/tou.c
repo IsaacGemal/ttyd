@@ -1164,7 +1164,8 @@ static void insert(s32* arr, s32 unused, s32 from, s32 to) {
     }
 }
 
-// NONMATCHING (95.03%): nAbove/nBelow callee-saved assignment off by one; sort/temp registers cascade
+// NONMATCHING (95.03%): nAbove lands in r29 instead of r31 (nBelow is r30 in both), so the
+// allocator uses r31 as a second-sort temporary and the whole sort/numbering register set cascades
 static void rankingControll(void) {
     s32 above[32];
     s32 below[32];
@@ -3337,7 +3338,7 @@ EVT_BEGIN(evt_tou_match_after_default)
 EVT_END()
 
 // TODO: type
-static u32 champion_belt_onoff[1];
+static s32 champion_belt_onoff[1];
 
 // TODO: type
 u32 gans_wp[1];
@@ -3493,7 +3494,6 @@ static void disp_proc(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (98.97%): int->float uses an anonymous double instead of double_to_int_tou_0000a870; fsubs operand order/register scheduling differ
 static USER_FUNC(evt_tou_print_ranking) {
     s32 i;
     s32 c;
@@ -3512,8 +3512,12 @@ static USER_FUNC(evt_tou_print_ranking) {
             }
         }
         ((DispWork*)dwp[0])->field_08 = c / 0xb;
-        ((DispWork*)dwp[0])->field_04 = (f32)(((DispWork*)dwp[0])->field_08 * 0xdc);
-        ((DispWork*)dwp[0])->field_00 = ((DispWork*)dwp[0])->field_04;
+        {
+            f32 v = (f32)(((DispWork*)dwp[0])->field_08 * 0xdc);
+
+            ((DispWork*)dwp[0])->field_04 = v;
+            ((DispWork*)dwp[0])->field_00 = v;
+        }
         evtGetValue(NULL, 0xf5de0180);
         for (i = 0; i < ((RankWork*)rank_wp[0])->count; i++) {
         }
@@ -3532,13 +3536,26 @@ static USER_FUNC(evt_tou_print_ranking) {
         psndSFXOn((const char*)5);
     }
     ((DispWork*)dwp[0])->field_04 = (f32)(((DispWork*)dwp[0])->field_08 * 0xdc);
-    ((DispWork*)dwp[0])->field_00 =
-        (((DispWork*)dwp[0])->field_04 - ((DispWork*)dwp[0])->field_00) * float_0p125_tou_0000a888 + ((DispWork*)dwp[0])->field_00;
+    {
+        DispWork* w = (DispWork*)dwp[0];
+#ifdef MUST_MATCH
+        // match-only: reading field_00 through dwp[0] again instead of w keeps MWCC from reordering
+        // the two field loads (the natural w->field_00 form lands field_00 in f3 before f2's field_04)
+        f32 t = w->field_04 - ((DispWork*)dwp[0])->field_00;
+#else
+        f32 t = w->field_04 - w->field_00;
+#endif
+
+        w->field_00 = t * float_0p125_tou_0000a888 + w->field_00;
+    }
     dispEntry((CameraId)8, float_300_tou_0000a88c, 0, disp_proc, NULL);
     return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (99.88%): C_MTXPerspective float-argument address registers land r4/r5 swapped
+
+// The original materialises float_1 before float_25; with common-subexpression elimination on, MWCC
+// folds the repeated float_1 and lands the two constant addresses in r4/r5 swapped. Off matches.
+#pragma opt_common_subs off
 void gans_tex(CameraId cameraId, void* param) {
     GansWork* work = (GansWork*)param;
     NpcEntry* npc;
@@ -3596,8 +3613,9 @@ void gans_tex(CameraId cameraId, void* param) {
     GXSetScissor(x, y, wd, ht);
     work->field_2C = 1;
 }
+#pragma opt_common_subs reset
 
-// NONMATCHING (99.83%): GXInitTexObjLOD hoists the bias_clamp li before the min_lod lfs
+// NONMATCHING (99.84%): GXInitTexObjLOD hoists the bias_clamp li before the min_lod lfs
 USER_FUNC(make_monitor) {
     NpcEntry* npc = npcNameToPtr_NoAssert(
         evtGetValue(NULL, 0xf5de0180) < 0xac ? "ガンス" : "キノシコワ");
@@ -3773,7 +3791,8 @@ static f32 camGetRy(void) {
 
 static const char str_00001F04[] = "locator8";
 
-// NONMATCHING (96.84%): event/npc callee-saved regs (r30/r31) swapped, cascading the angle-branch layout and fsubs operand order
+// NONMATCHING (99.24%): event/npc callee-saved regs (r30/r31) swapped, cascading the whole body;
+// the case1 fadds/fsubs land in f0/f1 instead of f1/f0
 USER_FUNC(tou_champion_belt_27_text_34) {
     NpcEntry* npc;
     AnimationPose* pose;
@@ -3807,24 +3826,14 @@ USER_FUNC(tou_champion_belt_27_text_34) {
     ((BeltData*)handle->userdata)->pos.x = loc[group].x;
     ((BeltData*)handle->userdata)->pos.y = loc[group].y;
     ((BeltData*)handle->userdata)->pos.z = loc[group].z;
-    if (angle > float_90_tou_0000a848) {
-        if (angle <= float_270_tou_0000a84c) {
-            goto case1;
-        }
-    } else if (angle < float_neg90_tou_0000a850) {
-        if (angle >= float_neg270_tou_0000a854) {
-            goto case1;
-        }
-    }
-    {
+    if ((angle > float_90_tou_0000a848 && angle <= float_270_tou_0000a84c) ||
+        (angle < float_neg90_tou_0000a850 && angle >= float_neg270_tou_0000a854)) {
+        cam = camGetPtr(CAMERA_3D);
+        ((BeltData*)handle->userdata)->field_1C = float_8_tou_0000a858 - (angle + cam->viewYaw);
+    } else {
         cam = camGetPtr(CAMERA_3D);
         ((BeltData*)handle->userdata)->field_1C = -(angle + cam->viewYaw) - float_8_tou_0000a858;
     }
-    goto after;
-case1:
-    cam = camGetPtr(CAMERA_3D);
-    ((BeltData*)handle->userdata)->field_1C = float_8_tou_0000a858 - (angle + cam->viewYaw);
-after:
     if (npc->position.y <= float_neg1000_tou_0000a85c) {
         ((BeltData*)handle->userdata)->pos.x = zero_tou_0000a82c;
         ((BeltData*)handle->userdata)->pos.y = float_neg1000_tou_0000a85c;

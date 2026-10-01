@@ -75,10 +75,9 @@ void effKemuri8N64SetCamId(EffectEntry* entry, s32 camId) {
 	((effKemuri8Data*)entry->userdata)->camId = camId;
 }
 
-// Instruction stream, schedule and integer registers match. MWCC's ten callee-saved FP registers are
-// rotated: original scale f31, constants f23-f30, params f26/f27/f22; ours scale f24, constants
-// f25-f31/f23, params f28/f23/f22 (the int->float magic takes f31 here, f29 in the original).
-// NONMATCHING (99.18%): only the callee-saved FPR colouring differs.
+// The sin/cos results go through separate function-scope temps (sinAngle, cosAngle): this is the source shape the
+// original used, and it is what makes MWCC pick the original's callee-saved FPR colouring (x f26,
+// y f27, z/angle f22, scale f31, constants f23-f30); inlining the calls into the multiply rotates them.
 EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effKemuri8Particle* data;
@@ -88,6 +87,8 @@ EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 	s32 flag;
 	f32 angle;
 	f32 scale;
+	f32 sinAngle;
+	f32 cosAngle;
 
 	effect = effEntry();
 	flag = 0;
@@ -137,8 +138,10 @@ EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 		p->field_0x28 = float_0_8041f430;
 		p->field_0x2C = float_0_8041f430;
 		angle = float_6p2832_8041f46c * (f32)(((i - 1) * 360) / (count - 1)) / float_360_8041f470;
-		p->position.x = scale * -(f32)sin(angle);
-		p->position.y = scale * -(f32)cos(angle);
+		sinAngle = (f32)sin(angle);
+		p->position.x = scale * -sinAngle;
+		cosAngle = (f32)cos(angle);
+		p->position.y = scale * -cosAngle;
 		p->position.z = float_0_8041f430;
 		p->field_0x30 = (f32)sin(angle);
 		p->field_0x34 = (f32)cos(angle);

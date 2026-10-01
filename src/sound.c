@@ -1255,9 +1255,9 @@ void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
 
 s16 dtbl[16] = {1, 7, 24, 59, 83, 111, 236, 555, 742, 885, 1052, 2221, 3285, 4432, 6962, 9300};
 
-// NONMATCHING (99.73%): the run-length branch keeps its nibble in r0 (clrlwi/extsb/slwi on r0)
-// where the original uses r9, so entry->0x44 + 1 is done in place instead of into r0; a
-// register-coalescing difference from the same source shape, 6 operands in all.
+// NONMATCHING (99.92%): the else nibble is now in r9 like the original, but its sign-extension
+// before the <<4 is fused into the shift destination (extsb r0,r9; slwi r0,r0,4) where the target
+// extends in place (extsb r9,r9; slwi r0,r9,4); only those 2 operands differ (see REPORT.md).
 u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 count, u8* in) {
     u8* e = (u8*)entry;
     s8 delta;
@@ -1287,7 +1287,8 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
         } else {
             in++;
             *(u32*)(e + 0x44) += 1;
-            delta = byte & 0xF;
+            index = byte & 0xF;
+            delta = (s8)index;
             if ((s8)delta == 8) {
                 *(u16*)(e + 0x5c) = ((byte >> 4) & 0xF) + 4;
                 *(u16*)(e + 0x5a) = 0;
@@ -1549,9 +1550,14 @@ void SoundSSSetSrndPanCh(s32 chan, u8 span) {
     SoundSSSetPanCh(chan, (u8)stream->pan);
 }
 
-// NONMATCHING (99.56%): same instructions; only register numbers or operands differ.
+// The index helper is an inline so the stream pointer's live range matches the original's
+// register allocation (without it MWCC colors the index/pointer as r6/r7 instead of r7/r6).
+static inline SoundStream* SoundSSGetStream(s32 chan) {
+    return &sound.streams[chan];
+}
+
 void SoundSSSetVolCh(s32 chan, u8 vol) {
-    SoundStream* stream = &sound.streams[chan];
+    SoundStream* stream = SoundSSGetStream(chan);
     f32 value;
 
     if (!stream->flags) {
