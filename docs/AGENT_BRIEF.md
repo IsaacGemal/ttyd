@@ -180,6 +180,12 @@ When the instructions match but the stack slots, register allocation or scheduli
   returns is probably `u8`); `cmplwi r3, 0` where the target has `cmpwi r3, 0` means it does not return `u32`.
   `(s32)BattlePadCheckRepeat(...)` and `((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(...)` were such
   casts; fix the declaration in the header (and the definition) once instead of casting at every call.
+- **A call result passed on as an argument: nested or through a local decides one `mr`.** `f(id, g(x))` compiles to
+  `bl g; mr r4, r3; mr r3, rID; bl f` (the result goes straight to its argument register). `s32 v = g(x); f(id, v);`
+  compiles to `bl g; mr r0, r3; mr r3, rID; mr r4, r0; bl f` (the local is parked in `r0` while the first argument
+  is set up). Read which of the two the target has and write that; it changes three instructions and nothing else
+  (`btlevtcmd_SetPartsBaseScale`: 97.98% to 100% by moving `evtGetValue(event, args[1])` into a local; the mirror image
+  fixes the cases where ours has the `r0` route and the target does not).
 
 ## Partial functions
 
