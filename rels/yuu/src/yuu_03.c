@@ -33,6 +33,11 @@
 
 #pragma pool_data off
 
+// named .rodata constants the original object defines
+const u32 zero_yuu_00014160 = 0;
+const u32 zero_yuu_00014164 = 0;
+const Vec vec3_yuu_00014168 = { 0.0f, 0.0f, 0.0f };
+
 #pragma force_active on
 extern s32 evt_yuucounter_alloc[];
 extern s32 evt_yuucounter_free[];
@@ -45,6 +50,9 @@ extern s32 yuuranking_get_monte_31_text_51C0[];
 extern s32 yuuranking_wait_button_31_text_51F8[];
 static f32 randf(f32 min, f32 max);
 static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v);
+#ifdef MUST_MATCH
+static Vec makeVecB(f32 x, f32 y, f32 z);
+#endif
 static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall);
 
 Yuuminigame4Work* unk_yuu_bss00000010;
@@ -95,7 +103,7 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (88.26%): unk_yuu_000034bc; needs register/allocation scheduling work
+// NONMATCHING (91.59%): unk_yuu_000034bc; target computes size once into a register (mulli) and reuses it, we spill it to the stack; first loop bases at +8 vs +0
 USER_FUNC(unk_yuu_000034bc) {
     s32 prev = 0;
     s32 num = 1;
@@ -106,8 +114,15 @@ USER_FUNC(unk_yuu_000034bc) {
         if (unk_yuu_bss00000010 != NULL) {
             prev = 1;
         }
+        // size is opaque so the compiler keeps one computed size for both calls, like the target's mulli/mr/mr
+#ifdef MUST_MATCH
+        { volatile s32 size = num * sizeof(Yuuminigame4Work);
+        unk_yuu_bss00000010 = _mapAlloc(size);
+        memset(unk_yuu_bss00000010, 0, size); }
+#else
         unk_yuu_bss00000010 = _mapAlloc(num * sizeof(Yuuminigame4Work));
         memset(unk_yuu_bss00000010, 0, num * sizeof(Yuuminigame4Work));
+#endif
         unk_yuu_bss00000010->count = num;
         unk_yuu_bss00000010->work = work2;
         for (i = 0; i < unk_yuu_bss00000010->count; i++) {
@@ -480,9 +495,11 @@ static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXTexCoord2f32(0.0f, v);
 }
 
-// NONMATCHING (88%): ryushi_disp; needs register/allocation scheduling work
+// NONMATCHING (93.60%): ryushi_disp; `wp = &wp[1]` (reuse local instead of reloading xwp) matched; base registers and angle-block schedule still differ
 void ryushi_disp(CameraId cameraId, void* param) {
     RyushiEntry* wp = xwp;
+    s32 unk30 = xwp->unk30;
+    s32 unk34 = xwp->unk34;
     Mtx mtx;
     Mtx rot;
     Mtx scale;
@@ -490,9 +507,9 @@ void ryushi_disp(CameraId cameraId, void* param) {
     Mtx out;
     GXTexObj texObj;
     GXColor color;
-    f32 f29 = 0.0f;
-    f32 f30;
     f32 f31;
+    f32 f30;
+    f32 f29;
     s32 i;
 
     PSMTXScale(mtx, wp->scale, wp->scale, 1.0f);
@@ -501,10 +518,10 @@ void ryushi_disp(CameraId cameraId, void* param) {
     PSMTXConcat(mtx, rot, mtx);
     effGetTexObj(0x1E, &texObj);
     GXLoadTexObj(&texObj, 0);
+    color = *(GXColor*)&zero_yuu_00014160;
     color.r = wp->unk38;
     color.g = wp->unk3C;
     color.b = wp->unk40;
-    color.a = 0;
     GXSetTevColor(2, color);
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
@@ -529,19 +546,25 @@ void ryushi_disp(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
     f31 = 0.0f;
-    wp = &xwp[1];
+    wp = &wp[1];
     for (i = 1; i < ryuwp; i++, wp++) {
         f30 = wp->scale;
         if (f30 == f31) {
             continue;
         }
+        color = *(GXColor*)&zero_yuu_00014164;
         color.r = (s32)f29;
-        color.g = xwp->unk30;
-        color.b = xwp->unk34;
+        color.g = unk30;
+        color.b = unk34;
         color.a = wp->unk20;
         GXSetTevColor(1, color);
         {
+            // target sums wp->z*0.125 first; the natural order schedules its loads differently
+#ifdef MUST_MATCH
+            f32 t = (wp->z * 0.125f + 3.14f * (f32)i * 0.25f) / 3.14f;
+#else
             f32 t = (3.14f * (f32)i * 0.25f + wp->z * 0.125f) / 3.14f;
+#endif
             f32 d = 180.0f * t;
             s32 k = (s32)(d / 360.0f);
             if (d < 0.0f) {
@@ -598,7 +621,7 @@ USER_FUNC(evt_ryushi_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.02%): evt_ryushi_clr; reload xwp global for unk08/0C/10 matched; randf fneg order + r27/r28 still differ
+// NONMATCHING (93.03%): evt_ryushi_clr; xwp reload for unk08/0C/10 matches; remaining are args[0]/xwp load order and the inlined randf fneg order
 USER_FUNC(evt_ryushi_clr) {
     RyushiEntry* wp = xwp;
     s32 i;
@@ -642,24 +665,43 @@ USER_FUNC(evt_ryushi_clr) {
 
 
 
-// NONMATCHING (77.7%): evt_ryushi; needs register/allocation scheduling work
+// inline Vec build reproduces the target's vec3->temp->pos copy (rule 7)
+#ifdef MUST_MATCH
+static inline Vec makeVecB(f32 x, f32 y, f32 z) {
+    Vec v = vec3_yuu_00014168;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+#endif
+
+// NONMATCHING (84.56%): evt_ryushi; makeVec helper + no redundant pos init fixed the prologue, hoisting `e` before `i` fixed r29/r30, root switch matches, f23=1.0f moved next to f22/f21; named floats still land in f28-f31 vs f20-f23 and inlined randf fneg order differs
 USER_FUNC(evt_ryushi) {
-    YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
-    Yuuminigame4Data* data = work2->data;
+    YuuminigameWork* work2;
+    Yuuminigame4Data* data;
     RyushiEntry* wp = xwp;
-    Vec pos = { 0.0f, 0.0f, 0.0f };
+    Vec pos;
     f32 f20;
     f32 f21;
     f32 f22;
-    f32 f23 = 1.0f;
+    f32 f23;
+    RyushiEntry* e;
     s32 i;
 
+#ifdef MUST_MATCH
+    pos = makeVecB(wp->x, wp->y, wp->z);
+#else
     pos.x = wp->x;
     pos.y = wp->y;
     pos.z = wp->z;
+#endif
 
     f22 = 0.0f;
     f21 = f22;
+    f23 = 1.0f;
+    work2 = (YuuminigameWork*)event->lwData[0];
+    data = work2->data;
     f20 = camGetPtr(4)->cameraAt.x;
     switch (data->unk10) {
     case 2:
@@ -702,29 +744,29 @@ USER_FUNC(evt_ryushi) {
     }
     f23 *= 0.5f;
 
-    for (i = 1; i < ryuwp; i++) {
-        RyushiEntry* e = &wp[i];
-
-        switch (e->unk04) {
+    {
+    e = &wp[1];
+    for (i = 1; i < ryuwp; i++, e++) {
+        switch (xwp->unk04) {
         case 0:
             e->z -= f22;
             if (e->z < -200.0f) {
-                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
-                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
-                e->z = 200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
+                e->x = e->unk08 + randf(-0.3f * xwp->unk08, 0.3f * xwp->unk08);
+                e->y = e->unk0C + randf(-0.3f * xwp->unk0C, 0.3f * xwp->unk0C);
+                e->z = 200.0f + randf(-0.3f * xwp->unk10, 0.3f * xwp->unk10);
             }
             break;
         case 1:
             e->z += f22;
             if (e->z > 200.0f) {
-                e->x = e->unk08 + randf(-0.3f * wp->unk08, 0.3f * wp->unk08);
-                e->y = e->unk0C + randf(-0.3f * wp->unk0C, 0.3f * wp->unk0C);
-                e->z = -200.0f + randf(-0.3f * wp->unk10, 0.3f * wp->unk10);
+                e->x = e->unk08 + randf(-0.3f * xwp->unk08, 0.3f * xwp->unk08);
+                e->y = e->unk0C + randf(-0.3f * xwp->unk0C, 0.3f * xwp->unk0C);
+                e->z = -200.0f + randf(-0.3f * xwp->unk10, 0.3f * xwp->unk10);
             }
             break;
         }
         {
-            f32 step = 10.0f * wp->unk08;
+            f32 step = 10.0f * xwp->unk08;
             f32 t = (e->x - f20) / (step * 0.5f);
             s32 n = (s32)t;
             if (n != 0) {
@@ -752,6 +794,7 @@ USER_FUNC(evt_ryushi) {
             e->unk20 = (s32)(0.7 * (255.0f * ((100.0f - a) / 100.0f) * f21));
         }
         e->scale = f23;
+    }
     }
 
     dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
@@ -890,7 +933,6 @@ void yuuminigame_disp_4slit(CameraId cameraId, void* param) {
     monteCountDisp();
 }
 
-// NONMATCHING (97.06%): yuuminigame4_gamerule; case 3/7 (unk18/unk1C += 36.0f) still schedule lis 0x4330 / stw conversion setup differently
 s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuuminigame4Data* data) {
     MarioWork* mario = marioGetPtr();
     EventEntry* e;
@@ -984,7 +1026,7 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
         break;
     case 3:
-        data->unk18 = data->unk18 + 36.0f;
+        data->unk18 += 36.0f;
         data->unk18 = (data->unk18 + 3600.0f) - (f32)((s32)((data->unk18 + 3600.0f) / 360.0f) * 360);
         break;
     case 4:
@@ -997,7 +1039,7 @@ s32 yuuminigame4_gamerule(EventEntry* event, BOOL isFirstCall, void* work, Yuumi
         data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
         break;
     case 7:
-        data->unk1C = data->unk1C + 36.0f;
+        data->unk1C += 36.0f;
         data->unk1C = (data->unk1C + 3600.0f) - (f32)((s32)((data->unk1C + 3600.0f) / 360.0f) * 360);
         break;
     case 8:

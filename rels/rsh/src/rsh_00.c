@@ -388,7 +388,12 @@ void moamoa_dispent(void) {
 // (`lwz rD, wp@l(rB)`) where the original materialises the address
 // (`addi rB, rB, wp@l; lwz rD, 0(rB)`). Under MUST_MATCH a one-iteration loop keeps the address
 // materialised (LICM hoists `&wp` out of the loop before unrolling it).
-// NONMATCHING (99.09%): register colouring of `event` and `id` differs.
+// NONMATCHING (99.10%): register colouring of `event` and `id` differs. The original has
+// `event`/`entry` in r31 and `id` in r30; ours has `event`/`entry` in r30 and `id` in r31, and
+// these 15 instructions are the only difference. The one-iteration loop below reproduces the
+// original's `addi;lwz` materialisation of `wp`. Declaring `id` as `s16` makes the allocator pick
+// the original's registers exactly (99.28%) but adds an `extsh` retail lacks, and it truncates
+// negative ids, so `id` stays s32.
 USER_FUNC(evt_moamoa_set_one) {
     ExtPose* pose;
     MoamoaEntry* entry;

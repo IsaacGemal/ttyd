@@ -853,6 +853,7 @@ USER_FUNC(shadow_scale_memory) {
 // global_optimizer/defer_codegen, inline or struct helpers, or any source permutation
 // changes the schedule. `end = start - start` reaches 90% but computes zero in fp
 // instead of loading zero_muj, so it is a wrong-code trick and not a match.
+// NONMATCHING (86.75%): as above; the instruction set is identical, only MWCC's schedule differs.
 USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;

@@ -372,16 +372,24 @@ EVT_BEGIN(mario_move_wait)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.33%): only the int->float conversion register allocation differs. The original keeps the loaded
-// ssf[index] in r5 and the pooled conversion double's address in r6 (xoris r5,r5 / addi r6,r3 / lfd f1,0(r6) /
-// stw r5,0xc(r1)); MWCC 2.6/2.0/2.5/2.7 here copy the value into r0 and put the double address in r4. Same class of
-// unsolved pooled int->float conversion as mri_16.c ss_check and the win_log.c/win_item.c conversions.
 USER_FUNC(ss_ch_check) {
+#ifdef MUST_MATCH
+    // Match-only: the 64-bit temp forces the register allocator to keep r4/r5 busy,
+    // so the conversion double's address lands in r6 and xoris stays in r5.
+    u64 new_var;
+#endif
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
     f32 value = (f32)ssf[index];
+#ifdef MUST_MATCH
+    new_var = args[1];
+#endif
 
+#ifdef MUST_MATCH
+    evtSetFloat(event, new_var, value);
+#else
     evtSetFloat(event, args[1], value);
+#endif
     return EVT_RETURN_DONE;
 }
 

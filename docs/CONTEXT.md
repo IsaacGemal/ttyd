@@ -3201,3 +3201,39 @@ Linked `eff_nokotarou`, `eff_shock_n64`, `eff_lensflare_n64` (the near-misses th
 - With the literals pooled in the target's order (Grind 44) the remaining difference in a function is often only the **order of the FP loads**: the constant is loaded after the variable it multiplies, where the original loads it first. A local that holds the constant, assigned before the variable is read, moves the load: `f32 k = 0.03125f; ... scaleAnim += t * k;` (`effNokotarouMain`, the blend `(C - v) * k + v` with the constant in a local), `f32 k9 = 0.9f; f32 k8 = 0.8f;` at the top of `effShockMain`, `f32 zero = 0.0f; if (f30 == zero)` in `effLensflareDisp` (the compare's operand order follows). The pool does not change.
 - Strings that the code names through extern objects (`str_803014A4`, `str_8042249C`) are literals at their uses: an undefined name leaves the string out of `.rodata`/`.sdata2`.
 - Not enough: `effPeachDustMain` (`k = 0.1f` hoisted to the function top, to the loop start, or after the counter: 98.86% in all), `effBombDisp` (the natural `half`/`negHalf` form pools 1.0 and 0.5 before 30; the literal-in-loop form has the right pool and 97.93%).
+
+## Wave 50: the overnight whole-file pass, DOL low-only files and the REL remainder (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+Isaac's 12-hour run (Sep 30 22:30 to Oct 1 10:30). Claude #1 runs grouped near-miss waves (42-49) on heavy DOL files;
+this session runs whole-file waves (50-59) on what is left below 80%, Flash only (Claude #1's six-model benchmark
+had Flash ahead on near-misses). Files go to whichever wave claims them first in `tools/claims.py`.
+
+- **Scope:** the 23 DOL game files whose open functions are all below 80% (`sdk/arc` left out as library code)
+  and every REL file with open functions: 93 files, 308 functions, 98 agents (mri_puni in six groups spliced by
+  name). Launcher `scratch/wave50/launch.py`: waves 40/41's recipe plus **continuation passes** (an agent that stops
+  with listed functions still open and 15+ minutes of budget left is told to keep going, up to twice) and a slot
+  cap of 24 shared by every w5x wave. The continuations fired for most agents; Flash tends to stop early.
+- **Collection** (`scratch/wave5x/collect.py`, reusable): agent copies merged 3-way onto main (main had moved four
+  of the files' `.data` boundaries); groups spliced by name; for a shared `rels/common` source worked by several
+  modules' agents, the copy that linked is taken whole (`unit_hammer_bros`: the tik copy linked in tik but dropped
+  tou2's `hammer_bros_nagemakuri_set_target` from 68% to 14%; the tou2 copy holds both). `scratch/wave5x/compare.py`
+  compares every unit's functions and sections with main's report; `greedy.py` reverts changed functions one at a
+  time until no section is below main; `pragma_audit.py` deletes each added pragma and keeps it only if a function
+  falls from 100% without it (16 removed).
+- **Left out** (a data section fell, or nothing new reached 100% once the drop was fixed): gor_10, hei_10, las_05,
+  yuu_02, tou_03, end_unknown (two new 100% functions, but `.rodata` 99.73 -> 99.60: a literal value differs),
+  muj_20, rsh_05, rsh_06, eki_00, unit_barriern_custom, eff_kameki_tornade, eff_pokopi_thunder; bom_01, tou2 and
+  unit_boss_gundan_zako_group2 because their agents' `rels/*/include` edits were lost (56 of the 98 workspaces were
+  deleted on the tower mid-run; the launcher only brings back `include/` as a patch). Also left as on main after
+  review: eff_opuku_wcurtain, eff_balloon.
+- **Result:** 8,336 -> 8,431 functions; unit_chorobon_gundan, unit_boss_batten_leader and yuu_01 link. party_kuribo,
+  battle_item_data, eff_toiki, eff_pturn, eff_small_star and eff_thruhammer are code-complete; finish_unit.py
+  didn't link them (data sections at 0-98%), left for a data pass.
+- **Review** (fresh Claude, `scratch/wave50/review.md`): ac_shot's afterimage GXColors were byte-reversed;
+  evt_yuuranking (yuu and gor) had moved the title box to `w - 50`; sys `display_func` wrapped its frame at 8 for
+  retail's 4; mot_ship added `f30 - f30` for retail's constant 0.0; eff_opuku_wcurtain had dropped the s16 clamp;
+  devices in muj_00, unit_boss_batten_leader and eff_sleep now sit under MUST_MATCH. Found outside the wave:
+  usu_00 `kpaSen_ext_shadow_disp`'s shadow matrix was 20.0f on the diagonal for retail's 10.0f (100% score, wrong
+  size). battle_item_data's two constants stay mutable globals: making them `const` loses `_cam_rot`.
+- **Lesson:** the launcher's "wave 50 drained" gate counted workspaces on the tower, so the cleanup stalled wave 51
+  for three hours; it now gates on the slot count alone.

@@ -395,7 +395,6 @@ static BattleWeapon weapon_wanwan_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// NONMATCHING (99.79%): only the temporaries r4/r5 of the first two loads (args, _battleWorkPointer@ha) are swapped.
 static USER_FUNC(chain_init) {
     s32* args;
     BattleWork* wp;
@@ -409,7 +408,7 @@ static USER_FUNC(chain_init) {
 
     args = event->args;
     wp = _battleWorkPointer;
-    id = evtGetValue(event, args[0]);
+    id = evtGetValue(event, *args++);
     id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(wp, id);
     BtlUnit_GetPos(unit, &x, &y, &z);
@@ -442,13 +441,11 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.71%): same r4/r5 swap at the start, and i/part/next take r30/r29 instead of r29/r30.
 static USER_FUNC(chain_main) {
     s32* args;
     BattleWork* wp;
     BattleUnit* unit;
     BattleUnitPart* part;
-    BattleUnitPart* next;
     s32 id;
     s32 i;
     f32 x;
@@ -469,7 +466,7 @@ static USER_FUNC(chain_main) {
 
     args = event->args;
     wp = _battleWorkPointer;
-    id = evtGetValue(event, args[0]);
+    id = evtGetValue(event, *args++);
     id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(wp, id);
     if (unit == NULL) {
@@ -507,7 +504,7 @@ static USER_FUNC(chain_main) {
     dx = ax - bx;
     dy = ay - by;
     dz = az - bz;
-    scale = (f32)sqrt(dx * dx + dy * dy + dz * dz) * 0.125f;
+    scale = (f32)sqrt(dx * dx + dy * dy + dz * dz) / 8.0f;
     if (scale < 10.0f) {
         scale = 10.0f;
     }
@@ -528,8 +525,8 @@ static USER_FUNC(chain_main) {
     do {
         part = BtlUnit_GetPartsPtr(unit, i);
         BtlUnit_GetPartsPos(part, &ax, &ay, &az);
-        next = BtlUnit_GetPartsPtr(unit, i + 1);
-        BtlUnit_GetPartsPos(next, &bx, &by, &bz);
+        part = BtlUnit_GetPartsPtr(unit, i + 1);
+        BtlUnit_GetPartsPos(part, &bx, &by, &bz);
         by -= pull;
         dx = ax - bx;
         dy = ay - by;
@@ -542,15 +539,15 @@ static USER_FUNC(chain_main) {
         if (by < 0.0f) {
             by = 0.0f;
         }
-        BtlUnit_SetPartsPos(next, bx, by, bz);
+        BtlUnit_SetPartsPos(part, bx, by, bz);
         i++;
     } while (i <= 7);
     i = 9;
     do {
         part = BtlUnit_GetPartsPtr(unit, i);
         BtlUnit_GetPartsPos(part, &ax, &ay, &az);
-        next = BtlUnit_GetPartsPtr(unit, i - 1);
-        BtlUnit_GetPartsPos(next, &bx, &by, &bz);
+        part = BtlUnit_GetPartsPtr(unit, i - 1);
+        BtlUnit_GetPartsPos(part, &bx, &by, &bz);
         by -= pull;
         dx = ax - bx;
         dy = ay - by;
@@ -563,7 +560,7 @@ static USER_FUNC(chain_main) {
         if (by < 0.0f) {
             by = 0.0f;
         }
-        BtlUnit_SetPartsPos(next, bx, by, bz);
+        BtlUnit_SetPartsPos(part, bx, by, bz);
         i--;
     } while (i >= 3);
     return EVT_RETURN_DONE;

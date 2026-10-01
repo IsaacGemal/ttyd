@@ -61,8 +61,8 @@ static USER_FUNC(re_fall_rtn);
 static USER_FUNC(fall_rtn);
 static void monte_disp(CameraId cameraId, void* param);
 static BOOL get_monte_check(Vec* a, Vec* b);
-static MonteEntry* monte_p;
 static u32 yuunpc_wp[1];
+static MonteEntry* monte_p;
 
 // clang-format off
 extend_data(16,
@@ -616,9 +616,7 @@ EVT_BEGIN(yuu_01_init_evt)
 EVT_END()
 
 // TODO: type
-static u32 yuunpc_wp[1] = {
-    0x00000000,
-};
+static u32 yuunpc_wp[1];
 USER_FUNC(unk_yuu_00005268) {
     camShiftReset();
     return EVT_RETURN_DONE;
@@ -651,10 +649,13 @@ static inline f32 monte_rand(f32 min, f32 max) {
 // base[2]=0.0f is set before the do-while and base[4]=1.0f after it, matching the target's store layout.
 // Reading the bounds straight from the montetable fields (no lo/hi copies) puts the z min/max pointers in the
 // target's r26/r27, and writing the z range back into `max` (then 100.0f * max) keeps the subtraction in f1.
-// The only remaining difference is the sfx GPR colour: the psndSFX string address lands in r21 with an extra
-// `mr r21, r0` where the target writes r26 directly. Declaration order, block scope, pointer locals and
-// opt_lifetimes/opt_propagation/global_optimizer/peephole/... pragmas were all tried; none move it.
-// NONMATCHING (99.53%): only the sfx GPR colour differs (ours r21 + extra mr, target r26); all else matches.
+//
+// The sfx string needs a match-only shape (see the MUST_MATCH blocks below): a plain `const char*` assignment
+// makes MWCC materialise the pooled address through r0 and copy it (`addi r0, r4, str@l; mr r21, r0`) where the
+// target writes r26 directly, and a union member alone removes the `mr` but colours the value r29. The
+// `(const char*)(u32)` round-trip on the union member makes the allocator colour it r26, matching the target.
+// Declaration order, block scope, `register`, named `.rodata` externs, and the opt_lifetimes/opt_propagation/
+// opt_common_subs/global_optimizer/peephole/loop-invariants/optimization_level pragmas were all tried.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -663,7 +664,13 @@ static USER_FUNC(fall_rtn) {
     s32 i;
     s32 tableIdx;
     s32 pointIdx;
+#ifdef MUST_MATCH
+    // Match-only: the union member makes MWCC write the string address straight into the callee-saved register
+    // instead of materialising it through r0 (see the note above). The plain pointer is the natural form.
+    union { const char* p; u32 u; } sfx;
+#else
     const char* sfx;
+#endif
 
     wasAllocated = 0;
     data = work->data;
@@ -730,7 +737,11 @@ static USER_FUNC(fall_rtn) {
         }
     }
 
+#ifdef MUST_MATCH
+    sfx.p = "SFX_EVT_GAME_MONTE_COUNT1";
+#else
     sfx = "SFX_EVT_GAME_MONTE_COUNT1";
+#endif
     {
         for (i = 0; i < monte_p->count; i++) {
             MonteEntry* p = &monte_p[i];
@@ -738,7 +749,15 @@ static USER_FUNC(fall_rtn) {
             case 0:
                 if (get_monte_check(&p->position, &marioGetPtr()->position) == 1) {
                     data->unk34++;
-                    psndSFXOn_3D(sfx, &marioGetPtr()->position);
+                    psndSFXOn_3D(
+#ifdef MUST_MATCH
+                        // match-only: the (u32)->(const char*) round-trip makes MWCC colour this value r26
+                        // as the target does; the plain `sfx.p` picks r29 and the plain pointer gives r21 + `mr`.
+                        (const char*)(u32)sfx.p,
+#else
+                        sfx,
+#endif
+                        &marioGetPtr()->position);
                     p->unk0 = 1;
                     p->unk4 = 1;
                 }

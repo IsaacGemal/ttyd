@@ -56,6 +56,10 @@ typedef struct PturnN64Elem {
     f32 field_0x40;  // 0x40
     s32 field_0x44;  // 0x44
 } PturnN64Elem;
+// .sdata2 constants defined in this unit (see config/G8MJ01/symbols.txt).
+extern const f32 float_deg2rad_8041fa60;
+extern const f32 float_0p03125_8041fa6c;
+extern const f32 float_0p0026042_8041fa70;
 void effPturnDisp(CameraId camId, void* param);
 void effPturnMain(EffectEntry* effect);
 void pturn_main_dispp(CameraId camId, void* param);

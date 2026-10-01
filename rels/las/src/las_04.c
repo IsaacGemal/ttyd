@@ -511,9 +511,13 @@ void _firebar_trans(FirebarEntry* entry) {
     }
 }
 
-// NONMATCHING (84.85%): the original spills `entry` to 0x8(r1), reloading it into
-// registers for the loops; MWCC keeps it in r31 throughout, which shifts the
-// callee-saved register allocation and the int->float conversion stack slots.
+// The original spills `entry` to 0x8(r1) and reloads it at region boundaries; the
+// MUST_MATCH address-take below forces the same spill (MWCC 2.6 would otherwise keep
+// entry in r31). The `addic.`/`bne`/`li`/`b` it adds are the only extra instructions;
+// the remaining r29/r30 and r26/r27 swaps and the Vec copy temps also occur without the
+// spill and resist every source shape tried; our .text is 0x10 bytes longer than the
+// original's.
+// NONMATCHING (97.65%)
 USER_FUNC(firebar_entry) {
     s32* args = event->args;
     FirebarDesc* desc = (FirebarDesc*)evtGetValue(event, args[0]);
@@ -557,6 +561,13 @@ USER_FUNC(firebar_entry) {
             break;
         }
 
+#ifdef MUST_MATCH
+        // Taking `entry`'s address makes MWCC spill it; the #else is the natural code.
+        if (&entry == NULL) {
+            for (;;) {
+            }
+        }
+#endif
         entry->segments = _mapAlloc(entry->count << 4);
         memset(entry->segments, 0, entry->count << 4);
         {
@@ -567,7 +578,17 @@ USER_FUNC(firebar_entry) {
                 // The original reloads the zero vector's words from .rodata on
                 // every iteration instead of hoisting the const copy out of the loop.
 #ifdef MUST_MATCH
-                seg->position = *(volatile Vec*)&vec3_las_00011ee0;
+                {
+                    const volatile u32* src = (const volatile u32*)&vec3_las_00011ee0;
+                    volatile u32* dst = (volatile u32*)&seg->position;
+                    u32 w1;
+                    u32 w0;
+                    w0 = src[0];
+                    w1 = src[1];
+                    dst[0] = w0;
+                    dst[1] = w1;
+                    dst[2] = src[2];
+                }
 #else
                 seg->position = vec3_las_00011ee0;
 #endif
@@ -584,24 +605,26 @@ USER_FUNC(firebar_entry) {
             entry->sfxId = -1;
         }
         {
-            FirebarSegment* base = entry->segments;
-            for (i = 0; i < 3; i++) {
-                s32 index = (entry->count + 1) * i / 3;
+            FirebarSegment* bp = entry->segments;
+            s32 m;
+            for (m = 0; m < 3; m++) {
+                s32 index = (entry->count + 1) * m / 3;
                 s32 r = rand();
                 f32 x;
                 f32 y;
 
-                seg = &base[index];
-                x = seg->position.x + (f32)(r % 16 - 8);
-                y = seg->position.y + 10.0f;
+                x = bp[index].position.x + (f32)(r % 16 - 8);
+                y = bp[index].position.y + 10.0f;
+                seg = &bp[index];
 
                 effKemuTestEntry(0, x, y, seg->position.z + (f32)(rand() % 5 + 3), 1.0f);
             }
         }
         {
-            seg = entry->segments;
-            for (i = 0; i < entry->count; i++, seg++) {
-                animPoseRelease(seg->poseId);
+            s32 k;
+            FirebarSegment* sp = entry->segments;
+            for (k = 0; k < entry->count; k++, sp++) {
+                animPoseRelease(sp->poseId);
             }
         }
         _mapFree(entry->segments);
