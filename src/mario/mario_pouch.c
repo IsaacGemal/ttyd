@@ -354,8 +354,28 @@ void pouchOpenMail(s32 mailId) {
 	mpp->mEmailReadFlags[mailId / 32] |= (1 << (mailId % 32));
 }
 
-// NONMATCHING (92.47%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 void pouchReceiveMail(s32 mailId) {
+#ifdef MUST_MATCH
+	// Found by the permuter: the loop counter and the running count share a two-element array
+	// (they sit side by side on the stack), which fixes the original's register and slot order.
+	int count0;
+	int slot[2];
+	s32 index;
+	s32 shift;
+
+	index = mailId / 32;
+	shift = mailId % 32;
+
+	count0 = 0;
+	slot[0] = count0;
+	for (slot[1] = 0; slot[1] < 99; slot[1]++) {
+		if (mpp->mEmailReceivedFlags[slot[1] / 32] & (1 << (slot[1] % 32))) {
+			slot[0]++;
+		}
+	}
+	mpp->mEmailReceivedFlags[index] |= (1 << shift);
+	mpp->mEmailIds[slot[0]] = (u8)mailId;
+#else
 	int i;
 	s32 count;
 	s32 index;
@@ -365,7 +385,6 @@ void pouchReceiveMail(s32 mailId) {
 	shift = mailId % 32;
 
 	count = 0;
-	//increment through known IDs to add to mEmailIds
 	for (i = 0; i < 99; i++) {
 		if (mpp->mEmailReceivedFlags[i / 32] & (1 << (i % 32))) {
 			count++;
@@ -373,6 +392,7 @@ void pouchReceiveMail(s32 mailId) {
 	}
 	mpp->mEmailReceivedFlags[index] |= (1 << shift);
 	mpp->mEmailIds[count] = (u8)mailId;
+#endif
 }
 
 s32 pouchReceiveMailCount(void) {
@@ -560,8 +580,7 @@ void pouchReviseMarioParam(void) {
 	}
 }
 
-// NONMATCHING (92.34%): 3 instructions differ, 2 missing, 2 extra, plus register differences.
-BOOL pouchRemoveKeepItem(s32 id, s32 index) {
+BOOL pouchRemoveKeepItem(s32 id, int index) {
 	int i, j;
 
 	if (mpp->storedItems[index] != id) {
