@@ -9,9 +9,16 @@
 #include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
+// math.h pools two sqrt doubles this unit does not have; only its fabs intrinsic is needed.
+#define fabs(x) __fabs(x)
 #include <string.h>
 #include "battle/ac/ac_monosiri_target.h"
+
+u32 _frame_table[7] = {
+    0x000000F0, 0x000000B4, 0x00000078, 0x0000005A,
+    0x00000046, 0x00000028, 0x00000014,
+};
 
 // Rectangular work area for the MonosiriTarget action command, at _battleWorkPointer + 0x1F4C.
 // No header declares it yet; every field is named from the original's uses.
@@ -56,7 +63,6 @@ extern const f64 double_28_80300928;
 extern const char str_80300910[];
 
 // .sdata frame table, indexed by BattleActionCommandGetDifficulty().
-extern s32 _frame_table[7];
 
 // .sdata2 constants.
 extern const GXColor dat_80422058; // 0xFFFFFFFF
@@ -77,6 +83,140 @@ extern const f32 float_80_80422090;
 extern const f32 float_160_80422094;
 
 static void actionCommandDisp(f32 x, f32 y);
+
+// dont_inline: the original keeps _getmaxcount as a real call (`bl _getmaxcount`), not an inline.
+#pragma dont_inline on
+s32 _getmaxcount(void) {
+#ifdef MUST_MATCH
+	// Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
+	return _frame_table[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(_battleWorkPointer)];
+#else
+	return _frame_table[BattleActionCommandGetDifficulty(_battleWorkPointer)];
+#endif
+}
+#pragma dont_inline reset
+
+// The `ac` + `field_0x2BC[0]` access below is a match-only form: addressing the work area through
+// the header's named field, rather than casting `work + 0x1F4C`, is what makes MWCC keep two
+// separate base pointers (r31=mt, r28=disp) the way the original does. The natural form is under
+// #else. The `unit`/`part` declaration order also matters: MWCC assigns `part` to r26 and `unit`
+// to r27 only when `unit` is declared first.
+s32 battleAcMain_MonosiriTarget(BattleWork* work) {
+#ifdef MUST_MATCH
+	BattleActions* ac = &work->actionCommands;
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)&ac->field_0x2BC[0];
+	BattleACDispParams* disp = &ac->dispParams;
+#else
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
+	BattleACDispParams* disp = &work->actionCommands.dispParams;
+#endif
+	BattleUnit* unit;
+	BattleUnitPart* part;
+	s32 autoCommand = 0;
+
+	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
+		autoCommand = 1;
+	}
+
+	unit = BattleGetUnitPtr(work, *(s32*)((u8*)work + 0x1CC8));
+	part = BtlUnit_GetPartsPtr(unit, *(s32*)((u8*)work + 0x1CCC));
+
+	switch (work->actionCommands.mAcState) {
+	case 0:
+		memset(disp, 0, 0x2C);
+		disp->iconX = float_neg300_8042208c;
+		disp->iconY = float_0_8042206c;
+		disp->counter = 0x14;
+		mt->frame = 0;
+		mt->maxcount = _getmaxcount();
+		BtlUnit_GetHitPos(unit, part, &mt->hitPos.x, &mt->hitPos.y, &mt->hitPos.z);
+		mt->curPos = mt->hitPos;
+		mt->startPos = mt->hitPos;
+		mt->hitFlag = 0;
+		mt->rotZ = float_0_8042206c;
+		work->actionCommands.mAcState = 0x63;
+		work->actionCommands.result = 1;
+		mt->sfxId = -1;
+		break;
+	case 0x64:
+		mt->frame = 0;
+		mt->sfxId = psndSFXOn(str_80300910);
+		work->actionCommands.mAcState = 0x3E8;
+		// fallthrough
+	case 0x3E8:
+		mt->frame++;
+		mt->curPos.x = (mt->hitPos.x - float_80_80422090) +
+		               intplGetValue(0, mt->frame, mt->maxcount, float_0_8042206c, float_160_80422094);
+		if (fabs(mt->curPos.x - mt->startPos.x) < double_28_80300928) {
+			mt->hitFlag = 1;
+		}
+		else {
+			mt->hitFlag = 0;
+		}
+		if (mt->hitFlag == 0) {
+			mt->counter = 0;
+		}
+		else {
+			mt->counter++;
+		}
+		if (mt->frame >= mt->maxcount) {
+			work->actionCommands.result = 0;
+			work->actionCommands.mAcState = 0x3EA;
+		}
+		else if (BattlePadCheckTrigger(0x100) || autoCommand) {
+			if (mt->hitFlag != 0) {
+				work->actionCommands.result = 2;
+				work->actionCommands.mResultCount++;
+			}
+			else {
+				if (autoCommand) {
+					break;
+				}
+				work->actionCommands.result = 0;
+			}
+			work->actionCommands.mAcState = 0x3EA;
+		}
+		break;
+	case 0x3EA:
+		mt->timer = 0x3C;
+		work->actionCommands.mAcState = 0x3EB;
+		if (mt->sfxId != -1) {
+			psndSFXOff(mt->sfxId);
+		}
+		// fallthrough
+	case 0x3EB:
+		mt->timer--;
+		if (mt->timer <= 0) {
+			work->actionCommands.mAcState = 0x3EC;
+		}
+		break;
+	case 0x3EC:
+		work->actionCommands.maincb = NULL;
+		work->actionCommands.dispcb = NULL;
+		work->actionCommands.resultcb = NULL;
+		work->actionCommands.deletecb = NULL;
+		return 0;
+	}
+	return 1;
+}
+
+s32 battleAcResult_MonosiriTarget(BattleWork* work) {
+	return work->actionCommands.result;
+}
+
+void battleAcDisp_MonosiriTarget(CameraId camId, void* param) {
+	BattleWork* work = _battleWorkPointer;
+
+	switch (work->actionCommands.mAcState) {
+	case 0x3E8:
+		actionCommandDisp(float_0_8042206c, float_0_8042206c);
+		break;
+	}
+}
+
+void battleAcDelete_MonosiriTarget(BattleWork* work) {
+	work->actionCommands.mAcState = 0x3EA;
+}
 
 // `opt_common_subs off`: with CSE on MWCC allocates the screen2 x/y update's 4.0f to f2 instead of
 // the original's f1; turning CSE off for this function restores the original FPR allocation.
@@ -205,136 +345,53 @@ static void actionCommandDisp(f32 x, f32 y) {
 }
 #pragma opt_common_subs reset
 
-void battleAcDelete_MonosiriTarget(BattleWork* work) {
-	work->actionCommands.mAcState = 0x3EA;
-}
-
-void battleAcDisp_MonosiriTarget(CameraId camId, void* param) {
-	BattleWork* work = _battleWorkPointer;
-
-	switch (work->actionCommands.mAcState) {
-	case 0x3E8:
-		actionCommandDisp(float_0_8042206c, float_0_8042206c);
-		break;
-	}
-}
-
-s32 battleAcResult_MonosiriTarget(BattleWork* work) {
-	return work->actionCommands.result;
-}
-
-// The `ac` + `field_0x2BC[0]` access below is a match-only form: addressing the work area through
-// the header's named field, rather than casting `work + 0x1F4C`, is what makes MWCC keep two
-// separate base pointers (r31=mt, r28=disp) the way the original does. The natural form is under
-// #else. The `unit`/`part` declaration order also matters: MWCC assigns `part` to r26 and `unit`
-// to r27 only when `unit` is declared first.
-s32 battleAcMain_MonosiriTarget(BattleWork* work) {
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 #ifdef MUST_MATCH
-	BattleActions* ac = &work->actionCommands;
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)&ac->field_0x2BC[0];
-	BattleACDispParams* disp = &ac->dispParams;
+const Vec vec3_80300880[11] = {
+    { 1.0f, 1.0f, 1.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 1.0f, 1.0f, 1.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 1.0f, 1.0f, 1.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 1.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 1.0f, 1.0f, 1.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+};
 #else
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
+const Vec vec3_80300880 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_8030088c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_80300898 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_803008a4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_803008b0 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_803008bc = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_803008c8 = { 0.0f, 0.0f, 1.0f };
+const Vec vec3_803008d4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_803008e0 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_803008ec = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_803008f8 = { 0.0f, 0.0f, 0.0f };
 #endif
-	BattleUnit* unit;
-	BattleUnitPart* part;
-	s32 autoCommand = 0;
-
-	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
-		autoCommand = 1;
-	}
-
-	unit = BattleGetUnitPtr(work, *(s32*)((u8*)work + 0x1CC8));
-	part = BtlUnit_GetPartsPtr(unit, *(s32*)((u8*)work + 0x1CCC));
-
-	switch (work->actionCommands.mAcState) {
-	case 0:
-		memset(disp, 0, 0x2C);
-		disp->iconX = float_neg300_8042208c;
-		disp->iconY = float_0_8042206c;
-		disp->counter = 0x14;
-		mt->frame = 0;
-		mt->maxcount = _getmaxcount();
-		BtlUnit_GetHitPos(unit, part, &mt->hitPos.x, &mt->hitPos.y, &mt->hitPos.z);
-		mt->curPos = mt->hitPos;
-		mt->startPos = mt->hitPos;
-		mt->hitFlag = 0;
-		mt->rotZ = float_0_8042206c;
-		work->actionCommands.mAcState = 0x63;
-		work->actionCommands.result = 1;
-		mt->sfxId = -1;
-		break;
-	case 0x64:
-		mt->frame = 0;
-		mt->sfxId = psndSFXOn(str_80300910);
-		work->actionCommands.mAcState = 0x3E8;
-		// fallthrough
-	case 0x3E8:
-		mt->frame++;
-		mt->curPos.x = (mt->hitPos.x - float_80_80422090) +
-		               intplGetValue(0, mt->frame, mt->maxcount, float_0_8042206c, float_160_80422094);
-		if (fabs(mt->curPos.x - mt->startPos.x) < double_28_80300928) {
-			mt->hitFlag = 1;
-		}
-		else {
-			mt->hitFlag = 0;
-		}
-		if (mt->hitFlag == 0) {
-			mt->counter = 0;
-		}
-		else {
-			mt->counter++;
-		}
-		if (mt->frame >= mt->maxcount) {
-			work->actionCommands.result = 0;
-			work->actionCommands.mAcState = 0x3EA;
-		}
-		else if (BattlePadCheckTrigger(0x100) || autoCommand) {
-			if (mt->hitFlag != 0) {
-				work->actionCommands.result = 2;
-				work->actionCommands.mResultCount++;
-			}
-			else {
-				if (autoCommand) {
-					break;
-				}
-				work->actionCommands.result = 0;
-			}
-			work->actionCommands.mAcState = 0x3EA;
-		}
-		break;
-	case 0x3EA:
-		mt->timer = 0x3C;
-		work->actionCommands.mAcState = 0x3EB;
-		if (mt->sfxId != -1) {
-			psndSFXOff(mt->sfxId);
-		}
-		// fallthrough
-	case 0x3EB:
-		mt->timer--;
-		if (mt->timer <= 0) {
-			work->actionCommands.mAcState = 0x3EC;
-		}
-		break;
-	case 0x3EC:
-		work->actionCommands.maincb = NULL;
-		work->actionCommands.dispcb = NULL;
-		work->actionCommands.resultcb = NULL;
-		work->actionCommands.deletecb = NULL;
-		return 0;
-	}
-	return 1;
-}
-
-// dont_inline: the original keeps _getmaxcount as a real call (`bl _getmaxcount`), not an inline.
-#pragma dont_inline on
-s32 _getmaxcount(void) {
-#ifdef MUST_MATCH
-	// Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
-	return _frame_table[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(_battleWorkPointer)];
-#else
-	return _frame_table[BattleActionCommandGetDifficulty(_battleWorkPointer)];
-#endif
-}
-#pragma dont_inline reset
+// Read only through the vec3_80300880 base under MUST_MATCH, so the linker would drop it.
+#pragma force_active on
+const f64 double_15_80300908 = 15.0;
+#pragma force_active reset
+const char str_80300910[] = "SFX_AC_CURSOR_MOVE1";
+const f64 double_28_80300928 = 28.0;
+const GXColor dat_80422058 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8042205c = { 0x80, 0x80, 0x80, 0xFF };
+const GXColor dat_80422060 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80422064 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80422068 = { 0x80, 0x80, 0x80, 0xFF };
+const f32 float_0_8042206c = 0.0f;
+const f32 float_4_80422070 = 4.0f;
+const f32 float_2_80422074 = 2.0f;
+const f32 float_0p01_80422078 = 0.01f;
+const f32 float_100_8042207c = 100.0f;
+const f32 float_neg200_80422080 = -200.0f;
+const f32 float_50_80422084 = 50.0f;
+const f32 float_1_80422088 = 1.0f;
+const f32 float_neg300_8042208c = -300.0f;
+const f32 float_80_80422090 = 80.0f;
+const f32 float_160_80422094 = 160.0f;

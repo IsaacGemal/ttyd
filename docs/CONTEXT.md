@@ -3261,3 +3261,13 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
 ## Grind 49: party_kuribo links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 `party/party_kuribo`: `tools/dol_gen.py --append` for its one event script, then `finish_unit` (sdata2 pool and string came out right); no hand edits.
+
+## Grind 50: ac_monosiri_target links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`battle/ac/ac_monosiri_target` (note: its `configure.py` entry has `extra_cflags=["-O4,s"]`, so a `sed` on the plain entry text misses it).
+
+- Pools: `pool_data` for `_frame_table`, `pool_define` for the floats/doubles/vectors, plus by hand the five `dat_` GXColors (they sit first in `.sdata2`, defined before the floats) and the string `str_80300910` between the two doubles (named, so it lands between `double_15` and `double_28`).
+- The `MUST_MATCH` code reads the eleven vectors through an array view (`extern const Vec vec3_80300880[11]`), so the definitions are one 11-element array under `MUST_MATCH` and eleven `Vec`s otherwise.
+- `math.h` pools two sqrt doubles (0.5, 3.0) twice that this unit does not have; `math_ext.h` plus `#define fabs(x) __fabs(x)` keeps the `fabs` intrinsic without them.
+- `double_15` is only reached through the vector base under `MUST_MATCH`: `#pragma force_active` or the linker drops it (the dol came out 32 bytes short in `.rodata`).
+- `tools/fn_order.py --write` moves the function bodies but leaves the `#pragma` blocks and comments where they were; the `opt_common_subs`/`dont_inline` pragmas had to be put back around their functions by hand (the lint then reports them as new: `--allow-pragma`).
