@@ -42,25 +42,25 @@ USER_FUNC(yoshi_original_color_anim_set) {
     id = BattleTransID(event, val);
     BattleGetUnitPtr(work, id);
     switch (pouchGetPartyColor(4)) {
-    case 0:
+    case 1:
         name = "c_babyyoshi2";
         break;
-    case 1:
+    case 2:
         name = "c_babyyoshi3";
         break;
-    case 2:
+    case 3:
         name = "c_babyyoshi4";
         break;
-    case 3:
+    case 4:
         name = "c_babyyoshi5";
         break;
-    case 4:
+    case 5:
         name = "c_babyyoshi6";
         break;
-    case 5:
+    case 6:
         name = "c_babyyoshi7";
         break;
-    case 6:
+    case 0:
     default:
         name = NULL;
         break;
