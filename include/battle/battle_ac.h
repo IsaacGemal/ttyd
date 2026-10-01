@@ -38,7 +38,7 @@ typedef struct BattleActions {
     s32 mResultCount;                // 0x24
     s32 result;                      // 0x28
     s8 mBaseAcDifficulty;            // 0x2C
-    s8 mAcDifficulty;                // 0x2D
+    u8 mAcDifficulty;                // 0x2D
     u8 field_0x2E[2];                // 0x2E
     s32 field_0x30;                  // 0x30
     u8 field_34[0x58 - 0x34];        // 0x34
@@ -61,7 +61,7 @@ void BattleActionCommandStart(BattleWork* work);
 void BattleActionCommandStop(BattleWork* work);
 s32 BattleActionCommandGetDefenceResult(void);
 void BattleActionCommandResetDefenceResult(void);
-s8 BattleActionCommandGetDifficulty(BattleWork* work);
+s32 BattleActionCommandGetDifficulty(BattleWork* work);
 u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask);
 void BattleAcDrawGauge(s32, s32, s32, s32, s32, s32, s32, s32, f32);
 void BattleAcGaugeSeInit(void);

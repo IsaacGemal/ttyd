@@ -257,7 +257,7 @@ void BattleActionCommandResetDefenceResult(void) {
 	BtlPad_WorkInit(&_battleWorkPointer->actionCommands.pad);
 }
 
-s8 BattleActionCommandGetDifficulty(BattleWork* work) {
+s32 BattleActionCommandGetDifficulty(BattleWork* work) {
 	return work->actionCommands.mAcDifficulty;
 }
 

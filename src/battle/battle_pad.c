@@ -169,7 +169,7 @@ u32 BattlePadMultiCheckRecordTrigger(s32 chan, s32 frame, s32 mask) {
 	return buttons & mask;
 }
 
-u32 BattlePadCheckNow(s32 mask) {
+s32 BattlePadCheckNow(s32 mask) {
 	return BattlePadMultiCheckNow(0, mask);
 }
 
@@ -178,7 +178,7 @@ s32 BattlePadMultiCheckNow(s32 chan, s32 mask) {
 	return history[0] & mask;
 }
 
-u32 BattlePadCheckUp(s32 mask) {
+s32 BattlePadCheckUp(s32 mask) {
 	return BattlePadMultiCheckUp(0, mask);
 }
 
@@ -187,7 +187,7 @@ u32 BattlePadMultiCheckUp(s32 chan, s32 mask) {
 	return history[0] & mask;
 }
 
-u32 BattlePadCheckRepeat(s32 mask) {
+s32 BattlePadCheckRepeat(s32 mask) {
 	return BattlePadMultiCheckRepeat(0, mask);
 }
 
