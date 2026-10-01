@@ -321,3 +321,6 @@ USER_FUNC(btlevtcmd_CommandGetWeaponItemId);
 USER_FUNC(btlevtcmd_ConsumeItem);
 USER_FUNC(btlevtcmd_GetConsumeItem);
 USER_FUNC(btlevtcmd_GetItemRecoverParam);
+USER_FUNC(btlevtcmd_AcGetDifficulty);
+USER_FUNC(btlevtcmd_AcSetGaugeParam);
+USER_FUNC(btlevtcmd_AudienceAppeal);

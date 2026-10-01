@@ -17,12 +17,7 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
-extern s32 evt_btl_camera_set_homing_unit_audience[];
-extern s32 btlevtcmd_AudienceAppeal[];
-extern s32 btlevtcmd_AcSetGaugeParam[];
-extern s32 evt_btl_camera_nomove_z_onoff[];
-extern s32 evt_btl_camera_nomove_x_onoff[];
-extern s32 btlevtcmd_AcGetDifficulty[];
+#include "battle/battle_attack_audience.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 
@@ -63,9 +58,7 @@ typedef struct ClaudaBreathEffectData {
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
     (*count)++;
 
-extern s32 _attack_aud[];
 extern s32 _check_aud_item_type[];
-extern s32 _get_attack_aud_no[];
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 negone_one[];

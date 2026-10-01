@@ -13,28 +13,6 @@ __declspec(section ".data") f32 lbl_803A4C60[2] = { -1.0f, 1.0f };
 extern const u32 dat_8041fb38;
 extern const u32 unk_80423240;
 extern const u32 unk_80423244;
-extern const f32 float_deg2rad_8041fb3c;
-extern const f32 float_0_8041fb40;
-extern const f32 float_0p03125_8041fb44;
-extern const f32 float_0p0039062_8041fb48;
-extern const f32 float_32_8041fb4c;
-extern const f32 float_64_8041fb50;
-extern const f32 float_96_8041fb54;
-extern const f32 float_0p015625_8041fb58;
-extern const f32 float_480_8041fb5c;
-extern const f32 float_608_8041fb60;
-extern const f32 float_1_8041fb64;
-extern const f32 float_6p2832_8041fb68;
-extern const f32 float_360_8041fb6c;
-extern const f32 float_0p5_8041fb70;
-extern const f32 float_0p04_8041fb74;
-extern const f32 float_1p2356_8041fb78;
-extern const f32 float_4_8041fb7c;
-extern const f32 float_8_8041fb80;
-extern const f32 float_0p3_8041fb84;
-extern const f32 float_0p01_8041fb88;
-extern const f32 float_0p6_8041fb8c;
-extern const f32 float_1p2_8041fb90;
 
 // .rodata
 // The zero Vec (vec3_802fb4f0), the two int->float magic doubles (double_to_int_802fb500,
@@ -161,10 +139,10 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     data->field_0x64 = 0;
     data->field_0x68 = 0;
     data->field_0x6C = 0;
-    data->scales[0] = float_1_8041fb64;
-    data->scales[1] = float_0_8041fb40;
-    data->scales[2] = float_0_8041fb40;
-    data->scales[3] = float_0_8041fb40;
+    data->scales[0] = 1.0f;
+    data->scales[1] = 0.0f;
+    data->scales[2] = 0.0f;
+    data->scales[3] = 0.0f;
     data->alphas[0] = 0xFF;
     data->alphas[1] = 0;
     data->alphas[2] = 0;
@@ -230,10 +208,10 @@ void effReleaseMain(EffectEntry* effect) {
         case 0:
             data->field_0x74++;
             data->alphas[0] = 200 + (counter & 3) * 30;
-            data->scales[0] = float_0p04_8041fb74 * (f32)sin(float_6p2832_8041fb68 * (f32)(counter * 20) / float_360_8041fb6c) + float_0p5_8041fb70;
+            data->scales[0] = 0.04f * (f32)sin(6.2831855f * (f32)(counter * 20) / 360.f) + 0.5f;
             if ((s32)data->field_0x0 != 0) {
-                data->x += (f32)sin(float_6p2832_8041fb68 * (f32)counter / float_360_8041fb6c);
-                data->y += (f32)cos(float_6p2832_8041fb68 * (float_1p2356_8041fb78 * (f32)counter) / float_360_8041fb6c);
+                data->x += (f32)sin(6.2831855f * (f32)counter / 360.f);
+                data->y += (f32)cos(6.2831855f * (1.235631f * (f32)counter) / 360.f);
                 if (data->field_0x74 > 50) {
                     data->field_0x74 = 0;
                     if (type == 3) {
@@ -250,15 +228,15 @@ void effReleaseMain(EffectEntry* effect) {
             f32 s;
             switch (data->field_0x74) {
                 case 0:
-                    data->scales[3] = float_4_8041fb7c;
+                    data->scales[3] = 4.0f;
                     data->alphas[3] = 0xFF;
                     break;
                 case 1:
-                    data->scales[3] = float_8_8041fb80;
+                    data->scales[3] = 8.0f;
                     data->alphas[3] = 0xFF;
                     break;
                 default:
-                    data->scales[3] = float_0_8041fb40;
+                    data->scales[3] = 0.0f;
                     data->alphas[3] = 0;
                     break;
             }
@@ -268,24 +246,24 @@ void effReleaseMain(EffectEntry* effect) {
                 // pointer; that steers MWCC's allocation (index in r9, scratch pair r7/r8 instead of r6/r9).
                 u32 off = data->field_0x74 << 2;
                 t = ((AnimeData*)((u8*)anime_data + off))->field_0;
-                s = float_0p3_8041fb84 * (f32)data->field_0x74 + float_0p01_8041fb88 * (f32)t;
+                s = 0.3f * (f32)data->field_0x74 + 0.01f * (f32)t;
                 b = ((AnimeData*)((u8*)anime_data + off))->field_2;
 #else
                 t = anime_data[data->field_0x74].field_0;
-                s = float_0p3_8041fb84 * (f32)data->field_0x74 + float_0p01_8041fb88 * (f32)t;
+                s = 0.3f * (f32)data->field_0x74 + 0.01f * (f32)t;
                 b = anime_data[data->field_0x74].field_2;
 #endif
             } else {
                 t = anime_data[29].field_0;
-                s = float_0p01_8041fb88 * (f32)t + float_0p3_8041fb84 * (f32)data->field_0x74;
+                s = 0.01f * (f32)t + 0.3f * (f32)data->field_0x74;
                 b = anime_data[29].field_2;
             }
             data->alphas[0] = 0;
-            data->scales[0] = float_0_8041fb40;
+            data->scales[0] = 0.0f;
             data->alphas[1] = b & 0xFF;
             data->alphas[2] = b & 0xFF;
             data->scales[1] = s;
-            data->scales[2] = float_0p6_8041fb8c + s;
+            data->scales[2] = 0.6f + s;
             data->field_0x74++;
             break;
         }
@@ -295,27 +273,27 @@ void effReleaseMain(EffectEntry* effect) {
             f32 s;
             switch (data->field_0x74) {
                 case 0:
-                    data->scales[3] = float_4_8041fb7c;
+                    data->scales[3] = 4.0f;
                     data->alphas[3] = 0xFF;
                     break;
                 case 1:
-                    data->scales[3] = float_8_8041fb80;
+                    data->scales[3] = 8.0f;
                     data->alphas[3] = 0xFF;
                     break;
                 default:
-                    data->scales[3] = float_0_8041fb40;
+                    data->scales[3] = 0.0f;
                     data->alphas[3] = 0;
                     break;
             }
             t = anime_data[data->field_0x74].field_0;
-            s = float_0p01_8041fb88 * (f32)t;
+            s = 0.01f * (f32)t;
             a = anime_data[data->field_0x74].field_2;
             data->alphas[0] = 0;
             data->alphas[1] = a;
             data->alphas[2] = a;
-            data->scales[0] = float_0_8041fb40;
+            data->scales[0] = 0.0f;
             data->scales[1] = s;
-            data->scales[2] = float_1p2_8041fb90 * s + float_4_8041fb7c;
+            data->scales[2] = 1.2f * s + 4.0f;
             data->field_0x74++;
             if (data->field_0x74 >= 30) {
                 data->field_0x74 = 0;
@@ -329,27 +307,27 @@ void effReleaseMain(EffectEntry* effect) {
             f32 s;
             switch (29 - data->field_0x74) {
                 case 0:
-                    data->scales[3] = float_4_8041fb7c;
+                    data->scales[3] = 4.0f;
                     data->alphas[3] = 0xFF;
                     break;
                 case 1:
-                    data->scales[3] = float_8_8041fb80;
+                    data->scales[3] = 8.0f;
                     data->alphas[3] = 0xFF;
                     break;
                 default:
-                    data->scales[3] = float_0_8041fb40;
+                    data->scales[3] = 0.0f;
                     data->alphas[3] = 0;
                     break;
             }
             t = anime_data_2[data->field_0x74].field_0;
-            s = float_0p01_8041fb88 * (f32)t;
+            s = 0.01f * (f32)t;
             a = anime_data_2[data->field_0x74].field_2;
             data->alphas[0] = 0;
-            data->scales[0] = float_0_8041fb40;
+            data->scales[0] = 0.0f;
             data->alphas[1] = a;
             data->alphas[2] = 0;
             data->scales[1] = s;
-            data->scales[2] = float_0_8041fb40;
+            data->scales[2] = 0.0f;
             data->field_0x74++;
             if (data->field_0x74 >= 30) {
                 data->field_0x74 = 0;
@@ -363,15 +341,15 @@ void effReleaseMain(EffectEntry* effect) {
         case 5:
 #endif
         default:
-            data->scales[0] = float_0_8041fb40;
-            data->scales[1] = float_0_8041fb40;
-            data->scales[2] = float_0_8041fb40;
+            data->scales[0] = 0.0f;
+            data->scales[1] = 0.0f;
+            data->scales[2] = 0.0f;
             data->alphas[0] = 0;
             data->alphas[1] = 0;
             data->alphas[2] = 0;
-            data->scales[3] = float_0_8041fb40;
+            data->scales[3] = 0.0f;
             data->alphas[3] = 0;
-            data->scales[3] = float_0_8041fb40;
+            data->scales[3] = 0.0f;
             data->field_0x74++;
             break;
     }
@@ -383,8 +361,8 @@ void effReleaseMain(EffectEntry* effect) {
         if (data->alphas[i] < 0) {
             data->alphas[i] = 0;
         }
-        if (data->scales[i] < float_0_8041fb40) {
-            data->scales[i] = float_0_8041fb40;
+        if (data->scales[i] < 0.0f) {
+            data->scales[i] = 0.0f;
         }
     }
 
@@ -444,7 +422,7 @@ void effReleaseDisp(CameraId camId, void* param) {
     type = data->field_0x4;
 
     PSMTXTrans(trans, data->x, data->y, data->z);
-    PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fb3c);
+    PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
     PSMTXScale(scale, data->field_0x3C, data->field_0x3C, data->field_0x3C);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(trans, scale, mtx);
@@ -481,7 +459,7 @@ void effReleaseDisp(CameraId camId, void* param) {
         if (type == 1 && i == 2) {
             continue;
         }
-        if (float_0_8041fb40 == data->scales[i]) {
+        if (0.0f == data->scales[i]) {
             continue;
         }
         if (data->alphas[i] == 0) {
@@ -507,7 +485,7 @@ void effReleaseDisp(CameraId camId, void* param) {
             case 0:
                 effGetTexObjN64(0x44, &texObj);
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
-                PSMTXScale(scale, float_0p03125_8041fb44, float_0p03125_8041fb44, float_0_8041fb40);
+                PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 #ifdef MUST_MATCH
                 effSetVtxDescN64((effVtxArray*)(vtxBase + 0x130));
@@ -525,29 +503,29 @@ void effReleaseDisp(CameraId camId, void* param) {
 #else
                 effSetVtxDescN64((effVtxArray*)size16x16_tex256x32_vtx);
 #endif
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_0_8041fb40, float_0_8041fb40);
+                PSMTXScale(scale, 0.00390625f, 0.00390625f, 0.0f);
+                PSMTXTrans(trans, 0.0f, 0.0f, 0.0f);
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
                 tri2(0x1C, 0x1D, 0x1E, 0x1C, 0x1C, 0x1E, 0x1F, 0x1C);
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_32_8041fb4c, float_0_8041fb40);
+                PSMTXScale(scale, 0.00390625f, 0.00390625f, 0.0f);
+                PSMTXTrans(trans, 0.0f, 32.0f, 0.0f);
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
                 tri2(4, 5, 6, 4, 4, 6, 7, 4);
                 tri2(0x18, 0x19, 0x1A, 0x18, 0x18, 0x1A, 0x1B, 0x18);
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_64_8041fb50, float_0_8041fb40);
+                PSMTXScale(scale, 0.00390625f, 0.00390625f, 0.0f);
+                PSMTXTrans(trans, 0.0f, 64.0f, 0.0f);
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
                 tri2(8, 9, 10, 8, 8, 10, 11, 8);
                 tri2(0x14, 0x15, 0x16, 0x14, 0x14, 0x16, 0x17, 0x14);
-                PSMTXScale(scale, float_0p0039062_8041fb48, float_0p0039062_8041fb48, float_0_8041fb40);
-                PSMTXTrans(trans, float_0_8041fb40, float_96_8041fb54, float_0_8041fb40);
+                PSMTXScale(scale, 0.00390625f, 0.00390625f, 0.0f);
+                PSMTXTrans(trans, 0.0f, 96.0f, 0.0f);
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
                 GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
@@ -557,7 +535,7 @@ void effReleaseDisp(CameraId camId, void* param) {
             case 2:
                 effGetTexObjN64(0x46, &texObj);
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
-                PSMTXScale(scale, float_0p015625_8041fb58, float_0p015625_8041fb58, float_0_8041fb40);
+                PSMTXScale(scale, 0.015625f, 0.015625f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 #ifdef MUST_MATCH
                 effSetVtxDescN64((effVtxArray*)(vtxBase + 0x328));
@@ -570,7 +548,7 @@ void effReleaseDisp(CameraId camId, void* param) {
             case 3:
                 effGetTexObjN64(0x47, &texObj);
                 GXLoadTexObj(&texObj, GX_TEXMAP0);
-                PSMTXScale(scale, float_0p015625_8041fb58, float_0p03125_8041fb44, float_0_8041fb40);
+                PSMTXScale(scale, 0.015625f, 0.03125f, 0.0f);
                 GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 #ifdef MUST_MATCH
                 effSetVtxDescN64((effVtxArray*)(vtxBase + 0x360));
@@ -605,7 +583,7 @@ void effReleaseDisp(CameraId camId, void* param) {
             GXColor color3;
 #endif
             GXGetProjectionv(projv);
-            C_MTXOrtho(ortho, float_0_8041fb40, float_480_8041fb5c, float_0_8041fb40, float_608_8041fb60, float_0_8041fb40, float_1_8041fb64);
+            C_MTXOrtho(ortho, 0.0f, 480.f, 0.0f, 608.0f, 0.0f, 1.0f);
             GXSetProjection(ortho, GX_ORTHOGRAPHIC);
             GXSetNumChans(1);
             GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
@@ -636,3 +614,6 @@ void effReleaseDisp(CameraId camId, void* param) {
         }
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041fb38 = 0xD0D0D000;

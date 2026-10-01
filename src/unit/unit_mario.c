@@ -16,8 +16,7 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
-extern s32 evt_btl_camera_set_homing_unit_audience[];
-extern s32 btlevtcmd_AudienceAppeal[];
+#include "battle/battle_attack_audience.h"
 static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
@@ -40,8 +39,6 @@ typedef struct TevCallbackParam {
 
 static void callback(TevCallbackParam* param);
 
-extern s32 _attack_aud[];
-extern s32 _get_attack_aud_no[];
 extern s32 btldefaultevt_avoid_counter_event[];
 extern s32 subset_attack_ready_jump_event[];
 s32 mario_ride_btl_entry_event[120];
