@@ -3237,6 +3237,7 @@ had Flash ahead on near-misses). Files go to whichever wave claims them first in
   size). battle_item_data's two constants stay mutable globals: making them `const` loses `_cam_rot`.
 - **Lesson:** the launcher's "wave 50 drained" gate counted workspaces on the tower, so the cleanup stalled wave 51
   for three hours; it now gates on the slot count alone.
+
 ## Grind 46: eff_break and countdown retries (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
 
 No unit linked in this stretch.
