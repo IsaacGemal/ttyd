@@ -611,11 +611,8 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     return result;
 }
 
-// One instruction pair is scheduled in the other order: the original loads `lwz r6,0x74(r30)`
-// (weapon->special) before `lbz r10,0x11(r1)` (p1), while this build loads p1 first. The `s32 rate`
-// plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8 rate makes the
+// The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8 rate makes the
 // GALE_FORCE test `extsb. r0,r8`). The jump-table reloc name differs; objdiff ignores it.
-// NONMATCHING (97.59%): only the two call-setup loads above are swapped.
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
     s32 work = 0;
@@ -661,7 +658,10 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
                 break;
             }
 #ifdef MUST_MATCH
-            if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, (s8)rate, levelDiff, p1, p2)) {
+            /* MUST_MATCH: the (no-op) 64-bit mask on the u32 flags swaps the two call-setup loads the way the original
+               has them (found by the permuter); no cast or plain form does. */
+            if (BattleSetStatusDamage(&work, unit2, part, weapon->special & 0xFFFFFFFFFFFFFFFFu, i, (s8)rate, levelDiff, p1,
+                                      p2)) {
 #else
             if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, rate, levelDiff, p1, p2)) {
 #endif
