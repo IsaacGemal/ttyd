@@ -3257,3 +3257,7 @@ Linked `eff_fall_leaf_n64`, `eff_akari_charge_n64`, `eff_small_star_n64`, `eff_t
 - **Not needed:** the 4-byte zero words that dtk shows at the end of `.sdata2`/`.rodata` (`gap_09_..._sdata2`) are alignment between units; the linked dol is identical without defining them (they did not link `eff_akari_charge_n64` when defined, because named objects are emitted before the pooled literals).
 - Not linked: `eff_cool_leaf_n64` (data and code 100% after `pool_data` and `(u8*)tbl + 0xA`; the compiler pools its own `4503601774854144.0` after the string where the target has it before), `eff_pturn_n64` (the pool needs 360 before 4.0 in `data->field_0x20 = (type == 0 || type == 1) ? 4.0f * cos(f31 / 360.f) : 0.0f`; an `if`/`else` with a temp fixes the pool but gives effPturnMain 93.8%, a local `d = 360.f` leaves the pool as it was).
 - `ci.py` needs `--allow-pragma` for the new `#pragma section ".sdata" ".sbss2"` in the three units (the idiom of AGENT_BRIEF, each with its why-comment).
+
+## Grind 49: party_kuribo links (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`party/party_kuribo`: `tools/dol_gen.py --append` for its one event script, then `finish_unit` (sdata2 pool and string came out right); no hand edits.
