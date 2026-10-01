@@ -272,7 +272,10 @@ void object_entry(void) {
     }
 }
 
-// NONMATCHING (98.93%): 1 missing, plus register differences.
+// NONMATCHING (98.93%): the instruction sequence is identical; only the callee-saved
+// allocation differs. The target uses found=r28, genki=r29, offsets-byte-offset=r30,
+// mario/parts=r31; MWCC 2.6 emits found=r28, mario/parts=r29, genki=r30, offset=r31.
+// No source shape (declaration order, scoping, types, pragmas, loop/array form) changes it.
 void weapon_entry(void) {
     GenkiWork* genki = get_ptr();
     s32 offsets[10];
@@ -315,28 +318,24 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 static void disp_2D(CameraId camera, void* param) {
 }
 
-// NONMATCHING (97.00%): same instructions; only register numbers or operands differ.
+// The target's `offset`/`woffset` are MWCC's strength-reduced induction variables for
+// `&genki->stars[i]`/`&genki->weapon[i]`; no explicit offset locals.
 USER_FUNC(end_genki) {
-    GenkiWork* genki = get_ptr();
-    s32 i;
-    s32 j;
     GenkiWeapon* weapon;
-    s32 woffset;
-    s32 offset;
+    s32 i;
+    GenkiWork* genki = get_ptr();
     GenkiStar* star;
+    s32 j;
 
-
-    offset = 0;
-    for (i = 0; i < 7; i++, offset += 0x64) {
-        star = (GenkiStar*)((u8*)genki + offset + 0x510);
+    for (i = 0; i < 7; i++) {
+        star = &genki->stars[i];
         if (star->field_60 != NULL) {
             effDelete(*(EffectEntry**)((u8*)star->field_60->userdata + 0x34));
             effDelete(star->field_60);
         }
     }
-    woffset = 0;
-    for (i = 0; i < 7; i++, woffset += 0x54) {
-        weapon = (GenkiWeapon*)((u8*)genki + woffset + 0x10C);
+    for (i = 0; i < 7; i++) {
+        weapon = &genki->weapon[i];
         if (weapon->field_44 != NULL) {
             effDelete(*(EffectEntry**)((u8*)weapon->field_44->userdata + 0x34));
             effDelete(weapon->field_44);
@@ -708,7 +707,13 @@ void main_weapon(s32 idx) {
     }
 }
 
-// NONMATCHING (95.84%): 2 instructions differ, 3 missing, 10 extra, plus register differences.
+// The int->float magic double is an anonymous `@693@` pool literal instead of the named
+// `double_to_int_80300468` (file-wide incomplete-.rodata-pool issue, see main_weapon), and 8
+// instructions of the `effStardustEntry` argument setup are scheduled differently (this MWCC groups
+// the three `li` constants where the original interleaves them with the float loads). Keeping
+// `float_15 + y` in the `fifteen` variable fixed the compare's f1/f2 assignment; the if/else that
+// builds `limit` fixed the case-1 integer register allocation.
+// NONMATCHING (96.96%): the two issues above.
 void main_object(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiObject* obj = (GenkiObject*)((u8*)genki + 0x358 + idx * 0x2C);
@@ -728,9 +733,11 @@ void main_object(s32 idx) {
         obj->field_0 = 2;
         obj->field_4 = 0;
         {
-            s32 limit = 0x32;
+            s32 limit;
             if (genki->field_C == 0) {
                 limit = 0x19;
+            } else {
+                limit = 0x32;
             }
             if (genki->field_60 < limit) {
                 obj->field_8 = genki->field_5C[genki->field_60];
@@ -786,10 +793,14 @@ void main_object(s32 idx) {
         }
         {
             BtlUnit_GetPos(mario, &x, &y, &z);
-            if (obj->field_10 <= float_15_80421de4 + y) {
-                obj->field_0 = 3;
-                effStardustEntry(5, 0xA, 0x3C, obj->field_C, float_15_80421de4 + y, obj->field_14,
-                                 float_30_80421d80, float_30_80421d80);
+            {
+                f32 fifteen = float_15_80421de4;
+                if (obj->field_10 <= fifteen + y) {
+                    f32 thirty = float_30_80421d80;
+                    obj->field_0 = 3;
+                    effStardustEntry(5, 0xA, 0x3C, obj->field_C, fifteen + y, obj->field_14,
+                                     thirty, thirty);
+                }
             }
         }
         obj->field_4++;
@@ -803,7 +814,11 @@ void main_object(s32 idx) {
     }
 }
 
-// NONMATCHING (93.61%): 2 instructions differ, 5 missing, 14 extra, plus register differences.
+// Matches: the original schedules each effRecoveryEntry's argument setup the way mwcc does for
+// known constants (x and the count are hoisted above the previous call's result store). It only
+// does that when it can treat the values as literals, so the MUST_MATCH branch passes the two
+// values inline (identical to float_0_80421d84 / float_neg1000_80421d88); the natural extern
+// form is under #else.
 s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     GenkiWork* genki = get_ptr();
     s32 i;
@@ -836,9 +851,15 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
         } else {
             genki->field_5C = (s32*)BattleAlloc(0xC8);
         }
+#ifdef MUST_MATCH
+        genki->field_34 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
+        genki->field_38 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
+        genki->field_3C = effRecoveryEntry(3, 0, 0.0f, -1000.0f, 0.0f);
+#else
         genki->field_34 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
         genki->field_38 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
         genki->field_3C = effRecoveryEntry(3, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
+#endif
         for (i = 0; i < 7; i++) {
             genki->weapon[i].field_44 = effStarStoneEntry(i, float_0_80421d84, float_neg1000_80421d88,
                                                           float_0_80421d84, float_1_80421d74);

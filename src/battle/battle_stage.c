@@ -378,9 +378,10 @@ static void screen_capture(CameraId camId, void* param) {
 	screen_wp->field_0x4 = 1;
 }
 
-// NONMATCHING (90.16%): the float locals must stay (otherwise MWCC reloads
-// every store), and declaration order fixes f2=one/f1=zero/f0=negOne. Only the
-// scheduling of the `addi r4,0x180` GSW setup and `lfs`/`lwz` around it differs.
+// The named float constants are declared extern but never defined in this unit
+// (their data is the original's .sdata2 pool), and going through the names makes
+// MWCC reload/hoist them in a different order. Writing the values as literals lets
+// it pool them as the original does and matches the schedule byte-for-byte.
 s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	u32 size;
 
@@ -388,21 +389,15 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	screen_wp = _mapAlloc(0x2C);
 	screen_wp->field_0x0 = _mapAlloc(size);
 	{
-		f32 negOne;
-		f32 zero;
-		f32 one;
-		one = float_1_8041c7f4;
-		zero = float_0_8041c7f0;
-		negOne = float_neg1_8041c818;
 		screen_wp->field_0x4 = 0;
-		screen_wp->field_0xC = one;
-		screen_wp->field_0x8 = one;
-		screen_wp->field_0x14 = zero;
-		screen_wp->field_0x10 = zero;
-		screen_wp->field_0x1C = zero;
-		screen_wp->field_0x18 = zero;
+		screen_wp->field_0xC = 1.0f;
+		screen_wp->field_0x8 = 1.0f;
+		screen_wp->field_0x14 = 0.0f;
+		screen_wp->field_0x10 = 0.0f;
+		screen_wp->field_0x1C = 0.0f;
+		screen_wp->field_0x18 = 0.0f;
 		screen_wp->field_0x20 = 0;
-		screen_wp->field_0x28 = negOne;
+		screen_wp->field_0x28 = -1.0f;
 	}
 
 	if (evtGetValue(event, GSW(0)) == 0xA3) {
@@ -424,11 +419,16 @@ typedef struct ScreenTevParam {
 } ScreenTevParam;
 
 // In the texture-generation loop the original keeps i/4 (r31) and i%4 (r30) live
-// and rematerialises (i/4)*0x100 (r4) / (i%4)*8 (r3) at each use; ours keeps the
-// two scaled terms live (r30/r31) instead, which shifts the loop's whole register
-// allocation. The ratio in the min-clamp also lands in f0 where the original uses
-// f1. Everything else matches; the code is functionally identical.
-// NONMATCHING (97.05%): register allocation only.
+// across the rand() calls and recomputes (i/4)*0x100 (r4/r25) and (i%4)*8 (r3/r26)
+// in each inner loop; the scaled terms otherwise get CSE'd into callee-saved
+// registers (r30/r31) and the whole generation loop's register assignment rotates
+// (param lands in r25 instead of r27, k/count in r26/r27 instead of r30/r31). The
+// second loop's shifts defeat that CSE (see the MUST_MATCH block). With
+// opt_propagation off the base/col add into the byte index as the original does
+// instead of folding into a buf+col pointer. The ratio in the min-clamp still lands
+// in f0 where the original uses f1; the code is otherwise identical.
+// NONMATCHING (97.78%): integer and float register allocation only.
+#pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
 void tou_gamen_screen_tev(void* param) {
 	GXTexObj texObj;
 	Mtx mtx;
@@ -441,8 +441,8 @@ void tou_gamen_screen_tev(void* param) {
 	}
 
 	if (screen_wp->field_0x24 != 0) {
-		u8* buf = (u8*)screen_wp->field_0x0;
 		s32 i;
+		u8* buf = (u8*)screen_wp->field_0x0;
 		s32 j;
 		s32 k;
 
@@ -460,12 +460,19 @@ void tou_gamen_screen_tev(void* param) {
 					s32 len = rand() % 4 + 2;
 					s32 start = rand() % (0x41 - len);
 					u8 val = rand() % 0x100;
-					s32 m;
-					for (m = start; m < start + len; m++) {
+					for (j = start; j < start + len; j++) {
+#ifdef MUST_MATCH
+						// MUST_MATCH: shifts, not the multiplies below. Using different operations in the two
+						// loops stops MWCC CSE-ing the scaled terms and keeping them in the callee-saved
+						// registers the original uses for i/4 and i%4 (see the NONMATCHING note).
+						s32 idx = (i / 4) << 8;
+						s32 col = (i % 4) << 3;
+#else
 						s32 idx = (i / 4) * 0x100;
 						s32 col = (i % 4) * 8;
-						idx += (m / 8) * 0x20;
-						idx += (m % 8);
+#endif
+						idx += (j / 8) * 0x20;
+						idx += (j % 8);
 						buf[idx + col] = val;
 					}
 				}
@@ -786,38 +793,25 @@ void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s
 }
 #pragma dont_inline reset
 
-// NONMATCHING (98.43%): only the second loop preamble differs: original emits
-// `li r0,7; li r31,0; li r3,0; mtctr r0`, ours `li r31,0; li r0,7; mr r3,r31`
-// (offset=0 reuses i's zero).
 s32 BattleStageSysLightEntry(const char* name) {
-	s32 offset;
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
-	s32 count = 7;
 
-	i = 0;
-	offset = 0;
-	for (; i <= 6; i++) {
-		u8* p = (u8*)stage + offset;
-		BattleStageLight* light = (BattleStageLight*)(p + 4);
+	for (i = 0; i <= 6; i++) {
+		BattleStageLight* light = &stage->lights[i];
 		if (light->flags & 1) {
 			strcmp(light->name, name);
 		}
-		offset += 0xe8;
 	}
 
 	i = 0;
-	offset = 0;
-	for (; count > 0; count--) {
-		u8* p = (u8*)stage + offset;
-		BattleStageLight* light = (BattleStageLight*)(p + 4);
+	for (; i < 7; i++) {
+		BattleStageLight* light = &stage->lights[i];
 		if (!(light->flags & 1)) {
 			light->flags = 1;
 			strcpy(light->name, name);
 			break;
 		}
-		i++;
-		offset += 0xe8;
 	}
 
 	return i;

@@ -163,7 +163,11 @@ void btlDispTexPlaneInit(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (98.62%): `switch` fixed the branch layout; only register-allocation diffs remain (r12 vs r5 GX FIFO base).
+// Writing the quad through a local `volatile PPCWGPipe*` puts the GX FIFO base in r12 as the target does (and
+// `ny` keeps -y in f2); 34 instructions still differ only in which caller-saved register holds each colour byte
+// (target: r3/r6/r7, r4/r5/r10/r11, r6/r7/r8/r9, r0/r3/r4/r5), plus three 1.0f pool entries the target names
+// float_1_8041bf64. The `switch` keeps the target's `beq then; b else` layout.
+// NONMATCHING (99.22%): only GX colour-byte temp registers differ; opcode sequence is identical.
 void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3) {
 	GXTexObj texobj;
 	f32 x, y;
@@ -210,7 +214,53 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 	x = 0.5f * (f32)GXGetTexObjWidth(&texobj);
 	y = 0.5f * (f32)GXGetTexObjHeight(&texobj);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+#ifdef MUST_MATCH
+	/* MUST_MATCH: writing through this local pointer reproduces the target's r12 GX FIFO base. */
+	{
+		volatile PPCWGPipe* fifo = &GXWGFifo;
+		f32 nx = -x, ny = -y;
 
+		fifo->f32 = nx;
+		fifo->f32 = y;
+		fifo->f32 = 0.0f;
+		fifo->u8 = color0.r;
+		fifo->u8 = color0.g;
+		fifo->u8 = color0.b;
+		fifo->u8 = color0.a;
+		fifo->f32 = 0.0f;
+		fifo->f32 = 0.0f;
+
+		fifo->f32 = x;
+		fifo->f32 = y;
+		fifo->f32 = 0.0f;
+		fifo->u8 = color1.r;
+		fifo->u8 = color1.g;
+		fifo->u8 = color1.b;
+		fifo->u8 = color1.a;
+		fifo->f32 = 1.0f;
+		fifo->f32 = 0.0f;
+
+		fifo->f32 = x;
+		fifo->f32 = ny;
+		fifo->f32 = 0.0f;
+		fifo->u8 = color2.r;
+		fifo->u8 = color2.g;
+		fifo->u8 = color2.b;
+		fifo->u8 = color2.a;
+		fifo->f32 = 1.0f;
+		fifo->f32 = 1.0f;
+
+		fifo->f32 = nx;
+		fifo->f32 = ny;
+		fifo->f32 = 0.0f;
+		fifo->u8 = color3.r;
+		fifo->u8 = color3.g;
+		fifo->u8 = color3.b;
+		fifo->u8 = color3.a;
+		fifo->f32 = 0.0f;
+		fifo->f32 = 1.0f;
+	}
+#else
 	GXPosition3f32(-x, y, 0.0f);
 	GXColor4u8(color0.r, color0.g, color0.b, color0.a);
 	GXTexCoord2f32(0.0f, 0.0f);
@@ -226,6 +276,7 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 	GXPosition3f32(-x, -y, 0.0f);
 	GXColor4u8(color3.r, color3.g, color3.b, color3.a);
 	GXTexCoord2f32(0.0f, 1.0f);
+#endif
 }
 
 void btlDispTexPlane(u32 id, GXColor color, f32 tX, f32 tY, f32 tZ, f32 sX, f32 sY) {
@@ -758,19 +809,19 @@ void btlUnitStolenItemDisp(CameraId cameraId, BattleUnit* unit) {
 	iconDispGx(&v, 0, itemDataTable[itemId].icon_id, float_1_8041bf64);
 }
 
-// NONMATCHING (96.86%): one branch-layout instruction (target `blt body; b end`, ours `bge end`).
 void btlUnitItemDisp2(CameraId cameraId, BattleUnit* unit) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 kind = unit->currentKind;
 
-	if ((kind >= 1 && kind < 0xd8) || (kind >= 0xde && kind < 0xe0) || (kind >= 0xe0 && kind < 0xe7)) {
-		if (wp->flags & 0x20000) {
-			btlUnitItemDisp(cameraId, unit);
-		} else {
-			wp->flags |= 0x20000;
-			btlUnitItemDisp(cameraId, unit);
-			wp->flags &= ~0x20000;
-		}
+	if (!((kind >= 1 && kind < 0xd8) || (kind >= 0xde && kind < 0xe0) || (kind >= 0xe0 && kind < 0xe7))) {
+		return;
+	}
+	if (wp->flags & 0x20000) {
+		btlUnitItemDisp(cameraId, unit);
+	} else {
+		wp->flags |= 0x20000;
+		btlUnitItemDisp(cameraId, unit);
+		wp->flags &= ~0x20000;
 	}
 }
 

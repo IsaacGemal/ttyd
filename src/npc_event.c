@@ -171,7 +171,8 @@ USER_FUNC(_2d_dead_jump) {
     }
 }
 
-// NONMATCHING (99.09%): offset temp allocated to f1 instead of f0 (f0/f1 constant swap); rest identical.
+// The `t` temp below only exists to steer MWCC's float-register colouring: without it the branch offset
+// lands in f1 and the 20.0f literal in f0, the reverse of the original. The natural form is under #else.
 USER_FUNC(_2d_get_dead_jump_offset) {
     s32* args = event->args;
     NpcEntry* npc;
@@ -179,6 +180,9 @@ USER_FUNC(_2d_get_dead_jump_offset) {
     s32 arg1;
     s32 name;
     f32 offset;
+#ifdef MUST_MATCH
+    f32 t;
+#endif
 
     name = evtGetValue(event, args[0]);
     npc = evtNpcNameToPtr(event, (const char*)name);
@@ -191,7 +195,15 @@ USER_FUNC(_2d_get_dead_jump_offset) {
     } else {
         offset = 1.0f;
     }
+#ifdef MUST_MATCH
+    // MUST_MATCH: splitting the multiply into `t = 20.0f; t = t * offset;` colours offset to f0 and 20.0f to f1
+    // as the original does; the single expression `20.0f * offset` colours them the other way round.
+    t = 20.0f;
+    t = t * offset;
+    evtSetValue(event, arg1, (s32)t);
+#else
     evtSetValue(event, arg1, (s32)(20.0f * offset));
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -485,8 +497,11 @@ USER_FUNC(limitSpd) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.90%): instruction sequence identical; only the shared string-pool/rodata base offsets differ
-// (the zero-Vec constant loads and string literals resolve to different offsets in the original link).
+// NONMATCHING (99.90%): all instructions are byte-identical; the only diffs are symbol/addend relocations
+// for the pooled `.rodata` zero-Vec/string block and the two `.sdata2` constants. This function's own pool
+// entries have exactly the target's order and spacing, but the whole unit's rodata is 0x1D0 vs the target's
+// 0x748 (sdata2 shift 0x4C), so every reference resolves low (vec3s 0x528, strings 0x578). The missing bytes
+// are other functions' literals; not fixable from here.
 USER_FUNC(zakoEntryDokan) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     char mobName[32];
@@ -586,8 +601,11 @@ USER_FUNC(dokanCheck) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.88%): instruction sequence identical; only the shared string-pool/rodata base offsets differ
-// (the zero-Vec constant loads and string literals resolve to different offsets in the original link).
+// NONMATCHING (99.88%): instruction sequence identical; only the .rodata/.sdata pool offsets differ. The target
+// unit's .rodata is 0x748 bytes, ours is 0x1D0: the missing entries are the string literals referenced by this
+// TU's `.data` event-script tables (enemy_common_dead_event et al.), which are not in the source yet, so
+// zakoEntryFall's zero-Vec constants land 0x528 and its Japanese names 0x578 bytes earlier than the target.
+// Blocked on the unit's data, not on this function (same cause as dokanCheck/zakoEntryDokan).
 USER_FUNC(zakoEntryFall) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     char names[3][16];

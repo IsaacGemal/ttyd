@@ -412,12 +412,11 @@ int msg_compare(const void* a, const void* b) {
 	return result < 0 ? -1 : 0;
 }
 
-// NONMATCHING (96.79%): 3 instructions differ.
 const char* msgSearch(const char* tag) { //1:1
 	MessageEntry* entry;
 	MsgLookupEntry* lookup;
 	smartEntry* smart;
-	u32 i, max, j, index;
+	s32 i, max, j, index;
 	s32 result;
 
 	for (i = 0; i < 2; i++) { //check both entries
@@ -428,8 +427,8 @@ const char* msgSearch(const char* tag) { //1:1
 			j = 0;
 			max = entry->count;
 			while (max >= j) {
-				index = (u32)((s32)(j + max) / 2); //tag, message
-				if (index >= entry->count) {
+				index = (j + max) / 2; //tag, message
+				if (index >= (s32)entry->count) {
 					break;
 				}
 				result = strcmp(tag, (const char*)((u32)entry->address + lookup[index].startaddr));
@@ -725,9 +724,12 @@ void selectWindow_Main(WindowEntry* window) {
 	dispEntry(8, 400.0f - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
 }
 
-// NONMATCHING (99.28%): full body written; all control flow matches. r29/r30 are swapped (the
-// original keeps window->userdata in r30 and the MessageData pointer in r29), plus one and. operand
-// order and the jumptable/400.0f symbol names.
+// All control flow and most operands match. Still differs: the original keeps window->userdata in r30
+// and the MessageData pointer in r29 (MWCC 2.6 here swaps them; declaration order, casts, aliases,
+// inline accessors and pragmas were tried), two commutative `and.` operand orders, and the switch
+// jump table is emitted as anonymous @826 instead of jumptable_8030DBA0 (its .data offset differs
+// because msgWindowOpen_SE_Data is extern in this unit rather than defined here).
+// NONMATCHING (99.37%): see above.
 void msgWindow_Main(WindowEntry* window) {
 	smartEntry* smart = window->userdata;
 	MessageData* data = smart->address;
@@ -827,7 +829,7 @@ void msgWindow_Main(WindowEntry* window) {
 		break;
 	case 3: {
 		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		if (keyGetButtonTrg(0) & (mask | 0x200)) {
+		if ((mask | 0x200) & keyGetButtonTrg(0)) {
 			*(u16*)window->field_0x0 = 1;
 			*(u16*)((u8*)data + 0xa) = 2;
 			if (keyGetButtonTrg(0) & 0x200) {
@@ -886,7 +888,7 @@ void msgWindow_Main(WindowEntry* window) {
 			break;
 		}
 		data->field_0x28 = value;
-		if (data->field_0x7840 - 1 == *(s32*)((u8*)data + 0x783C)) {
+		if (*(s32*)((u8*)data + 0x783C) == data->field_0x7840 - 1) {
 			*(u16*)window->field_0x0 = 3;
 			data->field_0x4 &= ~0x40;
 		}
@@ -897,13 +899,15 @@ void msgWindow_Main(WindowEntry* window) {
 	}
 	case 11: {
 		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		if (keyGetButtonTrg(0) & mask) {
+		if (mask & keyGetButtonTrg(0)) {
 			*(u16*)window->field_0x0 = 0xa;
 			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-			data = window->userdata->address;
-			(*(s32*)((u8*)data + 0x783C))++;
-			if (*(s32*)((u8*)data + 0x783C) > data->field_0x7840 - 1) {
-				*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
+			{
+				MessageData* d = window->userdata->address;
+				(*(s32*)((u8*)d + 0x783C))++;
+				if (*(s32*)((u8*)d + 0x783C) > d->field_0x7840 - 1) {
+					*(s32*)((u8*)d + 0x783C) = d->field_0x7840 - 1;
+				}
 			}
 			psndSFXOn((const char*)0x20041);
 		}
@@ -935,10 +939,9 @@ void msgWindow_Main(WindowEntry* window) {
 	}
 	}
 
-	dispEntry(8, 400.0f - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
+	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
 }
 
-// NONMATCHING (98.23%): only the msgMain switch compare tree differs (original pivots on 2, this on 1).
 void msgWindow_Clear_Main(WindowEntry* window) {
 	MessageData* data = window->userdata->address;
 
@@ -985,6 +988,8 @@ void msgWindow_Clear_Main(WindowEntry* window) {
 				break;
 			case 2:
 				*(u16*)window->field_0x0 = 3;
+				break;
+			case 3:
 				break;
 			}
 		}

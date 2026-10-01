@@ -27,6 +27,7 @@ extern const f32 float_6p2832_8041e558;
 extern const f32 float_360_8041e55c;
 extern const f32 float_0p5_8041e538;
 extern const f32 float_0_8041e53c;
+extern u32 lbl_80398960[];
 
 // .sdata2
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -208,21 +209,37 @@ void envDisp(CameraId camId, void *param) {
     GXSetProjectionv(pm);
 }
 
-// NONMATCHING (99.93%): same instructions; only register numbers or operands differ.
-void envDisp2(CameraId camId, void *param) { //almost 1:1, needs extra addi
+void envDisp2(CameraId camId, void *param) {
     f32 vp[GX_VIEWPORT_SZ];
     f32 pm[GX_PROJECTION_SZ];
     EnvironmentWork* wp;
     EnvironmentGlareFilter* filter;
+#ifdef MUST_MATCH
+    u8* base = (u8*)lbl_80398960;
+#endif
 
     GXGetViewportv(vp);
     GXGetProjectionv(pm);
     wp = envGetWork();
-    filter = &wp->filter; //CodeWarrior is very good compiler, yesyes
+    filter = &wp->filter;
     if (wp->flags & 0x20000000) {
         switch (filter->type) {
             case 0:
                 break;
+#ifdef MUST_MATCH
+            case 1:
+                envGlare((EnvironmentGlare*)(base + 0x40));
+                break;
+            case 2:
+                envGlare((EnvironmentGlare*)(base + 0xdc));
+                break;
+            case 3:
+                envGlare((EnvironmentGlare*)(base + 0x138));
+                break;
+            case 4:
+                envGlare((EnvironmentGlare*)(base + 0x2f4));
+                break;
+#else
             case 1:
                 envGlare(&envGlare0);
                 break;
@@ -235,6 +252,7 @@ void envDisp2(CameraId camId, void *param) { //almost 1:1, needs extra addi
             case 4:
                 envGlare(&envGlare3);
                 break;
+#endif
         }
     }
     GXSetViewport(vp[0], vp[1], vp[2], vp[3], vp[4], vp[5]);
@@ -1269,12 +1287,15 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// opt_propagation off is required or MWCC rematerialises the polynomial coefficients into
+// `opt_propagation off` is required or MWCC rematerialises the polynomial coefficients into
 // every branch instead of hoisting them (same as evt_sub.c).
+// `opt_lifetimes off` keeps the two seed loads (0.03705/0.00761) inside the loop; with the
+// default lifetime pass they are hoisted into the preheader, keeping two extra FPRs live and
+// shifting the whole loop allocation by one register.
 #pragma opt_propagation off
-// NONMATCHING (94.30%): FPR allocator permutation, and the literal seeds hoist the accumulators out of the loop (target sinv=f20, cosv=f22, scale=f25,
-// sinC1=f21, cosC1=f23, one=f24, pi=f29; ours results f20/f21, scale f26, coeffs f22-f25),
-// which shifts the inline-sqrt block by one register. Frame and every opcode match.
+#pragma opt_lifetimes off
+// NONMATCHING (98.08%): only a permutation of the five loop FPRs remains (target sinv=f20,
+// sinC1=f21, cosv=f22, cosC1=f23, one=f24, pi=f29; ours sinv=f24, sinC1=f21, cosv=f23, cosC1=f22, one=f20, pi=f29); sqrtf .rodata base 0x20 vs 0x68.
 void envDisp_FF(void) {
     EnvironmentWork* wp = envGetWork();
     CameraEntry* cam;
@@ -1310,13 +1331,15 @@ void envDisp_FF(void) {
         GXBegin(GX_LINES, GX_VTXFMT0, 2000);
         for (i = 0; i < 1000; i++) {
             f32 angle = (TWO_PI * (f32)i) / 1000.0f;
-            f32 cosC1 = 0.4967f;
-            f32 one = 1.0f;
-            f32 pi = 3.1415927f;
-            f32 sinC1 = 0.16605f;
+            f32 cosC1;
+            f32 sinC1;
+            f32 one;
 
+            sinC1 = 0.16605f;
+            one = 1.0f;
             cosv = 0.03705f;
-            if (angle <= pi) {
+            cosC1 = 0.4967f;
+            if (angle <= 3.1415927f) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;
                     cosv = cosv * f0 - cosC1;
@@ -1330,7 +1353,7 @@ void envDisp_FF(void) {
                     cosv = -cosv;
                 }
             } else if (angle < 4.712389f) {
-                f0 = angle - pi;
+                f0 = angle - 3.1415927f;
                 f0 = f0 * f0;
                 cosv = cosv * f0 - cosC1;
                 cosv = cosv * f0 + one;
@@ -1342,9 +1365,8 @@ void envDisp_FF(void) {
                 cosv = cosv * f0 - cosC1;
                 cosv = cosv * f0 + one;
             }
-
             sinv = 0.00761f;
-            if (angle <= pi) {
+            if (angle <= 3.1415927f) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;
                     sinv = sinv * f0 - sinC1;
@@ -1359,7 +1381,7 @@ void envDisp_FF(void) {
                     sinv = sinv * f1;
                 }
             } else if (angle < 4.712389f) {
-                f1 = angle - pi;
+                f1 = angle - 3.1415927f;
                 f0 = f1 * f1;
                 sinv = sinv * f0 - sinC1;
                 sinv = sinv * f0 + one;
@@ -1374,7 +1396,6 @@ void envDisp_FF(void) {
                 sinv = sinv * f1;
                 sinv = -sinv;
             }
-
             rnd = (f32)(rand() % 10) / 100.0f;
 
             GXPosition3f32(sinv * scale, cosv * scale, 0.0f);
@@ -1387,7 +1408,8 @@ void envDisp_FF(void) {
 #pragma opt_propagation reset
 
 
-// NONMATCHING (92.73%): gp is kept in a different register (r9/r11) and the filter base in r11/r12; the rounding and clamp logic matches.
+// 100%: the type store must follow the clamps (stores the type only after the sign/clamp checks) and
+// the four s16 temps need the original's declaration order for the register allocation to line up.
 void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentGlareFilter* filter = &wp->filter;
@@ -1401,9 +1423,12 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
         wp->flags &= ~0x20000000;
     }
     else {
+#ifdef MUST_MATCH
+        s16 tx1, ty1, tx0, ty0; // declaration order controls the register allocation of the four temps
+#else
         s16 tx0, ty0, tx1, ty1;
+#endif
 
-        filter->type = type;
         tx0 = x0 - (x0 & 1);
         ty0 = y0 - (y0 & 1);
         tx1 = x1 + (x1 & 1);
@@ -1420,6 +1445,7 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
         if (ty1 > gp->efbHeight) {
             ty1 = gp->efbHeight;
         }
+        filter->type = type;
         filter->y0 = ty0;
         filter->x0 = tx0;
         filter->y1 = ty1;
@@ -1430,40 +1456,38 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
     }
 }
 
-//almost 1:1, needs some regalloc work and type changes
-// NONMATCHING (98.53%): 6 instructions differ, 7 missing, 19 extra, plus register differences.
+// NONMATCHING (99.39%): all instructions match; the remaining diffs are callee-saved register
+// colours in the TEV setup/inner loop (target r19-r31 vs ours) and the pooled u16->f32 double
+// (local @528 vs double_to_int_mask_802f93a8, which this unit does not define).
 void envGlare(EnvironmentGlare* glare) {
-    EnvironmentWork* var_r4 = envGetWork();
-    EnvironmentGlareFilter* temp_r30;
-    void* temp_r19;
-    u32 temp_r20;
-    u32 temp_r21;
-    u16 temp_r26;
-    u16 temp_r27;
-    EnvironmentGlare* var_r21;
-    EnvironmentGlare* var_r22_3;
-    s32 temp_r31;
-    s32 temp_r30_2;
-
-    s32 temp_r20_2;
-    s32 temp_r21_2;
-    s32 temp_r29;
-    s32 var_r22;
-    u32 var_r22_2;
-    s32 var_r23;
-    u32 var_r23_2;
-    s32 var_r28;
-    s32 var_r19_3;
-    u16 temp_r0;
+    GXTevStageID var_r23;
     u16 temp_r8;
-
-    u32 size;
+    u32 temp_r20;
+    GXTevKColorSel temp_r20_2;
     Mtx44 sp88;
+    EnvironmentGlareFilter* temp_r30;
+    EnvironmentWork* var_r4 = envGetWork();
+    s32 temp_r30_2;
+    GXTevKColorSel temp_r21_2;
+    GXTevStageID var_r22;
+    s32 temp_r29;
+    s32 var_r28;
+    EnvironmentGlare* var_r21;
+    u32 var_r23_2;
+    u16 temp_r27;
+    s32 temp_r31;
+    void* temp_r19;
+    u32 temp_r21;
+    u32 size;
+    u16 temp_r26;
+    EnvironmentGlare* var_r22_3;
     Mtx sp58;
     Mtx sp28;
+    u32 var_r22_2;
+    s32 var_r19_3;
     GXTexObj sp8;
-
     int i;
+    u16 temp_r0;
 
     frame_cnt += 1.0f;
     temp_r30 = &var_r4->filter;

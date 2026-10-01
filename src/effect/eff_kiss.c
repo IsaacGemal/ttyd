@@ -95,8 +95,9 @@ extern u32 unk_80423314;
 extern u32 unk_80423318;
 extern u32 unk_8042331c;
 
-// NONMATCHING (95.25%): the (type==4)?60:40 store is emitted with the opposite compare polarity,
-// and a few sin/cos results are scheduled into different float registers; values are identical.
+// NONMATCHING (99.84%): all instructions are in place; MWCC pools the float literals into its own
+// .sdata2 @NNN entries, so the sda21 displacement differs from the original's named float_* symbols.
+// Using the named globals instead breaks the schedule (they are writable, so the compiler reloads them).
 EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	EffectEntry* entry;
 	KissEffectWork* data;
@@ -122,13 +123,13 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	data->z = z;
 	data->scaleY = 1.0f;
 	data->scaleX = 1.0f;
-	data->life = (type == 4) ? 60 : 40;
+	data->life = (type != 4) ? 40 : 60;
 	data->frame = 0;
+	twoPi = 6.2831855f * angle;
 	data->alpha = 0xFF;
 	data->angle = angle;
 	data->rot = 0.0f;
 
-	twoPi = float_6p2832_80421438 * angle;
 	data++;
 	for (i = 1; i < entry->count; i++, data++) {
 		data->x = 0.0f;
@@ -162,15 +163,16 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 			data->rot = 360.0f * (f32)i / (f32)(entry->count - 1);
 			data->velX = 3.0f * (f32)sin(6.2831855f * data->rot / 360.0f);
 			data->velY = 3.0f * (f32)cos(6.2831855f * data->rot / 360.0f);
-			data->rot = data->rot * float_neg1_80421464;
+			data->rot = data->rot * -1.0f;
 			break;
 		}
 	}
 	return entry;
 }
 
-// NONMATCHING (97.43%): the frame++/type/angle/life load-store schedule and the callee-saved
-// register choice differ; every branch and call matches.
+// NONMATCHING (99.52%): every branch and call matches; left are the pooled .sdata2 relocation slots
+// (anonymous @NNN vs the original's named float_*/double_to_int_* globals) and the rotated f2/f3/f0
+// registers in the kuri/kura radius math. See REPORT.md.
 void effKissMain(EffectEntry* effect) {
 	KissEffectWork* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -178,7 +180,7 @@ void effKissMain(EffectEntry* effect) {
 	   dispCalcZ; a single local folds the copy away. */
 	Vec position;
 #endif
-	Vec disp = { 0.0f, 0.0f, 0.0f };
+	Vec disp = vec3_802fe780;
 	s32 type;
 	s32 i;
 	f32 angle;
@@ -190,9 +192,9 @@ void effKissMain(EffectEntry* effect) {
 	position = disp;
 #endif
 
-	data->frame++;
 	type = data->type;
 	angle = data->angle;
+	data->frame++;
 	data->life--;
 	if (type == 3) {
 		data->frame = data->frame % 12;
@@ -200,7 +202,7 @@ void effKissMain(EffectEntry* effect) {
 
 	if (data->life < 0) {
 		if (type == 4) {
-			EffectEntry* entry = effStardustN64Entry(1, data->x + data[1].x, 5.0f + data->y + data[1].y, data->z + data[1].z, 10.0f);
+			EffectEntry* entry = effStardustN64Entry(1, data->x + data[1].x, data->y + data[1].y + 5.0f, data->z + data[1].z, 10.0f);
 			effStardustN64SetScale(entry, 0.5f);
 		}
 		effDelete(effect);
@@ -244,8 +246,8 @@ void effKissMain(EffectEntry* effect) {
 		f32 base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 39) {
-				f32 t = base / 360.0f;
 				f32 radius = (f32)kura_kiss[data->frame * 3] * 0.03125f * 1.2f;
+				f32 t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
 				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] * 0.03125f;
@@ -255,12 +257,15 @@ void effKissMain(EffectEntry* effect) {
 		}
 		break;
 	}
-	case 4:
+	case 4: {
+		f32 s;
 		data->x += 0.2f;
-		data->y = 2.0f * fabsf((f32)sin(9.424778f * (f32)data->frame / 60.0f));
+		s = (f32)sin(9.424778f * (f32)data->frame / 60.0f);
+		data->y = 2.0f * fabsf(s);
 		data->rot = 12.0f * (f32)sin(9.424778f * (f32)data->frame / 60.0f);
 		data->frame++;
 		break;
+	}
 	case 5: {
 		f32 decay = 0.9f;
 		for (i = 1; i < effect->count; i++, data++) {
@@ -288,21 +293,27 @@ void effKissMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (95.65%): MWCC allocates a 0x20-smaller frame and keeps 11 callee-saved GPRs where
-// retail keeps 13 (r19-r31); the bulk of the remaining diff is callee-saved/stack-slot choice. All
-// control flow, GX/MTX calls and the vertex stream match.
+// NONMATCHING (96.45%): structure/control flow/GX/MTX/vertex stream match; frame 0x1e0 and matrices at
+// retail offsets. Remaining is register allocation only: cdata/cdata1/cdata2 in r25/r24/r23 (retail
+// r29/r26/r25), so pass/elem/i in r27/r26/r22 (retail r22/r24/r23); angleDeg/deg f31/f30 swapped.
 void effKissDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	KissEffectWork* data = effect->userdata;
 	CameraEntry* camera;
 	GXTexObj tex;
-	GXColor color;
 	Mtx mtxA;
-	Mtx rot;
 	Mtx scl;
+	Mtx rot;
 	Mtx view;
 	KissEffectWork* elem;
 	u8* cdata;
+	u8* cdata1;
+	u8* cdata2;
+	s32 pass;
+	s32 i;
+	s32 alpha;
+	s32 type;
+	s32 frameIdx;
 	f32 angle;
 	f32 angleDeg;
 	f32 negAngleDeg;
@@ -312,17 +323,12 @@ void effKissDisp(CameraId camId, void* param) {
 	f32 rectH;
 	f32 texU;
 	f32 texV;
-	s32 type;
-	s32 alpha;
-	s32 frameIdx;
-	s32 pass;
-	s32 i;
 
 	camera = camGetPtr(camId);
 	frameIdx = data->frame * 3;
+	alpha = data->alpha;
 	angle = data->angle;
 	type = data->type;
-	alpha = data->alpha;
 
 	PSMTXTrans(mtxA, data->x, data->y, data->z);
 	PSMTXScale(scl, data->scaleX, data->scaleY, data->scaleY);
@@ -351,6 +357,8 @@ void effKissDisp(CameraId camId, void* param) {
 	angleDeg = deg * angle;
 	negAngleDeg = deg * -angle;
 	cdata = (u8*)color_rotation_data + frameIdx;
+	cdata1 = cdata + 1;
+	cdata2 = cdata + 2;
 
 	for (pass = 0; pass < 2; pass++) {
 		elem = effect->userdata;
@@ -364,7 +372,7 @@ void effKissDisp(CameraId camId, void* param) {
 				effGetTexObj(0x14, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (pass == 0) {
-					color = *(GXColor*)&unk_80423310;
+					GXColor color = *(GXColor*)&unk_80423310;
 					color.a = alpha / 2;
 					GXSetChanMatColor(GX_COLOR0A0, color);
 					offset = 1.5f;
@@ -379,17 +387,19 @@ void effKissDisp(CameraId camId, void* param) {
 				break;
 			case 3:
 				if (pass == 0) {
+					GXColor color;
 					effGetTexObj(0x59, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
 					color = *(GXColor*)&unk_80423314;
 					color.r = cdata[0];
-					color.g = cdata[1];
-					color.b = cdata[2];
+					color.g = cdata1[0];
+					color.b = cdata2[0];
 					color.a = alpha;
 					GXSetChanMatColor(GX_COLOR0A0, color);
 					rectW = 32.0f;
 					rectH = 40.0f;
 				} else {
+					GXColor color;
 					effGetTexObj(0x58, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
 					color = *(GXColor*)&str_804213F0;
@@ -462,7 +472,7 @@ void effKissDisp(CameraId camId, void* param) {
 				effGetTexObj(0x42, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
-					color = *(GXColor*)&unk_80423318;
+					GXColor color = *(GXColor*)&unk_80423318;
 					color.a = alpha / 2;
 					GXSetChanMatColor(GX_COLOR0A0, color);
 					offset = 1.5f;
@@ -473,15 +483,17 @@ void effKissDisp(CameraId camId, void* param) {
 				break;
 			case 3:
 				if (i == 0) {
+					GXColor color;
 					effGetTexObj(0x5a, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
 					color = *(GXColor*)&unk_8042331c;
 					color.r = cdata[0];
-					color.g = cdata[1];
-					color.b = cdata[2];
+					color.g = cdata1[0];
+					color.b = cdata2[0];
 					color.a = alpha;
 					GXSetChanMatColor(GX_COLOR0A0, color);
 				} else {
+					GXColor color;
 					effGetTexObj(0x42, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
 					color = *(GXColor*)&str_804213F4;
@@ -518,9 +530,21 @@ void effKissDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (94.71%): register allocation of the four loop constants and the GXColor stack
-// slots differ; MWCC also CSEs some float_0/float_1/float_2 loads that retail reloads. All GX/MTX
-// calls and the emitted vertex stream match.
+#ifdef MUST_MATCH
+// MUST_MATCH: building the GXColor through an inline return puts the colour temp where retail keeps it.
+static inline GXColor effKissDisp2Color(u8 alpha) {
+	GXColor c = *(GXColor*)&dat_804213f8;
+	c.a = alpha;
+	return c;
+}
+#endif
+
+#pragma opt_common_subs off // MUST_MATCH: keep the .sdata2 vertex constants' individual loads
+
+// 100% matched. `#pragma opt_common_subs off` stops MWCC from CSE-ing the vertex .sdata2
+// constants (retail reloads each one before every FIFO store); the colour inline puts the by-value
+// GXColor temp in retail's slot; splitting the yaw angle into two statements lands the negate and
+// multiply in retail's f1/f0; declaring i before alpha and deg before eight fixes the GPR/FPR picks.
 void effKissDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	KissEffectWork* data = effect->userdata;
@@ -536,15 +560,18 @@ void effKissDisp2(CameraId camId, void* param) {
 	f32 eight;
 	f32 negfour;
 	f32 four;
-	s32 alpha;
+	f32 ang;
 	s32 i;
+	s32 alpha;
 
 	alpha = data->alpha;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
 	PSMTXScale(scale, data->scaleX, data->scaleY, data->scaleY);
 	cam3d = camGetPtr(CAMERA_3D);
-	PSMTXRotRad(rot, 'y', float_deg2rad_804213fc * -cam3d->viewYaw);
+	ang = -cam3d->viewYaw;
+	ang = float_deg2rad_804213fc * ang;
+	PSMTXRotRad(rot, 'y', ang);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, local);
 
@@ -566,19 +593,23 @@ void effKissDisp2(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	effGetTexObj(0x14, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
+#ifdef MUST_MATCH
+	color = effKissDisp2Color(alpha);
+#else
 	color = *(GXColor*)&dat_804213f8;
 	color.a = alpha;
+#endif
 	GXSetChanMatColor(GX_COLOR0A0, color);
 
-	deg = float_deg2rad_804213fc;
 	eight = float_8_80421400;
+	deg = float_deg2rad_804213fc;
 	negfour = -eight * float_0p5_80421408;
 	four = float_4_80421410;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(trans, data->x, data->y, data->z);
 		PSMTXScale(scale, data->scaleX, data->scaleY, float_1_80421404);
-		PSMTXRotRad(rot, 'z', data->rot * deg);
+		PSMTXRotRad(rot, 'z', deg * data->rot);
 		PSMTXConcat(trans, scale, trans);
 		PSMTXConcat(trans, rot, trans);
 		PSMTXConcat(local, trans, trans);

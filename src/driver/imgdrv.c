@@ -31,17 +31,19 @@ static void zFill(void);
 
 
 
-// NONMATCHING (95.28%): 2 instructions differ, 3 missing, 2 extra, plus register differences.
-static void zFill(void) { //almost 1:1
+static void zFill(void) { //1:1
 	CameraEntry* camera;
-	f32 x0, x1, y0, y1;
+	f32 y0, y1, x0, x1;
+	f32 sum, half;
 	f32 zpos;
 	GXTexObj obj;
 	Mtx mtx;
 
 	camera = camGetCurPtr();
-	y0 = (camera->near + camera->far) * 0.5f;
-	y0 = y0 * tanf((0.5f * ((6.2831855f * camera->fovY) / 360.0f)));
+	half = 0.5f;
+	sum = camera->near + camera->far;
+	y0 = sum * half;
+	y0 = y0 * (f32)tan(half * ((6.2831855f * camera->fovY) / 360.0f));
 	x1 = (y0 * camera->aspect);
 	y1 = -y0;
 	x0 = -x1;

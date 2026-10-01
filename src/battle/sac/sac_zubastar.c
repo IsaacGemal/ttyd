@@ -527,8 +527,6 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
 #pragma dont_inline reset
 
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
-// NONMATCHING (92.93%): one early lwz of vec3_802ff6b0 is scheduled before count is stored; the rest
-// of the function is identical.
 void zubastar_create_takaku(s32 count, Vec* points) {
     ZubaStarWork* work = GetZubaStarPtr();
     ZubaStarBomb* bomb;

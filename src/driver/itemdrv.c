@@ -262,8 +262,11 @@ void itemSetPosition(ItemEntry* item, f32 x, f32 y, f32 z) {
 
 // The zero check emits a compiler-generated local 0.0 constant (`@...`) with the operands
 // reversed (`fcmpu dirX, 0`) where the original loads float_0_8041af9c and compares
-// `fcmpu 0, dirX`; the push-out scratch floats also land in different registers.
-// NONMATCHING (98.07%): compiler 0.0 pooling and push-out float registers differ.
+// `fcmpu 0, dirX`. The reflect block's scratch floats are a 3-register rotation: the
+// original puts hitNZ/0.5/outX in f6/f4/f5, ours in f5/f6/f4 (the `half` local and writing
+// the product on the right are needed to reach this; the natural forms give a worse
+// allocation). The second angleABf's zero load is also hoisted one slot in both branches.
+// NONMATCHING (98.36%): anonymous 0.0 pool symbol, reflect-block FPR rotation, one hoisted load.
 HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f32 dirX, f32 dirZ) {
     f32 hitX;
     f32 hitY;
@@ -282,7 +285,11 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     *outX = item->position.x;
     *outZ = item->position.z;
 
-    if (!dirX && !dirZ) {
+#ifdef MUST_MATCH
+    if (0.0f == dirX && 0.0f == dirZ) {
+#else
+    if (dirX == 0.0f && dirZ == 0.0f) {
+#endif
         return NULL;
     }
 
@@ -293,9 +300,10 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
                          item->position.x, item->position.y + float_15_8041afb4, item->position.z,
                          sin, float_0_8041af9c, cos);
     if (hit != NULL) {
+        f32 half = float_0p5_8041afb8;
         dot = dirX * hitNX + dirZ * hitNZ;
-        nx = float_0p5_8041afb8 * (dirX - dot * hitNX);
-        nz = float_0p5_8041afb8 * (dirZ - dot * hitNZ);
+        nx = (dirX - dot * hitNX) * half;
+        nz = (dirZ - dot * hitNZ) * half;
         *outX = *outX + nx;
         *outZ = *outZ + nz;
         dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
@@ -310,9 +318,10 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
                              item->position.x, item->position.y + float_15_8041afb4, item->position.z,
                              sin, float_0_8041af9c, cos);
         if (hit != NULL) {
+            f32 half = float_0p5_8041afb8;
             dot = dirX * hitNX + dirZ * hitNZ;
-            nx = float_0p5_8041afb8 * (dirX - dot * hitNX);
-            nz = float_0p5_8041afb8 * (dirZ - dot * hitNZ);
+            nx = (dirX - dot * hitNX) * half;
+            nz = (dirZ - dot * hitNZ) * half;
             *outX = *outX + nx;
             *outZ = *outZ + nz;
             dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
@@ -470,8 +479,6 @@ ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     return result;
 }
 
-// NONMATCHING (98.25%): the itemId range check emits `blt` to the else block where the
-// original emits `bge` to the then block plus an extra `b`; logic is identical, 2 instr differ.
 void itemDelete(char* name) {
     ItemWork* wp = itemGetWork();
     ItemEntry* entry = wp->entries;
@@ -480,11 +487,19 @@ void itemDelete(char* name) {
     for (i = 0; i < wp->count; i++, entry++) {
         if (!strcmp(entry->name, name)) {
             itemCheckBadge(entry);
-            if (entry->itemId < 0x79 && entry->itemId >= 0x72) {
-                effSoftDelete(entry->effect);
-            }
-            else {
-                iconDelete(entry->name);
+            switch (entry->itemId) {
+                case 0x72:
+                case 0x73:
+                case 0x74:
+                case 0x75:
+                case 0x76:
+                case 0x77:
+                case 0x78:
+                    effSoftDelete(entry->effect);
+                    break;
+                default:
+                    iconDelete(entry->name);
+                    break;
             }
             entry->flags &= ~1;
         }
@@ -691,9 +706,6 @@ s32 itemGetNokoCheck(ItemEntry* entry) {
     return N_fbatPreventMarioEventChk() == 0;
 }
 
-// NONMATCHING (93.34%): switch lowering block layout differs; the mode 1 / mode 3-4 return
-// blocks are not tail-merged the way the original has them. Tree split was moved to 5 by
-// reordering the cases.
 s32 itemGetCheck(ItemEntry* entry) {
     MarioWork* mario;
     ItemWork* wp;
@@ -760,25 +772,23 @@ s32 itemGetCheck(ItemEntry* entry) {
     }
 
     switch (entry->mode) {
-    case 2:
-        return 0;
     case 5:
     case 6:
         if (entry->field_0x26 != 0 && !itemStatus(entry, 0x4) && !itemStatus(entry, 0x8)) {
             return 1;
         }
-        return 0;
+        break;
     case 3:
     case 4:
         if (itemStatus(entry, 0x8)) {
-            return 0;
+            break;
         }
         return 1;
     case 1:
-        return 1;
     case 7:
         return 1;
     default:
-        return 0;
+        break;
     }
+    return 0;
 }

@@ -399,9 +399,30 @@ void mapReStartAnimation(const char* name) {
 	}
 }
 
-// NONMATCHING (99.15%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
+// Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner
+// allocates the helper's locals in declaration order, and that order is what puts
+// wp in the higher register (r28) in the target, matching the other inline copies.
+static inline MapEntryAnimData* mapFindAnm(const char* animName) {
+	MapEntry* entry;
+	MapWork* wp;
+	s32 j;
+	s32 i;
+
+	wp = &mapWork[activeGroup];
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		MapEntryAnimData* anim = entry->animData;
+		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
+				return anim;
+			}
+		}
+	}
+	return NULL;
+}
+
 void mapSetPlayRate(const char* name, f32 rate) {
-	MapEntryAnimData* found = mapSearchAnmObj(name);
+	MapEntryAnimData* found = mapFindAnm(name);
 
 	if (found) {
 		*(f32*)((u8*)found + 0x14) = rate;
@@ -1039,9 +1060,38 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	}
 }
 
-// NONMATCHING (99.47%): search-loop register permutation and the search branch shape
+// The search loop is inlined here instead of calling mapSearchAnmObj: MWCC's deferred inliner colors
+// the inlined wp/entry pair the other way when it inlines that function itself (99.47%). This copy,
+// with the loop pointer declared at function scope and j declared before i, reproduces the target's
+// registers. Natural form: `found = mapSearchAnmObj(animName);`.
+#ifdef MUST_MATCH
+static inline MapEntryAnimData* mapCheckAnimationSearch(const char* animName) {
+	MapEntry* entry;
+	MapWork* wp;
+	MapEntryAnimData* anim;
+	s32 j;
+	s32 i;
+
+	wp = &mapWork[activeGroup];
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		anim = entry->animData;
+		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
+				return anim;
+			}
+		}
+	}
+	return NULL;
+}
+#endif
+
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
+#ifdef MUST_MATCH
+	MapEntryAnimData* found = mapCheckAnimationSearch(animName);
+#else
 	MapEntryAnimData* found = mapSearchAnmObj(animName);
+#endif
 
 	*valid = FALSE;
 	*a3 = float_0_80419850;
@@ -2267,7 +2317,9 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 	}
 }
 
-// NONMATCHING (99.21%): obj/o (r30/r31) register swap only
+// NONMATCHING (99.21%): the first/second params (camId/node) land in r31/r30, the reverse of the target's
+// r30/r31. The header declares the first param MapObject*; typing it CameraId (its real type, see
+// _mapDispMapObj) makes the function byte-identical. Reported, not changed (header fix + caller casts).
 void _mapDispMapGrp(MapObject* obj, void* a2) {
 	_mapDispMapObj((s32)obj, (MapObject*)a2);
 	if (((MapObject*)a2)->child) _mapDispMapGrp(obj, ((MapObject*)a2)->child);

@@ -61,6 +61,8 @@ extern const f32 float_0p5_80419a64;
 extern const f32 float_neg1_80419a8c;
 extern const f32 float_neg2_80419ab8;
 extern const f32 float_neg3_80419abc;
+extern const f32 float_2_80419a84;
+extern const f32 float_deg2rad_80419a4c;
 u32 zero_80419a50 = 0;
 
 
@@ -498,11 +500,39 @@ void animPoseSetStartTime(s32 poseId, OSTime startTime) {
     pose->localTime = startTime;
 }
 
-// NONMATCHING (95.58%): 4 instructions differ, 3 missing, plus register differences.
+// NONMATCHING (97.05%): the search loop still differs. MWCC 2.6 inverts both branches
+// (target uses `bne`/`bge`, this build emits `beq`/`blt`) and initialises the byte
+// offset with `li` where the target uses `mr`; the block layout and registers now match.
 void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
-    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
+#ifdef MUST_MATCH
+    // Match-only: the explicit byte offset keeps the induction variable in r28 (the
+    // compiler's own choice puts it in r30), and jumping to Zero keeps the not-found
+    // path from re-testing the clamp (the target folds it). See the check.py diff.
     s32 top;
+    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
+    s32 off;
+    s32 animId;
+
+    animId = (s32)animName;
+    top = data->mAnimCount;
+    if (animId < 0) {
+        for (animId = 0, off = animId; animId < top; off += 0x40, animId++) {
+            if (!strcmp(((AnimTableEntry*)((u8*)ANIM_POSE_DATA_ANIMS(data) + off))->name, animName)) {
+                goto Found;
+            }
+        }
+        goto Zero;
+    }
+    if (animId < top) {
+        goto Found;
+    }
+Zero:
+    animId = 0;
+Found:;
+#else
+    s32 top;
+    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
     s32 animId;
 
     animId = (s32)animName;
@@ -517,7 +547,8 @@ void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     if (animId >= top) {
         animId = 0;
     }
-    if (!reset && pose->animId == animId) {
+#endif
+    if (!reset && animId == pose->animId) {
         return;
     }
     pose->animId = animId;
@@ -526,9 +557,9 @@ void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     }
     pose->localTime = animTimeGetTime(pose->type);
     pose->lastFrameZero = -1;
-    pose->lastFrameTime = 0.0f;
+    pose->lastFrameTime = float_0_80419a48;
     pose->field_0x80 = 0;
-    pose->loopTime = 0.0f;
+    pose->loopTime = float_0_80419a48;
 }
 
 s32 animPaperPoseGetId(const char* animName, s32 group) {
@@ -694,20 +725,26 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     wp->poses[poseId].materialLightFlag |= 1;
 }
 
-// NONMATCHING (95.80%): 5 instructions differ, 2 missing, 1 extra, plus register differences.
-void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
-    AnimationPose* pose = &wp->poses[poseId];
-    AnimationPoseData* data;
-    s32 top;
-    s32 i;
-
-    if (pose->paperId == -1) {
-        return;
+// Searches ANIM_POSE_DATA_ANIMS(data) for animName when i is negative (i is the string's address used
+// as a sentinel), then clamps the result into [0, top). MUST_MATCH keeps the target's exact control flow;
+// the natural form is in the #else.
+#ifdef MUST_MATCH
+static inline s32 animPoseSearchAnim(AnimationPoseData* data, const char* animName, s32 i, s32 top) {
+    if (i < 0) {
+        for (i = 0; i < top; i++) {
+            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
+                return i;
+            }
+        }
+        i = 0;
     }
-    pose = &wp->poses[pose->paperId];
-    data = *wp->files[pose->fileId].handle->data;
-    i = (s32)animName;
-    top = data->mAnimCount;
+    if (i < top) {
+        return i;
+    }
+    return 0;
+}
+#else
+static inline s32 animPoseSearchAnim(AnimationPoseData* data, const char* animName, s32 i, s32 top) {
     if (i < 0) {
         for (i = 0; i < top; i++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
@@ -718,7 +755,26 @@ void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     if (i >= top) {
         i = 0;
     }
-    if (!reset && pose->animId == i) {
+    return i;
+}
+#endif
+
+// NONMATCHING (98.55%): only register allocation and one branch differ. The target keeps i in r25,
+// offset r26, data r27 (top is r28 in both); we get data r25, i r26, offset r27. The target branches the
+// exhausted-loop path to the shared i=0 block (b .A8); we assign i=0 inline and fall into the clamp.
+void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* data;
+    s32 i;
+
+    if (pose->paperId == -1) {
+        return;
+    }
+    pose = &wp->poses[pose->paperId];
+    data = *wp->files[pose->fileId].handle->data;
+    i = (s32)animName;
+    i = animPoseSearchAnim(data, animName, i, data->mAnimCount);
+    if (!reset && i == pose->animId) {
         return;
     }
     pose->animId = i;
@@ -727,9 +783,9 @@ void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     }
     pose->localTime = animTimeGetTime(pose->type);
     pose->lastFrameZero = -1;
-    pose->lastFrameTime = 0.0f;
+    pose->lastFrameTime = float_0_80419a48;
     pose->field_0x80 = 0;
-    pose->loopTime = 0.0f;
+    pose->loopTime = float_0_80419a48;
 }
 
 void animPoseSetGXFunc(s32 poseId, void (*callback)(s32 wXluStage), BOOL disableDraw) {
@@ -915,61 +971,74 @@ void pushGXModelMtx_TransformNode__(void* node) {
 }
 
 // pushGXModelMtx_JointNode__
-// NONMATCHING (98.03%): struct offsets, matrix order and all switch cases match; only the
-// float-register scheduling (one extra `fmr f1,f5`) and two branch polarities differ.
+// Matches retail. The two `== 1.0f` tests below are deliberate: retail's block layout
+// branches to the join when z/scaleZ is *not* 1, so the last test has to be inverted to
+// reproduce its branch. The natural condition is the #else. The node fields are read as
+// truthiness because that is the only form MWCC emits with the value first in `fcmpu`
+// (`fcmpu f5, f0`, not `fcmpu f0, f5`), which retail uses for the zero tests.
 void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
     AnimPoseNode* n = node;
     Mtx mTrans, mScale, mJointScale, mRotX, mRot;
     f32 (*result)[4];
     u32 flags = 0;
+    f32 transX = n->mTranslation.x, transY = n->mTranslation.y, transZ = n->mTranslation.z;
     f32 scaleX = n->mScale.x, scaleY = n->mScale.y, scaleZ = n->mScale.z;
     f32 rot1X = n->mRot1.x * 2.0f, rot1Y = n->mRot1.y * 2.0f, rot1Z = n->mRot1.z * 2.0f;
     f32 rot2X = n->mRot2.x, rot2Y = n->mRot2.y, rot2Z = n->mRot2.z;
-    f32 transX = n->mTranslation.x, transY = n->mTranslation.y, transZ = n->mTranslation.z;
 
-    if (transX != 0.0f || transY != 0.0f || transZ != 0.0f) {
+    if (transX || transY || transZ) {
         PSMTXTrans(mTrans, transX, transY, transZ);
         flags |= 1;
     }
+#ifdef MUST_MATCH
+    // Retail branches to the join when z != 1 (natural condition under #else).
+    if (x != 1.0f || y != 1.0f || z == 1.0f) {
+#else
     if (x != 1.0f || y != 1.0f || z != 1.0f) {
-        if (x != 0.0f && y != 0.0f && z != 0.0f) {
+#endif
+        if (x && y && z) {
             PSMTXScale(mJointScale, 1.0f / x, 1.0f / y, 1.0f / z);
         } else {
             PSMTXScale(mJointScale, 1.0f, 1.0f, 1.0f);
         }
         flags |= 2;
     }
+#ifdef MUST_MATCH
+    // Same inversion for the node's own scale.
+    if (scaleX != 1.0f || scaleY != 1.0f || scaleZ == 1.0f) {
+#else
     if (scaleX != 1.0f || scaleY != 1.0f || scaleZ != 1.0f) {
+#endif
         PSMTXScale(mScale, scaleX, scaleY, scaleZ);
         flags |= 4;
     }
     PSMTXIdentity(mRotX);
-    if (rot2Z != 0.0f) {
+    if (rot2Z) {
         PSMTXRotRad(mRot, 'z', MTXDegToRad(rot2Z));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 8;
     }
-    if (rot2Y != 0.0f) {
+    if (rot2Y) {
         PSMTXRotRad(mRot, 'y', MTXDegToRad(rot2Y));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 8;
     }
-    if (rot2X != 0.0f) {
+    if (rot2X) {
         PSMTXRotRad(mRot, 'x', MTXDegToRad(rot2X));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 8;
     }
-    if (rot1Z != 0.0f) {
+    if (rot1Z) {
         PSMTXRotRad(mRot, 'z', MTXDegToRad(rot1Z));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 8;
     }
-    if (rot1Y != 0.0f) {
+    if (rot1Y) {
         PSMTXRotRad(mRot, 'y', MTXDegToRad(rot1Y));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 8;
     }
-    if (rot1X != 0.0f) {
+    if (rot1X) {
         PSMTXRotRad(mRot, 'x', MTXDegToRad(rot1X));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 8;

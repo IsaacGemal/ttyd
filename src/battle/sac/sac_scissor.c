@@ -263,12 +263,15 @@ s32 scissor_offscreen(void) {
     return 2;
 }
 
-// NONMATCHING (96.38%): newly written; see REPORT.md.
+// NONMATCHING (98.46%): MWCC copies the GXColor argument for the by-value GXSetChanMatColor
+// a second time; the original stores HSV2RGB's result at r1+0xC and passes &r1+0xC directly.
+// Ours stores it at r1+0x14 and copies it to r1+0x8 (one extra stw, four shifted operands).
 void scissor_disp_control(CameraId cameraId, void* param) {
     ScissorWork* work = GetScissorPtr();
     f32* points = work->field_0x114;
     GXColor color;
     GXColor hsv;
+    GXColor hsvTmp;
     s32 i;
 
     work->field_0x10++;
@@ -298,11 +301,12 @@ void scissor_disp_control(CameraId cameraId, void* param) {
     for (i = 0; i < work->field_0x9C - 1; i++) {
         hsv = *(GXColor*)&dat_8042171c;
         hsv.r = (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1);
-        *(u32*)&color = HSV2RGB(&hsv);
+        hsvTmp = hsv;
+        *(u32*)&color = HSV2RGB(&hsvTmp);
         GXSetChanMatColor(GX_COLOR0A0, color);
         GXBegin(GX_LINES, GX_VTXFMT0, 2);
-        GXPosition3f32(points[i * 2], points[i * 2 + 1], 0.0f);
-        GXPosition3f32(points[i * 2 + 2], points[i * 2 + 3], 0.0f);
+        GXPosition3f32(points[i * 2], points[i * 2 + 1], float_0_80421734);
+        GXPosition3f32(points[i * 2 + 2], points[i * 2 + 3], float_0_80421734);
     }
 }
 
@@ -329,22 +333,48 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
 
 // Keep scissor_damage_sub2 out of line: scissor_damage_sub calls (bl) it in the original.
 #pragma dont_inline on
-// NONMATCHING (97.82%): same instructions; only register numbers or operands differ.
+// The instructions are identical; only the register colouring differs.  Naming the
+// cross-product temporaries reproduces the original's cy=f7, cx=f8 and the whole
+// condition (zero=f1), but MWCC still colours the loop-invariants and loop-temporaries
+// in the opposite group order (ours: sub=f1, ny=f2, min=f3, zero=f4, py=f5; original:
+// sub=f2, py=f3, ny=f4, min=f5, zero=f1, px=f6), and swaps the GPRs for count
+// (original r9, ours r10) and the &tri[j] temp.
+// NONMATCHING (98.24%): register colouring only; see REPORT.md.
 s32 scissor_damage_sub2(Vec* point) {
     ScissorWork* work = GetScissorPtr();
     f32 cross[3];
     s32 count = work->field_0x14;
-    f32 px = point->x;
-    f32 py = point->y;
-    f32 zero = float_0_80421734;
+    f32 zero;
+    f32 sub;
+    f32 py;
+    f32 ny;
+    f32 min;
+    f32 px;
+    f32 cy;
+    f32 cx;
+    f32 d;
+    f32 e;
+    f32 nx;
     s32 i;
     s32 j;
 
+    px = point->x;
+    py = point->y;
+    zero = float_0_80421734;
     for (i = 0; i < count; i++) {
         f32* tri = (f32*)((u8*)work->field_0x118 + i * 0x18);
         for (j = 0; j < 3; j++) {
-            cross[j] = (px - tri[j]) * (tri[((j + 1) % 3) + 3] - tri[j + 3]) -
-                       (py - tri[j + 3]) * (tri[(j + 1) % 3] - tri[j]);
+            s32 k = (j + 1) % 3;
+
+            cy = tri[j + 3];
+            cx = tri[j];
+            sub = py - cy;
+            min = px - cx;
+            nx = tri[k];
+            ny = tri[k + 3];
+            d = nx - cx;
+            e = ny - cy;
+            cross[j] = min * e - sub * d;
         }
         if ((cross[0] > zero && cross[1] > zero && cross[2] > zero) ||
             (cross[0] < zero && cross[1] < zero && cross[2] < zero)) {
@@ -407,19 +437,29 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
     }
 }
 
-// NONMATCHING (98.28%): newly written; see REPORT.md.
+// NONMATCHING (99.39%): same instructions; only register numbers differ: battleWork/count are
+// r30/r24 here but r24/r30 in the original, and damage/the loop's unit+i are r25/r21 here but
+// r21/r25 there. Splitting i into a block-local variable fixed the rest of the allocation.
 s32 scissor_damage(EventEntry* event, s32 unused) {
-    s32* args = event->args;
-    BattleWork* battleWork = _battleWorkPointer;
-    BattleUnit* mario = BattleGetMarioPtr(battleWork);
-    ScissorWork* work = GetScissorPtr();
-    s32 count = 0;
-    s32 allHit = 1;
-    s32 audienceNum = BattleAudience_GetAudienceNum();
-    s32 damage = 0;
-    s32 out;
-    s32 i;
+    ScissorWork* work;
+    s32 damage;
+    s32 audienceNum;
+    s32 count;
+    BattleUnit* mario;
+    s32* args;
     s32 unitIndex;
+    s32 out;
+    BattleWork* battleWork;
+    s32 allHit;
+
+    args = event->args;
+    battleWork = _battleWorkPointer;
+    mario = BattleGetMarioPtr(battleWork);
+    work = GetScissorPtr();
+    count = 0;
+    allHit = 1;
+    audienceNum = BattleAudience_GetAudienceNum();
+    damage = 0;
 
     for (unitIndex = 0; unitIndex < 0x40; unitIndex++) {
         BattleUnit* unit = BattleGetUnitPtr(battleWork, unitIndex);
@@ -452,6 +492,8 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
     if (count == 0) {
         allHit = 0;
     }
+    {
+        s32 i;
     for (i = 0; i < count; i++) {
         BattleUnit* unit;
         BattleUnitPart* part;
@@ -466,6 +508,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
         part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
         BattleCheckDamage(mario, unit, part, &weapon_scissor, 0);
         damage = 1;
+    }
     }
     if (allHit == 1) {
         s32 value;
@@ -678,11 +721,13 @@ void star_disp2D_sub(s32 index, s32 alpha) {
     f32 z;
 
     if (work->state >= 6) {
+        s32 step;
+        f32 start;
         work->field_0x120++;
         if (work->field_0x120 > 0x1E) {
             work->field_0x120 = 0x1E;
         }
-        alpha = (s32)intplGetValue(0, work->field_0x120, 0x1E, (f32)(u8)alpha, float_0_80421734);
+        alpha = (s32)intplGetValue(0, (step = work->field_0x120, step), 0x1E, (start = (f32)(u8)alpha, start), float_0_80421734);
     }
     *(u32*)&color = dat_80421718;
     color.a = alpha;

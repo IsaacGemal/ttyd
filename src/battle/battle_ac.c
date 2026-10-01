@@ -127,12 +127,13 @@ s8 BattleActionCommandGetDifficulty(BattleWork* work) {
 	return work->actionCommands.mAcDifficulty;
 }
 
-// NONMATCHING (96.25%): same instructions; only register numbers or operands differ.
 void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 difficulty) {
 	s32 adjusted;
 
 	work->actionCommands.mBaseAcDifficulty = difficulty;
-	adjusted = difficulty - unit->badgesEquipped.Simplifier + unit->badgesEquipped.Unsimplifier;
+	adjusted = difficulty;
+	adjusted -= unit->badgesEquipped.Simplifier;
+	adjusted += unit->badgesEquipped.Unsimplifier;
 	if (adjusted < 0) {
 		adjusted = 0;
 	}
