@@ -6,7 +6,7 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 
 // .sdata2 constants live in this translation unit
@@ -63,7 +63,6 @@ static u32 size10x10_tex32x32_vtx[0xE0 / 4] = {
 
 // .rodata
 const Vec vec3_802faac8 = { 0.0f, 0.0f, 0.0f };
-const char str_802FAAE0[16] = "LensflareN64";
 EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
     EffectEntry* effect;
     LensflareData* data;
@@ -71,7 +70,7 @@ EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2)
     s32 i;
 
     effect = effEntry();
-    effect->type = str_802FAAE0;
+    effect->type = "LensflareN64";
     effect->count = 6;
     data = __memAlloc(HEAP_EFFECT, sizeof(LensflareData));
     effect->userdata = data;
