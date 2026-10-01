@@ -324,3 +324,4 @@ USER_FUNC(btlevtcmd_GetItemRecoverParam);
 USER_FUNC(btlevtcmd_AcGetDifficulty);
 USER_FUNC(btlevtcmd_AcSetGaugeParam);
 USER_FUNC(btlevtcmd_AudienceAppeal);
+USER_FUNC(btlevtcmd_AcSetOutputParam);

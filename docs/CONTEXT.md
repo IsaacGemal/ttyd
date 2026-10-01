@@ -3427,3 +3427,9 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Follow-up (form, behaviour equal):** match-only shapes outside MUST_MATCH in gcDvdCheckThread (`s32 width`,
   `half = 0.5f`), unit_boss_gundan_zako_group2's shake_ceil (`volatile` reads) and its ceil functions' raw-offset
   macros on `work_20_bss_6C`, chuchurina's redundant `else if (list != NULL)`.
+
+## Grind 61: unit_party_sanders: the chuchurina/sanders `.data` boundary moves 8 bytes; data written (2026-10-01, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- Approved by Isaac (relayed by the orchestrator, 12:42). The `{ -1.0f, 1.0f }` pair at 0x803848D8 was the tail of chuchurina's `attack_audience_event`; the `.data` boundary is now 0x803848D8, `attack_audience_event` is 0x330 bytes, `lbl_803848D8` (8 bytes) replaces `lbl_803848DC`. Same shape as christine (Grind 60).
+- `unit_party_sanders.c` has its whole `.data` (`dol_gen --append`); the four weapons are named in the unit's own `.data`, so the `MUST_MATCH` base-offset block of `__makeTechMenuFunc` is gone and it is 100% in the natural form.
+- Not linked: `_get_bomb_hit_position` is still 92.86% (callee-saved map shifted: outX/outY take r31/r30 in the target, and the `double_to_int` constant is loaded by name where we pool it).
