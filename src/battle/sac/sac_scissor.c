@@ -339,23 +339,19 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
 
 // Keep scissor_damage_sub2 out of line: scissor_damage_sub calls (bl) it in the original.
 #pragma dont_inline on
-// The instructions are identical; only the register colouring differs.  Assigning the
-// compare constant with the literal 0.0f puts it in f1 like the original (the
-// float_0_80421734 extern version lands in f4); the pool symbol is not scored.  MWCC
-// still rotates the loop values (ours: zero=f1, sub=f2, ny=f3, min=f4, py=f5, px=f6;
-// original: zero=f1, sub=f2, py=f3, ny=f4, min=f5, px=f6) and swaps the GPRs for count
-// (original r9, ours r10) and the &tri[j] temp.
-// NONMATCHING (99.08%): register colouring only; see REPORT.md.
-s32 scissor_damage_sub2(Vec* point) {
+// Match note: taking `const Vec*` and reading point->x/point->y directly (no px/py
+// locals) is what lets MWCC hoist the two loads into f6/f3 and colour the float
+// temporaries as the original does; caching them in locals rotated py/ny/min.
+// Leaving the loop bound as work->field_0x14 (no `count` local) is what steers the
+// bound to r9 and the &tri[j] temp to r10.  The 0.0f literal pools as a local symbol
+// instead of the original's float_0_80421734, which objdiff does not score.
+s32 scissor_damage_sub2(const Vec* point) {
     ScissorWork* work = GetScissorPtr();
     f32 cross[3];
-    s32 count = work->field_0x14;
     f32 zero;
     f32 sub;
-    f32 py;
     f32 ny;
     f32 min;
-    f32 px;
     f32 cy;
     f32 cx;
     f32 d;
@@ -364,18 +360,16 @@ s32 scissor_damage_sub2(Vec* point) {
     s32 i;
     s32 j;
 
-    px = point->x;
-    py = point->y;
     zero = 0.0f;
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < work->field_0x14; i++) {
         f32* tri = (f32*)((u8*)work->field_0x118 + i * 0x18);
         for (j = 0; j < 3; j++) {
             s32 k = (j + 1) % 3;
 
             cy = tri[j + 3];
             cx = tri[j];
-            sub = py - cy;
-            min = px - cx;
+            sub = point->y - cy;
+            min = point->x - cx;
             nx = tri[k];
             ny = tri[k + 3];
             d = nx - cx;

@@ -1,7 +1,7 @@
 #include "battle/battle_icon.h"
 #include "battle/battle.h"
 #include "battle/battle_sub.h"
-#include "data/item_data.h"
+#include "data/item_icon_view.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr_cmd.h"
 #include "system.h"
@@ -9,7 +9,6 @@
 #include <stdio.h>
 
 extern BattleWork* _battleWorkPointer;
-extern ItemData itemDataTable[];
 
 // dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
@@ -184,15 +183,11 @@ USER_FUNC(btlevtcmd_BtlIconEntry) {
 #pragma optimize_for_size reset
 
 //s32 itemId (index for itemDataTable) , f32 x, f32 y, f32 z, s32 evtIndex
-// NONMATCHING (99.17%): ItemData.icon_id is u16 in the original (lhz); the header declares
-// it s16, so the direct read emits lha (same bits for the passed value). The header line
-// can't be changed from here; see REPORT.md.
 USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 	s32* args = event->args;
 	BattleIcon* icon;
 	s32 itemId, index;
 	f32 x, y, z;
-	s16 iconId;
 
 	itemId = evtGetValue(event, args[0]);
 	x = (f32)evtGetValue(event, args[1]);
@@ -200,8 +195,10 @@ USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 	z = (f32)evtGetValue(event, args[3]);
 	index = args[4];
 #ifdef MUST_MATCH
-	iconId = itemDataTable[itemId].icon_id;
-	icon = BtlIcon_Entry(iconId, x, y, z);
+	// The header declares BtlIcon_Entry's id as s16, but the original passes the u16 field straight
+	// into r3 (lhz, no extsh); call through a u16-function pointer to avoid the sign extension.
+	// Remove when the header's first parameter becomes u16. See REPORT.md.
+	icon = ((BattleIcon* (*)(u16, f32, f32, f32))BtlIcon_Entry)(itemDataTable[itemId].icon_id, x, y, z);
 #else
 	icon = BtlIcon_Entry(itemDataTable[itemId].icon_id, x, y, z);
 #endif

@@ -101,7 +101,9 @@ void seq_logoExit(SequenceWork* work) {
 // `first`=r28, `size`=r30, `decode`=r29 (size/decode swapped). Every structural variant tried (declaration
 // order, block scope, temp for the raw load, inline helper, block-scoped initializers, reordered byte-swap
 // expression) still puts `size` in r30: MWCC special-cases the two-statement load-then-byte-swap so its
-// result takes the highest callee-saved register.
+// result takes the highest callee-saved register. Separating the raw load (`tmp = *(...); size = swap(tmp);`)
+// avoids the special case and, with declarations ordered `decode; size; first; tmp`, gives exactly
+// r28/r29/r30, but emits an extra `mr r29, r0` (99.64%).
 // NONMATCHING (99.89%): size/decode are assigned r30/r29 where the original has r29/r30.
 void seq_logoMain(SequenceWork* work) {
 	static OSTime time; //time instance 1

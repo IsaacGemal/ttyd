@@ -175,7 +175,8 @@ void winPartyInit2(WindowWork* work) {
 // and the u32->double constant), .sdata2 (the R_5..R_11 and W_1 strings and the 360.0f
 // constant) and .data (the three switch jump tables). Nothing inside winPartyInit can move
 // them; declaring the strings as named locals instead only perturbs register allocation
-// (99.57%).
+// (99.57%), and referencing the original's named string symbols as externs is worse still
+// (90-92%: the compiler can no longer use @sda21/one base register and reallocates r21).
 // Confirmed: our object's .rodata/.sdata2/.data are 0x78/0x44/0x54 while the original's are
 // 0x468/0x158/0x188. The missing entries all belong to undecompiled winPartyDisp (0x169C of
 // code) and to winPartyDt: winPartyDt is the .data table at 0x0 (0xFC) that also emits the

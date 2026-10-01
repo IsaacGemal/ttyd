@@ -663,10 +663,10 @@ static inline GXColor boobooColor(u8 v) {
 // that objdiff scores as equal).
 // NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
 void effBoobooDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
+	EffectEntry* effect = (EffectEntry*)param;
 	CameraEntry* camera;
 	s32 phase;
-	s32 poly;
+	u32 poly;
 	BoobooData* data;
 	s32 i;
 	Mtx mtx;
@@ -675,18 +675,18 @@ void effBoobooDisp(CameraId camId, void* param) {
 	GXColor color;
 
 	camera = camGetPtr(camId);
-	data = effect->userdata;
+	data = ((EffectEntry*)effect)->userdata;
 	phase = data->timer * 30;
 	for (i = 0; i < 11; i++, phase += 20) {
-		if (data->flags[i] & 1) {
+		if ((data->flags)[i] & 1) {
 			PSMTXTrans(mtx, data->x[i], data->y[i] + data->bob[i], data->z[i]);
 			PSMTXRotRad(rotMtx, 'y', 0.017453292f * (180.0f - data->rot[i]));
 			PSMTXConcat(mtx, rotMtx, mtx);
 			PSMTXScale(scaleMtx, 10.0f, 10.0f, 10.0f);
 			PSMTXConcat(mtx, scaleMtx, mtx);
 			PSMTXConcat(camera->view, mtx, mtx);
-			GXLoadPosMtxImm(mtx, GX_PNMTX0);
-			GXSetCurrentMtx(GX_PNMTX0);
+			GXLoadPosMtxImm(mtx, 0);
+			GXSetCurrentMtx(0);
 			if (!texture_dl(effect, i, data->tex[i])) {
 				if (data->tex[i] == 8 || data->tex[i] == 9) {
 					f32 s = (f32)sin(6.2831855f * phase / 360.0f);
@@ -697,7 +697,7 @@ void effBoobooDisp(CameraId camId, void* param) {
 					color = unk_804230a8;
 					color.r = color.g = color.b = bright;
 #endif
-					GXSetTevColor(GX_TEVREG0, color);
+					GXSetTevColor(1, color);
 				}
 				poly = data->poly[i];
 				GXSetCullMode(GX_CULL_BACK);

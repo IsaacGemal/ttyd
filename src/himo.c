@@ -161,11 +161,26 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
     }
 }
 
-// NONMATCHING (99.36%): logic matches; only register allocation differs — t/inv/v0 land in f28/f29/f27
-// instead of the target's f24/f25/f23 (rotating the loop pool constants) and `i`/`mtx` are swapped
-// (r23/r26). The int->float magic is a local @-pool entry here, not `double_to_int_802f8080`: its
-// .rodata offset is fixed by himo_sqrtf's 0.5/3.0 literals (weak _half/_three pool entries), which
-// are emitted before this function's conversion constant, so the relocation lands at 0x38 not 0x18.
+// Register allocation is the whole game here. The target keeps the seven loop-invariant floats in
+// f21-f31, with the group (a,inv,t,v0) in f23-f26 and v in f20. Declaring local copies of the six
+// pool constants in the order below and assigning them just before the loop makes MWCC rotate them
+// the same way; under #else the globals are read directly through the HIMO_* macros. The int->float
+// magic is a local @-pool entry here, not double_to_int_802f8080: its .rodata offset is fixed by
+// himo_sqrtf's 0.5/3.0 literals (weak _half/_three pool entries), which are emitted before this
+// function's conversion constant, so the relocation lands at 0x38 not 0x18.
+#ifdef MUST_MATCH
+#define HIMO_C1 c1
+#define HIMO_C10 c10
+#define HIMO_CPI cpi
+#define HIMO_C082 c082
+#define HIMO_C12881 c12881
+#else
+#define HIMO_C1 float_1_8041ded4
+#define HIMO_C10 float_10_8041ded0
+#define HIMO_CPI float_3p1416_8041ded8
+#define HIMO_C082 float_0p82_8041dedc
+#define HIMO_C12881 float_1p2881_8041dee0
+#endif
 void vivihimoDisp(CameraId cameraId, void* data) {
     HimoWork* work = data;
     CameraEntry* cam;
@@ -178,21 +193,29 @@ void vivihimoDisp(CameraId cameraId, void* data) {
     f32* knots = work->knots;
     f32* tangents = work->tangents;
 #endif
+    s32 i;
+#ifdef MUST_MATCH
+    f32 c12881;
+    f32 c082;
+    f32 cpi;
+    f32 c10;
+    f32 c1;
+    f32 c15;
+#endif
     Mtx mtxPrev;
     Mtx mtxCur;
     Mtx mtx;
-    Mtx* mtxp;
     Vec prevPos;
     Vec pos;
     Mtx* prev;
     Mtx* cur;
+    Mtx* mtxp;
+    f32 a;
     f32 inv;
     f32 t;
     f32 v0;
-    f32 a;
     f32 s;
     f32 v;
-    s32 i;
 
     cam = camGetPtr(cameraId);
 
@@ -236,6 +259,14 @@ void vivihimoDisp(CameraId cameraId, void* data) {
     mtx[2][3] = prevPos.z;
     PSMTXConcat(cam->view, mtx, *prev);
 
+#ifdef MUST_MATCH
+    c1 = float_1_8041ded4;
+    c10 = float_10_8041ded0;
+    cpi = float_3p1416_8041ded8;
+    c082 = float_0p82_8041dedc;
+    c12881 = float_1p2881_8041dee0;
+    c15 = float_15_8041dee4;
+#endif
     mtxp = &mtx;
     for (i = 0; i < 15; i++) {
 #ifdef MUST_MATCH
@@ -244,23 +275,23 @@ void vivihimoDisp(CameraId cameraId, void* data) {
         spline_getvalue((f32*)&pos, 4, (s32)points, (s32)knots, (s32)tangents, t);
 #endif
         GXLoadPosMtxImm(*prev, 0);
-        s = float_1_8041ded4 - t;
-        (*mtxp)[0][0] = float_10_8041ded0 * (s * work->mtx0[0][0] + t * work->mtx1[0][0]);
+        s = HIMO_C1 - t;
+        (*mtxp)[0][0] = HIMO_C10 * (s * work->mtx0[0][0] + t * work->mtx1[0][0]);
         (*mtxp)[0][1] = s * work->mtx0[0][1] + t * work->mtx1[0][1];
         (*mtxp)[0][2] = s * work->mtx0[0][2] + t * work->mtx1[0][2];
         (*mtxp)[0][3] = pos.x;
-        (*mtxp)[1][0] = float_10_8041ded0 * (s * work->mtx0[1][0] + t * work->mtx1[1][0]);
+        (*mtxp)[1][0] = HIMO_C10 * (s * work->mtx0[1][0] + t * work->mtx1[1][0]);
         (*mtxp)[1][1] = s * work->mtx0[1][1] + t * work->mtx1[1][1];
         (*mtxp)[1][2] = s * work->mtx0[1][2] + t * work->mtx1[1][2];
         (*mtxp)[1][3] = pos.y;
-        (*mtxp)[2][0] = float_10_8041ded0 * (s * work->mtx0[2][0] + t * work->mtx1[2][0]);
+        (*mtxp)[2][0] = HIMO_C10 * (s * work->mtx0[2][0] + t * work->mtx1[2][0]);
         (*mtxp)[2][1] = s * work->mtx0[2][1] + t * work->mtx1[2][1];
         (*mtxp)[2][2] = s * work->mtx0[2][2] + t * work->mtx1[2][2];
         (*mtxp)[2][3] = pos.z;
         PSMTXConcat(cam->view, (*mtxp), *cur);
         GXLoadPosMtxImm(*cur, 3);
 
-        v = inv * (a + (f32)tan(float_3p1416_8041ded8 * (float_0p82_8041dedc * t) - float_1p2881_8041dee0));
+        v = inv * (a + (f32)tan(HIMO_CPI * (HIMO_C082 * t) - HIMO_C12881));
 
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         GXMatrixIndex1u8(0);
@@ -294,5 +325,11 @@ void vivihimoDisp(CameraId cameraId, void* data) {
         t = (f32)(i + 2) / float_15_8041dee4;
     }
 }
+
+#undef HIMO_C1
+#undef HIMO_C10
+#undef HIMO_CPI
+#undef HIMO_C082
+#undef HIMO_C12881
 
 const f64 double_1p2881_802f8078 = 1.288053035736084;

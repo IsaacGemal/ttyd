@@ -449,11 +449,18 @@ s32* head; // retail reads the ring head through a pointer taken before the loop
     return result;
 }
 
-// The hoisted `w->unk0C` CSE temp lands in r9 and idx2/diff in r10, while the original has them
-// swapped (unk0C=r10, idx2/diff=r9); the CSE temp is synthetic, so declaration order cannot move
-// it (the order below is the search's best, giving countDown=r31/cur=r30/prev=r29 and the exact
-// entry order). Making it an explicit local turns it into a callee-saved user variable instead.
-// NONMATCHING (99.31%): only the w->unk0C CSE temp / idx2-diff registers are swapped.
+// Folding the `w->unk0C` head load and the wrap-around loop into this helper makes MWCC give the
+// hoisted head load r10 and the idx2/diff temp r9, as the original does; expanded inline at each
+// use the two registers swap (99.31%). It computes the same ring index, so behaviour is unchanged.
+static inline s32 ringIdx(RubWork* p, s32 off) {
+    s32 idx = p->unk0C + off;
+
+    while (idx < 0) {
+        idx += 20;
+    }
+    return idx;
+}
+
 s32 chkRevolveDir(s32* left, s32* right) {
 s32 adj;
 s32 diff;
@@ -472,15 +479,9 @@ RubWork* w;
     countDown = 0;
     countUp = 0;
     for (i = 0; i < 10; i++) {
-        idx1 = w->unk0C + j;
-        while (idx1 < 0) {
-            idx1 += 20;
-        }
+        idx1 = ringIdx(w, j);
         cur = w->unk3C[idx1];
-        idx2 = j - 1 + w->unk0C;
-        while (idx2 < 0) {
-            idx2 += 20;
-        }
+        idx2 = ringIdx(w, j - 1);
         prev = w->unk3C[idx2];
         j--;
         if (i == 0 && cur == prev) {

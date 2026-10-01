@@ -1649,8 +1649,9 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
     }
 }
 
-// NONMATCHING (99.74%): all opcodes match; the inlined unk_800c8f24 body allocates the
-// gravity value to f1 instead of f3, so 17 operands show as fp-register `arg_mismatch`.
+// The original inlines unk_800c8f24's body here. Writing the call out by hand and holding the speed in a
+// local and opt_propagation off, MWCC colours speed f1, gravity/down f3 and up f2 as in retail.
+#pragma opt_propagation off // the constant loads/scheduling need to keep the original shape
 void partyForceWalk(PartyEntry* party) {
     PartyEntry* work = party;
     Vec pos;
@@ -1679,7 +1680,33 @@ void partyForceWalk(PartyEntry* party) {
         } else {
             {
                 f32 spd = work->speed;
-                unk_800c8f24(work, spd);
+                if (work->flags2 & 0x100) {
+                    partyChgPoseId(work, 3);
+                    unk_800c90d4(work, 1);
+                } else {
+                    MarioWork* mario = work->playerPtr;
+                    f32 up;
+                    f32 grav;
+                    f32 down;
+                    grav = mario->playerGravity;
+                    up = grav == 1.0f ? 1.65f : 2.0f;
+                    down = grav == 1.0f ? 0.8f : 0.0f;
+                    if (up - down < spd && spd < spd + down) {
+                        if (N_marioGetMovementSpeed() == 1) {
+                            partyChgPoseId(work, 2);
+                            unk_800c90d4(work, 0);
+                        } else {
+                            partyChgPoseId(work, 3);
+                            unk_800c90d4(work, 1);
+                        }
+                    } else if (spd >= up) {
+                        partyChgPoseId(work, 3);
+                        unk_800c90d4(work, 1);
+                    } else {
+                        partyChgPoseId(work, 2);
+                        unk_800c90d4(work, 0);
+                    }
+                }
             }
             pos = work->position;
             wall = partySearchFrontWall(work, &pos, work->speed, work->dir);
@@ -1749,6 +1776,7 @@ void partyForceWalk(PartyEntry* party) {
         vivianShadow(work);
     }
 }
+#pragma opt_propagation reset
 
 extern int __float_nan[];
 

@@ -167,6 +167,11 @@ extern const char lbl_8041A248[4];
 // NONMATCHING (99.17%): every case matches; MWCC emits the target int base (`addi r25, r27, 8`) but coalesces
 // the float base copy (`mr r24, r25`) into it, so we save 11 callee-saved regs (stmw r21) instead of 12 (stmw r20)
 // and effSet/int sit one register higher (r24/r23..r21 vs target r23/r22..r20).
+// Tried and still coalesced: `fargs = iargs`/parens/casts (arg array, void*, u32/f32 pointer types), union and
+// struct-box copies, declaration reorder/one-line, assignment placed after each call, index vs pointer reads,
+// explicit increments, register/const args, a third alias pointer; pragmas opt_propagation/opt_common_subs/
+// opt_lifetimes/opt_dead_code/opt_strength_reduction/global_optimizer off, optimization_level 2-4, scheduling
+// off (all no change or worse); file flags -O2/-O3/-O4,s/-inline auto. Only the source text retail used reproduces it.
 USER_FUNC(evt_eff) {
 	s32* args = event->args;
 	s32* iargs;
@@ -480,6 +485,9 @@ USER_FUNC(evt_eff_delete_ptr) {
 
 // NONMATCHING (99.19%): every case matches except the `2.0f` multiplicand, which MWCC materialises into the
 // result scratch register (f2) instead of loading it into f1 as the target does (`fmuls f2, f1, f3`).
+// A literal `0.0f` for the two zero args flips the multiplicand to f1 (correct register), but pools 0.0 first
+// so the pool becomes 0.0/2.0/3.0 and the 0.0 load schedules a slot early (96.25%). `#pragma global_optimizer
+// off` also flips f1 with the pool addresses intact, but reorders the 0.0 load past `fdivs f4` (96.25%).
 USER_FUNC(evt_eff_fukidashi) {
 	s32* args = event->args;
 	s32 type;

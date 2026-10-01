@@ -231,11 +231,12 @@ static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (99.89%): the loop's colour bytes are loaded/scheduled r,b,g with r->r0/g->r5/b->r6,
-// where retail loads r,g,b with r->r6/g->r5/b->r0 (a register-colouring tie-break). The
-// int->float magic and the 0.0f/1.0f vertex literals also pool as anonymous @NN instead of the named
-// double_to_int_802fe918/float_0_804214f4/float_1_804214f8 (pool naming is not scored: effMistEntry
-// is 100% with the same anonymous-@ mismatch).
+// The colour is built through mistColor so its return slot is 0x8 and the by-value argument copy
+// lands at 0xc, as retail. Passing the alpha through (u8) rather than (s32) is what makes MWCC emit
+// the channel loads in address order r,g,b with r->r6/g->r5/b->r0; an (s32) cast rotates the schedule
+// to b,r,g with different registers. The int->float magic and the 0.0f/1.0f vertex literals pool as
+// anonymous @NN rather than the named double_to_int_802fe918/float_0_804214f4/float_1_804214f8
+// (pool naming is not scored: effMistEntry is 100% with the same anonymous-@ mismatch).
 void effMistDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MistWork* work;
@@ -290,7 +291,7 @@ void effMistDisp(CameraId cameraId, void* param) {
 		GXLoadPosMtxImm(mtxTrans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 #ifdef MUST_MATCH
-		color = mistColor(work->r, work->g, work->b, (s32)(work->alpha * (f32)alpha / float_255_804214e8));
+		color = mistColor(work->r, work->g, work->b, (u8)(work->alpha * (f32)alpha / float_255_804214e8));
 #else
 		color = unk_80423320;
 		color.r = work->r;

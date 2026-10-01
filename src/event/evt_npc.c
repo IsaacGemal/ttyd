@@ -860,16 +860,14 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     return EVT_RETURN_DONE;
 }
 
-// Full translation; only the callee-saved register assignment differs from the original: ours
-// puts targetY/targetZ/moveTime in f29/f27/f28 and speed/arcHeight in f30/f31, the original uses
-// f27/f28/f29/f31/f30. The rest of the mismatches cascade from those register choices.
-// Full translation. The original's two `_intplGetFloat` arguments are both computed before the
-// first call; MWCC here sinks the second division past it, which keeps moveTime/delta in
-// callee-saved f27/f26 and shifts the whole per-frame block. Writing the b call first recovers
-// most of the original register assignment. The remaining differences are constant-pool symbols
-// and the b/a register swap.
-// NONMATCHING (99.15%): the second quotient is computed after the first call, so moveTime/delta
-// land in f27/f26 instead of f2/f4; three `float_*` sda21 symbols and the sin/cos blocks differ.
+// The per-frame block now matches except for one register: the temp for
+// `dx = npc->jumpTargetPos.x - npc->jumpStartPos.x` must be f3 in the original (load f3,
+// subtract to f27); MWCC here loads it into f2. The key shapes: declare t/dy/delta in that
+// order, and compute the second intpl quotient as one statement `delta = (dy - delta) / t;`
+// before the calls, so both divisions hoist ahead of the first `_intplGetFloat` and `t` stays
+// volatile (giving dy/t/delta = f3/f2/f4 and speed/arcHeight = f31/f30).
+// NONMATCHING (99.97%): only the dx temp register differs (f2 vs original f3); logic and the
+// intpl call order, dy/t/delta colouring and sin/cos blocks all match.
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
     const char* npcName = (const char*)evtGetValue(event, args[0]);
@@ -886,9 +884,9 @@ USER_FUNC(evt_npc_glide_position) {
     f32 dist;
     f32 dx;
     f32 dz;
+    f32 t;
     f32 dy;
     f32 delta;
-    f32 t;
     f32 a;
     f32 b;
     s32 flag;
@@ -945,9 +943,9 @@ USER_FUNC(evt_npc_glide_position) {
         }
     }
 
-    delta = dy - delta;
-    b = _intplGetFloat(intplType, delta / t);
+    delta = (dy - delta) / t;
     a = _intplGetFloat(intplType, dy / t);
+    b = _intplGetFloat(intplType, delta);
     dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
     dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
     delta = a - b;

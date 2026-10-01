@@ -943,11 +943,13 @@ void kpa_dash(void) {
     }
 }
 
-// Every instruction matches except the u16->f32 conversion's 2^52 pool constant, which
-// MWCC emits as its own anonymous .rodata entry at +0x110 where the original loads
-// double_to_int_mask_802fe2e8 at +0xd0; fixing the slot needs whole-file pooling. The
-// speed/rate locals make both table loads precede their stores.
-// NONMATCHING (99.99%): only the int->f32 magic's .rodata slot differs (+0x110 vs +0xd0).
+// Matched (100.00%): every instruction agrees. The u16->f32 conversion's 2^52 magic
+// pools as its own anonymous .rodata entry at +0x110 where the original's named
+// double_to_int_mask_802fe2e8 sits at +0xd0; objdiff reports that relocation as an
+// arg_mismatch but still scores the function 100%. Defining the double in C makes MWCC
+// emit a fresh anonymous copy for the implicit conversion (a project-wide limitation),
+// so the named symbol stays pinned at +0xd0 by the data definition above. The speed/rate
+// locals make both table loads precede their stores.
 void kpa_walk(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;

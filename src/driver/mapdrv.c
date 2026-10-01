@@ -393,28 +393,10 @@ void mapReStartAnimationAll(void) {
 	}
 }
 
-// NONMATCHING (99.13%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
-void mapPauseAnimation(const char* name) {
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-
-	if (found) {
-		*(u16*)found |= 0x10;
-	}
-}
-
-// NONMATCHING (99.13%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
-void mapReStartAnimation(const char* name) {
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-
-	if (found) {
-		*(u16*)found |= 0x20;
-	}
-}
-
 #ifdef MUST_MATCH
-// Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner
-// allocates the helper's locals in declaration order, and that order is what puts
-// wp in the higher register (r28) in the target, matching the other inline copies.
+// Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner allocates the helper's
+// locals in declaration order, and that order puts wp in the higher register (r28) as in the target.
+// Natural form: `found = mapSearchAnmObj(name);`.
 static inline MapEntryAnimData* mapFindAnm(const char* animName) {
 	MapEntry* entry;
 	MapWork* wp;
@@ -434,6 +416,32 @@ static inline MapEntryAnimData* mapFindAnm(const char* animName) {
 	return NULL;
 }
 #endif
+
+void mapPauseAnimation(const char* name) {
+#ifdef MUST_MATCH
+	MapEntryAnimData* found = mapFindAnm(name);
+#else
+	MapEntryAnimData* found = mapSearchAnmObj(name);
+#endif
+
+	if (found) {
+		*(u16*)found |= 0x10;
+	}
+}
+
+// Matches via mapFindAnm: the inline copy's `entry`-before-`wp` declaration order puts wp in r28
+// (the higher register) in the target; inlining mapSearchAnmObj directly colors them the other way.
+void mapReStartAnimation(const char* name) {
+#ifdef MUST_MATCH
+	MapEntryAnimData* found = mapFindAnm(name);
+#else
+	MapEntryAnimData* found = mapSearchAnmObj(name);
+#endif
+
+	if (found) {
+		*(u16*)found |= 0x20;
+	}
+}
 
 void mapSetPlayRate(const char* name, f32 rate) {
 #ifdef MUST_MATCH
@@ -654,15 +662,15 @@ void mapObjFlushOn(const char* name) {
 	}
 }
 
-void mapDispMapGrp(MapObject* obj, void* a2) {
-	_mapDispMapGrp(obj, a2);
+void mapDispMapGrp(CameraId camId, MapObject* obj) {
+	_mapDispMapGrp(camId, obj);
 }
 
 void mapDispMapObj(CameraId camId, MapObject* obj) {
 	_mapDispMapObj(camId, obj);
 }
 
-void mapDispMapGrp_off(MapObject* obj, void* a2) {
+void mapDispMapGrp_off(CameraId camId, MapObject* obj) {
 	u16 v0;
 	u16 v1;
 	u16 v2;
@@ -670,10 +678,10 @@ void mapDispMapGrp_off(MapObject* obj, void* a2) {
 
 	sysWaitDrawSync();
 	GXClearBoundingBox();
-	_mapDispMapGrp(obj, a2);
+	_mapDispMapGrp(camId, obj);
 	sysWaitDrawSync();
 	GXReadBoundingBox(&v0, &v1, &v2, &v3);
-	offscreenAddBoundingBox(*(s16*)((u8*)a2 + 0xDC), v0, v1, v2, v3);
+	offscreenAddBoundingBox(*(s16*)((u8*)obj + 0xDC), v0, v1, v2, v3);
 }
 
 void mapDispMapObj_off(CameraId camId, MapObject* obj) {
@@ -2586,13 +2594,10 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 	}
 }
 
-// NONMATCHING (99.21%): the first/second params (camId/node) land in r31/r30, the reverse of the target's
-// r30/r31. The header declares the first param MapObject*; typing it CameraId (its real type, see
-// _mapDispMapObj) makes the function byte-identical. Reported, not changed (header fix + caller casts).
-void _mapDispMapGrp(MapObject* obj, void* a2) {
-	_mapDispMapObj((s32)obj, (MapObject*)a2);
-	if (((MapObject*)a2)->child) _mapDispMapGrp(obj, ((MapObject*)a2)->child);
-	if ((*(u32*)((MapObject*)a2)->field_0x0 & 0x20) && ((MapObject*)a2)->next) _mapDispMapGrp(obj, ((MapObject*)a2)->next);
+void _mapDispMapGrp(CameraId camId, MapObject* obj) {
+	_mapDispMapObj(camId, obj);
+	if (obj->child) _mapDispMapGrp(camId, obj->child);
+	if ((*(u32*)obj->field_0x0 & 0x20) && obj->next) _mapDispMapGrp(camId, obj->next);
 }
 
 // NONMATCHING (98.00%): inlined _mapDispMapObj_NoMaterial keeps an extra camId copy and one extra callee-saved reg
@@ -2666,19 +2671,10 @@ void* mapSearchDmdJointSub(void* a, void* b) {
 #define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj(*(p), (e), (n), (f))
 #endif
 
-// NONMATCHING (99.65%): branch-2 loop only: `e` and the compiler-generated i*4 induction
-// accumulate in r30/r31 swapped vs the target (target branch2 has e=r31, idx=r30; branch-1
-// loop is already exact with e=r30, idx=r31). The target's two `e` webs have different colors,
-// so it likely has a separate pointer per block; splitting `e` (function-scope or block-scope,
-// same or different name) reproduces branch 2 but moves `count` off r28 -- tried ~100 variants
-// (declaration permutations, block scopes, for-init forms, inline helper, pragmas, explicit
-// offsets); all scored below 99.65, so the shared-`e` form was kept. Both walks are otherwise
-// byte-identical.
 s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	Vec pos;
 	s32 count = 0;
 	s32 i;
-	LightEntry** e;
 
 	PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &pos);
 
@@ -2687,8 +2683,6 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 			count = LIGHT_GET_NEAR(&pos, entries, 8, 0);
 		}
 		else {
-			e = entries;
-
 			for (i = 0; i < 0x20; i++) {
 				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
 					MapEntry* entry = &mapWork[activeGroup].entries[*(s16*)(obj->field_0xDC + 2)];
@@ -2696,9 +2690,8 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
 
 					if (!(l->flags & LIGHT_AMBIENT)) {
+						entries[count] = l;
 						count++;
-						*e = l;
-						e++;
 						if (count >= 8) break;
 					}
 				}
@@ -2708,8 +2701,6 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	}
 	else {
 		if (*(u32*)(obj->joints->drawMode->unk2 + 2) != 0) {
-			e = entries;
-
 			for (i = 0; i < 0x20; i++) {
 				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
 					MapEntry* entry = &mapWork[activeGroup].entries[*(s16*)(obj->field_0xDC + 2)];
@@ -2717,9 +2708,8 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
 
 					if (!(l->flags & LIGHT_AMBIENT)) {
+						entries[count] = l;
 						count++;
-						*e = l;
-						e++;
 						if (count >= 8) break;
 					}
 				}

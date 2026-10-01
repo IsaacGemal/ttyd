@@ -159,11 +159,15 @@ static inline f32 effSleepVx(f32 nh, f32 s) {
 	return nh + s;
 }
 
-// Remaining diffs are callee-saved allocation -- negEight f21 (retail f23), first sine s0 f23 (retail
-// f21) and its fmuls/fadds, camId r25/headerAlpha r29/angle r25 (retail r26/r25/r29) -- plus four
-// anonymous literal pools (6.2832, 1.0, 0.125, 4.0 load from @265-@268 instead of
-// float_6p2832/float_1/float_0p125/float_4; naming them collapses MWCC's FPR scheduling to ~97%).
-// NONMATCHING (99.75%): instruction stream matches; see REPORT.md.
+// Declaring angle before data/i/j/headerAlpha and writing the second sine's angle as
+// `gp->retraceCount + angle + (j + 1) * 10` fixes the GPR allocation (retail camId r26,
+// headerAlpha r25, angle r29) and the integer add order; both are load-bearing.
+// The only remaining diff is that negEight and the first sine result trade callee-saved FPRs:
+// ours negEight f21 / s0 f23, retail negEight f23 / s0 f21 (this moves their fneg, fmuls and
+// two fadds). The four anonymous literal pools (6.2832, 1.0, 0.125, 4.0 load from @NNN instead
+// of float_6p2832/float_1/float_0p125/float_4) show in objdiff but are not scored -- effSleepEntry
+// has the same symbol-name mismatches and scores 100.00%.
+// NONMATCHING (99.92%): negEight/s0 FPR assignment; see REPORT.md.
 void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	CameraEntry* cam;
 	GXTexObj texObj;
@@ -174,11 +178,11 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	GXColor color;
 	f32 negEight;
 	f32 one;
-	s32 headerAlpha;
+	s32 angle;
 	effSleepData* data = effect->userdata;
 	s32 i;
 	s32 j;
-	s32 angle;
+	s32 headerAlpha;
 
 	cam = camGetPtr(camId);
 	headerAlpha = data->field_0x14;
@@ -231,7 +235,7 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 
 		for (j = 0; j < 8; j++) {
 			f32 s0 = effSleepSin(gp->retraceCount + angle + j * 10);
-			f32 s1 = effSleepSin(gp->retraceCount + (angle + (j + 1) * 10));
+			f32 s1 = effSleepSin(gp->retraceCount + angle + (j + 1) * 10);
 
 			GXBegin(0x80, 0, 4);
 			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s1), one * (f32)(j + 1), float_0_8042243c);

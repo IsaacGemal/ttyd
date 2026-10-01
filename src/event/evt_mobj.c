@@ -2076,6 +2076,14 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
 
 // NONMATCHING (99.35%): the itemEntry argument setup schedules the evtId load before the fadds and the x
 // load after it (target: x load, fadds, z load, evtId load); 2 replaced instructions, otherwise identical.
+// The two-step `y` (below) already forces the 0.04 constant into f2, the target's register. The remaining
+// reorder is the global optimizer hoisting the evtId load, not source-order scheduling: tried with no change
+// -- direct/inline/commuted y sums, x/z/evtId locals (function and block scope, every declaration/assignment
+// order), returning-inline helpers, comma-sequence forms, nested blocks, raw-offset and volatile reads, the
+// opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments/scheduling/optimize_for_size/
+// global_optimizer/defer_codegen pragmas, -O4,s, and MWCC 2.5/2.7/3.0a3/3.0a3p1/3.0a5 (all give this
+// schedule). Same known-hard load-hoist class as _hammer_star_effect (battle_mario.c) and
+// DrawSubMenuCommonProcess (battle_menu_disp.c).
 s32 mobj_badgeblk(MapObjectEntry* obj) {
     u8* base = (u8*)vec3_802c3dc8;
 
@@ -3784,6 +3792,9 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
     return 0;
 }
 
+// opt_common_subs off: with CSE on, MWCC hoists the pooled 25.0f load above the position.x load in
+// the final effMObjBrokenEntry call; off keeps the original load order.
+#pragma opt_common_subs off
 s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
     BOOL flag = FALSE;
 
@@ -3842,6 +3853,7 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
     }
     return 0;
 }
+#pragma opt_common_subs reset
 
 // NONMATCHING (96.77%): unit .rodata is not defined locally, so each pooled anim-name gets its own
 // lis/addi instead of the retail vec3_802c3dc8 base register (costs one callee-saved register).

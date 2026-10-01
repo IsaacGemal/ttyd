@@ -34,10 +34,14 @@ typedef struct PoseSoundEntry {
 
 // Reusing one variable for both evtGetValue and BattleTransID (`id = evtGetValue(...);
 // id = BattleTransID(event, id);`) removed the extra `mr r0` the two-variable form emitted.
-// What still differs is the pool: the string pool base is `r6`/`...rodata.0` (original `r5`/`str_802F6F38`),
-// so args goes through r5 not r6, the six strings sit at +0x8.. not +0x4F8.., and the jump-table base is
-// `@NNN` not `jumptable_8037EBF4`; those bytes belong to the unit's not-yet-written functions.
-// NONMATCHING (99.70%): only the pool base register/symbol and the pool offsets still differ.
+// The pool base register is r5/r6 as the original only with the pragma below (with propagation on
+// MWCC puts the string-pool base in r6 and event->args in r5); the only differences left are the
+// six string pool offsets and the .data jump-table symbol, both from the unit's not-yet-written data.
+#pragma opt_propagation off // with propagation on MWCC puts the string-pool base in r6 and event->args in r5 (original: r5/r6)
+// The two differences left are the string pool offsets and the .data jump-table symbol:
+// NONMATCHING (99.93%): the six string pool offsets (0x4F8.. vs 0x20..) and the .data jump-table
+// symbol (`jumptable_8037EBF4` vs `@471`) differ; both come from the rodata/.data that precede them
+// (pose tables at .rodata:0x0..0x4D8; .data objects before .data:0x51F4) and are not written yet.
 USER_FUNC(yoshi_original_color_anim_set) {
     s32 id;
     const char* name;
@@ -79,19 +83,20 @@ USER_FUNC(yoshi_original_color_anim_set) {
             return EVT_RETURN_DONE;
         }
         part = BattleGetUnitPartsPtr(id, 1);
-        animPoseGetAnimPosePtr(*(s32*)((u8*)part + 0x1C0));
-        if (*(s32*)((u8*)part + 0x1C0) != -1) {
-            animPoseRelease(*(s32*)((u8*)part + 0x1C0));
-            *(s32*)((u8*)part + 0x1C0) = -1;
+        animPoseGetAnimPosePtr(*(s32*)part->field_0x1C0);
+        if (*(s32*)part->field_0x1C0 != -1) {
+            animPoseRelease(*(s32*)part->field_0x1C0);
+            *(s32*)part->field_0x1C0 = -1;
         }
     }
     if (animEffectAsync(name, 1)) {
         part = BattleGetUnitPartsPtr(id, 1);
-        *(s32*)((u8*)part + 0x1C0) = animPoseEntry(name, 1);
+        *(s32*)part->field_0x1C0 = animPoseEntry(name, 1);
         return EVT_RETURN_DONE;
     }
     return 0;
 }
+#pragma opt_propagation reset
 
 extern BattleWeapon partyWeapon_YoshiNormalAttack;
 extern BattleWeapon partyWeapon_YoshiNomikomi_Shot;

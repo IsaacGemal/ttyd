@@ -4944,12 +4944,20 @@ u8 psndSFX_get_vol(s32 id) {
 // `addi r30,r4,psenv@l` directly. env still lands in r30 and the body is byte-for-byte
 // identical otherwise. The index form (`env = &psenv[i]` inside the loop) does give
 // the direct addi, but MWCC then colours the induction variable r31 and sfx r30,
-// swapping the two callee-saved registers. Putting the whole loop in a static inline
-// helper + `#pragma inline on` also gives the direct `addi r30` AND the right body,
-// but colours i r31 / sfx r29 (only i/sfx swapped, 36 diffs); the counter always
-// takes r31 there, and no declaration order or opt_* pragma moves it. The `addi r0`
-// is MWCC scheduling the address before the callee-save stores: making the address
-// depend on i (psenv+i, &psenv[id&0], ...) is constant-folded away again.
+// swapping the two callee-saved registers (i stays r29). Putting the whole loop in a
+// static inline helper and forcing it with `#pragma always_inline on` also gives the
+// direct `addi r30` AND the right body, but colours i r31 / sfx r29 (i/sfx swapped);
+// the counter always takes r31 there. `always_inline` has to stay on for the rest of
+// the translation unit (an `off`/`reset` after the function suppresses the inlining),
+// so it is not a usable local fix.
+// Verified not to move the swap: every declaration order, `register`, index-in-loop,
+// `do/while`, `for`-init and pointer-increment spelling, and every opt_*/scheduling/
+// peephole/always_inline pragma. The `addi r0` copy survives -O1..-O4, -O4,s and
+// `-opt noschedule`, so it is MWCC's front-end lowering of `env = psenv` (an array
+// decay) rather than the scheduler; `searchPSSFXList`'s `entry = pssfxlist` shows the
+// same copy in its 100% target. Making the address depend on i folds back to psenv
+// again. Compiler versions 1.3.2-2.7 all give the same index-form r31 pointer; only
+// the explicit-pointer form reaches the target r30, and only it emits the extra copy.
 void psndENV_stop(u32 id) {
 	PaperSoundEffect* sfx;
 	SoundEffectEntry* entry;

@@ -203,16 +203,17 @@ static inline GXColor itemColor0(u8 a, GXColor c) {
 }
 #endif
 
-// Six instructions still differ. (1) MWCC puts the cos result in f30, the target in f31 (`frsp f31,f1`
-// and the following `fneg f0,f31`); f31 later holds the +32/+5.33 sizes, so the two live ranges were
-// coloured differently. Splitting the scale into its own `scale` variable moved the cos result from f29
-// to f30, but no source shape tried (a cos/yaw temp, an inline cosf/cos wrapper, a nested/hoisted block,
-// declaration-order permutations, `f64`, `#pragma opt_lifetimes/opt_propagation/opt_common_subs/
-// opt_dead_assignments/scheduling/global_optimizer off`) puts it in f31. (2) In the second-loop preheader
-// the target loads 42.666668 into f1 and negates 10.666667 into f2; we get 42.666668 in f2 and the
-// negation in f1 (4 instructions). A `f32 f = 64.0f; f32 half = 0.5f; f30 = -f * half;` temp keeps the
-// target's scratch fneg instead of folding it into the fmuls. The GXColor temporaries match via itemColor0.
-// NONMATCHING (99.95%): cos result in f30 not f31 (2 insns); second-loop setup scratch f1/f2 swap (4 insns).
+// The cos result used to land in f30 (target f31) because the compiler coloured it with the first-loop
+// `-64.0f * 0.5f` value in f30; giving the second-loop `-42.666668f` its own `f30b` variable (reused as
+// the same machine register f30) puts cos in f31 and is byte-neutral otherwise. Only the second-loop
+// preheader is left: the target gets 10.666667 in f0, 42.666668 in f1 and the negation of 10.666667 in
+// f2 (`fneg f2,f0` / `fneg f30,f1` / `fmuls f29,f2,f0`); we get 10.666667 in f0, its negation in f1 and
+// 42.666668 in f2 (4 instructions). The scheduler emits the negation before 42.666668 is loaded, so the
+// negation takes f1. Source shapes tried without changing this: statement/declaration order, an explicit
+// negate temp, separate load statements, a separate `f42` temp, inline literals, top-level vs block
+// scopes, and `#pragma opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments/scheduling
+// off` (each breaks other instructions or the stack frame). The GXColor temporaries match via itemColor0.
+// NONMATCHING (99.96%): second-loop setup scratch f1/f2 swap (4 insns).
 void effItemGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -235,6 +236,7 @@ void effItemGetDisp(CameraId camId, void* param) {
 	s32 j;
 	f32 f31;
 	f32 f30;
+	f32 f30b;
 	f32 f29;
 	f32 scale;
 
@@ -350,7 +352,7 @@ void effItemGetDisp(CameraId camId, void* param) {
 		f32 f10 = 10.666667f;
 		f32 f42 = 42.666668f;
 		f32 half = 0.5f;
-		f30 = -f42;
+		f30b = -f42;
 		f29 = -f10 * half;
 	}
 	f31 = 5.3333335f;
@@ -406,9 +408,9 @@ void effItemGetDisp(CameraId camId, void* param) {
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(f31, 0.0f, 0.0f);
 			GXTexCoord2f32(2.0f, 0.0f);
-			GXPosition3f32(f31, f30, 0.0f);
+			GXPosition3f32(f31, f30b, 0.0f);
 			GXTexCoord2f32(2.0f, 1.0f);
-			GXPosition3f32(f29, f30, 0.0f);
+			GXPosition3f32(f29, f30b, 0.0f);
 			GXTexCoord2f32(0.0f, 1.0f);
 		}
 	}

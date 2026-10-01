@@ -228,17 +228,11 @@ s32 marioWaitDamageReturnFall(void) {
 // The 0x98/0xA4 Vec copies below are copied through double-volatile casts to keep the original
 // unscheduled per-component load/store order (the plain copy hoists `lwz 0x8(r30)` and `lwz 0xC(r30)`
 // one instruction too early). That fix is worth 0.80% and is guarded by MUST_MATCH (rule 7).
-// What still differs:
-//   - case 0x14 swaps f30/f31 (original spd=f31, floorY=f30; ours the reverse) - the allocator picks the
-//     free register for floorY rather than spd. Worth ~0.078%; no source shape found that flips it
-//     (declaration order, scope, naming, self-assignments, inlining the value, -O4,s and GC/1.3-2.5 all
-//     give the same swap). Also tried: local constant for the -10.0f clamp, if/else form of the floorY
-//     ternary, ternary form of the clamp, a separate case-0x14 fall-speed variable, an inline floorY
-//     helper, pre-initialising floorY, case-scope declarations, a case-scope hit pointer, and the
-//     opt_lifetimes/opt_dead_assignments/global_optimizer/opt_propagation/opt_common_subs/
-//     optimize_for_size/scheduling/peephole pragmas, each independently and with if/else: same swap or
-//     worse. decomp-permuter ran ~17.6k iterations (score stuck at 45) and found nothing.
-// NONMATCHING (99.92%): case 0x14 f30/f31 swap; see above.
+// case 0x14 keeps the returned Vec in a pointer local and assigns floorY from it in an if/else; the
+// plain ternary gives floorY f31 and spd f30, the reversed of the original's spd=f31/floorY=f30.
+// NONMATCHING (99.99%): every instruction/register/constant matches; the only report diff is the
+// unit's pool layout - our anonymous jump-table and int->float-double symbols don't match the
+// original's .data/.sdata2 symbols (the same project-wide pool-naming limitation winLogMain2 notes).
 void mot_damage(void) {
 	MarioWork* mario;
 	HitEntry* hit;
@@ -246,7 +240,7 @@ void mot_damage(void) {
 	Vec target;
 	f32 floorY;
 	f32 landY;
-
+	Vec* rp;
 	mario = marioGetPtr();
 	if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
 		mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
@@ -425,9 +419,12 @@ void mot_damage(void) {
 		if (spd <= -10.0f) {
 			spd = -10.0f;
 		}
-		floorY = *(HitEntry**)(mario->field_0x1F0 + 0x14) != NULL
-		             ? hitGetDamageReturnPos(*(HitEntry**)(mario->field_0x1F0 + 0x14))->y
-		             : mario->position.y;
+		if (*(HitEntry**)(mario->field_0x1F0 + 0x14) != NULL) {
+			rp = hitGetDamageReturnPos(*(HitEntry**)(mario->field_0x1F0 + 0x14));
+			floorY = rp->y;
+		} else {
+			floorY = mario->position.y;
+		}
 		if (marioBgmodeChk() == 1 || mario->position.y - floorY <= 50.0f) {
 			hit = marioChkLandon(&landY, spd);
 		} else {

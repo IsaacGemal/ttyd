@@ -164,10 +164,16 @@ void btlDispTexPlaneInit(void) {
 #pragma dont_inline reset
 
 // Writing the quad through a local `volatile PPCWGPipe*` puts the GX FIFO base in r12 as the target does (and
-// `ny` keeps -y in f2); 34 instructions still differ only in which caller-saved register holds each colour byte
-// (target: r3/r6/r7, r4/r5/r10/r11, r6/r7/r8/r9, r0/r3/r4/r5), plus three 1.0f pool entries the target names
-// float_1_8041bf64. The `switch` keeps the target's `beq then; b else` layout.
+// `ny` keeps -y in f2); the remaining diffs are only which caller-saved register holds each colour byte
+// (target: r0/r3/r6/r7, r4/r5/r10/r11, r6/r7/r8/r9, r0/r3/r4/r5). The `switch` keeps the target's
+// `beq then; b else` layout.
 // NONMATCHING (99.22%): only GX colour-byte temp registers differ; opcode sequence is identical.
+// Tried without a win: a GXColor4u8-style 4-scalar-argument inline helper (and all 24 argument permutations)
+// reproduces the target's colour0 registers exactly but forces the FIFO base into r5 instead of r12; a color
+// pointer helper, local GXColor copies, per-byte helpers, a 16-parameter whole-quad helper, explicit
+// `u8`/array temporaries, direct `GXWGFifo` accesses, and every relevant opt_* pragma (opt_lifetimes,
+// opt_common_subs, opt_propagation, opt_pointer_analysis, ...) all leave one of {base r12, colour registers}
+// wrong. The 1.0f/double pool-symbol names differ but do not affect the score.
 void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3) {
 	GXTexObj texobj;
 	f32 x, y;

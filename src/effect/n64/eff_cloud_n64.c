@@ -296,9 +296,31 @@ void effCloudMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (98.99%): all logic, constants, GX calls and the register set match; the rest is
-// graph-colouring/spill choice (type r22/r18, vtx r28/r22, alpha r18/r31), four stack slots sitting
-// 4 bytes lower, the strength-reduced i*180 increment's placement, and the @NNN magic double.
+// Two helpers that each build the TEV colour locally and pass it by value: this puts mwcc's three
+// colour stack slots where the target has them (local r1+0x10, first copy r1+0x14, second copy r1+0xc).
+// The plain assignment shape lands them 4 bytes lower and shifts mtx/texObj down too.
+#ifdef MUST_MATCH
+static inline void effCloudTevColor1(s32 r, s32 g, s32 b, s32 a) {
+	GXColor c = unk_804230c0;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void effCloudTevColor2(s32 r, s32 g, s32 b) {
+	GXColor c = unk_804230c4;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	GXSetTevColor(2, c);
+}
+#endif
+
+// NONMATCHING (99.26%): logic/constants/GX calls/register set match; still differs in global graph
+// colouring (texBase/vtx land r31/r19 vs r19/r28, rotating the loop-constant trio; `prev` coalesces
+// into r15; fadeB conversion swaps r3/r4; second loop's i/v swap; i*180 increment scheduled late).
 void effCloudDisp(CameraId cameraId, void* param) {
 	effCloudData* data;
 	s32 frame;
@@ -325,7 +347,11 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	f32 a;
 	f32 sx;
 	s32 age;
+#ifdef MUST_MATCH
+	// colours are built in the MUST_MATCH inlines above
+#else
 	GXColor color;
+#endif
 	EffectEntry* effect;
 	s32 fadeB;
 	s32 alpha0;
@@ -381,6 +407,11 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	effGetTexObjN64(0x83, &texObj);
 	GXLoadTexObj(&texObj, 0);
 
+#ifdef MUST_MATCH
+	effCloudTevColor1(data->field_0x18, data->field_0x1C, data->field_0x20, alpha0);
+
+	effCloudTevColor2(data->field_0x28, data->field_0x2C, data->field_0x30);
+#else
 	color = *(GXColor*)&unk_804230c0;
 	color.r = data->field_0x18;
 	color.g = data->field_0x1C;
@@ -393,6 +424,7 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	color.g = data->field_0x2C;
 	color.b = data->field_0x30;
 	GXSetTevColor(2, color);
+#endif
 
 	GXLoadPosMtxImm(cam->view, 0);
 	GXSetCurrentMtx(0);
@@ -431,10 +463,10 @@ void effCloudDisp(CameraId cameraId, void* param) {
 					firstActive = i;
 				} else if (i != 29) {
 					k = j + 1;
+					prev = j - 1;
 					if (k >= 30) {
 						k = 0;
 					}
-					prev = j - 1;
 					if (prev < 0) {
 						prev = 29;
 					}

@@ -451,6 +451,7 @@ static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
 }
 #endif
 
+// NONMATCHING (99.73%): the +6.4 constant lands in f27, not retail's f31.
 static void effKemuri2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effKemuri2Data* data = effect->userdata;
@@ -489,9 +490,9 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
 	for (i = 0; i < 2; i++) {
-		const f32 negSize2 = -float_12p8_8041c690;
 		const f32 negSizeX = -float_12_8041c688;
 		const f32 negSizeY = -float_8_8041c68c;
+		const f32 negSize2 = -float_12p8_8041c690 * float_0p5_8041c6cc;
 
 		if ((data->field_0x78 > float_20_8041c694 && data->field_0x78 < float_160_8041c698) ||
 		    (data->field_0x78 > float_180_8041c69c && data->field_0x78 < float_340_8041c6a0)) {
@@ -597,13 +598,13 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 #endif
 		}
 		GXBegin(0x80, 0, 4);
-		GXPosition3f32(negSize2 * float_0p5_8041c6cc, float_6p4_8041c6d4, 0.0f);
+		GXPosition3f32(negSize2, float_6p4_8041c6d4, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
 		GXPosition3f32(float_6p4_8041c6d4, float_6p4_8041c6d4, 0.0f);
 		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(float_6p4_8041c6d4, negSize2 * float_0p5_8041c6cc, 0.0f);
+		GXPosition3f32(float_6p4_8041c6d4, negSize2, 0.0f);
 		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(negSize2 * float_0p5_8041c6cc, negSize2 * float_0p5_8041c6cc, 0.0f);
+		GXPosition3f32(negSize2, negSize2, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }

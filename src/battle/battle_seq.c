@@ -927,6 +927,10 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 // NONMATCHING (99.19%): all instructions match except the count/wp callee-saved pair is swapped
 // (target count r30/wp r31, compiler picks count r31/wp r30). Declaration order, raw vs header-field
 // offsets, 128 pragma combos, compilers 1.3-2.7, inline helpers, f32/Vec/array temps and loop forms tried.
+// Rechecked: every GC compiler 1.3-2.7, optimization_level 0-4, opt_lifetimes/opt_loop_invariants/
+// peephole/scheduling pairs, wp/count aliases (u8* casts, selective per-loop use, 1-6 deep), extra locals,
+// algebraic rewrites, inline swap/count helpers, function reordering and -fp_contract off all keep the
+// same swap; the generated instruction sequence is otherwise byte-for-byte identical.
 void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
 	s32 count = mode;
 	s32 i;

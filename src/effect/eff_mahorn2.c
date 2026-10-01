@@ -301,6 +301,7 @@ void effMahorn2Disp(CameraId camId, void* param) {
     f32 rootScale;
     f32 w;
     f32 h;
+    f32 half;
     f32 texW;
     f32 texH;
     s32 type;
@@ -365,6 +366,11 @@ void effMahorn2Disp(CameraId camId, void* param) {
         GXLoadPosMtxImm(mtxFinal, 0);
         GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+        half = 0.5f;
+#else
+        half = float_0p5_804225ac;
+#endif
         type = data->type;
         switch (type) {
         case 0:
@@ -397,24 +403,25 @@ void effMahorn2Disp(CameraId camId, void* param) {
 
         if (type != 3) {
             GXBegin(0x80, 0, 4);
-            GXPosition3f32(-w * float_0p5_804225ac, h * float_0p5_804225ac, float_0_804225b0);
+            GXPosition3f32(-w * half, h * half, float_0_804225b0);
             GXTexCoord2f32(float_0_804225b0, float_0_804225b0);
-            GXPosition3f32(w * float_0p5_804225ac, h * float_0p5_804225ac, float_0_804225b0);
+            GXPosition3f32(w * half, h * half, float_0_804225b0);
             GXTexCoord2f32(texW, float_0_804225b0);
-            GXPosition3f32(w * float_0p5_804225ac, -h * float_0p5_804225ac, float_0_804225b0);
+            GXPosition3f32(w * half, -h * half, float_0_804225b0);
             GXTexCoord2f32(texW, texH);
-            GXPosition3f32(-w * float_0p5_804225ac, -h * float_0p5_804225ac, float_0_804225b0);
+            GXPosition3f32(-w * half, -h * half, float_0_804225b0);
             GXTexCoord2f32(float_0_804225b0, texH);
         }
         else {
-            top = h * float_0p5_804225ac;
 #ifdef MUST_MATCH
-            // MUST_MATCH: multiplying with the constant first keeps the fmuls operand encoding while the
-            // allocator holds -h and 0.5f in the opposite FPRs from `-h * 0.5f`.
-            bottom = float_0p5_804225ac * -h;
+            // MUST_MATCH: a local for the multiplier keeps the compiler from shifting the whole f24-f31
+            // allocation when the pool load is named; the multiply follows in the natural order.
+            f32 two = float_2_804225a4;
 #else
-            bottom = -h * float_0p5_804225ac;
+            f32 two = 2.0f;
 #endif
+            top = h * float_0p5_804225ac;
+            bottom = float_0p5_804225ac * -h;
 
             for (j = 0; j < 3; j++) {
                 GXBegin(0x80, 0, 4);
@@ -423,13 +430,13 @@ void effMahorn2Disp(CameraId camId, void* param) {
                     f32 texs[6] = { 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f };
 
                     GXPosition3f32(widths[j * 2], top, float_0_804225b0);
-                    GXTexCoord2f32(2.0f * texs[j * 2], float_0_804225b0);
+                    GXTexCoord2f32(two * texs[j * 2], float_0_804225b0);
                     GXPosition3f32(widths[j * 2 + 1], top, float_0_804225b0);
-                    GXTexCoord2f32(2.0f * texs[j * 2 + 1], float_0_804225b0);
+                    GXTexCoord2f32(two * texs[j * 2 + 1], float_0_804225b0);
                     GXPosition3f32(widths[j * 2 + 1], bottom, float_0_804225b0);
-                    GXTexCoord2f32(2.0f * texs[j * 2 + 1], texH);
+                    GXTexCoord2f32(two * texs[j * 2 + 1], texH);
                     GXPosition3f32(widths[j * 2], bottom, float_0_804225b0);
-                    GXTexCoord2f32(2.0f * texs[j * 2], texH);
+                    GXTexCoord2f32(two * texs[j * 2], texH);
                 }
             }
         }

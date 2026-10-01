@@ -270,14 +270,15 @@ s32 weaponGetPower_Deka(void) {
 }
 
 // .text:0x4BC | 0x8024327C | size: 0x354
-// Register allocation only. Loop 1 computes its scratch FPRs one slot low (beatPeriod f4
-// vs f5). The final `- 7 - 2` holds 2 in f0 and 70 in f1 where the original holds 2 in f1
-// and 70 in f0 (same instructions, swapped f-registers). The int->float magic is the
-// compiler's local @668 instead of double_to_int_80300630 (objdiff ignores that reloc).
-// The MUST_MATCH block below is what gets this far: it hoists the two clamp bounds as
-// callee-saved locals (30 in f30, 20 in f31) and gives the scan loop's tm/tj function
-// scope, which reproduces the original's registers.
-// NONMATCHING (99.41%): loop-1 scratch FPRs one low, and the final `- 7 - 2` has 2/70 in f0/f1.
+// 100%: the loop-1 and final scratch FPRs are pinned by writing the literal
+// 30.0f / 7.0f / 2.0f / 70.0f where the named .sdata2 constants would be used. A
+// literal is a constant node and the named constant is an extern load, so MWCC colours
+// the surrounding float temporaries one register lower for the named form; the literals
+// hold the same values and pool to the same slots (objdiff normalises those symbols).
+// The MUST_MATCH block also hoists the scan loop's two clamp bounds as callee-saved
+// locals (30 in f30, 20 in f31) and gives tm/tj function scope, which reproduces the
+// original's registers. The int->float magic stays the compiler's local @668 instead of
+// double_to_int_80300630 (objdiff ignores that reloc).
 void create_timing(void) {
     DekaWork* p = get_ptr();
     s32 idx[8];
@@ -323,9 +324,15 @@ restart:
 #else
             f = (p->beatPeriod - float_40_80421e68) * (f32)rand() / float_32767_80421e6c;
 #endif
+#ifdef MUST_MATCH
+            if (f <= 30.0f) {
+                f = 30.0f;
+            }
+#else
             if (f <= float_30_80421e70) {
                 f = float_30_80421e70;
             }
+#endif
             if (f >= p->beatPeriod - float_20_80421e74) {
                 f = p->beatPeriod - float_20_80421e74;
             }
@@ -401,12 +408,22 @@ scan:
         }
     }
 
+#ifdef MUST_MATCH
+    f = p->beatPeriod - 7.0f - 2.0f;
+#else
     f = p->beatPeriod - float_7_80421e78;
     f = f - float_2_80421e7c;
+#endif
     p->timing[idx[n - 1]].time = f;
+#ifdef MUST_MATCH
+    if (p->timing[idx[0]].time > 70.0f) {
+        p->timing[idx[0]].time = 70.0f;
+    }
+#else
     if (p->timing[idx[0]].time > float_70_80421e80) {
         p->timing[idx[0]].time = float_70_80421e80;
     }
+#endif
 }
 
 // .text:0x5E4 | 0x802435DC | size: 0x230

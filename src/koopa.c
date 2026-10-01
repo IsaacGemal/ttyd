@@ -88,9 +88,16 @@ f32 kpaGetBaseScale(s32 index) {
     return baseScaleTbl[index];
 }
 
-// NONMATCHING (99.40%): two scheduling/register-allocation quirks remain that don't respond to source shape:
-// PSMTXRotRad's camera read lands in f0 (original f2) with deg2rad in f2 (original f0), and the loop init
-// emits `addi r29,r29,0x50` before `li r28,1` (the original the reverse).  Compiler stamps 02040701/02040201.
+// The only instruction difference left is the loop preheader: MWCC emits `addi r29,r29,0x50` before
+// `li r28,1` where the original has the reverse. `#pragma scheduling off` flips the pair but changes
+// ~60 other instructions, and every source shape tried (i=1 first, comma and for-init forms, root+1 /
+// &root[1] / pointer-increment inits, an inline helper, and the opt_propagation / opt_lifetimes /
+// global_optimizer / peephole / dead-assignment toggles) leaves the order as the scheduler chose it.
+// The other `!!` arg mismatches are only .sdata2 pool slots: this file is in asm order, so the pool is
+// emitted in reverse; in the canonical (reverse-source) position kpaFireMain's constants pool in the
+// original order. Compiler stamps 02040701/02040201; the paired function kpaEnemyFireHitChk has the
+// identical preheader quirk.
+// NONMATCHING (99.52%): only the loop preheader `li r28,1` / `addi r29,r29,0x50` order differs.
 void kpaFireMain(void) {
     MarioWork* mp = marioGetPtr();
     f32 sign;
@@ -102,7 +109,6 @@ void kpaFireMain(void) {
     KpaFireNode* root;
     KpaFireNode* node;
     s32 i;
-    CameraEntry* cam;
     Mtx m2, m0, m1, m3; // declaration order puts the matrices in the original's stack slots
     Vec out;
     Vec v;
@@ -148,12 +154,11 @@ void kpaFireMain(void) {
         goto cleanup;
     }
     efp = fireefp;
-    cam = camGetPtr(4);
+    camGetPtr(4);
     root = efp->userdata;
     rootScale = root->unk40;
     PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
-    cam = camGetPtr(4);
-    PSMTXRotRad(m1, 0x79, 0.017453292f * (root->unk48 - MW_F32(cam, 0x114)));
+    PSMTXRotRad(m1, 0x79, (root->unk48 - camGetPtr(4)->viewYaw) * 0.017453292f);
     if (root->unk48 > 90.0f && root->unk48 < 270.0f) {
         PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
     } else {
