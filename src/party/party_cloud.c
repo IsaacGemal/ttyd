@@ -438,26 +438,26 @@ void N__cloud_use(PartyEntry* party) {
 #undef cloud
 #undef MOVE_TO_MARIO
 
-// Two diffs remain in cloud_use. (1) The original spells the `mot == 2` guard as
-// `if (mot == 2) return;` but MWCC keeps the then-block out of line (`bne body; b end`); we emit the
-// merged `beq end`, one instruction shorter. (2) The move-to-mario flag lands in r4 where the original
-// uses r0, so the two position loads pick r3/r0 instead of r4/r3. opt_common_subs off is required:
-// with CSE on MWCC hoists party+0x94 across movePos into a callee-saved register (r29 + a 0x20 frame).
+// `opt_common_subs off`: with CSE on MWCC hoists party+0x94 across movePos into a
+// callee-saved register (r29 + a 0x20 frame). Writing the flag as `pf = (...)` rather
+// than `if (...) pf = 1;` gives the original's r0 allocation for pf.
 #pragma opt_common_subs off // without it MWCC CSEs party+0x94 across movePos into a callee-saved register (r29)
 static inline void cloudMoveToMario(PartyEntry* party) {
     MarioWork* pm = party->playerPtr;
     f32 pa;
-    s32 pf = 0;
+    s32 pf;
     *(Vec*)((u8*)party + 0x94) = pm->position;
     pa = *(f32*)pm->unk1AC;
-    if (pa < 90.0f || pa >= 270.0f) { pf = 1; }
-    pa = toMovedir(pa + (pf ? -90.0f : 90.0f));
+    pf = (pa < 90.0f || pa >= 270.0f);
+    pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
     *(f32*)((u8*)party + 0x98) += 10.0f;
     party->position = *(Vec*)((u8*)party + 0x94);
 }
 
-// NONMATCHING (98.65%): see the note above the inline helper for the two remaining diffs.
+// The original spells the last two guards as one `mot <= 1 || mot == 2` condition; MWCC then
+// keeps the `mot == 2` arm out of line (`bne body; b end`). The braces below just keep the
+// cleanup body in its own scope (and unchanged from the base).
 void cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     u16 mot;
@@ -468,10 +468,10 @@ void cloud_use(PartyEntry* party) {
     if (mot == 0x1B) {
         return;
     }
-    if (mot <= 1) {
+    if (mot <= 1 || mot == 2) {
         return;
     }
-    if (mot != 2) {
+    {
         party->flags &= ~(1 << 8);
 
         if (party->useStruct != NULL) {

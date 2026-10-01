@@ -261,26 +261,59 @@ static inline GXColor nozleTevColor(u8 alpha) {
 }
 #endif
 
-// Every instruction is present; MWCC colours the long-lived webs differently from the
-// target: effect is r31 (target r25), base r29 (r30) and camera r30 (r31), which rotates the
-// per-branch loop pointers and counters too (target j/size/dl in r31/r29/r28, i/entry in r26/r27).
-// NONMATCHING (99.28%): register colours differ; the type-3 reload is the original's remat.
+// The original has each display-list loop in its own inline helper; with the loops inlined at
+// their call sites MWCC colours effect/base/camera r31/r29/r30 instead of the target's
+// r25/r30/r31 and rotates every loop pointer.  The helpers leave the whole function matching
+// except `data`, which lands in r28 where the original keeps it in r27.
+static inline void nozleDrawDL1_0(void) {
+	u32 j;
+	for (j = 0; j < 10; j++) {
+		GXCallDisplayList(nozle_1_dl_0_tbl[j], nozle_1_dl_0_size_tbl[j] << 5);
+	}
+}
+static inline void nozleDrawDL1_1(void) {
+	u32 j;
+	for (j = 0; j < 10; j++) {
+		GXCallDisplayList(nozle_1_dl_1_tbl[j], nozle_1_dl_1_size_tbl[j] << 5);
+	}
+}
+static inline void nozleDrawDL3_1(u8* base) {
+	u32 j;
+	for (j = 0; j < 0x11; j++) {
+		GXCallDisplayList(((u8**)(DATA_AT(0x1820, nozle_3_dl_1_tbl)))[j], nozle_3_dl_1_size_tbl[j] << 5);
+	}
+}
+static inline void nozleDrawDL3_0(u8* base) {
+	u32 j;
+	for (j = 0; j < 0x11; j++) {
+		GXCallDisplayList(((u8**)(DATA_AT(0x1200, nozle_3_dl_0_tbl)))[j], nozle_3_dl_0_size_tbl[j] << 5);
+	}
+}
+static inline void nozleDrawDL4_0(void) {
+	u32 j;
+	for (j = 0; j < 8; j++) {
+		GXCallDisplayList(nozle_4_dl_0_tbl[j], nozle_4_dl_0_size_tbl[j] << 5);
+	}
+}
+
+// NONMATCHING (99.89%): every instruction matches except the `data` pointer, which MWCC keeps
+// in r28 where the original uses r27.
 void effNozleDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	effNozleData* data = effect->userdata;
-	CameraEntry* camera;
+	effNozleData* data;
 	effNozleEntryData* entry;
-	u8* base;
+	s32 i;
+	CameraEntry* camera;
+	s32 alpha;
+	GXColor color;
 	GXTexObj tex;
 	Mtx transMtx;
 	Mtx rotMtx;
 	Mtx scaleMtx;
 	Mtx mtx;
-	GXColor color;
-	s32 alpha;
-	s32 i;
-	u32 j;
+	u8* base;
 
+	data = effect->userdata;
 	base = lbl_803AE260;
 	camera = camGetPtr(camId);
 	alpha = data->alpha;
@@ -361,9 +394,7 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(0xE, 2);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
 		GXSetArray(0xE, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
-		for (j = 0; j < 10; j++) {
-			GXCallDisplayList(nozle_1_dl_0_tbl[j], nozle_1_dl_0_size_tbl[j] << 5);
-		}
+		nozleDrawDL1_0();
 		GXClearVtxDesc();
 		GXSetVtxDesc(9, 2);
 		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
@@ -380,9 +411,7 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(0xE, 2);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
 		GXSetArray(0xE, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
-		for (j = 0; j < 10; j++) {
-			GXCallDisplayList(nozle_1_dl_1_tbl[j], nozle_1_dl_1_size_tbl[j] << 5);
-		}
+		nozleDrawDL1_1();
 		break;
 	case 2:
 		GXClearVtxDesc();
@@ -401,9 +430,7 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(0xE, 3);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
 		GXSetArray(0xE, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
-		for (j = 0; j < 0x11; j++) {
-			GXCallDisplayList(((u8**)(DATA_AT(0x1820, nozle_3_dl_1_tbl)))[j], nozle_3_dl_1_size_tbl[j] << 5);
-		}
+		nozleDrawDL3_1(base);
 		GXClearVtxDesc();
 		GXSetVtxDesc(9, 3);
 		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
@@ -420,9 +447,7 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetVtxDesc(0xE, 3);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
 		GXSetArray(0xE, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
-		for (j = 0; j < 0x11; j++) {
-			GXCallDisplayList(((u8**)(DATA_AT(0x1200, nozle_3_dl_0_tbl)))[j], nozle_3_dl_0_size_tbl[j] << 5);
-		}
+		nozleDrawDL3_0(base);
 		break;
 	case 3:
 		GXSetTevAlphaIn(0, 7, 1, 4, 7);
@@ -435,11 +460,12 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetTevColor(1, color);
 #ifdef MUST_MATCH
 		// the original rematerialises data here, re-reading effect->userdata
-		entry = ((effNozleData*)effect->userdata)->entries;
+		entry = (effNozleEntryData*)((effNozleData*)effect->userdata);
+		entry = &entry[1];
 #else
 		entry = data->entries;
 #endif
-		for (i = 1; i < effect->count; i++) {
+		for (i = 1; i < effect->count; i++, entry++) {
 			PSMTXTrans(transMtx, entry->field_0x18, -entry->field_0x1C, float_0_80421234);
 			GXLoadTexMtxImm(transMtx, 0x1E, 1);
 			PSMTXTrans(transMtx, entry->field_0x20, -entry->field_0x24, float_0_80421234);
@@ -466,10 +492,7 @@ void effNozleDisp(CameraId camId, void* param) {
 			GXSetVtxDesc(0xE, 2);
 			GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xD);
 			GXSetArray(0xE, DATA_AT(0x19C0, nozle_4_texcoord1_tbl), 4);
-			for (j = 0; j < 8; j++) {
-				GXCallDisplayList(nozle_4_dl_0_tbl[j], nozle_4_dl_0_size_tbl[j] << 5);
-			}
-			entry++;
+			nozleDrawDL4_0();
 		}
 		break;
 	}

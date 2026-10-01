@@ -75,15 +75,13 @@ s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 }
 #pragma optimize_for_size reset
 
-// The disp base pointer is the only difference. The original materialises `disp = param + 0x1F20` in r31
-// (`addi r31, r4, 0x1f20`) and reads the state from r4; MWCC folds the disp pointer into the BattleWork
-// base (`mr r31, r4` plus 0x1f3x offsets) instead. Every pragma tried (optimize_for_size, opt_common_subs/
-// opt_propagation/opt_lifetimes/global_optimizer off) and source form (u8*/member pointer, member order,
-// register/volatile) gives the same merge or worse.
-// NONMATCHING (98.81%): see above.
+// Deriving both the state and disp parameters from one BattleActions* (rather than straight from
+// the BattleWork*), state read first, is what makes MWCC materialise the disp base in r31
+// (`addi r31, r4, 0x1f20`) and load the state from r4, as the original does.
 void battleAcDisp_TimingA(CameraId camId, void* param) {
-	BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
-	s32 state = ((BattleWork*)param)->actionCommands.mAcState;
+	BattleActions* ac = &((BattleWork*)param)->actionCommands;
+	s32 state = ac->mAcState;
+	BattleACDispParams* disp = &ac->dispParams;
 
 	switch (state) {
 	case 0x63:

@@ -17,7 +17,7 @@ typedef struct ItemData {
 	s8 bp_cost; //0x1C
 	u8 hp_restored; //0x1D
 	u8 fp_restored; //0x1E
-	s8 sp_restored; //0x1F
+	u8 sp_restored; //0x1F
 	s16 icon_id; //0x20
 	s16 field_0x22; //0x22
 	BattleWeapon* battle_params; //0x24

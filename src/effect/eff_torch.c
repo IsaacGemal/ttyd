@@ -4,7 +4,7 @@
 #include "mario/mariost.h"
 #include "memory.h"
 
-u32 torch_obj2_texture[256] = {
+u32 torch_obj2_texture[256] ATTRIBUTE_ALIGN(32) = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000011,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,

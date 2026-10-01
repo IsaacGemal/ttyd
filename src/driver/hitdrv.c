@@ -1064,33 +1064,37 @@ HitEntry* hitCheckAttr(s32 user0, f32* hitX, f32* hitY, f32* hitZ, f32* distance
     return entry;
 }
 
-// NONMATCHING (99.72%): same instructions; only register numbers or operands differ.
+// NONMATCHING (99.96%): same instructions. The found-flag `var_r29` lives in r29; retail reuses
+// objectId's r28 for it. The base register was won back with the `wp = (MapWork*)&wp->entries[entryId]`
+// in-place reassignment (a separate `map` variable left the base in r29 and the flag in r30).
 HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
-                               f32 distance) { // almost 1:1, stubborn regalloc
-    MapWork* wp = mapGetWork();
-    MapEntry* var_r31 = wp->entries;
+                               f32 distance) {
+    int i;
+    MapWork* wp;
+    MapEntry* var_r31;
     MapEntry* map;
     Vec sp68;
     int j;
-    HitEntry* temp_r27;
     HitEntry* var_r23;
     HitVector* vector;
     f32 var_f28;
     f32 temp_f1;
     f32 var_f30;
     f32 var_f31;
-    s32 entryId;
     s32 objectId;
     s32 var_r29;
     HitCheckQuery temp;
+    s32 entryId;
+    HitEntry* temp_r27;
     HitCheckQuery* query;
-    int i;
 
+    wp = mapGetWork();
+    var_r31 = wp->entries;
     var_f28 = -1.0f;
     objectId = -1;
     query = &temp;
     sp68 = (Vec){ x, y, z };
-    for (i = 0; i < var_r31->count; var_r31++, i++) {
+    for (i = 0; i < wp->entries->count; var_r31++, i++) {
         var_r23 = var_r31->hitEntries;
         for (j = 0; j < var_r31->hitNumJoints; j++, var_r23++) {
             if ((var_r23->attributes & 0x80000000) && (var_r23->joint->partCount != 0)) {
@@ -1117,8 +1121,14 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     if (var_f28 < (0.5f * var_f31)) {
         return &wp->entries[entryId].hitEntries[objectId];
     }
+#ifdef MUST_MATCH
+    // MUST_MATCH: in-place base update makes MWCC reuse wp's register (r30) for the map, as retail does.
+    wp = (MapWork*)&wp->entries[entryId];
+    temp_r27 = &wp->entries[0].hitEntries[objectId];
+#else
     map = &wp->entries[entryId];
     temp_r27 = &map->hitEntries[objectId];
+#endif
     PSVECSubtract(&temp_r27->centerWorld, &sp68, &query->targetDir);
     PSVECNormalize(&query->targetDir, &query->targetDir);
     var_f30 = -1.0f;
@@ -1145,7 +1155,11 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
     if (var_r29 < 0) {
         return 0;
     }
+#ifdef MUST_MATCH
+    return &wp->entries[0].hitEntries[objectId];
+#else
     return &map->hitEntries[objectId];
+#endif
 }
 
 HitEntry* hitNameToPtr(const char* name) { // 1:1

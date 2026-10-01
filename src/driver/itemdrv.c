@@ -385,11 +385,20 @@ ItemEntry* itemNameToPtr(char* name) {
     return NULL;
 }
 
-// Float-register allocation in the vertical range test differs (8 instructions): the original
-// keeps the offset in f2, the 0.5 constant in f4 and the 10.0 constant in f1 (reused for the
-// hit distance); this build picks f1/f2/f5 instead. The MUST_MATCH subtraction swap keeps the
-// original's f3 (item Y) live; same value through fabs.
-// NONMATCHING (99.72%): only the vertical-test float registers differ.
+// The vertical range test needs the original's FPR colouring (0.5 in f4, the offset in f2,
+// 10.0 in f1) and the 0.5 load scheduled before mario's collision-box Y. Written directly,
+// MWCC CSEs the two products and schedules the direct sum so the constants land in f3/f5;
+// reading 0.5 and the box Y through the two inlines below splits the range term and produces
+// the original schedule. The natural expression is under #else.
+#ifdef MUST_MATCH
+static inline f32 itemHitCheckHalf(void) {
+    return float_0p5_8041afb8;
+}
+
+static inline f32 itemHitCheckBoxY(MarioWork* mario) {
+    return mario->wPlayerCollisionBox.y;
+}
+#endif
 ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     ItemWork* wp = itemGetWork();
     MarioWork* mario;
@@ -438,9 +447,8 @@ ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist) {
             && marioGetJabaraState() != 4
             && marioGetJabaraState() != 5
 #ifdef MUST_MATCH
-            // reversed subtraction order: same value (fabs), but it makes the original's f3 (item Y) live.
-            && __fabsf(entry->position.y - (float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + y))
-                < (float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + float_10_8041afb0)) {
+            && __fabsf((float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + y) - entry->position.y)
+                < (itemHitCheckHalf() * itemHitCheckBoxY(mario) + float_10_8041afb0)) {
 #else
             && __fabsf((float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + y) - entry->position.y)
                 < (float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + float_10_8041afb0)) {

@@ -628,7 +628,6 @@ void floatOffsetControl(BattleUnitPart* part) {
 }
 
 
-// NONMATCHING (99.22%): only 8 `mullw` operand-order diffs remain (target `blurColor*counter`, ours `counter*blurColor`).
 void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 	BattleWorkUnitPartBlur* blur = &parts->blurWork;
 	BattleWorkUnitPartBlurEntry* work;
@@ -639,10 +638,11 @@ void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 		work = &blur->work[i];
 		color = work->base;
 		if (work->flags & 1) {
-			color.r = color.r * (u8)((u8)work->blurColor[0] * (10 - i) / 10 + (u8)work->blurColor[4] * i / 10) / 0xff;
-			color.g = color.g * (u8)((u8)work->blurColor[1] * (10 - i) / 10 + (u8)work->blurColor[5] * i / 10) / 0xff;
-			color.b = color.b * (u8)((u8)work->blurColor[2] * (10 - i) / 10 + (u8)work->blurColor[6] * i / 10) / 0xff;
-			color.a = color.a * (u8)((u8)work->blurColor[3] * (10 - i) / 10 + (u8)work->blurColor[7] * i / 10) / 0xff;
+			// blurColor is loaded unsigned in the original (lbz); the header's s8 is wrong.
+			color.r = color.r * (u8)(((u8*)work->blurColor)[0] * (10 - i) / 10 + ((u8*)work->blurColor)[4] * i / 10) / 0xff;
+			color.g = color.g * (u8)(((u8*)work->blurColor)[1] * (10 - i) / 10 + ((u8*)work->blurColor)[5] * i / 10) / 0xff;
+			color.b = color.b * (u8)(((u8*)work->blurColor)[2] * (10 - i) / 10 + ((u8*)work->blurColor)[6] * i / 10) / 0xff;
+			color.a = color.a * (u8)(((u8*)work->blurColor)[3] * (10 - i) / 10 + ((u8*)work->blurColor)[7] * i / 10) / 0xff;
 			if (color.a == 0) continue;
 			animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1c0), color);
 			animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1c0), 0x40);

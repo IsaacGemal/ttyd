@@ -151,9 +151,10 @@ void effChargeMain(EffectEntry* effect) {
 }
 
 #ifdef MUST_MATCH
-// Build each GXColor in a helper so the by-value argument is copied into the outgoing slot retail uses.
-static inline GXColor effChargeColorBase(u8 r, u8 g, u8 b) {
-    GXColor c = unk_80423068;
+// The original builds each TEV colour in a helper that returns it by value; passing the base colour into the
+// first helper as a parameter (rather than reading the global inside it) is what makes mwcc place the inline
+// local and the outgoing argument copy in retail's stack slots.
+static inline GXColor effChargeColorBase(GXColor c, u8 r, u8 g, u8 b) {
     c.r = r;
     c.g = g;
     c.b = b;
@@ -168,9 +169,10 @@ static inline GXColor effChargeColorElem(u8 r, u8 g, u8 b, u8 a) {
     return c;
 }
 #endif
-// NONMATCHING (99.91%): only stack slots differ. Retail builds the first tev-color temp at 0x10 and copies it
-// up to the outgoing slot at 0x14, and the second colour's outgoing slot is 0xc; MWCC builds the first temp at
-// 0xc, copies to 0x14 and gives the second colour 0x10. `fmuls`/`fcmpu` operand order also differs.
+// Matches. Two shapes were needed beyond the straightforward code: the -yaw angle is built from
+// `camGetPtr(cameraId)->viewYaw` inline (a cached `camera` local gives mwcc the wrong fpr and `fmuls` order),
+// and the zero-scale test is written `if (!scale) continue;` (a `scale == 0.0f` literal emits the reversed
+// `fcmpu` operand order; `!scale` keeps the literal in the pool and compares f30 first).
 void effChargeDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     ChargeEffectData* data = effect->userdata;
@@ -182,7 +184,6 @@ void effChargeDisp(CameraId cameraId, void* param) {
     Mtx mtx98;
     Mtx mtx68;
     Mtx mtx38;
-    CameraEntry* camera;
     s32 colR;
     s32 colG;
     s32 colB;
@@ -194,30 +195,21 @@ void effChargeDisp(CameraId cameraId, void* param) {
     colB = data->colorB;
     PSMTXScale(mtx38, data->scale, data->scale, 1.0f);
     PSMTXTransApply(mtx38, mtx38, data->x, data->y, data->z);
-    camera = camGetPtr(cameraId);
-#ifdef MUST_MATCH
-    // A named local keeps the deg2rad load in f0 and the yaw in f1, as retail orders them.
-    {
-        f32 deg = 0.017453292f;
-        PSMTXRotRad(mtxC8, 'y', -camera->viewYaw * deg);
-    }
-#else
-    PSMTXRotRad(mtxC8, 'y', -camera->viewYaw * 0.017453292f);
-#endif
+    PSMTXRotRad(mtxC8, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
     PSMTXConcat(mtx38, mtxC8, mtx38);
 
     effGetTexObj(0x1e, &tex);
     GXLoadTexObj(&tex, GX_TEXMAP0);
 
 #ifdef MUST_MATCH
-    color = effChargeColorBase(data->field_0x3C, data->field_0x40, data->field_0x44);
+    GXSetTevColor(GX_TEVREG1, effChargeColorBase(unk_80423068, data->field_0x3C, data->field_0x40, data->field_0x44));
 #else
     color = unk_80423068;
     color.r = data->field_0x3C;
     color.g = data->field_0x40;
     color.b = data->field_0x44;
-#endif
     GXSetTevColor(GX_TEVREG1, color);
+#endif
 
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
@@ -244,7 +236,7 @@ void effChargeDisp(CameraId cameraId, void* param) {
     data++;
     for (i = 1; i < effect->count; i++, data++) {
         scale = data->scale;
-        if (scale == 0.0f) {
+        if (!scale) {
             continue;
         }
 

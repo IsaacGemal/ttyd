@@ -87,12 +87,22 @@ static inline Vec initializeVec(Vec* input) {
 // opt_common_subs/opt_propagation/optimize_for_size pragmas all leave the colouring unchanged. The
 // int->float magic also emits an anonymous @N entry instead of the named double_to_int_802fa930 (a
 // project-wide folded-pool issue; it does not lower objdiff's score).
-// NONMATCHING (99.04%): only the callee-saved FPR colouring differs (arguments f19-f22 vs f23-f26).
+// NONMATCHING (99.48%): only the callee-saved FPR colouring differs (the four reset constants are f23-f26
+// instead of the target's f17-f20 in forward order, 6p2832/360 are f17/f18 instead of f21/f22, and the
+// arguments are f19-f22 instead of f23-f26).
 EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri5Data* data;
     f32 rad;
     s32 i;
+#ifdef MUST_MATCH
+    // MUST_MATCH: these four locals exist only to steer MWCC's FPR allocation (see the comment above);
+    // the natural form is the four inline constants assigned at their stores (#else below).
+    f32 c34;
+    f32 c38;
+    f32 c3C;
+    f32 c30;
+#endif
 
     effect = effEntry();
     effect->type = str_802FA924;
@@ -113,12 +123,27 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
         data->field_0x8 = 0xFF;
         data->field_0x24 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1_8041f38c;
         data->field_0x28 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1p7_8041f394;
+#ifdef MUST_MATCH
+        // MUST_MATCH: defining the four reset constants here (well before their stores, which stay in
+        // their original order) is what moves MWCC's colouring from the #else form's 99.04% to 99.48%.
+        c34 = float_0p5_8041f398;
+        c38 = float_neg0p02_8041f39c;
+        c3C = float_5Eneg05_8041f3a0;
+        c30 = float_neg3p9_8041f3a4;
+#endif
         data->field_0x2C = (f32)(rand() % 61);
         data->field_0x6 = 0x1E;
+#ifdef MUST_MATCH
+        data->field_0x34 = c34;
+        data->field_0x38 = c38;
+        data->field_0x3C = c3C;
+        data->field_0x30 = c30;
+#else
         data->field_0x34 = float_0p5_8041f398;
         data->field_0x38 = float_neg0p02_8041f39c;
         data->field_0x3C = float_5Eneg05_8041f3a0;
         data->field_0x30 = float_neg3p9_8041f3a4;
+#endif
         rad = float_6p2832_8041f36c * reviseAngle(a4 + (f32)(i * 45)) / float_360_8041f370;
         data->field_0x44 = sin(rad);
         data->field_0x48 = cos(rad);

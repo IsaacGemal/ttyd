@@ -619,9 +619,6 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (93.10%): the pooled int->float magic constant is emitted as an
-// anonymous @NNN instead of double_to_int_802f3550, and the jump table symbol
-// is @NNN instead of jumptable_8036FD1C (known pool-naming limitation).
 void effRecoveryDisp2(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -632,6 +629,7 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 	s32 type;
 	s32 num;
 	s32 len;
+	f32 transX;
 
 	camGetPtr(camId);
 	num = data->field_1;
@@ -650,7 +648,13 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 	PSMTXConcat(mtx, data->anim->mtx, mtx);
 	PSMTXScale(tmp, float_0p035_8041cb0c, float_0p035_8041cb0c, float_0p035_8041cb0c);
 	PSMTXConcat(mtx, tmp, mtx);
+#ifdef MUST_MATCH
+	// split the x scale into a temp: keeps the int->float conversion and *24 in the original's registers
+	transX = float_24_8041cb10 * (f32)(-(len - 1));
+	PSMTXTrans(tmp, transX * float_0p5_8041caec, float_0_8041cadc, float_0_8041cadc);
+#else
 	PSMTXTrans(tmp, float_24_8041cb10 * -(len - 1) * float_0p5_8041caec, float_0_8041cadc, float_0_8041cadc);
+#endif
 	PSMTXConcat(mtx, tmp, mtx);
 
 	switch (type) {

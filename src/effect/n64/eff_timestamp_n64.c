@@ -204,11 +204,13 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 #pragma opt_common_subs off // with CSE on MWCC folds the constants differently and the integer colouring drifts further
 #pragma opt_lifetimes off // the default lifetime analysis picks a different, worse-matching register assignment
 // The target's field_0x30 scale and the transform scale must be separate locals: splitting them fixed
-// most of the colouring. The first-loop `data`/`i` pair is still swapped (ours data=r28 i=r26, target
-// data=r26 i=r28), the first-loop FP constants are rotated (ours 360=f27 500=f28 200=f29 6.2832=f30
-// double=f31, target 6.2832=f27 double=f28 200=f29 500=f30 360=f31), and the second loop swaps the
-// colr/data pointers and the j/texT pair. Separate loop counters were tried: no change or worse.
-// NONMATCHING (98.94%): instruction shapes and frame match; only the register colours differ (above).
+// most of the colouring. `texT += 0x80` must be the third for-increment (not the loop body's last
+// statement) or the vtx/texT increments are emitted in the wrong order.
+// The first-loop `data`/`i` pair is still swapped (ours data=r28 i=r26, target data=r26 i=r28), the
+// first-loop FP constants are rotated (ours 360=f27 500=f28 200=f29 6.2832=f30 double=f31, target
+// 6.2832=f27 double=f28 200=f29 500=f30 360=f31), and the second loop swaps the colr/data pointers and
+// the j/magic pair. `texT = offset` is folded to `li` by our compiler (`mr` in the target).
+// NONMATCHING (99.00%): instruction shapes and frame match; only the register colours differ (above).
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -275,7 +277,7 @@ void effTimestampDisp(CameraId camId, void* param) {
 	vtx = base;
 	angleB = angleA;
 	texT = 0;
-	for (i = 0; i < 16; i++, vtx += 2) {
+	for (i = 0; i < 16; i++, vtx += 2, texT += 0x80) {
 		fieldScale = data->field_0x30;
 		valA = (s32)(fieldScale * (float_500_804200c4 * (f32)sin(float_6p2832_804200bc * (f32)angleA / float_360_804200c0)));
 		valB = (s32)(fieldScale * (float_200_804200c8 * (f32)sin(float_6p2832_804200bc * (f32)angleB / float_360_804200c0)));
@@ -292,7 +294,6 @@ void effTimestampDisp(CameraId camId, void* param) {
 		angleA += 60;
 		angleB += 6;
 		offset += 400;
-		texT += 0x80;
 	}
 	DCFlushRange(base, 0x1C0);
 	GXInvalidateVtxCache();

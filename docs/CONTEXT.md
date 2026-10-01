@@ -2518,6 +2518,40 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
 - evt_snd.c carried two dead stubs (`evt_snd_bgmon`, `evt_snd_sfxon_3d`) that party_motion.c defines for real: multiply-defined
   at link. They were not in the unit's target, so they are gone.
 
+- **unit_party_nokotarou links** (19 KB of `.data`): `tools/dol_gen.py UNIT --append SRC > new.c` writes the unit's event scripts and tables
+  (it prints the merged file: redirect it; the header declarations it adds to `include/` clash with other files' local
+  `extern s32 X[]` stand-ins, so revert `include/battle/*` and declare the four handlers as local array externs). Three fixes
+  after that: `$` in a local's name (`negone_one$374`) becomes `_374`; the data needs `#pragma force_active on/off`; and
+  `__makeTechMenuFunc` keeps the `lbl_8038BEB8` anchor under MUST_MATCH (the anchor is the label 8 bytes before the unit's
+  `.data`, so compiling the weapons in the same TU changes the `lis/addi` immediates by 8 unless the code uses the extern).
+- eff_machinegun links: the `-16.0f` fold (`x0 = -32.0f * 0.5f` computed at compile time) is avoided with `f32 f = 32.0f;
+  f32 h = 0.5f; x0 = -f * h;` under MUST_MATCH. eff_mizutama has the same fold but the target also re-multiplies `sz * 0.5f` in
+  the loop (loop-invariant hoisting differs), left open at 95.6%.
+
+## Grind 28 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **eff_ice links** (10.8 KB of `.data` through `tools/dol_gen.py --append`). Its `.data` in the original object ends with 24 zero
+  bytes: the linker's padding before eff_torch's first object, a 1 KB texture that is 32-byte aligned (eff_torch's section
+  alignment is 32 in the original, 8 in dtk's regenerated object). With `align:32` on eff_torch's `.data` in splits.txt and
+  `ATTRIBUTE_ALIGN(32)` on `torch_obj2_texture` the linker pads the same way and eff_ice needs no pad objects. The `.sdata` and
+  `.sdata2` tails are padded to 8 by the linker on its own.
+- **nokotarou's `.data` split was 8 bytes off**: `party/party_chuchu` ended at 0x8038BEB8+8 with a `{ -1.0f, 1.0f }` pair
+  (`lbl_8038BEB8`), and `__makeTechMenuFunc` addressed the weapons as `lbl_8038BEB8 + 0x844`. That pair is the first object of
+  nokotarou's `.data` (the unit's base label), so the split now starts nokotarou at 0x8038BEB8; the MUST_MATCH anchor is gone and
+  the function reads the weapons by name and compiles to the target. Symptom for other units: a dtk `lbl_XXXX` used as the base
+  register of `lis/addi` with a big offset, sitting at the end of the previous unit's `.data`.
+- **Systematic version of the 8-byte split error**: `python3 tools/split_scan.py` lists the 32 units whose `.data` ends with an
+  8-byte `lbl_XXXXXXXX = {-1.0f, 1.0f}` that the next unit's code uses as its base register (the makeTech `weaponBase` anchors of
+  clauda/yoshi/chuchurina/vivian/sanders are this pattern). Moving each boundary 8 bytes down and defining the pair first in the
+  next unit's `.data` removes the anchors; only nokotarou's has been done.
+- **struct_render on dol units**: `fix_index` treated a scalar definition (`static BattleUnitDefense defence = {`) as a use and
+  refused to convert (only `[`-suffixed declarations were skipped), so the typed tables were left raw; it now also skips a
+  definition or declaration ending in `=` or `;`. With that, `tools/struct_render.py FILE --auto` plus the two `run_all` passes
+  (driver: monkey-patch `c_files` to the one file) types nokotarou's entry, data table, defence tables, resistance table, the
+  first weapon and the pose tables (two `extern s32 pose_table_nokotarou_*[]` in rels/jin and rels/las become `BattleDispPose[N]`);
+  the other four weapons, `unitdata_Party_Nokotarou` and `unitpartsdata_Party_Nokotarou` were typed by name
+  (`SYMBOL=BattleWeapon` etc.). Left raw: `unk_evt_80390b30` and the effect mesh tables of eff_ice (no layout for them).
+
 ## Grind 29 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
 
 - **Seven more units link**: eff_ice_n64, eff_kemuri4_n64, eff_kemuri7_n64, eff_kemuri10_n64, eff_fire_dust_n64,
@@ -3025,6 +3059,18 @@ retail). Labels that blamed the wrong cause are rewritten.
 - **Definitions before the code fold, after the code do not.** `mot_dokan` defines its named floats before the code (function 100%, but a second copy of every literal lands in `.sdata2`); moving the definitions after the code gives the right pool (with the `M_Z_1` string defined after `float_0`) but `mot_dokan` drops to 99.52% (hoisted loads in other registers). `countdown`: the `dat_` colours must be `extern const u32` + defined after the code, the zero word in `.sbss` is a `u32` declared before `wp`; a literal 300.0f (the pool needs it after the 0.5) drops `countDownMain` to 97.81%.
 - Permuter wins: `checkOneRevolution` 100% (a pointer to the ring head taken before the loop, `MUST_MATCH`), `unk_8017599c` 99.96% (scale `pos.y` before `pos.x`).
 
+## Wave 39: near-misses 98.5-99.98% (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The next 48 closest dol near-misses outside the permuter's queues, 18:06-19:34, from main 157e3e2. **23 of 48 reached
+100%, 10 improved, 15 unchanged, 0 worse.** Fixed at collection: eff_mahorn2's externs for constants it pools itself;
+party_cloud's `pf ? -90 : 90` pooled -90 ahead of 90/270 (`pf != 0 ?` restores the order); mot_jump's new zero-Vec
+literal added a duplicate pool entry, so the file is back to main's version.
+Four rewrites fix behaviour bugs in main, each checked against the asm: camRoadMain's unk_1C8 store now runs every
+time (main did it only inside the unk_D0 > 1.0 clamp); hitCheckSphereFilter tests entries[0].count (main read the count
+through the moving entry pointer); effDamageStarDisp's else-quad texcoords are 2.0 (main had 1.0); effGetTexObj's id
+compare is signed (`cmpwi`, not `cmplwi`). Two agents read the tower's main checkout, and four touched
+/home/isaac/permuter (timestamp ran permuter.py). No third-party code came in.
+
 ## Wave 40: DOL whole-file pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 At Claude #1's suggestion, the DOL files its near-miss waves leave behind: every open function either untouched and
@@ -3056,6 +3102,31 @@ passing the file's named strings, which keeps .sdata at 100%). Every changed fil
 for NonMatching units and noted here: eight of this wave's units still reference data their split owns through
 undefined stand-ins (they link only after tools/finish_unit.py), and seq_load's loadDraw is registered but still a
 TODO.
+
+## Grind 23 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Per-file flag sweep** (`tools/flag_sweep.py UNIT [--quick] [--json OUT]`): recompiles a dol unit with -O4,p / -O4,s /
+  -O2,p / -O2,s, `-inline auto` against the unit's own `auto,deferred`, and with or without the file's
+  `#pragma optimize_for_size` lines, then lists every function's score per variant and the variants where nothing drops.
+  Objects go to a scratch dir. Run over all of `battle/ac/*`, `battle_ac_help`, `battle_icon`, `battle_enemy_item`,
+  `sac_deka` and `sac_genki`.
+- **Result**: -O2 is worse everywhere (2 to 10 functions drop per unit). -O4,s with the pragmas removed matches today's
+  score for every unit that carried `optimize_for_size` pragmas, so those fourteen files now build with
+  `extra_cflags=["-O4,s"]` and the pragmas are gone. Two gained: battle_icon (BtlIcon_Entry 7.6 -> 71.5, BattleIconMain
+  59.4 -> 81.0, BattleIconEnd 72.6 -> 100, btlevtcmd_BtlIconSetFallAccel 77 -> 100) and ac_gauge_timing2 (battleAcMain 91.25
+  -> 96.10). The units already at -O4,s (ac_lst_rc_keep, ac_stick_rotate, ...) and the four ac units with no pragma
+  (ac_shot, ac_signal_timing, ac_gauge_timing, ac_repeatedly_lv) score the same under every -O4 variant, so flags do not
+  gate the remaining battle/ac functions: their gap is register allocation. The wave-24 report of
+  battleAcDisp_GaugeTiming2 at 100% under -O2,p does not reproduce (both functions of the unit drop under -O2).
+- **Review needed**: compiler-flag changes wait for Isaac's morning review.
+
+## Standing priority: match first, link later (2026-09-30, Isaac)
+
+Getting every function to 100% is the goal; linking every unit is secondary and comes as a cleanup phase once units
+are fully matched (data, splits and function order are mostly mechanical by then). Waves, the permuter and model
+choices are judged by matched functions; linking work happens when it is cheap (autolink, a unit one fix away) or
+when a unit is already 100% matched.
+
 Wave 40 follow-ups (Sep 30, Claude #2): arcdrv links once its functions are in rule 18's reverse order (every
 function had moved by 0x54 with each at 100%); eff_thunderflare_n64 links once effThunderflareN64Entry loads the
 named float_0_80420088 instead of a pooled 0.0f (tools/dol_diff.py showed the one word). tools/finish_unit.py took
