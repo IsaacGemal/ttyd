@@ -104,6 +104,8 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    project with no license is off-limits). Name every project and file you took code from in your report, keep
    anything you download or clone inside ./tmp in this directory (never /tmp or elsewhere), and don't search the
    rest of the machine. The merge lists everything you fetched.
+   The MIT/CC0 reference decomps are already on disk, read-only, at ~/ttyd-refs/<project> (ac-decomp, spm-decomp, tp,
+   tww, musyx; ~/ttyd-refs/README.md has the commits and licenses): read them there, do not clone them again.
 
 17. **The other wrong code reviews keep finding** in partly matched functions (waves 13-14; add to 9-11). Before
    you stop, go back over your partial functions for these, each checked against the asm:
