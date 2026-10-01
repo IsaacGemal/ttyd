@@ -4,7 +4,7 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include "math_ext.h"
+#include <math.h>
 
 // .data tables. Each record is 3 bytes: texcoord offset, scaleX, scaleY (scaled by 100).
 static u8 scale_dt[] = {
