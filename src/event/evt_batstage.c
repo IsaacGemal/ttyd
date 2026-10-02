@@ -56,8 +56,11 @@ typedef struct Blob9 {
 #endif
 
 // .sbss2
-u8 unk_80423030[4];
-u8 gap_10_80423034_sbss2[4];
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_80423034_sbss2[4];
+__declspec(section ".sdata") u8 unk_80423030[4];
 
 s32 evt_batstage_set_stg_dark(EventEntry* event, BOOL isFirstCall) {
 	s32* args = event->args;

@@ -26,7 +26,10 @@ u8 poyon_scale[40] = {
 	0x52, 0x75, 0x58, 0x6F, 0x5E, 0x69, 0x64, 0x64
 };
 
-GXColor unk_80423308;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423308;
 const GXColor dat_804212b0 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
@@ -545,3 +548,10 @@ void effMiniGameDisp(CameraId camId, void* param) {
 	}
 }
 
+
+// the 12 zero bytes after the unit's last .sdata object (gap_07_804160F4_sdata)
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_end_sdata[3] = { 0, 0, 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
