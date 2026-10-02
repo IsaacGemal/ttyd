@@ -2086,3 +2086,155 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         }
     }
 }
+extern const Vec vec3_802f6258;
+extern const Vec vec3_802f6264;
+extern const Vec vec3_802f6270;
+extern const Vec vec3_802f627c;
+
+extern const GXColor dat_8041d7b4;
+extern const GXColor dat_8041d7b8;
+extern const GXColor unk_80423050;
+extern const char str_802F6288[];
+extern const char str_802F62B0[];
+extern const char str_802F62B8[];
+extern const f32 float_0p04_8041d7c4;
+extern const f32 float_neg0p5_8041d7cc;
+extern const f32 float_32_8041d7d0;
+extern const f32 float_216_8041d7dc;
+extern const f32 float_248_8041d7e8;
+extern const f32 float_180_8041d7ec;
+extern const f32 float_160_8041d7d8;
+extern const f32 float_210_8041d7f0;
+extern const f32 float_16_8041d7e4;
+
+// NONMATCHING: first draft.
+void monosiri_disp(CameraId camId, void* param) {
+    MonosiriWork* w = param;
+    const char* base = str_802F5EB8;
+    GXColor c1 = dat_8041d7b4;
+    GXColor c2 = dat_8041d7b4;
+    f32 x = w->x;
+    f32 y = w->y;
+
+    if (w->file1 != NULL) {
+        GXTexObj obj;
+        Mtx m1;
+        Mtx m2;
+        Mtx m3;
+        u16 tw;
+        u16 th;
+        s32 i;
+        GXColor reg0 = dat_8041d7b8;
+        GXColor reg1 = unk_80423050;
+        f32 x0;
+        f32 y0;
+        f32 x1;
+        f32 y1;
+        const TattleEntry* tattle;
+        char buf[0x80];
+        f32 wdt;
+        f32 tx;
+        const char* loc;
+
+        winHalfBookGX((void*)w->file1->data[0], x, y, 0);
+        TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+        tw = GXGetTexObjWidth(&obj);
+        th = GXGetTexObjHeight(&obj);
+        TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+        GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
+        GXLoadTexObj(&obj, 0);
+        GXInitTexObj(&obj, *(void**)w->alloc, tw, th, 5, 0, 0, 0);
+        GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
+        GXLoadTexObj(&obj, 1);
+        GXSetNumTexGens(8);
+        for (i = 0; i < 8; i++) {
+            f32 s = -((float_0p04_8041d7c4 * (f32)(7 - i)) - float_1_8041d7c0);
+
+            PSMTXTrans(m1, float_0p5_8041d7c8, float_0p5_8041d7c8, float_0_8041d7bc);
+            PSMTXScale(m2, s, s, s);
+            PSMTXTrans(m3, float_neg0p5_8041d7cc, float_neg0p5_8041d7cc, float_0_8041d7bc);
+            PSMTXConcat(m1, m2, m1);
+            PSMTXConcat(m1, m3, m1);
+            GXLoadTexMtxImm(m1, 0x1E + i * 3, 1);
+            GXSetTexCoordGen2(i, 1, 4, 0x1E + i * 3, 0, 0x7D);
+        }
+        GXSetTevColor(1, reg0);
+        reg1.a = (s8)w->alpha;
+        GXSetTevColor(2, reg1);
+        GXSetNumTevStages(0xC);
+        for (i = 0; i < 8; i++) {
+            GXSetTevOrder(i, i, 1, 0xFF);
+            GXSetTevColorOp(i, 0, 0, 0, 1, 0);
+            GXSetTevAlphaOp(i, 0, 0, 0, 1, 0);
+            GXSetTevColorIn(i, 0xF, 0xF, 0xF, 2);
+            GXSetTevAlphaIn(i, 7, 4, 6, i == 0 ? 7 : 0);
+            GXSetTevKAlphaSel(i, 7);
+        }
+        GXSetTevOrder(8, 7, 1, 0xFF);
+        GXSetTevColorOp(8, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(8, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(8, 0, 8, 9, 0xF);
+        GXSetTevAlphaIn(8, 0, 7, 4, 4);
+        GXSetTevOrder(9, 0xFF, 0xFF, 0xFF);
+        GXSetTevColorOp(9, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(9, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(9, 0xF, 0xF, 0xF, 0);
+        GXSetTevAlphaIn(9, 7, 0, 2, 7);
+        GXSetTevOrder(0xA, 7, 0, 0xFF);
+        GXSetTevColorOp(0xA, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(0xA, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0xA, 0xF, 8, 0, 0xF);
+        GXSetTevAlphaIn(0xA, 7, 7, 7, 0);
+        GXSetTevOrder(0xB, 7, 0, 0xFF);
+        GXSetTevColorOp(0xB, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(0xB, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0xB, 8, 0, 1, 0xF);
+        GXSetTevAlphaIn(0xB, 7, 7, 7, 4);
+        GXBegin(0x80, 0, 4);
+        x0 = float_32_8041d7d0 + x;
+        y0 = y - float_8_8041d7d4;
+        x1 = x0 + float_216_8041d7dc;
+        y1 = y0 - float_160_8041d7d8;
+        GXPosition3f32(x0, y0, float_0_8041d7bc);
+        GXTexCoord2f32(float_0_8041d7bc, float_0_8041d7bc);
+        GXPosition3f32(x0, y1, float_0_8041d7bc);
+        GXTexCoord2f32(float_0_8041d7bc, float_1_8041d7c0);
+        GXPosition3f32(x1, y1, float_0_8041d7bc);
+        GXTexCoord2f32(float_1_8041d7c0, float_1_8041d7c0);
+        GXPosition3f32(x1, y0, float_0_8041d7bc);
+        GXTexCoord2f32(float_1_8041d7c0, float_0_8041d7bc);
+        tattle = battleGetUnitMonosiriPtr(w->unitKind);
+        if (w->unitKind == 0x4D || w->unitKind == 0x87) {
+            if (evtGetValue(NULL, GSW(0)) < 0xD2) {
+                sprintf(buf, RO(base, 0x3D0, str_802F6288), enemy_monoshiri_sort_table[w->unitKind],
+                        msgSearch(RO(base, 0x3D8, str_802F6290)));
+            } else {
+                sprintf(buf, RO(base, 0x3D0, str_802F6288), enemy_monoshiri_sort_table[w->unitKind],
+                        msgSearch(RO(base, 0x3E8, str_802F62A0)));
+            }
+        } else {
+            sprintf(buf, RO(base, 0x3D0, str_802F6288), enemy_monoshiri_sort_table[w->unitKind],
+                    msgSearch(tattle->enemyTag));
+        }
+        wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
+        winFontInit();
+        tx = float_16_8041d7e4 + x;
+        {
+            Vec scale = LV(0x3AC, vec3_802f6264);
+            Vec pos = logMkVec(LV(0x3A0, vec3_802f6258), (float_248_8041d7e8 - wdt) * float_0p5_8041d7c8 + tx,
+                               y - float_180_8041d7ec);
+
+            winFontSet(&pos, &scale, &c1, buf);
+        }
+        loc = msgSearch(tattle->locationTag);
+        sprintf(buf, RO(base, 0x3F8, str_802F62B0), msgSearch(RO(base, 0x400, str_802F62B8)), loc);
+        wdt = float_248_8041d7e8 - float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
+        {
+            Vec scale = LV(0x3C4, vec3_802f627c);
+            Vec pos = logMkVec(LV(0x3B8, vec3_802f6270), float_1_8041d7c0 + (wdt * float_0p5_8041d7c8 + tx),
+                               y - float_210_8041d7f0);
+
+            winFontSet(&pos, &scale, &c2, buf);
+        }
+    }
+}
