@@ -3619,6 +3619,13 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   party_motion_behind_mario_fly keeps its NONMATCHING (98.74%). battle_unit's `dat_8041c3b8` stays a non-const
   GXColor although retail has it in .sdata2: `const` takes BtlUnit_Entry from 100% to 99.31%. Open (LOW): unused
   float externs in bom_fall, invented constant names (`float_10`) in party_nokonoko.
+- Claude #1's second review of #209: barriernSatelliteToOutside (v2, mri) returned DONE when satellites had
+  moved; retail (`subic`/`subfe`/`and` on `updated`) returns DONE only when nothing moved. Fixed there and in
+  v1's copy, which had the same inversion on main (`found == 0 ? DONE : BLOCK`). winMsgDisp (reached named objects
+  past str_802F3FE8), party_motion_jump (past vec3_802f3e40) and tou's disp_proc (raw offsets) are back to main's
+  form; eff_opuku_wcurtain as on main (its clampS16 stays, since retail's GQR5 store saturates). eff_mugi is
+  code-complete with every section at 100% but the dol checksum still differs (a base-reached or padding issue for a
+  data pass); its opt_common_subs stays open to the end of the file (the following functions need it).
 - **Lesson:** don't switch the collection worktree to another commit while a review agent reads it (the build went
   stale under the reviewer); prepare the next wave's report from a separate checkout or the tower.
 - **Wave 54** (launched 21:16 on main c294f5f, base `~/ttyd-w54base` from `git archive`): wave 53's recipe with

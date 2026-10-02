@@ -3372,22 +3372,19 @@ static void printRanking(void) {
 static const char str_00001F74[] = "ランキング";
 static const char str_00001FA0[] = "%s%s";
 
-// NONMATCHING (94.12%): loop body, y/off regs, rank ternary and iconDispGx sequence match. Left:
-// preheader float_135/dwp addrs r7/r6, first GXSetScissor fctiwz register order, iconDispGx f15/f24 addrs.
+// NONMATCHING (81.91%): register allocation (r22 vs r23 and the loop temps), string/double const symbols, derivative scheduling
 static void disp_proc(CameraId cameraId, void* param) {
     FighterEntry* dt;
     s32 i;
     s32 rank;
-    s32 y;
     s32 off;
-    f32 f28;
+    s32 y;
+    f32 x;
     f32 base;
     f32 base2;
+    f32 f28;
+    f32 f30;
     f32 f31;
-    f32 x;
-    u16 sx;
-    u16 sw;
-    const f32* p135;
     Mtx scale;
     Mtx mtx;
     char buf[0x100];
@@ -3409,29 +3406,26 @@ static void disp_proc(CameraId cameraId, void* param) {
         FontDrawColor(&color);
     }
     FontDrawMessage(-i / 2, (s32)float_135_tou_0000a8b0, str_00001F74);
-    {
-        u16 sy = (u16)(s32)float_145_tou_0000a8b8;
-        f32 fw = float_250_tou_0000a890;
-        f32 fhv = float_220_tou_0000a8bc;
-
-        sx = (u16)(s32)(float_304_tou_0000a8b4 + f31);
-        sw = (u16)(s32)fw;
-        GXSetScissor(sx, sy, sw, (u16)(s32)fhv);
-    }
+    GXSetScissor((u16)(s32)(float_304_tou_0000a8b4 + f31), (u16)(s32)float_145_tou_0000a8b8,
+                 (u16)(s32)float_250_tou_0000a890, (u16)(s32)float_220_tou_0000a8bc);
     base = float_10_tou_0000a8c0 + f31;
-    p135 = &float_135_tou_0000a8b0;
-    f28 = *p135;
+    f28 = float_135_tou_0000a8b0;
+    f30 = float_40_tou_0000a8c4;
     rank = 0;
     y = 0;
     i = 0;
     off = 0;
     for (; i < ((RankWork*)rank_wp[0])->count; i++, off += 0xc) {
-        base2 = ((DispWork*)dwp[0])->field_00 + (f28 - (f32)y - float_40_tou_0000a8c4);
-        if (!(*((u16*)((u8*)((RankWork*)rank_wp[0])->entries + off)) & 2)) {
+        RankEntry* entry = (RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off);
+
+        base2 = ((DispWork*)dwp[0])->field_00 + (f28 - (f32)y) - f30;
+        if (!(entry->flags & 2)) {
             PSMTXScale(scale, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8);
             if (rank != 0) {
-                sprintf(buf, str_00001FA0, (rank / 10) ? suuji[rank / 10] : (const char*)&zero_tou_0000a8cc,
-                        suuji[rank % 10]);
+                s32 a = rank / 10;
+                const char* p1 = a ? suuji[a] : (const char*)&zero_tou_0000a8cc;
+
+                sprintf(buf, str_00001FA0, p1, suuji[rank % 10]);
                 FontDrawStart();
                 {
                     GXColor color = *(GXColor*)&dat_tou_00009908;
@@ -3443,7 +3437,7 @@ static void disp_proc(CameraId cameraId, void* param) {
                 FontDrawMessageMtx(mtx, buf);
             }
             FontDrawStart();
-            if (*((u16*)((u8*)((RankWork*)rank_wp[0])->entries + off)) & 4) {
+            if (entry->flags & 4) {
                 GXColor color = *(GXColor*)&dat_tou_0000990c;
 
                 FontDrawColor(&color);
@@ -3454,21 +3448,19 @@ static void disp_proc(CameraId cameraId, void* param) {
             }
             PSMTXTrans(mtx, float_40_tou_0000a8c4 + base, base2, zero_tou_0000a82c);
             PSMTXConcat(mtx, scale, mtx);
-            FontDrawMessageMtx(mtx, msgSearch((const char*)((u32*)dt)[(*((s32*)((u8*)((RankWork*)rank_wp[0])->entries + off + 4))) * 7 + 1]));
+            FontDrawMessageMtx(mtx, msgSearch((const char*)((u32*)dt)[entry->id * 7 + 1]));
             rank++;
             y += 0x14;
         }
     }
-    GXSetScissor(sx, (u16)(s32)float_137_tou_0000a8d8, sw, (u16)(s32)float_228_tou_0000a8dc);
+    GXSetScissor((u16)(s32)(float_304_tou_0000a8b4 + f31), (u16)(s32)float_137_tou_0000a8d8,
+                 (u16)(s32)float_250_tou_0000a890, (u16)(s32)float_228_tou_0000a8dc);
+    x = float_15_tou_0000a8e4 + f31;
     {
-        f32 v95 = float_95_tou_0000a8e0;
-        f32 v15 = float_15_tou_0000a8e4;
-        const f32* p95 = &float_95_tou_0000a8e0;
-        f32 y = (v95 + ((DispWork*)dwp[0])->field_00) - float_24_tou_0000a8e8;
-        f32 x2 = v15 + f31;
         Vec pos = vec3_tou_00009914;
-        pos.x = x2;
-        pos.y = y;
+
+        pos.x = x;
+        pos.y = (float_95_tou_0000a8e0 + ((DispWork*)dwp[0])->field_00) - float_24_tou_0000a8e8;
         iconDispGx(&pos, 0x10, 0x123, float_0p8_tou_0000a8c8);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
@@ -3476,13 +3468,13 @@ static void disp_proc(CameraId cameraId, void* param) {
         {
             Vec pos = vec3_tou_00009920;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x205, float_neg1_tou_0000a8ec);
         }
         {
             Vec pos = vec3_tou_0000992c;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x7e, float_0p6_tou_0000a830);
         }
     }
@@ -3490,13 +3482,13 @@ static void disp_proc(CameraId cameraId, void* param) {
         {
             Vec pos = vec3_tou_00009938;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x205, float_1_tou_0000a87c);
         }
         {
             Vec pos = vec3_tou_00009944;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x80, float_0p6_tou_0000a830);
         }
     }

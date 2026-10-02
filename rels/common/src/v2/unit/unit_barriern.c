@@ -2098,7 +2098,7 @@ static USER_FUNC(barriernSatelliteToOutside) {
             updated = 1;
         }
     }
-    return updated ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+    return updated == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 // restore the file's dont_inline for the functions below
 

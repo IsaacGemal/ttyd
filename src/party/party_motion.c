@@ -1939,25 +1939,19 @@ void party_motion_behind_mario(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (99.00%): the 0x128 ratio load lands in f1 not retail's f5, so the
-// `ty - position.y` diff lands in f5 not f6; the 1.4f subtraction destination and the
-// constant-pool symbol addresses remain.
+// NONMATCHING (81.24%): original copies the appear position through a scratch Vec seeded from vec3_802f3e40+0x18 (a compiler struct-assignment idiom) which this elides; frame size differs.
 void party_motion_jump(PartyEntry* party) {
-    extern u8 vec3_802f3e40[];
-    u8* vec = vec3_802f3e40;
     MarioWork* mario;
     HitEntry* hit;
-    u32 id;
-    s32 writeId;
-    s32 readId;
     Vec floor;
-    Vec appear1, appear2, appear3, appear4;
     Vec wall;
-    f32 sinV, cosV;
     f32 tx, ty, tz;
+    f32 sinV, cosV;
     f32 angle;
     f32 f31, f30;
-    f32 f0, f1, f2, f3, f4, f5, f6;
+    f32 f0, f1, f3, f4, f5, f6;
+    s32 id;
+    s32 writeId;
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
@@ -1975,35 +1969,26 @@ void party_motion_jump(PartyEntry* party) {
             ty = party->position.y;
             tz = party->position.z;
             movePos(&tx, &tz, party->speed, party->dir);
-            appear1 = *(Vec*)(vec + 0x18);
-            appear1.x = tx;
-            appear1.y = ty;
-            appear1.z = tz;
-            *(Vec*)((u8*)party + 0x94) = appear1;  // 0x94: appear position, not named in PartyEntry
+            *(f32*)((u8*)party + 0x94) = tx;
+            *(f32*)((u8*)party + 0x98) = ty;
+            *(f32*)((u8*)party + 0x9C) = tz;
         } else if (!(party->field_8 & 0x400000)) {
             writeId = partyGetFootmarkWriteId(id);
-            readId = partyGetFootmarkReadId(id);
-            if (readId == writeId) {
+            if (partyGetFootmarkReadId(id) == writeId) {
                 if (partyGetTargetDist(id, party->position.x, party->position.z) > 2.0f * mario->wPlayerCollisionBox.x) {
                     f30 = partyGetTargetDir(id, party->position.x, party->position.z);
                     getFrontFloor(party, &floor, f30);
-                    floor.y += 10.0f;
-                    ty = floor.y;
+                    ty = floor.y + 10.0f;
                     tx = party->position.x;
                     tz = party->position.z;
-                    movePos(&tx, &tz, 0.6f * party->field_F4, f30);
-                    appear2 = *(Vec*)(vec + 0x24);
-                    appear2.x = tx;
-                    appear2.y = ty;
-                    appear2.z = tz;
-                    *(Vec*)((u8*)party + 0x94) = appear2;
+                    movePos(&tx, &tz, 0.6f * *(f32*)((u8*)party + 0xF4), f30);
                 }
             } else {
                 partyGetReadId(id, &tx, &ty, &tz);
                 f30 = 50.0f;
                 f31 = distABf(party->position.x, party->position.z, tx, tz);
                 f0 = 1.4f * (ty - party->position.y);
-                if (50.0f > f0) {
+                if (f0 < 50.0f) {
                     f30 = f0;
                 }
                 angle = angleABf(party->position.x, party->position.z, tx, tz);
@@ -2013,27 +1998,21 @@ void party_motion_jump(PartyEntry* party) {
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
                     }
-                    tx = party->position.x;
-                    tz = party->position.z;
-                    appear3 = *(Vec*)(vec + 0x30);
-                    tx = tx + f31 * sinV;
-                    tz = tz + f31 * cosV;
+                    tx = party->position.x + f31 * sinV;
+                    tz = party->position.z + f31 * cosV;
                     ty = ty + 10.0f;
-                    appear3.x = tx;
-                    appear3.y = ty;
-                    appear3.z = tz;
-                    *(Vec*)((u8*)party + 0x94) = appear3;
+                    *(f32*)((u8*)party + 0x94) = tx;
+                    *(f32*)((u8*)party + 0x98) = ty;
+                    *(f32*)((u8*)party + 0x9C) = tz;
                 } else {
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
                     }
-                    tx = tx + f31 * sinV;
-                    tz = tz + f31 * cosV;
-                    appear4 = *(Vec*)(vec + 0x3C);
-                    appear4.x = tx;
-                    appear4.y = ty;
-                    appear4.z = tz;
-                    *(Vec*)((u8*)party + 0x94) = appear4;
+                    tx = party->position.x + f31 * sinV;
+                    tz = party->position.z + f31 * cosV;
+                    *(f32*)((u8*)party + 0x94) = tx;
+                    *(f32*)((u8*)party + 0x98) = ty;
+                    *(f32*)((u8*)party + 0x9C) = tz;
                 }
                 if (f31 < f30) {
                     partyNextReadId(id);
@@ -2043,7 +2022,7 @@ void party_motion_jump(PartyEntry* party) {
         *(f32*)((u8*)party + 0x128) = distABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
         if (party->field_28 == 0) {
             party->dir = angleABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
-            party->speed = 2.25f * party->playerPtr->playerGravity;
+            party->speed = 2.25f * mario->playerGravity;
         }
         f5 = *(f32*)((u8*)party + 0x128);
         f1 = 0.9f * (f5 / party->speed);
@@ -2059,21 +2038,8 @@ void party_motion_jump(PartyEntry* party) {
         f6 = *(f32*)((u8*)party + 0x98) - party->position.y;
         if (fabsf(f6) < 1.0f) {
             f6 = 25.0f;
-        } else {
-#ifdef MUST_MATCH
-            // MUST_MATCH: retail emits the empty true-block of this inner test as a
-            // forward `b`; a plain empty block is folded away by the compiler. The
-            // self-assignment keeps the block alive and reproduces the branch shape.
-            if (f6 >= 0.0f) {
-                f6 = f6;
-            } else {
-                f6 = 10.0f;
-            }
-#else
-            if (!(f6 >= 0.0f)) {
-                f6 = 10.0f;
-            }
-#endif
+        } else if (f6 < 0.0f) {
+            f6 = 10.0f;
         }
         f3 = (f6 + f6) / (f4 * f4 - f4);
         party->jumpPara1 = mario->playerGravity * (f3 * f4);
@@ -2140,8 +2106,7 @@ void party_motion_jump(PartyEntry* party) {
             hit = partySearchFrontWall(party, &wall, party->speed, party->dir);
             if (hit != NULL) {
                 party->field_12C = hit;
-                f0 = 0.0f;
-                if (party->speed != f0) {
+                if (party->speed != 0.0f) {
                     party->field_134 = hit;
                 }
             }

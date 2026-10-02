@@ -160,9 +160,7 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
-// Both pragmas are required for the polynomial constants to be hoisted once instead of rematerialised
-// per branch: with neither the function scores 81.83%, propagation off alone 83.26%, lifetimes off
-// alone 93.10%, both 96.81%. See REPORT.md for the full list of things tried. The magic double also
+// The magic double also
 // pools as @377 rather than double_to_int_802f3458 (objdiff resolves data by section offset, so that
 // is not scored).
 // NONMATCHING (81.83%): instruction sequence/control flow/stack frame identical; only FP register colouring of the loop-invariant constants differs (magic double f10 here vs f0 retail, shifting the rest; detail in REPORT.md).

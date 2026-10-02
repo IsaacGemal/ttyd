@@ -36,10 +36,6 @@ extern const f32 float_4_80421b84;
 extern const f32 float_1024_80421b8c;
 extern const f32 float_0p8_80421b90;
 extern const GXColor dat_80421b48;
-#ifdef MUST_MATCH
-// MUST_MATCH: named so the "A_1" address is relocated to the original's str_80421B88 symbol.
-const char str_80421B88[] = "A_1";
-#endif
 extern const GXColor dat_80421b4c;
 extern const GXColor dat_80421b50;
 

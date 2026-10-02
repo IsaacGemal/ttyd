@@ -1240,7 +1240,7 @@ static USER_FUNC(barriernSatelliteToOutside) {
             found = 1;
         }
     }
-    return found ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+    return found == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
 static USER_FUNC(outSplineTableSet) {
