@@ -292,9 +292,7 @@ void _relUnLoad(void) {
 #endif
 
 extern u8 rel_bss[];
-extern u32 OSGetSoundMode(void);
 extern void SoundSetOutputMode(s32 mode);
-extern BOOL OSLink(OSModuleInfo* module, void* bss);
 extern const GXColor dat_804193f0;
 extern const GXColor dat_804193f4;
 extern const GXColor dat_804193f8;

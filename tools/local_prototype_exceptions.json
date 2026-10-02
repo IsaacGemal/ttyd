@@ -86,20 +86,8 @@
  },
  {
   "path": "src/sequence/seq_mapchange.c",
-  "name": "OSGetSoundMode",
-  "declaration": "extern u32 OSGetSoundMode(void);",
-  "reason": "the owning header (sound.h, dolphin/os) pulls in libc math.h, which collides with math_ext.h that this file needs for sin/cos."
- },
- {
-  "path": "src/sequence/seq_mapchange.c",
   "name": "SoundSetOutputMode",
   "declaration": "extern void SoundSetOutputMode(s32 mode);",
-  "reason": "the owning header (sound.h, dolphin/os) pulls in libc math.h, which collides with math_ext.h that this file needs for sin/cos."
- },
- {
-  "path": "src/sequence/seq_mapchange.c",
-  "name": "OSLink",
-  "declaration": "extern BOOL OSLink(OSModuleInfo* module, void* bss);",
   "reason": "the owning header (sound.h, dolphin/os) pulls in libc math.h, which collides with math_ext.h that this file needs for sin/cos."
  }
 ]
