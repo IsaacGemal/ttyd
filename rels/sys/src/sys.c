@@ -425,7 +425,7 @@ s32 getLightColor(f32 angle) {
     return 0xFF - result * 2;
 }
 
-// NONMATCHING (87.79%): frame is 0x2a0 (target 0x280) because f24/f25 are saved in addition to f26-f31
+// NONMATCHING (87.80%): frame is 0x2a0 (target 0x280) because f24/f25 are saved in addition to f26-f31
 // (target saves f26-f31 only), so FPR pressure is still off; the entry-loop matrix/GXBegin scheduling,
 // the by-value GXColor copies and the background halfW/halfH colouring follow from that.
 void display_func(CameraId cameraId, void* param) {

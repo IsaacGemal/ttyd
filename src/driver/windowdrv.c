@@ -411,10 +411,23 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	}
 }
 
-// NONMATCHING (65.07%): structurally different (many insert/delete): regalloc, a stack GXColor swap and
-// vertex code differ.
+// MUST_MATCH: a named colour passed through an inline reproduces the original's stack layout for
+// GXSetFog's by-value GXColor argument (same trick as kanbanSetFog/wakuSetFog).
+#ifdef MUST_MATCH
+static inline void windowSetFog(GXColor color) {
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
+}
+#endif
+
+// NONMATCHING (99.96%): 7 instructions differ. Block 2's y3/y4 computation is hoisted above its GXBegin by our build
+// (target computes it just after); the resulting FP register numbers differ for that block (target
+// f1=32/f2=0/f0=w-32, ours f2/f0/f1). Block 3's x4 = x3 + 32.0f comes out with the commutative fadds
+// operands swapped (target f1,f0; ours f0,f1).
 void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
+#ifdef MUST_MATCH
+	f32 zero;
+#endif
 	f32 scroll;
 	Mtx mtx;
 	Mtx trans, scale;
@@ -436,7 +449,11 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
+#ifdef MUST_MATCH
+	windowSetFog((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+#else
 	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+#endif
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -510,11 +527,19 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXLoadTexMtxImm(scale, 0x21, GX_MTX2x4);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
-	x2 = 0.0f + (height - 32.0f);
-	y2 = 0.0f - (width - 32.0f); //not emitting correctly, some macro used?
-
 	GXPosition3f32(0.0f, 0.0f, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
+#ifdef MUST_MATCH
+	zero = 0.0f;
+	// MUST_MATCH: `zero` (a real local, not the literal 0.0f) stops MWCC folding 0.0f + x away, which
+	// the original's fadds/fsubs pairs require; computing x2/y2 after the first vertex also fixes the
+	// target's callee-saved FP allocation for this block.
+	x2 = zero + (height - 32.0f);
+	y2 = zero - (width - 32.0f);
+#else
+	x2 = 0.0f + (height - 32.0f);
+	y2 = 0.0f - (width - 32.0f);
+#endif
 
 	GXPosition3f32(x2, 0.0f, 0.0f); //f29 = x2, 0.0f + (height - 32.0f)
 	GXTexCoord2f32(1.0f, 0.0f);
@@ -545,8 +570,8 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXLoadTexMtxImm(scale2, 0x21, GX_MTX2x4);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
-	y3 = 0.0f - (width - 32.0f);
-	y4 = y3 - 32.0f; //not emitting correctly, some macro used?
+	y3 = -(width - 32.0f);
+	y4 = y3 - 32.0f;
 
 	GXPosition3f32(0.0f, y3, 0.0f); //f27 = y3, neg(width - 32.0f)
 	GXTexCoord2f32(0.0f, 0.0f);
@@ -606,7 +631,7 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	MTXTrans(trans4, scroll + ((height - 32.0f) / (f32)GXGetTexObjWidth(&wakuTexObj[5])),
 		((width - 32.0f) / (f32)GXGetTexObjHeight(&wakuTexObj[5])) - scroll, 0.0f);
 	MTXScale(scale4, fabsf(32.0f) / (f32)GXGetTexObjWidth(&wakuTexObj[5]),
-		fabsf(width - 32.0f) / (f32)GXGetTexObjHeight(&wakuTexObj[5]), 1.0f);
+		fabsf(32.0f) / (f32)GXGetTexObjHeight(&wakuTexObj[5]), 1.0f);
 	MTXConcat(trans4, scale4, trans4);
 	GXLoadTexMtxImm(trans4, 0x1E, GX_MTX2x4);
 	GXSetTexCoordGen(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1);
