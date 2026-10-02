@@ -1426,12 +1426,12 @@ void winLogInit(WindowWork* work) {
     w->mapScrollY = float_0_8041d7bc;
     w->mapScrollX = float_0_8041d7bc;
     area = gp->currentAreaName;
-    if (strcmp(gp->currentMapName, RO2(base, 0x5C0, str_802F6478)) == 0
-        || strcmp(gp->currentMapName, RO2(base, 0x5C8, str_802F6480)) == 0) {
+    if (strcmp(gp->currentMapName, RO(base, 0x5C0, str_802F6478)) == 0
+        || strcmp(gp->currentMapName, RO(base, 0x5C8, str_802F6480)) == 0) {
         area = "sin";
     }
-    if (strcmp(gp->currentMapName, RO2(base, 0x5D0, str_802F6488)) == 0
-        || strcmp(gp->currentMapName, RO2(base, 0x5D8, str_802F6490)) == 0) {
+    if (strcmp(gp->currentMapName, RO(base, 0x5D0, str_802F6488)) == 0
+        || strcmp(gp->currentMapName, RO(base, 0x5D8, str_802F6490)) == 0) {
         area = "hou";
     }
     if (strncmp(gp->currentMapName, "rsh", 3) == 0) {
@@ -1464,12 +1464,12 @@ void winLogInit(WindowWork* work) {
     if (strncmp(gp->currentMapName, "jon", 3) == 0) {
         area = "tik";
     }
-    if (strcmp(gp->currentMapName, RO2(base, 0x5E0, str_802F6498)) == 0) {
+    if (strcmp(gp->currentMapName, RO(base, 0x5E0, str_802F6498)) == 0) {
         area = "jin";
     }
-    if (strcmp(gp->currentMapName, RO2(base, 0x5E8, str_802F64A0)) == 0
-        || strcmp(gp->currentMapName, RO2(base, 0x5F0, str_802F64A8)) == 0
-        || strcmp(gp->currentMapName, RO2(base, 0x5F8, str_802F64B0)) == 0) {
+    if (strcmp(gp->currentMapName, RO(base, 0x5E8, str_802F64A0)) == 0
+        || strcmp(gp->currentMapName, RO(base, 0x5F0, str_802F64A8)) == 0
+        || strcmp(gp->currentMapName, RO(base, 0x5F8, str_802F64B0)) == 0) {
         area = "dou";
     }
     for (n = 0; n < 0x5D; n++) {
@@ -1968,7 +1968,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
 
     winBookGX(work, 1);
     winKirinukiGX(work, 0, x - float_110_8041d820, y - float_160_8041d7d8, float_100_8041d824, float_50_8041d828);
-    msg = msgSearch(RO2(base, 0x468, str_802F6320));
+    msg = msgSearch(RO(base, 0x468, str_802F6320));
     wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(msg));
     winFontInit();
     {
@@ -1979,7 +1979,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
 
         winFontSet(&pos, &scale, &c, msg);
     }
-    sprintf(buf, RO2(base, 0x480, str_802F6338), w->seenCnt, w->charCnt);
+    sprintf(buf, RO(base, 0x480, str_802F6338), w->seenCnt, w->charCnt);
     wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf));
     {
         Vec scale = LV(0x284, vec3_802f613c);
@@ -2006,15 +2006,15 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         if (swGet(id + 0x117A) != 0) {
             if (id == 0x4D || id == 0x87) {
                 if (evtGetValue(NULL, GSW(0)) < 0xD2) {
-                    msg = msgSearch(RO2(base, 0x3D8, str_802F6290));
+                    msg = msgSearch(RO(base, 0x3D8, str_802F6290));
                 } else {
-                    msg = msgSearch(RO2(base, 0x3E8, str_802F62A0));
+                    msg = msgSearch(RO(base, 0x3E8, str_802F62A0));
                 }
             } else {
                 msg = msgSearch(tattle->enemyTag);
             }
         } else {
-            msg = RO2(base, 0x488, str_802F6340);
+            msg = RO(base, 0x488, str_802F6340);
         }
         sprintf(buf2, "%d\x81\x44", (s32)enemy_monoshiri_sort_table[id]);
         xo = (f32)((i / 8) * 0xD8);
@@ -2061,7 +2061,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
             winIconSet(0x80, &pos, &scale, &c4);
         }
     }
-    msg = msgSearch(RO2(base, 0x490, str_802F6348));
+    msg = msgSearch(RO(base, 0x490, str_802F6348));
     {
         f32 fw = float_0p7_8041d85c * (f32)FontGetMessageWidth(msg);
         f32 ox;
