@@ -7,6 +7,10 @@
 #include "battle/battle_monosiri.h"
 #include "driver/animdrv.h"
 #include "driver/effdrv.h"
+#include "eff/eff_starstone.h"
+#include "mario/mario_pouch.h"
+#include "manager/evtmgr_cmd.h"
+#include "evt/evt_cmd.h"
 #include "driver/swdrv.h"
 #include "data/item_data.h"
 #include "pmario_sound.h"
@@ -513,78 +517,87 @@ typedef struct LogChar {
 
 // The fields of WindowWork that winLogMain touches (win_main.h only declares the first 0x1210 bytes).
 typedef struct LogWin {
-    u16 flags;           // 0x0
-    u8 pad_2[2];         // 0x2
-    u32 buttonTrg;       // 0x4
-    u32 buttonRep;       // 0x8
-    u32 dirTrg;          // 0xC
-    u32 dirRep;          // 0x10
-    u8 pad_14[0x30 - 0x14];
-    FileEntry* file;     // 0x30
-    u8 pad_34[0x124 - 0x34];
-    s32 retState;        // 0x124
-    u8 pad_128[0x158 - 0x128];
-    f32 curX;            // 0x158
-    f32 curY;            // 0x15C
-    u8 pad_160[0xD68 - 0x160];
-    s32 state;           // 0xD68
-    s32 sel;             // 0xD6C
-    s32 count;           // 0xD70
-    LogRow rows[5];      // 0xD74
-    s32 mapSel;          // 0xE14
-    u8 pad_E18[4];
-    s32 pose;            // 0xE1C
-    f32 mapCx;           // 0xE20
-    f32 mapCy;           // 0xE24
-    u8 pad_E28[0xE30 - 0xE28];
-    f32 e30;             // 0xE30
-    u8 pad_E34[4];
-    f32 mapScrollX;      // 0xE38
-    f32 mapScrollY;      // 0xE3C
-    s32 stoneNum;        // 0xE40
-    u8 pad_E44[0xE60 - 0xE44];
-    s32 stoneSel;        // 0xE60
-    u8 pad_E64[0xE6C - 0xE64];
-    f32 e6c;             // 0xE6C
-    u8 pad_E70[4];
-    f32 e74;             // 0xE74
-    u8 pad_E78[4];
-    f32 e7c;             // 0xE7C
-    f32 e80;             // 0xE80
-    u8 pad_E84[4];
-    f32 e88;             // 0xE88
-    u8 pad_E8C[4];
-    f32 e90;             // 0xE90
-    s32 cardCnt;         // 0xE94
-    s32 cardSel;         // 0xE98
-    s32 cardPage;        // 0xE9C
-    u8 pad_EA0[0xEAC - 0xEA0];
-    f32 eac;             // 0xEAC
-    u8 pad_EB0[4];
-    f32 eb4;             // 0xEB4
-    s16 cardIcon[100];   // 0xEB8
-    u8 pad_F80[4];
-    f32 f84;             // 0xF84
-    u8 pad_F88[4];
-    f32 f8c;             // 0xF8C
-    s32 badgeCnt;        // 0xF90
-    s32 badgeSel;        // 0xF94
-    s32 badgePage;       // 0xF98
-    u8 pad_F9C[0xFA8 - 0xF9C];
-    f32 fa8;             // 0xFA8
-    u8 pad_FAC[4];
-    f32 fb0;             // 0xFB0
-    s16 badgeIcon[60];   // 0xFB4
-    f32 x102c;           // 0x102C
-    u8 pad_1030[4];
-    f32 x1034;           // 0x1034
-    s32 charCnt;         // 0x1038
-    u8 pad_103C[4];
-    s32 charSel;         // 0x1040
-    s32 charPage;        // 0x1044
-    u8 pad_1048[8];
-    LogChar chars[216];  // 0x1050
-    void* mono;          // 0x1200
+    u16 flags; // 0x0
+    u8 pad_2[0x2];
+    u32 buttonTrg; // 0x4
+    u32 buttonRep; // 0x8
+    u32 dirTrg; // 0xC
+    u32 dirRep; // 0x10
+    u8 pad_14[0x1C];
+    FileEntry* file; // 0x30
+    u8 pad_34[0xF0];
+    s32 retState; // 0x124
+    u8 pad_128[0x30];
+    f32 curX; // 0x158
+    f32 curY; // 0x15C
+    u8 pad_160[0xC08];
+    s32 state; // 0xD68
+    s32 sel; // 0xD6C
+    s32 count; // 0xD70
+    LogRow rows[5]; // 0xD74
+    s32 mapSel; // 0xE14
+    s32 mapPick; // 0xE18
+    s32 pose; // 0xE1C
+    f32 mapCx; // 0xE20
+    f32 mapCy; // 0xE24
+    f32 e28; // 0xE28
+    f32 e2c; // 0xE2C
+    f32 e30; // 0xE30
+    f32 e34; // 0xE34
+    f32 mapScrollX; // 0xE38
+    f32 mapScrollY; // 0xE3C
+    s32 stoneNum; // 0xE40
+    EffectEntry* stones[7]; // 0xE44
+    s32 stoneSel; // 0xE60
+    f32 e64; // 0xE64
+    f32 e68; // 0xE68
+    f32 e6c; // 0xE6C
+    f32 e70; // 0xE70
+    f32 e74; // 0xE74
+    f32 e78; // 0xE78
+    f32 e7c; // 0xE7C
+    f32 e80; // 0xE80
+    f32 e84; // 0xE84
+    f32 e88; // 0xE88
+    f32 e8c; // 0xE8C
+    f32 e90; // 0xE90
+    s32 cardCnt; // 0xE94
+    s32 cardSel; // 0xE98
+    s32 cardPage; // 0xE9C
+    f32 ea0; // 0xEA0
+    f32 ea4; // 0xEA4
+    f32 ea8; // 0xEA8
+    f32 eac; // 0xEAC
+    f32 eb0; // 0xEB0
+    f32 eb4; // 0xEB4
+    s16 cardIcon[100]; // 0xEB8
+    f32 f80; // 0xF80
+    f32 f84; // 0xF84
+    f32 f88; // 0xF88
+    f32 f8c; // 0xF8C
+    s32 badgeCnt; // 0xF90
+    s32 badgeSel; // 0xF94
+    s32 badgePage; // 0xF98
+    f32 f9c; // 0xF9C
+    f32 fa0; // 0xFA0
+    f32 fa4; // 0xFA4
+    f32 fa8; // 0xFA8
+    f32 fac; // 0xFAC
+    f32 fb0; // 0xFB0
+    s16 badgeIcon[58]; // 0xFB4
+    f32 x1028; // 0x1028
+    f32 x102c; // 0x102C
+    f32 x1030; // 0x1030
+    f32 x1034; // 0x1034
+    s32 charCnt; // 0x1038
+    s32 seenCnt; // 0x103C
+    s32 charSel; // 0x1040
+    s32 charPage; // 0x1044
+    f32 x1048; // 0x1048
+    f32 x104c; // 0x104C
+    LogChar chars[216]; // 0x1050
+    void* mono; // 0x1200
+    u8 pad_1204[0xC];
 } LogWin;
 
 #define LOGWIN_CHECK(field, off) typedef char logwin_##field##_check[(offsetof(LogWin, field) == (off)) ? 1 : -1]
@@ -1311,4 +1324,275 @@ void winLogInit2(WindowWork* work) {
     WW_F32(work, 0xFAC) = float_neg300_8041d80c;
     name = ((WinLogEntry*)((u8*)work + 0xD78))[WW_S32(work, 0xD6C)].name;
     winMsgEntry(work, 0, name, 0);
+}
+
+extern const char* msg_help[5];
+extern const u8 enemy_monoshiri_sort_table[];
+extern const char str_802F6478[];
+extern const char str_802F6480[];
+extern const char str_802F6488[];
+extern const char str_802F6490[];
+extern const char str_802F6498[];
+extern const char str_802F64A0[];
+extern const char str_802F64A8[];
+extern const char str_802F64B0[];
+extern const f32 float_2_8041d87c;
+extern const f32 float_neg1000_8041d948;
+
+// Appends a tab to the menu and re-centres every tab row.
+#define LOG_ADD_TAB(w, tabType, msg)                                                  \
+    do {                                                                              \
+        LogRow* r_ = &(w)->rows[(w)->count];                                          \
+        s32 k_;                                                                       \
+        r_->type = (tabType);                                                         \
+        r_->timer = 0;                                                                \
+        r_->phase = 0;                                                                \
+        r_->name = (msg);                                                             \
+        (w)->count++;                                                                 \
+        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
+            (w)->rows[k_].curX = float_0_8041d7bc;                                    \
+            (w)->rows[k_].targetX = float_0_8041d7bc;                                 \
+            {                                                                         \
+                f32 y_ = float_45_8041d880 * (f32)(w)->count * float_0p5_8041d7c8    \
+                         - float_45_8041d880 * (f32)k_;                               \
+                (w)->rows[k_].curY = y_;                                              \
+                (w)->rows[k_].targetY = y_;                                           \
+            }                                                                         \
+        }                                                                             \
+    } while (0)
+
+// NONMATCHING: first draft, see the percentage from agent_check.
+void winLogInit(WindowWork* work) {
+    LogWin* w = (LogWin*)work;
+    const char* base = str_802F5EB8;
+    const char* area;
+    s32 i;
+    s32 n;
+    const u8* sortp;
+
+    w->state = 0;
+    w->sel = 0;
+    w->count = 0;
+    LOG_ADD_TAB(w, 0, msg_help[0]);
+    if (swByteGet(0) >= 0x13) {
+        LOG_ADD_TAB(w, 1, msg_help[1]);
+    }
+    if (swByteGet(0) >= 7) {
+        LOG_ADD_TAB(w, 4, msg_help[4]);
+    }
+    if (swByteGet(0) >= 0x14) {
+        LOG_ADD_TAB(w, 2, msg_help[2]);
+    }
+    if (swGet(0x40) != 0) {
+        LOG_ADD_TAB(w, 3, msg_help[3]);
+    }
+    w->stoneNum = 0;
+    for (i = 0; i < 7; i++) {
+        if (pouchCheckItem(stone_tbl[i]) != 0) {
+            w->stoneNum++;
+        }
+    }
+    for (i = 0; i < 7; i++) {
+        EffectEntry* e;
+
+        if (i < w->stoneNum) {
+            e = effStarStoneEntry(i, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc, float_2_8041d87c);
+        } else {
+            e = effStarStoneEntry(i + 7, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc,
+                                  float_2_8041d87c);
+            ((u8*)e->userdata)[0x5C] = 0x20;
+            ((u8*)e->userdata)[0x5D] = 0x20;
+            ((u8*)e->userdata)[0x5E] = 0x20;
+        }
+        w->stones[i] = e;
+        *(s32*)((u8*)e->userdata + 0x38) = 8;
+        *(u16*)((u8*)e->userdata + 4) &= ~4;
+        *(u16*)((u8*)e->userdata + 4) |= 0x20;
+    }
+    w->file = NULL;
+    w->pose = -1;
+    w->mapSel = -1;
+    w->mapPick = 0;
+    w->mapCy = float_0_8041d7bc;
+    w->mapCx = float_0_8041d7bc;
+    w->e2c = float_0_8041d7bc;
+    w->e28 = float_0_8041d7bc;
+    w->e34 = float_neg480_8041d89c;
+    w->e30 = float_neg480_8041d89c;
+    w->mapScrollY = float_0_8041d7bc;
+    w->mapScrollX = float_0_8041d7bc;
+    area = gp->currentAreaName;
+    if (strcmp(gp->currentMapName, RO2(base, 0x5C0, str_802F6478)) == 0
+        || strcmp(gp->currentMapName, RO2(base, 0x5C8, str_802F6480)) == 0) {
+        area = "sin";
+    }
+    if (strcmp(gp->currentMapName, RO2(base, 0x5D0, str_802F6488)) == 0
+        || strcmp(gp->currentMapName, RO2(base, 0x5D8, str_802F6490)) == 0) {
+        area = "hou";
+    }
+    if (strncmp(gp->currentMapName, "rsh", 3) == 0) {
+        if (swByteGet(0) < 0x136) {
+            area = "gor";
+        } else if (swByteGet(0) < 0x14E || swGet(0xDFB) != 0) {
+            area = "eki";
+        } else if (swGet(0xDFC) != 0) {
+            area = "pik";
+        } else {
+            switch (swByteGet(0x366)) {
+            case 0:
+                area = "gor";
+                break;
+            case 1:
+                area = "eki";
+                break;
+            case 2:
+                area = "pik";
+                break;
+            case 3:
+                area = "gor";
+                break;
+            }
+        }
+    }
+    if (strncmp(gp->currentMapName, "hom", 3) == 0) {
+        area = "eki";
+    }
+    if (strncmp(gp->currentMapName, "jon", 3) == 0) {
+        area = "tik";
+    }
+    if (strcmp(gp->currentMapName, RO2(base, 0x5E0, str_802F6498)) == 0) {
+        area = "jin";
+    }
+    if (strcmp(gp->currentMapName, RO2(base, 0x5E8, str_802F64A0)) == 0
+        || strcmp(gp->currentMapName, RO2(base, 0x5F0, str_802F64A8)) == 0
+        || strcmp(gp->currentMapName, RO2(base, 0x5F8, str_802F64B0)) == 0) {
+        area = "dou";
+    }
+    for (n = 0; n < 0x5D; n++) {
+        if (area != NULL && strcmp(area, tubuDt[n].id) == 0) {
+            break;
+        }
+    }
+    if ((u32)n < 0x5D) {
+        w->mapPick = n;
+    }
+    w->mapCx = float_304_8041d874 + (f32)tubuDt[w->mapPick].x;
+    w->mapCy = float_240_8041d858 + (f32)tubuDt[w->mapPick].y;
+    w->mapScrollX = w->mapScrollX - (f32)(s32)((w->mapCx + w->mapScrollX) - float_230_8041d878);
+    w->mapScrollY = w->mapScrollY - (f32)(s32)((w->mapCy + w->mapScrollY) - float_120_8041d870);
+    if (w->mapScrollX > float_0_8041d7bc) {
+        w->mapScrollX = float_0_8041d7bc;
+    }
+    if (w->mapScrollY > float_0_8041d7bc) {
+        w->mapScrollY = float_0_8041d7bc;
+    }
+    if (w->mapScrollX < float_neg148_8041d898) {
+        w->mapScrollX = float_neg148_8041d898;
+    }
+    if (w->mapScrollY < float_neg240_8041d894) {
+        w->mapScrollY = float_neg240_8041d894;
+    }
+    w->stoneSel = 0;
+    w->e7c = float_51p429_8041d8a8 * (f32)w->stoneSel;
+    w->e80 = w->e7c;
+    w->e68 = float_0_8041d7bc;
+    w->e64 = float_0_8041d7bc;
+    w->e70 = float_neg480_8041d89c;
+    w->e6c = float_neg480_8041d89c;
+    w->e78 = float_0_8041d7bc;
+    w->e74 = float_0_8041d7bc;
+    w->cardCnt = 0;
+    for (i = 0; i < 0x63; i++) {
+        if (itemDataTable[0xF0 + i].type_sort_order != -1) {
+            w->cardIcon[w->cardCnt++] = i;
+        }
+    }
+    qqsort(w->cardIcon, w->cardCnt, 2, compare_func5_2);
+    w->cardSel = 0;
+    w->e88 = float_320_8041d8b0;
+    w->e84 = float_320_8041d8b0;
+    w->e90 = float_neg240_8041d894;
+    w->e8c = float_neg240_8041d894;
+    w->cardPage = 0;
+    w->ea4 = float_0_8041d7bc;
+    w->ea0 = float_0_8041d7bc;
+    w->eac = float_neg200_8041d8d4;
+    w->ea8 = float_neg200_8041d8d4;
+    w->eb4 = float_neg300_8041d80c;
+    w->eb0 = float_neg300_8041d80c;
+    w->badgeCnt = 0;
+    for (i = 0; i < 0x63; i++) {
+        if (itemDataTable[0xB3 + i].type_sort_order != -1) {
+            w->badgeIcon[w->badgeCnt++] = i;
+        }
+    }
+    qqsort(w->badgeIcon, w->badgeCnt, 2, compare_func6_2);
+    w->badgeSel = 0;
+    w->f84 = float_320_8041d8b0;
+    w->f80 = float_320_8041d8b0;
+    w->f8c = float_neg240_8041d894;
+    w->f88 = float_neg240_8041d894;
+    w->badgePage = 0;
+    w->fa0 = float_0_8041d7bc;
+    w->f9c = float_0_8041d7bc;
+    w->fa8 = float_neg200_8041d8d4;
+    w->fa4 = float_neg200_8041d8d4;
+    w->fb0 = float_neg300_8041d80c;
+    w->fac = float_neg300_8041d80c;
+    w->charCnt = 0;
+    sortp = enemy_monoshiri_sort_table + 1;
+    for (i = 1; i < 0xD8; i++, sortp++) {
+        if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL) {
+            if (evtGetValue(NULL, GSW(0)) < 0x187) {
+                if ((u32)(i - 0x85) <= 1 || i == 0x87) {
+                    continue;
+                }
+            } else {
+                if ((u32)(i - 0x1F) <= 1 || i == 0x4D) {
+                    continue;
+                }
+            }
+            if (evtGetValue(NULL, GSW(0)) < 0x190) {
+                if (i == 0x90) {
+                    continue;
+                }
+            } else {
+                if (i == 0x3F) {
+                    continue;
+                }
+            }
+            w->chars[w->charCnt].pad = *sortp;
+            w->chars[w->charCnt++].id = i;
+        }
+    }
+    {
+        u16* list = (u16*)w->chars;
+        s32 a;
+        s32 b;
+
+        for (a = 0; a < w->charCnt - 1; a++) {
+            for (b = a + 1; b < w->charCnt; b++) {
+                if ((u8)(list[a] >> 8) > (u8)(list[b] >> 8)) {
+                    u16 t = list[a];
+                    list[a] = list[b];
+                    list[b] = t;
+                }
+            }
+        }
+    }
+    w->charSel = 0;
+    w->x102c = float_0_8041d7bc;
+    w->x1028 = float_0_8041d7bc;
+    w->x1034 = float_0_8041d7bc;
+    w->x1030 = float_0_8041d7bc;
+    w->charPage = 0;
+    w->x104c = float_0_8041d7bc;
+    w->x1048 = float_0_8041d7bc;
+    w->seenCnt = 0;
+    for (i = 1; i < 0xD8; i++) {
+        if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL && (u32)(i - 0x1F) > 1 && i != 0x4D && i != 0x3F
+            && swGet(i + 0x117A) != 0) {
+            w->seenCnt++;
+        }
+    }
 }
