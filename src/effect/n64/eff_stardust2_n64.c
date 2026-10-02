@@ -108,13 +108,15 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // 2pi/10/90 temps (f28/f29/f30) all match. Making angleScale/yScale the two free preheader FPRs (rather
 // than block-allocating them) needs them hoisted from the two `float_360 / denom` divisions instead of
 // declared; the k1/k4 constant locals and `field_24 += i + i` reproduce the multiply/add operand order.
-// What still differs is a volatile-register tie-break in the preheader: this build loads 0.4 into f2 and
-// the int->float conversion double into f0 (original f0/f2), keeps (count+1) in f0 (original f1) and
-// schedules `li r5, 0` before the 1.0 load; `y = (360/denom) * (f32)i` also emits
-// `fmuls f22, f0, f27` where the original has `fmuls f22, f27, f0` (same value, swapped operands).
+// The loop's multiply operand order (`fmuls f22, f27, f0`) only comes out right when `float_360 / denom`
+// is named in an in-loop local (MWCC still hoists it); the natural expression form emits `f0, f27`.
+// What still differs is one volatile-register tie-break in the preheader: this build loads 0.4 into f2
+// and the int->float conversion double into f0 (original f0/f2), keeps (count+1) in f0 (original f1) and
+// schedules `li r5, 0` before the 1.0 load. No source shape found moves it (declaration/statement order,
+// operand swaps, named int->float temp, constant locals, and the opt_/scheduling pragmas were all tried).
 // The int->float pool constant also resolves to an anonymous .rodata entry because Main/Disp pool two
 // extra double literals there.
-// NONMATCHING (98.59%): see above.
+// NONMATCHING (98.61%): only the preheader f0/f2/f1 tie-break above; see the comment.
 EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 scaleA, f32 scaleB) {
     EffectEntry* effect;
     EffStardust2Data* data;
@@ -170,7 +172,12 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
 
     ptr = data + 1;
     for (i = 1; i < count + 1; i++, ptr++) {
+#ifdef MUST_MATCH
+        f32 angleScale = float_360_8041fec0 / denom;
+        y = angleScale * (f32)i;
+#else
         y = (float_360_8041fec0 / denom) * (f32)i;
+#endif
         if (type > 1) {
             r = rand() % 360;
         }

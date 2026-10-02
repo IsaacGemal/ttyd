@@ -611,15 +611,33 @@ void itemCoinDrop(Vec* pos) {
     }
 }
 
-// NONMATCHING (80.38%): logic is complete but the struct-init temporaries / register
-// allocation differ from the original (frame 0x80 vs 0xa0); stack-offset diffs cascade.
+static inline Vec itemNearDistCheckVec2(f32 x, f32 y, f32 z) {
+    Vec temp = vec3_802cabf8;
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
+
+// Builds the position vectors. Returning a Vec by value makes the compiler emit the
+// hidden return-slot copy the target has (temp then store to the named local), the same
+// shape evt_img.c's makeVec uses. The two helpers keep the two distinct zero-vector
+// rodata symbols (vec3_802cabec and vec3_802cabf8) that the target loads.
+static inline Vec itemNearDistCheckVec(f32 x, f32 y, f32 z) {
+    Vec temp = vec3_802cabec;
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
+
 ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     ItemEntry* entry;
-    ItemEntry* result = NULL;
+    ItemEntry* result;
     ItemWork* wp;
-    Vec pos;
     Vec itemPos;
     Vec delta;
+    Vec pos;
     f32 best = maxDist;
     f32 mag;
     int i;
@@ -627,18 +645,13 @@ ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     marioGetPtr();
     wp = itemGetWork();
 
-    pos = vec3_802cabec;
-    pos.x = x;
-    pos.y = y;
-    pos.z = z;
+    pos = itemNearDistCheckVec(x, y, z);
+    result = NULL;
 
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
         if ((entry->flags & 1) && !itemStatus(entry, 0x1000) && !itemStatus(entry, 0x100000)
             && entry->mode != 2 && !itemStatus(entry, 0x2000000)) {
-            itemPos = vec3_802cabf8;
-            itemPos.x = entry->position.x;
-            itemPos.y = entry->position.y;
-            itemPos.z = entry->position.z;
+            itemPos = itemNearDistCheckVec2(entry->position.x, entry->position.y, entry->position.z);
 
             PSVECSubtract(&itemPos, &pos, &delta);
             mag = PSVECMag(&delta);

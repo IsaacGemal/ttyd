@@ -214,11 +214,24 @@ BOOL setupDataCheck(void) {
     return TRUE;
 }
 
-// The ai search loop (goto) and the `j = -1` scheduling now reproduce the original exactly. areaName/mapName/fbat
-// match r30/r24/r27 and deadMap is r26, but the string pool base is r28 (target r31), dead is r31 (target r29)
-// and attr is r29 (target r28). The three `lis/addi _map_attr_data` initializers also go through r0
-// (`addi r0; mr`) where the target writes the destination directly.
-// NONMATCHING (98.05%): only register allocation differs; instruction sequence matches.
+// The attribute-table lookup is a helper so its pointer gets its own web; inlined three times this
+// reproduces the original's callee-saved colours (attr r28, dead r29, the string base r31).
+static inline MapAttrData* findMapAttr(const char* name) {
+    MapAttrData* p = (MapAttrData*)_map_attr_data;
+    for (;; p++) {
+        if (p->name == NULL) {
+            break;
+        }
+        if (strcmp(p->name, name) == 0) {
+            break;
+        }
+    }
+    return p;
+}
+
+// NONMATCHING (99.78%): the attribute-table helper above makes attr r28, dead r29 and the string base r31 match
+// the original; only `flag`/`ai`/`j` are swapped (the target keeps flag in r27, fbat's old register, and ai/j in
+// r24, mapName's old register; ours is the reverse). Every instruction and stack slot is otherwise identical.
 void setupDataBase(const char* areaName, const char* mapName) {
     FieldBattleData* fbat;
     NpcDeadInfo* dead;
@@ -251,18 +264,15 @@ void setupDataBase(const char* areaName, const char* mapName) {
     f32 homingAngle;
 
     fbat = fbatGetPointer();
+#ifdef MUST_MATCH
+    // Dead store: it fixes which callee-saved registers MWCC picks for the whole function below (the natural
+    // form, without it, miscolours attr/dead/the string base).
     attr = (MapAttrData*)_map_attr_data;
+#endif
     dead = fbat->deadInfo;
     deadMap = fbat->deadInfo[1].mapName;
 
-    for (;; attr++) {
-        if (attr->name == NULL) {
-            break;
-        }
-        if (strcmp(attr->name, mapName) == 0) {
-            break;
-        }
-    }
+    attr = findMapAttr(mapName);
 
     for (i = 0; i < 64; i++) {
         if (strcmp(fbat->deadInfo[i].mapName, "") == 0) {
@@ -284,22 +294,8 @@ void setupDataBase(const char* areaName, const char* mapName) {
     }
 
     if (attr->field_0x8 & 1) {
-        for (attr2 = (MapAttrData*)_map_attr_data;; attr2++) {
-            if (attr2->name == NULL) {
-                break;
-            }
-            if (strcmp(attr2->name, mapName) == 0) {
-                break;
-            }
-        }
-        for (attr3 = (MapAttrData*)_map_attr_data;; attr3++) {
-            if (attr3->name == NULL) {
-                break;
-            }
-            if (strcmp(attr3->name, deadMap) == 0) {
-                break;
-            }
-        }
+        attr2 = findMapAttr(mapName);
+        attr3 = findMapAttr(deadMap);
         if (attr2->field_0x4 != attr3->field_0x4) {
             memset(dead, 0, 0x500);
             strcpy(dead[0].mapName, mapName);
@@ -308,8 +304,8 @@ void setupDataBase(const char* areaName, const char* mapName) {
         }
     }
 
-    flag = FALSE;
     npcIndex = 0;
+    flag = FALSE;
     if (attr->field_0x8 & 1) {
         flag = TRUE;
     }

@@ -146,13 +146,50 @@ void effMagic1Main(EffectEntry* effect) {
 #define MAGIC1_SIN(phase) \
     ((f32)sin(float_6p2832_8041f67c * (f32)(gp->retraceCount * 32 + (phase) + 180) / float_360_8041f680))
 
-// Pool constants for main_dl. Defined here (after the functions above, before
-// main_dl) so MWCC folds the literals in main_dl into these named symbols while
-// leaving effMagic1N64Entry/effMagic1Main referencing the externs unchanged.
+// Match-only: building each colour through an inline return puts its local and its
+// return temp where the original does (a plain local lands in the other slot); the
+// explicit (s32) casts keep the u8 channels on the signed int-to-float sequence
+// (without them MWCC uses the unsigned constant and the pool gains a second double).
+#ifdef MUST_MATCH
+static inline GXColor magic1Color2(u8* anime) {
+    GXColor c = *(GXColor*)&dat_8041f650;
+    c.r = (u8)(s32)((s32)anime[1] + float_0p5_8041f688 * ((255 - (s32)anime[1]) * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    c.g = (u8)(s32)((s32)anime[2] + float_0p5_8041f688 * ((255 - (s32)anime[2]) * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    c.b = (u8)(s32)((s32)anime[3] + float_0p5_8041f688 * ((255 - (s32)anime[3]) * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    return c;
+}
 
-// Details of the remaining 15.38% (MWCC-6 pool/register artefacts) are in REPORT.md.
-// NONMATCHING (82.63%): named sdata2 constants fold into anonymous @NNN pool entries,
-// and `size` gets r29 instead of sharing r30 with the anime-byte scratch.
+static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
+    c.r = (u8)(s32)((s32)anime[1] + float_0p5_8041f688 * (-(s32)anime[1] * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    c.g = (u8)(s32)((s32)anime[2] + float_0p5_8041f688 * (-(s32)anime[2] * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    c.b = (u8)(s32)((s32)anime[3] + float_0p5_8041f688 * (-(s32)anime[3] * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    c.a = alpha;
+    return c;
+}
+#else
+static inline GXColor magic1Color2(u8* anime) {
+    GXColor c = *(GXColor*)&dat_8041f650;
+    c.r = (u8)(s32)(anime[1] + float_0p5_8041f688 * (255 - anime[1]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    c.g = (u8)(s32)(anime[2] + float_0p5_8041f688 * (255 - anime[2]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    c.b = (u8)(s32)(anime[3] + float_0p5_8041f688 * (255 - anime[3]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    return c;
+}
+
+static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
+    c.r = (u8)(s32)(anime[1] - float_0p5_8041f688 * anime[1] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    c.g = (u8)(s32)(anime[2] - float_0p5_8041f688 * anime[2] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    c.b = (u8)(s32)(anime[3] - float_0p5_8041f688 * anime[3] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    c.a = alpha;
+    return c;
+}
+#endif
+
+// Details are in REPORT.md. The remaining diffs are fp register allocation: the fp
+// locals land one register lower than the target because MWCC keeps float_0 in f23 and
+// shares f15 between `angle` and the cos result, while the target keeps a separate f16
+// for cos and reloads float_0; the pool also loads 1.0 before 0.5 and 1/256 before 64,
+// and the phase sum adds 180 before the anime byte.
+// NONMATCHING (92.34%): fp locals one register low; cos shares f15; float_0 hoisted.
 static void main_dl(EffectEntry* effect, Mtx mtx) {
     u8* anime;
     s32 size;
@@ -161,6 +198,7 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
     s32 alpha;
     s32 i;
     s32 j;
+    s32 count;
     GXTexObj texObj;
     Mtx mtxA;
     Mtx mtxC;
@@ -180,21 +218,25 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 
     data = effect->userdata;
     type = data->type;
-    alpha = data->field_0x34;
     scale = data->field_0x28;
+    count = data->field_0x30;
+    alpha = data->field_0x34;
     x = data->field_0x10;
     y = data->field_0x14;
     z = data->field_0x18;
 
-    if (type == 0) {
+    switch (type) {
+    case 0:
         radius = float_9_8041f65c;
+        ringAngle = (f32)(count * 35);
         angle = -camGetPtr(CAMERA_3D)->viewYaw;
-        ringAngle = (f32)(data->field_0x30 * 35);
-    } else {
+        break;
+    default:
         x = x * scale;
         radius = float_6_8041f660;
+        ringAngle = (f32)(count * 25);
         angle = float_0_8041f654;
-        ringAngle = (f32)(data->field_0x30 * 25);
+        break;
     }
 
     GXSetNumChans(0);
@@ -217,14 +259,17 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 
     for (i = 0; i < 3; i++) {
         if (i > 0) {
-            if (type == 0) {
+            switch (type) {
+            case 0:
                 ringAngle -= float_70_8041f664;
                 x -= float_2_8041f668 * data->field_0x1c;
                 y -= float_2_8041f668 * data->field_0x20;
                 z -= float_2_8041f668 * data->field_0x24;
-            } else {
+                break;
+            default:
                 ringAngle -= float_50_8041f66c;
                 x -= float_2_8041f668 * (float_1p2048_8041f670 * data->field_0x1c);
+                break;
             }
             alpha = (s32)(float_100_8041f674 * (f32)data->field_0x34 / float_255_8041f678);
         }
@@ -246,18 +291,8 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
             PSMTXConcat(mtx, mtxE, mtxE);
             GXLoadPosMtxImm(mtxE, 0);
 
-            color = unk_804231a8;
-            color.r = (u8)(s32)(anime[1] - float_0p5_8041f688 * anime[1] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-            color.g = (u8)(s32)(anime[2] - float_0p5_8041f688 * anime[2] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-            color.b = (u8)(s32)(anime[3] - float_0p5_8041f688 * anime[3] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-            color.a = alpha;
-            GXSetTevColor(GX_TEVREG0, color);
-
-            color2 = *(GXColor*)&dat_8041f650;
-            color2.r = (u8)(s32)(anime[1] + float_0p5_8041f688 * (255 - anime[1]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-            color2.g = (u8)(s32)(anime[2] + float_0p5_8041f688 * (255 - anime[2]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-            color2.b = (u8)(s32)(anime[3] + float_0p5_8041f688 * (255 - anime[3]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-            GXSetTevColor(GX_TEVREG1, color2);
+            GXSetTevColor(GX_TEVREG0, magic1Color1(unk_804231a8, anime, alpha));
+            GXSetTevColor(GX_TEVREG1, magic1Color2(anime));
 
             size = (type == 0) ? 15 : 10;
             PSMTXScale(mtxB, float_2_8041f668, float_0p25_8041f690, float_1_8041f68c);
@@ -267,13 +302,13 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
             GXLoadTexMtxImm(mtxA, 0x1E, 1);
 
             GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-            GXPosition3s16(-size, size, 0);
+            GXPosition3s16(-(s16)size, size, 0);
             GXTexCoord2f32(0.0f, 0.0f);
             GXPosition3s16(size, size, 0);
             GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3s16(size, -size, 0);
+            GXPosition3s16(size, -(s16)size, 0);
             GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3s16(-size, -size, 0);
+            GXPosition3s16(-(s16)size, -(s16)size, 0);
             GXTexCoord2f32(0.0f, 1.0f);
         }
     }

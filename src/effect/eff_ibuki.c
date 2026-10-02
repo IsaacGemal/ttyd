@@ -250,15 +250,18 @@ static inline GXColor effIbukiColor1(u8 a) {
 }
 #endif
 
-// Logic, call constants and frame size (0x130) match. The callee-saved GPR allocation of the two live
-// parameters is swapped: the original keeps effect (r4, live to the end) in r29 and cameraId (r3, last
-// used at the second camGetPtr) in r28, while MWCC gives effect r28 and cameraId r29 here. That cascades
-// into the display-list loop and final-loop registers and into the first GXColor's stack slot (0x10 vs
-// 0xc). The GX vertex block also CSEs the repeated float_0/float_2 pool loads into f0/f3 where the
-// original reloads them per vertex, and the final loop latch emits elem++/i++ where the original emits
-// i++/elem++.
-// NONMATCHING (96.81%): effect/cameraId callee-saved registers swapped, first GXColor slot 0xc vs 0x10,
-// GX vertex block CSEs float_0/float_2.
+// Logic, call constants and frame size (0x130) match. The GX vertex block now reloads float_0/float_2 per
+// vertex (the literals for 0.0f/2.0f keep MWCC from CSEing them; the extern float_8/float_0p5 keep the
+// tmp*0.5 multiply inside the loop instead of hoisting it) and the final-loop latch is i++ then elem++.
+// The callee-saved GPR allocation of the two live parameters is still swapped: the original keeps effect
+// (r4, live to the end) in r29 and cameraId (r3, last used at the second camGetPtr) in r28, while MWCC
+// gives effect r28 and cameraId r29. That one swap cascades into the display-list loop and final-loop
+// registers and into the first GXColor's stack slot (0x10 vs 0xc). `opt_lifetimes off` and a separate
+// display-list counter `j` (instead of reusing `i`) remove the extra instructions this caused; the
+// remaining 25 differences are all register numbers from the effect/cameraId swap.
+// NONMATCHING (99.56%): effect/cameraId callee-saved registers swapped (effect r28 vs r29); the display
+// list loop, final loop and first GXColor slot differ only because of that swap.
+#pragma opt_lifetimes off // narrows the effect/cameraId live-range cascade; without it 11 more instructions differ
 void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effIbukiData* data = effect->userdata;
@@ -274,6 +277,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	Mtx scale;
 	Mtx out;
 	s32 i;
+	s32 j;
 	f32 tmp;
 	u8* base;
 
@@ -353,8 +357,8 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX1, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xe);
 	GXSetArray(GX_VA_TEX1, DATA_AT(0xe0, ibuki_texcoord1_tbl), 4);
-	for (i = 0; i < 4u; i++) {
-		GXCallDisplayList(ibuki_dl_0_tbl[i], ibuki_dl_0_size_tbl[i] << 5);
+	for (j = 0; j < 4u; j++) {
+		GXCallDisplayList(ibuki_dl_0_tbl[j], ibuki_dl_0_size_tbl[j] << 5);
 	}
 
 	GXSetNumChans(1);
@@ -377,7 +381,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	tmp = -float_16_80421f14;
 	i = 1;
 	elem = &data[1];
-	for (; i < effect->count; i++) {
+	for (; i < effect->count; i++, elem++) {
 		alpha2 = (elem->alpha * alpha) / 255;
 		if (elem->wait == 0) {
 			PSMTXTrans(mtx, elem->positionX, elem->positionY, elem->positionZ);
@@ -398,15 +402,15 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 #endif
 			GXSetChanMatColor(GX_COLOR0A0, color2);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(tmp * float_0p5_80421f18, float_8_80421f1c, float_0_80421f08);
-			GXTexCoord2f32(float_0_80421f08, float_0_80421f08);
-			GXPosition3f32(float_8_80421f1c, float_8_80421f1c, float_0_80421f08);
-			GXTexCoord2f32(float_2_80421f20, float_0_80421f08);
-			GXPosition3f32(float_8_80421f1c, tmp * float_0p5_80421f18, float_0_80421f08);
-			GXTexCoord2f32(float_2_80421f20, float_2_80421f20);
-			GXPosition3f32(tmp * float_0p5_80421f18, tmp * float_0p5_80421f18, float_0_80421f08);
-			GXTexCoord2f32(float_0_80421f08, float_2_80421f20);
+			GXPosition3f32(tmp * float_0p5_80421f18, float_8_80421f1c, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(float_8_80421f1c, float_8_80421f1c, 0.0f);
+			GXTexCoord2f32(2.0f, 0.0f);
+			GXPosition3f32(float_8_80421f1c, tmp * float_0p5_80421f18, 0.0f);
+			GXTexCoord2f32(2.0f, 2.0f);
+			GXPosition3f32(tmp * float_0p5_80421f18, tmp * float_0p5_80421f18, 0.0f);
+			GXTexCoord2f32(0.0f, 2.0f);
 		}
-		elem++;
 	}
 }
+#pragma opt_lifetimes reset

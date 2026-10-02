@@ -240,23 +240,38 @@ static inline Vec initializeVec(Vec* input) {
 }
 
 
-// NONMATCHING (96.10%): 3 instructions differ, 4 missing, 5 extra, plus register differences.
+#ifdef MUST_MATCH
+// Calling GXSetTevColor inside each inline places the colour build word and its by-value argument
+// copy in the original's slots (color 0xc/0x10, color2 0x8).
+static inline void effWaterDamageSetColor0(s32 alpha) {
+	GXColor c = { 0x00, 0xFF, 0xFF, 0xC8 };
+	c.a = alpha;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+
+static inline void effWaterDamageSetColor1(void) {
+	GXColor c = { 0x00, 0x20, 0x20, 0x00 };
+	GXSetTevColor(GX_TEVREG1, c);
+}
+#endif
+
+// The two colour inlines above reproduce the original's GXColor stack slots, and the loop's initial
+// data++ is hoisted to just before GXInitTexObj to match the original's schedule.
+// NONMATCHING (99.997%): one `addi r4, r30, 0x100` string-pool offset differs (ours 0xe8).
 void effWaterDamageDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
 	effWaterDamageData* data = effect->userdata;
-	CameraEntry* cam3d;
 	Mtx mtx;
 	Mtx scale;
 	Mtx rot;
 	Mtx viewMtx;
 	GXTexObj texObj;
 	GXColor color;
-	GXColor color2;
+	s32 i;
 	s32 alpha;
 	s32 x;
 	s32 y;
-	s32 i;
 
 	x = (s32)data->position.x;
 	y = (s32)data->position.y;
@@ -268,8 +283,7 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
 
 	PSMTXTrans(mtx, (f32)x, (f32)y, data->position.z);
-	cam3d = camGetPtr(CAMERA_3D);
-	PSMTXRotRad(rot, 'y', MTXDegToRad(-cam3d->viewYaw));
+	PSMTXRotRad(rot, 'y', MTXDegToRad(-camGetPtr(CAMERA_3D)->viewYaw));
 	PSMTXScale(scale, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXConcat(mtx, rot, mtx);
@@ -304,14 +318,19 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x89, &texObj);
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetCullMode(GX_CULL_NONE);
+#ifdef MUST_MATCH
+	// The original's scheduler hoists the loop's initial data++ to just before GXInitTexObj.
+	data++;
+#endif
 	GXInitTexObj(&texObj, unk_803a8a00, 0x10, 0x10, 0xE, 0, 0, 0);
 	GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
 	GXLoadTexObj(&texObj, GX_TEXMAP1);
 
-	color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
-	color2 = (GXColor){ 0x00, 0x20, 0x20, 0x00 };
-
+#ifdef MUST_MATCH
+	for (i = 1; i < effect->count; i++, data++) {
+#else
 	for (i = 1, data++; i < effect->count; i++, data++) {
+#endif
 		s32 kind;
 
 		PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
@@ -323,11 +342,17 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 
+#ifdef MUST_MATCH
+		effWaterDamageSetColor0(alpha * data->field_0x30 / 255);
+		effWaterDamageSetColor1();
+#else
+		color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
 		color.a = alpha * data->field_0x30 / 255;
 		GXSetTevColor(GX_TEVREG0, color);
-		GXSetTevColor(GX_TEVREG1, color2);
+		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x20, 0x20, 0x00 });
+#endif
 
-		kind = ((gp->retraceCount >> 1) + i) & 3;
+		kind = (i + (gp->retraceCount >> 1)) & 3;
 		switch (kind) {
 		case 0:
 		case 2:

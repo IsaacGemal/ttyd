@@ -77,15 +77,21 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (82.01%): the state machine and all logic match, but MWCC assigns the callee-saved
-// registers differently (work is r24 instead of r22, smooth r28 instead of r25, ...), so almost every
-// instruction that touches a pointer/loop variable differs in its register field.
+// The two unique-button loops must be `while (!found)` (a do-while leaves `pick` unspilled and drops
+// the frame to 0x30 with only 10 callee-saved GPRs). With that, the frame (0x40), the stmw/lmw range
+// (r20-r31) and bd/disp/cont/found all match. Tried: every relevant pragma (opt_lifetimes/propagation/
+// dead_assignments/common_subs/peephole/scheduling/global_optimizer/optimize_for_size), local
+// declaration order/scope/type, `register`, an inline helper, case order, do-while vs while, and
+// pool/data placement.
+// NONMATCHING (95.94%): control flow, constants and memory accesses match; what is left is MWCC's
+// callee-saved colouring (work r21/target r22, smooth r30/r25, sfx r26/r31, i r31/r30, offset r22/r26,
+// table r23/r21, pick r25/r24), a couple of `add`+`stw` vs `stwx` addresses, and one extra `mr`.
 s32 battleAcMain_ButtonDown(BattleWork* work) {
+    s32 smooth = 0;
     ButtonDownWork* bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
-    const char* sfx;
-    s32 smooth = 0;
     s32 cont;
+    const char* sfx;
 
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
         smooth = 1;
@@ -108,16 +114,25 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                 memset(bd->states, 1, 0x34);
                 for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
                     switch (*(s32*)&work->actionCommands.field_34[0x10]) {
+                        case -2:
+                            bd->buttons[i] = (irand(100) < 50) ? 0x100 : 0x200;
+                            bd->states[i] = 0;
+                            break;
+                        case -4:
+                            bd->buttons[i] = (irand(100) < 50) ? 0x200 : 0x400;
+                            bd->states[i] = 0;
+                            break;
                         case -3:
                             if (*(s32*)&work->actionCommands.field_34[0x00] & 4) {
                                 bd->buttons[i] = _button_table[irand(4)];
                             } else {
                                 u32 pick;
                                 s32 found = 0;
-                                do {
+                                while (!found) {
                                     s32 j;
-                                    s32 unique = 1;
+                                    s32 unique;
                                     pick = _button_table[irand(4)];
+                                    unique = 1;
                                     for (j = i - 1; j >= 0; j--) {
                                         if (bd->buttons[j] == pick) {
                                             unique = 0;
@@ -126,26 +141,19 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                                     if (unique) {
                                         found = 1;
                                     }
-                                } while (!found);
+                                }
                                 bd->buttons[i] = pick;
                             }
-                            bd->states[i] = 0;
-                            break;
-                        case -4:
-                            bd->buttons[i] = (irand(100) < 50) ? 0x200 : 0x400;
-                            bd->states[i] = 0;
-                            break;
-                        case -2:
-                            bd->buttons[i] = (irand(100) < 50) ? 0x100 : 0x200;
                             bd->states[i] = 0;
                             break;
                         default: {
                             u32 pick;
                             s32 found = 0;
-                            do {
+                            while (!found) {
                                 s32 j;
-                                s32 unique = 1;
+                                s32 unique;
                                 pick = _button_table[irand(7)];
+                                unique = 1;
                                 for (j = i - 1; j >= 0; j--) {
                                     if (bd->buttons[j] == pick) {
                                         unique = 0;
@@ -154,7 +162,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                                 if (unique) {
                                     found = 1;
                                 }
-                            } while (!found);
+                            }
                             bd->buttons[i] = pick;
                             bd->states[i] = 0;
                             break;
@@ -197,16 +205,14 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                     s32 allDone = 1;
                     work->actionCommands.outputParams[0] = 0;
                     for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-                        u32 button = bd->buttons[i];
-
-                        if (button == 0) {
+                        if (bd->buttons[i] == 0) {
                             continue;
                         }
                         if (bd->states[i] != 0) {
                             work->actionCommands.outputParams[0]++;
                             continue;
                         }
-                        if (BattlePadGetTrigger() == button || smooth) {
+                        if (BattlePadGetTrigger() == bd->buttons[i] || smooth) {
                             bd->states[i] = 1;
                             work->actionCommands.outputParams[0]++;
                             if (*(s32*)&work->actionCommands.field_34[8] == 1) {
@@ -221,6 +227,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                                 work->actionCommands.mAcState = 1001;
                                 if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
                                     work->actionCommands.outputParams[0] > 0) {
+                                    cont = 1;
                                     work->actionCommands.result |= 2;
                                     work->actionCommands.result &= ~1;
                                     work->actionCommands.mAcState = 1001;
@@ -240,14 +247,18 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                         bd->field_0x04 = work->actionCommands.outputParams[0];
                     }
                     if (allDone) {
+                        cont = 1;
                         work->actionCommands.result |= 2;
                         work->actionCommands.result &= ~1;
                         work->actionCommands.mAcState = 1001;
-                        cont = 1;
-                    } else if (--bd->field_0x00 < 0) {
+                    } else {
+                        bd->field_0x00--;
+                        if (bd->field_0x00 >= 0) {
+                            break;
+                        }
                         work->actionCommands.result = 0;
-                        work->actionCommands.mAcState = 1001;
                         cont = 1;
+                        work->actionCommands.mAcState = 1001;
                         if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
                             work->actionCommands.outputParams[0] > 0) {
                             work->actionCommands.result |= 2;

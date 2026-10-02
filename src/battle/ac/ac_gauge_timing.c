@@ -83,7 +83,13 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original saves r28-r31 with `stmw` and keeps `work` in r29.
 #pragma optimize_for_size on
-// NONMATCHING (98.75%): case-0 -300/0 loads f0/f1 swapped, the int->float multiply pools/schedules differently, and the two `field_34[0] & 2` tests emit one branch where the original emits `bne body; beq skip`.
+// The two `field_34[0] & 2` tests emit a single `beq skip` where the original emits a redundant
+// `bne` to the next instruction before `beq skip` (the pattern occurs nowhere else in the tree and
+// does not reproduce from any source shape tried); the default-case conversion
+// field_34[0x14]/100*field_0x08+50 loads field_34[0x14] into r0 instead of r4, which shifts the
+// A-conversion / B-load / hundred-load schedule (fdivs/fsubs/fmadds themselves already match).
+// NONMATCHING (99.01%): two `field_34[0] & 2` tests miss a redundant `bne` before `beq skip`;
+// default-case int->float puts field_34[0x14] in r0 instead of r4.
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
 #ifdef MUST_MATCH
     // MWCC folds two bases derived directly from `work` into one register; deriving both from
@@ -107,8 +113,10 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
     case 0:
         memset(disp, 0, 0x2C);
         {
-            f32 neg = MATCH_F32(float_neg300_804218c0);
-            f32 zero = MATCH_F32(float_0_80421890);
+            f32 zero;
+            f32 neg;
+            neg = MATCH_F32(float_neg300_804218c0);
+            zero = MATCH_F32(float_0_80421890);
             disp->iconX = neg;
             disp->iconY = zero;
             disp->counter = 0x14;
@@ -245,18 +253,17 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     dec->field_0x10 = 0;
                     goto tail;
                 }
-            } else if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
-                if ((s32)dec->field_0x04 <= 0) {
-                    dec->field_0x20++;
-                    dec->field_0x04 = MATCH_F32(float_0_80421890);
-                    dec->field_0x10 = 0;
-                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
-                        dec->field_0x1C = 0xF;
-                    } else {
-                        dec->field_0x1C = 0x1E;
-                    }
-                    goto tail;
+            } else if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
+                       ((s32)dec->field_0x04 <= 0)) {
+                dec->field_0x20++;
+                dec->field_0x04 = MATCH_F32(float_0_80421890);
+                dec->field_0x10 = 0;
+                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    dec->field_0x1C = 0xF;
+                } else {
+                    dec->field_0x1C = 0x1E;
                 }
+                goto tail;
             }
             if (dec->field_0x04 >= (f32)*(s32*)&work->actionCommands.field_34[0x10]) {
                 dec->field_0x10 = 1;
@@ -274,25 +281,26 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     goto tail;
                 }
             }
-            dec->field_0x04 = ((f32)*(s32*)&work->actionCommands.field_34[0x14] / MATCH_F32(float_100_80421874)) *
-                                  (f32)dec->field_0x08 +
-                              MATCH_F32(float_50_804218c8);
+            {
+                s32 a = *(s32*)&work->actionCommands.field_34[0x14];
+                f32 f = (f32)a / MATCH_F32(float_100_80421874);
+                dec->field_0x04 = f * (f32)dec->field_0x08 + MATCH_F32(float_50_804218c8);
+            }
             if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
                 s32 v = (s32)dec->field_0x04;
-                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
-                    if (v / 100 > dec->field_0x20) {
-                        dec->field_0x20 = v / 100;
-                        dec->field_0x04 = MATCH_F32(float_0_80421890);
-                        dec->field_0x10 = 0;
-                        if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
-                            dec->field_0x1C = 0xF;
-                        } else {
-                            dec->field_0x1C = 0x1E;
-                        }
-                        goto tail;
+                if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) && (v / 100 > dec->field_0x20)) {
+                    dec->field_0x20 = v / 100;
+                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x10 = 0;
+                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                        dec->field_0x1C = 0xF;
+                    } else {
+                        dec->field_0x1C = 0x1E;
                     }
+                    goto tail;
                 }
-                dec->field_0x04 = (f32)(v % 100);
+                v %= 100;
+                dec->field_0x04 = (f32)v;
             }
             if (__fabsf(dec->field_0x04 - MATCH_F32(float_50_804218c8)) <= double_12_802ff938) {
                 dec->field_0x10 = 1;
@@ -412,31 +420,43 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 
 // optimize_for_size: the original saves r25-r31 with `stmw` and keeps the 2D camera in r27.
 #pragma optimize_for_size on
-// NONMATCHING (88.96%): newly written; remaining diffs are register allocation and constant-pool labels,
+// Remaining diffs: the ELSE branch's p1/py live in f26/f25 instead of the target's f27/f28 (FPR
+// colouring); the loop's `Vec v = vec[1]` copy is scheduled before the float math (the target loads
+// it after); the int->float pool double is addressed by its own `lis` instead of `vec+0xd0`, so the
+// field_34[0x10] count lands in r4 rather than r3 in the THEN/ELSE ratio tests; the top `if
+// (field_34[0x0C] == 1)` emits `bne else` where the target has `beq then; b else`.
+// NONMATCHING (93.93%): guard/switch logic and constants match; see the diffs listed above.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
+    const Vec* vec = vec3_802ff860;
 #ifdef MUST_MATCH
-    // Deriving both bases from the same `ac` intermediate keeps disp=r27 and dec=r29, as the original.
+    // Deriving disp before camGetPtr (and dec after it) keeps work=r31, vec=r30, disp=r27 and dec=r29,
+    // as the original; the BattleActions intermediate keeps them from folding into the BattleWork base.
     BattleActions* ac = &work->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
-    GaugeTimingWork* dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
+    GaugeTimingWork* dec;
 #else
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-    GaugeTimingWork* dec = (GaugeTimingWork*)((u8*)work + 0x1F4C);
+    BattleActions* ac = &work->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    GaugeTimingWork* dec;
 #endif
-    const Vec* vec = vec3_802ff860;
     CameraEntry* cam;
     f32 baseX;
     f32 baseY;
     f32 value;
+    s32 i;
+    s32 count;
     s32 icon0;
     s32 icon1;
     s32 icon2;
     s32 icon3;
-    s32 i;
-    s32 count;
 
     camGetPtr(CAMERA_2D);
+#ifdef MUST_MATCH
+    dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
+#else
+    dec = (GaugeTimingWork*)((u8*)work + 0x1F4C);
+#endif
 
     value = dec->field_0x04 / float_100_80421874;
     if (value > float_1_80421878) {
@@ -444,8 +464,8 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
     disp->value = value;
 
-    if (*(s32*)&work->actionCommands.field_34[0x0C] == 1) {
-        f32 ratio = disp->value * float_100_80421874 / (f32)*(s32*)&work->actionCommands.field_34[0x10];
+    if (*(s32*)&ac->field_34[0x0C] == 1) {
+        f32 ratio = disp->value * float_100_80421874 / (f32)*(s32*)&ac->field_34[0x10];
         if (ratio > float_100_80421874) {
             ratio = float_100_80421874;
         }
@@ -456,9 +476,9 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
         {
             s32 icon =
-                (dec->field_0x04 >= (f32)*(s32*)&work->actionCommands.field_34[0x10]) ? 0x95 : 0x91;
+                (dec->field_0x04 >= (f32)*(s32*)&ac->field_34[0x10]) ? 0x95 : 0x91;
             Vec v = vec[0];
-            v.x = float_176_80421884 + float_neg288_80421888 + x + float_16_80421880;
+            v.x = float_16_80421880 + (float_176_80421884 + (float_neg288_80421888 + x));
             v.y = float_18_8042188c + y;
             ICON_DISP(&v, 0x10, icon, float_1_80421878);
         }
@@ -478,42 +498,53 @@ static void actionCommandDisp(f32 x, f32 y) {
             GXLoadPosMtxImm(cam->view, 0);
             btlDispGXQuads2DRasta(p1, py, p1 + float_10_804218a4, py - float_16_80421880, 0, 0xFF, 0, 0xFF);
         }
-        count = *(s32*)&work->actionCommands.field_34[0x10];
+        count = *(s32*)&ac->field_34[0x10];
         for (i = 0; i < count; i++) {
-            s32 icon = (dec->field_0x10 != 0) ? 0x95 : 0x91;
+#ifdef MUST_MATCH
+            // volatile: stops MWCC hoisting the vec[1] copy out of the loop (the target reloads it each pass).
+            Vec v = *(volatile Vec*)&vec[1];
+#else
             Vec v = vec[1];
+#endif
             v.x = (float_neg288_80421888 + x) +
                   (float_176_80421884 * (float_100_80421874 / (f32)(count + 1) * (f32)(i + 1)) /
                    float_100_80421874);
             v.y = float_20_804218a8 + y;
-            ICON_DISP(&v, 0x10, icon, float_0p8_804218ac);
+            ICON_DISP(&v, 0x10, (dec->field_0x10 != 0) ? 0x95 : 0x91, float_0p8_804218ac);
         }
     }
 
-    switch (*(s32*)&work->actionCommands.field_34[0x04]) {
+    switch (*(s32*)&ac->field_34[0x04]) {
     case 0:
+        // icon2/icon3 are set in every case (rather than once after the switch) because the target
+        // materialises `li r28,0; li r27,0` in each arm; without it MWCC propagates the 0 and the
+        // icon2 tests use a known-zero register instead.
         icon0 = BattleACGetButtonIcon(0x20, 1);
         icon1 = BattleACGetButtonIcon(0x20, 0);
+        icon2 = 0;
+        icon3 = 0;
         break;
     case 2:
         icon0 = BattleACGetButtonIcon(0x40000, 1);
         icon1 = BattleACGetButtonIcon(0x40000, 0);
+        icon2 = 0;
+        icon3 = 0;
         break;
     default:
         icon0 = BattleACGetButtonIcon(0x100, 1);
         icon1 = BattleACGetButtonIcon(0x100, 0);
+        icon2 = 0;
+        icon3 = 0;
         break;
     }
-    icon2 = 0;
-    icon3 = 0;
 
-    switch (work->actionCommands.mAcState) {
+    switch (ac->mAcState) {
     case 0x63:
     case 0x64:
     case 0x3EB:
     case 0x3EC:
     case 0x3ED:
-        if (icon2 != 0) {
+        if ((icon2 & 0xffff) != 0) {
             baseX = float_neg228_804218b0 + x;
             baseY = float_55_804218b4 + y;
             {
@@ -539,7 +570,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     case 0x3E9:
         if (dec->field_0x16 != 0) {
             if (dec->field_0x10 != 0) {
-                if (icon2 != 0) {
+                if ((icon2 & 0xffff) != 0) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
@@ -561,7 +592,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                     ICON_DISP(&v, 0x10, icon0, float_1_80421878);
                 }
             } else {
-                if (icon2 != 0) {
+                if ((icon2 & 0xffff) != 0) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
@@ -585,7 +616,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             }
         } else {
             if (dec->field_0x10 != 0) {
-                if (icon2 != 0) {
+                if ((icon2 & 0xffff) != 0) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
@@ -607,7 +638,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                     ICON_DISP(&v, 0x10, icon1, float_1_80421878);
                 }
             } else {
-                if (icon2 != 0) {
+                if ((icon2 & 0xffff) != 0) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {

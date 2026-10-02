@@ -338,12 +338,14 @@ void effNiceDisp(CameraId camId, void* param) {
 	animPoseDrawMtx(data->poseId, mtxFinal, 3, float_0_8041cbb0, float_1_8041cbb8);
 }
 
-// The control flow, values and jump table all match: (1) the string address is materialised as
-// `addi r0,...; mr r29,r0` instead of a direct `addi r29`; (2) the int->float magic in case 2
-// lands in f1 (original f2) and some lfs loads are scheduled in the opposite order; (3) the
-// prologue initialises x/y before i. Needs the rest of the unit's .sdata2/.rodata before the
-// anonymous pool offsets all resolve.
-// NONMATCHING (87.05%): string address rematerialised through r0, case-2 int->float in f1 not f2, prologue x/y before i.
+// The control flow, values and jump table all match. The int->float magic in case 2 now lands in
+// f2, the lfs loads are in the original order (the 1.0f start constant is a literal, as in the
+// original, instead of the non-const `float_1_8041cbb8` extern — MWCC schedules a non-const load
+// after the const ones), and the prologue li order (i, x, y) is reproduced by initialising them in
+// the for-clause.
+// NONMATCHING (98.86%): only register allocation differs: the string address is materialised as
+// `addi r0, r3, str@l; mr r29, r0` (retail `addi r29, r3, str@l`), and the third word of the zero
+// Vec loads into r3 (retail r0).
 void acrobatMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch and copies it into a second local
@@ -358,9 +360,6 @@ void acrobatMain(EffectEntry* effect) {
 	s32 i;
 	s32 done = 0;
 
-	x = 4;
-	y = 0xC;
-
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
@@ -369,7 +368,7 @@ void acrobatMain(EffectEntry* effect) {
 #endif
 
 	data++;
-	for (i = 1; i < effect->count; i++, data++, x += 4, y += 0xC) {
+	for (i = 1, x = 4, y = 0xC; i < effect->count; x += 4, y += 0xC, i++, data++) {
 		switch (data->field_0x28) {
 		case 0:
 			data->field_0x20 = x;
@@ -386,15 +385,17 @@ void acrobatMain(EffectEntry* effect) {
 			}
 			break;
 		case 2:
-			data->position.x = intplGetValue(0xC, ++data->field_0x20, 0x1E, float_500_8041cbbc, (f32)x);
+			data->field_0x20++;
+			data->position.x = intplGetValue(0xC, data->field_0x20, 0x1E, float_500_8041cbbc, (f32)x);
 			if (data->field_0x20 >= 0x1E) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
 			}
 			break;
 		case 3:
-			data->field_0x10 = intplGetValue(0xC, ++data->field_0x20, 8, float_1_8041cbb8, float_0p4_8041cbc0);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 8, float_1_8041cbb8, float_1p5_8041cbc4);
+			data->field_0x20++;
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, float_0p4_8041cbc0);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, float_1p5_8041cbc4);
 			if (data->field_0x20 >= 8) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
@@ -408,7 +409,8 @@ void acrobatMain(EffectEntry* effect) {
 			}
 			break;
 		case 5:
-			data->position.x = intplGetValue(8, ++data->field_0x20, 0x1E, (f32)x, (f32)y);
+			data->field_0x20++;
+			data->position.x = intplGetValue(8, data->field_0x20, 0x1E, (f32)x, (f32)y);
 			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0x1E, float_0p2_8041cbc8, float_1_8041cbb8);
 			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0x1E, float_1p5_8041cbc4, float_1_8041cbb8);
 			if (data->field_0x20 >= 0x1E) {
@@ -424,15 +426,17 @@ void acrobatMain(EffectEntry* effect) {
 			}
 			break;
 		case 7:
-			data->field_0x10 = intplGetValue(0xC, ++data->field_0x20, 0xF, float_1_8041cbb8, float_1p5_8041cbc4);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, float_1_8041cbb8, float_0p1_8041cbcc);
+			data->field_0x20++;
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, float_1p5_8041cbc4);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, float_0p1_8041cbcc);
 			if (data->field_0x20 >= 0xF) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
 			}
 			break;
 		case 8:
-			data->field_0x10 = intplGetValue(0xC, ++data->field_0x20, 0xF, float_1p5_8041cbc4, float_0p1_8041cbcc);
+			data->field_0x20++;
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, float_1p5_8041cbc4, float_0p1_8041cbcc);
 			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, float_0p1_8041cbcc, float_2_8041cbd0);
 			if (data->field_0x20 >= 0xF) {
 				data->field_0x20 = 0;

@@ -410,9 +410,15 @@ const Vec vec3_802fdcd4 = { 5.0f, 0.0f, -2.0f };
 const Vec vec3_802fdce0 = { 0.0f, 1.0f, 2.0f };
 const Vec vec3_802fdcec = { 0.0f, 0.0f, 0.0f };
 
-// NONMATCHING (84.84%): frame 0x150, rodata arrays and the scratch Vec/word copies line up. Still
-// differs: `entry` in a callee-saved reg other than r31 and `count` in r17 (not r4), pool base
-// `...rodata.0` not `vec3_802fdc88`, the int->double magic and .sdata2 pool at other offsets.
+// NONMATCHING (84.96%): frame 0x150 and the rodata arrays line up. The remaining differences are
+// register allocation and the resulting scheduling: the original keeps entry/work/i in r31/r30/r29
+// and the loop's scratch-Vec induction pointers in r16-r26, while ours gives bom_dir/bom_spd the top
+// registers and entry/work/i the lowest callee-saved ones (the whole block is permuted, so nearly
+// every instruction shows an arg mismatch). Cases 7/11 read `entry->count` from memory in the
+// original; writing `entry->count - 2` there instead of `count - 2` fixes those instructions but
+// changes the register pressure and drops the objdiff score, so the `count` local is kept. The
+// `...rodata.0` vs `vec3_802fdc88` base and its offset are link-time symbol issues.
+// NONMATCHING (84.96%): callee-saved register allocation, see the notes above.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effKemuTestData* data;
@@ -548,10 +554,13 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 #ifdef MUST_MATCH
 				/* MUST_MATCH: retail copies each rodata vector to a scratch Vec and
 				   indexes that; the plain form below loads the globals directly and
-				   leaves the frame and register allocation short. */
+				   leaves the frame and register allocation short. Declaring the
+				   scratch Vecs v88, v94, va0 is what makes the compiler emit the
+				   copies in the original's order (the natural v94, va0, v88 order
+				   reverses the store scheduling). */
+				Vec v88 = vec3_802fdc88;
 				Vec v94 = vec3_802fdc94;
 				Vec va0 = vec3_802fdca0;
-				Vec v88 = vec3_802fdc88;
 
 				work->posX = ((f32*)&v94)[i - 1];
 				work->posY = ((f32*)&va0)[i - 1];

@@ -385,9 +385,12 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (91.06%): the inline-sqrtf double pool lands in its own .rodata section instead of
-// right after vec3_802c12d0, and the angle/max accumulation uses different FPR allocation.
-// Control flow, constants and the branch structure match.
+// The inline-sqrtf double pool now lands right after vec3_802c12d0: the unused named double_*
+// definitions were removed and the two str_802C1348/54 literals moved to the end of the file, so
+// MWCC's pooled doubles land at +0x30/+0x38/+0x40/+0x48.
+// NONMATCHING (97.65%): the fabs of `deg` lands in f4 instead of f3, which cascades through the
+// maxVal/diff/cand blocks and leaves `dist` in f3 instead of f6; `d`/`node` are swapped (r5/r6);
+// the sqrtf x==0 return block is inline (bne + b) instead of a `beq` to a block at the end.
 u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     u32 flags = 0;
     CamRoadNode* node;
@@ -428,16 +431,30 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     if (cur->unk_04 == 0 && prev->unk_08 == 1) {
         flags |= 0x4;
     }
+#ifdef MUST_MATCH
+    // the compiler materialises the negated `<=` here; the natural `> 1.0` emits a plain branch
+    if (!(__fabsf(cur->unk_4C - prev->unk_4C) <= 1.0)) {
+#else
     if (__fabsf(cur->unk_4C - prev->unk_4C) > 1.0) {
+#endif
         flags |= 0x8;
     }
     dot = cur->unk_34 * prev->unk_34 + cur->unk_3C * prev->unk_3C;
+#ifdef MUST_MATCH
+    // a literal 1.0f keeps this constant out of the shared `float_1_80419558` slot,
+    // which is what lets the dot product land in f1/f0; the named constant does not.
+    if (dot > 1.0f) {
+        dot = 1.0f;
+    }
+#else
     if (dot > float_1_80419558) {
         dot = float_1_80419558;
     }
+#endif
     deg = (f32)acos(dot) * float_rad2deg_80419580;
-    if (__fabsf(deg) > float_180_80419588) {
-        deg = float_360_80419584 - __fabsf(deg);
+    deg = __fabsf(deg);
+    if (deg > float_180_80419588) {
+        deg = float_360_80419584 - deg;
     }
     maxVal = float_6p2832_80419574 * cur->unk_40 * deg / float_360_80419584 * wp->unk_1B4;
     diff = __fabsf(cur->unk_44 - prev->unk_44);
@@ -464,27 +481,39 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         f32 dx = cur->x - prev->x;
         f32 dy = cur->y - prev->y;
         f32 dz = cur->z - prev->z;
+#ifdef MUST_MATCH
+        // separate square temps stop the compiler fusing the sum into fmadds
+        f32 dxx = dx * dx;
+        f32 dyy = dy * dy;
+        f32 dzz = dz * dz;
+        f32 d2;
 
+        d2 = dxx;
+        d2 = d2 + dyy;
+        d2 = d2 + dzz;
+        dist = sqrtf(d2);
+#else
         dist = sqrtf(dx * dx + dy * dy + dz * dz);
+#endif
     }
-    if (maxVal >= float_0p01_8041958c || dist >= float_0p3_80419590) {
-        cand = dist * wp->unk_1C4;
-        if (cand > maxVal) {
-            maxVal = cand;
-        }
-        if (maxVal > float_90_80419594) {
-            maxVal = float_90_80419594;
-        }
-        if (maxVal < float_20_80419598) {
-            maxVal = float_20_80419598;
-        }
-        *out = float_1_80419558 / maxVal;
-        if (flags == 0) {
-            flags |= 0x10;
-        }
-        return flags;
+    if (maxVal < float_0p01_8041958c && dist < float_0p3_80419590) {
+        return 0;
     }
-    return 0;
+    cand = dist * wp->unk_1C4;
+    if (cand > maxVal) {
+        maxVal = cand;
+    }
+    if (maxVal > float_90_80419594) {
+        maxVal = float_90_80419594;
+    }
+    if (maxVal < float_20_80419598) {
+        maxVal = float_20_80419598;
+    }
+    *out = float_1_80419558 / maxVal;
+    if (flags == 0) {
+        flags |= 0x10;
+    }
+    return flags;
 }
 
 void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoadState* c, CamRoadState* out) {

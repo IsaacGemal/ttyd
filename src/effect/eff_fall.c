@@ -47,12 +47,12 @@ extern const f32 float_0p7_80420f9c;
 extern const GXColor dat_80420f64;
 extern const GXColor dat_80420f68;
 extern const GXColor dat_80420f6c;
-extern u8 shibuki_normal_tbl[];
-extern u8 shibuki_color0_tbl[];
-extern u8 shibuki_dl_1_0[];
-extern u8 shibuki_dl_1_1[];
-extern u8 shibuki_dl_1_2[];
-extern u8 shibuki_dl_1_3[];
+__declspec(section ".sdata") extern u8 shibuki_normal_tbl[];
+__declspec(section ".sdata") extern u8 shibuki_color0_tbl[];
+__declspec(section ".sdata") extern u8 shibuki_dl_1_0[];
+__declspec(section ".sdata") extern u8 shibuki_dl_1_1[];
+__declspec(section ".sdata") extern u8 shibuki_dl_1_2[];
+__declspec(section ".sdata") extern u8 shibuki_dl_1_3[];
 const f64 double_to_int_mask_802fe478 = 4503599627370496.0;
 const f64 double_to_int_802fe480 = 4503601774854144.0;
 const char str_80421058[] = "Fall";
@@ -100,29 +100,27 @@ s32 effFallCheckHit(EffectEntry* effect) {
 	return 0;
 }
 
-// Full GX state, quad display list and both shibuki splash passes transcribed. Diffs are register
-// allocation (original keeps cameraId/effect/work/base/camView in r27-r31 and uses `stmw r27`; ours
-// needs one fewer GPR and a 0x10-smaller frame) plus a few commutative float operand orders.
-// NONMATCHING (90.07%): 16 instructions differ, 19 missing, 18 extra, plus register differences.
+// Full GX state, quad display list and both shibuki splash passes. The quad uses float literals and the
+// splash pointer is re-read from effect->userdata (see REPORT.md).
+// NONMATCHING (99.05%): 18 instructions differ, all register-allocation/scheduling: quad `fneg`/`fmuls`
+// operand order, GXColor temp slots, and the u16->float mask address. See REPORT.md for details.
 void effFallDispWater(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	FallWork* work = effect->userdata;
 	CameraEntry* cam;
 	CameraEntry* camView;
-	GXTexObj texObj;
 	GXColor color;
+	GXTexObj texObj;
 	Mtx mtxPos, mtxScale, mtxRot, mtxView;
 	u8* base;
 	u16 height;
 	f32 f31;
 	f32 f30;
-	f32 w;
-
 	base = lbl_803ADD20;
 	camView = camGetPtr(cameraId);
 	PSMTXTrans(mtxPos, work->x, work->y, work->z);
 	cam = camGetPtr(cameraId);
-	PSMTXRotRad(mtxRot, 'y', float_deg2rad_80420f70 * -cam->viewYaw);
+	PSMTXRotRad(mtxRot, 'y', -cam->viewYaw * float_deg2rad_80420f70);
 	PSMTXConcat(mtxPos, mtxRot, mtxView);
 	PSMTXConcat(camView->view, mtxView, mtxView);
 
@@ -151,8 +149,10 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	effGetTexObj(0x35, &texObj);
 	GXLoadTexObj(&texObj, 0);
 
-	f31 = float_64_80420f74 * float_0p5_80420f7c;
-	f30 = float_704_80420f78 * float_0p5_80420f7c;
+	f31 = float_64_80420f74;
+	f30 = float_704_80420f78;
+	f31 = f31 * float_0p5_80420f7c;
+	f30 = f30 * float_0p5_80420f7c;
 	PSMTXTrans(mtxPos, work[1].unk50, work[1].unk54, work[1].unk58);
 	height = GXGetTexObjHeight(&texObj);
 	PSMTXScale(mtxScale, float_1_80420f80, f30 / (f32)height, float_1_80420f80);
@@ -165,20 +165,20 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtxPos, 0);
 	GXSetTevColor(1, dat_80420f64);
 	GXBegin(0x80, 0, 4);
-	w = f31 * float_0p5_80420f7c;
-	GXPosition3f32(-w, f30, float_0_80420f84);
+	GXPosition3f32(0.5f * -f31, f30, 0.0f);
 	GXColor4u8(0xff, 0xff, 0xff, 0xff);
-	GXTexCoord2f32(float_0_80420f84, float_0_80420f84);
-	GXPosition3f32(w, f30, float_0_80420f84);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(f31 * 0.5f, f30, 0.0f);
 	GXColor4u8(0xff, 0xff, 0xff, 0xff);
-	GXTexCoord2f32(float_2_80420f88, float_0_80420f84);
-	GXPosition3f32(w, float_0_80420f84, float_0_80420f84);
+	GXTexCoord2f32(2.0f, 0.0f);
+	GXPosition3f32(f31 * 0.5f, 0.0f, 0.0f);
 	GXColor4u8(0xff, 0xff, 0xff, 0x00);
-	GXTexCoord2f32(float_2_80420f88, float_1_80420f80);
-	GXPosition3f32(-w, float_0_80420f84, float_0_80420f84);
+	GXTexCoord2f32(2.0f, 1.0f);
+	GXPosition3f32(0.5f * -f31, 0.0f, 0.0f);
 	GXColor4u8(0xff, 0xff, 0xff, 0x00);
-	GXTexCoord2f32(float_0_80420f84, float_1_80420f80);
+	GXTexCoord2f32(0.0f, 1.0f);
 
+	work = effect->userdata;
 	if (work[1].unk38 > 0) {
 		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
 		PSMTXScale(mtxScale, float_0p56_80420f8c, float_0p4_80420f90, float_0p8_80420f94);
@@ -210,7 +210,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 		GXCallDisplayList(shibuki_dl_1_2, 0x20);
 		GXCallDisplayList(shibuki_dl_1_3, 0x20);
 		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
-		PSMTXScale(mtxScale, float_0p7_80420f9c * (float_0p8_80420f94 * work[1].unk2C), float_0p5_80420f7c * (float_0p8_80420f94 * work[1].unk2C), float_0p8_80420f94 * work[1].unk2C);
+		PSMTXScale(mtxScale, float_0p7_80420f9c * (work[1].unk2C * float_0p8_80420f94), float_0p5_80420f7c * (work[1].unk2C * float_0p8_80420f94), work[1].unk2C * float_0p8_80420f94);
 		PSMTXConcat(mtxView, mtxPos, mtxPos);
 		PSMTXConcat(mtxPos, mtxScale, mtxPos);
 		GXLoadPosMtxImm(mtxPos, 0);
@@ -310,17 +310,24 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 	}
 }
 
-// Full element-0 init, particle loop, and the type 0-8 switch bodies are reconstructed and match in
-// substance. Diffs are register allocation (c lands in f21 not f31, shifting every callee-saved GPR/FPR
-// and growing the frame by 0x10), the compiler's local jump table symbol, and the branch shape of the
-// `type != 0 && type >= 0 && type < 9` test.
-// NONMATCHING (86.33%): see above.
+// Full element-0 init, particle loop, and the type 0-8 switch bodies are reconstructed. The ternary is the
+// `irand(100) > 50 ? 0 : 180` form (writing `<= 50 ? 180 : 0` compiles to a different select idiom), the vec
+// copy stores the zero vector before the x/y/z overwrite, and the sound-name address is hoisted into a
+// callee-saved register: the declaration order (cInt, sfx, entry, elem) is what puts entry in r28 and cInt in
+// r30 as the original does. `sfx` exists only to force that hoist.
+// NONMATCHING (95.74%): the type-check branch order (`blt`/`beq` swapped, plus two dead `b`s the original
+// emits), the sound-name address picks up an extra `mr` before r29, and the vec3_802fe418 `lwz`s in case 3
+// schedule earlier than the original's. Everything else is byte-identical.
 EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f32 d, f32 e) {
-	EffectEntry* entry;
-	FallWork* data;
-	FallWork* elem;
-	Vec pos;
 	s32 cInt;
+#ifdef MUST_MATCH
+	// Hoists the sound-name address to a callee-saved register like the original (rule 7):
+	const char* sfx;
+#endif
+	EffectEntry* entry;
+	FallWork* elem;
+	FallWork* data;
+	Vec pos;
 	s32 count;
 	s32 i;
 	f32 angle;
@@ -328,7 +335,7 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 
 	entry = effEntry();
 	count = a + 1;
-	if (type != 0 && type >= 0 && type < 9) {
+	if (type >= 0 && type != 0 && type < 9) {
 		a = 1;
 		count = 2;
 	}
@@ -337,6 +344,9 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 	data = __memAlloc(HEAP_EFFECT, sizeof(FallWork) * entry->count);
 	entry->userdata = data;
 	entry->callback = effFallMain;
+#ifdef MUST_MATCH
+	sfx = str_802FE584;
+#endif
 	entry->flags |= 2;
 
 	data->type = type;
@@ -347,15 +357,15 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 	data->unk14 = d;
 	data->unk18 = e;
 	data->unk1C = a;
-	data->unk20 = b;
 	data->unk24 = 0;
 	data->unk28 = 0;
+	data->unk20 = b;
 	data->unk5C = -1;
 	data->unk60 = -1;
 
 	cInt = (s32)c;
-	for (i = 1; i < entry->count; i++) {
-		elem = &data[i];
+	elem = &data[1];
+	for (i = 1; i < entry->count; i++, elem++) {
 		angle = (f32)irand(360) * float_3p1416_8042103c / float_180_80420fc0;
 		scale = (f32)irand(cInt);
 		elem->x = scale * (f32)sin(angle);
@@ -365,7 +375,7 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 		elem->unk28 = 0;
 		elem->unk3C = 0xFF;
 		elem->unk48 = float_0_80420f84;
-		elem->unk18 = (f32)((irand(100) <= 50) ? 180 : 0);
+		elem->unk18 = (f32)((irand(100) > 50) ? 0 : 180);
 		elem->unk38 = 0;
 		elem->unk5C = -1;
 		elem->unk60 = -1;
@@ -406,7 +416,13 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 			pos.x = x;
 			pos.y = y;
 			pos.z = z;
-			elem->unk64 = psndSFXOn_3D(str_802FE584, &pos);
+			elem->unk64 = psndSFXOn_3D(
+#ifdef MUST_MATCH
+			    sfx
+#else
+			    str_802FE584
+#endif
+			    , &pos);
 			break;
 		case 4:
 		case 5:

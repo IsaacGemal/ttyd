@@ -152,13 +152,12 @@ void winBadgeMain2(WindowWork* work) {
 extern ItemData itemDataTable[];
 
 // 1752 B
-// The `add` operand order (idx+work vs work+idx) is fixed by indexing the
-// 0x3E4/0x3EC/0x404/0x40C arrays with `((s32*)((u8*)work + OFF))[idx]` instead of WW_S32. Remaining
-// diffs are all register allocation: `sel` lands in r27 where the target keeps it in r28 (which also
-// swaps the `work + sel*4` temporary the other way, r28 vs r27), the scratch registers in the
-// availableBP >= bp_cost comparison are r4/r0 swapped, and MWCC schedules the `mr r3, r31` for the two
-// winSortEntry calls after the first `lfs` where the target hoists it above the `cmpwi`.
-// NONMATCHING (98.74%): register allocation (sel r27 vs r28) and one schedule slot.
+// 100%. Two shapes are needed to reproduce the original's register allocation/scheduling:
+//   - the condition is written inline (`itemDataTable[pouchHaveBadge(idx)].bp_cost`) so the `lwz`/`cmpw`
+//     land availableBP in r0 and bp_cost in r3 instead of r4/r0.
+//   - the sort key's 0x3E4 pointer is held in a named `selPtr`, which puts `sel` in r28 (not r27).
+// The `void* arg0` copy is a scheduling aid only (see MUST_MATCH below): it materialises `work` into r3
+// before the `if`, so the `mr r3, r31` for winSortEntry is not sunk into the `lfs` delay slot.
 s32 winBadgeMain(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
     s32 sel;
@@ -194,11 +193,18 @@ s32 winBadgeMain(WindowWork* work) {
             WW_S32(work, 0x3DC) = 10;
             goto end;
         } else if (work->buttonTrg & 0x10) {
+#ifdef MUST_MATCH
+            void* arg0 = work; // match-only: forces `mr r3, r31` before the idx branch (schedule)
+#endif
             s32 idx = 3;
             if (WW_S32(work, 0x3E0) == 0) {
                 idx = 2;
             }
+#ifdef MUST_MATCH
+            winSortEntry((WindowWork*)arg0, idx, float_neg310_8041d420, float_150_8041d3ec);
+#else
             winSortEntry(work, idx, float_neg310_8041d420, float_150_8041d3ec);
+#endif
             WW_S32(work, 0x124) = WW_S32(work, 0x3DC);
             psndSFXOn((const char*)0x20012);
             WW_S32(work, 0x3DC) = 1000;
@@ -225,8 +231,7 @@ s32 winBadgeMain(WindowWork* work) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
                     } else {
-                        s32 badge = pouchHaveBadge(idx);
-                        if (pouch->availableBP >= itemDataTable[badge].bp_cost) {
+                        if (pouch->availableBP >= itemDataTable[pouchHaveBadge(idx)].bp_cost) {
                             psndSFXOn((const char*)0x20038);
                             pouchEquipBadgeIndex(idx);
                         } else {
@@ -237,18 +242,18 @@ s32 winBadgeMain(WindowWork* work) {
                     pouchRevisePartyParam();
                     mario_change(work, pouchHaveBadge(idx));
                 } else {
-                    s32 entryIdx = ((s32*)((u8*)work + 0x3E4))[sel];
+                    s32* selPtr = (s32*)((u8*)work + 0x3E4) + sel;
+                    s32 entryIdx = selPtr[0];
                     s32 idx = ((s32*)((u8*)work))[entryIdx * 3 + 0x102];
                     if (((s32*)((u8*)work))[entryIdx * 3 + 0x101] != 0) {
                         psndSFXOn((const char*)0x20039);
                         pouchUnEquipBadgeIndex(idx);
-                        ((s32*)((u8*)work + 0x404))[((s32*)((u8*)work + 0x3E4))[sel] * 3] = 0;
+                        ((s32*)((u8*)work + 0x404))[selPtr[0] * 3] = 0;
                     } else {
-                        s32 badge = pouchHaveBadge(idx);
-                        if (pouch->availableBP >= itemDataTable[badge].bp_cost) {
+                        if (pouch->availableBP >= itemDataTable[pouchHaveBadge(idx)].bp_cost) {
                             psndSFXOn((const char*)0x20038);
                             pouchEquipBadgeIndex(idx);
-                            ((s32*)((u8*)work + 0x404))[((s32*)((u8*)work + 0x3E4))[sel] * 3] = 1;
+                            ((s32*)((u8*)work + 0x404))[selPtr[0] * 3] = 1;
                         }
                     }
                     pouchReviseMarioParam();
@@ -281,11 +286,18 @@ s32 winBadgeMain(WindowWork* work) {
                 ((s32*)((u8*)work + 0x3E4))[sel] = ((s32*)((u8*)work + 0x3E4))[sel] + 1;
                 psndSFXOn((const char*)0x20035);
             } else if (work->buttonTrg & 0x10) {
+#ifdef MUST_MATCH
+                void* arg0 = work; // match-only: forces `mr r3, r31` before the idx branch (schedule)
+#endif
                 s32 idx = 3;
                 if (sel == 0) {
                     idx = 2;
                 }
+#ifdef MUST_MATCH
+                winSortEntry((WindowWork*)arg0, idx, float_neg310_8041d420, float_150_8041d3ec);
+#else
                 winSortEntry(work, idx, float_neg310_8041d420, float_150_8041d3ec);
+#endif
                 WW_S32(work, 0x124) = WW_S32(work, 0x3DC);
                 psndSFXOn((const char*)0x20012);
                 WW_S32(work, 0x3DC) = 1000;
@@ -434,25 +446,28 @@ void winMakeEquipList(WindowWork* work) {
 
 // 2496 B
 // Every instruction is accounted for; the logic, constants, call arguments and control flow match (no switch,
-// no jump table). The remaining diffs are compiler allocation only: frame 0x300 vs retail 0x330, callee-saved
-// GPRs start at r14 vs retail r16, the outer loop bound/counter sits in r15 vs retail r23, and the .rodata base
-// pools as `...rodata.0` vs retail `vec3_802f4a38` (same address, different symbol). The compiler's int->float
-// double also pools as an anonymous @NNN@ instead of double_to_int_802f4c60 (project-wide limitation). The
-// by-value Vec arguments of winTexSet/winIconSet need the MUST_MATCH copies below, the same shape item_disp
-// in win_item.c uses.
-// NONMATCHING (93.56%): register/stack allocation only, see above.
+// no jump table). The remaining diffs are compiler allocation only: frame 0x340 vs retail 0x330, callee-saved
+// GPRs start at r14 vs retail r16, work lives in r15 where retail keeps it in r28 (i/ofs/entry likewise land in
+// r20/r19/r18 instead of r29/r30/r31), the FP values are shifted down one slot (the inner-loop double is f29 vs
+// retail f24), and the .rodata base pools as `...rodata.0` vs retail `vec3_802f4a38` (same address, different
+// symbol). The inner-loop `winTexSet` constants are hoisted into registers where retail reloads them from .rodata
+// and instead keeps the by-value argument addresses in r19/r20/r21. The compiler's int->float double also pools
+// as an anonymous @NNN@ instead of double_to_int_802f4c60 (project-wide limitation). The by-value Vec arguments
+// of winTexSet/winIconSet need the MUST_MATCH copies below, the same shape item_disp in win_item.c uses.
+// NONMATCHING (94.13%): register/stack allocation only, see above.
+#pragma optimize_for_size on // nudge the allocator toward retail's register assignment (see report)
 void badge_disp(WindowWork* work, f32 x, f32 y) {
     GXColor iconColor = *(GXColor*)&dat_8041d358;
-    GXColor white;
-    GXColor black;
     GXColor color;
-    f32 f24;
-    f32 f25;
+    GXColor black;
+    GXColor white;
+    f32 f21;
     f32 f29;
     f32 f28;
-    f32 f26;
     f32 f27;
-    f32 f21;
+    f32 f26;
+    f32 f25;
+    f32 f24;
     s32 count;
     s32 i;
     s32 ofs;
@@ -704,3 +719,4 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         }
     }
 }
+#pragma optimize_for_size reset

@@ -258,29 +258,36 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	return effect;
 }
 
-// NONMATCHING (79.98%): state-machine register allocation and the tail
-// dispEntry slots differ from the target.
+// Logic and state machine match exactly. The remaining real diffs are (1) the
+// int->float double pooling as an anonymous @NNN@ at .rodata+0x170 instead of
+// reusing the named double_to_int_802f3550 at +0x48 (project-wide MWCC
+// limitation, cf. badge_disp in win_badge.c), and (2) the vec3_802f3520 copy
+// scheduled one slot ahead of the data->timeBase store in the tail.
+// NONMATCHING (99.58%): compiler-allocation artifacts only.
 void effRecoveryMain(EffectEntry* effect) {
 	RecoveryData* data = effect->userdata;
 	RecoveryData* ptr;
+	Vec soundArg;
+	Vec sound;
 	Vec pos;
-	s8 type;
-	s32 field;
-	s32 field_1;
-	s32 srcState;
-	s32 total;
+	Vec pos2;
+	Vec pos3;
 	s32 i;
+	s32 srcState;
+	s32 field_1;
+	s32 total;
+	s32 type;
+	u32 field;
 	f32 f31;
 	f32 f30;
 	f32 f29;
+	f32 f28;
 
 	type = data->type;
-	f31 = data->x;
-	f30 = data->y;
-	f29 = data->z;
 	srcState = 0;
 	total = 0;
 	field = 0;
+	f28 = data->field_40;
 	effCalcMayaAnim(data->anim);
 	if (gp->retraceCount > data->timeBase) {
 		field = gp->retraceCount - data->timeBase;
@@ -288,19 +295,20 @@ void effRecoveryMain(EffectEntry* effect) {
 	if (field < 1) {
 		field = 1;
 	}
-	while (field != 0) {
-		field--;
-		data = effect->userdata;
+	while (field-- != 0) {
+		ptr = effect->userdata;
+		field_1 = ptr->field_1;
+		f31 = ptr->x;
+		f30 = ptr->y;
+		f29 = ptr->z;
 		if (type == 4 || type == 5) {
 			field_1 = 10;
-		} else {
-			field_1 = data->field_1;
 		}
-		data->timer++;
-		if (data->timer > 10) {
+		ptr->timer++;
+		if (ptr->timer > 10) {
 			srcState = 1;
 		}
-		for (i = 1, ptr = data + 1; i < effect->count; i++, ptr++) {
+		for (i = 1, ptr = ptr + 1; i < effect->count; i++, ptr++) {
 			switch (ptr->state) {
 			case 0:
 				if (srcState == 0) {
@@ -310,7 +318,10 @@ void effRecoveryMain(EffectEntry* effect) {
 					f32 ang = ((f32)(i - 1) * 360.0f / (f32)field_1 + 90.0f) * float_6p2832_8041cb30 / 360.0f;
 					ptr->velX = 12.0f * (f32)sin(ang);
 					ptr->velY = 0.0f;
-					ptr->velZ = -12.0f * (f32)cos(ang);
+					{
+						f32 c = (f32)cos(ang);
+						ptr->velZ = 12.0f * -c;
+					}
 					ptr->timer = 0;
 					ptr->state++;
 				}
@@ -323,9 +334,9 @@ void effRecoveryMain(EffectEntry* effect) {
 					ptr->x += ptr->velX;
 					ptr->y += ptr->velY;
 					ptr->z += ptr->velZ;
-					ptr->scaleX = 1.0f;
-					ptr->scaleY = 1.0f;
 					ptr->scaleZ = 1.0f;
+					ptr->scaleY = 1.0f;
+					ptr->scaleX = 1.0f;
 					ptr->timer++;
 				} else {
 					ptr->timer = 10;
@@ -340,12 +351,14 @@ void effRecoveryMain(EffectEntry* effect) {
 				break;
 			case 3:
 				if (ptr->timer < 0x28) {
+					s16 timer = ptr->timer + 1;
 					f32 t;
-					ptr->timer++;
-					t = intplGetValue(0xB, ptr->timer, 0x28, 0.0f, 360.0f);
+					ptr->timer = timer;
+					t = intplGetValue(0xB, timer, 0x28, 0.0f, 360.0f);
 					{
-						f32 radius = distABf(0.0f, 0.0f, ptr->x, ptr->z) * 0.99f;
+						f32 radius = distABf(0.0f, 0.0f, ptr->x, ptr->z);
 						f32 ang = ((f32)(i - 2) * 360.0f / (f32)field_1 + t + 90.0f) * float_6p2832_8041cb30 / 360.0f;
+						radius *= float_0p99_8041cb40;
 						ptr->x = radius * (f32)sin(ang);
 						ptr->z = radius * -(f32)cos(ang);
 					}
@@ -365,12 +378,12 @@ void effRecoveryMain(EffectEntry* effect) {
 					f32 s;
 					ptr->timer++;
 					ptr->x = intplGetValue(1, ptr->timer, 0x10, ptr->x, 0.0f);
-					ptr->y = intplGetValue(1, ptr->timer, 0x10, ptr->y, data->field_40);
+					ptr->y = intplGetValue(1, ptr->timer, 0x10, ptr->y, f28);
 					ptr->z = intplGetValue(1, ptr->timer, 0x14, ptr->z, 0.0f);
 					s = intplGetValue(1, ptr->timer, 0x10, 1.0f, 0.0f);
-					ptr->scaleX = s;
-					ptr->scaleY = s;
 					ptr->scaleZ = s;
+					ptr->scaleY = s;
+					ptr->scaleX = s;
 				} else {
 					ptr->state++;
 				}
@@ -381,35 +394,42 @@ void effRecoveryMain(EffectEntry* effect) {
 			}
 		}
 		if (((u32)type <= 1 || (u32)(type - 7) <= 1 || type == 4 || type == 5) && total >= field_1) {
+			RecoveryData* center = effect->userdata;
 			if (type != 7 && type != 8) {
 				effStardustEntry(2, 2, 0x1E, f31, f30 - 20.0f, f29, 30.0f, 30.0f);
-				pos = vec3_802f3514;
-				pos.x = f31;
-				pos.y = f30;
-				pos.z = f29;
-				if (type == 4) {
-					psndSFXOn_3D(str_802F3588, &pos);
-				} else if (type == 5) {
-					psndSFXOn_3D(str_802F35D0, &pos);
-				} else if (type == 0) {
-					if (field_1 <= 5) {
-						psndSFXOn_3D(str_802F3558, &pos);
-					} else if (field_1 <= 10) {
-						psndSFXOn_3D(str_802F3570, &pos);
+				sound = vec3_802f3514;
+				sound.x = center->x;
+				sound.y = center->y;
+				sound.z = center->z;
+				soundArg = sound;
+				switch (center->type) {
+				case 0:
+					if (center->field_1 <= 5) {
+						psndSFXOn_3D(str_802F3558, &soundArg);
+					} else if (center->field_1 <= 10) {
+						psndSFXOn_3D(str_802F3570, &soundArg);
 					} else {
-						psndSFXOn_3D(str_802F3588, &pos);
+						psndSFXOn_3D(str_802F3588, &soundArg);
 					}
-				} else {
-					if (field_1 <= 5) {
-						psndSFXOn_3D(str_802F35A0, &pos);
-					} else if (field_1 <= 10) {
-						psndSFXOn_3D(str_802F35B8, &pos);
+					break;
+				case 1:
+					if (center->field_1 <= 5) {
+						psndSFXOn_3D(str_802F35A0, &soundArg);
+					} else if (center->field_1 <= 10) {
+						psndSFXOn_3D(str_802F35B8, &soundArg);
 					} else {
-						psndSFXOn_3D(str_802F35D0, &pos);
+						psndSFXOn_3D(str_802F35D0, &soundArg);
 					}
+					break;
+				case 4:
+					psndSFXOn_3D(str_802F3588, &soundArg);
+					break;
+				case 5:
+					psndSFXOn_3D(str_802F35D0, &soundArg);
+					break;
 				}
 			}
-			effDeleteMayaAnim(((RecoveryData*)effect->userdata)->anim);
+			effDeleteMayaAnim(center->anim);
 			effDelete(effect);
 			return;
 		}
@@ -417,23 +437,23 @@ void effRecoveryMain(EffectEntry* effect) {
 	data = effect->userdata;
 	data->timeBase = gp->retraceCount;
 	pos = vec3_802f3520;
-	pos.x = f31;
-	pos.y = f30;
-	pos.z = f29;
+	pos.x = data->x;
+	pos.y = data->y;
+	pos.z = data->z;
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 1, effRecoveryDisp, effect);
 	if ((u32)type <= 1 || type == 7 || type == 8) {
-		pos = vec3_802f352c;
-		pos.x = f31;
-		pos.y = f30;
-		pos.z = f29;
-		dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effRecoveryDisp2, effect);
+		pos2 = vec3_802f352c;
+		pos2.x = data->x;
+		pos2.y = data->y;
+		pos2.z = data->z;
+		dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effRecoveryDisp2, effect);
 	}
 	if (type == 4 || type == 5) {
-		pos = vec3_802f3538;
-		pos.x = f31;
-		pos.y = f30;
-		pos.z = f29;
-		dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effRecoveryDisp3, effect);
+		pos3 = vec3_802f3538;
+		pos3.x = data->x;
+		pos3.y = data->y;
+		pos3.z = data->z;
+		dispEntry(CAMERA_3D, dispCalcZ(&pos3), 2, effRecoveryDisp3, effect);
 	}
 }
 
@@ -506,8 +526,9 @@ void effRecoveryMain2(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effRecoveryDisp4, effect);
 }
 
-// NONMATCHING (81.32%): several matrix-stack slot choices and the second
-// render pass differ from the target.
+// The vertex float literals (-16/16 in the first pass, -6/6/2 in the loop) keep MWCC from
+// hoisting the shared float constants into callee-saved f29-f31; the named externs hold the same
+// pool values but stay live across the volatile FIFO stores, adding FPR-save prologue bytes.
 void effRecoveryDisp(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -519,7 +540,7 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	Mtx base;
 	GXTexObj tex;
 	GXColor c;
-	s8 type;
+	s32 type;
 	s32 i;
 
 	cam = camGetPtr(camId);
@@ -557,8 +578,8 @@ void effRecoveryDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&tex, GX_TEXMAP1);
 		break;
 	}
-	ptr = data;
-	PSMTXTrans(mtx, data->x, data->y, data->z);
+	ptr = entry->userdata;
+	PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
 	PSMTXRotRad(tmp, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041cad0);
 	PSMTXConcat(mtx, tmp, mtx);
 	PSMTXScale(scale, float_10_8041caf4, float_10_8041caf4, float_10_8041caf4);
@@ -566,7 +587,7 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	PSMTXTrans(scale, float_0_8041cadc, float_2_8041cae8, float_0_8041cadc);
 	PSMTXConcat(mtx, scale, mtx);
 	if ((u32)type <= 1 || (u32)(type - 7) <= 1 || type == 4 || type == 5) {
-		PSMTXConcat(mtx, data->anim->mtx, mtx);
+		PSMTXConcat(mtx, ptr->anim->mtx, mtx);
 	}
 	PSMTXConcat(cam->view, mtx, mtx);
 	PSMTXScale(scale, float_0p1_8041cb14, float_0p1_8041cb14, float_0p1_8041cb14);
@@ -580,17 +601,20 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(float_neg16_8041cb18, float_16_8041caf0, float_0_8041cadc);
+	GXPosition3f32((-16.0f), (16.0f), float_0_8041cadc);
 	GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);
-	GXPosition3f32(float_16_8041caf0, float_16_8041caf0, float_0_8041cadc);
+	GXPosition3f32((16.0f), (16.0f), float_0_8041cadc);
 	GXTexCoord2f32(float_1_8041cae0, float_0_8041cadc);
-	GXPosition3f32(float_16_8041caf0, float_neg16_8041cb18, float_0_8041cadc);
+	GXPosition3f32((16.0f), (-16.0f), float_0_8041cadc);
 	GXTexCoord2f32(float_1_8041cae0, float_1_8041cae0);
-	GXPosition3f32(float_neg16_8041cb18, float_neg16_8041cb18, float_0_8041cadc);
+	GXPosition3f32((-16.0f), (-16.0f), float_0_8041cadc);
 	GXTexCoord2f32(float_0_8041cadc, float_1_8041cae0);
 	if (type == 2 || type == 3) {
 		return;
 	}
+	// the pointer advance sits before the blend setup so its addi fills the call's argument slots,
+	// as the original schedules it (a for-init advance lands after the whole setup instead)
+	ptr = ptr + 1;
 	GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
 	GXSetZCompLoc(GX_FALSE);
 	GXSetAlphaCompare(GX_GEQUAL, 0x80, GX_AOP_OR, GX_NEVER, 0);
@@ -601,7 +625,7 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-	for (i = 1, ptr = data + 1; i < entry->count; i++, ptr++) {
+	for (i = 1; i < entry->count; i++, ptr++) {
 		s32 idx = (i + gp->retraceCount) % 12;
 		c = unk_80423040;
 		c.r = color_rotation_data[idx * 3 + 0];
@@ -617,13 +641,13 @@ void effRecoveryDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(float_neg6_8041cb1c, float_6_8041cb20, float_0_8041cadc);
+		GXPosition3f32(-6.0f, 6.0f, float_0_8041cadc);
 		GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);
-		GXPosition3f32(float_6_8041cb20, float_6_8041cb20, float_0_8041cadc);
-		GXTexCoord2f32(float_2_8041cae8, float_0_8041cadc);
-		GXPosition3f32(float_6_8041cb20, float_neg6_8041cb1c, float_0_8041cadc);
-		GXTexCoord2f32(float_2_8041cae8, float_1_8041cae0);
-		GXPosition3f32(float_neg6_8041cb1c, float_neg6_8041cb1c, float_0_8041cadc);
+		GXPosition3f32(6.0f, 6.0f, float_0_8041cadc);
+		GXTexCoord2f32(2.0f, float_0_8041cadc);
+		GXPosition3f32(6.0f, -6.0f, float_0_8041cadc);
+		GXTexCoord2f32(2.0f, float_1_8041cae0);
+		GXPosition3f32(-6.0f, -6.0f, float_0_8041cadc);
 		GXTexCoord2f32(float_0_8041cadc, float_1_8041cae0);
 	}
 }
@@ -789,27 +813,35 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (78.53%): frame is 0x120 vs the target 0x130 (one extra callee-
-// saved GPR), so every stack-relative matrix offset is 4 bytes low.
+// NONMATCHING (99.93%): the frame (0x130) and matrix offsets match; MWCC swaps the else branch's
+// colour build (0x14) and the i==1 branch's outgoing copy (0xc) vs the original (0xc / 0x14), plus
+// one swapped fadds operand order in the last GXPosition3f32.
 void effRecoveryDisp4(CameraId camId, void* param) {
 	EffectEntry* entry = param;
-	RecoveryData* data = entry->userdata;
-	RecoveryData* ptr;
+	RecoveryData* ptr = entry->userdata;
 	CameraEntry* cam;
 	Mtx mtx;
 	Mtx rot;
 	Mtx scale;
 	Mtx base;
+#ifdef MUST_MATCH
+	// Match-only: the original copies the else branch's colour to a second slot before loading the
+	// textures and re-reads it for GXSetChanMatColor. The volatile shim reproduces that extra stack
+	// slot (and the resulting 0x130 frame); it changes no value. The natural form is under #else.
+	volatile u32 saved;
+	GXColor chanColor;
+#endif
 	GXTexObj tex;
-	s32 color;
 	s32 i;
+	s32 color;
 	f32 y;
 	f32 s;
 	f32 t;
+	f32 one = float_1_8041cae0;
 
 	cam = camGetPtr(camId);
-	color = data->color;
-	PSMTXTrans(mtx, data->x, data->y, data->z);
+	color = ptr->color;
+	PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
 	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041cad0);
 	PSMTXConcat(mtx, rot, base);
 	GXSetNumTexGens(1);
@@ -826,7 +858,9 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	y = -float_32_8041cad4;
-	for (i = 1, ptr = data + 1; i < entry->count; i++, ptr++) {
+	i = 1;
+	ptr++;
+	for (; i < entry->count; i++, ptr++) {
 		if (ptr->delay != 0) {
 			continue;
 		}
@@ -838,22 +872,34 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 			chanColor.a = (color * ptr->color) / 255;
 			GXSetChanMatColor(GX_COLOR0A0, chanColor);
 		} else {
-			GXColor chanColor = *(GXColor*)&unk_80423044;
 			s32 idx = (i + gp->retraceCount) % 12;
-			effGetTexObj(0x14, &tex);
+#ifdef MUST_MATCH
+			chanColor = *(GXColor*)&unk_80423044;
 			chanColor.r = color_rotation_data[idx * 3 + 0];
 			chanColor.g = color_rotation_data[idx * 3 + 1];
 			chanColor.b = color_rotation_data[idx * 3 + 2];
 			chanColor.a = (color * ptr->color) / 255;
+			saved = *(u32*)&chanColor;
+			effGetTexObj(0x14, &tex);
+			GXLoadTexObj(&tex, GX_TEXMAP0);
+			GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&saved);
+#else
+			GXColor chanColor = *(GXColor*)&unk_80423044;
+			chanColor.r = color_rotation_data[idx * 3 + 0];
+			chanColor.g = color_rotation_data[idx * 3 + 1];
+			chanColor.b = color_rotation_data[idx * 3 + 2];
+			chanColor.a = (color * ptr->color) / 255;
+			effGetTexObj(0x14, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			GXSetChanMatColor(GX_COLOR0A0, chanColor);
+#endif
 		}
 		PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
 		PSMTXScale(scale, ptr->scaleX, ptr->scaleY, ptr->scaleZ);
-		if (i == 1) {
-			PSMTXRotRad(rot, 'z', float_0_8041cadc);
-		} else {
+		if (i != 1) {
 			PSMTXRotRad(rot, 'z', (ptr->angle - float_90_8041cad8) * float_deg2rad_8041cad0);
+		} else {
+			PSMTXRotRad(rot, 'z', float_0_8041cadc);
 		}
 		PSMTXConcat(base, mtx, mtx);
 		PSMTXConcat(mtx, scale, mtx);
@@ -875,8 +921,8 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		GXPosition3f32(float_16_8041caf0, float_16_8041caf0 + s, float_0_8041cadc);
 		GXTexCoord2f32(t, float_0_8041cadc);
 		GXPosition3f32(float_16_8041caf0, y * float_0p5_8041caec + s, float_0_8041cadc);
-		GXTexCoord2f32(t, float_1_8041cae0);
+		GXTexCoord2f32(t, one);
 		GXPosition3f32(y * float_0p5_8041caec, y * float_0p5_8041caec + s, float_0_8041cadc);
-		GXTexCoord2f32(float_0_8041cadc, float_1_8041cae0);
+		GXTexCoord2f32(float_0_8041cadc, one);
 	}
 }

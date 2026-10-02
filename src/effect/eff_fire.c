@@ -5,6 +5,7 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "driver/mapdrv.h"
+#include "matching.h"
 
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
@@ -65,12 +66,20 @@ extern const f32 float_5_8041e11c;
 extern const f32 float_0p6_8041e120;
 extern const f32 float_13p333_8041e124;
 extern const f32 float_0p33333_8041e128;
-extern const u8 dat_8041e0b8[];
+extern const u32 dat_8041e0b8;
 const char str_8041E168[] = "Fire";
 const char str_802F8C60[] = "FireSmoke";
 
-extern const ScaleEntry scale1[13];
-extern const ScaleEntry scale2[4];
+
+ScaleEntry scale1[13] = {
+	{ 0x00, 1.0f }, { 0x14, 1.1f }, { 0x1E, 1.0f }, { 0x2D, 1.05f },
+	{ 0x3C, 0.95f }, { 0x46, 1.05f }, { 0x50, 1.025f }, { 0x64, 1.1f },
+	{ 0x78, 1.0f }, { 0x82, 1.025f }, { 0xA0, 0.95f }, { 0xB4, 1.025f },
+	{ 0xC8, 1.0f },
+};
+ScaleEntry scale2[4] = {
+	{ 0x00, 1.0f }, { 0x64, 1.2f }, { 0xA0, 0.95f }, { 0xC8, 1.0f },
+};
 
 static u8 scale_dt[] = {
 	0x80, 0x80, 0x81, 0x7F, 0x82, 0x7F, 0x83, 0x7E, 0x84, 0x7E, 0x84, 0x7E, 0x85, 0x7D, 0x86, 0x7D,
@@ -175,14 +184,19 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	return entry;
 }
 
-// NONMATCHING (80.89%): effect/data/type land in r28/r30/r29 instead of r29/r31/r30, and the signed
-// conversion pools a local double_to_int constant.
+#pragma opt_common_subs off // without it MWCC CSEs data->position across the calls in the default branch into different registers
+// NONMATCHING (94.66%): the callee-saved mapping matches now (effect r29, data r31, type r30, smokeEntry r28).
+// The default (smoke) branch still differs: the original copies vec3_802f8c4c with integer lwz/stw where these
+// fieldwise reads emit lfsu, and pz/px land in f31/f29 instead of f29/f31 (scalar packing r9/r8 vs r10/r7).
 void effFireMain(EffectEntry* effect) {
-	effFireData* data = effect->userdata;
-	s32 type = data->type;
+	effFireData* data;
+	s32 type;
 	s32 count;
 	const ScaleEntry* table;
 	f32 factor;
+	EffectEntry* smokeEntry;
+	data = effect->userdata;
+	type = data->type;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -198,7 +212,13 @@ void effFireMain(EffectEntry* effect) {
 		effDelete(effect);
 		return;
 	}
-	if (type < 9 && type >= 3) {
+	switch (type) {
+	case 3:
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8:
 		data->colorIndex1 = (s32)((f32)data->frameMax * (f32)data->counter / (f32)data->counterMax);
 		data->colorIndex2 = (s32)((f32)data->frameMax * (f32)(data->counter + 1) / (f32)data->counterMax);
 		if (data->colorIndex1 >= data->frameMax) {
@@ -208,19 +228,27 @@ void effFireMain(EffectEntry* effect) {
 			data->colorIndex2 = 0;
 		}
 		data->field_0x38 = 0x80;
+		break;
 	}
 	data->counter++;
 	if (data->counter > data->counterMax) {
 		data->counter = 0;
 	}
 
-	if (type == 8 || type == 3 || type == 4) {
-		if (type == 4) {
-			table = scale2;
-			count = 4;
-		} else {
+	switch (type) {
+	case 3:
+	case 4:
+	case 8:
+		switch (type) {
+		case 3:
+		case 8:
 			table = scale1;
 			count = 13;
+			break;
+		case 4:
+			table = scale2;
+			count = 4;
+			break;
 		}
 		for (;;) {
 			if (data->scaleCounter < table[data->scaleIndex].threshold) {
@@ -234,12 +262,15 @@ void effFireMain(EffectEntry* effect) {
 		}
 		factor = (f32)(table[data->scaleIndex].threshold - data->scaleCounter) /
 			(f32)(table[data->scaleIndex].threshold - table[data->scaleIndex - 1].threshold);
-		data->curScale = factor * table[data->scaleIndex - 1].scale +
-			(1.0f - factor) * table[data->scaleIndex].scale;
+		data->curScale = (1.0f - factor) * table[data->scaleIndex].scale +
+			factor * table[data->scaleIndex - 1].scale;
 		data->curScale = data->curScale * float_1p4_8041e158;
 		data->curScale = data->curScale * float_1p2_8041e15c;
 		data->scaleCounter++;
-	} else if (type >= 5 && type < 8) {
+		break;
+	case 5:
+	case 6:
+	case 7:
 		data->sparkTimer++;
 		if (data->sparkTimer > data->sparkInterval) {
 			effFireSparkN64Entry(type, 2, 200, data->position.x, data->position.y + float_10_8041e160 * data->scale,
@@ -248,16 +279,17 @@ void effFireMain(EffectEntry* effect) {
 			data->sparkTimer = 0;
 			data->sparkInterval = rand() % 30 + 30;
 		}
-	} else {
+		break;
+	default:
 		data->sparkTimer++;
 		if (data->sparkTimer > data->sparkInterval) {
-			f32 px = data->position.x;
-			f32 py = data->position.y + (f32)dat_8041e0b8[type];
+			u32 offsets = dat_8041e0b8;
 			f32 pz = data->position.z - 5.0f;
+			f32 py = data->position.y + (f32)((u8*)&offsets)[type];
+			f32 px = data->position.x;
 			f32 sc = data->scale;
 			Vec smokePos;
 			effFireSmokeData* smoke;
-			EffectEntry* smokeEntry;
 
 			smokeEntry = effEntry();
 			smokeEntry->type = str_802F8C60;
@@ -268,7 +300,15 @@ void effFireMain(EffectEntry* effect) {
 			smokeEntry->flags |= 2;
 			smoke->field_0x0 = 0;
 			smoke->color.a = 0x80;
+#ifdef MUST_MATCH
+			// Match-only: reading vec3_802f8c4c field-by-field instead of a whole-Vec assignment changes MWCC's
+			// global allocation so effect/data/type/smokeEntry land in r29/r31/r30/r28 as the target.
+			smokePos.x = vec3_802f8c4c.x;
+			smokePos.y = vec3_802f8c4c.y;
+			smokePos.z = vec3_802f8c4c.z;
+#else
 			smokePos = vec3_802f8c4c;
+#endif
 			smokePos.x = px;
 			smokePos.y = py;
 			smokePos.z = pz;
@@ -286,18 +326,27 @@ void effFireMain(EffectEntry* effect) {
 			data->sparkTimer = 0;
 			data->sparkInterval = rand() % 30 + 30;
 		}
+		break;
 	}
 
-	if (type == 8 || type == 3 || type == 4) {
+	switch (type) {
+	case 3:
+	case 4:
+	case 8:
 		dispEntry(CAMERA_3D, dispCalcZ(&data->position), 2, effFireDisp2, effect);
-	} else if (type >= 5 && type < 8) {
+		break;
+	case 5:
+	case 6:
+	case 7:
 		dispEntry(CAMERA_3D, dispCalcZ(&data->position), 2, effFireDisp3, effect);
-	} else {
+		break;
+	default:
 		dispEntry(CAMERA_3D, dispCalcZ(&data->position), 8, effFireDisp, effect);
+		break;
 	}
 }
+#pragma opt_common_subs reset
 
-// NONMATCHING (86.09%): 5 instructions differ, 47 missing, 23 extra, plus register differences.
 void effFireDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -352,15 +401,15 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1E, GX_FALSE, 0x7D);
 
 	frame = (data->counter >> 1) % count;
-	scale = 1.0f / (f32)count;
-	PSMTXScale(scaleMtx, scale, 1.0f, 1.0f);
+	PSMTXScale(scaleMtx, 1.0f / (f32)count, 1.0f, 1.0f);
 	PSMTXTrans(transMtx, (f32)frame, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, mtx);
 	GXLoadTexMtxImm(mtx, 0x1E, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041e0f8);
-	scale = float_20_8041e13c * data->scale * float_0p03125_8041e14c;
+	scale = float_20_8041e13c * data->scale;
+	scale = scale * float_0p03125_8041e14c;
 	PSMTXScale(scaleMtx, scale * data->field_0x78, scale * data->field_0x7C, scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -388,18 +437,23 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0c0);
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(-(f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
-	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
-	GXTexCoord2f32(float_0_8041e108, float_0_8041e108);
-	GXPosition3f32((f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
-	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
-	GXTexCoord2f32(float_1_8041e100, float_0_8041e108);
-	GXPosition3f32((f32)texWidth * 0.5f, float_0_8041e108, float_0_8041e108);
-	GXColor4u8(0, 0, 0, 0xFF);
-	GXTexCoord2f32(float_1_8041e100, float_1_8041e100);
-	GXPosition3f32(-(f32)texWidth * 0.5f, float_0_8041e108, float_0_8041e108);
-	GXColor4u8(0, 0, 0, 0xFF);
-	GXTexCoord2f32(float_0_8041e108, float_1_8041e100);
+	{
+		f32 w = (f32)texWidth;
+		f32 h = (f32)texHeight;
+		f32 half = 0.5f;
+		GXPosition3f32(-w * half, h, 0.0f);
+		GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(w * half, h, 0.0f);
+		GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(w * half, 0.0f, 0.0f);
+		GXColor4u8(0, 0, 0, 0xFF);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(-w * half, 0.0f, 0.0f);
+		GXColor4u8(0, 0, 0, 0xFF);
+		GXTexCoord2f32(0.0f, 1.0f);
+	}
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetNumTevStages(4);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
@@ -429,21 +483,41 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE3, 4, 0, 1, 0xF);
 	GXSetTevAlphaIn(GX_TEVSTAGE3, 4, 7, 0, 0);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(-(f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
-	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
-	GXTexCoord2f32(float_0_8041e108, float_0_8041e108);
-	GXPosition3f32((f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
-	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
-	GXTexCoord2f32(float_1_8041e100, float_0_8041e108);
-	GXPosition3f32((f32)texWidth * 0.5f, float_0_8041e108, float_0_8041e108);
-	GXColor4u8(0, 0, 0, 0xFF);
-	GXTexCoord2f32(float_1_8041e100, float_1_8041e100);
-	GXPosition3f32(-(f32)texWidth * 0.5f, float_0_8041e108, float_0_8041e108);
-	GXColor4u8(0, 0, 0, 0xFF);
-	GXTexCoord2f32(float_0_8041e108, float_1_8041e100);
+	{
+		f32 w = (f32)texWidth;
+		f32 h = (f32)texHeight;
+		f32 half = 0.5f;
+		GXPosition3f32(-w * half, h, 0.0f);
+		GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(w * half, h, 0.0f);
+		GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(w * half, 0.0f, 0.0f);
+		GXColor4u8(0, 0, 0, 0xFF);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(-w * half, 0.0f, 0.0f);
+		GXColor4u8(0, 0, 0, 0xFF);
+		GXTexCoord2f32(0.0f, 1.0f);
+	}
 }
 
-// NONMATCHING (88.21%): 9 instructions differ, 49 missing, 17 extra, plus register differences.
+#pragma opt_common_subs off // keeps the two GX quads' constant loads out of CSE, which gives the original's FP colouring
+#ifdef MUST_MATCH
+static inline GXColor effFireDisp2Color(GXColor c, u8 a) {
+	c.r = a;
+	c.g = a;
+	c.b = a;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor effFireDisp2KColor(GXColor k, u8 a) {
+	k.a = a;
+	return k;
+}
+#endif
+
 void effFireDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -456,6 +530,7 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXColor c;
 	GXColor k;
 	s32 type;
+	f32 negHalf;
 
 	camera = camGetPtr(camId);
 	type = data->type;
@@ -478,7 +553,7 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXLoadTexMtxImm(transMtx, 0x21, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', -camera->viewYaw * float_deg2rad_8041e0f8);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041e0f8);
 	PSMTXScale(scaleMtx, data->scale * data->field_0x78, data->scale * data->field_0x7C, data->scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -498,52 +573,71 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE0, (GXTevColorArg)4, (GXTevColorArg)2, (GXTevColorArg)0xA, (GXTevColorArg)0xF);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)4);
-	if (type == 3 || type == 4) {
+	switch (type) {
+	case 3:
+	case 4:
 		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0d0);
 		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0d4);
-	} else if (type == 8) {
+		break;
+	case 8:
 		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0d8);
 		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0dc);
+		break;
 	}
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, (GXTevAlphaArg)0, (GXTevAlphaArg)4, (GXTevAlphaArg)3, (GXTevAlphaArg)7);
+#ifdef MUST_MATCH
+	c = *(GXColor*)&unk_80423058;
+	GXSetTevColor((GXTevRegID)3, effFireDisp2Color(c, data->field_0x38));
+#else
 	c = *(GXColor*)&unk_80423058;
 	c.r = data->field_0x38;
 	c.g = data->field_0x38;
 	c.b = data->field_0x38;
 	c.a = data->field_0x38;
 	GXSetTevColor((GXTevRegID)3, c);
+#endif
 	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE2, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0);
 	GXSetTevAlphaIn(GX_TEVSTAGE2, (GXTevAlphaArg)7, (GXTevAlphaArg)0, (GXTevAlphaArg)6, (GXTevAlphaArg)7);
 	GXSetTevKAlphaSel(GX_TEVSTAGE2, (GXTevKAlphaSel)0x1C);
+#ifdef MUST_MATCH
+	k = *(GXColor*)&unk_8042305c;
+	GXSetTevKColor(GX_KCOLOR0, effFireDisp2KColor(k, data->alpha));
+#else
 	k = *(GXColor*)&unk_8042305c;
 	k.a = data->alpha;
 	GXSetTevKColor(GX_KCOLOR0, k);
+#endif
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(-float_24_8041e134 * float_0p5_8041e104, float_40_8041e130, float_0_8041e108);
+	negHalf = -float_24_8041e134 * float_0p5_8041e104;
+	GXPosition3f32(negHalf, float_40_8041e130, 0.0f);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
-	GXTexCoord2f32(float_0_8041e108, float_0_8041e108);
-	GXPosition3f32(float_12_8041e138, float_40_8041e130, float_0_8041e108);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(float_12_8041e138, float_40_8041e130, 0.0f);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
-	GXTexCoord2f32(float_1_8041e100, float_0_8041e108);
-	GXPosition3f32(float_12_8041e138, float_0_8041e108, float_0_8041e108);
+	GXTexCoord2f32(1.0f, 0.0f);
+	GXPosition3f32(float_12_8041e138, 0.0f, 0.0f);
 	GXColor4u8(0, 0, 0, 0xFF);
-	GXTexCoord2f32(float_1_8041e100, float_1_8041e100);
-	GXPosition3f32(-float_24_8041e134 * float_0p5_8041e104, float_0_8041e108, float_0_8041e108);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(negHalf, 0.0f, 0.0f);
 	GXColor4u8(0, 0, 0, 0xFF);
-	GXTexCoord2f32(float_0_8041e108, float_1_8041e100);
+	GXTexCoord2f32(0.0f, 1.0f);
 
-	if (type == 3 || type == 8) {
+	switch (type) {
+	case 3:
+	case 8:
 		PSMTXTrans(transMtx, 0.0f, float_20_8041e13c, 0.0f);
-	} else if (type == 4) {
+		break;
+	case 4:
 		PSMTXTrans(transMtx, 0.0f, float_25_8041e140, 0.0f);
+		break;
 	}
 	PSMTXScale(scaleMtx, data->curScale, data->curScale, data->curScale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
@@ -556,12 +650,16 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetCurrentMtx(0);
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	if (type == 3) {
+	switch (type) {
+	case 3:
 		GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041e0e0);
-	} else if (type == 4) {
+		break;
+	case 4:
 		GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041e0e4);
-	} else if (type == 8) {
+		break;
+	case 8:
 		GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041e0e8);
+		break;
 	}
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, 0x7D);
@@ -574,30 +672,49 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 	GXSetTevColorIn(GX_TEVSTAGE0, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xF, (GXTevColorArg)0xA);
-	if (type == 3 || type == 8) {
+	switch (type) {
+	case 3:
+	case 8:
 		effGetTexObj(0x5F, &tex);
 		GXLoadTexObj(&tex, GX_TEXMAP0);
-	} else if (type == 4) {
+		break;
+	case 4:
 		effGetTexObj(0x60, &tex);
 		GXLoadTexObj(&tex, GX_TEXMAP0);
+		break;
 	}
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	{
-		f32 f3 = float_2_8041e148;
-		f32 f4 = (type == 3 || type == 8) ? float_1_8041e100 : float_2_8041e148;
-		f32 f2 = -float_32_8041e118 * float_0p5_8041e104;
-		GXPosition3f32(f2, float_16_8041e12c, float_0_8041e108);
-		GXTexCoord2f32(float_0_8041e108, float_0_8041e108);
-		GXPosition3f32(float_16_8041e12c, float_16_8041e12c, float_0_8041e108);
-		GXTexCoord2f32(f3, float_0_8041e108);
-		GXPosition3f32(float_16_8041e12c, f2, float_0_8041e108);
+		f32 f3;
+		f32 f4;
+		f32 f2;
+		if (type == 3 || type == 8) {
+			f3 = float_2_8041e148;
+			f4 = 1.0f;
+		} else {
+			f3 = float_2_8041e148;
+			f4 = f3;
+		}
+		f2 = -float_32_8041e118 * float_0p5_8041e104;
+		GXPosition3f32(f2, float_16_8041e12c, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(float_16_8041e12c, float_16_8041e12c, 0.0f);
+		GXTexCoord2f32(f3, 0.0f);
+		GXPosition3f32(float_16_8041e12c, f2, 0.0f);
 		GXTexCoord2f32(f3, f4);
-		GXPosition3f32(f2, f2, float_0_8041e108);
-		GXTexCoord2f32(float_0_8041e108, f4);
+		GXPosition3f32(f2, f2, 0.0f);
+		GXTexCoord2f32(0.0f, f4);
 	}
 }
+#pragma opt_common_subs reset
 
-// NONMATCHING (83.79%): 22 instructions differ, 68 missing, 48 extra, plus register differences.
+// The remaining differences are only register colouring. MWCC puts the shared 2^52 int->float double in
+// f31 (target f28) and so colours the loop's live float constants f28/f29/f30 (ours 0.333/16/40; target
+// 0.333/16/40 in f29/f30/f31, with f31=40 only reachable if the double takes f28). It also colours the
+// 0xCC008000 FIFO base r31 (target r30, whose 0x4330 int->float base we put in r30), and data/type
+// r27/r26 (target r26/r27). The four zero-vector copies below are MUST_MATCH: without the volatile read
+// MWCC hoists all twelve loads out of the outer loop; without the explicit temp the frame loses 0x30.
+// NONMATCHING (94.93%): int->float mask/constants and data/type register colouring differ.
 void effFireDisp3(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -612,17 +729,16 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXColor blend;
 	GXColor k;
 	Vec v;
-	Vec out;
 	Vec screen;
 	u8* colEntry;
 	s32 type;
 	s32 i;
 	s32 j;
-	f32 f26;
-	f32 f27;
-	f32 f29;
-	f32 f30;
 	f32 f31;
+	f32 f30;
+	f32 f29;
+	f32 f27;
+	f32 f26;
 
 	camera = camGetPtr(camId);
 	type = data->type;
@@ -647,7 +763,7 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXLoadTexMtxImm(transMtx, 0x21, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', -camera->viewYaw * float_deg2rad_8041e0f8);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041e0f8);
 	PSMTXScale(scaleMtx, data->scale * data->field_0x78, data->scale * data->field_0x7C, data->scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -705,12 +821,15 @@ void effFireDisp3(CameraId camId, void* param) {
 	colEntry = (u8*)col_tbl + (type - 5) * 0x20;
 
 	for (i = 0; i < 2; i++) {
-		if (i == 0) {
+		switch (i) {
+		case 0:
 			PSMTXIdentity(scaleMtx);
-		} else {
+			break;
+		case 1:
 			PSMTXTrans(transMtx, float_0_8041e108, float_5_8041e11c, float_1_8041e100);
 			PSMTXScale(scaleMtx, float_0p6_8041e120, float_0p6_8041e120, float_0p6_8041e120);
 			PSMTXConcat(transMtx, scaleMtx, scaleMtx);
+			break;
 		}
 		PSMTXConcat(mtx, scaleMtx, mtx80);
 		PSMTXConcat(camera->view, mtx80, scaleMtx);
@@ -724,53 +843,93 @@ void effFireDisp3(CameraId camId, void* param) {
 			f32 tB = f29 * (f32)(3 - j);
 			u8* c0 = colEntry + j * 4;
 			u8* c1 = colEntry + (j + 1) * 4;
-			GXPosition3f32(f26, yA, float_0_8041e108);
+			GXPosition3f32(f26, yA, MATCH_F32(float_0_8041e108));
 			GXColor4u8(c1[0], c1[1], c1[2], c1[3]);
-			GXTexCoord2f32(float_0_8041e108, tA);
-			GXPosition3f32(f30, yA, float_0_8041e108);
+			GXTexCoord2f32(MATCH_F32(float_0_8041e108), tA);
+			GXPosition3f32(f30, yA, MATCH_F32(float_0_8041e108));
 			GXColor4u8(c1[0], c1[1], c1[2], c1[3]);
-			GXTexCoord2f32(float_1_8041e100, tA);
-			GXPosition3f32(f30, yB, float_0_8041e108);
+			GXTexCoord2f32(MATCH_F32(float_1_8041e100), tA);
+			GXPosition3f32(f30, yB, MATCH_F32(float_0_8041e108));
 			GXColor4u8(c0[0], c0[1], c0[2], c0[3]);
-			GXTexCoord2f32(float_1_8041e100, tB);
-			GXPosition3f32(f26, yB, float_0_8041e108);
+			GXTexCoord2f32(MATCH_F32(float_1_8041e100), tB);
+			GXPosition3f32(f26, yB, MATCH_F32(float_0_8041e108));
 			GXColor4u8(c0[0], c0[1], c0[2], c0[3]);
-			GXTexCoord2f32(float_0_8041e108, tB);
+			GXTexCoord2f32(MATCH_F32(float_0_8041e108), tB);
 		}
 
-		v = vec3_802f8c1c;
-		v.x = f26;
-		v.y = f31;
-		PSMTXMultVec(mtx80, &v, &out);
-		getScreenPoint(&out, &screen);
+		{
+			Vec tmp;
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
+			tmp = *(volatile Vec*)&vec3_802f8c1c;
+#else
+			tmp = vec3_802f8c1c;
+#endif
+			tmp.x = f26;
+			tmp.y = f31;
+			v = tmp;
+		}
+		PSMTXMultVec(mtx80, &v, &v);
+		getScreenPoint(&v, &screen);
 		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
 		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
 		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;
 		if (screen.y < (f32)data->field_0x74) data->field_0x74 = (s32)screen.y;
 
-		v = vec3_802f8c28;
-		v.x = f30;
-		v.y = f31;
-		PSMTXMultVec(mtx80, &v, &out);
-		getScreenPoint(&out, &screen);
+		{
+			Vec tmp;
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
+			tmp = *(volatile Vec*)&vec3_802f8c28;
+#else
+			tmp = vec3_802f8c28;
+#endif
+			tmp.x = f30;
+			tmp.y = f31;
+			v = tmp;
+		}
+		PSMTXMultVec(mtx80, &v, &v);
+		getScreenPoint(&v, &screen);
 		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
 		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
 		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;
 		if (screen.y < (f32)data->field_0x74) data->field_0x74 = (s32)screen.y;
 
-		v = vec3_802f8c34;
-		v.x = f30;
-		PSMTXMultVec(mtx80, &v, &out);
-		getScreenPoint(&out, &screen);
+		{
+			Vec tmp;
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
+			tmp = *(volatile Vec*)&vec3_802f8c34;
+#else
+			tmp = vec3_802f8c34;
+#endif
+			tmp.x = f30;
+			v = tmp;
+		}
+		PSMTXMultVec(mtx80, &v, &v);
+		getScreenPoint(&v, &screen);
 		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
 		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
 		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;
 		if (screen.y < (f32)data->field_0x74) data->field_0x74 = (s32)screen.y;
 
-		v = vec3_802f8c40;
-		v.x = f26;
-		PSMTXMultVec(mtx80, &v, &out);
-		getScreenPoint(&out, &screen);
+		{
+			Vec tmp;
+#ifdef MUST_MATCH
+			// Match-only: the volatile read keeps the zero-vector copy inside the loop (with its
+			// temp+copy shape) instead of hoisting all twelve loads out of the outer loop.
+			tmp = *(volatile Vec*)&vec3_802f8c40;
+#else
+			tmp = vec3_802f8c40;
+#endif
+			tmp.x = f26;
+			v = tmp;
+		}
+		PSMTXMultVec(mtx80, &v, &v);
+		getScreenPoint(&v, &screen);
 		if (screen.x < (f32)data->field_0x68) data->field_0x68 = (s32)screen.x;
 		if (screen.x > (f32)data->field_0x6C) data->field_0x6C = (s32)screen.x;
 		if (screen.y > (f32)data->field_0x70) data->field_0x70 = (s32)screen.y;

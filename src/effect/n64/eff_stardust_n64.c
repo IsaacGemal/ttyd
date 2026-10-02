@@ -98,13 +98,14 @@ extern const f32 float_15_8041ff40;
 extern const f32 float_100_8041ff44;
 extern const f32 float_0p05_8041ff48;
 
-// Structure (switch arms incl. `case 3: case 4:` for the >=3 default, rand/angle math, the `s`/`s2`/`s3`/`c`/`t`
-// temporaries, and the i/lifeA/lifeB init order) now matches, as does the whole type-0 arm. What still differs is
-// compiler scratch-register/stack-slot choice: type-0 angle2's `360` and `6.2832` land in f3/f4 swapped; the
-// type-1/2 and default int->float conversion slots are mirrored (retail 0x2c/0x28 vs here 0x24/0x20); the type-1/2
-// angle divide is hoisted above the `vy` branch; and the int->float pool double is a local @NNN alias instead of
-// named double_to_int_802fb788 (objdiff resolves that by section offset, so it does not score).
-// NONMATCHING (95.78%): see above.
+// Structure matches: the switch arms (incl. `case 3: case 4:` for the >=3 default), the rand/angle math, the
+// `s`/`s2`/`s3`/`c`/`t` temporaries, the i/lifeA/lifeB init order, the default arm's vy-before-second-angle
+// ordering, and the int->float pool double (objdiff resolves the local @NNN alias by section offset).
+// opt_lifetimes off // needed: with lifetimes on the randA/randB temps coalesce into the wrong caller-saved
+// FPRs and the scale/scaleB homes swap (f26/f27); off restores the original colouring.
+#pragma opt_lifetimes off // randA/randB temps coalesce into the wrong caller-saved FPRs and scale/scaleB swap (f26/f27) otherwise
+// NONMATCHING (99.82%): type-0 angle2's `360` and `6.2832` land in f3/f4 swapped, and the type-1/2/default
+// int->float conversion slots are mirrored (retail 0x2c/0x28 vs here 0x24/0x20).
 EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     f32 angle;
     f32 t2;
@@ -222,8 +223,8 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
         case 4:
         default:
             angle = float_360_8041ff18 / (f32)count * (f32)i + (f32)(rand() % 360);
-            angle = float_6p2832_8041ff14 * angle / float_360_8041ff18;
             vy = -((f32)(rand() % 50 / 1000) + float_0p05_8041ff48);
+            angle = float_6p2832_8041ff14 * angle / float_360_8041ff18;
             ptr->field_0x18 = vy;
             ptr->field_0x10 = 0.0f;
             ptr->field_0x14 = 0.0f;
@@ -241,6 +242,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     }
     return effect;
 }
+#pragma opt_lifetimes reset
 
 // opt_common_subs on breaks the two fmadds contractions in the particle update; the original still
 // has them, so keep common subexpression merging off for this function.
@@ -366,12 +368,15 @@ void effStardustMain(EffectEntry* effect) {
 }
 
 #ifdef MUST_MATCH
-static inline GXColor stardustN64Color(u8 r, u8 g, u8 b) {
-    GXColor c = dat_8041fef0;
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    return c;
+/* MUST_MATCH: the original builds the TEV colour through a helper, so GXSetTevColor's argument
+   temp is allocated next to the helper's local (0x8) instead of above it (the plain #else form
+   swaps the two scratch slots). Same idiom as effFireSparkDisp. */
+static inline void stardustN64SetTevColor(s32 r, s32 g, s32 b) {
+    GXColor color = dat_8041fef0;
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    GXSetTevColor(GX_TEVREG0, color);
 }
 #endif
 
@@ -453,14 +458,14 @@ void effStardustDisp(CameraId camId, void* param) {
             colorBByte = 0xFF;
         }
 #ifdef MUST_MATCH
-        color = stardustN64Color(colorRByte, colorGByte, colorBByte);
+        stardustN64SetTevColor(colorRByte, colorGByte, colorBByte);
 #else
         color = dat_8041fef0;
         color.r = colorRByte;
         color.g = colorGByte;
         color.b = colorBByte;
-#endif
         GXSetTevColor(GX_TEVREG0, color);
+#endif
 
         switch (renderType & 7) {
         case 0:

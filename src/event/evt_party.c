@@ -502,31 +502,39 @@ USER_FUNC(evt_party_wait_landon) {
     return (party->flags & PARTY_FLAG_IS_GROUNDED) ? EVT_RETURN_DONE : 0;
 }
 
-// NONMATCHING (91.65%): float allocation for tx/tz/d vs the dy/tmp temporaries is shifted by
-// two registers, party/grounded use r31/r28 instead of r28/r29, int->float conversion stack
-// slots differ, and the partySearchGround result is tested with cmpwi instead of cmplwi.
+// The float constants are written as literals (MWCC pools them in .sdata2 in the original's
+// order); using the named non-const f32 globals instead makes MWCC reload them across the
+// party stores, shifting the whole case 0/1 schedule.
 USER_FUNC(evt_party_jump_pos) {
     s32* args = event->args;
     PartyEntry* party;
     HitEntry* hit;
-    f32 dy, tmp, frames, tx, ty, tz, d;
-    s32 msec, flag;
+    f32 tmp, dy, ty, frames, tx, tz, d;
     s32 grounded;
+    s32 msec, flag;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original's `Vec pos` (12 bytes at 0x8) overlaps MWCC's int<->float
+    // conversion temporary, which then lives at 0x10; a full Vec pushes that temp to 0x18.
+    // searchUnder2 only writes out->x, so a one-float home is enough to reproduce the frame.
+    f32 pos;
+#else
     Vec pos;
+#endif
 
     if (isFirstCall) {
+        PartyEntry* p;
         args += 1;
         event->userdata[0] = args[-1] ? 1 : partyCtrlNo;
-        party = partyGetPtr(event->userdata[0]);
-        if (!party) {
+        p = partyGetPtr(event->userdata[0]);
+        if (!p) {
             return EVT_RETURN_DONE;
         }
-        if (party->field_34 == 0xB) {
+        if (p->field_34 == 0xB) {
             return EVT_RETURN_DONE;
         }
         event->userdata[3] = 0;
-        partyChgMot(party, 8);
-        partyChgRunMode(party, 9);
+        partyChgMot(p, 8);
+        partyChgRunMode(p, 9);
     } else {
         args += 1;
     }
@@ -537,8 +545,8 @@ USER_FUNC(evt_party_jump_pos) {
     msec = evtGetValue(event, args[3]);
     flag = evtGetValue(event, args[4]);
     d = evtGetFloat(event, args[5]);
-    if (d <= float_neg1000_8041bb24) {
-        d = float_20_8041bb18;
+    if (d <= -1000.0f) {
+        d = 20.0f;
     }
     frames = (f32)sysMsec2Frame(msec);
     switch (event->userdata[3]) {
@@ -552,18 +560,24 @@ USER_FUNC(evt_party_jump_pos) {
             }
             partyChgPoseId(party, 4);
             dy = ty - party->position.y;
-            tmp = float_0p5_8041bb14 * frames;
-            if (__fabsf(dy) < float_1_8041bb10) {
+            tmp = 0.5f * frames;
+            if (__fabsf(dy) < 1.0f) {
                 dy = d;
-            } else if (dy >= float_0_8041bb1c) {
-                dy += float_37_8041bb20;
+            } else if (dy >= 0.0f) {
+                dy += 37.0f;
+#ifdef MUST_MATCH
+            // MUST_MATCH: the header declares searchUnder2 as s32, but it returns a pointer;
+            // the cast restores the original's unsigned (cmplwi) null test.
+            } else if ((HitEntry*)searchUnder2((Vec*)&pos, tx, ty, tz)) {
+#else
             } else if (searchUnder2(&pos, tx, ty, tz)) {
+#endif
                 dy = d;
             }
             dy = (dy + dy) / (tmp * tmp - tmp);
             party->jumpPara1 = dy * tmp;
             PF32(party, 0x174) = -dy;
-            event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
+            event->userdata[2] = (s32)(0.5f + tmp);
             event->userdata[3] = 1;
             /* fallthrough */
         case 1:
@@ -571,12 +585,12 @@ USER_FUNC(evt_party_jump_pos) {
             party->position.y += party->jumpPara1;
             party->jumpPara1 += PF32(party, 0x174);
             if (--event->userdata[2] <= 0) {
-                tmp = float_0p5_8041bb14 * frames;
-                party->jumpPara1 = float_0_8041bb1c;
+                tmp = 0.5f * frames;
                 dy = ty - party->position.y;
+                party->jumpPara1 = 0.0f;
                 PF32(party, 0x174) = (dy + dy) / (tmp * tmp - tmp);
-                party->jumpPara3 = float_0_8041bb1c;
-                event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
+                party->jumpPara3 = 0.0f;
+                event->userdata[2] = (s32)(0.5f + tmp);
                 event->userdata[3] = 2;
             }
             break;
@@ -601,9 +615,9 @@ USER_FUNC(evt_party_jump_pos) {
             }
             if (--event->userdata[2] <= 0) {
                 partyChgPoseId(party, 1);
-                party->jumpPara3 = float_0_8041bb1c;
-                PF32(party, 0x174) = float_0_8041bb1c;
-                party->speed = float_0_8041bb1c;
+                party->jumpPara3 = 0.0f;
+                PF32(party, 0x174) = 0.0f;
+                party->speed = 0.0f;
                 unk_800ba2dc(party);
                 return 1;
             }

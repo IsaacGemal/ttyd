@@ -92,22 +92,26 @@ static inline Vec getStageClearCamPos(void) {
 }
 
 #pragma opt_common_subs off // without it MWCC CSEs the repeated float_0 pool loads in the GX vertex block
-// Frame, Vec copies, matrices and GX state match. What still differs is the FP register colouring for the
-// -24/1/24 and int->float-magic values (target f29/f31/f28/f30, ours f30/f29/f31/f28) and the GX vertex
-// block's interleaved float_0 reloads that follow from it; the anonymous int->float magic also lands at
-// 0x58 instead of the named slot at 0x38. Register-allocation level, left for the permuter.
-// NONMATCHING (97.31%): only the FP register colouring and the anonymous int->float magic slot differ.
+// Frame, Vec copies, matrices and GX state match. What still differs is register colouring only: the
+// long-lived FP values land in f28/f30/f29/f31 where the target has f30/f29/f31/f28 for the
+// int->float magic / -24 / 1 / 24, so `type` lands in r26 instead of r22 (which also keeps i/work in
+// r23/r21 rather than r21/r23), and the GX vertex block's interleaved float_0 reloads follow from it.
+// The anonymous int->float magic also pools at 0x58/0x68 instead of the named slots at 0x38/0x30.
+// The declaration order above (field1C before type; f27 before f26) is what gets the closest; the
+// remaining colouring did not move under any declaration order, opt_lifetimes/fp_contract off or
+// global_optimizer off, so it is left for the permuter.
+// NONMATCHING (97.36%): only FP/GPR register colouring and the anonymous int->float magic slot differ.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStageClearWork* data = effect->userdata;
 	CameraEntry* cam;
 	CameraEntry* cam2;
-	s32 type;
 	s32 field1C;
+	s32 type;
 	s32 shadow;
 	f32 scale;
-	f32 f26;
 	f32 f27;
+	f32 f26;
 	f32 f28;
 	f32 f29;
 	f32 f30;
@@ -125,15 +129,8 @@ void effStageClearDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	scale = float_1p7_80420f1c * data->scale;
 	scale = float_0p9_80420f18 * scale;
-#ifdef MUST_MATCH
-	// match-only assignment order: type before field1C makes MWCC colour them r19/r22 like the target
-	// (the natural order is the #else arm, which is what the original source read like)
-	type = data->type;
-	field1C = data->field_0x1C;
-#else
 	field1C = data->field_0x1C;
 	type = data->type;
-#endif
 	if ((u32)gp->language != 0) {
 		scale = scale * float_0p6_80420f20;
 	}

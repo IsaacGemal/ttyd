@@ -62,22 +62,29 @@ USER_FUNC(search_result) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (84.64%): the item block now builds itemPos via a zero-init `itemTmp` + `itemPos = itemTmp`
-// (original uses 0x20 scratch then copies to 0x2c; this TU aliases itemPos to 0x8), and callee-saved
-// registers differ (event r24 not r18, party r27 not r19, iteration/found regs shifted). Logic and
-// all call sequences (incl. the item/minDist/revise360/revise360 chain) match.
+// Code and instruction schedule match the original except: (a) the loop setup emits `li r23, 0` for
+// `i = 0` where the original reuses found's zero (`mr r23, r24`), which also moves the `li r24, 0`/
+// `mr r30, r3` pair by one slot, and (b) the item/tmp zero vectors are compound literals
+// (`(Vec){0,0,0}`) emitted as local .rodata at `...rodata.0+0` while the original uses the named
+// globals `vec3_802f8288` (0x130) and `vec3_802f839c` (0x244); the latter is shared with
+// chuchu_searchObject, so the pool offsets only settle when the unit's .rodata matches.
+// NONMATCHING (98.64%): see the two differences above.
 USER_FUNC(set_msg) {
-    PartyEntry* party;
-    MarioWork* player;
-    ItemEntry* item;
     MapObjectEntry* mobj;
-    ChuchuSearchEntry* entryBase;
+    ItemEntry* item;
     ChuchuSearchEntry* entry;
-    Vec closestPos;
-    s32 pass;
+    MarioWork* loopPlayer;
     BOOL found;
     u32 i;
+    MarioWork* player;
+    s32 pass;
     s32 result;
+    PartyEntry* party;
+    Vec closestPos;
+    Vec itemPos;
+    Vec itemTmp;
+    Vec tmp;
+    Vec pos;
     f32 threshold;
     f32 minDist;
     f32 direction;
@@ -90,7 +97,6 @@ USER_FUNC(set_msg) {
         return EVT_RETURN_DONE;
     }
 
-    entryBase = unk_8038bb34;
     pass = 0;
     do {
         if (pass == 0) {
@@ -98,16 +104,15 @@ USER_FUNC(set_msg) {
         } else {
             threshold = 10000.0f;
         }
+        result = -1;
         item = itemNearDistCheck(player->position.x, player->position.y, player->position.z, threshold);
         mobj = mobjNearDistCheck2(player->position.x, player->position.y, player->position.z, threshold,
                                   mobj_list);
         found = FALSE;
-        player = party->playerPtr;
+        loopPlayer = party->playerPtr;
         minDist = 10000.0f;
-        entry = entryBase;
+        entry = unk_8038bb34;
         for (i = 0; i < 0x28; i++, entry++) {
-            Vec tmp = { 0.0f, 0.0f, 0.0f };
-            Vec pos;
             f32 dist;
             if (strcmp(gp->currentMapName, entry->name) != 0) {
                 continue;
@@ -115,11 +120,12 @@ USER_FUNC(set_msg) {
             if (evtGetValue(NULL, entry->evtId) != 0) {
                 continue;
             }
+            tmp = (Vec){ 0.0f, 0.0f, 0.0f };
             tmp.x = (f32)entry->x;
             tmp.y = (f32)entry->y;
             tmp.z = (f32)entry->z;
             pos = tmp;
-            dist = PSVECDistance(&player->position, &pos);
+            dist = PSVECDistance(&loopPlayer->position, &pos);
             if (threshold < dist) {
                 continue;
             }
@@ -133,17 +139,15 @@ USER_FUNC(set_msg) {
         }
 
         minDist = 10000.0f;
-        result = -1;
-        direction = 0.0f;
         if (item != NULL) {
-            Vec itemTmp = { 0.0f, 0.0f, 0.0f };
-            Vec itemPos;
+            itemTmp = (Vec){ 0.0f, 0.0f, 0.0f };
             itemTmp.x = item->position.x;
             itemTmp.y = item->position.y;
             itemTmp.z = item->position.z;
             itemPos = itemTmp;
             if (10000.0f > PSVECDistance(&itemPos, &player->position)) {
-                minDist = PSVECDistance(&itemPos, &player->position);
+                f32 d = PSVECDistance(&itemPos, &player->position);
+                minDist = d;
                 direction = revise360(angleABf(party->position.x, party->position.z, item->position.x, item->position.z)
                                       - *(f32*)((u8*)party + 0xF8));
                 result = 0;
@@ -151,7 +155,8 @@ USER_FUNC(set_msg) {
         }
         if (mobj != NULL) {
             if (minDist > PSVECDistance(&mobj->position, &player->position)) {
-                minDist = PSVECDistance(&mobj->position, &player->position);
+                f32 d = PSVECDistance(&mobj->position, &player->position);
+                minDist = d;
                 direction = revise360(angleABf(party->position.x, party->position.z, mobj->position.x,
                                                mobj->position.z)
                                       - *(f32*)((u8*)party + 0xF8));
@@ -181,11 +186,7 @@ USER_FUNC(set_msg) {
             event->lwData[0] = (s32)"map_exist_far";
             event->lwData[1] = 1;
         }
-        if (direction <= 180.0f) {
-            party->field_110 = 180.0f;
-        } else {
-            party->field_110 = 0.0f;
-        }
+        party->field_110 = (direction <= 180.0f) ? 180.0f : 0.0f;
         party->field_FC = partyToMovedir(party, party->field_110);
         party->dir = party->field_FC;
     } else {

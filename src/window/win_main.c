@@ -217,8 +217,7 @@ void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
     }
 }
 
-// NONMATCHING (96.62%): 1 missing, 1 extra, plus register differences.
-void winFontSetPitch(Vec* pos, Vec* scale, GXColor* color, f32 pitch, const char* format, ...) {
+void winFontSetPitch(Vec* pos, Vec scale, GXColor* color, f32 pitch, const char* format, ...) {
     char buf[0x400];
     GXColor c;
     va_list args;
@@ -229,7 +228,7 @@ void winFontSetPitch(Vec* pos, Vec* scale, GXColor* color, f32 pitch, const char
     va_end(args);
     c = *color;
     FontDrawColor(&c);
-    scaleCopy = *scale;
+    scaleCopy = scale;
     FontDrawScaleVec(scaleCopy);
     FontDrawStringVecPitch(pos, buf, pitch);
 }
