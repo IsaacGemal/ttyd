@@ -137,20 +137,21 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 	return entry;
 }
 
-// NONMATCHING (94.30%): the int->float conversion pools an anonymous @204 double instead of
-// double_to_int_802f3110, and the allocator maps the angle (f27/f28 vs f24) and the 1.0/0.7/-20/0.0
-// temporaries (f25-f27/f31 vs f26-f28/f31) one register apart; structure, args and constants match.
+// NONMATCHING (99.93%): only the viewYaw load/add differ -- retail coalesces sinVal, viewYaw and one
+// into f26, ours gives viewYaw f28; the two-variable (angle/angle2) shape and declaration order below
+// fix every other register (angle f24, cosVal/z f25, sinVal/one f26, p7 f27, neg20 f28, zero f31).
 EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6, f32 float7) {
 	EffectEntry* entry = effEntry();
 	effKemuri2Data* data;
-	f32 one;
-	f32 p7;
 	f32 neg20;
 	f32 zero;
-	f32 cosVal;
+	f32 p7;
+	f32 one;
 	f32 sinVal;
-	f32 angle;
 	f32 z;
+	f32 angle2;
+	f32 angle;
+	f32 cosVal;
 
 	entry->type = str_802F3120;
 	entry->count = 1;
@@ -163,15 +164,15 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	cosVal = float_1000_8041c710 * float7;
 	angle = float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714;
 	data->field_0x78 = reviseAngle(float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714 + camGetPtr(CAMERA_3D)->viewYaw);
+	angle2 = float_6p2832_8041c714 * (f32)(s32)angle / float_360_8041c70c;
+	z = float_5_8041c718 + float5;
 	data->counter = 0;
-	z = float5 + float_5_8041c718;
-	angle = float_6p2832_8041c714 * (f32)(s32)angle / float_360_8041c70c;
 	one = float_1_8041c6b0;
 	p7 = float_0p7_8041c71c;
 	neg20 = float_neg20_8041c720;
 	zero = float_0_8041c6bc;
-	data->field_0x30 = sin(angle);
-	data->field_0x34 = cos(angle);
+	data->field_0x30 = sin(angle2);
+	data->field_0x34 = cos(angle2);
 	data->x = float3;
 	data->y = float4;
 	data->z = z;

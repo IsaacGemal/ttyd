@@ -70,7 +70,6 @@ extern f32 float_25_8041a140;
 extern f32 float_7p5_8041a1bc;
 extern f32 float_40_8041a1ec;
 extern f32 float_32767_8041a1e4;
-extern s32 kpa_powerup_evt[];
 
 extern const char str_802C44EC[];
 extern const char str_8041A12C[4];
@@ -421,20 +420,25 @@ void kpa_disp_pole_score(CameraId camera, void* param) {
     FontDrawStringMtx(trans, psw->str);
 }
 
-// NONMATCHING (94.37%): register allocation of the 4 extracted digits differs.
+// NONMATCHING (94.91%): `rem` (rather than mutating `value`) gets the divisions right but the four
+// digit registers are still coloured wrongly (retail wants hundreds=r6/tens=r5/ones=r3; ours r7/r5/r6)
+// and retail's per-digit `add; mr` coalescing is absent. Tried: all declaration orders, explicit
+// temps, `ones = rem - tens*10`, least-significant-digit-first, digit widths and every pragma.
 s32 kpa_score_to_str(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, event->args[0]);
     s32 i = 0;
-    s32 thousands = value / 1000;
+    s32 thousands;
     s32 hundreds;
     s32 tens;
     s32 ones;
+    s32 rem;
 
-    value %= 1000;
-    hundreds = value / 100;
-    value %= 100;
-    tens = value / 10;
-    ones = value % 10;
+    thousands = value / 1000;
+    rem = value % 1000;
+    hundreds = rem / 100;
+    rem %= 100;
+    tens = rem / 10;
+    ones = rem % 10;
 
     if (i != 0 || thousands != 0) {
         psw->str[i] = thousands + '0';
@@ -522,64 +526,73 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (80.09%): 8 instructions differ, 17 missing, 14 extra, plus register differences.
+// MUST_MATCH: retail reaches the anim-name strings from vec3_802c3dc8+0x7a0..0x890 (the unit's rodata
+// pool base); this file doesn't define that data yet, so plain literals land on an anonymous symbol
+// and a different base register. FB_NAME selects the retail base+offset form; the natural literal form
+// is under #else.
+#ifdef MUST_MATCH
+#define FB_NAME(off, lit) ((const char*)(base + (off)))
+#else
+#define FB_NAME(off, lit) (lit)
+#endif
 s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
+#ifdef MUST_MATCH
+    u8* base = (u8*)vec3_802c3dc8;
+#endif
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f31 = evtGetFloat(event, args[1]);
     f32 f30 = evtGetFloat(event, args[2]);
     f32 f29 = evtGetFloat(event, args[3]);
     s32 type = args[4];
     s32 sub = args[5];
-    s32 unk1E4 = args[7];
+    s32 unk1E4;
     const char* asyncName;
     MapObjectEntry* obj;
-    BOOL inBattle = gp->inBattle != 0;
+    BOOL inBattle;
 
     evtGetValue(event, args[6]);
+    unk1E4 = args[7];
+    inBattle = gp->inBattle != 0;
     switch (type) {
         case 0:
-        default:
-            switch (sub) {
-                case 0:
-                    asyncName = "MOBJ_green_FlowBlock";
-                    break;
-                case 1:
-                    asyncName = "MOBJ_green_big_FlowBlock";
-                    break;
-                default:
-                    asyncName = "MOBJ_green_big02_FlowBlock";
-                    break;
+            if (sub == 0) {
+                asyncName = FB_NAME(0x7a0, "MOBJ_green_FlowBlock");
+            } else if (sub == 1) {
+                asyncName = FB_NAME(0x7b8, "MOBJ_green_big_FlowBlock");
+            } else {
+                asyncName = FB_NAME(0x7d4, "MOBJ_green_big02_FlowBlock");
             }
             break;
         case 1:
-            switch (sub) {
-                case 0:
-                    asyncName = "MOBJ_purple_FlowBlock";
-                    break;
-                case 1:
-                    asyncName = "MOBJ_purple_big_FlowBlock";
-                    break;
-                default:
-                    asyncName = "MOBJ_purple_big02_FlowBlock";
-                    break;
+            if (sub == 0) {
+                asyncName = FB_NAME(0x7f0, "MOBJ_purple_FlowBlock");
+            } else if (sub == 1) {
+                asyncName = FB_NAME(0x808, "MOBJ_purple_big_FlowBlock");
+            } else {
+                asyncName = FB_NAME(0x824, "MOBJ_purple_big02_FlowBlock");
             }
             break;
         case 2:
-            switch (sub) {
-                case 0:
-                    asyncName = "MOBJ_orange_FlowBlock";
-                    break;
-                case 1:
-                    asyncName = "MOBJ_orange_big_FlowBlock";
-                    break;
-                default:
-                    asyncName = "MOBJ_orange_big02_FlowBlock";
-                    break;
+            if (sub == 0) {
+                asyncName = FB_NAME(0x840, "MOBJ_orange_FlowBlock");
+            } else if (sub == 1) {
+                asyncName = FB_NAME(0x858, "MOBJ_orange_big_FlowBlock");
+            } else {
+                asyncName = FB_NAME(0x874, "MOBJ_orange_big02_FlowBlock");
             }
             break;
         case 3:
-            asyncName = "MOBJ_red_big02_FlowBlock";
+            asyncName = FB_NAME(0x890, "MOBJ_red_big02_FlowBlock");
+            break;
+        default:
+            if (sub == 0) {
+                asyncName = FB_NAME(0x7a0, "MOBJ_green_FlowBlock");
+            } else if (sub == 1) {
+                asyncName = FB_NAME(0x7b8, "MOBJ_green_big_FlowBlock");
+            } else {
+                asyncName = FB_NAME(0x7d4, "MOBJ_green_big02_FlowBlock");
+            }
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -609,7 +622,8 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (87.88%): 4 missing, 6 extra, plus register differences.
+#undef FB_NAME
+
 s32 fire_func(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     f32 f31 = evtGetFloat(event, args[0]);
@@ -624,25 +638,25 @@ s32 fire_func(EventEntry* event, BOOL isFirstCall) {
 
     if (isFirstCall) {
         event->userdata[0] =
-            (s32)effFireEntry(5, v, f31, f30, f29, float_0p8_8041a1b0 + (f32)irand(10) / float_10_8041a1a4);
+            (s32)effFireEntry(5, v, f31, f30, f29, 0.8f + (f32)irand(10) / 10.0f);
     }
     unk7C = event->userdataf[1];
     unk80 = event->userdataf[2];
     eff = (EffectEntry*)event->userdata[0];
     {
-        f32 one = float_1_8041a160;
-        n5 = (one - unk7C) * float_0p125_8041a1b4 + unk7C;
-        n6 = (one - unk80) * float_0p125_8041a1b4 + unk80;
+        f32 k = 0.125f;
+        unk7C = (1.0f - unk7C) * k + unk7C;
+        unk80 = (1.0f - unk80) * k + unk80;
     }
-    *(f32*)((u8*)eff->userdata + 0x78) = n5;
-    *(f32*)((u8*)eff->userdata + 0x7C) = n6;
-    if (n5 >= float_0p99_8041a1b8) {
-        *(f32*)((u8*)eff->userdata + 0x78) = float_1_8041a160;
-        *(f32*)((u8*)eff->userdata + 0x7C) = float_1_8041a160;
+    *(f32*)((u8*)eff->userdata + 0x78) = unk7C;
+    *(f32*)((u8*)eff->userdata + 0x7C) = unk80;
+    if (unk7C >= 0.99f) {
+        *(f32*)((u8*)eff->userdata + 0x78) = 1.0f;
+        *(f32*)((u8*)eff->userdata + 0x7C) = 1.0f;
         return 2;
     }
-    event->userdataf[1] = n5;
-    event->userdataf[2] = n6;
+    event->userdataf[1] = unk7C;
+    event->userdataf[2] = unk80;
     return 0;
 }
 
@@ -1093,6 +1107,7 @@ s32 evt_mobj_delete(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+
 s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
     u8* base = (u8*)vec3_802c3dc8;
     s32* args = event->args;
@@ -1503,54 +1518,46 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (17.52%): the reference materialises the x/y/z arrays on the stack; MWCC scalar-
-// replaces our arrays into f26-f31 (extra stfd/psq_st saves) and shifts every callee-saved
-// register and the names[]/obj[] stack slots. Body/loop logic is otherwise identical.
 s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
-    const char* name0 = (const char*)evtGetValue(event, args[1]);
-    f32 x0 = evtGetFloat(event, args[2]);
-    f32 y0 = evtGetFloat(event, args[3]);
-    f32 z0 = evtGetFloat(event, args[4]);
-    const char* name1 = (const char*)evtGetValue(event, args[5]);
-    f32 x1 = evtGetFloat(event, args[6]);
-    f32 y1 = evtGetFloat(event, args[7]);
-    f32 z1 = evtGetFloat(event, args[8]);
-    s32 unk1B4 = evtGetValue(event, args[9]);
-    s32 unk1D4 = evtGetValue(event, args[10]);
-    s32 unk1E4 = args[11];
-    const char* asyncName;
-    MapObjectEntry* obj[2];
     const char* names[2];
     f32 xs[2];
     f32 ys[2];
     f32 zs[2];
-    s32 i;
+    MapObjectEntry* obj[2];
+    s32 unk1B4;
+    s32 unk1D4;
+    s32 unk1E4;
     BOOL inBattle = gp->inBattle != 0;
+    s32 i;
+    const char* asyncName;
 
     {
         const char* jumptable[2] = {"MOBJ_BlueTimerSwitch", "MOBJ_RedTimerSwitch"};
         asyncName = jumptable[type];
     }
-    if (type == 0 && evtGetValue(event, args[11]) != 0) {
+    names[0] = (const char*)evtGetValue(event, args[1]);
+    xs[0] = evtGetFloat(event, args[2]);
+    ys[0] = evtGetFloat(event, args[3]);
+    zs[0] = evtGetFloat(event, args[4]);
+    names[1] = (const char*)evtGetValue(event, args[5]);
+    xs[1] = evtGetFloat(event, args[6]);
+    ys[1] = evtGetFloat(event, args[7]);
+    zs[1] = evtGetFloat(event, args[8]);
+    unk1B4 = evtGetValue(event, args[9]);
+    unk1D4 = evtGetValue(event, args[10]);
+    unk1E4 = args[11];
+    if (type == 0 && evtGetValue(event, unk1E4) != 0) {
         return 2;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
-    names[0] = name0;
-    names[1] = name1;
-    xs[0] = x0;
-    xs[1] = x1;
-    ys[0] = y0;
-    ys[1] = y1;
-    zs[0] = z0;
-    zs[1] = z1;
     for (i = 0; i < 2; i++) {
         mobjEntry(names[i], asyncName);
         obj[i] = mobjNameToPtr(names[i]);
-        strcpy((char*)((u8*)obj[i] + 0x1B8), (i == 0) ? name1 : name0);
+        strcpy((char*)((u8*)obj[i] + 0x1B8), (i == 0) ? names[1] : names[0]);
         mobjSetPosition(names[i], xs[i], ys[i], zs[i]);
         obj[i]->unk1D0 = mobj_timerswitch;
         obj[i]->unk1D4 = (s32*)unk1D4;
@@ -1738,6 +1745,123 @@ s32 mobj_koopa_brickblk(MapObjectEntry* obj) {
             obj->flags &= ~8;
             break;
         case 0x63:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
+
+s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
+    s32 pass = 0;
+    MarioWork* mario = marioGetPtr();
+    s32 i;
+    s32 j;
+    NpcEntry* npc;
+    Mtx mtx;
+    Mtx rotMtx;
+    char buf[32];
+    char buf2[32];
+
+    if (obj->unk1DC < 0xa) {
+        if (distABf(mario->position.x, mario->position.y, obj->position.x, obj->position.y) < 150.0f) {
+            if (psndSFXChk(*(s32*)((u8*)obj + 0x1B4)) != 0) {
+                *(s32*)((u8*)obj + 0x1B4) = psndSFXOn_3D((const char*)0x1cd, &obj->position);
+            }
+        } else if (psndSFXChk(*(s32*)((u8*)obj + 0x1B4)) == 0) {
+            psndSFXOff(*(s32*)((u8*)obj + 0x1B4));
+            *(s32*)((u8*)obj + 0x1B4) = -1;
+        }
+        PSMTXIdentity(mtx);
+        PSMTXTransApply(mtx, mtx, -obj->position.x, -obj->position.y, -obj->position.z);
+        PSMTXRotRad(rotMtx, 'Z', 0.017453292f * *(f32*)((u8*)obj + 0x1AC));
+        PSMTXConcat(rotMtx, mtx, mtx);
+        PSMTXTransApply(mtx, mtx, obj->position.x, obj->position.y, obj->position.z);
+        for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
+            sprintf(buf, "%s%2x", obj->name, i);
+            npc = npcNameToPtr(buf);
+            PSMTXMultVec(mtx, &npc->position, &npc->position);
+        }
+    }
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                switch (kpaGetLevel()) {
+                    case 0:
+                    case 1:
+                    case 2:
+                        if (obj->unk1E0 == 0x20000000) {
+                            pass = 1;
+                        }
+                        break;
+                    case 3:
+                        pass = 1;
+                        break;
+                }
+                if (pass == 0) {
+                    obj->flags &= ~8;
+                    break;
+                }
+                mobjRunEvent(obj, obj->unk1D4);
+                evtSetValue(NULL, obj->unk1E4, 1);
+                if (obj->hitObj[0].hitObject != NULL) {
+                    obj->hitObj[0].hitObject->flags |= 1;
+                }
+                obj->flags |= 2;
+                kpaAddScore(kpaMutekiCheck() ? 0x1f4 : 0x190);
+                obj->unk1DC = 0xa;
+            }
+            break;
+        case 0xa:
+            psndSFXOn_3D((const char*)0x1b8, &obj->position);
+            effMObjBrokenEntry(0, obj->position.x, obj->position.y + 12.5f, obj->position.z + 12.5f);
+            obj->unk1DC++;
+            break;
+        case 0xb:
+            obj->position.y = -1000.0f;
+            for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
+                sprintf(buf, "%s%2x", obj->name, i);
+                npc = npcNameToPtr(buf);
+                npc->field_188 = 0;
+                npc->jumpStartPos = npc->position;
+                npc->jumpTargetPos.x = (f32)irand(0x65) / 200.0f;
+                npc->jumpTargetPos.y = 6.0f - (f32)irand(0x65) / 75.0f;
+                npc->jumpTargetPos.z = 4.8f;
+                npc->moveTime = 2.0f;
+                npc->jumpFlags |= 4;
+            }
+            if (psndSFXChk(*(s32*)((u8*)obj + 0x1B4)) == 0) {
+                psndSFXOff(*(s32*)((u8*)obj + 0x1B4));
+                *(s32*)((u8*)obj + 0x1B4) = -1;
+            }
+            obj->unk1DC++;
+            break;
+        case 0xc:
+            for (i = 0; i < *(s32*)((u8*)obj + 0x1A4); i++) {
+                sprintf(buf, "%s%2x", obj->name, i);
+                npc = npcNameToPtr(buf);
+                npc->moveOffset.x = npc->moveOffset.x + npc->jumpTargetPos.x;
+                npc->position.y = npc->position.y + npc->jumpTargetPos.y;
+                npc->moveOffset.z = npc->moveOffset.z + npc->jumpTargetPos.z;
+                npc->scale.x += 0.04f;
+                if (npc->scale.x > 3.0f) {
+                    npc->scale.x = 3.0f;
+                }
+                {
+                    f32 s = npc->scale.x;
+                    npc->scale.y = s;
+                    npc->scale.z = s;
+                }
+                npc->jumpTargetPos.y = npc->jumpTargetPos.y - 0.2f;
+            }
+            if (npc->moveTime <= npc->field_1A0) {
+                obj->unk1DC = 0x63;
+            }
+            break;
+        case 0x63:
+            for (j = 0; j < *(s32*)((u8*)obj + 0x1A4); j++) {
+                sprintf(buf2, "%s%2x", obj->name, j);
+                npcDelete(npcNameToPtr(buf2));
+            }
             mobjDelete(obj->name);
             break;
     }
@@ -1985,15 +2109,35 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (94.95%): the `char x[16] = "o_"` initializer templates pool at
-// different .rodata offsets (ours) than retail's base+0x238/base+0x248, so the
-// 16-byte copy loads reference a separate `lis/addi` base.
+// Matched with a MUST_MATCH copy from retail's "o_"/"i_" templates (see inside the function).
 s32 mobj_brickblk(MapObjectEntry* obj) {
     u8* base = (u8*)vec3_802c3dc8;
+#ifdef MUST_MATCH
+    // MUST_MATCH: retail's "o_"/"i_" 16-byte templates live at vec3_802c3dc8+0x238/+0x248, so the
+    // target copies them from `base`. The natural initializer form (under #else) makes MWCC emit its
+    // own anonymous template and a separate base register; copying from `base` reproduces the target
+    // and is behaviourally identical. `inBattle` must be assigned after the copies (not in its
+    // declaration) or MWCC hoists the gp load above them.
+    char offName[16];
+    char imgName[16];
+    BOOL inBattle;
+    ImageEntry* img;
+
+    ((u32*)offName)[0] = ((u32*)(base + 0x238))[0];
+    ((u32*)offName)[1] = ((u32*)(base + 0x238))[1];
+    ((u32*)offName)[2] = ((u32*)(base + 0x238))[2];
+    ((u32*)offName)[3] = ((u32*)(base + 0x238))[3];
+    ((u32*)imgName)[0] = ((u32*)(base + 0x248))[0];
+    ((u32*)imgName)[1] = ((u32*)(base + 0x248))[1];
+    ((u32*)imgName)[2] = ((u32*)(base + 0x248))[2];
+    ((u32*)imgName)[3] = ((u32*)(base + 0x248))[3];
+    inBattle = gp->inBattle != 0;
+#else
     char offName[16] = "o_";
     char imgName[16] = "i_";
     BOOL inBattle = gp->inBattle != 0;
     ImageEntry* img;
+#endif
 
     strcat(offName, obj->name);
     strcat(imgName, obj->name);
@@ -2233,8 +2377,12 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (93.34%): register allocation (r28/r30 swapped) around the local jumptable
+// NONMATCHING (94.58%): declaring obj/asyncName right after `args` puts every callee-saved register
+// where retail has it; the 15 diffs left are the jumptable/inBattle load schedule (retail loads gp
+// before slwi type*4 and uses r0 for the index).
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
+    MapObjectEntry* obj;
+    const char* asyncName;
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
@@ -2244,8 +2392,6 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     f32 f28 = evtGetFloat(event, args[5]);
     s32 unk1D4 = evtGetValue(event, args[6]);
     s32 unk1E4 = args[7];
-    const char* asyncName;
-    MapObjectEntry* obj;
 
     {
         const char* jumptable[2] = {"MOBJ_BlueJumpStand", "MOBJ_BlueJumpStand2"};
@@ -2267,7 +2413,6 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
-
 s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
     MarioWork* mario = marioGetPtr();
 
@@ -2329,8 +2474,11 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (91.16%): register allocation around the local jumptable
+// NONMATCHING (94.40%): same as evt_mobj_jumpstand_blue; only the jumptable/inBattle load schedule
+// differs.
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
+    MapObjectEntry* obj;
+    const char* asyncName;
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
@@ -2339,8 +2487,6 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     f32 f29 = evtGetFloat(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[5]);
     s32 unk1E4 = args[6];
-    const char* asyncName;
-    MapObjectEntry* obj;
 
     {
         const char* jumptable[2] = {"MOBJ_RedJumpStand", "MOBJ_RedJumpStand2"};
@@ -2361,7 +2507,6 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
-
 s32 mobj_jumpstand_red(MapObjectEntry* obj) {
     MarioWork* mario = marioGetPtr();
     s32 partyId = marioGetPartyId();
@@ -2479,8 +2624,9 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (84.10%): case 2's bbox float computation is scheduled with different FP registers
-// (and the .sdata2/rodata constant symbols are anonymous @NNN here).
+// NONMATCHING (99.92%): only the case 1 / case 2 `Vec` stack slots are swapped — MWCC puts case 2's v
+// at 0x20 and case 1's at 0x2c where retail is the reverse. Independent of declaration order, names,
+// scoping and case order (all tried).
 s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
     Vec* vec = vec3_802c3dc8;
 
@@ -2514,13 +2660,35 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
         }
         case 2: {
             AnimationPoseData* data = animPoseGetAnimBaseDataPtr(obj->poseId);
+#ifdef MUST_MATCH
+            // MUST_MATCH: route the products through a temporary `w` (copied to `v`) and move the
+            // vec+0x88 copy after them. This reproduces retail's FP scheduling (products in f2/f0/f1
+            // with 10.0 kept live) and the retail temp-copy of the Vec. The natural form is under #else.
+            // The named float_0p8_8041a1b0/float_10_8041a1a4 loads (rather than literals) keep both
+            // constants live, as in retail.
+            Vec v;
+            Vec w;
+            f32 vx;
+            f32 vy;
+            f32 vz;
+            f32 mag;
+            f32 dist;
+
+            vx = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.x);
+            vy = float_10_8041a1a4 * data->bboxMax.y;
+            vz = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.z);
+            w = *(Vec*)((u32*)vec + 0x22);
+            w.x = vx; w.y = vy; w.z = vz;
+            v = w;
+#else
             Vec v = *(Vec*)((u8*)vec + 0x88);
             f32 mag;
             f32 dist;
 
-            v.x = 0.8f * (10.0f * data->bboxMax.x);
-            v.z = 0.8f * (10.0f * data->bboxMax.z);
-            v.y = 10.0f * data->bboxMax.y;
+            v.x = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.x);
+            v.z = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.z);
+            v.y = float_10_8041a1a4 * data->bboxMax.y;
+#endif
             mag = PSVECMag(&v);
             dist = PSVECDistance(&obj->position, &marioGetPtr()->position);
             if (dist > mag) {
@@ -2537,7 +2705,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
         }
         case 3: {
             f32 x = obj->scale2.x;
-            f32 y = obj->scale2.y + 0.9f;
+            f32 y = obj->scale2.y + float_0p9_8041a228;
             f32 z = obj->scale2.z;
             Vec v;
 
@@ -2826,8 +2994,9 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (88.34%): register allocation for args[6]/args[7] is swapped (retail r28=args[7],
-// r29=args[6]) and the two `?:` name selections are scheduled differently.
+// NONMATCHING (99.96%): the registers and schedule now match; the only diff is the pooled-string
+// offsets (retail uses vec3_802c3dc8+0x450/0x474/0x5c8/0x614, our unit's .rodata has them at
+// +0x124/0x1ec/0x200/0x1dc), i.e. the unit-wide .rodata base/layout is not reconstructed.
 s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2838,12 +3007,13 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1D4 = evtGetValue(event, args[5]);
     s32 unk1E4 = args[6];
     s32 var = args[7];
+    BOOL inBattle;
     const char* asyncName;
-    const char* animName;
     MapObjectEntry* obj;
 
-    asyncName = (var == 0) ? "MOBJ_HatenaBlock" : "MOBJ_BadgeBlock";
-    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+    inBattle = gp->inBattle != 0;
+    asyncName = (var != 0) ? "MOBJ_BadgeBlock" : "MOBJ_HatenaBlock";
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -2861,8 +3031,7 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     if (evtGetValue(event, unk1E4) != 0) {
         obj->unk1DC = 0x5a;
         animPoseSetAnim(obj->poseId, "S_2", 1);
-        animName = (var == 0) ? "MOBJ_Block" : "MOBJ_PinkBlock";
-        strcpy(obj->animName, animName);
+        strcpy(obj->animName, (var != 0) ? "MOBJ_PinkBlock" : "MOBJ_Block");
     }
     return 2;
 }
@@ -2870,6 +3039,14 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
 extern Vec vec3_802c3ef4[];
 extern const char str_802C41DC[];
 extern const char str_802C41F0[];
+
+#ifdef MUST_MATCH
+// The original compiler pools the "o_"/"i_" array initialisers into this
+// unit's .rodata and addresses them relative to vec3_802c3dc8 (base+0x100 and
+// base+0x110). Reproduce that here by copying 16 bytes through a struct.
+typedef struct MobjName16 { char s[16]; } MobjName16;
+#endif
+
 
 s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -3090,8 +3267,6 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (87.23%): correct registers, but MWCC evaluates the asyncName `?:` before loading gp
-// (retail interleaves the gp/args[6] loads between the two string materialisations).
 s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -3100,13 +3275,15 @@ s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     f32 f30 = evtGetFloat(event, args[3]);
     f32 f29 = evtGetFloat(event, args[4]);
     s32 unk1E4;
+    BOOL inBattle;
     const char* asyncName;
     MapObjectEntry* obj;
 
     evtGetValue(event, args[5]);
     unk1E4 = args[6];
+    inBattle = gp->inBattle != 0;
     asyncName = (type == 0) ? "MOBJ_RecoveryBlock" : "MOBJ_CoinTakenRecoveryBlock";
-    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -3471,8 +3648,6 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (93.84%): item-field store scheduling differs and `kpa_powerup_evt` is `.sdata` but the extern is
-// emitted lis/addi rather than SDA21.
 s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
     s32 flag = 0;
 
@@ -3526,12 +3701,12 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
                 itemFlagOn(item, 0x14);
                 *(s32*)((u8*)item + 0x7C) = 0x2710;
                 *(s32*)((u8*)item + 0x78) = 0;
-                *(f32*)((u8*)item + 0x80) = float_0p45_8041a1c4;
-                *(f32*)((u8*)item + 0x84) = float_0p7_8041a1c8;
-                *(f32*)((u8*)item + 0x58) = float_500_8041a1cc;
-                *(f32*)((u8*)item + 0x50) = float_120_8041a1d0;
-                *(s32*)((u8*)item + 0x54) = 0x5a;
+                *(f32*)((u8*)item + 0x80) = 0.45f;
+                *(f32*)((u8*)item + 0x84) = 0.7f;
                 *(s32*)((u8*)item + 0x88) = 0;
+                *(f32*)((u8*)item + 0x58) = 500.0f;
+                *(f32*)((u8*)item + 0x50) = 120.0f;
+                *(s32*)((u8*)item + 0x54) = 0x5a;
                 psndSFXOn_3D((const char*)0x836, &obj->position);
             }
             obj->unk1DC = 0x63;
@@ -3690,12 +3865,11 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (93.76%): `kpa_powerup_evt` is `.sdata` but extern emits lis/addi, plus item-field f32 load/store
-// scheduling.
 s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
-    BOOL flag = FALSE;
+    BOOL flag;
 
     marioGetPtr();
+    flag = FALSE;
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
@@ -3719,11 +3893,11 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                             itemFlagOn(item, 0x14);
                             *(s32*)((u8*)item + 0x7C) = 0x2710;
                             *(s32*)((u8*)item + 0x78) = 0;
-                            *(f32*)((u8*)item + 0x80) = float_0p45_8041a1c4;
-                            *(f32*)((u8*)item + 0x84) = float_0p7_8041a1c8;
+                            *(f32*)((u8*)item + 0x80) = 0.45f;
+                            *(f32*)((u8*)item + 0x84) = 0.7f;
                             *(s32*)((u8*)item + 0x88) = 0;
-                            *(f32*)((u8*)item + 0x58) = float_500_8041a1cc;
-                            *(f32*)((u8*)item + 0x50) = float_120_8041a1d0;
+                            *(f32*)((u8*)item + 0x58) = 500.0f;
+                            *(f32*)((u8*)item + 0x50) = 120.0f;
                             *(s32*)((u8*)item + 0x54) = 0x5a;
                             psndSFXOn_3D((const char*)0x836, &obj->position);
                         } else {
@@ -3752,11 +3926,21 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
             break;
         case 0x5a:
             if (obj->flags & 8) {
+                // MUST_MATCH: the empty case 2 makes MWCC emit the retail switch decision tree
+                // (cmpwi/beq/bge/b) instead of folding the two default edges together.
+#ifdef MUST_MATCH
                 switch (kpaGetLevel()) {
+                    case 2:
+                        break;
                     case 3:
                         flag = TRUE;
                         break;
                 }
+#else
+                if (kpaGetLevel() == 3) {
+                    flag = TRUE;
+                }
+#endif
                 if (!flag) {
                     obj->flags &= ~8;
                 } else {

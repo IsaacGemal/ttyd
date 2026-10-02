@@ -148,16 +148,19 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 
 // regalloc (r21-r31 vs r23-r31, the target keeps two table pointers) and the compiler
 // CSEs the evtSetValue GSW(118+i) index while the target recomputes it.
-// NONMATCHING (90.89%): table[dobreak] index, count hoisted out of the j loop and the BADGE_MAX - KEY_ITEM_MIN bound are fixed.
+// NONMATCHING (92.08%): unsigned `k` for the init loop, `u32 j`, a walking `bp` in the last
+// loop and `int i` declared last align several compares; the rest is register allocation
+// (target keeps two table pointers and folds base+offset into `stwx`).
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
 	s32 count;
-	int i, j;
+	u32 j, k;
+	s32* bp;
 	u32 dobreak;
-
-	for (i = 0; i < 0x11; i++) {
-		table[i][1] = 200;
-		table[i][0] = 0;
+	int i;
+	for (k = 0; k < 0x11; k++) {
+		table[k][1] = 200;
+		table[k][0] = 0;
 	}
 
 	dobreak = 0;
@@ -175,10 +178,12 @@ void badgeShop_bottakuruGeneration(void) {
 	qqsort(table, 0x11, 8, (int (*)(void*, void*))bottakuruComp);
 
 	for (i = 0; i < 4; i++) { //only 4 slots
+		bp = badge_bottakuru_table;
 		for (j = 0; j < 0x11; j++) {
-			if (table[i][0] == badge_bottakuru_table[j]) {
+			if (table[i][0] == *bp) {
 				evtSetValue(NULL, i + GSW(118), j);
 			}
+			bp++;
 		}
 	}
 }
@@ -223,12 +228,14 @@ void badgeShop_bteresaGeneration(void) {
 	}
 }
 
-// NONMATCHING (69.49%): large function, most diffs are register allocation; not reworked yet.
+// NONMATCHING (70.04%): large function; `badge` and `value` are `s16` (the target keeps both
+// `extsh`), but most of the remaining diffs are register allocation (one extra callee-saved
+// register on our side) and the inlined badgeShop_get bound check, which we do not fold.
 void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
 	s32* ptr;
 	u8 table[0x19];
 	int i;
-	s32 badge, value;
+	s16 badge, value;
 	s32 count, count2, count3, count4, stopcount; //TODO: rename
 	s32 v28, v7; //TODO: rename
 
@@ -588,18 +595,25 @@ USER_FUNC(evt_badgeShop_bottakuru_get_kind_cnt) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.77%): 2 instructions differ, 4 missing, 1 extra, plus register differences.
 USER_FUNC(U_evt_badgeShop_get_special_zaiko) {
-	s32 badge, count;
+	s16 badge;
+	s32 count;
+	s32* args = event->args;
 	int i;
 
 	for (count = 0, i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		badge = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN));
-		if (badge > 0) { //TODO: wonky cntlzw
+#ifdef MUST_MATCH
+		// `!(badge <= 0)` is `badge > 0`, but the target keeps the compiler's
+		// cntlzw/rlwnm boolean form (see btlevtcmd_AnnounceMessage) rather than extsh./ble.
+		if (!(badge <= 0)) {
+#else
+		if (badge > 0) {
+#endif
 			count++;
 		}
 	}
-	evtSetValue(event, *event->args, count);
+	evtSetValue(event, *args, count);
 	return EVT_RETURN_DONE;
 }
 

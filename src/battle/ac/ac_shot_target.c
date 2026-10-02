@@ -174,16 +174,22 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 // don't_inline: battleAcMain_ShotTarget calls this through the original `bl`.
 #pragma dont_inline on
-// NONMATCHING (92.86%): original stores counter (r4) before the dat_804218f8 load (also r4) and loads
-// dat after `stfs iconY`; MWCC hoists the load to r5. The s8 casts keep `li r0, -0x10`.
+// The s8 casts on `field_0x10[1..2]` keep MWCC emitting `li r0, -0x10` (a plain byte store).
 static void _ac_disp_init(BattleWork* work) {
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 
     memset(disp, 0, 0x2C);
     disp->iconX = float_neg200_80421914;
     disp->iconY = float_0_80421918;
-    disp->field_0xC = dat_804218f8;
+#ifdef MUST_MATCH
+    // Match-only: the volatile accesses stop MWCC hoisting the dat_804218f8 load into r5 (and
+    // reordering the counter store after it); the emitted instructions are byte-identical.
+    *(volatile u32*)&disp->counter = 0x14;
+    disp->field_0xC = *(volatile const u32*)&dat_804218f8;
+#else
     disp->counter = 0x14;
+    disp->field_0xC = dat_804218f8;
+#endif
     disp->field_0x10[0] = 0;
     *(s8*)&disp->field_0x10[1] = -0x10;
     *(s8*)&disp->field_0x10[2] = -0x10;
@@ -270,29 +276,16 @@ void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
     }
 }
 
-// Logic and switch map are complete; MWCC folds the work-area pointer (st = work+0x1F4C) into the
-// BattleWork base instead of materialising it in its own register (r27), so nearly every work-area
-// access differs in its base/offset. The int->float magic now matches at the original's vec3 base
-// + 0x90 (the doubles are referenced by name so the pool shares the vec3 base); the vec3 base
-// symbol itself is emitted as `...rodata.0` instead of `vec3_802ff950`.
-// NONMATCHING (17.67%): work-area base folded; vec3 base symbol name differs.
+// NONMATCHING (18.00%): rumbleType/sfx swap two callee-saved registers (the original keeps
+// rumbleType in r24 and sfx in r28; MWCC here gives rumbleType r28 and sfx r24). It shows in the
+// two top loads, two addi's and four `mr r3` argument setups.
 s32 battleAcMain_ShotTarget(BattleWork* work) {
-#ifdef MUST_MATCH
-    Vec* vecs = (Vec*)vec3_802ff950;
     BattleActions* ac = &work->actionCommands;
     ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
-#else
-    ShotTargetWork* st = (ShotTargetWork*)((u8*)work + 0x1F4C);
-#endif
-#ifdef MUST_MATCH
-    // The original reaches the SFX string through the vec3 base (it sits at vec3+0x6C).
-    const char* sfx = (const char*)((u8*)vecs + 0x6C);
-#else
-    const char* sfx = str_802FF9BC;
-#endif
-    s32 smooth = 0;
     s32 rumbleType;
     s32 cont;
+    s32 smooth = 0;
+    const char* sfx;
     Vec hit;
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -301,6 +294,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
         smooth = 1;
     }
     rumbleType = *(s32*)&work->actionCommands.field_34[0x10];
+    sfx = str_802FF9BC;
 
     do {
         cont = 0;
@@ -311,10 +305,19 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x04]);
                 part = BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x08]);
                 BtlUnit_GetHitPos(unit, part, &hit.x, &hit.y, &hit.z);
+#ifdef MUST_MATCH
+                // Match-only: volatile keeps MWCC from reordering these four stores, which the
+                // original issues in exactly this order (target stores, field_0x20, pos, field_0x24).
+                *(volatile Vec*)&st->target = hit;
+                *(volatile u32*)&st->field_0x20 = 0;
+                *(volatile Vec*)&st->pos = *(volatile Vec*)&vec3_802ff950[0];
+                *(volatile f32*)&st->field_0x24 = float_0_80421918;
+#else
                 st->target = hit;
                 st->field_0x20 = 0;
-                st->pos = RODATA_VEC(0, vec3_802ff950[0]);
+                st->pos = vec3_802ff950[0];
                 st->field_0x24 = float_0_80421918;
+#endif
                 _ac_rumble_param_set(rumbleType, &st->field_0x28, &st->field_0x2a, &st->field_0x2C);
                 _ac_rumble_param_set(rumbleType, &st->field_0x30, &st->field_0x32, &st->field_0x34);
                 st->field_0x38 = -1;
@@ -343,7 +346,13 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 {
                     f32 t = sinfd((f32)((st->field_0x2a + 1) * 180 / st->field_0x28)) * st->field_0x2C;
                     f32 s = sinfd((f32)(st->field_0x2a * 180 / st->field_0x28));
+#ifdef MUST_MATCH
+                    // Match-only: the temp fixes the fmsub/fadd register pairing the original has.
+                    f32 d = st->field_0x2C * s - t;
+                    st->pos.x += d;
+#else
                     st->pos.x += st->field_0x2C * s - t;
+#endif
                 }
                 st->field_0x32--;
                 if (st->field_0x32 < 0) {
@@ -352,7 +361,12 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 {
                     f32 t = sinfd((f32)((st->field_0x32 + 1) * 180 / st->field_0x30)) * st->field_0x34;
                     f32 s = sinfd((f32)(st->field_0x32 * 180 / st->field_0x30));
+#ifdef MUST_MATCH
+                    f32 d2 = st->field_0x34 * s - t;
+                    st->pos.y += d2;
+#else
                     st->pos.y += st->field_0x34 * s - t;
+#endif
                 }
                 st->pos.x += (f32)work->padWork[0].mPadData[0].stickX / float_10_80421940;
                 st->pos.y += (f32)work->padWork[0].mPadData[0].stickY / float_10_80421940;

@@ -88,7 +88,6 @@ f32 float_neg16_8041b918 = -16.0f;
 f32 float_neg8_8041b91c = -8.0f;
 f32 float_0p1_8041b920 = 0.1f;
 
-// NONMATCHING (92.78%): Vec copy load/store scheduling (`mario->scale = vecs[0]` and the two 0x70 copies).
 USER_FUNC(evt_mario_dokan_prepare) {
     s32* args = event->args;
     const Vec* vecs = vec3_802e5730;
@@ -100,12 +99,22 @@ USER_FUNC(evt_mario_dokan_prepare) {
     mario->flags |= 0x100;
     type = evtGetValue(event, args[0]);
     if (type == 4) {
+#ifdef MUST_MATCH
+        // MUST_MATCH: the original copies each Vec with an unscheduled per-component load/store pair;
+        // volatile on both sides stops MWCC from hoisting the third load above the second store.
+        *(volatile Vec*)&mario->scale = *(volatile Vec*)&vecs[0];
+#else
         mario->scale = vecs[0];
+#endif
         mario->dispFlags |= 0x1000;
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             partyShadowOff(party);
+#ifdef MUST_MATCH
+            *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[1];
+#else
             *(Vec*)((u8*)party + 0x70) = vecs[1];
+#endif
             party->flags2 |= 1;
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
@@ -113,7 +122,11 @@ USER_FUNC(evt_mario_dokan_prepare) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             partyShadowOff(party);
+#ifdef MUST_MATCH
+            *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[2];
+#else
             *(Vec*)((u8*)party + 0x70) = vecs[2];
+#endif
             party->flags2 |= 1;
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
@@ -126,7 +139,6 @@ USER_FUNC(evt_mario_dokan_prepare) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.09%): type-switch case body order, scheduling of the float_0 load, jump-table symbol.
 USER_FUNC(evt_mario_paper_pose_dokan) {
     const u8* base = (const u8*)vec3_802e5730;
     s32* args = event->args;
@@ -146,8 +158,10 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
             *(Vec*)((u8*)mario + 0x98) = *(Vec*)(base + 0xB4);
         } else {
             switch (type) {
-            case 0:
-                event->userdata[1] = 2;
+            case 4:
+            case 5:
+                event->userdata[1] = 20;
+                ret = 2;
                 break;
             case 1:
                 if (!(mario->flags & 0x02000000)) {
@@ -156,23 +170,21 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
                 }
                 event->userdata[1] = 0;
                 break;
+            case 0:
+                event->userdata[1] = 2;
+                break;
             case 2:
                 event->userdata[1] = 10;
                 break;
             case 3:
                 event->userdata[1] = 10;
                 break;
-            case 4:
-            case 5:
-                event->userdata[1] = 20;
-                ret = 2;
-                break;
             }
         }
-    }
 
-    if (type == 2 || type == 3) {
+        if (type == 2 || type == 3) {
         Vec pos;
+        f32 zero;
 
         marioSlitForceCancel();
         marioRollForceCancel();
@@ -184,19 +196,21 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         marioChgPose(str_8041B750);
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
-        *(f32*)((u8*)mario + 0x1A8) = *(f32*)((u8*)mario + 0x1AC);
-        *(f32*)((u8*)mario + 0x2A0) = float_0_8041b8ac;
+        mario->unk1A8 = *(f32*)((u8*)mario + 0x1AC); // 0x1AC: field not declared in MarioWork
+        zero = 0.0f;
+        *(f32*)((u8*)mario + 0x2A0) = zero; // 0x2A0: field not declared in MarioWork
         pos = *(Vec*)(base + 0xC0);
-        pos.z = (mario->flags & 0x02000000) ? float_neg16_8041b918 : float_0_8041b8ac;
+        pos.z = (mario->flags & 0x02000000) ? -16.0f : zero;
         *(Vec*)((u8*)mario + 0x98) = pos;
         event->userdata[0] = 0;
         marioNoUpdateCamPos();
         if (!(mario->flags & 0x02000000)) {
             camFollowYOff();
         }
-    } else if (type == 5) {
-        partyGoodbye(marioGetPartyId());
-        partyGoodbye(marioGetExtraPartyId());
+        } else if (type == 5) {
+            partyGoodbye(marioGetPartyId());
+            partyGoodbye(marioGetExtraPartyId());
+        }
     }
 
     switch (event->userdata[1]) {
@@ -210,23 +224,22 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
         *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0xCC);
-        *(f32*)((u8*)mario + 0x2A0) = float_30_8041b910;
+        *(f32*)((u8*)mario + 0x2A0) = 30.0f;
         event->userdata[0] = 8;
         event->userdata[1] = 3;
         ret = 2;
         break;
     case 3:
+        ret = 0;
         if (--event->userdata[0] <= 0) {
             event->userdata[0] = 10;
             event->userdata[1] = 4;
         }
-        ret = 0;
         break;
     case 4:
+        ret = 0;
         if (--event->userdata[0] <= 0) {
             ret = 2;
-        } else {
-            ret = 0;
         }
         break;
     case 0: {
@@ -234,10 +247,10 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
 
         *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0xD8);
         pos = *(Vec*)(base + 0xE4);
-        pos.z = (mario->flags & 0x02000000) ? float_neg16_8041b918 : float_0_8041b8ac;
+        pos.z = (mario->flags & 0x02000000) ? -16.0f : 0.0f;
         *(Vec*)((u8*)mario + 0x98) = pos;
         if (!(mario->flags & 0x02000000)) {
-            *(f32*)((u8*)mario + 0x94) += float_neg8_8041b91c;
+            mario->position.z += -8.0f;
         }
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
@@ -265,16 +278,16 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         break;
     }
     case 10:
-        *(f32*)((u8*)mario + 0x2A0) += float_1_8041b8a8;
-        if (*(f32*)((u8*)mario + 0x2A0) > float_30_8041b910) {
-            *(f32*)((u8*)mario + 0x2A0) = float_30_8041b910;
+        *(f32*)((u8*)mario + 0x2A0) += 1.0f;
+        if (*(f32*)((u8*)mario + 0x2A0) > 30.0f) {
+            *(f32*)((u8*)mario + 0x2A0) = 30.0f;
         }
         event->userdata[0]++;
         if (event->userdata[0] > 10) {
             *(f32*)((u8*)mario + 0x1A8) += *(f32*)((u8*)mario + 0x2A0);
-            *(f32*)((u8*)mario + 0x2A0) += float_0p1_8041b920;
-            if (*(f32*)((u8*)mario + 0x2A0) > float_30_8041b910) {
-                *(f32*)((u8*)mario + 0x2A0) = float_30_8041b910;
+            *(f32*)((u8*)mario + 0x2A0) += 0.1f;
+            if (*(f32*)((u8*)mario + 0x2A0) > 30.0f) {
+                *(f32*)((u8*)mario + 0x2A0) = 30.0f;
             }
         }
         if (event->userdata[0] < sysMsec2Frame(300)) {
@@ -526,8 +539,6 @@ USER_FUNC(evt_mario_get_dir) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (94.42%): register rotation (event/first/args/mario) and `fmadds` where the original emits
-// separate `fmuls`+`fadds`.
 USER_FUNC(evt_mario_set_dir) {
     s32* args = event->args;
     s32 first = isFirstCall;
@@ -551,16 +562,22 @@ USER_FUNC(evt_mario_set_dir) {
     }
     if (frames > 0) {
         f32 a = revise360(270.0f - angle);
+        f32 start;   // temps keep the target's separate fmuls+fadds (no fp_contract fusion)
+        f32 delta;
+        s32 n;       // temp keeps the increment result live without a reload, matching the allocator
 
         if (a > 270.0f) {
             a -= 360.0f;
         }
-        mario->unk1A8 = revise360(event->userdataf[1] + (a - event->userdataf[1]) * ((f32)event->userdata[0] / (f32)frames));
+        start = event->userdataf[1];
+        delta = (a - start) * ((f32)event->userdata[0] / (f32)frames);
+        mario->unk1A8 = revise360(start + delta);
         *(f32*)((u8*)mario + 0x1AC) = mario->unk1A8;
         mario->directionView = toMovedirSimple(mario->unk1A8);
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
-        event->userdata[0]++;
-        if ((s32)event->userdata[0] > frames) {
+        n = event->userdata[0] + 1;
+        event->userdata[0] = n;
+        if (n > frames) {
             if (loop == 0) {
                 return 1;
             }
@@ -1198,7 +1215,6 @@ USER_FUNC(evt_mario_party_door_move) {
     return ret;
 }
 
-// NONMATCHING (86.05%): regalloc on the screen-pos comparisons, two framerate conversions, jump-table symbol.
 USER_FUNC(evt_mario_party_bero_move) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1217,7 +1233,7 @@ USER_FUNC(evt_mario_party_bero_move) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             marioGetScreenPos(party->position, &sx, &sy, &sz);
-            if (!(float_0_8041b8ac <= sx && sx <= float_600_8041b8d4 && float_0_8041b8ac <= sy && sy <= float_535_8041b8d8)) {
+            if (!(0.0f <= sx && sx <= float_600_8041b8d4 && 0.0f <= sy && sy <= float_535_8041b8d8)) {
                 party->position = mario->position;
             }
             if (mario->position.y > party->position.y) {
@@ -1230,7 +1246,7 @@ USER_FUNC(evt_mario_party_bero_move) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             marioGetScreenPos(party->position, &sx, &sy, &sz);
-            if (!(float_0_8041b8ac <= sx && sx <= float_600_8041b8d4 && float_0_8041b8ac <= sy && sy <= float_535_8041b8d8)) {
+            if (!(0.0f <= sx && sx <= float_600_8041b8d4 && 0.0f <= sy && sy <= float_535_8041b8d8)) {
                 party->position = mario->position;
             }
             if (mario->position.y > party->position.y) {
@@ -1252,9 +1268,20 @@ USER_FUNC(evt_mario_party_bero_move) {
         if (mario->flags & MARIO_FLAG_BG_MODE) {
             speed *= float_0p4_8041b8dc;
         }
+#ifdef MUST_MATCH
+        {
+            f32 fr = (f32)gp->framerate * (dist / speed);
+            s32 n;
+
+            n = (s32)fr;
+            speed = speed / (f32)gp->framerate;
+            marioSetForceMove(n, mario->directionView, speed);
+        }
+#else
         tmp = dist / speed;
         speed = speed / (f32)gp->framerate;
         marioSetForceMove((s32)((f32)gp->framerate * tmp), mario->directionView, speed);
+#endif
         event->userdata[0] = 2;
         break;
     case 2:
@@ -1271,14 +1298,15 @@ USER_FUNC(evt_mario_party_bero_move) {
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             f32 angle;
-            BOOL flag = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec);
 
-            if (party->field_32 == 0) {
-                angle = flag ? float_220_8041b8e0 : float_140_8041b8e4;
+            if (party->field_32 == 0) { // 0x1AC below: field not declared in MarioWork
+                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_220_8041b8e0 : float_140_8041b8e4;
+                angle = revise360(mario->targetYaw + angle);
             } else {
-                angle = flag ? float_225_8041b8f0 : float_135_8041b8f4;
+                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_225_8041b8f0 : float_135_8041b8f4;
+                angle = revise360(mario->targetYaw + angle);
             }
-            partyMoveBehindMario3(party, 0, revise360(*(f32*)((u8*)mario + 0x198) + angle));
+            partyMoveBehindMario3(party, 0, angle);
             if (party->field_32 == 1) {
                 party->flags2 |= 0x10;
             }
@@ -1286,14 +1314,15 @@ USER_FUNC(evt_mario_party_bero_move) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             f32 angle;
-            BOOL flag = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec);
 
             if (party->field_32 == 0) {
-                angle = flag ? float_220_8041b8e0 : float_140_8041b8e4;
+                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_220_8041b8e0 : float_140_8041b8e4;
+                angle = revise360(mario->targetYaw + angle);
             } else {
-                angle = flag ? float_225_8041b8f0 : float_135_8041b8f4;
+                angle = (*(f32*)((u8*)mario + 0x1AC) >= float_90_8041b8e8 && *(f32*)((u8*)mario + 0x1AC) <= float_270_8041b8ec) ? float_225_8041b8f0 : float_135_8041b8f4;
+                angle = revise360(mario->targetYaw + angle);
             }
-            partyMoveBehindMario3(party, 0, revise360(*(f32*)((u8*)mario + 0x198) + angle));
+            partyMoveBehindMario3(party, 0, angle);
             if (party->field_32 == 1) {
                 party->flags2 |= 0x10;
             }
@@ -1339,10 +1368,12 @@ USER_FUNC(evt_mario_party_bero_move) {
     return ret;
 }
 
-// NONMATCHING (90.93%): f26-f31 assignment, stack frame size, one cmplwi/cmpwi.
+// NONMATCHING (92.58%): the two `accel = (dy+dy)/(half*half-half)` blocks reload `float_0`
+// instead of keeping it in f0, so their temporaries land in f0/f1 instead of f1/f2.
 USER_FUNC(evt_mario_jump_pos) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
+    f32 half;
     f32 x;
     f32 y;
     f32 z;
@@ -1350,7 +1381,6 @@ USER_FUNC(evt_mario_jump_pos) {
     s32 flag;
     f32 gravity;
     f32 framesF;
-    f32 half;
     f32 dy;
     f32 accel;
     void* ground;
@@ -1393,9 +1423,23 @@ USER_FUNC(evt_mario_jump_pos) {
                     dy = dy + float_0p5_8041b8c8 * *(f32*)((u8*)mario + 0x1B8);
                 }
             } else {
+#ifdef MUST_MATCH
+                // MUST_MATCH: the original's `Vec vec` (12 bytes at 0x14) overlaps MWCC's
+                // int<->float conversion temporary, which then lives at 0x18; a full Vec pushes
+                // that temp to 0x20 (frame 0xa0 instead of 0x90). searchUnder2 only writes
+                // out->x, so a one-float home reproduces the frame (same idiom as evt_party.c).
+                f32 vec;
+#else
                 Vec vec;
+#endif
 
+#ifdef MUST_MATCH
+                // MUST_MATCH: the header declares searchUnder2 as s32 but it returns a pointer;
+                // the cast restores the original's unsigned (cmplwi) null test.
+                if ((void*)searchUnder2((Vec*)&vec, x, y, z)) {
+#else
                 if (searchUnder2(&vec, x, y, z)) {
+#endif
                     dy = gravity;
                 } else {
                     dy = gravity;
@@ -1440,9 +1484,9 @@ USER_FUNC(evt_mario_jump_pos) {
         event->userdata[0] = 2;
         break;
     case 2: {
+        f32 v2;
         f32 v0;
         f32 v1;
-        f32 v2;
         MarioWork* mario2;
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
@@ -1844,7 +1888,8 @@ USER_FUNC(evt_mario_check_landon) {
     evtSetValue(event, args[0], 0);
     return EVT_RETURN_DONE;
 }
-// NONMATCHING (92.25%): register allocation (r29/r31) and the order of a few float loads and stores.
+// NONMATCHING (95.28%): the case 0 float block keeps `float_0` in f0 where we use f0 for the
+// `(dy+dy)/(half*half-half)` temporaries, plus one case 1 constant-load/store interleave.
 USER_FUNC(evt_koopa_hip_attack) {
     MarioWork* mario;
     s32 first = isFirstCall;
@@ -1854,9 +1899,9 @@ USER_FUNC(evt_koopa_hip_attack) {
     f32 z;
     f32 angle;
     f32 frames;
+    f32 v2;
     f32 v0;
     f32 v1;
-    f32 v2;
 
     mario = marioGetPtr();
     if (first) {
@@ -1871,7 +1916,6 @@ USER_FUNC(evt_koopa_hip_attack) {
     switch (event->userdata[0]) {
     case 0: {
         f32 dy;
-        f32 d;
         f32 denom;
         f32 v;
 
@@ -1881,15 +1925,15 @@ USER_FUNC(evt_koopa_hip_attack) {
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
         dy = y - mario->position.y;
         if (fabsf(dy) < float_1_8041b8a8) {
-            d = dy + angle;
+            dy = dy + angle;
         } else if (dy >= float_0_8041b8ac) {
-            d = dy + float_18p5_8041b8b0;
+            dy = dy + float_18p5_8041b8b0;
         } else {
-            d = angle;
+            dy = angle;
         }
-        d = d + d;
+        dy = dy + dy;
         denom = frames * frames - frames;
-        v = d / denom;
+        v = dy / denom;
         *(f32*)((u8*)mario + 0x7C) = v * frames;
         *(f32*)((u8*)mario + 0x80) = -v;
         *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
@@ -1915,31 +1959,36 @@ USER_FUNC(evt_koopa_hip_attack) {
         break;
     case 2: {
         f32 vy;
+        MarioWork* mario2;
+        u8* mp;
         void* ground;
-        s32 landed = 0;
+        s32 landed;
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
         vy = *(f32*)((u8*)mario + 0x7C);
-        mario = marioGetPtr();
-        if (mario->flags & MARIO_FLAG_TUBE_MODE) {
-            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, float_11_8041b8c0, *(f32*)((u8*)mario + 0x7C));
+        mario2 = marioGetPtr();
+        mp = (u8*)mario2;
+        if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
+            ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, float_11_8041b8c0, *(f32*)(mp + 0x7C));
         } else {
             ground = (void*)marioSearchGround(&v0, &v1, &v2, vy, vy);
         }
-        if (ground != NULL && mario->position.y + vy <= v0) {
+        if (ground != NULL && mario2->position.y + vy <= v0) {
             marioClearJumpPara();
-            mario->hitobjStandOn = ground;
-            mario->position.y = v0;
-            mario->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
+            mario2->hitobjStandOn = ground;
+            mario2->position.y = v0;
+            mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
                               MARIO_FLAG_IS_STEPPING | MARIO_FLAG_HAS_INPUT_JUMP);
-            *(f32*)((u8*)mario + 0x128) = fabsf(distABf(mario->position.x, mario->position.z,
-                                                        *(f32*)((u8*)mario + 0x11C), *(f32*)((u8*)mario + 0x124)));
-            mario->airTimer = 0;
-            *(s16*)((u8*)mario + 0x52) = 0;
-            mario->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
+            *(f32*)(mp + 0x128) = fabsf(distABf(mario2->position.x, mario2->position.z,
+                                                         *(f32*)(mp + 0x11C), *(f32*)(mp + 0x124)));
+            mario2->airTimer = 0;
+            *(s16*)(mp + 0x52) = 0;
+            mario2->flags &= ~MARIO_FLAG_STOP_AIR_MOVEMENT;
             camFollowYOn();
             landed = 1;
+        } else {
+            landed = 0;
         }
         if (!landed) {
             mario->position.y += *(f32*)((u8*)mario + 0x7C);
@@ -2140,8 +2189,6 @@ USER_FUNC(evt_mario_party_use_check) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (88.35%): the s32 `prev` fix is in; what remains is the 12-byte Vec copy at 0x70: the compiler
-// schedules the second `flags` reload after the first two Vec loads and picks r5 (not r4) for the Vec base.
 USER_FUNC(evt_mario_set_prev_party_dokan) {
     s32 first = isFirstCall;
     s32* args = event->args;
@@ -2169,10 +2216,19 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
             mario->currPartySlotId[slot] = ret;
             party = partyGetPtr(ret);
             partyChgRunMode(party, 0);
+#ifdef MUST_MATCH
+            // MUST_MATCH: volatile on both sides of the Vec copy (and on the flags updates that
+            // surround it) reproduces the original's unscheduled load/store pair without hoisting.
+            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x04000000;
+            *(volatile u32*)&party->flags = *(volatile u32*)&party->flags | 0x02000000;
+            pos = (Vec*)((u8*)party + 0x70);
+            *(volatile Vec*)pos = *(volatile Vec*)&vec3_802e58e8;
+#else
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
             pos = (Vec*)((u8*)party + 0x70);
             *pos = vec3_802e58e8;
+#endif
         }
     }
     return EVT_RETURN_DONE;

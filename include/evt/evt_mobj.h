@@ -107,3 +107,4 @@ extern s32 kpa_move_to_toride[];
 extern f32 float_170_8041a144;
 extern f32 float_100_8041a148;
 extern f32 float_50_8041a14c;
+extern f32 float_0p9_8041a228;

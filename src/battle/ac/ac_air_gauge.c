@@ -16,7 +16,14 @@ const Vec vec3_802fdc68 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fdc74 = {0.0f, 0.0f, 0.0f};
 const f64 double_to_int_802fdc80 = 4503601774854144.0;
 
+// Match-only: dat_80420a70 must be non-const (but still in .sdata2) so MWCC loads it at its use
+// instead of folding -1 into `li r5, -1` / hoisting a const load above the disp stores; the original
+// emits `lwz r5, dat_80420a70` late in battleAcMain_AirGauge's case 0. The natural form is under #else.
+#ifdef MUST_MATCH
+__declspec(section ".sdata2") s32 dat_80420a70 = -1;
+#else
 const s32 dat_80420a70 = -1;
+#endif
 const f32 float_100_80420a74 = 100.0f;
 const f32 float_0p01_80420a78 = 0.01f;
 const f32 float_neg200_80420a7c = -200.0f;
@@ -48,20 +55,47 @@ typedef struct AirGaugeDecWork {
 
 // don't_inline: the original keeps actionCommandDisp as its own local function
 #pragma dont_inline on
-// NONMATCHING (89.16%): 6 instructions differ, 4 missing, 2 extra, plus register differences.
 static void actionCommandDisp(f32 f1, f32 f2) {
 	BattleWork* work = _battleWorkPointer;
+#ifdef MUST_MATCH
+	// Match-only: deriving disp before camGetPtr and dec after makes MWCC materialise them in their
+	// own registers (work=r31, disp=r30, dec=r29) instead of folding them into the BattleWork base.
+	BattleActions* ac = &work->actionCommands;
+	BattleACDispParams* disp = &ac->dispParams;
+	AirGaugeDecWork* dec;
+#else
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
-	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
-	f32 target;
+	AirGaugeDecWork* dec;
+#endif
+#ifdef MUST_MATCH
+	// Match-only: `gv` is the draw call's float argument read through a volatile lvalue. The volatile
+	// read makes MWCC load disp->value into f1 before the two (s32) parameter conversions, which then
+	// colour into f2/f0 as the original does; a plain `disp->value` schedules the load after them and
+	// colours the first conversion into f1.
+	f32 gv;
+#endif
 	f32 value;
+	f32 target;
 
 	camGetPtr(CAMERA_2D);
+#ifdef MUST_MATCH
+	dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
+#else
+	dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
+#endif
 
-	target = dec->gaugePercent / float_100_80420a74;
+	target = dec->gaugePercent;
+	target = target / float_100_80420a74;
 	value = disp->value;
 	if (value <= target) {
+#ifdef MUST_MATCH
+		// Match-only: a named step keeps `value + step` as f1 + f0; the plain literal lets MWCC fold
+		// the operands the other way (`fadds f0, f0, f1`).
+		f32 step = float_0p01_80420a78;
+		disp->value = value + step;
+#else
 		disp->value = value + float_0p01_80420a78;
+#endif
 		if (disp->value > target) {
 			disp->value = target;
 		}
@@ -73,9 +107,14 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 		}
 	}
 
-	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)((u8*)work + 0x1cd0), *(s32*)((u8*)work + 0x1cd4),
-	                  *(s32*)((u8*)work + 0x1cd8), *(s32*)((u8*)work + 0x1cdc), 0, disp->value);
-
+#ifdef MUST_MATCH
+	gv = *(volatile f32*)&disp->value;
+	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[0xC], *(s32*)&work->actionCommands.field_34[0x10],
+	                  *(s32*)&work->actionCommands.field_34[0x14], *(s32*)&work->actionCommands.field_34[0x18], 0, gv);
+#else
+	BattleAcDrawGauge((s32)f1, (s32)f2, 0xb2, *(s32*)&work->actionCommands.field_34[0xC], *(s32*)&work->actionCommands.field_34[0x10],
+	                  *(s32*)&work->actionCommands.field_34[0x14], *(s32*)&work->actionCommands.field_34[0x18], 0, disp->value);
+#endif
 	if (dec->flag != 0) {
 		Vec pos;
 		pos = vec3_802fdc68;
@@ -143,17 +182,32 @@ typedef struct GaugeTableEntry {
 } GaugeTableEntry;
 
 
-// NONMATCHING (92.72%): register allocation only; the work-area pointer is folded into the BattleWork base
-// and the base/table registers differ.
+// The work area is reached through BattleActions.field_0x2BC so MWCC materialises it in its own register.
 f32 _GetGaugeDecValue(void) {
+#ifdef MUST_MATCH
+	// Match-only: `ac` + field_0x2BC keeps the work area in its own base register (r6) instead of
+	// folding it into the BattleWork base (see ac_monosiri_target.c). Declaring base first, before `ac`,
+	// is also needed: it leaves the loaded work pointer in r3 and lets the `lis` colour base into r4,
+	// as the original does.
+	u8* base = lbl_803ABCE0;
+	BattleActions* ac = &_battleWorkPointer->actionCommands;
+	AirGaugeDecWork* dec = (AirGaugeDecWork*)&ac->field_0x2BC[0];
+	s32 type;
+#else
 	BattleWork* work = _battleWorkPointer;
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
+	s32 type;
+	u8* base = lbl_803ABCE0;
+#endif
 	GaugeTableEntry* table;
 	f32 max;
-	u32 value;
-	u8* base = lbl_803ABCE0;
 
-	switch (*(s32*)((u8*)work + 0x1ce4)) {
+#ifdef MUST_MATCH
+	type = *(s32*)&ac->field_34[0x20]; // BattleWork+0x1ce4
+#else
+	type = *(s32*)&work->actionCommands.field_34[0x20];
+#endif
+	switch (type) {
 	case 0:
 		max = float_0p3_80420a90;
 		table = (GaugeTableEntry*)(base + 0x40);
@@ -180,13 +234,13 @@ f32 _GetGaugeDecValue(void) {
 		break;
 	case 6:
 	default:
-		max = float_0p5_80420aa8;
+		// table before max: with max first MWCC emits `lfs` before `addi` here, unlike every other case.
 		table = (GaugeTableEntry*)(base + 0x1A8);
+		max = float_0p5_80420aa8;
 		break;
 	}
 
-	value = dec->value;
-	while (value > (u32)table->threshold) {
+	while (dec->value > (u32)table->threshold) {
 		table++;
 		if (table->threshold < 0) {
 			break;
@@ -199,7 +253,7 @@ f32 _GetGaugeDecValue(void) {
 	}
 
 	dec->flag = table->unk8;
-	max = max - intplGetValue(0, value - (table - 1)->threshold, table->threshold - (table - 1)->threshold,
+	max = max - intplGetValue(0, dec->value - (table - 1)->threshold, table->threshold - (table - 1)->threshold,
 	                          (table - 1)->value, table->value);
 	return max;
 }

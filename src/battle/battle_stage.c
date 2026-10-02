@@ -4,7 +4,10 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <string.h>
-#include <math.h>
+// math_ext.h's out-of-line declarations, not the SDK <math.h>: the SDK header's
+// inline sqrt/sqrtf carry `static const` locals that land in this unit's .rodata
+// and shift the vec3 pool (see batSpotInit).
+#include "math_ext.h"
 #include "manager/evtmgr_cmd.h"
 #include <stdlib.h>
 static void screen_capture(CameraId camId, void* param);  // local to this file in the original
@@ -24,10 +27,19 @@ static u32 inta_tex[8] = {0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFF
 //.sdata2
 s32 dat_8041c7ec = -1;
 
-extern Vec vec3_802f31a8[];
-extern Vec vec3_802f31b4[];
-extern Vec vec3_802f31c0[];
-extern Vec vec3_802f31cc[];
+// .rodata zero/constant vectors this unit emitted; MWCC pools every access
+// through the vec3_802f31a8 base, and the int->float conversion double the
+// compiler emits lands after them at +0x78 (see batSpotInit).
+const Vec vec3_802f31a8[] = {{0.0f, 0.0f, 0.0f}};
+const Vec vec3_802f31b4[] = {{0.0f, 0.0f, 0.0f}};
+const Vec vec3_802f31c0[] = {{0.0f, 0.0f, 0.0f}};
+const Vec vec3_802f31cc[] = {{0.0f, 0.0f, 0.0f}};
+const Vec vec3_802f31d8[] = {{0.0f, 0.0f, -50.0f}};
+const Vec vec3_802f31e4[] = {{0.0f, 0.0f, 0.0f}};
+const Vec vec3_802f31f0[] = {{20.0f, 20.0f, 150.0f}};
+const Vec vec3_802f31fc[] = {{0.0f, 0.0f, 0.0f}};
+const Vec vec3_802f3208[] = {{1.0f, 1.0f, 1.0f}};
+const Vec vec3_802f3214[] = {{0.0f, 0.0f, 0.0f}};
 extern const f32 float_0_8041c7f0;
 extern const f32 float_1_8041c7f4;
 extern const f32 float_0p25_8041c7f8;
@@ -139,23 +151,20 @@ BattleStage* BattleStageGetPtr(void) {
     return &_battleWorkPointer->stage;
 }
 
-// NONMATCHING (95.88%): loop offset/null registers swapped (orig offset=r3 from
-// null=r4 via `mr`; ours null=r3/offset=r4). The four .sda2 floats are `const`
-// in the header so MWCC hoists all four lfs, matching the B24/B38 stores.
+// The four .sda2 floats are `const` in the header so MWCC hoists all four lfs,
+// matching the B24/B38 stores. The light loop indexes `stage->lights[i]` (not a
+// raw byte offset) so the compiler strength-reduces to the original's offset
+// register and reuses its zero for the stored `NULL`.
 void BattleStageInit(void) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
-	u32 offset;
-	u32 null;
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light;
 	memset(stage, 0, 0xB3C);
 	stage->field_0 = 0;
-	null = 0;
-	offset = 0;
 	for (i = 0; i < 12; i++) {
-		BattleStageLight* light = (BattleStageLight*)((u8*)stage + offset + 4);
+		light = &stage->lights[i];
 		light->flags = 0;
-		light->spline = (void*)null;
-		offset += 0xe8;
+		light->spline = NULL;
 	}
 	stage->stgDark.field_0 = 1;
 	stage->stgDark.field_5 = 0;
@@ -327,26 +336,17 @@ void BattleStageMain(void) {
 	}
 }
 
-// NONMATCHING (91.67%): only the `offset`/`null` register choice is swapped
-// (original offset=r31, null=r30; ours offset=r30, null=r31). The two-step
-// `u8* p` pointer is needed to keep the lights +4 from folding into the load.
 void BattleStageEnd(void) {
-	s32 offset;
-	void* null;
 	s32 i;
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light;
 
-	offset = 0;
-	null = NULL;
-	i = 0;
-	for (; i < 12; i++) {
-		u8* p = (u8*)stage + offset;
-		BattleStageLight* light = (BattleStageLight*)(p + 4);
+	for (i = 0; i < 12; i++) {
+		light = &stage->lights[i];
 		if (light->spline != NULL) {
 			__memFree(HEAP_BATTLE, light->spline);
-			light->spline = null;
+			light->spline = NULL;
 		}
-		offset += 0xe8;
 	}
 }
 
@@ -355,14 +355,16 @@ BattleSpotWork* BatSpotGetPtr(void) {
 }
 
 #pragma dont_inline on
-// NONMATCHING (96.08%): only the compiler-generated int->float conversion
-// double differs: original folds `lfd f30, 0x78(r31)` (vec3 .rodata and the
-// double share one pool), ours emits `lis @533; lfd @533@l`.  The pool only
-// anchors to the first .rodata symbol, and here weak sqrtf/sqrt local statics
-// (from tou_gamen_screen_tev's PSVECNormalize, see math.h) precede
-// vec3_802f31a8, so @533 gets its own base.  See REPORT.md.
+// The .rodata is now this unit's own (the vec3 block plus the two conversion
+// doubles at +0x78/+0x80; see the definitions near the top). The only
+// difference left is the int->float conversion double: the original folds it
+// as `lfd f30, 0x78(r31)` off the vec3 base, ours emits its own
+// `lis @567@ha; lfd @567@l(r3)`. Both are at the same .rodata offset; MWCC
+// picks a separate base for the anonymous literal, and defining the double by
+// name made no difference.
+// NONMATCHING (96.08%): int->float conversion double uses its own base instead of vec3's.
 void batSpotInit(void) {
-	Vec* g = vec3_802f31a8;
+	const Vec* g = vec3_802f31a8;
 	int i;
 	BattleSpotEntry* entry;
 
@@ -449,7 +451,7 @@ void batSpotDisp(CameraId camId, void* param) {
 BattleSpotEntry* batSpotEntry(void) {
 	int i;
 	BattleSpotEntry* entry = wp->entries;
-	Vec* g = vec3_802f31a8;
+	const Vec* g = vec3_802f31a8;
 
 	for (i = 0; i < wp->count; i++, entry++) {
 		if (!(entry->flags & 1)) {
@@ -984,7 +986,9 @@ void DarkByPoint(u8 color, f32 x, f32 y, f32 z) {
 #pragma dont_inline reset
 
 #pragma dont_inline on
-void DarkBySquare(u8 color, f32 a, f32 b, f32 c, f32 d, f32 z) {
+// The original declares the colour last (its caller evaluates it after the
+// floats); the ABI is identical, so this compiles to the same body either way.
+void DarkBySquare(f32 a, f32 b, f32 c, f32 d, f32 z, u8 color) {
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	DarkByPoint(color, a, b, z);
 	DarkByPoint(color, c, b, z);
@@ -1046,9 +1050,11 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 }
 #pragma dont_inline off
 
-// NONMATCHING (91.40%): fixed a real bug (calls 1 and 3 had their 3rd/4th
-// DarkBySquare args swapped; original is -640,640,640,-640,105). Still: original
-// materialises r31=&stage->audDark and uses 0x4(r31), ours folds to 0x6ee8(r30).
+// opt_common_subs off: with common subexpression elimination on, MWCC loads the
+// shared float constants in the reverse order (f2 before f1). DarkBySquare's
+// prototype is (f32..., u8 color) in the original, so the colour argument is
+// evaluated last; see the note on its definition.
+#pragma opt_common_subs off
 void BattleStageDispDark(CameraId camId, void* param) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	CameraEntry* cam = camGetPtr(4);
@@ -1072,17 +1078,18 @@ void BattleStageDispDark(CameraId camId, void* param) {
 	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
 	GXSetTevAlphaIn(0, 7, 7, 7, 5);
 	GXSetTevOrder(0, 0xFF, 0xFF, 4);
-	GXSetZMode(1, 6, 0);
 	{
 		BattleStageDark* audDark = &stage->audDark;
-		DarkBySquare(audDark->field_4, float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848);
+		GXSetZMode(1, 6, 0);
+		DarkBySquare(float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848, audDark->field_4);
 		GXSetZMode(1, 1, 0);
-		DarkBySquare(audDark->field_4, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_neg640_8041c840, float_105_8041c848);
+		DarkBySquare(float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_neg640_8041c840, float_105_8041c848, audDark->field_4);
 	}
 	GXSetZMode(1, 1, 0);
-	DarkBySquare(stage->stgDark.field_4, float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848);
+	DarkBySquare(float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848, stage->stgDark.field_4);
 }
 
+#pragma opt_common_subs reset
 void BattleStageDispLight(CameraId camId, void* param) {
 	s32 i;
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;

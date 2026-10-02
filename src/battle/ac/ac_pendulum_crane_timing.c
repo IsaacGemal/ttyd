@@ -106,20 +106,21 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // don't_inline: the original keeps actionCommandDisp as its own local function (bl from battleAcDisp)
 #pragma dont_inline on
-// NONMATCHING (89.38%): `baseX` is f27 vs the original f25 (so stack slots/saved regs shift); the loop's
-// `100.0f` load is a local `@371` (const-propagated; a volatile read keeps the name but stops hoisting); the
-// int->float double is @343 and the final divide's operands are scheduled in a different order.
+// 100%: two Vec locals are needed -- the original keeps the first icon's temp at sp+0x14 and the second at
+// sp+0x8. The f32 declaration order below is what makes baseX land in f25 (shared with yBottom), matching the
+// original's saved-register set; the second icon's constants are read without MATCH_F32 so the scheduler
+// interleaves them with the Vec copy as the target does.
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)((u8*)work + 0x1F4C);
 	CameraEntry* cam;
 	Vec v;
+	Vec v2;
 	s32 i;
-	f32 baseX;
-	f32 negX;
 	f32 xBase;
-	f32 yTop;
 	f32 yBottom;
+	f32 yTop;
+	f32 baseX;
 
 	camGetPtr(CAMERA_2D);
 
@@ -152,11 +153,10 @@ static void actionCommandDisp(f32 x, f32 y) {
 		                      (u8)(180 - (3 - abs(3 - i)) * 60), 0xFF);
 	}
 
-	v = vec3_802fdbac;
-	negX = MATCH_F32(float_neg288_804209a0) + x;
-	v.y = MATCH_F32(float_45_8042097c) + y;
-	v.x = negX + (f32)(dec->rate * 176) / float_100_80420980;
-	iconDispGx(&v, 0x10, 0x96, MATCH_F32(float_1_80420990));
+	v2 = vec3_802fdbac;
+	v2.x = float_neg288_804209a0 + x + (f32)(dec->rate * 176) / float_100_80420980;
+	v2.y = float_45_8042097c + y;
+	iconDispGx(&v2, 0x10, 0x96, float_1_80420990);
 }
 #pragma dont_inline reset
 

@@ -77,3 +77,5 @@ void unk_801f8cd0(void);
 void kpaMutekiOn(void);
 void kpaMutekiOff(void);
 void kpaMain(void);
+
+extern const f32 float_0_80420e80;

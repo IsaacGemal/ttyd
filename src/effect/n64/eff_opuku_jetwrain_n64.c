@@ -113,12 +113,16 @@ static inline GXColor makeTevColor(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// The first loop's callee-saved allocation is shifted one register down: mwcc puts counter in r26
-// (original r28) and the 0x4330 double-magic temp in r24 (original r25), so stmw/lmw saves r24..r31
-// instead of r25..r31; effect/data/lifetime are correct. That also renames every scratch register in
-// all three loops. In the second loop the byte loads are scheduled in a different order and the
-// constants land in other FPRs (mine f1/f6/f0/f5/f4, original f3/f1/f2/f0/f6).
-// NONMATCHING (92.87%): codegen-only register/scheduling differences; arithmetic and structure match.
+// The first loop's callee-saved allocation starts one register lower: mwcc puts the running pointer in
+// r25 (original r26), `counter` in r26 (original r28), the index in r27 (original r27) and the 0x4330
+// int->float magic in r24 (original r25), so stmw/lmw saves r24..r31 instead of r25..r31; the
+// effect/data/lifetime registers (r29/r30/r31) are correct. That shifts every scratch register in all
+// three loops and all three conversion-stack slots. In the second loop the bytes' raw xoris values use
+// r24/r25/r26/r27/r28 (original r25/r26/r27/r28) and the constants land in other FPRs (ours
+// f0=0.7/f1=magic/f2=4.0/f5=0.98/f6=0.5, original f0=0.5/f1=0.7/f2=magic/f3=4.0/f6=0.98).
+// Writing the shared 4*center as its own local (`fourCenter`) and using the `j` induction for the
+// first loop (instead of `i`) improved the allocator's match from 92.87% to 93.82%.
+// NONMATCHING (93.82%): codegen-only register/scheduling differences; arithmetic and structure match.
 void effOpukuJetwrainMain(EffectEntry* effect) {
 	s32 lifetime;
 	effOpukuJetwrainData* data = effect->userdata;
@@ -153,19 +157,20 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	data->field_0x1F = alpha;
 	scale = (f32)alpha / float_255_8041f7f0;
 
-	for (i = 1; i < 18; i++) {
-		data->field_0x23[i][6] = (s8)(f32)(scale * (float_neg64_8041f7fc * (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - i) * -20) / float_360_8041f7f8)));
+	for (j = 1; j < 18; j++) {
+		data->field_0x23[j][6] = (s8)(f32)(scale * (float_neg64_8041f7fc * (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - j) * -20) / float_360_8041f7f8)));
 	}
 
 	for (j = 1; j < 18; j++) {
 		for (i = 1; i < 12; i++) {
 			f32 center = (f32)(s8)data->field_0x23[j][i];
-			f32 corners = (f32)(s8)data->field_0x23[j - 1][i - 1] + (f32)(s8)data->field_0x23[j - 1][i + 1] + (f32)(s8)data->field_0x23[j + 1][i - 1] + (f32)(s8)data->field_0x23[j + 1][i + 1];
-			f32 edges = (f32)(s8)data->field_0x23[j - 1][i] + (f32)(s8)data->field_0x23[j][i - 1] + (f32)(s8)data->field_0x23[j][i + 1] + (f32)(s8)data->field_0x23[j + 1][i];
+			f32 fourCenter = float_4_8041f800 * center;
+			f32 corners = (f32)(s8)data->field_0x23[j + 1][i + 1] + (f32)(s8)data->field_0x23[j - 1][i + 1] + (f32)(s8)data->field_0x23[j + 1][i - 1] + (f32)(s8)data->field_0x23[j - 1][i - 1];
+			f32 edges = (f32)(s8)data->field_0x23[j + 1][i] + (f32)(s8)data->field_0x23[j - 1][i] + (f32)(s8)data->field_0x23[j][i + 1] + (f32)(s8)data->field_0x23[j][i - 1];
 			f32 v = (f32)data->field_0x11A[j][i];
 			f32 t = float_0p5_8041f804 * corners;
-			t = t + (edges - float_4_8041f800 * center);
-			t = t - float_0p7_8041f808 * (float_4_8041f800 * center);
+			t = t + (edges - fourCenter);
+			t = t - float_0p7_8041f808 * fourCenter;
 			data->field_0x11A[j][i] = (s16)(v + t);
 			data->field_0x11A[j][i] *= float_0p98_8041f80c;
 			if (lifetime < 0x20) {
