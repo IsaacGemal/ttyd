@@ -129,9 +129,11 @@ void BattleStatusIconDelete(BattleUnit* unit) {
 	; //stubbed in retail
 }
 
-// NONMATCHING (98.51%): MWCC folds the mIcons array offset 0x20 into the element field offsets
-// (base = icon + off) where the original adds it to the scaled index first (addi r29,r26,0x20; add
-// r29,r30,r29). Same addresses; the int->float 2^52 pool entry is an anonymous @NNL relocation name.
+// -O4,s (over the default -O4,p) is required: under -O4,p MWCC folds the mIcons +0x20 array offset
+// into the element field displacements (base = icon + off); the original keeps it on the scaled index
+// (addi r29,r26,0x20; add r29,r30,r29). The loop must index mIcons directly (and the float use be
+// written as i * -2) for the -O4,s strength reduction to produce the original's i/2i/offset counters.
+#pragma optimize_for_size on
 void BattleStatusIconDisp(CameraId camId, void* param) {
 	BattleUnit* unit = param;
 	BattleWorkStatusIcon* icon = &unit->mStatusIconWork;
@@ -150,30 +152,17 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 	Vec pos2;
 	GXColor color;
 	s32 i;
-#ifdef MUST_MATCH
-	s32 two;
-	s32 off;
-#endif
 
 	color = dat_804221e8;
 	btlGetScreenPoint(&icon->mPosition, &screenPos);
-#ifdef MUST_MATCH
-	for (i = icon->mNumStatusIcons - 1, off = i * 0x44, two = i * 2; i >= 0; i--, two -= 2, off -= 0x44) {
-		entry = (BattleWorkStatusIconEntry*)((u8*)&icon->mIcons[0] + off);
-#else
 	for (i = icon->mNumStatusIcons - 1; i >= 0; i--) {
 		entry = &icon->mIcons[i];
-#endif
 		pos = screenPos;
 		pos.y = icon->mDistanceBetweenIcons * (f32)i + pos.y;
 		pos.x += icon->mScreenSpaceOffset.x;
 		pos.y += icon->mScreenSpaceOffset.y;
 		pos.z += icon->mScreenSpaceOffset.z;
-#ifdef MUST_MATCH
-		pos.z -= (f32)(-two);
-#else
 		pos.z -= (f32)(i * -2);
-#endif
 
 		if (!(*(s32*)((u8*)entry + 0x40) & 1)) {
 			if (!(icon->mFlags & 1)) {
@@ -233,6 +222,7 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 		}
 	}
 }
+#pragma optimize_for_size reset
 
 // Icon parameter table base; fields accessed at +0x60..+0x8C are Vec entries 8..11.
 // -1 sentinel written to entry+0x3C.
@@ -484,13 +474,12 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	return TRUE;
 }
 
-// The remaining differences are the three intplGetValue calls: MWCC materialises the 2^52
-// unsigned-int->float mask via an anonymous pool entry where the original loads it as
-// vec3_803011e8 + 0x108 (lfd 0x108(r31)), and the fctiwz/byte scheduling differs.
-// optimize_for_size: the original's real divw for the modulo only comes out under -O4,s.
-// NONMATCHING (82.84%): the % 0x2d0 now emits the original's real divw. The 2^52 unsigned-int->float
-// mask is an anonymous pool entry addressed via lis/addi where the original loads lfd 0x108(r31) from
-// vec3_803011e8, and the fctiwz/byte scheduling around the three intplGetValue calls differs.
+// MWCC materialises the 2^52 unsigned-int->float mask for the three intplGetValue calls as an anonymous
+// pool entry addressed via lis/addi, where the original loads it as vec3_803011e8 + 0x108 (lfd f2,
+// 0x108(r31)); the fctiwz/byte scheduling around those calls follows from that. The mask is at the right
+// .rodata offset and r31 holds the vec base, but no source form (named const, union conversion,
+// #pragma pool_data) makes the implicit-mask load go through r31.
+// NONMATCHING (82.84%): conversion-mask pool addressing; the % 0x2d0 divw itself now matches.
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;

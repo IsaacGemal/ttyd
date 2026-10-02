@@ -63,8 +63,8 @@ u16 gauge_back[8] = {
 };
 
 u16 gauge_wakka[16] = {
-    0x01C1, 0x01C0, 0x01C3, 0x01C2, 0x01C5, 0x01C4, 0x01C7, 0x01C6,
-    0x01C9, 0x01C8, 0x01CB, 0x01CA, 0x01CD, 0x01CC, 0x01CF, 0x01CE,
+    0x01C0, 0x01C1, 0x01C2, 0x01C3, 0x01C4, 0x01C5, 0x01C6, 0x01C7,
+    0x01C8, 0x01C9, 0x01CA, 0x01CB, 0x01CC, 0x01CD, 0x01CE, 0x01CF,
 };
 
 //.sbss
@@ -451,9 +451,9 @@ void statusWinOpen(void) {
     wp->field_0x4 |= 5;
 }
 
-// NONMATCHING (85.41%): values/body complete. The original hoists the int->float bias and 0.0f into
-// f30/f31 and schedules the x conversion after the `beq`; GC/2.6 here emits it before `bl pouchGetPtr`
-// and reloads 0.0f. All remaining diffs are that placement/register allocation.
+// Draws Mario's star-power gauge: a wakka (fifteenths) icon for the partial hundreds, then the
+// gauge_back ticks for each obtained Star Power. The second loop stops at the first unobtained
+// power (the obtained powers are a contiguous set of low bits), which is the original's shape.
 void gaugeDisp(s32 a1, f32 x, f32 y) {
     s32 i;
     s32 count;
@@ -486,27 +486,28 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         pos.y = y;
         pos.z = 0.0f;
 #ifdef MUST_MATCH
-        // Match-only: the original passes a u16 icon id (no extsh); the header's s16 would extsh.
-        ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, gauge_wakka[fifteenths], 1.0f);
+        // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
+        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, gauge_wakka[fifteenths]);
 #else
         iconDispGx(&pos, 0x10, gauge_wakka[fifteenths], 1.0f);
 #endif
     }
     y = 12.0f + y;
     for (i = 0; i < 8u; i++) {
-        f32 px = x + i * 32;
-        if (pouchGetPtr()->mStarPowersObtained & (1 << i)) {
-            Vec pos;
+        Vec pos;
 
-            pos.x = px;
-            pos.y = y;
-            pos.z = 0.0f;
-#ifdef MUST_MATCH
-            ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
-#else
-            iconDispGx(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
-#endif
+        if (!(pouchGetPtr()->mStarPowersObtained & (1 << i))) {
+            break;
         }
+        pos.x = x + i * 32;
+        pos.y = y;
+        pos.z = 0.0f;
+#ifdef MUST_MATCH
+        // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
+        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, (i < hundreds) ? gauge_back[i] : 0x1BF);
+#else
+        iconDispGx(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
+#endif
     }
 }
 

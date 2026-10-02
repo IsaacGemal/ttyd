@@ -36,8 +36,6 @@ const f32 float_neg1000_8041df64 = -1000.0f;
 // opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
 // Without it the first loads and the constant land one register off.
 #pragma opt_common_subs off
-// NONMATCHING (99.71%): the two fmuls results differ: target my -> f3 and mz -> f1, ours my -> f1, mz -> f2.
-// Temporaries avoid the `-fp_contract` fmadds fusion.
 // 280 B
 void vivian_move(PartyEntry* party) {
     if (party->field_8 & 0x8) {
@@ -46,12 +44,15 @@ void vivian_move(PartyEntry* party) {
     }
     partyFlyMain(party);
     if (party != NULL && party->currentMemberId == 6) {
-        f32 dx = party->position.x - party->field_B8.x;
-        f32 dy = party->position.y - party->field_B8.y;
-        f32 dz = party->position.z - party->field_B8.z;
-        f32 mx = float_0p1_8041df5c * dx;
-        f32 my = float_0p1_8041df5c * dy;
-        f32 mz = float_0p1_8041df5c * dz;
+        // The temps are declared mz, my, mx (reverse use order): that colouring is what puts the
+        // target's `my` in f3 and `mz` in f1. Assignments stay in mx, my, mz order.
+        f32 dx, dy, dz, mz, my, mx;
+        dx = party->position.x - party->field_B8.x;
+        dy = party->position.y - party->field_B8.y;
+        dz = party->position.z - party->field_B8.z;
+        mx = float_0p1_8041df5c * dx;
+        my = float_0p1_8041df5c * dy;
+        mz = float_0p1_8041df5c * dz;
         party->field_B8.x = party->field_B8.x + mx;
         party->field_B8.y = party->field_B8.y + my;
         party->field_B8.z = party->field_B8.z + mz;
@@ -114,20 +115,15 @@ void L_partyVivianTailStop(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (93.00%): the flags&0x100 test emits `beqlr`; the target branches forward (`bne body; blr`).
 // 60 B
 void vivianUnhold(PartyEntry* party) {
-    if (party == NULL) {
+    if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
         return;
     }
-    if (party->currentMemberId != 6) {
+    if (party->useMotionId != 0xa) {
         return;
     }
-    if (party->flags & 0x100) {
-        if (party->useMotionId == 0xa) {
-            party->useMotionId = 0x14;
-        }
-    }
+    party->useMotionId = 0x14;
 }
 
 s32 vivianGetStatus(void) {
@@ -164,8 +160,8 @@ void vivian_init_801809C0(PartyEntry* party) {
     vivian_cancel_req = 0;
 }
 
-// NONMATCHING (85.41%): the Vec copies at 0xA4/0x7C hoist their first loads; the final `if` emits `beq` vs the
-// target's `bne body; b`. A `makeZeroVec` literal helper reaches 98.71% but drops unit .rodata to 93.75% (withheld).
+// Match-only volatile lvalues: the target's register choice and schedule for these Vec/f32
+// copies only come out when the accesses are volatile-qualified (same trick as mot_yoshi.c).
 // 340 B
 void mot_vivian_post(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -174,15 +170,24 @@ void mot_vivian_post(void) {
     if (mario->currMotionId == 0x20 || mario->currMotionId == 0x1f) {
         mario->dispFlags &= ~0x1000;
         marioPaperOff();
-        *(Vec*)((u8*)mario + 0xA4) = vec3_802f80a8;
+#ifdef MUST_MATCH
+        *(volatile Vec*)&mario->field_0x98[0xC] = *(volatile Vec*)&vec3_802f80a8;
+#else
+        *(Vec*)&mario->field_0x98[0xC] = vec3_802f80a8;
+#endif
         mario->flags &= ~0x400;
         if (party != NULL) {
             partyPaperOff(party);
             party->flags &= ~0x100;
             party->flags &= ~0x80000000;
             party->flags2 &= ~0x200000;
+#ifdef MUST_MATCH
+            *(volatile f32*)((u8*)party + 0x174) = float_10_8041df00;
+            *(volatile Vec*)&party->field_7C[0] = *(volatile Vec*)&vec3_802f80b4;
+#else
             *(f32*)((u8*)party + 0x174) = float_10_8041df00;
-            *(Vec*)((u8*)party + 0x7C) = vec3_802f80b4;
+            *(Vec*)&party->field_7C[0] = vec3_802f80b4;
+#endif
             partyChgRunMode(party, 2);
             party->field_3B = 0;
             partyChgPoseId(party, 1);
@@ -190,10 +195,11 @@ void mot_vivian_post(void) {
                 *(s8*)((u8*)party + 0x4F) &= ~1;
             }
         }
-    } else if (party != NULL && party->currentMemberId == 6) {
-        if (party->flags & 0x100) {
-            vivian_cancel_req = 1;
+    } else {
+        if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
+            return;
         }
+        vivian_cancel_req = 1;
     }
 }
 

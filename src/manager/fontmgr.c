@@ -1303,22 +1303,28 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 	}
 }
 
-// NONMATCHING (47.20%): immediate-mode GX quad reconstructed; loading blockGlyph after FontGetWidthPtr,
-// declaring hueoff/hueL/hueR as u8 and computing hueR at its second use matched retail's schedule.
-// Retail keeps an extra (f32)width temp (f27) we fold from `* 1.0f`, so the frame is 0x100 vs 0x140.
+// immediate-mode GX quad reconstructed; loading blockGlyph after FontGetWidthPtr, declaring hueoff/hueL/hueR
+// as u8 and computing hueR at its second use matched retail's schedule. width is a u8 (retail lbz's it).
+// yoffs is computed as a separate multiply then add (retail's fmuls+fadds are not contracted). The right-edge
+// x is (s16)(x + fwidthS) (kept in an s16 local, and the hue recomputes it cast through u16) and the
+// bottom-edge y is (s16)((y - 1) - fheightS). All four vertices write HSV2RGB's result after the position pair.
+// NONMATCHING (56.56%): retail keeps a taller frame (0x140 vs 0x130) and two more callee-saved GPRs; the
+// preamble's int->float conversion schedule and register colours still differ.
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u8* info = (u8*)FontGetWidthPtr(code);
 	BinaryFontGlyph* blk = blockGlyph;
-	s32 width = info[1];
+	u8 width = info[1];
 	s32 n = code - blk->firstcode;
 	s32 row = n / blk->sheetrows;
 	s32 col = row / blk->sheetcolumns;
-	f32 xoffs = (f32)(n - row * blk->sheetrows) * blk->cellwidth + info[0];
-	f32 yoffs = 1.0f + (f32)(row - col * blk->sheetcolumns) * blk->cellheight;
+	f32 xoffs;
+	f32 yoffs;
 	f32 fwidth;
 	f32 fheight;
 	f32 fwidthS;
 	f32 fheightS;
+		s16 xr;
+	s16 yb;
 	u8 hueoff;
 	u8 hueL;
 	u8 hueR;
@@ -1331,39 +1337,48 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	fheight = blk->cellheight;
 	fwidthS = fwidth * 1.0f;
 	fheightS = fheight * 1.0f;
+	xoffs = (f32)(n - row * blk->sheetrows) * blk->cellwidth + info[0];
+	yoffs = (f32)(row - col * blk->sheetcolumns) * blk->cellheight;
+	yoffs = 1.0f + yoffs;
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	n1 = irand(64);
 	n2 = irand(64);
 	hueoff = (u8)gp->retraceCount * 2;
 	hueL = (u8)(x + (u8)(x - hueoff));
+	xr = (s16)(x + fwidthS);
+	yb = (s16)(y - 1 - fheightS);
 
 	hsv = dat_8041a2f0;
-	hsv.r = hueL;
-	rgb = HSV2RGB(&hsv);
 	GXPosition3s16(x, y - 1, 0);
+	hsv.r = hueL;
+
+	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
 	GXTexCoord2u16((u16)xoffs, (u16)yoffs);
 	GXTexCoord2u8(n1, n2);
 
-	hueR = (u8)((x + width) + (u8)(x - hueoff));
+	hueR = (u8)((u16)(s16)(x + fwidthS) + (u8)(x - hueoff));
+	GXPosition3s16(xr, y - 1, 0);
 	hsv.r = hueR;
+
 	rgb = HSV2RGB(&hsv);
-	GXPosition3s16(x + (s16)fwidthS, y - 1, 0);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
 	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)yoffs);
 	GXTexCoord2u8(n1 + (u8)width, n2);
 
 	hsv.r = hueR;
+	GXPosition3s16(xr, yb, 0);
+
 	rgb = HSV2RGB(&hsv);
-	GXPosition3s16(x + (s16)fwidthS, y - 1 - (s16)fheightS, 0);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
 	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)(yoffs + fheight));
 	GXTexCoord2u8(n1 + (u8)width, n2 + (u8)fheight);
 
+	GXPosition3s16(x, yb, 0);
 	hsv.r = hueL;
+
 	rgb = HSV2RGB(&hsv);
-	GXPosition3s16(x, y - 1 - (s16)fheightS, 0);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
 	GXTexCoord2u16((u16)xoffs, (u16)(yoffs + fheight));
 	GXTexCoord2u8(n1, n2 + (u8)fheight);

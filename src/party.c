@@ -24,6 +24,7 @@
 #define PS8(p, off) (*(s8*)((u8*)(p) + (off)))
 #define P16(p, off) (*(u16*)((u8*)(p) + (off)))
 #define P32(p, off) (*(u32*)((u8*)(p) + (off)))
+#define PS32(p, off) (*(s32*)((u8*)(p) + (off)))
 #define PF32(p, off) (*(f32*)((u8*)(p) + (off)))
 
 
@@ -54,6 +55,13 @@ extern const f32 float_neg40_8041b144;
 extern const f32 float_neg30_8041b148;
 extern const f32 float_220_8041b14c;
 extern const f32 float_210_8041b150;
+extern const f32 float_30_8041b178;
+extern const f32 float_0p4_8041b174;
+extern const f32 float_0p5_8041b170;
+extern const f32 float_16_8041b17c;
+extern const f32 float_neg1p6_8041b180;
+extern const f32 float_0p0625_8041b184;
+extern const f32 float_neg2000_8041b164;
 const f32 vec3_802ccd30[3] = { 1.0f, 1.0f, 1.0f };
 const char str_802CCEEC[] = "d_mario";
 const Vec vec3_802ccee0 = { 0.0f, -1.0f, 0.0f };
@@ -1707,6 +1715,7 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     party->field_34 = 0;
     return ret;
 }
+
 
 // MUST_MATCH: the inliner does not fold partyChgPoseId's `index == 1` chain for the
 // literal argument, so write the already-folded pose selection the target emits; the

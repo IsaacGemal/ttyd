@@ -160,19 +160,100 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
-// The magic double also
-// pools as @377 rather than double_to_int_802f3458 (objdiff resolves data by section offset, so that
-// is not scored).
-// NONMATCHING (81.83%): instruction sequence/control flow/stack frame identical; only FP register colouring of the loop-invariant constants differs (magic double f10 here vs f0 retail, shifting the rest; detail in REPORT.md).
+// Inline sine/cosine polynomial approximations (the same two helpers evt_sub.c uses; they
+// reproduce the target's polynomial instruction sequence).
+static inline f32 damageStarSinf(f32 angle) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
+    f32 t, u;
+
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) {
+            t = angle * angle;
+            v = v * t - b;
+            v = v * t + one;
+            v = v * angle;
+        } else {
+            t = angle - 1.5707964f;
+            u = 1.5707964f - t;
+            t = u * u;
+            v = v * t - b;
+            v = v * t + one;
+            v = v * u;
+        }
+    } else if (angle < 4.712389f) {
+        t = angle - 3.1415927f;
+        u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * t;
+        v = -v;
+    } else {
+        t = angle - 4.712389f;
+        u = 1.5707964f - t;
+        t = u * u;
+        v = v * t - b;
+        v = v * t + one;
+        v = v * u;
+        v = -v;
+    }
+    return v;
+}
+
+static inline f32 damageStarCosf(f32 angle) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
+    f32 t, u;
+
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) {
+            t = angle * angle;
+            v = v * t - b;
+            v = v * t + one;
+        } else {
+            t = angle - 1.5707964f;
+            u = 1.5707964f - t;
+            t = u * u;
+            v = v * t - b;
+            v = v * t + one;
+            v = -v;
+        }
+    } else if (angle < 4.712389f) {
+        t = angle - 3.1415927f;
+        t = t * t;
+        v = v * t - b;
+        v = v * t + one;
+        v = -v;
+    } else {
+        t = angle - 4.712389f;
+        u = 1.5707964f - t;
+        t = u * u;
+        v = v * t - b;
+        v = v * t + one;
+    }
+    return v;
+}
+
+// The five named constant locals below (k6/k360/k15/k02/f4) and their declaration and
+// assignment order are load-bearing for MWCC's FPR colouring (the eff_starpoint/eff_gonbaba_breath
+// technique): without them the whole preheader constant block shifts several registers.
+// The magic double also pools as @378 rather than double_to_int_802f3458 (objdiff resolves data by
+// section offset, so that is not scored).
+// NONMATCHING (81.83%): sequence, control flow, stack frame, the loop accumulator (f13), rad (f29) and
+// the 30-count local (f4) match; only the FPR colouring of the preheader constants is permuted (the
+// int->float magic double lands in f9 vs f0, one/sinC1/cosC1 in f8/f5/f7 vs f1/f2/f3, the rest rotated).
 EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {
     EffectEntry* entry;
     DamageStarData* data;
     s32 origCount;
     s32 i;
-    f32 f0, f1, f4, sinv, cosv;
-    f32 cosC1;
-    f32 one;
-    f32 sinC1;
+    f32 k6;
+    f32 k360;
+    f32 k15;
+    f32 f4;
+    f32 k02;
 
     entry = effEntry();
     origCount = count;
@@ -199,95 +280,31 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     data->field_0x40 = gp->retraceCount;
 
     f4 = 30.0f - (f32)(count + 2);
-    one = 1.0f;
-    sinC1 = 0.16605f;
-    cosC1 = 0.4967f;
+    k6 = 6.2831855f;
+    k15 = 1.5f;
+    k02 = 0.2f;
+    k360 = 360.0f;
     i = 1;
     data = &data[1];
     for (; i < count + 2; i++, data++) {
         s32 spiral = i * ((i % 2) * 2 - 1) / 2;
         f32 a = f4 * (f32)spiral + angle;
-        f32 rad = (6.2831855f * a) / 360.0f;
+        f32 rad = (k6 * a) / k360;
 
         data->angle = a;
         data->position.x = 0.0f;
         data->position.y = 0.0f;
         data->position.z = 0.0f;
 
-        // sin
-        sinv = 0.00761f;
-        if (rad <= 3.1415927f) {
-            if (rad <= 1.5707964f) {
-                f0 = rad * rad;
-                sinv = sinv * f0 - sinC1;
-                sinv = sinv * f0 + one;
-                sinv = sinv * rad;
-            } else {
-                f0 = rad - 1.5707964f;
-                f1 = 1.5707964f - f0;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - sinC1;
-                sinv = sinv * f0 + one;
-                sinv = sinv * f1;
-            }
-        } else {
-            if (rad < 4.712389f) {
-                f1 = rad - 3.1415927f;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - sinC1;
-                sinv = sinv * f0 + one;
-                sinv = sinv * f1;
-                sinv = -sinv;
-            } else {
-                f0 = rad - 4.712389f;
-                f1 = 1.5707964f - f0;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - sinC1;
-                sinv = sinv * f0 + one;
-                sinv = sinv * f1;
-                sinv = -sinv;
-            }
-        }
-        data->vx = 1.5f * (speed * -sinv);
-
-        // cos
-        cosv = 0.03705f;
-        if (rad <= 3.1415927f) {
-            if (rad <= 1.5707964f) {
-                f0 = rad * rad;
-                cosv = cosv * f0 - cosC1;
-                cosv = cosv * f0 + one;
-            } else {
-                f0 = rad - 1.5707964f;
-                f0 = 1.5707964f - f0;
-                f0 = f0 * f0;
-                cosv = cosv * f0 - cosC1;
-                cosv = cosv * f0 + one;
-                cosv = -cosv;
-            }
-        } else {
-            if (rad < 4.712389f) {
-                f0 = rad - 3.1415927f;
-                f0 = f0 * f0;
-                cosv = cosv * f0 - cosC1;
-                cosv = cosv * f0 + one;
-                cosv = -cosv;
-            } else {
-                f0 = rad - 4.712389f;
-                f0 = 1.5707964f - f0;
-                f0 = f0 * f0;
-                cosv = cosv * f0 - cosC1;
-                cosv = cosv * f0 + one;
-            }
-        }
-        data->vy = 1.5f * (speed * cosv);
+        data->vx = k15 * (speed * -damageStarSinf(rad));
+        data->vy = k15 * (speed * damageStarCosf(rad));
 
         data->vz = 0.0f;
         data->rot = 0.0f;
         data->alpha = 0xFF;
-        data->scaleX = 0.2f;
-        data->scaleY = 0.2f;
-        data->scaleZ = 0.2f;
+        data->scaleX = k02;
+        data->scaleY = k02;
+        data->scaleZ = k02;
     }
 
     return entry;

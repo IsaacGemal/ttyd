@@ -24,6 +24,9 @@ typedef struct BattleCommand {
     void* field_55C;          // 0x55C
     u8 unk560[0x574 - 0x560]; // 0x560
 } BattleCommand;
+// The battle-command error event script. It is a .sdata object in battle_seq_command.c; the declspec
+// lets BattleCommandInput emit the target's `li r3, _btl_cmd_error_msg_event@sda21` address form.
+extern __declspec(section ".sdata") s32 _btl_cmd_error_msg_event[];
 BattleWeapon* BattleGetSelectWeapon(BattleWork* wp);
 void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit);
 void BattleDrawEnemyHP(CameraId camId, void* param);
