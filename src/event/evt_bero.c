@@ -339,8 +339,8 @@ USER_FUNC(evt_bero_get_info) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.68%): with the opt_lifetimes pragma above the callee-saved colours match
-// (event/table/entry/i = r29/r31/r30/r28); what is left is the prologue address materialising
+// NONMATCHING (93.68%): the callee-saved colouring differs from retail's
+// (event/table/entry/i = r29/r31/r30/r28); also is left is the prologue address materialising
 // through r0 instead of directly into r31 and the first switch's kind staying in r31, not r11.
 USER_FUNC(evt_bero_get_into_info) {
 	s32 kind = 0;

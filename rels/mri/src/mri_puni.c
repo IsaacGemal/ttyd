@@ -8769,10 +8769,8 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// opt_propagation off keeps xh/yh in registers like the target, but it also stops the two
-// branches' `pos` from sharing a slot: pos lands at 0x14 (target 0x8) in the flag-set branch
-// and the frame grows to 0x60 (target 0x50).
-// NONMATCHING (62.62%): only that slot/frame and the FP conversion order still differ.
+// NONMATCHING (62.62%): the two branches' `pos` stack slots, the frame size and the FP conversion
+// order differ.
 USER_FUNC(evt_puni_all_save) {
     PuniData* puni = &Punidat[1];
     s32 i;

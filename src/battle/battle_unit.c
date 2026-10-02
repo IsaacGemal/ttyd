@@ -2048,36 +2048,6 @@ void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16
     se->field_0x18 = -1;
 }
 
-// A pose-sound table entry. No header declares this type; the layout matches unit_party_yoshi.c's
-// PoseSoundEntry and the 0x14-byte entries BtlUnit_ControlPoseSoundMain reads.
-typedef struct PoseSoundEntry {
-    const char* poseName;                                         // 0x0
-    f32 volume;                                                   // 0x4
-    s32 (*callback)(BattleUnit*, struct PoseSoundEntry*, void*);  // 0x8
-    const char* soundName;                                        // 0xC
-    s16 pitch;                                                    // 0x10
-    u16 flags;                                                    // 0x12
-} PoseSoundEntry;
-
-// The pose-sound block of a BattleUnitPart, viewed with the block's own base (part + 0x4D0).
-typedef struct BtlPoseSoundWork {
-    void* mPoseSoundTable; // 0x0 (0x4D0)
-    s32 mPoseSoundFrame;   // 0x4 (0x4D4)
-    f32 mPoseSoundPrev;    // 0x8 (0x4D8)
-    f32 mPoseSoundCur;     // 0xC (0x4DC)
-    s32 mPoseSoundCount;   // 0x10 (0x4E0)
-    u8 mPoseSoundFlag;     // 0x14 (0x4E4)
-    u8 pad_0[3];
-    s32 mPoseSoundEventId; // 0x18 (0x4E8)
-} BtlPoseSoundWork;
-
-// The body is byte-identical except the third `frame < animFrame` re-check: retail emits a fresh
-// `cmplw r0,r3; bge`, GC/2.6 reuses the previous compare's CR0. Reversing the operands (below) forces
-// a fresh compare but swaps it to `cmplw r3,r0; ble`, which is the closest GC/2.6 gets.
-// `opt_propagation off` keeps the u32 0x7F -> double volume conversion that retail emits.
-// NONMATCHING (99.89%): the third `<` compare is `cmplw r3,r0; ble` instead of `cmplw r0,r3; bge`.
-
-
 // Keep BtlUnit_snd_se out of line: BtlUnit_ControlPoseSoundMain's original calls it rather than inlining it.
 #pragma dont_inline on
 s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {

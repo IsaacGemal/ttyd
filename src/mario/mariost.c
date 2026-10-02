@@ -69,8 +69,6 @@ static u8 stack[0x1000];
 
 //.sdata
 GlobalWork* gp = &marioSt;
-static s32 off_trg[4] = { 0 };
-static OSTime off_time[4] = { 0 };
 
 //.sbss
 OSTime none_key;
@@ -367,6 +365,7 @@ s32 marioStGetSystemLevel(void) {
 	return gp->systemLevelFlags;
 }
 
+// NONMATCHING (99.58%): the gcRumbleCheck call and the clamp's register colouring differ.
 void viPostCallback(u32 retraceCount) {
 	OSTime time;
 	u32 reset = PAD_BUTTON_B | PAD_BUTTON_X | PAD_BUTTON_START; //TODO: make sure it inlines right

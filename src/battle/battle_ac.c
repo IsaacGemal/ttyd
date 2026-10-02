@@ -126,8 +126,8 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
-// NONMATCHING (32.95%): the callee is now a real `bl` (dont_inline) and the body matches; the first guard-frame
-// copy is still `lis; addi; lwz` here vs retail's `lwzu` (the loaded word is parked in the base register,
+// NONMATCHING (32.95%): ours inlines BattleACPadCheckRecordTrigger, which the original calls with `bl`; the first
+// guard-frame copy is `lis; addi; lwz` here vs retail's `lwzu` (the loaded word is parked in the base register,
 // blocking the fold), which is what rotates the r26/r27/r28 allocation. The second `lwzu` and all stores match.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;

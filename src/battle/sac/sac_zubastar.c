@@ -545,9 +545,7 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 
 // .text:0x1990 | 0x8022FF20 | size: 0x100
 // Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
-// The literal 0.0f/1e-05f/1.0f (instead of the named sdata2 externs) lets MWCC reuse the dead parameter
-// f3 for the zero and gives a=f10, b=f9, c=f11; only an a/b register swap and the m1/m2 scheduling remain.
-// NONMATCHING (86.64%)
+// NONMATCHING (86.64%): float register allocation and the m1/m2 scheduling differ.
 #pragma dont_inline on
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {

@@ -768,7 +768,6 @@ s32 BtlUnit_GetCoin(BattleUnit* unit);
 void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
 void BtlUnit_PoseSoundInit(BattleUnitPart* part);
-void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part);
 BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
 BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit);
 void _CheckMoveCount(BattleUnit* unit);

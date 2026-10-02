@@ -138,11 +138,6 @@ extern const char str_802F63B4[];
 // first path lookup uses `g->language` while the second reloads gp, matching the
 // original's `lwz r5, gp@sda21`. GXGetTexObjHeight's u16 result is kept in a u16
 // local and fileAsyncf's result is compared unsigned, matching the original.
-// The pragma is needed so `base+0x438` is recomputed for each path string
-// instead of being common-subexpression-eliminated into a callee-saved register:
-// without it the two `addi rN, r31, 0x438/0x448` collapse and r29/r31 get reused.
-// The pragma is needed: without it base+0x438/0x448 collapse into one register.
-// NONMATCHING (91.96%): only the language-table base register/offset differs.
 void monosiriMain(void* work) {
     MonosiriWork* w = work;
     TattleEntry* tattle;

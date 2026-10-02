@@ -205,6 +205,7 @@ void FontDrawCode(u16 code, f32 x, f32 y) {
 	_JUTFont_DrawPos(code, 0, 0);
 }
 
+// NONMATCHING (83.60%)
 void FontDrawColor(GXColor* color) {
 	fontColor = *color;
 	color->a = (color->a * fontAlpha) / 255;
@@ -781,15 +782,6 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 	}
 }
 
-// NONMATCHING (92.94%): per-glyph PSMTXTransApply path; remaining diffs are the str/glyph/w callee-saved
-// assignment (r27/r28/r29 vs retail's r28/r29/r27), `lwzu` vs `addi` for the vec3_802c48cc copy and anon labels.
-#ifdef MUST_MATCH
-// MUST_MATCH: passing the first colour by value through this inline puts the FontDrawColor argument copy
-// at r1+0xc instead of r1+0x10, matching retail (same shape as FontDrawCode_ColorA).
-static inline void FontDrawString_ColorA(GXColor color) {
-	FontDrawColor(&color);
-}
-#endif
 // NONMATCHING (93.25%): per-glyph PSMTXTransApply path; remaining diffs are the str/glyph/w callee-saved
 // assignment (r27/r28/r29 vs retail's r28/r29/r27), `lwzu` vs `addi` for the vec3_802c48cc copy and anon labels.
 void FontDrawString(const char* str, f32 x, f32 y) {
@@ -831,7 +823,7 @@ void FontDrawString(const char* str, f32 x, f32 y) {
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
 #ifdef MUST_MATCH
-			FontDrawString_ColorA(c);
+			FontDrawCode_ColorA(c);
 #else
 			FontDrawColor(&c);
 #endif

@@ -210,15 +210,6 @@ EVT_BEGIN(urouro)
     RETURN
 EVT_END()
 
-// inline Vec builds keep both branches' `pos` in their own stack slots, like the original
-// (rule 7).
-extern Vec vec3_muj_00011528;
-extern Vec vec3_muj_00011534;
-#ifdef MUST_MATCH
-static inline Vec zeroVec11528(void) { Vec v = vec3_muj_00011528; return v; }
-static inline Vec zeroVec11534(void) { Vec v = vec3_muj_00011534; return v; }
-#endif
-
 // NONMATCHING (89.46%): first-branch `pos` is allocated at stack+0x8; original uses stack+0x14
 // (separate SSA slot per branch), rest of the tail matches.
 USER_FUNC(urouro_fuwafuwa_func) {
@@ -1771,20 +1762,6 @@ EVT_END()
 // All instructions match; the compiler keeps 5 FP callee-saved regs (angle f27, x f28, y f29,
 // z f30, speed f31) where the original uses 4 (angle f28, x f29, z f30, y f31 with speed reusing
 // f31 after pos.y). A named `zero` local for the zero-Vec literal got the pos stores closer.
-// inline Vec build reproduces the target's vec3->temp->pos copy (rule 7).
-#ifdef MUST_MATCH
-extern Vec vec3_muj_00011a8c;
-static inline Vec makeVecPos(f32 x, f32 y, f32 z) {
-    Vec v = vec3_muj_00011a8c;
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
-#endif
-// All instructions match; the compiler keeps 5 FP callee-saved regs (angle f27, x f28, y f29,
-// z f30, speed f31) where the original uses 4 (angle f28, x f29, z f30, y f31 with speed reusing
-// f31 after pos.y). A named `zero` local for the zero-Vec literal got the pos stores closer.
 // NONMATCHING (89.90%): 5 vs 4 FP callee-saved registers; the rest is stack offsets.
 USER_FUNC(unk_muj_00004328) {
     Mtx m1;
@@ -2241,25 +2218,8 @@ f32 mapAnimRate[4];
 
 MarcoShip* marcoship;
 
-// .rodata used by draw (defined by the unit's generated data object, not by this file).
-extern Vec vec3_muj_00011ac0;
-extern Vec vec3_muj_00011acc;
-extern u32 dat_muj_00011ad8;
-
-// inline Vec/GXColor builds reproduce the target's temp->arg copies (rule 7)
-#ifdef MUST_MATCH
-static inline Vec makeVecDraw(f32 y) {
-    Vec v = vec3_muj_00011ac0;
-    v.y = y;
-    return v;
-}
-static inline GXColor makeColorDraw(u8 a) {
-    GXColor c = *(GXColor*)&dat_muj_00011ad8;
-    c.a = a;
-    return c;
-}
-#endif
-
+// TODO: write draw (static, 0x1ac bytes) here:
+// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write pressStartGX (static, 0x4d8 bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
