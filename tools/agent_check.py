@@ -7,7 +7,7 @@
 
 UNIT is the source path without src/ and .c, e.g. driver/mapdrv. 100% means byte-identical.
 """
-import json, re, subprocess, sys, time
+import json, re, subprocess, sys
 
 FINAL = sys.argv[1] == "--final"
 if FINAL:
@@ -32,23 +32,23 @@ if os.path.exists(src) and src not in open("build.ninja").read():
 # --final also compiles every source (a header change could break another file), and the merge builds everything.
 target = entry.get("base_path") if entry else None
 jobs = ["-j2"]  # two waves of agents share the tower's 16 cores
-# `#pragma scheduling <cpu>` (601, 801, ...) makes this mwcceppc loop forever (waves 53 and 57: compiles hung for a day).
-if os.path.exists(src) and re.search(r"^\s*#\s*pragma\s+scheduling\s+\d", open(src, errors="replace").read(), re.M):
-    print("BUILD REFUSED: `#pragma scheduling <cpu number>` makes this compiler hang forever. Remove it; use "
-          "`#pragma scheduling off` / `reset` if you need to change scheduling.")
+# Sources that make the compiler hang forever (tools/hang_guard.py) are refused before anything is built.
+sys.path.insert(0, "tools")
+import hang_guard
+bad = hang_guard.problems(hang_guard.all_sources() if FINAL else [src])
+if bad:
+    print("BUILD REFUSED:\n" + "\n".join(bad))
     sys.exit(1)
-t0 = time.time()
 b = subprocess.run(["ninja", *jobs] + ([target] if target else []), capture_output=True, text=True)
 if b.returncode == 0 and FINAL:
     b = subprocess.run(["ninja", *jobs, "all_source"], capture_output=True, text=True)
 if b.returncode:
     out = b.stdout + b.stderr
-    # tools/project.py caps every compile at TTYD_COMPILE_TIMEOUT seconds; a build that failed after that long was
-    # killed there: the compiler loops forever on this source.
-    if time.time() - t0 >= int(os.environ.get("TTYD_COMPILE_TIMEOUT", 300)) - 1:
-        print("BUILD FAILED: THE COMPILER HUNG on this source and was killed after "
-              f"{int(time.time() - t0)} s (a normal compile takes about a second). Your last edit makes mwcceppc loop "
-              "forever: undo it (lastgood.c is the last version that built) and write that part differently.")
+    # tools/project.py's compile rules cap mwcc and print this marker when the cap kills it.
+    if "COMPILER TIMEOUT" in out:
+        print("BUILD FAILED: THE COMPILER HUNG and was killed (a normal compile takes about a second). Your last edit "
+              "makes mwcceppc loop forever: undo it (lastgood.c is the last version that built) and write that part "
+              "differently.\n" + "\n".join(l for l in out.splitlines() if "COMPILER TIMEOUT" in l))
         sys.exit(1)
     errs = [l for l in out.splitlines() if "rror" in l or "###" in l or l.startswith("#")]
     print("BUILD FAILED\n" + "\n".join((errs or out.splitlines())[-40:]))

@@ -136,6 +136,16 @@ def data_objects(base, allowed):
     print(f"ok   [data] {count} changed data object(s) hold the original's bytes")
 
 
+def hang_guard_check():
+    """Sources that make the compiler hang (tools/hang_guard.py) fail here, whatever --allow-pragma says."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import hang_guard
+    bad = hang_guard.problems(hang_guard.all_sources())
+    if bad:
+        fail("hang_guard", "\n  " + "\n  ".join(bad))
+    print("ok   [hang_guard] no source the compiler is known to hang on")
+
+
 def build():
     r = run([sys.executable, "configure.py"])
     if r.returncode:
@@ -291,6 +301,7 @@ def main():
         fail("prototypes", "\n  " + "\n  ".join(problems))
     print(f"ok   [prototypes] {count} documented exceptions; no other external local prototypes")
     extend_data_ids()
+    hang_guard_check()
     build()
     natural(a.base)
     data_objects(a.base, a.allow_data_mismatch)
