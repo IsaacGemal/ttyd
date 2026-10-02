@@ -210,6 +210,10 @@ When the instructions match but the stack slots, register allocation or scheduli
 - **A float literal divided in several statements (`/ 1000000.0f`) is reloaded per use; the same constant as a named `extern const f32` is hoisted into a callee-saved FPR.** Where the target reloads, use the literal (itemseq_Bound `itemTicksToSec`).
 - **A `static inline` double constant read through the unit's base register** (`*(const f64*)((const u8*)&vec3_xxx + 0x48)`) avoids the compiler emitting a second anonymous copy of a double the unit already defines, which otherwise shifts every later `.rodata` offset and fails the ratchet.
 
+- **`divw` by a constant in the target where yours has `lis 0x9249; mulhw`:** the original was built with the size optimiser for that function. `#pragma optimize_for_size on` / `reset` around it keeps the divide (and often fixes loop shapes that came out as `bdnz`): `ac_repeatedly_lv` `actionCommandDisp` 90.30 to 99.88.
+- **s16 `psq_l`/`psq_st` with GQR5 in the target is the SDK's `OSs16tof32`/`OSf32tos16` after `OSInitFastCast()`,** never a cast (`libs/dolsdk2004/include/dolphin/os/OSFastCast.h`; `effFlameDisp` 55 to 96). The header's `__OSf32tos16` temporary is an `f32` so the inlined temps sit 4 bytes apart; the old `f32 v[4]` Vec padding is not needed. A target that writes GQR5 from a computed value (hitdrv) is inline asm and out of scope.
+- **A target compare chain `cmpwi 1; beq; bge; cmpwi 0; bge` on a value you computed with `& 1` is a `switch`,** not an if/else chain on the masked value (gor_03 slot).
+
 ## Partial functions
 
 A function you write or change that doesn't reach 100% needs a comment directly above it:
