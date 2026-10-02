@@ -70,18 +70,18 @@ static inline Vec effHitInitVec(Vec* input) {
 	return temp;
 }
 
-// The instruction sequence matches; only MWCC's callee-saved register colouring and the loop-body
-// schedule still differ (details in REPORT.md).
-// NONMATCHING (91.92%): f30/f31 (the int->float magic double vs 0.0f) are swapped, effect/count/
-// count-1/magic land in different callee-saved registers, and the loop's two int->float conversions
-// are scheduled in a different order; the field/member writes are grouped to reproduce that schedule.
+// Every instruction is the same opcode with the same operands except that the 0.0f constant and the
+// pooled int->float double have swapped FPRs (ours zero=f30/double=f31, the original double=f30/zero=f31),
+// so every zero store and conversion reads the other register, and the two zero stores before the rand()
+// call are scheduled before it instead of after. The GPRs (effect/count/part/i/angle/count-1/magic) match.
+// NONMATCHING (93.24%): the FPR swap above and the two pre-rand zero-store positions.
 EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	effHitData* data;
 	s32 r;
-	s32 count;
+	EffectEntry* effect;
 	effHitParticle* part;
 	s32 i;
-	EffectEntry* effect;
+	s32 count;
 	s32 angle;
 
 	effect = effEntry();
@@ -140,18 +140,18 @@ EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 sca
 
 	part = (effHitParticle*)(data + 1);
 	for (i = 1; i < count; i++, part++) {
+		part->position.z = float_0_8041f0f0;
+		part->field_0x20 = float_0_8041f0f0;
 		r = rand();
-		angle = (i * 360) / (count - 1);
 		part->position.x = float_0_8041f0f0;
 		part->position.y = float_0_8041f0f0;
+		part->field_0x10 = float_0_8041f0f0;
 		part->field_0x14 = float_0_8041f0f0;
 		part->field_0x10 = float_0_8041f0f0;
+		angle = (i * 360) / (count - 1);
+		part->rotY = (f32)(r % 360);
 		part->field_0x0 = 0;
 		part->rotZ = (f32)angle;
-		part->field_0x20 = float_0_8041f0f0;
-		part->position.z = float_0_8041f0f0;
-		part->rotY = (f32)(r % 360);
-		part->field_0x10 = float_0_8041f0f0;
 		part->field_0x2C = 0xff;
 	}
 	return effect;

@@ -238,24 +238,28 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 #undef Z2C
 
 // .text:0x368 | 0x8022E8F8 | size: 0x35C
-// NONMATCHING (89.81%): GX setup matches; loop-invariant constant register mapping and inner vertex
-// load/store scheduling differ.
+// Constant-register mapping, Mtx slots and both loops match; loading p->x/p->y into locals fixes the inner
+// vertex reloads, and indexing bomb->points[j] directly (no local Vec*) gives the original's r5 inner
+// counter. Still differs (98.88%): the s/t numerators are both computed before the first GXPosition store
+// instead of interleaved (fadds, stfs x, fsubs), and the s/t temporaries use f1/f0 rather than f0/f1.
+// NONMATCHING (98.88%)
 void zubastar_disp_bomb(CameraId cameraId, void* param) {
     ZubaStarWork* work = GetZubaStarPtr();
     CameraEntry* cam = camGetPtr(8);
     GXTexObj texObj;
     Mtx m1;
     Mtx m2;
-    Mtx m3;
     Mtx m4;
+    Mtx m3;
     Mtx mtx;
-    s32 i;
+    ZubaStarBomb* bomb;
     s32 j;
-    f32 c96 = float_96_804217ec;
-    f32 c400 = float_400_804217f0;
-    f32 c240 = float_240_804217f4;
-    f32 c480 = float_480_804217f8;
-    f32 cdeg = float_deg2rad_804217e8;
+    s32 i;
+    f32 c480;
+    f32 c240;
+    f32 c400;
+    f32 c96;
+    f32 cdeg;
 
     GXSetCullMode(GX_CULL_NONE);
     GXSetZCompLoc(GX_FALSE);
@@ -278,8 +282,13 @@ void zubastar_disp_bomb(CameraId cameraId, void* param) {
     GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_804217e0, float_0_804217e0,
                     float_0_804217e0, 0, 0, 0);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
+    c96 = float_96_804217ec;
+    c400 = float_400_804217f0;
+    c240 = float_240_804217f4;
+    c480 = float_480_804217f8;
+    cdeg = float_deg2rad_804217e8;
     for (i = 0; i < work->bombCount; i++) {
-        ZubaStarBomb* bomb = work->bombs[i];
+        bomb = work->bombs[i];
 
         PSMTXTrans(m1, bomb->field_0x18.x, bomb->field_0x18.y, bomb->field_0x18.z);
         PSMTXTrans(m2, -bomb->field_0x18.x, -bomb->field_0x18.y, -bomb->field_0x18.z);
@@ -292,10 +301,11 @@ void zubastar_disp_bomb(CameraId cameraId, void* param) {
         GXLoadPosMtxImm(mtx, 0);
         GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, bomb->count);
         for (j = 0; j < bomb->count; j++) {
-            Vec* p = &bomb->points[j];
+            f32 y = bomb->points[j].y;
+            f32 x = bomb->points[j].x;
 
-            GXPosition3f32(p->x, p->y, float_0_804217e0);
-            GXTexCoord2f32((c96 + p->x) / c400, (c240 - p->y) / c480);
+            GXPosition3f32(x, y, 0.0f);
+            GXTexCoord2f32((c96 + x) / c400, (c240 - y) / c480);
         }
     }
 }
@@ -343,7 +353,7 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 // (Vec){0,0,0} and (Vec){0,-1000,200} (the original's vec3_802ff7ac/b8 hold exactly those), so MWCC has
 // the known values and recovers the schedule. Still differing: register allocation and the early-out
 // block, which branches around instead of `beq body; b main_loop`.
-// NONMATCHING (88.05%)
+// NONMATCHING (91.10%)
 s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
@@ -534,8 +544,10 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 }
 
 // .text:0x1990 | 0x8022FF20 | size: 0x100
-// NONMATCHING (86.64%): line-segment intersection logic matches; only float-register allocation differs.
 // Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
+// The literal 0.0f/1e-05f/1.0f (instead of the named sdata2 externs) lets MWCC reuse the dead parameter
+// f3 for the zero and gives a=f10, b=f9, c=f11; only an a/b register swap and the m1/m2 scheduling remain.
+// NONMATCHING (86.64%)
 #pragma dont_inline on
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
@@ -568,9 +580,12 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
     }
     return 0;
 }
+
 #pragma dont_inline reset
 
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
+// NONMATCHING (96.49%): a volatile struct copy reproduces the original's load/store interleave for
+// vec3_802ff6b0; the only remaining difference is the loop's branch targets.
 void zubastar_create_takaku(s32 count, Vec* points) {
     ZubaStarWork* work = GetZubaStarPtr();
     ZubaStarBomb* bomb;
@@ -581,7 +596,13 @@ void zubastar_create_takaku(s32 count, Vec* points) {
     bomb->points = BattleAlloc(count * 0xC);
     bomb->state = 0;
     bomb->count = count;
+#ifdef MUST_MATCH
+    // Volatile struct copy: pins the original's load order (x->r4, count store, y->r3,
+    // store x, store y, z->r3, store z) instead of letting MWCC batch both loads first.
+    *(volatile Vec*)&bomb->field_0x0C = *(const volatile Vec*)&vec3_802ff6b0;
+#else
     bomb->field_0x0C = vec3_802ff6b0;
+#endif
     bomb->timer = 0;
     bomb->maxTimer = 1;
     for (i = 0; i < count; i++) {
@@ -625,15 +646,6 @@ typedef struct ZubaStarEffectData {
     f32 scaleZ;          // 0x20
 } ZubaStarEffectData;
 
-// .text:0x2088 | 0x80230618 | size: 0x33C
-// The switch tree and framing match, and every named float constant in the function is now a literal
-// (37.0f, 50.0f, -1.0f, 2.0f, 2160.0f, 300.0f, 1.5f, 0.0f), so MWCC has their known values and recovers
-// the original's load schedule (95.5% vs 87.9% with the externs). The remaining differences are the
-// anonymous vs named pool symbol on each load, the anonymous @double for the int->float cast (the
-// original's own pool entry), and the per-call placement of the starCounter load around intplGetValue.
-// Case 1's two scale constants are the compound literal (Vec){0,0,0} (the original's vec3_802ff698/6a4
-// are zero vectors).
-// NONMATCHING (95.53%)
 static s32 main_star(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);

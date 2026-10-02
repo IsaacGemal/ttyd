@@ -5393,34 +5393,34 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (90.94%): inlining the slot/tbase address expressions (instead of a CSE'd `f32* slot`)
-// let MWCC recompute them like the original; the remaining diff is lfs+offset vs lfsx with the base/index
-// split the other way round, plus register numbers.
+// NONMATCHING (98.92%): `data + (sel*0xc + 0xc) + index*4` (not the flat form) and
+// `q = (s32*)((s8*)data) + index` reproduce the original address shape; the last
+// `if (*(s32*)(data + index*4 + 0x3c) == 0)` reuses r3 instead of rematerialising `data + index*4` into r5.
 s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
     s32 dir = 0;
     s32 changed = 0;
-    s32 steps = (s32)((f32)(s32)(*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) / 45.0f);
+    s32 steps = (s32)((f32)(s32)(*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) / 45.0f);
     f32 diff;
     s32 next;
 
     if ((*(f32*)(data + index * 4 + 0x24)) > 0.0f) {
         next = (steps + 1) & 7;
-        diff = 45.0f * (f32)next - (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc));
+        diff = 45.0f * (f32)next - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
         if (diff < 0.0f) {
             diff += 360.0f;
         }
         dir = (diff <= (*(f32*)(data + index * 4 + 0x24))) ? 1 : 0;
     } else {
-        diff = 45.0f * (f32)steps - (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc));
+        diff = 45.0f * (f32)steps - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
         if (diff > 0.0f) {
             diff -= 360.0f;
         }
         dir = (diff > (*(f32*)(data + index * 4 + 0x24))) ? -1 : 0;
     }
-    if ((((s8*)(data + index))[0x30] == 3 || ((s8*)(data + index))[0x30] == 4) && dir != 0) {
-        if (((s8*)(data + index))[0x39] != 0) {
-            if (((s8*)(data + index))[0x30] == 4) {
-                s32* q = (s32*)(data + index * 4);
+    if ((((s8*)data)[index + 0x30] == 3 || ((s8*)data)[index + 0x30] == 4) && dir != 0) {
+        if (((s8*)data)[index + 0x39] != 0) {
+            if (((s8*)data)[index + 0x30] == 4) {
+                s32* q = ((s32*)((s8*)data) + index);
                 if (q[0xf] == 0) {
                     if (q[0x12] != 0) {
                         q[0x12]--;
@@ -5433,29 +5433,29 @@ s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
                 }
             }
             if (*(s32*)(data + index * 4 + 0x3c) == 0) {
-                ((s8*)(data + index))[0x39]--;
+                ((s8*)data)[index + 0x39]--;
             }
         } else {
-            ((s8*)(data + index))[0x30] = 0;
+            ((s8*)data)[index + 0x30] = 0;
             changed = 1;
-            (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) = 45.0f * (f32)steps;
+            (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) = 45.0f * (f32)steps;
             goto done;
         }
     }
-    (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) += (*(f32*)(data + index * 4 + 0x24));
-    if ((*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) >= 360.0f) {
-        (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) -= 360.0f;
+    (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += (*(f32*)(data + index * 4 + 0x24));
+    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) >= 360.0f) {
+        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) -= 360.0f;
     }
-    if ((*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) < 0.0f) {
-        (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)) += 360.0f;
+    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) < 0.0f) {
+        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += 360.0f;
     }
 done:
-    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (*(f32*)(data + *(s32*)(data + 0x60) * 0xc + index * 4 + 0xc)));
+    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)));
     return changed;
 }
 
-// NONMATCHING (99.16%): byte-offset arithmetic and an explicit upsidegara pointer fixed the strength
-// reduction and lbzx mode; only the register chosen for the upsidegara base / d pointer (r5<->r4) differs.
+// Matching: indexing the u32 table as `&upsidegara[cur * 0x18]` (0x18 elements = 0x60 bytes) gives the
+// original's `add r0,r31,r5` / `add r5,r0,r27` two-step base, and `s8* d` gives the `lbzx r4` byte.
 void slot_neon_sub(void* arg0, u8* data) {
     s32 i;
     s32 r;
@@ -5474,12 +5474,12 @@ void slot_neon_sub(void* arg0, u8* data) {
         if (*(s32*)(data + 0x58) & 1) {
             for (i = 0; i < 3; i++) {
                 u8* up;
-                u8* d;
+                s8* d;
                 r = irand(8);
                 cur = *(s32*)(data + 0x60);
-                up = (u8*)upsidegara + cur * 0x60 + i * 0x20;
-                d = data + cur * 3 + i + 0x33;
-                while (*(s32*)(up + r * 4) == (s8)*d) {
+                up = (u8*)&upsidegara[cur * 0x18] + i * 0x20;
+                d = (s8*)(data + cur * 3 + i + 0x33);
+                while (*(s32*)(up + r * 4) == *d) {
                     r = (r + 1) & 7;
                 }
                 *d = *(s32*)(up + r * 4);

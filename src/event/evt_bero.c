@@ -339,14 +339,16 @@ USER_FUNC(evt_bero_get_info) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (87.97%): 7 instructions differ, 12 missing, 6 extra, plus register differences.
+// NONMATCHING (93.68%): with the opt_lifetimes pragma above the callee-saved colours match
+// (event/table/entry/i = r29/r31/r30/r28); what is left is the prologue address materialising
+// through r0 instead of directly into r31 and the first switch's kind staying in r31, not r11.
 USER_FUNC(evt_bero_get_into_info) {
-	BeroEntry** table = BeroINFOARR;
-	BeroEntry* entry;
 	s32 kind = 0;
 	s32 i;
+	BeroEntry** table = BeroINFOARR;
+	BeroEntry* entry;
 
-	for (i = 0; ; i++, table++) {
+	for (i = 0; ; table++, i++) {
 		entry = *table;
 		if (entry == NULL || !strcmp(gp->beroEnterName, "")) {
 			i = 0;
@@ -366,23 +368,42 @@ USER_FUNC(evt_bero_get_into_info) {
 		kind = entry->kinddirArg3;
 		{
 			const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
-			if (kind == 0x4E20) {
+			switch (kind) {
+			case 0x4E20:
 				if (kind == 0x2710) {
 					kind = 0x2710;
-				} else if ((entry->kinddirArg1 & 0xFFF) < 2) {
-					for (kind = 0; (u32)kind < 8U; kind++) {
-						if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
-							break;
-						}
-					}
 				} else {
-					kind = 0x2710;
+					switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
+					case 0:
+					case 1:
+						for (kind = 0; (u32)kind < 8U; kind++) {
+							if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
+								break;
+							}
+						}
+						break;
+					default:
+						kind = 0x2710;
+						break;
+					}
 				}
+				break;
 			}
 		}
 		event->lwData[5] = kind;
 		event->lwData[6] = (s32)&entry->field_0xC;
+#ifdef MUST_MATCH
+		// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+		{
+			s32* ev = entry->enterEvent;
+			if (ev == NULL) {
+				ev = default_entevt;
+			}
+			event->lwData[7] = (s32)ev;
+		}
+#else
 		event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
+#endif
 		event->lwData[8] = 0xffff0000;
 	} else {
 		event->lwData[1] = i;
@@ -392,23 +413,42 @@ USER_FUNC(evt_bero_get_into_info) {
 		kind = entry->kinddirArg3;
 		{
 			const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
-			if (kind == 0x4E20) {
+			switch (kind) {
+			case 0x4E20:
 				if (kind == 0x2710) {
 					kind = 0x2710;
-				} else if ((entry->kinddirArg1 & 0xFFF) < 2) {
-					for (kind = 0; (u32)kind < 8U; kind++) {
-						if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
-							break;
-						}
-					}
 				} else {
-					kind = 0x2710;
+					switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
+					case 0:
+					case 1:
+						for (kind = 0; (u32)kind < 8U; kind++) {
+							if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
+								break;
+							}
+						}
+						break;
+					default:
+						kind = 0x2710;
+						break;
+					}
 				}
+				break;
 			}
 		}
 		event->lwData[5] = kind;
 		event->lwData[6] = (s32)&entry->field_0xC;
+#ifdef MUST_MATCH
+		// MUST_MATCH: a pointer temp (instead of the ternary) gives the original's cmplwi/bne layout
+		{
+			s32* ev = entry->enterEvent;
+			if (ev == NULL) {
+				ev = default_entevt;
+			}
+			event->lwData[7] = (s32)ev;
+		}
+#else
 		event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
+#endif
 		event->lwData[8] = 0xffff0000;
 	}
 	return EVT_RETURN_DONE;
@@ -525,33 +565,13 @@ USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_on_bero_entry) {
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (90.39%): evtGetValue's args temporary is in r31 (original r29) and the
-	// table/test registers also differ; logic itself matches the original.
+// NOTE (100%): the filter body is inlined from bero_id_filter(id); writing it inline
+// directly gave the wrong callee-saved assignment (args r31, test r29).
 USER_FUNC(evt_bero_id_filter) {
 	s32* args = event->args;
 	s32 id = evtGetValue(event, args[0]);
-	BeroEntry** temp, **table = BeroINFOARR;
-	s32 newId = id;
-	const char *string, *test;
 
-	if (id < 0 || id >= 16) {
-		test = (const char*)id;
-		if (&newId != NULL) {
-			newId = 0;
-		}
-		temp = table;
-		while (1) {
-			string = (*temp)->hitName;
-			if (!string || !strcmp(string, test)) {
-				break;
-			}
-			temp++;
-			if (&newId != NULL) {
-				newId++;
-			}
-		}
-	}
-	evtSetValue(event, args[0], newId);
+	evtSetValue(event, args[0], bero_id_filter(id));
 	return EVT_RETURN_DONE;
 }
 
@@ -745,23 +765,31 @@ USER_FUNC(bero_set_disp_position_pipe) {
 }
 
 
-// NONMATCHING (65.28%): the two Vec copies (storedPos/storedAt) are emitted directly
-// from work.pos/work.at by our compiler, while the original materialises compiler
-// temporaries initialised from two zero Vec .rodata objects (vec3_802c4c58/64), which
-// also grows the frame to 0x60 and keeps r28-r29 live.
+// NOTE (100%): like bero_get_position_pipe2, cam->storedPos/storedAt go through two
+// local Vecs assigned a (Vec){0,0,0} compound literal at the store site and then
+// field-written from work; the direct struct copy drops the original's zero temps.
 USER_FUNC(evt_camera_change_event_from_road) {
 	MarioWork* mario = marioGetPtr();
 	CameraEntry* cam = camGetPtr(CAMERA_3D);
 	CameraParams work;
+	Vec bpt, bat;
 	f32 out;
 
 	camShiftMain(cam, mario, &out);
 	camRoadMain(&work.fovY, mario->position.x, cam->marioPos.y, mario->position.z,
 	            mario->position.x, cam->marioPos.y, mario->position.z, out);
+	bpt = (Vec){ 0.0f, 0.0f, 0.0f };
+	bpt.x = work.pos.x;
+	bpt.y = work.pos.y;
+	bpt.z = work.pos.z;
+	bat = (Vec){ 0.0f, 0.0f, 0.0f };
+	bat.x = work.at.x;
+	bat.y = work.at.y;
+	bat.z = work.at.z;
 	cam->presetPos = cam->cameraPos;
 	cam->presetAt = cam->cameraAt;
-	cam->storedPos = work.pos;
-	cam->storedAt = work.at;
+	cam->storedPos = bpt;
+	cam->storedAt = bat;
 	cam->startTimeA = gp->renderTime;
 	cam->durationA = OSMillisecondsToTicks(500);
 	cam->stateA = 3;
@@ -769,12 +797,15 @@ USER_FUNC(evt_camera_change_event_from_road) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (66.58%): 3 instructions differ, 27 missing, plus register differences.
+// NOTE (100%): BeroPT/BeroAT go through local Vecs assigned a (Vec){0,0,0} compound
+// literal at the store site, then field-written from work; the direct struct copy
+// (BeroPT = work.pos) drops the two zero-vector temps the original keeps.
 USER_FUNC(bero_get_position_pipe2) {
 	s32* args = event->args;
 	s32 a = evtGetValue(event, args[0]);
 	s32 b = (s32)evtGetFloat(event, args[1]);
 	Vec start, end;
+	Vec bpt, bat;
 	CameraParams work;
 
 	bero_get_position_pipe_sub(a, b, event->lwData[3], event->lwData[5], &start, &end);
@@ -782,8 +813,16 @@ USER_FUNC(bero_get_position_pipe2) {
 	camRoadReset();
 	camShiftReset();
 	camRoadMain(&work.fovY, end.x, end.y, end.z, end.x, end.y, end.z, 0.0f);
-	BeroPT = work.pos;
-	BeroAT = work.at;
+	bpt = (Vec){ 0.0f, 0.0f, 0.0f };
+	bpt.x = work.pos.x;
+	bpt.y = work.pos.y;
+	bpt.z = work.pos.z;
+	bat = (Vec){ 0.0f, 0.0f, 0.0f };
+	bat.x = work.at.x;
+	bat.y = work.at.y;
+	bat.z = work.at.z;
+	BeroPT = bpt;
+	BeroAT = bat;
 	return EVT_RETURN_DONE;
 }
 
@@ -906,14 +945,14 @@ USER_FUNC(evt_bero_get_info_num) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.41%): the float temporaries land in different registers (rad in f30 not
-// f27, dist reuses f29 instead of f26) and the int->double magic constant is emitted as
-// an anonymous @NNN instead of double_to_int_802c4da0; brace/line layout otherwise matches.
+// NONMATCHING (99.83%): only a scratch-register swap around the int->double conversion:
+// the original keeps sec*cs in f2 (double const f1, BeroSX f2), ours uses f1 for the
+// product (const f2, BeroSX f1); rad/dist callee-saved maps all match.
 USER_FUNC(evt_bero_move_mario_speed) {
 	f32 speed = evtGetFloat(event, event->args[0]);
 	OSTime now = gp->inBattle ? gp->renderTime : gp->renderFieldTime;
 	MarioWork* mario;
-	f32 sec, rad, sn, cs, dist, dx, dy, vx, vy;
+	f32 sec, sn, cs, rad, dist, dx, dy, vx, vy;
 	s32 frames;
 	BOOL reachedX, reachedY;
 
@@ -930,12 +969,9 @@ USER_FUNC(evt_bero_move_mario_speed) {
 	dist = sec * (f32)frames;
 	dx = sn * dist;
 	dy = -(cs * dist);
-	mario = marioGetPtr();
-	mario->position.x = BeroSX + dx;
-	mario = marioGetPtr();
-	mario->position.y = BeroSY + dy;
-	mario = marioGetPtr();
-	mario->position.z = BeroSZ;
+	marioGetPtr()->position.x = BeroSX + dx;
+	marioGetPtr()->position.y = BeroSY + dy;
+	marioGetPtr()->position.z = BeroSZ;
 	reachedX = 0;
 	if (vx >= 0 && BeroEX <= marioGetPtr()->position.x) {
 		reachedX = 1;
@@ -950,13 +986,13 @@ USER_FUNC(evt_bero_move_mario_speed) {
 	if (vy < 0 && BeroEY >= marioGetPtr()->position.y) {
 		reachedY = 1;
 	}
-	if (reachedX + reachedY == 2) {
-		marioGetPtr()->position.x = BeroEX;
-		marioGetPtr()->position.y = BeroEY;
-		marioGetPtr()->position.z = BeroEZ;
-		return EVT_RETURN_DONE;
+	if (reachedX + reachedY != 2) {
+		return 0;
 	}
-	return 0;
+	marioGetPtr()->position.x = BeroEX;
+	marioGetPtr()->position.y = BeroEY;
+	marioGetPtr()->position.z = BeroEZ;
+	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(bero_get_position_normal) {

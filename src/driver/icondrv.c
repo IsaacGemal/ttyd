@@ -447,8 +447,9 @@ void iconDispGx(Vec* position, s16 flags, s16 iconId, f32 scale) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 
-// NONMATCHING (97.60%): the icon_bin offset lookup puts `id`/`data` in different registers
-// than retail, so every loop temp and the frame loop shift by one.
+// NONMATCHING (97.80%): only `data` differs: retail keeps it in r4 and we use r6 (id's
+// register), which shifts the frame loop's scratch registers by one. The icon_bin/id lookup,
+// loop bounds and branch layout all match.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -456,6 +457,8 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     IconEntry entry;
     IconEntry* entryp;
     Mtx view;
+    IconBinary* bin;
+    u16 id;
 
     camera = camGetCurPtr();
     entryp = &entry;
@@ -463,10 +466,10 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
         return;
     entryp->flags = flags;
     entryp->color = *(GXColor*)&dat_80419784;
-    entryp->iconId = iconId;
+    bin = icon_bin;
+    id = (u16)iconId;
+    entryp->iconId = id;
     {
-        u16 id = (u16)iconId;
-        IconBinary* bin = icon_bin;
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
         } else {
@@ -499,8 +502,8 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (97.71%): same icon_bin register swap as iconDispGx2; the loop count and
-// branch layout match.
+// NONMATCHING (97.71%): same `data`-register difference as iconDispGx2 (retail r4, ours r6);
+// the lookup and the frame loop match.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -846,22 +849,17 @@ void iconSetAlpha(const char* name, u8 alpha) {
     }
 }
 
-// NONMATCHING (92.10%): the digit table, division and loop are the same; retail hoists the
-// `0x4330` int->float magic into r23 across the loop (9 callee-saved regs vs our 8), so every
-// loop temp and the returned width sit one register apart.
 s32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
+    Mtx mtx2;
     BOOL big;
-    s32 width;
     s32 i;
-    s32 id;
+    s32 count;
+    s32 width;
     s32 digits[5];
     s32 rem;
     f32 spacing;
-    Mtx mtx2;
-    s32 count;
 
-    width = 0;
-    big = (small == 0);
+    big = !small;
     spacing = big ? float_20_804197a0 : float_16_804197a4;
 
     rem = number % 100000;
@@ -873,6 +871,7 @@ s32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
     rem %= 100;
     digits[1] = rem / 10;
     digits[0] = rem % 10;
+    width = 0;
     if (number / 100000 != 0) {
         count = 5;
     } else if (digits[4] != 0) {
@@ -889,31 +888,25 @@ s32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
     for (i = 0; i < count; i++) {
         PSMTXTrans(mtx2, (f32)(-i) * spacing, 0.0f, 0.0f);
         PSMTXConcat(mtx, mtx2, mtx2);
-        if (big) {
-            id = suuji[digits[i]];
-        } else {
-            id = suuji_s[digits[i]];
-        }
-        iconDispGxCol(mtx2, 0x10, id, color);
+        iconDispGxCol(mtx2, 0x10, big ? (s32)suuji[digits[i]] : (s32)suuji_s[digits[i]], color);
         width = (s32)((f32)width + spacing);
     }
     return width;
 }
 
-// NONMATCHING (92.09%): same one-register shift as iconNumberDispGx (spacing 10/8, flags 0).
+// Same as iconNumberDispGx, but the original declares a 4-element array here and writes/reads
+// index 4; the compiler aliases digits[4] with mtx2 (r1+0x1c), which is what makes the offsets match.
 s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
+    Mtx mtx2;
     BOOL big;
-    s32 width;
     s32 i;
-    s32 id;
-    s32 digits[5];
+    s32 count;
+    s32 width;
+    s32 digits[4];
     s32 rem;
     f32 spacing;
-    Mtx mtx2;
-    s32 count;
 
-    width = 0;
-    big = (small == 0);
+    big = !small;
     spacing = big ? float_10_80419794 : float_8_80419798;
 
     rem = number % 100000;
@@ -925,6 +918,7 @@ s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
     rem %= 100;
     digits[1] = rem / 10;
     digits[0] = rem % 10;
+    width = 0;
     if (number / 100000 != 0) {
         count = 5;
     } else if (digits[4] != 0) {
@@ -941,12 +935,7 @@ s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
     for (i = 0; i < count; i++) {
         PSMTXTrans(mtx2, (f32)(-i) * spacing, 0.0f, 0.0f);
         PSMTXConcat(mtx, mtx2, mtx2);
-        if (big) {
-            id = suuji[digits[i]];
-        } else {
-            id = suuji_s[digits[i]];
-        }
-        iconDispGxCol(mtx2, 0, id, color);
+        iconDispGxCol(mtx2, 0, big ? (s32)suuji[digits[i]] : (s32)suuji_s[digits[i]], color);
         width = (s32)((f32)width + spacing);
     }
     return width;

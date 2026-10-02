@@ -129,16 +129,29 @@ extern const char str_802F63B4[];
 #endif
 
 
-// NONMATCHING (87.44%): the language table indexed by gp->language is not part of
-// the str_802F5EB8 base in our object (the original addresses it as
-// str_802F5EB8+0x350), and register allocation of work/inBattle/gp differs.
+// NONMATCHING (91.96%): only the language-table base differs. `jp`/`us` live in
+// a local table the original pools at str_802F5EB8+0x350 and copies through the
+// section base in r31; our object pools the same table as an anonymous @185
+// local at .rodata+0x8 and copies it through its own base register, so the two
+// prologue `lis`/`addi` and the two `lwz` bases differ (the surrounding schedule
+// is identical). Caching gp in `g` keeps it in r29 as the original does, and the
+// first path lookup uses `g->language` while the second reloads gp, matching the
+// original's `lwz r5, gp@sda21`. GXGetTexObjHeight's u16 result is kept in a u16
+// local and fileAsyncf's result is compared unsigned, matching the original.
+// The pragma is needed so `base+0x438` is recomputed for each path string
+// instead of being common-subexpression-eliminated into a callee-saved register:
+// without it the two `addi rN, r31, 0x438/0x448` collapse and r29/r31 get reused.
+// The pragma is needed: without it base+0x438/0x448 collapse into one register.
+// NONMATCHING (91.96%): only the language-table base register/offset differs.
 void monosiriMain(void* work) {
     MonosiriWork* w = work;
     TattleEntry* tattle;
+    const char* base = str_802F5EB8;
+    GlobalWork* g = gp;
     const char* lang[2] = {str_8041D7AC, str_8041D7B0};
-    s32 inBattle = (gp->inBattle != 0);
+    s32 inBattle = (g->inBattle != 0);
     GXTexObj texObj;
-    s32 height;
+    u16 height;
     s32 size;
 
     if (w == NULL) {
@@ -147,10 +160,10 @@ void monosiriMain(void* work) {
 
     switch (w->state) {
     case 0:
-        if (fileAsyncf(4, NULL, RO(str_802F5EB8, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[gp->language]) != 0) {
-            if (fileAsyncf(0, NULL, RO(str_802F5EB8, 0x448, str_802F6300), getMarioStDvdRoot()) != 0) {
-                w->file1 = fileAllocf(4, RO(str_802F5EB8, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[gp->language]);
-                w->file2 = fileAllocf(0, RO(str_802F5EB8, 0x448, str_802F6300), getMarioStDvdRoot());
+        if ((u32)fileAsyncf(4, NULL, RO(base, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[g->language]) != 0) {
+            if ((u32)fileAsyncf(0, NULL, RO(base, 0x448, str_802F6300), getMarioStDvdRoot()) != 0) {
+                w->file1 = fileAllocf(4, RO(base, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[gp->language]);
+                w->file2 = fileAllocf(0, RO(base, 0x448, str_802F6300), getMarioStDvdRoot());
                 w->state++;
                 TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
                 height = GXGetTexObjHeight(&texObj);
@@ -162,7 +175,7 @@ void monosiriMain(void* work) {
     case 1:
         tattle = battleGetUnitMonosiriPtr(w->unitKind);
         if (animGroupBaseAsync(tattle->modelName, inBattle, NULL)) {
-            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(str_802F5EB8, 0x45C, str_802F6314), inBattle, NULL)) {
+            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(base, 0x45C, str_802F6314), inBattle, NULL)) {
                 w->alpha += 0x14;
                 if (w->alpha > 0xFF) {
                     w->alpha = 0xFF;
@@ -173,7 +186,7 @@ void monosiriMain(void* work) {
                         animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
                         animPoseWorldPositionEvalOn(w->poseId);
                         animPoseMain(w->poseId);
-                        w->poseId2 = animPoseEntry(RO(str_802F5EB8, 0x45C, str_802F6314), inBattle);
+                        w->poseId2 = animPoseEntry(RO(base, 0x45C, str_802F6314), inBattle);
                         animPoseSetAnim(w->poseId2, str_8041D810, TRUE);
                         animPoseMain(w->poseId2);
                     } else {
@@ -198,6 +211,7 @@ void monosiriMain(void* work) {
         dispEntry(8, float_0_8041d7bc, 0, monosiri_disp, w);
     }
 }
+
 
 void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
     MonosiriWork* w = _mapAlloc(sizeof(MonosiriWork));
@@ -465,18 +479,25 @@ void winLogExit(WindowWork* work) {
     }
 }
 
-// NONMATCHING (85.77%): the int->float conversion below references an anonymous
-// compiler literal (@222) where the original uses the named global
-// double_to_int_802f62d8; the trailing `add r5, work, idx` also emits its
-// operands in the other order. Everything else (frame, stores, call) matches.
+// 100%: the 45.0f * (f32)a product is held in a named temp so MWCC colors the
+// long-lived int->float conversion double f7 (as the original does) instead of
+// f6; the entry address is formed with real WinLogEntry pointer indexing, which
+// makes the compiler emit `add rWork, rIndex` in the original's operand order.
+// The conversion double still pools as an anonymous @271 literal instead of the
+// named double_to_int_802f62d8 (project-wide limitation, not scored).
 void winLogInit2(WindowWork* work) {
     f32 v;
-    s32 a = WW_S32(work, 0xD70);
-    s32 b = WW_S32(work, 0xD6C);
     const char* name;
+    s32 a;
+    s32 b;
 
     WW_F32(work, 0x158) = float_neg128_8041d8dc;
-    WW_F32(work, 0x15C) = float_8_8041d7d4 + (float_45_8041d880 * (f32)a * float_0p5_8041d7c8 - float_45_8041d880 * (f32)b);
+    a = WW_S32(work, 0xD70);
+    b = WW_S32(work, 0xD6C);
+    {
+        f32 t = float_45_8041d880 * (f32)a;
+        WW_F32(work, 0x15C) = float_8_8041d7d4 + (t * float_0p5_8041d7c8 - float_45_8041d880 * (f32)b);
+    }
     WW_F32(work, 0xE88) = float_320_8041d8b0;
     WW_F32(work, 0xE84) = float_320_8041d8b0;
     WW_F32(work, 0xE90) = float_neg240_8041d894;
@@ -499,6 +520,6 @@ void winLogInit2(WindowWork* work) {
     WW_F32(work, 0xFA4) = float_neg200_8041d8d4;
     WW_F32(work, 0xFB0) = float_neg300_8041d80c;
     WW_F32(work, 0xFAC) = float_neg300_8041d80c;
-    name = WW_PTR(work, 0xD90 + WW_S32(work, 0xD6C) * 0x20);
+    name = ((WinLogEntry*)((u8*)work + 0xD78))[WW_S32(work, 0xD6C)].name;
     winMsgEntry(work, 0, name, 0);
 }

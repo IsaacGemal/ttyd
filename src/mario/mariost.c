@@ -69,6 +69,8 @@ static u8 stack[0x1000];
 
 //.sdata
 GlobalWork* gp = &marioSt;
+static s32 off_trg[4] = { 0 };
+static OSTime off_time[4] = { 0 };
 
 //.sbss
 OSTime none_key;
@@ -365,37 +367,16 @@ s32 marioStGetSystemLevel(void) {
 	return gp->systemLevelFlags;
 }
 
-// The 64-bit limit arithmetic only colours to the target's GPRs when it sits in an inlined helper;
-// the plain form under #else is functionally identical but allocates different registers.
-#ifdef MUST_MATCH
-static inline void viClampRetrace(GlobalWork* w) {
-	OSTime check = OSSecondsToTicks((OSTime)359999999);
-	OSTime cur = w->retraceLocalTime;
-	if (check < cur) {
-		cur = check;
-	}
-	w->retraceLocalTime = cur;
-}
-#endif
-
-// NONMATCHING (98.51%): the 64-bit OSSecondsToTicks limit now matches, but the inlined clamp
-// still colours gp/rtl to different GPRs and emits two select moves, and gcRumbleCheck's bl is
-// dropped while its body is an empty placeholder (it returns with the real body).
 void viPostCallback(u32 retraceCount) {
-	OSTime time, check;
+	OSTime time;
 	u32 reset = PAD_BUTTON_B | PAD_BUTTON_X | PAD_BUTTON_START; //TODO: make sure it inlines right
 
 	time = OSGetTime();
 	gp->retraceDeltaTime = time - gp->retraceTime;
 	gp->retraceLocalTime += gp->retraceDeltaTime;
-#ifdef MUST_MATCH
-	viClampRetrace(gp);
-#else
-	check = OSSecondsToTicks((OSTime)359999999);
-	if (check < gp->retraceLocalTime) {
-		gp->retraceLocalTime = check;
+	if (gp->retraceLocalTime > OSSecondsToTicks((OSTime)359999999)) {
+		gp->retraceLocalTime = OSSecondsToTicks((OSTime)359999999);
 	}
-#endif
 	if (!(gp->systemLevelFlags & 8)) {
 		gp->systemLv3Time += gp->retraceDeltaTime;
 	}

@@ -22,7 +22,6 @@
 extern ItemData itemDataTable[];
 
 // .data event tables are defined below the functions that use them.
-extern s32 btlataudevtDummy[16];
 extern s32 btlataudevtPresentItem_Damage[];
 extern s32 btlataudevtPresentItem_Get[];
 
@@ -254,17 +253,24 @@ void* btlataudGetMoveEventPtr(s32 unitId) {
 #undef pz
 #endif
 
-// NONMATCHING (93.75%): MWCC emits the btlataudevtDummy base plus a separate `addi 0x4`; the original
-// folds the +4 into the @ha/@l reloc addend (btlataudevtDummy+0x4). Same instruction sequence otherwise.
-s32* btlataudGetAttackEventPtr(s32 index) {
-    s32* data = BtlUnit_GetData(BattleGetUnitPtr(_battleWorkPointer, index), 6);
-    if (data == NULL) {
-        return btlataudevtDummy + 1;
-    }
-    return data;
-}
+// The original btlataudevtDummy is one 64-byte object and the fallback is its second word (+4); MWCC 2.6
+// cannot emit that folded reloc, so under MUST_MATCH the leading zero word is btlataudevtDummy and the event
+// data is the separate btlataudevtDummyBody symbol right after it, giving the same address for the fallback
+// (the .data bytes and btlataudevtDummy's address are unchanged). The natural single-object form, which
+// matches the original bytes but not the folded relocation, is under #else.
+#ifdef MUST_MATCH
+__declspec(section ".data") s32 btlataudevtDummy[] = {
+    0x00000000,
+};
 
-// .data
+s32 btlataudevtDummyBody[] = {
+    0x0005005B, (s32)_get_attack_aud_no, 0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0003005B, (s32)_attack_aud, 0xFE363C83,
+    0x00000000,
+    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
+    0x00000002, 0x00000001,
+};
+#else
 s32 btlataudevtDummy[] = {
     0x00000000,
     0x0005005B, (s32)_get_attack_aud_no, 0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
@@ -273,6 +279,20 @@ s32 btlataudevtDummy[] = {
     0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
     0x00000002, 0x00000001,
 };
+#endif
+
+s32* btlataudGetAttackEventPtr(s32 index) {
+    s32* data = BtlUnit_GetData(BattleGetUnitPtr(_battleWorkPointer, index), 6);
+    if (data == NULL) {
+#ifdef MUST_MATCH
+        return btlataudevtDummyBody;
+#else
+        return btlataudevtDummy + 1;
+#endif
+    }
+    return data;
+}
+
 
 s32 btlataudevtPresentItem_Damage[] = {
     0x0002005B, (s32)_delete_present_item, 0xFE363C80,
