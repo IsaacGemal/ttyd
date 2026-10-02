@@ -2238,3 +2238,187 @@ void monosiri_disp(CameraId camId, void* param) {
         }
     }
 }
+
+extern const f32 float_25_8041d7f4;
+extern const f32 float_1p2667_8041d7f8;
+extern const f32 float_1000_8041d7fc;
+extern const f32 float_608_8041d800;
+extern const f32 float_480_8041d804;
+
+extern const Vec vec3_802f6228;
+extern const Vec vec3_802f6234;
+extern const Vec vec3_802f6240;
+extern const Vec vec3_802f624c;
+
+#ifdef MUST_MATCH
+#define HALF_FOV_TAN (*(const f64*)((const char*)base + 0x430))
+#else
+#define HALF_FOV_TAN 0.21816615760326385
+#endif
+
+typedef struct TattleCamEntry {
+    s32 kind;
+    f32 x;
+    f32 y;
+    f32 scale;
+} TattleCamEntry;
+
+// Renders a tattle model into the viewer's texture: frames the model's bounding box, draws the pose (and the swarm
+// for the moamoa tattle) and copies the EFB into the viewer's image.
+// NONMATCHING: first draft.
+void capture(CameraId camId, void* param) {
+    MonosiriWork* w = param;
+    const char* base = str_802F5EB8;
+    AnimData* ad;
+    Vec mn;
+    Vec mx;
+    f32 cx;
+    f32 cy;
+    f32 vp[6];
+    f32 proj[7];
+    u32 sl;
+    u32 st;
+    u32 sw;
+    u32 sh;
+    GXTexObj obj;
+    s32 tw;
+    s32 th;
+    Mtx44 persp;
+    Mtx view;
+    Mtx tmp;
+    Mtx scaleM;
+    Mtx identM;
+    f32 dist;
+    Vec eye;
+    Vec up;
+    Vec at;
+    s32 i;
+    s32 n;
+    TattleCamEntry* tbl;
+    f32 ox;
+    f32 oy;
+    f32 os;
+    CameraEntry saved;
+    u16 bl;
+    u16 bt;
+    u16 br;
+    u16 bb;
+
+    ad = animPoseGetAnimDataPtr(w->poseId);
+    mn = *(Vec*)((u8*)ad + 0x44);
+    mx = *(Vec*)((u8*)ad + 0x50);
+    cx = (mx.x + mn.x) * float_0p5_8041d7c8;
+    cy = (mx.y + mn.y) * float_0p5_8041d7c8;
+    GXGetViewportv(vp);
+    GXGetProjectionv(proj);
+    GXGetScissor(&sl, &st, &sw, &sh);
+    TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+    tw = GXGetTexObjWidth(&obj);
+    th = GXGetTexObjHeight(&obj);
+    GXSetViewport(float_0_8041d7bc, float_0_8041d7bc, (f32)tw, (f32)th, float_0_8041d7bc, float_1_8041d7c0);
+    GXSetScissor(1, 1, tw - 2, th - 2);
+    C_MTXPerspective(persp, float_25_8041d7f4, float_1p2667_8041d7f8, float_1_8041d7c0, float_1000_8041d7fc);
+    GXSetProjection(persp, 0);
+    if ((mx.x - mn.x) / (f32)tw > (mx.y - mn.y) / (f32)th) {
+        dist = (mx.x - cx) / (f32)tan(HALF_FOV_TAN);
+    } else {
+        dist = ((float_608_8041d800 * (mx.y - cy)) / float_480_8041d804) / (f32)tan(HALF_FOV_TAN);
+    }
+    at = LV(0x388, vec3_802f6240);
+    at.x = cx;
+    at.y = cy;
+    up = LV(0x37C, vec3_802f6234);
+    eye = LV(0x370, vec3_802f6228);
+    eye.x = cx;
+    eye.y = cy;
+    eye.z = dist;
+    C_MTXLookAt(view, &eye, &up, &at);
+    {
+        s32* hdr = *(s32**)((u8*)w->file2->data[0]);
+        n = ((u32*)w->file2->data[0])[1] >> 4;
+        tbl = (TattleCamEntry*)hdr;
+        for (i = 0; i < n; i++) {
+            if (tbl[i].kind == w->unitKind) {
+                break;
+            }
+        }
+        if (i < n) {
+            ox = tbl[i].x;
+            oy = tbl[i].y;
+            os = tbl[i].scale;
+        } else {
+            ox = float_0_8041d7bc;
+            os = float_1_8041d7c0;
+            oy = ox;
+        }
+    }
+    PSMTXTrans(tmp, ox, oy, float_0_8041d7bc);
+    PSMTXScale(scaleM, os, os, os);
+    PSMTXConcat(tmp, scaleM, tmp);
+    PSMTXConcat(view, tmp, view);
+    sysWaitDrawSync();
+    GXClearBoundingBox();
+    saved = *camGetPtr(camId);
+    PSMTXCopy(view, camGetCurPtr()->view);
+    if (animPoseGetVivianType(w->poseId) != 0) {
+        Vec v = LV(0x394, vec3_802f624c);
+
+        animPoseVivianMain(w->poseId, &v);
+    }
+    animPoseSetMaterialFlagOn(w->poseId, 0x1800);
+    animPosePeraOff(w->poseId);
+    PSMTXIdentity(identM);
+    animPoseDrawMtx(w->poseId, identM, 1, float_0_8041d7bc, float_1_8041d7c0);
+    animPoseDrawMtx(w->poseId, identM, 2, float_0_8041d7bc, float_1_8041d7c0);
+    animPoseDrawMtx(w->poseId, identM, 3, float_0_8041d7bc, float_1_8041d7c0);
+    animPosePeraOn(w->poseId);
+    if (w->unitKind == 0x6B) {
+        Vec* verts = (Vec*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(w->poseId) + 0x15C))->address;
+        s32* counts = (s32*)((smartEntry*)smartAlloc(dat_80419a28 * 4, 3))->address;
+        s32* order = (s32*)((smartEntry*)smartAlloc(0x7D0, 3))->address;
+        s32 j;
+
+        memset(counts, 0, dat_80419a28 * 4);
+        for (j = 0; j < 0x1F4; j++) {
+            s32 k = j % dat_80419a28;
+
+            order[j] = counts[k]++;
+        }
+        animPoseSetMaterialFlagOn(w->poseId2, 0x1800);
+        animPosePeraOff(w->poseId2);
+        for (j = 0; j < 0x1F4; j++) {
+            s32 k = j % dat_80419a28;
+            f32 t = (f32)order[j] / (f32)counts[k];
+            Vec* a = &verts[animPoseGetGroupIdx(w->poseId, g_moamoa_chain_tbl[k].name)];
+            Vec* b = &verts[animPoseGetGroupIdx(w->poseId, g_moamoa_chain_tbl[k].anim)];
+            Vec p;
+            Vec q;
+            f32 jx;
+            f32 jy;
+            f32 jz;
+            Mtx m;
+
+            PSVECScale(a, &p, t);
+            PSVECScale(b, &q, float_1_8041d7c0 - t);
+            PSVECAdd(&p, &q, &p);
+            jz = (f32)(5 - irand(10));
+            jy = (f32)(5 - irand(10));
+            jx = (f32)(5 - irand(10));
+            PSMTXTrans(m, p.x + jx, p.y + jy, p.z + jz);
+            animPoseDrawMtx(w->poseId2, m, 1, float_0_8041d7bc, float_1_8041d7c0);
+            animPoseDrawMtx(w->poseId2, m, 2, float_0_8041d7bc, float_1_8041d7c0);
+            animPoseDrawMtx(w->poseId2, m, 3, float_0_8041d7bc, float_1_8041d7c0);
+        }
+        animPosePeraOn(w->poseId2);
+    }
+    PSMTXCopy(saved.view, camGetCurPtr()->view);
+    sysWaitDrawSync();
+    GXReadBoundingBox(&bl, &bt, &br, &bb);
+    GXSetTexCopySrc(0, 0, tw, th);
+    GXSetTexCopyDst(tw, th, 5, 0);
+    GXCopyTex(*(void**)w->alloc, 1);
+    GXPixModeSync();
+    GXSetViewport(vp[0], vp[1], vp[2], vp[3], vp[4], vp[5]);
+    GXSetProjectionv(proj);
+    GXSetScissor(sl, st, sw, sh);
+}
