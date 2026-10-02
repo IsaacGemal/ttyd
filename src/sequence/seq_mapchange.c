@@ -304,7 +304,7 @@ extern const f32 float_30_8041944c;
 extern const f32 float_neg30_80419448;
 extern const f32 float_5_8041947c;
 extern const f32 float_10_80419454;
-extern s32 key_off[];
+extern s32 key_off[10];
 
 // NONMATCHING: first draft.
 void seq_mapChangeMain(SequenceWork* work) {
@@ -510,9 +510,7 @@ void seq_mapChangeMain(SequenceWork* work) {
 
             party = partyGetPtr(marioGetPartyId());
             extraParty = partyGetPtr(marioGetExtraPartyId());
-            if (swByteGet(4) != 0) {
-                fadeEntry(0x1C, 0, unk_80422f60);
-            } else {
+            if (swByteGet(4) == 0) {
                 mario->position = gp->savePlayerPos;
                 evt_cam_road_reset(NULL, FALSE);
                 if (party != NULL) {
@@ -545,6 +543,8 @@ void seq_mapChangeMain(SequenceWork* work) {
                                                mario->position.z);
                 marioKeyOff();
                 evtEntryType(key_off, 0, 0, 0);
+            } else {
+                fadeEntry(0x1C, 0, unk_80422f60);
             }
             statusWinForceUpdate();
             gp->flags &= ~1;
