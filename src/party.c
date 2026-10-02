@@ -54,7 +54,7 @@ extern const f32 float_neg40_8041b144;
 extern const f32 float_neg30_8041b148;
 extern const f32 float_220_8041b14c;
 extern const f32 float_210_8041b150;
-const f32 vec3_802ccd30[3] = { 0.0f, 0.0f, 0.0f };
+const f32 vec3_802ccd30[3] = { 1.0f, 1.0f, 1.0f };
 const char str_802CCEEC[] = "d_mario";
 const Vec vec3_802ccee0 = { 0.0f, -1.0f, 0.0f };
 const Vec vec3_802ccdd8 = { 0.0f, 0.0f, 0.0f };
