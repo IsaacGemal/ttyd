@@ -177,6 +177,8 @@ void partyUsePost(PartyEntry* party);
 void partyPaperOff(PartyEntry* party);
 void partyPaperLightOff(PartyEntry* party);
 void party_force_ride_yoshi(PartyEntry* party);
+void party_ride_yoshi_force_move(void);
+void L_partyClearCont(PartyEntry* party);
 BOOL partyGoodbyeInit(PartyEntry* party);
 BOOL partyGoodbyeMain(PartyEntry* party);
 s32 partyRideYoshiMain(PartyEntry* party);

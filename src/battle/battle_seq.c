@@ -357,9 +357,6 @@ s32 _set_effect_luck(void) {
 	return 2;
 }
 
-// NONMATCHING (99.92%): all 15 real instruction diffs are register allocation, no logic. The first
-// recovery case's counter is r26 here vs r25; in the freeze case unit/sfx land in r29/r25 instead of
-// r25/r29 and the sfx string address goes through r0. Everything else matches instruction for instruction.
 void btlseqTurn(BattleWork* wp) {
 	BattleUnit* unit;
 	s32 i;
@@ -654,22 +651,47 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000020: {
-			BattleUnit* unit;
+#ifdef MUST_MATCH
+			// MUST_MATCH: three locals declared z, y, x take the original's Vec slots (sp+0x3c..0x44) and the
+			// comma initializers keep pz/py/sfx in r27/r28/r29 (and the first recovery loop's counter in r25).
+			// The natural form under #else uses a real Vec.
+			f32 z;
+			f32 y;
+			f32 x;
+			f32* pz = (0, &z);
+			f32* py = (0, &y);
+			const char* sfx = (0, str_802EF5AC);
+#define BT_X x
+#define BT_Y y
+#define BT_Z z
+#define BT_POS ((Vec*)&x)
+#else
 			Vec pos;
+			f32* pz = &pos.z;
+			f32* py = &pos.y;
 			const char* sfx = str_802EF5AC;
+#define BT_X pos.x
+#define BT_Y pos.y
+#define BT_Z pos.z
+#define BT_POS (&pos)
+#endif
 			for (i = 0; i < 64; i++) {
 				unit = BattleGetUnitPtr(wp, i);
 				if (BtlUnit_CheckRecoveryStatus(unit, STATUS_FREEZE)) {
 					if (!BtlUnit_CheckShadowGuard(unit)) {
 						BattleDamageDirect(-5, unit, 0, 1, 0, 0x11a, 0, 1);
 					}
-					BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-					pos.y += (f32)BtlUnit_GetHeight(unit);
-					effFreezeN64Entry(0, 1, pos.x, pos.y, pos.z, float_1_8041c284);
-					psndSFXOn_3D(sfx, &pos);
+					BtlUnit_GetPos(unit, &BT_X, py, pz);
+					BT_Y += (f32)BtlUnit_GetHeight(unit);
+					effFreezeN64Entry(0, 1, BT_X, BT_Y, BT_Z, float_1_8041c284);
+					psndSFXOn_3D(sfx, BT_POS);
 					handled = TRUE;
 				}
 			}
+#undef BT_X
+#undef BT_Y
+#undef BT_Z
+#undef BT_POS
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
 				BattleIncSeq(wp, SEQ_TURN);

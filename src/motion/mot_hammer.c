@@ -285,9 +285,10 @@ f32 marioGetAngleKaitenHammer(void) {
     return revise360(float_270_8041a9b4 - mario->unk1A8);
 }
 
-// NONMATCHING (99.71%): the original's dead hitGetAttr mask test is optimized away by this compiler,
-// which leaves one redundant store and its branch; everything else matches.
 #pragma opt_propagation off // keep the effUltraHammerEntry and Vec-copy FP/load scheduling
+// NONMATCHING (99.99%): the original's dead hitGetAttr mask comparison is optimized away by this
+// compiler; a self-select ternary keeps it alive but leaves the first `if (hit != NULL)` branching
+// to the second, redundant test instead of past the store (1 arg mismatch; all else matches).
 void mot_hammer2(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -604,19 +605,27 @@ void mot_hammer2(void) {
                              0.5f * m2->wPlayerCollisionBox.y + m2->position.y,
                              m2->position.z, sa, 0.0f, ca);
 #ifdef MUST_MATCH
-        // The store keeps the original's dead attribute mask from being optimized away;
-        // it is redundant with the identical store below.
-        if (hit != NULL && (hitGetAttr(hit) & 0x800005)) {
-            M_S32(mario, 0x1FC) = (s32)hit;
+        // The original keeps the wall's attribute-mask comparison in the output even
+        // though its result is never used (the branch on it was folded away).  A
+        // self-select ternary on an unsigned copy of the pointer is the one shape this
+        // compiler emits the comparison for while dropping the branch; without it the
+        // whole comparison is dead-code-eliminated (as under #else).  The only residual
+        // difference is that the original's first `if (hit != NULL)` branch lands on the
+        // redundant second null test rather than on the end of the statement.
+        {
+            u32 hitBits = (u32)hit;
+            if (hit != NULL && ((hitGetAttr(hit) & 0x800005) ? hitBits : hitBits)) {
+                M_S32(mario, 0x1FC) = (s32)hit;
+            }
         }
 #else
         // The original tests the wall's attributes here and does nothing with the result.
         if (hit != NULL && (hitGetAttr(hit) & 0x800005)) {
         }
-#endif
         if (hit != NULL) {
             M_S32(mario, 0x1FC) = (s32)hit;
         }
+#endif
         f30 = M_F32(mario, 0x2A8);
         M_F32(mario, 0x1A8) += f30 * (M_S8(mario, 0x43) ? -1.0f : 1.0f);
         if ((s32)f31 / 360 != (s32)M_F32(mario, 0x1A8) / 360) {
@@ -634,16 +643,17 @@ void mot_hammer2(void) {
             mario->dispFlags &= ~8;
             mario->dispFlags &= ~0x10;
         }
-        if (mario->multiTimer <= 0) {
-            if (M_S8(mario, 0x42) <= 2) {
-                mario->multiTimer = sysMsec2Frame(0x12C);
-            } else {
-                M_F32(mario, 0x1A8) = revise360(M_F32(mario, 0x1A8));
-                marioAdjustMoveDir();
-                mario->multiTimer = 0x1E;
-            }
-            mario->currSubMotionId = 0x16;
+        if (mario->multiTimer > 0) {
+            break;
         }
+        if (M_S8(mario, 0x42) <= 2) {
+            mario->multiTimer = sysMsec2Frame(0x12C);
+        } else {
+            M_F32(mario, 0x1A8) = revise360(M_F32(mario, 0x1A8));
+            marioAdjustMoveDir();
+            mario->multiTimer = 0x1E;
+        }
+        mario->currSubMotionId = 0x16;
         /* fallthrough to case 0x16 */
     case 0x16:
         if ((s32)--mario->multiTimer > 0) {

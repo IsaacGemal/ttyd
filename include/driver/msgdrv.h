@@ -77,6 +77,10 @@ typedef struct MessageWork {
 } MessageWork;
 
 extern const f32 float_400_8041a530;
+extern u32 dat_8041a500;
+extern u32 dat_8041a504;
+extern u32 dat_8041a508;
+extern u32 dat_8041a50c;
 void msgInit(void);
 void msgLoad(const char* filename, s32 index);
 

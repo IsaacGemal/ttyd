@@ -470,7 +470,9 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
     }
 }
 
-// NONMATCHING (99.38%): 3 instructions differ, 1 missing, 4 extra, plus register differences. Known issue: register allocation and stack-slot differences; see REPORT.md
+// NONMATCHING (99.99%): the 4 string and 3 double literals differ only by a +0x18 rodata offset, because this
+// unit's .rodata has two more Vecs before the strings than the target's (vec3_802c3d28 and one anonymous Vec from
+// other functions; the whole unit's rodata needs reordering, which mobjMain alone cannot do).
 void mobjMain(void) {
     MapObjectWork* wp;
     s32 count;
@@ -483,6 +485,13 @@ void mobjMain(void) {
     s32 v25;
     s32 i;
     Mtx mtx1, mtx2, mtx3;
+    // These five groups are declared here, in this order, so their stack slots land where the original's do
+    // (the compiler assigns the lowest slot to the last-declared local).
+    GXColor blend;
+    GXColor blend2;
+    GXColor color;
+    f32 nz, ny, nx, dist, hitZ, hitY, hitX;
+    Vec pos;
 
     wp = mobjGetWork();
     count = wp->count;
@@ -499,52 +508,54 @@ void mobjMain(void) {
     }
 
     if (gp->inBattle == 0) {
-        if (*(void**)((u8*)mario + 0x1FC) != NULL) {
-            if (((void**)wp)[2] == NULL ||
-                strcmp(hitGetName(((HitEntry**)wp)[2]), hitGetName(*(HitEntry**)((u8*)mario + 0x1FC))) != 0) {
-                ((void**)wp)[2] = *(void**)((u8*)mario + 0x1FC);
+        HitEntry** hp = (HitEntry**)wp;
+
+        if (*(HitEntry**)((u8*)mario + 0x1FC) != NULL) {
+            if (hp[2] == NULL ||
+                strcmp(hitGetName(hp[2]), hitGetName(*(HitEntry**)((u8*)mario + 0x1FC))) != 0) {
+                hp[2] = *(HitEntry**)((u8*)mario + 0x1FC);
             }
         } else {
-            ((void**)wp)[2] = NULL;
+            hp[2] = NULL;
         }
 
-        if (*(void**)((u8*)mario + 0x1F4) != NULL) {
-            if (((void**)wp)[3] == NULL ||
-                strcmp(hitGetName(((HitEntry**)wp)[3]), hitGetName(*(HitEntry**)((u8*)mario + 0x1F4))) != 0) {
-                void* tmp = *(void**)((u8*)mario + 0x1F4);
+        if (*(HitEntry**)((u8*)mario + 0x1F4) != NULL) {
+            if (hp[3] == NULL ||
+                strcmp(hitGetName(hp[3]), hitGetName(*(HitEntry**)((u8*)mario + 0x1F4))) != 0) {
+                HitEntry* tmp = *(HitEntry**)((u8*)mario + 0x1F4);
 
-                ((void**)wp)[3] = tmp;
+                hp[3] = tmp;
                 v24 = tmp;
             }
         } else {
-            ((void**)wp)[3] = NULL;
+            hp[3] = NULL;
         }
 
-        if (*(void**)((u8*)mario + 0x1E4) != NULL) {
-            if (((void**)wp)[4] == NULL ||
-                strcmp(hitGetName(((HitEntry**)wp)[4]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E4))) != 0) {
-                ((void**)wp)[4] = *(void**)((u8*)mario + 0x1E4);
+        if (*(HitEntry**)((u8*)mario + 0x1E4) != NULL) {
+            if (hp[4] == NULL ||
+                strcmp(hitGetName(hp[4]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E4))) != 0) {
+                hp[4] = *(HitEntry**)((u8*)mario + 0x1E4);
             }
         } else {
-            ((void**)wp)[4] = NULL;
+            hp[4] = NULL;
         }
 
-        if (*(void**)((u8*)mario + 0x1E0) != NULL) {
-            if (((void**)wp)[5] == NULL ||
-                strcmp(hitGetName(((HitEntry**)wp)[5]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E0))) != 0) {
-                ((void**)wp)[5] = *(void**)((u8*)mario + 0x1E0);
+        if (*(HitEntry**)((u8*)mario + 0x1E0) != NULL) {
+            if (hp[5] == NULL ||
+                strcmp(hitGetName(hp[5]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E0))) != 0) {
+                hp[5] = *(HitEntry**)((u8*)mario + 0x1E0);
             }
         } else {
-            ((void**)wp)[5] = NULL;
+            hp[5] = NULL;
         }
 
-        if (party != NULL && *(void**)((u8*)party + 0x130) != NULL) {
-            if (((void**)wp)[6] == NULL ||
-                strcmp(hitGetName(((HitEntry**)wp)[6]), hitGetName(*(HitEntry**)((u8*)party + 0x130))) != 0) {
-                ((void**)wp)[6] = *(void**)((u8*)party + 0x130);
+        if (party != NULL && *(HitEntry**)((u8*)party + 0x130) != NULL) {
+            if (hp[6] == NULL ||
+                strcmp(hitGetName(hp[6]), hitGetName(*(HitEntry**)((u8*)party + 0x130))) != 0) {
+                hp[6] = *(HitEntry**)((u8*)party + 0x130);
             }
         } else {
-            ((void**)wp)[6] = NULL;
+            hp[6] = NULL;
         }
     }
 
@@ -552,7 +563,13 @@ void mobjMain(void) {
         if (!(entry->flags & 1))
             continue;
 
+#ifdef MUST_MATCH
+        // MUST_MATCH: the original tests gp->inBattle a second time under the short-circuit; the compiler
+        // then emits the unreachable second conditional branch (to the non-body path) the target has.
+        if (gp->inBattle != 0 || (gp->inBattle == 0 && (mode <= 1u || mode == 8))) {
+#else
         if (gp->inBattle != 0 || mode <= 1u || mode == 8) {
+#endif
             s32 v22;
             HitEntry* hitObj;
 
@@ -570,8 +587,6 @@ void mobjMain(void) {
                     entry->position.y += entry->unk5C.y;
                     entry->unk5C.y -= entry->unk68;
                 } else {
-                    f32 nz, ny, nx, dist, hitZ, hitY, hitX;
-
                     dist = 10.0f + (1.0f + (f32)__fabs(entry->unk5C.y));
                     if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &dist, &nx, &ny, &nz, entry->position.x,
                                        10.0f + entry->position.y, entry->position.z, 0.0f, -1.0f, 0.0f) != NULL) {
@@ -720,8 +735,6 @@ void mobjMain(void) {
             continue;
 
         if (koopaRunFlag == 0 && (entry->flags & 0x802) == 0) {
-            GXColor blend;
-            GXColor blend2;
             MapEntry* mapEntry;
             s32 shadow;
 
@@ -746,14 +759,11 @@ void mobjMain(void) {
         animPoseMain(entry->poseId);
 
         {
-            GXColor color;
             *(u32*)&color = animPoseGetMaterialEvtColor(entry->poseId);
 
             if (entry->flags & 0x4000)
                 continue;
             if ((entry->flags & 0x80) == 0) {
-                Vec pos;
-
                 PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &entry->position, &pos);
                 PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &pos, &pos);
                 if (__fabs(pos.x) > 1.5)

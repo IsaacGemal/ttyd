@@ -225,6 +225,80 @@ void nameBG(void) {
 	GXTexCoord2f32(1.0f, 0.0f);
 }
 
+#define NAME_KIRINUKI_SCALE(id_, W, H) \
+	{ \
+		GXTexObj texObj; \
+		Mtx mtx; \
+		f32 xs; \
+		f64 hh; \
+		f64 ww; \
+		TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x60->data[0], &texObj, (id_)); \
+		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
+		GXLoadTexObj(&texObj, GX_TEXMAP0); \
+		GXSetNumTexGens(1); \
+		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY); \
+		hh = __fabs(H); \
+		ww = __fabs(W); \
+		yscale = (f32)hh / (f32)GXGetTexObjHeight(&texObj); \
+		xs = (f32)ww / (f32)GXGetTexObjWidth(&texObj); \
+		PSMTXScale(mtx, xs, yscale, 1.0f); \
+		GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4); \
+	}
+
+
+static inline void nameKirinukiQuad(f32 x, f32 y, f32 w, f32 h) {
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3f32(x, y, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(x, y - h, 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
+	GXPosition3f32(x + w, y - h, 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(x + w, y, 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+}
+
+// NONMATCHING (99.75%): frame 0x3e0 and the whole instruction stream match; only the float callee-saved register numbers of the eight per-quad size/temp values differ (46 register-name diffs) — MWCC's float allocator parks the short-lived `__fabs(8.0f)` temp in f24 where the target keeps a live size value there.
+void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w) {
+	f32 yscale;
+
+	GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_FALSE);
+	GXSetAlphaCompare(GX_GEQUAL, 0x80, GX_AOP_OR, GX_NEVER, 0);
+	GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	GXSetNumChans(0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+	GXSetCurrentMtx(0);
+
+	NAME_KIRINUKI_SCALE(0x2f, 8.0f, 8.0f);
+	nameKirinukiQuad(x, y, 8.0f, 8.0f);
+	NAME_KIRINUKI_SCALE(0x2d, z - 8.0f - 8.0f, 8.0f);
+	nameKirinukiQuad(x + 8.0f, y, z - 8.0f - 8.0f, 8.0f);
+	NAME_KIRINUKI_SCALE(0x31, 8.0f, 8.0f);
+	nameKirinukiQuad(x + z - 8.0f, y, 8.0f, 8.0f);
+	NAME_KIRINUKI_SCALE(0x2e, 8.0f, w - 8.0f - 8.0f);
+	nameKirinukiQuad(x, y - 8.0f, 8.0f, w - 8.0f - 8.0f);
+	NAME_KIRINUKI_SCALE(0x2c, z - 8.0f, w - 8.0f - 8.0f);
+	nameKirinukiQuad(x + 8.0f, y - 8.0f, z - 8.0f, w - 8.0f - 8.0f);
+	NAME_KIRINUKI_SCALE(0x30, 8.0f, 8.0f);
+	nameKirinukiQuad(x, y - (w - 8.0f), 8.0f, 8.0f);
+	NAME_KIRINUKI_SCALE(0x2c, z - 8.0f - 8.0f, 8.0f);
+	nameKirinukiQuad(x + 8.0f, y - (w - 8.0f), z - 8.0f - 8.0f, 8.0f);
+	NAME_KIRINUKI_SCALE(0x32, 8.0f, 8.0f);
+	nameKirinukiQuad(x + z - 8.0f, y - (w - 8.0f), 8.0f, 8.0f);
+}
+
 void nameEntMain(void) {
 	BOOL loaded;
 
