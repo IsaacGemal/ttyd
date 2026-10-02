@@ -2253,7 +2253,7 @@ static void draw(CameraId cameraId, void* param) {
     *camGetCurPtr() = *camGetPtr(CAMERA_2D);
     winTexInit(**(TEXPalette***)((u8*)work->data + 0xA0));
     unk_80177008(5, (Vec){ 0.0f, 100.0f + work->alpha, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f },
-                 (GXColor){ 0x00, 0xFF, 0xFF, work->field_0x8 });
+                 (GXColor){ 0xFF, 0xFF, 0xFF, work->field_0x8 });
     *camGetCurPtr() = camBackup;
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
     GXSetProjectionv(projection);

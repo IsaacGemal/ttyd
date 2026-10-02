@@ -2154,33 +2154,14 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
     }
 }
 
-extern const f32 float_60_bom_000070dc;
-extern const f32 float_1000_bom_0000705c;
-extern const f32 float_1_bom_00006ffc;
-extern const double double_to_int_bom_00007030;
-
+// TODO: write pose_main (static, 0x180 bytes) here:
+// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 // TODO: write disp_sight (global, 0x16fc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
-extern const GXColor dat_bom_00006360;
-extern Vec vec3_bom_00006364;
-extern Vec vec3_bom_00006370;
-extern const double double_to_int_mask_bom_000070e0;
-extern const f32 float_2_bom_0000704c;
-
-#ifdef MUST_MATCH
-// Builds winTexSet's by-value Vec argument at the call site. Taking the base Vec by pointer
-// and doing `v = *base; v.x = x; v.y = y` reproduces the original's
-// `translate = vec3_bom_00006364; translate.x = ..; translate.y = ..` cadence (it loads
-// base.x/y/z), while returning it inline keeps the argument's by-value copy in its stack slot.
-static inline Vec bomTexVec(const Vec* base, f32 x, f32 y) {
-    Vec v = *base;
-    v.x = x;
-    v.y = y;
-    return v;
-}
-#endif
+// TODO: write drawNum (global, 0x224 bytes) here:
+// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 
 extern const f32 float_deg2rad_bom_000070d4;
@@ -2547,7 +2528,7 @@ USER_FUNC(bom1000_msg) {
     evtSetFloat(event, a2[0], pose[idx].matrix[0][0][3]);
     evtSetFloat(event, a2[1], pose[idx].matrix[0][2][3]);
     return EVT_RETURN_DONE;
-}// keeps the three float temps and the schedule the target has (see the NONMATCHING note)
+}
 #pragma opt_common_subs off
 // NONMATCHING (99.66%): the first block loads float_100 into r4 and zero into r3;
 // the target has float_100 in r3 and zero in r4 (f29/f30/f31 and the second block match).
