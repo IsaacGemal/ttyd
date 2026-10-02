@@ -1642,6 +1642,7 @@ static inline Vec logMkVec(Vec base, f32 x, f32 y) {
 
 #define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
 
+// NONMATCHING (81.85%): behaviour complete; register colouring and the stack order of the Vec copies differ.
 // Draws one page of the log window: map, crystal stars, cards, badges, the tattle viewer and the tab strip.
 void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     LogWin* w = (LogWin*)work;
