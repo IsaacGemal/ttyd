@@ -276,8 +276,8 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (96.88%): MWCC CSEs `obj + 0x1B8` into r25 (r25 is dead there) and reuses it for
-// strcpy/strcat/mobjEntry; retail recomputes the addi each time. Everything else matches.
+// `obj+0x1B8` is reached as `&obj->unk1A0[0x18]` (the declared array), so MWCC recomputes the
+// `addi r3, r31, 0x1b8` per use; the raw `(char*)((u8*)obj + 0x1B8)` form CSEs the address into r25.
 s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     u8* base = (u8*)vec3_802c3dc8;
     s32* args = event->args;
@@ -317,10 +317,10 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
     if (evtGetValue(event, unk1E4) != 0) {
         obj->unk1DC = 0x63;
     }
-    strcpy((char*)((u8*)obj + 0x1B8), name);
-    strcat((char*)((u8*)obj + 0x1B8), "_h");
-    mobjEntry((char*)((u8*)obj + 0x1B8), (const char*)(base + 0x3C8));
-    child = mobjNameToPtr((char*)((u8*)obj + 0x1B8));
+    strcpy((char*)&obj->unk1A0[0x18], name);
+    strcat((char*)&obj->unk1A0[0x18], "_h");
+    mobjEntry((char*)&obj->unk1A0[0x18], (const char*)(base + 0x3C8));
+    child = mobjNameToPtr((char*)&obj->unk1A0[0x18]);
     pos2 = *(Vec*)(base + 0x3AC);
     pos2.x = x;
     pos2.y = 180.0f + y;
@@ -1232,7 +1232,7 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     f2 = evtGetFloat(event, args[2]);
     f3 = evtGetFloat(event, args[3]);
     unk1D4 = evtGetValue(event, args[4]);
-    asyncName = "MOBJ_Signboard";
+    asyncName = str_802C4458;
     unk1E4 = args[5];
     if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
         return 0;
@@ -2988,7 +2988,7 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1A0 = evtGetValue(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[5]);
     s32 unk1E4 = args[6];
-    const char* asyncName = "MOBJ_HatenaBlock";
+    const char* asyncName = str_802C423C;
     MapObjectEntry* obj;
 
     if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
@@ -3280,18 +3280,26 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// Recovery block (heart / coin-taken). MapObjectEntry does not declare the fields this object stores in its
-// 0x1A0 padding, so they are read/written as raw offsets: 0x1A4 s32 coinNeeded, 0x1A8 s32 msgWindowId,
-// 0x1B0 s32 timer, 0x1C8 EffectEntry* effect.
-// NONMATCHING (89.86%)
+// Recovery block (heart / coin-taken). MapObjectEntry does not declare the fields this object stores in
+// its 0x1A0 padding, so they are read/written through the declared array: *(s32*)&obj->unk1A0[4] (0x1A4
+// coinNeeded), (u8*)obj + 0x1A8 msgWindowId, +0x1B0 timer, +0x1C8 EffectEntry* effect. The
+// effCoinFukidashiEntry calls pass the header's (type, coinNum, count, x, y, z) order; y is accumulated
+// through a local (`f32 y2 = float_25; y2 += obj->position.y;`) so mwcc emits `fadds f2,f2,f1` like retail.
+// The residue is register allocation: retail keeps the y operand in f1 and the z operand in f3, ours uses
+// f0/f1, and retail loads the coin argument last.
+// NONMATCHING (98.21%)
 s32 mobj_recovery_blk(MapObjectEntry* obj) {
     s32 i;
 
     switch (obj->unk1DC) {
         case -1:
-            *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
-                obj->position.x, float_25_8041a140 + obj->position.y, obj->position.z - float_10_8041a1a4,
-                0, *(s32*)((u8*)obj + 0x1A4), 0);
+            {
+                f32 y2 = float_25_8041a140;
+                y2 += obj->position.y;
+                *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
+                    0, *(s32*)&obj->unk1A0[4], 0,
+                    obj->position.x, y2, obj->position.z - float_10_8041a1a4);
+            }
             obj->unk1DC++;
             break;
         case 0:
@@ -3404,9 +3412,11 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             break;
         case 6:
             if (*(EffectEntry**)((u8*)obj + 0x1C8) == NULL) {
+                f32 y2 = float_25_8041a140;
+                y2 += obj->position.y;
                 *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
-                    obj->position.x, float_25_8041a140 + obj->position.y, obj->position.z - float_10_8041a1a4,
-                    0, *(s32*)((u8*)obj + 0x1A4), 0);
+                    0, *(s32*)&obj->unk1A0[4], 0,
+                    obj->position.x, y2, obj->position.z - float_10_8041a1a4);
             }
             if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
                 break;
@@ -3493,7 +3503,7 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1A0 = evtGetValue(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[6]);
     s32 unk1E4 = args[7];
-    const char* asyncName = "MOBJ_HiddenHatenaBlock";
+    const char* asyncName = str_802C4224;
     MapObjectEntry* obj;
 
     if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
@@ -4400,9 +4410,12 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
 // Data for mobj_switch_float_blk only (unit .rodata; see report).
 extern const char* _switch_anim[6];
 
-// NONMATCHING (94.76%): the logic matches; the residue is mwcc scheduling/register allocation only
-// (child-branch `index` copy r30 vs target r27; the first/case-0xb hitCheckFilter float-load order and
-// the hoisted &obj[0x1B8]; `unk1E0 == 0x400000` subis/cmplwi vs lis/cmpw).
+// The logic matches; the residue is mwcc scheduling/register allocation only (`index` home r30 vs retail
+// r27, the case-0/case-0xb hitCheckFilter float-load order, and the loop's `i = 0` vs retail's `mr r30,
+// r29`). Matched tricks: `*(s8*)&anim->name[0]` gives the signed cmpwi (`-char unsigned` folds a plain
+// `(s8)field`); the case-1 ternary string routes through a local (stops mwcc hoisting `lwz r3,0x70`); and
+// `index = flag ? 3 : 0;` before the `|= 0x80000000` fixes flag's r4 home.
+// NONMATCHING (95.50%)
 s32 mobj_switch_float_blk(MapObjectEntry* obj) {
     s32 i;
     s32 index;
@@ -4437,7 +4450,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 if ((s32)hit != 0) {
                     if (evtCheckID(obj->eventId) != 0) {
                         anim = animPoseGetCurrentAnim(obj->poseId);
-                        if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                        if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
                             flag = TRUE;
                         } else {
                             flag = FALSE;
@@ -4454,12 +4467,12 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 } else {
                     if (evtCheckID(obj->eventId) != 0) {
                         anim = animPoseGetCurrentAnim(obj->poseId);
-                        if (anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '2') {
+                        if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '2') {
                             index = 0;
-                        } else if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] == '3') {
+                        } else if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] == '3') {
                             *(s32*)&obj->unk1A0[4] |= 0x40000000;
                             index = 0;
-                        } else if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '4' && (s8)anim->name[2] <= '5') {
+                        } else if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] >= '4' && (s8)anim->name[2] <= '5') {
                             index = 3;
                         } else {
                             index = 3;
@@ -4471,13 +4484,13 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 }
             } else {
                 anim = animPoseGetCurrentAnim(obj->poseId);
-                if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
                     flag = TRUE;
                 } else {
                     flag = FALSE;
                 }
-                *(s32*)&obj->unk1A0[4] |= 0x80000000;
                 index = flag ? 3 : 0;
+                *(s32*)&obj->unk1A0[4] |= 0x80000000;
             }
             mobjRunEvent(obj, obj->unk1D4);
             if (obj->unk1E0 == 0x200000) {
@@ -4517,12 +4530,15 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 mobjNameToPtr((char*)&obj->unk1A0[0x18]);
             }
             anim = animPoseGetCurrentAnim(obj->poseId);
-            if (anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+            if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
                 flag = TRUE;
             } else {
                 flag = FALSE;
             }
-            animPoseSetAnim(obj->poseId, flag ? "A_3" : "S_1", 1);
+            {
+                const char* nm = flag ? "A_3" : "S_1";
+                animPoseSetAnim(obj->poseId, nm, 1);
+            }
             obj->unk1DC++;
             break;
 
@@ -4550,7 +4566,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 break;
             }
             anim = animPoseGetCurrentAnim(obj->poseId);
-            if (anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+            if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
                 flag = TRUE;
             } else {
                 flag = FALSE;
@@ -4588,7 +4604,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 }
             } else {
                 anim = animPoseGetCurrentAnim(obj->poseId);
-                if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                if (*(s8*)&anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
                     flag = TRUE;
                 } else {
                     flag = FALSE;
@@ -4605,8 +4621,10 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (96.77%): unit .rodata is not defined locally, so each pooled anim-name gets its own
-// lis/addi instead of the retail vec3_802c3dc8 base register (costs one callee-saved register).
+// The 0x1B8/0x1B0 accesses use the declared unk1A0[] array field and the name test uses `*(s8*)...`, so
+// they match; the only diff is the four "MOBJ_*_FlowBlockSwitch" strings pooled at base+0x94 vs retail's
+// base+0x730 (unit .rodata layout, not reproducible per-function).
+// NONMATCHING (99.97%)
 s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -4650,20 +4668,20 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 0xe10000;
     obj->unk1E4 = unk1E4;
     obj->unk1DC = 0;
-    *(s32*)((u8*)obj + 0x1B0) = 0;
+    *(s32*)&obj->unk1A0[0x10] = 0;
     mobjCalcMtx(obj);
-    strcpy((char*)((u8*)obj + 0x1B8), childName);
-    if (*(char*)((u8*)obj + 0x1B8)) {
+    strcpy((char*)&obj->unk1A0[0x18], childName);
+    if (*(s8*)&obj->unk1A0[0x18] != 0) {
         f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
-        MapObjectEntry* obj2 = mobjNameToPtr((char*)((u8*)obj + 0x1B8));
+        MapObjectEntry* obj2 = mobjNameToPtr((char*)&obj->unk1A0[0x18]);
         HitEntry* hit;
-        strcpy((char*)((u8*)obj2 + 0x1B8), obj->name);
-        distance = float_1_8041a160 + (f32)__fabs(*(f32*)((u8*)obj2 + 0x60));
+        strcpy((char*)&obj2->unk1A0[0x18], obj->name);
+        distance = float_1_8041a160 + (f32)__fabs(obj2->unk5C.y);
         hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                             *(f32*)((u8*)obj2 + 0x38), float_0p5_8041a15c + *(f32*)((u8*)obj2 + 0x3c),
-                             *(f32*)((u8*)obj2 + 0x40), float_0_8041a150, float_neg1_8041a214,
+                             obj2->position.x, float_0p5_8041a15c + obj2->position.y,
+                             obj2->position.z, float_0_8041a150, float_neg1_8041a214,
                              float_0_8041a150);
-        if (hit != NULL) {
+        if ((s32)hit != 0) {
             animPoseSetAnim(obj->poseId, "S_1", 1);
         } else {
             animPoseSetAnim(obj->poseId, "A_3", 1);

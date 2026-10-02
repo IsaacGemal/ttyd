@@ -4425,6 +4425,152 @@ static f32 angleABf(f32 x1, f32 y1, f32 x2, f32 y2) {
 }
 
 //calc3D, returns the first bit of SND_3DINFO (vol, pan, span, unused)
+extern int __float_nan[]; // no project header declares it (MSL float.h is off the include path)
+// MWCC's inline for the MSL float sqrt: bit-classifies x and Newton-refines
+// the reciprocal square root; a negative input becomes NaN.
+static inline s32 psndFpClassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+	case 0x7F800000:
+		if (*(s32*)&x & 0x007FFFFF) {
+			return 1;
+		}
+		return 2;
+	case 0:
+		if (*(s32*)&x & 0x007FFFFF) {
+			return 5;
+		}
+		return 3;
+	default:
+		return 4;
+	}
+}
+
+static inline f32 psndSqrtf(f32 x) {
+	const f64 _half = .5;
+	const f64 _three = 3.0;
+
+	if (x > 0.0f) {
+		f64 guess = __frsqrte(x);
+
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		return x * guess;
+	} else if (x < 0.0) {
+		return *(f32*)__float_nan;
+	} else if (psndFpClassifyf(x) == 1) {
+		return *(f32*)__float_nan;
+	}
+	return x;
+}
+
+// NONMATCHING (59.86%): structurally identical (same calls and immediates); only the callee-saved
+// register allocation and schedule differ. The target keeps &psnd in r27 and volume/span/pan/angOut in
+// r28/r29/r30/r31 (frame 0x80); ours uses four callee-saved registers (frame 0x70).
+u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
+	static u8 PAN[4];
+	Vec pos;
+	f32 ang;
+	f32 dir;
+	f32 rel;
+	f32 dist;
+	s32 pan;
+	s32 angOut;
+
+	PaperSoundWork* ps = &psnd;
+	pos = *position;
+	if (flags & 0x01000000) {
+		pos.x += ps->position.x;
+		pos.y += ps->position.y;
+		pos.z += ps->position.z;
+	}
+	if (flags & 0x02000000) {
+		pos = ps->position;
+	}
+	dir = ps->direction;
+	ang = angleABf(ps->position.x, ps->position.z, pos.x, pos.z);
+	if (fabsf(ang - dir) >= 180.0f) {
+		if (ang < dir) {
+			ang += 360.0f;
+		}
+		else {
+			ang -= 360.0f;
+		}
+	}
+	rel = (ang - dir) / 180.0f;
+	pan = (s32)(127.0f * rel + 127.0f);
+	if ((s16)pan < 0x40) {
+		pan = 0x7F - pan;
+	}
+	else if ((s16)pan > 0xC4) {
+		pan = 0xC4 - (pan - 0xC4);
+	}
+	pan -= 0x40;
+	if ((s16)pan < 0) {
+		pan = 0;
+	}
+	if ((s16)pan > 0x7F) {
+		pan = 0x7F;
+	}
+	dist = psndSqrtf((pos.x - ps->position.x) * (pos.x - ps->position.x)
+	           + (pos.y - ps->position.y) * (pos.y - ps->position.y)
+	           + (pos.z - ps->position.z) * (pos.z - ps->position.z));
+	{
+		f32 cs = (f32)cos(3.14 * rel);
+		f32 a = fabsf(dist * cs);
+		s32 r;
+
+		if (a > 2048.0f) {
+			a = 2048.0f;
+		}
+		if (fabsf(rel) < 0.5f) {
+			r = (s32)(64.0f - 64.0f * a / 2048.0f);
+			if ((s16)r < 1) {
+				r = 1;
+			}
+		}
+		else {
+			r = (s32)(64.0f + 64.0f * a / 2048.0f);
+			if ((s16)r > 0x7F) {
+				r = 0x7F;
+			}
+		}
+		r = (s16)r;
+		if (r > 0x40) {
+			angOut = (s32)(64.0f + 64.0f * (f32)sin(6.2831855f * (f32)((r - 0x40) * 0x5A / 0x40) / 360.0f));
+		}
+		else {
+			angOut = (s32)(64.0f - 64.0f * (f32)sin(6.2831855f * (f32)((0x40 - r) * 0x5A / 0x40) / 360.0f));
+		}
+	}
+	if ((s16)angOut < 0) {
+		angOut = 0;
+	}
+	if ((s16)angOut > 0x7F) {
+		angOut = 0x7F;
+	}
+	if (span == 0) {
+		PAN[0] = volume;
+	}
+	else {
+		f32 s100 = (f32)(span * 100);
+		f32 d = dist - 200.0f;
+
+		if (d > s100) {
+			d = s100;
+		}
+		if (d < 0.0f) {
+			d = 0.0f;
+		}
+		PAN[0] = (s32)((f32)volume * (127.0f * (s100 - d) / s100) / 127.0f);
+	}
+	if (PAN[0] > 0x7F) {
+		PAN[0] = 0x7F;
+	}
+	PAN[1] = pan;
+	PAN[2] = angOut;
+	return *(u32*)PAN;
+}
 
 s32 searchPSSFXList(const char* name) {
 	SoundEffectEntry* entry = pssfxlist;
@@ -4757,7 +4903,7 @@ static inline u8 psndENVGetVol(PaperSoundEnv* env, PaperSoundWork* ps) {
 // four loop-1 spawn sites (one extra clrlwi), the loop-2 env->unk14 checks reload instead of reusing a register,
 // and the four loop-2 LPF blocks drop one dead duplicate `bne`. The declaration order and every tested
 // pragma/restructuring did not move the three colours.
-// NONMATCHING (96.60%): the three persistent pointers are a 3-cycle off in the callee-saved register allocation.
+// NONMATCHING (97.68%): the three persistent pointers are a 3-cycle off in the callee-saved register allocation.
 void psndENVMain(void) {
 	s32 target;
 	u16 span;
@@ -5480,9 +5626,11 @@ BOOL psndBGMOn(u32 r3, char* bgm_name) {
 	return psndBGMOn_f_d(r3, bgm_name, 0x3E8, 0x2EE, 0);
 }
 
+#pragma dont_inline on // the original keeps psndENVOff as a real call in psndSetFlag/psndStopAllFadeOut
 BOOL psndENVOff(u32 r3) { //probably "id"
 	return psndENVOff_f_d(r3, 0x3E8, 0);
 }
+#pragma dont_inline reset
 
 // per-env work item at psnd + (id & 0xF) * 0xC
 // (not in a header; the original's layout is not declared there yet)
@@ -5818,7 +5966,6 @@ BOOL psndBGMStartCheck(s32 id) {
 	return (SoundSSCheck(bgm->streamId) >> 3) & 1;
 }
 
-// NONMATCHING (68.35%): 1 instruction differs, 9 missing, plus register differences.
 void psndSetFlag(s32 flag) { //1:1 except maybe param
     psnd.unk56 |= flag;
     if (psnd.unk56 & 1) {
@@ -6126,6 +6273,158 @@ void psndSFX_pos(s32 id, Vec* position) {
 
 void psndSFXOnVol(s32 a, s32 b) {
 	__psndSFXOn(a, b, 0xFF, 0, 0, 0, 0x10, 0);
+}
+
+// NONMATCHING (93.07%): structurally identical (same calls and immediates); only the callee-saved register
+// allocation differs (target maps a/b/c/d/e/f/g/h to r26/r20/r21/r22/r23/r24/r25/r17 and free/freeIndex/
+// entry/index/i to r29/r27/r28/r31/r30; ours rotates them). `seq` reads psnd+0x54 as u16, not the header's s16.
+s32 __psndSFXOn(s32 a, s32 b, s32 c, s32 d, Vec* e, s32 f, s32 g, s32 h) {
+	int i;
+	PaperSoundEffectDetail* sfx;
+	u32 j;
+	PaperSoundEffectDetail* free;
+	SoundEffectEntry* entry;
+	s32 freeIndex;
+	s32 seq;
+	s32 index;
+	s32 id;
+
+	free = NULL;
+	freeIndex = 0;
+	id = searchPSSFXList((const char*)a);
+	index = id & 0x1FFF;
+	entry = &pssfxlist[index];
+	if (entry->field_0x4 == 0) {
+		return -1;
+	}
+	if ((psnd.unk56 & 4) && h == 0) {
+		return -1;
+	}
+	if (index == 0x5B || index == 0x8CA || (u32)(index - 0x1BE) <= 1 || index == 0x205) {
+		if (psnd.unk5C != 0) {
+			return -1;
+		}
+		psnd.unk5C = 6;
+	}
+	if (evtGetValue(NULL, 0xF5DE0180) <= 2 && index == 0x365) {
+		return -1;
+	}
+	seq = 0;
+	for (i = 0; i < 40; i++) {
+		sfx = (PaperSoundEffectDetail*)&pssfx[i];
+		if ((u32)sfx->unk0 != -1 && (sfx->unk0 & 0x1FFF) == index && (sfx->unk6 & 0x100) && seq == 0) {
+			{
+				u16 t = *(u16*)&psnd.unk54 + 8;
+				*(u16*)&psnd.unk54 = t;
+				seq = t;
+			}
+		}
+		if ((u32)sfx->unk0 == -1) {
+			free = sfx;
+			freeIndex = i;
+		}
+	}
+	if (free == NULL) {
+		for (j = 0; j < 40; j++) {
+			sfx = (PaperSoundEffectDetail*)&pssfx[j];
+			if ((u32)sfx->unk0 == -1) {
+				free = sfx;
+				freeIndex = j;
+				break;
+			}
+			if (*(u16*)&sfx->padB[1] > entry->field_0x10) {
+				if (j != -1) {
+					PaperSoundEffectDetail* victim = (PaperSoundEffectDetail*)&pssfx[j & 0xFF];
+
+					if ((u32)victim->unk0 != -1) {
+						if (victim->unk6 & 1) {
+							victim->unk0 = -1;
+							victim->unk18 = -1;
+						}
+						else {
+							SoundEffectEntry* ventry = &pssfxlist[victim->unk0 & 0x1FFF];
+
+							if ((u32)victim->unk18 != -1) {
+								if (ventry->field_0x4 & 0x80000000) {
+									SoundSSStopCh(victim->unk18);
+								}
+								else if (ventry->field_0x4 & 0x40000000) {
+									SoundSongStopCh(victim->unk18);
+								}
+								else {
+									SoundEfxStop(victim->unk18);
+								}
+							}
+							victim->unk0 = -1;
+							victim->unk18 = -1;
+						}
+					}
+				}
+				free = sfx;
+				freeIndex = j;
+				break;
+			}
+		}
+		if (free == NULL) {
+			return -1;
+		}
+	}
+	if ((u8)b == 0xFF) {
+		b = 0x7F;
+	}
+	if ((u8)c == 0xFF) {
+		c = entry->field_0xD;
+	}
+	free->unk6 = 0x101;
+	if (psnd.unk56 & 0x10) {
+		free->unk6 |= 0x10;
+	}
+	if (id & 0x04000000) {
+		free->unk6 |= 0x20;
+	}
+	if (index == 0x518 || index == 0x742) {
+		free->unk6 |= 0x280;
+	}
+	if (entry->field_0xE == 1) {
+		free->unk6 |= 0x200;
+	}
+	if (id & 0x10000) {
+		free->unk6 |= 0x400;
+	}
+	if (id & 0x20000) {
+		free->unk6 |= 0x800;
+	}
+	if (id & 0x40000) {
+		free->unk6 |= 0x80;
+	}
+	free->unk0 = id;
+	free->vol = b;
+	free->pan = entry->field_0xC;
+	free->unkA = c;
+	free->unkE = (s16)((f32)entry->field_0x11 + ((f32)seq + (f32)(u16)d / float_16p667_8041b69c));
+	free->unk10 = seq * 5;
+	free->padB[0] = entry->field_0xF;
+	*(u16*)&free->padB[1] = entry->field_0x10;
+	free->unk14 = *(s16*)&entry->field_0x12;
+	if (e != NULL) {
+		*(Vec*)free->pad1C = *e;
+		if ((u32)f == 0) {
+			free->unk6 |= 2;
+		}
+		else {
+			free->unk6 |= 4;
+		}
+	}
+	free->unk12 = g;
+	*(u16*)free->pad16 = 0x7D00;
+	{
+		u16 cnt = *(u16*)&psnd.unk50 + 1;
+
+		*(u16*)&psnd.unk50 = cnt;
+		free->unk4 = cnt;
+	}
+	freeIndex = freeIndex | (*(u16*)&psnd.unk50 << 8);
+	return freeIndex;
 }
 
 s32 psndSFXOn_(const char* name) {
@@ -6542,7 +6841,6 @@ void psndSFX_pit(s32 id, u16 pitch) {
 	}
 }
 
-// NONMATCHING (94.37%): psndENVOff is inlined where the original calls it.
 void psndStopAllFadeOut(void) {
 	u8* p = (u8*)&psnd;
 	int i;

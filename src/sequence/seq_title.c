@@ -1,6 +1,9 @@
 #include "seq/seq_title.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/fadedrv.h"
+#include "mario/mario_pouch.h"
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "sound.h"
@@ -101,9 +104,23 @@ void L_titleInit(SequenceWork* work) {
 	camGetPtr(CAMERA_2D)->flags |= 0x400;
 }
 
-// NONMATCHING (4.50%): 11 instructions differ, 509 missing, plus register differences.
+// This unit's .sdata2 GXColor constants (the original names them dat_80419480..). titleMain, disp1 and
+// disp2 pass them by value to fadeEntry/unk_80177008/winTexSet/FontDrawColor through *(GXColor*)&name.
+const GXColor dat_80419480 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80419484 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_80419488 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041948c = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_80419490 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80419494 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_80419498 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041949c = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_804194a0 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_804194a4 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_804194a8 = {0x00, 0x00, 0x00, 0xFF};
+
 // dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
 #pragma dont_inline on
+// NONMATCHING (4.50%)
 void titleMain(SequenceWork* work) {
 	switch (wp2->field_0x8) {
 		case 0:
@@ -154,19 +171,15 @@ static inline Vec disp2Vec(Vec v, f32 y, f32 x) {
 	return v;
 }
 
-// The two Vec by-value argument temp blocks now sit in the original slots (scale 0x38/0x14,
-// intermediate 0x44/0x20, outgoing 0x50/0x2c) and the pulse multiply matches. Two diffs remain,
-// both outside this function's control:
-//  (1) the int-to-float magic double: the target loads it from the rodata base
-//      (`lfd f2, 0xb0(r31)`, r31 = vec3_802c11a0); MWCC here emits its own address
-//      (`lis r3, @300@ha; lfd f2, @300@l(r3)`). This unit's vec3_802c11a0 is an extern in
-//      include/sequence/seq_title.h, so the compiler will not pool the generated double
-//      against it (defining the blob + #pragma pool_data on did not change it either).
-//  (2) the FontDrawString calls: the target evaluates the two floats before the string
-//      pointer (`lfs f1; lfs f2; lwz r3`), but include/manager/fontmgr.h declares
-//      FontDrawString(const char*, f32, f32), so MWCC evaluates the string pointer first.
-//      The callee's ABI registers are the same either way; only the call-site order differs.
-// NONMATCHING (97.32%): the two blockers above; the Vec arg temps and pulse multiply match.
+// The two Vec by-value argument temp blocks sit in the original slots (scale 0x38/0x14,
+// intermediate 0x44/0x20, outgoing 0x50/0x2c) and the pulse multiply matches. One diff remains,
+// outside this function's control: the int-to-float magic double. The target loads it from the
+// rodata base (`lfd f2, 0xb0(r31)`, r31 = vec3_802c11a0); MWCC here emits its own address
+// (`lis r3, @300@ha; lfd f2, @300@l(r3)`). This unit's vec3_802c11a0 is an extern in
+// include/sequence/seq_title.h and the unit does not define its .rodata blob, so the compiler
+// cannot pool the generated double against that base.
+// NONMATCHING (99.34%): the magic double above (5 instructions, all in its addressing and the
+// register colouring it forces); the Vec arg temps, pulse multiply and FontDrawString order match.
 void disp2(CameraId cameraId, void* param) {
 	u8* base = (u8*)vec3_802c11a0; // base of this unit's .rodata pool
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
@@ -193,8 +206,8 @@ void disp2(CameraId cameraId, void* param) {
 	winTexSet(6, disp2Vec(*(Vec*)(base + 0x30), wp2->field_0x18, wp2->field_0x14), *(Vec*)(base + 0x3c),
 	          (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
-	*(s32*)((u8*)wp2 + 0x2C) += 1; // TitleWork pulse counter, no field declared in the header
-	pulse = (f32)sin((f64)(6.2831855f * (f32)*(s32*)((u8*)wp2 + 0x2C) / 120.0f));
+	wp2->field_0x2C += 1; // title pulse counter
+	pulse = (f32)sin((f64)(6.2831855f * (f32)wp2->field_0x2C / 120.0f));
 	alpha = (s32)(wp2->field_0x1C * (459.0f * pulse));
 	if (alpha < 0) {
 		alpha = 0;
@@ -209,8 +222,15 @@ void disp2(CameraId cameraId, void* param) {
 		FontDrawEdge();
 		FontDrawColor(&(GXColor){ 0xFA, 0xFA, 0xFA, 0xFF });
 		FontDrawScale(0.8f);
+		// fontmgr.h declares FontDrawString(const char*, f32, f32); the original's declaration order is
+		// (f32, f32, const char*), which loads f1/f2 before the string pointer. Same ABI registers.
+#ifdef MUST_MATCH
+		((void (*)(f32, f32, const char*))FontDrawString)(60.0f, 220.0f, dat_ptr_8040f260);
+		((void (*)(f32, f32, const char*))FontDrawString)(200.0f, 220.0f, dat_ptr_8040f264);
+#else
 		FontDrawString(dat_ptr_8040f260, 60.0f, 220.0f);
 		FontDrawString(dat_ptr_8040f264, 200.0f, 220.0f);
+#endif
 	}
 
 	*camGetPtr(cameraId) = camBackup;

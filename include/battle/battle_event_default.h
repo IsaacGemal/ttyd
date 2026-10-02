@@ -14,6 +14,8 @@ extern s32 btldefaultevt_ChangeParty[];
 extern s32 btldefaultevt_ProtectPartner[];
 extern s32 btldefaultevt_ChangePosition[];
 extern s32 btldefaultevt_LectureEnd[];
+extern s32 btldefaultevt_BiribiriMove[];
+extern s32 btldefaultevt_CantMoveZeroGravity[];
 
 EVT_DEF(btldefaultevt_SuitoruBadgeEffect);
 EVT_DEF(btldefaultevt_Confuse);

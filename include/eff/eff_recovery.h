@@ -11,3 +11,4 @@ void effRecoveryDisp2(CameraId camId, void* param);
 void effRecoveryDisp(CameraId camId, void* param);
 void effRecoveryMain2(EffectEntry* effect);
 void effRecoveryMain(EffectEntry* effect);
+extern u32 recovery_effAnimDt[3];

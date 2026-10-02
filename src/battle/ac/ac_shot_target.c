@@ -286,6 +286,8 @@ void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
 // global_optimizer/optimize_for_size/optimization_level pragmas were all tried; none moves it.
 // The `ac->`-qualified work-area access is required: without it st folds into work (18%).
 // NONMATCHING (19.82%): rumbleType/sfx are coloured swapped (target r24/r28, ours r28/r24).
+// The `#pragma dont_inline on` above `_ac_rumble_param_set` is required: without it MWCC inlines
+// the whole body at all four call sites and the function drops to 19.82%.
 s32 battleAcMain_ShotTarget(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];

@@ -894,9 +894,9 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 #endif
 }
 
-// NONMATCHING (94.04%): the spline arithmetic and control flow match instruction-for-instruction; only
-// MWCC's FP colouring differs (target overwrites the t parameter in f1 with t-knot[lo]; ours keeps t live
-// and puts the result in f8, then permutes the rest of the block).
+// NONMATCHING (94.57%): arithmetic and control flow match instruction for instruction; only MWCC's FP
+// colouring differs now (knot[lo] loads into f2/f3, t-knot[lo] into f8, 2.0 into f0 vs the target's
+// f2/f3 for constants, f1 for t-knot[lo], f6 for 2.0). Uses the extern float_2/float_3 constants.
 void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	f32* points = (f32*)a;
 	f32* knots = (f32*)b;
@@ -904,7 +904,7 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	s32 lo;
 	s32 hi;
 	s32 mid;
-	f32 f0, f2, f3, f4, f5, f6, f7, f8;
+	f32 f2, f3, f4, f0, f6, f5, f8, f7;
 
 	if (type == 2) {
 		out[0] = t * (points[3] - points[0]) + points[0];
@@ -929,7 +929,7 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	}
 
 	f2 = knots[lo];
-	f6 = 2.0f;
+	f6 = float_2_80419858;
 	f7 = tangents[lo * 3 + 0];
 	f4 = tangents[lo * 3 + 3];
 	t = t - f2;
@@ -939,7 +939,7 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	f3 = points[lo * 3 + 3];
 	f2 = f0 - f2;
 	f4 = f6 * f7 + f4;
-	f0 = 3.0f;
+	f0 = float_3_8041984c;
 	f5 = t * f5;
 	f3 = f3 - f8;
 	f5 = f5 / f2;
@@ -982,6 +982,7 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	f3 = t * f3 + f8;
 	out[2] = f3;
 }
+
 
 //heavily inlined
 void mapGetJointsSub(MapFileJoint* joint, s32* numJoints) { //1:1
@@ -1748,10 +1749,14 @@ typedef struct MapAnimData {
 	MapAnimKey key[]; // 0x5C
 } MapAnimData;
 
-// NONMATCHING (94.26%): first pass
+// NONMATCHING (98.51%): spline math, constants and compare directions match. What differs is MWCC
+// register colouring of the inner loop's three pointers (chan/out/chan2) and the key-select value (f4 vs
+// f13); the d==0 boolean is `clrlwi.` vs the original's `cntlzw/srwi.` (same result, different normalisation.)
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;
+	s32 count;
+	s32 i, k;
 	MapAnimKey* next;
 	f32 out[24];
 	Mtx trans;
@@ -1762,8 +1767,7 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 	Mtx local;
 	f32 f31, f30, f29, f28, f27, f23;
 	f32 f26, f25, f24;
-	s32 count;
-	s32 i, k;
+	f32 zero;
 
 	count = joint->count;
 	for (i = 1; i < count; i++) {
@@ -1800,23 +1804,28 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				f32 den;
 				s32 flag;
 				f32 u, u2, u3, a, b, c, h10, h00, h01, h11;
+				f32 two, neg2;
 
 				flag = (d != MATCH_F32(float_0_80419850));
-				if (flag) {
-					den = d;
+				if ((flag & 1) == 0) {
+					den = MATCH_F32(float_1Eneg08_804198b8);
 				}
 				else {
-					den = float_1Eneg08_804198b8;
+					den = d;
 				}
 				u = dt / den;
+				two = MATCH_F32(float_2_80419858);
 				u2 = u * u;
 				u3 = u2 * u;
-				a = float_3_8041984c * u2;
-				b = u3 - float_2_80419858 * u2;
-				c = float_2_80419858 * u3 - a;
+				a = MATCH_F32(float_3_8041984c) * u2;
+				b = u3 - two * u2;
+				c = two * u3 - a;
 				h10 = u + b;
-				h00 = float_1_80419860 + c;
-				h01 = float_neg2_804198a0 * u3 + a;
+				h00 = MATCH_F32(float_1_80419860) + c;
+				neg2 = MATCH_F32(float_neg2_804198a0);
+				h01 = neg2 * u3 + a;
+
+
 				h11 = u3 - u2;
 				out[k] = tan0 * (d * h10)
 				       + value0 * h00
@@ -1835,33 +1844,35 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 		f25 = out[7] / joint->div[1];
 		f24 = out[8] / joint->div[2];
 
-		if (f31 != float_0_80419850 || f30 != float_0_80419850 || f29 != float_0_80419850) {
+		zero = float_0_80419850;
+		if (f31 != zero || f30 != zero || f29 != zero) {
 			PSMTXTrans(trans, f31, f30, f29);
 		}
-		if (f28 != float_0_80419850) {
+		if (f28 != zero) {
 			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * f28);
 		}
-		if (f27 != float_0_80419850) {
+		if (f27 != zero) {
 			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * f27);
 		}
-		if (f23 != float_0_80419850) {
+		if (f23 != zero) {
 			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * f23);
 		}
 		PSMTXScale(scale, f26, f25, f24);
 		PSMTXIdentity(local);
-		if (f31 != float_0_80419850 || f30 != float_0_80419850 || f29 != float_0_80419850) {
+		zero = float_0_80419850;
+		if (f31 != zero || f30 != zero || f29 != zero) {
 			PSMTXConcat(local, trans, local);
 		}
-		if (f23 != float_0_80419850) {
+		if (f23 != zero) {
 			PSMTXConcat(local, rotZ, local);
 		}
-		if (f27 != float_0_80419850) {
+		if (f27 != zero) {
 			PSMTXConcat(local, rotY, local);
 		}
-		if (f28 != float_0_80419850) {
+		if (f28 != zero) {
 			PSMTXConcat(local, rotX, local);
 		}
-		if (f26 != float_0_80419850 || f25 != float_0_80419850 || f24 != float_0_80419850) {
+		if (f26 != zero || f25 != zero || f24 != zero) {
 			PSMTXConcat(local, scale, local);
 		}
 		PSMTXConcat(inMtx, local, outMtx);
@@ -3618,8 +3629,8 @@ typedef struct MapVtxFmt {
 	u32 field_0x48[8];  // 0x48
 } MapVtxFmt;
 
-// NONMATCHING (94.84%): semantically identical; only MWCC register colouring of wp/nrm/pos differs
-// (target r31/r30/r29 vs ours r29/r31/r30) plus the two instruction forms that implies.
+// NONMATCHING (94.99%): register colouring only; the address computations and immediates match, but wp/pos/nrm
+// land in r29/r30/r31 vs the target r31/r30/r29, and the vertex-loop pointers/indices still permute.
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	MapWork* wp = &mapWork[activeGroup];
 	void* nrm = (void*)(((u32*)mesh->vcdTableOffset)[1] + 4);
@@ -3651,19 +3662,21 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 
 			for (i = 0; i < mesh->displayListCount; i++) {
 				MapVtx* v = (MapVtx*)*(u32*)(dp + 0x10);
+				MapVtx* vp;
 
 				GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, (u16)v->field_0x0);
+				vp = v;
 				for (j = 0; j < (s32)v->field_0x0; j++) {
 					s32 k;
 
-					GXWGFifo.s16 = v->x;
-					GXWGFifo.s16 = v->y;
-					GXWGFifo.s16 = v->z;
+					GXWGFifo.s16 = vp->x;
+					GXWGFifo.s16 = vp->y;
+					GXWGFifo.s16 = vp->z;
 					for (k = 0; k < texCount; k++) {
-						s16 t = v->tex[k];
+						s16 t = vp->tex[k];
 						GXWGFifo.u16 = (t != -1) ? (u16)t : 0;
 					}
-					v = (MapVtx*)((u8*)v + 0x18);
+					vp = (MapVtx*)((u8*)vp + 0x18);
 				}
 				dp += 4;
 			}
@@ -3707,6 +3720,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		}
 	}
 }
+
 
 // NONMATCHING (95.93%): GX setup order/constants and addressing match; only MWCC register coloring differs
 // (target keeps wp in r31, pos in r29, nrm in r30; ours puts wp in r29, pos in r25, nrm in r30, and the
@@ -3968,15 +3982,17 @@ void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
 	if (a3 && obj->next) _setOffScrnId(obj->next, id, 1);
 }
 
-// NONMATCHING (75.99%): local GXColor copy changes the frame/register layout vs target keeping the color pointer live
+// NONMATCHING (90.01%): field write must be a real GXColor struct copy and each `a3 && next` level needs its own
+// fresh GXColor copy (loaded from *color) while `child` passes the parent's &c. Remaining diff is scheduling:
+// target stores each level's copy just before the out-of-line bl, we store early (r0/r3 swap).
 void setColor(MapObject* obj, GXColor* color, s32 a3) {
 	GXColor c;
 	if (obj == 0) return;
 	c = *color;
-	*(u32*)obj->field_0xC = *(u32*)&c;
+	*(GXColor*)&obj->field_0xC = c;
 	*(u32*)obj->field_0x0 |= 0x40;
 	if (obj->child) setColor(obj->child, &c, 1);
-	if (a3 && obj->next) setColor(obj->next, &c, 1);
+	if (a3 && obj->next) { GXColor d = *color; setColor(obj->next, &d, 1); }
 }
 
 void* mapSearchDmdJointSub(void* a, void* b) {

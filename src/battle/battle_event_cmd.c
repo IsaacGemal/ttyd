@@ -61,7 +61,33 @@ extern const f64 double_to_int_mask_802ee170;
 extern const char* _mario_acrobat_voice_table[5];
 extern const char* _mario_attack_voice_table[10];
 extern const Vec vec3_802edec4;
-extern const Vec vec3_802ede88;
+// The original .rodata places these six zero Vecs at 0x0 and the 15 SFX_V_MARIO voice
+// strings at 0x48..0x1b0, so the compiler pools the double_to_int/0.5/3.0 constants that
+// follow at their retail offsets (0x1b0, 0x280, ...). Without the definitions the pool is
+// emitted at the start of .rodata and every base-relative `lfd 0xXXX(rN)` is off. The
+// strings are only referenced through `base + off` under MUST_MATCH, so they are emitted
+// as data purely to pin the layout.
+__declspec(section ".rodata") const Vec vec3_802ede88 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_802ede94 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_802edea0 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_802edeac = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_802edeb8 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_802edec4 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const char str_802EDED0[24] = "SFX_VOICE_MARIO_AC3_1";
+__declspec(section ".rodata") const char str_802EDEE8[24] = "SFX_VOICE_MARIO_AC3_2";
+__declspec(section ".rodata") const char str_802EDF00[24] = "SFX_VOICE_MARIO_AC3_3";
+__declspec(section ".rodata") const char str_802EDF18[24] = "SFX_VOICE_MARIO_AC3_4";
+__declspec(section ".rodata") const char str_802EDF30[24] = "SFX_VOICE_MARIO_AC3_5";
+__declspec(section ".rodata") const char str_802EDF48[24] = "SFX_VOICE_MARIO_AC1_1";
+__declspec(section ".rodata") const char str_802EDF60[24] = "SFX_VOICE_MARIO_AC1_2";
+__declspec(section ".rodata") const char str_802EDF78[24] = "SFX_VOICE_MARIO_AC1_3";
+__declspec(section ".rodata") const char str_802EDF90[24] = "SFX_VOICE_MARIO_AC1_4";
+__declspec(section ".rodata") const char str_802EDFA8[24] = "SFX_VOICE_MARIO_AC1_5";
+__declspec(section ".rodata") const char str_802EDFC0[24] = "SFX_VOICE_MARIO_AC2_1";
+__declspec(section ".rodata") const char str_802EDFD8[24] = "SFX_VOICE_MARIO_AC2_2";
+__declspec(section ".rodata") const char str_802EDFF0[24] = "SFX_VOICE_MARIO_AC2_3";
+__declspec(section ".rodata") const char str_802EE008[24] = "SFX_VOICE_MARIO_AC2_4";
+__declspec(section ".rodata") const char str_802EE020[24] = "SFX_VOICE_MARIO_AC2_5";
 extern const Vec vec3_802ede94;
 extern const Vec vec3_802edeac;
 extern const Vec vec3_802edeb8;
@@ -250,8 +276,9 @@ USER_FUNC(btlevtcmd_GetRandomValue) {
 }
 
 //s32 retIndex, s32 countIndex, s32 sizeIndex[]
-// NONMATCHING (98.60%): `args[0]`/`args[1]` are loaded in the opposite order, and the
-// `ceilcount = 0; retcount = 0;` pair emits `li r5,0` where the target copies `mr r5,r6`.
+// NONMATCHING (98.82%): reading `args[-1]` after `args += 2` makes the target load
+// `args[0]` before `args[1]`; what is left is `retcount = ceilcount = 0`, which MWCC
+// constant-folds to `li r5,0` where the target copies `mr r5,r6`.
 USER_FUNC(btlevtcmd_DrawLots) {
     s32* args = event->args;
     s32 index;
@@ -259,9 +286,15 @@ USER_FUNC(btlevtcmd_DrawLots) {
     s32 i, countId, count, max;
     s32 ceiling, ceilcount, retcount;
 
+#ifdef MUST_MATCH
+    index = args[0];
+    args += 2;
+    countId = args[-1];
+#else
     index = args[0];
     countId = args[1];
     args += 2;
+#endif
     count = evtGetValue(event, countId);
     alloc = BattleAlloc(sizeof(s32) * count);
     max = 0;
@@ -270,8 +303,7 @@ USER_FUNC(btlevtcmd_DrawLots) {
         max += alloc[i];
     }
     ceiling = irand(max);
-    ceilcount = 0;
-    retcount = 0;
+    retcount = ceilcount = 0;
     for (i = 0; i < count; i++) {
         ceilcount += alloc[i];
         if (ceiling < ceilcount) {
@@ -463,12 +495,11 @@ USER_FUNC(btlevtcmd_GetPartsPos) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
-// NONMATCHING (96.59%): 3 missing, plus register differences.
 USER_FUNC(btlevtcmd_SetPartsPos) {
     s32* args = event->args;
     f32 x, y, z, currX, currY, currZ;
-    BattleUnitPart* part;
     BattleUnit* unit;
+    BattleUnitPart* part;
     s32 id, partId;
 
     id = evtGetValue(event, args[0]);
@@ -484,7 +515,10 @@ USER_FUNC(btlevtcmd_SetPartsPos) {
     }
     else {
         BtlUnit_GetPos(unit, &currX, &currY, &currZ);
-        BtlUnit_SetPartsOffsetPos(part, x - currX, y - currY, z - currZ);
+        x -= currX;
+        y -= currY;
+        z -= currZ;
+        BtlUnit_SetPartsOffsetPos(part, x, y, z);
     }
     return EVT_RETURN_DONE;
 }
@@ -2908,9 +2942,6 @@ USER_FUNC(btlevtcmd_BtlStageObjFlagOnOff) {
 }
 
 //s32* valueIndex, BOOL isFirstCall
-// NONMATCHING (96.33%): logic and registers match; only the instruction scheduling of the two
-// constant loads feeding intplGetValue (lfs before vs after the r3/r4 setup) and the epilogue
-// lmw/lwz order still differ.
 USER_FUNC(btlevtcmd_SacBgsetMove) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -2958,7 +2989,10 @@ USER_FUNC(btlevtcmd_SacBgsetMove) {
             }
         }
     }
-    return event->userdata[0] >= 45;
+    if (event->userdata[0] >= 45) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 //no params
@@ -3846,12 +3880,10 @@ void _PartsMoveSoundControl(BattleUnitPart* part) {
     _MoveSoundControlCore(*(BattleUnit**)((u8*)part + 0x4EC), (u8*)part + 0xC0, part, x, y, z);
 }
 
-//s32 retIndex
-// NONMATCHING (97.94%): instructions match; only wp/args register numbers are swapped
-// (target wp=r4, args=r5).
+#pragma opt_dead_assignments off
 USER_FUNC(btlevtcmd_GetConsumeItem) {
-    BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
     s32 idx = *(s32*)((u8*)wp + 0x1C38);
     u8* tbl = (u8*)wp + 0x171C;
     s32 index;
@@ -3865,6 +3897,7 @@ USER_FUNC(btlevtcmd_GetConsumeItem) {
     evtSetValue(event, index, value);
     return EVT_RETURN_DONE;
 }
+#pragma opt_dead_assignments reset
 
 //s32* battleId
 USER_FUNC(btlevtcmd_ClearAllStatus) {
@@ -4071,23 +4104,32 @@ static inline f32 sqrtf(f32 x) {
 }
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* mode
-// NONMATCHING (93.94%): logic and schedule match; ours addresses its .rodata (double_to_int, the sqrtf
-// 0.5/3.0 doubles, the 0.0f pool) from a local base instead of vec3_802ede88 because this TU's data isn't
-// defined here, and `e`/rodata/unit land in different registers.
+// The pool offsets, the arg/e schedule and the dist/ellipse temps match: `frame, mode` before `args`, `e`
+// last with its i2f deferred to `eRaw`, both mMoveSpeedXZ divisions reread 0x17C, and the cx/dz/cz/dx/radius
+// source order is chosen to colour the FPRs like the original.
+// NONMATCHING (99.52%): 11 instructions differ only in the f3/f4/f5 colouring of the cx/dx x temps.
 USER_FUNC(btlevtcmd_EllipseMovePosition) {
     s32 btlId, id;
+    s32 frame, mode;
     s32* args = event->args;
     BattleUnit* unit;
-    s32 frame, mode;
-    f32 tx, ty, tz;
-    f32 x, y, z;
+    f32 tx;
+    f32 ty;
+    f32 tz;
+    f32 x;
+    f32 y;
+    f32 z;
     f32 dist;
-    f32 dx, dy, dz;
-    f32 cx, cz;
-    f32 e;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 cx;
+    f32 cz;
     f32 radius;
     f32 angle;
     f32 t;
+    f32 e;
+    s32 eRaw;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
@@ -4095,7 +4137,7 @@ USER_FUNC(btlevtcmd_EllipseMovePosition) {
     ty = (f32)evtGetValue(event, args[2]);
     tz = (f32)evtGetValue(event, args[3]);
     frame = evtGetValue(event, args[4]);
-    e = (f32)evtGetValue(event, args[5]);
+    eRaw = evtGetValue(event, args[5]);
     mode = evtGetValue(event, args[6]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     if (isFirstCall) {
@@ -4105,15 +4147,15 @@ USER_FUNC(btlevtcmd_EllipseMovePosition) {
         BtlUnit_SetMoveStartPos(unit, x, y, z);
         BtlUnit_SetMoveCurrentPos(unit, x, y, z);
         BtlUnit_SetMoveTargetPos(unit, tx, ty, tz);
-        dy = y - ty;
         dx = x - tx;
+        dy = y - ty;
         dz = z - tz;
         dist = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
         *(f32*)((u8*)unit + 0x17C) = dist;
         if (*(s32*)((u8*)unit + 0x168) == 0) {
-            *(s32*)((u8*)unit + 0x168) = (s32)(dist / unit->mMoveSpeedXZ);
+            *(s32*)&unit->field_0x168[0] = (s32)(*(f32*)&unit->field_0x178[4] / unit->mMoveSpeedXZ);
         } else {
-            unit->mMoveSpeedXZ = dist / (f32)*(s32*)((u8*)unit + 0x168);
+            unit->mMoveSpeedXZ = *(f32*)&unit->field_0x178[4] / (f32)*(s32*)&unit->field_0x168[0];
         }
         if (*(s32*)((u8*)unit + 0x168) == 0) {
             return 2;
@@ -4126,11 +4168,12 @@ USER_FUNC(btlevtcmd_EllipseMovePosition) {
             unit->moveDirection = -1;
         }
     }
-    cz = (unit->mMoveStartPos.z + unit->mMoveTargetPos.z) * float_0p5_8041bfc8;
-    cx = (unit->mMoveStartPos.x + unit->mMoveTargetPos.x) * float_0p5_8041bfc8;
-    dx = unit->mMoveTargetPos.x - unit->mMoveStartPos.x;
+    cx = (unit->mMoveTargetPos.x + unit->mMoveStartPos.x) * float_0p5_8041bfc8;
     dz = unit->mMoveTargetPos.z - unit->mMoveStartPos.z;
+    cz = (unit->mMoveStartPos.z + unit->mMoveTargetPos.z) * float_0p5_8041bfc8;
+    dx = unit->mMoveTargetPos.x - unit->mMoveStartPos.x;
     radius = sqrtf(dx * dx + dz * dz) * float_0p5_8041bfc8;
+    e = (f32)eRaw;
     angle = angleABf(cx, cz, unit->mMoveStartPos.x, unit->mMoveStartPos.z);
     t = intpl_sub(mode, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
                   float_180_8041bfc4, float_0_8041bf98);
@@ -4715,7 +4758,7 @@ USER_FUNC(btlevtcmd_FallPartsPosition) {
 }
 
 //s32* battleId, s32* partId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
-// NONMATCHING (96.27%): 1 instruction differs, 3 missing, 3 extra, plus register differences.
+// NONMATCHING (96.27%): with opt_common_subs off the 0.5/3.0 loads keep f4/f2; only args/args[1] r5/r6 remain swapped.
 USER_FUNC(btlevtcmd_JumpPartsPosition) {
     s32 btlId, id;
     s32* args = event->args;
@@ -5043,9 +5086,9 @@ USER_FUNC(btlevtcmd_JumpContinue) {
 }
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
-// NONMATCHING (97.51%): complete logic and matching 0xb0 frame. Only the `tx - x` direction-test FPR
-// naming, the mFallAccel*0.5 f2/f4 allocation, and whether `unit+0x188` is cached in a callee-saved
-// register across the BtlUnit_LoadSeMode call remain. The two psndSFXOn_3D calls each need two Vecs
+// NONMATCHING (97.51%): with opt_common_subs off the mFallAccel*count*0.5 temp colours f4/f2 and the
+// mFallAccel/0.5 loads keep the original order; only that FPR pair and the mMoveSpeedY/float_0 compare
+// operands still differ. The two psndSFXOn_3D calls each need two Vecs
 // (source + argument copy) and distinct globals vec3_802ede88 / vec3_802ede94, which is what fixes the
 // frame; the declaration order `s32 btlId, id; s32* args; BattleUnit* unit; s32 frame, a;` fixes the
 // args/id allocation. The tail is written `if (frame <= 0) { SetPos(target); ...; return 1; } return 0;`.
@@ -5140,9 +5183,9 @@ USER_FUNC(btlevtcmd_JumpPosition) {
 }
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* type, s32* a
-// NONMATCHING (96.74%): the logic and frame match; ours addresses the double constants (20, 6, 47, 1.12, 0.53, ...) from
-// anonymous pool entries instead of the vec3_802ede88 base, `tx - x > 0` loads its operands in the other FPR order (as
-// btlevtcmd_JumpPosition), and the fmadd operands land in different FPRs. Type 1 skips the setup, 2 and 4 stretch the arc.
+// NONMATCHING (98.35%): with opt_common_subs off the double constants (20, 6, 47, 1.12, 0.53, ...) load
+// from the vec3_802ede88 base at their retail offsets and the fmadd operands keep their FPRs; only the
+// `tx - x > 0` FPR order (as btlevtcmd_JumpPosition) still differs. Type 1 skips the setup, 2 and 4 stretch the arc.
 USER_FUNC(btlevtcmd_MarioJumpPosition) {
     s32* args = event->args;
     BattleWork* wp;
@@ -5314,7 +5357,7 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
 
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* interp, s32* curve, s32* a
-// NONMATCHING (94.66%): same instruction count and control flow; the frame is 0x10 larger (three extra float slots) and
+// NONMATCHING (97.70%): same instruction count and control flow; the frame is 0x10 larger (three extra float slots) and
 // the tx/ty/tz FPRs are assigned in another order. A dive from the start position to the target through intpl_sub
 // (interp >= 100 keeps the unit above the floor); curve 0 offsets the height by a sine, otherwise the offset follows the
 // direction of travel.
@@ -5468,7 +5511,7 @@ USER_FUNC(btlevtcmd_DivePosition) {
 // left: aboveFloor's `li r28, 0x0` is scheduled before BtlUnit_GetPartsPtr where the target has it before
 // BattleGetUnitPtr, ~10 diffs of intpl_sub argument-load order (same wall as btlevtcmd_DivePosition), and ~6 FPR
 // picks; 18 of the 41 diffs are local .rodata addressing that resolves when the unit links.
-// NONMATCHING (95.39%): aboveFloor init scheduling + intpl_sub/FPR order
+// NONMATCHING (95.94%): aboveFloor init scheduling + intpl_sub/FPR order
 USER_FUNC(btlevtcmd_DivePartsPosition) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -5648,7 +5691,11 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
         ((NiceEffectWork*)entry->userdata)->field_0x1C = float_0p75_8041bfa8;
     } else {
         BattleAudience_Case_AcrobatBad();
+#ifdef MUST_MATCH
+        psndSFXOn_3D("SFX_BTL_ACROBAT_MISS1", &pos);
+#else
         psndSFXOn_3D(str_802EE0EC, &pos);
+#endif
     }
     return 2;
 }
@@ -5793,22 +5840,23 @@ USER_FUNC(btlevtcmd_FallPosition) {
 }
 
 // The original addresses its sound names from the vec3_802ede88 base.
+// The SFX_SYSTEM names are pooled string literals in the original (ACSuccessEffect reads them at
+// vec3+0x1c0..0x24c), so MUST_MATCH spells them as literals and the natural build uses the symbols.
 #ifdef MUST_MATCH
 #define ACSE_STR(off, sym) (base + (off))
+#define ACSE_SYSSFX(sym, lit) (lit)
 #else
 extern const char str_802EE048[], str_802EE064[], str_802EE080[], str_802EE094[], str_802EE0A8[], str_802EE0BC[],
     str_802EE0D4[], str_802EE178[], str_802EE18C[], str_802EE1A0[];
 #define ACSE_STR(off, sym) (sym)
+#define ACSE_SYSSFX(sym, lit) (sym)
 #endif
 
 //s32* type, s32* x, s32* y, s32* z
-// NONMATCHING (92.19%): correct logic, but MWCC keeps `angle` in f30 (an extra saved FPR) and
+// NONMATCHING (99.67%): correct logic, but MWCC keeps `angle` in f30 (an extra saved FPR) and
 // reloads the double_to_int constant via lis/lfd instead of the target's base-relative 0x1b0(r30).
 USER_FUNC(btlevtcmd_ACSuccessEffect) {
     s32* args = event->args;
-#ifdef MUST_MATCH
-    const char* base = (const char*)&vec3_802ede88;
-#endif
     s32 type;
     Vec pos;
     f32 scale;
@@ -5825,48 +5873,49 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
     switch (type) {
     case 0:
         id = 0;
-        sfx = ACSE_STR(0x1C0, str_802EE048);
+        sfx = ACSE_SYSSFX(str_802EE048, "SFX_SYSTEM_NICE_25PERCENT1");
         angle = float_90_8041bfb0;
         scale *= float_0p3_8041bfac;
         break;
     case 1:
         id = 0;
-        sfx = ACSE_STR(0x1DC, str_802EE064);
+        sfx = ACSE_SYSSFX(str_802EE064, "SFX_SYSTEM_NICE_50PERCENT1");
         angle = float_90_8041bfb0;
         scale *= float_0p6_8041bfb4;
         break;
     case 2:
         id = 0;
-        sfx = ACSE_STR(0x1F8, str_802EE080);
+        sfx = ACSE_SYSSFX(str_802EE080, "SFX_SYSTEM_NICE1");
         angle = float_90_8041bfb0;
         scale *= float_1p2_8041bfb8;
         break;
     case 3:
         id = 1;
-        sfx = ACSE_STR(0x20C, str_802EE094);
+        sfx = ACSE_SYSSFX(str_802EE094, "SFX_SYSTEM_GOOD1");
         angle = float_90_8041bfb0;
         scale *= float_1p2_8041bfb8;
         break;
     case 4:
         id = 2;
-        sfx = ACSE_STR(0x220, str_802EE0A8);
+        sfx = ACSE_SYSSFX(str_802EE0A8, "SFX_SYSTEM_GREAT1");
         angle = float_120_8041bfbc;
         scale *= float_1p2_8041bfb8;
         break;
     case 5:
         id = 3;
-        sfx = ACSE_STR(0x234, str_802EE0BC);
+        sfx = ACSE_SYSSFX(str_802EE0BC, "SFX_SYSTEM_WONDERFUL1");
         angle = float_150_8041bfc0;
         break;
     case 6:
         id = 4;
-        sfx = ACSE_STR(0x24C, str_802EE0D4);
+        sfx = ACSE_SYSSFX(str_802EE0D4, "SFX_SYSTEM_EXCELLENT1");
         angle = float_180_8041bfc4;
         break;
     default:
         return 2;
     }
-    angle = angle * scale * float_0p5_8041bfc8;
+    angle = angle * scale;
+    angle = angle * float_0p5_8041bfc8;
     if (pos.x + angle > float_160_8041bfcc) {
         pos.x = float_160_8041bfcc - angle;
     }
@@ -6681,7 +6730,8 @@ USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
     s32 name;
 
     btlId = evtGetValue(event, args[0]);
-    unit = BattleGetUnitPtr(wp, id = BattleTransID(event, btlId));
+    id = BattleTransID(event, btlId);
+    unit = BattleGetUnitPtr(wp, id);
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
     name = evtGetValue(event, args[2]);
@@ -6864,10 +6914,6 @@ USER_FUNC(btlevtcmd_AnimeWaitPlayLoopTiming) {
 }
 
 //s32* battleId, s32* itemId
-// NONMATCHING (97.96%): logic and registers match. The compiler-generated int->float magic
-// constants print as @1822/@1835 instead of double_to_int_802ee038 / double_to_int_mask_802ee170
-// (same as btlevtcmd_ConsumeItem), and the address setup for BtlUnit_GetPos is scheduled in a
-// different order. The f32 locals are declared z,y,x to land x at 0x8/z at 0x10 like the target.
 USER_FUNC(btlevtcmd_ConsumeItemReserve) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -6876,7 +6922,7 @@ USER_FUNC(btlevtcmd_ConsumeItemReserve) {
     s32 itemId;
     s32 i;
     s32 coins;
-    f32 z, y, x;
+    Vec pos;
 
     btlId = evtGetValue(event, args[0]);
     itemId = evtGetValue(event, args[1]);
@@ -6898,8 +6944,8 @@ USER_FUNC(btlevtcmd_ConsumeItemReserve) {
                           (f32)itemDataTable[itemId].sell_price / float_100_8041bff0);
             if (coins > 0) {
                 pouchAddCoin(coins);
-                BtlUnit_GetPos(unit, &x, &y, &z);
-                effCoinN64Entry(0, 0, x, y, z, float_1_8041bfa4);
+                BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+                effCoinN64Entry(0, 0, pos.x, pos.y, pos.z, float_1_8041bfa4);
             }
         }
     } else if (unit->heldItem == 0x97) {
@@ -6909,19 +6955,18 @@ USER_FUNC(btlevtcmd_ConsumeItemReserve) {
 }
 
 //s32* battleId, s32* itemId
-// NONMATCHING (95.18%): correct logic; the inventory pointer arithmetic and coin math pick different
-// callee-saved registers than the target.
 USER_FUNC(btlevtcmd_ConsumeItem) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     s32 btlId;
     s32 itemId, slot, coins;
-    f32 x, y, z;
+    Vec pos;
 
     btlId = evtGetValue(event, event->args[0]);
     unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
     if (unit->currentKind == 0xDE || (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7)) {
-        s32* cmd = (s32*)((u8*)wp + 0x171C + *(s32*)((u8*)wp + 0x1C38) * 0x1C);
+        BattleCommand* cm = &wp->commandMenu;
+        s32* cmd = (s32*)((u8*)cm + cm->cursor[11].field_0 * 0x1C);
         itemId = cmd[0x94 / 4];
         slot = cmd[0x90 / 4];
         if (itemDataTable[itemId].usable_locations & 1) {
@@ -6931,8 +6976,8 @@ USER_FUNC(btlevtcmd_ConsumeItem) {
             coins = (s32)((f32)(unit->badgesEquipped.Refund * 5 + 0x46) * (f32)itemDataTable[itemId].sell_price / float_100_8041bff0);
             if (coins > 0) {
                 pouchAddCoin(coins);
-                BtlUnit_GetPos(unit, &x, &y, &z);
-                effCoinN64Entry(0, 0, x, y, z, float_1_8041bfa4);
+                BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+                effCoinN64Entry(0, 0, pos.x, pos.y, pos.z, float_1_8041bfa4);
             }
         }
     } else {
@@ -6942,7 +6987,7 @@ USER_FUNC(btlevtcmd_ConsumeItem) {
 }
 
 //s32* battleId, s32* count
-// NONMATCHING (95.71%): logic matches; the callee-saved registers are rotated (event r28 vs r31,
+// NONMATCHING (96.62%): logic matches; the callee-saved registers are rotated (event r28 vs r31,
 // base r31 vs r29, isFirstCall/kind r29 vs r26, args r26 vs r30). The command-menu address also
 // folds differently as a result. Reusing isFirstCall for currentKind did not change the allocation.
 USER_FUNC(btlevtcmd_CommandFlyItem) {
@@ -6965,7 +7010,8 @@ USER_FUNC(btlevtcmd_CommandFlyItem) {
         unit = BattleGetUnitPtr(wp, btlId);
         isFirstCall = unit->currentKind;
         if (isFirstCall == 0xDE || (isFirstCall >= 0xE0 && isFirstCall < 0xE7)) {
-            s32* cmd = (s32*)((u8*)wp + 0x171C + *(s32*)((u8*)wp + 0x1C38) * 0x1C);
+            u8* tbl = (u8*)&wp->commandMenu;
+        s32* cmd = (s32*)(tbl + wp->commandMenu.cursor[11].field_0 * 0x1C);
             itemId = cmd[0x94 / 4];
         } else {
             itemId = unit->heldItem;

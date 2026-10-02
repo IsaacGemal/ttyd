@@ -254,7 +254,7 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     return hit;
 }
 
-// NONMATCHING (96.91%): frame/query offsets/scheduling mostly match; wins were reusing `d` for the second
+// NONMATCHING (96.96%): frame/query offsets/scheduling mostly match; wins were reusing `d` for the second
 // query, plain `if (hit != NULL)` both blocks, and `partyNrmToAngle(&n)`. Left: callee-saved GPRs
 // (orig party=r30/pos=r31/vec3=r29/hit2=r28), an f4/f6 swap in the push-outs, rodata doubles, if-layout.
 HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
@@ -262,6 +262,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     HitCheckQuery query2;
     HitEntry* hit;
     HitEntry* hit2;
+    HitEntry* h1;
     Vec p;
     Vec n;
     Vec d;
@@ -285,20 +286,23 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     query1.targetDistance = f31;
 
     if (yoshiGetStatus() != 0) {
-        hit = hitCheckVecFilter(&query1, chkfilterYoshi);
+        h1 = hitCheckVecFilter(&query1, chkfilterYoshi);
     } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
-        hit = hitCheckVecFilter(&query1, chkfilterNokotaro);
+        h1 = hitCheckVecFilter(&query1, chkfilterNokotaro);
     } else {
-        hit = hitCheckVecFilter(&query1, chkfilter);
+        h1 = hitCheckVecFilter(&query1, chkfilter);
     }
 
-    if (hit != NULL) {
+    if (h1 != NULL) {
         f31 = (f32)(s32)(1000.0f * query1.targetDistance +
                          (query1.targetDistance >= 0.0f ? 0.5f : -0.5f)) /
               1000.0f;
         n.x = query1.hitNormal.x;
         n.y = query1.hitNormal.y;
         n.z = query1.hitNormal.z;
+        hit = h1;
+    } else {
+        hit = h1;
     }
     if (hit != NULL) {
         Vec nor = n;
@@ -483,15 +487,17 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     ((f32)(s32)(float_1000_8041b408 * (v) + ((v) >= float_0_8041b3ec ? float_0p5_8041b3f4 : float_neg0p5_8041b404)) / \
      float_1000_8041b408)
 
-// NONMATCHING (85.45%): caching 100*n.y in a local makes the FP saves f23-f31 match the original, and a
-// f32 hxyz[3] for the rounded hitPos steers the ROUND registers. Still off: the compiler forwards the
-// hitNormal copy into query.hitNormal (query 0x24 vs 0x30, frame 0x160 vs 0x150) and the doubles pool locally.
+// Caching 100*n.y, f32 hxyz[3], and giving each hitCheckVecFilter result its own variable (h2) that is copied
+// into `hit` at the end of each arm reproduces the retail phi (raw r3 tested, copy only inside the arm).
+// Remaining: fpu temp colouring and a forwarded hitNormal copy (query 0x24 vs 0x30, frame 0x140 vs 0x150).
+// NONMATCHING (86.74%)
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
     f32 ny100;
     Vec targetPos;
     Vec n;
     HitCheckQuery query;
     HitEntry* hit;
+    HitEntry* h2;
     f32 h;
     f32 f24;
     f32 px, py, pz;
@@ -532,20 +538,25 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     query.targetDistance = h + f24;
 
     if (yoshiGetStatus() != 0) {
-        hit = hitCheckVecFilter(&query, chkfilterYoshi);
+        h2 = hitCheckVecFilter(&query, chkfilterYoshi);
     } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
-        hit = hitCheckVecFilter(&query, chkfilterNokotaro);
+        h2 = hitCheckVecFilter(&query, chkfilterNokotaro);
     } else {
-        hit = hitCheckVecFilter(&query, chkfilter);
+        h2 = hitCheckVecFilter(&query, chkfilter);
+    }
+    if (h2 == NULL) {
+        hit = h2;
+    } else {
+        hxyz[0] = ROUND_MILLI(query.hitPos.x);
+        hxyz[1] = ROUND_MILLI(query.hitPos.y);
+        hxyz[2] = ROUND_MILLI(query.hitPos.z);
+        n = query.hitNormal;
+        ny100 = float_100_8041b3f8 * n.y;
+        hit = h2;
     }
     if (hit == NULL) {
         return 0;
     }
-    hxyz[0] = ROUND_MILLI(query.hitPos.x);
-    hxyz[1] = ROUND_MILLI(query.hitPos.y);
-    hxyz[2] = ROUND_MILLI(query.hitPos.z);
-    n = query.hitNormal;
-    ny100 = float_100_8041b3f8 * n.y;
 
     *(f32*)((u8*)party + 0xC4) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n.z,
                                                      ny100) - float_180_8041b424);
@@ -565,10 +576,10 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     return (u32)hit;
 }
 
-// The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). The
-// remaining diffs are FP register colouring (67 arg_mismatch) and a `hit` r27/r3 live-range split; the
-// `hitY = hitY;` copy in the `hit == NULL` arm is a dead-path materialisation (compiler-input only).
-// NONMATCHING (97.91%): FP colouring + `hit` r27/r3 split
+// The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). Giving the
+// first hitCheckVecFilter result its own variable (h2) and copying it into `hit` after the test removes the
+// r27/r3 live-range split. The remaining diffs are FP register colouring (f19-f31 rotated).
+// NONMATCHING (98.50%): FP colouring
 HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     HitCheckQuery query;
     Vec targetPos;
@@ -588,6 +599,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     f32 px, py, pz;
     f32 targetDist;
     f32 hitY;
+    HitEntry* h2;
     f32 bestY;
     f32 dz;
     f32 dx;
@@ -651,20 +663,19 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
         query.targetDistance = targetDist;
 
         if (yoshiGetStatus() != 0) {
-            hit = hitCheckVecFilter(&query, chkfilterYoshi);
+            h2 = hitCheckVecFilter(&query, chkfilterYoshi);
         } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
-            hit = hitCheckVecFilter(&query, chkfilterNokotaro);
+            h2 = hitCheckVecFilter(&query, chkfilterNokotaro);
         } else {
-            hit = hitCheckVecFilter(&query, chkfilter);
+            h2 = hitCheckVecFilter(&query, chkfilter);
         }
-        if (hit == NULL) {
-            hitY = hitY;
-        } else {
+        if (h2 != NULL) {
             hitY = ROUND_MILLI(query.hitPos.y);
             n.x = query.hitNormal.x;
             n.y = query.hitNormal.y;
             n.z = query.hitNormal.z;
         }
+        hit = h2;
         if (hit != NULL) {
             tmpA = n;
             *(f32*)(party->field_C4 + 0x00) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec,

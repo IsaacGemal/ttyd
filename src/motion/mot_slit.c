@@ -525,12 +525,12 @@ void marioSlitForceCancel(void) {
 }
 
 // The six marioHitCheckVec blocks match in instruction order; only float-register allocation and the
-// schedule differ. Checks 1/4 use `volatile` copies/loads (LHS `*(volatile Vec*)&A = *pos`, a
-// volatile load `A.y = *(volatile f32*)&A.y + ten`, and a volatile `dir.z` store) plus `dist` before
-// the add, to pin the target's load/store order Offset checks still differ: target
-// keeps x+offx/z+offz/y+10/dist in f3/f0/f1/f4, ours f4/f3/f1/f0.
-// NONMATCHING (93.47%): register allocation/scheduling differs; `f32 ten = 10.0f` and the volatile
-// forms were needed for the FP load order.
+// schedule differ. Checks 1/4 use `volatile` copies/loads (LHS `*(volatile Vec*)&A = *pos`, a volatile
+// load `A.y = *(volatile f32*)&A.y + ten`, a volatile `dir.z` store), `dist` written before the add,
+// and a duplicated dead `dist = 20.0f;` (MUST_MATCH), to pin the target's load/store order.
+// NONMATCHING (95.01%): register allocation/scheduling differ; the offset checks keep
+// x+offx/z+offz/y+10/dist in f3/f0/f1/f4, ours f4/f3/f1/f0, and the setup blocks split the raw A copy
+// differently. `f32 ten = 10.0f` and the volatile forms are needed for the FP load order.
 BOOL marioCreviceWallChk(Vec* pos) {
     Vec A, B, C, D;
     f32 sinv, cosv, dist;
@@ -550,7 +550,15 @@ BOOL marioCreviceWallChk(Vec* pos) {
     sincosf(&sinv, &cosv, toMovedirSimple(180.0f));
 
     *(volatile Vec*)&A = *pos;
+#ifdef MUST_MATCH
+    // The duplicate is dead (overwritten by the line below), but its presence
+    // steers MWCC's scheduler into the target's FP register allocation; see the
+    // NONMATCHING note above the function.
     dist = 20.0f;
+    dist = 20.0f;
+#else
+    dist = 20.0f;
+#endif
     A.y = *(volatile f32*)&A.y + ten;
     {
         Vec dir = vec3_802c5e78;
@@ -593,7 +601,15 @@ BOOL marioCreviceWallChk(Vec* pos) {
 
     sincosf(&sinv, &cosv, toMovedirSimple(0.0f));
     *(volatile Vec*)&A = *pos;
+#ifdef MUST_MATCH
+    // The duplicate is dead (overwritten by the line below), but its presence
+    // steers MWCC's scheduler into the target's FP register allocation; see the
+    // NONMATCHING note above the function.
     dist = 20.0f;
+    dist = 20.0f;
+#else
+    dist = 20.0f;
+#endif
     A.y = *(volatile f32*)&A.y + ten;
     {
         Vec dir = vec3_802c5e9c;
@@ -663,10 +679,16 @@ static inline void slitSetWalkSpeed(MarioWork* mario) {
 
     if (flags & 0x100000) {
         if (MW_S16(m, 0x2B4) != 0) {
+#ifdef MUST_MATCH
+            // The original keeps both arms of the empty test (`beq compute; b end`); a bare
+            // empty arm is folded away, so keep a no-op here.
+            speed = speed;
+#endif
         } else {
-            s8 sx = MW_U8(m, 0x24E);
-            s8 sy = MW_U8(m, 0x24F);
-            if (sx * sx + sy * sy <= 0xBD1) {
+            s32 sx = (s8)m->wStickDir1;
+            s32 sy = (s8)m->wStickDir2;
+            s32 angle = sx * sx + sy * sy;
+            if (angle <= 0xBD1) {
                 speed *= 0.5f;
             }
         }
@@ -684,8 +706,8 @@ static inline void slitResetBounce(void) {
     MW_F32(m, 0x158) = 0.004f;
 }
 
-// NONMATCHING (99.47%): the inlined walk-speed block (`slitSetWalkSpeed`) leaves its empty `if (field != 0) {}` arm as
-// `beq next; b end` in the target and `bne end` here (four inline sites), and the registers of the s8 products differ.
+// NONMATCHING (99.96%): the inlined walk-speed block's first s8 product is sign-extended in place in
+// the target (`extsb r4,r4; mullw r3,r4,r4`) but copied to r3 here (`extsb r3,r4; mullw r3,r3,r3`).
 // Mario in the slit (crevice): the paper-mode state machine for squeezing through a gap in a wall.
 void mot_slit(void) {
     MarioWork* mario = marioGetPtr();
@@ -696,6 +718,8 @@ void mot_slit(void) {
     s32 manhattan;
     s16 count16;
     f32 angleGoal;
+    f32 slitSinv;
+    f32 slitCosv;
 
     if (mario->controlStickSensitivity == zero) {
         mario->trigFlags &= 0xFFFF7FFF;
@@ -942,11 +966,13 @@ keyOffPath:
                     marioChgPaper("PM_S_1D");
                     diff = revise360(mario->directionView - mario->targetYaw);
                     if (MW_S16(mario, 0x2BA) == 0) {
+                        s16 side;
                         if (diff >= 180.0f) {
-                            MW_S16(mario, 0x2BA) = 2;
+                            side = 2;
                         } else {
-                            MW_S16(mario, 0x2BA) = 1;
+                            side = 1;
                         }
+                        MW_S16(mario, 0x2BA) = side;
                     }
                     if (MW_S16(mario, 0x2BA) == 1) {
                         if (diff >= 180.0f) {
@@ -1004,18 +1030,16 @@ keyOffPath:
                         HitCheckQuery query;
                         HitCheckQuery* q = &query;
                         Vec dir;
-                        f32 sinv;
-                        f32 cosv;
 
                         mario->directionView = revise360(MW_F32(mario, 0x2A8) + mario->targetYaw);
                         MW_S32(mario, 0x2A4) = 0;
-                        sincosf(&sinv, &cosv, mario->directionView);
+                        sincosf(&slitSinv, &slitCosv, mario->directionView);
                         query.targetPos.x = mario->position.x;
                         dir = vec3_802c5ec0;
                         query.targetPos.y = 11.0f + mario->position.y;
                         query.targetPos.z = mario->position.z;
-                        dir.x = sinv;
-                        dir.z = cosv;
+                        dir.x = slitSinv;
+                        dir.z = slitCosv;
                         query.targetDir = dir;
                         query.targetDistance = 20.0f;
                         if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
@@ -1169,13 +1193,12 @@ keyOffPath:
             mario->baseSpeed = 0.0f;
             marioChgPose("M_S_1");
         }
-        count16 = MW_S16(mario, 0x2DA) - 1;
+        count16 = MW_S16(mario, 0x2DA);
+        count16--;
         MW_S16(mario, 0x2DA) = count16;
         if (count16 <= 0) {
             MW_S16(mario, 0x2D8) = 0x66;
-            return;
         }
-    default:
         return;
     case 0x66:
         if (mario->controlStickSensitivity == zero) {
@@ -1220,7 +1243,8 @@ keyOffPath:
         psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
         /* fallthrough */
     case 0x6F:
-        count16 = MW_S16(mario, 0x2DA) - 1;
+        count16 = MW_S16(mario, 0x2DA);
+        count16--;
         MW_S16(mario, 0x2DA) = count16;
         if (count16 <= 0) {
             MW_S16(mario, 0x2D8) = 0x70;
@@ -1262,7 +1286,8 @@ keyOffPath:
         psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
         /* fallthrough */
     case 0x79:
-        count16 = MW_S16(mario, 0x2DA) - 1;
+        count16 = MW_S16(mario, 0x2DA);
+        count16--;
         MW_S16(mario, 0x2DA) = count16;
         if (count16 <= 0) {
             MW_S16(mario, 0x2D8) = 0x7A;

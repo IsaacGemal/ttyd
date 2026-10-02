@@ -577,9 +577,15 @@ void title_disp(WinMgrEntry* entry) {
 	}
 }
 
-// NONMATCHING (94.99%): `i = 0` is emitted just before the loop preheader, not back after
-// `bl pouchGetPtr`; two header x-sums keep their last intermediate in r3 where the original
-// uses r0; and the int->float block schedules differently (mask lands in f30, not f28).
+// list_disp: every call and immediate matches (tools/diff_shape.py: calls same 38 38), so the
+// remaining diffs are register allocation/scheduling. `i = 0` is emitted just before the loop
+// preheader, not back after `bl pouchGetPtr`; the two header x-sums and the loop's price x-sum
+// keep their last intermediate in r3 where the original uses r0; and the int->float block
+// materialises the conversions in a different order: ours creates a signed double first and
+// converts `width` with f30, the original creates the unsigned double first and uses f28.
+// Changing the unit's .rodata order does not change this (verified by neutralising name_disp's
+// first conversion), so it is internal to this function's codegen, not a pool/order problem.
+// NONMATCHING (95.80%): register allocation/scheduling only; see above.
 void list_disp(WinMgrEntry* entry) {
 	PouchData* pouch;
 	GXColor color0;
@@ -651,7 +657,7 @@ void list_disp(WinMgrEntry* entry) {
 		msg = msgSearch(str_802ECDF8);
 		sprintf(buf, "%s", msg);
 		width = FontGetMessageWidth(buf);
-		PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - 0.6f * width) - 40.0f, entry->field_0x1C - 28 - i * 26, 0.0f);
+		PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - 0.6f * width) - 40.0f, entry->field_0x1C - i * 26 - 28, 0.0f);
 		PSMTXScale(scale, 0.64f, 0.64f, 0.64f);
 		PSMTXConcat(mtx, scale, mtx);
 		FontDrawMessageMtx(mtx, buf);
@@ -703,9 +709,6 @@ void point_disp(WinMgrEntry* entry) {
 	}
 }
 
-// NONMATCHING (99.18%): `_wp` is loaded straight into r29 where the original loads r5 and
-// copies to r29; and the two viewport-scale multiplies run y-first (0x172/0x14) where the
-// original runs x-first (0x170/0x10), which is also the 0x10/0x14 stack-slot swap.
 void name_disp(WinMgrEntry* entry) {
 	ShopWork* wp = (ShopWork*)_wp;
 	GXColor titleColor;
@@ -715,7 +718,13 @@ void name_disp(WinMgrEntry* entry) {
 	const char* msg;
 	s32 i;
 
+#ifdef MUST_MATCH
+	// MUST_MATCH: reading _wp directly here (rather than through wp) makes the compiler
+	// keep the pointer in a scratch register and copy it to wp's callee-saved register.
+	msg = msgSearch(itemDataTable[((ShopWork*)_wp)->field_0x8[((ShopWork*)_wp)->field_0x2C * 2]].name);
+#else
 	msg = msgSearch(itemDataTable[wp->field_0x8[wp->field_0x2C * 2]].name);
+#endif
 	if (winMgrAction(wp->field_0x50) == 0) {
 		FontDrawStart();
 		FontDrawEdge();
@@ -732,8 +741,15 @@ void name_disp(WinMgrEntry* entry) {
 		pos.y += float_30_8041bc40;
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
-		pos.y *= (f32)gp->efbHeight * float_0p5_8041bc5c;
+#ifdef MUST_MATCH
+		// MUST_MATCH: the array form makes the scheduler emit the x scale before the y one,
+		// which is the original's order; the named-field form emits y first.
+		((f32*)&pos)[0] *= (f32)gp->fbWidth * float_0p5_8041bc5c;
+		((f32*)&pos)[1] *= (f32)gp->efbHeight * float_0p5_8041bc5c;
+#else
 		pos.x *= (f32)gp->fbWidth * float_0p5_8041bc5c;
+		pos.y *= (f32)gp->efbHeight * float_0p5_8041bc5c;
+#endif
 		sprintf(buf, "%d", *(s32*)((u8*)wp->field_0x8 + i * 8 + 4));
 		PSMTXTrans(mtx, float_12_8041bc64 * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, *(s32*)((u8*)wp->field_0x8 + i * 8 + 4), 0, *(GXColor*)&dat_8041bbe4);

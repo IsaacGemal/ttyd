@@ -276,31 +276,38 @@ void tegami_delete(void) {
     }
 }
 
-// What made most of this match: giving the int->float conversion its own local (`dbl = (f32)i;`)
-// right after twoPi, which is what lets the target's load order come out; assigning `mtxId` after
-// PSMTXTrans instead of before the loop's texture-matrix math; and caching the tev color-in
-// argument in `cc` so the `(i == 0)` boolean is computed once (cntlzw/srwi) before the arg setup
-// instead of being interleaved with it.
+// What made this match: assigning the loop constants inside the loop in source order
+// twoPi, dbl, quarter, c16605, one, pi (...c4967, hundred) lets MWCC hoist all of them before
+// the loop in the target's exact order (twoPi, double, quarter, ...). Declaring the
+// coefficients as `f32 pi, quarter, hundred, twoPi, one, c16605, c4967, scale, dbl;` reproduces
+// the target's FPR colours (MWCC colours callee-saved FPRs by declaration position, descending).
+// The tev color-in argument is cached in `cc` so the `(i == 0)` boolean is computed once
+// (cntlzw/srwi) before the arg setup instead of being interleaved with it.
 //
 // The .rodata pool order matches the target exactly (no data-symbol diffs). 18 instruction diffs
 // remain, all MWCC register colouring:
-//  * The int->float magic double lands in f31 where the target has it in f29, so pi is one low
-//    (ours f29, target f31; quarter f30 and the other six are exact): 3 loads + fsubs + 2 fcmpo,
-//    plus the fmuls that combines them comes out with its operands swapped. The anonymous
-//    conversion double is always coloured after the named loop constants; no declaration or
-//    statement arrangement (nor any opt_* toggle) moves it between twoPi and quarter. Swapping
-//    pi/quarter in the declaration is what lands quarter on f30 instead of f29.
+//  * The anonymous int->float magic double takes the target's f29 in the target but f23 here
+//    (hundred takes f29 here and f23 in the target); the two swap. The conversion double is
+//    compiler-generated (our object's is an anonymous pooled @NNN@, the target's is the named
+//    global `double_to_int_gor_0001dbb0`) and MWCC always colours it after the named loop
+//    constants, so it lands in the lowest free FPR; no declaration or statement arrangement (nor
+//    any opt_* toggle) moves it between twoPi and quarter. It costs `lfd f23`/`lfs f29`, the
+//    `fsubs`, and the two `fdivs` by hundred at the PSMTXTrans. The fmuls that combines
+//    twoPi*dbl with quarter also comes out with its operands swapped (target `f0*f30`, ours
+//    `f30*f0`).
 //  * r24 and r25 are swapped for the two short chains: ours keeps texBuf/named-zero/twoPi-address
-//    in r25 and mtxId/the tev boolean in r24, the target has them in r24 and r25 respectively.
+//    in r25 and mtxId/the tev boolean in r24; the target has them in r24 and r25 respectively.
+// `mtxId` is `u32` (the GX headers take `u32 mtx`/`u32 id`); as `s32` MWCC adds a redundant
+// `mr` copying the computed id into the loop variable.
 // NONMATCHING (99.75%, 18 diffs): MWCC register colouring only (see above).
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
     smartEntry* texBuf;
     CameraEntry* cam;
-    f32 quarter, pi, twoPi, one, c16605, c4967, scale, hundred, dbl;
+    f32 pi, quarter, hundred, twoPi, one, c16605, c4967, scale, dbl;
     s32 i;
-    s32 mtxId;
+    u32 mtxId;
     f32 f0, f1, f2, f3, f4;
 
     scale = evtGetFloat(NULL, GW(0)) / 100.0f;
@@ -487,7 +494,16 @@ USER_FUNC(cam_yure) {
         view_dy = cam->viewOffset.y;
         view_trg = 0;
     }
+#ifdef MUST_MATCH
+    // match-only: the temp makes 50.0f pool before 0.3f (the target's .rodata order); the
+    // one-expression form compiles to the same instructions but pools them the other way round.
+    {
+        f32 s = (f32)sin((f32)gp->retraceCount / 50.0f);
+        cam->viewOffset.y += 0.3f * s;
+    }
+#else
     cam->viewOffset.y += 0.3f * (f32)sin((f32)gp->retraceCount / 50.0f);
+#endif
     if (view_trg == 0) {
         if (cam->viewOffset.y > view_dy) {
             view_trg = 1;

@@ -219,6 +219,12 @@ typedef struct PartyData {
 void partySetFamicomMode(PartyEntry* party, s32 mode);
 extern s32 partyCtrlNo;
 extern char* partyPoseTbl[20][15];
+extern const Vec vec3_802cced4;
+extern const Vec vec3_802cce5c;
+extern const Vec vec3_802cce68;
+extern const Vec vec3_802cce74;
+extern const Vec vec3_802cce80;
+extern char str_802CCF08[];
 extern const f32 float_neg6p8_8041b0d8;
 extern const f32 float_6p8_8041b0dc;
 extern const f32 float_1p2_8041b0e0;
@@ -232,4 +238,5 @@ extern const f32 float_3p5_8041b108;
 extern const f32 float_4_8041b10c;
 extern const f32 float_0p75_8041b110;
 s32 partyDokanInit(PartyEntry* party);
+s32 partyDokanMain(PartyEntry* party);
 void party_damage_return(PartyEntry* party);

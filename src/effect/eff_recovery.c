@@ -94,73 +94,107 @@ static u8 color_rotation_data[] = {
 	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
-extern u8 recovery_effAnimDt[];
+
+// Match-only: helper's anonymous literal is the unit's zero-vector .rodata object; building the
+// temp from it keeps the copy's loads late (see entry).
+static inline Vec recoveryZeroVec(void) {
+	Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+	return v;
+}
+// Match-only: helper's anonymous literal is the unit's zero-vector .rodata object; building the
+// temp from it keeps the copy's loads late (see entry).
+static inline Vec recoveryZeroVec2(void) {
+	Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+	return v;
+}
+// Match-only: helper's anonymous literal is the unit's zero-vector .rodata object; building the
+// temp from it keeps the copy's loads late (see entry).
+static inline Vec recoveryZeroVec3(void) {
+	Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+	return v;
+}
+// Match-only: helper's anonymous literal is the unit's zero-vector .rodata object; building the
+// temp from it keeps the copy's loads late (see entry).
+static inline Vec recoveryZeroVec4(void) {
+	Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+	return v;
+}
+// Match-only: helper's anonymous literal is the unit's zero-vector .rodata object; building the
+// temp from it keeps the copy's loads late (see entry).
+static inline Vec recoveryZeroVec5(void) {
+	Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+	return v;
+}
+// Match-only: helper's anonymous literal is the unit's zero-vector .rodata object; building the
+// temp from it keeps the copy's loads late (see entry).
+static inline Vec recoveryZeroVec6(void) {
+	Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+	return v;
+}
 
 // .rodata (0x802F3508..0x802F3678)
-const Vec vec3_802f3508 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3514 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3520 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f352c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3538 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3544 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802f3550 = 4503601774854144.0;
-const char str_802F3558[0x18] = "SFX_HP_RECOVER_SHINE1";
-const char str_802F3570[0x18] = "SFX_HP_RECOVER_SHINE2";
-const char str_802F3588[0x18] = "SFX_HP_RECOVER_SHINE3";
-const char str_802F35A0[0x18] = "SFX_FP_RECOVER_SHINE1";
-const char str_802F35B8[0x18] = "SFX_FP_RECOVER_SHINE2";
-const char str_802F35D0[0x18] = "SFX_FP_RECOVER_SHINE3";
-const char str_802F35E8[0xC] = "Recovery";
-const char str_802F35F4[0x18] = "SFX_HP_RECOVER_SMALL1";
-const char str_802F360C[0x14] = "SFX_HP_RECOVER_MID1";
-const char str_802F3620[0x14] = "SFX_HP_RECOVER_BIG1";
-const char str_802F3634[0x18] = "SFX_FP_RECOVER_SMALL1";
-const char str_802F364C[0x14] = "SFX_FP_RECOVER_MID1";
-const char str_802F3660[0x14] = "SFX_FP_RECOVER_BIG1";
+#define str_802F3558 "SFX_HP_RECOVER_SHINE1"
+#define str_802F3570 "SFX_HP_RECOVER_SHINE2"
+#define str_802F3588 "SFX_HP_RECOVER_SHINE3"
+#define str_802F35A0 "SFX_FP_RECOVER_SHINE1"
+#define str_802F35B8 "SFX_FP_RECOVER_SHINE2"
+#define str_802F35D0 "SFX_FP_RECOVER_SHINE3"
+#define str_802F35E8 "Recovery"
+#define str_802F35F4 "SFX_HP_RECOVER_SMALL1"
+#define str_802F360C "SFX_HP_RECOVER_MID1"
+#define str_802F3620 "SFX_HP_RECOVER_BIG1"
+#define str_802F3634 "SFX_FP_RECOVER_SMALL1"
+#define str_802F364C "SFX_FP_RECOVER_MID1"
+#define str_802F3660 "SFX_FP_RECOVER_BIG1"
 
 const char str_8041CB08[] = "%d";
 
-// NONMATCHING (71.68%): register allocation in the element loop and the
-// recovery_effAnimDt reference (lis/addi instead of li @sda21) differ.
+// 100%: the colour strings are string literals (not named `const char[]` objects), so MWCC pools
+// its own int->float double as the unit's only .rodata constant right after the zero-Vec helpers,
+// at +0x48, ahead of the pooled strings -- exactly the original's layout. `double_to_int_802f3550`
+// is intentionally not defined by name (a named copy would add a second, unused pool entry and push
+// the anonymous one past the strings). The zero Vecs come from the `recoveryZeroVecN` inlines above
+// the .rodata.
 EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	RecoveryData* data;
-	RecoveryData* ptr;
-	Vec pos;
 	Vec disp;
-	s32 field;
-	s32 i;
+	Vec pos;
 	s32 n;
+	RecoveryData* ptr;
+	s32 i;
 	s32 angle;
 
 	effect = effEntry();
-	field = count;
 	switch (type) {
-	case 6:
-		field = 0xB;
+	case 2:
+	case 3:
+		count = 0;
 		break;
 	case 4:
 	case 5:
-		field = 0x14;
+		count = 0x14;
 		break;
-	case 2:
-	case 3:
-		field = 0;
+	case 6:
+		count = 0xB;
 		break;
 	}
 	effect->type = str_802F35E8;
-	effect->count = field + 1;
+	effect->count = count + 1;
 	data = __memAlloc(HEAP_EFFECT, effect->count * 0x44);
 	effect->userdata = data;
-	if (type == 6) {
+	switch (type) {
+	case 6:
 		effect->callback = effRecoveryMain2;
-	} else {
+		break;
+	default:
 		effect->callback = effRecoveryMain;
+		break;
 	}
 	data->anim = effMayaAnimAlloc(recovery_effAnimDt);
 	effPlayMayaAnim(data->anim);
 	data->type = type;
-	data->field_1 = field;
+	data->field_1 = count;
 	data->x = x;
 	data->y = y;
 	data->z = z;
@@ -169,18 +203,18 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	data->color = 0xFF;
 	data->field_40 = float_neg30_8041cb48;
 
-	pos = vec3_802f3508;
+	pos = recoveryZeroVec();
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
 	disp = pos;
 
-	switch (type) {
+	switch (data->type) {
 	case 0:
 	case 7:
-		if (field <= 5) {
+		if (data->field_1 <= 5) {
 			psndSFXOn_3D(str_802F35F4, &disp);
-		} else if (field <= 0xA) {
+		} else if (data->field_1 <= 0xA) {
 			psndSFXOn_3D(str_802F360C, &disp);
 		} else {
 			psndSFXOn_3D(str_802F3620, &disp);
@@ -188,9 +222,9 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 		break;
 	case 1:
 	case 8:
-		if (field <= 5) {
+		if (data->field_1 <= 5) {
 			psndSFXOn_3D(str_802F3634, &disp);
-		} else if (field <= 0xA) {
+		} else if (data->field_1 <= 0xA) {
 			psndSFXOn_3D(str_802F364C, &disp);
 		} else {
 			psndSFXOn_3D(str_802F3660, &disp);
@@ -204,19 +238,26 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 		break;
 	}
 
-	if (type == 6) {
+	switch (type) {
+	case 6:
 		effDeleteMayaAnim(data->anim);
 		data->timer = 0xB4;
+		break;
 	}
 
-	n = 8;
 	ptr = data + 1;
-	for (i = 1; i < effect->count; i++, ptr++) {
+	i = 1;
+	n = 8;
+	for (; i < effect->count; i++, ptr++) {
 		ptr->x = float_0_8041cadc;
-		if (type >= 4 && type < 6) {
+		switch (type) {
+		case 4:
+		case 5:
 			ptr->y = (i < 10) ? float_0_8041cadc : float_neg15_8041cb4c;
-		} else {
+			break;
+		default:
 			ptr->y = float_0_8041cadc;
+			break;
 		}
 		ptr->z = float_0_8041cadc;
 		ptr->scaleX = float_0_8041cadc;
@@ -229,17 +270,18 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 		ptr->state = 0;
 		ptr->color = 0xFF;
 		ptr->angle = float_0_8041cadc;
-		if (type == 6) {
+		switch (type) {
+		case 6:
 			if (i == 1) {
-				ptr->scaleX = float_1p5_8041cb50;
-				ptr->scaleY = float_1p5_8041cb50;
 				ptr->scaleZ = float_1p5_8041cb50;
+				ptr->scaleY = float_1p5_8041cb50;
+				ptr->scaleX = float_1p5_8041cb50;
 				ptr->color = 0;
 				ptr->delay = 0;
 			} else {
-				ptr->scaleX = float_0p3_8041cb54;
-				ptr->scaleY = float_0p3_8041cb54;
 				ptr->scaleZ = float_0p3_8041cb54;
+				ptr->scaleY = float_0p3_8041cb54;
+				ptr->scaleX = float_0p3_8041cb54;
 				if (i & 1) {
 					angle = irand(0x50);
 				} else {
@@ -252,18 +294,15 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 				ptr->color = 0xFF;
 				ptr->delay = n;
 			}
+			break;
 		}
 		n += 8;
 	}
 	return effect;
 }
 
-// Logic and state machine match exactly. The remaining real diffs are (1) the
-// int->float double pooling as an anonymous @NNN@ at .rodata+0x170 instead of
-// reusing the named double_to_int_802f3550 at +0x48 (project-wide MWCC
-// limitation, cf. badge_disp in win_badge.c), and (2) the vec3_802f3520 copy
-// scheduled one slot ahead of the data->timeBase store in the tail.
-// NONMATCHING (99.58%): compiler-allocation artifacts only.
+// 100%: same string-literal / `double_to_int` .rodata layout as effRecoveryEntry above (see its
+// comment); the int->float conversions now reference the compiler-pooled double at .rodata+0x48.
 void effRecoveryMain(EffectEntry* effect) {
 	RecoveryData* data = effect->userdata;
 	RecoveryData* ptr;
@@ -397,7 +436,7 @@ void effRecoveryMain(EffectEntry* effect) {
 			RecoveryData* center = effect->userdata;
 			if (type != 7 && type != 8) {
 				effStardustEntry(2, 2, 0x1E, f31, f30 - 20.0f, f29, 30.0f, 30.0f);
-				sound = vec3_802f3514;
+				sound = recoveryZeroVec2();
 				sound.x = center->x;
 				sound.y = center->y;
 				sound.z = center->z;
@@ -436,20 +475,20 @@ void effRecoveryMain(EffectEntry* effect) {
 	}
 	data = effect->userdata;
 	data->timeBase = gp->retraceCount;
-	pos = vec3_802f3520;
+	pos = recoveryZeroVec3();
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 1, effRecoveryDisp, effect);
 	if ((u32)type <= 1 || type == 7 || type == 8) {
-		pos2 = vec3_802f352c;
+		pos2 = recoveryZeroVec4();
 		pos2.x = data->x;
 		pos2.y = data->y;
 		pos2.z = data->z;
 		dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effRecoveryDisp2, effect);
 	}
 	if (type == 4 || type == 5) {
-		pos3 = vec3_802f3538;
+		pos3 = recoveryZeroVec5();
 		pos3.x = data->x;
 		pos3.y = data->y;
 		pos3.z = data->z;
@@ -471,9 +510,9 @@ void effRecoveryMain2(EffectEntry* effect) {
 	s32 i;
 
 #ifdef MUST_MATCH
-	pos = *(const volatile Vec*)&vec3_802f3544;
+	pos = recoveryZeroVec6();
 #else
-	pos = vec3_802f3544;
+	pos = recoveryZeroVec6();
 #endif
 	pos.x = ptr->x;
 	pos.y = ptr->y;

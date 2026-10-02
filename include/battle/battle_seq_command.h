@@ -53,6 +53,7 @@ s32 _check_weapon_type_attack(BattleWeapon* weapon);
 void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd);
 s32 _battleGetPartyIcon(s32 kind);
 s32 BattleCommandInput(BattleWork* wp);
+void BattleCommandInit(BattleWork* wp);
 void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg);
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp);
 void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, void* arg, void* arg2);

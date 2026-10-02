@@ -25,6 +25,8 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "battle/battle_event_subset.h"
+#include "battle/battle_event_default.h"
+#include "battle/battle_break_slot.h"
 #include "driver/dispdrv.h"
 #include "eff/eff_recovery.h"
 #include "eff/n64/eff_freeze_n64.h"
@@ -59,6 +61,7 @@ f32 float_100_8041c294 = 100.0f;
 const char str_8041C27C[] = "A1";
 const char str_8041C288[] = "A2";
 f32 float_1000_8041c298 = 1000.0f;
+f32 float_2_8041c29c = 2.0f;
 f32 float_10_8041c2a0 = 10.0f;
 f32 float_94_8041c2a4 = 94.0f;
 f32 float_120_8041c2a8 = 120.0f;
@@ -1832,6 +1835,300 @@ void btlseqMove(BattleWork* wp) {
 			break;
 		}
 	} while (changed);
+}
+
+// Raw offsets (fields that battle_unit.h leaves in padding, so no named member exists):
+// 0x258, 0x280, 0x29C, 0x2A0, 0x2A8, 0x2C, 0x2C4, 0x2C8, 0x2CC.
+// Case 0 shadows `unit` so MWCC keeps it in r29 (the outer `unit` is r31 elsewhere); the original splits
+// them the same way. The moveState switch lists case 8 before the shared case 7/case 9 so the bodies come
+// out in the target's order, and the currentKind check is a switch so the then-block lands before the else.
+void btlseqAct(BattleWork* wp) {
+	BOOL v;
+	BattleUnit* unit;
+	EventEntry* event;
+	f32 speed;
+
+	switch (BattleGetSeq(wp, SEQ_ACT)) {
+	case 0x6000000: {
+		BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		effNiceAsync(1);
+		*(s32*)((u8*)unit + 0x280) = 0;
+		*(s32*)((u8*)unit + 0x2CC) = 0;
+		BattleAudience_ActInit();
+		v = TRUE;
+		switch (unit->currentKind) {
+		case 0xDE:
+			if (!BtlUnit_CheckStatus(unit, 1) && !BtlUnit_CheckStatus(unit, 2) &&
+				!BtlUnit_CheckStatus(unit, 9) && !BtlUnit_CheckStatus(unit, 0x1B)) {
+				v = FALSE;
+			}
+			break;
+		default:
+			if (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
+				if (!BtlUnit_CheckStatus(unit, 1) && !BtlUnit_CheckStatus(unit, 2) &&
+					!BtlUnit_CheckStatus(unit, 9) && !BtlUnit_CheckStatus(unit, 0x1B)) {
+					v = FALSE;
+				}
+			}
+			break;
+		}
+		if (v) {
+			BattleSetSeq(wp, SEQ_ACT, 0x6000003);
+			break;
+		}
+		if (unit->mAttributeFlags & 0x10) {
+			BattleSetSeq(wp, SEQ_ACT, 0x6000004);
+			break;
+		}
+		if (unit->currentKind == 0xE4) {
+			if (BattleGetMarioPtr(wp)->mAttributeFlags & 0x10) {
+				BattleSetSeq(wp, SEQ_ACT, 0x6000004);
+				break;
+			}
+		}
+		if (unit->flippedTurns != 0) {
+			BattleSetSeq(wp, SEQ_ACT, 0x6000005);
+			break;
+		}
+		BattleCommandInit(wp);
+		BattleSetSeq(wp, SEQ_ACT, 0x6000001);
+		break;
+	}
+
+	case 0x6000001:
+		speed = battleCameraGetPosMoveSpeed();
+		if (speed > float_2_8041c29c) {
+			break;
+		}
+		BattleSetSeq(wp, SEQ_ACT, 0x6000002);
+		// fallthrough
+	case 0x6000002:
+		if (BattleCommandInput(wp)) {
+			wp->flags &= ~0x80;
+			BattleSetSeq(wp, SEQ_ACT, 0x6000006);
+		}
+		break;
+
+	case 0x6000005:
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		*(void**)((u8*)unit + 0x29C) = BtlUnit_GetData(unit, 2);
+		*(s32*)((u8*)unit + 0x2A8) = 1;
+		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
+		break;
+
+	case 0x6000003:
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		*(s32*)((u8*)unit + 0x2A8) = 1;
+		unit->flags |= 0x04000000;
+		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
+		break;
+
+	case 0x6000004:
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		*(void**)((u8*)unit + 0x29C) = BtlUnit_GetData(unit, 3);
+		*(s32*)((u8*)unit + 0x2A8) = 0x1B;
+		BattleSetSeq(wp, SEQ_ACT, 0x6000006);
+		break;
+
+	case 0x6000006: {
+		if ((*(s32*)((u8*)BattleGetUnitPtr(wp, wp->activeUnitId) + 0x2A8) & 1) == 0) {
+			BattleStatusWindowSystemOff();
+		}
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		event = NULL;
+		if (wp->flags & 0x40000000) {
+			if (!(unit->mAttributeFlags & 0x2000) &&
+				!(*(s32*)((u8*)unit + 0x2A8) & 8) && !(*(s32*)((u8*)unit + 0x2A8) & 0x10)) {
+				event = evtEntry(btldefaultevt_CantMoveZeroGravity, 0xA, 0);
+				goto act_done;
+			}
+		}
+		if (*(s32*)((u8*)unit + 0x2A8) & 0x10) {
+			if (*(void**)((u8*)unit + 0x29C) == NULL) {
+				goto act_done;
+			}
+			event = evtEntry(*(void**)((u8*)unit + 0x29C), 0xA, 0);
+			goto act_done;
+		}
+		if (*(s32*)((u8*)unit + 0x2A8) & 2) {
+			event = evtEntry(*(void**)((u8*)unit + 0x29C), 0xA, 0);
+			goto act_done;
+		}
+		if (BtlUnit_CheckStatus(unit, 1) || BtlUnit_CheckStatus(unit, 2) ||
+			BtlUnit_CheckStatus(unit, 9)) {
+			goto act_done;
+		}
+		if (BtlUnit_CheckStatus(unit, 0x1B) && !(unit->mAttributeFlags & 0x10000)) {
+			goto act_done;
+		}
+		if (BtlUnit_CheckStatus(unit, 6)) {
+			if (irand(100) < 0) {
+				event = evtEntry(btldefaultevt_BiribiriMove, 0xA, 0);
+				goto act_done;
+			}
+		}
+		if (BtlUnit_CheckStatus(unit, 5)) {
+			if (irand(100) < 0x32) {
+				unit->mTokenFlags |= 0x10;
+				event = evtEntry(*(void**)((u8*)unit + 0x2A0), 0xA, 0);
+				goto act_done;
+			}
+		}
+		event = evtEntry(*(void**)((u8*)unit + 0x29C), 0xA, 0);
+	act_done:
+		if (event != NULL) {
+			unit->attackEventId = event->eventId;
+			event->unitId = unit->unitId;
+			if (unit->waitEventId != 0) {
+				evtDeleteID(unit->waitEventId);
+				unit->waitEventId = 0;
+			}
+		}
+		BattleIncSeq(wp, SEQ_ACT);
+		break;
+	}
+
+	case 0x6000007:
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			break;
+		}
+		BattleIncSeq(wp, SEQ_ACT);
+		BattleStatusChangeMsgAdjust(wp);
+		// fallthrough
+	case 0x6000008:
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			break;
+		}
+		if ((BattleStatusChangeAnnouceMain(wp) | BattleStatusChangeMsgMain(wp)) != 0) {
+			break;
+		}
+		BattleIncSeq(wp, SEQ_ACT);
+		// fallthrough
+	case 0x6000009: {
+		if ((wp->flags & 0x30) == 0) {
+			BattleStatusWindowSystemOn();
+		}
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		if (unit != NULL) {
+			unit->flags &= ~0x04000000;
+			if (unit->mTokenFlags & 8) {
+				BtlUnit_SetStatus(unit, 0x10, 1, -0x63);
+				unit->mTokenFlags &= ~8;
+			}
+			if (wp->field_18FE1[0] == 1) {
+				wp->field_18FE1[0] = 0;
+			}
+			*(s32*)((u8*)unit + 0x258) = 0;
+			switch (unit->moveState) {
+			case 5:
+				unit->moveState = 6;
+				break;
+			case 6:
+				unit->moveState = 7;
+				break;
+			case 8:
+				unit->moveState = 9;
+				break;
+			case 7:
+			case 9:
+				unit->moveState = 0;
+				break;
+			}
+			if (unit->moveState == 0) {
+				BOOL flag = TRUE;
+				if (wp->flags & 0x2000) {
+					flag = TRUE;
+				}
+				if (flag) {
+					if (BtlUnit_CheckStatusFlag(unit, 0x02000000)) {
+						BtlUnit_OffStatusFlag(unit, 0x02000000);
+					} else {
+						unit->movesRemaining--;
+					}
+					if (wp->flags & 0x2000) {
+						unit->movesRemaining = 0;
+					}
+					if (unit->movesRemaining <= 0) {
+						unit->moveState = 10;
+						if (!(unit->mTokenFlags & 0x2000)) {
+							unit->activeTurns = 0;
+						} else {
+							unit->mTokenFlags &= ~0x2000;
+						}
+						if (BtlUnit_GetBelong(unit) == 0) {
+							if (*(s32*)((u8*)unit + 0x2C) == 0x4000002) {
+								if (!BattlePhaseEndCheck() && !(wp->flags & 0x2000)) {
+									unit->mMoveColorLv = 0x60;
+								}
+							}
+						}
+					}
+				}
+			} else if (unit->moveState == 3) {
+				unit->moveState = 0;
+			} else if (unit->moveState == 4) {
+				unit->moveState = 0;
+			}
+		}
+		BattleConsumeReserveItem();
+		wp->flags &= ~4;
+		BattleAudience_PerAct();
+		BattleIncSeq(wp, SEQ_ACT);
+		// fallthrough
+	}
+	case 0x600000A:
+		if ((u8)BattleAudience_CheckReaction() != 0) {
+			break;
+		}
+		if (!BattleCheckConcluded(wp) && (u8)BattleBreakSlot_CheckReaction() != 0) {
+			break;
+		}
+		BattleIncSeq(wp, SEQ_ACT);
+		// fallthrough
+	case 0x600000B:
+		if ((BattleStatusChangeAnnouceMain(wp) | BattleStatusChangeMsgMain(wp)) != 0) {
+			break;
+		}
+		BattleIncSeq(wp, SEQ_ACT);
+		// fallthrough
+	case 0x600000C: {
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			break;
+		}
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		if (unit != NULL) {
+			*(s32*)((u8*)unit + 0x2C8) = 0;
+			if (*(void**)((u8*)unit + 0x2C4) != NULL) {
+				event = evtEntry(*(void**)((u8*)unit + 0x2C4), 0xA, 0);
+				if (event != NULL) {
+					*(s32*)((u8*)unit + 0x2C8) = event->eventId;
+					event->unitId = unit->unitId;
+					if (unit->waitEventId != 0) {
+						evtDeleteID(unit->waitEventId);
+						unit->waitEventId = 0;
+					}
+				}
+			}
+		}
+		BattleIncSeq(wp, SEQ_ACT);
+		// fallthrough
+	}
+	case 0x600000D:
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		if (unit != NULL && *(s32*)((u8*)unit + 0x2C8) != 0) {
+			if (evtCheckID(*(s32*)((u8*)unit + 0x2C8))) {
+				break;
+			}
+			*(s32*)((u8*)unit + 0x2C8) = 0;
+		}
+		BattleIncSeq(wp, SEQ_ACT);
+		// fallthrough
+	case 0x600000E:
+		if (BattleWaitAllActiveEvtEnd(wp)) {
+			BattleIncSeq(wp, SEQ_MOVE);
+		}
+		break;
+	}
 }
 
 void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
