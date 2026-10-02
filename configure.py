@@ -862,7 +862,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "sdk/arc.c"),
+            Object(Matching, "sdk/arc.c"),
             Object(Matching, "sdk/DEMOInit.c"),
             Object(Matching, "sdk/DEMOPad.c"),
             Object(Matching, "sdk/texPalette.c"),

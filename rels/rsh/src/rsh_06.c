@@ -1970,7 +1970,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 #pragma inline_max_size(1000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
-// NONMATCHING (86.90%): behaviour complete, checked against the asm; the rest is register allocation and constant hoisting.
+// NONMATCHING (87.18%): behaviour complete, checked against the asm; the rest is register allocation and constant hoisting.
 #define MOA_TARGET(i) (wp->vec[(i) % 3])
 // Per-frame update of every moamoa (the Great Moamoa variant: a follower pulls the swarm to a joint of "base").
 static void ext_moamoa_main(void) {
@@ -2070,9 +2070,8 @@ static void ext_moamoa_main(void) {
         }
         if (wp->flags & 0x1) {
             if (!(entry->flags & 0x155)) {
-                s32 m = mario->currMotionId;
-
-                if (m == 0 || m == 1 || m == 2 || m == 0x15 || m == 0x16 || m == 0x1A) {
+                if (!mario->currMotionId || (u16)(mario->currMotionId - 1) <= 1 || (u16)(mario->currMotionId - 0x15) <= 1 ||
+                    mario->currMotionId == 0x1A) {
                     if (mario->position.y > 200.0f) {
                         f = wp->field_0x554;
                         if (f > 30.0f && f < 100.0f && (i & 1)) {
@@ -2272,9 +2271,13 @@ static void ext_moamoa_main(void) {
                 idx = rand() % 700;
                 other = &wp->entries[idx];
             } while ((other->field_0x2 != 0 && other->field_0x2 != 3) || (other->flags & 0x40));
-            (*ep->matrix)[0][3] = (*extGetPosePtr()[idx].matrix)[0][3];
-            (*ep->matrix)[1][3] = 215.0f;
-            (*ep->matrix)[2][3] = (*extGetPosePtr()[idx].matrix)[2][3];
+            {
+                ExtPose* src = &extGetPosePtr()[idx];
+
+                (*ep->matrix)[0][3] = (*src->matrix)[0][3];
+                (*ep->matrix)[1][3] = 215.0f;
+                (*ep->matrix)[2][3] = (*src->matrix)[2][3];
+            }
             entry->flags = 0;
             entry->field_0x2 = 0;
             entry->field_0x4 = 0;
