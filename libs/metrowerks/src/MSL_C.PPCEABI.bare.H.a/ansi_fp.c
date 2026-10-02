@@ -566,7 +566,7 @@ void __num2dec(const decform* form, double x, decimal* d) {
 
 extern unsigned long __double_max[];
 
-// NONMATCHING (91.52%): calls and immediates match; the original keeps only r29-r31 callee-saved with a 0x1f0 frame, this build uses r18-r31 with 0x210.
+// NONMATCHING (91.83%): calls and immediates match; the original keeps only r29-r31 callee-saved with a 0x1f0 frame, this build uses r18-r31 with 0x210.
 double __dec2num(const decimal* d) {
     if (d->sig.length <= 0) {
         return copysign(0.0, d->sign == 0 ? 1.0 : -1.0);
@@ -674,6 +674,8 @@ double __dec2num(const decimal* d) {
             __str2dec(&max, "179769313486231580793729011405303420", 308);
             if (!__less_dec(&max, &dec)) {
                 first_guess = *(double*)__double_max;
+            } else {
+                goto done;
             }
         }
 
@@ -694,6 +696,7 @@ double __dec2num(const decimal* d) {
 
                 ++*ull;
                 if (fpclassify(next_guess) == 2) {
+                    first_guess = next_guess;
                     goto done;
                 }
                 __num2dec_internal(&feedback2, next_guess);
@@ -702,6 +705,7 @@ double __dec2num(const decimal* d) {
                     first_guess = next_guess;
                     ++*ull;
                     if (fpclassify(next_guess) == 2) {
+                        first_guess = next_guess;
                         goto done;
                     }
                     __num2dec_internal(&feedback2, next_guess);
