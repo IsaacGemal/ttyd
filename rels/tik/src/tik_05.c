@@ -104,7 +104,7 @@ static USER_FUNC(alpha_init_func);
 static void alpha_tev(TevCallbackParam* param);
 static USER_FUNC(starstone_set_ry);
 s32 look_large_door[25];
-BrokenWork broken_work;
+extern BrokenWork broken_work;
 
 // clang-format off
 extend_data(24,
@@ -1893,20 +1893,20 @@ EVT_BEGIN(tik_05_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 select[1] = {
-    0x00000000,
-};
-
-BrokenWork broken_work;
-
-static CamKaiten* ckpw;
-
-static CamKaiten* ckp1;
+// The uninitialised globals are laid out in reverse declaration order.
+static u8* _ap;
 
 static CamKaiten* ckp0;
 
-static u8* _ap;
+static CamKaiten* ckp1;
+
+static CamKaiten* ckpw;
+
+BrokenWork broken_work;
+
+// TODO: type
+u32 select[1];
+
 
 
 
