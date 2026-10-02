@@ -1189,9 +1189,9 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     s32 damageCode;
     s32 dc1;
     s32 dc2;
-    Vec posC;
-    Vec posB;
     Vec posA;
+    Vec posB;
+    Vec posC;
 
     wp = _battleWorkPointer;
     BattleInitCounterPreCheckWork(&counter);
@@ -1330,7 +1330,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 BattleRunHitEvent(unit2, dc2);
                 result = 18;
             } else {
-                s32 var;
+                u32 var;
 
                 if (statusResult == 0 && damage == 0 && fpDamage == 0 && guarded == 0) {
                     result = 19;
@@ -1343,7 +1343,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                         ((void (*)(s32))BattleAudience_Case_EnemyDamage)(damage);
                     }
                 }
-                var = weapon->field_0x6D;
+                var = (u8)weapon->field_0x6D;
                 if (var == 0x14 && counter.field_0x24 != 0) {
                     var = 0;
                 }
