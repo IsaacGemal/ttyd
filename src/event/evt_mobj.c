@@ -29,8 +29,12 @@
 #include "eff/eff_fire.h"
 #include "eff/eff_small_star.h"
 #include "eff/eff_mobj_broken.h"
+#include "eff/eff_batfukidashi.h"
+#include "eff/eff_stardust.h"
 #include "driver/offscreendrv.h"
 #include "driver/imgdrv.h"
+#include "driver/swdrv.h"
+#include "statuswindow.h"
 #include "evt/evt_img.h"
 #include <dolphin/mtx.h>
 
@@ -77,6 +81,13 @@ extern s32 evt_lock_sound[];
 extern f32 float_1024_8041a1a0;
 extern const f32 float_neg0p8_8041a220;
 extern const f32 float_4_8041a224;
+extern f32 float_30_8041a1a8;
+extern f32 float_60_8041a1ac;
+extern f32 float_1E05_8041a1d8;
+extern f32 float_42p42_8041a1dc;
+extern f32 float_0p6_8041a1e0;
+extern f32 float_300_8041a158;
+extern f32 float_2_8041a190;
 
 // Prototypes missing from manager/fontmgr.h
 
@@ -1107,6 +1118,136 @@ s32 evt_mobj_delete(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+
+s32 mobj_itembox(MapObjectEntry* obj) {
+#ifdef MUST_MATCH
+    // MUST_MATCH: retail keeps the .data sound-script base in a register from the prologue.
+    u8* sndBase = (u8*)negone_one_374;
+#endif
+    u8* base = (u8*)vec3_802c3dc8;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (!(obj->flags & 8)) {
+                break;
+            }
+            marioKeyOff();
+            partyKeyOff();
+            marioStSystemLevel(1);
+            obj->eventId = 0;
+            mobjRunEvent(obj, obj->unk1D4);
+            obj->unk1DC++;
+            break;
+        case 1:
+            if (obj->eventId != 0) {
+                if (evtCheckID(obj->eventId) == 1) {
+                    break;
+                }
+                if (obj->flags & 0x1000) {
+                    obj->flags &= ~0x1000;
+                    obj->flags &= ~8;
+                    marioKeyOn();
+                    partyKeyOn();
+                    marioStSystemLevel(0);
+                    obj->eventId = 0;
+                    obj->unk1DC = 0;
+                    break;
+                }
+            }
+            obj->unk1DC++;
+            break;
+        case 2: {
+            EventEntry* event;
+
+            if (strcmp(obj->animName, (const char*)(base + 0x6A0)) == 0 || strcmp(obj->animName, (const char*)(base + 0x6C8)) == 0) {
+                // MUST_MATCH: retail reaches the box sound scripts from the .data base at
+                // negone_one_374 (offsets 0x90/0xE0/0x130) so one register holds the base.
+#ifdef MUST_MATCH
+                event = evtEntryType((s32*)(sndBase + 0x90), 0, 0, 0);
+#else
+                event = evtEntryType(evt_box_sound1, 0, 0, 0);
+#endif
+                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
+            } else if (strcmp(obj->animName, (const char*)(base + 0x6E0)) == 0) {
+#ifdef MUST_MATCH
+                event = evtEntryType((s32*)(sndBase + 0x130), 0, 0, 0);
+#else
+                event = evtEntryType(evt_box_sound3, 0, 0, 0);
+#endif
+                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
+            } else {
+#ifdef MUST_MATCH
+                event = evtEntryType((s32*)(sndBase + 0xE0), 0, 0, 0);
+#else
+                event = evtEntryType(evt_box_sound2, 0, 0, 0);
+#endif
+                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
+            }
+            animPoseSetAnim(obj->poseId, str_8041A118, 1);
+            obj->eventId = 0;
+            mobjRunEvent(obj, obj->unk1D8);
+            obj->unk1DC++;
+            break;
+        }
+        case 3: {
+            AnimationPoseData* animData;
+            Vec maxTmp;
+            Vec minTmp;
+            Vec bboxMax;
+            Vec bboxMin;
+
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            if (obj->eventId != 0 && evtCheckID(obj->eventId) == 1) {
+                break;
+            }
+            obj->flags &= ~0x20;
+            animData = animPoseGetAnimBaseDataPtr(obj->poseId);
+            minTmp = *(Vec*)(base + 0x210);
+            minTmp.x = animData->bboxMin.x;
+            minTmp.y = animData->bboxMin.y;
+            minTmp.z = animData->bboxMin.z;
+            bboxMin = minTmp;
+            maxTmp = *(Vec*)(base + 0x21C);
+            maxTmp.x = animData->bboxMax.x;
+            maxTmp.y = animData->bboxMax.y;
+            maxTmp.z = animData->bboxMax.z;
+            bboxMax = maxTmp;
+            bboxMin.z = bboxMin.z - *(f64*)(base + 0x710) * __fabsf(bboxMax.y - bboxMin.y);
+            PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
+            PSVECScale(&obj->translation, &obj->translation, float_0p5_8041a15c);
+            PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
+            obj->translation.y = float_0_8041a150;
+            obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
+            obj->scale2.z = obj->scale2.z * float_1p2_8041a20c;
+            mobjCalcMtx2(obj);
+            marioKeyOn();
+            partyKeyOn();
+            marioStSystemLevel(0);
+            obj->eventId = 0;
+            obj->unk1DC = 0x63;
+            break;
+        }
+        case 99:
+            evtSetValue(NULL, obj->unk1E4, 1);
+            obj->flags |= 8;
+            obj->flags &= ~0x20;
+            if (strcmp(obj->animName, (const char*)(base + 0x6E0)) == 0) {
+                animPoseSetAnim(obj->poseId, str_8041A218, 1);
+            } else {
+                animPoseSetAnim(obj->poseId, str_8041A1C0, 1);
+            }
+            break;
+    }
+    return 0;
+}
 
 s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
     u8* base = (u8*)vec3_802c3dc8;
@@ -3268,6 +3409,168 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// Recovery block (heart / coin-taken). MapObjectEntry does not declare the fields this object stores in its
+// 0x1A0 padding, so they are read/written as raw offsets: 0x1A4 s32 coinNeeded, 0x1A8 s32 msgWindowId,
+// 0x1B0 s32 timer, 0x1C8 EffectEntry* effect.
+s32 mobj_recovery_blk(MapObjectEntry* obj) {
+    s32 i;
+
+    switch (obj->unk1DC) {
+        case -1:
+            *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
+                obj->position.x, float_25_8041a140 + obj->position.y, obj->position.z - float_10_8041a1a4,
+                0, *(s32*)((u8*)obj + 0x1A4), 0);
+            obj->unk1DC++;
+            break;
+        case 0:
+            if (!(obj->flags & 8)) {
+                break;
+            }
+            marioKeyOff();
+            camGetPtr(8)->flags |= 0x200;
+            psndSFXOn_3D((const char*)0x1D9, &obj->position);
+            obj->unk1DC++;
+            // fallthrough
+        case 1:
+            if (!(gp->flags & 0x1000) && swGet(0xEA) == 0) {
+                swSet(0xEA);
+                obj->unk1DC = 0x14;
+                break;
+            }
+            obj->unk1DC++;
+            // fallthrough
+        case 2:
+            if (pouchGetCoin() < *(s32*)((u8*)obj + 0x1A4)) {
+                obj->unk1DC = 0xA;
+                break;
+            }
+            if (*(EffectEntry**)((u8*)obj + 0x1C8) != NULL) {
+                effSoftDelete(*(EffectEntry**)((u8*)obj + 0x1C8));
+                *(EffectEntry**)((u8*)obj + 0x1C8) = NULL;
+            }
+            psndSFXOn_3D((const char*)0x1DA, &obj->position);
+            animPoseSetAnim(obj->poseId, str_8041A11C, 1);
+            if (*(s32*)((u8*)obj + 0x1A4) == 0) {
+                obj->unk1DC = 3;
+            } else {
+                obj->unk1DC = 4;
+                statusWinForceOpen();
+            }
+            *(s32*)((u8*)obj + 0x1B0) = 0x78;
+            break;
+        case 3:
+            if (*(s32*)((u8*)obj + 0x1B0) == 100) {
+                effStardustEntry(1, 0x1E, 0x3C, obj->position.x,
+                                 float_45_8041a1f4 + obj->position.y, obj->position.z,
+                                 float_50_8041a14c, float_50_8041a14c);
+                psndSFXOn_3D((const char*)0x1DB, &obj->position);
+            }
+            if (*(s32*)((u8*)obj + 0x1B0) == 100) {
+                MarioWork* mario = marioGetPtr();
+                PouchData* pouch = pouchGetPtr();
+                PouchPartyData* party = pouch->partyData;
+
+                effStardustEntry(2, 0x32, 0x64, mario->position.x, mario->position.y, mario->position.z,
+                                 float_50_8041a14c, float_50_8041a14c);
+                marioChgPose(str_8041A1F8);
+                pouch->currentHP = pouch->maximumHP;
+                pouch->currentFP = pouch->maximumFP;
+                for (i = 0; i < 8; i++) {
+                    if ((party->flags & 1) && !(party->flags & 2)) {
+                        party->currentHP = party->maximumHP;
+                    }
+                    party++;
+                }
+                pouchAddCoin(0);
+            }
+            *(s32*)((u8*)obj + 0x1B0) -= 1;
+            if (*(s32*)((u8*)obj + 0x1B0) <= 0) {
+                obj->unk1DC = 5;
+            }
+            break;
+        case 4:
+            if (*(s32*)((u8*)obj + 0x1B0) == 100) {
+                effStardustEntry(1, 0x1E, 0x3C, obj->position.x,
+                                 float_45_8041a1f4 + obj->position.y, obj->position.z,
+                                 float_50_8041a14c, float_50_8041a14c);
+                psndSFXOn_3D((const char*)0x1DB, &obj->position);
+            }
+            if (*(s32*)((u8*)obj + 0x1B0) == 100) {
+                s32 coin = *(s32*)((u8*)obj + 0x1A4);
+                MarioWork* mario = marioGetPtr();
+                PouchData* pouch = pouchGetPtr();
+                PouchPartyData* party = pouch->partyData;
+
+                effStardustEntry(2, 0x32, 0x64, mario->position.x, mario->position.y, mario->position.z,
+                                 float_50_8041a14c, float_50_8041a14c);
+                marioChgPose(str_8041A1F8);
+                pouch->currentHP = pouch->maximumHP;
+                pouch->currentFP = pouch->maximumFP;
+                for (i = 0; i < 8; i++) {
+                    if ((party->flags & 1) && !(party->flags & 2)) {
+                        party->currentHP = party->maximumHP;
+                    }
+                    party++;
+                }
+                pouchAddCoin(-coin);
+            }
+            *(s32*)((u8*)obj + 0x1B0) -= 1;
+            if (*(s32*)((u8*)obj + 0x1B0) <= 0) {
+                obj->unk1DC = 5;
+            }
+            break;
+        case 5:
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            animPoseSetAnim(obj->poseId, str_8041A118, 1);
+            marioChgPose(str_8041A200);
+            marioKeyOn();
+            statusWinForceOff();
+            camGetPtr(8)->flags &= ~0x200;
+            obj->unk1DC++;
+            break;
+        case 6:
+            if (*(EffectEntry**)((u8*)obj + 0x1C8) == NULL) {
+                *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
+                    obj->position.x, float_25_8041a140 + obj->position.y, obj->position.z - float_10_8041a1a4,
+                    0, *(s32*)((u8*)obj + 0x1A4), 0);
+            }
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            obj->flags &= ~8;
+            obj->unk1DC = 0;
+            break;
+        case 10:
+            *(s32*)((u8*)obj + 0x1A8) = msgWindow_Entry(msgSearch(str_802C442C), 0, 0);
+            obj->unk1DC++;
+            break;
+        case 11:
+            if (windowCheckID(*(s32*)((u8*)obj + 0x1A8)) == 0) {
+                marioKeyOn();
+                camGetPtr(8)->flags &= ~0x200;
+                obj->flags &= ~8;
+                obj->unk1DC = 0;
+            }
+            break;
+        case 20:
+            *(s32*)((u8*)obj + 0x1A8) = msgWindow_Entry(msgSearch(str_802C4438), 0, 0);
+            obj->unk1DC++;
+            break;
+        case 21:
+            if (windowCheckID(*(s32*)((u8*)obj + 0x1A8)) == 0) {
+                marioKeyOn();
+                camGetPtr(8)->flags &= ~0x200;
+                obj->flags &= ~8;
+                obj->unk1DC = 0;
+            }
+            break;
+    }
+    return 0;
+}
+
 s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -3608,9 +3911,180 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// 100%: the unit's .rodata is reached from the vec3_802c3dc8 base (MUST_MATCH offsets), which
-// also frees r31 and gives the target callee-saved allocation; scale is built from the vec3_802c405c
-// template and only .y comes from obj->scale2.
+// Data externs / prototypes for this function only (see report).
+extern const char str_8041A11C[4];
+s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
+
+static inline BOOL mobjIsInRange(f32 cz, f32 range, f32 cx, f32 z, f32 x) {
+    if (cx - range <= x && x <= cx + range && cz - range <= z && z <= cz + range) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+// NONMATCHING (95.66%): the state machine and every position-range box check are right; the residue is
+// the FP register allocation at a few inlined mobjIsInRange sites (helper parameter order is permuted so
+// the compiler lands box-origin/half-range/entity in the target's f1-f5) plus constant-load scheduling.
+s32 mobj_kururing_floor(MapObjectEntry* obj) {
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    s32 flag;
+    f32 f31;
+    s32 i;
+    ItemEntry* item;
+    NpcWork* npcWork;
+    NpcEntry* entry;
+    u8* posBuf;
+    PartyEntry* party2;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (!(obj->flags & 8)) {
+                break;
+            }
+            f31 = distABf(mario->position.x, mario->position.z, obj->position.x, obj->position.z);
+            if (__fabsf(mario->position.y - obj->position.y) > float_10_8041a1a4) {
+                f31 = float_1E05_8041a1d8;
+            }
+            if (obj->unk1E0 == 0x01000000) {
+                if (pouchGetJumpLv() < 2) {
+                    flag = 0;
+                } else if (f31 < float_60_8041a1ac) {
+                    flag = 2;
+                } else if (f31 < float_100_8041a148) {
+                    flag = 1;
+                } else {
+                    flag = 0;
+                }
+            }
+            if (obj->unk1E0 == 0x00010000) {
+                flag = 1;
+            }
+            if (flag == 0) {
+                obj->flags &= ~8;
+                break;
+            }
+            {
+                f32 objx = obj->position.x;
+                if (mobjIsInRange(obj->position.z, float_30_8041a1a8, objx, mario->position.z, mario->position.x)) {
+                    flag = 1;
+                }
+                if (party != NULL &&
+                    mobjIsInRange(obj->position.z, float_30_8041a1a8, objx, party->position.z, party->position.x)) {
+                    flag = 1;
+                }
+            }
+            if (itemHitCheck(obj->position.x, obj->position.y, obj->position.z, float_42p42_8041a1dc) != NULL) {
+                flag = 1;
+            }
+            if (npcNearDistCheck(obj->position.x, obj->position.y, obj->position.z, float_42p42_8041a1dc) != NULL) {
+                flag = 1;
+            }
+            if (flag == 0) {
+                obj->flags &= ~8;
+                break;
+            }
+            if (flag == 1) {
+                animPoseSetAnim(obj->poseId, str_8041A118, 1);
+                psndSFXOnEx_3D((const char*)0x1ee, &obj->position, 0xff, 0xff, 0x64, 0x10);
+                obj->unk1DC = 0xa;
+            } else if (flag == 2) {
+                animPoseSetAnim(obj->poseId, str_8041A11C, 1);
+                psndSFXOn_3D((const char*)0x1ef, &obj->position);
+                obj->unk1DC = 1;
+                item = itemNameToPtr(obj->name);
+                if (item == NULL || !(item->flags & 1)) {
+                    f32 y = float_30_8041a1a8;
+
+                    y += obj->position.y;
+                    if (itemEntry(obj->name, 0x7d, 4, obj->unk1E4, 0, obj->position.x,
+                                  y, obj->position.z) != NULL) {
+                        item = itemNameToPtr(obj->name);
+                        itemFlagOn(item, 0x10);
+                        *(f32*)&item->field_0x70[0x10] = float_0p6_8041a1e0;
+                        *(f32*)&item->field_0x70[0x14] = float_1_8041a160;
+                        *(s32*)&item->field_0x70[0x18] = 5;
+                        *(f32*)&item->field_0x4D[0xB] = float_300_8041a158;
+                    }
+                }
+            }
+            animGetPtr()->poses[obj->poseId].flags |= 0x10;
+            obj->flags |= 0x400;
+            dispEntry(2, float_0_8041a150, 0, kururing_capture, obj);
+            break;
+
+        case 1:
+            animGetPtr()->poses[obj->poseId].flags |= 0x10;
+            obj->flags |= 0x400;
+            dispEntry(2, float_0_8041a150, 0, kururing_capture, obj);
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            animGetPtr()->poses[obj->poseId].flags &= ~0x10;
+            obj->flags &= ~0x400;
+            obj->flags &= ~8;
+            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            psndSFXOn_3D((const char*)0x1f0, &obj->position);
+            obj->unk1DC = 0;
+            break;
+
+        case 0xa:
+            animGetPtr()->poses[obj->poseId].flags |= 0x10;
+            obj->flags |= 0x400;
+            dispEntry(2, float_0_8041a150, 0, kururing_capture, obj);
+            posBuf = (u8*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(obj->poseId) + 0x15C))->address;
+            mario = marioGetPtr();
+            if (mobjIsInRange(obj->position.z, float_30_8041a1a8, obj->position.x, mario->position.z, mario->position.x)) {
+                mario->position.y = *(f32*)(posBuf + 0x10);
+            }
+            party2 = partyGetPtr(marioGetPartyId());
+            if (party2 != NULL &&
+                mobjIsInRange(obj->position.z, float_30_8041a1a8, obj->position.x, party2->position.z, party2->position.x)) {
+                party2->position.y = *(f32*)(posBuf + 0x10);
+            }
+            party2 = partyGetPtr(marioGetExtraPartyId());
+            if (party2 != NULL &&
+                mobjIsInRange(obj->position.z, float_30_8041a1a8, obj->position.x, party2->position.z, party2->position.x)) {
+                party2->position.y = *(f32*)(posBuf + 0x10);
+            }
+            npcWork = npcGetWorkPtr();
+            entry = npcWork->entries;
+            for (i = 0; i < npcWork->total; i++, entry++) {
+                if (entry->flags & 1) {
+                    if (mobjIsInRange(obj->position.z, float_42p42_8041a1dc, obj->position.x, entry->position.z, entry->position.x)) {
+                        entry->position.y = *(f32*)(posBuf + 0x10);
+                    }
+                }
+            }
+            item = itemNearDistCheck(obj->position.x, obj->position.y, obj->position.z, float_42p42_8041a1dc);
+            if (item != NULL) {
+                item->position.y = *(f32*)(posBuf + 0x10);
+            }
+            if (animPoseGetLoopTimes(obj->poseId) < float_2_8041a190) {
+                break;
+            }
+            animGetPtr()->poses[obj->poseId].flags &= ~0x10;
+            obj->flags &= ~0x400;
+            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            psndSFXOn_3D((const char*)0x1f0, &obj->position);
+            *(s32*)&obj->unk1A0[0x10] = 0x14;
+            obj->unk1DC++;
+            /* fallthrough */
+        case 0xb:
+            (*(s32*)&obj->unk1A0[0x10])--;
+            if (*(s32*)&obj->unk1A0[0x10] == 0) {
+                obj->unk1DC++;
+            }
+            break;
+
+        case 0xc:
+            obj->flags &= ~8;
+            obj->unk1DC = 0;
+            break;
+    }
+    return 0;
+}
+
 s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
     u8* base = (u8*)vec3_802c3dc8;
@@ -4050,6 +4524,214 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
     return 0;
 }
 #pragma opt_common_subs reset
+
+// Data for mobj_switch_float_blk only (unit .rodata; see report).
+extern const char* _switch_anim[6];
+
+// NONMATCHING (94.76%): the logic matches; the residue is mwcc scheduling/register allocation only
+// (child-branch `index` copy r30 vs target r27; the first/case-0xb hitCheckFilter float-load order and
+// the hoisted &obj[0x1B8]; `unk1E0 == 0x400000` subis/cmplwi vs lis/cmpw).
+s32 mobj_switch_float_blk(MapObjectEntry* obj) {
+    s32 i;
+    s32 index;
+    AnimTableEntry* anim;
+    const char** p;
+    BOOL flag;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (!(obj->flags & 8)) {
+                break;
+            }
+            anim = animPoseGetCurrentAnim(obj->poseId);
+            index = 0;
+            p = _switch_anim;
+            for (i = 0; i < 6; i++, p++) {
+                if (strcmp(*p, anim->name) == 0) {
+                    index = i;
+                    break;
+                }
+            }
+            *(s32*)&obj->unk1A0[4] = (*(s32*)&obj->unk1A0[4] & 0x40000000) | index;
+            if (*(s8*)&obj->unk1A0[0x18] != 0) {
+                f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
+                MapObjectEntry* child = mobjNameToPtr((char*)&obj->unk1A0[0x18]);
+                HitEntry* hit;
+                distance = float_1_8041a160 + (f32)__fabs(child->unk5C.y);
+                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                                     child->position.x, float_0p5_8041a15c + child->position.y,
+                                     child->position.z, float_0_8041a150, float_neg1_8041a214,
+                                     float_0_8041a150);
+                if ((s32)hit != 0) {
+                    if (evtCheckID(obj->eventId) != 0) {
+                        anim = animPoseGetCurrentAnim(obj->poseId);
+                        if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                            flag = TRUE;
+                        } else {
+                            flag = FALSE;
+                        }
+                        if (flag) {
+                            index = 0;
+                        } else {
+                            index = 3;
+                        }
+                    } else {
+                        *(s32*)&obj->unk1A0[4] |= 0x80000000;
+                        index = 0;
+                    }
+                } else {
+                    if (evtCheckID(obj->eventId) != 0) {
+                        anim = animPoseGetCurrentAnim(obj->poseId);
+                        if (anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '2') {
+                            index = 0;
+                        } else if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] == '3') {
+                            *(s32*)&obj->unk1A0[4] |= 0x40000000;
+                            index = 0;
+                        } else if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '4' && (s8)anim->name[2] <= '5') {
+                            index = 3;
+                        } else {
+                            index = 3;
+                        }
+                    } else {
+                        *(s32*)&obj->unk1A0[4] |= 0x80000000;
+                        index = 3;
+                    }
+                }
+            } else {
+                anim = animPoseGetCurrentAnim(obj->poseId);
+                if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                    flag = TRUE;
+                } else {
+                    flag = FALSE;
+                }
+                *(s32*)&obj->unk1A0[4] |= 0x80000000;
+                index = flag ? 3 : 0;
+            }
+            mobjRunEvent(obj, obj->unk1D4);
+            if (obj->unk1E0 == 0x200000) {
+                marioChgMot(5);
+            }
+            psndSFXOn_3D((const char*)0x1B5, &obj->position);
+            switch (obj->unk1E0) {
+                case 0x00400000:
+                    animPoseSetAnim(obj->poseId, _switch_anim[index + 1], 1);
+                    break;
+                default:
+                    animPoseSetAnim(obj->poseId, _switch_anim[index], 1);
+                    break;
+            }
+            obj->flags &= ~8;
+            if (*(s32*)&obj->unk1A0[0x10] != 0) {
+                obj->unk1DC = 0xa;
+            } else {
+                obj->unk1DC++;
+            }
+            break;
+
+        case 1:
+            if (obj->flags & 8) {
+                obj->unk1DC = 0;
+                break;
+            }
+            if (obj->flags & 0x1000) {
+                obj->flags &= ~0x1000;
+                obj->unk1DC = 0xa;
+                break;
+            }
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            if (*(s8*)&obj->unk1A0[0x18] != 0) {
+                mobjNameToPtr((char*)&obj->unk1A0[0x18]);
+            }
+            anim = animPoseGetCurrentAnim(obj->poseId);
+            if (anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                flag = TRUE;
+            } else {
+                flag = FALSE;
+            }
+            animPoseSetAnim(obj->poseId, flag ? "A_3" : "S_1", 1);
+            obj->unk1DC++;
+            break;
+
+        case 2:
+            if (obj->flags & 8) {
+                obj->unk1DC = 0;
+                break;
+            }
+            if (obj->flags & 0x1000) {
+                obj->flags &= ~0x1000;
+                obj->unk1DC = 0xa;
+            }
+            if (evtCheckID(obj->eventId) == 0) {
+                obj->unk1DC = 0;
+                *(s32*)&obj->unk1A0[4] = 0;
+            }
+            break;
+
+        case 0xa:
+            if (obj->flags & 8) {
+                obj->unk1DC = 0;
+                break;
+            }
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            anim = animPoseGetCurrentAnim(obj->poseId);
+            if (anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                flag = TRUE;
+            } else {
+                flag = FALSE;
+            }
+            if (flag) {
+                animPoseSetAnim(obj->poseId, "A_3", 1);
+            } else {
+                animPoseSetAnim(obj->poseId, "S_1", 1);
+            }
+            *(s32*)&obj->unk1A0[0x10] = 0x78;
+            obj->unk1DC++;
+            /* fallthrough */
+        case 0xb:
+            if (obj->flags & 8) {
+                obj->unk1DC = 0;
+                break;
+            }
+            (*(s32*)&obj->unk1A0[0x10])--;
+            if (*(s32*)&obj->unk1A0[0x10] != 0) {
+                break;
+            }
+            if (*(s8*)&obj->unk1A0[0x18] != 0) {
+                f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
+                MapObjectEntry* child = mobjNameToPtr((char*)&obj->unk1A0[0x18]);
+                HitEntry* hit;
+                distance = float_1_8041a160 + (f32)__fabs(child->unk5C.y);
+                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                                     child->position.x, float_0p5_8041a15c + child->position.y,
+                                     child->position.z, float_0_8041a150, float_neg1_8041a214,
+                                     float_0_8041a150);
+                if ((s32)hit != 0) {
+                    animPoseSetAnim(obj->poseId, "S_1", 0);
+                } else {
+                    animPoseSetAnim(obj->poseId, "A_3", 0);
+                }
+            } else {
+                anim = animPoseGetCurrentAnim(obj->poseId);
+                if ((s8)anim->name[0] == 'A' && (s8)anim->name[2] >= '1' && (s8)anim->name[2] <= '3') {
+                    flag = TRUE;
+                } else {
+                    flag = FALSE;
+                }
+                if (flag) {
+                    animPoseSetAnim(obj->poseId, "A_3", 1);
+                } else {
+                    animPoseSetAnim(obj->poseId, "S_1", 1);
+                }
+            }
+            obj->unk1DC = 0;
+            break;
+    }
+    return 0;
+}
 
 // NONMATCHING (96.77%): unit .rodata is not defined locally, so each pooled anim-name gets its own
 // lis/addi instead of the retail vec3_802c3dc8 base register (costs one callee-saved register).

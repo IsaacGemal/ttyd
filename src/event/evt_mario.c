@@ -56,37 +56,37 @@ const Vec vec3_802e5730[3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0
 f64 double_to_int_802e5908 = 4503601774854144.0;
 
 // .sdata2
-f32 float_0_8041b8ac = 0.0f;
-f32 float_1_8041b8a8 = 1.0f;
-f32 float_18p5_8041b8b0 = 18.5f;
-f32 float_neg0p4744_8041b8b4 = -0.4744f;
-f32 float_0p4704_8041b8b8 = 0.4704f;
-f32 float_neg0p1904_8041b8bc = -0.1904f;
-f32 float_11_8041b8c0 = 11.0f;
-f32 float_1p5_8041b8c4 = 1.5f;
-f32 float_0p5_8041b8c8 = 0.5f;
-f32 float_20_8041b8cc = 20.0f;
-f32 float_neg1000_8041b8d0 = -1000.0f;
-f32 float_600_8041b8d4 = 600.0f;
-f32 float_535_8041b8d8 = 535.0f;
-f32 float_0p4_8041b8dc = 0.4f;
-f32 float_220_8041b8e0 = 220.0f;
-f32 float_140_8041b8e4 = 140.0f;
-f32 float_90_8041b8e8 = 90.0f;
-f32 float_270_8041b8ec = 270.0f;
-f32 float_225_8041b8f0 = 225.0f;
-f32 float_135_8041b8f4 = 135.0f;
-f32 float_330_8041b8f8 = 330.0f;
-f32 float_60_8041b8fc = 60.0f;
-f32 float_120_8041b900 = 120.0f;
-f32 float_180_8041b904 = 180.0f;
-f32 float_240_8041b908 = 240.0f;
-f32 float_300_8041b90c = 300.0f;
-f32 float_30_8041b910 = 30.0f;
-f32 float_360_8041b914 = 360.0f;
-f32 float_neg16_8041b918 = -16.0f;
-f32 float_neg8_8041b91c = -8.0f;
-f32 float_0p1_8041b920 = 0.1f;
+const f32 float_1_8041b8a8 = 1.0f;
+const f32 float_0_8041b8ac = 0.0f;
+const f32 float_18p5_8041b8b0 = 18.5f;
+const f32 float_neg0p4744_8041b8b4 = -0.4744f;
+const f32 float_0p4704_8041b8b8 = 0.4704f;
+const f32 float_neg0p1904_8041b8bc = -0.1904f;
+const f32 float_11_8041b8c0 = 11.0f;
+const f32 float_1p5_8041b8c4 = 1.5f;
+const f32 float_0p5_8041b8c8 = 0.5f;
+const f32 float_20_8041b8cc = 20.0f;
+const f32 float_neg1000_8041b8d0 = -1000.0f;
+const f32 float_600_8041b8d4 = 600.0f;
+const f32 float_535_8041b8d8 = 535.0f;
+const f32 float_0p4_8041b8dc = 0.4f;
+const f32 float_220_8041b8e0 = 220.0f;
+const f32 float_140_8041b8e4 = 140.0f;
+const f32 float_90_8041b8e8 = 90.0f;
+const f32 float_270_8041b8ec = 270.0f;
+const f32 float_225_8041b8f0 = 225.0f;
+const f32 float_135_8041b8f4 = 135.0f;
+const f32 float_330_8041b8f8 = 330.0f;
+const f32 float_60_8041b8fc = 60.0f;
+const f32 float_120_8041b900 = 120.0f;
+const f32 float_180_8041b904 = 180.0f;
+const f32 float_240_8041b908 = 240.0f;
+const f32 float_300_8041b90c = 300.0f;
+const f32 float_30_8041b910 = 30.0f;
+const f32 float_360_8041b914 = 360.0f;
+const f32 float_neg16_8041b918 = -16.0f;
+const f32 float_neg8_8041b91c = -8.0f;
+const f32 float_0p1_8041b920 = 0.1f;
 
 USER_FUNC(evt_mario_dokan_prepare) {
     s32* args = event->args;
@@ -1368,8 +1368,6 @@ USER_FUNC(evt_mario_party_bero_move) {
     return ret;
 }
 
-// NONMATCHING (92.58%): the two `accel = (dy+dy)/(half*half-half)` blocks reload `float_0`
-// instead of keeping it in f0, so their temporaries land in f0/f1 instead of f1/f2.
 USER_FUNC(evt_mario_jump_pos) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1418,7 +1416,7 @@ USER_FUNC(evt_mario_jump_pos) {
         } else {
             if (dy >= float_0_8041b8ac) {
                 if (mario->characterId == 2) {
-                    dy = dy + float_18p5_8041b8b0;
+                    dy += float_18p5_8041b8b0;
                 } else {
                     dy = dy + float_0p5_8041b8c8 * *(f32*)((u8*)mario + 0x1B8);
                 }
@@ -1474,8 +1472,8 @@ USER_FUNC(evt_mario_jump_pos) {
             break;
         }
         half = float_0p5_8041b8c8 * framesF;
-        *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
         dy = y - mario->position.y;
+        *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
         accel = (dy + dy) / (half * half - half);
         *(f32*)((u8*)mario + 0x80) = accel;
         *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
@@ -1542,10 +1540,6 @@ USER_FUNC(evt_mario_jump_pos) {
 }
 
 // The float locals below are declared in the order that reproduces the original's f22-f31 assignment.
-// Logic and callee-saved registers now match; only FP temp-register allocation and instruction scheduling
-// in case 0 / the second switch differ
-// NONMATCHING (93.36%): FP temp-register allocation + scheduling in case 0 and the second switch; the
-// original loads float_0p5/float_1 before the position load and keeps 0.0 in one register across 0x84/0x88.
 USER_FUNC(evt_mario_jump_jumpstand) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1621,7 +1615,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         dy = ty - mario->position.y;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         if (fabsf(dy) < float_1_8041b8a8) {
-            dy = dy + float_20_8041b8cc;
+            dy += float_20_8041b8cc;
         } else if (dy >= float_0_8041b8ac) {
             dy = float_0p5_8041b8c8 * *(f32*)((u8*)mario + 0x1B8) + dy;
         } else {
@@ -1883,8 +1877,6 @@ USER_FUNC(evt_mario_check_landon) {
     evtSetValue(event, args[0], 0);
     return EVT_RETURN_DONE;
 }
-// NONMATCHING (95.28%): the case 0 float block keeps `float_0` in f0 where we use f0 for the
-// `(dy+dy)/(half*half-half)` temporaries, plus one case 1 constant-load/store interleave.
 USER_FUNC(evt_koopa_hip_attack) {
     MarioWork* mario;
     s32 first = isFirstCall;
@@ -1920,9 +1912,9 @@ USER_FUNC(evt_koopa_hip_attack) {
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
         dy = y - mario->position.y;
         if (fabsf(dy) < float_1_8041b8a8) {
-            dy = dy + angle;
+            dy += angle;
         } else if (dy >= float_0_8041b8ac) {
-            dy = dy + float_18p5_8041b8b0;
+            dy += float_18p5_8041b8b0;
         } else {
             dy = angle;
         }
@@ -1953,23 +1945,40 @@ USER_FUNC(evt_koopa_hip_attack) {
         }
         break;
     case 2: {
-        f32 vy;
         MarioWork* mario2;
         u8* mp;
         void* ground;
         s32 landed;
+#ifdef MUST_MATCH
+        // MUST_MATCH: the original reuses the `y` argument's callee-saved register (f31) for the
+        // vertical speed; a separate local lands in f27 instead.
+#else
+        f32 vy;
+#endif
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
+#ifdef MUST_MATCH
+        y = *(f32*)((u8*)mario + 0x7C);
+#else
         vy = *(f32*)((u8*)mario + 0x7C);
+#endif
         mario2 = marioGetPtr();
         mp = (u8*)mario2;
         if (mario2->flags & MARIO_FLAG_TUBE_MODE) {
             ground = (void*)marioSearchGroundRoll(&v0, &v1, &v2, float_11_8041b8c0, *(f32*)(mp + 0x7C));
         } else {
+#ifdef MUST_MATCH
+            ground = (void*)marioSearchGround(&v0, &v1, &v2, y, y);
+#else
             ground = (void*)marioSearchGround(&v0, &v1, &v2, vy, vy);
+#endif
         }
+#ifdef MUST_MATCH
+        if (ground != NULL && mario2->position.y + y <= v0) {
+#else
         if (ground != NULL && mario2->position.y + vy <= v0) {
+#endif
             marioClearJumpPara();
             mario2->hitobjStandOn = ground;
             mario2->position.y = v0;

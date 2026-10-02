@@ -397,10 +397,6 @@ static void insert(s32* arr, s32 n, s32 from, s32 to) {
 }
 #pragma dont_inline reset
 
-// TODO: this is mostly there
-// NONMATCHING (98.02%): 2nd nBelow find-loop keeps fighterDt/idx in r6/r5 vs the original's r5/r9
-// (so ours loses the `mr r5, r9` before the idx2 loop); entry[nAbove] CSE stores flags via sthx then
-// materializes the pointer, ours materializes first; entry[j] loop groups `(nAbove+i)+1` vs ours `(i+1)+nAbove`
 static void rankingControll(void) {
     s32 above[32];
     s32 below[32];
@@ -411,6 +407,7 @@ static void rankingControll(void) {
     s32 tmp;
     s32 idx;
     s32 idx2;
+    s32 firstIdx;
     s32 rank;
     RankEntry* entry;
     RankEntry* e;
@@ -572,13 +569,16 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nBelow) {
-                for (idx2 = 0; idx2 < nBelow; idx2++) {
-                    if (fighterDt[rank_wp->entries[below[idx2]].id].flags & 2) {
+                // the original reuses the same counter for the second search and saves the first
+                // hit first; this is what produces the `mr` before the second loop
+                firstIdx = idx;
+                for (idx = 0; idx < nBelow; idx++) {
+                    if (fighterDt[rank_wp->entries[below[idx]].id].flags & 2) {
                         break;
                     }
                 }
-                if (idx2 < nBelow && idx2 > 0) {
-                    insert(below, nBelow, idx, idx2 - 1);
+                if (idx < nBelow && idx > 0) {
+                    insert(below, nBelow, firstIdx, idx - 1);
                 }
             }
         }
@@ -600,12 +600,29 @@ static void rankingControll(void) {
     for (i = 0; i < nAbove; i++) {
         entry[i] = rank_wp->entries[above[i]];
     }
-    // TODO: fixup
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original's flags store compiles to an indexed `sthx` at entry + nAbove*12;
+    // routing it through a u16 view (flags is at offset 0) reproduces that, while id/points go
+    // through a materialised RankEntry*.
+    ((u16*)entry)[nAbove * 6] = RANK_PLAYER;
+    {
+        RankEntry* p = entry + nAbove;
+        p->id = FIGHTER_PLAYER;
+        *(s16*)p->points = 0;
+    }
+#else
     entry[nAbove].flags = RANK_PLAYER;
     entry[nAbove].id = FIGHTER_PLAYER;
     *(s16*)entry[nAbove].points = 0;
+#endif
     for (i = 0; i < nBelow; i++) {
+#ifdef MUST_MATCH
+        // MUST_MATCH: MWCC reassociates the natural `nAbove + i + 1` to `nAbove + (i + 1)`; writing
+        // the `+ 1` first makes it emit the original's `(nAbove + i) + 1` grouping instead.
+        j = 1 + nAbove + i;
+#else
         j = nAbove + i + 1;
+#endif
         entry[j] = rank_wp->entries[below[i]];
     }
     memcpy(rank_wp->entries, entry, sizeof(RankEntry) * rank_wp->count);
@@ -978,8 +995,6 @@ static void printRanking(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (94.93%): 1st GXSetScissor fctiwz/stfd interleave + &250 addi addressing;
-// suuji/sprintf str/buf address-setup hoisted above the suuji lookup
 static void disp_proc(CameraId cameraId, void* param) {
     FighterData* dt;
     s32 i;
@@ -1020,9 +1035,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     }
     FontDrawMessage(-i / 2, (s32)(f32){ 135.0f }, "ランキング");
     c250 = 250.0f;
-    scX = (u16)(s32)(304.0f + f31);
-    scW = (u16)(s32)c250;
-    GXSetScissor(scX, (u16)(s32)(f32){ 145.0f }, scW, (u16)(s32)(f32){ 220.0f });
+    scX = (u16)(304.0f + f31);
+    scW = (u16)c250;
+    GXSetScissor(scX, (u16)(f32){ 145.0f }, scW, (u16)(f32){ 220.0f });
     f28 = 135.0f;
     f30 = 40.0f;
     rank = 0;
@@ -1036,8 +1051,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         if (!(((RankEntry*)((u8*)rank_wp->entries + off))->flags & RANK_HIDDEN)) {
             PSMTXScale(scale, 0.8f, 0.8f, 0.8f);
             if (rank != 0) {
-                s32 a = rank / 10;
-                const char* p1 = a ? suuji[a] : "";
+                const char* p1 = (rank / 10) ? suuji[rank / 10] : "";
 
                 sprintf(buf, "%s%s", p1, suuji[rank % 10]);
                 FontDrawStart();
@@ -1067,7 +1081,7 @@ static void disp_proc(CameraId cameraId, void* param) {
             y += 0x14;
         }
     }
-    GXSetScissor(scX, (u16)(s32)(f32){ 137.0f }, scW, (u16)(s32)(f32){ 228.0f });
+    GXSetScissor(scX, (u16)(f32){ 137.0f }, scW, (u16)(f32){ 228.0f });
     {
         f32 yv = 95.0f + dwp->field_00;
         Vec pos = { 0.0f, 0.0f, 0.0f };
@@ -1170,7 +1184,9 @@ static f32 camGetRy(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.11%): event/npc callee-saved register swap (r31<->r30); constant-pool offsets
+// NONMATCHING (99.11%): `event`/`npc` callee-saved swap (original event=r31, npc=r30; ours reversed),
+// which cascades into every `0x104/0x78/0xc` access; plus the first angle branch picks f1 for the
+// `angle + viewYaw` sum where the original used f0. Both are allocator tie-breaks we couldn't steer.
 USER_FUNC(tou_champion_belt_28_text_2A10) {
     AnimationPose* pose;
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));

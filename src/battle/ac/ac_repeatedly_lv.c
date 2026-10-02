@@ -1,5 +1,6 @@
 #include "battle/ac/ac_repeatedly_lv.h"
 #include "battle/battle.h"
+#include "driver/icondrv.h"
 #include "system.h"
 
 extern const f32 float_neg300_8041e82c;
@@ -10,7 +11,28 @@ extern const f32 float_0_8041e828;
 extern const f32 float_100_8041e80c;
 extern const f32 float_0p4_8041e834;
 extern const f32 float_1p5_8041e838;
+extern const f32 float_neg200_8041e7f8;
+extern const f32 float_70_8041e7fc;
+extern const f32 float_1_8041e800;
+extern const f32 float_neg225_8041e804;
+extern const f32 float_neg175_8041e808;
+extern const f32 float_0p02_8041e810;
+extern const f32 float_neg288_8041e818;
+extern const f32 float_45_8041e81c;
+extern const f32 float_108_8041e820;
+extern const f32 float_25_8041e824;
 extern s32 dat_8041e7f0;
+extern u32 dat_8041e7f4;
+
+// .rodata zero vectors actionCommandDisp copies onto the stack per icon; the original pools every
+// access through the vec3_802fa0e8 base and indexes the rest by offset.
+const Vec vec3_802fa0e8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fa0f4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fa100 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fa10c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fa118 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fa124 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fa130 = {0.0f, 0.0f, 0.0f};
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -144,8 +166,6 @@ static void _init_param(BattleWork* work) {
 // original. As an extern (or defined earlier/later in the file) the allocator rotates f0/f1.
 const f32 float_0_8041e828 = 0.0f;
 
-// optimize_for_size: the original saves r27-r31 with stmw/lmw and converts int->float via the
-// double_to_int magic, both -O4,s hallmarks.
 s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->field_0x2BC[0];
@@ -380,6 +400,245 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
 }
 #pragma dont_inline reset
 
+// Match-only: iconDispGx declares the icon id `s16`, but the original passes the value returned by
+// BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function pointer keeps
+// the call a direct `bl iconDispGx`. Same workaround as ac_repeatedly.c / ac_power_gauge.c.
+#ifdef MUST_MATCH
+#define ICON_DISP(v, f, id, s) (((void (*)(Vec*, s16, s32, f32))iconDispGx)((v), (f), (id), (s)))
+#else
+#define ICON_DISP(v, f, id, s) iconDispGx((v), (f), (id), (s))
+#endif
+
+// Match-only: the header declares BattleAcDrawGauge's float ratio last, but the original's prototype
+// lists it between `count` and the three thresholds: the ratio `lfs f1` is scheduled between the two
+// `fctiwz` conversions only when the float parameter is evaluated before the threshold arguments. The
+// ABI is identical (ints -> r3-r10, float -> f1). Same workaround as ac_power_gauge_lv2.c.
+#ifdef MUST_MATCH
+#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags)                                  \
+    ((void (*)(s32, f32, s32, s32, s32, s32, s32, s32, s32))BattleAcDrawGauge)((x), (ratio), (y), (type), \
+                                                                               (count), (t0), (t1), (t2), (flags))
+#else
+#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags) \
+    BattleAcDrawGauge((x), (y), (type), (count), (t0), (t1), (t2), (flags), (ratio))
+#endif
+
+//
+// The only remaining difference (8 instructions) is a register-colouring tie-break in the two-icon
+// branches: for the FIRST icon of each pair the original computes `neg225 + x` into f3 and loads the
+// paired `float_70` into f0; ours swaps them (neg225+x -> f0, float_70 -> f3), and the final `fadds`
+// operand order follows. Every other instruction, including the second icon of each pair and PSMTXTrans,
+// is byte-identical. MWCC 2.6 picks f0 for the first temp regardless of declaration/statement order or of
+// routing the sum through a local, a constant local, a nested block, or a MUST_MATCH inline.
+// NONMATCHING (90.30%): in the two-icon branches the first `neg225 + x` sum is coloured f0 (orig f3) and the paired float_70 f3 (orig f0); 8 instructions, all register-only.
+static void actionCommandDisp(f32 x, f32 y) {
+    BattleWork* work = _battleWorkPointer;
+    BattleActions* ac = &work->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    RepeatedlyLvWork* dec = (RepeatedlyLvWork*)&ac->field_0x2BC[0];
+    u8* p = (u8*)disp;
+    s32 iconA;
+    s32 iconB;
+    s32 iconC;
+    s32 iconD;
+    s32 offA;
+    s32 offB;
+    s32 numIcons;
+    s32 flags;
+    s32 count;
+    s32 arr[4];
+    s32 i;
+    f32 target;
+    s32 div7;
+
+    camGetPtr(CAMERA_2D);
+
+    iconD = 0;
+    iconC = 0;
+    numIcons = 1;
+    offB = 0;
+    offA = 0;
+    (*(s32*)&disp->field_0x0[0])++;
+
+    iconA = BattleACGetButtonIcon(dec->field_0x00, 1);
+    {
+        s32 t = BattleACGetButtonIcon(dec->field_0x00, 0);
+        iconB = t;
+    }
+
+    switch (*(s32*)&ac->field_34[4]) {
+    case 0xF:
+        offA = -10;
+        offB = 10;
+        // fall through
+    case 0xB:
+    case 0xC:
+        iconA = BattleACGetButtonIcon(dec->field_0x04, 1);
+        iconB = BattleACGetButtonIcon(dec->field_0x04, 0);
+        iconC = BattleACGetButtonIcon(dec->field_0x08, 1);
+        iconD = BattleACGetButtonIcon(dec->field_0x08, 0);
+        numIcons = 2;
+        break;
+    case 0xD:
+        iconA = 0x7C;
+        iconB = 0x76;
+        break;
+    case 0xE:
+        iconA = 0x78;
+        iconB = 0x7A;
+        break;
+    }
+
+    div7 = *(s32*)&disp->field_0x0[0] / 7;
+    if (numIcons == 1) {
+        if ((div7 & 1) == 1) {
+            Vec vec = vec3_802fa0e8;
+            vec.x = float_neg200_8041e7f8 + x;
+            vec.y = float_70_8041e7fc + y;
+            ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
+        } else {
+            Vec vec = vec3_802fa0f4;
+            vec.x = float_neg200_8041e7f8 + x;
+            vec.y = float_70_8041e7fc + y;
+            ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
+        }
+    } else {
+        if ((div7 & 1) == 1) {
+            f32 x0 = float_neg225_8041e804 + x;
+            f32 y0 = float_70_8041e7fc + y;
+            Vec vec = vec3_802fa100;
+            vec.x = (f32)offA + x0;
+            vec.y = y0;
+            ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
+            {
+                f32 x1 = float_neg175_8041e808 + x;
+                Vec vec2 = vec3_802fa10c;
+                vec2.x = x1 + (f32)offB;
+                vec2.y = y0;
+                ICON_DISP(&vec2, 0x10, iconC, float_1_8041e800);
+            }
+        } else {
+            f32 x0 = float_neg225_8041e804 + x;
+            f32 y0 = float_70_8041e7fc + y;
+            Vec vec = vec3_802fa118;
+            vec.x = (f32)offA + x0;
+            vec.y = y0;
+            ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
+            {
+                f32 x1 = float_neg175_8041e808 + x;
+                Vec vec2 = vec3_802fa124;
+                vec2.x = x1 + (f32)offB;
+                vec2.y = y0;
+                ICON_DISP(&vec2, 0x10, iconD, float_1_8041e800);
+            }
+        }
+    }
+
+    target = dec->field_0x14 / float_100_8041e80c;
+    if (disp->value <= target) {
+        if (*(s32*)&ac->field_34[0] & 8) {
+            disp->value += float_0p02_8041e810;
+        } else {
+            disp->value += float_0p01_8041e814;
+        }
+        if (*(s32*)&ac->field_34[0] & 0x10) {
+            disp->value = target;
+        }
+        if (disp->value > target) {
+            disp->value = target;
+        }
+    } else {
+        if (*(s32*)&ac->field_34[0] & 8) {
+            disp->value -= float_0p02_8041e810;
+        } else {
+            disp->value -= float_0p01_8041e814;
+        }
+        if (*(s32*)&ac->field_34[0] & 0x10) {
+            disp->value = target;
+        }
+        if (disp->value < target) {
+            disp->value = target;
+        }
+    }
+
+    count = 0;
+    flags = 0;
+    if ((s8)dec->field_0x25 == 1 && disp->value >= float_1_8041e800) {
+        flags |= 1;
+        p[0xD] += p[0x11];
+        p[0xE] += p[0x12];
+        if (p[0xD] <= 0x80 && (s8)p[0x11] < 0) {
+            p[0x12] = 0x10;
+            p[0x11] = 0x10;
+        }
+        if (p[0xD] >= 0xF5 && (s8)p[0x11] > 0) {
+            *(s8*)&p[0x12] = -0x10;
+            *(s8*)&p[0x11] = -0x10;
+        }
+    }
+    if ((s8)dec->field_0x25 == -1) {
+        flags |= 2;
+    }
+
+    for (i = 0; i < 4; i++) {
+        arr[i] = 100;
+    }
+    for (i = 0; i < 4; i++, count++) {
+        arr[i] = *(s32*)&ac->field_78[i * 4];
+        if (i != 0 && arr[i] - arr[i - 1] <= 0) {
+            break;
+        }
+    }
+
+    BattleAcDrawGaugeFM((s32)x, (s32)y, dec->field_0x24, count, disp->value, arr[0], arr[1],
+                        arr[2], flags);
+
+    if (*(s32*)&ac->field_34[0] & 2) {
+        Vec vec = vec3_802fa130;
+        vec.x = float_neg288_8041e818 + x +
+                (f32)(*(s32*)&ac->field_34[0x1C] * 0xB0) / float_100_8041e80c;
+        vec.y = float_45_8041e81c + y;
+        ICON_DISP(&vec, 0x10, 0x96, float_1_8041e800);
+    }
+
+    if (*(s32*)&ac->field_34[0] & 4) {
+        Mtx mtx;
+        Mtx trans;
+        Mtx scale;
+        s32 num = ac->outputParams[2] + *(s32*)&ac->field_34[0x20];
+
+        f32 tx = float_neg200_8041e7f8 + x;
+
+        PSMTXTrans(trans, tx + float_108_8041e820, float_25_8041e824 + y,
+                   float_0_8041e828);
+        PSMTXScale(scale, float_1_8041e800, float_1_8041e800, float_1_8041e800);
+        PSMTXConcat(trans, scale, mtx);
+        iconNumberDispGx(mtx, num, 0, *(GXColor*)&dat_8041e7f4);
+    }
+}
+
 // Defined after the code that uses them, so the references stay bound to these names.
+const f32 float_neg200_8041e7f8 = -200.0f;
+const f32 float_70_8041e7fc = 70.0f;
+const f32 float_1_8041e800 = 1.0f;
+const f32 float_neg225_8041e804 = -225.0f;
+const f32 float_neg175_8041e808 = -175.0f;
+const f32 float_100_8041e80c = 100.0f;
+const f32 float_0p02_8041e810 = 0.02f;
+const f32 float_0p01_8041e814 = 0.01f;
+const f32 float_neg288_8041e818 = -288.0f;
+const f32 float_45_8041e81c = 45.0f;
+const f32 float_108_8041e820 = 108.0f;
+const f32 float_25_8041e824 = 25.0f;
 const f32 float_neg300_8041e82c = -300.0f;
 const f32 float_30_8041e830 = 30.0f;
+const f32 float_0p4_8041e834 = 0.4f;
+const f32 float_1p5_8041e838 = 1.5f;
+s32 dat_8041e7f0 = -1;
+u32 dat_8041e7f4 = 0xFFFFFFFF;
+
+// 4 zero bytes that end the unit's .sdata2 (see the original .sdata2:0x4C gap).
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") u32 gap_09_8041E83C_sdata2[1] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset

@@ -169,16 +169,35 @@ void effOpukuWgunMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effOpukuWgunDisp, effect);
 }
 
-// Control flow, constants, both TEV branches, the transform loop and the triangle loop all line up. The GQR2-5
-// setup retail runs before the s16->f32 reads and before the f32->s16 writes is reproduced with OSInitFastCast
-// (the SDK inline asm), so those blocks match. The remaining difference is the conversion itself: retail
-// reads/writes the transformed vertex through paired-single psq_l/psq_st (GQR5, S16) while MWCC 2.6 lowers
-// `f32 v = vtx->x` / `vtx->x = (s16)v` to the xoris/lfd/fsubs and fctiwz/sth integer path. That changes the
-// transform loop, the saved FPR set (retail keeps f21-f31, we keep f25-f31) and the 0x190 vs 0x140 frame,
-// which shifts every local slot and register assignment. No source form in this toolchain emits the psq path
-// (see eff_balloon_n64.c / eff_flame_n64.c); game code may not use inline asm, so this cannot reach 100%.
-// NONMATCHING (87.93%): transform loop uses lha/fctiwz instead of retail's psq_l/psq_st; the OSInitFastCast
-// GQR blocks match.
+#ifdef MUST_MATCH
+static inline GXColor makeOpukuWgunColor1(u8 r, u8 g, u8 b, u8 a) {
+	GXColor c = unk_804231e8;
+	c.r = r; c.g = g; c.b = b; c.a = a;
+	return c;
+}
+static inline GXColor makeOpukuWgunColor2p(GXColor c, u8 r, u8 g, u8 b) {
+	c.r = r; c.g = g; c.b = b;
+	return c;
+}
+// Building both tev colours through an inline (as eff_opuku_jetwrain does) makes mwcc keep each temporary
+// in its own slot and copy it to a separate outgoing argument slot, producing retail's temp/arg pairs.
+#endif
+// The frame (0x190), the saved-register set (f21-f31, r22-r31), both TEV-colour blocks, the first vertex
+// loop, the transform loop, the GX state and the triangle loop all line up. The GQR2-5 setup retail runs
+// before the s16->f32 reads and before the f32->s16 writes is reproduced with OSInitFastCast, and the
+// paired-single psq_l/psq_st conversions with the SDK's __OSs16tof32 / __OSf32tos16 inlines (plain casts
+// would lower to lha/fctiwz). The `zero` local keeps `data->z[i] + 0.0f` from folding away, which lands the
+// 0.0 in f31 and the 2pi/360/20/scale constants in retail's f28/f29/f30/f24; the `angle`/`rad` split gives
+// angle f22, rad/s f23 and t f21; `alpha` is an s32 so a_data*data->alpha/255 stores with a plain stb (no
+// clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. What still
+// differs (every instruction opcode/operand matches): mwcc's integer colouring of the two vertex loops
+// (retail keeps the walking vtx pointer in r23 and its base in r24, i in r26, texS in r28 and alpha in r22;
+// we get base r26 / running r28, i r24, texS r23 and alpha r22 -- two independent register swaps), the
+// first TEV colour's temporary slot (retail 0x1c/0x20, ours 0x10/0x1c), the transform loop's f32->s16
+// temporaries (retail 0x8/0xc/0x10; this SDK header's s16 temp gives the 2-byte 0x8/0xa/0xc, which is why
+// `v` sits at 0x24 in retail but 0x20 here) and the redundant `beq` retail emits before the i==0 `bne`.
+// NONMATCHING (98.23%): integer register colouring, the colour1 temp slot and the f32->s16 temp width;
+// every instruction opcode/operand matches.
 void effOpukuWgunDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -187,23 +206,37 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	smartEntry* entry;
 	GXTexObj texObj;
 	Mtx scaleMtx;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail's three __OSf32tos16 temporaries each take a 4-byte slot, so this helper object
+	   is 16 bytes and the following texObj/matrix offsets come out as retail's. Natural Vec under #else. */
+	f32 v[4];
+#define OW_VEC ((Vec*)v)
+#else
 	Vec v;
+#define OW_VEC (&v)
+#endif
 	GXColor color;
-	f32 angle = 0.0f;
 	f32 scale;
 	f32 t;
 	f32 s;
+	f32 angle;
+	f32 rad;
+	f32 zero = 0.0f;
 	f32 c;
 	s32 type;
-	u8 alpha;
 	s32 i;
 	s32 j;
 	s32 texS;
 	s32 x;
+	s32 alpha;
 
 	type = data->type;
 	scale = data->scale;
 
+#ifdef MUST_MATCH
+	GXSetTevColor(GX_TEVREG0, makeOpukuWgunColor1(data->field_0x34, data->field_0x38, data->field_0x3C, data->field_0x40));
+	GXSetTevColor(GX_TEVREG1, makeOpukuWgunColor2p(*(GXColor*)&dat_8041f840, data->field_0x44, data->field_0x48, data->field_0x4C));
+#else
 	color = unk_804231e8;
 	color.r = data->field_0x34;
 	color.g = data->field_0x38;
@@ -216,6 +249,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	color.g = data->field_0x48;
 	color.b = data->field_0x4C;
 	GXSetTevColor(GX_TEVREG1, color);
+#endif
 
 	GXSetCullMode(GX_CULL_NONE);
 
@@ -245,12 +279,12 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 			alpha = a_data[i] * data->alpha[i] / 255;
 		}
 		t *= scale;
-		angle = float_6p2832_8041f858 * angle / float_360_8041f85c;
-		s = t * (f32)sin(angle);
-		c = t * (f32)cos(angle);
+		rad = float_6p2832_8041f858 * angle / float_360_8041f85c;
+		s = t * (f32)sin(rad);
+		c = t * (f32)cos(rad);
 		vtx[2 * i].x = (s16)(float_20_8041f860 * (data->x[i] + s));
 		vtx[2 * i].y = (s16)(float_20_8041f860 * (data->y[i] + c));
-		vtx[2 * i].z = (s16)(float_20_8041f860 * (data->z[i] + float_0_8041f864));
+		vtx[2 * i].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
 		vtx[2 * i].s = texS;
 		vtx[2 * i].t = 0;
 		vtx[2 * i].r = (i & 1) * 255;
@@ -259,7 +293,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		vtx[2 * i].a = alpha;
 		vtx[2 * i + 1].x = (s16)(float_20_8041f860 * (data->x[i] - s));
 		vtx[2 * i + 1].y = (s16)(float_20_8041f860 * (data->y[i] - c));
-		vtx[2 * i + 1].z = (s16)(float_20_8041f860 * (data->z[i] + float_0_8041f864));
+		vtx[2 * i + 1].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
 		vtx[2 * i + 1].s = texS;
 		vtx[2 * i + 1].t = 0x400;
 		vtx[2 * i + 1].r = (i & 1) * 255;
@@ -273,14 +307,14 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 
 	for (j = 0; j < i * 2; j++) {
 		OSInitFastCast();
-		v.x = vtx[j].x;
-		v.y = vtx[j].y;
-		v.z = vtx[j].z;
-		PSMTXMultVec(scaleMtx, &v, &v);
+		OW_VEC->x = __OSs16tof32(&vtx[j].x);
+		OW_VEC->y = __OSs16tof32(&vtx[j].y);
+		OW_VEC->z = __OSs16tof32(&vtx[j].z);
+		PSMTXMultVec(scaleMtx, OW_VEC, OW_VEC);
 		OSInitFastCast();
-		vtx[j].x = (s16)v.x;
-		vtx[j].y = (s16)v.y;
-		vtx[j].z = (s16)v.z;
+		vtx[j].x = __OSf32tos16(OW_VEC->x);
+		vtx[j].y = __OSf32tos16(OW_VEC->y);
+		vtx[j].z = __OSf32tos16(OW_VEC->z);
 	}
 
 	DCFlushRange(vtx, 0x2A0);
@@ -332,7 +366,9 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	}
 
 	for (j = 0, x = 0; j < i - 1; j++, x += 2) {
-		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-		tri2(x, x + 2, x + 1, x, x + 1, x + 2, x + 3, x);
+		if (j >= 0) {
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+			tri2(x, x + 2, x + 1, x, x + 1, x + 2, x + 3, x);
+		}
 	}
 }

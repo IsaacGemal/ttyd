@@ -1,4 +1,5 @@
 #include "eff/eff_ultra_hammer.h"
+#include "unk_0x8025de70.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include "system.h"
@@ -14,18 +15,8 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_803B70C0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
-// These error strings and the copy-clear colour live in unk_0x8025de70.c (same data blob).
-extern const char str_803019E0[24];
-extern const char str_803019F8[24];
-extern const char str_80301A10[28];
-extern const char str_80301A2C[28];
-extern const char str_80301A48[36];
-extern const char str_80301A6C[32];
-extern const char str_80301A8C[32];
-extern const char str_80301AAC[32];
-extern const char str_80301ACC[40];
-extern const char str_80301AF4[28];
-extern const char str_80301B10[96];
+// These error strings and the copy-clear colour live in unk_0x8025de70.c (same data blob); the blob
+// layout is declared in include/unk_0x8025de70.h.
 extern const u32 dat_80422600;
 extern const char str_80422604[4];
 extern const f32 float_0_80422608;
@@ -40,20 +31,38 @@ void N_setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
 }
 
-// NONMATCHING (89.04%): register allocation, the signed int->float conversion, and the interrupt
-// restore after OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync (inline asm
-// is not allowed here), written as PPCMtmsr(PPCMfmsr() | 0x8002), which calls the two SDK functions. The original keeps
-// context/error/dsisr/dar in r26/r23/r25/r24 and the string base in r29 with an indexed gpr loop, while
-// this compiler uses different callee-saved registers and a running pointer, so two more callee-saved
-// registers and 0x10 of frame differ. The original's font MTXScale u16->float conversion uses the
-// unsigned magic double_to_int_mask_80301b70 from unk_0x8025de70.o's .rodata; under MUST_MATCH it
-// converts as signed and shares double_to_int_803019d8.
+// NONMATCHING (93.93%): one base register. All the error strings and the FP conversion magic double
+// live in one blob (unk_0x8025de70.o); the original reaches every one of them as an offset from a base
+// held in a callee-saved register, so they are modelled as one struct (include/unk_0x8025de70.h) reached
+// through `es`. That reproduces every string-relative access, and the two remaining classes of
+// difference cannot be removed cleanly:
+//   * The interrupt restore after OSFillFPUContext is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync in the
+//     original. Inline asm is not allowed here, so it is written PPCMtmsr(PPCMfmsr() | 0x8002), which
+//     calls the two SDK functions instead of the five inline instructions.
+//   * The conversion mask. The original reaches it as `lfd f2, 0x190(r29)` -- the blob's own 2^52
+//     unsigned mask, loaded through the same `es` register, which keeps es live across the render loop
+//     and with it nine callee-saved registers (r23..r31). This compiler will not fuse `fsub+frsp` into
+//     `fsubs` for a runtime mask, so the external-mask form gives fsub+frsp; the compiler's own
+//     `(f32)(u32)sheetWidth` gives the matching fsubs but appends an anonymous 8-byte pool entry that
+//     regresses this unit's .rodata (a CI ratchet measure). We instead use `(f32)(s32)sheetWidth`, which
+//     is value-identical for a u16 and reuses the unit's existing 2^52+2^31 constant: fsubs stays and
+//     .rodata is untouched, at the cost of one xoris per conversion. A redundant `printbase` alias of
+//     print_buffer then reproduces the hoisted base register, giving eight callee-saved registers. The
+//     remaining frame is 0x1518 vs 0x1520 and context/error/dsisr/dar land in adjacent registers.
+// Match aid (not a correctness fix): with CSE on, MWCC recomputes the tail's buffer pointers and one
+// GXPosition1x16 store; off, it keeps them in registers and picks up four more identical instructions.
+// NONMATCHING (93.93%): see the explanation above; the short version is one base register.
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	//registers
 	OSFontHeader* fontHeader;
 	s8* loop_newline;
 	s8* loop_zero;
 	s32 width2, height2;
+#ifdef MUST_MATCH
+	// Redundant alias of print_buffer: the original hoists &print_buffer into a callee-saved register
+	// across the render loop, which a bare &print_buffer[i] does not reproduce.
+	char* printbase;
+#endif
 	int i;
 	u32 count, stack;
 	u16 w1, w2, h1, h2, x1, x2, y1, y2;
@@ -68,6 +77,7 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	s32 x; // 0x18
 	s32 y; // 0x14
 	s32 width; // 0x10
+	const EffUltraHammerErrorStrings* es = &str_803019E0;
 #ifdef MUST_MATCH
 	u32 clearColor;
 #endif
@@ -79,42 +89,42 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 
 	switch (error) {
 		case OS_ERROR_DSI:
-			strcpy(print_buffer, str_803019E0);
+			strcpy(print_buffer, es->dsi);
 			break;
 		case OS_ERROR_ISI:
-			strcpy(print_buffer, str_803019F8);
+			strcpy(print_buffer, es->isi);
 			break;
 		case OS_ERROR_PROGRAM:
-			strcpy(print_buffer, str_80301A10);
+			strcpy(print_buffer, es->program);
 			break;
 	}
-	sprintf(print_buffer2, str_80301A2C, context);
+	sprintf(print_buffer2, es->context, context);
 	strcat(print_buffer, print_buffer2);
 	for (i = 0; i < 16; i++) {
-		sprintf(print_buffer2, str_80301A48,
+		sprintf(print_buffer2, es->gpr,
 			i, context->gpr[i],
 			i + 16, context->gpr[i + 16]
 		);
 		strcat(print_buffer, print_buffer2);
 	}
-	sprintf(print_buffer2, str_80301A6C, context->lr, context->cr);
+	sprintf(print_buffer2, es->lr, context->lr, context->cr);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, str_80301A8C, context->srr0, context->srr1);
+	sprintf(print_buffer2, es->srr, context->srr0, context->srr1);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, str_80301AAC, dsisr, dar);
+	sprintf(print_buffer2, es->dsisr, dsisr, dar);
 	strcat(print_buffer, print_buffer2);
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, str_80301ACC);
+	sprintf(print_buffer2, es->address);
 	strcat(print_buffer, print_buffer2);
 	stack = context->gpr[1]; //get r1 (stack)
 	i = 0;
 	while ((stack != 0) && (stack != 0xFFFFFFFF) && (i++ < 16)) {
-		sprintf(print_buffer2, str_80301AF4, stack, *(u32*)stack, *(u32*)(stack + 4));
+		sprintf(print_buffer2, es->backchain, stack, *(u32*)stack, *(u32*)(stack + 4));
 		strcat(print_buffer, print_buffer2);
 		stack = *(u32*)stack;
 	}
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, str_80301B10, context->srr0, dar);
+	sprintf(print_buffer2, es->instruction, context->srr0, dar);
 	strcat(print_buffer, print_buffer2);
 	psndExit();
 	OSFillFPUContext(context);
@@ -158,6 +168,9 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, 1, 3, 0);
 	while (1) {
 		count = VIGetRetraceCount();
+#ifdef MUST_MATCH
+		printbase = print_buffer;
+#endif
 		loop_newline = (s8*)&print_buffer;
 		width2 = 50;
 		height2 = 50;
@@ -172,7 +185,11 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 				loop_newline++;
 			}
 			else {
+#ifdef MUST_MATCH
+				OSGetFontTexture((const char*)&printbase[i], &image, &x, &y, &width);
+#else
 				OSGetFontTexture((const char*)&print_buffer[i], &image, &x, &y, &width);
+#endif
 				GXInitTexObj(&texObj, image, fontHeader->sheetWidth, fontHeader->sheetHeight,
 					(GXTexFmt)fontHeader->sheetFormat, GX_CLAMP, GX_CLAMP, GX_FALSE);
 				GXLoadTexObj(&texObj, GX_TEXMAP0);

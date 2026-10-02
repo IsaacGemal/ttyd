@@ -178,18 +178,20 @@ void effOpukuJetwMain(EffectEntry* effect) {
 
 // The frame size (0x180), the Mtx slots (work/rot/scale/trans at
 // 0x40/0x70/0xa0/0xd0), the switch layout, the loop's `rowOffset += columns, j++` bottom test and the
-// three GXColor call slots (0x18/0x1c, 0x10/0x14, 0x8/0xc) all match. What is left is register
-// allocation: mwcc puts the cached data fields in r21/r25/r26/r27 and lifetime in r14 (original
-// r25-r28 and r31), so the whole callee-saved assignment is rotated. That pressure spills `half` to
-// 0x130 (original keeps it in r14) and makes the inner pointer emit `(rowOffset + col) * 10`
-// (add/mulli) where the original emits `rowOffset * 10` then `+ col * 10` (the
-// `&table[rowOffset] + col` shape); writing that shape in C makes this compiler spill more, so the
-// additive-index form is kept. The pre-loop `if` and the three TEV colours also use the split
-// `trans`/`colPtr` field shape the original does (trans and rot use `ptr`, scale and alpha use
-// `colPtr`). Declaration-order permutations and the optimize_for_size / opt_lifetimes /
-// opt_propagation / opt_common_subs / scheduling / peephole / global_optimizer pragmas were tried;
-// none reach the target rotation. All candidate compilers (GC/1.3..GC/2.7) generate identical code;
-// GC/3.0 is worse.
+// three GXColor call slots (0x18/0x1c, 0x10/0x14, 0x8/0xc) all match. Only the callee-saved GPR map
+// does not. Seven of the eight probed values land in the original's registers: counter r14,
+// field24 r28, field18 r27, field1c r26, field20 r25, half r14, data r16. The three that do not are
+// the `.data` section base (r31 here, r20 originally), `lifetime` (r15, original r31) and `cam`
+// (r17, original r15). The base is always the first callee-saved value defined and no
+// declaration/assignment permutation, cache form (cache-for-both / reload-for-both / split), cache
+// position, switch-case order, or explicit base local moves it off r31 (adding four extra long-lived
+// locals just spills them); with r31 taken, `lifetime` cannot get it, which in turn keeps `cam` at
+// r17. The declaration order below, the cache-vs-reload split (`lifetime` local for the pre-loop `if`,
+// `data->lifetime` reloaded in the inner loop) and the additive-index `&table[rowOffset + col]` shape
+// were chosen by hill-climbing this file's score. optimize_for_size / opt_lifetimes / opt_propagation
+// / opt_common_subs / opt_strength_reduction / scheduling / peephole / global_optimizer pragmas were
+// also tried; none reach the target rotation. All candidate compilers (GC/1.3..GC/2.7) generate
+// identical code; GC/3.0 is worse.
 // Building each TEV colour and calling GXSetTevColor inside one inline makes mwcc allocate the
 // colour's build slot and its by-value argument copy together, matching the original's slots.
 static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 field24) {
@@ -219,33 +221,35 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
     GXSetTevColor(GX_TEVREG0, color);
 }
 
-// NONMATCHING (92.84%): register allocation, see the note above the TEV colour inlines.
+// NONMATCHING (94.19%): callee-saved allocation only. Matches counter/data/field24/field18/field1c/field20/half;
+// off: `.data` base r31 vs r20, lifetime r15 vs r31, cam r17 vs r15. The base always claims r31 so lifetime cannot.
+// See the note above the TEV colour inlines.
 void effOpukuJetwDisp(CameraId camId, void* param) {
     Mtx trans;
     s32 half;
     s32 field24;
+    s32 field18;
     s32 field1c;
-    effOpukuJetwData* data;
     s32 field20;
     s32 columns;
     s32 rows;
-    effOpukuJetwPoint* table;
-    CameraEntry* cam;
-    effOpukuJetwPoint* colPtr;
     Mtx scale;
-    s32 lifetime;
-    s32 field18;
-    s32 rowOffset;
     Mtx rot;
-    s32 j;
     EffectEntry* effect;
+    effOpukuJetwPoint* table;
+    s32 counter;
+    effOpukuJetwPoint* colPtr;
+    s32 col;
+    CameraEntry* cam;
+    s32 lifetime;
+    s32 j;
+    s32 rowOffset;
     effOpukuJetwPoint* ptr;
     s32 threshold;
-    s32 i;
-    s32 col;
-    s32 counter;
-    Mtx work;
     GXTexObj texObj;
+    effOpukuJetwData* data;
+    Mtx work;
+    s32 i;
 
     effect = param;
     cam = camGetPtr(camId);
@@ -318,7 +322,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             if (col > threshold) {
                 continue;
             }
-            if (columns - 1 > col + lifetime) {
+            if (columns - 1 > col + data->lifetime) {
                 continue;
             }
             colPtr = &table[col];
