@@ -398,7 +398,9 @@ static void insert(s32* arr, s32 n, s32 from, s32 to) {
 #pragma dont_inline reset
 
 // TODO: this is mostly there
-// NONMATCHING (97.65%): sort-loop i/j registers are r28/r27 vs r27/r28; entry[nAbove] address CSE
+// NONMATCHING (98.02%): 2nd nBelow find-loop keeps fighterDt/idx in r6/r5 vs the original's r5/r9
+// (so ours loses the `mr r5, r9` before the idx2 loop); entry[nAbove] CSE stores flags via sthx then
+// materializes the pointer, ours materializes first; entry[j] loop groups `(nAbove+i)+1` vs ours `(i+1)+nAbove`
 static void rankingControll(void) {
     s32 above[32];
     s32 below[32];
@@ -415,13 +417,13 @@ static void rankingControll(void) {
 
     nAbove = 0;
     nBelow = 0;
-    for (i = 0, e = rank_wp->entries; i < rank_wp->count; i++, e++) {
+    for (idx = 0, e = rank_wp->entries; idx < rank_wp->count; idx++, e++) {
         if (!(e->flags & RANK_PLAYER)) {
             if (e->flags & RANK_BELOW) {
-                below[nBelow] = i;
+                below[nBelow] = idx;
                 nBelow++;
             } else {
-                above[nAbove] = i;
+                above[nAbove] = idx;
                 nAbove++;
             }
         }
@@ -976,13 +978,14 @@ static void printRanking(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (84.52%): color/pos/conversion temp stack layout; fmuls operand order after fneg
+// NONMATCHING (94.93%): 1st GXSetScissor fctiwz/stfd interleave + &250 addi addressing;
+// suuji/sprintf str/buf address-setup hoisted above the suuji lookup
 static void disp_proc(CameraId cameraId, void* param) {
     FighterData* dt;
     s32 i;
     s32 rank;
-    s32 off;
     s32 y;
+    s32 off;
     f32 f31;
     f32 f30;
     f32 f28;
@@ -991,6 +994,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     Mtx scale;
     Mtx mtx;
     char buf[0x100];
+    u16 scX;
+    u16 scW;
+    f32 c250;
 
     if (evtGetValue(NULL, GSW(0)) < 172) {
         dt = fighterDt;
@@ -999,9 +1005,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     }
     {
         f32 t = 250.0f;
+        f32 h = 0.5f;
 
-        f31 = -t;
-        f31 = 0.5f * f31;
+        f31 = -t * h;
     }
     windowDispGX_System(0, 0xff, f31 - 30.0f, 165.0f, 310.0f, 330.0f);
     FontDrawStart();
@@ -1013,7 +1019,10 @@ static void disp_proc(CameraId cameraId, void* param) {
         FontDrawColor(&color);
     }
     FontDrawMessage(-i / 2, (s32)(f32){ 135.0f }, "ランキング");
-    GXSetScissor((u16)(s32)(304.0f + f31), (u16)(s32)(f32){ 145.0f }, (u16)(s32)(f32){ 250.0f }, (u16)(s32)(f32){ 220.0f });
+    c250 = 250.0f;
+    scX = (u16)(s32)(304.0f + f31);
+    scW = (u16)(s32)c250;
+    GXSetScissor(scX, (u16)(s32)(f32){ 145.0f }, scW, (u16)(s32)(f32){ 220.0f });
     f28 = 135.0f;
     f30 = 40.0f;
     rank = 0;
@@ -1058,38 +1067,39 @@ static void disp_proc(CameraId cameraId, void* param) {
             y += 0x14;
         }
     }
-    GXSetScissor((u16)(s32)(304.0f + f31), (u16)(s32)(f32){ 137.0f }, (u16)(s32)(f32){ 250.0f }, (u16)(s32)(f32){ 228.0f });
+    GXSetScissor(scX, (u16)(s32)(f32){ 137.0f }, scW, (u16)(s32)(f32){ 228.0f });
     {
+        f32 yv = 95.0f + dwp->field_00;
         Vec pos = { 0.0f, 0.0f, 0.0f };
 
         pos.x = 15.0f + f31;
-        pos.y = (95.0f + dwp->field_00) - 24.0f;
+        pos.y = yv - 24.0f;
         iconDispGx(&pos, 0x10, 0x123, 0.8f);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
     if (dwp->field_08 > 0) {
         Vec pos = { 0.0f, 125.0f, 0.0f };
 
-        pos.x = 250.0f + f31;
+        pos.x = f31 + c250;
         iconDispGx(&pos, 0x10, 0x205, -1.0f);
-    }
-    if (dwp->field_08 > 0) {
-        Vec pos = { 0.0f, 75.0f, 0.0f };
+        {
+            Vec pos = { 0.0f, 75.0f, 0.0f };
 
-        pos.x = 250.0f + f31;
-        iconDispGx(&pos, 0x10, 0x7e, 0.6f);
+            pos.x = f31 + c250;
+            iconDispGx(&pos, 0x10, 0x7e, 0.6f);
+        }
     }
     if (dwp->field_08 < 1) {
         Vec pos = { 0.0f, -140.0f, 0.0f };
 
-        pos.x = 250.0f + f31;
+        pos.x = f31 + c250;
         iconDispGx(&pos, 0x10, 0x205, 1.0f);
-    }
-    if (dwp->field_08 < 1) {
-        Vec pos = { 0.0f, -125.0f, 0.0f };
+        {
+            Vec pos = { 0.0f, -125.0f, 0.0f };
 
-        pos.x = 250.0f + f31;
-        iconDispGx(&pos, 0x10, 0x80, 0.6f);
+            pos.x = f31 + c250;
+            iconDispGx(&pos, 0x10, 0x80, 0.6f);
+        }
     }
 }
 

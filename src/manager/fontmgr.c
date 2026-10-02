@@ -377,21 +377,17 @@ void FontDrawStart_alpha(u8 alpha) {
 	fontEdge = FALSE;
 	JUTFont_DrawStart(start);
 }
-// NONMATCHING (91.47%): explicit copy of the `FontDrawStart_alpha(0xFF)` body; the order below is the one
-// CW schedules to retail's exact bytes (the natural `FontDrawStart_alpha(0xFF);` call scores lower).
-//does some fucky stuff on the alpha channel that doesn't change anything
+// NONMATCHING (95.06%): storing fontScale/fontAlpha/fontColor before start.a is the order CW schedules to
+// retail's bytes; remaining diffs are register allocation and the start/by-value-arg slots are swapped
+// (retail start@r1+0x8, arg@r1+0xc; FontDrawStart_alpha has the opposite and matches).
 void FontDrawStart(void) {
 	GXColor start;
 
 	start = fontColTbl[0];
-	start.a = (start.a * 0xFF) / 255;
-	fontAlpha = 0xFF;
-#ifdef MUST_MATCH // same frame fix as FontDrawStart_alpha: a plain struct assign grows the frame to 0x20
-	*(u32*)&fontColor = *(u32*)&fontColTbl[0];
-#else
-	fontColor = fontColTbl[0];
-#endif
 	fontScale = vec3_802c48c0;
+	fontAlpha = 0xFF;
+	*(u32*)&fontColor = *(u32*)&fontColTbl[0];
+	start.a = (start.a * 0xFF) / 255;
 	fontEdge = FALSE;
 	JUTFont_DrawStart(start);
 }
@@ -448,9 +444,9 @@ u16 FontGetMessageWidth(const char* message) {
 	return FontGetMessageWidthLine(message, NULL);
 }
 
-// NONMATCHING (98.38%): full parse loop reconstructed; remaining diffs are the maxwidth/curwidth copy using
-// the masked r0 instead of the source register, the two anonymous @-labels for the str_802C4904/str_802C4910
-// format strings and the final clrlwi/mr.
+// NONMATCHING (99.38%): `(s8)*message++` in the default case matched. Remaining diffs are register
+// allocation only: retail reuses the maxwidth/curwidth source register (mr r29,r28, subf with r29)
+// where ours uses the masked r0/r5 copy; the two anonymous @-labels are symbol-only.
 u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 	u16 glyph;
 	u16 maxwidth = 0;
@@ -514,8 +510,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 				break;
 			}
 			default:
-				glyph = JUTFont_CodeToGlyph((s8)*message);
-				message++;
+				glyph = JUTFont_CodeToGlyph((s8)*message++);
 				break;
 			}
 		}
@@ -624,8 +619,17 @@ u16 kanjiGetWidth(u16 code) {
 	return *(u8*)((u8*)width + 1);
 }
 
-// NONMATCHING (95.81%): structural code matches; remaining diffs are per-call (s16)offsetX rematerialisation,
-// the swapped GXColor temp slots, `while` emitting cmplwi instead of extsb., and anon .rodata labels.
+#ifdef MUST_MATCH
+// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
+// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
+// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
+static inline void FontDrawStringCenterMtx_ColorA(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
+// The edge block's first pair uses `(s16)offsetX` directly; the second pair caches it in an `s32 sx` (a
+// `s16 sx` omits retail's `extsh`) so the sign-extended value is reused across the two calls.
 void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
@@ -636,24 +640,29 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	offsetX = -(f32)FontGetMessageWidthLine(msg, NULL) * 0.5f;
 	PSMTXConcat(cam->view, mtx, m);
 	GXLoadPosMtxImm(m, GX_PNMTX0);
-	while ((s8)*msg) {
-		if (_ismbblead((s8)*msg)) {
+	while (*(s8*)msg) {
+		if (_ismbblead(*(s8*)msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*msg);
-			msg += 1;
+			glyph = JUTFont_CodeToGlyph((s8)*msg++);
 		}
 		if (fontEdge) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
+			s32 sx;
+#ifdef MUST_MATCH
+			FontDrawStringCenterMtx_ColorA(c);
+#else
 			FontDrawColor(&c);
+#endif
 			_JUTFont_DrawPos(glyph, (s16)offsetX - 2, 0);
 			_JUTFont_DrawPos(glyph, (s16)offsetX + 2, 0);
-			_JUTFont_DrawPos(glyph, (s16)offsetX, -2);
-			_JUTFont_DrawPos(glyph, (s16)offsetX, 2);
+			sx = (s16)offsetX;
+			_JUTFont_DrawPos(glyph, sx, -2);
+			_JUTFont_DrawPos(glyph, sx, 2);
 			c2 = saved;
 			FontDrawColor(&c2);
 		}
@@ -662,17 +671,19 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (89.67%): draws each glyph with PSMTXTrans+PSMTXConcat+PSMTXTransApply. Command and icon
-// handling was reconstructed from asm; the cached edge x/y ints land in r27/r26 instead of r28/r27 and CW
-// reserves a 0x1a0 frame (extra callee-saved r26) vs retail's 0x1b0. Schedule diffs remain.
+// NONMATCHING (95.76%): `x`/`y` after camGetCurPtr fixed f31/f30 and the mtx register; the first edge pair
+// now uses `(s16)x`/`(s16)y` inline and the second caches `s32 sx`/`sy` (CenterMtx shape). Remaining: frame
+// 0x1a0 vs 0x1b0 and retail CSEs the first pair's `(s16)y` where ours does not.
 void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
-	f32 x = 0.0f;
-	f32 y = 0.0f;
+	f32 x;
+	f32 y;
 	u16 glyph;
 
 	cam = camGetCurPtr();
+	x = 0.0f;
+	y = 0.0f;
 	PSMTXConcat(cam->view, mtx, m);
 	GXLoadPosMtxImm(m, GX_PNMTX0);
 	while (*(s8*)msg) {
@@ -692,7 +703,7 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 				char arg1[128];
 				char arg2[128];
 				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
-#ifdef MUST_MATCH // retail's second test is dead (sign-extended byte vs 0x2f72)
+#ifdef MUST_MATCH
 				if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
 #else
 				if (arg1[0] == 'R') {
@@ -705,8 +716,7 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 				break;
 			}
 			default:
-				glyph = JUTFont_CodeToGlyph(*(s8*)msg);
-				msg++;
+				glyph = JUTFont_CodeToGlyph((s8)*msg++);
 				break;
 			}
 		}
@@ -717,17 +727,17 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
-			s16 sx;
-			s16 sy;
+			s32 sx;
+			s32 sy;
 #ifdef MUST_MATCH
 			FontDrawCode_ColorA(c);
 #else
 			FontDrawColor(&c);
 #endif
-			sx = x;
-			sy = y;
-			_JUTFont_DrawPos(glyph, sx - 2, sy);
-			_JUTFont_DrawPos(glyph, sx + 2, sy);
+			_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
+			_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
+			sx = (s16)x;
+			sy = (s16)y;
 			_JUTFont_DrawPos(glyph, sx, sy - 2);
 			_JUTFont_DrawPos(glyph, sx, sy + 2);
 			c2 = saved;
@@ -738,7 +748,17 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (97.88%): correct algorithm; only register scheduling and float-pool label names differ.
+#ifdef MUST_MATCH
+// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
+// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
+// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
+static inline void FontDrawStringShake_ColorA(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
+// NONMATCHING (99.51%): only register allocation differs: retail keeps fontScale in r26 and the glyph
+// width in r27 (and pfh in r7, the block pointer in r6 in the inlined FontGetWidthPtr); ours is swapped.
 void FontDrawStringShake(const char* str, f32 x, f32 y) {
 	CameraEntry* cam;
 	Mtx mtx2;
@@ -750,14 +770,13 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 
 	cam = camGetCurPtr();
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
-	while ((s8)*str) {
-		if (_ismbblead((s8)*str)) {
+	while (*(s8*)str) {
+		if (_ismbblead(*(s8*)str)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)str);
 			str += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*str);
-			str += 1;
+			glyph = JUTFont_CodeToGlyph((s8)*str++);
 		}
 		offX = fontScale.x * (f32)(irand(10000) % 3) + x;
 		offY = fontScale.y * (f32)(irand(10000) % 3) + y;
@@ -769,7 +788,11 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
+#ifdef MUST_MATCH
+			FontDrawStringShake_ColorA(c);
+#else
 			FontDrawColor(&c);
+#endif
 			_JUTFont_DrawPos(glyph, -2, 0);
 			_JUTFont_DrawPos(glyph, 2, 0);
 			_JUTFont_DrawPos(glyph, 0, -2);
@@ -782,9 +805,10 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 	}
 }
 
-// NONMATCHING (93.25%): per-glyph PSMTXTransApply path; remaining diffs are the str/glyph/w callee-saved
-// assignment (r27/r28/r29 vs retail's r28/r29/r27), `lwzu` vs `addi` for the vec3_802c48cc copy and anon labels.
-void FontDrawString(const char* str, f32 x, f32 y) {
+// Matched: a local `str` copied from the param `s` (declared between glyph and w) reproduces retail's
+// str=r28/glyph=r29/w=r27 split; assigning fx before PSMTXScale and fz before fy after it reproduces
+// the float-load schedule; `(s8)*str++` puts the single-byte pointer increment before the sign-extend.
+void FontDrawString(const char* s, f32 x, f32 y) {
 	CameraEntry* cam;
 	Mtx mtx;
 	Mtx mtx2;
@@ -794,25 +818,26 @@ void FontDrawString(const char* str, f32 x, f32 y) {
 	f32 fz;
 	f32 fy;
 	u16 glyph;
+	const char* str;
 	u16 w;
 
+	str = s;
 	pos = vec3_802c48cc;
 	pos.x = x;
 	pos.y = y;
 	pos2 = pos;
+	cam = camGetCurPtr();
 	fx = pos2.x;
+	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
 	fz = pos2.z;
 	fy = pos2.y;
-	cam = camGetCurPtr();
-	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
 	while (*(s8*)str) {
 		if (_ismbblead(*(s8*)str)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)str);
 			str += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph(*(s8*)str);
-			str += 1;
+			glyph = JUTFont_CodeToGlyph((s8)*str++);
 		}
 		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
 		PSMTXTransApply(mtx, mtx2, fx, fy, fz);
@@ -839,7 +864,16 @@ void FontDrawString(const char* str, f32 x, f32 y) {
 	}
 }
 
-// NONMATCHING (98.59%): correct algorithm; only minor scheduling/label diffs remain.
+#ifdef MUST_MATCH
+// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
+// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
+// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
+static inline void FontDrawStringVecPitch_ColorA(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
+// Matched: sign-extended loop test `*(s8*)text` and `(s8)*text++` fix the extsb/increment order.
 void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 	CameraEntry* cam;
 	Mtx mtx2;
@@ -852,14 +886,13 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 	cam = camGetCurPtr();
 	x = pos->x;
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
-	while ((s8)*text) {
-		if (_ismbblead((s8)*text)) {
+	while (*(s8*)text) {
+		if (_ismbblead(*(s8*)text)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)text);
 			text += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*text);
-			text += 1;
+			glyph = JUTFont_CodeToGlyph((s8)*text++);
 		}
 		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
 		f1 = (pitch < 0.0f) ? x : x + fontScale.x * (0.5f * (pitch - (f32)w));
@@ -870,7 +903,11 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
+#ifdef MUST_MATCH
+			FontDrawStringVecPitch_ColorA(c);
+#else
 			FontDrawColor(&c);
+#endif
 			_JUTFont_DrawPos(glyph, -2, 0);
 			_JUTFont_DrawPos(glyph, 2, 0);
 			_JUTFont_DrawPos(glyph, 0, -2);
@@ -897,9 +934,9 @@ static inline void FontDrawStringPitch_ColorA(GXColor color) {
 }
 #endif
 
-// NONMATCHING (95.33%): pitch<0 fixed-spacing vs 0.5*(pitch-width); first colour passed by value through
-// FontDrawStringPitch_ColorA fixes its stack slot. A local `str` copied from the param `s` (declared
-// between glyph and w) reproduces retail's w=r27/str=r28 split. Remaining: vec3-copy scheduling, pool labels.
+// Matched: a local `str` copied from the param `s` (between glyph and w) gives retail's w=r27/str=r28
+// split; assigning fx before PSMTXScale and fz before fy after it fixes the float-load schedule; the
+// sign-extended loop test `*(s8*)str` and `(s8)*str++` reproduce the extsb/increment order.
 void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	CameraEntry* cam;
 	Mtx mtx;
@@ -907,8 +944,8 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	Vec pos2;
 	Vec pos;
 	f32 fx;
-	f32 fy;
 	f32 fz;
+	f32 fy;
 	f32 tx;
 	u16 glyph;
 	const char* str;
@@ -919,19 +956,18 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	pos.x = x;
 	pos.y = y;
 	pos2 = pos;
-	fx = pos2.x;
-	fy = pos2.y;
-	fz = pos2.z;
 	cam = camGetCurPtr();
+	fx = pos2.x;
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
-	while ((s8)*str) {
-		if (_ismbblead((s8)*str)) {
+	fz = pos2.z;
+	fy = pos2.y;
+	while (*(s8*)str) {
+		if (_ismbblead(*(s8*)str)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)str);
 			str += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*str);
-			str += 1;
+			glyph = JUTFont_CodeToGlyph((s8)*str++);
 		}
 		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
 		tx = (pitch < 0.0f) ? fx : fx + fontScale.x * (0.5f * (pitch - (f32)w));

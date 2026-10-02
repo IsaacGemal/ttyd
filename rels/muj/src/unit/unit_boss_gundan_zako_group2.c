@@ -14,10 +14,12 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "math_ext.h"
 #include "party/party_motion.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
+#include <stdlib.h>
 
 #pragma pool_data off
 
@@ -28,10 +30,10 @@ extern Vec vec3_muj_00013254;
 extern Vec vec3_muj_00013260;
 extern Vec vec3_muj_0001326c;
 extern Vec vec3_muj_00013278;
-extern f32 float_130_muj_00013340;
+extern Vec vec3_muj_00013284;
 
 // The group-2 control block reuses bytes the shared ZakogunWork leaves as padding for its
-// per-sequence interpolation fields (see the offsets listed in REPORT.md).
+// per-sequence interpolation fields
 #define WORK_VEC(off) (*(Vec*)((u8*)work_20_bss_6C + (off)))
 #define WORK_F32(off) (*(f32*)((u8*)work_20_bss_6C + (off)))
 #define WORK_S32(off) (*(s32*)((u8*)work_20_bss_6C + (off)))
@@ -333,6 +335,472 @@ BattleWeapon weapon_gundan_zako_group2_yusuri_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
+
+s32 down_ceil_20_text_9C8C(EventEntry* event, BOOL isFirstCall) {
+    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
+    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
+    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
+    s32 id;
+    f32 value;
+
+    if (isFirstCall) {
+        WORK_VEC(0x48) = vec3_muj_0001323c;
+        WORK_VEC(0x54) = vec3_muj_00013248;
+        WORK_S32(0x60) = 0x78;
+        WORK_S32(0x64) = 0x78;
+        flag[0] &= ~0x20;
+        id = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
+        WORK_S32(0x6C) = id;
+        WORK_S32(0x6C) = id;
+    }
+    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
+    obj2->mPosition.y = value;
+    obj->mPosition.y = value;
+    WORK_S32(0x60) -= 1;
+    if (WORK_S32(0x60) < 0) {
+        psndSFXOff(WORK_S32(0x6C));
+        return 2;
+    }
+    return 0;
+}
+
+s32 up_ceil(EventEntry* event, BOOL isFirstCall) {
+    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
+    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
+    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
+    f32 value;
+
+    if (isFirstCall) {
+        WORK_VEC(0x48) = vec3_muj_00013254;
+        WORK_VEC(0x54) = vec3_muj_00013260;
+        WORK_S32(0x60) = 0x78;
+        WORK_S32(0x64) = 0x78;
+        flag[0] |= 0x20;
+        WORK_S32(0x6C) = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
+    }
+    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
+    obj2->mPosition.y = value;
+    obj->mPosition.y = value;
+    WORK_S32(0x60) -= 1;
+    if (WORK_S32(0x60) < 0) {
+        psndSFXOff(WORK_S32(0x6C));
+        return 2;
+    }
+    return 0;
+}
+
+s32 shake_ceil(EventEntry* event, BOOL isFirstCall) {
+    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
+    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
+    f32 start;
+    f32 end;
+    s32 step;
+    f32 value;
+
+    if (isFirstCall) {
+        WORK_VEC(0x48) = vec3_muj_0001326c;
+        WORK_VEC(0x54) = vec3_muj_00013278;
+        WORK_S32(0x60) = 0;
+    }
+    start = *(volatile f32*)((u8*)work_20_bss_6C + 0x4C);
+    end = *(volatile f32*)((u8*)work_20_bss_6C + 0x58);
+    step = *(volatile s32*)((u8*)work_20_bss_6C + 0x60);
+
+    value = intplGetValue(4, step, 9, start, end);
+    obj2->mPosition.y = value;
+    obj->mPosition.y = value;
+    WORK_S32(0x60) += 1;
+    if (WORK_S32(0x60) > 0x11) {
+        f32 last = 130.0f;
+
+        obj2->mPosition.y = last;
+        obj->mPosition.y = last;
+        return 2;
+    }
+    return 0;
+}
+
+s32 zakogun_ext_init2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    ExtPose* pose = extGetPosePtr();
+
+    work_20_bss_6C->field_0x0 = 1;
+    for (i = 0; i < 25; i++, pose++) {
+        zakogun_ext_init123_common(pose, i);
+    }
+    return 2;
+}
+
+void zakogun_ext_main2(void) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit = zakogun_get_ptr();
+    ExtPose* pose = extGetPosePtr();
+    BattleStageObject* obj;
+    s32 i;
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 deg2rad = 0.017453292f;
+    f32 k = 0.25f;
+    Mtx mtx;
+    const char* sa;
+    const char* sc;
+    const char* sa2;
+
+    if (unit == NULL) {
+        return;
+    }
+    obj = BattleSearchObjectPtr("if_body");
+#ifdef MUST_MATCH
+    // MUST_MATCH: folding each literal through a comma makes MWCC materialise its address directly
+    // (no extra `mr`), and a second literal local reproduces the original's duplicate register.
+    sa = (0, "SFX_BOSS_TEAM_3RD_ATTACK2");
+    sc = (0, "SFX_BOSS_TEAM_3RD_MOVE_CAILING2");
+    sa2 = (0, "SFX_BOSS_TEAM_3RD_ATTACK2");
+#else
+    sa = "SFX_BOSS_TEAM_3RD_ATTACK2";
+    sc = "SFX_BOSS_TEAM_3RD_MOVE_CAILING2";
+    sa2 = sa;
+#endif
+    for (i = 0; i < 25; i++, pose++) {
+        ZakogunEntry* entry = &zakogun[i];
+
+        pose->field_0x10 = entry->poseStart + entry->poseIndex / entry->poseDiv;
+        entry->poseIndex++;
+        if (entry->poseIndex >= entry->poseCount * entry->poseDiv) {
+            entry->poseIndex = 0;
+        }
+        switch (entry->state) {
+        case 0:
+            entry->state = 5;
+            entry->rotZ = 0.0f;
+            entry->rotY = 0.0f;
+            entry->rotX = 0.0f;
+            zakogun_set_pose(entry, 0x25, 4, 6);
+            break;
+        case 5:
+            entry->pos.x = entry->target.x = (obj->mPosition.x - 250.0f) + 20.0f * (f32)i;
+            entry->pos.y = entry->target.y = obj->mPosition.y - 35.0f;
+            entry->pos.z = entry->target.z = 0.0f;
+            entry->state = 0xA;
+            break;
+        case 0xA:
+            entry->pos.x = entry->target.x = ((obj->mPosition.x + unit->mPosition.x) - 250.0f) + 20.0f * (f32)i;
+            entry->pos.y = entry->target.y = obj->mPosition.y - 35.0f;
+            if (entry->pos.y < unit->mPosition.y) {
+                entry->pos.y = unit->mPosition.y;
+            }
+            entry->pos.z = entry->target.z = -10.0f;
+            break;
+        case 0x14: {
+            BattleUnit* u = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
+
+            BtlUnit_GetPos(u, &x, &y, &z);
+            *(Vec*)&entry->field_0x34 = entry->pos;
+            if (entry->pos.x >= x) {
+                entry->field_0x40 = entry->pos.x - 30.0f;
+                entry->rotY = 0.0f;
+            } else {
+                entry->field_0x40 = entry->pos.x + 15.0f;
+                entry->rotY = 180.0f;
+            }
+            entry->field_0x44 = entry->field_0x38 - 2.0f;
+            entry->state = 0x19;
+            entry->timerMax = 8;
+            entry->timer = 8;
+        }
+            // fallthrough
+        case 0x19:
+            entry->pos.x = intplGetValue(4, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
+            entry->pos.y = intplGetValue(4, (entry->timerMax - entry->timer) * 2, entry->timerMax, entry->field_0x38, entry->field_0x44);
+            entry->timer--;
+            if (entry->timer < 0) {
+                BattleUnit* u = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
+
+                BtlUnit_GetPos(u, &x, &y, &z);
+                if (__fabsf(entry->pos.x - x) <= 20.0) {
+                    entry->state = 0x1E;
+                } else {
+                    entry->state = 0x14;
+                }
+            }
+            break;
+        case 0x1E: {
+            BattleUnit* u = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
+
+            BtlUnit_GetPos(u, &x, &y, &z);
+            *(f32*)entry->pad_4c = (f32)rand() / 32767.0f - 0.5f;
+            entry->field_0x50 = 0.0f;
+            *(f32*)entry->pad_54 = 1.5f;
+            entry->field_0x44 = 2.0f * (f32)work_20_bss_6C->field_0x68 + y;
+            entry->state = 0x23;
+            zakogun_set_pose(entry, 0x2C, 1, 1);
+            psndSFXOn(sa);
+        }
+            // fallthrough
+        case 0x23:
+            entry->pos.x += *(f32*)entry->pad_4c;
+            entry->pos.y += entry->field_0x50;
+            entry->pos.z += *(f32*)entry->pad_54;
+            entry->field_0x50 += -0.5f;
+            if (entry->pos.y < entry->field_0x44) {
+                entry->pos.y = entry->field_0x44;
+                entry->state = 0x28;
+                work_20_bss_6C->field_0x68++;
+                if (work_20_bss_6C->field_0x68 == 0x19) {
+                    unit->work[0] = 1;
+                }
+            }
+            break;
+        case 0x28:
+            if (work_20_bss_6C->field_0x68 == 0x19) {
+                entry->state = 0x2D;
+                entry->timer = irand(0x3C);
+            }
+            break;
+        case 0x2D:
+            entry->timer--;
+            if (entry->timer <= 0) {
+                *(f32*)entry->pad_4c = -5.0f;
+                entry->field_0x50 = 3.0f;
+                entry->state = 0x30;
+                zakogun_set_pose(entry, 0x22, 1, 1);
+                entry->rotY = 0.0f;
+            }
+            break;
+        case 0x30:
+            entry->pos.x += *(f32*)entry->pad_4c;
+            entry->pos.y += entry->field_0x50;
+            entry->field_0x50 += -0.5f;
+            if (entry->pos.y < 0.0f) {
+                entry->pos.y = 0.0f;
+                zakogun_set_pose(entry, 0x16, 0xA, 1);
+                entry->state = 0x31;
+            }
+            break;
+        case 0x31:
+            entry->pos.x += *(f32*)entry->pad_4c;
+            if (entry->pos.x <= -300.0f) {
+                entry->state = 0x32;
+                entry->pos.x = 300.0f;
+                entry->pos.y = entry->target.y;
+                entry->pos.z = entry->target.z;
+                zakogun_set_pose(entry, 0x25, 4, 6);
+                if (i == 0) {
+                    psndSFXOn(sc);
+                }
+            }
+            break;
+        case 0x32: {
+            BattleUnit* u = BattleGetUnitPtr(wp, work_20_bss_6C->targetId);
+
+            BtlUnit_GetPos(u, &x, &y, &z);
+            entry->rotY = 0.0f;
+            *(Vec*)&entry->field_0x34 = entry->pos;
+            entry->field_0x40 = entry->pos.x - 30.0f;
+            if (entry->field_0x40 < entry->target.x) {
+                entry->field_0x40 = entry->target.x;
+            }
+            entry->field_0x44 = entry->field_0x38 - 2.0f;
+            entry->state = 0x37;
+            entry->timerMax = 8;
+            entry->timer = 8;
+            btl_camera_set_mode(0, 0);
+        }
+            // fallthrough
+        case 0x37:
+            entry->pos.x = intplGetValue(4, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
+            entry->pos.y = intplGetValue(4, (entry->timerMax - entry->timer) * 2, entry->timerMax, entry->field_0x38, entry->field_0x44);
+            entry->timer--;
+            if (entry->timer < 0) {
+                if (entry->pos.x <= entry->target.x) {
+                    entry->pos.x = entry->target.x;
+                    entry->state = 0xA;
+                } else {
+                    entry->state = 0x32;
+                }
+            }
+            break;
+        case 0x3C:
+            zakogun_set_pose(entry, 0x29, 3, 6);
+            entry->state = 0x41;
+            entry->timer = 0x78;
+            // fallthrough
+        case 0x41:
+            entry->pos.x = (obj->mPosition.x - 250.0f) + 20.0f * (f32)i;
+            entry->pos.y = obj->mPosition.y - 35.0f;
+            entry->pos.z = 0.0f;
+            entry->timer--;
+            if (entry->timer < 0) {
+                entry->state = 0xA;
+                zakogun_set_pose(entry, 0x25, 4, 6);
+            }
+            break;
+        case 0x50:
+            entry->timer = irand(0xA);
+            entry->state = 0x52;
+            // fallthrough
+        case 0x52:
+            entry->timer--;
+            if (entry->timer <= 0) {
+                entry->state = 0x53;
+                entry->field_0x50 = 0.0f;
+                psndSFXOn(sa2);
+            }
+            break;
+        case 0x53:
+            entry->field_0x50 += -0.5f;
+            entry->pos.y += entry->field_0x50;
+            if (entry->pos.y <= 0.0f) {
+                entry->pos.y = 0.0f;
+                entry->state = 0x54;
+                zakogun_set_pose(entry, 0x21, 3, 3);
+            }
+            break;
+        case 0x54:
+            *(Vec*)&entry->field_0x34 = entry->pos;
+            entry->field_0x40 = entry->field_0x34 + (f32)irand(100) - 50.0f;
+            entry->field_0x44 = 0.0f;
+            entry->field_0x48 = entry->field_0x3c + (f32)irand(20) - 10.0f;
+            entry->state = 0x55;
+            entry->timerMax = 0x14;
+            entry->timer = 0x14;
+            entry->field_0x50 = (2.0f * (entry->field_0x44 - entry->field_0x38) - -200.0f) / 40.0f;
+            // fallthrough
+        case 0x55:
+            entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
+            entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x3c, entry->field_0x48);
+            entry->pos.y += entry->field_0x50;
+            entry->field_0x50 += -0.5f;
+            entry->timer--;
+            if (entry->timer < 0) {
+                entry->state = 0x56;
+            }
+            break;
+        case 0x56:
+            *(Vec*)&entry->field_0x34 = entry->pos;
+            entry->field_0x40 = entry->field_0x34 + (f32)irand(50) - 25.0f;
+            entry->field_0x44 = 0.0f;
+            entry->field_0x48 = entry->field_0x3c + (f32)irand(10) - 5.0f;
+            entry->state = 0x57;
+            entry->timerMax = 0xA;
+            entry->timer = 0xA;
+            entry->field_0x50 = (2.0f * (entry->field_0x44 - entry->field_0x38) - -50.0f) / 20.0f;
+            // fallthrough
+        case 0x57:
+            entry->pos.x = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x34, entry->field_0x40);
+            entry->pos.z = intplGetValue(0, entry->timerMax - entry->timer, entry->timerMax, entry->field_0x3c, entry->field_0x48);
+            entry->pos.y += entry->field_0x50;
+            entry->field_0x50 += -0.5f;
+            entry->timer--;
+            if (entry->timer < 0) {
+                entry->state = 0x58;
+                entry->rotY = 0.0f;
+                entry->timer = 0x30;
+            }
+            break;
+        case 0x58:
+            entry->rotY -= 15.0f;
+            entry->timer--;
+            if (entry->timer <= 0) {
+                entry->rotY = 0.0f;
+                entry->state = 0x59;
+            }
+            break;
+        case 0x59:
+            entry->rotX += 3.0f;
+            if (entry->rotX >= 90.0f) {
+                entry->state = -1;
+                entry->pos = vec3_muj_00013284;
+            }
+            break;
+        case 0x5A:
+            entry->pos.x = 0.0f;
+            entry->pos.y = -1000.0f;
+            entry->pos.z = 0.0f;
+            entry->state = -1;
+            break;
+        default:
+            break;
+        }
+        PSMTXIdentity(*pose->matrix);
+        PSMTXRotRad(mtx, 'x', deg2rad * entry->rotX);
+        PSMTXConcat(*pose->matrix, mtx, *pose->matrix);
+        PSMTXRotRad(mtx, 'y', deg2rad * entry->rotY);
+        PSMTXConcat(*pose->matrix, mtx, *pose->matrix);
+        (*pose->matrix)[0][3] = entry->pos.x;
+        (*pose->matrix)[1][3] = entry->pos.y;
+        (*pose->matrix)[2][3] = entry->pos.z + k * (f32)i;
+    }
+}
+
+s32 zakogun_attack2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
+
+    if (isFirstCall) {
+        work_20_bss_6C->field_0x68 = 0;
+        for (i = 0; i < 25; i++) {
+            zakogun[i].state = 0x14;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 25; i++) {
+        if (zakogun[i].state == 0xA) {
+            count++;
+        }
+    }
+    return count == 25 ? 2 : 0;
+}
+
+s32 zakogun_attack2_yusuri(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
+
+    if (isFirstCall) {
+        for (i = 0; i < 25; i++) {
+            zakogun[i].state = 0x3C;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 25; i++) {
+        if (zakogun[i].state == 0xA) {
+            count++;
+        }
+    }
+    return count == 25 ? 2 : 0;
+}
+
+s32 zakogun_dead2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+
+    for (i = 0; i < 25; i++) {
+        zakogun[i].state = 0x50;
+    }
+    return 2;
+}
+
+s32 zakogun_escape2(EventEntry* event, BOOL isFirstCall) {
+    s32 i;
+    s32 count;
+
+    if (isFirstCall) {
+        for (i = 0; i < 25; i++) {
+            zakogun[i].state = 0x5A;
+        }
+    }
+    i = 0;
+    count = 0;
+    for (; i < 25; i++) {
+        if (zakogun[i].state == -1) {
+            count++;
+        }
+    }
+    return count == 25 ? 2 : 0;
+}
+
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
     CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
@@ -382,40 +850,6 @@ static EVT_BEGIN(damage_event)
     CALL(zakogun_damage_pose_cancel)
     RETURN
 EVT_END()
-
-s32 zakogun_dead2(EventEntry* event, BOOL isFirstCall) {
-    s32 i;
-
-    for (i = 0; i < 25; i++) {
-        zakogun[i].state = 0x50;
-    }
-    return 2;
-}
-
-s32 up_ceil(EventEntry* event, BOOL isFirstCall) {
-    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
-    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
-    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
-    f32 value;
-
-    if (isFirstCall) {
-        WORK_VEC(0x48) = vec3_muj_00013254;
-        WORK_VEC(0x54) = vec3_muj_00013260;
-        WORK_S32(0x60) = 0x78;
-        WORK_S32(0x64) = 0x78;
-        flag[0] |= 0x20;
-        WORK_S32(0x6C) = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
-    }
-    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
-    obj2->mPosition.y = value;
-    obj->mPosition.y = value;
-    WORK_S32(0x60) -= 1;
-    if (WORK_S32(0x60) < 0) {
-        psndSFXOff(WORK_S32(0x6C));
-        return 2;
-    }
-    return 0;
-}
 
 static EVT_BEGIN(dead_event)
     CALL(btlevtcmd_SetUnitWork, -2, 2, 1)
@@ -473,26 +907,6 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-s32 zakogun_attack2(EventEntry* event, BOOL isFirstCall) {
-    s32 i;
-    s32 count;
-
-    if (isFirstCall) {
-        work_20_bss_6C->field_0x68 = 0;
-        for (i = 0; i < 25; i++) {
-            zakogun[i].state = 0x14;
-        }
-    }
-    i = 0;
-    count = 0;
-    for (; i < 25; i++) {
-        if (zakogun[i].state == 0xA) {
-            count++;
-        }
-    }
-    return count == 25 ? 2 : 0;
-}
-
 EVT_BEGIN(fall_attack_event)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
     CALL(btlevtcmd_SetUnitWork, -2, 1, 0)
@@ -526,60 +940,6 @@ EVT_BEGIN(fall_attack_event)
     RETURN
 EVT_END()
 
-s32 zakogun_attack2_yusuri(EventEntry* event, BOOL isFirstCall) {
-    s32 i;
-    s32 count;
-
-    if (isFirstCall) {
-        for (i = 0; i < 25; i++) {
-            zakogun[i].state = 0x3C;
-        }
-    }
-    i = 0;
-    count = 0;
-    for (; i < 25; i++) {
-        if (zakogun[i].state == 0xA) {
-            count++;
-        }
-    }
-    return count == 25 ? 2 : 0;
-}
-
-// The original loads the work pointer in r4 and reads field_0x4c/field_0x58 before field_0x60
-// (addi r4,r4,work@l; lwz r4,0(r4); lfs f1,0x4c(r4); lfs f2,0x58(r4); lwz r4,0x60(r4)).
-// Plain WORK_* reads let MWCC -O4,s fold the pointer load into `lwz rX,work@l(rY)` and hoist
-// field_0x60 first. Reading the three fields through volatile pointers pins the load order to
-// 0x4C, 0x58, 0x60, which keeps the pointer in r4 and materialises the address as addi+lwz.
-s32 shake_ceil(EventEntry* event, BOOL isFirstCall) {
-    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
-    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
-    f32 start;
-    f32 end;
-    s32 step;
-    f32 value;
-
-    if (isFirstCall) {
-        WORK_VEC(0x48) = vec3_muj_0001326c;
-        WORK_VEC(0x54) = vec3_muj_00013278;
-        WORK_S32(0x60) = 0;
-    }
-    start = *(volatile f32*)((u8*)work_20_bss_6C + 0x4C);
-    end = *(volatile f32*)((u8*)work_20_bss_6C + 0x58);
-    step = *(volatile s32*)((u8*)work_20_bss_6C + 0x60);
-
-    value = intplGetValue(4, step, 9, start, end);
-    obj2->mPosition.y = value;
-    obj->mPosition.y = value;
-    WORK_S32(0x60) += 1;
-    if (WORK_S32(0x60) > 0x11) {
-        f32 last = float_130_muj_00013340;
-
-        obj2->mPosition.y = last;
-        obj->mPosition.y = last;
-        return 2;
-    }
-    return 0;
-}
 static EVT_BEGIN(shake_attack_event)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
     SET_VALUE(LW(9), PTR(&weapon_gundan_zako_group2_yusuri_attack))
@@ -657,6 +1017,14 @@ static EVT_BEGIN(shake_attack_event)
     END_IF
     RETURN
 EVT_END()
+
+__declspec(section ".rodata") Vec vec3_muj_0001323c = { 0.0f, 250.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_muj_00013248 = { 0.0f, 130.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_muj_00013254 = { 0.0f, 130.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_muj_00013260 = { 0.0f, 250.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_muj_0001326c = { 0.0f, 130.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_muj_00013278 = { 0.0f, 135.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_muj_00013284 = { 0.0f, -1000.0f, 0.0f };
 
 static EVT_BEGIN(hit_check_event)
     WAIT_FRAMES(10)
@@ -739,91 +1107,5 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: write zakogun_ext_main2 (global, 0xe1c bytes) here:
-// its asm is in build/G8MJ01/muj/asm/unit/unit_boss_gundan_zako_group2.s; this is where the original has it, just before the first script that uses it
 
-// TODO: type
-static u32 jumptable_00031360[91] = {
-    (u32)((u8*)&zakogun_ext_main2 + 0x10c), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x140), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x1c4), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0x25c), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x318), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x3d8), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x4c8),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0x55c), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x58c), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0x5e8), (u32)((u8*)&zakogun_ext_main2 + 0x658), (u32)((u8*)&zakogun_ext_main2 + 0x6cc), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x774),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0x800), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x824), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0xd50),
-    (u32)((u8*)&zakogun_ext_main2 + 0x8c8), (u32)((u8*)&zakogun_ext_main2 + 0xd50), (u32)((u8*)&zakogun_ext_main2 + 0x8dc), (u32)((u8*)&zakogun_ext_main2 + 0x914),
-    (u32)((u8*)&zakogun_ext_main2 + 0x974), (u32)((u8*)&zakogun_ext_main2 + 0xa70), (u32)((u8*)&zakogun_ext_main2 + 0xaf8), (u32)((u8*)&zakogun_ext_main2 + 0xbf4),
-    (u32)((u8*)&zakogun_ext_main2 + 0xc90), (u32)((u8*)&zakogun_ext_main2 + 0xcd4), (u32)((u8*)&zakogun_ext_main2 + 0xd2c),
-};
-
-s32 zakogun_escape2(EventEntry* event, BOOL isFirstCall) {
-    s32 i;
-    s32 count;
-
-    if (isFirstCall) {
-        for (i = 0; i < 25; i++) {
-            zakogun[i].state = 0x5A;
-        }
-    }
-    i = 0;
-    count = 0;
-    for (; i < 25; i++) {
-        if (zakogun[i].state == -1) {
-            count++;
-        }
-    }
-    return count == 25 ? 2 : 0;
-}
-
-s32 zakogun_ext_init2(EventEntry* event, BOOL isFirstCall) {
-    s32 i;
-    ExtPose* pose = extGetPosePtr();
-
-    work_20_bss_6C->field_0x0 = 1;
-    for (i = 0; i < 25; i++, pose++) {
-        zakogun_ext_init123_common(pose, i);
-    }
-    return 2;
-}
-
-s32 down_ceil_20_text_9C8C(EventEntry* event, BOOL isFirstCall) {
-    u8* flag = (u8*)_battleWorkPointer + 0x180DC;
-    BattleStageObject* obj = BattleSearchObjectPtr("if_body");
-    BattleStageObject* obj2 = BattleSearchObjectPtr("if_wire");
-    s32 id;
-    f32 value;
-
-    if (isFirstCall) {
-        WORK_VEC(0x48) = vec3_muj_0001323c;
-        WORK_VEC(0x54) = vec3_muj_00013248;
-        WORK_S32(0x60) = 0x78;
-        WORK_S32(0x64) = 0x78;
-        flag[0] &= ~0x20;
-        id = psndSFXOn("SFX_BOSS_TEAM_3RD_MOVE_CAILING1");
-        WORK_S32(0x6C) = id;
-        WORK_S32(0x6C) = id;
-    }
-    value = intplGetValue(4, WORK_S32(0x64) - WORK_S32(0x60), WORK_S32(0x64), WORK_F32(0x4C), WORK_F32(0x58));
-    obj2->mPosition.y = value;
-    obj->mPosition.y = value;
-    WORK_S32(0x60) -= 1;
-    if (WORK_S32(0x60) < 0) {
-        psndSFXOff(WORK_S32(0x6C));
-        return 2;
-    }
-    return 0;
-}
 // clang-format on

@@ -1541,25 +1541,29 @@ USER_FUNC(evt_mario_jump_pos) {
     return 0;
 }
 
-// NONMATCHING (82.68%): 11 instructions differ, 43 missing, 56 extra, plus register differences.
+// The float locals below are declared in the order that reproduces the original's f22-f31 assignment.
+// Logic and callee-saved registers now match; only FP temp-register allocation and instruction scheduling
+// in case 0 / the second switch differ
+// NONMATCHING (93.36%): FP temp-register allocation + scheduling in case 0 and the second switch; the
+// original loads float_0p5/float_1 before the position load and keeps 0.0 in one register across 0x84/0x88.
 USER_FUNC(evt_mario_jump_jumpstand) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
+    f32 ty;
+    f32 tx;
+    f32 tz;
     f32 h;
     f32 ax;
-    f32 ay;
-    f32 az;
-    f32 tx;
-    f32 ty;
-    f32 tz;
     f32 bx;
+    f32 t;
+    f32 dy;
     f32 by;
+    f32 ay;
+    f32 tmp;
     f32 bz;
+    f32 az;
     s32 time;
     s32 mode;
-    f32 dy;
-    f32 tmp;
-    f32 t;
     HitEntry* hit;
     s32 landed;
 
@@ -1615,19 +1619,18 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         mario->directionView = angleABf(mario->position.x, mario->position.z, tx, tz);
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
         dy = ty - mario->position.y;
+        t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         if (fabsf(dy) < float_1_8041b8a8) {
             dy = dy + float_20_8041b8cc;
-        } else if (dy > float_0_8041b8ac) {
+        } else if (dy >= float_0_8041b8ac) {
             dy = float_0p5_8041b8c8 * *(f32*)((u8*)mario + 0x1B8) + dy;
         } else {
             dy = float_20_8041b8cc;
         }
-        t = float_0p5_8041b8c8 * (f32)event->userdata[1];
         tmp = (dy + dy) / (t * t - t);
         *(f32*)((u8*)mario + 0x7C) = tmp * t;
         *(f32*)((u8*)mario + 0x80) = -tmp;
-        *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
         if (event->userdata[3] & 2) {
             event->userdata[0] = 0xA;
         }
@@ -1645,12 +1648,12 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         if (--event->userdata[2] > 0) {
             break;
         }
+        dy = ty - mario->position.y;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-        tmp = ((ty - mario->position.y) + (ty - mario->position.y)) / (t * t - t);
+        tmp = (dy + dy) / (t * t - t);
         *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
         *(f32*)((u8*)mario + 0x80) = tmp;
-        *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
         event->userdata[2] = (s32)(float_0p5_8041b8c8 * (f32)event->userdata[1] + float_0p5_8041b8c8);
         event->userdata[0] = 2;
         if (!(mario->flags & 0x01000000)) {
@@ -1660,9 +1663,9 @@ USER_FUNC(evt_mario_jump_jumpstand) {
     }
     case 2: {
         MarioWork* player;
+        f32 outZ;
         f32 outY;
         f32 outX;
-        f32 outZ;
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
@@ -1690,7 +1693,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         if (landed) {
             event->userdata[2] = 0;
         } else {
-            mario->position.y += dy;
+            mario->position.y += *(f32*)((u8*)mario + 0x7C);
         }
         if (--event->userdata[2] <= 0) {
             event->userdata[0] = 0x14;
@@ -1703,24 +1706,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
 
     switch (event->userdata[0]) {
     case 0xA:
-        if (mario->position.y >= ay) {
-            event->userdata[2] = 0x36;
-            event->userdata[1] = event->userdata[2] / 2;
-            camFollowYOff();
-            ty = ay;
-            mario->baseSpeed = distABf(mario->position.x, mario->position.z, ax, az) / (f32)event->userdata[1];
-            mario->directionView = angleABf(mario->position.x, mario->position.z, ax, az);
-            *(f32*)((u8*)mario + 0x19C) = mario->directionView;
-            t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-            tmp = float_20_8041b8cc / (t * t - t);
-            *(f32*)((u8*)mario + 0x7C) = tmp * t;
-            *(f32*)((u8*)mario + 0x80) = -tmp;
-            *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-            *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
-            event->userdata[2] = (s32)(float_0p5_8041b8c8 * (f32)event->userdata[1] + float_0p5_8041b8c8);
-            event->userdata[0] = 0xB;
-            /* fallthrough */
-        } else {
+        if (mario->position.y < ay) {
             if (!(mode & 1)) {
                 movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
             }
@@ -1729,6 +1715,20 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             event->userdata[2]--;
             break;
         }
+        event->userdata[2] = 0x36;
+        event->userdata[1] = event->userdata[2] / 2;
+        camFollowYOff();
+        ty = ay;
+        mario->baseSpeed = distABf(mario->position.x, mario->position.z, ax, az) / (f32)event->userdata[1];
+        mario->directionView = angleABf(mario->position.x, mario->position.z, ax, az);
+        *(f32*)((u8*)mario + 0x19C) = mario->directionView;
+        t = float_0p5_8041b8c8 * (f32)event->userdata[1];
+        tmp = float_20_8041b8cc / (t * t - t);
+        *(f32*)((u8*)mario + 0x7C) = tmp * t;
+        *(f32*)((u8*)mario + 0x80) = -tmp;
+        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
+        event->userdata[2] = (s32)(float_0p5_8041b8c8 * (f32)event->userdata[1] + float_0p5_8041b8c8);
+        event->userdata[0] = 0xB;
         /* fallthrough */
     case 0xB:
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
@@ -1737,21 +1737,21 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         if (--event->userdata[2] > 0) {
             break;
         }
+        dy = ty - mario->position.y;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-        tmp = ((ty - mario->position.y) + (ty - mario->position.y)) / (t * t - t);
+        tmp = (dy + dy) / (t * t - t);
         *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
         *(f32*)((u8*)mario + 0x80) = tmp;
-        *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
+        *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
         event->userdata[2] = (s32)(float_0p5_8041b8c8 * (f32)event->userdata[1] + float_0p5_8041b8c8);
         event->userdata[0] = 0xC;
         marioChgPose(str_802E5878);
         break;
     case 0xC: {
         MarioWork* player;
+        f32 outZ;
         f32 outY;
         f32 outX;
-        f32 outZ;
 
         movePos(&mario->position.x, &mario->position.z, mario->baseSpeed, mario->directionView);
         marioMakeJumpPara();
@@ -1779,7 +1779,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         if (landed) {
             event->userdata[2] = 0;
         } else {
-            mario->position.y += dy;
+            mario->position.y += *(f32*)((u8*)mario + 0x7C);
         }
         if (--event->userdata[2] <= 0) {
             event->userdata[0] = 0x14;
@@ -1791,12 +1791,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
     }
 
     if (event->userdata[0] == 0x14) {
-        *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x80) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
-        *(f32*)((u8*)mario + 0x88) = float_0_8041b8ac;
-        mario->baseSpeed = float_0_8041b8ac;
-        mario->baseSpeed = float_0_8041b8ac;
+        mario->baseSpeed = mario->baseSpeed = *(f32*)((u8*)mario + 0x88) = *(f32*)((u8*)mario + 0x84) = *(f32*)((u8*)mario + 0x80) = *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
         marioChgMot(0);
         mario->dispFlags &= ~0x4;
         marioAdjustMoveDir();

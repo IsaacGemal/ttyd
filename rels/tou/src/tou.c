@@ -3616,7 +3616,6 @@ void gans_tex(CameraId cameraId, void* param) {
 }
 #pragma opt_common_subs reset
 
-// NONMATCHING (99.84%): GXInitTexObjLOD hoists the bias_clamp li before the min_lod lfs
 USER_FUNC(make_monitor) {
     NpcEntry* npc = npcNameToPtr_NoAssert(
         evtGetValue(NULL, 0xf5de0180) < 0xac ? "ガンス" : "キノシコワ");
@@ -3635,8 +3634,7 @@ USER_FUNC(make_monitor) {
     gans_wp[0] = (u32)work;
     work->texData = smartAlloc(GXGetTexBufferSize(0x80, 0x80, 5, 0, 0), 3);
     GXInitTexObj(&work->texObj, work->texData->address, 0x80, 0x80, (GXTexFmt)5, (GXTexWrapMode)0, (GXTexWrapMode)0, 0);
-    GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, zero_tou_0000a82c, zero_tou_0000a82c,
-                    zero_tou_0000a82c, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&work->texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     if (((GansWork*)gans_wp[0])->field_24) {
         ((GansWork*)gans_wp[0])->field_28 += 4;
         if (((GansWork*)gans_wp[0])->field_28 > 0x80) {

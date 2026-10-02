@@ -123,9 +123,9 @@ f32 float_6p2832_8041e260 = 6.283184f;
 
 
 #pragma dont_inline on // dispatcher must emit real `bl`s, not inline the state machines
-// NONMATCHING (99.68%): only compiler-generated names and register rotations remain - the
-// jump-table symbol, the anonymous pooled zero (`@863` vs `float_0_8041e178`), and the
-// f2/f1/f0 rotation in the type == 2 block.
+// NONMATCHING (99.74%): only compiler-generated names and a f2/f1/f0 register rotation in the
+// type == 2 block remain (the target wants field=f2, 0.05=f1, tau=f0; ours starts the block at
+// f1); the jump-table symbol and the anonymous pooled zero (`@863` vs `float_0_8041e178`) differ.
 void BattleAudienceCtrlProcessKinopio(s32 index) {
 	BattleAudienceMember* member;
 	BOOL front;
@@ -233,12 +233,13 @@ void BattleAudienceCtrlProcessKinopio(s32 index) {
 	}
 	}
 	if (member->type == 2) {
+		f32 angle = *(f32*)&member->field_0x12C;
+		f32 c = float_0p05_8041e198;
 		f32 tau = float_6p2832_8041e260;
-		*(f32*)((u8*)member + 0x12c) =
-		    *(f32*)((u8*)member + 0x12c) + float_0p05_8041e198;
-		if (*(f32*)((u8*)member + 0x12c) >= tau) {
-			*(f32*)((u8*)member + 0x12c) =
-			    *(f32*)((u8*)member + 0x12c) - tau;
+		angle = angle + c;
+		*(f32*)&member->field_0x12C = angle;
+		if (*(f32*)&member->field_0x12C >= tau) {
+			*(f32*)&member->field_0x12C = *(f32*)&member->field_0x12C - tau;
 		}
 		*(f32*)((u8*)member + 0x130) =
 		    float_5_8041e1a0 * (f32)sin(*(f32*)((u8*)member + 0x12c));
@@ -569,8 +570,8 @@ void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind) {
 }
 
 #pragma dont_inline on // recursive call stays a real `bl` in the original
-// NONMATCHING (97.27%): only the `float_0` comparison load is scheduled after the fsubs
-// instead of before it; the intpl/tail now match via the volatile-comma and combined-if tricks.
+// NONMATCHING (99.24%): same shape as Booing — `one`/`zero` locals and a non-compound
+// subtraction; only the f-register rotation differs (original field=f2 one=f1 zero=f0).
 void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -592,7 +593,10 @@ void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 		    float_0_8041e178, float_10_8041e1b4);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
-			if ((*(f32*)((u8*)member + 0xc) -= float_1_8041e188) <= float_0_8041e178) {
+			f32 one = float_1_8041e188;
+			f32 zero = float_0_8041e178;
+			*(f32*)(member->field_0x8 + 4) = *(f32*)(member->field_0x8 + 4) - one;
+			if (*(f32*)(member->field_0x8 + 4) <= zero) {
 				BattleAudience_ChangeStatus(index, 0);
 			}
 			else {
@@ -739,8 +743,9 @@ void BattleAudienceCtrlProcessKinopioItemThrow(s32 index) {
 	}
 }
 
-// NONMATCHING (97.14%): only the `float_0` comparison load is scheduled after the fsubs
-// instead of before it; the intpl/tail now match via the volatile-comma and combined-if tricks.
+// NONMATCHING (99.21%): the `x = x - one; if (x <= zero)` shape with `one`/`zero` locals
+// matches the original's instruction selection; only the f-register rotation differs (original
+// field=f2 one=f1 zero=f0, ours field=f1 one=f0 zero=f2).
 void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -760,7 +765,10 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 		    float_0_8041e178, float_10_8041e1b4);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
-			if ((*(f32*)((u8*)member + 0xc) -= float_1_8041e188) <= float_0_8041e178) {
+			f32 one = float_1_8041e188;
+			f32 zero = float_0_8041e178;
+			*(f32*)(member->field_0x8 + 4) = *(f32*)(member->field_0x8 + 4) - one;
+			if (*(f32*)(member->field_0x8 + 4) <= zero) {
 				BattleAudience_ChangeStatus(index, 0);
 			}
 			else {
@@ -1055,9 +1063,9 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 	}
 }
 
-// NONMATCHING (92.42%): register-allocation / scheduling / symbol-name differences only. The
-// `$`-tagged statics x$873/y$874/z$875 and the pooled 2^52 constant can't be spelled from C, so
-// their names differ; the volatile ordering casts for intplGetValue live under MUST_MATCH.
+// NONMATCHING (93.01%): register / scheduling / symbol-name differences only. The `$`-tagged
+// x$873/y$874/z$875 and the pooled 2^52 constant can't be spelled from C, so their names differ;
+// the intplGetValue volatile ordering casts live under MUST_MATCH (case 5 separates the ++).
 void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	BattleWork* work;
 	BattleAudienceMember* member;
@@ -1079,23 +1087,13 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	case 5:
 		unit = *(BattleUnit**)((u8*)member + 0xec);
 		part = BattleGetUnitPartsPtr(BtlUnit_GetUnitId(unit), BtlUnit_GetBodyPartsId(unit));
-#ifdef MUST_MATCH
-		// MUST_MATCH: the volatile casts order the constant loads as in the original.
-		member->position.x = intplGetValue(5, ++*(s32*)member->field_0x8, 0x3c,
-		    ((volatile f32)float_0_8041e178, member->mHomePosition.x), float_0_8041e178);
-		member->position.y = intplGetValue(5, *(s32*)member->field_0x8, 0x3c,
-		    ((volatile f32)float_80_8041e1d4, member->mHomePosition.y), float_80_8041e1d4);
-		member->position.z = intplGetValue(5, *(s32*)member->field_0x8, 0x3c,
-		    ((volatile f32)float_100_8041e1a8, member->mHomePosition.z), float_100_8041e1a8);
-#else
 		(*(s32*)member->field_0x8)++;
 		member->position.x = intplGetValue(5, *(s32*)member->field_0x8, 0x3c,
 		    member->mHomePosition.x, float_0_8041e178);
 		member->position.y = intplGetValue(5, *(s32*)member->field_0x8, 0x3c,
-		    member->mHomePosition.y, float_80_8041e1d4);
+		    ((volatile f32)float_80_8041e1d4, member->mHomePosition.y), float_80_8041e1d4);
 		member->position.z = intplGetValue(5, *(s32*)member->field_0x8, 0x3c,
 		    member->mHomePosition.z, float_100_8041e1a8);
-#endif
 		if (*(s32*)member->field_0x8 >= 0x3c) {
 			BattleAudience_SetAnim(index, 7, 0);
 			BtlUnit_GetHitPos(unit, part, &x_873, &y_874, &z_875);
@@ -1150,11 +1148,20 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	}
 }
 
-// NONMATCHING (85.94%): register-allocation / FP-scheduling / symbol-name differences only.
+// NONMATCHING (86.34%): register-allocation / FP-scheduling / symbol-name differences only. The
+// vector locals live at function scope (dx before dz so the callee-saved f30/f31 picks match), and
+// the four vector blocks each shadow them with a local `dz; dx;` pair to pin that case's f30/f31.
 void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	BattleWork* work = _battleWorkPointer;
 	PouchData* pouch;
 	BattleAudienceMember* member;
+	f32 dir;
+	f32 dx;
+	f32 t;
+	f32 dz;
+	f32 len;
+	f32 vx;
+	f32 vz;
 
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
@@ -1179,13 +1186,8 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		member->field_0x4 = 0x32;
 		break;
 	case 3: {
-		f32 dir;
 		f32 dz;
-		f32 t;
 		f32 dx;
-		f32 len;
-		f32 vx;
-		f32 vz;
 		member->field_0x4 = 5;
 		dir = *(f32*)(member->field_0x8 + 4);
 		dz = float_110_8041e1b0 - member->position.z;
@@ -1215,13 +1217,8 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	case 0xa:
 		if (*(f32*)(member->field_0x8 + 0x74) <= float_0_8041e178 &&
 		    member->position.y <= float_0_8041e178) {
-			f32 dir;
 			f32 dz;
 			f32 dx;
-			f32 len;
-			f32 t;
-			f32 vx;
-			f32 vz;
 			member->field_0x4 = 0xf;
 			member->position.y = float_0_8041e178;
 			*(f32*)(member->field_0x8 + 0x74) = float_0_8041e178;
@@ -1293,13 +1290,8 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		BattleAudience_ChangeStatus(index, 0xb);
 		break;
 	case 0x32: {
-		f32 dir;
 		f32 dz;
-		f32 t;
 		f32 dx;
-		f32 len;
-		f32 vx;
-		f32 vz;
 		member->field_0x4 = 0x37;
 		dir = *(f32*)(member->field_0x8 + 4);
 		dz = float_110_8041e1b0 - member->position.z;
@@ -1371,13 +1363,8 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	}
 		break;
 	case 0x46: {
-		f32 dir;
 		f32 dz;
 		f32 dx;
-		f32 len;
-		f32 t;
-		f32 vx;
-		f32 vz;
 		BattleStage_NozzleWorkCheck(1);
 		member->field_0x12C = *(s32*)((u8*)work + 0x18298);
 		member->field_0x4 = 0x4b;
@@ -1414,7 +1401,9 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 }
 
 
-// NONMATCHING (97.34%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (97.47%): declaring y before z (computing z first) fixes the f30/f31 rotation in
+// case 2. Remaining: the `float_6` constant load in cases 1/3 is scheduled after the counter
+// store here, before it in the original.
 void BattleAudienceCtrlProcessKinopioSing(s32 index) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -1442,9 +1431,12 @@ void BattleAudienceCtrlProcessKinopioSing(s32 index) {
 	case 2:
 		(*(s32*)member->field_0x8)--;
 		if (gp->retraceCount % 0xa == 0) {
-			f32 z = member->position.z + (f32)irand(0xa) - float_5_8041e1a0;
-			f32 y = member->position.y + (f32)irand(0xa);
-			f32 x = member->position.x + (f32)irand(0xc8) - float_100_8041e1a8;
+			f32 y;
+			f32 z;
+			f32 x;
+			z = member->position.z + (f32)irand(0xa) - float_5_8041e1a0;
+			y = member->position.y + (f32)irand(0xa);
+			x = member->position.x + (f32)irand(0xc8) - float_100_8041e1a8;
 			effOnpuN64Entry(0, x, y, z);
 		}
 		if (*(s32*)member->field_0x8 <= 0) {

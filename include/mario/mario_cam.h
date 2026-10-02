@@ -11,6 +11,7 @@ BOOL marioCamZoomOff(void);
 f32 marioGetCamFollowRate(void);
 void marioResetCamFollowRate(void);
 void marioInitCamId(void);
+void marioUpdateCamCollision(Vec collision);
 void marioUpdateCamPos(void);
 void marioNoUpdateCamPos(void);
 void camFollowYOn(void);

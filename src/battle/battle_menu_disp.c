@@ -354,6 +354,270 @@ void DrawWeaponWin(void) {
 }
 #pragma dont_inline reset
 
+extern const f32 float_0p2_8041c148;
+extern const f32 float_180_8041c150;
+extern const f32 float_270_8041c154;
+extern const f32 float_90_8041c158;
+extern const f32 float_360_8041c160;
+extern const f32 float_0p017453_8041c164;
+
+// Register allocation and instruction scheduling only. The state machine, item switch,
+// ring transforms and all values match; the target keeps `window->cursor` in r5 in the
+// field_0xC==1 branch (ours r4, with d in r5), and the case-1/case-4/case-5 angle
+// temporaries land in different f registers.
+// NONMATCHING (98.49%): see above.
+void DrawMainMenu(void) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleCursor* cursor = window->cursor;
+    f32 ringX;
+    f32 ringY;
+    Vec vecB[5];
+    Mtx mtxA[5];
+    f32 scales[5];
+    Mtx transMtx;
+    Mtx rotMtx;
+    Mtx scaleMtx;
+    f32 cur;
+    f32 angle;
+    s32 i;
+
+    camGetPtr(8);
+    switch (window->field_0xC) {
+    case 0:
+        {
+            s32 count = 0;
+            for (i = 0; i < cursor->unk8; i++) {
+                if (window->field_0x34[i] == 3) {
+                    count++;
+                }
+            }
+            if (count == cursor->unk8) {
+                window->field_0xC = 1;
+            }
+        }
+        break;
+    case 1:
+        window->field_0x14 = 1;
+        {
+            s32 d = window->cursor->field_0 - window->field_0x18;
+            if (d == 1 || -(window->cursor->unk8 - 1) == d) {
+                window->field_0xC = 2;
+                window->field_0x14 = 0;
+                window->field_0x18 = window->cursor->field_0;
+                for (i = 0; i < cursor->unk8; i++) {
+                    window->field_0x34[i] = 4;
+                    window->field_0x48[i] = 0;
+                    window->field_0x70[i] = window->field_0x84[i];
+                    window->field_0x84[i]--;
+                    if (window->field_0x84[i] == -1) {
+                        window->field_0x84[i] = cursor->unk8 - 1;
+                    }
+                }
+            } else if (d == -1 || window->cursor->unk8 - 1 == d) {
+                window->field_0xC = 2;
+                window->field_0x14 = 0;
+                window->field_0x18 = window->cursor->field_0;
+                for (i = 0; i < cursor->unk8; i++) {
+                    window->field_0x34[i] = 5;
+                    window->field_0x48[i] = 0;
+                    window->field_0x70[i] = window->field_0x84[i];
+                    window->field_0x84[i]++;
+                    if (window->field_0x84[i] == cursor->unk8) {
+                        window->field_0x84[i] = 0;
+                    }
+                }
+            }
+        }
+        break;
+    case 2:
+        {
+            s32 count = 0;
+            for (i = 0; i < cursor->unk8; i++) {
+                if (window->field_0x34[i] == 3) {
+                    count++;
+                }
+            }
+            if (count == cursor->unk8) {
+                window->field_0xC = 1;
+            }
+        }
+        break;
+    case 0xA:
+        window->field_0xC = 1;
+        window->field_0x14 = 1;
+        break;
+    }
+
+    window->field_0x1C = 0;
+    for (i = 0; i < cursor->unk8; i++) {
+        switch (window->field_0x34[i]) {
+        case 0:
+            window->field_0x48[i]--;
+            if (window->field_0x48[i] <= 0) {
+                window->field_0x34[i] = 1;
+                window->field_0x48[i] = 0;
+            }
+            break;
+        case 1:
+            window->field_0x20[i] |= 1;
+            {
+                cur = float_0p2_8041c148 * (f32)window->field_0x48[i] + float_0_8041c144;
+            }
+            angle = float_3p1416_8041c14c * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / float_180_8041c150;
+            {
+                if (cur >= angle) {
+                    cur = angle;
+                }
+                GetRingCenter(&vecB[i]);
+                GetRingOffset(&ringX, &ringY, cur);
+                vecB[i].x += ringX;
+                vecB[i].y += ringY;
+                vecB[i].z = ringY;
+                if (i == cursor->field_0) {
+                    f32 r = float_90_8041c158 * (f32)window->field_0x48[i] / float_10_8041c15c + float_270_8041c154;
+                    if (r >= float_360_8041c160) {
+                        r = float_0_8041c144;
+                    }
+                    PSMTXRotRad(rotMtx, 'x', float_0p017453_8041c164 * r);
+                    PSMTXTrans(transMtx, float_20_8041c168 + vecB[i].x, vecB[i].y, vecB[i].z);
+                    PSMTXConcat(transMtx, rotMtx, mtxA[i]);
+                    window->field_0x20[i] |= 2;
+                } else {
+                    f32 r = float_90_8041c158 * (f32)window->field_0x48[i] / float_10_8041c15c + float_270_8041c154;
+                    if (r >= float_360_8041c160) {
+                        r = float_0_8041c144;
+                    }
+                    PSMTXRotRad(rotMtx, 'x', float_0p017453_8041c164 * r);
+                    PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
+                    PSMTXConcat(transMtx, rotMtx, mtxA[i]);
+                }
+                scales[i] = 0.0f;
+                if (cur >= angle && window->field_0x48[i] >= 10) {
+                    window->field_0x34[i] = 3;
+                    window->field_0x48[i] = -1;
+                }
+                window->field_0x48[i]++;
+            }
+            break;
+        case 3:
+            angle = float_3p1416_8041c14c * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / float_180_8041c150;
+            GetRingCenter(&vecB[i]);
+            GetRingOffset(&ringX, &ringY, angle);
+            vecB[i].x += ringX;
+            vecB[i].y += ringY;
+            vecB[i].z = ringY;
+            if (i == cursor->field_0) {
+                PSMTXTrans(mtxA[i], float_20_8041c168 + vecB[i].x, vecB[i].y, vecB[i].z);
+                window->field_0x20[i] |= 2;
+            } else {
+                PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
+            }
+            scales[i] = 0.0f;
+            break;
+        case 4:
+            {
+                f32 v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
+                f32 v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
+                f32 cur;
+                if (v84 == 0.0f) {
+                    v84 = float_360_8041c160;
+                }
+                cur = float_0p2_8041c148 * (f32)window->field_0x48[i] + float_3p1416_8041c14c * v70 / float_180_8041c150;
+                angle = float_3p1416_8041c14c * v84 / float_180_8041c150;
+                if (cur >= angle) {
+                    window->field_0x34[i] = 3;
+                    cur = angle;
+                    window->field_0x48[i] = -1;
+                }
+                GetRingCenter(&vecB[i]);
+                GetRingOffset(&ringX, &ringY, cur);
+                vecB[i].x += ringX;
+                vecB[i].y += ringY;
+                vecB[i].z = ringY;
+                PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
+                scales[i] = 0.0f;
+                window->field_0x20[i] &= ~2;
+                window->field_0x48[i]++;
+            }
+            break;
+        case 5:
+            {
+                f32 v70;
+                f32 v84;
+                f32 cur;
+                f32 a70;
+                v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
+                if (v70 == 0.0f) {
+                    v70 = float_360_8041c160;
+                }
+                a70 = float_3p1416_8041c14c * v70 / float_180_8041c150;
+                v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
+                angle = float_3p1416_8041c14c * v84 / float_180_8041c150;
+                cur = a70 - float_0p2_8041c148 * (f32)window->field_0x48[i];
+                if (cur <= angle) {
+                    window->field_0x34[i] = 3;
+                    cur = angle;
+                    window->field_0x48[i] = -1;
+                }
+                GetRingCenter(&vecB[i]);
+                GetRingOffset(&ringX, &ringY, cur);
+                vecB[i].x += ringX;
+                vecB[i].y += ringY;
+                vecB[i].z = ringY;
+                PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
+                scales[i] = 0.0f;
+                window->field_0x20[i] &= ~2;
+                window->field_0x48[i]++;
+            }
+            break;
+        case 0xA:
+            window->field_0x20[i] |= 1;
+            window->field_0x20[i] |= 2;
+            GetRingCenter(&vecB[i]);
+            GetRingOffset(&ringX, &ringY, 0.0f);
+            vecB[i].x += ringX;
+            vecB[i].y += ringY;
+            vecB[i].z = ringY;
+            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, float_neg60_8041c16c, vecB[i].x);
+            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, float_55_8041c170, vecB[i].y);
+            PSMTXTrans(mtxA[i], float_20_8041c168 + vecB[i].x, vecB[i].y, vecB[i].z);
+            scales[i] = intplGetValue(0, window->field_0x48[i], 12, float_360_8041c160, float_0_8041c144);
+            window->field_0x48[i]++;
+            if (window->field_0x48[i] > 12) {
+                window->field_0x34[i] = 3;
+            }
+            break;
+        case 0xB:
+            window->field_0x20[i] |= 1;
+            window->field_0x20[i] &= ~2;
+            angle = float_3p1416_8041c14c * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / float_180_8041c150;
+            {
+                f32 s;
+                GetRingCenter(&vecB[i]);
+                GetRingOffset(&ringX, &ringY, angle);
+                vecB[i].x += ringX;
+                vecB[i].y += ringY;
+                vecB[i].z = ringY;
+                s = float_0p1_8041c174 * (f32)window->field_0x48[i];
+                if (s >= float_1_8041c178) {
+                    window->field_0x34[i] = 3;
+                }
+                PSMTXScale(scaleMtx, s, s, float_1_8041c178);
+                PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
+                PSMTXConcat(transMtx, scaleMtx, mtxA[i]);
+                scales[i] = 0.0f;
+                window->field_0x48[i]++;
+            }
+            break;
+        }
+    }
+
+    DrawMainIcon(window, window->field_0x4, mtxA, vecB, scales);
+    DrawMenuPartyChangeButton();
+    DrawMenuPinchMark();
+}
+
 void SelectedItemCoordinateColorUpDate(void) {
     switch (seq) {
         case 0:
@@ -903,9 +1167,13 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
 // be marked don't-inline itself (a surrounding region only stops its functions
 // being inlined elsewhere).
 #pragma dont_inline on
-// NONMATCHING (86.38%): FP scheduling only. The original loads 15/20, pos->y, 0.0,
-// 155, pos->x, then applies +/-f31; ours applies f31 first. In the selection block
-// the original hoists the double_to_int conversion ahead of the pos->x load.
+// Instruction scheduling / register allocation only. Explicit temporaries reproduce
+// the target's schedule in all three icon blocks: the two sums are formed (ysum/xsum)
+// before the +/-f31 add, vec.x = pos->x is hoisted above the `n` clamp, and the tail
+// uses `f32 ny = 24*(f32)n` before `vec.y = pos->y - ny`. The residual is that the
+// target loads 0.0 / 24 / pos->x into a different rotation of f0,f3,f4 and schedules
+// the final fnmsubs differently.
+// NONMATCHING (87.99%): see above.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -920,17 +1188,22 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         window->field_0x11C = 0;
     }
     if (cursor->field_4 > 0) {
-        vec.y = float_15_8041c18c + pos->y + f31;
-        vec.x = float_155_8041c188 + pos->x;
+        f32 ysum = float_15_8041c18c + pos->y;
+        f32 xsum = float_155_8041c188 + pos->x;
+        vec.y = ysum + f31;
+        vec.x = xsum;
         vec.z = float_0_8041c144;
         iconDispGx(&vec, 0x10, 0x1B5, float_0p75_8041c190);
     }
     if (cursor->field_4 < cursor->unk8 - 6) {
-        vec.y = float_20_8041c168 + pos->y - float_164_8041c194 - f31;
-        vec.x = float_155_8041c188 + pos->x;
+        f32 ysum = float_20_8041c168 + pos->y - float_164_8041c194;
+        f32 xsum = float_155_8041c188 + pos->x;
+        vec.y = ysum - f31;
+        vec.x = xsum;
         vec.z = float_0_8041c144;
         iconDispGx(&vec, 0x10, 0x1B6, float_0p75_8041c190);
     }
+    vec.x = pos->x;
     n = cursor->field_0 - cursor->field_4;
     if (n < 0) {
         n = 0;
@@ -938,9 +1211,11 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     if (n >= 6) {
         n = 5;
     }
-    vec.y = pos->y - float_24_8041c198 * (f32)n;
-    vec.x = pos->x;
-    vec.z = float_0_8041c144;
+    {
+        f32 ny = float_24_8041c198 * (f32)n;
+        vec.y = pos->y - ny;
+        vec.z = float_0_8041c144;
+    }
     iconDispGx(&vec, 0x14, 0x1F0, float_1_8041c178);
 }
 #pragma dont_inline reset
@@ -1296,7 +1571,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     }
 #ifdef MUST_MATCH
     // FontDrawColor's header says GXColor* but the original takes GXColor by value (which MWCC
-    // lowers to a caller-allocated copy); the cast restores that ABI. See REPORT.md.
+    // lowers to a caller-allocated copy); the cast restores that ABI.
     ((void (*)(GXColor))FontDrawColor)(color);
 #else
     FontDrawColor(&color);
@@ -1322,7 +1597,7 @@ extern const GXColor dat_8041c12c;
 
 #ifdef MUST_MATCH
 // Passing the colour through this by-value inline helper (instead of a named local) is what
-// makes MWCC place the GXColor argument temp in the original's stack slot. See REPORT.md.
+// makes MWCC place the GXColor argument temp in the original's stack slot.
 static inline GXColor MainIconCircleColor(GXColor base, u8 a) {
     base.r = a;
     base.g = a;

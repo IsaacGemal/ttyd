@@ -163,3 +163,4 @@ BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d);
 extern PaperSoundBGM psbgm[2];
 extern SoundEnvList psenvlist[];
 void psndENV_stop(u32 id);
+s32 psndBGMPlayTime(s32 id);
