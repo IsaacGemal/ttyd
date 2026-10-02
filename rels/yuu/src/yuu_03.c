@@ -495,7 +495,7 @@ static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXTexCoord2f32(0.0f, v);
 }
 
-// NONMATCHING (93.60%): ryushi_disp; `wp = &wp[1]` (reuse local instead of reloading xwp) matched; base registers and angle-block schedule still differ
+// NONMATCHING (97.40%): ryushi_disp; `wp = &wp[1]` (reuse local instead of reloading xwp) matched; base registers and angle-block schedule still differ
 void ryushi_disp(CameraId cameraId, void* param) {
     RyushiEntry* wp = xwp;
     s32 unk30 = xwp->unk30;
@@ -621,7 +621,7 @@ USER_FUNC(evt_ryushi_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.03%): evt_ryushi_clr; xwp reload for unk08/0C/10 matches; remaining are args[0]/xwp load order and the inlined randf fneg order
+// NONMATCHING (93.60%): evt_ryushi_clr; integer loop now matches exactly (temps a,b,c assigned after wp->unk0=0); remaining are top args[0]/xwp load order, the inlined randf fneg order (target negates x, we negate the max product) and one fmuls operand order
 USER_FUNC(evt_ryushi_clr) {
     RyushiEntry* wp = xwp;
     s32 i;
@@ -638,11 +638,14 @@ USER_FUNC(evt_ryushi_clr) {
     xwp->unk10 = 100.0f;
     wp = &wp[1];
     for (i = 1; i < n; i++, wp++) {
-        s32 a = (i - 1) % 10;
-        s32 b = ((i - 1) / 10) % 6;
-        s32 c = (i - 1) / 60;
+        s32 a;
+        s32 b;
+        s32 c;
 
         wp->unk0 = 0;
+        a = (i - 1) % 10;
+        b = ((i - 1) / 10) % 6;
+        c = (i - 1) / 60;
         wp->unk08 = xwp->unk08 * 0.5f * ((b + c) & 1) + ((f32)a * xwp->unk08 - xwp->unk08 * 4.5f);
         wp->unk0C = (f32)b * xwp->unk0C - xwp->unk0C * 2.5f;
         wp->unk10 = (f32)c * xwp->unk10 - xwp->unk10 * 1.5f;

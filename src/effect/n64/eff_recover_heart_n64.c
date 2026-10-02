@@ -113,7 +113,6 @@ typedef struct RecoverHeartData {
 	s32 field_0x44; // 0x44
 } RecoverHeartData; // 0x48
 
-// NONMATCHING (85.66%): instructions differ; see check.py
 EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	RecoverHeartData* data;
@@ -138,31 +137,38 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 	}
 	data[0].field_0x40 = time;
 	{
+		RecoverHeartData* p;
 		s32 i;
 
-		for (i = 1; i < 2; i++) {
-			data[1].x = float_0_8041fb10;
-			data[1].y = float_0_8041fb10;
-			data[1].z = float_0_8041fb10;
-			data[1].scale = float_0_8041fb10;
-			data[1].vx = float_0_8041fb10;
-			data[1].vz = float_0_8041fb10;
-			data[1].field_0x20 = float_0_8041fb10;
-			data[1].angle = float_0_8041fb10;
+		p = data + 1;
+		for (i = 1; i < 2; i++, p++) {
+			p->x = float_0_8041fb10;
+			p->y = float_0_8041fb10;
+			p->z = float_0_8041fb10;
+			p->scale = float_0_8041fb10;
+			p->vx = float_0_8041fb10;
+			p->vz = float_0_8041fb10;
+			p->field_0x20 = float_0_8041fb10;
+			p->angle = float_0_8041fb10;
 			if (i == 1) {
-				data[1].x = float_0_8041fb10;
-				data[1].field_0x34 = 0;
+				p->x = float_0_8041fb10;
+				p->field_0x34 = 0;
+				p->scaleW = float_0_8041fb10;
+				p->scaleH = float_0_8041fb10;
+				p->vy = float_1p4_8041fb34;
 			} else {
-				data[1].x = (f32)(((i & 1) * 2 - 1) * (i / 2) * 4);
-				data[1].field_0x34 = 11;
+				s32 m = (i & 1) * 2 - 1;
+				s32 v = m * ((i - 1) >> 1);
+				p->x = (f32)(v * 4);
+				p->vy = float_1p4_8041fb34;
+				p->field_0x34 = 11;
+				p->scaleW = float_0_8041fb10;
+				p->scaleH = float_0_8041fb10;
 			}
-			data[1].vy = float_1p4_8041fb34;
-			data[1].scaleW = float_0_8041fb10;
-			data[1].scaleH = float_0_8041fb10;
 		}
 	}
-	data[1].field_0x28 = 0xFF;
 	data[1].field_0x2C = 0;
+	data[1].field_0x28 = 0xFF;
 	return effect;
 }
 

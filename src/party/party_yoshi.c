@@ -91,13 +91,15 @@ static const f32 float_neg10 = -10.0f;
 static const f32 float_26 = 26.0f;
 static const f32 float_20 = 20.0f;
 
-// NONMATCHING (89.15%): declaring `y` as `s32 y = -(s32)(s8)...` reproduces the
-// original sign-extend-then-negate, and the rest of the body/register layout then
-// lines up. Remaining: `mario` lands in r31 here but r29 in the original (so x is
-// r30 not r31, -y is r29 not r30); the original `dist == 0.0f` is materialized with
-// the mfcr/extrwi/xori/cntlzw/srwi idiom; and one `float_0p75` load is placed
-// before the `mario->flags` load here.
+// 100%: `x`/`y` are s32 (the original sign-extends each byte once), the
+// `!dist` zero test makes MWCC emit the original mfcr/extrwi/xori/cntlzw/srwi
+// boolean, and the `flags |=` before `dist *= 0.75f` puts the fmuls where the
+// original schedules it. The literals pool anonymously because the file's
+// function order is not yet the original's (their addresses will land right
+// once the functions are reordered).
 void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
+    s32 x;
+    s32 y;
     MarioWork* mario = party->playerPtr;
 
     if ((s8)*(u8*)((u8*)mario + 0x39) != 0) {
@@ -107,16 +109,24 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
     }
 
     {
-        s8 x = *(s8*)((u8*)party + 0x158);
-        s32 y = -(s32)*(s8*)((u8*)party + 0x159);
-        f32 dist = distABf(0.0f, 0.0f, (f32)x, (f32)-y);
+        f32 dist;
         f32 ang;
+
+        x = *(s8*)((u8*)party + 0x158);
+        y = -(s32)*(s8*)((u8*)party + 0x159);
+        dist = distABf(0.0f, 0.0f, (f32)x, (f32)-y);
 
         if (dist >= 70.0f) {
             dist = 70.0f;
         }
         ang = angleABf(0.0f, 0.0f, (f32)x, (f32)-y);
+#ifdef MUST_MATCH
+        // `!dist` makes MWCC emit the original mfcr/.../srwi boolean; the
+        // natural `dist == 0.0f` test is under #else.
+        if (!dist) {
+#else
         if (dist == 0.0f) {
+#endif
             ang = party->field_FC;
         }
         ang = revise360(ang + *(f32*)((u8*)party + 0xF8));
@@ -129,8 +139,8 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
                 dist = 1.5f * (mario->mBaseWalkSpeed * marioGetMoveRate(ang));
             }
             if (hitGetAttr(mario->hitobjStandOn) & 0x100) {
-                dist *= 0.75f;
                 mario->flags |= 0x04000000;
+                dist *= 0.75f;
             } else {
                 mario->flags &= ~0x04000000;
             }
@@ -291,20 +301,33 @@ void unk_800b474c(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (94.90%): register interleave in the 6-float vec copy.
+// 100%: the volatile reads/writes reproduce the original's non-pipelined
+// load/store interleave in the two 6-float copies (and the playerPtr load order).
+// MUST_MATCH only: the natural form is under #else.
 void marioYoshiForceCancel(void) {
     const Vec* vec = vec3_802cccd0;
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
     if (yoshiGetStatus() != 0) {
+#ifdef MUST_MATCH
+        MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
+        Vec* dst = (Vec*)((u8*)pl + 0x98);
+        *(volatile Vec*)&dst[0] = *(const volatile Vec*)&vec[0];
+        *(volatile Vec*)&dst[1] = *(const volatile Vec*)&vec[1];
+#else
         MarioWork* pl = party->playerPtr;
         *(YoshiZeroVec6*)((u8*)pl + 0x98) = *(YoshiZeroVec6*)vec;
+#endif
 
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
+#ifdef MUST_MATCH
+                *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec[2];
+#else
                 *(Vec*)((u8*)extra + 0x7C) = vec[2];
+#endif
             }
         }
         marioChgPose("M_S_1");
@@ -335,8 +358,8 @@ void marioYoshiForceCancel(void) {
     }
 }
 
-// NONMATCHING (95.13%): shared cancel body is duplicated inline; remaining
-// difference is load/store interleaving in the 6-float copy.
+// 100%: same volatile-copy MUST_MATCH trick as marioYoshiForceCancel; the
+// natural form is under #else.
 void yoshi_exit(PartyEntry* arg) {
     const Vec* vec = vec3_802cccd0;
     MarioWork* mario;
@@ -346,13 +369,24 @@ void yoshi_exit(PartyEntry* arg) {
     mario = marioGetPtr();
     party = partyGetPtr(marioGetPartyId());
     if (yoshiGetStatus() != 0) {
+#ifdef MUST_MATCH
+        MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
+        Vec* dst = (Vec*)((u8*)pl + 0x98);
+        *(volatile Vec*)&dst[0] = *(const volatile Vec*)&vec[0];
+        *(volatile Vec*)&dst[1] = *(const volatile Vec*)&vec[1];
+#else
         MarioWork* pl = party->playerPtr;
         *(YoshiZeroVec6*)((u8*)pl + 0x98) = *(YoshiZeroVec6*)vec;
+#endif
 
         {
             PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
+#ifdef MUST_MATCH
+                *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec[2];
+#else
                 *(Vec*)((u8*)extra + 0x7C) = vec[2];
+#endif
             }
         }
         marioChgPose("M_S_1");

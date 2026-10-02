@@ -33,8 +33,10 @@ const f32 float_0p1_8041df5c = 0.1f;
 const f32 float_22_8041df60 = 22.0f;
 const f32 float_neg1000_8041df64 = -1000.0f;
 
-// NONMATCHING (86.20%): register allocation differs (party lands in r29, and the 0xB8/0xC0 addresses are
-// hoisted into r30/r31; the target keeps party in r31 and uses 0xb8(r31)).
+// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
+// Without it the first loads and the constant land one register off.
+#pragma opt_common_subs off
+// NONMATCHING (99.71%): the two fmuls results differ: target my -> f3 and mz -> f1, ours my -> f1, mz -> f2.
 // Temporaries avoid the `-fp_contract` fmadds fusion.
 // 280 B
 void vivian_move(PartyEntry* party) {
@@ -44,43 +46,42 @@ void vivian_move(PartyEntry* party) {
     }
     partyFlyMain(party);
     if (party != NULL && party->currentMemberId == 6) {
-        f32 dx = party->position.x - *(f32*)((u8*)party + 0xB8);
-        f32 dy = party->position.y - *(f32*)((u8*)party + 0xBC);
-        f32 dz = party->position.z - *(f32*)((u8*)party + 0xC0);
+        f32 dx = party->position.x - party->field_B8.x;
+        f32 dy = party->position.y - party->field_B8.y;
+        f32 dz = party->position.z - party->field_B8.z;
         f32 mx = float_0p1_8041df5c * dx;
         f32 my = float_0p1_8041df5c * dy;
         f32 mz = float_0p1_8041df5c * dz;
-        *(f32*)((u8*)party + 0xB8) = *(f32*)((u8*)party + 0xB8) + mx;
-        *(f32*)((u8*)party + 0xBC) = *(f32*)((u8*)party + 0xBC) + my;
-        *(f32*)((u8*)party + 0xC0) = *(f32*)((u8*)party + 0xC0) + mz;
-        if (distABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0xB8), *(f32*)((u8*)party + 0xC0)) >= float_22_8041df60) {
-            *(Vec*)((u8*)party + 0xB8) = party->position;
-            movePos((f32*)((u8*)party + 0xB8), (f32*)((u8*)party + 0xC0), float_22_8041df60, angleABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0xB8), *(f32*)((u8*)party + 0xC0)));
+        party->field_B8.x = party->field_B8.x + mx;
+        party->field_B8.y = party->field_B8.y + my;
+        party->field_B8.z = party->field_B8.z + mz;
+        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= float_22_8041df60) {
+            party->field_B8 = party->position;
+            movePos(&party->field_B8.x, &party->field_B8.z, float_22_8041df60, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
         }
     }
 }
 
-// NONMATCHING (83.98%): register allocation differs (party lands in r29, and the 0xB8/0xC0 addresses are
-// hoisted into r30/r31; the target keeps party in r31 and uses 0xb8(r31)).
-// Temporaries avoid the `-fp_contract` fmadds fusion.
+// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
 // 240 B
 void vivianShadow(PartyEntry* party) {
     if (party != NULL && party->currentMemberId == 6) {
-        f32 dx = party->position.x - *(f32*)((u8*)party + 0xB8);
-        f32 dy = party->position.y - *(f32*)((u8*)party + 0xBC);
-        f32 dz = party->position.z - *(f32*)((u8*)party + 0xC0);
+        f32 dx = party->position.x - party->field_B8.x;
+        f32 dy = party->position.y - party->field_B8.y;
+        f32 dz = party->position.z - party->field_B8.z;
         f32 mx = float_0p1_8041df5c * dx;
         f32 my = float_0p1_8041df5c * dy;
         f32 mz = float_0p1_8041df5c * dz;
-        *(f32*)((u8*)party + 0xB8) = *(f32*)((u8*)party + 0xB8) + mx;
-        *(f32*)((u8*)party + 0xBC) = *(f32*)((u8*)party + 0xBC) + my;
-        *(f32*)((u8*)party + 0xC0) = *(f32*)((u8*)party + 0xC0) + mz;
-        if (distABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0xB8), *(f32*)((u8*)party + 0xC0)) >= float_22_8041df60) {
-            *(Vec*)((u8*)party + 0xB8) = party->position;
-            movePos((f32*)((u8*)party + 0xB8), (f32*)((u8*)party + 0xC0), float_22_8041df60, angleABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0xB8), *(f32*)((u8*)party + 0xC0)));
+        party->field_B8.x = party->field_B8.x + mx;
+        party->field_B8.y = party->field_B8.y + my;
+        party->field_B8.z = party->field_B8.z + mz;
+        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= float_22_8041df60) {
+            party->field_B8 = party->position;
+            movePos(&party->field_B8.x, &party->field_B8.z, float_22_8041df60, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
         }
     }
 }
+#pragma opt_common_subs reset
 
 // 156 B
 s32 N_vivianDisplayTailCheck(PartyEntry* party) {
@@ -99,11 +100,10 @@ s32 N_vivianDisplayTailCheck(PartyEntry* party) {
     return 1;
 }
 
-// NONMATCHING (91.43%): `& ~1` on the u8 field emits `rlwinm 0,24,30`; the target emits `clrrwi r0,r0,1`.
 // 28 B
 void L_partyVivianTailStart(PartyEntry* party) {
     if (party->currentMemberId == 6) {
-        *(u8*)((u8*)party + 0x4F) &= ~1;
+        *(s8*)((u8*)party + 0x4F) &= ~1;
     }
 }
 
@@ -164,8 +164,8 @@ void vivian_init_801809C0(PartyEntry* party) {
     vivian_cancel_req = 0;
 }
 
-// NONMATCHING (84.71%): the Vec copies at mario+0xA4 and party+0x7C allocate registers differently (the
-// target loads 0(r4) into r3 then 4(r4) into r0); the float_10_8041df00 sda21 offset also differs.
+// NONMATCHING (85.41%): the Vec copies at 0xA4/0x7C hoist their first loads; the final `if` emits `beq` vs the
+// target's `bne body; b`. A `makeZeroVec` literal helper reaches 98.71% but drops unit .rodata to 93.75% (withheld).
 // 340 B
 void mot_vivian_post(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -187,7 +187,7 @@ void mot_vivian_post(void) {
             party->field_3B = 0;
             partyChgPoseId(party, 1);
             if (party->currentMemberId == 6) {
-                *(u8*)((u8*)party + 0x4F) &= ~1;
+                *(s8*)((u8*)party + 0x4F) &= ~1;
             }
         }
     } else if (party != NULL && party->currentMemberId == 6) {

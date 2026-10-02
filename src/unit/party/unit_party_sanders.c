@@ -9,7 +9,10 @@
 #include "system.h"
 #include "driver/msgdrv.h"
 #include "mario/mario_party.h"
-#include <math.h>
+#include "math_ext.h"
+// Local intrinsic form: the SDK math.h substitutes fabs as a macro, but
+// also drags in extern-inline sqrtf/sqrt whose localstatics shift this unit's .rodata.
+#define fabs(x) __fabs(x)
 #include <string.h>
 #include "battle/battle_attack_audience.h"
 #include "battle/battle_camera.h"
@@ -102,23 +105,19 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 }
 
 
-// NONMATCHING (92.86%): the callee-saved map is shifted (original event=r29/work=r28/unit=r28,
-// ours event=r31/work=r30/unit=r30, so outX/outY get r29/r28 instead of r31/r30) and the compiler
-// hoists the addi for BtlUnit_GetPos above the second BattleGetUnitPtr; the maths and calls match.
+// The declaration order below is what gives the original's callee-saved allocation
+// (event r29, work r28, v0 r26, v1 r25, outX/outY/outZ r31/r30/r26).
 USER_FUNC(_get_bomb_hit_position) {
-    s32 outX;
-    s32 outY;
-    s32 outZ;
-    s32* args = event->args;
+    BattleUnit* unit;
     BattleWork* work = _battleWorkPointer;
+    Vec pos;
+    s32* args = event->args;
     s32 v0;
     s32 v1;
-    BattleUnit* unit;
-    f32 z;
-    f32 y;
-    f32 x;
-    f32 size;
     s32 face;
+    s32 outZ;
+    s32 outX;
+    s32 outY;
 
     v0 = evtGetValue(event, args[0]);
     v1 = evtGetValue(event, args[1]);
@@ -129,14 +128,13 @@ USER_FUNC(_get_bomb_hit_position) {
     BattleGetUnitPtr(work, BattleTransID(event, v0));
     unit = BattleGetUnitPtr(work, BattleTransID(event, v1));
     face = unit->faceDirection;
-    BtlUnit_GetPos(unit, &x, &y, &z);
-    size = unit->mSizeMultiplier;
-    x += (f32)face * (unit->bintaHitOffset.x * size);
-    y += unit->bintaHitOffset.y * size;
-    z += unit->bintaHitOffset.z * size;
-    evtSetFloat(event, outX, x);
-    evtSetFloat(event, outY, y);
-    evtSetFloat(event, outZ, z);
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    pos.x += (f32)face * (unit->bintaHitOffset.x * unit->mSizeMultiplier);
+    pos.y += unit->bintaHitOffset.y * unit->mSizeMultiplier;
+    pos.z += unit->bintaHitOffset.z * unit->mSizeMultiplier;
+    evtSetFloat(event, outX, pos.x);
+    evtSetFloat(event, outY, pos.y);
+    evtSetFloat(event, outZ, pos.z);
     return EVT_RETURN_DONE;
 }
 

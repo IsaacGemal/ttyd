@@ -335,20 +335,10 @@ static USER_FUNC(shadow_scale_memory) {
     return EVT_RETURN_DONE;
 }
 
-// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
-// double and rematerialises the 0.0f load, so the argument setup is not the original's.
-#pragma opt_propagation off
-// NONMATCHING (86.75%): the instruction multiset and register allocation are identical;
-// MWCC just orders the int->float argument setup differently. The original hoists
-// `lis r3,zero` before `xoris`, puts both `addi` address setups before `stw r5` and
-// interleaves `li r3`/`li r5` with the two lfd/lfs loads; ours stores the exponent first.
-// Exhausted without effect: every GC compiler 1.3-2.7, -O2/-O3/-O4 with and without `,s`,
-// opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments/global_optimizer/
-// peephole/scheduling, inline and struct helpers, and the source permutations of the temp
-// assignments and call order; all give 86.75% or less. `end = start - start` reaches 90%
-// but computes 0.0 into fp instead of loading zero_mri (wrong code), so it is not usable.
-// Compound-literal / stack-temporary forms reach 88.32% only by adding a store+reload, and a
-// `u32` conversion scores 87.00% only because it drops the required `xoris`.
+// The original called intplGetValue through a prototype listing the two float bounds before
+// the step/duration words, so MWCC schedules the float loads as retail does. The ABI is
+// identical (ints->r3-r5, floats->f1-f2); only the source argument order differs. Same shape
+// as evt_sub_spline_get_value and battleAcMain_PowerGauge.
 static USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -364,7 +354,11 @@ static USER_FUNC(shadow_scale_small) {
     }
     start = (f32)unit->work[0];
     end = 0.0f;
+#ifdef MUST_MATCH
+    part->field_0x78 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(0, start, end, unit->work[1], 15);
+#else
     part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+#endif
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
     }
@@ -372,6 +366,10 @@ static USER_FUNC(shadow_scale_small) {
     return EVT_RETURN_BLOCK;
 }
 
+// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
+// double and rematerialises the 0.0f load, so shadow_scale_return's argument setup is not
+// the original's.
+#pragma opt_propagation off
 static USER_FUNC(shadow_scale_return) {
     BattleUnit* unit;
     BattleUnitPart* part;

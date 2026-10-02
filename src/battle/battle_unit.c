@@ -541,22 +541,22 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
 
 // Logic is byte-identical apart from register allocation. Retail colours unit=r6, id=r5, offset=r3
 // (sharing `li r3,0` for offset and moveState and using `mr. r6,r3` after BtlUnit_Entry); GC/2.6
-// keeps unit=r3, id=r6, offset=r5 and both `add r3,r31,r3; stw ...,0x120(r3)` break-case stores come
+// keeps unit=r6, id=r5, offset=r4 and both `add r3,r31,r3; stw ...,0x120(r3)` break-case stores come
 // out as `stwx`. Rearranging declarations/loops does not move the colours.
-// NONMATCHING (86.55%): see above.
+// NONMATCHING (93.19%): offset register rotated and break-case stores are `stwx` instead of base+0x120.
 BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
     BattleWork* wp = _battleWorkPointer;
-    s32 id;
     s32 offset;
+    s32 id;
     BattleUnit* unit;
 
     if (!(unit = BtlUnit_Entry(setup))) {
-        return NULL;
+        return unit;
     }
     if (flags & 2) {
-        unit->moveState = 0;
+        unit->moveState = offset = 0;
         id = unit->unitId;
-        for (offset = 0; offset < 0x100; offset += 4) {
+        for (; offset < 0x100; offset += 4) {
             if (id == -1) {
                 break;
             }
@@ -572,9 +572,10 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
         }
     }
     else if (flags & 1) {
+        offset = 0xFC;
         unit->moveState = 0;
         id = unit->unitId;
-        for (offset = 0xFC; offset >= 0; offset -= 4) {
+        for (; offset >= 0; offset -= 4) {
             if (id == -1) {
                 break;
             }
@@ -1297,9 +1298,8 @@ void BtlUnit_GetStatus(BattleUnit* unit, StatusEffectType type, s8* turns, s8* s
     }
 }
 
-// NONMATCHING (82.06%): HUGE/TINY and DEFENSE_UP/DOWN branch trees differ; target also `extsb`s type before the switch.
 BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 strength) {
-    switch (type) {
+    switch ((s8)type) {
         case STATUS_SLEEP:
             unit->mSleepTurns = turns;
             unit->mSleepStrength = 0;
@@ -1340,7 +1340,7 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
         case STATUS_HUGE:
         case STATUS_TINY:
             if (!strength) {
-                if (type == STATUS_HUGE) {
+                if ((s8)type == STATUS_HUGE) {
                     if (unit->mSizeChangeStrength >= 0) {
                         unit->mSizeChangeTurns = 0;
                         unit->mSizeChangeStrength = 0;
@@ -1381,9 +1381,18 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
             break;
         case STATUS_DEFENSE_UP:
         case STATUS_DEFENSE_DOWN:
-            if (strength <= 0) {
-                if (!strength) {
-                    if (type == STATUS_DEFENSE_DOWN) {
+            if (strength > 0) {
+                if (unit->mDefChangeStrength < 0) {
+                    unit->mDefChangeTurns = 0;
+                    unit->mDefChangeStrength = 0;
+                    return FALSE;
+                }
+                unit->mDefChangeTurns = turns;
+                unit->mDefChangeStrength = strength;
+            }
+            else {
+                if (strength == 0) {
+                    if ((s8)type == STATUS_DEFENSE_DOWN) {
                         if (unit->mDefChangeStrength <= 0) {
                             unit->mDefChangeTurns = 0;
                             unit->mDefChangeStrength = 0;
@@ -1403,15 +1412,6 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
                 unit->mDefChangeTurns = turns;
                 unit->mDefChangeStrength = strength;
             }
-            else {
-                if (unit->mDefChangeStrength < 0) {
-                    unit->mDefChangeTurns = 0;
-                    unit->mDefChangeStrength = 0;
-                    return FALSE;
-                }
-                unit->mDefChangeTurns = turns;
-                unit->mDefChangeStrength = strength;
-            }
             break;
         case STATUS_CHARGE:
             unit->mChargeStrength += strength;
@@ -1424,11 +1424,13 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
             }
             break;
         case STATUS_ALLERGIC:
-            if (turns <= 0) {
+            if (turns > 0) {
+                unit->mAllergicTurns = turns;
+            }
+            else {
                 unit->mAllergicTurns = 0;
                 return FALSE;
             }
-            unit->mAllergicTurns = turns;
             break;
         case STATUS_FLIPPED:
             unit->flippedTurns = turns;
@@ -1437,20 +1439,19 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
             unit->mInvisibleTurns = turns;
             break;
         case STATUS_PAYBACK:
-            if (turns <= 0) {
+            if (turns > 0) {
+                unit->mPaybackTurns = turns;
+            }
+            else {
                 unit->mPaybackTurns = 0;
                 return FALSE;
             }
-            unit->mPaybackTurns = turns;
             break;
         case STATUS_HOLD_FAST:
             unit->mHoldFastTurns = turns;
             break;
         case STATUS_FAST:
-            if (unit->mSlowTurns <= 0) {
-                unit->mFastTurns = turns;
-            }
-            else {
+            if (unit->mSlowTurns > 0) {
                 if (turns > 0) {
                     unit->mSlowTurns = 0;
                     _CheckMoveCount(unit);
@@ -1458,18 +1459,21 @@ BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 str
                 }
                 unit->mFastTurns = turns;
             }
+            else {
+                unit->mFastTurns = turns;
+            }
             _CheckMoveCount(unit);
             break;
         case STATUS_SLOW:
-            if (unit->mFastTurns <= 0) {
-                unit->mSlowTurns = turns;
-            }
-            else {
+            if (unit->mFastTurns > 0) {
                 if (turns > 0) {
                     unit->mFastTurns = 0;
                     _CheckMoveCount(unit);
                     return FALSE;
                 }
+                unit->mSlowTurns = turns;
+            }
+            else {
                 unit->mSlowTurns = turns;
             }
             _CheckMoveCount(unit);
@@ -1679,7 +1683,6 @@ void BtlUnit_OffUnitFlag(BattleUnit* unit, s32 flags) {
 
 // Keep BtlUnit_GetPoseNameFromType out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (87.19%): target uses `beq found` for the second poseId compare, mine `bne skip`, plus one dead `b`.
 char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
     BattleDispPose* pose = part->poseTable;
     s32 bound;
@@ -1697,10 +1700,11 @@ char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
         if ((s32)pose->poseId >= 0x46) {
             return NULL;
         }
-        if ((s32)pose->poseId == type || (s32)pose->poseId == bound) {
-            return (char*)pose->poseName;
+        if ((s32)pose->poseId != type && (s32)pose->poseId != bound) {
+            pose++;
+            continue;
         }
-        pose++;
+        return (char*)pose->poseName;
     }
     return NULL;
 }
@@ -2055,11 +2059,12 @@ s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
 #pragma dont_inline reset
 
 
-// NONMATCHING (87.75%): register allocation is rotated (target keeps name in r27/val in r30, ours name in r30/val in r29).
+// NONMATCHING (97.03%): `val = (s16)(c + val); val = (s16)(val + (irand(0x29)-0x14));` matches the target's
+// `(c+val)` association; the remaining diff is a one-register rotation (retail name=r27/val=r30, ours name=r29/val=r28).
 #pragma dont_inline on
 s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* pos) {
     s32 handle;
-    s32 val = 0;
+    s16 val = 0;
     s8 turns, strength;
 
     if (BtlUnit_CheckStatus(unit, STATUS_TINY)) {
@@ -2070,25 +2075,24 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
         BtlUnit_GetStatus(unit, STATUS_HUGE, &turns, &strength);
         val = (s16)(((s8)strength * 2 + 1) * -341);
     }
-    val = (s16)((c + val) + (irand(0x29) - 0x14));
+    val = (s16)(c + val);
+    val = (s16)(val + (irand(0x29) - 0x14));
     handle = psndSFXOn_3D(name, pos);
     psndSFX_pit(handle, val);
-    if ((u32)(b - 0xF1190000) < 0x4D80) {
-        psndSFX_vol(handle, psndSFX_get_vol(handle));
-    } else {
-        psndSFX_vol(handle, (u8)b);
-    }
+    psndSFX_vol(handle, (u32)(b - 0xF1190000) == 0x4D80 ? psndSFX_get_vol(handle) : (u8)b);
     return handle;
 }
 #pragma dont_inline reset
 
-// NONMATCHING (84.68%): switch compare tree roots at 3 instead of 4; info pointer kept in a callee-save
-// register instead of a temp; double_to_int constant uses a local symbol. Semantics are identical.
+// `case 5:` is grouped with `default:` on purpose: it seeds MWCC's switch decision tree at 4 like retail
+// (without it the tree roots at 3 and needs an extra `cmpwi 5`). The `prod` temp pins the multiply order.
 s32 BtlUnit_GetExp(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
-    FieldBattleInfo* info = wp->fbatInfo;
     PouchData* pouch = pouchGetPtr();
+    FieldBattleInfo* info = wp->fbatInfo;
     f32 mult;
+    f32 prod;
+    s32 exp;
 
     if (pouch->level > unit->mLevel) {
         return 0;
@@ -2105,11 +2109,14 @@ s32 BtlUnit_GetExp(BattleUnit* unit) {
         case 4:
             mult = float_1p3_8041c3d0;
             break;
+        case 5:
         default:
             mult = float_1p5_8041c3d4;
             break;
     }
-    return (s32)(mult * (f32)(unit->mLevel - pouch->level) * float_0p5_8041c3d8) + unit->mKindParams->mBonusExp;
+    prod = mult * (f32)(unit->mLevel - pouch->level);
+    exp = (s32)(prod * float_0p5_8041c3d8);
+    return exp + unit->mKindParams->mBonusExp;
 }
 
 typedef struct BattleWeaponFields {

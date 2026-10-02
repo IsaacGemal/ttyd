@@ -334,14 +334,17 @@ static USER_FUNC(shadow_scale_memory) {
 // `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
 // double and rematerialises the 0.0f constant, changing the instruction order.
 #pragma opt_propagation off
-// NONMATCHING (86.75%): both pool constants are materialised but MWCC schedules the
-// int->float conversion and constant loads in a different order than the original.
+// The `#pragma opt_propagation off` above is required by `shadow_scale_return`; with it the
+// natural form of this function still schedules the pooled constants in the wrong slots. Casting
+// `intplGetValue` to an ABI-identical float-first signature `(s32, f32, f32, s32, s32)` (= r3,
+// f1, f2, r4, r5 on PowerPC) makes MWCC evaluate the integer arguments right-to-left and
+// materialise the pooled constants before the int->float conversion, reproducing the retail
+// bytes. The call is the same function; the natural order is under #else (same fix as
+// unit_pakkun_flower.c's shadow_scale_small).
 static USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
     s32 id;
-    f32 start;
-    f32 end;
 
     id = BattleTransID(event, evtGetValue(event, event->args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -349,9 +352,11 @@ static USER_FUNC(shadow_scale_small) {
     if (isFirstCall) {
         unit->work[1] = 0;
     }
-    start = (f32)unit->work[0];
-    end = 0.0f;
-    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+#ifdef MUST_MATCH
+    part->field_0x78 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(0, (f32)unit->work[0], 0.0f, unit->work[1], 15);
+#else
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, (f32)unit->work[0], 0.0f);
+#endif
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
     }

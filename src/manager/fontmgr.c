@@ -205,8 +205,7 @@ void FontDrawCode(u16 code, f32 x, f32 y) {
 	_JUTFont_DrawPos(code, 0, 0);
 }
 
-// NONMATCHING (83.60%): retail loads `color->a` before the whole-word `*color`; ours loads the word first
-// and hoists the GXSetTevColor argument-copy address. Same multiset, different schedule.
+// NONMATCHING (83.60%)
 void FontDrawColor(GXColor* color) {
 	fontColor = *color;
 	color->a = (color->a * fontAlpha) / 255;
@@ -359,23 +358,42 @@ void JUTFontSetup(u16 idx) {
 	}
 }
 
-// NONMATCHING (52.34%): by-value `JUTFont_DrawStart(GXColor)` call is correct, but CW reserves a 0x20 frame (start at 0x10) vs retail's 0x10 frame (start at 0xc) and schedules the fontColTbl/vec3 loads differently.
+// NONMATCHING (60.40%): by-value `JUTFont_DrawStart(GXColor)` call and frame now match retail (0x10);
+// remaining diffs are the fontColTbl/vec3x load schedule and register allocation.
 void FontDrawStart_alpha(u8 alpha) {
 	GXColor start;
 
 	start = fontColTbl[0];
+	start.a = (start.a * alpha) / 255;
+#ifdef MUST_MATCH
+	// MUST_MATCH: the natural `fontColor = fontColTbl[0];` makes CW reserve an extra 0x10 stack slot
+	// (frame 0x20 instead of retail's 0x10); copying the word keeps the frame at 0x10.
+	*(u32*)&fontColor = *(u32*)&fontColTbl[0];
+#else
+	fontColor = fontColTbl[0];
+#endif
 	fontAlpha = alpha;
 	fontScale = vec3_802c48c0;
 	fontEdge = FALSE;
-	fontColor = fontColTbl[0];
-	start.a = (start.a * alpha) / 255;
 	JUTFont_DrawStart(start);
 }
-
-// NONMATCHING (64.58%): `FontDrawStart_alpha(0xFF);` inlined; same frame/scheduling diffs as FontDrawStart_alpha.
+// NONMATCHING (91.47%): explicit copy of the `FontDrawStart_alpha(0xFF)` body; the order below is the one
+// CW schedules to retail's exact bytes (the natural `FontDrawStart_alpha(0xFF);` call scores lower).
 //does some fucky stuff on the alpha channel that doesn't change anything
 void FontDrawStart(void) {
-	FontDrawStart_alpha(0xFF);
+	GXColor start;
+
+	start = fontColTbl[0];
+	start.a = (start.a * 0xFF) / 255;
+	fontAlpha = 0xFF;
+#ifdef MUST_MATCH // same frame fix as FontDrawStart_alpha: a plain struct assign grows the frame to 0x20
+	*(u32*)&fontColor = *(u32*)&fontColTbl[0];
+#else
+	fontColor = fontColTbl[0];
+#endif
+	fontScale = vec3_802c48c0;
+	fontEdge = FALSE;
+	JUTFont_DrawStart(start);
 }
 
 extern GXColor unk_80422fd8;
@@ -430,22 +448,23 @@ u16 FontGetMessageWidth(const char* message) {
 	return FontGetMessageWidthLine(message, NULL);
 }
 
-// NONMATCHING (90.03%): full parse loop reconstructed; remaining diffs are register allocation and the
-// anonymous @-labels for the sscanf format strings / double_to_int constants.
+// NONMATCHING (98.38%): full parse loop reconstructed; remaining diffs are the maxwidth/curwidth copy using
+// the masked r0 instead of the source register, the two anonymous @-labels for the str_802C4904/str_802C4910
+// format strings and the final clrlwi/mr.
 u16 FontGetMessageWidthLine(const char* message, u16* lines) {
-	s32 maxwidth = 0;
+	u16 glyph;
+	u16 maxwidth = 0;
 	s32 curwidth = 0;
 	s32 linecount = 0;
-	u16 glyph;
 
-	while (*message) {
+	while (*(s8*)message != 0) {
 		glyph = 0xFFFF;
-		if (_ismbblead((s8)*message)) {
+		if (_ismbblead(*(s8*)message)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)message);
 			message += 2;
 		}
 		else {
-			switch ((s8)*message) {
+			switch (*(s8*)message) {
 			case '\n':
 				if ((u16)maxwidth < (u16)curwidth) {
 					maxwidth = curwidth;
@@ -453,7 +472,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 				curwidth = 0;
 				linecount++;
 				message++;
-				continue;
+				break;
 			case '<': {
 				char arg1[128];
 				char arg2[128];
@@ -482,13 +501,17 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 					iconGetWidthHight(&width, &height, (u16)id);
 					curwidth = (s32)((f32)width * scale + offset + (f32)(u16)curwidth);
 				}
+#ifdef MUST_MATCH // retail's second test is dead (compares a sign-extended byte against 0x2f72)
+				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
+#else
 				else if ((s8)arg1[0] == 'R') {
-					continue;
+#endif
+					break;
 				}
-				if (*message == '\n') {
+				if ((s8)*message == '\n') {
 					message++;
 				}
-				continue;
+				break;
 			}
 			default:
 				glyph = JUTFont_CodeToGlyph((s8)*message);
@@ -499,7 +522,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 		if (glyph == 0xFFFF) {
 			continue;
 		}
-		curwidth = (u16)(charspace[gp->language] + curwidth + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
+		curwidth = (u16)(curwidth + (((BinaryFontWidthEntry*)FontGetWidthPtr(glyph))->width + charspace[gp->language]));
 	}
 	if ((u16)maxwidth < (u16)curwidth) {
 		maxwidth = curwidth;
@@ -519,9 +542,9 @@ u16 hankakuSearch(s8 code) {
 	return JUTFont_CodeToGlyph(code);
 }
 
-// NONMATCHING (87.50%): the header types `code` as u16, forcing a `clrlwi r3,r3,16` before the
-// JUTFont_CodeToGlyph(u32) call; retail has no extension, so the real parameter is u32/int.
-u16 kanjiSearch(u16 code) {
+// The header declares `u32 code`; the original passes r3 straight to JUTFont_CodeToGlyph(u32) without a
+// zero-extension (only hankakuSearch sign-extends its s8).
+u16 kanjiSearch(u32 code) {
 	return JUTFont_CodeToGlyph(code);
 }
 
@@ -639,8 +662,9 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (79.41%): draws each glyph with PSMTXTrans+PSMTXConcat+PSMTXTransApply. Command and icon
-// handling was reconstructed from asm; anon @-labels for the embedded strings and a few schedule diffs remain.
+// NONMATCHING (89.67%): draws each glyph with PSMTXTrans+PSMTXConcat+PSMTXTransApply. Command and icon
+// handling was reconstructed from asm; the cached edge x/y ints land in r27/r26 instead of r28/r27 and CW
+// reserves a 0x1a0 frame (extra callee-saved r26) vs retail's 0x1b0. Schedule diffs remain.
 void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
@@ -651,14 +675,14 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	cam = camGetCurPtr();
 	PSMTXConcat(cam->view, mtx, m);
 	GXLoadPosMtxImm(m, GX_PNMTX0);
-	while (*msg) {
+	while (*(s8*)msg) {
 		glyph = 0xFFFF;
-		if (_ismbblead((s8)*msg)) {
+		if (_ismbblead(*(s8*)msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
 		else {
-			switch ((s8)*msg) {
+			switch (*(s8*)msg) {
 			case '\n':
 				x = 0.0f;
 				y -= 28.0f;
@@ -668,16 +692,20 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 				char arg1[128];
 				char arg2[128];
 				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
+#ifdef MUST_MATCH // retail's second test is dead (sign-extended byte vs 0x2f72)
+				if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
+#else
 				if (arg1[0] == 'R') {
+#endif
 					break;
 				}
-				if (*msg == '\n') {
+				if (*(s8*)msg == '\n') {
 					msg++;
 				}
 				break;
 			}
 			default:
-				glyph = JUTFont_CodeToGlyph((s8)*msg);
+				glyph = JUTFont_CodeToGlyph(*(s8*)msg);
 				msg++;
 				break;
 			}
@@ -689,11 +717,19 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
+			s16 sx;
+			s16 sy;
+#ifdef MUST_MATCH
+			FontDrawCode_ColorA(c);
+#else
 			FontDrawColor(&c);
-			_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
-			_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
-			_JUTFont_DrawPos(glyph, (s16)x, (s16)y - 2);
-			_JUTFont_DrawPos(glyph, (s16)x, (s16)y + 2);
+#endif
+			sx = x;
+			sy = y;
+			_JUTFont_DrawPos(glyph, sx - 2, sy);
+			_JUTFont_DrawPos(glyph, sx + 2, sy);
+			_JUTFont_DrawPos(glyph, sx, sy - 2);
+			_JUTFont_DrawPos(glyph, sx, sy + 2);
 			c2 = saved;
 			FontDrawColor(&c2);
 		}
@@ -746,36 +782,36 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 	}
 }
 
-// NONMATCHING (92.63%): per-glyph PSMTXTransApply path; remaining diffs are register scheduling and
-// anonymous float-pool labels.
+// NONMATCHING (93.25%): per-glyph PSMTXTransApply path; remaining diffs are the str/glyph/w callee-saved
+// assignment (r27/r28/r29 vs retail's r28/r29/r27), `lwzu` vs `addi` for the vec3_802c48cc copy and anon labels.
 void FontDrawString(const char* str, f32 x, f32 y) {
 	CameraEntry* cam;
 	Mtx mtx;
 	Mtx mtx2;
-	Vec pos;
 	Vec pos2;
+	Vec pos;
 	f32 fx;
-	f32 fy;
 	f32 fz;
-	u16 w;
+	f32 fy;
 	u16 glyph;
+	u16 w;
 
 	pos = vec3_802c48cc;
 	pos.x = x;
 	pos.y = y;
 	pos2 = pos;
 	fx = pos2.x;
-	fy = pos2.y;
 	fz = pos2.z;
+	fy = pos2.y;
 	cam = camGetCurPtr();
 	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
-	while ((s8)*str) {
-		if (_ismbblead((s8)*str)) {
+	while (*(s8*)str) {
+		if (_ismbblead(*(s8*)str)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)str);
 			str += 2;
 		}
 		else {
-			glyph = JUTFont_CodeToGlyph((s8)*str);
+			glyph = JUTFont_CodeToGlyph(*(s8*)str);
 			str += 1;
 		}
 		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
@@ -786,7 +822,11 @@ void FontDrawString(const char* str, f32 x, f32 y) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
+#ifdef MUST_MATCH
+			FontDrawCode_ColorA(c);
+#else
 			FontDrawColor(&c);
+#endif
 			_JUTFont_DrawPos(glyph, -2, 0);
 			_JUTFont_DrawPos(glyph, 2, 0);
 			_JUTFont_DrawPos(glyph, 0, -2);
@@ -908,7 +948,7 @@ void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch) {
 	}
 }
 
-// NONMATCHING (97.27%): rodata format offsets (another function's string is emitted first), iconDispGxAlpha's
+// NONMATCHING (98.65%): rodata format offsets (another function's string is emitted first), iconDispGxAlpha's
 // s16 iconId (header, see sac_suki.c), the inlined FontDrawStart_alpha/FontDrawColor_ schedule and an 8-byte
 // stack pad before ipos still differ.
 void FontDrawMessageMtx(Mtx mtx, const char* msg) {
@@ -1024,7 +1064,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (93.81%): unit-wide literal-pool order (sda21/rodata offsets) and stack/frame layout still differ;
+// NONMATCHING (94.54%): unit-wide literal-pool order (sda21/rodata offsets) and stack/frame layout still differ;
 // the allocator leaves the frame 0x224 not 0x230, so a few stack slots, callee-saved registers and scheduling
 // remain. Loop, command dispatch, FP icon math, alpha blend and edge block otherwise match.
 void FontDrawMessage(s32 x0, s32 y, const char* msg) {

@@ -357,6 +357,9 @@ void battleAcDelete_Shot(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
+// dont_inline: the original keeps _ac_disp_init as its own local function (battleAcMain_Shot
+// reaches it through `bl`), so it must not be inlined into its single caller.
+#pragma dont_inline on
 static void _ac_disp_init(BattleWork* work) {
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 
@@ -371,6 +374,7 @@ static void _ac_disp_init(BattleWork* work) {
     disp->field_0x10[3] = 0;
     disp->value = float_0_8041e4b8;
 }
+#pragma dont_inline reset
 
 // The original builds the icon colour in a local and copies it to the by-value argument slot.
 static inline GXColor _makeIconColor(BattleACDispParams* disp) {
@@ -456,27 +460,40 @@ static inline void _drawTargetMarkQuad(s32 id, Vec trans, Vec scale, Vec rot, GX
     btlDispTex4(id, &trans, &scale, &rot, &color);
 }
 
-// NONMATCHING (80.31%): the logic and the by-value wrapper call match; retail keeps the vec3 base in
-// r31 and the colour pointer in r30 and gives every wrapper parameter a fresh stack slot, while the
-// compiler here keeps the colour pointer in r31, rematerialises the vec base, and reuses slots.
-void _draw_target_mark(GXColor* color, f32 x, f32 y, f32 z, f32 angle) {
-    Vec trans;
-    Vec rot;
-    Vec rot2;
+// Builds a rotation vector from a base vector and an angle; returning a Vec by value is what the
+// original does, giving reviseAngle's result its own stack slot before the quad copies it.
+static inline Vec _drawTargetMarkRot(Vec v, f32 angle) {
+    v.z = reviseAngle(angle);
+    return v;
+}
 
-    trans = vec3_802f92b8[1];
+#ifdef MUST_MATCH
+#define DRW_VEC(i, name) (vecs[i])
+#else
+#define DRW_VEC(i, name) (name)
+#endif
+
+// NONMATCHING (97.69%): vec3 base (r31), colour pointer (r30), all wrapper slots and both
+// reviseAngle calls match; only the first colour load is scheduled after `lwz r4,0xc(r31)` instead
+// of after the prologue `lis`. No opt_*/scheduling/peephole pragma or declaration order moves it.
+void _draw_target_mark(GXColor* color, f32 x, f32 y, f32 z, f32 angle) {
+#ifdef MUST_MATCH
+    Vec* vecs = (Vec*)vec3_802f92b8;
+#endif
+    Vec trans;
+
+    trans = DRW_VEC(1, vec3_802f92b8[1]);
     trans.x = x;
     trans.y = y;
     trans.z = z;
 
-    rot = vec3_802f92b8[3];
-    rot.z = reviseAngle(-angle);
-    _drawTargetMarkQuad(0x42, trans, vec3_802f92b8[2], rot, *color);
+    _drawTargetMarkQuad(0x42, trans, DRW_VEC(2, vec3_802f92b8[2]),
+                        _drawTargetMarkRot(DRW_VEC(3, vec3_802f92b8[3]), -angle), *color);
 
-    rot2 = vec3_802f92b8[5];
-    rot2.z = reviseAngle(angle);
-    _drawTargetMarkQuad(0x41, trans, vec3_802f92b8[4], rot2, *color);
+    _drawTargetMarkQuad(0x41, trans, DRW_VEC(4, vec3_802f92b8[4]),
+                        _drawTargetMarkRot(DRW_VEC(5, vec3_802f92b8[5]), angle), *color);
 }
+#undef DRW_VEC
 #pragma dont_inline reset
 
 void _disp_target_mark(CameraId cameraId, void* param) {

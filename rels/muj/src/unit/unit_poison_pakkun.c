@@ -846,20 +846,14 @@ USER_FUNC(shadow_scale_memory) {
 // double and rematerialises the 0.0f load, so shadow_scale_return loses the original's
 // fp register allocation and store order; off keeps both as separate .rodata loads.
 #pragma opt_propagation off
-// NONMATCHING (86.75%): both constants are materialised, but MWCC issues the 0.0f `lis`
-// after `xoris` and orders the `lfd f0`/`li r3`/`lfs f2`/`li r5` 4th-arg setup
-// differently from the original. The instruction set is identical. `#pragma scheduling
-// off` drops to 75%; neither it nor opt_common_subs/opt_lifetimes/opt_dead_assignments/
-// global_optimizer/defer_codegen, inline or struct helpers, or any source permutation
-// changes the schedule. `end = start - start` reaches 90% but computes zero in fp
-// instead of loading zero_muj, so it is a wrong-code trick and not a match.
-// NONMATCHING (86.75%): as above; the instruction set is identical, only MWCC's schedule differs.
+// intplGetValue's real prototype is (s32, s32, s32, f32, f32), which is ABI-identical to this
+// float-first form (r3, f1, f2, r4, r5). The cast makes MWCC materialise the pooled constants
+// and load the int arguments right-to-left, reproducing the retail bytes; the natural argument
+// order under #else is the same call (cf. teresa_intpl in unit_atmic_teresa.c).
 USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
     s32 id;
-    f32 start;
-    f32 end;
 
     id = BattleTransID(event, evtGetValue(event, event->args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -867,9 +861,11 @@ USER_FUNC(shadow_scale_small) {
     if (isFirstCall) {
         unit->work[1] = 0;
     }
-    start = (f32)unit->work[0];
-    end = 0.0f;
-    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+#ifdef MUST_MATCH
+    part->field_0x78 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(0, (f32)unit->work[0], 0.0f, unit->work[1], 15);
+#else
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, (f32)unit->work[0], 0.0f);
+#endif
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
     }

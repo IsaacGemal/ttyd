@@ -524,16 +524,11 @@ u16 pouchGetStarPoint(void) {
 	return mpp->mStarPoints;
 }
 
-// NONMATCHING (91.34%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 void pouchRevisePartyParam(void) {
 	PouchPartyData* party;
 	int i, count;
 
-	for (i = 0, count = 0; i < 200; i++) {
-		if (mpp->equippedBadges[i] == ITEM_HP_PLUS_P) {
-			count++;
-		}
-	}
+	count = pouchEquipCheckBadge(ITEM_HP_PLUS_P);
 	for (i = 0; i < 8; i++) { //TODO: NUM_PARTNERS macro
 		if (i != PARTNER_NONE) {
 			party = &mpp->partyData[i];
@@ -817,9 +812,10 @@ s32 pouchGetCoin(void) {
 	return mpp->coins;
 }
 
-// NONMATCHING (91.36%): same instructions; the original reuses `table1+index*2` from the initial check as the loop pointer (add+lha) where we emit an indexed lhax and re-add for the loop. Same scheduling leftover as pouchRemoveItem.
+// NONMATCHING (92.85%): the initial check now uses a pointer (`s16* p = table1 + index; id != *p`) and the search loop steps it (`p++, i++`), which reproduces the original's `slwi/add/lha` prologue. What remains is the shift-loop basic-block layout: the original joins the table2==0/!=0 paths into a shared `table1+i`/`table2+i` setup and re-tests table2 afterwards, where ours short-circuits the table2==0 path straight into the table1-only loop.
 s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	s16* table1, * table2;
+	s16* p;
 	BOOL valid;
 	s32 maximum;
 	int i, j, temp;
@@ -851,11 +847,12 @@ s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	if (!valid) {
 		return FALSE;
 	}
-	if (*(table1 + index) != id) {
+	p = table1 + index;
+	if (id != *p) {
 		return FALSE;
 	}
-	for (i = index; i < maximum; i++) {
-		if (id == table1[i]) {
+	for (i = index; i < maximum; p++, i++) {
+		if (id == *p) {
 			table1[i] = ITEM_NULL;
 			if (table2 != 0) {
 				table2[i] = ITEM_NULL;
@@ -1045,100 +1042,118 @@ void unk_800d06b4(char* src, char* dst) {
 	dst[i * 2] = 0;
 }
 
-// NONMATCHING (88.84%): loop shape matches (buf/str pointers, i, temp c); CodeWarrior still colors buf r3/i r5 and itemDataTable base r31/str r30 where the original has buf r5/i r3 and base r30/str r31. Declaration order moves the temp/buf registers around but not to the original permutation.
+// NONMATCHING (89.57%): the two conversion loops match (buf r5, char temp r4, i r3), and hoisting `str` to function scope (declared before the ids) puts `id_b` in r29 like the original. What is left is the prologue: ours keeps the itemDataTable+4 base in r31 and the msgSearch result in r30 where the original has base r30 / str r31 (it allocates base before str), plus the interleaved callee-save stores.
 s32 comp_aiueo(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
-	u16* buf;
 	const char* str;
-	s32 len;
-	u32 c;
-	s32 i;
 	s16 id_a = *a;
 	s16 id_b = *b;
+	{
+		s32 i;
+		u32 c;
+		u16* buf;
+		s32 len;
 
-	str = msgSearch(itemDataTable[id_a].name);
-	len = strlen(str) / 2;
-	buf = buf_a;
-	for (i = 0; i < len; i++) {
-		c = *(u16*)str;
-		if (c >= 0x829F && c < 0x82DE) {
-			c += 0xA1;
+		str = msgSearch(itemDataTable[id_a].name);
+		len = strlen(str) / 2;
+		buf = buf_a;
+		for (i = 0; i < len; i++) {
+			c = *(u16*)str;
+			if (c >= 0x829F && c < 0x82DE) {
+				c += 0xA1;
+			}
+			else if (c >= 0x82DE && c <= 0x82F1) {
+				c += 0xA2;
+			}
+			*buf = c;
+			str += 2;
+			buf++;
 		}
-		else if (c >= 0x82DE && c <= 0x82F1) {
-			c += 0xA2;
-		}
-		*buf = c;
-		str += 2;
-		buf++;
+		((u8*)buf_a)[i * 2] = 0;
 	}
-	((u8*)buf_a)[i * 2] = 0;
+	{
+		s32 i;
+		u32 c;
+		u16* buf;
+		const char* str;
+		s32 len;
 
-	str = msgSearch(itemDataTable[id_b].name);
-	len = strlen(str) / 2;
-	buf = buf_b;
-	for (i = 0; i < len; i++) {
-		c = *(u16*)str;
-		if (c >= 0x829F && c < 0x82DE) {
-			c += 0xA1;
+		str = msgSearch(itemDataTable[id_b].name);
+		len = strlen(str) / 2;
+		buf = buf_b;
+		for (i = 0; i < len; i++) {
+			c = *(u16*)str;
+			if (c >= 0x829F && c < 0x82DE) {
+				c += 0xA1;
+			}
+			else if (c >= 0x82DE && c <= 0x82F1) {
+				c += 0xA2;
+			}
+			*buf = c;
+			str += 2;
+			buf++;
 		}
-		else if (c >= 0x82DE && c <= 0x82F1) {
-			c += 0xA2;
-		}
-		*buf = c;
-		str += 2;
-		buf++;
+		((u8*)buf_b)[i * 2] = 0;
 	}
-	((u8*)buf_b)[i * 2] = 0;
 
 	return strcmp((const char*)buf_a, (const char*)buf_b);
 }
 
-// NONMATCHING (88.48%): same base/str and buf/i color swap as comp_aiueo; pointer form for buf improved it from 87.87%.
+// NONMATCHING (89.57%): same as comp_aiueo; moving `str` to function scope fixes id_b to r29, leaving only the base (r31 vs r30) / str (r30 vs r31) prologue swap.
 s32 comp_aiueo_r(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
-	u16* buf;
 	const char* str;
-	s32 len;
-	u32 c;
-	s32 i;
 	s16 id_a = *a;
 	s16 id_b = *b;
+	{
+		s32 i;
+		u32 c;
+		u16* buf;
+		s32 len;
 
-	str = msgSearch(itemDataTable[id_a].name);
-	len = strlen(str) / 2;
-	buf = buf_a;
-	for (i = 0; i < len; i++) {
-		c = *(u16*)str;
-		if (c >= 0x829F && c < 0x82DE) {
-			c += 0xA1;
+		str = msgSearch(itemDataTable[id_a].name);
+		len = strlen(str) / 2;
+		buf = buf_a;
+		for (i = 0; i < len; i++) {
+			c = *(u16*)str;
+			if (c >= 0x829F && c < 0x82DE) {
+				c += 0xA1;
+			}
+			else if (c >= 0x82DE && c <= 0x82F1) {
+				c += 0xA2;
+			}
+			*buf = c;
+			str += 2;
+			buf++;
 		}
-		else if (c >= 0x82DE && c <= 0x82F1) {
-			c += 0xA2;
-		}
-		*buf = c;
-		str += 2;
-		buf++;
+		((u8*)buf_a)[i * 2] = 0;
 	}
-	((u8*)buf_a)[i * 2] = 0;
+	{
+		s32 i;
+		u32 c;
+		u16* buf;
+		const char* str;
+		s32 len;
 
-	str = msgSearch(itemDataTable[id_b].name);
-	len = strlen(str) / 2;
-	buf = buf_b;
-	for (i = 0; i < len; i++) {
-		c = *(u16*)str;
-		if (c >= 0x829F && c < 0x82DE) {
-			c += 0xA1;
+		str = msgSearch(itemDataTable[id_b].name);
+		len = strlen(str) / 2;
+		buf = buf_b;
+		for (i = 0; i < len; i++) {
+			c = *(u16*)str;
+			if (c >= 0x829F && c < 0x82DE) {
+				c += 0xA1;
+			}
+			else if (c >= 0x82DE && c <= 0x82F1) {
+				c += 0xA2;
+			}
+			*buf = c;
+			str += 2;
+			buf++;
 		}
-		else if (c >= 0x82DE && c <= 0x82F1) {
-			c += 0xA2;
-		}
-		*buf = c;
-		str += 2;
-		buf++;
+		((u8*)buf_b)[i * 2] = 0;
 	}
-	((u8*)buf_b)[i * 2] = 0;
 
 	return strcmp((const char*)buf_b, (const char*)buf_a);
 }

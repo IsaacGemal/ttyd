@@ -33,6 +33,8 @@ extern const f32 float_8_8041deb0;
 extern const f32 float_500_8041deb4;
 extern const f32 float_200_8041deb8;
 extern const f32 float_0p66667_8041debc;
+extern const Vec vec3_802f7d1c;
+extern const Vec vec3_802f7d28;
 
 extern BattleWeapon partyWeapon_VivianNormalAttack;
 extern BattleWeapon partyWeapon_VivianShadowGuard;
@@ -58,12 +60,17 @@ extern const char str_802F8060[]; // "PM_B_2"
 #define STR_SHADOW1_2 (base + 0x3F8)
 #define STR_SHADOW1_1 (base + 0x414)
 #define STR_PM_B_2 (base + 0x430)
+// The two zero vectors sit in the same .rodata pool, before the strings.
+#define VEC_POS1 (*(const volatile Vec*)(base + 0xEC))
+#define VEC_POS2 (*(Vec*)(base + 0xF8))
 #else
 #define STR_P_BIBI str_802F8018
 #define STR_PM_B_1 str_802F8020
 #define STR_SHADOW1_2 str_802F8028
 #define STR_SHADOW1_1 str_802F8044
 #define STR_PM_B_2 str_802F8060
+#define VEC_POS1 vec3_802f7d1c
+#define VEC_POS2 vec3_802f7d28
 #endif
 
 USER_FUNC(_disp_heart_entry_stop_check) {
@@ -77,8 +84,9 @@ USER_FUNC(_disp_heart_entry_stop) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (85.81%): identical instruction sequence; only the stack slot chosen for the temporary
-// second icon position differs (target reuses 0x20, ours allocates an extra Vec at 0x38).
+// Matched. The hit position must be copied through a separate `hitPos` local before `pos` (MWCC keeps
+// the zero-filled `pos` plus a dead 12-byte temp); `iconPos = pos` followed by assignments from `pos`
+// (not `+=`), with `float_5 + pos.z` commuted, gives the original's FP registers.
 void _disp_heart(CameraId cameraId, void* param) {
     EventEntry* event;
     f32 scale;
@@ -86,6 +94,7 @@ void _disp_heart(CameraId cameraId, void* param) {
     s32 b;
     BattleUnit* unit;
     BattleUnitPart* part;
+    Vec hitPos;
     Vec iconPos;
     Vec pos;
 
@@ -108,11 +117,12 @@ void _disp_heart(CameraId cameraId, void* param) {
 
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, event->field_0x90[0]));
     part = BtlUnit_GetPartsPtr(unit, event->field_0x90[1]);
-    BtlUnit_GetHitPos(unit, part, &pos.x, &pos.y, &pos.z);
-    pos.z += float_10_8041de98;
+    BtlUnit_GetHitPos(unit, part, &hitPos.x, &hitPos.y, &hitPos.z);
+    hitPos.z += float_10_8041de98;
+    pos = hitPos;
     iconPos = pos;
-    iconPos.y += float_16_8041de9c * scale;
-    iconPos.z += float_5_8041dea0;
+    iconPos.y = pos.y + float_16_8041de9c * scale;
+    iconPos.z = float_5_8041dea0 + pos.z;
     iconDispGx(&pos, 0, 0x1F2, scale);
     iconDispGx(&iconPos, 0, 0x189, scale);
 }
@@ -348,19 +358,20 @@ USER_FUNC(_vivian_make_extra_work_area) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (91.42%): 5 instructions differ, 5 missing, 5 extra, plus register differences.
+// Matched. The two intplGetValue calls take a MUST_MATCH comma expression (volatile float casts)
+// so the float constants load before event->userdata[1]; base is declared last so MWCC gives it r31.
 USER_FUNC(battle_evt_majo_disp_off) {
-#ifdef MUST_MATCH
-    const char* const base = str_802F7C30;
-#endif
     s32* args = event->args;
     BattleUnit* unit;
     BattleUnitPart* parts;
     s32 pose;
-    s32 id;
     s32 v1;
+    s32 id;
     s32 v2;
     s32 v3;
+#ifdef MUST_MATCH
+    const char* const base = str_802F7C30;
+#endif
 
     id = BattleTransID(event, evtGetValue(event, args[0]));
     v1 = evtGetValue(event, args[1]);
@@ -378,7 +389,13 @@ USER_FUNC(battle_evt_majo_disp_off) {
 
     switch (event->userdata[0]) {
     case 0:
+#ifdef MUST_MATCH
+        // MUST_MATCH: force the float-constant loads before the userdata load (see battle_item_data.c: _cam_rot).
+        parts->field_0x78 = intplGetValue(0, ((volatile f32)float_1_8041de94, (volatile f32)float_2_8041deac, event->userdata[1]),
+                                          30, float_1_8041de94, float_2_8041deac);
+#else
         parts->field_0x78 = intplGetValue(0, event->userdata[1], 30, float_1_8041de94, float_2_8041deac);
+#endif
         if (v2 != 0) {
             unit->flags |= 0x10000;
         }
@@ -406,16 +423,22 @@ USER_FUNC(battle_evt_majo_disp_off) {
             event->userdata[1]++;
         }
         if (animPoseGetLoopTimes(animPoseGetAnimPosePtr(pose)->paperId) >= float_1_8041de94) {
-            psndSFXOn_3D(STR_SHADOW1_2, &unit->mPosition);
             event->userdata[0]++;
             event->userdata[1] = 0;
+            psndSFXOn_3D(STR_SHADOW1_2, &unit->mPosition);
             if (v3 != 0) {
                 parts->attributes |= 0x01000000;
             }
         }
         break;
     case 3:
+#ifdef MUST_MATCH
+        // MUST_MATCH: force the float-constant loads before the userdata load.
+        parts->field_0x78 = intplGetValue(0, ((volatile f32)float_2_8041deac, (volatile f32)float_0_8041de8c, event->userdata[1]),
+                                          20, float_2_8041deac, float_0_8041de8c);
+#else
         parts->field_0x78 = intplGetValue(0, event->userdata[1], 20, float_2_8041deac, float_0_8041de8c);
+#endif
         event->userdata[1]++;
         if (event->userdata[1] > 20) {
             parts->field_0x78 = float_0_8041de8c;
@@ -429,11 +452,10 @@ USER_FUNC(battle_evt_majo_disp_off) {
     return 0;
 }
 
-// NONMATCHING (84.85%): 3 instructions differ, 26 missing, 2 extra, plus register differences.
+// Matched. `VEC_POS1` is a `const volatile` view of the zero vector and the two userdata stores are
+// `volatile`: without that, MWCC hoists the zero-Vec copy above the stores and puts the constant 0 in
+// r6 instead of r0 (96.01%). The `#else` form is the plain, natural source.
 USER_FUNC(battle_evt_majo_disp_on) {
-#ifdef MUST_MATCH
-    const char* const base = str_802F7C30;
-#endif
     s32* args = event->args;
     BattleUnit* unit;
     BattleUnitPart* parts;
@@ -444,6 +466,9 @@ USER_FUNC(battle_evt_majo_disp_on) {
     f32 f2;
     f32 f3;
     f32 f4;
+#ifdef MUST_MATCH
+    const char* const base = str_802F7C30;
+#endif
 
     id = BattleTransID(event, evtGetValue(event, args[0]));
     v1 = evtGetValue(event, args[1]);
@@ -456,17 +481,40 @@ USER_FUNC(battle_evt_majo_disp_on) {
     pose = *(s32*)parts->field_0x1C0;
 
     if (isFirstCall) {
+#ifdef MUST_MATCH
+        // MUST_MATCH: the volatile accesses pin the two zero stores before the zero-Vec copy.
+        *(volatile s32*)&event->userdata[0] = 0;
+        *(volatile s32*)&event->userdata[1] = 0;
+        {
+            Vec pos = VEC_POS1;
+            pos.x = f2;
+            pos.y = f3 - float_200_8041deb8;
+            pos.z = f4;
+            unit->mPosition = pos;
+        }
+#else
         event->userdata[0] = 0;
         event->userdata[1] = 0;
-        unit->mPosition.x = f2;
-        unit->mPosition.y = f3 - float_200_8041deb8;
-        unit->mPosition.z = f4;
+        {
+            Vec pos = VEC_POS1;
+            pos.x = f2;
+            pos.y = f3 - float_200_8041deb8;
+            pos.z = f4;
+            unit->mPosition = pos;
+        }
+#endif
         animEffectAsync(STR_P_BIBI, 1);
     }
 
     switch (event->userdata[0]) {
     case 0:
+#ifdef MUST_MATCH
+        // MUST_MATCH: force the float-constant loads before the userdata load.
+        parts->field_0x78 = intplGetValue(0, ((volatile f32)float_0_8041de8c, (volatile f32)float_2_8041deac, event->userdata[1]),
+                                          30, float_0_8041de8c, float_2_8041deac);
+#else
         parts->field_0x78 = intplGetValue(0, event->userdata[1], 30, float_0_8041de8c, float_2_8041deac);
+#endif
         if (event->userdata[1] == 0) {
             psndSFXOn_3D(STR_SHADOW1_1, &unit->mPosition);
         }
@@ -483,9 +531,13 @@ USER_FUNC(battle_evt_majo_disp_on) {
         if (!animEffectAsync(STR_P_BIBI, 1)) {
             return 0;
         }
-        unit->mPosition.x = f2;
-        unit->mPosition.y = f3;
-        unit->mPosition.z = f4;
+        {
+            Vec pos = VEC_POS2;
+            pos.x = f2;
+            pos.y = f3;
+            pos.z = f4;
+            unit->mPosition = pos;
+        }
         animPoseSetEffect(pose, STR_P_BIBI, 1);
         animPoseSetEffectAnim(pose, STR_PM_B_2, 1);
         event->userdata[0]++;
@@ -502,7 +554,13 @@ USER_FUNC(battle_evt_majo_disp_on) {
         }
         break;
     case 3:
+#ifdef MUST_MATCH
+        // MUST_MATCH: force the float-constant loads before the userdata load.
+        parts->field_0x78 = intplGetValue(0, ((volatile f32)float_2_8041deac, (volatile f32)float_1_8041de94, event->userdata[1]),
+                                          15, float_2_8041deac, float_1_8041de94);
+#else
         parts->field_0x78 = intplGetValue(0, event->userdata[1], 15, float_2_8041deac, float_1_8041de94);
+#endif
         event->userdata[1]++;
         if (event->userdata[1] > 15) {
             parts->field_0x78 = float_1_8041de94;

@@ -6,6 +6,7 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include "matching.h"
 // math_ext.h instead of <math.h>: the SDK math.h instantiates its sqrtf inline, whose static
 // _half/_three doubles land at the front of .rodata and shift the vec3/double/string pool retail has.
 #include "math_ext.h"
@@ -182,9 +183,20 @@ void effSpiritMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSpiritDisp, effect);
 }
 
-// NONMATCHING (91.99%): the s32->f32 conversion double now pools at the right .rodata offset, but the
-// color local and its outgoing-argument copy are at 0x8/0xc swapped, and the vertex-block constants are
-// reloaded by the original for 0.0/2.0 (and land in f1/f2) where we keep them in registers (f3/f4/f5).
+#ifdef MUST_MATCH
+// The original builds the material colour in a helper that returns it; the caller's local and its
+// outgoing-argument copy then land at 0x8/0xc as retail. Building the colour directly in the caller
+// (or in a void helper that calls GXSetChanMatColor) puts the local at 0xc and the copy at 0x8.
+static inline GXColor effSpiritMakeColor(effSpiritData* data) {
+    GXColor color = unk_80423350;
+    color.r = data->colorR;
+    color.g = data->colorG;
+    color.b = data->colorB;
+    color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
+    return color;
+}
+#endif
+
 void effSpiritDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effSpiritData* data = effect->userdata;
@@ -210,12 +222,17 @@ void effSpiritDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+#ifdef MUST_MATCH
+    color = effSpiritMakeColor(data);
+    GXSetChanMatColor(4, color);
+#else
     color = *(GXColor*)&unk_80423350;
     color.r = data->colorR;
     color.g = data->colorG;
     color.b = data->colorB;
     color.a = (u8)(float_0p8_80422274 * (f32)data->alpha);
     GXSetChanMatColor(4, color);
+#endif
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetNumTevStages(1);
@@ -231,6 +248,37 @@ void effSpiritDisp(CameraId camId, void* param) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+    // Retail's GXVert.h expands GXPosition/GXTexCoord as macros, so each FIFO store reloads its
+    // constant; the inline forms in our header CSE the loads. MATCH_F32 forces the reloads the
+    // original has for float_0/float_2; the -4 half-width and float_4 stay in registers as retail.
+    // Splitting the negate from the scaling (half = -8; half *= 0.5) keeps -4 in f2 and 4 in f1,
+    // where the single expression -float_8*float_0p5 puts them the other way.
+    {
+    f32 half = -float_8_80422278;
+    half = half * float_0p5_8042227c;
+    GXWGFifo.f32 = half;
+    GXWGFifo.f32 = float_4_80422280;
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = float_4_80422280;
+    GXWGFifo.f32 = float_4_80422280;
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = MATCH_F32(float_2_80422288);
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = float_4_80422280;
+    GXWGFifo.f32 = half;
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = MATCH_F32(float_2_80422288);
+    GXWGFifo.f32 = MATCH_F32(float_2_80422288);
+    GXWGFifo.f32 = half;
+    GXWGFifo.f32 = half;
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = MATCH_F32(float_0_80422284);
+    GXWGFifo.f32 = MATCH_F32(float_2_80422288);
+    }
+#else
     GXPosition3f32(-float_8_80422278 * float_0p5_8042227c, float_4_80422280, float_0_80422284);
     GXTexCoord2f32(float_0_80422284, float_0_80422284);
     GXPosition3f32(float_4_80422280, float_4_80422280, float_0_80422284);
@@ -239,4 +287,5 @@ void effSpiritDisp(CameraId camId, void* param) {
     GXTexCoord2f32(float_2_80422288, float_2_80422288);
     GXPosition3f32(-float_4_80422280, -float_4_80422280, float_0_80422284);
     GXTexCoord2f32(float_0_80422284, float_2_80422288);
+#endif
 }
