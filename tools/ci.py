@@ -17,12 +17,15 @@ Steps, stopping at the first failure:
    --allow-regress NAME excuses a named, not-yet-matched function's fuzzy score (and its unit's and the
    total's fuzzy score), or every measure of a named unit (e.g. MarioSt/event/evt_eff) and the total's same
    measure: for deliberate fixes or removals of wrong code that lower a score. Say why in the commit.
+   Data objects: every data object defined or changed in the diff (tools/data_check.py) must hold the bytes
+   of the original object; --allow-data-mismatch NAME excuses one.
 4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas, and a note if any unit is
    fully matched but not yet linked.
 """
 import argparse
 import os
 import local_prototypes
+import data_check
 import json
 import re
 import shutil
@@ -122,6 +125,15 @@ def extend_data_ids():
     if problems:
         fail("extend_data", "\n  " + "\n  ".join(problems))
     print(f"ok   [extend_data] ids unique within each of {len(sources)} modules' linked sources")
+
+
+def data_objects(base, allowed):
+    """The data objects the diff defines must hold the original object's bytes (objdiff scores a data relocation by
+    its symbol, so a wrong table value is invisible to the ratchet)."""
+    problems, count = data_check.check(base, set(allowed))
+    if problems:
+        fail("data", "\n  " + "\n  ".join(problems) + "\n  (--allow-data-mismatch NAME excuses an object)")
+    print(f"ok   [data] {count} changed data object(s) hold the original's bytes")
 
 
 def build():
@@ -258,6 +270,8 @@ def main():
     ap.add_argument("--allow-protected", action="store_true")
     ap.add_argument("--allow-asm", action="store_true")
     ap.add_argument("--allow-configure", action="store_true")
+    ap.add_argument("--allow-data-mismatch", action="append", default=[], metavar="NAME",
+                    help="a data object whose bytes may differ from the original's; repeatable")
     ap.add_argument("--allow-regress", action="append", default=[], metavar="NAME",
                     help="a not-yet-matched function, or a unit, whose score may drop when wrong code is fixed or "
                          "removed; repeatable")
@@ -279,6 +293,7 @@ def main():
     extend_data_ids()
     build()
     natural(a.base)
+    data_objects(a.base, a.allow_data_mismatch)
     ratchet(set(a.allow_regress))
     summary()
     unlinked()
