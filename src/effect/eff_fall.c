@@ -536,11 +536,19 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 
 // Full reconstruction of the element-0 init, the per-element state machines for types 0-8, the type 2
 // procedural vertex build, the type 7 hand-rolled sin/cos approximation, and the display registration.
-// NONMATCHING (85.36%): the remaining diffs are register allocation (the
+// NONMATCHING (86.57%): the remaining diffs are register allocation (the
 // original keeps data/effect in r26/r19 and its constant addresses are pooled through vec3_802fe418 in
 // r31, so nearly every load/store differs in its base register) plus a few scheduling/pooling sites: the
 // int-to-float double constants are loaded through the compiler's own pool instead of base+0x60/0x68, the
 // frame is 0x110 vs 0x120, and `pos` sits at 0x8 instead of the original's 0x14.
+#ifdef MUST_MATCH
+#define FB(off, sym) ((const char*)&vec3_802fe418 + (off))
+#define FV(off, sym) (*(const Vec*)((const u8*)&vec3_802fe418 + (off)))
+#else
+#define FB(off, sym) (sym)
+#define FV(off, sym) (sym)
+#endif
+
 void effFallMain(EffectEntry* effect) {
 	FallWork* data = effect->userdata;
 	FallWork* elem;
@@ -558,7 +566,7 @@ void effFallMain(EffectEntry* effect) {
 	f32 f29;
 	f32 f26;
 
-	pos = vec3_802fe424;
+	pos = FV(0xC, vec3_802fe424);
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
@@ -601,15 +609,15 @@ void effFallMain(EffectEntry* effect) {
 				if (elem->unk24 == 0) {
 					elem->unk38++;
 					if (type == 1) {
-						psndSFXOn_3D(str_802FE488, &pos);
+						psndSFXOn_3D(FB(0x70, str_802FE488), &pos);
 					} else if (i == 1) {
-						psndSFXOn_3D(str_802FE4A0, &pos);
+						psndSFXOn_3D(FB(0x88, str_802FE4A0), &pos);
 					}
 				}
 				break;
 			case 1:
 				if (type == 0 && i > 1 && flag == 0 && gp->retraceCount % 6 == 0) {
-					psndSFXOn_3D(str_802FE4A0, &pos);
+					psndSFXOn_3D(FB(0x88, str_802FE4A0), &pos);
 					flag = 1;
 				}
 				elem->y += elem->unk34;
@@ -659,7 +667,7 @@ void effFallMain(EffectEntry* effect) {
 				done++;
 				break;
 			}
-			if (gp->retraceCount & 4) {
+			if ((gp->retraceCount >> 2) & 1) {
 				elem->unk28++;
 			}
 			if (elem->unk28 >= 3) {
@@ -676,7 +684,7 @@ void effFallMain(EffectEntry* effect) {
 					elem->y = y;
 					elem->unk24 = 0;
 					elem->unk38++;
-					psndSFXOn_3D(str_802FE4B8, &pos);
+					psndSFXOn_3D(FB(0xA0, str_802FE4B8), &pos);
 				}
 				break;
 			case 1:
@@ -761,19 +769,19 @@ void effFallMain(EffectEntry* effect) {
 			switch (elem->unk38) {
 			case 0:
 				if (type == 5) {
-					if (!animGroupBaseAsync(str_802FE548, inBattle, NULL)) {
+					if (!animGroupBaseAsync(FB(0x130, str_802FE548), inBattle, NULL)) {
 						break;
 					}
 					if (elem->unk5C == -1) {
-						elem->unk5C = animPoseEntry(str_802FE548, inBattle);
+						elem->unk5C = animPoseEntry(FB(0x130, str_802FE548), inBattle);
 						animPoseSetAnim(elem->unk5C, str_80421018, 1);
 					}
 				} else {
-					if (!animGroupBaseAsync(str_802FE554, inBattle, NULL)) {
+					if (!animGroupBaseAsync(FB(0x13C, str_802FE554), inBattle, NULL)) {
 						break;
 					}
 					if (elem->unk5C == -1) {
-						elem->unk5C = animPoseEntry(str_802FE554, inBattle);
+						elem->unk5C = animPoseEntry(FB(0x13C, str_802FE554), inBattle);
 						animPoseSetAnim(elem->unk5C, str_80421018, 1);
 					}
 				}
@@ -854,13 +862,13 @@ void effFallMain(EffectEntry* effect) {
 		case 6:
 			switch (elem->unk38) {
 			case 0:
-				if (!animGroupBaseAsync(str_802FE560, inBattle, NULL)) {
+				if (!animGroupBaseAsync(FB(0x148, str_802FE560), inBattle, NULL)) {
 					break;
 				}
 				if (elem->unk5C == -1) {
-					elem->unk5C = animPoseEntry(str_802FE560, inBattle);
+					elem->unk5C = animPoseEntry(FB(0x148, str_802FE560), inBattle);
 					animPoseSetAnim(elem->unk5C, str_80421018, 1);
-					psndSFXOn_3D(str_802FE4D4, &pos);
+					psndSFXOn_3D(FB(0xBC, str_802FE4D4), &pos);
 				}
 				elem->x += elem->unk50;
 				elem->y += elem->unk54;
@@ -883,7 +891,7 @@ void effFallMain(EffectEntry* effect) {
 					elem->unk38++;
 				}
 				if (elem->unk24 == 0x64) {
-					psndSFXOn_3D(str_802FE4D4, &pos);
+					psndSFXOn_3D(FB(0xBC, str_802FE4D4), &pos);
 				}
 				break;
 			case 2:
@@ -898,7 +906,7 @@ void effFallMain(EffectEntry* effect) {
 					done++;
 				}
 				if (elem->unk24 == 0x46) {
-					psndSFXOn_3D(str_802FE4D4, &pos);
+					psndSFXOn_3D(FB(0xBC, str_802FE4D4), &pos);
 				}
 				break;
 			}
@@ -909,16 +917,16 @@ void effFallMain(EffectEntry* effect) {
 		case 7:
 			switch (elem->unk38) {
 			case 0:
-				if (!animGroupBaseAsync(str_802FE56C, inBattle, NULL)) {
+				if (!animGroupBaseAsync(FB(0x154, str_802FE56C), inBattle, NULL)) {
 					break;
 				}
-				psndSFXOn_3D(str_802FE4F0, &pos);
+				psndSFXOn_3D(FB(0xD8, str_802FE4F0), &pos);
 				if (elem->unk5C == -1) {
-					elem->unk5C = animPoseEntry(str_802FE56C, inBattle);
+					elem->unk5C = animPoseEntry(FB(0x154, str_802FE56C), inBattle);
 					animPoseSetAnim(elem->unk5C, str_80421018, 1);
 				}
 				if (elem->unk60 == -1) {
-					elem->unk60 = animPoseEntry(str_802FE56C, inBattle);
+					elem->unk60 = animPoseEntry(FB(0x154, str_802FE56C), inBattle);
 					animPoseSetAnim(elem->unk60, str_8042102C, 1);
 				}
 				/* fallthrough */
@@ -1008,7 +1016,7 @@ void effFallMain(EffectEntry* effect) {
 					elem->z = elem->unk58;
 					elem->unk38++;
 					if (elem->unk38 == 2) {
-						elem->unk64 = psndSFXOn_3D(str_802FE50C, &pos);
+						elem->unk64 = psndSFXOn_3D(FB(0xF4, str_802FE50C), &pos);
 					}
 					if (elem->unk38 != 8) {
 						effKemuri1N64Entry(4, pos.x + elem->x, pos.y + elem->y - float_40_80421050,
@@ -1041,10 +1049,10 @@ void effFallMain(EffectEntry* effect) {
 		case 8:
 			switch (elem->unk38) {
 			case 0:
-				if (!animGroupBaseAsync(str_802FE578, inBattle, NULL)) {
+				if (!animGroupBaseAsync(FB(0x160, str_802FE578), inBattle, NULL)) {
 					break;
 				}
-				elem->unk5C = animPoseEntry(str_802FE578, inBattle);
+				elem->unk5C = animPoseEntry(FB(0x160, str_802FE578), inBattle);
 				animPoseSetAnim(elem->unk5C, str_80421018, 1);
 				elem->unk38++;
 				break;
@@ -1062,7 +1070,7 @@ void effFallMain(EffectEntry* effect) {
 					evtEntry(evt_shake, 0, 0);
 					animPoseSetAnim(elem->unk5C, str_80421054, 1);
 					elem->unk38++;
-					psndSFXOn_3D(str_802FE52C, &pos);
+					psndSFXOn_3D(FB(0x114, str_802FE52C), &pos);
 				}
 				break;
 			case 3:
