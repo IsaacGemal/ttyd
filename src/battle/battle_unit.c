@@ -78,6 +78,8 @@ typedef struct BattleUnitPartFields {
     u8 pad_3[0x500 - 0x4F4];
 } BattleUnitPartFields;
 
+// BtlUnitPoseSound / BtlUnitPartPoseSound live in include/battle/battle_unit.h.
+
 typedef struct HpGaugeLocal {
     u16 field_0;  // 0x0
     u16 field_2;  // 0x2
@@ -703,14 +705,13 @@ BOOL BtlUnit_Delete(BattleUnit* unit) {
     return TRUE;
 }
 
-// Logic is byte-identical apart from register allocation. Retail colours unit=r6, id=r5, offset=r3
-// (sharing `li r3,0` for offset and moveState and using `mr. r6,r3` after BtlUnit_Entry); GC/2.6
-// keeps unit=r6, id=r5, offset=r4 and both `add r3,r31,r3; stw ...,0x120(r3)` break-case stores come
-// out as `stwx`. Rearranging declarations/loops does not move the colours.
-// NONMATCHING (93.19%): offset register rotated and break-case stores are `stwx` instead of base+0x120.
+// Retail resolves the free-list slot through a base+displacement store (`add r3,r31,r3;
+// stw r5,0x120(r3)`) while the load uses the indexed form; writing the store as a
+// dereferenced element address reproduces it (the natural form reuses the load's
+// `stwx`).
 BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
     BattleWork* wp = _battleWorkPointer;
-    s32 offset;
+    s32 i;
     s32 id;
     BattleUnit* unit;
 
@@ -718,38 +719,45 @@ BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
         return unit;
     }
     if (flags & 2) {
-        unit->moveState = offset = 0;
+        unit->moveState = 0;
         id = unit->unitId;
-        for (; offset < 0x100; offset += 4) {
+        for (i = 0; i < 64; i++) {
             if (id == -1) {
                 break;
             }
-            if (*(s32*)((u8*)wp + 0x120 + offset) == -1) {
-                *(s32*)((u8*)wp + 0x120 + offset) = id;
+            if (*(s32*)((u8*)wp + 0x120 + i * 4) == -1) {
+#ifdef MUST_MATCH
+                { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
+#else
+                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+#endif
                 break;
             }
             {
-                s32 prev = *(s32*)((u8*)wp + 0x120 + offset);
-                *(s32*)((u8*)wp + 0x120 + offset) = id;
+                s32 prev = *(s32*)((u8*)wp + 0x120 + i * 4);
+                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
                 id = prev;
             }
         }
     }
     else if (flags & 1) {
-        offset = 0xFC;
         unit->moveState = 0;
         id = unit->unitId;
-        for (; offset >= 0; offset -= 4) {
+        for (i = 63; i >= 0; i--) {
             if (id == -1) {
                 break;
             }
-            if (*(s32*)((u8*)wp + 0x120 + offset) == -1) {
-                *(s32*)((u8*)wp + 0x120 + offset) = id;
+            if (*(s32*)((u8*)wp + 0x120 + i * 4) == -1) {
+#ifdef MUST_MATCH
+                { s32* pp = &((s32*)((u8*)wp + 0x120))[i]; *pp = id; }
+#else
+                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
+#endif
                 break;
             }
             {
-                s32 prev = *(s32*)((u8*)wp + 0x120 + offset);
-                *(s32*)((u8*)wp + 0x120 + offset) = id;
+                s32 prev = *(s32*)((u8*)wp + 0x120 + i * 4);
+                *(s32*)((u8*)wp + 0x120 + i * 4) = id;
                 id = prev;
             }
         }
@@ -2254,16 +2262,25 @@ void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16
     se->field_0x18 = -1;
 }
 
+
+// Keep BtlUnit_snd_se out of line: retail calls it rather than inlining its Vec/GetPos body
+// into BtlUnit_ControlPoseSoundMain.
+#pragma dont_inline on
 s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
     Vec pos;
 
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     return BtlUnit_snd_se_pos(unit, name, b, c, &pos);
 }
+#pragma dont_inline reset
 
 
-// NONMATCHING (97.03%): `val = (s16)(c + val); val = (s16)(val + (irand(0x29)-0x14));` matches the target's
-// `(c+val)` association; the remaining diff is a one-register rotation (retail name=r27/val=r30, ours name=r29/val=r28).
+// The compound-assignment spelling `val += c; val += (irand(0x29)-0x14);` reproduces retail's whole
+// register assignment (name r27, b r31, c r28, pos r29, val r30) and all instructions; the only diff
+// is the operand order of the first add, retail `add r30,r28,r30` (c+val) vs ours `add r30,r30,r28`
+// (val+c). The plain `val = c + val;` gives retail's operand order but rotates the allocation by one
+// register, so the two can't both be had with this compiler.
+// NONMATCHING (99.86%): first add's operand order (c+val vs val+c); registers and body all match.
 #pragma dont_inline on
 s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* pos) {
     s32 handle;
@@ -2278,8 +2295,8 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
         BtlUnit_GetStatus(unit, STATUS_HUGE, &turns, &strength);
         val = (s16)(((s8)strength * 2 + 1) * -341);
     }
-    val = (s16)(c + val);
-    val = (s16)(val + (irand(0x29) - 0x14));
+    val += c;
+    val += (irand(0x29) - 0x14);
     handle = psndSFXOn_3D(name, pos);
     psndSFX_pit(handle, val);
     psndSFX_vol(handle, (u32)(b - 0xF1190000) == 0x4D80 ? psndSFX_get_vol(handle) : (u8)b);

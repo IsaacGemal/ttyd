@@ -1097,28 +1097,31 @@ inline void SoundEfxCheckCh(s32 chan) {
     }
 }
 
-// NONMATCHING (89.01%): 4 instructions differ, 13 missing, 5 extra, plus register differences.
+// `optimize_for_size on`: nudges the allocator into the original's loop-2 register assignment
+// (channel index r29, effect pointer r30, i*0x88 byte offset r28); without it MWCC picks r28/r29/r30.
+#pragma optimize_for_size on
 void SoundEfxMain(void) {
     SoundEffect* effect;
     f32 x, y, z;
-    f32 v6, v9, v10;
+    f32 v6, v10, v9;
+    f32 one;
     int i;
 
-    x = sound.prevPos.x;
-    y = sound.prevPos.y;
-    z = sound.prevPos.z;
+    one = 1.0f;
+    v9 = 0.0f;
+    v10 = 0.0f;
     v6 = ((TWO_PI * sound.unk1F4) / 360.0f);
+    sound.dir.x = sound.pos.x - sound.prevPos.x;
+    sound.dir.y = sound.pos.y - sound.prevPos.y;
+    sound.dir.z = sound.pos.z - sound.prevPos.z;
     sound.prevPos.x = sound.pos.x;
     sound.prevPos.y = sound.pos.y;
     sound.prevPos.z = sound.pos.z;
-    sound.dir.x = sound.pos.x - x;
-    sound.dir.y = sound.pos.y - y;
-    sound.dir.z = sound.pos.z - z;
-    v9 = ((1.0f * (f32)sin(v6)) + 0.0f);
-    v10 = (f32)cos(v6);
+    v9 = ((one * (f32)sin(v6)) + v9);
+    v10 = (v10 - (one * (f32)cos(v6)));
     sound.heading.x = v9;
     sound.heading.y = 0.0f;
-    sound.heading.z = -((1.0f * v10) - 0.0f);
+    sound.heading.z = v10;
     sound.up.x = 0.0f;
     sound.up.y = 1.0f;
     sound.up.z = 0.0f;
@@ -1157,6 +1160,7 @@ void SoundEfxMain(void) {
         }
     }
 }
+#pragma optimize_for_size reset
 
 inline void SoundDVDStopCh(s32 chan) {
     SoundDVD* dvd = &sound.dvds[chan];
@@ -1359,11 +1363,11 @@ void cache_flush(u32 pointerToARQRequest) {
     _ssDVDReadAsync_activeChk(0, &dvd->info);
 }
 
-// NONMATCHING (88.62%): the code is complete and does what the assembly does. What still differs is
-// register allocation and scheduling only: the inlined entry helper's `entry` and `len` land in
-// r29/r31 where the original has them in r31/r29 (`aligned` is r30 in both); the two-buffer select
-// is emitted as `subfic; slwi; lwzx` where the original does `subfic; slwi; add; lwz 0x2c`; and the
-// ARQ `dest` addends and the second block's volatile registers are scheduled in a different order.
+// NONMATCHING (99.07%): the code is complete and does what the assembly does. The instruction stream is
+// identical in order and count (225 each); what still differs is register allocation only: the inlined
+// entry helper's `entry` and `len` land in r29/r31 where the original has them in r31/r29 (`aligned`
+// is r30 in both). The buffer select, the ARQ `dest` addend order and the ARQ source/dest argument
+// order (`dest` first) are the forms that reproduce the original's `subfic; slwi; add; lwz 0x2c`.
 static inline void _ssDVDReadAsync_cache_entry(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
     u32 aligned;
     u32 len;
@@ -1384,19 +1388,19 @@ static inline void _ssDVDReadAsync_cache_entry(SoundStream* stream, SoundStreamE
     }
     aligned = (len + 0x1F) & ~0x1F;
     if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(entry->dvd, (void*)((u32*)entry)[(1 - *(u16*)entry->unk4C) + 0x0B], aligned,
+        DVDMgrReadAsync(entry->dvd, (void*)((u32*)&entry->loadBuffer)[1 - *(u16*)entry->unk4C], aligned,
                         stream->unk4 + entry->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
     } else {
-        u32 dest = entry->bytesLoaded + offset + ((u32*)sound.unk21C)[stream->unk2] + stream->unk4;
-        DCInvalidateRange((void*)((u32*)entry)[(1 - *(u16*)entry->unk4C) + 0x0B], 0x8000);
+        u32 dest = stream->unk4 + entry->bytesLoaded + offset + ((u32*)sound.unk21C)[stream->unk2];
+        DCInvalidateRange((void*)((u32*)&entry->loadBuffer)[1 - *(u16*)entry->unk4C], 0x8000);
         ARQPostRequest(&entry->request, (u32)entry, 1, 0,
-                       ((u32*)entry)[(1 - *(u16*)entry->unk4C) + 0x0B], dest, aligned, cache_flush);
+                       dest, ((u32*)&entry->loadBuffer)[1 - *(u16*)entry->unk4C], aligned, cache_flush);
     }
     entry->requestLength = len;
 }
 
-// NONMATCHING (88.62%): see the note on _ssDVDReadAsync_cache_entry above; only register allocation
-// and addressing/scheduling differ. The logic, every call, branch and store matches.
+// NONMATCHING (99.07%): see the note on _ssDVDReadAsync_cache_entry above; only register allocation
+// differs. The logic, every call, branch, store and instruction order all match.
 void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
     SoundStream* stream = &sound.streams[((ARQRequest*)pointerToARQRequest)->owner & 0xFF];
     SoundStreamEntry* entry;
@@ -1417,7 +1421,7 @@ void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
         if (stream->count == 2) {
             *(u16*)stream->entries[1].unk4C = 1;
             entry = &stream->entries[1];
-            _ssDVDReadAsync_cache_entry(stream, entry, (*(u32*)&entry->unk4C[0x14] & ~0x1F) + 0x20);
+            _ssDVDReadAsync_cache_entry(stream, entry, *(u32*)&entry->unk4C[0x14] + (0x20 - (*(u32*)&entry->unk4C[0x14] & 0x1F)));
         }
     } else {
         length = DVDMgrGetLength(stream->entries[0].dvd);
@@ -1468,7 +1472,7 @@ s16 dtbl[16] = {1, 7, 24, 59, 83, 111, 236, 555, 742, 885, 1052, 2221, 3285, 443
 
 // NONMATCHING (99.92%): the else nibble is now in r9 like the original, but its sign-extension
 // before the <<4 is fused into the shift destination (extsb r0,r9; slwi r0,r0,4) where the target
-// extends in place (extsb r9,r9; slwi r0,r9,4); only those 2 operands differ (see REPORT.md).
+// extends in place (extsb r9,r9; slwi r0,r9,4); only those 2 operands differ
 u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 count, u8* in) {
     u8* e = (u8*)entry;
     s8 delta;
@@ -1835,9 +1839,205 @@ void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3) {
     DVDMgrReadAsync(stream->entries[0].dvd, stream->entries[0].unk28, 0x100, 0, SoundSSPlayChEx_main);
 }
 
-// NONMATCHING (0.16%): 626 missing.
+static inline void _ssPlayChRead(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
+    u32 len;
+    u32 aligned;
+    u32 n;
+    SoundStreamEntry* e = entry;
+
+    len = 0x8000;
+    if (e->bytesLoaded + 0x8000 > *(u32*)&e->unk4C[0x14]) {
+        len = *(u32*)&e->unk4C[0x14] - e->bytesLoaded;
+    } else {
+        for (n = 2; n < 6; n++) {
+            if (e->bytesLoaded + n * 0x8000 <= *(u32*)&e->unk4C[0x14]) {
+                continue;
+            }
+            len -= (0x8000 - (*(u32*)&e->unk4C[0x14] - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len += 0x20 - (len & 0x1F);
+            break;
+        }
+    }
+    aligned = (len + 0x1F) & ~0x1F;
+    if (!(stream->flags & 0x400)) {
+        DVDMgrReadAsync(e->dvd, (void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned,
+                        stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
+    } else {
+        u32 dest = ((u32*)sound.unk21C)[stream->unk2] + (offset + (stream->unk4 + (e->bytesLoaded)));
+        DCInvalidateRange((void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), 0x8000);
+        ARQPostRequest(&e->request, (u32)e, 1, 0,
+                       dest, (u32)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned, cache_flush);
+    }
+    e->requestLength = len;
+}
+
 void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
-    if (result >= 0) {}
+    SoundStream* stream;
+    s32 chan;
+    u8 type;
+    u32 size;
+    StreamHeader* hdr;
+    u8 pan;
+    u8* p;
+    u8* dst;
+    u8* src;
+    u8* dst2;
+    u8* src2;
+    u32 j;
+    SoundStreamEntry* ev;
+
+    if (result < 0) {
+        return;
+    }
+
+    for (chan = 0; chan < 3; chan++) {
+        stream = &sound.streams[chan];
+        if (stream->flags && (DVDFileInfo*)&stream->entries[0].dvd->info == fileInfo) {
+            break;
+        }
+    }
+
+    hdr = (StreamHeader*)stream->entries[0].unk28;
+    type = hdr->field_0x0;
+    stream->freq = hdr->freq;
+    stream->count = hdr->count;
+    *(u32*)&stream->unk1C[0] = hdr->field_0x8;
+    *(u32*)&stream->unk1C[4] = hdr->field_0xC;
+    *(u32*)&stream->entries[0].unk4C[0x14] = hdr->field_0x10;
+    *(u32*)&stream->entries[1].unk4C[0x14] = hdr->field_0x14;
+    *(u32*)&stream->entries[0].unk4C[0x18] = hdr->field_0x18;
+    *(u32*)&stream->entries[1].unk4C[0x18] = hdr->field_0x1C;
+    *(u16*)&stream->entries[0].unk4C[2] = hdr->field_0x20;
+    *(u16*)&stream->entries[1].unk4C[2] = hdr->field_0x22;
+    *(u16*)&stream->entries[0].unk4C[4] = hdr->field_0x24;
+    *(u16*)&stream->entries[1].unk4C[4] = hdr->field_0x26;
+
+    if (*(u32*)&stream->unk1C[4] != 0xFFFFFFFF) {
+        stream->flags |= 0x200;
+    } else {
+        *(u32*)&stream->unk1C[4] = 0;
+    }
+
+    switch (type) {
+    case 0:
+        *(u32*)&stream->entries[0].unk4C[0x14] = *(u32*)&stream->unk1C[0];
+        *(u32*)&stream->entries[1].unk4C[0x14] = *(u32*)&stream->unk1C[0];
+        *(u32*)&stream->entries[0].unk4C[0x18] = *(u32*)&stream->unk1C[4];
+        *(u32*)&stream->entries[1].unk4C[0x18] = *(u32*)&stream->unk1C[4];
+        stream->unk4 = 0x40;
+        break;
+    case 1:
+        stream->flags |= 0x80;
+        *(s16*)&stream->entries[0].unk4C[6] = *(s16*)&stream->entries[0].unk4C[2];
+        *(s16*)&stream->entries[1].unk4C[6] = *(s16*)&stream->entries[1].unk4C[2];
+        stream->unk4 = 0x40;
+        break;
+    case 2:
+        src = (u8*)hdr + 0x5C;
+        dst = (u8*)&stream->entries[0].info;
+        stream->flags |= 0x100;
+        for (j = 0x20; j != 0; j--) {
+            *dst++ = *src++;
+        }
+        if (stream->count == 2) {
+            src2 = (u8*)hdr + 0xBC;
+            dst2 = (u8*)&stream->entries[1].info;
+            for (j = 0x20; j != 0; j--) {
+                *dst2++ = *src2++;
+            }
+        }
+        stream->unk4 = 0x100;
+        break;
+    }
+
+    *(u16*)&stream->entries[0].unk4C[0] = 0;
+    *(u32*)&stream->entries[0].unk38[0xC] = 0;
+    stream->entries[0].bytesLoaded = 0;
+    *(u32*)&stream->entries[0].unk38[0] = 0;
+    *(u16*)&stream->entries[0].unk4C[8] = 0;
+    *(u16*)&stream->entries[0].unk4C[0xA] = 0;
+    *(u16*)&stream->entries[0].unk4C[0xC] = 0;
+    *(u16*)&stream->entries[0].unk4C[0xE] = 0;
+    *(u16*)&stream->entries[0].unk4C[0x10] = 0;
+    *(u16*)&stream->entries[1].unk4C[0] = 0;
+    *(u32*)&stream->entries[1].unk38[0xC] = 0;
+    stream->entries[1].bytesLoaded = 0;
+    *(u32*)&stream->entries[1].unk38[0] = 0;
+    *(u16*)&stream->entries[1].unk4C[8] = 0;
+    *(u16*)&stream->entries[1].unk4C[0xA] = 0;
+    *(u16*)&stream->entries[1].unk4C[0xC] = 0;
+    *(u16*)&stream->entries[1].unk4C[0xE] = 0;
+    *(u16*)&stream->entries[1].unk4C[0x10] = 0;
+
+    if (!(stream->flags & 0x400)) {
+        *(u16*)&stream->entries[0].unk4C[0] = 1;
+        _ssPlayChRead(stream, &stream->entries[0], 0);
+        stream->flags |= 0x1000;
+        if (stream->count == 2) {
+            *(u16*)&stream->entries[1].unk4C[0] = 1;
+            ev = &stream->entries[1];
+            _ssPlayChRead(
+                stream, ev,
+                *(u32*)&ev->unk4C[0x14] + (0x20 - (*(u32*)&ev->unk4C[0x14] & 0x1F)));
+            stream->flags |= 0x2000;
+        }
+    }
+
+    size = sndStreamAllocLength(0xE00, 0);
+    p = stream->entries[0].unk28;
+    for (j = size; j != 0; j--) {
+        *p++ = 0;
+    }
+    if (stream->count == 2) {
+        p = stream->entries[1].unk28;
+        for (j = size; j != 0; j--) {
+            *p++ = 0;
+        }
+    }
+
+    pan = 0;
+    if (stream->count == 1) {
+        pan = 0x40;
+    }
+    if (!(stream->flags & 0x100)) {
+        stream->entries[0].streamId =
+            sndStreamAllocEx(0xFF, stream->entries[0].unk28, 0xE00, stream->freq, 0, pan, 0, 0, 0, 0,
+                             0x10000, _sscallback, chan, NULL);
+        if (stream->count == 2) {
+            stream->entries[1].streamId = sndStreamAllocEx(
+                0xFF, stream->entries[1].unk28, 0xE00, stream->freq, 0, 0x7F, 0, 0, 0, 0, 0x10000,
+                _sscallback, chan | 0x100, NULL);
+        }
+        stream->flags |= 8;
+    } else {
+        stream->entries[0].streamId = sndStreamAllocEx(
+            0xFF, stream->entries[0].unk28, 0xE00, stream->freq, 0, pan, 0, 0, 0, 0, 0x10001,
+            _sscallback, chan, &stream->entries[0].info);
+        if (stream->count == 2) {
+            stream->entries[1].streamId = sndStreamAllocEx(
+                0xFF, stream->entries[1].unk28, 0xE00, stream->freq, 0, 0x7F, 0, 0, 0, 0, 0x10001,
+                _sscallback, chan | 0x100, &stream->entries[1].info);
+        }
+    }
+
+    stream->unk14 = stream->vol;
+    stream->flags |= 0x10;
+    SoundSSSetPanCh(chan, (u8)stream->pan);
+
+    if (stream->flags & 0x400) {
+        u32 len;
+
+        len = DVDMgrGetLength(stream->entries[0].dvd);
+        if (stream->entries[0].bytesLoaded + 0x8000 >= len) {
+            len = len - stream->entries[0].bytesLoaded;
+        } else {
+            len = 0x8000;
+        }
+        DVDMgrReadAsync(stream->entries[0].dvd, (void*)stream->entries[0].loadBuffer,
+                        (len + 0x1F) & ~0x1F, stream->entries[0].bytesLoaded,
+                        _ssDVDReadAsync_cache_next);
+        stream->entries[0].requestLength = len;
+    }
 }
 
 s32 SoundSSCheck(s32 chan) {
@@ -2068,18 +2268,82 @@ void SoundSSMain(void) {
     }
 }
 
+// Variant of _ssDVDReadAsync_cache_entry used only by SoundSSMainInt. The two-buffer select and the ARQ
+// dest are written so MWCC emits the original's `subfic; slwi; addi 0x2c; lwzx` and `0x21c(base)` forms;
+// the shared helper above is left as-is because _ssDVDReadAsync_cache_aram needs its form.
+static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
+    u32 aligned;
+    u32 len;
+    u32 n;
+
+    len = 0x8000;
+    if (entry->bytesLoaded + 0x8000 > *(u32*)&entry->unk4C[0x14]) {
+        len = *(u32*)&entry->unk4C[0x14] - entry->bytesLoaded;
+    } else {
+        for (n = 2; n < 6; n++) {
+            if (entry->bytesLoaded + n * 0x8000 <= *(u32*)&entry->unk4C[0x14]) {
+                continue;
+            }
+            len -= (0x8000 - (*(u32*)&entry->unk4C[0x14] - (entry->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len += 0x20 - (len & 0x1F);
+            break;
+        }
+    }
+    aligned = (len + 0x1F) & ~0x1F;
+    if (!(stream->flags & 0x400)) {
+        DVDMgrReadAsync(entry->dvd, (void*)((u32*)((u8*)entry + (1 - *(u16*)entry->unk4C) * 4 + 0x2C))[0], aligned,
+                        stream->unk4 + entry->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
+    } else {
+        u32 dest = stream->unk4 + entry->bytesLoaded + offset + *(u32*)(sound.unk21C + stream->unk2 * 4);
+        DCInvalidateRange((void*)((u32*)((u8*)entry + (1 - *(u16*)entry->unk4C) * 4 + 0x2C))[0], 0x8000);
+        ARQPostRequest(&entry->request, (u32)entry, 1, 0,
+                       dest, ((u32*)((u8*)entry + (1 - *(u16*)entry->unk4C) * 4 + 0x2C))[0], aligned, cache_flush);
+    }
+    entry->requestLength = len;
+}
+
 // dont_inline keeps SoundSSMainInt out of SoundMainInt (the original keeps a
 // stack frame and real call sequence).
 #pragma dont_inline on
-// NONMATCHING (0.43%): 232 missing.
+// NONMATCHING (99.18%): instruction stream identical; only three induction/helper registers differ: the
+// original keeps the loop byte offset in r25, the entry pointer in r28 and the helper's len in r26;
+// MWCC uses r26/r25/r28 here.
 void SoundSSMainInt(void) {
     int i;
     SoundStream* stream;
+    SoundStreamEntry* entry;
 
     for (i = 0; i < 3; i++) {
         stream = &sound.streams[i];
-        if (stream->flags & 8 && !(stream->flags & 2) && stream->flags & 1) {
+        if (!(stream->flags & 8)) {
+            continue;
+        }
+        if (stream->flags & 2) {
+            continue;
+        }
+        if (!(stream->flags & 1)) {
+            continue;
+        }
 
+        if (*(u32*)&stream->entries[0].unk38[0xC] && *(s16*)&stream->entries[0].unk4C[8] == 0 &&
+            !(stream->flags & 0x1000)) {
+            entry = &stream->entries[0];
+            _ssDVDReadAsync_cache_entry_ss(stream, entry, 0);
+            stream->flags |= 0x1000;
+            if (stream->flags & 0x400) {
+                *(u16*)&stream->entries[0].unk4C[8] = 1;
+            }
+        }
+
+        if (stream->count == 2 && *(u32*)&stream->entries[1].unk38[0xC] &&
+            *(s16*)&stream->entries[1].unk4C[8] == 0 && !(stream->flags & 0x2000)) {
+            entry = &stream->entries[1];
+            _ssDVDReadAsync_cache_entry_ss(stream, entry,
+                                           *(u32*)&entry->unk4C[0x14] + (0x20 - (*(u32*)&entry->unk4C[0x14] & 0x1F)));
+            stream->flags |= 0x2000;
+            if (stream->flags & 0x400) {
+                *(u16*)&stream->entries[1].unk4C[8] = 1;
+            }
         }
     }
 }

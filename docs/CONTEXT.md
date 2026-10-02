@@ -3701,6 +3701,35 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Blocked, with the cause:** `muj_20` and `tik_00` (REL `.rodata` pool offsets: the pool order needs interleaved functions and scripts, and `rel_pool_order.py` finds no owner for the aggregate templates); `lecture_frankli_sac`, `boss_black_peach` (same family); `eff_blow_n64` (`Main`/`Entry` 99.6/99.9% with a literal pool: a compare against `0.0f` puts the constant first); `eff_pturn_n64` (4.0 pools before 360 and no source order changes it); `unit_party_vivian` (11/11 at 100% and the data generated, but the `.rodata` order needs the functions that use the pool base pointer interleaved with the data scripts and the vec3s as compiler aggregates, not named objects); `eff_hit_n64` (`dol_gen` stops: `cnt_table` has a different size in the asm than in the source); `eff_mobj_broken`, `battle_break_slot`, `evt_party`, `battle_mario` and the Grind 85/86 list as before.
 
 
+## Grind 89: the hardest functions, attempted by hand (2026-10-02, Claude Sonnet 5.5 "TTYD Claude #3", orchestrator's experiment)
+
+- Six functions from the orchestrator's list, each complete and checked against the asm, none a stub. Start 0% each. Final: `envAddTev` 99.58% (#226), `mot_slit` 99.47% (#227), `BattleSetStatusDamage` 98.63% (#228, permuter variant applied), `winLogMain` 95.42% (#229), `eki_00 ext_moamoa_main` 87.92% (#230), `rsh_06 ext_moamoa_main` 86.90% (#231). `animPoseMain` (wave57's unit) and `rsh_05` (wave57) were not touched.
+- `ext_moamoa_main` is not one function in three RELs: eki_00 is 12736 B, rsh_05 12832 B, rsh_06 12252 B, and rsh_06 differs in logic (a follower that pulls the swarm to a joint of the `base` NPC, a respawn at a random idle moamoa, camera-relative clamps). Each needs its own solve; rsh_05 is still to do.
+- What moved the large ones (details in AGENT_BRIEF): the sin/cos approximation inlined dozens of times needs coefficient *locals* (`c1 = 0.16605f, c2 = 1.0f`) or MWCC reloads them per branch (eki_00 main 42 -> 60%, `moamoa_hit_check` 68 -> 89%, `ext_moamoa_init` 80 -> 89% from the same change); a function that inlines a lot needs `#pragma inline_max_total_size(60000)` / `inline_max_size(1000)`, and callees the original calls (`moamoa_jump`) then need `#pragma dont_inline on` around their definition (60 -> 87%); `if (hit == 1) ... else if (hit == 2 || hit == 4)` where the original has a compare chain (a `switch` builds a different tree); a 10-way `switch` whose range check is already the jump table's must not be wrapped in `if (x <= 0x41)`; a state value handled by the first `if (state != 0xE)` was really `case 0xE:` of the same switch (winLogMain).
+- Experiment result for the orchestrator: all six reached the numbers above in about 1-2 hours each of one session; the rest in each is register allocation, schedule and the int-to-float conversion double (`winLogMain` reaches it through the string base register).
+- Review findings on #226-#230 (all fixed): `mot_slit` kept running after `marioChkJump()` where the original returns, wrapped key-independent turn logic inside `marioChkKey()`, and passed the wrong hitobj to `hitGetAttr`; `envAddTev` used 3x4 where the asm has 2x4 in cases 1-8 (and the reverse in case 10), which the percentage hid because the operands are one `li` each; `BattleSetStatusDamage` used three floats where the original has a `Vec`; the eki_00 escape scan must `break` at a flagged pose. Header correction kept: `BattleStatusChangeInfoSetAnnouce` takes `s32 type` (the asm reads a full int).
+- The class of bug to watch for in hand-written large functions (and in agent output generally): early `return` versus `break`, which statements sit inside a condition, and enum constants that compile to the right instruction count with the wrong immediate. A high percentage does not prove these; reading the diff rows that are not register renames does.
+## Waves 55-57: wave 55's last agents, wave 56, wave 57 batch 1 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 57** (00:33 on main 23988ae): 124 agents, wave 56's recipe (up to six continuation passes, 2-hour budgets on
+  groups over 2.5 KB). Mac builds are back to `nice -n 10 ninja -j4` / `CI_JOBS=4` (Isaac is using the Mac); main
+  reports come from the tower's base builds.
+- Batch (wave 55's last 8 units, wave 56's 11 agents, wave 57's first 35; onto main 720fc14): 8,992 -> 9,019.
+  Data fixes: statuswindow's `gauge_wakka` holds 0x1C0..0x1CF in order (adjacent halfwords were swapped; Claude #1's
+  [data] check), party.c's `vec3_802ccd30` is {1, 1, 1} as the original. extdrv as on main (an agent wrote inline
+  `asm`). When a .c goes back to main, the agent's header edits for it can no longer agree (a table declared as
+  `u32[3]` in the header and `u8[]` in the file): revert the header with it.
+- Review (`scratch/wave57/review1.md`, half the files): `kururing_capture` (under MUST_MATCH) built the int->float
+  pair wrong (the xored value in the high word, the low word left as maxTmp.y's bits), so C_MTXPerspective got a
+  garbage aspect ratio: as on main. partyRideMain, party_motion_homing_fly and mobj_lv_blk_evt (named objects read
+  past vec3_802ccd30 / vec3_802f3e40 / vec3_802c3dc8) unwritten again. Open (LOW): spline_maketable's sqrt constants
+  through vec3_802c16d8 + 0x2A8, unused `u8* p` locals in mapdrv, mapdrv.h declaring vec3_802c16e4 as u8[].
+- Claude #1's second review of #236: animPoseEntry's already-loaded paths reached `pose->fileId = fileId` and
+  `file->textureId = texId` with both unset (retail stores the loop counters r25/r22): as on main. winNameGX's third
+  branch is `else if (type == 2)` in retail, and winMailDisp read vec3s past str_802F3FE8: both unwritten again.
+  seq_title (L_titleInit/titleMain passed strings as offsets from vec3_802c11a0) as on main. Open (LOW):
+  battle_menu_disp's `*(GXColor*)&float_3p0039_8041c138` is really a GXColor (0x40404000).
+
 ## Grind 90: win_log review fixes and known rule gaps (2026-10-02, Claude Sonnet 5.5 "TTYD Claude #3")
 
 `capture` read the tattle camera table one level too deep (`data[0]` is the table, `data[1]` the byte count); fixed. `msg_help` is now a function-local `static` in winLogInit and `pos_tbl` a function-local non-const `static` in mapGX, matching the original `msg_help$506` (.sdata) and `pos_tbl$1271` (.data). Still open in `win_log.c`: the functions are in asm order where rule 18 wants reverse order, and the MUST_MATCH `LV`/`RO`/`HALF_FOV_TAN` macros read named objects as offsets from `str_802F5EB8` (rule 13).

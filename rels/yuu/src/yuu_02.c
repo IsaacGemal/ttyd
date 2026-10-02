@@ -170,9 +170,30 @@ void unk_yuu_00001054(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (83.03%): the loop body and allocation match exactly. Only the loop preamble
-// scheduling differs: MWCC loads the 1.0f constant three instructions before the target does and
-// emits `li r3, 0` where the target coalesces the byte-offset induction var to `mr r3, r9`.
+#ifdef MUST_MATCH
+// Match-only shape: with this loop written inline in the function below, MWCC materialises the
+// byte-offset induction variable's init as `li r3,0`, which lets the scheduler sink the index init
+// and hoist the 1.0f load (94.03%, 6 instructions off). Wrapped as an inlined helper the same loop
+// gets the target's `li r9,0` / `mr r3,r9` init and preheader schedule. The natural inline form is
+// the `#else` branch of the loop below. The one remaining diff is a register swap in this loop's
+// body: the target keeps monte_p in r8 and the row base in r10 (`addi r10,r3,0x8`,
+// `add r10,r8,r10`), ours has them the other way. Tried to flip it (all still 99.36%): helper
+// return type/params, extra locals, declaration order, `register`, loop/body reorders, field-vs-base
+// stores, and the opt_lifetimes / global_optimizer / opt_dead_assignments / opt_common_subs /
+// scheduling / optimize_for_size pragmas.
+static inline void monte_fill(void) {
+    s32 i;
+    for (i = 0; i < monte_p->count; i++) {
+        f32* base = (f32*)((u8*)&monte_p[i] + 8);
+        *(Vec*)&base[1] = vec3_yuu_00014008;
+        base[4] = 1.0f;
+        monte_p[i].active = 1;
+    }
+}
+#endif
+
+// NONMATCHING (84.58%): the whole function matches except a single register swap in the first
+// loop (target monte_p=r8/base=r10, ours swapped); the helper comment above explains the rest.
 USER_FUNC(unk_yuu_00000f1c) {
     s32 already = 0;
     s32 count;
@@ -189,12 +210,16 @@ USER_FUNC(unk_yuu_00000f1c) {
         memset(monte_p, 0, count * sizeof(MonteEntry));
         monte_p->count = count;
         monte_p->work = work;
+#ifdef MUST_MATCH
+        monte_fill();
+#else
         for (i = 0; i < monte_p->count; i++) {
             f32* base = (f32*)((u8*)&monte_p[i] + 8);
             *(Vec*)&base[1] = vec3_yuu_00014008;
             base[4] = 1.0f;
             monte_p[i].active = 1;
         }
+#endif
     }
     for (i = 0; i < monte_p->count; i++) {
     }

@@ -84,12 +84,6 @@ typedef struct CreditsPoseEntry {
     /* 0x14 */ Mtx matrix;
 } CreditsPoseEntry;
 
-extern GXColor dat_end_00002f2c;
-extern GXColor zero_end_00002f30;
-extern GXColor zero_end_00002f34;
-extern GXColor dat_end_00002f38;
-extern GXColor zero_end_00002f3c;
-extern GXColor dat_end_00002f64;
 
 #pragma pool_data off
 
@@ -425,10 +419,12 @@ s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.69%): register allocation only; the R_credits_npc_info base is cached where the original
-// recomputes it, and constant-pool symbols differ.
+// NONMATCHING (95.69%): an explicit `off = idx*0xC`, and a block-scoped `CreditsNpcInfo*
+// npc` kept live across the animPoseEntry call reproduce the r27 base caching and the 1368 B size. Left is only
+// the `fmuls f31,f0`/`f0,f31` operand order.
 s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
     s32 idx = evtGetValue(event, event->args[0]);
+    s32 off = idx * 0xC;
     CreditsPoseEntry* entry;
     s32 inBattle = (gp->inBattle != 0);
     f32 f31;
@@ -438,10 +434,10 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
     Mtx mtx2;
     Mtx mtx3;
 
-    if (((CreditsNpcInfo*)R_credits_npc_info)[idx].event != NULL) {
-        evtEntry(((CreditsNpcInfo*)R_credits_npc_info)[idx].event, 0, 0);
+    if (((CreditsNpcInfo*)((u8*)R_credits_npc_info + off))->event != NULL) {
+        evtEntry(((CreditsNpcInfo*)((u8*)R_credits_npc_info + off))->event, 0, 0);
         if ((u32)(idx + 5) < 0x98) {
-            animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[idx + 5].name, inBattle, NULL);
+            animGroupBaseAsync(((CreditsNpcInfo*)((u8*)R_credits_npc_info + off + 0x3C))->name, inBattle, NULL);
         }
         return EVT_RETURN_DONE;
     }
@@ -470,7 +466,7 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
                 break;
         }
         if ((u32)(idx + 5) < 0x98) {
-            animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[idx + 5].name, inBattle, NULL);
+            animGroupBaseAsync(((CreditsNpcInfo*)((u8*)R_credits_npc_info + off + 0x3C))->name, inBattle, NULL);
         }
         event->userdata[0] = (s32)entry;
     }
@@ -498,18 +494,21 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
             f29 = 100.0f;
             break;
     }
-    if (animGroupBaseAsync(((CreditsNpcInfo*)R_credits_npc_info)[idx].name, inBattle, NULL) == 0) {
-        return EVT_RETURN_BLOCK;
-    }
-    switch (entry->state) {
+    {
+        CreditsNpcInfo* npc = (CreditsNpcInfo*)((u8*)R_credits_npc_info + off);
+
+        if (animGroupBaseAsync(npc->name, inBattle, NULL) == 0) {
+            return EVT_RETURN_BLOCK;
+        }
+        switch (entry->state) {
         case 0:
             {
                 u32 type;
 
                 EXIGetType(0, 2, &type);
                 if (type != 0x05070000) {
-                    entry->poseId = animPoseEntry(((CreditsNpcInfo*)R_credits_npc_info)[idx].name, inBattle);
-                    animPoseSetAnim(entry->poseId, ((CreditsNpcInfo*)R_credits_npc_info)[idx].anim, 1);
+                    entry->poseId = animPoseEntry(npc->name, inBattle);
+                    animPoseSetAnim(entry->poseId, ((CreditsNpcInfo*)((u8*)R_credits_npc_info + off))->anim, 1);
                 } else {
                     entry->poseId = animPoseEntry("a_mario", inBattle);
                     animPoseSetAnim(entry->poseId, "M_W_1", 1);
@@ -525,11 +524,12 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
                 return EVT_RETURN_DONE;
             }
             break;
+        }
     }
     PSMTXTrans(mtx1, 0.0f, f29, 0.0f);
     PSMTXRotRad(mtx2, 'z', 0.017453292f * entry->frame);
     PSMTXConcat(mtx2, mtx1, mtx1);
-    PSMTXTrans(mtx2, 0.5f * f31, 0.5f * f30, 0.0f);
+    PSMTXTrans(mtx2, f31 * 0.5f, f30 * 0.5f, 0.0f);
     PSMTXConcat(mtx2, mtx1, entry->matrix);
     PSMTXScale(mtx3, 1.0f, 1.0f, 0.01f);
     PSMTXConcat(entry->matrix, mtx3, entry->matrix);
@@ -578,6 +578,7 @@ EVT_END()
 
 #define WORK ((CreditsWork*)dat_ptr_end_00003218[0])
 
+
 // The original builds each GXColor in a stack temp and copies it to the by-value
 // argument slot; doing the build and the call in an inline reproduces that pair.
 static inline void setChanMatColorGX(const GXColor* base, u8 a) {
@@ -591,24 +592,33 @@ static inline void setTevColorGX(const GXColor* base, u8 a) {
     GXSetTevColor(1, c);
 }
 
-// NONMATCHING (98.72%): mode test compiles to the inverted diamond (`beq then; b else; then` in retail
-// vs `bne else; then` here) and the original copies camPos through a second Vec temp (0x38 -> 0x5c)
-// before C_MTXLookAt; a separate Vec copy fixes the frame but lands the other slots wrong.
+const GXColor dat_end_00002f2c = {0xFF, 0xFF, 0xFF, 0x00};
+const GXColor zero_end_00002f30 = {0x00, 0x00, 0x00, 0x00};
+const GXColor zero_end_00002f34 = {0x00, 0x00, 0x00, 0x00};
+const GXColor dat_end_00002f38 = {0xFF, 0xFF, 0xFF, 0x00};
+const GXColor zero_end_00002f3c = {0x00, 0x00, 0x00, 0x00};
+const Vec vec3_end_00002f40 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_end_00002f4c = {0.0f, 1.0f, 0.0f};
+const Vec vec3_end_00002f58 = {0.0f, 0.0f, 0.0f};
+const GXColor dat_end_00002f64 = {0xFF, 0xFF, 0xFF, 0x00};
+
+// NONMATCHING (99.98%): the frame, the GXColor temp pairs, the second Vec copy and the loop regs now match.
+// What is left is one register swap: the second GXBegin block's width temp is f30 here vs f29 in retail
+// (retail keeps f30 = the 2^52 mask live across the block, so its width result lands in the lower f29).
 void unk_end_00001324(CameraId cameraId, void* param) {
-    CameraEntry* cam = camGetPtr(cameraId);
-    s32 var1 = evtGetValue(NULL, GW(11));
-    s32 var2 = evtGetValue(NULL, GW(12));
+    s32 i;
     GXTexObj texObj;
     Mtx mtx1;
     Mtx mtx2;
     Mtx mtx3;
-    GXColor color;
     Vec camPos;
     Vec camUp;
     Vec target;
     f32 width;
     f32 height;
-    s32 i;
+    CameraEntry* cam = camGetPtr(cameraId);
+    s32 var1 = evtGetValue(NULL, GW(11));
+    s32 var2 = evtGetValue(NULL, GW(12));
 
     if (WORK->image == NULL) {
         return;
@@ -629,9 +639,7 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
 
-    color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-    color.a = WORK->field_08;
-    GXSetChanMatColor(4, color);
+    setChanMatColorGX(&dat_end_00002f2c, WORK->field_08);
 
     switch (WORK->mode) {
         case 0:
@@ -639,18 +647,14 @@ void unk_end_00001324(CameraId cameraId, void* param) {
             GXLoadTexObj(&texObj, 0);
             break;
         case 1:
-            color = (GXColor){0x00, 0x00, 0x00, 0x00};
-            color.a = WORK->field_10;
-            GXSetTevColor(1, color);
+            setTevColorGX(&zero_end_00002f30, WORK->field_10);
             TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x31);
             GXLoadTexObj(&texObj, 0);
             TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x32);
             GXLoadTexObj(&texObj, 1);
             break;
         case 2:
-            color = (GXColor){0x00, 0x00, 0x00, 0x00};
-            color.a = WORK->field_10;
-            GXSetTevColor(1, color);
+            setTevColorGX(&zero_end_00002f34, WORK->field_10);
             TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x32);
             GXLoadTexObj(&texObj, 0);
             TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x33);
@@ -716,14 +720,10 @@ void unk_end_00001324(CameraId cameraId, void* param) {
 
     for (i = 0; i < 2; i++) {
         if (i == 0) {
-            color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-            color.a = WORK->field_08;
-            GXSetChanMatColor(4, color);
+            setChanMatColorGX(&dat_end_00002f38, WORK->field_08);
             GXSetZMode(1, 3, 0);
         } else {
-            color = (GXColor){0x00, 0x00, 0x00, 0x00};
-            color.a = WORK->field_08;
-            GXSetChanMatColor(4, color);
+            setChanMatColorGX(&zero_end_00002f3c, WORK->field_08);
             GXSetZMode(1, 4, 0);
         }
         GXBegin(0x80, 0, 4);
@@ -740,18 +740,22 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     }
 
     if (WORK->field_0C > 0) {
-        camPos = (Vec){0.0f, 0.0f, 0.0f};
-        camPos.z = 240.0f / (f32)tan(0.21816615760326385);
-        camUp = (Vec){0.0f, 1.0f, 0.0f};
-        target = (Vec){0.0f, 0.0f, 0.0f};
+        Vec camPosBuild;
+
+        camPosBuild = vec3_end_00002f40;
+        {
+            f32 tanVal = (f32)tan(0.21816615760326385);
+            camPosBuild.z = 240.0f / tanVal;
+        }
+        camPos = camPosBuild;
+        camUp = vec3_end_00002f4c;
+        target = vec3_end_00002f58;
         GXSetNumTevStages(1);
         GXSetTevOrder(0, 0, 0, 4);
         GXSetTevOp(0, 0);
         TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)WORK->image + 0xA0), &texObj, 0x34);
         GXLoadTexObj(&texObj, 0);
-        color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-        color.a = WORK->field_0C;
-        GXSetChanMatColor(4, color);
+        setChanMatColorGX(&dat_end_00002f64, WORK->field_0C);
         GXSetZMode(1, 3, 0);
         C_MTXLookAt(mtx3, &camPos, &camUp, &target);
         PSMTXTrans(mtx1, 0.0f, -138.0f, 0.0f);
@@ -947,12 +951,10 @@ typedef struct CreditsEndingRecord {
     /* 0x18 */ const char* msgB[3];
 } CreditsEndingRecord;
 
-// NONMATCHING (97.24%): frame 0x850 vs 0x860; MWCC folds `offset` into the live record
-// pointer (a temp, not a callee-saved GPR), so only 12 of the original 13 callee-saved
-// regs are used, `event` lands in r29 not r27, and GW(11) reads through rec not base+offset.
+// NONMATCHING (97.24%): register allocation (`event` in r29 not r27, `fnmsubs` order).
 s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
-    CreditsEndingRecord* rec;
     s32* pEntry;
+    CreditsEndingRecord* rec;
     s32 i;
     s32 offset;
     s32 x;
@@ -1115,6 +1117,7 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
     event->userdata[1] = index;
     return EVT_RETURN_BLOCK;
 }
+
 
 s32 unk_end_00000a6c(EventEntry* event, BOOL isFirstCall) {
     s32 flag = (gp->inBattle != 0);

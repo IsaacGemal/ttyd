@@ -314,10 +314,9 @@ BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 	return result;
 }
 
-// NONMATCHING (93.63%): header declares `s8 type`, but retail reads/writes a full int (no extsb for the
-// list comparison, extsb only at the _get_pri call), so `type + 0` recovers the sign-extension; still differs
-// in count/pos/loop induction register allocation and one extra saved register (r24) caused by that cast.
-void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2) {
+// NONMATCHING (96.17%): retail reads/writes a full int; still differs in count/pos/loop induction register
+// allocation and one extra saved register.
+void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2) {
 	BattleStatusChangeEntry* list = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
 #ifdef MUST_MATCH
 	s8 pri = _get_pri(type + 0);

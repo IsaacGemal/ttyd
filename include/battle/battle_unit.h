@@ -593,7 +593,12 @@ typedef struct BattleUnit {
     ItemDropData* dropTable;                     // 0x308
     u8 field_0x30C[0x30D - 0x30C];               // 0x30C
     u8 mMoveColorLv;                             // 0x30D
-    u8 field_0x30E[0x334 - 0x30E];               // 0x30E
+    u8 field_0x30E[0x320 - 0x30E];               // 0x30E
+    EffectEntry* mSleepEff;                      // 0x320
+    EffectEntry* mFireEff;                       // 0x324
+    EffectEntry* mFreezeEff;                     // 0x328
+    EffectEntry* mBiribiriEff;                   // 0x32C
+    u8 field_0x330[0x334 - 0x330];               // 0x330
     s16 mBurnDamageFlameState;                   // 0x334
     s16 mbBurnDamageFlameActive;                 // 0x336
     s32 mBurnDamageFlameAnimTimer;               // 0x338
@@ -602,6 +607,26 @@ typedef struct BattleUnit {
     BattleWorkStatusIcon mStatusIconWork;        // 0x344
     u8 field_0xAE4[0xB30 - 0xAE4];               // 0xAE4
 } BattleUnit;
+
+// A 0x14-byte pose-sound table entry; the layout BtlUnit_ControlPoseSoundMain walks.
+typedef struct BtlUnitPoseSound {
+    const char* poseName;                                          // 0x0
+    f32 volume;                                                    // 0x4
+    s32 (*callback)(BattleUnit*, struct BtlUnitPoseSound*, void*); // 0x8
+    const char* soundName;                                         // 0xC
+    s16 pitch;                                                     // 0x10
+    u16 flags;                                                     // 0x12
+} BtlUnitPoseSound;
+
+// The pose-sound playback state that follows the table pointer in BattleUnitPart (part+0x4D0).
+typedef struct BtlUnitPartPoseSound {
+    void* table;       // 0x0 (0x4D0)
+    s32 frame;         // 0x4
+    f32 prev;          // 0x8
+    f32 cur;           // 0xC
+    s32 count;         // 0x10
+    u8 flag;           // 0x14
+} BtlUnitPartPoseSound;
 
 typedef struct BattleUnitKind {
     BattleUnitType mUnitType;          // 0x0

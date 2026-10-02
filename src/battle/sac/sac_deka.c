@@ -490,21 +490,28 @@ void yuka_disp(CameraId cameraId, void* param) {
 }
 
 // .text:0x83C | 0x8024380C | size: 0x28C
-// NONMATCHING (94.78%): algorithm matches; only FPR/GPR allocation and scheduling
-// differ (target holds left/right in f28/f29 and emits `fmuls f3,f3,f4`, ours f29/f27
-// and `fmuls f3,f4,f3`). Writing `(f32)p->height * 0.5f` lifted it 94.56 -> 94.78.
+// The residual is FPR allocation/scheduling: target keeps the y midpoint in f2 (so it can
+// hoist the `tan` argument load into the freed f1 before the camera stores) and emits
+// `fmuls f2,f2,f4`; ours materialises the y product in f1 and cannot hoist. Declaring the
+// three sums as named locals (`sx/sy/sz`) lifted it 94.78 -> 94.87.
+// NONMATCHING (94.87%): algorithm and every call/constant match; only that FPR/schedule
+// colouring differs.
 void yuka_capture(CameraId cameraId) {
     DekaWork* p = get_ptr();
     CameraEntry* cam = camGetPtr(cameraId);
     CameraEntry save;
     Vec target;
     f32 t;
+    f32 sx, sy, sz;
 
     memcpy(&save, camGetPtr(cameraId), 0x260);
 
-    target.x = (p->plane0.x + p->plane1.x) * float_0p5_80421e54;
-    target.y = (p->plane0.y + p->plane1.y) * float_0p5_80421e54;
-    target.z = (p->plane0.z + p->plane1.z) * float_0p5_80421e54;
+    sx = p->plane0.x + p->plane1.x;
+    sy = p->plane0.y + p->plane1.y;
+    sz = p->plane0.z + p->plane1.z;
+    target.x = sx * float_0p5_80421e54;
+    target.y = sy * float_0p5_80421e54;
+    target.z = sz * float_0p5_80421e54;
 
     cam->cameraUp = vec3_803005e0;
     cam->cameraPos = target;
@@ -538,6 +545,8 @@ static inline GXColor disp2D_color(GXColor base, u8 alpha) {
     return base;
 }
 #endif
+
+
 
 
 // .text:0x1158 | 0x80244150 | size: 0x48
@@ -1001,9 +1010,12 @@ s32 main_deka(EventEntry* event, s32 arg) {
 }
 
 // .text:0x29F8 | 0x802459F0 | size: 0x2D8
-// NONMATCHING (86.59%): algorithm matches; the original pools the three zero Vecs and
-// double_to_int_80300630 through one base (r30=&vec3_803004f8), which the missing
-// .rodata symbols in this unit prevent; register/stack allocation then differs.
+// Every instruction matches except the compiler's int->float magic constant: the original
+// pools `double_to_int_80300630` off `r30=&vec3_803004f8` (`lfd f6, 0x138(r30)`), ours emits
+// an anonymous `@735` with its own `lis` because `vec3_803004f8` is only an extern. Using two
+// separate Vec locals (`v`, `v2`) instead of reusing one was the key to the frame/register
+// layout (86.59 -> 98.18).
+// NONMATCHING (98.18%): only that unpolled magic constant differs.
 static void yuka_init(void) {
 #ifdef MUST_MATCH
     const u8* base = (const u8*)&vec3_803004f8;
@@ -1046,7 +1058,7 @@ static void yuka_init(void) {
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 0x81; j++) {
-            Vec v;
+            Vec v, v2;
             f32 x = p->plane0.x + (f32)p->width * float_0p0078125_80421eac * (f32)j;
             f32 z = p->plane0.z + (f32)p->height * (f32)i;
 
@@ -1055,20 +1067,20 @@ static void yuka_init(void) {
             v.x = x;
             v.z = z;
             mesh->disp[i][j] = v;
-            v = *(Vec*)(base + 0x0C);
-            v.x = x;
-            v.z = z;
-            mesh->pos[i][j] = v;
+            v2 = *(Vec*)(base + 0x0C);
+            v2.x = x;
+            v2.z = z;
+            mesh->pos[i][j] = v2;
             mesh->normal[i][j] = *(Vec*)(base + 0x18);
 #else
             v = vec3_803004f8[0];
             v.x = x;
             v.z = z;
             mesh->disp[i][j] = v;
-            v = vec3_803004f8[1];
-            v.x = x;
-            v.z = z;
-            mesh->pos[i][j] = v;
+            v2 = vec3_803004f8[1];
+            v2.x = x;
+            v2.z = z;
+            mesh->pos[i][j] = v2;
             mesh->normal[i][j] = vec3_803004f8[2];
 #endif
             mesh->texU[i][j] = float_0p0078125_80421eac * (f32)j;

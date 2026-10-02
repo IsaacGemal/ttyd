@@ -91,6 +91,23 @@ RankUpData _rank_up_data[] = {
     {0xFFFF, 0, NULL, NULL},
 };
 
+
+const char str_802FDE74[] = "btl_msg_mj_last";
+const Vec vec3_802fde84 = {0.0f, 0.0f, 0.0f};
+const char str_802FDE90[] = "nozzle_l";
+const char str_802FDE9C[] = "nozzle_c";
+const char str_802FDEA8[] = "nozzle_r";
+const char str_802FDEB4[] = "confetti";
+const char str_802FDEC0[] = "levelup";
+const char str_802FDEC8[] = "SFX_PARTY_BATTLE_SUBMOVE1L";
+const char str_802FDEE4[] = "SFX_PARTY_BATTLE_SUBMOVE1R";
+const char str_802FDF00[] = "SFX_PARTY_BATTLE_SUBHANG1";
+const char str_802FDF1C[] = "SFX_VOICE_MARIO_PAUSE2";
+const char str_802FDF34[] = "spotlight";
+const char str_802FDF40[] = "SFX_BTL_LVUP_BLOCK_MOVE1";
+const char str_802FDF5C[] = "SFX_BTL_LVUP_BLOCK_HIT1";
+const char str_802FDF74[] = "SFX_BTL_LVUP_CURSOR1";
+
 s32 _koura_delete_event[] = {
     0x0003005B, (s32)_check_guard_koura, 0xFFFFFFFD, 0xFE363C8A,
     0x00020019, 0xFE363C8A, 0xFFFFFFFF, 0x0003005B,
@@ -149,7 +166,7 @@ extern BattleDispPose pose_table_nokotarou_stay[];
 // (Without this mwcc inlines _audience_Whistle_control, btlseqEnd_DispMain, ... into btlseqEnd.)
 #pragma dont_inline on
 // NONMATCHING (95.47%): logic matches; remaining diffs are register allocation (mwcc picks r31 for wp here
-// instead of r26) and a few scheduling/switch-tree differences. See REPORT.md.
+// instead of r26) and a few scheduling/switch-tree differences.
 void btlseqEnd(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     FieldBattleInfo* info = wp->fbatInfo;
@@ -915,7 +932,7 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     return (event->userdata[1] > 0) ? 0 : 2;
 }
 
-// NONMATCHING (98.19%): rebuilt from the asm. Body matches; only the .rodata constant base/offsets differ.
+// NONMATCHING (98.32%): rebuilt from the asm. Body matches; only the .rodata constant base/offsets differ.
 s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     BattleSpotEntry* entry;
@@ -1018,14 +1035,6 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
     return (event->userdata[1] < 4) ? 0 : 2;
 }
 
-// NONMATCHING (99.76%): every instruction matches; all 30 objdiff differences are DIFF_ARG_MISMATCH, not
-// opcode/register/scheduling. 27 are the six .rodata Vec pairs + three zero Vecs: ours are at 0xD8+, the
-// original's at 0x1F0+, a constant 0x118 displacement because this unit's .rodata still lacks the data-table
-// strings (nozzle/confetti/levelup/SFX/spotlight) that precede them in the original. The other 3 are the
-// .sdata2 colour words (anonymous @292/@299/@306 here, dat_80420c34/38/3c in the original; same value). No edit
-// to this function can move either pool: both depend on the rest of the unit's functions/data. Verified that
-// naming the colours `extern const GXColor dat_80420c34` regresses to 92.50% (mwcc hoists the load and shifts
-// the registers), and moving the function to its reverse-asm source position only changes 0xD8 -> 0xE4.
 s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     PouchData* pouch = pouchGetPtr();
@@ -1290,11 +1299,14 @@ void _GetExpIcon_End(BattleSeqEndWork* work) {
     }
 }
 
-// NONMATCHING (97.48%): 2 missing, 1 extra, plus register differences.
+// NONMATCHING (98.79%): first two loops + iconSetPos match; only the third block's register assignment
+// differs (orig j=r31/offset=r28, ours j=r28/offset=r31).
 void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     s32 exp = *(s16*)((u8*)work + 0xA);
     s32 i;
+    s32 j;
+    f32 zero = 0.0f;
 
     for (i = 0; i < exp / 10; i++) {
         iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18), 2);
@@ -1318,10 +1330,7 @@ void _GetExpIcon_Main(BattleWork* wp) {
         *(s32*)((u8*)work + 0xCC + i * 4) = 0;
     }
     {
-        s32 rem = exp % 10;
-        s32 j;
-
-        for (j = 10; j - 10 < rem; j++) {
+        for (j = 10; j - 10 < exp % 10; j++) {
             iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
             if (*(s32*)((u8*)work + 0x80 + j * 4) <= 0) {
                 *(s32*)((u8*)work + 0x80 + j * 4) = 0x40;
@@ -1341,13 +1350,11 @@ void _GetExpIcon_Main(BattleWork* wp) {
         iconSetAlpha((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18),
                      (u8)*(s32*)((u8*)work + 0x80 + i * 4));
         iconSetPos((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18),
-                   *(f32*)((u8*)work + 0x118 + i * 0xC), 0.0f + *(f32*)((u8*)work + 0x11C + i * 0xC),
-                   *(f32*)((u8*)work + 0x120 + i * 0xC));
+                   ((f32*)((u8*)work + 0x118 + i * 0xC))[0], ((f32*)((u8*)work + 0x11C + i * 0xC))[0] + zero,
+                   ((f32*)((u8*)work + 0x120 + i * 0xC))[0]);
     }
 }
 
-// NONMATCHING (93.80%): second-loop offsets (orig preloads li 0x28 / li 0x78 and increments, ours
-// computes i*4 / i*0xc) and some register naming differ.
 void _GetExpIcon_Init(BattleSeqEndWork* arg) {
     BattleSeqEndWork* work = arg;
     s32 i;
@@ -1367,7 +1374,7 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
         iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
                    *(f32*)((u8*)work + 0x11C + i * 0xC), *(f32*)((u8*)work + 0x120 + i * 0xC));
     }
-    for (; i < 0x13; i++) {
+    for (i = 10; i < 0x13; i++) {
         sprintf(name, "_Bgsp%d", i);
         iconEntry2D(name, 0x18C);
         *(u32*)((u8*)work + 0x34 + i * 4) = (u32)iconNameToPtr(name);
@@ -1429,9 +1436,8 @@ s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
 // NONMATCHING (91.12%): 2 instructions differ, plus register differences.
 s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    BattleWork* wp = _battleWorkPointer;
     s32 val = args[0];
-    BattleSeqEndWork* work = wp->seqEndWork;
+    BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
 
     *(s32*)((u8*)work + 0x2A4) = evtGetValue(event, val);
     return 2;
@@ -1443,17 +1449,18 @@ void _GetExpIcon_Disp(CameraId camId, void* param) {
     windowDispGX_Waku_col(0, color, -76.899994f, 21.0f, 165.79999f, 24.199999f, 10.0f);
 }
 
-// NONMATCHING (68.47%): rebuilt from the asm; logic is complete. The switch, pouch checks and message
-// selection match. Remaining differences are int->float conversion codegen (the original divides the u16
-// width with srawi/addze) and instruction scheduling inside the window computation.
+// NONMATCHING (99.53%): `lines++` before the window call with window y `((u16)lines - 1) * 29` and
+// height `lines * 29 + 1` reuses the truncated `lines+1`; `s32 width` keeps clrlwi + srawi/addze, and
+// `(s32)float_neg148_80420cfc` keeps the fctiwz. 17 left: .rodata string/mask offsets + their registers.
 void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
     PouchData* pouch;
     const char* msg;
     u16 lines;
-    u16 width;
+    s32 width;
     f32 x;
+    f32 zero = 0.0f;
 
     pouch = pouchGetPtr();
     switch (*(s32*)((u8*)work + 0x10)) {
@@ -1477,21 +1484,24 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
         break;
     }
     width = FontGetMessageWidthLine(msg, &lines);
-    x = (f32)(-(s32)(width / 2));
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, x - 20.0f, -145.0f + (f32)(lines * 29),
-                          (f32)(width + 40), (f32)((lines + 1) * 29 + 1), 10.0f);
+    x = zero - (f32)(width / 2);
     lines++;
+    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, x - 20.0f, -145.0f + (f32)(((u16)lines - 1) * 29),
+                          (f32)(width + 40), (f32)(lines * 29 + 1), 10.0f);
     FontDrawStart_alpha(0xFF);
-    FontDrawMessage((s32)x, -148 + (lines - 1) * 29, msg);
+    FontDrawMessage((s32)x, (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
 }
 
-// NONMATCHING (82.23%): 8 missing, 8 extra, plus register differences.
+// NONMATCHING (85.41%): windows/strings/icon match; the rest are .rodata string+mask offsets (our .rodata is
+// 0x1A4 short, so btl_msg_* sits at +0x158 not +0x304), the str/work base swap, and len-conversion
+// scheduling. No `f32 w` local: written out twice, mwcc CSEs `6.25f * (f32)len` into the target's `fmuls`.
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
     Vec pos;
     char buf[0x14];
     u32 len;
+    f32 zero = 0.0f;
 
     pouchGetPtr();
     sprintf(buf, msgSearch("btl_msg_lvup_ok"));
@@ -1500,7 +1510,7 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
                           12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
     windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, -70.0f, -10.0f, 130.0f, 60.0f, 10.0f);
     FontDrawStart();
-    FontDrawString(buf, 0.0f - 6.25f * (f32)len, 27.0f);
+    FontDrawString(buf, zero - 6.25f * (f32)len, 27.0f);
     FontDrawString(msgSearch("btl_msg_lvup_yes"), -20.0f, -13.0f);
     FontDrawString(msgSearch("btl_msg_lvup_no"), -20.0f, -38.0f);
     pos.x = -40.0f;
@@ -1509,13 +1519,14 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     iconDispGx(&pos, 0x10, 0x18C, 1.0f);
 }
 
-// NONMATCHING (94.62%): 2 instructions differ, 2 extra, plus register differences. Known issue: strlen's result is converted unsigned in the original (no xoris); u32 len alone scores lower because the frame shifts
+// NONMATCHING (99.27%): buf[0x10] (not [8]) makes the frame match; the 6 !! left are the strlen int->float
+// conversion (target unsigned/no xoris, ours signed s32 len) - identical for len < 2^31.
 void _MarioExpDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
+    char buf[0x10];
     Vec pos;
-    char buf[8];
-    s32 len;
+    f32 lenf;
 
     pouchGetPtr();
     pos.x = 200.0f;
@@ -1523,8 +1534,8 @@ void _MarioExpDisp(CameraId camId, void* param) {
     pos.z = 0.0f;
     if (work != NULL) {
         sprintf(buf, "%2d", *(s16*)((u8*)work + 0xA));
-        len = strlen(buf);
-        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 180.0f, -160.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
+        lenf = (f32)strlen(buf);
+        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 180.0f, -160.0f, 12.5f * lenf + 65.0f, 32.0f, 10.0f);
         iconDispGx(&pos, 0x10, 0x18C, 1.0f);
         FontDrawStart();
         FontDrawString(buf, 225.0f, -163.0f);
