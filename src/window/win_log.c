@@ -941,7 +941,7 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->e7c = float_51p429_8041d8a8 * (f32)w->stoneSel;
                 while (w->e80 < w->e7c) {
-                    w->e80 = w->e80 + float_360_8041d930;
+                    w->e80 += float_360_8041d930;
                 }
                 SFX(0x209D6);
                 SFX(0x20037);
@@ -952,7 +952,7 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->e7c = float_51p429_8041d8a8 * (f32)w->stoneSel;
                 while (w->e80 > w->e7c) {
-                    w->e80 = w->e80 - float_360_8041d930;
+                    w->e80 -= float_360_8041d930;
                 }
                 SFX(0x209D6);
                 SFX(0x20037);
