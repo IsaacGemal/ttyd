@@ -1361,7 +1361,8 @@ extern const f32 float_neg1000_8041d948;
         }                                                                             \
     } while (0)
 
-// NONMATCHING: first draft, see the percentage from agent_check.
+// NONMATCHING (82.24%): behaviour complete, checked against the asm; the rest is register allocation (the original keeps
+// the stone counter in r27) and the int->float conversion double reached through the string base register.
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
@@ -1396,15 +1397,15 @@ void winLogInit(WindowWork* work) {
         EffectEntry* e;
 
         if (i < w->stoneNum) {
-            e = effStarStoneEntry(i, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc, float_2_8041d87c);
+            e = w->stones[i] =
+                effStarStoneEntry(i, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc, float_2_8041d87c);
         } else {
-            e = effStarStoneEntry(i + 7, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc,
-                                  float_2_8041d87c);
+            e = w->stones[i] = effStarStoneEntry(i + 7, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc,
+                                                 float_2_8041d87c);
             ((u8*)e->userdata)[0x5C] = 0x20;
             ((u8*)e->userdata)[0x5D] = 0x20;
             ((u8*)e->userdata)[0x5E] = 0x20;
         }
-        w->stones[i] = e;
         *(s32*)((u8*)e->userdata + 0x38) = 8;
         *(u16*)((u8*)e->userdata + 4) &= ~4;
         *(u16*)((u8*)e->userdata + 4) |= 0x20;
