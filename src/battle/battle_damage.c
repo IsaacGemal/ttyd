@@ -4,6 +4,12 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_status_effect.h"
+#include "driver/effdrv.h"
+#include "eff/eff_updown.h"
+#include "eff/n64/eff_stamp_n64.h"
+#include "eff/n64/eff_vapor_n64.h"
+#include "pmario_sound.h"
 #include "system.h"
 
 #include <string.h>
@@ -15,8 +21,8 @@
 u8 _getRegistStatus(BattleUnit* unit, s32 type);
 void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2);
 s32 _getSickStatusRate(BattleWeapon* weapon, s32 type);
-s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, s32 type,
-                          s32 rate, s32 levelDiff, u8 arg8, u8 arg9);
+s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
+                          s32 rate, s32 levelDiff, s8 turns, s8 strength);
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags);
 
@@ -481,6 +487,8 @@ void BattleAttackDeclare(s32* out1, s32* out2) {
     }
 }
 
+// dont_inline: BattleSetStatusDamage calls this out of line
+#pragma dont_inline on
 u8 _getRegistStatus(BattleUnit* unit, s32 type) {
     BattleVulnerableStatus* vuln = unit->vulnStatus;
 
@@ -533,6 +541,7 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
         return 100;
     }
 }
+#pragma dont_inline reset
 
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     BattleWork* wp = _battleWorkPointer;
@@ -609,6 +618,480 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
         *out = result;
     }
     return result;
+}
+
+// The six colour bytes the stamp effect reads (the tint and the fade-out tint).
+#define STAMP_COLOR(e, r0, g0, b0, r1, g1, b1)                           \
+    {                                                                    \
+        ((effStampData*)(e)->userdata)->field_0x38 = r0;                 \
+        ((effStampData*)(e)->userdata)->field_0x39 = g0;                 \
+        ((effStampData*)(e)->userdata)->field_0x3A = b0;                 \
+        ((effStampData*)(e)->userdata)->field_0x3B = r1;                 \
+        ((effStampData*)(e)->userdata)->field_0x3C = g1;                 \
+        ((effStampData*)(e)->userdata)->field_0x3D = b1;                 \
+    }
+
+// Applies one status (sleep, stop, poison, ...) to `unit` from an attack of `part`'s side: the immunity and
+// resist checks, the roll against `rate`, the status itself, the hit effect and the announcement. `*work` collects
+// what happened (1/2 got/lost a status, 4/8 fright/gale force, 0x10 instant kill, 0x20 sleep).
+// NONMATCHING (98.63%): register allocation differences only.
+s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
+                          s32 rate, s32 levelDiff, s8 turns, s8 strength) {
+    u8 chargeStrength;
+    u8 sp9;
+#ifdef MUST_MATCH
+    int new_var2;
+#endif
+    u8 sp8;
+    f32 x, y, z;
+    Vec hit;
+    s32 isRemoving;
+    s32 applied;
+    s32 announced;
+    s32 resist;
+    u32 resistFlag;
+#ifdef MUST_MATCH
+    f32 new_var;
+#endif
+    EffectEntry* eff;
+
+    isRemoving = 0;
+    BtlUnit_GetStatus(unit, STATUS_CHARGE, NULL, (s8*)&chargeStrength);
+    switch (type) {
+    case STATUS_FAST:
+    case STATUS_SLOW:
+        if (turns <= 0) {
+            isRemoving = 1;
+        }
+        break;
+    case STATUS_ALLERGIC:
+    case STATUS_PAYBACK:
+        if (turns <= 0) {
+            isRemoving = 1;
+        }
+        break;
+    case STATUS_HUGE:
+    case STATUS_TINY:
+    case STATUS_ATTACK_UP:
+    case STATUS_ATTACK_DOWN:
+    case STATUS_DEFENSE_UP:
+    case STATUS_DEFENSE_DOWN:
+        if (strength == 0) {
+            isRemoving = 1;
+        }
+        break;
+    case STATUS_SLEEP:
+    case STATUS_STOP:
+    case STATUS_DIZZY:
+    case STATUS_POISON:
+    case STATUS_CONFUSE:
+    case STATUS_ELECTRIC:
+    case STATUS_DODGY:
+    case STATUS_BURN:
+    case STATUS_FREEZE:
+        if (turns == 0) {
+            isRemoving = 1;
+        }
+        break;
+    case STATUS_CHARGE:
+    case STATUS_FLIPPED:
+    case STATUS_INVISIBLE:
+    case STATUS_HOLD_FAST:
+    case STATUS_HP_REGEN:
+    case STATUS_FP_REGEN:
+        break;
+    }
+    if (part->attributes & kUnk_ImmuneToDamageOrStatus) {
+        return 0;
+    }
+    if (part->attributes & kUnk_ImmuneToStatus) {
+        return 0;
+    }
+    if (BtlUnit_CheckStatus(unit, STATUS_ALLERGIC) && isRemoving == 0) {
+        return 0;
+    }
+    if (part->attributes & kUnk_ImmageToOHKO) {
+        switch (type) {
+        case STATUS_ALLERGIC:
+        case STATUS_SLEEP:
+        case STATUS_STOP:
+        case STATUS_DIZZY:
+        case STATUS_POISON:
+        case STATUS_CONFUSE:
+        case STATUS_BURN:
+        case STATUS_FREEZE:
+        case STATUS_TINY:
+        case STATUS_ATTACK_DOWN:
+        case STATUS_DEFENSE_DOWN:
+        case STATUS_SLOW:
+        case STATUS_FRIGHT:
+        case STATUS_GALE_FORCE:
+        case STATUS_INSTANT_KILL:
+            if (isRemoving == 0) {
+                return 0;
+            }
+            break;
+        }
+    }
+    if (unit->badgesEquipped.FeelingFine != 0) {
+        switch (type) {
+        case STATUS_SLEEP:
+        case STATUS_STOP:
+        case STATUS_DIZZY:
+        case STATUS_POISON:
+        case STATUS_CONFUSE:
+        case STATUS_ELECTRIC:
+        case STATUS_TINY:
+        case STATUS_ATTACK_DOWN:
+        case STATUS_DEFENSE_DOWN:
+        case STATUS_INSTANT_KILL:
+            return 0;
+        }
+    }
+    if (type == STATUS_BURN && unit->badgesEquipped.IcePower != 0) {
+        return 0;
+    }
+    if (rate <= 0) {
+        return 0;
+    }
+    resist = _getRegistStatus(unit, type);
+    resistFlag = weaponSpecial & 0x100;
+    if (resistFlag == 0 || resist == 0) {
+        rate = rate * (u8)resist / 100;
+        if (resistFlag == 0 && resist > 0) {
+            rate += levelDiff;
+        }
+    }
+    if (irand(100) >= rate) {
+        return 0;
+    }
+    applied = 0;
+    if (type == STATUS_FRIGHT) {
+        *work |= 4;
+    } else if (type == STATUS_GALE_FORCE) {
+        *work |= 8;
+    } else {
+        if (type == STATUS_SLEEP) {
+            *work |= 0x20;
+        }
+        if (type == STATUS_INSTANT_KILL) {
+            *work |= 0x10;
+        }
+        applied = BtlUnit_SetStatus(unit, (s8)type, turns, strength);
+    }
+    switch (type) {
+    case STATUS_ELECTRIC:
+    case STATUS_DODGY:
+    case STATUS_HUGE:
+    case STATUS_ATTACK_UP:
+    case STATUS_DEFENSE_UP:
+    case STATUS_CHARGE:
+    case STATUS_INVISIBLE:
+    case STATUS_FAST:
+    case STATUS_PAYBACK:
+    case STATUS_HOLD_FAST:
+    case STATUS_HP_REGEN:
+    case STATUS_FP_REGEN:
+        *work |= 2;
+        break;
+    default:
+        if (turns > 0) {
+            *work |= 1;
+        } else {
+            *work |= 2;
+        }
+        break;
+    }
+    if (applied != 0) {
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        if (unit->mAttributeFlags & 2) {
+            y = y - (f32)(BtlUnit_GetHeight(unit) / 2);
+        } else {
+            y = y + (f32)(BtlUnit_GetHeight(unit) / 2);
+        }
+        switch (unit->currentKind) {
+        case 0x17:
+        case 0x84:
+        case 0xAB:
+            x -= 300.0f;
+            z += 30.0f;
+            break;
+        }
+        switch (type) {
+        case STATUS_SLEEP:
+            effStampN64Entry(0, x, y, 10.0f + z);
+            break;
+        case STATUS_CONFUSE:
+            effStampN64Entry(1, x, y, 10.0f + z);
+            break;
+        case STATUS_STOP:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0x6E, 0x6E, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_DIZZY:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0, 0x6E, 0xDC, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_POISON:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0, 0xDC, 0, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_ELECTRIC:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_CHARGE:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0xDC, 0xDC, 0);
+            break;
+        case STATUS_PAYBACK:
+        case STATUS_HOLD_FAST:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0, 0, 0, 0xDC);
+            break;
+        case STATUS_HUGE:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0xDC, 0, 0);
+            break;
+        case STATUS_TINY:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0, 0, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_ATTACK_UP:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0xDC, 0, 0);
+            break;
+        case STATUS_ATTACK_DOWN:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0, 0, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_DEFENSE_UP:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0, 0, 0xDC);
+            break;
+        case STATUS_DEFENSE_DOWN:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0, 0, 0xDC, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_FAST:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0xDC, 0x6E, 0);
+            break;
+        case STATUS_SLOW:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0x6E, 0, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_BURN:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0, 0xDC, 0, 0);
+            break;
+        case STATUS_FREEZE:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0, 0x6E, 0xDC);
+            break;
+        case STATUS_ALLERGIC:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xA0, 0xDC, 0, 0xA, 0xA, 0xA);
+            break;
+        case STATUS_INVISIBLE:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0x6E, 0x6E, 0x6E);
+            break;
+        case STATUS_HP_REGEN:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0xDC, 0x6E, 0x6E);
+            break;
+        case STATUS_FP_REGEN:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0xA0, 0xDC, 0);
+            break;
+        case STATUS_DODGY:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0, 0xDC, 0);
+            break;
+        case STATUS_INSTANT_KILL:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xDC, 0xDC, 0xDC, 0xA, 0xA, 0xA);
+            break;
+        default:
+            eff = effStampN64Entry(2, x, y, 10.0f + z);
+            STAMP_COLOR(eff, 0xC8, 0xC8, 0xC8, 0xA, 0xA, 0xA);
+            break;
+        }
+        switch ((s32)type) {
+        case STATUS_HUGE:
+        case STATUS_TINY:
+        case STATUS_ATTACK_UP:
+        case STATUS_ATTACK_DOWN:
+        case STATUS_CHARGE:
+#ifdef MUST_MATCH
+            new_var = y;
+            effUpdownEntry(0, x, new_var, 15.0f + z, strength, 60);
+#else
+            effUpdownEntry(0, x, y, 15.0f + z, strength, 60);
+#endif
+            break;
+        case STATUS_DEFENSE_UP:
+        case STATUS_DEFENSE_DOWN:
+            effUpdownEntry(1, x, y, 20.0f + z, strength, 60);
+            break;
+        }
+    } else {
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        y += (f32)(BtlUnit_GetHeight(unit) / 2);
+        switch (type) {
+        case STATUS_BURN:
+            if (unit->mFreezeEff != NULL) {
+                effSoftDelete(unit->mFreezeEff);
+            }
+            break;
+        case STATUS_FREEZE:
+            eff = effVaporN64Entry(0, 60, x, y, z, 1.0f);
+            ((effVaporN64Data*)eff->userdata)->color1R = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color1G = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color1B = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color2R = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color2G = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color2B = 0xFF;
+            break;
+        }
+    }
+    announced = 0;
+    if (applied != 0) {
+        BtlUnit_GetStatus(unit, (s8)type, (s8*)&sp9, (s8*)&sp8);
+        switch ((s32)type) {
+        case STATUS_CHARGE:
+            if ((s8)sp8 > 0) {
+                if ((s8)chargeStrength != (s8)sp8) {
+                    BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp8, 1);
+                    BattleStatusChangeMsgSetAnnouce(unit, type, 1);
+                    announced = 1;
+                } else {
+                    BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp8, 0);
+                    BattleStatusChangeMsgSetAnnouce(unit, type, 0);
+                    announced = 1;
+                }
+            }
+            break;
+        case STATUS_POISON:
+            if ((s8)sp8 > 0) {
+                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp8, 1);
+                BattleStatusChangeMsgSetAnnouce(unit, type, 1);
+                announced = 1;
+            }
+            break;
+        case STATUS_ALLERGIC:
+        case STATUS_SLEEP:
+        case STATUS_STOP:
+        case STATUS_DIZZY:
+        case STATUS_CONFUSE:
+        case STATUS_ELECTRIC:
+        case STATUS_DODGY:
+        case STATUS_BURN:
+        case STATUS_FREEZE:
+        case STATUS_HUGE:
+        case STATUS_TINY:
+        case STATUS_ATTACK_UP:
+        case STATUS_ATTACK_DOWN:
+        case STATUS_DEFENSE_UP:
+        case STATUS_DEFENSE_DOWN:
+        case STATUS_INVISIBLE:
+        case STATUS_FAST:
+        case STATUS_SLOW:
+        case STATUS_PAYBACK:
+        case STATUS_HOLD_FAST:
+        case STATUS_HP_REGEN:
+        case STATUS_FP_REGEN:
+            if ((s8)sp9 > 0) {
+#ifdef MUST_MATCH
+                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)(new_var2 = sp9), 1);
+#else
+                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp9, 1);
+#endif
+                BattleStatusChangeMsgSetAnnouce(unit, type, 1);
+                announced = 1;
+            }
+            break;
+        }
+    }
+    BtlUnit_GetHitPos(unit, part, &hit.x, &hit.y, &hit.z);
+    if (announced != 0) {
+        switch (type) {
+        case STATUS_SLEEP:
+            psndSFXOn_3D("SFX_CONDITION_SLEEP1", &hit);
+            break;
+        case STATUS_STOP:
+            psndSFXOn_3D("SFX_CONDITION_STOP1", &hit);
+            break;
+        case STATUS_DIZZY:
+            psndSFXOn_3D("SFX_CONDITION_GURUGURU1", &hit);
+            break;
+        case STATUS_CONFUSE:
+            psndSFXOn_3D("SFX_CONDITION_CONFUSE1", &hit);
+            break;
+        case STATUS_POISON:
+            psndSFXOn_3D("SFX_CONDITION_POISON1", &hit);
+            break;
+        case STATUS_DODGY:
+            psndSFXOn_3D("SFX_CONDITION_YOKEYOKE1", &hit);
+            break;
+        case STATUS_ELECTRIC:
+            psndSFXOn_3D("SFX_CONDITION_BIRIBIRI1", &hit);
+            break;
+        case STATUS_HUGE:
+            psndSFXOn_3D("SFX_CONDITION_DEKADEKA1", &hit);
+            break;
+        case STATUS_TINY:
+            psndSFXOn_3D("SFX_CONDITION_MINIMINI1", &hit);
+            break;
+        case STATUS_DEFENSE_UP:
+            psndSFXOn_3D("SFX_CONDITION_KATIKATI1", &hit);
+            break;
+        case STATUS_DEFENSE_DOWN:
+            psndSFXOn_3D("SFX_BTL_FUNYA1", &hit);
+            break;
+        case STATUS_SLOW:
+            psndSFXOn_3D("SFX_CONDITION_SLOW1", &hit);
+            break;
+        case STATUS_BURN:
+            psndSFXOn_3D("SFX_CONDITION_FIRE1", &hit);
+            break;
+        case STATUS_FREEZE:
+            psndSFXOn_3D("SFX_CONDITION_ICE1", &hit);
+            break;
+        case STATUS_FAST:
+            psndSFXOn_3D("SFX_CONDITION_FAST1", &hit);
+            break;
+        case STATUS_HP_REGEN:
+            psndSFXOn_3D("SFX_CONDITION_REST_HP_SLOW1", &hit);
+            break;
+        case STATUS_FP_REGEN:
+            psndSFXOn_3D("SFX_CONDITION_REST_FP_SLOW1", &hit);
+            break;
+        case STATUS_ALLERGIC:
+            psndSFXOn_3D("SFX_CONDITION_ALLERGY1", &hit);
+            break;
+        case STATUS_ATTACK_UP:
+            psndSFXOn_3D("SFX_CONDITION_TUYOTUYO1", &hit);
+            break;
+        case STATUS_ATTACK_DOWN:
+            psndSFXOn_3D("SFX_CONDITION_YOWAYOWA1", &hit);
+            break;
+        case STATUS_CHARGE:
+            psndSFXOn_3D("SFX_CONDITION_CHARGE1", &hit);
+            break;
+        case STATUS_INVISIBLE:
+            psndSFXOn_3D("SFX_CONDITION_TOUMEI1", &hit);
+            break;
+        case STATUS_PAYBACK:
+            psndSFXOn_3D("SFX_CONDITION_COUNTER1", &hit);
+            break;
+        case STATUS_HOLD_FAST:
+            psndSFXOn_3D("SFX_BTL_THUNDERS_COUNTER1", &hit);
+            break;
+        }
+    }
+    return 1;
 }
 
 // The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8
