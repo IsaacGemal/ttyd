@@ -1111,6 +1111,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
 // file-scope `u8` prototype the scheduler loads p1 (arg8) before `weapon->special` (arg4), where the
 // original loads `lwz r6,0x74(r30)` first and then `lbz r10,0x11(r1)`. The jump-table reloc name
 // differs; objdiff ignores it.
+#pragma dont_inline on
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
     s32 work = 0;
@@ -1168,6 +1169,7 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
     }
     return work;
 }
+#pragma dont_inline reset
 
 #define BU_S8(u, off) (*(s8*)((u8*)(u) + (off)))
 #define BU_S32(u, off) (*(s32*)((u8*)(u) + (off)))
@@ -1183,7 +1185,11 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     s32 damage;
     s32 fpDamage;
     s32 damageCode;
-    s32 dc;
+    s32 dc1;
+    s32 dc2;
+    Vec posA;
+    Vec posB;
+    Vec posC;
 
     wp = _battleWorkPointer;
     BattleInitCounterPreCheckWork(&counter);
@@ -1196,10 +1202,9 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     damage = 0;
     if (!(weapon->special & 0x20000) && BtlUnit_GetACPossibility(unit2) != 0 && BattleActionCommandGetDefenceResult() == 5) {
         EffectEntry* eff;
-        Vec pos;
 
-        BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
-        eff = effNiceEntry(2, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
+        BtlUnit_GetHitPos(unit2, part, &posC.x, &posC.y, &posC.z);
+        eff = effNiceEntry(2, posC.x - 60.0f, 45.0f + posC.y, posC.z - 10.0f);
         ((f32*)eff->userdata)[7] = 0.75f;
         flags |= 0x80000;
         psndSFXOn("SFX_SYSTEM_GREAT1");
@@ -1311,16 +1316,16 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 damageCode = flags | 0x1D;
             }
             if ((flags & 0x100) != 0 && (statusResult & 0x10)) {
-                dc = 0x717;
+                dc1 = 0x717;
                 unit2->damagePattern = 0;
-                _checkDamageCode_EmergencyRevival(unit2, &dc);
-                BattleRunHitEvent(unit2, dc);
+                _checkDamageCode_EmergencyRevival(unit2, &dc1);
+                BattleRunHitEvent(unit2, dc1);
                 result = 18;
             } else if ((flags & 0x100) != 0 && (weapon->special & 0x80) && BtlUnit_CheckStatus(unit2, 9) != 0
                        && irand(100) < 0) {
-                dc = 0x8717;
-                _checkDamageCode_EmergencyRevival(unit2, &dc);
-                BattleRunHitEvent(unit2, dc);
+                dc2 = 0x8717;
+                _checkDamageCode_EmergencyRevival(unit2, &dc2);
+                BattleRunHitEvent(unit2, dc2);
                 result = 18;
             } else {
                 s32 var;
@@ -1399,11 +1404,9 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 BattleAudience_Case_Countered();
             }
             if (counter.field_0x18 != 0) {
-                Vec pos;
-
-                BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
-                effBombEntry(0, pos.x, pos.y, pos.z, 1.0f);
-                psndSFXOn_3D("SFX_BTL_THUNDERS_ATTACK4", &pos);
+                BtlUnit_GetHitPos(unit2, part, &posA.x, &posA.y, &posA.z);
+                effBombEntry(0, posA.x, posA.y, posA.z, 1.0f);
+                psndSFXOn_3D("SFX_BTL_THUNDERS_ATTACK4", &posA);
                 BattleFogForceStop();
             }
             BattleActionCommandStop(wp);
