@@ -18,6 +18,7 @@
 #include "driver/camdrv.h"
 #include "driver/windowdrv.h"
 #include "eff/eff_stardust.h"
+#include "eff/eff_starstone.h"
 #include "eff/eff_itemget.h"
 #include "mario/mario_motion.h"
 #include "mario/mario_cam.h"
@@ -187,35 +188,37 @@ void itemReInit(void) {
 
 
 
-// NONMATCHING (14.78%): 9 instructions differ, 434 missing, 8 extra, plus register differences.
+// NONMATCHING (99.25%): the two itemId range checks (0x72..0x78, 0x79..0x7C) compile to a single inverted branch where the original has bge + b.
 ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8) {
 	ItemWork* wp = itemGetWork();
 	ItemEntry* entry;
-	s32 evtVar;
 	int i;
-	char itemName[64];
+	s32 count;
+	int j;
+	int isGswf = 0;
+	int isLswf = 0;
+	char itemName[8];
 
-
-	evtVar = evtId;
 	if (evtId != -1) {
 		if (evtId >= GSWF(0) && evtId <= EVTDAT_GSWF_MAX) {
-			evtVar = evtId + EVTDAT_GSWF_BASE;
-			if (swGet(evtId + EVTDAT_GSWF_BASE)) {
+			isGswf = 1;
+			evtId += EVTDAT_GSWF_BASE;
+			if (swGet(evtId)) {
 				return NULL;
 			}
 		}
-		else {
-			if (evtId >= LSWF(0) && evtId <= EVTDAT_LSWF_MAX) {
-				evtVar = evtId + EVTDAT_LSWF_BASE;
-				if (_swGet(evtId + EVTDAT_LSWF_BASE)) {
-					return NULL;
-				}
+		else if (evtId >= LSWF(0) && evtId <= EVTDAT_LSWF_MAX) {
+			isLswf = 1;
+			evtId += EVTDAT_LSWF_BASE;
+			if (_swGet(evtId)) {
+				return NULL;
 			}
 		}
 	}
 
 	if (name == NULL) {
-		if (++wp->currId >= 0xFFFFF) { //fix overflow
+		wp->currId = wp->currId + 1;
+		if (wp->currId >= 0xFFFFF) {
 			wp->currId = 1;
 		}
 		sprintf(itemName, "_i%05x", wp->currId);
@@ -230,13 +233,173 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 	}
 
 	entry = wp->entries;
-	if (wp->count > 0) { //TODO: redundant check?
-		for (i = 0; i < wp->count; i++, entry++) {
-			if (!(entry->flags & 1)) {
-				break;
-			}
+	count = wp->count;
+	for (j = 0; j < count; j++, entry++) {
+		if (!(entry->flags & 1)) {
+			break;
 		}
 	}
+
+	if (j >= count) {
+		entry = wp->entries;
+		if ((entry->flags & 1) && entry->itemId == 0x79 && (entry->flags & 0x400)) {
+			itemDelete(entry->name);
+		}
+		else {
+			entry = wp->entries;
+			if ((entry->flags & 1) && entry->itemId == 0x7C && (entry->flags & 0x400)) {
+				itemDelete(entry->name);
+			}
+			else {
+				entry = wp->entries;
+				if ((entry->flags & 1) && entry->itemId == 0x7B && (entry->flags & 0x400)) {
+					itemDelete(entry->name);
+				}
+				else {
+					entry = NULL;
+				}
+			}
+		}
+		if (entry == NULL) {
+			return NULL;
+		}
+	}
+
+	memset(entry, 0, sizeof(ItemEntry));
+	strcpy(entry->name, name);
+	entry->position.x = a6;
+	entry->position.y = a7;
+	entry->position.z = a8;
+	entry->itemId = type;
+	entry->field_0x2 = a3;
+	*(s32*)((u8*)entry + 0x20) = a5;
+	entry->flags |= 1;
+	entry->scale = float_1_8041afa4;
+	entry->alpha = 0xFF;
+
+	if (evtId != -1) {
+		if (isGswf) {
+			entry->evtId = evtId;
+			entry->flags |= 0x20;
+		}
+		else if (isLswf) {
+			entry->evtId = evtId;
+			entry->flags |= 0x40;
+		}
+	}
+	else {
+		entry->evtId = -1;
+	}
+
+	if (entry->itemId < 0x79) {
+		if (entry->itemId < 0x72) {
+			goto icon;
+		}
+		entry->effect = effStarStoneEntry(entry->itemId - 0x72, a6, float_16_8041afc8 + a7, a8, float_1_8041afa4);
+	}
+	else {
+	icon:
+		entry->effect = NULL;
+		iconEntry(entry->name, ((ItemDataView*)itemDataTable)[type].icon_id);
+		iconSetPos(entry->name, a6, a7, a8);
+		iconSetScale(entry->name, entry->scale);
+		iconSetAlpha(entry->name, entry->alpha);
+	}
+
+	*(f32*)((u8*)entry + 0x84) = float_1_8041afa4;
+	*(f32*)((u8*)entry + 0x80) = float_1_8041afa4;
+	entry->field_0x68 = gp->renderTime;
+
+	if (entry->itemId < 0x7D) {
+		if (entry->itemId >= 0x79) {
+			entry->flags |= 4;
+		}
+	}
+
+	switch (a3) {
+	case 17:
+		entry->flags |= 2;
+	case 16:
+		entry->mode = 7;
+		entry->field_0x26 = 0;
+		break;
+	case 0:
+		entry->mode = 1;
+		entry->field_0x26 = 0;
+		break;
+	case 1:
+		entry->mode = 1;
+		entry->field_0x26 = 0;
+		entry->flags |= 2;
+		break;
+	case 4:
+		entry->mode = 6;
+		entry->field_0x26 = 0;
+		break;
+	case 3:
+		*(s64*)((u8*)entry + 0x78) = 5000;
+		entry->mode = 5;
+		entry->field_0x26 = 0;
+		break;
+	case 11:
+		*(u32*)((u8*)entry + 0x38) |= 0x4000;
+		*(s64*)((u8*)entry + 0x78) = 20000;
+		entry->mode = 6;
+		entry->field_0x26 = 0;
+		break;
+	case 12:
+		*(u32*)((u8*)entry + 0x38) |= 0x4000;
+		*(s64*)((u8*)entry + 0x78) = 20000;
+		entry->mode = 6;
+		entry->field_0x26 = 0;
+		entry->flags |= 0x400;
+		break;
+	case 9:
+		entry->flags |= 0x100;
+	case 8:
+		*(u32*)((u8*)entry + 0x38) |= 0x4000;
+		*(s64*)((u8*)entry + 0x78) = 8000;
+		entry->mode = 6;
+		entry->field_0x26 = 0;
+		break;
+	case 10:
+		*(u32*)((u8*)entry + 0x38) |= 0x4000;
+		*(s64*)((u8*)entry + 0x78) = 8000;
+		entry->mode = 6;
+		entry->field_0x26 = 0;
+		entry->flags |= 0x400;
+		break;
+	case 7:
+		*(u32*)((u8*)entry + 0x38) |= 0x4000;
+	case 5:
+		*(s64*)((u8*)entry + 0x78) = 5000;
+		entry->mode = 6;
+		entry->field_0x26 = 0;
+		break;
+	case 6:
+		*(s64*)((u8*)entry + 0x78) = 5000;
+		*(u32*)((u8*)entry + 0x38) |= 0x40;
+		entry->mode = 6;
+		entry->field_0x26 = 0;
+		break;
+	case 2:
+		entry->mode = 5;
+		entry->field_0x26 = 0;
+		break;
+	case 13:
+		entry->mode = 3;
+		entry->field_0x26 = 0;
+		break;
+	case 14:
+		entry->mode = 4;
+		entry->field_0x26 = 0;
+		break;
+	case 15:
+		entry->mode = 10;
+		entry->field_0x26 = 0;
+		break;
+	}
+	return entry;
 }
 
 
