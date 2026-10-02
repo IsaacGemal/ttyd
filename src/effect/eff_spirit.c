@@ -32,7 +32,10 @@ extern const f32 float_246_804222b0;
 extern const f32 float_226_804222b4;
 extern const f32 float_65_804222b8;
 
-extern GXColor unk_80423350;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423350;
 
 EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 targetX, f32 targetY, f32 targetZ,
                             f32 scale) {
@@ -51,13 +54,13 @@ EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 tar
     data->y = y;
     data->z = z;
     data->scale = scale;
-    data->scaleBase = 1.0f;
+    data->scaleBase = float_1_8042229c;
     data->tick = 0;
     data->lifetime = 1000;
     data->state = 0;
-    data->velX = 0.0f;
-    data->velY = 2.0f;
-    data->velZ = 0.0f;
+    data->velX = float_0_80422284;
+    data->velY = float_2_80422288;
+    data->velZ = float_0_80422284;
     data->startX = data->x;
     data->startY = data->y;
     data->startZ = data->z;
@@ -289,3 +292,24 @@ void effSpiritDisp(CameraId camId, void* param) {
     GXTexCoord2f32(float_0_80422284, float_2_80422288);
 #endif
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_80422270 = 0.017453292f;
+const f32 float_0p8_80422274 = 0.8f;
+const f32 float_8_80422278 = 8.0f;
+const f32 float_0p5_8042227c = 0.5f;
+const f32 float_4_80422280 = 4.0f;
+const f32 float_0_80422284 = 0.0f;
+const f32 float_2_80422288 = 2.0f;
+const f32 float_0p95_8042228c = 0.95f;
+const f32 float_0p1_80422290 = 0.1f;
+const f32 float_3p1416_80422294 = 3.1415927f;
+const f32 float_50_80422298 = 50.0f;
+const f32 float_1_8042229c = 1.0f;
+const f32 float_255_804222a0 = 255.0f;
+const f32 float_37_804222a4 = 37.0f;
+const f32 float_242_804222a8 = 242.0f;
+const f32 float_254_804222ac = 254.0f;
+const f32 float_246_804222b0 = 246.0f;
+const f32 float_226_804222b4 = 226.0f;
+const f32 float_65_804222b8 = 65.0f;

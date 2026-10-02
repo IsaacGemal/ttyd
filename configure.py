@@ -536,7 +536,7 @@ config.libs = [
             Object(NonMatching, "effect/eff_particle.c"),
             Object(NonMatching, "effect/eff_ibuki.c"),
             Object(Matching, "effect/eff_mahorn.c"),
-            Object(NonMatching, "effect/eff_spirit.c"),
+            Object(Matching, "effect/eff_spirit.c"),
             Object(Matching, "effect/eff_indirect.c"),
             Object(Matching, "effect/eff_syuryou.c"),
             Object(Matching, "effect/eff_uranoko.c"),
