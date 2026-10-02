@@ -693,8 +693,9 @@ static void ext_moamoa_main(void) {
             tz = MOA_TARGET(i).z;
             dist = pose->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) * 0.25f);
             ty = pose->field_0x1C * f + ty;
+            tx = f * dist + tx;
             tz = f * (-pose->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) * 0.25f)) + tz;
-            ep->matrix[0][0][3] += ((f * dist + tx) - ep->matrix[0][0][3]) / 15.0f;
+            ep->matrix[0][0][3] += (tx - ep->matrix[0][0][3]) / 15.0f;
             ep->matrix[0][1][3] += (ty - ep->matrix[0][1][3]) / 15.0f;
             ep->matrix[0][2][3] += (tz - ep->matrix[0][2][3]) / 15.0f;
             pose->field_0x04++;
