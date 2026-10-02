@@ -959,6 +959,27 @@ static void moamoa_pose_init(void) {
 }
 #pragma dont_inline reset
 
+// TODO: type
+static u32 jumptable_00002400[66] = {
+    (u32)((u8*)&ext_moamoa_main + 0xcf0), (u32)((u8*)&ext_moamoa_main + 0x1770), (u32)((u8*)&ext_moamoa_main + 0x1a68), (u32)((u8*)&ext_moamoa_main + 0x1ccc),
+    (u32)((u8*)&ext_moamoa_main + 0x1f28), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2744), (u32)((u8*)&ext_moamoa_main + 0x2810), (u32)((u8*)&ext_moamoa_main + 0x2834),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x1f4c), (u32)((u8*)&ext_moamoa_main + 0x1f4c), (u32)((u8*)&ext_moamoa_main + 0x1f4c), (u32)((u8*)&ext_moamoa_main + 0x2250),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x22b0),
+    (u32)((u8*)&ext_moamoa_main + 0x2600), (u32)((u8*)&ext_moamoa_main + 0x2690), (u32)((u8*)&ext_moamoa_main + 0x14d8), (u32)((u8*)&ext_moamoa_main + 0x1504),
+    (u32)((u8*)&ext_moamoa_main + 0x15cc), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8),
+    (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2ef8), (u32)((u8*)&ext_moamoa_main + 0x2b54), (u32)((u8*)&ext_moamoa_main + 0x2b7c),
+    (u32)((u8*)&ext_moamoa_main + 0x2e08), (u32)((u8*)&ext_moamoa_main + 0x2e2c),
+};
+
 #pragma opt_propagation off // stop MWCC rematerialising the ekiSinf/ekiCosf coefficients per branch
 // NONMATCHING (79.81%): `#pragma opt_propagation off` above stops MWCC rematerialising the ekiSinf/ekiCosf
 // coefficients per branch, which recovered most of the gap (72.30 -> 79.81). What is left is register
