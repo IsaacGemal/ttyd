@@ -12,12 +12,16 @@
 
 extern GlobalWork* gp;
 // .sdata2 colours of this unit: white (0xFFFFFFFF) for the digits and the colon, and a yellowish 0xFFFFFF99 for the frame.
-extern u32 dat_80420498;
-extern u32 dat_8042049c;
+__declspec(section ".sdata2") u32 dat_80420498 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8042049c = 0xFFFFFF99;
 #define COUNTDOWN_WHITE (*(GXColor*)&dat_80420498)
 #define COUNTDOWN_YELLOW (*(GXColor*)&dat_8042049c)
 
 //.sbss
+// the 4 bytes after wp in the target's .sbss (gap_08_80418B2C_sbss)
+#pragma force_active on
+static u32 gap_after_wp;
+#pragma force_active reset
 static CountdownWork* wp;
 
 void countDownInit(void) {
@@ -71,25 +75,12 @@ void countDownSetRestartTime(s32 time) {
     wp->restartTime = time;
 }
 
-#ifdef MUST_MATCH
-// Undefined stand-ins for two pooled literals (0.0f and 300.0f) in this unit's .sdata2. Unless
-// the compiler cannot see the values, it will not load both float arguments before wp->counter.
-extern const f32 float_0_804204a0;
-extern const f32 float_300_804204bc;
-#endif
-
 void countDownMain(void) {
 	if (wp->flags & 1) {
 		switch (wp->state) {
 		case 0:
 			if (++wp->counter < 30) {
-#ifdef MUST_MATCH
-				// MUST_MATCH: the comma expression (its volatile cast has no effect on an rvalue)
-				// orders the float constant loads before wp->counter, as in the original.
-				wp->dx = intplGetValue(0xB, ((volatile f32)float_300_804204bc, wp->counter), 30, float_300_804204bc, float_0_804204a0);
-#else
 				wp->dx = intplGetValue(0xB, wp->counter, 30, 300.0f, 0.0f);
-#endif
 			} else {
 				wp->counter = 0;
 				wp->state++;
@@ -103,12 +94,7 @@ void countDownMain(void) {
 			break;
 		case 2:
 			if (++wp->counter < 30) {
-#ifdef MUST_MATCH
-				// 300.0f stays a literal so it remains in this unit's .sdata2 pool.
-				wp->dx = intplGetValue(0xB, ((volatile f32)float_0_804204a0, wp->counter), 30, float_0_804204a0, 300.0f);
-#else
 				wp->dx = intplGetValue(0xB, wp->counter, 30, 0.0f, 300.0f);
-#endif
 			} else {
 				wp->counter = 0;
 				wp->state++;
@@ -257,3 +243,5 @@ void countDownFlagOn(u16 flag) {
 void countDownFlagOff(u16 flag) {
     wp->flags &= ~flag;
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

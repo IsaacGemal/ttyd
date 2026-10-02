@@ -1314,7 +1314,10 @@ USER_FUNC(btlevtcmd_SetPartsBaseScale) {
     if (id == -1) {
         return EVT_RETURN_DONE;
     }
-    part = BattleGetUnitPartsPtr(id, evtGetValue(event, args[1]));
+    {
+        s32 partId = evtGetValue(event, args[1]);
+        part = BattleGetUnitPartsPtr(id, partId);
+    }
     x = evtGetFloat(event, args[2]);
     y = evtGetFloat(event, args[3]);
     z = evtGetFloat(event, args[4]);
@@ -4288,9 +4291,8 @@ USER_FUNC(btlevtcmd_snd_se) {
     unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
     v1 = evtGetValue(event, args[1]);
     v2 = evtGetValue(event, args[2]);
-    v3 = evtGetValue(event, args[3]);
     v4 = args[4];
-    ret = BtlUnit_snd_se(unit, (const char*)v1, v2, (s16)v3);
+    ret = BtlUnit_snd_se(unit, (const char*)v1, v2, (s16)evtGetValue(event, args[3]));
     if (v4 != EVTDAT_POINTER_MAX) {
         evtSetValue(event, v4, ret);
     }
@@ -6600,8 +6602,7 @@ USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
     s32 name;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(wp, id);
+    unit = BattleGetUnitPtr(wp, id = BattleTransID(event, btlId));
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
     name = evtGetValue(event, args[2]);
