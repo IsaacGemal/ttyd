@@ -56,7 +56,7 @@ typedef struct MoamoaNpc {
 
 typedef struct MoamoaPose {
     u16 flags;          // 0x00
-    u16 field_0x02;     // 0x02
+    s16 field_0x02;     // 0x02
     s16 field_0x04;     // 0x04
     u16 field_0x06;     // 0x06
     Vec position;       // 0x08
@@ -517,14 +517,15 @@ static inline f32 ekiCosf2(f32 rad) {
 
 // Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
 // (MoamoaPose.field_0x02), clamping into the room, then the animation frame update and the rider-delta limit.
+#define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
     ExtPose* ep;
     MoamoaPose* pose;
     s32 i;
-    s32 handled = 0;
-    s32 voicePlayed = 0;
+    s32 handled;
+    s32 voicePlayed;
     f32 rad;
     f32 tx;
     f32 ty;
@@ -537,6 +538,7 @@ static void ext_moamoa_main(void) {
     mario = marioGetPtr();
     party = partyGetPtr(0);
     camGetPtr(CAMERA_3D);
+    handled = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
         wp->field_0x40++;
     } else {
@@ -581,25 +583,21 @@ static void ext_moamoa_main(void) {
         }
     }
     ep = extGetPosePtr();
+    voicePlayed = 0;
     pose = wp->poses;
     for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
-        Vec* target;
-
         wp->field_0x550 = angleABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
         wp->field_0x554 = distABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
         if ((wp->field_0x00 & 0x1) && !(wp->field_0x00 & 0x4) && marioKeyOffChk() == 0 && marioCtrlOffChk() == 0
             && handled == 0 && !(pose->flags & 0x154)) {
             res = moamoa_hit_check(ep, pose);
-            switch (res) {
-            case 1:
+            if (res == 1) {
                 pose->flags |= 0x4;
                 pose->field_0x02 = 0x24;
                 wp->field_0x38++;
                 moamoa_pose_change(pose, "c_n_moa_a", "D_1");
                 handled = 1;
-                break;
-            case 2:
-            case 4:
+            } else if (res == 2 || res == 4) {
                 pose->flags |= 0xC;
                 pose->field_0x02 = 0x2F;
                 wp->field_0x38++;
@@ -607,8 +605,7 @@ static void ext_moamoa_main(void) {
                 if (res != 4) {
                     handled = 1;
                 }
-                break;
-            case 3:
+            } else if (res == 3) {
                 pose->flags |= 0x84;
                 pose->field_0x02 = 0x30;
                 f = (wp->field_0x55C + wp->field_0x550) * 0.5f;
@@ -622,7 +619,6 @@ static void ext_moamoa_main(void) {
                 wp->field_0x38++;
                 moamoa_pose_change(pose, "c_n_moa_a", "D_1");
                 handled = 1;
-                break;
             }
         }
         if (wp->field_0x00 & 0x1) {
@@ -636,22 +632,18 @@ static void ext_moamoa_main(void) {
         }
         if ((wp->field_0x00 & 0x1) && !(pose->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum
             && irand(1000) < 200) {
-            Vec pos;
-
-            pos = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008914);
-            v = pos;
+            v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008914);
             psndSFXOn_3D("SFX_STG6_MOAMOA_VOICE1", &v);
         }
-        target = &(&wp->field_0x14)[i % 3];
-        if (pose->field_0x02 <= 0x41) {
+        if ((u32)pose->field_0x02 <= 0x41) {
             switch (pose->field_0x02) {
             case 0x0:
                 if (i % 50 < 0x14) {
                     f32 ang = randf(0.0f, 6.2831855f);
                     f32 len = randf(0.0f, 50.0f);
 
-                    tx = len * ekiSinf2(ang) + target->x;
-                    tz = -(len * ekiCosf2(ang) - target->z);
+                    tx = len * ekiSinf2(ang) + MOA_TARGET(i).x;
+                    tz = -(len * ekiCosf2(ang) - MOA_TARGET(i).z);
                     rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], tx, tz) / 360.0f;
                     tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
                     ty = ep->matrix[0][1][3];
@@ -661,8 +653,8 @@ static void ext_moamoa_main(void) {
                 } else {
                     f32 ang;
 
-                    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], target->x, target->z);
-                    ang = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], target->x, target->z);
+                    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
+                    ang = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
                     if (dist < 100.0f) {
                         ang = randf(0.0f, 360.0f);
                     }
@@ -697,9 +689,9 @@ static void ext_moamoa_main(void) {
                     f = 0.0f;
                     pose->flags |= 0x200;
                 }
-                tx = target->x;
-                ty = target->y;
-                tz = target->z;
+                tx = MOA_TARGET(i).x;
+                ty = MOA_TARGET(i).y;
+                tz = MOA_TARGET(i).z;
                 dist = pose->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) * 0.25f);
                 ty = pose->field_0x1C * f + ty;
                 tz = f * (-pose->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) * 0.25f)) + tz;
@@ -755,8 +747,8 @@ static void ext_moamoa_main(void) {
                     tx = mario->position.x;
                     tz = mario->position.z;
                 } else {
-                    tx = target->x;
-                    tz = target->z;
+                    tx = MOA_TARGET(i).x;
+                    tz = MOA_TARGET(i).z;
                 }
                 rad = 6.2831855f * (angleABf(tx, tz, ep->matrix[0][0][3], ep->matrix[0][2][3]) + randf(-45.0f, 45.0f))
                       / 360.0f;
@@ -782,10 +774,7 @@ static void ext_moamoa_main(void) {
                 f = randf(5.0f, 6.0f);
                 ty = randf(0.2f, 0.3f);
                 if (voicePlayed == 0) {
-                    Vec pos;
-
-                    pos = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008920);
-                    v = pos;
+                    v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008920);
                     psndSFXOn_3D((const char*)0x6C3, &v);
                     voicePlayed = 1;
                 }
@@ -808,9 +797,9 @@ static void ext_moamoa_main(void) {
                     pose->field_0x02 = 0x3E;
                 } else if (wp->field_0x38 < 0xFA) {
                     PSMTXIdentity(*ep->matrix);
-                    ep->matrix[0][0][3] = target->x;
-                    ep->matrix[0][1][3] = target->y;
-                    ep->matrix[0][2][3] = target->z;
+                    ep->matrix[0][0][3] = MOA_TARGET(i).x;
+                    ep->matrix[0][1][3] = MOA_TARGET(i).y;
+                    ep->matrix[0][2][3] = MOA_TARGET(i).z;
                     pose->flags = 0;
                     pose->field_0x02 = 0;
                     pose->field_0x04 = 0;
@@ -829,7 +818,7 @@ static void ext_moamoa_main(void) {
                 } else {
                     ep->flags |= 0x2;
                     pose->field_0x04 =
-                        (100.0f - distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], target->x, target->z)) * 0.5f;
+                        (100.0f - distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z)) * 0.5f;
                     pose->field_0x02++;
                 }
                 break;
@@ -840,7 +829,7 @@ static void ext_moamoa_main(void) {
                 break;
             case 0x1B:
                 if (fabs(ep->matrix[0][0][3]) < 300.0 && fabs(ep->matrix[0][2][3]) < 300.0) {
-                    rad = 6.2831855f * (angleABf(target->x, target->z, ep->matrix[0][0][3], ep->matrix[0][2][3])
+                    rad = 6.2831855f * (angleABf(MOA_TARGET(i).x, MOA_TARGET(i).z, ep->matrix[0][0][3], ep->matrix[0][2][3])
                                         + randf(-45.0f, 45.0f))
                           / 360.0f;
                     tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
