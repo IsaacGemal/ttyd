@@ -15,6 +15,13 @@
 #include "mario/mariost.h"
 #include "motion/mot_jabara.h"
 #include "driver/hitdrv.h"
+#include "driver/camdrv.h"
+#include "driver/windowdrv.h"
+#include "eff/eff_stardust.h"
+#include "eff/eff_itemget.h"
+#include "mario/mario_motion.h"
+#include "mario/mario_cam.h"
+#include "pmario_sound.h"
 #include "math_ext.h"
 #include "system.h"
 #include "memory.h"
@@ -451,6 +458,559 @@ void itemMain(void) {
 
 // item status lives at 0x38 (u32, not yet declared in the header)
 #define ITEM_STATUS(item) (*(u32*)((u8*)(item) + 0x38))
+
+extern WinMgrDesc itemdrv_window_desc[];
+extern s32 all_juyoitem_lecture[];
+extern const f32 float_35_8041afc4;
+extern const f32 float_50_8041b000;
+extern const f32 float_62_8041b004;
+extern const f32 float_85_8041b008;
+extern const f32 float_120_8041b00c;
+extern const f32 float_0p7_8041aff4;
+extern const f32 float_1024_8041affc;
+
+// Removes every live entry in the current item work whose name matches `item`'s,
+// reporting badges that arrive and clearing each entry's active flag.
+static inline void itemseq_deleteMatching(ItemEntry* item) {
+    ItemWork* wp = itemGetWork();
+    ItemEntry* entry = wp->entries;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++, entry++) {
+        if (strcmp(entry->name, item->name) == 0) {
+            if (!gp->inBattle) {
+                if (entry->itemId >= 0xF0 && entry->itemId < 0x153 && (entry->flags & 0x100)) {
+                    pouchArriveBadge(entry->itemId);
+                }
+            }
+            switch (entry->itemId) {
+            case 0x72: case 0x73: case 0x74: case 0x75: case 0x76: case 0x77: case 0x78:
+                effSoftDelete(entry->effect);
+                break;
+            default:
+                iconDelete(entry->name);
+                break;
+            }
+            entry->flags &= ~1;
+        }
+    }
+}
+
+// Plays the "item obtained" stardust/SFX for the item id, at the item's position.
+static inline void itemseq_sfxGet(ItemEntry* item) {
+    Vec pos2;
+    // vec3_802cac1c is the 6th of the contiguous zero Vecs. The indexed form keeps the three dead
+    // loads *after* the caller's stores; the plain symbol makes MWCC's scheduler hoist them. Cost: one
+    // `mr r5, r28` base copy. `(Vec){0.0f,0.0f,0.0f}` schedules perfectly but adds a `.rodata` object
+    // at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck -> see REPORT.md.
+    Vec pos = (&vec3_802cabe0)[5];
+
+    pos.x = item->position.x;
+    pos.y = item->position.y;
+    pos.z = item->position.z;
+    pos2 = pos;
+    switch (item->itemId) {
+    case 0x79:
+        effStardustEntry(1, 3, 0x1E, pos.x, 35.0f + pos.y, pos.z, 16.0f, 16.0f);
+        psndSFXOn_3D("SFX_COIN_GET1", &pos2);
+        break;
+    case 0x7A:
+        effStardustEntry(1, 3, 0x1E, pos.x, 35.0f + pos.y, pos.z, 16.0f, 16.0f);
+        psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", &pos2);
+        break;
+    case 0x7B:
+        psndSFXOn_3D("SFX_HEART_GET1", &pos2);
+        break;
+    case 0x7C:
+        // The nine "leaped" SFX names below are pooled by the compiler right after SFX_FLOWER_GET1
+        // (they are referenced nowhere in the object - a dead-code artifact) and push the BGM group
+        // to +0x180. Folding their exact bytes into this one literal reproduces the target .rodata
+        // byte-for-byte at zero instruction cost; the call still sees "SFX_FLOWER_GET1".
+        psndSFXOn_3D(
+            "SFX_FLOWER_GET1\0"
+            "SFX_COIN_LEAPED1\0\0\0\0"
+            "SFX_EVT_GAME_MONTE_LEAPED1\0\0"
+            "SFX_HEART_LEAPED1\0\0\0"
+            "SFX_FLOWER_LEAPED1\0\0"
+            "SFX_STAR_PIECE_LEAPED1\0\0"
+            "SFX_EVT_STARSTONE_JUMP1\0"
+            "SFX_BADGE_LEAPED1\0\0\0"
+            "SFX_ITEM_LEAPED1\0\0\0\0"
+            "MOBJ_KururinFloor\0\0",
+            &pos2);
+        break;
+    case 0x7D:
+        break;
+    }
+}
+
+// Puts the item into the pouch (clearing its switch if it has one), spawning its
+// first-hit event at the item position. Returns 0 when the pouch is already full.
+static inline s32 itemseq_tryGet(ItemEntry* item) {
+    if (!pouchGetItem(item->itemId)) {
+        return 0;
+    }
+    if (item->flags & 0x20) {
+        swSet(item->evtId);
+    } else if (item->flags & 0x40) {
+        _swSet(item->evtId);
+    }
+    if (*(void**)((u8*)item + 0x20) != NULL) {
+        EventEntry* evt = evtEntry(*(void**)((u8*)item + 0x20), 0, 0x20);
+
+        evt->lwData[0] = (s32)(1024.0f * item->position.x) - 0x0DB58580;
+        evt->lwData[1] = (s32)(1024.0f * item->position.y) - 0x0DB58580;
+        evt->lwData[2] = (s32)(1024.0f * item->position.z) - 0x0DB58580;
+    }
+    *(u32*)((u8*)item + 0x38) |= 1;
+    return 1;
+}
+
+// All logic, switch dispatch, constants, call order and the whole .rodata layout match. The one
+// remaining difference is scheduling: in the itemseq_sfxGet zero-Vec init MWCC emits a `mr r5, r28`
+// base copy for the three dead loads (the indexed form keeps them *after* the caller's stores; the
+// plain symbol form instead makes the scheduler hoist the loads above the stores). Neither form
+// reproduces the target exactly.
+// NONMATCHING (99.81%): itemseq_sfxGet zero-Vec init: extra mr r5, r28 base copy and loads scheduled differently.
+void itemseq_GetItem(ItemEntry* item) {
+    ItemWork* wp = itemGetWork();
+    MarioWork* mario = marioGetPtr();
+    s32 effType;
+    s32 bgmType;
+    s32 got;
+    s32 id;
+    s32 sel;
+    u32 motion;
+
+    switch (item->field_0x26) {
+    case 0:
+        *(u32*)((u8*)item + 0x38) &= ~0x10000;
+        if (item->flags & 0x100) {
+            *(u32*)((u8*)item + 0x38) |= 0x4000000;
+        } else {
+            *(u32*)((u8*)item + 0x38) &= ~0x4000000;
+        }
+        item->flags &= ~0x100;
+        if (item->flags & 4) {
+            got = itemseq_tryGet(item);
+            if (got != 0) {
+                *(s32*)((u8*)item + 0x7C) = 0;
+                *(s32*)((u8*)item + 0x78) = 0;
+                itemseq_sfxGet(item);
+                itemseq_deleteMatching(item);
+            } else {
+                item->mode = 4;
+                item->field_0x26 = 0;
+            }
+            break;
+        }
+        item->field_0x26 = 1;
+        *(s32*)((u8*)item + 0x7C) = 0;
+        *(s32*)((u8*)item + 0x78) = 0;
+        camGetPtr(8)->flags |= 0x200;
+        marioKeyOff();
+        marioStSystemLevel(2);
+        psndSetFlag(0x80);
+        mario->riderDelta.x = 0.0f;
+        mario->riderDelta.z = 0.0f;
+        mario->baseSpeed = 0.0f;
+        *(f32*)((u8*)mario + 0x18C) = 0.0f;
+        id = item->itemId;
+        if (id == 7) {
+            goto itemseq_setFlag;
+        }
+        if (id == 8) {
+            goto itemseq_setFlag;
+        }
+        if (id == 10) {
+            goto itemseq_setFlag;
+        }
+        if (id != 11) {
+            goto state1;
+        }
+    itemseq_setFlag:
+        *(u32*)((u8*)item + 0x38) |= 0x2000;
+        goto state1;
+
+    case 1:
+    state1:
+        if (!(((item->flags & 0x1000) && !(item->flags & 0x4000)) || marioChkItemGetMotion())) {
+            motion = mario->currMotionId;
+            if (motion == 5 || (u16)(motion - 6) <= 2 || motion == 0xF || motion == 0xE) {
+                item->field_0x26 = 8;
+            }
+            break;
+        }
+        item->field_0x26 = 2;
+        marioChgGetItemMotion();
+        effType = 7;
+        bgmType = -1;
+        {
+            f32 px = mario->position.x;
+            f32 py = 50.0f + mario->position.y;
+            f32 pz = mario->position.z;
+
+            item->position.x = px;
+            item->position.y = py;
+            item->position.z = pz;
+        }
+        id = item->itemId;
+        if (id == 0x57) {
+            effType = 4;
+            bgmType = -1;
+        } else if (id == 0x7D) {
+            effType = 8;
+            bgmType = 0;
+        } else if (id < 0xC) {
+            effType = 3;
+            bgmType = 3;
+        } else if (id < 0x72) {
+            effType = 6;
+            bgmType = 1;
+        } else if (id < 0x79) {
+            effType = 0;
+            bgmType = -1;
+        } else if (id < 0xEC) {
+            effType = 7;
+            bgmType = -1;
+        } else if (id < 0x153) {
+            effType = 5;
+            bgmType = 2;
+        }
+        *(EffectEntry**)(wp->field_0xC) = effItemGetEntry(effType, mario->position.x,
+                                                          62.0f + mario->position.y, mario->position.z);
+        if (*(u32*)((u8*)item + 0x38) & 0x2000) {
+            EffectEntry* eff = *(EffectEntry**)(wp->field_0xC);
+
+            *(s32*)((u8*)eff->userdata + 0x38) = 5;
+            iconFlagOn(item->name, 0x200);
+            marioSetCamId(7);
+        } else {
+            EffectEntry* eff = *(EffectEntry**)(wp->field_0xC);
+
+            *(s32*)((u8*)eff->userdata + 0x38) = 5;
+            iconFlagOn(item->name, 0x100);
+            if (effType == 0 || effType == 3) {
+                marioSetCamId(5);
+            }
+        }
+        if (!(item->flags & 0x8000)) {
+            {
+                u32 silent = (u32)psndBGMChkSilent(0);
+
+                if (silent != 0) {
+                    item->flags |= 8;
+                }
+            }
+            switch (bgmType) {
+            case 0:
+                if (!(item->flags & 8)) {
+                    psndBGMOff(0x3800);
+                }
+                psndBGMOn(0x211, "BGM_FF_GET_STARPIECE1");
+                break;
+            case 1:
+                if (!(item->flags & 8)) {
+                    psndBGMOff(0x3800);
+                }
+                psndBGMOn(0x211, "BGM_FF_GET_KEYITEM1");
+                break;
+            case 2:
+                if (!(item->flags & 8)) {
+                    psndBGMOff(0x3800);
+                }
+                psndBGMOn(0x211, "BGM_FF_GET_BADGE1");
+                break;
+            case 3:
+                if (!(item->flags & 8)) {
+                    psndBGMOff(0x3800);
+                }
+                psndBGMOn(0x211, "BGM_FF_GET_IMPORTANT_ITEM1");
+                break;
+            default:
+                if (!(item->flags & 8)) {
+                    psndBGMOff(0x3800);
+                }
+                psndBGMOn(0x211, "BGM_FF_GET_ITEM1");
+                break;
+            }
+        }
+        if (effType == 8) {
+            evtSetValue(NULL, 0xF5DE01A2, evtGetValue(NULL, 0xF5DE01A2) + 1);
+        }
+        item->flags &= ~0x2000;
+        itemseq_sfxGet(item);
+        *(s32*)((u8*)item + 0x28) = winMgrEntry(&itemdrv_window_desc[0]);
+        winMgrOpen(*(s32*)((u8*)item + 0x28));
+        winMgrSetParam(*(s32*)((u8*)item + 0x28), item);
+        if (!(*(u32*)((u8*)item + 0x38) & 0x2000)) {
+            *(s32*)((u8*)item + 0x2C) = winMgrEntry(&itemdrv_window_desc[1]);
+            winMgrOpen(*(s32*)((u8*)item + 0x2C));
+            winMgrSetParam(*(s32*)((u8*)item + 0x2C), item);
+        }
+        got = itemseq_tryGet(item);
+        if (got == 0) {
+            *(s32*)((u8*)item + 0x30) = winMgrEntry(&itemdrv_window_desc[2]);
+            winMgrOpen(*(s32*)((u8*)item + 0x30));
+            winMgrSetParam(*(s32*)((u8*)item + 0x30), item);
+        }
+        if (item->itemId == 0x49) {
+            iconChange(item->name, 0x114);
+        }
+        if (item->effect == NULL) {
+            iconNameToPtr(item->name)->flags |= 0x80;
+        }
+        break;
+
+    case 2:
+        if (!(*(u32*)((u8*)item + 0x38) & 0x2000)) {
+            marioCtrlOff();
+            *(u32*)((u8*)item + 0x38) |= 0x1000000;
+        }
+        item->field_0x26 = 3;
+        /* fallthrough */
+    case 3:
+        if (!(item->flags & 0x8000) && !(item->flags & 0x2000)) {
+            if (psndBGMChk(1)) {
+                item->flags |= 0x2000;
+                psndBGMOff(0x201);
+                if (!(item->flags & 8)) {
+                    psndBGMOn(0xA0, NULL);
+                }
+            }
+        }
+        if (winMgrAction(*(s32*)((u8*)item + 0x28))) {
+            break;
+        }
+        if (!(keyGetButtonTrg(0) & 0x300)) {
+            break;
+        }
+        winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x28));
+        if (!(*(u32*)((u8*)item + 0x38) & 0x2000)) {
+            winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x2C));
+        }
+        if (!(item->flags & 0x8000) && !(item->flags & 0x2000)) {
+            psndBGMOff(0x201);
+            if (!(item->flags & 8)) {
+                psndBGMOn(0xA0, NULL);
+            }
+        }
+        if (*(u32*)((u8*)item + 0x38) & 0x2000) {
+            item->field_0x26 = 6;
+            break;
+        }
+        if (item->itemId >= 0x79 && item->itemId < 0xEC && item->itemId != 0x7D && !swGet(0xEB) && !(gp->flags & 0x1000)) {
+            swSet(0xEB);
+            item->field_0x26 = 4;
+            *(s32*)((wp->field_0xC + 0xC)) = msgWindow_Entry(msgSearch("item_first_hit"), 0, 0);
+            break;
+        }
+        effSoftDelete(*(EffectEntry**)(wp->field_0xC));
+        marioSetCamId(4);
+        iconFlagOff(item->name, 0x100);
+        if (item->itemId == 0x49) {
+            iconChange(item->name, 0x115);
+        }
+        if (item->effect == NULL) {
+            iconNameToPtr(item->name)->flags &= ~0x80;
+        }
+        if (*(u32*)((u8*)item + 0x38) & 1) {
+            marioStSystemLevel(0);
+            psndClearFlag(0x80);
+            if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
+                *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+                marioCtrlOn();
+            }
+            marioKeyOn();
+            marioChgStayMotion();
+            camGetPtr(8)->flags &= ~0x200;
+            itemseq_deleteMatching(item);
+            break;
+        }
+        item->field_0x26 = 5;
+        winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x30));
+        marioChgStayMotion();
+        iconFlagOn(item->name, 2);
+        id = item->itemId;
+        if (id >= 0xF0 && id < 0x153) {
+            *(WinMgrSelect**)((wp->field_0xC + 4)) = winMgrSelectEntry(2, id, 1);
+        } else {
+            *(WinMgrSelect**)((wp->field_0xC + 4)) = winMgrSelectEntry(1, id, 1);
+        }
+        break;
+
+    case 4:
+        if (windowCheckID(*(s32*)((wp->field_0xC + 0xC)))) {
+            break;
+        }
+        effSoftDelete(*(EffectEntry**)(wp->field_0xC));
+        marioSetCamId(4);
+        iconFlagOff(item->name, 0x100);
+        marioStSystemLevel(0);
+        psndClearFlag(0x80);
+        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
+            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+            marioCtrlOn();
+        }
+        marioKeyOn();
+        marioChgStayMotion();
+        camGetPtr(8)->flags &= ~0x200;
+        itemseq_deleteMatching(item);
+        break;
+
+    case 5:
+        sel = (s32)winMgrSelect(*(WinMgrSelect**)((wp->field_0xC + 4)));
+        if (sel == 0) {
+            break;
+        }
+        winMgrSelectDelete(*(WinMgrSelect**)((wp->field_0xC + 4)));
+        if (sel < 0) {
+            if (*(u32*)((u8*)item + 0x38) & 0x4000000) {
+                item->flags |= 0x100;
+            }
+            goto state5Tail;
+        }
+        pouchRemoveItem(sel);
+        itemseq_tryGet(item);
+        *(u32*)((u8*)item + 0x38) &= ~1;
+        item->itemId = sel;
+        *(void**)((u8*)item + 0x20) = NULL;
+        item->evtId = 0;
+        item->flags &= ~0x60;
+        {
+            // ItemData.icon_id is s16 in data/item_data.h, but the target loads it with lhz. Read the
+            // same field (stride 0x28, offset 0x20) through a u16 view instead of casting the header.
+            u16* iconIds = (u16*)((u8*)itemDataTable + 0x20);
+
+            iconChange(item->name, iconIds[item->itemId * 0x14]);
+        }
+        wp->currId++;
+        {
+            IconEntry* icon = iconNameToPtr(item->name);
+
+            sprintf(icon->name, "_i%05x", wp->currId);
+            sprintf(item->name, "_i%05x", wp->currId);
+        }
+        item->flags |= 0x100;
+    state5Tail:
+        item->flags &= ~0x1000;
+        *(f32*)((u8*)item + 0x50) = 85.0f;
+        *(f32*)((u8*)item + 0x58) = 120.0f;
+        *(f32*)((u8*)item + 0x80) = 0.7f;
+        *(f32*)((u8*)item + 0x84) = 1.0f;
+        *(s32*)((u8*)item + 0x28) = winMgrEntry(&itemdrv_window_desc[3]);
+        winMgrOpen(*(s32*)((u8*)item + 0x28));
+        winMgrSetParam(*(s32*)((u8*)item + 0x28), item);
+        marioChgGetItemMotion();
+        iconFlagOff(item->name, 2);
+        if (mario->flags & 0x2000000) {
+            *(u32*)((u8*)item + 0x38) |= 0x8000;
+        }
+        item->field_0x26 = 9;
+        break;
+
+    case 6:
+        *(EventEntry**)((wp->field_0xC + 8)) = evtEntryType(all_juyoitem_lecture, 0, 0, 0);
+        *(ItemEntry**)((u8*)*(EventEntry**)((wp->field_0xC + 8)) + 0xBC) = item;
+        *(EffectEntry**)((u8*)*(EventEntry**)((wp->field_0xC + 8)) + 0xC0) = *(EffectEntry**)(wp->field_0xC);
+        psndClearFlag(0x80);
+        item->field_0x26 = 7;
+        break;
+
+    case 7:
+        {
+            EventEntry* evt = *(EventEntry**)((wp->field_0xC + 8));
+
+            if (evtCheckID(evt->eventId)) {
+                break;
+            }
+        }
+        marioStSystemLevel(0);
+        psndClearFlag(0x80);
+        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
+            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+            marioCtrlOn();
+        }
+        marioKeyOn();
+        marioChgStayMotion();
+        camGetPtr(8)->flags &= ~0x200;
+        itemseq_deleteMatching(item);
+        break;
+
+    case 9:
+        if (!(keyGetButtonTrg(0) & 0x100)) {
+            break;
+        }
+        winMgrCloseAutoDelete(*(s32*)((u8*)item + 0x28));
+        *(u32*)((u8*)item + 0x38) |= 8;
+        item->mode = 6;
+        item->field_0x26 = 0;
+        item->flags &= ~0x10;
+        id = item->itemId;
+        if (id >= 1 && id < 0x79) {
+            *(s32*)((u8*)item + 0x7C) = 0;
+            *(s32*)((u8*)item + 0x78) = 0;
+        } else if (id >= 0xF0 && id < 0x153) {
+            *(s32*)((u8*)item + 0x7C) = 0;
+            *(s32*)((u8*)item + 0x78) = 0;
+        } else {
+            *(s32*)((u8*)item + 0x7C) = 0x4E20;
+            *(s32*)((u8*)item + 0x78) = 0;
+        }
+        *(u32*)((u8*)item + 0x38) |= 0x10000;
+        *(u32*)((u8*)item + 0x38) &= ~0x1000;
+        item->flags &= ~0x2;
+        marioStSystemLevel(0);
+        psndClearFlag(0x80);
+        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
+            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+            marioCtrlOn();
+        }
+        marioKeyOn();
+        marioChgStayMotion();
+        camGetPtr(8)->flags &= ~0x200;
+        break;
+
+    case 8:
+        if (mario->flags & 0x2000000) {
+            *(u32*)((u8*)item + 0x38) |= 0x8000;
+        }
+        *(s32*)((u8*)item + 0x7C) = 0;
+        *(s32*)((u8*)item + 0x78) = 0;
+        if (*(u32*)((u8*)item + 0x38) & 0x1000) {
+            item->mode = 1;
+            item->field_0x26 = 0;
+            *(u32*)((u8*)item + 0x38) &= ~0x4;
+            *(u32*)((u8*)item + 0x38) &= ~0x8;
+            *(u32*)((u8*)item + 0x38) &= ~0x4000;
+            *(u32*)((u8*)item + 0x38) &= ~0x1000;
+            item->flags &= ~0x1000;
+        } else {
+            *(f32*)((u8*)item + 0x50) = 85.0f;
+            *(f32*)((u8*)item + 0x58) = 120.0f;
+            *(f32*)((u8*)item + 0x80) = 0.7f;
+            *(f32*)((u8*)item + 0x84) = 1.0f;
+            *(u32*)((u8*)item + 0x38) |= 8;
+            item->mode = 6;
+            item->field_0x26 = 0;
+            item->flags &= ~0x10;
+            *(u32*)((u8*)item + 0x38) &= ~0x1000;
+            item->flags &= ~0x2;
+            item->flags &= ~0x1000;
+        }
+        marioStSystemLevel(0);
+        psndClearFlag(0x80);
+        if (*(u32*)((u8*)item + 0x38) & 0x1000000) {
+            *(u32*)((u8*)item + 0x38) &= ~0x1000000;
+            marioCtrlOn();
+        }
+        marioKeyOn();
+        break;
+
+    default:
+        break;
+    }
+}
 
 void itemPickUp(ItemEntry* item) {
     ITEM_STATUS(item) |= 0x1000;
@@ -1035,3 +1595,4 @@ s32 itemGetCheck(ItemEntry* entry) {
     }
     return 0;
 }
+

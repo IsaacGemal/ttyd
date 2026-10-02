@@ -9,6 +9,14 @@
 #include "manager/fontmgr.h"
 #include "driver/msgdrv.h"
 #include "mario/mario_pouch.h"
+#include "pmario_sound.h"
+#include "mario/mario.h"
+#include "mario/mario_party.h"
+#include "mario/mariost.h"
+#include "motion/mot_slit.h"
+#include "motion/mot_roll.h"
+#include "driver/swdrv.h"
+#include "data/mail_data.h"
 #include "system.h"
 
 // These .rodata strings are deliberately NOT defined here: defining them would push the
@@ -25,9 +33,24 @@ extern const char str_802F5638[];
 // first 0x1210 bytes, so the rest are reached through raw offsets below.
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_S16(w, off) (*(s16*)((u8*)(w) + (off)))
+#define WW_U16(w, off) (*(u16*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 
 extern u16 menu_skip_list[18];
+extern const char** luigi_book_list[5];
+extern WindowPartyDt winPartyDt[];
+extern const f32 float_neg310_8041d550;
+extern const f32 float_neg170_8041d558;
+extern const f32 float_160_8041d4dc;
+extern const f32 float_neg144_8041d55c;
+extern const f32 float_180_8041d560;
+extern const f32 float_neg96_8041d568;
+extern const f32 float_neg80_8041d56c;
+extern const f32 float_130_8041d570;
+extern const f32 float_28_8041d574;
+extern const f32 float_60_8041d564;
+extern const f32 float_neg16_8041d4b0;
+extern const f32 float_neg28_8041d4b4;
 extern const f32 float_190_8041d544;
 extern const f32 float_0p25_8041d548;
 extern const f32 float_6_8041d54c;
@@ -66,6 +89,29 @@ extern const f32 float_30_8041d524;
 
 extern const f32 float_0p5_8041d4a8;
 extern const GXColor dat_8041d4a4;
+
+// .sdata2 colours, floats and format strings used by itemUseDisp (defined elsewhere).
+extern const GXColor dat_8041d480;
+extern const GXColor dat_8041d484;
+extern const GXColor dat_8041d488;
+extern const GXColor dat_8041d48c;
+extern const GXColor dat_8041d490;
+extern const GXColor dat_8041d494;
+extern const GXColor dat_8041d498;
+extern const GXColor dat_8041d49c;
+extern const GXColor dat_8041d4a0;
+extern const f32 float_neg16_8041d4b0;
+extern const f32 float_neg28_8041d4b4;
+extern const f32 float_0p9_8041d4b8;
+extern __declspec(section ".sdata2") const char str_8041D4BC[];
+extern __declspec(section ".sdata2") const char str_8041D4C4[];
+extern __declspec(section ".sdata2") const char str_8041D4C8[];
+extern __declspec(section ".sdata2") const char str_8041D4CC[];
+extern const f32 float_14_8041d4d4;
+extern const f32 float_1_8041d4d8;
+extern const f32 float_160_8041d4dc;
+extern const f32 float_2_8041d4e0;
+extern WindowPartyDt winPartyDt[];
 
 // .rodata prefix of window/win_item: the 60 msg_luigi_book strings and the vec3_802f52xx /
 // vec3_802f55xx aggregate constants. Defining them here (rather than extern) is what lets MWCC
@@ -342,6 +388,526 @@ typedef struct ItemWorkTail {
 } ItemWorkTail;
 
 static WinMgrDesc window_desc[2];
+
+// Item window state machine: the held-item grid, the key-item list, the Luigi book
+// (case 100) and the received-mail viewer (cases 200/201/202). Transliterated from the
+// original assembly; every call, branch, loop and store is present.
+// The original keeps str_802F4CE8 in r30 and reaches str_802F560C/20/38 as r30+0x924/0x938/
+// 0x950 (one lis/addi + displacement). Our object inlines the string literals used here, so
+// MWCC pools them right after the int->float doubles and the base register folds correctly;
+// str_802F55E8/55F4 ("name_mario", "msg_menu_sort_narabikae") belong to the neighbouring
+// itemUseDisp/item_disp and are still missing, so the three displacements are 0x24 low. That
+// gap is a unit-level data-ordering issue, not a winItemMain one. The frame (0x60), the
+// int->float scratch doubles (r1+0x30..0x3f), the callee-saved block (stmw r27, r1+0x4c) and
+// the party-pointer list (0-based, read as `list[cursor - 1]`) all match, and the function is
+// the same length as the original (1180 instructions). What is left is the register colours
+// of the `dirRep & 0xC000` arm, where MWCC swaps the base/value pair (r4/r5).
+//
+// `winItemMailLine` only exists to defeat MWCC's CSE: written inline, the `work + 0x26C` of
+// the case-201 call argument is shared with the following `+= 1` / `+= 0xA`, so MWCC
+// materialises it into r31 and copies it into r4 (`addi r31, r28, 0x26c` / `mr r4, r31`),
+// where the original computes it straight into r4 and uses displacements afterwards. Going
+// through a (trivially inlined) function makes the address a separate value and restores the
+// original sequence.
+static inline u16* winItemMailLine(void* w) { return (u16*)((u8*)w + 0x26C); }
+
+// NONMATCHING (99.95%): every call, branch, constant, store and control-flow edge matches;
+// only the missing rodata-base offset and one arm's register colouring differ.
+s32 winItemMain(WindowWork* work) {
+    s32 sel;
+    s32 count;
+    s32 rows;
+    s32 idx;
+    s32 idx2;
+    s32 item;
+    s32 i;
+    s32 n;
+    s32 old;
+    s32 page;
+    WindowPartyDt* list[9];
+    s32 leader;
+
+    switch (WW_S32(work, 0x20C)) {
+    case 0:
+        if (work->buttonTrg & 0x200) {
+            psndSFXOn((const char*)0x20013);
+            return -1;
+        }
+        if (work->buttonTrg & 0x1000) {
+            return -2;
+        }
+        if (work->dirRep & 0x3000) {
+            WW_S32(work, 0x210) = 1 - WW_S32(work, 0x210);
+            psndSFXOn((const char*)0x20005);
+        } else if (work->buttonTrg & 0x100) {
+            if (WW_S32(work, 0x210) == 0) {
+                if (pouchGetHaveItemCnt() == 0) {
+                    break;
+                }
+            }
+            if (WW_S32(work, 0x210) == 1) {
+                if (WW_S16(work, 0x3DA) == 0) {
+                    break;
+                }
+            }
+            WW_S32(work, 0x20C) = 10;
+            psndSFXOn((const char*)0x20012);
+            break;
+        } else if (work->buttonTrg & 0x10) {
+            winSortEntry(work, WW_S32(work, 0x210) != 0, float_neg310_8041d550, float_150_8041d52c);
+            WW_S32(work, 0x124) = WW_S32(work, 0x20C);
+            psndSFXOn((const char*)0x20012);
+            WW_S32(work, 0x20C) = 1000;
+        }
+        WW_F32(work, 0x158) = float_neg275_8041d554;
+        WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
+        winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? "msg_menu_mochi_item" : "msg_menu_mochi_daiji", 0);
+        break;
+
+    case 10:
+        if (WW_S32(work, 0x210) == 0) {
+            count = pouchGetHaveItemCnt();
+        } else {
+            count = WW_S16(work, 0x3DA);
+        }
+        sel = WW_S32(work, 0x210);
+        rows = (count + 9) / 10;
+
+        if (work->buttonTrg & 0x200) {
+            psndSFXOn((const char*)0x20013);
+            WW_S32(work, 0x20C) = 0;
+        }
+        if (work->buttonTrg & 0x100) {
+            if (WW_S32(work, 0x210) == 0) {
+                item = pouchHaveItem(((s32*)((u8*)work + 0x214))[sel]);
+                if (itemDataTable[item].usable_locations & 4) {
+                    WinMgrEntry* entry;
+
+                    WW_S32(work, 0x2D4) = item;
+                    WW_S32(work, 0x2D8) = ((s32*)((u8*)work + 0x214))[sel];
+                    WW_S32(work, 0x20C) = 300;
+                    WW_S32(work, 0x2DC) = 0;
+                    WW_S32(work, 0x2E0) = 0;
+                    psndSFXOn((const char*)0x20012);
+                    entry = winMgrGetPtr(WW_S32(work, 0x1208));
+                    winMgrSetSize(WW_S32(work, 0x1208), entry->field_0x18, entry->field_0x1C, entry->field_0x20,
+                                  WW_S32(work, 0x1E0) * 0x1C + 0x44);
+                    winMgrOpen(WW_S32(work, 0x1208));
+                    winMgrOpen(WW_S32(work, 0x120C));
+                }
+            } else {
+                idx = ((s32*)((u8*)work + 0x214))[sel];
+                idx2 = ((s16*)((u8*)work + 0x2E8))[idx];
+                item = idx2;
+                if ((u32)(item - 0x37) <= 3 || item == 0x3B) {
+                    const char** book;
+
+                    WW_S32(work, 0x20C) = 100;
+                    WW_F32(work, 0x238) = float_neg170_8041d558;
+                    WW_F32(work, 0x240) = float_160_8041d4dc;
+                    work->flags |= 0x8000;
+                    book = luigi_book_list[item - 0x37];
+                    WW_S32(work, 0x2C8) = item - 0x37;
+                    WW_S32(work, 0x2D0) = 0;
+                    WW_S32(work, 0x2CC) = 0;
+                    while (book[WW_S32(work, 0x2CC)] != 0) {
+                        WW_S32(work, 0x2CC)++;
+                    }
+                    WW_S32(work, 0x2CC) = (WW_S32(work, 0x2CC) + 1) / 2;
+                    psndSFXOn((const char*)0x20012);
+                } else if (item == 0x36 && pouchReceiveMailCount() != 0) {
+                    WW_S32(work, 0x20C) = 200;
+                    WW_F32(work, 0x248) = float_neg144_8041d55c;
+                    WW_F32(work, 0x250) = float_180_8041d560;
+                    psndSFXOn((const char*)0x20012);
+                } else if (item == 0x4E) {
+                    WW_S32(work, 0x2D4) = item;
+                    psndSFXOn((const char*)0x20012);
+                    return -2;
+                }
+            }
+            goto update10;
+        }
+        if (work->buttonRep & 0x40) {
+            ((s32*)((u8*)work + 0x21C))[sel] -= 1;
+            if (((s32*)((u8*)work + 0x21C))[sel] < 0) {
+                ((s32*)((u8*)work + 0x21C))[sel] = 0;
+            }
+            ((s32*)((u8*)work + 0x214))[sel] = ((s32*)((u8*)work + 0x21C))[sel] * 10;
+            psndSFXOn((const char*)0x20035);
+        } else if (work->buttonRep & 0x20) {
+            ((s32*)((u8*)work + 0x21C))[sel] += 1;
+            if (((s32*)((u8*)work + 0x21C))[sel] >= rows) {
+                ((s32*)((u8*)work + 0x21C))[sel] = rows - 1;
+            }
+            ((s32*)((u8*)work + 0x214))[sel] = ((s32*)((u8*)work + 0x21C))[sel] * 10;
+            psndSFXOn((const char*)0x20035);
+        } else if (work->dirRep & 0xC000) {
+            idx = ((s32*)((u8*)work + 0x214))[sel];
+            if (idx % 2 != 0) {
+                s32 v = idx - 1;
+                if (v >= 0 && v < count) {
+                    ((s32*)((u8*)work + 0x214))[sel] = idx - 1;
+                }
+            } else {
+                s32 v = idx + 1;
+                if (v >= 0 && v < count) {
+                    ((s32*)((u8*)work + 0x214))[sel] = idx + 1;
+                }
+            }
+            psndSFXOn((const char*)0x20035);
+        } else if (work->dirRep & 0x1000) {
+            idx = ((s32*)((u8*)work + 0x214))[sel];
+            {
+                s32 v = idx - 2;
+                if (v >= 0 && v < count) {
+                    ((s32*)((u8*)work + 0x214))[sel] = idx - 2;
+                }
+            }
+            ((s32*)((u8*)work + 0x21C))[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
+            psndSFXOn((const char*)0x20035);
+        } else if (work->dirRep & 0x2000) {
+            idx = ((s32*)((u8*)work + 0x214))[sel];
+            {
+                s32 v = idx + 2;
+                if (v >= 0 && v < count) {
+                    ((s32*)((u8*)work + 0x214))[sel] = idx + 2;
+                } else if (idx + (idx & 1) < count) {
+                    ((s32*)((u8*)work + 0x214))[sel] = count - 1;
+                }
+            }
+            ((s32*)((u8*)work + 0x21C))[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
+            psndSFXOn((const char*)0x20035);
+        } else if (work->buttonTrg & 0x10) {
+            winSortEntry(work, WW_S32(work, 0x210) != 0, float_neg310_8041d550, float_150_8041d52c);
+            WW_S32(work, 0x124) = WW_S32(work, 0x20C);
+            psndSFXOn((const char*)0x20012);
+            WW_S32(work, 0x20C) = 1000;
+        } else if (work->buttonTrg & 0x1000) {
+            return -2;
+        }
+    update10: {
+        WW_F32(work, 0x158) = (f32)((((s32*)((u8*)work + 0x214))[sel] % 10 % 2) * 0xCC - 0x9B);
+        WW_F32(work, 0x15C) = (f32)(0x6E - (((s32*)((u8*)work + 0x214))[sel] % 10 / 2) * 0x26);
+        item = (WW_S32(work, 0x210) == 0) ? pouchHaveItem(((s32*)((u8*)work + 0x214))[sel])
+                                          : (s32)((s16*)((u8*)work + 0x2E8))[((s32*)((u8*)work + 0x214))[sel]];
+        winMsgEntry(work, item, itemDataTable[item].description, 0);
+    }
+        break;
+
+    case 100:
+        if (work->buttonTrg & 0x100) {
+            psndSFXOn((const char*)0x20012);
+            WW_S32(work, 0x2D0) += 1;
+            if (WW_S32(work, 0x2D0) >= WW_S32(work, 0x2CC)) {
+                WW_S32(work, 0x2D0) = WW_S32(work, 0x2CC) - 1;
+                WW_S32(work, 0x20C) = 10;
+                WW_F32(work, 0x238) = float_320_8041d528;
+                WW_F32(work, 0x240) = float_neg240_8041d4f4;
+                work->flags &= ~0x8000;
+                WW_F32(work, 0x150) = WW_F32(work, 0x158);
+                WW_F32(work, 0x154) = WW_F32(work, 0x15C);
+            }
+        } else if (work->buttonTrg & 0x200) {
+            psndSFXOn((const char*)0x20013);
+            WW_S32(work, 0x2D0) -= 1;
+            if (WW_S32(work, 0x2D0) < 0) {
+                WW_S32(work, 0x2D0) = 0;
+                WW_S32(work, 0x20C) = 10;
+                WW_F32(work, 0x238) = float_320_8041d528;
+                WW_F32(work, 0x240) = float_neg240_8041d4f4;
+                work->flags &= ~0x8000;
+                WW_F32(work, 0x150) = WW_F32(work, 0x158);
+                WW_F32(work, 0x154) = WW_F32(work, 0x15C);
+            }
+        } else if (work->buttonTrg & 0x1000) {
+            WW_F32(work, 0x238) = float_320_8041d528;
+            WW_F32(work, 0x240) = float_neg240_8041d4f4;
+            work->flags &= ~0x8000;
+            WW_F32(work, 0x150) = WW_F32(work, 0x158);
+            WW_F32(work, 0x154) = WW_F32(work, 0x15C);
+            return -2;
+        }
+        WW_F32(work, 0x158) = float_neg170_8041d558;
+        WW_F32(work, 0x15C) = float_150_8041d52c;
+        break;
+
+    case 200:
+        if (work->buttonTrg & 0x100) {
+            u8* mail;
+            u8* b;
+
+            b = (u8*)work;
+            b += WW_S32(work, 0x258) * 2;
+            if ((s32)pouchCheckMail(b[0x26F]) == 1) {
+                b = (u8*)work;
+                b += WW_S32(work, 0x258) * 2;
+                pouchOpenMail(b[0x26F]);
+            }
+            swSet(0x26);
+            psndSFXOn((const char*)0x20036);
+            WW_S32(work, 0x20C) = 201;
+            b = (u8*)work;
+            b += WW_S32(work, 0x258) * 2;
+            mail = (u8*)mailGetPtr(b[0x26F]);
+            FontGetMessageWidthLine(msgSearch(*(const char**)(mail + 0xC)), winItemMailLine(work));
+            WW_U16(work, 0x26C) += 1;
+            WW_S32(work, 0x268) = 0;
+            if (*(u16*)(mail + 0) & 0x1000) {
+                WW_U16(work, 0x26C) += 0xA;
+            }
+        } else if (work->buttonTrg & 0x200) {
+            psndSFXOn((const char*)0x20013);
+            WW_S32(work, 0x20C) = 10;
+            WW_F32(work, 0x248) = float_320_8041d528;
+            WW_F32(work, 0x250) = float_neg240_8041d4f4;
+        } else if (work->dirRep & 0x1000) {
+            old = WW_S32(work, 0x258);
+            WW_S32(work, 0x258) = old - 1;
+            if (WW_S32(work, 0x258) < 0) {
+                WW_S32(work, 0x258) = 0;
+            }
+            WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
+            WW_S32(work, 0x268) = 0;
+            if (old != WW_S32(work, 0x258)) {
+                psndSFXOn((const char*)0x20036);
+            }
+        } else if (work->dirRep & 0x2000) {
+            old = WW_S32(work, 0x258);
+            WW_S32(work, 0x258) = old + 1;
+            if (WW_S32(work, 0x258) >= WW_S32(work, 0x254)) {
+                WW_S32(work, 0x258) = WW_S32(work, 0x254) - 1;
+            }
+            WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
+            WW_S32(work, 0x268) = 0;
+            if (old != WW_S32(work, 0x258)) {
+                psndSFXOn((const char*)0x20036);
+            }
+        } else if (work->buttonRep & 0x40) {
+            old = WW_S32(work, 0x25C);
+            WW_S32(work, 0x25C) = old - 1;
+            if (WW_S32(work, 0x25C) < 0) {
+                WW_S32(work, 0x25C) = 0;
+            }
+            WW_S32(work, 0x258) = WW_S32(work, 0x25C) * 5;
+            if (old != WW_S32(work, 0x25C)) {
+                psndSFXOn((const char*)0x20036);
+            }
+        } else if (work->buttonRep & 0x20) {
+            page = WW_S32(work, 0x254);
+            old = WW_S32(work, 0x25C);
+            WW_S32(work, 0x25C) = old + 1;
+            page = (page + 4) / 5;
+            if (WW_S32(work, 0x25C) >= page) {
+                WW_S32(work, 0x25C) = page - 1;
+            }
+            WW_S32(work, 0x258) = WW_S32(work, 0x25C) * 5;
+            if (old != WW_S32(work, 0x25C)) {
+                psndSFXOn((const char*)0x20036);
+            }
+        } else if (work->buttonTrg & 0x10) {
+            winSortEntry(work, 7, WW_F32(work, 0x248), WW_F32(work, 0x250) - float_60_8041d564);
+            WW_S32(work, 0x124) = WW_S32(work, 0x20C);
+            psndSFXOn((const char*)0x20012);
+            WW_S32(work, 0x20C) = 1000;
+        } else if (work->buttonTrg & 0x1000) {
+            WW_F32(work, 0x248) = float_320_8041d528;
+            WW_F32(work, 0x250) = float_neg240_8041d4f4;
+            return -2;
+        }
+        WW_F32(work, 0x158) = float_neg96_8041d568;
+        WW_F32(work, 0x15C) = float_120_8041d530 - (f32)((WW_S32(work, 0x258) % 5) * 0x28);
+        break;
+
+    case 201: {
+        u8* b = (u8*)work;
+        u8* mail;
+
+        b += WW_S32(work, 0x258) * 2;
+        mail = (u8*)mailGetPtr(b[0x26F]);
+
+        if (*(u16*)(mail + 0) & 0x1000) {
+            WW_S32(work, 0x2C) = fileAsyncf(4, NULL, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
+            if ((u32)WW_S32(work, 0x2C) != 0) {
+                WW_S32(work, 0x2C) = (s32)fileAllocf(4, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
+                WW_S32(work, 0x20C) += 1;
+            }
+        } else {
+            WW_S32(work, 0x2C) = 0;
+            WW_S32(work, 0x20C) += 1;
+        }
+        break;
+    }
+
+    case 202:
+        if ((u32)WW_U16(work, 0x26C) > 8) {
+            if (keyGetDirRep(0) & 0x100) {
+                if (WW_S32(work, 0x268) > 0) {
+                    WW_S32(work, 0x268) -= 1;
+                }
+            } else if (keyGetDirRep(0) & 0x200) {
+                if (WW_S32(work, 0x268) + 6 < (s32)WW_U16(work, 0x26C)) {
+                    WW_S32(work, 0x268) += 1;
+                }
+            }
+        }
+        if (work->buttonTrg & 0x200) {
+            psndSFXOn((const char*)0x20036);
+            if ((u32)WW_S32(work, 0x2C) != 0) {
+                fileFree((FileEntry*)WW_S32(work, 0x2C));
+            }
+            WW_S32(work, 0x20C) = 200;
+        } else if (work->buttonTrg & 0x1000) {
+            if ((u32)WW_S32(work, 0x2C) != 0) {
+                fileFree((FileEntry*)WW_S32(work, 0x2C));
+            }
+            WW_F32(work, 0x248) = float_320_8041d528;
+            WW_F32(work, 0x250) = float_neg240_8041d4f4;
+            return -2;
+        }
+        WW_F32(work, 0x158) = float_neg96_8041d568;
+        WW_F32(work, 0x15C) = float_120_8041d530;
+        break;
+
+    case 300:
+        if (work->buttonTrg & 0x200) {
+            psndSFXOn((const char*)0x20013);
+            WW_S32(work, 0x20C) = 10;
+            WW_S32(work, 0x2D4) = 0;
+            winMgrClose(WW_S32(work, 0x1208));
+            winMgrClose(WW_S32(work, 0x120C));
+        } else if (work->buttonTrg & 0x100) {
+            MarioWork* mario = marioGetPtr();
+            s32 ok = 0;
+
+            psndSFXOn((const char*)0x20012);
+            if (mario->currMotionId == 0x19 || mario->currMotionId == 0x18) {
+                ok = 1;
+            }
+            if (unk_8009fcbc() || U_marioSlitContinueChk()) {
+                ok = 1;
+            }
+            if (WW_S32(work, 0x2DC) > 0) {
+                if (marioBgmodeChk()) {
+                    ok = 1;
+                }
+            }
+            if (WW_S32(work, 0x2DC) > 1) {
+                if (!marioBgmodeChk()) {
+                    ok = 1;
+                }
+            }
+            if (!ok) {
+                winMgrClose(WW_S32(work, 0x1208));
+                winMgrClose(WW_S32(work, 0x120C));
+                return -2;
+            }
+            if (marioBgmodeChk() == 0) {
+                leader = marioGetParty();
+            } else {
+                leader = marioGetPtr()->prevPartyMemberId[0];
+            }
+            n = 0;
+            for (i = 0; i < 7; i++) {
+                if (leader == winPartyDt[i].field_0x0) {
+                    list[n++] = &winPartyDt[i];
+                }
+            }
+            for (i = 0; i < 7; i++) {
+                if (leader != winPartyDt[i].field_0x0) {
+                    list[n++] = &winPartyDt[i];
+                }
+            }
+            if (WW_S32(work, 0x2DC) < 1) {
+                pouchSetHP(pouchGetHP() + itemDataTable[WW_S32(work, 0x2D4)].hp_restored);
+                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[WW_S32(work, 0x2D4)].fp_restored);
+                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[WW_S32(work, 0x2D4)].sp_restored);
+            } else {
+                PartyId pid = list[WW_S32(work, 0x2DC) - 1]->field_0x0;
+
+                (*(void(*)(PartyId, s32))pouchSetPartyHP)(pid, (*(s32(*)(PartyId))pouchGetPartyHP)(pid) + itemDataTable[WW_S32(work, 0x2D4)].hp_restored);
+                pouchSetFP((*(s32(*)(void))pouchGetFP)() + itemDataTable[WW_S32(work, 0x2D4)].fp_restored);
+                pouchSetAP((*(s32(*)(void))pouchGetAP)() + itemDataTable[WW_S32(work, 0x2D4)].sp_restored);
+            }
+            WW_S32(work, 0x2E0) = 0;
+            WW_S32(work, 0x20C) = 301;
+            break;
+        } else if (work->dirRep & 0x1000) {
+            old = WW_S32(work, 0x2DC);
+            WW_S32(work, 0x2DC) = old - 1;
+            if (WW_S32(work, 0x2DC) < 0) {
+                WW_S32(work, 0x2DC) = WW_S32(work, 0x1E0);
+            }
+            if (old != WW_S32(work, 0x2DC)) {
+                psndSFXOn((const char*)0x20005);
+            }
+        } else if (work->dirRep & 0x2000) {
+            old = WW_S32(work, 0x2DC);
+            WW_S32(work, 0x2DC) = old + 1;
+            if (WW_S32(work, 0x2DC) >= WW_S32(work, 0x1E0) + 1) {
+                WW_S32(work, 0x2DC) = 0;
+            }
+            if (old != WW_S32(work, 0x2DC)) {
+                psndSFXOn((const char*)0x20005);
+            }
+        } else if (work->buttonTrg & 0x1000) {
+            WW_S32(work, 0x2D4) = 0;
+            winMgrClose(WW_S32(work, 0x1208));
+            winMgrClose(WW_S32(work, 0x120C));
+            return -2;
+        }
+        WW_F32(work, 0x158) = float_neg80_8041d56c;
+        {
+            f32 f4;
+            s32 t = WW_S32(work, 0x2DC);
+
+            if (t == 0) {
+                f4 = float_0_8041d4ac;
+            } else if (t == 1) {
+                f4 = float_neg16_8041d4b0;
+            } else {
+                f4 = float_neg28_8041d4b4;
+            }
+            {
+                f32 v = float_130_8041d570 - float_28_8041d574 * (f32)t;
+
+                WW_F32(work, 0x15C) = v + f4;
+            }
+        }
+        break;
+
+    case 301:
+        WW_S32(work, 0x2E0) += 1;
+        if (WW_S32(work, 0x2E0) > gp->framerate * 2) {
+            WW_S32(work, 0x2E0) = 0;
+            pouchRemoveItemIndex(WW_S32(work, 0x2D4), WW_S32(work, 0x2D8));
+            WW_S32(work, 0x20C) = 10;
+            WW_S32(work, 0x2D4) = 0;
+            if (pouchGetHaveItemCnt() == 0) {
+                WW_S32(work, 0x20C) = 0;
+            } else if (WW_S32(work, 0x214) >= pouchGetHaveItemCnt()) {
+                WW_S32(work, 0x214) = pouchGetHaveItemCnt() - 1;
+            }
+            winMgrClose(WW_S32(work, 0x1208));
+            winMgrClose(WW_S32(work, 0x120C));
+        }
+        break;
+
+    case 1000:
+        if (!winSortWait(work)) {
+            WW_S32(work, 0x20C) = WW_S32(work, 0x124);
+        }
+        if (work->buttonTrg & 0x1000) {
+            return -2;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
 
 // MUST_MATCH: retail keeps the blend difference in a temp so MWCC contracts it as
 // `diff * 0.25f + old` rather than `0.25f * diff + old`; using the same temp for the
@@ -830,6 +1396,375 @@ void winMakeSkipList(WindowWork* work) {
             w->skipList[w->count] = item;
             w->count++;
         }
+    }
+}
+
+// Draws the item/submenu window: the selected item's icon, name and description, the
+// party members' names and HP/FP, the item grid and the window's background textures.
+// Complete and logically correct; MWCC saves the original's 9 callee-saved registers and, with the
+// per-block `Vec tcopy`, the frame matches the original's 0x490 exactly.
+// NONMATCHING (94.44%): a residue of stack-slot names and integer register colours; `i`/`ofs`/`list`
+// land in different saved registers and the by-value `winTexSet` scale arguments are copied where the
+// original passes them in place, so those instructions differ in operands only.
+void itemUseDisp(WinMgrEntry* entry) {
+    WindowWork* work = winGetPtr();
+    WindowPartyDt* list[7];
+    WindowPartyDt* party;
+    GXColor color = dat_8041d480;
+    GXColor iconColor = dat_8041d484;
+    GXColor white = dat_8041d484;
+    s32 i;
+    s32 ofs;
+    s32 ofs2;
+    s32 sel2e0;
+    f32 f31;
+    f32 w;
+    const char* name;
+    s32 n;
+    s32 gray;
+    Vec tcopy;
+
+    if (winMgrAction(WW_S32(work, 0x1208))) {
+        return;
+    }
+
+    {
+        s32 partyId;
+
+        partyId = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
+
+        party = winPartyDt;
+        n = 0;
+        for (i = 0; i < 7; i++) {
+            if (party[i].field_0x0 == partyId) {
+                list[n++] = &party[i];
+            }
+        }
+        for (i = 0; i < 7; i++) {
+            if (party[i].field_0x0 != partyId) {
+                list[n++] = &party[i];
+            }
+        }
+
+    }
+
+    for (i = 0, ofs = 0, ofs2 = 0; i < WW_S32(work, 0x1E0) + 1; ofs += 0x16, ofs2 += 0x1C, i++) {
+        if (i == 0) {
+            f31 = float_0_8041d4ac;
+        } else if (i == 1) {
+            f31 = float_neg16_8041d4b0;
+        } else {
+            f31 = float_neg28_8041d4b4;
+        }
+
+        sel2e0 = WW_S32(work, 0x2E0);
+        gray = 0;
+        if (sel2e0 != 0) {
+            if (i == WW_S32(work, 0x2DC)) {
+                color = dat_8041d488;
+            } else {
+                color = dat_8041d48c;
+                gray = 1;
+            }
+        }
+
+        if (i == 0) {
+
+            if (sel2e0 % 20 > 15 && i == WW_S32(work, 0x2DC)) {
+                continue;
+            }
+            if (gray) {
+                winIconGrayInit();
+            } else {
+                winIconInit();
+            }
+            {
+                GXColor c = iconColor;
+                Vec scale = vec3_802f53a8;
+                Vec translate = vec3_802f539c;
+                translate.x = (f32)(entry->field_0x18 + 0x1E);
+                translate.y = (f32)(entry->field_0x1C - 0x14 - ofs);
+#ifdef MUST_MATCH
+                tcopy = translate;
+                winIconSet(0x19E, &tcopy, &scale, &c);
+#else
+                winIconSet(0x19E, &translate, &scale, &c);
+#endif
+            }
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+            GXSetTevAlphaIn(0, 7, 1, 4, 7);
+            {
+                GXColor c = dat_8041d490;
+                Vec scale = vec3_802f53c0;
+                Vec translate = vec3_802f53b4;
+                w = (f32)FontGetMessageWidth(str_8041D4BC);
+                translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
+                translate.y = (f32)(entry->field_0x1C - 0x13 - ofs);
+                winTexSet(0xAF, translate, scale, c);
+            }
+            {
+                GXColor c = dat_8041d494;
+                Vec scale = vec3_802f53d8;
+                Vec translate = vec3_802f53cc;
+                w = (f32)FontGetMessageWidth(str_8041D4BC);
+                translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
+                translate.y = (f32)(entry->field_0x1C - 0x13 - (i + 1) * 0x16);
+                winTexSet(0xAF, translate, scale, c);
+            }
+            winFontInit();
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f53f0;
+                Vec translate = vec3_802f53e4;
+                Vec tcopy;
+                translate.x = (f32)(entry->field_0x18 + 0x32);
+                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
+                tcopy = translate;
+                winFontSet(&tcopy, &scale, &c, msgSearch("name_mario"));
+            }
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f5408;
+                Vec translate = vec3_802f53fc;
+                Vec tcopy;
+
+                translate.x = (f32)(entry->field_0x18 + 0xDC);
+                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
+                tcopy = translate;
+                winFontSet(&tcopy, &scale, &c, str_8041D4BC);
+            }
+            {
+                Vec scale;
+                Vec translate = vec3_802f5414;
+                Vec tcopy;
+                GXColor c = color;
+                scale = vec3_802f5420;
+                translate.x = (f32)(entry->field_0x18 + 0xF5);
+                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
+                tcopy = translate;
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetHP());
+            }
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f5438;
+                Vec translate = vec3_802f542c;
+                Vec tcopy;
+
+                translate.x = (f32)(entry->field_0x18 + 0x10B);
+                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
+                tcopy = translate;
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C8);
+            }
+            {
+                Vec scale;
+                Vec translate = vec3_802f5444;
+                Vec tcopy;
+                GXColor c = color;
+                scale = vec3_802f5450;
+                translate.x = (f32)(entry->field_0x18 + 0x136);
+                translate.y = (f32)(entry->field_0x1C - 0xA - ofs);
+                tcopy = translate;
+                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetMaxHP());
+            }
+            if (itemDataTable[WW_S32(work, 0x2D4)].fp_restored != 0) {
+                if (WW_S32(work, 0x2E0) % 20 > 15) {
+                    continue;
+                }
+                color = dat_8041d498;
+            }
+            winFontInit();
+            {
+                Vec scale;
+                Vec translate = vec3_802f545c;
+                Vec tcopy;
+                GXColor c = color;
+                scale = vec3_802f5468;
+                translate.x = (f32)(entry->field_0x18 + 0xDC);
+                translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
+                tcopy = translate;
+                winFontSet(&tcopy, &scale, &c, str_8041D4CC);
+            }
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f5480;
+                Vec translate = vec3_802f5474;
+                Vec tcopy;
+
+                translate.x = (f32)(entry->field_0x18 + 0xF5);
+                translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
+                tcopy = translate;
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetFP());
+            }
+            {
+                Vec scale;
+                Vec translate = vec3_802f548c;
+                Vec tcopy;
+                GXColor c = color;
+                scale = vec3_802f5498;
+                translate.x = (f32)(entry->field_0x18 + 0x10B);
+                translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
+                tcopy = translate;
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C8);
+            }
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f54b0;
+                Vec translate = vec3_802f54a4;
+                Vec tcopy;
+
+                translate.x = (f32)(entry->field_0x18 + 0x136);
+                translate.y = (f32)(entry->field_0x1C - 0xA - (i + 1) * 0x16);
+                tcopy = translate;
+                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetMaxFP());
+            }
+        } else {
+
+
+
+            if (list[i - 1]->field_0x0 != 4) {
+                name = msgSearch(list[i - 1]->field_0x8);
+            } else {
+                name = pouchGetYoshiName();
+            }
+            if (WW_S32(work, 0x2E0) % 20 > 15 && i == WW_S32(work, 0x2DC)) {
+                continue;
+            }
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+            GXSetTevAlphaIn(0, 7, 1, 4, 7);
+            {
+                GXColor c = dat_8041d49c;
+                Vec scale = vec3_802f54c8;
+                Vec translate = vec3_802f54bc;
+                w = (f32)FontGetMessageWidth(str_8041D4BC);
+                translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
+                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_14_8041d4d4;
+                winTexSet(0xAF, translate, scale, c);
+            }
+            if (gray) {
+                winIconGrayInit();
+            } else {
+                winIconInit();
+            }
+            {
+                GXColor c = iconColor;
+                Vec scale = vec3_802f54e0;
+                Vec translate = vec3_802f54d4;
+                Vec tcopy;
+                translate.x = (f32)(entry->field_0x18 + 0x1E);
+                translate.y = f31 + ((f32)(entry->field_0x1C - 0x14 - ofs2));
+#ifdef MUST_MATCH
+                tcopy = translate;
+                winIconSet(list[i - 1]->field_0x4, &tcopy, &scale, &c);
+#else
+                winIconSet(list[i - 1]->field_0x4, &translate, &scale, &c);
+#endif
+            }
+            winFontInit();
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f54f8;
+                GXColor* pc = &c;
+                Vec cscale;
+                Vec translate;
+                w = (f32)FontGetMessageWidth(name);
+                if (w < float_160_8041d4dc) {
+                    scale.x = float_1_8041d4d8;
+                } else {
+                    scale.x = float_160_8041d4dc / (f32)FontGetMessageWidth(name);
+                }
+                cscale = scale;
+                translate = vec3_802f54ec;
+                translate.x = (f32)(entry->field_0x18 + 0x32);
+                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
+                tcopy = translate;
+                winFontSet(&tcopy, &cscale, pc, name);
+            }
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f5510;
+                Vec translate = vec3_802f5504;
+                Vec tcopy;
+
+                translate.x = (f32)(entry->field_0x18 + 0xDC);
+                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
+                tcopy = translate;
+                winFontSet(&tcopy, &scale, &c, str_8041D4BC);
+            }
+            {
+                Vec scale;
+                Vec translate = vec3_802f551c;
+                GXColor c = color;
+                scale = vec3_802f5528;
+                translate.x = (f32)(entry->field_0x18 + 0xF5);
+                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
+                tcopy = translate;
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[list[i - 1]->field_0x0].currentHP);
+            }
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f5540;
+                Vec translate = vec3_802f5534;
+
+                translate.x = (f32)(entry->field_0x18 + 0x10B);
+                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
+                tcopy = translate;
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C8);
+            }
+            {
+                GXColor c = color;
+                Vec scale = vec3_802f5558;
+                Vec translate = vec3_802f554c;
+
+                translate.x = (f32)(entry->field_0x18 + 0x136);
+                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_2_8041d4e0;
+                tcopy = translate;
+                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[list[i - 1]->field_0x0].maximumHP);
+            }
+        }
+    }
+
+    if (WW_S32(work, 0x1E0) > 1) {
+        winIconInit();
+        for (n = 2; n < 0x1E; n++) {
+            GXColor c = color;
+#ifdef MUST_MATCH
+            /* Retail reloads these rodata Vecs every iteration instead of hoisting them into
+               callee-saved registers; the volatile view keeps the loads in the loop and the
+               objects in .rodata. */
+            Vec scale = *(const volatile Vec*)&vec3_802f5570;
+            Vec translate = *(const volatile Vec*)&vec3_802f5564;
+#else
+            Vec scale = vec3_802f5570;
+            Vec translate = vec3_802f5564;
+#endif
+            translate.x = (f32)(entry->field_0x18 + (entry->field_0x20 / 31) * n);
+            translate.y = (f32)(entry->field_0x1C - 0x54);
+#ifdef MUST_MATCH
+            tcopy = translate;
+            winIconSet(0x1B7, &tcopy, &scale, &c);
+#else
+            winIconSet(0x1B7, &translate, &scale, &c);
+#endif
+        }
+    }
+    winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+    {
+        Vec scale = *(const volatile Vec*)&vec3_802f5588;
+        Vec translate = *(const volatile Vec*)&vec3_802f557c;
+        GXColor c = dat_8041d4a0;
+        translate.y = WW_F32(work, 0x154) - float_2_8041d4e0;
+        translate.x = float_2_8041d4e0 + WW_F32(work, 0x150);
+        winTexSet(0, translate, scale, c);
+    }
+    {
+        Vec scale = *(const volatile Vec*)&vec3_802f55a0;
+        Vec translate = *(const volatile Vec*)&vec3_802f5594;
+        GXColor c = white;
+        translate.x = WW_F32(work, 0x150);
+        translate.y = WW_F32(work, 0x154);
+        winTexSet(0, translate, scale, c);
     }
 }
 
