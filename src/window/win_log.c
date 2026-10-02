@@ -1779,7 +1779,7 @@ static const f32 pos_tbl[7][2] = {
     {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
 };
 
-// NONMATCHING: first draft.
+// NONMATCHING (75.01%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
 void mapGX(WindowWork* work, f32 x, f32 y) {
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
@@ -1873,7 +1873,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 scale = float_3_8041d888;
             }
             PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, float_0_8041d7bc);
-            n = *(s32*)(*(u8**)((u8*)anim + 0x24) + 8);
+            n = (s32)*(f32*)(*(u8**)((u8*)anim + 0x24) + 8);
             animPoseSetLocalTime(w->pose, (f32)(gp->retraceCount % n));
             animPoseMain(w->pose);
             animPoseDrawMtx(w->pose, m, 1, float_0_8041d7bc, scale);
