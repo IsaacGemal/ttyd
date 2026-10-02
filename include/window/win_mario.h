@@ -2,11 +2,14 @@
 
 #include "win/win_main.h"
 
+#ifdef MUST_MATCH
 // .rodata block that starts with the window's msg_menu_mario_* strings.  The
 // Vec/GXColor constants winMarioDisp reads all live past the string tables, so
-// they are reached through this one base (kept in a register as r31).
+// the original reaches them through this one base (kept in a register as r31).
+// Match-only: the named symbols are used otherwise (see win_mario.c).
 typedef struct WinMarioVecs { u8 pad[0x1000]; } WinMarioVecs;
 extern WinMarioVecs str_802F5650;
+#endif
 
 // .sdata2/.sdata data this unit reads from elsewhere
 extern const GXColor dat_8041d5e8;

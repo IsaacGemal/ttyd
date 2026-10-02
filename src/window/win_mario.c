@@ -529,19 +529,260 @@ void winMarioInit(WindowWork* work) {
 
 static s32 pri[6] = { 3, 2, 8, 10, 7, 9 };
 
+#ifdef MUST_MATCH
+// The original reaches every rodata constant of winMarioDisp through one base register (vp).
 #define VEC_AT(o) (*(Vec*)(vp + (o)))
 #define GXC_AT(o) (*(GXColor*)(vp + (o)))
 #define STR_AT(o) ((char*)(vp + (o)))
+#define WM_RAW_TBL(i) (*(const char**)((u8*)vp + 0x30C + (i) * 4))
+#define WM_TAG_TBL(i) (*(const char**)((u8*)vp + 0x360 + (i) * 4))
+#define WM_ZENKAKU(num) wmDispZenkaku(vp, 0x184, num)
+#define WM_NUM(width, num) wmDispNum(vp, 0x1AC, width, num)
+#else
+extern const Vec vec3_802f58b4;
+extern const Vec vec3_802f58c0;
+extern const Vec vec3_802f58cc;
+extern const Vec vec3_802f58d8;
+extern const Vec vec3_802f58e4;
+extern const Vec vec3_802f58f0;
+extern const Vec vec3_802f58fc;
+extern const Vec vec3_802f5908;
+extern const Vec vec3_802f5914;
+extern const Vec vec3_802f5920;
+extern const Vec vec3_802f592c;
+extern const Vec vec3_802f5938;
+extern const GXColor dat_802f5944[3];
+extern const GXColor dat_802f5950[3];
+extern const Vec vec3_802f59bc;
+extern const Vec vec3_802f59c8;
+extern const Vec vec3_802f59d4;
+extern const Vec vec3_802f59e0;
+extern const Vec vec3_802f59ec;
+extern const Vec vec3_802f59f8;
+extern const Vec vec3_802f5a04;
+extern const Vec vec3_802f5a10;
+extern const Vec vec3_802f5a1c;
+extern const Vec vec3_802f5a28;
+extern const Vec vec3_802f5a34;
+extern const Vec vec3_802f5a40;
+extern const Vec vec3_802f5a4c;
+extern const Vec vec3_802f5a58;
+extern const Vec vec3_802f5a64;
+extern const Vec vec3_802f5a70;
+extern const Vec vec3_802f5a7c;
+extern const Vec vec3_802f5a88;
+extern const Vec vec3_802f5a94;
+extern const Vec vec3_802f5aa0;
+extern const Vec vec3_802f5aac;
+extern const Vec vec3_802f5ab8;
+extern const Vec vec3_802f5ac4;
+extern const Vec vec3_802f5ad0;
+extern const Vec vec3_802f5adc;
+extern const Vec vec3_802f5ae8;
+extern const Vec vec3_802f5af4;
+extern const Vec vec3_802f5b00;
+extern const Vec vec3_802f5b0c;
+extern const Vec vec3_802f5b18;
+extern const Vec vec3_802f5b24;
+extern const Vec vec3_802f5b30;
+extern const Vec vec3_802f5b3c;
+extern const Vec vec3_802f5b48;
+extern const Vec vec3_802f5b54;
+extern const Vec vec3_802f5b60;
+extern const Vec vec3_802f5b6c;
+extern const Vec vec3_802f5b78;
+extern const Vec vec3_802f5b84;
+extern const Vec vec3_802f5b90;
+extern const Vec vec3_802f5b9c;
+extern const Vec vec3_802f5ba8;
+extern const Vec vec3_802f5bb4;
+extern const Vec vec3_802f5bc0;
+extern const Vec vec3_802f5bcc;
+extern const Vec vec3_802f5bd8;
+extern const Vec vec3_802f5be4;
+extern const Vec vec3_802f5bf0;
+extern const Vec vec3_802f5bfc;
+extern const Vec vec3_802f5c08;
+extern const Vec vec3_802f5c14;
+extern const Vec vec3_802f5c20;
+extern const Vec vec3_802f5c2c;
+extern const Vec vec3_802f5c38;
+extern const Vec vec3_802f5c44;
+extern const Vec vec3_802f5c50;
+extern const Vec vec3_802f5c5c;
+extern const Vec vec3_802f5c68;
+extern const Vec vec3_802f5c74;
+extern const Vec vec3_802f5c80;
+extern const Vec vec3_802f5c8c;
+extern const Vec vec3_802f5c98;
+extern const Vec vec3_802f5ca4;
+extern const Vec vec3_802f5cb0;
+extern const Vec vec3_802f5cbc;
+extern const Vec vec3_802f5cc8;
+extern const Vec vec3_802f5cd4;
+extern const Vec vec3_802f5ce0;
+extern const Vec vec3_802f5cec;
+extern const Vec vec3_802f5cf8;
+extern const Vec vec3_802f5d04;
+extern const Vec vec3_802f5d10;
+extern const Vec vec3_802f5d1c;
+extern const Vec vec3_802f5d28;
+extern const Vec vec3_802f5d34;
+extern const Vec vec3_802f5d40;
+extern const Vec vec3_802f5d4c;
+extern const Vec vec3_802f5d58;
+extern const Vec vec3_802f5d64;
+extern const Vec vec3_802f5d70;
+extern const Vec vec3_802f5d7c;
+extern const Vec vec3_802f5d88;
+extern const char str_802F5D94[];
+extern const char str_802F5DA0[];
+extern const char str_802F5DB8[];
+extern const char str_802F5DD0[];
+extern const char str_802F5DE8[];
+extern const char str_802F5E00[];
+extern const char str_802F5E1C[];
+extern const char str_802F5E3C[];
+extern const char str_802F5E58[];
+
+#define WMV_0x264 vec3_802f58b4
+#define WMV_0x270 vec3_802f58c0
+#define WMV_0x27C vec3_802f58cc
+#define WMV_0x288 vec3_802f58d8
+#define WMV_0x294 vec3_802f58e4
+#define WMV_0x2A0 vec3_802f58f0
+#define WMV_0x2AC vec3_802f58fc
+#define WMV_0x2B8 vec3_802f5908
+#define WMV_0x2C4 vec3_802f5914
+#define WMV_0x2D0 vec3_802f5920
+#define WMV_0x2DC vec3_802f592c
+#define WMV_0x2E8 vec3_802f5938
+#define WMG_0x2F4 dat_802f5944[0]
+#define WMG_0x2F8 dat_802f5944[1]
+#define WMG_0x2FC dat_802f5944[2]
+#define WMG_0x300 dat_802f5950[0]
+#define WMG_0x304 dat_802f5950[1]
+#define WMG_0x308 dat_802f5950[2]
+#define WMV_0x36C vec3_802f59bc
+#define WMV_0x378 vec3_802f59c8
+#define WMV_0x384 vec3_802f59d4
+#define WMV_0x390 vec3_802f59e0
+#define WMV_0x39C vec3_802f59ec
+#define WMV_0x3A8 vec3_802f59f8
+#define WMV_0x3B4 vec3_802f5a04
+#define WMV_0x3C0 vec3_802f5a10
+#define WMV_0x3CC vec3_802f5a1c
+#define WMV_0x3D8 vec3_802f5a28
+#define WMV_0x3E4 vec3_802f5a34
+#define WMV_0x3F0 vec3_802f5a40
+#define WMV_0x3FC vec3_802f5a4c
+#define WMV_0x408 vec3_802f5a58
+#define WMV_0x414 vec3_802f5a64
+#define WMV_0x420 vec3_802f5a70
+#define WMV_0x42C vec3_802f5a7c
+#define WMV_0x438 vec3_802f5a88
+#define WMV_0x444 vec3_802f5a94
+#define WMV_0x450 vec3_802f5aa0
+#define WMV_0x45C vec3_802f5aac
+#define WMV_0x468 vec3_802f5ab8
+#define WMV_0x474 vec3_802f5ac4
+#define WMV_0x480 vec3_802f5ad0
+#define WMV_0x48C vec3_802f5adc
+#define WMV_0x498 vec3_802f5ae8
+#define WMV_0x4A4 vec3_802f5af4
+#define WMV_0x4B0 vec3_802f5b00
+#define WMV_0x4BC vec3_802f5b0c
+#define WMV_0x4C8 vec3_802f5b18
+#define WMV_0x4D4 vec3_802f5b24
+#define WMV_0x4E0 vec3_802f5b30
+#define WMV_0x4EC vec3_802f5b3c
+#define WMV_0x4F8 vec3_802f5b48
+#define WMV_0x504 vec3_802f5b54
+#define WMV_0x510 vec3_802f5b60
+#define WMV_0x51C vec3_802f5b6c
+#define WMV_0x528 vec3_802f5b78
+#define WMV_0x534 vec3_802f5b84
+#define WMV_0x540 vec3_802f5b90
+#define WMV_0x54C vec3_802f5b9c
+#define WMV_0x558 vec3_802f5ba8
+#define WMV_0x564 vec3_802f5bb4
+#define WMV_0x570 vec3_802f5bc0
+#define WMV_0x57C vec3_802f5bcc
+#define WMV_0x588 vec3_802f5bd8
+#define WMV_0x594 vec3_802f5be4
+#define WMV_0x5A0 vec3_802f5bf0
+#define WMV_0x5AC vec3_802f5bfc
+#define WMV_0x5B8 vec3_802f5c08
+#define WMV_0x5C4 vec3_802f5c14
+#define WMV_0x5D0 vec3_802f5c20
+#define WMV_0x5DC vec3_802f5c2c
+#define WMV_0x5E8 vec3_802f5c38
+#define WMV_0x5F4 vec3_802f5c44
+#define WMV_0x600 vec3_802f5c50
+#define WMV_0x60C vec3_802f5c5c
+#define WMV_0x618 vec3_802f5c68
+#define WMV_0x624 vec3_802f5c74
+#define WMV_0x630 vec3_802f5c80
+#define WMV_0x63C vec3_802f5c8c
+#define WMV_0x648 vec3_802f5c98
+#define WMV_0x654 vec3_802f5ca4
+#define WMV_0x660 vec3_802f5cb0
+#define WMV_0x66C vec3_802f5cbc
+#define WMV_0x678 vec3_802f5cc8
+#define WMV_0x684 vec3_802f5cd4
+#define WMV_0x690 vec3_802f5ce0
+#define WMV_0x69C vec3_802f5cec
+#define WMV_0x6A8 vec3_802f5cf8
+#define WMV_0x6B4 vec3_802f5d04
+#define WMV_0x6C0 vec3_802f5d10
+#define WMV_0x6CC vec3_802f5d1c
+#define WMV_0x6D8 vec3_802f5d28
+#define WMV_0x6E4 vec3_802f5d34
+#define WMV_0x6F0 vec3_802f5d40
+#define WMV_0x6FC vec3_802f5d4c
+#define WMV_0x708 vec3_802f5d58
+#define WMV_0x714 vec3_802f5d64
+#define WMV_0x720 vec3_802f5d70
+#define WMV_0x72C vec3_802f5d7c
+#define WMV_0x738 vec3_802f5d88
+#define WMS_0x744 str_802F5D94
+#define WMS_0x750 str_802F5DA0
+#define WMS_0x768 str_802F5DB8
+#define WMS_0x780 str_802F5DD0
+#define WMS_0x798 str_802F5DE8
+#define WMS_0x7B0 str_802F5E00
+#define WMS_0x7CC str_802F5E1C
+#define WMS_0x7EC str_802F5E3C
+#define WMS_0x808 str_802F5E58
+extern const char* const N_stat_name_tbl[3];
+extern const char str_802F5968[];
+extern const char str_802F5980[];
+extern const char str_802F5998[];
+#define VEC_AT(o) WMV_##o
+#define GXC_AT(o) WMG_##o
+#define STR_AT(o) ((char*)WMS_##o)
+#define WM_RAW_TBL(i) N_stat_name_tbl[i]
+#define WM_TAG_TBL(i) ((i) == 0 ? str_802F5968 : (i) == 1 ? str_802F5980 : str_802F5998)
+#define WM_ZENKAKU(num) wmDispZenkaku(num)
+#define WM_NUM(width, num) wmDispNum(width, num)
+#endif
 #define POSE (WW_S32(work, 0x188))
 
-// Same body as winZenkakuStr, but with the digit table read through the panel's
+// Same body as winZenkakuStr. Under MUST_MATCH the digit table is read through the panel's
 // rodata base (`base + off`) so MWCC folds it into the existing `r31` displacement
 // instead of reloading a separate symbol for the local table template.
-static inline char* wmDispZenkaku(const u8* base, s32 off, s32 num) {
+#ifdef MUST_MATCH
+#define WM_BASE_PARAMS const u8* base, s32 off,
+#else
+#define WM_BASE_PARAMS
+#endif
+static inline char* wmDispZenkaku(WM_BASE_PARAMS s32 num) {
     signed char buf[0x100];
     const char* tbl[10];
-    s32 i;
+    static char tmp2[0x100];
+    u32 i;
 
+#ifdef MUST_MATCH
     tbl[0] = *(const char**)(base + off + 0x00);
     tbl[1] = *(const char**)(base + off + 0x04);
     tbl[2] = *(const char**)(base + off + 0x08);
@@ -552,26 +793,38 @@ static inline char* wmDispZenkaku(const u8* base, s32 off, s32 num) {
     tbl[7] = *(const char**)(base + off + 0x1C);
     tbl[8] = *(const char**)(base + off + 0x20);
     tbl[9] = *(const char**)(base + off + 0x24);
+#else
+    tbl[0] = "\x82\x4F";
+    tbl[1] = "\x82\x50";
+    tbl[2] = "\x82\x51";
+    tbl[3] = "\x82\x52";
+    tbl[4] = "\x82\x53";
+    tbl[5] = "\x82\x54";
+    tbl[6] = "\x82\x55";
+    tbl[7] = "\x82\x56";
+    tbl[8] = "\x82\x57";
+    tbl[9] = "\x82\x58";
+#endif
     if (num < 0) {
-        strcpy(unk_803dfbf8, "-");
+        strcpy(tmp2, "-");
         num = -num;
     } else {
-        strcpy(unk_803dfbf8, "");
+        strcpy(tmp2, "");
     }
     sprintf((char*)buf, "%d", num);
-    for (i = 0; i < (s32)strlen((char*)buf); i++) {
-        strcat(unk_803dfbf8, tbl[buf[i] - 0x30]);
+    for (i = 0; i < strlen((char*)buf); i++) {
+        strcat(tmp2, tbl[buf[i] - 0x30]);
     }
-    return unk_803dfbf8;
+    return tmp2;
 }
 
-// Same body as unk_8016af5c (zero-padded), reading the digit table through the
-// panel rodata base (`base + off`) as wmDispZenkaku does.
-static inline char* wmDispNum(const u8* base, s32 off, s32 width, s32 num) {
+// Same body as unk_8016af5c (zero-padded), reading the digit table as wmDispZenkaku does.
+static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num) {
     signed char buf[0x100];
     const char* tbl[10];
     s32 i;
 
+#ifdef MUST_MATCH
     tbl[0] = *(const char**)(base + off + 0x00);
     tbl[1] = *(const char**)(base + off + 0x04);
     tbl[2] = *(const char**)(base + off + 0x08);
@@ -582,6 +835,18 @@ static inline char* wmDispNum(const u8* base, s32 off, s32 width, s32 num) {
     tbl[7] = *(const char**)(base + off + 0x1C);
     tbl[8] = *(const char**)(base + off + 0x20);
     tbl[9] = *(const char**)(base + off + 0x24);
+#else
+    tbl[0] = "\x82\x4F";
+    tbl[1] = "\x82\x50";
+    tbl[2] = "\x82\x51";
+    tbl[3] = "\x82\x52";
+    tbl[4] = "\x82\x53";
+    tbl[5] = "\x82\x54";
+    tbl[6] = "\x82\x55";
+    tbl[7] = "\x82\x56";
+    tbl[8] = "\x82\x57";
+    tbl[9] = "\x82\x58";
+#endif
     if (num < 0) {
         strcpy(unk_803dfbf8, "-");
         num = -num;
@@ -599,11 +864,13 @@ static inline char* wmDispNum(const u8* base, s32 off, s32 width, s32 num) {
     return unk_803dfbf8;
 }
 
-// NONMATCHING (91.91%): register allocation and instruction scheduling still differ; the target keeps three stack copies of white/black, hoists loop-invariant colour loads, and folds the double->int conversion magic into the rodata base register. The stack frame matches exactly (0x1940). The 26 colour-temp copies below are the target's `GXColor c = <col>; winFontSet*(..., &c, ...)` pattern; the remaining sites cannot be added without blowing MWCC's inlining budget (which drops every inlined wmDisp* buffer). See REPORT.md.
+// NONMATCHING (91.91%): register allocation and instruction scheduling still differ; the target keeps three stack copies of white/black, hoists loop-invariant colour loads, and folds the double->int conversion magic into the rodata base register. The stack frame matches exactly (0x1940). The 26 colour-temp copies below are the target's `GXColor c = <col>; winFontSet*(..., &c, ...)` pattern; the remaining sites cannot be added without blowing MWCC's inlining budget (which drops every inlined wmDisp* buffer).
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     // Draws the Mario status panel: name/level/rank, HP/FP/BP, star pieces and
     // shine sprites, the play-time clock and the collected star powers.
+#ifdef MUST_MATCH
     const u8* vp;
+#endif
     PouchData* pouch;
     const u8* e;
     GXColor white, black;
@@ -613,7 +880,9 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     s32 i, j;
     (void)camId;
 
+#ifdef MUST_MATCH
     vp = (const u8*)&str_802F5650;
+#endif
     pouch = pouchGetPtr();
     e = (const u8*)work + idx * 0x14;
     white = *(GXColor*)&dat_8041d5e8;
@@ -662,7 +931,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         char buf[0x1D0];
         Vec pos, scale, tmp;
-        sprintf(buf, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->level));
+        sprintf(buf, str_8041D63C, WM_ZENKAKU(pouch->level));
         winFontInit();
         tmp = VEC_AT(0x2AC);
         scale = VEC_AT(0x2B8);
@@ -722,18 +991,18 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         const char* mRaw;
         const char* mTag;
         Vec tr, sc, tmp, pos, scale;
-        rawTbl[0] = *(const char**)((u8*)vp + 0x30C);
-        rawTbl[1] = *(const char**)((u8*)vp + 0x310);
-        rawTbl[2] = *(const char**)((u8*)vp + 0x314);
+        rawTbl[0] = WM_RAW_TBL(0);
+        rawTbl[1] = WM_RAW_TBL(1);
+        rawTbl[2] = WM_RAW_TBL(2);
         colTbl[0] = GXC_AT(0x2F4);
         colTbl[1] = GXC_AT(0x2F8);
         colTbl[2] = GXC_AT(0x2FC);
         hiliteTbl[0] = GXC_AT(0x300);
         hiliteTbl[1] = GXC_AT(0x304);
         hiliteTbl[2] = GXC_AT(0x308);
-        tagTbl[0] = *(const char**)((u8*)vp + 0x360);
-        tagTbl[1] = *(const char**)((u8*)vp + 0x364);
-        tagTbl[2] = *(const char**)((u8*)vp + 0x368);
+        tagTbl[0] = WM_TAG_TBL(0);
+        tagTbl[1] = WM_TAG_TBL(1);
+        tagTbl[2] = WM_TAG_TBL(2);
         mRaw = rawTbl[i];
         mTag = tagTbl[i];
         f23 = (f32)(u16)FontGetMessageWidth(mRaw);
@@ -809,7 +1078,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x408);
         pos = tmp;
         c = black;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->currentHP));
+        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->currentHP));
     }
     f24 = float_4_8041d66c + (float_12_8041d670 + f24);
     {
@@ -820,7 +1089,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x420);
         pos = tmp;
         c = black;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->currentFP));
+        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->currentFP));
     }
     {
         Vec pos, scale, tmp;
@@ -830,7 +1099,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x438);
         pos = tmp;
         c = black;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->maximumBP));
+        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumBP));
     }
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
     f18 = float_190_8041d614 + (x - float_270_8041d650);
@@ -854,7 +1123,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     }
     winFontInit();
     f18 = float_200_8041d684 + (x - float_270_8041d650);
-    f28 = y - float_38_8041d668;
+    f28 = float_4_8041d66c + (float_12_8041d670 + (y - float_38_8041d668));
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x474);
@@ -863,7 +1132,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x480);
         pos = tmp;
         c = black;
-        winFontSet(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->maximumHP));
+        winFontSet(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumHP));
     }
     {
         Vec pos, scale, tmp;
@@ -873,7 +1142,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x498);
         pos = tmp;
         c = black;
-        winFontSet(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->maximumFP));
+        winFontSet(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumFP));
     }
 
     if (WW_S32(work, 0x198) > 0) {
@@ -939,7 +1208,6 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
                   float_20_8041d628 + (float_10_8041d61c + y),
                   float_260_8041d688, float_150_8041d69c);
     winIconInit();
-    f23 = float_10_8041d61c + x;
     f24 = float_10_8041d61c + (float_20_8041d628 + x);
     {
         Vec tr, sc, tmp;
@@ -954,7 +1222,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x534);
         sc = VEC_AT(0x540);
-        tmp.x = f23;
+        tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_28_8041d6a0);
         tr = tmp;
         winIconSet(0x18B, &tr, &sc, &white);
@@ -963,7 +1231,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x54C);
         sc = VEC_AT(0x558);
-        tmp.x = f23;
+        tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_56_8041d6a4);
         tr = tmp;
         winIconSet(0x18D, &tr, &sc, &white);
@@ -972,7 +1240,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x564);
         sc = VEC_AT(0x570);
-        tmp.x = f23;
+        tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_84_8041d6a8);
         tr = tmp;
         winIconSet(0x102, &tr, &sc, &white);
@@ -981,7 +1249,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x57C);
         sc = VEC_AT(0x588);
-        tmp.x = f23;
+        tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_112_8041d644);
         tr = tmp;
         winIconSet(0x1A2, &tr, &sc, &white);
@@ -1055,7 +1323,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x618);
         pos = tmp;
         c = white;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->mStarPoints));
+        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->mStarPoints));
     }
     {
         Vec pos, scale, tmp;
@@ -1065,7 +1333,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x630);
         pos = tmp;
         c = white;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->coins));
+        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->coins));
     }
     {
         Vec pos, scale, tmp;
@@ -1075,7 +1343,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x648);
         pos = tmp;
         c = white;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->mStarPieceCount));
+        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->mStarPieceCount));
     }
     {
         Vec pos, scale, tmp;
@@ -1085,7 +1353,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x660);
         pos = tmp;
         c = white;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, wmDispZenkaku(vp, 0x184, pouch->mShineSpriteCount));
+        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->mShineSpriteCount));
     }
 
     {
@@ -1094,7 +1362,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         u32 hours;
         u32 mins;
         secs = gp->retraceLocalTime / (s64)(*(volatile u32*)0x800000F8 >> 2);
-        if (secs >= 360000) {
+        if ((u64)secs > 359999) {
             hours = 99;
             mins = 59;
         } else {
@@ -1107,14 +1375,14 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         tmp.y = f25;
         pos1 = tmp;
         c = white;
-        winFontSetR(&pos1, &scale1, &c, str_8041D63C, wmDispNum(vp, 0x1AC, 2, hours));
+        winFontSetR(&pos1, &scale1, &c, str_8041D63C, WM_NUM(2, hours));
         tmp = VEC_AT(0x684);
         scale2 = VEC_AT(0x690);
         tmp.x = f18;
         tmp.y = f25;
         pos2 = tmp;
         c = white;
-        winFontSetR(&pos2, &scale2, &c, str_8041D63C, wmDispNum(vp, 0x1AC, 2, mins));
+        winFontSetR(&pos2, &scale2, &c, str_8041D63C, WM_NUM(2, mins));
     }
 
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
@@ -1131,7 +1399,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x6B4);
-        tmp.x = float_220_8041d6c0 + x;
+        f24 = float_220_8041d6c0 + x;
+        tmp.x = f24;
         tmp.y = (float_10_8041d61c + (float_2_8041d660 + (y - float_112_8041d644))) - float_2_8041d660;
         tr = tmp;
         sc = VEC_AT(0x6C0);
@@ -1200,7 +1469,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             pos1 = tmp;
             c = black;
             winFontSetLabel(&pos1, &scale1, &c, sa->field_0);
-            sprintf(buf, str_8041D63C, wmDispZenkaku(vp, 0x184, sa->field_12));
+            sprintf(buf, str_8041D63C, WM_ZENKAKU(sa->field_12));
             drop = (f32)(0x82 - j);
             tmp = VEC_AT(0x714);
             scale2 = VEC_AT(0x720);

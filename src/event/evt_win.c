@@ -781,7 +781,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				Vec pos = vec3_802f64b8;
 
 				pos.y = wp->field_0x44 + (f32)(0x38 - dispOff);
-				iconDispGx(&pos, 0x10, data->icon_id, float_0p5_8041db60);
+				iconDispGx(&pos, 0x10, ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
 				FontDrawStart();
 				FontDrawString(data->id, float_36_8041db64, wp->field_0x44 + (f32)(0x50 - dispOff));
 				if ((f32)dispCnt == wp->field_0x34) {
@@ -972,7 +972,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					Vec pos = vec3_802f64d0;
 
 					pos.y = wp->field_0x44 + (f32)(0x38 - dispOff);
-					iconDispGx(&pos, (u16)(flag | 0x10), data->icon_id, float_0p5_8041db60);
+					iconDispGx(&pos, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
 				}
 				FontDrawStart();
 				FontDrawScale(float_0p8_8041db74);
@@ -993,7 +993,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 						x = 0;
 						break;
 					case 0xF:
-						price = data->buy_price * (evtGetValue(NULL, 0xF5DE06A9) + 11) / 10;
+						price = ((ItemDataView*)data)->buy_price * (evtGetValue(NULL, 0xF5DE06A9) + 11) / 10;
 						sprintf(buf, "%3d", price);
 						scale = float_1_8041db80;
 						x = -0xE;
@@ -1005,7 +1005,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 						x = -0x14;
 						break;
 					case 0xB:
-						sprintf(buf, "%2d", data->buy_price);
+						sprintf(buf, "%2d", ((ItemDataView*)data)->buy_price);
 						scale = float_1_8041db80;
 						x = 0;
 						break;

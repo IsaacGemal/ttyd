@@ -28,6 +28,16 @@ extern const char str_802F55F4[];
 extern const char str_802F560C[];
 extern const char str_802F5620[];
 extern const char str_802F5638[];
+#ifdef MUST_MATCH
+// The original reaches these through the str_802F4CE8 base register; inline literals pool so that the base folds.
+#define STR_MOCHI_ITEM "msg_menu_mochi_item"
+#define STR_MOCHI_DAIJI "msg_menu_mochi_daiji"
+#define STR_MAIL_TPL "%s/w/jp/mail.tpl"
+#else
+#define STR_MOCHI_ITEM str_802F560C
+#define STR_MOCHI_DAIJI str_802F5620
+#define STR_MAIL_TPL str_802F5638
+#endif
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x1210 bytes, so the rest are reached through raw offsets below.
@@ -461,7 +471,7 @@ s32 winItemMain(WindowWork* work) {
         }
         WW_F32(work, 0x158) = float_neg275_8041d554;
         WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
-        winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? "msg_menu_mochi_item" : "msg_menu_mochi_daiji", 0);
+        winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
         break;
 
     case 10:
@@ -727,9 +737,9 @@ s32 winItemMain(WindowWork* work) {
         mail = (u8*)mailGetPtr(b[0x26F]);
 
         if (*(u16*)(mail + 0) & 0x1000) {
-            WW_S32(work, 0x2C) = fileAsyncf(4, NULL, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
+            WW_S32(work, 0x2C) = fileAsyncf(4, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
             if ((u32)WW_S32(work, 0x2C) != 0) {
-                WW_S32(work, 0x2C) = (s32)fileAllocf(4, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
+                WW_S32(work, 0x2C) = (s32)fileAllocf(4, STR_MAIL_TPL, getMarioStDvdRoot());
                 WW_S32(work, 0x20C) += 1;
             }
         } else {

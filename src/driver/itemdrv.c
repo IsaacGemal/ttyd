@@ -94,6 +94,7 @@ static inline f32 sqrtf(f32 x) {
 
 
 extern ItemData itemDataTable[];
+extern const char str_802CAC8C[];
 extern const char str_802CADE8[];
 extern const char str_802CAE00[];
 extern const char str_802CAE18[];
@@ -115,6 +116,18 @@ const Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
 const f64 double_20_802cac28 = 20.0;
+#ifndef MUST_MATCH
+const char str_802CAC8C[] = "SFX_FLOWER_GET1";
+const char str_802CAC9C[] = "SFX_COIN_LEAPED1\0\0\0";
+const char str_802CACB0[] = "SFX_EVT_GAME_MONTE_LEAPED1\0";
+const char str_802CACCC[] = "SFX_HEART_LEAPED1\0\0";
+const char str_802CACE0[] = "SFX_FLOWER_LEAPED1\0";
+const char str_802CACF4[] = "SFX_STAR_PIECE_LEAPED1\0";
+const char str_802CAD0C[] = "SFX_EVT_STARSTONE_JUMP1";
+const char str_802CAD24[] = "SFX_BADGE_LEAPED1\0\0";
+const char str_802CAD38[] = "SFX_ITEM_LEAPED1\0\0\0";
+const char str_802CAD4C[] = "MOBJ_KururinFloor\0\0";
+#endif
 
 //.bss
 static ItemWork work[2];
@@ -502,8 +515,12 @@ static inline void itemseq_sfxGet(ItemEntry* item) {
     // vec3_802cac1c is the 6th of the contiguous zero Vecs. The indexed form keeps the three dead
     // loads *after* the caller's stores; the plain symbol makes MWCC's scheduler hoist them. Cost: one
     // `mr r5, r28` base copy. `(Vec){0.0f,0.0f,0.0f}` schedules perfectly but adds a `.rodata` object
-    // at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck -> see REPORT.md.
+    // at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck.
+#ifdef MUST_MATCH
     Vec pos = (&vec3_802cabe0)[5];
+#else
+    Vec pos = vec3_802cac1c;
+#endif
 
     pos.x = item->position.x;
     pos.y = item->position.y;
@@ -522,10 +539,11 @@ static inline void itemseq_sfxGet(ItemEntry* item) {
         psndSFXOn_3D("SFX_HEART_GET1", &pos2);
         break;
     case 0x7C:
-        // The nine "leaped" SFX names below are pooled by the compiler right after SFX_FLOWER_GET1
-        // (they are referenced nowhere in the object - a dead-code artifact) and push the BGM group
-        // to +0x180. Folding their exact bytes into this one literal reproduces the target .rodata
-        // byte-for-byte at zero instruction cost; the call still sees "SFX_FLOWER_GET1".
+#ifdef MUST_MATCH
+        // str_802CAC8C..str_802CAD4C are ten consecutive .rodata strings; itemseq_Bound (not written
+        // yet) reads the last nine through its base register. As named objects they would be emitted
+        // ahead of the pooled doubles and shift sqrtf's constants, so they are folded into this one
+        // literal, which reproduces the target .rodata bytes; the call still sees "SFX_FLOWER_GET1".
         psndSFXOn_3D(
             "SFX_FLOWER_GET1\0"
             "SFX_COIN_LEAPED1\0\0\0\0"
@@ -538,6 +556,9 @@ static inline void itemseq_sfxGet(ItemEntry* item) {
             "SFX_ITEM_LEAPED1\0\0\0\0"
             "MOBJ_KururinFloor\0\0",
             &pos2);
+#else
+        psndSFXOn_3D(str_802CAC8C, &pos2);
+#endif
         break;
     case 0x7D:
         break;
