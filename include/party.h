@@ -168,6 +168,7 @@ void partyChgRunMode(PartyEntry* party, s32 mode);
 void partyShadowOff(PartyEntry* party);
 void partySetCamId(PartyEntry* party, s32 cameraId);
 void partyInit(void);
+void partyReInit(void);
 void partyInitCamId(PartyEntry* party);
 void partyRun(PartyEntry* party);
 void partyStop(PartyEntry* party);

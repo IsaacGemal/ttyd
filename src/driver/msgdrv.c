@@ -20,6 +20,10 @@ extern GXColor unk_80422fe4;
 extern f32 float_0p36_8041a6a0;
 extern f32 float_0p6_8041a570;
 extern s32 msgWindowOpen_SE_Data[12][2];
+extern GXColor dat_8041a4f0;
+extern GXColor dat_8041a4f4;
+extern GXColor dat_8041a4f8;
+extern GXColor dat_8041a4fc;
 
 typedef struct MsgLookupEntry {
 	u32 startaddr; //0x0
@@ -465,9 +469,232 @@ BOOL _ismbblead(u32 a1) {
 
 
 
-// NONMATCHING (0.16%): empty placeholder, not decompiled yet.
+// math.h comes after msgInit: included at the top it changes how msgInit addresses its strings.
+#include <math.h>
+// NONMATCHING (93.84%): 247 instructions differ, nearly all register allocation and
+// instruction scheduling; see REPORT.md. The logic is complete.
 BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
+	MessageData* data = smart->address;
+	BOOL result = FALSE;
+	MsgDataEntry* entry = data->entries;
+	s32 i;
 
+	FontDrawStart_alpha(alpha);
+
+	for (i = 0; i < data->field_0x10; i++, entry++) {
+		switch (entry->glyph) {
+		case 0xFFFF:
+			return FALSE;
+		case 0xFFFE:
+			if (*(u16*)((u8*)data + 0x8) == *(s16*)((u8*)entry + 0x6)) {
+				result = TRUE;
+			}
+			break;
+		case 0xFFF7: {
+			GXColor color = *(GXColor*)((u8*)entry + 0x0);
+			FontDrawColor(&color);
+			break;
+		}
+		case 0xFFF6:
+			if (*(u32*)((u8*)entry + 0x0)) {
+				FontDrawNoise();
+			}
+			else {
+				FontDrawNoiseOff();
+			}
+			break;
+		case 0xFFF4: {
+			GXColor color = FontGetDrawColor();
+			Mtx mtx;
+			f32 rotY;
+
+			PSMTXIdentity(mtx);
+			rotY = *(f32*)((u8*)entry + 0x14);
+			if (rotY >= 90.0f && rotY <= 270.0f) {
+				PSMTXScaleApply(mtx, mtx, 1.0f, 1.0f, -1.0f);
+			}
+			PSMTXTransApply(mtx, mtx,
+				x + (f32)*(s16*)((u8*)entry + 0x6),
+				y + (f32)data->field_0x28 + (f32)*(s16*)((u8*)entry + 0x8) - 40.0f,
+				0.0f);
+			animPoseMain(*(s32*)((u8*)entry + 0x0));
+			animPoseDrawMtx(*(s32*)((u8*)entry + 0x0), mtx, 2,
+				*(f32*)((u8*)entry + 0x14), *(f32*)((u8*)entry + 0x10));
+			FontDrawStart_alpha(alpha);
+			FontDrawColor(&color);
+			break;
+		}
+		case 0xFFF8:
+		default: {
+			f32 px = x + (f32)*(s16*)((u8*)entry + 0x6);
+			f32 py = y + (f32)data->field_0x28 + (f32)*(s16*)((u8*)entry + 0x8);
+			BOOL tev = FALSE;
+			u8 fade = 0xFF;
+
+			if (data->field_0x4 & 0x40) {
+				s32 cur = data->field_0x28;
+				s32 idx = *(s32*)((u8*)data + 0x783C);
+				s32 e8 = *(s16*)((u8*)entry + 0x8);
+				s32* base = (s32*)((u8*)data + idx * 4);
+
+				if (cur == *(s32*)((u8*)base + 0x7844)) {
+					if (e8 + *(s32*)((u8*)base + 0x7848) <= 0) {
+						break;
+					}
+					tev = TRUE;
+				}
+				else if (cur < *(s32*)((u8*)base + 0x7844)) {
+					if (e8 + *(s32*)((u8*)base + 0x7844) > 0) {
+						tev = TRUE;
+					}
+					else {
+						s32 t = *(s32*)((u8*)base + 0x7844) - cur;
+						if (t > 100) {
+							t = 100;
+						}
+						fade = (u32)((100 - t) * 255 / 100);
+						if (idx != data->field_0x7840 - 1) {
+							if (e8 + *(s32*)((u8*)base + 0x7848) > 0) {
+								tev = TRUE;
+							}
+							else {
+								break;
+							}
+						}
+						else {
+							GXColor color = FontGetDrawColor();
+							color.a = (color.a * fade) / 255;
+							GXSetTevColor(GX_TEVREG0, color);
+						}
+					}
+				}
+				else {
+					if (e8 + *(s32*)((u8*)base + 0x7848) > 0) {
+						tev = TRUE;
+					}
+					else {
+						s32 t = cur - *(s32*)((u8*)base + 0x7844);
+						if (t > 100) {
+							t = 100;
+						}
+						fade = (u32)(t * 255 / 100);
+						if (idx != data->field_0x7840 - 2) {
+							if (e8 + *(s32*)((u8*)base + 0x784C) > 0) {
+								tev = TRUE;
+							}
+							else {
+								break;
+							}
+						}
+						else {
+							GXColor color = FontGetDrawColor();
+							color.a = (color.a * fade) / 255;
+							GXSetTevColor(GX_TEVREG0, color);
+						}
+					}
+				}
+			}
+
+			if (entry->glyph == 0xFFF8) {
+				GXColor color = FontGetDrawColor();
+				Vec pos;
+				pos.x = 20.0f + (x + (f32)*(s16*)((u8*)entry + 0x6));
+				pos.y = (f32)*(s16*)((u8*)entry + 0xA) + (((f32)*(s16*)((u8*)entry + 0x8) + (y + (f32)data->field_0x28)) - 40.0f);
+				pos.z = 0.0f;
+				iconDispGxAlpha(&pos, 0x10, *(u32*)((u8*)entry + 0x0) & 0xFFFF,
+					(u8)((fade * alpha) / 255), *(f32*)((u8*)entry + 0x10));
+				FontDrawStart_alpha(alpha);
+				FontDrawColor(&color);
+				break;
+			}
+
+			if ((f32)(*(s16*)((u8*)entry + 0x8) + data->field_0x28) >= 32.0f * *(f32*)((u8*)entry + 0x10) - 10.0f) {
+				break;
+			}
+
+			if (tev) {
+				GXColor color = *(GXColor*)&dat_8041a4f0;
+				switch (data->window->type) {
+				case 3:
+				case 8:
+				case 9:
+					color = *(GXColor*)&dat_8041a4f4;
+					break;
+				}
+				color.a = fade;
+				GXSetTevColor(GX_TEVREG0, color);
+				FontDrawScale(*(f32*)((u8*)entry + 0x10));
+				FontDrawCode(entry->glyph, px, py);
+				FontDrawColor_();
+				break;
+			}
+
+			if (*(u32*)((u8*)entry + 0x0) & 1) {
+				u16 half = kanjiGetWidth(entry->glyph) >> 1;
+				f32 fx = px;
+				f32 fy = py;
+				Mtx mtx;
+
+				if (*(u32*)((u8*)entry + 0x0) & 2) {
+					fx = px + (f32)(irand(10000) % 3);
+					fy = py + (f32)(irand(10000) % 3);
+				}
+				PSMTXTrans(mtx, (f32)(-half), 12.0f, 0.0f);
+				PSMTXScaleApply(mtx, mtx, *(f32*)((u8*)entry + 0x14), *(f32*)((u8*)entry + 0x14), *(f32*)((u8*)entry + 0x14));
+				PSMTXTransApply(mtx, mtx, (f32)half, -12.0f, 0.0f);
+				PSMTXScaleApply(mtx, mtx, *(f32*)((u8*)entry + 0x10), *(f32*)((u8*)entry + 0x10), *(f32*)((u8*)entry + 0x10));
+				PSMTXTransApply(mtx, mtx, fx, fy, 0.0f);
+				FontDrawCodeMtx(mtx, entry->glyph);
+				*(f32*)((u8*)entry + 0x14) = 0.5f * (*(f32*)((u8*)entry + 0x14) - 1.0f) + 1.0f;
+			}
+			else if (*(u32*)((u8*)entry + 0x0) & 2) {
+				f32 fx = px + (f32)(irand(10000) % 3);
+				f32 fy = py + (f32)(irand(10000) % 3);
+				FontDrawScale(*(f32*)((u8*)entry + 0x10));
+				FontDrawCode(entry->glyph, fx, fy);
+			}
+			else if (*(u32*)((u8*)entry + 0x0) & 4) {
+				f32 t = (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x18);
+				f32 angle = 0.01f * t - 0.02f * px;
+				f32 ca = (f32)cos(angle);
+				f32 sa = (f32)sin(angle);
+				FontDrawScale(*(f32*)((u8*)entry + 0x10));
+				FontDrawCode(entry->glyph, 3.2f * ca + px, py - 3.2f * sa);
+			}
+			else if (*(u32*)((u8*)entry + 0x0) & (0x100 << data->field_0x7A43)) {
+				f32 t = (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x18);
+				f32 angle = 0.01f * t - 0.02f * px;
+				f32 ca = (f32)cos(angle);
+				f32 fx = 3.2f * ca + px;
+				f32 sa = (f32)sin(angle);
+				f32 fy = py - 3.2f * sa;
+
+				FontDrawScale(*(f32*)((u8*)entry + 0x10));
+				{
+					GXColor color = *(GXColor*)&dat_8041a4f8;
+					FontDrawColor(&color);
+				}
+				FontDrawCode(entry->glyph, fx, fy);
+				FontDrawEdge();
+				FontDrawRainbowColor();
+				{
+					GXColor color2 = *(GXColor*)&dat_8041a4fc;
+					FontDrawColor(&color2);
+				}
+				FontDrawCode(entry->glyph, fx - 4.0f, fy + 4.0f);
+				FontDrawEdgeOff();
+				FontDrawRainbowColorOff();
+				FontDrawColorIDX(0);
+			}
+			else {
+				FontDrawScale(*(f32*)((u8*)entry + 0x10));
+				FontDrawCode(entry->glyph, px, py);
+			}
+			break;
+		}
+		}
+	}
+	return result;
 }
 
 

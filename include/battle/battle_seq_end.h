@@ -19,7 +19,14 @@ typedef struct BattleSeqEndWork {
     u8 unk0[0x2AC - 0x0]; //0x0
 } BattleSeqEndWork;
 void _GetExpIcon_Main(BattleWork* wp);
+void _GetExpIcon_End(BattleSeqEndWork* work);
+void _GetExpIcon_Init(BattleSeqEndWork* arg);
 void _LvupParamConfirmDisp(CameraId camId, void* param);
 void L__LvupParamHelpMsgDisp(CameraId camId, void* param);
 void _lvup_select_object_disp(CameraId camId, void* param);
 void btlseqEnd_DispMain(CameraId camId, BattleWork* wp);
+void btlseqEnd_DispInit(BattleWork* wp);
+void _audience_Whistle_control(void);
+void _check_audience_battle_end_exec(void);
+void _ExecAllUnitBattleEndEvent(void);
+void _BattleMarioKouraDelete(void);

@@ -15,6 +15,12 @@
 #include "system.h"
 #include <string.h>
 #include "manager/evtmgr_cmd.h"
+#include "driver/shadowdrv.h"
+#include "koopa.h"
+#include "koopa_hit.h"
+#include "motion/mot_hip.h"
+#include "party.h"
+#include "mario/mario_party.h"
 
 #define MAX_MOBJ_WORK 3
 
@@ -406,8 +412,383 @@ void mobjSetPosition(const char* name, f32 x, f32 y, f32 z) {
     entry->position.z = z;
 }
 
-// NONMATCHING (0.10%): empty placeholder, not decompiled yet.
+// Static inline duplicates of mobjCalcMtx/mobjCalcMtx2 so the compiler always inlines them into
+// mobjMain (the original's mobjMain has both bodies inlined).
+static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox) {
+    Vec position;
+    Mtx trans;
+    Mtx scale;
+    Mtx xRot;
+    Mtx yRot;
+    Mtx zRot;
+    AnimationPoseData* animData;
+    Vec bboxMin;
+    Vec bboxMax;
+    Vec minTmp;
+    Vec maxTmp;
+    s32 i;
+
+    PSVECAdd(&entry->position, &entry->translation, &position);
+
+    if (calcBBox) {
+        animData = animPoseGetAnimBaseDataPtr(entry->poseId);
+
+        minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
+        minTmp.x = animData->bboxMin.x;
+        minTmp.y = animData->bboxMin.y;
+        minTmp.z = animData->bboxMin.z;
+        bboxMin = minTmp;
+        maxTmp = (Vec){ 0.0f, 0.0f, 0.0f };
+        maxTmp.x = animData->bboxMax.x;
+        maxTmp.y = animData->bboxMax.y;
+        maxTmp.z = animData->bboxMax.z;
+        bboxMax = maxTmp;
+
+        entry->scale2.x = 10.0f * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
+        entry->scale2.y = 10.0f * (entry->scale.y * (f32)__fabs(bboxMax.y));
+        entry->scale2.z = 10.0f * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
+
+        if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+            entry->translation.z = 0.0f;
+            entry->scale2.z = 10.0f * (2.5f * entry->scale.z);
+        }
+    }
+
+    MTXTrans(trans, position.x, position.y, position.z);
+    MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
+    MTXRotRad(xRot, 'x', MTXDegToRad(entry->rotation.x));
+    MTXRotRad(yRot, 'y', MTXDegToRad(entry->rotation.y));
+    MTXRotRad(zRot, 'z', MTXDegToRad(entry->rotation.z));
+    MTXConcat(trans, zRot, trans);
+    MTXConcat(trans, yRot, trans);
+    MTXConcat(trans, xRot, trans);
+    MTXConcat(trans, scale, mtx);
+
+    for (i = 0; i < 2; i++) {
+        if (entry->hitObj[i].hitObject != 0)
+            hitReCalcMatrix(entry->hitObj[i].hitObject, mtx);
+    }
+}
+
+// NONMATCHING (99.38%): 3 instructions differ, 1 missing, 4 extra, plus register differences. Known issue: register allocation and stack-slot differences; see REPORT.md
 void mobjMain(void) {
+    MapObjectWork* wp;
+    s32 count;
+    MapObjectEntry* entry;
+    MarioWork* mario;
+    PartyEntry* party;
+    FieldBattleData* fbat;
+    s16 mode;
+    void* v24;
+    s32 v25;
+    s32 i;
+    Mtx mtx1, mtx2, mtx3;
+
+    wp = mobjGetWork();
+    count = wp->count;
+    entry = wp->entries;
+
+    mario = marioGetPtr();
+    party = partyGetPtr(marioGetPartyId());
+    fbat = fbatGetPointer();
+    mode = fbat->mode;
+    v24 = NULL;
+    v25 = 0;
+    if (party != NULL && (party->flags & 0x100)) {
+        v25 = 1;
+    }
+
+    if (gp->inBattle == 0) {
+        if (*(void**)((u8*)mario + 0x1FC) != NULL) {
+            if (((void**)wp)[2] == NULL ||
+                strcmp(hitGetName(((HitEntry**)wp)[2]), hitGetName(*(HitEntry**)((u8*)mario + 0x1FC))) != 0) {
+                ((void**)wp)[2] = *(void**)((u8*)mario + 0x1FC);
+            }
+        } else {
+            ((void**)wp)[2] = NULL;
+        }
+
+        if (*(void**)((u8*)mario + 0x1F4) != NULL) {
+            if (((void**)wp)[3] == NULL ||
+                strcmp(hitGetName(((HitEntry**)wp)[3]), hitGetName(*(HitEntry**)((u8*)mario + 0x1F4))) != 0) {
+                void* tmp = *(void**)((u8*)mario + 0x1F4);
+
+                ((void**)wp)[3] = tmp;
+                v24 = tmp;
+            }
+        } else {
+            ((void**)wp)[3] = NULL;
+        }
+
+        if (*(void**)((u8*)mario + 0x1E4) != NULL) {
+            if (((void**)wp)[4] == NULL ||
+                strcmp(hitGetName(((HitEntry**)wp)[4]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E4))) != 0) {
+                ((void**)wp)[4] = *(void**)((u8*)mario + 0x1E4);
+            }
+        } else {
+            ((void**)wp)[4] = NULL;
+        }
+
+        if (*(void**)((u8*)mario + 0x1E0) != NULL) {
+            if (((void**)wp)[5] == NULL ||
+                strcmp(hitGetName(((HitEntry**)wp)[5]), hitGetName(*(HitEntry**)((u8*)mario + 0x1E0))) != 0) {
+                ((void**)wp)[5] = *(void**)((u8*)mario + 0x1E0);
+            }
+        } else {
+            ((void**)wp)[5] = NULL;
+        }
+
+        if (party != NULL && *(void**)((u8*)party + 0x130) != NULL) {
+            if (((void**)wp)[6] == NULL ||
+                strcmp(hitGetName(((HitEntry**)wp)[6]), hitGetName(*(HitEntry**)((u8*)party + 0x130))) != 0) {
+                ((void**)wp)[6] = *(void**)((u8*)party + 0x130);
+            }
+        } else {
+            ((void**)wp)[6] = NULL;
+        }
+    }
+
+    for (i = 0; i < count; i++, entry++) {
+        if (!(entry->flags & 1))
+            continue;
+
+        if (gp->inBattle != 0 || mode <= 1u || mode == 8) {
+            s32 v22;
+            HitEntry* hitObj;
+
+            if (entry->flags & 4) {
+                if (mobjCheckItemboxOpen(entry) == 2) {
+                    mobjMainCalcMtx(entry, mtx1, FALSE);
+                } else {
+                    mobjMainCalcMtx(entry, mtx2, TRUE);
+                }
+                entry->flags &= ~4;
+            }
+
+            if (entry->flags & 0x40) {
+                if (entry->unk5C.y >= 0.0f) {
+                    entry->position.y += entry->unk5C.y;
+                    entry->unk5C.y -= entry->unk68;
+                } else {
+                    f32 nz, ny, nx, dist, hitZ, hitY, hitX;
+
+                    dist = 10.0f + (1.0f + (f32)__fabs(entry->unk5C.y));
+                    if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &dist, &nx, &ny, &nz, entry->position.x,
+                                       10.0f + entry->position.y, entry->position.z, 0.0f, -1.0f, 0.0f) != NULL) {
+                        entry->position.y = hitY;
+                        entry->unk5C.y = (-0.5f * entry->unk6C) * entry->unk5C.y;
+                        if (__fabs(entry->unk5C.y) <= 2.0) {
+                            entry->unk5C.y = 0.0f;
+                        }
+                    } else {
+                        entry->position.y += entry->unk5C.y;
+                        entry->unk5C.y -= entry->unk68;
+                    }
+                }
+                mobjMainCalcMtx(entry, mtx3, TRUE);
+            }
+
+            if (!(entry->flags & 8)) {
+                v22 = 0;
+                hitObj = entry->hitObj[0].hitObject;
+                if (mario->characterId != 2) {
+                    if ((entry->flags & 0x10000) && *(void**)((u8*)mario + 0x1FC) == (void*)hitObj) {
+                        if (marioGetPtr()->position.y <= 5.0f + entry->position.y) {
+                            v22 = 1;
+                            entry->unk1E0 = 0x10000;
+                            goto apply;
+                        }
+                    }
+                    if ((entry->flags & 0x400000) && v24 == (void*)hitObj) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x400000;
+                        goto apply;
+                    }
+                    if ((entry->flags & 0x200000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x200000;
+                        goto apply;
+                    }
+                    if ((entry->flags & 0x1000000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj &&
+                        marioChkHipBump() != 0) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x1000000;
+                        goto apply;
+                    }
+                    if (unk_8005bb80() != 0 && (entry->flags & 0x40000) &&
+                        *(void**)(mario->field_0x1DC + 4) == (void*)hitObj && (*(u16*)(mario->field_0x245 + 3) & 0x100) &&
+                        v25 == 0) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x40000;
+                        goto apply;
+                    }
+                    if ((entry->flags & 0x800000) && party != NULL) {
+                        if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
+                            v22 = 1;
+                            entry->unk1E0 = 0x800000;
+                            goto apply;
+                        }
+                        if (*(void**)((u8*)party + 0x130) != NULL && party->currentMemberId == 3 &&
+                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->field_F4) {
+                            v22 = 1;
+                            entry->unk1E0 = 0x800000;
+                            goto apply;
+                        }
+                    }
+                    if ((entry->flags & 0x2000000) && party != NULL && party->currentMemberId == 3) {
+                        if (*(void**)((u8*)party + 0x130) == (void*)hitObj) {
+                            v22 = 1;
+                            entry->unk1E0 = 0x2000000;
+                            goto apply;
+                        }
+                        if (*(void**)((u8*)party + 0x130) != NULL &&
+                            PSVECDistance(&party->position, &entry->position) < entry->hitObj[0].hitObject->radius + party->field_F4) {
+                            v22 = 1;
+                            entry->unk1E0 = 0x800000;
+                            goto apply;
+                        }
+                    }
+                } else {
+                    s32 j;
+
+                    if (entry->flags & 0x4000000) {
+                        for (j = 0; j < 10; j++) {
+                            if (kpaGetHitobjHead(j) == (void*)hitObj) {
+                                v22 = 1;
+                                entry->unk1E0 = 0x4000000;
+                                break;
+                            }
+                        }
+                    }
+                    if (entry->flags & 0x10000000) {
+                        for (j = 0; j < 10 && v22 == 0; j++) {
+                            if (kpaGetHitobjRide(j) == (void*)hitObj) {
+                                if (kpaHipAttackCheck() != 0) {
+                                    v22 = 1;
+                                    entry->unk1E0 = 0x10000000;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if ((entry->flags & 0x8000000) && kpaGetHitobj() == (void*)hitObj && kpaGetLevel() == 3) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x8000000;
+                        goto apply;
+                    }
+                    if ((entry->flags & 0x20000000) && kpaGetHitFlame() == (void*)hitObj) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x20000000;
+                        goto apply;
+                    }
+                    if ((entry->flags & 0x80000) && *(void**)((u8*)mario + 0x1E0) == (void*)hitObj) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x80000;
+                        goto apply;
+                    }
+                    if ((entry->flags & 0x200000) && *(void**)((u8*)mario + 0x1E4) == (void*)hitObj) {
+                        v22 = 1;
+                        entry->unk1E0 = 0x200000;
+                    }
+                }
+            apply:
+                if (v22 != 0) {
+                    entry->flags |= 8;
+                }
+            }
+
+            if (entry->flags & 0x100) {
+                entry->flags &= ~8;
+            }
+            if ((u32)marioStGetSystemLevel() != 0) {
+                entry->flags &= ~8;
+            }
+            {
+                MarioWork* m = marioGetPtr();
+
+                if (m->currMotionId == 0x1F || m->currMotionId == 0x20) {
+                    entry->flags &= ~8;
+                }
+            }
+            if (entry->unk1D0 != NULL) {
+                if (entry->unk1D0(entry) == -1)
+                    continue;
+            }
+        }
+
+        if (!(entry->flags & 1))
+            continue;
+
+        if (koopaRunFlag == 0 && (entry->flags & 0x802) == 0) {
+            GXColor blend;
+            GXColor blend2;
+            MapEntry* mapEntry;
+            s32 shadow;
+
+            mapEntry = &mapGetWork()->entries[0];
+            mapGetBlend(&blend);
+            mapGetBlend2(&blend2);
+            if ((mapEntry->flags & 2) && !(animPoseGetMaterialFlag(entry->poseId) & 0x800) && blend.a != 0xff) {
+                goto noShadow;
+            }
+            if ((mapEntry->flags & 4) && !(animPoseGetMaterialFlag(entry->poseId) & 0x1000) && blend2.a != 0xff) {
+                goto noShadow;
+            }
+            shadow = shadowEntry(entry->position.x, entry->position.y, entry->position.z,
+                                 10.0f * entry->scale.x * entry->scale2.x / 25.0f);
+            if (entry->flags & 0x400000) {
+                shadowSetType(shadow, 1);
+                shadowSetSize(shadow, 10.0f * entry->scale.x * entry->scale2.x / 20.0f);
+            }
+        noShadow:;
+        }
+
+        animPoseMain(entry->poseId);
+
+        {
+            GXColor color;
+#ifdef MUST_MATCH
+            *(u32*)&color = (u32)animPoseGetMaterialEvtColor(entry->poseId);
+#else
+            color = *animPoseGetMaterialEvtColor(entry->poseId);
+#endif
+
+            if (entry->flags & 0x4000)
+                continue;
+            if ((entry->flags & 0x80) == 0) {
+                Vec pos;
+
+                PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &entry->position, &pos);
+                PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &pos, &pos);
+                if (__fabs(pos.x) > 1.5)
+                    continue;
+                if (__fabs(pos.y) > 1.5)
+                    continue;
+                if (__fabs(pos.z) > 1.0)
+                    continue;
+            }
+            if ((entry->flags & 0x2000) && ((gp->retraceCount >> 3) & 1))
+                continue;
+
+            if (entry->offscreenId == -1) {
+                if ((animPoseGetMaterialFlag(entry->poseId) & 0x40) && ((u8*)&color)[3] != 0xff) {
+                    dispEntry(entry->camId, dispCalcZ(&entry->position), 2, mobjDispXLU, entry);
+                } else {
+                    dispEntry(entry->camId, dispCalcZ(&entry->position), 0, mobjDisp, entry);
+                    dispEntry(entry->camId, dispCalcZ(&entry->position), 1, mobjDisp, entry);
+                    dispEntry(entry->camId, dispCalcZ(&entry->position), 2, mobjDisp, entry);
+                }
+            } else {
+                if ((animPoseGetMaterialFlag(entry->poseId) & 0x40) && ((u8*)&color)[3] != 0xff) {
+                    dispEntry(CAMERA_OFFSCREEN2, dispCalcZ(&entry->position), 2, mobjDisp_OffscreenXLU, entry);
+                } else {
+                    dispEntry(CAMERA_OFFSCREEN2, dispCalcZ(&entry->position), 0, mobjDisp_OffscreenXLU, entry);
+                    dispEntry(CAMERA_OFFSCREEN2, dispCalcZ(&entry->position), 1, mobjDisp_OffscreenXLU, entry);
+                    dispEntry(CAMERA_OFFSCREEN2, dispCalcZ(&entry->position), 2, mobjDisp_OffscreenXLU, entry);
+                }
+            }
+        }
+    }
 }
 
 MapObjectEntry* mobjNameToPtr(const char* name) {

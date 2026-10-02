@@ -22,6 +22,8 @@
 #include "driver/npcdrv.h"
 #include "party/party_nokonoko.h"
 #include <stdio.h>
+#include "party.h"
+#include "mario/mario_party.h"
 
 extern GlobalWork* gp;
 
@@ -93,6 +95,12 @@ extern const char str_802CAE48[];
 extern u32 dat_8041af90;
 extern u32 dat_8041af94;
 extern u32 dat_8041af98;
+extern const f32 float_20_8041afa0;
+extern const f32 float_16_8041afc8;
+extern const f32 float_neg1000_8041aff0;
+extern const f32 float_neg1_8041afac;
+extern const f32 float_12_8041b010;
+extern const f64 double_neg1_802cae60;
 const Vec vec3_802cabe0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cabec = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cabf8 = {0.0f, 0.0f, 0.0f};
@@ -212,9 +220,233 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 }
 
 
-// NONMATCHING (0.24%): empty placeholder, not decompiled yet.
+// NONMATCHING (96.24%): logic complete; FPR scheduling in mode 1 and one register swap in mode 9 differ.
 void itemMain(void) {
+    ItemWork* wp;
+    ItemEntry* entry;
+    ItemEntry* itemHit;
+    HitEntry* hit;
+    MarioWork* mario;
+    int i;
 
+    wp = itemGetWork();
+    mario = marioGetPtr();
+
+    itemHit = itemHitCheck(mario->position.x, mario->position.y, mario->position.z,
+                           float_0p5_8041afb8 * mario->wPlayerCollisionBox.x + float_12_8041b010);
+    if (itemGetCheck(itemHit)) {
+        itemHit->mode = 2;
+        itemHit->field_0x26 = 0;
+    }
+
+    for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
+        int active;
+        u16 mode;
+
+        if (!(entry->flags & 1)) {
+            continue;
+        }
+
+        mode = entry->mode;
+        active = 1;
+        switch (mode) {
+        case 2:
+        case 7:
+        case 8:
+        case 10:
+            break;
+        default:
+            if (gp->systemLevelFlags & 0xF) {
+                active = 0;
+            }
+            break;
+        }
+
+        if (!active) {
+            entry->field_0x68 = gp->renderTime;
+            continue;
+        }
+
+        if (mode != 2) {
+            if (*(u64*)((u8*)entry + 0x78) == 0) {
+                *(u32*)((u8*)entry + 0x38) &= ~0x100;
+            } else if (*(u32*)((u8*)entry + 0x38) & 0x4000) {
+                *(u32*)((u8*)entry + 0x38) &= ~0x100;
+            } else {
+                f32 elapsed = (f32)OSTicksToMicroseconds(gp->renderTime - entry->field_0x68) / 1000.0f;
+
+                *(s64*)((u8*)entry + 0x78)
+                    = (s64)((f32) * (s64*)((u8*)entry + 0x78) - elapsed);
+                if (*(s64*)((u8*)entry + 0x78) <= 0) {
+                    entry->mode = 9;
+                    entry->field_0x26 = 0;
+                } else if (*(s64*)((u8*)entry + 0x78) <= 3000
+                           && ((*(s64*)((u8*)entry + 0x78) >> 4) & 1)) {
+                    *(u32*)((u8*)entry + 0x38) ^= 0x100;
+                }
+            }
+        } else {
+            *(u32*)((u8*)entry + 0x38) &= ~0x100;
+        }
+
+        switch (entry->mode) {
+        case 5:
+        case 6:
+        case 10:
+            itemseq_Bound(entry);
+            break;
+        case 3:
+        case 4:
+            itemseq_Bound(entry);
+            break;
+        case 1:
+        {
+            f32 y = entry->position.y;
+            f32 hitNZ;
+            f32 hitNY;
+            f32 hitNX;
+            f32 distance;
+            f32 hitZ;
+            f32 hitY;
+            f32 hitX;
+            f32 newY;
+
+
+
+            if (*(u32*)((u8*)entry + 0x38) & 0x100000) {
+                hit = NULL;
+                newY = y + float_neg1_8041afac;
+            } else {
+                distance = (f32)(double_20_802cac28 + __fabs(double_neg1_802cae60));
+                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                                     entry->position.x, float_20_8041afa0 + y, entry->position.z,
+                                     float_0_8041af9c, float_neg1_8041afac, float_0_8041af9c);
+                if (hit != NULL) {
+                    newY = hitY;
+                } else {
+                    newY = y + float_neg1_8041afac;
+                }
+            }
+            if (hit == NULL) {
+                entry->mode = 3;
+                entry->field_0x26 = 0;
+            } else {
+                entry->position.y = newY;
+            }
+        }
+        break;
+        case 2:
+            itemseq_GetItem(entry);
+            break;
+        case 8:
+        {
+            PartyEntry* party = partyGetPtr(marioGetPartyId());
+            if (party != NULL) {
+                f32 x = party->position.x;
+                f32 y = float_15_8041afb4 + party->position.y;
+                f32 z = party->position.z;
+
+                entry->position.x = x;
+                entry->position.y = y;
+                entry->position.z = z;
+            } else {
+                entry->mode = 3;
+                entry->field_0x26 = 0;
+                *(u32*)((u8*)entry + 0x38) &= ~0x1000;
+            }
+        }
+        break;
+        case 9:
+        {
+            ItemEntry* e;
+            int j;
+            ItemWork* wp2;
+
+            wp2 = itemGetWork();
+            for (e = wp2->entries, j = 0; j < wp2->count; j++, e++) {
+                if (!strcmp(e->name, entry->name)) {
+                    itemCheckBadge(e);
+                    switch (e->itemId) {
+                    case 0x72:
+                    case 0x73:
+                    case 0x74:
+                    case 0x75:
+                    case 0x76:
+                    case 0x77:
+                    case 0x78:
+                        effSoftDelete(e->effect);
+                        break;
+                    default:
+                        iconDelete(e->name);
+                        break;
+                    }
+                    e->flags &= ~1;
+                }
+            }
+        }
+        break;
+        default:
+            break;
+        }
+
+        if (!(entry->flags & 1)) {
+            continue;
+        }
+
+        switch (entry->itemId) {
+        case 0x72:
+        case 0x73:
+        case 0x74:
+        case 0x75:
+        case 0x76:
+        case 0x77:
+        case 0x78:
+            if (!(*(u32*)((u8*)entry + 0x38) & 0x100)) {
+                ((f32*)((u8*)entry->effect->userdata + 0x8))[0] = entry->position.x;
+                ((f32*)((u8*)entry->effect->userdata + 0x8))[1]
+                    = float_16_8041afc8 + entry->position.y;
+                ((f32*)((u8*)entry->effect->userdata + 0x8))[2] = entry->position.z;
+            } else {
+                ((f32*)((u8*)entry->effect->userdata + 0x8))[0] = entry->position.x;
+                ((f32*)((u8*)entry->effect->userdata + 0x8))[1] = float_neg1000_8041aff0;
+                ((f32*)((u8*)entry->effect->userdata + 0x8))[2] = entry->position.z;
+            }
+            break;
+        default:
+            if (!(*(u32*)((u8*)entry + 0x38) & 0x100)) {
+                iconSetPos(entry->name, entry->position.x, entry->position.y, entry->position.z);
+                iconSetScale(entry->name, entry->scale);
+                iconSetAlpha(entry->name, entry->alpha);
+            } else {
+                iconSetPos(entry->name, entry->position.x, float_neg1000_8041aff0, entry->position.z);
+            }
+            break;
+        }
+
+        entry->field_0x68 = gp->renderTime;
+
+        if (entry->itemId == 0x79 || entry->itemId == 0x7a) {
+            if (irand(1000) < 0x1e) {
+                s32 a = 10 - irand(20);
+                s32 b = irand(20) + 10;
+
+                effHagetakaFlushN64Entry(0, 0xa, entry->position.x + (f32)a, entry->position.y + (f32)b,
+                                         entry->position.z, float_1_8041afa4);
+            }
+        }
+    }
+
+    {
+        ItemWork* wp2 = gp->inBattle ? &work[0] : &work[1];
+        ItemEntry* e;
+        int j;
+
+        for (e = wp2->entries, j = 0; j < wp2->count; j++, e++) {
+            if (e->flags & 1) {
+                e->field_0x68 = gp->renderTime;
+            }
+        }
+    }
 }
 
 // item status lives at 0x38 (u32, not yet declared in the header)

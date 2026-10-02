@@ -16,11 +16,20 @@
 #include "manager/arammgr.h"
 #include "matching.h"
 #include <stdio.h>
+#include <dolphin/os.h>
+#include "driver/shadowdrv.h"
 
 extern s32 texmtx_tbl[];
 
 extern f32 queen_uv[4]; //gxsub.c
 extern GlobalWork* gp;
+
+#ifdef MUST_MATCH
+// The original passes the caller's own Vec where the by-value argument would take a copy.
+#define LIGHT_GET_NEAR(p, e, n, f) ((s32 (*)(Vec*, LightEntry**, s32, LightEntryFlags))lightGetNearObj)((p), (e), (n), (f))
+#else
+#define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj(*(p), (e), (n), (f))
+#endif
 
 #define TWO_PI 6.28318530717958647692528676655900576839433879875021f
 
@@ -1092,9 +1101,92 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	return mapEntrySub(joint, NULL, mtx, TRUE, index);
 }
 
-// NONMATCHING (0.70%): only the opening/loop skeleton is present
+// MWCC register allocation of the long-lived locals differs: the target keeps wp in r31 and the
+// group*0x178 offset in r27, ours puts wp in r27 and the offset/slot/j8 temporaries in r29/r30/r31.
+// The declaration order below is match-only: it makes MWCC's declared-locals block start at r28 and
+// reproduce every other register.
+// NONMATCHING (97.11%): only wp/offset/slot/j8 registers differ.
 void makeDisplayList(BOOL group) {
+	MapEntry* entry;
+	MapWork* wp;
+	void* buf;
+	s32 i;
+	s32 j;
+	s32 pass;
+	s32 total;
+	u8* dest;
+	MapObject* obj;
 
+	wp = &mapWork[activeGroup];
+	buf = _mapAlloc(0x10000);
+	entry = &wp->entries[group];
+	__mapdrv_make_dl = TRUE;
+	total = 0;
+	for (pass = 0; pass < 2; pass++) {
+		obj = entry->objects;
+		for (i = 0; i < 8; i++) {
+			*(void**)(obj->field_0xEC + 8 + i * 4) = NULL;
+			*(u32*)(obj->field_0xEC + 0x28 + i * 4) = 0;
+		}
+		for (i = 0; i < entry->numJoints; i++, obj++) {
+			if (obj->joints->partCount < 1 || obj->joints->partCount > 8) {
+				continue;
+			}
+			if (obj->joints->drawMode->unk2[0] & 0x8) {
+				continue;
+			}
+			if (*(u32*)(obj->joints->drawMode->unk2 + 2) != 0) {
+				continue;
+			}
+			if (shadowGetCharShadowProjection() != 0) {
+				if (*(u32*)obj->field_0x0 & 0x4) {
+					continue;
+				}
+			}
+			if (!(entry->flags & 0x8000)) {
+				continue;
+			}
+			for (j = 0; j < obj->joints->partCount; j++) {
+				MapFileMesh* mesh = obj->joints->parts[j].mesh;
+
+				memset(buf, 0, 0x10000);
+				DCInvalidateRange(buf, 0x10000);
+				GXBeginDisplayList(buf, 0x10000);
+				GXResetWriteGatherPipe();
+				mapSetMaterial(obj, mesh);
+				GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
+				*(u32*)(obj->field_0xEC + 0x28 + j * 4) = GXEndDisplayList();
+				if (pass == 0) {
+					total += *(u32*)(obj->field_0xEC + 0x28 + j * 4);
+				}
+				else {
+					*(void**)(obj->field_0xEC + 8 + j * 4) = dest;
+					dest += *(u32*)(obj->field_0xEC + 0x28 + j * 4);
+					memcpy(*(void**)(obj->field_0xEC + 8 + j * 4), buf, *(u32*)(obj->field_0xEC + 0x28 + j * 4));
+					DCFlushRange(*(void**)(obj->field_0xEC + 8 + j * 4), *(u32*)(obj->field_0xEC + 0x28 + j * 4));
+				}
+			}
+		}
+		if (pass == 0) {
+			*(u32*)(entry->field_0x168) = total;
+			if (*(u32*)(entry->field_0x168) != 0) {
+				*(void**)(entry->field_0x168 + 4) = _mapAllocTail(*(u32*)(entry->field_0x168));
+				dest = *(u8**)(entry->field_0x168 + 4);
+			}
+			else {
+#ifdef MUST_MATCH
+				// MUST_MATCH: naming the group offset here is what makes MWCC keep the offset live and
+				// emit the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
+				*(void**)(((u8*)wp + group * 0x178) + 0x16C) = NULL;
+#else
+				*(void**)(entry->field_0x168 + 4) = NULL;
+#endif
+				break;
+			}
+		}
+	}
+	_mapFree(buf);
+	__mapdrv_make_dl = FALSE;
 }
 
 MapEntryAnimData* mapSearchAnmObj(const char* animName) {
@@ -1352,6 +1444,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 // An empty string; symbols.txt names it as a float.
 extern const char float_0_804198cc[4];
+extern GXColor dat_8041981c;
 
 // NONMATCHING (98.06%): entry vs i register swap (target r29=entry, r30=i); opening load now matches
 void mapUnLoad(void) {
@@ -2178,9 +2271,704 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 	}
 }
 
-// NONMATCHING (0.07%): only a stub is present
-void mapMain(void) {
+static inline u8* mapSearchAnimObj(const char* name) {
+	MapEntry* entry;
+	MapWork* wp;
+	s32 i;
+	s32 j;
+	u8* table;
 
+	wp = &mapWork[activeGroup];
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		table = *(u8**)((u8*)entry + 0xA0);
+		if (table == NULL) {
+			return NULL;
+		}
+		for (j = 0; j < *(s32*)table; j++) {
+			u8* pair = table + 4 + j * 8;
+			if (!strcmp(*(char**)pair, name)) {
+				return *(u8**)(pair + 4);
+			}
+		}
+	}
+	return NULL;
+}
+
+// Complete and logically correct; remaining diffs are register allocation/scheduling: the outer entry
+// loop spills i, the five animation-list pointers and the OSTime land in different callee-saved
+// registers, the inlined Hermite interpolation uses f29-f31 (frame 0x310 vs 0x2e0), and the
+// list17/18/16 key loops pick an equivalent but differently laid-out compare/branch.
+// NONMATCHING (80.36%): see above.
+void mapMain(void) {
+	MapWork* wp0;
+	MapEntry* entry;
+	u8* anim;
+	u8* list19;
+	u8* list18;
+	u8* list17;
+	u8* list16;
+	u8* list15;
+	OSTime time;
+	BOOL updated;
+	s32 i;
+	s32 j;
+	char namebuf[0x100];
+	char namebuf2[0x100];
+
+	wp0 = &mapWork[activeGroup];
+	entry = &wp0->entries[0];
+	for (i = 0; i < wp0->entries[0].count; entry++, i++) {
+		anim = (u8*)entry->animData;
+		updated = FALSE;
+		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim += 0x20) {
+			list19 = *(u8**)((*(u8**)(anim + 0x18)) + 0xC);
+			list18 = *(u8**)((*(u8**)(anim + 0x18)) + 0x10);
+			list17 = *(u8**)((*(u8**)(anim + 0x18)) + 0x14);
+			list16 = *(u8**)((*(u8**)(anim + 0x18)) + 0x18);
+			list15 = *(u8**)((*(u8**)(anim + 0x18)) + 0x1C);
+			if (!((*(u16*)anim) & 0x1)) {
+				continue;
+			}
+			if ((*(u16*)anim) & 0x2) {
+				continue;
+			}
+			if ((*(u16*)anim) & 0x100) {
+				time = gp->systemLv0Time;
+			}
+			else if ((*(u16*)anim) & 0x200) {
+				time = gp->systemLv1Time;
+			}
+			else if ((*(u16*)anim) & 0x400) {
+				time = gp->systemLv2Time;
+			}
+			else if ((*(u16*)anim) & 0x800) {
+				time = gp->systemLv3Time;
+			}
+			else if (gp->inBattle) {
+				time = gp->renderTime;
+			}
+			else {
+				time = gp->renderFieldTime;
+			}
+			if (!((*(u16*)anim) & 0x10)) {
+				f32 f = (f32)(u64)(OSTicksToMilliseconds(time) - *(OSTime*)(anim + 0x8)) * gp->framerate / 1000.0f;
+				f32 frame = *(f32*)(anim + 0x10);
+				if (f < frame) {
+					*(f32*)(anim + 0x10) = frame - f;
+				}
+				else {
+					*(f32*)(anim + 0x10) = *(f32*)(anim + 0x14) * (f - frame) + frame;
+				}
+				*(OSTime*)(anim + 0x8) = OSTicksToMilliseconds(time);
+				*(OSTime*)(anim + 0x8) -= (u64)(1000.0f * *(f32*)(anim + 0x10) / (f32)gp->framerate);
+			}
+			else if ((*(u16*)anim) & 0x20) {
+				*(OSTime*)(anim + 0x8) = OSTicksToMilliseconds(time);
+				*(OSTime*)(anim + 0x8) -= (u64)(1000.0f * *(f32*)(anim + 0x10) / (f32)gp->framerate);
+				*(u16*)anim &= ~0x70;
+				*(u16*)anim &= ~0x38;
+			}
+			{
+				f32 frame = *(f32*)(anim + 0x10);
+				f32 length = *(f32*)((*(u8**)(anim + 0x18)) + 0x8);
+				if (frame >= length) {
+					if ((*(u16*)anim) & 0x4) {
+						while (frame > length) {
+							frame -= length;
+						}
+						*(f32*)(anim + 0x10) = frame;
+						*(OSTime*)(anim + 0x8) = OSTicksToMilliseconds(time);
+						*(OSTime*)(anim + 0x8) -= (u64)(1000.0f * *(f32*)(anim + 0x10) / (f32)gp->framerate);
+					}
+					else {
+						*(f32*)(anim + 0x10) = length;
+						*(u16*)anim |= 0x2;
+					}
+				}
+			}
+			/* matrix animation */
+			if (list19 != NULL) {
+				u8* lp = list19;
+				s32 li;
+				for (li = 0; li < *(s32*)list19; li++, lp += 4) {
+					u8* joint = *(u8**)(lp + 4);
+					MapObject* obj = mapGetMapObjSub(*(char**)joint);
+					if (obj != NULL) {
+						mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, joint);
+						*(u32*)obj |= 0x2000;
+						*(u32*)obj |= 0x200;
+						updated = TRUE;
+					}
+				}
+			}
+			/* color animation */
+			if (list18 != NULL) {
+				u8* lp = list18;
+				s32 li;
+				for (li = 0; li < *(s32*)list18; li++, lp += 4) {
+					u8* item = *(u8**)(lp + 4);
+					u8* obj;
+					strcpy(namebuf, *(char**)item);
+					obj = mapSearchAnimObj(namebuf);
+					if (obj != NULL) {
+						{
+							s32 cnt = *(s32*)(item + 0x10);
+							s32 ki;
+							if (cnt > 1) {
+								for (ki = 1; ki < cnt; ki++) {
+									u8* prev = item + 0x14 + (ki - 1) * 0x68;
+									u8* next = item + 0x14 + ki * 0x68;
+									f32 t = *(f32*)(anim + 0x10);
+									s32 k;
+									u8* ch;
+									u8* chn;
+									if (t > *(f32*)next) {
+										if (ki == cnt - 1) {
+											t = *(f32*)next;
+										}
+										else {
+											continue;
+										}
+									}
+									ch = prev + 4;
+									chn = next + 4;
+									for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
+										if (*(s32*)(ch + 0x10) != 0) {
+											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)ch;
+										}
+										else {
+											f32 k0 = *(f32*)prev;
+											f32 k1 = *(f32*)next;
+											f32 d = k1 - k0;
+											f32 dt = t - k0;
+											f32 tan0 = *(f32*)(ch + 8);
+											f32 value0 = *(f32*)ch;
+											f32 tan1 = *(f32*)(chn + 4);
+											f32 value1 = *(f32*)chn;
+											f32 den;
+											f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+											s32 flag;
+											flag = (d != MATCH_F32(float_0_80419850));
+											if (flag) {
+												den = d;
+											}
+											else {
+												den = float_1Eneg08_804198b8;
+											}
+											u = dt / den;
+											u2 = u * u;
+											u3 = u2 * u;
+											a = float_3_8041984c * u2;
+											b = u3 - float_2_80419858 * u2;
+											c = float_2_80419858 * u3 - a;
+											h10 = u + b;
+											h00 = float_1_80419860 + c;
+											h01 = float_neg2_804198a0 * u3 + a;
+											h11 = u3 - u2;
+											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+										}
+									}
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
+									break;
+								}
+							}
+						}
+					}
+					strcpy(namebuf, *(char**)item);
+					strcat(namebuf, "_v");
+					obj = mapSearchAnimObj(namebuf);
+					if (obj != NULL) {
+						{
+							s32 cnt = *(s32*)(item + 0x10);
+							s32 ki;
+							if (cnt > 1) {
+								for (ki = 1; ki < cnt; ki++) {
+									u8* prev = item + 0x14 + (ki - 1) * 0x68;
+									u8* next = item + 0x14 + ki * 0x68;
+									f32 t = *(f32*)(anim + 0x10);
+									s32 k;
+									u8* ch;
+									u8* chn;
+									if (t > *(f32*)next) {
+										if (ki == cnt - 1) {
+											t = *(f32*)next;
+										}
+										else {
+											continue;
+										}
+									}
+									ch = prev + 4;
+									chn = next + 4;
+									for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
+										if (*(s32*)(ch + 0x10) != 0) {
+											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)ch;
+										}
+										else {
+											f32 k0 = *(f32*)prev;
+											f32 k1 = *(f32*)next;
+											f32 d = k1 - k0;
+											f32 dt = t - k0;
+											f32 tan0 = *(f32*)(ch + 8);
+											f32 value0 = *(f32*)ch;
+											f32 tan1 = *(f32*)(chn + 4);
+											f32 value1 = *(f32*)chn;
+											f32 den;
+											f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+											s32 flag;
+											flag = (d != MATCH_F32(float_0_80419850));
+											if (flag) {
+												den = d;
+											}
+											else {
+												den = float_1Eneg08_804198b8;
+											}
+											u = dt / den;
+											u2 = u * u;
+											u3 = u2 * u;
+											a = float_3_8041984c * u2;
+											b = u3 - float_2_80419858 * u2;
+											c = float_2_80419858 * u3 - a;
+											h10 = u + b;
+											h00 = float_1_80419860 + c;
+											h01 = float_neg2_804198a0 * u3 + a;
+											h11 = u3 - u2;
+											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+										}
+									}
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
+									break;
+								}
+							}
+						}
+					}
+					strcpy(namebuf, *(char**)item);
+					strcat(namebuf, "_v_x");
+					obj = mapSearchAnimObj(namebuf);
+					if (obj != NULL) {
+						{
+							s32 cnt = *(s32*)(item + 0x10);
+							s32 ki;
+							if (cnt > 1) {
+								for (ki = 1; ki < cnt; ki++) {
+									u8* prev = item + 0x14 + (ki - 1) * 0x68;
+									u8* next = item + 0x14 + ki * 0x68;
+									f32 t = *(f32*)(anim + 0x10);
+									s32 k;
+									u8* ch;
+									u8* chn;
+									if (t > *(f32*)next) {
+										if (ki == cnt - 1) {
+											t = *(f32*)next;
+										}
+										else {
+											continue;
+										}
+									}
+									ch = prev + 4;
+									chn = next + 4;
+									for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
+										if (*(s32*)(ch + 0x10) != 0) {
+											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)ch;
+										}
+										else {
+											f32 k0 = *(f32*)prev;
+											f32 k1 = *(f32*)next;
+											f32 d = k1 - k0;
+											f32 dt = t - k0;
+											f32 tan0 = *(f32*)(ch + 8);
+											f32 value0 = *(f32*)ch;
+											f32 tan1 = *(f32*)(chn + 4);
+											f32 value1 = *(f32*)chn;
+											f32 den;
+											f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+											s32 flag;
+											flag = (d != MATCH_F32(float_0_80419850));
+											if (flag) {
+												den = d;
+											}
+											else {
+												den = float_1Eneg08_804198b8;
+											}
+											u = dt / den;
+											u2 = u * u;
+											u3 = u2 * u;
+											a = float_3_8041984c * u2;
+											b = u3 - float_2_80419858 * u2;
+											c = float_2_80419858 * u3 - a;
+											h10 = u + b;
+											h00 = float_1_80419860 + c;
+											h01 = float_neg2_804198a0 * u3 + a;
+											h11 = u3 - u2;
+											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+										}
+									}
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+			/* alpha animation */
+			if (list17 != NULL) {
+				u8* lp = list17;
+				s32 li;
+				for (li = 0; li < *(s32*)list17; li++, lp += 4) {
+					u8* item = *(u8**)(lp + 4);
+					u8* obj;
+					strcpy(namebuf2, *(char**)item);
+					obj = mapSearchAnimObj(namebuf2);
+					if (obj != NULL) {
+						{
+							s32 cnt = *(s32*)(item + 4);
+							s32 ki;
+							if (cnt > 1) {
+								for (ki = 1; ki < cnt; ki++) {
+									u8* prev = item + 8 + (ki - 1) * 0x54;
+									u8* next = item + 8 + ki * 0x54;
+									f32 t = *(f32*)(anim + 0x10);
+									if (t > *(f32*)next) {
+										if (ki == cnt - 1) {
+											t = *(f32*)next;
+										}
+										else {
+											continue;
+										}
+									}
+									if (*(s32*)(prev + 0x14) != 0) {
+										f32 value = *(f32*)(prev + 4);
+										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
+										break;
+									}
+									else {
+										f32 k0 = *(f32*)prev;
+										f32 k1 = *(f32*)next;
+										f32 d = k1 - k0;
+										f32 dt = t - k0;
+										f32 tan0 = *(f32*)(prev + 0xC);
+										f32 value0 = *(f32*)(prev + 4);
+										f32 tan1 = *(f32*)(next + 8);
+										f32 value1 = *(f32*)(next + 4);
+										f32 den;
+										f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
+										s32 flag;
+										flag = (d != MATCH_F32(float_0_80419850));
+										if (flag) {
+											den = d;
+										}
+										else {
+											den = float_1Eneg08_804198b8;
+										}
+										u = dt / den;
+										u2 = u * u;
+										u3 = u2 * u;
+										a = float_3_8041984c * u2;
+										b = u3 - float_2_80419858 * u2;
+										c = float_2_80419858 * u3 - a;
+										h10 = u + b;
+										h00 = float_1_80419860 + c;
+										h01 = float_neg2_804198a0 * u3 + a;
+										h11 = u3 - u2;
+										val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
+										break;
+									}
+								}
+							}
+						}
+					}
+					strcpy(namebuf2, *(char**)item);
+					strcat(namebuf2, "_v");
+					obj = mapSearchAnimObj(namebuf2);
+					if (obj != NULL) {
+						{
+							s32 cnt = *(s32*)(item + 4);
+							s32 ki;
+							if (cnt > 1) {
+								for (ki = 1; ki < cnt; ki++) {
+									u8* prev = item + 8 + (ki - 1) * 0x54;
+									u8* next = item + 8 + ki * 0x54;
+									f32 t = *(f32*)(anim + 0x10);
+									if (t > *(f32*)next) {
+										if (ki == cnt - 1) {
+											t = *(f32*)next;
+										}
+										else {
+											continue;
+										}
+									}
+									if (*(s32*)(prev + 0x14) != 0) {
+										f32 value = *(f32*)(prev + 4);
+										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
+										break;
+									}
+									else {
+										f32 k0 = *(f32*)prev;
+										f32 k1 = *(f32*)next;
+										f32 d = k1 - k0;
+										f32 dt = t - k0;
+										f32 tan0 = *(f32*)(prev + 0xC);
+										f32 value0 = *(f32*)(prev + 4);
+										f32 tan1 = *(f32*)(next + 8);
+										f32 value1 = *(f32*)(next + 4);
+										f32 den;
+										f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
+										s32 flag;
+										flag = (d != MATCH_F32(float_0_80419850));
+										if (flag) {
+											den = d;
+										}
+										else {
+											den = float_1Eneg08_804198b8;
+										}
+										u = dt / den;
+										u2 = u * u;
+										u3 = u2 * u;
+										a = float_3_8041984c * u2;
+										b = u3 - float_2_80419858 * u2;
+										c = float_2_80419858 * u3 - a;
+										h10 = u + b;
+										h00 = float_1_80419860 + c;
+										h01 = float_neg2_804198a0 * u3 + a;
+										h11 = u3 - u2;
+										val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
+										break;
+									}
+								}
+							}
+						}
+					}
+					strcpy(namebuf2, *(char**)item);
+					strcat(namebuf2, "_v_x");
+					obj = mapSearchAnimObj(namebuf2);
+					if (obj != NULL) {
+						{
+							s32 cnt = *(s32*)(item + 4);
+							s32 ki;
+							if (cnt > 1) {
+								for (ki = 1; ki < cnt; ki++) {
+									u8* prev = item + 8 + (ki - 1) * 0x54;
+									u8* next = item + 8 + ki * 0x54;
+									f32 t = *(f32*)(anim + 0x10);
+									if (t > *(f32*)next) {
+										if (ki == cnt - 1) {
+											t = *(f32*)next;
+										}
+										else {
+											continue;
+										}
+									}
+									if (*(s32*)(prev + 0x14) != 0) {
+										f32 value = *(f32*)(prev + 4);
+										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
+										break;
+									}
+									else {
+										f32 k0 = *(f32*)prev;
+										f32 k1 = *(f32*)next;
+										f32 d = k1 - k0;
+										f32 dt = t - k0;
+										f32 tan0 = *(f32*)(prev + 0xC);
+										f32 value0 = *(f32*)(prev + 4);
+										f32 tan1 = *(f32*)(next + 8);
+										f32 value1 = *(f32*)(next + 4);
+										f32 den;
+										f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
+										s32 flag;
+										flag = (d != MATCH_F32(float_0_80419850));
+										if (flag) {
+											den = d;
+										}
+										else {
+											den = float_1Eneg08_804198b8;
+										}
+										u = dt / den;
+										u2 = u * u;
+										u3 = u2 * u;
+										a = float_3_8041984c * u2;
+										b = u3 - float_2_80419858 * u2;
+										c = float_2_80419858 * u3 - a;
+										h10 = u + b;
+										h00 = float_1_80419860 + c;
+										h01 = float_neg2_804198a0 * u3 + a;
+										h11 = u3 - u2;
+										val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			/* light animation (position/rotation) */
+			if (list16 != NULL) {
+				u8* lp = list16;
+				s32 li;
+				for (li = 0; li < *(s32*)list16; li++, lp += 4) {
+					u8* item = *(u8**)(lp + 4);
+					LightEntry* light = lightNameToPtr(*(char**)item);
+					if (light != NULL) {
+						s32 cnt = *(s32*)(item + 4);
+						s32 ki;
+						f32 out[9];
+						if (cnt > 1) {
+							for (ki = 1; ki < cnt; ki++) {
+								u8* prev = item + 8 + (ki - 1) * 0xB8;
+								u8* next = item + 8 + ki * 0xB8;
+								f32 t = *(f32*)(anim + 0x10);
+								s32 k;
+								u8* ch;
+								u8* chn;
+								if (t > *(f32*)next) {
+									if (ki == cnt - 1) {
+										t = *(f32*)next;
+									}
+									else {
+										continue;
+									}
+								}
+								ch = prev + 4;
+								chn = next + 4;
+								for (k = 0; k < 9; k++, ch += 0x14, chn += 0x14) {
+									if (*(s32*)(ch + 0x10) != 0) {
+										out[k] = *(f32*)ch;
+									}
+									else {
+										f32 k0 = *(f32*)prev;
+										f32 k1 = *(f32*)next;
+										f32 d = k1 - k0;
+										f32 dt = t - k0;
+										f32 tan0 = *(f32*)(ch + 8);
+										f32 value0 = *(f32*)ch;
+										f32 tan1 = *(f32*)(chn + 4);
+										f32 value1 = *(f32*)chn;
+										f32 den;
+										f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+										s32 flag;
+										flag = (d != MATCH_F32(float_0_80419850));
+										if (flag) {
+											den = d;
+										}
+										else {
+											den = float_1Eneg08_804198b8;
+										}
+										u = dt / den;
+										u2 = u * u;
+										u3 = u2 * u;
+										a = float_3_8041984c * u2;
+										b = u3 - float_2_80419858 * u2;
+										c = float_2_80419858 * u3 - a;
+										h10 = u + b;
+										h00 = float_1_80419860 + c;
+										h01 = float_neg2_804198a0 * u3 + a;
+										h11 = u3 - u2;
+										out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									}
+								}
+								light->position.x = float_10_80419864 * out[0];
+								light->position.y = float_10_80419864 * out[1];
+								light->position.z = float_10_80419864 * out[2];
+								light->rotation.x = out[3];
+								light->rotation.y = out[4];
+								light->rotation.z = out[5];
+								break;
+							}
+						}
+					}
+				}
+			}
+			/* light animation (color/angle) */
+			if (list15 != NULL) {
+				u8* lp = list15;
+				s32 li;
+				for (li = 0; li < *(s32*)list15; li++, lp += 4) {
+					u8* item = *(u8**)(lp + 4);
+					LightEntry* light = lightNameToPtr(*(char**)item);
+					if (light != NULL) {
+						s32 cnt = *(s32*)(item + 4);
+						s32 ki;
+						f32 out[5];
+						if (cnt > 1) {
+							for (ki = 1; ki < cnt; ki++) {
+								u8* prev = item + 8 + (ki - 1) * 0x68;
+								u8* next = item + 8 + ki * 0x68;
+								f32 t = *(f32*)(anim + 0x10);
+								s32 k;
+								u8* ch;
+								u8* chn;
+								if (t > *(f32*)next) {
+									if (ki == cnt - 1) {
+										t = *(f32*)next;
+									}
+									else {
+										continue;
+									}
+								}
+								ch = prev + 4;
+								chn = next + 4;
+								for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
+									if (*(s32*)(ch + 0x10) != 0) {
+										out[k] = *(f32*)ch;
+									}
+									else {
+										f32 k0 = *(f32*)prev;
+										f32 k1 = *(f32*)next;
+										f32 d = k1 - k0;
+										f32 dt = t - k0;
+										f32 tan0 = *(f32*)(ch + 8);
+										f32 value0 = *(f32*)ch;
+										f32 tan1 = *(f32*)(chn + 4);
+										f32 value1 = *(f32*)chn;
+										f32 den;
+										f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+										s32 flag;
+										flag = (d != MATCH_F32(float_0_80419850));
+										if (flag) {
+											den = d;
+										}
+										else {
+											den = float_1Eneg08_804198b8;
+										}
+										u = dt / den;
+										u2 = u * u;
+										u3 = u2 * u;
+										a = float_3_8041984c * u2;
+										b = u3 - float_2_80419858 * u2;
+										c = float_2_80419858 * u3 - a;
+										h10 = u + b;
+										h00 = float_1_80419860 + c;
+										h01 = float_neg2_804198a0 * u3 + a;
+										h11 = u3 - u2;
+										out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									}
+								}
+								light->color.r = (s32)(255.0f * out[0]);
+								light->color.g = (s32)(255.0f * out[1]);
+								light->color.b = (s32)(255.0f * out[2]);
+								light->color.a = 0xFF;
+								light->spotAngle = out[4];
+								light->attenAngle = out[3];
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		if (updated) {
+			Mtx mtx;
+			PSMTXScale(mtx, float_10_80419864, float_10_80419864, float_10_80419864);
+			mapReCalcMatrix(entry->rootMapObj, mtx, 0);
+		}
+	}
 }
 
 // 1:1
@@ -2346,14 +3134,185 @@ MapObject* mapGetMapObj(const char *name) { // 1:1
 // material layout (MapMaterialTex only covers 0xB/0x2C onwards)
 
 
-// NONMATCHING (0.28%): only a stub is present
+// 1:1
 void mapSetMaterialLight(s32 flags, Vec position) {
+	LightEntry* lights[8];
+	LightEntry* light;
+	LightEntry* ambient;
+	CameraEntry* cam;
+	GXLightObj lightObj;
+	GXColor fogColor;
+	GXColor ambColor;
+	GXColor chanAmbColor;
+	Vec pos;
+	Vec dir;
+	Mtx rotX, rotY, rotZ;
+#ifdef MUST_MATCH
+	f32 spotAngle; /* keeps the 0.5f constant in f0 and the field in f1, as the target does */
+#endif
+	s32 count = 0;
+	u32 lightMask;
+	s32 attn = 2;
+	s32 i;
 
+	fogColor = dat_80419834;
+	ambColor = dat_80419838;
+
+	if ((u32)flags & 1) {
+		lights[0] = lightGetPaper();
+		count = 1;
+	}
+	if ((u32)flags & 8) {
+		lights[count++] = lightGetPaperCraft();
+	}
+	if ((u32)flags & 0x10) {
+		lights[count++] = lightGetPaper();
+	}
+	if ((u32)flags & 2) {
+		if (lightCheckCharaLight() && count < 8) {
+			count += LIGHT_GET_NEAR(&position, &lights[count], 8 - count, LIGHT_CHARA);
+		}
+	}
+	if ((u32)flags & 0x19) {
+		if (count == 1) {
+			if ((u32)flags & 1) {
+				ambColor = paper_ambient;
+			}
+			else if ((u32)flags & 8) {
+				ambColor = paperCraft_ambient;
+			}
+			else {
+				ambColor = dat_8041983c;
+			}
+		}
+		else {
+			count = LIGHT_GET_NEAR(&position, lights, 8, LIGHT_CHARA);
+		}
+	}
+
+	lightMask = 0;
+	for (i = 0; i < count; i++) {
+		/* The target keeps lights[i] in a callee-saved register for the flags test, the point
+		   position and the first spot rotation, but re-materializes it from the array for the
+		   remaining fields.  The light/lights[i] mix below reproduces that allocation; both
+		   forms are semantically identical. */
+		dir = vec3_802c1828[0];
+		light = lights[i];
+
+		if (light->flags & LIGHT_POINT) {
+			cam = camGetCurPtr();
+			PSMTXMultVec(cam->view, &light->position, &pos);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			if (lights[i]->flags & LIGHT_NO_DIST_ATTEN) {
+				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+				                float_1_80419860, float_0_80419850, float_0_80419850);
+			}
+			else {
+				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+				                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
+				attn = 1;
+			}
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
+		}
+		else if (light->flags & LIGHT_SPOT) {
+			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * light->rotation.x);
+			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(rotZ, rotY, rotY);
+			PSMTXConcat(rotY, rotX, rotX);
+			PSMTXMultVec(rotX, &dir, &dir);
+			PSVECScale(&dir, &dir, float_neg1p0486E06_80419870);
+			PSVECAdd(&lights[i]->position, &dir, &pos);
+			cam = camGetCurPtr();
+			PSMTXMultVec(cam->view, &pos, &pos);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
+		}
+		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
+			cam = camGetCurPtr();
+			PSMTXMultVec(cam->view, &light->position, &pos);
+			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(rotZ, rotY, rotY);
+			PSMTXConcat(rotY, rotX, rotX);
+			PSMTXMultVec(rotX, &dir, &dir);
+			cam = camGetCurPtr();
+			PSMTXMultVecSR(cam->view, &dir, &dir);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightDir(&lightObj, dir.x, dir.y, dir.z);
+#ifdef MUST_MATCH
+			/* split out so the field lands in f1 and 0.5f in f0, as the target does */
+			spotAngle = lights[i]->spotAngle;
+			GXInitLightSpot(&lightObj, spotAngle * float_0p5_80419854, 4);
+#else
+			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, 4);
+#endif
+			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, 0);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
+			attn = 1;
+		}
+		lightMask |= lightid_tbl[i];
+	}
+
+	ambient = lightGetCharaAmbient();
+	if (ambient != NULL) {
+		chanAmbColor = ambient->color;
+	}
+	else {
+		chanAmbColor = ambColor;
+	}
+
+	GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, fogColor);
+	GXSetNumChans(1);
+	GXSetChanAmbColor(GX_COLOR0A0, chanAmbColor);
+
+	if ((u32)flags & 4) {
+		GXSetChanMatColor(GX_COLOR0A0, fogColor);
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
+	}
+	else {
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_CLAMP, GX_AF_NONE);
+	}
 }
 
-// NONMATCHING (0.50%): only a stub is present
 void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
+	MapWork* wp = &mapWork[activeGroup];
+	GXColor color = dat_8041981c;
 
+	if (flags & 0x40) {
+		color.r = color.r * color1.r / 255;
+		color.g = color.g * color1.g / 255;
+		color.b = color.b * color1.b / 255;
+		color.a = color.a * color1.a / 255;
+	}
+	if (color2.r != 0xFF) {
+		color.a = color.a * color2.r / 255;
+	}
+	if ((wp->entries[0].flags & 0x2) && !(flags & 0x800)) {
+		color.r = color.r * wp->entries[0].field_0x16[0] / 255;
+		color.g = color.g * wp->entries[0].field_0x16[1] / 255;
+		color.b = color.b * wp->entries[0].field_0x16[2] / 255;
+		color.a = color.a * wp->entries[0].field_0x16[3] / 255;
+	}
+	if ((wp->entries[0].flags & 0x4) && !(flags & 0x1000)) {
+		color.r = color.r * wp->entries[0].field_0x16[4] / 255;
+		color.g = color.g * wp->entries[0].field_0x16[5] / 255;
+		color.b = color.b * wp->entries[0].field_0x16[6] / 255;
+		color.a = color.a * wp->entries[0].field_0x16[7] / 255;
+	}
+	if ((wp->entries[0].flags & 0x8) && !(flags & 0x800)) {
+		color.r = color.r * wp->entries[0].field_0x16[8] / 255;
+		color.g = color.g * wp->entries[0].field_0x16[9] / 255;
+		color.b = color.b * wp->entries[0].field_0x16[10] / 255;
+		color.a = color.a * wp->entries[0].field_0x16[11] / 255;
+	}
+	GXSetTevKColor(GX_KCOLOR0, color);
 }
 
 // NONMATCHING (83.18%): logic/structure and call sequence match; MWCC register coloring differs (target
@@ -2663,13 +3622,6 @@ void* mapSearchDmdJointSub(void* a, void* b) {
 	}
 	return NULL;
 }
-
-#ifdef MUST_MATCH
-// The original passes the caller's own Vec where the by-value argument would take a copy.
-#define LIGHT_GET_NEAR(p, e, n, f) ((s32 (*)(Vec*, LightEntry**, s32, LightEntryFlags))lightGetNearObj)((p), (e), (n), (f))
-#else
-#define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj(*(p), (e), (n), (f))
-#endif
 
 s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	Vec pos;
