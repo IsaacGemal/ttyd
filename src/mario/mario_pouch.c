@@ -500,7 +500,20 @@ void unk_800d06b4(char* src, char* dst) {
 // r29). What still differs: the original sinks the three callee-save stores next to each register's
 // first definition and loads id_b after `mulli`/`addi base`; ours stores all three at the top and
 // loads id_b before the mulli.
-// NONMATCHING (90.24%): base/str/regs now match; only the callee-save store order and id_b load slot differ.
+// NONMATCHING (90.24%): base/str/regs now match; only the callee-save store order and id_b load slot
+// differ. The original sinks each stw next to the saved register's first def (r31 in the `lis`->`addi`
+// delay slot, r30 before `addi r30`, r29 before `lha r29`) and loads id_b after `mulli`/`addi base`;
+// MWCC 2.6 here clusters all three stw at the top and hoists id_b above the mulli, sinking the base
+// `addi r30` instead (identical instruction multiset, inverted schedule). Tried without effect: every
+// declaration order of id_a/id_b/base/str; ids read via pointers/arrays/temps/combined; id_b declared
+// in the second block instead of at the top (this does put `mulli` before `addi r30`, but the stores
+// still don't sink and r29 ends up holding `b`, worse); base as ItemData*/char*/const char* and
+// `(char*)itemDataTable+4`; buffers `u16*`/`char*`; `str` const/non-const; `c` u32/u16/int; the
+// direct `itemDataTable[id].name` form (swaps base r31 / result r30); calling `unk_800d06b4` and
+// inlining it (allocates c/buf to swapped regs); and #pragma scheduling on/off, optimization_level
+// 1-4, optimize_for_size off, peephole on/off, opt_lifetimes/opt_propagation/opt_common_subs/
+// opt_dead_assignments off and their combinations. `optimize_for_size on` emits stmw and is wrong.
+// The stores never sink from any C shape, so this is list-scheduler work (permuter territory).
 s32 comp_aiueo(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
@@ -585,7 +598,8 @@ s32 comp_kind(s16* a, s16* b) {
 }
 
 // NONMATCHING (90.24%): same as comp_aiueo (its callee-saved registers now match too); the
-// remaining diff is the same callee-save store placement and id_b load slot.
+// remaining diff is the same callee-save store placement and id_b load slot (8 instructions), and the
+// same experiments above did not move it.
 s32 comp_aiueo_r(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];

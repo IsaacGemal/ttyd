@@ -220,13 +220,18 @@ static inline void _chuchu_pick_drop(BattleUnit* unit, u16* out) {
 }
 #endif
 
-// The target keeps the stolen item in the same register as the event arg id (r27). The
-// reused-s32 form under MUST_MATCH colours event r26 and the args/id chain r28, but still
-// splits the item to r30; the natural u16 form (#else) scores 94.04% with 7 saved regs.
-// Decl/statement order and opt_lifetimes/opt_propagation/dead-assignment/optimize_for_size
-// toggles, a list-parameter helper and a single-write helper were all tried.
-// NONMATCHING (94.84%): callee-saved map only (target event r26, args/id/item/list r27,
-// unit r28, out r29, work r30, flag r31).
+// The target holds work->fbatInfo->setup (0xC(r3)) in r5 across the two stores of the
+// first branch; naming it in a local (below) reproduces that (no CSE without it). That was
+// the last structural difference: what is left is the callee-saved map (target event r26,
+// args/id/item/list r27, unit r28, out r29, work r30, flag r31; ours colours event r26,
+// work r27, args r28, item/list r30) and the loop's block order (target checks at the top,
+// ours rotates the body first). Declaration and assignment order, initializer placement,
+// a separate u16/ItemType item, a BattleUnit temp for the getter, and the
+// opt_lifetimes/opt_propagation/opt_dead_assignments/optimize_for_size/opt_common_subs
+// toggles and every loop form were all tried; the loop body is written first in the
+// target, where ours rotates it.
+// NONMATCHING (96.25%): callee-saved map only (ours work r27 vs target r30, args r28 vs
+// r27, item r30 vs r27) plus the pick loop's rotated block order.
 #ifdef MUST_MATCH
 USER_FUNC(_chuchu_item_steal) {
     s32 out;
@@ -250,7 +255,7 @@ USER_FUNC(_chuchu_item_steal) {
         }
     }
 #else
-// NONMATCHING (94.84%): natural form; see the note above (callee-saved map only).
+// NONMATCHING: natural u16 form; see the note above (same callee-saved map gap).
 USER_FUNC(_chuchu_item_steal) {
     u16 item;
     BattleWork* work;
@@ -288,11 +293,13 @@ USER_FUNC(_chuchu_item_steal) {
     if (BtlUnit_CheckUnitFlag(unit, 0x40000000)) {
         BtlUnit_OffUnitFlag(unit, 0x40000000);
         if (unit->groupSetupId >= 0) {
-            work->fbatInfo->setup->heldItems[unit->groupSetupId] = 0;
-            work->fbatInfo->setup->stolenItems[unit->groupSetupId] = 0;
+            NpcBattleInfo* setup = work->fbatInfo->setup;
+            setup->heldItems[unit->groupSetupId] = 0;
+            setup->stolenItems[unit->groupSetupId] = 0;
         }
     } else if (unit->groupSetupId >= 0) {
-        work->fbatInfo->setup->heldItems[unit->groupSetupId] = 0;
+        NpcBattleInfo* setup = work->fbatInfo->setup;
+        setup->heldItems[unit->groupSetupId] = 0;
     }
 #ifdef MUST_MATCH
     if ((u16)id >= 0xF0 && (u16)id < 0x153) {

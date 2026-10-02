@@ -11,6 +11,7 @@ extern BattleWeapon marioDefaultWeapon_Hammer;
 extern BattleWeapon marioWeapon_KaitenHammer;
 extern BattleWeapon marioWeapon_UltraHammer;
 extern u32 superActionTable[];
+extern BattleWeapon ItemWeaponData_CookingItem;
 extern s32 marioAttackEvent_MajinaiDefenceUp[];
 
 USER_FUNC(_whirlwind_effect);

@@ -182,6 +182,11 @@ typedef struct BattleAudienceTypeWeights {
 } BattleAudienceTypeWeights;
 
 extern f32 float_0p5_8041e708;
+// .sdata2 constants and the haiti table used by battle_audience.c (data objects of this unit).
+extern f32 float_12p5_8041e688;
+extern f32 float_304_8041e6cc;
+extern f32 float_240_8041e6d0;
+extern s32 haiti_data[][10];
 
 BattleAudience* BattleAudienceBaseGetPtr(void);
 BattleAudienceMember* BattleAudienceGetPtr(s32 id);
@@ -215,6 +220,8 @@ BOOL BattleAudience_GetExist(s32 id);
 BOOL BattleAudience_GetSysCtrl(s32 index);
 BOOL BattleAudience_GetWaiting(s32 index);
 s32 BattleAudience_HaitiRandForFallObject(void);
+void BattleAudience_Case_FallObject_Aud(s32 index, u8 type);
+void BattleAudience_Case_FallObject_Stage(void);
 s32 BattleAudience_GetAudienceNum(void);
 void BattleAudience_Case_Escape(void);
 void BattleAudience_Case_Escape_Bad(void);

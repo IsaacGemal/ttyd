@@ -29,8 +29,13 @@
 #include "party/party_cloud.h"
 #include "math_ext.h"
 #include "mario/mario_motion.h"
+#include "mario/mario_sbr.h"
 #include "battle/battle.h"
 #include "driver/seqdrv.h"
+#include "driver/camdrv.h"
+#include "driver/hitdrv.h"
+#include "eff/eff_small_star.h"
+#include "pmario_sound.h"
 
 extern char _evt_majinai_coin_up_effect[];
 
@@ -40,6 +45,12 @@ extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
 #ifdef MUST_MATCH
 extern f32 vec3_802c2f78[];
+// 180.0f lives in this unit's .sdata2 as float_180_80419bec (declared in the header). Naming it makes MWCC treat
+// it as a memory value (CSE'd once into a callee-saved register) instead of a pooled literal, which is what gives
+// the original's marioDir f31 / 180-in-f29 split (rule 7/13: name the object).
+#define FBAT_180 float_180_80419bec
+#else
+#define FBAT_180 180.0f
 #endif
 
 int __float_nan[];
@@ -1100,6 +1111,57 @@ void fbatSetAttackAnnounce(s32 a1) {
 void fbatSetAttackAnnounceEnable(void) {
     gp->fbatData->firstStrike.enabled = TRUE;
 }
+
+// Camera yaw used by the field-battle facing checks: the direction from the camera to the point it looks at,
+// in degrees, normalised to [0, 360). The original inlines this block at each of its three uses.
+static inline f32 fbatEncountCheck_camYaw(void) {
+    CameraEntry* camera = camGetPtr(CAMERA_3D);
+    f32 dx = camera->cameraAt.x - camera->cameraPos.x;
+    f32 dz = camera->cameraAt.z - camera->cameraPos.z;
+    f32 angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+
+    if (angle < 0.0f) {
+        angle += 360.0f;
+    }
+    return angle;
+}
+
+#ifdef MUST_MATCH
+// Match-only sqrtf: the original reaches the shared sqrtf double pool (0.5 / 3.0 / 0.0 at
+// vec3_802c2f78 + 0x1c0) with vec3_802c2f78 as the base register (rule 7).
+static inline f32 fbatEncountCheck_sqrtf(f32 x, const f64* pool) {
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        f64 half = pool[0];
+        f64 three = pool[1];
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        return x * guess;
+    } else if (x < pool[2]) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+#endif
+
+// Sets the field-battle work into the "hit" state (mode 5). It re-reads gp->fbatData and its mode, because the
+// original inlines this helper at the call site after fbatHitCheck (which may have rewritten the work).
+static inline s32 fbatEncountCheck_setHitMode(NpcEntry* hit) {
+    FieldBattleData* fd = gp->fbatData;
+
+    if (fd->mode != 1) {
+        return FALSE;
+    }
+    fd->mode = 5;
+    fd->field_2[0] = 0;
+    *(NpcEntry**)((u8*)fd + 4) = hit;
+    *(NpcEntry**)((u8*)fd + 8) = hit;
+    return TRUE;
+}
+
 
 // NONMATCHING (95.81%): control flow matches; `entry`/`mario` land in r29/r30 swapped, the
 // `mode == 3` test uses `bne` where the original uses `beq`+`b`, and the arg_mismatch float/rodata
@@ -2307,7 +2369,13 @@ static inline f32 npcHitCheckSphere_sqrtf(f32 x, const f64* pool) {
 
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
 #ifdef MUST_MATCH
-    const f64* pool = (const f64*)((u8*)vec3_802c2f78 + 0x1c0);
+    // The unit's own rodata: the sqrtf double pool is at vec3_802c2f78 + 0x1c0 and the strings
+    // str_802C317C/str_802C3198 at +0x204/+0x220; the original reaches all of them with vec3_802c2f78 as the
+    // base register (rule 7).
+    const u8* fbBase = (const u8*)vec3_802c2f78;
+    const f64* pool = (const f64*)(fbBase + 0x1c0);
+#else
+    const u8* fbBase = NULL;
 #endif
     f32 dx = x - entry->position.x;
     f32 dy = y - entry->position.y;

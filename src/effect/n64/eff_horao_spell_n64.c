@@ -194,28 +194,28 @@ static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a)
 // data->field_0x14 makes MWCC reload/recompute them) and of the low scratch, which sits 0x14 lower
 // than retail, leaving the frame 0x10 short (0x2a0 vs 0x2b0). The `s` temp for the sin result (as in
 // eff_magic_horao_n64) is what lands the fp constants in retail's registers.
-// NONMATCHING (93.62%): integer register allocation; the -2*counter preheader and low scratch layout differ.
+// NONMATCHING (93.94%): integer register allocation; the -2*counter preheader and low scratch layout differ.
 void effHoraoSpellDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	CameraEntry* cam = camGetPtr(camId);
-	effHoraoSpellData* data = effect->userdata;
-	effHoraoSpellVtx* vtx;
-	smartEntry* entry;
-	Mtx transMtx;
-	Mtx scaleMtx;
-	Mtx rotMtx;
-	Mtx resultMtx;
-	Mtx baseMtx;
 	GXTexObj texObj;
-	GXColor color;
-	s32 counter;
-	s32 alpha;
+	Mtx scaleMtx;
 	s32 i;
-	s32 j;
+	Mtx resultMtx;
+	effHoraoSpellVtx* vtx;
+	EffectEntry* effect = param;
 	s32 angle;
-	s32 colorIdx;
-	f32 scale;
+	s32 j;
+	s32 alpha;
+	CameraEntry* cam = camGetPtr(camId);
 	f32 s;
+	smartEntry* entry;
+	s32 counter;
+	GXColor color;
+	f32 scale;
+	Mtx baseMtx;
+	s32 colorIdx;
+	Mtx rotMtx;
+	effHoraoSpellData* data = effect->userdata;
+	Mtx transMtx;
 
 	counter = data->field_0x14;
 	alpha = data->field_0x24;

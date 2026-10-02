@@ -3,6 +3,7 @@
 #include "battle/battle_audience.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_ac.h"
+#include "battle/battle_disp.h"
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
 #include "driver/dispdrv.h"
@@ -42,6 +43,19 @@ const char str_80421E18[] = "M_D_1";
 const char str_80421E20[] = "M_X_1";
 const f32 float_20_80421d78 = 20.0f;
 const f32 float_10_80421d54 = 10.0f;
+const f32 float_5_80421d58 = 5.0f;
+const f32 float_6_80421d5c = 6.0f;
+const f32 float_8_80421d60 = 8.0f;
+const f32 float_0p5_80421d64 = 0.5f;
+const f32 float_90_80421d68 = 90.0f;
+const f32 float_85_80421d7c = 85.0f;
+const GXColor dat_80421d20 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80421d24 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80421d28 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80421d2c = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80421d30 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80421d34 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_80421d38 = {0xFF, 0xFF, 0xFF, 0xFF};
 const s32 dat_803002c8[3] = {0, 4, 2};
 const f32 float_1p32_80421ddc = 1.32f;
 const f32 float_1p98_80421de0 = 1.98f;
@@ -313,6 +327,291 @@ static GenkiWork* get_ptr(void) {
 #pragma dont_inline reset
 
 static void disp_3D_alpha(CameraId camera, void* param) {
+}
+
+static inline void _drawGenkiTex(s32 id, Vec rot, GXColor color, Vec trans, Vec scale) {
+    btlDispTex4(id, &trans, &scale, &rot, &color);
+}
+static inline void _drawGenkiTex2(s32 id, Vec scale, Vec trans, Vec rot, GXColor color) {
+    btlDispTex4(id, &trans, &scale, &rot, &color);
+}
+
+// NONMATCHING (93.87%): the object-loop switch decision tree and most of field_64 match; the
+// `_drawGenkiTex`/`_drawGenkiTex2` by-value helpers are not inlined (the two calls stay `bl`), so
+// field_64's argument slots, the `@NNN` magic-double pool entry and some loop registers differ.
+static void disp_3D(CameraId cameraId, void* param) {
+    const f32* vec = vec3_803002b0;
+    GenkiWork* genki = get_ptr();
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    BattleUnit* party = BattleGetPartyPtr(_battleWorkPointer);
+    f32 angle = float_3p1416_80421d48 * genki->field_6C / float_180_80421d4c;
+    Mtx mtx;
+    Vec pos;
+    Vec pos2;
+    f32 x, y, z;
+    f32 px, py, pz;
+    s32 i;
+
+    if (genki->field_4 != 0) {
+        BtlUnit_GetHomePos(mario, &x, &y, &z);
+        y += float_60_80421d50;
+        {
+            f32* ud = (f32*)genki->field_34->userdata;
+            ud[2] = x;
+            ud[3] = y - float_10_80421d54;
+            ud[4] = z + float_5_80421d58;
+        }
+        {
+            s32 frame;
+            if (genki->field_1C >= float_10_80421d54) {
+                Vec v = *(const Vec*)&vec[0x9C / 4];
+                v.x = x + float_6_80421d5c;
+                v.y = y;
+                v.z = z + float_8_80421d60;
+                pos = v;
+            } else {
+                Vec v = *(const Vec*)&vec[0xA8 / 4];
+                v.x = x;
+                v.y = y;
+                v.z = z + float_8_80421d60;
+                pos = v;
+            }
+            PSMTXTrans(mtx, pos.x, pos.y, pos.z);
+            frame = genki->field_28 % 12;
+            if (frame >= 0 && frame <= 5) {
+                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, *(GXColor*)&dat_80421d20);
+            }
+        }
+        if (genki->field_50 != -1) {
+            BtlUnit_GetHomePos(party, &px, &py, &pz);
+            py += float_60_80421d50;
+            {
+                f32* ud = (f32*)genki->field_38->userdata;
+                ud[2] = px;
+                ud[3] = py - float_10_80421d54;
+                ud[4] = pz + float_5_80421d58;
+            }
+            {
+                s32 frame;
+                if (genki->field_20 >= float_10_80421d54) {
+                    Vec v = *(const Vec*)&vec[0xB4 / 4];
+                    v.x = px + float_6_80421d5c;
+                    v.y = py;
+                    v.z = pz + float_8_80421d60;
+                    pos2 = v;
+                } else {
+                    Vec v = *(const Vec*)&vec[0xC0 / 4];
+                    v.x = px;
+                    v.y = py;
+                    v.z = pz + float_8_80421d60;
+                    pos2 = v;
+                }
+                PSMTXTrans(mtx, pos2.x, pos2.y, pos2.z);
+                frame = genki->field_2C % 12;
+                if (frame >= 0 && frame <= 5) {
+                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, *(GXColor*)&dat_80421d24);
+                }
+            }
+            BtlUnit_GetHomePos(mario, &x, &y, &z);
+            BtlUnit_GetHomePos(party, &px, &py, &pz);
+            x = float_0p5_80421d64 * (x + px);
+            y += float_90_80421d68;
+            {
+                f32* ud = (f32*)genki->field_3C->userdata;
+                ud[2] = x;
+                ud[3] = y - float_10_80421d54;
+                ud[4] = z + float_5_80421d58;
+            }
+            {
+                s32 frame;
+                if (genki->field_24 >= float_10_80421d54) {
+                    Vec v = *(const Vec*)&vec[0xCC / 4];
+                    v.x = x + float_6_80421d5c;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                } else {
+                    Vec v = *(const Vec*)&vec[0xD8 / 4];
+                    v.x = x;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                }
+                PSMTXTrans(mtx, pos.x, pos.y, pos.z);
+                frame = genki->field_30 % 12;
+                if (frame >= 0 && frame <= 5) {
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d28);
+                }
+            }
+        } else {
+            BtlUnit_GetHomePos(mario, &x, &y, &z);
+            y += float_90_80421d68;
+            {
+                f32* ud = (f32*)genki->field_3C->userdata;
+                ud[2] = x;
+                ud[3] = y - float_10_80421d54;
+                ud[4] = z + float_5_80421d58;
+            }
+            {
+                s32 frame;
+                if (genki->field_24 >= float_10_80421d54) {
+                    Vec v = *(const Vec*)&vec[0xE4 / 4];
+                    v.x = x + float_6_80421d5c;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                } else {
+                    Vec v = *(const Vec*)&vec[0xF0 / 4];
+                    v.x = x;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                }
+                PSMTXTrans(mtx, pos.x, pos.y, pos.z);
+                frame = genki->field_30 % 12;
+                if (frame >= 0 && frame <= 5) {
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d2c);
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < 10; i++) {
+        GenkiObject* obj = &genki->objects[i];
+
+        if (obj->field_0 != 2) {
+            continue;
+        }
+        {
+            s16 flags = 0;
+            f32 scale = float_1p25_80421d6c;
+            s32 icon;
+            s32 frame;
+
+            switch (obj->field_8) {
+            case 0:
+            case 1:
+                icon = 0x1A3;
+                if (obj->field_8 == 1) {
+                    scale = float_2_80421d70;
+                    frame = obj->field_4 % 12;
+                    if (frame >= 0 && frame <= 5) {
+                        flags |= 0x20;
+                    }
+                }
+                break;
+            case 2:
+            case 3:
+                switch (party->currentKind - 0xE0) {
+                case 0:
+                    icon = 0x1A4;
+                    break;
+                case 1:
+                    icon = 0x1A5;
+                    break;
+                case 3:
+                    icon = 0x1AE;
+                    break;
+                case 2:
+                    switch (pouchGetPartyColor(4)) {
+                    case 1:
+                        icon = 0x1A8;
+                        break;
+                    case 2:
+                        icon = 0x1A9;
+                        break;
+                    case 3:
+                        icon = 0x1AA;
+                        break;
+                    case 4:
+                        icon = 0x1AB;
+                        break;
+                    case 5:
+                        icon = 0x1AC;
+                        break;
+                    case 6:
+                        icon = 0x1AD;
+                        break;
+                    case 0:
+                        icon = 0x1A7;
+                        break;
+                    }
+                    break;
+                case 4:
+                    icon = 0x1AF;
+                    break;
+                case 5:
+                    icon = 0x1A6;
+                    break;
+                case 6:
+                    icon = 0x1B0;
+                    break;
+                default:
+                    icon = 0;
+                    break;
+                }
+                if (obj->field_8 == 3) {
+                    scale = float_2_80421d70;
+                    frame = obj->field_4 % 12;
+                    if (frame >= 0 && frame <= 5) {
+                        flags |= 0x20;
+                    }
+                }
+                break;
+            case 4:
+            case 5:
+                icon = 0x1B1;
+                if (obj->field_8 == 5) {
+                    scale = float_2_80421d70;
+                    frame = obj->field_4 % 12;
+                    if (frame >= 0 && frame <= 5) {
+                        flags |= 0x20;
+                    }
+                }
+                break;
+            case 6:
+                icon = 0x143;
+                break;
+            }
+            PSMTXScale(mtx, scale, scale, float_1_80421d74);
+            PSMTXTransApply(mtx, mtx, obj->field_C,
+                            obj->field_10 - float_20_80421d78 * scale, obj->field_14);
+            iconDispGxCol(mtx, flags, icon, *(GXColor*)&dat_80421d30);
+        }
+    }
+
+    if (genki->field_64 >= 2 && genki->field_64 <= 3) {
+        Mtx mtx2;
+
+        PSMTXScale(mtx2, float_0p5_80421d64, float_0p5_80421d64, float_0p5_80421d64);
+        BtlUnit_GetPos(mario, &x, &y, &z);
+        y += float_85_80421d7c * (f32)sin(angle);
+        x += float_85_80421d7c * (f32)cos(angle);
+        {
+            Vec trans;
+            Vec rot;
+
+            rot = *(const Vec*)&vec[0x114 / 4];
+            trans = *(const Vec*)&vec[0xFC / 4];
+            trans.z = z + float_10_80421d54;
+            trans.x = x + float_10_80421d54;
+            trans.y = y + float_30_80421d80;
+            rot.z = float_6_80421d5c * (f32)genki->field_68;
+            _drawGenkiTex(0x41, rot, *(GXColor*)&dat_80421d34, trans, *(const Vec*)&vec[0x108 / 4]);
+        }
+        {
+            Vec trans;
+            Vec rot;
+
+            rot = *(const Vec*)&vec[0x138 / 4];
+            rot.z = float_6_80421d5c * -(f32)genki->field_68;
+            trans = *(const Vec*)&vec[0x120 / 4];
+            trans.x = x;
+            trans.y = y;
+            trans.z = z;
+            _drawGenkiTex2(0x42, *(const Vec*)&vec[0x12C / 4], trans, rot, *(GXColor*)&dat_80421d38);
+        }
+    }
 }
 
 static void disp_2D(CameraId camera, void* param) {

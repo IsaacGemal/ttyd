@@ -15,13 +15,19 @@
 #include "mario/mariost.h"
 #include "evt/evt_lottery.h"
 #include "evt/evt_johoya.h"
+#include "evt/evt_badgeshop.h"
+#include "window/win_item.h"
 #include "pmario_sound.h"
 #include "statuswindow.h"
 #include "window/win_main.h"
 
+extern u16 menu_skip_list[18]; // defined with win_item's data
+
 extern ItemData itemDataTable[];
 // .sdata
 u16 party_id_table[8] = { 1, 2, 5, 4, 6, 3, 7, 0 };
+// .sdata
+static u16 party_icon_table[8] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161, 0 };
 
 // .sbss2
 GXColor unk_80423330;
@@ -32,10 +38,23 @@ GXColor dat_80421a18 = { 0x2b, 0xa4, 0xff, 0x00 };
 GXColor dat_80421a1c = { 0x2b, 0xa4, 0xff, 0x00 };
 GXColor dat_80421a20 = { 0x2b, 0xa4, 0xff, 0x00 };
 GXColor dat_80421a24 = { 0x2b, 0xa4, 0xff, 0x00 };
+// dat_80421a28..dat_80421a40 are used by select_disp (not written yet).
+GXColor dat_80421a44 = { 0x00, 0x00, 0x00, 0xFF };
+GXColor dat_80421a48 = { 0xA0, 0xA0, 0xA0, 0xFF };
+GXColor dat_80421a4c = { 0xFF, 0xFF, 0xFF, 0xFF };
+GXColor dat_80421a50 = { 0xFF, 0xFF, 0xFF, 0xFF };
+// dat_80421a54..dat_80421a60 are used by select_disp_mario (not written yet).
 
 // .sdata2
-// GXColor dat_80421a28..dat_80421a60 are used by select_disp_party / select_disp_mario (not written yet).
-// Defined here only as far as select_disp_luigi needs them.
+// GXColor dat_80421a28..dat_80421a60 are used by select_disp / select_disp_party / select_disp_mario.
+// Defined here only as far as select_disp_luigi and select_disp need them (select_disp: a28..a40).
+const GXColor dat_80421a28 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80421a2c = { 0xA0, 0xA0, 0xA0, 0xFF };
+const GXColor dat_80421a30 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a34 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a38 = { 0xF0, 0xF0, 0xF0, 0xFF };
+const GXColor dat_80421a3c = { 0xF0, 0xF0, 0xF0, 0xFF };
+const GXColor dat_80421a40 = { 0xF0, 0xF0, 0xF0, 0xFF };
 const GXColor dat_80421a64 = { 0x00, 0x00, 0x00, 0xFF };
 const GXColor dat_80421a68 = { 0xA0, 0xA0, 0xA0, 0xFF };
 const GXColor dat_80421a6c = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -44,6 +63,8 @@ const GXColor dat_80421a74 = { 0xF0, 0xF0, 0xF0, 0xFF };
 
 // .sdata2
 f32 float_0_80421a80 = 0.0f;
+f32 float_32_80421a84 = 32.0f;
+const char str_80421A9C[] = "%d";
 f32 float_1_80421a90 = 1.0f;
 f32 float_0p5_80421a94 = 0.5f;
 f32 float_28_80421aac = 28.0f;
@@ -160,7 +181,7 @@ const char str_802FFFCC[] = "msg_lottery_number\000";
 #define PI 3.14159265358979323846264338327950288419716939937510
 
 typedef struct WinMgrSelectTbl {
-    s16 numDescriptors; // 0x0
+    u16 numDescriptors; // 0x0
     // will pad 2 bytes
     WinMgrDesc* descriptors; // 0x4
 } WinMgrSelectTbl;
@@ -190,13 +211,18 @@ const char str_80421A88[] = "%3d";
 
 //.sdata
 static char* party_labelname_table[7] = { str_804219B8, str_804219C0, str_804219C8, str_804219D0, str_804219D8, str_804219E0, str_804219E8 };
+static s32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
 static char* mario_status_labelname_table[3] = { str_804219F0, str_804219F4, str_804219F8 };
 static char* mario_status_name_table[3] = { str_804219FC, str_80421A04, str_80421A0C };
 static s32 mario_status_henka_table[3] = { 5, 5, 3 };
+s32 mario_status_max_table[3] = { 200, 200, 99 };
 static s16* mario_status_point_table[3];
 
 //.data
-WinMgrSelectTbl select_desc_tbl[] = { { 3, NULL } };
+// select_desc_tbl belongs in .data (the original addresses it with @ha/@l, not @sda21); the array is
+// only declared here with a placeholder entry, the full 19-entry table and the select_*_desc arrays
+// still need to be added for the unit to link.
+__declspec(section ".data") WinMgrSelectTbl select_desc_tbl[] = { { 3, NULL } };
 
 //.sbss
 static WinMgrWork work;
@@ -849,56 +875,349 @@ void select_disp3(WinMgrEntry* entry) {
     }
 }
 
-// NONMATCHING (10.64%): 5 instructions differ, 829 missing, 11 extra, plus register differences.
-WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
-    WinMgrSelectTbl* table;
-    WinMgrSelect* select;
-    // WinMgrDesc* desc;
-    PouchData* pouch;
-    s32 descId, i, id;
+#ifdef MUST_MATCH
+// MUST_MATCH: reading `field_0x10` through this inline (while `field_0x14` is a plain field read)
+// is the only shape that emits the 0x14 load before the 0x10 load while keeping their registers
+// (r7, r6). Declaring both as plain temps leaves the pair in the opposite order.
+static s32 get10(WinMgrDesc* d){ return d->field_0x10; }
+#endif
 
-    pouch = pouchGetPtr();
-    select = (WinMgrSelect*)__memAlloc(HEAP_DEFAULT, sizeof(WinMgrSelect));
-    memset(select, 0, sizeof(WinMgrSelect));
+WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
+    PouchData* pouch = pouchGetPtr();
+    InformantWork* jdt = &_jdt;
+    WinMgrSelect* select;
+    WinMgrSelectTbl* table;
+    s32 descId;
+    s32 i;
+    WinMgrDesc* desc;
+    s32 j;
+    s32 type;
+    u16 item;
+
+    select = (WinMgrSelect*)__memAlloc(HEAP_DEFAULT, 0x3c);
+    memset(select, 0, 0x3c);
 
     select->field_0x4 = a1;
-
-    select->field_0xC = 0;
     descId = a1;
+    select->field_0xC = 0;
     select->field_0x10 = 0;
-
     select->field_0x18 = 0.0f;
     select->field_0x14 = 0.0f;
     select->field_0x1C = 0.0f;
-
     select->field_0x38 = a2;
 
     if (a3) {
-        select->flags |= 0x100;
+        *(u16*)&select->flags |= 0x100;
     }
-    if (a1 < 0) {
+
+    if (descId < 0) {
         descId = 0;
     }
-    table = &select_desc_tbl[descId];
-    select->numDescriptors = (s32)table->numDescriptors;
-
+    desc = select_desc_tbl[descId].descriptors;
+    select->numDescriptors = (s32)select_desc_tbl[descId].numDescriptors;
     for (i = 0; i < select->numDescriptors; i++) {
-        id = winMgrEntry(&table->descriptors[i]);
-        select->descriptorId[i] = id;
-        winMgrSetParam(id, select);
-    }
-    select->field_0x14 = (f32)table->descriptors->field_0xC;
-    select->field_0x18 = (f32)(table->descriptors->field_0x10 - 54);
-    // TODO: finish
-    /*switch (select->field_0x4) {
-
+        select->descriptorId[i] = winMgrEntry(desc++);
+        winMgrSetParam(select->descriptorId[i], select);
     }
 
+    desc = select_desc_tbl[descId].descriptors;
+    select->field_0x14 = (f32)desc->field_0xC;
+    select->field_0x18 = (f32)(desc->field_0x10 - 54);
 
+    type = select->field_0x4;
+    switch (type) {
+    case 0:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x1e8);
+        memset((void*)select->field_0x30, 0, 0x1e8);
+        select->field_0x34 = 0;
+        if (a2 != 0) {
+            {
+                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
+                it->field_0x2 = a2;
+            }
+        }
+        for (i = 0; i < 0x79; i++) {
+            item = pouchKeyItem(i);
+            if (item != 0) {
+                for (j = 0; j < 0x13; j++) {
+                    if (item == menu_skip_list[j]) {
+                        break;
+                    }
+                }
+                if (j >= 0x13) {
+                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+                }
+            }
+        }
+        break;
+    case 1:
+    case 3:
+    case 4:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x54);
+        memset((void*)select->field_0x30, 0, 0x54);
+        select->field_0x34 = 0;
+        if (a2 != 0) {
+            {
+                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
+                it->field_0x2 = a2;
+            }
+        }
+        for (i = 0; i < 0x14; i++) {
+            item = pouchHaveItem(i);
+            if (item != 0) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+            }
+        }
+        break;
+    case 2:
+    case 12:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x324);
+        memset((void*)select->field_0x30, 0, 0x324);
+        select->field_0x34 = 0;
+        if (a2 != 0) {
+            {
+                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
+                it->field_0x2 = a2;
+            }
+        }
+        for (i = 0; i < 0xc8; i++) {
+            item = pouchHaveBadge(i);
+            if (item != 0) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+            }
+        }
+        break;
+    case 5:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x84);
+        memset((void*)select->field_0x30, 0, 0x84);
+        select->field_0x34 = 0;
+        if (a2 != 0) {
+            {
+                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
+                it->field_0x2 = a2;
+            }
+        }
+        for (i = 0; i < 0x20; i++) {
+            item = pouchKeepItem(i);
+            if (item != 0) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = item;
+            }
+        }
+        break;
+    case 6:
+    case 7:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x1c);
+        memset((void*)select->field_0x30, 0, 0x1c);
+        select->field_0x34 = 0;
+        for (i = 0; party_id_table[i] != 0; i++) {
+            if (partyChkJoin(party_id_table[i])) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i;
+                if (evtGetValue(0, 0xF8406022) == 0) {
+                    if (pouch->partyData[party_id_table[i]].techLevel >= 1) {
+                        ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                    }
+                } else {
+                    if (pouch->partyData[party_id_table[i]].techLevel >= 2) {
+                        ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                    }
+                }
+                select->field_0x34++;
+            }
+        }
+        break;
+    case 8:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x1c);
+        memset((void*)select->field_0x30, 0, 0x1c);
+        select->field_0x34 = 0;
+        for (i = 0; party_id_table[i] != 0; i++) {
+            if (partyChkJoin(party_id_table[i])) {
+                if (party_id_table[i] == evtGetValue(0, 0xFD050F81)) {
+                    continue;
+                }
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i;
+                if (pouch->partyData[party_id_table[i]].techLevel == 0) {
+                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                }
+                select->field_0x34++;
+            }
+        }
+        break;
+    case 9:
+        mario_status_point_table[0] = &pouchGetPtr()->baseMaxHP;
+        mario_status_point_table[1] = &pouchGetPtr()->baseMaxFP;
+        mario_status_point_table[2] = &pouchGetPtr()->maximumBP;
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0xc);
+        memset((void*)select->field_0x30, 0, 0xc);
+        for (i = 0; i < 3; i++) {
+            s32 canDown = 0;
+            s32 canUp = 0;
 
+            ((WinMgrSelectItem*)select->field_0x30)[i].field_0x2 = i;
+            for (j = 0; j < 3; j++) {
+                if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2 != j) {
+                    if (*mario_status_point_table[j] - mario_status_henka_table[j] <= 0) {
+                        canDown++;
+                    }
+                } else if (*mario_status_point_table[j] + mario_status_henka_table[j] > mario_status_max_table[j]) {
+                    canUp = 1;
+                }
+            }
+            if (canDown == 2 || canUp != 0) {
+                if (canUp != 0) {
+                    ((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 |= 7;
+                } else {
+                    ((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 |= 3;
+                }
+            }
+        }
+        select->field_0x34 = 3;
+        break;
+    case 10:
+        mario_status_point_table[0] = &pouchGetPtr()->baseMaxHP;
+        mario_status_point_table[1] = &pouchGetPtr()->baseMaxFP;
+        mario_status_point_table[2] = &pouchGetPtr()->maximumBP;
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 8);
+        memset((void*)select->field_0x30, 0, 8);
+        select->field_0x34 = 0;
+        for (i = 0; i < 3; i++) {
+            if (i == evtGetValue(0, 0xFD050F81)) {
+                continue;
+            }
+            ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i;
+            if (*mario_status_point_table[i] - mario_status_henka_table[i] <= 0) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+            }
+            select->field_0x34++;
+        }
+        break;
+    case 11:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x18c);
+        memset((void*)select->field_0x30, 0, 0x18c);
+        select->field_0x34 = 0;
+        for (i = 0; i < 0x63; i++) {
+            s16 v = (s16)badgeShop_get(bdsw->bargain_table, (s16)(i + 0xf0));
 
+            if (v - badgeShop_ThrowCheck(i + 0xf0) > 0) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = i + 0xf0;
+            }
+        }
+        qqsort((void*)select->field_0x30, select->field_0x34, 4, (int (*)(void*, void*))unk_802379e4);
+        break;
+    case 13:
+        {
+            s32 max = getBadgeStarmaniacTableMaxCount();
 
-    */
+            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, max * 4);
+            memset((void*)select->field_0x30, 0, max * 4);
+            select->field_0x34 = 0;
+            for (i = 0; i < 0x63; i++) {
+                s32 v = (s16)badgeShop_get(bdsw->starmaniac_table, (s16)(i + 0xf0));
+
+                if (v - badgeShop_ThrowCheck(i + 0xf0) > 0) {
+                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x2 = i + 0xf0;
+                    if (itemDataTable[0xf0 + i].star_piece_price > pouchGetStarPiece()) {
+                        ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34].field_0x0 |= 3;
+                    }
+                    select->field_0x34++;
+                }
+            }
+            qqsort((void*)select->field_0x30, select->field_0x34, 4, (int (*)(void*, void*))unk_80237a2c);
+        }
+        break;
+    case 14:
+        select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, 0x10);
+        memset((void*)select->field_0x30, 0, 0x10);
+        select->field_0x34 = 0;
+        for (i = 0; i < 4; i++) {
+            s32 v = evtGetValue(0, 0xF5DE01F6 + i);
+
+            if (badge_bottakuru_table[v] != 0) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = badge_bottakuru_table[v];
+            }
+        }
+        break;
+    case 15:
+        {
+            s32 max = getBadgeBottakuru100TableMaxCount();
+
+            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, max * 4);
+            memset((void*)select->field_0x30, 0, max * 4);
+            select->field_0x34 = 0;
+            for (i = 0; i < max; i++) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = badge_bottakuru100_table[i];
+            }
+        }
+        break;
+    case 16:
+        {
+            s32 max = getBadgeBteresaTableMaxCount();
+
+            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, max * 4);
+            memset((void*)select->field_0x30, 0, max * 4);
+            select->field_0x34 = 0;
+            for (i = 0; i < 0x152; i++) {
+                if ((s16)badgeShop_get(bdsw->bteresa_table, (s16)(i + 1)) > 0) {
+                    ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = i + 1;
+                }
+            }
+        }
+        break;
+    case 17:
+    case 18:
+        {
+            u8* unk = (type == 0x11) ? jdt->unk14.unkD : jdt->unk14.unk1A;
+
+            select->field_0x34 = jdt->count;
+            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, (select->field_0x34 + 1) * 4);
+            memset((void*)select->field_0x30, 0, (select->field_0x34 + 1) * 4);
+            for (i = 0; i < select->field_0x34; i++) {
+                ((WinMgrSelectItem*)select->field_0x30)[i].field_0x2 = i;
+                if (johoya_get(unk, jdt->info[i].storyId) != 0) {
+                    ((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 |= 1;
+                }
+            }
+        }
+        break;
+    default:
+        if (a1 < 0) {
+            s32* list = (s32*)a1;
+            s32 n = 0;
+
+            while (list[n++] != -1)
+                ;
+            select->field_0x30 = (s32)__memAlloc(HEAP_DEFAULT, (n + 1) * 4);
+            memset((void*)select->field_0x30, 0, (n + 1) * 4);
+            select->field_0x34 = 0;
+            if (a2 != 0) {
+                WinMgrSelectItem* it = &((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++];
+
+                it->field_0x2 = a2;
+            }
+            for (i = 0; list[i] != -1; ) {
+                ((WinMgrSelectItem*)select->field_0x30)[select->field_0x34++].field_0x2 = list[i++];
+            }
+        }
+        break;
+    }
+
+    if (select->field_0x34 < 8) {
+        s32 f20 = desc->field_0x14;
+#ifdef MUST_MATCH
+        s32 f1C = get10(desc);
+#else
+        s32 f1C = desc->field_0x10;
+#endif
+        s32 f18 = desc->field_0xC;
+        s32 f24 = desc->field_0x18 - (8 - select->field_0x34) * 0x18;
+        WinMgrEntry* e = &wp->mEntries[select->descriptorId[0]];
+
+        if (e->flags & 1) {
+            e->field_0x18 = f18;
+            e->field_0x1C = f1C;
+            e->field_0x20 = f20;
+            e->field_0x24 = f24;
+        }
+    }
     return select;
 }
 
@@ -1031,7 +1350,293 @@ void select_main(WinMgrEntry* entry) {
 }
 #pragma opt_common_subs reset
 
-// NONMATCHING (92.61%): close, but MWCC folds the `0.0f + (f32)int` copies that the
+// All instructions match; the remaining differences are stack-slot and register colours. Six 4-byte
+// temporaries (the five per-block GXColor copies plus the GXSetFog argument copy at 0x18) are
+// assigned in a different order than the original, shifting each block colour temp down 4 bytes and
+// putting the fog temp at 0x18 instead of 0x2c. The price block's Vec translate/scale land in each
+// other's slot, the two white-colour stores come out in the opposite order, and the int->float
+// conversion reloads an anonymous @NNN copy of the double instead of the named double_to_int_802fff00
+// symbol (project-wide limitation, same class as win_item.c/win_badge.c). One extra branch appears
+// versus the original (see the MUST_MATCH block in the item loop).
+// NONMATCHING (99.83%): six block/fog temporaries and the price Vecs are stack-coloured differently.
+void select_disp(WinMgrEntry* entry) {
+    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    Mtx mtx1;
+    Mtx mtx2;
+    u32 scissorLeft;
+    u32 scissorTop;
+    u32 scissorWidth;
+    u32 scissorHeight;
+    GXColor colorBlack = dat_80421a28;
+    GXColor colorGray = dat_80421a2c;
+    GXColor colorWhite = dat_80421a30;
+    GXColor colorBase = dat_80421a30;
+    GXColor colorTitle = dat_80421a30;
+    GXColor fogColor;
+    char buf[0x20];
+    const char* msg;
+    u16 width;
+    u16 x;
+    f32 zero;
+    s32 i;
+    s32 showPrice;
+    s32 price;
+
+    if (wp->mEntries[select->descriptorId[0]].flags & 4) {
+        return;
+    }
+
+    fogColor = dat_80421a34;
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+    GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
+    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+
+    zero = float_0_80421a80;
+    for (i = 0; i < select->field_0x34; i++) {
+        f32 rowBase;
+        ItemData* item;
+
+        item = &itemDataTable[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2];
+        rowBase = select->field_0x1C + (zero + (f32)(entry->field_0x1C - 0x2c - i * 0x18));
+
+        if ((f32)entry->field_0x1C < rowBase - 32.0f) {
+            continue;
+        }
+        if ((f32)(entry->field_0x1C - entry->field_0x24) > 32.0f + rowBase) {
+            continue;
+        }
+
+#ifdef MUST_MATCH
+        // The target keeps a dead `cmpwi r0, 0` on select->field_0x38 here: the compare
+        // result is thrown away and the real test is the item flag bit. Short-circuit `||`
+        // is what makes MWCC emit that dead compare; our build keeps one extra branch the
+        // original's optimiser folded away. Natural form under #else (98.80%).
+        if (select->field_0x38 != 0 || (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1)) {
+#else
+        if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+#endif
+            winIconGrayInit();
+        } else {
+            winIconInit();
+        }
+        {
+            GXColor color = colorBase;
+            Vec translate;
+            Vec tmp = vec3_802ffa98;
+            Vec scale = vec3_802ffaa4;
+
+            tmp.x = (f32)(entry->field_0x18 + 0x23);
+            tmp.y = select->field_0x1C + (zero + (f32)(entry->field_0x1C - 0x2c - i * 0x18));
+            translate = tmp;
+            winIconSet(*(u16*)&item->icon_id, &translate, &scale, &color);
+        }
+
+        winFontInit();
+        {
+            GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            Vec translate;
+            Vec tmp = vec3_802ffab0;
+            Vec scale = vec3_802ffabc;
+
+            tmp.x = (f32)(entry->field_0x18 + 0x3c);
+            tmp.y = select->field_0x1C + (zero + (f32)(entry->field_0x1C - 0x20 - i * 0x18));
+            translate = tmp;
+            winFontSet(&translate, &scale, &color, msgSearch(item->name));
+        }
+
+        showPrice = 0;
+        switch (select->field_0x4) {
+        case 11:
+            price = *(u16*)&item->buy_price;
+            showPrice = 1;
+            break;
+        case 3:
+        case 12:
+            price = item->sell_price;
+            showPrice = 1;
+            break;
+        case 13:
+            price = item->star_piece_price;
+            showPrice = 1;
+            break;
+        case 14:
+            price = *(u16*)&item->buy_price * 12 / 10;
+            showPrice = 1;
+            break;
+        case 15:
+            price = *(u16*)&item->buy_price * (evtGetValue(0, 0xF5DE06A9) + 11) / 10;
+            showPrice = 1;
+            break;
+        case 16:
+            price = (*(u16*)&item->buy_price * 2 + 2) / 3;
+            showPrice = 1;
+            break;
+        }
+        if (!showPrice) {
+            continue;
+        }
+
+        sprintf(buf, str_80421A9C, price);
+        width = FontGetMessageWidth(buf);
+        {
+            f32 priceWidth = (f32)width;
+
+            winFontInit();
+            {
+                GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+                Vec scale = vec3_802ffad4;
+                Vec tmp = vec3_802ffac8;
+                Vec translate;
+
+                tmp.x = (f32)(entry->field_0x18 + entry->field_0x20 - 0xa) - priceWidth;
+                tmp.y = select->field_0x1C + (zero + (f32)(entry->field_0x1C - 0x20 - i * 0x18));
+                translate = tmp;
+                winFontSet(&translate, &scale, &color, buf);
+            }
+        }
+    }
+
+    if (select->field_0x38 != 0) {
+        winIconInit();
+        for (i = 2; i < 30; i++) {
+            Vec translate;
+            Vec tmp;
+            Vec scale;
+            GXColor color;
+#ifdef MUST_MATCH
+            // The original reloads the two const vectors every iteration instead of
+            // hoisting them into the loop. Reading them through a volatile pointer stops
+            // MWCC's loop-invariant motion and reproduces that schedule. Natural form
+            // under #else (96.75%): the loads get hoisted and the rodata values stay live
+            // in r22-r27 for the whole loop.
+            volatile Vec* sc = (volatile Vec*)&vec3_802ffaec;
+            volatile Vec* tp = (volatile Vec*)&vec3_802ffae0;
+#endif
+
+#ifdef MUST_MATCH
+            color = *(volatile GXColor*)&colorBlack;
+#else
+            color = colorBlack;
+#endif
+#ifdef MUST_MATCH
+            scale = *sc;
+            tmp = *tp;
+#else
+            scale = vec3_802ffaec;
+            tmp = vec3_802ffae0;
+#endif
+            tmp.x = (f32)(entry->field_0x18 + i * entry->field_0x20 / 31);
+            tmp.y = (f32)(entry->field_0x1C - 0x38) + select->field_0x1C;
+            translate = tmp;
+            winIconSet(0x1b7, &translate, &scale, &color);
+        }
+    }
+
+    GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
+
+    switch (select->field_0x4) {
+    case 2:
+    case 11:
+    case 12:
+    case 13:
+        msg = msgSearch(str_802FFF60);
+        break;
+    case 14:
+        msg = msgSearch(str_802FFF74);
+        break;
+    case 16:
+        msg = msgSearch(str_802FFF88);
+        break;
+    case 17:
+        msg = msgSearch(str_802FFED8);
+        break;
+    default:
+        msg = msgSearch(str_802FFF9C);
+        break;
+    }
+
+    width = FontGetMessageWidth(msg);
+    x = (entry->field_0x20 - width) / 2;
+    winFontInit();
+    {
+        GXColor color = colorTitle;
+        Vec translate;
+        Vec tmp = vec3_802ffaf8;
+        Vec scale = vec3_802ffb04;
+
+        tmp.x = (f32)(entry->field_0x18 + x);
+        tmp.y = (f32)(entry->field_0x1C + 0xe);
+        translate = tmp;
+        winFontSetEdge(&translate, &scale, &color, msg);
+    }
+
+    switch (select->field_0x4) {
+    case 3:
+    case 11:
+    case 12:
+    case 14:
+    case 15:
+        PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+        PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
+        PSMTXConcat(mtx1, mtx2, mtx1);
+        iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a38);
+        {
+            Vec pos = vec3_802ffb10;
+            pos.x = (f32)(entry->field_0x18 + 0x10c);
+            pos.y = (f32)(entry->field_0x1C - 0xc);
+            iconDispGx(&pos, 0x10, 0x18b, 0.6f);
+        }
+        break;
+    case 13:
+        PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+        PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
+        PSMTXConcat(mtx1, mtx2, mtx1);
+        iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a3c);
+        {
+            Vec pos = vec3_802ffb1c;
+            pos.x = (f32)(entry->field_0x18 + 0x10c);
+            pos.y = (f32)(entry->field_0x1C - 0xc);
+            iconDispGx(&pos, 0x10, 0x18d, 0.6f);
+        }
+        break;
+    case 16:
+        PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+        PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
+        PSMTXConcat(mtx1, mtx2, mtx1);
+        iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a40);
+        {
+            Vec pos = vec3_802ffb28;
+            pos.x = (f32)(entry->field_0x18 + 0x10c);
+            pos.y = (f32)(entry->field_0x1C - 0xc);
+            iconDispGx(&pos, 0x10, 0x13f, 0.6f);
+        }
+        break;
+    }
+
+    {
+        Vec pos = vec3_802ffb34;
+        pos.x = select->field_0x14;
+        pos.y = select->field_0x18;
+        iconDispGx(&pos, 0x14, 0x1f0, 1.0f);
+    }
+
+    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->field_0x10 != 0) {
+            Vec pos = vec3_802ffb40;
+            pos.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
+            pos.y = (f32)(entry->field_0x1C - 0x24);
+            iconDispGx(&pos, 0x10, 0x1b5, float_0p6_80421a8c);
+        }
+        if (select->field_0x10 != select->field_0x34 - 8) {
+            Vec pos = vec3_802ffb4c;
+            pos.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
+            pos.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            iconDispGx(&pos, 0x10, 0x1b6, float_0p6_80421a8c);
+        }
+    }
+}
+
+// NONMATCHING (92.75%): close, but MWCC folds the `0.0f + (f32)int` copies that the
 // original keeps (which is why the original also spills f29); the SDA/rodata label
 // spellings differ cosmetically.
 void select_disp_luigi(WinMgrEntry* entry) {
@@ -1071,7 +1676,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
     }
 
     fogColor = dat_80421a70;
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+    GXSetFog(0, float_0_80421a80, float_0_80421a80, float_0_80421a80, float_0_80421a80, fogColor);
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
 
@@ -1158,20 +1763,20 @@ void select_disp_luigi(WinMgrEntry* entry) {
     posMain = vec3_802ffd14;
     posMain.x = select->field_0x14;
     posMain.y = select->field_0x18;
-    iconDispGx(&posMain, 0x14, 0x1f0, 1.0f);
+    iconDispGx(&posMain, 0x14, 0x1f0, float_1_80421a90);
 
     if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->field_0x10 != 0) {
             posUp = vec3_802ffd20;
-            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * 0.5f;
+            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
-            iconDispGx(&posUp, 0x10, 0x1b5, 0.6f);
+            iconDispGx(&posUp, 0x10, 0x1b5, float_0p6_80421a8c);
         }
         if (select->field_0x10 != select->field_0x34 - 8) {
             posDown = vec3_802ffd2c;
-            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * 0.5f;
+            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
-            iconDispGx(&posDown, 0x10, 0x1b6, 0.6f);
+            iconDispGx(&posDown, 0x10, 0x1b6, float_0p6_80421a8c);
         }
     }
 }

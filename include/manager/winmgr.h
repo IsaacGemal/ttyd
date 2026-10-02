@@ -85,6 +85,8 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3);
 s32 winMgrSelect(WinMgrSelect* select);
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event);
 s32 unk_80237448(WinMgrSelect* select);
+s32 unk_802379e4(void* a, void* b);
+s32 unk_80237a2c(void* a, void* b);
 void winMgrDisp(CameraId camId, void* param);
 void winMgrSeq(WinMgrEntry* entry);
 

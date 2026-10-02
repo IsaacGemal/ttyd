@@ -1308,7 +1308,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 // yoffs is computed as a separate multiply then add (retail's fmuls+fadds are not contracted). The right-edge
 // x is (s16)(x + fwidthS) (kept in an s16 local, and the hue recomputes it cast through u16) and the
 // bottom-edge y is (s16)((y - 1) - fheightS). All four vertices write HSV2RGB's result after the position pair.
-// NONMATCHING (56.56%): retail keeps a taller frame (0x140 vs 0x130) and two more callee-saved GPRs; the
+// NONMATCHING (56.70%): retail keeps a taller frame (0x140 vs 0x130) and two more callee-saved GPRs; the
 // preamble's int->float conversion schedule and register colours still differ.
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u8* info = (u8*)FontGetWidthPtr(code);
@@ -1330,16 +1330,16 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u8 hueR;
 	GXColor hsv;
 	u32 rgb;
-	u8 n1;
 	u8 n2;
+	u8 n1;
 
-	fwidth = width;
-	fheight = blk->cellheight;
-	fwidthS = fwidth * 1.0f;
-	fheightS = fheight * 1.0f;
-	xoffs = (f32)(n - row * blk->sheetrows) * blk->cellwidth + info[0];
 	yoffs = (f32)(row - col * blk->sheetcolumns) * blk->cellheight;
+	xoffs = (f32)(n - row * blk->sheetrows) * blk->cellwidth + info[0];
+	fheight = blk->cellheight;
 	yoffs = 1.0f + yoffs;
+	fheightS = fheight * 1.0f;
+	fwidth = width;
+	fwidthS = fwidth * 1.0f;
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	n1 = irand(64);

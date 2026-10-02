@@ -569,7 +569,8 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		return 1;
 	}
 	while (BattleMenuKeyOKInACT(wp)) {
-		s32 i;
+		s16* held;
+	s32 i;
 		s32 t;
 		for (i = 0; i < cursor->unk8; i++) {
 			t = wcmd->mActionTable[i].mType;
@@ -585,7 +586,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 					continue;
 				}
 			}
-			_btlcmd_MakeSelectWeaponTable(wp, (void*)t);
+			_btlcmd_MakeSelectWeaponTable(wp, t);
 			if (_btlcmd_CheckWeaponTargetNum(wp, unit, wcmd->mWeaponTable[0].mWeaponParams) > 0) {
 				continue;
 			}
@@ -1119,12 +1120,12 @@ void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, void* arg) {
 	wp->commandMenu.field_4 |= 0x01000100;
 }
 
-void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, void* arg, void* arg2) {
+void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, s32 arg, s32 arg2) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleCursor* cursor;
 
 	_btlcmd_MakeSelectWeaponTable(wp, arg);
-	_btlcmd_GetCursorPtr(cmd, (s32)arg, &cursor);
+	_btlcmd_GetCursorPtr(cmd, arg, &cursor);
 	BattleMenuDisp_WeaponSelect_Init(wp, cursor, &cmd->unk8[0x80 - 0x8], (u32)arg2);
 	cmd->field_4 |= 0x01000010;
 }
@@ -1245,7 +1246,8 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 		f32 width;
 		Vec pos;
 		Vec screen;
-		s32 i;
+		s16* held;
+	s32 i;
 		s32 yoff;
 
 		for (i = 0, yoff = 0; i < sampling->count; i++, yoff += 0x20) {
@@ -1664,10 +1666,350 @@ void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out) {
 	}
 }
 
+// Default "no item" weapon used when the item list is empty; its name/description strings
+// and the icon 0x162 are what the original's _btlcmd_MakeSelectWeaponTable builds.
+static BattleWeapon defaultWeapon_Dummy_NoItem = {
+    "btl_wn_dummy_noitem",                    // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    "msg_dummy_noitem",                       // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01000160,                               // targetClassFlags
+    0x20000002,                               // targetPropertyFlags
+    2,                                        // element
+    3,                                        // field_0x6D
+    0,                                        // actionLevel
+    0,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0,                                        // special
+    0,                                        // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0,
+    NULL,                                     // mAttackEvtScript
+    { 0x64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
+
+// Badge IDs offered for the jump / hammer weapon menus (original tables, kept global like
+// _checkPartyTable). Not declared in any header.
+ItemType _jump_badge_table[8] = {
+	ITEM_POWER_JUMP, ITEM_MULTIBOUNCE, ITEM_SHRINK_STOMP, ITEM_SLEEPY_STOMP,
+	ITEM_SOFT_STOMP, ITEM_TORNADO_JUMP, ITEM_POWER_BOUNCE, ITEM_MEGA_JUMP,
+};
+ItemType _hammer_badge_table[9] = {
+	ITEM_POWER_SMASH, ITEM_PIERCING_BLOW, ITEM_HAMMER_THROW, ITEM_HEAD_RATTLE, ITEM_ICE_SMASH,
+	ITEM_FIRE_DRIVE, ITEM_QUAKE_HAMMER, ITEM_MEGA_SMASH, ITEM_MEGA_QUAKE,
+};
+
+// Builds the select-weapon menu table for `arg` (0 = jump, 1 = hammer, 2 = items, 4 = super
+// actions, 6 = partner/indirect). Returns the number of usable entries and clamps the cursor.
+s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
+	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
+	PouchData* pouch = pouchGetPtr();
+	BattleCursor* cursor;
+	BattleWeapon* weapon;
+	ItemData* item;
+	s32 count;
+	u32 bj;
+	s32 j;
+	s32 i;
+	ItemType id;
+	u32 bi;
+
+	if (wcmd == NULL) {
+		return 0;
+	}
+	_btlcmd_GetCursorPtr((BattleCommand*)wcmd, arg, &cursor);
+	count = 0;
+	switch (arg) {
+	case 0:
+		if (pouch->jumpLevel >= 1) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioDefaultWeapon_Jump;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			if ((wp->flags & 0x09000000) && wp->field_424 != -1) {
+				wcmd->mWeaponTable[count].mWeaponParams =
+				    (BattleWeapon*)BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x44);
+			}
+			count++;
+		}
+		if (pouch->jumpLevel >= 2) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_KururinJump;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			count++;
+		}
+		if (pouch->jumpLevel >= 3) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_JyabaraJump;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			count++;
+		}
+		break;
+	case 1:
+		if (pouch->hammerLevel >= 1) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioDefaultWeapon_Hammer;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			if ((wp->flags & 0x0A000000) && wp->field_424 != -1) {
+				wcmd->mWeaponTable[count].mWeaponParams =
+				    (BattleWeapon*)BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x45);
+			}
+			count++;
+		}
+		if (pouch->hammerLevel >= 2) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_KaitenHammer;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			count++;
+		}
+		if (pouch->hammerLevel >= 3) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_UltraHammer;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			count++;
+		}
+		break;
+	}
+	switch (arg) {
+	case 0:
+		for (bi = 0; bi < 8; bi++) {
+			id = _jump_badge_table[bi];
+			if (pouchEquipCheckBadge(id) > 0) {
+				wcmd->mWeaponTable[count].mIndex = bi;
+				wcmd->mWeaponTable[count].mItem = id;
+				item = &itemDataTable[id];
+				wcmd->mWeaponTable[count].mWeaponParams = item->battle_params;
+				wcmd->mWeaponTable[count].field_0x4 = 0;
+				wcmd->mWeaponTable[count].field_0x18 = 0;
+				weapon = wcmd->mWeaponTable[count].mWeaponParams;
+				if (weapon->item != 0) {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
+				} else {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&weapon->icon;
+				}
+				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+					wcmd->mWeaponTable[count].mName =
+					    (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				} else {
+					wcmd->mWeaponTable[count].mName =
+					    (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				}
+				count++;
+			}
+		}
+		break;
+	case 1:
+		for (bj = 0; bj < 9; bj++) {
+			id = _hammer_badge_table[bj];
+			if (pouchEquipCheckBadge(id) > 0) {
+				wcmd->mWeaponTable[count].mIndex = bj;
+				wcmd->mWeaponTable[count].mItem = id;
+				item = &itemDataTable[id];
+				wcmd->mWeaponTable[count].mWeaponParams = item->battle_params;
+				wcmd->mWeaponTable[count].field_0x4 = 0;
+				wcmd->mWeaponTable[count].field_0x18 = 0;
+				weapon = wcmd->mWeaponTable[count].mWeaponParams;
+				if (weapon->item != 0) {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
+				} else {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&weapon->icon;
+				}
+				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+					wcmd->mWeaponTable[count].mName =
+					    (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				} else {
+					wcmd->mWeaponTable[count].mName =
+					    (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				}
+				count++;
+			}
+		}
+		break;
+	}
+	switch (arg) {
+	case 6: {
+		void (*func)(BattleCommand*, s32*);
+
+		func = (void (*)(BattleCommand*, s32*))BtlUnit_GetData(mario, 1);
+		func((BattleCommand*)wcmd, &count);
+		break;
+	}
+	case 2: {
+		s16* held = pouch->heldItems;
+		ItemData* item;
+		for (i = 0; i < 20; i++) {
+			id = held[i];
+			item = &itemDataTable[id];
+			if (id == 0) {
+				continue;
+			}
+			if (!(item->usable_locations & 2)) {
+				continue;
+			}
+			wcmd->mWeaponTable[count].mIndex = i;
+			wcmd->mWeaponTable[count].mItem = id;
+			wcmd->mWeaponTable[count].mWeaponParams = item->battle_params;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			if (wcmd->mWeaponTable[count].mWeaponParams == NULL) {
+				wcmd->mWeaponTable[count].mWeaponParams = &ItemWeaponData_CookingItem;
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(item->name);
+				wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
+			} else {
+				wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
+				weapon = wcmd->mWeaponTable[count].mWeaponParams;
+				if (weapon->name != NULL) {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+				} else {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+				}
+			}
+			count++;
+			if (count >= 21) {
+				break;
+			}
+		}
+		if (count == 0) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mIndex = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &defaultWeapon_Dummy_NoItem;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = 0x162;
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			count++;
+		}
+		break;
+	}
+	case 4: {
+		u16 mask = pouch->mStarPowersObtained;
+		for (j = 0; j < 16; j++) {
+			if (!(mask & ((u32)1 << j))) {
+				continue;
+			}
+			if (superActionTable[j] == 0) {
+				continue;
+			}
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = (BattleWeapon*)superActionTable[j];
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].mIcon = *(u16*)&((BattleWeapon*)superActionTable[j])->icon;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			weapon = wcmd->mWeaponTable[count].mWeaponParams;
+			if (weapon->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(weapon->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[weapon->item].name);
+			}
+			count++;
+			if (count >= 21) {
+				break;
+			}
+		}
+		break;
+	}
+	}
+	if (count <= 0) {
+		return 0;
+	}
+	cursor->unk8 = count;
+	if (cursor->field_0 >= (s32)cursor->unk8) {
+		cursor->field_0 = cursor->unk8 - 1;
+	}
+	while (cursor->unk8 < cursor->field_4 + 6) {
+		if (0 >= cursor->field_4) {
+			break;
+		}
+		cursor->field_4--;
+	}
+	_btlcmd_UpdateSelectWeaponTable(wp, arg);
+	return count;
+}
+
 void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
 	BattleCursor* cursor;
+	s16* held;
 	s32 i;
 	s32 count;
 
@@ -1857,6 +2199,7 @@ CheckPartyTable _checkPartyTable[8] = {
 #pragma dont_inline on // prevents _battleGetPartyIcon from being inlined into _btlcmd_MakePartyTable
 s32 _battleGetPartyIcon(s32 kind) {
 	CheckPartyTable* entry;
+	s16* held;
 	s32 i;
 
 	for (i = 0; i < 8; i++) {
@@ -1986,7 +2329,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	case 6:
 	case 7:
 	case 8:
-		_btlcmd_MakeSelectWeaponTable(wp, (void*)*(s32*)&cmd->unk540[0]);
+		_btlcmd_MakeSelectWeaponTable(wp, *(s32*)&cmd->unk540[0]);
 		_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
 		count = 0;
 		{
@@ -2132,10 +2475,11 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWeapon* weapon;
 	s32 selected;
+	s16* held;
 	s32 i;
 	s8 belong;
 
-	_btlcmd_MakeSelectWeaponTable(wp, (void*)arg);
+	_btlcmd_MakeSelectWeaponTable(wp, arg);
 	weapon = ((BattleWorkCommand*)&wp->commandMenu)->mWeaponTable[weaponIdx].mWeaponParams;
 	belong = (s8)BtlUnit_GetEnemyBelong(unit);
 #ifdef MUST_MATCH
@@ -2457,7 +2801,7 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
-// NONMATCHING (98.44%): instruction sequence now matches; only the pooled string base
+// NONMATCHING (98.59%): instruction sequence now matches; only the pooled string base
 // (`str_802EF640` vs local `...rodata.0`, offsets shifted 0x28) and the msg-base/args
 // register swap (target r5/r6, ours r6/r5) differ, both expected to resolve once the
 // file's rodata pool is complete.

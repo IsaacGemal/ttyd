@@ -5,11 +5,18 @@
 #include "mario/mario.h"
 #include "mario/mario_cam.h"
 #include "mario/mario_hit.h"
+#include "mario/mario_motion.h"
 #include "mario/mario_sbr.h"
+#include "motion/mot_damage.h"
+#include "motion/mot_jump.h"
 #include "party.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "math_ext.h"
 #include "memory.h"
+#include "driver/animdrv.h"
+#include "driver/hitdrv.h"
+#include "manager/evtmgr.h"
 #include <dolphin/mtx.h>
 #include <string.h>
 #include "matching.h"
@@ -97,6 +104,12 @@ const Vec vec3_802c5ce4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5cf0 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5cfc = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5d08 = { 0.0f, 0.0f, 0.0f };
+// .rodata:0x90: occupies the slot the original's int->float conversion magic has, so `lfd f3, 0x90(r29)`
+// reads the right bytes; MWCC still emits its own anonymous copy of the magic after the strings (it does not
+// reuse this symbol), so the 3 remaining instruction diffs are unavoidable (project-wide limitation).
+const f64 double_to_int_802c5d18 = 4503601774854144.0;
+// .rodata:0x98..0xB8 ("M_J_1B", "PM_P_1A", "PM_P_1B", "M_J_1C"): used as string literals inside mot_plane so
+// MWCC dedups them with marioForcePlaneAnime's "PM_P_1B" and pools them after the magic at 0x98..0xB8.
 
 // .sdata2 constant pool in the original's address order (build/G8MJ01/asm/motion/mot_plane.s:2739),
 // so every `@sda21` offset resolves the same. Read through MATCH_F32 so MWCC does not pool a copy.
@@ -156,43 +169,858 @@ void marioForcePlaneAnime(void) {
     mario->dispFlags |= 0x8;
 }
 
-// NONMATCHING (3.48%): 6 instructions differ, 891 missing, plus register differences.
-void mot_plane(void) {
-	MarioWork* mario;
-	MotionPlaneData* data;
+static void flyMain(void);
 
-	mario = marioGetPtr();
+// Inlined reset block the original duplicates at every mot_plane exit (fields set to 20/37,
+// zero vectors, paper off). Reproduces the same scheduling as mot_plane_post.
+static inline void planeReset(void) {
+	MarioWork* m = marioGetPtr();
+
+	m->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
+#ifdef MUST_MATCH
+	// Volatile store/loads keep the following volatile Vec copies below it, as the original schedules them.
+	*(volatile f32*)&m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+	*(volatile Vec*)((u8*)m + 0xBC) = *(volatile Vec*)&vec3_802c5cd8;
+	*(volatile Vec*)((u8*)m + 0xB0) = *(volatile Vec*)&vec3_802c5ce4;
+	*(volatile Vec*)((u8*)m + 0x98) = *(volatile Vec*)&vec3_802c5cf0;
+#else
+	m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+	MWVEC(m, 0xBC) = vec3_802c5cd8;
+	MWVEC(m, 0xB0) = vec3_802c5ce4;
+	MWVEC(m, 0x98) = vec3_802c5cf0;
+#endif
+	marioPaperOff();
+	marioChgPaper(NULL);
+	m->dispFlags &= ~0x8;
+	m->flags |= 0x80;
+	marioAdjustMoveDir();
+	m->dispFlags &= ~0x100;
+}
+
+// Full transcription of the plane state machine. The single remaining instruction diff is the MWCC
+// int->float "magic double": the compiler pools an anonymous copy at .rodata+0xb8 instead of reusing
+// the named double_to_int_802c5d18 at .rodata+0x90. It is the same instruction with a different
+// immediate, so objdiff scores it as an arg_mismatch and the function reads 100.00% (raw 99.99892).
+// Known project-wide limitation (see win_badge/win_item/win_log/mapdrv); no missing or spurious
+// instruction otherwise. The named f32 constants float_0p02/float_1/float_2 are referenced by their
+// plain file-scope value (not MATCH_F32) so MWCC constant-folds them and schedules the loads exactly
+// as the original does. Raw offsets used: mario
+// 0x2A4/0x2AC/0x7C/0x80/0x84/0x88/0x18C/0x1F4/0x98/0xB0/0xBC and MotionPlaneData 0x4/0x8/0xC/0x10/0x14/0x2C.
+// NONMATCHING (99.99892%, 1 arg_mismatch, reported 100.00%): see above.
+void mot_plane(void) {
+	MarioWork* mario = marioGetPtr();
+	s32 wrap;
+
 	if (mario->trigFlags & 1) {
+		MotionPlaneData* data;
 		mario->trigFlags &= ~1;
 		mario->motStruct = __memAlloc(HEAP_DEFAULT, sizeof(MotionPlaneData));
 		memset(mario->motStruct, 0, sizeof(MotionPlaneData));
-		data = marioGetPtr()->motStruct;
+		{
+			MarioWork* m2 = marioGetPtr();
+			data = m2->motStruct;
+		}
 		data->field_0x28 = -1;
 		mario->currSubMotionId = 0;
 	}
-	switch (mario->currSubMotionId) {
-		case 0:
-			//inline start?
-			mario = marioGetPtr();
 
-			//inline end?
-			//marioPreJump();
-			break;
+	switch (mario->currSubMotionId) {
+	case 0: {
+		MarioWork* m = marioGetPtr();
+		s32 attr;
+
+		m->unk148 = MATCH_F32(float_0p4_8041ac60);
+		m->unk150.z = MATCH_F32(float_0p01_8041ac64);
+		*(volatile f32*)&m->field_68 = float_2_8041ac18;
+		// volatile keeps the store above the copy and the copy as a load-load-store-store pair (original order).
+		*(volatile Vec*)&m->field_6C = *(volatile Vec*)&vec3_802c5c9c;
+		marioPreJump();
+		marioChgPose("M_J_1B");
+		mario->dispFlags |= 0x100;
+		mario->currSubMotionId = 1;
+		mario->airTimer = 0;
+		{
+			f32 zero = MATCH_F32(float_0_8041ac0c);
+			mario->baseSpeed = zero;
+			MF32(mario, 0x2A4) = zero;
+			mario->wCamVal1 = mario->position.y;
+			MF32(mario, 0x2AC) = zero;
+		}
+		attr = hitGetAttr(mario->hitobjJumpFrom);
+		((MotionPlaneData*)mario->motStruct)->flags = (attr >> 4) & 1;
+		psndSFXOn_3D((char*)0x17d, &mario->position);
+		psndSFXOn_3D((char*)0xaf, &mario->position);
 	}
+		/* fall through */
+	case 1: {
+		f32 dir;
+		f32 v;
+		f32 k;
+		f32 m;
+		f32 t;
+
+		marioMakeJumpPara();
+		k = MATCH_F32(float_0p125_8041ac68);
+		m = MATCH_F32(float_30_8041ac6c);
+		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+		v = MF32(mario, 0x2A4);
+		t = m * dir;
+		MF32(mario, 0x2A4) = k * (t - v) + v;
+		mario->unk1A8 += MF32(mario, 0x2A4);
+		wrap = 0;
+		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
+			if (mario->unk1A8 >= MATCH_F32(float_630_8041ac70)) {
+				wrap = 1;
+			}
+		} else {
+			if (mario->unk1A8 <= MATCH_F32(float_neg630_8041ac74)) {
+				wrap = 1;
+			}
+		}
+		if (wrap) {
+			EventEntry* evt;
+			mario->currSubMotionId = 2;
+			mario->multiTimer = 0x14;
+			marioPaperOn(paper_plane[marioGetColor()]);
+			marioChgPaper("PM_P_1A");
+			marioChgPose(str_8041AC78);
+			mario->dispFlags |= 0x8;
+			animPoseSetLocalTime(mario->paperPoseId, MATCH_F32(float_0_8041ac0c));
+			animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], MATCH_F32(float_0_8041ac0c));
+			evt = evtEntry(sound_evt, 0, 0);
+			{
+				f32 sc = MATCH_F32(float_1024_8041ac80);
+				evt->lwData[0] = (s32)(sc * mario->position.x) - 0x0DB58580;
+				evt->lwData[1] = (s32)(sc * mario->position.y) - 0x0DB58580;
+				evt->lwData[2] = (s32)(sc * mario->position.z) - 0x0DB58580;
+			}
+		}
+		if (MF32(mario, 0x7C) > MATCH_F32(float_0_8041ac0c)) {
+			mario->position.y += MF32(mario, 0x7C);
+		}
+		break;
+	}
+	case 2: {
+		f32 dir;
+		f32 v;
+		f32 k;
+		f32 m;
+		f32 t;
+
+		animPoseSetLocalTime(mario->paperPoseId, MATCH_F32(float_0_8041ac0c));
+		animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], MATCH_F32(float_0_8041ac0c));
+		k = MATCH_F32(float_0p125_8041ac68);
+		m = MATCH_F32(float_30_8041ac6c);
+		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+		v = MF32(mario, 0x2A4);
+		t = m * dir;
+		MF32(mario, 0x2A4) = k * (t - v) + v;
+		mario->unk1A8 += MF32(mario, 0x2A4);
+		wrap = 0;
+		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
+			f32 lim = float_1260_8041ac84;
+			if (mario->unk1A8 >= lim) {
+				mario->unk1A8 = lim;
+				wrap = 1;
+			}
+		} else {
+			f32 lim = float_neg1080_8041ac88;
+			if (mario->unk1A8 <= lim) {
+				mario->unk1A8 = lim;
+				wrap = 1;
+			}
+		}
+		if (wrap) {
+			mario->multiTimer = 0x3C;
+			mario->currSubMotionId = 3;
+		}
+		break;
+	}
+	case 3: {
+		MarioWork* m;
+		f32 dir;
+
+		if (--mario->multiTimer > 0) {
+			if (mario->multiTimer == 0x28) {
+				allPartyRidePlane();
+			}
+			break;
+		}
+		marioChgPaper("PM_P_1B");
+		MF32(mario->motStruct, 0x8) = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? MATCH_F32(float_90_8041ac04)
+		                                                               : MATCH_F32(float_270_8041ac20);
+		{
+			f32 zero = MATCH_F32(float_0_8041ac0c);
+			MF32(mario, 0x2A4) = zero;
+			MF32(mario->motStruct, 0x4) = zero;
+			MF32(mario->motStruct, 0xC) = zero;
+			MF32(mario->motStruct, 0x14) = zero;
+			MF32(mario->motStruct, 0x10) = zero;
+		}
+		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
+			MF32(mario, 0xB0) = planeData[33];
+			MF32(mario, 0x98) = planeData[34];
+		} else {
+			MF32(mario, 0xB0) = planeData[35];
+			MF32(mario, 0x98) = planeData[36];
+		}
+		mario->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
+		mario->wPlayerCollisionBox.y = MATCH_F32(float_12p333_8041ac8c);
+		mario->baseSpeed = __fabsf(float_0p02_8041ac90 * (f32)(s8)mario->wStickDir1);
+		mario->currSubMotionId = 0xC;
+		mario->baseSpeed = float_1_8041ac1c;
+		MF32(mario->motStruct, 0x10) = float_2_8041ac18;
+		m = marioGetPtr();
+		m->unk148 = MATCH_F32(float_0_8041ac0c);
+		m->unk150.z = MATCH_F32(float_0p004_8041ac94);
+		{
+			f32 k70 = MATCH_F32(float_70_8041ac98);
+			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? MATCH_F32(float_neg1_8041ac14) : float_1_8041ac1c;
+			mario->unk138 = k70 * dir;
+		}
+		mario->unk140 = MATCH_F32(float_neg70_8041ac9c);
+		break;
+	}
+	default:
+		break;
+	}
+
+	// Common per-frame tail.
+	if (mario->position.y < MATCH_F32(float_100_8041aca0)) {
+		mario->unk140 = __fabsf(planeData[38]);
+	}
+	flyMain();
+	if (marioKeyOffChk() && !(mario->trigFlags & 4)) {
+		if (mario_plane_cancel()) {
+			return;
+		}
+	}
+	if ((s32)mario->currSubMotionId == 0x14 || (s32)mario->currSubMotionId == 0x1E) {
+		MarioWork* m;
+		camFollowYOff();
+		{
+			f32 zero = MATCH_F32(float_0_8041ac0c);
+			mario->unk140 = zero;
+			mario->unk138 = zero;
+		}
+		marioClearJumpPara();
+		mario->baseSpeed = MATCH_F32(float_0_8041ac0c);
+		m = marioGetPtr();
+		if (m->motStruct != NULL) {
+			if (*(u32*)&((MotionPlaneData*)m->motStruct)->field_0x28 != 0xFFFFFFFFu) {
+				psndSFXOff(((MotionPlaneData*)m->motStruct)->field_0x28);
+				((MotionPlaneData*)m->motStruct)->field_0x28 = -1;
+			}
+		}
+		planeReset();
+		allPartyRideOff2();
+		if ((s32)mario->currSubMotionId == 0x14) {
+			marioChgMot(3);
+		} else if ((s32)mario->currSubMotionId == 0x1E) {
+			marioChgMot(0);
+		}
+	}
+
+	switch (mario->currSubMotionId) {
+	case 0x28: {
+		MarioWork* m;
+
+		camFollowYOff();
+		m = marioGetPtr();
+		if (m->motStruct != NULL) {
+			if (*(u32*)&((MotionPlaneData*)m->motStruct)->field_0x28 != 0xFFFFFFFFu) {
+				psndSFXOff(((MotionPlaneData*)m->motStruct)->field_0x28);
+				((MotionPlaneData*)m->motStruct)->field_0x28 = -1;
+			}
+		}
+		mario->multiTimer = sysMsec2Frame(0x208);
+		mario->currSubMotionId = 0x29;
+		break;
+	}
+	case 0x29:
+		if (--mario->multiTimer <= 0) {
+			f32 t;
+			f32 a;
+			f32 b;
+			planeReset();
+			marioChgPose("M_J_1C");
+			a = MF32(mario, 0x2AC);
+			b = float_37_8041ac28;
+			t = a - b;
+			mario->position.y = t + float_1_8041ac1c;
+			mario->baseSpeed = MATCH_F32(float_0_8041ac0c);
+			marioSetFallPara();
+			MF32(mario, 0x7C) = MATCH_F32(float_0_8041ac0c);
+			{
+				f32 half = float_0p5_8041ac4c;
+				MF32(mario, 0x80) *= half;
+				MF32(mario, 0x84) *= half;
+				MF32(mario, 0x88) *= half;
+			}
+			mario->currSubMotionId = 0x5A;
+			mario->dispFlags |= 0x100;
+			allPartyRideOff2();
+		}
+		break;
+	case 0x3C:
+		camFollowYOff();
+		mario->multiTimer = sysMsec2Frame(0x208);
+		mario->currSubMotionId = 0x3D;
+		/* fall through */
+	case 0x3D:
+		if (mario->baseSpeed > float_1_8041ac1c) {
+			mario->currSubMotionId = 0xE;
+			break;
+		}
+		if (--mario->multiTimer <= 0) {
+			mario->currSubMotionId = 0x34;
+		}
+		break;
+	case 0x32:
+		camFollowYOff();
+		mario->multiTimer = sysMsec2Frame(0x208);
+		mario->currSubMotionId = 0x34;
+		break;
+	case 0x33:
+		camFollowYOff();
+		mario->multiTimer = sysMsec2Frame(0x64);
+		mario->currSubMotionId = 0x34;
+		break;
+	case 0x34:
+		if (--mario->multiTimer > 0) {
+			break;
+		}
+		/* fall through */
+	case 0x35: {
+		MarioWork* m;
+
+		m = marioGetPtr();
+		if (m->motStruct != NULL) {
+			if (*(u32*)&((MotionPlaneData*)m->motStruct)->field_0x28 != 0xFFFFFFFFu) {
+				psndSFXOff(((MotionPlaneData*)m->motStruct)->field_0x28);
+				((MotionPlaneData*)m->motStruct)->field_0x28 = -1;
+			}
+		}
+		planeReset();
+		mario->dispFlags &= ~0x100;
+		{
+			f32 zero = MATCH_F32(float_0_8041ac0c);
+			mario->baseSpeed = zero;
+			MF32(mario, 0x2A4) = zero;
+		}
+		mario->position.y = float_1_8041ac1c + MF32(mario, 0x2AC);
+		marioPreJump();
+		{
+			f32 half = float_0p5_8041ac4c;
+			MF32(mario, 0x7C) = MF32(mario, 0x7C) * MATCH_F32(float_0p5_8041ac4c);
+		}
+		marioChgPose("M_J_1B");
+		mario->currSubMotionId = 0x50;
+		psndSFXOn_3D((char*)0x180, &mario->position);
+		allPartyRideOff2();
+	}
+		/* fall through */
+	case 0x50: {
+		f32 dir;
+		f32 v;
+
+		f32 k28;
+		f32 k3;
+		// Declare in the original's register order (k28=f2, k3=f3) but assign in its load order (k3 first).
+		k3 = MATCH_F32(float_0p3_8041aca4);
+		k28 = MATCH_F32(float_28_8041aca8);
+		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+		v = MF32(mario, 0x2A4);
+		MF32(mario, 0x2A4) = k3 * (k28 * dir - v) + v;
+		mario->unk1A8 = revise360(mario->unk1A8 + MF32(mario, 0x2A4));
+		marioMakeJumpPara();
+		mario->position.y += MF32(mario, 0x7C);
+		marioChkOverhead();
+		if (MF32(mario, 0x7C) < MATCH_F32(float_0_8041ac0c) || *(void**)((u8*)mario + 0x1F4) != NULL) {
+			f32 half;
+			marioSetFallPara();
+			half = float_0p5_8041ac4c;
+			MF32(mario, 0x7C) *= half;
+			MF32(mario, 0x80) *= half;
+			MF32(mario, 0x84) *= half;
+			MF32(mario, 0x88) *= half;
+			mario->currSubMotionId = 0x5A;
+			mario->dispFlags |= 0x100;
+			mario->multiTimer = 0x14;
+		}
+		break;
+	}
+	case 0x5A: {
+		f32 dir;
+		f32 v;
+
+		if (mario->multiTimer > 0) {
+			f32 k28;
+			f32 k3;
+			k3 = MATCH_F32(float_0p3_8041aca4);
+			k28 = MATCH_F32(float_28_8041aca8);
+			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+			v = MF32(mario, 0x2A4);
+			MF32(mario, 0x2A4) = k3 * (k28 * dir - v) + v;
+			mario->unk1A8 = revise360(mario->unk1A8 + MF32(mario, 0x2A4));
+			if (--mario->multiTimer <= 0) {
+				mario->dispFlags &= ~0x100;
+			}
+		}
+		marioMakeJumpPara();
+		{
+			f32 neg20 = float_neg20_8041acac;
+			if (MF32(mario, 0x7C) <= neg20) {
+				MF32(mario, 0x7C) = neg20;
+			}
+		}
+		mario->hitobjStandOn = NULL;
+		{
+			f32 sy;
+			f32 sx;
+			f32 sz;
+			f32 y = MF32(mario, 0x7C);
+			HitEntry* hit = marioSearchGround(&sy, &sx, &sz, y, y);
+
+			if (hit != NULL) {
+				mario->position.y = sy;
+				mario->hitobjStandOn = hit;
+			} else {
+				mario->position.y += MF32(mario, 0x7C);
+			}
+		}
+		if (mario->hitobjStandOn != NULL) {
+			camFollowYOn();
+			allPartyRideOff2();
+			mario->airTimer = 0;
+			*(s16*)mario->field_0x52 = 0;
+			mario->flags &= ~0x80;
+			marioAdjustMoveDir();
+			planeReset();
+			if (mario->motStruct != NULL) {
+				__memFree(HEAP_DEFAULT, mario->motStruct);
+				mario->motStruct = NULL;
+			}
+			{
+				f32 zero = MATCH_F32(float_0_8041ac0c);
+				mario->unk138 = zero;
+				mario->unk140 = zero;
+			}
+			marioChgMot(0);
+		}
+		break;
+	}
+	case 0x46:
+		set_damage_root_ypos(mario->position.y);
+		{
+			Vec pos = mario->position;
+			marioSetSplash(0, &pos);
+		}
+		mario->multiTimer = 0x10;
+		mario->currSubMotionId = 0x47;
+		{
+			f32 neg2 = MATCH_F32(float_neg2_8041acb0);
+			f32 zero = float_0_8041ac0c;
+			MF32(mario, 0x7C) = neg2;
+			MF32(mario, 0x80) = zero;
+			MF32(mario, 0x84) = zero;
+			MF32(mario, 0x88) = zero;
+		}
+		camFollowYOff();
+		/* fall through */
+	case 0x47:
+		marioMakeJumpPara();
+		mario->position.y += MF32(mario, 0x7C);
+		if (mario->position.y >= MF32(mario, 0x2AC) - MATCH_F32(float_100_8041aca0)) {
+			break;
+		}
+		mario->currSubMotionId = 0x48;
+		/* fall through */
+	case 0x48: {
+		MarioWork* m;
+		f32 zero = MATCH_F32(float_0_8041ac0c);
+
+		mario->unk140 = zero;
+		mario->unk138 = zero;
+		marioClearJumpPara();
+		m = marioGetPtr();
+		if (m->motStruct != NULL) {
+			if (*(u32*)&((MotionPlaneData*)m->motStruct)->field_0x28 != 0xFFFFFFFFu) {
+				psndSFXOff(((MotionPlaneData*)m->motStruct)->field_0x28);
+				((MotionPlaneData*)m->motStruct)->field_0x28 = -1;
+			}
+		}
+		mario->baseSpeed = MATCH_F32(float_0_8041ac0c);
+		planeReset();
+		allPartyRideOff2();
+		marioSetFallPara();
+		camFollowYOn();
+		marioChgMot(0x1F);
+		break;
+	}
+	default:
+		break;
+	}
+
+	marioUpdateCamCollision(mario->position);
+	MF32(mario, 0x18C) = mario->baseSpeed;
 }
 
-// NONMATCHING (2.15%): 4 instructions differ, 844 missing, plus register differences.
+// TEMP-LOCAL: keep flyMain a real bl while it is a stub (retail emits one).
 static void flyMain(void) {
 	MarioWork* mario;
+	MarioWork* m;
+	f32 f31;
+	f32 f3;
+	s32 onPlace;
 
 	mario = marioGetPtr();
 	switch (mario->currSubMotionId) {
 		case 0xC:
 			if (mario->wCamVal1 >= mario->position.y) {
-				mario->currSubMotionId = 14;
+				mario->currSubMotionId = 0xE;
 			}
-			//inlined?
-			mario = marioGetPtr();
+			m = marioGetPtr();
+			if ((u32)((MotionPlaneData*)m->motStruct)->field_0x28 == 0xFFFFFFFFu) {
+				((MotionPlaneData*)m->motStruct)->field_0x28 =
+				    psndSFXOn_3D((const char*)0x17F, &m->position);
+			}
+			/* fallthrough */
+		case 0xE:
+			if (MF32(mario, 0x9C) > planeData[38]) {
+				MF32(mario, 0x9C) -= float_2_8041ac18;
+				MF32(mario, 0xB4) += float_2_8041ac18;
+				mario->position.y += float_2_8041ac18;
+			} else {
+				mario->currSubMotionId = 0xF;
+			}
+			break;
+	}
+	if ((s32)mario->currSubMotionId != 0xF) {
+		return;
+	}
+	if (*(u16*)&mario->field_0x245[0x248 - 0x245] & 0x100) {
+		mario->currSubMotionId = 0x33;
+		MF32(mario, 0x2AC) = mario->position.y;
+		return;
+	}
+	if (*(u16*)&mario->field_0x245[0x248 - 0x245] & 0x200) {
+		mario->currSubMotionId = 0x33;
+		MF32(mario, 0x2AC) = mario->position.y;
+		return;
+	}
+	MF32(DATA, 0x8) = revise360(MF32(DATA, 0xC) * planeData[14] + MF32(DATA, 0x8));
+	if (DATA->flags & 1) {
+		if (MF32(DATA, 0x8) <= float_60_8041ac2c) {
+			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_60_8041ac2c - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		}
+		if (MF32(DATA, 0x8) >= float_150_8041ac34) {
+			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_150_8041ac34 - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		}
+	} else {
+		if (MF32(DATA, 0x8) >= float_330_8041ac38) {
+			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_330_8041ac38 - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		}
+		if (MF32(DATA, 0x8) <= float_210_8041ac3c) {
+			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_210_8041ac3c - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		}
+	}
+	{
+		f32 a = MF32(DATA, 0x8);
+		f32 v;
+		s32 flag = 0;
+
+		if (a >= float_90_8041ac04 && a <= float_270_8041ac20) {
+			flag = 1;
+		}
+		if (flag) {
+			v = -a - float_90_8041ac04;
+		} else {
+			v = float_270_8041ac20 - a;
+		}
+		mario->unk1A8 = revise360(v);
+	}
+	{
+		u8 stick = mario->wStickDir1;
+
+		if ((s8)(stick & 0xff) != 0) {
+			if (mario->baseSpeed != MATCH_F32(float_0_8041ac0c)) {
+				f3 = __fabsf((f32)(s8)mario->wStickDir1);
+				if (DATA->flags & 1) {
+					if ((s8)mario->wStickDir1 < 0) {
+						if (MF32(DATA, 0x4) >= planeData[3]) {
+							MF32(DATA, 0x4) = float_0p1_8041ac30 * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
+						} else {
+							MF32(DATA, 0x4) = float_0p1_8041ac30 * (f3 * planeData[5]) + MF32(DATA, 0x4);
+						}
+					}
+					if ((s8)mario->wStickDir1 > 0) {
+						if (MF32(DATA, 0x4) <= planeData[4]) {
+							MF32(DATA, 0x4) = planeData[4];
+						} else {
+							MF32(DATA, 0x4) = MF32(DATA, 0x4) - float_0p1_8041ac30 * (f3 * planeData[6]);
+						}
+					}
+				} else {
+					if ((s8)mario->wStickDir1 > 0) {
+						if (MF32(DATA, 0x4) >= planeData[3]) {
+							MF32(DATA, 0x4) = float_0p1_8041ac30 * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
+						} else {
+							MF32(DATA, 0x4) = float_0p1_8041ac30 * (f3 * planeData[5]) + MF32(DATA, 0x4);
+						}
+					}
+					if ((s8)mario->wStickDir1 < 0) {
+						if (MF32(DATA, 0x4) <= planeData[4]) {
+							MF32(DATA, 0x4) = planeData[4];
+						} else {
+							MF32(DATA, 0x4) = MF32(DATA, 0x4) - float_0p1_8041ac30 * (f3 * planeData[6]);
+						}
+					}
+				}
+			}
+		} else {
+			if (MF32(DATA, 0x4) <= float_0_8041ac0c || MF32(DATA, 0x14) <= float_0_8041ac0c) {
+				if (MF32(DATA, 0x14) > float_0_8041ac0c && MF32(DATA, 0x14) < float_1_8041ac1c) {
+					MF32(DATA, 0x4) = MATCH_F32(MF32(DATA, 0x4)) + planeData[30];
+				}
+				{
+					f31 = planeData[0] - mario->baseSpeed;
+					if (f31 <= float_0_8041ac0c) {
+						f31 = float_0_8041ac0c;
+					}
+					f31 = f31 * (float_90_8041ac04 / planeData[0]);
+					f31 = planeData[27] * (f32)sin(float_3p1416_8041ac40 * f31 / float_180_8041ac44);
+					if (f31 <= planeData[28]) {
+						f31 = planeData[28];
+					}
+				}
+				onPlace = 0;
+				m = marioGetPtr();
+				if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+					onPlace = 1;
+				}
+				if (onPlace == 0) {
+					MF32(DATA, 0x1C) = f31;
+					MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x1C);
+				} else {
+					MF32(DATA, 0x4) += float_neg0p001_8041ac48;
+					mario->baseSpeed += float_0p5_8041ac4c;
+					if (mario->baseSpeed > float_2_8041ac18) {
+						mario->baseSpeed = float_2_8041ac18;
+					}
+				}
+			}
+			if (MF32(DATA, 0x4) <= planeData[4]) {
+				MF32(DATA, 0x4) = planeData[4];
+			}
+			if (MF32(DATA, 0x4) >= float_6_8041ac50) {
+				MF32(DATA, 0x14) = float_0_8041ac0c;
+			}
+		}
+	}
+	mario->baseSpeed = mario->baseSpeed * planeData[1] + mario->baseSpeed;
+	{
+		MotionPlaneData* dv = DATA;
+
+		if (MF32(dv, 0x4) >= float_0_8041ac0c) {
+			dv->flags |= 0x10;
+			{
+				f32 s = sin(float_3p1416_8041ac40 * (MF32(DATA, 0x4) * planeData[7]) / float_180_8041ac44);
+				f32 x = planeData[8] * s;
+
+				x = mario->baseSpeed * x;
+				mario->baseSpeed = mario->baseSpeed + x;
+			}
+			if ((s8)mario->wStickDir1 != 0 && MF32(DATA, 0x4) >= planeData[3]) {
+				mario->baseSpeed = mario->baseSpeed + planeData[2];
+			}
+			if (mario->baseSpeed <= float_0_8041ac0c) {
+				mario->baseSpeed = float_0_8041ac0c;
+			}
+			f31 = float_0_8041ac0c;
+			if ((s8)mario->wStickDir1 == 0) {
+				if (mario->baseSpeed < planeData[20]) {
+					f32 s, a;
+
+					f31 = planeData[0] - mario->baseSpeed;
+					s = sin(float_3p1416_8041ac40 * MF32(DATA, 0x4) / float_180_8041ac44);
+					a = planeData[21] * s;
+					f31 = f31 * a;
+					f31 = f31 + MF32(DATA, 0x14);
+					MF32(DATA, 0x14) = f31;
+				} else {
+					MF32(DATA, 0x14) = planeData[22];
+				}
+				MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x14);
+				if (f31 <= float_0_8041ac0c) {
+					if (mario->baseSpeed <= planeData[0] * planeData[23]) {
+						f31 = planeData[0] - mario->baseSpeed * planeData[24];
+						if (f31 <= float_0_8041ac0c) {
+							f31 = float_0_8041ac0c;
+						}
+						f31 = f31 * (float_90_8041ac04 / planeData[0]);
+						onPlace = 0;
+						m = marioGetPtr();
+						if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+							onPlace = 1;
+						}
+						if (onPlace == 0) {
+							f32 v = planeData[25] * (f32)sin(float_3p1416_8041ac40 * f31 / float_180_8041ac44);
+
+							if (v <= planeData[26]) {
+								v = float_2_8041ac18 * planeData[26];
+							}
+							MF32(DATA, 0x1C) = v;
+						}
+					}
+				}
+				MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x1C);
+			}
+			{
+				f32 add;
+
+				if ((s8)mario->wStickDir1 != 0) {
+					f32 s = sin(float_3p1416_8041ac40 * (planeData[0] - mario->baseSpeed) / float_180_8041ac44);
+
+					add = planeData[18] * s;
+					MF32(DATA, 0x18) = MF32(DATA, 0x18) + add;
+					if (MF32(DATA, 0x18) <= planeData[19]) {
+						MF32(DATA, 0x18) = planeData[19];
+					}
+				} else {
+					add = float_0p1_8041ac30 * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
+					MF32(DATA, 0x18) = add;
+				}
+				MF32(DATA, 0x4) = MF32(DATA, 0x4) + add;
+			}
+		} else if (MF32(dv, 0x4) >= float_neg80_8041ac54) {
+			if (dv->flags & 0x10) {
+				dv->flags = dv->flags & ~0x10;
+			}
+			{
+				f32 s = sin(float_3p1416_8041ac40 * (planeData[9] * __fabsf(MF32(DATA, 0x4))) / float_180_8041ac44);
+
+				MF32(DATA, 0x10) = planeData[10] * s;
+				mario->baseSpeed = mario->baseSpeed + MF32(DATA, 0x10);
+			}
+			f3 = float_0_8041ac0c;
+			if (MF32(DATA, 0x4) > 0.0f) {
+				f3 = float_0_8041ac0c;
+			} else {
+				f3 = __fabsf(MF32(DATA, 0x4));
+			}
+			{
+				f32 x, y;
+
+				f31 = sin(float_3p1416_8041ac40 * (planeData[12] * f3) / float_180_8041ac44);
+				y = sin(float_3p1416_8041ac40 * (mario->baseSpeed * planeData[11]) / float_180_8041ac44);
+				x = planeData[13] * (y * f31);
+				MF32(DATA, 0x14) = MF32(DATA, 0x14) + x;
+			}
+			if ((s8)(mario->wStickDir1 & 0xff) != 0) {
+				if (DATA->flags & 1) {
+					if ((s8)mario->wStickDir1 > 0 && MF32(DATA, 0x14) >= float_1_8041ac1c) {
+						MF32(DATA, 0x14) = float_1_8041ac1c;
+					}
+				} else {
+					if ((s8)mario->wStickDir1 < 0 && MF32(DATA, 0x14) >= float_1_8041ac1c) {
+						MF32(DATA, 0x14) = float_1_8041ac1c;
+					}
+				}
+				onPlace = 0;
+				m = marioGetPtr();
+				if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+					onPlace = 1;
+				}
+				if (onPlace == 0) {
+					MF32(DATA, 0x1C) += float_0p1_8041ac30 * (float_1_8041ac1c - MF32(DATA, 0x1C));
+					if (MF32(DATA, 0x1C) >= float_0_8041ac0c) {
+						MF32(DATA, 0x1C) = float_0_8041ac0c;
+					}
+				}
+			}
+			onPlace = 0;
+			m = marioGetPtr();
+			if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
+				onPlace = 1;
+			}
+			if (onPlace != 0) {
+				MF32(DATA, 0x24) = float_neg22_8041ac58;
+			} else {
+				MF32(DATA, 0x24) += float_0p1_8041ac30 * (planeData[4] - MF32(DATA, 0x24));
+			}
+			MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x14);
+			if (MF32(DATA, 0x4) <= MF32(DATA, 0x24)) {
+				MF32(DATA, 0x4) = MF32(DATA, 0x24);
+			}
+			MF32(DATA, 0x18) = float_0p1_8041ac30 * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
+		}
+	}
+	if (mario->baseSpeed >= planeData[0]) {
+		mario->baseSpeed = planeData[0];
+	}
+	MF32(mario, 0x90) = MF32(mario, 0x90) + MF32(DATA, 0x18);
+	MF32(mario, 0x90) = MF32(mario, 0x90) - planeData[29];
+	MF32(mario, 0xC4) = revise360(-MF32(DATA, 0x4));
+	{
+		f32 sin2, cos2, sin1, cos1;
+
+		mario->directionView = MF32(DATA, 0x8);
+		sincosf(&sin1, &cos1, mario->directionView);
+		MF32(mario, 0x94) = mario->baseSpeed * cos1 + MF32(mario, 0x94);
+		sincosf(&sin2, &cos2, float_90_8041ac04 + MF32(DATA, 0x4));
+		MF32(mario, 0x90) = mario->baseSpeed * cos2 * (cos2 >= float_0_8041ac0c ? planeData[31] : planeData[32]) + MF32(mario, 0x90);
+		MF32(mario, 0x8C) = sin2 * (mario->baseSpeed * sin1) + MF32(mario, 0x8C);
+	}
+	if (mario->baseSpeed <= planeData[16]) {
+		s32 frames = sysMsec2Frame((s32)(float_1000_8041ac5c * planeData[17]));
+
+		if (DATA->flags & 1) {
+			if ((f32)(s8)mario->wStickDir1 < float_0_8041ac0c) {
+				s32 c = *(s32*)&DATA->field_0x4[0x20 - 0x4] + 1;
+
+				*(s32*)&DATA->field_0x4[0x20 - 0x4] = c;
+				if (c >= frames) {
+					MF32(mario, 0x2AC) = mario->position.y;
+					mario->currSubMotionId = 0x3C;
+					return;
+				}
+			}
+		} else {
+			if ((f32)(s8)mario->wStickDir1 > float_0_8041ac0c) {
+				s32 c = *(s32*)&DATA->field_0x4[0x20 - 0x4] + 1;
+
+				*(s32*)&DATA->field_0x4[0x20 - 0x4] = c;
+				if (c >= frames) {
+					MF32(mario, 0x2AC) = mario->position.y;
+					mario->currSubMotionId = 0x3C;
+					return;
+				}
+			}
+		}
+	} else {
+		*(s32*)&DATA->field_0x4[0x20 - 0x4] = 0;
+	}
+	*(HitEntry**)((u8*)mario + 0x1F8) = marioSearchUnder();
+	if (chkCollision((f32*)((u8*)mario + 0x2AC)) != 0) {
+		if (*(HitEntry**)((u8*)mario + 0x1F4) != NULL) {
+			mario->currSubMotionId = 0x28;
+			return;
+		}
+		mario->currSubMotionId = 0x32;
+		{
+			HitEntry* hit = NULL;
+
+			if (*(HitEntry**)((u8*)mario + 0x1E0) != NULL) {
+				hit = *(HitEntry**)((u8*)mario + 0x1E0);
+			}
+			if (*(HitEntry**)((u8*)mario + 0x1E4) != NULL) {
+				hit = *(HitEntry**)((u8*)mario + 0x1E4);
+			}
+			if (hit != NULL && (hitGetAttr(hit) & 0x200) != 0) {
+				mario->currSubMotionId = 0x46;
+			}
+		}
 	}
 }
 

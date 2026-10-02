@@ -725,8 +725,9 @@ void move_check(ExtPose* pose, s32 index) {
     }
 }
 
-// NONMATCHING (82.91%): every instruction is present but the two (s32) conversions and the 0x4330 double
-// setup interleave differently from the target.
+// NONMATCHING (82.91%): all 46 instructions are present; only the f-register assignment differs. The original
+// puts the x quotient (x - neg570)/40 in f4 and the divisor 40 in f0, we put the x quotient in f0 and 40 in f3
+// (our (s32)/(u16) conversions and the 0x4330 double setup then schedule from those registers).
 void calc_area(s32 index, f32 x, f32 z) {
     KaronPoseEntry* entries = skwp->entries;
     u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
@@ -800,8 +801,9 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
     return result;
 }
 
-// NONMATCHING (92.11%): f-register allocation/scheduling; the collision half lands in
-// f27 instead of f29, and calc_area's constant load order differs.
+// NONMATCHING (92.17%): f-register allocation/scheduling; the collision half lands in
+// f27 instead of f29, and calc_area's constant load order differs. The p->flags clears now mask to 16 bits
+// (&= 0xFFFE) as the original does.
 static void senkaron_ext_main(void) {
     ExtPose* pose;
     MarioWork* mario;
@@ -928,7 +930,7 @@ static void senkaron_ext_main(void) {
                     (*pose->matrix)[1][3] = 0.0f;
                     p->type = 1;
                     p->field_4 = 0;
-                    p->flags &= ~2;
+                    p->flags &= 0xFFFE;
                     if (i % 8 == 0) {
                         Vec v = {0.0f, 0.0f, 0.0f};
 
@@ -1072,7 +1074,7 @@ static void senkaron_ext_main(void) {
                 if (hit == 1) {
                     p->flags |= 1;
                 } else {
-                    p->flags &= ~1;
+                    p->flags &= 0xFFFE;
                 }
                 p->field_4 = 60;
             }

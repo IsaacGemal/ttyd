@@ -28,4 +28,6 @@ typedef struct effFukidashiData {
 void effFukidashiMain(EffectEntry* effect);
 void effFukidashiDisp(CameraId camId, void* param);
 void calc_pos(effFukidashiData* data, s32 index);
+// First object of this unit's .data (the pool the display function addresses its moja/chuchu tables from).
+extern u8 lbl_8036BEA0[];
 // Model / animation data defined by this translation unit.

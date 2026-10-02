@@ -6,6 +6,10 @@
 #include "battle/battle_unit.h"
 #include "mario/mario_pouch.h"
 
+// .sdata2 pool entry (0x80419BEC). fbatEncountCheck names 180.0f through it so MWCC keeps the value in a
+// callee-saved register (f29) as the original does; the raw literal lands in f31 instead.
+extern const f32 float_180_80419bec;
+
 #define NPC_FIELD_MAX_COUNT 36
 #define NPC_BATTLE_MAX_COUNT 16
 

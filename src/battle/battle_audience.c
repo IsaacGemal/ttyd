@@ -17,6 +17,7 @@
 #include "data/item_icon_view.h"
 #include "driver/icondrv.h"
 #include "driver/windowdrv.h"
+#include "driver/swdrv.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_80399940[2] = { 0xBF800000, 0x3F800000 };
@@ -1620,9 +1621,71 @@ void BattleAudienceCtrlProcess(void) {
 	}
 }
 
+// MWCC inlines the small BattleAudienceGetPtr/_GetExist helpers here and the extra
+// address computations shift the whole body; the original keeps them as calls.
 #pragma dont_inline on
-// NONMATCHING (1.10%): 1 instruction differs, 125 missing.
 BOOL BattleAudienceItemOn(s32 index, u16 itemId, s32 numItems) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	BattleAudienceMember* member = BattleAudienceGetPtr(index);
+	BattleAudienceItem* item;
+	s32 i;
+	if (audience->flags & 0x40000) {
+		return FALSE;
+	}
+	if (audience_kind[member->type].itemTable->type == 0) {
+		return FALSE;
+	}
+	if (itemId >= 0x79 && itemId < 0xec && swGet(0xeb) == 0) {
+		return FALSE;
+	}
+	if (index % 20 < 4 || index % 20 > 0xf) {
+		return FALSE;
+	}
+	if ((u8)BattleAudience_GetExist(index) == 0) {
+		return FALSE;
+	}
+	if (member->status == 7) {
+		return FALSE;
+	}
+	if (member->status == 8) {
+		return FALSE;
+	}
+	if (member->status == 0xd) {
+		return FALSE;
+	}
+	if (member->status == 0xc) {
+		return FALSE;
+	}
+	if (member->status == 0xb) {
+		return FALSE;
+	}
+	if (member->status == 0x12) {
+		return FALSE;
+	}
+	if (member->status == 0x11) {
+		return FALSE;
+	}
+	if (member->status == 0x15) {
+		return FALSE;
+	}
+	if (member->status == 0xa) {
+		return FALSE;
+	}
+	if (member->flags & 8) {
+		i = 0;
+		item = BattleAudienceItemGetPtr(0);
+		for (; i < numItems; i++, item++) {
+			if (!(item->flags & 1)) {
+				item->flags |= 1;
+				item->state = 0;
+				((s32*)item->field_0x8)[1] = index;
+				item->mItemType = itemId;
+				BattleAudience_ChangeStatus(index, 7);
+				member->itemId = i;
+				return TRUE;
+			}
+		}
+	}
 	return FALSE;
 }
 
@@ -1645,14 +1708,64 @@ void BattleAudienceSetThrowItemMax(void) {
 	*(s32*)((u8*)audience + 0x137F8) = 0;
 }
 
-// NONMATCHING (2.59%): 1 instruction differs, 52 missing.
 BattleUnit* BattleAudienceDetectTargetAll(void) {
-	return NULL;
+	s32 ids[64];
+	s32 offset;
+	s32 i;
+	BattleWork* wp = _battleWorkPointer;
+	BattleUnit* unit = NULL;
+	s32 count;
+	s32 sel;
+	BattleAudienceBaseGetPtr();
+	count = 0;
+	offset = 0;
+	i = 0;
+	for (; i < 0x40; i++) {
+		unit = wp->units[i];
+		if (unit != NULL) {
+			BattleUnitPart* part = BattleGetUnitPartsPtr(i, BtlUnit_GetBodyPartsId(unit));
+			if (!(part->attributes & kNotTargetable) && unit->currentHp > 0 && (unit->currentKind < 0xD8 || unit->currentKind >= 0xDA)) {
+				ids[count] = i;
+				count++;
+				offset += 4;
+			}
+		}
+	}
+	if (count == 0) {
+		return NULL;
+	}
+	sel = irand(count);
+	return BattleGetUnitPtr(wp, ids[sel]);
 }
 
-// NONMATCHING (2.69%): 1 instruction differs, 50 missing.
 BattleUnit* BattleAudienceDetectTargetPlayer(void) {
-	return NULL;
+	s32 ids[64];
+	s32 offset;
+	s32 i;
+	BattleWork* wp = _battleWorkPointer;
+	BattleUnit* unit = NULL;
+	s32 count;
+	s32 sel;
+	BattleAudienceBaseGetPtr();
+	count = 0;
+	offset = 0;
+	i = 0;
+	for (; i < 0x40; i++) {
+		unit = wp->units[i];
+		if (unit != NULL) {
+			BattleUnitPart* part = BattleGetUnitPartsPtr(i, BtlUnit_GetBodyPartsId(unit));
+			if (unit->mAlliance == 0 && unit->currentHp > 0 && !(part->attributes & kNotTargetable)) {
+				ids[count] = i;
+				count++;
+				offset += 4;
+			}
+		}
+	}
+	if (count == 0) {
+		return NULL;
+	}
+	sel = irand(count);
+	return BattleGetUnitPtr(wp, ids[sel]);
 }
 
 // The weight-count loop is written as `for (;;) { if (type == 0) break; ... }` so MWCC does not rotate it (a
@@ -1698,7 +1811,7 @@ void BattleAudienceItemCtrlProcess(void) {
 			continue;
 		}
 		member = BattleAudienceGetPtr(*(s32*)((u8*)item + 0xc));
-		kind = &audience_kind[member->type];
+		kind = &audience_kind[(s32)member->type];
 		if (member->status == 0xd || member->status == 0x13 || member->status == 0x15 || member->status == 0xc) {
 			goto deactivate;
 		}
@@ -2126,15 +2239,78 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	}
 }
 
-// NONMATCHING (0.97%): 1 instruction differs, 143 missing.
+// NONMATCHING (86.07%): complete and correct; the `star+8..0x10 -> star+0x20` copy is a Vec
+// assignment (MWCC emits lwz/lwz/stw/stw/lwz/stw), the `star+0x44` zero is written after the Vec
+// copy, and the remaining diffs are FP scheduling of the two Vec constant copies / post-multiply loads.
 BOOL BattleAudienceApSrcEntry(void) {
-	return FALSE;
+	BattleAudience* audience;
+	BattleAudienceMember* member;
+	CameraEntry* cam;
+	u8* star;
+	f32 sx;
+	f32 sy;
+	s32 ids[200];
+	s32 idx;
+	s32 count;
+	s32 offset;
+	s32 i;
+
+	audience = BattleAudienceBaseGetPtr();
+	i = 0;
+	star = (u8*)audience->starpower;
+	for (; i < 100; i++, star += 0x60) {
+		if (!(*(s32*)star & 1)) {
+			break;
+		}
+	}
+	if (i == 100) {
+		return FALSE;
+	}
+	idx = 0;
+	count = 0;
+	offset = 0;
+	member = BattleAudienceGetPtr(0);
+	for (; idx < 200; idx++) {
+		if ((u8)BattleAudience_GetExist(idx) == 1) {
+			ids[count] = idx;
+			count++;
+			offset += 4;
+		}
+	}
+	if (count == 0) {
+		return TRUE;
+	}
+	*(s32*)star = 1;
+	*(s32*)(star + 4) = 0;
+	*(Vec*)(star + 0x38) = vec3_802f9750;
+	*(s32*)(star + 0x44) = 0;
+	*(u8*)(star + 0x5c) = 0x80;
+	member = BattleAudienceGetPtr(ids[irand(count)]);
+	*(f32*)(star + 8) = member->position.x;
+	*(f32*)(star + 0xc) = float_20_8041e6a8 + member->position.y;
+	*(f32*)(star + 0x10) = float_1_8041e620 + member->position.z;
+	cam = camGetPtr(CAMERA_3D);
+	PSMTXMultVec(cam->view, (Vec*)(star + 8), (Vec*)(star + 8));
+	PSMTX44MultVec(cam->projection, (Vec*)(star + 8), (Vec*)(star + 8));
+	sx = float_304_8041e6cc;
+	sy = float_240_8041e6d0;
+	*(f32*)(star + 8) *= sx;
+	*(f32*)(star + 0xc) *= sy;
+	*(f32*)(star + 0x10) = float_0_8041e618;
+	*(f32*)(star + 0x14) = float_40_8041e690 * (f32)rand() / float_32767_8041e674 - float_20_8041e6a8;
+	*(f32*)(star + 0x18) = float_10_8041e694 * (f32)rand() / float_32767_8041e674;
+	*(f32*)(star + 0x1c) = float_0_8041e618;
+	*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+	*(Vec*)(star + 0x2c) = vec3_802f975c;
+	return TRUE;
 }
 
 // The target colours the first cast's 0.0f constant f0 (window->count f1, cast temp f2, diff f3); MWCC colours
 // ours f3 instead, shifting the first block and both step clamps up a register (diff ends in f2, not f3), which
 // also turns the positive clamp's bge+b diamond into a plain bge. The post-update 0.0f loads schedule one slot late.
-// NONMATCHING (93.06%): complete and correct; the 24 remaining instructions differ only in FP colouring/scheduling.
+// NONMATCHING (95.70%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
+// and the two final stores go through locals; the rest is FP register colouring (the first cast's
+// zero lands in f3 instead of f0, rotating both clamps).
 void BattleAudienceWinCtrlProcess(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -2147,9 +2323,7 @@ void BattleAudienceWinCtrlProcess(void) {
 	if (diff != float_0_8041e618) {
 		if (diff > float_0_8041e618) {
 			f32 step = float_0p1_8041e678 * diff;
-			if (step < float_0p1_8041e678) {
-				step = float_0p1_8041e678;
-			}
+			step = step < float_0p1_8041e678 ? float_0p1_8041e678 : step;
 			window->count += step;
 			if ((f32)audience->mCurrentAudienceIntCount - window->count < float_0_8041e618) {
 				window->count = (f32)audience->mCurrentAudienceIntCount;
@@ -2186,8 +2360,12 @@ void BattleAudienceWinCtrlProcess(void) {
 
 	*(f32*)(win + 0x8) =
 	    intplGetValue(4, *(s32*)(win + 0x14), 0xF, float_neg500_8041e6c0, float_neg280_8041e6c4);
-	*(f32*)(win + 0xC) = float_neg160_8041e6c8;
-	*(f32*)(win + 0x10) = float_0_8041e618;
+	{
+		f32 a = float_neg160_8041e6c8;
+		f32 b = float_0_8041e618;
+		*(f32*)(win + 0xC) = a;
+		*(f32*)(win + 0x10) = b;
+	}
 }
 
 void BattleAudienceGXInit(void) {
@@ -2636,9 +2814,52 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	iconNumberDispGx(mtx, (s32)win->count, FALSE, numberColor);
 }
 
-// NONMATCHING (1.21%): 1 instruction differs, 114 missing.
+// NONMATCHING (99.91%): `audience_kind[type]` (no `(u8)` cast) is required so MWCC uses the
+// parameter directly, and `m * 0x19 - 0xeb + r` (not `m * 0x19 + r - 0xeb`) is required so `r`
+// lands in r6. The only remaining diff is one commuted `fadds` in the second branch.
 BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
-	return FALSE;
+	BattleAudienceMember* member;
+	f32 f;
+	s32 r;
+	s32 m;
+	BattleAudienceBaseGetPtr();
+	BattleStageGetPtr();
+	member = BattleAudienceGetPtr(index);
+	if ((audience_kind[type].field_0x0 & 1) == 0) {
+		if (member->flags & 1) {
+			return FALSE;
+		}
+		if (member->flags & 0x100) {
+			return FALSE;
+		}
+		member->flags = 5;
+		r = rand() * 10 / 0x7fff;
+		m = index % 20;
+		f = (f32)(m * 0x19 - 0xeb + r);
+		member->position.x = f;
+		member->mHomePosition.x = f;
+		BattleAudience_Entry_Sub(index, type, status);
+	}
+	else {
+		if (index % 2 == 1) {
+			return FALSE;
+		}
+		if (member->flags & 1) {
+			return FALSE;
+		}
+		if (member->flags & 0x100) {
+			return FALSE;
+		}
+		member->flags = 0x85;
+		r = rand() * 10 / 0x7fff;
+		m = index % 20;
+		f = float_12p5_8041e688 + (f32)(m * 0x19 - 0xe6) + (f32)r - float_5_8041e62c;
+		member->position.x = f;
+		member->mHomePosition.x = f;
+		BattleAudience_Entry_Sub(index, type, status);
+		(&member[1])->flags = 0x101;
+	}
+	return TRUE;
 }
 
 // NONMATCHING (83.61%): the conversion's int->float magic pools a duplicate @N double instead of reusing double_to_int_802f9a00, and the seven Vec copies schedule pipelined where the original does load2/store2/load1/store1.
@@ -3099,7 +3320,6 @@ s32 BattleAudience_HaitiRandForFallObject(void) {
 }
 
 s32 BattleAudience_NoUsedHaitiRand(void) {
-	extern s32 haiti_data[][10];
 	s32 stack[200];
 	s32* haiti;
 	s32 memberId;
@@ -4491,22 +4711,21 @@ void BattleAudience_Case_ActionCommandBad(void* arg) {
 	audience->flags |= 0x20;
 }
 
-// NONMATCHING (91.10%): MWCC caches audience + 0x10000 in a third callee-saved register
 // (frame 0x20); the original recomputes addis r3,r31,1 at each access and only saves r30/r31.
 void BattleAudienceCheer(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	if (*(s32*)((u8*)audience + 0x137C4) > 0x320) {
-		*(s32*)((u8*)audience + 0x137C4) = 0x320;
+	if (*(s32*)(audience->field_13794 + 0x30) > 0x320) {
+		*(s32*)(audience->field_13794 + 0x30) = 0x320;
 	}
-	if (*(s32*)((u8*)audience + 0x137C4) > 0) {
+	if (*(s32*)(audience->field_13794 + 0x30) > 0) {
 		if (pouchGetPtr()->maximumSP == 0) {
-			*(s32*)((u8*)audience + 0x137C4) = 0;
+			*(s32*)(audience->field_13794 + 0x30) = 0;
 		}
 		else {
 			audience->flags |= 2;
 		}
 		BattleAudienceJoy(a);
-		if (*(s32*)((u8*)audience + 0x137C4) != 0) {
+		if (*(s32*)(audience->field_13794 + 0x30) != 0) {
 			BattleStatusWindowAPRecoveryOn();
 		}
 	}
@@ -4648,19 +4867,17 @@ void BattleAudienceSoundHandBeat(void) {
 	}
 }
 
-// NONMATCHING (69.52%): loop body matches (mtctr/bdnz); the prologue computes the biased
-// base/count/i in a different order and the tail folds the final address differently.
 void BattleAudienceAddPhaseEvtList(s32 evtId) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 i = 0;
 	s32 count = *(s32*)((u8*)audience + 0x13904);
+	s32 i = 0;
 	for (; i < count; i++) {
 		if (*(s32*)((u8*)audience + 0x138CC + i * 4) == evtId) {
 			return;
 		}
 	}
-	*(s32*)((u8*)audience + 0x138CC + count * 4) = evtId;
-	*(s32*)((u8*)audience + 0x13904) = count + 1;
+	*((s32*)((u8*)audience + 0x138CC) + count) = evtId;
+	*(s32*)(audience->field_138CC + 0x38) = *(s32*)(audience->field_138CC + 0x38) + 1;
 }
 
 s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b) {

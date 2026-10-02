@@ -241,9 +241,20 @@ static inline f32 damageStarCosf(f32 angle) {
 // technique): without them the whole preheader constant block shifts several registers.
 // The magic double also pools as @378 rather than double_to_int_802f3458 (objdiff resolves data by
 // section offset, so that is not scored).
-// NONMATCHING (81.83%): sequence, control flow, stack frame, the loop accumulator (f13), rad (f29) and
-// the 30-count local (f4) match; only the FPR colouring of the preheader constants is permuted (the
-// int->float magic double lands in f9 vs f0, one/sinC1/cosC1 in f8/f5/f7 vs f1/f2/f3, the rest rotated).
+// Remaining diff: with the two pragmas below the instruction sequence, control flow, stack frame, the loop
+// accumulator (f13), rad (f29), the 30-count local (f4) and the per-branch 1.5708/4.7124 scratch all match.
+// The preheader constant block differs: the hoisted loop-invariant loads come out in a different order and in
+// a different FPR permutation. 12 loop-invariant values plus the f7 scratch saturate every volatile register
+// except f4. Target value->FPR: 30->f6, 0.0->f12, 6.28->f11, 360->f10, .166->f2, 1.0->f1, pi->f9, 1.5->f8,
+// .4967->f3, .2->f5, magic->f0, seed->f13; ours: 30->f6, 0.0->f8, 6.28->f1, 360->f2, .166->f12, 1.0->f11,
+// pi->f7, 1.5->f3, .4967->f0, .2->f5, magic->f9, seed->f13. Target preheader load order is
+// {30,0.0,6.28,360,.166,1.0,pi,1.5,.4967,.2}; ours is {30,6.28,1.5,.2,360,0.0,.166,1.0,pi,.4967}.
+// Reordering the named locals' declarations/assignments, naming the coefficients or 0.0, parameterising the
+// polynomial, const locals, dropping the named locals for literals, moving f4's computation, and
+// opt_common_subs/global_optimizer/scheduling/fp_contract/optimization_level/optimize_for_size/pool_data
+// variants all leave >=68 differing instructions (or make it worse); it is allocator luck.
+// NONMATCHING (81.83%): only the hoisted loop-invariant constant loads differ (their preheader order and
+// FPR permutation; the exact mapping is in the comment block above) - allocator luck.
 EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {
     EffectEntry* entry;
     DamageStarData* data;
@@ -309,6 +320,7 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
 
     return entry;
 }
+// End of the Entry-only pragmas above.
 
 
 void effDamageStarMain(EffectEntry* effect) {

@@ -78,5 +78,8 @@ void unk_801f8cd0(void);
 void kpaMutekiOn(void);
 void kpaMutekiOff(void);
 void kpaMain(void);
+void kpaPauseSE2(void);
+s32 kpaJumpChk(void);
+void kpaFall(void);
 
 extern const f32 float_0_80420e80;

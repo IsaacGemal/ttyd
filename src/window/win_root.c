@@ -408,10 +408,8 @@ int N_compare_func4_2_r(void* a, void* b) {
     }
 }
 
-// NONMATCHING (80.65%): the instruction multiset matches the original; only MWCC's
-// scheduling differs (the original hoists `lwz r4, 0x8(r4)` above the prologue
-// saves, ours emits it after them).
-int N_compare_func4_1(void* a, void* b) {
+// 1:1 (the `const` parameters reproduce the original's hoisted `lwz r4,0x8(r4)` prologue load).
+int N_compare_func4_1(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_b = (s16)*(s32*)((u8*)b + 8);
@@ -422,9 +420,8 @@ int N_compare_func4_1(void* a, void* b) {
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
-// NONMATCHING (80.65%): same schedule-only difference as N_compare_func4_1 (ids
-// are s16, the original `extsh`s both).
-int N_compare_func4_1_r(void* a, void* b) {
+// 1:1 (same `const`-parameter prologue hoist as N_compare_func4_1).
+int N_compare_func4_1_r(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_b = (s16)*(s32*)((u8*)b + 8);
@@ -495,56 +492,52 @@ int compare_func6_2_r(void* a, void* b) {
     }
 }
 
-// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-int compare_func5_1(void* a, void* b) {
+// 1:1 (the `const` parameters reproduce the target's hoisted `lha` prologue load).
+int compare_func5_1(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
-
     unk_800d06b4((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     unk_800d06b4((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
-// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-int compare_func5_1_r(void* a, void* b) {
+// 1:1 (same `const`-parameter prologue hoist as compare_func5_1).
+int compare_func5_1_r(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
-
     unk_800d06b4((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     unk_800d06b4((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-int compare_func6_1(void* a, void* b) {
+// 1:1 (the `const` parameters reproduce the target's hoisted `lha` prologue load).
+int compare_func6_1(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
-
     unk_800d06b4((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     unk_800d06b4((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
-// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-int compare_func6_1_r(void* a, void* b) {
+// 1:1 (same `const`-parameter prologue hoist as compare_func6_1).
+int compare_func6_1_r(const void* a, const void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
-
     unk_800d06b4((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     unk_800d06b4((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-// NONMATCHING (92.86%): 1 missing, 1 extra.
-int compare_func4(void* a, void* b) {
+// 1:1 (the `const` parameters reproduce the target's hoisted `lbz r3,0x1(r3)` prologue load).
+int compare_func4(const void* a, const void* b) {
     void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
     void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
     const char* sa = (const char*)msgSearch(*(const char**)((u8*)ma + 8));
@@ -553,8 +546,8 @@ int compare_func4(void* a, void* b) {
     return strcmp(sa, sb);
 }
 
-// NONMATCHING (92.31%): 1 missing, 1 extra.
-int compare_func4_r(void* a, void* b) {
+// 1:1 (same `const`-parameter prologue hoist as compare_func4).
+int compare_func4_r(const void* a, const void* b) {
     void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
     void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
     const char* sa = (const char*)msgSearch(*(const char**)((u8*)ma + 8));
@@ -589,9 +582,9 @@ void sort_7_3_func(WindowWork* work) {
 
 void sort_8_1_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, compare_func4);
+        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, (int (*)(void*, void*))compare_func4);
     } else {
-        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, compare_func4_r);
+        qqsort((u8*)work + 0x26E, WW_S32(work, 0x254), 2, (int (*)(void*, void*))compare_func4_r);
     }
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0x258) = 0;
@@ -666,49 +659,43 @@ int compare_func3(void* a, void* b) {
 void sort_7_2_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func2);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2);
     } else {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
-        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func2_r);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, (int (*)(void*, void*))compare_func2_r);
     }
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
 
-// Two `menu_monosiri_%s` lookups over the 26-entry enemy-code table.
-// NONMATCHING (94.86%): only MWCC register allocation (table base/tag/index FPRs)
-// and the compiler-generated table symbol differ.
-int compare_func2_r(void* a, void* b) {
-    u8 buf_a[64];
-    u8 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
-    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
-    const char* tag_a = ea->locationTag;
-    const char* tag_b;
+// The loop both comparators run: find `tag` in the 26-entry table, formatting each
+// candidate into `buf`. Written as an inlined helper because inlining it twice is
+// what reproduces the target's callee-saved register allocation (table base/pointer
+// in r26/r27, tag/counter in r28/r29).
+static inline s32 winRootFindTag(const char* const* table, const char* tag, u8* buf) {
     s32 i;
-    s32 j;
 
     for (i = 0; (u32)i < 0x1A; i++) {
-        sprintf((char*)buf_a, str_802F4510, tbl[i]);
-        if (strcmp((char*)buf_a, tag_a) == 0) {
+        sprintf((char*)buf, str_802F4510, table[i]);
+        if (strcmp((char*)buf, tag) == 0) {
             break;
         }
     }
     if ((u32)i >= 0x1A) {
         i = 0;
     }
+    return i;
+}
 
-    tag_b = eb->locationTag;
-    for (j = 0; (u32)j < 0x1A; j++) {
-        sprintf((char*)buf_b, str_802F4510, tbl[j]);
-        if (strcmp((char*)buf_b, tag_b) == 0) {
-            break;
-        }
-    }
-    if ((u32)j >= 0x1A) {
-        j = 0;
-    }
+// Two `menu_monosiri_%s` lookups over the 26-entry enemy-code table.
+int compare_func2_r(const void* a, const void* b) {
+    u8 buf_a[64];
+    u8 buf_b[64];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
+    s32 i = winRootFindTag(tbl, ea->locationTag, buf_a);
+    s32 j = winRootFindTag(tbl, eb->locationTag, buf_b);
 
     if (i < j) {
         return 1;
@@ -720,38 +707,13 @@ int compare_func2_r(void* a, void* b) {
 }
 
 // Two `menu_monosiri_%s` lookups over the 26-entry enemy-code table.
-// NONMATCHING (94.86%): only MWCC register allocation (table base/tag/index FPRs)
-// and the compiler-generated table symbol differ.
-int compare_func2(void* a, void* b) {
+int compare_func2(const void* a, const void* b) {
     u8 buf_a[64];
     u8 buf_b[64];
-    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
-    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
-    const char* tag_a = ea->locationTag;
-    const char* tag_b;
-    s32 i;
-    s32 j;
-
-    for (i = 0; (u32)i < 0x1A; i++) {
-        sprintf((char*)buf_a, str_802F4510, tbl[i]);
-        if (strcmp((char*)buf_a, tag_a) == 0) {
-            break;
-        }
-    }
-    if ((u32)i >= 0x1A) {
-        i = 0;
-    }
-
-    tag_b = eb->locationTag;
-    for (j = 0; (u32)j < 0x1A; j++) {
-        sprintf((char*)buf_b, str_802F4510, tbl[j]);
-        if (strcmp((char*)buf_b, tag_b) == 0) {
-            break;
-        }
-    }
-    if ((u32)j >= 0x1A) {
-        j = 0;
-    }
+    TattleEntry* ea = battleGetUnitMonosiriPtr(((u8*)a)[1]);
+    TattleEntry* eb = battleGetUnitMonosiriPtr(((u8*)b)[1]);
+    s32 i = winRootFindTag(tbl, ea->locationTag, buf_a);
+    s32 j = winRootFindTag(tbl, eb->locationTag, buf_b);
 
     if (i > j) {
         return 1;
@@ -764,9 +726,9 @@ int compare_func2(void* a, void* b) {
 
 void sort_6_1_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_1);
+        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1);
     } else {
-        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, compare_func6_1_r);
+        qqsort((u8*)work + 0xFB4, WW_S32(work, 0xF90), 2, (int (*)(void*, void*))compare_func6_1_r);
     }
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0xF94) = 0;
@@ -797,9 +759,9 @@ void sort_5_2_func(WindowWork* work) {
 
 void sort_5_1_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_1);
+        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1);
     } else {
-        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, compare_func5_1_r);
+        qqsort((u8*)work + 0xEB8, WW_S32(work, 0xE94), 2, (int (*)(void*, void*))compare_func5_1_r);
     }
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0xE98) = 0;
@@ -819,9 +781,9 @@ void sort_4_2_func(WindowWork* work) {
 
 void sort_4_1_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0x404, WW_S32(work, 0xD64), 0xC, N_compare_func4_1);
+        qqsort((u8*)work + 0x404, WW_S32(work, 0xD64), 0xC, (int (*)(void*, void*))N_compare_func4_1);
     } else {
-        qqsort((u8*)work + 0x404, WW_S32(work, 0xD64), 0xC, N_compare_func4_1_r);
+        qqsort((u8*)work + 0x404, WW_S32(work, 0xD64), 0xC, (int (*)(void*, void*))N_compare_func4_1_r);
     }
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0x3E8) = 0;

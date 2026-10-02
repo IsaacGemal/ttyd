@@ -962,13 +962,28 @@ s32 partyGetNum(void) {
     return num;
 }
 
-// NONMATCHING (77.37%): 2 instructions differ, 6 missing, 6 extra, plus register differences.
+// Original inlined body of partyGetNum (the original never emits that function standalone):
+// the table element must be loaded before the `index >= 0` test that partyGetPtr inlines, and
+// the element load is shared with the flags dereference. The plain `party = partyGetPtr(i)`
+// loop loads the element only on the non-negative path, which is what the old version did.
+static inline s32 L_partyNum(void) {
+    s32 num = 0;
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        if (partyPtrTbl[i] && (partyGetPtr(i)->flags & 1)) {
+            num++;
+        }
+    }
+    return num;
+}
+
 void partyMain(void) {
     s32 num;
     s32 i;
 
     marioGetPtr();
-    num = partyGetNum();
+    num = L_partyNum();
     if (num != 0) {
         unk_8013be14();
         for (i = 0; i < 2; i++) {
@@ -1342,8 +1357,77 @@ found:
     return slotId;
 }
 
-// NONMATCHING (94.17%): 4 saved registers instead of the original 5 (no `stmw`/`lmw`), so every
-// register number is shifted; vec3_802ccdd8 is accessed via `@sda21` bases instead of one base+offset.
+
+// Inlined anim-name selection behind a helper: inline, the result lands in r28 instead of the
+// target's r29 and `str_802CCEEC` materialises via `addi r0,...; mr r28,r0`; a helper returning it
+// gives it the target's r29.
+static inline const char* L_animName(PartyEntry* party) {
+    PartyData* dp = party_dp;
+
+    if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+        if (!(party->flags2 & 0x8000)) {
+            return dp->name;
+        }
+        return str_802CCEEC;
+    }
+    {
+        const char* name = yoshigroup[pouchGetPartyColor(PARTNER_YOSHI)];
+        if (party->flags2 & 0x8000) {
+            name = str_802CCEEC;
+        }
+        return name;
+    }
+}
+// Static inline copy of partyChgPoseId specialised for index 1 The original's
+// inliner folds the `index == 1` chain for the literal argument; a direct partyChgPoseId(party, 1)
+// call leaves the three-compare chain in, so this keeps the same `return`-based control flow the
+// target emits with the index pre-folded. `v5` is declared before `index` and as `s32`: that pair
+// is what makes the allocator give `index` r29 and `v5` r28, matching the target (any other
+// declaration order/type leaves them swapped).
+static inline char* L_partyChgPoseId1(PartyEntry* party) {
+    s32 v5;
+    s32 index = 1;
+    char* v6;
+    char* v8;
+
+    if ((party->flags2 & 2) != 0) {
+        return party->field_18;
+    }
+    v5 = 0;
+    if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
+        v5 = TRUE;
+    }
+    if (v5 == TRUE) {
+        index = 12;
+    }
+    if (!(party->flags2 & 0x8000)) {
+        v6 = partyPoseTbl[party->currentMemberId][index];
+    } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+        v6 = partyDotPoseTbl[party->currentMemberId][index];
+    } else {
+        v6 = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][index];
+    }
+    v8 = party->field_18;
+    if (v8 && !strcmp(v8, v6)) {
+        return v6;
+    }
+    party->field_18 = v6;
+    party->field_20 = 0;
+    party->field_8 |= 0x2000;
+    return v6;
+}
+
+// Inlined material-flag setup behind a helper: inline, `mario` lands in r28 instead of the
+// target's r29; a helper gives it a fresh allocation in r29.
+static inline void L_setMaterial(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+
+    animPoseSetMaterialFlagOn(party->paperAnimGroup,
+                              animPoseGetMaterialFlag(mario->paperAnimGroupId[marioAnimeId()]));
+    animPoseSetMaterialLightFlagOn(party->paperAnimGroup,
+                                   animPoseGetMaterialLightFlag(mario->paperAnimGroupId[marioAnimeId()]));
+}
+
 s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
     MarioWork* player = marioGetPtr();
     s32 slotId;
@@ -1374,6 +1458,9 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
         party->flags |= 4;
     }
     party_dp = &partyDataTbl[memberId];
+#ifdef MUST_MATCH
+    animName = L_animName(party);
+#else
     {
         PartyData* dp = party_dp;
 
@@ -1390,11 +1477,15 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
             }
         }
     }
+#endif
     if (party->paperAnimGroup >= 0) {
         animPoseRelease(party->paperAnimGroup);
     }
     party->paperAnimGroup = animPoseEntry(animName, 2);
     animPosePeraOff(party->paperAnimGroup);
+#ifdef MUST_MATCH
+    L_setMaterial(party);
+#else
     {
         MarioWork* mario = party->playerPtr;
 
@@ -1403,40 +1494,16 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
         animPoseSetMaterialLightFlagOn(party->paperAnimGroup,
                                        animPoseGetMaterialLightFlag(mario->paperAnimGroupId[marioAnimeId()]));
     }
+#endif
 #ifdef MUST_MATCH
-    {
-        char* pose;
-
-        if (party->flags2 & 2) {
-            pose = party->field_18;
-        } else {
-            s32 index = 1;
-            s32 lowHp = 0;
-
-            if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
-                lowHp = 1;
-            }
-            if (lowHp == 1) {
-                index = 12;
-            }
-            if (!(party->flags2 & 0x8000)) {
-                pose = partyPoseTbl[party->currentMemberId][index];
-            } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-                pose = partyDotPoseTbl[party->currentMemberId][index];
-            } else {
-                pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][index];
-            }
-            if (!(party->field_18 && !strcmp(party->field_18, pose))) {
-                party->field_18 = pose;
-                party->field_20 = 0;
-                party->field_8 |= 0x2000;
-            }
-        }
-        partyChgPose(party, pose);
-    }
+    // MUST_MATCH: the original's inliner folds partyChgPoseId's `index == 1` chain for the
+    // literal argument; L_partyChgPoseId1 keeps that folded control flow.
+    partyChgPose(party, L_partyChgPoseId1(party));
 #else
     partyChgPose(party, partyChgPoseId(party, 1));
 #endif
+
+
     party->field_1C = 0;
     ((void (*)(PartyEntry*))party_dp->init_func)(party);
     partyChgRunMode(party, 2);
@@ -1455,8 +1522,6 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
     return slotId;
 }
 
-// NONMATCHING (92.97%): 4 saved registers instead of the original `stmw r27`/`lmw`, so every register
-// number is shifted; one branch layout swap.
 s32 partyEntry2Hello(s32 memberId) {
     MarioWork* player = marioGetPtr();
     s32 slotId;
@@ -1487,6 +1552,9 @@ s32 partyEntry2Hello(s32 memberId) {
         party->flags |= 4;
     }
     party_dp = &partyDataTbl[memberId];
+#ifdef MUST_MATCH
+    animName = L_animName(party);
+#else
     {
         PartyData* dp = party_dp;
 
@@ -1503,11 +1571,15 @@ s32 partyEntry2Hello(s32 memberId) {
             }
         }
     }
+#endif
     if (party->paperAnimGroup >= 0) {
         animPoseRelease(party->paperAnimGroup);
     }
     party->paperAnimGroup = animPoseEntry(animName, 2);
     animPosePeraOff(party->paperAnimGroup);
+#ifdef MUST_MATCH
+    L_setMaterial(party);
+#else
     {
         MarioWork* mario = party->playerPtr;
 
@@ -1516,40 +1588,15 @@ s32 partyEntry2Hello(s32 memberId) {
         animPoseSetMaterialLightFlagOn(party->paperAnimGroup,
                                        animPoseGetMaterialLightFlag(mario->paperAnimGroupId[marioAnimeId()]));
     }
+#endif
 #ifdef MUST_MATCH
-    {
-        char* pose;
-
-        if (party->flags2 & 2) {
-            pose = party->field_18;
-        } else {
-            s32 index = 1;
-            s32 lowHp = 0;
-
-            if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
-                lowHp = 1;
-            }
-            if (lowHp == 1) {
-                index = 12;
-            }
-            if (!(party->flags2 & 0x8000)) {
-                pose = partyPoseTbl[party->currentMemberId][index];
-            } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-                pose = partyDotPoseTbl[party->currentMemberId][index];
-            } else {
-                pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][index];
-            }
-            if (!(party->field_18 && !strcmp(party->field_18, pose))) {
-                party->field_18 = pose;
-                party->field_20 = 0;
-                party->field_8 |= 0x2000;
-            }
-        }
-        partyChgPose(party, pose);
-    }
+    // MUST_MATCH: same folded-index trick as partyEntry2Pos above.
+    partyChgPose(party, L_partyChgPoseId1(party));
 #else
     partyChgPose(party, partyChgPoseId(party, 1));
 #endif
+
+
     party->field_1C = 0;
     ((void (*)(PartyEntry*))party_dp->init_func)(party);
     partyChgRunMode(party, 4);
@@ -1964,9 +2011,9 @@ void partyMakeDispDir(PartyEntry* party) {
 #pragma opt_common_subs reset
 #pragma opt_lifetimes reset
 
-// NONMATCHING (92.21%): the compiler's magic unsigned->double constant is `@911` instead of
-// `double_to_int_mask_802ccef8`; float register allocation in the order calculation and the
-// partyHitCheck argument build scheduling differ.
+// Keep CSE off across this function: with it on the order multiply's FPRs land in f1/f0/f2
+// instead of the target's f2/f1/f0.
+#pragma opt_common_subs off
 void partyPreDisp(PartyEntry* party) {
     Vec dispPos;
     Vec hitCheckPos;
@@ -1975,7 +2022,6 @@ void partyPreDisp(PartyEntry* party) {
     Vec hitNormal;
     f32 dist;
     f32 order;
-    s16 field2A;
     s32 shadowMode;
     f32 size;
     s32 shadowId;
@@ -2005,6 +2051,8 @@ void partyPreDisp(PartyEntry* party) {
 
     animPoseMain(party->paperAnimGroup);
 
+    // The original wraps the whole tail (disp entry, shadow setup, vivian, shadow entry) in this arm:
+    // the target's `bne` at `flags2 & 1` jumps straight to the epilogue.
     if (!(party->flags2 & 1)) {
         dispPos = party->position;
         PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &dispPos, &dispPos);
@@ -2015,59 +2063,57 @@ void partyPreDisp(PartyEntry* party) {
             order = float_10000_8041b118;
         }
         order = order * float_neg1_8041b0ec;
-        field2A = party->field_2A;
-        if (field2A > 0) {
-            if (!(field2A & 2)) {
+        if (party->field_2A > 0) {
+            if (!(party->field_2A & 2)) {
                 dispEntry((CameraId)party->camId, order, 1, partyDisp, party);
             }
         } else {
             dispEntry((CameraId)party->camId, order, 1, partyDisp, party);
         }
-    }
 
-    shadowMode = 2;
-    size = float_13p333_8041b11c;
-    if (party->currentMemberId != PARTY_MEMBER_VIVIAN) {
-        party->field_B8 = party->position;
-    } else {
-        if (party->field_34 == 4 || (party->field_34 == 8 && !(party->flags & 0x100))) {
+        shadowMode = 2;
+        size = float_13p333_8041b11c;
+        if (party->currentMemberId != PARTY_MEMBER_VIVIAN) {
             party->field_B8 = party->position;
-        }
-        if (party->flags & 0x100) {
-            size = PF32(party, 0x174);
-            if (party->flags & 0x80000000) {
-                shadowMode = 1;
+        } else {
+            if (party->field_34 == 4 || (party->field_34 == 8 && !(party->flags & 0x100))) {
+                party->field_B8 = party->position;
+            }
+            if (party->flags & 0x100) {
+                size = PF32(party, 0x174);
+                if (party->flags & 0x80000000) {
+                    shadowMode = 1;
+                }
             }
         }
-    }
 
-    if (N_vivianDisplayTailCheck(party)) {
-        dir = vec3_802ccee0;
-        hitCheckPos = party->position;
-        dist = float_1000_8041b120;
-        hitCheckPos.y += float_10_8041b124;
-        if (partyHitCheck(party, &hitCheckPos, &dir, &hitPos, &hitNormal, &dist)) {
-            party->field_B8.y = hitPos.y;
-        } else {
-            party->field_B8.y = party->position.y;
+        if (N_vivianDisplayTailCheck(party)) {
+            dist = float_1000_8041b120;
+            hitCheckPos = party->position;
+            hitCheckPos.y += float_10_8041b124;
+            dir = vec3_802ccee0;
+            party->field_B8.y = partyHitCheck(party, &hitCheckPos, &dir, &hitPos, &hitNormal, &dist) ? hitPos.y
+                                                                                                     : party->position.y;
+            animPoseVivianMain(party->paperAnimGroup, &party->field_B8);
         }
-        animPoseVivianMain(party->paperAnimGroup, &party->field_B8);
-    }
 
-    if (!(party->flags2 & 0x100000)) {
-        shadowId = shadowEntryMode(shadowMode, party->field_B8.x, party->field_B8.y, party->field_B8.z, size);
-        if (party->camId != 4) {
-            shadowSetCamId(shadowId, party->camId);
-        }
-        if (party->flags2 & 0x200000) {
-            shadowFlagOn(shadowId, 4);
+        if (!(party->flags2 & 0x100000)) {
+            shadowId = shadowEntryMode(shadowMode, party->field_B8.x, party->field_B8.y, party->field_B8.z, size);
+            if (party->camId != 4) {
+                shadowSetCamId(shadowId, party->camId);
+            }
+            if (party->flags2 & 0x200000) {
+                shadowFlagOn(shadowId, 4);
+            }
         }
     }
 }
 
-// NONMATCHING (94.42%): the leading partyGetNum()/partyGetPtr() inline keeps the
-// partyPtrTbl element load after the index test; the original hoists the load above it
-// and tests the element before the index (the same compiler difference as partyMain).
+#pragma opt_common_subs reset
+
+// Matches (100%): the leading count inlines L_partyNum (above partyMain), whose
+// `partyPtrTbl[i] && (partyGetPtr(i)->flags & 1)` form makes MWCC hoist the element load
+// above the index test the way the original does.
 void partyDisp(CameraId cameraId, void* param) {
     PartyEntry* party = param;
     Mtx scaleMtx;
@@ -2077,7 +2123,7 @@ void partyDisp(CameraId cameraId, void* param) {
     f32 scale;
     f32 yOffset;
 
-    if (partyGetNum() != 0) {
+    if (L_partyNum() != 0) {
         if (party->flags & 0x200) {
             PF32(party, 0x88) = float_neg6p8_8041b0d8;
             PF32(party, 0x8C) = float_6p8_8041b0dc;

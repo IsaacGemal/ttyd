@@ -889,7 +889,8 @@ static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (96.45%): 1 instruction differs, 1 missing.
+// NONMATCHING (96.45%): the inner `if (x >= 0x07000007)` comes out as `blt end` where the
+// original has `bge body; b end`; tried nested / && / negated / else-return forms, all identical.
 void _audience_Whistle_control(void) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
 
@@ -932,7 +933,7 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     return (event->userdata[1] > 0) ? 0 : 2;
 }
 
-// NONMATCHING (98.32%): rebuilt from the asm. Body matches; only the .rodata constant base/offsets differ.
+// NONMATCHING (98.35%): rebuilt from the asm. Body matches; only the .rodata constant base/offsets differ.
 s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     BattleSpotEntry* entry;
@@ -962,7 +963,7 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     }
     entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
     entry->field_1C = (Vec){15.0f, 15.0f, 150.0f};
-    entry->field_28 = 0xFFFFFFFF;
+    entry->field_28 = dat_80420c28;
     entry->flags |= 2;
     return 2;
 }
@@ -1298,14 +1299,13 @@ void _GetExpIcon_End(BattleSeqEndWork* work) {
         iconDelete((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18));
     }
 }
-
-// NONMATCHING (98.79%): first two loops + iconSetPos match; only the third block's register assignment
-// differs (orig j=r31/offset=r28, ours j=r28/offset=r31).
+// NONMATCHING (99.18%): first two loops + iconSetPos match; third block now has j=r31/offset=r28.
+// The only remaining diff is the modulo constant 10 materialized in r3 instead of reusing r31.
 void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     s32 exp = *(s16*)((u8*)work + 0xA);
-    s32 i;
     s32 j;
+    s32 i;
     f32 zero = 0.0f;
 
     for (i = 0; i < exp / 10; i++) {
@@ -1433,15 +1433,17 @@ s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (91.12%): 2 instructions differ, plus register differences.
+// opt_propagation off: without it MWCC hoists the _battleWorkPointer sda21 load above the event->args load.
+#pragma opt_propagation off
 s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    s32 val = args[0];
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
+    s32 val = args[0];
 
     *(s32*)((u8*)work + 0x2A4) = evtGetValue(event, val);
     return 2;
 }
+#pragma opt_propagation reset
 
 void _GetExpIcon_Disp(CameraId camId, void* param) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0x80};

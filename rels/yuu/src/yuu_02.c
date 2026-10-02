@@ -118,9 +118,9 @@ __declspec(section ".rodata") Vec vec3_yuu_00014008 = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_yuu_00014008 = { 0.0f, 0.0f, 0.0f };
 #endif
-static MonteEntry* monte_p;
-MonteEntry* unk_yuu_bss00000004;
 static void* yuunpc_wp;
+MonteEntry* unk_yuu_bss00000004;
+static MonteEntry* monte_p;
 
 USER_FUNC(unk_yuu_00001210) {
     camShiftReset();
@@ -179,8 +179,9 @@ void unk_yuu_00001054(CameraId cameraId, void* param) {
 // body: the target keeps monte_p in r8 and the row base in r10 (`addi r10,r3,0x8`,
 // `add r10,r8,r10`), ours has them the other way. Tried to flip it (all still 99.36%): helper
 // return type/params, extra locals, declaration order, `register`, loop/body reorders, field-vs-base
-// stores, and the opt_lifetimes / global_optimizer / opt_dead_assignments / opt_common_subs /
-// scheduling / optimize_for_size pragmas.
+// stores, do/while/goto forms, explicit offset induction, multi-helper splits, s16/u16/u8 index and
+// ~600 further syntactic variants, plus the opt_lifetimes / global_optimizer / opt_dead_assignments /
+// opt_common_subs / scheduling / peephole / optimize_for_size / optimization_level pragmas.
 static inline void monte_fill(void) {
     s32 i;
     for (i = 0; i < monte_p->count; i++) {
@@ -192,8 +193,10 @@ static inline void monte_fill(void) {
 }
 #endif
 
-// NONMATCHING (84.58%): the whole function matches except a single register swap in the first
-// loop (target monte_p=r8/base=r10, ours swapped); the helper comment above explains the rest.
+// Kept off so MWCC does not fold count*sizeof(MonteEntry) (count==1) to li 0x44 and drop the
+// target's li r28,1 / mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
+// NONMATCHING (84.58%): only the first loop's register swap differs (target monte_p=r8, base=r10;
+// ours monte_p=r10, base=r8) -- see the monte_fill comment above for the shapes tried.
 USER_FUNC(unk_yuu_00000f1c) {
     s32 already = 0;
     s32 count;

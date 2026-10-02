@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
 
 BOOL camRoadSetup(const char* filename);
 void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank);
@@ -11,6 +12,7 @@ u32 compareCamRoad(struct CamRoadState* cur, struct CamRoadState* prev, f32* out
 void calcCamRoad(struct CamRoadState* a, struct CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az);
 void calcHokanCamRoad(s32 flag, struct CamRoadState* a, struct CamRoadState* b, f32 t, struct CamRoadState* c, struct CamRoadState* out);
 void calcCurrentCamState(f32* dst);
+BOOL collisionTri_simple(Vec* p, Vec* v0, Vec* v1, Vec* v2, f32* out);
 void camRoadCurveOn(const char* name);
 void camRoadCurveOff(const char* name);
 f32 camRoadGetCurrentShiftXRate(void);
