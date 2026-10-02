@@ -444,8 +444,10 @@ static void ext_moamoa_dispent(void) {
     }
 }
 
+// The original inlines every ekiSinf/ekiCosf/randf/pose-change here: raise the inliner's per-caller limits.
 #pragma inline_max_total_size(60000)
 #pragma inline_max_size(1000)
+// Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
 // NONMATCHING (87.92%): behaviour complete, checked against the asm. The rest is register allocation and where the
 // scheduler places the randf results; the three inlined pose-change loops keep their own registers in the original.
@@ -506,7 +508,10 @@ static void ext_moamoa_main(void) {
         extGetPosePtr();
         pose = wp->poses;
         for (i = 0; i < wp->poseNum; i++, pose++) {
-            if (!(pose->flags & 0x4) && !(pose->flags & 0x10)) {
+            if (!(pose->flags & 0x4)) {
+                if (pose->flags & 0x10) {
+                    break;
+                }
                 pose->field_0x02 = 0x19;
                 pose->field_0x04 = 0;
                 pose->flags |= 0x10;
@@ -745,7 +750,7 @@ static void ext_moamoa_main(void) {
             if (pose->field_0x04 < 0x1E) {
                 Mtx rot;
 
-                PSMTXRotRad(rot, 'y', 0.20944f);
+                PSMTXRotRad(rot, 'y', 0.20943952f);
                 PSMTXConcat(*ep->matrix, rot, *ep->matrix);
                 ep->flags &= ~0x2;
                 pose->field_0x04++;
@@ -801,7 +806,7 @@ static void ext_moamoa_main(void) {
             ep->matrix[0][0][3] += pose->position.x;
             ep->matrix[0][1][3] += pose->position.y;
             ep->matrix[0][2][3] += pose->position.z;
-            PSMTXRotRad(rot, 'y', 0.20944f);
+            PSMTXRotRad(rot, 'y', 0.20943952f);
             PSMTXConcat(*ep->matrix, rot, *ep->matrix);
             ep->flags &= ~0x2;
             if (ep->matrix[0][0][3] < -1000.0f) {
@@ -1617,6 +1622,7 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
 
 #pragma opt_propagation reset
 
+// The original calls moamoa_jump (a real bl) from ext_moamoa_main; the raised inline limits would inline it.
 #pragma dont_inline on
 static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5) {
     f32 hitX;
