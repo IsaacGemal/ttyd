@@ -1597,3 +1597,154 @@ void winLogInit(WindowWork* work) {
         }
     }
 }
+
+extern const Vec vec3_802f5f2c;
+extern const Vec vec3_802f5f38;
+extern const Vec vec3_802f5f44;
+extern const Vec vec3_802f5f50;
+extern const Vec vec3_802f5f5c;
+extern const Vec vec3_802f5f68;
+extern const Vec vec3_802f5f74;
+extern const Vec vec3_802f5f80;
+extern const Vec vec3_802f5f8c;
+extern const Vec vec3_802f5f98;
+extern const Vec vec3_802f5fa4;
+extern const Vec vec3_802f5fb0;
+extern const Vec vec3_802f5fbc;
+extern const Vec vec3_802f5fc8;
+extern const Vec vec3_802f5fd4;
+extern const Vec vec3_802f5fe0;
+extern const Vec vec3_802f5fec;
+extern const GXColor dat_8041d78c;
+extern const GXColor dat_8041d790;
+extern const GXColor dat_8041d794;
+extern const GXColor dat_8041d798;
+extern const GXColor dat_8041d79c;
+extern const f32 float_0p017453_8041d8a4;
+extern const f32 float_0p43633_8041d8a0;
+extern const f32 float_30_8041d864;
+extern const f32 float_4_8041d88c;
+extern const f32 float_10_8041d8b4;
+extern const f32 float_170_8041d8b8;
+extern const f32 float_130_8041d8bc;
+extern const f32 float_1_8041d7c0;
+
+#define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
+
+// Draws one page of the log window: map, crystal stars, cards, badges, the tattle viewer and the tab strip.
+void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
+    LogWin* w = (LogWin*)work;
+    GXColor white = dat_8041d78c;
+    GXColor white2 = dat_8041d78c;
+    GXColor white3 = dat_8041d78c;
+    f32 x = WW_F32(work, 0xC4 + idx * 0x14);
+    f32 y = WW_F32(work, 0xC8 + idx * 0x14);
+    s32 i;
+
+    winBgGX(work, 4, x, y);
+    if (y + w->e34 > float_neg480_8041d89c) {
+        mapGX(work, x + w->e2c, y + w->e34);
+    }
+    if (y + w->e70 > float_neg480_8041d89c) {
+        GXColor col = dat_8041d790;
+        Vec translate = vec3_802f5f2c;
+        Vec scale = vec3_802f5f38;
+
+        winTexInit(LOG_TEXPAL());
+        col.a = (u8)w->e78;
+        translate.x = x + w->e68;
+        translate.y = y + w->e70;
+        winTexSet(0x24, translate, scale, col);
+        for (i = 0; i < 7; i++) {
+            Vec p = vec3_802f5f44;
+            Mtx rx;
+            Mtx ry;
+            GXColor shadow = dat_8041d794;
+
+            PSMTXRotRad(rx, 'x', float_0p43633_8041d8a0);
+            PSMTXRotRad(ry, 'y', float_0p017453_8041d8a4 * (float_51p429_8041d8a8 * (f32)i - w->e80));
+            PSMTXMultVec(ry, &p, &p);
+            PSMTXMultVec(rx, &p, &p);
+            winKageGX(work, &shadow, p.x + (x + w->e68), (p.y + (y + w->e70)) - float_30_8041d864, p.z,
+                      float_1_8041d7c0);
+            ((f32*)w->stones[i]->userdata)[2] = p.x + (x + w->e68);
+            ((f32*)w->stones[i]->userdata)[3] = float_20_8041d8ac + (p.y + (y + w->e70));
+            ((f32*)w->stones[i]->userdata)[4] = p.z;
+        }
+        for (i = 0; i < 7; i++) {
+            effStarStoneDraw(8, w->stones[i]);
+        }
+    }
+    if (w->e84 < float_320_8041d8b0 && w->e8c > float_neg240_8041d894) {
+        winHakoGX(work, 0, x + w->e84, y + w->e8c);
+        winTexInit(LOG_TEXPAL());
+        {
+            Vec translate = vec3_802f5f50;
+            Vec scale = vec3_802f5f5c;
+
+            translate.x = x + w->ea8;
+            translate.y = y + w->eb0;
+            winTexSet(0x95, translate, scale, white);
+        }
+        if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
+            Vec translate = vec3_802f5f68;
+            Vec scale = vec3_802f5f74;
+
+            winIconInit();
+            translate.x = x + w->ea8;
+            translate.y = (y + w->eb0) - float_4_8041d88c;
+            winIconSet(itemDataTable[w->cardIcon[w->cardSel] + 240].icon_id, &translate, &scale, &white2);
+        }
+    }
+    if (w->f80 < float_320_8041d8b0 && w->f88 > float_neg240_8041d894) {
+        winHakoGX(work, 1, x + w->f80, y + w->f88);
+        winTexInit(LOG_TEXPAL());
+        {
+            Vec translate = vec3_802f5f80;
+            Vec scale = vec3_802f5f8c;
+
+            translate.x = x + w->fa4;
+            translate.y = y + w->fac;
+            winTexSet(0x96, translate, scale, white);
+        }
+        if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
+            Vec translate = vec3_802f5f98;
+            Vec scale = vec3_802f5fa4;
+
+            winIconInit();
+            translate.x = x + w->fa4;
+            translate.y = (y + w->fac) - float_10_8041d8b4;
+            winIconSet(itemDataTable[w->badgeIcon[w->badgeSel] + 179].icon_id, &translate, &scale, &white2);
+        }
+    }
+    if (w->state == 0xE || (u32)(w->state - 0x14) <= 2 || w->state == 0x3E9) {
+        monoshiriGX(work, x - float_170_8041d8b8, float_130_8041d8bc + y);
+    }
+    for (i = 0; i < w->count; i++) {
+        if (i == w->sel) {
+            Vec translate = vec3_802f5fb0;
+            Vec scale = vec3_802f5fbc;
+            Vec translate2 = vec3_802f5fc8;
+            Vec scale2 = vec3_802f5fd4;
+            GXColor c3 = dat_8041d798;
+
+            winTexInit(LOG_TEXPAL());
+            translate.x = x + w->rows[i].curX;
+            translate.y = y + w->rows[i].curY;
+            winTexSet(0xB5, translate, scale, c3);
+            winTexInit_x2(LOG_TEXPAL());
+            translate2.x = (x + w->rows[i].curX) - float_8_8041d7d4;
+            translate2.y = float_8_8041d7d4 + (y + w->rows[i].curY);
+            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5, translate2, scale2, white3);
+        } else {
+            Vec translate = vec3_802f5fe0;
+            Vec scale = vec3_802f5fec;
+            GXColor c4 = dat_8041d79c;
+
+            winTexInit_x2(LOG_TEXPAL());
+            translate.x = x + w->rows[i].curX;
+            translate.y = y + w->rows[i].curY;
+            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5, translate, scale, c4);
+        }
+    }
+}
