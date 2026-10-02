@@ -1769,11 +1769,28 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 }
 
 // The weight-count loop is written as `for (;;) { if (type == 0) break; ... }` so MWCC does not rotate it (a
-// `while`/`for` rotated the condition to the bottom). The remaining diffs are register allocation: MWCC puts
-// audience in r28 (target r30) and i in r31 (target r26), and hoists a couple of FP constants differently;
-// all 631 values, calls, branches and stores are the same operation.
-// NONMATCHING (89.76%): functionally complete; only register allocation / FP scheduling differs.
+// `while`/`for` rotated the condition to the bottom). What got it to 98.46%:
+//  - every `float_*_8041e6xx` external was replaced by its literal (0.0f, 1.0f, 10.0f, …), which is what the
+//    original source used: with literals MWCC colours the FP registers as the target does;
+//  - `tbl` (lbl_80399940) is initialised first and `i` is declared right after it, so the base pointer is
+//    hoisted into r29 and the saved-GPR assignment matches the original exactly;
+//  - the outer `if (item+0x44)` was inverted so the else body is the fall-through branch;
+//  - the `case 0` vecA block is written/ordered so MWCC's scheduler reproduces the original's float
+//    load/store schedule (wrapped in MUST_MATCH; the #else order is the natural one);
+//  - the case-3 inner `if (0x44 == 2)` jumps straight to the case-4 body like the original (MUST_MATCH
+//    `goto`; without it MWCC falls through the `state != 4` check, 1 instruction);
+//  - the deactivate path reuses `member` for the second `BattleAudienceGetPtr` call, which is what the
+//    original did (it materialises -1 in r0, not r22).
+// What is left (~20 instructions) is the `case 0` vecA FP scheduling: the original computes the
+// `pos.y + kind->0x10 - 10` sum first, then Y, Z, X; MWCC orders ours Z, X, sum, Y.  Reordering the block
+// and reshaping the expressions does not move it further.  Functionally complete: every call, immediate,
+// value and branch is the same operation.
+// NONMATCHING (98.46%): case-0 vecA FP load/store scheduling only.
 void BattleAudienceItemCtrlProcess(void) {
+#ifdef MUST_MATCH
+	u8* tbl = (u8*)lbl_80399940;
+#endif
+	s32 i;
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceItem* item;
@@ -1782,17 +1799,14 @@ void BattleAudienceItemCtrlProcess(void) {
 	BattleUnit* unit;
 	BattleUnitPart* part;
 	BattleAudienceItemKind* kindItems;
-#ifdef MUST_MATCH
-	u8* tbl;
-#endif
 	u8* aud;
 	Vec hitPos;
 	Vec vecA;
 	Vec vecB;
 	f32 dist;
+	f32 dx;
 	s8 turns;
 	s8 strength;
-	s32 i;
 	s32 j;
 	s32 count;
 	s32 offset;
@@ -1801,9 +1815,6 @@ void BattleAudienceItemCtrlProcess(void) {
 	s32 acc;
 
 	i = 0;
-#ifdef MUST_MATCH
-	tbl = (u8*)lbl_80399940;
-#endif
 	aud = (u8*)audience;
 	item = BattleAudienceItemGetPtr(0);
 	for (; i < 100; i++, item++) {
@@ -1850,13 +1861,25 @@ void BattleAudienceItemCtrlProcess(void) {
 				item->mItemType = kindItems[offset].type;
 			}
 			*(s32*)((u8*)item + 0x8) = i + 0xb4;
-			*(f32*)((u8*)item + 0x20) = float_1_8041e620;
-			*(f32*)((u8*)item + 0x24) = float_0_8041e618;
+#ifdef MUST_MATCH
+			/* Statement order is a scheduling aid only: it makes MWCC emit the original's
+			   float load/store schedule.  The #else block is behaviourally identical. */
+			*(f32*)((u8*)item + 0x20) = 1.0f;
+			vecA = vec3_802f972c;
+			vecA.z = member->position.z + 1.0f;
+			vecA.x = member->position.x + kind->field_0xC;
+			*(f32*)((u8*)item + 0x24) = 0.0f;
+			vecA.y = member->position.y + kind->field_0x10 - 10.0f;
+			*(Vec*)((u8*)item + 0x14) = vecA;
+#else
 			vecA = vec3_802f972c;
 			vecA.x = member->position.x + kind->field_0xC;
-			vecA.y = member->position.y + kind->field_0x10 - float_10_8041e694;
-			vecA.z = member->position.z + float_1_8041e620;
+			vecA.y = member->position.y + kind->field_0x10 - 10.0f;
+			vecA.z = member->position.z + 1.0f;
+			*(f32*)((u8*)item + 0x20) = 1.0f;
+			*(f32*)((u8*)item + 0x24) = 0.0f;
 			*(Vec*)((u8*)item + 0x14) = vecA;
+#endif
 			item->state++;
 			/* fallthrough */
 		case 1:
@@ -1884,13 +1907,14 @@ void BattleAudienceItemCtrlProcess(void) {
 				*(BattleUnit**)((u8*)item + 0x40) = unit;
 				part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 				BtlUnit_GetHitPos(unit, part, &hitPos.x, &hitPos.y, &hitPos.z);
-				dist = float_30_8041e6f0 + (f32)__fabs(hitPos.x - *(f32*)((u8*)item + 0x14)) / float_15_8041e6f4;
-				*(f32*)((u8*)item + 0x28) = (hitPos.x - *(f32*)((u8*)item + 0x14)) / dist;
-				*(f32*)((u8*)item + 0x34) = float_0_8041e618;
-				*(f32*)((u8*)item + 0x2c) = float_7_8041e6f8;
-				*(f32*)((u8*)item + 0x38) = float_2_8041e660 * ((hitPos.y - *(f32*)((u8*)item + 0x18)) - *(f32*)((u8*)item + 0x2c) * dist) / (dist * dist);
+				dx = hitPos.x - *(f32*)((u8*)item + 0x14);
+				dist = 30.0f + (f32)__fabs(dx) / 15.0f;
+				*(f32*)((u8*)item + 0x28) = dx / dist;
+				*(f32*)((u8*)item + 0x34) = 0.0f;
+				*(f32*)((u8*)item + 0x2c) = 7.0f;
+				*(f32*)((u8*)item + 0x38) = 2.0f * ((hitPos.y - *(f32*)((u8*)item + 0x18)) - *(f32*)((u8*)item + 0x2c) * dist) / (dist * dist);
 				*(f32*)((u8*)item + 0x30) = (hitPos.z - *(f32*)((u8*)item + 0x1c)) / dist;
-				*(f32*)((u8*)item + 0x3c) = float_0_8041e618;
+				*(f32*)((u8*)item + 0x3c) = 0.0f;
 				*(s32*)((u8*)item + 0x8) = (s32)dist;
 				item->state++;
 			}
@@ -1901,8 +1925,8 @@ void BattleAudienceItemCtrlProcess(void) {
 				}
 				vecB = vec3_802f9738;
 				vecB.x = *(f32*)((u8*)member + 0xc0) + kind->field_0xC;
-				vecB.y = *(f32*)((u8*)member + 0xc4) + kind->field_0x10 + intplGetValue(0, offset, 5, float_neg10_8041e6fc, float_0_8041e618);
-				vecB.z = *(f32*)((u8*)member + 0xc8) + float_1_8041e620;
+				vecB.y = *(f32*)((u8*)member + 0xc4) + kind->field_0x10 + intplGetValue(0, offset, 5, -10.0f, 0.0f);
+				vecB.z = *(f32*)((u8*)member + 0xc8) + 1.0f;
 				*(Vec*)((u8*)item + 0x14) = vecB;
 			}
 			break;
@@ -1924,7 +1948,7 @@ void BattleAudienceItemCtrlProcess(void) {
 				*(f32*)((u8*)item + 0x2c) += *(f32*)((u8*)item + 0x38);
 				*(f32*)((u8*)item + 0x30) += *(f32*)((u8*)item + 0x3c);
 				if (item->mItemType == 0xef) {
-					*(f32*)((u8*)item + 0x24) += float_18_8041e700;
+					*(f32*)((u8*)item + 0x24) += 18.0f;
 				}
 				*(s32*)((u8*)item + 0x8) -= 1;
 			}
@@ -1944,16 +1968,16 @@ void BattleAudienceItemCtrlProcess(void) {
 			if (item->mItemType >= 0x80 && item->mItemType < 0xec && pouchGetEmptyHaveItemCnt() <= 0) {
 				*(s32*)((u8*)item + 0x44) = 0;
 			}
-			if (*(s32*)((u8*)item + 0x44) == 0) {
-				item->state = 4;
-			}
-			else {
+			if (*(s32*)((u8*)item + 0x44) != 0) {
 				*(s32*)(aud + 0x137f8) += 1;
 				if (*(s32*)(aud + 0x137f8) > 3) {
 					*(s32*)(aud + 0x137f8) = 3;
 				}
 				if (*(s32*)((u8*)item + 0x44) == 2) {
 					item->state = 4;
+#ifdef MUST_MATCH
+					goto case4_body;
+#endif
 				}
 				else {
 					if (item->mItemType >= 0x79 && item->mItemType < 0xec) {
@@ -2007,21 +2031,27 @@ void BattleAudienceItemCtrlProcess(void) {
 					case 1:
 						BattleAudienceSoundStop(10);
 						BattleAudienceSoundStop(11);
-						if (*(f32*)((u8*)item + 0x28) < float_0_8041e618) {
-							*(f32*)((u8*)item + 0x28) *= float_neg0p2_8041e704;
+						if (*(f32*)((u8*)item + 0x28) < 0.0f) {
+							*(f32*)((u8*)item + 0x28) *= -0.2f;
 						}
-						*(f32*)((u8*)item + 0x2c) = float_1p5_8041e670;
-						*(f32*)((u8*)item + 0x30) = float_0_8041e618;
+						*(f32*)((u8*)item + 0x2c) = 1.5f;
+						*(f32*)((u8*)item + 0x30) = 0.0f;
 						item->state = 4;
 						break;
 					}
 					*(s32*)(aud + 0x137f8) = 0;
 				}
 			}
+			else {
+				item->state = 4;
+			}
 			if (item->state != 4) {
 				break;
 			}
 			/* fall through */
+#ifdef MUST_MATCH
+		case4_body:
+#endif
 		case 4:
 			*(f32*)((u8*)item + 0x14) += *(f32*)((u8*)item + 0x28);
 			*(f32*)((u8*)item + 0x18) += *(f32*)((u8*)item + 0x2c);
@@ -2029,13 +2059,13 @@ void BattleAudienceItemCtrlProcess(void) {
 			*(f32*)((u8*)item + 0x28) += *(f32*)((u8*)item + 0x34);
 			*(f32*)((u8*)item + 0x2c) += *(f32*)((u8*)item + 0x38);
 			*(f32*)((u8*)item + 0x30) += *(f32*)((u8*)item + 0x3c);
-			if (*(f32*)((u8*)item + 0x18) <= float_0_8041e618) {
+			if (*(f32*)((u8*)item + 0x18) <= 0.0f) {
 				BattleAudienceSoundStop(10);
 				BattleAudienceSoundStop(11);
 				item->state = 5;
-				*(f32*)((u8*)item + 0x18) = float_0p1_8041e678;
-				*(f32*)((u8*)item + 0x2c) = float_1_8041e620;
-				*(f32*)((u8*)item + 0x30) = float_0_8041e618;
+				*(f32*)((u8*)item + 0x18) = 0.1f;
+				*(f32*)((u8*)item + 0x2c) = 1.0f;
+				*(f32*)((u8*)item + 0x30) = 0.0f;
 			}
 			break;
 		case 5:
@@ -2045,10 +2075,10 @@ void BattleAudienceItemCtrlProcess(void) {
 			*(f32*)((u8*)item + 0x28) += *(f32*)((u8*)item + 0x34);
 			*(f32*)((u8*)item + 0x2c) += *(f32*)((u8*)item + 0x38);
 			*(f32*)((u8*)item + 0x30) += *(f32*)((u8*)item + 0x3c);
-			if (*(f32*)((u8*)item + 0x18) <= float_0_8041e618) {
+			if (*(f32*)((u8*)item + 0x18) <= 0.0f) {
 				*(s32*)((u8*)item + 0x8) = 0x3c;
 				item->state = 6;
-				*(f32*)((u8*)item + 0x18) = float_0_8041e618;
+				*(f32*)((u8*)item + 0x18) = 0.0f;
 			}
 			break;
 		case 6:
@@ -2083,7 +2113,8 @@ void BattleAudienceItemCtrlProcess(void) {
 			*(s32*)((u8*)item + 0x8) = 0;
 			item->state = 0;
 			if (*(s32*)((u8*)item + 0xc) != -1) {
-				BattleAudienceGetPtr(*(s32*)((u8*)item + 0xc))->itemId = -1;
+				member = BattleAudienceGetPtr(*(s32*)((u8*)item + 0xc));
+				member->itemId = -1;
 			}
 			break;
 		}
@@ -2477,7 +2508,21 @@ typedef struct BattleAudienceTexCoords {
 	f32 v[32];
 } BattleAudienceTexCoords;
 
-// NONMATCHING (93.88%): functionally complete; only instruction scheduling and FP-register
+#ifdef MUST_MATCH
+// Same idea as BattleAudienceDispApSrc_color below: routing the colour through an inline puts the
+// named local at r1+0x8 and the hidden by-value copy at r1+0xc, matching the original. The #else
+// plain assignment puts them the other way round.
+static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
+	GXColor color = *(GXColor*)&unk_80423080;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	return color;
+}
+#endif
+
+// NONMATCHING (95.22%): functionally complete; only instruction scheduling and FP-register
 // allocation differ (matrix build, texture-scale formulas, GX-vertex emission).
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
@@ -2493,6 +2538,27 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 	Mtx mtxScale;
 	Mtx mtxDraw;
 	BattleAudienceTexCoords texCoords;
+#ifdef MUST_MATCH
+	// Match-only: this declaration order lands the trig results in the original's FPRs (scaleY is
+	// parked after rz, cy/cz the other way round). Same code, only the allocator's tie-break moves.
+	f32 scaleX;
+	f32 cx;
+	f32 scaleZ;
+	f32 sy;
+	f32 cy;
+	f32 cz;
+	f32 sz;
+	f32 neg20;
+	f32 rx;
+	f32 rz;
+	f32 scaleY;
+	f32 offsetX;
+	f32 offsetY;
+	f32 angle;
+	f32 ry;
+	f32 offsetZ;
+	f32 sx;
+#else
 	f32 scaleX;
 	f32 cx;
 	f32 scaleZ;
@@ -2510,6 +2576,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 	f32 ry;
 	f32 offsetZ;
 	f32 sx;
+#endif
 	u8 cr;
 	u8 cg;
 	u8 cb;
@@ -2609,10 +2676,10 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		cz = (f32)cos(rz);
 		sz = (f32)sin(rz);
 
-		mtxRot[0][0] = cy * cz - sx * sy * sz;
+		mtxRot[2][0] = sy * cz + sx * cy * sz;
 		mtxRot[0][3] = 0.0f;
 		mtxRot[0][2] = -cx * sy;
-		mtxRot[2][0] = sy * cz + sx * cy * sz;
+		mtxRot[0][0] = cy * cz - sx * sy * sz;
 		mtxRot[1][0] = cx * sz;
 		mtxRot[0][1] = -cy * sz - sx * sy * cz;
 		mtxRot[1][2] = -sx;
@@ -2647,13 +2714,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 
 		texBase = 0;
 		front = BattleAudience_GetFront(i);
-		if (*(s32**)((u8*)member + 0x24) == member->animTable[9]) {
-			texBase = 8;
-		}
 		cr = *(u8*)((u8*)member + 0x41);
 		cg = *(u8*)((u8*)member + 0x42);
 		cb = *(u8*)((u8*)member + 0x43);
 		ca = *(u8*)((u8*)member + 0x44);
+		if (*(s32**)((u8*)member + 0x24) == member->animTable[9]) {
+			texBase = 8;
+		}
 
 		if (*(f32*)((u8*)member + 0xE8) >= float_360_8041e6b4) {
 			*(f32*)((u8*)member + 0xE8) = *(f32*)((u8*)member + 0xE8) -
@@ -2682,19 +2749,23 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			texBase += 4;
 		}
 
+#ifdef MUST_MATCH
+		color = BattleAudienceDispAudience_color(cr, cg, cb, ca);
+#else
 		color = *(GXColor*)&unk_80423080;
 		color.r = cr;
 		color.g = cg;
 		color.b = cb;
 		color.a = ca;
+#endif
 		GXSetChanMatColor(GX_COLOR0A0, color);
 
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(neg20 + *(f32*)((u8*)member + 0x6C), 40.0f + *(f32*)((u8*)member + 0x70),
-		               *(f32*)((u8*)member + 0x74));
+		GXPosition3f32(neg20 + *(f32*)(member->field_0x54 + 0x18), float_40_8041e690 + *(f32*)(member->field_0x54 + 0x1C),
+		               *(f32*)(member->field_0x54 + 0x20));
 		GXTexCoord2f32(texCoords.v[texBase * 2], texCoords.v[texBase * 2 + 1]);
-		GXPosition3f32(float_20_8041e6a8 + *(f32*)((u8*)member + 0x6C), 40.0f + *(f32*)((u8*)member + 0x70),
-		               *(f32*)((u8*)member + 0x74));
+		GXPosition3f32(float_20_8041e6a8 + *(f32*)(member->field_0x54 + 0x18), float_40_8041e690 + *(f32*)(member->field_0x54 + 0x1C),
+		               *(f32*)(member->field_0x54 + 0x20));
 		GXTexCoord2f32(texCoords.v[(texBase + 1) * 2], texCoords.v[(texBase + 1) * 2 + 1]);
 		GXPosition3f32(float_20_8041e6a8, 0.0f, 0.0f);
 		GXTexCoord2f32(texCoords.v[(texBase + 2) * 2], texCoords.v[(texBase + 2) * 2 + 1]);
@@ -2862,7 +2933,10 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	return TRUE;
 }
 
-// NONMATCHING (83.61%): the conversion's int->float magic pools a duplicate @N double instead of reusing double_to_int_802f9a00, and the seven Vec copies schedule pipelined where the original does load2/store2/load1/store1.
+// The u8 `type` index emits clrlslwi where the original (whose `type` is wider) emits slwi; the i2f
+// fudge double pools an anonymous @N at .rodata+0x8A8 instead of reusing double_to_int_802f9a00 at
+// +0x488; the rest is register scheduling.
+// NONMATCHING (88.44%): see above (header prototype type width, i2f double, register scheduling).
 void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	BattleAudienceMember* member;
 	BattleStage* stage;
@@ -2870,6 +2944,12 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	s32 row;
 	f32 y;
 	f32 z;
+#ifdef MUST_MATCH
+	// Match-only: reading the vec3_802f98xx block through str_802F9578 (the unit's .rodata base,
+	// r29 in the original) makes MWCC serialize each 12-byte copy load2/store2/load1/store1 and
+	// keeps the base out of the i2f fudge's own lis. The natural named-global form is under #else.
+	const Vec* vec = (const Vec*)str_802F9578;
+#endif
 
 	BattleAudienceBaseGetPtr();
 	stage = BattleStageGetPtr();
@@ -2907,7 +2987,18 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 		member->position.y = float_neg2000_8041e680;
 	}
 
-	member->field_0xE8 = float_270_8041e684;
+#ifdef MUST_MATCH
+	{
+		*(Vec*)(member->field_0x54 + 0x30) = *(const Vec*)((const u8*)vec + 0x288);
+		*(Vec*)(member->field_0x54 + 0x24) = *(const Vec*)(member->field_0x54 + 0x30);
+		*(Vec*)(member->field_0x54 + 0x3C) = *(const Vec*)((const u8*)vec + 0x294);
+		member->mRotation = *(const Vec*)((const u8*)vec + 0x2A0);
+		member->mRotationOffset = *(const Vec*)((const u8*)vec + 0x2AC);
+		*(Vec*)(member->field_0x54 + 0x00) = *(const Vec*)((const u8*)vec + 0x2B8);
+		*(Vec*)(member->field_0x54 + 0x0C) = *(const Vec*)((const u8*)vec + 0x2C4);
+		*(Vec*)(member->field_0x54 + 0x18) = *(const Vec*)((const u8*)vec + 0x2D0);
+	}
+#else
 	*(Vec*)((u8*)member + 0x84) = vec3_802f9800;
 	*(Vec*)((u8*)member + 0x78) = *(Vec*)((u8*)member + 0x84);
 	*(Vec*)((u8*)member + 0x90) = vec3_802f980c;
@@ -2916,6 +3007,8 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	*(Vec*)((u8*)member + 0x54) = vec3_802f9830;
 	*(Vec*)((u8*)member + 0x60) = vec3_802f983c;
 	*(Vec*)((u8*)member + 0x6c) = vec3_802f9848;
+#endif
+	member->field_0xE8 = float_270_8041e684;
 
 	if ((index >= 4 && index <= 0xf) ||
 	    (index >= 0x18 && index <= 0x23) ||
@@ -3840,8 +3933,16 @@ void BattleAudience_WinSetActive(u8 active) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (93.45%): MWCC CSEs audience + 0x10000 into r25 across the BattleAlloc call where the
-// original recomputes addis, and the f-register allocation is shifted by one (crowdKindSum f30 vs f31).
+// Three levers got this from 93.45% to 99.64%: (a) reaching the 0x137C8 store/memcpy through a
+// local `u8*` view (audlocal) makes MWCC recompute `audience + 0x10000` with addis and a fresh
+// register instead of CSEing an addis result across BattleAlloc; (b) writing the two `> 0.0f`
+// comparisons and the `crowdKindSum = 0.0f` reset as float literals (not float_0_8041e618) keeps each
+// a separate load instead of being CSE'd; (c) the declaration order below (crowdKindSum first, then
+// partyMultiplier) puts the multiplier count in f31 to match the original. What is left (9
+// instructions) is the FPR tie on the loop: the accumulator lands in f30 vs the original's f31 and
+// the pooled anonymous i2f double in f31 vs the original's named double_to_int_802f9a00 in f30; the
+// FMUL operand order and `add` operand order in the 0x137C4 update follow from that.
+// NONMATCHING (99.64%): see above (i2f anonymous double forces the f30/f31 tie).
 void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -3850,16 +3951,19 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	BattleBreakSlot* slot;
 	s32 i;
 	f32 crowdKindSum;
+	f32 partyMultiplier;
 	f32 sqrtWeight;
 	f32 spAcMultiplier;
 	f32 stylishMultiplier;
 	f32 marioMultiplier;
-	f32 partyMultiplier;
 
-	if (*(void**)((u8*)audience + 0x137C8) == NULL) {
-		*(void**)((u8*)audience + 0x137C8) = BattleAlloc(0xC);
+	{
+		u8* audlocal = (u8*)audience;
+		if (*(void**)(audlocal + 0x137C8) == NULL) {
+			*(void**)(audlocal + 0x137C8) = BattleAlloc(0xC);
+		}
+		memcpy(*(void**)(audlocal + 0x137C8), info, 0xC);
 	}
-	memcpy(*(void**)((u8*)audience + 0x137C8), info, 0xC);
 	mario = BattleGetMarioPtr(wp);
 	party = BattleGetPartyPtr(wp);
 	crowdKindSum = float_0_8041e618;
@@ -3869,11 +3973,11 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	sqrtWeight = (f32)sqrt(crowdKindSum);
 	spAcMultiplier = info->mSpAcSuccessMultiplier;
 	stylishMultiplier = (f32)(u8)info->mStylishCommandMultiplier;
-	crowdKindSum = float_0_8041e618;
-	if (spAcMultiplier > float_0_8041e618) {
+	crowdKindSum = 0.0f;
+	if (spAcMultiplier > 0.0f) {
 		crowdKindSum += float_1_8041e620;
 	}
-	if (stylishMultiplier > float_0_8041e618) {
+	if (stylishMultiplier > 0.0f) {
 		crowdKindSum += float_1_8041e620;
 	}
 	if (mario->mStatusFlags & 0x20000000) {

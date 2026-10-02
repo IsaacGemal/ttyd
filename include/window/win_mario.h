@@ -22,6 +22,25 @@ extern const char str_8041D6DC[5];
 extern const char* hammer_pose[4];
 extern const f32 float_10_8041d61c;
 extern const f32 float_12_8041d670;
+// rodata vectors fukidashi and winMarioDisp read (named form of the vp-relative loads)
+extern const Vec vec3_802f5824;
+extern const Vec vec3_802f5830;
+extern const Vec vec3_802f583c;
+extern const Vec vec3_802f5848;
+extern const Vec vec3_802f5854;
+extern const Vec vec3_802f5860;
+extern const Vec vec3_802f586c;
+extern const Vec vec3_802f5878;
+extern const Vec vec3_802f5884;
+extern const Vec vec3_802f5890;
+extern const Vec vec3_802f589c;
+extern const Vec vec3_802f58a8;
+extern const GXColor dat_8041d5d0;
+extern const GXColor dat_8041d5d4;
+extern const GXColor dat_8041d5d8;
+extern const GXColor dat_8041d5dc;
+extern const GXColor dat_8041d5e0;
+extern const GXColor dat_8041d5e4;
 
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx);
 s32 winMarioMain(WindowWork* work);

@@ -51,6 +51,7 @@ void BattleStageObjectInit(void);
 BOOL BattleFogForceStop(void);
 s32 BattleStage_ObjectFallCheck(void);
 void BattleStage_NozzleWorkCheck(s32 flag);
+void BattleStage_WallCloseCheck(void);
 void BattleObjectConfig(void);
 void _Nozzle_Change_Check(u8 index, void* nozzle);
 s32 _get_nozzle_attack_index(u8 index);

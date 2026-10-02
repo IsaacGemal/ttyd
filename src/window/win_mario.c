@@ -8,6 +8,7 @@
 #include "manager/fontmgr.h"
 #include "pmario_sound.h"
 #include "battle/battle_seq_end.h"
+#include "data/item_icon_view.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <string.h>
@@ -64,6 +65,12 @@ EXT_F32(float_254_8041d6d4);
 EXT_F32(float_90_8041d6d8);
 EXT_F32(float_228_8041d6e4);
 EXT_F32(float_17_8041d6e8);
+EXT_F32(float_230_8041d6ec);
+EXT_F32(float_72_8041d6f0);
+EXT_F32(float_6_8041d6f4);
+EXT_F32(float_210_8041d6f8);
+EXT_F32(float_30_8041d6fc);
+EXT_F32(float_60_8041d700);
 #undef EXT_F32
 
 // WindowWork only declares its first 0x40 bytes in the header; the fields this
@@ -464,6 +471,7 @@ void winMarioInit2(WindowWork* work) {
     WW_S32(work, 0x194) = 0;
 }
 
+
 // NONMATCHING (99.97%): every instruction matches except five
 // `addi rN, r30, str_802F5650+...` rodata immediates (0x830..0x858); they land
 // at 0xb8..0xe0 until fukidashi/winMarioDisp own the earlier literals.
@@ -524,6 +532,265 @@ void winMarioInit(WindowWork* work) {
         if (pouch->mStarPowersObtained & (1 << i)) {
             WW_S32(work, 0x198) += 1;
         }
+    }
+}
+
+// The two bubble shapes fukidashi draws: the three texture/icon positions are read from
+// the unit's shared rodata vectors through one base (vp), as winMarioDisp does.
+#ifdef MUST_MATCH
+#define FUKI_VEC(off, sym) (*(Vec*)(vp + (off)))
+#else
+#define FUKI_VEC(off, sym) sym
+#endif
+
+// NONMATCHING (98.85%): all calls, constants, branches and the 0x300 frame
+// match; only per-block stack-slot placement differs.
+void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
+#ifdef MUST_MATCH
+    const u8* vp;
+#endif
+    u16 iconId;
+
+#ifdef MUST_MATCH
+    vp = (const u8*)&str_802F5650;
+#endif
+    switch (type) {
+    case 2:
+        if (pouchGetHammerLv() > 0) {
+            GXColor c1,c2,c3;
+            iconId = itemDataTable[pouchGetHammerLv() + 8].icon_id;
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x21C, vec3_802f586c);
+        tmp.x = (x - float_230_8041d6ec) + float_5_8041d6cc;
+        y = float_72_8041d6f0 + y;
+        tmp.y = y - float_5_8041d6cc;
+        c1 = dat_8041d5dc;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x228, vec3_802f5878), c1);
+    }
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x234, vec3_802f5884);
+        tmp.x = x - float_230_8041d6ec;
+        tmp.y = y;
+        c2 = dat_8041d5e0;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x240, vec3_802f5890), c2);
+    }
+    winIconInit();
+    {
+        Vec tr,sc,tmp;
+        tmp = FUKI_VEC(0x24C, vec3_802f589c);
+        tmp.x = (x - float_230_8041d6ec) - float_6_8041d6f4;
+        tmp.y = y;
+        c3 = dat_8041d5e4;
+        sc = FUKI_VEC(0x258, vec3_802f58a8);
+        tr = tmp;
+        winIconSet(iconId, &tr, &sc, &c3);
+    }
+        }
+        break;
+    case 3:
+        if (pouchGetJumpLv() > 0) {
+            GXColor c1,c2,c3;
+            iconId = itemDataTable[pouchGetJumpLv() + 5].icon_id;
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x21C, vec3_802f586c);
+        tmp.x = (x - float_210_8041d6f8) + float_5_8041d6cc;
+        y = float_20_8041d628 + y;
+        tmp.y = y - float_5_8041d6cc;
+        c1 = dat_8041d5dc;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x228, vec3_802f5878), c1);
+    }
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x234, vec3_802f5884);
+        tmp.x = x - float_210_8041d6f8;
+        tmp.y = y;
+        c2 = dat_8041d5e0;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x240, vec3_802f5890), c2);
+    }
+    winIconInit();
+    {
+        Vec tr,sc,tmp;
+        tmp = FUKI_VEC(0x24C, vec3_802f589c);
+        tmp.x = (x - float_210_8041d6f8) - float_6_8041d6f4;
+        tmp.y = y;
+        c3 = dat_8041d5e4;
+        sc = FUKI_VEC(0x258, vec3_802f58a8);
+        tr = tmp;
+        winIconSet(iconId, &tr, &sc, &c3);
+    }
+        }
+        break;
+    case 7:
+        if ((s32)pouchCheckItem(2) != 0) {
+            GXColor c1,c2,c3;
+            iconId = itemDataTable[2].icon_id;
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp.x = (x - float_80_8041d68c) + float_5_8041d6cc;
+        y = float_90_8041d6d8 + y;
+        tmp.y = y - float_5_8041d6cc;
+        c1 = dat_8041d5d0;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
+    }
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp.x = x - float_80_8041d68c;
+        tmp.y = y;
+        c2 = dat_8041d5d4;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+    }
+    winIconInit();
+    {
+        Vec tr,sc,tmp;
+        tmp = FUKI_VEC(0x204, vec3_802f5854);
+        tmp.x = (x - float_80_8041d68c) + float_6_8041d6f4;
+        tmp.y = y;
+        c3 = dat_8041d5d8;
+        sc = FUKI_VEC(0x210, vec3_802f5860);
+        tr = tmp;
+        winIconSet(iconId, &tr, &sc, &c3);
+    }
+        }
+        break;
+    case 8:
+        if ((s32)pouchCheckItem(4) != 0) {
+            GXColor c1,c2,c3;
+            iconId = itemDataTable[4].icon_id;
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp.x = (x - float_80_8041d68c) + float_5_8041d6cc;
+        y = float_20_8041d628 + y;
+        tmp.y = y - float_5_8041d6cc;
+        c1 = dat_8041d5d0;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
+    }
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp.x = x - float_80_8041d68c;
+        tmp.y = y;
+        c2 = dat_8041d5d4;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+    }
+    winIconInit();
+    {
+        Vec tr,sc,tmp;
+        tmp = FUKI_VEC(0x204, vec3_802f5854);
+        tmp.x = (x - float_80_8041d68c) + float_6_8041d6f4;
+        tmp.y = y;
+        c3 = dat_8041d5d8;
+        sc = FUKI_VEC(0x210, vec3_802f5860);
+        tr = tmp;
+        winIconSet(iconId, &tr, &sc, &c3);
+    }
+        }
+        break;
+    case 9:
+        if ((s32)pouchCheckItem(5) != 0) {
+            GXColor c1,c2,c3;
+            iconId = itemDataTable[5].icon_id;
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
+        y = float_130_8041d680 + y;
+        tmp.y = y - float_5_8041d6cc;
+        c1 = dat_8041d5d0;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
+    }
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp.x = x - float_30_8041d6fc;
+        tmp.y = y;
+        c2 = dat_8041d5d4;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+    }
+    winIconInit();
+    {
+        Vec tr,sc,tmp;
+        tmp = FUKI_VEC(0x204, vec3_802f5854);
+        tmp.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
+        tmp.y = y;
+        c3 = dat_8041d5d8;
+        sc = FUKI_VEC(0x210, vec3_802f5860);
+        tr = tmp;
+        winIconSet(iconId, &tr, &sc, &c3);
+    }
+        }
+        break;
+    case 10:
+        if ((s32)pouchCheckItem(3) != 0) {
+            GXColor c1,c2,c3;
+            iconId = itemDataTable[3].icon_id;
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+            GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
+        y = float_60_8041d700 + y;
+        tmp.y = y - float_5_8041d6cc;
+        c1 = dat_8041d5d0;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
+    }
+    {
+        Vec tr,tmp;
+        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp.x = x - float_30_8041d6fc;
+        tmp.y = y;
+        c2 = dat_8041d5d4;
+        tr = tmp;
+        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+    }
+    winIconInit();
+    {
+        Vec tr,sc,tmp;
+        tmp = FUKI_VEC(0x204, vec3_802f5854);
+        tmp.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
+        tmp.y = y;
+        c3 = dat_8041d5d8;
+        sc = FUKI_VEC(0x210, vec3_802f5860);
+        tr = tmp;
+        winIconSet(iconId, &tr, &sc, &c3);
+    }
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -864,7 +1131,7 @@ static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num) {
     return unk_803dfbf8;
 }
 
-// NONMATCHING (91.91%): register allocation and instruction scheduling still differ; the target keeps three stack copies of white/black, hoists loop-invariant colour loads, and folds the double->int conversion magic into the rodata base register. The stack frame matches exactly (0x1940). The 26 colour-temp copies below are the target's `GXColor c = <col>; winFontSet*(..., &c, ...)` pattern; the remaining sites cannot be added without blowing MWCC's inlining budget (which drops every inlined wmDisp* buffer).
+// NONMATCHING (92.05%): register allocation and instruction scheduling still differ; the target keeps three stack copies of white/black, hoists loop-invariant colour loads, and folds the double->int conversion magic into the rodata base register. The stack frame matches exactly (0x1940). The 26 colour-temp copies below are the target's `GXColor c = <col>; winFontSet*(..., &c, ...)` pattern; the remaining sites cannot be added without blowing MWCC's inlining budget (which drops every inlined wmDisp* buffer).
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     // Draws the Mario status panel: name/level/rank, HP/FP/BP, star pieces and
     // shine sprites, the play-time clock and the collected star powers.

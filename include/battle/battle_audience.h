@@ -197,6 +197,8 @@ void BattleAudience_Init(void);
 void BattleAudience_Main(void);
 void BattleAudience_ActInit(void);
 void BattleAudience_PerAct(void);
+void BattleAudience_Case_FirstAttack_Good(void);
+void BattleAudience_Case_FirstAttack_Bad(void);
 BOOL BattleAudience_CheckReaction(void);
 void BattleAudience_PerPhase(u32 value);
 BOOL BattleAudience_CheckReactionPerPhase(void);

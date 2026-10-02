@@ -4990,17 +4990,31 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (95.66%): s32 locals before work/data pin r29/r28; case-3 stop is an explicit if/else; the phase-0x2d
-// block shares `u8* pb = data+i` / `u8* pw = data+i*4`, `s8 s` and a `s32* tp` walk of tmp1; case 9/10/11 read the
-// event pointer straight from data+0x6c. Remaining: the sel loop's bdnz (target counter+3-way dispatch) and case-11.
+// The phase-0x2d block shares `u8* pw = data+i*4` before `u8* pb = data+i`, `s8 s` and indexes `tmp1[j]`
+// (the operand order matters for the register pick); case 11 keeps `CaseSetup* sp = &setup` so the struct
+// address is materialised once (r22) exactly like the original, and case 3's `dir` is a single nested ternary
+// (an if/else compiles an extra `mr`). The sel loop is written as a
+// `k = 0; goto sel_test; sel_body: ... k = 1; sel_inc: k++; sel_test: if (k < 2) goto sel_body;` with the
+// success path setting `k = 1` in each case and the invalid path `goto sel_inc`: a plain `for` compiles to
+// `mtctr`/`bdnz` here, this form reproduces the original's explicit `li r9,0; b test` counter and its
+// `li r9,1; stb; addi r9,r9,1; cmpwi r9,2; blt` break.
+// Case 3 is the original's `if (i==sel) { switch(i){...} } else { stop = 0; } if (stop && ...) {...}` (its
+// `bne` after `cmpw i, sel` targets the `li r25,0` the `else` emits). Writing it that way is required for the
+// case-2 `else` to exist, and it changes which registers MWCC hands out; the declaration order
+// `j, k, stop, work, data, i, changed` is what makes that structure score 97.06%. Still differs (all register
+// allocation / scheduling): `stop` lands in r30 vs the original's r25, event in r25 vs r26, pb in r31 vs r30;
+// the string address is materialised into r0 then `mr`'d instead of directly into its register; MWCC also
+// hoists the `else`'s `stop = 0` to the function entry (an extra `li` the original lacks); and the tp walk /
+// case-11 indices and the sel conditions keep a different register set.
+// NONMATCHING (97.06%): see above.
 USER_FUNC(goryuugijo_main_slot) {
-    s32 i;
     s32 j;
     s32 k;
-    s32 changed;
-    s32 stop = 0;
+    s32 stop;
     GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
     u8* data = (u8*)work->data;
+    s32 i;
+    s32 changed;
 
     switch (*(s32*)(data + 0x04)) {
     case 1:
@@ -5038,7 +5052,7 @@ USER_FUNC(goryuugijo_main_slot) {
     case 3:
         slot_neon_sub(work, data);
         if (*(s32*)(data + 0x54) <= 6) {
-            if (*(s32*)(data + 0x54) == 6) {
+            if (*(s32*)(data + 0x54) >= 6) {
                 *(f32*)(data + 0x08) = 0.0f;
             } else {
                 *(f32*)(data + 0x08) -= 10.0f;
@@ -5050,11 +5064,7 @@ USER_FUNC(goryuugijo_main_slot) {
         if ((s32)((u8*)data + i)[0x30] != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
             s32 dir;
             i = *(s16*)(data + 0x74);
-            if ((s32)((u8*)data + i)[0x30] != 2) {
-                dir = 1;
-            } else {
-                dir = (keyGetDirRep(0) & 0x4000) ? -1 : 1;
-            }
+            dir = ((s32)((u8*)data + i)[0x30] != 2) ? 1 : ((keyGetDirRep(0) & 0x4000) ? -1 : 1);
             for (j = 0; j < 3; j++) {
                 i = *(s16*)(data + 0x74) + dir;
                 *(s16*)(data + 0x74) = i;
@@ -5076,7 +5086,6 @@ USER_FUNC(goryuugijo_main_slot) {
                 changed += 1;
                 continue;
             }
-            stop = 0;
             if (i == *(s16*)(data + 0x74)) {
                 switch (i) {
                 case 0:
@@ -5101,6 +5110,9 @@ USER_FUNC(goryuugijo_main_slot) {
                     }
                     break;
                 }
+            } else {
+                stop = 0;
+            }
                 if (stop && *(s8*)(data + i + 0x30) == 2) {
                     *(s8*)(data + i + 0x30) = 3;
                     if (*(u32*)data & 2) {
@@ -5110,7 +5122,6 @@ USER_FUNC(goryuugijo_main_slot) {
                     }
                     psndSFXOn(stopSfx);
                 }
-            }
             changed += slot_rotate_sub(work, data, i);
         }
         }
@@ -5144,14 +5155,10 @@ USER_FUNC(goryuugijo_main_slot) {
                 break;
             }
             cnt = 0;
-            {
-            s32* tp = tmp1;
             for (j = 0; j < 3; j++) {
-                if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + j + 0x33) == *tp) {
+                if (tmp1[j] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + j + 0x33)) {
                     cnt += 1;
                 }
-                tp++;
-            }
             }
             if (cnt < 2) {
                 *(s32*)(data + 0x04) = 6;
@@ -5177,8 +5184,8 @@ USER_FUNC(goryuugijo_main_slot) {
         if (*(s32*)(data + 0x54) == 0x2d) {
             s32 tmp[3][3];
             for (i = 0; i < 3; i++) {
-                s32 a = (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f);
                 u8* base = (u8*)slotgara + i * 0x20;
+                s32 a = (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f);
                 for (j = 0; j < 3; j++) {
                     tmp[j][i] = *(u32*)(base + *(s32*)(data + 0x60) * 0x60 + ((a + j - 1) & 7) * 4);
                 }
@@ -5191,16 +5198,17 @@ USER_FUNC(goryuugijo_main_slot) {
                 }
                 sel = irand(2);
                 {
-                s32 sel0 = sel;
-                u8* pb = data + i;
                 u8* pw = data + i * 4;
-                for (k = 0; k < 2; k++) {
-                    sel = (sel0 + k + 1) & 1;
+                u8* pb = data + i;
+                k = 0;
+                goto sel_test;
+                sel_body:
+                    sel = (sel + 1) & 1;
                     switch (sel) {
-                    case 0: {
+                    case 0:
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
                         if (s != tmp[0][i] && tmp[2][i] == s) {
-                            continue;
+                            goto sel_inc;
                         }
                         if (s == 0) {
                             pb[0x39] = 1;
@@ -5215,12 +5223,12 @@ USER_FUNC(goryuugijo_main_slot) {
                             *(f32*)(pw + 0x24) = 1.40625f;
                         }
                         pb[0x30] = 4;
-                        goto slot_k_done;
-                    }
-                    case 1: {
+                        k = 1;
+                        break;
+                    case 1:
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
                         if (s != tmp[2][i] && s == tmp[0][i]) {
-                            continue;
+                            goto sel_inc;
                         }
                         if (s == 0) {
                             pb[0x39] = 0;
@@ -5235,11 +5243,13 @@ USER_FUNC(goryuugijo_main_slot) {
                             *(f32*)(pw + 0x24) = -1.40625f;
                         }
                         pb[0x30] = 4;
-                        goto slot_k_done;
+                        k = 1;
+                        break;
                     }
-                    }
-                }
-                slot_k_done:;
+                sel_inc:
+                    k++;
+                sel_test:
+                    if (k < 2) goto sel_body;
                 }
             }
             *(s32*)(data + 0x04) += 1;
@@ -5356,16 +5366,17 @@ USER_FUNC(goryuugijo_main_slot) {
         *(s32*)(data + 0x48) = 0;
         if (*(u32*)data & 1) {
             CaseSetup setup;
+            CaseSetup* sp = &setup;
             *(u32*)data &= ~1;
             for (i = 0; i < 2; i++) {
-                setup.activeConditionId = 0x8009;
-                setup.hitObjName = drumname[i][4];
-                setup.swFlag = 0;
-                setup.activeFunc = 0;
-                setup.evtCode = (void*)slotevttbl[i];
-                setup.priority = 0;
-                memcpy(setup.lwData, event->lwData, 0x40);
-                *(s32*)(data + i * 4 + 0x64) = caseEntry(&setup);
+                sp->activeConditionId = 0x8009;
+                sp->hitObjName = drumname[i][4];
+                sp->swFlag = 0;
+                sp->activeFunc = 0;
+                sp->evtCode = (void*)slotevttbl[i];
+                sp->priority = 0;
+                memcpy(sp->lwData, event->lwData, 0x40);
+                *(s32*)(data + i * 4 + 0x64) = caseEntry(sp);
             }
         }
         if (*(u32*)data & 8) {
@@ -5591,7 +5602,8 @@ void slot_neon_sub(void* arg0, u8* data) {
 
 // NONMATCHING (95.83%): data pointer lands in r5 instead of r4 (constant addr materialised into r4).
 USER_FUNC(goryuugijo_init_slot) {
-    u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
+    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
+    u8* data = (u8*)work->data;
 
     *(s32*)(data + 0x54) = 0;
     *(f32*)(data + 0x8) = 0.0f;

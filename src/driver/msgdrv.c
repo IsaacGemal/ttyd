@@ -475,13 +475,23 @@ BOOL _ismbblead(u32 a1) {
 
 // math.h comes after msgInit: included at the top it changes how msgInit addresses its strings.
 #include <math.h>
-// NONMATCHING (93.84%): 247 instructions differ, nearly all register allocation and
-// instruction scheduling The logic is complete.
+#ifdef MUST_MATCH
+// MUST_MATCH: retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes
+// its address to FontDrawColor). The header declares a pointer, so the natural call is FontDrawColor(&c)
+// and it does not copy.
+static inline void msgDrawColor(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+// Matching. The `idx`/`base` arithmetic is written inline at each array access (a `base` pointer local let the
+// allocator coalesce it the wrong way), and the `ca`/`sa` of the two cos/sin branches are one shared pair
+// hoisted to the default case so the allocator keeps them in the retail registers; `angle` stays local to
+// each branch. The by-value font colour comes from the msgDrawColor inline above.
 BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 	MessageData* data = smart->address;
-	BOOL result = FALSE;
 	MsgDataEntry* entry = data->entries;
 	s32 i;
+	BOOL result = FALSE;
 
 	FontDrawStart_alpha(alpha);
 
@@ -495,12 +505,16 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			}
 			break;
 		case 0xFFF7: {
-			GXColor color = *(GXColor*)((u8*)entry + 0x0);
+			GXColor color = *(GXColor*)&entry->field_0x0;
+#ifdef MUST_MATCH
+			msgDrawColor(color);
+#else
 			FontDrawColor(&color);
+#endif
 			break;
 		}
 		case 0xFFF6:
-			if (*(u32*)((u8*)entry + 0x0)) {
+			if (entry->field_0x0) {
 				FontDrawNoise();
 			}
 			else {
@@ -521,11 +535,15 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				x + (f32)*(s16*)((u8*)entry + 0x6),
 				y + (f32)data->field_0x28 + (f32)*(s16*)((u8*)entry + 0x8) - 40.0f,
 				0.0f);
-			animPoseMain(*(s32*)((u8*)entry + 0x0));
-			animPoseDrawMtx(*(s32*)((u8*)entry + 0x0), mtx, 2,
+			animPoseMain(entry->field_0x0);
+			animPoseDrawMtx(entry->field_0x0, mtx, 2,
 				*(f32*)((u8*)entry + 0x14), *(f32*)((u8*)entry + 0x10));
 			FontDrawStart_alpha(alpha);
+#ifdef MUST_MATCH
+			msgDrawColor(color);
+#else
 			FontDrawColor(&color);
+#endif
 			break;
 		}
 		case 0xFFF5:
@@ -541,31 +559,37 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			f32 py = y + (f32)data->field_0x28 + (f32)*(s16*)((u8*)entry + 0x8);
 			BOOL tev = FALSE;
 			u8 fade = 0xFF;
+			// The two rotating-code branches below share this cos/sin pair; one shared variable pair is
+			// what puts them in the retail registers (each branch keeps its own `angle`).
+			f32 ca;
+			f32 sa;
 
 			if (data->field_0x4 & 0x40) {
 				s32 cur = data->field_0x28;
 				s32 idx = *(s32*)((u8*)data + 0x783C);
 				s32 e8 = *(s16*)((u8*)entry + 0x8);
-				s32* base = (s32*)((u8*)data + idx * 4);
+				// Window queue: cursor at data+0x783C, count at data+0x7840, three parallel arrays at
+				// data+0x7844/0x7848/0x784C, all indexed by the cursor.
+				GXColor color;
 
-				if (cur == *(s32*)((u8*)base + 0x7844)) {
-					if (e8 + *(s32*)((u8*)base + 0x7848) <= 0) {
+				if (cur == ((s32*)((u8*)data + idx * 4))[0x7844 / 4]) {
+					if (e8 + ((s32*)((u8*)data + idx * 4))[0x7848 / 4] <= 0) {
 						break;
 					}
 					tev = TRUE;
 				}
-				else if (cur < *(s32*)((u8*)base + 0x7844)) {
-					if (e8 + *(s32*)((u8*)base + 0x7844) > 0) {
+				else if (cur < ((s32*)((u8*)data + idx * 4))[0x7844 / 4]) {
+					if (e8 + ((s32*)((u8*)data + idx * 4))[0x7844 / 4] > 0) {
 						tev = TRUE;
 					}
 					else {
-						s32 t = *(s32*)((u8*)base + 0x7844) - cur;
+						s32 t = ((s32*)((u8*)data + idx * 4))[0x7844 / 4] - cur;
 						if (t > 100) {
 							t = 100;
 						}
 						fade = (u32)((100 - t) * 255 / 100);
 						if (idx != data->field_0x7840 - 1) {
-							if (e8 + *(s32*)((u8*)base + 0x7848) > 0) {
+							if (e8 + ((s32*)((u8*)data + idx * 4))[0x7848 / 4] > 0) {
 								tev = TRUE;
 							}
 							else {
@@ -573,24 +597,24 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 							}
 						}
 						else {
-							GXColor color = FontGetDrawColor();
+							color = FontGetDrawColor();
 							color.a = (color.a * fade) / 255;
 							GXSetTevColor(GX_TEVREG0, color);
 						}
 					}
 				}
 				else {
-					if (e8 + *(s32*)((u8*)base + 0x7848) > 0) {
+					if (e8 + ((s32*)((u8*)data + idx * 4))[0x7848 / 4] > 0) {
 						tev = TRUE;
 					}
 					else {
-						s32 t = cur - *(s32*)((u8*)base + 0x7844);
+						s32 t = cur - ((s32*)((u8*)data + idx * 4))[0x7844 / 4];
 						if (t > 100) {
 							t = 100;
 						}
 						fade = (u32)(t * 255 / 100);
 						if (idx != data->field_0x7840 - 2) {
-							if (e8 + *(s32*)((u8*)base + 0x784C) > 0) {
+							if (e8 + ((s32*)((u8*)data + idx * 4))[0x784C / 4] > 0) {
 								tev = TRUE;
 							}
 							else {
@@ -598,7 +622,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 							}
 						}
 						else {
-							GXColor color = FontGetDrawColor();
+							color = FontGetDrawColor();
 							color.a = (color.a * fade) / 255;
 							GXSetTevColor(GX_TEVREG0, color);
 						}
@@ -612,10 +636,20 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				pos.x = 20.0f + (x + (f32)*(s16*)((u8*)entry + 0x6));
 				pos.y = (f32)*(s16*)((u8*)entry + 0xA) + (((f32)*(s16*)((u8*)entry + 0x8) + (y + (f32)data->field_0x28)) - 40.0f);
 				pos.z = 0.0f;
-				iconDispGxAlpha(&pos, 0x10, *(u32*)((u8*)entry + 0x0) & 0xFFFF,
-					(u8)((fade * alpha) / 255), *(f32*)((u8*)entry + 0x10));
+				// MUST_MATCH: retail converts iconId as u16 (clrlwi, no extsh); cast the callee at the call site.
+#ifdef MUST_MATCH
+				((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x10, (u16)(entry->field_0x0),
+					(u8)((fade * alpha) / 255), *(f32*)entry->field_0x10);
+#else
+				iconDispGxAlpha(&pos, 0x10, entry->field_0x0 & 0xFFFF,
+					(u8)((fade * alpha) / 255), *(f32*)entry->field_0x10);
+#endif
 				FontDrawStart_alpha(alpha);
+#ifdef MUST_MATCH
+				msgDrawColor(color);
+#else
 				FontDrawColor(&color);
+#endif
 				break;
 			}
 
@@ -640,13 +674,13 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				break;
 			}
 
-			if (*(u32*)((u8*)entry + 0x0) & 1) {
+			if (entry->field_0x0 & 1) {
 				u16 half = kanjiGetWidth(entry->glyph) >> 1;
 				f32 fx = px;
 				f32 fy = py;
 				Mtx mtx;
 
-				if (*(u32*)((u8*)entry + 0x0) & 2) {
+				if (entry->field_0x0 & 2) {
 					fx = px + (f32)(irand(10000) % 3);
 					fy = py + (f32)(irand(10000) % 3);
 				}
@@ -658,39 +692,49 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				FontDrawCodeMtx(mtx, entry->glyph);
 				*(f32*)((u8*)entry + 0x14) = 0.5f * (*(f32*)((u8*)entry + 0x14) - 1.0f) + 1.0f;
 			}
-			else if (*(u32*)((u8*)entry + 0x0) & 2) {
+			else if (entry->field_0x0 & 2) {
 				f32 fx = px + (f32)(irand(10000) % 3);
 				f32 fy = py + (f32)(irand(10000) % 3);
 				FontDrawScale(*(f32*)((u8*)entry + 0x10));
 				FontDrawCode(entry->glyph, fx, fy);
 			}
-			else if (*(u32*)((u8*)entry + 0x0) & 4) {
+			else if (entry->field_0x0 & 4) {
 				f32 t = (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x18);
 				f32 angle = 0.01f * t - 0.02f * px;
-				f32 ca = (f32)cos(angle);
-				f32 sa = (f32)sin(angle);
+				ca = (f32)cos(angle);
+				sa = (f32)sin(angle);
 				FontDrawScale(*(f32*)((u8*)entry + 0x10));
 				FontDrawCode(entry->glyph, 3.2f * ca + px, py - 3.2f * sa);
 			}
-			else if (*(u32*)((u8*)entry + 0x0) & (0x100 << data->field_0x7A43)) {
+			else if (entry->field_0x0 & (0x100 << data->field_0x7A43)) {
 				f32 t = (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x18);
 				f32 angle = 0.01f * t - 0.02f * px;
-				f32 ca = (f32)cos(angle);
-				f32 fx = 3.2f * ca + px;
-				f32 sa = (f32)sin(angle);
-				f32 fy = py - 3.2f * sa;
+				f32 fx;
+				f32 fy;
+				ca = (f32)cos(angle);
+				fx = 3.2f * ca + px;
+				sa = (f32)sin(angle);
+				fy = py - 3.2f * sa;
 
 				FontDrawScale(*(f32*)((u8*)entry + 0x10));
 				{
 					GXColor color = *(GXColor*)&dat_8041a4f8;
+#ifdef MUST_MATCH
+					msgDrawColor(color);
+#else
 					FontDrawColor(&color);
+#endif
 				}
 				FontDrawCode(entry->glyph, fx, fy);
 				FontDrawEdge();
 				FontDrawRainbowColor();
 				{
 					GXColor color2 = *(GXColor*)&dat_8041a4fc;
+#ifdef MUST_MATCH
+					msgDrawColor(color2);
+#else
 					FontDrawColor(&color2);
+#endif
 				}
 				FontDrawCode(entry->glyph, fx - 4.0f, fy + 4.0f);
 				FontDrawEdgeOff();

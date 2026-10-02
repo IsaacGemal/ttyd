@@ -24,7 +24,9 @@
 // breaks the base+offset operands of itemUseDisp2/winItemDisp. They belong inline in the
 // functions that use them (owned by the other agents working on this file).
 // The pool doubles themselves need no declaration: the compiler emits its own @NNN@ entries.
-extern const char str_802F55F4[];
+// str_802F55F4 ("msg_menu_sort_narabikae") is used as an inline literal in item_disp instead:
+// pooling it there puts it at 0x90c, between itemUseDisp's name_mario and winItemMain's three
+// strings, so winItemMain's displacements come out right.
 extern const char str_802F560C[];
 extern const char str_802F5620[];
 extern const char str_802F5638[];
@@ -403,15 +405,15 @@ static WinMgrDesc window_desc[2];
 // (case 100) and the received-mail viewer (cases 200/201/202). Transliterated from the
 // original assembly; every call, branch, loop and store is present.
 // The original keeps str_802F4CE8 in r30 and reaches str_802F560C/20/38 as r30+0x924/0x938/
-// 0x950 (one lis/addi + displacement). Our object inlines the string literals used here, so
-// MWCC pools them right after the int->float doubles and the base register folds correctly;
-// str_802F55E8/55F4 ("name_mario", "msg_menu_sort_narabikae") belong to the neighbouring
-// itemUseDisp/item_disp and are still missing, so the three displacements are 0x24 low. That
-// gap is a unit-level data-ordering issue, not a winItemMain one. The frame (0x60), the
-// int->float scratch doubles (r1+0x30..0x3f), the callee-saved block (stmw r27, r1+0x4c) and
-// the party-pointer list (0-based, read as `list[cursor - 1]`) all match, and the function is
-// the same length as the original (1180 instructions). What is left is the register colours
-// of the `dirRep & 0xC000` arm, where MWCC swaps the base/value pair (r4/r5).
+// 0x950 (one lis/addi + displacement). Our object pools the string literals used here, in the
+// same order (name_mario 0x900, msg_menu_sort_narabikae 0x90c, then the three below), so the
+// base register folds correctly. The frame (0x60), the int->float scratch doubles
+// (r1+0x30..0x3f), the callee-saved block (stmw r27, r1+0x4c) and the party-pointer list
+// (0-based, read as `list[cursor - 1]`) all match, and the function is the same length as the
+// original (1180 instructions). The `dirRep & 0xC000` arm's base/value register pair (r5/r4)
+// came out swapped until the element was reached through a pointer
+// (`s32* e = &list[sel]; idx = *e;`) rather than a repeated subscript, which colours it as the
+// original. 100%.
 //
 // `winItemMailLine` only exists to defeat MWCC's CSE: written inline, the `work + 0x26C` of
 // the case-201 call argument is shared with the following `+= 1` / `+= 0xA`, so MWCC
@@ -421,8 +423,7 @@ static WinMgrDesc window_desc[2];
 // original sequence.
 static inline u16* winItemMailLine(void* w) { return (u16*)((u8*)w + 0x26C); }
 
-// NONMATCHING (99.95%): every call, branch, constant, store and control-flow edge matches;
-// only the missing rodata-base offset and one arm's register colouring differ.
+// 100%: every call, branch, constant, store and control-flow edge matches.
 s32 winItemMain(WindowWork* work) {
     s32 sel;
     s32 count;
@@ -553,16 +554,19 @@ s32 winItemMain(WindowWork* work) {
             ((s32*)((u8*)work + 0x214))[sel] = ((s32*)((u8*)work + 0x21C))[sel] * 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->dirRep & 0xC000) {
-            idx = ((s32*)((u8*)work + 0x214))[sel];
+            // A pointer to the element (rather than the array subscript repeated) is what makes
+            // MWCC colour the base r5 / value r4 as the original does.
+            s32* e = &((s32*)((u8*)work + 0x214))[sel];
+            idx = *e;
             if (idx % 2 != 0) {
                 s32 v = idx - 1;
                 if (v >= 0 && v < count) {
-                    ((s32*)((u8*)work + 0x214))[sel] = idx - 1;
+                    *e = idx - 1;
                 }
             } else {
                 s32 v = idx + 1;
                 if (v >= 0 && v < count) {
-                    ((s32*)((u8*)work + 0x214))[sel] = idx + 1;
+                    *e = idx + 1;
                 }
             }
             psndSFXOn((const char*)0x20035);
@@ -1055,12 +1059,25 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
 // through the base register; score went 68.53% -> 83.60% from that alone.
 // 87.03%: the FP register colours now match (f27=base, f28=float_20, f29=double_to_int,
 // f25=item y, f26=row base) via the `twenty` local and the f26/f25 declaration order, and
-// each winIconSet gets a by-value GXColor copy like the original. Still differs in the
-// stack-slot order (the original allocates the by-value Vec/GXColor argument copies above
-// the source Vec locals; our emulated copies land below them, frame 0x230 vs 0x250) and the
-// integer colours (ours saves r22-r31, the original r23-r31: grayFlag does not reuse half's
-// r26, and i/parity/entry are rotated).
-// NONMATCHING (87.03%): stack-slot order and integer register colours, see above.
+// each winIconSet gets a by-value GXColor copy like the original.
+// 92.29%: building the by-value/pointed Vec arguments through the `winItemMkVec` inline
+// (returning the modified Vec) instead of a source Vec plus assignment lands several of the
+// argument copies in the original's stack slots - the loop's winIconSet translate copy, the
+// loop's winFontSetPitch translate, the final winFontSet translate, and the two overflow
+// winTexSet translate arguments.
+// 92.29% -> 93.16%: writing item_disp's two sort-tag lookups as the inline literal
+// "msg_menu_sort_narabikae" (instead of the extern str_802F55F4) pools that string at 0x90c,
+// between itemUseDisp's name_mario and winItemMain's three strings, which is what makes
+// winItemMain exactly 100%. That pooling rearranges item_disp's own register allocation, so
+// the remaining wins came from re-shaping the loop: swapping the `parity`/`half` declaration
+// order (the original computes parity first), writing the grey flag as `!colored` rather than
+// `colored == 0` (MWCC emits a different cntlzw shape), and putting `i++` before `entry += 2`
+// in the for-increment. The frame is now the original's 0x250. Still differs in the integer
+// colours (ours keeps `work` in r23, the original r31, and the rest rotate) and the loop
+// block's stack-slot order (the winIconSet/winFontSetPitch argument copies and the `scale`
+// source land at different offsets: the original homes `white` at r1+0x8 and copies it to
+// 0x2c/0x38, ours keeps it at 0x2c).
+// NONMATCHING (94.75%): integer register colours and loop stack-slot order, see above.
 void item_disp(WindowWork* work, f32 x, f32 y) {
     GXColor white = dat_8041d474;
     GXColor dark = dat_8041d478;
@@ -1070,9 +1087,9 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     f32 f22;
     f32 f26;
     f32 f25;
-    s32 count;
     s32 i;
     u8* entry;
+    s32 count;
 
     if (WW_S32(work, 0x210) == 0) {
         count = pouchGetHaveItemCnt();
@@ -1086,8 +1103,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 
     for (i = 0, entry = (u8*)work; i < count; i++, entry += 2) {
         s32 item;
-        s32 half = i / 2;
         s32 parity = i % 2;
+        s32 half = i / 2;
         s32 colored;
         s32 grayFlag;
 
@@ -1099,8 +1116,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         f25 = *(f32*)((u8*)work + WW_S32(work, 0x210) * 4 + 0x224);
 
         colored = (WW_S32(work, 0x210) != 0) || (itemDataTable[item].usable_locations & 4);
+        grayFlag = !colored;
         f26 = base - (f32)(half * 0x26);
-        grayFlag = (colored == 0);
         f22 = f25 + (twenty + (f26 - float_10_8041d4ec));
         if (f22 > float_240_8041d4f0) {
             continue;
@@ -1117,13 +1134,14 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 
         {
             GXColor iconColor = white;
-            Vec translate = vec3_802f52d0;
             Vec scale;
 #ifdef MUST_MATCH
             // The original calls winIconSet with by-value Vecs (one copy per struct);
             // the shared header declares Vec* (see report), so copy them here to match.
             Vec tcopy;
-            Vec scopy;
+#endif
+#ifndef MUST_MATCH
+            Vec translate = vec3_802f52d0;
 #endif
 
             if (WW_S32(work, 0x210) == 0) {
@@ -1132,24 +1150,29 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
                 scale = vec3_802f52e8;
             }
 
+#ifdef MUST_MATCH
+            tcopy = winItemMkVec(vec3_802f52d0, (x - float_125_8041d4f8) + (f32)(parity * 0xCC), f22);
+            winIconSet(*(u16*)&itemDataTable[item].icon_id, &tcopy, &scale, &iconColor);
+#else
             translate.x = (x - float_125_8041d4f8) + (f32)(parity * 0xCC);
             translate.y = f22;
-#ifdef MUST_MATCH
-            tcopy = translate;
-            scopy = scale;
-            winIconSet(*(u16*)&itemDataTable[item].icon_id, &tcopy, &scopy, &iconColor);
-#else
             winIconSet(*(u16*)&itemDataTable[item].icon_id, &translate, &scale, &iconColor);
 #endif
         }
         winFontInit();
         {
             GXColor color = grayFlag ? gray : dark;
-            Vec translate = vec3_802f52f4;
             Vec scale = vec3_802f5300;
+#ifdef MUST_MATCH
+            Vec translate = winItemMkVec(vec3_802f52f4, (x - float_105_8041d4fc) + (f32)(parity * 0xCC), f25 + (float_20_8041d4e8 + f26));
+#else
+            Vec translate = vec3_802f52f4;
+#endif
 
+#ifndef MUST_MATCH
             translate.x = (x - float_105_8041d4fc) + (f32)(parity * 0xCC);
             translate.y = f25 + (float_20_8041d4e8 + f26);
+#endif
             winFontSetPitch(&translate, scale, &color, float_20_8041d4e8,
                             msgSearch(itemDataTable[item].name));
         }
@@ -1162,12 +1185,18 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             f22 = float_250_8041d500 + x;
             {
+#ifdef MUST_MATCH
+                Vec scale = vec3_802f5318;
+
+                winTexSet(0x17, winItemMkVec(vec3_802f530c, f22, float_20_8041d4e8 + (float_18_8041d504 + (float_110_8041d508 + y))), scale, white);
+#else
                 Vec translate = vec3_802f530c;
                 Vec scale = vec3_802f5318;
 
                 translate.x = f22;
                 translate.y = float_20_8041d4e8 + (float_18_8041d504 + (float_110_8041d508 + y));
                 winTexSet(0x17, translate, scale, white);
+#endif
             }
             winIconInit();
             {
@@ -1175,7 +1204,6 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
                 Vec scale = vec3_802f5330;
 #ifdef MUST_MATCH
                 Vec tcopy;
-                Vec scopy;
                 GXColor ccopy;
 #endif
 
@@ -1183,9 +1211,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
                 translate.y = float_20_8041d4e8 + (float_113_8041d50c + y);
 #ifdef MUST_MATCH
                 tcopy = translate;
-                scopy = scale;
                 ccopy = white;
-                winIconSet(0x7E, &tcopy, &scopy, &ccopy);
+                winIconSet(0x7E, &tcopy, &scale, &ccopy);
 #else
                 winIconSet(0x7E, &translate, &scale, &white);
 #endif
@@ -1195,12 +1222,18 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             f22 = float_250_8041d500 + x;
             {
+#ifdef MUST_MATCH
+                Vec scale = vec3_802f5348;
+
+                winTexSet(0x17, winItemMkVec(vec3_802f533c, f22, float_20_8041d4e8 + ((y - float_90_8041d510) - float_15_8041d514)), scale, white);
+#else
                 Vec translate = vec3_802f533c;
                 Vec scale = vec3_802f5348;
 
                 translate.x = f22;
                 translate.y = float_20_8041d4e8 + ((y - float_90_8041d510) - float_15_8041d514);
                 winTexSet(0x17, translate, scale, white);
+#endif
             }
             winIconInit();
             {
@@ -1208,7 +1241,6 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
                 Vec scale = vec3_802f5360;
 #ifdef MUST_MATCH
                 Vec tcopy;
-                Vec scopy;
                 GXColor ccopy;
 #endif
 
@@ -1216,9 +1248,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
                 translate.y = float_20_8041d4e8 + (y - float_90_8041d510);
 #ifdef MUST_MATCH
                 tcopy = translate;
-                scopy = scale;
                 ccopy = white;
-                winIconSet(0x80, &tcopy, &scopy, &ccopy);
+                winIconSet(0x80, &tcopy, &scale, &ccopy);
 #else
                 winIconSet(0x80, &translate, &scale, &white);
 #endif
@@ -1227,18 +1258,25 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     }
 
     {
-        const char* msg = msgSearch(str_802F55F4);
+        const char* msg = msgSearch("msg_menu_sort_narabikae");
         f32 w = float_0p7_8041d518 * (f32)FontGetMessageWidth(msg);
 
         winFontInit();
         f22 = x + (float_220_8041d51c - w);
         {
+#ifdef MUST_MATCH
+            Vec translate = winItemMkVec(vec3_802f536c, f22, float_20_8041d4e8 + ((y - float_92_8041d520) - float_10_8041d4ec));
+#else
             Vec translate = vec3_802f536c;
+#endif
             Vec scale = vec3_802f5378;
+            GXColor dcopy = dark;
 
+#ifndef MUST_MATCH
             translate.x = f22;
             translate.y = float_20_8041d4e8 + ((y - float_92_8041d520) - float_10_8041d4ec);
-            winFontSet(&translate, &scale, &dark, msgSearch(str_802F55F4));
+#endif
+            winFontSet(&translate, &scale, &dcopy, msgSearch("msg_menu_sort_narabikae"));
         }
         winIconInit();
         {
@@ -1246,7 +1284,6 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
             Vec scale = vec3_802f5390;
 #ifdef MUST_MATCH
             Vec tcopy;
-            Vec scopy;
             GXColor ccopy;
 #endif
 
@@ -1254,9 +1291,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
             translate.y = float_20_8041d4e8 + ((y - float_100_8041d4e4) - float_10_8041d4ec);
 #ifdef MUST_MATCH
             tcopy = translate;
-            scopy = scale;
             ccopy = white;
-            winIconSet(0x217, &tcopy, &scopy, &ccopy);
+            winIconSet(0x217, &tcopy, &scale, &ccopy);
 #else
             winIconSet(0x217, &translate, &scale, &white);
 #endif

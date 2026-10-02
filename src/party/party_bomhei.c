@@ -274,8 +274,6 @@ HitEntry* check_front(PartyEntry* party) {
     return field138;
 }
 
-// .text:0x3FC | 0x800BD24C | size: 0x880
-// partyGetReturnPos (TODO)
 
 
 // .text:0xC7C | 0x800BDACC | size: 0x94

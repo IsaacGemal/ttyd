@@ -299,6 +299,7 @@ void animPoseWorldPositionEvalOn(s32 poseId);
 void L_animPoseWorldPositionEvalOff(s32 poseId);
 void animPoseWorldMatrixEvalOn(s32 poseId);
 void animPoseMain(s32 poseId);
+BOOL animPoseTestXLU(s32 poseId);
 
 BOOL animGroupBaseAsync(const char* name, s32 group, void* callback);
 

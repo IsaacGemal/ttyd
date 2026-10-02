@@ -48,7 +48,6 @@ const char str_802C5B5C[] = "M_H_9A";
 const char str_802C5B64[] = "M_H_3B";
 const char str_802C5B6C[] = "M_H_6B";
 const char str_802C5B74[] = "M_H_9B";
-const f64 double_to_int_802c5b80 = 4503601774854144.0;
 
 // .sdata
 s32 se_data[10] = {
@@ -742,19 +741,25 @@ s32 marioChkHammer2(void) {
     return 1;
 }
 
-// NONMATCHING (91.28%): the directional/sfx blocks and clamp sequences differ in float register
-// assignment and stack naming; the jump table and constants match.
+// NONMATCHING (98.25%): the switch/loop/pose shapes, pool offsets, base r31 and mario r30 now
+// match. Left: the `type==7?3:type` clamp keeps `type`/`v` in r0/r3 vs the original's r3/r0, and
+// the `b<=10?b:10` clamp hoists `li r0,0xa` one slot before the compare.
 void mot_hammer(void) {
     MarioWork* mario = marioGetPtr();
+    MarioWork* mario2;
+    MarioWork* mario3;
     MapObjectEntry* mobj;
-    HitEntry* hit;
+    s32 mt;
+    s32 sound;
+    s32 r28, rp;
+    u32 i;
     s32 type;
     s32 r27;
-    s32 r28;
-    s32 i;
-    s32 sound;
+    s32 lv;
+    HitEntry* hit;
     f32 f30;
     f32 f31;
+    f32 ang2;
     f32 px;
     f32 pz;
 
@@ -764,60 +769,61 @@ void mot_hammer(void) {
         mario->flags |= 0x80;
         f30 = M_F32(mario, 0x1A8);
         {
+            f32 off;
             MarioWork* m = marioGetPtr();
+            off = float_0_8041a9a8;
             if (m->dispFlags & 0x80000000) {
                 f32 ang = m->unk1A8;
                 s32 facing = 0;
                 if (ang >= float_90_8041a9b0 && ang <= float_270_8041a9b4) {
                     facing = 1;
                 }
-                f31 = facing ? float_30_8041a9d4 : float_neg30_8041aa6c;
-            } else {
-                f31 = float_0_8041a9a8;
+                off = facing ? float_30_8041a9d4 : float_neg30_8041aa6c;
             }
+            if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
+                ang2 = revise360(float_180_8041a9b8 + off);
+            } else {
+                ang2 = revise360(off);
+            }
+            M_F32(mario, 0x2A4) = ang2;
         }
-        if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
-            M_F32(mario, 0x2A4) = revise360(float_180_8041a9b8 + f31);
-        } else {
-            M_F32(mario, 0x2A4) = revise360(f31);
-        }
-        mario->multiTimer = 0;
-        mario->airTimer = 0;
-        mario->currSubMotionId = 0;
-        mario->baseSpeed = float_0_8041a9a8;
+        M_S32(mario, 0x48) = 0;
+        M_S16(mario, 0x50) = 0;
+        M_S32(mario, 0x44) = 0;
+        M_F32(mario, 0x180) = float_0_8041a9a8;
         M_S32(mario, 0x200) = 0;
         hit = hitEstimate(&type);
         M_S32(mario, 0x200) = (s32)hit;
         if (hit != NULL) {
             f30 = M_F32(mario, 0x1A8);
-            if (marioGetPtr()->dispFlags & 0x80000000) {
-                f31 = float_neg30_8041aa6c;
-            } else {
-                f31 = float_0_8041a9a8;
-            }
-            if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
-                mario->directionView = toMovedir2(float_180_8041a9b8, f31);
-            } else {
-                mario->directionView = toMovedir2(float_0_8041a9a8, f31);
+            {
+                f32 v = (marioGetPtr()->dispFlags & 0x80000000) ? float_neg30_8041aa6c : float_0_8041a9a8;
+                if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
+                    ang2 = toMovedir2(float_180_8041a9b8, v);
+                } else {
+                    ang2 = toMovedir2(float_0_8041a9a8, v);
+                }
+                mario->directionView = ang2;
             }
             f30 = M_F32(mario, 0x1A8);
             {
+                f32 off;
                 MarioWork* m = marioGetPtr();
+                off = float_0_8041a9a8;
                 if (m->dispFlags & 0x80000000) {
                     f32 ang = m->unk1A8;
                     s32 facing = 0;
                     if (ang >= float_90_8041a9b0 && ang <= float_270_8041a9b4) {
                         facing = 1;
                     }
-                    f31 = facing ? float_30_8041a9d4 : float_neg30_8041aa6c;
-                } else {
-                    f31 = float_0_8041a9a8;
+                    off = facing ? float_30_8041a9d4 : float_neg30_8041aa6c;
                 }
-            }
-            if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
-                M_F32(mario, 0x2A4) = revise360(float_180_8041a9b8 + f31);
-            } else {
-                M_F32(mario, 0x2A4) = revise360(f31);
+                if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
+                    ang2 = revise360(float_180_8041a9b8 + off);
+                } else {
+                    ang2 = revise360(off);
+                }
+                M_F32(mario, 0x2A4) = ang2;
             }
         }
         if (hitGetAttr(hit) & 0x80000000) {
@@ -864,7 +870,7 @@ void mot_hammer(void) {
         } else {
             mario->flags &= ~0x800;
         }
-        mario = marioGetPtr();
+        mario2 = marioGetPtr();
         sound = 0x15B;
         switch (pouchGetHammerLv()) {
         case 1:
@@ -877,7 +883,7 @@ void mot_hammer(void) {
             sound = 0x15D;
             break;
         }
-        psndSFXOn_3D((const char*)sound, &mario->position);
+        psndSFXOn_3D((const char*)sound, &mario2->position);
         M_S32(mario, 0x2A8) = type;
     }
     M_F32(mario, 0x1A8) = (M_F32(mario, 0x2A4) >= float_90_8041a9b0 && M_F32(mario, 0x2A4) <= float_270_8041a9b4)
@@ -886,30 +892,30 @@ void mot_hammer(void) {
     M_F32(mario, 0x1AC) = M_F32(mario, 0x1A8);
     M_F32(mario, 0x19C) = toMovedir(M_F32(mario, 0x2A4));
     mario->directionView = M_F32(mario, 0x19C);
-    r28 = 0;
+    rp = 0;
     if (mario->flags & 0x800) {
-        s32 a = M_S32(mario, 0x2A0);
         s32 b = mario->multiTimer;
+        s32 a = M_S32(mario, 0x2A0);
         r27 = (b <= a) ? b : a;
         if (b == a) {
-            r28 = 1;
+            rp = 1;
         }
     } else {
         s32 b = mario->multiTimer;
         r27 = (b <= 10) ? b : 10;
         if (b == 10) {
-            r28 = 1;
+            rp = 1;
         }
     }
     mario->poseTime = r27;
     animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)r27);
-    if (r28 != 0) {
-        s8 hl = pouchGetPtr()->hammerLevel;
-        if (hl == 1) {
+    if (rp != 0) {
+        lv = (s8)pouchGetPtr()->hammerLevel;
+        if (lv == 1) {
             evtEntry(lv1quake_evt, 0, 0);
-        } else if (hl == 2) {
+        } else if (lv == 2) {
             evtEntry(lv2quake_evt, 0, 0);
-        } else if (hl == 3) {
+        } else if (lv == 3) {
             evtEntry(lv3quake_evt, 0, 0);
         }
         mario->currSubMotionId = 1;
@@ -918,109 +924,96 @@ void mot_hammer(void) {
         f30 = mario->position.y;
         pz = mario->position.z;
         if (!(mario->dispFlags & 0x80000000)) {
-            switch (M_S32(mario, 0x2A8)) {
-            case 0:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8);
-                movePos(&px, &pz, float_25_8041aaa8, f31);
+            r27 = -1;
+            switch (M_S32(mario, 0x2A8)) {            case 7:
+                movePos(&px, &pz, float_16_8041aaa0, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
+                f31 = float_53_8041aaa4;
+                r27 = 0x16;
+                break;
+                        case 0:
+            case 6:
+                movePos(&px, &pz, float_25_8041aaa8, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
                 f31 = float_neg3_8041aaac;
                 r27 = 0x15;
                 break;
-            case 4:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8);
-                movePos(&px, &pz, float_30_8041a9d4, f31);
-                f31 = float_30_8041a9d4;
-                r27 = 0x16;
-                break;
             case 5:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8);
-                movePos(&px, &pz, float_31_8041aab0, f31);
+                movePos(&px, &pz, float_31_8041aab0, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
                 f31 = float_5_8041a9cc;
                 r27 = 0x15;
                 break;
-            case 7:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8);
-                movePos(&px, &pz, float_16_8041aaa0, f31);
+            case 4:
+                movePos(&px, &pz, float_30_8041a9d4, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
+                f31 = float_30_8041a9d4;
+                r27 = 0x16;
+                break;
+}
+        } else {
+            r27 = -1;
+            switch (M_S32(mario, 0x2A8)) {            case 7:
+                movePos(&px, &pz, float_16_8041aaa0, toMovedir2(M_F32(mario, 0x1AC), float_neg2_8041a9f8));
                 f31 = float_53_8041aaa4;
                 r27 = 0x16;
                 break;
-            default:
-                r27 = -1;
-                break;
-            }
-        } else {
-            switch (M_S32(mario, 0x2A8)) {
-            case 0:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4);
-                movePos(&px, &pz, float_30_8041a9d4, f31);
+                        case 0:
+            case 6:
+                movePos(&px, &pz, float_30_8041a9d4, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
                 f31 = float_neg3_8041aaac;
                 r27 = 0x15;
                 break;
-            case 4:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4);
-                movePos(&px, &pz, float_37_8041a9e8, f31);
-                f31 = float_28_8041aab8;
-                r27 = 0x16;
-                break;
             case 5:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4);
-                movePos(&px, &pz, float_36_8041a9dc, f31);
+                movePos(&px, &pz, float_36_8041a9dc, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
                 f31 = float_20_8041a9e0;
                 r27 = 0x16;
                 break;
-            case 7:
-                f31 = toMovedir2(M_F32(mario, 0x1AC), float_neg2_8041a9f8);
-                movePos(&px, &pz, float_16_8041aaa0, f31);
-                f31 = float_53_8041aaa4;
+            case 4:
+                movePos(&px, &pz, float_37_8041a9e8, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
+                f31 = float_28_8041aab8;
                 r27 = 0x16;
                 break;
-            default:
-                r27 = -1;
-                break;
-            }
+}
         }
         if (r27 > 0) {
             effKemuTestEntry(r27, px, f30 + f31, pz, float_1_8041aa38);
         }
-        mario = marioGetPtr();
+        mario3 = marioGetPtr();
         sound = 0x161;
         switch (pouchGetHammerLv()) {
         case 1:
-            psndSFXOn_3D((const char*)0x15E, &mario->position);
+            psndSFXOn_3D((const char*)0x15E, &mario3->position);
             break;
         case 2:
-            psndSFXOn_3D((const char*)0x15F, &mario->position);
+            psndSFXOn_3D((const char*)0x15F, &mario3->position);
             break;
         case 3:
-            psndSFXOn_3D((const char*)0x160, &mario->position);
+            psndSFXOn_3D((const char*)0x160, &mario3->position);
             break;
         }
         i = 0;
-        while ((u32)i < 10) {
-            if (pouchEquipCheckBadge(se_data[M_S8(mario, 0x3A)]) != 0) {
-                s32 idx = M_S8(mario, 0x3A);
-                sound = se_data[idx + 1];
-                M_S8(mario, 0x3A) = idx + 2;
-                if (M_S8(mario, 0x3A) >= 0xA) {
-                    M_S8(mario, 0x3A) -= 0xA;
+        while (i < 10) {
+            if (pouchEquipCheckBadge(se_data[M_S8(mario3, 0x3A)]) != 0) {
+                sound = se_data[M_S8(mario3, 0x3A) + 1];
+                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
+                if (M_S8(mario3, 0x3A) >= 0xA) {
+                    M_S8(mario3, 0x3A) -= 0xA;
                 }
                 break;
             } else {
-                M_S8(mario, 0x3A) = M_S8(mario, 0x3A) + 2;
-                if (M_S8(mario, 0x3A) >= 0xA) {
-                    M_S8(mario, 0x3A) -= 0xA;
+                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
+                if (M_S8(mario3, 0x3A) >= 0xA) {
+                    M_S8(mario3, 0x3A) -= 0xA;
                 }
                 i++;
             }
         }
-        psndSFXOn_3D((const char*)sound, &mario->position);
+        psndSFXOn_3D((const char*)sound, &mario3->position);
     }
-    mario->multiTimer++;
-    if (mario->multiTimer > 0x14) {
+    mt = mario->multiTimer + 1;
+    mario->multiTimer = mt;
+    if (mt > 0x14) {
         mario->flags &= ~0x80;
         marioChgMot(0);
     }
 }
-
 s32 marioGetHammerLevel(void) {
     return pouchGetPtr()->hammerLevel;
 }
