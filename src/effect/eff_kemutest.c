@@ -47,7 +47,6 @@ const Vec vec3_802fdcec = { 0.0f, 0.0f, 0.0f };
 // f26 vs f25 in case 11, and in case 4/13 the `bom_dir`/`bom_spd` loads and the `angle`/`spd` values
 // (f25/f26) come out swapped. The MUST_MATCH `spd = 0.0f;` dead store pins `spd` in f26 so cases
 // 7/8/9/17/20 match. Instruction sequences are otherwise byte-identical.
-// NONMATCHING (99.91%): FP temp numbering (f25/f26) in cases 2/3, 4/13, 11 only; see above.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effKemuTestData* data;

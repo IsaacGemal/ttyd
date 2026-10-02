@@ -1005,28 +1005,6 @@ static inline void winMsgDispEdge(Vec pos, Vec* scale, GXColor color, const char
     winFontSetEdge(&pos, scale, &color, msg);
 }
 
-static inline void winMsgDispText(Vec pos, Vec* scale, GXColor color, const char* msg) {
-    winFontSet(&pos, scale, &color, msg);
-}
-
-static inline void winMsgDispLabel(Vec pos, Vec* scale, GXColor color, const char* msg) {
-    winFontSetLabel(&pos, scale, &color, msg);
-}
-
-// Same shape as root_vec (defined with winRootDisp below), but winMsgDisp is emitted
-// before it. Builds a by-value Vec from a base Vec in the str_802F3FE8 rodata block.
-static inline Vec winMsgDispVec(const Vec* base, f32 x, f32 y) {
-    Vec v = *base;
-    v.x = x;
-    v.y = y;
-    return v;
-}
-
-// str_802F3FE8 is the menu-display rodata block; WinRootVecs (win_root.h) names only
-// its first six Vecs (v0..v5). winMsgDisp reads later Vecs at fixed offsets, reached
-// here by raw offset from the named base. Offset 0x5d0 is the str_802F45B8 string.
-
-
 // 5-page switch over work->0xcc. The explicit empty case -1 below (a redirect
 // target of cases 11 and 41) is what makes MWCC pick 0 as the [0,10) search-tree
 // pivot; without it the tree pivots on 1.

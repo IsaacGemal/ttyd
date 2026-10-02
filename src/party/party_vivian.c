@@ -14,18 +14,9 @@
 s32 vivian_cancel_req;
 
 // .rodata (three contiguous zero vectors used for paper/effect positioning)
-#ifdef MUST_MATCH
-// Match-only: mot_vivian_post copies these into MarioWork/PartyEntry. Building each from a compound
-// literal makes the compiler schedule the three-word copy the way the target does; one inline per
-// vector keeps the three pool entries at the target's vec3_802f80a8/b4/c0 addresses.
-static inline Vec makeZeroVecA(void) { Vec v = (Vec){ 0.0f, 0.0f, 0.0f }; return v; }
-static inline Vec makeZeroVecB(void) { Vec v = (Vec){ 0.0f, 0.0f, 0.0f }; return v; }
-static inline Vec makeZeroVecC(void) { Vec v = (Vec){ 0.0f, 0.0f, 0.0f }; return v; }
-#else
 const Vec vec3_802f80a8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802f80b4 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802f80c0 = {0.0f, 0.0f, 0.0f};
-#endif
 const char str_802F80CC[] = "eki_02";
 const char str_802F80D4[] = "PTR_A2_1";
 const char str_802F80E0[] = "PTR_A2_3";
@@ -123,13 +114,19 @@ void L_partyVivianTailStop(PartyEntry* party) {
     }
 }
 
+// NONMATCHING (93.00%): the flags&0x100 test emits `beqlr`; the target branches forward (`bne body; blr`).
 // 60 B
 void vivianUnhold(PartyEntry* party) {
-    if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
+    if (party == NULL) {
         return;
     }
-    if (party->useMotionId == 0xa) {
-        party->useMotionId = 0x14;
+    if (party->currentMemberId != 6) {
+        return;
+    }
+    if (party->flags & 0x100) {
+        if (party->useMotionId == 0xa) {
+            party->useMotionId = 0x14;
+        }
     }
 }
 
@@ -167,6 +164,8 @@ void vivian_init_801809C0(PartyEntry* party) {
     vivian_cancel_req = 0;
 }
 
+// NONMATCHING (85.41%): the Vec copies at 0xA4/0x7C hoist their first loads; the final `if` emits `beq` vs the
+// target's `bne body; b`. A `makeZeroVec` literal helper reaches 98.71% but drops unit .rodata to 93.75% (withheld).
 // 340 B
 void mot_vivian_post(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -175,11 +174,7 @@ void mot_vivian_post(void) {
     if (mario->currMotionId == 0x20 || mario->currMotionId == 0x1f) {
         mario->dispFlags &= ~0x1000;
         marioPaperOff();
-#ifdef MUST_MATCH
-        *(Vec*)&mario->field_0x98[0xA4 - 0x98] = makeZeroVecA();
-#else
-        *(Vec*)&mario->field_0x98[0xA4 - 0x98] = vec3_802f80a8;
-#endif
+        *(Vec*)((u8*)mario + 0xA4) = vec3_802f80a8;
         mario->flags &= ~0x400;
         if (party != NULL) {
             partyPaperOff(party);
@@ -187,11 +182,7 @@ void mot_vivian_post(void) {
             party->flags &= ~0x80000000;
             party->flags2 &= ~0x200000;
             *(f32*)((u8*)party + 0x174) = float_10_8041df00;
-#ifdef MUST_MATCH
-            *(Vec*)party->field_7C = makeZeroVecB();
-#else
-            *(Vec*)party->field_7C = vec3_802f80b4;
-#endif
+            *(Vec*)((u8*)party + 0x7C) = vec3_802f80b4;
             partyChgRunMode(party, 2);
             party->field_3B = 0;
             partyChgPoseId(party, 1);
@@ -199,10 +190,10 @@ void mot_vivian_post(void) {
                 *(s8*)((u8*)party + 0x4F) &= ~1;
             }
         }
-    } else if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
-        return;
-    } else {
-        vivian_cancel_req = 1;
+    } else if (party != NULL && party->currentMemberId == 6) {
+        if (party->flags & 0x100) {
+            vivian_cancel_req = 1;
+        }
     }
 }
 

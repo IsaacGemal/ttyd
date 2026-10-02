@@ -3372,37 +3372,19 @@ static void printRanking(void) {
 static const char str_00001F74[] = "ランキング";
 static const char str_00001FA0[] = "%s%s";
 
-// The GPR set matches the target (r22 &rank_wp, r23 off, r24 y, r25 rank, r26 i, r27/r28 scissor casts,
-// r29 dt, r30 &dwp, r31 0x4330) and the FP set too (f26 base2, f27 base, f28 float_135, f29 the
-// double_to_int constant, f30 float_40). The whole body needs MWCC's value propagation disabled: with it on
-// MWCC rematerialises the per-use float constants and hoists the suuji/sprintf setup, scoring several
-// points lower. The first GXSetScissor's four float operands and the vec3 block's pos.y partial sum are
-// each loaded through a dedicated `f32` temp (`b304`/`b145`/`b220`/`b250`, `y5`); this is a match-only
-// device: it forces MWCC to keep the address in a register (target form `addi r4, r3, @l; lfs f1, 0(r4)`)
-// and pins the scheduling, taking the function from 92.25% to 99.05%. The four temps are assigned in the
-// order they must be scheduled (sx, top, hgt, sw, and `y5` before `pos.x`); sx/sw then use a plain (u16)
-// cast while top/hgt keep the (u16)(s32) round-trip. Still off: the first GXSetScissor's exact FP register
-// assignment (ours uses an extra f4/f5 for 250/220) and the suuji ternary's else arm, which lands &zero in
-// r0 before an `mr r5` (target adds straight into r5).
-// NONMATCHING (95.32%): scissor FP reg assignment (f4/f5 vs f1/f0) and p1 else-arm mr
+// NONMATCHING (81.91%): register allocation (r22 vs r23 and the loop temps), string/double const symbols, derivative scheduling
 static void disp_proc(CameraId cameraId, void* param) {
     FighterEntry* dt;
     s32 i;
-    s32 msgw;
     s32 rank;
-    s32 y;
     s32 off;
+    s32 y;
+    f32 x;
     f32 base;
     f32 base2;
+    f32 f28;
+    f32 f30;
     f32 f31;
-    u16 sx;
-    u16 sw;
-    u16 top;
-    u16 hgt;
-    f32 b304;
-    f32 b145;
-    f32 b220;
-    f32 b250;
     Mtx scale;
     Mtx mtx;
     char buf[0x100];
@@ -3417,30 +3399,27 @@ static void disp_proc(CameraId cameraId, void* param) {
                         float_310_tou_0000a89c, float_330_tou_0000a8a0);
     FontDrawStart();
     FontDrawScale(float_1_tou_0000a87c);
-    msgw = FontGetMessageWidth(str_00001F74);
+    i = FontGetMessageWidth(str_00001F74);
     {
         GXColor color = *(GXColor*)&dat_tou_00009904;
 
         FontDrawColor(&color);
     }
-    FontDrawMessage(-msgw / 2, (s32)float_135_tou_0000a8b0, str_00001F74);
-    b304 = float_304_tou_0000a8b4 + f31;
-    sx = (u16)b304;
-    b145 = float_145_tou_0000a8b8;
-    top = (u16)(s32)b145;
-    b220 = float_220_tou_0000a8bc;
-    hgt = (u16)(s32)b220;
-    b250 = float_250_tou_0000a890;
-    sw = (u16)b250;
-    GXSetScissor(sx, top, sw, hgt);
+    FontDrawMessage(-i / 2, (s32)float_135_tou_0000a8b0, str_00001F74);
+    GXSetScissor((u16)(s32)(float_304_tou_0000a8b4 + f31), (u16)(s32)float_145_tou_0000a8b8,
+                 (u16)(s32)float_250_tou_0000a890, (u16)(s32)float_220_tou_0000a8bc);
     base = float_10_tou_0000a8c0 + f31;
+    f28 = float_135_tou_0000a8b0;
+    f30 = float_40_tou_0000a8c4;
     rank = 0;
     y = 0;
     i = 0;
     off = 0;
     for (; i < ((RankWork*)rank_wp[0])->count; i++, off += 0xc) {
-        base2 = ((DispWork*)dwp[0])->field_00 + (float_135_tou_0000a8b0 - (f32)y - float_40_tou_0000a8c4);
-        if (!(((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 2)) {
+        RankEntry* entry = (RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off);
+
+        base2 = ((DispWork*)dwp[0])->field_00 + (f28 - (f32)y) - f30;
+        if (!(entry->flags & 2)) {
             PSMTXScale(scale, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8);
             if (rank != 0) {
                 s32 a = rank / 10;
@@ -3458,7 +3437,7 @@ static void disp_proc(CameraId cameraId, void* param) {
                 FontDrawMessageMtx(mtx, buf);
             }
             FontDrawStart();
-            if ((((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 4)) {
+            if (entry->flags & 4) {
                 GXColor color = *(GXColor*)&dat_tou_0000990c;
 
                 FontDrawColor(&color);
@@ -3469,19 +3448,19 @@ static void disp_proc(CameraId cameraId, void* param) {
             }
             PSMTXTrans(mtx, float_40_tou_0000a8c4 + base, base2, zero_tou_0000a82c);
             PSMTXConcat(mtx, scale, mtx);
-            FontDrawMessageMtx(mtx,
-                msgSearch((const char*)((u32*)dt)[((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->id * 7 + 1]));
+            FontDrawMessageMtx(mtx, msgSearch((const char*)((u32*)dt)[entry->id * 7 + 1]));
             rank++;
             y += 0x14;
         }
     }
-    GXSetScissor(sx, (u16)(s32)float_137_tou_0000a8d8, sw, (u16)(s32)float_228_tou_0000a8dc);
+    GXSetScissor((u16)(s32)(float_304_tou_0000a8b4 + f31), (u16)(s32)float_137_tou_0000a8d8,
+                 (u16)(s32)float_250_tou_0000a890, (u16)(s32)float_228_tou_0000a8dc);
+    x = float_15_tou_0000a8e4 + f31;
     {
-        f32 y5 = float_95_tou_0000a8e0 + ((DispWork*)dwp[0])->field_00;
         Vec pos = vec3_tou_00009914;
 
-        pos.x = float_15_tou_0000a8e4 + f31;
-        pos.y = y5 - float_24_tou_0000a8e8;
+        pos.x = x;
+        pos.y = (float_95_tou_0000a8e0 + ((DispWork*)dwp[0])->field_00) - float_24_tou_0000a8e8;
         iconDispGx(&pos, 0x10, 0x123, float_0p8_tou_0000a8c8);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
@@ -3489,13 +3468,13 @@ static void disp_proc(CameraId cameraId, void* param) {
         {
             Vec pos = vec3_tou_00009920;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x205, float_neg1_tou_0000a8ec);
         }
         {
             Vec pos = vec3_tou_0000992c;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x7e, float_0p6_tou_0000a830);
         }
     }
@@ -3503,13 +3482,13 @@ static void disp_proc(CameraId cameraId, void* param) {
         {
             Vec pos = vec3_tou_00009938;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x205, float_1_tou_0000a87c);
         }
         {
             Vec pos = vec3_tou_00009944;
 
-            pos.x = f31 + float_250_tou_0000a890;
+            pos.x = float_250_tou_0000a890 + f31;
             iconDispGx(&pos, 0x10, 0x80, float_0p6_tou_0000a830);
         }
     }

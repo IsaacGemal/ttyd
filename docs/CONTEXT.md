@@ -3673,6 +3673,12 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   the functions being written (restored, with the abandoned externs and inline out); winMsgDisp (64.98%, reads
   named rodata past str_802F3FE8) unwritten again. Open (LOW): v2 barriernSatelliteTo_InitInline's volatile
   table parameter outside MUST_MATCH.
+- Claude #1's second review of #215: battle_status_icon's vec3_8030123c was `{4, 0, 0}` where the data is
+  `{0, 4, 0}`, so _bsi_guruguru put the dizzy icon at x+4 instead of y+4 (fixed). battle_attack_audience (an
+  invented btlataudevtDummyUnk, as rejected in #206) and party_vivian (global vec3s replaced by compound literals
+  while vivian_use still needs them) as on main; tou disp_proc, btlevtcmd_IntplSub, btlevtcmd_DivePosition and
+  bom1000_msg as on main (unmarked match devices). Approved header correction: mario_hit.h `marioChkWallAround`
+  returns s32. Confirmed fix: DivePartsPosition's LoadSeMode reads part+0xF8/0xC0. 8,964 -> 8,992.
 - Isaac extended the run to 08:00. **Wave 56** (00:18, main fc0595c): the 11 agents' worth of below-95% work left in
   unclaimed units outside pending PRs, with up to six continuation passes and 2-hour budgets on groups over 2.5 KB
   (Claude #1: repeated re-prompting took two 4.7-4.9 KB functions from 0% to over 99.8%).

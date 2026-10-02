@@ -737,7 +737,6 @@ void main_button(s32 index) {
 // same value does not stop it), which lands at .rodata+0x2D0 here, while the target's sits at +0x228
 // (the target reaches it as base+0x228). Because it is a raw base+offset objdiff reports it as a
 // real arg_mismatch; a symbol reference to the copy would score `~~` like main_button's.
-// NONMATCHING (100.00%): only that one `lfd` offset differs.
 static void main_star(void) {
     SukiWork* work = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);

@@ -22,6 +22,7 @@
 extern ItemData itemDataTable[];
 
 // .data event tables are defined below the functions that use them.
+extern s32 btlataudevtDummy[16];
 extern s32 btlataudevtPresentItem_Damage[];
 extern s32 btlataudevtPresentItem_Get[];
 
@@ -253,30 +254,25 @@ void* btlataudGetMoveEventPtr(s32 unitId) {
 #undef pz
 #endif
 
-// The 4-byte word at the start of this unit's .data (0x80371354) is its own object: the original
-// takes the event table's address as `btlataudevtDummy+0x4` in a single lis/addi, and MWCC never
-// folds a constant array index into the @ha/@l reloc (btlataudevtDummy+1 compiles to the base plus
-// a separate `addi r3, r3, 0x4`), so the table must be a symbol that begins at 0x80371358. The
-// .data bytes are unchanged from the single 0x40-byte table.
-// __declspec(section ".data"): the word is all zero, so without this MWCC puts it in .bss and
-// the unit's .data loses its first four bytes.
-__declspec(section ".data") s32 btlataudevtDummyUnk[1] = { 0x00000000 };
+// NONMATCHING (93.75%): MWCC emits the btlataudevtDummy base plus a separate `addi 0x4`; the original
+// folds the +4 into the @ha/@l reloc addend (btlataudevtDummy+0x4). Same instruction sequence otherwise.
+s32* btlataudGetAttackEventPtr(s32 index) {
+    s32* data = BtlUnit_GetData(BattleGetUnitPtr(_battleWorkPointer, index), 6);
+    if (data == NULL) {
+        return btlataudevtDummy + 1;
+    }
+    return data;
+}
 
-s32 btlataudevtDummy[15] = {
+// .data
+s32 btlataudevtDummy[] = {
+    0x00000000,
     0x0005005B, (s32)_get_attack_aud_no, 0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x0003005B, (s32)_attack_aud, 0xFE363C83,
     0x00000000,
     0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
     0x00000002, 0x00000001,
 };
-
-s32* btlataudGetAttackEventPtr(s32 index) {
-    s32* data = BtlUnit_GetData(BattleGetUnitPtr(_battleWorkPointer, index), 6);
-    if (data == NULL) {
-        return btlataudevtDummy;
-    }
-    return data;
-}
 
 s32 btlataudevtPresentItem_Damage[] = {
     0x0002005B, (s32)_delete_present_item, 0xFE363C80,
