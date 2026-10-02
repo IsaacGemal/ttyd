@@ -636,9 +636,9 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
 // what happened (1/2 got/lost a status, 4/8 fright/gale force, 0x10 instant kill, 0x20 sleep).
 s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
                           s32 rate, s32 levelDiff, s8 turns, s8 strength) {
-    s8 chargeStrength;
-    s8 sp9;
-    s8 sp8;
+    u8 chargeStrength;
+    u8 sp9;
+    u8 sp8;
     f32 x, y, z;
     f32 hitX, hitY, hitZ;
     s32 isRemoving;
@@ -649,7 +649,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
     EffectEntry* eff;
 
     isRemoving = 0;
-    BtlUnit_GetStatus(unit, STATUS_CHARGE, NULL, &chargeStrength);
+    BtlUnit_GetStatus(unit, STATUS_CHARGE, NULL, (s8*)&chargeStrength);
     switch (type) {
     case STATUS_FAST:
     case STATUS_SLOW:
@@ -911,18 +911,18 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
             STAMP_COLOR(eff, 0xC8, 0xC8, 0xC8, 0xA, 0xA, 0xA);
             break;
         }
-        if (type != STATUS_CHARGE) {
-            if ((s32)type < STATUS_CHARGE) {
-                if ((s32)type < STATUS_DEFENSE_UP) {
-                    if ((s32)type >= STATUS_HUGE) {
-                        effUpdownEntry(0, x, y, 15.0f + z, strength, 60);
-                    }
-                } else {
-                    effUpdownEntry(1, x, y, 20.0f + z, strength, 60);
-                }
-            }
-        } else {
+        switch ((s32)type) {
+        case STATUS_HUGE:
+        case STATUS_TINY:
+        case STATUS_ATTACK_UP:
+        case STATUS_ATTACK_DOWN:
+        case STATUS_CHARGE:
             effUpdownEntry(0, x, y, 15.0f + z, strength, 60);
+            break;
+        case STATUS_DEFENSE_UP:
+        case STATUS_DEFENSE_DOWN:
+            effUpdownEntry(1, x, y, 20.0f + z, strength, 60);
+            break;
         }
     } else {
         BtlUnit_GetPos(unit, &x, &y, &z);
@@ -935,45 +935,63 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
             break;
         case STATUS_FREEZE:
             eff = effVaporN64Entry(0, 60, x, y, z, 1.0f);
-            {
-                effVaporN64Data* vapor = eff->userdata;
-                vapor->color1R = 0xFF;
-                vapor->color1G = 0xFF;
-                vapor->color1B = 0xFF;
-                vapor->color2R = 0xFF;
-                vapor->color2G = 0xFF;
-                vapor->color2B = 0xFF;
-            }
+            ((effVaporN64Data*)eff->userdata)->color1R = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color1G = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color1B = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color2R = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color2G = 0xFF;
+            ((effVaporN64Data*)eff->userdata)->color2B = 0xFF;
             break;
         }
     }
     announced = 0;
     if (applied != 0) {
-        BtlUnit_GetStatus(unit, (s8)type, &sp9, &sp8);
+        BtlUnit_GetStatus(unit, (s8)type, (s8*)&sp9, (s8*)&sp8);
         switch ((s32)type) {
         case STATUS_CHARGE:
-            if (sp8 > 0) {
-                if (chargeStrength != sp8) {
-                    BattleStatusChangeInfoSetAnnouce(unit, type, sp8, 1);
+            if ((s8)sp8 > 0) {
+                if ((s8)chargeStrength != (s8)sp8) {
+                    BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp8, 1);
                     BattleStatusChangeMsgSetAnnouce(unit, type, 1);
                     announced = 1;
                 } else {
-                    BattleStatusChangeInfoSetAnnouce(unit, type, sp8, 0);
+                    BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp8, 0);
                     BattleStatusChangeMsgSetAnnouce(unit, type, 0);
                     announced = 1;
                 }
             }
             break;
         case STATUS_POISON:
-            if (sp8 > 0) {
-                BattleStatusChangeInfoSetAnnouce(unit, type, sp8, 1);
+            if ((s8)sp8 > 0) {
+                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp8, 1);
                 BattleStatusChangeMsgSetAnnouce(unit, type, 1);
                 announced = 1;
             }
             break;
-        default:
-            if (sp9 > 0) {
-                BattleStatusChangeInfoSetAnnouce(unit, type, sp9, 1);
+        case STATUS_ALLERGIC:
+        case STATUS_SLEEP:
+        case STATUS_STOP:
+        case STATUS_DIZZY:
+        case STATUS_CONFUSE:
+        case STATUS_ELECTRIC:
+        case STATUS_DODGY:
+        case STATUS_BURN:
+        case STATUS_FREEZE:
+        case STATUS_HUGE:
+        case STATUS_TINY:
+        case STATUS_ATTACK_UP:
+        case STATUS_ATTACK_DOWN:
+        case STATUS_DEFENSE_UP:
+        case STATUS_DEFENSE_DOWN:
+        case STATUS_INVISIBLE:
+        case STATUS_FAST:
+        case STATUS_SLOW:
+        case STATUS_PAYBACK:
+        case STATUS_HOLD_FAST:
+        case STATUS_HP_REGEN:
+        case STATUS_FP_REGEN:
+            if ((s8)sp9 > 0) {
+                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp9, 1);
                 BattleStatusChangeMsgSetAnnouce(unit, type, 1);
                 announced = 1;
             }

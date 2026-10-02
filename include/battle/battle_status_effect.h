@@ -67,7 +67,7 @@ void BSE_Freeze(BattleUnit* unit);
 void BSE_FreezeDelete(BattleUnit* unit);
 void BSE_Kagegakure(BattleUnit* unit);
 void BSE_KagegakureDelete(BattleUnit* unit);
-void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2);
+void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2);
 void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg);
 void BattleStatusChangeMsgAdjust(BattleWork* wp);
 BOOL BattleStatusChangeMsgMain(BattleWork* wp);
