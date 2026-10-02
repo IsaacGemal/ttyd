@@ -331,12 +331,17 @@ static USER_FUNC(shadow_scale_memory) {
     return EVT_RETURN_DONE;
 }
 
-// opt_propagation off is needed: it keeps MWCC from folding the 0.0f local of both
-// shadow_scale_* functions into the intplGetValue call, which is what lets return match.
-#pragma opt_propagation off
-// NONMATCHING (86.75%): the instruction set and registers match, but MWCC's peephole/scheduler hoists the
-// int->float exponent store (stw r0,0x8) and the converted-double load (lfd f0,0x8) ahead of the zero-constant
-// address setup; the original schedules lis r3,zero before xoris and leaves those two after it.
+// `intplGetValue`'s real prototype is (s32, s32, s32, f32, f32). The cast below lists the two float
+// bounds before the step/duration words, which is ABI-identical (ints->r3-r5, floats->f1-f2) but makes
+// MWCC schedule the int->float conversion as the retail bytes do (cf. teresa_intpl in unit_atmic_teresa.c).
+static inline f32 monochrome_small_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+#ifdef MUST_MATCH
+    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
+#else
+    return intplGetValue(mode, step, steps, start, end);
+#endif
+}
+
 static USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -352,7 +357,7 @@ static USER_FUNC(shadow_scale_small) {
     }
     start = (f32)unit->work[0];
     end = 0.0f;
-    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+    part->field_0x78 = monochrome_small_intpl(0, start, end, unit->work[1], 15);
 
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
@@ -361,6 +366,10 @@ static USER_FUNC(shadow_scale_small) {
     return EVT_RETURN_BLOCK;
 }
 
+// `#pragma opt_propagation off` is needed for `shadow_scale_return`: with propagation on MWCC folds the
+// int->float magic double and rematerialises the 0.0f load, so its fp register allocation and store order
+// are lost.
+#pragma opt_propagation off
 static USER_FUNC(shadow_scale_return) {
     BattleUnit* unit;
     BattleUnitPart* part;

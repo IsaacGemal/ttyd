@@ -79,6 +79,11 @@ typedef struct BinaryFontWidth {
 	u16 lastcode; //0xA, last code for this block (inclusive)
 } BinaryFontWidth;
 
+typedef struct BinaryFontWidthEntry {
+	u8 unknown; //0x0
+	u8 width; //0x1
+} BinaryFontWidthEntry;
+
 void fontmgrInit(void);
 void fontmgrTexSetup(void);
 void FontDrawStart(void);
@@ -92,7 +97,7 @@ void FontDrawStringShake(const char* str, f32 x, f32 y);
 
 
 
-u16 kanjiSearch(u16 code);
+u16 kanjiSearch(u32 code);
 u16 kanjiGetWidth(u16 code);
 u16 FontGetMessageWidthLine(const char* message, u16* lines);
 u16 FontGetMessageWidth(const char* message);

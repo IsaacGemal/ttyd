@@ -23,3 +23,10 @@ void BattleStatusIconInit(struct BattleUnit* unit);
 void BattleStatusIconMain(struct BattleUnit* unit);
 void BattleStatusIconDelete(struct BattleUnit* unit);
 void BattleStatusIconDisp(CameraId camId, void* param);
+
+struct IconDispTableEntry;
+BOOL _bsi_default_turn(struct BattleUnit* unit, struct IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry);
+BOOL _bsi_guruguru(struct BattleUnit* unit, struct IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry);
+BOOL _bsi_biribiri(struct BattleUnit* unit, struct IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry);
+BOOL _bsi_allergy(struct BattleUnit* unit, struct IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry);
+BOOL _bsi_regeneration(struct BattleUnit* unit, struct IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry);

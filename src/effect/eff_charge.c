@@ -8,20 +8,22 @@
 #include <dolphin/mtx.h>
 
 const Vec vec3_802f8e60 = { 0.0f, 0.0f, 0.0f };
+const f64 double_to_int_802f8e70 = 4503601774854144.0;
 const char str_802F8E78[] = "Charge";
-
-extern const f64 double_to_int_802f8e70;
 extern GXColor unk_80423068;
 extern GXColor unk_8042306c;
 
 
-// NONMATCHING (80.49%): the s32->f32 conversion pool symbol plus the schedule/register allocation of the
-// particle-init loop (frame 0x80 vs 0x70, extra conversion spills, A/B interleave order).
+// Matches. The init loop must be the nested `for (j = 0; j < 2; j++, elem++)` shape with a signed
+// `s32 n = i + j - 1` (as in eff_thunderflare_n64): flat `elem[0]`/`elem[1]` writes let MWCC strength-reduce
+// `i * 100` into a running counter, which also inflates the frame to 0x80. The switch needs `case 2:` grouped
+// with `default:` so MWCC emits the target's decision tree (one extra branch to the default body).
 EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* entry;
     ChargeEffectData* data;
     ChargeEffectData* elem;
     s32 i;
+    s32 j;
 
     entry = effEntry();
     entry->type = str_802F8E78;
@@ -55,6 +57,7 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
         data->field_0x40 = 0x14;
         data->field_0x44 = 0x0a;
         break;
+    case 2:
     default:
         data->colorR = 0;
         data->colorG = 0;
@@ -67,14 +70,13 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
 
     for (i = 1; i < 0x1f; i += 2) {
         elem = &data[i];
-        elem[0].angle1 = 9.0f * (360.f * (f32)(i - 1)) / 30.f;
-        elem[0].angle2 = 0.0f;
-        elem[0].radius = (f32)((i - 1) * 100 / 30);
-        elem[0].field_0x00 = 0;
-        elem[1].angle1 = 9.0f * (360.f * (f32)i) / 30.f;
-        elem[1].angle2 = 0.0f;
-        elem[1].radius = (f32)(i * 100 / 30);
-        elem[1].field_0x00 = 0;
+        for (j = 0; j < 2; j++, elem++) {
+            s32 n = i + j - 1;
+            elem->angle1 = 9.0f * (360.f * (f32)n) / 30.f;
+            elem->angle2 = 0.0f;
+            elem->radius = (f32)(n * 100 / 30);
+            elem->field_0x00 = 0;
+        }
     }
     return entry;
 }

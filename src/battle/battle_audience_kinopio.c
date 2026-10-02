@@ -562,7 +562,8 @@ void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind) {
 }
 
 #pragma dont_inline on // recursive call stays a real `bl` in the original
-// NONMATCHING (93.86%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (97.27%): only the `float_0` comparison load is scheduled after the fsubs
+// instead of before it; the intpl/tail now match via the volatile-comma and combined-if tricks.
 void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -580,12 +581,11 @@ void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		*(f32*)((u8*)member + 0x70) = intplGetValue(4, *(s32*)member->field_0x8, 0xf,
+		*(f32*)((u8*)member + 0x70) = intplGetValue(4, ((volatile f32)float_0_8041e178, (volatile f32)float_10_8041e1b4, *(s32*)member->field_0x8), 0xf,
 		    float_0_8041e178, float_10_8041e1b4);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
-			*(f32*)((u8*)member + 0xc) -= float_1_8041e188;
-			if (*(f32*)((u8*)member + 0xc) <= float_0_8041e178) {
+			if ((*(f32*)((u8*)member + 0xc) -= float_1_8041e188) <= float_0_8041e178) {
 				BattleAudience_ChangeStatus(index, 0);
 			}
 			else {
@@ -632,7 +632,6 @@ void BattleAudienceCtrlProcessKinopioJoyJump(s32 index, s32 kind) {
 	}
 }
 
-// NONMATCHING (92.53%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioJoyJump2(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -647,15 +646,18 @@ void BattleAudienceCtrlProcessKinopioJoyJump2(s32 index, s32 kind) {
 		*(s32*)member->field_0x8 = 2;
 		member->field_0x4++;
 		// fallthrough
-	case 1:
-		*(f32*)((u8*)member + 0xdc) =
-		    float_4_8041e204 + (f32)rand() / float_32767_8041e1e4;
-		*(f32*)((u8*)member + 0xe4) = float_neg0p2_8041e208;
+	case 1: {
+		f32 neg = -0.2f;
+		*(f32*)((u8*)member + 0xdc) = 4.0f + (f32)rand() / 32767.0f;
+		*(f32*)((u8*)member + 0xe4) = neg;
 		member->field_0x4++;
+	}
 		// fallthrough
 	case 2:
-		member->mRotation.y += float_20_8041e1cc;
-		if (float_0_8041e178 == *(f32*)((u8*)member + 0xe4)) {
+	{
+		f32 zero = 0.0f;
+		member->mRotation.y += 20.0f;
+		if (zero == *(f32*)((u8*)member + 0xe4)) {
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
 				BattleAudience_ChangeStatus(index, 0);
@@ -665,6 +667,7 @@ void BattleAudienceCtrlProcessKinopioJoyJump2(s32 index, s32 kind) {
 			}
 		}
 		break;
+	}
 	}
 }
 
@@ -729,7 +732,8 @@ void BattleAudienceCtrlProcessKinopioItemThrow(s32 index) {
 	}
 }
 
-// NONMATCHING (93.57%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (97.14%): only the `float_0` comparison load is scheduled after the fsubs
+// instead of before it; the intpl/tail now match via the volatile-comma and combined-if tricks.
 void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -745,12 +749,11 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		*(f32*)((u8*)member + 0x70) = intplGetValue(4, *(s32*)member->field_0x8, 0xf,
+		*(f32*)((u8*)member + 0x70) = intplGetValue(4, ((volatile f32)float_0_8041e178, (volatile f32)float_10_8041e1b4, *(s32*)member->field_0x8), 0xf,
 		    float_0_8041e178, float_10_8041e1b4);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
-			*(f32*)((u8*)member + 0xc) -= float_1_8041e188;
-			if (*(f32*)((u8*)member + 0xc) <= float_0_8041e178) {
+			if ((*(f32*)((u8*)member + 0xc) -= float_1_8041e188) <= float_0_8041e178) {
 				BattleAudience_ChangeStatus(index, 0);
 			}
 			else {
@@ -819,7 +822,6 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (84.48%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 	BattleAudienceMember* member;
 
@@ -830,22 +832,30 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 	if (member->type == AUDIENCE_PIRANHA_PLANT) {
 		switch (member->field_0x4) {
 		case 0:
+		{
+			f32 zero = 0.0f;
 			member->position.x = member->mHomePosition.x;
-			member->position.y = float_neg100_8041e190;
+			member->position.y = -100.0f;
 			member->position.z = member->mHomePosition.z;
-			*(f32*)((u8*)member + 0x78) = float_0_8041e178;
-			*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
-			*(f32*)((u8*)member + 0x80) = float_0_8041e178;
-			*(s32*)member->field_0x8 += irand(0x3c);
-			(*(s32*)member->field_0x8)++;
+			*(f32*)((u8*)member + 0x78) = zero;
+			*(f32*)((u8*)member + 0x7c) = zero;
+			*(f32*)((u8*)member + 0x80) = zero;
+			{
+				s32 t = irand(0x3c);
+				t = t + *(s32*)member->field_0x8;
+				*(s32*)member->field_0x8 = t + 1;
+			}
 			member->field_0x4++;
 			break;
+		}
 		case 1:
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
-				*(f32*)((u8*)member + 0x78) = float_0_8041e178;
-				*(f32*)((u8*)member + 0x7c) = float_1_8041e188;
-				*(f32*)((u8*)member + 0x80) = float_0_8041e178;
+				f32 one = 1.0f;
+				f32 zero = 0.0f;
+				*(f32*)((u8*)member + 0x78) = zero;
+				*(f32*)((u8*)member + 0x7c) = one;
+				*(f32*)((u8*)member + 0x80) = zero;
 				member->field_0x4++;
 			}
 			break;
@@ -862,26 +872,37 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 		switch (member->field_0x4) {
 		case 0:
 			member->position.x = (f32)(irand(0x190) - 0xc8);
+		{
+			f32 thousand = 1000.0f;
 			member->position.y = member->mHomePosition.y;
-			member->position.z = float_1000_8041e1fc;
-			*(f32*)((u8*)member + 0x78) = float_0_8041e178;
-			*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
-			*(f32*)((u8*)member + 0x80) = float_0_8041e178;
-			*(s32*)member->field_0x8 += irand(0x3c);
-			(*(s32*)member->field_0x8)++;
+			member->position.z = thousand;
+			{
+				f32 zero = 0.0f;
+				*(f32*)((u8*)member + 0x78) = zero;
+				*(f32*)((u8*)member + 0x7c) = zero;
+				*(f32*)((u8*)member + 0x80) = zero;
+			}
+			{
+				s32 t = irand(0x3c);
+				t = t + *(s32*)member->field_0x8;
+				*(s32*)member->field_0x8 = t + 1;
+			}
 			member->field_0x4++;
 			break;
+		}
 		case 1:
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
-				f32 dz = member->mHomePosition.z - member->position.z;
 				f32 dx = member->mHomePosition.x - member->position.x;
+				f32 dz = member->mHomePosition.z - member->position.z;
 				f32 len = (f32)sqrt(dx * dx + dz * dz);
-				*(f32*)((u8*)member + 0x78) = float_10_8041e1b4 * (dx / len);
-				*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
-				*(f32*)((u8*)member + 0x80) = float_10_8041e1b4 * (dz / len);
-				*(f32*)((u8*)member + 0xc) = float_10_8041e1b4;
-				*(f32*)((u8*)member + 0x10) = float_10_8041e1b4;
+				f32 zero = 0.0f;
+				f32 ten = 10.0f;
+				*(f32*)((u8*)member + 0x78) = ten * (dx / len);
+				*(f32*)((u8*)member + 0x7c) = zero;
+				*(f32*)((u8*)member + 0x80) = ten * (dz / len);
+				*(f32*)((u8*)member + 0xc) = ten;
+				*(f32*)((u8*)member + 0x10) = ten;
 				*(f32*)((u8*)member + 0x14) = len;
 				member->field_0x4++;
 			}
@@ -899,7 +920,6 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 	}
 }
 
-// NONMATCHING (89.96%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 	BattleAudienceMember* member;
 
@@ -911,9 +931,9 @@ void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 		case 0:
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
-				*(f32*)((u8*)member + 0x78) = float_0_8041e178;
-				*(f32*)((u8*)member + 0x7c) = float_neg1_8041e18c;
-				*(f32*)((u8*)member + 0x80) = float_0_8041e178;
+				*(f32*)((u8*)member + 0x78) = 0.0f;
+				*(f32*)((u8*)member + 0x7c) = -1.0f;
+				*(f32*)((u8*)member + 0x80) = 0.0f;
 				member->field_0x4++;
 			}
 			break;
@@ -930,14 +950,20 @@ void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 		case 0:
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
-				f32 v = ((float_2_8041e1ec * (f32)rand()) / float_32767_8041e1e4 -
-				            float_1_8041e188) -
-				        (member->position.x / float_120_8041e1f0);
-				*(f32*)((u8*)member + 0x78) = v;
-				*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
-				*(f32*)((u8*)member + 0x80) = float_8_8041e1f4;
-				*(f32*)((u8*)member + 0xdc) = float_6_8041e17c;
-				*(f32*)((u8*)member + 0xe4) = float_neg0p5_8041e1e8;
+				f32 v = ((2.0f * (f32)rand()) / 32767.0f -
+				            1.0f) -
+				        (member->position.x / 120.0f);
+				{
+					f32 zero = 0.0f;
+					f32 eight = 8.0f;
+					f32 six = 6.0f;
+					f32 neg0p5 = -0.5f;
+					*(f32*)((u8*)member + 0x78) = v;
+					*(f32*)((u8*)member + 0x7c) = zero;
+					*(f32*)((u8*)member + 0x80) = eight;
+					*(f32*)((u8*)member + 0xdc) = six;
+					*(f32*)((u8*)member + 0xe4) = neg0p5;
+				}
 				member->field_0x4++;
 				psndSFXOn_3D(str_802F8DD4, &member->position);
 			}
@@ -1022,7 +1048,7 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 	}
 }
 
-// NONMATCHING (85.66%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (92.26%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 	BattleWork* work;
 	BattleAudienceMember* member;
@@ -1460,7 +1486,6 @@ void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 	}
 }
 
-// NONMATCHING (94.98%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioIgnite(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -1489,6 +1514,10 @@ void BattleAudienceCtrlProcessKinopioIgnite(s32 index, s32 kind) {
 			member->field_0x4++;
 		}
 		break;
+#ifdef MUST_MATCH
+	case 3: // empty case only so MWCC picks the original's compare tree
+		break;
+#endif
 	}
 }
 

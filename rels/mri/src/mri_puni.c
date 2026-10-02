@@ -1848,9 +1848,11 @@ void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
     }
 }
 
-// NONMATCHING (80.94%): switch + hoisted pos x/z + `q` neighbour pointer match;
-// the loop's register allocation differs (target keeps a byte index and uses
-// lhzx, we recompute the address) as does the saved-register set.
+// switch + hoisted pos x/z + `q` neighbour pointer match; loading `cur` through a byte
+// offset makes the target's `lhzx` byte-index form match. The loop's register allocation
+// still differs (target saves r27-r31, we keep fewer live values), as does the probe setup
+// before the switch.
+// NONMATCHING (81.13%): see above.
 void puniMapFindbuff(Vec* pos) {
     s32 out1;
     s32 out2;
@@ -1901,7 +1903,8 @@ void puniMapFindbuff(Vec* pos) {
         for (i = 0; i < total; i++) {
             u16* buf = Punimap->field_0x20;
             u16* q = &buf[i];
-            u16 cur = buf[i];
+            u8* byteBuf = (u8*)buf;
+            u16 cur = *(u16*)(byteBuf + i * 2);
             s32 hi;
 
             if (cur == 0xFFFF)
@@ -2043,15 +2046,22 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
     }
 }
 
-// NONMATCHING (88.5%): register allocation and scheduling differ.
+// NONMATCHING (88.50%): register allocation now matches; only the FP scheduling of the three
+// pos->x/y/z loads+conversions differs (target loads z between the x and y conversions).
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
-    s32 x = (s32)pos->x;
-    s32 y = (s32)pos->y;
-    s32 z = (s32)pos->z;
-    s32 xh = (x >> 8) & 0xFF;
-    s32 yh = (y >> 8) & 0xFF;
-    s32 zh = (z >> 8) & 0xFF;
-    u32 off = base + index * 7;
+    s32 xh;
+    s32 yh;
+    u32 off;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    x = (s32)pos->x;
+    { f32 ty = pos->y; y = (s32)ty; }
+    { f32 tz = pos->z; z = (s32)tz; }
+    xh = (x >> 8) & 0xFF;
+    yh = (y >> 8) & 0xFF;
+    off = base + index * 7;
 
     _swByteSet(off + 0x8F0D180, *out);
     _swByteSet(off + 0x8F0D181, x);
@@ -2059,7 +2069,7 @@ void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     _swByteSet(off + 0x8F0D183, y);
     _swByteSet(off + 0x8F0D184, yh);
     _swByteSet(off + 0x8F0D185, z);
-    _swByteSet(off + 0x8F0D186, zh);
+    _swByteSet(off + 0x8F0D186, (z >> 8) & 0xFF);
 }
 
 void puniswTrapGetindex(s32 index, s32* out) {
@@ -2429,7 +2439,7 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     }
 }
 
-// NONMATCHING (85.85%): the `*pos = saved; pos->y = saved.y + 1.0f` copy and the second
+// NONMATCHING (88.57%): the `*pos = saved; pos->y = saved.y + 1.0f` copy and the second
 // hitCheckFilter argument setup schedule differently; the rest matches.
 void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
     Vec hitP;
@@ -2470,8 +2480,9 @@ void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
         dist = PSVECMag(&diff);
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
-            *pos = saved;
+            pos->x = saved.x;
             pos->y = saved.y + 1.0f;
+            pos->z = saved.z;
             puni->field_0x214 =
                 hitCheckFilter(0, &hitP2x, &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z,
                                     saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
@@ -2637,7 +2648,7 @@ void puniMoveLimitedNormal(PuniData* puni) {
     }
 }
 
-// NONMATCHING (97.10%): the frame size (0xb0) and all Vec slots now match; the `up2 = up`
+// NONMATCHING (97.16%): the frame size (0xb0) and all Vec slots now match; the `up2 = up`
 // argument copy reproduces the original's second Vec. The remaining diff is `dist`: the
 // original keeps it at 0x20 (between hitP and hitN2), MWCC puts ours at 0x8 regardless of
 // where `dist` is declared, plus the `mag == 0` fcmpu operand order.
@@ -2814,7 +2825,7 @@ void puniParaDamage(PuniData* puni) {
     }
 }
 
-// NONMATCHING (99.2%): control flow matches; only `before` lands in r5 (target r4), and the
+// NONMATCHING (99.20%): control flow matches; only `before` lands in r5 (target r4), and the
 // function-local `.bss` static `debug` / 0.001f literal get a different symbol offset until
 // the sibling compiler-tagged statics (`h0$2954`..`takasa$2947`) and constants are emitted.
 void puniParaRecover(PuniData* puni) {
@@ -2871,7 +2882,7 @@ static inline s32 puniQrnd2(s32 range) {
 }
 
 
-// NONMATCHING (98.9%): the LCG/abs now match and `idx`/`i` land in the target's
+// NONMATCHING (98.90%): the LCG/abs now match and `idx`/`i` land in the target's
 // registers; only `end` (target r7, ours r10) and the short-lived `puni` cursor (target
 // r10, ours r7) are swapped.
 PuniData* puniSearchRandom(s32 start, s32 count) {
@@ -3483,7 +3494,7 @@ void puniModeNormal(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (99.05%): the instruction sequence is identical; only the loop
+// NONMATCHING (99.06%): the instruction sequence is identical; only the loop
 // pointer is allocated r6 instead of r3 (and the field temporary takes r3).
 void puniModeParentpre(PuniData* punidat) {
     s32 i;
@@ -4069,7 +4080,6 @@ s32 puniModeAway_sub(PuniData* punidat) {
     return 0;
 }
 
-// NONMATCHING (99.93%): register allocation and scheduling differ.
 #pragma push
 #pragma dont_inline on
 void puniModeAway(PuniData* punidat) {
@@ -4434,7 +4444,7 @@ static inline f32 puniRandfRecover(f32 a, f32 b) {
 }
 
 
-// NONMATCHING (99.37%): only the `field_0xE = unkC` store in case 1 is scheduled one slot earlier
+// NONMATCHING (99.38%): only the `field_0xE = unkC` store in case 1 is scheduled one slot earlier
 // than the target (ours before `li r3, 0xd`, the target after it); reordering the source statements
 // or routing the old unkC through a temporary only makes it worse.
 void puniModeRecover(PuniData* punidat) {
@@ -8460,7 +8470,7 @@ USER_FUNC(evt_puni_get_lsw_index) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.27%): instruction sequence now matches; only the callee-saved numbering rotates
+// NONMATCHING (95.37%): instruction sequence now matches; only the callee-saved numbering rotates
 // (original event=r28,args=r26,index=r27,i=r30,b0=r31; ours event=r26,args=r28,index=r31,i=r29,b0=r30).
 USER_FUNC(evt_puni_set_lsw_index) {
     s32* args = event->args;
@@ -8759,9 +8769,8 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (62.61%): MWCC colours puni r31 vs the original r29 (and z r29 vs r31), and schedules the
-// pos float->int conversions/base computation in a different order. `(Vec){0,0,0}` must be written as
-// the named `(Vec){0.0f, 0.0f, 0.0f}`.
+// NONMATCHING (62.62%): the two branches' `pos` stack slots, the frame size and the FP conversion
+// order differ.
 USER_FUNC(evt_puni_all_save) {
     PuniData* puni = &Punidat[1];
     s32 i;

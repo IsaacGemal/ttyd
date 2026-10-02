@@ -113,12 +113,12 @@ void rollEvtJumpSetup(void) {
     mario->airTimer = 1;
 }
 
-// NONMATCHING (part of marioSetRollDispDir, 94%): helper inlined by MWCC; the constants
-// (135.0f/90.0f) are CSE'd across the inlined copies here, whereas the original reloads them.
+// helper inlined by MWCC into marioSetRollDispDir (100%); `hi` must be computed after the
+// first `if` or the compiler hoists `a + range` and the schedule diverges.
 static s32 rollDispAngleInRange(f32 angle, f32 ref, f32 range) {
     f32 a = (f32)(s32)(10.0f * angle) / 10.0f;
     f32 lo = a - range;
-    f32 hi = a + range;
+    f32 hi;
     s32 kind = 0;
     s32 res = 0;
 
@@ -126,6 +126,7 @@ static s32 rollDispAngleInRange(f32 angle, f32 ref, f32 range) {
         lo += 360.0f;
         kind = 1;
     }
+    hi = a + range;
     if (hi > 360.0f) {
         hi -= 360.0f;
         kind = 2;
@@ -146,7 +147,7 @@ static s32 rollDispAngleInRange(f32 angle, f32 ref, f32 range) {
     return res;
 }
 
-// NONMATCHING (part of marioSetRollDispDir, 94%): helper inlined by MWCC.
+// helper inlined by MWCC into marioSetRollDispDir (100%).
 static f32 rollDispCalcTarget(MarioWork* mario, f32 angle) {
     f32 res = 270.0f + mario->targetYaw - angle;
     f32 off;
@@ -238,14 +239,13 @@ void marioSetRollDispDir(void) {
     }
 }
 
-extern const Vec vec3_802c5d40[];
 extern f32 rollData;
 
-// NONMATCHING (91.99%): only the three Vec copies differ - the original groups the loads
-// (`lwz r3; lwz r0`) before the stores and keeps the 0x8=0 store ahead of them, while MWCC
-// interleaves load/store here and swaps r0/r3. No expression shape tried changes the schedule.
+// 100%: the source array must be reached through a non-const pointer. A `const Vec*`
+// made MWCC software-pipeline the three Vec copies (load/store interleaved, r0/r3
+// swapped) instead of the original's load,load,store,store,load,store grouping.
 void marioRollForceCancel(void) {
-    const Vec* vec = vec3_802c5d40;
+    Vec* vec = vec3_802c5d40;
     MarioWork* mario = marioGetPtr();
 
     if (mario->currMotionId == 0x16) {
@@ -291,9 +291,9 @@ void marioRollForceCancel(void) {
     }
 }
 
-// NONMATCHING (91.50%): same Vec-copy scheduling/register diff as marioRollForceCancel.
+// 100%: same fix as marioRollForceCancel - the source pointer must not be `const`.
 void mot_roll_post(void) {
-    const Vec* vec = vec3_802c5d40;
+    Vec* vec = vec3_802c5d40;
     MarioWork* mario = marioGetPtr();
     MarioWork* m2 = marioGetPtr();
 

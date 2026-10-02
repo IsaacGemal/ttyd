@@ -19,6 +19,7 @@ extern ItemData itemDataTable[];
 extern const GXColor dat_8041c118;
 extern const GXColor dat_8041c11c;
 extern const GXColor dat_8041c120;
+extern const GXColor dat_8041c140;
 extern const f32 float_neg200_8041c17c;
 extern const f32 float_neg100_8041c180;
 extern const f32 float_neg60_8041c16c;
@@ -27,6 +28,16 @@ extern const f32 float_neg40_8041c184;
 extern const f32 float_3p1416_8041c14c;
 extern const f32 float_0p1_8041c174;
 
+
+extern const f32 float_0_8041c144;
+extern const f32 float_10_8041c15c;
+extern const f32 float_15_8041c18c;
+extern const f32 float_155_8041c188;
+extern const f32 float_0p75_8041c190;
+extern const f32 float_20_8041c168;
+extern const f32 float_164_8041c194;
+extern const f32 float_24_8041c198;
+extern const f32 float_1_8041c178;
 
 // Layout of the battle menu scratch buffer allocated by
 // InitSubMenuCommonProcess (0x124 bytes). Only the fields this file touches
@@ -104,11 +115,11 @@ typedef struct BattleMenuWeaponEntry {
 
 extern BattleWeapon ItemWeaponData_CookingItem;
 
-extern Vec vec3_802ef168;
+extern const Vec vec3_802ef168;
 extern const Vec vec3_802ef174;
 // In .rodata: `const` makes MWCC emit lis/addi instead of @sda21 loads.
 extern const Vec vec3_802ef180;
-extern Vec vec3_802ef18c;
+extern const Vec vec3_802ef18c;
 
 // Stack scratch block shared by the battle-menu draw workers. The original
 // build keeps these arrays in one contiguous frame region; listing them as
@@ -130,7 +141,6 @@ typedef struct BattleMenuDispScratch {
 
 // The Disp wrappers must emit a real call, not an inline expansion of these.
 #pragma dont_inline on
-// NONMATCHING (87.33%): 9 instructions differ, 4 missing, 91 extra, plus register differences.
 void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -138,13 +148,13 @@ void DrawMultiItemWin(void) {
     BattleMenuDispEntry* entries;
     f32 outX;
     f32 outY;
-    Vec vec;
     u16 arr24[7];
+    Vec vec;
+    f32 scales[5];
     s32 arr88[7];
     s32 arr6C[7];
     s32 arr50[7];
     s32 arr34[7];
-    f32 scales[5];
     Vec centers[5];
     Mtx mats[5];
     Mtx rot[7];
@@ -156,11 +166,14 @@ void DrawMultiItemWin(void) {
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->field_0x98 + i;
         if (idx < cursor->unk8) {
-            BattleMenuDispEntry* entry = &entries[idx];
-            arr88[i] = entry->field_0x0;
-            arr24[i] = entry->field_0xC != 0 ? entry->field_0xC : 0x18B;
-            arr6C[i] = entry->field_0x4;
-            arr50[i] = entry->field_0x10;
+            arr88[i] = entries[idx].field_0x0;
+            if (entries[idx].field_0xC != 0) {
+                arr24[i] = entries[idx].field_0xC;
+            } else {
+                arr24[i] = 0x18B;
+            }
+            arr6C[i] = entries[idx].field_0x4;
+            arr50[i] = entries[idx].field_0x10;
             arr34[i] = 0;
         }
     }
@@ -274,23 +287,22 @@ void DrawOperationWin(void) {
     }
 }
 
-// NONMATCHING (88.37%): 8 instructions differ, 9 missing, 90 extra, plus register differences.
 void DrawWeaponWin(void) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleCommand* cmd = &wp->commandMenu;
+    BattleMenuWork* window = (BattleMenuWork*)cmd->field_55C;
     BattleCursor* cursor = window->cursor;
-    BattleMenuWeaponEntry* entries;
     BattleUnit* unit;
     BattleWeapon* sel;
     f32 outX;
     f32 outY;
-    Vec vec;
     u16 arr24[7];
+    Vec vec;
+    f32 scales[5];
     s32 arr88[7];
     s32 arr6C[7];
     s32 arr50[7];
     s32 arr34[7];
-    f32 scales[5];
     Vec centers[5];
     Mtx mats[5];
     Mtx rot[7];
@@ -298,23 +310,21 @@ void DrawWeaponWin(void) {
     const char* msg;
 
     unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-    entries = (BattleMenuWeaponEntry*)window->field_0x8;
-    sel = entries[cursor->field_0].weapon;
+    sel = ((BattleMenuWeaponEntry*)window->field_0x8)[cursor->field_0].weapon;
     DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->field_0x98 + i;
         if (idx < cursor->unk8) {
-            BattleMenuWeaponEntry* entry = &entries[idx];
-            arr88[i] = entry->field_0x4;
-            arr24[i] = *(u16*)((u8*)wp + 0x171c + idx * 0x1c + 0x8c);
-            arr6C[i] = entry->field_0x8;
-            if (entry->weapon != 0) {
-                arr50[i] = BtlUnit_GetWeaponCost(unit, entry->weapon);
+            arr88[i] = ((BattleMenuWeaponEntry*)window->field_0x8)[idx].field_0x4;
+            arr24[i] = *(u16*)((u8*)cmd + idx * 0x1c + 0x8c);
+            arr6C[i] = ((BattleMenuWeaponEntry*)window->field_0x8)[idx].field_0x8;
+            if (((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon != 0) {
+                arr50[i] = BtlUnit_GetWeaponCost(unit, ((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon);
             } else {
                 arr50[i] = 0;
             }
-            if (entry->weapon != 0) {
-                arr34[i] = *(u8*)((u8*)entry->weapon + 0x12);
+            if (((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon != 0) {
+                arr34[i] = *(u8*)((u8*)((BattleMenuWeaponEntry*)window->field_0x8)[idx].weapon + 0x12);
             } else {
                 arr34[i] = 0;
             }
@@ -329,12 +339,14 @@ void DrawWeaponWin(void) {
         if (id != 0) {
             msg = itemDataTable[id].description;
         } else if (sel == &ItemWeaponData_CookingItem) {
-            msg = itemDataTable[entries[cursor->field_0].field_0x14].description;
+            BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->field_0x8;
+            msg = itemDataTable[entry[cursor->field_0].field_0x14].description;
         } else {
             msg = *(const char**)((u8*)sel + 0xC);
         }
     } else {
-        msg = itemDataTable[entries[cursor->field_0].field_0x14].description;
+        BattleMenuWeaponEntry* entry = (BattleMenuWeaponEntry*)window->field_0x8;
+        msg = itemDataTable[entry[cursor->field_0].field_0x14].description;
     }
     if (msg != 0) {
         DrawMenuHelpWin(msg, outX, outY);
@@ -621,15 +633,6 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
     }
 }
 
-// The min(cursor->unk8, 6) is written through a local (`n`) so MWCC materialises
-// the temporaries in r3 and copies to r6, as the original does; the direct
-// ternary/if coalesces them into r6 and loses the extra move.
-// Only instruction scheduling differs now: the `intplGetValue` argument setup.
-// The original loads the `start`/`end` floats before the `currStep` word, ours
-// loads `currStep` first. `#pragma scheduling off`, opt_propagation/lifetimes/
-// global_optimizer, `#pragma dont_inline`, and source permutations all leave the
-// schedule unchanged (the same shape flagged in shadow_scale_small, unit_poison_pakkun).
-// NONMATCHING (98.63%): only the four intplGetValue argument setups are reordered.
 void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* scales, Mtx* mtxC) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -900,7 +903,9 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
 // be marked don't-inline itself (a surrounding region only stops its functions
 // being inlined elsewhere).
 #pragma dont_inline on
-// NONMATCHING (85.42%): 7 instructions differ, 5 missing, 5 extra, plus register differences.
+// NONMATCHING (86.38%): FP scheduling only. The original loads 15/20, pos->y, 0.0,
+// 155, pos->x, then applies +/-f31; ours applies f31 first. In the selection block
+// the original hoists the double_to_int conversion ahead of the pos->x load.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -909,22 +914,22 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     f32 f31;
     s32 n;
 
-    f31 = intplGetValue(4, window->field_0x11C, 6, 0.0f, 10.0f);
+    f31 = intplGetValue(4, window->field_0x11C, 6, float_0_8041c144, float_10_8041c15c);
     window->field_0x11C++;
     if (window->field_0x11C >= 12) {
         window->field_0x11C = 0;
     }
     if (cursor->field_4 > 0) {
-        vec.x = 155.0f + pos->x;
-        vec.y = 15.0f + pos->y + f31;
-        vec.z = 0.0f;
-        iconDispGx(&vec, 0x10, 0x1B5, 0.75f);
+        vec.y = float_15_8041c18c + pos->y + f31;
+        vec.x = float_155_8041c188 + pos->x;
+        vec.z = float_0_8041c144;
+        iconDispGx(&vec, 0x10, 0x1B5, float_0p75_8041c190);
     }
-    if (cursor->unk8 - 6 > cursor->field_4) {
-        vec.x = 155.0f + pos->x;
-        vec.y = 20.0f + pos->y - 164.0f - f31;
-        vec.z = 0.0f;
-        iconDispGx(&vec, 0x10, 0x1B6, 0.75f);
+    if (cursor->field_4 < cursor->unk8 - 6) {
+        vec.y = float_20_8041c168 + pos->y - float_164_8041c194 - f31;
+        vec.x = float_155_8041c188 + pos->x;
+        vec.z = float_0_8041c144;
+        iconDispGx(&vec, 0x10, 0x1B6, float_0p75_8041c190);
     }
     n = cursor->field_0 - cursor->field_4;
     if (n < 0) {
@@ -933,17 +938,17 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     if (n >= 6) {
         n = 5;
     }
+    vec.y = pos->y - float_24_8041c198 * (f32)n;
     vec.x = pos->x;
-    vec.y = pos->y - 24.0f * (f32)n;
-    vec.z = 0.0f;
-    iconDispGx(&vec, 0x14, 0x1F0, 1.0f);
+    vec.z = float_0_8041c144;
+    iconDispGx(&vec, 0x14, 0x1F0, float_1_8041c178);
 }
 #pragma dont_inline reset
 
 // NONMATCHING (97.44%): MWCC coalesces sp/p (`cmplwi` instead of `mr. r31,r3`),
 // shifting p/line to r3/r4; everything else is register renaming.
 void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
-    GXColor color = {0xFF, 0xFF, 0xFF, 0xCF};
+    GXColor color = dat_8041c140;
     s8 text[4][0x30];
     s8* sp = (s8*)tag;
     s8* p;
@@ -955,8 +960,7 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     FontDrawStart();
     FontDrawColorIDX(0);
     FontDrawScale(0.8f);
-    sp = (s8*)msgSearch((char*)sp);
-    if (sp != 0) {
+    if ((sp = (s8*)msgSearch((char*)sp)) != 0) {
         for (i = 0; i < 4; i++) {
             text[i][0] = 0;
         }

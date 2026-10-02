@@ -356,13 +356,18 @@ label_5:
     return poseId;
 }
 
-// NONMATCHING (90.00%): 5 instructions differ, 8 missing, 8 extra, plus register differences.
+// NONMATCHING (97.41%): register allocation only. The target keeps offset in r30 (mr from the
+// zeroed i in r31) where this build uses li, and swaps wp/pose between r5/r3 in the loop; the
+// `id != -2` test also branches bne-to-create + b-over in the target vs beq-over here.
 s32 animPaperPoseEntry(const char* animName, s32 group) {
     s32 i;
+    s32 offset;
     AnimationPose* pose;
 
-    for (i = 0; i < wp->totalPoses; i++) {
-        pose = &wp->poses[i];
+    i = 0;
+    offset = i;
+    while (i < wp->totalPoses) {
+        pose = (AnimationPose*)((u8*)wp->poses + offset);
         if (pose->flags & 1) {
             if (pose->typeFlags & 1 && pose->typeFlags & 2 && pose->type == group) {
                 if (!strcmp(animPoseGetBaseData(pose)->fileName, animName)) {
@@ -370,22 +375,27 @@ s32 animPaperPoseEntry(const char* animName, s32 group) {
                 }
             }
         }
+        offset += 0x170;
+        i++;
     }
     if (i == wp->totalPoses) {
         i = -1;
     }
     if (i >= 0) {
-        wp->poses[i].references++;
-    } else {
-        i = animPoseEntry(animName, group);
-        if (i != -2) {
-            pose = &wp->poses[i];
+        ((AnimationPose*)((u8*)wp->poses + i * 0x170))->references += 1;
+        return i;
+    }
+    {
+        s32 id = animPoseEntry(animName, group);
+
+        if (id != -2) {
+            pose = &wp->poses[id];
             pose->typeFlags = 3;
             pose->references = 0;
             pose->flags |= 1;
         }
+        return id;
     }
-    return i;
 }
 
 // animEffectAsync
@@ -582,41 +592,52 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
     return i;
 }
 
-// NONMATCHING (91.17%): register allocation only; the logic and stack frame match.
+// NONMATCHING (95.43%): register allocation only; the two search loops now use the target's
+// explicit byte offsets and the logic/stack frame match.
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
-    AnimationPose* pose = &wp->poses[poseId];
+    s32 poseOffset = poseId * 0x170;
     s32 type;
     s32 i;
     s32 j;
+    s32 offset;
+    AnimationPose* pose = &wp->poses[poseId];
 
     if (animName == NULL) {
         pose->paperId = -1;
-        wp->poses[poseId].materialLightFlag &= ~1;
+        ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag &= ~1;
         return;
     }
     type = pose->type;
-    for (i = 0; i < wp->totalPoses; i++) {
-        AnimationPose* p = &wp->poses[i];
+    i = 0;
+    offset = i;
+    while (i < wp->totalPoses) {
+        AnimationPose* p = (AnimationPose*)((u8*)wp->poses + offset);
 
         if ((p->flags & 1) && (p->typeFlags & 1) && (p->typeFlags & 2) && p->type == type) {
             if (!strcmp(animPoseGetBaseData(p)->fileName, animName)) {
                 break;
             }
         }
+        offset += 0x170;
+        i++;
     }
     if (i == wp->totalPoses) {
         i = -1;
     }
     pose->paperId = i;
     if (pose->paperId < 0) {
-        for (j = 0; j < wp->totalPoses; j++) {
-            AnimationPose* p = &wp->poses[j];
+        j = 0;
+        offset = j;
+        while (j < wp->totalPoses) {
+            AnimationPose* p = (AnimationPose*)((u8*)wp->poses + offset);
 
             if ((p->flags & 1) && (p->typeFlags & 1) && (p->typeFlags & 2) && p->type == 2) {
                 if (!strcmp(animPoseGetBaseData(p)->fileName, animName)) {
                     break;
                 }
             }
+            offset += 0x170;
+            j++;
         }
         if (j == wp->totalPoses) {
             j = -1;
@@ -632,12 +653,15 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
         pose->flags &= ~2;
         pose->flags &= ~4;
     }
-    wp->poses[poseId].materialLightFlag |= 1;
+    ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
 }
-// NONMATCHING (81.14%): 6 instructions differ, 14 missing, plus register differences.
+// NONMATCHING (82.84%): the animPoseMain call at the end is inlined away because that callee is
+// still an empty stub; a `#pragma dont_inline` on it restores the call but lowers
+// animPoseDrawShape. The search loop's bne/beq layout and top/r26 register choice also differ.
 void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     AnimationPose* pose = &wp->poses[poseId];
-    AnimationPoseData* data = *wp->files[wp->poses[pose->paperId].fileId].handle->data;
+    s32 paperOffset = pose->paperId * 0x170;
+    AnimationPoseData* data = *wp->files[((AnimationPose*)((u8*)wp->poses + paperOffset))->fileId].handle->data;
     s32 top = data->mAnimCount;
     s32 animId = (s32)animName;
 
@@ -658,10 +682,12 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     }
 }
 
-// NONMATCHING (93.05%): register allocation differs and the `id != -2` test
-// branches to the create block in the original (bne) vs to the skip block here (beq).
+// NONMATCHING (97.20%): register allocation only. The target keeps pose in r31 and the pose byte
+// offset in r30; this build swaps them, and the `id != -2` test branches bne-to-create + b-over
+// in the target vs beq-over here.
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     AnimationPose* pose = &wp->poses[poseId];
+    s32 poseOffset;
 
     if (pose->paperId != -1) {
         if (animName != NULL) {
@@ -697,9 +723,10 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
             }
         }
     }
+    poseOffset = poseId * 0x170;
     if (animName == NULL) {
         pose->paperId = -1;
-        wp->poses[poseId].materialLightFlag &= ~1;
+        ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag &= ~1;
         return;
     }
     {
@@ -722,7 +749,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     } else {
         pose->flags &= ~2;
     }
-    wp->poses[poseId].materialLightFlag |= 1;
+    ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
 }
 
 // Searches ANIM_POSE_DATA_ANIMS(data) for animName when i is negative (i is the string's address used

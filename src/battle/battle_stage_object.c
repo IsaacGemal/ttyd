@@ -35,7 +35,13 @@ extern const u32 dat_8041cce8;
 extern const u32 dat_8041ccec;
 extern const u32 dat_8041ccf0;
 extern const u32 dat_8041ccf4;
+#ifdef MUST_MATCH
+// Match-only: a non-const declaration stops mwcc hoisting the dat_8041ccfc load above the
+// event->userdata[2] store in _fall_frame_delete (the symbol itself is const .sdata2).
+extern u32 dat_8041ccfc;
+#else
 extern const u32 dat_8041ccfc;
+#endif
 extern char str_802F3CC4[];
 extern char str_802F3CDC[];
 extern char str_802F3CF4[];
@@ -768,15 +774,16 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 }
 
 #pragma dont_inline on
-// NONMATCHING (91.12%): target keeps the loaded pointer in r4, base in r5 and reloads `clrlwi r0,r3,24`
-// per case (index stays live in r3); mwcc keeps base in r3 and reuses the once-extended index in r0.
-// All case bodies/labels match.
+// MATCHING. The outer `switch ((u8)index)` (rather than `switch (index)`) makes mwcc extend the
+// parameter into r0 for the dispatch and re-extend it in each case body, leaving `index` live in
+// r3; without the cast it caches the extension in r4. The three cases fall through 0 -> 2 -> 1 (no
+// `return -1` after the inner switches), which is the original's control flow.
 s32 _get_nozzle_attack_index(u8 index) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* base = (u8*)wp + 0x20000 - 0x7F40;
 	u8 type;
 
-	switch (index) {
+	switch ((u8)index) {
 		case 0:
 			type = base[index + 0x1C4];
 			switch (type) {
@@ -787,18 +794,6 @@ s32 _get_nozzle_attack_index(u8 index) {
 				case 3:
 					return 1;
 			}
-			return -1;
-		case 1:
-			type = base[index + 0x1C4];
-			switch (type) {
-				case 1:
-					return 0;
-				case 2:
-					return -1;
-				case 3:
-					return 1;
-			}
-			return -1;
 		case 2:
 			type = base[index + 0x1C4];
 			switch (type) {
@@ -809,7 +804,16 @@ s32 _get_nozzle_attack_index(u8 index) {
 				case 3:
 					return -1;
 			}
-			return -1;
+		case 1:
+			type = base[index + 0x1C4];
+			switch (type) {
+				case 1:
+					return 0;
+				case 2:
+					return -1;
+				case 3:
+					return 1;
+			}
 	}
 	return -1;
 }
@@ -950,18 +954,20 @@ USER_FUNC(_nozzle_turn) {
 }
 
 #pragma dont_inline on
-// NONMATCHING (82.61%): target precomputes `index+0x1C4` into r29 and uses `lbzx base,r29`; mwcc adds
-// `base+index` then uses the 0x1C4 displacement, and keeps one fewer callee-saved register (r28 vs r27 start).
-// All sequence/opcodes match. The `slot[0x73]` (rather than `base+index*4+0x1CC`) form was needed to stop mwcc
-// folding the 0x1CC into an `lwzx`.
+// MATCHING. Three source shapes were needed: (1) `u8 idx = index` plus `s32 typeOffset = idx + 0x1C4`
+// declared before `base` (the compiler then precomputes `base[typeOffset]` as `lbzx base,typeOffset`
+// and hands base/typeOffset r28/r29); (2) the `idx` store uses array syntax `base[idx + 0x1C7]` (a pointer
+// expression makes mwcc emit `stbx` with a re-extended index); (3) `slot[0x73]` (rather than
+// `base+index*4+0x1CC`) keeps mwcc from folding 0x1CC into an `lwzx`.
 void _Nozzle_Change_Check(u8 index, void* nozzle) {
+	u8 idx = index;
+	s32 typeOffset = idx + 0x1C4;
 	u8* base = (u8*)_battleWorkPointer + 0x20000 - 0x7F40;
 	u8* data = nozzle;
-	s32 sum;
+	s32 sum = 0;
 	u8 i;
 	s32 k;
 
-	sum = 0;
 	for (k = 0; k < 4; k++) {
 		sum += *data;
 		data++;
@@ -975,13 +981,13 @@ void _Nozzle_Change_Check(u8 index, void* nozzle) {
 		}
 		data++;
 	}
-	if (i != *(u8*)(base + index + 0x1C4)) {
-		s32* slot = (s32*)(base + index * 4);
+	if (i != base[typeOffset]) {
+		s32* slot = (s32*)(base + idx * 4);
 		if (slot[0x73] != 0 && !evtCheckID(slot[0x73])) {
 			slot[0x73] = 0;
 		}
 		if (slot[0x73] == 0) {
-			*(u8*)(base + index + 0x1C7) = i;
+			base[idx + 0x1C7] = i;
 			{
 				EventEntry* e = evtEntry(_nozzle_turn_event, 10, 0);
 				slot[0x73] = e->eventId;

@@ -3575,3 +3575,35 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Parked:** `unit_party_yoshi` (branch `wip-yoshi-data`: `.data`/`.sdata`/`.sdata2` equal via `dol_gen --append`, the typed `BattleWeapon` tables, `negone_one_NNN` statics; blocked by `.rodata`, where the i2f double lands one string early, and three near-miss functions), `eff_mist2` (with the correct function order and named floats `.rodata`/`.sdata2` are equal, but `effMist2Disp` stays 91-95%: named floats get hoisted into registers, `volatile` reads change the schedule), `fadedrv` (`.sdata2` pi pools after 0.5/180 where the target has it first; a one-statement `pi * (x * 0.5f / 180.0f)` fixes the pool and breaks `disp_maku`), `mot_dokan` (the 180/120/-120 pool order), `msgdrv` (data offsets shift until `msgAnalize`/`msgDisp` are written), `lightdrv` (`lightMain` is a stub).
 - **Shared cause not found:** `partyGetTargetDir`, `partyGetTargetDist3D`, `unk_800c9f48` all hold `id != 0` in a callee-saved register across two `anotherPartyGetPtr` calls where the target recomputes it (`neg/or/srwi` into `r3` each time). `!!id`, `(u32)id != 0`, ternaries and `> 0` changed nothing or made it worse.
 
+## Wave 53, batch 1 (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Wave 53 (launched 16:56 on main eb6320c; Isaac's 8-hour autonomous run): every unclaimed game file's functions
+  below 95% up to 2.5 KB, grouped per file as in waves 51/52, 174 agents. Workspaces as tools/wave_launch.py builds
+  them (no `tools/perm_*.py`, the base's DOL asm linked, `.git` left out); the prompt lists, per unit, the functions
+  a review took out (effCalcMayaAnimMatrix, mapSetMaterial) and they are out of the agents' lists; every prompt says
+  to reach a named object by name, never as another object's address plus an offset. Mac builds run
+  `nice -n 10 ninja -j8` (the helper scripts too).
+- Batch 1 (40 agents, onto main 80dc510): 8,780 -> 8,826 functions. **battle_camera.c's agent copy sends mwcceppc
+  into an endless loop** (a build sat at 100% CPU on it for over an hour): that file is as on main. chuchurina,
+  yuu_02, win_root, bom_01, battle_status_icon and muj_20 (a lower score, or nothing new once the section drops were
+  cleared) as on main.
+- Review (`scratch/wave53/review1.md`): no behaviour defects; two older bugs are fixed by this batch
+  (`BtlUnit_snd_se_pos` tested `< 0x4D80` for retail's `== 0x4D80`; `BattleActionCommandSetup`'s
+  `while (entry++->id)` skipped the first entry). Fixed: muj_20's draw placeholder (deleted without the function
+  being written), notes that cited pragmas the audit had removed (evt_bero, win_log, mri_puni, battle_ac,
+  zubastar), deleted notes on functions still below 100% (viPostCallback, FontDrawColor), an orphaned
+  BtlUnit_ControlPoseSoundMain block and prototype (the greedy revert had taken its body out), mariost's unused
+  statics, fontmgr's duplicate colour inline. **Lesson:** `pragma_audit.py` and `greedy.py` remove code but not
+  the comments that describe it; check the notes around every function they touch.
+- Claude #1's second review of #206: battle_attack_audience had split the 0x40-byte btlataudevtDummy into an
+  invented `btlataudevtDummyBody` under MUST_MATCH (rules 13/17): the file is as on main
+  (btlataudGetAttackEventPtr 93.75%). Approved header correction: include/manager/fontmgr.h `kanjiSearch` takes
+  `u32`, not `u16` (retail has no clrlwi; the only caller loads with lhz). The four NONMATCHING markers it flagged
+  (main_star in sac_bakugame/sac_zubastar, DrawSubMenuCommonProcess, puniModeAway) were dropped because those
+  functions are at 100% in the merged build; `nm_refresh.py` now takes the lowest score when a name appears
+  twice in a unit. Also open: party_vivian's `*(s8*)` switch operands (lines ~106/190) outside MUST_MATCH.
+- **Follow-up (form, behaviour equal):** mot_roll reads three named vectors as `vec3_802c5d40[4..6]` (older; its
+  header now declares the array non-const); match-only shapes outside MUST_MATCH in animdrv (pose byte offsets),
+  battle_audience_kinopio (volatile-comma intplGetValue arguments), fontmgr (FontDrawStart's hand-inlined copy) and
+  mri_puni (puniswSetindex, puniMapFindbuff); evt_bero's `*(u16*)&` on a u16 field; sac_bakugame's tables as u32
+  blobs cast to structs. unit_party_vivian reaches two vec3s as base+offset only under MUST_MATCH (names in #else).

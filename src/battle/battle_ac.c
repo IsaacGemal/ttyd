@@ -73,9 +73,8 @@ void BattleActionCommandDeclareACResult(BattleWork* work, BattleWeapon* weapon, 
 	}
 }
 
-// NONMATCHING (90.14%): 1 missing, 2 extra, plus register differences.
 void BattleActionCommandSetup(BattleWork* work, s32 id, BattleUnit* unit, s32 a4, s32 a5) {
-	ActionCommandEntry* entry; // r6
+	ActionCommandEntry* entry = ActionCommandList; // r6
 
 	work->actionCommands.mAcUnit = unit;
 	work->actionCommands.field_0x4 = a4;
@@ -88,8 +87,7 @@ void BattleActionCommandSetup(BattleWork* work, s32 id, BattleUnit* unit, s32 a4
 	work->actionCommands.deletecb = NULL;
 	work->actionCommands.field_0x8 = a5;
 	work->actionCommands.field_0x30 = 0;
-	entry = ActionCommandList;
-	while (entry++->id) {
+	while (entry->id) {
 		if (entry->id == id) {
 			work->actionCommands.maincb = entry->main;
 			if (!(work->actionCommands.mAcUnit->mTokenFlags & 0x10)){
@@ -99,6 +97,7 @@ void BattleActionCommandSetup(BattleWork* work, s32 id, BattleUnit* unit, s32 a4
 			work->actionCommands.deletecb = entry->delete;
 			return;
 		}
+		entry++;
 	}
 }
 
@@ -127,10 +126,9 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
-// NONMATCHING (32.95%): ours inlines BattleACPadCheckRecordTrigger, which the original calls with `bl`. Before
-// that: the first guard-frame copy is `lis; addi; lwz` here vs retail's `lwzu`
-// (the loaded word is parked in the base register, blocking the fold), and that extra live register
-// rotates the rest of the callee-saved allocation. The second `lwzu` and all stores match.
+// NONMATCHING (32.95%): ours inlines BattleACPadCheckRecordTrigger, which the original calls with `bl`; the first
+// guard-frame copy is `lis; addi; lwz` here vs retail's `lwzu` (the loaded word is parked in the base register,
+// blocking the fold), which is what rotates the r26/r27/r28 allocation. The second `lwzu` and all stores match.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;
 	BattleWorkPad* pad = &work->actionCommands.pad;
@@ -251,10 +249,11 @@ s32 BattleActionCommandGetDefenceResult(void) {
 	return _battleWorkPointer->actionCommands.mDefenseResult;
 }
 
-// NONMATCHING (91.67%): 1 extra.
 void BattleActionCommandResetDefenceResult(void) {
-	_battleWorkPointer->actionCommands.mDefenseResult = 0;
-	BtlPad_WorkInit(&_battleWorkPointer->actionCommands.pad);
+	BattleWork* work = _battleWorkPointer;
+
+	work->actionCommands.mDefenseResult = 0;
+	BtlPad_WorkInit(&work->actionCommands.pad);
 }
 
 s32 BattleActionCommandGetDifficulty(BattleWork* work) {
