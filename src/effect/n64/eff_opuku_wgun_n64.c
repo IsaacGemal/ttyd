@@ -193,10 +193,9 @@ static inline GXColor makeOpukuWgunColor2p(GXColor c, u8 r, u8 g, u8 b) {
 // differs (every instruction opcode/operand matches): mwcc's integer colouring of the two vertex loops
 // (retail keeps the walking vtx pointer in r23 and its base in r24, i in r26, texS in r28 and alpha in r22;
 // we get base r26 / running r28, i r24, texS r23 and alpha r22 -- two independent register swaps), the
-// first TEV colour's temporary slot (retail 0x1c/0x20, ours 0x10/0x1c), the transform loop's f32->s16
-// temporaries (retail 0x8/0xc/0x10; this SDK header's s16 temp gives the 2-byte 0x8/0xa/0xc, which is why
-// `v` sits at 0x24 in retail but 0x20 here) and the redundant `beq` retail emits before the i==0 `bne`.
-// NONMATCHING (98.23%): integer register colouring, the colour1 temp slot and the f32->s16 temp width;
+// first TEV colour's temporary slot (retail 0x1c/0x20, ours 0x10/0x1c) and the redundant `beq` retail emits
+// before the i==0 `bne`. The f32->s16 temporaries now land 4 apart (OSFastCast.h's temp is an f32).
+// NONMATCHING (98.28%): integer register colouring and the colour1 temp slot;
 // every instruction opcode/operand matches.
 void effOpukuWgunDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -206,15 +205,8 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	smartEntry* entry;
 	GXTexObj texObj;
 	Mtx scaleMtx;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail's three __OSf32tos16 temporaries each take a 4-byte slot, so this helper object
-	   is 16 bytes and the following texObj/matrix offsets come out as retail's. Natural Vec under #else. */
-	f32 v[4];
-#define OW_VEC ((Vec*)v)
-#else
 	Vec v;
 #define OW_VEC (&v)
-#endif
 	GXColor color;
 	f32 scale;
 	f32 t;
