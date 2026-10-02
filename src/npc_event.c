@@ -66,20 +66,19 @@ USER_FUNC(pressCheck) {
     return EVT_RETURN_DONE;
 }
 
-// Still differs: every float local is coloured one register too high (orig x=f31,y=f24,z=f25,ratio=f30,...;
-// ours x=f24,y=f25,z=f26,ratio=f31,...), the original keeps a dead `diff.x*diff.x+diff.z*diff.z` compare
-// before angleABf that our expression omits, and the float-constant pool offsets differ.
-// NONMATCHING (88.22%): fabs now uses the `__fabs` intrinsic (double abs + double divide + frsp, matches).
+// NONMATCHING (99.50%): only one swapped fcmpu operand (target f29,f2 vs ours f2,f29), the return-0 tail the
+// target shares instead of duplicating, and the unit's missing-.data pool offsets remain; every other
+// instruction is byte-identical.
 USER_FUNC(_2d_dead_jump) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
-    f32 f31;
     f32 f30;
+    f32 f25;
+    f32 f26;
     f32 f29;
     f32 f28;
     f32 f27;
-    f32 f26;
-    f32 f25;
+    f32 f31;
     f32 f24;
     NpcEntry* npc;
     Vec diff;
@@ -99,11 +98,6 @@ USER_FUNC(_2d_dead_jump) {
     npc->jumpFlags |= 0x1000;
 
     if (isFirstCall) {
-        f32 g;
-        f32 h;
-        f32 half;
-        f32 f4;
-
         npc->flags |= 0x20000;
         npc->flags &= 0xBFFFFFEF;
         npc->field_188 = 0;
@@ -114,6 +108,14 @@ USER_FUNC(_2d_dead_jump) {
         npc->jumpTargetPos.z = f25;
         npc->jumpStartPos = npc->position;
         PSVECSubtract(&npc->jumpTargetPos, &npc->jumpStartPos, &diff);
+#ifdef MUST_MATCH
+        // MUST_MATCH: the target keeps a dead `diff.x*diff.x + diff.z*diff.z` compare before the angleABf
+        // call. An empty `if` is dropped entirely, but a self-store makes MWCC emit the compare and then
+        // optimise the store away, leaving exactly the target's lone fcmpo.
+        if (diff.x * diff.x + diff.z * diff.z < 0.0f) {
+            npc->moveDir = npc->moveDir;
+        }
+#endif
         npc->moveDir = angleABf(0.0f, 0.0f, diff.x, diff.z);
         if (f30 > 0.0f) {
             npc->moveSpeed = (f32)(__fabs(f31 - npc->position.x) / f30);
@@ -125,41 +127,34 @@ USER_FUNC(_2d_dead_jump) {
         npc->jumpVelY = 0.0f;
         npc->jumpYScale = 1.0f;
         dy = npc->jumpTargetPos.y - npc->jumpStartPos.y;
-        if (f29 == 0.0f) {
-            if (dy >= 0.0f) {
-                return EVT_RETURN_YIELD;
+        if (f29 != 0.0f) {
+            if (dy > 0.0f) {
+                f27 = f27 + dy;
             }
-            return EVT_RETURN_BLOCK;
-        }
-        if (dy > 0.0f) {
-            f27 = f27 + dy;
-        }
-        npc->jumpVelY = 0.0f;
-        if (f30 == 0.0f) {
-            npc->jumpVelY = f29;
-        } else {
-            g = npc->jumpGravity;
-            h = -980.0f;
-            half = 0.5f;
-            f4 = half * f30;
-            npc->jumpVelY = -(f30 * ((h * g) * f30)) / f30;
-            {
-                f32 y = f4 * ((h * g) * f4);
-                y = npc->jumpVelY * f4 + y;
+            npc->jumpVelY = 0.0f;
+            if (f30 == 0.0f) {
+                npc->jumpVelY = f29;
+            } else {
+                f32 f4 = 0.5f * f30;
+                f32 y;
+
+                npc->jumpVelY = -(f30 * ((-980.0f * npc->jumpGravity) * f30)) / f30;
+                y = npc->jumpVelY * f4 + f4 * ((-980.0f * npc->jumpGravity) * f4);
                 if (y != 0.0f) {
                     npc->jumpYScale = f27 / y;
                 }
             }
+            return EVT_RETURN_BLOCK;
         }
-        return EVT_RETURN_BLOCK;
+        return dy >= 0.0f ? EVT_RETURN_YIELD : EVT_RETURN_BLOCK;
     } else {
         f32 s;
         f32 c;
 
         s = (f32)sin(6.2831855f * npc->moveDir / 360.0f);
-        npc->moveOffset.x = npc->moveDt * npc->moveSpeed * s + npc->moveOffset.x;
+        npc->moveOffset.x = npc->moveDt * (npc->moveSpeed * s) + npc->moveOffset.x;
         c = (f32)cos(6.2831855f * npc->moveDir / 360.0f);
-        npc->moveOffset.z = npc->moveDt * npc->moveSpeed * -c + npc->moveOffset.z;
+        npc->moveOffset.z = npc->moveDt * (npc->moveSpeed * -c) + npc->moveOffset.z;
         if (npc->position.y >= f28) {
             return EVT_RETURN_BLOCK;
         }
@@ -302,25 +297,22 @@ USER_FUNC(kamec_fire_magic_delete) {
     return EVT_RETURN_DONE;
 }
 
-// Still differs: every float temp is coloured one register low (orig scale=f31, ratio=f30, ...;
-// ours scale=f30, ratio=f29, ...), the first block evaluates the x difference before the y difference, and the
-// shared rodata/string pool offsets differ. The dead `pos = {0,0,0}` rodata init now matches.
-// NONMATCHING (89.31%): instruction sequence and logic match apart from float register colouring.
+// NONMATCHING (94.36%): loops/updates match; what remains is per-block scratch colouring (target loads block1's
+// s.x straight into f28, ours via f23, and schedules the axis loads differently) plus the whole unit's rodata
+// offsets, which are early because src/npc_event.c lacks the target's .data/.sdata event-script tables.
 USER_FUNC(chain_main) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     NpcEntry* ref;
     NpcEntry* cur;
-    f32 f31;
-    f32 f30;
-    f32 f29;
     f32 f28;
-    f32 f27;
-    f32 f26;
-    f32 f25;
-    f32 f24;
     f32 f23;
-    f32 dist;
-    f32 t;
+    f32 f24;
+    f32 f25;
+    f32 f31;
+    f32 f26;
+    f32 f30;
+    f32 f27;
+    f32 f29;
     s32 i;
 
     {
@@ -340,17 +332,21 @@ USER_FUNC(chain_main) {
         Vec pos;
         NpcEntry* s = npc->slaves[0];
 
-        f29 = s->position.y - f30;
+        f29 = s->position.y;
         f28 = s->position.x;
         f27 = s->position.z;
+        f29 = f29 - f30;
         f26 = npc->position.x - f28;
-        f24 = npc->position.z - f27;
         f25 = npc->position.y - f29;
-        dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
-        t = 1.0f - f31 / dist;
-        f29 = f25 * t + f29;
-        f26 = f26 * t + f28;
-        f24 = f24 * t + f27;
+        f24 = npc->position.z - f27;
+        {
+            f32 dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
+            f32 t = 1.0f - f31 / dist;
+
+            f29 = f25 * t + f29;
+            f26 = f26 * t + f28;
+            f24 = f24 * t + f27;
+        }
         if (f29 < npc->territoryBase.y) {
             f29 = npc->territoryBase.y;
         }
@@ -369,14 +365,17 @@ USER_FUNC(chain_main) {
         f23 = cur->position.y - f30;
         f27 = cur->position.x;
         f29 = cur->position.z;
-        f25 = ref->position.y - f23;
         f26 = ref->position.x - f27;
+        f25 = ref->position.y - f23;
         f24 = ref->position.z - f29;
-        dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
-        t = 1.0f - f31 / dist;
-        f23 = f25 * t + f23;
-        f26 = f26 * t + f27;
-        f24 = f24 * t + f29;
+        {
+            f32 dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
+            f32 t = 1.0f - f31 / dist;
+
+            f23 = f25 * t + f23;
+            f26 = f26 * t + f27;
+            f24 = f24 * t + f29;
+        }
         if (f23 < npc->territoryBase.y) {
             f23 = npc->territoryBase.y;
         }
@@ -387,22 +386,25 @@ USER_FUNC(chain_main) {
         cur->position = pos;
     }
 
-    for (i = 2; i >= 0; i--) {
+    for (i = 3; i >= 1; i--) {
         Vec pos;
 
-        cur = npc->slaves[i];
-        ref = npc->slaves[i + 1];
+        ref = npc->slaves[i];
+        cur = npc->slaves[i - 1];
         f23 = cur->position.y - f30;
         f27 = cur->position.x;
         f29 = cur->position.z;
-        f25 = ref->position.y - f23;
         f26 = ref->position.x - f27;
+        f25 = ref->position.y - f23;
         f24 = ref->position.z - f29;
-        dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
-        t = 1.0f - f31 / dist;
-        f23 = f25 * t + f23;
-        f26 = f26 * t + f27;
-        f24 = f24 * t + f29;
+        {
+            f32 dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
+            f32 t = 1.0f - f31 / dist;
+
+            f23 = f25 * t + f23;
+            f26 = f26 * t + f27;
+            f24 = f24 * t + f29;
+        }
         if (f23 < npc->territoryBase.y) {
             f23 = npc->territoryBase.y;
         }

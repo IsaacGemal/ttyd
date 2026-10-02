@@ -10,7 +10,6 @@
 #include "driver/hitdrv.h"
 #include <string.h>
 #include <dolphin/mtx.h>
-#include <math.h>
 #include "party/party_move.h"
 #include "party/party_hit.h"
 #include "driver/mobjdrv.h"
@@ -24,6 +23,10 @@
 #include "motion/mot_slit.h"
 #include "party/party_chuchu.h"
 #include "party/party_bomhei.h"
+
+#pragma pool_data on // load each function's constants through one .rodata base register, as the original unit does
+#define fabs(x) __fabs(x)
+#define fabsf(x) __fabsf(x)
 
 // Local declarations for data that will eventually move to a header.
 extern s32 readId[2];
@@ -57,15 +60,18 @@ void partyChgMot(PartyEntry* party, s32 mot) {
     work->field_8 |= 2;
 }
 
-// NONMATCHING (86.67%): the original keeps a redundant `cmpwi r0,4; bge` range test for the empty
-// case 4/5 group; this compiler (GC/2.6) folds it. Cases above 6 emit `cmpwi r0,7` instead. Non-empty
-// case 4/5 bodies make -O4,p duplicate the shared after-switch block instead of merging it.
+// The switch lists cases 0-3 (empty) with case 6, leaving 4/5 to `default`. Grouping 0-3 is what makes
+// the compare tree emit the original's redundant `cmpwi r0,4; bge` leaf; with cases 4/5 or 0-5 the
+// compiler folds the empty group away. Listing cases 0-3 instead of 0-5 is byte-identical for the
+// state machine (both groups do nothing) and reproduces the target exactly.
 void partyChgMoveMode(PartyEntry* party, u8 mode) {
     PartyEntry* work = party;
     s32 oldMode = work->field_3B;
     switch (oldMode) {
-    case 4:
-    case 5:
+    case 0:
+    case 1:
+    case 2:
+    case 3:
         break;
     case 6:
         work->flags &= ~0x8000;
@@ -77,8 +83,6 @@ void partyChgMoveMode(PartyEntry* party, u8 mode) {
     work->field_8 |= 4;
 }
 
-// NONMATCHING (95.00%): the inlined partyChgMoveMode switch is missing the original's redundant
-// `cmpwi r0,4; bge` range test for the empty case 4/5 group (same blocker as partyChgMoveMode).
 void partyMoveBesideMario(PartyEntry* party, s32 mode) {
     if (party->currentMemberId == 4 && party->field_34 == 3) {
         return;
@@ -88,7 +92,6 @@ void partyMoveBesideMario(PartyEntry* party, s32 mode) {
     partyChgMot(party, 1);
 }
 
-// NONMATCHING (95.00%): same inlined partyChgMoveMode range-test mismatch as partyMoveBesideMario.
 void partyMoveBehindMario(PartyEntry* party, s32 mode) {
     if (party->currentMemberId == 4 && party->field_34 == 3) {
         return;
@@ -363,15 +366,15 @@ void partyNextReadId(u32 index) {
 
 // Each clears one party slot's buffer: 0x50 records (0x500 bytes) of footmarkBuf.
 #ifdef MUST_MATCH
-// NONMATCHING (84.98%): the `u32` copy makes the compiler emit the original's `stw` stores; the
-// pointer walk matches the `bdnz`/0x80-stride unroll, but this compiler still emits a redundant
-// loop-entry test (`cmpwi`/`bge`) the original lacks.
+// The `u32` copy makes the compiler emit the original's `stw` stores; the loop counter must be
+// `u32` (not `s32`), which is what turns `for (i<0x50)` into the clean counted `mtctr 10`/`bdnz`
+// loop with no loop-entry test. The natural field-copy form under #else compiles to `lfs`/`stfs`.
 void partyClearFootmark(void) {
     MarioWork* mario = marioGetPtr();
     Vec pos = mario->position;
     u32* src = (u32*)&pos;
     Footmark* f = (Footmark*)footmarkBuf;
-    s32 i;
+    u32 i;
 
     for (i = 0; i < 0x50; i++) {
         ((u32*)&f->x)[0] = src[0];
@@ -401,8 +404,9 @@ void partyClearFootmark(void) {
 
 // dont_inline keeps this a real `bl` from partyRecordFootmark, as in retail.
 #pragma dont_inline on
-// NONMATCHING (87.37%): shares the clear loop's redundant loop-entry test with partyClearFootmark;
-// the mario/target copy is otherwise matched.
+// The nested if/else is what makes the compiler emit the original's two separate mario-position
+// copies (the single short-circuit condition shares one). The MUST_MATCH block uses the same
+// u32-copy / u32-counter loop as partyClearFootmark.
 void partyClearFootmark2(void) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* target = partyGetPtr(marioGetPartyId());
@@ -411,13 +415,17 @@ void partyClearFootmark2(void) {
     u32* src = (u32*)&pos;
     Footmark* f;
 #endif
-    s32 i;
+    u32 i;
 
-    if (target == NULL || nokonokoGetStatus(target) == 3
-        || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
-        pos = mario->position;
+    if (target != NULL) {
+        if (nokonokoGetStatus(target) == 3
+            || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+            pos = mario->position;
+        } else {
+            pos = target->position;
+        }
     } else {
-        pos = target->position;
+        pos = mario->position;
     }
 #ifdef MUST_MATCH
     // the u32 copy and pointer walk, as in partyClearFootmark
@@ -574,6 +582,9 @@ static const char* boxNames[] = {
     "MOBJ_BlueTimerSwitch",
     NULL,
 };
+
+#include <math.h>  // deliberately after boxNames[]: its inline sqrtf/sqrt emit static doubles
+               // at .rodata offset 0, which would break constant pooling. See partyGetAppearPos4.
 
 s32 unk_800c8dd0(HitEntry* hit) {
     s32 found;
@@ -1192,17 +1203,39 @@ Footmark* partyGetFootmarkPtr(u32 index) {
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
 }
 
-// HEADER PROBLEM: the asm returns BOOL (`li r3,0x1` / `li r3,0x0` before both epilogues,
-// e.g. 800C3D18 and 800C407C), but include/party/party_move.h:32 declares this function `void`
-// and bulk agents may not change existing header lines. The definition is therefore `void` and
-// the eight `li r3` return-value instructions are missing; the header should become
+// HEADER PROBLEM: the asm returns BOOL (`li r3,0x1` at 800C3D18/800C3ED0/800C4070 and
+// `li r3,0x0` at 800C407C), but include/party/party_move.h declares this function `void`.
+// Existing header lines may not be changed, so the definition stays `void` and the four `li r3`
+// return-value instructions are missing; the header should become
 // `BOOL partyGetAppearPos2(PartyEntry* party, Vec* pos);` (the only caller, party.c:1105,
 // ignores the result).
-// The compiler also pools this function's Vec compound-literal templates into per-literal local
-// .rodata symbols (@752/@754/...) instead of the original's str_802CDB20+0x38c... blob, so it
-// keeps only three callee-saved GPRs (r29-r31) instead of four (r28-r31). All other opcodes,
-// stack offsets and control flow match.
-// NONMATCHING (74.24%): wrong header return type + pool-layout blocker.
+// POOL BLOCKER: the original's Vec templates are the target's named rodata pool entries
+// (vec3_802cdeac, vec3_802cdeb8, vec3_802cdec4, vec3_802cded0, vec3_802cdedc, vec3_802cdee8,
+// vec3_802cdef4, vec3_802cdf00, vec3_802cdf0c, vec3_802cdf18, vec3_802cdf24, vec3_802cdf30) at
+// str_802CDB20+0x38c..0x41c, addressed through one base register (r31, base 
+// str_802CDB20, the first rodata string) live across the whole function.
+// ROOT CAUSE FOUND: the target emits the two inline sqrtf doubles (`_half`/`_three` from
+// math.h's `extern inline sqrtf/sqrt`) at str_802CDB20+0x600, i.e. at the END of .rodata,
+// after the vec3 pool. This compiler emits them as WEAK LOCAL `_half$localstatic`/`
+// `_three$localstatic` at .rodata offset 0, so the compiler's pool base becomes those doubles
+// (and it does not pool our constants at all) instead of str_802CDB20. The 32 vec3s before
+// these (str+0x20c..0x38c) belong to partyGetAppearPos (still unwritten).
+// DIAGNOSTIC: swapping `#include <math.h>` for `#include "math_ext.h"` (which declares sqrt as
+// an external and drops the inline doubles) makes the compiler pool: partyGetAppearPos2 rises
+// to 98.42% with base `...rodata.0` and offsets 0x20c.. (matching the target's 0x38c.. once the
+// 32 preceding vec3s exist), the only remaining diffs being those offsets and the missing
+// `li r3` returns (header). But that whole-file swap also drops partyMarioHosei 100->83.72,
+// partyMoveMain 100->98.82 and unk_800c9f48 95.62->90.11 (they need the inline doubles), so it
+// cannot be applied here. The correct fix is a unit-finish step that emits those sqrtf doubles
+// at the end of .rodata (see the partyGetMoveDirSpd comment: `the inline sqrt double pool lands
+// in a fresh @991 instead of str_802CDB20+0x600`).
+// Tried and reverted (none beat 74.24%): `#pragma pool_data on`; named `const Vec` globals
+// (static and global, at the top, next to the function and at the end of the file) + the pragma
+// (57.03%); one `const Vec vec3_pool[44]` array indexed as vec3_pool[32..43], with and without a
+// local pointer (58.90%/65.01%). build.ninja experiments with `-pooldata on -pool on` and with
+// `-str reuse,pool,readonly` changed nothing either.
+// All other opcodes, stack offsets and control flow match.
+// NONMATCHING (98.42%): wrong header return type + unit-level .rodata double-placement blocker.
 void partyGetAppearPos2(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;
     HitCheckQuery query;
@@ -1295,16 +1328,16 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
     return;
 }
 
-// The compiler does not pool the .rodata constants for this function, so it keeps two
-// pool-base registers live across the loop instead of the original's one. That shifts
-// every callee-saved register by one (stmw r20 vs r21) and leaves the four Vec/angle
-// literal offsets (@749/@755/@757/@761/@763) unnamed instead of
-// str_802CDB20+0x41c/0x440/0x44c/0x458/0x464. All opcodes and stack offsets otherwise match.
-// NONMATCHING (89.61%): one extra callee-saved register and unpooled constant relocations.
+// With math_ext.h + pool_data the constants share str_802CDB20, but every angle/Vec literal offset
+// still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the
+// whole unit is finished), plus a few fpr/stack slots follow the same shift. Declaring `u32 i` first
+// and the `targetDist` initializer before `unk1AC` fixed the r26/r27 and f25/f26 swaps.
+// NONMATCHING (99.67%)
 BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
+    u32 i;
     MarioWork* player = party->playerPtr;
-    f32 unk1AC = *(f32*)((u8*)player + 0x1AC);
     f32 targetDist = 30.0f + *(f32*)((u8*)party + 0xF4);
+    f32 unk1AC = *(f32*)player->unk1AC;
     HitCheckQuery query;
     s32 angles[9] = {45, 135, -135, 315, -315, 180, -180, 90, -90};
     HitEntry* hit;
@@ -1317,7 +1350,6 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     f32 cosv;
     Vec hitNormal;
     f32 angle;
-    u32 i;
 
     position->x = player->position.x;
     position->y = player->position.y;
@@ -1396,35 +1428,49 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 }
 
 // The original pools the five angle tables into one interleaved .rodata blob (base
-// str_802CDB20) and copies them with a sliding-window scheduler; ours emits five separate
-// declaration-order tables and a register-batch copy, shifting the stack frame (0x270 vs
-// 0x290) and most of the prologue/copy block. Declaring the tables E,D,C,B,A (V,W,Z,Y,X) and
-// giving targetDir a separate `(Vec){0,-1,0}` temp (so 0.0f is not hoisted) recovers the
-// original's five callee-saved FPRs (f27-f31) and the loop body. 0x54 is an unnamed angle
-// field PartyEntry does not declare, so it is read as a raw offset. Like the original, the
-// fallback loop reads one entry past the end of each angle table on its last pass (the neighbour
-// it lands in differs from retail's for anglesE).
-// NONMATCHING (77.78%): interleaved angle-table pool and sliding-window copy differ.
+// str_802CDB20) and copies them with a sliding-window scheduler. Declaring the tables
+// E,D,C,B,A puts them in retail's order in the pool and drives the sliding-window copy.
+//
+// The pool base only forms if the translation unit's first .rodata object is a named
+// global. `libs/dolsdk2004/include/libc/math.h` declares `extern inline float sqrtf`/`sqrt`
+// with `static const double` `_half`/`_three` locals, so including it emits those four
+// doubles at offset 0 of .rodata; MWCC then gives every function a per-object constant
+// base instead of the single pooled r31 base, which cost this function (and Pos2/3/5 and
+// partyGetMoveDirSpd) ~20 points each. The `#include <math.h>` below is deliberately placed
+// after `boxNames[]` (see the note there) so the first .rodata object is a string, matching
+// retail (whose sqrtf statics sit at .rodata+0x600).
+//
+// Keeping the Vec locals uninitialized and assigning `pos1 = (Vec){0,0,0}` etc. inside the
+// loop reproduces the original's per-iteration template reloads; a declaration initializer
+// makes MWCC hoist the template stores into the prologue. `count` is a ternary (a
+// `count = 11; if (...) count = 13;` spills to a different callee-saved register), and
+// targetDistance is stored in both arms of the angle if/else to match the original's
+// duplicated store. The base angle at 0x54 is not a declared f32 field (it sits inside the
+// byte-blob `field_4D`), so it is read as `*(f32*)(party->field_4D + 7)`, the same style the
+// file already uses for that array. Like the original the fallback loop reads one entry past
+// the end of each angle table on its last pass.
+// NONMATCHING (99.86%): 77 diffs, all just the .rodata base offset (str_802CDB20 is 0x15c
+// lower in this build because the rest of the unit is not yet byte-exact); the code is
+// otherwise identical to retail.
 BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
-    MarioWork* player = party->playerPtr;
     PartyEntry* other = NULL;
+    MarioWork* player = party->playerPtr;
     f32 sinv;
     f32 cosv;
-    Vec pos1 = (Vec){0.0f, 0.0f, 0.0f};
-    Vec dir1 = (Vec){0.0f, 0.0f, 0.0f};
-    Vec dir2 = (Vec){0.0f, -1.0f, 0.0f};
-    Vec pos2 = (Vec){0.0f, 0.0f, 0.0f};
+    HitCheckQuery query;
     s32 anglesE[11] = {180, 150, -150, 120, -120, 90, -90, 60, -60, 30, -30};
     s32 anglesD[11] = {150, -150, 120, -120, 90, -90, 60, -60, 30, -30, 180};
     s32 anglesC[11] = {-150, 150, -120, 120, -90, 90, -60, 60, -30, 30, -180};
     s32 anglesB[13] = {180, 180, 150, -150, 120, -120, 90, -90, 60, -60, 30, -30, 0};
     s32 anglesA[13] = {45, 60, 15, 75, 0, 90, -15, 105, -30, 120, -45, 135, -60};
-    HitCheckQuery query;
+    Vec pos1;
+    Vec dir1;
+    Vec pos2;
     HitEntry* hit;
     NpcEntry* npc;
-    f32 dist;
-    f32 targetDist;
     f32 baseAngle;
+    f32 targetDist;
+    f32 dist;
     f32 angle;
     s32 count;
     s32 i;
@@ -1437,7 +1483,7 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
         dist = 26.0f;
     }
     targetDist = dist + party->field_F4;
-    baseAngle = revise360(180.0f + *(f32*)((u8*)party + 0x54));
+    baseAngle = revise360(180.0f + *(f32*)(party->field_4D + 7));
 
     if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
         position->x = player->position.x;
@@ -1456,34 +1502,36 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
         }
     }
 
-    count = 11;
-    if (party->field_8 & 0x200000) {
-        count = 13;
-    }
+    count = (party->field_8 & 0x200000) ? 13 : 11;
 
     for (i = 0; i <= count; i++) {
-        query.targetDistance = targetDist;
         if (i == 0) {
-            angle = *(f32*)((u8*)party + 0x54);
-        } else if (party->field_8 & 0x200000) {
-            if (strcmp(gp->currentMapName, "usu_00") == 0) {
-                angle = toMovedir2(*(f32*)((u8*)party + 0x54), (f32)anglesA[i]);
-            } else {
-                angle = toMovedir2(*(f32*)((u8*)party + 0x54), (f32)anglesB[i]);
-            }
-        } else if (other == NULL) {
-            angle = toMovedir2(baseAngle, (f32)anglesE[i]);
-        } else if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
-            angle = toMovedir2(baseAngle, (f32)anglesD[i]);
+            query.targetDistance = targetDist;
+            angle = *(f32*)(party->field_4D + 7);
         } else {
-            angle = toMovedir2(baseAngle, (f32)anglesC[i]);
+            query.targetDistance = targetDist;
+            if (party->field_8 & 0x200000) {
+                if (strcmp(gp->currentMapName, "usu_00") == 0) {
+                    angle = toMovedir2(*(f32*)(party->field_4D + 7), (f32)anglesA[i]);
+                } else {
+                    angle = toMovedir2(*(f32*)(party->field_4D + 7), (f32)anglesB[i]);
+                }
+            } else if (other == NULL) {
+                angle = toMovedir2(baseAngle, (f32)anglesE[i]);
+            } else if (!(party->flags & PARTY_FLAG_IS_PARTNER)) {
+                angle = toMovedir2(baseAngle, (f32)anglesD[i]);
+            } else {
+                angle = toMovedir2(baseAngle, (f32)anglesC[i]);
+            }
         }
 
         sincosf(&sinv, &cosv, angle);
+        pos1 = (Vec){0.0f, 0.0f, 0.0f};
         pos1.x = position->x;
-        pos1.y = position->y + 37.0f;
         pos1.z = position->z;
+        pos1.y = position->y + 37.0f;
         query.targetPos = pos1;
+        dir1 = (Vec){0.0f, 0.0f, 0.0f};
         dir1.x = sinv;
         dir1.z = cosv;
         query.targetDir = dir1;
@@ -1494,11 +1542,12 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
 
         movePos(&position->x, &position->z, dist, angle);
         query.targetDistance = 87.0f;
+        pos2 = (Vec){0.0f, 0.0f, 0.0f};
         pos2.x = position->x;
         pos2.y = position->y + 37.0f;
         pos2.z = position->z;
         query.targetPos = pos2;
-        query.targetDir = dir2;
+        query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
         hit = hitCheckVecFilter(&query, NULL);
         if (hit == NULL) {
             continue;
@@ -1538,7 +1587,12 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     return FALSE;
 }
 
-// NONMATCHING (85.22%): the Vec-literal stack layout differs.
+// NONMATCHING (96.87%): retail reaches every constant through one base register (r30 =
+// str_802CDB20) and offsets (angles at +0x5a4, the dir/hitPos Vecs at +0x5d4/+0x5e0, the int->float
+// double at +0x5f0), i.e. all of this function's rodata is pooled relative to one base. Our object
+// gives each constant its own symbol/base (angles @930, the Vecs @940/@944, the double elsewhere),
+// so the whole register set shifts by one and the offsets differ. Needs the unit's full rodata
+// layout/fn order to resolve.
 BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
     MapObjectEntry* obj;
@@ -1587,12 +1641,12 @@ BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     return TRUE;
 }
 
-// NONMATCHING (91.17%): footmark clear inherits partyClearFootmark's redundant loop-entry test;
-// the inlined partyChgMoveMode switch also drops the original's `cmpwi 4; bge`.
+// Same footmark-clear shape as partyClearFootmark/partyClearFootmark2 (u32-copy / u32-counter
+// loop, nested if for the two mario-position copies) and the same inlined partyChgMoveMode switch.
 void partyWalkInit(PartyEntry* party, s32 mode) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
-    s32 i;
+    u32 i;
 
     work->flags |= 2;
     if (!(work->flags & 0x8)) {
@@ -2162,13 +2216,13 @@ void partyRecordFootmark(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (91.31%): the two footmark-clear loops carry the known redundant loop-entry test
-// (`cmpwi`/`bge`) this compiler emits where the original uses ctr/bdnz; the speed ramp's running
-// sum is allocated to f1 instead of f0.
+// NONMATCHING (99.81%): everything matches except the speed ramp at the bottom, where this
+// compiler colours the running sum f1 (and the 0.05f/0.1f constant f0) where retail has the sum in
+// f0 and the constant in f1. Declaration order, scope and expression shape were all tried.
 void partyMoveWalk(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario;
-    s32 i;
+    u32 i;
 
     if (work->field_8 & 0x8) {
         work->field_8 &= ~0x8;
@@ -2195,11 +2249,15 @@ void partyMoveWalk(PartyEntry* party) {
             Footmark* f;
             MarioWork* m = marioGetPtr();
             target = partyGetPtr(marioGetPartyId());
-            if (target == NULL || nokonokoGetStatus(target) == 3
-                || PSVECDistance(&m->position, &target->position) >= 150.0f) {
-                pos = m->position;
+            if (target != NULL) {
+                if (nokonokoGetStatus(target) == 3
+                    || PSVECDistance(&m->position, &target->position) >= 150.0f) {
+                    pos = m->position;
+                } else {
+                    pos = target->position;
+                }
             } else {
-                pos = target->position;
+                pos = m->position;
             }
             f = (Footmark*)(footmarkBuf + 0x500);
             for (i = 0; i < 0x50; i++) {
@@ -2221,11 +2279,15 @@ void partyMoveWalk(PartyEntry* party) {
         if (!(mario->flags & 0x400000)) {
             partyChgPoseId(party, 1);
             switch (work->field_3B) {
-            case 4:
-            case 5:
+            case 0:
+            case 1:
+            case 2:
+            case 3:
                 break;
             case 6:
                 party->flags &= ~0x8000;
+                break;
+            default:
                 break;
             }
             work->field_3B = 1;
@@ -2243,23 +2305,26 @@ void partyMoveWalk(PartyEntry* party) {
         MarioWork* m = work->playerPtr;
         f32 target;
         f32 speed = work->speed;
+        f32 f;
         if (m->flags & 0x8000) {
             target = m->baseSpeed;
         } else {
             f32 v = work->speed2 * m->playerGravity;
-            f32 scale = (party->flags & 0x80) ? 0.75f : 1.0f;
-            target = v * scale;
+            f = (party->flags & 0x80) ? 0.75f : 1.0f;
+            target = v * f;
         }
         if (target > 0.0f) {
-            f32 f = 0.5f + target - speed;
-            f = f * 0.05f + speed;
+            f32 k = 0.05f;
+            f = 0.5f + target - speed;
+            f = f * k + speed;
             if (f >= target) {
                 f = target;
             }
             work->speed = f;
         } else {
-            f32 f = -1.0f - speed;
-            f = f * 0.1f + speed;
+            f32 k = 0.1f;
+            f = -1.0f - speed;
+            f = f * k + speed;
             if (f <= 0.0f) {
                 f = 0.0f;
             }
@@ -2279,15 +2344,32 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
         if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
+#ifdef MUST_MATCH
+            /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
+            s32 readIdx = readId[slot];
+            if (readIdx != id + 1) {
+#else
             if (readId[slot] != id + 1) {
-                writeId[slot] = id + 1;
+#endif
+                writeId[slot]++;
                 if (writeId[slot] >= 0x50) {
                     writeId[slot] = 0;
                 }
                 f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
+#ifdef MUST_MATCH
+                /* the original copies the position a word at a time; float assignments give stfs */
+                {
+                    u32* src = (u32*)pos;
+
+                    ((u32*)&f->x)[0] = src[0];
+                    ((u32*)&f->x)[1] = src[1];
+                    ((u32*)&f->x)[2] = src[2];
+                }
+#else
                 f->x = pos->x;
                 f->y = pos->y;
                 f->z = pos->z;
+#endif
                 if (flags & 1) {
                     f->field_0 |= 1;
                 } else {
@@ -2303,16 +2385,21 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     }
 }
 
-// NONMATCHING (87.35%): `flags |= (cond)` and the inlined writer codegen differ (extrwi/mr
-// instead of rlwinm./li r3, plus an early `li r31`), same class as partyRecordFootmark.
 void partyWalkMain(PartyEntry* party) {
-    MarioWork* player = party->playerPtr;
     PartyEntry* target;
+    MarioWork* player = party->playerPtr;
     s32 flags = 0;
-    Vec pos;
 
     if (party->currentSlotId == 0) {
-        flags |= (marioGetPtr()->flags & 0x10000) != 0;
+        MarioWork* m = marioGetPtr();
+        s32 jump = 0;
+        Vec pos;
+        if (m->flags & MARIO_FLAG_IS_JUMPING) {
+            jump = 1;
+        }
+        if (jump) {
+            flags |= 1;
+        }
         if (marioChkSlitThrouh() != 0) {
             flags |= 4;
         }
@@ -2324,21 +2411,30 @@ void partyWalkMain(PartyEntry* party) {
             if ((target->currentMemberId == 3 && target->field_34 == 3)
                 || nokonokoGetStatus(target) == 3
                 || PSVECDistance(&player->position, &target->position) >= 150.0f) {
+                s32 marioFlags = marioGetPtr()->flags;
+                Vec pos;
                 flags = 0;
-                flags |= (marioGetPtr()->flags & 0x10000) != 0;
+                if (marioFlags & MARIO_FLAG_IS_JUMPING) {
+                    flags = 1;
+                }
                 pos = marioGetPtr()->position;
                 partyWalkFootmarkSub(&pos, flags, 1);
             } else {
+                Vec pos;
                 flags = 0;
                 if (target->flags & PARTY_FLAG_IS_JUMPING) {
-                    flags |= 1;
+                    flags = 1;
                 }
                 pos = target->position;
                 partyWalkFootmarkSub(&pos, flags, 1);
             }
         } else {
+            s32 marioFlags = marioGetPtr()->flags;
+            Vec pos;
             flags = 0;
-            flags |= (marioGetPtr()->flags & 0x10000) != 0;
+            if (marioFlags & MARIO_FLAG_IS_JUMPING) {
+                flags = 1;
+            }
             pos = marioGetPtr()->position;
             partyWalkFootmarkSub(&pos, flags, 1);
         }
@@ -2346,12 +2442,14 @@ void partyWalkMain(PartyEntry* party) {
     walkMain(party);
 }
 
-// NONMATCHING (88.61%): both footmark clears inherit partyClearFootmark's redundant loop-entry
-// test/register allocation, and the three inlined partyChgMoveMode switches miss the `cmpwi r0,4;
-// bge` range test. `(mode == 0) ? 0 : 2` makes MWCC emit the original cntlzw/extrwi/neg/andc idiom.
+// Only the three inlined partyChgMoveMode switches are off; they miss the original's redundant
+// `cmpwi r0,4; bge` range test for the empty 4/5 case group (see partyChgMoveMode). The footmark
+// clears and the `(mode == 0) ? 0 : 2` cntlzw idiom now match. Uses `u32 i` for the clear loops:
+// a signed counter makes MWCC emit a redundant loop-entry test.
+// NONMATCHING (96.93%)
 void partyMoveFlyInit(PartyEntry* party, s32 mode) {
     PartyEntry* work = party;
-    s32 i;
+    u32 i;
 
     marioGetPtr();
     party->flags |= 0x2;
@@ -2375,11 +2473,15 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         Footmark* f;
         MarioWork* m = marioGetPtr();
         target = partyGetPtr(marioGetPartyId());
-        if (target == NULL || nokonokoGetStatus(target) == 3
-            || PSVECDistance(&m->position, &target->position) >= 150.0f) {
-            pos = m->position;
+        if (target != NULL) {
+            if (nokonokoGetStatus(target) == 3
+                || PSVECDistance(&m->position, &target->position) >= 150.0f) {
+                pos = m->position;
+            } else {
+                pos = target->position;
+            }
         } else {
-            pos = target->position;
+            pos = m->position;
         }
         f = (Footmark*)(footmarkBuf + 0x500);
         for (i = 0; i < 0x50; i++) {

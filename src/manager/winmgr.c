@@ -45,6 +45,7 @@ const GXColor dat_80421a74 = { 0xF0, 0xF0, 0xF0, 0xFF };
 // .sdata2
 f32 float_0_80421a80 = 0.0f;
 f32 float_1_80421a90 = 1.0f;
+f32 float_0p5_80421a94 = 0.5f;
 f32 float_28_80421aac = 28.0f;
 f32 float_neg144_80421aa8 = -144.0f;
 f32 float_0p6_80421a8c = 0.6f;
@@ -313,7 +314,6 @@ void winMgrMain(void) {
     }
 }
 
-// NONMATCHING (96.63%): 2 instructions differ, 3 missing, 3 extra, plus register differences.
 void winMgrSeq(WinMgrEntry* entry) {
     entry->flags |= 4;
 
@@ -609,10 +609,17 @@ s32 unk_80237448(WinMgrSelect* select) {
     return select->field_0xC;
 }
 
-// NONMATCHING (82.06%): 2 missing, 1 extra, plus register differences.
 void winMgrSelectDelete(WinMgrSelect* select) {
-    __memFree(HEAP_DEFAULT, (void*)select->field_0x30);
-    __memFree(HEAP_DEFAULT, select);
+#ifdef MUST_MATCH
+    // The original took the pointer as `void*` and cast it to WinMgrSelect*; that cast makes the
+    // compiler copy the incoming r3 through r0 before the first call (asm: mr r0, r3 / mr r31, r0).
+    // Keep the header's WinMgrSelect* signature and reproduce the copy with the same no-op cast.
+    WinMgrSelect* s = (WinMgrSelect*)(void*)select;
+#else
+    WinMgrSelect* s = select;
+#endif
+    __memFree(HEAP_DEFAULT, (void*)s->field_0x30);
+    __memFree(HEAP_DEFAULT, s);
 }
 
 s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
@@ -1026,7 +1033,7 @@ void select_main(WinMgrEntry* entry) {
 
 // NONMATCHING (92.61%): close, but MWCC folds the `0.0f + (f32)int` copies that the
 // original keeps (which is why the original also spills f29); the SDA/rodata label
-// spellings differ cosmetically. See REPORT.md.
+// spellings differ cosmetically.
 void select_disp_luigi(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -1305,21 +1312,17 @@ s32 unk_80239b2c(EventEntry* event) {
     return 2;
 }
 
-// NONMATCHING (93.32%): just written.
 void select_disp3_mario(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
-    PouchData* pouch;
 
-    pouch = pouchGetPtr();
-    (void)pouch;
+    pouchGetPtr();
     if (!(wp->mEntries[select->descriptorId[2]].flags & 4)) {
         WinMgrSelectItem* items = (WinMgrSelectItem*)select->field_0x30;
-        u16 flag = items[select->field_0xC].field_0x0;
         const char* help;
         char buf[0x48];
 
-        if (flag & 2) {
-            if (flag & 4) {
+        if (items[select->field_0xC].field_0x0 & 2) {
+            if (items[select->field_0xC].field_0x0 & 4) {
                 help = str_802FFD80;
             } else {
                 help = str_802FFD8C;
@@ -1327,10 +1330,14 @@ void select_disp3_mario(WinMgrEntry* entry) {
         } else {
             help = str_80421A78;
         }
-        if (select->field_0x4 == 9) {
+        switch (select->field_0x4) {
+        case 9:
             sprintf(buf, str_802FFD94, help, mario_status_labelname_table[items[select->field_0xC].field_0x2]);
-        } else {
+            break;
+        case 10:
+        default:
             sprintf(buf, str_802FFDA4, help, mario_status_labelname_table[items[select->field_0xC].field_0x2]);
+            break;
         }
         entry->field_0x34 = (s32)msgSearch(buf);
         winMgrHelpDraw(entry);

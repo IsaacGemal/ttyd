@@ -142,6 +142,9 @@ extern const char str_8030069C[0x14];
 const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
 const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
+GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
+GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
+GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 // .sdata2 constants (names from the original object; used by name so the relocations match)
 f32 float_0p5_80421e54 = 0.5f;
@@ -487,7 +490,9 @@ void yuka_disp(CameraId cameraId, void* param) {
 }
 
 // .text:0x83C | 0x8024380C | size: 0x28C
-// NONMATCHING (94.56%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
+// NONMATCHING (94.78%): algorithm matches; only FPR/GPR allocation and scheduling
+// differ (target holds left/right in f28/f29 and emits `fmuls f3,f3,f4`, ours f29/f27
+// and `fmuls f3,f4,f3`). Writing `(f32)p->height * 0.5f` lifted it 94.56 -> 94.78.
 void yuka_capture(CameraId cameraId) {
     DekaWork* p = get_ptr();
     CameraEntry* cam = camGetPtr(cameraId);
@@ -506,7 +511,7 @@ void yuka_capture(CameraId cameraId) {
     cam->cameraAt = cam->cameraPos;
 
     t = (f32)tan(double_0p21817_80300638);
-    cam->cameraPos.y += float_0p5_80421e54 * (f32)p->height / t;
+    cam->cameraPos.y += (f32)p->height * float_0p5_80421e54 / t;
 
     C_MTXLookAt(cam->view, (Point3d*)&cam->cameraPos, &cam->cameraUp, (Point3d*)&cam->cameraAt);
     C_MTXPerspective(cam->projection, float_25_80421e84, (f32)p->width / (f32)p->height, float_1_80421e88, float_32767_80421e6c);
@@ -523,6 +528,17 @@ void yuka_capture(CameraId cameraId) {
     GXPixModeSync();
     memcpy(camGetPtr(cameraId), &save, 0x260);
 }
+
+#ifdef MUST_MATCH
+// The original builds each GXColor in a helper that returns it by value: the
+// helper's result lands in one stack slot and the assignment copies it to the
+// variable the call then passes. The plain form under #else is equivalent.
+static inline GXColor disp2D_color(GXColor base, u8 alpha) {
+    base.a = alpha;
+    return base;
+}
+#endif
+
 
 // .text:0x1158 | 0x80244150 | size: 0x48
 s32 end_deka(EventEntry* event) {
@@ -985,16 +1001,27 @@ s32 main_deka(EventEntry* event, s32 arg) {
 }
 
 // .text:0x29F8 | 0x802459F0 | size: 0x2D8
-// NONMATCHING (83.26%): algorithm matches; the original pools the three zero Vecs and
+// NONMATCHING (86.59%): algorithm matches; the original pools the three zero Vecs and
 // double_to_int_80300630 through one base (r30=&vec3_803004f8), which the missing
 // .rodata symbols in this unit prevent; register/stack allocation then differs.
 static void yuka_init(void) {
+#ifdef MUST_MATCH
+    const u8* base = (const u8*)&vec3_803004f8;
+#endif
     DekaWork* p = get_ptr();
+#ifdef MUST_MATCH
+    MapObject* obj = mapGetMapObj((const char*)(base + 0x1B8));
+#else
     MapObject* obj = mapGetMapObj("stg_b_yuka");
+#endif
     DekaYukaMesh* mesh;
     s32 i, j;
 
+#ifdef MUST_MATCH
+    mapGrpFlagOn((const char*)(base + 0x1B8), 0x400001);
+#else
     mapGrpFlagOn("stg_b_yuka", 0x400001);
+#endif
 
     PSMTXMultVec(obj->modelWorldMtx, &obj->joints->bboxMin, &p->plane0);
     PSMTXMultVec(obj->modelWorldMtx, &obj->joints->bboxMax, &p->plane1);
@@ -1023,6 +1050,17 @@ static void yuka_init(void) {
             f32 x = p->plane0.x + (f32)p->width * float_0p0078125_80421eac * (f32)j;
             f32 z = p->plane0.z + (f32)p->height * (f32)i;
 
+#ifdef MUST_MATCH
+            v = *(Vec*)(base + 0x00);
+            v.x = x;
+            v.z = z;
+            mesh->disp[i][j] = v;
+            v = *(Vec*)(base + 0x0C);
+            v.x = x;
+            v.z = z;
+            mesh->pos[i][j] = v;
+            mesh->normal[i][j] = *(Vec*)(base + 0x18);
+#else
             v = vec3_803004f8[0];
             v.x = x;
             v.z = z;
@@ -1032,6 +1070,7 @@ static void yuka_init(void) {
             v.z = z;
             mesh->pos[i][j] = v;
             mesh->normal[i][j] = vec3_803004f8[2];
+#endif
             mesh->texU[i][j] = float_0p0078125_80421eac * (f32)j;
             mesh->texV[i][j] = (f32)i;
         }

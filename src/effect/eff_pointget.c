@@ -17,7 +17,14 @@ const GXColor dat_80420ed0 = { 0x00, 0x00, 0x00, 0x80 };
 const GXColor dat_80420ed4 = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 // .rodata
+#ifdef MUST_MATCH
+// MUST_MATCH: the original addresses this object with lis/addi (it is not in .sdata)
+// and, as a non-const object in .rodata, MWCC does not hoist its three loads above the
+// effect->userdata load in effPointGetMain (the natural `const` form does, and scores 96%).
+__declspec(section ".rodata") Vec vec3_802fe390 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802fe390 = { 0.0f, 0.0f, 0.0f };
+#endif
 const f64 double_to_int_mask_802fe3a0 = 4503599627370496.0;
 const f64 double_to_int_802fe3a8 = 4503601774854144.0;
 const char str_802FE3B0[] = "PointGet";
@@ -50,9 +57,6 @@ EffectEntry* effPointGetEntry(s32 type, s32 value, s32 wait, f32 x, f32 y, f32 z
 	work->state = 0;
 	return entry;
 }
-// NONMATCHING (92.10%): control flow, switch and all stores match; only
-// scheduling differs: the disp vec-copy interleaves effect->userdata with the
-// raw vec3 loads, and the s32 frame local stays in a register vs being reloaded.
 void effPointGetMain(EffectEntry* effect) {
 	PointGetWork* work;
 	Vec position;
@@ -67,10 +71,9 @@ void effPointGetMain(EffectEntry* effect) {
 
 	work->frame++;
 	{
-	s32 frame = work->frame;
 	switch (work->state) {
 	case 0:
-		work->x = intplGetValue(0xB, frame, 0x2D, -1000.0f, 0.0f);
+		work->x = intplGetValue(0xB, work->frame, 0x2D, -1000.0f, 0.0f);
 		if (work->frame >= 0x2D) {
 			work->frame = 0;
 			work->state++;
@@ -89,7 +92,7 @@ void effPointGetMain(EffectEntry* effect) {
 		}
 		break;
 	case 2:
-		work->x = intplGetValue(0xB, frame, 0x3C, 0.0f, 1000.0f);
+		work->x = intplGetValue(0xB, work->frame, 0x3C, 0.0f, 1000.0f);
 		if (work->frame >= 0x3C) {
 			effDelete(effect);
 			return;
@@ -103,12 +106,13 @@ void effPointGetMain(EffectEntry* effect) {
 	dispEntry(8, dispCalcZ(&position), 2, effPointGetDisp, effect);
 }
 
-// The frame (0x1e0), the callee-saved set (f19-f31/r26-r31), the .sdata2 pool order and
-// the mtx offsets (0xb8/0x88/0x58) all match. Only the callee-saved FP colouring differs
-// by a cycle: the original holds 48/32/dconst/half/basehalf in f23/f24/f25/f26/f27 with
-// scale->f19 and s->f20, while ours puts 48/32/dconst/half in f24/f26/f25/f27 and reuses
-// f19 for basehalf. Writing part2's `base * half` as a `base / 2.0f` division stops the
-// compiler CSEing it with the precomputed basehalf, which restores the 13-register frame.
+// The frame (0x1e0), the callee-saved set (f19-f31/r26-r31), the order of the constant
+// loads and the mtx offsets (0xb8/0x88/0x58) all match. Only the callee-saved FP colouring
+// differs by a cycle: the original holds 48/32/dconst/half/basehalf in f23/f24/f25/f26/f27
+// with scale->f19 and s->f20, while ours puts them in f24/f26/f27/f25/f19 (basehalf reuses
+// the dead scale register f19, so the loop's nx temp takes f23 instead). Writing part2's
+// `base / 2.0f` as a division stops the compiler CSEing it with the precomputed basehalf,
+// which restores the 13-register frame.
 // The @NNN vs named double_to_int_* pool labels are benign (see window/win_mario.c).
 // NONMATCHING (99.76%): only the callee-saved FP register colouring differs.
 void effPointGetDisp(CameraId camId, void* param) {

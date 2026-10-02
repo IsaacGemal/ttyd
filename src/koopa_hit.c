@@ -48,15 +48,18 @@ BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
     return strcmp(obj->animName, "MOBJ_Block") != 0;
 }
 
-// NONMATCHING (91.57%): register allocation only -- `result` lands in r27 vs the original's r25, the 0.0f
-// constant in r25 vs r26, plus an extra `mr r29,r28`; instruction selection and constants all match.
+// Register allocation only: the clear loop's `i`/`ofs` zero-inits are emitted as `mr r28,r26` + `li r27,0`
+// instead of the original's `mr r27,r26` + `mr r28,r26`, and the pi constant is in f30 vs the original's f31
+// (double_to_int stays in f31 vs f30). `result` is correctly in r25. Declaring `result` last (after
+// entry/i/count/mp) is what fixes the colouring; the `pi`/`deg` locals are deliberate and removing them
+// costs 3 more instructions.
+// NONMATCHING (97.11%): every other instruction, constant and stack slot matches.
 void* kpaHitCheck(void) {
-    void* result = NULL;
-    MarioWork* mp;
-    s32* data;
-    s32 count;
     s32* entry;
     s32 i;
+    s32 count;
+    MarioWork* mp;
+    void* result = NULL;
 
     mp = marioGetPtr();
     if (mp->characterId != 2) {
@@ -70,17 +73,22 @@ void* kpaHitCheck(void) {
     if (kpaFireAttackCheck() == 1) {
         return NULL;
     }
-    data = head_sphere_data[kpaGetLevel()];
-    count = data[0];
-    entry = data + 1;
-    for (i = 0; i < count; i++, entry += 4) {
-        f32 x = (f32)entry[0] * (f32)sin(3.1415927f * mp->directionView / 180.0f) + mp->position.x;
-        f32 z = mp->position.z - (f32)entry[0] * (f32)cos(3.1415927f * mp->directionView / 180.0f);
+    entry = head_sphere_data[kpaGetLevel()];
+    count = entry[0];
+    entry = entry + 1;
+    {
+    f32 pi = 3.1415927f;
+    f32 deg = 180.0f;
+    for (i = 0; i < count; i++) {
+        f32 x = (f32)entry[0] * (f32)sin(pi * mp->directionView / deg) + mp->position.x;
+        f32 z = mp->position.z - (f32)entry[0] * (f32)cos(pi * mp->directionView / deg);
         f32 y = mp->position.y + (f32)entry[1];
         f32 c = (f32)entry[2];
+        s32 type = entry[3];
         void* hit;
 
-        switch (entry[3]) {
+        entry += 4;
+        switch (type) {
         case 1:
             if (!(mp->flags & 0x10000)) continue;
             break;
@@ -103,9 +111,11 @@ void* kpaHitCheck(void) {
             result = hit;
         }
     }
+    }
     KPA(mp)->unk1C = result;
     return result;
 }
+
 
 void* kpaGetHitFlame(void) {
     MarioWork* mp = marioGetPtr();
@@ -167,22 +177,22 @@ s32 kpaChkHitobjRide(void) {
     return (s32)result;
 }
 
-// NONMATCHING (72.93%): MWCC folds the 0x4C field into `lwz 0x4c(r3)` after adding the base, where the
-// original emits `addi r0,r4,0x4c; lwzx`.
+// Written as a scaled byte offset (the field reached through offsetof) because the plain `kpa->ride[index]`
+// makes MWCC fold 0x4C into the load displacement; the original computes the offset first (`addi r0,r4,0x4c`).
 void* kpaGetHitobjRide(s32 index) {
     KpaWork* kpa = KPA(marioGetPtr());
-    return kpa->ride[index];
+    return *(void**)((u8*)kpa + index * 4 + offsetof(KpaWork, ride));
 }
 
 void* kpaGetHitobjHead2(void) {
     return KPA(marioGetPtr())->head[0];
 }
 
-// NONMATCHING (72.93%): MWCC folds the 0x20 field into `lwz 0x20(r3)` after adding the base, where the
-// original emits `addi r0,r4,0x20; lwzx`.
+// Written as a scaled byte offset (the field reached through offsetof) because the plain `kpa->head[index]`
+// makes MWCC fold 0x20 into the load displacement; the original computes the offset first (`addi r0,r4,0x20`).
 void* kpaGetHitobjHead(s32 index) {
     KpaWork* kpa = KPA(marioGetPtr());
-    return kpa->head[index];
+    return *(void**)((u8*)kpa + index * 4 + offsetof(KpaWork, head));
 }
 
 // The original is a stub that returns NULL (`li r3, 0; blr`); its callers ignore the result.
@@ -191,8 +201,12 @@ void* kpaSearchFrontUnder(void) {
 }
 
 
-// NONMATCHING (81.72%): the spilled float register set differs (extra f27 save) and the `kpaGetLevel()==0`
-// test emits bne where the original emits beq.
+// Only 13 instructions differ, all register naming or block layout: the clear loop's counter is r28
+// where the original uses r27 (offset r27 vs r28), the `kpaGetLevel()==0` test emits bne+b where the
+// original emits beq+b, and in the x/y/z block the sz/entry[1] temporaries land in f3/f4 vs f5/f3.
+// Computing the head offsets first and only adding the position after the entry[2]/flags guard (with
+// `entry += 3` as a body statement) is what took this from 46 to 13 differing instructions.
+// NONMATCHING (95.67%): no instruction selection, constant or stack slot differs.
 void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     // per-head offset tables (forward, height, facing condition)
     static s32 _ofs0[] = { 3, 12, 16, 1, 0, 16, 0, -9, 16, 0 };
@@ -202,19 +216,21 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
                            0,  30,  194, 0, 5,   187, 0, -20, 210, 0, -45, 201, 0, -70, 181, 0, -95, 153,
                            0,  -120, 56, 0 };
     static s32* headchkofs[] = { _ofs0, _ofs1, _ofs2, _ofs3 };
-    MarioWork* mp = marioGetPtr();
-    void* result = NULL;
     f32 angle;
     f32 dist;
-    s32* entry;
-    s32 count;
     s32 i;
+    MarioWork* mp;
+    s32 count;
+    s32* entry;
+    void* result;
     s32 ofs;
 
+    mp = marioGetPtr();
     if (mp->flags & 0x20000) {
         return NULL;
     }
-    if (mp->baseSpeed != 0.0f) {
+    result = NULL;
+    if (mp->baseSpeed != float_0_80420e80) {
         angle = mp->directionView;
     } else {
         angle = toMovedir(mp->unk1A8);
@@ -256,35 +272,38 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     angle = 3.1415927f * angle / 180.0f;
     ofs = 0;
-    for (i = 0; i < count; i++, entry += 3, ofs += 4) {
+    for (i = 0; i < count; i++, ofs += 4) {
         f32 sx = (f32)entry[0] * (f32)sin(angle);
-        f32 z = mp->position.z - (f32)entry[0] * (f32)cos(angle);
-        f32 x = mp->position.x + sx;
-        f32 y = mp->position.y + (f32)entry[1];
-        f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
+        f32 c = (f32)cos(angle);
+        f32 sz = (f32)entry[0] * -c;
+        f32 yo = (f32)entry[1];
+        f32 hitX, hitY, hitZ, hitNX, hitNY, hitNZ, distance;
+        f32 x, y, z;
+        s32 t = entry[2];
         void* hit;
 
-        if (entry[2] == 0) {
-            if (!(mp->flags & 0x10000)) continue;
-        }
+        entry += 3;
+        if (t == 0 && !(mp->flags & 0x10000)) continue;
+        x = mp->position.x + sx;
+        y = mp->position.y + yo;
+        z = mp->position.z + sz;
         distance = dist;
         hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, 0.0f, 1.0f,
                              0.0f);
         if (hit == NULL) continue;
-        {
-            f32 q = (f32)(s32)(100.0f * hitY + 0.5f) / 100.0f;
-            if (y + dist >= q) {
-                pos->y = q;
-                result = hit;
-                *outY = 0.0f;
-                KPA(marioGetPtr())->head[i] = hit;
-            } else {
-                *outY = q - pos->y - dist;
-            }
+        hitY = (f32)(s32)(100.0f * hitY + 0.5f) / 100.0f;
+        if (y + dist >= hitY) {
+            pos->y = hitY;
+            result = hit;
+            *outY = 0.0f;
+            KPA(marioGetPtr())->head[i] = hit;
+        } else {
+            *outY = hitY - pos->y - dist;
         }
     }
     return result;
 }
+
 
 s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     MarioWork* mp = marioGetPtr();

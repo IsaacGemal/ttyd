@@ -199,6 +199,7 @@ extern f32 float_neg90_8041cd54;
 extern f32 float_12_8041cd38;
 extern f32 float_8_8041cd44;
 extern f32 float_1_8041cd48;
+extern char str_8041CD78[4];
 
 // Keep _get_nozzle_dir out of line: _nozzle_work_effect's original emits a `bl` to it.
 #pragma dont_inline on
@@ -1115,7 +1116,7 @@ USER_FUNC(_set_mobj_rotate_x) {
 	s32 layer;
 
 	wp = _battleWorkPointer;
-	base = (u8*)wp + 0x20000;
+	base = (u8*)_battleWorkPointer + 0x20000;
 	vec = (u8*)vec3_802f3ac8;
 	layer = evtGetValue(event, *event->args);
 

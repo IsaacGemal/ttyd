@@ -76,9 +76,10 @@ static inline void fileClearTpl(TEXPalette* tpl) {
 
 // Cases 1,2,3,5,6,7,8,9,10 and the type-5 loop match exactly. Case 4 (TPL) goes through the
 // fileClearTpl inline above so its loop counter/byte offset take the original's r5/r6.
-// NONMATCHING (99.93%): case 4's CLUT pointer fixup loads descriptorArray into r3 where the
-// original uses r4 (and the +4 offset into r4 where the original uses r3); every other
-// instruction, including the jump table, matches.
+// NONMATCHING (99.93%): 4 instructions. Case 4's CLUT pointer fixup loads descriptorArray into
+// r3 where the original uses r4 (and the +4 offset into r4 where the original uses r3), i.e.
+// lwzx/stwx r0, r3, r4 instead of r0, r4, r3; every other instruction, including the jump
+// table, matches.
 void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
 	u8* d = data;
@@ -526,7 +527,7 @@ void _fileGarbage(BOOL a1) {
 	afp->lastused = prev;
 }
 
-FileEntry* fileAllocf(u8 type, const char* format, ...) {
+FileEntry* fileAllocf(s32 type, const char* format, ...) {
 	va_list va;
 
 	va_start(va, format);
@@ -534,15 +535,15 @@ FileEntry* fileAllocf(u8 type, const char* format, ...) {
 	return _fileAlloc(_filename, type, NULL);
 }
 
-FileEntry* fileAlloc(const char* filename, u8 type) {
+FileEntry* fileAlloc(const char* filename, s32 type) {
 	return _fileAlloc(filename, type, NULL);
 }
 
-FileEntry* _fileAlloc(const char* filename, u8 type, void (*callback)(FileEntry*)) {
-	smartEntry* smart;
-	DVDEntry* entry;
+FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry*)) {
 	FileEntry *search, *newentry, *temp;
 	void* handle;
+	DVDEntry* entry;
+	smartEntry* smart;
 	u32 size, test;
 
 	for (search = afp->firstused; search; search = search->next) {
@@ -600,7 +601,7 @@ FileEntry* _fileAlloc(const char* filename, u8 type, void (*callback)(FileEntry*
 	}
 	if (handle) {
 		newentry->state = 1;
-		newentry->data = newentry->field_0x4;
+		newentry->data = (void**)&newentry->field_0x4;
 		*newentry->data = handle;
 		newentry->references = 1;
 		newentry->field_0x1 = type;
@@ -614,8 +615,8 @@ FileEntry* _fileAlloc(const char* filename, u8 type, void (*callback)(FileEntry*
 			return NULL;
 		}
 		size = DVDMgrGetLength(entry);
-		test = ((32 - (size & 31)) + size) & ((size & 31) != 0);
-		if (test) {
+		test = size + ((size & 31) ? 32 - (size & 31) : 0);
+		if (test == 0) {
 			DVDMgrClose(entry);
 			return NULL;
 		}
@@ -639,17 +640,17 @@ FileEntry* _fileAlloc(const char* filename, u8 type, void (*callback)(FileEntry*
 	if (!afp->firstavailable) {
 		afp->lastavailable = NULL;
 	}
-	if (afp->firstused) {
-		afp->lastused->next = newentry;
+	if (!afp->firstused) {
+		afp->firstused = newentry;
+		afp->lastused = newentry;
 	}
 	else {
-		afp->firstused = newentry;
+		afp->lastused->next = newentry;
+		afp->lastused = newentry;
 	}
-	afp->lastused = newentry;
 	return newentry;
 }
 
-// NONMATCHING (89.41%): 3 instructions differ.
 void fileFree(FileEntry* handle) {
 	if (handle) {
 		if (handle->data) {
@@ -688,7 +689,7 @@ void dvdReadDoneCallBack(s32 error, DVDFileInfo* info) {
 	}
 }
 
-s32 fileAsyncf(u8 type, FileCallback callback, const char* format, ...) {
+s32 fileAsyncf(s32 type, FileCallback callback, const char* format, ...) {
 	va_list va;
 
 	va_start(va, format);
@@ -696,8 +697,7 @@ s32 fileAsyncf(u8 type, FileCallback callback, const char* format, ...) {
 	return fileAsync(_filename, type, callback);
 }
 
-// NONMATCHING (92.19%): 9 instructions differ, 22 missing, 6 extra, plus register differences.
-s32 fileAsync(const char* filename, u8 type, FileCallback callback) {
+s32 fileAsync(const char* filename, s32 type, FileCallback callback) {
 	FileEntry *search, *newentry, *temp;
 	smartEntry* smart;
 	DVDEntry* entry;
@@ -711,9 +711,7 @@ s32 fileAsync(const char* filename, u8 type, FileCallback callback) {
 			if (search->state == 2) {
 				search->state = 3;
 			}
-			else {
-				return (s32)search;
-			}
+			return (s32)search;
 		}
 	}
 
@@ -771,13 +769,14 @@ s32 fileAsync(const char* filename, u8 type, FileCallback callback) {
 		if (!afp->firstavailable) {
 			afp->lastavailable = NULL;
 		}
-		if (afp->firstused) {
-			afp->lastused->next = newentry;
+		if (!afp->firstused) {
+			afp->firstused = newentry;
+			afp->lastused = newentry;
 		}
 		else {
-			afp->firstused = newentry;
+			afp->lastused->next = newentry;
+			afp->lastused = newentry;
 		}
-		afp->lastused = newentry;
 		return (s32)newentry;
 	}
 	else {
@@ -786,8 +785,8 @@ s32 fileAsync(const char* filename, u8 type, FileCallback callback) {
 			return -1;
 		}
 		size = DVDMgrGetLength(entry);
-		test = ((32 - (size & 31)) + size) & ((size & 31) != 0);
-		if (test) {
+		test = size + ((size & 31) ? 32 - (size & 31) : 0);
+		if (test == 0) {
 			DVDMgrClose(entry);
 			return 0;
 		}
@@ -808,13 +807,14 @@ s32 fileAsync(const char* filename, u8 type, FileCallback callback) {
 		if (!afp->firstavailable) {
 			afp->lastavailable = NULL;
 		}
-		if (afp->firstused) {
-			afp->lastused->next = newentry;
+		if (!afp->firstused) {
+			afp->firstused = newentry;
+			afp->lastused = newentry;
 		}
 		else {
-			afp->firstused = newentry;
+			afp->lastused->next = newentry;
+			afp->lastused = newentry;
 		}
-		afp->lastused = newentry;
 		newentry->entry = DVDMgrOpen(filename, 2u, 0);
 		DVDMgrReadAsync(newentry->entry, smart->address, test, 0, dvdReadDoneCallBack);
 		return 0;

@@ -1449,6 +1449,209 @@ void envDisp_FF(void) {
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
+// The texture-matrix data the original keeps in .rodata at dat_802f9338: ten texture-matrix ids followed
+// by five vectors. The target accesses the vectors as dat_802f9338+0x28..+0x60, so model the whole blob
+// as one object (the header has no name for it).
+typedef struct EnvTevMtxData {
+    s32 tbl[10]; // 0x00
+    Vec vec28;   // 0x28
+    Vec vec34;   // 0x34
+    Vec vec40;   // 0x40
+    Vec vec4C;   // 0x4C
+    Vec vec58;   // 0x58
+} EnvTevMtxData;
+
+// Texture-matrix ids and the five vectors the matrix cases rotate against (target .rodata at 0x802f9338).
+const EnvTevMtxData dat_802f9338 = {
+    { 30, 33, 36, 39, 42, 45, 48, 51, 54, 57 },
+    { 0.0f, 0.0f, -1.0f },
+    { 0.0f, 0.0f, 1.0f },
+    { 0.0f, 100.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, -1.0f },
+};
+
+// 100% (0 instruction diffs): frame/local order matters (frustumE must be Mtx44 to leave the 0x10 gap the
+// target has before scaleD), and the case-2 angle/scale temporaries need the target's declaration order.
+void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType) {
+    const EnvTevMtxData* data = &dat_802f9338;
+    EnvironmentWork* wp = envGetWork();
+    Mtx mtx;
+    Mtx scaleA;
+    Mtx rotA;
+    Mtx scaleB;
+    Mtx mtxB;
+    Mtx invC;
+    Mtx rotC;
+    Mtx scaleD;
+#ifdef MUST_MATCH
+    // the target reserves 0x40 here (a 4x4 matrix), which leaves the 0x10 stack gap before scaleD
+    Mtx44 frustumE;
+#else
+    Mtx frustumE;
+#endif
+    Mtx invE;
+    Mtx concatE;
+    Mtx lookE;
+    Vec vecA;
+    Vec vecB;
+    Vec vecC;
+    Vec vecD;
+    Vec vecE;
+    Vec vecF;
+    Vec vecG;
+    Vec vecH;
+    Vec vecI;
+    Vec vecJ;
+    Vec vecK;
+    Vec vecL;
+
+    switch (type) {
+    // EnvironmentWork::unk70 is a byte blob in the header; the original fields inside it are
+    // +0x00 (0x70) MtxPtr, +0x08 (0x78) MtxPtr, +0x0C (0x7C) f32, +0x10 (0x80) f32, +0x14 (0x84) f32.
+    case 0:
+        PSMTXRotRad(mtx, 'Y', 0.017453292f * *(f32*)&wp->unk70[0x10]);
+        PSMTXRotRad(rotA, 'Z', 0.017453292f * -*(f32*)&wp->unk70[0x14]);
+        PSMTXConcat(mtx, rotA, mtx);
+        PSMTXInvXpose(mtx, mtx);
+        PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
+        PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
+        PSVECNormalize((Vec*)&mtx[2], (Vec*)&mtx[2]);
+        PSMTXScale(scaleA, 0.5f, 0.5f, 1.0f);
+        PSMTXConcat(scaleA, mtx, mtx);
+        PSMTXTrans(scaleA, 0.5f, 0.5f, 0.0f);
+        PSMTXConcat(scaleA, mtx, mtx);
+        GXLoadTexMtxImm(mtx, texMtx, mtxType);
+        break;
+    case 1:
+        PSMTXRotRad(mtx, 'Y', -1.5707964f);
+        PSMTXConcat(mtx, *(MtxPtr*)&wp->unk70[8], mtx);
+        PSMTXInvXpose(mtx, mtx);
+        PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
+        PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
+        PSVECNormalize((Vec*)&mtx[2], (Vec*)&mtx[2]);
+        PSMTXScale(scaleB, 0.5f - 0.25f * *(f32*)&wp->unk70[0xc], 0.5f, 1.0f);
+        PSMTXConcat(scaleB, mtx, mtx);
+        PSMTXTrans(scaleB, 0.5f, 0.5f, 0.0f);
+        PSMTXConcat(scaleB, mtx, mtx);
+        GXLoadTexMtxImm(mtx, texMtx, mtxType);
+        break;
+    case 2: {
+        f32 tmp;
+        f32 angX = 3.1415927f * *(f32*)&wp->unk70[0x10] / 180.0f;
+        f32 angY = 3.1415927f * *(f32*)&wp->unk70[0x14] / 180.0f;
+        f32 scale;
+#ifdef MUST_MATCH
+        // a named temp for cos(angY) makes f0 the multiply accumulator, matching the target's operand order
+        f32 c;
+#endif
+
+        vecA = data->vec28;
+        tmp = (f32)sin(angX);
+#ifdef MUST_MATCH
+        c = (f32)cos(angY);
+        vecB.x = -c * tmp;
+#else
+        vecB.x = -(f32)cos(angY) * tmp;
+#endif
+        vecB.y = -(f32)sin(angY);
+        tmp = (f32)cos(angX);
+#ifdef MUST_MATCH
+        c = (f32)cos(angY);
+        vecB.z = -c * tmp;
+#else
+        vecB.z = -(f32)cos(angY) * tmp;
+#endif
+        PSMTXMultVecSR(*(MtxPtr*)wp->unk70, &vecB, &vecB);
+        C_VECHalfAngle(&vecB, &vecA, &vecC);
+        PSMTXInvXpose(*(MtxPtr*)&wp->unk70[8], mtx);
+        PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
+        PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
+        PSVECNormalize((Vec*)&mtx[2], (Vec*)&mtx[2]);
+        PSMTXIdentity(mtxB);
+        mtxB[0][0] = vecC.x;
+        mtxB[0][1] = vecC.y;
+        mtxB[0][2] = vecC.z;
+        PSMTXConcat(mtxB, mtx, mtx);
+        scale = 20.0f * *(f32*)&wp->unk70[0xc];
+        PSMTXScale(mtxB, scale, 1.0f, 1.0f);
+        PSMTXConcat(mtxB, mtx, mtx);
+        PSMTXTrans(mtxB, 1.0f - scale, 0.0f, 0.0f);
+        PSMTXConcat(mtxB, mtx, mtx);
+        GXLoadTexMtxImm(mtx, texMtx, mtxType);
+        break;
+    }
+    case 3: {
+        f32 angX = 3.1415927f * *(f32*)&wp->unk70[0x10] / 180.0f;
+        f32 angY = 3.1415927f * *(f32*)&wp->unk70[0x14] / 180.0f;
+        f32 tmp;
+
+        vecG = data->vec34;
+        vecD.x = (f32)cos(angY) * (f32)sin(angX);
+        vecD.y = (f32)sin(angY);
+        vecD.z = (f32)cos(angY) * (f32)cos(angX);
+        PSMTXMultVecSR(*(MtxPtr*)wp->unk70, &vecD, &vecD);
+        tmp = PSVECDotProduct(&vecD, &vecG);
+        if (tmp == -1.0f) {
+            PSMTXScale(mtx, 0.0f, 0.0f, 0.0f);
+            GXLoadTexMtxImm(mtx, texMtx, GX_MTX2x4);
+        } else {
+            C_VECHalfAngle(&vecD, &vecG, &vecE);
+            vecE.x = -vecE.x;
+            vecE.y = -vecE.y;
+            vecE.z = -vecE.z;
+            PSMTXInvXpose(*(MtxPtr*)&wp->unk70[8], invC);
+            PSVECNormalize((Vec*)&invC[0], (Vec*)&invC[0]);
+            PSVECNormalize((Vec*)&invC[1], (Vec*)&invC[1]);
+            PSVECNormalize((Vec*)&invC[2], (Vec*)&invC[2]);
+            if (tmp == 1.0f) {
+                PSMTXIdentity(rotC);
+            } else {
+                PSVECCrossProduct(&vecE, &vecG, &vecF);
+                PSMTXRotAxisRad(rotC, &vecF, (f32)acos(PSVECDotProduct(&vecG, &vecE)));
+            }
+            PSMTXConcat(rotC, invC, mtx);
+            angX = 2.0f * *(f32*)&wp->unk70[0xc];
+            PSMTXScale(rotC, angX, angX, 1.0f);
+            PSMTXConcat(rotC, mtx, mtx);
+            PSMTXTrans(rotC, 0.5f, 0.5f, 0.0f);
+            PSMTXConcat(rotC, mtx, mtx);
+            GXLoadTexMtxImm(mtx, texMtx, mtxType);
+        }
+        break;
+    }
+    case 4:
+        PSMTXInvXpose(*(MtxPtr*)&wp->unk70[8], mtx);
+        PSVECNormalize((Vec*)&mtx[0], (Vec*)&mtx[0]);
+        PSVECNormalize((Vec*)&mtx[1], (Vec*)&mtx[1]);
+        PSVECNormalize((Vec*)&mtx[2], (Vec*)&mtx[2]);
+        GXLoadTexMtxImm(mtx, texMtx, GX_MTX2x4);
+        PSMTXScale(scaleD, 0.5f, 0.5f, 0.0f);
+        PSMTXTrans(mtx, 0.5f, 0.5f, 1.0f);
+        PSMTXConcat(mtx, scaleD, mtx);
+        GXLoadTexMtxImm(mtx, texMtx2, mtxType);
+        break;
+    case 5:
+        a += 0.0001f;
+        vecK = data->vec40;
+        vecK.x = 10.0f * (f32)sin(a);
+        vecK.z = 10.0f * (f32)cos(a);
+        vecH = vecK;
+        vecL = data->vec4C;
+        vecL.x = 10.0f * (f32)sin(a);
+        vecL.z = 10.0f * (f32)cos(a);
+        vecI = vecL;
+        vecJ = data->vec58;
+        C_MTXLookAt(lookE, &vecH, &vecJ, &vecI);
+        C_MTXLightFrustum(frustumE, -32.0f, 32.0f, -32.0f, 32.0f, 300.0f, 0.5f, 0.5f, 0.5f, 0.5f);
+        PSMTXInverse(*(MtxPtr*)wp->unk70, invE);
+        PSMTXConcat(lookE, invE, concatE);
+        PSMTXConcat(frustumE, concatE, mtx);
+        GXLoadTexMtxImm(mtx, texMtx2, mtxType);
+        break;
+    }
+}
+
 
 // 100%: the type store must follow the clamps (stores the type only after the sign/clamp checks) and
 // the four s16 temps need the original's declaration order for the register allocation to line up.
