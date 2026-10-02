@@ -485,6 +485,7 @@ typedef struct TubuDt {
 
 
 // winGetMapTplName as the compiler inlined it into winLogMain, sharing the caller's string base register.
+#ifdef MUST_MATCH
 #define MAP_TPL_NAME(dst, base)                                       \
     if (swByteGet(0) < 0x13) {                                        \
         dst = RO(base, 0x4A8, str_802F6360);                          \
@@ -503,6 +504,9 @@ typedef struct TubuDt {
     } else {                                                          \
         dst = RO(base, 0x4FC, str_802F63B4);                          \
     }
+#else
+#define MAP_TPL_NAME(dst, base) dst = winGetMapTplName()
+#endif
 
 typedef struct LogRow {
     s32 type;         // 0x00
@@ -661,12 +665,6 @@ extern const f32 float_neg310_8041d940;
 extern const f32 float_neg60_8041d944;
 extern const f32 float_neg8_8041d910;
 
-#ifdef MUST_MATCH
-#define RO2(base, off, sym) ((const char*)(base) + (off))
-#else
-#define RO2(base, off, sym) ((const char*)&(sym))
-#endif
-
 static inline BOOL tubuUnlocked(TubuDt* t) {
     switch (t->flagIdx) {
     case 0:
@@ -774,15 +772,15 @@ s32 winLogMain(WindowWork* work) {
             break;
         case 10:
             MAP_TPL_NAME(tpl, base);
-            if ((u32)fileAsyncf(4, NULL, RO2(base, 0x510, str_802F63C8), getMarioStDvdRoot(), tpl) != 0) {
+            if ((u32)fileAsyncf(4, NULL, RO(base, 0x510, str_802F63C8), getMarioStDvdRoot(), tpl) != 0) {
                 if (w->file == 0) {
                     MAP_TPL_NAME(tpl, base);
-                    w->file = (FileEntry*)fileAllocf(4, RO2(base, 0x510, str_802F63C8), getMarioStDvdRoot(), tpl);
+                    w->file = (FileEntry*)fileAllocf(4, RO(base, 0x510, str_802F63C8), getMarioStDvdRoot(), tpl);
                 }
                 if (w->pose == -1) {
                     if (w->flags & 0x2000) {
                         const char* anim = "W_1";
-                        w->pose = animPoseEntry(RO2(base, 0x51C, str_802F63D4), 0);
+                        w->pose = animPoseEntry(RO(base, 0x51C, str_802F63D4), 0);
                         switch (marioGetColor()) {
                         case 0:
                             anim = "W_1";
@@ -799,18 +797,18 @@ s32 winLogMain(WindowWork* work) {
                         }
                         animPoseSetAnim(w->pose, anim, 1);
                     } else {
-                        const char* model = RO2(base, 0x524, str_802F63DC);
+                        const char* model = RO(base, 0x524, str_802F63DC);
                         switch (marioGetColor()) {
                         case 0:
                             break;
                         case 1:
-                            model = RO2(base, 0x52C, str_802F63E4);
+                            model = RO(base, 0x52C, str_802F63E4);
                             break;
                         case 2:
-                            model = RO2(base, 0x538, str_802F63F0);
+                            model = RO(base, 0x538, str_802F63F0);
                             break;
                         case 3:
-                            model = RO2(base, 0x544, str_802F63FC);
+                            model = RO(base, 0x544, str_802F63FC);
                             break;
                         }
                         w->pose = animPoseEntry(model, 0);
@@ -866,8 +864,8 @@ s32 winLogMain(WindowWork* work) {
                     if (best < float_50_8041d828) {
                         static char name[0x40];
                         static char help[0x40];
-                        sprintf(name, RO2(base, 0x550, str_802F6408), tubuDt[bestIdx].id);
-                        sprintf(help, RO2(base, 0x564, str_802F641C), tubuDt[bestIdx].id);
+                        sprintf(name, RO(base, 0x550, str_802F6408), tubuDt[bestIdx].id);
+                        sprintf(help, RO(base, 0x564, str_802F641C), tubuDt[bestIdx].id);
                         if (w->mapSel != bestIdx) {
                             SFX(0x20035);
                         }
@@ -986,7 +984,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[stone_tbl[w->stoneSel]];
                 winMsgEntry(work, -1, it->description, (s32)it->name);
             } else {
-                winMsgEntry(work, -1, RO2(base, 0x570, str_802F6428), (s32)RO2(base, 0x58C, str_802F6444));
+                winMsgEntry(work, -1, RO(base, 0x570, str_802F6428), (s32)RO(base, 0x58C, str_802F6444));
             }
             break;
         case 12: {
@@ -1063,7 +1061,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[w->cardIcon[w->cardSel]];
                 winMsgEntry(work, -2, (it + 240)->menu_description, (s32)(it + 240)->name);
             } else {
-                winMsgEntry(work, -2, RO2(base, 0x570, str_802F6428), (s32)RO2(base, 0x58C, str_802F6444));
+                winMsgEntry(work, -2, RO(base, 0x570, str_802F6428), (s32)RO(base, 0x58C, str_802F6444));
             }
             break;
         }
@@ -1141,7 +1139,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel]];
                 winMsgEntry(work, -2, (it + 179)->menu_description, (s32)(it + 179)->name);
             } else {
-                winMsgEntry(work, -2, RO2(base, 0x570, str_802F6428), (s32)RO2(base, 0x58C, str_802F6444));
+                winMsgEntry(work, -2, RO(base, 0x570, str_802F6428), (s32)RO(base, 0x58C, str_802F6444));
             }
             break;
         }
@@ -1231,7 +1229,7 @@ s32 winLogMain(WindowWork* work) {
                 winMsgEntry(work, 0,
                             battleGetUnitMonosiriPtr(w->chars[w->charSel].id)->tattleLogTag, 0);
             } else {
-                winMsgEntry(work, 0, RO2(base, 0x5A8, str_802F6460), 0);
+                winMsgEntry(work, 0, RO(base, 0x5A8, str_802F6460), 0);
             }
     
             break;

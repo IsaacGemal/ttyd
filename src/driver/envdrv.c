@@ -27,6 +27,10 @@ extern const f32 float_6p2832_8041e558;
 extern const f32 float_360_8041e55c;
 extern const f32 float_0p5_8041e538;
 extern const f32 float_0_8041e53c;
+extern const f32 float_45_8041e560;
+extern const f32 float_0p15_8041e564;
+extern const f32 float_0p3_8041e56c;
+extern const f32 float_90_8041e568;
 
 // .sdata2
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -1651,6 +1655,209 @@ void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType
         break;
     }
 }
+
+// The weather/overlay texture setup the game keeps next to texPalette's: TEXGetGXTexObjFromPalette and its CI sibling
+// with clamped wraps and no TLUT name, picking the CI form when the texture has a palette. Inlined at every use.
+static inline void envLoadTevTexture(u32 id, u32 map, GXTexObj* obj, GXTlutObj* tlut) {
+    TEXDescriptor* tdp;
+    GXBool mipMap;
+
+    if (TEXGet(env_tpl, id)->CLUTHeader != NULL) {
+        tdp = TEXGet(env_tpl, id);
+        if (tdp->textureHeader->minLOD == tdp->textureHeader->maxLOD) {
+            mipMap = GX_FALSE;
+        } else {
+            mipMap = GX_TRUE;
+        }
+        GXInitTlutObj(tlut, tdp->CLUTHeader->data, tdp->CLUTHeader->format, tdp->CLUTHeader->numEntries);
+        GXInitTexObjCI(obj, tdp->textureHeader->data, tdp->textureHeader->width, tdp->textureHeader->height,
+                       tdp->textureHeader->format, GX_CLAMP, GX_CLAMP, mipMap, 0);
+        GXInitTexObjLOD(obj, tdp->textureHeader->minFilter, tdp->textureHeader->magFilter,
+                        tdp->textureHeader->minLOD, tdp->textureHeader->maxLOD, tdp->textureHeader->LODBias,
+                        GX_DISABLE, tdp->textureHeader->edgeLODEnable, GX_ANISO_1);
+        GXLoadTlut(tlut, 0);
+        GXLoadTexObj(obj, map);
+    } else {
+        tdp = TEXGet(env_tpl, id);
+        if (tdp->textureHeader->minLOD == tdp->textureHeader->maxLOD) {
+            mipMap = GX_FALSE;
+        } else {
+            mipMap = GX_TRUE;
+        }
+        GXInitTexObj(obj, tdp->textureHeader->data, tdp->textureHeader->width, tdp->textureHeader->height,
+                     tdp->textureHeader->format, GX_CLAMP, GX_CLAMP, mipMap);
+        GXInitTexObjLOD(obj, tdp->textureHeader->minFilter, tdp->textureHeader->magFilter,
+                        tdp->textureHeader->minLOD, tdp->textureHeader->maxLOD, tdp->textureHeader->LODBias,
+                        GX_DISABLE, tdp->textureHeader->edgeLODEnable, GX_ANISO_1);
+        GXLoadTexObj(obj, map);
+    }
+}
+
+// NONMATCHING (99.58%): the stage/texmap/texcoord cursors land in r30/r29/r28 in the target and r29/r28/r30 here
+// (register allocation only; declaration and use order did not move them).
+// Adds one tev stage for the overlay effect `type` (1..8, 10) and loads its texture, texgen and texture matrix.
+// `param` is the shared stage cursor (EnvironmentYami's first fields: stage, texmap, texcoord).
+void envAddTev(s32 type, void* param) {
+    EnvironmentYami* yami = param;
+    EnvironmentWork* wp = envGetWork();
+    s32 tevStage = yami->tevStage;
+    s32 texMap = yami->texMap;
+    s32 texCoord = yami->texCoord;
+    s32 unk18 = yami->unk18;
+    Mtx mtx;
+    GXTexObj texObj1;
+    GXTexObj texObj2;
+    GXTexObj texObj3;
+    GXTexObj texObj4;
+    GXTexObj texObj5;
+    GXTexObj texObj6;
+    GXTexObj texObj7;
+    GXTexObj texObj8;
+    GXTexObj texObj9;
+    GXTlutObj tlut1;
+    GXTlutObj tlut2;
+    GXTlutObj tlut3;
+    GXTlutObj tlut4;
+    GXTlutObj tlut5;
+    GXTlutObj tlut6;
+    GXTlutObj tlut7;
+    GXTlutObj tlut8;
+    GXTlutObj tlut9;
+    GXColor kColor;
+
+    if (type != 0) {
+        PSMTXConcat(camGetCurPtr()->view, yami->unk4, mtx);
+        *(MtxPtr*)&wp->unk70[0] = camGetCurPtr()->view;
+        *(MtxPtr*)&wp->unk70[4] = yami->unk4;
+        *(MtxPtr*)&wp->unk70[8] = mtx;
+        GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+        GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        switch (type) {
+        case 1:
+            GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0x10] = float_10_8041e524;
+            *(f32*)&wp->unk70[0x14] = (f32)(gp->retraceCount + 45);
+            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            envLoadTevTexture(6, texMap, &texObj1, &tlut1);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texCoord += 1;
+            texMap += 1;
+            break;
+        case 2:
+            GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0x10] = float_10_8041e524;
+            *(f32*)&wp->unk70[0x14] = (f32)(gp->retraceCount + 45);
+            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            envLoadTevTexture(8, texMap, &texObj2, &tlut2);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texCoord += 1;
+            texMap += 1;
+            break;
+        case 3:
+            GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_TEXC, GX_CC_ZERO);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            envLoadTevTexture(0, texMap, &texObj3, &tlut3);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(1, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texMap += 1;
+            texCoord += 1;
+            break;
+        case 4:
+            GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            *(f32*)&wp->unk70[0x10] = float_45_8041e560;
+            *(f32*)&wp->unk70[0x14] = float_45_8041e560;
+            envLoadTevTexture(1, texMap, &texObj4, &tlut4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texMap += 1;
+            texCoord += 1;
+            break;
+        case 5:
+            GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            *(f32*)&wp->unk70[0x10] = float_45_8041e560;
+            *(f32*)&wp->unk70[0x14] = float_45_8041e560;
+            envLoadTevTexture(2, texMap, &texObj5, &tlut5);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texMap += 1;
+            texCoord += 1;
+            break;
+        case 6:
+            GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0xC] = float_0p15_8041e564;
+            *(f32*)&wp->unk70[0x10] = float_0_8041e53c;
+            *(f32*)&wp->unk70[0x14] = float_90_8041e568;
+            envLoadTevTexture(4, texMap, &texObj6, &tlut6);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texMap += 1;
+            texCoord += 1;
+            break;
+        case 7:
+            GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0xC] = float_0p3_8041e56c;
+            *(f32*)&wp->unk70[0x10] = float_0_8041e53c;
+            *(f32*)&wp->unk70[0x14] = float_90_8041e568;
+            envLoadTevTexture(5, texMap, &texObj7, &tlut7);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texMap += 1;
+            texCoord += 1;
+            break;
+        case 8:
+            GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            *(f32*)&wp->unk70[0x10] = float_10_8041e524;
+            *(f32*)&wp->unk70[0x14] = float_45_8041e560;
+            envLoadTevTexture(10, texMap, &texObj8, &tlut8);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            tevStage += 1;
+            texMap += 1;
+            texCoord += 1;
+            break;
+        case 10:
+            GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_KONST, GX_CC_ZERO);
+            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+            GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
+            kColor = dat_8041e51c;
+            GXSetTevKColor(GX_KCOLOR1, kColor);
+            envLoadTevTexture(9, texMap, &texObj9, &tlut9);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTTEXMTX0);
+            envTevLoadTexMtxImm(4, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            tevStage += 1;
+            texMap += 1;
+            texCoord += 1;
+            break;
+        }
+        yami->tevStage = tevStage;
+        yami->texCoord = texCoord;
+        yami->unk18 = unk18;
+        yami->texMap = texMap;
+    }
+}
+
 
 
 // 100%: the type store must follow the clamps (stores the type only after the sign/clamp checks) and
