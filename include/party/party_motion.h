@@ -6,6 +6,7 @@ typedef struct PartyEntry PartyEntry;
 USER_FUNC(evt_snd_bgmoff);
 USER_FUNC(evt_snd_sfxon);
 void allPartySlitOn(void);
+void allPartySlitOff(void);
 void allPartyForceSlitOff(void);
 BOOL party_slit(PartyEntry* party);
 s32 party_roll(PartyEntry* party);

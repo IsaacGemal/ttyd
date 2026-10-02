@@ -40,7 +40,6 @@ extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
 #ifdef MUST_MATCH
 extern f32 vec3_802c2f78[];
-extern u32 dat_80419b88; // shared 0xFFFFFF00 colour word the original loads for the blur tint (rule 7)
 #endif
 
 int __float_nan[];
@@ -244,152 +243,6 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
 }
 
 
-// NONMATCHING (98.72%): 1 extra, plus register differences.
-void npcDisp_xlu(CameraId cameraId, void* param) {
-    NpcEntry* entry = param; // cast to proper type
-    Mtx mtx;
-    GXColor color;
-    f32 rotY;
-
-    rotY = reviseAngle(-entry->direction);
-    mtx_setup(entry, mtx, -1);
-
-    color = entry->color;
-    if (entry->jumpFlags & 0x400000) {
-        color.r /= 2;
-        color.g /= 2;
-        color.b /= 2;
-        animPoseSetMaterialEvtColor(entry->poseId, color);
-        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-    }
-
-    if (entry->flags & 0x800000) {
-        AnimTableEntry* anim;
-        AnimationPose* animPose;
-        CameraEntry* camera;
-        f32 dx, dz;
-        f32 angle;
-        u32 i;
-
-        anim = animPoseGetCurrentAnim(entry->poseId); //stale store
-        animPose = animPoseGetAnimPosePtr(entry->poseId);
-        anim = animPoseGetCurrentAnim(entry->poseId);
-
-        camera = camGetPtr(CAMERA_3D);
-        dx = camera->cameraAt.x - camera->cameraPos.x;
-        dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
-        if (angle < 0.0f) {
-            angle += 360.0f;
-        }
-        angle = reviseAngle((angle - animPose->rotationY));
-
-        
-        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][0], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-            }
-        } else {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][1], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-            }
-        }
-    }
-    animPoseMain(entry->poseId);
-    animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
-    animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
-    animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
-}
-
-#pragma opt_lifetimes off // keeps `anim` in the target's r29
-// NONMATCHING (98.87%): remaining diffs are MWCC register allocation. The pragma above puts
-// `anim` in r29 (target r29), but MWCC still spills the animPoseGetCurrentAnim result through r0
-// (one extra `mr r29,r0`) and assigns the loop vars as i=r28/ptr=r30 instead of i=r30/ptr=r28.
-void npcDisp(CameraId camId, void* param) {
-    NpcEntry* entry = param; // cast to proper type
-    Mtx mtx;
-    GXColor color;
-    f32 rotY;
-    DispEntry* disp;
-
-    rotY = reviseAngle(-entry->direction);
-    mtx_setup(entry, mtx, -1);
-
-    disp = dispGetCurWork();
-    switch (disp->renderMode) {
-        case 0:
-            color = entry->color;
-            if (entry->jumpFlags & 0x400000) {
-                color.r /= 2;
-                color.g /= 2;
-                color.b /= 2;
-                animPoseSetMaterialEvtColor(entry->poseId, color);
-                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-            }
-            if (entry->flags & 0x800000) {
-                AnimTableEntry* anim;
-                AnimationPose* animPose;
-                CameraEntry* camera;
-                f32 dx, dz;
-                f32 angle;
-                u32 i;
-
-                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
-                animPose = animPoseGetAnimPosePtr(entry->poseId);
-                anim = animPoseGetCurrentAnim(entry->poseId);
-
-                camera = camGetPtr(CAMERA_3D);
-                dx = camera->cameraAt.x - camera->cameraPos.x;
-                dz = camera->cameraAt.z - camera->cameraPos.z;
-                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
-                if (angle < 0.0f) {
-                    angle += 360.0f;
-                }
-                angle = reviseAngle((angle - animPose->rotationY));
-
-                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][0], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-                    }
-                } else {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][1], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-                    }
-                }
-            }
-            animPoseMain(entry->poseId);
-            animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
-            break;
-        case 1:
-            animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
-            break;
-        case 2:
-            animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
-            break;
-    }
-}
-#pragma opt_lifetimes reset
-
 #ifdef MUST_MATCH
 // MUST_MATCH: the original does the colour + billboard work through an inlined helper. Inlining the
 // whole block makes MWCC put the GXColor local at r1+0x10 and its by-value copy at r1+0x14 (the
@@ -448,7 +301,209 @@ static inline void npcOffscreenSetup(NpcEntry* entry) {
         }
     }
 }
+
+static inline void npcOffscreenSetup2(NpcEntry* entry, GXColor* colorp) {
+    AnimTableEntry* anim;
+    AnimationPose* animPose;
+    CameraEntry* camera;
+    f32 dx, dz;
+    f32 angle;
+    u32 i;
+
+    *colorp = entry->color;
+    if (entry->jumpFlags & 0x400000) {
+        colorp->r /= 2;
+        colorp->g /= 2;
+        colorp->b /= 2;
+        animPoseSetMaterialEvtColor(entry->poseId, *colorp);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    }
+
+    if (entry->flags & 0x800000) {
+        anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+        animPose = animPoseGetAnimPosePtr(entry->poseId);
+        anim = animPoseGetCurrentAnim(entry->poseId);
+
+        camera = camGetPtr(CAMERA_3D);
+        dx = camera->cameraAt.x - camera->cameraPos.x;
+        dz = camera->cameraAt.z - camera->cameraPos.z;
+        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        if (angle < 0.0f) {
+            angle += 360.0f;
+        }
+        angle = reviseAngle((angle - animPose->rotationY));
+
+        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][0], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+            }
+        } else {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][1], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+            }
+        }
+    }
+}
 #endif
+
+void npcDisp_xlu(CameraId cameraId, void* param) {
+    NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+
+    rotY = reviseAngle(-entry->direction);
+    mtx_setup(entry, mtx, -1);
+
+#ifdef MUST_MATCH
+    npcOffscreenSetup2(entry, &color);
+#else
+    color = entry->color;
+    if (entry->jumpFlags & 0x400000) {
+        color.r /= 2;
+        color.g /= 2;
+        color.b /= 2;
+        animPoseSetMaterialEvtColor(entry->poseId, color);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    }
+
+    if (entry->flags & 0x800000) {
+        AnimTableEntry* anim;
+        AnimationPose* animPose;
+        CameraEntry* camera;
+        f32 dx, dz;
+        f32 angle;
+        u32 i;
+
+        anim = animPoseGetCurrentAnim(entry->poseId); //stale store
+        animPose = animPoseGetAnimPosePtr(entry->poseId);
+        anim = animPoseGetCurrentAnim(entry->poseId);
+
+        camera = camGetPtr(CAMERA_3D);
+        dx = camera->cameraAt.x - camera->cameraPos.x;
+        dz = camera->cameraAt.z - camera->cameraPos.z;
+        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        if (angle < 0.0f) {
+            angle += 360.0f;
+        }
+        angle = reviseAngle((angle - animPose->rotationY));
+
+        
+        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][0], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+            }
+        } else {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][1], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+            }
+        }
+    }
+#endif
+    animPoseMain(entry->poseId);
+    animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+    animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+    animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+}
+
+void npcDisp(CameraId camId, void* param) {
+    NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+    DispEntry* disp;
+
+    rotY = reviseAngle(-entry->direction);
+    mtx_setup(entry, mtx, -1);
+
+    disp = dispGetCurWork();
+    switch (disp->renderMode) {
+        case 0:
+#ifdef MUST_MATCH
+            npcOffscreenSetup2(entry, &color);
+#else
+            color = entry->color;
+            if (entry->jumpFlags & 0x400000) {
+                color.r /= 2;
+                color.g /= 2;
+                color.b /= 2;
+                animPoseSetMaterialEvtColor(entry->poseId, color);
+                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+            }
+            if (entry->flags & 0x800000) {
+                AnimTableEntry* anim;
+                AnimationPose* animPose;
+                CameraEntry* camera;
+                f32 dx, dz;
+                f32 angle;
+                u32 i;
+
+                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+                animPose = animPoseGetAnimPosePtr(entry->poseId);
+                anim = animPoseGetCurrentAnim(entry->poseId);
+
+                camera = camGetPtr(CAMERA_3D);
+                dx = camera->cameraAt.x - camera->cameraPos.x;
+                dz = camera->cameraAt.z - camera->cameraPos.z;
+                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+                if (angle < 0.0f) {
+                    angle += 360.0f;
+                }
+                angle = reviseAngle((angle - animPose->rotationY));
+
+                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][0], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+                    }
+                } else {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][1], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+                    }
+                }
+            }
+#endif
+            animPoseMain(entry->poseId);
+            animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+            break;
+        case 1:
+            animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+            break;
+        case 2:
+            animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+            break;
+    }
+}
+
 
 // 1:1: npcDisp_xlu with a sysWaitDrawSync/GXClearBoundingBox prologue and a
 // GXReadBoundingBox + offscreenAddBoundingBox(entry->field_110, ...) epilogue.
@@ -526,10 +581,7 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     offscreenAddBoundingBox(entry->field_110, left, top, right, bottom);
 }
 
-// NONMATCHING (98.85%): npcDisp with the offscreen bounding-box prologue/epilogue. Remaining diffs:
-// the by-value GXColor local lands at 0x14 and its call copy at 0x10 (target: 0x10/0x14); anim sits in
-// r28 and the pose-search pointer/counter in r30/r29 (target: anim r29, i r30, pointer r28, and a direct
-// mr r29,r3 instead of the extra mr r0,r3). The float-pool symbols differ but do not affect the score.
+// 1:1: npcDisp with the offscreen bounding-box prologue/epilogue.
 void npcDisp_offscreen(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -546,6 +598,9 @@ void npcDisp_offscreen(CameraId camId, void* param) {
     disp = dispGetCurWork();
     switch (disp->renderMode) {
         case 0:
+#ifdef MUST_MATCH
+            npcOffscreenSetup(entry);
+#else
             color = entry->color;
             if (entry->jumpFlags & 0x400000) {
                 color.r /= 2;
@@ -595,6 +650,7 @@ void npcDisp_offscreen(CameraId camId, void* param) {
                     }
                 }
             }
+#endif
             animPoseMain(entry->poseId);
             animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
             break;
@@ -1705,23 +1761,22 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
     }
 }
 
-// NONMATCHING (91.50%): the roll destination is the header's info->field_9C[0x14+i] (the raw-offset form
-// strength-reduced info+0xB0+i into an extra walk); `p`/`u8* walk` are declared first (r27) and the second
-// loop walks `enemy++, walk += 4, i++`.  Remaining: level-test branch polarity, num/i register swap.
+// NONMATCHING (87.11%): `i` first is closest; p/i in r26/r27 vs r27/r28, info r28 vs r31, and the roll loop
+// strength-reduces `info+i` into a walk register instead of `stbx info[i+0xB0]` (pragmas/loop-shape didn't
+// help). The `<= 0 || >= 3` level test scores 87.35% but would edit an untouched raw-offset line (lint).
 void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 i;
     NpcBattleInfo* info = &npc->battleInfo;
-    s8* p;
-    u8* walk;
     NpcBattleSetupEntry* sel;
     NpcBattleSetupEntry* entry;
-    s32 pick;
-    ItemDropData* d;
-    s32 num;
-    BattleUnitSetup* enemy;
     ItemDropData* list;
-    s32 sum;
+    ItemDropData* d;
+    BattleUnitSetup* enemy;
+    s8* p;
     s32 evt;
+    s32 pick;
+    s32 sum;
+    s32 num;
 
     memset(info, 0, 0xC8);
     memset(info->recoveredItems, 0, 0x20);
@@ -1732,9 +1787,12 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         return;
     }
     *(s32*)((u8*)info + 0xAC) = setup->field_0x1C;
-    if (*(s32*)&info->field_9C[0x10] == 0 || *(s32*)&info->field_9C[0x10] < 0 || *(s32*)&info->field_9C[0x10] >= 3) {
-        for (i = 0, p = (s8*)setup; i < 0x10; i++, p += 2) {
-            info->field_9C[0x14 + i] = ((u8*)p)[0x20] + irand(p[0x21] - p[0x20] + 1);
+    if (*(s32*)((u8*)info + 0xAC) == 0 || *(s32*)((u8*)info + 0xAC) < 0 ||
+        *(s32*)((u8*)info + 0xAC) >= 3) {
+        p = (s8*)setup;
+        for (i = 0; i < 0x10; i++) {
+            ((u8*)info)[0xB0 + i] = p[0x20] + irand(p[0x21] - p[0x20] + 1);
+            p += 2;
         }
     }
     info->field_4 = setup->field_0x18;
@@ -1774,8 +1832,7 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         num = info->groupSetup->numEnemies;
         enemy = info->groupSetup->enemyData;
         memset(info->heldItems, 0, 0x20);
-        walk = (u8*)info;
-        for (i = 0; i < num; enemy++, walk += 4, i++) {
+        for (i = 0; i < num; i++, enemy++) {
             list = enemy->itemDropTable;
             if (list != NULL) {
                 d = list;
@@ -1789,8 +1846,8 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
                     while ((pick -= list->holdWeight) >= 0) {
                         list++;
                     }
-                    *(ItemType*)(walk + 0x1C) = list->type;
-                    *(ItemDropData**)(walk + 0x3C) = enemy->itemDropTable;
+                    info->heldItems[i] = list->type;
+                    info->itemDropLists[i] = enemy->itemDropTable;
                 }
             }
         }
@@ -2046,29 +2103,20 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-#ifdef MUST_MATCH
-typedef const char* volatile npcVolName;
-#else
-typedef const char* npcVolName;
-#endif
-
-// NONMATCHING (96.85%): the callee-save block sinks past the `name[0] == 0` check; retail saves in the
-// prologue.  `npcVolName` is a `const char* volatile` copy under MUST_MATCH; copying it once into the
-// plain `nm` homes the save block while keeping the body's `mr r3,r28`.  5 diffs = the volatile spill.
-void npcSetStayPose(npcVolName name) {
+// NONMATCHING (88.37%): the callee-save block sinks past the `name[0] == 0` check; retail saves in the prologue.
+void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
-    const char* nm = name;
 
-    if ((s8)nm[0] == 0) {
+    if ((s8)name[0] == 0) {
         return;
     }
-    if (!strcmp(nm, "(^x^)party")) {
+    if (!strcmp(name, "(^x^)party")) {
         return;
     }
-    if (!strcmp(nm, "party")) {
+    if (!strcmp(name, "party")) {
         PartyEntry* party = partyGetPtr(marioGetPartyId());
         if (party == NULL) {
             return;
@@ -2076,7 +2124,7 @@ void npcSetStayPose(npcVolName name) {
         partyChgPoseId(party, 1);
         return;
     }
-    if (!strcmp(nm, "extparty")) {
+    if (!strcmp(name, "extparty")) {
         PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
         if (party == NULL) {
             return;
@@ -2084,7 +2132,7 @@ void npcSetStayPose(npcVolName name) {
         partyChgPoseId(party, 1);
         return;
     }
-    if (!strcmp(nm, "mario")) {
+    if (!strcmp(name, "mario")) {
         marioChgPose(MarioStayPose);
         return;
     }
@@ -2093,7 +2141,7 @@ void npcSetStayPose(npcVolName name) {
     total = wp->total;
     entry = wp->entries;
     for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, nm)) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
             break;
         }
     }
@@ -2102,22 +2150,20 @@ void npcSetStayPose(npcVolName name) {
     }
 }
 
-// NONMATCHING (96.85%): same save-block scheduling as npcSetStayPose (volatile `npcVolName` copied to the
-// plain `nm` under MUST_MATCH); the partyChgPoseId arg is 7.  5 diffs = the volatile spill/reload of `name`.
-void npcSetTalkPose(npcVolName name) {
+// NONMATCHING (88.37%): same prologue save-block scheduling as npcSetStayPose; the partyChgPoseId arg is 7.
+void npcSetTalkPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
-    const char* nm = name;
 
-    if ((s8)nm[0] == 0) {
+    if ((s8)name[0] == 0) {
         return;
     }
-    if (!strcmp(nm, "(^x^)party")) {
+    if (!strcmp(name, "(^x^)party")) {
         return;
     }
-    if (!strcmp(nm, "party")) {
+    if (!strcmp(name, "party")) {
         PartyEntry* party = partyGetPtr(marioGetPartyId());
         if (party == NULL) {
             return;
@@ -2125,7 +2171,7 @@ void npcSetTalkPose(npcVolName name) {
         partyChgPoseId(party, 7);
         return;
     }
-    if (!strcmp(nm, "extparty")) {
+    if (!strcmp(name, "extparty")) {
         PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
         if (party == NULL) {
             return;
@@ -2133,7 +2179,7 @@ void npcSetTalkPose(npcVolName name) {
         partyChgPoseId(party, 7);
         return;
     }
-    if (!strcmp(nm, "mario")) {
+    if (!strcmp(name, "mario")) {
         marioChgPose(MarioTalkPose);
         return;
     }
@@ -2142,7 +2188,7 @@ void npcSetTalkPose(npcVolName name) {
     total = wp->total;
     entry = wp->entries;
     for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, nm)) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
             break;
         }
     }
@@ -2190,21 +2236,18 @@ s32 npcCheckBlow(NpcEntry* entry) {
 // materialises as a per-iteration stack copy (correct) but from this unit's own `.rodata` template
 // instead of dat_802c2f9c (vec3_802c2f78 + 0x24), and the compiler's double pool (int->float 2^52,
 // sqrtf 0.5/3.0) lands at 0x48 instead of vec3_802c2f78 + 0x1d8/0x1c0, because this unit's rodata
-// data is not written yet; the rest is register/float allocation. `dist`/`npc` are left uninitialised
-// and the sincos outputs are declared c2,s2,c1,s1 to reproduce the target's stack slots/register count.
-// NONMATCHING (94.72%): pool offsets (missing unit rodata; base r31 not r30) + FP register allocation.
-// The two sincosf calls precede marioGetPtr() (so mario stays caller-saved, matching the original's
-// schedule, which hoists marioGetPtr to the top of the loop but keeps the rest the same).
+// data is not written yet; the rest is register/float allocation.
+// NONMATCHING (92.82%): pool offsets (missing unit rodata) and register allocation.
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
     MarioWork* mario;
     f32 i = 0.0f;
-    f32 dist;
-    NpcEntry* npc;
+    f32 dist = 0.0f;
+    NpcEntry* npc = NULL;
 
     for (; i <= 11.0f; i += 1.0f) {
         s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
         f32 idx = i;
-        f32 c2, s2, c1, s1;
+        f32 s1, c1, s2, c2;
         f32 px, py, pz;
         f32 dx, dy, dz;
 
@@ -2214,9 +2257,9 @@ NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius,
         if (idx >= 11.0f) {
             idx = 10.0f;
         }
+        mario = marioGetPtr();
         sincosf(&s1, &c1, angle);
         sincosf(&s2, &c2, (f32)angles[(s32)idx]);
-        mario = marioGetPtr();
         px = s2 * (s1 * radius) + mario->position.x;
         pz = s2 * (c1 * radius) + mario->position.z;
         py = radius * c2 + mario->position.y;
