@@ -2,10 +2,6 @@
 #include "battle/battle_unit.h"
 #include "math_ext.h"
 
-// battle_sub.c is compiled -O4,s in the original: functions below use stmw/lmw and the
-// size-oriented scheduler. configure.py has no extra_cflags for this file, so emulate it here.
-#pragma optimize_for_size on
-
 extern BattleWork* _battleWorkPointer;
 
 // .sdata2 constants emitted by this unit
@@ -166,5 +162,3 @@ void btlsubResetMoveColorLvAll(BattleWork* work) {
 		}
 	}
 }
-
-#pragma optimize_for_size reset

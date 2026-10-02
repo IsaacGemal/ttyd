@@ -58,9 +58,72 @@ static inline f32 __OSs16tof32(register const s16* arg) {
   return ret;
 }
 
+static inline u8 __OSf32tou8(register f32 in) {
+  f32 tmp;
+  register u8* ptr = (u8*)&tmp;
+#ifdef __MWERKS__
+  asm { psq_st in, 0(ptr), 1, OS_FASTCAST_U8 }
+#endif
+  return *ptr;
+}
+
+static inline u16 __OSf32tou16(register f32 in) {
+  f32 tmp;
+  register u16* ptr = (u16*)&tmp;
+#ifdef __MWERKS__
+  asm { psq_st in, 0(ptr), 1, OS_FASTCAST_U16 }
+#endif
+  return *ptr;
+}
+
+static inline s8 __OSf32tos8(register f32 in) {
+  f32 tmp;
+  register s8* ptr = (s8*)&tmp;
+#ifdef __MWERKS__
+  asm { psq_st in, 0(ptr), 1, OS_FASTCAST_S8 }
+#endif
+  return *ptr;
+}
+
+static inline f32 __OSu8tof32(register const u8* arg) {
+  register f32 ret;
+#ifdef __MWERKS__
+  asm { psq_l ret, 0(arg), 1, OS_FASTCAST_U8 }
+#endif
+  return ret;
+}
+
+static inline f32 __OSu16tof32(register const u16* arg) {
+  register f32 ret;
+#ifdef __MWERKS__
+  asm { psq_l ret, 0(arg), 1, OS_FASTCAST_U16 }
+#endif
+  return ret;
+}
+
+static inline f32 __OSs8tof32(register const s8* arg) {
+  register f32 ret;
+#ifdef __MWERKS__
+  asm { psq_l ret, 0(arg), 1, OS_FASTCAST_S8 }
+#endif
+  return ret;
+}
+
 static inline void OSf32tos16(const f32* in, s16* out) { *out = __OSf32tos16(*in); }
 
 static inline void OSs16tof32(const s16* in, f32* out) { *out = __OSs16tof32(in); }
+
+static inline void OSf32tou8(const f32* in, u8* out) { *out = __OSf32tou8(*in); }
+
+static inline void OSf32tou16(const f32* in, u16* out) { *out = __OSf32tou16(*in); }
+
+static inline void OSf32tos8(const f32* in, s8* out) { *out = __OSf32tos8(*in); }
+
+static inline void OSu8tof32(const u8* in, f32* out) { *out = __OSu8tof32(in); }
+
+static inline void OSu16tof32(const u16* in, f32* out) { *out = __OSu16tof32(in); }
+
+static inline void OSs8tof32(const s8* in, f32* out) { *out = __OSs8tof32(in); }
 // clang-format off
 
 #ifdef __cplusplus
