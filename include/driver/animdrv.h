@@ -278,7 +278,7 @@ AnimationPose* animPoseGetAnimPosePtr(s32 poseId);
 void animPaperPoseRelease(s32 poseId);
 void animPoseRelease(s32 poseId);
 
-GXColor* animPoseGetMaterialEvtColor(s32 poseId);
+u32 animPoseGetMaterialEvtColor(s32 poseId);
 u32 animPoseGetMaterialLightFlag(s32 poseId);
 u32 animPoseGetMaterialFlag(s32 poseId);
 void animPoseSetMaterialEvtColor(s32 poseId, GXColor color);

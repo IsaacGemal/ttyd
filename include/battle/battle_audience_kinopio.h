@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dolphin/types.h>
+void BattleAudienceCtrlProcessKinopio(s32 index);
 void BattleAudienceCtrlProcessKinopioEat(s32 index);
 void BattleAudienceCtrlProcessKinopioIntrude(s32 index);
 void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind);

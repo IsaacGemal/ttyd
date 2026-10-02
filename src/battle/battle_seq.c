@@ -24,6 +24,10 @@
 #include <stdio.h>
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_event_subset.h"
+#include "driver/dispdrv.h"
+#include "eff/eff_recovery.h"
+#include "eff/n64/eff_freeze_n64.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") f32 lbl_80360FE0[2] = { -1.0f, 1.0f };
@@ -353,9 +357,1113 @@ s32 _set_effect_luck(void) {
 	return 2;
 }
 
-// NONMATCHING (0.05%): empty placeholder, not decompiled yet.
+// NONMATCHING (99.92%): all 15 real instruction diffs are register allocation, no logic. The first
+// recovery case's counter is r26 here vs r25; in the freeze case unit/sfx land in r29/r25 instead of
+// r25/r29 and the sfx string address goes through r0. Everything else matches instruction for instruction.
 void btlseqTurn(BattleWork* wp) {
+	BattleUnit* unit;
+	s32 i;
+	s8 turns;
+	s8 strength;
+	BOOL handled = FALSE;
+	s32 recovered = 0;
 
+	switch (BattleGetSeq(wp, SEQ_TURN)) {		case 0x3000000:
+			BattleIncSeq(wp, SEQ_TURN);
+			break;
+
+		case 0x3000001:
+			btlseqTurnFirstProcess(wp);
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x3000003:
+			if (wp->turnCount != 1) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else if (wp->fbatInfo->field_0x14[4] == 0) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				*(s32*)wp->field_EFC = 0x78;
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000004:
+			if (*(s32*)wp->field_EFC != 0) {
+				(*(s32*)wp->field_EFC)--;
+			}
+			if (*(s32*)wp->field_EFC <= 0 || BattlePadCheckTrigger(0x300)) {
+				BattleIncSeq(wp, SEQ_TURN);
+			} else {
+				dispEntry(CAMERA_2D, float_900_8041c2ac, 1, (DispCallback)_rule_disp, NULL);
+			}
+			break;
+
+		case 0x3000002:
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x3000005:
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x3000007:
+		case 0x300000B:
+		case 0x300000D:
+		case 0x300000F:
+		case 0x3000011:
+		case 0x3000013:
+		case 0x3000015:
+		case 0x3000017:
+		case 0x3000019:
+		case 0x300001B:
+		case 0x300001D:
+		case 0x300001F:
+		case 0x3000021:
+		case 0x3000023:
+		case 0x3000025:
+		case 0x3000027:
+		case 0x3000029:
+		case 0x300002B:
+		case 0x300002D:
+		case 0x300002F:
+		case 0x3000031:
+		case 0x3000033:
+		case 0x3000035:
+		case 0x3000037:
+		case 0x3000039:
+		case 0x300003B:
+		case 0x300003D:
+		case 0x300003F:
+		case 0x3000041:
+		case 0x3000043:
+		case 0x3000045:
+		case 0x3000047:
+		case 0x3000049:
+			if (BattleWaitAllActiveEvtEnd(wp)) {
+				if (BattleCheckConcluded(wp)) {
+					BattleSetSeq(wp, SEQ_UNKNOWN, 3);
+					BattleSetSeq(wp, SEQ_END, 0x7000000);
+				} else {
+					BattleIncSeq(wp, SEQ_TURN);
+				}
+			}
+			break;
+
+		case 0x3000012:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_SLEEP);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+			}
+			break;
+
+		case 0x3000014:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_STOP);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000016:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_DIZZY);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000018:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_CONFUSE);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300001A:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_ELECTRIC);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300001C:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_DODGY);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300001E:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_BURN);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000020: {
+			BattleUnit* unit;
+			Vec pos;
+			const char* sfx = str_802EF5AC;
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (BtlUnit_CheckRecoveryStatus(unit, STATUS_FREEZE)) {
+					if (!BtlUnit_CheckShadowGuard(unit)) {
+						BattleDamageDirect(-5, unit, 0, 1, 0, 0x11a, 0, 1);
+					}
+					BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+					pos.y += (f32)BtlUnit_GetHeight(unit);
+					effFreezeN64Entry(0, 1, pos.x, pos.y, pos.z, float_1_8041c284);
+					psndSFXOn_3D(sfx, &pos);
+					handled = TRUE;
+				}
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+		}
+
+		case 0x3000022:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_HUGE);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000024:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_TINY);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000026:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_POISON);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000028:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_ATTACK_UP);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300002A:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_ATTACK_DOWN);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300002C:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_DEFENSE_UP);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300002E:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_DEFENSE_DOWN);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000030:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				result = BtlUnit_CheckRecoveryStatus(unit, STATUS_ALLERGIC);
+				recovered |= result;
+				if (result) {
+					EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+					if (event) {
+						unit->attackEventId = event->eventId;
+						event->unitId = unit->unitId;
+					}
+					handled = TRUE;
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000032:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					result = BtlUnit_CheckRecoveryStatus(unit, STATUS_HP_REGEN);
+					recovered |= result;
+					if (result) {
+						EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+						if (event) {
+							unit->attackEventId = event->eventId;
+							event->unitId = unit->unitId;
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000034:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					result = BtlUnit_CheckRecoveryStatus(unit, STATUS_FP_REGEN);
+					recovered |= result;
+					if (result) {
+						EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+						if (event) {
+							unit->attackEventId = event->eventId;
+							event->unitId = unit->unitId;
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000036:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					result = BtlUnit_CheckRecoveryStatus(unit, STATUS_INVISIBLE);
+					recovered |= result;
+					if (result) {
+						EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+						if (event) {
+							unit->attackEventId = event->eventId;
+							event->unitId = unit->unitId;
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000038:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					result = BtlUnit_CheckRecoveryStatus(unit, STATUS_FAST);
+					recovered |= result;
+					if (result) {
+						EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+						if (event) {
+							unit->attackEventId = event->eventId;
+							event->unitId = unit->unitId;
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300003A:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					result = BtlUnit_CheckRecoveryStatus(unit, STATUS_SLOW);
+					recovered |= result;
+					if (result) {
+						EventEntry* event;
+						BtlUnit_ResetMoveStatus(unit);
+						event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+						if (event) {
+							unit->attackEventId = event->eventId;
+							event->unitId = unit->unitId;
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300003C:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					result = BtlUnit_CheckRecoveryStatus(unit, STATUS_PAYBACK);
+					recovered |= result;
+					if (result) {
+						EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+						if (event) {
+							unit->attackEventId = event->eventId;
+							event->unitId = unit->unitId;
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300003E:
+			for (i = 0; i < 64; i++) {
+				s32 result;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					result = BtlUnit_CheckRecoveryStatus(unit, STATUS_HOLD_FAST);
+					recovered |= result;
+					if (result) {
+						EventEntry* event = evtEntry(subsetevt_status_recovery, 0xa, 0);
+						if (event) {
+							unit->attackEventId = event->eventId;
+							event->unitId = unit->unitId;
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (recovered) {
+				psndSFXOn(str_802EF598);
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000006:
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
+					unit->currentHp > 0) {
+					BtlUnit_GetStatus(unit, STATUS_POISON, &turns, &strength);
+					if (strength > 0 && !BtlUnit_CheckShadowGuard(unit)) {
+						handled = TRUE;
+						BattleDamageDirect(-5, unit, 0, strength, 0, 0x117, 0, 1);
+					}
+				}
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000008:
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
+					unit->currentHp > 0) {
+					BtlUnit_GetStatus(unit, STATUS_BURN, &turns, &strength);
+					if (strength > 0) {
+						handled = TRUE;
+						break;
+					}
+				}
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				*(u16*)wp->field_2 = 0;
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000009:
+			switch (*(u16*)wp->field_2) {
+				case 0:
+					(*(u16*)wp->field_2)++;
+					for (i = 0; i < 64; i++) {
+						unit = BattleGetUnitPtr(wp, i);
+						if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
+							unit->currentHp > 0) {
+							BtlUnit_GetStatus(unit, STATUS_BURN, &turns, &strength);
+							if (strength > 0) {
+								BSE_TurnFirstProcessEffectEntry(unit, 1);
+							}
+						}
+					}
+					// falls through
+				case 1: {
+					BOOL done = TRUE;
+					for (i = 0; i < 64; i++) {
+						unit = BattleGetUnitPtr(wp, i);
+						if (unit != NULL && BSE_TurnFirstProcessEffectMain(unit)) {
+							done = FALSE;
+						}
+					}
+					if (done) {
+						(*(u16*)wp->field_2)++;
+					}
+					break;
+				}
+				default:
+					if (BattleWaitAllActiveEvtEnd(wp)) {
+						if (BattleCheckConcluded(wp)) {
+							BattleSetSeq(wp, SEQ_UNKNOWN, 3);
+							BattleSetSeq(wp, SEQ_END, 0x7000000);
+						} else {
+							BattleIncSeq(wp, SEQ_TURN);
+						}
+					}
+					break;
+			}
+			break;
+
+		case 0x300000A:
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
+					unit->currentHp > 0) {
+					BtlUnit_GetStatus(unit, STATUS_HP_REGEN, &turns, &strength);
+					if (strength > 0) {
+						if (!(unit->mAttributeFlags & 0x40000000)) {
+							unit->hpGauge.field_0xC = unit->currentHp;
+							BtlUnit_RecoverHp(unit, strength);
+							unit->hpGauge.field_0x10 = unit->currentHp;
+							unit->hpGauge.field_0x4 = unit->hpGauge.field_0x6;
+							unit->hpGauge.field_0x8 = unit->hpGauge.field_0xA;
+							unit->hpGauge.field_0x2 |= 1;
+						} else {
+							BtlUnit_RecoverHp(unit, strength);
+						}
+						{
+							f32 x, y, z;
+							BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+							BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+							y += unit->mSizeMultiplier * (f32)(BtlUnit_GetHeight(unit) + 5);
+							effRecoveryEntry(0, strength, x, y, z);
+						}
+						{
+							EventEntry* event = evtEntry(subsetevt_regeneration, 0xa, 0);
+							if (event) {
+								unit->attackEventId = event->eventId;
+								event->unitId = unit->unitId;
+							}
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300000C:
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
+					unit->currentHp > 0) {
+					BtlUnit_GetStatus(unit, STATUS_FP_REGEN, &turns, &strength);
+					if (strength > 0) {
+						BtlUnit_RecoverFp(unit, strength);
+						{
+							f32 x, y, z;
+							BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+							BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+							y += unit->mSizeMultiplier * (f32)(BtlUnit_GetHeight(unit) + 5);
+							effRecoveryEntry(1, strength, x, y, z);
+						}
+						{
+							EventEntry* event = evtEntry(subsetevt_regeneration, 0xa, 0);
+							if (event) {
+								unit->attackEventId = event->eventId;
+								event->unitId = unit->unitId;
+							}
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x300000E:
+			if (wp->turnCount <= 1) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+				break;
+			}
+			for (i = 0; i < 64; i++) {
+				s32 count;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) || unit->currentHp <= 0) {
+						continue;
+					}
+					count = 0;
+					{
+						s32 j = unit->badgesEquipped.HappyHeart;
+						s32 chance;
+						while (j > 0) {
+							chance = 33 - (unit->currentHp / unit->maxHp) * 3;
+							if (irand(100) < chance) {
+								count++;
+							}
+							j--;
+						}
+					}
+					if (count > 0) {
+						unit->currentHp += count;
+						if (unit->currentHp > unit->maxHp) {
+							unit->currentHp = unit->maxHp;
+						}
+						{
+							f32 x, y, z;
+							BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+							BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+							y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit);
+							effRecoveryEntry(0, count, x, y, z);
+						}
+						{
+							EventEntry* event = evtEntry(subsetevt_happy_heart, 0xa, 0);
+							if (event) {
+								unit->attackEventId = event->eventId;
+								event->unitId = unit->unitId;
+							}
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+			}
+			break;
+
+		case 0x3000010:
+			if (wp->turnCount <= 1) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+				break;
+			}
+			for (i = 0; i < 64; i++) {
+				s32 j;
+				s32 count;
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit != NULL) {
+					if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) || unit->currentHp <= 0) {
+						continue;
+					}
+					j = unit->badgesEquipped.HappyFlower;
+					count = 0;
+					{
+						s32 chance;
+						while (j > 0) {
+							chance = 33 - (unit->currentFp / unit->maxFp) * 3;
+							if (irand(100) < chance) {
+								count++;
+							}
+							j--;
+						}
+					}
+					if (count > 0) {
+						BtlUnit_RecoverFp(unit, count);
+						{
+							f32 x, y, z;
+							BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+							BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+							y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit);
+							effRecoveryEntry(1, count, x, y, z);
+						}
+						{
+							EventEntry* event = evtEntry(subsetevt_happy_flower, 0xa, 0);
+							if (event) {
+								unit->attackEventId = event->eventId;
+								event->unitId = unit->unitId;
+							}
+						}
+						handled = TRUE;
+					}
+				}
+			}
+			if (!handled) {
+				BattleIncSeq(wp, SEQ_TURN);
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			} else {
+				BattleIncSeq(wp, SEQ_TURN);
+				btlseqTurn(wp);
+			}
+			break;
+
+		case 0x3000040:
+			if (*(s32*)&wp->field_18FF0[0x48] != 0) {
+				*(s32*)&wp->field_18FF0[0x48] -= 1;
+			}
+			BattleIncSeq(wp, SEQ_TURN);
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x3000042:
+			if (*(s32*)&wp->field_18FF0[0x4C] != 0) {
+				*(s32*)&wp->field_18FF0[0x4C] -= 1;
+			}
+			BattleIncSeq(wp, SEQ_TURN);
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x3000044:
+			if (*(s32*)&wp->field_18FF0[0x50] != 0) {
+				*(s32*)&wp->field_18FF0[0x50] -= 1;
+			}
+			BattleIncSeq(wp, SEQ_TURN);
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x3000046:
+			if (*(s32*)&wp->field_18FF0[0x54] != 0) {
+				*(s32*)&wp->field_18FF0[0x54] -= 1;
+			}
+			BattleIncSeq(wp, SEQ_TURN);
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x3000048:
+			if (*(s32*)&wp->field_18FF0[0x58] != 0) {
+				*(s32*)&wp->field_18FF0[0x58] -= 1;
+			}
+			BattleIncSeq(wp, SEQ_TURN);
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x300004A:
+			BattleIncSeq(wp, SEQ_TURN);
+			btlseqTurn(wp);
+			break;
+
+		case 0x300004B:
+			BattleIncSeq(wp, SEQ_TURN);
+			BattleSetSeq(wp, SEQ_PHASE, 0x4000000);
+			break;
+
+		case 0x300004C:
+			btlseqPhase(wp);
+			break;
+
+		case 0x300004D:
+			BattleAudience_Case_TurnEnd();
+			BattleSetSeq(wp, SEQ_TURN, 0x3000001);
+			wp->flags &= ~0x2000;
+			break;
+	}
 }
 
 // The three rule-message pointer tables are the 0x110-byte arrays the original addresses as
@@ -413,10 +1521,6 @@ void _rule_disp(void) {
 	FontDrawMessage((s32)x, (s32)float_120_8041c2a8 - 29, buf);
 }
 #pragma opt_propagation reset
-
-void btlseqEnd(BattleWork* wp) {
-
-}
 
 BOOL BattlePhaseEndCheck(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;

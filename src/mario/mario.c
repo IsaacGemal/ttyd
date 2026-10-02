@@ -64,6 +64,16 @@ MarioWork* mp;
 
 //locals for symbols with no home header
 extern Vec R_last_position;
+#include "mario/mario_balloon.h"
+#include "mario/mario_pouch.h"
+#include "memory.h"
+extern s32 blurPosId;
+#include "mario/mario_kemuri.h"
+#include "driver/itemdrv.h"
+#include "motion/mot_damage.h"
+#include "math_ext.h"
+extern s32 __float_nan[];
+#include "driver/shadowdrv.h"
 
 MarioWork* marioGetPtr(void) {
 	return mp;
@@ -665,15 +675,100 @@ void marioResetHitObj(const char* name) {
 	}
 }
 
-// NONMATCHING (0.72%): empty placeholder, not decompiled yet.
+// The original calls marioOfsRotReset(), whose body the compiler inlined here; mirror that with an inline helper
+// so the four zero-vector stores are emitted at the call site.
+static inline void marioOfsRotResetInline(void) {
+	MarioWork* wp = mp;
+
+	*(Vec*)(wp->field_0x98 + 0x24) = vec3_802c3698;
+	*(Vec*)(wp->field_0x98 + 0x18) = vec3_802c36a4;
+	*(Vec*)(wp->field_0x98 + 0x00) = vec3_802c36b0;
+	*(Vec*)(wp->field_0x98 + 0x0C) = vec3_802c36bc;
+}
+
+// NONMATCHING (91.09%): the compiler hoists the zero-vector loads of the inlined marioOfsRotReset ahead of the
+// dispFlags clears; every other instruction matches. The clears are split around the copy to steer that schedule.
 void marioReset(void) {
+	MarioWork* wp = mp;
+	MarioWork* wp2;
 
+	if (wp->characterId == 1) {
+		wp->wPlayerCollisionBox.x = 20.0f;
+		wp->wPlayerCollisionBox.y = 47.0f;
+		wp->mBaseWalkSpeed = 1.0f;
+		wp->mBaseDashSpeed = 2.0f;
+	}
+	else if (wp->characterId == 2) {
+		wp->mBaseWalkSpeed = 1.0f;
+		wp->mBaseDashSpeed = 2.25f;
+	}
+	else {
+		if (!(wp->flags & MARIO_FLAG_BG_MODE)) {
+			wp->wPlayerCollisionBox.x = 20.0f;
+			wp->wPlayerCollisionBox.y = 37.0f;
+		}
+		else {
+			wp->wPlayerCollisionBox.x = 10.0f;
+			wp->wPlayerCollisionBox.y = 25.9f;
+		}
+		wp->mBaseWalkSpeed = 1.0f;
+		wp->mBaseDashSpeed = 2.25f;
+	}
+
+	wp->flags &= ~MARIO_FLAG_PAPER_MODE;
+	wp->flags &= ~MARIO_FLAG_TUBE_MODE;
+
+	wp2 = mp;
+
+	if ((wp2->dispFlags & 0x40000000) && wp2->paperAnimName != NULL) {
+		animPoseSetPaperAnimGroup(wp2->paperAnimGroupId[0], NULL, FALSE);
+		wp2->paperAnimName = NULL;
+		wp2->dispFlags &= ~0x40000000;
+		wp2 = mp;
+		if (wp2->paperPoseId >= 0) {
+			animPaperPoseRelease(wp2->paperPoseId);
+			wp2->paperPoseId = -1;
+		}
+	}
+
+	wp2 = mp;
+	if ((wp2->dispFlags & 0x40000000) && !(wp2->dispFlags & 0x2) && !(wp2->flags & MARIO_FLAG_IS_8_BIT)) {
+		if (wp2->paperAnimName == NULL || strcmp(wp2->paperAnimName, NULL) != 0) {
+			wp2->paperAnimName = NULL;
+			wp2->poseTime = 0;
+			wp2->trigFlags |= MARIO_TRIG_FLAG_CHG_PAPER_ANIM;
+		}
+	}
+
+#ifdef MUST_MATCH
+	// MUST_MATCH: this split of the two clears around the inlined copy is what makes the compiler keep
+	// the copy's loads after both clears, as the original does; the natural order is under #else.
+	wp->dispFlags &= ~0x8;
+	marioOfsRotResetInline();
+	wp->dispFlags &= ~0x100;
+#else
+	wp->dispFlags &= ~0x8;
+	wp->dispFlags &= ~0x100;
+	marioOfsRotResetInline();
+#endif
+	wp->baseSpeed = 0.0f;
+	marioChgMot(0);
 }
 
-// NONMATCHING (3.57%): empty placeholder, not decompiled yet.
+// The four Vec stores and loads match; only the `lwz r5, mp` slot differs (see REPORT.md). Known-hard
+// load-hoist class: scheduling on hoists the next vector's load past the previous store, scheduling off
+// puts `lwz mp` after the pool `addi`.
+#pragma scheduling off // target does not hoist the next vector's load past the previous store
+// NONMATCHING (90.50%): `lwz r5, mp` lands after `addi r4` instead of between `lis` and `addi`.
 void marioOfsRotReset(void) {
+	u8* base = (u8*)mp;
 
+	*(Vec*)(base + 0xBC) = vec3_802c3698;
+	*(Vec*)(base + 0xB0) = vec3_802c36a4;
+	*(Vec*)(base + 0x98) = vec3_802c36b0;
+	*(Vec*)(base + 0xA4) = vec3_802c36bc;
 }
+#pragma scheduling reset
 
 void marioSoundInit(void) {
 	s32* p = (s32*)(mp->field_0x250 + 0x28);
@@ -691,22 +786,595 @@ void marioPoseInit(void) {
 	wp->paperAnimGroupId[2] = animPoseEntry(marioAnimeGroupData[mp->colorId][2], 2);
 }
 
-// NONMATCHING (0.35%): empty placeholder, not decompiled yet.
+// NONMATCHING (96.16%): complete; the only diffs are the scheduler evaluating the two named rodata
+// Vec copies (mp->scale, mp->bottomlessResetPosition) source-first instead of destination-first.
+// Anonymous (Vec){...} literals match, but would move .rodata shared with other functions.
 void marioInit(void) {
+	MarioWork* wp;
+	s32 i;
 
+	mp = (MarioWork*)__memAlloc(HEAP_DEFAULT, 0x2e0);
+	memset(mp, 0, 0x2e0);
+	wp = mp;
+	*(s32*)((u8*)wp + 0x278) = -1;
+	*(s32*)((u8*)wp + 0x27c) = -1;
+	*(s32*)((u8*)wp + 0x280) = -1;
+	pouchInit();
+	marioResetGravity();
+	marioInitCamId();
+	mp->colorId = 0;
+	animGroupBaseAsync(marioAnimeGroupData[mp->colorId][0], 2, NULL);
+	animGroupBaseAsync(marioAnimeGroupData[mp->colorId][1], 2, NULL);
+	animGroupBaseAsync(marioAnimeGroupData[mp->colorId][2], 2, NULL);
+	mp->paperAnimGroupId[0] = -1;
+	mp->paperAnimGroupId[1] = -1;
+	mp->paperAnimGroupId[2] = -1;
+	mp->paperPoseId = -1;
+	if (mp->characterId == 0) {
+		mp->mBaseWalkSpeed = 1.0f;
+		mp->mBaseDashSpeed = 2.25f;
+	}
+	else {
+		mp->mBaseWalkSpeed = 1.0f;
+		mp->mBaseDashSpeed = 2.0f;
+	}
+	mp->currPartySlotId[0] = -1;
+	mp->currPartySlotId[1] = -1;
+	mp->wPlayerCollisionBox.x = 20.0f;
+	mp->wPlayerCollisionBox.y = 37.0f;
+	mp->scale = vec3_802c36c8;
+	*(Vec*)((u8*)mp + 0x110) = mp->position;
+	mp->wPlayerCollisionBox.z = 20.0f;
+	marioChgPose("M_S_1");
+	*(s32*)((u8*)mp + 0x20) = 0;
+	mp->bottomlessResetPosition = vec3_802c36d4;
+	marioChgMot(0);
+	marioBaloonInit();
+	marioGetRubInit();
+	blurPosId = 0;
+	for (i = 0; i < 8; i++) {
+		blurPos[i] = mp->position;
+	}
+	marioResetCamShift();
+	marioResetCamShiftRate();
+	marioResetCamFollowRate();
+	if ((s32)pouchCheckItem(ITEM_HAMMER) == 0) {
+		pouchGetItem(ITEM_HAMMER);
+	}
+	partyInit();
 }
 
-// NONMATCHING (0.40%): empty placeholder, not decompiled yet.
+// The declaration order below steers MWCC's allocator to the target's registers.
+// NONMATCHING (92.67%): only camId/motionId/partySlot0/partySlot1/animGroup0 still land in the
+// wrong callee-saved register and the scale/bottomless Vec word copies schedule r3/r0 one step
+// differently; everything else, all constants and all calls match.
 void marioReInit(void) {
+	s32 animGroup1;
+	s32 animGroup2;
+	MarioWork* wp;
+	s32 animGroup0;
+	s32 partySlot1;
+	s32 trigFlags;
+	s32 peachFlags;
+	u16 motionId;
+	s32 camId;
+	s32 partySlot0;
+	s32 characterId;
+	s32 highFlag;
+	s32 paperPoseId;
+	s32 prevParty0;
+	s32 prevParty1;
+	s32 field28C;
+	f32 unk1A8;
+	f32 unk1AC;
+	f32 dirView;
+	f32 unk19C;
+	s32 i;
 
+	wp = mp;
+	highFlag = wp->flags & 0x80000000;
+	camId = marioGetCamId();
+	paperPoseId = wp->paperPoseId;
+	characterId = wp->characterId;
+	partySlot0 = wp->currPartySlotId[0];
+	partySlot1 = wp->currPartySlotId[1];
+	peachFlags = wp->peachFlags;
+	field28C = *(s32*)wp->field_0x28C;
+	trigFlags = wp->trigFlags;
+	motionId = wp->currMotionId;
+	unk1A8 = wp->unk1A8;
+	unk1AC = *(f32*)wp->unk1AC;
+	dirView = wp->directionView;
+	unk19C = *(f32*)wp->unk19C;
+	prevParty0 = wp->prevPartyMemberId[0];
+	prevParty1 = wp->prevPartyMemberId[1];
+	animGroup0 = wp->paperAnimGroupId[0];
+	animGroup1 = wp->paperAnimGroupId[1];
+	animGroup2 = wp->paperAnimGroupId[2];
+
+	if (wp->paperPoseId >= 0) {
+		animPoseSetPaperAnimGroup(wp->paperAnimGroupId[0], NULL, 0);
+		animPoseRelease(wp->paperPoseId);
+		wp->paperPoseId = -1;
+		paperPoseId = -1;
+	}
+
+	memset(wp, 0, sizeof(MarioWork));
+
+	*(s32*)(mp->field_0x250 + 0x28) = -1;
+	*(s32*)(mp->field_0x250 + 0x2C) = -1;
+	*(s32*)(mp->field_0x250 + 0x30) = -1;
+	if (highFlag != 0) {
+		wp->flags |= 0x80000000;
+	}
+
+	wp->peachFlags = peachFlags;
+	*(s32*)wp->field_0x28C = field28C;
+	wp->camId = camId;
+	wp->characterId = characterId;
+	wp->trigFlags = trigFlags;
+	wp->currMotionId = motionId;
+	wp->unk1A8 = unk1A8;
+	*(f32*)wp->unk1AC = unk1AC;
+	wp->directionView = dirView;
+	*(f32*)wp->unk19C = unk19C;
+	wp->prevPartyMemberId[0] = prevParty0;
+	wp->prevPartyMemberId[1] = prevParty1;
+	wp->currPartySlotId[0] = partySlot0;
+	wp->currPartySlotId[1] = partySlot1;
+	wp->paperAnimGroupId[0] = animGroup0;
+	wp->paperAnimGroupId[1] = animGroup1;
+	wp->paperAnimGroupId[2] = animGroup2;
+	wp->paperPoseId = paperPoseId;
+
+	if (wp->characterId == 0) {
+		wp->mBaseWalkSpeed = 1.0f;
+		wp->mBaseDashSpeed = 2.25f;
+	}
+	else {
+		wp->mBaseWalkSpeed = 1.0f;
+		wp->mBaseDashSpeed = 2.0f;
+	}
+
+	marioSetSpec();
+
+	wp->flags &= ~1;
+
+	if (wp->paperAnimGroupId[0] >= 0) {
+		animPoseSetMaterialFlagOff(wp->paperAnimGroupId[0], -1);
+	}
+	if (wp->paperAnimGroupId[1] >= 0) {
+		animPoseSetMaterialFlagOff(wp->paperAnimGroupId[1], -1);
+	}
+	if (wp->paperAnimGroupId[2] >= 0) {
+		animPoseSetMaterialFlagOff(wp->paperAnimGroupId[2], -1);
+	}
+	if (wp->paperAnimGroupId[0] >= 0) {
+		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[0], 2);
+	}
+	if (wp->paperAnimGroupId[1] >= 0) {
+		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[1], 2);
+	}
+	if (wp->paperAnimGroupId[2] >= 0) {
+		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[2], 2);
+	}
+
+	wp->scale = vec3_802c36e0;
+	wp->bottomlessResetPosition = vec3_802c36ec;
+
+	partyReInit();
+	marioBaloonInit();
+	marioGetRubInit();
+
+	blurPosId = 0;
+	for (i = 0; i < 8; i++) {
+		blurPos[i] = mp->position;
+	}
+
+	if (wp->characterId == 0) {
+		marioSetCharMode(0);
+	}
+	if (wp->characterId == 2) {
+		marioSetCharMode(2);
+	}
+
+	marioResetCamShift();
+	marioResetCamShiftRate();
+	marioResetCamFollowRate();
+
+	if ((s32)pouchCheckItem(ITEM_HAMMER) == 0) {
+		pouchGetItem(ITEM_HAMMER);
+	}
+
+	*(Vec*)(wp->field_0xD4 + 0xC) = vec3_802c36f8;
 }
 
-// NONMATCHING (0.16%): empty placeholder, not decompiled yet.
+// MUST_MATCH: the original builds the coin position in an inlined struct return, so the
+// temporary lives at r1+0x14 and the by-pointer argument copy at r1+0x20.
+static inline Vec marioCoinPos(f32 x, f32 y, f32 z) {
+	Vec v = vec3_802c3704;
+
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	return v;
+}
+
+// MUST_MATCH: the blur history update is inlined in the original, and every copy re-reads mp.
+static inline void marioUpdateBlurPos(void) {
+	if ((*(u32*)(mp->field_0x32 + 2) & 1) && (mp->dispFlags & 0x08000000)) {
+		s32 id = blurPosId;
+		s32 next = id + 1;
+		Vec* p = &blurPos[id];
+
+		*p = mp->position;
+		blurPosId = next;
+		if (next >= 8) {
+			blurPosId = next - 8;
+		}
+	}
+}
+
+// NONMATCHING (97.97%): scratch-register allocation in the blur-history copies (blurPosId in r6 here, r7 in
+// the original) and the unit's mp reload placement; the rest are .sdata2 symbol names.
 void marioMain(void) {
+	MarioWork* wp = mp;
+	f32 groundZ;
+	f32 groundX;
+	f32 groundY;
 
+	if (!(wp->flags & MARIO_FLAG_ACTIVE)) {
+		return;
+	}
+
+	if (((u16)gp->buttonNew[0] & 0x100f) ? 1 : *(s8*)(wp->field_0x32 + 6)) {
+		if (wp->characterId == 0) {
+			BOOL badge1 = pouchEquipCheckBadge(0x147);
+			BOOL badge2 = pouchEquipCheckBadge(0x148);
+#ifdef MUST_MATCH
+			s32 color = marioCharModeColor(badge1, badge2);
+#else
+			s32 color;
+
+			if (badge1 && !badge2) {
+				color = 1;
+			}
+			else if (!badge1 && badge2) {
+				color = 2;
+			}
+			else if (badge1 && badge2) {
+				color = 3;
+			}
+			else {
+				color = 0;
+			}
+#endif
+
+			if (mp->characterId == 0 && mp->colorId != color) {
+				mp->colorId = color;
+				marioSetCharMode(0);
+			}
+		}
+
+		{
+			MarioWork* p = mp;
+
+			if (pouchEquipCheckBadge(0x143) != 0) {
+				if (p->currMotionId == 0) {
+					p->trigFlags |= 0x1000;
+				}
+				else if (p->currMotionId == 1) {
+					p->trigFlags |= 0x1000;
+				}
+				else if (p->currMotionId == 2) {
+					marioChgMot(1);
+					p->trigFlags |= 0x1000;
+				}
+			}
+		}
+	}
+
+	marioSetDirEventMain();
+	wp->playerGravity = 1.0f;
+	if (strcmp(gp->currentMapName, "moo_00") == 0
+	    || strcmp(gp->currentMapName, "moo_01") == 0
+	    || strcmp(gp->currentMapName, "moo_02") == 0
+	    || strcmp(gp->currentMapName, "moo_05") == 0
+	    || strcmp(gp->currentMapName, "moo_06") == 0
+	    || strcmp(gp->currentMapName, "moo_07") == 0) {
+		wp->playerGravity = 0.5f;
+	}
+
+	marioPreCamera();
+	marioHitCheckWidth();
+
+	if (wp->unk4C > 0) {
+		wp->unk4C--;
+	}
+	if (*(s16*)(wp->field_0x2AC + 0x14) > 0) {
+		*(s16*)(wp->field_0x2AC + 0x14) -= 1;
+		if (*(s16*)(wp->field_0x2AC + 0x14) % 30 == 0 && *(s16*)(wp->field_0x2AC + 0x14) > 0) {
+			Vec pos = marioCoinPos(wp->position.x, wp->position.y + 30.0f, wp->position.z);
+
+			itemCoinDrop(&pos);
+		}
+	}
+	if (wp->unk5E > 0 && --wp->unk5E <= 0) {
+		wp->dispFlags &= ~0x100000;
+	}
+
+	if (wp->currMotionId == MARIO_MOTION_DOKAN) {
+		marioMotion();
+		mp->hitobjStandOn = marioSearchGround(&groundY, &groundX, &groundZ, 0.0f, 0.0f);
+		marioPreDisp();
+		partyMain();
+		marioCamMain();
+		marioUpdateBlurPos();
+		{
+			MarioWork* p = mp;
+			*(s16*)(p->field_0x52 + 2) = p->airTimer;
+			*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+			if (pouchGetHP() <= 0) {
+				seqSetSeq(5, NULL, NULL);
+			}
+			*(Vec*)(p->unk104 + 0xC) = p->position;
+			p->riderDelta.x = 0.0f;
+			p->riderDelta.y = 0.0f;
+			p->riderDelta.z = 0.0f;
+			*(u32*)(p->field_0x32 + 2) += 1;
+		}
+		return;
+	}
+
+	if (wp->flags & MARIO_FLAG_CTRL_OFF) {
+		if (wp->flags & MARIO_FLAG_CTRL_OFF_2) {
+			marioCtrlOff2Main();
+		}
+	}
+	else {
+		marioUpdateKeyData();
+		marioGetStick(&wp->controlStickAngle, &wp->controlStickSensitivity);
+		marioUseParty();
+		marioMotion();
+
+		if (wp->characterId == 2) {
+			kpaMain();
+			{
+				MarioWork* p = mp;
+				*(s16*)(p->field_0x52 + 2) = p->airTimer;
+				*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+				if (pouchGetHP() <= 0) {
+					seqSetSeq(5, NULL, NULL);
+				}
+				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->riderDelta.x = 0.0f;
+				p->riderDelta.y = 0.0f;
+				p->riderDelta.z = 0.0f;
+				*(u32*)(p->field_0x32 + 2) += 1;
+			}
+			return;
+		}
+		if (wp->characterId == 1) {
+			peachMain();
+			return;
+		}
+
+		if (wp->currMotionId == MARIO_MOTION_PLANE || (u16)(wp->currMotionId - MARIO_MOTION_DAMAGE) <= 1 || wp->currMotionId == MARIO_MOTION_BOTTOMLESS) {
+			marioSearchUnder();
+			marioPreDisp();
+			marioBottomless();
+			partyMain();
+			marioCamMain();
+			*(void**)((u8*)wp + 0x1f4) = NULL;
+			*(void**)((u8*)wp + 0x1e0) = NULL;
+			*(void**)((u8*)wp + 0x1dc) = NULL;
+			wp->hitobjPush = NULL;
+			*(void**)((u8*)wp + 0x1f0) = NULL;
+			{
+				MarioWork* p = mp;
+				*(s16*)(p->field_0x52 + 2) = p->airTimer;
+				*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+				if (pouchGetHP() <= 0) {
+					seqSetSeq(5, NULL, NULL);
+				}
+				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->riderDelta.x = 0.0f;
+				p->riderDelta.y = 0.0f;
+				p->riderDelta.z = 0.0f;
+				*(u32*)(p->field_0x32 + 2) += 1;
+			}
+			return;
+		}
+		else if (wp->currMotionId == MARIO_MOTION_VIVIAN) {
+			marioChkGnd();
+			marioChkToge();
+			marioPreDisp();
+			marioBalloonMain();
+			marioBottomless();
+			partyMain();
+			marioCamMain();
+			{
+				MarioWork* p = mp;
+				*(s16*)(p->field_0x52 + 2) = p->airTimer;
+				*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+				if (pouchGetHP() <= 0) {
+					seqSetSeq(5, NULL, NULL);
+				}
+				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->riderDelta.x = 0.0f;
+				p->riderDelta.y = 0.0f;
+				p->riderDelta.z = 0.0f;
+				*(u32*)(p->field_0x32 + 2) += 1;
+			}
+			return;
+		}
+		else if (wp->currMotionId == MARIO_MOTION_JABARA) {
+			marioMove();
+			marioChkToge();
+			marioPreDisp();
+			marioBalloonMain();
+			marioBottomless();
+			partyMain();
+			marioCamMain();
+			{
+				MarioWork* p = mp;
+				*(s16*)(p->field_0x52 + 2) = p->airTimer;
+				*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+				if (pouchGetHP() <= 0) {
+					seqSetSeq(5, NULL, NULL);
+				}
+				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->riderDelta.x = 0.0f;
+				p->riderDelta.y = 0.0f;
+				p->riderDelta.z = 0.0f;
+				*(u32*)(p->field_0x32 + 2) += 1;
+			}
+			return;
+		}
+		else if (wp->currMotionId == MARIO_MOTION_YOSHI) {
+			marioChkToge();
+			marioBottomless();
+			marioPreDisp();
+			marioBalloonMain();
+			mario_kemuri_80130474();
+			partyMain();
+			marioCamMain();
+			{
+				MarioWork* p = mp;
+				*(s16*)(p->field_0x52 + 2) = p->airTimer;
+				*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+				if (pouchGetHP() <= 0) {
+					seqSetSeq(5, NULL, NULL);
+				}
+				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->riderDelta.x = 0.0f;
+				p->riderDelta.y = 0.0f;
+				p->riderDelta.z = 0.0f;
+				*(u32*)(p->field_0x32 + 2) += 1;
+			}
+			return;
+		}
+		else if (wp->currMotionId == MARIO_MOTION_JUMP_3) {
+			marioBottomless();
+			marioPreDisp();
+			marioBalloonMain();
+			mario_kemuri_80130474();
+			partyMain();
+			marioCamMain();
+			marioUpdateBlurPos();
+			{
+				MarioWork* p = mp;
+				*(s16*)(p->field_0x52 + 2) = p->airTimer;
+				*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+				if (pouchGetHP() <= 0) {
+					seqSetSeq(5, NULL, NULL);
+				}
+				*(Vec*)(p->unk104 + 0xC) = p->position;
+				p->riderDelta.x = 0.0f;
+				p->riderDelta.y = 0.0f;
+				p->riderDelta.z = 0.0f;
+				*(u32*)(p->field_0x32 + 2) += 1;
+			}
+			return;
+		}
+
+		if (wp->flags & 0x40000) {
+			marioMove();
+			marioChkOverhead();
+			if (wp->airTimer > 100) {
+				marioChgMot(MARIO_MOTION_FALL);
+				marioSetFallPara();
+			}
+		}
+		else if (wp->flags & 0x10000) {
+			marioJump();
+			marioChkOverhead();
+			marioMove();
+			{
+				BOOL isRoll = FALSE;
+
+				if (mp->currMotionId == MARIO_MOTION_ROLL) {
+					isRoll = TRUE;
+				}
+				if (!isRoll) {
+					if (wp->airTimer > 5) {
+						marioChkGnd2();
+					}
+				}
+			}
+		}
+		else if (wp->flags & 0x20000) {
+			if (wp->currMotionId != MARIO_MOTION_SHIP) {
+				marioMove();
+				if (wp->currMotionId == MARIO_MOTION_HIP) {
+					f32 overheadY = marioChkOverhead();
+
+					if (*(void**)((u8*)wp + 0x1f4) != NULL) {
+						wp->position.y = overheadY;
+					}
+				}
+				else {
+					marioChkOverhead();
+				}
+				marioFall();
+				if (wp->currMotionId != MARIO_MOTION_HIP && wp->currMotionId != MARIO_MOTION_HIP_2) {
+					BOOL isRoll = FALSE;
+
+					if (mp->currMotionId == MARIO_MOTION_ROLL) {
+						isRoll = TRUE;
+					}
+					if (!isRoll && wp->airTimer > 5) {
+						marioChkGnd2();
+					}
+				}
+				else {
+					marioChkGnd2();
+				}
+			}
+		}
+		else {
+			marioMove();
+			marioChkOverhead();
+			marioChkGnd();
+		}
+		marioBoots();
+	}
+
+	marioForceMoveMain();
+	marioBottomless();
+	marioPreDisp();
+	marioBalloonMain();
+	mario_kemuri_80130474();
+	partyMain();
+	marioCamMain();
+	if ((*(u32*)(wp->field_0x32 + 2) & 1) && (wp->dispFlags & 0x08000000)) {
+		s32 id = blurPosId;
+		Vec* p = &blurPos[id];
+
+		p->x = wp->position.x;
+		p->y = wp->position.y;
+		p->z = wp->position.z;
+		blurPosId = id + 1;
+		if (blurPosId >= 8) {
+			blurPosId = id + 1 - 8;
+		}
+	}
+	{
+		MarioWork* p = mp;
+		*(s16*)(p->field_0x52 + 2) = p->airTimer;
+		*(void**)((u8*)p + 0x208) = p->hitobjStandOn;
+		if (pouchGetHP() <= 0) {
+			seqSetSeq(5, NULL, NULL);
+		}
+		*(Vec*)(p->unk104 + 0xC) = p->position;
+		p->riderDelta.x = 0.0f;
+		p->riderDelta.y = 0.0f;
+		p->riderDelta.z = 0.0f;
+		*(u32*)(p->field_0x32 + 2) += 1;
+	}
 }
 
-// NONMATCHING (85.70%): 4 instructions differ, 15 missing, plus register differences.
+// NONMATCHING (89.49%): 15 instructions differ, plus register differences.
 void marioCtrlOff2Main(void) {
 	MarioWork* wp = mp;
 	s32 flags;
@@ -769,14 +1437,328 @@ void marioCtrlOff2Main(void) {
 	}
 }
 
-// NONMATCHING (0.13%): empty placeholder, not decompiled yet.
-void marioMove(void) {
+#ifdef MUST_MATCH
+// The original expands the first marioGetScreenPos call in an earlier inlining phase, so its frame sits at the
+// low addresses (0x44/0x60); routing it through this static inline reproduces that split. Plain call is natural.
+static inline void marioScreenPos(Vec position, f32* x, f32* y, f32* z) {
+	marioGetScreenPos(position, x, y, z);
+}
+#endif
 
+void marioMove(void) {
+	MarioWork* wp = mp;
+	Vec lastPosition = wp->position;
+	// Declaration order is load-bearing for the frame layout (see party_force_reset_outofscreen): the
+	// compiler lays these scalars out in reverse, which is what gives x at 0x8 and sx at 0x1c.
+	f32 sx;
+	f32 sy;
+	f32 sz;
+	f32 z;
+	f32 y;
+	f32 x;
+	// `zero` (not the literal) makes MWCC keep the field in f1 for the `!=` compares, as in retail.
+	f32 zero = 0.0f;
+	s32 stickDir;
+
+	marioMoveMain();
+
+	{
+		MarioWork* wp2 = mp;
+
+#ifdef MUST_MATCH
+		marioScreenPos(wp2->position, &x, &y, &z);
+#else
+		marioGetScreenPos(wp2->position, &x, &y, &z);
+#endif
+		wp2->unk168 = x;
+		wp2->unk16C = y;
+		*(s32*)wp2->unk170 = z;
+	}
+
+	if (wp->dispFlags & 0x100000) {
+		if (wp->controlStickSensitivity != zero || !(wp->dispFlags & 0x1000000)) {
+			marioCamZoomOff();
+		}
+	}
+
+	if (wp->flags & 0x2000000) {
+		if (strcmp(gp->currentMapName, "aji_13") != 0) {
+			if (wp->controlStickSensitivity != zero && !(wp->dispFlags & 0x20000)) {
+				camFollowYOff();
+			}
+		}
+		else {
+			marioGetScreenPos(wp->position, &sx, &sy, &sz);
+			if (sy >= 400.0f) {
+				camFollowYOn();
+			}
+		}
+
+		if (wp->currMotionId == MARIO_MOTION_WALK || wp->currMotionId == MARIO_MOTION_DASH) {
+			if (lastPosition.x - wp->position.x != 0.0f) {
+				if (PSVECDistance(&lastPosition, &wp->position) <= 1.0f) {
+					marioChgPose("M_W_1");
+				}
+				else {
+					marioChgPose("M_R_1");
+				}
+			}
+			else {
+				// wStickDir1 is signed in retail (lbz + extsb), but the header declares it u8.
+				stickDir = (s8)wp->wStickDir1;
+				if (stickDir * stickDir < 25) {
+					marioChgPose("M_Z_1");
+				}
+				else if (stickDir * stickDir < 3025) {
+					marioChgPose("M_W_1");
+				}
+				else {
+					marioChgPose("M_R_1");
+				}
+			}
+		}
+	}
 }
 
-// NONMATCHING (0.27%): empty placeholder, not decompiled yet.
-void marioMoveMain(void) {
+extern s32 __float_nan[];
+#define NAN (*(f32*)__float_nan)
 
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+#define fpclassify(x) marioMoveMain_fpclassify(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline s32 marioMoveMain_fpclassify(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+	case 0x7F800000:
+		if (*(s32*)&x & 0x007FFFFF) {
+			return FP_NAN;
+		} else {
+			return FP_INFINITE;
+		}
+	case 0:
+		if (*(s32*)&x & 0x007FFFFF) {
+			return FP_SUBNORMAL;
+		} else {
+			return FP_ZERO;
+		}
+	default:
+		return FP_NORMAL;
+	}
+}
+
+static inline f32 marioMoveMain_sqrtf(f32 x) {
+	const f64 _half = .5;
+	const f64 _three = 3.0;
+
+	if (x > 0.0f) {
+		f64 guess = __frsqrte(x);
+
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		return x * guess;
+	} else if (x < 0.0) {
+		return NAN;
+	} else if (isnan(x)) {
+		return NAN;
+	}
+	return x;
+}
+
+// MWCC allocates f29 to the x-accumulator and f30 to the speed (the original is the reverse), so ~28
+// instructions differ only in those two registers; the three inline-sqrtf double offsets (0x330 vs the
+// original 0x340) are a unit-wide .rodata layout difference that resolves once the rest of the unit is
+// written; and N_dou10_yoko_yari3 is missing one `addi r3, wp+0x210` because its header prototype is
+// declared (void). See REPORT.md.
+// NONMATCHING (98.99%): register allocation of the x-accumulator/speed floats and the missing addi noted above.
+void marioMoveMain(void) {
+	MarioWork* wp = mp;
+	PartyEntry* party;
+	HitEntry* hit;
+	f32 f30;
+	f32 f31;
+	f32 f29;
+	f32 sinVal;
+	f32 cosVal;
+	f32 cap;
+	f32 zero;
+
+	if (wp->currMotionId != MARIO_MOTION_SHIP) {
+		if (wp->flags & 0x01000000) {
+			*(void**)((u8*)wp + 0x1F4) = NULL;
+		}
+		*(void**)((u8*)wp + 0x1E0) = NULL;
+		*(void**)((u8*)wp + 0x1DC) = NULL;
+		*(void**)((u8*)wp + 0x1EC) = NULL;
+		*(void**)((u8*)wp + 0x1F0) = NULL;
+	}
+	if (wp->flags & MARIO_FLAG_CTRL_OFF) {
+		return;
+	}
+	if (wp->currMotionId == MARIO_MOTION_JUMP_3) {
+		return;
+	}
+	if (getRollEvtFlag() != 0) {
+		return;
+	}
+
+	if (wp->flags & MARIO_FLAG_FORCED_MOVEMENT) {
+		if (wp->currMotionId == MARIO_MOTION_YOSHI) {
+			party = partyGetPtr(marioGetPartyId());
+			*(f32*)wp->unk19C = wp->directionView;
+			movePos(&party->position.x, &party->position.z, wp->baseSpeed, wp->directionView);
+			wp->position.x = party->position.x;
+			wp->position.z = party->position.z;
+			return;
+		} else if (wp->currMotionId == MARIO_MOTION_ROLL) {
+			marioSetRollDispDir();
+			movePos(&wp->position.x, &wp->position.z, wp->baseSpeed, wp->directionView);
+			return;
+		} else if (wp->currMotionId == MARIO_MOTION_SHIP) {
+			marioShipSetDispDir();
+			movePos(&wp->position.x, &wp->position.z, wp->baseSpeed, wp->directionView);
+			return;
+		} else if (wp->currMotionId != MARIO_MOTION_SLIT) {
+			*(f32*)wp->unk19C = wp->directionView;
+			movePos(&wp->position.x, &wp->position.z, wp->baseSpeed, wp->directionView);
+			return;
+		} else {
+			movePos(&wp->position.x, &wp->position.z, wp->baseSpeed, wp->directionView);
+			return;
+		}
+	}
+
+	if (wp->currMotionId == MARIO_MOTION_SHIP) {
+		return;
+	}
+	if (L_marioChkRub() != 0) {
+		return;
+	}
+
+	f30 = 0.0f;
+	f31 = f30;
+	if (!(wp->flags & MARIO_FLAG_STOP_AIR_MOVEMENT) && wp->airTimer != 0) {
+		f29 = wp->controlStickSensitivity * wp->playerGravity;
+		if (wp->flags & MARIO_FLAG_PAPER_MODE) {
+			if (wp->currMotionId != MARIO_MOTION_JUMP_STAND) {
+				f29 = f30;
+			} else {
+				f29 *= 0.015f;
+			}
+		} else if (pouchEquipCheckBadge(0x143)) {
+			f29 *= 0.01f;
+		} else {
+			s32 isRoll = FALSE;
+
+			if (marioGetPtr()->currMotionId == MARIO_MOTION_ROLL) {
+				isRoll = TRUE;
+			}
+			if (isRoll == TRUE) {
+				f29 *= 0.01f;
+			} else {
+				f29 *= 0.015f;
+				if (!(wp->flags & (MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING | MARIO_FLAG_IS_STEPPING))) {
+					f29 *= 0.25f;
+				}
+				if (wp->flags & MARIO_FLAG_BG_MODE) {
+					f29 *= 0.4f;
+				}
+			}
+		}
+		sincosf(&sinVal, &cosVal, wp->controlStickAngle);
+		f30 = f29 * sinVal;
+		f31 = f29 * cosVal;
+	}
+
+	f29 = wp->baseSpeed;
+	if (wp->hitobjStandOn != NULL) {
+		if (hitGetAttr((HitEntry*)wp->hitobjStandOn) & 0x40000000) {
+			*(void**)((u8*)wp + 0x204) = wp->hitobjStandOn;
+		}
+		if (hitGetAttr((HitEntry*)wp->hitobjStandOn) & 0x100) {
+			wp->flags |= 0x04000000;
+			f29 *= 0.75f;
+		} else {
+			wp->flags &= ~0x04000000;
+		}
+	} else {
+		wp->flags &= ~0x04000000;
+	}
+
+	sincosf(&sinVal, &cosVal, wp->directionView);
+	f30 = f29 * sinVal + f30;
+	f29 = f29 * cosVal + f31;
+	if (!(wp->flags & (0x02000000 | MARIO_FLAG_HAS_INPUT_JUMP))) {
+		if (*(f32*)(wp->field_0x1F0 + 0x30) != 0.0f) {
+			f30 *= (f32)cos(3.1415927f * *(f32*)(wp->field_0x1F0 + 0x24) / 180.0f);
+		}
+		if (*(f32*)(wp->field_0x1F0 + 0x28) != 0.0f) {
+			f29 *= (f32)cos(3.1415927f * *(f32*)(wp->field_0x1F0 + 0x24) / 180.0f);
+		}
+	}
+
+	zero = 0.0f;
+	f29 = f29 + wp->riderDelta.z;
+	f30 = f30 + wp->riderDelta.x;
+	f31 = f30 * f30 + f29 * f29;
+	wp->position.y = wp->position.y + (zero + wp->riderDelta.y);
+	f31 = marioMoveMain_sqrtf(f31);
+
+	if (f31) {
+		f29 = angleABf(0.0f, 0.0f, f30, f29);
+	} else {
+		f29 = toMovedir(wp->unk1A8);
+	}
+
+	if (!(wp->flags & MARIO_FLAG_PAPER_MODE)) {
+		if (wp->flags & (MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING)) {
+			cap = wp->mBaseDashSpeed * wp->playerGravity;
+			if (f31 > cap) {
+				f31 = cap;
+			}
+		}
+	}
+	if (!(wp->flags & 0x01000000)) {
+		f31 *= marioGetMoveRate(*(f32*)wp->unk19C);
+	}
+	if (wp->flags & MARIO_FLAG_PRE_BATTLE_PHYSICS) {
+		f31 = 0.0f;
+	}
+	*(f32*)wp->unk18C = f31;
+
+	if (wp->flags & MARIO_FLAG_USE_FORCE_DIRECTION) {
+		f29 = wp->unk1A4;
+		wp->directionView = f29;
+	} else if (wp->flags & MARIO_FLAG_WALLS_DISABLED) {
+		f29 = wp->directionView;
+	}
+
+	if (wp->flags & MARIO_FLAG_WALLS_DISABLED) {
+		movePos(&wp->position.x, &wp->position.z, wp->baseSpeed, f29);
+		return;
+	}
+
+	if (!(wp->flags & 0x01000000)) {
+		marioCheckWall(f31, f29);
+	} else {
+		if (!(wp->flags & MARIO_FLAG_IS_JUMPING)) {
+			marioCheckWall(f31, f29);
+		} else {
+			marioCheckWall_roll(f31, f29);
+		}
+		N_dou10_yoko_yari3();
+		hit = (HitEntry*)*(void**)((u8*)wp + 0x1E0);
+		if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
+			set_damage_root_ypos(wp->position.y);
+			marioChgMot(MARIO_MOTION_DAMAGE_TOGE);
+			return;
+		}
+	}
+	marioChkToge();
 }
 
 BOOL marioChkPushAnime(void) {
@@ -1010,24 +1992,477 @@ f32 marioGetScale(void) { //1:1
 	return mp->flags & 0x2000000 ? 1.2f : 2.0f;
 }
 
-// NONMATCHING (0.29%): empty placeholder, not decompiled yet.
+// Adjusts Mario's display direction (unk1AC target, unk1A8 smoothed) from the
+// angle between his facing (unk19C) and the camera yaw (targetYaw), then steers
+// unk1A8 toward the target through the trigFlags 0x100/0x200/0x400 turn states.
 void marioMakeDispDir(void) {
+	MarioWork* wp = mp;
+	f32* marioDir = (f32*)((u8*)wp + 0x1AC);
+	f32* marioDirView = (f32*)((u8*)wp + 0x19C);
 
+	if (!(wp->dispFlags & 0x01000000)) {
+		if (!(wp->dispFlags & 0x100)) {
+			f32 angle;
+			f32 dir;
+
+			angle = revise360(*marioDirView - wp->targetYaw);
+			dir = (s32)(*marioDir + 0.5f);
+			if (!(wp->dispFlags & 0x01000000)) {
+				if (dir == 290.0f || dir == 250.0f) {
+					dir = 180.0f;
+					if (angle >= 180.0f) {
+						dir = 0.0f;
+					}
+				}
+			}
+			if (wp->baseSpeed) {
+				if (angle >= 190.0f && angle <= 350.0f) {
+					dir = 0.0f;
+				}
+				else if (angle >= 10.0f && angle <= 170.0f) {
+					dir = 180.0f;
+				}
+			}
+			*marioDir = dir;
+			if (wp->dispFlags & 0x200) {
+				wp->unk1A8 = *marioDir;
+			}
+			if (wp->unk1A8 == *marioDir) {
+				return;
+			}
+		}
+		if (wp->currMotionId == 0x12) {
+			if (wp->unk1A8 <= 180.0f) {
+				if (*marioDir == 0.0f) {
+					wp->unk1A8 = 0.0f;
+					wp->trigFlags &= ~0x100;
+				}
+				else if (*marioDir == 180.0f) {
+					wp->unk1A8 = 180.0f;
+					wp->trigFlags &= ~0x100;
+				}
+			}
+			else if (wp->unk1A8 > 180.0f) {
+				if (*marioDir == 0.0f) {
+					wp->unk1A8 = 0.0f;
+					wp->trigFlags &= ~0x100;
+				}
+				else {
+					wp->unk1A8 = 180.0f;
+					wp->trigFlags &= ~0x100;
+				}
+			}
+		}
+		else if (wp->unk1A8 <= 180.0f) {
+			f32 dirRounded = (s32)*marioDir;
+
+			if (dirRounded == 0.0f) {
+				f32 delta;
+
+				if (wp->trigFlags & 0x400) {
+					wp->trigFlags &= ~0x400;
+					wp->trigFlags &= ~0x100;
+				}
+				wp->trigFlags |= 0x200;
+				if (wp->trigFlags & 0x100) {
+					delta = 0.3f * (10.0f - wp->unk1A8);
+				}
+				else {
+					delta = 0.125f * (-float_30_80419f70 - wp->unk1A8);
+				}
+				wp->unk1A8 += delta;
+				if (!(wp->trigFlags & 0x100)) {
+					if (wp->unk1A8 < -float_20_80419fac) {
+						wp->trigFlags |= 0x100;
+					}
+				}
+				else {
+					if (wp->unk1A8 >= 0.0f) {
+						wp->unk1A8 = 0.0f;
+						wp->trigFlags &= ~0x100;
+					}
+				}
+			}
+			else if (dirRounded == 180.0f) {
+				f32 delta;
+
+				if (wp->trigFlags & 0x200) {
+					wp->trigFlags &= ~0x200;
+					wp->trigFlags &= ~0x100;
+				}
+				wp->trigFlags |= 0x400;
+				if (wp->trigFlags & 0x100) {
+					delta = 0.3f * (170.0f - wp->unk1A8);
+				}
+				else {
+					delta = 0.125f * (210.0f - wp->unk1A8);
+				}
+				wp->unk1A8 += delta;
+				if (!(wp->trigFlags & 0x100)) {
+					if (wp->unk1A8 > 200.0f) {
+						wp->trigFlags |= 0x100;
+					}
+				}
+				else {
+					if (wp->unk1A8 <= 180.0f) {
+						wp->unk1A8 = 180.0f;
+						wp->trigFlags &= ~0x100;
+					}
+				}
+			}
+		}
+		else if (wp->unk1A8 > 180.0f) {
+			if (*marioDir == 0.0f) {
+				f32 delta;
+
+				if (wp->trigFlags & 0x400) {
+					wp->trigFlags &= ~0x400;
+					wp->trigFlags &= ~0x100;
+				}
+				wp->trigFlags |= 0x200;
+				if (wp->trigFlags & 0x100) {
+					delta = 0.3f * (10.0f - wp->unk1A8);
+				}
+				else {
+					delta = 0.125f * (-float_30_80419f70 - wp->unk1A8);
+				}
+				wp->unk1A8 += delta;
+				if (!(wp->trigFlags & 0x100)) {
+					if (wp->unk1A8 < -float_20_80419fac) {
+						wp->trigFlags |= 0x100;
+					}
+				}
+				else {
+					if (wp->unk1A8 >= 0.0f) {
+						wp->unk1A8 = 0.0f;
+						wp->trigFlags &= ~0x100;
+					}
+				}
+			}
+			else if (*marioDir == 180.0f) {
+				f32 delta;
+
+				if (wp->trigFlags & 0x200) {
+					wp->trigFlags &= ~0x200;
+					wp->trigFlags &= ~0x100;
+				}
+				wp->trigFlags |= 0x400;
+				if (wp->trigFlags & 0x100) {
+					delta = 0.3f * (170.0f - wp->unk1A8);
+				}
+				else {
+					delta = 0.125f * (210.0f - wp->unk1A8);
+				}
+				wp->unk1A8 += delta;
+				if (!(wp->trigFlags & 0x100)) {
+					if (wp->unk1A8 > 200.0f) {
+						wp->trigFlags |= 0x100;
+					}
+					else if (wp->unk1A8 <= 180.0f) {
+						wp->unk1A8 = 180.0f;
+						wp->trigFlags &= ~0x100;
+					}
+				}
+			}
+		}
+	}
 }
 
-// NONMATCHING (0.23%): empty placeholder, not decompiled yet.
-void marioRearAnime(void) {
+void marioRearAnime(void) { //1:1
+	MarioWork* wp = mp;
+	const char* pose;
+	f32 angle;
 
+	if (!(wp->dispFlags & 0x70000004) && !(wp->flags & 0x2000)) {
+		angle = revise360(*(f32*)&wp->unk19C[0] - wp->targetYaw);
+		if (angle >= 290.0f || angle <= 70.0f) {
+			pose = toRearPose(wp->animName);
+			if (pose) {
+				wp->dispFlags |= 0x80000000;
+				marioChgPose(pose);
+			}
+			else {
+				pose = toFrontPose(wp->animName);
+				if (!pose) {
+					wp->dispFlags &= ~0x80000000;
+				}
+			}
+		}
+		else {
+			wp->dispFlags &= ~0x80000000;
+			pose = toFrontPose(wp->animName);
+			if (pose) {
+				marioChgPose(pose);
+			}
+		}
+	}
+	else if (wp->dispFlags & 0x80000000) {
+		wp->dispFlags &= ~0x80000000;
+		pose = toFrontPose(wp->animName);
+		if (pose) {
+			marioChgPose(pose);
+		}
+	}
 }
 
-// NONMATCHING (0.38%): empty placeholder, not decompiled yet.
+// NONMATCHING (99.45%): mp is held in r4 then copied to r31 (the target loads r31 directly), and the FPR chosen
+// for ofsZ is f3 here, f5 in the target.
 void marioPreDisp(void) {
+	MarioWork* wp = mp;
+	Vec pos;
+	f32 size;
+	f32 ofsY;
+	f32 ofsZ;
+	f32 ofsX;
+	f32 c;
+	f32 diff;
+	s32 v;
 
+	if (wp->characterId == 0 || wp->characterId == 1) {
+		marioRearAnime();
+	}
+
+	if (*(s8*)&wp->field_0x32[0x38 - 0x32] == 0 && !(wp->dispFlags & 0x100)) {
+		marioMakeDispDir();
+	}
+
+	if (wp->trigFlags & 0x5000) {
+		if (wp->trigFlags & 0x1000) {
+			wp->trigFlags &= ~0x1000;
+		}
+		if (wp->trigFlags & 0x4000) {
+			wp->trigFlags &= ~0x4000;
+		}
+
+		animPoseSetAnim(wp->paperAnimGroupId[marioAnimeId()], wp->animName, 1);
+		if (wp->paperAnimName) {
+			// header declares this 2-arg, but the target passes r5=1 (same cast as msgdrv.c)
+			((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(wp->paperAnimGroupId[0], wp->paperAnimName, 1);
+		}
+		animPoseSetLocalTime(wp->paperAnimGroupId[marioAnimeId()], (f32)*(u16*)&wp->poseTime);
+	}
+
+	animPoseMain(wp->paperAnimGroupId[marioAnimeId()]);
+
+	if (wp->dispFlags & 1) {
+		return;
+	}
+
+	pos = wp->position;
+	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &pos, &pos);
+
+	ofsY = 5000.0f * pos.z + 5000.0f;
+	if (ofsY < 0.0f) {
+		ofsY = 0.0f;
+	}
+	else if (ofsY > 10000.0f) {
+		ofsY = 10000.0f;
+	}
+	ofsY *= -1.0f;
+
+	if (!(wp->dispFlags & 0x08000000) || (wp->flags & 0x40000000)) {
+		if (wp->characterId == 2) {
+			v = kpaNoHitEnemyCheck();
+		}
+		else {
+			v = wp->unk4C;
+		}
+		if (v > 0) {
+			if (!(v & 2)) {
+				dispEntry(marioGetCamId(), ofsY, 1, marioDisp, wp);
+			}
+		}
+		else {
+			dispEntry(marioGetCamId(), ofsY, 1, marioDisp, wp);
+		}
+	}
+	else {
+		dispEntry(marioGetCamId(), ofsY, 2, marioDispBlur, wp);
+	}
+
+	if (wp->dispFlags & 0x1000) {
+		return;
+	}
+	if (wp->flags & 0x02000000) {
+		return;
+	}
+
+	if (wp->currMotionId == MARIO_MOTION_PLANE) {
+		shadowEntryMode(2, wp->position.x, *(f32*)wp->field_0x1C0, wp->position.z, 13.333333f);
+		return;
+	}
+
+	if (wp->characterId == 2) {
+		size = 30.0f;
+		ofsX = 14.0f * (f32)sin(3.1415927f * wp->targetYaw / 180.0f);
+		c = (f32)cos(3.1415927f * wp->targetYaw / 180.0f);
+		ofsZ = 14.0f * -c;
+	}
+	else {
+		ofsX = 0.0f;
+		size = 13.333333f;
+		ofsZ = 0.0f;
+	}
+
+	if (wp->hitobjStandOn != NULL) {
+		f32 hitSize;
+		s32 mode;
+
+		if (wp->flags & 0x02000000) {
+			hitSize = 0.6f * size;
+		}
+		else {
+			hitSize = size;
+		}
+		mode = 2;
+		if (wp->flags & 0x02000000) {
+			mode = 0;
+		}
+		shadowEntryMode(mode, wp->position.x + ofsX, wp->position.y, wp->position.z + ofsZ, hitSize);
+		return;
+	}
+
+	{
+		diff = wp->position.y - *(f32*)wp->field_0x1C0;
+		if (diff >= -2.0f) {
+			size = size - diff / 13.333333f;
+			if (size < 0.1f) {
+				size = 0.0f;
+			}
+			if (size) {
+				s32 mode = 2;
+				if (wp->flags & 0x02000000) {
+					mode = 0;
+				}
+				shadowEntryMode(mode, wp->position.x + ofsX, wp->position.y, wp->position.z + ofsZ, size);
+			}
+		}
+	}
 }
 
-// NONMATCHING (0.26%): empty placeholder, not decompiled yet.
-void marioDispBlurSub(s32* unused, s32 blurId) {
+#ifdef MUST_MATCH
+// MUST_MATCH: returning the built GXColor from an inline lands the local at the original's stack slot
+// (sp+0x8) and the call argument at sp+0xC, instead of the other way round (brief code shape).
+static inline GXColor marioBlurColor(u8 alpha) {
+	GXColor color = *(GXColor*)(void*)&dat_80419e34;
 
+	color.a = alpha;
+	return color;
+}
+#endif
+
+// NONMATCHING (99.95%): body and control flow match; only the GXColor build in the
+// evt-color call differs, where MWCC swaps the two scratch registers (original keeps the
+// colour word in r3 and the mp pointer in r4; ours the other way round).
+void marioDispBlurSub(s32* unused, s32 blurId) {
+	MarioWork* wp = mp;
+	Mtx mtx;
+	Mtx temp;
+	Mtx scale;
+	GXColor color;
+	f32 scaleFactor;
+	f32 s;
+
+	scaleFactor = wp->flags & 0x2000000 ? 1.2f : 2.0f;
+	PSMTXScale(mtx, wp->scale.x * scaleFactor, wp->scale.y * scaleFactor, wp->scale.z * scaleFactor);
+
+	if (!(wp->dispFlags & 0x8)) {
+		if (wp->currMotionId == 0x14) {
+			f32 angle = revise360(*(f32*)(wp->field_0x98 + 0x24));
+
+			s = (angle >= 90.0f && angle <= 270.0f) ? -1.0f : 1.0f;
+			PSMTXScale(scale, 1.0f, 1.0f, s);
+			PSMTXConcat(scale, mtx, mtx);
+		}
+	}
+
+	if (!(wp->dispFlags & 0xC00)) {
+		if (!(wp->dispFlags & 0x8)) {
+			f32 angle = revise360(wp->unk1A8);
+
+			s = (angle >= 90.0f && angle <= 270.0f) ? -1.0f : 1.0f;
+			PSMTXScale(scale, 1.0f, 1.0f, s);
+			PSMTXConcat(scale, mtx, mtx);
+		}
+	}
+	else {
+		if (wp->dispFlags & 0x400) {
+			PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
+		}
+		else {
+			PSMTXScale(scale, 1.0f, 1.0f, -1.0f);
+		}
+		PSMTXConcat(scale, mtx, mtx);
+	}
+
+	PSMTXTrans(temp, -*(f32*)(wp->field_0x98 + 0x18), -*(f32*)(wp->field_0x98 + 0x1C), -*(f32*)(wp->field_0x98 + 0x20));
+	PSMTXConcat(temp, mtx, mtx);
+
+	if (wp->currMotionId == 0x18) {
+		PSMTXRotRad(temp, 'x', 0.017453292f * *(f32*)(wp->field_0x98 + 0x24));
+		PSMTXConcat(temp, mtx, mtx);
+		PSMTXRotRad(temp, 'z', 0.017453292f * *(f32*)(wp->field_0x98 + 0x2C));
+		PSMTXConcat(temp, mtx, mtx);
+	}
+	else {
+		PSMTXRotRad(temp, 'z', 0.017453292f * *(f32*)(wp->field_0x98 + 0x2C));
+		PSMTXConcat(temp, mtx, mtx);
+		PSMTXRotRad(temp, 'x', 0.017453292f * *(f32*)(wp->field_0x98 + 0x24));
+		PSMTXConcat(temp, mtx, mtx);
+	}
+
+	PSMTXRotRad(temp, 'y', 0.017453292f * revise360(wp->unk1A8 - wp->targetYaw));
+	PSMTXConcat(temp, mtx, mtx);
+
+	if (wp->dispFlags & 0xC00) {
+		f32 angle = revise360(wp->unk1A8);
+
+		if (angle >= 90.0f && angle <= 270.0f) {
+			PSMTXRotRad(temp, 'y', 0.017453292f * ((wp->dispFlags & 0x400) ? 180.0f : 0.0f));
+			PSMTXConcat(temp, mtx, mtx);
+		}
+		else {
+			PSMTXRotRad(temp, 'y', 0.017453292f * ((wp->dispFlags & 0x400) ? 0.0f : 180.0f));
+			PSMTXConcat(temp, mtx, mtx);
+		}
+	}
+
+	PSMTXTrans(temp, *(f32*)(wp->field_0x98 + 0x18), *(f32*)(wp->field_0x98 + 0x1C), *(f32*)(wp->field_0x98 + 0x20));
+	PSMTXConcat(temp, mtx, mtx);
+
+	if (wp->flags & 0x1000000) {
+		PSMTXScale(scale, 1.0f, *(f32*)(wp->unk104 + 0x2C), 1.0f);
+		PSMTXConcat(scale, mtx, mtx);
+	}
+
+	if (wp->currMotionId == 0x1A) {
+		PSMTXRotRad(temp, 'z', 0.017453292f * *(f32*)(wp->field_0x2AC + 0x0C));
+		PSMTXConcat(temp, mtx, mtx);
+	}
+
+	{
+		f32 zero = 0.0f;
+		f32 x = *(f32*)(wp->field_0x98 + 0x0C) + (*(f32*)(wp->field_0x98 + 0x00) + blurPos[blurId].x);
+		f32 y = zero + (*(f32*)(wp->field_0x98 + 0x10) + (*(f32*)(wp->field_0x98 + 0x04) + blurPos[blurId].y));
+		f32 z = *(f32*)(wp->field_0x98 + 0x14) + (*(f32*)(wp->field_0x98 + 0x08) + blurPos[blurId].z);
+
+		PSMTXTrans(temp, x, y, z);
+	}
+	PSMTXConcat(temp, mtx, mtx);
+
+	animPoseSetMaterialFlagOn(wp->paperAnimGroupId[marioAnimeId()], 0x40);
+
+#ifdef MUST_MATCH
+	color = marioBlurColor(0x80 - blurId * 16);
+#else
+	color = *(const GXColor*)&dat_80419e34;
+	color.a = 0x80 - blurId * 16;
+#endif
+	animPoseSetMaterialEvtColor(wp->paperAnimGroupId[marioAnimeId()], color);
+
+	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 1, 0.0f, 1.0f);
+	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 2, 0.0f, 1.0f);
+	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 3, 0.0f, 1.0f);
 }
 
 // NONMATCHING (1.03%): 96 missing.

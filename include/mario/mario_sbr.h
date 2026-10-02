@@ -29,3 +29,5 @@ f32 partyToMovedir(PartyEntry* party, f32 dir);
 void N_marioReloadMapOnBottomlessOn(void);
 void N_marioReloadMapOnBottomlessOff(void);
 void marioGetStick(f32* outAngle, f32* outMag);
+s32 marioSetDirEventMain(void);
+void marioUpdateKeyData(void);

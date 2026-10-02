@@ -61,6 +61,25 @@ typedef struct PaperSoundEffect {
     u8 unk1C[0x28 - 0x1C]; // 0x1C
 } PaperSoundEffect;
 
+// Named-field view of PaperSoundEffect used by psndSFXMain. Same layout as PaperSoundEffect; the effect
+// record's byte fields are not individually declared in the base struct yet.
+typedef struct PaperSoundEffectDetail {
+    s32 unk0;              // 0x0
+    u16 unk4;              // 0x4
+    u16 unk6;              // 0x6
+    u8 vol;                // 0x8
+    u8 pan;                // 0x9
+    u8 unkA;               // 0xA
+    u8 padB[3];            // 0xB
+    u16 unkE;              // 0xE
+    u16 unk10;             // 0x10
+    u16 unk12;             // 0x12
+    s16 unk14;             // 0x14
+    u8 pad16[2];           // 0x16
+    s32 unk18;             // 0x18
+    u8 pad1C[0x28 - 0x1C]; // 0x1C
+} PaperSoundEffectDetail;
+
 typedef struct PaperSoundEnv {
     u8 unk0[0x4 - 0x0];  // 0x0
     s16 unk4;            // 0x4
