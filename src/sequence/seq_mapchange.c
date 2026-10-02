@@ -306,7 +306,8 @@ extern const f32 float_5_8041947c;
 extern const f32 float_10_80419454;
 extern s32 key_off[10];
 
-// NONMATCHING: first draft.
+// NONMATCHING (99.84%): behaviour complete, checked against the asm; one branch polarity in the field-save block
+// (`if (swByteGet(4) == 0)` here compiles to bne where the target has beq + b).
 void seq_mapChangeMain(SequenceWork* work) {
     const char* const base = table_802C1028;
     BOOL newarea;
@@ -365,7 +366,6 @@ void seq_mapChangeMain(SequenceWork* work) {
                 }
             }
             work->state++;
-            return;
         }
     default:
         return;
@@ -396,7 +396,7 @@ void seq_mapChangeMain(SequenceWork* work) {
             } else {
                 ready = 1;
             }
-            if (ready != 0 && mapPreLoad() != 0) {
+            if (ready != 0 && ((BOOL (*)(const char*))mapPreLoad)(_next_map) != 0) {
                 FileEntry* file;
 
                 area = _next_area;
