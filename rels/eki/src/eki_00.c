@@ -1684,6 +1684,7 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
 
 #pragma opt_propagation reset
 
+#pragma dont_inline on
 static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5) {
     f32 hitX;
     f32 hitY;
@@ -1733,6 +1734,8 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32
     ep->flags |= 0x10;
     ep->flags &= ~0x4;
 }
+
+#pragma dont_inline reset
 
 static void ext_shadow_disp(CameraId cameraId, void* param) {
     static Mtx mt = {
