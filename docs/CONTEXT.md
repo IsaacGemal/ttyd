@@ -3795,3 +3795,37 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   nameent.h keeps `void nameMain(void)` (the s32 change was unproven and nameMain isn't written). mot_hammer's
   `case 6 -> case 0` mapping is retail (older bug). Open (LOW): mot_hammer reads four declared MarioWork fields as
   raw offsets; winBadgeDisp's second loop carries `i` over (differs only if availableBP < 0).
+
+## Incident: hung compiles ran for a day on the tower (2026-10-02, Claude Opus 5.5 orchestrator; review by Codex)
+
+**What happened.** Isaac noticed the tower's CPU running hot (81.6°C) with only the permuter going. Three `wibo
+mwcceppc.exe` processes were at 100% CPU: wave 53 `battle_camera.c` since Oct 1 17:20 (25 h, workspace already
+pruned) and wave 57 `eff_funemizu.c` since 03:01 and 04:04 (15-16 h). About 55 core-hours wasted. The 04:04 one
+was wave 57's launcher's own `ssh ... python3 check.py` between continuation passes (no timeout): that worker
+thread waited 16 h, and the log shows `effect_eff_funemizu finished in 58186s` at the second it was killed. With 10
+days of uptime, these three were all the orphans there had been; no other launcher thread ran past its budget.
+
+**Cause.** `#pragma scheduling <cpu number>` makes this mwcceppc loop forever: the battle_camera agent wrote
+`scheduling 801`, the funemizu agent `scheduling 601` (only those two outputs ever used it; main never has). The
+funemizu source from 03:01 reproduces it every time; removing that one line compiles it in 1 s. It survived its
+agents because `timeout ... bwrap ... pi` kills pi, not the compile pi's tool started (pi -> check.py -> ninja ->
+sh -> wibo). Nothing else had a time limit: check.py ran ninja without one, launchers ran check.py over ssh
+without one, and the reaper (`~/snood/tools/reaper.py`) had no rule for wibo.
+
+**Fixed** (PR below; Codex review, then its findings applied and re-reviewed):
+- Every mwcc build rule runs under `timeout -k 10 $TTYD_COMPILE_TIMEOUT` (default 300 s; the slowest real compile
+  is ~2.5 s) and prints `COMPILER TIMEOUT: <src>` on exit 124/137, so anything that runs ninja (check.py, ci.py,
+  the collection tools, the dashboard) fails instead of hanging. configure.py fails if GNU timeout is missing
+  (`TTYD_NO_COMPILE_TIMEOUT=1` opts out).
+- `tools/hang_guard.py` refuses known hang triggers (numeric `#pragma scheduling`). check.py runs it before
+  building (every source on `--final`); ci.py runs it as its own step, whatever `--allow-pragma` says. Brief rule
+  8 says so. check.py reports a hung compile as such, from the marker.
+- `tools/wave_launch.py`: the agent's ssh call has a deadline, and after every agent (also on error) `reap()`
+  kills the build/agent programs (wibo, ninja, python, pi, ...) still running in its workspace.
+- Reaper: mwcc/mwld under wibo (with or without the timeout wrapper) killed after 900 s.
+- Claude #2's scratch launcher template got the same three changes (timeouts on its own check.py/rel_link.py
+  calls, workspace reap); battle_camera and eff_funemizu can leave its exclusion list.
+
+**Lessons.** A wave that "finished" can still leave processes: check the tower for long-lived compiles at
+heartbeats (`ps -eo etimes,args | grep wibo`), not just load and temperature. A launcher thread with no deadline
+looks the same as a slow agent from the log until the end.
