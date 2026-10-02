@@ -47,3 +47,4 @@ HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance, f32* out
 void marioCheckWall_roll(f32 a, f32 b);
 void marioChkToge(void);
 HitEntry* N_dou10_yoko_yari3(void);
+void marioHitCheckWidth(void);

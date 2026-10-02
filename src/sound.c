@@ -1359,12 +1359,109 @@ void cache_flush(u32 pointerToARQRequest) {
     _ssDVDReadAsync_activeChk(0, &dvd->info);
 }
 
-// NONMATCHING (0.44%): empty placeholder, not decompiled yet.
-void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
+// NONMATCHING (88.62%): the code is complete and does what the assembly does. What still differs is
+// register allocation and scheduling only: the inlined entry helper's `entry` and `len` land in
+// r29/r31 where the original has them in r31/r29 (`aligned` is r30 in both); the two-buffer select
+// is emitted as `subfic; slwi; lwzx` where the original does `subfic; slwi; add; lwz 0x2c`; and the
+// ARQ `dest` addends and the second block's volatile registers are scheduled in a different order.
+static inline void _ssDVDReadAsync_cache_entry(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
+    u32 aligned;
+    u32 len;
+    u32 n;
+
+    len = 0x8000;
+    if (entry->bytesLoaded + 0x8000 > *(u32*)&entry->unk4C[0x14]) {
+        len = *(u32*)&entry->unk4C[0x14] - entry->bytesLoaded;
+    } else {
+        for (n = 2; n < 6; n++) {
+            if (entry->bytesLoaded + n * 0x8000 <= *(u32*)&entry->unk4C[0x14]) {
+                continue;
+            }
+            len -= (0x8000 - (*(u32*)&entry->unk4C[0x14] - (entry->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len += 0x20 - (len & 0x1F);
+            break;
+        }
+    }
+    aligned = (len + 0x1F) & ~0x1F;
+    if (!(stream->flags & 0x400)) {
+        DVDMgrReadAsync(entry->dvd, (void*)((u32*)entry)[(1 - *(u16*)entry->unk4C) + 0x0B], aligned,
+                        stream->unk4 + entry->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
+    } else {
+        u32 dest = entry->bytesLoaded + offset + ((u32*)sound.unk21C)[stream->unk2] + stream->unk4;
+        DCInvalidateRange((void*)((u32*)entry)[(1 - *(u16*)entry->unk4C) + 0x0B], 0x8000);
+        ARQPostRequest(&entry->request, (u32)entry, 1, 0,
+                       ((u32*)entry)[(1 - *(u16*)entry->unk4C) + 0x0B], dest, aligned, cache_flush);
+    }
+    entry->requestLength = len;
 }
 
-// NONMATCHING (1.49%): empty placeholder, not decompiled yet.
+// NONMATCHING (88.62%): see the note on _ssDVDReadAsync_cache_entry above; only register allocation
+// and addressing/scheduling differ. The logic, every call, branch and store matches.
+void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
+    SoundStream* stream = &sound.streams[((ARQRequest*)pointerToARQRequest)->owner & 0xFF];
+    SoundStreamEntry* entry;
+    u32 length;
+    u32 len;
+
+    length = DVDMgrGetLength(stream->entries[0].dvd);
+    if (*(u32*)stream->entries[0].unk38 >= length) {
+        stream->entries[0].bytesLoaded = 0;
+        *(u32*)stream->entries[0].unk38 = 0;
+        stream->entries[1].bytesLoaded = 0;
+        *(u32*)stream->entries[1].unk38 = 0;
+        *(u16*)stream->entries[0].unk4C = 1;
+
+        entry = &stream->entries[0];
+        _ssDVDReadAsync_cache_entry(stream, entry, 0);
+
+        if (stream->count == 2) {
+            *(u16*)stream->entries[1].unk4C = 1;
+            entry = &stream->entries[1];
+            _ssDVDReadAsync_cache_entry(stream, entry, (*(u32*)&entry->unk4C[0x14] & ~0x1F) + 0x20);
+        }
+    } else {
+        length = DVDMgrGetLength(stream->entries[0].dvd);
+        len = 0x8000;
+        if (stream->entries[0].bytesLoaded + 0x8000 >= length) {
+            len = length - stream->entries[0].bytesLoaded;
+        }
+        DVDMgrReadAsync(stream->entries[0].dvd, (void*)stream->entries[0].loadBuffer,
+                        (len + 0x1F) & ~0x1F, stream->entries[0].bytesLoaded,
+                        _ssDVDReadAsync_cache_next);
+        stream->entries[0].requestLength = len;
+    }
+}
+
+static u32 owner_no;
+
 void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
+    SoundStream* stream;
+    SoundStreamEntry* entry;
+    u32 aramAddr;
+    u32 owner;
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        stream = &sound.streams[i];
+        if (stream->flags == 0) {
+            continue;
+        }
+        if (&stream->entries[0].dvd->info != fileInfo) {
+            continue;
+        }
+        if (result < 0) {
+            break;
+        }
+        entry = &stream->entries[0];
+        entry->bytesLoaded += entry->requestLength;
+        aramAddr = ((u32*)entry->unk38)[0] + ((u32*)sound.unk21C)[stream->unk2];
+        DCFlushRange((void*)entry->loadBuffer, 0x8000);
+        owner = owner_no++;
+        ARQPostRequest(&entry->request, (owner << 16) | i, 0, 0, entry->loadBuffer, aramAddr, 0x8000,
+                       _ssDVDReadAsync_cache_aram);
+        ((u32*)entry->unk38)[0] += entry->requestLength;
+        break;
+    }
 }
 
 s16 dtbl[16] = {1, 7, 24, 59, 83, 111, 236, 555, 742, 885, 1052, 2221, 3285, 4432, 6962, 9300};

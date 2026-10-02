@@ -171,6 +171,18 @@ typedef struct BattleAudience {
     BOOL excited;                      // 0x13910, if toads are cheering
 } BattleAudience;
 
+// Struct views used by BattleAudienceSettingAudience so MWCC emits the paired
+// lwzu/stwu const-table copy loops (it does not for memcpy).
+typedef struct BattleAudienceDeltaMultiplierTable {
+    f32 v[65];
+} BattleAudienceDeltaMultiplierTable;
+
+typedef struct BattleAudienceTypeWeights {
+    s32 v[11];
+} BattleAudienceTypeWeights;
+
+extern f32 float_0p5_8041e708;
+
 BattleAudience* BattleAudienceBaseGetPtr(void);
 BattleAudienceMember* BattleAudienceGetPtr(s32 id);
 BattleAudienceItem* BattleAudienceItemGetPtr(s32 id);
@@ -262,6 +274,7 @@ s32 BattleAudienceDetectPakkunEatTargetSub(s32 a, s32 b, s32 c);
 s32 BattleAudienceNumToTargetSub(void);
 void BattleAudienceSoundNoiseAlways(void);
 void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3);
+void BattleAudienceSoundSetVolAll(u8 a2, s32 a3);
 void BattleAudienceNumToTarget(void);
 void BattleAudience_WinSetActive(u8 active);
 void BattleAudienceSoundMain(void);
@@ -303,3 +316,4 @@ void BattleAudience_Case_AcrobatGood(void);
 void BattleAudience_Case_AcrobatBad(void);
 void BattleAudience_Case_ActionCommandGood(void);
 void BattleAudience_Case_ActionCommandBad(void* arg);
+void BattleAudience_Case_TurnEnd(void);

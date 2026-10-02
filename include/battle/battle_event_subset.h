@@ -11,3 +11,7 @@ EVT_DEF(subsetevt_dead_core);
 EVT_DEF(subsetevt_dead_core_nospin_norotate);
 EVT_DEF(subsetevt_nodamage_motion);
 EVT_DEF(subsetevt_shot_damage);
+EVT_DEF(subsetevt_status_recovery);
+EVT_DEF(subsetevt_regeneration);
+EVT_DEF(subsetevt_happy_heart);
+EVT_DEF(subsetevt_happy_flower);

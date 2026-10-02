@@ -9,6 +9,12 @@ typedef struct TEXPalette TEXPalette;
 extern s32 culling[];
 extern u32 attr_fmt[];
 extern f32 float_0p0001_8041985c;
+extern GXColor dat_80419834;
+extern GXColor dat_80419838;
+extern GXColor dat_8041983c;
+extern GXColor paperCraft_ambient;
+extern u32 lightid_tbl[];
+extern Vec vec3_802c1828[];
 
 typedef struct DisplayList {
     u32 offset;      // 0x00 - Offset to vertex data
@@ -246,6 +252,7 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index);
 void bmapLoad(const char* map1, const char* map2);
 void bmapUnLoad(void);
 void mapGetBlend(GXColor* out);
+void mapGetBlend2(GXColor* out);
 #include "driver/lightdrv.h"
 s32 mapSetLight(MapObject* obj, LightEntry** entries);
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh);

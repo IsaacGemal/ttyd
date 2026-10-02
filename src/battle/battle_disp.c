@@ -49,6 +49,13 @@ extern const char str_802EDE58[];
 extern const char str_802EDE60[];
 extern const char str_802EDE68[];
 extern const char str_802EDE70[];
+extern f32 float_deg2rad_8041bf54;
+extern f32 float_270_8041bf70;
+extern f32 float_90_8041bf74;
+extern f32 float_neg1_8041bf78;
+extern f32 float_180_8041bf7c;
+extern f32 float_neg5_8041bf80;
+typedef void (*BattleUnitPartDispCallback)(BattleUnitPart* part, s32 mode);
 
 // Keep searchPoseTbl out of line: the original calls it rather than inlining.
 #pragma dont_inline on
@@ -385,9 +392,314 @@ void btlDispMain(void) {
 	}
 }
 
-// NONMATCHING (0.12%): 862 missing.
+// All code, calls and matrix/switch structure match; remaining diffs are register allocation only. The
+// target keeps owner in r29 / wp in r31 (we have them swapped) and maps the six callee-saved floats to
+// f26-f31 in the "natural" order (f26=1.0, f27=270/90, f28=pos.z, f29=pos.x, f30=height, f31=angle),
+// while MWCC assigns ours in a different permutation. The three callees are kept as real `bl`s with
+// #pragma dont_inline because the target does not inline them.
+// NONMATCHING (97.05%): register allocation (owner/wp and f26/f27/f30 permutation).
 void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
+	BattleWork* wp;
+	BattleUnit* owner;
+	CameraEntry* cam;
+	f32 f26;
+	f32 f27;
+	f32 f28;
+	f32 f29;
+	f32 f30;
+	f32 f31;
+	Mtx m28;
+	Mtx m27;
+	Mtx m26;
+	Mtx m25;
+	Mtx m24;
+	Mtx m23;
+	Mtx m22;
+	Mtx m21;
+	Mtx m20;
+	Mtx m19;
+	Mtx m18;
+	Mtx m17;
+	Mtx m16;
+	Mtx m15;
+	Mtx m14;
+	Mtx m13;
+	Mtx m12;
+	Mtx m11;
+	Mtx m10;
+	Mtx m9;
+	Mtx m8;
+	Mtx m7;
+	Mtx m6;
+	Mtx m5;
+	Mtx m4;
+	Mtx m3;
+	Mtx m2;
+	Mtx m1;
+	Mtx m0;
 
+	(void)camId;
+	if (*(s32*)((char*)parts + 0x1C0) < 0) {
+		return;
+	}
+	wp = _battleWorkPointer;
+	owner = parts->mOwner;
+	f26 = float_1_8041bf64;
+
+	PSMTXTrans(m11, -owner->mRotationOffset.x, -owner->mRotationOffset.y, -owner->mRotationOffset.z);
+	PSMTXTrans(m10, owner->mRotationOffset.x, owner->mRotationOffset.y, owner->mRotationOffset.z);
+	PSMTXTrans(m15, owner->mDisplayOffset.x, owner->mDisplayOffset.y, owner->mDisplayOffset.z);
+	PSMTXTrans(m16, owner->mPosition.x, owner->mPosition.y, owner->mPosition.z);
+	PSMTXRotRad(m14, 'x', float_deg2rad_8041bf54 * (owner->mRotation.x + owner->mBaseRotation.x));
+	PSMTXRotRad(m13, 'y', float_deg2rad_8041bf54 * (owner->mRotation.y + owner->mBaseRotation.y));
+	PSMTXRotRad(m12, 'z', float_deg2rad_8041bf54 * (owner->mRotation.z + owner->mBaseRotation.z));
+	PSMTXScale(m9, owner->mSizeMultiplier * (owner->mBaseScale.x * owner->mScale.x),
+	                   owner->mSizeMultiplier * (owner->mBaseScale.y * owner->mScale.y),
+	                   owner->mBaseScale.z * owner->mScale.z);
+	PSMTXIdentity(m24);
+	PSMTXConcat(m9, m24, m24);
+	PSMTXConcat(m11, m24, m24);
+	PSMTXConcat(m13, m24, m24);
+	PSMTXConcat(m12, m24, m24);
+	PSMTXConcat(m14, m24, m24);
+	PSMTXConcat(m10, m24, m28);
+	PSMTXConcat(m15, m28, m28);
+
+	f27 = float_270_8041bf70;
+
+	if (parts->attributes & 0x10000000) {
+		if (parts->faceDirection >= 0) {
+			f27 = float_90_8041bf74;
+		}
+		f29 = parts->mPosition.x;
+		f30 = getFloatDispOffset((BattleUnit*)parts);
+// dont_inline: retail keeps these real bls from btlUnitPartsDisp.
+#pragma dont_inline on
+		f30 = (parts->mPosition.y + getGravityDispOffset((BattleUnit*)parts)) + f30;
+		f28 = parts->mPosition.z;
+		cam = camGetCurPtr();
+		f31 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
+		f31 = reviseAngle(f31 - angleABf(cam->cameraPos.x, cam->cameraPos.z, f29, f28));
+
+		PSMTXTrans(m22, -parts->mRotationOffset.x, -parts->mRotationOffset.y, -parts->mRotationOffset.z);
+		PSMTXTrans(m21, parts->mRotationOffset.x, parts->mRotationOffset.y, parts->mRotationOffset.z);
+		PSMTXRotRad(m20, 'x', float_deg2rad_8041bf54 * (parts->mRotation.x + parts->mBaseRotation.x));
+		PSMTXRotRad(m19, 'y', float_deg2rad_8041bf54 * (parts->mBaseRotation.y + parts->mRotation.y + f31));
+		PSMTXRotRad(m18, 'z', float_deg2rad_8041bf54 * (parts->mRotation.z + parts->mBaseRotation.z));
+		PSMTXTrans(m23, f29, f30, f28);
+
+		f30 = reviseAngle(float_neg1_8041bf78 * f27 - float_90_8041bf74);
+		f28 = reviseAngle(parts->mBaseRotation.y + (f30 + parts->mRotation.y));
+		cam = camGetCurPtr();
+		f27 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
+		{
+			f32 f0 = reviseAngle(f28 + f27);
+			if (f0 >= float_90_8041bf74 && f0 <= float_270_8041bf70) {
+				f26 = f26 * float_neg1_8041bf78;
+				PSMTXRotRad(m19, 'y', float_deg2rad_8041bf54 *
+					(f31 + parts->mRotation.y + parts->mBaseRotation.y -
+					 float_2_8041bf68 * (float_180_8041bf7c - (f0 - f27))));
+			}
+		}
+
+		if (parts->attributes & 0x08000000) {
+			PSMTXScale(m26,
+				parts->mBaseScale.x * parts->mScale.x,
+				parts->mBaseScale.y * parts->mScale.y,
+				f26 * (parts->mBaseScale.z * parts->mScale.z));
+		} else {
+			PSMTXScale(m26,
+				owner->mSizeMultiplier * (parts->mBaseScale.x * parts->mScale.x),
+				owner->mSizeMultiplier * (parts->mBaseScale.y * parts->mScale.y),
+				f26 * (parts->mBaseScale.z * parts->mScale.z));
+		}
+
+		PSMTXIdentity(m17);
+		PSMTXConcat(m26, m17, m17);
+		PSMTXConcat(m22, m17, m17);
+		PSMTXConcat(m18, m17, m17);
+		PSMTXConcat(m20, m17, m17);
+		PSMTXConcat(m19, m17, m17);
+		PSMTXConcat(m21, m17, m17);
+		PSMTXConcat(m23, m17, m27);
+		PSMTXCopy(m27, m25);
+		PSMTXTrans(m0, float_0_8041bf58, float_0_8041bf58, float_neg5_8041bf80);
+		PSMTXConcat(m0, m25, m25);
+	} else {
+		f32 dir;
+		f32 sign;
+
+		if (owner->faceDirection >= 0) {
+			f27 = float_90_8041bf74;
+		}
+		dir = (f32)parts->faceDirection;
+		if (dir > float_0_8041bf58) {
+			sign = float_1_8041bf64;
+		} else if (dir < float_0_8041bf58) {
+			sign = float_neg1_8041bf78;
+		} else {
+			sign = (f32)*(s8*)((char*)wp + owner->mAlliance * 8 + 0xA);
+		}
+		f30 = sign * parts->mPositionOffset.x + owner->mPosition.x;
+		f26 = getFloatDispOffset((BattleUnit*)parts);
+		f31 = (owner->mPosition.y + parts->mPositionOffset.y + getGravityDispOffset((BattleUnit*)parts)) + f26;
+		f29 = owner->mPosition.z + parts->mPositionOffset.z;
+		f28 = float_0_8041bf58;
+		if (owner->mAttributeFlags & 0x04000000) {
+			cam = camGetCurPtr();
+			f26 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
+			f28 = reviseAngle(f26 - angleABf(cam->cameraPos.x, cam->cameraPos.z, f30, f29));
+		}
+
+		PSMTXTrans(m3, -parts->mRotationOffset.x, -parts->mRotationOffset.y, -parts->mRotationOffset.z);
+		PSMTXTrans(m2, parts->mRotationOffset.x, parts->mRotationOffset.y, parts->mRotationOffset.z);
+		PSMTXRotRad(m6, 'x', float_deg2rad_8041bf54 * (parts->mRotation.x + parts->mBaseRotation.x));
+		PSMTXRotRad(m5, 'y', float_deg2rad_8041bf54 * (parts->mBaseRotation.y + parts->mRotation.y + f28));
+		PSMTXRotRad(m4, 'z', float_deg2rad_8041bf54 * (parts->mRotation.z + parts->mBaseRotation.z));
+		PSMTXTrans(m8, f30, f31, f29);
+		PSMTXTrans(m7, parts->mDisplayOffset.x, parts->mDisplayOffset.y, parts->mDisplayOffset.z);
+
+		f30 = reviseAngle(float_neg1_8041bf78 * f27 - float_90_8041bf74);
+		if (!(owner->flags & 0x1000000)) {
+			f26 = reviseAngle(parts->mBaseRotation.y + (owner->mBaseRotation.y +
+				(parts->mRotation.y + (f30 + owner->mRotation.y))));
+			cam = camGetCurPtr();
+			{
+				f32 f0 = reviseAngle(f26 + angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z));
+				if (f0 >= float_90_8041bf74 && f0 <= float_270_8041bf70) {
+					PSMTXScale(m9,
+						owner->mSizeMultiplier * (owner->mBaseScale.x * owner->mScale.x),
+						owner->mSizeMultiplier * (owner->mBaseScale.y * owner->mScale.y),
+						float_neg1_8041bf78 * (owner->mBaseScale.z * owner->mScale.z));
+					PSMTXIdentity(m24);
+					PSMTXConcat(m9, m24, m24);
+					PSMTXConcat(m11, m24, m24);
+					switch (*(s8*)((char*)parts + 0x4FC)) {
+					case 0:
+						PSMTXConcat(m13, m24, m24);
+						PSMTXConcat(m12, m24, m24);
+						PSMTXConcat(m14, m24, m24);
+						break;
+					case 1:
+						PSMTXConcat(m13, m24, m24);
+						PSMTXConcat(m14, m24, m24);
+						PSMTXConcat(m12, m24, m24);
+						break;
+					case 2:
+						PSMTXConcat(m14, m24, m24);
+						PSMTXConcat(m13, m24, m24);
+						PSMTXConcat(m12, m24, m24);
+						break;
+					case 3:
+						PSMTXConcat(m14, m24, m24);
+						PSMTXConcat(m12, m24, m24);
+						PSMTXConcat(m13, m24, m24);
+						break;
+					case 4:
+						PSMTXConcat(m12, m24, m24);
+						PSMTXConcat(m14, m24, m24);
+						PSMTXConcat(m13, m24, m24);
+						break;
+					case 5:
+						PSMTXConcat(m12, m24, m24);
+						PSMTXConcat(m13, m24, m24);
+						PSMTXConcat(m14, m24, m24);
+						break;
+					}
+					PSMTXConcat(m10, m24, m28);
+					PSMTXConcat(m15, m28, m28);
+				}
+			}
+		}
+
+		PSMTXScale(m1,
+			parts->mBaseScale.x * parts->mScale.x,
+			parts->mBaseScale.y * parts->mScale.y,
+			float_1_8041bf64 * (parts->mBaseScale.z * parts->mScale.z));
+		PSMTXIdentity(m24);
+		PSMTXConcat(m28, m24, m24);
+		PSMTXConcat(m1, m24, m24);
+		PSMTXConcat(m3, m24, m24);
+		switch (*(s8*)((char*)parts + 0x4FC)) {
+		case 0:
+			PSMTXConcat(m5, m24, m24);
+			PSMTXConcat(m4, m24, m24);
+			PSMTXConcat(m6, m24, m24);
+			break;
+		case 1:
+			PSMTXConcat(m5, m24, m24);
+			PSMTXConcat(m6, m24, m24);
+			PSMTXConcat(m4, m24, m24);
+			break;
+		case 2:
+			PSMTXConcat(m6, m24, m24);
+			PSMTXConcat(m5, m24, m24);
+			PSMTXConcat(m4, m24, m24);
+			break;
+		case 3:
+			PSMTXConcat(m6, m24, m24);
+			PSMTXConcat(m4, m24, m24);
+			PSMTXConcat(m5, m24, m24);
+			break;
+		case 4:
+			PSMTXConcat(m4, m24, m24);
+			PSMTXConcat(m6, m24, m24);
+			PSMTXConcat(m5, m24, m24);
+			break;
+		case 5:
+			PSMTXConcat(m4, m24, m24);
+			PSMTXConcat(m5, m24, m24);
+			PSMTXConcat(m6, m24, m24);
+			break;
+		}
+		PSMTXConcat(m2, m24, m24);
+		PSMTXConcat(m8, m24, m27);
+		PSMTXConcat(m7, m27, m27);
+		PSMTXCopy(m27, m25);
+		PSMTXTrans(m0, float_0_8041bf58, float_0_8041bf58, float_neg5_8041bf80);
+		PSMTXConcat(m0, m25, m25);
+	}
+
+	*(u32*)((char*)parts + 0x218) = *(u32*)((char*)parts + 0x4F4);
+	if (*(s32*)((char*)parts + 0x204) & 0x10) {
+		*(u8*)((char*)parts + 0x218) = 0;
+		*(u8*)((char*)parts + 0x219) = 0;
+		*(u8*)((char*)parts + 0x21A) = 0;
+	}
+	if (*(s32*)((char*)parts + 0x204) & 0x20) {
+		*(u8*)((char*)parts + 0x218) = 0;
+		*(u8*)((char*)parts + 0x219) = 0;
+		*(u8*)((char*)parts + 0x21A) = 0;
+	}
+	if (*(u8*)((char*)parts + 0x218) == 0xFF && *(u8*)((char*)parts + 0x219) == 0xFF &&
+	    *(u8*)((char*)parts + 0x21A) == 0xFF) {
+		if (BtlUnit_CheckStatus(owner, 4)) {
+			*(u8*)((char*)parts + 0x218) = *(u8*)((char*)parts + 0x218) * 0xA0 / 0xFF;
+			*(u8*)((char*)parts + 0x21A) = *(u8*)((char*)parts + 0x218) * 0xA0 / 0xFF;
+		}
+		*(u8*)((char*)parts + 0x218) = *(u8*)((char*)parts + 0x218) * *(u8*)((char*)owner + 0x30E) / 0xFF;
+		*(u8*)((char*)parts + 0x219) = *(u8*)((char*)parts + 0x219) * *(u8*)((char*)owner + 0x30E) / 0xFF;
+		*(u8*)((char*)parts + 0x21A) = *(u8*)((char*)parts + 0x21A) * *(u8*)((char*)owner + 0x30E) / 0xFF;
+	}
+	animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1C0), *(GXColor*)((char*)parts + 0x218));
+	animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1C0), 0x40);
+	if (*(BattleUnitPartDispCallback*)((char*)parts + 0x210)) {
+		(*(BattleUnitPartDispCallback*)((char*)parts + 0x210))(parts, 0);
+	}
+	if (BtlUnit_CheckStatus(owner, 0x10)) {
+		animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1C0), 0x800000);
+	} else {
+		animPoseSetMaterialFlagOff(*(s32*)((char*)parts + 0x1C0), 0x800000);
+	}
+	animPoseDrawMtx(*(s32*)((char*)parts + 0x1C0), m27, 1, f30, float_2_8041bf68);
+	animPoseDrawMtx(*(s32*)((char*)parts + 0x1C0), m27, 2, f30, float_2_8041bf68);
+	animPoseDrawMtx(*(s32*)((char*)parts + 0x1C0), m27, 3, f30, float_2_8041bf68);
+	if (*(BattleUnitPartDispCallback*)((char*)parts + 0x210)) {
+		(*(BattleUnitPartDispCallback*)((char*)parts + 0x210))(parts, 1);
+	}
+// dont_inline: retail keeps this a real bl from btlUnitPartsDisp.
+#pragma dont_inline on
+	btlUnitPartsBlurControl(parts, 0, m25, *(GXColor*)((char*)parts + 0x218), f30);
 }
 
 
@@ -654,6 +966,7 @@ f32 getGravityDispOffset(BattleUnit* unit) {
 f32 getFloatDispOffset(BattleUnit* unit) {
 	return sinfd((f32)((*(u16*)((char*)unit + 0x1a8) * 4 + 0x10e) % 360)) * 2.0f + 2.0f;
 }
+#pragma dont_inline reset
 
 void gravityOffsetControl(BattleUnitPart* part) {
 	BattleWork* wp = _battleWorkPointer;
@@ -737,6 +1050,7 @@ void btlUnitPartsBlurControl(BattleUnitPart* part, s32 unused, Mtx orientation, 
 		_partsBlurControl(part, 0, orientation, color, rotation);
 	}
 }
+#pragma dont_inline reset
 
 #pragma dont_inline on
 void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation) {
@@ -878,8 +1192,6 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	}
 }
 #pragma dont_inline reset
-
-extern f32 float_deg2rad_8041bf54;
 
 // See the note on double_to_int_802ede28 above.
 #if 0

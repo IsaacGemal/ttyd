@@ -53,6 +53,7 @@ s32 kpaMutekiCheck(void);
 void kpaSetLevel(s32 level);
 void kpaPreInit(void);
 s32 kpaGetLevel(void);
+BOOL kpaHipAttackCheck(void);
 void kpaAttackStart(void);
 void kpa2DMain(void);
 void kpa3DMain(void);
@@ -75,5 +76,6 @@ void kpaMSetMutekiTimer(void);
 void unk_801f8cd0(void);
 void kpaMutekiOn(void);
 void kpaMutekiOff(void);
+void kpaMain(void);
 
 extern const f32 float_0_80420e80;

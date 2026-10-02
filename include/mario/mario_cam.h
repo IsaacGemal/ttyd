@@ -7,6 +7,7 @@
 s32 marioGetCamId(void);
 void marioCamZoomOffReq2(s32);
 BOOL marioCamZoomUp(void);
+BOOL marioCamZoomOff(void);
 f32 marioGetCamFollowRate(void);
 void marioResetCamFollowRate(void);
 void marioInitCamId(void);
@@ -22,3 +23,4 @@ void marioSetCamFollowRate(f32 followRate);
 void marioResetCamShift(void);
 void marioResetCamShiftRate(void);
 void marioCamZoomOffReq(void);
+void marioPreCamera(void);

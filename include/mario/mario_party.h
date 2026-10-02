@@ -17,3 +17,4 @@ void partyLeft(PartyId partnerId);
 s32 partyGetHp(s32 partyId);
 s32 unk_8013be14(void);
 s32 partyGetTechLv(s32 partyId);
+s32 marioUseParty(void);

@@ -76,6 +76,7 @@ typedef enum BattleActRecordConditionType {
 void BtlActRec_AddPoint(void* p, u8 value);
 void BtlActRec_AddCount(void* p);
 void BtlActRec_JudgeTurnRuleKeep(void);
+void BtlActRec_JudgeRuleKeep(void);
 u8 _check_turn_count_0_end(s32 flag);
 u8 _check_turn_count_0_turn(s32 flag);
 s32 _check_no_use(s32 arg);

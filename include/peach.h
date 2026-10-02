@@ -14,3 +14,4 @@ void peach_talk(void);
 void peach_stay(void);
 void peachChgPose(const char* name);
 void peachPreInit(void);
+s32 peachMain(void);
