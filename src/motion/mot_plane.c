@@ -254,9 +254,9 @@ void mot_plane_post(void) {
 	allPartyRideOff2();
 }
 
-// NONMATCHING (87.23%): only FP register allocation and load scheduling differ in the v3C Vec block
-// and the five marioHitCheck call sites (f0/f1 and f4/f5/f6 swapped in places); every constant, call
-// argument and data reference is correct.
+// v3C and v30 blocks plus the five marioHitCheck calls now match except for a few FP/address
+// registers (v30.y result f30 vs f1, planeData/vec3 r3/r4) and the call-1 load schedule.
+// NONMATCHING (97.18%): every constant, call argument and data reference is correct.
 s32 chkCollision(f32* out) {
 	s32 flag = 0;
 	MarioWork* mario = marioGetPtr();
@@ -278,27 +278,27 @@ s32 chkCollision(f32* out) {
 
 	v3C = vec3_802c5cfc;
 	{
-		f32 t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14;
+		f32 t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15;
 		t1 = MF32(mario, 0x98);
 		t3 = MF32(mario, 0x9C);
 		t0 = mario->position.x;
 		t2 = mario->position.y;
 		t4 = MF32(mario, 0xB0);
-		t5 = t0 + t1;
-		t6 = t2 + t3;
-		t4 = t4 + t5;
-		t8 = MF32(mario, 0xB4) + t6;
 		t9 = -sinA;
 		t10 = sinC * cosA;
 		t11 = 4.0f;
 		t12 = cosC * cosA;
-		t8 = t9 * t11 + t8;
+		t5 = t0 + t1;
+		t6 = t2 + t3;
+		t4 = t4 + t5;
+		t8 = MF32(mario, 0xB4) + t6;
 		t4 = t11 * t10 + t4;
-		t13 = mario->position.z;
-		t14 = MF32(mario, 0xA0);
-		t14 = t13 + t14;
+		t8 = t9 * t11 + t8;
+		t14 = mario->position.z;
+		t13 = MF32(mario, 0xA0);
+		t15 = t14 + t13;
 		t13 = MF32(mario, 0xB8);
-		t14 = t13 + t14;
+		t14 = t13 + t15;
 		t14 = t11 * t12 + t14;
 		v3C.x = t4;
 		v3C.y = t8;
@@ -317,39 +317,56 @@ s32 chkCollision(f32* out) {
 		vy = MF32(mario, 0xB4) + (mario->position.y + MF32(mario, 0x9C));
 		vz = MF32(mario, 0xB8) + (mario->position.z + MF32(mario, 0xA0));
 		vx = pd40 * (sinC * -cosA) + vx;
-		vy = sinA * pd40 + vy;
 		vz = pd40 * (cosC * -cosA) + vz;
+		vy = sinA * pd40 + vy;
 		sincosf(&sinA, &cosA, MF32(DATA, 0x4) - MATCH_F32(float_90_8041ac04));
 		v30 = vec3_802c5d08;
-		v30.x = vx + (planeData[39] * (cosA * sinC) - planeData[39] * (sinR * cosC));
+		vx = vx + (planeData[39] * (cosA * sinC) - planeData[39] * (sinR * cosC));
+		v30.x = vx;
 		v30.y = vy + planeData[39] * (sinA * cosR);
-		v30.z = vz + (planeData[39] * (cosA * cosC) - planeData[39] * (sinR * sinC));
+		vz = vz + (planeData[39] * (cosA * cosC) - planeData[39] * (sinR * sinC));
+		v30.z = vz;
 		MFVEC(DATA, 0x30) = v30;
 	}
 
 	ten = 10.0f;
-	dist = ten + mario->baseSpeed;
-	hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-	                    MF32(DATA, 0x30) - ten * sinC, MF32(DATA, 0x34), MF32(DATA, 0x38) - ten * cosC, sinC, 0.0f, cosC);
+	{
+		MotionPlaneData* d = DATA;
+		f32 a0 = MF32(d, 0x30) - ten * sinC;
+		f32 a1 = MF32(d, 0x34);
+		dist = ten + mario->baseSpeed;
+		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
+		                    a0, a1, MF32(d, 0x38) - ten * cosC, sinC, 0.0f, cosC);
+	}
 	if (hit != NULL) {
 		*(HitEntry**)((u8*)mario + 0x1E0) = hit;
 		flag = 1;
 		*out = hy;
 	}
 
-	dist = mario->baseSpeed;
-	hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-	                    MF32(DATA, 0x3C), MF32(DATA, 0x40), MF32(DATA, 0x44), sinC, 0.0f, cosC);
+	{
+		f32 a0 = MF32(DATA, 0x3C);
+		f32 a1 = MF32(DATA, 0x40);
+		f32 a2 = MF32(DATA, 0x44);
+		dist = mario->baseSpeed;
+		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
+		                    a0, a1, a2, sinC, 0.0f, cosC);
+	}
 	if (hit != NULL) {
 		*(HitEntry**)((u8*)mario + 0x1E0) = hit;
 		flag = 1;
 		*out = hy;
 	}
 
-	dist = MATCH_F32(float_10p1_8041ac10);
-	mario->hitobjStandOn = NULL;
-	hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-	                    v30.x, v30.y + ten, v30.z, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
+	{
+		f32 a0 = MF32(DATA, 0x30);
+		f32 a1 = MF32(DATA, 0x34);
+		f32 a2 = MF32(DATA, 0x38);
+		mario->hitobjStandOn = NULL;
+		dist = MATCH_F32(float_10p1_8041ac10);
+		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
+		                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
+	}
 	if (hit != NULL) {
 		mario->hitobjStandOn = hit;
 		flag = 1;
@@ -357,9 +374,15 @@ s32 chkCollision(f32* out) {
 	}
 
 	if (flag == 0) {
-		dist = MATCH_F32(float_10p1_8041ac10);
-		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-		                    v3C.x, v3C.y + ten, v3C.z, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
+		{
+			f32 a0 = MF32(DATA, 0x3C);
+			f32 a1 = MF32(DATA, 0x40);
+			f32 a2 = MF32(DATA, 0x44);
+			mario->hitobjStandOn = NULL;
+			dist = MATCH_F32(float_10p1_8041ac10);
+			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
+			                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
+		}
 		if (hit != NULL) {
 			mario->hitobjStandOn = hit;
 			flag = 1;
@@ -381,9 +404,14 @@ s32 chkCollision(f32* out) {
 
 	*(HitEntry**)((u8*)mario + 0x1F4) = NULL;
 	if (mario->hitobjStandOn == NULL) {
-		dist = MATCH_F32(float_2_8041ac18);
-		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-		                    v30.x, v30.y, v30.z, 0.0f, MATCH_F32(float_1_8041ac1c), 0.0f);
+		{
+			f32 a1 = MF32(DATA, 0x34);
+			f32 a2 = MF32(DATA, 0x38);
+			f32 a0 = MF32(DATA, 0x30);
+			dist = MATCH_F32(float_2_8041ac18);
+			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
+			                    a0, a1, a2, 0.0f, MATCH_F32(float_1_8041ac1c), 0.0f);
+		}
 		if (hit != NULL) {
 			*(HitEntry**)((u8*)mario + 0x1F4) = hit;
 			flag = 1;

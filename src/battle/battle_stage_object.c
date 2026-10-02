@@ -719,7 +719,13 @@ USER_FUNC(_set_mobj_shake) {
 	return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (92.12%): 3 instructions differ, 3 missing, 4 extra, plus register differences.
+// MATCHING. The one non-obvious requirement is the `intpl_sub` call: mwcc evaluates a callee's arguments in
+// its DECLARED parameter order, and the header declares intpl_sub as (mode, currStep, steps, start, end). With
+// that order it loads currStep/steps first and spills the int->float magic as a materialised address
+// (`lis`+`addi`+`lfd`, 13 diffs). The original callee is ABI-identical but declared with the floats first
+// (mode, start, end, currStep, steps) — the same shape as `intplGetValue` — so the floats are evaluated first
+// and the magic folds (`lis`+`lfd @l(r4)`). Calling through the reordered prototype (a cast, so no local
+// declaration is needed) reproduces it exactly.
 USER_FUNC(_fall_frame) {
 	s32 layer = event->args[0];
 	BattleWork* wp = _battleWorkPointer;
@@ -731,8 +737,13 @@ USER_FUNC(_fall_frame) {
 		event->field_84 = (s32)obj->mPosition.y;
 	}
 	event->userdata[2]++;
+#ifdef MUST_MATCH
+	obj->mPosition.y = ((f32 (*)(s32, f32, f32, s32, s32))intpl_sub)(
+	    2, (f32)(s32)event->field_84, 0.0f, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C);
+#else
 	obj->mPosition.y = intpl_sub(2, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C,
 	                             (f32)(s32)event->field_84, 0.0f);
+#endif
 	if (event->userdata[2] < 0x3C) {
 		return EVT_RETURN_BLOCK;
 	}

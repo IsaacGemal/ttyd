@@ -122,6 +122,10 @@ typedef struct DekaWork {
 
 static DekaWork* get_ptr(void);
 
+// Small rodata tables main_star copies to the stack (the original inlines the copy).
+typedef struct { s32 v[11]; } DekaTableInt11;
+typedef struct { f32 v[6]; } DekaTableF32x6;
+
 // Vertex data allocated by yuka_init into matEntry->address (0x3870 bytes).
 typedef struct DekaYukaMesh {
     /*0x0000*/ Vec pos[2][0x81];
@@ -138,6 +142,16 @@ static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363
 extern const char str_80300670[0x18];
 extern const char str_80300688[0x14];
 extern const char str_8030069C[0x14];
+
+// main_star's .rodata objects (not in a header yet).
+extern const char str_80300648[0x14];
+extern const char str_8030065C[0x14];
+extern const Vec vec3_80300540;
+extern const Vec vec3_8030054c;
+extern const DekaTableInt11 dat_80300558;
+extern const DekaTableInt11 dat_80300584;
+extern const DekaTableF32x6 dat_803005b0;
+extern const DekaTableF32x6 dat_803005c8;
 
 const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
 const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
@@ -743,6 +757,256 @@ void main_timing(s32 idx) {
         case 4:
         case 5:
             break;
+    }
+}
+
+// .text:0x1640 | 0x80244638 | size: 0x89C
+// The algorithm and nearly all instructions match. The rest is the unit's incomplete
+// .rodata pool: the original resolves its int->float magic constant
+// (double_to_int_80300630) as vec3_803004f8+0x138, while ours must materialise an
+// anonymous @NNN constant with its own lis; that extra base register also shifts a few
+// GPRs around it (state 1, and the state-11 camera-shake / yukaUnk / velocity block).
+// Same root cause as main_base and yuka_init. A few register/scheduling diffs remain in
+// the state-10 setup.
+// NONMATCHING (96.59%): the anonymous int->float magic and its register fallout.
+static void main_star(void) {
+#ifdef MUST_MATCH
+    const u8* base = (const u8*)&vec3_803004f8;
+#endif
+    DekaWork* p = get_ptr();
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    s32 audience = BattleAudience_GetAudienceNum();
+    s32 alpha = 0xFF;
+
+    switch (p->starState) {
+    case 1:
+        p->starState = 2;
+        p->starTimer = 0;
+        p->starEffect = effStarStoneEntry(0, float_0_80421e8c, float_neg1000_80421eb4, float_0_80421e8c, float_1_80421e88);
+        BtlUnit_GetPos(mario, &p->starPos.x, &p->starPos.y, &p->starPos.z);
+        p->starPos.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421eb8;
+        p->starPrev = p->starPos;
+        p->starTarget = p->starPos;
+        p->starTarget.y += float_50_80421ebc;
+        p->starTarget.z += float_neg1_80421e94;
+#ifdef MUST_MATCH
+        p->starScale = *(Vec*)(base + 0x48);
+        p->starRot = *(Vec*)(base + 0x54);
+#else
+        p->starScale = vec3_80300540;
+        p->starRot = vec3_8030054c;
+#endif
+        /* fallthrough */
+    case 2:
+        p->starTimer++;
+        if (p->starTimer <= 100) {
+            p->starPos.x = intplGetValue(0, p->starTimer, 100, p->starPrev.x, p->starTarget.x);
+            p->starPos.y = intplGetValue(0, p->starTimer, 100, p->starPrev.y, p->starTarget.y);
+            p->starPos.z = intplGetValue(0, p->starTimer, 100, p->starPrev.z, p->starTarget.z);
+            {
+                f32 s = intplGetValue(0, p->starTimer, 100, float_0_80421e8c, float_2_80421e7c);
+                p->starScale.z = s;
+                p->starScale.y = s;
+                p->starScale.x = s;
+            }
+        } else {
+            p->starPos.x = p->starTarget.x;
+            p->starPos.y = p->starTarget.y;
+            p->starPos.z = p->starTarget.z;
+            p->starScale.z = float_2_80421e7c;
+            p->starScale.y = float_2_80421e7c;
+            p->starScale.x = float_2_80421e7c;
+        }
+        p->starRot.y = intplGetValue(4, p->starTimer, 120, float_0_80421e8c, float_2160_80421ec0);
+        if (p->starTimer >= 120) {
+            p->starState = 3;
+            p->starTimer = 0;
+            p->starPrev = p->starPos;
+            p->starTarget.x = float_neg100_80421ec4;
+            p->starTarget.y = float_30_80421e70;
+            p->starTarget.z = float_50_80421ebc;
+        }
+        break;
+    case 3:
+        p->starTimer++;
+        p->starPos.x = intplGetValue(4, p->starTimer, 60, p->starPrev.x, p->starTarget.x);
+        p->starPos.y = intplGetValue(4, p->starTimer, 60, p->starPrev.y, p->starTarget.y);
+        p->starPos.z = intplGetValue(4, p->starTimer, 60, p->starPrev.z, p->starTarget.z);
+        if (p->starTimer >= 60) {
+            p->starState = 4;
+            p->starTimer = 0;
+        }
+        break;
+    case 6:
+        p->starState = 7;
+        p->starTimer = 0;
+        p->starUnk44 = p->starUnk48 = p->starScale.x;
+        p->starUnk48 += float_1_80421e88;
+#ifdef MUST_MATCH
+        psndSFXOn((const char*)(base + 0x150));
+#else
+        psndSFXOn(str_80300648);
+#endif
+        if (audience >= 1 && audience <= 0x31) {
+            BattleAudienceSoundCallKind(1);
+        }
+        if (audience >= 0x32 && audience <= 0x63) {
+            BattleAudienceSoundCallKind(1);
+            BattleAudienceSoundWhistleKind(1);
+        }
+        if (audience >= 0x64 && audience <= 0x95) {
+            BattleAudienceSoundCallKind(2);
+            BattleAudienceSoundWhistleKind(2);
+        }
+        if (audience >= 0x96) {
+            BattleAudienceSoundCallKind(2);
+            BattleAudienceSoundWhistleKind(3);
+        }
+        /* fallthrough */
+    case 7: {
+        DekaTableInt11 tbl;
+        f32 s;
+#ifdef MUST_MATCH
+        tbl = *(const DekaTableInt11*)(base + 0x60);
+#else
+        tbl = dat_80300558;
+#endif
+        p->starTimer++;
+        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
+        p->starScale.z = s;
+        p->starScale.y = s;
+        p->starScale.x = s;
+        p->starPos.y = float_12p5_80421ec8 * (p->starScale.y - float_2_80421e7c) + float_30_80421e70;
+        if (p->starTimer >= 0x2B) {
+            p->starState = 5;
+            p->starTimer = 0;
+            p->starScale.x = p->starScale.y = p->starScale.z = p->starUnk48;
+        }
+        break;
+    }
+    case 8:
+        p->starState = 9;
+        p->starTimer = 0;
+        p->starUnk44 = p->starUnk48 = p->starScale.x;
+        p->starUnk48 = float_2_80421e7c;
+        /* fallthrough */
+    case 9: {
+        DekaTableInt11 tbl;
+        f32 s;
+#ifdef MUST_MATCH
+        tbl = *(const DekaTableInt11*)(base + 0x8c);
+#else
+        tbl = dat_80300584;
+#endif
+        p->starTimer++;
+        s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
+        p->starScale.z = s;
+        p->starScale.y = s;
+        p->starScale.x = s;
+        p->starPos.y = float_12p5_80421ec8 * (p->starScale.y - float_2_80421e7c) + float_30_80421e70;
+        if (p->starTimer >= 0x2B) {
+            p->starState = 5;
+            p->starTimer = 0;
+            p->starScale.x = p->starScale.y = p->starScale.z = p->starUnk48;
+        }
+        break;
+    }
+    case 10:
+        p->starState = 11;
+        p->starTarget.y = p->starPos.y;
+        p->starVel = float_5_80421e60;
+        p->starTimer = 0;
+        p->starCounter = 0;
+        /* fallthrough */
+    case 11: {
+        DekaTableF32x6 tblA;
+        DekaTableF32x6 tblB;
+        s32 j;
+
+        p->starPos.y = p->starPos.y + p->starVel;
+        p->starVel = p->starVel + float_neg0p5_80421ecc;
+        if (p->starPos.y < p->starTarget.y) {
+#ifdef MUST_MATCH
+            tblA = *(const DekaTableF32x6*)(base + 0xb8);
+            tblB = *(const DekaTableF32x6*)(base + 0xd0);
+#else
+            tblA = dat_803005b0;
+            tblB = dat_803005c8;
+#endif
+            p->starCounter++;
+#ifdef MUST_MATCH
+            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
+            psndSFXOn((const char*)(base + 0x164));
+#else
+            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
+            psndSFXOn(str_8030065C);
+#endif
+            for (j = 0; j < 2; j++) {
+                s32 i;
+                for (i = 0; i < 6; i++) {
+                    if (p->yukaActive[i] == 0) {
+                        p->yukaActive[i] = 1;
+                        p->yukaPos[i] = float_2_80421e7c;
+                        if (j == 1) {
+                            p->yukaPos[i] *= float_neg1_80421e94;
+                        }
+                        if (j == 0) {
+                            p->yukaIndex[i] = 0x2A;
+                        } else {
+                            p->yukaIndex[i] = 0x29;
+                        }
+                        p->yukaScale[i] = float_43_80421ed0;
+                        p->yukaUnk[i] = (f32)p->starCounter * tblB.v[p->combo] + float_4_80421e64;
+                        break;
+                    }
+                }
+            }
+            if (p->starCounter >= 6) {
+                p->starState = 12;
+                p->starTimer = 30;
+                p->starTarget = p->starPos;
+                p->starPrev = p->starTarget;
+                p->starTarget.y += float_40_80421e68;
+            } else {
+                f32 x = float_4_80421e64 * (f32)p->starCounter + float_20_80421e74;
+                f32 half = float_0p5_80421e54;
+
+                p->starPos.y = p->starTarget.y;
+                p->starVel = half * x * x / (float_2_80421e7c * x);
+            }
+        }
+        break;
+    }
+    case 12:
+        p->starTimer--;
+        p->starPos.y = intplGetValue(4, 30 - p->starTimer, 30, p->starPrev.y, p->starTarget.y);
+        if (p->starTimer <= 0) {
+            p->starState = 13;
+            p->starTimer = 0;
+        }
+        break;
+    case 13:
+        p->starTimer++;
+        if (p->starTimer > 30) {
+            p->starTimer = 30;
+        }
+        alpha = (s32)intplGetValue(0, p->starTimer, 30, float_255_80421e98, float_0_80421e8c);
+        break;
+    default:
+        break;
+    }
+
+    if (p->starEffect != NULL) {
+        DekaStarEffectData* d = p->starEffect->userdata;
+
+        d->position.x = p->starPos.x;
+        d->position.y = p->starPos.y;
+        d->position.z = p->starPos.z;
+        d->unk18.x = p->starRot.x;
+        d->unk18.y = p->starRot.y;
+        d->unk18.z = p->starRot.z;
+        d->unk14 = float_1p5_80421ed4 * p->starScale.x;
+        d->unk5F = (u8)alpha;
     }
 }
 

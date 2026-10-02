@@ -2356,9 +2356,91 @@ NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
     return found;
 }
 
-// NONMATCHING (76.58%): vertical overlap gate, two horizontal dist checks (position then
-// prevPosition), mario->field_0x1D8 = entry, close/far branch at |compAngle(angle, directionView)|
-// < 40, inline sin/cos push offset clamped to length 2, then marioChkWallAround. Registers differ.
+// Inline degree/radian sine and cosine approximations (same polynomials as the npc blur path).
+// Assigning the coefficients to non-const locals first stops MWCC rematerialising them in every
+// branch, which recovers the target's early coefficient loads.
+static inline f32 npcSideSinf(f32 rad) {
+    f32 sinv;
+    f32 f0, f1;
+    f32 c0, c1, c2, pi;
+
+    c0 = 0.00761f;
+    c1 = 0.16605f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            sinv = c0 * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * rad;
+        } else {
+            f0 = rad - 1.5707964f;
+            f1 = 1.5707964f - f0;
+            f0 = f1 * f1;
+            sinv = c0 * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+        }
+    } else if (rad < 4.712389f) {
+        f1 = rad - pi;
+        f0 = f1 * f1;
+        sinv = c0 * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f0 = rad - 4.712389f;
+        f1 = 1.5707964f - f0;
+        f0 = f1 * f1;
+        sinv = c0 * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 npcSideCosf(f32 rad) {
+    f32 cosv;
+    f32 f0;
+    f32 c0, c1, c2, pi;
+
+    c0 = 0.03705f;
+    c1 = 0.4967f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            cosv = c0 * f0 - c1;
+            cosv = cosv * f0 + c2;
+        } else {
+            f0 = rad - 1.5707964f;
+            f0 = 1.5707964f - f0;
+            f0 = f0 * f0;
+            cosv = c0 * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - pi;
+        f0 = f0 * f0;
+        cosv = c0 * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = rad - 4.712389f;
+        f0 = 1.5707964f - f0;
+        f0 = f0 * f0;
+        cosv = c0 * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+// NONMATCHING (78.35%): the sin/cos polynomial keeps its accumulator in a fresh register where the target
+// reuses the seed register (target sinv f4, cosv f5); the sqrtf pool displacements resolve at link.
 s32 npcCheckHitMarioSide(NpcEntry* entry) {
     MarioWork* mario = marioGetPtr();
     Vec pos;
@@ -2366,7 +2448,6 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     f32 radius;
     f32 angle;
     f32 offX, offZ;
-    f32 sinv, cosv;
     f32 rad;
     f32 dist;
 
@@ -2393,17 +2474,17 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     mario->field_0x1D8 = (s32)entry;
     angle = angleABf(mario->position.x, mario->position.z, entry->position.x, entry->position.z);
     if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
-        rad = (6.2831855f * mario->directionView) / 360.0f;
-        sinv = npcSinf(rad);
-        cosv = npcCosf(rad);
-        offX = (radius - d2) * -sinv;
-        offZ = (radius - d2) * cosv;
+        {
+            f32 t = 6.2831855f * mario->directionView;
+            offX = (radius - d2) * -npcSideSinf(t / 360.0f);
+            offZ = (radius - d2) * npcSideCosf(t / 360.0f);
+        }
     } else {
-        rad = (6.2831855f * angle) / 360.0f;
-        sinv = npcSinf(rad);
-        offX = (entry->position.x - radius * sinv) - mario->position.x;
-        cosv = npcCosf(rad);
-        offZ = (entry->position.z + radius * cosv) - mario->position.z;
+        {
+            f32 t = 6.2831855f * angle;
+            offX = (entry->position.x - radius * npcSideSinf(t / 360.0f)) - mario->position.x;
+            offZ = (entry->position.z + radius * npcSideCosf(t / 360.0f)) - mario->position.z;
+        }
     }
     dist = sqrtf(offX * offX + offZ * offZ);
     {
@@ -2418,4 +2499,103 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     mario->position.z += offZ;
     marioChkWallAround(&mario->position, 0, 0.0f, 160.0f + angle, 20.0f, mario->wPlayerCollisionBox.y);
     return 1;
+}
+
+// NONMATCHING (99.97%): only the compiler sqrtf/int-to-float double-pool `lfd` displacements differ
+// (ours relative to this unit's local rodata base, the target's to vec3_802c2f78+0x1c0); they resolve
+// once the unit's remaining rodata is in place. All other instructions match.
+HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, f32 dx, f32 dz) {
+    HitEntry* hit;
+    f32 hx, hy, hz, d, nx, ny, nz;
+    f32 sinv, cosv;
+    f32 dist2;
+    f32 y, dot, ox, oz;
+    f32 angA, angB, ndist;
+
+    *outX = entry->position.x;
+    *outZ = entry->position.z;
+    if (dx == 0.0f && dz == 0.0f) {
+        return NULL;
+    }
+    sincosf(&sinv, &cosv, angleABf(0.0f, 0.0f, dx, dz));
+    dist2 = dx * dx + dz * dz;
+
+    d = 0.75f * entry->width + sqrtf(dx * dx + dz * dz);
+    y = 0.2f * entry->height;
+    if (y > 10.0f) {
+        y = 10.0f;
+    }
+    if (entry->flags & 0x2000) {
+        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                           entry->position.z, sinv, 0.0f, cosv);
+    } else {
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                             entry->position.z, sinv, 0.0f, cosv);
+    }
+    if (hit != NULL) {
+        dot = dx * nx + dz * nz;
+        ox = 0.5f * (dx - dot * nx);
+        oz = 0.5f * (dz - dot * nz);
+        *outX += ox;
+        *outZ += oz;
+        if (entry->flags & 0x10000) {
+            angA = reviseAngle(180.0f + *outAngle);
+            angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
+            *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
+        }
+        return hit;
+    }
+
+    d = 0.75f * entry->width + sqrtf(dx * dx + dz * dz);
+    y = 0.4f * entry->height;
+    if (entry->flags & 0x2000) {
+        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                           entry->position.z, sinv, 0.0f, cosv);
+    } else {
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                             entry->position.z, sinv, 0.0f, cosv);
+    }
+    if (hit != NULL) {
+        ndist = sqrtf(nx * nx + nz * nz);
+        if (angleABf(0.0f, 0.0f, ndist, 0.0f - ny) >= 45.0f) {
+            dot = dx * nx + dz * nz;
+            ox = 0.5f * (dx - dot * nx);
+            oz = 0.5f * (dz - dot * nz);
+            *outX += ox;
+            *outZ += oz;
+            if (entry->flags & 0x10000) {
+                angA = reviseAngle(180.0f + *outAngle);
+                angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
+                *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
+            }
+            return hit;
+        }
+    }
+
+    dist2 = sqrtf(dx * dx + dz * dz);
+    d = 0.75f * entry->width + dist2;
+    y = 0.75f * entry->height;
+    if (entry->flags & 0x2000) {
+        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                           entry->position.z, sinv, 0.0f, cosv);
+    } else {
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                             entry->position.z, sinv, 0.0f, cosv);
+    }
+    if (hit != NULL) {
+        dot = dx * nx + dz * nz;
+        ox = 0.5f * (dx - dot * nx);
+        oz = 0.5f * (dz - dot * nz);
+        *outX += ox;
+        *outZ += oz;
+        if (entry->flags & 0x10000) {
+            angA = reviseAngle(180.0f + *outAngle);
+            angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
+            *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
+        }
+        return hit;
+    }
+    *outX += dx;
+    *outZ += dz;
+    return NULL;
 }

@@ -17,7 +17,14 @@ const Vec vec3_802f8c1c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f8c28 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f8c34 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f8c40 = { 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+// Match-only: the target copies vec3_802f8c4c into smokePos with integer lwz/stw from a lis/addi address.
+// A plain `const Vec` lets MWCC fold that copy into lfsu; a non-const object forced into .rodata gives the
+// integer copy and still places the symbol in .rodata, the section the original uses.
+__declspec(section ".rodata") Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
+#endif
 extern const f64 double_to_int_mask_802f8c58;
 const f64 double_to_int_802f8c70 = 4503601774854144.0;
 extern const f32 float_0p0078125_8041e0ec;
@@ -185,9 +192,6 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 }
 
 #pragma opt_common_subs off // without it MWCC CSEs data->position across the calls in the default branch into different registers
-// NONMATCHING (94.66%): the callee-saved mapping matches now (effect r29, data r31, type r30, smokeEntry r28).
-// The default (smoke) branch still differs: the original copies vec3_802f8c4c with integer lwz/stw where these
-// fieldwise reads emit lfsu, and pz/px land in f31/f29 instead of f29/f31 (scalar packing r9/r8 vs r10/r7).
 void effFireMain(EffectEntry* effect) {
 	effFireData* data;
 	s32 type;
@@ -284,12 +288,28 @@ void effFireMain(EffectEntry* effect) {
 		data->sparkTimer++;
 		if (data->sparkTimer > data->sparkInterval) {
 			u32 offsets = dat_8041e0b8;
+#ifdef MUST_MATCH
+			// Match-only: declaring px/py/pz/sc uninitialised and assigning them in the target's computation
+			// order (pz, sc, px, py) makes MWCC colour pz=f29 and px=f31 as the original. Declaring them with
+			// initialisers in this order colours pz=f31 and px=f29.
+			f32 px;
+			f32 py;
+			f32 pz;
+			f32 sc;
+#else
 			f32 pz = data->position.z - 5.0f;
 			f32 py = data->position.y + (f32)((u8*)&offsets)[type];
 			f32 px = data->position.x;
 			f32 sc = data->scale;
+#endif
 			Vec smokePos;
 			effFireSmokeData* smoke;
+#ifdef MUST_MATCH
+			pz = data->position.z - 5.0f;
+			sc = data->scale;
+			px = data->position.x;
+			py = data->position.y + (f32)((u8*)&offsets)[type];
+#endif
 
 			smokeEntry = effEntry();
 			smokeEntry->type = str_802F8C60;
@@ -300,15 +320,7 @@ void effFireMain(EffectEntry* effect) {
 			smokeEntry->flags |= 2;
 			smoke->field_0x0 = 0;
 			smoke->color.a = 0x80;
-#ifdef MUST_MATCH
-			// Match-only: reading vec3_802f8c4c field-by-field instead of a whole-Vec assignment changes MWCC's
-			// global allocation so effect/data/type/smokeEntry land in r29/r31/r30/r28 as the target.
-			smokePos.x = vec3_802f8c4c.x;
-			smokePos.y = vec3_802f8c4c.y;
-			smokePos.z = vec3_802f8c4c.z;
-#else
 			smokePos = vec3_802f8c4c;
-#endif
 			smokePos.x = px;
 			smokePos.y = py;
 			smokePos.z = pz;

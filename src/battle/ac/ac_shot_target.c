@@ -276,9 +276,16 @@ void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
     }
 }
 
-// NONMATCHING (18.00%): rumbleType/sfx swap two callee-saved registers (the original keeps
-// rumbleType in r24 and sfx in r28; MWCC here gives rumbleType r28 and sfx r24). It shows in the
-// two top loads, two addi's and four `mr r3` argument setups.
+// Every instruction, constant and memory access matches except the colouring of two callee-saved
+// registers: the original keeps rumbleType in r24 and sfx in r28, MWCC here gives rumbleType r28
+// and sfx r24 (7 objdiff `!!` lines: the two preheader loads and five `mr r3` argument setups).
+// Assignment order, declaration order (all 24 permutations of the scalars, plus hit/unit/part
+// placements), types, `register`/`volatile`, scoped copies, the ac_shot comma hack, a per-block
+// split and the opt_lifetimes/opt_propagation/opt_common_subs/opt_dead_assignments/opt_dead_code/
+// opt_pointer_analysis/opt_strength_reduction/opt_loop_invariants/peephole/scheduling/
+// global_optimizer/optimize_for_size/optimization_level pragmas were all tried; none moves it.
+// The `ac->`-qualified work-area access is required: without it st folds into work (18%).
+// NONMATCHING (19.82%): rumbleType/sfx are coloured swapped (target r24/r28, ours r28/r24).
 s32 battleAcMain_ShotTarget(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
@@ -290,20 +297,23 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
     BattleUnit* unit;
     BattleUnitPart* part;
 
-    if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
+    if (ac->mAcUnit->badgesEquipped.AutoCommand != 0) {
         smooth = 1;
     }
-    rumbleType = *(s32*)&work->actionCommands.field_34[0x10];
-    sfx = str_802FF9BC;
+    rumbleType = *(s32*)&ac->field_34[0x10];
 
     do {
         cont = 0;
-        switch (work->actionCommands.mAcState) {
+        // The name is a constant, so MWCC hoists this load into the loop preheader; writing it
+        // here lands the hoisted `addi` between the rumble load and the two hoisted hit-address
+        // temps, the order the original has.
+        sfx = str_802FF9BC;
+        switch (ac->mAcState) {
             case 0:
                 _ac_disp_init(work);
-                work->actionCommands.result = 1;
-                unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x04]);
-                part = BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x08]);
+                ac->result = 1;
+                unit = BattleGetUnitPtr(work, *(s32*)&ac->field_34[0x04]);
+                part = BtlUnit_GetPartsPtr(unit, *(s32*)&ac->field_34[0x08]);
                 BtlUnit_GetHitPos(unit, part, &hit.x, &hit.y, &hit.z);
 #ifdef MUST_MATCH
                 // Match-only: volatile keeps MWCC from reordering these four stores, which the
@@ -321,21 +331,21 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 _ac_rumble_param_set(rumbleType, &st->field_0x28, &st->field_0x2a, &st->field_0x2C);
                 _ac_rumble_param_set(rumbleType, &st->field_0x30, &st->field_0x32, &st->field_0x34);
                 st->field_0x38 = -1;
-                work->actionCommands.mAcState = 0x63;
+                ac->mAcState = 0x63;
                 break;
             case 99:
                 break;
             case 100:
-                st->field_0x00 = *(s32*)&work->actionCommands.field_34[0x0C];
-                work->actionCommands.mAcState = 1000;
+                st->field_0x00 = *(s32*)&ac->field_34[0x0C];
+                ac->mAcState = 1000;
                 st->field_0x38 = psndSFXOn(sfx);
                 // fallthrough
             case 1000:
-                if (*(s16*)&work->actionCommands.field_78[0x10] > 0) {
-                    (*(s16*)&work->actionCommands.field_78[0x10])--;
-                    work->actionCommands.result = 2;
-                    work->actionCommands.mResultCount++;
-                    work->actionCommands.mAcState = 1001;
+                if (*(s16*)&ac->field_78[0x10] > 0) {
+                    (*(s16*)&ac->field_78[0x10])--;
+                    ac->result = 2;
+                    ac->mResultCount++;
+                    ac->mAcState = 1001;
                     cont = 1;
                     break;
                 }
@@ -345,14 +355,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 }
                 {
                     f32 t = sinfd((f32)((st->field_0x2a + 1) * 180 / st->field_0x28)) * st->field_0x2C;
-                    f32 s = sinfd((f32)(st->field_0x2a * 180 / st->field_0x28));
-#ifdef MUST_MATCH
-                    // Match-only: the temp fixes the fmsub/fadd register pairing the original has.
-                    f32 d = st->field_0x2C * s - t;
-                    st->pos.x += d;
-#else
-                    st->pos.x += st->field_0x2C * s - t;
-#endif
+                    st->pos.x += st->field_0x2C * sinfd((f32)(st->field_0x2a * 180 / st->field_0x28)) - t;
                 }
                 st->field_0x32--;
                 if (st->field_0x32 < 0) {
@@ -360,13 +363,7 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                 }
                 {
                     f32 t = sinfd((f32)((st->field_0x32 + 1) * 180 / st->field_0x30)) * st->field_0x34;
-                    f32 s = sinfd((f32)(st->field_0x32 * 180 / st->field_0x30));
-#ifdef MUST_MATCH
-                    f32 d2 = st->field_0x34 * s - t;
-                    st->pos.y += d2;
-#else
-                    st->pos.y += st->field_0x34 * s - t;
-#endif
+                    st->pos.y += st->field_0x34 * sinfd((f32)(st->field_0x32 * 180 / st->field_0x30)) - t;
                 }
                 st->pos.x += (f32)work->padWork[0].mPadData[0].stickX / float_10_80421940;
                 st->pos.y += (f32)work->padWork[0].mPadData[0].stickY / float_10_80421940;
@@ -393,33 +390,33 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
                     st->field_0x20 = 0;
                 }
                 st->field_0x00--;
-                if ((work->actionCommands.field_0x4 & 1) &&
-                    (work->actionCommands.mAcUnit->mTokenFlags & kConfusedAction)) {
+                if ((ac->field_0x4 & 1) &&
+                    (ac->mAcUnit->mTokenFlags & kConfusedAction)) {
                     if (irand(100) >= 0) {
-                        work->actionCommands.result = 0;
+                        ac->result = 0;
                     } else {
-                        work->actionCommands.result = 2;
-                        work->actionCommands.mResultCount++;
+                        ac->result = 2;
+                        ac->mResultCount++;
                     }
-                    work->actionCommands.mAcState = 1001;
+                    ac->mAcState = 1001;
                 } else if (st->field_0x00 < 0) {
                     if (st->field_0x20 != 0) {
-                        work->actionCommands.result = 2;
-                        work->actionCommands.mResultCount++;
+                        ac->result = 2;
+                        ac->mResultCount++;
                     } else {
-                        work->actionCommands.result = 0;
+                        ac->result = 0;
                     }
-                    work->actionCommands.mAcState = 1001;
+                    ac->mAcState = 1001;
                 }
                 break;
             case 1001:
-                work->actionCommands.mAcState = 1002;
+                ac->mAcState = 1002;
                 break;
             case 1002:
                 break;
             case 1003:
                 st->field_0x04 = 0x3C;
-                work->actionCommands.mAcState = 1004;
+                ac->mAcState = 1004;
                 if ((u32)st->field_0x38 != 0xFFFFFFFFu) {
                     psndSFXOff(st->field_0x38);
                 }
@@ -427,14 +424,14 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
             case 1004:
                 st->field_0x04--;
                 if (st->field_0x04 <= 0) {
-                    work->actionCommands.mAcState = 1005;
+                    ac->mAcState = 1005;
                 }
                 break;
             case 1005:
-                work->actionCommands.maincb = NULL;
-                work->actionCommands.dispcb = NULL;
-                work->actionCommands.resultcb = NULL;
-                work->actionCommands.deletecb = NULL;
+                ac->maincb = NULL;
+                ac->dispcb = NULL;
+                ac->resultcb = NULL;
+                ac->deletecb = NULL;
                 break;
         }
     } while (cont);

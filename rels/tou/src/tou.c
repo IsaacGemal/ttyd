@@ -3372,58 +3372,78 @@ static void printRanking(void) {
 static const char str_00001F74[] = "ランキング";
 static const char str_00001FA0[] = "%s%s";
 
-// NONMATCHING (81.91%): register allocation (r22 vs r23 and the loop temps), string/double const symbols, derivative scheduling
+// NONMATCHING (96.88%): 1st GXSetScissor fctiwz/stfd ordering + `scW & 0xffff` (MUST_MATCH); the
+// rank/10 suuji lookup is an unconditional load + overwrite (MUST_MATCH); float_135 is inlined so
+// MWCC puts its scratch base and dwp's in r6/r7.
 static void disp_proc(CameraId cameraId, void* param) {
     FighterEntry* dt;
+    f32 f31;
+    s32 scW;
+    s32 scX;
+    s32 w;
     s32 i;
     s32 rank;
-    s32 off;
     s32 y;
-    f32 x;
-    f32 base;
-    f32 base2;
-    f32 f28;
-    f32 f30;
-    f32 f31;
+    s32 off;
+    f32 f27;
+    f32 f26;
     Mtx scale;
     Mtx mtx;
     char buf[0x100];
+    f32 c250;
 
     if (evtGetValue(NULL, 0xf5de0180) < 0xac) {
         dt = (FighterEntry*)fighterDt;
     } else {
         dt = (FighterEntry*)fighterDt_re;
     }
-    f31 = -float_250_tou_0000a890 * float_0p5_tou_0000a868;
+    {
+        f32 t = float_250_tou_0000a890;
+        f32 h = float_0p5_tou_0000a868;
+
+        f31 = -t * h;
+    }
     windowDispGX_System(0, 0xff, f31 - float_30_tou_0000a894, float_165_tou_0000a898,
                         float_310_tou_0000a89c, float_330_tou_0000a8a0);
     FontDrawStart();
     FontDrawScale(float_1_tou_0000a87c);
-    i = FontGetMessageWidth(str_00001F74);
+    w = FontGetMessageWidth(str_00001F74);
     {
         GXColor color = *(GXColor*)&dat_tou_00009904;
 
         FontDrawColor(&color);
     }
-    FontDrawMessage(-i / 2, (s32)float_135_tou_0000a8b0, str_00001F74);
-    GXSetScissor((u16)(s32)(float_304_tou_0000a8b4 + f31), (u16)(s32)float_145_tou_0000a8b8,
-                 (u16)(s32)float_250_tou_0000a890, (u16)(s32)float_220_tou_0000a8bc);
-    base = float_10_tou_0000a8c0 + f31;
-    f28 = float_135_tou_0000a8b0;
-    f30 = float_40_tou_0000a8c4;
+    FontDrawMessage(-w / 2, (s32)float_135_tou_0000a8b0, str_00001F74);
+    c250 = float_250_tou_0000a890;
+    scX = (s32)(float_304_tou_0000a8b4 + f31);
+    scW = (s32)c250;
+#ifdef MUST_MATCH
+    // match-only: `scW & 0xffff` (with the 145/220 args left as u32) is what makes MWCC load
+    // float_304/float_145 symbol-relative and land the scissor stores in the target's slots.
+    GXSetScissor((u32)scX, (u32)(s32)float_145_tou_0000a8b8, (u32)scW & 0xffff, (u32)(s32)float_220_tou_0000a8bc);
+#else
+    GXSetScissor((u32)scX, (u32)(s32)float_145_tou_0000a8b8, (u32)scW, (u32)(s32)float_220_tou_0000a8bc);
+#endif
+    f27 = float_10_tou_0000a8c0 + f31;
     rank = 0;
     y = 0;
     i = 0;
     off = 0;
     for (; i < ((RankWork*)rank_wp[0])->count; i++, off += 0xc) {
-        RankEntry* entry = (RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off);
-
-        base2 = ((DispWork*)dwp[0])->field_00 + (f28 - (f32)y) - f30;
-        if (!(entry->flags & 2)) {
+        f26 = ((DispWork*)dwp[0])->field_00 + ((float_135_tou_0000a8b0 - (f32)y) - float_40_tou_0000a8c4);
+        if (!(((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 2)) {
             PSMTXScale(scale, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8);
             if (rank != 0) {
                 s32 a = rank / 10;
-                const char* p1 = a ? suuji[a] : (const char*)&zero_tou_0000a8cc;
+#ifdef MUST_MATCH
+                // match-only: the unconditional load + overwrite keeps the sprintf str/buf setup in the
+                // target's position; the natural if/else form hoists it above the divide (95.86%).
+                const char* p1 = suuji[a];
+                if (!a) { p1 = (const char*)&zero_tou_0000a8cc; }
+#else
+                const char* p1;
+                if (a) { p1 = suuji[a]; } else { p1 = (const char*)&zero_tou_0000a8cc; }
+#endif
 
                 sprintf(buf, str_00001FA0, p1, suuji[rank % 10]);
                 FontDrawStart();
@@ -3432,12 +3452,12 @@ static void disp_proc(CameraId cameraId, void* param) {
 
                     FontDrawColor(&color);
                 }
-                PSMTXTrans(mtx, base, base2, zero_tou_0000a82c);
+                PSMTXTrans(mtx, f27, f26, zero_tou_0000a82c);
                 PSMTXConcat(mtx, scale, mtx);
                 FontDrawMessageMtx(mtx, buf);
             }
             FontDrawStart();
-            if (entry->flags & 4) {
+            if (((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 4) {
                 GXColor color = *(GXColor*)&dat_tou_0000990c;
 
                 FontDrawColor(&color);
@@ -3446,49 +3466,44 @@ static void disp_proc(CameraId cameraId, void* param) {
 
                 FontDrawColor(&color);
             }
-            PSMTXTrans(mtx, float_40_tou_0000a8c4 + base, base2, zero_tou_0000a82c);
+            PSMTXTrans(mtx, float_40_tou_0000a8c4 + f27, f26, zero_tou_0000a82c);
             PSMTXConcat(mtx, scale, mtx);
-            FontDrawMessageMtx(mtx, msgSearch((const char*)((u32*)dt)[entry->id * 7 + 1]));
+            FontDrawMessageMtx(mtx, msgSearch((const char*)((u32*)dt)[((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->id * 7 + 1]));
             rank++;
             y += 0x14;
         }
     }
-    GXSetScissor((u16)(s32)(float_304_tou_0000a8b4 + f31), (u16)(s32)float_137_tou_0000a8d8,
-                 (u16)(s32)float_250_tou_0000a890, (u16)(s32)float_228_tou_0000a8dc);
-    x = float_15_tou_0000a8e4 + f31;
+    GXSetScissor(scX, (u16)(s32)float_137_tou_0000a8d8, scW, (u16)(s32)float_228_tou_0000a8dc);
     {
+        f32 yv = float_95_tou_0000a8e0 + ((DispWork*)dwp[0])->field_00;
         Vec pos = vec3_tou_00009914;
 
-        pos.x = x;
-        pos.y = (float_95_tou_0000a8e0 + ((DispWork*)dwp[0])->field_00) - float_24_tou_0000a8e8;
+        pos.x = float_15_tou_0000a8e4 + f31;
+        pos.y = yv - float_24_tou_0000a8e8;
         iconDispGx(&pos, 0x10, 0x123, float_0p8_tou_0000a8c8);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
     if (((DispWork*)dwp[0])->field_08 > 0) {
-        {
-            Vec pos = vec3_tou_00009920;
+        Vec pos = vec3_tou_00009920;
 
-            pos.x = float_250_tou_0000a890 + f31;
-            iconDispGx(&pos, 0x10, 0x205, float_neg1_tou_0000a8ec);
-        }
+        pos.x = f31 + float_250_tou_0000a890;
+        iconDispGx(&pos, 0x10, 0x205, float_neg1_tou_0000a8ec);
         {
             Vec pos = vec3_tou_0000992c;
 
-            pos.x = float_250_tou_0000a890 + f31;
+            pos.x = f31 + float_250_tou_0000a890;
             iconDispGx(&pos, 0x10, 0x7e, float_0p6_tou_0000a830);
         }
     }
     if (((DispWork*)dwp[0])->field_08 < 1) {
-        {
-            Vec pos = vec3_tou_00009938;
+        Vec pos = vec3_tou_00009938;
 
-            pos.x = float_250_tou_0000a890 + f31;
-            iconDispGx(&pos, 0x10, 0x205, float_1_tou_0000a87c);
-        }
+        pos.x = f31 + float_250_tou_0000a890;
+        iconDispGx(&pos, 0x10, 0x205, float_1_tou_0000a87c);
         {
             Vec pos = vec3_tou_00009944;
 
-            pos.x = float_250_tou_0000a890 + f31;
+            pos.x = f31 + float_250_tou_0000a890;
             iconDispGx(&pos, 0x10, 0x80, float_0p6_tou_0000a830);
         }
     }

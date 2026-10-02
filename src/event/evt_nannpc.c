@@ -722,22 +722,32 @@ static inline HitEntry* hitCheckFilterVec(HitFilterCallback callback, f32* hitX,
                           dir.y, dir.z);
 }
 
-// The first hitCheckFilter's staged pos/velNorm copies land in local spill slots (0x24/0x30) instead
-// of the original's outgoing-arg area (0x78/0x84); the second ray's scalar hit buffers are declared
-// in reverse (fnz2..fpx2) so their stack slots ascend like the original's.
-// NONMATCHING (91.99%): the loop pointers (r23/r24 swapped) and the hitCheckFilter argument staging still differ.
+// The explicit dirArg/posArg copies (see the MUST_MATCH block below) plus this declaration order
+// reproduce the original's whole local stack layout (pos 0x60, velNorm 0x6c, staged copies
+// 0x78/0x84, hitPos 0x24, hitNormal 0x30). The second ray's scalar hit buffers are declared in
+// reverse (fnz2..fpx2) so their stack slots ascend like the original's.
+// NONMATCHING (92.21%): the callee-saved colouring still differs -- original other=r23, entry=r24,
+// third-loop cursor=r25, work=r26, hit pointer temps=r27-r30, scale=r31; ours entry=r23, other=r24,
+// third-loop cursor=r27, work=r26, temps=r28-r31, scale=r23.
 void nanNPCOption(void) {
     Vec delta;
+#ifdef MUST_MATCH
+    // MUST_MATCH: explicit copies of pos/velNorm force the by-value Vec temps into the original's
+    // outgoing-arg slots (0x78/0x84); the plain helper call below stages them in low locals instead
+    // and shifts every other local's slot.
+    Vec dirArg;
+    Vec posArg;
+#endif
     Vec velNorm;
-    Vec hitNormal;
-    Vec reflect;
     Vec pos;
-    f32 hitDist;
-    f32 fnz2, fny2, fnx2, fpz2, fpy2, fpx2;
-    Vec hitPos;
-    f32 vlen;
+    Vec reflect;
     Vec savedPos;
     Vec move;
+    Vec hitNormal;
+    Vec hitPos;
+    f32 hitDist;
+    f32 fnz2, fny2, fnx2, fpz2, fpy2, fpx2;
+    f32 vlen;
     NanNpcEntry* other;
     BOOL scale;
     NanNpcEntry* entry;
@@ -806,8 +816,16 @@ void nanNPCOption(void) {
         entry->work[4] = 0;
         scale = TRUE;
         hitDist = vlen;
+#ifdef MUST_MATCH
+        posArg = pos;
+        dirArg = velNorm;
+        entry->work[4] = (s32)hitCheckFilter((HitFilterCallback)0, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist,
+                                             &hitNormal.x, &hitNormal.y, &hitNormal.z, posArg.x, posArg.y, posArg.z,
+                                             dirArg.x, dirArg.y, dirArg.z);
+#else
         entry->work[4] = (s32)hitCheckFilterVec((HitFilterCallback)0, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist,
                                                 &hitNormal.x, &hitNormal.y, &hitNormal.z, pos, velNorm);
+#endif
         if ((u32)entry->work[4] == 0) {
             PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
         } else {

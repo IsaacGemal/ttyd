@@ -524,70 +524,122 @@ void marioSlitForceCancel(void) {
     }
 }
 
-// NONMATCHING (63.22%): 41 instructions differ, 38 missing, 104 extra, plus register differences.
+// The six marioHitCheckVec blocks match in instruction order; only float-register allocation and the
+// schedule differ. Checks 1/4 use `volatile` copies/loads (LHS `*(volatile Vec*)&A = *pos`, a
+// volatile load `A.y = *(volatile f32*)&A.y + ten`, and a volatile `dir.z` store) plus `dist` before
+// the add, to pin the target's load/store order Offset checks still differ: target
+// keeps x+offx/z+offz/y+10/dist in f3/f0/f1/f4, ours f4/f3/f1/f0.
+// NONMATCHING (93.47%): register allocation/scheduling differs; `f32 ten = 10.0f` and the volatile
+// forms were needed for the FP load order.
 BOOL marioCreviceWallChk(Vec* pos) {
     Vec A, B, C, D;
-    f32 dist;
-    f32 sinv, cosv;
+    f32 sinv, cosv, dist;
     f32 offx, offz;
-    f32 angle1 = 0.0f;
-    f32 angle2 = 0.0f;
-    HitEntry* hit;
+    f32 ten = 10.0f;
+    f32 angle1;
+    f32 angle2;
     HitEntry* hit1;
     HitEntry* hit2;
 
-#define CREVICE_CHECK(base, ox, oz, target)                                            \
-    {                                                                                  \
-        Vec dir = (base);                                                              \
-        A.x = pos->x + (ox);                                                           \
-        A.y = pos->y + 10.0f;                                                          \
-        A.z = pos->z + (oz);                                                           \
-        dir.x = sinv;                                                                  \
-        dir.z = cosv;                                                                  \
-        B = dir;                                                                       \
-        dist = 20.0f;                                                                  \
-        hit = marioHitCheckVec(&A, &B, &C, &D, &dist);                                 \
-        if (hit) {                                                                     \
-            target = angleABf(0.0f, 0.0f, D.x, D.z);                                    \
-        }                                                                              \
-    }
-
     marioGetPtr();
     sincosf(&sinv, &cosv, toMovedirSimple(270.0f));
+    angle1 = 0.0f;
+    angle2 = 0.0f;
     offx = 0.5f * (20.0f * sinv);
     offz = 0.5f * (20.0f * cosv);
     sincosf(&sinv, &cosv, toMovedirSimple(180.0f));
 
-    CREVICE_CHECK(vec3_802c5e78, 0.0f, 0.0f, angle1);
-    hit1 = hit;
+    *(volatile Vec*)&A = *pos;
+    dist = 20.0f;
+    A.y = *(volatile f32*)&A.y + ten;
+    {
+        Vec dir = vec3_802c5e78;
+        dir.x = sinv;
+        *(volatile f32*)&dir.z = cosv;
+        B = dir;
+    }
+    hit1 = marioHitCheckVec(&A, &B, &C, &D, &dist);
+    if (hit1) {
+        angle1 = angleABf(0.0f, 0.0f, D.x, D.z);
+    }
     if (!hit1) {
-        CREVICE_CHECK(vec3_802c5e84, offx, offz, angle1);
-        hit1 = hit;
-        if (!hit1) {
-            CREVICE_CHECK(vec3_802c5e90, -offx, -offz, angle1);
-            hit1 = hit;
+        {
+            Vec a = vec3_802c5e84;
+            a.x = pos->x + offx;
+            a.z = pos->z + offz;
+            a.y = pos->y + ten;
+            dist = 20.0f;
+            A = a;
+        }
+        hit1 = marioHitCheckVec(&A, &B, &C, &D, &dist);
+        if (hit1) {
+            angle1 = angleABf(0.0f, 0.0f, D.x, D.z);
+        }
+    }
+    if (!hit1) {
+        {
+            Vec a = vec3_802c5e90;
+            a.x = pos->x - offx;
+            a.z = pos->z - offz;
+            a.y = pos->y + ten;
+            dist = 20.0f;
+            A = a;
+        }
+        hit1 = marioHitCheckVec(&A, &B, &C, &D, &dist);
+        if (hit1) {
+            angle1 = angleABf(0.0f, 0.0f, D.x, D.z);
         }
     }
 
     sincosf(&sinv, &cosv, toMovedirSimple(0.0f));
-    CREVICE_CHECK(vec3_802c5e9c, 0.0f, 0.0f, angle2);
-    hit2 = hit;
+    *(volatile Vec*)&A = *pos;
+    dist = 20.0f;
+    A.y = *(volatile f32*)&A.y + ten;
+    {
+        Vec dir = vec3_802c5e9c;
+        dir.x = sinv;
+        *(volatile f32*)&dir.z = cosv;
+        B = dir;
+    }
+    hit2 = marioHitCheckVec(&A, &B, &C, &D, &dist);
+    if (hit2) {
+        angle2 = angleABf(0.0f, 0.0f, D.x, D.z);
+    }
     if (!hit2) {
-        CREVICE_CHECK(vec3_802c5ea8, offx, offz, angle2);
-        hit2 = hit;
-        if (!hit2) {
-            CREVICE_CHECK(vec3_802c5eb4, -offx, -offz, angle2);
-            hit2 = hit;
+        {
+            Vec a = vec3_802c5ea8;
+            a.x = pos->x + offx;
+            a.z = pos->z + offz;
+            a.y = pos->y + ten;
+            dist = 20.0f;
+            A = a;
+        }
+        hit2 = marioHitCheckVec(&A, &B, &C, &D, &dist);
+        if (hit2) {
+            angle2 = angleABf(0.0f, 0.0f, D.x, D.z);
+        }
+    }
+    if (!hit2) {
+        {
+            Vec a = vec3_802c5eb4;
+            a.x = pos->x - offx;
+            a.z = pos->z - offz;
+            a.y = pos->y + ten;
+            dist = 20.0f;
+            A = a;
+        }
+        hit2 = marioHitCheckVec(&A, &B, &C, &D, &dist);
+        if (hit2) {
+            angle2 = angleABf(0.0f, 0.0f, D.x, D.z);
         }
     }
 
     if (hit1 && hit2) {
-        if (fabsf(180.0f - 0.5f * (angle1 + angle2)) <= 10.0f) {
+        if (__fabsf(180.0f - 0.5f * (angle1 + angle2)) <= 10.0f) {
             return TRUE;
         }
     }
     return FALSE;
-#undef CREVICE_CHECK
 }
 
 // The walk-speed cap the slit's walking states share: once the base speed reaches the dash speed it drops back

@@ -276,26 +276,29 @@ void tegami_delete(void) {
     }
 }
 
-// opt_propagation off: MWCC rematerialises the sin/cos coefficients into every branch instead
-// of hoisting them (same as envDisp_FF).
-// opt_lifetimes off: keeps the 0.00761/0.03705 seed loads inside the loop instead of hoisting
-// them into the preheader (same as envDisp_FF).
-// opt_common_subs off: without it the nonvolatile FPR colouring of the loop constants shifts by
-// one (twoPi in f29, ...); with it six of the eight land exactly where the target has them.
-// The .rodata pool order matches the target exactly and the six constants
-// twoPi/one/c16605/c4967/scale/hundred colour as f28/f27/f26/f25/f24/f23. What still differs: the
-// int->float magic double lands in f31 where the target has it in f29 (the target's compiler hoists
-// it between pi and quarter; this one puts it first), so pi/quarter land one low (f30/f29 vs
-// f31/f30); and texBuf/mtxId, plus the loop's named-zero pointer, are swapped one GPR apart
-// (texBuf r25 vs r24, mtxId r24 vs r25). The rest is an MWCC allocator-order difference no source,
-// declaration or statement arrangement (nor any opt_* toggle) reproduces.
-// NONMATCHING (96.94%, 45 diffs): MWCC colours the int->float double and pi/quarter one FPR low.
+// What made most of this match: giving the int->float conversion its own local (`dbl = (f32)i;`)
+// right after twoPi, which is what lets the target's load order come out; assigning `mtxId` after
+// PSMTXTrans instead of before the loop's texture-matrix math; and caching the tev color-in
+// argument in `cc` so the `(i == 0)` boolean is computed once (cntlzw/srwi) before the arg setup
+// instead of being interleaved with it.
+//
+// The .rodata pool order matches the target exactly (no data-symbol diffs). 18 instruction diffs
+// remain, all MWCC register colouring:
+//  * The int->float magic double lands in f31 where the target has it in f29, so pi is one low
+//    (ours f29, target f31; quarter f30 and the other six are exact): 3 loads + fsubs + 2 fcmpo,
+//    plus the fmuls that combines them comes out with its operands swapped. The anonymous
+//    conversion double is always coloured after the named loop constants; no declaration or
+//    statement arrangement (nor any opt_* toggle) moves it between twoPi and quarter. Swapping
+//    pi/quarter in the declaration is what lands quarter on f30 instead of f29.
+//  * r24 and r25 are swapped for the two short chains: ours keeps texBuf/named-zero/twoPi-address
+//    in r25 and mtxId/the tev boolean in r24, the target has them in r24 and r25 respectively.
+// NONMATCHING (99.75%, 18 diffs): MWCC register colouring only (see above).
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
     smartEntry* texBuf;
     CameraEntry* cam;
-    f32 pi, quarter, twoPi, one, c16605, c4967, scale, hundred;
+    f32 quarter, pi, twoPi, one, c16605, c4967, scale, hundred, dbl;
     s32 i;
     s32 mtxId;
     f32 f0, f1, f2, f3, f4;
@@ -320,13 +323,19 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXSetNumTevStages(8);
     for (i = 0; i < 8; i++) {
         twoPi = 6.2831855f;
+#ifdef MUST_MATCH
+        dbl = (f32)i; // match-only: the conversion needs its own local for the target's load order
+#endif
         quarter = 0.125f;
         f2 = 0.00761f;
         c16605 = 0.16605f;
         one = 1.0f;
         pi = 3.1415927f;
-        hundred = 100.0f;
+#ifdef MUST_MATCH
+        f3 = (twoPi * dbl) * quarter; // match-only: see dbl above
+#else
         f3 = (twoPi * (f32)i) * quarter;
+#endif
         if (f3 <= pi) {
             f1 = 1.5707964f;
             if (f3 <= f1) {
@@ -360,6 +369,7 @@ static void depthDisp(CameraId cameraId, void* param) {
         }
         f4 = 0.03705f;
         c4967 = 0.4967f;
+        hundred = 100.0f;
         if (f3 <= pi) {
             f1 = 1.5707964f;
             if (f3 <= f1) {
@@ -387,8 +397,8 @@ static void depthDisp(CameraId cameraId, void* param) {
             f4 = f4 * f0 - c4967;
             f4 = f4 * f0 + one;
         }
-        mtxId = 30 + i * 3;
         PSMTXTrans(mtx, (scale * f2) / hundred, (scale * f4) / hundred, 0.0f);
+        mtxId = 30 + i * 3;
         GXLoadTexMtxImm(mtx, mtxId, GX_MTX2x4);
         GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0, mtxId, GX_FALSE, GX_PTIDENTITY);
         GXSetTevKColorSel(i, GX_TEV_KCSEL_1_8);
@@ -398,8 +408,13 @@ static void depthDisp(CameraId cameraId, void* param) {
         GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         {
             s32 zero = (i == 0);
+#ifdef MUST_MATCH
+            s32 cc = zero ? GX_CC_ZERO : GX_CC_CPREV; // match-only: caches the boolean so it is computed first
 
+            GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, cc);
+#else
             GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, zero ? GX_CC_ZERO : GX_CC_CPREV);
+#endif
             GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, zero ? GX_CA_ZERO : GX_CA_APREV);
         }
         GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);

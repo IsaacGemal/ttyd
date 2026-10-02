@@ -54,6 +54,9 @@ const char str_8041B2A8[] = "M_W_1";
 const char str_8041B2B0[] = "M_R_1";
 const char str_8041B2B8[] = "M_S_1";
 
+// NONMATCHING (99.99%): only the int->float magic double differs: our pool places it at
+// .rodata+0xe0 while the original folds it at +0x58 (the same objdiff-only base/offset difference
+// documented for party_cloud.c). Every other instruction is identical.
 // .text:0x0 | 0x800BCE50 | size: 0x3FC
 HitEntry* check_front(PartyEntry* party) {
 #ifdef MUST_MATCH
@@ -273,6 +276,7 @@ HitEntry* check_front(PartyEntry* party) {
 
 // .text:0x3FC | 0x800BD24C | size: 0x880
 // partyGetReturnPos (TODO)
+
 
 // .text:0xC7C | 0x800BDACC | size: 0x94
 void mario_controll(PartyEntry* party) {
