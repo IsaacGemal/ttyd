@@ -563,6 +563,154 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     return (u32)hit;
 }
 
+// The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). The
+// remaining diffs are FP register colouring (67 arg_mismatch) and a `hit` r27/r3 live-range split; the
+// `hitY = hitY;` copy in the `hit == NULL` arm is a dead-path materialisation (compiler-input only).
+// NONMATCHING (97.90%): FP colouring + `hit` r27/r3 split; see REPORT.md.
+HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
+    HitCheckQuery query;
+    Vec targetPos;
+    Vec dir;
+    Vec n;
+    Vec tmpA;
+    Vec tmpB;
+    HitEntry* hit;
+    HitEntry* best;
+    f32 h;
+    f32 off;
+    f32 rad;
+    f32 s, c;
+    f32 noSin, noCos;
+    f32 offSin, offCos;
+    f32 y;
+    f32 px, py, pz;
+    f32 targetDist;
+    f32 hitY;
+    f32 bestY;
+    f32 dz;
+    f32 dx;
+    s32 i;
+
+    if (party->flags & 0x02000000) {
+        return NULL;
+    }
+    off = __fabsf(up) + float_0p1_8041b42c;
+    *(Vec*)party->field_C4 = vec3_802cd320;
+    *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = float_0_8041b3ec;
+    if (marioGetPtr()->currMotionId == MARIO_MOTION_YOSHI) {
+        h = float_5_8041b430;
+    } else {
+        h = float_0p75_8041b400 * partyGetHeight(party);
+    }
+    party->field_E4 = party->position.y;
+    *(f32*)party->field_E8 = float_neg1_8041b414;
+    if (party->speed != float_0_8041b3ec) {
+        rad = party->dir;
+    } else {
+        rad = partyToMovedir(party, party->field_10C);
+    }
+    rad = (float_3p1416_8041b420 * rad) / float_180_8041b424;
+    s = (f32)sin((f64)rad);
+    offSin = float_0p375_8041b434 * (party->field_F4 * s);
+    c = (f32)cos((f64)rad);
+    py = party->position.y;
+    noSin = -offSin;
+    y = py + h;
+    offCos = float_0p375_8041b434 * (party->field_F4 * -c);
+    targetDist = h + off;
+    pz = party->position.z;
+    px = party->position.x;
+    noCos = -offCos;
+    dir = vec3_802cd32c;
+    best = NULL;
+    bestY = float_neg10000_8041b438;
+    for (i = 0; i < 5; i++) {
+        if (i == 0) {
+            dx = 0.0f;
+            dz = 0.0f;
+        } else if (i == 1) {
+            dx = offSin;
+            dz = offCos;
+        } else if (i == 2) {
+            dx = noCos;
+            dz = offSin;
+        } else if (i == 3) {
+            dx = offCos;
+            dz = noSin;
+        } else if (i == 4) {
+            dx = noSin;
+            dz = noCos;
+        }
+        targetPos.x = px + dx;
+        targetPos.y = y;
+        targetPos.z = pz + dz;
+        query.targetPos = targetPos;
+        query.targetDir = dir;
+        query.targetDistance = targetDist;
+
+        if (yoshiGetStatus() != 0) {
+            hit = hitCheckVecFilter(&query, chkfilterYoshi);
+        } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
+            hit = hitCheckVecFilter(&query, chkfilterNokotaro);
+        } else {
+            hit = hitCheckVecFilter(&query, chkfilter);
+        }
+        if (hit == NULL) {
+            hitY = hitY;
+        } else {
+            hitY = ROUND_MILLI(query.hitPos.y);
+            n.x = query.hitNormal.x;
+            n.y = query.hitNormal.y;
+            n.z = query.hitNormal.z;
+        }
+        if (hit != NULL) {
+            tmpA = n;
+            *(f32*)(party->field_C4 + 0x00) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec,
+                                                             float_100_8041b3f8 * tmpA.z,
+                                                             float_100_8041b3f8 * tmpA.y) - float_180_8041b424);
+            *(f32*)(party->field_C4 + 0x04) = float_0_8041b3ec;
+            *(f32*)(party->field_C4 + 0x08) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec,
+                                                             float_100_8041b3f8 * tmpA.x,
+                                                             float_100_8041b3f8 * tmpA.y) - float_180_8041b424);
+            if (partyNrmToAngle(&tmpA) >= float_50_8041b43c) {
+                hit = NULL;
+            }
+        }
+        if (hit != NULL) {
+            tmpB = n;
+            *(f32*)(party->field_C4 + 0x00) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec,
+                                                             float_100_8041b3f8 * tmpB.z,
+                                                             float_100_8041b3f8 * tmpB.y) - float_180_8041b424);
+            *(f32*)(party->field_C4 + 0x04) = float_0_8041b3ec;
+            *(f32*)(party->field_C4 + 0x08) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec,
+                                                             float_100_8041b3f8 * tmpB.x,
+                                                             float_100_8041b3f8 * tmpB.y) - float_180_8041b424);
+            *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = partyNrmToAngle(&tmpB);
+            if (hitY < py && __fabsf(hitY - py) >= float_2_8041b428) {
+                if (__fabsf(hitY - py) > __fabsf(down)) {
+                    *(f32*)party->field_E8 = __fabsf(py - hitY);
+                } else {
+                    if (hitY > bestY) {
+                        bestY = hitY;
+                        best = hit;
+                    }
+                }
+            } else if (__fabsf(hitY - py) <= float_11_8041b40c) {
+                if (hitY > bestY) {
+                    bestY = hitY;
+                    best = hit;
+                }
+            }
+        }
+    }
+    if (best != NULL) {
+        party->field_E4 = bestY;
+        *(f32*)party->field_E8 = float_0_8041b3ec;
+        return best;
+    }
+    return NULL;
+}
+
 void partyChkGnd(PartyEntry* party) {
     s32 attr;
     HitEntry* hit;

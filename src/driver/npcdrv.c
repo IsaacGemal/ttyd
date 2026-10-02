@@ -691,9 +691,9 @@ static inline f32 npcCosf(f32 rad) {
     return cosv;
 }
 
-// NONMATCHING (76.71%): blur recovered (2*sin/-(2*cos) offsets from camGetPtr(camId)->viewYaw, 4
-// draws with history 4..1 and alpha 0x80-100..0x80-25, flag save/restore). Diffs: MWCC schedules
-// the inline sin/cos constants per branch, li-forms the color, entry/flag in r31/r30 vs r30/r28.
+// NONMATCHING (76.71%): blur recovered (2*sin/-(2*cos) offsets from camGetPtr(camId)->viewYaw, 4 draws
+// with history 4..1, alpha 0x80-100..0x80-25, flag save/restore). The pragmas hold the sin/cos coefficient
+// loads before the branch (rad in f5); remaining: lazy c0/c2 loads, li-formed color, entry/flag r31/r30.
 void npcDisp_blur(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -1588,16 +1588,15 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     return count;
 }
 
-// NONMATCHING (94.16%): same structure; `gp`/`work` land in r3/r4 swapped so every entry pointer
-// register differs, and the fbatData load is scheduled after the mode test instead of before it.
 void npcKoopaModeEncountCheck(void) {
+    FieldBattleData* fbat = gp->fbatData;
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    NpcEntry* entry;
-    s32 total;
     s32 i;
+    s32 total;
+    NpcEntry* entry;
 
     total = wp->total;
-    if (gp->fbatData->mode != 1) {
+    if (fbat->mode != 1) {
         return;
     }
     for (i = 0, entry = wp->entries; i < total; i++, entry++) {
@@ -1646,8 +1645,13 @@ void npcGroupDead(NpcEntry* entry, s32 type) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (85.50%): recursive list walk is right; the compiler unrolls the 4-slave loop into a
-// 2x2 mtctr loop where the original keeps a simple counter, and it inlines _npcDead at a different depth.
+// The walk, the recursive inlining depth and the inlined _npcDead copies all match; the only diffs
+// are the deepest slave loop's callee-saved registers. The original keeps the shift's `1` in r27
+// (loaded slave in r24, array pointer in r25, counter in r26); ours lets the deepest copy
+// rematerialise `1` into a volatile, so slave/pointer/counter land in r25/r26/r27 and the prologue
+// is `stmw r25` instead of `stmw r24`. This requires _npcDead to call fbatGetPointer(), which is
+// what makes the deepest inlined copy emit a real `bl fbatGetPointer`.
+// NONMATCHING (97.46%): deepest slave-loop register allocation (see above).
 void _npcGroupDead(NpcEntry* entry, s32 type) {
     int i;
 
@@ -1667,7 +1671,7 @@ void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
     entry->jumpFlags |= 4;
     entry->koopaEncounterType = koopaEncounterType;
     if (entry->flags & 4) {
-        gp->fbatData->deadInfo[0].mask |= (1 << entry->field_314);
+        fbatGetPointer()->deadInfo[0].mask |= (1 << entry->field_314);
     }
 }
 
@@ -1700,10 +1704,11 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
     }
 }
 
-// NONMATCHING (86.86%): logic is complete; MWCC picks a different callee-saved register
-// allocation (p/sel/i land in r26/r28/r25 instead of the original's r27/r27/r28) and the
-// level-range test/branch layout differs. All constants and offsets checked against the asm.
+// NONMATCHING (87.11%): `i` first is closest; p/i in r26/r27 vs r27/r28, info r28 vs r31, and the roll loop
+// strength-reduces `info+i` into a walk register instead of `stbx info[i+0xB0]` (pragmas/loop-shape didn't
+// help). The `<= 0 || >= 3` level test scores 87.35% but would edit an untouched raw-offset line (lint).
 void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
+    s32 i;
     NpcBattleInfo* info = &npc->battleInfo;
     NpcBattleSetupEntry* sel;
     NpcBattleSetupEntry* entry;
@@ -1715,7 +1720,6 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 pick;
     s32 sum;
     s32 num;
-    s32 i;
 
     memset(info, 0, 0xC8);
     memset(info->recoveredItems, 0, 0x20);
@@ -1798,7 +1802,6 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     npc->flags |= 0x10000000;
 }
 
-// NONMATCHING (94.29%): the remaining differences are not yet analysed.
 BOOL npcCheckInterrupt(NpcEntry* npc) {
     EventEntry* evt;
 
@@ -1841,14 +1844,10 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
             npc->field_188 = 0;
             npc->moveSpeed = 0.0f;
             return TRUE;
-        } else {
-            *(s32*)npc->field_140 &= 0xF00;
-            npc->jumpFlags &= ~0x1000;
         }
-    } else {
-        *(s32*)npc->field_140 &= 0xF00;
-        npc->jumpFlags &= ~0x1000;
     }
+    *(s32*)npc->field_140 &= 0xF00;
+    npc->jumpFlags &= ~0x1000;
     return FALSE;
 }
 
@@ -2047,13 +2046,18 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-// NONMATCHING (88.37%): 5 missing, 5 extra, plus register differences.
+// NONMATCHING (98.72%): body matches; MWCC only hoists the callee-save block into the prologue once a
+// `name == NULL` guard precedes the `(s8)name[0] == 0` check, which costs an extra `mr.`/`beq` and loads
+// name[0] from r28 vs the target's r3. Without the guard the saves sink past the check (88.37%).
 void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
 
+    if (name == NULL) {
+        return;
+    }
     if ((s8)name[0] == 0) {
         return;
     }
@@ -2094,13 +2098,16 @@ void npcSetStayPose(const char* name) {
     }
 }
 
-// NONMATCHING (88.35%): same signed-byte check and same prologue-scheduling diff as npcSetStayPose.
+// NONMATCHING (98.72%): same prologue save-block scheduling as npcSetStayPose; the partyChgPoseId arg is 7.
 void npcSetTalkPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
 
+    if (name == NULL) {
+        return;
+    }
     if ((s8)name[0] == 0) {
         return;
     }
@@ -2112,7 +2119,7 @@ void npcSetTalkPose(const char* name) {
         if (party == NULL) {
             return;
         }
-        partyChgPoseId(party, 1);
+        partyChgPoseId(party, 7);
         return;
     }
     if (!strcmp(name, "extparty")) {
@@ -2120,7 +2127,7 @@ void npcSetTalkPose(const char* name) {
         if (party == NULL) {
             return;
         }
-        partyChgPoseId(party, 1);
+        partyChgPoseId(party, 7);
         return;
     }
     if (!strcmp(name, "mario")) {
@@ -2141,9 +2148,15 @@ void npcSetTalkPose(const char* name) {
     }
 }
 
-// NONMATCHING (65.88%): 3 instructions differ, 24 missing, 1 extra, plus register differences.
+// The original copies entry->position into a shared `position` temp and from there into one Vec per
+// cloudGetBreathPower call (the temp sits at 0x2C, the call Vecs at 0x20/0x14/0x8); writing the copies
+// this way is what reproduces those stack slots. `half` keeps the fnmsubs operands (f2=height, f1=0.5).
 s32 npcCheckBlow(NpcEntry* entry) {
-    Vec pos;
+    Vec position;
+    Vec pos1;
+    Vec pos2;
+    Vec pos3;
+    f32 half;
 
     if (entry->flags & 0x20000000) {
         return FALSE;
@@ -2151,31 +2164,41 @@ s32 npcCheckBlow(NpcEntry* entry) {
     if (entry->flags & 0x20) {
         return FALSE;
     }
-    pos = entry->position;
-    if (cloudGetBreathPower(entry->width, &pos) > 0.0f) {
+    position = entry->position;
+    pos1 = position;
+    if (cloudGetBreathPower(entry->width, &pos1) > 0.0f) {
         return TRUE;
     }
-    pos.y = entry->position.y - entry->height * 0.5f;
-    if (cloudGetBreathPower(entry->width, &pos) > 0.0f) {
+    position = entry->position;
+    half = 0.5f;
+    position.y = position.y - entry->height * half;
+    pos2 = position;
+    if (cloudGetBreathPower(entry->width, &pos2) > 0.0f) {
         return TRUE;
     }
-    pos.y = entry->position.y - entry->height;
-    return cloudGetBreathPower(entry->width, &pos) > 0.0f;
+    position = entry->position;
+    position.y = position.y - entry->height;
+    pos3 = position;
+    return cloudGetBreathPower(entry->width, &pos3) > 0.0f;
 }
 
-// NONMATCHING (92.71%): hammer sweep over 12 elevation angles placing a point radius from Mario
-// along (sin/cos of angle, elevation from the shared table), then the _npcHitCheckSphere test.
-// Diffs: local angle table pools to a different rodata symbol, and register/float allocation.
+// Hammer sweep over 12 elevation angles placing a point radius from Mario along (sin/cos of angle,
+// elevation from the shared table), then the _npcHitCheckSphere test. The local angle table
+// materialises as a per-iteration stack copy (correct) but from this unit's own `.rodata` template
+// instead of dat_802c2f9c (vec3_802c2f78 + 0x24), and the compiler's double pool (int->float 2^52,
+// sqrtf 0.5/3.0) lands at 0x48 instead of vec3_802c2f78 + 0x1d8/0x1c0, because this unit's rodata
+// data is not written yet; the rest is register/float allocation.
+// NONMATCHING (92.82%): pool offsets (missing unit rodata) and register allocation.
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
+    MarioWork* mario;
+    f32 i = 0.0f;
     f32 dist = 0.0f;
-    f32 i;
     NpcEntry* npc = NULL;
 
-    for (i = 0.0f; i <= 11.0f; i += 1.0f) {
+    for (; i <= 11.0f; i += 1.0f) {
         s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
         f32 idx = i;
         f32 s1, c1, s2, c2;
-        MarioWork* mario;
         f32 px, py, pz;
         f32 dx, dy, dz;
 

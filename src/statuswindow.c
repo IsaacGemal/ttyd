@@ -3,6 +3,7 @@
 #include "battle/battle.h"
 #include "driver/icondrv.h"
 #include "driver/seqdrv.h"
+#include "driver/swdrv.h"
 #include "mario/mario.h"
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
@@ -13,11 +14,21 @@
 
 extern GlobalWork* gp;
 
+// .sdata2 colour constants of this unit (white with alpha), passed to the icon draw functions.
+__declspec(section ".sdata2") u32 dat_8041c8e0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041c8e4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041c8e8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041c8ec = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041c8f0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041c8f4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041c8f8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041c8fc = 0xFFFFFFFF;
+
 //.data
 typedef struct alwaysDtEntry {
     s16 xpos;   // 0x0
     s16 ypos;   // 0x2
-    s16 iconId; // 0x4
+    u16 iconId; // 0x4
     f32 scale;  // 0x8
 } alwaysDtEntry;
 
@@ -35,6 +46,16 @@ alwaysDtEntry alwaysDt[] = {
     { 512, 34, 470, 1.0f }, // "x"
     { 360, 76, 466, 1.0f }, // blue sp banner
     { 220, 80, 434, 0.9f }  // star
+};
+
+alwaysDtEntry partysDt[3] = {
+    { 108, 76, 464, 1.0f },
+    { 38, 80, 420, 1.0f },
+    { 124, 70, 472, 1.0f },
+};
+
+u16 party_icon[8] = {
+    0x01A4, 0x01A4, 0x01A5, 0x01A6, 0x01A7, 0x01AE, 0x01AF, 0x01B0,
 };
 
 u16 gauge_back[8] = {
@@ -430,16 +451,18 @@ void statusWinOpen(void) {
     wp->field_0x4 |= 5;
 }
 
-// NONMATCHING (66.15%): 9 instructions differ, 22 missing, 15 extra, plus register differences.
+// NONMATCHING (85.41%): values/body complete. The original hoists the int->float bias and 0.0f into
+// f30/f31 and schedules the x conversion after the `beq`; GC/2.6 here emits it before `bl pouchGetPtr`
+// and reloads 0.0f. All remaining diffs are that placement/register allocation. See REPORT.md.
 void gaugeDisp(s32 a1, f32 x, f32 y) {
-    s32 count;
     s32 i;
+    s32 count;
     s32 hundreds;
     s32 remainder;
     s32 fifteenths;
 
     count = 0;
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8u; i++) {
         if (pouchGetPtr()->mStarPowersObtained & (1 << i)) {
             count += 100;
         }
@@ -451,8 +474,8 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         a1 = 0;
     }
     hundreds = a1 / 100;
-    remainder = a1 - hundreds * 100;
-    fifteenths = remainder * 15 / 100;
+    remainder = a1 % 100;
+    fifteenths = remainder * 15 / 99;
     if (remainder != 0 && a1 != 0 && fifteenths == 0) {
         fifteenths = 1;
     }
@@ -462,17 +485,27 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         pos.x = x + hundreds * 32;
         pos.y = y;
         pos.z = 0.0f;
+#ifdef MUST_MATCH
+        // Match-only: the original passes a u16 icon id (no extsh); the header's s16 would extsh.
+        ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, gauge_wakka[fifteenths], 1.0f);
+#else
         iconDispGx(&pos, 0x10, gauge_wakka[fifteenths], 1.0f);
+#endif
     }
-    y += 12.0f;
-    for (i = 0; i < 8; i++) {
+    y = 12.0f + y;
+    for (i = 0; i < 8u; i++) {
+        f32 px = x + i * 32;
         if (pouchGetPtr()->mStarPowersObtained & (1 << i)) {
             Vec pos;
 
-            pos.x = x + i * 32;
+            pos.x = px;
             pos.y = y;
             pos.z = 0.0f;
+#ifdef MUST_MATCH
+            ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
+#else
             iconDispGx(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
+#endif
         }
     }
 }
@@ -648,35 +681,167 @@ void valueUpdate(void) {
 #endif
 }
 
-// NONMATCHING (15.31%): 15 instructions differ, 448 missing, 2 extra, plus register differences.
+// NONMATCHING (99.82%): body complete; the original groups the by-value GXColor outgoing temps by
+// callee (iconDispGxCol slots, then iconNumberDispGx slots), GC/2.6 allocates them in program order.
+// All remaining diffs are that stack-slot order. See REPORT.md.
 void statusWinDisp(CameraId camId, void* param) {
     alwaysDtEntry* dtEntry;
+    s32 i;
     s32 v6;
-    int i;
-    Mtx iconPos, iconScale;
+    s32 number;
+    f32 tx, ty;
+    f32 baseX, baseY;
+    Mtx mtx;
+    Mtx scale;
+    Mtx badgeMtx;
+    Mtx badgeScale;
+    Mtx hpMtx;
+    Mtx maxHpMtx;
+    Mtx fpMtx;
+    Mtx maxFpMtx;
+    Mtx starMtx;
+    Mtx coinMtx;
+    Mtx partyHpMtx;
+    Mtx partyMaxHpMtx;
 
+    baseX = wp->field_0x20;
+    baseY = wp->field_0x24;
     v6 = 1;
     if (wp->field_0x88 > 0) {
         wp->field_0x88--;
-        v6 = (wp->field_0x88 % 16) > 0;
+        v6 = (wp->field_0x88 % 16) >= 6;
     }
 
     dtEntry = alwaysDt;
-    for (i = 0; i < 13; i++, dtEntry++) {
+    for (i = 0; i < 13u; i++, dtEntry++) {
         if (dtEntry->iconId == 466 && !pouchGetPtr()->mStarPowersObtained) {
             break; // don't draw star power bar
         }
         if (!v6) {
-            if (wp->field_0x80 & 1 && i == 1) {
+            if ((wp->field_0x80 & 1) && i == 1) {
                 continue;
             }
-            if (wp->field_0x80 & 2 && i == 4 || wp->field_0x80 & 0x10 && i == 8 || wp->field_0x80 & 4 && i == 12) {
+            if (((wp->field_0x80 & 2) && i == 4) || ((wp->field_0x80 & 0x10) && i == 8) || ((wp->field_0x80 & 4) && i == 12)) {
                 continue;
             }
         }
-        MTXTrans(iconPos, wp->field_0x20 + (f32)dtEntry->xpos, wp->field_0x24 - (f32)dtEntry->ypos, 0.0f);
-        MTXScale(iconScale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
-        MTXConcat(iconPos, iconScale, iconPos);
+        PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, 0.0f);
+        PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
+        PSMTXConcat(mtx, scale, mtx);
+        iconDispGxCol(mtx, 0x10, dtEntry->iconId, *(GXColor*)&dat_8041c8e4);
+    }
+
+    if (!(wp->field_0x80 & 1) || v6 != 0) {
+        number = *(s16*)((u8*)wp + 0x50);
+        PSMTXTrans(hpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 38.0f + 2.0f, 0.0f);
+        iconNumberDispGx(hpMtx, number, 0, *(GXColor*)&dat_8041c8e0);
+    }
+    number = *(s16*)((u8*)wp + 0x52);
+    tx = baseX + 186.0f - 6.0f - 10.0f;
+    ty = baseY - 38.0f + 3.0f;
+    PSMTXTrans(maxHpMtx, tx, ty, 0.0f);
+    iconNumberDispGx(maxHpMtx, number, 1, *(GXColor*)&dat_8041c8e0);
+
+    if (!(wp->field_0x80 & 2) || v6 != 0) {
+        number = *(s16*)((u8*)wp + 0x54);
+        PSMTXTrans(fpMtx, baseX + 292.0f - 6.0f, baseY - 38.0f + 2.0f, 0.0f);
+        iconNumberDispGx(fpMtx, number, 0, *(GXColor*)&dat_8041c8e0);
+    }
+    number = *(s16*)((u8*)wp + 0x56);
+    PSMTXTrans(maxFpMtx, baseX + 358.0f - 6.0f, ty, 0.0f);
+    iconNumberDispGx(maxFpMtx, number, 1, *(GXColor*)&dat_8041c8e0);
+
+    number = *(s16*)((u8*)wp + 0x5E);
+    ty = baseY - 38.0f + 2.0f;
+    PSMTXTrans(starMtx, baseX + 462.0f, ty, 0.0f);
+    iconNumberDispGx(starMtx, number, 0, *(GXColor*)&dat_8041c8e0);
+
+    if (!(wp->field_0x80 & 0x10) || v6 != 0) {
+        number = *(s16*)((u8*)wp + 0x60);
+        PSMTXTrans(coinMtx, baseX + 572.0f, ty, 0.0f);
+        iconNumberDispGx(coinMtx, number, 0, *(GXColor*)&dat_8041c8e0);
+    }
+
+    if (!(wp->field_0x80 & 4) || v6 != 0) {
+        gaugeDisp(*(s16*)((u8*)wp + 0x62), baseX + 260.0f, baseY - 87.0f + 4.0f);
+    }
+
+    if (*(s16*)((u8*)wp + 0x58) != 0) {
+        s32 partyId = *(s16*)((u8*)wp + 0x58);
+
+        partysDt[1].iconId = party_icon[partyId];
+        if (partyId == 4) {
+            switch (pouchGetPartyColor(4)) {
+            case 0:
+                partysDt[1].iconId = 0x1A7;
+                break;
+            case 1:
+                partysDt[1].iconId = 0x1A8;
+                break;
+            case 2:
+                partysDt[1].iconId = 0x1A9;
+                break;
+            case 3:
+                partysDt[1].iconId = 0x1AA;
+                break;
+            case 4:
+                partysDt[1].iconId = 0x1AB;
+                break;
+            case 5:
+                partysDt[1].iconId = 0x1AC;
+                break;
+            case 6:
+            default:
+                partysDt[1].iconId = 0x1AD;
+                break;
+            }
+        }
+        dtEntry = partysDt;
+        for (i = 0; i < 3u; i++, dtEntry++) {
+            if ((wp->field_0x80 & 8) && v6 == 0 && i == 1) {
+                continue;
+            }
+            PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, 0.0f);
+            PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
+            PSMTXConcat(mtx, scale, mtx);
+            iconDispGxCol(mtx, 0x10, dtEntry->iconId, *(GXColor*)&dat_8041c8e8);
+        }
+        if (!(wp->field_0x80 & 8) || v6 != 0) {
+            number = *(s16*)((u8*)wp + 0x5A);
+            PSMTXTrans(partyHpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 78.0f + 2.0f + 4.0f, 0.0f);
+            iconNumberDispGx(partyHpMtx, number, 0, *(GXColor*)&dat_8041c8e0);
+        }
+        number = *(s16*)((u8*)wp + 0x5C);
+        PSMTXTrans(partyMaxHpMtx, tx, baseY - 78.0f + 2.0f + 4.0f, 0.0f);
+        iconNumberDispGx(partyMaxHpMtx, number, 1, *(GXColor*)&dat_8041c8e0);
+    }
+
+    if ((wp->field_0x4 & 0x100) && gp->inBattle == 0) {
+        ty = -180.0f + (wp->field_0x34 - wp->field_0x24);
+        PSMTXTrans(badgeMtx, -190.0f, ty, 0.0f);
+        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+        iconDispGxCol(badgeMtx, 0x10, 0x212, *(GXColor*)&dat_8041c8ec);
+        if (swByteGet(0) >= 7 || partyChkJoin(1) != 0) {
+            PSMTXTrans(badgeMtx, -250.0f, 16.0f + ty, 0.0f);
+            PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+            PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+            iconDispGxCol(badgeMtx, 0x10, 0x213, *(GXColor*)&dat_8041c8f0);
+        }
+        PSMTXTrans(badgeMtx, -190.0f, 50.0f + ty, 0.0f);
+        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+        iconDispGxCol(badgeMtx, 0x10, 0x214, *(GXColor*)&dat_8041c8f4);
+        if (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt() != 0) {
+            PSMTXTrans(badgeMtx, -130.0f, 16.0f + ty, 0.0f);
+            PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+            PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+            iconDispGxCol(badgeMtx, 0x10, 0x215, *(GXColor*)&dat_8041c8f8);
+        }
+        PSMTXTrans(badgeMtx, -190.0f, ty - 25.0f, 0.0f);
+        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+        iconDispGxCol(badgeMtx, 0x10, 0x216, *(GXColor*)&dat_8041c8fc);
     }
 }
 

@@ -74,3 +74,4 @@ void shadowSetCollision(s32 id, BOOL value);
 s32 shadowGetCharShadowProjection(void);
 void shadowDepthShadowDrawCountUp(void);
 void shadowProjShadowDrawCountUp(void);
+void depthShadowEnd(s32 arg0, DepthShadowWork* work);

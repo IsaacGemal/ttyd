@@ -81,6 +81,9 @@ extern f32 float_neg13_8041c364;
 extern f32 float_neg38_8041c368;
 extern f32 float_neg40_8041c36c;
 extern f32 float_900_8041c370;
+extern f32 float_255_8041c308;
+extern u32 dat_8041c2dc;
+extern u32 dat_8041c2e0;
 
 // Sampling work block lives inside BattleWork at offset 0x428 (same layout as the
 // local BattleSampling struct in battle_detect.c).
@@ -101,12 +104,16 @@ typedef struct BattleTargetSampling {
     s8 selectIdx;                   // 0xAB7
 } BattleTargetSampling;
 
-// NONMATCHING (19.37%): 116 missing, plus register differences.
 void BattleDrawEnemyHP(CameraId camId, void* param) {
 	BattleWork* wp = param;
+	int i;
 	BattleUnit* unit;
 	Vec position;
-	int i;
+	Vec screen;
+	Vec hpPos;
+	GXColor color = *(GXColor*)&dat_8041c2dc;
+	s32 icon;
+	Mtx mtx;
 
 	camGetPtr(CAMERA_2D); //unused, probably just stored
 
@@ -114,21 +121,38 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 		unit = wp->units[i];
 		if (unit) {
 			if (!BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-				if (battleCheckUnitMonosiriFlag(unit)) {
-					if (!unit->mAttributeFlags & 0x2000000) {
-						if (wp->commandMenu.field_4 & 0x1000000) {
-							if (unit->flags & 1) {
-								position.x = unit->mPosition.x;
-								position.y = unit->mPosition.y;
-								position.z = unit->mPosition.z;
-								if (wp->flags & 0x80) {
-									position.x = unit->mHomePosition.x;
-									position.y = unit->mHomePosition.y;
-									position.z = unit->mHomePosition.z;
-								}
-								position.x += (f32)unit->mHpGaugeOffset[0];
-								position.y += (f32)unit->mHpGaugeOffset[1];
+				if (battleCheckUnitMonosiriFlag(wp->units[i])) {
+					if (!(unit->mAttributeFlags & 0x2000000)) {
+						if ((wp->commandMenu.field_4 & 0x1000000) || (unit->flags & 1)) {
+							position.x = unit->mPosition.x;
+							position.y = unit->mPosition.y;
+							position.z = unit->mPosition.z;
+							if (wp->flags & 0x80) {
+								position.x = unit->mHomePosition.x;
+								position.y = unit->mHomePosition.y;
+								position.z = unit->mHomePosition.z;
 							}
+							position.x += (f32)unit->mHpGaugeOffset[0];
+							position.y += (f32)unit->mHpGaugeOffset[1];
+							btlGetScreenPoint(&position, &screen);
+							if (unit->flags & 1) {
+								if ((unit->hpGauge.field_0x2 & 1) && unit->hpGauge.field_0x8 < 0x14) {
+									color.a = (u8)(s32)intplGetValue(0, unit->hpGauge.field_0x8, 0x14, float_0_8041c2f0,
+									                                  float_255_8041c308);
+								}
+							}
+							icon = 20;
+							if (wp->units[i]->currentHp >= 100) {
+								icon = 12;
+							} else if (wp->units[i]->currentHp >= 10) {
+								icon = 16;
+							}
+							PSMTXTrans(mtx, screen.x + (f32)icon, screen.y - float_32_8041c30c, float_0_8041c2f0);
+							iconNumberDispGx(mtx, wp->units[i]->currentHp, 1, *(GXColor*)&dat_8041c2e0);
+							// MUST_MATCH: BattleDrawEnemyHPBar takes GXColor by value (target copies it to a temp);
+							// the header declares GXColor*. The comma sequences the hpPos copy like the target.
+							((void (*)(Vec*, BattleUnit*, GXColor))BattleDrawEnemyHPBar)((hpPos = screen, &hpPos), unit,
+							                                                               color);
 						}
 					}
 				}
@@ -137,7 +161,9 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (73.48%): 10 instructions differ, 12 missing, 10 extra, plus register differences.
+// NONMATCHING (86.95%): the `switch` reproduces the target's `beq then; b else`; the default arm's
+// call matches after spilling its args to locals (`w`/`tx`/`ty`). Only the 0xA call's schedule differs
+// (target keeps the `pos->x` store and colour copy late; our scheduler hoists them).
 void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
 	BattleWorkHpGauge* gauge = &unit->hpGauge;
@@ -147,28 +173,38 @@ void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 	{
 		f32 x = pos->x - float_10_8041c2e4;
 		pos->x = x;
-		btlDispTexPlane(0xA, *color, x + float_19_8041c2e8, pos->y - float_3_8041c2ec, float_0_8041c2f0,
-		                float_1_8041c2f4, float_1_8041c2f4);
+		// MUST_MATCH: btlDispTexPlane's original signature has an unused s32 3rd parameter (target passes r5=0);
+		// the header omits it. Cast calls it with it.
+		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
+		    0xA, *color, 0, float_19_8041c2e8 + x, pos->y - float_3_8041c2ec, float_0_8041c2f0,
+		    float_1_8041c2f4, float_1_8041c2f4);
 	}
-	if ((s16)*(u16*)gauge->field_0x0 == 1) {
+	switch ((s32)*(u16*)gauge->field_0x0) {
+	case 1:
 		if (gauge->field_0x4 > 0) {
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
 			btlDispGXQuads2DRasta(float_1_8041c2f4 + pos->x, float_2_8041c2f8 + pos->y,
-			                     float_34_8041c2fc * gauge->field_0x18 + float_1_8041c2f4 + pos->x,
-			                     float_2_8041c2f8 + pos->y - float_8_8041c300, 0, 0, 0, color->a);
+			                     float_34_8041c2fc * gauge->field_0x18 + (float_1_8041c2f4 + pos->x),
+			                     (float_2_8041c2f8 + pos->y) - float_8_8041c300, 0, 0, 0, color->a);
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
 		}
-		btlDispTexPlane(0xB, *color,
-		                float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14),
-		                pos->y - float_3_8041c2ec, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
-	} else {
-		btlDispTexPlane(0xB, *color,
-		                float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14),
-		                pos->y - float_3_8041c2ec, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
-	}
-}
+		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
+		    0xB, *color, 0,
+		    float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14),
+		    pos->y - float_3_8041c2ec, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
+		break;
+	default:
+		{
+		f32 w = gauge->field_0x14;
+		f32 tx = float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - w);
+		f32 ty = pos->y - float_3_8041c2ec;
+		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
+		    0xB, *color, 0, tx, ty, float_0_8041c2f0, w, float_1_8041c2f4);
+		}
+		break;
+	}}
 
 void BattleCommandInit(BattleWork* wp) {
 	wp->commandMenu.unk0 = 0;
@@ -192,7 +228,7 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	PouchData* pouch = pouchGetPtr();
 	BattleWorkCommandCursor* cursor;
-	s32 count;
+	u32 count;
 	NpcBattleInfo* setup = wp->fbatInfo->setup;
 
 	if (cmd == NULL) {
@@ -387,7 +423,6 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 void BattleCommandDisplay_AllEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x111111;
 }
-#pragma dont_inline reset
 
 void BattleCommandDisplay_ProtectPartnerSelectMenuEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x100000;
@@ -435,9 +470,12 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	sprintf(buf, msgSearch("btl_msg_multi_item_cancel_check"));
 	len = strlen(buf);
 	xoff = float_6p25_8041c318 * (f32)len;
+	{
+	f32 yoff = float_12p5_8041c320 * (f32)len + float_65_8041c34c;
 	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c0, float_neg30_8041c344 - xoff,
-	                      float_30_8041c348, float_12p5_8041c320 * (f32)len + float_65_8041c34c,
+	                      float_30_8041c348, yoff,
 	                      float_32_8041c30c, float_10_8041c2e4);
+	}
 	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c4, float_neg70_8041c350, float_neg10_8041c354,
 	                      float_130_8041c358, float_60_8041c314, float_10_8041c2e4);
 	FontDrawStart();
@@ -450,7 +488,7 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	iconDispGx(&pos, 0x14, 0x1F0, float_1_8041c2f4);
 }
 
-// NONMATCHING (96.45%): register allocation (cursor folded into 0x1c50(wp)) and cmplwi vs cmpwi.
+// NONMATCHING (97.59%): register allocation (cursor folded into 0x1c50(wp)) and cmplwi vs cmpwi.
 s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
 	BattleCursor* cursor = &wp->commandMenu.cursor[13];
 	s32 done = 0;
@@ -512,13 +550,12 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_ActSelect_End(wp);
 	wp->commandMenu.field_4 &= ~0x1;
 }
-#pragma dont_inline reset
 
-// NONMATCHING (97.29%): 11 instructions differ, 4 missing, plus register differences.
+// NONMATCHING (97.45%): 11 instructions differ, 4 missing, plus register differences.
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s32 result = 0;
 
@@ -669,13 +706,12 @@ void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_WeaponSelect_End(wp);
 	wp->commandMenu.field_4 &= ~0x10;
 }
-#pragma dont_inline reset
 
-// NONMATCHING (92.16%): 8 instructions differ, 1 missing, 79 extra, plus register differences.
+// NONMATCHING (98.88%): callee-saved register shift only (target unit=r27/cmd=r31, ours r31/r30).
 s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 	BattleCommand* cmd = &wp->commandMenu;
-	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
 	s32 result = 0;
 
@@ -687,7 +723,7 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 			*(s32*)&wp->commandMenu.unk540[0x14] = 0;
 		}
 		if (BattlePadCheckTrigger(0x100) || wp->commandMenu.unk540[0x18] != 0) {
-			if (wcmd->mWeaponTable[cursor->field_0].field_0x4) {
+			if ((s32)wcmd->mWeaponTable[cursor->field_0].field_0x4 != 0) {
 				psndSFXOn((char*)0x9D8);
 				BattleCommandDisplay_WeaponSelectMenuEnd(wp);
 				_btlcmd_SelectWeaponDecide(wp, arg, cursor->field_0);
@@ -708,7 +744,7 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.unk540[0x18] = 0;
-			if (wcmd->mWeaponTable[cursor->field_0].field_0x18 != 0) {
+			if ((s32)wcmd->mWeaponTable[cursor->field_0].field_0x18 != 0) {
 				BattleCommandDisplay_WeaponSelectMenuEnd(wp);
 				result = 1;
 				cmd->unk0 = 8;
@@ -767,7 +803,12 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 		break;
 	}
 end:
+#ifdef MUST_MATCH
+	// MUST_MATCH: header declares BattleMenuDisp_WeaponSelect_Main(void), but the original passes wp in r3.
+	((void (*)(BattleWork*))BattleMenuDisp_WeaponSelect_Main)(wp);
+#else
 	BattleMenuDisp_WeaponSelect_Main();
+#endif
 	return result;
 }
 
@@ -776,9 +817,8 @@ void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_Operation_End(wp);
 	wp->commandMenu.field_4 &= ~0x100;
 }
-#pragma dont_inline reset
 
-// NONMATCHING (95.43%): switch body layout, cmplwi vs cmpwi, pooled labels.
+// NONMATCHING (96.10%): switch body layout, cmplwi vs cmpwi, pooled labels.
 s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -877,9 +917,8 @@ void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_MultiItem_End(wp);
 	wp->commandMenu.field_4 &= ~0x20;
 }
-#pragma dont_inline reset
 
-// NONMATCHING (98.17%): cmplwi vs cmpwi, pooled labels, missing mr r3 before MultiItem_Main.
+// NONMATCHING (98.95%): cmplwi vs cmpwi, pooled labels, missing mr r3 before MultiItem_Main.
 s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -957,14 +996,13 @@ void BattleCommandDisplay_ChangePartySelectMenuEnd(BattleWork* wp) {
 	BattleMenuDisp_ChangePartySelect_End(wp);
 	wp->commandMenu.field_4 &= ~0x1000;
 }
-#pragma dont_inline reset
 
 void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) {
 	BattleMenuDisp_ChangePartySelect_Init(wp, (u32)arg);
 	wp->commandMenu.field_4 |= 0x01001000;
 }
 
-// NONMATCHING (98.39%): cmplwi vs cmpwi, pooled labels, missing mr r3 before ChangePartySelect_Main.
+// NONMATCHING (99.27%): cmplwi vs cmpwi, pooled labels, missing mr r3 before ChangePartySelect_Main.
 s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -1115,8 +1153,8 @@ void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
 	}
 }
 
-// NONMATCHING (92.50%): 2 instructions differ.
-void BattleCommandDisplay_ActMenuDisp(CameraId camId, BattleWork* wp) {
+void BattleCommandDisplay_ActMenuDisp(CameraId camId, void* param) {
+	BattleWork* wp = param;
 	BattleCursor* cursor;
 
 	_btlcmd_GetCursorPtr(&wp->commandMenu, 0xE, &cursor);
@@ -1281,7 +1319,6 @@ void _cursor_init(BattleCursor* cursor) {
 	cursor->field_0 = 0;
 	cursor->field_4 = 0;
 }
-#pragma dont_inline reset
 
 void _commandRestoreRec(void) {
 	BattleWork* wp = _battleWorkPointer;
@@ -1547,7 +1584,6 @@ BOOL BattleCommandAttackAudienceCheck(void) {
 	}
 	return FALSE;
 }
-#pragma dont_inline reset
 
 void BattleCommandDisplay(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
@@ -1850,7 +1886,6 @@ s32 _battleGetPartyIcon(s32 kind) {
 	}
 	return 0;
 }
-#pragma dont_inline reset
 
 BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 	BattleUnit* unit;
@@ -2142,7 +2177,6 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	}
 	return 0;
 }
-#pragma dont_inline reset
 
 // NONMATCHING (99.97%): the code is byte-for-byte right; all eight pooled string offsets
 // are 0xa8 short of the target (this function's literals land at .rodata+0x25c instead of
@@ -2161,7 +2195,7 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	BattleWorkCommand* wcmd;
 	BattleCursor* cursor;
 	BattleUnit* party;
-	s32 count;
+	u32 count;
 	s32 escapeIdx;
 
 	mario = BattleGetUnitPtr(wp, wp->activeUnitId);
@@ -2288,16 +2322,12 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	}
 }
 
-// Keeping the original `bl _battleGetPartyIcon` needs the dont_inline pragma on that callee.
-// NONMATCHING (78.48%): instruction stream now matches; only callee-saved register
-// allocation differs (target keeps mario/cmd in r25/r24 and the loop counter in r20; ours
-// use r26/r25 and r24).
-// NONMATCHING (78.48%): _btlcmd_MakeMultiItemTable builds the multi-item menu table (Double/Triple Dip);
-// the compiler constant-folds `count` and the field offset.
+// NONMATCHING (88.46%): the instruction stream matches; only the pooled string base differs
+// (`str_802EF640` addends +0x228/+0x23c/+0x24c short of the target), which lands when the unit links.
 void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd;
-	s32 count = 1;
+	u32 count;
 
 	if ((cmd = &wp->commandMenu)) {
 		BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -2309,22 +2339,27 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 		wcmd->mMultiItemTable[0].mIcon = 0x14C;
 		wcmd->mMultiItemTable[0].mDescription = NULL;
 		wcmd->mMultiItemTable[0].mWeaponCost = 0;
+		count = 1;
 		if (unit->badgesEquipped.DoubleDip) {
 			wcmd->mMultiItemTable[count].pad_0xE[0] = 2;
 			if (unit->currentKind == UNIT_MARIO) {
 				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
 				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[254].name);
-				wcmd->mMultiItemTable[count].mIcon = (u16)itemDataTable[254].icon_id;
+				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[254].icon_id;
 				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[254].description;
 				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
 			} else {
 				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
 				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[255].name);
-				wcmd->mMultiItemTable[count].mIcon = (u16)itemDataTable[255].icon_id;
+				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[255].icon_id;
 				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[255].description;
 				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
 			}
-			wcmd->mMultiItemTable[count].field_0x14 = (wcmd->mMultiItemTable[count].mEnabled == 0) ? 1 : 0;
+			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
+				wcmd->mMultiItemTable[count].field_0x14 = 1;
+			} else {
+				wcmd->mMultiItemTable[count].field_0x14 = 0;
+			}
 			count = 2;
 		}
 		if (unit->badgesEquipped.TripleDip) {
@@ -2332,7 +2367,7 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 			if (unit->currentKind == UNIT_MARIO) {
 				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
 				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[329].name);
-				wcmd->mMultiItemTable[count].mIcon = (u16)itemDataTable[329].icon_id;
+				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[329].icon_id;
 				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[329].description;
 				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
 			} else {
@@ -2342,7 +2377,11 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 				wcmd->mMultiItemTable[count].mDescription = "msg_3kai_item_p";
 				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
 			}
-			wcmd->mMultiItemTable[count].field_0x14 = (wcmd->mMultiItemTable[count].mEnabled == 0) ? 1 : 0;
+			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
+				wcmd->mMultiItemTable[count].field_0x14 = 1;
+			} else {
+				wcmd->mMultiItemTable[count].field_0x14 = 0;
+			}
 			count++;
 		}
 		cursor->unk8 = count;

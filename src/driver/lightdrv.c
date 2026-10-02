@@ -7,34 +7,24 @@
 #include <stdio.h>
 
 
-//.rodata
-const Vec decay_tbl[] = {
-	{1.0f, 0.0f, 0.0f},
-	{0.0f, 0.1f, 0.0f},
-	{0.0f, 0.0f, 0.01f}, 
-	{0.0f, 0.0f, 0.01f}
-};
-
 //.sbss
 static LightWork work[2];
 
-//.bss
-LightEntry booLight;
-LightEntry paperCraft;
-LightEntry paperLight3DImg;
+//.bss (declared in reverse target order: MWCC emits .bss in reverse declaration order)
 LightEntry paperLight3D;
+LightEntry paperLight3DImg;
+LightEntry paperCraft;
+LightEntry booLight;
 
 //local prototypes
 static s32 _sort(const void* a, const void* b);
 
 #define lightGetWork() (mapGetActiveGroup() == 1 ? &work[1] : &work[0])
 
-// NONMATCHING (99.98%): only the three pooled string addresses differ (r31+0xa4/0xac/0xb8 here vs
-// +0xc8/0xd0/0xdc in the target). They sit after every numeric literal in .rodata, so they move up
-// 0x24 once lightMain emits its four target vec3 literals (the three beyond its current one).
-// The .bss/.rodata offsets match only with the LightEntry globals declared in the reverse of the
-// original's .bss order (MWCC emits .bss in reverse declaration order) and decay_tbl defined after
-// lightMain (rodata named objects land at their declaration point).
+// The pooled string addresses land after every numeric literal in .rodata, so they move up once lightMain
+// emits its four target vec3 literals. The .bss/.rodata offsets match only with the LightEntry globals
+// declared in the reverse of the original's .bss order (MWCC emits .bss in reverse declaration order) and
+// decay_tbl defined after lightMain (rodata named objects land at their declaration point).
 void lightInit(void) {
 	Mtx scale;
 #ifdef MUST_MATCH
@@ -95,28 +85,57 @@ void lightReInit(void) {
 	memset(wp->entries, 0, sizeof(LightEntry) * wp->count);
 }
 
-// NONMATCHING (25.07%): 9 instructions differ, 72 missing, 4 extra, plus register differences.
+// Match-only: returning a Vec by value makes MWCC emit the hidden return-slot copy the
+// target has (build a temp, then store it to the named local). The zero vector is passed
+// as the base so its literal pools at the call site, in the target's order.
+static inline Vec lightMainVec(Vec v, f32 x, f32 y, f32 z);
+
 void lightMain(void) {
 	CameraEntry* camera;
+	Vec dir = {0.0f, 0.0f, 1.0f};
+	Vec v0, v1, v2;
 	Vec position;
 
 	camera = camGetPtr(CAMERA_3D);
-	position.x = (camera->view[0][0] * 0.0f) + (camera->view[1][0] * 0.0f) + (camera->view[2][0] * 1.0f);
-	position.y = (camera->view[0][1] * 0.0f) + (camera->view[1][1] * 0.0f) + (camera->view[2][1] * 1.0f);
-	position.z = (camera->view[0][2] * 0.0f) + (camera->view[1][2] * 0.0f) + (camera->view[2][2] * 1.0f);
+	v0 = *(Vec*)&camera->view[0];
+	v1 = *(Vec*)&camera->view[1];
+	v2 = *(Vec*)&camera->view[2];
+	position = lightMainVec((Vec){0.0f, 0.0f, 0.0f},
+		(v0.x * dir.x) + (v1.x * dir.y) + (v2.x * dir.z),
+		(v0.y * dir.x) + (v1.y * dir.y) + (v2.y * dir.z),
+		(v0.z * dir.x) + (v1.z * dir.y) + (v2.z * dir.z));
 	VECNormalize(&position, &position);
-	paperLight3D.position.x = 1048576.0f * position.x;
-	paperLight3D.position.y = 1048576.0f * position.y;
-	paperLight3D.position.z = 1048576.0f * position.z;
+	paperLight3D.position = lightMainVec((Vec){0.0f, 0.0f, 0.0f}, 1048576.0f * position.x,
+	                                      1048576.0f * position.y, 1048576.0f * position.z);
 	booLight.position = (Vec){0.0f, 1000.0f, 0.0f};
 }
 
-// NONMATCHING (81.70%): 9 instructions differ, 18 missing, 5 extra, plus register differences.
-s32 lightEntry(const char* name, s32 type, Vec position, Vec rotation, GXColor color, s32 attenType, s32 flags, f32 spotAngle, f32 attenAngle) {
+static inline Vec lightMainVec(Vec v, f32 x, f32 y, f32 z) {
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	return v;
+}
+
+//.rodata: declared after lightMain so the named object lands at its declaration point, i.e.
+// after the vec literals lightInit/lightMain pool (the target has it at 0x90).
+const Vec decay_tbl[] = {
+	{1.0f, 0.0f, 0.0f},
+	{0.0f, 0.1f, 0.0f},
+	{0.0f, 0.0f, 0.01f}, 
+	{0.0f, 0.0f, 0.01f}
+};
+
+// position/rotation are Vec* but color is a by-value GXColor: the pointer params force the second
+// `*position` load for field_0x3C, while the by-value color is non-aliasing so its load hoists into the
+// position-setup block (color=r0, pos.x/pos.y=r6/r5, decay offset=r7), exactly as the target schedules it.
+s32 lightEntry(const char* name, s32 type, Vec* position, Vec* rotation, GXColor color, s32 attenType, s32 flags, f32 spotAngle, f32 attenAngle) {
 	LightWork* wp = lightGetWork();
+	s32 i;
+	s32 k;
 	LightEntry* entry;
-	s32 i, j, k;
-	char v41[320]; //TODO: rename, verify size
+	s32 j;
+	char v41[256];
 
 	entry = wp->entries;
 	for (i = 0; i < wp->count; i++, entry++) {
@@ -149,13 +168,15 @@ s32 lightEntry(const char* name, s32 type, Vec position, Vec rotation, GXColor c
 	}
 	memset(entry, 0, sizeof(LightEntry));
 	strcpy(entry->name, name);
-	entry->position = position;
-	entry->rotation = rotation;
-	entry->field_0x3C = position;
+	entry->position = *position;
+	entry->rotation = *rotation;
+	entry->field_0x3C = *position;
 	entry->color = color;
 	entry->spotAngle = spotAngle;
 	entry->attenAngle = attenAngle;
-	entry->attenDistCoef = decay_tbl[attenType];
+	entry->attenDistCoef.x = decay_tbl[attenType].x;
+	entry->attenDistCoef.y = decay_tbl[attenType].y;
+	entry->attenDistCoef.z = decay_tbl[attenType].z;
 	entry->flags |= 1;
 	switch (type) {
 		case 0:
@@ -165,11 +186,14 @@ s32 lightEntry(const char* name, s32 type, Vec position, Vec rotation, GXColor c
 			entry->flags |= LIGHT_POINT;
 			break;
 		case 2:
-			entry->flags |= LIGHT_DIRECTIONAL;
-			break;
-		case 3:
 			entry->flags |= LIGHT_SPOT;
 			break;
+		case 3:
+			entry->flags |= LIGHT_DIRECTIONAL;
+			break;
+	}
+	if (flags & 2) {
+		entry->flags |= LIGHT_CHARA;
 	}
 	return i;
 }

@@ -219,9 +219,9 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
     return 2;
 }
 
-// NONMATCHING (98.89%): left is the second block's `0.5f`/`mSizeMultiplier` FP registers swapped
-// (target f2/f1, ours f1/f2) and one `lwz effect` / `mr r3,unit` scheduling slot around the
-// `userdata[1] < 16` branch. `height` must stay an `f32` local for the first block to match.
+// NONMATCHING (98.97%): the target schedules the `lwz effect` before the `bge` (ours after) and emits
+// the y fmadds as scale*t where ours is t*scale (same registers, operands swapped). `height` must stay
+// an f32 local for the first block to match; the `t` temp below is a MUST_MATCH shape for the FP regs.
 USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
     s32 id;
     BattleWork* work;
@@ -302,8 +302,19 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
         effect = (EffectEntry*)event->userdata[2];
         ((effSweatData*)effect->userdata)->position.x = unit->mMoveCurrentPos.x;
         height = BtlUnit_GetHeight(unit);
+#ifdef MUST_MATCH
+        // Splitting `0.5f * height` into a named temp is what makes MWCC keep the inner product in
+        // f2 and the scale in f1 (the target's pair); the plain single expression below puts the
+        // literal in f1 and leaves the other three FP instructions differing.
+        {
+            f32 t = float_0p5_8041dd9c * height;
+            ((effSweatData*)effect->userdata)->position.y =
+                t * unit->mSizeMultiplier + unit->mMoveCurrentPos.y;
+        }
+#else
         ((effSweatData*)effect->userdata)->position.y =
             unit->mSizeMultiplier * (float_0p5_8041dd9c * height) + unit->mMoveCurrentPos.y;
+#endif
         ((effSweatData*)effect->userdata)->position.z = unit->mMoveCurrentPos.z;
     }
     *(s32*)((u8*)unit + 0x168) -= 1;
@@ -318,25 +329,22 @@ s32 _yoshi_slide_move_sound(BattleUnit* unit, PoseSoundEntry* entry) {
     return BtlUnit_snd_se(unit, entry->soundName, 0xF1194D80, (s16)(unit->work[4] * unit->work[5] / 100));
 }
 
-// NONMATCHING (92.80%): same instruction sequence; the callee-saved registers are assigned in a different order
-// (target: event r29, args r27, work r28; ours r31, r29, r30).
+// Matched by mirroring the identical, already-matched `_get_bomb_hit_position` in
+// unit_party_sanders.c: same declaration order (the order fixes MWCC's callee-saved
+// allocation: event r29, work r28, id1 r26, id2 r25, outX/outY/outZ r31/r30/r26) and the
+// same `Vec pos` + inline `mSizeMultiplier` shape.
 USER_FUNC(_get_nomikomi_hit_position) {
-    f32 y;
-    s32 outY;
-    f32 scale;
-    s32 outX;
-    s32 outZ;
-    f32 z;
-    f32 x;
-    BattleWork* work;
-    s32* args;
+    BattleUnit* unit;
+    BattleWork* work = _battleWorkPointer;
+    Vec pos;
+    s32* args = event->args;
     s32 id1;
     s32 id2;
     s32 dir;
-    BattleUnit* unit;
+    s32 outZ;
+    s32 outX;
+    s32 outY;
 
-    args = event->args;
-    work = _battleWorkPointer;
     id1 = evtGetValue(event, args[0]);
     id2 = evtGetValue(event, args[1]);
     evtGetValue(event, args[2]);
@@ -346,14 +354,13 @@ USER_FUNC(_get_nomikomi_hit_position) {
     BattleGetUnitPtr(work, BattleTransID(event, id1));
     unit = BattleGetUnitPtr(work, BattleTransID(event, id2));
     dir = unit->faceDirection;
-    BtlUnit_GetPos(unit, &x, &y, &z);
-    scale = unit->mSizeMultiplier;
-    x += (f32)dir * (unit->bintaHitOffset.x * scale);
-    y += unit->bintaHitOffset.y * scale;
-    z += unit->bintaHitOffset.z * scale;
-    evtSetFloat(event, outX, x);
-    evtSetFloat(event, outY, y);
-    evtSetFloat(event, outZ, z);
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    pos.x += (f32)dir * (unit->bintaHitOffset.x * unit->mSizeMultiplier);
+    pos.y += unit->bintaHitOffset.y * unit->mSizeMultiplier;
+    pos.z += unit->bintaHitOffset.z * unit->mSizeMultiplier;
+    evtSetFloat(event, outX, pos.x);
+    evtSetFloat(event, outY, pos.y);
+    evtSetFloat(event, outZ, pos.z);
     return EVT_RETURN_DONE;
 }
 

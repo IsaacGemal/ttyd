@@ -3,6 +3,7 @@
  */
 #include "driver/animdrv.h"
 #include "driver/dispdrv.h"
+#include "sdk/DEMOInit.h"
 #include "himo.h"
 #include "driver/mapdrv.h"
 #include "mario/mariost.h"
@@ -58,6 +59,15 @@ extern const f32 float_0_80419a48;
 extern const f32 float_1_80419a44;
 extern const f32 float_0p04_80419ac0;
 extern const f32 float_0p5_80419a64;
+extern const f32 float_8_80419a70;
+extern const f32 float_25p74_80419a74;
+extern const f32 float_0p14881_80419a78;
+extern const f32 float_150_80419a7c;
+extern const f32 float_215_80419a80;
+extern const f32 float_0p25_80419a6c;
+extern const f32 float_0p75_80419a68;
+extern const f64 double_to_int_mask_802c2de0;
+extern const f64 double_to_int_802c2df0;
 extern const f32 float_neg1_80419a8c;
 extern const f32 float_deg2rad_80419a4c;
 extern const f32 float_neg0p5_80419a88;
@@ -1799,10 +1809,190 @@ void animPaperPoseDisp(CameraId camId, void* param) {
     }
 }
 
+// AnimData's paper fields (not declared in the header's truncated AnimData).
+#define ANIMDATA_F44(d) (*(f32*)((u8*)(d) + 0x44))
+#define ANIMDATA_F48(d) (*(f32*)((u8*)(d) + 0x48))
+#define ANIMDATA_F50(d) (*(f32*)((u8*)(d) + 0x50))
+#define ANIMDATA_F54(d) (*(f32*)((u8*)(d) + 0x54))
+// AnimationPose fields the header keeps as opaque padding.
+#define POSE_I0x98(p) (*(smartEntry**)((u8*)(p) + 0x98))
+#define POSE_I0x9C(p) (*(s32*)((u8*)(p) + 0x9C))
+#define POSE_TEXOBJ(p) (*(GXTexObj*)((u8*)(p) + 0xA0))
+#define POSE_S0x114(p) (*(s16*)((u8*)(p) + 0x114))
+#define POSE_S0x116(p) (*(s16*)((u8*)(p) + 0x116))
+#define POSE_S0x118(p) (*(s16*)((u8*)(p) + 0x118))
+#define POSE_S0x11A(p) (*(s16*)((u8*)(p) + 0x11A))
+#define POSE_F0x104(p) (*(f32*)((u8*)(p) + 0x104))
+#define POSE_F0x108(p) (*(f32*)((u8*)(p) + 0x108))
+#define POSE_F0x10C(p) (*(f32*)((u8*)(p) + 0x10C))
+#define POSE_F0x110(p) (*(f32*)((u8*)(p) + 0x110))
+
+extern GXColor dat_80419a34;
+extern GXColor dat_80419a38;
+
 // dont_inline keeps animPaperPoseDispSub a real bl from animPaperPoseDisp (retail emits one).
 #pragma dont_inline on
-// NONMATCHING (0.17%): empty placeholder, not decompiled yet.
+// Signals/offsets/logic/constants all match; the only diffs are the callee-saved GPR map.
+// The original keeps pose in r30, animData in r29, materialFlag in r31, flags in r28 and
+// materialLightFlag in r27, and reuses r27/r31/r28 for x/c/b in the y-flip block; this
+// compiler instead assigns pose r28, flags r27, materialFlag r30, materialLightFlag r31.
+// Declaration order, use order, -O pragmas (opt_lifetimes/opt_common_subs/opt_propagation),
+// optimize_for_size and a struct copy were all tried and do not move `pose` off r28.
+// NONMATCHING (96.10%): callee-saved register allocation only.
 void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
+    AnimData* animData;
+    AnimationPoseData* data;
+    GXColor color0;
+    GXColor color1;
+    Mtx mtxTrans;
+    Mtx mtxSaved;
+    f32 f31;
+    f32 f30;
+    u16 left;
+    u16 top;
+    u16 right;
+    u16 bottom;
+    s32 materialLightFlag;
+    s32 flags;
+    s32 materialFlag;
+    s32 x;
+    s32 y;
+    s32 y2;
+    s32 b;
+    s32 c;
+    u16 w;
+    u16 h;
+    f32 scale;
+
+    f31 = float_8_80419a70;
+
+    if ((pose->flags & 1) == 0) {
+        return;
+    }
+
+    data = animPoseGetBaseData(pose);
+    animData = ANIM_POSE_DATA_ANIMS(data)[pose->animId].data;
+
+    f31 *= float_25p74_80419a74 / (ANIMDATA_F54(animData) - ANIMDATA_F48(animData));
+    f30 = float_0p75_80419a68 * (f32)DEMOGetRenderModeObj()->efbHeight;
+
+    sysWaitDrawSync();
+    GXClearBoundingBox();
+
+    PSMTXTrans(mtxTrans, float_0_80419a48,
+               float_0p25_80419a6c * -(f32)DEMOGetRenderModeObj()->efbHeight - ANIMDATA_F48(animData) * f31,
+               float_0_80419a48);
+
+    materialFlag = pose->materialFlag;
+    materialLightFlag = pose->materialLightFlag;
+    flags = pose->flags;
+    color0 = pose->materialColor;
+    color1 = pose->materialColor2;
+    pose->flags &= ~8;
+    pose->materialColor = dat_80419a34;
+    pose->materialColor2 = dat_80419a38;
+    pose->materialLightFlag = 0;
+
+    if (pose->vivianType != 0) {
+        PSMTXCopy(pose->matrix, mtxSaved);
+        PSMTXCopy(mtxTrans, pose->matrix);
+    }
+
+    _animPoseDrawMtx(pose, mtxTrans, 2, float_0_80419a48, f31);
+
+    pose->flags = flags;
+    pose->materialFlag = materialFlag;
+    pose->materialColor = color0;
+    pose->materialColor2 = color1;
+    pose->materialLightFlag = materialLightFlag;
+    if (pose->vivianType != 0) {
+        PSMTXCopy(mtxSaved, pose->matrix);
+    }
+
+    sysWaitDrawSync();
+    GXReadBoundingBox(&left, &top, &right, &bottom);
+
+    if (left > right) {
+        left = 0;
+        top = 0;
+        right = 0x10;
+        bottom = 0x10;
+    }
+
+    if ((pose->flags & 2) && (pose->flags & 4) && gp->inBattle) {
+        x = (s32)(ANIMDATA_F44(animData) * f31 + (f32)(DEMOGetRenderModeObj()->fbWidth / 2));
+        y = (s32)(ANIMDATA_F50(animData) * f31 + (f32)(DEMOGetRenderModeObj()->fbWidth / 2));
+        y2 = (s32)(f30 - f31 * (ANIMDATA_F54(animData) - ANIMDATA_F48(animData)));
+        b = (s32)f30;
+        if (x <= left && y >= right && y2 <= top && b >= bottom) {
+            left = x;
+            right = y;
+            top = y2;
+            bottom = b;
+        }
+    }
+
+    if (left < 2) left = 2;
+    if (top < 2) top = 2;
+    if (right > DEMOGetRenderModeObj()->fbWidth - 2) right = DEMOGetRenderModeObj()->fbWidth - 2;
+    if (bottom > DEMOGetRenderModeObj()->efbHeight - 2) bottom = DEMOGetRenderModeObj()->efbHeight - 2;
+
+    if (pose->flags & 2) {
+        if (pose->flags & 4) {
+            x = (DEMOGetRenderModeObj()->fbWidth / 2) - left;
+            c = x;
+            y = right - (DEMOGetRenderModeObj()->fbWidth / 2);
+            if (x < y) c = y;
+            x = (s32)(float_0p5_80419a64 * (f32)c);
+            b = (s32)(float_0p14881_80419a78 * (f32)(bottom - top));
+            POSE_S0x114(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
+            POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
+            scale = float_8_80419a70 / f31;
+            POSE_S0x118(pose) = top - b;
+            POSE_S0x11A(pose) = bottom + b;
+            pose->field_0xF8 = scale * ((f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / float_150_80419a7c);
+            pose->field_0xFC = scale * ((f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / float_215_80419a80);
+            pose->field_0x100 = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
+            pose->flags &= ~4;
+        } else {
+            x = (DEMOGetRenderModeObj()->fbWidth / 2) - left;
+            c = x;
+            y = right - (DEMOGetRenderModeObj()->fbWidth / 2);
+            if (x < y) c = y;
+            x = (s32)(float_0p5_80419a64 * (f32)c);
+            b = (s32)(float_0p14881_80419a78 * (f32)(bottom - top));
+            POSE_S0x114(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
+            POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
+            scale = float_8_80419a70 / f31;
+            POSE_S0x118(pose) = top - b;
+            POSE_S0x11A(pose) = bottom + b;
+            pose->field_0xF8 = scale * ((f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / float_150_80419a7c);
+            pose->field_0xFC = scale * ((f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / float_215_80419a80);
+            pose->field_0x100 = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
+        }
+    }
+
+    left -= 2;
+    left -= left & 1;
+    top -= 2;
+    top -= top & 1;
+    right += 2;
+    right += right & 1;
+    bottom += 2;
+    bottom += bottom & 1;
+    w = right - left;
+    h = bottom - top;
+    POSE_F0x104(pose) = ((f32)POSE_S0x114(pose) - (f32)left) / (f32)(POSE_S0x116(pose) - POSE_S0x114(pose));
+    POSE_F0x108(pose) = ((f32)POSE_S0x118(pose) - (f32)top) / (f32)(POSE_S0x11A(pose) - POSE_S0x118(pose));
+    POSE_F0x10C(pose) = (f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / (f32)w;
+    POSE_F0x110(pose) = (f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / (f32)h;
+    GXSetTexCopySrc(left, top, w, h);
+    GXSetTexCopyDst(w, h, 5, 0);
+    POSE_I0x98(pose) = smartAlloc(GXGetTexBufferSize(w, h, 5, 0, 0), 3);
+    GXCopyTex(*(void**)POSE_I0x98(pose), 1);
+    GXPixModeSync();
+    GXInitTexObj(&POSE_TEXOBJ(pose), *(void**)POSE_I0x98(pose), w, h, 5, 0, 0, 0);
+    POSE_I0x9C(pose) = 0;
 }
 #pragma dont_inline reset
 

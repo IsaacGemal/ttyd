@@ -340,11 +340,30 @@ void effKemuri1Main(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effKemuri1Disp, effect);
 }
 
-// Draws every live entry as a camera-facing textured quad.
-// NONMATCHING (91.71%): the frame is 0x180 instead of 0x160 (two more saved FPRs, f27/f28), the
-// shared `fneg` is CSE'd differently, registers are permuted, and the int->float magic double is a
-// local @263@ instead of double_to_int_802fa898.
+// Draws every live entry as a camera-facing textured quad. Matching uses the same tricks as the sibling
+// effKemuri8Disp/effKemuri9Disp: a `half` local held in f29, the colour helpers above, and a two-variable
+// size (size/size2) with 0.0f/1.0f literals in the vertex stream.
+#ifdef MUST_MATCH
+// Building each colour and making its GXSetChanMatColor call inside a void inline pairs the local with
+// its outgoing copy (0x8/0xc and 0x10), so the TEV colour's by-value temp lands at 0x14 as the
+// original's does (the plain `GXColor color` local would take 0x14 instead). Same shape as eff_kemuri8.
+static inline void kemuri1SetChanMatColorA(void) {
+	GXColor c = dat_8041f234;
+	GXSetChanMatColor(4, c);
+}
+
+static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
+	GXColor c = unk_80423168;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = 0xFF;
+	GXSetChanMatColor(4, c);
+}
+#endif
+
 void effKemuri1Disp(CameraId camId, void* param) {
+	f32 half = 0.5f;
 	EffectEntry* effect = param;
 	effKemuri1Data* data = effect->userdata;
 	CameraEntry* cam;
@@ -353,15 +372,16 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	Mtx mtxScale;
 	Mtx mtxRot;
 	Mtx mtxBase;
-	s32 field0;
 	s32 field1;
+	s32 field0;
 	f32 scrollX;
 	f32 scrollY;
 	f32 scale;
 	f32 size;
+	f32 size2;
 	s32 type;
-	s32 i;
 	s32 j;
+	s32 i;
 
 	cam = camGetPtr(camId);
 	type = data->type;
@@ -369,10 +389,14 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	field1 = data->field_0x48;
 
 	scale = float_1_8041f238;
-	if (type < 8) {
-		if (type >= 5) {
-			scale = float_0p5_8041f23c;
-		}
+	switch (type) {
+	case 5:
+	case 6:
+	case 7:
+		scale = float_0p5_8041f23c;
+		break;
+	default:
+		break;
 	}
 
 	PSMTXTrans(mtxTmp, data->position.x, data->position.y, data->position.z);
@@ -414,8 +438,8 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 13, 1, 4, 0);
 
-	scrollX = (f32)field0 * float_0p0625_8041f244;
-	scrollY = (f32)field1 * float_0p0625_8041f244;
+	scrollX = float_0p0625_8041f244 * (f32)field0;
+	scrollY = float_0p0625_8041f244 * (f32)field1;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -435,19 +459,27 @@ void effKemuri1Disp(CameraId camId, void* param) {
 
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
+#ifdef MUST_MATCH
+				kemuri1SetChanMatColorA();
+#else
 				GXSetChanMatColor(4, dat_8041f234);
-				PSMTXTrans(mtxTmp, data->position.x + float_2_8041f24c,
+#endif
+				PSMTXTrans(mtxTmp, float_2_8041f24c + data->position.x,
 					data->position.y - float_2_8041f24c, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
 				GXLoadPosMtxImm(mtxTmp, 0);
 			}
 			else {
+#ifdef MUST_MATCH
+				kemuri1SetChanMatColorB(data->field_0x44, data->field_0x45, data->field_0x46);
+#else
 				GXColor color = unk_80423168;
 				color.r = data->field_0x44;
 				color.g = data->field_0x45;
 				color.b = data->field_0x46;
 				color.a = 0xFF;
 				GXSetChanMatColor(4, color);
+#endif
 				PSMTXTrans(mtxTmp, data->position.x, data->position.y, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
 				GXLoadPosMtxImm(mtxTmp, 0);
@@ -455,6 +487,33 @@ void effKemuri1Disp(CameraId camId, void* param) {
 
 			GXBegin(0x80, 0, 4);
 
+#ifdef MUST_MATCH
+			// Two variables so MWCC emits the original's duplicate `fmr` and four separate size*0.5 corners;
+			// the 0.0f/1.0f literals make it reload them per store instead of hoisting them into extra FPRs.
+			switch (type) {
+			case 0:
+				size = float_16_8041f250;
+				size2 = size;
+				break;
+			case 1:
+				size = float_24_8041f254;
+				size2 = size;
+				break;
+			default:
+				size = float_32_8041f258;
+				size2 = size;
+				break;
+			}
+
+			GXPosition3f32(-size2 * half, size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(size2 * half, size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(size2 * half, -size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-size2 * half, -size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+#else
 			switch (type) {
 			case 0:
 				size = float_16_8041f250;
@@ -467,14 +526,15 @@ void effKemuri1Disp(CameraId camId, void* param) {
 				break;
 			}
 
-			GXPosition3f32(-size * float_0p5_8041f23c, size * float_0p5_8041f23c, float_0_8041f248);
+			GXPosition3f32(-size * half, size * half, float_0_8041f248);
 			GXTexCoord2f32(float_0_8041f248, float_0_8041f248);
-			GXPosition3f32(size * float_0p5_8041f23c, size * float_0p5_8041f23c, float_0_8041f248);
+			GXPosition3f32(size * half, size * half, float_0_8041f248);
 			GXTexCoord2f32(float_1_8041f238, float_0_8041f248);
-			GXPosition3f32(size * float_0p5_8041f23c, -size * float_0p5_8041f23c, float_0_8041f248);
+			GXPosition3f32(size * half, -size * half, float_0_8041f248);
 			GXTexCoord2f32(float_1_8041f238, float_1_8041f238);
-			GXPosition3f32(-size * float_0p5_8041f23c, -size * float_0p5_8041f23c, float_0_8041f248);
+			GXPosition3f32(-size * half, -size * half, float_0_8041f248);
 			GXTexCoord2f32(float_0_8041f248, float_1_8041f238);
+#endif
 		}
 	}
 }

@@ -27,6 +27,8 @@ extern GXColor unk_80422fa4;
 extern u8 cube_dl_top[0x40];
 extern u8 cube_dl_bottom[0x20];
 extern u8 cube_dl_side[0x20];
+extern Vec vertex_tbl[];
+extern const f32 float_1000_8041992c;
 extern const f32 float_0_804198f4;
 extern const f32 float_0p5_804198f8;
 extern const f32 float_0p2_8041990c;
@@ -40,7 +42,10 @@ extern const f32 float_16_80419900;
 extern const f32 float_neg1_80419908;
 
 typedef struct ShadowConfigFields {
-    u8 pad00[0x28];
+    u8 pad00[0x4];
+    Vec camPos;  //0x4
+    Vec up;      //0x10
+    Vec target;  //0x1C
     f32 unk28;
     f32 unk2C;
     f32 unk30;
@@ -568,7 +573,7 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
 // NONMATCHING (95.81%): body matches. This compiler hoists `negSize * 0.5f` out of the entry loop into f31
 // (the original keeps -2.5 in f30 and computes the product per iteration), which shifts the immediate-mode
 // FP registers; the two GXColor argument-copy stack slots are also swapped (0x10/0x14 vs 0x14/0x10).
-void shadowCharShadowDisp_Texture(CameraId camId) {
+void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
     u16 left, top, right, bottom;
@@ -653,7 +658,7 @@ static inline void shadowPolyMatColor(void) {
 }
 #endif
 
-void shadowCharShadowDisp_Polygon(CameraId camId) {
+void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
     u16 left, top, right, bottom;
@@ -736,12 +741,20 @@ static inline GXColor shadowProjColor(u8 v) {
 }
 #endif
 
-// NONMATCHING (93.08%): body and control flow match. Remaining diffs are mwcc allocation choices: the
-// GXColor argument scratch slots, the work/config register swap (r30/r29), the C_MTXLookAt Vec copies
-// (original loads all nine words then stores, ours interleaves) and two .sdata2 pool labels.
+// Body, control flow and the work/config register pair (r29/r30) match. MUST_MATCH allocation choices:
+// `work` is `void*` with `(CharShadowWork*)` casts at each use (the natural `CharShadowWork* work`
+// makes MWCC pick r30/r29 and drops to 96.80%); and the C_MTXLookAt sources are copied through nine
+// explicit u32 temps, which is what makes MWCC batch them as "load all nine words, then store all
+// nine" like retail instead of interleaving (that alone is +2.3%). The two .sdata2 `~~` pool labels
+// vanish when the unit links. Still differs only in MWCC allocation/scheduling: inside that batched
+// Vec copy MWCC colours the nine temps in the opposite register order from retail (ours
+// r7..r12,r26,r27,r0 vs retail r27,r26,r12..r7,r0), the GXColor argument scratch slots are permuted
+// (ours 0x18/0x14/0x10/0x8/0xc vs retail 0x8/0xc/0x18/0x10/0x14), and one `fsubs f3,f2,f29` is
+// scheduled one slot later.
+// NONMATCHING (99.27%): register/stack-slot allocation and one scheduler slot, as detailed above.
 void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
-    CharShadowWork* work;
     ShadowConfigFields* config;
+    void* work;
     ShadowEntry* entry;
 #ifdef MUST_MATCH
     const u8* vecs;
@@ -754,11 +767,11 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     Vec camPos;
     Vec camUp;
     Vec camTarget;
+    f32 zero;
     f32 w;
     f32 d;
     f32 we;
     f32 de;
-    f32 zero;
     s32 i;
 
     (void)camId;
@@ -767,8 +780,8 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 #ifdef MUST_MATCH
     vecs = (const u8*)&vec3_802c1a90;
 #endif
-    config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
-    entry = work->entries;
+    config = (ShadowConfigFields*)(shadowConfig + ((CharShadowWork*)work)->unk8 * 0x48);
+    entry = ((CharShadowWork*)work)->entries;
     view = camGetCurPtr()->view;
     alpha = cswp->unk100.a;
 
@@ -827,9 +840,9 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXPosition1x8(3);
         GXPosition1x8(4);
         GXPosition1x8(5);
-        work->unk4++;
+        ((CharShadowWork*)work)->unk4++;
     }
-    if (work->unk4 != 0) {
+    if (((CharShadowWork*)work)->unk4 != 0) {
         C_MTXOrtho(projMtx, config->unk2C, -config->unk2C, config->unk28, -config->unk28, config->unk30, config->unk34);
         GXSetProjection(projMtx, 1);
         GXSetBlendMode(1, 4, 5, 0);
@@ -840,9 +853,18 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXSetVtxDesc(0xB, 1);
         GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
 #ifdef MUST_MATCH
-        camPos = *(const Vec*)(vecs + 0xC);
-        camUp = *(const Vec*)(vecs + 0x18);
-        camTarget = *(const Vec*)(vecs + 0x24);
+        {
+            /* Copy the three camera basis vectors through explicit word temps: this forces MWCC to
+               emit retail's "nine loads, then nine stores" instead of interleaving load/store. */
+            const u32* vp = (const u32*)(vecs + 0xC);
+            s32 v0 = vp[0], v1 = vp[1], v2 = vp[2];
+            s32 v3 = vp[3], v4 = vp[4], v5 = vp[5];
+            s32 v6 = vp[6], v7 = vp[7], v8 = vp[8];
+
+            ((u32*)&camPos)[0] = v0; ((u32*)&camPos)[1] = v1; ((u32*)&camPos)[2] = v2;
+            ((u32*)&camUp)[0] = v3; ((u32*)&camUp)[1] = v4; ((u32*)&camUp)[2] = v5;
+            ((u32*)&camTarget)[0] = v6; ((u32*)&camTarget)[1] = v7; ((u32*)&camTarget)[2] = v8;
+        }
 #else
         camPos = vec3_802c1a9c;
         camUp = vec3_802c1aa8;
@@ -852,42 +874,43 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXLoadPosMtxImm(lookAt, 0);
         w = -config->unk28;
         d = config->unk2C;
-        de = d * float_0p2_8041990c;
-        we = w * float_0p2_8041990c;
-        zero = float_0_804198f4;
+        de = float_0p2_8041990c * d;
+        we = float_0p2_8041990c * w;
         GXBegin(GX_QUADS, GX_VTXFMT0, 16);
-        GXPosition3f32(zero - w, zero, zero - d);
+        {
+        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(zero + w, zero, zero - d);
+        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(zero + w, zero, de + (zero - d));
+        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, de + (float_0_804198f4 - d));
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(zero - w, zero, de + (zero - d));
+        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, de + (float_0_804198f4 - d));
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(zero - w, zero, zero + d);
+        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(zero + w, zero, zero + d);
+        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(zero + w, zero, (zero + d) - de);
+        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, (float_0_804198f4 + d) - de);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(zero - w, zero, (zero + d) - de);
+        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, (float_0_804198f4 + d) - de);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(zero - w, zero, zero - d);
+        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(zero - w, zero, zero + d);
+        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(we + (zero - w), zero, zero + d);
+        GXPosition3f32(we + (float_0_804198f4 - w), float_0_804198f4, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(we + (zero - w), zero, zero - d);
+        GXPosition3f32(we + (float_0_804198f4 - w), float_0_804198f4, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(zero + w, zero, zero - d);
+        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(zero + w, zero, zero + d);
+        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32((zero + w) - we, zero, zero + d);
+        GXPosition3f32((float_0_804198f4 + w) - we, float_0_804198f4, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32((zero + w) - we, zero, zero - d);
+        GXPosition3f32((float_0_804198f4 + w) - we, float_0_804198f4, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0);
+        }
     }
 }
 
@@ -896,7 +919,7 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 // reserving r3 for `&query` and putting `_filter` straight in r4. The declaration order below then keeps
 // mtx in r29 and i in r30.
 #pragma opt_propagation off // needed, with `q`, so MWCC reserves r3 for &query and puts _filter in r4
-void shadowCharShadowDisp_Collision(void) {
+void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
     ShadowEntry* entry = cswp->entries;
     s32 i;
     HitCheckQuery query;
@@ -984,22 +1007,162 @@ void shadowMain(void) {
     dswp->unk4 = 0;
 }
 
-// NONMATCHING (85.96%): 5 instructions differ, 15 missing, 9 extra, plus register differences.
-void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
+// The viewport/scissor/look-at/projection block the original expands identically for the
+// proj, proj+depth and char shadow draw paths; it was a macro in the source.
+// The 0x4/0x10/0x1C offsets are the camera vectors in the config blob's unnamed head
+// (ShadowConfigFields only names 0x28+); 0x3C is ProjShadowWork's pad3C. No field exists for either.
+#define SHADOW_DISP_PROJ_SETUP(w, extra)                                                                                                   \
+    do {                                                                                                                                   \
+        u16 size;                                                                                                                          \
+        Mtx44* proj;                                                                                                                       \
+        ShadowConfigFields* cfg;                                                                                                           \
+        Vec camPos;                                                                                                                        \
+        GXInvalidateTexAll();                                                                                                              \
+        size = ShadowSizeTbl[((ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48))->unk40];                                               \
+        extra;                                                                                                                             \
+        GXGetViewportv(tmp_vp);                                                                                                            \
+        GXGetScissor(&tmp_sci[0], &tmp_sci[1], &tmp_sci[2], &tmp_sci[3]);                                                                  \
+        GXSetViewport(0.0f, 0.0f, (f32)size, (f32)size, 0.0f, 1.0f);                                                                        \
+        GXSetScissor(1, 1, size - 2, size - 2);                                                                                            \
+        cfg = (ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48);                                                                       \
+        proj = (Mtx44*)((u8*)(w) + 0x3C);                                                                                                  \
+        camPos = cfg->camPos;                                                                                                              \
+        C_MTXLookAt(w->unkC, &camPos, &cfg->up, &cfg->target);                                                              \
+        if (cfg->unk38 == 0) {                                                                                                             \
+            C_MTXFrustum(*proj, cfg->unk2C, -cfg->unk2C, cfg->unk28, -cfg->unk28, cfg->unk30, cfg->unk34);                                 \
+        }                                                                                                                                  \
+        else {                                                                                                                             \
+            C_MTXOrtho(*proj, cfg->unk2C, -cfg->unk2C, cfg->unk28, -cfg->unk28, cfg->unk30, cfg->unk34);                                   \
+        }                                                                                                                                  \
+        GXSetProjection(*shadowDispProjMtx(w), ((ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48))->unk38);                                                                                                \
+        PSMTXCopy(camGetCurPtr()->view, tmp_view);                                                                                         \
+        PSMTXCopy(w->unkC, camGetCurPtr()->view);                                                                          \
+    } while (0)
+
+#ifdef MUST_MATCH
+// MUST_MATCH: building the by-value GXColor in an inlined helper is what puts its copy in the lower
+// scratch slot (r1+0x8) and the GXSetFog copy in r1+0xc, as the original does; writing the colour
+// inline puts them the other way round. The independent form is under #else.
+static inline void shadowDispMatColor(void) {
+    GXColor c = cswp->unk100;
+    GXSetChanMatColor(4, c);
+}
+#endif
+
+// The projection matrix as a fresh base+0x3C expression (writing it through the `proj`
+// local CSEs and the original recomputes it for GXSetProjection).
+static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*)w->unkC + 0x30); }
+
+// The body and all constants match; the only diff is the .data base register. The original reaches
+// `shadowConfig + unk8*0x48` (and testKagePosArray / vertex_tbl) as `addi rX, r31, 0x40` off the
+// shared .data base r31 = lbl_80303460, because shadowConfig (+0x40), testKagePosArray (+0xE0) and
+// vertex_tbl (+0x2C0) are defined in this unit's .data. They are only `extern` here, so MWCC
+// materialises each with `lis/addi shadowConfig`; that is the whole diff (the base setup plus the
+// register pairing it forces). With stand-in .data objects at those offsets the function reaches
+// 99.25% (only the size register and one `mr`/`addi` on GXSetProjection remain). See REPORT.md.
+// NONMATCHING (92.38%): only the .data base register (shadowConfig/testKagePosArray/vertex_tbl are extern).
+void shadowDisp(CameraId cameraId, void* param) {
+    DispEntry* work = dispGetCurWork();
     ShadowConfigFields* config;
+    ProjShadowWork* workp;
+
+    if (cameraId == CAMERA_OFFSCREEN2 || cameraId == CAMERA_3D || cameraId == CAMERA_3D_EFFECTA || cameraId == CAMERA_3D_EFFECTB) {
+        shadowCharShadowDisp_Polygon(cameraId, param);
+        camGetCurPtr();
+        GXSetNumChans(1);
+        GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+#ifdef MUST_MATCH
+        shadowDispMatColor();
+#else
+        {
+            GXColor color = cswp->unk100;
+            GXSetChanMatColor(4, color);
+        }
+#endif
+        GXSetNumTexGens(0);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(0, 0xFF, 0xFF, 4);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+        GXSetTevAlphaIn(0, 7, 1, 5, 7);
+        GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+        GXSetBlendMode(1, 4, 5, 0);
+        GXSetZMode(1, 3, 0);
+        GXSetZCompLoc(1);
+        GXSetAlphaCompare(7, 0, 0, 7, 0);
+        GXSetCurrentMtx(0);
+        GXSetCullMode(0);
+        GXSetArray(9, testKagePosArray, 0xC);
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 2);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 2);
+        GXSetVtxDesc(0xB, 2);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+        GXSetArray(9, vertex_tbl, 0xC);
+        GXSetArray(0xB, color_tbl, 4);
+        cylinderShadowDraw(cameraId, param);
+        shadowCharShadowDisp_Texture(cameraId, param);
+    }
+    else if (cameraId == CAMERA_SHADOW) {
+        switch (work->renderMode) {
+        case 5: {
+            shadowCharShadowDisp_Collision(cameraId, param);
+            config = (ShadowConfigFields*)(shadowConfig + cswp->unk8 * 0x48);
+            if (*(s32*)config == 1) {
+                CameraEntry* cam = camGetPtr(CAMERA_3D);
+
+                config->camPos.x = cam->cameraAt.x;
+                config->camPos.y = float_1000_8041992c + cam->cameraAt.y;
+                config->camPos.z = cam->cameraAt.z;
+                config->up.x = float_0_804198f4;
+                config->up.y = float_0_804198f4;
+                config->up.z = float_neg1_80419908;
+                config->target.x = cam->cameraAt.x;
+                config->target.y = cam->cameraAt.y;
+                config->target.z = cam->cameraAt.z;
+            }
+            workp = (ProjShadowWork*)cswp;
+            SHADOW_DISP_PROJ_SETUP(workp, (void)0);
+            shadowCharShadowDisp_Projection(cameraId, param);
+            projShadowEnd(cameraId, (ProjShadowWork*)cswp);
+            break;
+        }
+        case 0: {
+            workp = pswp;
+            SHADOW_DISP_PROJ_SETUP(workp, (void)0);
+            break;
+        }
+        case 2: {
+            projShadowEnd(cameraId, pswp);
+            workp = (ProjShadowWork*)dswp;
+            SHADOW_DISP_PROJ_SETUP(workp, GXSetColorUpdate(0));
+            break;
+        }
+        case 7:
+            depthShadowEnd(cameraId, dswp);
+            break;
+        }
+    }
+}
+
+void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
+    u32 flag;
+    ShadowConfigFields* config;
+    ShadowConfigFields* config2;
     CameraEntry* cam;
-    Mtx mtx;
     Mtx mtx2;
-    GXTexObj* texObj;
-    smartEntry* smart;
-    f32 f29;
-    f32 f30;
+    Mtx mtx;
     f32 f31;
+    f32 f30;
+    f32 f29;
     f32 f4;
-    s32 fmt;
     s32 sizeFmt;
-    s32 size;
-    s32 flag;
+    s32 fmt;
+    u16 size;
 
     cam = camGetCurPtr();
     PSMTXCopy(tmp_view, cam->view);
@@ -1019,32 +1182,29 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         }
         if (work->unk0 & 2) {
             size = ShadowSizeTbl[config->unk40];
-            smart = smartAlloc(GXGetTexBufferSize(size, size, sizeFmt, 0, 0), 3);
-            *(smartEntry**)((u8*)work + 0xFC) = smart;
+            *(smartEntry**)((u8*)work + 0xFC) = smartAlloc(GXGetTexBufferSize(size, size, sizeFmt, 0, 0), 3);
         }
         GXSetTexCopySrc(0, 0, size, size);
         GXSetTexCopyDst(size, size, fmt, 0);
         GXSetZMode(1, 3, 1);
-        smart = *(smartEntry**)((u8*)work + 0xFC);
-        GXCopyTex(smart->address, 1);
+        GXCopyTex(((smartEntry*)*(void**)((u8*)work + 0xFC))->address, 1);
         GXPixModeSync();
-        texObj = (GXTexObj*)((u8*)work + 0xDC);
-        GXInitTexObj(texObj, smart->address, size, size, sizeFmt, 0, 0, 0);
-        GXInitTexObjLOD(texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
-        config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
+        GXInitTexObj((GXTexObj*)&work->unkC[0xD0], ((smartEntry*)*(void**)((u8*)work + 0xFC))->address, size, size, sizeFmt, 0, 0, 0);
+        GXInitTexObjLOD((GXTexObj*)&work->unkC[0xD0], 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        config2 = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
+        flag = (config2->unk3C > 2);
         if (&work->unkC[0x70] != NULL) {
-            flag = (config->unk3C > 2);
-            if (config->unk38 == 0) {
-                C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, 0.5f, 0.5f, 0.5f, 0.5f);
+            if (config2->unk38 == 0) {
+                C_MTXLightFrustum(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, config2->unk30, 0.5f, 0.5f, 0.5f, 0.5f);
             }
             else {
-                C_MTXLightOrtho(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, 0.5f, 0.5f, 0.5f, 0.5f);
+                C_MTXLightOrtho(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, 0.5f, 0.5f, 0.5f, 0.5f);
             }
             PSMTXConcat(mtx, (f32(*)[4])work->unkC, (f32(*)[4])&work->unkC[0x70]);
         }
         if (&work->unkC[0xA0] != NULL) {
-            f29 = config->unk30;
-            f30 = config->unk34;
+            f29 = config2->unk30;
+            f30 = config2->unk34;
             f31 = f30 - f29;
             PSMTXScale(mtx2, 0.0f, 0.0f, 0.0f);
             if (flag) {
@@ -1053,20 +1213,26 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
             else {
                 f4 = float_16_80419900;
             }
-            if (config->unk38 == 0) {
-                mtx2[0][2] = f30 / f31;
-                mtx2[0][3] = f30 * f29 / f31;
-                mtx2[1][2] = (f30 / f31) * f4;
-                mtx2[1][3] = (f30 * f29 / f31) * f4;
+            if (config2->unk38 == 0) {
+                f32 d = f30 / f31;
+                f32 n = f30 * f29 / f31;
+
+                mtx2[0][2] = d;
+                mtx2[0][3] = n;
+                mtx2[1][2] = d * f4;
+                mtx2[1][3] = n * f4;
                 mtx2[2][2] = float_1_80419904;
-                mtx2[2][3] = config->unk44;
+                mtx2[2][3] = config2->unk44;
             }
             else {
-                mtx2[0][2] = float_neg1_80419908 / f31;
-                mtx2[0][3] = -f29 / f31;
-                mtx2[1][2] = (float_neg1_80419908 / f31) * f4;
-                mtx2[1][3] = (-f29 / f31) * f4;
-                mtx2[2][3] = float_1_80419904 + config->unk44;
+                f32 d = float_neg1_80419908 / f31;
+                f32 n = -f29 / f31;
+
+                mtx2[0][2] = d;
+                mtx2[0][3] = n;
+                mtx2[1][2] = d * f4;
+                mtx2[1][3] = n * f4;
+                mtx2[2][3] = float_1_80419904 + config2->unk44;
             }
             PSMTXConcat(mtx2, (f32(*)[4])work->unkC, (f32(*)[4])&work->unkC[0xA0]);
         }

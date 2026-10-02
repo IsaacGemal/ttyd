@@ -222,7 +222,9 @@ extern const char str_802C5988[];
 extern const char str_802C59A4[];
 extern const char str_802C59BC[];
 extern const char str_802C59D4[];
+extern const Vec vec3_802c5880;
 extern const Vec vec3_802c588c;
+extern const Vec vec3_802c5898;
 extern const Vec vec3_802c58a4;
 #define RO(base, off, sym) ((const char*)&(sym))
 #endif
@@ -438,11 +440,13 @@ extern const f32 float_3p1416_8041a7e0;
 extern const f32 float_neg23p7_8041a834;
 extern const f32 float_5p8_8041a838;
 
-// NONMATCHING (87.30%): 2 instructions differ, 8 missing, 16 extra, plus register differences.
+// NONMATCHING (96.55%): the up = vec3_802c5820 assignment must come after y = a2 + a for the
+// FP register colouring; what remains is only the prologue interleaving of the vec-copy loads
+// with the float_3p1416/float_180/float_0p5/float_5p8 constant loads (the loop body matches).
 void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec p;
-    Vec up = vec3_802c5820;
+    Vec up;
     Vec out1;
     Vec out2;
     f32 outF;
@@ -457,6 +461,7 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     radius = float_neg23p7_8041a834;
     *outY = float_neg1_8041a7dc;
     y = a2 + a;
+    up = vec3_802c5820;
 
     for (i = 0; i < 8; i++) {
         outF = y;
@@ -493,19 +498,24 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
 extern const f32 float_9_8041a83c;
 extern const f32 float_3_8041a7f0;
 extern const f32 float_90_8041a81c;
-extern const Vec vec3_802c5808;
-extern const Vec vec3_802c5814;
+extern const volatile Vec vec3_802c5808;
+extern const volatile Vec vec3_802c5814;
 
-// NONMATCHING (83.62%): stack frame 0x100 vs 0x110; one extra callee-saved GPR; the dead
-// ours and removed, and the query/out1 locals land at different offsets.
+// The sin/cos colouring and the hit-check join now match. The ROUND_MILLI register colours are
+// reproduced with volatile reads of the float constants (marked MUST_MATCH): the original reloads
+// float_0 per component and float_1000 for the y component, which MW only does if the loads are
+// not CSE-able. The dead out2 copy and the `hit=0` join are also under MUST_MATCH.
+// NONMATCHING (98.73%): two scheduler placements remain (lwz r7 in the p build, one ROUND block).
 void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
     MarioWork* wp = marioGetPtr();
     f32 ox;
     f32 oz;
-    Vec dir;
-    Vec p;
-    Vec out2;
+    f32 ss;
+    f32 cc;
     Vec out1;
+    Vec out2;
+    Vec p;
+    Vec dir;
     HitCheckQuery query;
     HitEntry* hit;
     f32 y;
@@ -525,32 +535,41 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
             break;
         case 1:
             rad = float_3p1416_8041a7e0 * (float_90_8041a81c + wp->directionView) / float_180_8041a7cc;
-            ox = float_9_8041a83c * (f32)sin(rad);
-            oz = float_9_8041a83c * -(f32)cos(rad);
+            ss = (f32)sin(rad);
+            ox = float_9_8041a83c * ss;
+            cc = (f32)cos(rad);
+            oz = float_9_8041a83c * -cc;
             movePos(&ox, &oz, float_3_8041a7f0, wp->directionView);
             break;
         case 2:
             rad = float_3p1416_8041a7e0 * (wp->directionView - float_90_8041a81c) / float_180_8041a7cc;
-            ox = float_9_8041a83c * (f32)sin(rad);
-            oz = float_9_8041a83c * -(f32)cos(rad);
+            ss = (f32)sin(rad);
+            ox = float_9_8041a83c * ss;
+            cc = (f32)cos(rad);
+            oz = float_9_8041a83c * -cc;
             movePos(&ox, &oz, float_3_8041a7f0, wp->directionView);
             break;
         case 3:
             rad = float_3p1416_8041a7e0 * (float_90_8041a81c + wp->directionView) / float_180_8041a7cc;
-            ox = float_9_8041a83c * (f32)sin(rad);
-            oz = float_9_8041a83c * -(f32)cos(rad);
+            ss = (f32)sin(rad);
+            ox = float_9_8041a83c * ss;
+            cc = (f32)cos(rad);
+            oz = float_9_8041a83c * -cc;
             movePos(&ox, &oz, float_3_8041a7f0, float_180_8041a7cc + wp->directionView);
             break;
         case 4:
             rad = float_3p1416_8041a7e0 * (wp->directionView - float_90_8041a81c) / float_180_8041a7cc;
-            ox = float_9_8041a83c * (f32)sin(rad);
-            oz = float_9_8041a83c * -(f32)cos(rad);
+            ss = (f32)sin(rad);
+            ox = float_9_8041a83c * ss;
+            cc = (f32)cos(rad);
+            oz = float_9_8041a83c * -cc;
             movePos(&ox, &oz, float_3_8041a7f0, float_180_8041a7cc + wp->directionView);
             break;
         }
+        p = vec3_802c5808;
         dir = vec3_802c5814;
         p.x = pos->x + ox;
-        p.y = pos->y + float_1_8041a7bc;
+        p.y = float_1_8041a7bc + pos->y;
         p.z = pos->z + oz;
         query.targetPos = p;
         query.targetDir = dir;
@@ -563,6 +582,29 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
         } else {
             hit = hitCheckVecFilter(&query, chkfilterVec);
         }
+#ifdef MUST_MATCH
+        // The original re-materialises hit=0 at the join of the two null checks and keeps a dead
+        // out2 copy guarded by a null test on the local's address; reproduce both.
+        if (hit == NULL) {
+            hit = NULL;
+            goto check_hit2;
+        }
+        out1 = query.hitPos;
+        out1.x = (f32)(s32)(float_1000_8041a7a0 * out1.x +
+                            (out1.x >= *(volatile const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                  float_1000_8041a7a0;
+        out1.y = (f32)(s32)(*(volatile const f32*)&float_1000_8041a7a0 * out1.y +
+                            (out1.y >= *(volatile const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                  float_1000_8041a7a0;
+        out1.z = (f32)(s32)(float_1000_8041a7a0 * out1.z +
+                            (out1.z >= *(volatile const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                  float_1000_8041a7a0;
+        if (&out2 != NULL) {
+            out2 = query.hitNormal;
+        }
+    check_hit2:
+        if (hit != NULL) {
+#else
         if (hit != NULL) {
             out1 = query.hitPos;
             out1.x = (f32)(s32)(float_1000_8041a7a0 * out1.x +
@@ -575,6 +617,9 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
                                 (out1.z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
                       float_1000_8041a7a0;
             out2 = query.hitNormal;
+        }
+        if (hit != NULL) {
+#endif
             if (pos->y + y >= out1.y) {
                 pos->y = out1.y - y - float_1_8041a7bc;
                 *outY = float_0_8041a7a4;
@@ -597,18 +642,74 @@ extern const f32 float_100_8041a7f8;
 extern const f32 float_0p05_8041a848;
 extern const f32 float_75_8041a840;
 extern const f32 float_50_8041a844;
-extern const Vec vec3_802c57fc;
+extern const volatile Vec vec3_802c57f0;
+extern const volatile Vec vec3_802c57fc;
+extern const u8 vec3_802c5730[];
 
-// NONMATCHING (57.32%): 21 instructions differ, 103 missing, 37 extra, plus register differences.
+// Inline sqrtf from the SDK's math.h, redeclared here because including math.h clashes with
+// math_ext.h's out-of-line sqrt. Same expansion the original used (frsqrte + NaN handling).
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+extern s32 __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+
+static inline s32 __fpclassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_NAN;
+            } else {
+                return FP_INFINITE;
+            }
+            break;
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_SUBNORMAL;
+            } else {
+                return FP_ZERO;
+            }
+            break;
+        default:
+            return FP_NORMAL;
+    }
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
+        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
+        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
+        return x * guess;
+    } else if (x < double_0_802c5938) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+
+// The f19-f31 colouring, the p build scratch and the vec3 base register still differ; see
+// REPORT.md.
+// NONMATCHING (87.36%): FP register colouring (f18/f19 vs f19-f31), the vec3 base register
+// (r31 vs r30) and the p-build scratch ordering differ.
 void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec p;
     Vec up;
     Vec hitPos;
     Vec normal;
+    Vec tmp;
     HitEntry* hit;
     f32 x0;
-    f32 y0;
     f32 f25;
     f32 f24;
     f32 f27;
@@ -629,68 +730,67 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
     s = (f32)sin(rad);
-    c = (f32)cos(rad);
     x0 = wp->wPlayerCollisionBox.x - float_0p5_8041a7c4;
     f25 = float_0p5_8041a7c4 * (x0 * s);
-    f24 = float_0p5_8041a7c4 * (x0 * -c);
+    c = (f32)cos(rad);
+    rad = *outY;
     f27 = -f25;
-    f28 = -f24;
-    y0 = *outY;
-    f26 = float_0p5_8041a7c4 * y0;
-    f22 = y0 + a;
+    f22 = rad + a;
+    f26 = float_0p5_8041a7c4 * rad;
     *outY = float_neg1_8041a7dc;
-    up = vec3_802c57fc;
+    f24 = float_0p5_8041a7c4 * (x0 * -c);
+    f28 = -f24;
     for (i = 0; i < 5; i++) {
         f32 ox;
         f32 oz;
 
-        switch (i) {
-        case 0:
+        if (i == 0) {
             ox = float_0_8041a7a4;
             oz = float_0_8041a7a4;
-            break;
-        case 1:
+        } else if (i == 1) {
             ox = f25;
             oz = f24;
-            break;
-        case 2:
+        } else if (i == 2) {
             ox = f28;
             oz = f25;
-            break;
-        case 3:
+        } else if (i == 3) {
             ox = f24;
             oz = f27;
-            break;
-        case 4:
+        } else if (i == 4) {
             ox = f27;
             oz = f28;
-            break;
         }
-        p.x = pos->x + ox;
-        p.y = pos->y + f26;
-        p.z = pos->z + oz;
         dist = f22;
+        tmp = *(const volatile Vec*)(vec3_802c5730 + 0xc0);
+        tmp.x = pos->x + ox;
+        tmp.y = pos->y + f26;
+        tmp.z = pos->z + oz;
+        p = tmp;
+        up = *(const volatile Vec*)(vec3_802c5730 + 0xcc);
         hit = marioHitCheck2(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
+            f32 nz = normal.z;
+            f32 ny = normal.y;
+            f32 nx = normal.x;
             MarioWork* wp2 = marioGetPtr();
             f32 ang;
 
             *(f32*)&wp2->field_0x1F0[0x28] =
                 (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * normal.z,
-                                                            float_100_8041a7f8 * normal.y) -
+                                                            float_100_8041a7f8 * nz,
+                                                            float_100_8041a7f8 * ny) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
                 float_100_8041a7f8;
             *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
             *(f32*)&wp2->field_0x1F0[0x30] =
                 (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * normal.x,
-                                                            float_100_8041a7f8 * normal.y) -
+                                                            float_100_8041a7f8 * nx,
+                                                            float_100_8041a7f8 * ny) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
                 float_100_8041a7f8;
-            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrt(normal.x * normal.x + normal.z * normal.z), -normal.y);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, sqrtf(nx * nx + nz * nz), -ny);
             if (!(wp->flags & 0x1000000)) {
                 f32 lim = (wp->dispFlags & 0x1000000) ? float_75_8041a840 : float_50_8041a844;
 
@@ -703,14 +803,14 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             if (hit != NULL) {
                 f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
 
-                y = y - float_0p05_8041a848 * y0;
+                y = y - float_0p05_8041a848 * rad;
                 hitPos.y = y;
-                if (pos->y + y0 >= y) {
+                if (pos->y + rad >= y) {
                     pos->y = y;
                     *outY = float_0_8041a7a4;
                     return hit;
                 } else {
-                    *outY = (y - pos->y) - y0;
+                    *outY = (y - pos->y) - rad;
                     return NULL;
                 }
             }
@@ -719,12 +819,12 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
                 f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
 
                 hitPos.y = y;
-                if (pos->y + y0 >= y) {
+                if (pos->y + rad >= y) {
                     pos->y = y;
                     *outY = float_0_8041a7a4;
                     return hit;
                 } else {
-                    *outY = (y - pos->y) - y0;
+                    *outY = (y - pos->y) - rad;
                     return NULL;
                 }
             }
@@ -747,27 +847,39 @@ extern const f32 float_2_8041a7e8;
 extern const f32 float_10_8041a7fc;
 extern const f32 float_40_8041a800;
 
-// NONMATCHING (59.03%): original keeps v.y in f31 across movePos (0xa0 frame), builds
-// targetPos before sincosf, query at 0x48; ours 0x80 and different layout. Dir is
-// {0,0,1} (sincosf called with 0.0). 0x1E0 is unnamed MarioWork padding.
+// Matches. The original builds targetPos by first copying a named zero vector
+// (vec3_802c5880 / vec3_802c5898) and then overwriting the components, and adds the
+// float_5 clearance after the copy; both shapes are needed for the exact stack layout.
+// 0x1E0 is unnamed MarioWork padding.
 HitEntry* N_dou10_yoko_yari3(void) {
-    const u8* base = vec3_802c5730;
+    const char* base = (const char*)vec3_802c5730;
     MarioWork* wp = marioGetPtr();
-    Vec v;
-    Vec dir;
-    HitCheckQuery query;
     f32 sn;
     f32 cs;
+    f32 vx;
+    f32 vy;
+    f32 vz;
+    Vec v;
+    Vec dir;
+    Vec v2;
+    Vec dir2;
+    HitCheckQuery query;
     HitEntry* hit;
 
     if (strcmp(gp->currentMapName, RO(base, 0x210, str_802C5940)) != 0) {
         return NULL;
     }
 
-    v = wp->position;
-    movePos(&v.x, &v.z, float_10_8041a7fc, wp->directionView);
-    v.y = v.y + float_5_8041a7b8;
+    vx = wp->position.x;
+    vy = wp->position.y;
+    vz = wp->position.z;
+    movePos(&vx, &vz, float_10_8041a7fc, wp->directionView);
+    v = *(const Vec*)(RO(base, 0x150, vec3_802c5880));
+    v.x = vx;
+    v.y = vy;
+    v.z = vz;
     query.targetPos = v;
+    query.targetPos.y = query.targetPos.y + float_5_8041a7b8;
     sincosf(&sn, &cs, float_0_8041a7a4);
     dir = *(const Vec*)(RO(base, 0x15C, vec3_802c588c));
     dir.x = sn;
@@ -779,15 +891,21 @@ HitEntry* N_dou10_yoko_yari3(void) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         return hit;
     }
-    v = wp->position;
-    movePos(&v.x, &v.z, float_neg10_8041a804, wp->directionView);
-    v.y = v.y + float_5_8041a7b8;
-    query.targetPos = v;
+    vx = wp->position.x;
+    vy = wp->position.y;
+    vz = wp->position.z;
+    movePos(&vx, &vz, float_neg10_8041a804, wp->directionView);
+    v2 = *(const Vec*)(RO(base, 0x168, vec3_802c5898));
+    v2.x = vx;
+    v2.y = vy;
+    v2.z = vz;
+    query.targetPos = v2;
+    query.targetPos.y = query.targetPos.y + float_5_8041a7b8;
     sincosf(&sn, &cs, float_0_8041a7a4);
-    dir = *(const Vec*)(RO(base, 0x174, vec3_802c58a4));
-    dir.x = sn;
-    dir.z = cs;
-    query.targetDir = dir;
+    dir2 = *(const Vec*)(RO(base, 0x174, vec3_802c58a4));
+    dir2.x = sn;
+    dir2.z = cs;
+    query.targetDir = dir2;
     query.targetDistance = float_40_8041a800;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL) {
@@ -796,15 +914,119 @@ HitEntry* N_dou10_yoko_yari3(void) {
     return hit;
 }
 
-// NONMATCHING (78.97%): 0xc0 frame in the original vs 0xb0 here (toMovedir's result
-// is dead in both); pos/hitPos copies and the round blocks schedule differently.
+// Same as marioHitCheckVec but writes through the third output pointer without a
+// NULL test (every caller passes the address of a local); the original inlines
+// marioHitCheckVec this way. Used by dou10_yoko_yari / dou10_yoko_yari2 /
+// marioChkFront. Under MUST_MATCH the float_0/float_1000 reads are cast through a
+// pointer so MWCC reloads them once per component (plain form otherwise).
+static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
+    HitCheckQuery query;
+    HitEntry* hit;
+
+    query.targetPos = *a;
+    query.targetDir = *b;
+    query.targetDistance = *distance;
+
+    if (marioGetPtr()->currMotionId == 0x1C) {
+        hit = hitCheckVecFilter(&query, chkfilterVecVivian);
+    } else if (marioGetPtr()->flags & 0x1000000) {
+        hit = hitCheckVecFilter(&query, chkfilterVecRoll);
+    } else {
+        hit = hitCheckVecFilter(&query, chkfilterVec);
+    }
+
+    if (hit == NULL) {
+        return NULL;
+    }
+
+#ifdef MUST_MATCH
+    // The cast defeats MWCC's CSE of the 0.0f load so the target's per-component reload is
+    // reproduced; the plain form is identical and used for non-matching builds.
+    *distance = (f32)(s32)(float_1000_8041a7a0 * query.targetDistance +
+                           (query.targetDistance >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4
+                                                                     : float_neg0p5_8041a7c8)) /
+                *(const f32*)&float_1000_8041a7a0;
+#else
+    *distance = (f32)(s32)(float_1000_8041a7a0 * query.targetDistance +
+                           (query.targetDistance >= float_0_8041a7a4 ? float_0p5_8041a7c4
+                                                                     : float_neg0p5_8041a7c8)) /
+                *(const f32*)&float_1000_8041a7a0;
+#endif
+    if (c) {
+        *c = query.hitPos;
+        c->x = (f32)(s32)(*(const f32*)&float_1000_8041a7a0 * c->x +
+                          (c->x >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               *(const f32*)&float_1000_8041a7a0;
+        c->y = (f32)(s32)(*(const f32*)&float_1000_8041a7a0 * c->y +
+                          (c->y >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               *(const f32*)&float_1000_8041a7a0;
+        c->z = (f32)(s32)(*(const f32*)&float_1000_8041a7a0 * c->z +
+                          (c->z >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               *(const f32*)&float_1000_8041a7a0;
+    }
+    if (d) {
+        *d = query.hitNormal;
+    }
+    return hit;
+}
+
+// Filter+round half of the above, with the query built by the caller. marioChkFront needs
+// its query.targetPos written before the dir build (the original schedules the pos->x/y/z
+// loads first), which marioHitCheckVecOut cannot express because it copies *a itself.
+static inline HitEntry* marioHitCheckVecRound(HitCheckQuery* query, Vec* c, Vec* d, f32* distance) {
+    HitEntry* hit;
+
+    if (marioGetPtr()->currMotionId == 0x1C) {
+        hit = hitCheckVecFilter(query, chkfilterVecVivian);
+    } else if (marioGetPtr()->flags & 0x1000000) {
+        hit = hitCheckVecFilter(query, chkfilterVecRoll);
+    } else {
+        hit = hitCheckVecFilter(query, chkfilterVec);
+    }
+    if (hit == NULL) {
+        return NULL;
+    }
+#ifdef MUST_MATCH
+    *distance = (f32)(s32)(float_1000_8041a7a0 * query->targetDistance +
+                           (query->targetDistance >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4
+                                                                     : float_neg0p5_8041a7c8)) /
+                *(const f32*)&float_1000_8041a7a0;
+#else
+    *distance = (f32)(s32)(float_1000_8041a7a0 * query->targetDistance +
+                           (query->targetDistance >= float_0_8041a7a4 ? float_0p5_8041a7c4
+                                                                     : float_neg0p5_8041a7c8)) /
+                float_1000_8041a7a0;
+#endif
+    if (c) {
+        *c = query->hitPos;
+        c->x = (f32)(s32)(c->x * *(const f32*)&float_1000_8041a7a0 +
+                          (c->x >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               *(const f32*)&float_1000_8041a7a0;
+        c->y = (f32)(s32)(c->y * *(const f32*)&float_1000_8041a7a0 +
+                          (c->y >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               *(const f32*)&float_1000_8041a7a0;
+        c->z = (f32)(s32)(c->z * *(const f32*)&float_1000_8041a7a0 +
+                          (c->z >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               *(const f32*)&float_1000_8041a7a0;
+    }
+    if (d) {
+        *d = query->hitNormal;
+    }
+    return hit;
+}
+
+// MATCHING: marioHitCheckVecOut inlines marioHitCheckVec with the `c != NULL` test folded
+// away, and the MUST_MATCH casts (on the 0.0f tests and both float_1000 uses) make MWCC
+// reload those constants once per component exactly as the original does.
 HitEntry* dou10_yoko_yari2(f32* out) {
     MarioWork* wp = marioGetPtr();
     Vec pos;
+    Vec tmp;
     Vec dir;
     Vec hitPos;
     Vec hitNormal;
     HitEntry* hit;
+    f32 dist;
     f32 f8;
 
     toMovedir(wp->unk1A8);
@@ -812,18 +1034,19 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     if (strcmp(gp->currentMapName, str_802C5940) != 0) {
         return NULL;
     }
-    pos.y = pos.y + float_60_8041a808;
+    tmp = pos;
+    tmp.y = tmp.y + float_60_8041a808;
     dir = vec3_802c5874;
-    f8 = float_100_8041a7f8;
-    hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &f8);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    dist = float_100_8041a7f8;
+    hit = marioHitCheckVecOut(&tmp, &dir, &hitPos, &hitNormal, &dist);
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
 
     pos = wp->position;
     hit = searchFrontWall(&pos, &f8, float_20_8041a810, float_0_8041a7a4, float_20_8041a810);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
@@ -831,7 +1054,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     pos = wp->position;
     movePos(&pos.x, &pos.z, float_8_8041a814, float_270_8041a818);
     hit = searchFrontWall(&pos, &f8, float_20_8041a810, float_0_8041a7a4, float_20_8041a810);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
@@ -839,22 +1062,25 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     pos = wp->position;
     movePos(&pos.x, &pos.z, float_8_8041a814, float_90_8041a81c);
     hit = searchFrontWall(&pos, &f8, float_20_8041a810, float_0_8041a7a4, float_20_8041a810);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
     return hit;
 }
 
-// NONMATCHING (79.39%): the remaining differences are not yet analysed (the frame is 0xc0 vs the original 0xd0).
+// MATCHING: `goto out` gives the single shared `mr r3,r28` exit the original has; the
+// rounding is the same MUST_MATCH reload form as dou10_yoko_yari2.
 HitEntry* dou10_yoko_yari(f32* out) {
     MarioWork* wp = marioGetPtr();
     Vec pos;
+    Vec tmp;
     Vec dir;
     Vec hitPos;
     Vec hitNormal;
     HitEntry* hit;
     f32 f8;
+    f32 dist100;
     f32 dist;
 
     if (wp->currMotionId == 0x16) {
@@ -867,24 +1093,28 @@ HitEntry* dou10_yoko_yari(f32* out) {
     }
     pos = wp->position;
     if (strcmp(gp->currentMapName, str_802C5940) != 0) {
-        return hit;
+        goto out;
     }
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
-        return hit;
+        goto out;
+    }
+    if (hit != NULL) {
+        goto out;
     }
     dist = (wp->flags & 0x100000) ? float_2_8041a7e8 : float_8_8041a814;
-    pos.y = pos.y + float_60_8041a808;
+    tmp = pos;
+    tmp.y = tmp.y + float_60_8041a808;
     dir = vec3_802c5868;
-    f8 = float_100_8041a7f8;
-    hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &f8);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    dist100 = float_100_8041a7f8;
+    hit = marioHitCheckVecOut(&tmp, &dir, &hitPos, &hitNormal, &dist100);
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
 
     pos = wp->position;
     hit = searchFrontWall(&pos, &f8, float_20_8041a810, float_0_8041a7a4, float_20_8041a810);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
@@ -892,7 +1122,7 @@ HitEntry* dou10_yoko_yari(f32* out) {
     pos = wp->position;
     movePos(&pos.x, &pos.z, dist, float_270_8041a818);
     hit = searchFrontWall(&pos, &f8, float_20_8041a810, float_0_8041a7a4, float_20_8041a810);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
@@ -900,10 +1130,11 @@ HitEntry* dou10_yoko_yari(f32* out) {
     pos = wp->position;
     movePos(&pos.x, &pos.z, dist, float_90_8041a81c);
     hit = searchFrontWall(&pos, &f8, float_20_8041a810, float_0_8041a7a4, float_20_8041a810);
-    if (hit != NULL && (hitGetAttr(hit) & 0x100000)) {
+    if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
+out:
     return hit;
 }
 
@@ -1156,76 +1387,30 @@ extern const Vec vec3_802c5838;
                 ((v) >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /      \
      float_1000_8041a7a0)
 
-// Inline sqrtf from the SDK's math.h, redeclared here because including math.h clashes with
-// math_ext.h's out-of-line sqrt. Same expansion the original used (frsqrte + NaN handling).
-#define FP_NAN 1
-#define FP_INFINITE 2
-#define FP_ZERO 3
-#define FP_NORMAL 4
-#define FP_SUBNORMAL 5
-
-extern s32 __float_nan[];
-#define NAN (*(f32*)__float_nan)
 
 
-static inline s32 __fpclassifyf(f32 x) {
-    switch (*(s32*)&x & 0x7F800000) {
-        case 0x7F800000:
-            if (*(s32*)&x & 0x007FFFFF) {
-                return FP_NAN;
-            } else {
-                return FP_INFINITE;
-            }
-            break;
-        case 0:
-            if (*(s32*)&x & 0x007FFFFF) {
-                return FP_SUBNORMAL;
-            } else {
-                return FP_ZERO;
-            }
-            break;
-        default:
-            return FP_NORMAL;
-    }
-}
-
-#define fpclassify(x) __fpclassifyf(x)
-#define isnan(x) (fpclassify(x) == FP_NAN)
-
-static inline f32 sqrtf(f32 x) {
-    if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
-        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
-        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
-        return x * guess;
-    } else if (x < double_0_802c5938) {
-        return NAN;
-    } else if (isnan(x)) {
-        return NAN;
-    }
-    return x;
-}
-
-
-// NONMATCHING (74.47%): 0xf0 frame in the original vs 0xe0 here (one fewer stack
-// Vec); dir/targetPos copies and rounding blocks scheduled differently; logic (sincos
-// dir, rounded distance compare, distABf) is the same.
+// NONMATCHING (98.27%): the caller builds `query` (via marioHitCheckVecRound) so
+// query.targetPos = *pos is written first, reproducing the original's load/store order. The
+// remaining diffs are GPR naming in that build and the hitPos rounding's f3/f4 colouring.
 void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
-    Vec dir;
+    HitCheckQuery query;
     Vec hitPos;
     Vec hitNormal;
+    Vec dir;
     HitEntry* hit;
     f32 distance;
     f32 s;
     f32 c;
 
     sincosf(&s, &c, angle);
+    query.targetPos = *pos;
     dir = vec3_802c5838;
     dir.x = s;
     dir.z = c;
+    query.targetDir = dir;
+    query.targetDistance = dist;
     distance = dist;
-    hit = marioHitCheckVec(pos, &dir, &hitPos, &hitNormal, &distance);
+    hit = marioHitCheckVecRound(&query, &hitPos, &hitNormal, &distance);
     if (hit != NULL && distance <= dist) {
         *out = distABf(pos->x, pos->z, hitPos.x, hitPos.z);
         return hit;
@@ -1761,9 +1946,31 @@ f32 marioChkOverhead(void) {
     return v.y;
 }
 
-// NONMATCHING (72.55%): inlined marioHitCheckVec body keeps the distance in f31
-// (saves f31, 0xf0 stack); ours keeps it in memory (0xd0 stack), so register and
-// stack layout differ along with scheduling.
+#ifdef MUST_MATCH
+static HitEntry* marioHitCheckVecNoCTest(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
+#endif
+
+#ifdef MUST_MATCH
+// Match-only Vec builders: returning by value makes MWCC place pos at 0x14 and dir at 0x8
+// like the original; the natural field-assignment form is under #else.
+static Vec mhc_makePos(f32 x, f32 y, f32 z) {
+    Vec v = *(const Vec*)vec3_802c5730;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+static Vec mhc_makeDir(f32 x, f32 y, f32 z) {
+    Vec v = *(const Vec*)vec3_802c573c;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+#endif
+
+// NONMATCHING (87.91%): remaining diffs are the inlined `*distance` write-back rounding
+// registers and one extra null test; the c test is folded via the match-only helper.
 HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance,
                         f32* outNX, f32* outNY, f32* outNZ,
                         f32 x, f32 y, f32 z, f32 nx, f32 ny, f32 nz) {
@@ -1772,7 +1979,16 @@ HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance,
     Vec hitPos;
     Vec hitNormal;
     HitEntry* hit;
+#ifdef MUST_MATCH
+    // The inliner's c null test is folded in the original; pass c through a local and use the
+    // match-only no-c-test copy so the emitted tests line up. Natural call under #else.
+    Vec* php;
+#endif
 
+#ifdef MUST_MATCH
+    pos = mhc_makePos(x, y, z);
+    dir = mhc_makeDir(nx, ny, nz);
+#else
     pos = *(const Vec*)vec3_802c5730;
     dir = *(const Vec*)vec3_802c573c;
     pos.x = x;
@@ -1781,7 +1997,13 @@ HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance,
     dir.x = nx;
     dir.y = ny;
     dir.z = nz;
+#endif
+#ifdef MUST_MATCH
+    php = &hitPos;
+    hit = marioHitCheckVecNoCTest(&pos, &dir, php, &hitNormal, distance);
+#else
     hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, distance);
+#endif
     if (hit != NULL) {
         *outX = hitPos.x;
         *outY = hitPos.y;
@@ -1790,6 +2012,66 @@ HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance,
         *outNY = hitNormal.y;
         *outNZ = hitNormal.z;
     }
+    return hit;
+}
+
+// Like marioHitCheckVec but filtered by chkFilterAttr2 with user0/user1 set;
+// the original inlines this into marioHitCheck2 (both attr branches).
+static inline HitEntry* marioHitCheckVecAttr(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
+    HitCheckQuery query;
+    HitEntry* hit;
+
+    query.targetPos = *a;
+    query.targetDir = *b;
+    query.targetDistance = *distance;
+    query.user0 = 4;
+    query.user1 = 0x800000;
+    hit = hitCheckVecFilter(&query, chkFilterAttr2);
+    if (hit == NULL) {
+        return NULL;
+    }
+    *distance = (f32)(s32)(float_1000_8041a7a0 * query.targetDistance +
+                           (query.targetDistance >= float_0_8041a7a4 ? float_0p5_8041a7c4
+                                                                     : float_neg0p5_8041a7c8)) /
+                float_1000_8041a7a0;
+    if (c != NULL) {
+        *c = query.hitPos;
+        c->x = (f32)(s32)(float_1000_8041a7a0 * c->x +
+                          (c->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               float_1000_8041a7a0;
+        c->y = (f32)(s32)(float_1000_8041a7a0 * c->y +
+                          (c->y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               float_1000_8041a7a0;
+        c->z = (f32)(s32)(float_1000_8041a7a0 * c->z +
+                          (c->z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+               float_1000_8041a7a0;
+    }
+    if (d != NULL) {
+        *d = query.hitNormal;
+    }
+    return hit;
+}
+
+void* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e) {
+    MarioWork* wp = marioGetPtr();
+    void* hit;
+    f32 dist;
+
+    dist = *e;
+    if (wp->currMotionId != MARIO_MOTION_JABARA) {
+        if ((wp->flags & 0x20000) == 0) {
+            hit = marioHitCheckVecAttr(a, b, c, d, &dist);
+        } else {
+            hit = marioHitCheckVec(a, b, c, d, &dist);
+        }
+    } else {
+        if (marioGetJabaraState() == 1) {
+            hit = marioHitCheckVecAttr(a, b, c, d, &dist);
+        } else {
+            hit = marioHitCheckVec(a, b, c, d, &dist);
+        }
+    }
+    *e = dist;
     return hit;
 }
 
@@ -1842,9 +2124,56 @@ extern const Vec vec3_802c576c;
 extern const f32 float_37_8041a86c;
 extern const f32 float_1037_8041a888;
 
-// NONMATCHING (74.01%): the inlined marioHitCheckVec query sits at 0x38 in the
-// original but 0x2c here (one fewer stack Vec); pos is built by loading
-// vec3_802c5760 first there, plus register differences.
+#ifdef MUST_MATCH
+// Match-only variant of marioHitCheckVec that assumes `c` is non-null, so MWCC emits no
+// null test for it (the original compiler folded the inlined `c != NULL`). The natural
+// build never sees this and calls marioHitCheckVec directly.
+static HitEntry* marioHitCheckVecNoCTest(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
+    HitCheckQuery query;
+    HitEntry* hit;
+    f32 td;
+
+    td = *distance;
+    query.targetPos = *a;
+    query.targetDir = *b;
+    query.targetDistance = td;
+
+    if (marioGetPtr()->currMotionId == 0x1C) {
+        hit = hitCheckVecFilter(&query, chkfilterVecVivian);
+    } else if (marioGetPtr()->flags & 0x1000000) {
+        hit = hitCheckVecFilter(&query, chkfilterVecRoll);
+    } else {
+        hit = hitCheckVecFilter(&query, chkfilterVec);
+    }
+
+    if (hit == NULL) {
+        return NULL;
+    }
+
+    td = (f32)(s32)(float_1000_8041a7a0 * td +
+                    (td >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+         float_1000_8041a7a0;
+    *distance = td;
+    *c = query.hitPos;
+    c->x = (f32)(s32)(float_1000_8041a7a0 * c->x +
+                      (c->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+           float_1000_8041a7a0;
+    c->y = (f32)(s32)(float_1000_8041a7a0 * c->y +
+                      (c->y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+           float_1000_8041a7a0;
+    c->z = (f32)(s32)(float_1000_8041a7a0 * c->z +
+                      (c->z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+           float_1000_8041a7a0;
+    if (d != NULL) {
+        *d = query.hitNormal;
+    }
+    return hit;
+}
+#endif
+
+// NONMATCHING (87.38%): the inline's null test on the hitPos pointer is a register test
+// here (the original folds it), and the query is at 0x2c vs the original 0x38 (the
+// original also builds pos from vec3_802c5760 first).
 s32 searchUnder2(Vec* out, f32 x, f32 y, f32 z) {
     Vec pos;
     Vec dir;
@@ -1852,18 +2181,27 @@ s32 searchUnder2(Vec* out, f32 x, f32 y, f32 z) {
     Vec hitNormal;
     HitEntry* hit;
     f32 dist;
+#ifdef MUST_MATCH
+    // The inliner's c null test is folded in the original; pass c through a local and use the
+    // match-only no-c-test copy so the emitted tests line up. Natural call under #else.
+    Vec* php;
+#endif
 
     pos.x = x;
     pos.y = y + float_37_8041a86c;
     pos.z = z;
     dir = vec3_802c576c;
     dist = float_1037_8041a888;
+#ifdef MUST_MATCH
+    php = &hitPos;
+    hit = marioHitCheckVecNoCTest(&pos, &dir, php, &hitNormal, &dist);
+#else
     hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &dist);
+#endif
     out->x = (hit != NULL) ? hitPos.y : float_neg1_8041a7dc;
     return (s32)hit;
 }
 
-// NONMATCHING (86.16%): 5 instructions differ, 10 missing, 8 extra, plus register differences.
 HitEntry* marioSearchUnder(void) {
     MarioWork* wp = marioGetPtr();
     Vec pos;
@@ -1873,6 +2211,12 @@ HitEntry* marioSearchUnder(void) {
     HitEntry* hit;
     f32 dist;
     f32 y;
+#ifdef MUST_MATCH
+    // Passing the out-pointers through locals makes the inliner's null tests on c/d
+    // use registers (and lands them at the offsets the original uses); the natural
+    // call is under #else.
+    Vec* php;
+#endif
 
     y = wp->wPlayerCollisionBox.y;
     if (wp->flags & 0x1000000) {
@@ -1883,7 +2227,12 @@ HitEntry* marioSearchUnder(void) {
     pos.y = pos.y + y;
     dir = vec3_802c5754;
     dist = float_1000_8041a7a0;
+#ifdef MUST_MATCH
+    php = &hitPos;
+    hit = marioHitCheckVecNoCTest(&pos, &dir, php, &hitNormal, &dist);
+#else
     hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &dist);
+#endif
     *(f32*)wp->field_0x1C0 = (hit != NULL) ? hitPos.y : float_neg3000_8041a870;
     return hit;
 }

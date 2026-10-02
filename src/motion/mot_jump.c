@@ -208,13 +208,24 @@ void mot_jumpStand(void) {
     }
 }
 
-// NONMATCHING (89.45%): 11 instructions differ, 8 missing, 11 extra, plus register differences.
+// The two int->float conversions: the original folds the magic double into the unit's rodata pool
+// and loads it as `lfd f2, 0x38(r30)` (r30 is the vec3_802c5c40 base); MWCC always emits its own
+// anonymous @446 pool entry and addresses it with its own `lis r3`, so the load and the
+// r3-vs-r4/0x30-vs-0x38 knock-ons differ. Defining double_to_int_802c5c78 by name does not help
+// (the compiler still emits a second anonymous copy); the documented project-wide int->float pool
+// limitation, same as mot_jumpNpc.
+// NONMATCHING (99.04%): only the two int->float magic-double references differ.
 void mot_jumpSw(void) {
     JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
     if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
         MarioWork* mario2;
+        f32 sinv;
+        f32 cosv;
+        f32 x;
+        f32 z;
+        f32 dist;
 
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
         marioResetCamFollowRate();
@@ -235,12 +246,12 @@ void mot_jumpSw(void) {
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
                 MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
-                f32 dist;
                 Vec pos;
-                Vec tmp = *JUMP_RODATA(const Vec*, 0x0, vec3_802c5c40);
+                Vec tmp;
 
                 MWF32(mario, 0x2B4) = obj->position.x;
                 MWF32(mario, 0x2B8) = obj->position.z;
+                tmp = *JUMP_RODATA(const Vec*, 0x0, vec3_802c5c40);
                 tmp.x = obj->position.x;
                 tmp.y = obj->position.y + 0.5f * mario->wPlayerCollisionBox.y;
                 tmp.z = obj->position.z;
@@ -249,41 +260,40 @@ void mot_jumpSw(void) {
                                   5.0f * mario->wPlayerCollisionBox.x)) {
                     if (dist >= 0.0f
                         && dist <= 0.5f * mario->wPlayerCollisionBox.x + 30.0f) {
-                        mario->directionView = revise360(180.0f + mario->directionView);
-                        *(f32*)((u8*)mario + 0x19C) = mario->directionView;
+                        f32 d = revise360(180.0f + mario->directionView);
+
+                        mario->directionView = d;
+                        *(f32*)mario->unk19C = d;
                     }
                 }
+                sincosf(&sinv, &cosv, mario->directionView);
                 {
-                    f32 sinv;
-                    f32 cosv;
-                    f32 x;
-                    f32 z;
+                    f32 c30 = 30.0f;
 
-                    sincosf(&sinv, &cosv, mario->directionView);
-                    x = 30.0f * sinv + obj->position.x;
-                    z = 30.0f * cosv + obj->position.z;
-                    mario->multiTimer = 0x14;
-                    mario->baseSpeed =
-                        distABf(mario->position.x, mario->position.z, x, z)
-                        / (f32)(s32)mario->multiTimer;
+                    x = c30 * sinv + obj->position.x;
+                    z = c30 * cosv + obj->position.z;
                 }
+                mario->multiTimer = 0x14;
+                mario->baseSpeed =
+                    distABf(mario->position.x, mario->position.z, x, z)
+                    / (f32)(s32)mario->multiTimer;
             }
         } else {
             f32 dir;
-            f32 sinv;
-            f32 cosv;
-            f32 x;
-            f32 z;
 
             dir = revise360(180.0f + mario->directionView);
             sincosf(&sinv, &cosv, dir);
-            x = 30.0f * sinv + mario->position.x;
-            z = 30.0f * cosv + mario->position.z;
+            {
+                f32 c30 = 30.0f;
+
+                x = c30 * sinv + mario->position.x;
+                z = c30 * cosv + mario->position.z;
+            }
+            mario->directionView = dir;
+            *(f32*)mario->unk19C = dir;
             mario->multiTimer = 0x14;
             mario->baseSpeed = distABf(mario->position.x, mario->position.z, x, z)
                                / (f32)(s32)mario->multiTimer;
-            mario->directionView = dir;
-            *(f32*)((u8*)mario + 0x19C) = dir;
         }
         mario->currSubMotionId = 0;
     }

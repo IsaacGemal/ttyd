@@ -263,9 +263,9 @@ s32 scissor_offscreen(void) {
     return 2;
 }
 
-// NONMATCHING (98.46%): MWCC copies the GXColor argument for the by-value GXSetChanMatColor
-// a second time; the original stores HSV2RGB's result at r1+0xC and passes &r1+0xC directly.
-// Ours stores it at r1+0x14 and copies it to r1+0x8 (one extra stw, four shifted operands).
+// NONMATCHING (99.27%): the GXColor/hsv stack layout differs. The original keeps hsv at
+// r1+0x8 and HSV2RGB's result at r1+0xC (passed by address); ours spills the result to
+// r1+0x14 and makes one extra 4-byte copy to r1+0x8. The hsvTmp copy is the closest form.
 void scissor_disp_control(CameraId cameraId, void* param) {
     ScissorWork* work = GetScissorPtr();
     f32* points = work->field_0x114;
@@ -281,9 +281,9 @@ void scissor_disp_control(CameraId cameraId, void* param) {
         work->field_0x10 -= 0x3C;
     }
     if (work->field_0x10 <= 0x1D) {
-        intplGetValue(0, work->field_0x10, 0x1D, float_0_80421734, float_255_8042174c);
+        intplGetValue(0, work->field_0x10, 0x1D, 0.0f, float_255_8042174c);
     } else {
-        intplGetValue(0, work->field_0x10 - 0x1E, 0x3B, float_255_8042174c, float_0_80421734);
+        intplGetValue(0, work->field_0x10 - 0x1E, 0x3B, float_255_8042174c, 0.0f);
     }
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
@@ -311,8 +311,8 @@ void scissor_disp_control(CameraId cameraId, void* param) {
 #endif
         GXSetChanMatColor(GX_COLOR0A0, color);
         GXBegin(GX_LINES, GX_VTXFMT0, 2);
-        GXPosition3f32(points[i * 2], points[i * 2 + 1], float_0_80421734);
-        GXPosition3f32(points[i * 2 + 2], points[i * 2 + 3], float_0_80421734);
+        GXPosition3f32(points[i * 2], points[i * 2 + 1], 0.0f);
+        GXPosition3f32(points[i * 2 + 2], points[i * 2 + 3], 0.0f);
     }
 }
 
@@ -385,22 +385,24 @@ s32 scissor_damage_sub2(const Vec* point) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (94.79%): newly written; see REPORT.md.
+// NONMATCHING (97.18%): remaining diffs are all FP register colouring (original
+// sign=f27/width=f29/height=f28/halfH=f30/halfW=f31/nine=f24/rowBase=f25; ours sign=f31
+// and rotated). FP/int declaration order was hill-climbed for score; see REPORT.md.
 void scissor_damage_sub(BattleUnit* unit, s32* out) {
     Vec pos;
     Vec point;
     Vec screen;
-    f32 sign;
-    f32 width;
-    f32 height;
-    f32 ratio;
-    f32 halfW;
     f32 halfH;
-    f32 rowBase;
+    f32 width;
+    f32 sign;
+    f32 ratio;
+    f32 height;
+    f32 halfW;
     f32 nine;
-    s32 hits = 0;
+    f32 rowBase;
     s32 i;
     s32 j;
+    s32 hits = 0;
 
     sign = (unit->mAttributeFlags & kCeiling) ? float_neg1_80421750 : float_1_80421754;
     width = unit->cutWidth * unit->mSizeMultiplier;
@@ -424,7 +426,7 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
             }
         }
     }
-    ratio = (f32)hits / float_100_8042175c;
+    ratio = (f32)hits / 100.0f;
     *out = 0;
     if (ratio >= float_0p3_80421760) {
         *out = 1;
@@ -544,10 +546,13 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
     return 2;
 }
 
-// NONMATCHING (93.32%): newly written; see REPORT.md.
+// NONMATCHING (99.92%): only the two intersection-result stores differ, where the address
+// scratch is r4 (ours) vs r5 (target). Constants as literals, p hoisted to function scope
+// and right-chained stores got it here; see REPORT.md.
 s32 scissor_control(s32 unused, s32 reset) {
     ScissorWork* work = GetScissorPtr();
     ScissorPoint* points = (ScissorPoint*)work->field_0x114;
+    ScissorPoint* p;
     s32 i;
     s32 offset;
 
@@ -571,25 +576,26 @@ s32 scissor_control(s32 unused, s32 reset) {
         f32 mag = (f32)sqrt(work->field_0xA4 * work->field_0xA4 + work->field_0xA8 * work->field_0xA8);
         mag = (f32)sqrt(work->field_0xAC * work->field_0xAC + work->field_0xB0 * work->field_0xB0);
         if (mag > float_42_8042176c) {
-            work->field_0xD4 += work->field_0xAC / float_50_80421770;
-            work->field_0xD8 += work->field_0xB0 / float_50_80421770;
+            f32 k = 50.0f;
+            work->field_0xD4 += work->field_0xAC / k;
+            work->field_0xD8 += work->field_0xB0 / k;
         }
     }
-    work->field_0xD4 *= float_0p86_80421774;
-    work->field_0xD8 *= float_0p86_80421774;
+    work->field_0xD4 *= 0.86f;
+    work->field_0xD8 *= 0.86f;
     work->field_0xB4 += work->field_0xD4;
     work->field_0xB8 += work->field_0xD8;
-    if (work->field_0xB4 < float_neg300_80421778) {
-        work->field_0xB4 = float_neg300_80421778;
+    if (work->field_0xB4 < -300.0f) {
+        work->field_0xB4 = -300.0f;
     }
-    if (work->field_0xB4 > float_300_8042177c) {
-        work->field_0xB4 = float_300_8042177c;
+    if (work->field_0xB4 > 300.0f) {
+        work->field_0xB4 = 300.0f;
     }
-    if (work->field_0xB8 < float_neg200_80421780) {
-        work->field_0xB8 = float_neg200_80421780;
+    if (work->field_0xB8 < -200.0f) {
+        work->field_0xB8 = -200.0f;
     }
-    if (work->field_0xB8 > float_200_80421784) {
-        work->field_0xB8 = float_200_80421784;
+    if (work->field_0xB8 > 200.0f) {
+        work->field_0xB8 = 200.0f;
     }
     if (work->field_0x104 <= 0x3B) {
         work->state = 6;
@@ -611,20 +617,17 @@ s32 scissor_control(s32 unused, s32 reset) {
     }
     if (work->field_0x9C > 3) {
         for (i = 0, offset = 0; i < work->field_0x9C - 3; i++, offset += 8) {
-            ScissorPoint* p = &points[i];
             f32 ox;
             f32 oy;
-            s32 n = work->field_0x9C;
+            p = &points[i];
 
             if (scissor_intersection(p->x, p->y, p[1].x, p[1].y,
-                                     points[n - 2].x, points[n - 2].y, points[n - 1].x, points[n - 1].y,
+                                     points[work->field_0x9C - 2].x, points[work->field_0x9C - 2].y, points[work->field_0x9C - 1].x, points[work->field_0x9C - 1].y,
                                      &ox, &oy) != 0) {
                 s32 k;
 
-                points[n - 1].x = ox;
-                p->x = ox;
-                points[n - 1].y = oy;
-                p->y = oy;
+                p->x = points[work->field_0x9C - 1].x = ox;
+                p->y = points[work->field_0x9C - 1].y = oy;
                 for (k = 0; k < i; k++) {
                     points[k] = *p;
                 }
@@ -642,17 +645,17 @@ s32 scissor_control(s32 unused, s32 reset) {
     return 0;
 }
 
-// NONMATCHING (94.89%): same instructions, different schedule: case 0's two lfs
-// are hoisted before the stfs in the original; cases 5/15 load f1/f2 before r4.
 s32 scissor_timer_main(void) {
     ScissorWork* work = GetScissorPtr();
 
     switch (work->field_0xFC) {
         case 0:
-            work->field_0x108 = float_320_80421788;
-            work->field_0x10C = float_185_8042178c;
+        {
+            work->field_0x108 = 320.0f;
+            work->field_0x10C = 185.0f;
             work->field_0xFC = 5;
             work->field_0x100 = 0;
+        }
             // fallthrough
         case 5:
             work->field_0x108 = intplGetValue(4, work->field_0x100, 0xF, float_320_80421788, float_120_80421790);
@@ -701,8 +704,6 @@ s32 scissor_timer_get(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// Keep star_disp2D_sub out of line: star_disp2D must call (bl) it.
-// NONMATCHING (98.77%): 3 instructions differ, 60 missing, 132 extra, plus register differences.
 #pragma dont_inline on
 void star_disp2D_sub(s32 index, s32 alpha) {
     ScissorWork* work = GetScissorPtr();
@@ -769,10 +770,11 @@ void star_disp2D(void) {
     }
 }
 
-// NONMATCHING (77.45%): the original addresses the five vectors from one common base; the int->float magic double is an anonymous pool copy (@863) instead
-// of the folded double_to_int_802ff638, which shifts the FP registers through case 1;
-// intplGetValue also loads r4 before f1/f2. See REPORT.md.
+// NONMATCHING (91.34%): ScissorRodata + `rod` reproduce the original's single-base vector
+// addressing and r31/r30/r29/r28 colouring; floats as literals bought another 5%. What's
+// left is GPR scratch colouring and the int->float magic double still in an anonymous pool slot.
 s32 star_control(void) {
+    const ScissorRodata* rod = &str_802FF570;
     ScissorWork* work = GetScissorPtr();
     StarTrail* star = (StarTrail*)((u8*)work + 0x9C);
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -790,9 +792,9 @@ s32 star_control(void) {
     switch (work->state) {
     case 1:
         {
-            f32 zero = float_0_80421734;
-            f32 neg = float_neg1000_8042179c;
-            f32 one = float_1_80421754;
+            f32 zero = 0.0f;
+            f32 neg = -1000.0f;
+            f32 one = 1.0f;
 
             work->state = 2;
             work->field_0x120 = 0;
@@ -803,10 +805,10 @@ s32 star_control(void) {
             (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804217a0);
         *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
         *(Vec*)&work->field_0x13C = *(Vec*)&work->field_0x124;
-        work->field_0x140 += float_50_80421770;
-        work->field_0x144 += float_neg1_80421750;
-        *(Vec*)&work->field_0x154 = vec3_802ff59c;
-        *(Vec*)&work->field_0x160 = vec3_802ff5a8;
+        work->field_0x140 += 50.0f;
+        work->field_0x144 += -1.0f;
+        *(Vec*)&work->field_0x154 = rod->v0;
+        *(Vec*)&work->field_0x160 = rod->v1;
         /* fallthrough */
     case 2:
         work->field_0x120++;
@@ -814,12 +816,12 @@ s32 star_control(void) {
             work->field_0x124 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x130, work->field_0x13C);
             work->field_0x128 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x134, work->field_0x140);
             work->field_0x12C = intplGetValue(0, work->field_0x120, 0x64, work->field_0x138, work->field_0x144);
-            f = intplGetValue(0, work->field_0x120, 0x64, float_0_80421734, float_2_804217a4);
+            f = intplGetValue(0, work->field_0x120, 0x64, 0.0f, 2.0f);
             work->field_0x15C = f;
             work->field_0x158 = f;
             work->field_0x154 = f;
         } else {
-            f32 two = float_2_804217a4;
+            f32 two = 2.0f;
 
             work->field_0x124 = work->field_0x13C;
             work->field_0x128 = work->field_0x140;
@@ -828,12 +830,12 @@ s32 star_control(void) {
             work->field_0x158 = two;
             work->field_0x154 = two;
         }
-        work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, float_0_80421734, float_2160_804217a8);
+        work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, 0.0f, float_2160_804217a8);
         if (work->field_0x120 >= 0x78) {
             work->state = 3;
             work->field_0x120 = 0;
             *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
-            work->field_0x140 = float_300_8042177c;
+            work->field_0x140 = 300.0f;
         }
         break;
     case 3:
@@ -843,12 +845,12 @@ s32 star_control(void) {
             work->state = 4;
             work->field_0x120 = 0;
             {
-                f32 neg = float_neg1000_8042179c;
-                f32 zero = float_0_80421734;
+                f32 neg = -1000.0f;
+                f32 zero = 0.0f;
 
-                *(Vec*)&work->field_0x124 = vec3_802ff5b4;
-                *(Vec*)&work->field_0x154 = vec3_802ff5c0;
-                *(Vec*)&work->field_0x160 = vec3_802ff5cc;
+                *(Vec*)&work->field_0x124 = rod->v2;
+                *(Vec*)&work->field_0x154 = rod->v3;
+                *(Vec*)&work->field_0x160 = rod->v4;
                 work->field_0x134 = work->field_0x128;
                 work->field_0x140 = zero;
                 star->velX = work->field_0x124;
@@ -878,10 +880,10 @@ s32 star_control(void) {
         ScissorEffectData* data = work->field_0x16C->userdata;
 
         if (work->state >= 4) {
-            f32 zero = float_0_80421734;
+            f32 zero = 0.0f;
 
             data->posX = zero;
-            data->posY = float_neg1000_8042179c;
+            data->posY = -1000.0f;
             data->posZ = zero;
         } else {
             data->posX = work->field_0x124;
@@ -889,7 +891,7 @@ s32 star_control(void) {
             data->posZ = work->field_0x12C;
         }
         {
-            f32 s = float_1p5_804217ac;
+            f32 s = 1.5f;
 
             data->rotX = work->field_0x160;
             data->rotY = work->field_0x164;
@@ -898,7 +900,7 @@ s32 star_control(void) {
         }
     }
     if (work->state >= 4 && work->state <= 6) {
-        dispEntry(8, float_0_80421734, 2, (DispCallback)star_disp2D, NULL);
+        dispEntry(8, 0.0f, 2, (DispCallback)star_disp2D, NULL);
     }
     return 0;
 }
@@ -1128,12 +1130,10 @@ s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     return scissor_intersection3(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
 
-// NONMATCHING (94.87%): same instructions; the original schedules `lfs f0,
-// float_0_80421734` before the prologue's `stw r0, 0x14(r1)`, ours after it.
 s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     f32 diff = bx - ax;
 
-    if (float_0_80421734 != diff) {
+    if (0.0f != diff) {
         f32 slope = (by - ay) / diff;
         if (ax >= bx) {
             ax += float_1000_804217b0;

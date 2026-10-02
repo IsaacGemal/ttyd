@@ -31,13 +31,13 @@ typedef struct FileManagerWork {
 void fileInit(void);
 void fileGarbageMoveMem(void* data, FileEntry* file);
 void _fileGarbage(BOOL a1);
-FileEntry* fileAllocf(u8 type, const char* format, ...);
-FileEntry* fileAlloc(const char* filename, u8 type);
+FileEntry* fileAllocf(s32 type, const char* format, ...);
+FileEntry* fileAlloc(const char* filename, s32 type);
 void fileFree(FileEntry* handle);
-s32 fileAsyncf(u8 type, FileCallback callback, const char* format, ...);
+s32 fileAsyncf(s32 type, FileCallback callback, const char* format, ...);
 void fileSetCurrentArchiveType(s32 type);
 void fileGarbageDataAdrSet(void* data, s32 type);
 void fileGarbageDataAdrClear(FileEntry* entry);
 void dvdReadDoneCallBack(s32 error, DVDFileInfo* info);
-s32 fileAsync(const char* filename, u8 type, FileCallback callback);
-FileEntry* _fileAlloc(const char* filename, u8 type, void (*callback)(FileEntry*));
+s32 fileAsync(const char* filename, s32 type, FileCallback callback);
+FileEntry* _fileAlloc(const char* filename, s32 type, void (*callback)(FileEntry*));
