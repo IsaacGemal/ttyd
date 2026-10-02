@@ -392,7 +392,7 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			for (j = 0; j < 3; i++) {
+			for (j = 0; j < 3; j++) {
 				GXCallDisplayList(funemizu_dl_0_tbl[j], funemizu_dl_0_size_tbl[j] << 5);
 			}
 		}
