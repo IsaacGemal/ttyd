@@ -79,7 +79,7 @@ typedef struct ScissorPoint {
 } ScissorPoint;
 
 // Local view of the scissor action-command work area at _battleWorkPointer + 0x1F4C.
-// No header declares this struct yet; (fields as used below).
+// No header declares this struct yet.
 typedef struct ScissorWork {
     u32 flags;                    // 0x00
     u8 field_0x04[0x08];          // 0x04
@@ -135,7 +135,7 @@ typedef struct ScissorWork {
 } ScissorWork;
 
 // Star trail area reached through a work+0x9C pointer in the original.
-// No header declares it; (fields as used below).
+// No header declares it.
 typedef struct StarTrail {
     u8 field_0x00[0x18];  // 0x00
     f32 velX;             // 0x18
@@ -146,7 +146,7 @@ typedef struct StarTrail {
 } StarTrail;
 
 // Star-stone effect userdata written at the end of star_control.
-// No header declares it; (fields as used below).
+// No header declares it.
 typedef struct ScissorEffectData {
     u8 field_0x00[0x8];  // 0x00
     f32 posX;            // 0x08
