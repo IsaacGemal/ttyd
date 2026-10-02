@@ -64,7 +64,8 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    under `#else` where there is one; use `PAD_STACK(n)` from `matching.h` for padding. Unmarked tricks look like
    real logic to the next reader.
 8. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
-   still matches without it, remove it.
+   still matches without it, remove it. Never write `#pragma scheduling <cpu number>` (`601`, `801`, ...): it
+   makes this compiler loop forever, and check.py refuses it. `scheduling off` / `reset` are fine.
 9. **Wrong constants in functions that don't match yet.** Check every constant against the asm, even when the
    function is at 80% and "only registers differ": `oris r0, r0, 0xa1` is `| 0x00a10000`, not `0xa1000000`;
    `rlwinm r0, r0, 0, 16, 11` keeps IBM bits 16-11 (wrapping) and clears IBM bits 12-15, which are value bits

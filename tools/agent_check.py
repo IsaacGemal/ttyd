@@ -32,6 +32,11 @@ if os.path.exists(src) and src not in open("build.ninja").read():
 # --final also compiles every source (a header change could break another file), and the merge builds everything.
 target = entry.get("base_path") if entry else None
 jobs = ["-j2"]  # two waves of agents share the tower's 16 cores
+# `#pragma scheduling <cpu>` (601, 801, ...) makes this mwcceppc loop forever (waves 53 and 57: compiles hung for a day).
+if os.path.exists(src) and re.search(r"^\s*#\s*pragma\s+scheduling\s+\d", open(src, errors="replace").read(), re.M):
+    print("BUILD REFUSED: `#pragma scheduling <cpu number>` makes this compiler hang forever. Remove it; use "
+          "`#pragma scheduling off` / `reset` if you need to change scheduling.")
+    sys.exit(1)
 t0 = time.time()
 b = subprocess.run(["ninja", *jobs] + ([target] if target else []), capture_output=True, text=True)
 if b.returncode == 0 and FINAL:
