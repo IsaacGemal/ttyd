@@ -196,6 +196,10 @@ When the instructions match but the stack slots, register allocation or scheduli
   is set up). Read which of the two the target has and write that; it changes three instructions and nothing else
   (`btlevtcmd_SetPartsBaseScale`: 97.98% to 100% by moving `evtGetValue(event, args[1])` into a local; the mirror image
   fixes the cases where ours has the `r0` route and the target does not).
+- Inlined float polynomials (sin/cos approximations used 10+ times in one function): write the coefficients as non-const locals at the top of the inline (`f32 c1 = 0.16605f, c2 = 1.0f;`). MWCC then hoists the constant loads once per instance like the original; `const` locals, or literals in the branches, rematerialise them per branch (hit_check 68 -> 89%).
+- A function that inlines many callees: raise `#pragma inline_max_total_size(60000)` and `inline_max_size(1000)` around it (reset after), and put `#pragma dont_inline on` / `reset` around the definition of any callee the original still calls.
+- A decision chain on a small integer result where the original shows `cmpwi 1; bne; cmpwi 2; beq; cmpwi 4; bne` is an `if/else if (a || b)` chain, not a `switch`; a `switch` makes a different tree.
+- Do not wrap a dense `switch` in `if (x <= N)`: the switch already emits that range check (a second `bgt` appears).
 
 ## Partial functions
 
