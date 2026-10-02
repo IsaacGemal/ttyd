@@ -1630,7 +1630,7 @@ static USER_FUNC(barriern_satellite_zanzou2) {
                                          (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 1);
 }
 
-// NONMATCHING (98.03%): all callee-saved registers now line up.  A block-scope `p = &zanzou_count[index + 1]` for the isFirstCall store makes retail's indexed `stwx` come out, and `intplGetValue(4, ...)` (the literal 4, not `a`) in the first scale matches retail, which unlike the non-satellite version always uses 4 there.  What still differs: (1) the first scale computes the zanzou_count base into r6 and loads it after the 0.8f address, where retail uses r4 and loads the float first (register/schedule only); (2) in the second loop ours issues `lwzx r4, r31, r30` one step earlier, before `lfsx f1, r20, r27`, where retail delays it until after `mr r3, r26`.
+// NONMATCHING (99.93%): all callee-saved registers now line up.  A block-scope `p = &zanzou_count[index + 1]` for the isFirstCall store makes retail's indexed `stwx` come out, and `intplGetValue(4, ...)` (the literal 4, not `a`) in the first scale matches retail, which unlike the non-satellite version always uses 4 there.  What still differs: (1) the first scale computes the zanzou_count base into r6 and loads it after the 0.8f address, where retail uses r4 and loads the float first (register/schedule only); (2) in the second loop ours issues `lwzx r4, r31, r30` one step earlier, before `lfsx f1, r20, r27`, where retail delays it until after `mr r3, r26`.
 static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
                                          s32 index, s32 mode) {
     BattleUnitPart* part;

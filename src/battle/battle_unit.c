@@ -102,11 +102,6 @@ void BtlUnit_PoseSoundInit(BattleUnitPart* part) {
     fields->mPoseSoundCur = 0.0f;
 }
 
-// The volume reduction `(s32)(0x7F * 0.7)`: GC/2.6 can fold the u32 0x7F into a pooled 127.0 double instead of the retail runtime conversion
-// (`lis 0x4330` + `double_to_int_mask_802efac8`, `fsub`, `fmul`). The `s32 v2` temp pins the
-// conversion before the psndSFX_vol call. `-1.0f` is a literal so the load schedules as retail does.
-
-
 BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit) {
     if (unit->mAttributeFlags & kVeiled) {
         return TRUE;
@@ -2259,7 +2254,6 @@ void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16
     se->field_0x18 = -1;
 }
 
-// Keep BtlUnit_snd_se out of line: BtlUnit_ControlPoseSoundMain's original calls it rather than inlining it.
 s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
     Vec pos;
 

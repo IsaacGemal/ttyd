@@ -3607,3 +3607,20 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   battle_audience_kinopio (volatile-comma intplGetValue arguments), fontmgr (FontDrawStart's hand-inlined copy) and
   mri_puni (puniswSetindex, puniMapFindbuff); evt_bero's `*(u16*)&` on a u16 field; sac_bakugame's tables as u32
   blobs cast to structs. unit_party_vivian reaches two vec3s as base+offset only under MUST_MATCH (names in #else).
+
+## Wave 53, batch 2, and wave 54 (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Batch 2 (80 agents, onto main c294f5f): +28 functions, with end_muki at 100% from Claude #3's permuter mask
+  (`off & mask`, mask = -1, under MUST_MATCH). Files that stopped building and units with a lower score and nothing
+  new are as on main; the audit's removed pragmas no longer leave comments describing them.
+- Review (`scratch/wave53/review2.md`): bom_01 `ext_init` looked up pose group `"c_bom_sen"` where retail uses
+  `"R_1"`, so no pose got its index or timer (87.81%, behaviour fixed). muj_20 had lost the pressStartGX
+  placeholder again (as on main now); party.h/evt_shop.h/sac_muki.h declarations left from reverted work are out;
+  party_motion_behind_mario_fly keeps its NONMATCHING (98.74%). battle_unit's `dat_8041c3b8` stays a non-const
+  GXColor although retail has it in .sdata2: `const` takes BtlUnit_Entry from 100% to 99.31%. Open (LOW): unused
+  float externs in bom_fall, invented constant names (`float_10`) in party_nokonoko.
+- **Lesson:** don't switch the collection worktree to another commit while a review agent reads it (the build went
+  stale under the reviewer); prepare the next wave's report from a separate checkout or the tower.
+- **Wave 54** (launched 21:16 on main c294f5f, base `~/ttyd-w54base` from `git archive`): wave 53's recipe with
+  functions and groups up to 4 KB, leaving out units whose wave 53 work wasn't merged, battle/battle_camera (its
+  agent copy hangs mwcceppc) and the functions reviews took out; 80 agents.

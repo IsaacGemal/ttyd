@@ -350,7 +350,7 @@ static void ext_init(void) {
 
             e = pd2->entries;
             for (j = 0; j < pd2->count; j++, e++) {
-                if (strcmp(e->name, "c_bom_sen") == 0) {
+                if (strcmp(e->name, "R_1") == 0) {
                     break;
                 }
             }
