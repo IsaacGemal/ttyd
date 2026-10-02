@@ -1216,17 +1216,17 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         switch (weapon->superguardType) {
         case 2:
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (u8)weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
             return 21;
         case 3:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (u8)weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
             return 21;
         case 4:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (u8)weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
             if (BU_U32(unit1, 0x2CC) != 0) {
                 BattleRunHitEventDirect(unit1, 0x137, (void*)BU_U32(unit1, 0x2CC));
             } else {
@@ -1237,7 +1237,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         case 1:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (u8)weapon->field_0x6D, 0);
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
             BattleDamageDirect(-5, unit1, 0, 1, 0, 0x137, 0, 1);
             return -1;
         }
@@ -1301,7 +1301,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             if ((u8)damageCode == 0x1E && guarded != 0) {
                 damageCode = flags | 0x17;
             }
-            if ((u8)damageCode == 0x1E && ((u8)weapon->field_0x6D == 0x13 || (u8)weapon->field_0x6D == 0x1B)) {
+            if ((u8)damageCode == 0x1E && ((*(u8*)&weapon->field_0x6D) == 0x13 || (*(u8*)&weapon->field_0x6D) == 0x1B)) {
                 damageCode = flags | 0x17;
             }
             if ((u8)damageCode == 0x1E && statusResult != 0) {
@@ -1323,7 +1323,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 _checkDamageCode_EmergencyRevival(unit2, &dc1);
                 BattleRunHitEvent(unit2, dc1);
                 result = 18;
-            } else if ((flags & 0x100) != 0 && (weapon->special & 0x80) && BtlUnit_CheckStatus(unit2, 9) != 0
+            } else if ((flags & 0x100) != 0 && (weapon->special & 0x80) && (u32)BtlUnit_CheckStatus(unit2, 9) != 0
                        && irand(100) < 0) {
                 dc2 = 0x8717;
                 _checkDamageCode_EmergencyRevival(unit2, &dc2);
@@ -1334,7 +1334,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
 
                 if (statusResult == 0 && damage == 0 && fpDamage == 0 && guarded == 0) {
                     result = 19;
-                    if (unit2->currentKind >= 1 && unit2->currentKind < 0xD8 && (u8)weapon->field_0x6D != 0x1B) {
+                    if (unit2->currentKind >= 1 && unit2->currentKind < 0xD8 && (*(u8*)&weapon->field_0x6D) != 0x1B) {
                         BattleAudience_Case_EnemyNoDamage();
                     }
                 } else {
@@ -1343,8 +1343,8 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                         ((void (*)(s32))BattleAudience_Case_EnemyDamage)(damage);
                     }
                 }
-                var = (u8)weapon->field_0x6D;
-                if (var == 0x14 && counter.field_0x24 != 0) {
+                var = (*(u8*)&weapon->field_0x6D);
+                if (var == 0x14 && (u32)counter.field_0x24 != 0) {
                     var = 0;
                 }
                 if (var == 0xE || var == 0x10) {
@@ -1368,7 +1368,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         }
         BU_S32(unit1, 0x27C)++;
         BU_S8(unit2, 0x26F) = BU_S32(unit1, 0x27C);
-        if (counter.field_0x24 != 0) {
+        if ((u32)counter.field_0x24 != 0) {
             s32 w1;
             s32 w2;
             s32 w3;
@@ -1414,7 +1414,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             BattleActionCommandStop(wp);
             BattleAcHelpSetDispType(0);
             BattleDamageDirect(-5, unit1, 0, counter.field_0x28, 0, counter.field_0x24, 0, 1);
-            if (counter.field_0x2C != 0) {
+            if ((u32)counter.field_0x2C != 0) {
                 unit2->damagePattern = 0;
                 BattleRunHitEvent(unit2, counter.field_0x2C);
             }
