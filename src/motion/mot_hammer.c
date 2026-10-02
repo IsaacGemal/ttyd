@@ -742,7 +742,7 @@ s32 marioChkHammer2(void) {
     return 1;
 }
 
-// NONMATCHING (88.29%): the directional/sfx blocks and clamp sequences differ in float register
+// NONMATCHING (91.28%): the directional/sfx blocks and clamp sequences differ in float register
 // assignment and stack naming; the jump table and constants match.
 void mot_hammer(void) {
     MarioWork* mario = marioGetPtr();
@@ -823,18 +823,18 @@ void mot_hammer(void) {
         if (hitGetAttr(hit) & 0x80000000) {
             mobj = mobjHitObjPtrToPtr(hit);
             r28 = 0;
-            if (strcmp((char*)mobj + 0x15, str_802C5ABC) == 0 ||
-                strcmp((char*)mobj + 0x15, str_802C5ACC) == 0) {
+            if (strcmp(mobj->animName, str_802C5ABC) == 0 ||
+                strcmp(mobj->animName, str_802C5ACC) == 0) {
                 if (pouchGetPtr()->hammerLevel >= 1) {
                     r28 = 1;
                 }
-            } else if (strcmp((char*)mobj + 0x15, str_802C5AE0) == 0 ||
-                       strcmp((char*)mobj + 0x15, str_802C5AF0) == 0) {
+            } else if (strcmp(mobj->animName, str_802C5AE0) == 0 ||
+                       strcmp(mobj->animName, str_802C5AF0) == 0) {
                 if (pouchGetPtr()->hammerLevel >= 2) {
                     r28 = 1;
                 }
-            } else if (strcmp((char*)mobj + 0x15, str_802C5B04) == 0 ||
-                       strcmp((char*)mobj + 0x15, str_802C5B14) == 0) {
+            } else if (strcmp(mobj->animName, str_802C5B04) == 0 ||
+                       strcmp(mobj->animName, str_802C5B14) == 0) {
                 if (pouchGetPtr()->hammerLevel >= 3) {
                     r28 = 1;
                 }
@@ -904,16 +904,13 @@ void mot_hammer(void) {
     mario->poseTime = r27;
     animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)r27);
     if (r28 != 0) {
-        switch (pouchGetPtr()->hammerLevel) {
-        case 1:
+        s8 hl = pouchGetPtr()->hammerLevel;
+        if (hl == 1) {
             evtEntry(lv1quake_evt, 0, 0);
-            break;
-        case 2:
+        } else if (hl == 2) {
             evtEntry(lv2quake_evt, 0, 0);
-            break;
-        case 3:
+        } else if (hl == 3) {
             evtEntry(lv3quake_evt, 0, 0);
-            break;
         }
         mario->currSubMotionId = 1;
         M_S32(mario, 0x1FC) = M_S32(mario, 0x200);
@@ -998,7 +995,7 @@ void mot_hammer(void) {
             break;
         }
         i = 0;
-        while (i < 10) {
+        while ((u32)i < 10) {
             if (pouchEquipCheckBadge(se_data[M_S8(mario, 0x3A)]) != 0) {
                 s32 idx = M_S8(mario, 0x3A);
                 sound = se_data[idx + 1];
