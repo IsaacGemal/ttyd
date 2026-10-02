@@ -1329,7 +1329,6 @@ void winLogInit2(WindowWork* work) {
     winMsgEntry(work, 0, name, 0);
 }
 
-extern const char* msg_help[5];
 extern const u8 enemy_monoshiri_sort_table[];
 extern const char str_802F6478[];
 extern const char str_802F6480[];
@@ -1368,6 +1367,7 @@ extern const f32 float_neg1000_8041d948;
 // the stone counter in r27) and the int->float conversion double reached through the string base register.
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
+    static const char* msg_help[5] = {str_802F5EB8, str_802F5EB8 + 0x14, str_802F5EB8 + 0x2C, str_802F5EB8 + 0x44, str_802F5EB8 + 0x5C};
     const char* base = str_802F5EB8;
     const char* area;
     s32 i;
@@ -1775,12 +1775,11 @@ extern const f32 float_3_8041d888;
 extern const f32 float_0p125_8041d890;
 extern const f32 float_neg148_8041d898;
 
-static const f32 pos_tbl[7][2] = {
-    {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
-};
-
 // NONMATCHING (75.01%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
 void mapGX(WindowWork* work, f32 x, f32 y) {
+    static f32 pos_tbl[7][2] = {
+        {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
+    };
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
     f32 tx = float_74_8041d86c + (x + w->mapScrollX);
@@ -2263,7 +2262,7 @@ typedef struct TattleCamEntry {
 
 // Renders a tattle model into the viewer's texture: frames the model's bounding box, draws the pose (and the swarm
 // for the moamoa tattle) and copies the EFB into the viewer's image.
-// NONMATCHING (85.76%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
+// NONMATCHING (85.95%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
 void capture(CameraId camId, void* param) {
     MonosiriWork* w = param;
     const char* base = str_802F5EB8;
@@ -2332,9 +2331,8 @@ void capture(CameraId camId, void* param) {
     eye.z = dist;
     C_MTXLookAt(view, &eye, &up, &at);
     {
-        s32* hdr = *(s32**)((u8*)w->file2->data[0]);
-        n = ((u32*)w->file2->data[0])[1] >> 4;
-        tbl = (TattleCamEntry*)hdr;
+        tbl = (TattleCamEntry*)w->file2->data[0];
+        n = (u32)w->file2->data[1] >> 4;
         for (i = 0; i < n; i++) {
             if (tbl[i].kind == w->unitKind) {
                 break;
