@@ -13,7 +13,6 @@ anything worth keeping into a chapter here.
 ## Current state (rewrite this section as things change)
 
 - **⚠️ Ledger audit planned (Isaac, Oct 2).** This ledger has drifted: some entries are outdated, and some claims were wrong when written. Later, go through it step by step, check each claim against the repo, the build and the git history, and correct or remove what's wrong. Until then, treat any number or claim here as a lead to verify, not a fact. (This section itself still describes Sep 29.)
-- **📌 To investigate: a cleanup index (Isaac, Oct 2).** Melee publishes one ([doldecomp.github.io/melee/cleanup](https://doldecomp.github.io/melee/cleanup/), 6,057 sites in 597 files): every place matched C is ugly for matching's sake (pointer moved by a literal offset, pointer retyped, `MUST_MATCH`/pragma/`PAD_STACK`, `goto`), each counted once by its outermost form, regenerated on every push. A rough grep here suggests far more (~6k `(u8*)p + 0xNN`, ~9k `*(T*)p`, ~2k `MUST_MATCH` blocks, ~600 offset macros). Their `tools/cleanup_index.py` and template are sparse-cloned at `~/melee-cleanup` for reference; the repo has no license file, so study it and write our own rather than copying. Ideas: publish it, ratchet it in `ci.py`, later run cleanup waves (naming struct fields first; the check is objective: stays 100% and linked). After matching, not before.
 - New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first, then the
   chapters after it; the newest chapters (Sep 28-29: the REL chapters, waves 17 and 18, Claude #3's grind rounds)
   supersede it where they differ. The agents' rules live in `docs/AGENT_BRIEF.md`, attached to every prompt.
@@ -217,6 +216,7 @@ Considered and deliberately not built yet. Pick one up by adding a dated chapter
   `tools/ci.py` directly and records the result in the PR or commit. Revisit when the repo goes public, for a
   visible "build passing" badge; then it must run only on pushes to `main`, never on pull requests (see the
   private go-public checklist). Not implemented, not tested.
+- **Cleanup index** (parked 2026-10-02, Isaac). Melee publishes one ([doldecomp.github.io/melee/cleanup](https://doldecomp.github.io/melee/cleanup/), 6,057 sites in 597 files): every place matched C is ugly for matching's sake (pointer moved by a literal offset, pointer retyped, `MUST_MATCH`/pragma/`PAD_STACK`, `goto`), each counted once by its outermost form, regenerated on every push. A rough grep here suggests far more (~6k `(u8*)p + 0xNN`, ~9k `*(T*)p`, ~2k `MUST_MATCH` blocks, ~600 offset macros). Their `tools/cleanup_index.py` and template are sparse-cloned at `~/melee-cleanup` for reference; the repo has no license file, so study it and write our own rather than copying. Ideas: publish it, ratchet it in `ci.py`, later run cleanup waves (naming struct fields first; the check is objective: stays 100% and linked). After matching, not before.
 
 ## Harness: Pi over opencode (2026-09-25, Claude Opus 5.5)
 
