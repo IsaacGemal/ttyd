@@ -610,8 +610,8 @@ static void ext_moamoa_main(void) {
                 pose->field_0x02 = 0x30;
                 f = (wp->field_0x55C + wp->field_0x550) * 0.5f;
                 pose->position = vec3_eki_00008908;
-                rad = 6.2831855f * f / 360.0f;
                 dist = randf(0.1f, 0.2f);
+                rad = 6.2831855f * f / 360.0f;
                 pose->field_0x14 = dist * ekiSinf2(rad);
                 pose->field_0x1C = randf(0.03f, 0.06f);
                 pose->field_0x20 = dist * -ekiCosf2(rad);
