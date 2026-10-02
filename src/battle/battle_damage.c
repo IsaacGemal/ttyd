@@ -1182,16 +1182,16 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     BattleWork* wp;
     CounterPreCheckWork counter;
     s32 result = -1;
-    s32 statusResult = 0;
+    u32 statusResult = 0;
     s32 guarded = 0;
     s32 damage;
     s32 fpDamage;
     s32 damageCode;
     s32 dc1;
     s32 dc2;
-    Vec posA;
-    Vec posB;
     Vec posC;
+    Vec posB;
+    Vec posA;
 
     wp = _battleWorkPointer;
     BattleInitCounterPreCheckWork(&counter);
@@ -1205,8 +1205,8 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     if (!(weapon->special & 0x20000) && BtlUnit_GetACPossibility(unit2) != 0 && BattleActionCommandGetDefenceResult() == 5) {
         EffectEntry* eff;
 
-        BtlUnit_GetHitPos(unit2, part, &posC.x, &posC.y, &posC.z);
-        eff = effNiceEntry(2, posC.x - 60.0f, 45.0f + posC.y, posC.z - 10.0f);
+        BtlUnit_GetHitPos(unit2, part, &posA.x, &posA.y, &posA.z);
+        eff = effNiceEntry(2, posA.x - 60.0f, 45.0f + posA.y, posA.z - 10.0f);
         ((f32*)eff->userdata)[7] = 0.75f;
         flags |= 0x80000;
         psndSFXOn("SFX_SYSTEM_GREAT1");
@@ -1406,9 +1406,9 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 BattleAudience_Case_Countered();
             }
             if (counter.field_0x18 != 0) {
-                BtlUnit_GetHitPos(unit2, part, &posA.x, &posA.y, &posA.z);
-                effBombEntry(0, posA.x, posA.y, posA.z, 1.0f);
-                psndSFXOn_3D("SFX_BTL_THUNDERS_ATTACK4", &posA);
+                BtlUnit_GetHitPos(unit2, part, &posC.x, &posC.y, &posC.z);
+                effBombEntry(0, posC.x, posC.y, posC.z, 1.0f);
+                psndSFXOn_3D("SFX_BTL_THUNDERS_ATTACK4", &posC);
                 BattleFogForceStop();
             }
             BattleActionCommandStop(wp);
