@@ -10,13 +10,23 @@
 typedef struct YuunpcEntry {
     u16 field_0;      //0x0
     u16 flags;        //0x2
-    u8 pad_04[0x18];  //0x4
+    s16 field_4;      //0x4
+    u16 pad_06;       //0x6
+    f32 field_8;      //0x8
+    Vec field_C;      //0xC
+    f32 field_18;     //0x18
     f32 field_1C;     //0x1C
     f32 field_20;     //0x20
     f32 field_24;     //0x24
     f32 field_28;     //0x28
     f32 field_2C;     //0x2C
-    u8 pad_30[0x24];  //0x30
+    Vec field_30;     //0x30
+    f32 field_3C;     //0x3C
+    f32 field_40;     //0x40
+    f32 field_44;     //0x44
+    f32 field_48;     //0x48
+    s32 field_4C;     //0x4C
+    s32 field_50;     //0x50
     s16 field_54;     //0x54
     s16 field_56;     //0x56
     s16 field_58;     //0x58
