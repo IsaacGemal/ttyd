@@ -483,9 +483,9 @@ static s32 yuu_kesan(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
 #define A74(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x74 + (i) * 4))
 #define AD4(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0xd4 + (i) * 4))
 
-// NONMATCHING (73.93%): same asm shape as rels/yuu/src/event/evt_yuuranking.c's disp_func and ported from
-// it. Still differs: float/string constants pool anonymously, one register short (target stmw r24-r31 vs
-// r25-r31), GXColor temps at 0x14 not 0x48-0x54, and the inlined fontlenpitch blocks schedule differently.
+// NONMATCHING (92.33%): ported from rels/yuu/src/event/evt_yuuranking.c's disp_func (identical asm). MWCC
+// allocates one callee-saved register short (target stmw r24-r31 vs our r25-r31): the inlined fontlenpitch keeps
+// text/str in one register instead of two, so every stack slot sits 4 bytes higher.
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     YuRankWork* work = param;
     const char* titleTbl[4] = {
@@ -505,26 +505,26 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     f32 w;
     f32 sc;
     f32 y;
-    GXColor c19;
-    GXColor c18;
-    GXColor c17;
-    GXColor c16;
-    GXColor c15;
-    GXColor c14;
-    GXColor c13;
-    GXColor c12;
-    GXColor c11;
-    GXColor c10;
-    GXColor c9;
-    GXColor c8;
-    GXColor c7;
-    GXColor c6;
-    GXColor c5;
-    GXColor c4;
-    GXColor c3;
-    GXColor c2;
-    GXColor c1;
     GXColor c0;
+    GXColor c1;
+    GXColor c2;
+    GXColor c3;
+    GXColor c4;
+    GXColor c5;
+    GXColor c6;
+    GXColor c7;
+    GXColor c8;
+    GXColor c9;
+    GXColor c10;
+    GXColor c11;
+    GXColor c12;
+    GXColor c13;
+    GXColor c14;
+    GXColor c15;
+    GXColor c16;
+    GXColor c17;
+    GXColor c18;
+    GXColor c19;
 
     c0 = *(GXColor*)&dat_gor_0001cd30;
     windowDispGX_Waku_col(0, c0, work->field_0C + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
@@ -561,101 +561,27 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         FontDrawColor(&c3);
         msg = msgSearch("menu_subtitle1_minigame1");
         unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
-        if (work->field_38 < 0) {
-            c4 = *(GXColor*)&dat_gor_0001cd48;
-            FontDrawColor(&c4);
-            msg = msgSearch("menu_error_minigame1");
-            sprintf(buf, msg);
+        if (work->field_38 >= 0) {
+            msg = msgSearch("menu_decimal_point");
+            sprintf(buf, "%3d%s%02d", work->field_38 / 1000, msg, (work->field_38 % 1000) / 10);
             FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
-            goto end;
-        }
-        msg = msgSearch("menu_decimal_point");
-        sprintf(buf, "%3d%s%02d", work->field_38 / 1000, msg, (work->field_38 % 1000) / 10);
-        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
-        if (work->field_30 >= 4) {
-            FontDrawStart();
-            FontDrawScale(1.0f);
-            c5 = *(GXColor*)&dat_gor_0001cd40;
-            FontDrawColor(&c5);
-            msg = msgSearch("menu_subtitle4_getmonte");
-            unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
-            sprintf(buf, "%4d", work->field_20);
-            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
-        }
-        if (work->field_30 >= 7) {
-            FontDrawStart();
-            FontDrawScale(1.0f);
-            c6 = *(GXColor*)&dat_gor_0001cd44;
-            FontDrawColor(&c6);
-            if (work->field_24 > 1) {
-                msg = msgSearch("menu_subtitle2_minigame1");
-                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
-                if (work->field_24 < 0x100) {
-                    msg = msgSearch("menu_subtitle4_minigame1");
-                    sprintf(buf, msg, work->field_24);
-                } else {
-                    sprintf(buf, "%2d", work->field_24 - 0x100);
-                }
-                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
-            } else if (work->field_24 < 0) {
-                msg = msgSearch("menu_subtitle5_minigame1");
-                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
-                msg = msgSearch("menu_subtitle6_minigame1");
-                sprintf(buf, msg, -work->field_24);
-                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+            if (work->field_30 >= 4) {
+                FontDrawStart();
+                FontDrawScale(1.0f);
+                c5 = *(GXColor*)&dat_gor_0001cd40;
+                FontDrawColor(&c5);
+                msg = msgSearch("menu_subtitle4_getmonte");
+                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
+                sprintf(buf, "%4d", work->field_20);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
             }
-        }
-        goto end;
-
-    case 2:
-    case 3:
-        FontDrawStart();
-        c7 = *(GXColor*)&dat_gor_0001cd4c;
-        FontDrawColor(&c7);
-        if (work->field_14 == 3) {
-            msg = msgSearch("menu_subtitle1_minigame2");
-        } else {
-            msg = msgSearch("menu_subtitle1_minigame3");
-        }
-        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
-        FontDrawScale(1.0f);
-        if (work->field_38 < 0) {
-            c8 = *(GXColor*)&dat_gor_0001cd58;
-            FontDrawColor(&c8);
-            if (work->field_14 == 3) {
-                sprintf(buf, msgSearch("menu_error_minigame2"));
-            } else {
-                sprintf(buf, msgSearch("menu_error_minigame3"));
-            }
-            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
-            goto end;
-        }
-        i = work->field_38 / 1000;
-        j = i / 60;
-        i = i - j * 60;
-        msg = msgSearch("menu_colon");
-        sprintf(buf, "%1d%s%02d%s%02d", j, msg, i, msgSearch("menu_colon"), (work->field_38 % 1000) / 10);
-        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
-        if (work->field_30 >= 4) {
-            FontDrawStart();
-            FontDrawScale(1.0f);
-            c9 = *(GXColor*)&dat_gor_0001cd50;
-            FontDrawColor(&c9);
-            msg = msgSearch("menu_subtitle4_getmonte");
-            unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
-            sprintf(buf, "%4d", work->field_20);
-            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
             if (work->field_30 >= 7) {
                 FontDrawStart();
                 FontDrawScale(1.0f);
-                c10 = *(GXColor*)&dat_gor_0001cd54;
-                FontDrawColor(&c10);
+                c6 = *(GXColor*)&dat_gor_0001cd44;
+                FontDrawColor(&c6);
                 if (work->field_24 > 1) {
-                    if (work->field_14 == 3) {
-                        msg = msgSearch("menu_subtitle2_minigame2");
-                    } else {
-                        msg = msgSearch("menu_subtitle2_minigame3");
-                    }
+                    msg = msgSearch("menu_subtitle2_minigame1");
                     unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
                     if (work->field_24 < 0x100) {
                         msg = msgSearch("menu_subtitle4_minigame1");
@@ -672,6 +598,87 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 }
             }
+        } else {
+            c4 = *(GXColor*)&dat_gor_0001cd48;
+            FontDrawColor(&c4);
+            msg = msgSearch("menu_error_minigame1");
+            sprintf(buf, msg);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+        }
+        goto end;
+
+    case 2:
+    case 3:
+        FontDrawStart();
+        c7 = *(GXColor*)&dat_gor_0001cd4c;
+        FontDrawColor(&c7);
+        switch (work->field_14) {
+        case 3:
+            msg = msgSearch("menu_subtitle1_minigame2");
+            break;
+        case 2:
+            msg = msgSearch("menu_subtitle1_minigame3");
+            break;
+        }
+        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
+        FontDrawScale(1.0f);
+        if (work->field_38 >= 0) {
+            s32 f38 = work->field_38;
+            i = f38 / 1000;
+            j = i / 60;
+            i = i - j * 60;
+            msg = msgSearch("menu_colon");
+            sprintf(buf, "%1d%s%02d%s%02d", j, msg, i, msgSearch("menu_colon"), (f38 % 1000) / 10);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            if (work->field_30 >= 4) {
+                FontDrawStart();
+                FontDrawScale(1.0f);
+                c9 = *(GXColor*)&dat_gor_0001cd50;
+                FontDrawColor(&c9);
+                msg = msgSearch("menu_subtitle4_getmonte");
+                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
+                sprintf(buf, "%4d", work->field_20);
+                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
+                if (work->field_30 >= 7) {
+                    FontDrawStart();
+                    FontDrawScale(1.0f);
+                    c10 = *(GXColor*)&dat_gor_0001cd54;
+                    FontDrawColor(&c10);
+                    if (work->field_24 > 1) {
+                        switch (work->field_14) {
+                        case 3:
+                            msg = msgSearch("menu_subtitle2_minigame2");
+                            break;
+                        case 2:
+                            msg = msgSearch("menu_subtitle2_minigame3");
+                            break;
+                        }
+                        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                        if (work->field_24 < 0x100) {
+                            msg = msgSearch("menu_subtitle4_minigame1");
+                            sprintf(buf, msg, work->field_24);
+                        } else {
+                            sprintf(buf, "%2d", work->field_24 - 0x100);
+                        }
+                        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                    } else if (work->field_24 < 0) {
+                        msg = msgSearch("menu_subtitle5_minigame1");
+                        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                        msg = msgSearch("menu_subtitle6_minigame1");
+                        sprintf(buf, msg, -work->field_24);
+                        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                    }
+                }
+            }
+        } else {
+            c8 = *(GXColor*)&dat_gor_0001cd58;
+            FontDrawColor(&c8);
+            if (work->field_14 == 3) {
+                sprintf(buf, msgSearch("menu_error_minigame2"));
+            } else {
+                sprintf(buf, msgSearch("menu_error_minigame3"));
+            }
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
         }
         goto end;
 
@@ -682,37 +689,37 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         FontDrawColor(&c11);
         msg = msgSearch("menu_subtitle1_minigame4");
         unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
-        if (work->field_38 >= work->field_2C) {
+        if (work->field_38 < work->field_2C) {
+            sprintf(buf, "%4d", work->field_38 + 1);
+            FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            if (work->field_30 >= 7) {
+                FontDrawStart();
+                FontDrawScale(1.0f);
+                c13 = *(GXColor*)&dat_gor_0001cd60;
+                FontDrawColor(&c13);
+                if (work->field_24 > 1) {
+                    msg = msgSearch("menu_subtitle2_minigame4");
+                    unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    if (work->field_24 < 0x100) {
+                        msg = msgSearch("menu_subtitle4_minigame1");
+                        sprintf(buf, msg, work->field_24);
+                    } else {
+                        sprintf(buf, "%2d", work->field_24 - 0x100);
+                    }
+                    FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                } else if (work->field_24 < 0) {
+                    msg = msgSearch("menu_subtitle5_minigame1");
+                    unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
+                    msg = msgSearch("menu_subtitle6_minigame1");
+                    sprintf(buf, msg, -work->field_24);
+                    FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                }
+            }
+        } else {
             c12 = *(GXColor*)&dat_gor_0001cd64;
             FontDrawColor(&c12);
             sprintf(buf, msgSearch("menu_error_minigame4"));
             FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
-            goto end;
-        }
-        sprintf(buf, "%4d", work->field_38 + 1);
-        FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
-        if (work->field_30 >= 7) {
-            FontDrawStart();
-            FontDrawScale(1.0f);
-            c13 = *(GXColor*)&dat_gor_0001cd60;
-            FontDrawColor(&c13);
-            if (work->field_24 > 1) {
-                msg = msgSearch("menu_subtitle2_minigame4");
-                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
-                if (work->field_24 < 0x100) {
-                    msg = msgSearch("menu_subtitle4_minigame1");
-                    sprintf(buf, msg, work->field_24);
-                } else {
-                    sprintf(buf, "%2d", work->field_24 - 0x100);
-                }
-                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
-            } else if (work->field_24 < 0) {
-                msg = msgSearch("menu_subtitle5_minigame1");
-                unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
-                msg = msgSearch("menu_subtitle6_minigame1");
-                sprintf(buf, msg, -work->field_24);
-                FontDrawStringPitch(buf, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
-            }
         }
         goto end;
 
@@ -784,7 +791,12 @@ rank:
             FontDrawColor(&c19);
         }
         msg = subTbl[i];
+#ifdef MUST_MATCH
+        // original compares through a signed char pointer (cmpwi); the plain char compare emits cmplwi
+        if (((const s8*)msg)[0] == 'm' && ((const s8*)msg)[1] == 'e' && ((const s8*)msg)[2] == 'n' && ((const s8*)msg)[3] == 'u' && ((const s8*)msg)[4] == '_') {
+#else
         if (msg[0] == 'm' && msg[1] == 'e' && msg[2] == 'n' && msg[3] == 'u' && msg[4] == '_') {
+#endif
             msg = msgSearch(msg);
         }
         if (i == 5) {
@@ -793,18 +805,8 @@ rank:
         } else {
             FontDrawStringPitch(msg, work->field_0C + -150.4f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
         }
-        if (work->field_14 == 1) {
-            if (A74(i) < work->field_2C) {
-                sprintf(buf, "%4d", A74(i) + 1);
-                FontDrawStringPitch(buf, work->field_0C + -37.600006f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
-                sprintf(buf, "%4d", AD4(i));
-                FontDrawStringPitch(buf, work->field_0C + 75.19998f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
-            } else {
-                sprintf(buf, msgSearch("menu_error_minigame4"));
-                FontDrawMessage((s32)(work->field_0C + -75.200005f),
-                                (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
-            }
-        } else if (work->field_14 == 0) {
+        switch (work->field_14) {
+        case 0:
             if (A74(i) >= 0) {
                 msg = msgSearch("menu_decimal_point");
                 sprintf(buf, "%3d%s%02d", A74(i) / 1000, msg, (A74(i) % 1000) / 10);
@@ -816,7 +818,9 @@ rank:
                 FontDrawMessage((s32)(work->field_0C + -75.200005f),
                                 (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
             }
-        } else if (work->field_14 == 2 || work->field_14 == 3) {
+        break;
+        case 2:
+        case 3:
             if (A74(i) >= 0) {
                 s32 sec = A74(i) / 1000;
                 s32 min = sec / 60;
@@ -836,6 +840,19 @@ rank:
                 FontDrawMessage((s32)(work->field_0C + -75.200005f),
                                 (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
             }
+        break;
+        case 1:
+            if (A74(i) < work->field_2C) {
+                sprintf(buf, "%4d", A74(i) + 1);
+                FontDrawStringPitch(buf, work->field_0C + -37.600006f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+                sprintf(buf, "%4d", AD4(i));
+                FontDrawStringPitch(buf, work->field_0C + 75.19998f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
+            } else {
+                sprintf(buf, msgSearch("menu_error_minigame4"));
+                FontDrawMessage((s32)(work->field_0C + -75.200005f),
+                                (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
+            }
+        break;
         }
     }
 
