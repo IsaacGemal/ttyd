@@ -20,3 +20,10 @@ void roll_upstairs_on(void);
 extern f32 roll_grx;
 extern f32 roll_grz;
 extern Vec vec3_802c5d40[];
+typedef struct MotRoll {
+    f32 velX;   // 0x0
+    f32 velY;   // 0x4
+    s32 unk8;   // 0x8
+    s32 state;  // 0xC
+    f32 unk10;  // 0x10
+} MotRoll;
