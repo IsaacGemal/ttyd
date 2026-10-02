@@ -3818,11 +3818,14 @@ without one, and the reaper (`~/snood/tools/reaper.py`) had no rule for wibo.
   the collection tools, the dashboard) fails instead of hanging. configure.py fails if GNU timeout is missing
   (`TTYD_NO_COMPILE_TIMEOUT=1` opts out).
 - `tools/hang_guard.py` refuses known hang triggers (numeric `#pragma scheduling`). check.py runs it before
-  building (every source on `--final`); ci.py runs it as its own step, whatever `--allow-pragma` says. Brief rule
+  building (the unit and every header; every source on `--final`); ci.py runs it as its own step, whatever `--allow-pragma` says. Brief rule
   8 says so. check.py reports a hung compile as such, from the marker.
 - `tools/wave_launch.py`: the agent's ssh call has a deadline, and after every agent (also on error) `reap()`
   kills the build/agent programs (wibo, ninja, python, pi, ...) still running in its workspace.
-- Reaper: mwcc/mwld under wibo (with or without the timeout wrapper) killed after 900 s.
+- Reaper: mwcc/mwld under wibo (with or without the timeout wrapper) killed after 900 s; it re-checks the command
+  line before the follow-up SIGKILL (PID reuse).
+- Every launcher ssh/rsync has a deadline. Still true by design: reap() treats "runs in this workspace" as
+  ownership, which holds because only the agent works there.
 - Claude #2's scratch launcher template got the same three changes (timeouts on its own check.py/rel_link.py
   calls, workspace reap); battle_camera and eff_funemizu can leave its exclusion list.
 

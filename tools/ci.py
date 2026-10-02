@@ -288,6 +288,7 @@ def main():
     a = ap.parse_args()
     CI_DIR.mkdir(parents=True, exist_ok=True)
     if a.init:
+        hang_guard_check()
         build()
         shutil.copy(BUILD / "report.json", ACCEPTED)
         print(f"accepted current build as the baseline ({ACCEPTED.relative_to(ROOT)})")

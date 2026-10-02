@@ -28,6 +28,10 @@ def problems(paths):
     return out
 
 
+def all_headers():
+    return [p for d in ("include", "rels", "libs", "src") for p in (ROOT / d).rglob("*.h")]
+
+
 def all_sources():
     return [p for d in ("src", "rels", "libs", "include") for p in (ROOT / d).rglob("*") if p.suffix in (".c", ".h")]
 

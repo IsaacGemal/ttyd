@@ -35,7 +35,7 @@ jobs = ["-j2"]  # two waves of agents share the tower's 16 cores
 # Sources that make the compiler hang forever (tools/hang_guard.py) are refused before anything is built.
 sys.path.insert(0, "tools")
 import hang_guard
-bad = hang_guard.problems(hang_guard.all_sources() if FINAL else [src])
+bad = hang_guard.problems(hang_guard.all_sources() if FINAL else [src, *hang_guard.all_headers()])
 if bad:
     print("BUILD REFUSED:\n" + "\n".join(bad))
     sys.exit(1)

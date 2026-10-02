@@ -92,20 +92,21 @@ def src_path(unit):
     return str(rel) if rest and rel.exists() else f"src/{unit}.c"
 
 def ssh(host, cmd, **kw):
+    kw.setdefault("timeout", 1800)  # no remote step may hold a launcher thread forever
     return subprocess.run(["ssh", host, cmd], capture_output=True, text=True, check=True, **kw)
 
 
 # What an agent's run leaves behind once pi is gone. `timeout` kills pi, not what its tools started: a hung compile
 # under check.py outlived its agent by a day (wave 53). Only these programs are killed, so a person's shell that
 # happens to sit in the workspace is left alone.
-REAP_NAMES = "wibo ninja python3 python pi node bwrap timeout sh objdiff-cli dtk nice"
+REAP_NAMES = "wibo|ninja|python*|pi|node|bwrap|timeout|sh|objdiff-cli|dtk|nice"
 
 
 def reap(host, ws):
     """Kill the build and agent processes still running in workspace `ws` on `host`."""
     cmd = (f"cd {ws} 2>/dev/null || exit 0; for d in /proc/[0-9]*; do "
            f"case \"$(readlink $d/cwd 2>/dev/null)\" in \"$PWD\"|\"$PWD\"/*) ;; *) continue;; esac; "
-           f"case \" {REAP_NAMES} \" in *\" $(cat $d/comm 2>/dev/null) \"*) "
+           f"case \"$(cat $d/comm 2>/dev/null)\" in {REAP_NAMES}) "
            f"[ \"${{d#/proc/}}\" != $$ ] && kill -9 \"${{d#/proc/}}\" 2>/dev/null;; esac; done; true")
     try:
         subprocess.run(["ssh", host, cmd], capture_output=True, text=True, timeout=120)
@@ -162,7 +163,7 @@ def run(host, tag, unit, key, log):
             timeout=TIMEOUT + 900 + 600)
     subprocess.run(["rsync", "-az", f"{host}:{ws}/REPORT.md", f"{host}:{ws}/final.c", f"{host}:{ws}/lastgood.c",
                     f"{host}:{ws}/other_changes.txt", f"{host}:{ws}/include.patch", f"{host}:{ws}/provenance.txt", f"{host}:{ws}/stderr.log",
-                    str(HERE / tag) + "/"])
+                    str(HERE / tag) + "/"], timeout=600)
     log(f"{host}:{tag} finished in {time.time() - t0:.0f}s: {r.stdout.strip()}")
 
 
