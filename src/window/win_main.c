@@ -118,6 +118,8 @@ void winOpenDisable(void) {
 
 extern WindowPartyDt winPartyDt[];
 extern PartyData partyDataTbl[];
+// evt_item_use (.data 0x803759D0) is part of this unit's still-unported .data (the script plus kime_pose*, str_8041DC5C..,
+// evt_eff*); it is not defined in C yet.
 extern s32 evt_item_use[];
 
 // NONMATCHING (94.29%): calls and immediates match; the open-menu goto layout, the final characterId branches, and the pooled-string/names-table base register differ.
