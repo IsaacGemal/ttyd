@@ -1039,8 +1039,8 @@ s32 winLogMain(WindowWork* work) {
             w->curX = (f32)(((w->cardSel % 28) % 7) * 0x38 - 0x8C);
             w->curY = (f32)(0x5A - ((w->cardSel % 28) / 7) * 0x38);
             if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
-                ItemData* it = &itemDataTable[w->cardIcon[w->cardSel] + 240];
-                winMsgEntry(work, -2, it->menu_description, (s32)it->name);
+                ItemData* it = &itemDataTable[w->cardIcon[w->cardSel]];
+                winMsgEntry(work, -2, (it + 240)->menu_description, (s32)(it + 240)->name);
             } else {
                 winMsgEntry(work, -2, RO2(base, 0x570, str_802F6428), (s32)RO2(base, 0x58C, str_802F6444));
             }
@@ -1117,8 +1117,8 @@ s32 winLogMain(WindowWork* work) {
             w->curX = (f32)(((w->badgeSel % 28) % 7) * 0x38 - 0x8C);
             w->curY = (f32)(0x5A - ((w->badgeSel % 28) / 7) * 0x38);
             if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
-                ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel] + 179];
-                winMsgEntry(work, -2, it->menu_description, (s32)it->name);
+                ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel]];
+                winMsgEntry(work, -2, (it + 179)->menu_description, (s32)(it + 179)->name);
             } else {
                 winMsgEntry(work, -2, RO2(base, 0x570, str_802F6428), (s32)RO2(base, 0x58C, str_802F6444));
             }
