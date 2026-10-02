@@ -63,6 +63,10 @@ extern const f32 float_neg160_8041d8c4;
 extern const f32 float_0p25_8041d8c8;
 extern const f64 double_0p125_802f63c0;
 extern const char str_802F5EB8[];
+extern const char str_802F5ECC[];
+extern const char str_802F5EE4[];
+extern const char str_802F5EFC[];
+extern const char str_802F5F14[];
 extern const char str_8041D7AC[];
 extern const char str_8041D7B0[];
 extern const char str_8041D810[];
@@ -1367,7 +1371,7 @@ extern const f32 float_neg1000_8041d948;
 // the stone counter in r27) and the int->float conversion double reached through the string base register.
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
-    static const char* msg_help[5] = {str_802F5EB8, str_802F5EB8 + 0x14, str_802F5EB8 + 0x2C, str_802F5EB8 + 0x44, str_802F5EB8 + 0x5C};
+    static const char* msg_help[5] = {str_802F5EB8, str_802F5ECC, str_802F5EE4, str_802F5EFC, str_802F5F14};
     const char* base = str_802F5EB8;
     const char* area;
     s32 i;
