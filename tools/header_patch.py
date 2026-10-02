@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Check and apply an agent's header patch: it may only add declarations to headers under include/.
+"""Check and apply an agent's header patch: it may only add declarations to headers under include/
+or a REL's rels/<mod>/include/.
 
   python3 tools/header_patch.py PATCH          check it; print what's wrong, exit 1 if anything is
   python3 tools/header_patch.py --apply PATCH  check it, then append each added line to its header unless the
@@ -67,7 +68,7 @@ def type_line(body, stack):
     return ok
 
 
-TARGET = re.compile(r"^\+\+\+ b/(include/(?:[\w.-]+/)*[\w.-]+\.h)(?:\t.*)?$")
+TARGET = re.compile(r"^\+\+\+ b/((?:rels/[\w.-]+/)?include/(?:[\w.-]+/)*[\w.-]+\.h)(?:\t.*)?$")
 
 
 def additions(patch, created=None):
@@ -104,7 +105,7 @@ def problems(patch):
         if line.startswith("+++ "):
             m = TARGET.match(line)
             if not m or ".." in m.group(1):
-                out.append(f"line {n}: patches something other than a header under include/: {line[4:].split(chr(9))[0]}")
+                out.append(f"line {n}: patches something other than a header under include/ or rels/<mod>/include/: {line[4:].split(chr(9))[0]}")
             cur = m.group(1) if m and ".." not in m.group(1) else None
             sections += cur is not None
             new, stack = False, []
@@ -133,7 +134,7 @@ def problems(patch):
     if stack:
         out.append("a type definition is never closed at the end of the patch")
     if patch.strip() and not sections and not out:
-        out.append("no header sections (`+++ b/include/...h`) found: not a unified diff of include/")
+        out.append("no header sections (`+++ b/include/...h` or `+++ b/rels/<mod>/include/...h`) found: not a unified diff of include/")
     return out
 
 
