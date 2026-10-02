@@ -651,19 +651,29 @@ void btlseqTurn(BattleWork* wp) {
 			break;
 
 		case 0x3000020: {
+#ifdef MUST_MATCH
+			// MUST_MATCH: three locals declared z, y, x take the original's Vec slots (sp+0x3c..0x44) and the
+			// comma initializers keep pz/py/sfx in r27/r28/r29 (and the first recovery loop's counter in r25).
+			// The natural form under #else uses a real Vec.
 			f32 z;
 			f32 y;
 			f32 x;
-#ifdef MUST_MATCH
-			// The comma initializers keep pz/py/sfx in r27/r28/r29 (and the first recovery loop's
-			// counter in r25); the plain addresses under #else put the string load through r0.
 			f32* pz = (0, &z);
 			f32* py = (0, &y);
 			const char* sfx = (0, str_802EF5AC);
+#define BT_X x
+#define BT_Y y
+#define BT_Z z
+#define BT_POS ((Vec*)&x)
 #else
-			f32* pz = &z;
-			f32* py = &y;
+			Vec pos;
+			f32* pz = &pos.z;
+			f32* py = &pos.y;
 			const char* sfx = str_802EF5AC;
+#define BT_X pos.x
+#define BT_Y pos.y
+#define BT_Z pos.z
+#define BT_POS (&pos)
 #endif
 			for (i = 0; i < 64; i++) {
 				unit = BattleGetUnitPtr(wp, i);
@@ -671,13 +681,17 @@ void btlseqTurn(BattleWork* wp) {
 					if (!BtlUnit_CheckShadowGuard(unit)) {
 						BattleDamageDirect(-5, unit, 0, 1, 0, 0x11a, 0, 1);
 					}
-					BtlUnit_GetPos(unit, &x, py, pz);
-					y += (f32)BtlUnit_GetHeight(unit);
-					effFreezeN64Entry(0, 1, x, y, z, float_1_8041c284);
-					psndSFXOn_3D(sfx, (Vec*)&x);
+					BtlUnit_GetPos(unit, &BT_X, py, pz);
+					BT_Y += (f32)BtlUnit_GetHeight(unit);
+					effFreezeN64Entry(0, 1, BT_X, BT_Y, BT_Z, float_1_8041c284);
+					psndSFXOn_3D(sfx, BT_POS);
 					handled = TRUE;
 				}
 			}
+#undef BT_X
+#undef BT_Y
+#undef BT_Z
+#undef BT_POS
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
 				BattleIncSeq(wp, SEQ_TURN);
