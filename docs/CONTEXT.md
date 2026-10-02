@@ -12,6 +12,7 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
+- **⚠️ Ledger audit planned (Isaac, Oct 2).** This ledger has drifted: some entries are outdated, and some claims were wrong when written. Later, go through it step by step, check each claim against the repo, the build and the git history, and correct or remove what's wrong. Until then, treat any number or claim here as a lead to verify, not a fact. (This section itself still describes Sep 29.)
 - New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first, then the
   chapters after it; the newest chapters (Sep 28-29: the REL chapters, waves 17 and 18, Claude #3's grind rounds)
   supersede it where they differ. The agents' rules live in `docs/AGENT_BRIEF.md`, attached to every prompt.

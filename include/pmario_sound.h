@@ -164,3 +164,5 @@ extern PaperSoundBGM psbgm[2];
 extern SoundEnvList psenvlist[];
 void psndENV_stop(u32 id);
 s32 psndBGMPlayTime(s32 id);
+BOOL psndBGMChk(s32 id);
+BOOL psndBGMChkSilent(s32 id);
