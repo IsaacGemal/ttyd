@@ -429,7 +429,8 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
 // operand order follows. Every other instruction, including the second icon of each pair and PSMTXTrans,
 // is byte-identical. MWCC 2.6 picks f0 for the first temp regardless of declaration/statement order or of
 // routing the sum through a local, a constant local, a nested block, or a MUST_MATCH inline.
-// NONMATCHING (90.30%): in the two-icon branches the first `neg225 + x` sum is coloured f0 (orig f3) and the paired float_70 f3 (orig f0); 8 instructions, all register-only.
+// NONMATCHING (99.88%): the pragma reproduces the original divw by 7; in the two-icon branches the first `neg225 + x` sum is coloured f0 (orig f3) and the paired float_70 f3 (orig f0); 8 instructions, all register-only.
+#pragma optimize_for_size on
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
@@ -615,6 +616,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         iconNumberDispGx(mtx, num, 0, *(GXColor*)&dat_8041e7f4);
     }
 }
+#pragma optimize_for_size reset
 
 // Defined after the code that uses them, so the references stay bound to these names.
 const f32 float_neg200_8041e7f8 = -200.0f;
