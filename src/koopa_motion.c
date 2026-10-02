@@ -1156,3 +1156,57 @@ void quake_kpaLandOn(void) {
 void quake_kpaHipAttack(void) {
     evtEntry(quake_kpaHipAttack_evt, 0, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0_80420da0 = 0.0f;
+const f32 float_280_80420da4 = 280.0f;
+const f32 float_0p6_80420da8 = 0.6f;
+const f32 float_225_80420dac = 225.0f;
+const f32 float_135_80420db0 = 135.0f;
+const f32 float_180_80420db4 = 180.0f;
+const f32 float_3_80420db8 = 3.0f;
+const f32 float_1_80420dbc = 1.0f;
+const f32 float_neg0p0001_80420dc0 = -0.0001f;
+const f32 float_1p52_80420dc4 = 1.52f;
+const f32 float_0p005_80420dc8 = 0.005f;
+const f32 float_0p006_80420dcc = 0.006f;
+const f32 float_neg0p0008_80420dd0 = -0.0008f;
+const f32 float_0p02_80420dd4 = 0.02f;
+const f32 float_neg2_80420dd8 = -2.0f;
+const f32 float_370_80420ddc = 370.0f;
+const f32 float_2_80420de0 = 2.0f;
+const f32 float_neg0p03_80420de4 = -0.03f;
+const f32 float_0p06_80420de8 = 0.06f;
+const f32 float_5_80420dec = 5.0f;
+const f32 float_neg0p13_80420df0 = -0.13f;
+const f32 float_neg0p001_80420df4 = -0.001f;
+const f32 float_0p5_80420df8 = 0.5f;
+const f32 float_neg0p08_80420dfc = -0.08f;
+const f32 float_0p009_80420e00 = 0.009f;
+const f32 float_2p6_80420e04 = 2.6f;
+const f32 float_0p21_80420e08 = 0.21f;
+const f32 float_neg0p283_80420e0c = -0.283f;
+const f32 float_neg0p023_80420e10 = -0.023f;
+const f32 float_0p01_80420e14 = 0.01f;
+const f32 float_1225_80420e18 = 1225.0f;
+const f32 float_40_80420e1c = 40.0f;
+const f32 float_24_80420e20 = 24.0f;
+const f32 float_74_80420e24 = 74.0f;
+const f32 float_103p6_80420e28 = 103.6f;
+const f32 float_222_80420e2c = 222.0f;
+const f32 float_20_80420e30 = 20.0f;
+const f32 float_neg0p4744_80420e34 = -0.4744f;
+const f32 float_0p4704_80420e38 = 0.4704f;
+const f32 float_neg0p1904_80420e3c = -0.1904f;
+const f32 float_neg100_80420e40 = -100.0f;
+const f32 float_75_80420e44 = 75.0f;
+const f32 float_neg0p526_80420e48 = -0.526f;
+const f32 float_neg0p02_80420e4c = -0.02f;
+const f32 float_70_80420e50 = 70.0f;
+const f32 float_neg0p2_80420e54 = -0.2f;
+const f32 float_neg0p7_80420e58 = -0.7f;
+const f32 float_0p2_80420e5c = 0.2f;
+const f32 float_1p3_80420e60 = 1.3f;
+const f32 float_0p633_80420e64 = 0.633f;
+const f32 float_2p3_80420e68 = 2.3f;
+const f32 float_0p002_80420e6c = 0.002f;

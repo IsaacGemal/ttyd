@@ -37,16 +37,6 @@ __declspec(section ".sdata2") s32 dat_80421c20 = -1;
 #else
 const s32 dat_80421c20 = -1;
 #endif
-extern const f32 float_neg200_80421c24;
-extern const f32 float_25_80421c28;
-extern const f32 float_1_80421c2c;
-extern const f32 float_100_80421c30;
-extern const f32 float_70_80421c34;
-extern const f32 float_120_80421c38;
-extern const f32 float_neg300_80421c3c;
-extern const f32 float_30_80421c40;
-extern const f32 float_0_80421c44;
-extern const f32 float_0p01_80421c48;
 
 // Work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC). No header declares it.
 typedef struct PowerGaugeLv2DecWork {
@@ -91,10 +81,10 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
     switch (work->actionCommands.mAcState) {
         case 0x0:
             memset(disp, 0, 0x2C);
-            disp->iconX = float_neg300_80421c3c;
-            disp->iconY = float_0_80421c44;
+            disp->iconX = -300.0f;
+            disp->iconY = 0.0f;
             disp->counter = 0x14;
-            disp->value = float_0_80421c44;
+            disp->value = 0.0f;
             disp->field_0xC = dat_80421c20;
             ((u8*)disp)[0x10] = 0;
             ((s8*)disp)[0x11] = -0x10;
@@ -105,15 +95,15 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
             work->actionCommands.mAcState = 0x63;
             work->actionCommands.result = 1;
             dec->frameLimit = sysMsec2Frame(0x1B58);
-            dec->gaugePercent = float_0_80421c44;
+            dec->gaugePercent = 0.0f;
 #ifdef MUST_MATCH
             // Match-only: the constant-first form is what makes the magic double land in f1
             // and 0.01f in f2 (the natural value-first form swaps them).
-            dec->field_0x10 = float_0p01_80421c48 * (f32)*(s32*)&work->actionCommands.field_34[8];
-            dec->field_0x14 = float_0p01_80421c48 * (f32)*(s32*)&work->actionCommands.field_34[0xC];
+            dec->field_0x10 = 0.01f * (f32)*(s32*)&work->actionCommands.field_34[8];
+            dec->field_0x14 = 0.01f * (f32)*(s32*)&work->actionCommands.field_34[0xC];
 #else
-            dec->field_0x10 = (f32)*(s32*)&work->actionCommands.field_34[8] * float_0p01_80421c48;
-            dec->field_0x14 = (f32)*(s32*)&work->actionCommands.field_34[0xC] * float_0p01_80421c48;
+            dec->field_0x10 = (f32)*(s32*)&work->actionCommands.field_34[8] * 0.01f;
+            dec->field_0x14 = (f32)*(s32*)&work->actionCommands.field_34[0xC] * 0.01f;
 #endif
             dec->flag = 0;
             dec->flag2 = 0;
@@ -177,16 +167,16 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
             if (dec->flag == 0) {
                 if (smooth) {
                     if (dec->flag2 != 0) {
-                        dec->gaugePercent += float_0p01_80421c48 *
+                        dec->gaugePercent += 0.01f *
                                              (dec->field_0x10 * (f32)_power_table[difficulty]);
                     }
                     else {
-                        dec->gaugePercent -= float_0p01_80421c48 *
+                        dec->gaugePercent -= 0.01f *
                                              (dec->field_0x10 * (f32)_power_table2[difficulty]);
                     }
                 }
-                if (dec->gaugePercent >= float_100_80421c30) {
-                    dec->gaugePercent = float_100_80421c30;
+                if (dec->gaugePercent >= 100.0f) {
+                    dec->gaugePercent = 100.0f;
                     dec->flag = 1;
                 }
                 else {
@@ -197,23 +187,23 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
                     // Match-only: the volatile read forces the reload into f1 the target has;
                     // the natural form reuses f0 and swaps the compare operands.
                     f32 g = *(volatile f32*)&dec->gaugePercent;
-                    if (g <= float_0_80421c44) {
-                        dec->gaugePercent = float_0_80421c44;
+                    if (g <= 0.0f) {
+                        dec->gaugePercent = 0.0f;
                     }
                 }
 #else
-                if (dec->gaugePercent <= float_0_80421c44) {
-                    dec->gaugePercent = float_0_80421c44;
+                if (dec->gaugePercent <= 0.0f) {
+                    dec->gaugePercent = 0.0f;
                 }
 #endif
             }
             BattleAcGaugeSeUpdate(dec->gaugePercent);
             work->actionCommands.outputParams[0] =
-                (s32)(dec->gaugePercent * (f32)*(s32*)&work->actionCommands.field_34[0x10] / float_100_80421c30);
+                (s32)(dec->gaugePercent * (f32)*(s32*)&work->actionCommands.field_34[0x10] / 100.0f);
             if (work->actionCommands.outputParams[0] >= *(s32*)&work->actionCommands.field_34[0x10]) {
                 work->actionCommands.outputParams[0] = *(s32*)&work->actionCommands.field_34[0x10] - 1;
             }
-            if (!(*(u32*)&work->actionCommands.field_34[0] & 1) && dec->gaugePercent >= float_100_80421c30) {
+            if (!(*(u32*)&work->actionCommands.field_34[0] & 1) && dec->gaugePercent >= 100.0f) {
                 work->actionCommands.outputParams[0]++;
             }
             break;
@@ -269,8 +259,8 @@ void battleAcDisp_PowerGaugeLv2(CameraId camId, void* param) {
 
     switch (state) {
         case 0x63:
-            disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80421c3c,
-                                        float_30_80421c40);
+            disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.0f,
+                                        30.0f);
             // fallthrough
         case 0x64:
         case 0x3E8:
@@ -283,11 +273,11 @@ void battleAcDisp_PowerGaugeLv2(CameraId camId, void* param) {
         case 0x3EB:
         case 0x3EC:
             if (disp->counter >= 0x28) {
-                disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_80421c40,
-                                            float_neg300_80421c3c);
+                disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.0f,
+                                            -300.0f);
             }
             else {
-                disp->iconX = float_30_80421c40;
+                disp->iconX = 30.0f;
             }
             actionCommandDisp(disp->iconX, disp->iconY);
             if (disp->counter < 0x3C) {
@@ -346,21 +336,21 @@ static void actionCommandDisp(f32 x, f32 y) {
 
     camGetPtr(CAMERA_2D);
 
-    f31 = float_neg200_80421c24 + x;
-    f30 = float_25_80421c28 + y;
+    f31 = -200.0f + x;
+    f30 = 25.0f + y;
 
     {
         Vec pos = vec[0];
         pos.x = f31;
         pos.y = f30;
-        iconDispGx(&pos, 0x10, 0x8C, float_1_80421c2c);
+        iconDispGx(&pos, 0x10, 0x8C, 1.0f);
     }
 
     {
         s32 flags = 0;
 
         f32 g = dec->gaugePercent;
-        ratio = g / float_100_80421c30;
+        ratio = g / 100.0f;
         if (ratio > 1.0f) {
             ratio = 1.0f;
         }
@@ -370,7 +360,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             ((u8*)ac)[0x29D] = (u8)(((u8*)ac)[0x29D] + ((u8*)ac)[0x2A1]);
             ((u8*)ac)[0x29E] = (u8)(((u8*)ac)[0x29E] + ((u8*)ac)[0x2A2]);
 
-            if (disp->value >= float_1_80421c2c) {
+            if (disp->value >= 1.0f) {
                 flags |= 1;
             }
             if (((u8*)ac)[0x29D] <= 0x80 && (s8)((u8*)ac)[0x2A1] < 0) {
@@ -410,22 +400,22 @@ static void actionCommandDisp(f32 x, f32 y) {
         {
             Vec pos = vec[1];
             pos.x = f31;
-            pos.y = float_70_80421c34 + y;
-            ICON_DISP(&pos, 0x10, icon0, float_1_80421c2c);
+            pos.y = 70.0f + y;
+            ICON_DISP(&pos, 0x10, icon0, 1.0f);
             break;
         }
         case 0x3E8:
             if (dec->flag2 != 0) {
                 Vec pos = vec[2];
                 pos.x = f31;
-                pos.y = float_70_80421c34 + y;
-                ICON_DISP(&pos, 0x10, icon1, float_1_80421c2c);
+                pos.y = 70.0f + y;
+                ICON_DISP(&pos, 0x10, icon1, 1.0f);
             }
             else {
                 Vec pos = vec[3];
                 pos.x = f31;
-                pos.y = float_70_80421c34 + y;
-                ICON_DISP(&pos, 0x10, icon0, float_1_80421c2c);
+                pos.y = 70.0f + y;
+                ICON_DISP(&pos, 0x10, icon0, 1.0f);
             }
             break;
     }
@@ -433,20 +423,17 @@ static void actionCommandDisp(f32 x, f32 y) {
     {
         s32 id = dec->flag2 != 0 ? 0x95 : 0x91;
         Vec pos = vec[4];
-        pos.x = float_120_80421c38 + f31;
+        pos.x = 120.0f + f31;
         pos.y = f30;
-        ICON_DISP(&pos, 0x10, id, float_1_80421c2c);
+        ICON_DISP(&pos, 0x10, id, 1.0f);
     }
 }
 
 // --- .sdata2 definitions ---
-const f32 float_neg200_80421c24 = -200.0f;
-const f32 float_25_80421c28 = 25.0f;
-const f32 float_1_80421c2c = 1.0f;
-const f32 float_100_80421c30 = 100.0f;
-const f32 float_70_80421c34 = 70.0f;
-const f32 float_120_80421c38 = 120.0f;
-const f32 float_neg300_80421c3c = -300.0f;
-const f32 float_30_80421c40 = 30.0f;
-const f32 float_0_80421c44 = 0.0f;
-const f32 float_0p01_80421c48 = 0.01f;
+
+// the 24 zero bytes after the unit's last .sdata object (gap_07_804179E8_sdata)
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_end_sdata[6] = { 0, 0, 0, 0, 0, 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
