@@ -4990,7 +4990,7 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (94.77%): s32 locals before work/data pin r29/r28; case-3 stop is an explicit if/else; the phase-0x2d
+// NONMATCHING (95.66%): s32 locals before work/data pin r29/r28; case-3 stop is an explicit if/else; the phase-0x2d
 // block shares `u8* pb = data+i` / `u8* pw = data+i*4`, `s8 s` and a `s32* tp` walk of tmp1; case 9/10/11 read the
 // event pointer straight from data+0x6c. Remaining: the sel loop's bdnz (target counter+3-way dispatch) and case-11.
 USER_FUNC(goryuugijo_main_slot) {
@@ -5191,11 +5191,13 @@ USER_FUNC(goryuugijo_main_slot) {
                 }
                 sel = irand(2);
                 {
+                s32 sel0 = sel;
                 u8* pb = data + i;
                 u8* pw = data + i * 4;
                 for (k = 0; k < 2; k++) {
-                    sel = (sel + 1) & 1;
-                    if (sel == 0) {
+                    sel = (sel0 + k + 1) & 1;
+                    switch (sel) {
+                    case 0: {
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
                         if (s != tmp[0][i] && tmp[2][i] == s) {
                             continue;
@@ -5213,8 +5215,9 @@ USER_FUNC(goryuugijo_main_slot) {
                             *(f32*)(pw + 0x24) = 1.40625f;
                         }
                         pb[0x30] = 4;
-                        break;
-                    } else if (sel == 1) {
+                        goto slot_k_done;
+                    }
+                    case 1: {
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
                         if (s != tmp[2][i] && s == tmp[0][i]) {
                             continue;
@@ -5232,9 +5235,11 @@ USER_FUNC(goryuugijo_main_slot) {
                             *(f32*)(pw + 0x24) = -1.40625f;
                         }
                         pb[0x30] = 4;
-                        break;
+                        goto slot_k_done;
+                    }
                     }
                 }
+                slot_k_done:;
                 }
             }
             *(s32*)(data + 0x04) += 1;
