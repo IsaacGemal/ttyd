@@ -52,6 +52,7 @@ typedef struct MapObjectWork {
 
 void mobjInit(void);
 void mobjMain(void);
+BOOL mobjCheckExec(void);
 
 void mobjHitEntry(MapObjectEntry* entry, s32 type);
 BOOL mobjGetHint(MapObjectEntry* entry);

@@ -31,8 +31,16 @@ const Vec vec3_80300714 = {0.5f, 0.5f, 1.0f};
 const Vec vec3_80300720 = {0.0f, 0.0f, 20.0f};
 const Vec vec3_8030072c = {0.0f, 0.0f, 1.0f};
 const Vec vec3_80300738 = {0.5f, 0.5f, 1.0f};
+// main_icon copies these two by whole-struct assignment; the original schedules that copy with a
+// non-const source (the destination may alias it), which `const` lets MWCC optimise away. The objects
+// stay in .rodata exactly as the target's do.
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_80300744 = {0.0f, -1000.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300750 = {0.3f, 0.3f, 0.3f};
+#else
 const Vec vec3_80300744 = {0.0f, -1000.0f, 0.0f};
 const Vec vec3_80300750 = {0.3f, 0.3f, 0.3f};
+#endif
 const Vec vec3_8030075c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_80300768 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_80300774 = {0.0f, 0.0f, 0.0f};
@@ -334,7 +342,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (94.82%): the tables/base register now match; the residual diff is the pooled
+// NONMATCHING (99.99%): the tables/base register now match; the residual diff is the pooled
 // int->float magic double (@864@ vs double_to_int_80300828 at str_803006D8+0x150).
 // .text:0x530 | 0x802472FC | size: 0x2F8
 static void disp_3D(CameraId cameraId, void* param) {
@@ -365,8 +373,8 @@ static void disp_3D(CameraId cameraId, void* param) {
     }
     if (work->field_38 >= 2 && work->field_38 < 7) {
         for (t = 0; t < 4; t++) {
-            PSMTXScale(m, (f32)arr1.v[t * 2] * work->field_68.x,
-                       (f32)arr1.v[t * 2 + 1] * work->field_68.y, work->field_68.z);
+            PSMTXScale(m, (f32)arr2.v[t * 2] * work->field_68.x,
+                       (f32)arr2.v[t * 2 + 1] * work->field_68.y, work->field_68.z);
             PSMTXTransApply(m, m, work->field_44.x, work->field_44.y, work->field_44.z);
             PSMTXTransApply(m, m, (f32)arr1.v[t * 2] * work->field_68.x,
                             (f32)arr1.v[t * 2 + 1] * work->field_68.y,
@@ -642,8 +650,8 @@ static void main_star(void) {
     }
 }
 
-// NONMATCHING (92.57%): the intplGetValue float arguments are loaded after the field_04 store
-// here and before it in the original; the Vec copies and the jump-table symbol also differ.
+// NONMATCHING (97.47%): the two constant-Vec copies now match (non-const .rodata sources); the
+// residual diff is the load-order of the intplGetValue float arguments around the field_04 store.
 // .text:0x12A0 | 0x8024806C | size: 0x288
 void main_icon(s32 index) {
     MukiWork* work = get_ptr();
@@ -663,11 +671,23 @@ void main_icon(s32 index) {
         entry->scale = vec3_80300750;
         /* fallthrough */
     case 2:
-        entry->field_04++;
-        entry->rot = intplGetValue(4, entry->field_04, 0x1E, float_180_80422000, float_1080_80422004);
-        entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, MATCH_F32(float_0_80421fb4), float_255_80422008);
-        if (entry->field_04 >= 0x1E) {
-            entry->type = 7;
+        {
+#ifdef MUST_MATCH
+            // MUST_MATCH: holding the first constant in a local makes MWCC hoist its load before the
+            // `field_04` store, as the original orders it (AGENT_BRIEF "a constant assigned to a local").
+            f32 a180 = float_180_80422000;
+#endif
+
+            entry->field_04++;
+#ifdef MUST_MATCH
+            entry->rot = intplGetValue(4, entry->field_04, 0x1E, a180, float_1080_80422004);
+#else
+            entry->rot = intplGetValue(4, entry->field_04, 0x1E, float_180_80422000, float_1080_80422004);
+#endif
+            entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, MATCH_F32(float_0_80421fb4), float_255_80422008);
+            if (entry->field_04 >= 0x1E) {
+                entry->type = 7;
+            }
         }
         break;
     case 3:

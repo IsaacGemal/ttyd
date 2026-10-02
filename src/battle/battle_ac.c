@@ -1,12 +1,17 @@
 #include "battle/battle_ac.h"
 #include "battle/battle.h"
 #include "battle/battle_audience.h"
+#include "battle/battle_disp.h"
 #include "battle/ac/ac_table.h"
 #include "driver/dispdrv.h"
+#include "driver/icondrv.h"
 #include "pmario_sound.h"
 
 extern ActionCommandEntry ActionCommandList[];
 extern BattleWork* _battleWorkPointer;
+extern const Vec vec3_802eda58;
+extern GXColor dat_8041be98;
+extern GXColor dat_8041be9c;
 
 //local prototypes
 void psndSFX_pit(s32 id, s32 pitch);
@@ -126,9 +131,9 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
-// NONMATCHING (32.95%): ours inlines BattleACPadCheckRecordTrigger, which the original calls with `bl`; the first
-// guard-frame copy is `lis; addi; lwz` here vs retail's `lwzu` (the loaded word is parked in the base register,
-// blocking the fold), which is what rotates the r26/r27/r28 allocation. The second `lwzu` and all stores match.
+// NONMATCHING (32.95%): register allocation only. Retail materialises `N_superguard_frames` with a
+// separate `addi r7, r6, @l` before the `lwzu` and uses `lwzu` for both tables; ours folds the low
+// addend into the `lwzu` offset for the second table. Every instruction is otherwise identical.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;
 	BattleWorkPad* pad = &work->actionCommands.pad;
@@ -422,6 +427,182 @@ s32 BattleACGetButtonIcon(s32 button, s32 status) {
 
 	return icon;
 }
+
+// Returns the current battle work pointer. Reading it through a call is what makes MWCC keep it in
+// r30 and the shared gauge-boundary temp in r29, matching retail.
+static inline BattleWork* getWorkPointer(void) {
+	return _battleWorkPointer;
+}
+
+// NONMATCHING (99.83%): every instruction and constant matches; only two runs of float registers differ.
+// Reading `work` through the `getWorkPointer()` call above was needed to get the `work`/boundary-temp
+// split right (retail keeps `work` in r30 and the cross-segment boundary `x + type*t0/100 - 289` in
+// r29, shared by segment 1's right edge and segment 2's left edge and live across segment 1's draw).
+// Grouping each draw's four edge floats into a local `struct { f32 ...; }` (in the order declared in
+// the helpers below) reproduces retail's f27-f30 allocation everywhere except the three 2px marker
+// highlights, whose y/colour conversion order still comes out one register off (27 instructions).
+// Draws one gauge segment between two thresholds, both scaled by `type`/100 and offset from x.
+static inline void gaugeSegment(CameraEntry* cam, s32 x, s32 y, s32 type, s32 prev, s32 next, u8 r, u8 g,
+                                u8 b, u8 a) {
+	struct { f32 xa, yb, xb, yt; } e;
+
+	e.xa = (f32)(x - 289 + type * prev / 100);
+	e.yb = (f32)(y + 50);
+	e.xb = (f32)(x - 289 + type * next / 100);
+	e.yt = (f32)(y + 32);
+
+	if (e.xb >= e.xa) {
+		btlDispGXInit2DRasta();
+		GXLoadPosMtxImm(cam->view, 0);
+		btlDispGXQuads2DRasta(e.xa, e.yb, e.xb, e.yt, r, g, b, a);
+	}
+}
+
+// Draws the full-width background segment (both edges at the left border, so no guard is needed).
+static inline void gaugeBackground(CameraEntry* cam, s32 x, s32 y, u8 r, u8 g, u8 b, u8 a) {
+	btlDispGXInit2DRasta();
+	GXLoadPosMtxImm(cam->view, 0);
+	btlDispGXQuads2DRasta((f32)(x - 289), (f32)(y + 50), (f32)(x - 289), (f32)(y + 32), r, g, b, a);
+}
+
+// Same, but the right edge is `type * value / 100` measured from the left border (value is a 0..100 fill).
+static inline void gaugeProgress(CameraEntry* cam, s32 x, s32 y, s32 type, s32 prev, f32 value, u8 r, u8 g,
+                                 u8 b, u8 a) {
+	s32 offa = type * prev / 100;
+	struct { f32 xa, yb, xb, yt; } e;
+
+	e.xa = (f32)(x - 289 + offa);
+	e.yb = (f32)(y + 50);
+	e.xb = (f32)(x - 289) + type * value / 100.0f;
+	e.yt = (f32)(y + 32);
+
+	if (e.xb >= e.xa) {
+		btlDispGXInit2DRasta();
+		GXLoadPosMtxImm(cam->view, 0);
+		btlDispGXQuads2DRasta(e.xa, e.yb, e.xb, e.yt, r, g, b, a);
+	}
+}
+
+// Draws a 2px-wide marker at a threshold's boundary position.
+static inline void gaugeHighlight(CameraEntry* cam, s32 x, s32 y, s32 type, s32 threshold, u8 r, u8 g,
+                                  u8 b, u8 a) {
+	s32 off = type * threshold / 100;
+	struct { f32 xb, yb, xa, yt; } e;
+
+	e.xb = (f32)(x - 289 + off);
+	e.yb = (f32)(y + 50);
+	e.xa = e.xb - 2.0f;
+	e.yt = (f32)(y + 32);
+
+	if (e.xb >= e.xa) {
+		btlDispGXInit2DRasta();
+		GXLoadPosMtxImm(cam->view, 0);
+		btlDispGXQuads2DRasta(e.xa, e.yb, e.xb, e.yt, r, g, b, a);
+	}
+}
+
+// NONMATCHING (69.21%): every instruction and constant matches; only float-register allocation
+// differs, see the note above gaugeSegment. This function (and only this one) is built with -O4,s.
+void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags, f32 ratio) {
+	BattleWork* work = getWorkPointer();
+	CameraEntry* cam;
+	GXColor color = dat_8041be98;
+	Vec pos;
+
+	cam = camGetPtr(CAMERA_2D);
+
+	pos = vec3_802eda58;
+	pos.x = (f32)(x - 200);
+	pos.y = (f32)(y + 25);
+	iconDispGx(&pos, 0x10, 0x8C, 1.0f);
+
+	if (count >= 2) {
+		gaugeSegment(cam, x, y, type, 0, t0, 0x21, 0x21, 0x75, 0xFF);
+		if (t1 - t0 > 0) {
+			gaugeSegment(cam, x, y, type, t0, t1, 0x1D, 0x23, 0xA3, 0xFF);
+		}
+		if (t2 - t1 > 0) {
+			gaugeSegment(cam, x, y, type, t1, t2, 0x46, 0x0C, 0xB4, 0xFF);
+		}
+		if (100 - t2 > 0) {
+			gaugeSegment(cam, x, y, type, t2, 100, 0x73, 0x0D, 0x13, 0xFF);
+		}
+	}
+
+	if (count >= 2) {
+		gaugeBackground(cam, x, y, 0x2D, 0x38, 0xD2, 0xFF);
+		if (t0 > 0) {
+			gaugeHighlight(cam, x, y, type, t0, 0x54, 0x28, 0xD1, 0xFF);
+		}
+		if (t1 - t0 > 0) {
+			gaugeHighlight(cam, x, y, type, t1, 0x7D, 0x2C, 0xB5, 0xFF);
+		}
+		if (t2 - t1 > 0) {
+			gaugeHighlight(cam, x, y, type, t2, 0xA1, 0x1B, 0x55, 0xFF);
+		}
+	}
+
+	if (!(ratio < 0.0f)) {
+		if (flags & 3) {
+			if (flags & 1) {
+				color.r = (u8)(color.r * ((u8*)work)[0x1F2C] / 255);
+				color.g = (u8)(color.g * ((u8*)work)[0x1F2D] / 255);
+				color.b = (u8)(color.b * ((u8*)work)[0x1F2E] / 255);
+				color.a = (u8)(color.a * ((u8*)work)[0x1F2F] / 255);
+			} else {
+				color = dat_8041be9c;
+			}
+			if (ratio > 0.0f) {
+				struct { f32 xa, yb, xb, yt; } e;
+
+				e.xa = (f32)(x - 289);
+				e.yb = (f32)(y + 50);
+				e.xb = (f32)type * ratio + (f32)(x - 289);
+				e.yt = (f32)(y + 32);
+
+				if (e.xb >= e.xa) {
+					btlDispGXInit2DRasta();
+					GXLoadPosMtxImm(cam->view, 0);
+					btlDispGXQuads2DRasta(e.xa, e.yb, e.xb, e.yt, color.r, color.g, color.b, color.a);
+				}
+			}
+		} else {
+			if (!(ratio <= 0.0f)) {
+				f32 ratio100 = ratio * 100.0f;
+				f32 end;
+
+				end = ratio100;
+				if (ratio100 > (f32)t0) {
+					end = (f32)t0;
+				}
+				if (end > 0.0f) {
+					gaugeProgress(cam, x, y, type, 0, end, 0x00, 0xE4, 0x86, 0xFF);
+				}
+				end = ratio100;
+				if (ratio100 > (f32)t1) {
+					end = (f32)t1;
+				}
+				if (end - (f32)t0 > 0.0f) {
+					gaugeProgress(cam, x, y, type, t0, end, 0x2E, 0xB4, 0xF2, 0xFF);
+				}
+				end = ratio100;
+				if (ratio100 > (f32)t2) {
+					end = (f32)t2;
+				}
+				if (end - (f32)t1 > 0.0f) {
+					gaugeProgress(cam, x, y, type, t1, end, 0x75, 0x70, 0xFF, 0xFF);
+				}
+				if (ratio100 > 100.0f) {
+					ratio100 = 100.0f;
+				}
+				if (ratio100 - (f32)t2 > 0.0f) {
+					gaugeProgress(cam, x, y, type, t2, ratio100, 0xF3, 0x04, 0xBC, 0xFF);
+				}
+			}
+		}
+	}
+}
+
 
 void BattleAcGaugeSeInit(void) {
 	BattleWork* work = _battleWorkPointer;

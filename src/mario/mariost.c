@@ -69,6 +69,9 @@ static u8 stack[0x1000];
 
 //.sdata
 GlobalWork* gp = &marioSt;
+// zero-initialised but the target keeps these in .sdata (not .sbss), so force the section
+__declspec(section ".sdata") s32 off_trg[4] = { 0 };
+__declspec(section ".sdata") OSTime off_time[4] = { 0 };
 
 //.sbss
 OSTime none_key;
@@ -365,10 +368,9 @@ s32 marioStGetSystemLevel(void) {
 	return gp->systemLevelFlags;
 }
 
-// NONMATCHING (99.58%): the gcRumbleCheck call and the clamp's register colouring differ.
 void viPostCallback(u32 retraceCount) {
 	OSTime time;
-	u32 reset = PAD_BUTTON_B | PAD_BUTTON_X | PAD_BUTTON_START; //TODO: make sure it inlines right
+	u32 reset = PAD_BUTTON_B | PAD_BUTTON_X | PAD_BUTTON_START;
 
 	time = OSGetTime();
 	gp->retraceDeltaTime = time - gp->retraceTime;

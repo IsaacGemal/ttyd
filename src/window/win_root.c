@@ -184,9 +184,10 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
     }
 }
 
-// NONMATCHING (90.37%): GX quad vertex loop; MWCC CSEs the position constants
-// into f1/f2/f3 and reloads f0 only, while the original reloads f0 per vertex.
-// Non-const externs made it worse (88.47%).
+// Full-screen GX quad. The original reloads each position constant into f0
+// immediately before its FIFO store instead of CSE-ing the constants across the
+// four vertices, so the vertex writes under MUST_MATCH read the named floats
+// through a volatile view (the natural GXPosition3f32 form is in #else).
 void winZClear(void) {
     Mtx mtx;
 
@@ -211,10 +212,27 @@ void winZClear(void) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxDesc(9, 1);
     GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+    // volatile reads stop MWCC from CSE-ing the position constants across the
+    // four vertices; the original reloads each one into f0 before its store.
+    GXWGFifo.f32 = *(volatile f32*)&float_neg500_8041d0d0;
+    GXWGFifo.f32 = *(volatile f32*)&float_300_8041d0d4;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_300_8041d0d4;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_neg100_8041d0d8;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_neg500_8041d0d0;
+    GXWGFifo.f32 = *(volatile f32*)&float_neg100_8041d0d8;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+#else
     GXPosition3f32(float_neg500_8041d0d0, float_300_8041d0d4, float_0_8041d068);
     GXPosition3f32(float_0_8041d068, float_300_8041d0d4, float_0_8041d068);
     GXPosition3f32(float_0_8041d068, float_neg100_8041d0d8, float_0_8041d068);
     GXPosition3f32(float_neg500_8041d0d0, float_neg100_8041d0d8, float_0_8041d068);
+#endif
     GXEnd();
     GXSetColorUpdate(1);
 }
@@ -987,16 +1005,6 @@ static inline void winMsgDispEdge(Vec pos, Vec* scale, GXColor color, const char
     winFontSetEdge(&pos, scale, &color, msg);
 }
 
-static inline void winMsgDispText(Vec pos, Vec* scale, GXColor color, const char* msg) {
-    winFontSet(&pos, scale, &color, msg);
-}
-
-static inline void winMsgDispLabel(Vec pos, Vec* scale, GXColor color, const char* msg) {
-    winFontSetLabel(&pos, scale, &color, msg);
-}
-
-
-
 // 5-page switch over work->0xcc. The explicit empty case -1 below (a redirect
 // target of cases 11 and 41) is what makes MWCC pick 0 as the [0,10) search-tree
 // pivot; without it the tree pivots on 1.
@@ -1091,9 +1099,12 @@ void winBgMain(WindowWork* work) {
     }
 }
 
-// NONMATCHING (84.78%): bubble sort of the 0xc-byte records at work+0x404. pb now
-// starts as work + j*0xc like the original; still, the original spills the three
-// swap temporaries to 0x14/0x18/0x1c and uses different volatile registers.
+// bubble sort of the 0xc-byte records at work+0x404. Writing the swap as a
+// `SortRec` (3-word) copy `t = *pa; *pa = *pb; *pb = t;` reproduces the original's
+// interleaved load/store sequence and its stack spills at 0x14/0x18/0x1c exactly.
+// NONMATCHING (96.69%): the instruction sequence is identical; only MWCC's
+// register coloring differs (the original keeps loop counters i/j in r5/r6 and the
+// table base in r11, ours uses r10/r11 and r9; the temps shift with them).
 void sort_4_3_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
         s32 i;
@@ -1104,9 +1115,9 @@ void sort_4_3_func(WindowWork* work) {
             u8* pb = (u8*)work + j * 0xC;
 
             while (j < WW_S32(work, 0xD64)) {
+                s32 swap = 0;
                 ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
                 ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
-                s32 swap = 0;
 
                 if (da->bp_cost > db->bp_cost) {
                     swap = 1;
@@ -1114,15 +1125,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    u32 t0 = *(u32*)(pa + 0x404);
-                    u32 t1 = *(u32*)(pa + 0x408);
-                    u32 t2 = *(u32*)(pa + 0x40C);
-                    *(u32*)(pa + 0x404) = *(u32*)(pb + 0x404);
-                    *(u32*)(pa + 0x408) = *(u32*)(pb + 0x408);
-                    *(u32*)(pa + 0x40C) = *(u32*)(pb + 0x40C);
-                    *(u32*)(pb + 0x404) = t0;
-                    *(u32*)(pb + 0x408) = t1;
-                    *(u32*)(pb + 0x40C) = t2;
+                    SortRec t = *(SortRec*)(pa + 0x404);
+                    *(SortRec*)(pa + 0x404) = *(SortRec*)(pb + 0x404);
+                    *(SortRec*)(pb + 0x404) = t;
                 }
                 pb += 0xC;
                 j++;
@@ -1138,9 +1143,9 @@ void sort_4_3_func(WindowWork* work) {
             u8* pb = (u8*)work + j * 0xC;
 
             while (j < WW_S32(work, 0xD64)) {
+                s32 swap = 0;
                 ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
                 ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
-                s32 swap = 0;
 
                 if (da->bp_cost < db->bp_cost) {
                     swap = 1;
@@ -1148,15 +1153,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    u32 t0 = *(u32*)(pa + 0x404);
-                    u32 t1 = *(u32*)(pa + 0x408);
-                    u32 t2 = *(u32*)(pa + 0x40C);
-                    *(u32*)(pa + 0x404) = *(u32*)(pb + 0x404);
-                    *(u32*)(pa + 0x408) = *(u32*)(pb + 0x408);
-                    *(u32*)(pa + 0x40C) = *(u32*)(pb + 0x40C);
-                    *(u32*)(pb + 0x404) = t0;
-                    *(u32*)(pb + 0x408) = t1;
-                    *(u32*)(pb + 0x40C) = t2;
+                    SortRec t = *(SortRec*)(pa + 0x404);
+                    *(SortRec*)(pa + 0x404) = *(SortRec*)(pb + 0x404);
+                    *(SortRec*)(pb + 0x404) = t;
                 }
                 pb += 0xC;
                 j++;

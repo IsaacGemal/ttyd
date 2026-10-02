@@ -276,9 +276,20 @@ void tegami_delete(void) {
     }
 }
 
-// NONMATCHING (72.23%): 86 of 392 instructions differ - all register allocation in the sin/cos
-// block. The f0/f1 scratch pair is swapped (the same blocker envDisp_FF hits),
-// and the int->float double / quarter / pi take f31/f29/f30 vs the target's f29/f30/f31.
+// opt_propagation off: MWCC rematerialises the sin/cos coefficients into every branch instead
+// of hoisting them (same as envDisp_FF).
+// opt_lifetimes off: keeps the 0.00761/0.03705 seed loads inside the loop instead of hoisting
+// them into the preheader (same as envDisp_FF).
+// opt_common_subs off: without it the nonvolatile FPR colouring of the loop constants shifts by
+// one (twoPi in f29, ...); with it six of the eight land exactly where the target has them.
+// The .rodata pool order matches the target exactly and the six constants
+// twoPi/one/c16605/c4967/scale/hundred colour as f28/f27/f26/f25/f24/f23. What still differs: the
+// int->float magic double lands in f31 where the target has it in f29 (the target's compiler hoists
+// it between pi and quarter; this one puts it first), so pi/quarter land one low (f30/f29 vs
+// f31/f30); and texBuf/mtxId, plus the loop's named-zero pointer, are swapped one GPR apart
+// (texBuf r25 vs r24, mtxId r24 vs r25). The rest is an MWCC allocator-order difference no source,
+// declaration or statement arrangement (nor any opt_* toggle) reproduces.
+// NONMATCHING (96.94%, 45 diffs): MWCC colours the int->float double and pi/quarter one FPR low.
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
@@ -287,7 +298,7 @@ static void depthDisp(CameraId cameraId, void* param) {
     f32 pi, quarter, twoPi, one, c16605, c4967, scale, hundred;
     s32 i;
     s32 mtxId;
-    f32 f1, f0, f2, f4, f3;
+    f32 f0, f1, f2, f3, f4;
 
     scale = evtGetFloat(NULL, GW(0)) / 100.0f;
     cam = camGetPtr(cameraId);
@@ -309,76 +320,73 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXSetNumTevStages(8);
     for (i = 0; i < 8; i++) {
         twoPi = 6.2831855f;
-        f1 = (f32)i;
         quarter = 0.125f;
         f2 = 0.00761f;
-        f3 = (twoPi * f1) * quarter;
         c16605 = 0.16605f;
         one = 1.0f;
         pi = 3.1415927f;
+        hundred = 100.0f;
+        f3 = (twoPi * (f32)i) * quarter;
         if (f3 <= pi) {
-            if (f3 <= 1.5707964f) {
-                f0 = f3 * f3;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
+            f1 = 1.5707964f;
+            if (f3 <= f1) {
+                f2 = f2 * (f3 * f3) - c16605;
+                f2 = f2 * (f3 * f3) + one;
                 f2 = f2 * f3;
             } else {
-                f0 = f3 - 1.5707964f;
-                f1 = 1.5707964f - f0;
+                f0 = f3 - f1;
+                f1 = f1 - f0;
                 f0 = f1 * f1;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
+                f2 = f2 * f0 - c16605;
+                f2 = f2 * f0 + one;
                 f2 = f2 * f1;
             }
+        } else if (f3 < 4.712389f) {
+            f1 = f3 - 3.1415927f;
+            f0 = f1 * f1;
+            f2 = f2 * f0 - c16605;
+            f2 = f2 * f0 + one;
+            f2 = f2 * f1;
+            f2 = -f2;
         } else {
-            if (f3 < 4.712389f) {
-                f1 = f3 - 3.1415927f;
-                f0 = f1 * f1;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
-                f2 = f2 * f1;
-                f2 = -f2;
-            } else {
-                f0 = f3 - 4.712389f;
-                f1 = 1.5707964f - f0;
-                f0 = f1 * f1;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
-                f2 = f2 * f1;
-                f2 = -f2;
-            }
+            f0 = f3 - 4.712389f;
+            f1 = 1.5707964f;
+            f1 = f1 - f0;
+            f0 = f1 * f1;
+            f2 = f2 * f0 - c16605;
+            f2 = f2 * f0 + one;
+            f2 = f2 * f1;
+            f2 = -f2;
         }
         f4 = 0.03705f;
         c4967 = 0.4967f;
         if (f3 <= pi) {
-            if (f3 <= 1.5707964f) {
-                f0 = f3 * f3;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
+            f1 = 1.5707964f;
+            if (f3 <= f1) {
+                f4 = f4 * (f3 * f3) - c4967;
+                f4 = f4 * (f3 * f3) + one;
             } else {
-                f0 = f3 - 1.5707964f;
-                f0 = 1.5707964f - f0;
+                f0 = f3 - f1;
+                f0 = f1 - f0;
                 f0 = f0 * f0;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
+                f4 = f4 * f0 - c4967;
+                f4 = f4 * f0 + one;
                 f4 = -f4;
             }
+        } else if (f3 < 4.712389f) {
+            f0 = f3 - 3.1415927f;
+            f0 = f0 * f0;
+            f4 = f4 * f0 - c4967;
+            f4 = f4 * f0 + one;
+            f4 = -f4;
         } else {
-            if (f3 < 4.712389f) {
-                f0 = f3 - 3.1415927f;
-                f0 = f0 * f0;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
-                f4 = -f4;
-            } else {
-                f0 = f3 - 4.712389f;
-                f0 = 1.5707964f - f0;
-                f0 = f0 * f0;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
-            }
+            f0 = f3 - 4.712389f;
+            f1 = 1.5707964f;
+            f0 = f1 - f0;
+            f0 = f0 * f0;
+            f4 = f4 * f0 - c4967;
+            f4 = f4 * f0 + one;
         }
-        hundred = 100.0f;
         mtxId = 30 + i * 3;
         PSMTXTrans(mtx, (scale * f2) / hundred, (scale * f4) / hundred, 0.0f);
         GXLoadTexMtxImm(mtx, mtxId, GX_MTX2x4);
@@ -389,18 +397,10 @@ static void depthDisp(CameraId cameraId, void* param) {
         GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         {
-            s32 colorIn;
-            s32 alphaIn;
+            s32 zero = (i == 0);
 
-            if (i == 0) {
-                colorIn = GX_CC_ZERO;
-                alphaIn = GX_CA_ZERO;
-            } else {
-                colorIn = GX_CC_CPREV;
-                alphaIn = GX_CA_APREV;
-            }
-            GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, colorIn);
-            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, alphaIn);
+            GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, zero ? GX_CC_ZERO : GX_CC_CPREV);
+            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, zero ? GX_CA_ZERO : GX_CA_APREV);
         }
         GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);
     }

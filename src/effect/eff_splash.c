@@ -83,9 +83,9 @@ void* geso_shibuki_dl_0_tbl[] = {
 
 u8 geso_shibuki_dl_0_size_tbl[] = { 1, 1, 1, 1, 1, 0, 0, 0 };
 
-// NONMATCHING (92.83%): float registers shifted by one (mine f25-f28 for x/y/z/scale
-// vs target f26-f29), num/radial register swap (mine num=r28/radial=r27 vs target
-// num=r27/radial=r28), and the callback setup uses addi r0 vs addi r4.
+// NONMATCHING (99.33%): the four float args colour to f25-f28 where the target has f26-f29 and the
+// second loop's hoisted constants shift down with them: MWCC keeps 360 in the high block (f31, with
+// double_to_int/6.2832) where the target puts it in the low block (f20). Otherwise instruction-exact.
 EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	SplashData* data;
@@ -93,6 +93,13 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	s32 num;
 	s32 radial;
 	s32 i;
+	f32 spawnAngle;
+	f32 sn;
+	f32 cs;
+	f32 sx;
+	f32 sz;
+	f32 dx;
+	f32 dz;
 
 	entry = effEntry();
 	num = 0;
@@ -136,7 +143,7 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->field_0x38 = 0;
 
 	ptr = data + 1;
-	for (i = 1; i <= num; i++, ptr++) {
+	for (i = 1; i < num + 1; i++, ptr++) {
 		ptr->position.z = 0.0f;
 		ptr->position.y = 0.0f;
 		ptr->position.x = 0.0f;
@@ -205,8 +212,9 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	}
 
 	for (i = num + 1; i < entry->count; i++, ptr++) {
-		f32 angle = 6.2831855f * (f32)irand(360) / 360.0f;
+		f32 angle = (f32)irand(360);
 		f32 radius = (f32)irand(5);
+		angle = 6.2831855f * angle / 360.0f;
 		ptr->offsetX = radius * (f32)sin(angle);
 		ptr->offsetY = radius * (f32)cos(angle);
 		ptr->position.x = 2.0f * ptr->offsetX;
@@ -221,9 +229,14 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	}
 
 	if (type == 2) {
-		f32 spawnAngle = 6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f;
-		effKemuTestEntry(6, x + scale * (-30.0f * (f32)sin(spawnAngle)), y + 5.0f * scale,
-		                 z + scale * (30.0f * (f32)cos(spawnAngle)), scale);
+		spawnAngle = 6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f;
+		sn = (f32)sin(spawnAngle);
+		cs = (f32)cos(spawnAngle);
+		sx = -30.0f * sn;
+		sz = 30.0f * cs;
+		dx = scale * sx;
+		dz = scale * sz;
+		effKemuTestEntry(6, x + dx, y + 5.0f * scale, z + dz, scale);
 	}
 
 	return entry;
@@ -373,43 +386,44 @@ void effSplashGetCol(enum CameraId camId, void* param) {
 	data->color.b = ((u8*)&palette)[2];
 }
 
-// NONMATCHING (65.05%): 13 instructions differ, 150 missing, 109 extra, plus register differences.
+
+// NONMATCHING (99.91%): byte-for-byte apart from 11 register-only slots -- the f0 vs f15
+// intermediate in `angle = 6.2832f * t; angle *= 0.125f;`, and the display-list loop's counter
+// (target reuses r25 for both j and k; ours gives k r20). Everything else matches.
 void effSplashDisp(enum CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	SplashData* data = effect->userdata;
-	SplashData* ptr;
-	CameraEntry* cam;
-	GXTexObj tex;
-	GXColor color;
+	f32 colA;
 	Mtx mtxA;
-	Mtx mtxB;
-	Mtx mtxC;
-	Mtx mtxD;
+	f32 eight;
+	f32 halfq;
 	f32 radiusA;
 	f32 radiusB;
+	f32 colB;
+	f32 fourq;
+	GXTexObj tex;
 	f32 offsetB;
+	Mtx mtxB;
 	f32 mulR;
 	f32 mulG;
 	f32 mulB;
-	f32 mulT;
-	f32 colA;
-	f32 colB;
-	s32 type;
-	s32 mode;
 	s32 i;
+	u32 k;
 	s32 j;
-	u8 g;
-	u8 b;
+	CameraEntry* cam;
+	Mtx mtxC;
+	s32 type;
+	Mtx mtxD;
+	s32 mode;
+	GXColor color;
+	f32 mulT;
 
-	color = data->color;
+	cam = camGetPtr(camId);
 	type = data->type;
-	g = color.g;
-	b = color.b;
+	color = data->color;
 
+	mode = 0;
 	switch (type) {
-	case 3:
-		mode = 6;
-		break;
 	case 0:
 	case 1:
 	case 4:
@@ -418,12 +432,11 @@ void effSplashDisp(enum CameraId camId, void* param) {
 	case 2:
 		mode = 1;
 		break;
-	default:
-		mode = 0;
+	case 3:
+		mode = 6;
 		break;
 	}
 
-	cam = camGetPtr(camId);
 	PSMTXTrans(mtxA, data->position.x, data->position.y, data->position.z);
 	PSMTXRotRad(mtxC, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(mtxB, data->scaleX, data->scaleY, data->scaleZ);
@@ -449,14 +462,14 @@ void effSplashDisp(enum CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-	ptr = data + 1;
-	for (i = 1; i <= mode; i++, ptr++) {
-		if (ptr->field_0x28 != 0) {
+	data++;
+	for (i = 1; i < mode + 1; i++, data++) {
+		if (data->field_0x28 != 0) {
 			continue;
 		}
 
-		PSMTXTrans(mtxA, ptr->position.x, ptr->position.y, ptr->position.z);
-		PSMTXScale(mtxB, ptr->scaleX, ptr->scaleY, ptr->scaleZ);
+		PSMTXTrans(mtxA, data->position.x, data->position.y, data->position.z);
+		PSMTXScale(mtxB, data->scaleX, data->scaleY, data->scaleZ);
 		PSMTXConcat(mtxA, mtxB, mtxA);
 		PSMTXConcat(mtxD, mtxA, mtxA);
 		GXLoadPosMtxImm(mtxA, 0);
@@ -530,8 +543,8 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			mulG = 1.0f;
 			mulB = 1.0f;
 			colA = (f32)color.r / 255.0f;
-			colB = (f32)g / 255.0f;
-			mulT = (f32)b / 255.0f;
+			colB = (f32)color.g / 255.0f;
+			mulT = (f32)color.b / 255.0f;
 			break;
 		case 2:
 			mulR = 1.0f;
@@ -544,6 +557,28 @@ void effSplashDisp(enum CameraId camId, void* param) {
 		}
 
 		switch (type) {
+		case 0:
+		case 1:
+		case 2:
+		case 4:
+			GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 18);
+			for (j = 0; j < 9; j++) {
+				f32 angle, c, s, t;
+				t = (f32)j;
+				angle = 6.2831855f * t;
+				angle *= 0.125f;
+				c = (f32)cos(angle);
+				s = (f32)sin(angle);
+				GXPosition3f32(radiusA * s, 0.0f, radiusA * c);
+				GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
+				GXTexCoord2f32((f32)(j & 1), 0.1f);
+				c = (f32)cos(angle);
+				s = (f32)sin(angle);
+				GXPosition3f32(radiusB * s, offsetB, radiusB * c);
+				GXColor4u8((u8)(255.0f * colA), (u8)(255.0f * colB), (u8)(255.0f * mulT), 0xFF);
+				GXTexCoord2f32((f32)(j & 1), 2.1f);
+			}
+			break;
 		case 3:
 			geso_shibuki_color0_tbl[0] = color;
 			GXClearVtxDesc();
@@ -559,25 +594,8 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
 			GXSetArray(GX_VA_TEX0, geso_shibuki_texcoord0_tbl, 4);
-			for (j = 0; j < 5; j++) {
-				GXCallDisplayList(geso_shibuki_dl_0_tbl[j], geso_shibuki_dl_0_size_tbl[j] * 32);
-			}
-			break;
-		case 0:
-		case 1:
-		case 2:
-		case 4:
-			GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 18);
-			for (j = 0; j < 9; j++) {
-				f32 angle = 6.2831855f * (f32)j * 0.125f;
-				f32 c = (f32)cos(angle);
-				f32 s = (f32)sin(angle);
-				GXPosition3f32(radiusA * s, 0.0f, radiusA * c);
-				GXColor4u8((u8)(s32)(255.0f * mulR), (u8)(s32)(255.0f * mulG), (u8)(s32)(255.0f * mulB), 0xFF);
-				GXTexCoord2f32((f32)(j & 1), 0.1f);
-				GXPosition3f32(radiusB * s, offsetB, radiusB * c);
-				GXColor4u8((u8)(s32)(255.0f * colA), (u8)(s32)(255.0f * colB), (u8)(s32)(255.0f * mulT), 0xFF);
-				GXTexCoord2f32((f32)(j & 1), 2.1f);
+			for (k = 0; k < 5; k++) {
+				GXCallDisplayList(geso_shibuki_dl_0_tbl[k], geso_shibuki_dl_0_size_tbl[k] * 32);
 			}
 			break;
 		}
@@ -592,15 +610,14 @@ void effSplashDisp(enum CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-	ptr = data + (mode + 1);
-	for (i = mode + 1; i < effect->count; i++, ptr++) {
-		if (ptr->field_0x28 != 0) {
+	for (i = mode + 1; i < effect->count; i++, data++) {
+		if (data->field_0x28 != 0) {
 			continue;
 		}
 
-		PSMTXTrans(mtxA, ptr->position.x, ptr->position.y, ptr->position.z);
+		PSMTXTrans(mtxA, data->position.x, data->position.y, data->position.z);
 		PSMTXRotRad(mtxC, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
-		PSMTXScale(mtxB, ptr->scaleX, ptr->scaleY, ptr->scaleZ);
+		PSMTXScale(mtxB, data->scaleX, data->scaleY, data->scaleZ);
 		PSMTXConcat(mtxA, mtxC, mtxA);
 		PSMTXConcat(mtxA, mtxB, mtxA);
 		PSMTXConcat(mtxD, mtxA, mtxA);
@@ -611,30 +628,34 @@ void effSplashDisp(enum CameraId camId, void* param) {
 		PSMTXIdentity(mtxA);
 		GXLoadTexMtxImm(mtxA, GX_TEXMTX0, GX_MTX2x4);
 
-		if (type == 2) {
+		switch (type) {
+		case 2:
 			mulR = 1.0f;
 			mulG = 0.869f;
 			mulB = 0.0f;
-		} else {
-			mulR = (1.0f + (f32)color.r / 255.0f) * 0.5f;
-			mulG = (1.0f + (f32)g / 255.0f) * 0.5f;
-			mulB = (1.0f + (f32)b / 255.0f) * 0.5f;
+			break;
+		default:
+			mulR = (1.0f + (f32)color.r / 255.0f) / 2.0f;
+			mulG = (1.0f + (f32)color.g / 255.0f) / 2.0f;
+			mulB = (1.0f + (f32)color.b / 255.0f) / 2.0f;
+			break;
 		}
 
+		eight = 8.0f;
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(-8.0f * 0.5f, 4.0f, 0.0f);
-		GXColor4u8((u8)(s32)(255.0f * mulR), (u8)(s32)(255.0f * mulG), (u8)(s32)(255.0f * mulB), 0xFF);
+		halfq = -eight / 2.0f;
+		fourq = 4.0f;
+		GXPosition3f32(halfq, fourq, 0.0f);
+		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(4.0f, 4.0f, 0.0f);
-		GXColor4u8((u8)(s32)(255.0f * mulR), (u8)(s32)(255.0f * mulG), (u8)(s32)(255.0f * mulB), 0xFF);
+		GXPosition3f32(fourq, fourq, 0.0f);
+		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(4.0f, -8.0f * 0.5f, 0.0f);
-		GXColor4u8((u8)(s32)(255.0f * mulR), (u8)(s32)(255.0f * mulG), (u8)(s32)(255.0f * mulB), 0xFF);
+		GXPosition3f32(fourq, halfq, 0.0f);
+		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(-8.0f * 0.5f, -8.0f * 0.5f, 0.0f);
-		GXColor4u8((u8)(s32)(255.0f * mulR), (u8)(s32)(255.0f * mulG), (u8)(s32)(255.0f * mulB), 0xFF);
+		GXPosition3f32(halfq, halfq, 0.0f);
+		GXColor4u8((u8)(255.0f * mulR), (u8)(255.0f * mulG), (u8)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
-
-

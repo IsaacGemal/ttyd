@@ -31,3 +31,5 @@ void N_marioReloadMapOnBottomlessOff(void);
 void marioGetStick(f32* outAngle, f32* outMag);
 s32 marioSetDirEventMain(void);
 void marioUpdateKeyData(void);
+f32 marioGetDispDir(void);
+void N_marioSetBottomlessRespawnPos(f32 x, f32 y, f32 z);

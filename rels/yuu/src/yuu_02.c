@@ -110,6 +110,14 @@ static EVT_BEGIN(minigame_view_monte)
     RETURN
 EVT_END()
 
+#ifdef MUST_MATCH
+// The target keeps this in .rodata and reloads its three words every loop iteration; a plain
+// `const` global lets MWCC hoist/CSE the loads out of the loop. The section attribute pins the
+// non-const object to .rodata instead (the natural form is the `const` one under #else).
+__declspec(section ".rodata") Vec vec3_yuu_00014008 = { 0.0f, 0.0f, 0.0f };
+#else
+const Vec vec3_yuu_00014008 = { 0.0f, 0.0f, 0.0f };
+#endif
 static MonteEntry* monte_p;
 MonteEntry* unk_yuu_bss00000004;
 static void* yuunpc_wp;
@@ -162,13 +170,13 @@ void unk_yuu_00001054(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (80.46%): `count` is declared volatile to stop this compiler constant-folding it away (the
-// original kept it in a register); the Vec store addressing still differs.
+// NONMATCHING (83.03%): the loop body and allocation match exactly. Only the loop preamble
+// scheduling differs: MWCC loads the 1.0f constant three instructions before the target does and
+// emits `li r3, 0` where the target coalesces the byte-offset induction var to `mr r3, r9`.
 USER_FUNC(unk_yuu_00000f1c) {
-    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 already = 0;
-    volatile s32 count;
-    s32 size;
+    s32 count;
+    YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 i;
 
     marioGetPtr();
@@ -177,14 +185,14 @@ USER_FUNC(unk_yuu_00000f1c) {
             already = 1;
         }
         count = 1;
-        size = count * sizeof(MonteEntry);
-        monte_p = (MonteEntry*)_mapAlloc(size);
-        memset(monte_p, 0, size);
+        monte_p = (MonteEntry*)_mapAlloc(count * sizeof(MonteEntry));
+        memset(monte_p, 0, count * sizeof(MonteEntry));
         monte_p->count = count;
         monte_p->work = work;
         for (i = 0; i < monte_p->count; i++) {
-            monte_p[i].pos = (Vec){0.0f, 0.0f, 0.0f};
-            monte_p[i].scale = 1.0f;
+            f32* base = (f32*)((u8*)&monte_p[i] + 8);
+            *(Vec*)&base[1] = vec3_yuu_00014008;
+            base[4] = 1.0f;
             monte_p[i].active = 1;
         }
     }

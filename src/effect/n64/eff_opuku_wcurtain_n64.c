@@ -8,18 +8,8 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
+#include <dolphin/os/OSFastCast.h>
 #include <stdlib.h>
-
-// Retail stores the transformed vertex through psq_st (GQR5, s16), which saturates to the s16 range.
-static inline s16 clampS16(f32 value) {
-	if (value > 32767.0f) {
-		return 32767;
-	}
-	if (value < -32768.0f) {
-		return -32768;
-	}
-	return (s16)value;
-}
 
 // .rodata
 const char str_802FB2A4[] = "OpukuWcurtainN64";
@@ -112,15 +102,20 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-// NONMATCHING (75.15%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
-// retail (the store saturates, which clampS16 reproduces); they need inline asm, so here they lower to
-// xoris/lfd/fsubs loads and compare/fctiwz/sth stores. That changes the transform loop body, the saved
-// FPRs and every local stack offset; tri2's u16 prototype also adds a clrlwi the retail call lacks.
+// The packed s16<->f32 vertex conversions are psq_l/psq_st (GQR5) and match through the SDK
+// OSs16tof32/OSf32tos16 fast-cast inlines; the transform loop, GX/TEV setup, matrix math and draw loop are
+// instruction-for-instruction identical. What is left is compiler colouring/layout only:
+//  (1) the GXSetTevColor by-value copy sits at r1+0x10 (target r1+0x18), shifting texObj/scaleMtx/transMtx
+//      and the Vec v down by 4 and putting the transform loop's psq_st scratch at 0xc/0xa/0x8 (target
+//      0x10/0xc/0x8);
+//  (2) the vertex-building loop's volatile temps are a rotated colouring: target texS r4, x r5, t r6,
+//      0xff r7, 0 r8, field_2C r9, i*20 r10, alpha r11, cursor r12; ours r10, r11, r4, r5, r6, r9, r7, r12,
+//      r8 (val r9 and i r29 match).
+// NONMATCHING (98.89%): vertex-building loop's volatile register colouring and the GXSetTevColor copy slot.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
 	effOpukuWcurtainData* data = effect->userdata;
-	OpukuWcurtainVtx* vtx;
 	smartEntry* entry;
 	GXTexObj texObj;
 	Mtx transMtx;
@@ -132,6 +127,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	s32 j;
 	s32 texS;
 	s32 x;
+	OpukuWcurtainVtx* vtx;
 	s32 counter = data->counter;
 
 	color = unk_804231e0;
@@ -160,8 +156,9 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	entry = smartAlloc(0x2A0, HEAP_EFFECT);
 	vtx = (OpukuWcurtainVtx*)entry->address;
 	texS = counter << 5;
-	x = -300;
-	for (i = 0; i < 12; i++) {
+	for (i = 0, x = -300; i < 12; i++) {
+		s32 a = 0xFF - i * 20;
+
 		vtx[2 * i].x = x;
 		vtx[2 * i].y = 600;
 		vtx[2 * i].z = 0;
@@ -170,7 +167,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 		vtx[2 * i].r = 0xFF;
 		vtx[2 * i].g = 0xFF;
 		vtx[2 * i].b = 0xFF;
-		vtx[2 * i].a = 0xFF - i * 20;
+		vtx[2 * i].a = a;
 		vtx[2 * i + 1].x = x;
 		x += 50;
 		vtx[2 * i + 1].y = (s32)(10.0f * (60.0f + data->field_0x2C[i]));
@@ -181,24 +178,23 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 		vtx[2 * i + 1].r = 0xFF;
 		vtx[2 * i + 1].g = 0xFF;
 		vtx[2 * i + 1].b = 0xFF;
-		vtx[2 * i + 1].a = 0xFF - i * 20;
+		vtx[2 * i + 1].a = a;
 	}
 
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 
-	{
-		OpukuWcurtainVtx* p = vtx;
-		for (j = 0; j < i * 2; j++, p++) {
-			v.x = p->x;
-			v.y = p->y;
-			v.z = p->z;
-			PSMTXMultVec(transMtx, &v, &v);
-			p->x = clampS16(v.x);
-			p->y = clampS16(v.y);
-			p->z = clampS16(v.z);
-		}
+	for (j = 0; j < i * 2; j++) {
+		OSInitFastCast();
+		OSs16tof32(&vtx[j].x, &v.x);
+		OSs16tof32(&vtx[j].y, &v.y);
+		OSs16tof32(&vtx[j].z, &v.z);
+		PSMTXMultVec(transMtx, &v, &v);
+		OSInitFastCast();
+		OSf32tos16(&v.x, &vtx[j].x);
+		OSf32tos16(&v.y, &vtx[j].y);
+		OSf32tos16(&v.z, &vtx[j].z);
 	}
 
 	DCFlushRange(vtx, 0x2A0);
@@ -207,7 +203,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
-	for (j = 0, x = 0; j < i - 1; j++, x += 2) {
+	for (j = 0, x = 0; j < i - 1; x += 2, j++) {
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(x, x + 2, x + 1, x, x + 1, x + 2, x + 3, x);
 	}

@@ -88,3 +88,8 @@ s32 unk_80237448(WinMgrSelect* select);
 void winMgrDisp(CameraId camId, void* param);
 void winMgrSeq(WinMgrEntry* entry);
 
+extern WinMgrDesc select_desc[];
+extern WinMgrDesc select_party_desc[];
+extern WinMgrDesc select_mario_desc[];
+extern WinMgrDesc select_luigi_desc[];
+extern WinMgrDesc select_johoya_perfect_desc[];

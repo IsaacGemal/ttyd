@@ -24,6 +24,8 @@
 #include "evt/evt_telop.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "pmario_sound.h"
+#include "win/win_main.h"
 #include "driver/animdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
@@ -1640,8 +1642,60 @@ EVT_BEGIN(bom1000_minnnanokoe)
     RETURN
 EVT_END()
 
-// TODO: write bom1000_jump (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const Vec vec3_bom_00006ea4;
+extern const Vec vec3_bom_00006eb0;
+extern const f32 float_0p1_bom_00007008;
+extern const f32 float_0p5_bom_0000700c;
+extern const f32 float_10_bom_00007010;
+extern const f32 zero_bom_00007004;
+extern const char str_00000DDC[];
+
+// Inline Vec build reproduces the target's vec3 -> temp -> field copy (rule 7).
+static inline Vec bomVec3(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *base;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+// bom1000_jump(): kick a random pose's state and occasionally play a 3D SFX.
+// NONMATCHING (99.12%): register colouring only - the idx*0x30 temp and the extGetPosePtr element
+// land on swapped r30/r31 (r30=idx*0x30 in retail), so the state base reuses r28 (pd) there.
+USER_FUNC(bom1000_jump) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    s32 idx = rand() % *(s32*)((u8*)pd + 0x4);  // 0x4 of PoseData is the pose count
+    s32 type = pd->states[idx].field_0;
+
+    if (type != 100) {
+        PoseData* data = ((PoseRoot*)lp[0])->data;
+        ExtPose* pose = extGetPosePtr();
+        Vec pos;
+
+        pos = bomVec3(pose[idx].matrix[0][0][3], pose[idx].matrix[0][1][3], pose[idx].matrix[0][2][3],
+                      &vec3_bom_00006ea4);
+        data->states[idx].field_4 = pos;
+        data->states[idx].field_10 = zero_bom_00007004;
+        data->states[idx].field_14 = float_0p1_bom_00007008;
+        data->states[idx].field_18 = 20;
+        {
+            f32 m = data->states[idx].field_14 * (f32)data->states[idx].field_18;
+
+            data->states[idx].field_1C = m * float_0p5_bom_0000700c +
+                                         float_10_bom_00007010 / (f32)data->states[idx].field_18;
+        }
+        data->states[idx].field_1 = 5;
+        data->states[idx].field_0 = 100;
+        if (evtGetValue(0, 0xF5DE0180) != 401 && idx % 5 == 0) {
+            Vec pos2;
+
+            pos2 = bomVec3(pose[idx].matrix[0][0][3], pose[idx].matrix[0][1][3], pose[idx].matrix[0][2][3],
+                           &vec3_bom_00006eb0);
+            psndSFXOn_3D(str_00000DDC, &pos2);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(minnnanokoe_evt)
     SPAWN_EVENT(bom1000_minnnanokoe)
@@ -1873,8 +1927,34 @@ u32 lp[1] = {
 
 SightWork* sight_wp;
 
-// TODO: write jump_minnnanokoe (global, 0x1cc bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+// jump_minnnanokoe(index, f): kick a single pose's state (position from pose matrix, a
+// short animation timer) and occasionally play a 3D SFX.
+void jump_minnnanokoe(s32 index, f32 f) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtPose* pose = extGetPosePtr();
+    Vec pos;
+
+    pos = bomVec3(pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3],
+                  &vec3_bom_00006ea4);
+    pd->states[index].field_4 = pos;
+    pd->states[index].field_10 = zero_bom_00007004;
+    pd->states[index].field_14 = float_0p1_bom_00007008;
+    pd->states[index].field_18 = 20;
+    {
+        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
+
+        pd->states[index].field_1C = m * float_0p5_bom_0000700c + f / (f32)pd->states[index].field_18;
+    }
+    pd->states[index].field_1 = 5;
+    pd->states[index].field_0 = 100;
+    if (evtGetValue(0, 0xF5DE0180) != 401 && index % 5 == 0) {
+        Vec pos2;
+
+        pos2 = bomVec3(pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3],
+                       &vec3_bom_00006eb0);
+        psndSFXOn_3D(str_00000DDC, &pos2);
+    }
+}
 
 extern const f32 float_6p2832_bom_00007060;
 extern const f32 float_0p125_bom_00007064;
@@ -2037,8 +2117,42 @@ static void depthDisp(CameraId cameraId, void* param) {
     sysWaitDrawSync();
 }
 
-// TODO: write jump (global, 0x250 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const Vec vec3_bom_0000649c;
+extern const Vec vec3_bom_000064a8;
+
+// jump(index, a, x, y, z, p, q): aim a pose at (x,z), distance/time-scaled.
+void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtPose* ep = &extGetPosePtr()[index];
+    Vec pos;
+    f32 d;
+    f32 dy;
+
+    pos = bomVec3(x, y, z, &vec3_bom_0000649c);
+    pd->states[index].field_4 = pos;
+    pd->states[index].field_10 = p;
+    pd->states[index].field_14 = q;
+    dy = y - ep->matrix[0][1][3];
+    d = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
+    // the original calls angleABf here and discards the result (see asm 0x2EC0)
+    angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
+    pd->states[index].field_18 = d / pd->states[index].field_10;
+    {
+        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
+
+        pd->states[index].field_1C = m * float_0p5_bom_0000700c +
+                                     dy / (f32)pd->states[index].field_18;
+    }
+    pd->states[index].field_1 = a;
+    pd->states[index].field_0 = 100;
+    ep->field_0x4 = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
+    if (index % 20 == 0 && !(pd->flags & 1)) {
+        Vec pos2;
+
+        pos2 = bomVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_bom_000064a8);
+        psndSFXOn_3D(str_00000DDC, &pos2);
+    }
+}
 
 // TODO: write pose_main (static, 0x180 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
@@ -2048,6 +2162,7 @@ static void depthDisp(CameraId cameraId, void* param) {
 
 // TODO: write drawNum (global, 0x224 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+
 
 extern const f32 float_deg2rad_bom_000070d4;
 

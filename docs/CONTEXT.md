@@ -3658,3 +3658,27 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   reads `(u8*)work + 0x1f4c` where actionCommands.field_0x2BC is declared.
 - **Wave 55** (launched 22:35 on main 8cbdff5): wave 54's recipe with 60-minute budgets and no starts after 00:15,
   leaving out every unit wave 53/54 work is pending on; 79 agents.
+
+## Wave 54's last agents, wave 55, wave 56 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Wave 55 (launched 22:35 on main 8cbdff5; 79 agents, 60-minute budgets) and wave 54's last 36 agents, collected
+  together onto main fc0595c: 8,964 -> 8,995 functions (muj_20 +5, fontmgr +4, bom_01 +2, party_vivian +2,
+  koopa_motion +2, mri unit_barriern +2). Header changes that broke or changed other files are out (party.h's
+  conflicting partyDokanMain prototypes, envdrv.h, win_item.h, battle_seq_command.h's existing line, koopa.h's
+  shared struct); seq_mapchange keeps main's form (its local SoundSetOutputMode prototype can't come from sound.h,
+  which pulls in <math.h>, without changing codegen); mario_hit as on main (a macro main's code needs had moved under
+  MUST_MATCH).
+- Review (`scratch/wave55/review1.md`, partial): muj_20 `draw` drew the logo cyan (`{0x00, 0xFF, 0xFF, a}`; retail
+  copies dat_muj_00011ad8 = 0xFFFFFF00), now white; bom_01's pose_main and drawNum placeholders were deleted without
+  the functions being written (restored, with the abandoned externs and inline out); winMsgDisp (64.98%, reads
+  named rodata past str_802F3FE8) unwritten again. Open (LOW): v2 barriernSatelliteTo_InitInline's volatile
+  table parameter outside MUST_MATCH.
+- Claude #1's second review of #215: battle_status_icon's vec3_8030123c was `{4, 0, 0}` where the data is
+  `{0, 4, 0}`, so _bsi_guruguru put the dizzy icon at x+4 instead of y+4 (fixed). battle_attack_audience (an
+  invented btlataudevtDummyUnk, as rejected in #206) and party_vivian (global vec3s replaced by compound literals
+  while vivian_use still needs them) as on main; tou disp_proc, btlevtcmd_IntplSub, btlevtcmd_DivePosition and
+  bom1000_msg as on main (unmarked match devices). Approved header correction: mario_hit.h `marioChkWallAround`
+  returns s32. Confirmed fix: DivePartsPosition's LoadSeMode reads part+0xF8/0xC0. 8,964 -> 8,992.
+- Isaac extended the run to 08:00. **Wave 56** (00:18, main fc0595c): the 11 agents' worth of below-95% work left in
+  unclaimed units outside pending PRs, with up to six continuation passes and 2-hour budgets on groups over 2.5 KB
+  (Claude #1: repeated re-prompting took two 4.7-4.9 KB functions from 0% to over 99.8%).

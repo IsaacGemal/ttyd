@@ -62,3 +62,13 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags);
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* damageCode, s32 flags);
 s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32* damageCode, s32 flags);
 void __declare(s32 unitId, s32 partId, s32* out1, s32* out2);
+// .sdata2 constants for BattleDamageDirect, named as in the original unit.
+extern const f32 float_1_8041bed8;
+extern const f32 float_8_8041bef0;
+extern const f32 float_5_8041bef4;
+extern const f32 float_10_8041bed0;
+extern const f32 float_30_8041bee4;
+extern const f32 float_60_8041bec8;
+extern const f32 float_neg30_8041bef8;
+extern const f32 float_neg60_8041befc;
+extern const f32 float_0_8041bf00;
