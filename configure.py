@@ -700,7 +700,7 @@ config.libs = [
             Object(Matching, "event/evt_fade.c"),
             Object(Matching, "event/evt_light.c"),
             Object(Matching, "event/evt_audience.c"),
-            Object(NonMatching, "event/evt_batstage.c"),
+            Object(Matching, "event/evt_batstage.c"),
             Object(Matching, "event/evt_seq.c"),
             Object(Matching, "event/evt_twoddisp.c"),
             Object(Matching, "event/evt_snd.c"),
