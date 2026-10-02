@@ -3595,6 +3595,13 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   BtlUnit_ControlPoseSoundMain block and prototype (the greedy revert had taken its body out), mariost's unused
   statics, fontmgr's duplicate colour inline. **Lesson:** `pragma_audit.py` and `greedy.py` remove code but not
   the comments that describe it; check the notes around every function they touch.
+- Claude #1's second review of #206: battle_attack_audience had split the 0x40-byte btlataudevtDummy into an
+  invented `btlataudevtDummyBody` under MUST_MATCH (rules 13/17): the file is as on main
+  (btlataudGetAttackEventPtr 93.75%). Approved header correction: include/manager/fontmgr.h `kanjiSearch` takes
+  `u32`, not `u16` (retail has no clrlwi; the only caller loads with lhz). The four NONMATCHING markers it flagged
+  (main_star in sac_bakugame/sac_zubastar, DrawSubMenuCommonProcess, puniModeAway) were dropped because those
+  functions are at 100% in the merged build; `nm_refresh.py` now takes the lowest score when a name appears
+  twice in a unit. Also open: party_vivian's `*(s8*)` switch operands (lines ~106/190) outside MUST_MATCH.
 - **Follow-up (form, behaviour equal):** mot_roll reads three named vectors as `vec3_802c5d40[4..6]` (older; its
   header now declares the array non-const); match-only shapes outside MUST_MATCH in animdrv (pose byte offsets),
   battle_audience_kinopio (volatile-comma intplGetValue arguments), fontmgr (FontDrawStart's hand-inlined copy) and
