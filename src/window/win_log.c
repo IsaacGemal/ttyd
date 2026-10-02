@@ -677,6 +677,9 @@ static inline BOOL tubuUnlocked(TubuDt* t) {
     return FALSE;
 }
 
+// NONMATCHING (95.42%): behaviour complete, checked against the asm. What differs is register allocation (the
+// original keeps the string base in r31 and `work` in r29; ours swaps them) and the int->float conversion double,
+// which the original reaches through the string base register (base+0x420) while ours pools an anonymous literal.
 // Tattle log / menu main: the tabbed "kiroku" window (map, crystal stars, cards, tattle log).
 s32 winLogMain(WindowWork* work) {
     LogWin* w = (LogWin*)work;
