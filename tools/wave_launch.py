@@ -84,6 +84,13 @@ NEWFILE = ("THE FILE DOESN'T EXIST YET: create src/{unit}.c with the includes it
 OLDFILE = "Change only `{func}` (and, if it needs one, a new static inline helper right above it). Other agents are working on other functions in this same file at the same time, so leave every other function exactly as it is: only your function will be taken from your copy."
 
 
+
+def src_path(unit):
+    """The unit's source as the repo lays it out: src/<unit>.c, or rels/<mod>/src/<rest>.c for REL units."""
+    mod, _, rest = unit.partition("/")
+    rel = Path(f"rels/{mod}/src/{rest}.c")
+    return str(rel) if rest and rel.exists() else f"src/{unit}.c"
+
 def ssh(host, cmd, **kw):
     return subprocess.run(["ssh", host, cmd], capture_output=True, text=True, check=True, **kw)
 
@@ -101,7 +108,7 @@ def prepare(host, tag, spec):
         f"&& ln -sfn ~/ttyd/orig {ws}/orig && ln -sfn ~/ttyd/.venv {ws}/.venv "
         f"&& ln -sfn ~/ttyd/build/compilers {ws}/build/compilers && ln -sfn {BASE}/build/tools {ws}/build/tools")
     ssh(host, f"cp {ws}/tools/agent_check.py {ws}/check.py && "
-        f"if test -f {ws}/src/{unit}.c; then cp {ws}/src/{unit}.c {ws}/orig_file.c; fi")
+        f"if test -f {ws}/{src_path(unit)}; then cp {ws}/{src_path(unit)} {ws}/orig_file.c; fi")
     p = HERE / tag
     p.mkdir(exist_ok=True)
     (p / "PROMPT.md").write_text(PROMPT.format(workers=WORKERS, unit=unit, func=spec["func"], size=spec["size"], score=spec["score"], filenote=(OLDFILE if spec["has_src"] else NEWFILE).format(unit=unit, func=spec["func"])) + "\n")
@@ -122,8 +129,8 @@ def run(host, tag, unit, key, log):
             f"'Do the task described in the attached PROMPT.md, following docs/AGENT_BRIEF.md.' </dev/null >events.jsonl 2>stderr.log; echo rc=$?; "
             f"if ! test -s REPORT.md || ! grep -q -- '--final' events.jsonl; then echo finisher; "
             f"timeout 900 {box} pi --mode json -c --model {MODEL} {shlex.quote(finish)} </dev/null >>events.jsonl 2>>stderr.log; fi; "
-            f"cp src/{unit}.c final.c 2>/dev/null; "
-            f"{{ diff -rq {BASE}/src src; diff -rq {BASE}/libs libs; }} | grep -v -F 'src/{unit}.c differ' > other_changes.txt; "  # merge_agent.sh allows the agent's own file
+            f"cp {src_path(unit)} final.c 2>/dev/null; "
+            f"{{ diff -rq {BASE}/src src; diff -rq {BASE}/libs libs; diff -rq {BASE}/rels rels; }} | grep -v -F '{src_path(unit)} differ' > other_changes.txt; "  # merge_agent.sh allows the agent's own file
             # header additions come back as a patch (a/include -> b/include); tools/merge_agent.sh checks and applies it
             f"diff -ruN {BASE}/include include | sed -e 's#^--- /.*/include/#--- a/include/#' "
             f"-e 's#^+++ include/#+++ b/include/#' > include.patch; "
