@@ -21,6 +21,16 @@
 #include <stdarg.h>
 #include <math.h>
 #include "evt/evt_yuugijou.h"
+#include "driver/swdrv.h"
+#include "driver/fadedrv.h"
+#include "driver/mobjdrv.h"
+#include "driver/npcdrv.h"
+#include "driver/animdrv.h"
+#include "manager/filemgr.h"
+#include "mario/mario_party.h"
+#include "koopa.h"
+#include "window/win_log.h"
+#include "pmario_sound.h"
 #include "eff/eff_recovery.h"
 #include "statuswindow.h"
 #include "window/win_main.h"
@@ -102,9 +112,19 @@ void winOpenDisable(void) {
     }
 }
 
-// NONMATCHING (26.44%): 21 instructions differ, 521 missing, 2 extra, plus register differences.
+#define WM_S32(off) (*(s32*)((u8*)wp + (off)))
+#define WM_PARTY() (((s32*)((u8*)wp + 0x1BC))[WM_S32(0x1DC)])
+#define WM_PTR(off) (*(void**)((u8*)wp + (off)))
+
+extern WindowPartyDt winPartyDt[];
+extern PartyData partyDataTbl[];
+extern s32 evt_item_use[];
+
+// NONMATCHING (94.29%): calls and immediates match; the open-menu goto layout, the final characterId branches, and the pooled-string/names-table base register differ.
 void winMain(void) {
     MarioWork* mario;
+    WindowPartyDt* list[7];
+    const char* names[2] = {"jp", "us"};
 
     mario = marioGetPtr();
     if (!(wp->flags & 1) && seqGetSeq() == SEQ_GAME && !seqCheckSeq()) {
@@ -143,31 +163,237 @@ void winMain(void) {
 
         switch (wp->menuState) {
             case 0:
+                if (!(wp->flags & 0x1000)) {
+                    if ((u32)marioStGetSystemLevel() == 0 && !marioCheckMenuDisable() && !mobjCheckExec() && fadeIsFinish()) {
+                        if (mario->characterId == 2) {
+                            if (wp->buttonTrg & 0x1000) {
+                                WM_S32(0x1C) = 0;
+                                goto check_open;
+                            }
+                        } else {
+                            if (wp->buttonTrg & 0x1000) {
+                                WM_S32(0x1C) = 0;
+                                goto check_open;
+                            }
+                            if (!(keyGetButton(0) & 0x10) && strcmp(gp->currentAreaName, "yuu") != 0) {
+                                if ((wp->buttonTrg & 1) && (swByteGet(0) >= 7 || partyChkJoin(1))) {
+                                    WM_S32(0x1C) = 1;
+                                    goto check_open;
+                                }
+                                if (wp->buttonTrg & 8) {
+                                    WM_S32(0x1C) = 2;
+                                    goto check_open;
+                                }
+                                if ((wp->buttonTrg & 2) && (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt())) {
+                                    WM_S32(0x1C) = 3;
+                                    goto check_open;
+                                }
+                                if (wp->buttonTrg & 4) {
+                                    WM_S32(0x1C) = 4;
+                                check_open:
+                                    if (!(keyGetButton(0) & 0x40)) {
+                                        goto open_menu;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    WM_S32(0x1C) = 0;
+                open_menu:
+                    *(u16*)camGetPtr(CAMERA_2D) |= 0x200;
+                    if (gp->flags & 0x1000) {
+                        WM_S32(0x1C) = 1;
+                    }
+                    if (!(wp->flags & 0x1000)) {
+                        marioStSystemLevel(4);
+                    } else {
+                        npcStopForEvent();
+                    }
+                    fbatChangeMode(7);
+                    if (mario->characterId == 2) {
+                        if (kpaGetStageViewType() == 0) {
+                            marioCtrlOff();
+                        } else {
+                            marioCtrlOff2();
+                        }
+                    } else {
+                        marioCtrlOff2();
+                    }
+                    partyCtrlOff();
+                    psndSetFlag(0x80);
+                    if (mario->characterId == 2) {
+                        kpaPauseSE2();
+                    }
+                    if (mario->flags & 0x80000000) {
+                        wp->flags |= 0x2000;
+                    } else {
+                        wp->flags &= ~0x2000;
+                    }
+                    {
+                        s32 i = 0;
+                        do {
+                            padRumbleHardOff(i);
+                            i++;
+                        } while (i < 4);
+                    }
+                    fileAsyncf(4, 0, "%s/w/jp/mail.tpl", getMarioStDvdRoot());
+                    {
+                        const char* tpl = winGetMapTplName();
+                        fileAsyncf(4, 0, "%s/w/jp/%s", getMarioStDvdRoot(), tpl);
+                    }
+                    WM_S32(0x24) = 0;
+                    if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
+                        wp->menuState = 0x190;
+                    } else {
+                        wp->menuState += 1;
+                    }
+                }
                 break;
 
-			case 201:
+            case 1:
+                {
+                    s32 done;
+
+                    if ((u32)fileAsyncf(4, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
+                        done = 0;
+                    } else {
+                        done = 1;
+                        WM_PTR(0x28) = fileAllocf(4, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
+                    }
+                    if (done != 0) {
+                        wp->menuState += 1;
+                    }
+                }
+                break;
+
+            case 2:
+                if (marioGetPtr()->characterId == 0) {
+                    s32 r = winRootMain(wp);
+
+                    switch (r) {
+                        case -1:
+                            wp->menuState += 1;
+                            break;
+                        case -2:
+                            wp->menuState = 0x64;
+                            break;
+                        case -3:
+                            if (WM_S32(0x2D4) == 0x4E) {
+                                wp->menuState = 0x12C;
+                            } else {
+                                wp->menuState = 0xC8;
+                            }
+                            break;
+                    }
+                } else if (wp->buttonTrg & 0x1000) {
+                    kpaPauseSE2();
+                    wp->menuState = 3;
+                }
+                break;
+
+            case 3:
+                *(u16*)camGetPtr(CAMERA_2D) &= ~0x200;
+                if (mario->characterId == 2) {
+                    if (kpaGetStageViewType() == 0) {
+                        marioCtrlOn();
+                    } else {
+                        marioCtrlOn2();
+                    }
+                } else {
+                    marioCtrlOn2();
+                }
+                partyCtrlOn();
+                fbatChangeMode(1);
+                psndClearFlag(0x80);
+                statusWinForceUpdate();
+                if (!(wp->flags & 0x1000)) {
+                    marioStSystemLevel(0);
+                } else {
+                    npcStartForEvent();
+                }
+                if (WM_PTR(0x28) != NULL) {
+                    fileFree(WM_PTR(0x28));
+                }
+                WM_PTR(0x28) = NULL;
+                wp->flags = 0;
+                wp->menuState = 0;
+                break;
+
+            case 0x64:
+                if (marioBgmodeChk()) {
+                    mario = marioGetPtr();
+                    mario->prevPartyMemberId[0] = WM_PARTY();
+                    wp->menuState = 3;
+                } else if (animGroupBaseAsync(partyDataTbl[WM_PARTY()].name, 2, NULL)) {
+                    wp->menuState += 1;
+                }
+                break;
+
+            case 0x65:
+                marioPartyGoodbye();
+                wp->menuState += 1;
+                break;
+
+            case 0x66:
+                if (marioGetParty() == 0) {
+                    marioPartyHello(WM_PARTY());
+                    wp->menuState = 3;
+                }
+                break;
+
+            case 0xC8: {
+                s32 party;
+                s32 cnt = 0;
+                s32 i;
+
+                if (marioBgmodeChk() == 0) {
+                    party = marioGetParty();
+                } else {
+                    party = marioGetPtr()->prevPartyMemberId[0];
+                }
+                for (i = 0; i < 7; i++) {
+                    if (party == winPartyDt[i].field_0x0) {
+                        list[cnt++] = &winPartyDt[i];
+                    }
+                }
+                for (i = 0; i < 7; i++) {
+                    if (party != winPartyDt[i].field_0x0) {
+                        list[cnt++] = &winPartyDt[i];
+                    }
+                }
+                wp->currentEvent = evtEntryType(&evt_item_use, 0, 0, 0);
+                *(s32*)((u8*)wp->currentEvent + 0xC4) = WM_S32(0x2D4);
+                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (*(s32**)&(list - 1)[WM_S32(0x2DC)])[0];
+                psndClearFlag(0x80);
+                wp->menuState += 1;
+                pouchRemoveItemIndex(WM_S32(0x2D4), WM_S32(0x2D8));
+                break;
+            }
+
+            case 0xC9:
                 if (!evtCheckID(wp->currentEvent->eventId)) {
                     wp->menuState = 3;
                 }
                 break;
 
-            case 300:
+            case 0x12C:
                 wp->currentEvent = evtEntryType(&evt_diary_read, 0, 0, 0);
                 wp->menuState += 1;
                 break;
 
-            case 301:
+            case 0x12D:
                 if (!evtCheckID(wp->currentEvent->eventId)) {
                     wp->menuState = 3;
                 }
                 break;
 
-            case 400:
+            case 0x190:
                 evtYuuWindow();
                 wp->menuState += 1;
                 break;
 
-            case 401:
+            case 0x191:
                 if (evtYuuWindowEndChk()) {
                     wp->menuState = 3;
                 }
@@ -175,20 +401,23 @@ void winMain(void) {
         }
 
         if (wp->menuState == 2) {
-            s8 characterId = marioGetPtr()->characterId;
-            if (characterId < 1) {
-                if (characterId < 0) {
+            u8 cid = marioGetPtr()->characterId;
+            s8 characterId = cid;
+            if (characterId != 1) {
+                if (characterId < 1) {
+                    if (characterId < 0) {
+                        return;
+                    }
+                    if (!(wp->flags & 0x1000)) {
+                        dispEntry(CAMERA_2D, 250.0f, 0, winDisp, NULL);
+                    } else {
+                        dispEntry(CAMERA_2D, 500.0f, 0, winDisp, NULL);
+                    }
                     return;
                 }
-                if (!(wp->flags & 0x1000)) {
-                    dispEntry(CAMERA_2D, 250.0f, 0, winDisp, NULL);
-                } else {
-                    dispEntry(CAMERA_2D, 500.0f, 0, winDisp, NULL);
+                if (characterId < 3) {
+                    dispEntry(CAMERA_2D, 250.0f, 0, winDispKoopa, NULL);
                 }
-                return;
-            }
-            if (characterId < 3) {
-                dispEntry(CAMERA_2D, 250.0f, 0, winDispKoopa, NULL);
             }
         }
     }
