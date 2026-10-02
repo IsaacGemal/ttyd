@@ -92,7 +92,26 @@ def src_path(unit):
     return str(rel) if rest and rel.exists() else f"src/{unit}.c"
 
 def ssh(host, cmd, **kw):
+    kw.setdefault("timeout", 1800)  # no remote step may hold a launcher thread forever
     return subprocess.run(["ssh", host, cmd], capture_output=True, text=True, check=True, **kw)
+
+
+# What an agent's run leaves behind once pi is gone. `timeout` kills pi, not what its tools started: a hung compile
+# under check.py outlived its agent by a day (wave 53). Only these programs are killed, so a person's shell that
+# happens to sit in the workspace is left alone.
+REAP_NAMES = "wibo|ninja|python*|pi|node|bwrap|timeout|sh|objdiff-cli|dtk|nice"
+
+
+def reap(host, ws):
+    """Kill the build and agent processes still running in workspace `ws` on `host`."""
+    cmd = (f"cd {ws} 2>/dev/null || exit 0; for d in /proc/[0-9]*; do "
+           f"case \"$(readlink $d/cwd 2>/dev/null)\" in \"$PWD\"|\"$PWD\"/*) ;; *) continue;; esac; "
+           f"case \"$(cat $d/comm 2>/dev/null)\" in {REAP_NAMES}) "
+           f"[ \"${{d#/proc/}}\" != $$ ] && kill -9 \"${{d#/proc/}}\" 2>/dev/null;; esac; done; true")
+    try:
+        subprocess.run(["ssh", host, cmd], capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 def prepare(host, tag, spec):
@@ -123,6 +142,7 @@ def run(host, tag, unit, key, log):
     box = f"bwrap --dev-bind / / --bind $PWD/tmp /tmp --"
     finish = (f"You stopped before finishing. Do only this: run python3 check.py --final {unit}, fix what it lists, "
               f"and write REPORT.md as PROMPT.md describes. Don't start other work.")
+    # The ssh call gets a deadline too: a launcher thread once waited 16 h on a hung compile (wave 57).
     r = ssh(host, f"export FEATHERLESS_API_KEY={shlex.quote(key)} TTYD_BASE={BASE}; export PATH=$HOME/.local/bin:$HOME/ttyd/.venv/bin:$PATH; "
             f"mkdir -p {ws}/tmp && export TMPDIR=/tmp; "
             f"cd {ws} && timeout {TIMEOUT} {box} pi --mode json --model {MODEL} @PROMPT.md @docs/AGENT_BRIEF.md "
@@ -139,10 +159,11 @@ def run(host, tag, unit, key, log):
             # what it fetched or searched outside the workspace, for the merge (tools/merge_agent.sh shows it)
             f"python3 tools/provenance.py events.jsonl $(pwd) > provenance.txt 2>&1 "
             f"|| echo 'ERROR tools/provenance.py failed; check events.jsonl by hand' >> provenance.txt; "
-            f"mkdir -p {ARCHIVE}/{tag} && zstd -q -3 -f events.jsonl -o {ARCHIVE}/{tag}/events.jsonl.zst; true")
+            f"mkdir -p {ARCHIVE}/{tag} && zstd -q -3 -f events.jsonl -o {ARCHIVE}/{tag}/events.jsonl.zst; true",
+            timeout=TIMEOUT + 900 + 600)
     subprocess.run(["rsync", "-az", f"{host}:{ws}/REPORT.md", f"{host}:{ws}/final.c", f"{host}:{ws}/lastgood.c",
                     f"{host}:{ws}/other_changes.txt", f"{host}:{ws}/include.patch", f"{host}:{ws}/provenance.txt", f"{host}:{ws}/stderr.log",
-                    str(HERE / tag) + "/"])
+                    str(HERE / tag) + "/"], timeout=600)
     log(f"{host}:{tag} finished in {time.time() - t0:.0f}s: {r.stdout.strip()}")
 
 
@@ -168,8 +189,10 @@ def main():
             try:
                 prepare(host, tag, s)
                 run(host, tag, s["unit"], key, log)
-            except Exception as e:
+            except Exception as e:  # including the ssh deadline (subprocess.TimeoutExpired)
                 log(f"{host}:{tag} ERROR {e}")
+            finally:
+                reap(host, f"~/ttyd-agents/{WS_PREFIX}{tag}")
 
     log(f"{len(SPEC)} functions, {WORKERS} at a time across {', '.join(HOSTS)}")
     threads = [threading.Thread(target=worker, args=(HOSTS[i % len(HOSTS)],)) for i in range(WORKERS)]

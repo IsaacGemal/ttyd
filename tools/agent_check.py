@@ -32,11 +32,24 @@ if os.path.exists(src) and src not in open("build.ninja").read():
 # --final also compiles every source (a header change could break another file), and the merge builds everything.
 target = entry.get("base_path") if entry else None
 jobs = ["-j2"]  # two waves of agents share the tower's 16 cores
+# Sources that make the compiler hang forever (tools/hang_guard.py) are refused before anything is built.
+sys.path.insert(0, "tools")
+import hang_guard
+bad = hang_guard.problems(hang_guard.all_sources() if FINAL else [src, *hang_guard.all_headers()])
+if bad:
+    print("BUILD REFUSED:\n" + "\n".join(bad))
+    sys.exit(1)
 b = subprocess.run(["ninja", *jobs] + ([target] if target else []), capture_output=True, text=True)
 if b.returncode == 0 and FINAL:
     b = subprocess.run(["ninja", *jobs, "all_source"], capture_output=True, text=True)
 if b.returncode:
     out = b.stdout + b.stderr
+    # tools/project.py's compile rules cap mwcc and print this marker when the cap kills it.
+    if "COMPILER TIMEOUT" in out:
+        print("BUILD FAILED: THE COMPILER HUNG and was killed (a normal compile takes about a second). Your last edit "
+              "makes mwcceppc loop forever: undo it (lastgood.c is the last version that built) and write that part "
+              "differently.\n" + "\n".join(l for l in out.splitlines() if "COMPILER TIMEOUT" in l))
+        sys.exit(1)
     errs = [l for l in out.splitlines() if "rror" in l or "###" in l or l.startswith("#")]
     print("BUILD FAILED\n" + "\n".join((errs or out.splitlines())[-40:]))
     sys.exit(1)
