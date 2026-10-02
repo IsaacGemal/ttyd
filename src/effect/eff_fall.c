@@ -536,7 +536,7 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 
 // Full reconstruction of the element-0 init, the per-element state machines for types 0-8, the type 2
 // procedural vertex build, the type 7 hand-rolled sin/cos approximation, and the display registration.
-// NONMATCHING (85.36%): body is complete and correct; the remaining diffs are register allocation (the
+// NONMATCHING (85.36%): the remaining diffs are register allocation (the
 // original keeps data/effect in r26/r19 and its constant addresses are pooled through vec3_802fe418 in
 // r31, so nearly every load/store differs in its base register) plus a few scheduling/pooling sites: the
 // int-to-float double constants are loaded through the compiler's own pool instead of base+0x60/0x68, the
@@ -898,7 +898,7 @@ void effFallMain(EffectEntry* effect) {
 					done++;
 				}
 				if (elem->unk24 == 0x46) {
-					psndSFXOn_3D(str_802FE52C, &pos);
+					psndSFXOn_3D(str_802FE4D4, &pos);
 				}
 				break;
 			}
