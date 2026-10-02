@@ -279,8 +279,8 @@ void marioReInit_slit(void) {
     mario->trigFlags &= ~1u;
     mario->currMotionId = MARIO_MOTION_SLIT;
     MW_S16(mario, 0x2D8) = 0xA;
-    MW_F32(mario, 0x1A8) = 270.0f;
-    MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+    mario->unk1A8 = 270.0f;
+    MW_F32(mario, 0x1AC) = mario->unk1A8;
     marioChgPose("M_S_1");
     marioChgPaper("PM_S_1B");
     MW_S16(mario, 0x2D8) = 0xA;
@@ -456,11 +456,11 @@ void mot_slit_post(void) {
         }
     MW_F32(mario, 0x1B4) = 20.0f;
     if (mario->directionView >= 180.0f) {
-        MW_F32(mario, 0x1A8) = 0.0f;
-        MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+        mario->unk1A8 = 0.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
     } else {
-        MW_F32(mario, 0x1A8) = 180.0f;
-        MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+        mario->unk1A8 = 180.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
     }
     mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
     mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
@@ -478,11 +478,11 @@ void mot_slit_post(void) {
         mario->flags &= ~MARIO_FLAG_PAPER_MODE;
     MW_F32(mario, 0x1B4) = 20.0f;
     if (mario->directionView >= 180.0f) {
-        MW_F32(mario, 0x1A8) = 0.0f;
-        MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+        mario->unk1A8 = 0.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
     } else {
-        MW_F32(mario, 0x1A8) = 180.0f;
-        MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+        mario->unk1A8 = 180.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
     }
     mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
     mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
@@ -502,11 +502,11 @@ void marioSlitForceCancel(void) {
     if (mario->flags & MARIO_FLAG_PAPER_MODE) {
         mario->flags &= ~MARIO_FLAG_PAPER_MODE;
         if (mario->directionView >= 180.0f) {
-            MW_F32(mario, 0x1A8) = 0.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+            mario->unk1A8 = 0.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
         } else {
-            MW_F32(mario, 0x1A8) = 180.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+            mario->unk1A8 = 180.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
         }
         mario->dispFlags &= 0xFEFFF3FF;
         mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
@@ -593,8 +593,8 @@ BOOL marioCreviceWallChk(Vec* pos) {
 // The walk-speed cap the slit's walking states share: once the base speed reaches the dash speed it drops back
 // to the walk speed and the run pose is dropped in (unless a pose change is already queued).
 static inline void slitCapSpeed(MarioWork* mario) {
-    if (MW_F32(mario, 0x180) >= MW_F32(mario, 0x188)) {
-        MW_F32(mario, 0x180) = MW_F32(mario, 0x184);
+    if (mario->baseSpeed >= mario->mBaseDashSpeed) {
+        mario->baseSpeed = mario->mBaseWalkSpeed;
         if (!(mario->trigFlags & 0x8000)) {
             marioChgPose("M_R_1");
         }
@@ -621,10 +621,10 @@ static inline void slitSetWalkSpeed(MarioWork* mario) {
     } else if (flags & 0x02000000) {
         speed *= 0.5f;
     }
-    MW_F32(mario, 0x180) = speed;
+    mario->baseSpeed = speed;
 }
 
-// Pushes the pose/paper hint that matches which way the stick points relative to the crevice.
+// Resets the squeeze bounce: field 0x148 back to 0 and 0x158 to its resting 0.004.
 static inline void slitResetBounce(void) {
     MarioWork* m = marioGetPtr();
 
@@ -632,7 +632,7 @@ static inline void slitResetBounce(void) {
     MW_F32(m, 0x158) = 0.004f;
 }
 
-// NONMATCHING (99.45%): the inlined walk-speed block (`slitSetWalkSpeed`) leaves its empty `if (field != 0) {}` arm as
+// NONMATCHING (99.47%): the inlined walk-speed block (`slitSetWalkSpeed`) leaves its empty `if (field != 0) {}` arm as
 // `beq next; b end` in the target and `bne end` here (four inline sites), and the registers of the s8 products differ.
 // Mario in the slit (crevice): the paper-mode state machine for squeezing through a gap in a wall.
 void mot_slit(void) {
@@ -645,7 +645,7 @@ void mot_slit(void) {
     s16 count16;
     f32 angleGoal;
 
-    if (MW_F32(mario, 0x190) == zero) {
+    if (mario->controlStickSensitivity == zero) {
         mario->trigFlags &= 0xFFFF7FFF;
     }
     if (mario->trigFlags & 1) {
@@ -685,12 +685,12 @@ void mot_slit(void) {
         MW_S16(mario, 0x50) = 0;
     }
     if (marioRollChgChk() != 0) {
-        if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) >= 180.0f) {
-            MW_F32(mario, 0x1A8) = 0.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+        if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
+            mario->unk1A8 = 0.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
         } else {
-            MW_F32(mario, 0x1A8) = 180.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
+            mario->unk1A8 = 180.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
         }
         mario->flags &= 0xFFBFFFFF;
         mario->flags &= 0xFFDFFFFF;
@@ -704,14 +704,14 @@ void mot_slit(void) {
         MW_S32(mario, 0x2DC) = 0x1E;
         MW_S32(mario, 0x2A4) = 0;
         MW_S16(mario, 0x2D8) = 2;
-        MW_F32(mario, 0x2AC) = MW_F32(mario, 0x90);
+        MW_F32(mario, 0x2AC) = mario->position.y;
         slitCapSpeed(mario);
         marioGetPtr();
         psndSFXOn_3D((const char*)0x177, (Vec*)((u8*)mario + 0x8C));
         break;
     case 2:
-        if (MW_F32(mario, 0x190) == zero) {
-            MW_F32(mario, 0x180) = 0.0f;
+        if (mario->controlStickSensitivity == zero) {
+            mario->baseSpeed = 0.0f;
             marioChgPose("M_S_1");
         }
         count = MW_S32(mario, 0x2DC) - 1;
@@ -727,16 +727,16 @@ void mot_slit(void) {
         break;
     case 4:
         if (marioChkKey() != 0) {
-            if (MW_F32(mario, 0x190) == zero) {
-                MW_F32(mario, 0x180) = 0.0f;
+            if (mario->controlStickSensitivity == zero) {
+                mario->baseSpeed = 0.0f;
                 marioChgPose("M_S_1");
             }
-            MW_F32(mario, 0x1A0) = toMovedirSimple(MW_F32(mario, 0x1A8));
+            mario->directionView = toMovedirSimple(mario->unk1A8);
         }
         slitCapSpeed(mario);
-        MW_F32(mario, 0x1A8) = 270.0f;
-        MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
-        if (MW_F32(mario, 0x190) == zero) {
+        mario->unk1A8 = 270.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
+        if (mario->controlStickSensitivity == zero) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1B");
@@ -744,73 +744,74 @@ void mot_slit(void) {
         MW_S16(mario, 0x2B6) = 0;
         /* fallthrough */
     case 10:
-        if (MW_F32(mario, 0x90) != MW_F32(mario, 0x2AC)) {
+        if (mario->position.y != MW_F32(mario, 0x2AC)) {
             slitResetBounce();
         }
-        MW_F32(mario, 0x2AC) = MW_F32(mario, 0x90);
+        MW_F32(mario, 0x2AC) = mario->position.y;
         if (MW_S16(mario, 0x4E) != 0) {
             if (!(mario->trigFlags & 0x8000)) {
                 marioChgPose("M_W_1");
             }
             marioChgPaper("PM_S_1D");
-            if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) <= 180.0f) {
+            if (revise360(mario->directionView - mario->targetYaw) <= 180.0f) {
                 MW_S16(mario, 0x2BA) = 1;
-                MW_F32(mario, 0x1A8) = 260.0f;
+                mario->unk1A8 = 260.0f;
             } else {
                 MW_S16(mario, 0x2BA) = 2;
-                MW_F32(mario, 0x1A8) = 280.0f;
+                mario->unk1A8 = 280.0f;
             }
             break;
         }
         slitCapSpeed(mario);
         if (marioChkKey() != 0) {
             if (slitContinueChk() != 1) {
-                MW_F32(mario, 0x1A0) = MW_F32(mario, 0x194);
+                mario->directionView = mario->controlStickAngle;
                 MW_S16(mario, 0x2D8) = 0x64;
                 break;
             }
         }
-        if (marioChkJump() == 0) {
-            if (MW_F32(mario, 0x190) == zero) {
-                MW_F32(mario, 0x180) = 0.0f;
-                if (MW_S32(mario, 0x2A4) == 0) {
-                    marioChgPose("M_S_1");
-                    marioChgPaper("PM_S_1B");
-                }
-            } else {
-                s16 flags2B8;
-                f32 turn;
-
-                if (strcmp(mario->animName, "M_I_Y") == 0) {
-                    marioChgPose("M_W_1");
-                }
-                flags2B8 = MW_S16(mario, 0x2B8);
-                if (!(flags2B8 & 1)) {
-                    slitResetBounce();
-                } else {
-                    MW_S16(mario, 0x2B8) = (s16)(flags2B8 & 0xFFFFFFFE);
-                    slitResetBounce();
-                }
-                slitSetWalkSpeed(mario);
-                MW_F32(mario, 0x1A0) = MW_F32(mario, 0x194);
-                if (!(mario->trigFlags & 0x8000)) {
-                    marioChgPose("M_W_1");
-                }
-                turn = revise360(MW_F32(mario, 0x194) - MW_F32(mario, 0x198));
-                if (turn >= 315.0f || turn <= 45.0f || (turn >= 135.0f && turn <= 225.0f)) {
-                    marioChgPaper("PM_S_1E");
-                } else {
-                    marioChgPaper("PM_S_1D");
-                    if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) <= 180.0f) {
-                        MW_S16(mario, 0x2BA) = 1;
-                        MW_F32(mario, 0x1A8) = 260.0f;
-                    } else {
-                        MW_S16(mario, 0x2BA) = 2;
-                        MW_F32(mario, 0x1A8) = 280.0f;
-                    }
-                }
-                MW_S16(mario, 0x2D8) = 0x14;
+        if (marioChkJump() != 0) {
+            return;
+        }
+        if (mario->controlStickSensitivity == zero) {
+            mario->baseSpeed = 0.0f;
+            if (MW_S32(mario, 0x2A4) == 0) {
+                marioChgPose("M_S_1");
+                marioChgPaper("PM_S_1B");
             }
+        } else {
+            s16 flags2B8;
+            f32 turn;
+
+            if (strcmp(mario->animName, "M_I_Y") == 0) {
+                marioChgPose("M_W_1");
+            }
+            flags2B8 = MW_S16(mario, 0x2B8);
+            if (!(flags2B8 & 1)) {
+                slitResetBounce();
+            } else {
+                MW_S16(mario, 0x2B8) = (s16)(flags2B8 & 0xFFFFFFFE);
+                slitResetBounce();
+            }
+            slitSetWalkSpeed(mario);
+            mario->directionView = mario->controlStickAngle;
+            if (!(mario->trigFlags & 0x8000)) {
+                marioChgPose("M_W_1");
+            }
+            turn = revise360(mario->controlStickAngle - mario->targetYaw);
+            if (turn >= 315.0f || turn <= 45.0f || (turn >= 135.0f && turn <= 225.0f)) {
+                marioChgPaper("PM_S_1E");
+            } else {
+                marioChgPaper("PM_S_1D");
+                if (revise360(mario->directionView - mario->targetYaw) <= 180.0f) {
+                    MW_S16(mario, 0x2BA) = 1;
+                    mario->unk1A8 = 260.0f;
+                } else {
+                    MW_S16(mario, 0x2BA) = 2;
+                    mario->unk1A8 = 280.0f;
+                }
+            }
+            MW_S16(mario, 0x2D8) = 0x14;
         }
         break;
     }
@@ -819,12 +820,12 @@ void mot_slit(void) {
         if (MW_S16(mario, 0x2B4) > 0) {
             MW_S16(mario, 0x2B4) = 0;
             marioChgPaper("PM_S_1D");
-            if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) <= 180.0f) {
+            if (revise360(mario->directionView - mario->targetYaw) <= 180.0f) {
                 angleGoal = 260.0f;
             } else {
                 angleGoal = 280.0f;
             }
-            MW_F32(mario, 0x1A8) = angleGoal;
+            mario->unk1A8 = angleGoal;
         }
         if (marioChkKey() != 0) {
             if (slitContinueChk() != 1) {
@@ -835,8 +836,8 @@ void mot_slit(void) {
             marioChkJump();
         }
         if (marioChkKey() != 0) {
-            if (MW_F32(mario, 0x190) == zero) {
-                MW_F32(mario, 0x180) = 0.0f;
+            if (mario->controlStickSensitivity == zero) {
+                mario->baseSpeed = 0.0f;
                 count = MW_S16(mario, 0x2B6) + 1;
                 MW_S16(mario, 0x2B6) = (s16)count;
                 if ((s16)count < 6) {
@@ -851,8 +852,8 @@ void mot_slit(void) {
                 s8 sy;
 
                 MW_S16(mario, 0x2B6) = 0;
-                sx = MW_U8(mario, 0x24E);
-                sy = MW_U8(mario, 0x24F);
+                sx = mario->wStickDir1;
+                sy = mario->wStickDir2;
                 manhattan = abs(sx) + abs(sy);
                 if (!(mario->trigFlags & 0x8000)) {
                     const char* pose = "M_R_1";
@@ -865,27 +866,29 @@ void mot_slit(void) {
             }
         } else {
 keyOffPath:
-            if (marioChkKey() != 0) {
+            {
                 f32 turn;
 
-                MW_F32(mario, 0x1A0) = MW_F32(mario, 0x194);
-                slitSetWalkSpeed(mario);
-                turn = revise360(MW_F32(mario, 0x194) - MW_F32(mario, 0x198));
+                if (marioChkKey() != 0) {
+                    mario->directionView = mario->controlStickAngle;
+                    slitSetWalkSpeed(mario);
+                }
+                turn = revise360(mario->controlStickAngle - mario->targetYaw);
                 if (turn >= 315.0f || turn <= 45.0f || (turn >= 135.0f && turn <= 225.0f)) {
                     marioChgPaper("PM_S_1E");
                     MW_S16(mario, 0x2B6) = 6;
                     MW_S16(mario, 0x2BA) = 0;
-                    if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) <= 180.0f) {
+                    if (revise360(mario->directionView - mario->targetYaw) <= 180.0f) {
                         angleGoal = 260.0f;
                     } else {
                         angleGoal = 280.0f;
                     }
-                    MW_F32(mario, 0x1A8) = angleGoal;
+                    mario->unk1A8 = angleGoal;
                 } else {
                     f32 diff;
 
                     marioChgPaper("PM_S_1D");
-                    diff = revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198));
+                    diff = revise360(mario->directionView - mario->targetYaw);
                     if (MW_S16(mario, 0x2BA) == 0) {
                         if (diff >= 180.0f) {
                             MW_S16(mario, 0x2BA) = 2;
@@ -900,7 +903,7 @@ keyOffPath:
                             MW_S16(mario, 0x2D8) = 0x15;
                             MW_S16(mario, 0x2BA) = 2;
                             slitSetWalkSpeed(mario);
-                            MW_F32(mario, 0x1A8) = 260.0f;
+                            mario->unk1A8 = 260.0f;
                         }
                     } else if (MW_S16(mario, 0x2BA) == 2) {
                         if (diff <= 180.0f) {
@@ -909,7 +912,7 @@ keyOffPath:
                             MW_S16(mario, 0x2D8) = 0x15;
                             MW_S16(mario, 0x2BA) = 1;
                             slitSetWalkSpeed(mario);
-                            MW_F32(mario, 0x1A8) = 280.0f;
+                            mario->unk1A8 = 280.0f;
                         }
                     }
                 }
@@ -927,15 +930,15 @@ keyOffPath:
             } else {
                 angleGoal = 280.0f;
             }
-            MW_F32(mario, 0x1A8) = angleGoal;
+            mario->unk1A8 = angleGoal;
         }
         break;
     }
     if (mario->flags & 0x100000) {
-        if (MW_U32(mario, 0x1EC) != 0) {
-            if (MW_U32(mario, 0x1E4) != 0 && MW_U16(mario, 0x2E) == 0x15) {
-                if (hitGetAttr((HitEntry*)MW_S32(mario, 0x1E4)) & 0x2000) {
-                    f32 turn = revise360(MW_F32(mario, 0x194) - MW_F32(mario, 0x198));
+        if ((u32)mario->hitobjPush != 0) {
+            if ((u32)mario->hitobjStandOn != 0 && mario->currMotionId == 0x15) {
+                if (hitGetAttr((HitEntry*)(s32)mario->hitobjPush) & 0x2000) {
+                    f32 turn = revise360(mario->controlStickAngle - mario->targetYaw);
 
                     if (turn > 90.0f && turn < 270.0f) {
                         MW_F32(mario, 0x2A8) = 180.0f;
@@ -952,30 +955,30 @@ keyOffPath:
                         f32 sinv;
                         f32 cosv;
 
-                        MW_F32(mario, 0x1A0) = revise360(MW_F32(mario, 0x2A8) + MW_F32(mario, 0x198));
+                        mario->directionView = revise360(MW_F32(mario, 0x2A8) + mario->targetYaw);
                         MW_S32(mario, 0x2A4) = 0;
-                        sincosf(&sinv, &cosv, MW_F32(mario, 0x1A0));
-                        query.targetPos.x = MW_F32(mario, 0x8C);
+                        sincosf(&sinv, &cosv, mario->directionView);
+                        query.targetPos.x = mario->position.x;
                         dir = vec3_802c5ec0;
-                        query.targetPos.y = 11.0f + MW_F32(mario, 0x90);
-                        query.targetPos.z = MW_F32(mario, 0x94);
+                        query.targetPos.y = 11.0f + mario->position.y;
+                        query.targetPos.z = mario->position.z;
                         dir.x = sinv;
                         dir.z = cosv;
                         query.targetDir = dir;
                         query.targetDistance = 20.0f;
-                        if (hitCheckVecHitObjXZ(q, (HitEntry*)MW_S32(mario, 0x1EC)) != 0) {
-                            query.targetPos.x = MW_F32(mario, 0x8C);
-                            query.targetPos.z = MW_F32(mario, 0x94);
+                        if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
+                            query.targetPos.x = mario->position.x;
+                            query.targetPos.z = mario->position.z;
                             query.targetDistance = 20.0f;
                             movePos(&q->targetPos.x, &q->targetPos.z, 1.0f,
                                     reviseAngle(90.0f + MW_F32(mario, 0x19C)));
-                            if (hitCheckVecHitObjXZ(q, (HitEntry*)MW_S32(mario, 0x1EC)) != 0) {
-                                query.targetPos.x = MW_F32(mario, 0x8C);
-                                query.targetPos.z = MW_F32(mario, 0x94);
+                            if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
+                                query.targetPos.x = mario->position.x;
+                                query.targetPos.z = mario->position.z;
                                 query.targetDistance = 20.0f;
                                 movePos(&q->targetPos.x, &q->targetPos.z, 1.0f,
                                         reviseAngle(MW_F32(mario, 0x19C) - 90.0f));
-                                if (hitCheckVecHitObjXZ(q, (HitEntry*)MW_S32(mario, 0x1EC)) != 0) {
+                                if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
                                     MW_S16(mario, 0x2D8) = 0x50;
                                 }
                             }
@@ -987,13 +990,13 @@ keyOffPath:
             }
         } else {
             state = MW_S16(mario, 0x2D8);
-            if ((state < 0x5A || state > 0x5E) && MW_U32(mario, 0x1E4) != 0 &&
-                (hitGetAttr((HitEntry*)MW_S32(mario, 0x1E4)) & 0x2000)) {
+            if ((state < 0x5A || state > 0x5E) && (u32)mario->hitobjStandOn != 0 &&
+                (hitGetAttr((HitEntry*)(s32)mario->hitobjStandOn) & 0x2000)) {
                 s32 count = MW_S32(mario, 0x2A4);
 
                 MW_S32(mario, 0x2A4) = count + 3;
                 marioChgPaper("PM_S_1H");
-                if (MW_S32(mario, 0x2A4) >= 0xF && MW_U16(mario, 0x2E) == 0x15) {
+                if (MW_S32(mario, 0x2A4) >= 0xF && mario->currMotionId == 0x15) {
                     MW_S16(mario, 0x2D8) = 0x5A;
                 }
             } else {
@@ -1016,7 +1019,7 @@ keyOffPath:
         }
         mario->flags |= 0x400;
         MW_S32(mario, 0x2DC) = 0x14;
-        MW_F32(mario, 0x180) = (2.0f * MW_F32(mario, 0x1B4)) / (f32)MW_S32(mario, 0x2DC);
+        mario->baseSpeed = (2.0f * MW_F32(mario, 0x1B4)) / (f32)MW_S32(mario, 0x2DC);
         MW_S16(mario, 0x2D8) = 0x51;
         mario->flags |= 0x200000;
         break;
@@ -1041,7 +1044,7 @@ keyOffPath:
         mario->flags |= 0x10000000;
         marioChgPaper("PM_S_1H");
         MW_S32(mario, 0x2DC) = sysMsec2Frame(0x1F4);
-        MW_F32(mario, 0x180) = 0.0f;
+        mario->baseSpeed = 0.0f;
         MW_S16(mario, 0x2D8) = 0x5B;
         {
             MarioWork* m = marioGetPtr();
@@ -1059,12 +1062,12 @@ keyOffPath:
         mario->flags |= 0xA0000;
         /* fallthrough */
     case 0x5C:
-        if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) <= 180.0f) {
+        if (revise360(mario->directionView - mario->targetYaw) <= 180.0f) {
             angleGoal = 260.0f;
         } else {
             angleGoal = 280.0f;
         }
-        MW_F32(mario, 0x1A8) = angleGoal;
+        mario->unk1A8 = angleGoal;
         count = MW_S32(mario, 0x2DC) - 1;
         MW_S32(mario, 0x2DC) = count;
         if (count <= 0) {
@@ -1072,7 +1075,7 @@ keyOffPath:
             mario->flags &= 0xFFFFFEFF;
             mario->flags &= 0xEFFFFFFF;
     case 0x5D:
-            if (MW_U32(mario, 0x1E4) != 0) {
+            if ((u32)mario->hitobjStandOn != 0) {
                 mario->flags &= 0xFFF0FFFF;
                 MW_S16(mario, 0x2D8) = 0x5E;
     case 0x5E:
@@ -1088,30 +1091,30 @@ keyOffPath:
         MW_S16(mario, 0x2DA) = 0;
         mario->flags &= 0xFFEFFFFF;
         MW_F32(mario, 0x1B4) = 20.0f;
-        if (zero == MW_F32(mario, 0x180)) {
+        if (zero == mario->baseSpeed) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1C");
         MW_S16(mario, 0x2DA) = 0x1E;
         MW_S16(mario, 0x2D8) = 0x65;
-        if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) >= 180.0f) {
-            MW_F32(mario, 0x1A8) = 0.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
-            if (MW_F32(mario, 0x190) == zero) {
-                MW_F32(mario, 0x1A0) = toMovedirSimple(MW_F32(mario, 0x1A8));
+        if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
+            mario->unk1A8 = 0.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+            if (mario->controlStickSensitivity == zero) {
+                mario->directionView = toMovedirSimple(mario->unk1A8);
             }
         } else {
-            MW_F32(mario, 0x1A8) = 180.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
-            if (MW_F32(mario, 0x190) == zero) {
-                MW_F32(mario, 0x1A0) = toMovedirSimple(MW_F32(mario, 0x1A8));
+            mario->unk1A8 = 180.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+            if (mario->controlStickSensitivity == zero) {
+                mario->directionView = toMovedirSimple(mario->unk1A8);
             }
         }
         psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
         /* fallthrough */
     case 0x65:
-        if (MW_F32(mario, 0x190) == zero) {
-            MW_F32(mario, 0x180) = 0.0f;
+        if (mario->controlStickSensitivity == zero) {
+            mario->baseSpeed = 0.0f;
             marioChgPose("M_S_1");
         }
         count16 = MW_S16(mario, 0x2DA) - 1;
@@ -1123,8 +1126,8 @@ keyOffPath:
     default:
         return;
     case 0x66:
-        if (MW_F32(mario, 0x190) == zero) {
-            MW_F32(mario, 0x180) = 0.0f;
+        if (mario->controlStickSensitivity == zero) {
+            mario->baseSpeed = 0.0f;
             marioChgPose("M_S_1");
         }
         mario->flags &= 0xFFBFFFFF;
@@ -1146,21 +1149,21 @@ keyOffPath:
         MW_S16(mario, 0x2DA) = 0;
         mario->flags &= 0xFFEFFFFF;
         MW_F32(mario, 0x1B4) = 20.0f;
-        if (MW_F32(mario, 0x190) == zero) {
+        if (mario->controlStickSensitivity == zero) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1C");
         MW_S16(mario, 0x2DA) = 0x1E;
         MW_S16(mario, 0x2D8) = 0x6F;
-        MW_F32(mario, 0x180) = 0.0f;
-        if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) >= 180.0f) {
-            MW_F32(mario, 0x1A8) = 0.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
-            MW_F32(mario, 0x1A0) = toMovedirSimple(MW_F32(mario, 0x1A8));
+        mario->baseSpeed = 0.0f;
+        if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
+            mario->unk1A8 = 0.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+            mario->directionView = toMovedirSimple(mario->unk1A8);
         } else {
-            MW_F32(mario, 0x1A8) = 180.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
-            MW_F32(mario, 0x1A0) = toMovedirSimple(MW_F32(mario, 0x1A8));
+            mario->unk1A8 = 180.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+            mario->directionView = toMovedirSimple(mario->unk1A8);
         }
         psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
         /* fallthrough */
@@ -1188,21 +1191,21 @@ keyOffPath:
         MW_S16(mario, 0x2DA) = 0;
         mario->flags &= 0xFFEFFFFF;
         MW_F32(mario, 0x1B4) = 20.0f;
-        if (MW_F32(mario, 0x190) == zero) {
+        if (mario->controlStickSensitivity == zero) {
             marioChgPose("M_S_1");
         }
         marioChgPaper("PM_S_1C");
         MW_S16(mario, 0x2DA) = 0x1E;
         MW_S16(mario, 0x2D8) = 0x79;
-        MW_F32(mario, 0x180) = 0.0f;
-        if (revise360(MW_F32(mario, 0x1A0) - MW_F32(mario, 0x198)) >= 180.0f) {
-            MW_F32(mario, 0x1A8) = 0.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
-            MW_F32(mario, 0x1A0) = toMovedirSimple(MW_F32(mario, 0x1A8));
+        mario->baseSpeed = 0.0f;
+        if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
+            mario->unk1A8 = 0.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+            mario->directionView = toMovedirSimple(mario->unk1A8);
         } else {
-            MW_F32(mario, 0x1A8) = 180.0f;
-            MW_F32(mario, 0x1AC) = MW_F32(mario, 0x1A8);
-            MW_F32(mario, 0x1A0) = toMovedirSimple(MW_F32(mario, 0x1A8));
+            mario->unk1A8 = 180.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+            mario->directionView = toMovedirSimple(mario->unk1A8);
         }
         psndSFXOn_3D((const char*)0x178, (Vec*)((u8*)mario + 0x8C));
         /* fallthrough */
