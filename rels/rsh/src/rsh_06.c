@@ -1729,6 +1729,7 @@ static void ext_shadow_disp(CameraId cameraId, void* param) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
+#pragma dont_inline on
 static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4,
                         f32 p5) {
     if (flag) {
@@ -1773,6 +1774,7 @@ static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 fla
     pose->flags |= 0x10;
     pose->flags &= ~4;
 }
+#pragma dont_inline reset
 
 
 // Inline sine/cosine approximations (the polynomials shared by the NPC blur path).
