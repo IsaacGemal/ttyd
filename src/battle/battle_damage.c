@@ -487,6 +487,8 @@ void BattleAttackDeclare(s32* out1, s32* out2) {
     }
 }
 
+// dont_inline: BattleSetStatusDamage calls this out of line
+#pragma dont_inline on
 u8 _getRegistStatus(BattleUnit* unit, s32 type) {
     BattleVulnerableStatus* vuln = unit->vulnStatus;
 
@@ -539,6 +541,7 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
         return 100;
     }
 }
+#pragma dont_inline reset
 
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     BattleWork* wp = _battleWorkPointer;
@@ -618,15 +621,14 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
 }
 
 // The six colour bytes the stamp effect reads (the tint and the fade-out tint).
-#define STAMP_COLOR(e, r0, g0, b0, r1, g1, b1)               \
-    {                                                        \
-        effStampData* stamp = (e)->userdata;                 \
-        stamp->field_0x38 = r0;                              \
-        stamp->field_0x39 = g0;                              \
-        stamp->field_0x3A = b0;                              \
-        stamp->field_0x3B = r1;                              \
-        stamp->field_0x3C = g1;                              \
-        stamp->field_0x3D = b1;                              \
+#define STAMP_COLOR(e, r0, g0, b0, r1, g1, b1)                           \
+    {                                                                    \
+        ((effStampData*)(e)->userdata)->field_0x38 = r0;                 \
+        ((effStampData*)(e)->userdata)->field_0x39 = g0;                 \
+        ((effStampData*)(e)->userdata)->field_0x3A = b0;                 \
+        ((effStampData*)(e)->userdata)->field_0x3B = r1;                 \
+        ((effStampData*)(e)->userdata)->field_0x3C = g1;                 \
+        ((effStampData*)(e)->userdata)->field_0x3D = b1;                 \
     }
 
 // Applies one status (sleep, stop, poison, ...) to `unit` from an attack of `part`'s side: the immunity and
@@ -684,6 +686,13 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
             isRemoving = 1;
         }
         break;
+    case STATUS_CHARGE:
+    case STATUS_FLIPPED:
+    case STATUS_INVISIBLE:
+    case STATUS_HOLD_FAST:
+    case STATUS_HP_REGEN:
+    case STATUS_FP_REGEN:
+        break;
     }
     if (part->attributes & kUnk_ImmuneToDamageOrStatus) {
         return 0;
@@ -738,8 +747,8 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
     if (rate <= 0) {
         return 0;
     }
-    resistFlag = weaponSpecial & 0x100;
     resist = _getRegistStatus(unit, type);
+    resistFlag = weaponSpecial & 0x100;
     if (resistFlag == 0 || resist == 0) {
         rate = rate * (u8)resist / 100;
         if (resistFlag == 0 && resist > 0) {
