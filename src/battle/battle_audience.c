@@ -2933,10 +2933,7 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	return TRUE;
 }
 
-// The u8 `type` index emits clrlslwi where the original (whose `type` is wider) emits slwi; the i2f
-// fudge double pools an anonymous @N at .rodata+0x8A8 instead of reusing double_to_int_802f9a00 at
-// +0x488; the rest is register scheduling.
-// NONMATCHING (88.44%): see above (header prototype type width, i2f double, register scheduling).
+// NONMATCHING (83.61%): the conversion's int->float magic pools a duplicate @N double instead of reusing double_to_int_802f9a00, and the seven Vec copies schedule pipelined where the original does load2/store2/load1/store1.
 void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	BattleAudienceMember* member;
 	BattleStage* stage;
@@ -2944,12 +2941,6 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	s32 row;
 	f32 y;
 	f32 z;
-#ifdef MUST_MATCH
-	// Match-only: reading the vec3_802f98xx block through str_802F9578 (the unit's .rodata base,
-	// r29 in the original) makes MWCC serialize each 12-byte copy load2/store2/load1/store1 and
-	// keeps the base out of the i2f fudge's own lis. The natural named-global form is under #else.
-	const Vec* vec = (const Vec*)str_802F9578;
-#endif
 
 	BattleAudienceBaseGetPtr();
 	stage = BattleStageGetPtr();
@@ -2987,18 +2978,7 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 		member->position.y = float_neg2000_8041e680;
 	}
 
-#ifdef MUST_MATCH
-	{
-		*(Vec*)(member->field_0x54 + 0x30) = *(const Vec*)((const u8*)vec + 0x288);
-		*(Vec*)(member->field_0x54 + 0x24) = *(const Vec*)(member->field_0x54 + 0x30);
-		*(Vec*)(member->field_0x54 + 0x3C) = *(const Vec*)((const u8*)vec + 0x294);
-		member->mRotation = *(const Vec*)((const u8*)vec + 0x2A0);
-		member->mRotationOffset = *(const Vec*)((const u8*)vec + 0x2AC);
-		*(Vec*)(member->field_0x54 + 0x00) = *(const Vec*)((const u8*)vec + 0x2B8);
-		*(Vec*)(member->field_0x54 + 0x0C) = *(const Vec*)((const u8*)vec + 0x2C4);
-		*(Vec*)(member->field_0x54 + 0x18) = *(const Vec*)((const u8*)vec + 0x2D0);
-	}
-#else
+	member->field_0xE8 = float_270_8041e684;
 	*(Vec*)((u8*)member + 0x84) = vec3_802f9800;
 	*(Vec*)((u8*)member + 0x78) = *(Vec*)((u8*)member + 0x84);
 	*(Vec*)((u8*)member + 0x90) = vec3_802f980c;
@@ -3007,8 +2987,6 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	*(Vec*)((u8*)member + 0x54) = vec3_802f9830;
 	*(Vec*)((u8*)member + 0x60) = vec3_802f983c;
 	*(Vec*)((u8*)member + 0x6c) = vec3_802f9848;
-#endif
-	member->field_0xE8 = float_270_8041e684;
 
 	if ((index >= 4 && index <= 0xf) ||
 	    (index >= 0x18 && index <= 0x23) ||

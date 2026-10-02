@@ -3782,3 +3782,15 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   party.c's unk_800ba2dc (named vec3s read as v[23]/v[33]/v[34] past vec3_802ccd30) unwritten again; markers back
   on titleMain, zubastar_get_kouten, msgWindow_Entry. Open (LOW): badgeShop_add and FontDrawString called through
   casts with a different parameter type (if retail's id is s16, fix the prototypes instead).
+
+## Wave 58, batch 3 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- The wave's last 33 agents onto main d60f461: 9,097 -> 9,103. No REL agent in this batch edited `rels/*/include`
+  (the wave 52+ launchers bring those edits back as rels_include.patch; tools/wave_launch.py is getting the same).
+  party.c (+4) as on main: its #else forms didn't compile (a Vec cast to a pointer, `vb` used outside MUST_MATCH).
+- Review (`scratch/wave58/review3.md`): itemseq_Bound's rewrite fell through into the 0x60/0x68 timing update the
+  original jumps past (itemdrv as on main, since main's version needs the agent's old macro); party_bomhei's
+  partyGetReturnPos placeholder (deleted a third time) restored; BattleAudience_Entry_Sub as on main (rule 13);
+  nameent.h keeps `void nameMain(void)` (the s32 change was unproven and nameMain isn't written). mot_hammer's
+  `case 6 -> case 0` mapping is retail (older bug). Open (LOW): mot_hammer reads four declared MarioWork fields as
+  raw offsets; winBadgeDisp's second loop carries `i` over (differs only if availableBP < 0).
