@@ -33,6 +33,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags);
 
+// dont_inline: the original calls this out of line from BattleCheckDamage.
 #pragma dont_inline on
 void BattleInitCounterPreCheckWork(void* work) {
     memset(work, 0, 0x30);
@@ -40,6 +41,7 @@ void BattleInitCounterPreCheckWork(void* work) {
 }
 #pragma dont_inline reset
 
+// dont_inline: BattleCheckDamage calls this out of line in the original.
 #pragma dont_inline on
 s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     if (unit->currentKind == UNIT_MARIO) {
@@ -309,6 +311,7 @@ calculate_defense:
     return result;
 }
 
+// dont_inline: BattleCheckDamage calls this out of line in the original.
 #pragma dont_inline on
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                             BattleWeapon* weapon, s32* damageCode, s32 flags) {
@@ -1113,6 +1116,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
 // file-scope `u8` prototype the scheduler loads p1 (arg8) before `weapon->special` (arg4), where the
 // original loads `lwz r6,0x74(r30)` first and then `lbz r10,0x11(r1)`. The jump-table reloc name
 // differs; objdiff ignores it.
+// dont_inline: BattleCheckDamage calls this out of line in the original.
 #pragma dont_inline on
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
@@ -1192,7 +1196,6 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     s32 dc1;
     s32 dc2;
     Vec posA;
-    Vec posB;
     Vec posC;
 
     wp = _battleWorkPointer;
