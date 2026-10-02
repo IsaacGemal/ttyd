@@ -286,7 +286,7 @@ void _relUnLoad(void) {
 
 // The original .rodata string-pool base for this function's strings (see _unload).
 #ifdef MUST_MATCH
-#define SMC_STR(off, lit) (table_802C1028 + (off))
+#define SMC_STR(off, lit) (base + (off))
 #else
 #define SMC_STR(off, lit) (lit)
 #endif
@@ -331,7 +331,11 @@ void seq_mapChangeMain(SequenceWork* work) {
         gp->areaFadeInType = 10;
         gp->areaFadeInDuration = 300;
         psndSFXAllOff();
-        gp->didAreaChange = newarea ? 1 : 0;
+        if (!newarea) {
+            gp->didAreaChange = 0;
+        } else {
+            gp->didAreaChange = 1;
+        }
         if (strcmp(_next_map, SMC_STR(0x38, "tou_03")) != 0) {
             area = _next_area;
             if (strcmp(_next_area, "tou") == 0) {
@@ -405,14 +409,13 @@ void seq_mapChangeMain(SequenceWork* work) {
                 file = (FileEntry*)fileAllocf(0, SMC_STR(0x40, "%s/rel/%s.rel"), getMarioStDvdRoot(), area);
                 if (file != NULL) {
                     if (strncmp(area, "tst", 3) == 0) {
-                        gp->relocationBase = _mapAlloc(((u32*)file->data[0])[1]);
+                        gp->relocationBase = _mapAlloc((u32)file->data[1]);
                     } else if (strncmp(area, "jon", 3) == 0) {
-                        gp->relocationBase = _mapAlloc(((u32*)file->data[0])[1]);
+                        gp->relocationBase = _mapAlloc((u32)file->data[1]);
                     } else {
                         gp->relocationBase = gp->mapAlloc;
                     }
-                    memcpy(gp->relocationBase, ((void**)file->data)[0] ? *(void**)file->data[0] : NULL,
-                           ((u32*)file->data[0])[1]);
+                    memcpy(gp->relocationBase, file->data[0], (u32)file->data[1]);
                     fileFree(file);
                 }
                 if (gp->relocationBase != NULL) {
