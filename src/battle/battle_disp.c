@@ -397,7 +397,7 @@ void btlDispMain(void) {
 // f26-f31 in the "natural" order (f26=1.0, f27=270/90, f28=pos.z, f29=pos.x, f30=height, f31=angle),
 // while MWCC assigns ours in a different permutation. The three callees are kept as real `bl`s with
 // #pragma dont_inline because the target does not inline them.
-// NONMATCHING (96.68%): register allocation (owner/wp and f26/f27/f30 permutation).
+// NONMATCHING (97.05%): register allocation (owner/wp and f26/f27/f30 permutation).
 void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	BattleWork* wp;
 	BattleUnit* owner;
@@ -488,7 +488,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		PSMTXRotRad(m18, 'z', float_deg2rad_8041bf54 * (parts->mRotation.z + parts->mBaseRotation.z));
 		PSMTXTrans(m23, f29, f30, f28);
 
-		f30 = reviseAngle(float_90_8041bf74 - f27);
+		f30 = reviseAngle(float_neg1_8041bf78 * f27 - float_90_8041bf74);
 		f28 = reviseAngle(parts->mBaseRotation.y + (f30 + parts->mRotation.y));
 		cam = camGetCurPtr();
 		f27 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
@@ -559,7 +559,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		PSMTXTrans(m8, f30, f31, f29);
 		PSMTXTrans(m7, parts->mDisplayOffset.x, parts->mDisplayOffset.y, parts->mDisplayOffset.z);
 
-		f30 = reviseAngle(float_90_8041bf74 - f27);
+		f30 = reviseAngle(float_neg1_8041bf78 * f27 - float_90_8041bf74);
 		if (!(owner->flags & 0x1000000)) {
 			f26 = reviseAngle(parts->mBaseRotation.y + (owner->mBaseRotation.y +
 				(parts->mRotation.y + (f30 + owner->mRotation.y))));

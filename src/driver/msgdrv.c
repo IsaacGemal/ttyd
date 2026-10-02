@@ -524,6 +524,13 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			FontDrawColor(&color);
 			break;
 		}
+		case 0xFFF5:
+		case 0xFFF9:
+		case 0xFFFA:
+		case 0xFFFB:
+		case 0xFFFC:
+		case 0xFFFD:
+			break;
 		case 0xFFF8:
 		default: {
 			f32 px = x + (f32)*(s16*)((u8*)entry + 0x6);
@@ -1382,9 +1389,7 @@ s32 msgIconStr2ID(const char* str) {
 	return -1;
 }
 
-// NONMATCHING (79.26%): full body written. The `msgDisp` call is elided because the current msgDisp is an
-// empty stub the compiler inlines away; once msgDisp has a real body the call should reappear. The
-// GXSetFog/waku setup also allocates its stack temps differently.
+// NONMATCHING (91.60%): the GXSetFog/waku setup allocates its stack temps differently.
 void selectWindow_Disp(CameraId camId, void* param) {
 	WindowEntry* window = param; //cast to correct type
 	MessageData* data = window->userdata->address;

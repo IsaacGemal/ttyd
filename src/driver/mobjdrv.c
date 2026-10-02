@@ -747,11 +747,7 @@ void mobjMain(void) {
 
         {
             GXColor color;
-#ifdef MUST_MATCH
-            *(u32*)&color = (u32)animPoseGetMaterialEvtColor(entry->poseId);
-#else
-            color = *animPoseGetMaterialEvtColor(entry->poseId);
-#endif
+            *(u32*)&color = animPoseGetMaterialEvtColor(entry->poseId);
 
             if (entry->flags & 0x4000)
                 continue;

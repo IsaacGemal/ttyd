@@ -4807,7 +4807,7 @@ void psndENVMain(void) {
 				*(f32*)(env->unk6 + 0x1A) = 0.0f;
 				f31 = (f32)irand(0x168);
 				rnd = env->unk6[5] * 10 + irand(env->unk6[6] * 10);
-				f30 = 6.2832f * f31 / 360.0f;
+				f30 = 6.2831855f * f31 / 360.0f;
 				f31 = (f32)rnd;
 				*(f32*)(env->unk6 + 0x12) += f31 * (f32)sin(f30);
 				*(f32*)(env->unk6 + 0x1A) -= f31 * (f32)cos(f30);
@@ -6090,10 +6090,7 @@ BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
 	return psndBGMOn_f_d(a, b, c, 0x2EE, d);
 }
 
-// NONMATCHING (93.52%): all opcodes/operands match except the two `psndBGMOff_f_d` call sites,
-// which are inlined away because that callee is still the empty `{}` placeholder (the original
-// body is 0x200 bytes and will not inline once another agent writes it). The remaining diffs are
-// register allocation (the target maps the params a/b/c/d to r30/r24/r31/r25 and bgm/entry/work to
+// NONMATCHING (97.39%): register allocation (the target maps the params a/b/c/d to r30/r24/r31/r25 and bgm/entry/work to
 // r29/r27/r28; ours picks r25/r29/r26/r28, though bgm/entry/reverb now match) plus a 3-instruction
 // branch layout on the three SoundSSCheck/SoundSongCheck loops, and `psbgmlist` being materialised
 // through r0 (`addi r0,r3,psbgmlist@l; mr r27,r0`) instead of `addi r27,r3,psbgmlist@l`. The tail
@@ -6391,7 +6388,6 @@ done:
 	return 1;
 }
 
-// NONMATCHING (10.00%): 9 missing.
 BOOL psndBGMOff(s32 flags) {
 	return psndBGMOff_f_d(flags, 0x3E8, 0);
 }
@@ -6487,7 +6483,7 @@ void psndSFX_pit(s32 id, u16 pitch) {
 	}
 }
 
-// NONMATCHING (94.37%): the psndBGMOff_f_d calls are optimised away (empty stub) and psndENVOff is inlined.
+// NONMATCHING (94.37%): psndENVOff is inlined where the original calls it.
 void psndStopAllFadeOut(void) {
 	u8* p = (u8*)&psnd;
 	int i;

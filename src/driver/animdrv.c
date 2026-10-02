@@ -876,9 +876,9 @@ u32 animPoseGetMaterialLightFlag(s32 poseId) {
     return pose->materialLightFlag;
 }
 
-GXColor* animPoseGetMaterialEvtColor(s32 poseId) {
+u32 animPoseGetMaterialEvtColor(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
-    return (GXColor*)*(u32*)&pose->materialColor;
+    return *(u32*)&pose->materialColor;
 }
 
 // NONMATCHING (0.06%): empty placeholder, not decompiled yet.

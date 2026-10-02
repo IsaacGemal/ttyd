@@ -1374,7 +1374,7 @@ void marioMain(void) {
 	}
 }
 
-// NONMATCHING (85.70%): 4 instructions differ, 15 missing, plus register differences.
+// NONMATCHING (89.49%): 15 instructions differ, plus register differences.
 void marioCtrlOff2Main(void) {
 	MarioWork* wp = mp;
 	s32 flags;

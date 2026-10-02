@@ -21,6 +21,11 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_80399940[2] = { 0xBF800000, 0x3F800000 };
 
+extern u8 weapon_data_akikan[];
+extern u8 weapon_data_brick[];
+extern u8 weapon_data_bone[];
+extern u8 weapon_data_hammer[];
+
 #ifdef MUST_MATCH
 // For the struct-copy that BattleAudience_Case_FallObject_Aud uses to load its two const offset
 // tables; MWCC only emits the paired lwzu/stwu copy loop for a struct assignment, not for memcpy.
@@ -161,8 +166,8 @@ f32 float_5_8041e62c = 5.0f;
 f32 float_0p01_8041e628 = 0.01f;
 f32 float_1p5_8041e670 = 1.5f;
 
-// These .sdata2/.sdata objects live in this unit but are not defined yet; the functions that own them
-// (DispWin, DispItem, ...) are still stubs. Declared extern so PerAct/ApSrcCtrlProcess can reference them.
+// These .sdata2/.sdata objects live in this unit but are not defined yet.
+// Declared extern so PerAct/ApSrcCtrlProcess can reference them.
 extern f32 float_neg5_8041e710;
 extern f32 float_25_8041e6dc;
 extern f32 float_40_8041e690;
@@ -230,8 +235,6 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.12%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
-// dropped); the resulting liveness difference also shifts the loop registers.
 // MUST_MATCH: the retail Init passes an unsigned index to GetExist (same asm, different scheduling).
 #ifdef MUST_MATCH
 #define INIT_EXIST_ARG(i) ((u32)(i))
@@ -291,7 +294,6 @@ void BattleAudience_Init(void) {
 	BattleAudienceNumToTarget();
 }
 
-// NONMATCHING (94.29%): 2 missing, plus register differences.
 void BattleAudience_Main(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -1230,7 +1232,7 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 // `while`/`for` rotated the condition to the bottom). The remaining diffs are register allocation: MWCC puts
 // audience in r28 (target r30) and i in r31 (target r26), and hoists a couple of FP constants differently;
 // all 631 values, calls, branches and stores are the same operation.
-// NONMATCHING (89.59%): functionally complete; only register allocation / FP scheduling differs.
+// NONMATCHING (89.76%): functionally complete; only register allocation / FP scheduling differs.
 void BattleAudienceItemCtrlProcess(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -1240,7 +1242,9 @@ void BattleAudienceItemCtrlProcess(void) {
 	BattleUnit* unit;
 	BattleUnitPart* part;
 	BattleAudienceItemKind* kindItems;
+#ifdef MUST_MATCH
 	u8* tbl;
+#endif
 	u8* aud;
 	Vec hitPos;
 	Vec vecA;
@@ -1257,7 +1261,9 @@ void BattleAudienceItemCtrlProcess(void) {
 	s32 acc;
 
 	i = 0;
+#ifdef MUST_MATCH
 	tbl = (u8*)lbl_80399940;
+#endif
 	aud = (u8*)audience;
 	item = BattleAudienceItemGetPtr(0);
 	for (; i < 100; i++, item++) {
@@ -1312,7 +1318,7 @@ void BattleAudienceItemCtrlProcess(void) {
 			vecA.z = member->position.z + float_1_8041e620;
 			*(Vec*)((u8*)item + 0x14) = vecA;
 			item->state++;
-			break;
+			/* fallthrough */
 		case 1:
 			if (*(s32*)((u8*)item + 0x8) <= 0) {
 				for (j = 0; j < 100; j++) {
@@ -1419,19 +1425,35 @@ void BattleAudienceItemCtrlProcess(void) {
 					BattleAudience_SetPresentTargetUnitId(BtlUnit_GetUnitId(unit));
 					switch (item->mItemType) {
 					case 0xec:
+						#ifdef MUST_MATCH
 						memcpy(aud + 0x137fc, tbl + 0x40, 0xc0);
+#else
+						memcpy(aud + 0x137fc, weapon_data_akikan, 0xc0);
+#endif
 						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
 						break;
 					case 0xed:
+						#ifdef MUST_MATCH
 						memcpy(aud + 0x137fc, tbl + 0x100, 0xc0);
+#else
+						memcpy(aud + 0x137fc, weapon_data_brick, 0xc0);
+#endif
 						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
 						break;
 					case 0xee:
+						#ifdef MUST_MATCH
 						memcpy(aud + 0x137fc, tbl + 0x1c0, 0xc0);
+#else
+						memcpy(aud + 0x137fc, weapon_data_bone, 0xc0);
+#endif
 						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
 						break;
 					case 0xef:
+						#ifdef MUST_MATCH
 						memcpy(aud + 0x137fc, tbl + 0x280, 0xc0);
+#else
+						memcpy(aud + 0x137fc, weapon_data_hammer, 0xc0);
+#endif
 						*(s32*)(aud + 0x1381c) = *(s32*)(aud + 0x1381c) + *(s32*)(aud + 0x137f8) - 1;
 						break;
 					}
@@ -1528,7 +1550,7 @@ void BattleAudienceItemCtrlProcess(void) {
 	}
 }
 
-// NONMATCHING (95.60%): functionally complete; only instruction scheduling / FP-register allocation differs.
+// NONMATCHING (96.74%): functionally complete; only instruction scheduling / FP-register allocation differs.
 // case 0's double_to_int bias lands in f1 not f2; case 5's y-intpl arg order; the vec3 copy uses lwzu;
 // case 10's dx load order; case 15's angle += delta uses f0 not f1. All values/calls/branches match.
 void BattleAudienceApSrcCtrlProcess(void) {

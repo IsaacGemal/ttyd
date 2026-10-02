@@ -1724,7 +1724,7 @@ void bmapLoad(const char* map1, const char* map2) {
 	}
 }
 
-// NONMATCHING (95.45%): entry/i (r29/r30) register swap in the first two loops and one extra
+// NONMATCHING (96.81%): entry/i (r29/r30) register swap in the first two loops and one extra
 // activeGroup reload; our build also inlines makeDisplayList, which the original calls.
 void bmapUnLoad(void) {
 	MapWork* wp;
@@ -2299,7 +2299,7 @@ static inline u8* mapSearchAnimObj(const char* name) {
 // loop spills i, the five animation-list pointers and the OSTime land in different callee-saved
 // registers, the inlined Hermite interpolation uses f29-f31 (frame 0x310 vs 0x2e0), and the
 // list17/18/16 key loops pick an equivalent but differently laid-out compare/branch.
-// NONMATCHING (80.36%): see above.
+// NONMATCHING (80.60%): see above.
 void mapMain(void) {
 	MapWork* wp0;
 	MapEntry* entry;
@@ -2355,7 +2355,7 @@ void mapMain(void) {
 				f32 f = (f32)(u64)(OSTicksToMilliseconds(time) - *(OSTime*)(anim + 0x8)) * gp->framerate / 1000.0f;
 				f32 frame = *(f32*)(anim + 0x10);
 				if (f < frame) {
-					*(f32*)(anim + 0x10) = frame - f;
+					*(f32*)(anim + 0x10) = frame - (frame - f);
 				}
 				else {
 					*(f32*)(anim + 0x10) = *(f32*)(anim + 0x14) * (f - frame) + frame;
@@ -2366,8 +2366,8 @@ void mapMain(void) {
 			else if ((*(u16*)anim) & 0x20) {
 				*(OSTime*)(anim + 0x8) = OSTicksToMilliseconds(time);
 				*(OSTime*)(anim + 0x8) -= (u64)(1000.0f * *(f32*)(anim + 0x10) / (f32)gp->framerate);
-				*(u16*)anim &= ~0x70;
-				*(u16*)anim &= ~0x38;
+				*(u16*)anim &= ~0x20;
+				*(u16*)anim &= ~0x10;
 			}
 			{
 				f32 frame = *(f32*)(anim + 0x10);

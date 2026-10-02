@@ -3167,9 +3167,7 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// The original's `psndSFXOn_3D` argument is the literal 0x401E8; `animPoseGetMaterialEvtColor`
-// returns a GXColor* in the header but retail treats r3 as the colour value itself, so the
-// value is reinterpreted rather than dereferenced.
+// The original's `psndSFXOn_3D` argument is the literal 0x401E8.
 s32 mobj_breaking_floor(MapObjectEntry* obj) {
     GXColor color2;
     GXColor color;
@@ -3198,13 +3196,7 @@ s32 mobj_breaking_floor(MapObjectEntry* obj) {
             break;
         case 1: {
 
-            // MUST_MATCH: the header declares animPoseGetMaterialEvtColor as returning GXColor*, but
-            // retail treats the returned r3 as the colour value (it stores r3 and reads its high byte).
-#ifdef MUST_MATCH
-            *(u32*)&color2 = (u32)animPoseGetMaterialEvtColor(obj->poseId);
-#else
-            color2 = *animPoseGetMaterialEvtColor(obj->poseId);
-#endif
+            *(u32*)&color2 = animPoseGetMaterialEvtColor(obj->poseId);
             if (color2.a >= 4) {
                 color2.a -= 4;
             } else {

@@ -136,6 +136,11 @@ extern const GXColor dat_80420c00;
 extern const GXColor dat_80420c04;
 extern s32 _event_MajinaiEnd[];
 extern s32 _rank_up_event[];
+extern s32 _curtain_close_event[];
+extern s32 _move_to_heart_event[];
+extern s32 _move_to_flower_event[];
+extern s32 _move_to_badge_point_event[];
+extern s32 _jump_event[];
 extern s32 marioAttackEvent_MajinaiExpUp[];
 extern BattleDispPose pose_table_nokotarou_stay[];
 
@@ -143,12 +148,14 @@ extern BattleDispPose pose_table_nokotarou_stay[];
 // Until configure.py gets that flag for this file, keep btlseqEnd and the helpers it calls out of line.
 // (Without this mwcc inlines _audience_Whistle_control, btlseqEnd_DispMain, ... into btlseqEnd.)
 #pragma dont_inline on
-// NONMATCHING (95.16%): logic matches; remaining diffs are register allocation (mwcc picks r31 for wp here
+// NONMATCHING (95.47%): logic matches; remaining diffs are register allocation (mwcc picks r31 for wp here
 // instead of r26) and a few scheduling/switch-tree differences. See REPORT.md.
 void btlseqEnd(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     FieldBattleInfo* info = wp->fbatInfo;
+#ifdef MUST_MATCH
     u8* data = (u8*)lbl_803ACB10;
+#endif
     const char* str = str_802FDDF0;
     PouchData* pouch = pouchGetPtr();
     BattleSeqEndWork* newWork;
@@ -293,7 +300,7 @@ void btlseqEnd(BattleWork* wp) {
         } else {
             BattleSetSeq(wp, SEQ_END, 0x07000006);
         }
-        break;
+        /* fallthrough */
 
     case 0x07000006:
         if (!BattleWaitAllActiveEvtEnd(wp)) {
@@ -501,7 +508,11 @@ void btlseqEnd(BattleWork* wp) {
 
     case 0x07000011:
         if (*(s32*)((u8*)work + 0x4) == 0) {
+#ifdef MUST_MATCH
             event = evtEntry(data + 0x7C, 0xA, 0);
+#else
+            event = evtEntry(_curtain_close_event, 0xA, 0);
+#endif
             *(s32*)((u8*)work + 0x1FC) = event->eventId;
             BattleStatusWindowSystemOff();
             psndBGMOff(0x400);
@@ -538,9 +549,21 @@ void btlseqEnd(BattleWork* wp) {
         if (*(s32*)((u8*)work + 0x10) != flag) {
             event = NULL;
             switch (*(s32*)((u8*)work + 0x10)) {
+#ifdef MUST_MATCH
             case 0: event = evtEntry(data + 0xAEC, 0xA, 0); break;
+#else
+            case 0: event = evtEntry(_move_to_heart_event, 0xA, 0); break;
+#endif
+#ifdef MUST_MATCH
             case 1: event = evtEntry(data + 0xC04, 0xA, 0); break;
+#else
+            case 1: event = evtEntry(_move_to_flower_event, 0xA, 0); break;
+#endif
+#ifdef MUST_MATCH
             case 2: event = evtEntry(data + 0xD34, 0xA, 0); break;
+#else
+            case 2: event = evtEntry(_move_to_badge_point_event, 0xA, 0); break;
+#endif
             }
             if (event != NULL) {
                 *(s32*)((u8*)work + 0x1FC) = event->eventId;
@@ -560,7 +583,11 @@ void btlseqEnd(BattleWork* wp) {
                 *(s32*)((u8*)work + 0x2C) = 2;
                 *(u32*)((u8*)work + 0x30) &= ~0x20;
                 BattleSetSeq(wp, SEQ_END, 0x07000014);
+#ifdef MUST_MATCH
                 event = evtEntry(data + 0x9C4, 0xA, 0);
+#else
+                event = evtEntry(_jump_event, 0xA, 0);
+#endif
                 *(s32*)((u8*)work + 0x1FC) = event->eventId;
             }
         }
@@ -646,6 +673,7 @@ void btlseqEnd(BattleWork* wp) {
             }
         }
         BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), "M_V_2");
+        BattleAudienceSoundCheer(0xB4, 0x28);
         *(s32*)((u8*)work + 0x4) = 0xB4;
         BattleSetSeq(wp, SEQ_END, 0x07000016);
         unit = BattleGetMarioPtr(wp);
@@ -861,7 +889,7 @@ void _audience_Whistle_control(void) {
     }
 }
 
-// NONMATCHING (96.54%): only the intplGetValue 0.0f float-constant load is scheduled after lwz r4/r5;
+// NONMATCHING (98.45%): only the intplGetValue 0.0f float-constant load is scheduled after lwz r4/r5;
 // the original loads it first.
 s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
@@ -922,9 +950,6 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (98.92%): logic and instructions match. Two pool constants are unnamed @N in our object
-// where the original has globals (the int->float magic double and the GXColor word dat_80420c2c), and
-// the color word store and intplGetValue timer load are scheduled in the opposite order.
 s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     BattleSpotEntry* entry;
@@ -1046,8 +1071,6 @@ s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (98.32%): mwcc schedules the lfs f2 (2160.0f) load after lwz r4/r5; the original loads
-// lfs f1, 0.0f then lfs f2, 2160.0f before loading the int args.
 s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -1105,7 +1128,6 @@ s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (92.00%): 3 missing, 3 extra, plus register differences.
 s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     s32 selected = *(s32*)((u8*)work + 0x10);
@@ -1570,7 +1592,7 @@ typedef struct BattleSeqEndWorkLvup {
 // comes from btlDispTexPlane's missing 8th parameter -- see the report). Remaining: the register/scheduling
 // of the cur!=max position computation and the pooled int->float double is @N instead of
 // double_to_int_802fe050.
-// NONMATCHING (90.48%): see the note above.
+// NONMATCHING (97.84%): see the note above.
 void _lvup_select_object_disp(CameraId camId, void* param) {
     BattleSeqEndWorkLvup* work = (BattleSeqEndWorkLvup*)_battleWorkPointer->seqEndWork;
     Mtx mtxMain;
