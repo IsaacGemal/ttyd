@@ -113,25 +113,20 @@ static inline GXColor makeTevColor(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// The first loop's callee-saved allocation starts one register lower: mwcc puts the running pointer in
-// r25 (original r26), `counter` in r26 (original r28), the index in r27 (original r27) and the 0x4330
-// int->float magic in r24 (original r25), so stmw/lmw saves r24..r31 instead of r25..r31; the
-// effect/data/lifetime registers (r29/r30/r31) are correct. That shifts every scratch register in all
-// three loops and all three conversion-stack slots. In the second loop the bytes' raw xoris values use
-// r24/r25/r26/r27/r28 (original r25/r26/r27/r28) and the constants land in other FPRs (ours
-// f0=0.7/f1=magic/f2=4.0/f5=0.98/f6=0.5, original f0=0.5/f1=0.7/f2=magic/f3=4.0/f6=0.98).
-// Writing the shared 4*center as its own local (`fourCenter`) and using the `j` induction for the
-// first loop (instead of `i`) improved the allocator's match from 92.87% to 93.82%.
-// NONMATCHING (93.82%): codegen-only register/scheduling differences; arithmetic and structure match.
+// Matching this function was allocator work only. Three source details move mwcc's coloring onto the
+// original's registers: `counter` is declared after `j` (so the allocator gives j r27 and counter r28,
+// the original's pair, and stmw/lmw drop from r24..r31 to r25..r31); the second loop names the shared
+// halfCorners = 0.5*corners (f7) while leaving `- 0.7*fourCenter` inline so mwcc emits the original's
+// fnmsubs; and the third loop compares `12 > i` (see the MUST_MATCH note at the loop).
 void effOpukuJetwrainMain(EffectEntry* effect) {
 	s32 lifetime;
 	effOpukuJetwrainData* data = effect->userdata;
 	Vec position = initializeVec((Vec*)&data->x);
-	s32 counter;
 	s32 alpha;
 	f32 scale;
 	s32 i;
 	s32 j;
+	s32 counter;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -168,9 +163,8 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 			f32 corners = (f32)(s8)data->field_0x23[j + 1][i + 1] + (f32)(s8)data->field_0x23[j - 1][i + 1] + (f32)(s8)data->field_0x23[j + 1][i - 1] + (f32)(s8)data->field_0x23[j - 1][i - 1];
 			f32 edges = (f32)(s8)data->field_0x23[j + 1][i] + (f32)(s8)data->field_0x23[j - 1][i] + (f32)(s8)data->field_0x23[j][i + 1] + (f32)(s8)data->field_0x23[j][i - 1];
 			f32 v = (f32)data->field_0x11A[j][i];
-			f32 t = float_0p5_8041f804 * corners;
-			t = t + (edges - fourCenter);
-			t = t - float_0p7_8041f808 * fourCenter;
+			f32 halfCorners = float_0p5_8041f804 * corners;
+			f32 t = halfCorners + (edges - fourCenter) - float_0p7_8041f808 * fourCenter;
 			data->field_0x11A[j][i] = (s16)(v + t);
 			data->field_0x11A[j][i] *= float_0p98_8041f80c;
 			if (lifetime < 0x20) {
@@ -180,7 +174,13 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	}
 
 	for (j = 1; j < 18; j++) {
+#ifdef MUST_MATCH
+		// `12 > i` (not `i < 12`): the reversed comparison makes mwcc hoist the loop's constants out
+		// of the j loop and drop the entry guard, matching the original's code; see the report.
+		for (i = 1; 12 > i; i++) {
+#else
 		for (i = 1; i < 12; i++) {
+#endif
 			data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] + float_0p02_8041f810 * (f32)data->field_0x11A[j][i]);
 		}
 	}

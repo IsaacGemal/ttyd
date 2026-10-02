@@ -17,6 +17,7 @@
 
 extern GlobalWork* gp;
 extern GXColor unk_80422fe4;
+extern GXColor unk_80422fe0;
 extern f32 float_0p36_8041a6a0;
 extern f32 float_0p6_8041a570;
 extern s32 msgWindowOpen_SE_Data[12][2];
@@ -81,12 +82,9 @@ const char* language_dir[2] = {"msg", "emsg"};
 
 //local prototypes
 
-// NONMATCHING (99.94%): the code itself is byte-identical. The only differences are the three
-// computed string offsets (0x208/0x210/0x218 vs 0x13c/0x144/0x14c): this file's .rodata pool is
-// 0xCC bytes short because the string literals of the not-yet-decompiled functions (msgAnalize's
-// "keyxon".."/paper" block, msgDisp, etc.) aren't emitted yet. The pool follows .text order, so
-// msgInit (last function) is hit. Nothing inside msgInit can move them; it will reach 100% once
-// those functions contribute their literals.
+// NONMATCHING (99.94%): code is byte-identical; the three computed string offsets differ because
+// this file's .rodata pool is 0xCC bytes short (msgAnalize/msgDisp literals not emitted yet). It
+// reaches 100% once those functions contribute their literals.
 void msgInit(void) {
 	msgw->poseId = animPoseEntry("hoshi_2", 2);
 	animPoseSetAnim(msgw->poseId, "HOS_C_1", TRUE);
@@ -100,17 +98,22 @@ void msgInit(void) {
 	msgLoad("global", 1);
 }
 
-// NONMATCHING (86.61%): 6 instructions differ, 12 missing, 8 extra, plus register differences.
 void msgLoad(const char* filename, s32 index) {
-	MessageEntry* entry;
-	DVDEntry* dvd;
-	char* msgptr;
-	s32 msgcount;
-	char filepath[64];
+	// This declaration order is load-bearing: MWCC colours the callee-saved registers r27-r31 in
+	// declaration order, and only this order gives the original's assignment (entry=r31, r30/address
+	// =r30, msgptr=r29, lookup=r29, dvd=r28, msgcount=r28, i=r28, r27/offset=r27; the two loop temps
+	// must also be split into their own declarations, not `u32 r27, r30;`). Any other order moves
+	// dvd/offset/lookup and loses the match.
 	char dvdpath[128]; //TODO: double check size
-	int i;
-	u32 r27, r30;
+	u32 r30;
+	MessageEntry* entry;
 	MsgLookupEntry* lookup;
+	int i;
+	s32 msgcount;
+	DVDEntry* dvd;
+	char filepath[64];
+	char* msgptr;
+	u32 r27;
 
 	entry = &msgw->entries[index];
 	sprintf(filepath, "./%s/%s.txt", language_dir[gp->language], filename);
@@ -141,42 +144,44 @@ void msgLoad(const char* filename, s32 index) {
 		}
 	}
 
-	if (entry->address) {
-		msgptr = entry->address;
-		msgcount = 0;
-		while (*msgptr) {
-			msgcount++;
-			msgptr += strlen(msgptr) + 1;
-		}
-		entry->count = (u32)(msgcount / 2); //tag, message
-	}
-	else {
+	if (entry->address == NULL) {
 		entry->length = 0;
 		entry->count = 0;
+	}
+	else {
+		msgptr = entry->address;
+		msgcount = 0;
+		while (*(s8*)msgptr) {
+			msgptr += strlen(msgptr) + 1;
+			msgcount++;
+		}
+		entry->count = (u32)(msgcount / 2); //tag, message
 	}
 
 	if (entry->lookup) {
 		smartFree(entry->lookup);
 	}
-	if (entry->count) {
+	if ((s32)entry->count == 0) {
+		entry->lookup = NULL;
+	}
+	else {
 		r27 = 0;
 		entry->lookup = smartAlloc(entry->count * sizeof(MsgLookupEntry), 0);
 		r30 = (u32)entry->address;
 		lookup = entry->lookup->address;
-		for (i = 0; i < entry->count; i++) {
+		i = 0;
+		while (i < (s32)entry->count) {
 			lookup->startaddr = r27;
 			r27 += strlen((const char*)r30) + 1;
 			r30 += strlen((const char*)r30) + 1;
 			lookup->endaddr = r27;
 			r27 += strlen((const char*)r30) + 1;
 			r30 += strlen((const char*)r30) + 1;
+			i++;
 			lookup++;
 		}
 		msgSortDvdData = entry->address;
 		qsort(entry->lookup->address, entry->count, sizeof(MsgLookupEntry), msg_compare);
-	}
-	else {
-		entry->lookup = NULL;
 	}
 }
 
@@ -472,7 +477,7 @@ BOOL _ismbblead(u32 a1) {
 // math.h comes after msgInit: included at the top it changes how msgInit addresses its strings.
 #include <math.h>
 // NONMATCHING (93.84%): 247 instructions differ, nearly all register allocation and
-// instruction scheduling; see REPORT.md. The logic is complete.
+// instruction scheduling The logic is complete.
 BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 	MessageData* data = smart->address;
 	BOOL result = FALSE;
@@ -799,14 +804,14 @@ void msgWindow_ForceClose(const char* tag) {
 	}
 }
 
-// NONMATCHING (93.29%): full body written. The original's 3rd parameter reaches windowEntry with no
-// clrlwi (u16), but the pre-existing prototype declares it s32; register allocation also differs.
 s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
-	s32 id;
+	// Declaration order steers MWCC's callee-saved allocation to the original (msg=r28, id=r27,
+	// buf=r30); the natural order lands msg in r27/buf in r27.
+	char* buf;
 	WindowEntry* window;
 	MessageData* data;
 	smartEntry* smart;
-	char* buf;
+	s32 id;
 
 	id = windowEntry(b);
 	window = windowGetPointer(id);
@@ -840,6 +845,7 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	}
 	__memFree(HEAP_DEFAULT, buf);
 	window->userdata = smart;
+	data = window->userdata->address;
 	data->field_0x7A50 = 0;
 	data->field_0x7A54 = 0;
 	switch (window->type) {
@@ -864,12 +870,11 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 		break;
 	case 5:
 		window->main = selectWindow_Main;
-		data = window->userdata->address;
-		window->x = (-data->field_0x7A44) / 2;
-		window->y = data->field_0x7A46;
-		window->height = data->field_0x7A44;
-		window->width = data->field_0x7A40 * 0x24 + 0x28;
-		data->field_0x7A43 = data->field_0x7A41;
+		window->x = (s16)((-((MessageData*)window->userdata->address)->field_0x7A44) / 2);
+		window->y = ((MessageData*)window->userdata->address)->field_0x7A46;
+		window->height = ((MessageData*)window->userdata->address)->field_0x7A44;
+		window->width = (s16)(((MessageData*)window->userdata->address)->field_0x7A40 * 0x24 + 0x28);
+		((MessageData*)window->userdata->address)->field_0x7A43 = ((MessageData*)window->userdata->address)->field_0x7A41;
 		data->field_0x7A48 = window->y - (f32)(data->field_0x7A43 * 0x1F + 0x3A);
 		break;
 	case 1:
@@ -1969,16 +1974,31 @@ s32 msgIconStr2ID(const char* str) {
 	return -1;
 }
 
-// NONMATCHING (91.60%): the GXSetFog/waku setup allocates its stack temps differently.
+// Builds the waku colour in one expression so MWCC lands it in the same stack slot as the
+// original (a plain local followed by `color.a = ...` puts it one slot higher).
+static inline GXColor selectWindowColor(u8 a) {
+	GXColor c = { 0xFF, 0xFF, 0xFF, 0 };
+	c.a = a;
+	return c;
+}
+
 void selectWindow_Disp(CameraId camId, void* param) {
 	WindowEntry* window = param; //cast to correct type
 	MessageData* data = window->userdata->address;
+#ifdef MUST_MATCH
+	GXColor color;
+#else
 	GXColor color = { 0xFF, 0xFF, 0xFF, 0 };
+#endif
 	Vec pos;
 
 	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe4);
 
+#ifdef MUST_MATCH
+	color = selectWindowColor(window->alpha);
+#else
 	color.a = window->alpha;
+#endif
 	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, 30.0f);
 
 	msgDisp(window->userdata, (u8)window->alpha, 40.0f + window->x, window->y - 25.0f);

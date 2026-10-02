@@ -351,9 +351,14 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 // The state machine matches. Every named float constant is a literal (0.0f, 104.0f, 600.0f, 200.0f,
 // 70.0f, 32767.0f, 35.0f, 2.0f, -1.25f) and the two initial vectors are the compound literals
 // (Vec){0,0,0} and (Vec){0,-1000,200} (the original's vec3_802ff7ac/b8 hold exactly those), so MWCC has
-// the known values and recovers the schedule. Still differing: register allocation and the early-out
-// block, which branches around instead of `beq body; b main_loop`.
-// NONMATCHING (91.10%)
+// the known values and recovers the schedule. Two structural details matter (both under MUST_MATCH below):
+// a single-case `switch` instead of `if` for the early-out guard, which makes MWCC emit `beq body;
+// b main_loop` like the original, and hoisting the SFX string into a loop-lived local to fix the
+// callee-saved colouring. The only remaining diffs are 9 rodata reads: the pool base symbol is
+// `...rodata.0` here vs `str_802FF668` in the original, so the same vectors/double read at offsets
+// 0xc/0x18/0x40 instead of 0x144/0x150/0x1c0. The missing 0x138 bytes are the string pool of the
+// not-yet-written zubastar_main, so this is not local to this function.
+// NONMATCHING (99.96%): 9 rodata offsets (unit pool layout; depends on zubastar_main).
 s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
@@ -363,7 +368,15 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
         work->field_0x004 = 0;
         return 0;
     }
+    // A single-case `switch` (rather than `if`) is what makes MWCC lay the guard out as
+    // `beq body; b main_loop` like the original; an `if` collapses it to `bne skip`. Semantically
+    // identical, so the natural form is the #else arm.
+#ifdef MUST_MATCH
+    switch (work->field_0x004) {
+    case 0: {
+#else
     if (work->field_0x004 == 0) {
+#endif
         s32 count = 0;
 
         for (i = 0; i < work->bombCount; i++) {
@@ -375,7 +388,22 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
         if (count == work->bombCount) {
             return 2;
         }
+#ifdef MUST_MATCH
+        break;
     }
+    }
+#else
+    }
+#endif
+#ifdef MUST_MATCH
+    // The SFX string address must stay live across the main loop (hoisted into a callee-saved
+    // register) and the main-loop counter be declared after it; otherwise MWCC colours the whole
+    // callee-saved set one register higher (a/b r30/r31, bombCount r23) than the original
+    // (a/b r29/r30, bombCount r31). The natural form is the #else arm.
+    {
+        const char* sfx = "SFX_BTL_SAC_ZUBA_STAR3";
+        s32 i;
+#endif
     for (i = 0; i < work->bombCount; i++) {
         ZubaStarBomb* bomb = work->bombs[i];
 
@@ -402,16 +430,18 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
                 (bomb->field_0x18.x - 104.0f) * 600.0f / 200.0f;
             bomb->field_0x3C = 0.0f;
             bomb->field_0x40 = 70.0f * (f32)rand() / 32767.0f - 35.0f;
-            {
-                f32 t = (f32)maxTimer;
-
-                bomb->field_0x44 = (2.0f * (bomb->field_0x30.y - bomb->field_0x24.y) -
-                                    (t * (-1.25f * t))) /
-                                   (2.0f * t);
-            }
+            // (f32)maxTimer is cast at each use: the original converts it three times, so a temp
+            // here would fold them into one and change the schedule.
+            bomb->field_0x44 = (2.0f * (bomb->field_0x30.y - bomb->field_0x24.y) -
+                                ((f32)maxTimer * (-1.25f * (f32)maxTimer))) /
+                               (2.0f * (f32)maxTimer);
             bomb->timer = 0;
             bomb->state = 5;
+#ifdef MUST_MATCH
+            psndSFXOn(sfx);
+#else
             psndSFXOn("SFX_BTL_SAC_ZUBA_STAR3");
+#endif
             break;
         }
         case 5:
@@ -431,6 +461,9 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
             break;
         }
     }
+#ifdef MUST_MATCH
+    }
+#endif
     dispEntry(8, 0.0f, 1, zubastar_disp_bomb, NULL);
     return 0;
 }
@@ -443,7 +476,9 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
 // uses a separate source/dest index pair (two strength-reduced offsets plus a counter), the
 // found-point stores use post-increment so MWCC reuses the copy-loop counter for index[0]+1/+2 and k,
 // and bomb1->count is written in the original's +2-then-+j order.
-// NONMATCHING (91.58%): callee-saved colouring and bomb1/bomb2 Vec-copy schedule still differ.
+// NONMATCHING (91.73%): callee-saved colouring and bomb1/bomb2 Vec-copy schedule still differ.
+// Naming `&used[0]` as a local pointer shifts the colouring slightly closer (120 → 112 diffs); it is a
+// no-op alias, kept only for that.
 void zubastar_bunkatu(Vec* a, Vec* b) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 bombCount = work->bombCount;
@@ -460,10 +495,11 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
         f32 out2;
 
         {
+            s32* usedp = used;
             s32 k;
 
             for (k = 0; k < 2; k++) {
-                used[k] = 0;
+                usedp[k] = 0;
             }
         }
         for (j = 0; j < bomb->count; j++) {
@@ -554,7 +590,12 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 
 // .text:0x1990 | 0x8022FF20 | size: 0x100
 // Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
-// NONMATCHING (86.64%): float register allocation and the m1/m2 scheduling differ.
+// The constants are literals (0.0f, 1e-05f, 1.0f) so MWCC has their values. The float register
+// colouring needs three source details: `opt_lifetimes off` + `opt_propagation off` (reset after the
+// function) keep the select result `b` in f10 rather than f3; giving the `f7 - f5` and `f4 - f2`
+// differences their own temps (`ct`/`c2`, `dt`) puts those temps in f3 and the results in f11/f7 with
+// the copies the original has; and naming the final slope (`sl`) rather than reusing `a` lets it land
+// in f1.
 #pragma dont_inline on
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
@@ -587,8 +628,10 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
     }
     return 0;
 }
-
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 #pragma dont_inline reset
+
 
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
 // NONMATCHING (96.49%): a volatile struct copy reproduces the original's load/store interleave for

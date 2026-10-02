@@ -146,30 +146,37 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 	return a > b;
 }
 
-// regalloc (r21-r31 vs r23-r31, the target keeps two table pointers) and the compiler
-// CSEs the evtSetValue GSW(118+i) index while the target recomputes it.
-// NONMATCHING (92.08%): unsigned `k` for the init loop, `u32 j`, a walking `bp` in the last
-// loop and `int i` declared last align several compares; the rest is register allocation
-// (target keeps two table pointers and folds base+offset into `stwx`).
+// `s16 count`, `s32 j`, `u32 k`, `u32 dobreak`, `s32 i`, a `s32* p` row pointer for the
+// `[1]` store and a separate `u32 m` counter for the last loop get most compares and the
+// inline `badgeShop_get` (r30/r31) right. What is left: the target stores `[1]` through a
+// pointer and `[0]` through base+scaled-index (`stwx r24, r28, r25`), so it keeps a row
+// pointer AND an offset; ours strength-reduces `table[dobreak][0]` to a second pointer. The
+// remaining diffs are register allocation (target r21-r31, ours r22-r31).
+// NONMATCHING (96.89%): target keeps base+scaled-index for the `[0]` store; regalloc.
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
-	s32 count;
-	u32 j, k;
+	s16 count;
+	s32 j;
+	u32 k;
 	s32* bp;
+	s32* p;
 	u32 dobreak;
-	int i;
+	s32 i;
+	u32 m;
 	for (k = 0; k < 0x11; k++) {
 		table[k][1] = 200;
 		table[k][0] = 0;
 	}
 
 	dobreak = 0;
+	p = (s32*)table;
 	for (i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		count = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN)); //inline
 		for (j = 0; j < count; j++) {
-			table[dobreak][1] = irand(100);
+			p[1] = irand(100);
 			table[dobreak][0] = i + KEY_ITEM_MIN;
 			dobreak += 1;
+			p += 2;
 			if (dobreak >= 0x10) break;
 		}
 		if (dobreak >= 0x10) break;
@@ -179,9 +186,9 @@ void badgeShop_bottakuruGeneration(void) {
 
 	for (i = 0; i < 4; i++) { //only 4 slots
 		bp = badge_bottakuru_table;
-		for (j = 0; j < 0x11; j++) {
+		for (m = 0; m < 0x11; m++) {
 			if (table[i][0] == *bp) {
-				evtSetValue(NULL, i + GSW(118), j);
+				evtSetValue(NULL, i + GSW(118), m);
 			}
 			bp++;
 		}
@@ -228,16 +235,30 @@ void badgeShop_bteresaGeneration(void) {
 	}
 }
 
-// NONMATCHING (70.04%): large function; `badge` and `value` are `s16` (the target keeps both
-// `extsh`), but most of the remaining diffs are register allocation (one extra callee-saved
-// register on our side) and the inlined badgeShop_get bound check, which we do not fold.
+// `badge`/`value` are `s16`, `count4`/`stopcount` s16, the first loop's `value |= 1` (the
+// target's `ori r0,r5,1`, not `li`) and dropping the `v28` local (re-reading
+// `bdsw->field_0x10C`) each recovered a little; writing the bargain loop as a real
+// `while (bdsw->field_0x10C + bdsw->field_0x110 < count3)` (not `while(1){if(...)break;}`)
+// reproduces the target's rotated `b <cond>` loop layout and was the big win. What remains is
+// structural: we keep one extra callee-saved register (stmw r23 vs the target's r24), the
+// inlined `badgeShop_get(bdsw->special_table, ...)` keeps the bottakuru compare the target
+// folds, and the compiler hoists the second loop's `count4 = 0` / `mtctr` setup above the first
+// loop; the rest is register allocation.
+// NONMATCHING (99.28%): the field-init stores share the loop counter's zero register in target
+// (`li r25,0`; `stw r25,0xf8..`), ours materialises a fresh `r0` for the two `field_0x110`
+// stores; one `extsh r4,r0` is one slot later than target.
 void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
-	s32* ptr;
-	u8 table[0x19];
+	s16 value;
+	s32 count3;
 	int i;
-	s16 badge, value;
-	s32 count, count2, count3, count4, stopcount; //TODO: rename
-	s32 v28, v7; //TODO: rename
+	u8 table[0x19];
+	s16 stopcount;
+	s32 count;
+	s32 v7;
+	s32* ptr;
+	s32 count2;
+	s16 count4;
+	s32 badge;
 
 	if (evtGetValue(NULL, GSW(0)) >= 55 && !evtGetValue(0, GSWF(238))) {
 		evtSetValue(NULL, GSWF(238), 1);
@@ -290,6 +311,19 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 
 	memset(table, 0, sizeof(table));
+#ifdef MUST_MATCH
+	/* The target's field-init stores reuse the loop counter's zero register
+	   (r25) rather than a fresh constant; MWCC only does that when the store
+	   value is `i` while `i` is not yet a known constant (its `for` init is
+	   hoisted to just before the stores). Natural form under #else. */
+	bdsw->field_0xF8[0] = i;
+	bdsw->field_0xF8[1] = i;
+	bdsw->field_0xF8[2] = i;
+	bdsw->field_0xF8[3] = i;
+	bdsw->field_0xF8[4] = i;
+	bdsw->field_0x10C = i;
+	bdsw->field_0x110 = 0;
+#else
 	bdsw->field_0xF8[0] = ITEM_NULL;
 	bdsw->field_0xF8[1] = ITEM_NULL;
 	bdsw->field_0xF8[2] = ITEM_NULL;
@@ -297,19 +331,20 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	bdsw->field_0xF8[4] = ITEM_NULL;
 	bdsw->field_0x10C = 0;
 	bdsw->field_0x110 = 0;
+#endif
 
 	v7 = 0;
 	count = 0;
 	count2 = 0;
 	for (i = 0; i < 99; i++) {
 		value = 0;
-		badge = badgeShop_get(bdsw->special_table, (s16)(i + BADGE_MIN)); //inline
-		if (badge) {
+		badge = (s16)badgeShop_get(bdsw->special_table, (s16)(i + BADGE_MIN)); //inline
+		if ((s16)badge) {
 			count++;
-			value = 1;
+			value |= 1;
 		}
 		if (value) {
-			badgeShop_set(table, (s16)(i + BADGE_MIN), (s16)value);
+			badgeShop_set(table, (s16)(i + BADGE_MIN), value);
 			count2++;
 		}
 	}
@@ -318,12 +353,8 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 		count3 = count2; //less than 5 needed
 	}
 	irand(0x100); //unused
-	while (1) {
-		v28 = bdsw->field_0x10C;
-		if (v28 + bdsw->field_0x110 >= count3) {
-			break;
-		}
-		if (v28 < 3 || !v7) {
+	while ((s32)(bdsw->field_0x10C + bdsw->field_0x110) < count3) {
+		if ((s32)bdsw->field_0x10C < 3 || !v7) {
 			stopcount = irand(count);
 			count4 = 0;
 			for (i = 0; i < 99; i++) {
@@ -336,12 +367,13 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 				}
 			}
 			if (i < 99) {
-				bdsw->field_0xF8[bdsw->field_0x10C++] = i + BADGE_MIN;
+				bdsw->field_0xF8[bdsw->field_0x10C] = i + BADGE_MIN;
+				bdsw->field_0x10C++;
 				badgeShop_set(table, (s16)(i + BADGE_MIN), 0);
-				if (badge & 1) {
+				if ((s16)badge & 1) {
 					count--;
 				}
-				if (badge & 2) {
+				if ((s16)badge & 2) {
 					v7--;
 				}
 			}
@@ -358,9 +390,16 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 }
 
-// NONMATCHING (99.02%): target reuses r6 for `index / 4` (addze r6); a separate
-// `word` temp gets r9 (r6 is held by `bound`), so mask/shift land right but the
-// load/store index and val sign-extend differ; inline forms move the division late.
+// Target reuses r6 for `index / 4` (`addze r6, r0`); our separate `word` temp gets r9
+// because the allocator treats `bound` (also r6) as still live, so the load/store index and
+// the val sign-extend register differ. Declaration order permutations, opt_lifetimes/
+// opt_common_subs/opt_propagation and inline forms do not move it (inline `table[index/4]`
+// drops the val clamp instead).
+// The target never inlines `badgeShop_set` (both callers emit a real `bl`), but it always
+// inlines the smaller `badgeShop_get`.
+// NONMATCHING (99.84%): the only diff is the sign-extend of `val` for the shift
+// (`extsh r0,r5` target vs `extsh r5,r5` ours); everything else, including `word` in r6
+// (the dead `bound` register) and `val` in r5, now matches.
 s32 badgeShop_set(u8* table, s16 id, s16 val) {
 	s32 bound;
 	s16 index;
@@ -402,7 +441,13 @@ s32 badgeShop_set(u8* table, s16 id, s16 val) {
 		val = 3;
 	}
 	table[word] = (u8)((u8)(mask & table[word]) + (u8)(val << shift));
+#ifdef MUST_MATCH
+	// `+ word - word` folds to zero but keeps `word` live until the return; without it the
+	// allocator lets `word` die earlier and colours it r9 instead of the target's r6.
+	return val + word - word;
+#else
 	return val;
+#endif
 }
 
 s32 badgeShop_get(u8* table, s16 id) { //1:1
@@ -494,24 +539,34 @@ USER_FUNC(badgeShop_getBargainTable) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (88.48%): target keeps the raw evtGetValue result in r31 and does
-// `extsh r4,r31` at each call; we sign-extend once into r31 (CSE).
 USER_FUNC(evt_badgeShop_throw_inc) {
-	s16 value;
+	s32 value;
 
 	value = evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->bargain_table, value, 1);
-	badgeShop_add(bdsw->special_table, value, 1);
+#ifdef MUST_MATCH
+	// Original badgeShop_add takes its id as s16, not the header's s32: the cast
+	// restores the per-call `extsh r4,r31` the target has (report notes the header).
+	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, value, 1);
+	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->special_table, value, 1);
+#else
+	badgeShop_add(bdsw->bargain_table, (s16)value, 1);
+	badgeShop_add(bdsw->special_table, (s16)value, 1);
+#endif
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (88.48%): same as evt_badgeShop_throw_inc, the shared (s16)value cast is CSE'd.
 USER_FUNC(evt_badgeShop_throw_dec) {
-	s16 value;
+	s32 value;
 
 	value = evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->bargain_table, value, -1);
-	badgeShop_add(bdsw->special_table, value, -1);
+#ifdef MUST_MATCH
+	// See evt_badgeShop_throw_inc: the original badgeShop_add id is s16.
+	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, value, -1);
+	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->special_table, value, -1);
+#else
+	badgeShop_add(bdsw->bargain_table, (s16)value, -1);
+	badgeShop_add(bdsw->special_table, (s16)value, -1);
+#endif
 	return EVT_RETURN_DONE;
 }
 
@@ -531,15 +586,19 @@ USER_FUNC(evt_badgeShop_starmaniac_dec) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.33%): opt_common_subs off stops the GSW(118+i) CSE; only the bdsw load
-// (r6 before mr r30,r3 vs r3 after) still differs.
 #pragma opt_common_subs off // without it the GSW(118+i) index is CSE'd and the target's fresh evtSetValue index is lost
 USER_FUNC(evt_badgeShop_bottakuru_dec) {
 	s32 value;
 	int i;
 
 	value = evtGetValue(event, *event->args);
+#ifdef MUST_MATCH
+	// Original badgeShop_add takes its id as s16 (see report); the cast restores the
+	// target's `extsh r4,r30` with the raw result kept in r30.
+	((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bottakuru_table, value, -1);
+#else
 	badgeShop_add(bdsw->bottakuru_table, (s16)value, -1);
+#endif
 	for (i = 0; i < 4; i++) {
 		if (value == badge_bottakuru_table[evtGetValue(event, GSW(118 + i))]) {
 			evtSetValue(event, GSW(118 + i), (sizeof(badge_bottakuru_table) / sizeof(s32)) - 1); //last entry aka kNullItem

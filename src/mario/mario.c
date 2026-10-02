@@ -99,13 +99,6 @@ static inline s32 marioCharModeColor(BOOL badge1, BOOL badge2) {
 }
 #endif
 
-// NONMATCHING (99.99%): every instruction matches; the only differences are the 7 `addi r31, 0x...`
-// string-pool offsets (c_peach/c_peach_r/c_zako_n/c_koopa/c_koopa2/KPA_S_1/KPA_T_1), all 0x60 low.
-// They are low because unimplemented functions in this unit have not emitted the .rodata that precedes
-// them yet: marioMove references aji_13, marioMain references moo_00..moo_07, marioPreDisp/marioMakeDispDir
-// use the double_to_int constants, etc. Nothing in this function can move that pool; it resolves once
-// those functions are written. marioCharModeColor reproduces the original's allocation of the colour
-// value to r3.
 void marioSetCharMode(s32 mode) {
 	MarioWork* wp = mp;
 	s32 materialFlag;
@@ -275,10 +268,6 @@ void marioSetCharMode(s32 mode) {
 	}
 }
 
-// NONMATCHING (99.998%, check.py prints 100.00%): every instruction matches; the only remaining diff is
-// the relocation for "d_mario" (target `addi r3, r31, 0x390`, ours 0x330). The unit's .rodata is 0x60 bytes
-// short because the functions ahead of this one in .text (marioPaperOn/marioMove/marioMain) do not emit
-// their pool constants/strings yet. When those are written "d_mario" lands at 0x390 and this reaches 100%.
 void marioSetFamicomMode(s32 mode) {
 	MarioWork* wp = mp;
 
@@ -755,7 +744,7 @@ void marioReset(void) {
 	marioChgMot(0);
 }
 
-// The four Vec stores and loads match; only the `lwz r5, mp` slot differs (see REPORT.md). Known-hard
+// The four Vec stores and loads match; only the `lwz r5, mp` slot differs Known-hard
 // load-hoist class: scheduling on hoists the next vector's load past the previous store, scheduling off
 // puts `lwz mp` after the pool `addi`.
 #pragma scheduling off // target does not hoist the next vector's load past the previous store
@@ -1573,7 +1562,7 @@ static inline f32 marioMoveMain_sqrtf(f32 x) {
 // instructions differ only in those two registers; the three inline-sqrtf double offsets (0x330 vs the
 // original 0x340) are a unit-wide .rodata layout difference that resolves once the rest of the unit is
 // written; and N_dou10_yoko_yari3 is missing one `addi r3, wp+0x210` because its header prototype is
-// declared (void). See REPORT.md.
+// declared (void).
 // NONMATCHING (98.99%): register allocation of the x-accumulator/speed floats and the missing addi noted above.
 void marioMoveMain(void) {
 	MarioWork* wp = mp;
@@ -2471,15 +2460,104 @@ void marioDispBlur(CameraId camId, void* param) {
 
 }
 
-// NONMATCHING (6.54%): 309 missing, plus register differences.
 void marioDisp(CameraId camId, void* param) {
-	MarioWork* wp = param; //cast to correct type
-	Mtx mtx1; //TODO: rename
-	f32 scale;
+	MarioWork* wp = mp;
+	Mtx mtx;
+	Mtx temp;
+	Mtx scale;
+	f32 scaleFactor;
+	f32 s;
 
-	scale = marioGetScale(); //inlined
-	MTXScale(mtx1, mp->scale.x * scale, mp->scale.y * scale, mp->scale.z * scale);
+	scaleFactor = wp->flags & 0x2000000 ? 1.2f : 2.0f;
+	PSMTXScale(mtx, wp->scale.x * scaleFactor, wp->scale.y * scaleFactor, wp->scale.z * scaleFactor);
 
+	if (!(wp->dispFlags & 0x8)) {
+		if (wp->currMotionId == 0x14) {
+			f32 angle = revise360(*(f32*)(wp->field_0x98 + 0x24));
+
+			s = (angle >= 90.0f && angle <= 270.0f) ? -1.0f : 1.0f;
+			PSMTXScale(scale, 1.0f, 1.0f, s);
+			PSMTXConcat(scale, mtx, mtx);
+		}
+	}
+
+	if (!(wp->dispFlags & 0xC00)) {
+		if (wp->dispFlags & 0x10) {
+			PSMTXScale(scale, 1.0f, 1.0f, -1.0f);
+			PSMTXConcat(scale, mtx, mtx);
+		}
+		else if (!(wp->dispFlags & 0x8)) {
+			f32 angle = revise360(wp->unk1A8);
+
+			s = (angle >= 90.0f && angle <= 270.0f) ? -1.0f : 1.0f;
+			PSMTXScale(scale, 1.0f, 1.0f, s);
+			PSMTXConcat(scale, mtx, mtx);
+		}
+	}
+	else {
+		if (wp->dispFlags & 0x400) {
+			PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
+		}
+		else {
+			PSMTXScale(scale, 1.0f, 1.0f, -1.0f);
+		}
+		PSMTXConcat(scale, mtx, mtx);
+	}
+
+	PSMTXTrans(temp, -*(f32*)(wp->field_0x98 + 0x18), -*(f32*)(wp->field_0x98 + 0x1C), -*(f32*)(wp->field_0x98 + 0x20));
+	PSMTXConcat(temp, mtx, mtx);
+
+	if (wp->currMotionId == 0x18) {
+		PSMTXRotRad(temp, 'x', 0.017453292f * *(f32*)(wp->field_0x98 + 0x24));
+		PSMTXConcat(temp, mtx, mtx);
+		PSMTXRotRad(temp, 'z', 0.017453292f * *(f32*)(wp->field_0x98 + 0x2C));
+		PSMTXConcat(temp, mtx, mtx);
+	}
+	else {
+		PSMTXRotRad(temp, 'z', 0.017453292f * *(f32*)(wp->field_0x98 + 0x2C));
+		PSMTXConcat(temp, mtx, mtx);
+		PSMTXRotRad(temp, 'x', 0.017453292f * *(f32*)(wp->field_0x98 + 0x24));
+		PSMTXConcat(temp, mtx, mtx);
+	}
+
+	PSMTXRotRad(temp, 'y', 0.017453292f * revise360(wp->unk1A8 - wp->targetYaw));
+	PSMTXConcat(temp, mtx, mtx);
+
+	if (wp->dispFlags & 0xC00) {
+		f32 angle = revise360(wp->unk1A8);
+
+		if (angle >= 90.0f && angle <= 270.0f) {
+			PSMTXRotRad(temp, 'y', 0.017453292f * ((wp->dispFlags & 0x400) ? 180.0f : 0.0f));
+			PSMTXConcat(temp, mtx, mtx);
+		}
+		else {
+			PSMTXRotRad(temp, 'y', 0.017453292f * ((wp->dispFlags & 0x400) ? 0.0f : 180.0f));
+			PSMTXConcat(temp, mtx, mtx);
+		}
+	}
+
+	PSMTXTrans(temp, *(f32*)(wp->field_0x98 + 0x18), *(f32*)(wp->field_0x98 + 0x1C), *(f32*)(wp->field_0x98 + 0x20));
+	PSMTXConcat(temp, mtx, mtx);
+
+	if (wp->flags & 0x1000000) {
+		PSMTXScale(scale, 1.0f, *(f32*)(wp->unk104 + 0x2C), 1.0f);
+		PSMTXConcat(scale, mtx, mtx);
+	}
+
+	{
+		f32 x = *(f32*)(wp->field_0x98 + 0x0C) + (wp->position.x + *(f32*)(wp->field_0x98 + 0x00));
+		f32 y = *(f32*)(wp->field_0x98 + 0x10) + (wp->position.y + *(f32*)(wp->field_0x98 + 0x04));
+		f32 z = *(f32*)(wp->field_0x98 + 0x14) + (wp->position.z + *(f32*)(wp->field_0x98 + 0x08));
+
+		PSMTXTrans(temp, x, y, z);
+	}
+	PSMTXConcat(temp, mtx, mtx);
+
+	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 2, 0.0f, 1.0f);
+	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 1, 0.0f, 1.0f);
+
+	s = (wp->flags & 0x04000000) ? 0.75f : 1.0f;
+	animPoseSetLocalTimeRate(wp->paperAnimGroupId[marioAnimeId()], s);
 }
 
 const char* toRearPose(const char* name) { //1:1

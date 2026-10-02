@@ -1,6 +1,6 @@
 #include "evt/evt_cam.h"
 
-#include <math.h>
+#include "math_ext.h"
 
 #include "driver/camdrv.h"
 #include "evt/evt_npc.h"
@@ -11,6 +11,24 @@
 #include "system.h"
 #include "cam_road.h"
 #include "cam_shift.h"
+// The unit's rodata pool, in the original's address order. The inline sqrtf below pools its
+// local double constants after these, at the original's +0xd8/+0xe0/+0xe8. The other
+// functions in this unit still use anonymous zero-vector literals (which MWCC emits
+// separately), so only the leading pool slots are declared here to reproduce the offsets.
+const Vec vec3_802c5f38 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f44 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f50 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f5c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f68 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f74 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f80 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f8c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5f98 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802c5fa4 = { 0.0f, 0.0f, 0.0f };
+// Original format string; no code names it, it only fills the pool gap before the doubles.
+#pragma force_active on
+const char str_802C5FF8[16] = "%f%f%f%f%f%f%d%s";
+#pragma force_active reset
 
 
 
@@ -47,21 +65,69 @@ USER_FUNC(evt_cam_get_at) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (71.36%): 11 instructions differ, 47 missing, 14 extra, plus register differences.
+int __float_nan[];
+#define CAM_NAN (*(f32*)__float_nan)
+
+#define CAM_FP_NAN 1
+#define CAM_FP_INFINITE 2
+#define CAM_FP_ZERO 3
+#define CAM_FP_NORMAL 4
+#define CAM_FP_SUBNORMAL 5
+
+// Float classification the original's inline sqrtf uses (same shape as math.h's __fpclassifyf).
+static inline s32 camShakeFpClassify(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return CAM_FP_NAN;
+            }
+            return CAM_FP_INFINITE;
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return CAM_FP_SUBNORMAL;
+            }
+            return CAM_FP_ZERO;
+        default:
+            return CAM_FP_NORMAL;
+    }
+}
+
+// sqrtf as the original inlines it: Newton-Raphson refinement plus the NaN classification.
+// The local consts are what the original's inline pools as double_0p5/double_3/double_0.
+static inline f32 camShakeSqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return CAM_NAN;
+    } else if (camShakeFpClassify(x) == CAM_FP_NAN) {
+        return CAM_NAN;
+    }
+    return x;
+}
+
+// NONMATCHING (96.60%): only register colouring and the second 64-bit store mask differ;
+// the sqrtf, its pool offsets and the 64-bit userdata store now match the original.
 USER_FUNC(evt_cam_shake) {
     s32* args = event->args;
     CameraId camId = evtGetValue(event, args[0]);
     f32 ampX = evtGetFloat(event, args[1]);
     f32 ampY = evtGetFloat(event, args[2]);
     s32 duration = evtGetValue(event, args[3]);
-    OSTime start = event->lifetime;
+    u64 start = event->lifetime;
 
     if (isFirstCall) {
         event->userdata[0] = 0;
-        event->userdata[1] = start;
-        event->userdata[2] = start >> 32;
+        event->userdata[1] = (start >> 32) & 0xFFFFFFFF;
+        event->userdata[2] = start & 0xFFFFFFFF;
         event->field_84 = 0;
-        event->wInterpRelatedTime = start;
+        event->wInterpRelatedTime = (start & 0xFFFFFFFF00000000) | (start & 0xFFFFFFFF);
     }
     event->userdata[0]++;
     event->userdata[0] = event->userdata[0] % 4;
@@ -72,29 +138,30 @@ USER_FUNC(evt_cam_shake) {
     }
     camGetPtr(camId)->flags |= 8;
     if (duration != 0) {
-        if (OSTicksToMilliseconds(start - *(OSTime*)&event->userdata[1]) >= duration) {
+        if (OSTicksToMilliseconds(start - *(u64*)&event->userdata[1]) > duration) {
             camGetPtr(camId)->flags &= ~8;
             padRumbleOff(0);
             return EVT_RETURN_DONE;
         }
     }
     {
-        f32 mag = sqrtf(ampX * ampX + ampY * ampY);
+        f32 mag = camShakeSqrtf(ampX * ampX + ampY * ampY);
         s32 onTime = (s32)(13000.0f * mag);
         s32 offTime = (s32)(50.0f * (1.0f - mag));
+        OSTime wInterp = event->wInterpRelatedTime;
 
         if (onTime != 0 && offTime != 0) {
-            if (event->field_84 == 0) {
+            if ((s32)event->field_84 == 0) {
                 padRumbleOn(0);
-                if (OSTicksToMilliseconds(start - event->wInterpRelatedTime) >= onTime) {
+                if (OSTicksToMilliseconds(start - wInterp) > onTime) {
                     event->field_84 = 1 - event->field_84;
-                    event->wInterpRelatedTime = start;
+                    event->wInterpRelatedTime = (start & 0xFFFFFFFF00000000) | (start & 0xFFFFFFFF);
                 }
             } else {
                 padRumbleOff(0);
-                if (OSTicksToMilliseconds(start - event->wInterpRelatedTime) >= offTime) {
+                if (OSTicksToMilliseconds(start - wInterp) > offTime) {
                     event->field_84 = 1 - event->field_84;
-                    event->wInterpRelatedTime = start;
+                    event->wInterpRelatedTime = (start & 0xFFFFFFFF00000000) | (start & 0xFFFFFFFF);
                 }
             }
         }
