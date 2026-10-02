@@ -130,10 +130,12 @@ def run(host, tag, unit, key, log):
             f"if ! test -s REPORT.md || ! grep -q -- '--final' events.jsonl; then echo finisher; "
             f"timeout 900 {box} pi --mode json -c --model {MODEL} {shlex.quote(finish)} </dev/null >>events.jsonl 2>>stderr.log; fi; "
             f"cp {src_path(unit)} final.c 2>/dev/null; "
-            f"{{ diff -rq {BASE}/src src; diff -rq {BASE}/libs libs; diff -rq {BASE}/rels rels; }} | grep -v -F '{src_path(unit)} differ' > other_changes.txt; "  # merge_agent.sh allows the agent's own file
-            # header additions come back as a patch (a/include -> b/include); tools/merge_agent.sh checks and applies it
-            f"diff -ruN {BASE}/include include | sed -e 's#^--- /.*/include/#--- a/include/#' "
-            f"-e 's#^+++ include/#+++ b/include/#' > include.patch; "
+            f"{{ diff -rq {BASE}/src src; diff -rq {BASE}/libs libs; diff -rq {BASE}/rels rels; }} | grep -v -F '{src_path(unit)} differ' "
+            f"| grep -v -E 'rels/[^/ ]+/include[/:]' > other_changes.txt; "  # merge_agent.sh allows the agent's own file
+            # header additions (include/ and each REL's rels/<mod>/include/) come back as one patch (a/... -> b/...);
+            # tools/merge_agent.sh checks and applies it
+            f"{{ diff -ruN {BASE}/include include; for d in rels/*/include; do diff -ruN {BASE}/$d $d; done; }} "
+            f"| sed -e 's#^--- {BASE}/#--- a/#' -e 's#^+++ include/#+++ b/include/#' -e 's#^+++ rels/#+++ b/rels/#' > include.patch; "
             # what it fetched or searched outside the workspace, for the merge (tools/merge_agent.sh shows it)
             f"python3 tools/provenance.py events.jsonl $(pwd) > provenance.txt 2>&1 "
             f"|| echo 'ERROR tools/provenance.py failed; check events.jsonl by hand' >> provenance.txt; "
