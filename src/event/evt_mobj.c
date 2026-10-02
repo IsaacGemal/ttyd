@@ -1935,42 +1935,25 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// Frame size (0x2e0), save slot (0x38) and the bbox template+copy shape all match retail. The natural
-// `(f32)texHeight` gives the right high conversion temp but makes MWCC emit the mask as an anonymous
-// absolute pool entry (@2181) instead of retail's base-relative `0x518(r30)`; reimplementing it as
-// bit-twiddling against `base+0x518` fixes the mask but drops the temp into a low source-local slot.
-// The compromise here uses the natural height conversion and the manual form only for the aspect.
-// Still differs: the height mask pool entry, the aspect conversion temp slot (ours 0x8 vs retail
-// 0x2b0), a f4/f3 swap in the bbox loads, and the tan-argument load schedule. Details in REPORT.md.
-// NONMATCHING (90.68%): height mask pool entry, aspect temp slot, bbox f-register swap.
+// NONMATCHING (73.98%): 21 instructions differ, 41 missing, 25 extra, plus register differences.
 void kururing_capture(CameraId cameraId, void* param) {
     MapObjectEntry* obj = param;
     u8* base = (u8*)vec3_802c3dc8;
     CameraEntry save;
     CameraEntry* cam;
     AnimationPoseData* animData;
-    Vec bboxMin;
     Vec bboxMax;
-    Vec minTmp;
-    Vec maxTmp;
+    Vec bboxMin;
     u16 texWidth;
     u16 texHeight;
     f32 t;
 
     memcpy(&save, camGetPtr(cameraId), 0x260);
     animData = animPoseGetAnimBaseDataPtr(obj->poseId);
-    minTmp = *(Vec*)(base + 0x264);
-    minTmp.x = animData->bboxMin.x;
-    minTmp.y = animData->bboxMin.y;
-    minTmp.z = animData->bboxMin.z;
-    bboxMin = minTmp;
-    maxTmp = *(Vec*)(base + 0x270);
-    maxTmp.x = animData->bboxMax.x;
-    maxTmp.y = animData->bboxMax.y;
-    maxTmp.z = animData->bboxMax.z;
-    bboxMax = maxTmp;
-    texWidth = (bboxMax.x - bboxMin.x) * float_10_8041a1a4;
-    texHeight = (bboxMax.z - bboxMin.z) * float_10_8041a1a4;
+    bboxMax = animData->bboxMax;
+    bboxMin = animData->bboxMin;
+    texWidth = (s32)((bboxMax.x - bboxMin.x) * float_10_8041a1a4);
+    texHeight = (s32)((bboxMax.z - bboxMin.z) * float_10_8041a1a4);
     cam = camGetPtr(cameraId);
     texWidth = (texWidth + 1) & ~1;
     texHeight = (texHeight + 1) & ~1;
@@ -1978,17 +1961,9 @@ void kururing_capture(CameraId cameraId, void* param) {
     cam->cameraAt = obj->position;
     cam->cameraPos = obj->position;
     t = (f32)tan(*(f64*)(base + 0x510));
-#ifdef MUST_MATCH
-    cam->cameraPos.y += 0.5f * (f32)texHeight / t;
-    *(u32*)&maxTmp = ((u32)(texWidth / texHeight) ^ 0x80000000) | 0x43300000;
-    C_MTXPerspective(cam->projection, float_25_8041a140,
-                     (f32)(*(f64*)&maxTmp - *(f64*)(base + 0x400)),
-                     float_1_8041a160, float_32767_8041a1e4);
-#else
     cam->cameraPos.y += 0.5f * (f32)texHeight / t;
     C_MTXPerspective(cam->projection, float_25_8041a140, (f32)(texWidth / texHeight),
                      float_1_8041a160, float_32767_8041a1e4);
-#endif
     cam->projType = GX_PERSPECTIVE;
     C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
     GXSetProjection(cam->projection, cam->projType);
@@ -3073,137 +3048,6 @@ extern const char str_802C41DC[];
 extern const char str_802C41F0[];
 
 
-// 100%: two "o_"/"i_" 16-byte name templates are copied from the unit's .rodata base (0x100/0x110),
-// like mobj_brickblk. Retail reads mario->motion through a u16 at 0x2E (the header declares
-// MarioMotion there, 4 bytes); kept as a raw offset because the target uses lhz.
-s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
-    char offName[16];
-    char imgName[16];
-    u8* base = (u8*)vec3_802c3dc8;
-    MarioWork* mario;
-    ImageEntry* img;
-    BOOL inBattle;
-
-    ((u32*)offName)[0] = ((u32*)(base + 0x100))[0];
-    ((u32*)offName)[1] = ((u32*)(base + 0x100))[1];
-    ((u32*)offName)[2] = ((u32*)(base + 0x100))[2];
-    ((u32*)offName)[3] = ((u32*)(base + 0x100))[3];
-    ((u32*)imgName)[0] = ((u32*)(base + 0x110))[0];
-    ((u32*)imgName)[1] = ((u32*)(base + 0x110))[1];
-    ((u32*)imgName)[2] = ((u32*)(base + 0x110))[2];
-    ((u32*)imgName)[3] = ((u32*)(base + 0x110))[3];
-    inBattle = gp->inBattle != 0;
-    mario = marioGetPtr();
-    strcat(offName, obj->name);
-    strcat(imgName, obj->name);
-    switch (obj->unk1DC) {
-        case 0:
-            animGroupBaseAsync((const char*)(base + 0x5C0), inBattle, NULL);
-            if (obj->flags & 8) {
-                if (strcmp(obj->animName, (const char*)(base + 0x8AC)) == 0 ||
-                    strcmp(obj->animName, (const char*)(base + 0x8BC)) == 0) {
-                } else if (strcmp(obj->animName, (const char*)(base + 0x8D0)) == 0) {
-                    if (!(pouchGetHammerLv() >= 2 && *(u16*)&mario->currMotionId == 0x13)) {
-                        obj->flags &= ~8;
-                        break;
-                    }
-                } else if (strcmp(obj->animName, (const char*)(base + 0x8E4)) == 0 ||
-                           strcmp(obj->animName, (const char*)(base + 0x8F4)) == 0) {
-                    if (!(pouchGetHammerLv() >= 3)) {
-                        obj->flags &= ~8;
-                        break;
-                    }
-                } else if (strcmp(obj->animName, (const char*)(base + 0x908)) == 0) {
-                    if (!(pouchGetHammerLv() >= 3 && *(u16*)&mario->currMotionId == 0x13)) {
-                        obj->flags &= ~8;
-                        break;
-                    }
-                } else {
-                    obj->flags &= ~8;
-                    break;
-                }
-                mobjRunEvent(obj, obj->unk1D4);
-                evtSetValue(NULL, obj->unk1E4, 1);
-                obj->unk1DC = 0xa;
-            }
-            break;
-        case 0xa: {
-            s32 captureArgs1[10];
-            EventEntry tmpEvent1;
-            s32 captureArgs2[10];
-            EventEntry tmpEvent2;
-
-            animPaperPoseEntry((const char*)(base + 0x5C0), inBattle);
-            offscreenEntry(offName);
-            imgEntry(imgName, inBattle);
-            obj->offscreenId = offscreenNameToId(offName);
-            tmpEvent1.args = captureArgs1;
-            captureArgs1[0] = (s32)imgName;
-            captureArgs1[1] = 0;
-            captureArgs1[2] = (s32)offName;
-            captureArgs1[3] = 1;
-            captureArgs1[4] = 0;
-            captureArgs1[5] = 0;
-            captureArgs1[6] = 0;
-            captureArgs1[7] = 0;
-            evt_img_alloc_capture(&tmpEvent1, 1);
-            tmpEvent2.args = captureArgs2;
-            captureArgs2[0] = (s32)imgName;
-            captureArgs2[1] = 1;
-            captureArgs2[2] = (s32)offName;
-            captureArgs2[3] = 1;
-            captureArgs2[4] = 0;
-            captureArgs2[5] = 0;
-            captureArgs2[6] = 0;
-            captureArgs2[7] = 0;
-            evt_img_alloc_capture(&tmpEvent2, 1);
-            img = imgNameToPtr(imgName, inBattle);
-            img->poseId = animPaperPoseGetId((const char*)(base + 0x5C0), inBattle);
-            img->animName = "A_1";
-            // ImageEntry has no field for the animation clock; 0x110 is inside its 0x10C gap.
-            *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
-            imgSetShadow(img, 2);
-            if (strcmp(obj->animName, (const char*)(base + 0x8AC)) == 0 ||
-                strcmp(obj->animName, (const char*)(base + 0x8E4)) == 0) {
-                psndSFXOn_3D((const char*)0x1C7, &obj->position);
-            } else if (strcmp(obj->animName, (const char*)(base + 0x8BC)) == 0 ||
-                       strcmp(obj->animName, (const char*)(base + 0x8F4)) == 0) {
-                psndSFXOn_3D((const char*)0x1C8, &obj->position);
-            } else if (strcmp(obj->animName, (const char*)(base + 0x8D0)) == 0 ||
-                       strcmp(obj->animName, (const char*)(base + 0x908)) == 0) {
-                psndSFXOn_3D((const char*)0x1C9, &obj->position);
-            }
-            obj->unk1DC = 0xb;
-            break;
-        }
-        case 0xb:
-            img = imgNameToPtr(imgName, inBattle);
-            if (img->field_0x118 >= float_1_8041a160) {
-                obj->unk1DC = 0xc;
-            }
-            if (img->flags & 0x10000000) {
-                obj->unk1DC = 0xc;
-            }
-            obj->position = *(Vec*)(base + 0x120);
-            obj->flags |= 4;
-            obj->flags |= 8;
-            break;
-        case 0xc:
-            img = imgNameToPtr(imgName, inBattle);
-            imgFreeCapture(img, 0);
-            imgFreeCapture(img, 1);
-            imgSetShadow(img, 0);
-            imgRelease(img, inBattle);
-            offscreenDelete(offName);
-            obj->offscreenId = -1;
-            obj->unk1DC = 0x63;
-            break;
-        case 0x63:
-            mobjDelete(obj->name);
-            break;
-    }
-    return 0;
-}
 
 s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;

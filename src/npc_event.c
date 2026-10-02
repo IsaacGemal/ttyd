@@ -297,7 +297,6 @@ USER_FUNC(kamec_fire_magic_delete) {
     return EVT_RETURN_DONE;
 }
 
-f32 float_0p25_8041bd18 = 0.25f;
 
 // NONMATCHING (94.36%): loops/updates match; what remains is per-block scratch colouring (target loads block1's
 // s.x straight into f28, ours via f23, and schedules the axis loads differently) plus the whole unit's rodata

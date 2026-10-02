@@ -3700,3 +3700,19 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Linked:** `pik_02`, `unit_barriern_custom`, `kpa`, `unit_boss_gundan_zako_group2` (autolink was all they needed), `tik_05` (`.bss` order: `_ap`, `ckp0`, `ckp1`, `ckpw`, `broken_work`, uninitialised `select`), `ac_air_gauge` (functions in the original order, all-literal pool, force_active on the tables), `ac_power_gauge_lv2` (all-literal pool, 24-byte `.sdata` gap), `koopa_motion` (`pool_define`). Fixed four data objects that differed from retail (found by `data_check`): `usu_00`'s two vec3s were swapped (a runtime bug), `evt_mario`'s i2f double, the Pianta Parlor Special Card item, one kinopio float.
 - **Blocked, with the cause:** `muj_20` and `tik_00` (REL `.rodata` pool offsets: the pool order needs interleaved functions and scripts, and `rel_pool_order.py` finds no owner for the aggregate templates); `lecture_frankli_sac`, `boss_black_peach` (same family); `eff_blow_n64` (`Main`/`Entry` 99.6/99.9% with a literal pool: a compare against `0.0f` puts the constant first); `eff_pturn_n64` (4.0 pools before 360 and no source order changes it); `unit_party_vivian` (11/11 at 100% and the data generated, but the `.rodata` order needs the functions that use the pool base pointer interleaved with the data scripts and the vec3s as compiler aggregates, not named objects); `eff_hit_n64` (`dol_gen` stops: `cnt_table` has a different size in the asm than in the source); `eff_mobj_broken`, `battle_break_slot`, `evt_party`, `battle_mario` and the Grind 85/86 list as before.
 
+
+## Waves 55-57: wave 55's last agents, wave 56, wave 57 batch 1 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 57** (00:33 on main 23988ae): 124 agents, wave 56's recipe (up to six continuation passes, 2-hour budgets on
+  groups over 2.5 KB). Mac builds are back to `nice -n 10 ninja -j4` / `CI_JOBS=4` (Isaac is using the Mac); main
+  reports come from the tower's base builds.
+- Batch (wave 55's last 8 units, wave 56's 11 agents, wave 57's first 35; onto main 720fc14): 8,992 -> 9,019.
+  Data fixes: statuswindow's `gauge_wakka` holds 0x1C0..0x1CF in order (adjacent halfwords were swapped; Claude #1's
+  [data] check), party.c's `vec3_802ccd30` is {1, 1, 1} as the original. extdrv as on main (an agent wrote inline
+  `asm`). When a .c goes back to main, the agent's header edits for it can no longer agree (a table declared as
+  `u32[3]` in the header and `u8[]` in the file): revert the header with it.
+- Review (`scratch/wave57/review1.md`, half the files): `kururing_capture` (under MUST_MATCH) built the int->float
+  pair wrong (the xored value in the high word, the low word left as maxTmp.y's bits), so C_MTXPerspective got a
+  garbage aspect ratio: as on main. partyRideMain, party_motion_homing_fly and mobj_lv_blk_evt (named objects read
+  past vec3_802ccd30 / vec3_802f3e40 / vec3_802c3dc8) unwritten again. Open (LOW): spline_maketable's sqrt constants
+  through vec3_802c16d8 + 0x2A8, unused `u8* p` locals in mapdrv, mapdrv.h declaring vec3_802c16e4 as u8[].
