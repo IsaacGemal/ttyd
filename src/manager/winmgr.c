@@ -1033,7 +1033,7 @@ void select_main(WinMgrEntry* entry) {
 
 // NONMATCHING (92.61%): close, but MWCC folds the `0.0f + (f32)int` copies that the
 // original keeps (which is why the original also spills f29); the SDA/rodata label
-// spellings differ cosmetically. See REPORT.md.
+// spellings differ cosmetically.
 void select_disp_luigi(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;

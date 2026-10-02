@@ -566,7 +566,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
 // The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). The
 // remaining diffs are FP register colouring (67 arg_mismatch) and a `hit` r27/r3 live-range split; the
 // `hitY = hitY;` copy in the `hit == NULL` arm is a dead-path materialisation (compiler-input only).
-// NONMATCHING (97.90%): FP colouring + `hit` r27/r3 split; see REPORT.md.
+// NONMATCHING (97.90%): FP colouring + `hit` r27/r3 split
 HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     HitCheckQuery query;
     Vec targetPos;

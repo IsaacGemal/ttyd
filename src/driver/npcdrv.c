@@ -2046,18 +2046,13 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-// NONMATCHING (98.72%): body matches; MWCC only hoists the callee-save block into the prologue once a
-// `name == NULL` guard precedes the `(s8)name[0] == 0` check, which costs an extra `mr.`/`beq` and loads
-// name[0] from r28 vs the target's r3. Without the guard the saves sink past the check (88.37%).
+// NONMATCHING (88.37%): the callee-save block sinks past the `name[0] == 0` check; retail saves in the prologue.
 void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
 
-    if (name == NULL) {
-        return;
-    }
     if ((s8)name[0] == 0) {
         return;
     }
@@ -2105,9 +2100,6 @@ void npcSetTalkPose(const char* name) {
     s32 total;
     int i;
 
-    if (name == NULL) {
-        return;
-    }
     if ((s8)name[0] == 0) {
         return;
     }

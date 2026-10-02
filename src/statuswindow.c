@@ -453,7 +453,7 @@ void statusWinOpen(void) {
 
 // NONMATCHING (85.41%): values/body complete. The original hoists the int->float bias and 0.0f into
 // f30/f31 and schedules the x conversion after the `beq`; GC/2.6 here emits it before `bl pouchGetPtr`
-// and reloads 0.0f. All remaining diffs are that placement/register allocation. See REPORT.md.
+// and reloads 0.0f. All remaining diffs are that placement/register allocation.
 void gaugeDisp(s32 a1, f32 x, f32 y) {
     s32 i;
     s32 count;
@@ -683,7 +683,7 @@ void valueUpdate(void) {
 
 // NONMATCHING (99.82%): body complete; the original groups the by-value GXColor outgoing temps by
 // callee (iconDispGxCol slots, then iconNumberDispGx slots), GC/2.6 allocates them in program order.
-// All remaining diffs are that stack-slot order. See REPORT.md.
+// All remaining diffs are that stack-slot order.
 void statusWinDisp(CameraId camId, void* param) {
     alwaysDtEntry* dtEntry;
     s32 i;

@@ -498,8 +498,8 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
 extern const f32 float_9_8041a83c;
 extern const f32 float_3_8041a7f0;
 extern const f32 float_90_8041a81c;
-extern const volatile Vec vec3_802c5808;
-extern const volatile Vec vec3_802c5814;
+extern const Vec vec3_802c5808;
+extern const Vec vec3_802c5814;
 
 // The sin/cos colouring and the hit-check join now match. The ROUND_MILLI register colours are
 // reproduced with volatile reads of the float constants (marked MUST_MATCH): the original reloads
@@ -642,8 +642,8 @@ extern const f32 float_100_8041a7f8;
 extern const f32 float_0p05_8041a848;
 extern const f32 float_75_8041a840;
 extern const f32 float_50_8041a844;
-extern const volatile Vec vec3_802c57f0;
-extern const volatile Vec vec3_802c57fc;
+extern const Vec vec3_802c57f0;
+extern const Vec vec3_802c57fc;
 extern const u8 vec3_802c5730[];
 
 // Inline sqrtf from the SDK's math.h, redeclared here because including math.h clashes with
@@ -697,19 +697,16 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// The f19-f31 colouring, the p build scratch and the vec3 base register still differ; see
-// REPORT.md.
-// NONMATCHING (87.36%): FP register colouring (f18/f19 vs f19-f31), the vec3 base register
-// (r31 vs r30) and the p-build scratch ordering differ.
+// NONMATCHING (57.32%): 21 instructions differ, 103 missing, 37 extra, plus register differences.
 void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec p;
     Vec up;
     Vec hitPos;
     Vec normal;
-    Vec tmp;
     HitEntry* hit;
     f32 x0;
+    f32 y0;
     f32 f25;
     f32 f24;
     f32 f27;
@@ -730,67 +727,68 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
     s = (f32)sin(rad);
+    c = (f32)cos(rad);
     x0 = wp->wPlayerCollisionBox.x - float_0p5_8041a7c4;
     f25 = float_0p5_8041a7c4 * (x0 * s);
-    c = (f32)cos(rad);
-    rad = *outY;
-    f27 = -f25;
-    f22 = rad + a;
-    f26 = float_0p5_8041a7c4 * rad;
-    *outY = float_neg1_8041a7dc;
     f24 = float_0p5_8041a7c4 * (x0 * -c);
+    f27 = -f25;
     f28 = -f24;
+    y0 = *outY;
+    f26 = float_0p5_8041a7c4 * y0;
+    f22 = y0 + a;
+    *outY = float_neg1_8041a7dc;
+    up = vec3_802c57fc;
     for (i = 0; i < 5; i++) {
         f32 ox;
         f32 oz;
 
-        if (i == 0) {
+        switch (i) {
+        case 0:
             ox = float_0_8041a7a4;
             oz = float_0_8041a7a4;
-        } else if (i == 1) {
+            break;
+        case 1:
             ox = f25;
             oz = f24;
-        } else if (i == 2) {
+            break;
+        case 2:
             ox = f28;
             oz = f25;
-        } else if (i == 3) {
+            break;
+        case 3:
             ox = f24;
             oz = f27;
-        } else if (i == 4) {
+            break;
+        case 4:
             ox = f27;
             oz = f28;
+            break;
         }
+        p.x = pos->x + ox;
+        p.y = pos->y + f26;
+        p.z = pos->z + oz;
         dist = f22;
-        tmp = *(const volatile Vec*)(vec3_802c5730 + 0xc0);
-        tmp.x = pos->x + ox;
-        tmp.y = pos->y + f26;
-        tmp.z = pos->z + oz;
-        p = tmp;
-        up = *(const volatile Vec*)(vec3_802c5730 + 0xcc);
         hit = marioHitCheck2(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
-            f32 nz = normal.z;
-            f32 ny = normal.y;
-            f32 nx = normal.x;
             MarioWork* wp2 = marioGetPtr();
             f32 ang;
 
             *(f32*)&wp2->field_0x1F0[0x28] =
                 (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * nz,
-                                                            float_100_8041a7f8 * ny) -
+                                                            float_100_8041a7f8 * normal.z,
+                                                            float_100_8041a7f8 * normal.y) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
                 float_100_8041a7f8;
             *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
             *(f32*)&wp2->field_0x1F0[0x30] =
                 (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * nx,
-                                                            float_100_8041a7f8 * ny) -
+                                                            float_100_8041a7f8 * normal.x,
+                                                            float_100_8041a7f8 * normal.y) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
                 float_100_8041a7f8;
-            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, sqrtf(nx * nx + nz * nz), -ny);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrt(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (!(wp->flags & 0x1000000)) {
                 f32 lim = (wp->dispFlags & 0x1000000) ? float_75_8041a840 : float_50_8041a844;
 
@@ -803,14 +801,14 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             if (hit != NULL) {
                 f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
 
-                y = y - float_0p05_8041a848 * rad;
+                y = y - float_0p05_8041a848 * y0;
                 hitPos.y = y;
-                if (pos->y + rad >= y) {
+                if (pos->y + y0 >= y) {
                     pos->y = y;
                     *outY = float_0_8041a7a4;
                     return hit;
                 } else {
-                    *outY = (y - pos->y) - rad;
+                    *outY = (y - pos->y) - y0;
                     return NULL;
                 }
             }
@@ -819,12 +817,12 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
                 f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
 
                 hitPos.y = y;
-                if (pos->y + rad >= y) {
+                if (pos->y + y0 >= y) {
                     pos->y = y;
                     *outY = float_0_8041a7a4;
                     return hit;
                 } else {
-                    *outY = (y - pos->y) - rad;
+                    *outY = (y - pos->y) - y0;
                     return NULL;
                 }
             }

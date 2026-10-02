@@ -1089,7 +1089,7 @@ void BattleStageDispDark(CameraId camId, void* param) {
 	DarkBySquare(float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848, stage->stgDark.field_4);
 }
 
-#pragma opt_common_subs on
+#pragma opt_common_subs reset
 void BattleStageDispLight(CameraId camId, void* param) {
 	s32 i;
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;

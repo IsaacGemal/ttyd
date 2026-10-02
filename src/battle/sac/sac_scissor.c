@@ -79,7 +79,7 @@ typedef struct ScissorPoint {
 } ScissorPoint;
 
 // Local view of the scissor action-command work area at _battleWorkPointer + 0x1F4C.
-// No header declares this struct yet; fields are listed in REPORT.md.
+// No header declares this struct yet; (fields as used below).
 typedef struct ScissorWork {
     u32 flags;                    // 0x00
     u8 field_0x04[0x08];          // 0x04
@@ -135,7 +135,7 @@ typedef struct ScissorWork {
 } ScissorWork;
 
 // Star trail area reached through a work+0x9C pointer in the original.
-// No header declares it; fields are listed in REPORT.md.
+// No header declares it; (fields as used below).
 typedef struct StarTrail {
     u8 field_0x00[0x18];  // 0x00
     f32 velX;             // 0x18
@@ -146,7 +146,7 @@ typedef struct StarTrail {
 } StarTrail;
 
 // Star-stone effect userdata written at the end of star_control.
-// No header declares it; fields are listed in REPORT.md.
+// No header declares it; (fields as used below).
 typedef struct ScissorEffectData {
     u8 field_0x00[0x8];  // 0x00
     f32 posX;            // 0x08
@@ -387,7 +387,7 @@ s32 scissor_damage_sub2(const Vec* point) {
 
 // NONMATCHING (97.18%): remaining diffs are all FP register colouring (original
 // sign=f27/width=f29/height=f28/halfH=f30/halfW=f31/nine=f24/rowBase=f25; ours sign=f31
-// and rotated). FP/int declaration order was hill-climbed for score; see REPORT.md.
+// and rotated). FP/int declaration order was hill-climbed for score
 void scissor_damage_sub(BattleUnit* unit, s32* out) {
     Vec pos;
     Vec point;
@@ -548,7 +548,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
 
 // NONMATCHING (99.92%): only the two intersection-result stores differ, where the address
 // scratch is r4 (ours) vs r5 (target). Constants as literals, p hoisted to function scope
-// and right-chained stores got it here; see REPORT.md.
+// and right-chained stores got it here
 s32 scissor_control(s32 unused, s32 reset) {
     ScissorWork* work = GetScissorPtr();
     ScissorPoint* points = (ScissorPoint*)work->field_0x114;
@@ -770,11 +770,10 @@ void star_disp2D(void) {
     }
 }
 
-// NONMATCHING (91.34%): ScissorRodata + `rod` reproduce the original's single-base vector
-// addressing and r31/r30/r29/r28 colouring; floats as literals bought another 5%. What's
-// left is GPR scratch colouring and the int->float magic double still in an anonymous pool slot.
+// NONMATCHING (77.45%): the original addresses the five vectors from one common base; the int->float magic double is an anonymous pool copy (@863) instead
+// of the folded double_to_int_802ff638, which shifts the FP registers through case 1;
+// intplGetValue also loads r4 before f1/f2.
 s32 star_control(void) {
-    const ScissorRodata* rod = &str_802FF570;
     ScissorWork* work = GetScissorPtr();
     StarTrail* star = (StarTrail*)((u8*)work + 0x9C);
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -792,9 +791,9 @@ s32 star_control(void) {
     switch (work->state) {
     case 1:
         {
-            f32 zero = 0.0f;
-            f32 neg = -1000.0f;
-            f32 one = 1.0f;
+            f32 zero = float_0_80421734;
+            f32 neg = float_neg1000_8042179c;
+            f32 one = float_1_80421754;
 
             work->state = 2;
             work->field_0x120 = 0;
@@ -805,10 +804,10 @@ s32 star_control(void) {
             (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804217a0);
         *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
         *(Vec*)&work->field_0x13C = *(Vec*)&work->field_0x124;
-        work->field_0x140 += 50.0f;
-        work->field_0x144 += -1.0f;
-        *(Vec*)&work->field_0x154 = rod->v0;
-        *(Vec*)&work->field_0x160 = rod->v1;
+        work->field_0x140 += float_50_80421770;
+        work->field_0x144 += float_neg1_80421750;
+        *(Vec*)&work->field_0x154 = vec3_802ff59c;
+        *(Vec*)&work->field_0x160 = vec3_802ff5a8;
         /* fallthrough */
     case 2:
         work->field_0x120++;
@@ -816,12 +815,12 @@ s32 star_control(void) {
             work->field_0x124 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x130, work->field_0x13C);
             work->field_0x128 = intplGetValue(0, work->field_0x120, 0x64, work->field_0x134, work->field_0x140);
             work->field_0x12C = intplGetValue(0, work->field_0x120, 0x64, work->field_0x138, work->field_0x144);
-            f = intplGetValue(0, work->field_0x120, 0x64, 0.0f, 2.0f);
+            f = intplGetValue(0, work->field_0x120, 0x64, float_0_80421734, float_2_804217a4);
             work->field_0x15C = f;
             work->field_0x158 = f;
             work->field_0x154 = f;
         } else {
-            f32 two = 2.0f;
+            f32 two = float_2_804217a4;
 
             work->field_0x124 = work->field_0x13C;
             work->field_0x128 = work->field_0x140;
@@ -830,12 +829,12 @@ s32 star_control(void) {
             work->field_0x158 = two;
             work->field_0x154 = two;
         }
-        work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, 0.0f, float_2160_804217a8);
+        work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, float_0_80421734, float_2160_804217a8);
         if (work->field_0x120 >= 0x78) {
             work->state = 3;
             work->field_0x120 = 0;
             *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
-            work->field_0x140 = 300.0f;
+            work->field_0x140 = float_300_8042177c;
         }
         break;
     case 3:
@@ -845,12 +844,12 @@ s32 star_control(void) {
             work->state = 4;
             work->field_0x120 = 0;
             {
-                f32 neg = -1000.0f;
-                f32 zero = 0.0f;
+                f32 neg = float_neg1000_8042179c;
+                f32 zero = float_0_80421734;
 
-                *(Vec*)&work->field_0x124 = rod->v2;
-                *(Vec*)&work->field_0x154 = rod->v3;
-                *(Vec*)&work->field_0x160 = rod->v4;
+                *(Vec*)&work->field_0x124 = vec3_802ff5b4;
+                *(Vec*)&work->field_0x154 = vec3_802ff5c0;
+                *(Vec*)&work->field_0x160 = vec3_802ff5cc;
                 work->field_0x134 = work->field_0x128;
                 work->field_0x140 = zero;
                 star->velX = work->field_0x124;
@@ -880,10 +879,10 @@ s32 star_control(void) {
         ScissorEffectData* data = work->field_0x16C->userdata;
 
         if (work->state >= 4) {
-            f32 zero = 0.0f;
+            f32 zero = float_0_80421734;
 
             data->posX = zero;
-            data->posY = -1000.0f;
+            data->posY = float_neg1000_8042179c;
             data->posZ = zero;
         } else {
             data->posX = work->field_0x124;
@@ -891,7 +890,7 @@ s32 star_control(void) {
             data->posZ = work->field_0x12C;
         }
         {
-            f32 s = 1.5f;
+            f32 s = float_1p5_804217ac;
 
             data->rotX = work->field_0x160;
             data->rotY = work->field_0x164;
@@ -900,7 +899,7 @@ s32 star_control(void) {
         }
     }
     if (work->state >= 4 && work->state <= 6) {
-        dispEntry(8, 0.0f, 2, (DispCallback)star_disp2D, NULL);
+        dispEntry(8, float_0_80421734, 2, (DispCallback)star_disp2D, NULL);
     }
     return 0;
 }

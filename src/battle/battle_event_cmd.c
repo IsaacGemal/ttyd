@@ -4040,7 +4040,7 @@ static inline f32 sqrtf(f32 x) {
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* mode
 // NONMATCHING (93.94%): logic and schedule match; ours addresses its .rodata (double_to_int, the sqrtf
 // 0.5/3.0 doubles, the 0.0f pool) from a local base instead of vec3_802ede88 because this TU's data isn't
-// defined here, and `e`/rodata/unit land in different registers. See REPORT.md.
+// defined here, and `e`/rodata/unit land in different registers.
 USER_FUNC(btlevtcmd_EllipseMovePosition) {
     s32 btlId, id;
     s32* args = event->args;

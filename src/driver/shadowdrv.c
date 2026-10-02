@@ -1059,7 +1059,7 @@ static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*
 // vertex_tbl (+0x2C0) are defined in this unit's .data. They are only `extern` here, so MWCC
 // materialises each with `lis/addi shadowConfig`; that is the whole diff (the base setup plus the
 // register pairing it forces). With stand-in .data objects at those offsets the function reaches
-// 99.25% (only the size register and one `mr`/`addi` on GXSetProjection remain). See REPORT.md.
+// 99.25% (only the size register and one `mr`/`addi` on GXSetProjection remain).
 // NONMATCHING (92.38%): only the .data base register (shadowConfig/testKagePosArray/vertex_tbl are extern).
 void shadowDisp(CameraId cameraId, void* param) {
     DispEntry* work = dispGetCurWork();

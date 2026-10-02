@@ -3631,3 +3631,24 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Wave 54** (launched 21:16 on main c294f5f, base `~/ttyd-w54base` from `git archive`): wave 53's recipe with
   functions and groups up to 4 KB, leaving out units whose wave 53 work wasn't merged, battle/battle_camera (its
   agent copy hangs mwcceppc) and the functions reviews took out; 80 agents.
+
+## Wave 54, batch 1, and wave 55 (2026-10-01, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Batch 1 (46 agents, with wave 53's last 5, onto main 8cbdff5): 8,879 -> 8,946 functions, the run's best batch
+  (evt_mobj +11, battle_event_cmd +11, party_move +7, mario_hit +5, evt_mario +5). Before the review:
+  eff_pokopi_thunder and eff_particle as on main (a section lower, nothing new); npcCheckHitMarioSide,
+  evt_badgeShop_throw_inc/dec and evt_mobj_kururing_floor as on main (lower, or code the natural build couldn't
+  compile: helpers defined only under MUST_MATCH but used unconditionally).
+- Review (`scratch/wave54/review1.md`): no behaviour defects; older bugs fixed by the batch: lightEntry's light types
+  (2 = SPOT, 3 = DIRECTIONAL) and its `flags & 2` -> LIGHT_CHARA, evt_mario_paper_pose_dokan's type 2/3/5 handling
+  inside `if (isFirstCall)`, GetHpGaugeOffset's EVTDAT_POINTER_MAX guards, npcSetTalkPose's pose argument 7.
+  As on main or unwritten: mobj_itembox (base+offset reads past vec3_802c3dc8), partyGetMoveDirSpd (hand-inlined
+  partyClearFootmark), marioSearchHead (named vec3s read through vec3_802c5730), sac_scissor's star_control and its
+  ScissorRodata overlay of str_802FF570. npcSetStayPose/npcSetTalkPose lose a `name == NULL` guard retail doesn't
+  have (98.72% -> 88.37%; behaviour must not differ to buy a score). mario_hit's rodata externs are no longer
+  `volatile`. "See REPORT.md" pointers to agent scratch files are out of tracked source.
+- **Header corrections kept (agents' asm evidence, as #142's filemgr.h line):** lightdrv.h `lightEntry` takes a
+  `Vec*` (MWCC passes the struct by address either way); filemgr.h's six `u8 type` parameters are `s32`. Open
+  (form): lightMain's Vec-building helper and `*(Vec*)&view[n]` row reads.
+- **Wave 55** (launched 22:35 on main 8cbdff5): wave 54's recipe with 60-minute budgets and no starts after 00:15,
+  leaving out every unit wave 53/54 work is pending on; 79 agents.

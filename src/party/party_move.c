@@ -1877,12 +1877,9 @@ static inline f32 partySqrtf(f32 x) {
     return x;
 }
 
-// Only two diffs remain: (a) the inlined partyChgMoveMode switch drops the original's redundant
-// `cmpwi r0,4; bge` (see partyChgMoveMode), and (b) the inline sqrt double pool lands at
-// str_802CDB20+0x458 instead of +0x600 (resolves once the whole unit's constants are in the object).
-// A `scale = (flags & 0x80) ? 0.75f : 1.0f;` ternary fixed the f4/f5 length/scale swap; the footmark
-// clear is exact.
-// NONMATCHING (99.36%)
+// NONMATCHING (89.86%): footmark clear inherits partyClearFootmark's redundant loop-entry test;
+// the inlined partyChgMoveMode switch drops `cmpwi 4; bge`; the inline sqrt double pool lands
+// in a fresh @991 instead of str_802CDB20+0x600 and the length/scale fp regs are swapped.
 void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
@@ -1895,20 +1892,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
 
     if (hosei != 0 && work->field_3B != 2) {
         if (!(work->flags & 0x8)) {
-            MarioWork* m = marioGetPtr();
-            Vec pos = m->position;
-            u32* src = (u32*)&pos;
-            Footmark* f = (Footmark*)footmarkBuf;
-            u32 i;
-            for (i = 0; i < 0x50; i++) {
-                ((u32*)&f->x)[0] = src[0];
-                ((u32*)&f->x)[1] = src[1];
-                ((u32*)&f->x)[2] = src[2];
-                f->field_0 = 0;
-                f++;
-            }
-            writeId[0] = 0;
-            readId[0] = 0;
+            partyClearFootmark();
         } else {
             s32 flag = 0;
             PartyEntry* partner = anotherPartyGetPtr(1);
@@ -1925,17 +1909,13 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
                 Vec pos;
                 u32* src;
                 Footmark* f;
-                u32 i;
+                s32 i;
 
-                if (target != NULL) {
-                    if (nokonokoGetStatus(target) == 3
-                        || PSVECDistance(&m2->position, &target->position) >= 150.0f) {
-                        pos = m2->position;
-                    } else {
-                        pos = target->position;
-                    }
-                } else {
+                if (target == NULL || nokonokoGetStatus(target) == 3
+                    || PSVECDistance(&m2->position, &target->position) >= 150.0f) {
                     pos = m2->position;
+                } else {
+                    pos = target->position;
                 }
                 src = (u32*)&pos;
                 f = (Footmark*)(footmarkBuf + 0x500);
@@ -1986,7 +1966,11 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     f31 = work->speed * sinv + (*(f32*)((u8*)work + 0xAC) + *(f32*)((u8*)work + 0xA0));
     f30 = work->speed * cosv + (*(f32*)((u8*)work + 0xB4) + *(f32*)((u8*)work + 0xA8));
     *angle = angleABf(0.0f, 0.0f, f31, f30);
-    scale = (work->flags & 0x80) ? 0.75f : 1.0f;
+    if (work->flags & 0x80) {
+        scale = 0.75f;
+    } else {
+        scale = 1.0f;
+    }
     *speed = scale * partySqrtf(f31 * f31 + f30 * f30);
 }
 
