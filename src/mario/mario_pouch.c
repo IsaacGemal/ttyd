@@ -179,7 +179,7 @@ s32 pouchGetEmptyKeepItemCnt(void) {
 // the remainder on r4. The pointer form of the shift loop (`*p1 = *(p1-1)`, `p1--`) is what took
 // this from 93.55% to 97.21%; moving `table2` before `table1` in the declarations completed the
 // saved-register fix (98.45%).
-// NONMATCHING (98.45%): table2-shift second pointer r6 vs r3, remainder copy, zero-fill/ternary peepholes
+// NONMATCHING (98.45%): the search/shift logic is right; left is register allocation in the shift: the original keeps the second (table2) walk pointer in r3 and the unroll remainder count in r4, ours uses r6 and r3 (plus an extra `mr r3,r4`). The prologue also differs (original `li r4,0; mr r29,r4; mr r30,r4` coalescing the three NULL/0 stores, ours `li r29,0; li r30,0`; and the STRANGE_SACK ternary loads straight into r4 vs our r0+`mr`). Tried unswitching the table2==0 loop, moving the p2 declaration, and decl/init reorders without improvement.
 BOOL pouchGetItem(ItemType type) {
 	s16* table2;
 	s16* table1;
@@ -321,498 +321,99 @@ BOOL pouchGetItem(ItemType type) {
 
 
 
-char* pouchGetYoshiName(void) {
-	if (strlen(mpp->yoshiName) < 1) {
-		return (char*)msgSearch("name_party3");
+// keep pouchCheckItem out of line: its callers must emit `bl pouchCheckItem`, not an inlined loop
+#pragma dont_inline on
+u32 pouchCheckItem(u32 itemId) {
+	int i;
+	u32 itemCnt;
+	s32 id = (s32)itemId;
+
+	if (ITEM_MIN <= id && id < ITEM_MAX) {
+		for (itemCnt = 0, i = 0; i < MAX_HELD_ITEMS; i++) {
+			if (id == mpp->heldItems[i]) {
+				itemCnt++;
+			}
+		}
+		return itemCnt;
 	}
-	return mpp->yoshiName;
-}
-
-void pouchSetYoshiName(char* name) {
-	strcpy(mpp->yoshiName, name);
-}
-
-void pouchSetPartyColor(PartyId partnerId, u16 color) {
-	mpp->partyData[partnerId].flags = (u16)((mpp->partyData[partnerId].flags & 0x1FFF) | ((color & 7) << 13));
-}
-
-s32 pouchGetPartyColor(PartyId partnerId) {
-	return mpp->partyData[partnerId].flags >> 13;
-}
-
-u32 pouchCheckMail(s32 mailId) {
-	s32 mask = (1 << (mailId % 32));
-	if (mpp->mEmailReadFlags[mailId / 32] & mask) {
-		return 2;
+	else if (KEY_ITEM_MIN <= id && id < KEY_ITEM_MAX) {
+		for (itemCnt = 0, i = 0; i < MAX_KEY_ITEMS; i++) {
+			if (id == mpp->keyItems[i]) {
+				itemCnt++;
+			}
+		}
+		return itemCnt;
+	}
+	else if (BADGE_MIN <= id && id < BADGE_MAX) {
+		for (itemCnt = 0, i = 0; i < MAX_BADGES; i++) {
+			if (id == mpp->badges[i]) {
+				itemCnt++;
+			}
+		}
+		return itemCnt;
 	}
 	else {
-		return (mpp->mEmailReceivedFlags[mailId / 32] & mask) != 0;
+		return 0;
 	}
 }
+#pragma dont_inline reset
 
-void pouchOpenMail(s32 mailId) {
-	mpp->mEmailReadFlags[mailId / 32] |= (1 << (mailId % 32));
-}
 
-void pouchReceiveMail(s32 mailId) {
-#ifdef MUST_MATCH
-	// Found by the permuter: the loop counter and the running count share a two-element array
-	// (they sit side by side on the stack), which fixes the original's register and slot order.
-	int count0;
-	int slot[2];
-	s32 index;
-	s32 shift;
+// NONMATCHING (95.78%): same single-loop-unswitch shape as pouchRemoveItemIndex. What is left is only the branch polarity / layout of the unswitched dispatch: the original's `cmplwi r30,0` branches `beq` to the table1-only loop (table2 loop is fallthrough) and the shared `table1+i`/`table2+i` preheader is scheduled before the test; ours does the adds after the test and branches `bne` to the table2 loop.
+BOOL pouchRemoveItem(ItemType type) {
+	s16* table1, * table2;
+	BOOL valid;
+	s32 maximum;
+	int i, j, temp;
 
-	index = mailId / 32;
-	shift = mailId % 32;
-
-	count0 = 0;
-	slot[0] = count0;
-	for (slot[1] = 0; slot[1] < 99; slot[1]++) {
-		if (mpp->mEmailReceivedFlags[slot[1] / 32] & (1 << (slot[1] % 32))) {
-			slot[0]++;
-		}
+	maximum = 0;
+	table1 = NULL;
+	table2 = NULL;
+	if (type >= ITEM_MIN && type < ITEM_MAX) {
+		table1 = mpp->heldItems;
+		table2 = NULL;
+		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+		valid = TRUE;
 	}
-	mpp->mEmailReceivedFlags[index] |= (1 << shift);
-	mpp->mEmailIds[slot[0]] = (u8)mailId;
-#else
-	int i;
-	s32 count;
-	s32 index;
-	s32 shift;
-
-	index = mailId / 32;
-	shift = mailId % 32;
-
-	count = 0;
-	for (i = 0; i < 99; i++) {
-		if (mpp->mEmailReceivedFlags[i / 32] & (1 << (i % 32))) {
-			count++;
-		}
+	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
+		table1 = mpp->keyItems;
+		table2 = NULL;
+		maximum = 121;
+		valid = TRUE;
 	}
-	mpp->mEmailReceivedFlags[index] |= (1 << shift);
-	mpp->mEmailIds[count] = (u8)mailId;
-#endif
-}
-
-s32 pouchReceiveMailCount(void) {
-	s32 i, count;
-
-	for (count = 0, i = 0; i < 99; i++) {
-		if (mpp->mEmailReceivedFlags[i / 32] & (1 << (i % 32))) {
-			count++;
-		}
-	}
-	return count;
-}
-
-void pouchGetStarStone(u32 id) {
-	if (!mpp->mStarPowersObtained) {
-		mpp->audienceCount = 2.0f;
-	}
-	mpp->mStarPowersObtained |= 1 << id;
-	mpp->maximumSP = (s16)(100 * (id + 1));
-	if (mpp->maximumSP < 0) {
-		mpp->maximumSP = 0;
-	}
-	if (mpp->maximumSP > 800) {
-		mpp->maximumSP = 800;
-	}
-}
-
-void pouchAddKpaScore(u32 score) {
-	mpp->mSuperBowserScore += score;
-	if (mpp->mSuperBowserScore > 999999)
-	{
-		mpp->mSuperBowserScore = 999999;
-	}
-}
-
-u32 pouchGetKpaScore(void) {
-	return mpp->mSuperBowserScore;
-}
-
-BOOL pouchAddKpaCoin(s32 coins) {
-	BOOL wrapped = FALSE;
-
-	mpp->mSuperBowserCoins += coins;
-	if (mpp->mSuperBowserCoins >= 100) {
-		mpp->mSuperBowserCoins -= 100;
-		wrapped = TRUE;
-	}
-	return wrapped;
-}
-
-u8 pouchGetKpaCoin(void) {
-	return mpp->mSuperBowserCoins;
-}
-
-void pouchMajinaiInit(u32 curseCount) {
-	if ((s32)mpp->mMerleeCurseUsesRemaining < (s32)curseCount) {
-		mpp->mMerleeCurseUsesRemaining = (u8)curseCount;
-		mpp->mTurnsUntilMerleeActivation = -1;
-		mpp->mMerleeNextCurseType = 0;
-	}
-}
-
-s32 pouchArriveBadge(s32 id) {
-	return badgeShop_add(bdsw->special_table, (s16)id, 1);
-}
-
-BOOL pouchUnEquipBadgeID(s32 badgeId) {
-	int i;
-
-	for (i = 0; i < 200; i++) {
-		if (mpp->equippedBadges[i] == badgeId) {
-			if (mpp->equippedBadges[i]) {
-				mpp->equippedBadges[i] = 0;
-			}
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-BOOL pouchEquipBadgeID(s32 badgeId) {
-	int i;
-
-	for (i = 0; i < 200; i++) {
-		if (mpp->badges[i] == badgeId) {
-			if (mpp->badges[i]) {
-				mpp->equippedBadges[i] = mpp->badges[i];
-			}
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-BOOL pouchEquipCheckBadgeIndex(s32 index) {
-	return mpp->equippedBadges[index] != 0;
-}
-
-s32 pouchEquipCheckBadge(s32 badgeId) {
-	int i, count;
-
-	count = 0;
-	for (i = 0; i < 200; i++) {
-		if (badgeId == mpp->equippedBadges[i]) {
-			count++;
-		}
-	}
-	return count;
-}
-
-BOOL pouchUnEquipBadgeIndex(s32 index) {
-	if (mpp->equippedBadges[index] == 0) {
-		return FALSE;
-	}
-	mpp->equippedBadges[index] = 0;
-	return TRUE;
-}
-
-BOOL pouchEquipBadgeIndex(s32 index) {
-	if (mpp->badges[index] == 0) {
-		return FALSE;
-	}
-	mpp->equippedBadges[index] = mpp->badges[index];
-	return TRUE;
-}
-
-// NONMATCHING (65.00%): header include/mario/mario_pouch.h declares u16, forcing a clrlwi on the return; the original's `lha r3, 0x96(r3)` (no clrlwi) shows it returns s16, and callers assign straight to an s16. Header cannot be changed per task rules; see REPORT.
-u16 pouchGetStarPoint(void) {
-	return mpp->mStarPoints;
-}
-
-void pouchRevisePartyParam(void) {
-	PouchPartyData* party;
-	int i, count;
-
-	count = pouchEquipCheckBadge(ITEM_HP_PLUS_P);
-	for (i = 0; i < 8; i++) { //TODO: NUM_PARTNERS macro
-		if (i != PARTNER_NONE) {
-			party = &mpp->partyData[i];
-			party->baseMaxHP = _party_max_hp_table[i][party->HPLevel];
-			party->maximumHP = (s16)(party->baseMaxHP + (count * 5));
-			if (party->currentHP > party->maximumHP) {
-				party->currentHP = party->maximumHP;
-			}
-		}
-	}
-}
-
-void pouchReviseMarioParam(void) {
-	int i;
-
-	mpp->maximumHP = mpp->baseMaxHP;
-	mpp->maximumFP = mpp->baseMaxFP;
-
-	for (i = 0; i < 200; i++) {
-		s16 badge = mpp->equippedBadges[i];
-
-		if (badge == ITEM_NULL) {
-			continue;
-		}
-		switch (badge) {
-			case ITEM_HP_PLUS:
-				mpp->maximumHP += 5;
-				break;
-			case ITEM_FP_PLUS:
-				mpp->maximumFP += 5;
-				break;
-		}
-	}
-	if (mpp->currentHP > mpp->maximumHP) {
-		mpp->currentHP = mpp->maximumHP;
-	}
-	if (mpp->currentFP > mpp->maximumFP) {
-		mpp->currentFP = mpp->maximumFP;
-	}
-	mpp->availableBP = mpp->maximumBP;
-
-	for (i = 0; i < 200; i++) {
-		mpp->availableBP -= itemDataTable[mpp->equippedBadges[i]].bp_cost;
-	}
-}
-
-BOOL pouchRemoveKeepItem(s32 id, int index) {
-	int i, j;
-
-	if (mpp->storedItems[index] != id) {
-		return FALSE;
-	}
-	for (i = index; i < MAX_STORED_ITEMS; i++) {
-		if (mpp->storedItems[i] == id) {
-			mpp->storedItems[i] = ITEM_NULL;
-			for (j = i; j < MAX_STORED_ITEMS - 1; j++) {
-				mpp->storedItems[j] = mpp->storedItems[j + 1];
-				mpp->storedItems[j + 1] = ITEM_NULL;
-			}
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-//TODO: this function
-BOOL pouchAddKeepItem(s32 id) {
-	int i, j;
-
-	for (i = MAX_STORED_ITEMS - 1; i >= 0; i--) {
-		if (mpp->storedItems[i] == ITEM_NULL) {
-			for (j = i; j > 0; j--) {
-				mpp->storedItems[j] = mpp->storedItems[j - 1];
-			}
-			mpp->storedItems[0] = id;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-s32 pouchGetPartyAttackLv(PartyId partyId) {
-	PouchPartyData* party = &mpp->partyData[partyId];
-
-	return party->attackLevel;
-}
-
-s32 pouchGetHammerLv(void) {
-	int level = 0;
-	s32 c;
-
-	c = (s32)pouchCheckItem(ITEM_ULTRA_HAMMER);
-	if (c) {
-		level = 3;
+	else if (type >= BADGE_MIN && type < BADGE_MAX) {
+		table1 = mpp->badges;
+		table2 = mpp->equippedBadges;
+		maximum = 200;
+		valid = TRUE;
 	}
 	else {
-		c = (s32)pouchCheckItem(ITEM_SUPER_HAMMER);
-		if (c) {
-			level = 2;
-		}
-		else {
-			c = (s32)pouchCheckItem(ITEM_HAMMER);
-			if (c) {
-				level = 1;
+		valid = FALSE;
+	}
+	if (!valid) {
+		return FALSE;
+	}
+	for (i = 0; i < maximum; i++) {
+		if (type == table1[i]) {
+			table1[i] = ITEM_NULL;
+			if (table2 != 0) {
+				table2[i] = ITEM_NULL;
 			}
-		}
-	}
-	mpp->hammerLevel = level;
-	return mpp->hammerLevel;
-}
-
-s32 pouchGetJumpLv(void) {
-	int level = 0;
-	s32 c;
-
-	c = (s32)pouchCheckItem(ITEM_ULTRA_BOOTS);
-	if (c) {
-		level = 3;
-	}
-	else {
-		c = (s32)pouchCheckItem(ITEM_SUPER_BOOTS);
-		if (c) {
-			level = 2;
-		}
-		else {
-			c = (s32)pouchCheckItem(ITEM_BOOTS);
-			if (c) {
-				level = 1;
+			for (j = i; j < maximum - 1; j++) {
+				table1[j] = table1[j + 1];
+				table1[j + 1] = ITEM_NULL;
+				if (table2) {
+					table2[j] = table2[j + 1];
+					table2[j + 1] = ITEM_NULL;
+				}
 			}
+			return TRUE;
 		}
 	}
-	mpp->jumpLevel = level;
-	return mpp->jumpLevel;
+	return FALSE;
 }
 
-void pouchSetAudienceNum(f32 num) {
-	mpp->audienceCount = num;
-}
-
-f32 pouchGetAudienceNum(void) {
-	return mpp->audienceCount;
-}
-
-s32 pouchGetMaxAP(void) {
-	return mpp->maximumSP;
-}
-
-void pouchSetAP(s32 points) {
-	mpp->currentSP = points;
-	if (mpp->currentSP < 0) {
-		mpp->currentSP = 0;
-	}
-	if (mpp->currentSP > mpp->maximumSP) {
-		mpp->currentSP = mpp->maximumSP;
-	}
-}
-
-void pouchAddAP(s16 points) {
-	mpp->currentSP += points;
-	if (mpp->currentSP < 0) {
-		mpp->currentSP = 0;
-	}
-	if (mpp->currentSP > mpp->maximumSP) {
-		mpp->currentSP = mpp->maximumSP;
-	}
-}
-
-s16 pouchGetAP(void) {
-	return mpp->currentSP;
-}
-
-void pouchSetMaxFP(s16 points) {
-	mpp->maximumFP = points;
-	mpp->baseMaxFP = mpp->maximumFP;
-}
-
-void pouchSetFP(s32 points) {
-	mpp->currentFP = points;
-	if (mpp->currentFP > mpp->maximumFP) {
-		mpp->currentFP = mpp->maximumFP;
-	}
-}
-
-s32 pouchGetMaxFP(void) {
-	return mpp->maximumFP;
-}
-
-s16 pouchGetFP(void) {
-	return mpp->currentFP;
-}
-
-void pouchSetPartyHP(PartyId partnerId, s16 points) {
-	PouchPartyData* party;
-
-	mpp->partyData[partnerId].currentHP = points;
-	party = &mpp->partyData[partnerId];
-	if (party->currentHP > party->maximumHP) {
-		party->currentHP = party->maximumHP;
-	}
-}
-
-s16 pouchGetPartyHP(PartyId partnerId) {
-	return mpp->partyData[partnerId].currentHP;
-}
-
-void pouchSetMaxHP(s16 points) {
-	mpp->maximumHP = points;
-	mpp->baseMaxHP = mpp->maximumHP;
-}
-
-void pouchSetHP(s32 points) {
-	mpp->currentHP = points;
-	if (mpp->currentHP > mpp->maximumHP) {
-		mpp->currentHP = mpp->maximumHP;
-	}
-}
-
-s32 pouchGetMaxHP(void) {
-	return mpp->maximumHP;
-}
-
-s32 pouchGetHP(void) {
-	return mpp->currentHP;
-}
-
-s16 pouchAddHP(s16 points) {
-	s32 hp;
-
-	hp = mpp->currentHP + points;
-	mpp->currentHP = hp;
-	if (mpp->currentHP < 0) {
-		mpp->currentHP = 0;
-	}
-	if (mpp->currentHP > mpp->maximumHP) {
-		mpp->currentHP = mpp->maximumHP;
-	}
-	return mpp->currentHP;
-}
-
-s32 pouchAddStarPiece(s32 count) {
-	mpp->mStarPieceCount += count;
-	return mpp->mStarPieceCount;
-}
-
-s32 pouchGetStarPiece(void) {
-	return mpp->mStarPieceCount;
-}
-
-s32 pouchSetSuperCoin(s32 count) {
-	mpp->mShineSpriteCount = count;
-	return mpp->mShineSpriteCount;
-}
-
-s32 pouchGetSuperCoin(void) {
-	return mpp->mShineSpriteCount;
-}
-
-s32 pouchSetCoin(s32 coins) {
-	mpp->coins = coins;
-	if (mpp->coins < 0) {
-		mpp->coins = 0;
-	}
-	if (mpp->coins > 999) {
-		mpp->coins = 999;
-	}
-	return mpp->coins;
-}
-
-s32 pouchAddCoin(s32 coins) {
-	mpp->coins += coins;
-	if (mpp->coins < 0) {
-		mpp->coins = 0;
-	}
-	if (mpp->coins > 999) {
-		mpp->coins = 999;
-	}
-	return mpp->coins;
-}
-
-s32 pouchGetCoin(void) {
-	return mpp->coins;
-}
-
-// NONMATCHING (92.85%): the initial check now uses a pointer (`s16* p = table1 + index; id != *p`) and the search loop steps it (`p++, i++`), which reproduces the original's `slwi/add/lha` prologue. What remains is the shift-loop basic-block layout: the original joins the table2==0/!=0 paths into a shared `table1+i`/`table2+i` setup and re-tests table2 afterwards, where ours short-circuits the table2==0 path straight into the table1-only loop.
+// NONMATCHING (96.02%): the shift is now written as ONE loop with the `if (table2)` unswitched by the compiler, which reproduces the original's shared `table1+i`/`table2+i` preheader. What is left is that preheader's scheduling/block layout: the original schedules the two `add`s before the dispatch's `cmplwi r30,0` and keeps the preheader as the merge point of the table2==0/!=0 paths (a cold block before the epilogue); ours folds the adds into the dispatch and branches `bne` to the table2 loop instead.
 s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	s16* table1, * table2;
 	s16* p;
@@ -857,162 +458,13 @@ s32 pouchRemoveItemIndex(s32 id, s32 index) {
 			if (table2 != 0) {
 				table2[i] = ITEM_NULL;
 			}
-			if (table2) {
-				for (j = i; j < maximum - 1; j++) {
-					table1[j] = table1[j + 1];
-					table1[j + 1] = ITEM_NULL;
+			for (j = i; j < maximum - 1; j++) {
+				table1[j] = table1[j + 1];
+				table1[j + 1] = ITEM_NULL;
+				if (table2) {
 					table2[j] = table2[j + 1];
 					table2[j + 1] = ITEM_NULL;
 				}
-			}
-			else {
-				for (j = i; j < maximum - 1; j++) {
-					table1[j] = table1[j + 1];
-					table1[j + 1] = ITEM_NULL;
-				}
-			}
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-// NONMATCHING (92.43%): signed pouchCheckItem test, shift count maximum-1-i, index-based shift loop. Leftover is scheduling: the original hoists the `table1+i`/`table2+i` pointer setup and `temp=0` above the `if (table2)` branch and branches later.
-BOOL pouchRemoveItem(ItemType type) {
-	s16* table1, * table2;
-	BOOL valid;
-	s32 maximum;
-	int i, j, temp;
-
-	maximum = 0;
-	table1 = NULL;
-	table2 = NULL;
-	if (type >= ITEM_MIN && type < ITEM_MAX) {
-		table1 = mpp->heldItems;
-		table2 = NULL;
-		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
-		valid = TRUE;
-	}
-	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
-		table1 = mpp->keyItems;
-		table2 = NULL;
-		maximum = 121;
-		valid = TRUE;
-	}
-	else if (type >= BADGE_MIN && type < BADGE_MAX) {
-		table1 = mpp->badges;
-		table2 = mpp->equippedBadges;
-		maximum = 200;
-		valid = TRUE;
-	}
-	else {
-		valid = FALSE;
-	}
-	if (!valid) {
-		return FALSE;
-	}
-	for (i = 0; i < maximum; i++) {
-		if (type == table1[i]) {
-			table1[i] = ITEM_NULL;
-			if (table2 != 0) {
-				table2[i] = ITEM_NULL;
-			}
-			if (table2) {
-				for (j = i; j < maximum - 1; j++) {
-					table1[j] = table1[j + 1];
-					table1[j + 1] = ITEM_NULL;
-					table2[j] = table2[j + 1];
-					table2[j + 1] = ITEM_NULL;
-				}
-			}
-			else {
-				for (j = i; j < maximum - 1; j++) {
-					table1[j] = table1[j + 1];
-					table1[j + 1] = ITEM_NULL;
-				}
-			}
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-
-
-
-
-
-
-
-#pragma dont_inline on
-u32 pouchCheckItem(u32 itemId) {
-	int i;
-	u32 itemCnt;
-	s32 id = (s32)itemId;
-
-	if (ITEM_MIN <= id && id < ITEM_MAX) {
-		for (itemCnt = 0, i = 0; i < MAX_HELD_ITEMS; i++) {
-			if (id == mpp->heldItems[i]) {
-				itemCnt++;
-			}
-		}
-		return itemCnt;
-	}
-	else if (KEY_ITEM_MIN <= id && id < KEY_ITEM_MAX) {
-		for (itemCnt = 0, i = 0; i < MAX_KEY_ITEMS; i++) {
-			if (id == mpp->keyItems[i]) {
-				itemCnt++;
-			}
-		}
-		return itemCnt;
-	}
-	else if (BADGE_MIN <= id && id < BADGE_MAX) {
-		for (itemCnt = 0, i = 0; i < MAX_BADGES; i++) {
-			if (id == mpp->badges[i]) {
-				itemCnt++;
-			}
-		}
-		return itemCnt;
-	}
-	else {
-		return 0;
-	}
-}
-#pragma dont_inline reset
-
-s32 comp_kind(s16* a, s16* b) {
-	s32 va = itemDataTable[*a].type_sort_order;
-	s32 vb = itemDataTable[*b].type_sort_order;
-
-	if (va > vb) {
-		return 1;
-	}
-	if (va < vb) {
-		return -1;
-	}
-	return 0;
-}
-
-s32 comp_kind_r(s16* a, s16* b) {
-	s32 va = itemDataTable[*a].type_sort_order;
-	s32 vb = itemDataTable[*b].type_sort_order;
-
-	if (va < vb) {
-		return 1;
-	}
-	if (va > vb) {
-		return -1;
-	}
-	return 0;
-}
-
-BOOL N_pouchUnEquipBadgeID(s32 badgeId) {
-	int i;
-
-	for (i = 0; i < 200; i++) {
-		if (mpp->equippedBadges[i] == badgeId) {
-			if (mpp->equippedBadges[i]) {
-				mpp->equippedBadges[i] = 0;
 			}
 			return TRUE;
 		}
@@ -1042,7 +494,7 @@ void unk_800d06b4(char* src, char* dst) {
 	dst[i * 2] = 0;
 }
 
-// NONMATCHING (89.57%): the two conversion loops match (buf r5, char temp r4, i r3), and hoisting `str` to function scope (declared before the ids) puts `id_b` in r29 like the original. What is left is the prologue: ours keeps the itemDataTable+4 base in r31 and the msgSearch result in r30 where the original has base r30 / str r31 (it allocates base before str), plus the interleaved callee-save stores.
+// NONMATCHING (89.82%): the two conversion loops match exactly (buf r5, char temp r4, i r3); using a single function-scope `str` and declaring it before the ids gives the original's id_b=r29. Left is only the base/str callee-saved swap: the original keeps the itemDataTable+4 base in r30 and the msgSearch result in r31 (and interleaves the callee-save stores), ours has base r31 / str r30 with all three stores first. Tried every declaration order, a call to the file's own unk_800d06b4 (which the original inlines), pointer locals and a `NULL`/`0` init; none flip the allocator.
 s32 comp_aiueo(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
@@ -1076,7 +528,6 @@ s32 comp_aiueo(s16* a, s16* b) {
 		s32 i;
 		u32 c;
 		u16* buf;
-		const char* str;
 		s32 len;
 
 		str = msgSearch(itemDataTable[id_b].name);
@@ -1100,7 +551,20 @@ s32 comp_aiueo(s16* a, s16* b) {
 	return strcmp((const char*)buf_a, (const char*)buf_b);
 }
 
-// NONMATCHING (89.57%): same as comp_aiueo; moving `str` to function scope fixes id_b to r29, leaving only the base (r31 vs r30) / str (r30 vs r31) prologue swap.
+s32 comp_kind(s16* a, s16* b) {
+	s32 va = itemDataTable[*a].type_sort_order;
+	s32 vb = itemDataTable[*b].type_sort_order;
+
+	if (va > vb) {
+		return 1;
+	}
+	if (va < vb) {
+		return -1;
+	}
+	return 0;
+}
+
+// NONMATCHING (89.82%): same as comp_aiueo, including the base (r31 vs r30) / str (r30 vs r31) callee-saved swap.
 s32 comp_aiueo_r(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
@@ -1134,7 +598,6 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 		s32 i;
 		u32 c;
 		u16* buf;
-		const char* str;
 		s32 len;
 
 		str = msgSearch(itemDataTable[id_b].name);
@@ -1156,6 +619,19 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 	}
 
 	return strcmp((const char*)buf_b, (const char*)buf_a);
+}
+
+s32 comp_kind_r(s16* a, s16* b) {
+	s32 va = itemDataTable[*a].type_sort_order;
+	s32 vb = itemDataTable[*b].type_sort_order;
+
+	if (va < vb) {
+		return 1;
+	}
+	if (va > vb) {
+		return -1;
+	}
+	return 0;
 }
 
 void pouchSortItem(s32 type) {
@@ -1300,4 +776,515 @@ void pouchSortItem(s32 type) {
 		memcpy(pouch->badges, badgeList, sizeof(badgeList));
 		memcpy(pouch->equippedBadges, equippedList, sizeof(equippedList));
 	}
+}
+
+s32 pouchGetCoin(void) {
+	return mpp->coins;
+}
+
+s32 pouchAddCoin(s32 coins) {
+	mpp->coins += coins;
+	if (mpp->coins < 0) {
+		mpp->coins = 0;
+	}
+	if (mpp->coins > 999) {
+		mpp->coins = 999;
+	}
+	return mpp->coins;
+}
+
+s32 pouchSetCoin(s32 coins) {
+	mpp->coins = coins;
+	if (mpp->coins < 0) {
+		mpp->coins = 0;
+	}
+	if (mpp->coins > 999) {
+		mpp->coins = 999;
+	}
+	return mpp->coins;
+}
+
+s32 pouchGetSuperCoin(void) {
+	return mpp->mShineSpriteCount;
+}
+
+s32 pouchSetSuperCoin(s32 count) {
+	mpp->mShineSpriteCount = count;
+	return mpp->mShineSpriteCount;
+}
+
+s32 pouchGetStarPiece(void) {
+	return mpp->mStarPieceCount;
+}
+
+BOOL pouchUnEquipBadgeID(s32 badgeId) {
+	int i;
+
+	for (i = 0; i < 200; i++) {
+		if (mpp->equippedBadges[i] == badgeId) {
+			if (mpp->equippedBadges[i]) {
+				mpp->equippedBadges[i] = 0;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+s32 pouchAddStarPiece(s32 count) {
+	mpp->mStarPieceCount += count;
+	return mpp->mStarPieceCount;
+}
+
+s16 pouchAddHP(s16 points) {
+	s32 hp;
+
+	hp = mpp->currentHP + points;
+	mpp->currentHP = hp;
+	if (mpp->currentHP < 0) {
+		mpp->currentHP = 0;
+	}
+	if (mpp->currentHP > mpp->maximumHP) {
+		mpp->currentHP = mpp->maximumHP;
+	}
+	return mpp->currentHP;
+}
+
+s32 pouchGetHP(void) {
+	return mpp->currentHP;
+}
+
+s32 pouchGetMaxHP(void) {
+	return mpp->maximumHP;
+}
+
+void pouchSetHP(s32 points) {
+	mpp->currentHP = points;
+	if (mpp->currentHP > mpp->maximumHP) {
+		mpp->currentHP = mpp->maximumHP;
+	}
+}
+
+void pouchSetMaxHP(s16 points) {
+	mpp->maximumHP = points;
+	mpp->baseMaxHP = mpp->maximumHP;
+}
+
+s16 pouchGetPartyHP(PartyId partnerId) {
+	return mpp->partyData[partnerId].currentHP;
+}
+
+void pouchSetPartyHP(PartyId partnerId, s16 points) {
+	PouchPartyData* party;
+
+	mpp->partyData[partnerId].currentHP = points;
+	party = &mpp->partyData[partnerId];
+	if (party->currentHP > party->maximumHP) {
+		party->currentHP = party->maximumHP;
+	}
+}
+
+s16 pouchGetFP(void) {
+	return mpp->currentFP;
+}
+
+s32 pouchGetMaxFP(void) {
+	return mpp->maximumFP;
+}
+
+void pouchSetFP(s32 points) {
+	mpp->currentFP = points;
+	if (mpp->currentFP > mpp->maximumFP) {
+		mpp->currentFP = mpp->maximumFP;
+	}
+}
+
+void pouchSetMaxFP(s16 points) {
+	mpp->maximumFP = points;
+	mpp->baseMaxFP = mpp->maximumFP;
+}
+
+s16 pouchGetAP(void) {
+	return mpp->currentSP;
+}
+
+void pouchAddAP(s16 points) {
+	mpp->currentSP += points;
+	if (mpp->currentSP < 0) {
+		mpp->currentSP = 0;
+	}
+	if (mpp->currentSP > mpp->maximumSP) {
+		mpp->currentSP = mpp->maximumSP;
+	}
+}
+
+void pouchSetAP(s32 points) {
+	mpp->currentSP = points;
+	if (mpp->currentSP < 0) {
+		mpp->currentSP = 0;
+	}
+	if (mpp->currentSP > mpp->maximumSP) {
+		mpp->currentSP = mpp->maximumSP;
+	}
+}
+
+s32 pouchGetMaxAP(void) {
+	return mpp->maximumSP;
+}
+
+f32 pouchGetAudienceNum(void) {
+	return mpp->audienceCount;
+}
+
+void pouchSetAudienceNum(f32 num) {
+	mpp->audienceCount = num;
+}
+
+s32 pouchGetJumpLv(void) {
+	int level = 0;
+	s32 c;
+
+	c = (s32)pouchCheckItem(ITEM_ULTRA_BOOTS);
+	if (c) {
+		level = 3;
+	}
+	else {
+		c = (s32)pouchCheckItem(ITEM_SUPER_BOOTS);
+		if (c) {
+			level = 2;
+		}
+		else {
+			c = (s32)pouchCheckItem(ITEM_BOOTS);
+			if (c) {
+				level = 1;
+			}
+		}
+	}
+	mpp->jumpLevel = level;
+	return mpp->jumpLevel;
+}
+
+s32 pouchGetHammerLv(void) {
+	int level = 0;
+	s32 c;
+
+	c = (s32)pouchCheckItem(ITEM_ULTRA_HAMMER);
+	if (c) {
+		level = 3;
+	}
+	else {
+		c = (s32)pouchCheckItem(ITEM_SUPER_HAMMER);
+		if (c) {
+			level = 2;
+		}
+		else {
+			c = (s32)pouchCheckItem(ITEM_HAMMER);
+			if (c) {
+				level = 1;
+			}
+		}
+	}
+	mpp->hammerLevel = level;
+	return mpp->hammerLevel;
+}
+
+s32 pouchGetPartyAttackLv(PartyId partyId) {
+	PouchPartyData* party = &mpp->partyData[partyId];
+
+	return party->attackLevel;
+}
+
+//TODO: this function
+BOOL pouchAddKeepItem(s32 id) {
+	int i, j;
+
+	for (i = MAX_STORED_ITEMS - 1; i >= 0; i--) {
+		if (mpp->storedItems[i] == ITEM_NULL) {
+			for (j = i; j > 0; j--) {
+				mpp->storedItems[j] = mpp->storedItems[j - 1];
+			}
+			mpp->storedItems[0] = id;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+BOOL pouchRemoveKeepItem(s32 id, int index) {
+	int i, j;
+
+	if (mpp->storedItems[index] != id) {
+		return FALSE;
+	}
+	for (i = index; i < MAX_STORED_ITEMS; i++) {
+		if (mpp->storedItems[i] == id) {
+			mpp->storedItems[i] = ITEM_NULL;
+			for (j = i; j < MAX_STORED_ITEMS - 1; j++) {
+				mpp->storedItems[j] = mpp->storedItems[j + 1];
+				mpp->storedItems[j + 1] = ITEM_NULL;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void pouchReviseMarioParam(void) {
+	int i;
+
+	mpp->maximumHP = mpp->baseMaxHP;
+	mpp->maximumFP = mpp->baseMaxFP;
+
+	for (i = 0; i < 200; i++) {
+		s16 badge = mpp->equippedBadges[i];
+
+		if (badge == ITEM_NULL) {
+			continue;
+		}
+		switch (badge) {
+			case ITEM_HP_PLUS:
+				mpp->maximumHP += 5;
+				break;
+			case ITEM_FP_PLUS:
+				mpp->maximumFP += 5;
+				break;
+		}
+	}
+	if (mpp->currentHP > mpp->maximumHP) {
+		mpp->currentHP = mpp->maximumHP;
+	}
+	if (mpp->currentFP > mpp->maximumFP) {
+		mpp->currentFP = mpp->maximumFP;
+	}
+	mpp->availableBP = mpp->maximumBP;
+
+	for (i = 0; i < 200; i++) {
+		mpp->availableBP -= itemDataTable[mpp->equippedBadges[i]].bp_cost;
+	}
+}
+
+void pouchRevisePartyParam(void) {
+	PouchPartyData* party;
+	int i, count;
+
+	count = pouchEquipCheckBadge(ITEM_HP_PLUS_P);
+	for (i = 0; i < 8; i++) { //TODO: NUM_PARTNERS macro
+		if (i != PARTNER_NONE) {
+			party = &mpp->partyData[i];
+			party->baseMaxHP = _party_max_hp_table[i][party->HPLevel];
+			party->maximumHP = (s16)(party->baseMaxHP + (count * 5));
+			if (party->currentHP > party->maximumHP) {
+				party->currentHP = party->maximumHP;
+			}
+		}
+	}
+}
+
+// NONMATCHING (65.00%): header include/mario/mario_pouch.h declares u16, forcing a clrlwi on the return; the original's `lha r3, 0x96(r3)` (no clrlwi) shows it returns s16, and callers assign straight to an s16. Header cannot be changed per task rules; see REPORT.
+u16 pouchGetStarPoint(void) {
+	return mpp->mStarPoints;
+}
+
+BOOL pouchEquipBadgeIndex(s32 index) {
+	if (mpp->badges[index] == 0) {
+		return FALSE;
+	}
+	mpp->equippedBadges[index] = mpp->badges[index];
+	return TRUE;
+}
+
+BOOL pouchUnEquipBadgeIndex(s32 index) {
+	if (mpp->equippedBadges[index] == 0) {
+		return FALSE;
+	}
+	mpp->equippedBadges[index] = 0;
+	return TRUE;
+}
+
+s32 pouchEquipCheckBadge(s32 badgeId) {
+	int i, count;
+
+	count = 0;
+	for (i = 0; i < 200; i++) {
+		if (badgeId == mpp->equippedBadges[i]) {
+			count++;
+		}
+	}
+	return count;
+}
+
+BOOL pouchEquipCheckBadgeIndex(s32 index) {
+	return mpp->equippedBadges[index] != 0;
+}
+
+BOOL pouchEquipBadgeID(s32 badgeId) {
+	int i;
+
+	for (i = 0; i < 200; i++) {
+		if (mpp->badges[i] == badgeId) {
+			if (mpp->badges[i]) {
+				mpp->equippedBadges[i] = mpp->badges[i];
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+BOOL N_pouchUnEquipBadgeID(s32 badgeId) {
+	int i;
+
+	for (i = 0; i < 200; i++) {
+		if (mpp->equippedBadges[i] == badgeId) {
+			if (mpp->equippedBadges[i]) {
+				mpp->equippedBadges[i] = 0;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+s32 pouchArriveBadge(s32 id) {
+	return badgeShop_add(bdsw->special_table, (s16)id, 1);
+}
+
+void pouchMajinaiInit(u32 curseCount) {
+	if ((s32)mpp->mMerleeCurseUsesRemaining < (s32)curseCount) {
+		mpp->mMerleeCurseUsesRemaining = (u8)curseCount;
+		mpp->mTurnsUntilMerleeActivation = -1;
+		mpp->mMerleeNextCurseType = 0;
+	}
+}
+
+u8 pouchGetKpaCoin(void) {
+	return mpp->mSuperBowserCoins;
+}
+
+BOOL pouchAddKpaCoin(s32 coins) {
+	BOOL wrapped = FALSE;
+
+	mpp->mSuperBowserCoins += coins;
+	if (mpp->mSuperBowserCoins >= 100) {
+		mpp->mSuperBowserCoins -= 100;
+		wrapped = TRUE;
+	}
+	return wrapped;
+}
+
+u32 pouchGetKpaScore(void) {
+	return mpp->mSuperBowserScore;
+}
+
+void pouchAddKpaScore(u32 score) {
+	mpp->mSuperBowserScore += score;
+	if (mpp->mSuperBowserScore > 999999)
+	{
+		mpp->mSuperBowserScore = 999999;
+	}
+}
+
+void pouchGetStarStone(u32 id) {
+	if (!mpp->mStarPowersObtained) {
+		mpp->audienceCount = 2.0f;
+	}
+	mpp->mStarPowersObtained |= 1 << id;
+	mpp->maximumSP = (s16)(100 * (id + 1));
+	if (mpp->maximumSP < 0) {
+		mpp->maximumSP = 0;
+	}
+	if (mpp->maximumSP > 800) {
+		mpp->maximumSP = 800;
+	}
+}
+
+
+
+
+
+
+
+
+s32 pouchReceiveMailCount(void) {
+	s32 i, count;
+
+	for (count = 0, i = 0; i < 99; i++) {
+		if (mpp->mEmailReceivedFlags[i / 32] & (1 << (i % 32))) {
+			count++;
+		}
+	}
+	return count;
+}
+void pouchReceiveMail(s32 mailId) {
+#ifdef MUST_MATCH
+	// Found by the permuter: the loop counter and the running count share a two-element array
+	// (they sit side by side on the stack), which fixes the original's register and slot order.
+	int count0;
+	int slot[2];
+	s32 index;
+	s32 shift;
+
+	index = mailId / 32;
+	shift = mailId % 32;
+
+	count0 = 0;
+	slot[0] = count0;
+	for (slot[1] = 0; slot[1] < 99; slot[1]++) {
+		if (mpp->mEmailReceivedFlags[slot[1] / 32] & (1 << (slot[1] % 32))) {
+			slot[0]++;
+		}
+	}
+	mpp->mEmailReceivedFlags[index] |= (1 << shift);
+	mpp->mEmailIds[slot[0]] = (u8)mailId;
+#else
+	int i;
+	s32 count;
+	s32 index;
+	s32 shift;
+
+	index = mailId / 32;
+	shift = mailId % 32;
+
+	count = 0;
+	for (i = 0; i < 99; i++) {
+		if (mpp->mEmailReceivedFlags[i / 32] & (1 << (i % 32))) {
+			count++;
+		}
+	}
+	mpp->mEmailReceivedFlags[index] |= (1 << shift);
+	mpp->mEmailIds[count] = (u8)mailId;
+#endif
+}
+
+void pouchOpenMail(s32 mailId) {
+	mpp->mEmailReadFlags[mailId / 32] |= (1 << (mailId % 32));
+}
+
+u32 pouchCheckMail(s32 mailId) {
+	s32 mask = (1 << (mailId % 32));
+	if (mpp->mEmailReadFlags[mailId / 32] & mask) {
+		return 2;
+	}
+	else {
+		return (mpp->mEmailReceivedFlags[mailId / 32] & mask) != 0;
+	}
+}
+
+s32 pouchGetPartyColor(PartyId partnerId) {
+	return mpp->partyData[partnerId].flags >> 13;
+}
+
+void pouchSetPartyColor(PartyId partnerId, u16 color) {
+	mpp->partyData[partnerId].flags = (u16)((mpp->partyData[partnerId].flags & 0x1FFF) | ((color & 7) << 13));
+}
+
+void pouchSetYoshiName(char* name) {
+	strcpy(mpp->yoshiName, name);
+}
+
+char* pouchGetYoshiName(void) {
+	if (strlen(mpp->yoshiName) < 1) {
+		return (char*)msgSearch("name_party3");
+	}
+	return mpp->yoshiName;
 }

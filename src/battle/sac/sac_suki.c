@@ -133,6 +133,19 @@ extern const f32 float_80_804220e4;
 extern const f32 float_neg1000_804220f8;
 extern const f32 float_neg80_8042212c;
 extern const f32 float_neg60_80422130;
+extern const f32 float_30_804220d4;
+extern const f32 float_37_804220fc;
+extern const f32 float_50_80422100;
+extern const f32 float_neg1_80422104;
+extern const f32 float_2_80422108;
+extern const f32 float_2160_8042210c;
+extern const f32 float_300_80422110;
+extern const f32 float_100_80422114;
+extern const f32 float_32_80422118;
+extern const f32 float_1440_8042211c;
+extern const f32 float_5_80422120;
+extern const f32 float_40_80422124;
+extern const f32 float_1p5_80422128;
 extern u8 weapon[];
 static u32 nice_event[8] = {
     0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF88,
@@ -198,11 +211,6 @@ s32 main_suki(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// .text:0x1230 | 0x8024AA14 | size: 0x470
-// The three intplGetValue argument setups differ in instruction scheduling: the original keeps the
-// `lwz r4, work->counter` load as the last instruction before the call (after the two lfs of the float
-// bounds), and the case-2 Vec copy uses r6/r4/r0 instead of r4/r6/r0. Everything else is verified.
-// NONMATCHING (97.62%): intplGetValue arg scheduling (counter load position) and case-2 Vec registers.
 static void main_base(void) {
     SukiWork* work = get_ptr();
     s32 audienceNum = BattleAudience_GetAudienceNum();
@@ -666,8 +674,6 @@ void N__disp_2D(s32 type, s32 index) {
     iconDispGx(&pos, 0x10, iconId, float_1_804220d8);
 #endif
 }
-// .text:0x85C | 0x8024A17C | size: 0x180
-// NONMATCHING (82.40%): 8 instructions differ, 8 missing, 4 extra, plus register differences.
 static void disp_2D(CameraId camera, void* param) {
     SukiWork* work = get_ptr();
     Mtx mtx;
@@ -724,6 +730,145 @@ void main_button(s32 index) {
     }
 }
 #pragma dont_inline reset
+
+// .text:0x470 | 0x8024A344 | size: 0x5BC
+// NONMATCHING (100.00%): every instruction agrees except the implicit int->float magic double for
+// `(f32)mario->mHeight`: MWCC always pools its own anonymous copy (a user `const double` with the
+// same value does not stop it), which lands at .rodata+0x2D0 here, while the target's sits at +0x228
+// (the target reaches it as base+0x228). Because it is a raw base+offset objdiff reports it as a
+// real arg_mismatch; a symbol reference to the copy would score `~~` like main_button's.
+// NONMATCHING (100.00%): only that one `lfd` offset differs.
+static void main_star(void) {
+    SukiWork* work = get_ptr();
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+
+    switch (work->starState) {
+    case 0:
+        break;
+    case 1:
+        work->starState = 2;
+        work->starCounter = 0;
+        work->effect = effStarStoneEntry(5, float_0_804220e8, float_neg1000_804220f8, float_0_804220e8, float_1_804220d8);
+        BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
+        work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804220fc;
+        work->starStart = work->starCur;
+        work->starEnd = work->starCur;
+        work->starEnd.y += float_50_80422100;
+        work->starEnd.z += float_neg1_80422104;
+        work->scale1 = vec3_80300a00;
+        work->scale2 = vec3_80300a0c;
+        work->flag = 4;
+        // fall through
+    case 2:
+        work->starCounter++;
+        if (work->starCounter <= 100) {
+            work->starCur.x = intplGetValue(0, work->starCounter, 100, work->starStart.x, work->starEnd.x);
+            work->starCur.y = intplGetValue(0, work->starCounter, 100, work->starStart.y, work->starEnd.y);
+            work->starCur.z = intplGetValue(0, work->starCounter, 100, work->starStart.z, work->starEnd.z);
+            {
+                f32 s = intplGetValue(0, work->starCounter, 100, float_0_804220e8, float_2_80422108);
+
+                work->scale1.z = s;
+                work->scale1.y = s;
+                work->scale1.x = s;
+            }
+        }
+        else {
+            work->starCur.x = work->starEnd.x;
+            work->starCur.y = work->starEnd.y;
+            work->starCur.z = work->starEnd.z;
+            work->scale1.z = float_2_80422108;
+            work->scale1.y = float_2_80422108;
+            work->scale1.x = float_2_80422108;
+        }
+        work->scale2.y = intplGetValue(4, work->starCounter, 120, float_0_804220e8, float_2160_8042210c);
+        if (work->starCounter >= 120) {
+            work->starState = 3;
+            work->starCounter = 0;
+            work->starStart = work->starCur;
+            work->starEnd.y = float_300_80422110;
+        }
+        break;
+    case 3:
+        work->starCounter++;
+        work->starCur.y = intplGetValue(1, work->starCounter, 60, work->starStart.y, work->starEnd.y);
+        if (work->starCounter >= 60) {
+            work->starState = 4;
+            work->starCounter = 0;
+            work->starCur = vec3_80300a18;
+            work->scale1 = vec3_80300a24;
+            work->scale2 = vec3_80300a30;
+        }
+        break;
+    case 4:
+        break;
+    case 5:
+        work->starState = 6;
+        work->starCounter = 0;
+        BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
+        work->starCur.y += float_100_80422114;
+        work->scale1 = vec3_80300a3c;
+        work->scale2 = vec3_80300a48;
+        work->starStart.y = work->starCur.y;
+        work->starEnd.y = float_300_80422110;
+        effStardustN64Entry(0, work->starCur.x, work->starCur.y, work->starCur.z, float_32_80422118);
+        break;
+    case 6:
+        work->starCounter++;
+        work->scale2.y = intplGetValue(0, work->starCounter, 40, float_0_804220e8, float_1440_8042211c);
+        if (work->starCounter >= 40) {
+            work->starState = 7;
+            work->starCounter = 0;
+            effStardustN64Entry(4, work->starCur.x, work->starCur.y - float_5_80422120, work->starCur.z, float_40_80422124);
+            effStardustN64Entry(4, float_30_804220d4 + work->starCur.x, work->starCur.y, work->starCur.z, float_40_80422124);
+            effStardustN64Entry(4, work->starCur.x - float_30_804220d4, work->starCur.y, work->starCur.z, float_40_80422124);
+            psndSFXOn(str_80300B40);
+        }
+        break;
+    case 7:
+        work->starCounter++;
+        work->starCur.y = intplGetValue(4, work->starCounter, 30, work->starStart.y, work->starEnd.y);
+        if (work->starCounter >= 30) {
+            work->starState = 4;
+            work->starCounter = 0;
+            work->starCur = vec3_80300a54;
+            work->scale1 = vec3_80300a60;
+            work->scale2 = vec3_80300a6c;
+        }
+        break;
+    case 8:
+        work->flag = 4;
+        break;
+    case 9:
+        work->starCounter++;
+        work->starCur.x = intplGetValue(0, work->starCounter, 20, work->starStart.x, work->starEnd.x);
+        work->starCur.y = intplGetValue(1, work->starCounter, 20, work->starStart.y, work->starEnd.y);
+        work->starCur.z = intplGetValue(0, work->starCounter, 20, work->starStart.z, work->starEnd.z);
+        work->flag = 7;
+        if (work->starCounter >= 20) {
+            work->starState = 8;
+            work->starCounter = 0;
+        }
+        break;
+    case 10:
+        break;
+    default:
+        break;
+    }
+
+    if (work->effect != NULL) {
+        effStarStoneData* data = work->effect->userdata;
+
+        data->field_0x8 = work->starCur.x;
+        data->field_0xC = work->starCur.y;
+        data->field_0x10 = work->starCur.z;
+        data->field_0x18 = work->scale2.x;
+        data->field_0x1C = work->scale2.y;
+        data->field_0x20 = work->scale2.z;
+        data->field_0x14 = float_1p5_80422128 * work->scale1.x;
+        data->field_0x38 = work->flag;
+    }
+}
 
 // .text:0x9DC | 0x8024A2FC | size: 0x48
 s32 end_suki(EventEntry* event, BOOL isFirstCall) {

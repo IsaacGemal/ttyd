@@ -1,4 +1,5 @@
 #include "pik_02.h"
+#include "matching.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -282,6 +283,15 @@ USER_FUNC(hoshi_r) {
 // scratch in f0 and the wrapped-angle pivot in f1; with the coefficients as helper locals the seed
 // lands in f4/f3/f2 exactly as retail. See evt_sub_get_coin for the same helper structure.
 #pragma opt_propagation off
+// opt_lifetimes off keeps retail's FPR colouring across the first-call block and the angle wrap.
+#pragma opt_lifetimes off
+// MUST_MATCH-only: retail keeps the first-call 0.5 and 50.0 in the constant pool and reads them back
+// instead of folding them into immediates. Naming them keeps those two loads; the MATCH_F32 read
+// also forces the fma's product operand to the front, as retail has it.
+#ifdef MUST_MATCH
+static const f32 c50 = 50.0f;
+static const f32 half_sym = 0.5f;
+#endif
 static inline f32 hoshi_sin_approx(f32 angle) {
     f32 v = 0.00761f;
     f32 b = 0.16605f;
@@ -352,33 +362,38 @@ static inline f32 hoshi_cos_approx(f32 angle) {
     return v;
 }
 
-// NONMATCHING (92.94%): only the first-call block differs, and only in FPR colouring. Retail reads
-// `half` into f0, `data->0xC` into f2, `0.1`/`0.5` into f0/f1 and the `0.1f*d` product into f2;
-// MWCC picks f2/f0/f1/f2/f1 here. The values and the stack slots are identical.
+// hoshi_jump: retail spills the first-call d/t/scale through 4-byte stack slots and copies them out
+// with lwz/stw, and reads the 50.0 and 0.5 from the pool; opt_lifetimes off supplies the FPR colouring.
 USER_FUNC(hoshi_jump) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
     effStarStoneData* data = entry->userdata;
     NpcEntry* npc = npcNameToPtr("マジョリン");
     f32 nx = npc->position.x;
+#ifdef MUST_MATCH
+    f32 ny = *(f32*)&c50 + npc->position.y;
+#else
     f32 ny = npc->position.y + 50.0f;
+#endif
     f32 nz = npc->position.z;
-    f32 f2, f5;
+    f32 f2, f4, f5;
     f32 t;
-    f32 half;
+    f32 scale;
     f32 d;
 
 #ifdef MUST_MATCH
     // MUST_MATCH: retail spills the first-call values through 4-byte stack slots and copies them to
     // event->userdata with lwz/stw; the natural float stores are under #else.
-    half = 0.5f;
+    scale = MATCH_F32(half_sym);
 #endif
     if (isFirstCall) {
 #ifdef MUST_MATCH
-        d = distABf(nx, nz, data->field_0x8, data->field_0x10) / half;
-        t = 0.1f * d * 0.5f + (ny - data->field_0xC) / d;
+        d = distABf(nx, nz, data->field_0x8, data->field_0x10) / scale;
+        f4 = ny - data->field_0xC;
+        f2 = 0.1f * d;
+        t = f2 * MATCH_F32(half_sym) + f4 / d;
         event->userdata[0] = *(s32*)&d;
         event->userdata[1] = *(s32*)&t;
-        event->userdata[2] = *(s32*)&half;
+        event->userdata[2] = *(s32*)&scale;
 #else
         d = distABf(nx, nz, data->field_0x8, data->field_0x10) / 0.5f;
         t = 0.1f * d * 0.5f + (ny - data->field_0xC) / d;
@@ -391,12 +406,12 @@ USER_FUNC(hoshi_jump) {
 
     d = event->userdataf[0];
     t = event->userdataf[1];
-    half = event->userdataf[2];
+    scale = event->userdataf[2];
 
     f2 = 6.2831855f * angleABf(data->field_0x8, data->field_0x10, nx, nz);
     f5 = f2 / 360.0f;
-    data->field_0x8 = half * hoshi_sin_approx(f5) + data->field_0x8;
-    data->field_0x10 = data->field_0x10 - half * hoshi_cos_approx(f5);
+    data->field_0x8 = scale * hoshi_sin_approx(f5) + data->field_0x8;
+    data->field_0x10 = data->field_0x10 - scale * hoshi_cos_approx(f5);
     data->field_0xC = data->field_0xC + t;
 
     t = t - 0.1f;
@@ -416,6 +431,7 @@ USER_FUNC(hoshi_jump) {
 #endif
     return EVT_RETURN_BLOCK;
 }
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
 EVT_BEGIN(evt_garnet)

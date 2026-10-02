@@ -58,18 +58,18 @@ USER_FUNC(bom1000_jump);
 USER_FUNC(bom1000_msg);
 void ext_dispent_minnnanokoe(void);  // TODO: real signature
 void ext_disp_minnnanokoe(CameraId cameraId, void* param);
-void jump_minnnanokoe(void);  // TODO: real signature
+void jump_minnnanokoe(s32 index, f32 f);
 void ext_init_minnnanokoe(void);  // TODO: real signature
 USER_FUNC(make_ext_table_minnnanokoe);
 USER_FUNC(taihou_r);
-void jump(void);  // TODO: real signature
+void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q);
 USER_FUNC(make_ext_table);
 USER_FUNC(bom_fall);
 USER_FUNC(bom_flag);
 USER_FUNC(sight_dir);
 USER_FUNC(sight);
 void disp_sight(CameraId cameraId, void* param);
-void drawNum(void);  // TODO: real signature
+void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c);
 void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot);
 EVT_DEF(evt_door_1);
 EVT_DEF(evt_bom_01_karakara);

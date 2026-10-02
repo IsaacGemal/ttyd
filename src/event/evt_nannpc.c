@@ -381,20 +381,29 @@ USER_FUNC(evt_nannpc_set_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (94.72%): the loop callee-saved registers are still permuted (orig
-// vec=r31, args=r24, poses=r28, id=r25, work=r23, mask=r29, name=r27, entry=r30, offset=r26;
-// ours vec=r29, args=r27, poses=r30, id=r26, work=r25, mask=r27, name=r23, entry=r31, offset=r28).
-// Tried: 720 declaration-order permutations (+ a 9-variable local search, all <=95.0%; the
-// allocator plateau holds); opt_lifetimes/opt_dead_assignments/opt_propagation/global_optimizer/
-// optimize_for_size/scheduling pragmas (none help); splitting the store block into an inline;
-// pointer-vs-index forms; loop-local vs function-scope entry/name. The gap is pure colouring.
+// NONMATCHING (95.00%): the loop callee-saved registers are still permuted (orig work=r23,
+// args=r24, id=r25, offset=r26, name=r27, poses=r28, mask=r29, entry=r30, vec=r31; ours work=r26,
+// name=r23, offset=r29, mask=r27, poses/entry/vec/id match). The decl order (vec, poses, work, id,
+// i, args: uninitialized, then assigned in asm order) is what gets vec/poses/entry/id to their
+// registers; the pragma gets the rest there except work/name/offset. Tried: all 720 decl orders
+// with opt_lifetimes/opt_dead_assignments/opt_propagation/opt_strength_reduction/global_optimizer/
+// opt_common_subs/scheduling (all <=96.94); function-scope entry/name; pointer-vs-index. The rest is
+// pure colouring (an `opt_loop_invariants off` pragma reaches 97.13 but is not a pragma this
+// codebase uses).
+// NONMATCHING (95.00%): work/name/offset/mask land in the wrong callee-saved registers.
 USER_FUNC(evt_nannpc_entry) {
-    Vec* vec = (Vec*)vec3_802f2ff8;
-    s32* args = event->args;
-    ExtPose* poses = extGetPosePtr();
-    s32 id = evtGetValue(event, args[0]);
-    NanNpcWork* work = nanNPCWork;
+    Vec* vec;
+    ExtPose* poses;
+    NanNpcWork* work;
+    s32 id;
     s32 i;
+    s32* args;
+
+    vec = (Vec*)vec3_802f2ff8;
+    args = event->args;
+    poses = extGetPosePtr();
+    id = evtGetValue(event, args[0]);
+    work = nanNPCWork;
 
     for (i = 0; i < work->count; i++) {
         NanNpcEntry* entry = &work->entries[i];

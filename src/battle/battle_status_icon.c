@@ -32,8 +32,54 @@ struct IconDispTableEntry {
 	s32 something2;
 };
 
+// .rodata objects of this unit: 22 Vecs, then the int->float conversion doubles.
+const Vec vec3_803011e8 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_803011f4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_80301200 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_8030120c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_80301218 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_80301224 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_80301230 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_8030123c = {4.0f, 0.0f, 0.0f};
+const Vec vec3_80301248 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_80301254 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_80301260 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_8030126c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_80301278 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_80301284 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_80301290 = {0.8f, 0.8f, 1.0f};
+const Vec vec3_8030129c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_803012a8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_803012b4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_803012c0 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_803012cc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_803012d8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_803012e4 = {0.0f, 0.0f, 0.0f};
+
 IconDispTableEntry _disp_table[] = {
-	{1, NULL, 15, 1}
+	{1, _bsi_default_turn, 15, 1},
+	{4, _bsi_default_turn, 13, 1},
+	{0x15, _bsi_default_turn, 14, 1},
+	{2, _bsi_default_turn, 16, 1},
+	{8, _bsi_default_turn, 17, 1},
+	{9, _bsi_default_turn, 18, 1},
+	{0x13, _bsi_default_turn, 19, 1},
+	{0x14, _bsi_default_turn, 20, 1},
+	{0xe, _bsi_default_turn, 21, 1},
+	{0xf, _bsi_default_turn, 22, 1},
+	{7, _bsi_default_turn, 28, 1},
+	{0xa, _bsi_default_turn, 29, 1},
+	{0xb, _bsi_default_turn, 30, 1},
+	{5, _bsi_default_turn, 31, 1},
+	{0xc, _bsi_default_turn, 32, 1},
+	{0xd, _bsi_default_turn, 33, 1},
+	{0x12, _bsi_default_turn, 34, 1},
+	{3, _bsi_guruguru, 26, 0},
+	{6, _bsi_biribiri, 25, 0},
+	{0, _bsi_allergy, 27, 0},
+	{0x17, _bsi_regeneration, 23, 0},
+	{0x18, _bsi_regeneration, 24, 0},
+	{-1, NULL, 0, 0},
 };
 
 //local prototypes
@@ -42,15 +88,12 @@ void BattleStatusIconInit(BattleUnit* unit) {
 	memset(&unit->mStatusIconWork, 0, sizeof(BattleWorkStatusIcon));
 }
 
-// NONMATCHING (86.59%): the callback is passed &icon->mIcons[i] here, but the original indexes by
-// icon->mNumStatusIcons (mulli from 0x794(r31)); using the correct index scores 79.74 because the
-// full 23-entry _disp_table changes _disp_table's addressing, so the table below is still truncated
-// to one entry. The rest is register/scheduling differences (the original keeps unit/icon/table/i in
-// r30/r31/r28/r27 and uses stmw).
+#pragma optimize_for_size on // -O4,s: the table loop needs base+index addressing and its register colours
 void BattleStatusIconMain(BattleUnit* unit) {
 	BattleWorkStatusIcon* icon = &unit->mStatusIconWork;
 	BattleWork* work = _battleWorkPointer;
-	int i;
+	BattleWorkStatusIconEntry* entry;
+	u32 i;
 
 	icon->mNumStatusIcons = 0;
 	if (work->flags & 0x10000 || work->dispFlags & 1) {
@@ -60,18 +103,19 @@ void BattleStatusIconMain(BattleUnit* unit) {
 		icon->mScreenSpaceOffset.x = 13.440001f;
 		icon->mScreenSpaceOffset.z = 0.0f;
 		icon->mFlags = 0;
-		if (unit->mAttributeFlags & kCeiling) {
-			icon->mDistanceBetweenIcons = 25.6f;
-			icon->mScreenSpaceOffset.y = 0.0f;
-		}
-		else {
+		if (!(unit->mAttributeFlags & kCeiling)) {
 			icon->mDistanceBetweenIcons = 25.6f;
 			icon->mScreenSpaceOffset.y = 19.200001f;
 		}
+		else {
+			icon->mDistanceBetweenIcons = 25.6f;
+			icon->mScreenSpaceOffset.y = 0.0f;
+		}
 
 		for (i = 0; i < 0x17; i++) {
+			entry = &icon->mIcons[icon->mNumStatusIcons];
 			if (_disp_table[i].id == -1) break;
-			if (_disp_table[i].callback(unit, &_disp_table[i], &icon->mIcons[i])) {
+			if (_disp_table[i].callback(unit, &_disp_table[i], entry)) {
 				icon->mNumStatusIcons++;
 			}
 		}
@@ -80,7 +124,7 @@ void BattleStatusIconMain(BattleUnit* unit) {
 		}
 	}
 }
-
+#pragma optimize_for_size reset
 void BattleStatusIconDelete(BattleUnit* unit) {
 	; //stubbed in retail
 }
@@ -191,7 +235,6 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 }
 
 // Icon parameter table base; fields accessed at +0x60..+0x8C are Vec entries 8..11.
-extern Vec vec3_803011e8[];
 // -1 sentinel written to entry+0x3C.
 extern s32 dat_804221fc;
 extern s32 dat_804221f8;
@@ -201,7 +244,7 @@ extern f32 float_0_80422214;
 extern f32 float_4_80422218;
 
 BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	Vec* vec = vec3_803011e8;
+	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s32 turnCount;
 	s8 turns;
@@ -259,7 +302,7 @@ BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 }
 
 BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	Vec* vec = vec3_803011e8;
+	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s8 turns;
 	s8 strength;
@@ -313,7 +356,7 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 }
 
 BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	Vec* vec = vec3_803011e8;
+	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s32 turnCount;
 	s8 turns;
@@ -364,12 +407,6 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	return TRUE;
 }
 
-extern Vec vec3_80301278;
-extern Vec vec3_80301284;
-extern Vec vec3_80301290;
-extern Vec vec3_8030129c;
-extern Vec vec3_803012a8;
-extern Vec vec3_803012b4;
 // MUST_MATCH: the original reaches these six Vecs as offsets from vec3_803011e8.
 #ifdef MUST_MATCH
 #define BIRI_VEC(k, sym) vec[k]
@@ -379,7 +416,7 @@ extern Vec vec3_803012b4;
 
 BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 #ifdef MUST_MATCH
-	Vec* vec = vec3_803011e8;
+	const Vec* vec = &vec3_803011e8;
 #endif
 	s32 type = disp->id;
 	s32 turnCount;
@@ -451,10 +488,11 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 // unsigned-int->float mask via an anonymous pool entry where the original loads it as
 // vec3_803011e8 + 0x108 (lfd 0x108(r31)), and the fctiwz/byte scheduling differs.
 // optimize_for_size: the original's real divw for the modulo only comes out under -O4,s.
-// NONMATCHING (82.84%): under -O4,p MWCC strength-reduces the % 0x2d0 to a magic multiply, but the
-// original emits a real divw (only -O4,s does that), so this function is compiled size-optimised.
+// NONMATCHING (82.84%): the % 0x2d0 now emits the original's real divw. The 2^52 unsigned-int->float
+// mask is an anonymous pool entry addressed via lis/addi where the original loads lfd 0x108(r31) from
+// vec3_803011e8, and the fctiwz/byte scheduling around the three intplGetValue calls differs.
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	Vec* vec = vec3_803011e8;
+	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s16* counter;
 	s32 turnCount;

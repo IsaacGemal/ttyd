@@ -2416,6 +2416,9 @@ void tiz_broken_draw(CameraId camId, void* param) {
     }
 }
 
+#pragma opt_propagation off // keeps the polynomial coefficients hoisted like the target
+#pragma opt_lifetimes off // keeps the two seed loads inside the loop like the target
+
 // Inline degree/radian sine and cosine approximations (the same polynomials the
 // NPC blur path uses).
 static inline f32 tikSinf(f32 rad) {
@@ -2489,9 +2492,10 @@ static inline f32 tikCosf(f32 rad) {
     return cosv;
 }
 
-// NONMATCHING (77.66%): FP colouring only. The two `!= 0.0f` compares put the constant
-// first (retail compares the variable first), and tikSinf's last branch keeps `rad - 3pi/2`
-// in f2 instead of f1 (its `halfpi - ...` then reads the swapped operands).
+// Matches retail. The polynomial seed/coefficient hoisting needs `opt_propagation off`;
+// `opt_lifetimes off` keeps the two seed loads (0.00761/0.03705) inside the init loop. The
+// zero test is written as truthiness (`f3 || f4`) because that is the only form MWCC emits
+// with the value first in `fcmpu` (`fcmpu f3, f27`), which retail uses.
 USER_FUNC(tiz_broken) {
     s32 j, i;
     s32 active = 0;
@@ -2529,7 +2533,7 @@ USER_FUNC(tiz_broken) {
                         entry->field_0x8 = 3;
                     }
                 }
-                if (f3 != 0.0f || f4 != 0.0f) {
+                if (f3 || f4) {
                     f6 = sqrtf(f3 * f3 + f4 * f4);
                     f0 = f3 / f6;
                     f2 = f4 / f6;
@@ -2600,6 +2604,9 @@ USER_FUNC(tiz_broken) {
     dispEntry(8, 0.0f, 0, tiz_broken_draw, NULL);
     return EVT_RETURN_BLOCK;
 }
+
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 
 static USER_FUNC(evtflash) {
     s32* args = event->args;

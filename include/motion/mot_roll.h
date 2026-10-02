@@ -16,4 +16,7 @@ void marioRollForceCancel(void);
 BOOL unk_8009fcbc(void);
 void marioRollFixOn(void);
 void marioSetRollDispDir(void);
+void roll_upstairs_on(void);
+extern f32 roll_grx;
+extern f32 roll_grz;
 extern Vec vec3_802c5d40[];

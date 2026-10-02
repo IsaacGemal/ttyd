@@ -7,10 +7,8 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
-#ifdef MUST_MATCH
 #include <dolphin/os/OSFastCast.h>
-#endif
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 
 extern GXColor unk_80423150;
@@ -37,23 +35,14 @@ static u8 colb[20] = {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0,
 };
 
-// .sdata2 constants (named after their original addresses).
-const f32 float_deg2rad_8041f15c = 0.017453292f;
-const f32 float_0p0078125_8041f160 = 0.0078125f;
-const f32 float_0p03125_8041f164 = 0.03125f;
-const f32 float_0_8041f168 = 0.0f;
-const f32 float_6p2832_8041f16c = 6.2831855f;
-const f32 float_78p75_8041f170 = 78.75f;
-const f32 float_0p34907_8041f174 = 0.34906584f;
-const f32 float_6_8041f178 = 6.0f;
-const f32 float_360_8041f17c = 360.0f;
-const f32 float_neg30_8041f180 = -30.0f;
-const f32 float_8_8041f184 = 8.0f;
-const f32 float_30_8041f188 = 30.0f;
-const f32 float_0p10472_8041f18c = 0.10471976f;
-const f32 float_1_8041f190 = 1.0f;
-const f32 float_0p01_8041f194 = 0.01f;
+// .sdata2
+// Retail reloads this scratch word every outer-loop iteration instead of hoisting it, which only happens
+// if the object is writable; the byte content and .sdata2 slot are identical either way.
+#ifdef MUST_MATCH
+__declspec(section ".sdata2") u32 dat_8041f158 = 0xFFFFFF00;
+#else
 const u32 dat_8041f158 = 0xFFFFFF00;
+#endif
 
 // .data: 32 vertices (16 pairs), values read byte-for-byte from the original `.4byte` block.
 effHoraoSpellVtx horao_spell_vtx[32] = {
@@ -165,49 +154,47 @@ void effHoraoSpellMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&pos2), 2, effHoraoSpellDisp, effect);
 }
 
-// Inlines a per-vertex table copy + transform; retail lowers the packed s16<->f32 conversion through
-// GQR5 (psq_l/psq_st), which plain C cannot produce, so this lowers to lha/fctiwz instead.
+// Copies one vertex table entry and transforms its position in place. Retail performs the s16<->f32
+// conversions with the paired-single GQR5 path, i.e. the SDK's __OSs16tof32/__OSf32tos16 helpers
+// bracketed by OSInitFastCast; plain casts would lower to lha/fctiwz.
 static inline void effHoraoSpellSetVtx(effHoraoSpellVtx* vtx, effHoraoSpellVtx* src, Mtx mtx) {
 	Vec v;
 
 	memcpy(vtx, src, sizeof(effHoraoSpellVtx));
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail original re-runs OSInitFastCast around the paired-single s16<->f32
-	   conversions; this build lowers the casts to the integer path, so the calls exist only to
-	   reproduce the original GQR2-5 setup. */
 	OSInitFastCast();
-#endif
-	v.x = vtx->pos[0];
-	v.y = vtx->pos[1];
-	v.z = vtx->pos[2];
+	v.x = __OSs16tof32(&vtx->pos[0]);
+	v.y = __OSs16tof32(&vtx->pos[1]);
+	v.z = __OSs16tof32(&vtx->pos[2]);
 	PSMTXMultVec(mtx, &v, &v);
-#ifdef MUST_MATCH
 	OSInitFastCast();
-#endif
-	vtx->pos[0] = v.x;
-	vtx->pos[1] = v.y;
-	vtx->pos[2] = v.z;
+	vtx->pos[0] = __OSf32tos16(v.x);
+	vtx->pos[1] = __OSf32tos16(v.y);
+	vtx->pos[2] = __OSf32tos16(v.z);
 }
 
+// A GXColor built field-by-field and passed by value lands in the temporary's stack slot; the original
+// builds it in an inline that takes the base colour as a parameter (as makeHoraoColor does in
+// eff_magic_horao_n64), which moves the local above the by-value copy.
 #ifdef MUST_MATCH
-/* MUST_MATCH: retail's paired-single cast scratch occupies 0x20 below the named locals, so the
-   matrices and texObj in retail sit 0x20 higher. A two-element texObj (using the second element)
-   reserves the same 0x20 and lands the matrices/texObj at retail's offsets; the Vec/colour scratch
-   stays low in both. */
-#define HORAO_TEXOBJ (&texObj[1])
-#else
-#define HORAO_TEXOBJ (&texObj)
+static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
 #endif
 
-// NONMATCHING (77.24%): the control flow, GX/TEV state, matrix math and both loops line up. The
-// remaining gap is the s16<->f32 vertex conversion: retail loads/stores each position component with
-// psq_l/psq_st (GQR5, s16) after an inlined OSInitFastCast, while MWCC 2.6 lowers the same
-// `f32 v = vtx->pos[n]` / `vtx->pos[n] = v` source to the lha / xoris+lfd+fsubs / fctiwz integer
-// path. That leaves retail with f17-f31 live (we keep f22-f31) and a 0x2c0 frame with the low
-// Vec/colour scratch 0x20 higher, so every saved register and low scratch slot differs. The
-// explicit OSInitFastCast calls in the helper reproduce retail's GQR2-5 setup byte-for-byte but
-// cannot make this compiler emit psq for the cast.
-// NONMATCHING (77.24%): psq_l/psq_st vertex casts vs our lha/fctiwz; saved FPRs and local offsets differ.
+// The vertex s16<->f32 conversions now use the SDK's psq_l/psq_st helpers
+// (__OSs16tof32/__OSf32tos16 with OSInitFastCast), so the loop structure, the GX/TEV/matrix calls
+// and the fp constant registers (f26=2pi, f29=360, f30=deg2rad, f31=30, f17=0.01, f18=1.0,
+// f28=-30, f27=magic) all match retail. What differs: the integer register allocation (retail keeps
+// data in r19, counter in r24; we use r23/r26) and the preheader scheduling of the -2*counter
+// conversion (retail precomputes the integer bits in r15 and converts in-loop; reading
+// data->field_0x14 makes MWCC reload/recompute them) and of the low scratch, which sits 0x14 lower
+// than retail, leaving the frame 0x10 short (0x2a0 vs 0x2b0). The `s` temp for the sin result (as in
+// eff_magic_horao_n64) is what lands the fp constants in retail's registers.
+// NONMATCHING (93.62%): integer register allocation; the -2*counter preheader and low scratch layout differ.
 void effHoraoSpellDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -219,11 +206,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	Mtx rotMtx;
 	Mtx resultMtx;
 	Mtx baseMtx;
-#ifdef MUST_MATCH
-	GXTexObj texObj[2];
-#else
 	GXTexObj texObj;
-#endif
 	GXColor color;
 	s32 counter;
 	s32 alpha;
@@ -232,17 +215,22 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	s32 angle;
 	s32 colorIdx;
 	f32 scale;
+	f32 s;
 
 	counter = data->field_0x14;
 	alpha = data->field_0x24;
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
-	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041f15c * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(transMtx, rotMtx, transMtx);
 	scale = data->field_0x38;
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	PSMTXConcat(cam->view, transMtx, resultMtx);
 
+#ifdef MUST_MATCH
+	GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor(unk_80423150, data->field_0x18, data->field_0x1C, data->field_0x20, alpha));
+	GXSetTevColor(GX_TEVREG1, makeHoraoSpellColor(unk_80423154, data->field_0x28, data->field_0x2C, data->field_0x30, data->field_0x34));
+#else
 	color = unk_80423150;
 	color.r = data->field_0x18;
 	color.g = data->field_0x1C;
@@ -255,6 +243,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	color.b = data->field_0x30;
 	color.a = data->field_0x34;
 	GXSetTevColor(GX_TEVREG1, color);
+#endif
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(2);
@@ -268,18 +257,18 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C0, GX_CC_C1, GX_CC_CPREV, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
-	effGetTexObjN64(0x73, HORAO_TEXOBJ);
-	GXLoadTexObj(HORAO_TEXOBJ, GX_TEXMAP0);
+	effGetTexObjN64(0x73, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(scaleMtx, float_0p0078125_8041f160, float_0p03125_8041f164, float_0_8041f168);
+	PSMTXScale(scaleMtx, 0.0078125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 
 	angle = -0x11A;
 	for (i = 0; i < 2; i++, angle += 0x24) {
 		colorIdx = (counter + 4 * i) % 17;
-		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041f15c * (f32)angle);
+		PSMTXRotRad(rotMtx, 'z', 0.017453292f * (f32)angle);
 		PSMTXConcat(resultMtx, rotMtx, transMtx);
 		GXLoadPosMtxImm(transMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
@@ -291,24 +280,26 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 		GXSetTevColor(GX_TEVREG0, color);
 		color = *(GXColor*)&dat_8041f158;
 		GXSetTevColor(GX_TEVREG1, color);
-		PSMTXScale(scaleMtx, float_0p0078125_8041f160, float_0p03125_8041f164, float_0_8041f168);
-		PSMTXTrans(transMtx, -2.0f * (f32)counter, float_0_8041f168, float_0_8041f168);
+		PSMTXScale(scaleMtx, 0.0078125f, 0.03125f, 0.0f);
+		PSMTXTrans(transMtx, (f32)(-2 * data->field_0x14), 0.0f, 0.0f);
 		PSMTXConcat(scaleMtx, transMtx, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
-		PSMTXRotRad(rotMtx, 'x', float_0p34907_8041f174);
-		PSMTXTrans(transMtx, float_6_8041f178, float_0_8041f168, float_0_8041f168);
+		PSMTXRotRad(rotMtx, 'x', 0.34906584f);
+		PSMTXTrans(transMtx, 6.0f, 0.0f, 0.0f);
 		PSMTXConcat(rotMtx, transMtx, transMtx);
-		PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041f15c * (float_neg30_8041f180 * (f32)sin(float_6p2832_8041f16c * (float_78p75_8041f170 + (f32)(counter * 8)) / float_360_8041f17c)));
+		s = (f32)sin(6.2831855f * (78.75f + (f32)(counter * 8)) / 360.0f);
+		PSMTXRotRad(rotMtx, 'y', 0.017453292f * (-30.0f * s));
 		PSMTXConcat(transMtx, rotMtx, baseMtx);
 		entry = smartAlloc(0x1C0, 3);
 		vtx = (effHoraoSpellVtx*)entry->address;
 		for (j = 0; j < 16; j++) {
-			PSMTXTrans(transMtx, float_8_8041f184, float_0_8041f168, float_0_8041f168);
-			PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041f15c * (float_30_8041f188 * (f32)sin(float_6p2832_8041f16c * (f32)(counter * 8 + (j * 720) / 15) / float_360_8041f17c)));
+			PSMTXTrans(transMtx, 8.0f, 0.0f, 0.0f);
+			s = (f32)sin(6.2831855f * (f32)(counter * 8 + (j * 720) / 15) / 360.0f);
+			PSMTXRotRad(rotMtx, 'y', 0.017453292f * (30.0f * s));
 			PSMTXConcat(transMtx, rotMtx, transMtx);
-			PSMTXRotRad(rotMtx, 'z', float_0p10472_8041f18c);
+			PSMTXRotRad(rotMtx, 'z', 0.10471976f);
 			PSMTXConcat(transMtx, rotMtx, transMtx);
-			scale = float_0p01_8041f194 * (f32)j + float_1_8041f190;
+			scale = 0.01f * (f32)j + 1.0f;
 			PSMTXScale(scaleMtx, scale, scale, scale);
 			PSMTXConcat(transMtx, scaleMtx, transMtx);
 			PSMTXConcat(baseMtx, transMtx, baseMtx);

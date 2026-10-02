@@ -1939,18 +1939,25 @@ void party_motion_behind_mario(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (81.24%): original copies the appear position through a scratch Vec seeded from vec3_802f3e40+0x18 (a compiler struct-assignment idiom) which this elides; frame size differs.
+// The appear-position stores are scratch Vecs seeded from vec3_802f3e40+0x18/0x24/0x30/0x3c (MUST_MATCH;
+// the natural three scalar stores elide the copies and shrink the frame from 0xb0 to 0x70). The getFrontFloor/<= path
+// also shares one store, which the previous version dropped. Declaring `f32 sinV, cosV;` before `f32 tx,ty,tz;`
+// puts the f32 stack slots in the original's order (0x8..0x18), moving `Vec wall;` into its case puts the scratch
+// Vecs at 0x28/0x34/0x40/0x4c, `u32 id;` fixes the GPR rotation, and the negated float tests reproduce MWCC's crors.
+// NONMATCHING (94.28%): still the f30/f31 role swap (whole f31>f30 block), the int->float magic double base
+// register (fresh lis vs 0x108(r31)), the `!`-test branch shapes and one `lwz r3, 0x160(r28)` that ours folds away.
 void party_motion_jump(PartyEntry* party) {
+    extern u8 vec3_802f3e40[];
+    u8* vec = vec3_802f3e40;
     MarioWork* mario;
     HitEntry* hit;
     Vec floor;
-    Vec wall;
-    f32 tx, ty, tz;
     f32 sinV, cosV;
+    f32 tx, ty, tz;
     f32 angle;
-    f32 f31, f30;
+    f32 f30, f31;
     f32 f0, f1, f3, f4, f5, f6;
-    s32 id;
+    u32 id;
     s32 writeId;
 
     mario = party->playerPtr;
@@ -1969,31 +1976,51 @@ void party_motion_jump(PartyEntry* party) {
             ty = party->position.y;
             tz = party->position.z;
             movePos(&tx, &tz, party->speed, party->dir);
+#ifdef MUST_MATCH
+            {
+                Vec pos = *(Vec*)(vec + 0x18);
+                pos.x = tx; pos.y = ty; pos.z = tz;
+                *(Vec*)((u8*)party + 0x94) = pos;
+            }
+#else
             *(f32*)((u8*)party + 0x94) = tx;
             *(f32*)((u8*)party + 0x98) = ty;
             *(f32*)((u8*)party + 0x9C) = tz;
+#endif
         } else if (!(party->field_8 & 0x400000)) {
             writeId = partyGetFootmarkWriteId(id);
             if (partyGetFootmarkReadId(id) == writeId) {
                 if (partyGetTargetDist(id, party->position.x, party->position.z) > 2.0f * mario->wPlayerCollisionBox.x) {
                     f30 = partyGetTargetDir(id, party->position.x, party->position.z);
                     getFrontFloor(party, &floor, f30);
-                    ty = floor.y + 10.0f;
+                    floor.y = floor.y + 10.0f;
+                    ty = floor.y;
                     tx = party->position.x;
                     tz = party->position.z;
                     movePos(&tx, &tz, 0.6f * *(f32*)((u8*)party + 0xF4), f30);
                 }
+#ifdef MUST_MATCH
+                {
+                    Vec pos = *(Vec*)(vec + 0x24);
+                    pos.x = tx; pos.y = ty; pos.z = tz;
+                    *(Vec*)((u8*)party + 0x94) = pos;
+                }
+#else
+                *(f32*)((u8*)party + 0x94) = tx;
+                *(f32*)((u8*)party + 0x98) = ty;
+                *(f32*)((u8*)party + 0x9C) = tz;
+#endif
             } else {
                 partyGetReadId(id, &tx, &ty, &tz);
                 f30 = 50.0f;
                 f31 = distABf(party->position.x, party->position.z, tx, tz);
                 f0 = 1.4f * (ty - party->position.y);
-                if (f0 < 50.0f) {
+                if (!(f0 >= 50.0f)) {
                     f30 = f0;
                 }
                 angle = angleABf(party->position.x, party->position.z, tx, tz);
                 sincosf(&sinV, &cosV, angle);
-                if (f31 > f30) {
+                if (f30 < f31) {
                     f31 = f30;
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
@@ -2001,20 +2028,36 @@ void party_motion_jump(PartyEntry* party) {
                     tx = party->position.x + f31 * sinV;
                     tz = party->position.z + f31 * cosV;
                     ty = ty + 10.0f;
+#ifdef MUST_MATCH
+                    {
+                        Vec pos = *(Vec*)(vec + 0x30);
+                        pos.x = tx; pos.y = ty; pos.z = tz;
+                        *(Vec*)((u8*)party + 0x94) = pos;
+                    }
+#else
                     *(f32*)((u8*)party + 0x94) = tx;
                     *(f32*)((u8*)party + 0x98) = ty;
                     *(f32*)((u8*)party + 0x9C) = tz;
+#endif
                 } else {
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
                     }
                     tx = party->position.x + f31 * sinV;
                     tz = party->position.z + f31 * cosV;
+#ifdef MUST_MATCH
+                    {
+                        Vec pos = *(Vec*)(vec + 0x3c);
+                        pos.x = tx; pos.y = ty; pos.z = tz;
+                        *(Vec*)((u8*)party + 0x94) = pos;
+                    }
+#else
                     *(f32*)((u8*)party + 0x94) = tx;
                     *(f32*)((u8*)party + 0x98) = ty;
                     *(f32*)((u8*)party + 0x9C) = tz;
+#endif
                 }
-                if (f31 < f30) {
+                if (!(f30 <= f31)) {
                     partyNextReadId(id);
                 }
             }
@@ -2038,7 +2081,7 @@ void party_motion_jump(PartyEntry* party) {
         f6 = *(f32*)((u8*)party + 0x98) - party->position.y;
         if (fabsf(f6) < 1.0f) {
             f6 = 25.0f;
-        } else if (f6 < 0.0f) {
+        } else if (!(f6 >= 0.0f)) {
             f6 = 10.0f;
         }
         f3 = (f6 + f6) / (f4 * f4 - f4);
@@ -2099,6 +2142,8 @@ void party_motion_jump(PartyEntry* party) {
                 break;
             }
         }
+        {
+        Vec wall;
         if (party->flags & 0x01000000) {
             movePos(&wall.x, &wall.z, party->speed, party->dir);
         } else {
@@ -2112,6 +2157,7 @@ void party_motion_jump(PartyEntry* party) {
             }
             party->position.x = wall.x;
             party->position.z = wall.z;
+        }
         }
         break;
     default:
@@ -2170,9 +2216,11 @@ static inline f32 pt_sqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (90.83%): stack slots and statement order/shape match (scale before query1.targetDir,
-// loop stores x then z, `(f32)i` written inline twice, `wall = touch_wall_ct` once after the loop).
-// Still differs only in GPR colouring (party/pos/vec/i) and FPR colouring (scale f28 vs f29, wall f2 vs f28).
+// Stack slots and statement order/shape match; the `(a < b) ? a : b` select written as if/else drops the spurious
+// fmr the ternary emitted, and declaring `scale` before `floorY` gets scale the original's slot.
+// NONMATCHING (92.49%): still FPR colouring (orig scale f29/wall f28; ours scale f28 and floorY's -2000f kept in f29
+// across the loop where the original rematerialises it after the loop, so wall never gets f28), the magic-double base
+// register (fresh lis vs 0x108(r31)) and a few GPR colouring swaps (party/pos/vec/i).
 s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
@@ -2181,8 +2229,8 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     HitCheckQuery query1;
     f32 sin2, cos2;
     f32 cos1, sin1;
-    f32 floorY;
     f32 scale;
+    f32 floorY = -2000.0f;
     f32 h;
     s32 i;
     HitEntry* hit;
@@ -2190,7 +2238,6 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     scale = 2.0f * *(f32*)((u8*)party + 0xF4) / 3.0f;
     query1.targetDir = *(Vec*)(vec + 0x60);
     sincosf(&sin1, &cos1, angle);
-    floorY = -2000.0f;
     for (i = 0; i < 3; i++) {
         query1.targetPos.x = party->position.x + (f32)i * (sin1 * scale);
         query1.targetPos.z = party->position.z + (f32)i * (cos1 * scale);
@@ -2208,7 +2255,11 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     if (floorY > -2000.0f) {
         f32 a = party->position.y + wall;
         f32 b = floorY - 2.0f;
-        query2.targetPos.y = (a < b) ? a : b;
+        if (a < b) {
+            query2.targetPos.y = a;
+        } else {
+            query2.targetPos.y = b;
+        }
     } else {
         query2.targetPos.y = party->position.y + wall;
     }

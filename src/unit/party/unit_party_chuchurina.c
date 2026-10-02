@@ -79,36 +79,37 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #endif
 }
 
-// NONMATCHING (92.29%): same instruction sequence; the callee-saved registers are assigned in a different order
-// (target: event r29, args r27, work r28; ours r31, r29, r30).
+// The declaration order below is what gives the original's callee-saved allocation
+// (event r29, args r27, work r28, v0 r26, v1 r25, outX/outY/outZ r31/r30/r26);
+// this function's asm is identical to _get_bomb_hit_position in unit_party_sanders.c.
 USER_FUNC(_get_binta_hit_position) {
-    s32 id1, id2, outX, outY, outZ;
-    BattleWork* work;
-    s32* args;
     BattleUnit* unit;
-    f32 z, y, x;
-    f32 scale;
+    BattleWork* work = _battleWorkPointer;
+    Vec pos;
+    s32* args = event->args;
+    s32 v0;
+    s32 v1;
     s32 dir;
+    s32 outZ;
+    s32 outX;
+    s32 outY;
 
-    args = event->args;
-    work = _battleWorkPointer;
-    id1 = evtGetValue(event, args[0]);
-    id2 = evtGetValue(event, args[1]);
+    v0 = evtGetValue(event, args[0]);
+    v1 = evtGetValue(event, args[1]);
     evtGetValue(event, args[2]);
     outX = args[3];
     outY = args[4];
     outZ = args[5];
-    BattleGetUnitPtr(work, BattleTransID(event, id1));
-    unit = BattleGetUnitPtr(work, BattleTransID(event, id2));
+    BattleGetUnitPtr(work, BattleTransID(event, v0));
+    unit = BattleGetUnitPtr(work, BattleTransID(event, v1));
     dir = unit->faceDirection;
-    BtlUnit_GetPos(unit, &x, &y, &z);
-    scale = unit->mSizeMultiplier;
-    x += (f32)dir * (unit->bintaHitOffset.x * scale);
-    y += unit->bintaHitOffset.y * scale;
-    z += unit->bintaHitOffset.z * scale;
-    evtSetFloat(event, outX, x);
-    evtSetFloat(event, outY, y);
-    evtSetFloat(event, outZ, z);
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    pos.x += (f32)dir * (unit->bintaHitOffset.x * unit->mSizeMultiplier);
+    pos.y += unit->bintaHitOffset.y * unit->mSizeMultiplier;
+    pos.z += unit->bintaHitOffset.z * unit->mSizeMultiplier;
+    evtSetFloat(event, outX, pos.x);
+    evtSetFloat(event, outY, pos.y);
+    evtSetFloat(event, outZ, pos.z);
     return EVT_RETURN_DONE;
 }
 
@@ -153,19 +154,44 @@ USER_FUNC(_get_itemsteal_param) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.68%): the drop-table selection matches instruction-for-instruction (the redundant `else if (list != NULL)` reproduces the target's dead `beq`); only the callee-saved colouring differs.
-// Target event r26, args/id/item/list r27, unit r28, out r29, work r30, flag r31; ours event r27, args/flag r26, unit r28, out r29, work r30, item r31, list r25.
-// Seven saved regs / 0x30 frame vs six / 0x20; decl-order shuffles, an `evt` alias, inlined args and every pragma leave the event/args swap in place.
+static inline void _chuchu_pick_drop(BattleUnit* unit, u16* out) {
+    ItemDropData* list;
+    ItemDropData* d;
+    s32 sum;
+    s32 pick;
+    if (unit->dropTable != NULL) {
+        irand(100);
+    }
+    list = unit->dropTable;
+    if (list == NULL) {
+        *out = 0;
+    } else if (list != NULL) {
+        d = list;
+        sum = 0;
+        while (d->holdWeight > 0 || d->type != 0) {
+            sum += d->holdWeight;
+            d++;
+        }
+        if (sum > 0) {
+            pick = irand(sum);
+            while ((pick -= list->holdWeight) >= 0) {
+                list++;
+            }
+            *out = list->type;
+        } else {
+            *out = 0;
+        }
+    }
+}
+
+// NONMATCHING (94.04%): factoring the drop selection into the inline helper above reproduces the target's exact instruction sequence; only the callee-saved colouring differs. Target event r26, args/id/item/list r27, unit r28, out r29, work r30, flag r31 (6 saved / 0x20 frame); ours event r27, args/id/list r25, flag r26, unit r28, out r29, work r30, item r31 (7 saved / 0x30).
+// The allocator already coalesces args/id/list onto one register here, it just numbers it r25/r26 where the target uses r27. Declaration/statement-order searches and every relevant pragma leave this in place; the pre-helper body peaks at 93.78%.
 USER_FUNC(_chuchu_item_steal) {
     u16 item;
     BattleWork* work;
     s32 id, out, flag;
     s32* args;
     BattleUnit* unit;
-    ItemDropData* list;
-    ItemDropData* d;
-    s32 sum;
-    s32 pick;
 
     work = _battleWorkPointer;
     args = event->args;
@@ -175,29 +201,7 @@ USER_FUNC(_chuchu_item_steal) {
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
     item = unit->heldItem;
     if (item == 0) {
-        if (unit->dropTable != NULL) {
-            irand(100);
-        }
-        list = unit->dropTable;
-        if (list == NULL) {
-            item = 0;
-        } else if (list != NULL) {
-            d = list;
-            sum = 0;
-            while (d->holdWeight > 0 || d->type != 0) {
-                sum += d->holdWeight;
-                d++;
-            }
-            if (sum > 0) {
-                pick = irand(sum);
-                while ((pick -= list->holdWeight) >= 0) {
-                    list++;
-                }
-                item = list->type;
-            } else {
-                item = 0;
-            }
-        }
+        _chuchu_pick_drop(unit, &item);
         if (item == 0) {
             item = 0x79;
         }

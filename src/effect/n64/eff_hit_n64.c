@@ -70,19 +70,18 @@ static inline Vec effHitInitVec(Vec* input) {
 	return temp;
 }
 
-// Every instruction is the same opcode with the same operands except that the 0.0f constant and the
-// pooled int->float double have swapped FPRs (ours zero=f30/double=f31, the original double=f30/zero=f31),
-// so every zero store and conversion reads the other register, and the two zero stores before the rand()
-// call are scheduled before it instead of after. The GPRs (effect/count/part/i/angle/count-1/magic) match.
-// NONMATCHING (93.24%): the FPR swap above and the two pre-rand zero-store positions.
+// Computing the rand()%360 conversion first (into `frand`) makes it the first use of the pooled int->float
+// magic double, which is what the original's preheader does (double=f30, zero=f31): with the conversion
+// after the zero stores MWCC colours the two constants the other way round. The zero stores then follow in
+// the original's order (x,y,z,0x10,0x14,0x20), so the scheduler interleaves them with the angle conversion.
 EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	effHitData* data;
-	s32 r;
 	EffectEntry* effect;
 	effHitParticle* part;
 	s32 i;
 	s32 count;
 	s32 angle;
+	f32 frand;
 
 	effect = effEntry();
 	count = (duration * 5 + 20) / 3 + 1;
@@ -140,18 +139,18 @@ EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 sca
 
 	part = (effHitParticle*)(data + 1);
 	for (i = 1; i < count; i++, part++) {
-		part->position.z = float_0_8041f0f0;
-		part->field_0x20 = float_0_8041f0f0;
-		r = rand();
+		frand = (f32)(rand() % 360);
 		part->position.x = float_0_8041f0f0;
 		part->position.y = float_0_8041f0f0;
+		part->position.z = float_0_8041f0f0;
 		part->field_0x10 = float_0_8041f0f0;
 		part->field_0x14 = float_0_8041f0f0;
-		part->field_0x10 = float_0_8041f0f0;
-		angle = (i * 360) / (count - 1);
-		part->rotY = (f32)(r % 360);
+		part->field_0x20 = float_0_8041f0f0;
 		part->field_0x0 = 0;
+		angle = (i * 360) / (count - 1);
 		part->rotZ = (f32)angle;
+		part->rotY = frand;
+		part->field_0x10 = float_0_8041f0f0;
 		part->field_0x2C = 0xff;
 	}
 	return effect;

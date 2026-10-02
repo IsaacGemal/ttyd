@@ -1764,30 +1764,60 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (89.47%): the return test compiles to retail's `subic; subfe; and` tail (the original returns
-// EVT_RETURN_DONE when `updated == 0`), the second loop's per-path `result` assignments and `j` counter match,
-// and storing `work->unitId` before `work->type` keeps `work` in r7.  What still differs is MWCC's register
-// allocation of the 20 hoisted spline addresses: retail keeps the first 13 in source order
-// (splineTableOut1_1..Out4_1) and spills splineTableIn4_1, Out4_2..In4_4 to 0x30-0x48, while ours keeps the
-// twice-used In3_*/In4_* tables and spills the single-use Out3_*/Out4_* tables.  That is because retail
-// rematerialises the `splineTableIn*` address for `work->unitId = id` (a fresh lis/addi into r4) and keeps the
-// hoisted register only for the later `parts->work[2] = id` store, so every hoisted register is single-use; ours
-// CSEs the two `(s32)splineTableIn*` references into one value.  No source spelling (casts, `&arr[0]`, local
-// copies, an inline helper) breaks that CSE, so the whole first loop's block registers stay shifted.
+#pragma dont_inline reset // exclude this function so it inlines barriernSatelliteTo_MainI below
+// Inline copy of barriernSatelliteTo_Main used by Inside (defined outside the dont_inline region so it inlines).
+static inline u8 barriernSatelliteTo_MainI(BattleUnit* unit, s32 index) {
+    BarriernSatelliteTo* work;
+    BattleUnit* satellite;
+    f32 pos[3];
+    f32 out[3];
+    f32 t;
+
+    if (unit->work[4 + index] == -1) {
+        return 0;
+    }
+    work = (BarriernSatelliteTo*)unit->work[10 + index];
+    if (work == NULL) {
+        return 0;
+    }
+    if (work->field_58 >= 0x3c) {
+        if (work != NULL) {
+            __memFree(4, work);
+            unit->work[10 + index] = 0;
+        }
+        return 0;
+    }
+    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
+    spline_getvalue(out, work->type, work->unitId, (s32)work->points, (s32)work->field_1C, t);
+    satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
+    if (satellite == NULL) {
+        return 0;
+    }
+    BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
+    BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
+    BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
+    work->field_58++;
+    return 1;
+}
+
+// The store to work->unitId must rematerialise the spline-table address: retail materialises it fresh in
+// the body and keeps the hoisted copy only for the parts->work[2] store, so a plain store lets MWCC CSE the
+// two references onto one hoisted value and the first loop's registers shift.  A volatile store blocks that.
+#ifdef MUST_MATCH
+#define BARRIERN_SET_UNITID(w, v) (*(volatile s32*)&(w)->unitId = (s32)(v))
+#else
+#define BARRIERN_SET_UNITID(w, v) ((w)->unitId = (s32)(v))
+#endif
+
 static USER_FUNC(barriernSatelliteToInside) {
     s32* args;
     s32 id;
     BattleUnit* unit;
     BarriernSatelliteTo* work;
-    s32 spline;
     s32 i;
-    BattleUnit* satellite;
-    f32 out[3];
-    f32 pos[3];
-    f32 t;
+    s32 spline;
     s32 j;
     u8 updated;
-    u8 result;
 
     args = event->args;
     id = evtGetValue(event, args[0]);
@@ -1804,8 +1834,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn1_1;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn1_1);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn1_1;
@@ -1815,8 +1845,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn2_1;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn2_1);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_1;
@@ -1826,8 +1856,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn2_2;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn2_2);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_2;
@@ -1837,8 +1867,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn3_1;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn3_1);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_1;
@@ -1848,8 +1878,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn3_2;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn3_2);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_2;
@@ -1859,8 +1889,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn3_3;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn3_3);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_3;
@@ -1870,8 +1900,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn4_1;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn4_1);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_1;
@@ -1881,8 +1911,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn4_2;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn4_2);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_2;
@@ -1892,8 +1922,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn4_3;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn4_3);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_3;
@@ -1903,8 +1933,8 @@ static USER_FUNC(barriernSatelliteToInside) {
                 if (unit->work[4 + i] != -1) {
                     work = __memAlloc(4, 0x5c);
                     unit->work[10 + i] = (s32)work;
-                    work->unitId = (s32)splineTableIn4_4;
                     work->type = 5;
+                    BARRIERN_SET_UNITID(work, splineTableIn4_4);
                     work->field_58 = 0;
                     spline_maketable(5, work->unitId, work->points, work->field_1C);
                     BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_4;
@@ -1914,49 +1944,20 @@ static USER_FUNC(barriernSatelliteToInside) {
     }
     updated = 0;
     for (j = 0; j < 4; j++) {
-        if (unit->work[4 + j] == -1) {
-            result = 0;
-        } else {
-            work = (BarriernSatelliteTo*)unit->work[10 + j];
-            if (work == NULL) {
-                result = 0;
-            } else if (work->field_58 >= 0x3c) {
-                if (work != NULL) {
-                    __memFree(4, work);
-                    unit->work[10 + j] = 0;
-                }
-                result = 0;
-            } else {
-                t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
-                spline_getvalue(out, work->type, work->unitId, (s32)work->points, (s32)work->field_1C, t);
-                satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + j]);
-                if (satellite == NULL) {
-                    result = 0;
-                } else {
-                    BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
-                    BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-                    BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-                    work->field_58++;
-                    result = 1;
-                }
-            }
-        }
-        if (result == 1) {
+        if (barriernSatelliteTo_MainI(unit, j) == 1) {
             updated = 1;
         }
     }
     return updated == 0 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-// NONMATCHING (93.02%): the first-phase Init loop and second-phase Main loop now match retail's
-// inlined shape (work in r7, u8 result, return-value idiom, frame 0x50).  Two things remain: (1) in each
-// of the ten inlined Init bodies retail rematerialises the table address (`lis r3; addi r4`) for
-// work->unitId while keeping the hoisted copy in r25 for the parts->work[2] store; MWCC instead CSEs both
-// uses onto r25, so every Init body is one `lis/addi` short.  (2) the final return picks `subfic r3,r3,0`
-// where retail has `subic r3,r3,1` (same value, one peephole instruction).
 #pragma dont_inline reset
-// Separate inline copy of barriernSatelliteTo_Init used by Outside. Storing unitId before
-// type changes the inliner's register allocation to match the original.
-static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, s32 id) {
+// 100%: separate inline copy of barriernSatelliteTo_Init used by Outside. The table pointer is taken
+// through a `volatile` parameter (so MWCC rematerialises the address with a fresh `lis/addi` for the
+// work->unitId store) plus a normal second copy `inv` (kept live in a register for the later
+// parts->work[2] store). Passing the same symbol twice is behaviourally identical and is what
+// reproduces the original's split register/rematerialisation choice; a plain 1-arg helper CSEs both
+// uses onto one register.
+static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
     BarriernSatelliteTo* work;
 
     if (unit->work[4 + index] == -1) {
@@ -1964,11 +1965,11 @@ static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, s32
     }
     work = __memAlloc(4, 0x5c);
     unit->work[10 + index] = (s32)work;
-    work->unitId = id;
     work->type = 5;
+    work->unitId = (s32)table;
     work->field_58 = 0;
     spline_maketable(5, work->unitId, work->points, work->field_1C);
-    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = id;
+    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = (s32)inv;
     return 1;
 }
 
@@ -2007,8 +2008,8 @@ static inline u8 barriernSatelliteTo_MainInline(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (93.02%): see the block comment above the InitInline/MainInline helpers; only the
-// per-body table-address rematerialisation and the final subic/subfic peephole are still missing.
+// 100%: the ten inlined Init bodies come from barriernSatelliteTo_InitInline (volatile+inv split,
+// see its comment); work stays in r7, u8 result, and the return is `subic;subfe;and` as retail.
 static USER_FUNC(barriernSatelliteToOutside) {
     s32* args;
     s32 id;
@@ -2026,64 +2027,64 @@ static USER_FUNC(barriernSatelliteToOutside) {
         switch (n) {
         case 1:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut1_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut1_1, (s32*)splineTableOut1_1) == 1) {
                     break;
                 }
             }
             break;
         case 2:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut2_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_1, (s32*)splineTableOut2_1) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut2_2) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut2_2, (s32*)splineTableOut2_2) == 1) {
                     break;
                 }
             }
             break;
         case 3:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut3_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_1, (s32*)splineTableOut3_1) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut3_2) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_2, (s32*)splineTableOut3_2) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut3_3) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut3_3, (s32*)splineTableOut3_3) == 1) {
                     break;
                 }
             }
             break;
         case 4:
             for (i = 0;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_1) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_1, (s32*)splineTableOut4_1) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_2) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_2, (s32*)splineTableOut4_2) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_3) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_3, (s32*)splineTableOut4_3) == 1) {
                     break;
                 }
             }
             i++;
             for (;; i++) {
-                if (barriernSatelliteTo_InitInline(unit, i, (s32)splineTableOut4_4) == 1) {
+                if (barriernSatelliteTo_InitInline(unit, i, (s32*)splineTableOut4_4, (s32*)splineTableOut4_4) == 1) {
                     break;
                 }
             }

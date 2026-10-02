@@ -339,17 +339,16 @@ USER_FUNC(evt_bero_get_info) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.68%): the callee-saved colouring differs from retail's
-// (event/table/entry/i = r29/r31/r30/r28); also is left is the prologue address materialising
-// through r0 instead of directly into r31 and the first switch's kind staying in r31, not r11.
+// Matched (100%): using the array-index loop form (no `table` pointer) colours the
+// prologue's BeroINFOARR directly into r31, and reusing the outer counter `i` as the name-list
+// counter makes the compiler keep the switch's kind in r11 (split from the r31 loop counter).
 USER_FUNC(evt_bero_get_into_info) {
 	s32 kind = 0;
 	s32 i;
-	BeroEntry** table = BeroINFOARR;
 	BeroEntry* entry;
 
-	for (i = 0; ; table++, i++) {
-		entry = *table;
+	for (i = 0; ; i++) {
+		entry = BeroINFOARR[i];
 		if (entry == NULL || !strcmp(gp->beroEnterName, "")) {
 			i = 0;
 			entry = (BeroEntry*)bero_null;
@@ -376,16 +375,17 @@ USER_FUNC(evt_bero_get_into_info) {
 					switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
 					case 0:
 					case 1:
-						for (kind = 0; (u32)kind < 8U; kind++) {
-							if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
+						for (i = 0; (u32)i < 8U; i++) {
+							if (!strncmp(names[i], entry->hitName, strlen(names[i]))) {
 								break;
 							}
 						}
 						break;
 					default:
-						kind = 0x2710;
+						i = 0x2710;
 						break;
 					}
+					kind = i;
 				}
 				break;
 			}
@@ -405,6 +405,7 @@ USER_FUNC(evt_bero_get_into_info) {
 		event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
 #endif
 		event->lwData[8] = 0xffff0000;
+		return EVT_RETURN_DONE;
 	} else {
 		event->lwData[1] = i;
 		event->lwData[2] = BeroNUM;
@@ -450,8 +451,8 @@ USER_FUNC(evt_bero_get_into_info) {
 		event->lwData[7] = entry->enterEvent ? (s32)entry->enterEvent : (s32)default_entevt;
 #endif
 		event->lwData[8] = 0xffff0000;
+		return EVT_RETURN_DONE;
 	}
-	return EVT_RETURN_DONE;
 }
 
 // ---- reconstructed functions ----

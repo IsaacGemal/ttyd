@@ -1415,17 +1415,42 @@ static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (89.15%): only the first loop differs - `Init`'s hoisted In table is reused for work->unitId
-// where the original rematerialises it (lis/addi per branch, +20 insns, 80 B), which also swaps i/spline
-// (r15/r16) and shifts the callee-saved colouring. Tail matches (u8 hasSat, `Main()==1`, inverted ternary).
+#ifdef MUST_MATCH
+// MUST_MATCH: same body as barriernSatelliteTo_Init, but the spline-table pointer arrives through a
+// `volatile` parameter so MWCC rematerialises the table address for the inlined `work->unitId` store
+// (the target does), while `inv` keeps a normal copy alive across the calls for the later
+// parts->work[2] store. Passing the same symbol twice is behaviourally identical.
+static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
+    BarriernSatelliteTo* work;
+
+    if (unit->work[4 + index] == -1) {
+        return 0;
+    }
+    work = __memAlloc(4, 0x5c);
+    unit->work[10 + index] = (s32)work;
+    work->type = 5;
+    work->unitId = (s32)table;
+    work->field_58 = 0;
+    spline_maketable(5, work->unitId, work->points, work->field_1C);
+    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = (s32)inv;
+    return 1;
+}
+#define barriernSatelliteTo_Init barriernSatelliteTo_InitInline
+#else
+#define barriernSatelliteTo_Init(unit, index, table, inv) barriernSatelliteTo_Init(unit, index, inv)
+#endif
+
+// Matches via barriernSatelliteTo_InitInline above: the `volatile` table argument makes MWCC rematerialise
+// the In-table address for the inlined `work->unitId` store, while the plain `inv` argument reuses the
+// loop-cached copy for the later parts->work[2] store, exactly as the target's first loop does.
 static USER_FUNC(barriernSatelliteToInside) {
     s32* args;
     s32 id;
     s32 type;
     BattleUnit* unit;
     BattleUnitPart* part;
-    s32 spline;
     s32 i;
+    s32 spline;
     u8 hasSat;
 
     args = event->args;
@@ -1441,34 +1466,34 @@ static USER_FUNC(barriernSatelliteToInside) {
             part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1);
             spline = part->work[2];
             if (spline == (s32)splineTableOut1_1) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn1_1);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn1_1, (s32*)splineTableIn1_1);
             }
             if (spline == (s32)splineTableOut2_1) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn2_1);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn2_1, (s32*)splineTableIn2_1);
             }
             if (spline == (s32)splineTableOut2_2) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn2_2);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn2_2, (s32*)splineTableIn2_2);
             }
             if (spline == (s32)splineTableOut3_1) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_1);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_1, (s32*)splineTableIn3_1);
             }
             if (spline == (s32)splineTableOut3_2) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_2);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_2, (s32*)splineTableIn3_2);
             }
             if (spline == (s32)splineTableOut3_3) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_3);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn3_3, (s32*)splineTableIn3_3);
             }
             if (spline == (s32)splineTableOut4_1) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_1);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_1, (s32*)splineTableIn4_1);
             }
             if (spline == (s32)splineTableOut4_2) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_2);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_2, (s32*)splineTableIn4_2);
             }
             if (spline == (s32)splineTableOut4_3) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_3);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_3, (s32*)splineTableIn4_3);
             }
             if (spline == (s32)splineTableOut4_4) {
-                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_4);
+                barriernSatelliteTo_Init(unit, i, (s32*)splineTableIn4_4, (s32*)splineTableIn4_4);
             }
         }
     }
@@ -1550,31 +1575,6 @@ static EVT_BEGIN(wakka_attack_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
-#ifdef MUST_MATCH
-// MUST_MATCH: same body as barriernSatelliteTo_Init, but the spline-table pointer arrives through a
-// `volatile` parameter so MWCC rematerialises the table address for the inlined `work->unitId` store
-// (the target does), while `inv` keeps a normal copy alive across the calls for the later
-// parts->work[2] store. Passing the same symbol twice is behaviourally identical.
-static inline u8 barriernSatelliteTo_InitInline(BattleUnit* unit, s32 index, s32* volatile table, s32* inv) {
-    BarriernSatelliteTo* work;
-
-    if (unit->work[4 + index] == -1) {
-        return 0;
-    }
-    work = __memAlloc(4, 0x5c);
-    unit->work[10 + index] = (s32)work;
-    work->type = 5;
-    work->unitId = (s32)table;
-    work->field_58 = 0;
-    spline_maketable(5, work->unitId, work->points, work->field_1C);
-    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]), 1)->work[2] = (s32)inv;
-    return 1;
-}
-#define barriernSatelliteTo_Init barriernSatelliteTo_InitInline
-#else
-#define barriernSatelliteTo_Init(unit, index, table, inv) barriernSatelliteTo_Init(unit, index, inv)
-#endif
 
 // Matches via barriernSatelliteTo_InitInline above: the volatile table parameter makes MWCC rematerialise
 // the spline-table address for the inlined `work->unitId` store while `inv` carries the loop-cached copy to
@@ -2007,10 +2007,8 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static s32 zanzou_count[5] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
-};
+// zanzou_count is a tentative definition in the original (.bss, see .obj zanzou_count in the asm); the
+// line-83 declaration already defines it, so no initializer here (an initializer moves it to .data).
 static USER_FUNC(barriern_wawawa_set_target) {
     s32* args;
     s32 xs[12];

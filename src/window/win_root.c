@@ -184,9 +184,10 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
     }
 }
 
-// NONMATCHING (90.37%): GX quad vertex loop; MWCC CSEs the position constants
-// into f1/f2/f3 and reloads f0 only, while the original reloads f0 per vertex.
-// Non-const externs made it worse (88.47%).
+// Full-screen GX quad. The original reloads each position constant into f0
+// immediately before its FIFO store instead of CSE-ing the constants across the
+// four vertices, so the vertex writes under MUST_MATCH read the named floats
+// through a volatile view (the natural GXPosition3f32 form is in #else).
 void winZClear(void) {
     Mtx mtx;
 
@@ -211,10 +212,27 @@ void winZClear(void) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxDesc(9, 1);
     GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+    // volatile reads stop MWCC from CSE-ing the position constants across the
+    // four vertices; the original reloads each one into f0 before its store.
+    GXWGFifo.f32 = *(volatile f32*)&float_neg500_8041d0d0;
+    GXWGFifo.f32 = *(volatile f32*)&float_300_8041d0d4;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_300_8041d0d4;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_neg100_8041d0d8;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+    GXWGFifo.f32 = *(volatile f32*)&float_neg500_8041d0d0;
+    GXWGFifo.f32 = *(volatile f32*)&float_neg100_8041d0d8;
+    GXWGFifo.f32 = *(volatile f32*)&float_0_8041d068;
+#else
     GXPosition3f32(float_neg500_8041d0d0, float_300_8041d0d4, float_0_8041d068);
     GXPosition3f32(float_0_8041d068, float_300_8041d0d4, float_0_8041d068);
     GXPosition3f32(float_0_8041d068, float_neg100_8041d0d8, float_0_8041d068);
     GXPosition3f32(float_neg500_8041d0d0, float_neg100_8041d0d8, float_0_8041d068);
+#endif
     GXEnd();
     GXSetColorUpdate(1);
 }
@@ -995,7 +1013,162 @@ static inline void winMsgDispLabel(Vec pos, Vec* scale, GXColor color, const cha
     winFontSetLabel(&pos, scale, &color, msg);
 }
 
+// Same shape as root_vec (defined with winRootDisp below), but winMsgDisp is emitted
+// before it. Builds a by-value Vec from a base Vec in the str_802F3FE8 rodata block.
+static inline Vec winMsgDispVec(const Vec* base, f32 x, f32 y) {
+    Vec v = *base;
+    v.x = x;
+    v.y = y;
+    return v;
+}
 
+// str_802F3FE8 is the menu-display rodata block; WinRootVecs (win_root.h) names only
+// its first six Vecs (v0..v5). winMsgDisp reads later Vecs at fixed offsets, reached
+// here by raw offset from the named base. Offset 0x5d0 is the str_802F45B8 string.
+#define WMD_VEC(off) (*(Vec*)((u8*)&str_802F3FE8 + (off)))
+
+// The message/icon/text logic matches instruction-for-instruction through the waku quad,
+// the icon block and the 0x140 message block: the FP registers are coloured like the
+// original (f28=x, f29=y, f30=dy, f31=dx, f27=dy2, f26=width) and the frame is 0x620
+// (the sprintf buffer is 0x404 bytes so the int->float scratch lands at 0x5a8). Two things
+// still differ. (1) The `(f32)FontGetMessageWidth` int->float conversion pools its magic
+// double anonymously (@NNN@) and so needs its own `lis`, which steals r3 and shifts the
+// integer colours; the original reaches the same value as `lfd f4, 0x4e0(r31)` from the
+// str_802F3FE8 base — that offset is double_to_int_mask_802f44c8. Defining a same-valued
+// `const f64` does not help (MWCC still emits a fresh copy), and defining the whole
+// .rodata block does not either. (2) The by-value Vec/GXColor argument copies for the
+// winTexSet / winIconSet / winFontSet* calls land in different stack slots: the original
+// gives each call its own block descending from 0x198 (pos at 0x198, 0x174, 0x150, ...;
+// scale 0x18 below; colour 0x2c, 0x28, ...), ours pack all the scales together and all
+// the positions together. The score is insensitive to declaration/assignment order.
+// NONMATCHING (64.98%): see the notes above.
+void winMsgDisp(WindowWork* work, f32 x, f32 y) {
+    u8* vp = (u8*)&str_802F3FE8;
+    GXColor iconColor = dat_8041cf28;
+    GXColor textColor = dat_8041cf2c;
+    GXColor wakuColor = dat_8041cf30;
+    char buf[0x404];
+    f32 dy;
+    f32 dx;
+    f32 dy2;
+    Vec s_tex;
+    Vec s_icon;
+    Vec s_text;
+    Vec s_label;
+    Vec s_sel0;
+    Vec s_sel1;
+    Vec s_sel2;
+    Vec s_sel3;
+    Vec s_arrow;
+
+    dx = x - float_250_8041d1a4 + float_10_8041d1a0 - float_10_8041d1a0;
+    dy = float_40_8041d0e8 + y;
+    windowDispGX_Waku_col(0, wakuColor, dx, dy, float_500_8041d1a8, float_80_8041d0b0,
+                          float_20_8041d0c0);
+
+    if (WW_S32(work, 0x138) != 0 && WW_S32(work, 0x138) > 0) {
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        s_tex = *(Vec*)(vp + 0xa8);
+        winMsgDispTex(winMsgDispVec((Vec*)(vp + 0x9c), dx, dy), &s_tex, iconColor);
+        winIconInit();
+        s_icon = *(Vec*)(vp + 0xc0);
+        winMsgDispIcon(*(u16*)((u8*)&itemDataTable[WW_S32(work, 0x138)] + 0x20),
+                       winMsgDispVec((Vec*)(vp + 0xb4), dx, dy), &s_icon,
+                       iconColor);
+    }
+
+    if (WW_PTR(work, 0x140) != NULL) {
+        const char* msg;
+        f32 width;
+
+        dx = (WW_S32(work, 0x138) == -2) ? float_neg130_8041d1ac : float_0_8041d068;
+        msg = msgSearch((const char*)WW_PTR(work, 0x140));
+        width = (f32)FontGetMessageWidth(msg);
+        dy2 = float_16_8041d0e4 + dy + float_8_8041d0a0;
+        winNameGX(work, 1, x - float_120_8041d09c + dx, dy2, float_240_8041d0ac,
+                  float_32_8041d0a4);
+        winFontInit();
+        winMsgDispEdge(winMsgDispVec((Vec*)(vp + 0xcc),
+                                     dx + ((float_240_8041d0ac - width) * float_0p5_8041d06c +
+                                            (x - float_120_8041d09c)),
+                                     dy2 - float_4_8041d07c),
+                       (Vec*)(vp + 0xd8), iconColor, msg);
+    }
+
+    if (WW_PTR(work, 0x13c) != NULL) {
+        f32 ty = dy - float_14_8041d180;
+
+        GXSetScissor(0, (u32)(float_240_8041d0ac - ty), 0x260, 0x38);
+        if (strcmp((const char*)WW_PTR(work, 0x13c),
+                   (const char*)(vp + 0x5d0)) == 0) {
+            s16 num = *(s16*)((u8*)lotteryGetPtr() + 0x20);
+
+            sprintf(buf, (const char*)msgSearch((const char*)WW_PTR(work, 0x13c)), num);
+            winFontInit();
+            s_text = *(Vec*)(vp + 0xf0);
+            winMsgDispText(winMsgDispVec((Vec*)(vp + 0xe4),
+                                         x - float_250_8041d1a4 + float_40_8041d0e8 - float_10_8041d1a0,
+                                         ty + (f32)(WW_S32(work, 0x148) * 0x1c)),
+                           &s_text, textColor, buf);
+        } else {
+            winFontInit();
+            s_label = *(Vec*)(vp + 0x108);
+            winMsgDispLabel(winMsgDispVec((Vec*)(vp + 0xfc),
+                                          x - float_250_8041d1a4 + float_40_8041d0e8 - float_10_8041d1a0,
+                                          ty + (f32)(WW_S32(work, 0x148) * 0x1c)),
+                            &s_label, textColor,
+                            (const char*)WW_PTR(work, 0x13c));
+        }
+        GXSetScissor(0, 0, 0x260, 0x1e0);
+    }
+
+    if (WW_S32(work, 0x14c) > 2) {
+        s32 sel = WW_S32(work, 0x148);
+        s32 num = WW_S32(work, 0x14c);
+
+        winIconInit();
+        if (sel == 0) {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                s_sel0 = *(Vec*)(vp + 0x120);
+                winMsgDispIcon(0x1b6,
+                               winMsgDispVec((Vec*)(vp + 0x114),
+                                             float_250_8041d1a4 + x - float_10_8041d1a0,
+                                             y - float_24_8041d0c8),
+                               &s_sel0, dat_8041cf34);
+            }
+        } else if (sel / 2 == (num + 1) / 2 - 1) {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                s_sel1 = *(Vec*)(vp + 0x138);
+                winMsgDispIcon(0x1b5,
+                               winMsgDispVec((Vec*)(vp + 0x12c),
+                                             float_250_8041d1a4 + x - float_10_8041d1a0,
+                                             y + float_24_8041d0c8),
+                               &s_sel1, dat_8041cf38);
+            }
+        } else {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                s_sel2 = *(Vec*)(vp + 0x150);
+                winMsgDispIcon(0x1b5,
+                               winMsgDispVec((Vec*)(vp + 0x144),
+                                             float_250_8041d1a4 + x - float_10_8041d1a0,
+                                             y + float_24_8041d0c8),
+                               &s_sel2, dat_8041cf3c);
+                s_sel3 = *(Vec*)(vp + 0x168);
+                winMsgDispIcon(0x1b6,
+                               winMsgDispVec((Vec*)(vp + 0x15c),
+                                             float_250_8041d1a4 + x - float_10_8041d1a0,
+                                             y - float_24_8041d0c8),
+                               &s_sel3, dat_8041cf40);
+            }
+        }
+        s_arrow = *(Vec*)(vp + 0x180);
+        winMsgDispIcon(0x70,
+                       winMsgDispVec((Vec*)(vp + 0x174),
+                                     float_250_8041d1a4 + x - float_10_8041d1a0,
+                                     y),
+                       &s_arrow, dat_8041cf44);
+    }
+}
 
 // 5-page switch over work->0xcc. The explicit empty case -1 below (a redirect
 // target of cases 11 and 41) is what makes MWCC pick 0 as the [0,10) search-tree
@@ -1091,9 +1264,12 @@ void winBgMain(WindowWork* work) {
     }
 }
 
-// NONMATCHING (84.78%): bubble sort of the 0xc-byte records at work+0x404. pb now
-// starts as work + j*0xc like the original; still, the original spills the three
-// swap temporaries to 0x14/0x18/0x1c and uses different volatile registers.
+// bubble sort of the 0xc-byte records at work+0x404. Writing the swap as a
+// `SortRec` (3-word) copy `t = *pa; *pa = *pb; *pb = t;` reproduces the original's
+// interleaved load/store sequence and its stack spills at 0x14/0x18/0x1c exactly.
+// NONMATCHING (96.69%): the instruction sequence is identical; only MWCC's
+// register coloring differs (the original keeps loop counters i/j in r5/r6 and the
+// table base in r11, ours uses r10/r11 and r9; the temps shift with them).
 void sort_4_3_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
         s32 i;
@@ -1104,9 +1280,9 @@ void sort_4_3_func(WindowWork* work) {
             u8* pb = (u8*)work + j * 0xC;
 
             while (j < WW_S32(work, 0xD64)) {
+                s32 swap = 0;
                 ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
                 ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
-                s32 swap = 0;
 
                 if (da->bp_cost > db->bp_cost) {
                     swap = 1;
@@ -1114,15 +1290,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    u32 t0 = *(u32*)(pa + 0x404);
-                    u32 t1 = *(u32*)(pa + 0x408);
-                    u32 t2 = *(u32*)(pa + 0x40C);
-                    *(u32*)(pa + 0x404) = *(u32*)(pb + 0x404);
-                    *(u32*)(pa + 0x408) = *(u32*)(pb + 0x408);
-                    *(u32*)(pa + 0x40C) = *(u32*)(pb + 0x40C);
-                    *(u32*)(pb + 0x404) = t0;
-                    *(u32*)(pb + 0x408) = t1;
-                    *(u32*)(pb + 0x40C) = t2;
+                    SortRec t = *(SortRec*)(pa + 0x404);
+                    *(SortRec*)(pa + 0x404) = *(SortRec*)(pb + 0x404);
+                    *(SortRec*)(pb + 0x404) = t;
                 }
                 pb += 0xC;
                 j++;
@@ -1138,9 +1308,9 @@ void sort_4_3_func(WindowWork* work) {
             u8* pb = (u8*)work + j * 0xC;
 
             while (j < WW_S32(work, 0xD64)) {
+                s32 swap = 0;
                 ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
                 ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
-                s32 swap = 0;
 
                 if (da->bp_cost < db->bp_cost) {
                     swap = 1;
@@ -1148,15 +1318,9 @@ void sort_4_3_func(WindowWork* work) {
                     swap = 1;
                 }
                 if (swap) {
-                    u32 t0 = *(u32*)(pa + 0x404);
-                    u32 t1 = *(u32*)(pa + 0x408);
-                    u32 t2 = *(u32*)(pa + 0x40C);
-                    *(u32*)(pa + 0x404) = *(u32*)(pb + 0x404);
-                    *(u32*)(pa + 0x408) = *(u32*)(pb + 0x408);
-                    *(u32*)(pa + 0x40C) = *(u32*)(pb + 0x40C);
-                    *(u32*)(pb + 0x404) = t0;
-                    *(u32*)(pb + 0x408) = t1;
-                    *(u32*)(pb + 0x40C) = t2;
+                    SortRec t = *(SortRec*)(pa + 0x404);
+                    *(SortRec*)(pa + 0x404) = *(SortRec*)(pb + 0x404);
+                    *(SortRec*)(pb + 0x404) = t;
                 }
                 pb += 0xC;
                 j++;
