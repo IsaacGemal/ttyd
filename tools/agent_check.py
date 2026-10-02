@@ -7,7 +7,7 @@
 
 UNIT is the source path without src/ and .c, e.g. driver/mapdrv. 100% means byte-identical.
 """
-import json, re, subprocess, sys
+import json, re, subprocess, sys, time
 
 FINAL = sys.argv[1] == "--final"
 if FINAL:
@@ -32,11 +32,19 @@ if os.path.exists(src) and src not in open("build.ninja").read():
 # --final also compiles every source (a header change could break another file), and the merge builds everything.
 target = entry.get("base_path") if entry else None
 jobs = ["-j2"]  # two waves of agents share the tower's 16 cores
+t0 = time.time()
 b = subprocess.run(["ninja", *jobs] + ([target] if target else []), capture_output=True, text=True)
 if b.returncode == 0 and FINAL:
     b = subprocess.run(["ninja", *jobs, "all_source"], capture_output=True, text=True)
 if b.returncode:
     out = b.stdout + b.stderr
+    # tools/project.py caps every compile at TTYD_COMPILE_TIMEOUT seconds; a build that failed after that long was
+    # killed there: the compiler loops forever on this source.
+    if time.time() - t0 >= int(os.environ.get("TTYD_COMPILE_TIMEOUT", 300)) - 1:
+        print("BUILD FAILED: THE COMPILER HUNG on this source and was killed after "
+              f"{int(time.time() - t0)} s (a normal compile takes about a second). Your last edit makes mwcceppc loop "
+              "forever: undo it (lastgood.c is the last version that built) and write that part differently.")
+        sys.exit(1)
     errs = [l for l in out.splitlines() if "rror" in l or "###" in l or l.startswith("#")]
     print("BUILD FAILED\n" + "\n".join((errs or out.splitlines())[-40:]))
     sys.exit(1)

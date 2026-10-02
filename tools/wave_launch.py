@@ -129,6 +129,10 @@ def run(host, tag, unit, key, log):
             f"'Do the task described in the attached PROMPT.md, following docs/AGENT_BRIEF.md.' </dev/null >events.jsonl 2>stderr.log; echo rc=$?; "
             f"if ! test -s REPORT.md || ! grep -q -- '--final' events.jsonl; then echo finisher; "
             f"timeout 900 {box} pi --mode json -c --model {MODEL} {shlex.quote(finish)} </dev/null >>events.jsonl 2>>stderr.log; fi; "
+            # timeout kills pi, not what its tools started: a hung compile under check.py outlived its agent by a day
+            # (wave 53). Kill whatever still runs in this workspace (except this shell).
+            f"for d in /proc/[0-9]*; do case \"$(readlink $d/cwd 2>/dev/null)\" in \"$PWD\"|\"$PWD\"/*) "
+            f"[ \"${{d#/proc/}}\" != $$ ] && kill -9 \"${{d#/proc/}}\" 2>/dev/null; esac; done; "
             f"cp {src_path(unit)} final.c 2>/dev/null; "
             f"{{ diff -rq {BASE}/src src; diff -rq {BASE}/libs libs; diff -rq {BASE}/rels rels; }} | grep -v -F '{src_path(unit)} differ' "
             f"| grep -v -E 'rels/[^/ ]+/include[/:]' > other_changes.txt; "  # merge_agent.sh allows the agent's own file

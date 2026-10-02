@@ -15,6 +15,7 @@ import json
 import math
 import os
 import platform
+import shutil
 import sys
 from pathlib import Path
 from typing import (
@@ -34,6 +35,9 @@ from typing import (
 
 from . import ninja_syntax
 from .ninja_syntax import serialize_path
+
+# Upper bound on one compiler invocation (see compile_timeout_cmd); the slowest file takes a few seconds.
+COMPILE_TIMEOUT_S = int(os.environ.get("TTYD_COMPILE_TIMEOUT", 300))
 
 if sys.platform == "cygwin":
     sys.exit(
@@ -637,6 +641,13 @@ def generate_build_ninja(
 
     wrapper_cmd = f"{wrapper} " if wrapper else ""
 
+    # A compile normally takes about a second, but some inputs make mwcceppc loop forever (wave 53 battle_camera,
+    # wave 57 eff_funemizu: compiles left running for 16-25 h, one of them blocking a launcher thread). Every
+    # compile is capped, so whatever runs ninja (agents' check.py, ci.py, the collection tools) fails instead of
+    # hanging. GNU timeout exits 124 when it fires; tools/agent_check.py reports that as a compiler hang.
+    timeout_bin = shutil.which("timeout") or shutil.which("gtimeout")
+    compile_timeout_cmd = f"{timeout_bin} -k 10 {COMPILE_TIMEOUT_S} " if timeout_bin else ""
+
     compilers = config.compilers()
     compilers_implicit: Optional[Path] = None
     if config.compilers_path is None and config.compilers_tag is not None:
@@ -689,19 +700,19 @@ def generate_build_ninja(
 
     # MWCC
     mwcc = compiler_path / "mwcceppc.exe"
-    mwcc_cmd = f"{wrapper_cmd}{mwcc} $cflags -MMD -c $in -o $basedir"
+    mwcc_cmd = f"{compile_timeout_cmd}{wrapper_cmd}{mwcc} $cflags -MMD -c $in -o $basedir"
     mwcc_implicit: List[Optional[Path]] = [compilers_implicit or mwcc, wrapper_implicit]
 
     # MWCC with UTF-8 to Shift JIS wrapper
-    mwcc_sjis_cmd = f"{wrapper_cmd}{sjiswrap} {mwcc} $cflags -MMD -c $in -o $basedir"
+    mwcc_sjis_cmd = f"{compile_timeout_cmd}{wrapper_cmd}{sjiswrap} {mwcc} $cflags -MMD -c $in -o $basedir"
     mwcc_sjis_implicit: List[Optional[Path]] = [*mwcc_implicit, sjiswrap]
 
     # MWCC for precompiled headers
-    mwcc_pch_cmd = f"{wrapper_cmd}{mwcc} $cflags -MMD -c $in -o $basedir -precompile $basefilestem.mch"
+    mwcc_pch_cmd = f"{compile_timeout_cmd}{wrapper_cmd}{mwcc} $cflags -MMD -c $in -o $basedir -precompile $basefilestem.mch"
     mwcc_pch_implicit: List[Optional[Path]] = [*mwcc_implicit]
 
     # MWCC for precompiled headers with UTF-8 to Shift JIS wrapper
-    mwcc_pch_sjis_cmd = f"{wrapper_cmd}{sjiswrap} {mwcc} $cflags -MMD -c $in -o $basedir -precompile $basefilestem.mch"
+    mwcc_pch_sjis_cmd = f"{compile_timeout_cmd}{wrapper_cmd}{sjiswrap} {mwcc} $cflags -MMD -c $in -o $basedir -precompile $basefilestem.mch"
     mwcc_pch_sjis_implicit: List[Optional[Path]] = [*mwcc_implicit, sjiswrap]
 
     # MWCC with extab post-processing
