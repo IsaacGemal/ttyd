@@ -635,247 +635,245 @@ static void ext_moamoa_main(void) {
             v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008914);
             psndSFXOn_3D("SFX_STG6_MOAMOA_VOICE1", &v);
         }
-        if ((u32)pose->field_0x02 <= 0x41) {
-            switch (pose->field_0x02) {
-            case 0x0:
-                if (i % 50 < 0x14) {
-                    f32 ang = randf(0.0f, 6.2831855f);
-                    f32 len = randf(0.0f, 50.0f);
+        switch (pose->field_0x02) {
+        case 0x0:
+            if (i % 50 < 0x14) {
+                f32 ang = randf(0.0f, 6.2831855f);
+                f32 len = randf(0.0f, 50.0f);
 
-                    tx = len * ekiSinf2(ang) + MOA_TARGET(i).x;
-                    tz = -(len * ekiCosf2(ang) - MOA_TARGET(i).z);
-                    rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], tx, tz) / 360.0f;
-                    tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
-                    ty = ep->matrix[0][1][3];
-                    tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
-                    moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, randf(1.5f, 3.0f), randf(0.8f, 2.0f));
-                    pose->flags |= 0x1;
-                } else {
-                    f32 ang;
+                tx = len * ekiSinf2(ang) + MOA_TARGET(i).x;
+                tz = -(len * ekiCosf2(ang) - MOA_TARGET(i).z);
+                rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], tx, tz) / 360.0f;
+                tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
+                ty = ep->matrix[0][1][3];
+                tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
+                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, randf(1.5f, 3.0f), randf(0.8f, 2.0f));
+                pose->flags |= 0x1;
+            } else {
+                f32 ang;
 
-                    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
-                    ang = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
-                    if (dist < 100.0f) {
-                        ang = randf(0.0f, 360.0f);
-                    }
-                    rad = 6.2831855f * ang / 360.0f;
-                    tx = 5.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
-                    ty = ep->matrix[0][1][3];
-                    tz = -(5.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
-                    moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, randf(0.3f, 0.5f), randf(0.5f, 0.8f));
-                    pose->flags &= ~0x1;
+                dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
+                ang = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
+                if (dist < 100.0f) {
+                    ang = randf(0.0f, 360.0f);
                 }
-                break;
-            case 0x32:
-                if (--pose->field_0x04 < 0) {
-                    pose->field_0x04 = 0;
-                    pose->field_0x02++;
-                }
-                break;
-            case 0x33:
-                pose->field_0x1C = randf(0.0f, 200.0f);
-                f = 300.0f * pose->field_0x1C / 200.0f;
-                pose->field_0x20 = randf(0.0f, f);
-                pose->field_0x02++;
+                rad = 6.2831855f * ang / 360.0f;
+                tx = 5.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
+                ty = ep->matrix[0][1][3];
+                tz = -(5.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
+                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, randf(0.3f, 0.5f), randf(0.5f, 0.8f));
+                pose->flags &= ~0x1;
+            }
+            break;
+        case 0x32:
+            if (--pose->field_0x04 < 0) {
                 pose->field_0x04 = 0;
-                /* fallthrough */
-            case 0x34:
-                if (pose->field_0x04 < 200) {
-                    f = 1.0f;
-                } else {
-                    f = (f32)(800 - pose->field_0x04) / 600.0f;
-                }
-                if (f < 0.0f) {
-                    f = 0.0f;
-                    pose->flags |= 0x200;
-                }
-                tx = MOA_TARGET(i).x;
-                ty = MOA_TARGET(i).y;
-                tz = MOA_TARGET(i).z;
-                dist = pose->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) * 0.25f);
-                ty = pose->field_0x1C * f + ty;
-                tz = f * (-pose->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) * 0.25f)) + tz;
-                ep->matrix[0][0][3] += ((f * dist + tx) - ep->matrix[0][0][3]) / 15.0f;
-                ep->matrix[0][1][3] += (ty - ep->matrix[0][1][3]) / 15.0f;
-                ep->matrix[0][2][3] += (tz - ep->matrix[0][2][3]) / 15.0f;
-                pose->field_0x04++;
-                break;
-            case 0x1:
-                dist = wp->field_0x554;
-                rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f)) / 360.0f;
-                tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
-                ty = ep->matrix[0][1][3];
-                tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
-                moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz, randf(1.0f, 1.0f),
-                            randf(0.4f, 0.4f));
-                break;
-            case 0x2:
-                dist = wp->field_0x554;
-                rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f) + 180.0f) / 360.0f;
-                ty = ep->matrix[0][1][3];
-                tx = 30.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
-                tz = ep->matrix[0][2][3];
-                moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz,
-                            2.0f * randf(1.0f, 1.0f), 2.0f * randf(0.4f, 0.4f));
-                break;
-            case 0x3:
-                ep->matrix[0][1][3] += pose->field_0x14;
-                pose->field_0x14 -= pose->field_0x20;
-                rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->position.x, pose->position.z)
-                      / 360.0f;
-                ep->matrix[0][0][3] = pose->field_0x1C * ekiSinf2(rad) + ep->matrix[0][0][3];
-                ep->matrix[0][2][3] = pose->field_0x1C * -ekiCosf2(rad) + ep->matrix[0][2][3];
-                if (--pose->field_0x18 < 0) {
-                    ep->matrix[0][0][3] = pose->position.x;
-                    ep->matrix[0][1][3] = pose->position.y;
-                    ep->matrix[0][2][3] = pose->position.z;
-                    pose->flags &= ~0x2;
-                    ep->flags &= ~0x10;
-                    pose->field_0x04 = 0;
-                    pose->field_0x02++;
-                }
-                break;
-            case 0x4:
-                if (++pose->field_0x04 > 4) {
-                    pose->field_0x02 = pose->field_0x24;
-                }
-                break;
-            case 0x24:
-            case 0x25:
-            case 0x26:
-                if (!(pose->flags & 0x1)) {
-                    tx = mario->position.x;
-                    tz = mario->position.z;
-                } else {
-                    tx = MOA_TARGET(i).x;
-                    tz = MOA_TARGET(i).z;
-                }
-                rad = 6.2831855f * (angleABf(tx, tz, ep->matrix[0][0][3], ep->matrix[0][2][3]) + randf(-45.0f, 45.0f))
-                      / 360.0f;
-                tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
-                ty = ep->matrix[0][1][3];
-                tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
-                moamoa_jump(ep, pose, pose->field_0x02 + 1, 1, tx, ty, tz, randf(1.0f, 1.0f), randf(1.0f, 1.0f));
-                break;
-            case 0x27:
-                if (++pose->field_0x04 < 0x1E) {
-                    ep->matrix[0][0][0] *= 0.9f;
-                    ep->matrix[0][1][1] = ep->matrix[0][1][1] * 0.9f;
-                    ep->matrix[0][2][2] = ep->matrix[0][2][2] * 0.9f;
-                } else {
-                    pose->field_0x02 = 0x31;
-                }
-                break;
-            case 0x2F:
-                rad = 6.2831855f * randf(135.0f, 225.0f) / 360.0f;
-                dist = randf(300.0f, 500.0f);
-                tx = dist * ekiSinf2(rad) + ep->matrix[0][0][3];
-                tz = -(dist * ekiCosf2(rad) - ep->matrix[0][2][3]);
-                f = randf(5.0f, 6.0f);
-                ty = randf(0.2f, 0.3f);
-                if (voicePlayed == 0) {
-                    v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008920);
-                    psndSFXOn_3D((const char*)0x6C3, &v);
-                    voicePlayed = 1;
-                }
-                moamoa_jump(ep, pose, 0x31, 0, tx, -100.0f, tz, f, ty);
-                break;
-            case 0x30:
-                if (--pose->field_0x18 > 0) {
-                    pose->position.x += pose->field_0x14;
-                    pose->position.y += pose->field_0x1C;
-                    pose->position.z += pose->field_0x20;
-                    ep->matrix[0][0][3] += pose->position.x;
-                    ep->matrix[0][1][3] += pose->position.y;
-                    ep->matrix[0][2][3] += pose->position.z;
-                } else {
-                    pose->field_0x02 = 0x31;
-                }
-                break;
-            case 0x31:
-                if ((wp->field_0x00 & 0x1000) && (wp->field_0x00 & 0x2000)) {
-                    pose->field_0x02 = 0x3E;
-                } else if (wp->field_0x38 < 0xFA) {
-                    PSMTXIdentity(*ep->matrix);
-                    ep->matrix[0][0][3] = MOA_TARGET(i).x;
-                    ep->matrix[0][1][3] = MOA_TARGET(i).y;
-                    ep->matrix[0][2][3] = MOA_TARGET(i).z;
-                    pose->flags = 0;
-                    pose->field_0x02 = 0;
-                    pose->field_0x04 = 0;
-                } else {
-                    pose->field_0x02 = 0x3E;
-                }
-                break;
-            case 0x19:
-                if (pose->field_0x04 < 0x1E) {
-                    Mtx rot;
-
-                    PSMTXRotRad(rot, 'y', 0.20944f);
-                    PSMTXConcat(*ep->matrix, rot, *ep->matrix);
-                    ep->flags &= ~0x2;
-                    pose->field_0x04++;
-                } else {
-                    ep->flags |= 0x2;
-                    pose->field_0x04 =
-                        (100.0f - distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z)) * 0.5f;
-                    pose->field_0x02++;
-                }
-                break;
-            case 0x1A:
-                if (--pose->field_0x04 < 0) {
-                    pose->field_0x02++;
-                }
-                break;
-            case 0x1B:
-                if (fabs(ep->matrix[0][0][3]) < 300.0 && fabs(ep->matrix[0][2][3]) < 300.0) {
-                    rad = 6.2831855f * (angleABf(MOA_TARGET(i).x, MOA_TARGET(i).z, ep->matrix[0][0][3], ep->matrix[0][2][3])
-                                        + randf(-45.0f, 45.0f))
-                          / 360.0f;
-                    tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
-                    tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
-                    moamoa_jump(ep, pose, pose->field_0x02, 1, tx, 0.0f, tz, 3.0f * randf(1.0f, 1.0f), randf(1.0f, 1.0f));
-                } else {
-                    pose->field_0x02 = 0x3E;
-                }
-                break;
-            case 0x3E:
-                pose->flags |= 0x20;
-                ep->flags &= ~0x1;
-                ep->flags |= 0x4;
-                break;
-            case 0x3F:
-                rad = 6.2831855f * randf(225.0f, 315.0f) / 360.0f;
-                f = randf(2.0f, 3.0f);
-                pose->field_0x04 = irand(i / 2);
-                pose->position.x = f * ekiSinf2(rad);
-                pose->position.y = randf(1.0f, 2.0f);
-                pose->position.z = f * -ekiCosf2(rad);
                 pose->field_0x02++;
-                break;
-            case 0x40:
-                if (--pose->field_0x04 < 0) {
-                    pose->field_0x02++;
-                }
-                break;
-            case 0x41: {
-                Mtx rot;
-
-                pose->position.x *= 1.1f;
-                pose->position.y *= 1.02f;
-                pose->position.z *= 1.1f;
+            }
+            break;
+        case 0x33:
+            pose->field_0x1C = randf(0.0f, 200.0f);
+            f = 300.0f * pose->field_0x1C / 200.0f;
+            pose->field_0x20 = randf(0.0f, f);
+            pose->field_0x02++;
+            pose->field_0x04 = 0;
+            /* fallthrough */
+        case 0x34:
+            if (pose->field_0x04 < 200) {
+                f = 1.0f;
+            } else {
+                f = (f32)(800 - pose->field_0x04) / 600.0f;
+            }
+            if (f < 0.0f) {
+                f = 0.0f;
+                pose->flags |= 0x200;
+            }
+            tx = MOA_TARGET(i).x;
+            ty = MOA_TARGET(i).y;
+            tz = MOA_TARGET(i).z;
+            dist = pose->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) * 0.25f);
+            ty = pose->field_0x1C * f + ty;
+            tz = f * (-pose->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) * 0.25f)) + tz;
+            ep->matrix[0][0][3] += ((f * dist + tx) - ep->matrix[0][0][3]) / 15.0f;
+            ep->matrix[0][1][3] += (ty - ep->matrix[0][1][3]) / 15.0f;
+            ep->matrix[0][2][3] += (tz - ep->matrix[0][2][3]) / 15.0f;
+            pose->field_0x04++;
+            break;
+        case 0x1:
+            dist = wp->field_0x554;
+            rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f)) / 360.0f;
+            tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
+            ty = ep->matrix[0][1][3];
+            tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
+            moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz, randf(1.0f, 1.0f),
+                        randf(0.4f, 0.4f));
+            break;
+        case 0x2:
+            dist = wp->field_0x554;
+            rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f) + 180.0f) / 360.0f;
+            ty = ep->matrix[0][1][3];
+            tx = 30.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
+            tz = ep->matrix[0][2][3];
+            moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz,
+                        2.0f * randf(1.0f, 1.0f), 2.0f * randf(0.4f, 0.4f));
+            break;
+        case 0x3:
+            ep->matrix[0][1][3] += pose->field_0x14;
+            pose->field_0x14 -= pose->field_0x20;
+            rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->position.x, pose->position.z)
+                  / 360.0f;
+            ep->matrix[0][0][3] = pose->field_0x1C * ekiSinf2(rad) + ep->matrix[0][0][3];
+            ep->matrix[0][2][3] = pose->field_0x1C * -ekiCosf2(rad) + ep->matrix[0][2][3];
+            if (--pose->field_0x18 < 0) {
+                ep->matrix[0][0][3] = pose->position.x;
+                ep->matrix[0][1][3] = pose->position.y;
+                ep->matrix[0][2][3] = pose->position.z;
+                pose->flags &= ~0x2;
+                ep->flags &= ~0x10;
+                pose->field_0x04 = 0;
+                pose->field_0x02++;
+            }
+            break;
+        case 0x4:
+            if (++pose->field_0x04 > 4) {
+                pose->field_0x02 = pose->field_0x24;
+            }
+            break;
+        case 0x24:
+        case 0x25:
+        case 0x26:
+            if (!(pose->flags & 0x1)) {
+                tx = mario->position.x;
+                tz = mario->position.z;
+            } else {
+                tx = MOA_TARGET(i).x;
+                tz = MOA_TARGET(i).z;
+            }
+            rad = 6.2831855f * (angleABf(tx, tz, ep->matrix[0][0][3], ep->matrix[0][2][3]) + randf(-45.0f, 45.0f))
+                  / 360.0f;
+            tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
+            ty = ep->matrix[0][1][3];
+            tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
+            moamoa_jump(ep, pose, pose->field_0x02 + 1, 1, tx, ty, tz, randf(1.0f, 1.0f), randf(1.0f, 1.0f));
+            break;
+        case 0x27:
+            if (++pose->field_0x04 < 0x1E) {
+                ep->matrix[0][0][0] *= 0.9f;
+                ep->matrix[0][1][1] = ep->matrix[0][1][1] * 0.9f;
+                ep->matrix[0][2][2] = ep->matrix[0][2][2] * 0.9f;
+            } else {
+                pose->field_0x02 = 0x31;
+            }
+            break;
+        case 0x2F:
+            rad = 6.2831855f * randf(135.0f, 225.0f) / 360.0f;
+            dist = randf(300.0f, 500.0f);
+            tx = dist * ekiSinf2(rad) + ep->matrix[0][0][3];
+            tz = -(dist * ekiCosf2(rad) - ep->matrix[0][2][3]);
+            f = randf(5.0f, 6.0f);
+            ty = randf(0.2f, 0.3f);
+            if (voicePlayed == 0) {
+                v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008920);
+                psndSFXOn_3D((const char*)0x6C3, &v);
+                voicePlayed = 1;
+            }
+            moamoa_jump(ep, pose, 0x31, 0, tx, -100.0f, tz, f, ty);
+            break;
+        case 0x30:
+            if (--pose->field_0x18 > 0) {
+                pose->position.x += pose->field_0x14;
+                pose->position.y += pose->field_0x1C;
+                pose->position.z += pose->field_0x20;
                 ep->matrix[0][0][3] += pose->position.x;
                 ep->matrix[0][1][3] += pose->position.y;
                 ep->matrix[0][2][3] += pose->position.z;
+            } else {
+                pose->field_0x02 = 0x31;
+            }
+            break;
+        case 0x31:
+            if ((wp->field_0x00 & 0x1000) && (wp->field_0x00 & 0x2000)) {
+                pose->field_0x02 = 0x3E;
+            } else if (wp->field_0x38 < 0xFA) {
+                PSMTXIdentity(*ep->matrix);
+                ep->matrix[0][0][3] = MOA_TARGET(i).x;
+                ep->matrix[0][1][3] = MOA_TARGET(i).y;
+                ep->matrix[0][2][3] = MOA_TARGET(i).z;
+                pose->flags = 0;
+                pose->field_0x02 = 0;
+                pose->field_0x04 = 0;
+            } else {
+                pose->field_0x02 = 0x3E;
+            }
+            break;
+        case 0x19:
+            if (pose->field_0x04 < 0x1E) {
+                Mtx rot;
+
                 PSMTXRotRad(rot, 'y', 0.20944f);
                 PSMTXConcat(*ep->matrix, rot, *ep->matrix);
                 ep->flags &= ~0x2;
-                if (ep->matrix[0][0][3] < -1000.0f) {
-                    pose->field_0x02 = 0x3E;
-                }
-                break;
+                pose->field_0x04++;
+            } else {
+                ep->flags |= 0x2;
+                pose->field_0x04 =
+                    (100.0f - distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z)) * 0.5f;
+                pose->field_0x02++;
             }
+            break;
+        case 0x1A:
+            if (--pose->field_0x04 < 0) {
+                pose->field_0x02++;
             }
+            break;
+        case 0x1B:
+            if (fabs(ep->matrix[0][0][3]) < 300.0 && fabs(ep->matrix[0][2][3]) < 300.0) {
+                rad = 6.2831855f * (angleABf(MOA_TARGET(i).x, MOA_TARGET(i).z, ep->matrix[0][0][3], ep->matrix[0][2][3])
+                                    + randf(-45.0f, 45.0f))
+                      / 360.0f;
+                tx = 15.0f * ekiSinf2(rad) + ep->matrix[0][0][3];
+                tz = -(15.0f * ekiCosf2(rad) - ep->matrix[0][2][3]);
+                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, 0.0f, tz, 3.0f * randf(1.0f, 1.0f), randf(1.0f, 1.0f));
+            } else {
+                pose->field_0x02 = 0x3E;
+            }
+            break;
+        case 0x3E:
+            pose->flags |= 0x20;
+            ep->flags &= ~0x1;
+            ep->flags |= 0x4;
+            break;
+        case 0x3F:
+            rad = 6.2831855f * randf(225.0f, 315.0f) / 360.0f;
+            f = randf(2.0f, 3.0f);
+            pose->field_0x04 = irand(i / 2);
+            pose->position.x = f * ekiSinf2(rad);
+            pose->position.y = randf(1.0f, 2.0f);
+            pose->position.z = f * -ekiCosf2(rad);
+            pose->field_0x02++;
+            break;
+        case 0x40:
+            if (--pose->field_0x04 < 0) {
+                pose->field_0x02++;
+            }
+            break;
+        case 0x41: {
+            Mtx rot;
+
+            pose->position.x *= 1.1f;
+            pose->position.y *= 1.02f;
+            pose->position.z *= 1.1f;
+            ep->matrix[0][0][3] += pose->position.x;
+            ep->matrix[0][1][3] += pose->position.y;
+            ep->matrix[0][2][3] += pose->position.z;
+            PSMTXRotRad(rot, 'y', 0.20944f);
+            PSMTXConcat(*ep->matrix, rot, *ep->matrix);
+            ep->flags &= ~0x2;
+            if (ep->matrix[0][0][3] < -1000.0f) {
+                pose->field_0x02 = 0x3E;
+            }
+            break;
+        }
         }
         if (!(pose->flags & 0x98)) {
             if (ep->matrix[0][0][3] > 280.0f) {
