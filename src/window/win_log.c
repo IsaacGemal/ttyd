@@ -1950,7 +1950,7 @@ extern const char str_802F6348[];
 extern const char str_802F6290[];
 extern const char str_802F62A0[];
 
-// NONMATCHING: first draft.
+// NONMATCHING (74.42%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
 void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
@@ -2107,7 +2107,7 @@ extern const f32 float_160_8041d7d8;
 extern const f32 float_210_8041d7f0;
 extern const f32 float_16_8041d7e4;
 
-// NONMATCHING: first draft.
+// NONMATCHING (81.85%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
 void monosiri_disp(CameraId camId, void* param) {
     MonosiriWork* w = param;
     const char* base = str_802F5EB8;
@@ -2265,7 +2265,7 @@ typedef struct TattleCamEntry {
 
 // Renders a tattle model into the viewer's texture: frames the model's bounding box, draws the pose (and the swarm
 // for the moamoa tattle) and copies the EFB into the viewer's image.
-// NONMATCHING: first draft.
+// NONMATCHING (85.76%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
 void capture(CameraId camId, void* param) {
     MonosiriWork* w = param;
     const char* base = str_802F5EB8;
