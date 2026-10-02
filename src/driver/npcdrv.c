@@ -243,152 +243,6 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
 }
 
 
-// NONMATCHING (88.37%): 1 extra, plus register differences.
-void npcDisp_xlu(CameraId cameraId, void* param) {
-    NpcEntry* entry = param; // cast to proper type
-    Mtx mtx;
-    GXColor color;
-    f32 rotY;
-
-    rotY = reviseAngle(-entry->direction);
-    mtx_setup(entry, mtx, -1);
-
-    color = entry->color;
-    if (entry->jumpFlags & 0x400000) {
-        color.r /= 2;
-        color.g /= 2;
-        color.b /= 2;
-        animPoseSetMaterialEvtColor(entry->poseId, color);
-        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-    }
-
-    if (entry->flags & 0x800000) {
-        AnimTableEntry* anim;
-        AnimationPose* animPose;
-        CameraEntry* camera;
-        f32 dx, dz;
-        f32 angle;
-        u32 i;
-
-        anim = animPoseGetCurrentAnim(entry->poseId); //stale store
-        animPose = animPoseGetAnimPosePtr(entry->poseId);
-        anim = animPoseGetCurrentAnim(entry->poseId);
-
-        camera = camGetPtr(CAMERA_3D);
-        dx = camera->cameraAt.x - camera->cameraPos.x;
-        dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
-        if (angle < 0.0f) {
-            angle += 360.0f;
-        }
-        angle = reviseAngle((angle - animPose->rotationY));
-
-        
-        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][0], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-            }
-        } else {
-            for (i = 0; i < 14; i++) {
-                if (!strcmp(luigi_pose[i][1], anim->name)) {
-                    break;
-                }
-            }
-            if (i < 14) {
-                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-            }
-        }
-    }
-    animPoseMain(entry->poseId);
-    animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
-    animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
-    animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
-}
-
-#pragma opt_lifetimes off // keeps `anim` in the target's r29
-// NONMATCHING (98.87%): remaining diffs are MWCC register allocation. The pragma above puts
-// `anim` in r29 (target r29), but MWCC still spills the animPoseGetCurrentAnim result through r0
-// (one extra `mr r29,r0`) and assigns the loop vars as i=r28/ptr=r30 instead of i=r30/ptr=r28.
-void npcDisp(CameraId camId, void* param) {
-    NpcEntry* entry = param; // cast to proper type
-    Mtx mtx;
-    GXColor color;
-    f32 rotY;
-    DispEntry* disp;
-
-    rotY = reviseAngle(-entry->direction);
-    mtx_setup(entry, mtx, -1);
-
-    disp = dispGetCurWork();
-    switch (disp->renderMode) {
-        case 0:
-            color = entry->color;
-            if (entry->jumpFlags & 0x400000) {
-                color.r /= 2;
-                color.g /= 2;
-                color.b /= 2;
-                animPoseSetMaterialEvtColor(entry->poseId, color);
-                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-            }
-            if (entry->flags & 0x800000) {
-                AnimTableEntry* anim;
-                AnimationPose* animPose;
-                CameraEntry* camera;
-                f32 dx, dz;
-                f32 angle;
-                u32 i;
-
-                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
-                animPose = animPoseGetAnimPosePtr(entry->poseId);
-                anim = animPoseGetCurrentAnim(entry->poseId);
-
-                camera = camGetPtr(CAMERA_3D);
-                dx = camera->cameraAt.x - camera->cameraPos.x;
-                dz = camera->cameraAt.z - camera->cameraPos.z;
-                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
-                if (angle < 0.0f) {
-                    angle += 360.0f;
-                }
-                angle = reviseAngle((angle - animPose->rotationY));
-
-                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][0], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
-                    }
-                } else {
-                    for (i = 0; i < 14; i++) {
-                        if (!strcmp(luigi_pose[i][1], anim->name)) {
-                            break;
-                        }
-                    }
-                    if (i < 14) {
-                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
-                    }
-                }
-            }
-            animPoseMain(entry->poseId);
-            animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
-            break;
-        case 1:
-            animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
-            break;
-        case 2:
-            animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
-            break;
-    }
-}
-#pragma opt_lifetimes reset
-
 #ifdef MUST_MATCH
 // MUST_MATCH: the original does the colour + billboard work through an inlined helper. Inlining the
 // whole block makes MWCC put the GXColor local at r1+0x10 and its by-value copy at r1+0x14 (the
@@ -447,7 +301,209 @@ static inline void npcOffscreenSetup(NpcEntry* entry) {
         }
     }
 }
+
+static inline void npcOffscreenSetup2(NpcEntry* entry, GXColor* colorp) {
+    AnimTableEntry* anim;
+    AnimationPose* animPose;
+    CameraEntry* camera;
+    f32 dx, dz;
+    f32 angle;
+    u32 i;
+
+    *colorp = entry->color;
+    if (entry->jumpFlags & 0x400000) {
+        colorp->r /= 2;
+        colorp->g /= 2;
+        colorp->b /= 2;
+        animPoseSetMaterialEvtColor(entry->poseId, *colorp);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    }
+
+    if (entry->flags & 0x800000) {
+        anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+        animPose = animPoseGetAnimPosePtr(entry->poseId);
+        anim = animPoseGetCurrentAnim(entry->poseId);
+
+        camera = camGetPtr(CAMERA_3D);
+        dx = camera->cameraAt.x - camera->cameraPos.x;
+        dz = camera->cameraAt.z - camera->cameraPos.z;
+        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        if (angle < 0.0f) {
+            angle += 360.0f;
+        }
+        angle = reviseAngle((angle - animPose->rotationY));
+
+        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][0], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+            }
+        } else {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][1], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+            }
+        }
+    }
+}
 #endif
+
+void npcDisp_xlu(CameraId cameraId, void* param) {
+    NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+
+    rotY = reviseAngle(-entry->direction);
+    mtx_setup(entry, mtx, -1);
+
+#ifdef MUST_MATCH
+    npcOffscreenSetup2(entry, &color);
+#else
+    color = entry->color;
+    if (entry->jumpFlags & 0x400000) {
+        color.r /= 2;
+        color.g /= 2;
+        color.b /= 2;
+        animPoseSetMaterialEvtColor(entry->poseId, color);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    }
+
+    if (entry->flags & 0x800000) {
+        AnimTableEntry* anim;
+        AnimationPose* animPose;
+        CameraEntry* camera;
+        f32 dx, dz;
+        f32 angle;
+        u32 i;
+
+        anim = animPoseGetCurrentAnim(entry->poseId); //stale store
+        animPose = animPoseGetAnimPosePtr(entry->poseId);
+        anim = animPoseGetCurrentAnim(entry->poseId);
+
+        camera = camGetPtr(CAMERA_3D);
+        dx = camera->cameraAt.x - camera->cameraPos.x;
+        dz = camera->cameraAt.z - camera->cameraPos.z;
+        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        if (angle < 0.0f) {
+            angle += 360.0f;
+        }
+        angle = reviseAngle((angle - animPose->rotationY));
+
+        
+        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][0], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+            }
+        } else {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][1], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+            }
+        }
+    }
+#endif
+    animPoseMain(entry->poseId);
+    animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+    animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+    animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+}
+
+void npcDisp(CameraId camId, void* param) {
+    NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+    DispEntry* disp;
+
+    rotY = reviseAngle(-entry->direction);
+    mtx_setup(entry, mtx, -1);
+
+    disp = dispGetCurWork();
+    switch (disp->renderMode) {
+        case 0:
+#ifdef MUST_MATCH
+            npcOffscreenSetup2(entry, &color);
+#else
+            color = entry->color;
+            if (entry->jumpFlags & 0x400000) {
+                color.r /= 2;
+                color.g /= 2;
+                color.b /= 2;
+                animPoseSetMaterialEvtColor(entry->poseId, color);
+                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+            }
+            if (entry->flags & 0x800000) {
+                AnimTableEntry* anim;
+                AnimationPose* animPose;
+                CameraEntry* camera;
+                f32 dx, dz;
+                f32 angle;
+                u32 i;
+
+                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+                animPose = animPoseGetAnimPosePtr(entry->poseId);
+                anim = animPoseGetCurrentAnim(entry->poseId);
+
+                camera = camGetPtr(CAMERA_3D);
+                dx = camera->cameraAt.x - camera->cameraPos.x;
+                dz = camera->cameraAt.z - camera->cameraPos.z;
+                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+                if (angle < 0.0f) {
+                    angle += 360.0f;
+                }
+                angle = reviseAngle((angle - animPose->rotationY));
+
+                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][0], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+                    }
+                } else {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][1], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+                    }
+                }
+            }
+#endif
+            animPoseMain(entry->poseId);
+            animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+            break;
+        case 1:
+            animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+            break;
+        case 2:
+            animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+            break;
+    }
+}
+
 
 // 1:1: npcDisp_xlu with a sysWaitDrawSync/GXClearBoundingBox prologue and a
 // GXReadBoundingBox + offscreenAddBoundingBox(entry->field_110, ...) epilogue.
@@ -525,10 +581,7 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     offscreenAddBoundingBox(entry->field_110, left, top, right, bottom);
 }
 
-// NONMATCHING (98.85%): npcDisp with the offscreen bounding-box prologue/epilogue. Remaining diffs:
-// the by-value GXColor local lands at 0x14 and its call copy at 0x10 (target: 0x10/0x14); anim sits in
-// r28 and the pose-search pointer/counter in r30/r29 (target: anim r29, i r30, pointer r28, and a direct
-// mr r29,r3 instead of the extra mr r0,r3). The float-pool symbols differ but do not affect the score.
+// 1:1: npcDisp with the offscreen bounding-box prologue/epilogue.
 void npcDisp_offscreen(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -545,6 +598,9 @@ void npcDisp_offscreen(CameraId camId, void* param) {
     disp = dispGetCurWork();
     switch (disp->renderMode) {
         case 0:
+#ifdef MUST_MATCH
+            npcOffscreenSetup(entry);
+#else
             color = entry->color;
             if (entry->jumpFlags & 0x400000) {
                 color.r /= 2;
@@ -594,6 +650,7 @@ void npcDisp_offscreen(CameraId camId, void* param) {
                     }
                 }
             }
+#endif
             animPoseMain(entry->poseId);
             animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
             break;
