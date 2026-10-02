@@ -40,6 +40,7 @@ extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
 #ifdef MUST_MATCH
 extern f32 vec3_802c2f78[];
+extern u32 dat_80419b88; // shared 0xFFFFFF00 colour word the original loads for the blur tint (rule 7)
 #endif
 
 int __float_nan[];
@@ -243,7 +244,7 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
 }
 
 
-// NONMATCHING (88.37%): 1 extra, plus register differences.
+// NONMATCHING (98.72%): 1 extra, plus register differences.
 void npcDisp_xlu(CameraId cameraId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -1704,22 +1705,23 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
     }
 }
 
-// NONMATCHING (87.11%): `i` first is closest; p/i in r26/r27 vs r27/r28, info r28 vs r31, and the roll loop
-// strength-reduces `info+i` into a walk register instead of `stbx info[i+0xB0]` (pragmas/loop-shape didn't
-// help). The `<= 0 || >= 3` level test scores 87.35% but would edit an untouched raw-offset line (lint).
+// NONMATCHING (91.50%): the roll destination is the header's info->field_9C[0x14+i] (the raw-offset form
+// strength-reduced info+0xB0+i into an extra walk); `p`/`u8* walk` are declared first (r27) and the second
+// loop walks `enemy++, walk += 4, i++`.  Remaining: level-test branch polarity, num/i register swap.
 void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 i;
     NpcBattleInfo* info = &npc->battleInfo;
+    s8* p;
+    u8* walk;
     NpcBattleSetupEntry* sel;
     NpcBattleSetupEntry* entry;
-    ItemDropData* list;
-    ItemDropData* d;
-    BattleUnitSetup* enemy;
-    s8* p;
-    s32 evt;
     s32 pick;
-    s32 sum;
+    ItemDropData* d;
     s32 num;
+    BattleUnitSetup* enemy;
+    ItemDropData* list;
+    s32 sum;
+    s32 evt;
 
     memset(info, 0, 0xC8);
     memset(info->recoveredItems, 0, 0x20);
@@ -1730,12 +1732,9 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         return;
     }
     *(s32*)((u8*)info + 0xAC) = setup->field_0x1C;
-    if (*(s32*)((u8*)info + 0xAC) == 0 || *(s32*)((u8*)info + 0xAC) < 0 ||
-        *(s32*)((u8*)info + 0xAC) >= 3) {
-        p = (s8*)setup;
-        for (i = 0; i < 0x10; i++) {
-            ((u8*)info)[0xB0 + i] = p[0x20] + irand(p[0x21] - p[0x20] + 1);
-            p += 2;
+    if (*(s32*)&info->field_9C[0x10] == 0 || *(s32*)&info->field_9C[0x10] < 0 || *(s32*)&info->field_9C[0x10] >= 3) {
+        for (i = 0, p = (s8*)setup; i < 0x10; i++, p += 2) {
+            info->field_9C[0x14 + i] = ((u8*)p)[0x20] + irand(p[0x21] - p[0x20] + 1);
         }
     }
     info->field_4 = setup->field_0x18;
@@ -1775,7 +1774,8 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         num = info->groupSetup->numEnemies;
         enemy = info->groupSetup->enemyData;
         memset(info->heldItems, 0, 0x20);
-        for (i = 0; i < num; i++, enemy++) {
+        walk = (u8*)info;
+        for (i = 0; i < num; enemy++, walk += 4, i++) {
             list = enemy->itemDropTable;
             if (list != NULL) {
                 d = list;
@@ -1789,8 +1789,8 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
                     while ((pick -= list->holdWeight) >= 0) {
                         list++;
                     }
-                    info->heldItems[i] = list->type;
-                    info->itemDropLists[i] = enemy->itemDropTable;
+                    *(ItemType*)(walk + 0x1C) = list->type;
+                    *(ItemDropData**)(walk + 0x3C) = enemy->itemDropTable;
                 }
             }
         }
@@ -2046,20 +2046,29 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-// NONMATCHING (88.37%): the callee-save block sinks past the `name[0] == 0` check; retail saves in the prologue.
-void npcSetStayPose(const char* name) {
+#ifdef MUST_MATCH
+typedef const char* volatile npcVolName;
+#else
+typedef const char* npcVolName;
+#endif
+
+// NONMATCHING (96.85%): the callee-save block sinks past the `name[0] == 0` check; retail saves in the
+// prologue.  `npcVolName` is a `const char* volatile` copy under MUST_MATCH; copying it once into the
+// plain `nm` homes the save block while keeping the body's `mr r3,r28`.  5 diffs = the volatile spill.
+void npcSetStayPose(npcVolName name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
+    const char* nm = name;
 
-    if ((s8)name[0] == 0) {
+    if ((s8)nm[0] == 0) {
         return;
     }
-    if (!strcmp(name, "(^x^)party")) {
+    if (!strcmp(nm, "(^x^)party")) {
         return;
     }
-    if (!strcmp(name, "party")) {
+    if (!strcmp(nm, "party")) {
         PartyEntry* party = partyGetPtr(marioGetPartyId());
         if (party == NULL) {
             return;
@@ -2067,7 +2076,7 @@ void npcSetStayPose(const char* name) {
         partyChgPoseId(party, 1);
         return;
     }
-    if (!strcmp(name, "extparty")) {
+    if (!strcmp(nm, "extparty")) {
         PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
         if (party == NULL) {
             return;
@@ -2075,7 +2084,7 @@ void npcSetStayPose(const char* name) {
         partyChgPoseId(party, 1);
         return;
     }
-    if (!strcmp(name, "mario")) {
+    if (!strcmp(nm, "mario")) {
         marioChgPose(MarioStayPose);
         return;
     }
@@ -2084,7 +2093,7 @@ void npcSetStayPose(const char* name) {
     total = wp->total;
     entry = wp->entries;
     for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+        if (entry->flags & 1 && !strcmp(entry->description, nm)) {
             break;
         }
     }
@@ -2093,20 +2102,22 @@ void npcSetStayPose(const char* name) {
     }
 }
 
-// NONMATCHING (88.37%): same prologue save-block scheduling as npcSetStayPose; the partyChgPoseId arg is 7.
-void npcSetTalkPose(const char* name) {
+// NONMATCHING (96.85%): same save-block scheduling as npcSetStayPose (volatile `npcVolName` copied to the
+// plain `nm` under MUST_MATCH); the partyChgPoseId arg is 7.  5 diffs = the volatile spill/reload of `name`.
+void npcSetTalkPose(npcVolName name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
+    const char* nm = name;
 
-    if ((s8)name[0] == 0) {
+    if ((s8)nm[0] == 0) {
         return;
     }
-    if (!strcmp(name, "(^x^)party")) {
+    if (!strcmp(nm, "(^x^)party")) {
         return;
     }
-    if (!strcmp(name, "party")) {
+    if (!strcmp(nm, "party")) {
         PartyEntry* party = partyGetPtr(marioGetPartyId());
         if (party == NULL) {
             return;
@@ -2114,7 +2125,7 @@ void npcSetTalkPose(const char* name) {
         partyChgPoseId(party, 7);
         return;
     }
-    if (!strcmp(name, "extparty")) {
+    if (!strcmp(nm, "extparty")) {
         PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
         if (party == NULL) {
             return;
@@ -2122,7 +2133,7 @@ void npcSetTalkPose(const char* name) {
         partyChgPoseId(party, 7);
         return;
     }
-    if (!strcmp(name, "mario")) {
+    if (!strcmp(nm, "mario")) {
         marioChgPose(MarioTalkPose);
         return;
     }
@@ -2131,7 +2142,7 @@ void npcSetTalkPose(const char* name) {
     total = wp->total;
     entry = wp->entries;
     for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+        if (entry->flags & 1 && !strcmp(entry->description, nm)) {
             break;
         }
     }
@@ -2179,18 +2190,21 @@ s32 npcCheckBlow(NpcEntry* entry) {
 // materialises as a per-iteration stack copy (correct) but from this unit's own `.rodata` template
 // instead of dat_802c2f9c (vec3_802c2f78 + 0x24), and the compiler's double pool (int->float 2^52,
 // sqrtf 0.5/3.0) lands at 0x48 instead of vec3_802c2f78 + 0x1d8/0x1c0, because this unit's rodata
-// data is not written yet; the rest is register/float allocation.
-// NONMATCHING (92.82%): pool offsets (missing unit rodata) and register allocation.
+// data is not written yet; the rest is register/float allocation. `dist`/`npc` are left uninitialised
+// and the sincos outputs are declared c2,s2,c1,s1 to reproduce the target's stack slots/register count.
+// NONMATCHING (94.72%): pool offsets (missing unit rodata; base r31 not r30) + FP register allocation.
+// The two sincosf calls precede marioGetPtr() (so mario stays caller-saved, matching the original's
+// schedule, which hoists marioGetPtr to the top of the loop but keeps the rest the same).
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
     MarioWork* mario;
     f32 i = 0.0f;
-    f32 dist = 0.0f;
-    NpcEntry* npc = NULL;
+    f32 dist;
+    NpcEntry* npc;
 
     for (; i <= 11.0f; i += 1.0f) {
         s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
         f32 idx = i;
-        f32 s1, c1, s2, c2;
+        f32 c2, s2, c1, s1;
         f32 px, py, pz;
         f32 dx, dy, dz;
 
@@ -2200,9 +2214,9 @@ NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius,
         if (idx >= 11.0f) {
             idx = 10.0f;
         }
-        mario = marioGetPtr();
         sincosf(&s1, &c1, angle);
         sincosf(&s2, &c2, (f32)angles[(s32)idx]);
+        mario = marioGetPtr();
         px = s2 * (s1 * radius) + mario->position.x;
         pz = s2 * (c1 * radius) + mario->position.z;
         py = radius * c2 + mario->position.y;

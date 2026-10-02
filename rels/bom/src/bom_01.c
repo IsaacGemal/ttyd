@@ -244,28 +244,34 @@ extern const f32 float_1_bom_00006ffc;
 extern const f32 zero_bom_00007004;
 extern u32 lp[1];
 
-// The instruction sequence, frame layout (0x120) and the inlined bomb-sine/cosine
-// polynomial all match. Declaring `i`/`j` first reproduces the outer-loop integer
-// colouring, declaring `angle` first moves the FPR colouring, and re-deriving `pd`
-// inside the entry-match block reproduces the retail r20 reload. What is left is the
-// callee-saved FPR colouring and the order MWCC pools/loads the loop constants
-// (retail: zero, double, 32767, 400, 6.2832, 500, 0.16605, 1.0, pi, 0.4967). Source
-// layout cannot move it further, so it is a permuter candidate.
-// NONMATCHING (87.81%): FPR colouring and loop-constant load order only.
+// The instruction sequence and frame layout (0x120) match. Declaring `i`/`j` first
+// reproduces the outer-loop integer colouring and re-deriving `pd` inside the entry-match
+// block reproduces the retail r20 reload. Removing the `pi` local (comparing
+// float_3p1416_bom_00007070 directly) puts pi in f31 and the constants on f22..f30 as
+// retail has them; the local PoseState* `st`/`st2` fixed most of the integer colouring.
+// The callee-saved FPR values now match (c1=f23, c2=f24, ccos=f22, zero=f25, double=f26,
+// 6.2832=f27, 32767=f28, 400=f29, 500=f30, pi=f31, angle=f21). Assigning c1/ccos/c2
+// inside the loop (right after the sinv seed) rather than in the preheader is what makes
+// MWCC schedule the retail constant-load order. Casting the state address to bytes
+// (`(PoseState*)((u8*)pd->states + i * sizeof(PoseState))`) folds the array base 0xB0 into
+// the store displacement (0xcc/0xc4/0xb0 off pd+i*0x30) as retail does, and swapping the
+// two sin-block scratch temps is what puts the polynomial working reg where retail wants
+// it. Still differs: (a) the preheader GPR base register allocation and load order, and
+// (b) the loop scratch f0/f1 colouring.
+// NONMATCHING (88.62%): a permuter candidate - only register colouring differs.
 static void ext_init(void) {
     s32 i;
     s32 j;
     PoseData* pd;
     ExtPose* pose;
     PoseEntry* e;
-    f32 angle;
-    f32 ccos;
-    f32 c1;
     f32 c2;
-    f32 pi;
+    f32 c1;
+    f32 ccos;
+    f32 angle;
     f32 range;
-    f32 sinv;
     f32 f0;
+    f32 sinv;
     f32 f1;
 
     lp[0] = (u32)smartAlloc(0xBC30, 1);
@@ -274,53 +280,54 @@ static void ext_init(void) {
     *(s32*)((u8*)pd + 4) = extGetPoseNum();
     pose_init();
     pose = extGetPosePtr();
-    c1 = float_0p16605_bom_0000706c;
-    ccos = float_0p4967_bom_00007080;
-    c2 = float_1_bom_00006ffc;
-    pi = float_3p1416_bom_00007070;
     for (i = 0; i < *(s32*)((u8*)pd + 4); i++, pose++) {
-        pd->states[i].field_1C = zero_bom_00007004;
-        pd->states[i].field_14 = zero_bom_00007004;
-        pd->states[i].field_0 = 0;
+        PoseState* st = (PoseState*)((u8*)pd->states + i * sizeof(PoseState));
+
+        st->field_1C = zero_bom_00007004;
+        st->field_14 = zero_bom_00007004;
+        st->field_0 = 0;
         pose->flags |= 7;
         PSMTXIdentity(*pose->matrix);
         angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
         range = (f32)rand() * float_400_bom_000070bc / float_32767_bom_000070ac + float_500_bom_000070e8;
         sinv = float_0p00761_bom_00007068;
-        if (angle <= pi) {
+        c1 = float_0p16605_bom_0000706c;
+        ccos = float_0p4967_bom_00007080;
+        c2 = float_1_bom_00006ffc;
+        if (angle <= float_3p1416_bom_00007070) {
             if (angle <= float_1p5708_bom_00007074) {
-                f0 = angle * angle;
-                sinv = sinv * f0 - c1;
-                sinv = sinv * f0 + c2;
+                f1 = angle * angle;
+                sinv = sinv * f1 - c1;
+                sinv = sinv * f1 + c2;
                 sinv = sinv * angle;
             } else {
-                f0 = angle - float_1p5708_bom_00007074;
-                f1 = float_1p5708_bom_00007074 - f0;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - c1;
-                sinv = sinv * f0 + c2;
-                sinv = sinv * f1;
+                f1 = angle - float_1p5708_bom_00007074;
+                f0 = float_1p5708_bom_00007074 - f1;
+                f1 = f0 * f0;
+                sinv = sinv * f1 - c1;
+                sinv = sinv * f1 + c2;
+                sinv = sinv * f0;
             }
         } else if (angle < float_4p7124_bom_00007078) {
-            f1 = angle - pi;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * f1;
+            f0 = angle - float_3p1416_bom_00007070;
+            f1 = f0 * f0;
+            sinv = sinv * f1 - c1;
+            sinv = sinv * f1 + c2;
+            sinv = sinv * f0;
             sinv = -sinv;
         } else {
-            f0 = angle - float_4p7124_bom_00007078;
-            f1 = float_1p5708_bom_00007074 - f0;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * f1;
+            f1 = angle - float_4p7124_bom_00007078;
+            f0 = float_1p5708_bom_00007074 - f1;
+            f1 = f0 * f0;
+            sinv = sinv * f1 - c1;
+            sinv = sinv * f1 + c2;
+            sinv = sinv * f0;
             sinv = -sinv;
         }
         (*pose->matrix)[0][3] = range * sinv;
         (*pose->matrix)[1][3] = zero_bom_00007004;
         sinv = float_0p03705_bom_0000707c;
-        if (angle <= pi) {
+        if (angle <= float_3p1416_bom_00007070) {
             if (angle <= float_1p5708_bom_00007074) {
                 f0 = angle * angle;
                 sinv = sinv * f0 - ccos;
@@ -334,7 +341,7 @@ static void ext_init(void) {
                 sinv = -sinv;
             }
         } else if (angle < float_4p7124_bom_00007078) {
-            f0 = angle - pi;
+            f0 = angle - float_3p1416_bom_00007070;
             f0 = f0 * f0;
             sinv = sinv * f0 - ccos;
             sinv = sinv * f0 + c2;
@@ -357,9 +364,11 @@ static void ext_init(void) {
                 }
             }
             if (j < pd2->count) {
-                if (pd2->states[i].field_20 != j) {
-                    pd2->states[i].field_20 = (s16)j;
-                    pd2->states[i].time = gp->renderTime + rand();
+                PoseState* st2 = (PoseState*)((u8*)pd2->states + i * sizeof(PoseState));
+
+                if (st2->field_20 != j) {
+                    st2->field_20 = (s16)j;
+                    st2->time = gp->renderTime + rand();
                 }
             }
         }
@@ -1969,20 +1978,24 @@ extern const f32 float_100_bom_00007000;
 extern const f32 float_1_bom_00006ffc;
 
 // The instruction sequence, frame (0x110) and the sin/cos polynomial all match; only
-// the FPR colouring differs. Retail hoists twoPi/double/quarter into f28/f29/f30 and
-// keeps the sin/cos coefficients on f23..f27; MWCC here shifts them by one. Source
-// layout cannot influence this, so it is a permuter candidate.
-// NONMATCHING (87.92%): FPR colouring and loop-constant load order only.
+// the FPR colouring differs. Comparing float_3p1416 directly (no `pi` local) removes the
+// f31 clash, but MWCC still colours angle as f1 and shifts the coefficient group.
+// Retail keeps angle in f3, pi in f31, twoPi/double/quarter on f28/f29/f30 and the sin/cos
+// coefficients on f23..f27. Declaring the scratch temps `f0, f2, f4, f3, f1` is what puts
+// angle in f3; the remaining diff is the f29/f30 (double/quarter) swap and the f0/f1
+// scratch pair, which MWCC will not reproduce. Declaration order was exhausted over all
+// 120 permutations of the five constants (best is the one below).
+// NONMATCHING (89.33%): a permuter candidate - only register colouring differs.
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
     smartEntry* texBuf;
     CameraEntry* cam;
-    f32 twoPi, quarter, c16605, one, pi, c4967;
+    f32 quarter, twoPi, one, c16605, c4967;
     f32 scale;
     s32 i;
     s32 mtxId;
-    f32 f3, f2, f4, f0, f1;
+    f32 f0, f2, f4, f3, f1;
 
     scale = (f32)evtGetValue(NULL, GW(5)) / float_100_bom_00007000;
     cam = camGetPtr(cameraId);
@@ -2009,8 +2022,7 @@ static void depthDisp(CameraId cameraId, void* param) {
         f2 = float_0p00761_bom_00007068;
         c16605 = float_0p16605_bom_0000706c;
         one = float_1_bom_00006ffc;
-        pi = float_3p1416_bom_00007070;
-        if (f3 <= pi) {
+        if (f3 <= float_3p1416_bom_00007070) {
             if (f3 <= float_1p5708_bom_00007074) {
                 f0 = f3 * f3;
                 f2 = (f2 * f0) - c16605;
@@ -2044,7 +2056,7 @@ static void depthDisp(CameraId cameraId, void* param) {
         }
         f4 = float_0p03705_bom_0000707c;
         c4967 = float_0p4967_bom_00007080;
-        if (f3 <= pi) {
+        if (f3 <= float_3p1416_bom_00007070) {
             if (f3 <= float_1p5708_bom_00007074) {
                 f0 = f3 * f3;
                 f4 = (f4 * f0) - c4967;
@@ -2082,18 +2094,15 @@ static void depthDisp(CameraId cameraId, void* param) {
         GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         {
-            s32 colorIn;
-            s32 alphaIn;
+            s32 flag = (i == 0);
+            s32 colorIn = flag ? GX_CC_ZERO : GX_CC_CPREV;
 
-            if (i == 0) {
-                colorIn = GX_CC_ZERO;
-                alphaIn = GX_CA_ZERO;
-            } else {
-                colorIn = GX_CC_CPREV;
-                alphaIn = GX_CA_APREV;
-            }
             GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, colorIn);
-            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, alphaIn);
+            {
+                s32 alphaIn = flag ? GX_CA_ZERO : GX_CA_APREV;
+
+                GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, alphaIn);
+            }
         }
         GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);
     }

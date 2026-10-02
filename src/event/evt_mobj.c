@@ -1935,25 +1935,42 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (73.98%): 21 instructions differ, 41 missing, 25 extra, plus register differences.
+// Frame size (0x2e0), save slot (0x38) and the bbox template+copy shape all match retail. The natural
+// `(f32)texHeight` gives the right high conversion temp but makes MWCC emit the mask as an anonymous
+// absolute pool entry (@2181) instead of retail's base-relative `0x518(r30)`; reimplementing it as
+// bit-twiddling against `base+0x518` fixes the mask but drops the temp into a low source-local slot.
+// The compromise here uses the natural height conversion and the manual form only for the aspect.
+// Still differs: the height mask pool entry, the aspect conversion temp slot (ours 0x8 vs retail
+// 0x2b0), a f4/f3 swap in the bbox loads, and the tan-argument load schedule. Details in REPORT.md.
+// NONMATCHING (90.68%): height mask pool entry, aspect temp slot, bbox f-register swap.
 void kururing_capture(CameraId cameraId, void* param) {
     MapObjectEntry* obj = param;
     u8* base = (u8*)vec3_802c3dc8;
     CameraEntry save;
     CameraEntry* cam;
     AnimationPoseData* animData;
-    Vec bboxMax;
     Vec bboxMin;
+    Vec bboxMax;
+    Vec minTmp;
+    Vec maxTmp;
     u16 texWidth;
     u16 texHeight;
     f32 t;
 
     memcpy(&save, camGetPtr(cameraId), 0x260);
     animData = animPoseGetAnimBaseDataPtr(obj->poseId);
-    bboxMax = animData->bboxMax;
-    bboxMin = animData->bboxMin;
-    texWidth = (s32)((bboxMax.x - bboxMin.x) * float_10_8041a1a4);
-    texHeight = (s32)((bboxMax.z - bboxMin.z) * float_10_8041a1a4);
+    minTmp = *(Vec*)(base + 0x264);
+    minTmp.x = animData->bboxMin.x;
+    minTmp.y = animData->bboxMin.y;
+    minTmp.z = animData->bboxMin.z;
+    bboxMin = minTmp;
+    maxTmp = *(Vec*)(base + 0x270);
+    maxTmp.x = animData->bboxMax.x;
+    maxTmp.y = animData->bboxMax.y;
+    maxTmp.z = animData->bboxMax.z;
+    bboxMax = maxTmp;
+    texWidth = (bboxMax.x - bboxMin.x) * float_10_8041a1a4;
+    texHeight = (bboxMax.z - bboxMin.z) * float_10_8041a1a4;
     cam = camGetPtr(cameraId);
     texWidth = (texWidth + 1) & ~1;
     texHeight = (texHeight + 1) & ~1;
@@ -1961,9 +1978,17 @@ void kururing_capture(CameraId cameraId, void* param) {
     cam->cameraAt = obj->position;
     cam->cameraPos = obj->position;
     t = (f32)tan(*(f64*)(base + 0x510));
+#ifdef MUST_MATCH
+    cam->cameraPos.y += 0.5f * (f32)texHeight / t;
+    *(u32*)&maxTmp = ((u32)(texWidth / texHeight) ^ 0x80000000) | 0x43300000;
+    C_MTXPerspective(cam->projection, float_25_8041a140,
+                     (f32)(*(f64*)&maxTmp - *(f64*)(base + 0x400)),
+                     float_1_8041a160, float_32767_8041a1e4);
+#else
     cam->cameraPos.y += 0.5f * (f32)texHeight / t;
     C_MTXPerspective(cam->projection, float_25_8041a140, (f32)(texWidth / texHeight),
                      float_1_8041a160, float_32767_8041a1e4);
+#endif
     cam->projType = GX_PERSPECTIVE;
     C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
     GXSetProjection(cam->projection, cam->projType);
@@ -2377,9 +2402,6 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (94.58%): declaring obj/asyncName right after `args` puts every callee-saved register
-// where retail has it; the 15 diffs left are the jumptable/inBattle load schedule (retail loads gp
-// before slwi type*4 and uses r0 for the index).
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     const char* asyncName;
@@ -2392,12 +2414,18 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     f32 f28 = evtGetFloat(event, args[5]);
     s32 unk1D4 = evtGetValue(event, args[6]);
     s32 unk1E4 = args[7];
-
+    s32 inBattle;
+    inBattle = gp->inBattle != 0;
     {
         const char* jumptable[2] = {"MOBJ_BlueJumpStand", "MOBJ_BlueJumpStand2"};
+#ifdef MUST_MATCH
+        // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
+        asyncName = *(const char**)((u8*)jumptable + (type << 2));
+#else
         asyncName = jumptable[type];
+#endif
     }
-    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -2474,8 +2502,6 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (94.40%): same as evt_mobj_jumpstand_blue; only the jumptable/inBattle load schedule
-// differs.
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     const char* asyncName;
@@ -2487,12 +2513,18 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     f32 f29 = evtGetFloat(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[5]);
     s32 unk1E4 = args[6];
-
+    s32 inBattle;
+    inBattle = gp->inBattle != 0;
     {
         const char* jumptable[2] = {"MOBJ_RedJumpStand", "MOBJ_RedJumpStand2"};
+#ifdef MUST_MATCH
+        // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
+        asyncName = *(const char**)((u8*)jumptable + (type << 2));
+#else
         asyncName = jumptable[type];
+#endif
     }
-    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -3040,13 +3072,138 @@ extern Vec vec3_802c3ef4[];
 extern const char str_802C41DC[];
 extern const char str_802C41F0[];
 
-#ifdef MUST_MATCH
-// The original compiler pools the "o_"/"i_" array initialisers into this
-// unit's .rodata and addresses them relative to vec3_802c3dc8 (base+0x100 and
-// base+0x110). Reproduce that here by copying 16 bytes through a struct.
-typedef struct MobjName16 { char s[16]; } MobjName16;
-#endif
 
+// 100%: two "o_"/"i_" 16-byte name templates are copied from the unit's .rodata base (0x100/0x110),
+// like mobj_brickblk. Retail reads mario->motion through a u16 at 0x2E (the header declares
+// MarioMotion there, 4 bytes); kept as a raw offset because the target uses lhz.
+s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
+    char offName[16];
+    char imgName[16];
+    u8* base = (u8*)vec3_802c3dc8;
+    MarioWork* mario;
+    ImageEntry* img;
+    BOOL inBattle;
+
+    ((u32*)offName)[0] = ((u32*)(base + 0x100))[0];
+    ((u32*)offName)[1] = ((u32*)(base + 0x100))[1];
+    ((u32*)offName)[2] = ((u32*)(base + 0x100))[2];
+    ((u32*)offName)[3] = ((u32*)(base + 0x100))[3];
+    ((u32*)imgName)[0] = ((u32*)(base + 0x110))[0];
+    ((u32*)imgName)[1] = ((u32*)(base + 0x110))[1];
+    ((u32*)imgName)[2] = ((u32*)(base + 0x110))[2];
+    ((u32*)imgName)[3] = ((u32*)(base + 0x110))[3];
+    inBattle = gp->inBattle != 0;
+    mario = marioGetPtr();
+    strcat(offName, obj->name);
+    strcat(imgName, obj->name);
+    switch (obj->unk1DC) {
+        case 0:
+            animGroupBaseAsync((const char*)(base + 0x5C0), inBattle, NULL);
+            if (obj->flags & 8) {
+                if (strcmp(obj->animName, (const char*)(base + 0x8AC)) == 0 ||
+                    strcmp(obj->animName, (const char*)(base + 0x8BC)) == 0) {
+                } else if (strcmp(obj->animName, (const char*)(base + 0x8D0)) == 0) {
+                    if (!(pouchGetHammerLv() >= 2 && *(u16*)&mario->currMotionId == 0x13)) {
+                        obj->flags &= ~8;
+                        break;
+                    }
+                } else if (strcmp(obj->animName, (const char*)(base + 0x8E4)) == 0 ||
+                           strcmp(obj->animName, (const char*)(base + 0x8F4)) == 0) {
+                    if (!(pouchGetHammerLv() >= 3)) {
+                        obj->flags &= ~8;
+                        break;
+                    }
+                } else if (strcmp(obj->animName, (const char*)(base + 0x908)) == 0) {
+                    if (!(pouchGetHammerLv() >= 3 && *(u16*)&mario->currMotionId == 0x13)) {
+                        obj->flags &= ~8;
+                        break;
+                    }
+                } else {
+                    obj->flags &= ~8;
+                    break;
+                }
+                mobjRunEvent(obj, obj->unk1D4);
+                evtSetValue(NULL, obj->unk1E4, 1);
+                obj->unk1DC = 0xa;
+            }
+            break;
+        case 0xa: {
+            s32 captureArgs1[10];
+            EventEntry tmpEvent1;
+            s32 captureArgs2[10];
+            EventEntry tmpEvent2;
+
+            animPaperPoseEntry((const char*)(base + 0x5C0), inBattle);
+            offscreenEntry(offName);
+            imgEntry(imgName, inBattle);
+            obj->offscreenId = offscreenNameToId(offName);
+            tmpEvent1.args = captureArgs1;
+            captureArgs1[0] = (s32)imgName;
+            captureArgs1[1] = 0;
+            captureArgs1[2] = (s32)offName;
+            captureArgs1[3] = 1;
+            captureArgs1[4] = 0;
+            captureArgs1[5] = 0;
+            captureArgs1[6] = 0;
+            captureArgs1[7] = 0;
+            evt_img_alloc_capture(&tmpEvent1, 1);
+            tmpEvent2.args = captureArgs2;
+            captureArgs2[0] = (s32)imgName;
+            captureArgs2[1] = 1;
+            captureArgs2[2] = (s32)offName;
+            captureArgs2[3] = 1;
+            captureArgs2[4] = 0;
+            captureArgs2[5] = 0;
+            captureArgs2[6] = 0;
+            captureArgs2[7] = 0;
+            evt_img_alloc_capture(&tmpEvent2, 1);
+            img = imgNameToPtr(imgName, inBattle);
+            img->poseId = animPaperPoseGetId((const char*)(base + 0x5C0), inBattle);
+            img->animName = "A_1";
+            // ImageEntry has no field for the animation clock; 0x110 is inside its 0x10C gap.
+            *(OSTime*)&img->field_0x10C[4] = animTimeGetTime(inBattle);
+            imgSetShadow(img, 2);
+            if (strcmp(obj->animName, (const char*)(base + 0x8AC)) == 0 ||
+                strcmp(obj->animName, (const char*)(base + 0x8E4)) == 0) {
+                psndSFXOn_3D((const char*)0x1C7, &obj->position);
+            } else if (strcmp(obj->animName, (const char*)(base + 0x8BC)) == 0 ||
+                       strcmp(obj->animName, (const char*)(base + 0x8F4)) == 0) {
+                psndSFXOn_3D((const char*)0x1C8, &obj->position);
+            } else if (strcmp(obj->animName, (const char*)(base + 0x8D0)) == 0 ||
+                       strcmp(obj->animName, (const char*)(base + 0x908)) == 0) {
+                psndSFXOn_3D((const char*)0x1C9, &obj->position);
+            }
+            obj->unk1DC = 0xb;
+            break;
+        }
+        case 0xb:
+            img = imgNameToPtr(imgName, inBattle);
+            if (img->field_0x118 >= float_1_8041a160) {
+                obj->unk1DC = 0xc;
+            }
+            if (img->flags & 0x10000000) {
+                obj->unk1DC = 0xc;
+            }
+            obj->position = *(Vec*)(base + 0x120);
+            obj->flags |= 4;
+            obj->flags |= 8;
+            break;
+        case 0xc:
+            img = imgNameToPtr(imgName, inBattle);
+            imgFreeCapture(img, 0);
+            imgFreeCapture(img, 1);
+            imgSetShadow(img, 0);
+            imgRelease(img, inBattle);
+            offscreenDelete(offName);
+            obj->offscreenId = -1;
+            obj->unk1DC = 0x63;
+            break;
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
 
 s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -3607,26 +3764,42 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (77.23%): missing unit .rodata base shifts the callee-saved register allocation.
+// 100%: the unit's .rodata is reached from the vec3_802c3dc8 base (MUST_MATCH offsets), which
+// also frees r31 and gives the target callee-saved allocation; scale is built from the vec3_802c405c
+// template and only .y comes from obj->scale2.
 s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
+#ifdef MUST_MATCH
+    u8* base = (u8*)vec3_802c3dc8;
+#endif
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f29 = evtGetFloat(event, args[1]);
     f32 f30 = evtGetFloat(event, args[2]);
     f32 f31 = evtGetFloat(event, args[3]);
     s32 r30 = evtGetValue(event, args[4]);
-    s32 unk1E4 = args[6];
+    s32 unk1E4;
     MapObjectEntry* obj;
     Vec pos;
     Vec scale;
+    const char* asyncName;
 
     evtGetValue(event, args[5]);
-    if (!animGroupBaseAsync("MOBJ_KururinFloor", gp->inBattle != 0, NULL)) {
+#ifdef MUST_MATCH
+    asyncName = (const char*)(base + 0x4fc);
+#else
+    asyncName = "MOBJ_KururinFloor";
+#endif
+    unk1E4 = args[6];
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
         return 0;
     }
-    mobjEntry(name, "MOBJ_KururinFloor");
+    mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
+#ifdef MUST_MATCH
+    pos = *(Vec*)(base + 0x288);
+#else
     pos = vec3_802c4050[0];
+#endif
     pos.x = f29;
     pos.y = f30 + 0.1f;
     pos.z = f31;
@@ -3637,9 +3810,12 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 0x1010000;
     obj->flags |= 2;
     mobjCalcMtx(obj);
-    scale = obj->scale2;
-    scale.x = vec3_802c405c[0].x;
-    scale.z = vec3_802c405c[0].z;
+#ifdef MUST_MATCH
+    scale = *(Vec*)(base + 0x294);
+#else
+    scale = vec3_802c405c[0];
+#endif
+    scale.y = obj->scale2.y;
     obj->scale2 = scale;
     mobjCalcMtx2(obj);
     mapGrpFlagOn((const char*)r30, 0x400000);

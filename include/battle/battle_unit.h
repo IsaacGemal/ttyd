@@ -603,6 +603,26 @@ typedef struct BattleUnit {
     u8 field_0xAE4[0xB30 - 0xAE4];               // 0xAE4
 } BattleUnit;
 
+// A 0x14-byte pose-sound table entry; the layout BtlUnit_ControlPoseSoundMain walks.
+typedef struct BtlUnitPoseSound {
+    const char* poseName;                                          // 0x0
+    f32 volume;                                                    // 0x4
+    s32 (*callback)(BattleUnit*, struct BtlUnitPoseSound*, void*); // 0x8
+    const char* soundName;                                         // 0xC
+    s16 pitch;                                                     // 0x10
+    u16 flags;                                                     // 0x12
+} BtlUnitPoseSound;
+
+// The pose-sound playback state that follows the table pointer in BattleUnitPart (part+0x4D0).
+typedef struct BtlUnitPartPoseSound {
+    void* table;       // 0x0 (0x4D0)
+    s32 frame;         // 0x4
+    f32 prev;          // 0x8
+    f32 cur;           // 0xC
+    s32 count;         // 0x10
+    u8 flag;           // 0x14
+} BtlUnitPartPoseSound;
+
 typedef struct BattleUnitKind {
     BattleUnitType mUnitType;          // 0x0
     const char* name;                  // 0x4

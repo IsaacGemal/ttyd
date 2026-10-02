@@ -8,6 +8,7 @@
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
 #include <dolphin/types.h>
+#include "math_ext.h"
 #include <string.h>
 #include "driver/mapdrv.h"
 #include "system.h"
@@ -20,6 +21,7 @@
 #include "window/win_log.h"
 #include "battle/battle_monosiri.h"
 #include "manager/evtmgr_cmd.h"
+#include "math_ext.h"
 
 extern WinRootVecs str_802F3FE8;
 extern const GXColor dat_8041ced8;
@@ -46,6 +48,7 @@ extern const GXColor dat_8041cf18;
 extern const GXColor dat_8041cf1c;
 extern const GXColor dat_8041cf20;
 extern const GXColor dat_8041cf24;
+extern const GXColor dat_8041cf4c;
 extern const f32 float_18_8041d1b8;
 extern const f32 float_320_8041d074;
 extern const f32 float_570_8041d1bc;
@@ -63,6 +66,52 @@ extern const f32 float_neg144_8041d1d4;
 #define WW_U32(w, off) (*(u32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
+#define WW_U16(w, off) (*(u16*)((u8*)(w) + (off)))
+
+// winMailDisp rodata: the target reaches the Vec pair table and the int->float
+// magics through one base at str_802F3FE8, which is well past the end of the
+// WinRootVecs fields the header declares. This local view names them by offset.
+typedef struct WinMailVecs {
+    u8 pad_0[0x32C];
+    Vec v32c;
+    Vec v338;
+    Vec v344;
+    Vec v350;
+    Vec v35c;
+    Vec v368;
+    Vec v374;
+    Vec v380;
+    Vec v38c;
+    Vec v398;
+    Vec v3a4;
+    Vec v3b0;
+    Vec v3bc;
+    Vec v3c8;
+    Vec v3d4;
+    Vec v3e0;
+    Vec v3ec;
+    Vec v3f8;
+    Vec v404;
+    Vec v410;
+    Vec v41c;
+    Vec v428;
+    Vec v434;
+    Vec v440;
+    Vec v44c;
+    Vec v458;
+    Vec v464;
+    Vec v470;
+    Vec v47c;
+    Vec v488;
+    Vec v494;
+    Vec v4a0;
+    Vec v4ac;
+    Vec v4b8;
+    Vec v4c4;
+    Vec v4d0;
+    u8 pad_4dc[0x4E8 - 0x4DC];
+    f64 d4e8;
+} WinMailVecs;
 
 typedef struct SortTable {
     const char* name;                 // 0x0
@@ -184,10 +233,73 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
     }
 }
 
-// Full-screen GX quad. The original reloads each position constant into f0
-// immediately before its FIFO store instead of CSE-ing the constants across the
-// four vertices, so the vertex writes under MUST_MATCH read the named floats
-// through a volatile view (the natural GXPosition3f32 form is in #else).
+// One name-plate half: a textured quad from (x,y) to (x+w,y-h), with the texture
+// stretched across it. The scales are f64 because the original uses the double
+// __fabs() (not the fabsf() of windowdrv.c); the (f32) conversion happens at the
+// division, matching the target's frsp placement.
+static inline void winNameQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sy;
+    f64 sx;
+    f32 syf;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
+// The six quads are inlined from winNameQuad and pooled with the compiler's int->f32 magic through one
+// .rodata base, emitting the target's lis/addi + lfd OFFSET(base) scheme.
+// NONMATCHING (98.90%): the pool offset is 0xa0/0xb0 vs the target's str_802F3FE8+0x4e0/0x540, so those loads read the wrong offset, f26 is not saved (frame 0x270 vs 0x280) and quads 2-6 use f27/f28 where the target reuses f26/f27. Reproducing the offset needs the whole ~0x5e8-byte .rodata blob (96 vec3s, msg_menu strings, trailing doubles) defined in first-use order: a file-wide job.
+void winNameGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041cf4c);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+    GXSetCurrentMtx(0);
+
+    if (type == 0) {
+        winNameQuad(work, 0x13, x, y, w - 16.0f, 32.0f);
+        winNameQuad(work, 0x14, x + w - 16.0f, y, 16.0f, 32.0f);
+    } else if (type == 1) {
+        winNameQuad(work, 0x15, x, y, w - 16.0f, 32.0f);
+        winNameQuad(work, 0x16, x + w - 16.0f, y, 16.0f, 32.0f);
+    } else {
+        winNameQuad(work, 0x78, x, y, w - 8.0f, 24.0f);
+        winNameQuad(work, 0x79, x + w - 8.0f, y, 8.0f, 24.0f);
+    }
+}
+
 void winZClear(void) {
     Mtx mtx;
 
@@ -235,6 +347,234 @@ void winZClear(void) {
 #endif
     GXEnd();
     GXSetColorUpdate(1);
+}
+
+extern const GXColor dat_8041d018;
+extern const GXColor dat_8041d01c;
+extern const GXColor dat_8041d020;
+extern const GXColor dat_8041d024;
+extern const GXColor dat_8041d028;
+extern const GXColor dat_8041d02c;
+extern const GXColor dat_8041d030;
+extern const GXColor dat_8041d034;
+extern const GXColor dat_8041d038;
+extern const GXColor dat_8041d03c;
+extern const GXColor dat_8041d040;
+extern const GXColor dat_8041d044;
+extern const GXColor dat_8041d048;
+extern const GXColor dat_8041d04c;
+extern const GXColor dat_8041d050;
+extern const GXColor dat_8041d054;
+extern const GXColor dat_8041d058;
+extern const GXColor dat_8041d05c;
+extern const GXColor dat_8041d060;
+extern const f32 float_neg240_8041d078;
+extern const f32 float_4_8041d07c;
+extern const f32 float_208_8041d080;
+extern const f32 float_56_8041d084;
+extern const f32 float_72_8041d088;
+extern const f32 float_3_8041d08c;
+extern const f32 float_88_8041d094;
+extern const f32 float_104_8041d098;
+extern const f32 float_120_8041d09c;
+extern const f32 float_8_8041d0a0;
+extern const f32 float_32_8041d0a4;
+extern const f32 float_304_8041d0a8;
+extern const f32 float_240_8041d0ac;
+extern const f32 float_80_8041d0b0;
+extern const f32 float_210_8041d0b4;
+extern const f32 float_7_8041d0b8;
+extern const f32 float_360_8041d0bc;
+extern const f32 float_20_8041d0c0;
+extern const f32 float_230_8041d0c4;
+extern const f32 float_24_8041d0c8;
+
+static inline Vec mail_vec(const Vec* base, f32 x, f32 y) {
+    Vec v = *base;
+    v.x = x;
+    v.y = y;
+    return v;
+}
+
+// NONMATCHING (53.67%): calls/constants/control flow match; frame 0x410 vs 0x370 because the target compiler keeps a distinct temp+arg copy per by-value winTexSet Vec (ours coalesces the slots), and the int->float magic is an anonymous double not str_802F3FE8+0x4E8. Draws the scrolling mail list (state != 0xCA) or the opened letter (state == 0xCA).
+void winMailDisp(WindowWork* work) {
+    WinMailVecs* vp = (WinMailVecs*)&str_802F3FE8;
+    s32 i;
+    s32 y;
+
+    if (!(WW_F32(work, 0x244) < float_320_8041d074)) {
+        return;
+    }
+    if (!(WW_F32(work, 0x24C) > float_neg240_8041d078)) {
+        return;
+    }
+    winMailGX(work);
+
+    if (WW_S32(work, 0x20C) != 0xCA) {
+        for (i = 0, y = 0; i < WW_S32(work, 0x254); i++, y += 0x28) {
+            u8* p = (u8*)work + i * 2;
+            u8 id = *(u8*)(p + 0x26F);
+            u8 idx = *(u8*)(p + 0x26E);
+            u8* mail = (u8*)mailGetPtr(id);
+            u16 flags = *(u16*)mail;
+            GXColor color1 = *(const volatile GXColor*)&dat_8041d018; // volatile: target reloads per row
+            GXColor color2;
+            s32 tex;
+
+            if (flags & 1) {
+                color2 = dat_8041d01c;
+            } else if (flags & 2) {
+                color2 = dat_8041d020;
+            } else if (flags & 4) {
+                color2 = dat_8041d024;
+            } else {
+                color2 = dat_8041d028;
+            }
+
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            {
+                winTexSet(0x77, mail_vec(&vp->v32c, float_4_8041d07c + (float_208_8041d080 + WW_F32(work, 0x244)), WW_F32(work, 0x260) + ((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)y)), vp->v338, color2);
+            }
+            {
+                tex = pouchCheckMail(id) == 2 ? 0x5E : 0x5D;
+                winTexSet(tex, mail_vec(&vp->v344, float_72_8041d088 + WW_F32(work, 0x244), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)y) - float_3_8041d08c)), vp->v350, dat_8041d02c);
+            }
+            {
+                winTexSet((idx + 1) / 10 + 0x65, mail_vec(&vp->v35c, float_2_8041d090 + (float_88_8041d094 + WW_F32(work, 0x244)), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)y) - float_3_8041d08c)), vp->v368, dat_8041d02c);
+            }
+            {
+                winTexSet((idx + 1) - ((idx + 1) / 10) * 10 + 0x65, mail_vec(&vp->v374, float_2_8041d090 + (float_104_8041d098 + WW_F32(work, 0x244)), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)y) - float_3_8041d08c)), vp->v380, dat_8041d02c);
+            }
+            winFontInit();
+            {
+                Vec pos = vp->v38c;
+                Vec scale = vp->v398;
+                pos.x = float_120_8041d09c + WW_F32(work, 0x244);
+                pos.y = WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)y) + float_8_8041d0a0);
+                winFontSetLabel(&pos, &scale, &color1, *(const char**)(mail + 0x8));
+            }
+        }
+        GXSetScissor(0, 0, 0x260, 0x1E0);
+        return;
+    }
+
+    {
+        s32 slot = WW_S32(work, 0x258);
+        u8 idx = *(u8*)((u8*)work + 0x26E + slot * 2);
+        u8 id = *(u8*)((u8*)work + 0x26F + slot * 2);
+        u8* mail = (u8*)mailGetPtr(id);
+        u16 flags = *(u16*)mail;
+        GXColor colorA = dat_8041d030;
+        GXColor colorB = dat_8041d034;
+        GXColor colorC;
+        u32 scX;
+        u32 scY;
+
+        if (flags & 1) {
+            colorC = dat_8041d038;
+        } else if (flags & 2) {
+            colorC = dat_8041d03c;
+        } else if (flags & 4) {
+            colorC = dat_8041d040;
+        } else {
+            colorC = dat_8041d044;
+        }
+
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        {
+            winTexSet(0x77, mail_vec(&vp->v3a4, float_4_8041d07c + (float_208_8041d080 + WW_F32(work, 0x244)), WW_F32(work, 0x24C) - float_56_8041d084), vp->v3b0, colorC);
+        }
+        {
+            winTexSet(0x5E, mail_vec(&vp->v3bc, float_72_8041d088 + WW_F32(work, 0x244), WW_F32(work, 0x24C) - float_56_8041d084), vp->v3c8, colorA);
+        }
+        {
+            winTexSet((idx + 1) / 10 + 0x65, mail_vec(&vp->v3d4, float_2_8041d090 + (float_88_8041d094 + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - float_56_8041d084) - float_3_8041d08c), vp->v3e0, colorA);
+        }
+        {
+            winTexSet((idx + 1) - ((idx + 1) / 10) * 10 + 0x65, mail_vec(&vp->v3ec, float_2_8041d090 + (float_104_8041d098 + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - float_56_8041d084) - float_3_8041d08c), vp->v3f8, colorA);
+        }
+        winFontInit();
+        {
+            Vec pos = vp->v404;
+            Vec scale = vp->v410;
+            pos.x = float_120_8041d09c + WW_F32(work, 0x244);
+            pos.y = (WW_F32(work, 0x24C) - float_56_8041d084) + float_8_8041d0a0;
+            winFontSetLabel(&pos, &scale, &colorB, *(const char**)(mail + 0x8));
+        }
+        scX = (u32)(float_32_8041d0a4 + (float_304_8041d0a8 + WW_F32(work, 0x244)));
+        scY = (u32)(float_72_8041d088 + (float_240_8041d0ac - WW_F32(work, 0x24C)));
+        GXSetScissor(scX, scY, 0x158, 0xB1);
+
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        {
+            winTexSet(0x77, mail_vec(&vp->v41c, float_4_8041d07c + (float_208_8041d080 + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - float_56_8041d084) - float_80_8041d0b0), vp->v428, colorC);
+        }
+        winFontInit();
+        {
+            Vec pos = vp->v434;
+            Vec scale = vp->v440;
+            GXColor colorD = dat_8041d048;
+            pos.x = float_80_8041d0b0 + WW_F32(work, 0x244);
+            pos.y = (WW_F32(work, 0x24C) - float_80_8041d0b0) + (f32)(WW_S32(work, 0x268) * 21);
+            winFontSetLabel(&pos, &scale, &colorD, *(const char**)(mail + 0xC));
+        }
+
+        if (flags & 0x1000) {
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x2C) + 0xA0));
+            {
+                winTexSet(*(u32*)(mail + 0x10), mail_vec(&vp->v44c, float_210_8041d0b4 + WW_F32(work, 0x244), (WW_F32(work, 0x24C) - (f32)((WW_U16(work, 0x26C) - 1) * 21)) + (f32)(WW_S32(work, 0x268) * 21) + float_7_8041d0b8), vp->v458, dat_8041d04c);
+            }
+        }
+
+        GXSetScissor(0, 0, 0x260, 0x1E0);
+        if (WW_U16(work, 0x26C) <= 8) {
+            return;
+        }
+        winIconInit();
+        if (WW_S32(work, 0x268) == 0) {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                Vec translate = vp->v464;
+                Vec scale = vp->v470;
+                GXColor color = dat_8041d050;
+                translate.x = float_360_8041d0bc + WW_F32(work, 0x244);
+                translate.y = (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)) - float_24_8041d0c8;
+                winIconSet(0x1B6, &translate, &scale, &color);
+            }
+        } else if (WW_S32(work, 0x268) + 6 == WW_U16(work, 0x26C)) {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                Vec translate = vp->v47c;
+                Vec scale = vp->v488;
+                GXColor color = dat_8041d054;
+                translate.x = float_360_8041d0bc + WW_F32(work, 0x244);
+                translate.y = (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)) + float_24_8041d0c8;
+                winIconSet(0x1B5, &translate, &scale, &color);
+            }
+        } else {
+            if ((gp->retraceCount & 0x1F) < 0x14) {
+                Vec translate = vp->v47c;
+                Vec scale = vp->v488;
+                GXColor color = dat_8041d058;
+                translate.x = float_360_8041d0bc + WW_F32(work, 0x244);
+                translate.y = (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)) + float_24_8041d0c8;
+                winIconSet(0x1B5, &translate, &scale, &color);
+
+                translate = vp->v494;
+                scale = vp->v4a0;
+                color = dat_8041d05c;
+                translate.x = float_360_8041d0bc + WW_F32(work, 0x244);
+                translate.y = (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)) - float_24_8041d0c8;
+                winIconSet(0x1B6, &translate, &scale, &color);
+            }
+        }
+        {
+            Vec translate = vp->v4ac;
+            Vec scale = vp->v4b8;
+            GXColor color = dat_8041d060;
+            translate.x = float_360_8041d0bc + WW_F32(work, 0x244);
+            translate.y = float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4);
+            winIconSet(0x70, &translate, &scale, &color);
+        }
+    }
 }
 
 int compare_func1(void* a, void* b) {

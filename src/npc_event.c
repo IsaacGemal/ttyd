@@ -66,9 +66,8 @@ USER_FUNC(pressCheck) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.50%): only one swapped fcmpu operand (target f29,f2 vs ours f2,f29), the return-0 tail the
-// target shares instead of duplicating, and the unit's missing-.data pool offsets remain; every other
-// instruction is byte-identical.
+// 100%: `if (f29)` (not `f29 != 0.0f`) makes MWCC emit the target's `fcmpu cr0, f29, f2` operand order; the
+// `else if (dy >= 0.0f) return YIELD;` tail shares the target's single `li r3, 0` return-0 block.
 USER_FUNC(_2d_dead_jump) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -127,7 +126,7 @@ USER_FUNC(_2d_dead_jump) {
         npc->jumpVelY = 0.0f;
         npc->jumpYScale = 1.0f;
         dy = npc->jumpTargetPos.y - npc->jumpStartPos.y;
-        if (f29 != 0.0f) {
+        if (f29) {
             if (dy > 0.0f) {
                 f27 = f27 + dy;
             }
@@ -144,9 +143,10 @@ USER_FUNC(_2d_dead_jump) {
                     npc->jumpYScale = f27 / y;
                 }
             }
-            return EVT_RETURN_BLOCK;
+        } else if (dy >= 0.0f) {
+            return EVT_RETURN_YIELD;
         }
-        return dy >= 0.0f ? EVT_RETURN_YIELD : EVT_RETURN_BLOCK;
+        return EVT_RETURN_BLOCK;
     } else {
         f32 s;
         f32 c;
@@ -296,6 +296,8 @@ USER_FUNC(kamec_fire_magic_delete) {
     }
     return EVT_RETURN_DONE;
 }
+
+f32 float_0p25_8041bd18 = 0.25f;
 
 // NONMATCHING (94.36%): loops/updates match; what remains is per-block scratch colouring (target loads block1's
 // s.x straight into f28, ours via f23, and schedules the axis loads differently) plus the whole unit's rodata

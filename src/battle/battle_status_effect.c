@@ -314,16 +314,12 @@ BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 	return result;
 }
 
-// NONMATCHING (93.63%): header declares `s8 type`, but retail reads/writes a full int (no extsb for the
-// list comparison, extsb only at the _get_pri call), so `type + 0` recovers the sign-extension; still differs
-// in count/pos/loop induction register allocation and one extra saved register (r24) caused by that cast.
+// NONMATCHING (94.49%): the original takes `s32 type` (callers pass a full int; the list comparison
+// uses the raw register), but the header declares `s8 type`, so the definition must be `s8` and the
+// compiler adds one extra `extsb`, shifting the entry-pointer registers. Loop-init/disp also differ.
 void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2) {
 	BattleStatusChangeEntry* list = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
-#ifdef MUST_MATCH
-	s8 pri = _get_pri(type + 0);
-#else
-	s8 pri = _get_pri(type);
-#endif
+	s8 pri = _get_pri((s8)type);
 	s32 i = 0;
 	BattleStatusChangeEntry entry;
 	BattleStatusChangeEntry tmp;
@@ -333,11 +329,7 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2) 
 	s32 disp;
 
 	do {
-#ifdef MUST_MATCH
 		s8 p = _get_pri(list[i].type + 0);
-#else
-		s8 p = _get_pri(list[i].type);
-#endif
 
 		if (pri >= p) {
 			break;
@@ -350,11 +342,7 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2) 
 	entry.type = type;
 	entry.field_0x1 = p1;
 	entry.field_0x8 = p2;
-#ifdef MUST_MATCH
-	if (list[i].type == type + 0) {
-#else
 	if (list[i].type == type) {
-#endif
 		list[i] = entry;
 	} else {
 		for (j = i; j < 6; j++) {
@@ -368,9 +356,9 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2) 
 	for (j = 0; j < 6; j++) {
 		if (list[j].type != -1) {
 			list[j].field_0x2 = pos;
-			count++;
-			pos += 0xA;
 			list[j].field_0x4 = 0;
+			pos += 0xA;
+			count++;
 		} else {
 			break;
 		}

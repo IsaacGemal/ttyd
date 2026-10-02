@@ -211,7 +211,10 @@ void animPoseBattleInit(void) {
     animPoseRefresh();
 }
 
-// NONMATCHING (94.61%): 13 instructions differ, 2 missing, 7 extra, plus register differences.
+// Control flow matches (fixed the two inverted tests and the file/alloc activity checks); the
+// target hoists one .rodata base for the five strings, this build does not (the unit's cflags lack
+// -str pool), and some loop offsets use `li 0` where the target copies the zeroed index with `mr`.
+// NONMATCHING (94.64%): the five-string .rodata base and a few `li 0`/`mr` loop offsets still differ.
 s32 animPoseEntry(const char* animName, s32 type) {
     AnimationPose *pose, *temp;
     AnimationPoseFile *file, *tempfile;
@@ -250,7 +253,7 @@ label_1:
     check = wp->totalFiles;
     for (i = 0; i < check; i++) {
         file = &wp->files[i];
-        if (!file->active) {
+        if (file->active) {
             data = *file->handle->data;
             if (!strcmp(data->fileName, animName)) {
                 file->references++;
@@ -273,7 +276,7 @@ label_2:
     file->references++;
     file->handle = fileAllocf(5, "%s/%s", "a", animName);
 
-    if (file->handle) {
+    if (file->handle == NULL) {
         fileId = -2;
         file->active = FALSE;
         file->references--;
@@ -665,13 +668,41 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
     }
     ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
 }
-// NONMATCHING (82.84%): the animPoseMain call at the end is inlined away because that callee is
-// still an empty stub; a `#pragma dont_inline` on it restores the call but lowers
-// animPoseDrawShape. The search loop's bne/beq layout and top/r26 register choice also differ.
+// Match-only: mirrors animPoseSearchAnim (defined below with animPoseSetEffectAnim) so this function
+// can use it too. The target's search exits through an early `return`, which MWCC compiles to the
+// `bne <increment>; b <found>` branch pair (a plain `break` gives one `beq <found>`).
+#ifdef MUST_MATCH
+static inline s32 animPoseSearchAnimPaper(AnimationPoseData* data, const char* animName, s32 i, s32 top) {
+    if (i < 0) {
+        for (i = 0; i < top; i++) {
+            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
+                return i;
+            }
+        }
+        i = 0;
+    }
+    if (i < top) {
+        return i;
+    }
+    return 0;
+}
+#endif
+
+// NONMATCHING (98.24%): the search loop, the paperId test and the animPoseMain bl now match. Only
+// callee-saved colours in the inlined search differ (target animName r29/animId r30/top r28/off r26;
+// here r30/r28/r26/r29) and the exhausted loop falls through to `li i,0` where the target branches.
 void animPoseSetPaperAnim(s32 poseId, const char* animName) {
+#ifdef MUST_MATCH
+    s32 animId = (s32)animName;
+#endif
     AnimationPose* pose = &wp->poses[poseId];
     s32 paperOffset = pose->paperId * 0x170;
     AnimationPoseData* data = *wp->files[((AnimationPose*)((u8*)wp->poses + paperOffset))->fileId].handle->data;
+#ifdef MUST_MATCH
+    s32 top = data->mAnimCount;
+
+    animId = animPoseSearchAnimPaper(data, animName, animId, top);
+#else
     s32 top = data->mAnimCount;
     s32 animId = (s32)animName;
 
@@ -685,9 +716,10 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     if (animId >= top) {
         animId = 0;
     }
+#endif
     *(s32*)((u8*)pose + 0x94) = animId;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
-    if (pose->paperId != -1 && !(wp->poses[pose->paperId].typeFlags & 2)) {
+    if (pose->paperId != -1 && !(((AnimationPose*)((u8*)wp->poses + pose->paperId * 0x170))->typeFlags & 2)) {
         animPoseMain(pose->paperId);
     }
 }
@@ -891,9 +923,13 @@ u32 animPoseGetMaterialEvtColor(s32 poseId) {
     return *(u32*)&pose->materialColor;
 }
 
+// dont_inline: the 6464-byte original is never inlined, so the empty stub must stay a real bl for
+// animPoseSetPaperAnim and animPoseDrawShape (retail emits `bl animPoseMain` there).
 // NONMATCHING (0.06%): empty placeholder, not decompiled yet.
+#pragma dont_inline on
 void animPoseMain(s32 poseId) {
 }
+#pragma dont_inline reset
 
 // pushGXModelMtx_TransformNode__
 // NONMATCHING (96.99%): all logic/constants/offsets and the switch dispatch match; the
@@ -1831,7 +1867,6 @@ extern GXColor dat_80419a34;
 extern GXColor dat_80419a38;
 
 // dont_inline keeps animPaperPoseDispSub a real bl from animPaperPoseDisp (retail emits one).
-#pragma dont_inline on
 // Signals/offsets/logic/constants all match; the only diffs are the callee-saved GPR map.
 // The original keeps pose in r30, animData in r29, materialFlag in r31, flags in r28 and
 // materialLightFlag in r27, and reuses r27/r31/r28 for x/c/b in the y-flip block; this
@@ -1994,7 +2029,6 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
     GXInitTexObj(&POSE_TEXOBJ(pose), *(void**)POSE_I0x98(pose), w, h, 5, 0, 0, 0);
     POSE_I0x9C(pose) = 0;
 }
-#pragma dont_inline reset
 
 // animPoseDisp_MakeExtTexture
 
@@ -2091,7 +2125,9 @@ BOOL animPoseTestXLU(s32 poseId) {
 }
 
 // evalProc
-// NONMATCHING (94.21%): 4 instructions differ, 3 missing, 1 extra, plus register differences.
+// NONMATCHING (99.75%): control flow and offsets match; the first block's data/groups registers are
+// swapped (target data r4/groups r6, here data r6) and the vec3/PSMTX blocks schedule the pointer
+// adds and mtx loads in a different order. No structural difference.
 void evalProc(s32 parentGroupId, s32 groupId) {
     AnimPoseGroup* group;
     AnimPoseGroup* parent;
@@ -2134,10 +2170,10 @@ void evalProc(s32 parentGroupId, s32 groupId) {
             pos.x = (*g_modeling_mtx)[0][3];
             pos.y = (*g_modeling_mtx)[1][3];
             pos.z = (*g_modeling_mtx)[2][3];
-            ((Vec*)*(void**)((u8*)wp->mpCurPose + 0x15C))[groupId] = pos;
+            ((Vec*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x15C))->address)[groupId] = pos;
         }
         if (wp->mpCurPose->flags & 0x80) {
-            PSMTXCopy(*g_modeling_mtx, (*(Mtx**)((u8*)wp->mpCurPose + 0x164))[groupId]);
+            PSMTXCopy(*g_modeling_mtx, ((Mtx*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x164))->address)[groupId]);
         }
         if (!(wp->mpCurPose->flags & 0x20) || groupId != *wp->mpCurPose->vivianGroupNo) {
             evalProc(groupId, group->childGroupId);
@@ -2225,25 +2261,45 @@ void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData)
 }
 
 // animPoseDrawShape
-// NONMATCHING (83.95%): register allocation differs (pose in a caller-saved register, shapeId
-// spilled; frame 0x40 vs 0x50) and the animPoseMain calls are inlined away because that
-// function is still an empty stub.
+// Structure matches and the 14 saved wp fields now get the target's exact colours (r21/r20/r19 for
+// mpCurPose/AnimData/PoseData, r30..r22 for the tex/data/mtx fields, r18/r17 for the two tail words).
+// MWCC assigns those registers in declaration order, so the saved fields are declared in that colour
+// order while the loads/restores stay in struct-field order.
+// Hoisting `mBufferPosNum`/`mBufferNrmNum` into locals keeps them in registers across the two
+// `mFloatScratchWP` updates, which is what the target does (it removed the two duplicated loads).
+// NONMATCHING (98.19%): the remaining differences are register colouring in the poseId division and
+// the base-data block (`wp` r6/data r4 in the target vs r4/r6 here).
 void animPoseDrawShape(s32 poseId, s32 shapeId) {
     AnimationPose* pose = &wp->poses[poseId];
-    AnimationPose* prevPose = wp->mpCurPose;
-    AnimData* prevAnimData = wp->mpCurAnimData;
-    AnimationPoseData* prevPoseData = wp->mpCurPoseData;
-    GXTexObj* prevTexObj0 = wp->mpTexObjs[0];
-    GXTexObj* prevTexObj1 = wp->mpTexObjs[1];
-    GXTexObj* prevCurTexObj = wp->mpCurTexObj;
-    void* prevTexData0 = wp->mpTexDatas[0];
-    void* prevTexData1 = wp->mpTexDatas[1];
-    void* prevCurTexData = wp->mpCurTexData;
-    Mtx* prevPaperMtx0 = wp->paperMtxPtr[0];
-    Mtx* prevPaperMtx1 = wp->paperMtxPtr[1];
-    Mtx* prevPaperMtx2 = wp->paperMtxPtr[2];
-    u32 prevD8 = wp->field_0xD8;
-    u32 prevDC = wp->field_0xDC;
+    GXTexObj* prevTexObj0;
+    GXTexObj* prevTexObj1;
+    GXTexObj* prevCurTexObj;
+    void* prevTexData0;
+    void* prevTexData1;
+    void* prevCurTexData;
+    Mtx* prevPaperMtx0;
+    Mtx* prevPaperMtx1;
+    Mtx* prevPaperMtx2;
+    AnimationPose* prevPose;
+    AnimData* prevAnimData;
+    AnimationPoseData* prevPoseData;
+    u32 prevD8;
+    u32 prevDC;
+
+    prevPose = wp->mpCurPose;
+    prevAnimData = wp->mpCurAnimData;
+    prevPoseData = wp->mpCurPoseData;
+    prevTexObj0 = wp->mpTexObjs[0];
+    prevTexObj1 = wp->mpTexObjs[1];
+    prevCurTexObj = wp->mpCurTexObj;
+    prevTexData0 = wp->mpTexDatas[0];
+    prevTexData1 = wp->mpTexDatas[1];
+    prevCurTexData = wp->mpCurTexData;
+    prevPaperMtx0 = wp->paperMtxPtr[0];
+    prevPaperMtx1 = wp->paperMtxPtr[1];
+    prevPaperMtx2 = wp->paperMtxPtr[2];
+    prevD8 = wp->field_0xD8;
+    prevDC = wp->field_0xDC;
 
     wp->mpCurPose = pose;
     wp->mpCurAnimData = ANIM_POSE_DATA_ANIMS(animPoseGetBaseData(pose))[pose->animId].data;
@@ -2262,9 +2318,18 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     wp->field_0xDC = 0;
 
     if (pose->lastFrameZero == -1) {
+#ifdef MUST_MATCH
+        // The original loses poseId to the pointer mulli and recovers it with an unsigned
+        // division of the byte offset by sizeof(AnimationPose) (magic 0xb21642c9 >> 8).
+        s32 shapePoseId = (s32)((u32)((u8*)pose - (u8*)wp->poses) / sizeof(AnimationPose));
+#else
+        s32 shapePoseId = poseId;
+#endif
         if (pose->typeFlags & 2) {
             AnimationPoseData* data = animPoseGetBaseData(pose);
-            s32 total = data->mBufferPosNum + data->mBufferNrmNum;
+            s32 posNum = data->mBufferPosNum;
+            s32 nrmNum = data->mBufferNrmNum;
+            s32 total = posNum + nrmNum;
 
             if (total <= (s32)wp->mFloatScratchRP) {
                 if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
@@ -2272,24 +2337,14 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
                 }
                 wp->mbUseFloatScratch = 1;
                 wp->vtxArrayPos = &wp->mpFloatScratch[wp->mFloatScratchWP];
-                wp->mFloatScratchWP += data->mBufferPosNum;
+                wp->mFloatScratchWP += posNum;
                 wp->vtxArrayNrm = &wp->mpFloatScratch[wp->mFloatScratchWP];
-                wp->mFloatScratchWP += data->mBufferNrmNum;
+                wp->mFloatScratchWP += nrmNum;
             }
-#ifdef MUST_MATCH
-            // The original loses poseId to the `mulli` and recovers it from the pointer
-            // (magic division by 0x170); pose - wp->poses reproduces that.
-            animPoseMain(pose - wp->poses);
-#else
-            animPoseMain(poseId);
-#endif
+            animPoseMain(shapePoseId);
             wp->mbUseFloatScratch = 0;
         } else {
-#ifdef MUST_MATCH
-            animPoseMain(pose - wp->poses);
-#else
-            animPoseMain(poseId);
-#endif
+            animPoseMain(shapePoseId);
         }
     }
     renderProc(shapeId, *(s32*)((u8*)pose + 0x28));

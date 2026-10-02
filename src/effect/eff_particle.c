@@ -68,8 +68,15 @@ SDATA2_CONST f32 float_0p25_80421d18 = 0.25f;
 SDATA2_CONST f32 float_2p5_80421d1c = 2.5f;
 
 // .rodata
+// The zero vectors share the sdata2 trick: non-const under MUST_MATCH so the loads reference the
+// original symbols (and MWCC keeps the struct copy instead of folding it), const otherwise.
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_80300260 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_8030026c = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_80300260 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_8030026c = { 0.0f, 0.0f, 0.0f };
+#endif
 const f64 double_to_int_mask_80300278 = 4503599627370496.0;
 const char str_80300280[12] = "Particle";
 
@@ -198,17 +205,29 @@ void effParticleDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (87.88%): retail keeps a 0x14 stack copy of the position Vec plus a 0x8 init scratch; mine keeps one slot at 0x8.
+// Reproduces the original's separate scratch Vec: the compiler keeps the returned temp, and the
+// 0x14 copy is what dispCalcZ sees.
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = vec3_8030026c;
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// The two-slot position Vec matches because `vec3_8030026c` is non-const under MUST_MATCH (see the
+// declaration above): a const zero vector lets MWCC fold the copy and hoist `lwz r4,0x0(r5)` above
+// the userdata load; the non-const global keeps the copy and the load stays put.
 void effParticleMain(EffectEntry* effect) {
 	ParticleWork* work = effect->userdata;
-	Vec position = vec3_8030026c;
+	Vec position;
+	Vec position2;
 	ParticleEntry* particle;
 	ParticleEntry* prev;
 	s32 i;
 
-	position.x = work->position.x;
-	position.y = work->position.y;
-	position.z = work->position.z;
+	position = makeVec(work->position.x, work->position.y, work->position.z);
+	position2 = position;
 
 	if (effect->flags & 0x4) {
 		effect->flags &= ~0x4;
@@ -245,10 +264,21 @@ void effParticleMain(EffectEntry* effect) {
 		}
 		i = prev->next;
 	}
-	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effParticleDisp, effect);
+	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effParticleDisp, effect);
 }
 
-// NONMATCHING (80.10%): retail keeps a 0x14 stack copy of the direction Vec plus a 0x8 scratch (frame is 0x10 larger); the life>0 test is laid out as bgt, mine as ble.
+// same idea as makeVec but over vec3_80300260 (the entry's direction scratch)
+static inline Vec makeVec2(f32 x, f32 y, f32 z) {
+	Vec temp = vec3_80300260;
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// NONMATCHING (91.74%): the direction Vec/two-slot copy, the `w2` work reload (`0xc(r30)`) in the loop/head
+// and the emitter stores all match (non-const `vec3_80300260` + the MUST_MATCH constant array). Still differs:
+// the emitter-constant load order (0/5/125/25 vs 25/125/5/0), `frame=0`'s temp register, and the angleX stfs.
 EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 velX, f32 velY, f32 velZ) {
 	EffectEntry* entry = effEntry();
 	ParticleWork* work;
@@ -267,10 +297,10 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->velocity.x = velX;
 	work->velocity.y = velY;
 	work->velocity.z = velZ;
-	if (life > 0) {
-		work->life = life;
-	} else {
+	if (life <= 0) {
 		work->life = 1000;
+	} else {
+		work->life = life;
 	}
 	work->frame = 0;
 	work->scale = float_1_80421cf8;
@@ -278,12 +308,36 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->count = count;
 	work->particles = (ParticleEntry*)((u8*)work + entry->count * 0xB0);
 	work->field_0xAC = float_4_80421ce0;
-	for (i = 1; i < work->count + 2; i++) {
-		work->particles[i - 1].next = i;
+	{
+		ParticleWork* w2 = entry->userdata;
+
+		for (i = 1; i < w2->count + 2; i++) {
+			w2->particles[i - 1].next = i;
+		}
+		w2->particles[i - 1].next = 0;
+		w2->head = 0;
 	}
-	work->particles[i - 1].next = 0;
-	work->head = 0;
 	PSMTXIdentity(work->emitter.matrix);
+#ifdef MUST_MATCH
+	// MUST_MATCH: this array order makes MWCC put the four constants in the original's f3/f2/f1/f0
+	// (0.0, 5.0, 125.0, 25.0). The natural field-by-field form is under #else.
+	{
+		f32 c[4];
+
+		c[0] = float_25_80421d08;
+		c[1] = float_125_80421d04;
+		c[2] = float_5_80421d00;
+		c[3] = float_0_80421cf0;
+		work->emitter.field_0x3C.z = c[3];
+		work->emitter.field_0x3C.y = c[3];
+		work->emitter.field_0x3C.x = c[3];
+		work->emitter.field_0x48 = work->emitter.field_0x3C;
+		work->emitter.field_0x54 = c[3];
+		work->emitter.field_0x58 = c[2];
+		work->emitter.field_0x5C = c[1];
+		work->emitter.field_0x60 = c[0];
+	}
+#else
 	work->emitter.field_0x3C.z = float_0_80421cf0;
 	work->emitter.field_0x3C.y = float_0_80421cf0;
 	work->emitter.field_0x3C.x = float_0_80421cf0;
@@ -292,17 +346,18 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->emitter.field_0x58 = float_5_80421d00;
 	work->emitter.field_0x5C = float_125_80421d04;
 	work->emitter.field_0x60 = float_25_80421d08;
+#endif
 	{
-		Vec direction = vec3_80300260;
+		Vec direction;
+		Vec direction2;
 
-		direction.x = work->velocity.x;
-		direction.y = work->velocity.y;
-		direction.z = work->velocity.z;
-		PSVECNormalize(&direction, &direction);
-		work->angleX = -angleABf(float_0_80421cf0, float_0_80421cf0, direction.z * float_1000_80421d0c,
-		                         direction.y * float_1000_80421d0c);
-		work->angleZ = -angleABf(float_0_80421cf0, float_0_80421cf0, direction.x * float_1000_80421d0c,
-		                         direction.y * float_1000_80421d0c);
+		direction = makeVec2(work->velocity.x, work->velocity.y, work->velocity.z);
+		direction2 = direction;
+		PSVECNormalize(&direction2, &direction2);
+		work->angleX = -angleABf(float_0_80421cf0, float_0_80421cf0, float_1000_80421d0c * direction2.z,
+		                         float_1000_80421d0c * direction2.y);
+		work->angleZ = -angleABf(float_0_80421cf0, float_0_80421cf0, float_1000_80421d0c * direction2.x,
+		                         float_1000_80421d0c * direction2.y);
 	}
 	{
 		Mtx rotX;
@@ -348,14 +403,16 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (90.24%): the inline sqrtf u32->f32 mask is pooled after the sqrtf doubles (retail pools it before the string); several FP register assignments differ.
+// NONMATCHING (90.44%): MWCC pools its u32->f32 2^52 constant at 0x48(r31); the original's is the same
+// value at 0x18(r31) (the slot our declared double_to_int_mask_80300278 fills). The FP constants
+// (float_2/dat/mask/float_1) also get different scratch registers (f5/f4/f3/f1 vs f3/f4/f2/f5 here).
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
 	static s32 use_last;
 	static f32 y2;
 	ParticleWork* work = effect->userdata;
 	f32 random;
-	f32 x;
 	f32 z;
+	f32 x;
 	f32 radius;
 	f32 factor;
 
@@ -365,9 +422,9 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	} else {
 		do {
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			x = (f32)(u32)seed * dat_80421d10 * float_2_80421cf4 - float_1_80421cf8;
+			x = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			z = (f32)(u32)seed * dat_80421d10 * float_2_80421cf4 - float_1_80421cf8;
+			z = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
 			radius = x * x + z * z;
 		} while (radius > float_1_80421cf8);
 		factor = particle_sqrtf(float_neg2_80421d14 * (f32)log(radius) / radius);
@@ -380,9 +437,9 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 
 	do {
 		seed = seed * 0x5EEDF715 + 0x1B0CB173;
-		particle->velocity.x = (f32)(u32)seed * dat_80421d10 * float_2_80421cf4 - float_1_80421cf8;
+		particle->velocity.x = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
 		seed = seed * 0x5EEDF715 + 0x1B0CB173;
-		particle->velocity.z = (f32)(u32)seed * dat_80421d10 * float_2_80421cf4 - float_1_80421cf8;
+		particle->velocity.z = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
 		radius = particle->velocity.x * particle->velocity.x + particle->velocity.z * particle->velocity.z;
 	} while (radius > float_1_80421cf8);
 	particle->velocity.x *= float_0p5_80421cec;

@@ -1,6 +1,9 @@
 #include "seq/seq_title.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
+#include "driver/fadedrv.h"
+#include "mario/mario_pouch.h"
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "sound.h"
@@ -15,6 +18,36 @@ extern SoundWork sound;
 extern PaperSoundBGM psbgm[2];
 extern GlobalWork* gp;
 
+// This unit's .rodata blob, in the original's symbol order. The functions reach it through
+// `base = (u8*)vec3_802c11a0` (see L_titleInit/titleMain); defining the objects here is what emits
+// the bytes (the literals used before are gone once the functions use base+offset).
+// The `extern Vec vec3_802c11a0[]` declaration in include/sequence/seq_title.h has no `const` and
+// no element count, so the six original vec3_802c11a0..dc symbols are emitted as one 6-element
+// array (the five tail symbols are not referenced by any function).
+__declspec(section ".rodata") Vec vec3_802c11a0[6] = {
+	{ 0.0f, 0.0f, 0.0f },
+	{ 1.0f, 1.0f, 1.0f },
+	{ 0.0f, 0.0f, 0.0f },
+	{ 1.0f, 1.0f, 1.0f },
+	{ 0.0f, 0.0f, 0.0f },
+	{ 1.0f, 1.0f, 1.0f },
+};
+const char str_802C11E8[12] = "%s/demo.tpl";
+const char str_802C11F4[8] = "c_peach";
+const char str_802C11FC[8] = "c_nazo\000";
+const char str_802C1204[24] = "MOBJ_GoldenTreasureBox\000";
+const char str_802C121C[20] = "MOBJ_BigTreasureBox";
+const char str_802C1230[8] = "c_roten";
+const char str_802C1238[12] = "c_kuribo_n\000";
+const char str_802C1244[12] = "c_tyusan\000\000\000";
+const f64 double_to_int_802c1250 = 4503601774854144.0;
+const f64 double_to_int_mask_802c1258 = 4503599627370496.0;
+const char str_802C1260[24] = "OFF_d_maku_left_right\000\000";
+const char str_802C1278[20] = "OFF_d_maku_center\000\000";
+const char str_802C128C[8] = "dmo_00\000";
+const char str_802C1294[16] = "%s/mariost.tpl\000";
+const char str_802C12A4[12] = "BGM_DIGEST1";
+const char str_802C12B0[12] = "BGM_TITLE1\000";
 
 TitleWork work2;
 TitleWork* wp2 = &work2;
@@ -53,11 +86,14 @@ s32 N_getDebugMode(void) {
 	return wp2->debug;
 }
 
-// NONMATCHING (91.55%): the original reaches its .rodata strings as offsets from one base register (vec3_802c11a0);
-// ours loads each string address on its own.
+// Match shape: the original reaches its .rodata strings as offsets from one base register
+// (r31 = vec3_802c11a0): `addi r4, r31, 0xf4/0x104/0x110`. This unit's .rodata strings live at
+// those offsets; loading them through the same base reproduces the target's address form, while
+// literal strings compile to a separate lis/addi pair per string.
 void L_titleInit(SequenceWork* work) {
+	u8* base = (u8*)vec3_802c11a0; // base of this unit's .rodata pool
 	memset(wp2, 0, sizeof(TitleWork));
-	wp2->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
+	wp2->texture = fileAllocf(4, (const char*)(base + 0xF4), getMarioStDvdRoot());
 	wp2->field_0xC = 0.0f;
 	wp2->field_0x10 = 1000.0f;
 	wp2->field_0x14 = 0.0f;
@@ -85,13 +121,13 @@ void L_titleInit(SequenceWork* work) {
 			else {
 				SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
 			}
-			psndBGMOn(0x200, "BGM_DIGEST1");
+			psndBGMOn(0x200, (char*)(base + 0x104));
 			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}
 		}
 		else {
-			psndBGMOn(0x200, "BGM_TITLE1");
+			psndBGMOn(0x200, (char*)(base + 0x110));
 			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}
@@ -101,23 +137,211 @@ void L_titleInit(SequenceWork* work) {
 	camGetPtr(CAMERA_2D)->flags |= 0x400;
 }
 
-// NONMATCHING (4.50%): 11 instructions differ, 509 missing, plus register differences.
-// dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
-#pragma dont_inline on
 void titleMain(SequenceWork* work) {
+	u8* base = (u8*)vec3_802c11a0; // base of this unit's .rodata pool
+
 	switch (wp2->field_0x8) {
 		case 0:
-			if (psndBGMStartCheck(0)
-				&& animGroupBaseAsync("OFF_d_maku_left_right", 2, 0)
-				&& animGroupBaseAsync("OFF_d_maku_center", 2, 0))
-			{
-
+			if ((u32)psndBGMStartCheck(0) == 0) {
+				break;
+			}
+			if (!animGroupBaseAsync((const char*)(base + 0xC0), 2, 0)) {
+				break;
+			}
+			if (!animGroupBaseAsync((const char*)(base + 0xD8), 2, 0)) {
+				break;
+			}
+			if (seqGetPrevSeq() == SEQ_LOAD) {
+				fadeEntry(0x40, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+				fadeEntry(0x1F, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
+				wp2->field_0x10 = 120.0f;
+				wp2->field_0x18 = -170.0f;
+				*(s32*)(wp2->field_0x20 + 0x4) = 0;
+			}
+			else if (seqGetPrevSeq() == SEQ_GAME_OVER) {
+				fadeEntry(0x15, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+				fadeEntry(0x1D, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
+				*(s32*)(wp2->field_0x20 + 0x4) = 0x4E;
+			}
+			else {
+				fadeEntry(0x15, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+				fadeEntry(0x22, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
+				fadeSetNarrowFast();
+				*(s32*)(wp2->field_0x20 + 0x4) = 0x17;
+			}
+			wp2->field_0x8 += 1;
+			break;
+		case 1:
+			*(s32*)(wp2->field_0x20 + 0x4) -= 1;
+			if (*(s32*)(wp2->field_0x20 + 0x4) == 0) {
+				if (psbgm[0].streamId != 0xFFFFFFFF) {
+					sound.streams[psbgm[0].streamId].flags &= ~0x8000;
+				}
+			}
+			if (!fadeIsFinish()) {
+				break;
+			}
+			if (seqGetPrevSeq() != SEQ_LOAD) {
+				fadeEntry(0x14, 0x1F4, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+				wp2->field_0x8 += 1;
+			}
+			else {
+				wp2->field_0x10 = 120.0f;
+				wp2->field_0x18 = -170.0f;
+				*(s32*)(wp2->field_0x20 + 0xC) = 0;
+				wp2->field_0x8 = 3;
+			}
+			break;
+		case 2:
+			wp2->field_0xC = 0.0f;
+			wp2->field_0x10 = intplGetValue(10, *(s32*)(wp2->field_0x20), 60, 300.0f, 120.0f);
+			*(s32*)(wp2->field_0x20 + 0x4) -= 1;
+			if (*(s32*)(wp2->field_0x20 + 0x4) == 0) {
+				if (psbgm[0].streamId != 0xFFFFFFFF) {
+					sound.streams[psbgm[0].streamId].flags &= ~0x8000;
+				}
+				if (seqGetPrevSeq() == SEQ_GAME_OVER) {
+					psndSFXOn((const char*)0xAB8);
+				}
+			}
+			wp2->field_0x14 = 0.0f;
+			wp2->field_0x18 = intplGetValue(11, *(s32*)(wp2->field_0x20), 60, -300.0f, -170.0f);
+			*(s32*)(wp2->field_0x20) += 1;
+			if (*(s32*)(wp2->field_0x20) > 60) {
+				fileAsyncf(4, 0, (const char*)(base + 0x48), getMarioStDvdRoot());
+				animGroupBaseAsync((const char*)(base + 0x54), 0, 0);
+				animGroupBaseAsync((const char*)(base + 0x5C), 0, 0);
+				animGroupBaseAsync((const char*)(base + 0x64), 0, 0);
+				animGroupBaseAsync((const char*)(base + 0x7C), 0, 0);
+				animGroupBaseAsync((const char*)(base + 0x90), 0, 0);
+				animGroupBaseAsync((const char*)(base + 0x98), 0, 0);
+				animGroupBaseAsync((const char*)(base + 0xA4), 0, 0);
+				*(s32*)(wp2->field_0x20 + 0xC) = 0;
+				wp2->field_0x8 += 1;
+			}
+			break;
+		case 3:
+			wp2->field_0x1C += 0.1f;
+			if (wp2->field_0x1C > 1.0f) {
+				wp2->field_0x1C = 1.0f;
+			}
+			if (keyGetButtonTrg(0) & 0x1100) {
+				psndSFXOn((const char*)8);
+				wp2->field_0x8 = 0xA;
+				break;
+			}
+			if (++*(s32*)(wp2->field_0x20 + 0x8) > 0x474) {
+				wp2->field_0x8 = 0x14;
+			}
+			break;
+		case 0xA:
+			fadeEntry(0x3F, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+			wp2->field_0x8 += 1;
+			// fall through
+		case 0xB:
+			if (fadeIsFinish()) {
+				fadeEntry(0x1A, 0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+				wp2->field_0x8 += 1;
+			}
+			break;
+		case 0xC:
+			if (fadeIsFinish()) {
+				fadeReset(4);
+				seqSetSeq(SEQ_LOAD, NULL, NULL);
+			}
+			break;
+		case 0x14:
+			fadeEntry(0x21, 0, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
+			fadeEntry(0xA, 0x3E8, (GXColor){ 0x00, 0x00, 0x00, 0xFF });
+			psndBGMOff_f_d(0x200, 0x3E8, 0);
+			*(s32*)(wp2->field_0x20) = 0;
+			wp2->field_0x8 += 1;
+			break;
+		case 0x15:
+			wp2->field_0x10 = intplGetValue(11, *(s32*)(wp2->field_0x20), 60, 120.0f, 400.0f);
+			wp2->field_0x18 = intplGetValue(11, *(s32*)(wp2->field_0x20), 60, -170.0f, -400.0f);
+			*(s32*)(wp2->field_0x20) += 1;
+			if (*(s32*)(wp2->field_0x20) > 60) {
+				*(s32*)(wp2->field_0x20) = 60;
+			}
+			wp2->field_0x1C -= 0.1f;
+			if (wp2->field_0x1C < 0.0f) {
+				wp2->field_0x1C = 0.0f;
+			}
+			if (fadeIsFinish()) {
+				fadeReset(1);
+				if (pouchGetHP() <= 0) {
+					pouchSetHP(1);
+				}
+				gp->areaFadeInType = 10;
+				gp->areaFadeInDuration = 0;
+				seqSetSeq(SEQ_MAP_CHANGE, (const char*)(base + 0xEC), NULL);
 			}
 			break;
 	}
+
+	if (wp2->field_0x8 != 0xC && work->state < 0xE) {
+		dispEntry(4, 0.0f, 0, disp1, NULL);
+		dispEntry(7, 0.0f, 0, disp2, NULL);
+		switch (wp2->debug) {
+			case 0:
+				if (keyGetButtonTrg(0) & ~0x400) {
+					wp2->debug = 0;
+					break;
+				}
+				if (keyGetButtonTrg(0) & 0x400) {
+					wp2->debug++;
+				}
+				break;
+			case 1:
+				if (keyGetButtonTrg(0) & ~0x200) {
+					wp2->debug = 0;
+					break;
+				}
+				if (keyGetButtonTrg(0) & 0x200) {
+					wp2->debug++;
+				}
+				break;
+			case 2:
+				if (keyGetButtonTrg(0) & ~0x20) {
+					wp2->debug = 0;
+					break;
+				}
+				if (keyGetButtonTrg(0) & 0x20) {
+					wp2->debug++;
+				}
+				break;
+			case 3:
+				if (keyGetButtonTrg(0) & ~0x200) {
+					wp2->debug = 0;
+					break;
+				}
+				if (keyGetButtonTrg(0) & 0x200) {
+					wp2->debug++;
+				}
+				break;
+			case 4:
+				if (keyGetButtonTrg(0) & ~0x800) {
+					wp2->debug = 0;
+					break;
+				}
+				if (keyGetButtonTrg(0) & 0x800) {
+					wp2->debug++;
+				}
+				break;
+			case 5:
+				if (keyGetButtonTrg(0) & ~0x40) {
+					wp2->debug = 0;
+					break;
+				}
+				if (keyGetButtonTrg(0) & 0x40) {
+					wp2->debug = -1;
+				}
+				break;
+		}
+	}
 }
 
-#pragma dont_inline reset
 
 void disp1(CameraId cameraId, void* param) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
@@ -154,18 +378,20 @@ static inline Vec disp2Vec(Vec v, f32 y, f32 x) {
 	return v;
 }
 
-// The two Vec by-value argument temp blocks now sit in the original slots (scale 0x38/0x14,
-// intermediate 0x44/0x20, outgoing 0x50/0x2c) and the pulse multiply matches. Two diffs remain,
-// both outside this function's control:
+// The two Vec by-value argument temp blocks sit in the original slots (scale 0x38/0x14,
+// intermediate 0x44/0x20, outgoing 0x50/0x2c) and the pulse multiply matches. Two diffs remain:
 //  (1) the int-to-float magic double: the target loads it from the rodata base
 //      (`lfd f2, 0xb0(r31)`, r31 = vec3_802c11a0); MWCC here emits its own address
-//      (`lis r3, @300@ha; lfd f2, @300@l(r3)`). This unit's vec3_802c11a0 is an extern in
-//      include/sequence/seq_title.h, so the compiler will not pool the generated double
-//      against it (defining the blob + #pragma pool_data on did not change it either).
+//      (`lis r3, @440@ha; lfd f2, @440@l(r3)`) even now that the whole .rodata blob
+//      (vec3_802c11a0 .. str_802C12B0, incl. double_to_int_802c1250) is defined in this file;
+//      adding `#pragma pool_data on` compiled to the same bytes. The compiler's generated double
+//      does not join the blob pool.
 //  (2) the FontDrawString calls: the target evaluates the two floats before the string
 //      pointer (`lfs f1; lfs f2; lwz r3`), but include/manager/fontmgr.h declares
-//      FontDrawString(const char*, f32, f32), so MWCC evaluates the string pointer first.
-//      The callee's ABI registers are the same either way; only the call-site order differs.
+//      FontDrawString(const char*, f32, f32), so MWCC evaluates the string pointer first. Only the
+//      first of the two calls differs (the second already matches). The callee's ABI registers are
+//      the same either way; only the call-site order differs, and the header is shared with other
+//      files so it cannot be reordered here.
 // NONMATCHING (97.32%): the two blockers above; the Vec arg temps and pulse multiply match.
 void disp2(CameraId cameraId, void* param) {
 	u8* base = (u8*)vec3_802c11a0; // base of this unit's .rodata pool
