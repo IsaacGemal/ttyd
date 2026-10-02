@@ -3729,3 +3729,7 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   branch is `else if (type == 2)` in retail, and winMailDisp read vec3s past str_802F3FE8: both unwritten again.
   seq_title (L_titleInit/titleMain passed strings as offsets from vec3_802c11a0) as on main. Open (LOW):
   battle_menu_disp's `*(GXColor*)&float_3p0039_8041c138` is really a GXColor (0x40404000).
+
+## Grind 90: win_log review fixes and known rule gaps (2026-10-02, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`capture` read the tattle camera table one level too deep (`data[0]` is the table, `data[1]` the byte count); fixed. `msg_help` is now a function-local `static` in winLogInit and `pos_tbl` a function-local non-const `static` in mapGX, matching the original `msg_help$506` (.sdata) and `pos_tbl$1271` (.data). Still open in `win_log.c`: the functions are in asm order where rule 18 wants reverse order, and the MUST_MATCH `LV`/`RO`/`HALF_FOV_TAN` macros read named objects as offsets from `str_802F5EB8` (rule 13).
