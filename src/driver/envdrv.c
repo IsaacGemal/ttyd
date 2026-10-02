@@ -1693,7 +1693,7 @@ static inline void envLoadTevTexture(u32 id, u32 map, GXTexObj* obj, GXTlutObj* 
     }
 }
 
-// NONMATCHING (99.56%): the stage/texmap/texcoord cursors land in r30/r29/r28 in the target and r29/r28/r30 here
+// NONMATCHING (99.58%): the stage/texmap/texcoord cursors land in r30/r29/r28 in the target and r29/r28/r30 here
 // (register allocation only; declaration and use order did not move them).
 // Adds one tev stage for the overlay effect `type` (1..8, 10) and loads its texture, texgen and texture matrix.
 // `param` is the shared stage cursor (EnvironmentYami's first fields: stage, texmap, texcoord).
@@ -1742,8 +1742,8 @@ void envAddTev(s32 type, void* param) {
             *(f32*)&wp->unk70[0x14] = (f32)(gp->retraceCount + 45);
             *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
             envLoadTevTexture(6, texMap, &texObj1, &tlut1);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texCoord += 1;
             texMap += 1;
@@ -1755,8 +1755,8 @@ void envAddTev(s32 type, void* param) {
             *(f32*)&wp->unk70[0x14] = (f32)(gp->retraceCount + 45);
             *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
             envLoadTevTexture(8, texMap, &texObj2, &tlut2);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texCoord += 1;
             texMap += 1;
@@ -1766,8 +1766,8 @@ void envAddTev(s32 type, void* param) {
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
             *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
             envLoadTevTexture(0, texMap, &texObj3, &tlut3);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(1, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(1, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texMap += 1;
             texCoord += 1;
@@ -1779,8 +1779,8 @@ void envAddTev(s32 type, void* param) {
             *(f32*)&wp->unk70[0x10] = float_45_8041e560;
             *(f32*)&wp->unk70[0x14] = float_45_8041e560;
             envLoadTevTexture(1, texMap, &texObj4, &tlut4);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texMap += 1;
             texCoord += 1;
@@ -1792,8 +1792,8 @@ void envAddTev(s32 type, void* param) {
             *(f32*)&wp->unk70[0x10] = float_45_8041e560;
             *(f32*)&wp->unk70[0x14] = float_45_8041e560;
             envLoadTevTexture(2, texMap, &texObj5, &tlut5);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texMap += 1;
             texCoord += 1;
@@ -1805,8 +1805,8 @@ void envAddTev(s32 type, void* param) {
             *(f32*)&wp->unk70[0x10] = float_0_8041e53c;
             *(f32*)&wp->unk70[0x14] = float_90_8041e568;
             envLoadTevTexture(4, texMap, &texObj6, &tlut6);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texMap += 1;
             texCoord += 1;
@@ -1818,8 +1818,8 @@ void envAddTev(s32 type, void* param) {
             *(f32*)&wp->unk70[0x10] = float_0_8041e53c;
             *(f32*)&wp->unk70[0x14] = float_90_8041e568;
             envLoadTevTexture(5, texMap, &texObj7, &tlut7);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texMap += 1;
             texCoord += 1;
@@ -1831,8 +1831,8 @@ void envAddTev(s32 type, void* param) {
             *(f32*)&wp->unk70[0x10] = float_10_8041e524;
             *(f32*)&wp->unk70[0x14] = float_45_8041e560;
             envLoadTevTexture(10, texMap, &texObj8, &tlut8);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+            envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
             tevStage += 1;
             texMap += 1;
             texCoord += 1;
@@ -1844,8 +1844,8 @@ void envAddTev(s32 type, void* param) {
             kColor = dat_8041e51c;
             GXSetTevKColor(GX_KCOLOR1, kColor);
             envLoadTevTexture(9, texMap, &texObj9, &tlut9);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTTEXMTX0);
-            envTevLoadTexMtxImm(4, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
+            GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTTEXMTX0);
+            envTevLoadTexMtxImm(4, dat_802f9338.tbl[texMap], 0x40, GX_MTX3x4);
             tevStage += 1;
             texMap += 1;
             texCoord += 1;
