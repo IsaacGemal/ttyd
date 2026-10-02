@@ -17,17 +17,12 @@ const Vec vec3_802f34a4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f34b0 = { 0.0f, 0.0f, 0.0f };
 const char str_802F34BC[12] = "EFF_Hana";
 const char str_802F34C8[12] = "EFF_Mugi";
-// dtk padding labels, defined only to reproduce the original's .rodata alignment.
-const char gap_04_802F34D4_rodata[4] = { 0 };
 const f64 double_0p005_802f34d8 = 0.005;
 const char str_802F34E0[12] = "MugiKemuri2";
-const f64 double_to_int_802f34f0 = 4503601774854144.0;
-const char str_802F34F8[12] = "MugiKemuri";
-const char gap_04_802F3504_rodata[4] = { 0 };
 
 // .sdata2 constants.
-const char str_8041CA7C[4] = "win";
-const char str_8041CA80[4] = "Z_1";
+extern const char str_8041CA7C[4];
+extern const char str_8041CA80[4];
 extern const GXColor dat_8041ca68;
 extern const GXColor dat_8041ca6c;
 extern const f32 float_deg2rad_8041ca70;
@@ -62,7 +57,7 @@ EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4) 
 #endif
 	s32 i;
 
-	entry->type = str_802F34F8;
+	entry->type = "MugiKemuri";
 	entry->count = 5;
 	work = __memAlloc(HEAP_EFFECT, sizeof(MugiKemuriWork) * 5);
 	entry->userdata = work;
@@ -474,6 +469,8 @@ const GXColor dat_8041ca6c = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_deg2rad_8041ca70 = 0.017453292f;
 const f32 float_0_8041ca74 = 0.0f;
 const f32 float_15_8041ca78 = 15.0f;
+const char str_8041CA7C[4] = "win";
+const char str_8041CA80[4] = "Z_1";
 const f32 float_0p85_8041ca84 = 0.85f;
 const f32 float_0p004_8041ca88 = 0.004f;
 const f32 float_1_8041ca8c = 1.0f;
