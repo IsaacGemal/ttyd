@@ -390,10 +390,11 @@ extern const f32 float_360_8041c160;
 extern const f32 float_0p017453_8041c164;
 
 // Register allocation and instruction scheduling only. The state machine, item switch,
-// ring transforms and all values match; the target keeps `window->cursor` in r5 in the
-// field_0xC==1 branch (ours r4, with d in r5), and the case-1/case-4/case-5 angle
-// temporaries land in different f registers.
-// NONMATCHING (98.49%): see above.
+// ring transforms and all values match. Splitting `d` into `d = window->cursor->field_0;
+// d -= window->field_0x18;` puts `d` in r4 like the target (a one-expression form gave
+// r5); `window->cursor` is still r3 where the target has r5. The case-1/case-4/case-5
+// angle temporaries land in different f registers.
+// NONMATCHING (98.50%): see above.
 void DrawMainMenu(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -428,7 +429,8 @@ void DrawMainMenu(void) {
     case 1:
         window->field_0x14 = 1;
         {
-            s32 d = window->cursor->field_0 - window->field_0x18;
+            s32 d = window->cursor->field_0;
+            d -= window->field_0x18;
             if (d == 1 || -(window->cursor->unk8 - 1) == d) {
                 window->field_0xC = 2;
                 window->field_0x14 = 0;
@@ -1195,13 +1197,13 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
 // be marked don't-inline itself (a surrounding region only stops its functions
 // being inlined elsewhere).
 #pragma dont_inline on
-// Instruction scheduling / register allocation only. Explicit temporaries reproduce
-// the target's schedule in all three icon blocks: the two sums are formed (ysum/xsum)
-// before the +/-f31 add, vec.x = pos->x is hoisted above the `n` clamp, and the tail
-// uses `f32 ny = 24*(f32)n` before `vec.y = pos->y - ny`. The residual is that the
-// target loads 0.0 / 24 / pos->x into a different rotation of f0,f3,f4 and schedules
-// the final fnmsubs differently.
-// NONMATCHING (87.99%): see above.
+// Instruction scheduling / register allocation only. Splitting the first block's sums
+// (`ysum = float_15; ysum += pos->y;`) makes MWCC form the sum in place in f2 exactly
+// like the target; a single-expression form materialises it in a fresh register. The
+// residual: `pos->y` lands in f0 where the target has f1 (so the 0.0 load is scheduled
+// after pos->x); the second block has the same rotation; the tail uses the `f32 ny`
+// temp and schedules the final fnmsubs differently.
+// NONMATCHING (88.09%): see above.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -1216,8 +1218,12 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         window->field_0x11C = 0;
     }
     if (cursor->field_4 > 0) {
-        f32 ysum = float_15_8041c18c + pos->y;
-        f32 xsum = float_155_8041c188 + pos->x;
+        f32 ysum;
+        f32 xsum;
+        ysum = float_15_8041c18c;
+        ysum += pos->y;
+        xsum = float_155_8041c188;
+        xsum += pos->x;
         vec.y = ysum + f31;
         vec.x = xsum;
         vec.z = float_0_8041c144;
@@ -1248,12 +1254,13 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (97.44%): MWCC coalesces sp/p (`cmplwi` instead of `mr. r31,r3`),
-// shifting p/line to r3/r4; everything else is register renaming.
+// The original reuses its `tag` parameter as the message pointer (`mr. r31, r3`
+// after msgSearch); writing the result back into `tag` reproduces the register
+// allocation, and the copy loop needs `*dp = *p; p++; dp++;` for the p/dp
+// increment order.
 void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     GXColor color = dat_8041c140;
     s8 text[4][0x30];
-    s8* sp = (s8*)tag;
     s8* p;
     s8* dp;
     s32 line;
@@ -1263,11 +1270,11 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     FontDrawStart();
     FontDrawColorIDX(0);
     FontDrawScale(0.8f);
-    if ((sp = (s8*)msgSearch((char*)sp)) != 0) {
+    if ((tag = msgSearch(tag)) != 0) {
         for (i = 0; i < 4; i++) {
             text[i][0] = 0;
         }
-        p = sp;
+        p = (s8*)tag;
         dp = text[0];
         line = 0;
         for (;;) {
@@ -1288,7 +1295,9 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
                 p++;
                 continue;
             }
-            *dp++ = *p++;
+            *dp = *p;
+            p++;
+            dp++;
         }
         if (text[0][0] != 0) {
             FontDrawScale(0.8f);

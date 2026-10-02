@@ -255,7 +255,9 @@ void* btlataudGetMoveEventPtr(s32 unitId) {
 #endif
 
 // NONMATCHING (93.75%): MWCC emits the btlataudevtDummy base plus a separate `addi 0x4`; the original
-// folds the +4 into the @ha/@l reloc addend (btlataudevtDummy+0x4). Same instruction sequence otherwise.
+// folds the +4 into the @ha/@l reloc addend (btlataudevtDummy+0x4). No C form folds under this compiler:
+// arr+1, &arr[1], (char*)arr+4, struct/flexible-array/union member addresses, signed/unsigned/const/
+// volatile, all GC/Wii MWCC versions and the -O/-model/-opt flag variants materialise the base then add.
 s32* btlataudGetAttackEventPtr(s32 index) {
     s32* data = BtlUnit_GetData(BattleGetUnitPtr(_battleWorkPointer, index), 6);
     if (data == NULL) {

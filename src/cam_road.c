@@ -388,7 +388,7 @@ static inline f32 sqrtf(f32 x) {
 // The inline-sqrtf double pool now lands right after vec3_802c12d0: the unused named double_*
 // definitions were removed and the two str_802C1348/54 literals moved to the end of the file, so
 // MWCC's pooled doubles land at +0x30/+0x38/+0x40/+0x48.
-// NONMATCHING (97.65%): the fabs of `deg` lands in f4 instead of f3, which cascades through the
+// NONMATCHING (97.66%): the fabs of `deg` lands in f4 instead of f3, which cascades through the
 // maxVal/diff/cand blocks and leaves `dist` in f3 instead of f6; `d`/`node` are swapped (r5/r6);
 // the sqrtf x==0 return block is inline (bne + b) instead of a `beq` to a block at the end.
 u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
@@ -570,6 +570,108 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
     out->unk_44 = a->unk_44 + f31 * (b->unk_44 - a->unk_44);
     out->unk_48 = a->unk_48 + f31 * (b->unk_48 - a->unk_48);
     out->unk_5C = a->unk_5C + f31 * (b->unk_5C - a->unk_5C);
+}
+
+// Match-only helpers: the original materialises sub/cross/dot results as Vec locals and
+// copies them into by-value argument slots, which only happens when these are inline functions
+// taking Vec by value.
+static inline Vec collisionTriSub(Vec a, Vec b) {
+    Vec r;
+    r.x = a.x - b.x;
+    r.y = a.y - b.y;
+    r.z = a.z - b.z;
+    return r;
+}
+
+static inline Vec collisionTriCross(Vec a, Vec b) {
+    Vec r;
+    r.x = a.y * b.z - a.z * b.y;
+    r.y = a.z * b.x - a.x * b.z;
+    r.z = a.x * b.y - a.y * b.x;
+    return r;
+}
+
+static inline f32 collisionTriDot(Vec a, Vec b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+static inline Vec collisionTriScale(Vec v, f32 s) {
+    Vec r;
+    r.x = v.x * s;
+    r.y = v.y * s;
+    r.z = v.z * s;
+    return r;
+}
+
+static inline Vec collisionTriAdd(Vec a, Vec b) {
+    Vec r;
+    r.x = a.x + b.x;
+    r.y = a.y + b.y;
+    r.z = a.z + b.z;
+    return r;
+}
+
+// The `dir` vector must be the anonymous literal `{ 0.0f, -1.0f, 0.0f }`, not a copy of the named
+// `vec3_802c12f4`: copied from the named global MWCC hoists all three loads to the prologue (98.0%);
+// the literal pools to the same .rodata Vec and restores the target's interleaved load schedule.
+// Remaining diff: the first two vertex loads are swapped -- the target issues `lwz v1.x` before the `stmw`
+// (this build issues `lwz v0.x` after it). The `dot(...) > 0.0` edge guards must be `0.0` (double, reusing the
+// guard block's already-resident `double_0_802c1318`), not `0.0f`; the float form keeps a second 0.0f live and
+// shifts the `collisionTriDot(n, dir)` guard accumulators one FP register higher (f2..f5 vs f0,f2,f3,f4).
+// This is the same known-hard load-hoist class as `marioOfsRotReset` (the scheduler moves a load across the
+// prologue store in the opposite direction; `scheduling off` collapses the whole function). Everything else --
+// instructions, slots, constants and all FP/GP register assignments -- matches.
+// NONMATCHING (99.65%): first vertex-load pair swapped (target hoists `lwz v1.x` above `stmw`).
+BOOL collisionTri_simple(Vec* p, Vec* v0, Vec* v1, Vec* v2, f32* out) {
+    Vec dir = { 0.0f, -1.0f, 0.0f };
+    Vec bc = collisionTriSub(*v2, *v0);
+    Vec ab = collisionTriSub(*v0, *v1);
+    Vec ca = collisionTriSub(*v1, *v2);
+    Vec n = collisionTriCross(bc, ab);
+    f32 d;
+    f32 s;
+    f32 y;
+
+    if (n.x == 0.0f && n.y == 0.0f && n.z == 0.0f) {
+        return FALSE;
+    }
+    d = collisionTriDot(n, collisionTriSub(*p, *v0));
+    if (d > 0.0f) {
+        if (collisionTriDot(n, dir) >= 0.0) {
+            return FALSE;
+        }
+        if (collisionTriDot(collisionTriSub(*p, *v0), collisionTriCross(bc, dir)) > 0.0) {
+            return FALSE;
+        }
+        if (collisionTriDot(collisionTriSub(*p, *v1), collisionTriCross(ab, dir)) > 0.0) {
+            return FALSE;
+        }
+        if (collisionTriDot(collisionTriSub(*p, *v2), collisionTriCross(ca, dir)) > 0.0) {
+            return FALSE;
+        }
+    } else {
+        if (collisionTriDot(n, dir) <= 0.0) {
+            return FALSE;
+        }
+        if (collisionTriDot(collisionTriSub(*p, *v0), collisionTriCross(bc, dir)) < 0.0) {
+            return FALSE;
+        }
+        if (collisionTriDot(collisionTriSub(*p, *v1), collisionTriCross(ab, dir)) < 0.0) {
+            return FALSE;
+        }
+        if (collisionTriDot(collisionTriSub(*p, *v2), collisionTriCross(ca, dir)) < 0.0) {
+            return FALSE;
+        }
+    }
+    s = -d / collisionTriDot(n, dir);
+    {
+        Vec hit = collisionTriAdd(*p, collisionTriScale(dir, s));
+        if (hit.y < *out) {
+            return FALSE;
+        }
+        *out = hit.y;
+        return TRUE;
+    }
 }
 
 void calcCurrentCamState(f32* dst) {

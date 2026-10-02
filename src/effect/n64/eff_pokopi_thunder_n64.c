@@ -3,8 +3,13 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
+#include "eff/eff_n64.h"
+#include "math_ext.h"
+#include "system.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <dolphin/os/OSCache.h>
 #include <stdlib.h>
 
 // Inlined MetroWerks sqrtf and its NaN classification (same helper several other effect
@@ -198,4 +203,321 @@ void effPokopiThunderMain(EffectEntry* effect) {
 	}
 
 	dispEntry(data->cameraId, dispCalcZ(&pos2), 2, effPokopiThunderDisp, effect);
+}
+
+// .data: the two animation tables, byte-for-byte from the original `.4byte` blocks.
+u8 yuragi_data[0x108] = {
+	0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
+	0x0A, 0x09, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
+	0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00,
+	0x23, 0x05, 0x19, 0x05, 0x00, 0x19, 0x23, 0x05, 0x0F, 0x00, 0x00, 0x00,
+	0x0A, 0x0D, 0x0F, 0x0C, 0x0B, 0x0D, 0x0A, 0x0C, 0x05, 0x01, 0x00, 0x00,
+	0x2D, 0x0F, 0x23, 0x0F, 0x00, 0x23, 0x2D, 0x37, 0x19, 0x05, 0x02, 0x00,
+	0x0D, 0x0A, 0x0C, 0x0A, 0x0D, 0x0A, 0x0D, 0x0A, 0x0C, 0x09, 0x05, 0x01,
+	0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x00, 0x0F, 0x0F, 0x05, 0x02, 0x00,
+	0x0E, 0x0A, 0x0F, 0x0A, 0x0D, 0x1E, 0x20, 0x1E, 0x18, 0x32, 0x28, 0x3C,
+	0x01, 0x05, 0x0F, 0x0F, 0x23, 0x2D, 0x28, 0x23, 0x19, 0x05, 0x02, 0x00,
+	0x04, 0x06, 0x0A, 0x05, 0x08, 0x0E, 0x06, 0x0A, 0x0E, 0x23, 0x32, 0x32,
+	0x01, 0x0F, 0x19, 0x0F, 0x19, 0x23, 0x2D, 0x28, 0x23, 0x0F, 0x05, 0x00,
+	0x02, 0x02, 0x17, 0x0C, 0x08, 0x0F, 0x0F, 0x05, 0x06, 0x12, 0x26, 0x3C,
+	0x1E, 0x19, 0x0F, 0x05, 0x0F, 0x0F, 0x19, 0x1E, 0x23, 0x19, 0x05, 0x00,
+	0x03, 0x03, 0x03, 0x0B, 0x03, 0x0C, 0x04, 0x05, 0x02, 0x0C, 0x2A, 0x32,
+	0x21, 0x21, 0x14, 0x0C, 0x19, 0x11, 0x0F, 0x14, 0x16, 0x14, 0x05, 0x00,
+	0x03, 0x03, 0x03, 0x02, 0x0A, 0x02, 0x02, 0x0C, 0x02, 0x02, 0x02, 0x14,
+	0x1E, 0x1E, 0x19, 0x19, 0x23, 0x14, 0x0F, 0x0A, 0x0F, 0x0F, 0x05, 0x00,
+	0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x06, 0x02, 0x02, 0x02, 0x06, 0x05,
+	0x1B, 0x1B, 0x16, 0x16, 0x20, 0x11, 0x0C, 0x07, 0x0C, 0x0C, 0x02, 0x00,
+	0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x00,
+};
+u8 yuragi_data2[0x108] = {
+	0x19, 0x19, 0x19, 0x05, 0x19, 0x05, 0x19, 0x19, 0x05, 0x19, 0x19, 0x19,
+	0x04, 0x03, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x0F, 0x0F, 0x0F, 0x19, 0x0F, 0x0F, 0x05, 0x19, 0x19, 0x0F, 0x19, 0x19,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x03, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00,
+	0x19, 0x19, 0x19, 0x05, 0x0F, 0x19, 0x05, 0x05, 0x0F, 0x05, 0x05, 0x00,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x00, 0x00,
+	0x19, 0x19, 0x19, 0x05, 0x19, 0x05, 0x19, 0x19, 0x05, 0x0F, 0x05, 0x00,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x06, 0x05,
+	0x0F, 0x0F, 0x0F, 0x2D, 0x23, 0x2D, 0x23, 0x23, 0x19, 0x23, 0x0F, 0x00,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x06, 0x05,
+	0x2D, 0x37, 0x23, 0x19, 0x37, 0x0F, 0x2D, 0x19, 0x2D, 0x23, 0x0F, 0x00,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x06, 0x05,
+	0x55, 0x19, 0x0F, 0x4B, 0x19, 0x41, 0x23, 0x2D, 0x4B, 0x55, 0x0F, 0x00,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x06, 0x05,
+	0x55, 0x0F, 0x23, 0x37, 0x41, 0x2D, 0x19, 0x4B, 0x23, 0x2D, 0x23, 0x28,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x06, 0x05,
+	0x55, 0x0F, 0x23, 0x37, 0x41, 0x2D, 0x19, 0x4B, 0x23, 0x2D, 0x23, 0x28,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x06, 0x05,
+	0x55, 0x0F, 0x23, 0x37, 0x41, 0x2D, 0x19, 0x4B, 0x23, 0x2D, 0x23, 0x28,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x06, 0x04, 0x04, 0x04, 0x06, 0x05,
+	0x1E, 0x1E, 0x19, 0x19, 0x23, 0x14, 0x0F, 0x0A, 0x0F, 0x0F, 0x05, 0x00,
+	0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x02, 0x00,
+};
+
+// .sdata
+u8* yuragi_data_table[2] = { yuragi_data, yuragi_data2 };
+
+// .sbss2 scratch GXColor the original copies before filling its fields.
+GXColor unk_80423220;
+
+// .sdata2 scratch word the original builds the second TEV colour from.
+__declspec(section ".sdata2") const u32 dat_8041fa20 = 0x00000080;
+
+// Local view of one 14-byte vertex the original writes (pos/tex/colour, stride 0xE).
+typedef struct EffPokopiThunderVtx {
+	s16 pos[3];  // 0x0
+	s16 tex0[2]; // 0x6
+	u8 clr[4];   // 0xA
+} EffPokopiThunderVtx;
+
+// The original's .sdata2 float pool, named after its addresses.
+extern const f32 float_0p1_8041fa24;
+extern const f32 float_0p0078125_8041fa28;
+extern const f32 float_0p03125_8041fa2c;
+extern const f32 float_0_8041fa30;
+extern const f32 float_0p090909_8041fa34;
+extern const f32 float_6p2832_8041fa38;
+extern const f32 float_360_8041fa3c;
+extern const f32 float_0p04_8041fa40;
+extern const f32 float_8_8041fa44;
+extern const f32 float_neg90_8041fa48;
+extern const f32 float_180_8041fa4c;
+extern const f32 float_neg180_8041fa50;
+extern const f32 float_10_8041fa58;
+extern const f32 float_0p005_8041fa5c;
+
+#ifdef MUST_MATCH
+static inline GXColor effPokopiThunderColor1(EffPokopiThunderData* data, s32 a) {
+	GXColor c = unk_80423220;
+	c.r = data->field_0x30;
+	c.g = data->field_0x34;
+	c.b = data->field_0x38;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor effPokopiThunderColor2(EffPokopiThunderData* data) {
+	GXColor c = *(GXColor*)&dat_8041fa20;
+	c.r = data->field_0x40;
+	c.g = data->field_0x44;
+	c.b = data->field_0x48;
+	return c;
+}
+#endif
+
+// NONMATCHING (97.20% / 74 differing insns): logic, constants, data, the prologue and loop-2's FP constant
+// registers all match; what is left is mwcc's register colouring/scheduling of the two particle loops. In
+// loop 1 our `p` cursor takes r27 where the target uses r29 (and the `tbl+i` temp the reverse); loop 2's
+// counter takes r30 instead of r26 (so `uoff`/`cb` shift too); and the amp's `8.0f * scale` is hoisted to
+// the loop-2 preheader instead of being sunk into the branch as the target does. The second GXSetTevColor
+// colour is built in the sp+0xc argument slot instead of sp+0x10. Declaration order and every loop-1
+// statement permutation were hill-climbed from 192 to 74 differing instructions and are exhausted
+//
+// NONMATCHING (97.20%): 74 instructions differ only in mwcc register colouring/scheduling (see above).
+void effPokopiThunderDisp(CameraId camId, void* param) {
+	s32 t1;
+	GXTexObj texObj;
+	GXColor color;
+	s32 cr;
+	s32 cg;
+	f32 scale;
+	f32 t;
+	CameraEntry* cam;
+	s32 field3C;
+	s32 i;
+	s32 k;
+	f32 a2;
+	s32 type;
+	Mtx mtx;
+	f32 wx;
+	f32* p;
+	f32 proj[7];
+	f32 wy;
+	s32 timer;
+	s32 uoff;
+	f32 f20;
+	s32 j;
+	f32 viewport[6];
+	GXColor color2;
+	smartEntry* entry;
+	f32 f6;
+	EffPokopiThunderData* data;
+	f32 ang;
+	s32 cb;
+	f32 zero = 0.0f;
+	EffPokopiThunderVtx* vtx;
+	EffPokopiThunderVtx* v;
+	u8* tbl;
+	f32 a1;
+	s32 u;
+	EffectEntry* effect = param;
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	timer = data->timer;
+	field3C = data->field_0x3C;
+	type = data->type;
+	scale = (*(f32*)((u8*)data + 0x4C));
+	if (data->cameraId != 4) {
+		cam = camGetPtr(CAMERA_3D);
+		GXGetProjectionv(proj);
+		GXGetViewportv(viewport);
+		GXSetProjection(cam->projection, cam->projType);
+	}
+	PSMTXScale(mtx, 0.1f, 0.1f, 0.1f);
+	PSMTXConcat(cam->view, mtx, mtx);
+	GXLoadPosMtxImm(mtx, 0);
+	GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+	color = effPokopiThunderColor1(data, field3C);
+#else
+	color = unk_80423220;
+	color.r = data->field_0x30;
+	color.g = data->field_0x34;
+	color.b = data->field_0x38;
+	color.a = field3C;
+#endif
+	GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+	color2 = effPokopiThunderColor2(data);
+#else
+	color2 = *(GXColor*)&dat_8041fa20;
+	color2.r = data->field_0x40;
+	color2.g = data->field_0x44;
+	color2.b = data->field_0x48;
+#endif
+	GXSetTevColor(2, color2);
+	GXSetNumChans(0);
+	GXSetNumTevStages(4);
+	GXSetTevOrder(0, 0, 0, 0xff);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 3);
+	GXSetTevColorIn(0, 0xf, 8, 8, 0xf);
+	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+	GXSetTevOrder(1, 0xff, 0xff, 0xff);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 2, 4, 0, 0xf);
+	GXSetTevAlphaIn(1, 3, 7, 2, 7);
+	GXSetTevOrder(2, 1, 1, 0xff);
+	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(2, 0xf, 0xf, 0xf, 0);
+	GXSetTevAlphaIn(2, 7, 3, 4, 0);
+	GXSetTevOrder(3, 0xff, 0xff, 0xff);
+	GXSetTevColorOp(3, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(3, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(3, 0xf, 0xf, 0xf, 0);
+	GXSetTevAlphaIn(3, 7, 1, 0, 7);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
+	PSMTXScale(mtx, 0.0078125f, 0.03125f, 0.0f);
+	GXLoadTexMtxImm(mtx, 0x1e, 1);
+	GXLoadTexMtxImm(mtx, 0x21, 1);
+	effGetTexObjN64(0x54, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, 1);
+	GXSetCullMode(0);
+
+	t1 = timer - 1;
+	if (type != 2) {
+		if (t1 < 11) {
+			tbl = (u8*)yuragi_data_table[type] + t1 * 0x18;
+		} else {
+			tbl = (u8*)yuragi_data_table[type] + 0xF0;
+		}
+	} else {
+		if (t1 < 8) {
+			tbl = (u8*)yuragi_data_table[0] + t1 * 0x18;
+		} else if (t1 < 0x24) {
+			tbl = (u8*)yuragi_data_table[0] + (t1 % 6 + 2) * 0x18;
+		} else {
+			tbl = (u8*)yuragi_data_table[0] + 0xF0;
+		}
+	}
+
+	p = (f32*)data;
+	for (i = 0; i < 12; i++, p++) {
+		s32 idx = *(s32*)((u8*)data + 0x110) + (i - timer) * 10;
+		t = (f32)tbl[i];
+		wx = 0.09090909f * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)));
+		ang = 6.2831855f * (f32)(idx % 120 - 60) / 360.0f;
+		wy = 0.09090909f * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)));
+		f20 = 0.04f * (t * (f32)sin(ang));
+		f6 = 0.04f * (t * (f32)cos(ang));
+		p[20] = (wx * f6 - wy * f20) +
+		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)))) + (*(f32*)((u8*)data + 0x10)));
+		p[32] = (wx * f20 + wy * f6) +
+		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)))) + (*(f32*)((u8*)data + 0x14)));
+		p[44] = zero + (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x24)) - (*(f32*)((u8*)data + 0x18)))) + (*(f32*)((u8*)data + 0x18)));
+		p[56] = 0.1f * (f32)tbl[i + 12];
+	}
+
+	entry = smartAlloc(0x2A0, 3);
+	vtx = (EffPokopiThunderVtx*)entry->address;
+
+	p = (f32*)data;
+	v = vtx;
+	uoff = 0;
+	cr = 0;
+	cg = 0;
+	cb = 0;
+	for (i = 0; i < 12; i++, p++, v += 2) {
+		if (i == 0) {
+			ang = -angleABf(p[33], -p[21], p[32], -p[20]);
+		} else if (i == 11) {
+			ang = -90.0f;
+		} else {
+			a1 = -angleABf(p[33], -p[21], p[32], -p[20]);
+			a2 = -angleABf(p[32], -p[20], p[31], -p[19]);
+			if (a2 - a1 > 180.0f) {
+				a1 += 360.0f;
+			} else if (a2 - a1 < -180.0f) {
+				a2 += 360.0f;
+			}
+			ang = (a1 + a2) * 0.5f;
+		}
+		u = (0x80 - uoff) << 5;
+		f20 = 8.0f * scale * p[56];
+		ang = 6.2831855f * ang / 360.0f;
+		f6 = f20 * (f32)sin(ang);
+		f20 = f20 * (f32)cos(ang);
+		v[0].pos[0] = (s16)(10.0f * (p[20] + f6));
+		v[0].pos[1] = (s16)(10.0f * (p[32] + f20));
+		v[0].pos[2] = (s16)(10.0f * (p[44] + zero));
+		v[0].tex0[0] = u;
+		v[0].tex0[1] = 0;
+		v[0].clr[0] = cr;
+		v[0].clr[1] = cg;
+		v[0].clr[2] = cb;
+		v[1].pos[0] = (s16)(10.0f * (p[20] - f6));
+		v[1].pos[1] = (s16)(10.0f * (p[32] - f20));
+		v[1].pos[2] = (s16)(10.0f * (p[44] + zero));
+		v[1].tex0[0] = u;
+		v[1].tex0[1] = 0x400;
+		v[1].clr[0] = cr;
+		v[1].clr[1] = cg;
+		v[1].clr[2] = cb;
+		cr += 50;
+		cg += 120;
+		cb += 30;
+		uoff += 12;
+	}
+
+	DCFlushRange(vtx, 0x2A0);
+	GXInvalidateVtxCache();
+	effSetVtxDescN64((effVtxArray*)vtx);
+
+	k = 0;
+	for (j = 0; j < i - 1; j++) {
+		GXBegin(0x90, 0, 6);
+		tri2(k, k + 2, k + 1, 2, k + 1, k + 2, k + 3, 0);
+		k += 2;
+	}
+
+	if (data->cameraId != 4) {
+		GXSetProjectionv(proj);
+		GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
+	}
 }

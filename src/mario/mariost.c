@@ -509,6 +509,15 @@ void* gcDvdCheckThread(void* param) {
 	}
 }
 
+#ifdef MUST_MATCH
+// The original narrows each tick value to its low 32 bits before subtracting and
+// sign-extends the difference for the signed 64-bit millisecond division, so MWCC
+// emits subf/srawi + __div2i rather than a full 64-bit subfc/subfe subtraction.
+#define RUMBLE_MS(now, then) OSTicksToMilliseconds((OSTime)((s32)(now) - (s32)(then)))
+#else
+#define RUMBLE_MS(now, then) OSTicksToMilliseconds((now) - (then))
+#endif
+
 // NONMATCHING (0.52%): empty placeholder, not decompiled yet.
 void gcRumbleCheck(void) {
 	/*OSTime start;

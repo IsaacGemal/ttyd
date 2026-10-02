@@ -474,12 +474,15 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	return TRUE;
 }
 
-// MWCC materialises the 2^52 unsigned-int->float mask for the three intplGetValue calls as an anonymous
-// pool entry addressed via lis/addi, where the original loads it as vec3_803011e8 + 0x108 (lfd f2,
-// 0x108(r31)); the fctiwz/byte scheduling around those calls follows from that. The mask is at the right
-// .rodata offset and r31 holds the vec base, but no source form (named const, union conversion,
-// #pragma pool_data) makes the implicit-mask load go through r31.
-// NONMATCHING (82.84%): conversion-mask pool addressing; the % 0x2d0 divw itself now matches.
+// The three u8->f32 argument conversions are the only remaining difference: the original loads
+// the compiler's 2^52 mask from the unit's pooled .rodata through the vec base
+// (lfd f2, 0x108(r31), r31 = vec3_803011e8); MWCC here emits it as an anonymous @289 pool entry
+// addressed via its own lis/addi. Referencing the four vec3s by name (vec3_803012c0..vec3_803012e4)
+// instead of vec[18..21] DOES fold the mask to 0x108(r31) (86.10%) but batches the vec copies
+// against the conversion setup, so the pointer form (as in the file's other _bsi_*) is kept.
+// NONMATCHING (82.84%): the u8->f32 conversion mask pools as an anonymous @289 with its own
+// lis/addi, where the original folds it to 0x108(r31) (and the fctiwz/byte scheduling that
+// follows).
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;

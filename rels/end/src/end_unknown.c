@@ -419,9 +419,9 @@ s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.69%): an explicit `off = idx*0xC`, and a block-scoped `CreditsNpcInfo*
-// npc` kept live across the animPoseEntry call reproduce the r27 base caching and the 1368 B size. Left is only
-// the `fmuls f31,f0`/`f0,f31` operand order.
+// The early accesses write `off` (idx*0xC) so it stays in r29; the later name accesses use the local `npc` base
+// + off (compiled to `lwzx`) while the `anim` access uses the constant R_credits_npc_info + off, which is what
+// makes retail rematerialise the base instead of CSE-ing it with the name accesses.
 s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
     s32 idx = evtGetValue(event, event->args[0]);
     s32 off = idx * 0xC;
@@ -434,8 +434,8 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
     Mtx mtx2;
     Mtx mtx3;
 
-    if (((CreditsNpcInfo*)((u8*)R_credits_npc_info + off))->event != NULL) {
-        evtEntry(((CreditsNpcInfo*)((u8*)R_credits_npc_info + off))->event, 0, 0);
+    if (((CreditsNpcInfo*)R_credits_npc_info)[idx].event != NULL) {
+        evtEntry(((CreditsNpcInfo*)R_credits_npc_info)[idx].event, 0, 0);
         if ((u32)(idx + 5) < 0x98) {
             animGroupBaseAsync(((CreditsNpcInfo*)((u8*)R_credits_npc_info + off + 0x3C))->name, inBattle, NULL);
         }
@@ -495,9 +495,9 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
             break;
     }
     {
-        CreditsNpcInfo* npc = (CreditsNpcInfo*)((u8*)R_credits_npc_info + off);
+        CreditsNpcInfo* npc = (CreditsNpcInfo*)R_credits_npc_info;
 
-        if (animGroupBaseAsync(npc->name, inBattle, NULL) == 0) {
+        if (animGroupBaseAsync(((CreditsNpcInfo*)((u8*)npc + off))->name, inBattle, NULL) == 0) {
             return EVT_RETURN_BLOCK;
         }
         switch (entry->state) {
@@ -507,7 +507,7 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
 
                 EXIGetType(0, 2, &type);
                 if (type != 0x05070000) {
-                    entry->poseId = animPoseEntry(npc->name, inBattle);
+                    entry->poseId = animPoseEntry(((CreditsNpcInfo*)((u8*)npc + off))->name, inBattle);
                     animPoseSetAnim(entry->poseId, ((CreditsNpcInfo*)((u8*)R_credits_npc_info + off))->anim, 1);
                 } else {
                     entry->poseId = animPoseEntry("a_mario", inBattle);
@@ -529,7 +529,7 @@ s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
     PSMTXTrans(mtx1, 0.0f, f29, 0.0f);
     PSMTXRotRad(mtx2, 'z', 0.017453292f * entry->frame);
     PSMTXConcat(mtx2, mtx1, mtx1);
-    PSMTXTrans(mtx2, f31 * 0.5f, f30 * 0.5f, 0.0f);
+    PSMTXTrans(mtx2, f31 / 2.0f, f30 / 2.0f, 0.0f);
     PSMTXConcat(mtx2, mtx1, entry->matrix);
     PSMTXScale(mtx3, 1.0f, 1.0f, 0.01f);
     PSMTXConcat(entry->matrix, mtx3, entry->matrix);
@@ -602,9 +602,8 @@ const Vec vec3_end_00002f4c = {0.0f, 1.0f, 0.0f};
 const Vec vec3_end_00002f58 = {0.0f, 0.0f, 0.0f};
 const GXColor dat_end_00002f64 = {0xFF, 0xFF, 0xFF, 0x00};
 
-// NONMATCHING (99.98%): the frame, the GXColor temp pairs, the second Vec copy and the loop regs now match.
-// What is left is one register swap: the second GXBegin block's width temp is f30 here vs f29 in retail
-// (retail keeps f30 = the 2^52 mask live across the block, so its width result lands in the lower f29).
+// The second GXBegin block uses its own width/height locals: with the loop's
+// variables reused the width temp lands in f30, fresh ones put it in f29 like retail.
 void unk_end_00001324(CameraId cameraId, void* param) {
     s32 i;
     GXTexObj texObj;
@@ -616,6 +615,8 @@ void unk_end_00001324(CameraId cameraId, void* param) {
     Vec target;
     f32 width;
     f32 height;
+    f32 width2;
+    f32 height2;
     CameraEntry* cam = camGetPtr(cameraId);
     s32 var1 = evtGetValue(NULL, GW(11));
     s32 var2 = evtGetValue(NULL, GW(12));
@@ -765,15 +766,15 @@ void unk_end_00001324(CameraId cameraId, void* param) {
         GXLoadPosMtxImm(mtx1, 0);
         GXSetCurrentMtx(0);
         GXBegin(0x80, 0, 4);
-        width = (f32)GXGetTexObjWidth(&texObj);
-        height = (f32)GXGetTexObjHeight(&texObj);
-        GXPosition3f32(-width / 2.0f, height / 2.0f, 0.0f);
+        width2 = (f32)GXGetTexObjWidth(&texObj);
+        height2 = (f32)GXGetTexObjHeight(&texObj);
+        GXPosition3f32(-width2 / 2.0f, height2 / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(width / 2.0f, height / 2.0f, 0.0f);
+        GXPosition3f32(width2 / 2.0f, height2 / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(width / 2.0f, -height / 2.0f, 0.0f);
+        GXPosition3f32(width2 / 2.0f, -height2 / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(-width / 2.0f, -height / 2.0f, 0.0f);
+        GXPosition3f32(-width2 / 2.0f, -height2 / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
     }
 }
@@ -951,7 +952,9 @@ typedef struct CreditsEndingRecord {
     /* 0x18 */ const char* msgB[3];
 } CreditsEndingRecord;
 
-// NONMATCHING (97.24%): register allocation (`event` in r29 not r27, `fnmsubs` order).
+// NONMATCHING (99.10%): register allocation only (retail colours `event` to r27, x to r29, y to r28; ours
+// r29/r24/r23). The lwzu and the rematerialised record base now match; the two `#ifdef MUST_MATCH` tricks
+// below break the pEntry/rec CSE that otherwise merges the two pointers.
 s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
     s32* pEntry;
     CreditsEndingRecord* rec;
@@ -976,7 +979,14 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
         evtSetValue(event, GW(10), 0);
         ((CreditsWork*)dat_ptr_end_00003218[0])->eventId = (s32)evtEntry(unk_evt_end_000042e0, 0, 0);
     }
+#ifdef MUST_MATCH
+    // giving `offset` a fresh value before `pEntry` stops the compiler merging pEntry with rec, which is what
+    // makes retail emit `lwzu` for `*++pEntry` and rematerialise the record base; the natural form is below.
+    offset = index * 0x24;
+    pEntry = (s32*)((u8*)unk_end_0000321c + offset);
+#else
     pEntry = (s32*)((u8*)unk_end_0000321c + index * 0x24);
+#endif
     ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx = *++pEntry;
     offset = index * 0x24;
     switch (((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx) {
@@ -1045,7 +1055,7 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                 }
             }
             evtSetValue(event, GW(10), 1);
-            evtSetValue(event, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + offset))->field_8);
+            evtSetValue(event, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + index * 0x24))->field_8);
             evtSetValue(event, GW(12), *pEntry);
             state++;
             break;

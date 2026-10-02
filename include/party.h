@@ -155,6 +155,7 @@ void partyKeyOn(void);
 void partyKeyOff(void);
 void partyMain(void);
 void allPartyForceRideOn(void);
+void allPartyRidePlane(void);
 void partyDokanEnd(s32 index, s32 unk);
 void allPartyRideShip(void);
 void allPartyRideOff(void);

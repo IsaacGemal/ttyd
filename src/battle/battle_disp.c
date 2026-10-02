@@ -952,7 +952,9 @@ void btlDispAnimeSpeed(BattleUnit* unit, f32 speed) {
 	animPoseSetLocalTimeRate(*(s32*)((char*)unit + 0x1c0), ((f32*)&unit->hpGauge.field_0xC)[1] * ((f32*)&unit->hpGauge.field_0xC)[2]);
 }
 
-// NONMATCHING (88.55%): target hoists both display-constant loads and products; our multiply/store schedule differs.
+// The original pools 304.0f/240.0f/0.0f as literals; with the named externs MWCC keeps the
+// multiply results in f0 and reorders the constant loads. The literals reproduce the target
+// schedule exactly (the 3 remaining diffs are symbol-only and disappear when the unit links).
 void btlGetScreenPoint(Vec* pos, Vec* out) {
 	CameraEntry* cam = camGetPtr(CAMERA_3D);
 	Vec v;
@@ -962,9 +964,9 @@ void btlGetScreenPoint(Vec* pos, Vec* out) {
 	v.z = pos->z;
 	PSMTXMultVec(cam->view, &v, &v);
 	PSMTX44MultVec(cam->projection, &v, &v);
-	out->x = float_304_8041bf5c * v.x;
-	out->y = float_240_8041bf60 * v.y;
-	out->z = float_0_8041bf58;
+	out->x = 304.0f * v.x;
+	out->y = 240.0f * v.y;
+	out->z = 0.0f;
 }
 
 f32 getGravityDispOffset(BattleUnit* unit) {
@@ -1107,7 +1109,7 @@ static f32 x_1184;
 
 // Declaring these explicitly made the compiler emit a second copy of its u32->f32 conversion
 // doubles in .rodata, which shifted the pooled strings by 8 bytes and broke every function that
-// common-bases .rodata. The compiler already emits both doubles; see REPORT.md.
+// common-bases .rodata. The compiler already emits both doubles
 #if 0
 double double_to_int_802ede28 = 4503601774854144.0;
 #endif
@@ -1150,8 +1152,9 @@ void _btlStockExpDisp(CameraId cameraId, void* param) {
 extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
 
-// NONMATCHING (85.73%): 2 instructions differ, 2 missing, 2 extra, plus register differences.
-void btlUnitStolenItemDisp(CameraId cameraId, BattleUnit* unit) {
+// NONMATCHING (91.46%): 2 instructions differ, 2 missing, 2 extra, plus register differences.
+void btlUnitStolenItemDisp(CameraId cameraId, void* param) {
+	BattleUnit* unit = param;
 	Vec v;
 	s32 itemId = unit->heldItem;
 
@@ -1176,14 +1179,19 @@ void btlUnitItemDisp2(CameraId cameraId, BattleUnit* unit) {
 	}
 }
 
-// NONMATCHING (91.57%): 2 instructions differ, 4 missing, plus register differences.
+// The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
+// constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; assigning
+// the height to an otherwise-unused double local keeps the conversion stores.
 #pragma dont_inline on
+// NONMATCHING (91.57%): only the iconDispGx arg setup differs -- target computes &itemDataTable[item] in
+// r4 and reads icon_id `lhz` late; we use r3 / `lha` early.
 void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	BattleWork* wp = _battleWorkPointer;
 	Vec v;
 	s32 item;
+	double dd;
 
-	(f32)BtlUnit_GetHeight(unit);
+	dd = BtlUnit_GetHeight(unit);
 	item = BtlUnit_EnemyItemCanUseCheck(unit->heldItem);
 	if ((wp->flags & 0x20000) && item == 0) {
 		item = 0x94;

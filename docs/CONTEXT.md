@@ -3751,3 +3751,22 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   include/unk_0x8025de70.h out); party_bomhei's partyGetReturnPos placeholder restored; kinopio's -0.15f is
   retail's -0.14999999f. **The functions reviews took out are now listed in `scratch/wave5x/removed.json`; the next
   launcher puts each unit's entries in its prompt** (wave 53's two-entry list wasn't enough).
+
+## Wave 57's last agents and wave 58, batch 1 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 58** (03:47 on main 6aadace; base and report built on the tower): 88 agents, wave 57's recipe; each unit's
+  prompt lists the functions reviews took out (`scratch/wave5x/removed.json`) and Claude #3's hints
+  (`scratch/wave5x/hints.json`: OSFastCast conversions for qr5 loads, `__fabs` in eki_00). Collection is one script
+  now, `scratch/wave5x/collect_batch.sh BRANCH REPORT wave:base:towerbase:batch...`.
+- Batch (wave 57's last 24 agents, wave 58's first 22; onto main f155e66): 9,048 -> 9,074 (win_root +10, party +5,
+  battle_audience +5). win_item.h's `extern u16 menu_skip_list[];` changes win_item's codegen, so it stays out and
+  winmgr declares it locally. partyPreDisp now exits early as retail (older bug).
+- Review (`scratch/wave58/review1.md`): select_disp (MUST_MATCH branch greyed every row when field_0x38 != 0; retail
+  tests only the flag bit) unwritten again; battle_seq_command as on main (defaultWeapon_Dummy_NoItem's element,
+  actionLevel and field_B4 initialisers were wrong at 0x6C/0xB4; data isn't scored); mario.c as on main (seven named
+  vec3s read through str_802C3610; its header change to marioSetPaperAnimeLocalTime with it), npcdrv and koopa as
+  on main (leftovers for unwritten functions; koopa.c needs the agent's koopa.h).
+- Claude #1's second review of #259: sac_genki disp_3D offsets x/y/z themselves (retail stores them back), so the
+  second draw (texture 0x42) uses the offset position too (now 92.83%); battle_stage_object _object_fall_attack
+  records `alloc[idx + 1]` only in the weighted-random branch. Confirmed fix in the batch: las_05 senkaron's 0xFFFE
+  mask (older bug).

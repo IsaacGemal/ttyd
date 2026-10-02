@@ -298,9 +298,9 @@ USER_FUNC(kamec_fire_magic_delete) {
 }
 
 
-// NONMATCHING (94.36%): loops/updates match; what remains is per-block scratch colouring (target loads block1's
-// s.x straight into f28, ours via f23, and schedules the axis loads differently) plus the whole unit's rodata
-// offsets, which are early because src/npc_event.c lacks the target's .data/.sdata event-script tables.
+// NONMATCHING (99.89%): 9 of the 12 diffs are the unit's rodata offsets (target zero-Vec at str_802ECF20+0x4b4/
+// 0x4c0, ours 0x18/0x24 early) - this TU lacks its .data/.sdata event-script tables, same cause as dokanCheck.
+// The other 3 are block1's s.x landing in f23 where the target uses f28 (one load, one fsubs, one fmadds).
 USER_FUNC(chain_main) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     NpcEntry* ref;
@@ -315,6 +315,7 @@ USER_FUNC(chain_main) {
     f32 f27;
     f32 f29;
     s32 i;
+    s32 j;
 
     {
         NpcEntry* n = npc->slaves[3];
@@ -322,7 +323,7 @@ USER_FUNC(chain_main) {
         f32 dx = npc->position.x - n->position.x;
         f32 dz = npc->position.z - n->position.z;
 
-        f31 = (f32)sqrt(dy * dy + dx * dx + dz * dz) * 0.25f;
+        f31 = (f32)sqrt(dx * dx + dy * dy + dz * dz) / 4.0f;
     }
     if (f31 < 10.0f) {
         f31 = 10.0f;
@@ -341,7 +342,7 @@ USER_FUNC(chain_main) {
         f25 = npc->position.y - f29;
         f24 = npc->position.z - f27;
         {
-            f32 dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
+            f32 dist = (f32)sqrt(f26 * f26 + f25 * f25 + f24 * f24);
             f32 t = 1.0f - f31 / dist;
 
             f29 = f25 * t + f29;
@@ -363,14 +364,15 @@ USER_FUNC(chain_main) {
 
         ref = npc->slaves[i];
         cur = npc->slaves[i + 1];
-        f23 = cur->position.y - f30;
+        f23 = cur->position.y;
+        f23 = f23 - f30;
         f27 = cur->position.x;
         f29 = cur->position.z;
         f26 = ref->position.x - f27;
         f25 = ref->position.y - f23;
         f24 = ref->position.z - f29;
         {
-            f32 dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
+            f32 dist = (f32)sqrt(f26 * f26 + f25 * f25 + f24 * f24);
             f32 t = 1.0f - f31 / dist;
 
             f23 = f25 * t + f23;
@@ -387,19 +389,20 @@ USER_FUNC(chain_main) {
         cur->position = pos;
     }
 
-    for (i = 3; i >= 1; i--) {
+    for (j = 3; j >= 1; j--) {
         Vec pos;
 
-        ref = npc->slaves[i];
-        cur = npc->slaves[i - 1];
-        f23 = cur->position.y - f30;
+        ref = npc->slaves[j];
+        cur = npc->slaves[j - 1];
+        f23 = cur->position.y;
+        f23 = f23 - f30;
         f27 = cur->position.x;
         f29 = cur->position.z;
         f26 = ref->position.x - f27;
         f25 = ref->position.y - f23;
         f24 = ref->position.z - f29;
         {
-            f32 dist = (f32)sqrt(f25 * f25 + f26 * f26 + f24 * f24);
+            f32 dist = (f32)sqrt(f26 * f26 + f25 * f25 + f24 * f24);
             f32 t = 1.0f - f31 / dist;
 
             f23 = f25 * t + f23;
