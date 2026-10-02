@@ -634,21 +634,25 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
 // Applies one status (sleep, stop, poison, ...) to `unit` from an attack of `part`'s side: the immunity and
 // resist checks, the roll against `rate`, the status itself, the hit effect and the announcement. `*work` collects
 // what happened (1/2 got/lost a status, 4/8 fright/gale force, 0x10 instant kill, 0x20 sleep).
-// NONMATCHING (98.51%): register allocation differences only.
+// NONMATCHING (98.63%): register allocation differences only.
 s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
                           s32 rate, s32 levelDiff, s8 turns, s8 strength) {
     u8 chargeStrength;
     u8 sp9;
+#ifdef MUST_MATCH
     int new_var2;
+#endif
     u8 sp8;
     f32 x, y, z;
-    f32 hitX, hitY, hitZ;
+    Vec hit;
     s32 isRemoving;
     s32 applied;
     s32 announced;
     s32 resist;
     u32 resistFlag;
+#ifdef MUST_MATCH
     f32 new_var;
+#endif
     EffectEntry* eff;
 
     isRemoving = 0;
@@ -920,8 +924,12 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         case STATUS_ATTACK_UP:
         case STATUS_ATTACK_DOWN:
         case STATUS_CHARGE:
+#ifdef MUST_MATCH
             new_var = y;
             effUpdownEntry(0, x, new_var, 15.0f + z, strength, 60);
+#else
+            effUpdownEntry(0, x, y, 15.0f + z, strength, 60);
+#endif
             break;
         case STATUS_DEFENSE_UP:
         case STATUS_DEFENSE_DOWN:
@@ -995,87 +1003,91 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         case STATUS_HP_REGEN:
         case STATUS_FP_REGEN:
             if ((s8)sp9 > 0) {
+#ifdef MUST_MATCH
                 BattleStatusChangeInfoSetAnnouce(unit, type, (s8)(new_var2 = sp9), 1);
+#else
+                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp9, 1);
+#endif
                 BattleStatusChangeMsgSetAnnouce(unit, type, 1);
                 announced = 1;
             }
             break;
         }
     }
-    BtlUnit_GetHitPos(unit, part, &hitX, &hitY, &hitZ);
+    BtlUnit_GetHitPos(unit, part, &hit.x, &hit.y, &hit.z);
     if (announced != 0) {
         switch (type) {
         case STATUS_SLEEP:
-            psndSFXOn_3D("SFX_CONDITION_SLEEP1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_SLEEP1", &hit);
             break;
         case STATUS_STOP:
-            psndSFXOn_3D("SFX_CONDITION_STOP1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_STOP1", &hit);
             break;
         case STATUS_DIZZY:
-            psndSFXOn_3D("SFX_CONDITION_GURUGURU1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_GURUGURU1", &hit);
             break;
         case STATUS_CONFUSE:
-            psndSFXOn_3D("SFX_CONDITION_CONFUSE1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_CONFUSE1", &hit);
             break;
         case STATUS_POISON:
-            psndSFXOn_3D("SFX_CONDITION_POISON1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_POISON1", &hit);
             break;
         case STATUS_DODGY:
-            psndSFXOn_3D("SFX_CONDITION_YOKEYOKE1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_YOKEYOKE1", &hit);
             break;
         case STATUS_ELECTRIC:
-            psndSFXOn_3D("SFX_CONDITION_BIRIBIRI1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_BIRIBIRI1", &hit);
             break;
         case STATUS_HUGE:
-            psndSFXOn_3D("SFX_CONDITION_DEKADEKA1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_DEKADEKA1", &hit);
             break;
         case STATUS_TINY:
-            psndSFXOn_3D("SFX_CONDITION_MINIMINI1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_MINIMINI1", &hit);
             break;
         case STATUS_DEFENSE_UP:
-            psndSFXOn_3D("SFX_CONDITION_KATIKATI1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_KATIKATI1", &hit);
             break;
         case STATUS_DEFENSE_DOWN:
-            psndSFXOn_3D("SFX_BTL_FUNYA1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_BTL_FUNYA1", &hit);
             break;
         case STATUS_SLOW:
-            psndSFXOn_3D("SFX_CONDITION_SLOW1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_SLOW1", &hit);
             break;
         case STATUS_BURN:
-            psndSFXOn_3D("SFX_CONDITION_FIRE1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_FIRE1", &hit);
             break;
         case STATUS_FREEZE:
-            psndSFXOn_3D("SFX_CONDITION_ICE1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_ICE1", &hit);
             break;
         case STATUS_FAST:
-            psndSFXOn_3D("SFX_CONDITION_FAST1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_FAST1", &hit);
             break;
         case STATUS_HP_REGEN:
-            psndSFXOn_3D("SFX_CONDITION_REST_HP_SLOW1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_REST_HP_SLOW1", &hit);
             break;
         case STATUS_FP_REGEN:
-            psndSFXOn_3D("SFX_CONDITION_REST_FP_SLOW1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_REST_FP_SLOW1", &hit);
             break;
         case STATUS_ALLERGIC:
-            psndSFXOn_3D("SFX_CONDITION_ALLERGY1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_ALLERGY1", &hit);
             break;
         case STATUS_ATTACK_UP:
-            psndSFXOn_3D("SFX_CONDITION_TUYOTUYO1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_TUYOTUYO1", &hit);
             break;
         case STATUS_ATTACK_DOWN:
-            psndSFXOn_3D("SFX_CONDITION_YOWAYOWA1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_YOWAYOWA1", &hit);
             break;
         case STATUS_CHARGE:
-            psndSFXOn_3D("SFX_CONDITION_CHARGE1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_CHARGE1", &hit);
             break;
         case STATUS_INVISIBLE:
-            psndSFXOn_3D("SFX_CONDITION_TOUMEI1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_TOUMEI1", &hit);
             break;
         case STATUS_PAYBACK:
-            psndSFXOn_3D("SFX_CONDITION_COUNTER1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_CONDITION_COUNTER1", &hit);
             break;
         case STATUS_HOLD_FAST:
-            psndSFXOn_3D("SFX_BTL_THUNDERS_COUNTER1", (Vec*)&hitX);
+            psndSFXOn_3D("SFX_BTL_THUNDERS_COUNTER1", &hit);
             break;
         }
     }
