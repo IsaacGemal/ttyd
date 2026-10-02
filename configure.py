@@ -452,7 +452,7 @@ config.libs = [
             Object(NonMatching, "driver/fadedrv.c"),
             Object(NonMatching, "driver/hitdrv.c"),
             Object(NonMatching, "driver/icondrv.c"),
-            Object(NonMatching, "driver/lightdrv.c"),
+            Object(Matching, "driver/lightdrv.c"),
             Object(NonMatching, "driver/mapdrv.c"),
             Object(NonMatching, "driver/shadowdrv.c"),
             Object(Matching, "driver/seqdrv.c"),
