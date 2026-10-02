@@ -52,9 +52,15 @@ BOOL ARCOpen(ARCHandle* handle, const char* filename, ARCFileInfo* info) {
 	return TRUE;
 }
 
+extern const unsigned char __lower_map[];
+
+static inline int arcToLower(int c) {
+	return (c == -1) ? -1 : (int)__lower_map[(unsigned char)c];
+}
+
 static BOOL isSame(const signed char* path, const signed char* string) {
 	while (*string != '\0') {
-		if (tolower(*path++) != tolower(*string++)) {
+		if (arcToLower(*path++) != arcToLower(*string++)) {
 			return FALSE;
 		}
 	}
@@ -64,8 +70,6 @@ static BOOL isSame(const signed char* path, const signed char* string) {
 	return FALSE;
 }
 
-// NONMATCHING (72.65%): the original keeps far fewer values live (three saved registers, isSame and the
-// directory scan inlined tighter); ours saves r21-r31.
 s32 ARCConvertPathToEntrynum(ARCHandle* handle, const char* path) {
 	const signed char* pathPtr = (const signed char*)path;
 	const signed char* ptr;
@@ -74,9 +78,10 @@ s32 ARCConvertPathToEntrynum(ARCHandle* handle, const char* path) {
 	u32 length;
 	u32 dirLookAt;
 	u32 i;
-	FSTEntry* fst = (FSTEntry*)handle->FSTStart;
+	FSTEntry* fst;
 
 	dirLookAt = handle->currDir;
+	fst = (FSTEntry*)handle->FSTStart;
 	while (1) {
 		if (*pathPtr == '\0') {
 			return (s32)dirLookAt;
