@@ -33,6 +33,9 @@
 #include "mario/mario_party.h"
 #include <stdio.h>
 
+// The original's call sites convert the flag and icon arguments as u16 (clrlwi), not s16 (extsh).
+#define iconDispGxU(p, f, i, sc) ((void (*)(Vec*, u16, u16, f32))iconDispGx)(p, f, i, sc)
+
 // evt_unitwin_disp_func is a display callback, not an event command.
 
 typedef struct { u32 w[16]; } UstBlk40;
@@ -400,12 +403,12 @@ USER_FUNC(set_new_goods_list) {
 		{ \
 			Vec ic = vec3_802f6580; \
 			ic.y = wp->field_0x44 + (f32)(0x38 - dispOff) + (f32)blink; \
-			iconDispGx(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
+			iconDispGxU(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
 		} \
 		{ \
 			Vec ic = vec3_802f658c; \
 			ic.y = wp->field_0x44 + (f32)(0x38 - dispOff) + (f32)blink; \
-			iconDispGx(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
+			iconDispGxU(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
 		} \
 	} else { \
 		numval = mario_status_point_table[row][0] - mario_status_henka_table[row]; \
@@ -418,7 +421,7 @@ USER_FUNC(set_new_goods_list) {
 		{ \
 			Vec ic = vec3_802f6598; \
 			ic.y = wp->field_0x44 + (f32)(0x38 - dispOff) - (f32)blink; \
-			iconDispGx(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
+			iconDispGxU(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
 		} \
 	} \
 	if (numval > 0) { \
@@ -562,7 +565,7 @@ USER_FUNC(set_new_goods_list) {
 		{ \
 			Vec pc = POSBLK; \
 			pc.y = wp->field_0x44 + (f32)(0x38 - dispOff); \
-			iconDispGx(&pc, (s16)(flag | 0x10), mario_status_icon_table[row], float_0p5_8041db60); \
+			iconDispGxU(&pc, (s16)(flag | 0x10), mario_status_icon_table[row], float_0p5_8041db60); \
 		} \
 		FontDrawStart(); \
 		{ GXColor cc = rowColor; FontDrawColor(&cc); } \
@@ -584,7 +587,7 @@ USER_FUNC(set_new_goods_list) {
 
 
 
-// NONMATCHING (95.55%): complete reconstruction; case layout and .rodata order match.
+// NONMATCHING (95.82%): complete reconstruction; case layout and .rodata order match.
 // What remains: MWCC pools its own int->float double after the declared ones, plus
 // local stack slots and callee-saved assignment. Display callback for the shop window.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
@@ -781,7 +784,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				Vec pos = vec3_802f64b8;
 
 				pos.y = wp->field_0x44 + (f32)(0x38 - dispOff);
-				iconDispGx(&pos, 0x10, ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
+				iconDispGxU(&pos, 0x10, ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
 				FontDrawStart();
 				FontDrawString(data->id, float_36_8041db64, wp->field_0x44 + (f32)(0x50 - dispOff));
 				if ((f32)dispCnt == wp->field_0x34) {
@@ -895,7 +898,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			}
 			{
 				Vec pos = vec3_802f64c4;
-				iconDispGx(&pos, 0x10, iconId, float_0p6_8041db70);
+				iconDispGxU(&pos, 0x10, iconId, float_0p6_8041db70);
 			}
 		}
 
@@ -972,7 +975,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					Vec pos = vec3_802f64d0;
 
 					pos.y = wp->field_0x44 + (f32)(0x38 - dispOff);
-					iconDispGx(&pos, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
+					iconDispGxU(&pos, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
 				}
 				FontDrawStart();
 				FontDrawScale(float_0p8_8041db74);
@@ -1088,7 +1091,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			{
 				Vec pos = vec3_802f64dc;
 
-				iconDispGx(&pos, 0x10, 0x18B, float_0p6_8041db70);
+				iconDispGxU(&pos, 0x10, 0x18B, float_0p6_8041db70);
 			}
 		}
 		GXGetScissor(&sc[0], &sc[1], &sc[2], &sc[3]);
@@ -1229,7 +1232,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 					default: iconId = 0x15E; break;
 					}
 				}
-				iconDispGx(&pos, flag | 0x10, iconId, float_0p5_8041db60);
+				iconDispGxU(&pos, flag | 0x10, iconId, float_0p5_8041db60);
 			}
 			FontDrawStart();
 			{ GXColor cc = nameColor; FontDrawColor(&cc); }
