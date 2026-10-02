@@ -58,7 +58,7 @@
  {
   "path": "src/battle/battle_damage.c",
   "name": "BattleSetStatusDamage",
-  "declaration": "s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, s32 type, s32 rate, s32 levelDiff, u8 arg8, u8 arg9);",
+  "declaration": "s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type, s32 rate, s32 levelDiff, s8 turns, s8 strength);",
   "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
  },
  {

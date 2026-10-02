@@ -634,10 +634,12 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
 // Applies one status (sleep, stop, poison, ...) to `unit` from an attack of `part`'s side: the immunity and
 // resist checks, the roll against `rate`, the status itself, the hit effect and the announcement. `*work` collects
 // what happened (1/2 got/lost a status, 4/8 fright/gale force, 0x10 instant kill, 0x20 sleep).
+// NONMATCHING (98.51%): register allocation differences only.
 s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
                           s32 rate, s32 levelDiff, s8 turns, s8 strength) {
     u8 chargeStrength;
     u8 sp9;
+    int new_var2;
     u8 sp8;
     f32 x, y, z;
     f32 hitX, hitY, hitZ;
@@ -646,6 +648,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
     s32 announced;
     s32 resist;
     u32 resistFlag;
+    f32 new_var;
     EffectEntry* eff;
 
     isRemoving = 0;
@@ -917,7 +920,8 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         case STATUS_ATTACK_UP:
         case STATUS_ATTACK_DOWN:
         case STATUS_CHARGE:
-            effUpdownEntry(0, x, y, 15.0f + z, strength, 60);
+            new_var = y;
+            effUpdownEntry(0, x, new_var, 15.0f + z, strength, 60);
             break;
         case STATUS_DEFENSE_UP:
         case STATUS_DEFENSE_DOWN:
@@ -991,7 +995,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         case STATUS_HP_REGEN:
         case STATUS_FP_REGEN:
             if ((s8)sp9 > 0) {
-                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp9, 1);
+                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)(new_var2 = sp9), 1);
                 BattleStatusChangeMsgSetAnnouce(unit, type, 1);
                 announced = 1;
             }
