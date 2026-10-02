@@ -564,6 +564,9 @@ void __num2dec(const decform* form, double x, decimal* d) {
     }
 }
 
+extern unsigned long __double_max[];
+
+// NONMATCHING (91.83%): calls and immediates match; the original keeps only r29-r31 callee-saved with a 0x1f0 frame, this build uses r18-r31 with 0x210.
 double __dec2num(const decimal* d) {
     if (d->sig.length <= 0) {
         return copysign(0.0, d->sign == 0 ? 1.0 : -1.0);
@@ -631,15 +634,6 @@ double __dec2num(const decimal* d) {
         dec.exp += dec.sig.length - 1;
         exponent = dec.exp;
 
-        {
-            decimal max;
-
-            __str2dec(&max, "179769313486231580793729011405303420", 308);
-            if (__less_dec(&max, &dec)) {
-                return copysign((double)HUGE_VALF, d->sign == 0 ? 1.0 : -1.0);
-            }
-        }
-
         i = dec.sig.text;
         first_guess = *i++;
 
@@ -675,63 +669,86 @@ double __dec2num(const decimal* d) {
         first_guess = ldexp(first_guess, exponent);
 
         if (fpclassify(first_guess) == 2) {
-            first_guess = LDBL_MAX;
+            decimal max;
+
+            __str2dec(&max, "179769313486231580793729011405303420", 308);
+            if (!__less_dec(&max, &dec)) {
+                first_guess = *(double*)__double_max;
+            } else {
+                goto done;
+            }
         }
 
         {
-            decimal feedback1, feedback2, difflow, diffhigh;
+            decimal feedback1;
             double next_guess;
             unsigned long long* ull = (unsigned long long*)&next_guess;
-            int guessed_low = 0;
 
             __num2dec_internal(&feedback1, first_guess);
 
             if (__equals_dec(&feedback1, &dec)) {
                 goto done;
             }
-            if (__less_dec(&feedback1, &dec)) {
-                guessed_low = 1;
-            }
-
             next_guess = first_guess;
 
-            while (1) {
-                if (guessed_low) {
+            if (__less_dec(&feedback1, &dec)) {
+                decimal feedback2, difflow, diffhigh;
+
+                ++*ull;
+                if (fpclassify(next_guess) == 2) {
+                    first_guess = next_guess;
+                    goto done;
+                }
+                __num2dec_internal(&feedback2, next_guess);
+                while (__less_dec(&feedback2, &dec)) {
+                    feedback1 = feedback2;
+                    first_guess = next_guess;
                     ++*ull;
                     if (fpclassify(next_guess) == 2) {
+                        first_guess = next_guess;
                         goto done;
                     }
-                } else {
-                    --*ull;
+                    __num2dec_internal(&feedback2, next_guess);
                 }
+                __minus_dec(&difflow, &dec, &feedback1);
+                __minus_dec(&diffhigh, &feedback2, &dec);
 
-                __num2dec_internal(&feedback2, next_guess);
-                if (guessed_low && !__less_dec(&feedback2, &dec)) {
-                    break;
-                } else if (!guessed_low && !__less_dec(&dec, &feedback2)) {
-                    difflow = feedback1;
-                    feedback1 = feedback2;
-                    feedback2 = difflow;
-                    {
-                        double temp = first_guess;
+                if (__equals_dec(&difflow, &diffhigh)) {
+                    if (*(unsigned long long*)&first_guess & 1) {
                         first_guess = next_guess;
-                        next_guess = temp;
                     }
-                    break;
-                }
-                feedback1 = feedback2;
-                first_guess = next_guess;
-            }
-
-            __minus_dec(&difflow, &dec, &feedback1);
-            __minus_dec(&diffhigh, &feedback2, &dec);
-
-            if (__equals_dec(&difflow, &diffhigh)) {
-                if (*(unsigned long long*)&first_guess & 1) {
+                } else if (!__less_dec(&difflow, &diffhigh)) {
                     first_guess = next_guess;
                 }
-            } else if (!__less_dec(&difflow, &diffhigh)) {
-                first_guess = next_guess;
+            } else {
+                decimal feedback2, difflow, diffhigh;
+
+                --*ull;
+                __num2dec_internal(&feedback2, next_guess);
+                while (__less_dec(&dec, &feedback2)) {
+                    feedback1 = feedback2;
+                    first_guess = next_guess;
+                    --*ull;
+                    __num2dec_internal(&feedback2, next_guess);
+                }
+                difflow = feedback1;
+                feedback1 = feedback2;
+                feedback2 = difflow;
+                {
+                    double temp = first_guess;
+                    first_guess = next_guess;
+                    next_guess = temp;
+                }
+                __minus_dec(&difflow, &dec, &feedback1);
+                __minus_dec(&diffhigh, &feedback2, &dec);
+
+                if (__equals_dec(&difflow, &diffhigh)) {
+                    if (*(unsigned long long*)&first_guess & 1) {
+                        first_guess = next_guess;
+                    }
+                } else if (!__less_dec(&difflow, &diffhigh)) {
+                    first_guess = next_guess;
+                }
             }
         }
     done:
