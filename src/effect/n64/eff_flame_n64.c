@@ -264,9 +264,9 @@ void effFlameMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (95.74%): the 24 inlined vertex transforms convert the s16 positions with the SDK's paired-single
+// NONMATCHING (95.82%): the 24 inlined vertex transforms convert the s16 positions with the SDK's paired-single
 // inlines (`OSs16tof32`/`OSf32tos16` in OSFastCast.h, GQR5 type 7) after `OSInitFastCast()`, as the original does.
-// What differs: the frame is 0x400 against the original's 0x4c0 (its 24 Vec slots sit at 0x138-0x24c), the
+// What differs: the frame is 0x490 against the original's 0x4c0 (its 24 Vec slots sit at 0x138-0x24c), the
 // table address is passed as `flameTbl + offset` and the original keeps that add separate from the per-vertex
 // `+ idx * 14` where this build folds the two, and the destination address is recomputed per call in the
 // original but kept in a register here. The end-of-draw type test picks the shorter branch polarity.
