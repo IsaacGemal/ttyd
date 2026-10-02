@@ -83,5 +83,11 @@
   "path": "*",
   "name": "iconDispGxAlpha",
   "reason": "the definition takes the icon id as s16 (icondrv's iconDispGx needs it), but the REL lecture units pass it zero-extended (u16); declare it with the width your file's asm passes."
+ },
+ {
+  "path": "src/sequence/seq_mapchange.c",
+  "name": "SoundSetOutputMode",
+  "declaration": "extern void SoundSetOutputMode(s32 mode);",
+  "reason": "the owning header (sound.h, dolphin/os) pulls in libc math.h, which collides with math_ext.h that this file needs for sin/cos."
  }
 ]

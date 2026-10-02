@@ -42,12 +42,12 @@ static inline void OSInitFastCast(void) {
 }
 
 static inline s16 __OSf32tos16(register f32 in) {
-  s16 tmp;
-  register s16* ptr = &tmp;
+  f32 tmp;
+  register s16* ptr = (s16*)&tmp;
 #ifdef __MWERKS__
   asm { psq_st in, 0(ptr), 1, OS_FASTCAST_S16 }
 #endif
-  return tmp;
+  return *ptr;
 }
 
 static inline f32 __OSs16tof32(register const s16* arg) {

@@ -1367,7 +1367,7 @@ extern const f32 float_neg1000_8041d948;
         }                                                                             \
     } while (0)
 
-// NONMATCHING (82.24%): behaviour complete, checked against the asm; the rest is register allocation (the original keeps
+// NONMATCHING (86.26%): behaviour complete, checked against the asm; the rest is register allocation (the original keeps
 // the stone counter in r27) and the int->float conversion double reached through the string base register.
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
@@ -1476,7 +1476,7 @@ void winLogInit(WindowWork* work) {
         || strcmp(gp->currentMapName, RO(base, 0x5F8, str_802F64B0)) == 0) {
         area = "dou";
     }
-    for (n = 0; n < 0x5D; n++) {
+    for (n = 0; (u32)n < 0x5D; n++) {
         if (area != NULL && strcmp(area, tubuDt[n].id) == 0) {
             break;
         }
@@ -1510,9 +1510,9 @@ void winLogInit(WindowWork* work) {
     w->e78 = float_0_8041d7bc;
     w->e74 = float_0_8041d7bc;
     w->cardCnt = 0;
-    for (i = 0; i < 0x63; i++) {
-        if (itemDataTable[0xF0 + i].type_sort_order != -1) {
-            w->cardIcon[w->cardCnt++] = i;
+    for (i = 0xF0; i < 0xF0 + 0x63; i++) {
+        if (itemDataTable[i].type_sort_order != -1) {
+            w->cardIcon[w->cardCnt++] = i - 0xF0;
         }
     }
     qqsort(w->cardIcon, w->cardCnt, 2, compare_func5_2);
@@ -1529,9 +1529,9 @@ void winLogInit(WindowWork* work) {
     w->eb4 = float_neg300_8041d80c;
     w->eb0 = float_neg300_8041d80c;
     w->badgeCnt = 0;
-    for (i = 0; i < 0x63; i++) {
-        if (itemDataTable[0xB3 + i].type_sort_order != -1) {
-            w->badgeIcon[w->badgeCnt++] = i;
+    for (i = 0xB3; i < 0xB3 + 0x39; i++) {
+        if (itemDataTable[i].type_sort_order != -1) {
+            w->badgeIcon[w->badgeCnt++] = i - 0xB3;
         }
     }
     qqsort(w->badgeIcon, w->badgeCnt, 2, compare_func6_2);
@@ -1574,16 +1574,15 @@ void winLogInit(WindowWork* work) {
         }
     }
     {
-        u16* list = (u16*)w->chars;
         s32 a;
         s32 b;
 
         for (a = 0; a < w->charCnt - 1; a++) {
             for (b = a + 1; b < w->charCnt; b++) {
-                if ((u8)(list[a] >> 8) > (u8)(list[b] >> 8)) {
-                    u16 t = list[a];
-                    list[a] = list[b];
-                    list[b] = t;
+                if (w->chars[a].pad > w->chars[b].pad) {
+                    LogChar t = w->chars[a];
+                    w->chars[a] = w->chars[b];
+                    w->chars[b] = t;
                 }
             }
         }
@@ -2282,8 +2281,8 @@ void capture(CameraId camId, void* param) {
     u32 sw;
     u32 sh;
     GXTexObj obj;
-    s32 tw;
-    s32 th;
+    u16 tw;
+    u16 th;
     Mtx44 persp;
     Mtx view;
     Mtx tmp;
@@ -2379,7 +2378,7 @@ void capture(CameraId camId, void* param) {
         s32 j;
 
         memset(counts, 0, dat_80419a28 * 4);
-        for (j = 0; j < 0x1F4; j++) {
+        for (j = 0; (u32)j < 0x1F4; j++) {
             s32 k = j % dat_80419a28;
 
             order[j] = counts[k]++;
