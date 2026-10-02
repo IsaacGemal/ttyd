@@ -154,6 +154,41 @@ USER_FUNC(_get_itemsteal_param) {
     return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+// Match-only: retail keeps the stolen item in the same register as the event arg id
+// (r27). Carrying both in one reused s32 gives MWCC the target colouring; the natural
+// u16 local is under #else.
+static inline ItemType _chuchu_pick_drop(BattleUnit* unit) {
+    ItemDropData* list;
+    ItemDropData* d;
+    s32 sum;
+    s32 pick;
+    if (unit->dropTable != NULL) {
+        irand(100);
+    }
+    list = unit->dropTable;
+    if (list == NULL) {
+        return 0;
+    } else if (list != NULL) {
+        d = list;
+        sum = 0;
+        while (d->holdWeight > 0 || d->type != 0) {
+            sum += d->holdWeight;
+            d++;
+        }
+        if (sum > 0) {
+            pick = irand(sum);
+            while ((pick -= list->holdWeight) >= 0) {
+                list++;
+            }
+            return list->type;
+        } else {
+            return 0;
+        }
+    }
+    return 0;
+}
+#else
 static inline void _chuchu_pick_drop(BattleUnit* unit, u16* out) {
     ItemDropData* list;
     ItemDropData* d;
@@ -183,9 +218,39 @@ static inline void _chuchu_pick_drop(BattleUnit* unit, u16* out) {
         }
     }
 }
+#endif
 
-// NONMATCHING (94.04%): factoring the drop selection into the inline helper above reproduces the target's exact instruction sequence; only the callee-saved colouring differs. Target event r26, args/id/item/list r27, unit r28, out r29, work r30, flag r31 (6 saved / 0x20 frame); ours event r27, args/id/list r25, flag r26, unit r28, out r29, work r30, item r31 (7 saved / 0x30).
-// The allocator already coalesces args/id/list onto one register here, it just numbers it r25/r26 where the target uses r27. Declaration/statement-order searches and every relevant pragma leave this in place; the pre-helper body peaks at 93.78%.
+// The target keeps the stolen item in the same register as the event arg id (r27). The
+// reused-s32 form under MUST_MATCH colours event r26 and the args/id chain r28, but still
+// splits the item to r30; the natural u16 form (#else) scores 94.04% with 7 saved regs.
+// Decl/statement order and opt_lifetimes/opt_propagation/dead-assignment/optimize_for_size
+// toggles, a list-parameter helper and a single-write helper were all tried.
+// NONMATCHING (94.84%): callee-saved map only (target event r26, args/id/item/list r27,
+// unit r28, out r29, work r30, flag r31).
+#ifdef MUST_MATCH
+USER_FUNC(_chuchu_item_steal) {
+    s32 out;
+    s32 id;
+    s32 flag;
+    s32* args;
+    BattleUnit* unit;
+    BattleWork* work;
+
+    work = _battleWorkPointer;
+    args = event->args;
+    id = evtGetValue(event, args[0]);
+    out = args[1];
+    flag = evtGetValue(event, args[2]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
+    id = (u16)unit->heldItem;
+    if ((u16)id == 0) {
+        id = _chuchu_pick_drop(unit);
+        if ((u16)id == 0) {
+            id = 0x79;
+        }
+    }
+#else
+// NONMATCHING (94.84%): natural form; see the note above (callee-saved map only).
 USER_FUNC(_chuchu_item_steal) {
     u16 item;
     BattleWork* work;
@@ -206,11 +271,16 @@ USER_FUNC(_chuchu_item_steal) {
             item = 0x79;
         }
     }
+#endif
     if (!(flag & 2)) {
         evtSetValue(event, out, 0);
         return EVT_RETURN_DONE;
     }
+#ifdef MUST_MATCH
+    if (pouchGetItem((u16)id) == 0) {
+#else
     if (pouchGetItem(item) == 0) {
+#endif
         evtSetValue(event, out, 0);
         return EVT_RETURN_DONE;
     }
@@ -224,7 +294,11 @@ USER_FUNC(_chuchu_item_steal) {
     } else if (unit->groupSetupId >= 0) {
         work->fbatInfo->setup->heldItems[unit->groupSetupId] = 0;
     }
+#ifdef MUST_MATCH
+    if ((u16)id >= 0xF0 && (u16)id < 0x153) {
+#else
     if (item >= 0xF0 && item < 0x153) {
+#endif
         if (unit->currentKind == 0xDE) {
             BtlUnit_EquipItem(unit, 3, 0);
         } else if (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
@@ -233,7 +307,11 @@ USER_FUNC(_chuchu_item_steal) {
             BtlUnit_EquipItem(unit, 1, 0);
         }
     }
+#ifdef MUST_MATCH
+    evtSetValue(event, out, (u16)id);
+#else
     evtSetValue(event, out, item);
+#endif
     return EVT_RETURN_DONE;
 }
 

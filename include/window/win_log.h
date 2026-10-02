@@ -22,3 +22,4 @@ void winLogMain2(WindowWork* work);
 s32 winLogMain(WindowWork* work);
 void winLogExit(WindowWork* work);
 void winLogInit2(WindowWork* work);
+void winLogInit(WindowWork* work);

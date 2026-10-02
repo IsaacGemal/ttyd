@@ -44,14 +44,16 @@ const Vec vec3_802cd3bc = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cd3c8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cd3d4 = {0.0f, 0.0f, 0.0f};
 
-// .rodata int->float magic constant used by partyHitCheck's rounding.
-const f64 double_to_int_802cd3e0 = 4503601774854144.0;
-const f64 double_0p5_802cd3e8 = 0.5;
-const f64 double_3_802cd3f0 = 3.0;
-const f64 double_0_802cd3f8 = 0.0;
-const char str_802CD400[0x18] = "MOBJ_HiddenHatenaBlock";
-const char str_802CD418[0x18] = "MOBJ_HiddenBadgeBlock";
-const char str_802CD430[0x18] = "MOBJ_Hidden10CountBlock";
+// .rodata constants: declared here (tentatively) so the inline sqrtf below references the
+// named globals instead of folding them into anonymous pool copies, and defined after the
+// functions so the emitted .rodata order is magic / 0.5 / 3.0 / 0.0 / block-name strings.
+const f64 double_to_int_802cd3e0;
+const f64 double_0p5_802cd3e8;
+const f64 double_3_802cd3f0;
+const f64 double_0_802cd3f8;
+const char str_802CD400[0x18];
+const char str_802CD418[0x18];
+const char str_802CD430[0x18];
 
 // Float sqrt used by the original: inline expansion with NaN classification.
 static inline s32 __fpclassifyf(f32 x) {
@@ -252,7 +254,7 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     return hit;
 }
 
-// NONMATCHING (96.90%): frame/query offsets/scheduling mostly match; wins were reusing `d` for the second
+// NONMATCHING (96.91%): frame/query offsets/scheduling mostly match; wins were reusing `d` for the second
 // query, plain `if (hit != NULL)` both blocks, and `partyNrmToAngle(&n)`. Left: callee-saved GPRs
 // (orig party=r30/pos=r31/vec3=r29/hit2=r28), an f4/f6 swap in the push-outs, rodata doubles, if-layout.
 HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
@@ -481,7 +483,7 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     ((f32)(s32)(float_1000_8041b408 * (v) + ((v) >= float_0_8041b3ec ? float_0p5_8041b3f4 : float_neg0p5_8041b404)) / \
      float_1000_8041b408)
 
-// NONMATCHING (85.44%): caching 100*n.y in a local makes the FP saves f23-f31 match the original, and a
+// NONMATCHING (85.45%): caching 100*n.y in a local makes the FP saves f23-f31 match the original, and a
 // f32 hxyz[3] for the rounded hitPos steers the ROUND registers. Still off: the compiler forwards the
 // hitNormal copy into query.hitNormal (query 0x24 vs 0x30, frame 0x160 vs 0x150) and the doubles pool locally.
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
@@ -566,7 +568,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
 // The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). The
 // remaining diffs are FP register colouring (67 arg_mismatch) and a `hit` r27/r3 live-range split; the
 // `hitY = hitY;` copy in the `hit == NULL` arm is a dead-path materialisation (compiler-input only).
-// NONMATCHING (97.90%): FP colouring + `hit` r27/r3 split
+// NONMATCHING (97.91%): FP colouring + `hit` r27/r3 split
 HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     HitCheckQuery query;
     Vec targetPos;
@@ -754,7 +756,7 @@ void partyChkGnd(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (83.52%): the inlined sqrtf doubles are pooled in a separate
+// NONMATCHING (83.56%): the inlined sqrtf doubles are pooled in a separate
 // .rodata subsection rather than following vec3_802cd320 at 0xc8/0xd0/0xd8.
 f32 partyNrmToAngle(Vec* v) {
     f32 len = sqrtf(v->x * v->x + v->z * v->z);
@@ -889,3 +891,12 @@ BOOL chkfilter(HitCheckQuery* query, HitEntry* entry) {
     }
     return TRUE;
 }
+
+// Definitions for the .rodata constants declared above (see the comment there).
+const f64 double_to_int_802cd3e0 = 4503601774854144.0;
+const f64 double_0p5_802cd3e8 = 0.5;
+const f64 double_3_802cd3f0 = 3.0;
+const f64 double_0_802cd3f8 = 0.0;
+const char str_802CD400[0x18] = "MOBJ_HiddenHatenaBlock";
+const char str_802CD418[0x18] = "MOBJ_HiddenBadgeBlock";
+const char str_802CD430[0x18] = "MOBJ_Hidden10CountBlock";

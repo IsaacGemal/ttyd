@@ -494,12 +494,24 @@ void unk_800d06b4(char* src, char* dst) {
 	dst[i * 2] = 0;
 }
 
-// NONMATCHING (89.82%): the two conversion loops match exactly (buf r5, char temp r4, i r3); using a single function-scope `str` and declaring it before the ids gives the original's id_b=r29. Left is only the base/str callee-saved swap: the original keeps the itemDataTable+4 base in r30 and the msgSearch result in r31 (and interleaves the callee-save stores), ours has base r31 / str r30 with all three stores first. Tried every declaration order, a call to the file's own unk_800d06b4 (which the original inlines), pointer locals and a `NULL`/`0` init; none flip the allocator.
+// The two conversion loops match exactly. The `base` local and the `base + id*sizeof(ItemData)`
+// access are a match-only shape: written as itemDataTable[id].name MWCC keeps the base in r31 and
+// the msgSearch result in r30, while the original has base r30 / result r31 (and the id_b load in
+// r29). What still differs: the original sinks the three callee-save stores next to each register's
+// first definition and loads id_b after `mulli`/`addi base`; ours stores all three at the top and
+// loads id_b before the mulli.
+// NONMATCHING (90.24%): base/str/regs now match; only the callee-save store order and id_b load slot differ.
 s32 comp_aiueo(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
 	const char* str;
 	s16 id_a = *a;
+#ifdef MUST_MATCH
+	// Match-only: spelling the access as itemDataTable[id].name lets MWCC colour the base r31 and
+	// the msgSearch result r30; the explicit base local gives the original's r30/r31. MUST_MATCH
+	// only because the original compiler CSE'd the same base itself.
+	const char* base = (const char*)&itemDataTable[0].name;
+#endif
 	s16 id_b = *b;
 	{
 		s32 i;
@@ -507,7 +519,11 @@ s32 comp_aiueo(s16* a, s16* b) {
 		u16* buf;
 		s32 len;
 
+#ifdef MUST_MATCH
+		str = msgSearch(*(const char**)(base + id_a * sizeof(ItemData)));
+#else
 		str = msgSearch(itemDataTable[id_a].name);
+#endif
 		len = strlen(str) / 2;
 		buf = buf_a;
 		for (i = 0; i < len; i++) {
@@ -530,7 +546,11 @@ s32 comp_aiueo(s16* a, s16* b) {
 		u16* buf;
 		s32 len;
 
+#ifdef MUST_MATCH
+		str = msgSearch(*(const char**)(base + id_b * sizeof(ItemData)));
+#else
 		str = msgSearch(itemDataTable[id_b].name);
+#endif
 		len = strlen(str) / 2;
 		buf = buf_b;
 		for (i = 0; i < len; i++) {
@@ -564,12 +584,17 @@ s32 comp_kind(s16* a, s16* b) {
 	return 0;
 }
 
-// NONMATCHING (89.82%): same as comp_aiueo, including the base (r31 vs r30) / str (r30 vs r31) callee-saved swap.
+// NONMATCHING (90.24%): same as comp_aiueo (its callee-saved registers now match too); the
+// remaining diff is the same callee-save store placement and id_b load slot.
 s32 comp_aiueo_r(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
 	const char* str;
 	s16 id_a = *a;
+#ifdef MUST_MATCH
+	// Match-only: see comp_aiueo.
+	const char* base = (const char*)&itemDataTable[0].name;
+#endif
 	s16 id_b = *b;
 	{
 		s32 i;
@@ -577,7 +602,11 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 		u16* buf;
 		s32 len;
 
+#ifdef MUST_MATCH
+		str = msgSearch(*(const char**)(base + id_a * sizeof(ItemData)));
+#else
 		str = msgSearch(itemDataTable[id_a].name);
+#endif
 		len = strlen(str) / 2;
 		buf = buf_a;
 		for (i = 0; i < len; i++) {
@@ -600,7 +629,11 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 		u16* buf;
 		s32 len;
 
+#ifdef MUST_MATCH
+		str = msgSearch(*(const char**)(base + id_b * sizeof(ItemData)));
+#else
 		str = msgSearch(itemDataTable[id_b].name);
+#endif
 		len = strlen(str) / 2;
 		buf = buf_b;
 		for (i = 0; i < len; i++) {

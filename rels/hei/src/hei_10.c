@@ -250,27 +250,36 @@ void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 
     entry->field_0x24 = field24;
 }
 
-// Structure, the switch dispatch and the inlined heiSinf/heiCosf blocks now
-// match. MWCC still picks a different colouring for the loop's live pointers
-// (pose/entry/sfx/i land in r28/r27/r26/r25, the original's r25/r24/r27/r26)
-// and the case-0 randf temporaries sit at 0x34/0x30 instead of 0x3c/0x38,
-// which shifts every later stack slot. The `sfx` local is hoisted into a
-// callee-saved register as in the original.
-// NONMATCHING (72.05%): loop register colouring + case-0 stack slot offsets.
+// Structure, the switch dispatch, the case ordering, the decrement-then-test
+// of field_0x18 and the inlined heiSinf/heiCosf blocks now match. Three source
+// spellings were needed to get MWCC to emit the original's branches: the case-1
+// range test is `if (dist < 800.0f) { body } else { state = 99; }` (an
+// early-return `if (!(dist < 800.0f))` makes MWCC emit the NaN-safe
+// `cror eq,gt,eq; bne`), the trailing clamp guard is a `switch (entry->state)`
+// with only `case 0` (MWCC will not emit the original's two-compare range test
+// for `if (entry->state == 0)`), and the jitter is `+ -45.0f` so the pool holds
+// float_neg45 and the op is fmadds.
+// Remaining differences are MWCC's choices, not source shape: the loop's live
+// pointers colour differently (pose/entry/sfx land in r28/r27/r25, the
+// original's r25/r24/r27; the original keeps r28 free as an oldState scratch,
+// we keep r24 free), the four Vec temporaries are slotted in a different order,
+// and the case-0 `deg` fmadds is scheduled before the second rand call rather
+// than after it.
+// NONMATCHING (80.58%): loop register colouring + Vec stack-slot order + fp scheduling.
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static void ext_main(void) {
     MarioWork* mario = marioGetPtr();
     ExtPose* pose = extGetPosePtr();
     HeiExtEntry* entry = wp->entries;
-    const char* sfx = "SFX_STG1_CHORO_ESCAPE1";
     s32 i;
+    const char* sfx = "SFX_STG1_CHORO_ESCAPE1";
 
     for (i = 0; i < wp->count; i++, pose++, entry++) {
         switch (entry->state) {
         case 0: {
             f32 deg = randf(0.0f, 360.0f);
-            f32 rad = 3.1415927f * deg / 180.0f;
             f32 speed = randf(4.0f, 7.0f);
+            f32 rad = 3.1415927f * deg / 180.0f;
             f32 sinv = heiSinf(rad);
             f32 px = speed * sinv + (*pose->matrix)[0][3];
             f32 py = (*pose->matrix)[1][3];
@@ -317,21 +326,32 @@ static void ext_main(void) {
             f32 dy;
             s32 frames;
 
-            if (dist >= 800.0f) {
-                entry->state = 99;
-                break;
-            }
+            if (dist < 800.0f) {
+#ifdef MUST_MATCH
+            // The original folds randf(0,1)'s "*1+0" away here; propagation is
+            // off for the sin/cos coefficients, so spell the division out.
+            r = (f32)rand() / 32767.0f;
+#else
             r = randf(0.0f, 1.0f);
-            dir = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]) + (r * 90.0f - 45.0f);
-            rad = 3.1415927f * dir / 180.0f;
+#endif
+            // Spelling the jitter as `+ -45.0f` makes MWCC load float_neg45 and
+            // contract to fmadds, matching the original's pool entry; the natural
+            // `- 45.0f` instead pools float_45 and emits fmsubs.
+            dir = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]) + (r * 90.0f + -45.0f);
             speed = randf(15.0f, 20.0f);
+            rad = 3.1415927f * dir / 180.0f;
             sinv = heiSinf(rad);
             py = (*pose->matrix)[1][3];
             cosv = heiCosf(rad);
             px = speed * sinv + (*pose->matrix)[0][3];
             pz = (*pose->matrix)[2][3] - speed * cosv;
+#ifdef MUST_MATCH
+            a = (f32)rand() / 32767.0f;
+            b = (f32)rand() / 32767.0f;
+#else
             a = randf(0.0f, 1.0f);
             b = randf(0.0f, 1.0f);
+#endif
             pos.x = px;
             pos.y = py;
             pos.z = pz;
@@ -348,12 +368,27 @@ static void ext_main(void) {
             entry->state = 0x64;
             entry->field_0x24 = oldState;
             if (rand() % 150 == 0) {
+#ifdef MUST_MATCH
+                // The original builds the position then copies it to a second
+                // Vec before the call (MWCC by-value argument copy).
                 Vec sfxPos = { 0 };
+                Vec sfxOut;
+#else
+                Vec sfxPos = { 0 };
+#endif
 
                 sfxPos.x = (*pose->matrix)[0][3];
                 sfxPos.y = (*pose->matrix)[1][3];
                 sfxPos.z = (*pose->matrix)[2][3];
+#ifdef MUST_MATCH
+                sfxOut = sfxPos;
+                psndSFXOn_3D(sfx, &sfxOut);
+#else
                 psndSFXOn_3D(sfx, &sfxPos);
+#endif
+            }
+            } else {
+                entry->state = 99;
             }
         } break;
         case 0x63:
@@ -372,8 +407,7 @@ static void ext_main(void) {
             cosv = heiCosf(rad);
             (*pose->matrix)[0][3] += entry->field_0x1C * sinv;
             (*pose->matrix)[2][3] -= entry->field_0x1C * cosv;
-            entry->field_0x18--;
-            if (entry->field_0x18 < 0) {
+            if (--entry->field_0x18 < 0) {
                 (*pose->matrix)[0][3] = entry->position.x;
                 (*pose->matrix)[1][3] = entry->position.y;
                 (*pose->matrix)[2][3] = entry->position.z;
@@ -383,7 +417,8 @@ static void ext_main(void) {
         default:
             break;
         }
-        if (entry->state == 0) {
+        switch (entry->state) {
+        case 0:
             if ((*pose->matrix)[0][3] > 230.0f) {
                 (*pose->matrix)[0][3] = 230.0f;
             }
@@ -396,6 +431,7 @@ static void ext_main(void) {
             if ((*pose->matrix)[2][3] < -100.0f) {
                 (*pose->matrix)[2][3] = -100.0f;
             }
+            break;
         }
         if (gp->retraceCount & 1) {
             pose->field_0x10 = (i + gp->retraceCount) % 20;
@@ -443,7 +479,7 @@ USER_FUNC(evt_chorobon_wait) {
 // has them at 0xc/0x10 (the userdataf[1] temp owns 0x8 there), the whole
 // stack layout is four bytes low, and the FPR allocator starts at f0 instead
 // of f1 (original rad=f5, c0..c2=f4..f2, pi=f1).
-// NONMATCHING (74.6%): volatile stack slot placement + FPR base register.
+// NONMATCHING (74.60%): volatile stack slot placement + FPR base register.
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static USER_FUNC(npc_jump) {
     s32* args = event->args;

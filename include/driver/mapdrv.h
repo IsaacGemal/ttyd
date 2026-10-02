@@ -15,6 +15,7 @@ extern GXColor dat_8041983c;
 extern GXColor paperCraft_ambient;
 extern u32 lightid_tbl[];
 extern Vec vec3_802c1828[];
+extern u8 vec3_802c16e4[];
 
 typedef struct DisplayList {
     u32 offset;      // 0x00 - Offset to vertex data
@@ -245,7 +246,7 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c);
 void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t);
 void mapSetPaperAmbColor(GXColor* color);
 void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* scale, void* a4);
-void mapGetBoundingBox(Vec min, Vec max);
+void mapGetBoundingBox(Vec* min, Vec* max);
 MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index);
 MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isRoot, s32 index);
 MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index);

@@ -2377,9 +2377,6 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (94.58%): declaring obj/asyncName right after `args` puts every callee-saved register
-// where retail has it; the 15 diffs left are the jumptable/inBattle load schedule (retail loads gp
-// before slwi type*4 and uses r0 for the index).
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     const char* asyncName;
@@ -2392,12 +2389,18 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     f32 f28 = evtGetFloat(event, args[5]);
     s32 unk1D4 = evtGetValue(event, args[6]);
     s32 unk1E4 = args[7];
-
+    s32 inBattle;
+    inBattle = gp->inBattle != 0;
     {
         const char* jumptable[2] = {"MOBJ_BlueJumpStand", "MOBJ_BlueJumpStand2"};
+#ifdef MUST_MATCH
+        // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
+        asyncName = *(const char**)((u8*)jumptable + (type << 2));
+#else
         asyncName = jumptable[type];
+#endif
     }
-    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -2474,8 +2477,6 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (94.40%): same as evt_mobj_jumpstand_blue; only the jumptable/inBattle load schedule
-// differs.
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     const char* asyncName;
@@ -2487,12 +2488,18 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     f32 f29 = evtGetFloat(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[5]);
     s32 unk1E4 = args[6];
-
+    s32 inBattle;
+    inBattle = gp->inBattle != 0;
     {
         const char* jumptable[2] = {"MOBJ_RedJumpStand", "MOBJ_RedJumpStand2"};
+#ifdef MUST_MATCH
+        // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
+        asyncName = *(const char**)((u8*)jumptable + (type << 2));
+#else
         asyncName = jumptable[type];
+#endif
     }
-    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -3040,12 +3047,6 @@ extern Vec vec3_802c3ef4[];
 extern const char str_802C41DC[];
 extern const char str_802C41F0[];
 
-#ifdef MUST_MATCH
-// The original compiler pools the "o_"/"i_" array initialisers into this
-// unit's .rodata and addresses them relative to vec3_802c3dc8 (base+0x100 and
-// base+0x110). Reproduce that here by copying 16 bytes through a struct.
-typedef struct MobjName16 { char s[16]; } MobjName16;
-#endif
 
 
 s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
@@ -3607,26 +3608,42 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (77.23%): missing unit .rodata base shifts the callee-saved register allocation.
+// 100%: the unit's .rodata is reached from the vec3_802c3dc8 base (MUST_MATCH offsets), which
+// also frees r31 and gives the target callee-saved allocation; scale is built from the vec3_802c405c
+// template and only .y comes from obj->scale2.
 s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
+#ifdef MUST_MATCH
+    u8* base = (u8*)vec3_802c3dc8;
+#endif
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f29 = evtGetFloat(event, args[1]);
     f32 f30 = evtGetFloat(event, args[2]);
     f32 f31 = evtGetFloat(event, args[3]);
     s32 r30 = evtGetValue(event, args[4]);
-    s32 unk1E4 = args[6];
+    s32 unk1E4;
     MapObjectEntry* obj;
     Vec pos;
     Vec scale;
+    const char* asyncName;
 
     evtGetValue(event, args[5]);
-    if (!animGroupBaseAsync("MOBJ_KururinFloor", gp->inBattle != 0, NULL)) {
+#ifdef MUST_MATCH
+    asyncName = (const char*)(base + 0x4fc);
+#else
+    asyncName = "MOBJ_KururinFloor";
+#endif
+    unk1E4 = args[6];
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
         return 0;
     }
-    mobjEntry(name, "MOBJ_KururinFloor");
+    mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
+#ifdef MUST_MATCH
+    pos = *(Vec*)(base + 0x288);
+#else
     pos = vec3_802c4050[0];
+#endif
     pos.x = f29;
     pos.y = f30 + 0.1f;
     pos.z = f31;
@@ -3637,9 +3654,12 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 0x1010000;
     obj->flags |= 2;
     mobjCalcMtx(obj);
-    scale = obj->scale2;
-    scale.x = vec3_802c405c[0].x;
-    scale.z = vec3_802c405c[0].z;
+#ifdef MUST_MATCH
+    scale = *(Vec*)(base + 0x294);
+#else
+    scale = vec3_802c405c[0];
+#endif
+    scale.y = obj->scale2.y;
     obj->scale2 = scale;
     mobjCalcMtx2(obj);
     mapGrpFlagOn((const char*)r30, 0x400000);
