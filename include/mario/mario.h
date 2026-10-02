@@ -255,7 +255,7 @@ const char* toDotMarioPose(const char* name);
 void marioChgPose(const char* name);
 void marioChgPoseTime(const char* name, s16 frames);
 void marioChgPaper(const char* name);
-void marioSetPaperAnimeLocalTime(s32 frames);
+void marioSetPaperAnimeLocalTime(s16 frames);
 BOOL marioPaperOn(const char* name);
 void marioPaperOff(void);
 void marioPaperLightOn(void);

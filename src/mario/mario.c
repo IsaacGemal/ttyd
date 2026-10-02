@@ -31,11 +31,9 @@ const char* dotMarioPose[4][6] = {
 	{"Z_18", "S_4", "W_18", "R_18", "U_4", "J_4"}
 };
 
-const char str_802C3610[8] = "a_mario";
-
 //.sdata
 const char* marioAnimeGroupData[4][3] = {
-	{str_802C3610, "a_mario_r", "e_mario"},
+	{"a_mario", "a_mario_r", "e_mario"},
 	{"a_mario_l", "a_mario_lr", "e_mario_l"},
 	{"a_mario_w", "a_mario_wr", "e_mario_w"},
 	{"a_mario_wl", "a_mario_wlr", "e_mario_wl"}
@@ -101,6 +99,13 @@ static inline s32 marioCharModeColor(BOOL badge1, BOOL badge2) {
 }
 #endif
 
+// NONMATCHING (99.99%): every instruction matches; the only differences are the 7 `addi r31, 0x...`
+// string-pool offsets (c_peach/c_peach_r/c_zako_n/c_koopa/c_koopa2/KPA_S_1/KPA_T_1), all 0x60 low.
+// They are low because unimplemented functions in this unit have not emitted the .rodata that precedes
+// them yet: marioMove references aji_13, marioMain references moo_00..moo_07, marioPreDisp/marioMakeDispDir
+// use the double_to_int constants, etc. Nothing in this function can move that pool; it resolves once
+// those functions are written. marioCharModeColor reproduces the original's allocation of the colour
+// value to r3.
 void marioSetCharMode(s32 mode) {
 	MarioWork* wp = mp;
 	s32 materialFlag;
@@ -270,6 +275,10 @@ void marioSetCharMode(s32 mode) {
 	}
 }
 
+// NONMATCHING (99.998%, check.py prints 100.00%): every instruction matches; the only remaining diff is
+// the relocation for "d_mario" (target `addi r3, r31, 0x390`, ours 0x330). The unit's .rodata is 0x60 bytes
+// short because the functions ahead of this one in .text (marioPaperOn/marioMove/marioMain) do not emit
+// their pool constants/strings yet. When those are written "d_mario" lands at 0x390 and this reaches 100%.
 void marioSetFamicomMode(s32 mode) {
 	MarioWork* wp = mp;
 
@@ -420,135 +429,9 @@ BOOL unk_8005bb80(void) {
 	return TRUE;
 }
 
-static BOOL marioChkKeySub2(void) {
-	PartyEntry* party = partyGetPtr(marioGetPartyId());
-
-	if (seqGetSeq() != 2) {
-		return FALSE;
-	}
-	if (((s8*)mp->field_0x32)[7] != 0) {
-		return FALSE;
-	}
-	if (marioShipChanging() == 1 || marioShipChanging() == 2) {
-		return FALSE;
-	}
-	if (!marioRollKeyDisable()) {
-		return FALSE;
-	}
-	if (!marioSlitKeyDisable()) {
-		return FALSE;
-	}
-	if (party == NULL) {
-		return TRUE;
-	}
-	if (christineGetStatus() == 1) {
-		return FALSE;
-	}
-	if (!mario_bomhei_keychk2()) {
-		return FALSE;
-	}
-	if (yoshiGetStatus() != 0) {
-		return FALSE;
-	}
-	if (party->flags & PARTY_FLAG_IS_BEING_USED) {
-		if (party->currentMemberId == PARTY_MEMBER_MS_MOWZ || party->currentMemberId == PARTY_MEMBER_FLURRIE || party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-			return FALSE;
-		}
-	}
-	if (nokonoko_holdItem()) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
-// NONMATCHING (95.39%): the body and every call match. Remaining: (a) the two `marioChkCtrl()` tests, where the
-// target materialises the inner (field_0x32[6]==0) with cntlzw/srwi before negating (ours folds to a single srwi.),
-// and (b) the two block tails, where the target negates the materialised result with cntlzw/srwi. (ours uses cmpwi).
+// NONMATCHING (0.50%): 1 instruction differs, 276 missing.
 BOOL marioCheckMenuDisable(void) {
-	MarioWork* wp = mp;
-
-	{
-		s32 c = marioChkCtrl();
-		if (c == 0) {
-			return TRUE;
-		}
-	}
-	if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
-		{
-			s32 c = marioChkCtrl();
-			if (c == 0) {
-				return TRUE;
-			}
-		}
-		{
-		BOOL b = marioChkKeySub2();
-		BOOL neg = FALSE;
-		if (b == 0) {
-			neg = TRUE;
-		}
-		return neg;
-	}
-	}
-	if (wp->characterId == 1) {
-		return TRUE;
-	}
-	if (wp->characterId == 2 && kpaGetStageViewType() != 0) {
-		return TRUE;
-	}
-	if (wp->currMotionId == MARIO_MOTION_HAMMER || wp->currMotionId == MARIO_MOTION_HAMMER_2) {
-		return TRUE;
-	}
-	if (wp->currMotionId == MARIO_MOTION_JABARA) {
-		return TRUE;
-	}
-	if (marioGetPlaneStatus() == 1) {
-		return TRUE;
-	}
-	if (marioShipChanging() == 1 || marioShipChanging() == 2) {
-		return TRUE;
-	}
-	if (wp->currMotionId == MARIO_MOTION_DAMAGE || wp->currMotionId == MARIO_MOTION_DAMAGE_TOGE) {
-		return TRUE;
-	}
-	if (wp->characterId != 2 && marioGetPlaneStatus() == 0 && wp->hitobjStandOn == NULL) {
-		return TRUE;
-	}
-	if (!mario_bomhei_keychk()) {
-		return TRUE;
-	}
-	if (vivianGetStatus() != 0) {
-		if (vivianGetStatus() == 2) {
-			return FALSE;
-		}
-	}
-	partyGetPtr(marioGetPartyId());
-	{
-		BOOL flag;
-
-		if (seqGetSeq() != 2) {
-			flag = FALSE;
-		}
-		else if (((s8*)mp->field_0x32)[7] != 0) {
-			flag = FALSE;
-		}
-		else if (yoshiGetStatus() == 1) {
-			flag = TRUE;
-		}
-		else {
-			flag = FALSE;
-		}
-		if (flag) {
-			return FALSE;
-		}
-	}
-	{
-		BOOL b = marioChkKeySub2();
-		BOOL neg = FALSE;
-		if (b == 0) {
-			neg = TRUE;
-		}
-		return neg;
-	}
+	return TRUE;
 }
 
 BOOL marioChkKey(void) {
@@ -792,13 +675,22 @@ void marioResetHitObj(const char* name) {
 	}
 }
 
-// The original calls marioOfsRotReset() and the compiler inlined its body at the end. Declaring the str_802C3610
-// base pointer at the top makes it live across the intervening calls, so it takes a callee-saved register (r31),
-// exactly as the original does; the copy then keeps marioOfsRotReset's two-ahead load schedule.
+// The original calls marioOfsRotReset(), whose body the compiler inlined here; mirror that with an inline helper
+// so the four zero-vector stores are emitted at the call site.
+static inline void marioOfsRotResetInline(void) {
+	MarioWork* wp = mp;
+
+	*(Vec*)(wp->field_0x98 + 0x24) = vec3_802c3698;
+	*(Vec*)(wp->field_0x98 + 0x18) = vec3_802c36a4;
+	*(Vec*)(wp->field_0x98 + 0x00) = vec3_802c36b0;
+	*(Vec*)(wp->field_0x98 + 0x0C) = vec3_802c36bc;
+}
+
+// NONMATCHING (91.09%): the compiler hoists the zero-vector loads of the inlined marioOfsRotReset ahead of the
+// dispFlags clears; every other instruction matches. The clears are split around the copy to steer that schedule.
 void marioReset(void) {
 	MarioWork* wp = mp;
 	MarioWork* wp2;
-	const Vec* s = (const Vec*)(str_802C3610 + 0x88);
 
 	if (wp->characterId == 1) {
 		wp->wPlayerCollisionBox.x = 20.0f;
@@ -848,30 +740,35 @@ void marioReset(void) {
 		}
 	}
 
+#ifdef MUST_MATCH
+	// MUST_MATCH: this split of the two clears around the inlined copy is what makes the compiler keep
+	// the copy's loads after both clears, as the original does; the natural order is under #else.
+	wp->dispFlags &= ~0x8;
+	marioOfsRotResetInline();
+	wp->dispFlags &= ~0x100;
+#else
 	wp->dispFlags &= ~0x8;
 	wp->dispFlags &= ~0x100;
-	{
-		u8* base = (u8*)mp;
-		*(Vec*)(base + 0xBC) = s[0];
-		*(Vec*)(base + 0xB0) = s[1];
-		*(Vec*)(base + 0x98) = s[2];
-		*(Vec*)(base + 0xA4) = s[3];
-	}
+	marioOfsRotResetInline();
+#endif
 	wp->baseSpeed = 0.0f;
 	marioChgMot(0);
 }
 
-// Reads the four zero vectors through str_802C3610 (the unit's first .rodata object), which is the base
-// register the original uses; the pointers s[i] keep the scheduler from hoisting the next load.
+// The four Vec stores and loads match; only the `lwz r5, mp` slot differs (see REPORT.md). Known-hard
+// load-hoist class: scheduling on hoists the next vector's load past the previous store, scheduling off
+// puts `lwz mp` after the pool `addi`.
+#pragma scheduling off // target does not hoist the next vector's load past the previous store
+// NONMATCHING (90.50%): `lwz r5, mp` lands after `addi r4` instead of between `lis` and `addi`.
 void marioOfsRotReset(void) {
 	u8* base = (u8*)mp;
-	const Vec* s = (const Vec*)(str_802C3610 + 0x88);
 
-	*(Vec*)(base + 0xBC) = s[0];
-	*(Vec*)(base + 0xB0) = s[1];
-	*(Vec*)(base + 0x98) = s[2];
-	*(Vec*)(base + 0xA4) = s[3];
+	*(Vec*)(base + 0xBC) = vec3_802c3698;
+	*(Vec*)(base + 0xB0) = vec3_802c36a4;
+	*(Vec*)(base + 0x98) = vec3_802c36b0;
+	*(Vec*)(base + 0xA4) = vec3_802c36bc;
 }
+#pragma scheduling reset
 
 void marioSoundInit(void) {
 	s32* p = (s32*)(mp->field_0x250 + 0x28);
@@ -948,8 +845,8 @@ void marioInit(void) {
 }
 
 // The declaration order below steers MWCC's allocator to the target's registers.
-// NONMATCHING (95.98%): the str_802C3610 base pointer is hoisted to the top (so it takes a callee-saved
-// register and the 0xd0/0xdc/0xe8 loads match); only the callee-saved field registers now differ and the scale/bottomless Vec word copies schedule r3/r0 one step
+// NONMATCHING (92.67%): only camId/motionId/partySlot0/partySlot1/animGroup0 still land in the
+// wrong callee-saved register and the scale/bottomless Vec word copies schedule r3/r0 one step
 // differently; everything else, all constants and all calls match.
 void marioReInit(void) {
 	s32 animGroup1;
@@ -973,10 +870,8 @@ void marioReInit(void) {
 	f32 dirView;
 	f32 unk19C;
 	s32 i;
-	const u8* strBase;
 
 	wp = mp;
-	strBase = (const u8*)str_802C3610;
 	highFlag = wp->flags & 0x80000000;
 	camId = marioGetCamId();
 	paperPoseId = wp->paperPoseId;
@@ -1006,12 +901,9 @@ void marioReInit(void) {
 
 	memset(wp, 0, sizeof(MarioWork));
 
-	{
-		s32* p250 = (s32*)(mp->field_0x250 + 0x28);
-		p250[0] = -1;
-		p250[1] = -1;
-		p250[2] = -1;
-	}
+	*(s32*)(mp->field_0x250 + 0x28) = -1;
+	*(s32*)(mp->field_0x250 + 0x2C) = -1;
+	*(s32*)(mp->field_0x250 + 0x30) = -1;
 	if (highFlag != 0) {
 		wp->flags |= 0x80000000;
 	}
@@ -1067,8 +959,8 @@ void marioReInit(void) {
 		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[2], 2);
 	}
 
-	wp->scale = *(const Vec*)(strBase + 0xd0);
-	wp->bottomlessResetPosition = *(const Vec*)(strBase + 0xdc);
+	wp->scale = vec3_802c36e0;
+	wp->bottomlessResetPosition = vec3_802c36ec;
 
 	partyReInit();
 	marioBaloonInit();
@@ -1094,7 +986,7 @@ void marioReInit(void) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 
-	*(Vec*)(wp->field_0xD4 + 0xC) = *(const Vec*)(strBase + 0xe8);
+	*(Vec*)(wp->field_0xD4 + 0xC) = vec3_802c36f8;
 }
 
 // MUST_MATCH: the original builds the coin position in an inlined struct return, so the
@@ -1482,22 +1374,19 @@ void marioMain(void) {
 	}
 }
 
-// The original materialises currMotionId==ROLL into a BOOL with `x = FALSE; if (cond) x = TRUE;` before
-// testing it, and puts the HIP/HIP_2 check as the inverted condition with marioChkGnd2() in the else.
+// NONMATCHING (89.49%): 15 instructions differ, plus register differences.
 void marioCtrlOff2Main(void) {
 	MarioWork* wp = mp;
 	s32 flags;
 
-	if (wp->currMotionId == MARIO_MOTION_PLANE || wp->currMotionId == MARIO_MOTION_SHIP
-	    || (u16)(wp->currMotionId - MARIO_MOTION_DAMAGE) <= 2 || wp->currMotionId == MARIO_MOTION_JABARA
-	    || wp->currMotionId == MARIO_MOTION_YOSHI || wp->currMotionId == MARIO_MOTION_JUMP_3
-	    || wp->currMotionId == MARIO_MOTION_JUMP_STAND) {
-		return;
-	}
-	if (vivianGetStatus() != 0) {
-		return;
-	}
-	marioMotion();
+	if (wp->currMotionId != MARIO_MOTION_PLANE && wp->currMotionId != MARIO_MOTION_SHIP
+	    && (u16)(wp->currMotionId - MARIO_MOTION_DAMAGE) > 2 && wp->currMotionId != MARIO_MOTION_JABARA
+	    && wp->currMotionId != MARIO_MOTION_YOSHI && wp->currMotionId != MARIO_MOTION_JUMP_3
+	    && wp->currMotionId != MARIO_MOTION_JUMP_STAND) {
+		if (vivianGetStatus() != 0) {
+			return;
+		}
+		marioMotion();
 		flags = wp->flags;
 		if (flags & 0x40000) {
 			marioMove();
@@ -1512,15 +1401,8 @@ void marioCtrlOff2Main(void) {
 			marioJump();
 			marioChkOverhead();
 			marioMove();
-			{
-				BOOL isRoll = FALSE;
-
-				if (mp->currMotionId == MARIO_MOTION_ROLL) {
-					isRoll = TRUE;
-				}
-				if (isRoll) {
-					return;
-				}
+			if (mp->currMotionId == MARIO_MOTION_ROLL) {
+				return;
 			}
 			if (wp->airTimer <= 5) {
 				return;
@@ -1543,23 +1425,15 @@ void marioCtrlOff2Main(void) {
 				marioChkOverhead();
 			}
 			marioFall();
-			if (wp->currMotionId != MARIO_MOTION_HIP && wp->currMotionId != MARIO_MOTION_HIP_2) {
-				BOOL isRoll = FALSE;
-
-				if (mp->currMotionId == MARIO_MOTION_ROLL) {
-					isRoll = TRUE;
-				}
-				if (!isRoll && wp->airTimer > 5) {
-					marioChkGnd2();
-				}
-			}
-			else {
+			if (wp->currMotionId == MARIO_MOTION_HIP || wp->currMotionId == MARIO_MOTION_HIP_2
+			    || (mp->currMotionId != MARIO_MOTION_ROLL && wp->airTimer > 5)) {
 				marioChkGnd2();
 			}
 			marioChkWallAround(&wp->position, 0, 0.0f, 0.0f, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
 		}
-	else {
-		marioChkGnd();
+		else {
+			marioChkGnd();
+		}
 	}
 }
 
@@ -1699,7 +1573,7 @@ static inline f32 marioMoveMain_sqrtf(f32 x) {
 // instructions differ only in those two registers; the three inline-sqrtf double offsets (0x330 vs the
 // original 0x340) are a unit-wide .rodata layout difference that resolves once the rest of the unit is
 // written; and N_dou10_yoko_yari3 is missing one `addi r3, wp+0x210` because its header prototype is
-// declared (void).
+// declared (void). See REPORT.md.
 // NONMATCHING (98.99%): register allocation of the x-accumulator/speed floats and the missing addi noted above.
 void marioMoveMain(void) {
 	MarioWork* wp = mp;
@@ -2028,9 +1902,8 @@ void marioChgPaper(const char* name) {
 	}
 }
 
-// The original parameter is a full word (the conversion has no extsh and callers pass an s32); the header
-// used to say s16, which made MWCC insert an extsh.
-void marioSetPaperAnimeLocalTime(s32 frames) { //f32 cast reuse, flags check
+// NONMATCHING (78.52%): 4 missing, 6 extra, plus register differences.
+void marioSetPaperAnimeLocalTime(s16 frames) { //f32 cast reuse, flags check
 	MarioWork* wp = mp;
 	s32 group;
 
