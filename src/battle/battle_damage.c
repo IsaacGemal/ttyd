@@ -40,6 +40,7 @@ void BattleInitCounterPreCheckWork(void* work) {
 }
 #pragma dont_inline reset
 
+#pragma dont_inline on
 s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     if (unit->currentKind == UNIT_MARIO) {
         if ((s32)pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
@@ -61,6 +62,7 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     }
     return 0;
 }
+#pragma dont_inline reset
 
 static inline u8 getAllOrNothing(BattleUnit* unit) {
     return unit->badgesEquipped.AllOrNothing;
@@ -1299,7 +1301,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             if ((u8)damageCode == 0x1E && guarded != 0) {
                 damageCode = flags | 0x17;
             }
-            if ((u8)damageCode == 0x1E && (weapon->field_0x6D == 0x13 || weapon->field_0x6D == 0x1B)) {
+            if ((u8)damageCode == 0x1E && ((u8)weapon->field_0x6D == 0x13 || (u8)weapon->field_0x6D == 0x1B)) {
                 damageCode = flags | 0x17;
             }
             if ((u8)damageCode == 0x1E && statusResult != 0) {
