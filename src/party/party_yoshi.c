@@ -829,6 +829,8 @@ L_3754:
 
 L_3800:
     switch (party->useMotionId) {
+    default:
+        goto L_3CE4;
     case 0x14:
         ((PartyYoshiUse*)party->useStruct)->direction =
             (mario->unk1A8 >= 90.0f && mario->unk1A8 <= 270.0f) ? 1 : -1;
