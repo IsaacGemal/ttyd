@@ -23,21 +23,24 @@ static inline void effFlameSetVtx(effFlameData* data, Mtx mtx, s32 idx, effFlame
 	Vec v;
 	memcpy(&data->vtx[idx], &tbl[idx], sizeof(effFlameVtx));
 #ifdef MUST_MATCH
-	/* MUST_MATCH: retail originally used paired-single conversions, so it re-runs OSInitFastCast
-	   before each load and store; this toolchain lowers the casts to the integer path, so the calls
-	   exist only to reproduce the original GQR setup. */
 	OSInitFastCast();
-#endif
+	OSs16tof32(&data->vtx[idx].pos[0], &v.x);
+	OSs16tof32(&data->vtx[idx].pos[1], &v.y);
+	OSs16tof32(&data->vtx[idx].pos[2], &v.z);
+	PSMTXMultVec(mtx, &v, &v);
+	OSInitFastCast();
+	OSf32tos16(&v.x, &data->vtx[idx].pos[0]);
+	OSf32tos16(&v.y, &data->vtx[idx].pos[1]);
+	OSf32tos16(&v.z, &data->vtx[idx].pos[2]);
+#else
 	v.x = data->vtx[idx].pos[0];
 	v.y = data->vtx[idx].pos[1];
 	v.z = data->vtx[idx].pos[2];
 	PSMTXMultVec(mtx, &v, &v);
-#ifdef MUST_MATCH
-	OSInitFastCast();
-#endif
 	data->vtx[idx].pos[0] = v.x;
 	data->vtx[idx].pos[1] = v.y;
 	data->vtx[idx].pos[2] = v.z;
+#endif
 }
 EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* entry;
@@ -261,27 +264,12 @@ void effFlameMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (55.02%): bulk of the difference is in the 24 inlined vertex transforms. Retail
-// converts each s16 position component with scalar paired-single loads/stores (psq_l/psq_st,
-// GQR5 type 7, preceded by an inlined OSInitFastCast GQR2-5 setup) and keeps the intermediate Vecs
-// in callee-saved f14-f31, which also grows the frame to 0x4c0 and places the 24 Vec slots at
-// 0x138-0x24c with the Mtxs at 0x278+. With the OSInitFastCast calls below this build reproduces
-// the GQR setup byte-for-byte, but (GC/2.6, -O4,p) still lowers the `f32 v = s16` casts to the
-// xoris/lfd/fsubs and fctiwz integer paths, so each component's load costs ~5 more instructions and
-// its store ~1 more (359 extra instructions over the 1954-instruction original), and the
-// frame stays 0x2c0, shifting every local slot. The __psq_l/__psq_st names are runtime emulation
-// functions, not intrinsics: every GC compiler here (1.0-3.0a5.2) and every Wii one (1.0-1.7)
-// lowers a scalar s16<->f32 cast to lha/xoris/lfd/fsubs (or fctiwz), and __vec2x32float__ only
-// yields qr0 paired ops (psq_lx/psq_stx, ps_merge00). The compiler has no fast-cast builtin,
-// pragma or flag (checked -help all and the binary's strings), so no source form emits the
-// original W=1 qr5 path. The GX/TEV setup, both matrix setups and the draw call sequence
-// otherwise line up, and the s16 data tables (stg_flame_v etc., base lbl_8039CDA8+0x40) confirm
-// the conversion is real. The TEV stage select now shares its body between type 0 and type 1
-// (`case 0: case 1:`), which is what retail does (its dispatch branches type 1 to the 4-stage
-// setup) and reproduces the original's `cmpwi 2/beq/bge/cmpwi 0/bge/b/b` chain; that recovered
-// 0.5%. The end-of-draw type test still picks the shorter branch polarity (`blt else` vs retail's
-// `bge true; b else`), a single-instruction block-ordering difference MWCC will not reproduce.
-// NONMATCHING (55.02%): 24 inlined vertex transforms differ (see the comment above).
+// NONMATCHING (95.74%): the 24 inlined vertex transforms convert the s16 positions with the SDK's paired-single
+// inlines (`OSs16tof32`/`OSf32tos16` in OSFastCast.h, GQR5 type 7) after `OSInitFastCast()`, as the original does.
+// What differs: the frame is 0x400 against the original's 0x4c0 (its 24 Vec slots sit at 0x138-0x24c), the
+// table address is passed as `flameTbl + offset` and the original keeps that add separate from the per-vertex
+// `+ idx * 14` where this build folds the two, and the destination address is recomputed per call in the
+// original but kept in a register here. The end-of-draw type test picks the shorter branch polarity.
 void effFlameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFlameVtx* flameTbl = (effFlameVtx*)lbl_8039CDA8;
