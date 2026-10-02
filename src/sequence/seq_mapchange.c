@@ -312,6 +312,7 @@ void seq_mapChangeMain(SequenceWork* work) {
     BOOL newarea;
     const char* area;
     const char* lang[2];
+    s32* ev;
 
     newarea = strcmp(_next_area, gp->currentAreaName) != 0;
     switch (work->state) {
@@ -445,8 +446,9 @@ void seq_mapChangeMain(SequenceWork* work) {
             }
             setupDataBase(_next_area, _next_map);
             psndMapChange();
-            if (mapDataPtr(_next_map)->eventAddr != NULL) {
-                gp->field_0x164 = (u32)evtEntry(mapDataPtr(_next_map)->eventAddr, 0, 0)->eventId;
+            ev = mapDataPtr(_next_map)->eventAddr;
+            if (ev != NULL) {
+                gp->field_0x164 = (u32)evtEntry(ev, 0, 0)->eventId;
             } else {
                 gp->field_0x164 = 0;
             }
@@ -455,7 +457,7 @@ void seq_mapChangeMain(SequenceWork* work) {
         }
         break;
     case 4:
-        if (gp->field_0x164 == 0) {
+        if ((s32)gp->field_0x164 == 0) {
             camCtrlOn(4);
             work->state++;
             return;
@@ -484,8 +486,13 @@ void seq_mapChangeMain(SequenceWork* work) {
     case 7:
         if (strncmp(_next_map, "dmo", 3) != 0 && strncmp(_next_map, "dig", 3) != 0 && strncmp(_next_map, "end", 3) != 0
             && strncmp(_next_map, "sys", 3) != 0 && strncmp(_next_map, SMC_STR(0x98, "gor_10"), 6) != 0) {
+#ifdef MUST_MATCH
+            lang[0] = ((const char* const*)base)[0];
+            lang[1] = ((const char* const*)base)[1];
+#else
             lang[0] = "jp";
             lang[1] = "us";
+#endif
             fileAsyncf(4, 0, SMC_STR(0xA0, "%s/window/%s/win.tpl"), getMarioStDvdRoot(), lang[gp->language]);
             animGroupBaseAsync(SMC_STR(0xB8, "p_jyabara"), 0, NULL);
             animGroupBaseAsync(SMC_STR(0xC4, "p_kaiten_h"), 0, NULL);
@@ -501,28 +508,20 @@ void seq_mapChangeMain(SequenceWork* work) {
             PartyEntry* party;
             PartyEntry* extraParty;
 
-            marioGetPartyId();
             party = partyGetPtr(marioGetPartyId());
-            marioGetExtraPartyId();
             extraParty = partyGetPtr(marioGetExtraPartyId());
             if (swByteGet(4) != 0) {
                 fadeEntry(0x1C, 0, unk_80422f60);
             } else {
-                mario->position.x = gp->savePlayerPos.x;
-                mario->position.y = gp->savePlayerPos.y;
-                mario->position.z = gp->savePlayerPos.z;
+                mario->position = gp->savePlayerPos;
                 evt_cam_road_reset(NULL, FALSE);
                 if (party != NULL) {
-                    party->position.x = gp->savePlayerPos.x;
-                    party->position.y = gp->savePlayerPos.y;
-                    party->position.z = gp->savePlayerPos.z;
+                    party->position = gp->savePlayerPos;
                     party->position.x = float_30_8041944c * (f32)cos(camGetPtr(4)->viewYaw) + party->position.x;
                     party->position.z = float_30_8041944c * (f32)sin(camGetPtr(4)->viewYaw) + party->position.z;
                 }
                 if (extraParty != NULL) {
-                    extraParty->position.x = gp->savePlayerPos.x;
-                    extraParty->position.y = gp->savePlayerPos.y;
-                    extraParty->position.z = gp->savePlayerPos.z;
+                    extraParty->position = gp->savePlayerPos;
                     extraParty->position.x =
                         float_neg30_80419448 * (f32)cos(camGetPtr(4)->viewYaw) + extraParty->position.x;
                     extraParty->position.z =
@@ -534,9 +533,7 @@ void seq_mapChangeMain(SequenceWork* work) {
                     || strcmp(gp->currentMapName, SMC_STR(0x170, "tik_07")) == 0) {
                     mario->position.x -= float_5_8041947c;
                     if (party != NULL) {
-                        party->position.x = mario->position.x;
-                        party->position.y = mario->position.y;
-                        party->position.z = mario->position.z;
+                        party->position = mario->position;
                         party->position.x -= float_30_8041944c;
                         if (extraParty != NULL) {
                             extraParty->position = party->position;
