@@ -160,18 +160,19 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
-// opt_lifetimes off: without it MWCC splits the seed load from the first polynomial accumulate,
-// so the sin/cos loop FPRs differ (75.42% -> 96.99%); reset after this function.
-// NONMATCHING (75.42%): control flow/order match; the original keeps count in r27 and origCount in r30,
-// ours swaps them (r28/r27), and the s32->f32 conversion uses this TU's pool copy not the named symbol.
-// described in REPORT.md
+// The magic double also
+// pools as @377 rather than double_to_int_802f3458 (objdiff resolves data by section offset, so that
+// is not scored).
+// NONMATCHING (81.83%): instruction sequence/control flow/stack frame identical; only FP register colouring of the loop-invariant constants differs (magic double f10 here vs f0 retail, shifting the rest; detail in REPORT.md).
 EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {
     EffectEntry* entry;
     DamageStarData* data;
-    s32 num;
     s32 origCount;
     s32 i;
-    f32 f0, f1, f2, f3, f4, sinv, cosv;
+    f32 f0, f1, f4, sinv, cosv;
+    f32 cosC1;
+    f32 one;
+    f32 sinC1;
 
     entry = effEntry();
     origCount = count;
@@ -179,11 +180,10 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
         count = 20;
     }
     entry->type = str_802F3468;
-    num = count + 2;
-    entry->count = num;
-    data = __memAlloc(HEAP_EFFECT, num * sizeof(DamageStarData));
+    entry->count = count + 2;
+    data = __memAlloc(HEAP_EFFECT, (count + 2) * sizeof(DamageStarData));
     entry->userdata = data;
-    memset(data, 0, num * sizeof(DamageStarData));
+    memset(data, 0, (count + 2) * sizeof(DamageStarData));
     entry->callback = effDamageStarMain;
     data->anim = effMayaAnimAlloc(damageStar_effAnimDt);
     effPlayMayaAnim(data->anim);
@@ -198,11 +198,14 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     data->field_0x3C = origCount;
     data->field_0x40 = gp->retraceCount;
 
-    f4 = 30.0f - (f32)num;
+    f4 = 30.0f - (f32)(count + 2);
+    one = 1.0f;
+    sinC1 = 0.16605f;
+    cosC1 = 0.4967f;
     i = 1;
     data = &data[1];
-    for (; i < num; i++, data++) {
-        s32 spiral = i * ((i & 1) * 2 - 1) / 2;
+    for (; i < count + 2; i++, data++) {
+        s32 spiral = i * ((i % 2) * 2 - 1) / 2;
         f32 a = f4 * (f32)spiral + angle;
         f32 rad = (6.2831855f * a) / 360.0f;
 
@@ -216,31 +219,31 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
         if (rad <= 3.1415927f) {
             if (rad <= 1.5707964f) {
                 f0 = rad * rad;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f0 - sinC1;
+                sinv = sinv * f0 + one;
                 sinv = sinv * rad;
             } else {
                 f0 = rad - 1.5707964f;
                 f1 = 1.5707964f - f0;
                 f0 = f1 * f1;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f0 - sinC1;
+                sinv = sinv * f0 + one;
                 sinv = sinv * f1;
             }
         } else {
             if (rad < 4.712389f) {
                 f1 = rad - 3.1415927f;
                 f0 = f1 * f1;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f0 - sinC1;
+                sinv = sinv * f0 + one;
                 sinv = sinv * f1;
                 sinv = -sinv;
             } else {
                 f0 = rad - 4.712389f;
                 f1 = 1.5707964f - f0;
                 f0 = f1 * f1;
-                sinv = sinv * f0 - 0.16605f;
-                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f0 - sinC1;
+                sinv = sinv * f0 + one;
                 sinv = sinv * f1;
                 sinv = -sinv;
             }
@@ -252,29 +255,29 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
         if (rad <= 3.1415927f) {
             if (rad <= 1.5707964f) {
                 f0 = rad * rad;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
+                cosv = cosv * f0 - cosC1;
+                cosv = cosv * f0 + one;
             } else {
                 f0 = rad - 1.5707964f;
                 f0 = 1.5707964f - f0;
                 f0 = f0 * f0;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
+                cosv = cosv * f0 - cosC1;
+                cosv = cosv * f0 + one;
                 cosv = -cosv;
             }
         } else {
             if (rad < 4.712389f) {
                 f0 = rad - 3.1415927f;
                 f0 = f0 * f0;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
+                cosv = cosv * f0 - cosC1;
+                cosv = cosv * f0 + one;
                 cosv = -cosv;
             } else {
                 f0 = rad - 4.712389f;
                 f0 = 1.5707964f - f0;
                 f0 = f0 * f0;
-                cosv = cosv * f0 - 0.4967f;
-                cosv = cosv * f0 + 1.0f;
+                cosv = cosv * f0 - cosC1;
+                cosv = cosv * f0 + one;
             }
         }
         data->vy = 1.5f * (speed * cosv);

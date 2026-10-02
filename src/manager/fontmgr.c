@@ -888,21 +888,33 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 	}
 }
 
-// NONMATCHING (93.79%): pitch<0 fixed-spacing vs 0.5*(pitch-width) centring reconstructed; remaining
-// diffs are register scheduling and float-pool labels.
-void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch) {
+#ifdef MUST_MATCH
+// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
+// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
+// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
+static inline void FontDrawStringPitch_ColorA(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
+// NONMATCHING (95.33%): pitch<0 fixed-spacing vs 0.5*(pitch-width); first colour passed by value through
+// FontDrawStringPitch_ColorA fixes its stack slot. A local `str` copied from the param `s` (declared
+// between glyph and w) reproduces retail's w=r27/str=r28 split. Remaining: vec3-copy scheduling, pool labels.
+void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	CameraEntry* cam;
 	Mtx mtx;
 	Mtx mtx2;
-	Vec pos;
 	Vec pos2;
+	Vec pos;
 	f32 fx;
 	f32 fy;
 	f32 fz;
 	f32 tx;
-	u16 w;
 	u16 glyph;
+	const char* str;
+	u16 w;
 
+	str = s;
 	pos = vec3_802c48d8;
 	pos.x = x;
 	pos.y = y;
@@ -930,7 +942,11 @@ void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
+#ifdef MUST_MATCH
+			FontDrawStringPitch_ColorA(c);
+#else
 			FontDrawColor(&c);
+#endif
 			_JUTFont_DrawPos(glyph, -2, 0);
 			_JUTFont_DrawPos(glyph, 2, 0);
 			_JUTFont_DrawPos(glyph, 0, -2);
@@ -1064,19 +1080,34 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (94.54%): unit-wide literal-pool order (sda21/rodata offsets) and stack/frame layout still differ;
-// the allocator leaves the frame 0x224 not 0x230, so a few stack slots, callee-saved registers and scheduling
-// remain. Loop, command dispatch, FP icon math, alpha blend and edge block otherwise match.
+
+#ifdef MUST_MATCH
+// MUST_MATCH: the inlined FontDrawColor has a by-value parameter temp (retail r1+0xc..0x20); passing the
+// colour by value through this inline is the shape that reproduces it. The natural call is under each #else.
+static inline void FontDrawMessage_ColorA(GXColor color) {
+	FontDrawColor(&color);
+}
+#endif
+
+// NONMATCHING (98.75%): FontDrawColor's by-value temps and the edge block's colours still land in different
+// stack slots than retail, and the unit-wide sda21/rodata pool labels differ.
+
 void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 	s32 x = x0;
 	s32 yy = y;
 	u16 glyph;
+#ifdef MUST_MATCH
+	// MUST_MATCH: hoisting the edge's saved colour to function scope makes the compiler put it after the
+	// icon locals instead of on top of them, which aligns the icon locals with retail (natural form is the
+	// block-scope `GXColor saved` under the #else in the edge block).
+	GXColor edgeSaved;
+#endif
 	char arg1[128];
 	char arg2[128];
 
-	while ((s8)*msg != 0) {
+	while (*(s8*)msg) {
 		glyph = 0xFFFF;
-		if (_ismbblead(msg[0])) {
+		if (_ismbblead(*(s8*)msg)) {
 			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
 			msg += 2;
 		}
@@ -1091,20 +1122,36 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
 				if (strcmp(arg1, "red") == 0) {
 					GXColor c = {0xE0, 0x00, 0x00, 0xFF};
+					#ifdef MUST_MATCH
+					FontDrawMessage_ColorA(c);
+					#else
 					FontDrawColor(&c);
+					#endif
 				}
 				else if (strcmp(arg1, "/red") == 0) {
 					GXColor c = fontColTbl[0];
+					#ifdef MUST_MATCH
+					FontDrawMessage_ColorA(c);
+					#else
 					FontDrawColor(&c);
+					#endif
 				}
 				else if (strcmp(arg1, "col") == 0) {
 					GXColor c;
 					sscanf(arg2, "%x", &c);
+					#ifdef MUST_MATCH
+					FontDrawMessage_ColorA(c);
+					#else
 					FontDrawColor(&c);
+					#endif
 				}
 				else if (strcmp(arg1, "/col") == 0) {
 					GXColor c = fontColTbl[0];
+					#ifdef MUST_MATCH
+					FontDrawMessage_ColorA(c);
+					#else
 					FontDrawColor(&c);
+					#endif
 				}
 				else if (strcmp(arg1, "icon") == 0) {
 					s32 id;
@@ -1132,17 +1179,39 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 					ipos.x = (f32)x + (0.5f * (f32)iw) * scale + (f32)a1;
 					ipos.y = (f32)yy - (f32)ih * scale + (f32)a2;
 					ipos.z = 0.0f;
+#ifdef MUST_MATCH
+					// MUST_MATCH: the original reads the icon id zero-extended (iconDispGxAlpha's
+					// `clrlwi r5, 16`), but include/driver/icondrv.h declares iconId s16, so a plain
+					// call emits `extsh`. Cast through the signature the original used; still a direct
+					// `bl iconDispGxAlpha` (same workaround as battle_menu_disp / ac_lst_rc_keep).
+					((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&ipos, 0x10, (u16)id, fontAlpha, scale);
+#else
 					iconDispGxAlpha(&ipos, 0x10, (u16)id, fontAlpha, scale);
+#endif
 					{
-						GXColor c = fontColTbl[0];
-						c.a = (c.a * fontAlpha) / 255;
+#ifdef MUST_MATCH
+					// MUST_MATCH: hand-expanded FontDrawStart_alpha; this statement order is the one whose
+					// register schedule matches retail's (the plain call inlines with a different order).
+						GXColor start;
+						u8 a = fontAlpha;
+						start = fontColTbl[0];
 						fontEdge = FALSE;
+						fontColor = fontColTbl[0];
+						fontAlpha = a;
 						fontScale = vec3_802c48c0;
-						JUTFont_DrawStart(c);
+						start.a = (start.a * a) / 255;
+						JUTFont_DrawStart(start);
+#else
+						FontDrawStart_alpha(fontAlpha);
+#endif
 					}
 					{
-						GXColor c = fontColTbl[0];
+						GXColor c = fontColor;
+						#ifdef MUST_MATCH
+						FontDrawMessage_ColorA(c);
+						#else
 						FontDrawColor(&c);
+						#endif
 					}
 					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
@@ -1159,8 +1228,8 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 				}
 				break;
 			default:
-				glyph = JUTFont_CodeToGlyph((s8)*msg);
 				msg++;
+				glyph = JUTFont_CodeToGlyph((s8)*(msg - 1));
 				break;
 			}
 		}
@@ -1169,31 +1238,41 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 		}
 		if (fontEdge) {
 			GXColor c2;
-			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
 			s16 sx;
 			s16 sy;
+			#ifdef MUST_MATCH
+			edgeSaved = fontColor;
+			FontDrawMessage_ColorA(c);
+			#else
+			GXColor saved = fontColor;
 			FontDrawColor(&c);
+			#endif
 			sx = x;
 			sy = yy;
 			_JUTFont_DrawPos(glyph, sx - 2, sy);
 			_JUTFont_DrawPos(glyph, sx + 2, sy);
-			_JUTFont_DrawPos(glyph, sx, sy - 2);
-			_JUTFont_DrawPos(glyph, sx, sy + 2);
+			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy - 2));
+			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy + 2));
+			#ifdef MUST_MATCH
+			c2 = edgeSaved;
+			FontDrawMessage_ColorA(c2);
+			#else
 			c2 = saved;
 			FontDrawColor(&c2);
+			#endif
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)yy);
 		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
 	}
 }
 
-// NONMATCHING (41.05%): immediate-mode GX quad reconstructed from asm (cell decode, rainbow HSV vertex
-// colours, irand TEX1 noise). Retail keeps five shape floats (f27-f31) and a 0x140 frame; ours keeps four
-// and a 0x100 frame, so the whole schedule/layout shifts. Closest structural reconstruction attempted.
+// NONMATCHING (47.20%): immediate-mode GX quad reconstructed; loading blockGlyph after FontGetWidthPtr,
+// declaring hueoff/hueL/hueR as u8 and computing hueR at its second use matched retail's schedule.
+// Retail keeps an extra (f32)width temp (f27) we fold from `* 1.0f`, so the frame is 0x100 vs 0x140.
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
-	BinaryFontGlyph* blk = blockGlyph;
 	u8* info = (u8*)FontGetWidthPtr(code);
+	BinaryFontGlyph* blk = blockGlyph;
 	s32 width = info[1];
 	s32 n = code - blk->firstcode;
 	s32 row = n / blk->sheetrows;
@@ -1204,9 +1283,9 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	f32 fheight;
 	f32 fwidthS;
 	f32 fheightS;
-	s32 hueoff = (u8)gp->retraceCount * 2;
-	s32 hueL = (u8)(x + (u8)(x - hueoff));
-	s32 hueR = (u8)((x + width) + (u8)(x - hueoff));
+	u8 hueoff;
+	u8 hueL;
+	u8 hueR;
 	GXColor hsv;
 	u32 rgb;
 	u8 n1;
@@ -1220,6 +1299,8 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	n1 = irand(64);
 	n2 = irand(64);
+	hueoff = (u8)gp->retraceCount * 2;
+	hueL = (u8)(x + (u8)(x - hueoff));
 
 	hsv = dat_8041a2f0;
 	hsv.r = hueL;
@@ -1229,6 +1310,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	GXTexCoord2u16((u16)xoffs, (u16)yoffs);
 	GXTexCoord2u8(n1, n2);
 
+	hueR = (u8)((x + width) + (u8)(x - hueoff));
 	hsv.r = hueR;
 	rgb = HSV2RGB(&hsv);
 	GXPosition3s16(x + (s16)fwidthS, y - 1, 0);

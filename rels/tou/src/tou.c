@@ -3494,6 +3494,7 @@ static void disp_proc(CameraId cameraId, void* param) {
     }
 }
 
+
 static USER_FUNC(evt_tou_print_ranking) {
     s32 i;
     s32 c;

@@ -64,10 +64,17 @@ static inline int tik_fpclassifyf(float value) {
 static inline f32 sqrtf(f32 x) {
     if (x > 0.0f) {
         f64 guess = __frsqrte(x);
+#ifdef MUST_MATCH
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        x = x * (0.5 * guess * (3.0 - guess * guess * x));
+        return x;
+#else
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         return x * guess;
+#endif
     } else if (x < 0.0) {
         return NAN;
     } else if (tik_fpclassifyf(x) == FP_NAN) {
@@ -2409,43 +2416,128 @@ void tiz_broken_draw(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (65.63%): 438 of 548 instructions differ: 278 with different operands, 17 replaced, 62 missing, 76 extra, 5 with a different opcode
+// Inline degree/radian sine and cosine approximations (the same polynomials the
+// NPC blur path uses).
+static inline f32 tikSinf(f32 rad) {
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
+    f32 f0, f1, f2, sinv = 0.00761f;
+    f32 c1 = 0.16605f;
+    f32 c2 = 1.0f;
+
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            sinv = sinv * (rad * rad) - c1;
+            sinv = sinv * (rad * rad) + c2;
+            sinv = sinv * rad;
+        } else {
+            f1 = halfpi - (rad - halfpi);
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+        }
+    } else if (rad < threehalves) {
+        f1 = rad - pi;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f1 = halfpi - (rad - threehalves);
+        f2 = f1 * f1;
+        sinv = sinv * f2 - c1;
+        sinv = sinv * f2 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 tikCosf(f32 rad) {
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
+    f32 f0, cosv = 0.03705f;
+    f32 c1 = 0.4967f;
+    f32 c2 = 1.0f;
+
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            cosv = cosv * (rad * rad) - c1;
+            cosv = cosv * (rad * rad) + c2;
+        } else {
+            f0 = halfpi - (rad - halfpi);
+            f0 = f0 * f0;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < threehalves) {
+        f0 = (rad - pi) * (rad - pi);
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = halfpi - (rad - threehalves);
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+// NONMATCHING (77.66%): FP colouring only. The two `!= 0.0f` compares put the constant
+// first (retail compares the variable first), and tikSinf's last branch keeps `rad - 3pi/2`
+// in f2 instead of f1 (its `halfpi - ...` then reads the swapped operands).
 USER_FUNC(tiz_broken) {
+    s32 j, i;
     s32 active = 0;
-    BrokenWork* work;
+    // The update loop needs its own entry pointer and counter to colour r5/r6 like the
+    // target; reusing `entry`/`i` pins them to the init loop's callee-saved registers.
+    s32 i2;
     BrokenEntry* entry;
-    s32 i;
-    s32 j;
+    BrokenEntry* entry2;
     f32 f0, f1, f2, f3, f4, f5, f6, f7;
     f32 angle;
     f32 rad;
+    f32 k;
 
     if (isFirstCall) {
-        memset(&broken_work, 0, 0xC);
-        broken_work.field_0x4 = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
-        broken_work.field_0x8 = smartAlloc(0xF594, 1);
-        broken_work.field_0x0 = 0;
+        memset((void*)broken_wp[0], 0, 0xC);
+        ((BrokenWork*)broken_wp[0])->field_0x4 = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 5, 0, 0), 1);
+        ((BrokenWork*)broken_wp[0])->field_0x8 = smartAlloc(0xF594, 1);
+        ((BrokenWork*)broken_wp[0])->field_0x0 = 0;
 
-        work = &broken_work;
-        entry = (BrokenEntry*)work->field_0x8->address;
+        entry = (BrokenEntry*)((BrokenWork*)broken_wp[0])->field_0x8->address;
         for (i = 0; i < 0x1E; i++) {
             for (j = 0; j < 0x26; j++) {
                 f3 = (f32)j / 37.0f - 0.5f;
                 f4 = 0.5f + (f32)(-i) / 29.0f;
                 if (f4 > 0.0f) {
-                    entry->field_0x8 = (f3 >= 0.0f) ? 1 : 0;
+                    if (f3 < 0.0f) {
+                        entry->field_0x8 = 0;
+                    } else {
+                        entry->field_0x8 = 1;
+                    }
                 } else {
-                    entry->field_0x8 = (f3 >= 0.0f) ? 3 : 2;
+                    if (f3 < 0.0f) {
+                        entry->field_0x8 = 2;
+                    } else {
+                        entry->field_0x8 = 3;
+                    }
                 }
-                if (f3 == 0.0f && f4 == 0.0f) {
+                if (f3 != 0.0f || f4 != 0.0f) {
+                    f6 = sqrtf(f3 * f3 + f4 * f4);
+                    f0 = f3 / f6;
+                    f2 = f4 / f6;
+                    f7 = f6;
+                } else {
                     f7 = 0.0f;
                     f0 = 0.0f;
                     f2 = 0.0f;
-                } else {
-                    f6 = f4 * f4 + f3 * f3;
-                    f7 = sqrtf(f6);
-                    f0 = f3 / f7;
-                    f2 = f4 / f7;
                 }
                 entry->field_0x0 = 0;
                 entry->field_0x4 = (s32)(param_tbl[0] * f7);
@@ -2457,100 +2549,37 @@ USER_FUNC(tiz_broken) {
                 entry->field_0xC = -f0 * param_tbl[1];
                 entry->field_0x10 = -f2 * param_tbl[1];
                 entry->field_0x14 = 10.0f;
-                f0 = 0.00761f;
-                f5 = 0.16605f;
                 angle = angleABf(0.0f, 0.0f, f3, f4);
                 rad = 6.2831855f * angle / 360.0f;
-
-                if (rad <= 3.1415927f) {
-                    if (rad <= 1.5707964f) {
-                        f1 = rad * rad;
-                        f6 = (f0 * f1) - f5;
-                        f6 = (f6 * f1) + 1.0f;
-                        f6 = f6 * rad;
-                    } else {
-                        f1 = rad - 1.5707964f;
-                        f1 = 1.5707964f - f1;
-                        f2 = f1 * f1;
-                        f6 = (f0 * f2) - f5;
-                        f6 = (f6 * f2) + 1.0f;
-                        f6 = f6 * f1;
-                    }
-                } else {
-                    if (rad < 4.712389f) {
-                        f1 = rad - 3.1415927f;
-                        f2 = f1 * f1;
-                        f6 = (f0 * f2) - f5;
-                        f6 = (f6 * f2) + 1.0f;
-                        f6 = -(f6 * f1);
-                    } else {
-                        f1 = rad - 4.712389f;
-                        f1 = 1.5707964f - f1;
-                        f2 = f1 * f1;
-                        f6 = (f0 * f2) - f5;
-                        f6 = (f6 * f2) + 1.0f;
-                        f6 = -(f6 * f1);
-                    }
-                }
-                entry->field_0x2C = param_tbl[3] * f6;
-
-                f6 = 0.03705f;
-                if (rad <= 3.1415927f) {
-                    if (rad <= 1.5707964f) {
-                        f1 = rad * rad;
-                        f6 = (f6 * f1) - 0.4967f;
-                        f6 = (f6 * f1) + 1.0f;
-                    } else {
-                        f1 = rad - 1.5707964f;
-                        f1 = 1.5707964f - f1;
-                        f2 = f1 * f1;
-                        f6 = (f6 * f2) - 0.4967f;
-                        f6 = (f6 * f2) + 1.0f;
-                        f6 = -f6;
-                    }
-                } else {
-                    if (rad < 4.712389f) {
-                        f1 = rad - 3.1415927f;
-                        f2 = f1 * f1;
-                        f6 = (f6 * f2) - 0.4967f;
-                        f6 = (f6 * f2) + 1.0f;
-                        f6 = -f6;
-                    } else {
-                        f1 = rad - 4.712389f;
-                        f1 = 1.5707964f - f1;
-                        f2 = f1 * f1;
-                        f6 = (f6 * f2) - 0.4967f;
-                        f6 = (f6 * f2) + 1.0f;
-                    }
-                }
-                entry->field_0x30 = param_tbl[3] * -f6;
+                k = param_tbl[3];
+                entry->field_0x2C = k * tikSinf(rad);
+                entry->field_0x30 = k * -tikCosf(rad);
                 entry++;
             }
             entry++;
         }
     }
 
-    work = &broken_work;
-    entry = (BrokenEntry*)work->field_0x8->address;
-    for (i = 0; i < 0x1E; i++) {
+    entry2 = (BrokenEntry*)((BrokenWork*)broken_wp[0])->field_0x8->address;
+    for (i2 = 0; i2 < 0x1E; i2++) {
         for (j = 0; j < 0x26; j++) {
-            switch (entry->field_0x0) {
+            switch (entry2->field_0x0) {
             case 0:
-                if (entry->field_0x4 != 0) {
-                    entry->field_0x4--;
+                if (entry2->field_0x4 != 0) {
+                    entry2->field_0x4--;
                 } else {
-                    entry->x += entry->field_0x2C;
-                    entry->y += entry->field_0x30;
-                    entry->x += entry->field_0xC;
-                    entry->y += entry->field_0x10;
-                    entry->z += entry->field_0x14;
-                    entry->field_0xC *= param_tbl[2];
-                    entry->field_0x10 *= param_tbl[2];
-                    entry->field_0x14 *= param_tbl[2];
-                    entry->field_0x28 += param_tbl[4];
-                    entry->field_0x24 += entry->field_0x28;
-                    if (fabs(entry->x) > 340.0 || fabs(entry->y) > 260.0) {
-                        entry->field_0x0++;
+                    entry2->x += entry2->field_0x2C;
+                    entry2->y += entry2->field_0x30;
+                    entry2->x += entry2->field_0xC;
+                    entry2->y += entry2->field_0x10;
+                    entry2->z += entry2->field_0x14;
+                    entry2->field_0xC *= param_tbl[2];
+                    entry2->field_0x10 *= param_tbl[2];
+                    entry2->field_0x14 *= param_tbl[2];
+                    entry2->field_0x28 += param_tbl[4];
+                    entry2->field_0x24 += entry2->field_0x28;
+                    if (__fabsf(entry2->x) > 340.0 || __fabsf(entry2->y) > 260.0) {
+                        entry2->field_0x0++;
                     }
                 }
                 break;
@@ -2558,14 +2587,14 @@ USER_FUNC(tiz_broken) {
                 active++;
                 break;
             }
-            entry++;
+            entry2++;
         }
-        entry++;
+        entry2++;
     }
 
     if (active >= 0x474) {
-        smartFree(broken_work.field_0x4);
-        smartFree(broken_work.field_0x8);
+        smartFree(((BrokenWork*)broken_wp[0])->field_0x4);
+        smartFree(((BrokenWork*)broken_wp[0])->field_0x8);
         return EVT_RETURN_DONE;
     }
     dispEntry(8, 0.0f, 0, tiz_broken_draw, NULL);

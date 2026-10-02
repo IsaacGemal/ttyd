@@ -84,6 +84,13 @@ typedef struct CreditsPoseEntry {
     /* 0x14 */ Mtx matrix;
 } CreditsPoseEntry;
 
+extern GXColor dat_end_00002f2c;
+extern GXColor zero_end_00002f30;
+extern GXColor zero_end_00002f34;
+extern GXColor dat_end_00002f38;
+extern GXColor zero_end_00002f3c;
+extern GXColor dat_end_00002f64;
+
 #pragma pool_data off
 
 #pragma force_active on
@@ -346,7 +353,7 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_peach", (u32)"P_W_1", 0x00000000,
 };
 
-// NONMATCHING (80%): config/G8MJ01/end/symbols.txt gives _prolog size 0x50, but it is 0x60; its epilogue is split off
+// NONMATCHING (80.00%): config/G8MJ01/end/symbols.txt gives _prolog size 0x50, but it is 0x60; its epilogue is split off
 // into gap_00_00002520_text, so the target is cut short.
 void _prolog(void) {
     voidfunctionptr* ctor;
@@ -418,7 +425,7 @@ s32 unk_end_000022e8(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.68%): register allocation only; the R_credits_npc_info base is cached where the original
+// NONMATCHING (95.69%): register allocation only; the R_credits_npc_info base is cached where the original
 // recomputes it, and constant-pool symbols differ.
 s32 unk_end_00001d90(EventEntry* event, BOOL isFirstCall) {
     s32 idx = evtGetValue(event, event->args[0]);
@@ -570,6 +577,20 @@ EVT_BEGIN(unk_evt_end_00004044)
 EVT_END()
 
 #define WORK ((CreditsWork*)dat_ptr_end_00003218[0])
+
+// The original builds each GXColor in a stack temp and copies it to the by-value
+// argument slot; doing the build and the call in an inline reproduces that pair.
+static inline void setChanMatColorGX(const GXColor* base, u8 a) {
+    GXColor c = *base;
+    c.a = a;
+    GXSetChanMatColor(4, c);
+}
+static inline void setTevColorGX(const GXColor* base, u8 a) {
+    GXColor c = *base;
+    c.a = a;
+    GXSetTevColor(1, c);
+}
+
 // NONMATCHING (98.72%): mode test compiles to the inverted diamond (`beq then; b else; then` in retail
 // vs `bne else; then` here) and the original copies camPos through a second Vec temp (0x38 -> 0x5c)
 // before C_MTXLookAt; a separate Vec copy fixes the frame but lands the other slots wrong.
@@ -926,21 +947,24 @@ typedef struct CreditsEndingRecord {
     /* 0x18 */ const char* msgB[3];
 } CreditsEndingRecord;
 
-// NONMATCHING (93.75%): frame is 0x850 vs 0x860 (the original keeps two more callee-saved regs, r19/r20);
-// the record pointer uses lwz instead of lwzu and R_credits_npc_info/unk_end_0000321c bases are cached
-// rather than recomputed (register allocation).
+// NONMATCHING (97.24%): frame 0x850 vs 0x860; MWCC folds `offset` into the live record
+// pointer (a temp, not a callee-saved GPR), so only 12 of the original 13 callee-saved
+// regs are used, `event` lands in r29 not r27, and GW(11) reads through rec not base+offset.
 s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
-    s32 state = event->userdata[0];
-    s32 index = event->userdata[1];
     CreditsEndingRecord* rec;
+    s32* pEntry;
     s32 i;
     s32 offset;
     s32 x;
     s32 y;
     char bufA[0x400];
     char bufB[0x400];
+    s32 state = event->userdata[0];
+    s32 index = event->userdata[1];
 
     if (isFirstCall) {
+        state = 0;
+        index = 0;
         for (i = 0; i < 3; i++) {
             ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] = -1;
         }
@@ -950,9 +974,9 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
         evtSetValue(event, GW(10), 0);
         ((CreditsWork*)dat_ptr_end_00003218[0])->eventId = (s32)evtEntry(unk_evt_end_000042e0, 0, 0);
     }
+    pEntry = (s32*)((u8*)unk_end_0000321c + index * 0x24);
+    ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx = *++pEntry;
     offset = index * 0x24;
-    rec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + offset);
-    ((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx = rec->field_4;
     switch (((CreditsWork*)dat_ptr_end_00003218[0])->entryIdx) {
         case 0:
             x = -274;
@@ -975,12 +999,11 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
             y = -60;
             break;
         default:
-            x = 0;
-            y = 0;
             break;
     }
     switch (state) {
         case 0:
+            rec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + offset);
             for (i = 0; i < 3; i++) {
                 const char* key = rec->msgA[i];
 
@@ -1020,8 +1043,8 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                 }
             }
             evtSetValue(event, GW(10), 1);
-            evtSetValue(event, GW(11), rec->field_8);
-            evtSetValue(event, GW(12), rec->field_4);
+            evtSetValue(event, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + offset))->field_8);
+            evtSetValue(event, GW(12), *pEntry);
             state++;
             break;
         case 1:
@@ -1434,21 +1457,21 @@ void unk_end_000006f8(void) {
     }
 }
 
-// NONMATCHING (96.78%): logic matches; only register allocation differs (our work pointer is r26
-// where the original uses r24, loop counter the other way round) plus one constant load scheduled
-// differently.
+// The declaration order of the loop induction vars (i, extPose, work) and the final
+// zero-fill pointer (count before p) sets the callee-saved register assignment the
+// original uses; the indices into unk_end_bss0000000c are kept as a pointer pair.
 void unk_end_00000440(void) {
     NpcEntry* npc = npcNameToPtr("モアモア");
     AnimationPose* pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
     Vec* positions = (Vec*)(*(smartEntry**)pose->field_0x15C)->address;
-    CreditsPoseState* work;
+    s32 i;
     ExtPose* extPose;
+    CreditsPoseState* work;
     Mtx mtx1;
     Mtx mtx3;
     Mtx mtx2;
     Vec offset;
     Vec tmp;
-    s32 i;
 
     if (positions == NULL) {
         return;
@@ -1456,17 +1479,18 @@ void unk_end_00000440(void) {
     extPose = extGetPosePtr();
     work = (CreditsPoseState*)unk_end_bss00000000[0];
     for (i = 0; i < extGetPoseNum(); i++) {
-        s32 p0 = ((s32*)unk_end_bss0000000c[0])[work->idx * 2 + 0];
-        s32 p1 = ((s32*)unk_end_bss0000000c[0])[work->idx * 2 + 1];
+        s32* idxPair = (s32*)unk_end_bss0000000c[0] + work->idx * 2;
+        Vec* p0 = &positions[idxPair[0]];
+        Vec* p1 = &positions[idxPair[1]];
         f32 ratio = (f32)work->counter / (f32)((s32*)unk_end_bss00000008[0])[work->idx];
         f32 c = 1.0f - ratio;
 
-        if (positions[p0].y == -1000.0f || positions[p1].y == -1000.0f) {
+        if (p0->y == -1000.0f || p1->y == -1000.0f) {
             offset = (Vec){0.0f, -1000.0f, 0.0f};
             extPose->flags &= ~1;
         } else {
-            PSVECScale(&positions[p0], &offset, ratio);
-            PSVECScale(&positions[p1], &tmp, c);
+            PSVECScale(p0, &offset, ratio);
+            PSVECScale(p1, &tmp, c);
             PSVECAdd(&offset, &tmp, &offset);
             extPose->flags |= 1;
         }
@@ -1481,12 +1505,12 @@ void unk_end_00000440(void) {
     }
 
     pose = (AnimationPose*)animPoseGetAnimPosePtr(npc->poseId);
-    positions = (Vec*)(*(smartEntry**)pose->field_0x15C)->address;
     {
         s32 count = *(s32*)(pose->field_0x15C + 4);
+        Vec* p = (Vec*)(*(smartEntry**)pose->field_0x15C)->address;
 
         for (i = 0; i < count; i++) {
-            positions[i] = (Vec){0.0f, -1000.0f, 0.0f};
+            p[i] = (Vec){0.0f, -1000.0f, 0.0f};
         }
     }
 }

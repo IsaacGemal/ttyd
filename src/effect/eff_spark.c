@@ -8,29 +8,37 @@
 #include <math.h>
 
 // The original has these constants in .sdata2. Declared const, MWCC folds their values into its own pool;
-// the matching build keeps them writable so the loads reference the original symbols.
+// the matching build keeps the definitions after the functions (so MWCC cannot fold them) and references
+// them through extern declarations here, which makes the loads reference the original symbols.
+extern const u32 dat_8041e270;
+extern const f32 float_deg2rad_8041e274;
+extern const f32 float_16_8041e278;
 #ifdef MUST_MATCH
-#define SDATA2_CONST
+extern const volatile f32 float_0_8041e27c;
 #else
-#define SDATA2_CONST const
+extern const f32 float_0_8041e27c;
 #endif
-SDATA2_CONST u32 dat_8041e270 = 0xFFFFFF00;
-SDATA2_CONST f32 float_deg2rad_8041e274 = 0.017453292f;
-SDATA2_CONST f32 float_16_8041e278 = 16.0f;
-SDATA2_CONST f32 float_0_8041e27c = 0.0f;
-SDATA2_CONST f32 float_0p5_8041e280 = 0.5f;
-SDATA2_CONST f32 float_8_8041e284 = 8.0f;
-SDATA2_CONST f32 float_1_8041e288 = 1.0f;
-SDATA2_CONST f32 float_0p1_8041e28c = 0.1f;
-SDATA2_CONST f32 float_0p2_8041e290 = 0.2f;
-SDATA2_CONST f32 float_360_8041e294 = 360.0f;
-SDATA2_CONST f32 float_6p2832_8041e298 = 6.2831855f;
-SDATA2_CONST char str_8041E29C[8] = "Spark";
-SDATA2_CONST f32 float_0p9_8041e2a4 = 0.9f;
-SDATA2_CONST f32 float_neg1_8041e2a8 = -1.0f;
+extern const f32 float_0p5_8041e280;
+extern const f32 float_8_8041e284;
+#ifdef MUST_MATCH
+extern const volatile f32 float_1_8041e288;
+#else
+extern const f32 float_1_8041e288;
+#endif
+extern const f32 float_0p1_8041e28c;
+extern const f32 float_0p2_8041e290;
+extern const f32 float_360_8041e294;
+extern const f32 float_6p2832_8041e298;
+#ifdef MUST_MATCH
+extern char str_8041E29C[8];
+#else
+extern const char str_8041E29C[8];
+#endif
+extern const f32 float_0p9_8041e2a4;
+extern const f32 float_neg1_8041e2a8;
 
 const Vec vec3_802f8e20 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802f8e30 = 4503601774854144.0;
+extern const f64 double_to_int_802f8e30;
 
 // .data
 static f32 scale_data[24] = {
@@ -65,14 +73,13 @@ static inline GXColor sparkColor(s32 a) {
 }
 #endif
 
-// Reads of the named .sdata2 vertex floats go through volatile pointers so MWCC reloads float_0/float_1
-// per vertex like the original; the color build goes through the sparkColor inline for the 0xc/0x8 pair.
-// NONMATCHING (93.99%): the -size*0.5 product lands in f3 vs the original's f2, shifting the whole
-// vertex register schedule, and the i=1/particle++ order at the loop head is swapped.
+// float_0/float_1 are declared volatile so MWCC reloads them per vertex like the original; the color
+// build goes through the sparkColor inline for the 0xc/0x8 pair.
+// Advancing `data` before the header (`data++; for (i = 1; ...; i++, data++)`) makes MWCC emit the
+// `li i, 1` before the pointer `addi` in the loop preheader, matching the original (eff_starpoint shape).
 void effSparkDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effSparkData* data = effect->userdata;
-	effSparkData* particle;
 	CameraEntry* cam;
 	GXTexObj texObj;
 	GXColor color;
@@ -111,14 +118,14 @@ void effSparkDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtxGlobal, mtxScale, mtxGlobal);
 
 	size = float_16_8041e278;
-	particle = data + 1;
-	for (i = 1; i < effect->count; i++, particle++) {
-		if (particle->seq < 0) {
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->seq < 0) {
 			continue;
 		}
-		PSMTXRotRad(mtxRot, 'z', float_deg2rad_8041e274 * particle->angle);
-		PSMTXScale(mtxScale, particle->scale, particle->scale, particle->scale);
-		PSMTXTrans(mtxTrans, particle->position.x, particle->position.y, float_0_8041e27c);
+		PSMTXRotRad(mtxRot, 'z', float_deg2rad_8041e274 * data->angle);
+		PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
+		PSMTXTrans(mtxTrans, data->position.x, data->position.y, float_0_8041e27c);
 		PSMTXConcat(mtxTrans, mtxRot, mtxParticle);
 		PSMTXConcat(mtxParticle, mtxScale, mtxParticle);
 		PSMTXConcat(mtxGlobal, mtxParticle, mtxParticle);
@@ -127,22 +134,17 @@ void effSparkDisp(CameraId camId, void* param) {
 		GXSetCurrentMtx(0);
 
 #ifdef MUST_MATCH
-		color = sparkColor((alpha * particle->alpha) >> 8);
+		color = sparkColor((alpha * data->alpha) >> 8);
 #else
 		color = *(GXColor*)&dat_8041e270;
-		color.a = (alpha * particle->alpha) >> 8;
+		color.a = (alpha * data->alpha) >> 8;
 #endif
 		GXSetChanMatColor(GX_COLOR0A0, color);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
-		// Match-only: volatile reads make MWCC reload these per vertex like the original, instead of
-		// CSE-ing the writable globals into f0/f3 for the whole quad.
-#define VF0 (*(volatile f32*)&float_0_8041e27c)
-#define VF1 (*(volatile f32*)&float_1_8041e288)
-#else
+		// Match-only: the volatile declarations force MWCC to reload float_0/float_1 per vertex like the
+		// original, instead of CSE-ing them for the whole quad.
 #define VF0 (float_0_8041e27c)
 #define VF1 (float_1_8041e288)
-#endif
 		GXPosition3f32(-size * float_0p5_8041e280, float_8_8041e284, VF0);
 		GXTexCoord2f32(VF0, VF0);
 		GXPosition3f32(float_8_8041e284, float_8_8041e284, VF0);
@@ -156,17 +158,17 @@ void effSparkDisp(CameraId camId, void* param) {
 	}
 }
 
-// The declaration order is tuned so MWCC gives data r28 (matching the original) and the float temps
-// f29/f28 take the original's roles.
-// NONMATCHING (95.77%): type lands in r29 / parity in r26 (original reversed), the parity mask is
-// scheduled before the loop's type*4, and the int->float magic pools anonymously.
+// The declaration order is tuned so MWCC gives type r26 / parity r29 and data r28 (matching the
+// original); `parity = counter & 1;` sits inside the loop before the alpha/scale switch, which the
+// compiler hoists to the preheader just after the f31/f30 switch. The two zero stores use a chained
+// assignment so one volatile float_0 read feeds both targetVx/targetVy.
 void effSparkMain(EffectEntry* effect) {
 	Vec disp;
 	Vec position;
-	s32 type;
+	s32 parity;
 	effSparkData* data = effect->userdata;
 	s32 i;
-	s32 parity;
+	s32 type;
 	s32 counter;
 	s32 mode;
 	u32 alpha;
@@ -211,7 +213,6 @@ void effSparkMain(EffectEntry* effect) {
 		f30 = f31;
 		break;
 	}
-	parity = counter & 1;
 
 	for (i = 1; i < effect->count; i++, data++) {
 		data->seq++;
@@ -228,11 +229,11 @@ void effSparkMain(EffectEntry* effect) {
 			data->position.y = float_16_8041e278 * (f32)cos(f29);
 			data->vx = data->position.x * f31;
 			data->vy = data->position.y * f31;
-			data->targetVx = float_0_8041e27c;
-			data->targetVy = float_0_8041e27c;
+			data->targetVy = data->targetVx = float_0_8041e27c;
 			data->angle = -f28;
 			data->scale = float_1_8041e288;
 		}
+		parity = counter & 1;
 		switch (type) {
 		case 0:
 			data->alpha = a_data[data->seq];
@@ -261,17 +262,15 @@ void effSparkMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), mode, effSparkDisp, effect);
 }
 
-// Hoisting the loop-invariant -1.0 into the `neg1` local makes MWCC keep it in a register across the
-// unrolled launch loop like the original; routing the 0.9 scale through a local assigned before the
-// position stores and stored after them recovers a little more.
-// NONMATCHING (92.05%): FP register allocation only -- 0.5 lands in f1 (original f0), neg1 in f5
-// (original f2), the conversion magic in f4 (original f5); the 2^52 double pools as @218 not the symbol.
+// Routing the 0.9 scale through a local assigned before the position stores recovers the target's f1
+// scale register. Rematerialising float_neg1 at its use site (instead of hoisting it into a `neg1`
+// local) makes MWCC keep it in f2 and the int->float conversion magic in f5; the `maxF` split keeps the
+// 0.5 constant in f0.
 EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	EffectEntry* entry;
 	effSparkData* data;
 	s32 i;
 	f32 scale;
-	f32 neg1;
 	f32 half;
 #ifdef MUST_MATCH
 	// Match-only: split into two statements so MWCC loads the 0.5 constant into f0 and the converted
@@ -298,7 +297,6 @@ EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	data->position.z = z;
 	data->scale = scale;
 
-	neg1 = float_neg1_8041e2a8;
 #ifdef MUST_MATCH
 	maxF = (f32)max_seq_num[type];
 	half = maxF * float_0p5_8041e280;
@@ -307,8 +305,42 @@ EffectEntry* effSparkEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 #endif
 	p = data + 1;
 	for (i = 1; i < 6; i++, p++) {
-		p->seq = (s32)(neg1 - half * (f32)(i & 1));
+		p->seq = (s32)(float_neg1_8041e2a8 - half * (f32)(i & 1));
 	}
 
 	return entry;
 }
+
+#ifdef MUST_MATCH
+// MUST_MATCH: .sdata2 constants defined after the functions so MWCC cannot fold their values;
+// float_0/float_1 are volatile so the FIFO writes reload them per vertex like the original
+// (as in eff_mahorn.c).
+const u32 dat_8041e270 = 0xFFFFFF00;
+const f32 float_deg2rad_8041e274 = 0.017453292f;
+const f32 float_16_8041e278 = 16.0f;
+const volatile f32 float_0_8041e27c = 0.0f;
+#else
+const u32 dat_8041e270 = 0xFFFFFF00;
+const f32 float_deg2rad_8041e274 = 0.017453292f;
+const f32 float_16_8041e278 = 16.0f;
+const f32 float_0_8041e27c = 0.0f;
+#endif
+const f32 float_0p5_8041e280 = 0.5f;
+const f32 float_8_8041e284 = 8.0f;
+#ifdef MUST_MATCH
+const volatile f32 float_1_8041e288 = 1.0f;
+#else
+const f32 float_1_8041e288 = 1.0f;
+#endif
+const f32 float_0p1_8041e28c = 0.1f;
+const f32 float_0p2_8041e290 = 0.2f;
+const f32 float_360_8041e294 = 360.0f;
+const f32 float_6p2832_8041e298 = 6.2831855f;
+#ifdef MUST_MATCH
+char str_8041E29C[8] = "Spark";
+#else
+const char str_8041E29C[8] = "Spark";
+#endif
+const f32 float_0p9_8041e2a4 = 0.9f;
+const f32 float_neg1_8041e2a8 = -1.0f;
+const f64 double_to_int_802f8e30 = 4503601774854144.0;

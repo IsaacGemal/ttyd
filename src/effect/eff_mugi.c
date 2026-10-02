@@ -7,7 +7,7 @@
 #include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -160,20 +160,32 @@ EffectEntry* effMugiKemuri2Entry(s32 int1, f32 float2, f32 float3, f32 float4, f
 	return entry;
 }
 
-// NONMATCHING (88.95%): the pos/disp Vec pair is coalesced instead of copied,
-// EFF_Hana/EFF_Mugi are addressed via their own symbols instead of
-// vec3_802f3498+0x24/0x30, and the work pointer lives in r5, not r4.
+// opt_common_subs off, for the rest of the file (the functions after this one need it too): with it on,
+// MWCC colours the rotX update block's FPRs f1/f0/f2 instead of the original's f2/f1/f0. The volatile reads in the
+// MUST_MATCH block below pin the prologue's load order.
+#pragma opt_common_subs off
 void effMugiKemuriMain(EffectEntry* effect) {
-	MugiKemuriWork* work = effect->userdata;
+	MugiKemuriWork* work;
 	MugiKemuriWork* w;
 	Vec disp;
 	Vec pos;
 	s32 i;
+#ifdef MUST_MATCH
+	s32 j;
+#endif
 	s32 inBattle;
 	BOOL anyActive;
 	const char* name;
 
+#ifdef MUST_MATCH
+	// Volatile reads pin the original's prologue order: the userdata load comes before the
+	// pos component loads, which come before the copy's stores.
+	work = *(MugiKemuriWork* volatile*)&effect->userdata;
+	pos = *(volatile Vec*)&vec3_802f34a4;
+#else
+	work = effect->userdata;
 	pos = vec3_802f34a4;
+#endif
 	pos.x = work->x;
 	pos.y = work->y;
 	pos.z = work->z;
@@ -182,9 +194,15 @@ void effMugiKemuriMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		for (i = 0; i < effect->count; i++) {
-			if (work[i].animPose != -1) {
-				animPoseRelease(work[i].animPose);
+		w = effect->userdata;
+#ifdef MUST_MATCH
+		// A separate index keeps i and w in the original's registers; reusing i swaps them.
+		for (j = 0; j < effect->count; j++, w++) {
+#else
+		for (i = 0; i < effect->count; i++, w++) {
+#endif
+			if (w->animPose != -1) {
+				animPoseRelease(w->animPose);
 			}
 		}
 		effDelete(effect);
@@ -204,7 +222,7 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	}
 
 	anyActive = FALSE;
-	w = work;
+	w = effect->userdata;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->active == 0) {
 			continue;
@@ -231,9 +249,10 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	}
 
 	if (!anyActive) {
-		for (i = 0; i < effect->count; i++) {
-			if (work[i].animPose != -1) {
-				animPoseRelease(work[i].animPose);
+		w = effect->userdata;
+		for (i = 0; i < effect->count; i++, w++) {
+			if (w->animPose != -1) {
+				animPoseRelease(w->animPose);
 			}
 		}
 		effDelete(effect);
@@ -243,21 +262,30 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuriDisp, effect);
 }
 
-// NONMATCHING (86.15%): the pos/disp Vec pair is coalesced instead of copied,
-// the rodata strings are addressed directly instead of base+0x24/0x30, and the
-// work pointer/FPR allocation differs.
+// Same reasons as effMugiKemuriMain: opt_common_subs off for the float loop's FPR
+// colouring, and the MUST_MATCH volatile reads for the prologue order.
 void effMugiKemuri2Main(EffectEntry* effect) {
-	MugiKemuriWork* work = effect->userdata;
+	MugiKemuriWork* work;
 	MugiKemuriWork* w;
 	MarioWork* mario;
 	Vec disp;
 	Vec pos;
 	s32 i;
-	s32 inBattle;
+#ifdef MUST_MATCH
+	s32 j;
+#endif
 	BOOL anyActive;
+	s32 inBattle;
 	const char* name;
 
+#ifdef MUST_MATCH
+	// Same prologue ordering requirement as effMugiKemuriMain.
+	work = *(MugiKemuriWork* volatile*)&effect->userdata;
+	pos = *(volatile Vec*)&vec3_802f34b0;
+#else
+	work = effect->userdata;
 	pos = vec3_802f34b0;
+#endif
 	pos.x = work->x;
 	pos.y = work->y;
 	pos.z = work->z;
@@ -266,9 +294,15 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		for (i = 0; i < effect->count; i++) {
-			if (work[i].animPose != -1) {
-				animPoseRelease(work[i].animPose);
+		w = effect->userdata;
+#ifdef MUST_MATCH
+		// A separate index keeps i and w in the original's registers; reusing i swaps them.
+		for (j = 0; j < effect->count; j++, w++) {
+#else
+		for (i = 0; i < effect->count; i++, w++) {
+#endif
+			if (w->animPose != -1) {
+				animPoseRelease(w->animPose);
 			}
 		}
 		effDelete(effect);
@@ -288,7 +322,7 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	}
 
 	anyActive = FALSE;
-	w = work;
+	w = effect->userdata;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->active == 0) {
 			continue;
@@ -317,19 +351,20 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 
 	if (!anyActive) {
 		BOOL still = FALSE;
-		w = work;
+		w = effect->userdata;
 		for (i = 0; i < effect->count; i++, w++) {
 			w->alpha -= 10;
-			if (w->alpha >= 0) {
-				still = TRUE;
-			} else {
+			if (w->alpha < 0) {
 				w->alpha = 0;
+			} else {
+				still = TRUE;
 			}
 		}
 		if (!still) {
-			for (i = 0; i < effect->count; i++) {
-				if (work[i].animPose != -1) {
-					animPoseRelease(work[i].animPose);
+			w = effect->userdata;
+			for (i = 0; i < effect->count; i++, w++) {
+				if (w->animPose != -1) {
+					animPoseRelease(w->animPose);
 				}
 			}
 			effDelete(effect);
@@ -432,3 +467,25 @@ void effMugiKemuri2Disp(CameraId cameraId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041ca68 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041ca6c = { 0xFF, 0xFF, 0xFF, 0x00 };
+const f32 float_deg2rad_8041ca70 = 0.017453292f;
+const f32 float_0_8041ca74 = 0.0f;
+const f32 float_15_8041ca78 = 15.0f;
+const f32 float_0p85_8041ca84 = 0.85f;
+const f32 float_0p004_8041ca88 = 0.004f;
+const f32 float_1_8041ca8c = 1.0f;
+const f32 float_neg100_8041ca90 = -100.0f;
+const f32 float_0p7_8041ca94 = 0.7f;
+const f32 float_5p4_8041ca98 = 5.4f;
+const f32 float_0p5_8041ca9c = 0.5f;
+const f32 float_neg0p07_8041caa0 = -0.07f;
+const f32 float_0p003_8041caa4 = 0.003f;
+const f32 float_6p2832_8041caa8 = 6.2831855f;
+const f32 float_360_8041caac = 360.0f;
+const f32 float_0p3_8041cab0 = 0.29999998f;
+const f32 float_1p75_8041cab4 = 1.75f;
+const f32 float_neg0p08_8041cab8 = -0.08f;
+const f32 float_neg3p9_8041cabc = -3.9f;

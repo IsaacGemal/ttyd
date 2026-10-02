@@ -3,6 +3,7 @@
 #include "data/item_data.h"
 #include "driver/camdrv.h"
 #include "driver/msgdrv.h"
+#include "driver/windowdrv.h"
 #include "manager/fontmgr.h"
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
@@ -101,19 +102,17 @@ s32 winSortWait(WindowWork* work) {
     return WW_S32(work, 0x17C) != 0;
 }
 
-// Full-screen textured quad. Values/branches match; MWCC keeps w/h and the 0/1
-// constants in different FPRs than the original (target reloads float_0/float_1
-// per vertex, ours caches them) and the u16->f32 magic double is pooled as
-// @1158@ instead of double_to_int_mask_802f44c8.
-// NONMATCHING (88.73%): FPR allocation and the pooled conversion constant differ.
+// Full-screen textured quad. Writing the vertex constants as literals makes MWCC
+// reload them per FIFO store (named externs let it common the load), which is what
+// the original does; the local `half` gives the original's value*constant operand
+// order. The int->f32 magic double still pools anonymously, which objdiff accepts.
 void unk_8014d338(s32 unused, WindowWork* work) {
     GXTexObj texObj;
     f32 w;
     f32 h;
 
     if (WW_S32(work, 0x38) != 0) {
-        GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068,
-                 dat_8041d064);
+        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041d064);
         GXSetNumChans(0);
         GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
         GXSetNumTevStages(1);
@@ -127,7 +126,7 @@ void unk_8014d338(s32 unused, WindowWork* work) {
         GXSetZMode(0, 7, 0);
         GXLoadPosMtxImm(camGetPtr(8)->view, 0);
         GXSetCurrentMtx(0);
-        GXInitTexObj(&texObj, (void*)*(u32*)((u8*)work + 0x34), gp->fbWidth, gp->efbHeight, 4, 0, 0, 0);
+        GXInitTexObj(&texObj, **(void***)((u8*)work + 0x34), gp->fbWidth, gp->efbHeight, 4, 0, 0, 0);
         GXLoadTexObj(&texObj, 0);
         GXSetCullMode(0);
         GXClearVtxDesc();
@@ -138,14 +137,17 @@ void unk_8014d338(s32 unused, WindowWork* work) {
         GXBegin(0x80, 0, 4);
         w = (f32)gp->fbWidth;
         h = (f32)gp->efbHeight;
-        GXPosition3f32(-w * float_0p5_8041d06c, -h * float_0p5_8041d06c, float_0_8041d068);
-        GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
-        GXPosition3f32(w * float_0p5_8041d06c, -h * float_0p5_8041d06c, float_0_8041d068);
-        GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
-        GXPosition3f32(w * float_0p5_8041d06c, h * float_0p5_8041d06c, float_0_8041d068);
-        GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
-        GXPosition3f32(-w * float_0p5_8041d06c, h * float_0p5_8041d06c, float_0_8041d068);
-        GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
+        {
+            f32 half = 0.5f;
+            GXPosition3f32(-w * half, -h * half, 0.0f);
+            GXTexCoord2f32(0.0f, 1.0f);
+            GXPosition3f32(w * half, -h * half, 0.0f);
+            GXTexCoord2f32(1.0f, 1.0f);
+            GXPosition3f32(w * half, h * half, 0.0f);
+            GXTexCoord2f32(1.0f, 0.0f);
+            GXPosition3f32(-w * half, h * half, 0.0f);
+            GXTexCoord2f32(0.0f, 0.0f);
+        }
     }
 }
 
@@ -950,6 +952,51 @@ extern const f32 float_800_8041d1d8;
 extern const f32 float_640_8041d1dc;
 extern const f32 float_neg640_8041d1e0;
 
+extern const f32 float_250_8041d1a4;
+extern const f32 float_10_8041d1a0;
+extern const f32 float_500_8041d1a8;
+extern const f32 float_neg130_8041d1ac;
+extern const f32 float_120_8041d09c;
+extern const f32 float_8_8041d0a0;
+extern const f32 float_16_8041d0e4;
+extern const f32 float_32_8041d0a4;
+extern const f32 float_240_8041d0ac;
+extern const f32 float_24_8041d0c8;
+extern const f32 float_14_8041d180;
+extern const f32 float_80_8041d0b0;
+extern const f32 float_20_8041d0c0;
+extern const f32 float_4_8041d07c;
+extern const GXColor dat_8041cf28;
+extern const GXColor dat_8041cf2c;
+extern const GXColor dat_8041cf30;
+extern const GXColor dat_8041cf34;
+extern const GXColor dat_8041cf38;
+extern const GXColor dat_8041cf3c;
+extern const GXColor dat_8041cf40;
+extern const GXColor dat_8041cf44;
+
+static inline void winMsgDispIcon(s32 iconId, Vec translate, Vec* scale, GXColor color) {
+    winIconSet(iconId, &translate, scale, &color);
+}
+
+static inline void winMsgDispTex(Vec translate, Vec* scale, GXColor color) {
+    winTexSet(0x25, translate, *scale, color);
+}
+
+static inline void winMsgDispEdge(Vec pos, Vec* scale, GXColor color, const char* msg) {
+    winFontSetEdge(&pos, scale, &color, msg);
+}
+
+static inline void winMsgDispText(Vec pos, Vec* scale, GXColor color, const char* msg) {
+    winFontSet(&pos, scale, &color, msg);
+}
+
+static inline void winMsgDispLabel(Vec pos, Vec* scale, GXColor color, const char* msg) {
+    winFontSetLabel(&pos, scale, &color, msg);
+}
+
+
+
 // 5-page switch over work->0xcc. The explicit empty case -1 below (a redirect
 // target of cases 11 and 41) is what makes MWCC pick 0 as the [0,10) search-tree
 // pivot; without it the tree pivots on 1.
@@ -1192,15 +1239,37 @@ void sort_5_3_func(WindowWork* work) {
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }
 
-// First loop and inter-call sequence match; still differs in the scheduling of
-// the dat_8041ced8 load and the stack slots MWCC picks for the translate/scale
-// temporaries in the second loop and trailing winTexSet calls.
-// NONMATCHING (63.77%): see above.
+// Picks the row colour. Keeping this as an inline helper (rather than the same
+// if/else written at the call site) is what makes MWCC home the loop colour in the
+// original's 0x8 slot.
+static inline GXColor root_color(WindowWork* work, s32 j) {
+    if (WW_S32(work, 0x40) == j) {
+        return dat_8041cee0;
+    }
+    return dat_8041cee4;
+}
+
+// Builds winTexSet's by-value Vec argument at the call site. Taking the base Vec
+// by pointer and doing `v = *base; v.x = x; v.y = y` reproduces the original's
+// `translate = vp->vN; translate.x = ..; translate.y = ..` cadence (it loads
+// base.x/y/z), while returning it inline keeps the argument evaluation order.
+// Without this the loop/tail temporaries and by-value copies land in different
+// stack slots. A named local in the caller scores 63%.
+static inline Vec root_vec(const Vec* base, f32 x, f32 y) {
+    Vec v = *base;
+    v.x = x;
+    v.y = y;
+    return v;
+}
+
+// First loop, switch and inter-call sequence match, as do the second loop's and the
+// trailing winTexSet calls' instructions in order. `root_vec` took it from 63.77 to
+// ~98%. Still differs in the bgcolor load (ours hoists it two instructions earlier)
+// and the stack slots MWCC picks for the loop/tail by-value argument copies.
+// NONMATCHING (97.74%): bgcolor load scheduling and by-value argument-copy stack slots.
 void winRootDisp(CameraId camId, WindowWork* work) {
     WinRootVecs* vp = &str_802F3FE8;
     GXColor bgcolor = dat_8041ced8;
-    Vec translate;
-    Vec scale;
     s32 i;
     s32 j;
     u8* p;
@@ -1246,18 +1315,11 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     for (j = 0; j < WW_S32(work, 0x44); j++) {
         GXColor color;
 
-        if (WW_S32(work, 0x40) == j) {
-            color = dat_8041cee0;
-        } else {
-            color = dat_8041cee4;
-        }
+        color = root_color(work, j);
 
         winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-        translate = vp->v4;
-        scale = vp->v5;
-        translate.x = WW_F32(p, 0x4C);
-        translate.y = WW_F32(p, 0x50);
-        winTexSet_x2(WW_S32(p, 0x48) + 1, 0xB2, translate, scale, color);
+        winTexSet_x2(WW_S32(p, 0x48) + 1, 0xB2,
+                     root_vec(&vp->v4, WW_F32(p, 0x4C), WW_F32(p, 0x50)), vp->v5, color);
         p += 0x18;
     }
 
@@ -1268,24 +1330,19 @@ void winRootDisp(CameraId camId, WindowWork* work) {
     if (!(work->flags & 0x8000)) {
         winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
 
-        translate = vp->v0;
-        scale = vp->v1;
-        translate.x = WW_F32(work, 0x150) + 2.0f;
-        translate.y = WW_F32(work, 0x154) - 2.0f;
-        winTexSet(0, translate, scale, dat_8041cedc);
+        {
+            f32 two = float_2_8041d090;
+            winTexSet(0, root_vec(&vp->v0, two + WW_F32(work, 0x150), WW_F32(work, 0x154) - two), vp->v1,
+                      dat_8041cedc);
+        }
 
-        translate = vp->v2;
-        scale = vp->v3;
-        translate.x = WW_F32(work, 0x150);
-        translate.y = WW_F32(work, 0x154);
-        winTexSet(0, translate, scale, bgcolor);
+        winTexSet(0, root_vec(&vp->v2, WW_F32(work, 0x150), WW_F32(work, 0x154)), vp->v3, bgcolor);
     }
 }
 
-// All GX state, matrices and quad match except GXSetFog's 0.0f argument copies,
-// the pooled int->float double (local @754@ vs double_to_int_mask_802f44c8) and
-// the vertex FIFO stores (original reloads f0, MWCC keeps f1/f2/f3).
-// NONMATCHING (90.93%): see above.
+// Kage (paper) window quad. The vertex constants are literals so MWCC reloads each
+// through f0 into the FIFO as the original does; the same-literal GXSetFog zero lets
+// MWCC land it in f1 after saving x. The int->f32 magic double still pools anonymously.
 void winKageGX(WindowWork* work, void* color, f32 x, f32 y, f32 w, f32 h) {
     GXTexObj texObj;
     Mtx mtx4;
@@ -1294,7 +1351,7 @@ void winKageGX(WindowWork* work, void* color, f32 x, f32 y, f32 w, f32 h) {
     Mtx mtx3;
     f32 scaleY;
 
-    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041d014);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041d014);
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZCompLoc(1);
     GXSetAlphaCompare(7, 0, 0, 7, 0);
@@ -1330,19 +1387,28 @@ void winKageGX(WindowWork* work, void* color, f32 x, f32 y, f32 w, f32 h) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(float_neg0p5_8041d0e0, float_0p5_8041d06c, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
-    GXPosition3f32(float_neg0p5_8041d0e0, float_neg0p5_8041d0e0, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
-    GXPosition3f32(float_0p5_8041d06c, float_neg0p5_8041d0e0, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
-    GXPosition3f32(float_0p5_8041d06c, float_0p5_8041d06c, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
+    GXPosition3f32(-0.5f, 0.5f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(-0.5f, -0.5f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(0.5f, -0.5f, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(0.5f, 0.5f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
 }
 
-// NONMATCHING (88.97%): everything matches except the vertex FIFO stores
-// (original reloads each float constant into f0, MWCC keeps them in f1-f4) and
-// the two pooled int->float doubles (local @848@ vs double_to_int_mask_802f44c8).
+#ifdef MUST_MATCH
+// MUST_MATCH: the original reloads each float constant immediately before its volatile
+// FIFO store; MWCC otherwise CSEs the constants into f1-f4 and reuses them. Loading
+// through a volatile pointer forces the per-store reload (same idiom as party.c).
+#define BG_F32(v) (GXWGFifo.f32 = *(volatile f32*)&(v))
+#define BG_POS(x, y, z) do { BG_F32(x); BG_F32(y); BG_F32(z); } while (0)
+#define BG_TEX(u, v) do { BG_F32(u); BG_F32(v); } while (0)
+#else
+#define BG_POS(x, y, z) GXPosition3f32(x, y, z)
+#define BG_TEX(u, v) GXTexCoord2f32(u, v)
+#endif
+
 void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
     GXTexObj texObj;
     Mtx mtx;
@@ -1412,24 +1478,24 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
     GXLoadTexMtxImm(mtx, 0x1E, 1);
 
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(float_neg285_8041d1c0, float_160_8041d1c4, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
-    GXPosition3f32(float_neg285_8041d1c0, float_neg160_8041d1c8, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
-    GXPosition3f32(float_0_8041d068, float_neg160_8041d1c8, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
-    GXPosition3f32(float_0_8041d068, float_160_8041d1c4, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
+    BG_POS(float_neg285_8041d1c0, float_160_8041d1c4, float_0_8041d068);
+    BG_TEX(float_0_8041d068, float_0_8041d068);
+    BG_POS(float_neg285_8041d1c0, float_neg160_8041d1c8, float_0_8041d068);
+    BG_TEX(float_0_8041d068, float_1_8041d070);
+    BG_POS(float_0_8041d068, float_neg160_8041d1c8, float_0_8041d068);
+    BG_TEX(float_1_8041d070, float_1_8041d070);
+    BG_POS(float_0_8041d068, float_160_8041d1c4, float_0_8041d068);
+    BG_TEX(float_1_8041d070, float_0_8041d068);
 
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(float_0_8041d068, float_160_8041d1c4, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
-    GXPosition3f32(float_0_8041d068, float_neg160_8041d1c8, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
-    GXPosition3f32(float_285_8041d1cc, float_neg160_8041d1c8, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
-    GXPosition3f32(float_285_8041d1cc, float_160_8041d1c4, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
+    BG_POS(float_0_8041d068, float_160_8041d1c4, float_0_8041d068);
+    BG_TEX(float_1_8041d070, float_0_8041d068);
+    BG_POS(float_0_8041d068, float_neg160_8041d1c8, float_0_8041d068);
+    BG_TEX(float_1_8041d070, float_1_8041d070);
+    BG_POS(float_285_8041d1cc, float_neg160_8041d1c8, float_0_8041d068);
+    BG_TEX(float_0_8041d068, float_1_8041d070);
+    BG_POS(float_285_8041d1cc, float_160_8041d1c4, float_0_8041d068);
+    BG_TEX(float_0_8041d068, float_0_8041d068);
 
     TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, 6);
     GXInitTexObjLOD(&texObj, 0, 0, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
@@ -1444,12 +1510,12 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
     GXSetTevAlphaIn(0, 7, 7, 7, 3);
 
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(float_neg285_8041d1c0, float_144_8041d1d0, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
-    GXPosition3f32(float_neg285_8041d1c0, float_neg144_8041d1d4, float_0_8041d068);
-    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
-    GXPosition3f32(float_285_8041d1cc, float_neg144_8041d1d4, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
-    GXPosition3f32(float_285_8041d1cc, float_144_8041d1d0, float_0_8041d068);
-    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
+    BG_POS(float_neg285_8041d1c0, float_144_8041d1d0, float_0_8041d068);
+    BG_TEX(float_0_8041d068, float_0_8041d068);
+    BG_POS(float_neg285_8041d1c0, float_neg144_8041d1d4, float_0_8041d068);
+    BG_TEX(float_0_8041d068, float_1_8041d070);
+    BG_POS(float_285_8041d1cc, float_neg144_8041d1d4, float_0_8041d068);
+    BG_TEX(float_1_8041d070, float_1_8041d070);
+    BG_POS(float_285_8041d1cc, float_144_8041d1d0, float_0_8041d068);
+    BG_TEX(float_1_8041d070, float_0_8041d068);
 }

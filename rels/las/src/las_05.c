@@ -500,9 +500,6 @@ void _kurokaron_next_move_index(void) {
     }
 }
 
-// NONMATCHING (93.89%): global register allocation diverges from the prologue (target keeps pose in r27,
-// entries in r31); the first PSVECSubtract is followed by a dead vec.x*vec.x+vec.z*vec.z compare, the inline
-// _kurokaron_next_move_index uses a different store shape, and several operand orders differ.
 USER_FUNC(kurokaron_move_position) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -515,6 +512,7 @@ USER_FUNC(kurokaron_move_position) {
     f32 distTarget;
     f32 distMario;
     f32 speed;
+    f32 speed2;
 
     npc->jumpFlags |= 0x10;
     if (isFirstCall != 0) {
@@ -525,10 +523,14 @@ USER_FUNC(kurokaron_move_position) {
         npc->jumpTargetPos.z = y;
         npc->jumpStartPos = npc->position;
         PSVECSubtract(&npc->jumpTargetPos, &npc->jumpStartPos, &vec);
+#ifdef MUST_MATCH
+        // The original evaluates a now-dead sqrtf here; MWCC keeps its argument check.
+        distTarget = sqrtf(vec.x * vec.x + vec.z * vec.z);
+#endif
         npc->moveDir = angleABf(zero_las_000121fc, zero_las_000121fc, vec.x, vec.z);
         npc->moveSpeed = z;
         npc->moveOffset.y = zero_las_000121fc;
-        if (npc->moveSpeed <= float_0p1_las_000122e4 && npc->moveTime == zero_las_000121fc) {
+        if (npc->moveSpeed <= float_0p1_las_000122e4 && zero_las_000121fc == npc->moveTime) {
             npc->moveSpeed = float_1_las_00012260;
         }
         npc->footstepAccum = zero_las_000121fc;
@@ -542,7 +544,7 @@ USER_FUNC(kurokaron_move_position) {
     PSVECSubtract(&mario->position, &npc->position, &vec);
     distMario = sqrtf(vec.x * vec.x + vec.z * vec.z);
 
-    if (distMario < float_80_las_00012268 && kurokaron_vivian_prev_sts == 3 && vivianGetStatus() == 0) {
+    if (distMario < float_80_las_00012268 && (s32)kurokaron_vivian_prev_sts == 3 && vivianGetStatus() == 0) {
         kurokaron_stop_cnt = 60;
     }
     kurokaron_vivian_prev_sts = vivianGetStatus();
@@ -555,8 +557,8 @@ USER_FUNC(kurokaron_move_position) {
     if (!(kurokaron_move_flag & 2) && vivianGetStatus() != 1 && vivianGetStatus() != 2 && vivianGetStatus() != 3 &&
         distMario < float_80_las_00012268) {
         kurokaron_move_index = _kurokaron_run_away(npc->position.x, npc->position.z, mario->position.x, mario->position.z);
-        kurokaron_move_flag |= 2;
         kurokaron_run_cnt = 350;
+        kurokaron_move_flag |= 2;
         return EVT_RETURN_DONE;
     }
 
@@ -572,14 +574,14 @@ USER_FUNC(kurokaron_move_position) {
         if (kurokaron_move_flag & 4) {
             if (kurokaron_move_flag & 8) {
                 kurokaron_move_flag &= ~8;
-                npc->moveDir = reviseAngle(angle + float_90_las_00012208);
+                npc->moveDir = reviseAngle(float_90_las_00012208 + angle);
             } else {
                 kurokaron_move_flag |= 8;
                 npc->moveDir = reviseAngle(angle - float_90_las_00012208);
             }
         }
-        kurokaron_move_flag |= 2;
         kurokaron_run_cnt = 350;
+        kurokaron_move_flag |= 2;
     }
 
     if (distTarget <= speed && distMario > float_100_las_000122ec) {
@@ -601,8 +603,8 @@ USER_FUNC(kurokaron_move_position) {
                 kurokaron_move_index--;
             }
         } else {
-            kurokaron_move_index = kurokaron_move_index + 1;
-            kurokaron_move_index = kurokaron_move_index % 6;
+            kurokaron_move_index++;
+            kurokaron_move_index %= 6;
         }
         return EVT_RETURN_DONE;
     }
@@ -611,13 +613,19 @@ USER_FUNC(kurokaron_move_position) {
         npcTuningRy(npc, npc->moveDir);
     }
     if ((kurokaron_move_flag & 2) != 0 && kurokaron_run_cnt != 0) {
-        speed = float_1p8_las_000122f0 * npc->moveSpeed;
+        speed2 = float_1p8_las_000122f0 * npc->moveSpeed;
     } else {
-        speed = npc->moveSpeed;
+        speed2 = npc->moveSpeed;
     }
 
-    npc->moveOffset.x += npc->moveDt * (speed * (f32)sin(float_6p2832_las_000122f4 * npc->moveDir / float_360_las_000122b4));
-    npc->moveOffset.z += npc->moveDt * (speed * -(f32)cos(float_6p2832_las_000122f4 * npc->moveDir / float_360_las_000122b4));
+    {
+        f32 s = (f32)sin(float_6p2832_las_000122f4 * npc->moveDir / float_360_las_000122b4);
+        npc->moveOffset.x += npc->moveDt * (speed2 * s);
+    }
+    {
+        f32 c = (f32)cos(float_6p2832_las_000122f4 * npc->moveDir / float_360_las_000122b4);
+        npc->moveOffset.z += npc->moveDt * (speed2 * -c);
+    }
 
     if (npc->footstepAccum > (f32)npc->footstepStride / npc->moveSpeed) {
         if (npc->footstepToggle != 0) {
@@ -630,7 +638,12 @@ USER_FUNC(kurokaron_move_position) {
             }
         }
         npc->footstepAccum = zero_las_000121fc;
+#ifdef MUST_MATCH
+        // The original truncates the toggle to s8 before storing (MWCC emits extsb).
+        npc->footstepToggle = (s8)(1 - npc->footstepToggle);
+#else
         npc->footstepToggle = 1 - npc->footstepToggle;
+#endif
     }
     if (npc->footstepSfxB != NULL || npc->footstepToggle != 0) {
         npc->footstepAccum += float_1000_las_000122e8 * npc->moveDt;
@@ -669,7 +682,6 @@ static void senkaron_ext_init(void) {
     }
 }
 
-// NONMATCHING (98.7%): the instruction sequence matches; only the FPR colours of the distance-squared block differ.
 void move_check(ExtPose* pose, s32 index) {
     MarioWork* mario;
     KaronPoseEntry* entries;
@@ -694,10 +706,12 @@ void move_check(ExtPose* pose, s32 index) {
         other = &entries[j];
 
         if (other->type == 1 && other->area == entry->area) {
-            if (__fabsf((*pose->matrix)[0][3] - mario->position.x) * __fabsf((*pose->matrix)[0][3] - mario->position.x) +
-                    __fabsf((*pose->matrix)[2][3] - mario->position.z) * __fabsf((*pose->matrix)[2][3] - mario->position.z) >
-                __fabsf((*nextPose->matrix)[0][3] - mario->position.x) * __fabsf((*nextPose->matrix)[0][3] - mario->position.x) +
-                    __fabsf((*nextPose->matrix)[2][3] - mario->position.z) * __fabsf((*nextPose->matrix)[2][3] - mario->position.z)) {
+            f32 px = __fabsf((*pose->matrix)[0][3] - mario->position.x);
+            f32 pz = __fabsf((*pose->matrix)[2][3] - mario->position.z);
+            f32 nx = __fabsf((*nextPose->matrix)[0][3] - mario->position.x);
+            f32 nz = __fabsf((*nextPose->matrix)[2][3] - mario->position.z);
+
+            if (px * px + pz * pz > nx * nx + nz * nz) {
                 f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
                 f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
 
@@ -786,9 +800,8 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
     return result;
 }
 
-// NONMATCHING (91.95%): f-register allocation/scheduling; the collision half lands in
-// f27 instead of f29, the dir range test lays out its branches differently, and
-// calc_area's constant load order differs.
+// NONMATCHING (92.11%): f-register allocation/scheduling; the collision half lands in
+// f27 instead of f29, and calc_area's constant load order differs.
 static void senkaron_ext_main(void) {
     ExtPose* pose;
     MarioWork* mario;
@@ -828,9 +841,7 @@ static void senkaron_ext_main(void) {
                 dir = 1;
             } else if (*(f32*)mario->unk1AC == 180.0f) {
                 dir = 2;
-            } else if (mario->unk1A8 < 90.0f) {
-                dir = 1;
-            } else if (270.0f >= mario->unk1A8) {
+            } else if (mario->unk1A8 >= 90.0f && 270.0f >= mario->unk1A8) {
                 dir = 2;
             } else {
                 dir = 1;
@@ -871,10 +882,12 @@ static void senkaron_ext_main(void) {
         for (k = j + 1; count != 0; count--, k++, nextPose++) {
             other = &entries[k];
             if (other->type == 1 && other->area == entry->area) {
-                if (__fabsf((*pose->matrix)[0][3] - m->position.x) * __fabsf((*pose->matrix)[0][3] - m->position.x) +
-                        __fabsf((*pose->matrix)[2][3] - m->position.z) * __fabsf((*pose->matrix)[2][3] - m->position.z) >
-                    __fabsf((*nextPose->matrix)[0][3] - m->position.x) * __fabsf((*nextPose->matrix)[0][3] - m->position.x) +
-                        __fabsf((*nextPose->matrix)[2][3] - m->position.z) * __fabsf((*nextPose->matrix)[2][3] - m->position.z)) {
+                f32 px = __fabsf((*pose->matrix)[0][3] - m->position.x);
+                f32 pz = __fabsf((*pose->matrix)[2][3] - m->position.z);
+                f32 nx = __fabsf((*nextPose->matrix)[0][3] - m->position.x);
+                f32 nz = __fabsf((*nextPose->matrix)[2][3] - m->position.z);
+
+                if (px * px + pz * pz > nx * nx + nz * nz) {
                     f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
                     f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
 

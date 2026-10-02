@@ -56,159 +56,6 @@ CALL(evt_snd_sfxon_3d, STRING("SFX_ITEM_WHAT5"), LW(0), LW(1), LW(2), 0)
 RETURN
 EVT_END()
 
-void effNanigaDisp3(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	effNanigaData* data = effect->userdata;
-	ItemData* item;
-	Mtx trans;
-	Mtx rot;
-	Mtx scale;
-	Mtx mtx;
-
-	camGetPtr(camId);
-	item = &itemDataTable[data->itemId];
-	PSMTXTrans(trans, data->posX, data->posY - float_16_80421b54, data->posZ);
-	PSMTXRotRad(rot, 'y', float_deg2rad_80421b58 * -camGetPtr(camId)->viewYaw);
-	PSMTXScale(scale, data->scale, data->scale, data->scale);
-	PSMTXConcat(trans, rot, trans);
-	PSMTXConcat(trans, scale, mtx);
-
-	if (data->state < 4) {
-		iconDispGxCol(mtx, 0, 0x184, dat_80421b4c);
-	}
-	else {
-		iconDispGxCol(mtx, 0, ICON_ID(item->icon_id), dat_80421b50);
-	}
-}
-
-void effNanigaDisp2(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	effNanigaData* data = effect->userdata;
-	Mtx trans;
-	Mtx rot;
-	Mtx scale;
-	Mtx mtx;
-
-	camGetPtr(camId);
-	PSMTXTrans(trans, data->posX, data->posY - float_20_80421b5c, data->posZ);
-	PSMTXRotRad(rot, 'y', float_deg2rad_80421b58 * -camGetPtr(camId)->viewYaw);
-	PSMTXScale(scale, data->scale, data->scale, data->scale);
-	PSMTXConcat(trans, rot, trans);
-	PSMTXConcat(trans, scale, mtx);
-	animPoseSetMaterialFlagOn(data->poseId, 0x40);
-	animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, data->color });
-	animPoseMain(data->poseId);
-	animPoseDrawMtx(data->poseId, mtx, 1, float_0_80421b60, float_10_80421b64);
-	animPoseDrawMtx(data->poseId, mtx, 2, float_0_80421b60, float_10_80421b64);
-	animPoseDrawMtx(data->poseId, mtx, 3, float_0_80421b60, float_10_80421b64);
-}
-
-// The target loads the four single-precision literals (0.5/0.0/1.0/0.9) from the named .sdata2 objects, which
-// are the compiler's own pooled literal entries; referencing them by name makes MWCC keep them in callee-saved
-// FPRs (f26+), so the literals stay literal here and pool to anonymous @440-@443 slots at different offsets.
-// The two compiler-generated int<->float magic doubles also sit 8 bytes later in .rodata, because the target's
-// .rodata has two unreferenced zero Vec3 objects before them (a Main/Entry inlining difference). Those pool
-// symbol names do not count against the score (objdiff resolves them by value).
-// The size conversion's `fmuls` is fixed by holding data->scale in a local across the conversion call, which
-// also makes MWCC emit the target's `lfs f28`/`lfs f0` order and the `fmuls f1, f0, f28` operand order.
-// NONMATCHING (99.78%): the two u16->f32 conversions (centerY/centerX) get their 2^52 mask, 0.5 and the
-// converted value in different caller-saved FPRs than the original (target f3/f1/f2, ours f2/f3/f1), flipping
-// the `fsubs`/`fmsubs`/`fmadds` registers; reordering operands or using an extern/literal does not change it.
-void effNanigaDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	effNanigaData* data = effect->userdata;
-	CameraEntry* camera;
-	Mtx mtx;
-	Mtx rot;
-	Mtx scale;
-	Mtx base;
-	GXTexObj tex;
-	u32 scissorLeft;
-	u32 scissorTop;
-	u32 scissorWidth;
-	u32 scissorHeight;
-	f32 half;
-	u32 centerX;
-	u32 centerY;
-	u32 size;
-	f32 extent;
-	f32 pos20;
-	f32 halfSize;
-	f32 savedScale;
-	f32 sizeScale;
-	s32 i;
-
-	camera = camGetPtr(camId);
-	savedScale = data->scale;
-	data->scale = savedScale * float_1p5_80421b68;
-	PSMTXTrans(mtx, data->field_0x10, data->field_0x14, data->field_0x18);
-	PSMTXRotRad(rot, 'y', float_deg2rad_80421b58 * -camGetPtr(camId)->viewYaw);
-	PSMTXScale(scale, data->scale, data->scale, data->scale);
-	PSMTXConcat(mtx, rot, mtx);
-	PSMTXConcat(mtx, scale, base);
-	GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
-	sizeScale = data->scale;
-	size = (u32)(float_40_80421b6c * sizeScale);
-	extent = float_20_80421b5c * sizeScale;
-	half = 0.5f;
-	centerY = (u32)((f32)gp->efbHeight * half - data->field_0x14);
-	centerX = (u32)((f32)gp->fbWidth * half + data->field_0x10);
-	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), size, size);
-
-	effGetTexObj(0x57, &tex);
-	GXLoadTexObj(&tex, 0);
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x3c, 0, 0x7d);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 0xff);
-	GXSetTevOp(0, 3);
-	GXSetNumChans(0);
-	GXSetCullMode(0);
-	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xd, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
-	PSMTXConcat(camera->view, base, mtx);
-	GXLoadPosMtxImm(mtx, 0);
-	GXSetCurrentMtx(0);
-	GXBegin(0x80, 0, 4);
-	pos20 = float_20_80421b5c;
-	halfSize = -float_40_80421b6c * float_0p5_80421b70;
-	GXPosition3f32(halfSize, pos20, 0.0f);
-	GXTexCoord2f32(0.0f, 0.0f);
-	GXPosition3f32(pos20, pos20, 0.0f);
-	GXTexCoord2f32(1.0f, 0.0f);
-	GXPosition3f32(pos20, halfSize, 0.0f);
-	GXTexCoord2f32(1.0f, 1.0f);
-	GXPosition3f32(halfSize, halfSize, 0.0f);
-	GXTexCoord2f32(0.0f, 1.0f);
-
-	for (i = 0; i < data->count + 5; i++) {
-		iconGetTexObj(&tex, ICON_ID(itemDataTable[data->itemList[i % data->count]].icon_id));
-		GXLoadTexObj(&tex, 0);
-		PSMTXTrans(mtx, 0.0f, data->field_0x34 + float_neg40_80421b78 * (f32)i, 0.0f);
-		PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
-		PSMTXConcat(base, mtx, mtx);
-		PSMTXConcat(mtx, scale, mtx);
-		PSMTXConcat(camera->view, mtx, mtx);
-		GXLoadPosMtxImm(mtx, 0);
-		GXSetCurrentMtx(0);
-		GXBegin(0x80, 0, 4);
-		GXPosition3f32(halfSize, pos20, 0.0f);
-		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(pos20, pos20, 0.0f);
-		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(pos20, halfSize, 0.0f);
-		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(halfSize, halfSize, 0.0f);
-		GXTexCoord2f32(0.0f, 1.0f);
-	}
-
-	GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
-	data->scale = savedScale;
-}
-
 inline Vec initializeVec(Vec* input) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 
@@ -218,9 +65,87 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
+#ifdef MUST_MATCH
+// MUST_MATCH: a second copy of the zero-Vec inline so Main and Entry each pool their own
+// .rodata zero Vec3 at the offsets the original has (target has vec3_803000d8 and vec3_803000e4).
+static inline Vec initializeVec2(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+#endif
 
-// NONMATCHING (96.35%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets),
+EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f32 z) {
+	EffectEntry* entry;
+	effNanigaData* data;
+	s32 inBattle;
+	Vec vec;
+	s32 index;
+	s32 i;
+	s32 randResult;
+	s32* ptr;
+
+	entry = effEntry();
+	inBattle = gp->inBattle != 0;
+	entry->type = "Naniga";
+	entry->count = 1;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effNanigaData));
+	entry->userdata = data;
+	entry->callback = effNanigaMain;
+	entry->flags |= 2;
+	data->type = type;
+	data->posX = x;
+	data->posY = float_20_80421b5c + y;
+	data->posZ = z;
+	data->scale = float_1_80421b74;
+	data->state = 0;
+	data->timer = 0;
+	data->itemList = itemList;
+	data->count = 0;
+	while (itemList[data->count] != 0) {
+		data->count++;
+	}
+	data->itemId = itemId;
+	ptr = itemList;
+	data->start = float_0_80421b60;
+	data->field_0x34 = float_0_80421b60;
+	index = 0;
+	for (i = data->count; i > 0; i--) {
+		if (itemId == *ptr) {
+			break;
+		}
+		ptr++;
+		index++;
+	}
+	data->end = float_40_80421b6c * (f32)index + float_3_80421b94 * (float_40_80421b6c * (f32)data->count);
+	randResult = rand() % 3;
+	if (randResult == 0) {
+		data->mode = 1;
+		data->end += float_40_80421b6c;
+	}
+	else if (randResult == 1) {
+		data->mode = 2;
+		data->end -= float_40_80421b6c;
+	}
+	else {
+		data->mode = 0;
+	}
+	animGroupBaseAsync("EFF_naniga", inBattle, 0);
+	data->poseId = -1;
+	data->color = 0xFF;
+	vec = initializeVec((Vec*)&data->posX);
+	*(Vec*)&data->field_0x10 = vec;
+	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, (Vec*)&data->field_0x10, (Vec*)&data->field_0x10);
+	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, (Vec*)&data->field_0x10, (Vec*)&data->field_0x10);
+	data->field_0x10 *= gp->fbWidth * float_0p5_80421b70;
+	data->field_0x14 *= gp->efbHeight * float_0p5_80421b70;
+	return entry;
+}
+
+// NONMATCHING (97.37%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets),
 // the compiler's switch layout, and register allocation.
 void effNanigaMain(EffectEntry* effect) {
 	effNanigaData* data = effect->userdata;
@@ -387,68 +312,152 @@ void effNanigaMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (94.92%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets)
-// and register allocation/scheduling around the item-count scan.
-EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f32 z) {
-	EffectEntry* entry;
-	effNanigaData* data;
-	BOOL inBattle;
-	Vec vec;
-	s32 index;
+// The target loads the four single-precision literals (0.5/0.0/1.0/0.9) from the named .sdata2 objects, which
+// are the compiler's own pooled literal entries; referencing them by name makes MWCC keep them in callee-saved
+// FPRs (f26+), so the literals stay literal here and pool to anonymous @440-@443 slots at different offsets.
+// The two compiler-generated int<->float magic doubles also sit 8 bytes later in .rodata, because the target's
+// .rodata has two unreferenced zero Vec3 objects before them (a Main/Entry inlining difference). Those pool
+// symbol names do not count against the score (objdiff resolves them by value).
+// The size conversion's `fmuls` is fixed by holding data->scale in a local across the conversion call, which
+// also makes MWCC emit the target's `lfs f28`/`lfs f0` order and the `fmuls f1, f0, f28` operand order.
+void effNanigaDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effNanigaData* data = effect->userdata;
+	CameraEntry* camera;
+	Mtx mtx;
+	Mtx rot;
+	Mtx scale;
+	Mtx base;
+	GXTexObj tex;
+	u32 scissorLeft;
+	u32 scissorTop;
+	u32 scissorWidth;
+	u32 scissorHeight;
+	f32 half;
+	u32 centerX;
+	u32 centerY;
+	u32 size;
+	f32 extent;
+	f32 pos20;
+	f32 halfSize;
+	f32 savedScale;
+	f32 sizeScale;
 	s32 i;
-	s32 randResult;
 
-	entry = effEntry();
-	entry->type = "Naniga";
-	entry->count = 1;
-	inBattle = gp->inBattle != 0;
-	data = __memAlloc(HEAP_EFFECT, sizeof(effNanigaData));
-	entry->userdata = data;
-	entry->callback = effNanigaMain;
-	entry->flags |= 2;
-	data->type = type;
-	data->posX = x;
-	data->posY = float_20_80421b5c + y;
-	data->posZ = z;
-	data->scale = float_1_80421b74;
-	data->state = 0;
-	data->timer = 0;
-	data->itemList = itemList;
-	data->count = 0;
-	while (itemList[data->count] != 0) {
-		data->count++;
+	camera = camGetPtr(camId);
+	savedScale = data->scale;
+	data->scale = savedScale * float_1p5_80421b68;
+	PSMTXTrans(mtx, data->field_0x10, data->field_0x14, data->field_0x18);
+	PSMTXRotRad(rot, 'y', float_deg2rad_80421b58 * -camGetPtr(camId)->viewYaw);
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
+	PSMTXConcat(mtx, rot, mtx);
+	PSMTXConcat(mtx, scale, base);
+	GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
+	sizeScale = data->scale;
+	size = (u32)(float_40_80421b6c * sizeScale);
+	extent = float_20_80421b5c * sizeScale;
+	half = 0.5f;
+	centerY = (u32)((f32)gp->efbHeight * half - data->field_0x14);
+	centerX = (u32)((f32)gp->fbWidth * half + data->field_0x10);
+	GXSetScissor((u32)((f32)centerX - extent), (u32)((f32)centerY - extent), size, size);
+
+	effGetTexObj(0x57, &tex);
+	GXLoadTexObj(&tex, 0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x3c, 0, 0x7d);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 0xff);
+	GXSetTevOp(0, 3);
+	GXSetNumChans(0);
+	GXSetCullMode(0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xd, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
+	PSMTXConcat(camera->view, base, mtx);
+	GXLoadPosMtxImm(mtx, 0);
+	GXSetCurrentMtx(0);
+	GXBegin(0x80, 0, 4);
+	pos20 = float_20_80421b5c;
+	halfSize = -float_40_80421b6c * float_0p5_80421b70;
+	GXPosition3f32(halfSize, pos20, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(pos20, pos20, 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+	GXPosition3f32(pos20, halfSize, 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(halfSize, halfSize, 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
+
+	for (i = 0; i < data->count + 5; i++) {
+		iconGetTexObj(&tex, ICON_ID(itemDataTable[data->itemList[i % data->count]].icon_id));
+		GXLoadTexObj(&tex, 0);
+		PSMTXTrans(mtx, 0.0f, data->field_0x34 + float_neg40_80421b78 * (f32)i, 0.0f);
+		PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
+		PSMTXConcat(base, mtx, mtx);
+		PSMTXConcat(mtx, scale, mtx);
+		PSMTXConcat(camera->view, mtx, mtx);
+		GXLoadPosMtxImm(mtx, 0);
+		GXSetCurrentMtx(0);
+		GXBegin(0x80, 0, 4);
+		GXPosition3f32(halfSize, pos20, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(pos20, pos20, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(pos20, halfSize, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(halfSize, halfSize, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 	}
-	data->itemId = itemId;
-	data->field_0x34 = float_0_80421b60;
-	data->start = float_0_80421b60;
-	index = 0;
-	for (i = 0; i < data->count; i++) {
-		if (data->itemList[i] == itemId) {
-			break;
-		}
-		index++;
-	}
-	data->end = float_40_80421b6c * (f32)index + float_3_80421b94 * (float_40_80421b6c * (f32)data->count);
-	randResult = rand() % 3;
-	if (randResult == 0) {
-		data->mode = 1;
-		data->end += float_40_80421b6c;
-	}
-	else if (randResult == 1) {
-		data->mode = 2;
-		data->end -= float_40_80421b6c;
+
+	GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
+	data->scale = savedScale;
+}
+
+void effNanigaDisp2(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effNanigaData* data = effect->userdata;
+	Mtx trans;
+	Mtx rot;
+	Mtx scale;
+	Mtx mtx;
+
+	camGetPtr(camId);
+	PSMTXTrans(trans, data->posX, data->posY - float_20_80421b5c, data->posZ);
+	PSMTXRotRad(rot, 'y', float_deg2rad_80421b58 * -camGetPtr(camId)->viewYaw);
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
+	PSMTXConcat(trans, rot, trans);
+	PSMTXConcat(trans, scale, mtx);
+	animPoseSetMaterialFlagOn(data->poseId, 0x40);
+	animPoseSetMaterialEvtColor(data->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, data->color });
+	animPoseMain(data->poseId);
+	animPoseDrawMtx(data->poseId, mtx, 1, float_0_80421b60, float_10_80421b64);
+	animPoseDrawMtx(data->poseId, mtx, 2, float_0_80421b60, float_10_80421b64);
+	animPoseDrawMtx(data->poseId, mtx, 3, float_0_80421b60, float_10_80421b64);
+}
+
+void effNanigaDisp3(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effNanigaData* data = effect->userdata;
+	ItemData* item;
+	Mtx trans;
+	Mtx rot;
+	Mtx scale;
+	Mtx mtx;
+
+	camGetPtr(camId);
+	item = &itemDataTable[data->itemId];
+	PSMTXTrans(trans, data->posX, data->posY - float_16_80421b54, data->posZ);
+	PSMTXRotRad(rot, 'y', float_deg2rad_80421b58 * -camGetPtr(camId)->viewYaw);
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
+	PSMTXConcat(trans, rot, trans);
+	PSMTXConcat(trans, scale, mtx);
+
+	if (data->state < 4) {
+		iconDispGxCol(mtx, 0, 0x184, dat_80421b4c);
 	}
 	else {
-		data->mode = 0;
+		iconDispGxCol(mtx, 0, ICON_ID(item->icon_id), dat_80421b50);
 	}
-	animGroupBaseAsync("EFF_naniga", inBattle, 0);
-	data->poseId = -1;
-	data->color = 0xFF;
-	vec = initializeVec((Vec*)&data->posX);
-	*(Vec*)&data->field_0x10 = vec;
-	PSMTXMultVec(camGetPtr(CAMERA_3D)->view, (Vec*)&data->field_0x10, (Vec*)&data->field_0x10);
-	PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, (Vec*)&data->field_0x10, (Vec*)&data->field_0x10);
-	data->field_0x10 *= gp->fbWidth * float_0p5_80421b70;
-	data->field_0x14 *= gp->efbHeight * float_0p5_80421b70;
-	return entry;
 }

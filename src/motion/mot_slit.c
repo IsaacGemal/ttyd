@@ -60,8 +60,9 @@ void motSlitCancel3(void) {
     }
 }
 
-// NONMATCHING (71.07%): the original keeps the constant 0x14 in r31 across the
-// marioGetPtr call (a live local); MWCC folds it to r0 here.
+// opt_propagation off keeps the 0x14 local in r31 across the marioGetPtr call;
+// on, MWCC rematerializes it as `li r0` after the call.
+#pragma opt_propagation off
 void motSlitContinue(void) {
     MarioWork* mario;
     s16 state;
@@ -71,6 +72,7 @@ void motSlitContinue(void) {
     mario = marioGetPtr();
     MW_S16(mario, 0x2D8) = state;
 }
+#pragma opt_propagation reset
 
 void N_marioSlitSetAfterLand(void) {
     MarioWork* mario = marioGetPtr();

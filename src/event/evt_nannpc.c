@@ -384,6 +384,10 @@ USER_FUNC(evt_nannpc_set_position) {
 // NONMATCHING (94.72%): the loop callee-saved registers are still permuted (orig
 // vec=r31, args=r24, poses=r28, id=r25, work=r23, mask=r29, name=r27, entry=r30, offset=r26;
 // ours vec=r29, args=r27, poses=r30, id=r26, work=r25, mask=r27, name=r23, entry=r31, offset=r28).
+// Tried: 720 declaration-order permutations (+ a 9-variable local search, all <=95.0%; the
+// allocator plateau holds); opt_lifetimes/opt_dead_assignments/opt_propagation/global_optimizer/
+// optimize_for_size/scheduling pragmas (none help); splitting the store block into an inline;
+// pointer-vs-index forms; loop-local vs function-scope entry/name. The gap is pure colouring.
 USER_FUNC(evt_nannpc_entry) {
     Vec* vec = (Vec*)vec3_802f2ff8;
     s32* args = event->args;
@@ -712,7 +716,7 @@ static inline HitEntry* hitCheckFilterVec(HitFilterCallback callback, f32* hitX,
 // The first hitCheckFilter's staged pos/velNorm copies land in local spill slots (0x24/0x30) instead
 // of the original's outgoing-arg area (0x78/0x84); the second ray's scalar hit buffers are declared
 // in reverse (fnz2..fpx2) so their stack slots ascend like the original's.
-// NONMATCHING (91.99%): argument staging location and a few callee-saved registers differ.
+// NONMATCHING (91.99%): the loop pointers (r23/r24 swapped) and the hitCheckFilter argument staging still differ.
 void nanNPCOption(void) {
     Vec delta;
     Vec velNorm;
@@ -724,10 +728,10 @@ void nanNPCOption(void) {
     Vec hitPos;
     f32 vlen;
     Vec savedPos;
+    Vec move;
     NanNpcEntry* other;
     BOOL scale;
     NanNpcEntry* entry;
-    Vec move;
     NanNpcWork* work = nanNPCWork;
 
     for (entry = work->entries; entry < &work->entries[work->count]; entry++) {
