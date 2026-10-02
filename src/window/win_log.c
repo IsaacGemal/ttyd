@@ -1886,7 +1886,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0xBF, logMkVec(LV(0x1B8, vec3_802f6070), float_4_8041d88c + (float_230_8041d878 + x), y), LV(0x1C4, vec3_802f607c), c1);
         winTexSet(0xBF, logMkVec(LV(0x1D0, vec3_802f6088), x, float_4_8041d88c + top), LV(0x1DC, vec3_802f6094), c1);
         winTexSet(0xBF, logMkVec(LV(0x1E8, vec3_802f60a0), x, (y - float_120_8041d870) - float_4_8041d88c), LV(0x1F4, vec3_802f60ac), c1);
-        bounce = (f32)fabs(float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890));
+        bounce = (f32)__fabs(float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890));
         winTexInit(LOG_TEXPAL());
         winTexSet(0xBD, logMkVec(LV(0x200, vec3_802f60b8), x, top + (float_neg240_8041d894 == w->mapScrollY ? float_0_8041d7bc : bounce)), LV(0x20C, vec3_802f60c4), c1);
         winTexInit(LOG_TEXPAL());
