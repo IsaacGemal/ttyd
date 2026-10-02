@@ -1729,6 +1729,7 @@ static void ext_shadow_disp(CameraId cameraId, void* param) {
         offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
     }
 }
+// The original calls moamoa_jump (a real bl) from ext_moamoa_main; the raised inline limits would inline it.
 #pragma dont_inline on
 static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4,
                         f32 p5) {
@@ -1964,8 +1965,10 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 }
 
 
+// The original inlines every sin/cos/randf/pose-change here: raise the inliner's per-caller limits.
 #pragma inline_max_total_size(60000)
 #pragma inline_max_size(1000)
+// Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
 // NONMATCHING (86.90%): behaviour complete, checked against the asm; the rest is register allocation and constant hoisting.
 #define MOA_TARGET(i) (wp->vec[(i) % 3])
@@ -2305,7 +2308,7 @@ static void ext_moamoa_main(void) {
             (*ep->matrix)[0][3] += entry->field_0x8.x;
             (*ep->matrix)[1][3] += entry->field_0x8.y;
             (*ep->matrix)[2][3] += entry->field_0x8.z;
-            PSMTXRotRad(rot, 'y', 0.20944f);
+            PSMTXRotRad(rot, 'y', 0.20943952f);
             PSMTXConcat(*ep->matrix, rot, *ep->matrix);
             ep->flags &= ~0x2;
             if ((*ep->matrix)[0][3] < -1000.0f) {
