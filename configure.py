@@ -1835,7 +1835,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_cortez.c"),
             Object(Matching, "unit/unit_boss_gundan_zako_group1.c"),
             Object(NonMatching, "unit/unit_boss_gundan_zako_group2.c"),
-            Object(NonMatching, "unit/unit_poison_pakkun.c"),
+            Object(Matching, "unit/unit_poison_pakkun.c"),
             Object(Matching, "event/evt_lect_muj.c"),
         ],
     ),
