@@ -9,9 +9,13 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
 #include "battle/battle_damage_split.h"
+#include "battle/battle_detect.h"
+#include "battle/battle_break_slot.h"
+#include "battle/battle_stage_object.h"
 #include "battle/battle_mario.h"
 #include "battle/battle_status_effect.h"
 #include "driver/animdrv.h"
+#include "driver/fadedrv.h"
 #include "driver/msgdrv.h"
 #include "driver/windowdrv.h"
 #include "eff/eff_nice.h"
@@ -272,10 +276,318 @@ BattleWeapon* _GetFirstAttackWeapon(s32 id) { //1:1
 	return NULL;
 }
 
-// NONMATCHING (1.75%): 1 instruction differs, 501 missing, plus register differences.
-void btlseqFirstAct(BattleWork* wp) {
-	switch (BattleGetSeq(wp, SEQ_FIRST_ACT)) {
+extern GXColor dat_8041c268;
+extern const char str_802EF5DC[];
+extern __declspec(section ".sdata") u32 nanika_luck_event[];
+extern __declspec(section ".sdata") u32 _default_haikei_set_entry_event[];
 
+void btlseqFirstAct(BattleWork* wp) {
+	FieldBattleInfo* info = wp->fbatInfo;
+	s32 party = info->partyId;
+	NpcBattleInfo* setup;
+	s32 i;
+	BattleUnit* unit;
+	BattleUnit* unit1;
+	BattleWeapon* weapon;
+	BattleUnit* unit2;
+	EventEntry* evt;
+
+
+	switch (BattleGetSeq(wp, SEQ_FIRST_ACT)) {
+	case 0x2000000:
+		switch (party) {
+		case 0:
+			*(s32*)wp->field_EFC = 0;
+			evtEntry(_default_haikei_set_entry_event, 10, 0);
+			setup = wp->fbatInfo->setup;
+			for (i = 0; i < 64; i++) {
+				unit = BattleGetUnitPtr(wp, i);
+				if (unit == NULL) {
+					continue;
+				}
+				if (*(void**)unit->field_0x2B4 == NULL) {
+					continue;
+				}
+				if (setup->field_4 & 0x00100000) {
+					if (unit->currentKind == 0xDE) {
+						continue;
+					}
+					if (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
+						continue;
+					}
+				}
+				if (marioGetPtr()->currMotionId == 0x1A && unit->currentKind == 0xDE) {
+					evt = evtEntry(BtlUnit_GetData(unit, 0x41), 10, 0);
+					*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+					evt->unitId = unit->unitId;
+				} else {
+					evt = evtEntry(*(void**)unit->field_0x2B4, 10, 0);
+					*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+					evt->unitId = unit->unitId;
+				}
+			}
+			BattleSetSeq(wp, 2, 0x2000001);
+			break;
+		default:
+		switch (party) {
+		case 1:
+		case 2:
+		case 3:
+			*(s32*)wp->field_EFC = 10;
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+			*(s32*)wp->field_EFC = 0;
+			break;
+		default:
+			*(s32*)wp->field_EFC = 0;
+			break;
+		}
+		wp->flags |= 2;
+		BattleGetFirstAttackUnit(wp, &unit1, &unit2);
+		wp->activeUnitId = unit1->unitId;
+		unit1->mTokenFlags |= 0x1000;
+		evt = evtEntry(unit2->damageEventCode, 10, 0x20);
+		if (evt != NULL) {
+			evt->unitId = unit2->unitId;
+			unit2->damageCode = 0x39;
+			unit2->damageEventId = evt->eventId;
+		}
+		unit1->flags |= 0x04000000;
+		if (party < 9) {
+			weapon = _GetFirstAttackWeapon(party);
+			*(void**)unit1->field_0x29C = weapon->mAttackEvtScript;
+			*(s32*)unit1->field_0x2A8 = 0;
+			BattleStatusWindowEventOff();
+		}
+		if (BtlUnit_GetBelong(unit1) == 0) {
+			BattleAudience_Case_FirstAttack_Good();
+		} else {
+			BattleAudience_Case_FirstAttack_Bad();
+		}
+		evt = evtEntry(*(void**)unit1->field_0x29C, 10, 0);
+		if (evt != NULL) {
+			evt->unitId = unit1->unitId;
+			unit1->attackEventId = evt->eventId;
+		}
+		switch (party) {
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+			unit = BattleGetPartyPtr(wp);
+			if (unit != NULL) {
+				evt = evtEntry(*(void**)unit->field_0x2B4, 10, 0);
+				*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+				evt->unitId = unit->unitId;
+			}
+			break;
+		case 7:
+		case 8:
+			unit = BattleGetMarioPtr(wp);
+			if (unit != NULL) {
+				evt = evtEntry(*(void**)unit->field_0x2B4, 10, 0);
+				*(s32*)(unit->field_0x2B4 + 4) = evt->eventId;
+				evt->unitId = unit->unitId;
+			}
+			break;
+		}
+		BattleSetSeq(wp, 2, 0x2000001);
+		break;
+		}
+		break;
+
+	case 0x2000001:
+		if (--*(s32*)wp->field_EFC > 0) {
+			break;
+		}
+		fadeEntry(0x17, 0xC8, dat_8041c268);
+		wp->field_19060 = psndSFXOn(str_802EF5DC);
+		BattleSetSeq(wp, 2, 0x2000002);
+		/* fallthrough */
+	case 0x2000002:
+		if (fadeIsFinish()) {
+			if ((u32)wp->field_19060 != 0xFFFFFFFF) {
+				psndSFXOff(wp->field_19060);
+				wp->field_19060 = -1;
+			}
+		}
+		if (BattleWaitAllActiveEvtEnd(wp)) {
+			BattleStatusWindowEventOn();
+		}
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			break;
+		}
+		if (!fadeIsFinish()) {
+			break;
+		}
+		BattleSetSeq(wp, 2, 0x2000003);
+		unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+		if (unit == NULL) {
+			break;
+		}
+		unit->flags &= ~0x04000000;
+		break;
+
+	case 0x2000003:
+		if (BattleCheckConcluded(wp)) {
+			BattleAudience_PerAct();
+			BattleSetSeq(wp, 0, 3);
+			BattleSetSeq(wp, 7, 0x7000000);
+			break;
+		}
+		BattleSetSeq(wp, 2, 0x2000004);
+		BattleStatusChangeMsgAdjust(wp);
+		/* fallthrough */
+	case 0x2000004:
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			break;
+		}
+		if (BattleStatusChangeAnnouceMain(wp) | BattleStatusChangeMsgMain(wp)) {
+			break;
+		}
+		BattleIncSeq(wp, 2);
+		/* fallthrough */
+	case 0x2000005:
+		if ((wp->flags & 0x30) == 0) {
+			BattleStatusWindowSystemOn();
+		}
+		BattleConsumeReserveItem();
+		wp->flags &= ~0x4;
+		BattleAudience_PerAct();
+		BattleIncSeq(wp, 2);
+		/* fallthrough */
+	case 0x2000006:
+		if ((u8)BattleAudience_CheckReaction()) {
+			break;
+		}
+		if (!BattleCheckConcluded(wp)) {
+			if ((u8)BattleBreakSlot_CheckReaction()) {
+				break;
+			}
+		}
+		BattleIncSeq(wp, 2);
+		/* fallthrough */
+	case 0x2000007:
+		if (BattleStatusChangeAnnouceMain(wp) | BattleStatusChangeMsgMain(wp)) {
+			break;
+		}
+		BattleIncSeq(wp, 2);
+		/* fallthrough */
+	case 0x2000008:
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			break;
+		}
+		if (wp->fbatInfo->setup->field_4 & 0x10) {
+			BattleSetSeq(wp, 2, 0x2000009);
+			BattleStage_WallCloseCheck();
+			break;
+		}
+		BattleSetSeq(wp, 2, 0x200000A);
+		break;
+
+	case 0x2000009: {
+		s32* p = (s32*)((u8*)wp + 0x182A4);
+		if (*p) {
+			if (!evtCheckID(*p)) {
+				*p = 0;
+			}
+		}
+		if (*p != 0) {
+			break;
+		}
+		BattleSetSeq(wp, 2, 0x200000A);
+		break;
+	}
+
+	case 0x200000A: {
+		BattleUnit* u;
+		BOOL found;
+		int j;
+		*(s32*)(wp->field_18FF0 + 0x5C) = 0;
+		found = FALSE;
+		for (j = 0; j < 64; j++) {
+			u = BattleGetUnitPtr(wp, j);
+			if (u == NULL) {
+				continue;
+			}
+			if (u->badgesEquipped.LuckyStart == 0) {
+				continue;
+			}
+			if (BtlUnit_CheckStatus(u, 0x1B)) {
+				continue;
+			}
+			found = TRUE;
+		}
+		if (found) {
+			evt = evtEntry(nanika_luck_event, 10, 0);
+			evt->unitId = -5;
+			*(s32*)(wp->field_18FF0 + 0x5C) = evt->eventId;
+			*(u64*)(wp->field_18C70 + 0x368) |= 0xFFFFFFFFFFFFFFFFULL;
+			BattleStatusChangeMsgAdjust(wp);
+			BattleSetSeq(wp, 2, 0x200000B);
+			*(u16*)(wp->field_18FE1 + 1) = 0;
+			break;
+		}
+		BattleSetSeq(wp, 2, 0x200000C);
+		break;
+	}
+
+	case 0x200000B: {
+		BOOL result;
+		result = TRUE;
+		if (*(u16*)(wp->field_18FE1 + 1) < 0x12C) {
+			(*(u16*)(wp->field_18FE1 + 1))++;
+		}
+		if (*(s32*)(wp->field_18FF0 + 0x5C)) {
+			if (evtCheckID(*(s32*)(wp->field_18FF0 + 0x5C))) {
+				result = FALSE;
+			} else {
+				*(s32*)(wp->field_18FF0 + 0x5C) = 0;
+			}
+		}
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			result = FALSE;
+		}
+		if (BattleStatusChangeAnnouceMain(wp)) {
+			result = FALSE;
+		}
+		if (BattleStatusChangeMsgMain(wp)) {
+			result = FALSE;
+		}
+		if (result) {
+			BattleSetSeq(wp, 2, 0x200000C);
+		}
+		break;
+	}
+
+	case 0x200000C:
+		if (wp->flags & 2) {
+			BattleSetSeq(wp, 2, 0x200000E);
+			break;
+		}
+		BattleStage_NozzleWorkCheck(0);
+		BattleSetSeq(wp, 2, 0x200000D);
+		/* fallthrough */
+	case 0x200000D:
+		if (!BattleWaitAllActiveEvtEnd(wp)) {
+			break;
+		}
+		BattleSetSeq(wp, 2, 0x200000E);
+		/* fallthrough */
+	case 0x200000E:
+		wp->flags &= ~0x2;
+		BattleSetSeq(wp, 0, 2);
+		BattleSetSeq(wp, 3, 0x3000000);
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -2141,8 +2453,8 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	if (wp->turnCount >= 2) {
 		BattleMajinaiCheck();
 	}
-	*(s32*)((u8*)wp + 0x18FDC) = 0;
-	*(s32*)((u8*)wp + 0x18FD8) = 0;
+	*(s32*)(wp->field_18C70 + 0x36C) = 0;
+	*(s32*)(wp->field_18C70 + 0x368) = 0;
 	BtlActRec_AddCount((u8*)wp + 0x16F3B);
 
 	for (i = 0; i < 64; i++) {
@@ -2162,8 +2474,9 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	BattleFogEndCheck();
 }
 
-// NONMATCHING (80.03%): control-flow layout of the four event-id ifs differs (the original checks the condition
-// after the body) and wp/i land in r28/r30 instead of r30/r28; logic is verified against the asm.
+// NONMATCHING (97.01%): the four event-id guards use while(...){...;break;} to get the original's
+// check-after-body layout; only the wp/i callee-saved pair is swapped (r28/r30 here, r30/r28 in the
+// original). No declaration order, loop form, pragma or compiler version in 1.3-2.7 flips it.
 s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 	s32 i;
 	BOOL result = TRUE;
@@ -2172,37 +2485,41 @@ s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 	for (i = 0; i < 64; i++) {
 		unit = BattleGetUnitPtr(wp, i);
 		if (unit) {
-			if (unit->phaseEventId) {
+			while (unit->phaseEventId) {
 				if (evtCheckID(unit->phaseEventId)) {
 					result = FALSE;
 				}
 				else {
 					unit->phaseEventId = 0;
 				}
+				break;
 			}
-			if (unit->attackEventId) {
+			while (unit->attackEventId) {
 				if (evtCheckID(unit->attackEventId)) {
 					result = FALSE;
 				}
 				else {
 					unit->attackEventId = 0;
 				}
+				break;
 			}
-			if (unit->damageEventId) {
+			while (unit->damageEventId) {
 				if (evtCheckID(unit->damageEventId)) {
 					result = FALSE;
 				}
 				else {
 					unit->damageEventId = 0;
 				}
+				break;
 			}
-			if (*(s32*)(unit->field_0x2B4 + 4)) {
+			while (*(s32*)(unit->field_0x2B4 + 4)) {
 				if (evtCheckID(*(s32*)(unit->field_0x2B4 + 4))) {
 					result = FALSE;
 				}
 				else {
 					*(s32*)(unit->field_0x2B4 + 4) = 0;
 				}
+				break;
 			}
 		}
 	}

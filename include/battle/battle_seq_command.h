@@ -37,6 +37,7 @@ void _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg);
 void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out);
 s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon* weapon);
 void _cursor_init(BattleCursor* cursor);
+void BattleCommandDisplay(BattleWork* wp);
 void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
 void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);

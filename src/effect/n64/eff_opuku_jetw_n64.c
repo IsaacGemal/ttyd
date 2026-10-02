@@ -221,8 +221,15 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
     GXSetTevColor(GX_TEVREG0, color);
 }
 
-// NONMATCHING (94.19%): callee-saved allocation only. Matches counter/data/field24/field18/field1c/field20/half;
-// off: `.data` base r31 vs r20, lifetime r15 vs r31, cam r17 vs r15. The base always claims r31 so lifetime cannot.
+// NONMATCHING (94.19%): callee-saved allocation, plus two loop code shapes. Matches
+// counter/data/field24/field18/field1c/field20/half; off: `.data` base r31 vs r20, lifetime r15/r20 vs r31,
+// cam r17 vs r15. The base always claims r31 so lifetime cannot. The loop also differs structurally:
+// the target builds rowPtr = &table[rowOffset] first, then ptr = &rowPtr[col] and colPtr = &table[col]
+// sharing one col*10, and tests `columns - 1 - col > lifetime` off the cached local (no reload); ours uses
+// `&table[rowOffset + col]`, computes colPtr before the PSMTXTrans, and reloads `data->lifetime` with the
+// addition form `columns - 1 > col + data->lifetime`. Writing the target's shapes (rowPtr, subtraction,
+// cached lifetime) makes GC/2.6 keep `counter` as the loop induction and spill half/columns-1, so it scores
+// lower (86-92%); every GC/1.3..3.0 compiler, -O level, flag and pragma tried behaves the same.
 // See the note above the TEV colour inlines.
 void effOpukuJetwDisp(CameraId camId, void* param) {
     Mtx trans;

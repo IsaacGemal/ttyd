@@ -422,15 +422,20 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
     BattleAcDrawGauge((x), (y), (type), (count), (t0), (t1), (t2), (flags), (ratio))
 #endif
 
-//
-// The only remaining difference (8 instructions) is a register-colouring tie-break in the two-icon
-// branches: for the FIRST icon of each pair the original computes `neg225 + x` into f3 and loads the
-// paired `float_70` into f0; ours swaps them (neg225+x -> f0, float_70 -> f3), and the final `fadds`
-// operand order follows. Every other instruction, including the second icon of each pair and PSMTXTrans,
-// is byte-identical. MWCC 2.6 picks f0 for the first temp regardless of declaration/statement order or of
-// routing the sum through a local, a constant local, a nested block, or a MUST_MATCH inline.
-// NONMATCHING (99.88%): the pragma reproduces the original divw by 7; in the two-icon branches the first `neg225 + x` sum is coloured f0 (orig f3) and the paired float_70 f3 (orig f0); 8 instructions, all register-only.
+// optimize_for_size: the original actionCommandDisp is size-optimized (the /7 is a real `divw`, not the
+// magic-multiply -O4,p emits, and the frame/allocator match only at this level). Other functions in the
+// file match at the default -O4,p, so the pragma is scoped to just this function.
 #pragma optimize_for_size on
+//
+// The remaining difference (8 instructions) is a register-colouring tie-break in the two-icon branches:
+// for the FIRST icon of each pair the original computes `neg225 + x` into f3 and loads the paired
+// `float_70` into f0; ours swaps them (neg225+x -> f0, float_70 -> f3), and the final `fadds` operand
+// order follows. Every other instruction, including the second icon of each pair and PSMTXTrans, is
+// byte-identical. MWCC 2.6 picks f0 for the first temp regardless of declaration/statement order, of
+// routing the sum through a local / a constant local / an `offAf` temp, a nested block, or a MUST_MATCH
+// inline. `#pragma opt_propagation off` does move the sum to f3 but also perturbs the prologue's r3/r4
+// assignment and the iconNumberDispGx argument order (and scores lower), so it is not used.
+// NONMATCHING (99.88%): in the two-icon branches the first `neg225 + x` sum is coloured f0 (orig f3) and the paired float_70 f3 (orig f0); 8 instructions, all register-only.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
@@ -504,10 +509,9 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     } else {
         if ((div7 & 1) == 1) {
-            f32 x0 = float_neg225_8041e804 + x;
             f32 y0 = float_70_8041e7fc + y;
             Vec vec = vec3_802fa100;
-            vec.x = (f32)offA + x0;
+            vec.x = float_neg225_8041e804 + x + (f32)offA;
             vec.y = y0;
             ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
             {
@@ -518,10 +522,9 @@ static void actionCommandDisp(f32 x, f32 y) {
                 ICON_DISP(&vec2, 0x10, iconC, float_1_8041e800);
             }
         } else {
-            f32 x0 = float_neg225_8041e804 + x;
             f32 y0 = float_70_8041e7fc + y;
             Vec vec = vec3_802fa118;
-            vec.x = (f32)offA + x0;
+            vec.x = float_neg225_8041e804 + x + (f32)offA;
             vec.y = y0;
             ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
             {
