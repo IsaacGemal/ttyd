@@ -47,6 +47,7 @@ void winFontInit(void);
 void winFontSet(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
 void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag);
 void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
+void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
 void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color);
 void winTexInit_x2(TEXPalette* texture);
 void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color);

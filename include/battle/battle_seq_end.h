@@ -30,3 +30,4 @@ void _audience_Whistle_control(void);
 void _check_audience_battle_end_exec(void);
 void _ExecAllUnitBattleEndEvent(void);
 void _BattleMarioKouraDelete(void);
+const char* BattleGetRankNameLabel(s32 level);
