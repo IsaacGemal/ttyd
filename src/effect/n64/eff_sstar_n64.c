@@ -125,16 +125,12 @@ inline Vec initializeVec(Vec* input) {
 static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
     Vec v;
     memcpy(dst, src, 0xE);
-#ifdef MUST_MATCH
-    OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the s16->f32 reads */
-#endif
+    OSInitFastCast(); /* retail's GQR2-5 setup before the s16->f32 reads */
     OSs16tof32(&dst[0], &v.x);
     OSs16tof32(&dst[1], &v.y);
     OSs16tof32(&dst[2], &v.z);
     PSMTXMultVec(mtx, &v, &v);
-#ifdef MUST_MATCH
-    OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the f32->s16 writes */
-#endif
+    OSInitFastCast(); /* retail's GQR2-5 setup before the f32->s16 writes */
     OSf32tos16(&v.x, &dst[0]);
     OSf32tos16(&v.y, &dst[1]);
     OSf32tos16(&v.z, &dst[2]);

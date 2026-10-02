@@ -54,10 +54,7 @@ extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// The double constants are declared in the header and defined after the function: defined before it,
-// MWCC folds 6.0 into an anonymous .rodata copy, while defined after it the comparison loads the
-// named double_6_80300058 at 0x78 exactly as the original does.
-// NONMATCHING (96.48%): register allocation (dec=r29 vs r27, autoFlag=r28 vs r26, the loop index
+// NONMATCHING (96.47%): register allocation (dec=r29 vs r27, autoFlag=r28 vs r26, the loop index
 // and the per-loop SFX-name temporaries are rotated) plus the s32->f32 conversion magic double:
 // MWCC pools it as an anonymous literal after the unit's strings (0xD0) where the original reads
 // the shared double_to_int_80300060 at 0x80. Every other load/store offset, including the named
@@ -272,7 +269,6 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	return 1;
 }
 
-#pragma optimize_for_size reset
 
 s32 battleAcResult_GaugeTiming2(BattleWork* work) {
 	return work->actionCommands.result;

@@ -244,16 +244,16 @@ s32 winMarioMain(WindowWork* work) {
                 if (strcmp(d2->field_C, str_8041D580) == 0) {
                     switch (marioGetColor()) {
                     case 0:
-                        anim = "S_1";
+                        anim = str_8041D580;
                         break;
                     case 1:
-                        anim = "S_2";
+                        anim = str_8041D704;
                         break;
                     case 2:
-                        anim = "S_3";
+                        anim = str_8041D708;
                         break;
                     case 3:
-                        anim = "S_4";
+                        anim = str_8041D70C;
                         break;
                     }
                 } else {
@@ -294,16 +294,16 @@ s32 winMarioMain(WindowWork* work) {
                 if (strcmp(d2->field_C, str_8041D580) == 0) {
                     switch (marioGetColor()) {
                     case 0:
-                        anim = "S_1";
+                        anim = str_8041D580;
                         break;
                     case 1:
-                        anim = "S_2";
+                        anim = str_8041D704;
                         break;
                     case 2:
-                        anim = "S_3";
+                        anim = str_8041D708;
                         break;
                     case 3:
-                        anim = "S_4";
+                        anim = str_8041D70C;
                         break;
                     }
                 } else {
@@ -411,19 +411,19 @@ void winMarioInit(WindowWork* work) {
     s32 i;
 
     if (work->flags & 0x2000) {
-        anim = "S_1";
+        anim = str_8041D580;
         switch (marioGetColor()) {
         case 0:
-            anim = "S_1";
+            anim = str_8041D580;
             break;
         case 1:
-            anim = "S_2";
+            anim = str_8041D704;
             break;
         case 2:
-            anim = "S_3";
+            anim = str_8041D708;
             break;
         case 3:
-            anim = "S_4";
+            anim = str_8041D70C;
             break;
         }
         WW_S32(work, 0x188) = animPoseEntry("d_mario", 0);

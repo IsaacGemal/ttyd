@@ -509,7 +509,12 @@ void main_weapon(s32 idx) {
         weapon->pos[0].x += float_20_80421d78 * mario->mSizeMultiplier;
         weapon->pos[0].y += float_28_80421dec * mario->mSizeMultiplier;
         {
+#ifdef MUST_MATCH
+            // Match-only: retail reads this Vec through the vec3_803002b0 base register.
             Vec vel = *(const Vec*)&vec[0xC / 4];
+#else
+            Vec vel = vec3_803002bc;
+#endif
 
             vel.x = float_10_80421d54 * (f32)cos(angle);
             vel.y = float_10_80421d54 * (f32)sin(angle);
