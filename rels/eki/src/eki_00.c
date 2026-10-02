@@ -442,6 +442,9 @@ static void ext_moamoa_dispent(void) {
     }
 }
 
+#pragma inline_max_total_size(60000)
+#pragma inline_max_size(1000)
+#pragma opt_propagation off
 // Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
 // (MoamoaPose.field_0x02), clamping into the room, then the animation frame update and the rider-delta limit.
 static void ext_moamoa_main(void) {
@@ -853,6 +856,10 @@ static void ext_moamoa_main(void) {
         }
     }
 }
+
+#pragma opt_propagation reset
+#pragma inline_max_size reset
+#pragma inline_max_total_size reset
 
 // dont_inline keeps moamoa_pose_init a real `bl` from ext_moamoa_init as in retail.
 #pragma dont_inline on
