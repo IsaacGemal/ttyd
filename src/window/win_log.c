@@ -7,6 +7,8 @@
 #include "battle/battle_monosiri.h"
 #include "driver/animdrv.h"
 #include "driver/effdrv.h"
+#include "driver/msgdrv.h"
+#include "manager/fontmgr.h"
 #include "dolphin/gx.h"
 #include "dolphin/mtx.h"
 #include "math_ext.h"
@@ -1895,5 +1897,192 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0xBE, logMkVec(LV(0x230, vec3_802f60e8), x, (y - float_120_8041d870) - (float_0_8041d7bc == w->mapScrollY ? float_0_8041d7bc : bounce)), LV(0x23C, vec3_802f60f4), c1);
         winTexInit(LOG_TEXPAL());
         winTexSet(0xBB, logMkVec(LV(0x248, vec3_802f6100), (x - float_220_8041d868) - (float_0_8041d7bc == w->mapScrollX ? float_0_8041d7bc : bounce), y), LV(0x254, vec3_802f610c), c1);
+    }
+}
+extern const Vec vec3_802f6118;
+extern const Vec vec3_802f6124;
+extern const Vec vec3_802f6130;
+extern const Vec vec3_802f613c;
+extern const Vec vec3_802f6148;
+extern const Vec vec3_802f6154;
+extern const Vec vec3_802f6160;
+extern const Vec vec3_802f616c;
+extern const Vec vec3_802f6178;
+extern const Vec vec3_802f6184;
+extern const Vec vec3_802f6190;
+extern const Vec vec3_802f619c;
+extern const Vec vec3_802f61a8;
+extern const Vec vec3_802f61b4;
+extern const Vec vec3_802f61c0;
+extern const Vec vec3_802f61cc;
+extern const Vec vec3_802f61d8;
+extern const Vec vec3_802f61e4;
+extern const Vec vec3_802f61f0;
+extern const Vec vec3_802f61fc;
+extern const f32 float_110_8041d820;
+extern const f32 float_160_8041d7d8;
+extern const f32 float_100_8041d824;
+extern const f32 float_50_8041d828;
+extern const f32 float_0p75_8041d7e0;
+extern const f32 float_108_8041d82c;
+extern const f32 float_166_8041d830;
+extern const f32 float_184_8041d834;
+extern const f32 float_56_8041d840;
+extern const f32 float_24_8041d838;
+extern const f32 float_5_8041d83c;
+extern const f32 float_16_8041d7e4;
+extern const f32 float_440_8041d84c;
+extern const f32 float_18_8041d850;
+extern const f32 float_15_8041d854;
+extern const f32 float_240_8041d858;
+extern const f32 float_0p7_8041d85c;
+extern const f32 float_420_8041d860;
+extern const f32 float_210_8041d7f0;
+extern const f32 float_30_8041d864;
+extern const f32 float_220_8041d868;
+
+extern const GXColor dat_8041d7a4;
+extern const GXColor dat_8041d7a8;
+extern const char str_802F6320[];
+extern const char str_802F6338[];
+extern const char str_802F6340[];
+extern const char str_802F6348[];
+extern const char str_802F6290[];
+extern const char str_802F62A0[];
+
+// NONMATCHING: first draft.
+void monoshiriGX(WindowWork* work, f32 x, f32 y) {
+    LogWin* w = (LogWin*)work;
+    const char* base = str_802F5EB8;
+    GXColor c8 = dat_8041d7a8;
+    GXColor c4 = dat_8041d7a4;
+    GXColor c8b = dat_8041d7a8;
+    GXColor c8c = dat_8041d7a8;
+    const char* msg;
+    s32 wdt;
+    s32 i;
+    f32 fx;
+    f32 fy;
+    f32 xr;
+    f32 yr;
+    char buf[0x20];
+    char buf2[0x20];
+
+    winBookGX(work, 1);
+    winKirinukiGX(work, 0, x - float_110_8041d820, y - float_160_8041d7d8, float_100_8041d824, float_50_8041d828);
+    msg = msgSearch(RO2(base, 0x468, str_802F6320));
+    wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(msg));
+    winFontInit();
+    {
+        Vec scale = LV(0x26C, vec3_802f6124);
+        Vec pos = logMkVec(LV(0x260, vec3_802f6118), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
+                           y - float_166_8041d830);
+        GXColor c = c8b;
+
+        winFontSet(&pos, &scale, &c, msg);
+    }
+    sprintf(buf, RO2(base, 0x480, str_802F6338), w->seenCnt, w->charCnt);
+    wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf));
+    {
+        Vec scale = LV(0x284, vec3_802f613c);
+        Vec pos = logMkVec(LV(0x278, vec3_802f6130), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
+                           y - float_184_8041d834);
+        GXColor c = c8b;
+
+        winFontSet(&pos, &scale, &c, buf);
+    }
+    winFontInit();
+    xr = float_56_8041d840 + x;
+    fx = (float_24_8041d838 + x) - float_5_8041d83c;
+    fy = y - float_16_8041d7e4;
+    for (i = 0; i < 16; i++) {
+        s32 idx = i + w->charPage * 16;
+        s32 id = w->chars[idx].id;
+        TattleEntry* tattle = battleGetUnitMonosiriPtr(id);
+        f32 xo;
+        f32 yo;
+
+        if (idx >= w->charCnt) {
+            break;
+        }
+        if (swGet(id + 0x117A) != 0) {
+            if (id == 0x4D || id == 0x87) {
+                if (evtGetValue(NULL, GSW(0)) < 0xD2) {
+                    msg = msgSearch(RO2(base, 0x3D8, str_802F6290));
+                } else {
+                    msg = msgSearch(RO2(base, 0x3E8, str_802F62A0));
+                }
+            } else {
+                msg = msgSearch(tattle->enemyTag);
+            }
+        } else {
+            msg = RO2(base, 0x488, str_802F6340);
+        }
+        sprintf(buf2, "%d\x81\x44", (s32)enemy_monoshiri_sort_table[id]);
+        xo = (f32)((i / 8) * 0xD8);
+        yo = fy - (f32)((i % 8) * 0x18);
+        {
+            Vec scale = LV(0x29C, vec3_802f6154);
+            Vec pos = logMkVec(LV(0x290, vec3_802f6148), fx + xo, yo);
+            GXColor c = c8c;
+
+            winFontSet(&pos, &scale, &c, buf2);
+        }
+        {
+            Vec scale = LV(0x2B4, vec3_802f616c);
+            Vec pos = logMkVec(LV(0x2A8, vec3_802f6160), xr + xo, yo);
+            GXColor c = c8c;
+
+            winFontSet(&pos, &scale, &c, msg);
+        }
+    }
+    if (w->charPage > 0) {
+        f32 ax = float_440_8041d84c + x;
+
+        winTexInit(LOG_TEXPAL());
+        winTexSet(0x17, logMkVec(LV(0x2C0, vec3_802f6178), ax, float_18_8041d850 + y), LV(0x2CC, vec3_802f6184), c4);
+        winIconInit();
+        {
+            Vec scale = LV(0x2E4, vec3_802f619c);
+            Vec pos = logMkVec(LV(0x2D8, vec3_802f6190), ax, y);
+
+            winIconSet(0x7E, &pos, &scale, &c4);
+        }
+    }
+    if (w->charPage < (w->charCnt + 0xF) / 16 - 1) {
+        f32 ay = y - float_15_8041d854;
+        f32 ax = float_440_8041d84c + x;
+
+        winTexInit(LOG_TEXPAL());
+        winTexSet(0x17, logMkVec(LV(0x2F0, vec3_802f61a8), ax, ay - float_240_8041d858), LV(0x2FC, vec3_802f61b4), c4);
+        winIconInit();
+        {
+            Vec scale = LV(0x314, vec3_802f61cc);
+            Vec pos = logMkVec(LV(0x308, vec3_802f61c0), ax, y - float_240_8041d858);
+
+            winIconSet(0x80, &pos, &scale, &c4);
+        }
+    }
+    msg = msgSearch(RO2(base, 0x490, str_802F6348));
+    {
+        f32 fw = float_0p7_8041d85c * (f32)FontGetMessageWidth(msg);
+        f32 ox;
+
+        winFontInit();
+        ox = x + (float_420_8041d860 - fw);
+        {
+            Vec scale = LV(0x32C, vec3_802f61e4);
+            Vec pos = logMkVec(LV(0x320, vec3_802f61d8), ox, y - float_210_8041d7f0);
+            GXColor c = c8;
+
+            winFontSet(&pos, &scale, &c, msg);
+        }
+        winIconInit();
+        {
+            Vec scale = LV(0x344, vec3_802f61fc);
+            Vec pos = logMkVec(LV(0x338, vec3_802f61f0), ox - float_30_8041d864, y - float_220_8041d868);
+
+            winIconSet(0x217, &pos, &scale, &c4);
+        }
     }
 }
