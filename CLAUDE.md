@@ -22,5 +22,8 @@ setup.
 - Every commit with model-authored work ends with a `Co-Authored-By:` trailer naming the model that actually did
   it (your own model for your own work; the model on an agent report's `Model:` line for merged agent work).
   This overrides any global "no Co-Authored-By" rule.
+- PR descriptions don't repeat that attribution: no `Co-Authored-By:` lines and no "agent work by ..." line. Write a
+  short summary of what changed and the results, then the usual "Generated with Claude Code" footer. The commits
+  carry the attribution.
 - Run `python3 tools/ci.py` before every commit; commit only on PASS. It is the oracle: lint, build, the
   no-regression ratchet, and the progress summary. Never commit a regression.
