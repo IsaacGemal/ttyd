@@ -593,7 +593,12 @@ typedef struct BattleUnit {
     ItemDropData* dropTable;                     // 0x308
     u8 field_0x30C[0x30D - 0x30C];               // 0x30C
     u8 mMoveColorLv;                             // 0x30D
-    u8 field_0x30E[0x334 - 0x30E];               // 0x30E
+    u8 field_0x30E[0x320 - 0x30E];               // 0x30E
+    EffectEntry* mSleepEff;                      // 0x320
+    EffectEntry* mFireEff;                       // 0x324
+    EffectEntry* mFreezeEff;                     // 0x328
+    EffectEntry* mBiribiriEff;                   // 0x32C
+    u8 field_0x330[0x334 - 0x330];               // 0x330
     s16 mBurnDamageFlameState;                   // 0x334
     s16 mbBurnDamageFlameActive;                 // 0x336
     s32 mBurnDamageFlameAnimTimer;               // 0x338
