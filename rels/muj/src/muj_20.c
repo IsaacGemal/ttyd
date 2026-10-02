@@ -2221,8 +2221,6 @@ MarcoShip* marcoship;
 // TODO: write draw (static, 0x1ac bytes) here:
 // its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write pressStartGX (static, 0x4d8 bytes) here:
-// its asm is in build/G8MJ01/muj/asm/muj_20.s; this is where the original has it, just before the first script that uses it
 
 
 void elmos1000tai_seq00(struct NanNpcEntry* entry) {

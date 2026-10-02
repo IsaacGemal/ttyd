@@ -10,17 +10,6 @@
 #include <dolphin/os/OSCache.h>
 #include <stdlib.h>
 
-// Retail stores the transformed vertex through psq_st (GQR5, s16), which saturates to the s16 range.
-static inline s16 clampS16(f32 value) {
-	if (value > 32767.0f) {
-		return 32767;
-	}
-	if (value < -32768.0f) {
-		return -32768;
-	}
-	return (s16)value;
-}
-
 // .rodata
 const char str_802FB2A4[] = "OpukuWcurtainN64";
 
@@ -112,21 +101,26 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-// NONMATCHING (75.15%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
-// retail (the store saturates, which clampS16 reproduces); they need inline asm, so here they lower to
-// xoris/lfd/fsubs loads and compare/fctiwz/sth stores. That changes the transform loop body, the saved
-// FPRs and every local stack offset; tri2's u16 prototype also adds a clrlwi the retail call lacks.
+// Retail lowers the packed s16<->f32 vertex conversions to psq_l/psq_st through GQR5 (store saturates),
+// with the GQR2-5 setup inlined; MWCC 2.6 lowers the same `v = p->component` / `p->component = v` casts
+// to lha/xoris+lfd+fsubs loads and fctiwz/stfd/sth stores. No available compiler (2.5, 2.6, 2.7, 3.0a3,
+// 3.0a5) emits the psq path from any source form tried, and the brief forbids the inline asm the SDK uses
+// for it. That changes the transform loop body, the saved FPRs (retail keeps f28-f31, we keep f30-f31) and
+// the 0x110 vs 0x100 frame, so tri2's u16 prototype also adds a clrlwi the retail call lacks. The GX/TEV
+// state, the vertex fill loop and the triangle loop line up.
+// NONMATCHING (78.64%): psq_l/psq_st vertex casts vs our lha/fctiwz; saved FPRs and stack offsets differ.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
 	effOpukuWcurtainData* data = effect->userdata;
 	OpukuWcurtainVtx* vtx;
+	OpukuWcurtainVtx* p;
 	smartEntry* entry;
 	GXTexObj texObj;
 	Mtx transMtx;
 	Mtx scaleMtx;
 	GXColor color;
-	Vec v;
+	f32 v[4];
 	f32 scale;
 	s32 i;
 	s32 j;
@@ -153,7 +147,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	PSMTXScale(scaleMtx, 0.03125f, 0.03125f, 0.0f);
+	PSMTXScale(scaleMtx, 0.03125f, 0.03125f, float_0_8041f820);
 	GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 
@@ -188,17 +182,15 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	PSMTXScale(scaleMtx, scale, scale, scale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 
-	{
-		OpukuWcurtainVtx* p = vtx;
-		for (j = 0; j < i * 2; j++, p++) {
-			v.x = p->x;
-			v.y = p->y;
-			v.z = p->z;
-			PSMTXMultVec(transMtx, &v, &v);
-			p->x = clampS16(v.x);
-			p->y = clampS16(v.y);
-			p->z = clampS16(v.z);
-		}
+	p = vtx;
+	for (j = 0; j < i * 2; j++, p++) {
+		v[0] = p->x;
+		v[1] = p->y;
+		v[2] = p->z;
+		PSMTXMultVec(transMtx, (Vec*)v, (Vec*)v);
+		p->x = (s16)v[0];
+		p->y = (s16)v[1];
+		p->z = (s16)v[2];
 	}
 
 	DCFlushRange(vtx, 0x2A0);

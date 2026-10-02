@@ -52,6 +52,8 @@ typedef struct PoseRoot {
 	PoseData* data; // 0x0
 } PoseRoot;
 
+extern u32 lp[1];
+
 USER_FUNC(bom1000_jump);
 USER_FUNC(bom1000_msg);
 void ext_dispent_minnnanokoe(void);  // TODO: real signature
@@ -68,7 +70,7 @@ USER_FUNC(sight_dir);
 USER_FUNC(sight);
 void disp_sight(CameraId cameraId, void* param);
 void drawNum(void);  // TODO: real signature
-void drawBG(void);  // TODO: real signature
+void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot);
 EVT_DEF(evt_door_1);
 EVT_DEF(evt_bom_01_karakara);
 EVT_DEF(evt_bom1000);

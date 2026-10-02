@@ -1609,14 +1609,18 @@ static f32 randf(f32 min, f32 max) {
     return r * (max - min) + min;
 }
 
-// NONMATCHING (93.31%): the three `wp->vec[i] = vec3_*` copies get a different source-address
-// schedule (d04 address computed a step earlier, cf8 lanes loaded into r0/r4 instead of r6/r0) and
-// that cascades into the loop's callee-saved block (`stmw r15` vs `stmw r17`, entry/pose in r25/r24
-// vs r31/r23). Every instruction is otherwise present and the 0x150 frame matches.
+
+// The loop body matches. What is left is the three `wp->vec[i] = vec3_*` copies at the top, whose
+// lane loads MWCC colours into r0/r4 instead of r6/r0 (and `&wp` lands in r4 instead of r5). The local-
+// declaration order is load-bearing: `s32 i; ExtPose* pose; MoamoaEntry* entry;` gives 98.23% (97.49%
+// in the source order, and every other permutation of these four declarations scores differently).
+// The remaining `float_*`/`@NNN` symbol-name diffs are the .rodata shift from the still-unwritten
+// ext_moamoa_main, not this function.
+// NONMATCHING (98.23%): three `wp->vec` copies colour their lane loads r0/r4 instead of r6/r0.
 static void ext_moamoa_init(void) {
-    MoamoaEntry* entry;
-    ExtPose* pose;
     s32 i;
+    ExtPose* pose;
+    MoamoaEntry* entry;
     f32 hx, hy, hz, dist, nx, ny, nz;
 
     wp = _mapAlloc(0x870);
@@ -1659,7 +1663,13 @@ static void ext_moamoa_init(void) {
             moamoa_pose_change(entry, "c_n_moa_a", "S_1");
         }
         {
+#ifdef MUST_MATCH
+            // The original's zero vector is read-only but MWCC must reload it every iteration, so the
+            // volatile read stands in for the missing non-const qualifier.
+            Vec offset = *(volatile Vec*)&vec3_rsh_00013d1c;
+#else
             Vec offset = vec3_rsh_00013d1c;
+#endif
 
             offset.x = randf(-10.0f, 10.0f);
             offset.y = randf(-10.0f, 10.0f);
@@ -1757,21 +1767,24 @@ static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 fla
     pose->flags &= ~4;
 }
 
+
 // Inline sine/cosine approximations (the polynomials shared by the NPC blur path).
 static inline f32 moamoa_sin(f32 r) {
     f32 x, y, s = 0.00761f;
+    f32 c1 = 0.16605f;
+    f32 c2 = 1.0f;
 
     if (r <= 3.1415927f) {
         if (r <= 1.5707964f) {
             x = r * r;
-            s = s * x - 0.16605f;
-            s = s * x + 1.0f;
+            s = s * x - c1;
+            s = s * x + c2;
             s = s * r;
         } else {
             x = 1.5707964f - (r - 1.5707964f);
             y = x * x;
-            s = s * y - 0.16605f;
-            s = s * y + 1.0f;
+            s = s * y - c1;
+            s = s * y + c2;
             s = s * x;
         }
     } else if (r < 4.712389f) {
@@ -1794,30 +1807,32 @@ static inline f32 moamoa_sin(f32 r) {
 
 static inline f32 moamoa_cos(f32 r) {
     f32 x, c = 0.03705f;
+    f32 d1 = 0.4967f;
+    f32 d2 = 1.0f;
 
     if (r <= 3.1415927f) {
         if (r <= 1.5707964f) {
             x = r * r;
-            c = c * x - 0.4967f;
-            c = c * x + 1.0f;
+            c = c * x - d1;
+            c = c * x + d2;
         } else {
             x = 1.5707964f - (r - 1.5707964f);
             x = x * x;
-            c = c * x - 0.4967f;
-            c = c * x + 1.0f;
+            c = c * x - d1;
+            c = c * x + d2;
             c = -c;
         }
     } else if (r < 4.712389f) {
         x = r - 3.1415927f;
         x = x * x;
-        c = c * x - 0.4967f;
-        c = c * x + 1.0f;
+        c = c * x - d1;
+        c = c * x + d2;
         c = -c;
     } else {
         x = 1.5707964f - (r - 4.712389f);
         x = x * x;
-        c = c * x - 0.4967f;
-        c = c * x + 1.0f;
+        c = c * x - d1;
+        c = c * x + d2;
     }
     return c;
 }
@@ -1833,8 +1848,10 @@ static inline Vec moamoa_vec(f32 x, f32 y, f32 z, const Vec* base) {
     return v;
 }
 
-// NONMATCHING (67.83%): reconstructed from the assembly; the Vec temporaries match the retail
-// 0xf0 frame now, the sin/cos FPR colouring still differs.
+// The sine/cosine coefficients now hoist and colour like retail (the two pragmas and the named
+// non-const locals); the final moamoa_vec/pvec block's address schedule differs.
+// NONMATCHING (68.56%): frame is 0x130 not 0xf0 (MWCC reserves 8 bytes per inlined sin/cos for the
+// coefficient locals), so every stack slot is shifted; the last pvec block schedules differently.
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party;
@@ -1878,7 +1895,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
             return 2;
     }
 
-    if (mario->currMotionId == 0x13 && mario->currSubMotionId == 0x14) {
+    if (mario->currMotionId == 0x13 && (s32)mario->currSubMotionId == 0x14) {
         Vec v65 = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
                              &vec3_rsh_00013d34);
 
@@ -1919,37 +1936,36 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
                               &vec3_rsh_00013d70);
 
         f31 = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
-        if (PSVECDistance(&mpos, &pvec) >= f31)
-            return 0;
+        if (PSVECDistance(&mpos, &pvec) < f31) {
+            (*pose->matrix)[0][3] = entry->field_0x28;
+            (*pose->matrix)[2][3] = entry->field_0x2C;
+            {
+                pvec = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                                  &vec3_rsh_00013d7c);
 
-        (*pose->matrix)[0][3] = entry->field_0x28;
-        (*pose->matrix)[2][3] = entry->field_0x2C;
-        {
-            Vec pv2 = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
-                                 &vec3_rsh_00013d7c);
+                f29 = PSVECDistance(&mpos, &pvec);
+            }
+            if (f29 < f31) {
+                f30 = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3],
+                               (*pose->matrix)[2][3]);
+                if (__fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
+                    f32 rad, s, c;
 
-            f29 = PSVECDistance(&mpos, &pv2);
-        }
-        if (f29 >= f31)
-            return 0;
+                    rad = 6.2831855f * mario->directionView / 360.0f;
+                    s = moamoa_sin(rad);
+                    mario->riderDelta.x = -((f31 - f29) * s);
+                    c = moamoa_cos(6.2831855f * mario->directionView / 360.0f);
+                    mario->riderDelta.z = (f31 - f29) * c;
+                } else {
+                    f32 rad, s, c;
 
-        f30 = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
-        if (__fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
-            f32 rad, s, c;
-
-            rad = 6.2831855f * mario->directionView / 360.0f;
-            s = moamoa_sin(rad);
-            mario->riderDelta.x = -((f31 - f29) * s);
-            c = moamoa_cos(6.2831855f * mario->directionView / 360.0f);
-            mario->riderDelta.z = (f31 - f29) * c;
-        } else {
-            f32 rad, s, c;
-
-            rad = 6.2831855f * f30 / 360.0f;
-            s = moamoa_sin(rad);
-            mario->riderDelta.x = ((*pose->matrix)[0][3] - f31 * s) - mario->position.x;
-            c = moamoa_cos(rad);
-            mario->riderDelta.z = ((*pose->matrix)[2][3] + f31 * c) - mario->position.z;
+                    rad = 6.2831855f * f30 / 360.0f;
+                    s = moamoa_sin(rad);
+                    mario->riderDelta.x = ((*pose->matrix)[0][3] - f31 * s) - mario->position.x;
+                    c = moamoa_cos(rad);
+                    mario->riderDelta.z = ((*pose->matrix)[2][3] + f31 * c) - mario->position.z;
+                }
+            }
         }
     }
 

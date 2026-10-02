@@ -1,4 +1,5 @@
 #include "bom_01.h"
+#include "driver/camdrv.h"
 #include "driver/envdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_bg.h"
@@ -226,8 +227,143 @@ static ExtTableEntry ext_data[31] = {0};
 // TODO: write ext_main (static, 0x1494 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write ext_init (static, 0x50c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const f32 float_6p2832_bom_00007060;
+extern const f32 float_0p00761_bom_00007068;
+extern const f32 float_0p16605_bom_0000706c;
+extern const f32 float_3p1416_bom_00007070;
+extern const f32 float_1p5708_bom_00007074;
+extern const f32 float_4p7124_bom_00007078;
+extern const f32 float_0p03705_bom_0000707c;
+extern const f32 float_0p4967_bom_00007080;
+extern const f32 float_32767_bom_000070ac;
+extern const f32 float_400_bom_000070bc;
+extern const f32 float_500_bom_000070e8;
+extern const f32 float_1_bom_00006ffc;
+extern const f32 zero_bom_00007004;
+extern u32 lp[1];
+
+// The instruction sequence, frame layout (0x120) and the inlined bomb-sine/cosine
+// polynomial all match. Declaring `i`/`j` first reproduces the outer-loop integer
+// colouring, declaring `angle` first moves the FPR colouring, and re-deriving `pd`
+// inside the entry-match block reproduces the retail r20 reload. What is left is the
+// callee-saved FPR colouring and the order MWCC pools/loads the loop constants
+// (retail: zero, double, 32767, 400, 6.2832, 500, 0.16605, 1.0, pi, 0.4967). Source
+// layout cannot move it further, so it is a permuter candidate.
+// NONMATCHING (87.81%): FPR colouring and loop-constant load order only.
+static void ext_init(void) {
+    s32 i;
+    s32 j;
+    PoseData* pd;
+    ExtPose* pose;
+    PoseEntry* e;
+    f32 angle;
+    f32 ccos;
+    f32 c1;
+    f32 c2;
+    f32 pi;
+    f32 range;
+    f32 sinv;
+    f32 f0;
+    f32 f1;
+
+    lp[0] = (u32)smartAlloc(0xBC30, 1);
+    pd = ((PoseRoot*)lp[0])->data;
+    memset(pd, 0, 0xBC30);
+    *(s32*)((u8*)pd + 4) = extGetPoseNum();
+    pose_init();
+    pose = extGetPosePtr();
+    c1 = float_0p16605_bom_0000706c;
+    ccos = float_0p4967_bom_00007080;
+    c2 = float_1_bom_00006ffc;
+    pi = float_3p1416_bom_00007070;
+    for (i = 0; i < *(s32*)((u8*)pd + 4); i++, pose++) {
+        pd->states[i].field_1C = zero_bom_00007004;
+        pd->states[i].field_14 = zero_bom_00007004;
+        pd->states[i].field_0 = 0;
+        pose->flags |= 7;
+        PSMTXIdentity(*pose->matrix);
+        angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
+        range = (f32)rand() * float_400_bom_000070bc / float_32767_bom_000070ac + float_500_bom_000070e8;
+        sinv = float_0p00761_bom_00007068;
+        if (angle <= pi) {
+            if (angle <= float_1p5708_bom_00007074) {
+                f0 = angle * angle;
+                sinv = sinv * f0 - c1;
+                sinv = sinv * f0 + c2;
+                sinv = sinv * angle;
+            } else {
+                f0 = angle - float_1p5708_bom_00007074;
+                f1 = float_1p5708_bom_00007074 - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - c1;
+                sinv = sinv * f0 + c2;
+                sinv = sinv * f1;
+            }
+        } else if (angle < float_4p7124_bom_00007078) {
+            f1 = angle - pi;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+            sinv = -sinv;
+        } else {
+            f0 = angle - float_4p7124_bom_00007078;
+            f1 = float_1p5708_bom_00007074 - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+            sinv = -sinv;
+        }
+        (*pose->matrix)[0][3] = range * sinv;
+        (*pose->matrix)[1][3] = zero_bom_00007004;
+        sinv = float_0p03705_bom_0000707c;
+        if (angle <= pi) {
+            if (angle <= float_1p5708_bom_00007074) {
+                f0 = angle * angle;
+                sinv = sinv * f0 - ccos;
+                sinv = sinv * f0 + c2;
+            } else {
+                f0 = angle - float_1p5708_bom_00007074;
+                f0 = float_1p5708_bom_00007074 - f0;
+                f0 = f0 * f0;
+                sinv = sinv * f0 - ccos;
+                sinv = sinv * f0 + c2;
+                sinv = -sinv;
+            }
+        } else if (angle < float_4p7124_bom_00007078) {
+            f0 = angle - pi;
+            f0 = f0 * f0;
+            sinv = sinv * f0 - ccos;
+            sinv = sinv * f0 + c2;
+            sinv = -sinv;
+        } else {
+            f0 = angle - float_4p7124_bom_00007078;
+            f0 = float_1p5708_bom_00007074 - f0;
+            f0 = f0 * f0;
+            sinv = sinv * f0 - ccos;
+            sinv = sinv * f0 + c2;
+        }
+        (*pose->matrix)[2][3] = range * sinv;
+        {
+            PoseData* pd2 = ((PoseRoot*)lp[0])->data;
+
+            e = pd2->entries;
+            for (j = 0; j < pd2->count; j++, e++) {
+                if (strcmp(e->name, "c_bom_sen") == 0) {
+                    break;
+                }
+            }
+            if (j < pd2->count) {
+                if (pd2->states[i].field_20 != j) {
+                    pd2->states[i].field_20 = (s16)j;
+                    pd2->states[i].time = gp->renderTime + rand();
+                }
+            }
+        }
+    }
+}
+
 
 EVT_BEGIN(evt_bom1000)
     CALL(make_ext_table)
@@ -434,8 +570,42 @@ char* oh_data[8] = {
     "stg7_bom_65_d",
 };
 
-// TODO: write bom_fall (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const f32 float_600_bom_000070f4;
+extern const f32 float_32767_bom_000070ac;
+extern const f32 float_300_bom_000070f8;
+extern const f32 float_3700_bom_000070fc;
+extern const f32 float_neg450_bom_00007104;
+extern const f32 float_neg650_bom_00007100;
+
+USER_FUNC(bom_fall) {
+    PoseData* data = ((PoseRoot*)lp[0])->data;
+    ExtPose* pose = extGetPosePtr();
+    s32 i;
+    s32 j;
+    PoseEntry* e;
+    PoseData* pd;
+
+    // 0x4 of PoseData is the pose count written by ext_init; the header keeps it as padding
+    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
+        data->states[i].field_0 = 0x7f;
+        pose->matrix[0][0][3] = 600.0f * rand() / 32767.0f;
+        pose->matrix[0][1][3] = 3700.0f + 300.0f * rand() / 32767.0f;
+        pose->matrix[0][2][3] = -650.0f + -450.0f * rand() / 32767.0f;
+        pd = ((PoseRoot*)lp[0])->data;
+        for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
+            if (strcmp(e->name, "S_2") == 0) {
+                break;
+            }
+        }
+        if (j < pd->count) {
+            if (pd->states[i].field_20 != j) {
+                pd->states[i].field_20 = (s16)j;
+                pd->states[i].time = gp->renderTime + rand();
+            }
+        }
+    }
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(evt_taihou)
     CALL(evt_mario_key_onoff, 0)
@@ -1387,8 +1557,80 @@ static u32 npcEnt[161] = {
     0x00000000,
 };
 
-// TODO: write ext_init_minnnanokoe (global, 0x318 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const f32 zero_bom_00007004;
+extern const f32 float_270_bom_0000703c;
+extern const char zero_bom_00007038[];
+
+// Inlined copy of pose_init used by ext_init_minnnanokoe (the original inlines it there with a 0x20 buffer).
+static inline void pose_init_minnnanokoe_copy(void) {
+    char buf[0x20];
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtTableEntry* p = ext_data;
+    s32 i = 0;
+    s32 start;
+
+    strcpy(buf, zero_bom_00007038);
+    pd->count = -1;
+    do {
+        if (strcmp(p->type, buf) != 0) {
+            strcpy(buf, p->type);
+            start = i;
+            pd->count++;
+        }
+        strcpy(pd->entries[pd->count].name, buf);
+        pd->entries[pd->count].field_C = start;
+        pd->entries[pd->count].field_10 = i - start + 1;
+        pd->entries[pd->count].field_8 = p->value;
+        i++;
+    } while ((++p)->name != NULL);
+    pd->count++;
+}
+
+// NONMATCHING (99.46%): loop register colouring differs; the target puts i in r26, e in r27, j in r28,
+// the compiler picks j=r26, i=r27, e=r28. Writing the inner increment as `e++, j++` aligns best.
+void ext_init_minnnanokoe(void) {
+    s32 i;
+    s32 j;
+    PoseData* data;
+    ExtPose* pose;
+    PoseEntry* e;
+    PoseData* pd;
+    s32 rx;
+    s32 rz;
+
+    lp[0] = (u32)smartAlloc(0xBC30, 1);
+    data = ((PoseRoot*)lp[0])->data;
+    memset(data, 0, 0xBC30);
+    // 0x4 of PoseData is the pose count; the header keeps it as padding
+    *(s32*)((u8*)data + 0x4) = extGetPoseNum();
+    pose_init_minnnanokoe_copy();
+    pose = extGetPosePtr();
+    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
+        data->states[i].field_1C = zero_bom_00007004;
+        data->states[i].field_14 = zero_bom_00007004;
+        data->states[i].field_0 = 5;
+        pose->flags |= 3;
+        PSMTXIdentity((MtxPtr)pose->matrix);
+        rx = (i % 14) * 30 - 205 + rand() % 10;
+        rz = 190 - (i / 14) * 20 + rand() % 20;
+        pose->matrix[0][0][3] = (f32)rx;
+        pose->matrix[0][1][3] = zero_bom_00007004;
+        pose->matrix[0][2][3] = (f32)rz;
+        pose->field_0x4 = float_270_bom_0000703c;
+        pd = ((PoseRoot*)lp[0])->data;
+        for (j = 0, e = pd->entries; j < pd->count; e++, j++) {
+            if (strcmp(e->name, "S_1") == 0) {
+                break;
+            }
+        }
+        if (j < pd->count) {
+            if (pd->states[i].field_20 != j) {
+                pd->states[i].field_20 = (s16)j;
+                pd->states[i].time = gp->renderTime + rand();
+            }
+        }
+    }
+}
 
 EVT_BEGIN(bom1000_minnnanokoe)
     CALL(make_ext_table_minnnanokoe)
@@ -1634,8 +1876,166 @@ SightWork* sight_wp;
 // TODO: write jump_minnnanokoe (global, 0x1cc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write depthDisp (static, 0x62c bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const f32 float_6p2832_bom_00007060;
+extern const f32 float_0p125_bom_00007064;
+extern const f32 float_0p00761_bom_00007068;
+extern const f32 float_0p16605_bom_0000706c;
+extern const f32 float_3p1416_bom_00007070;
+extern const f32 float_1p5708_bom_00007074;
+extern const f32 float_4p7124_bom_00007078;
+extern const f32 float_0p03705_bom_0000707c;
+extern const f32 float_0p4967_bom_00007080;
+extern const f32 float_100_bom_00007000;
+extern const f32 float_1_bom_00006ffc;
+
+// The instruction sequence, frame (0x110) and the sin/cos polynomial all match; only
+// the FPR colouring differs. Retail hoists twoPi/double/quarter into f28/f29/f30 and
+// keeps the sin/cos coefficients on f23..f27; MWCC here shifts them by one. Source
+// layout cannot influence this, so it is a permuter candidate.
+// NONMATCHING (87.92%): FPR colouring and loop-constant load order only.
+static void depthDisp(CameraId cameraId, void* param) {
+    GXTexObj texObj;
+    Mtx mtx;
+    smartEntry* texBuf;
+    CameraEntry* cam;
+    f32 twoPi, quarter, c16605, one, pi, c4967;
+    f32 scale;
+    s32 i;
+    s32 mtxId;
+    f32 f3, f2, f4, f0, f1;
+
+    scale = (f32)evtGetValue(NULL, GW(5)) / float_100_bom_00007000;
+    cam = camGetPtr(cameraId);
+    texBuf = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, GX_TF_RGB565, GX_FALSE, 0), 3);
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x260, 0x1E0, GX_TF_RGB565, GX_FALSE);
+    GXCopyTex(texBuf->address, GX_FALSE);
+    GXPixModeSync();
+    GXInitTexObj(&texObj, texBuf->address, 0x260, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetNumTexGens(8);
+    GXSetNumTevStages(8);
+    for (i = 0; i < 8; i++) {
+        twoPi = float_6p2832_bom_00007060;
+        quarter = float_0p125_bom_00007064;
+        f3 = (twoPi * (f32)i) * quarter;
+        f2 = float_0p00761_bom_00007068;
+        c16605 = float_0p16605_bom_0000706c;
+        one = float_1_bom_00006ffc;
+        pi = float_3p1416_bom_00007070;
+        if (f3 <= pi) {
+            if (f3 <= float_1p5708_bom_00007074) {
+                f0 = f3 * f3;
+                f2 = (f2 * f0) - c16605;
+                f2 = (f2 * f0) + one;
+                f2 = f2 * f3;
+            } else {
+                f0 = f3 - float_1p5708_bom_00007074;
+                f1 = float_1p5708_bom_00007074 - f0;
+                f0 = f1 * f1;
+                f2 = (f2 * f0) - c16605;
+                f2 = (f2 * f0) + one;
+                f2 = f2 * f1;
+            }
+        } else {
+            if (f3 < float_4p7124_bom_00007078) {
+                f1 = f3 - float_3p1416_bom_00007070;
+                f0 = f1 * f1;
+                f2 = (f2 * f0) - c16605;
+                f2 = (f2 * f0) + one;
+                f2 = f2 * f1;
+                f2 = -f2;
+            } else {
+                f0 = f3 - float_4p7124_bom_00007078;
+                f1 = float_1p5708_bom_00007074 - f0;
+                f0 = f1 * f1;
+                f2 = (f2 * f0) - c16605;
+                f2 = (f2 * f0) + one;
+                f2 = f2 * f1;
+                f2 = -f2;
+            }
+        }
+        f4 = float_0p03705_bom_0000707c;
+        c4967 = float_0p4967_bom_00007080;
+        if (f3 <= pi) {
+            if (f3 <= float_1p5708_bom_00007074) {
+                f0 = f3 * f3;
+                f4 = (f4 * f0) - c4967;
+                f4 = (f4 * f0) + one;
+            } else {
+                f0 = f3 - float_1p5708_bom_00007074;
+                f0 = float_1p5708_bom_00007074 - f0;
+                f0 = f0 * f0;
+                f4 = (f4 * f0) - c4967;
+                f4 = (f4 * f0) + one;
+                f4 = -f4;
+            }
+        } else {
+            if (f3 < float_4p7124_bom_00007078) {
+                f0 = f3 - float_3p1416_bom_00007070;
+                f0 = f0 * f0;
+                f4 = (f4 * f0) - c4967;
+                f4 = (f4 * f0) + one;
+                f4 = -f4;
+            } else {
+                f0 = f3 - float_4p7124_bom_00007078;
+                f0 = float_1p5708_bom_00007074 - f0;
+                f0 = f0 * f0;
+                f4 = (f4 * f0) - c4967;
+                f4 = (f4 * f0) + one;
+            }
+        }
+        mtxId = 30 + i * 3;
+        PSMTXTrans(mtx, (scale * f2) / float_100_bom_00007000, (scale * f4) / float_100_bom_00007000, 0.0f);
+        GXLoadTexMtxImm(mtx, mtxId, GX_MTX2x4);
+        GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0, mtxId, GX_FALSE, GX_PTIDENTITY);
+        GXSetTevKColorSel(i, GX_TEV_KCSEL_1_8);
+        GXSetTevKAlphaSel(i, GX_TEV_KASEL_1_8);
+        GXSetTevOrder(i, i, GX_TEXMAP0, GX_COLOR_NULL);
+        GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        {
+            s32 colorIn;
+            s32 alphaIn;
+
+            if (i == 0) {
+                colorIn = GX_CC_ZERO;
+                alphaIn = GX_CA_ZERO;
+            } else {
+                colorIn = GX_CC_CPREV;
+                alphaIn = GX_CA_APREV;
+            }
+            GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, colorIn);
+            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, alphaIn);
+        }
+        GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    }
+    GXLoadPosMtxImm(cam->view, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(2);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 3, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3s16(-0x130, 0xF0, 0);
+    GXTexCoord2s16(0, 0);
+    GXPosition3s16(0x130, 0xF0, 0);
+    GXTexCoord2s16(1, 0);
+    GXPosition3s16(0x130, -0xF0, 0);
+    GXTexCoord2s16(1, 1);
+    GXPosition3s16(-0x130, -0xF0, 0);
+    GXTexCoord2s16(0, 1);
+    sysWaitDrawSync();
+}
 
 // TODO: write jump (global, 0x250 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
@@ -1648,6 +2048,63 @@ SightWork* sight_wp;
 
 // TODO: write drawNum (global, 0x224 bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+
+extern const f32 float_deg2rad_bom_000070d4;
+
+// drawBG is the last function in the original asm, so it is the first body in the reverse-ordered source.
+void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot) {
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx m0;
+    Mtx m2;
+    Mtx m1;
+    s16 w;
+    s16 h;
+
+    cam = camGetPtr(CAMERA_2D);
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, id);
+    GXLoadTexObj(&texObj, 0);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    if (id == 0) {
+        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xF);
+        GXSetTevAlphaIn(0, 6, 7, 4, 7);
+        GXSetTevKAlphaSel(0, 0);
+    }
+    PSMTXTrans(m0, x, y, 0.0f);
+    PSMTXScale(m1, scaleX, scaleY, 1.0f);
+    PSMTXRotRad(m2, 'z', float_deg2rad_bom_000070d4 * rot);
+    PSMTXConcat(m0, m1, m1);
+    PSMTXConcat(m1, m2, m0);
+    PSMTXConcat(cam->view, m0, m0);
+    GXLoadPosMtxImm(m0, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 3, 0);
+    GXBegin(0x80, 0, 4);
+    w = (s16)GXGetTexObjWidth(&texObj);
+    h = (s16)GXGetTexObjHeight(&texObj);
+    GXPosition3s16(-w, h, 0);
+    GXTexCoord2s16(0, 0);
+    GXPosition3s16(0, h, 0);
+    GXTexCoord2s16(1, 0);
+    GXPosition3s16(0, 0, 0);
+    GXTexCoord2s16(1, 1);
+    GXPosition3s16(-w, 0, 0);
+    GXTexCoord2s16(0, 1);
+}
 
 // clang-format on
 
@@ -1930,7 +2387,7 @@ static void pose_init(void) {
     pd->count++;
 }
 
-// NONMATCHING (75.88%): rand() scheduling differs (compiler hoists the call before idx computation)
+// NONMATCHING (75.89%): rand() scheduling differs (compiler hoists the call before idx computation)
 USER_FUNC(bom1000_msg) {
     s32* args = event->args;
     s32 a = evtGetValue(event, args[0]);
@@ -1990,4 +2447,11 @@ const double double_0p7854_bom_00007088 = 0.7853981852531433;
 const double double_to_int_bom_00007030 = 4503601774854144.0;
 const char zero_bom_00007038[4] = {0};
 const f32 float_800_bom_0000711c = 800.0f;
+const f32 float_600_bom_000070f4 = 600.0f;
+const f32 float_32767_bom_000070ac = 32767.0f;
+const f32 float_300_bom_000070f8 = 300.0f;
+const f32 float_3700_bom_000070fc = 3700.0f;
+const f32 float_neg450_bom_00007104 = -450.0f;
+const f32 float_neg650_bom_00007100 = -650.0f;
+const f32 float_270_bom_0000703c = 270.0f;
 

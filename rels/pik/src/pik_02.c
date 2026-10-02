@@ -278,15 +278,83 @@ USER_FUNC(hoshi_r) {
     return EVT_RETURN_DONE;
 }
 
-// `pragma opt_propagation off` is required or MWCC rematerialises the sin/cos coefficients per branch.
-// See evt_sub_get_coin / evt_item_get_important_item for the same FPR-colouring gap.
+// Keeping each polynomial in one helper (rather than inlining it twice) is what puts the angle^2
+// scratch in f0 and the wrapped-angle pivot in f1; with the coefficients as helper locals the seed
+// lands in f4/f3/f2 exactly as retail. See evt_sub_get_coin for the same helper structure.
 #pragma opt_propagation off
-// NONMATCHING (89.47%): declaring the temps `f0,f4,f2,f5,f3,f1` and leaving `half` a
-// plain local (only v0/v1 stay volatile) fixes the fp frame and coefficient colouring
-// (0.00761->f4, 0.16605->f3, 1.0->f2, pi->f1, half slot 0xc). The radian still lands
-// in f6 vs retail's f5; that one split cascades through both polynomials and the tail,
-// and the first-call `t`/`v0` slots and the final userdataf stores still differ.
-// NONMATCHING (89.47%): radian f6 vs retail f5; a few first-call slots and stores differ.
+static inline f32 hoshi_sin_approx(f32 angle) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
+    f32 t, u;
+
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) {
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * angle;
+        } else {
+            t = 1.5707964f - (angle - 1.5707964f);
+            u = t * t;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * t;
+        }
+    } else if (angle < 4.712389f) {
+        t = angle - 3.1415927f;
+        u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * t;
+        v = -v;
+    } else {
+        t = 1.5707964f - (angle - 4.712389f);
+        u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * t;
+        v = -v;
+    }
+    return v;
+}
+
+static inline f32 hoshi_cos_approx(f32 angle) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
+    f32 u;
+
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) {
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+        } else {
+            u = 1.5707964f - (angle - 1.5707964f);
+            u = u * u;
+            v = v * u - b;
+            v = v * u + one;
+            v = -v;
+        }
+    } else if (angle < 4.712389f) {
+        u = angle - 3.1415927f;
+        u = u * u;
+        v = v * u - b;
+        v = v * u + one;
+        v = -v;
+    } else {
+        u = 1.5707964f - (angle - 4.712389f);
+        u = u * u;
+        v = v * u - b;
+        v = v * u + one;
+    }
+    return v;
+}
+
+// NONMATCHING (92.94%): only the first-call block differs, and only in FPR colouring. Retail reads
+// `half` into f0, `data->0xC` into f2, `0.1`/`0.5` into f0/f1 and the `0.1f*d` product into f2;
+// MWCC picks f2/f0/f1/f2/f1 here. The values and the stack slots are identical.
 USER_FUNC(hoshi_jump) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
     effStarStoneData* data = entry->userdata;
@@ -294,138 +362,58 @@ USER_FUNC(hoshi_jump) {
     f32 nx = npc->position.x;
     f32 ny = npc->position.y + 50.0f;
     f32 nz = npc->position.z;
-    f32 f0, f4, f2, f5, f3, f1;
-#ifdef MUST_MATCH
-    // MUST_MATCH: the int bit-cast stores below need a named temp; the natural #else form writes
-    // event->userdataf directly and has no temp.
+    f32 f2, f5;
     f32 t;
-#endif
-    volatile f32 v0;
-    volatile f32 v1;
     f32 half;
+    f32 d;
 
 #ifdef MUST_MATCH
-    // MUST_MATCH: retail scales by a volatile 0.5 `half` (so the divide reads the stack slot) and
-    // stores the three floats through int bit-casts (spill + lwz/stw); natural form is under #else.
+    // MUST_MATCH: retail spills the first-call values through 4-byte stack slots and copies them to
+    // event->userdata with lwz/stw; the natural float stores are under #else.
     half = 0.5f;
 #endif
     if (isFirstCall) {
 #ifdef MUST_MATCH
-        f32 d = distABf(nx, nz, data->field_0x8, data->field_0x10) / half;
-        f4 = ny - data->field_0xC;
-        f0 = f4 / d;
-        f2 = 0.1f * d;
-        t = f2 * 0.5f + f0;
+        d = distABf(nx, nz, data->field_0x8, data->field_0x10) / half;
+        t = 0.1f * d * 0.5f + (ny - data->field_0xC) / d;
         event->userdata[0] = *(s32*)&d;
         event->userdata[1] = *(s32*)&t;
         event->userdata[2] = *(s32*)&half;
 #else
-        f32 d = distABf(nx, nz, data->field_0x8, data->field_0x10) / 0.5f;
-        f4 = ny - data->field_0xC;
-        f0 = f4 / d;
-        f2 = 0.1f * d;
+        d = distABf(nx, nz, data->field_0x8, data->field_0x10) / 0.5f;
+        t = 0.1f * d * 0.5f + (ny - data->field_0xC) / d;
         event->userdataf[0] = d;
-        event->userdataf[1] = f2 * 0.5f + f0;
+        event->userdataf[1] = t;
         event->userdataf[2] = 0.5f;
 #endif
         event->field_84 = 0;
     }
 
-    v0 = event->userdataf[0];
-    v1 = event->userdataf[1];
+    d = event->userdataf[0];
+    t = event->userdataf[1];
     half = event->userdataf[2];
 
     f2 = 6.2831855f * angleABf(data->field_0x8, data->field_0x10, nx, nz);
     f5 = f2 / 360.0f;
-    f1 = 0.00761f;
-    f3 = 0.16605f;
-    f2 = 1.0f;
-    f4 = 3.1415927f;
-    if (f5 <= f4) {
-        f4 = 1.5707964f;
-        if (f5 <= f4) {
-            f0 = f5 * f5;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-            f1 = f1 * f5;
-        } else {
-            f0 = f5 - f4;
-            f4 = f4 - f0;
-            f0 = f4 * f4;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-            f1 = f1 * f4;
-        }
-    } else {
-        f0 = 4.712389f;
-        if (f5 < f0) {
-            f4 = f5 - f4;
-            f0 = f4 * f4;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-            f1 = f1 * f4;
-            f1 = -f1;
-        } else {
-            f0 = f5 - f0;
-            f4 = 1.5707964f;
-            f4 = f4 - f0;
-            f0 = f4 * f4;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-            f1 = f1 * f4;
-            f1 = -f1;
-        }
-    }
-    data->field_0x8 = half * f1 + data->field_0x8;
+    data->field_0x8 = half * hoshi_sin_approx(f5) + data->field_0x8;
+    data->field_0x10 = data->field_0x10 - half * hoshi_cos_approx(f5);
+    data->field_0xC = data->field_0xC + t;
 
-    f1 = 0.03705f;
-    f3 = 0.4967f;
-    f2 = 1.0f;
-    f4 = 3.1415927f;
-    if (f5 <= f4) {
-        f4 = 1.5707964f;
-        if (f5 <= f4) {
-            f0 = f5 * f5;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-        } else {
-            f0 = f5 - f4;
-            f0 = f4 - f0;
-            f0 = f0 * f0;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-            f1 = -f1;
-        }
-    } else {
-        f0 = 4.712389f;
-        if (f5 < f0) {
-            f0 = f5 - f4;
-            f0 = f0 * f0;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-            f1 = -f1;
-        } else {
-            f0 = f5 - f0;
-            f4 = 1.5707964f;
-            f0 = f4 - f0;
-            f0 = f0 * f0;
-            f1 = f1 * f0 - f3;
-            f1 = f1 * f0 + f2;
-        }
-    }
-    data->field_0x10 = data->field_0x10 - half * f1;
-    data->field_0xC = data->field_0xC + v1;
-
-    f1 = v0 - 1.0f;
-    f2 = v1 - 0.1f;
-    if (f1 < 0.0f) {
+    t = t - 0.1f;
+    d = d - 1.0f;
+    if (d < 0.0f) {
         data->field_0x8 = nx;
         data->field_0xC = ny;
         data->field_0x10 = nz;
         return EVT_RETURN_DONE;
     }
-    event->userdataf[0] = f1;
-    event->userdataf[1] = f2;
+#ifdef MUST_MATCH
+    event->userdata[0] = *(s32*)&d;
+    event->userdata[1] = *(s32*)&t;
+#else
+    event->userdataf[0] = d;
+    event->userdataf[1] = t;
+#endif
     return EVT_RETURN_BLOCK;
 }
 #pragma opt_propagation reset

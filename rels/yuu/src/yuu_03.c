@@ -679,16 +679,32 @@ static inline Vec makeVecB(f32 x, f32 y, f32 z) {
 }
 #endif
 
-// NONMATCHING (84.56%): evt_ryushi; makeVec helper + no redundant pos init fixed the prologue, hoisting `e` before `i` fixed r29/r30, root switch matches, f23=1.0f moved next to f22/f21; named floats still land in f28-f31 vs f20-f23 and inlined randf fneg order differs
+// `opt_lifetimes off` is needed: with the default pass the persistent floats land in a
+// different callee-saved block (f28-f31 instead of f20-f23) and the frame grows by 16 bytes.
+#pragma opt_lifetimes off
 USER_FUNC(evt_ryushi) {
     YuuminigameWork* work2;
     Yuuminigame4Data* data;
     RyushiEntry* wp = xwp;
     Vec pos;
-    f32 f20;
-    f32 f21;
-    f32 f22;
+#ifdef MUST_MATCH
+    // Allocation-steering locals. MWCC colours callee-saved FP registers by the order
+    // locals are declared, and the inlined randf scratches need names to land in
+    // f24/f25. The declaration order below is load-bearing: it is what puts the
+    // persistent floats in f20-f23. `half` keeps the 0.5 constant in a variable so the
+    // `step * 0.5f` multiply is emitted with the variable operand first.
+    f32 t2;
+    f32 t0;
+    f32 t3;
+#endif
     f32 f23;
+#ifdef MUST_MATCH
+    f32 half;
+    f32 t1;
+#endif
+    f32 f22;
+    f32 f21;
+    f32 f20;
     RyushiEntry* e;
     s32 i;
 
@@ -737,15 +753,23 @@ USER_FUNC(evt_ryushi) {
     }
 
     wp->unk24++;
-    if (wp->unk24 <= 0x14) {
-        wp->unk20 = wp->unk24 * 12;
-    } else {
-        wp->unk20 = 0xFF;
+    {
+        s32 n = wp->unk24;
+        if (n <= 0x14) {
+            wp->unk20 = n * 12;
+        } else {
+            wp->unk20 = 0xFF;
+        }
+        if (n & 1) {
+            wp->unk20 /= 2;
+        }
     }
-    if (wp->unk24 & 1) {
-        wp->unk20 /= 2;
-    }
-    f23 *= 0.5f;
+#ifdef MUST_MATCH
+    half = 0.5f;
+    f23 = half * f23;
+#else
+    f23 = 0.5f * f23;
+#endif
 
     {
     e = &wp[1];
@@ -754,23 +778,56 @@ USER_FUNC(evt_ryushi) {
         case 0:
             e->z -= f22;
             if (e->z < -200.0f) {
-                e->x = e->unk08 + randf(-0.3f * xwp->unk08, 0.3f * xwp->unk08);
-                e->y = e->unk0C + randf(-0.3f * xwp->unk0C, 0.3f * xwp->unk0C);
-                e->z = 200.0f + randf(-0.3f * xwp->unk10, 0.3f * xwp->unk10);
+#ifdef MUST_MATCH
+                t1 = 0.3f * xwp->unk08;
+                t0 = 0.3f * -xwp->unk08;
+                e->x = e->unk08 + randf(t0, t1);
+                t2 = 0.3f * xwp->unk0C;
+                t1 = 0.3f * -xwp->unk0C;
+                e->y = e->unk0C + randf(t1, t2);
+                t2 = 0.3f * xwp->unk10;
+                t3 = 0.3f * -xwp->unk10;
+                e->z = 200.0f + randf(t3, t2);
+#else
+                e->x = e->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
+                e->y = e->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
+                e->z = 200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
+#endif
             }
             break;
         case 1:
             e->z += f22;
             if (e->z > 200.0f) {
-                e->x = e->unk08 + randf(-0.3f * xwp->unk08, 0.3f * xwp->unk08);
-                e->y = e->unk0C + randf(-0.3f * xwp->unk0C, 0.3f * xwp->unk0C);
-                e->z = -200.0f + randf(-0.3f * xwp->unk10, 0.3f * xwp->unk10);
+#ifdef MUST_MATCH
+                t0 = 0.3f * xwp->unk08;
+                t3 = 0.3f * -xwp->unk08;
+                e->x = e->unk08 + randf(t3, t0);
+                t0 = 0.3f * xwp->unk0C;
+                t1 = 0.3f * -xwp->unk0C;
+                e->y = e->unk0C + randf(t1, t0);
+                t2 = 0.3f * xwp->unk10;
+                t1 = 0.3f * -xwp->unk10;
+                e->z = -200.0f + randf(t1, t2);
+#else
+                e->x = e->unk08 + randf(0.3f * -xwp->unk08, 0.3f * xwp->unk08);
+                e->y = e->unk0C + randf(0.3f * -xwp->unk0C, 0.3f * xwp->unk0C);
+                e->z = -200.0f + randf(0.3f * -xwp->unk10, 0.3f * xwp->unk10);
+#endif
             }
             break;
         }
         {
             f32 step = 10.0f * xwp->unk08;
-            f32 t = (e->x - f20) / (step * 0.5f);
+#ifdef MUST_MATCH
+            f32 ex = *(volatile f32*)&e->x;
+#else
+            f32 ex = e->x;
+#endif
+#ifdef MUST_MATCH
+            f32 t = (ex - f20) / (step * half);
+#else
+            f32 t = (ex - f20) / (step * 0.5f);
+#endif
             s32 n = (s32)t;
             if (n != 0) {
                 if (n > 0) {
@@ -784,9 +841,11 @@ USER_FUNC(evt_ryushi) {
             }
         }
         {
-            f32 a = e->z;
-            if (a < 0.0f) {
-                a = -a;
+            f32 a;
+            if (e->z < 0.0f) {
+                a = -e->z;
+            } else {
+                a = e->z;
             }
             a = a - 100.0f;
             if (a < 0.0f) {
@@ -803,6 +862,8 @@ USER_FUNC(evt_ryushi) {
     dispEntry(4, dispCalcZ(&pos), 2, ryushi_disp, NULL);
     return EVT_RETURN_DONE;
 }
+
+#pragma opt_lifetimes reset
 
 void yuuminigame_init_4slit(EventEntry* event, BOOL isFirstCall) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];

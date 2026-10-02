@@ -30,6 +30,13 @@ static const f32 float_1p5708 = 1.5707964f;
 static const f32 float_4p7124 = 4.712389f;
 static const f32 float_90 = 90.0f;
 static const f32 float_0p5 = 0.5f;
+static const f32 float_10 = 10.0f;
+static const f32 float_30 = 30.0f;
+static const f32 float_100 = 100.0f;
+static const f32 float_11 = 11.0f;
+static const f32 float_6 = 6.0f;
+static const f32 float_1 = 1.0f;
+static const f32 float_0p4 = 0.4f;
 
 void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     Vec sp;
@@ -66,45 +73,39 @@ void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     *out = *p;
 }
 
-// NONMATCHING (93.54%): the probe values and control flow match; the remaining
-// difference is that the sin result and x share f27 where the original uses f29,
-// and distance takes f29 where the original uses f27 (c is f1 rather than f3).
+// NONMATCHING (93.96%): probe values and control flow match; z lands in f26 like the original,
+// but s/x take f27 and baseY/distance use f29/f28 where the original uses f29/f28/f27.
 void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
-    f32 s;
-    f32 c;
-    f32 distance;
+    f32 s, c, distance;
     f32 hitX, hitY, hitZ;
     f32 hitNX, hitNY, hitNZ;
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 radius;
-    f32 baseY;
+    f32 x, y, z, radius, baseY;
+    f32 t;
 
     radius = marioGetPtr()->wPlayerCollisionBox.x;
     s = sin(MATCH_F32(float_1p5708));
     c = cos(MATCH_F32(float_1p5708));
     baseY = pos->y;
-    x = radius * s;
-    x = pos->x + x;
-    y = baseY + height;
-    z = radius * -c;
-    z = pos->z + z;
+    t = radius * s;
+    x = pos->x + t;
+    y = pos->y + height;
+    t = radius * -c;
+    z = pos->z + t;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
         out->z = z;
         out->y = baseY;
     } else {
-    s = sin(MATCH_F32(float_4p7124));
-    c = cos(MATCH_F32(float_4p7124));
-    baseY = pos->y;
-    y = baseY + height;
-    z = radius * -c;
-    z = pos->z + z;
-    x = radius * s;
-    x = pos->x + x;
-    distance = float_0p1 + height;
+        s = sin(MATCH_F32(float_4p7124));
+        c = cos(MATCH_F32(float_4p7124));
+        baseY = pos->y;
+        t = radius * s;
+        x = pos->x + t;
+        y = pos->y + height;
+        t = radius * -c;
+        z = pos->z + t;
+        distance = float_0p1 + height;
         if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
             out->x = x;
             out->z = z;
@@ -344,9 +345,15 @@ static inline float fsub32(f32 arg0, f32 arg1)
   return arg0 - arg1;
 }
 
-// Four floor/wall probes; remaining diffs are float register allocation in the probe
-// origins and the normal projection, plus anonymous pool literals.
-// NONMATCHING (92.68%): see REPORT.md for details.
+#ifdef MUST_MATCH
+// Same-byte match for the original's fadds f0, f5, f0 operand order in the first probe.
+static inline float fadd32(f32 arg0, f32 arg1)
+{
+  return arg0 + arg1;
+}
+#endif
+
+// Four floor/wall probes: straight ahead, then dir-90, dir+90 and the f31 sweeps.
 HitEntry* ccwall(PartyEntry* party, s32 flag) {
     u8* p = (u8*)party;
     HitEntry* hit;
@@ -359,30 +366,37 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     f32 sin4, cos4;
     f32 y;
     f32 f31;
-    f32 nx, nz;
+    f32 ssin, scos;
+    f32 spd;
     f32 dot;
     f32 oy;
     f32 x, z;
 
-    y = 10.0f;
+    y = float_10;
 
+    x = party->position.x;
+    z = party->position.z;
     oy = party->position.y + *(f32*)(p + 0xF0) + y;
-    distance = *(f32*)(p + 0xF0) + 30.0f;
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, party->position.x, oy,
-                         party->position.z, 0.0f, -1.0f, 0.0f);
+#ifdef MUST_MATCH
+    distance = fadd32(*(f32*)(p + 0xF0), float_30);
+#else
+    distance = *(f32*)(p + 0xF0) + float_30;
+#endif
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy,
+                         z, float_0, float_neg1, float_0);
     if (((hitGetAttr(hit) >> 9) & 1) == 1) {
         hit = NULL;
     }
     *(HitEntry**)((u8*)party + 0x138) = hit;
     if (hit != NULL) {
         f32 py;
-        hitY = (f32)(s32)(100.0f * hitY + 0.5f) / 100.0f;
-        py = (f32)(s32)(100.0f * party->position.y + 0.5f) / 100.0f;
-        if (__fabsf(py - hitY) <= 11.0f) {
+        hitY = (f32)(s32)(float_100 * hitY + float_0p5) / float_100;
+        py = (f32)(s32)(float_100 * party->position.y + float_0p5) / float_100;
+        if (__fabsf(py - hitY) <= float_11) {
             if (py <= hitY) {
                 if (flag == 0) {
                     party->position.y = hitY;
-                    if (__fabsf(py - hitY) >= 1.0f) {
+                    if (__fabsf(py - hitY) >= float_1) {
                         *(s16*)(p + 0x17E) |= 0x2;
                     }
                 }
@@ -390,7 +404,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
                 if ((*(s16*)(p + 0x17E) & 0x2) != 0 && flag == 1) {
                     party->position.y = hitY;
                 }
-                if (__fabsf(py - hitY) <= 6.0f) {
+                if (__fabsf(py - hitY) <= float_6) {
                     party->position.y = hitY;
                 }
             }
@@ -399,23 +413,24 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
 
     *(HitEntry**)((u8*)party + 0x130) = NULL;
     *(HitEntry**)((u8*)party + 0x12C) = NULL;
-    y += 1.0f;
+    y += float_1;
 
-    distance = 0.5f * *(f32*)(p + 0xF4) + party->speed;
     x = party->position.x;
     z = party->position.z;
     oy = party->position.y + y;
+    distance = float_0p5 * *(f32*)(p + 0xF4) + party->speed;
     sincosf(&sinV, &cosV, party->dir);
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, 0.0f, cosV);
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, float_0, cosV);
     if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
-        sincosf(&sin2, &cos2, party->dir + 180.0f);
-        party->position.x = hitX + 0.5f * (*(f32*)(p + 0xF4) * sin2);
-        party->position.z = hitZ + 0.5f * (*(f32*)(p + 0xF4) * cos2);
-        nx = hitNX;
-        nz = hitNZ;
-        dot = party->speed * sinV * nx + party->speed * cosV * nz;
-        party->position.x += 0.5f * (party->speed * sinV - dot * nx);
-        party->position.z += 0.5f * (party->speed * cosV - dot * nz);
+        sincosf(&sin2, &cos2, party->dir + float_180);
+        party->position.x = hitX + float_0p5 * (sin2 * *(f32*)(p + 0xF4));
+        party->position.z = hitZ + float_0p5 * (cos2 * *(f32*)(p + 0xF4));
+        spd = party->speed;
+        ssin = sinV * spd;
+        scos = cosV * spd;
+        dot = ssin * hitNX + scos * hitNZ;
+        party->position.x += float_0p5 * (ssin - dot * hitNX);
+        party->position.z += float_0p5 * (scos - dot * hitNZ);
         if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
             *(HitEntry**)((u8*)party + 0x130) = hit;
         }
@@ -423,24 +438,25 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         return hit;
     }
 
-    f31 = 0.4f * *(f32*)(p + 0xF4);
-    z = party->position.z + f31 * (f32)cos((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
-    x = party->position.x + f31 * (f32)sin((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
-    distance = 0.4f * *(f32*)(p + 0xF4) + party->speed;
+    f31 = float_0p4 * *(f32*)(p + 0xF4);
+    z = party->position.z + f31 * (f32)cos((f64)(float_3p1416 * (party->dir - float_90) / float_180));
+    x = party->position.x + f31 * (f32)sin((f64)(float_3p1416 * (party->dir - float_90) / float_180));
     oy = party->position.y + y;
+    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
     sincosf(&sinV, &cosV, party->dir);
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, 0.0f, cosV);
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, float_0, cosV);
     if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
-        sincosf(&sin3, &cos3, party->dir + 180.0f);
-        party->position.x = hitX + 0.5f * (*(f32*)(p + 0xF4) * sin3);
-        party->position.z = hitZ + 0.5f * (*(f32*)(p + 0xF4) * cos3);
-        party->position.z -= f31 * (f32)cos((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
-        party->position.x -= f31 * (f32)sin((f64)(3.1415927f * (party->dir - 90.0f) / 180.0f));
-        nx = hitNX;
-        nz = hitNZ;
-        dot = party->speed * sinV * nx + party->speed * cosV * nz;
-        party->position.x += 0.5f * (party->speed * sinV - dot * nx);
-        party->position.z += 0.5f * (party->speed * cosV - dot * nz);
+        sincosf(&sin3, &cos3, party->dir + float_180);
+        party->position.x = hitX + float_0p5 * (sin3 * *(f32*)(p + 0xF4));
+        party->position.z = hitZ + float_0p5 * (cos3 * *(f32*)(p + 0xF4));
+        party->position.z -= f31 * (f32)cos((f64)(float_3p1416 * (party->dir - float_90) / float_180));
+        party->position.x -= f31 * (f32)sin((f64)(float_3p1416 * (party->dir - float_90) / float_180));
+        spd = party->speed;
+        ssin = sinV * spd;
+        scos = cosV * spd;
+        dot = ssin * hitNX + scos * hitNZ;
+        party->position.x += float_0p5 * (ssin - dot * hitNX);
+        party->position.z += float_0p5 * (scos - dot * hitNZ);
         if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
             *(HitEntry**)((u8*)party + 0x130) = hit;
         }
@@ -449,24 +465,31 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         return hit;
     }
 
-    f31 = 0.4f * *(f32*)(p + 0xF4);
-    z = party->position.z + f31 * (f32)cos((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
-    x = party->position.x + f31 * (f32)sin((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
-    distance = 0.4f * *(f32*)(p + 0xF4) + party->speed;
-    y = party->position.y + y;
+    f31 = float_0p4 * *(f32*)(p + 0xF4);
+    z = party->position.z + f31 * (f32)cos((f64)(float_3p1416 * (party->dir + float_90) / float_180));
+    x = party->position.x + f31 * (f32)sin((f64)(float_3p1416 * (party->dir + float_90) / float_180));
+    oy = party->position.y + y;
+#ifdef MUST_MATCH
+    // The original evaluates and stores this probe's distance twice; the first is dead.
+    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
+    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
+#else
+    distance = float_0p4 * *(f32*)(p + 0xF4) + party->speed;
+#endif
     sincosf(&sinV, &cosV, party->dir);
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, sinV, 0.0f, cosV);
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy, z, sinV, float_0, cosV);
     if (hit != NULL && (hitGetAttr(hit) & 5) == 0) {
-        sincosf(&sin4, &cos4, party->dir + 180.0f);
-        party->position.x = hitX + 0.5f * (*(f32*)(p + 0xF4) * sin4);
-        party->position.z = hitZ + 0.5f * (*(f32*)(p + 0xF4) * cos4);
-        party->position.z -= f31 * (f32)cos((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
-        party->position.x -= f31 * (f32)sin((f64)(3.1415927f * (party->dir + 90.0f) / 180.0f));
-        nx = hitNX;
-        nz = hitNZ;
-        dot = party->speed * sinV * nx + party->speed * cosV * nz;
-        party->position.x += 0.5f * (party->speed * sinV - dot * nx);
-        party->position.z += 0.5f * (party->speed * cosV - dot * nz);
+        sincosf(&sin4, &cos4, party->dir + float_180);
+        party->position.x = hitX + float_0p5 * (sin4 * *(f32*)(p + 0xF4));
+        party->position.z = hitZ + float_0p5 * (cos4 * *(f32*)(p + 0xF4));
+        party->position.z -= f31 * (f32)cos((f64)(float_3p1416 * (party->dir + float_90) / float_180));
+        party->position.x -= f31 * (f32)sin((f64)(float_3p1416 * (party->dir + float_90) / float_180));
+        spd = party->speed;
+        ssin = sinV * spd;
+        scos = cosV * spd;
+        dot = ssin * hitNX + scos * hitNZ;
+        party->position.x += float_0p5 * (ssin - dot * hitNX);
+        party->position.z += float_0p5 * (scos - dot * hitNZ);
         if (*(s16*)(p + 0x17C) != 0 || flag == 0) {
             *(HitEntry**)((u8*)party + 0x130) = hit;
         }

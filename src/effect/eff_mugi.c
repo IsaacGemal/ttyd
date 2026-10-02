@@ -7,7 +7,7 @@
 #include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -160,20 +160,32 @@ EffectEntry* effMugiKemuri2Entry(s32 int1, f32 float2, f32 float3, f32 float4, f
 	return entry;
 }
 
-// NONMATCHING (88.95%): the pos/disp Vec pair is coalesced instead of copied,
-// EFF_Hana/EFF_Mugi are addressed via their own symbols instead of
-// vec3_802f3498+0x24/0x30, and the work pointer lives in r5, not r4.
+// opt_common_subs off: with it on, MWCC colours the rotX update block's FPRs
+// f1/f0/f2 instead of the original's f2/f1/f0. The volatile reads in the
+// MUST_MATCH block below pin the prologue's load order.
+#pragma opt_common_subs off
 void effMugiKemuriMain(EffectEntry* effect) {
-	MugiKemuriWork* work = effect->userdata;
+	MugiKemuriWork* work;
 	MugiKemuriWork* w;
 	Vec disp;
 	Vec pos;
 	s32 i;
+#ifdef MUST_MATCH
+	s32 j;
+#endif
 	s32 inBattle;
 	BOOL anyActive;
 	const char* name;
 
+#ifdef MUST_MATCH
+	// Volatile reads pin the original's prologue order: the userdata load comes before the
+	// pos component loads, which come before the copy's stores.
+	work = *(MugiKemuriWork* volatile*)&effect->userdata;
+	pos = *(volatile Vec*)&vec3_802f34a4;
+#else
+	work = effect->userdata;
 	pos = vec3_802f34a4;
+#endif
 	pos.x = work->x;
 	pos.y = work->y;
 	pos.z = work->z;
@@ -182,9 +194,15 @@ void effMugiKemuriMain(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		for (i = 0; i < effect->count; i++) {
-			if (work[i].animPose != -1) {
-				animPoseRelease(work[i].animPose);
+		w = effect->userdata;
+#ifdef MUST_MATCH
+		// A separate index keeps i and w in the original's registers; reusing i swaps them.
+		for (j = 0; j < effect->count; j++, w++) {
+#else
+		for (i = 0; i < effect->count; i++, w++) {
+#endif
+			if (w->animPose != -1) {
+				animPoseRelease(w->animPose);
 			}
 		}
 		effDelete(effect);
@@ -204,7 +222,7 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	}
 
 	anyActive = FALSE;
-	w = work;
+	w = effect->userdata;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->active == 0) {
 			continue;
@@ -231,9 +249,10 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	}
 
 	if (!anyActive) {
-		for (i = 0; i < effect->count; i++) {
-			if (work[i].animPose != -1) {
-				animPoseRelease(work[i].animPose);
+		w = effect->userdata;
+		for (i = 0; i < effect->count; i++, w++) {
+			if (w->animPose != -1) {
+				animPoseRelease(w->animPose);
 			}
 		}
 		effDelete(effect);
@@ -243,21 +262,30 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuriDisp, effect);
 }
 
-// NONMATCHING (86.15%): the pos/disp Vec pair is coalesced instead of copied,
-// the rodata strings are addressed directly instead of base+0x24/0x30, and the
-// work pointer/FPR allocation differs.
+// Same reasons as effMugiKemuriMain: opt_common_subs off for the float loop's FPR
+// colouring, and the MUST_MATCH volatile reads for the prologue order.
 void effMugiKemuri2Main(EffectEntry* effect) {
-	MugiKemuriWork* work = effect->userdata;
+	MugiKemuriWork* work;
 	MugiKemuriWork* w;
 	MarioWork* mario;
 	Vec disp;
 	Vec pos;
 	s32 i;
-	s32 inBattle;
+#ifdef MUST_MATCH
+	s32 j;
+#endif
 	BOOL anyActive;
+	s32 inBattle;
 	const char* name;
 
+#ifdef MUST_MATCH
+	// Same prologue ordering requirement as effMugiKemuriMain.
+	work = *(MugiKemuriWork* volatile*)&effect->userdata;
+	pos = *(volatile Vec*)&vec3_802f34b0;
+#else
+	work = effect->userdata;
 	pos = vec3_802f34b0;
+#endif
 	pos.x = work->x;
 	pos.y = work->y;
 	pos.z = work->z;
@@ -266,9 +294,15 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
-		for (i = 0; i < effect->count; i++) {
-			if (work[i].animPose != -1) {
-				animPoseRelease(work[i].animPose);
+		w = effect->userdata;
+#ifdef MUST_MATCH
+		// A separate index keeps i and w in the original's registers; reusing i swaps them.
+		for (j = 0; j < effect->count; j++, w++) {
+#else
+		for (i = 0; i < effect->count; i++, w++) {
+#endif
+			if (w->animPose != -1) {
+				animPoseRelease(w->animPose);
 			}
 		}
 		effDelete(effect);
@@ -288,7 +322,7 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	}
 
 	anyActive = FALSE;
-	w = work;
+	w = effect->userdata;
 	for (i = 0; i < effect->count; i++, w++) {
 		if (w->active == 0) {
 			continue;
@@ -317,19 +351,20 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 
 	if (!anyActive) {
 		BOOL still = FALSE;
-		w = work;
+		w = effect->userdata;
 		for (i = 0; i < effect->count; i++, w++) {
 			w->alpha -= 10;
-			if (w->alpha >= 0) {
-				still = TRUE;
-			} else {
+			if (w->alpha < 0) {
 				w->alpha = 0;
+			} else {
+				still = TRUE;
 			}
 		}
 		if (!still) {
-			for (i = 0; i < effect->count; i++) {
-				if (work[i].animPose != -1) {
-					animPoseRelease(work[i].animPose);
+			w = effect->userdata;
+			for (i = 0; i < effect->count; i++, w++) {
+				if (w->animPose != -1) {
+					animPoseRelease(w->animPose);
 				}
 			}
 			effDelete(effect);

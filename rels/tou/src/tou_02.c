@@ -1658,13 +1658,18 @@ void fan_disp(void) {
 }
 
 #pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
-// NONMATCHING (97.13%): body, dispatch, rodata and the pose-loop/clash scoping now match; what
-// is left is register colouring in the case 1 `a` constant loads (2pi/90/135 land in f1/f2/f3
-// shifted) and the flySfx string materialisation (r27 vs retail r30+r29).
+// body, dispatch, rodata, the pose-loop/clash scoping and the case 1 `a` constant colouring now
+// match. `opt_lifetimes off` (with `opt_propagation off`) recovered the loop's FPRs, splitting
+// `(f32)rand()/32767.0f` into a temp fixed the case 1 expression, and declaring pose before fan
+// fixed the last loop's fan/pose colours. What is left: the case 2 `fan->target =
+// vec3_tou_0000d064` / `ang = (ang + breath) * 0.5f` scheduling (retail loads 0.5 after the vector
+// stores, ours before) and the flySfx/FanPose prologue of the last loop (retail r29/r30/r26, ours
+// r0/r29/r30) plus the cached `&query` in r30 vs retail's inline r1.
+// NONMATCHING (95.50%): those three register/scheduling clusters.
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
-    FanPose* fan;
     ExtPose* pose;
+    FanPose* fan;
     Vec d;
     Vec vec = { 0.0f, 0.0f, 0.0f };
     s32 i;
@@ -1758,9 +1763,9 @@ void ext_fan_main(void) {
     }
 
     {
-        const char* flySfx = "SFX_STG3_AUDIENCE_FAN_FLY1";
-        FanPose* fan = fan_wp->poses;
         s32 i;
+        FanPose* fan = fan_wp->poses;
+        const char* flySfx = "SFX_STG3_AUDIENCE_FAN_FLY1";
 
         for (i = 0; i < fan_wp->poseNum; i++, fan++) {
         if (fan->field_0x2 != 0) {
@@ -1770,8 +1775,10 @@ void ext_fan_main(void) {
         case 1:
             fan->field_0x2 = 10;
             {
-                f32 a = (TWO_PI * (135.0f + (f32)rand() / 32767.0f * 90.0f)) / 360.0f;
-                f32 dist = 400.0f + (f32)rand() / 32767.0f * 100.0f;
+                f32 rf = (f32)rand() / 32767.0f;
+                f32 a = (135.0f + rf * 90.0f) * TWO_PI / 360.0f;
+                f32 rf2 = (f32)rand() / 32767.0f;
+                f32 dist = 400.0f + rf2 * 100.0f;
                 f32 s = fanSinf(a);
                 f32 c;
                 f32 vx, vz;
@@ -1954,6 +1961,10 @@ void ext_fan_dispent(void) {
     dispEntry(4, 0.0f, 1, (DispCallback)fan_disp, NULL);
 }
 
+// fanSinf's branch-2/3 angle and square are named with the opposite temp letters from
+// fanCosf's; MWCC's FPR allocator maps f0->f1 and f1->f0 here, so this spelling is the one
+// that lands the angle in f1 and the square in f0 as retail does. This spelling is what took
+// check_hammer to 100%; it also lifted ext_fan_main from 97.67% to 98.04%.
 static inline f32 fanSinf(f32 rad) {
     const f32 pi = 3.1415927f;
     const f32 halfpi = 1.5707964f;
@@ -1968,30 +1979,30 @@ static inline f32 fanSinf(f32 rad) {
             sinv = sinv * (rad * rad) + c2;
             sinv = sinv * rad;
         } else {
-            f1 = halfpi - (rad - halfpi);
-            f0 = f1 * f1;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * f1;
+            f0 = halfpi - (rad - halfpi);
+            f1 = f0 * f0;
+            sinv = sinv * f1 - c1;
+            sinv = sinv * f1 + c2;
+            sinv = sinv * f0;
         }
     } else if (rad < threehalves) {
-        f1 = rad - pi;
-        f0 = f1 * f1;
-        sinv = sinv * f0 - c1;
-        sinv = sinv * f0 + c2;
-        sinv = sinv * f1;
+        f0 = rad - pi;
+        f1 = f0 * f0;
+        sinv = sinv * f1 - c1;
+        sinv = sinv * f1 + c2;
+        sinv = sinv * f0;
         sinv = -sinv;
     } else {
-        f0 = rad - threehalves;
-        f1 = halfpi - f0;
-        f0 = f1 * f1;
-        sinv = sinv * f0 - c1;
-        sinv = sinv * f0 + c2;
-        sinv = sinv * f1;
+        f0 = halfpi - (rad - threehalves);
+        f1 = f0 * f0;
+        sinv = sinv * f1 - c1;
+        sinv = sinv * f1 + c2;
+        sinv = sinv * f0;
         sinv = -sinv;
     }
     return sinv;
 }
+
 
 static inline f32 fanCosf(f32 rad) {
     const f32 pi = 3.1415927f;
@@ -2027,9 +2038,10 @@ static inline f32 fanCosf(f32 rad) {
 }
 
 #pragma opt_propagation off // stop MWCC rematerialising the sin/cos coefficients per branch
-// NONMATCHING (97.90%): byte-identical apart from FPR colouring in the inlined
-// fanSinf/fanCosf (retail reuses f1 for the halfpi inner test, so rad^2 lands in f0;
-// ours keeps pi live). `opt_lifetimes off` is what gets rad/coeffs into f6/f4/f3/f2.
+#pragma opt_lifetimes off // match retail FPR colouring of rad and the sin/cos coefficients
+// check_hammer reached 100% with `opt_propagation off` + `opt_lifetimes off` (both required:
+// without them rad/coeffs land in the wrong FPRs) and the fanSinf temp spelling above.
+// The pragmas stay because each function is compiled under them separately.
 s32 check_hammer(FanPose* pose) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party;
@@ -2082,6 +2094,7 @@ s32 check_hammer(FanPose* pose) {
     }
     return 0;
 }
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 USER_FUNC(evt_end_count) {
     evtSetValue(event, event->args[0], fan_wp->field_0x510);

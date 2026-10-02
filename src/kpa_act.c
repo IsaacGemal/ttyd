@@ -52,28 +52,50 @@ USER_FUNC(kpa_chg_pose) {
     return EVT_RETURN_DONE;
 }
 
-// The remainder split (which register holds the running score, when each digit is sign-extended,
-// and the order the /10000, /1000, /100, /10 magic constants are loaded) still differs. The original
-// uses r31 for score, r9/r8/r7/r5/r3 for the five digits and r4 for the loop pointer.
-// NONMATCHING (84.21%)
+// The whole instruction sequence matches; only register allocation still differs. `ksdp` lands in r0
+// here (the original keeps it in r6 through the digit split), which pushes the loop counter/pointer and
+// the ten_thousands/tens temporaries into different registers. n/base are the copies that let the
+// allocator reuse r31 for score and keep the string base across the emitted digits.
+// NONMATCHING (88.50%)
 void kpaAddScorePos(s32 score, Vec* pos) {
     s32 i;
     s32 len;
     s8 ten_thousands;
-    s8 thousands;
-    s8 hundreds;
     s8 tens;
     s8 ones;
     char* str;
+#ifdef MUST_MATCH
+    // Match-only copies: `n` lets the allocator reuse r31 for score after the call, and `base`
+    // preserves the string start for the terminator (the natural form uses score / ksdp[i].text).
+    s32 n;
+#endif
+    s8 hundreds;
+    s8 thousands;
+#ifdef MUST_MATCH
+    char* base;
+#endif
 
     if (score > 10000) {
         score = 10000;
     }
     pouchAddKpaScore(score);
+#ifdef MUST_MATCH
+    n = score;
+#endif
     for (i = 0; i < 50; i++) {
         if (ksdp[i].timer != 0) {
             continue;
         }
+#ifdef MUST_MATCH
+        ten_thousands = n / 10000;
+        n %= 10000;
+        thousands = n / 1000;
+        n %= 1000;
+        hundreds = n / 100;
+        n %= 100;
+        tens = n / 10;
+        ones = n % 10;
+#else
         ten_thousands = score / 10000;
         score %= 10000;
         thousands = score / 1000;
@@ -82,7 +104,11 @@ void kpaAddScorePos(s32 score, Vec* pos) {
         score %= 100;
         tens = score / 10;
         ones = score % 10;
+#endif
         str = ksdp[i].text;
+#ifdef MUST_MATCH
+        base = str;
+#endif
         len = 0;
         if (len != 0 || ten_thousands != 0) {
             *str = ten_thousands + '0';
@@ -105,7 +131,11 @@ void kpaAddScorePos(s32 score, Vec* pos) {
             *str = ones + '0';
             len++;
         }
+#ifdef MUST_MATCH
+        base[len] = 0;
+#else
         ksdp[i].text[len] = 0;
+#endif
         ksdp[i].timer = 30;
         ksdp[i].pos.x = pos->x - float_0p5_80420d84 * (float_10_80420d88 * (f32)strlen(ksdp[i].text));
         ksdp[i].pos.y = pos->y + float_20_80420d8c;
@@ -121,17 +151,24 @@ void kpaAddScore(s32 score) {
     pouchAddKpaScore(score);
 }
 
-// NONMATCHING (85.90%)
+// Same as kpaAddScorePos: the sequence matches, but `ksdp` is allocated to r0 instead of the
+// original's r6, so the loop counter/pointer and the digit temporaries differ in register only.
+// NONMATCHING (90.12%)
 void kpaAddCoinPos(s32 coins, Vec* pos) {
     s32 i;
     s32 len;
     s8 ten_thousands;
-    s8 thousands;
-    s8 hundreds;
     s8 tens;
     s8 ones;
     char* str;
-
+#ifdef MUST_MATCH
+    s32 n;
+#endif
+    s8 hundreds;
+    s8 thousands;
+#ifdef MUST_MATCH
+    char* base;
+#endif
     if (pouchAddKpaCoin(coins)) {
         pouchAddKpaScore(1000);
     }
@@ -140,10 +177,23 @@ void kpaAddCoinPos(s32 coins, Vec* pos) {
         coins = 10000;
     }
     pouchAddKpaScore(coins);
+#ifdef MUST_MATCH
+    n = coins;
+#endif
     for (i = 0; i < 50; i++) {
         if (ksdp[i].timer != 0) {
             continue;
         }
+#ifdef MUST_MATCH
+        ten_thousands = n / 10000;
+        n %= 10000;
+        thousands = n / 1000;
+        n %= 1000;
+        hundreds = n / 100;
+        n %= 100;
+        tens = n / 10;
+        ones = n % 10;
+#else
         ten_thousands = coins / 10000;
         coins %= 10000;
         thousands = coins / 1000;
@@ -152,7 +202,11 @@ void kpaAddCoinPos(s32 coins, Vec* pos) {
         coins %= 100;
         tens = coins / 10;
         ones = coins % 10;
+#endif
         str = ksdp[i].text;
+#ifdef MUST_MATCH
+        base = str;
+#endif
         len = 0;
         if (len != 0 || ten_thousands != 0) {
             *str = ten_thousands + '0';
@@ -175,7 +229,11 @@ void kpaAddCoinPos(s32 coins, Vec* pos) {
             *str = ones + '0';
             len++;
         }
+#ifdef MUST_MATCH
+        base[len] = 0;
+#else
         ksdp[i].text[len] = 0;
+#endif
         ksdp[i].timer = 30;
         ksdp[i].pos.x = pos->x - float_0p5_80420d84 * (float_10_80420d88 * (f32)strlen(ksdp[i].text));
         ksdp[i].pos.y = pos->y + float_20_80420d8c;

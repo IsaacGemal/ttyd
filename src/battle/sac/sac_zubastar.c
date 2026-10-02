@@ -436,9 +436,14 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
 }
 
 // .text:0x1A90 | 0x80230020 | size: 0x4C8
-// NONMATCHING (86.85%): logic and instructions match; the callee-saved register allocation differs throughout
-// (this compiler gives a/b r30/r31, bombCount r23; the original has a/b r29/r30, bombCount r31), plus the
-// scheduling of the found-point stores into bomb1 and of the final bomb initialization.
+// The instruction stream is complete and in order. What still differs is the callee-saved register
+// colouring throughout (this compiler gives a/b r30/r31 and bombCount r23; the original has a/b
+// r29/r30 and bombCount r31, so the whole colouring is permuted) and the schedule of the two Vec
+// copies that initialise bomb1/bomb2. Recovered from the original: the first bomb1->points copy loop
+// uses a separate source/dest index pair (two strength-reduced offsets plus a counter), the
+// found-point stores use post-increment so MWCC reuses the copy-loop counter for index[0]+1/+2 and k,
+// and bomb1->count is written in the original's +2-then-+j order.
+// NONMATCHING (91.58%): callee-saved colouring and bomb1/bomb2 Vec-copy schedule still differ.
 void zubastar_bunkatu(Vec* a, Vec* b) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 bombCount = work->bombCount;
@@ -497,19 +502,23 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
             bomb2 = BattleAlloc(0x50);
             for (j = 0; j < bomb->count; j++) {
                 if (j == index[0]) {
-                    bomb1->count = bomb->count - (index[1] - j) + 2;
+                    bomb1->count = bomb->count - index[1] + 2 + j;
                     bomb2->count = index[1] - index[0] + 2;
                 }
             }
             bomb1->points = BattleAlloc(bomb1->count * 0xC);
             bomb2->points = BattleAlloc(bomb2->count * 0xC);
-            for (j = 0; j <= index[0]; j++) {
-                bomb1->points[j] = bomb->points[j];
-            }
-            bomb1->points[index[0] + 1] = point[0];
-            bomb1->points[index[0] + 2] = point[1];
             {
-                s32 k = index[0] + 3;
+                s32 k;
+
+                for (j = 0, k = 0; j <= index[0]; j++, k++) {
+                    bomb1->points[k] = bomb->points[j];
+                }
+            }
+            bomb1->points[j++] = point[0];
+            bomb1->points[j++] = point[1];
+            {
+                s32 k = j;
 
                 for (j = index[1] + 1; j < bomb->count; j++, k++) {
                     bomb1->points[k] = bomb->points[j];

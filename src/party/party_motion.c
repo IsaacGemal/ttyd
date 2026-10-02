@@ -52,8 +52,9 @@ void party_motion_upstairs(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (93.99%): register allocation differs - original keeps party/attr/hit in r29/r30/r31,
-// mine only r30/r31 (attr not held in a callee-saved reg).
+// 100%: hoisting `hit = NULL;` to the top of the `if (attr & 0x200)` block (before the
+// `field_4C == 0` check) is what the original did; it also made MWCC colour `party`=r29,
+// `attr`=r30, `hit`=r31 instead of the swapped assignment.
 void unk_8014ba3c(PartyEntry* party) {
     HitEntry* hit;
     s32 attr;
@@ -72,11 +73,11 @@ void unk_8014ba3c(PartyEntry* party) {
     if (hit != NULL) {
         attr = hitGetAttr(hit);
         if (attr & 0x200) {
+            hit = NULL;
             if (party->field_4C == 0) {
                 party->field_8 = (party->field_8 | 0x1000000);
                 party->flags = (party->flags | 0x02000000);
             }
-            hit = NULL;
         }
     }
     *(HitEntry**)((u8*)party + 0x138) = hit;
@@ -1347,16 +1348,20 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (94.54%): register allocation and the partyGetMoveDirSpd/partySearchFrontWall scratch slots.
 void party_motion_behind_mario_fly(PartyEntry* party) {
     MarioWork* mario;
+    MarioWork* mario2;
     HitEntry* hit;
     PartyEntry* other;
     f32 speed;
+    f32 dir;
     f32 angle;
     f32 limit;
     f32 f31;
     f32 f29;
+#ifdef MUST_MATCH
+    f32 k;
+#endif
     Vec pos;
 
     mario = party->playerPtr;
@@ -1365,22 +1370,28 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
         party->field_8 = (party->field_8 | 0x40000);
         if (!(party->field_8 & 0x100000)) {
             if (!(party->field_8 & 0x10000)) {
+                mario2 = party->playerPtr;
                 if (!(party->flags & 0x8)) {
-                    angle = toMovedir(mario->unk1A8);
+                    dir = toMovedir(mario2->unk1A8);
                 } else {
                     other = partyGetPtr(marioGetPartyId());
                     if (other != NULL) {
-                        angle = partyToMovedir(party, other->field_10C);
+                        dir = partyToMovedir(party, other->field_10C);
                     } else {
-                        angle = toMovedir(mario->unk1A8);
+                        dir = toMovedir(mario2->unk1A8);
                     }
                 }
-                angle = revise360(angle + 180.0f);
+#ifdef MUST_MATCH
+                dir += 180.0f;
+                dir = revise360(dir);
+#else
+                dir = revise360(dir + 180.0f);
+#endif
             } else {
                 party->field_8 = (party->field_8 & ~0x10000);
-                angle = revise360(180.0f + angleABf(mario->position.x, mario->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C)));
+                dir = revise360(180.0f + angleABf(mario->position.x, mario->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C)));
             }
-            *(f32*)((u8*)party + 0x54) = angle;
+            *(f32*)((u8*)party + 0x54) = dir;
         }
         partyGetAppearPos4(party, (Vec*)((u8*)party + 0x94));
         *(s32*)((u8*)party + 0x24) = (s32)distABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
@@ -1390,18 +1401,23 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
     }
     if (!(party->field_8 & 0x100000)) {
         if (marioKeyOffChk()) {
-            mario = party->playerPtr;
+            mario2 = party->playerPtr;
             if (!(party->flags & 0x8)) {
-                angle = toMovedir(mario->unk1A8);
+                dir = toMovedir(mario2->unk1A8);
             } else {
                 other = partyGetPtr(marioGetPartyId());
                 if (other != NULL) {
-                    angle = partyToMovedir(party, other->field_10C);
+                    dir = partyToMovedir(party, other->field_10C);
                 } else {
-                    angle = toMovedir(mario->unk1A8);
+                    dir = toMovedir(mario2->unk1A8);
                 }
             }
-            *(f32*)((u8*)party + 0x54) = revise360(angle + 180.0f);
+#ifdef MUST_MATCH
+            dir += 180.0f;
+            *(f32*)((u8*)party + 0x54) = revise360(dir);
+#else
+            *(f32*)((u8*)party + 0x54) = revise360(dir + 180.0f);
+#endif
         }
     }
     angleABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
@@ -1431,13 +1447,18 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             hit = partySearchFrontWall(party, &pos, speed, angle);
             if (hit != NULL) {
                 party->field_12C = hit;
-                if (party->speed != 0.0f) {
+                if (0.0f != party->speed) {
                     party->field_134 = hit;
                 }
             }
             party->position.x = pos.x;
             party->position.z = pos.z;
+#ifdef MUST_MATCH
+            k = 0.05f;
+            party->position.y = k * (*(f32*)((u8*)party + 0x98) - party->position.y) + party->position.y;
+#else
             party->position.y = 0.05f * (*(f32*)((u8*)party + 0x98) - party->position.y) + party->position.y;
+#endif
             unk_800c8f24(party, party->speed);
         } else {
             goto restore;
@@ -1447,7 +1468,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
         *(s32*)((u8*)party + 0x24) = 0;
         if (party->field_8 & 0x200000) {
             party->field_8 = (party->field_8 & ~0x20000);
-            if (*(s8*)((u8*)party + 0x32) == 1) {
+            if (party->field_32 == 1) {
                 party->flags2 = (party->flags2 & ~0x10);
             }
         }
@@ -1482,7 +1503,12 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             if (f31 > *(f32*)((u8*)party + 0xF0)) {
                 hit = NULL;
             }
+#ifdef MUST_MATCH
+            k = 0.05f;
+            party->position.y = k * (party->field_E4 - party->position.y) + party->position.y;
+#else
             party->position.y = 0.05f * (party->field_E4 - party->position.y) + party->position.y;
+#endif
         }
         party->field_138 = hit;
     }
@@ -1912,19 +1938,25 @@ void party_motion_behind_mario(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (81.24%): original copies the appear position through a scratch Vec seeded from vec3_802f3e40+0x18 (a compiler struct-assignment idiom) which this elides; frame size differs.
+// NONMATCHING (99.00%): the 0x128 ratio load lands in f1 not retail's f5, so the
+// `ty - position.y` diff lands in f5 not f6; the 1.4f subtraction destination and the
+// constant-pool symbol addresses remain.
 void party_motion_jump(PartyEntry* party) {
+    extern u8 vec3_802f3e40[];
+    u8* vec = vec3_802f3e40;
     MarioWork* mario;
     HitEntry* hit;
+    u32 id;
+    s32 writeId;
+    s32 readId;
     Vec floor;
+    Vec appear1, appear2, appear3, appear4;
     Vec wall;
-    f32 tx, ty, tz;
     f32 sinV, cosV;
+    f32 tx, ty, tz;
     f32 angle;
     f32 f31, f30;
-    f32 f0, f1, f3, f4, f5, f6;
-    s32 id;
-    s32 writeId;
+    f32 f0, f1, f2, f3, f4, f5, f6;
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
@@ -1942,26 +1974,35 @@ void party_motion_jump(PartyEntry* party) {
             ty = party->position.y;
             tz = party->position.z;
             movePos(&tx, &tz, party->speed, party->dir);
-            *(f32*)((u8*)party + 0x94) = tx;
-            *(f32*)((u8*)party + 0x98) = ty;
-            *(f32*)((u8*)party + 0x9C) = tz;
+            appear1 = *(Vec*)(vec + 0x18);
+            appear1.x = tx;
+            appear1.y = ty;
+            appear1.z = tz;
+            *(Vec*)((u8*)party + 0x94) = appear1;  // 0x94: appear position, not named in PartyEntry
         } else if (!(party->field_8 & 0x400000)) {
             writeId = partyGetFootmarkWriteId(id);
-            if (partyGetFootmarkReadId(id) == writeId) {
+            readId = partyGetFootmarkReadId(id);
+            if (readId == writeId) {
                 if (partyGetTargetDist(id, party->position.x, party->position.z) > 2.0f * mario->wPlayerCollisionBox.x) {
                     f30 = partyGetTargetDir(id, party->position.x, party->position.z);
                     getFrontFloor(party, &floor, f30);
-                    ty = floor.y + 10.0f;
+                    floor.y += 10.0f;
+                    ty = floor.y;
                     tx = party->position.x;
                     tz = party->position.z;
-                    movePos(&tx, &tz, 0.6f * *(f32*)((u8*)party + 0xF4), f30);
+                    movePos(&tx, &tz, 0.6f * party->field_F4, f30);
+                    appear2 = *(Vec*)(vec + 0x24);
+                    appear2.x = tx;
+                    appear2.y = ty;
+                    appear2.z = tz;
+                    *(Vec*)((u8*)party + 0x94) = appear2;
                 }
             } else {
                 partyGetReadId(id, &tx, &ty, &tz);
                 f30 = 50.0f;
                 f31 = distABf(party->position.x, party->position.z, tx, tz);
                 f0 = 1.4f * (ty - party->position.y);
-                if (f0 < 50.0f) {
+                if (50.0f > f0) {
                     f30 = f0;
                 }
                 angle = angleABf(party->position.x, party->position.z, tx, tz);
@@ -1971,21 +2012,27 @@ void party_motion_jump(PartyEntry* party) {
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
                     }
-                    tx = party->position.x + f31 * sinV;
-                    tz = party->position.z + f31 * cosV;
+                    tx = party->position.x;
+                    tz = party->position.z;
+                    appear3 = *(Vec*)(vec + 0x30);
+                    tx = tx + f31 * sinV;
+                    tz = tz + f31 * cosV;
                     ty = ty + 10.0f;
-                    *(f32*)((u8*)party + 0x94) = tx;
-                    *(f32*)((u8*)party + 0x98) = ty;
-                    *(f32*)((u8*)party + 0x9C) = tz;
+                    appear3.x = tx;
+                    appear3.y = ty;
+                    appear3.z = tz;
+                    *(Vec*)((u8*)party + 0x94) = appear3;
                 } else {
                     if (partyGetTargetDistY(id) == 0.0f) {
                         f31 = 0.0f;
                     }
-                    tx = party->position.x + f31 * sinV;
-                    tz = party->position.z + f31 * cosV;
-                    *(f32*)((u8*)party + 0x94) = tx;
-                    *(f32*)((u8*)party + 0x98) = ty;
-                    *(f32*)((u8*)party + 0x9C) = tz;
+                    tx = tx + f31 * sinV;
+                    tz = tz + f31 * cosV;
+                    appear4 = *(Vec*)(vec + 0x3C);
+                    appear4.x = tx;
+                    appear4.y = ty;
+                    appear4.z = tz;
+                    *(Vec*)((u8*)party + 0x94) = appear4;
                 }
                 if (f31 < f30) {
                     partyNextReadId(id);
@@ -1995,7 +2042,7 @@ void party_motion_jump(PartyEntry* party) {
         *(f32*)((u8*)party + 0x128) = distABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
         if (party->field_28 == 0) {
             party->dir = angleABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
-            party->speed = 2.25f * mario->playerGravity;
+            party->speed = 2.25f * party->playerPtr->playerGravity;
         }
         f5 = *(f32*)((u8*)party + 0x128);
         f1 = 0.9f * (f5 / party->speed);
@@ -2011,8 +2058,21 @@ void party_motion_jump(PartyEntry* party) {
         f6 = *(f32*)((u8*)party + 0x98) - party->position.y;
         if (fabsf(f6) < 1.0f) {
             f6 = 25.0f;
-        } else if (f6 < 0.0f) {
-            f6 = 10.0f;
+        } else {
+#ifdef MUST_MATCH
+            // MUST_MATCH: retail emits the empty true-block of this inner test as a
+            // forward `b`; a plain empty block is folded away by the compiler. The
+            // self-assignment keeps the block alive and reproduces the branch shape.
+            if (f6 >= 0.0f) {
+                f6 = f6;
+            } else {
+                f6 = 10.0f;
+            }
+#else
+            if (!(f6 >= 0.0f)) {
+                f6 = 10.0f;
+            }
+#endif
         }
         f3 = (f6 + f6) / (f4 * f4 - f4);
         party->jumpPara1 = mario->playerGravity * (f3 * f4);
@@ -2079,7 +2139,8 @@ void party_motion_jump(PartyEntry* party) {
             hit = partySearchFrontWall(party, &wall, party->speed, party->dir);
             if (hit != NULL) {
                 party->field_12C = hit;
-                if (party->speed != 0.0f) {
+                f0 = 0.0f;
+                if (party->speed != f0) {
                     party->field_134 = hit;
                 }
             }
@@ -2143,29 +2204,31 @@ static inline f32 pt_sqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (81.01%): the two HitCheckQuery locals and two sincos pairs get the opposite stack slots from the original; sqrtf doubles load from local symbols instead of vec3_802f3e40+0x108.
+// NONMATCHING (90.83%): stack slots and statement order/shape match (scale before query1.targetDir,
+// loop stores x then z, `(f32)i` written inline twice, `wall = touch_wall_ct` once after the loop).
+// Still differs only in GPR colouring (party/pos/vec/i) and FPR colouring (scale f28 vs f29, wall f2 vs f28).
 s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
-    HitCheckQuery query1;
+    f32 wall;
     HitCheckQuery query2;
-    f32 sin1, cos1;
+    HitCheckQuery query1;
     f32 sin2, cos2;
+    f32 cos1, sin1;
     f32 floorY;
     f32 scale;
     f32 h;
     s32 i;
     HitEntry* hit;
 
-    query1.targetDir = *(Vec*)(vec + 0x60);
     scale = 2.0f * *(f32*)((u8*)party + 0xF4) / 3.0f;
+    query1.targetDir = *(Vec*)(vec + 0x60);
     sincosf(&sin1, &cos1, angle);
     floorY = -2000.0f;
     for (i = 0; i < 3; i++) {
-        f32 fi = (f32)i;
-        query1.targetPos.x = party->position.x + fi * (sin1 * scale);
+        query1.targetPos.x = party->position.x + (f32)i * (sin1 * scale);
+        query1.targetPos.z = party->position.z + (f32)i * (cos1 * scale);
         query1.targetPos.y = party->position.y + *(f32*)((u8*)party + 0xF0);
-        query1.targetPos.z = party->position.z + fi * (cos1 * scale);
         query1.targetDistance = 100.0f;
         hit = hitCheckVecFilter(&query1, NULL);
         if (hit != NULL) {
@@ -2175,12 +2238,13 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
             }
         }
     }
+    wall = touch_wall_ct;
     if (floorY > -2000.0f) {
-        f32 a = party->position.y + touch_wall_ct;
+        f32 a = party->position.y + wall;
         f32 b = floorY - 2.0f;
         query2.targetPos.y = (a < b) ? a : b;
     } else {
-        query2.targetPos.y = party->position.y + touch_wall_ct;
+        query2.targetPos.y = party->position.y + wall;
     }
     h = 0.75f * *(f32*)((u8*)party + 0xF4);
     sincosf(&sin2, &cos2, angle);
@@ -2201,9 +2265,10 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     return hitGetAttr(hit);
 }
 
-// NONMATCHING (91.85%): original reloads playerPtr into r29 inside the first `if`, `fadds` operand order, and 1.5f*collbox.x scheduling.
+#pragma opt_propagation off // keep constant-load scheduling so hd's 1000.0f load stays after the y add
 void party_motion_beside_mario(PartyEntry* party) {
     MarioWork* mario;
+    MarioWork* mario2;
     HitEntry* hit;
     PartyEntry* other;
     f32 x, z, y;
@@ -2211,51 +2276,72 @@ void party_motion_beside_mario(PartyEntry* party) {
     f32 dist;
     f32 limit;
     f32 hnz, hny, hnx, hd, hz, hy, hx;
+#ifdef MUST_MATCH
+    f32 ytmp;
+#endif
 
     mario = party->playerPtr;
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
-        mario = party->playerPtr;
+        mario2 = party->playerPtr;
         if (!(party->flags & 0x8)) {
-            dir = toMovedir(mario->unk1A8);
+            dir = toMovedir(mario2->unk1A8);
         } else {
             other = partyGetPtr(marioGetPartyId());
             if (other != NULL) {
                 dir = partyToMovedir(party, other->field_10C);
             } else {
-                dir = toMovedir(mario->unk1A8);
+                dir = toMovedir(mario2->unk1A8);
             }
         }
+#ifdef MUST_MATCH
+        dir += 90.0f;
+        *(f32*)((u8*)party + 0x54) = revise360(dir);
+#else
         *(f32*)((u8*)party + 0x54) = revise360(dir + 90.0f);
+#endif
+        limit = 1.5f * mario->wPlayerCollisionBox.x;
         x = mario->position.x;
         z = mario->position.z;
-        movePos(&x, &z, 1.5f * mario->wPlayerCollisionBox.x, *(f32*)((u8*)party + 0x54));
+        movePos(&x, &z, limit, *(f32*)((u8*)party + 0x54));
         *(s32*)((u8*)party + 0x24) = (s32)distABf(party->position.x, party->position.z, x, z);
         if (*(s32*)((u8*)party + 0x24) <= 0) {
             *(s32*)((u8*)party + 0x24) = 1;
         }
     }
     if (marioKeyOffChk()) {
-        mario = party->playerPtr;
+        mario2 = party->playerPtr;
         if (!(party->flags & 0x8)) {
-            dir = toMovedir(mario->unk1A8);
+            dir = toMovedir(mario2->unk1A8);
         } else {
             other = partyGetPtr(marioGetPartyId());
             if (other != NULL) {
                 dir = partyToMovedir(party, other->field_10C);
             } else {
-                dir = toMovedir(mario->unk1A8);
+                dir = toMovedir(mario2->unk1A8);
             }
         }
+#ifdef MUST_MATCH
+        dir += 90.0f;
+        *(f32*)((u8*)party + 0x54) = revise360(dir);
+#else
         *(f32*)((u8*)party + 0x54) = revise360(dir + 90.0f);
+#endif
     }
+    limit = 1.5f * mario->wPlayerCollisionBox.x;
     x = mario->position.x;
     z = mario->position.z;
     y = mario->position.y;
-    movePos(&x, &z, 1.5f * mario->wPlayerCollisionBox.x, *(f32*)((u8*)party + 0x54));
+    movePos(&x, &z, limit, *(f32*)((u8*)party + 0x54));
     angleABf(party->position.x, party->position.z, x, z);
+#ifdef MUST_MATCH
+    ytmp = y + touch_wall_ct;
+    hd = 1000.0f;
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+#else
     hd = 1000.0f;
     hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, y + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+#endif
     if (hit == NULL) {
         dist = -2000.0f;
     } else {
@@ -2263,15 +2349,14 @@ void party_motion_beside_mario(PartyEntry* party) {
         hitGetAttr(hit);
     }
     if (dist <= -2000.0f) {
+        dist = 1.5f * mario->wPlayerCollisionBox.x;
         x = mario->position.x;
         z = mario->position.z;
-        dist = 1.5f * mario->wPlayerCollisionBox.x;
         movePos(&x, &z, dist, toMovedir(mario->unk1A8));
     }
+    limit = 2.0f;
     if (mario->baseSpeed > 1.0f) {
         limit = 10.0f;
-    } else {
-        limit = 2.0f;
     }
     dist = distABf(party->position.x, party->position.z, x, z);
     (*(s32*)((u8*)party + 0x24)) = (*(s32*)((u8*)party + 0x24)) - 1;
@@ -2320,12 +2405,15 @@ void party_motion_beside_mario(PartyEntry* party) {
         party->flags2 = (party->flags2 & ~0x10);
     }
 }
+#pragma opt_propagation reset
 
 // Register rotation vec/ret/party (orig r31/r30/r29, mine r29/r31/r30) and the
 // `next = 0.1f * (target - cur) + cur` block (orig emits fsubs/fmuls/fadds, mine
 // emits fmadds) remain. Duplicating the target computation into each arm of the
 // `dir < 180` test fixed most of the block-level differences.
-// NONMATCHING (86.22%): see above.
+// NONMATCHING (95.42%): dropping the end block's `p` temp fixed the callee-saved GPRs and splitting
+// `next` into sub/mul/add (with the 0.1f in a `rate` local) removed the fmadds and put `cur` in the
+// target's f4. The rest is the FPR colouring of the diff/rate temps and the bool->float `cond` path.
 s32 party_roll(PartyEntry* party) {
     extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
@@ -2334,6 +2422,9 @@ s32 party_roll(PartyEntry* party) {
     f32 cur;
     f32 next;
     f32 cond;
+    f32 rate = 0.1f;
+    // byte view of party for the 0x7C/0x88 fields the PartyEntry header leaves as padding
+    u8* partyBytes = (u8*)party;
 
     if (party->field_37[0] != 2) {
         return 1;
@@ -2375,11 +2466,7 @@ s32 party_roll(PartyEntry* party) {
         *(f32*)((u8*)party + 0x6C) = 0.0f;
         *(f32*)((u8*)party + 0x88) = 0.0f;
         *(f32*)((u8*)party + 0x8C) = 0.0f;
-        if (party->dir < 180.0f) {
-            *(f32*)((u8*)party + 0x7C) = 3.0f;
-        } else {
-            *(f32*)((u8*)party + 0x7C) = -3.0f;
-        }
+        *(f32*)(partyBytes + 0x7C) = (party->dir < 180.0f) ? 3.0f : -3.0f;
         *(f32*)((u8*)party + 0x80) = 0.0f;
         *(s32*)((u8*)party + 0x24) = 0x41;
         party->field_3A = 0x65;
@@ -2393,7 +2480,9 @@ s32 party_roll(PartyEntry* party) {
             if (party->dir < 180.0f) {
                 target = 90.0f;
                 cur = party->field_10C;
-                next = 0.1f * (target - cur) + cur;
+                next = target - cur;
+                next = next * rate;
+                next = next + cur;
                 cond = (target - next < 1.0f);
                 if (fabsf(cond) != 0.0f) {
                     next = target;
@@ -2403,7 +2492,9 @@ s32 party_roll(PartyEntry* party) {
             } else {
                 target = 270.0f;
                 cur = party->field_10C;
-                next = 0.1f * (target - cur) + cur;
+                next = target - cur;
+                next = next * rate;
+                next = next + cur;
                 cond = (target - next < 1.0f);
                 if (fabsf(cond) != 0.0f) {
                     next = target;
@@ -2425,15 +2516,8 @@ s32 party_roll(PartyEntry* party) {
             party->field_FC = 90.0f;
             party->dir = 90.0f;
         }
-        {
-            u8* p = vec3_802f3e40;
-            *(u32*)((u8*)party + 0x88) = *(u32*)(p + 0x48);
-            *(u32*)((u8*)party + 0x8C) = *(u32*)(p + 0x4C);
-            *(u32*)((u8*)party + 0x90) = *(u32*)(p + 0x50);
-            *(u32*)((u8*)party + 0x7C) = *(u32*)(p + 0x54);
-            *(u32*)((u8*)party + 0x80) = *(u32*)(p + 0x58);
-            *(u32*)((u8*)party + 0x84) = *(u32*)(p + 0x5C);
-        }
+        *(Vec*)(partyBytes + 0x88) = *(Vec*)(vec + 0x48);
+        *(Vec*)(partyBytes + 0x7C) = *(Vec*)(vec + 0x54);
         party->field_37[0] = 0;
         party->flags = (party->flags & ~0x1000);
         party->flags2 = (party->flags2 & ~0x100);

@@ -1038,11 +1038,15 @@ static u8 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// NONMATCHING (89.36%): the inlined barriernSatelliteTo_InitInline (see above) now gets `work` in r7
-// like the original, but still keeps the id in the caller's cached table register for `work->unitId`
-// where the original rematerialises it (`lis/addi` into r4), permuting registers through the function.
-// `found` is a `u8`, which matches the original's `clrlwi` on the return value, but the compiler still
-// chooses `subfic` where the original used `subic` for the found->0/2 conversion.
+// NONMATCHING (90.55%): preloading the ten In spline-table addresses into locals inside the
+// `isFirstCall` branch (MUST_MATCH only; natural build uses the globals directly) recovers most of
+// the init-phase register allocation. The return conversion now matches too (`subic`/`subfe`/`and`)
+// by writing it as `(found == 0) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK` with `found` a `u8`; the
+// old `found ? EVT_RETURN_DONE : EVT_RETURN_BLOCK` gave `subfic`/`andc` and inverted the logic.
+// Still differs: the inlined barriernSatelliteTo_InitInline stores the hoisted register to
+// `work->unitId` where retail rematerialises it (`lis/addi` into r4), and the twenty hoisted table
+// addresses land in a different register/spill order (retail spills the In4_* group; this source
+// spills the Out3_*/Out4_* group). The `barriernSatelliteTo_Main` loop matches.
 static USER_FUNC(barriernSatelliteToInside) {
     s32* args;
     s32 id;
@@ -1057,6 +1061,31 @@ static USER_FUNC(barriernSatelliteToInside) {
     id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     if (isFirstCall) {
+#ifdef MUST_MATCH
+        // Cache the table addresses; this alone lines up several of the init-phase
+        // registers (see the NONMATCHING note).
+        s32 in1_1 = (s32)splineTableIn1_1;
+        s32 in2_1 = (s32)splineTableIn2_1;
+        s32 in2_2 = (s32)splineTableIn2_2;
+        s32 in3_1 = (s32)splineTableIn3_1;
+        s32 in3_2 = (s32)splineTableIn3_2;
+        s32 in3_3 = (s32)splineTableIn3_3;
+        s32 in4_1 = (s32)splineTableIn4_1;
+        s32 in4_2 = (s32)splineTableIn4_2;
+        s32 in4_3 = (s32)splineTableIn4_3;
+        s32 in4_4 = (s32)splineTableIn4_4;
+#else
+#define in1_1 ((s32)splineTableIn1_1)
+#define in2_1 ((s32)splineTableIn2_1)
+#define in2_2 ((s32)splineTableIn2_2)
+#define in3_1 ((s32)splineTableIn3_1)
+#define in3_2 ((s32)splineTableIn3_2)
+#define in3_3 ((s32)splineTableIn3_3)
+#define in4_1 ((s32)splineTableIn4_1)
+#define in4_2 ((s32)splineTableIn4_2)
+#define in4_3 ((s32)splineTableIn4_3)
+#define in4_4 ((s32)splineTableIn4_4)
+#endif
         for (i = 0; i < 4; i++) {
             s32 table;
 
@@ -1065,34 +1094,34 @@ static USER_FUNC(barriernSatelliteToInside) {
             }
             table = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2];
             if (table == (s32)splineTableOut1_1) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn1_1);
+                barriernSatelliteTo_InitInline(unit, i, in1_1);
             }
             if (table == (s32)splineTableOut2_1) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn2_1);
+                barriernSatelliteTo_InitInline(unit, i, in2_1);
             }
             if (table == (s32)splineTableOut2_2) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn2_2);
+                barriernSatelliteTo_InitInline(unit, i, in2_2);
             }
             if (table == (s32)splineTableOut3_1) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn3_1);
+                barriernSatelliteTo_InitInline(unit, i, in3_1);
             }
             if (table == (s32)splineTableOut3_2) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn3_2);
+                barriernSatelliteTo_InitInline(unit, i, in3_2);
             }
             if (table == (s32)splineTableOut3_3) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn3_3);
+                barriernSatelliteTo_InitInline(unit, i, in3_3);
             }
             if (table == (s32)splineTableOut4_1) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_1);
+                barriernSatelliteTo_InitInline(unit, i, in4_1);
             }
             if (table == (s32)splineTableOut4_2) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_2);
+                barriernSatelliteTo_InitInline(unit, i, in4_2);
             }
             if (table == (s32)splineTableOut4_3) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_3);
+                barriernSatelliteTo_InitInline(unit, i, in4_3);
             }
             if (table == (s32)splineTableOut4_4) {
-                barriernSatelliteTo_InitInline(unit, i, (s32)splineTableIn4_4);
+                barriernSatelliteTo_InitInline(unit, i, in4_4);
             }
         }
     }
@@ -1102,8 +1131,21 @@ static USER_FUNC(barriernSatelliteToInside) {
             found = 1;
         }
     }
-    return found ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+    return (found == 0) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
+
+#ifndef MUST_MATCH
+#undef in1_1
+#undef in2_1
+#undef in2_2
+#undef in3_1
+#undef in3_2
+#undef in3_3
+#undef in4_1
+#undef in4_2
+#undef in4_3
+#undef in4_4
+#endif
 
 // NONMATCHING (93.02%): same inlined barriernSatelliteTo_InitInline rematerialisation as
 // barriernSatelliteToInside; the original materialises the table address for `work->unitId = id`

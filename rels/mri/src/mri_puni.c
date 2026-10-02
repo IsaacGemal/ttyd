@@ -80,6 +80,9 @@ typedef struct PuniPaternData {
 
 
 extern f32 float_1E06_mri_000255d0;
+extern f32 zero_mri_00025320;
+extern f32 float_1_mri_0002531c;
+extern f32 float_0p1_mri_000255f8;
 #pragma force_active on
 extern PuniMap* Punimap;
 static f32 randf(f32 min, f32 max);
@@ -2578,23 +2581,25 @@ void puniMoveDecel(PuniData* puni) {
     }
 }
 
-// NONMATCHING (92.47%): the extra `tmp` for PSVECNormalize (copied into `dir`) fixes the stack
-// frame and most of the schedule, and a named `zero` fixes the `mag == 0` compare operand order;
-// the remaining difference is the target's extra copy of `up` (built in a temp then copied).
 void puniMoveLimitedNormal(PuniData* puni) {
     f32 mag = PSVECMag(&puni->field_0x15C);
-    Vec tmp;
     Vec up;
+    Vec tmp;
+    Vec up2;
     Vec dir;
-    Vec hitN;
-    Vec hitP;
     Vec saved;
     Vec diff;
-    Vec hitN2;
-    Vec hitP2;
+    Vec hitN;
+    Vec hitP;
     f32 dist;
+    f32 hitN2z;
+    f32 hitN2y;
+    f32 hitN2x;
+    f32 hitP2z;
+    f32 hitP2y;
+    f32 hitP2x;
     f32 scale;
-    f32 zero = 0.0f;
+    f32 zero = zero_mri_00025320;
 
     if (mag == zero) {
         return;
@@ -2605,37 +2610,37 @@ void puniMoveLimitedNormal(PuniData* puni) {
     }
 
     up = puni->field_0x12C;
-    up.y += 1.0f;
+    up.y += float_1_mri_0002531c;
     PSVECNormalize(&puni->field_0x15C, &tmp);
     dir = tmp;
+    up2 = up;
 
     puni->field_0x214 = 0;
     puni->field_0x210 = 0;
     dist = mag;
     puni->field_0x210 =
-        hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
-                            up.z, dir.x, dir.y, dir.z);
+        hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up2.x, up2.y,
+                            up2.z, dir.x, dir.y, dir.z);
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
     } else if (Punigp->unk328 != 0x12) {
         saved = puni->field_0x12C;
         puni->field_0x560 = hitN;
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
-        if (puni->field_0x15C.y == 0.0f) {
-            hitN.y = 0.0f;
+        if (zero_mri_00025320 == puni->field_0x15C.y) {
+            hitN.y = zero_mri_00025320;
         }
         PSVECNormalize(&hitN, &hitN);
         scale = PSVECDotProduct(&dir, &hitN);
-        scale = scale * -(mag - dist) + 0.1f;
-        PSVECScale(&hitN, &hitN, scale);
+        PSVECScale(&hitN, &hitN, scale * -(mag - dist) + float_0p1_mri_000255f8);
         PSVECAdd(&puni->field_0x12C, &hitN, &puni->field_0x12C);
         PSVECSubtract(&puni->field_0x12C, &saved, &diff);
         dist = PSVECMag(&diff);
-        if (dist > 0.0f) {
+        if (dist > zero_mri_00025320) {
             PSVECNormalize(&diff, &diff);
             puni->field_0x214 =
-                hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
-                                    saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
+                hitCheckFilter(0, &hitP2x, &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z,
+                                    saved.x, float_1_mri_0002531c + saved.y, saved.z, diff.x, diff.y, diff.z);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = saved;
             }
@@ -7890,10 +7895,12 @@ void puniHagurePos(PuniData* punidat) {
 }
 
 // The inlined nearest-of-four helper (f28/f29 swapped), the prologue colouring
-// (event/args) and the rounding of the `else` branch's zero Vec (the original
-// copies vec3_mri_00025b20 to a stack temp) still differ. The main scan loop is
-// now a pointer walk so its `addi 0x5a8` matches.
-// NONMATCHING (84.53%): control flow, all call sites and all field writes match.
+// (event/args), the anonymous `@NNN` names the pool gives float_60/float_100/vec3_mri_00025b20
+// and the rounding of the `else` branch's zero Vec (the original copies vec3_mri_00025b20 to a
+// stack temp) still differ. The main scan loop is now a pointer walk so its `addi 0x5a8` matches.
+// NONMATCHING (84.53%): control flow, all call sites and all field writes match. Using the named
+// float/vec externs and giving the main loop one shared `Vec v` kept the 0xb0 frame but reordered
+// the rounding and did not fix the f28/f29 and event/args colouring, so the literal version stays.
 USER_FUNC(evt_puni_exit) {
     s32* args = event->args;
     s32 mode = evtGetValue(event, args[0]);

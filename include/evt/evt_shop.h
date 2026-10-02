@@ -20,6 +20,8 @@ typedef struct ShopObj {
 } ShopObj;
 
 extern const char str_802ECDE0[];
+extern const char str_8041BC28[4];
+extern const char str_8041BC60[4];
 
 USER_FUNC(evt_shop_setup);
 s32 evtShopIsActive(void);

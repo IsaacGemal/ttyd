@@ -276,18 +276,18 @@ void tegami_delete(void) {
     }
 }
 
-#pragma global_optimizer off
-// NONMATCHING (72.23%): 118 of 392 instructions differ: 98 with different operands, 4 replaced, 8 missing, 7 extra, 1 with a different opcode
+// NONMATCHING (72.23%): 86 of 392 instructions differ - all register allocation in the sin/cos
+// block. The f0/f1 scratch pair is swapped (the same blocker envDisp_FF hits),
+// and the int->float double / quarter / pi take f31/f29/f30 vs the target's f29/f30/f31.
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
     smartEntry* texBuf;
     CameraEntry* cam;
-    f32 twoPi, quarter, c16605, one, pi, c4967, hundred;
-    f32 scale;
+    f32 pi, quarter, twoPi, one, c16605, c4967, scale, hundred;
     s32 i;
     s32 mtxId;
-    f32 f3, f2, f4, f0, f1;
+    f32 f1, f0, f2, f4, f3;
 
     scale = evtGetFloat(NULL, GW(0)) / 100.0f;
     cam = camGetPtr(cameraId);
@@ -307,12 +307,12 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
     GXSetNumTexGens(8);
     GXSetNumTevStages(8);
-    hundred = 100.0f;
     for (i = 0; i < 8; i++) {
         twoPi = 6.2831855f;
+        f1 = (f32)i;
         quarter = 0.125f;
         f2 = 0.00761f;
-        f3 = (twoPi * (f32)i) * quarter;
+        f3 = (twoPi * f1) * quarter;
         c16605 = 0.16605f;
         one = 1.0f;
         pi = 3.1415927f;
@@ -378,6 +378,7 @@ static void depthDisp(CameraId cameraId, void* param) {
                 f4 = (f4 * f0) + one;
             }
         }
+        hundred = 100.0f;
         mtxId = 30 + i * 3;
         PSMTXTrans(mtx, (scale * f2) / hundred, (scale * f4) / hundred, 0.0f);
         GXLoadTexMtxImm(mtx, mtxId, GX_MTX2x4);
@@ -422,7 +423,6 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXTexCoord2s16(0, 1);
     sysWaitDrawSync();
 }
-#pragma global_optimizer reset
 
 USER_FUNC(depth) {
     dispEntry(8, 1200.0f, 0, depthDisp, NULL);
