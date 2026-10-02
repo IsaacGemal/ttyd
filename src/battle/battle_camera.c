@@ -713,13 +713,14 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (85.67%): 3 instructions differ, 7 missing, 5 extra, plus register differences.
+// NONMATCHING (94.84%): register allocation and the order of two moves before the BtlUnit_GetPos call.
 USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   s32 *args = event->args;
   s32 priority, type, partId, memberId;
   BattleWork *wp;
   BattleCameraWork *camera;
   BattleAudience *audience;
+  BattleAudienceMember *member;
   BattleUnit *unit;
   BattleUnitPart *part;
   f32 x, y, z;
@@ -743,9 +744,8 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   BtlUnit_GetHitPos(unit, part, &x2, &y2, &z2);
   camera->unkBC = (Vec){x, y, z};
   camera->unk20 = memberId;
-  camera->unkC8 = (Vec){audience->members[memberId].position.x,
-                        audience->members[memberId].position.y,
-                        audience->members[memberId].position.z};
+  member = &audience->members[memberId];
+  camera->unkC8 = (Vec){member->position.x, member->position.y, member->position.z};
   return EVT_RETURN_DONE;
 }
 

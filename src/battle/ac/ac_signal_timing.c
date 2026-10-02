@@ -369,7 +369,7 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// NONMATCHING (56.05%): register allocation / stack slots; for the two causes.
+// NONMATCHING (58.44%): register allocation / stack slots; for the two causes.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     const volatile Vec* vec = vec3_802fedc8;
@@ -445,16 +445,14 @@ static void actionCommandDisp(f32 x, f32 y) {
         Mtx scale;
         Mtx mtx2;
         s32 number = bd->field_0x00 + *(s32*)&work->actionCommands.field_34[0x18];
-        if (*(s32*)&work->actionCommands.field_34[0] & 1) {
-            PSMTXTrans(mtx,
-                       (float_neg200_804216e0 + x) +
-                           (f32)((num * 0x30) + (*(s32*)&work->actionCommands.field_34[0x1C] << 5) - 0x1a),
-                       f31, float_0_804216f4);
-        } else {
-            PSMTXTrans(mtx,
-                       (float_neg200_804216e0 + x) +
-                           (f32)((num * 0x30) + (*(s32*)&work->actionCommands.field_34[0x1C] << 5) - 0x1a),
-                       f31, float_0_804216f4);
+        {
+            s32 ioff;
+            if (*(s32*)&work->actionCommands.field_34[0] & 1) {
+                ioff = (num * 0x30) + (*(s32*)&work->actionCommands.field_34[0x1C] << 5) - 0x1a;
+            } else {
+                ioff = (num * 0x30) + (*(s32*)&work->actionCommands.field_34[0x1C] << 5) - 0x1a;
+            }
+            PSMTXTrans(mtx, (float_neg200_804216e0 + x) + (f32)ioff, f31, float_0_804216f4);
         }
         if (*(s32*)&work->actionCommands.field_34[0] & 8) {
             PSMTXScale(scale, float_1p5_804216f8, float_1p5_804216f8, float_1p5_804216f8);

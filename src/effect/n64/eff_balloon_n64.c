@@ -133,15 +133,8 @@ extern const f32 float_deg2rad_8041e948;
 // to the lha/xoris/lfd+fsubs and fctiwz integer path instead. OSInitFastCast re-runs before
 // the reads and before the writes, matching retail's GQR2-5 setup.
 static inline void effBalloonSetVtx(BalloonVtx* dst, BalloonVtx* src, Mtx mtx) {
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail's __OSf32tos16 temporaries each take a 4-byte slot, making the
-	   helper object 16 bytes; the extra f32 reproduces that frame size. Natural Vec under #else. */
-	f32 v[4];
-#define BALLOON_VEC ((Vec*)v)
-#else
 	Vec v;
 #define BALLOON_VEC (&v)
-#endif
 
 	memcpy(dst, src, sizeof(BalloonVtx));
 	OSInitFastCast(); /* retail's GQR2-5 setup before the s16->f32 reads */
@@ -169,22 +162,10 @@ static inline void tri1WithUnused(s32 x, s32 y, s32 z, s32 unused) {
 // blocks match; the psq_l/psq_st vertex conversions match too (via the SDK OSs16tof32/
 // OSf32tos16 fast-cast inlines); tri1WithUnused reproduces the original's 4th (unused) tri1
 // argument and its lack of a clrlwi on i+2/i+3.
-// The remaining gap is stack layout and register colouring, caused by the SDK header: the
-// reconstructed `__OSf32tos16` in libs/dolsdk2004/include/dolphin/os/OSFastCast.h declares its
-// temporary as `s16 tmp`, which MWCC allocates 2 bytes apart across calls (frame 0x200). The
-// retail header used a 4-byte temporary: changing that one line to `f32 tmp` (plus `f32* ptr
-// = &tmp; return *(s16*)&tmp;`) makes the temps land 4 apart, the frame 0x210 and every
-// Vec/matrix/texObj offset exact. That one-line header fix is NOT committed here (this file may
-// only add prototypes to headers); with it this source reaches 99.89% and only the callee-saved
-// colouring remains (retail cam r28 vs ours r31, life r31 vs r29, balloon_vtx base r29 vs r28).
-// The MUST_MATCH `f32 v[4]` in effBalloonSetVtx pads each inlined helper object to 16 bytes to
-// recover the 0x210 frame without the header fix (99.63% -> 99.73%); it also misaligns the
-// Vector slots because a 16-byte object spaces them 16 apart instead of retail's 12.
-// tri1's 4-argument form is not in include/eff/eff_n64.h or src/effect/n64/eff_n64.c (both
+// The remaining gap is the callee-saved colouring (retail cam r28 vs ours r31, life r31 vs r29, balloon_vtx
+// base r29 vs r28). tri1's 4-argument form is not in include/eff/eff_n64.h or src/effect/n64/eff_n64.c (both
 // declare 3 u16 args); the local tri1WithUnused helper casts around that.
-// NONMATCHING (99.73%): everything matches except the __OSf32tos16 temp width (s16 2-byte slots
-// here vs 4-byte in retail; see the header note above) and the callee-saved register colouring
-// that follows from it.
+// NONMATCHING (99.89%): callee-saved register colouring only.
 void effBalloonDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;
