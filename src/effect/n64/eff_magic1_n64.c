@@ -143,8 +143,15 @@ void effMagic1Main(EffectEntry* effect) {
 
 // Per-channel animation sine used by main_dl. The original recomputes the
 // phase for every channel, so this stays a macro instead of a shared local.
+// MUST_MATCH: the operand order (phase + 180 + retraceCount*32) is what puts the sum's
+// registers where the original has them; the natural left-to-right order scores lower.
+#ifdef MUST_MATCH
+#define MAGIC1_PHASE(phase) ((phase) + 180 + gp->retraceCount * 32)
+#else
+#define MAGIC1_PHASE(phase) (gp->retraceCount * 32 + (phase) + 180)
+#endif
 #define MAGIC1_SIN(phase) \
-    ((f32)sin(float_6p2832_8041f67c * (f32)(gp->retraceCount * 32 + (phase) + 180) / float_360_8041f680))
+    ((f32)sin(float_6p2832_8041f67c * (f32)(s32)MAGIC1_PHASE(phase) / float_360_8041f680))
 
 // Match-only: building each colour through an inline return puts its local and its
 // return temp where the original does (a plain local lands in the other slot); the
@@ -184,12 +191,14 @@ static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
 }
 #endif
 
-// Details are in REPORT.md. The remaining diffs are fp register allocation: the fp
-// locals land one register lower than the target because MWCC keeps float_0 in f23 and
-// shares f15 between `angle` and the cos result, while the target keeps a separate f16
-// for cos and reloads float_0; the pool also loads 1.0 before 0.5 and 1/256 before 64,
-// and the phase sum adds 180 before the anime byte.
-// NONMATCHING (92.34%): fp locals one register low; cos shares f15; float_0 hoisted.
+// Details are in REPORT.md. main_dl matches everywhere except two MWCC register
+// allocation tie-breaks that the source shape does not move:
+//  - the constant pool loads 1.0 before 0.5 and 1/256 before 64 (the target loads
+//    0.5/1.0 and 64/1/256), so f28/f29 and f30/f31 are swapped in the setup and in the
+//    colour/trans code;
+//  - each MAGIC1_SIN phase sum keeps retraceCount*32 in r0 and the anime byte in r3,
+//    the target the other way round (identical instruction, swapped operands).
+// NONMATCHING (97.41%): f28/f29 and f30/f31 swapped; phase sum r0/r3 swapped.
 static void main_dl(EffectEntry* effect, Mtx mtx) {
     u8* anime;
     s32 size;
@@ -214,6 +223,7 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
     f32 x;
     f32 y;
     f32 z;
+    f32 cosAngle;
     f32 angle;
 
     data = effect->userdata;
@@ -282,10 +292,18 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
         PSMTXConcat(mtxC, mtxA, mtxA);
         PSMTXConcat(mtxA, mtxB, mtxD);
 
-        anime = anime_data;
-        for (j = 0; j < 3; j++, anime += 4) {
+        for (j = 0, anime = anime_data; j < 3; j++, anime += 4) {
+#ifdef MUST_MATCH
+            /* MUST_MATCH: naming the loop angle `cosAngle` and the cosine `angle` is what
+               puts them in the target's f15/f16; the natural assignment swaps the two. */
+            cosAngle = float_6p2832_8041f67c * ringAngle / float_360_8041f680;
+            angle = (f32)cos(cosAngle);
+            PSMTXTrans(mtxE, radius * (f32)sin(cosAngle), radius * angle, 0.0f);
+#else
             angle = float_6p2832_8041f67c * ringAngle / float_360_8041f680;
-            PSMTXTrans(mtxE, radius * (f32)sin(angle), radius * (f32)cos(angle), float_0_8041f654);
+            cosAngle = (f32)cos(angle);
+            PSMTXTrans(mtxE, radius * (f32)sin(angle), radius * cosAngle, 0.0f);
+#endif
             ringAngle += float_120_8041f684;
             PSMTXConcat(mtxD, mtxE, mtxE);
             PSMTXConcat(mtx, mtxE, mtxE);
@@ -296,8 +314,8 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 
             size = (type == 0) ? 15 : 10;
             PSMTXScale(mtxB, float_2_8041f668, float_0p25_8041f690, float_1_8041f68c);
-            PSMTXTrans(mtxA, float_0_8041f654,
-                       (f32)(3 - j) * float_64_8041f694 * float_0p0039062_8041f698, float_0_8041f654);
+            PSMTXTrans(mtxA, 0.0f,
+                       (f32)(3 - j) * float_64_8041f694 * float_0p0039062_8041f698, 0.0f);
             PSMTXConcat(mtxA, mtxB, mtxA);
             GXLoadTexMtxImm(mtxA, 0x1E, 1);
 

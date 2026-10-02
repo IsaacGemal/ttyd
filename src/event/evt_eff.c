@@ -298,10 +298,20 @@ USER_FUNC(evt_eff) {
 
 
 
-// NONMATCHING (97.58%): every case matches; the prologue keeps `args` and the `args+2` base pointers in different
-// registers (target r17/r29/r28, ours one base with displacements), shifting the int allocation down two.
+#pragma push
+#pragma optimization_level 1 // retail's register allocation keeps the three args+2 base pointers apart; higher levels coalesce them
+// Returning the stored pointer through a helper forces a real register copy (`mr r28,r29`) instead of
+// rematerialising `addi r28,r17,8`; at level 1 the bare `fargs = args + 2` is folded.
+static inline s32* effIdent(s32** d, s32* p) { return *d = p; }
+
+// NONMATCHING (99.78%): every case, call and argument matches; the 8 remaining instructions are level-1
+// allocator/scheduler choices: `lwz r17` is one slot early, the two pointer copies schedule one slot before
+// the call's `mr r3,r30`, and the switch keeps the jump target in r3 not r0. See REPORT.md.
 USER_FUNC(evt_eff64) {
 	s32* args = event->args;
+	s32* iargs;
+	s32* fargs;
+	s32* rargs;
 	const char* effName;
 	const char* effSet;
 	s32 int2, int3, int4, int5, int6, int7, int8, int9,
@@ -311,42 +321,43 @@ USER_FUNC(evt_eff64) {
 	EffectEntry* effect;
 
 	effName = (const char*)evtGetValue(event, args[0]);
-	//these are probably storing different typecasts, s32 and u32
 	evtGetValue(event, args[0]);
 	evtGetValue(event, args[0]);
+	iargs = args + 2;
 	effSet = (const char*)evtGetValue(event, args[1]);
-	//these are probably storing different typecasts, s32 and u32
+	fargs = effIdent(&fargs, iargs);
 	evtGetValue(event, args[1]);
+	rargs = effIdent(&rargs, iargs);
 	evtGetValue(event, args[1]);
 
-	int2 = evtGetValue(event, args[2]);
-	int3 = evtGetValue(event, args[3]);
-	int4 = evtGetValue(event, args[4]);
-	int5 = evtGetValue(event, args[5]);
-	int6 = evtGetValue(event, args[6]);
-	int7 = evtGetValue(event, args[7]);
-	int8 = evtGetValue(event, args[8]);
-	int9 = evtGetValue(event, args[9]);
-	int10 = evtGetValue(event, args[10]);
-	int11 = evtGetValue(event, args[11]);
-	int12 = evtGetValue(event, args[12]);
-	int13 = evtGetValue(event, args[13]);
-	int14 = evtGetValue(event, args[14]);
+	int2 = evtGetValue(event, iargs[0]);
+	int3 = evtGetValue(event, iargs[1]);
+	int4 = evtGetValue(event, iargs[2]);
+	int5 = evtGetValue(event, iargs[3]);
+	int6 = evtGetValue(event, iargs[4]);
+	int7 = evtGetValue(event, iargs[5]);
+	int8 = evtGetValue(event, iargs[6]);
+	int9 = evtGetValue(event, iargs[7]);
+	int10 = evtGetValue(event, iargs[8]);
+	int11 = evtGetValue(event, iargs[9]);
+	int12 = evtGetValue(event, iargs[10]);
+	int13 = evtGetValue(event, iargs[11]);
+	int14 = evtGetValue(event, iargs[12]);
 
-	float2 = evtGetFloat(event, args[2]); //unused
-	float3 = evtGetFloat(event, args[3]);
-	float4 = evtGetFloat(event, args[4]);
-	float5 = evtGetFloat(event, args[5]);
-	float6 = evtGetFloat(event, args[6]);
-	float7 = evtGetFloat(event, args[7]);
-	float8 = evtGetFloat(event, args[8]);
-	float9 = evtGetFloat(event, args[9]);
-	float10 = evtGetFloat(event, args[10]);
-	float11 = evtGetFloat(event, args[11]);
-	float12 = evtGetFloat(event, args[12]);
-	float13 = evtGetFloat(event, args[13]);
-	float14 = evtGetFloat(event, args[14]);
-	raw3 = args[3];
+	float2 = evtGetFloat(event, fargs[0]);
+	float3 = evtGetFloat(event, fargs[1]);
+	float4 = evtGetFloat(event, fargs[2]);
+	float5 = evtGetFloat(event, fargs[3]);
+	float6 = evtGetFloat(event, fargs[4]);
+	float7 = evtGetFloat(event, fargs[5]);
+	float8 = evtGetFloat(event, fargs[6]);
+	float9 = evtGetFloat(event, fargs[7]);
+	float10 = evtGetFloat(event, fargs[8]);
+	float11 = evtGetFloat(event, fargs[9]);
+	float12 = evtGetFloat(event, fargs[10]);
+	float13 = evtGetFloat(event, fargs[11]);
+	float14 = evtGetFloat(event, fargs[12]);
+	raw3 = rargs[1];
 	effect = NULL;
 	switch (effGetSetN64(effSet)->id) {
 		case 0: effect = effExpBomN64Entry(float2, float3, float4); break;
@@ -411,7 +422,7 @@ USER_FUNC(evt_eff64) {
 		case 60: effect = effShockN64Entry(int2, float3, float4, float5, float6, float7); break;
 		case 61: effect = effBalloonHeihoN64Entry(int2, int8, float3, float4, float5, float6, float7); break;
 		case 62: effect = effRubbleN64Entry(int2, int10, float3, float4, float5, float6, float7, float8, float9); break;
-		case 63: effect = effMagicHoraoN64Entry(int2, int7, int9, int11, float3, float4, float5, float6, float8, float10); break;
+		case 63: effMagicHoraoN64Entry(int2, int7, int9, int11, float3, float4, float5, float6, float8, float10); break;
 		case 64: effect = effLensflareN64Entry(int2, int7, float3, float4, float5, float6); break;
 		case 65: effect = effCrystalN64Entry(int2, int7, float3, float4, float5, float6); break;
 		case 66: effect = effButterflyN64Entry(int2, float3, float4, float5); break;
@@ -434,7 +445,10 @@ USER_FUNC(evt_eff64) {
 		case 83: effect = effKamekiTornadeN64Entry(int2, int7, float3, float4, float5, float6); break;
 		case 84: effect = effStoneSmokeN64Entry(int2, int7, float3, float4, float5, float6); break;
 		case 85: effect = effPokopiPchargeN64Entry(float3, float4, float5, float6, int2, int7); break;
-		case 86: effect = effHagetakaFlushN64Entry(int2, float3, float4, float5, float6); break;
+		// eff_hagetaka_flush_n64.h declares this with 5 parameters, but the original passes six: the caller's asm
+		// loads r4 = int7 (int2 in r3, float3..float6 in f1..f4) before the bl. The callee never reads r4, so the
+		// header dropped it. Call through the real signature (the same bridge win_main.c uses for the pouch accessors).
+		case 86: effect = ((EffectEntry* (*)(s32, s32, f32, f32, f32, f32))effHagetakaFlushN64Entry)(int2, int7, float3, float4, float5, float6); break;
 		case 87: effect = effKumokumoN64Entry(int2, int9, float3, float4, float5, float6, float7, float8); break;
 		case 88: effect = effVaporN64Entry(int2, int7, float3, float4, float5, float6); break;
 		case 89: effect = effFireSparkN64Entry(int2, int9, int10, float3, float4, float5, float6, float7, float8, float11, float12); break;
@@ -444,7 +458,9 @@ USER_FUNC(evt_eff64) {
 		case 93: effect = effKumokumoChipN64Entry(int2, float3, float4, float5, float6, float7, float8, float9, float10); break;
 		case 94: effect = effFireworksN64Entry(int2, int10, float3, float4, float5, float6, float7, float8, float9); break;
 		case 95: effect = effGlassN64Entry(int2, int7, float3, float4, float5, float6); break;
-		case 96: effect = effBoobooN64Entry(); break;
+		// eff_booboo_n64.h declares this (void), but the original passes the same six arguments (its prologue
+		// ignores them and calls effEntry first), so call through the real signature.
+		case 96: effect = ((EffectEntry* (*)(s32, s32, f32, f32, f32, f32))effBoobooN64Entry)(int2, int7, float3, float4, float5, float6); break;
 		case 97: effect = effPikkyoloN64Entry(int2, int7, float3, float4, float5, float6); break;
 		case 98: effect = effFreezeN64Entry(int2, int7, float3, float4, float5, float6); break;
 		case 99: effect = effSunlightN64Entry(int2, int7, float3, float4, float5, float6); break;
@@ -462,6 +478,7 @@ USER_FUNC(evt_eff64) {
 	}
 	return EVT_RETURN_DONE;
 }
+#pragma pop
 
 USER_FUNC(evt_eff_softdelete) {
 	effSoftDelete(effNameToPtr((const char*)evtGetValue(event, event->args[0])));

@@ -1658,14 +1658,31 @@ void fan_disp(void) {
 }
 
 #pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
-// body, dispatch, rodata, the pose-loop/clash scoping and the case 1 `a` constant colouring now
-// match. `opt_lifetimes off` (with `opt_propagation off`) recovered the loop's FPRs, splitting
-// `(f32)rand()/32767.0f` into a temp fixed the case 1 expression, and declaring pose before fan
-// fixed the last loop's fan/pose colours. What is left: the case 2 `fan->target =
-// vec3_tou_0000d064` / `ang = (ang + breath) * 0.5f` scheduling (retail loads 0.5 after the vector
-// stores, ours before) and the flySfx/FanPose prologue of the last loop (retail r29/r30/r26, ours
-// r0/r29/r30) plus the cached `&query` in r30 vs retail's inline r1.
-// NONMATCHING (95.50%): those three register/scheduling clusters.
+#pragma opt_lifetimes off // retail FPR colouring of the sin/cos inlines in the switch cases
+// Both pragmas are required: without `opt_propagation off` the function is 74.9%, without
+// `opt_lifetimes off` it is 95.5%. `opt_lifetimes off` recovered the loop FPRs (95.5 -> 98.0);
+// the else-branch and second-loop counters are block-scoped so MWCC keeps the short-lived `i` in
+// a volatile register as retail does (98.0 -> 98.1).
+// Four idioms recover retail's exact code shape (98.1 -> 98.19):
+//  - the random ranges use `randf(min, max)`, whose `r * (max - min) + min` emits MWCC's
+//    `fmadds rf, 90, ...` operand order directly (the hand-written `min + r * span` comes out with
+//    the constant first). `randf` inlines to the same `rand`-then-scale sequence.
+//  - `ang = (ang + breath) / 2.0f` folds to the retail `* 0.5` fused-multiply-add colouring; the
+//    literal `* 0.5f` picks different FPRs (same story as the `field_0x38` line below).
+//  - `fan->field_0x40 = scale * -c;` (negating the operand, not `-scale * c`) is what retail's
+//    fused form wants; `-(scale * c)` / `-scale * c` colour the FPRs differently.
+//  - the last loop advances `fan++, pose++, i++` (of the six permutations this one colours the
+//    loop's GPRs and the preceding switch loop exactly like retail).
+// What is still different (141 instruction diffs, most of them one register name):
+//  - the last loop: our MWCC hoists `&query.hitNormal` (r1+0x5c) into r30 across the loop, so the
+//    loop's fan/i land in r28/r27 where retail has r30/r28 (retail computes the address inline).
+//  - case 1's angle `a` lands in f31 where retail has f30 (and the `rf * 90.0f` fmadds operands
+//    come out swapped); this cascades through the inlined fanSinf/fanCosf branches.
+//  - case 2's `fan->target = vec3_tou_0000d064` / `ang = (ang + breath) / 2.0f` scheduling: retail
+//    loads the vector and 0.5 after the stores, ours before.
+//  - a few loop-counter / &fan_wp register swaps in the second and pairwise loops, and one
+//    `fcmpu cr0, f0, f1` where retail has the operands the other way round.
+// NONMATCHING (98.19%): the above register/scheduling clusters; no logic differs.
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
     ExtPose* pose;
@@ -1700,6 +1717,7 @@ void ext_fan_main(void) {
         }
     } else {
         s32 found = 0;
+        s32 i;
         pose = extGetPosePtr();
         fan = fan_wp->poses;
         for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
@@ -1722,6 +1740,9 @@ void ext_fan_main(void) {
         }
     }
 
+    {
+    FanPose* fan;
+    s32 i;
     fan = fan_wp->poses;
     for (i = 0; i < fan_wp->poseNum; i++, fan++) {
         if (fan->field_0x2 != 0) {
@@ -1734,6 +1755,7 @@ void ext_fan_main(void) {
             PSVECScale(&d, &d, 0.1f);
             PSVECAdd(&fan->velocity, &d, &fan->velocity);
         }
+    }
     }
 
     fan = fan_wp->poses;
@@ -1777,8 +1799,7 @@ void ext_fan_main(void) {
             {
                 f32 rf = (f32)rand() / 32767.0f;
                 f32 a = (135.0f + rf * 90.0f) * TWO_PI / 360.0f;
-                f32 rf2 = (f32)rand() / 32767.0f;
-                f32 dist = 400.0f + rf2 * 100.0f;
+                f32 dist = randf(400.0f, 500.0f);
                 f32 s = fanSinf(a);
                 f32 c;
                 f32 vx, vz;
@@ -1793,8 +1814,8 @@ void ext_fan_main(void) {
                     v.z = vz;
                     fan->target = v;
                 }
-                fan->field_0x3C = 4.0f + (f32)rand() / 32767.0f * 2.0f;
-                fan->field_0x40 = 0.1f + (f32)rand() / 32767.0f * 0.1f;
+                fan->field_0x3C = randf(4.0f, 6.0f);
+                fan->field_0x40 = randf(0.1f, 0.2f);
                 {
                     f32 dy = fan->target.y - fan->position.y;
                     f32 dxy = distABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
@@ -1820,17 +1841,17 @@ void ext_fan_main(void) {
 
                 fan->field_0x2 = 20;
                 fan->target = vec3_tou_0000d064;
-                ang = (ang + breath) * 0.5f;
+                ang = (ang + breath) / 2.0f;
                 {
-                    f32 scale = 0.1f + (f32)rand() / 32767.0f * 0.1f;
+                    f32 scale = randf(0.1f, 0.2f);
                     f32 s;
                     f32 c;
                     f32 a = TWO_PI * ang / 360.0f;
                     s = fanSinf(a);
                     fan->field_0x38 = scale * s;
-                    fan->field_0x3C = 0.03f + (f32)rand() / 32767.0f * 0.03f;
+                    fan->field_0x3C = randf(0.03f, 0.06f);
                     c = fanCosf(a);
-                    fan->field_0x40 = -scale * c;
+                    fan->field_0x40 = scale * -c;
                     fan->field_0x44 = 120;
                 }
                 psndSFXOn_3D(flySfx, &fan->position);
@@ -1846,27 +1867,27 @@ void ext_fan_main(void) {
 
     pose = extGetPosePtr();
     fan = fan_wp->poses;
-    for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
+    for (i = 0; i < fan_wp->poseNum; fan++, pose++, i++) {
         switch (fan->field_0x2) {
         case 0:
-            PSVECNormalize(&fan->velocity, &fan->velocity);
-            {
-                f32 mag = PSVECMag(&fan->velocity);
-                HitCheckQuery query;
+        {
+            HitCheckQuery query;
+            f32 mag;
 
-                query.targetPos = fan->position;
-                query.targetPos.y += 4.0f;
-                query.targetDir = fan->velocity;
-                query.targetDir.y = 0.0f;
-                query.targetDistance = 25.0f + mag;
-                if (hitCheckVecFilter(&query, NULL) != NULL) {
-                    C_VECReflect(&fan->velocity, &query.hitNormal, &fan->velocity);
-                } else {
-                    fan->position.x += fan->velocity.x;
-                    fan->position.z += fan->velocity.z;
-                    fan->velocity.x *= 0.6f;
-                    fan->velocity.z *= 0.6f;
-                }
+            PSVECNormalize(&fan->velocity, &fan->velocity);
+            mag = PSVECMag(&fan->velocity);
+            query.targetPos = fan->position;
+            query.targetPos.y += 4.0f;
+            query.targetDir = fan->velocity;
+            query.targetDir.y = 0.0f;
+            query.targetDistance = 25.0f + mag;
+            if (hitCheckVecFilter(&query, NULL) != NULL) {
+                C_VECReflect(&fan->velocity, &query.hitNormal, &fan->velocity);
+            } else {
+                fan->position.x += fan->velocity.x;
+                fan->position.z += fan->velocity.z;
+                fan->velocity.x *= 0.6f;
+                fan->velocity.z *= 0.6f;
             }
             if (fan->position.x < -350.0f) {
                 fan->position.x = -350.0f;
@@ -1877,6 +1898,7 @@ void ext_fan_main(void) {
             if (fan->position.z > 195.0f + (f32)i / 100.0f) {
                 fan->position.z = 195.0f + (f32)i / 100.0f;
             }
+        }
             break;
         case 10:
             fan->position.y += fan->field_0x38;
@@ -1938,6 +1960,7 @@ void ext_fan_main(void) {
     psndSFX_pos(fan_wp->sfxId, &vec);
     psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->field_0x510 / fan_wp->poseNum));
 }
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 void ext_fan_dispent(void) {
     FanPose* fan;

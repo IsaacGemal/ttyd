@@ -248,7 +248,7 @@ static inline f32 s70(void) { return 70.0f; }
 // unscored; the four `addi rN, r31, 0x18/0x20/0x28/0x30` replaces are only objdiff pairing once
 // the `lis` shifts them by one slot. The 70.0f and the clamp's mario reload are reproduced by the
 // SEVENTY()/RELOAD_MARIO() match-only macros above.
-// NONMATCHING (99.68%): only the int->float magic double's base register differs (fresh `lis` vs r31).
+// NONMATCHING (99.75%): only the int->float magic double's base register differs (fresh `lis` vs r31).
 void N__cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     const u8* base = (const u8*)&vec3_802f8120;
@@ -366,9 +366,21 @@ void N__cloud_use(PartyEntry* party) {
         *(Vec*)((u8*)party + 0x7C) = *(const Vec*)base;
         *(f32*)((u8*)cloud + 0x8) += 2.0f;
         RELOAD_MARIO();
-        if (*(f32*)((u8*)cloud + 0x8) >= *(f32*)((u8*)cloud + 0xC)) {
-            *(f32*)((u8*)cloud + 0x8) = *(f32*)((u8*)cloud + 0xC);
+#ifdef MUST_MATCH
+        // Match-only: the original loads cloud->unk8 (0x8) before cloud->field_0xC; assigning mx
+        // inside the comparison forces that emission order. The natural form is under #else.
+        {
+            f32 a = cloud->unk8;
+            f32 mx;
+            if (a >= (mx = *(f32*)cloud->field_0xC)) {
+                cloud->unk8 = mx;
+            }
         }
+#else
+        if (cloud->unk8 >= *(f32*)cloud->field_0xC) {
+            cloud->unk8 = *(f32*)cloud->field_0xC;
+        }
+#endif
         angle = toMovedir(cloud->unk4);
         sincosf(&sin1, &cos1, angle);
         sincosf(&sin2, &cos2, -45.0f);
@@ -381,10 +393,8 @@ void N__cloud_use(PartyEntry* party) {
         }
         cloud->unk24 = (s32)hit;
         getHitBreatheout2(party, 0.0f);
-        seq = *(s16*)((u8*)cloud + 0x38) + 1;
-        *(s16*)((u8*)cloud + 0x38) = seq;
-        if (seq > 2) {
-            *(s16*)((u8*)cloud + 0x38) = 0;
+        if (++*(s16*)(cloud->field_0x30 + 8) > 2) {
+            *(s16*)(cloud->field_0x30 + 8) = 0;
         }
         if ((party->flags & 0x80000000) == 0) {
             if ((*(u16*)((u8*)party + 0x150) & 0x400) != 0 && marioKeyOffChk() == 0) {

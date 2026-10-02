@@ -25,3 +25,4 @@ void marioResetCamShift(void);
 void marioResetCamShiftRate(void);
 void marioCamZoomOffReq(void);
 void marioPreCamera(void);
+void marioUpdateCamCollision(Vec collision);

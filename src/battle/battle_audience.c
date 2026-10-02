@@ -155,12 +155,12 @@ f32 float_100_8041e64c = 100.0f;
 f32 float_3_8041e65c = 3.0f;
 f32 float_2_8041e660 = 2.0f;
 f32 float_0_8041e618 = 0.0f;
-f32 float_0p05_8041e624 = 0.05f;
-f32 float_0p15_8041e630 = 0.15f;
+f32 float_0p05_8041e624 = 0.049999997f;
+f32 float_0p15_8041e630 = 0.14999999f;
 f32 float_neg0p25_8041e640 = -0.25f;
-f32 float_neg0p05_8041e614 = -0.05f;
-f32 float_neg0p1_8041e634 = -0.1f;
-f32 float_neg0p2_8041e638 = -0.2f;
+f32 float_neg0p05_8041e614 = -0.049999997f;
+f32 float_neg0p1_8041e634 = -0.099999994f;
+f32 float_neg0p2_8041e638 = -0.19999999f;
 f32 float_0p02_8041e61c = 0.02f;
 f32 float_5_8041e62c = 5.0f;
 f32 float_0p01_8041e628 = 0.01f;
@@ -479,6 +479,9 @@ BOOL BattleAudience_CheckReaction(void) {
 	return FALSE;
 }
 
+// check_exe_phase_evt_status must be called out of line (26 bl), not inlined: the
+// retail callers use its byte result.
+#pragma dont_inline on
 BOOL check_exe_phase_evt_status(s32 index, s32 type) {
 	BattleAudienceMember* member;
 
@@ -506,6 +509,7 @@ BOOL check_exe_phase_evt_status(s32 index, s32 type) {
 	}
 	return (member->flags >> 3) & 1;
 }
+#pragma dont_inline reset
 
 //TODO: re-type "value" for btlseq "states"
 void BattleAudience_PerPhase(u32 value) {
@@ -539,105 +543,528 @@ void BattleAudience_PerPhase(u32 value) {
 	}
 }
 
-//TODO: add evt support and then uncomment message scripts
-// NONMATCHING (13.15%): 21 instructions differ, 852 missing, 1 extra, plus register differences.
+#pragma opt_common_subs off // needed: with CSE on MWCC keeps audience+0x10000 in a callee-saved register
 BOOL BattleAudience_CheckReactionPerPhase(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
-	s32 counter, i;
+	u8* aud;
+	s32 evtList[200];
+	s32 phaseList[14];
+	s32 i, j, k, n, count, idx;
 
 	audience = BattleAudienceBaseGetPtr();
+	aud = (u8*)audience;
 	pouchGetPtr();
 	if (!(audience->flags & 8)) {
 		return FALSE;
 	}
 	switch (audience->mCheckPhaseReactionState) {
-		case 0:
-			audience->mCheckPhaseReactionState = 5;
-			if (audience->flags & 0x40000) {
-				audience->mCheckPhaseReactionState = 15;
-				return TRUE;
-			}
-			//no break
-		case 5:
-			for (counter = 0, i = 0; i < 200; i++) {
-				member = BattleAudienceGetPtr(i);
-				if (BattleAudience_GetSysCtrl(i) && member->type == AUDIENCE_BULKY_BOBOMB &&
-						member->status == 18 && --member->field_0x12C <= 0) {
+	case 0:
+		audience->mCheckPhaseReactionState = 5;
+		if (audience->flags & 0x40000) {
+			audience->mCheckPhaseReactionState = 15;
+			break;
+		}
+		// fall through
+	case 5:
+		count = 0;
+		for (i = 0; i < 200; i++) {
+			member = BattleAudienceGetPtr(i);
+			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == AUDIENCE_BULKY_BOBOMB &&
+					member->status == 18) {
+				member->field_0x12C--;
+				if (member->field_0x12C <= 0) {
 					BattleAudience_ChangeStatus(i, 19);
-					counter++;
+					count++;
 				}
 			}
-			if (counter < 1) {
-				audience->mCheckPhaseReactionState = 7;
+		}
+		if (count >= 1) {
+			audience->mCheckPhaseReactionState = 6;
+		}
+		else {
+			audience->mCheckPhaseReactionState = 7;
+		}
+		// fall through
+	case 6:
+	case 7:
+		for (j = 0; j < 200; j++) {
+			member = BattleAudienceGetPtr(j);
+			if ((u8)BattleAudience_GetSysCtrl(j) == 1 && member->type == AUDIENCE_BULKY_BOBOMB &&
+					member->status == 19) {
+				break;
+			}
+		}
+		if (j == 200) {
+			if (audience->mCheckPhaseReactionState == 6) {
+				audience->mCheckPhaseReactionState = 8;
 			}
 			else {
-				audience->mCheckPhaseReactionState = 6;
+				audience->mCheckPhaseReactionState = 13;
 			}
-			//no break
-		case 6:
-		case 7:
+		}
+		break;
+	case 8:
+		audience->event = evtEntry(msg_heavy_bomb_fire, 0, 0x20);
+		audience->mCheckPhaseReactionState = 9;
+		break;
+	case 9:
+		if (!evtCheckID(audience->event->eventId)) {
+			audience->event = NULL;
+			audience->mCheckPhaseReactionState = 10;
+		}
+		break;
+	case 10:
+		if (audience->flags & 0x8000) {
+			audience->event = evtEntry(msg_puni_all_escape, 0, 0x20);
+			audience->flags &= ~0x8000;
+			audience->mCheckPhaseReactionState = 11;
+		}
+		else {
+			audience->mCheckPhaseReactionState = 15;
+		}
+		break;
+	case 11:
+		if (!evtCheckID(audience->event->eventId)) {
+			audience->event = NULL;
+			audience->mCheckPhaseReactionState = 15;
+		}
+		break;
+	case 13:
+		memcpy(phaseList, aud + 0x138CC, *(s32*)(aud + 0x13904) * 4);
+		n = *(s32*)(aud + 0x13904);
+		*(s32*)(aud + 0x13904) = 0;
+		for (i = 0; i < n; i++) {
+			switch (phaseList[i]) {
+			case 0:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 0)) {
+						BattleAudienceAddPhaseEvtList(0);
+						break;
+					}
+				}
+				break;
+			case 1:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 8)) {
+						if (BattleAudienceGetPtr(j)->status != 0x11) {
+							BattleAudienceAddPhaseEvtList(1);
+							break;
+						}
+					}
+				}
+				break;
+			case 2:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 4)) {
+						BattleAudienceAddPhaseEvtList(2);
+						break;
+					}
+				}
+				break;
+			case 3:
+				if (*(s32*)(aud + 0x137B0) != 0) {
+					for (j = 0; j < audience->mMaxAudience; ) {
+						if (!(u8)BattleAudience_GetExist(j)) {
+							BattleAudienceAddPhaseEvtList(3);
+							break;
+						}
+						member = BattleAudienceGetPtr(j);
+						if (member->flags & 0x80) {
+							j += 2;
+						}
+						else {
+							j += 1;
+						}
+					}
+				}
+				break;
+			case 4:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 2)) {
+						BattleAudienceAddPhaseEvtList(4);
+						break;
+					}
+				}
+				break;
+			case 5:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 1)) {
+						BattleAudienceAddPhaseEvtList(5);
+						break;
+					}
+				}
+				break;
+			case 6:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 1)) {
+						BattleAudienceAddPhaseEvtList(6);
+						break;
+					}
+				}
+				break;
+			case 7:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 3)) {
+						BattleAudienceAddPhaseEvtList(7);
+						break;
+					}
+				}
+				break;
+			case 8:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 5)) {
+						BattleAudienceAddPhaseEvtList(8);
+						break;
+					}
+				}
+				break;
+			case 9:
+				if (!(audience->flags & 0x4000)) {
+					for (j = 0; j <= 59; j++) {
+						if ((u8)check_exe_phase_evt_status(j, 5)) {
+							BattleAudienceAddPhaseEvtList(9);
+							break;
+						}
+					}
+				}
+				break;
+			case 10:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 6)) {
+						BattleAudienceAddPhaseEvtList(0xA);
+						break;
+					}
+				}
+				break;
+			case 11:
+				if (!(audience->flags & 0x4000)) {
+					for (j = 0; j <= 59; j++) {
+						if ((u8)check_exe_phase_evt_status(j, 9) &&
+								BattleAudienceGetPtr(j)->status != 0x12) {
+							BattleAudienceAddPhaseEvtList(0xB);
+							break;
+						}
+					}
+				}
+				break;
+			case 12:
+				if (!(audience->flags & 0x4000)) {
+					for (j = 0; j <= 59; j++) {
+						if ((u8)check_exe_phase_evt_status(j, 0xB) &&
+								BattleAudienceDetectPakkunEatTarget(j) != -1) {
+							BattleAudienceAddPhaseEvtList(0xC);
+							break;
+						}
+					}
+				}
+				break;
+			case 13:
+				for (j = 0; j <= 59; j++) {
+					if ((u8)check_exe_phase_evt_status(j, 0xC)) {
+						BattleAudienceAddPhaseEvtList(0xD);
+						break;
+					}
+				}
+				break;
+			}
+		}
+		if (*(s32*)(aud + 0x13904) >= 1) {
+			*(s32*)(aud + 0x138CC) = ((s32*)(aud + 0x138CC))[irand(*(s32*)(aud + 0x13904))];
+			*(s32*)(aud + 0x13904) = 1;
+		}
+		else {
+			*(s32*)(aud + 0x13904) = 0;
+		}
+		audience->mCheckPhaseReactionState = 12;
+		*(s32*)(aud + 0x137E0) = 0;
+		// fall through
+	case 12:
+		if (*(s32*)(aud + 0x13904) == 1) {
+		switch (*(s32*)(aud + 0x138CC)) {
+		case 0:
+			k = 0;
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 0)) {
+					evtList[k++] = i;
+				}
+			}
+			BattleAudienceItemOn(evtList[irand(k)], 0, 1);
+			*(s32*)(aud + 0x13904) = 0;
+			break;
+		case 1:
 			for (i = 0; i < 200; i++) {
-				member = BattleAudienceGetPtr(i);
-				if (BattleAudience_GetSysCtrl(i) && member->type == AUDIENCE_BULKY_BOBOMB &&
-						member->status == 19) {
+				if ((u8)check_exe_phase_evt_status(i, 8)) {
+					if (BattleAudienceGetPtr(i)->status != 0x11) {
+						BattleAudience_ChangeStatus(i, 0x11);
+						BattleAudienceGetPtr(i)->field_0x12C = 5;
+					}
+				}
+			}
+			*(s32*)(aud + 0x13904) = 0;
+			break;
+		case 2:
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 4)) {
+					BattleAudienceItemOn(i, 0xEE, 0x64);
+				}
+			}
+			*(s32*)(aud + 0x13904) = 0;
+			break;
+		case 3:
+			switch (*(s32*)(aud + 0x137E0)) {
+			case 0:
+				BattleAudienceAddPuni(0xC8);
+				*(s32*)(aud + 0x137E0) = 5;
+				break;
+			case 5:
+				for (i = 0; i < 200; i++) {
+					if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0xB) {
+						break;
+					}
+				}
+				if (i == 200) {
+					*(s32*)(aud + 0x137E0) = 0xA;
+				}
+				break;
+			case 10:
+				*(s32*)(aud + 0x137E0) = 0xF;
+				audience->event = evtEntry(msg_puni_all_enter, 0, 0x20);
+				break;
+			case 15:
+				if (!evtCheckID(audience->event->eventId)) {
+					audience->event = NULL;
+					*(s32*)(aud + 0x13904) = 0;
+				}
+				break;
+			}
+			break;
+		case 4:
+			switch (*(s32*)(aud + 0x137E0)) {
+			case 5:
+				goto scan4;
+			case 0:
+				count = 0;
+				for (i = 0; i <= 59; i++) {
+					if ((u8)check_exe_phase_evt_status(i, 2)) {
+						evtList[count++] = i;
+					}
+				}
+				BattleAudience_ChangeStatus(evtList[irand(count)], 0xE);
+				*(s32*)(aud + 0x137E0) = 5;
+				goto scan4;
+			default:
+				if (*(s32*)(aud + 0x137E0) >= 5) {
+					break;
+				}
+				break;
+			}
+			break;
+		scan4:
+			for (i = 0; i <= 59; i++) {
+				if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0xE) {
 					break;
 				}
 			}
-			if (i == 200) { //didn't meet that condition
-				if (audience->mCheckPhaseReactionState == 6) {
-					audience->mCheckPhaseReactionState = 8;
-				}
-				else {
-					audience->mCheckPhaseReactionState = 13;
+			if (i == 0x3C) {
+				*(s32*)(aud + 0x13904) = 0;
+			}
+			break;
+		case 5:
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 1)) {
+					BattleAudienceItemOn(i, 0xED, 0x64);
 				}
 			}
-			return TRUE;
+			*(s32*)(aud + 0x13904) = 0;
+			break;
+		case 6:
+			count = 0;
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 1)) {
+					evtList[count++] = i;
+				}
+			}
+			BattleAudienceItemOn(evtList[irand(count)], 0, 1);
+			*(s32*)(aud + 0x13904) = 0;
+			break;
+		case 7:
+			count = 0;
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 3)) {
+					evtList[count++] = i;
+				}
+			}
+			BattleAudienceItemOn(evtList[irand(count)], 0xEF, 1);
+			*(s32*)(aud + 0x13904) = 0;
+			break;
 		case 8:
-			//audience->evt = evtEntry(&msg_heavy_bomb_fire, 0, 0x20);
-			audience->mCheckPhaseReactionState = 9;
-			return TRUE;
+			count = 0;
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 5)) {
+					evtList[count++] = i;
+				}
+			}
+			BattleAudienceItemOn(evtList[irand(count)], 0, 1);
+			*(s32*)(aud + 0x13904) = 0;
+			break;
 		case 9:
-			if (!evtCheckID(audience->event->eventId)) {
-				audience->event = NULL;
-				audience->mCheckPhaseReactionState = 10;
+			switch (*(s32*)(aud + 0x137E0)) {
+			case 5:
+				goto scan9;
+			case 0:
+				count = 0;
+				for (i = 0; i <= 59; i++) {
+					if ((u8)check_exe_phase_evt_status(i, 5)) {
+						evtList[count++] = i;
+					}
+				}
+				BattleAudience_ChangeStatus(evtList[irand(count)], 0xF);
+				*(s32*)(aud + 0x137E0) = 5;
+				goto scan9;
+			default:
+				if (*(s32*)(aud + 0x137E0) >= 5) {
+					break;
+				}
+				break;
 			}
-			return TRUE;
+			break;
+		scan9:
+			for (i = 0; i <= 59; i++) {
+				if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0xF) {
+					break;
+				}
+			}
+			if (i == 0x3C) {
+				*(s32*)(aud + 0x13904) = 0;
+			}
+			break;
 		case 10:
-			if (audience->flags & 0x8000) {
-				//audience->evt = evtEntry(&msg_puni_all_escape, 0, 0x20);
-				audience->flags &= ~0x8000;
-				audience->mCheckPhaseReactionState = 11;
+			switch (*(s32*)(aud + 0x137E0)) {
+			case 0:
+				count = 0;
+				for (i = 0; i <= 59; i++) {
+					if ((u8)check_exe_phase_evt_status(i, 6)) {
+						evtList[count++] = i;
+					}
+				}
+				BattleAudience_ChangeStatus(evtList[irand(count)], 0x10);
+				*(s32*)(aud + 0x137E0) = 5;
+				// fall through
+			case 5:
+				for (i = 0; i <= 59; i++) {
+					if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0x10) {
+						break;
+					}
+				}
+				if (i == 0x3C) {
+					*(s32*)(aud + 0x137E0) = 0xA;
+				}
+				break;
+			case 10:
+				*(s32*)(aud + 0x137E0) = 0xF;
+				audience->event = evtEntry(msg_pansy_sing, 0, 0x20);
+				break;
+			case 15:
+				if (!evtCheckID(audience->event->eventId)) {
+					audience->event = NULL;
+					*(s32*)(aud + 0x13904) = 0;
+				}
+				break;
 			}
-			else {
-				audience->mCheckPhaseReactionState = 15;
-			}
-			return TRUE;
+			break;
 		case 11:
-			if (!evtCheckID(audience->event->eventId)) {
-				audience->event = NULL;
-				audience->mCheckPhaseReactionState = 15;
+			count = 0;
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 9) &&
+						BattleAudienceGetPtr(i)->status != 0x12) {
+					evtList[count++] = i;
+				}
 			}
-			return TRUE;
-
-
-
-
-
-
-
-
-
-
-
-
+			idx = evtList[irand(count)];
+			member = BattleAudienceGetPtr(idx);
+			BattleAudience_ChangeStatus(idx, 0x12);
+			member->field_0x12C = 5;
+			*(s32*)(aud + 0x13904) = 0;
+			break;
+		case 12:
+			switch (*(s32*)(aud + 0x137E0)) {
+			case 5:
+				goto scan12;
+			case 0:
+				count = 0;
+				for (i = 0; i <= 59; i++) {
+					if ((u8)check_exe_phase_evt_status(i, 0xB) &&
+							BattleAudienceDetectPakkunEatTarget(i) != -1) {
+						evtList[count++] = i;
+					}
+				}
+				BattleAudience_ChangeStatus(evtList[irand(count)], 0x14);
+				*(s32*)(aud + 0x137E0) = 5;
+				goto scan12;
+			default:
+				if (*(s32*)(aud + 0x137E0) >= 5) {
+					break;
+				}
+				break;
+			}
+			break;
+		scan12:
+			for (i = 0; i <= 59; i++) {
+				if ((u8)BattleAudience_GetSysCtrl(i) && BattleAudienceGetPtr(i)->status == 0x14) {
+					break;
+				}
+			}
+			if (i == 0x3C) {
+				*(s32*)(aud + 0x13904) = 0;
+			}
+			break;
+		case 13:
+			for (i = 0; i <= 59; i++) {
+				if ((u8)check_exe_phase_evt_status(i, 0xC)) {
+					BattleAudienceItemOn(i, 0, 1);
+					break;
+				}
+			}
+			*(s32*)(aud + 0x13904) = 0;
+			break;
+		}
+		}
+		else {
+			audience->mCheckPhaseReactionState = 15;
+		}
+		break;
+	case 15:
+		for (i = 0; i < 200; i++) {
+			member = BattleAudienceGetPtr(i);
+			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->status == 0xD) {
+				*(s32*)(member->field_0xEC + 8) -= 1;
+				if (*(s32*)(member->field_0xEC + 8) <= 0) {
+					BattleAudience_ChangeStatus(i, 3);
+					*(s32*)(member->field_0xEC + 8) = 0;
+				}
+			}
+		}
+		for (i = 0; i < 200; i++) {
+			member = BattleAudienceGetPtr(i);
+			if ((u8)BattleAudience_GetSysCtrl(i) == 1 && member->type == 8 &&
+					member->status == 0x11) {
+				member->field_0x12C--;
+				if (member->field_0x12C <= 0) {
+					member->field_0x4 = 4;
+				}
+			}
+		}
+		BattleBreakSlot_DecBreakTurn();
+		// fall through
+	case 20:
+		audience->flags &= ~8;
+		*(s32*)(aud + 0x13904) = 0;
+		return FALSE;
 	}
-
-
-
-
-	return FALSE; //TODO: finish, a lot
+	return TRUE;
 }
+#pragma opt_common_subs reset
 
 void BattleAudience_Disp(void) {
 	BattleAudienceBaseGetPtr();
