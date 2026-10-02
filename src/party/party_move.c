@@ -101,8 +101,8 @@ void partyMoveBehindMario(PartyEntry* party, s32 mode) {
     partyChgMot(party, 1);
 }
 
-// NONMATCHING (96.67%): the original keeps a redundant `cmpwi r0,4; bge` range test for the empty
-// case 4/5 group in the field_3B switch; this compiler folds it (same blocker as partyChgMoveMode).
+// The field_3B switch is partyChgMoveMode's; calling it (inlined) keeps the original's
+// `cmpwi 6; beq; bge; cmpwi 4; bge` range test that a hand-written 4/5/6 switch folds away.
 void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
     if (party->currentMemberId == 4 && party->field_34 == 3) {
         return;
@@ -111,16 +111,7 @@ void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
     party->field_8 |= 0x40000;
     party_set_behind_dir(party, dir);
     party->field_3C[1] = mode;
-    switch (party->field_3B) {
-    case 4:
-    case 5:
-        break;
-    case 6:
-        party->flags &= ~0x8000;
-        break;
-    }
-    party->field_3B = 2;
-    party->field_8 |= 0x4;
+    partyChgMoveMode(party, 2);
     if (party->field_36 == 3) {
         party->flags &= ~0x70;
         party->flags &= ~0x3000000;
@@ -1877,9 +1868,17 @@ static inline f32 partySqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (89.86%): footmark clear inherits partyClearFootmark's redundant loop-entry test;
-// the inlined partyChgMoveMode switch drops `cmpwi 4; bge`; the inline sqrt double pool lands
-// in a fresh @991 instead of str_802CDB20+0x600 and the length/scale fp regs are swapped.
+// Every instruction matches; the only diffs are the three `lfd` offsets into the pool (retail
+// 0x600/0x608/0x610 from str_802CDB20, ours ...rodata.0+0x478..0x488). The inlined sqrt double
+// pool sits 0x188 lower because the rest of the unit's .rodata (the 32 vec3s and tables emitted by
+// the unwritten partyGetAppearPos) is not in the object yet; the offsets land on
+// str_802CDB20+0x600 once the unit links.
+// Match devices in the body: the first footmark clear is hand-inlined with its own `Vec pos1`
+// (a call to partyClearFootmark() compiles to the same code but puts its temp at 0x14; the two
+// address-taken Vecs only take retail's slots -- pos1 at 0x20, pos at 0x14 -- when pos1 is
+// declared first, since MWCC assigns address-taken locals in reverse declaration order), and the
+// scale select is a ternary, which is what keeps scale in f4 and the sqrt argument/result in f5.
+// NONMATCHING (99.99%): only the three inline-sqrt `lfd` pool offsets differ (see above).
 void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
@@ -1889,10 +1888,28 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     f32 f31;
     f32 f30;
     f32 scale;
+    f32 len;
+    Vec pos1;
+    Vec pos;
 
     if (hosei != 0 && work->field_3B != 2) {
         if (!(work->flags & 0x8)) {
-            partyClearFootmark();
+            u32* src1;
+            Footmark* f1;
+            u32 i1;
+
+            pos1 = marioGetPtr()->position;
+            src1 = (u32*)&pos1;
+            f1 = (Footmark*)footmarkBuf;
+            for (i1 = 0; i1 < 0x50; i1++) {
+                ((u32*)&f1->x)[0] = src1[0];
+                ((u32*)&f1->x)[1] = src1[1];
+                ((u32*)&f1->x)[2] = src1[2];
+                f1->field_0 = 0;
+                f1++;
+            }
+            writeId[0] = 0;
+            readId[0] = 0;
         } else {
             s32 flag = 0;
             PartyEntry* partner = anotherPartyGetPtr(1);
@@ -1906,16 +1923,19 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
             if (flag != 0) {
                 MarioWork* m2 = marioGetPtr();
                 PartyEntry* target = partyGetPtr(marioGetPartyId());
-                Vec pos;
                 u32* src;
                 Footmark* f;
-                s32 i;
+                u32 i;
 
-                if (target == NULL || nokonokoGetStatus(target) == 3
-                    || PSVECDistance(&m2->position, &target->position) >= 150.0f) {
-                    pos = m2->position;
+                if (target != NULL) {
+                    if (nokonokoGetStatus(target) == 3
+                        || PSVECDistance(&m2->position, &target->position) >= 150.0f) {
+                        pos = m2->position;
+                    } else {
+                        pos = target->position;
+                    }
                 } else {
-                    pos = target->position;
+                    pos = m2->position;
                 }
                 src = (u32*)&pos;
                 f = (Footmark*)(footmarkBuf + 0x500);
@@ -1938,21 +1958,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
         *(s16*)((u8*)work + 0x52) = 0;
         if (!(work->currentMemberId == 4 && work->field_34 == 3)) {
             work->field_3C[1] = 0;
-            {
-                s32 oldMode = work->field_3B;
-                switch (oldMode) {
-                case 4:
-                case 5:
-                    break;
-                case 6:
-                    work->flags &= ~0x8000;
-                    break;
-                default:
-                    break;
-                }
-            }
-            work->field_3B = 2;
-            work->field_8 |= 4;
+            partyChgMoveMode(work, 2);
             if (work->field_36 == 3) {
                 work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
                 work->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
@@ -1966,12 +1972,9 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     f31 = work->speed * sinv + (*(f32*)((u8*)work + 0xAC) + *(f32*)((u8*)work + 0xA0));
     f30 = work->speed * cosv + (*(f32*)((u8*)work + 0xB4) + *(f32*)((u8*)work + 0xA8));
     *angle = angleABf(0.0f, 0.0f, f31, f30);
-    if (work->flags & 0x80) {
-        scale = 0.75f;
-    } else {
-        scale = 1.0f;
-    }
-    *speed = scale * partySqrtf(f31 * f31 + f30 * f30);
+    scale = (work->flags & 0x80) ? 0.75f : 1.0f;
+    len = partySqrtf(f31 * f31 + f30 * f30);
+    *speed = scale * len;
 }
 
 // partyMoveMain returns a state code in r3.
@@ -2442,11 +2445,10 @@ void partyWalkMain(PartyEntry* party) {
     walkMain(party);
 }
 
-// Only the three inlined partyChgMoveMode switches are off; they miss the original's redundant
-// `cmpwi r0,4; bge` range test for the empty 4/5 case group (see partyChgMoveMode). The footmark
-// clears and the `(mode == 0) ? 0 : 2` cntlzw idiom now match. Uses `u32 i` for the clear loops:
-// a signed counter makes MWCC emit a redundant loop-entry test.
-// NONMATCHING (96.93%)
+// The four field_3B switches are partyChgMoveMode's; calling it (inlined) keeps the original's
+// redundant `cmpwi r0,4; bge` range test for the empty 4/5 case group (a hand-written switch
+// folds it away). Uses `u32 i` for the clear loops: a signed counter makes MWCC emit a redundant
+// loop-entry test.
 void partyMoveFlyInit(PartyEntry* party, s32 mode) {
     PartyEntry* work = party;
     u32 i;
@@ -2498,56 +2500,20 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         *(f32*)((u8*)work + 0x40) = 50.0f;
     } else {
         *(u8*)((u8*)work + 0x3D) = (mode == 0) ? 0 : 2;
-        switch (work->field_3B) {
-        case 4:
-        case 5:
-            break;
-        case 6:
-            party->flags &= ~0x8000;
-            break;
-        }
-        work->field_3B = 0;
-        work->field_8 |= 4;
+        partyChgMoveMode(party, 0);
         if (*(s8*)((u8*)work + 0x3F) == 1 || *(s8*)((u8*)work + 0x3F) == 3) {
             *(u8*)((u8*)work + 0x3F) = 0;
             *(u8*)((u8*)work + 0x3D) = 0;
-            switch (work->field_3B) {
-            case 4:
-            case 5:
-                break;
-            case 6:
-                party->flags &= ~0x8000;
-                break;
-            }
-            work->field_3B = 1;
-            work->field_8 |= 4;
+            partyChgMoveMode(party, 1);
         } else if (*(s8*)((u8*)work + 0x3F) == 2) {
             *(u8*)((u8*)work + 0x3D) = 0;
-            switch (work->field_3B) {
-            case 4:
-            case 5:
-                break;
-            case 6:
-                party->flags &= ~0x8000;
-                break;
-            }
-            work->field_3B = 0x3C;
-            work->field_8 |= 4;
+            partyChgMoveMode(party, 0x3C);
         }
         *(u32*)((u8*)work + 0x44) = 0x10;
         *(f32*)((u8*)work + 0x40) = 50.0f;
         *(u8*)((u8*)work + 0x3E) = 0;
         partyChgPoseId(party, 1);
-        switch (work->field_3B) {
-        case 4:
-        case 5:
-            break;
-        case 6:
-            party->flags &= ~0x8000;
-            break;
-        }
-        work->field_3B = 1;
-        work->field_8 |= 4;
+        partyChgMoveMode(party, 1);
         if (work->field_36 == 3) {
             party->flags &= ~0x70;
             party->flags &= ~0x3000000;

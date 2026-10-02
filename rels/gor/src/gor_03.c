@@ -4990,16 +4990,17 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (81.43%): inverting the case-2 and dir if/else matched the branch layout; raw stop mask and
-// `(s32)((u8*)data + i)[0x30]` plus an `i` reload matched the addressing. Remaining: one-register
-// callee-saved shift (event/work/data r26/r29/r28 vs r28/r30/r29) and `rlwinm.` vs `rlwinm`.
+// NONMATCHING (94.77%): s32 locals before work/data pin r29/r28; case-3 stop is an explicit if/else; the phase-0x2d
+// block shares `u8* pb = data+i` / `u8* pw = data+i*4`, `s8 s` and a `s32* tp` walk of tmp1; case 9/10/11 read the
+// event pointer straight from data+0x6c. Remaining: the sel loop's bdnz (target counter+3-way dispatch) and case-11.
 USER_FUNC(goryuugijo_main_slot) {
-    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
-    u8* data = (u8*)work->data;
     s32 i;
     s32 j;
     s32 k;
     s32 changed;
+    s32 stop = 0;
+    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
+    u8* data = (u8*)work->data;
 
     switch (*(s32*)(data + 0x04)) {
     case 1:
@@ -5068,22 +5069,36 @@ USER_FUNC(goryuugijo_main_slot) {
             }
         }
         changed = 0;
+        {
+        char* stopSfx = "SFX_EVT_GAME_SLOT_STOP1";
         for (i = 0; i < 3; i++) {
             if (*(s8*)(data + i + 0x30) == 0) {
                 changed += 1;
                 continue;
             }
+            stop = 0;
             if (i == *(s16*)(data + 0x74)) {
-                s32 stop = 0;
                 switch (i) {
                 case 0:
-                    stop = keyGetButtonTrg(0) & 0x100;
+                    if (keyGetButtonTrg(0) & 0x100) {
+                        stop = 1;
+                    } else {
+                        stop = 0;
+                    }
                     break;
                 case 1:
-                    stop = keyGetButtonTrg(0) & 0x100;
+                    if (keyGetButtonTrg(0) & 0x100) {
+                        stop = 1;
+                    } else {
+                        stop = 0;
+                    }
                     break;
                 case 2:
-                    stop = keyGetButtonTrg(0) & 0x100;
+                    if (keyGetButtonTrg(0) & 0x100) {
+                        stop = 1;
+                    } else {
+                        stop = 0;
+                    }
                     break;
                 }
                 if (stop && *(s8*)(data + i + 0x30) == 2) {
@@ -5093,16 +5108,18 @@ USER_FUNC(goryuugijo_main_slot) {
                     } else {
                         *(s8*)(data + i + 0x39) = irand(2);
                     }
-                    psndSFXOn("SFX_EVT_GAME_SLOT_STOP1");
+                    psndSFXOn(stopSfx);
                 }
             }
             changed += slot_rotate_sub(work, data, i);
         }
+        }
         if (changed == 3) {
             for (i = 0; i < 3; i++) {
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 5], 1);
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 6], 1);
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 7], 1);
+                char** p = drumname[*(s32*)(data + 0x60)] + i * 3;
+                mapGrpFlagOn(p[5], 1);
+                mapGrpFlagOn(p[6], 1);
+                mapGrpFlagOn(p[7], 1);
             }
             mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
             *(s32*)(data + 0x54) = 0;
@@ -5116,8 +5133,7 @@ USER_FUNC(goryuugijo_main_slot) {
             s32 tmp1[3];
             s32 cnt;
             for (i = 0; i < 3; i++) {
-                tmp1[i] = slotgara[*(s32*)(data + 0x60) * 24 + i * 8 +
-                                   (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f)];
+                tmp1[i] = *(u32*)((u8*)slotgara + *(s32*)(data + 0x60) * 0x60 + i * 0x20 + (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f) * 4);
             }
             if (tmp1[0] == tmp1[1] && tmp1[1] == tmp1[2]) {
                 *(s32*)(data + 0x04) = 6;
@@ -5128,10 +5144,14 @@ USER_FUNC(goryuugijo_main_slot) {
                 break;
             }
             cnt = 0;
+            {
+            s32* tp = tmp1;
             for (j = 0; j < 3; j++) {
-                if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + j + 0x33) == tmp1[j]) {
+                if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + j + 0x33) == *tp) {
                     cnt += 1;
                 }
+                tp++;
+            }
             }
             if (cnt < 2) {
                 *(s32*)(data + 0x04) = 6;
@@ -5140,73 +5160,81 @@ USER_FUNC(goryuugijo_main_slot) {
         }
         if (phase == 0 || phase == 0x12 || phase == 0x24) {
             for (i = 0; i < 3; i++) {
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 5], 1);
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 6], 1);
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 7], 1);
+                char** p = drumname[*(s32*)(data + 0x60)] + i * 3;
+                mapGrpFlagOn(p[5], 1);
+                mapGrpFlagOn(p[6], 1);
+                mapGrpFlagOn(p[7], 1);
             }
         }
-        if (phase == 9 || phase == 0x1b || phase == 0x2d) {
+        if (*(s32*)(data + 0x54) == 9 || *(s32*)(data + 0x54) == 0x1b || *(s32*)(data + 0x54) == 0x2d) {
             for (i = 0; i < 3; i++) {
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 5], 1);
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 6], 1);
-                mapGrpFlagOn(drumname[*(s32*)(data + 0x60)][i * 3 + 7], 1);
+                char** p = drumname[*(s32*)(data + 0x60)] + i * 3;
+                mapGrpFlagOn(p[5], 1);
+                mapGrpFlagOn(p[6], 1);
+                mapGrpFlagOn(p[7], 1);
             }
         }
-        if (phase == 0x2d) {
+        if (*(s32*)(data + 0x54) == 0x2d) {
             s32 tmp[3][3];
             for (i = 0; i < 3; i++) {
                 s32 a = (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f);
+                u8* base = (u8*)slotgara + i * 0x20;
                 for (j = 0; j < 3; j++) {
-                    tmp[j][i] = slotgara[*(s32*)(data + 0x60) * 24 + i * 8 + ((a + j - 1) & 7)];
+                    tmp[j][i] = *(u32*)(base + *(s32*)(data + 0x60) * 0x60 + ((a + j - 1) & 7) * 4);
                 }
             }
             for (i = 0; i < 3; i++) {
-                s32 s;
+                s8 s;
                 s32 sel;
                 if (tmp[1][i] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33)) {
                     continue;
                 }
                 sel = irand(2);
+                {
+                u8* pb = data + i;
+                u8* pw = data + i * 4;
                 for (k = 0; k < 2; k++) {
                     sel = (sel + 1) & 1;
-                    s = *(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33);
                     if (sel == 0) {
+                        s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
                         if (s != tmp[0][i] && tmp[2][i] == s) {
                             continue;
                         }
                         if (s == 0) {
-                            *(s8*)(data + i + 0x39) = 1;
-                            *(s32*)(data + i * 4 + 0x48) = 1;
-                            *(f32*)(data + i * 4 + 0x24) = -1.40625f;
+                            pb[0x39] = 1;
+                            *(s32*)(pw + 0x48) = 1;
+                            *(f32*)(pw + 0x24) = -1.40625f;
                         } else {
-                            *(s8*)(data + i + 0x39) = 6;
-                            if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33) == 2) {
-                                *(s8*)(data + i + 0x39) += 8;
+                            pb[0x39] = 6;
+                            if (*(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33) == 2) {
+                                pb[0x39] += 8;
                             }
-                            *(s32*)(data + i * 4 + 0x48) = 0;
-                            *(f32*)(data + i * 4 + 0x24) = 1.40625f;
+                            *(s32*)(pw + 0x48) = 0;
+                            *(f32*)(pw + 0x24) = 1.40625f;
                         }
-                        *(s8*)(data + i + 0x30) = 4;
+                        pb[0x30] = 4;
                         break;
-                    } else {
+                    } else if (sel == 1) {
+                        s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
                         if (s != tmp[2][i] && s == tmp[0][i]) {
                             continue;
                         }
                         if (s == 0) {
-                            *(s8*)(data + i + 0x39) = 0;
-                            *(s32*)(data + i * 4 + 0x48) = 0;
-                            *(f32*)(data + i * 4 + 0x24) = 1.40625f;
+                            pb[0x39] = 0;
+                            *(s32*)(pw + 0x48) = 0;
+                            *(f32*)(pw + 0x24) = 1.40625f;
                         } else {
-                            *(s8*)(data + i + 0x39) = 7;
-                            if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33) == 2) {
-                                *(s8*)(data + i + 0x39) += 8;
+                            pb[0x39] = 7;
+                            if (*(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33) == 2) {
+                                pb[0x39] += 8;
                             }
-                            *(s32*)(data + i * 4 + 0x48) = 1;
-                            *(f32*)(data + i * 4 + 0x24) = -1.40625f;
+                            *(s32*)(pw + 0x48) = 1;
+                            *(f32*)(pw + 0x24) = -1.40625f;
                         }
-                        *(s8*)(data + i + 0x30) = 4;
+                        pb[0x30] = 4;
                         break;
                     }
+                }
                 }
             }
             *(s32*)(data + 0x04) += 1;
@@ -5234,8 +5262,7 @@ USER_FUNC(goryuugijo_main_slot) {
     {
         s32 tmp[3];
         for (i = 0; i < 3; i++) {
-            tmp[i] = slotgara[*(s32*)(data + 0x60) * 24 + i * 8 +
-                              (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f)];
+            tmp[i] = *(u32*)((u8*)slotgara + *(s32*)(data + 0x60) * 0x60 + i * 0x20 + (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f) * 4);
         }
         if (tmp[0] == tmp[1] && tmp[1] == tmp[2]) {
             *(s32*)(data + 0x54) = 0;
@@ -5279,12 +5306,10 @@ USER_FUNC(goryuugijo_main_slot) {
         break;
     case 9:
         if (*(s32*)(data + 0x54) >= 0x13) {
-            EventEntry* e;
             *(s32*)(data + 0x54) = 0;
             if (*(EventEntry**)(data + 0x6c) == NULL) {
-                e = evtEntry(slot_fall_monte, 0, 0);
-                *(EventEntry**)(data + 0x6c) = e;
-                e->lwData[0] = event->lwData[0];
+                *(EventEntry**)(data + 0x6c) = evtEntry(slot_fall_monte, 0, 0);
+                (*(EventEntry**)(data + 0x6c))->lwData[0] = event->lwData[0];
             }
             *(s32*)(data + 0x04) += 1;
         } else {
@@ -5294,26 +5319,25 @@ USER_FUNC(goryuugijo_main_slot) {
     case 10:
     {
         EventEntry* e = *(EventEntry**)(data + 0x6c);
-        if (e != NULL && evtCheckID(e->eventId) != 0) {
-            *(s32*)(data + 0x54) += 1;
-        } else {
+        if (e == NULL || evtCheckID(e->eventId) == 0) {
             mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][16], 2, 0);
             *(u32*)data &= ~8;
             mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
             *(s32*)(data + 0x54) = 0;
             *(EventEntry**)(data + 0x6c) = NULL;
             *(s32*)(data + 0x04) += 1;
+        } else {
+            *(s32*)(data + 0x54) += 1;
         }
         break;
     }
     case 11:
     {
-        EventEntry* e = *(EventEntry**)(data + 0x6c);
-        if (e != NULL) {
+        if (*(EventEntry**)(data + 0x6c) != NULL) {
             u8* p = (u8*)monte_p[0];
             *(s32*)(*(u8**)(p + 0x4c) + 0x5c) = 0;
             _mapFree((void*)monte_p[0]);
-            evtDeleteID(e->eventId);
+            evtDeleteID((*(EventEntry**)(data + 0x6c))->eventId);
             *(EventEntry**)(data + 0x6c) = NULL;
         }
         *(s32*)(data + 0x54) = 0;

@@ -38,6 +38,34 @@ extern const f32 float_20_8041c168;
 extern const f32 float_164_8041c194;
 extern const f32 float_24_8041c198;
 extern const f32 float_1_8041c178;
+// Constants used by DrawSubIconSub (declared here so the symbols are emitted).
+extern const f32 float_255_8041c1cc;
+extern const f32 float_144_8041c1d0;
+extern const f32 float_neg152_8041c1d4;
+extern const f32 float_neg136_8041c1d8;
+extern const f32 float_152_8041c1dc;
+extern const f32 float_136_8041c1e0;
+extern const f32 float_neg119_8041c1e4;
+extern const f32 float_2_8041c1e8;
+extern const f32 float_0p5_8041c1c8;
+extern const f32 float_neg104_8041c1ec;
+extern const f32 float_22_8041c1f0;
+extern const f32 float_120_8041c1f4;
+extern const f32 float_72_8041c1f8;
+extern const f32 float_25_8041c1fc;
+extern const f32 float_30_8041c200;
+extern const f32 float_26_8041c204;
+extern const f32 float_92_8041c208;
+extern const f32 float_100_8041c20c;
+extern const f32 float_76_8041c210;
+extern const f32 float_78_8041c214;
+extern const f32 float_4_8041c1a8;
+extern const f32 float_0p8_8041c1a4;
+extern const f32 float_28_8041c1ac;
+extern const f32 float_3p0039_8041c138;
+extern const GXColor dat_8041c130;
+extern const GXColor dat_8041c134;
+extern GXColor unk_80422ff0;
 
 // Layout of the battle menu scratch buffer allocated by
 // InitSubMenuCommonProcess (0x124 bytes). Only the fields this file touches
@@ -1430,6 +1458,336 @@ void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s
                 PSMTXConcat(mtx, mtxBase[i], result[i]);
                 DrawSubIconSub(window, i, result[i], a[i], b[i], c[i], d[i], e[i], table, flag);
             }
+        }
+    }
+}
+
+// Builds the text colour the sub icons tint their labels with.
+static inline GXColor SubIconFontColor(GXColor c, s32 alpha) {
+    c.a = alpha;
+    return c;
+}
+
+// NONMATCHING (99.94%): sequence matches; only the pooled rodata base (this file's .rodata must start
+// with the MainIconCircle tables, still extern here), the font-colour helper's two swapped stack
+// slots, and one int-conversion GPR differ. The s32->u8/u16 arg masks were removed via MUST_MATCH casts.
+void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, void* table,
+                    s32 flag) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleCursor* cursor = window->cursor;
+    CameraEntry* cam = camGetPtr(CAMERA_2D);
+    GXTexObj texObj;
+    Mtx mtxScale;
+    Mtx mtxTrans;
+    Mtx mtxOut;
+    s32 digitsD[3];
+    s32 posD[3];
+    s32 digitsE[3];
+    s32 posE[3];
+    s32 digitsH[3];
+    s32 posH[3];
+    char textD[2];
+    char textE[2];
+    char textH[2];
+    f32 frac;
+    s32 alpha;
+    u8 cr;
+    u8 cg;
+    u8 cb;
+    s32 ca;
+    s32 count;
+    s32 i;
+
+    frac = window->field_0x98 - (f32)(s32)window->field_0x98;
+    alpha = 0xFF;
+    if (index == 0) {
+        alpha = (s32)(float_255_8041c1cc * (float_1_8041c178 - frac));
+    }
+    if (index == 6) {
+        alpha = (s32)(float_255_8041c1cc * frac);
+    }
+    if ((s32)window->field_0x98 + index == cursor->field_0) {
+        cr = seleItemCoordCol.r;
+        cg = seleItemCoordCol.g;
+        cb = seleItemCoordCol.b;
+        ca = alpha;
+    } else {
+        cb = 0xFF;
+        cg = 0xFF;
+        cr = 0xFF;
+        ca = (s32)(float_144_8041c1d0 * (f32)(u8)alpha / float_255_8041c1cc);
+    }
+    btlDispGXInit2D();
+    PSMTXConcat(cam->view, mtx, mtxOut);
+    GXLoadPosMtxImm(mtxOut, 0);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 2);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+#ifdef MUST_MATCH
+    // btlDispGXQuads2D's header declares its alpha as u8, but the original passes a 32-bit value
+    // with no truncation; casting `a` to s32 restores that ABI.
+    ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
+        float_neg152_8041c1d4, float_24_8041c198, float_neg136_8041c1d8, float_0_8041c144, cr, cg, cb, ca);
+    ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
+        float_152_8041c1dc, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb, ca);
+#else
+    btlDispGXQuads2D(float_neg152_8041c1d4, float_24_8041c198, float_neg136_8041c1d8, float_0_8041c144, cr,
+                     cg, cb, ca);
+    btlDispGXQuads2D(float_152_8041c1dc, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb,
+                     ca);
+#endif
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 3);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+#ifdef MUST_MATCH
+    ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
+        float_neg136_8041c1d8, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb, ca);
+#else
+    btlDispGXQuads2D(float_neg136_8041c1d8, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb,
+                     ca);
+#endif
+    PSMTXTrans(mtxTrans, float_neg119_8041c1e4, float_2_8041c1e8, float_0_8041c144);
+    PSMTXScale(mtxScale, float_0p5_8041c1c8, float_0p5_8041c1c8, float_1_8041c178);
+    PSMTXConcat(mtx, mtxTrans, mtxOut);
+    PSMTXConcat(mtxOut, mtxScale, mtxOut);
+    if (b == 0) {
+        b = 0x18B;
+    }
+    if (a == 1) {
+#ifdef MUST_MATCH
+        // iconDispGxCol's header declares iconId as s32, but the original passes the u16 `b` with no
+        // zero-extension; casting iconId to u16 restores that.
+        ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x10, b,
+                                                          SubIconFontColor(dat_8041c130, alpha));
+#else
+        iconDispGxCol(mtxOut, 0x10, b, SubIconFontColor(dat_8041c130, alpha));
+#endif
+    } else {
+#ifdef MUST_MATCH
+        ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x30, b,
+                                                          SubIconFontColor(dat_8041c134, alpha));
+#else
+        iconDispGxCol(mtxOut, 0x30, b, SubIconFontColor(dat_8041c134, alpha));
+#endif
+    }
+    FontDrawStart();
+    {
+        GXColor color = (a == 1) ? SubIconFontColor(unk_80422ff0, alpha)
+                                 : SubIconFontColor(*(GXColor*)&float_3p0039_8041c138, alpha);
+        FontDrawColor(&color);
+    }
+    PSMTXTrans(mtxTrans, float_neg104_8041c1ec, float_22_8041c1f0, float_0_8041c144);
+    if (flag == 1) {
+        f32 scale;
+        if (FontGetMessageWidth((char*)c) > 0x96) {
+            scale = float_120_8041c1f4 / (f32)FontGetMessageWidth((char*)c);
+        } else {
+            scale = float_0p8_8041c1a4;
+        }
+        PSMTXScale(mtxScale, scale, float_0p8_8041c1a4, float_0p8_8041c1a4);
+    } else {
+        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+    }
+    PSMTXConcat(mtx, mtxTrans, mtxOut);
+    PSMTXConcat(mtxOut, mtxScale, mtxOut);
+    FontDrawStringMtx(mtxOut, (char*)c);
+
+    if (d != 0) {
+        s32 h = d / 100;
+        s32 t;
+        s32 o;
+        s32 rem;
+        rem = d - h * 100;
+        t = rem / 10;
+        o = rem - t * 10;
+        digitsD[0] = o;
+        digitsD[1] = t;
+        digitsD[2] = h;
+        if (h > 0) {
+            posD[0] = 0x1C;
+            posD[1] = 0x0E;
+            posD[2] = 0;
+            count = 3;
+        } else if (t > 0) {
+            posD[0] = 0x15;
+            posD[1] = 0x07;
+            posD[2] = 0;
+            count = 2;
+        } else {
+            posD[0] = 0x0E;
+            posD[1] = 0;
+            posD[2] = 0;
+            count = 1;
+        }
+        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        for (i = 0; i < count; i++) {
+            textD[0] = (char)(digitsD[i] + 0x30);
+            textD[1] = 0;
+            PSMTXTrans(mtxTrans, float_4_8041c1a8 + (float_72_8041c1f8 + (f32)posD[i]), float_25_8041c1fc,
+                       float_0_8041c144);
+            PSMTXConcat(mtx, mtxTrans, mtxOut);
+            PSMTXConcat(mtxOut, mtxScale, mtxOut);
+            FontDrawStringMtx(mtxOut, textD);
+        }
+        PSMTXTrans(mtxTrans, float_120_8041c1f4, float_22_8041c1f0, float_0_8041c144);
+        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXConcat(mtx, mtxTrans, mtxOut);
+        PSMTXConcat(mtxOut, mtxScale, mtxOut);
+        FontDrawStringMtx(mtxOut, msgSearch("btl_cost_disp_FP"));
+    }
+
+    if (e != 0) {
+        s32 h = e / 100;
+        s32 t;
+        s32 o;
+        s32 rem;
+        rem = e - h * 100;
+        t = rem / 10;
+        o = rem - t * 10;
+        digitsE[0] = o;
+        digitsE[1] = t;
+        digitsE[2] = h;
+        if (h > 0) {
+            posE[0] = 0x1C;
+            posE[1] = 0x0E;
+            posE[2] = 0;
+            count = 3;
+        } else if (t > 0) {
+            posE[0] = 0x15;
+            posE[1] = 0x07;
+            posE[2] = 0;
+            count = 2;
+        } else {
+            posE[0] = 0x0E;
+            posE[1] = 0;
+            posE[2] = 0;
+            count = 1;
+        }
+        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        for (i = 0; i < count; i++) {
+            textE[0] = (char)(digitsE[i] + 0x30);
+            textE[1] = 0;
+            PSMTXTrans(mtxTrans, float_4_8041c1a8 + (float_72_8041c1f8 + (f32)posE[i]), float_25_8041c1fc,
+                       float_0_8041c144);
+            PSMTXConcat(mtx, mtxTrans, mtxOut);
+            PSMTXConcat(mtxOut, mtxScale, mtxOut);
+            FontDrawStringMtx(mtxOut, textE);
+        }
+        PSMTXTrans(mtxTrans, float_120_8041c1f4, float_22_8041c1f0, float_0_8041c144);
+        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXConcat(mtx, mtxTrans, mtxOut);
+        PSMTXConcat(mtxOut, mtxScale, mtxOut);
+        FontDrawStringMtx(mtxOut, msgSearch("btl_cost_disp_AP"));
+    }
+
+    if (table != 0) {
+        // HP and max HP are the two s16 halves of the entry's field_0x14 word.
+        s32 count2;
+        s16 hp;
+        s16 maxHp;
+        BattleMenuDispEntry* entry;
+        s32 h;
+        s32 t;
+        s32 o;
+        s32 rem;
+        s32 h2;
+        s32 t2;
+        s32 o2;
+        s32 rem2;
+        entry = (BattleMenuDispEntry*)((u8*)table + (index + (s32)window->field_0x98) * 0x18);
+        {
+            // field_0x14 holds HP in its low half and max HP in its high half as two s16s.
+            s16* halves = (s16*)entry;
+            hp = halves[10];
+            maxHp = halves[11];
+        }
+        PSMTXTrans(mtxTrans, float_30_8041c200, float_22_8041c1f0, float_0_8041c144);
+        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXConcat(mtx, mtxTrans, mtxOut);
+        PSMTXConcat(mtxOut, mtxScale, mtxOut);
+        FontDrawStringMtx(mtxOut, msgSearch("btl_disp_HP"));
+        h = hp / 100;
+        rem = hp - h * 100;
+        t = rem / 10;
+        o = rem - t * 10;
+        digitsH[0] = o;
+        digitsH[1] = t;
+        digitsH[2] = h;
+        if (h > 0) {
+            posH[0] = 0x1C;
+            posH[1] = 0x0E;
+            posH[2] = 0;
+            count2 = 3;
+        } else if (t > 0) {
+            posH[0] = 0x15;
+            posH[1] = 0x07;
+            posH[2] = 0;
+            count2 = 2;
+        } else {
+            posH[0] = 0x0E;
+            posH[1] = 0;
+            posH[2] = 0;
+            count2 = 1;
+        }
+        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        for (i = 0; i < count2; i++) {
+            textH[0] = (char)(digitsH[i] + 0x30);
+            textH[1] = 0;
+            if ((u32)gp->language == 0) {
+                PSMTXTrans(mtxTrans, float_26_8041c204 + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                           float_0_8041c144);
+            } else {
+                PSMTXTrans(mtxTrans, float_28_8041c1ac + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                           float_0_8041c144);
+            }
+            PSMTXConcat(mtx, mtxTrans, mtxOut);
+            PSMTXConcat(mtxOut, mtxScale, mtxOut);
+            FontDrawStringMtx(mtxOut, textH);
+        }
+        if ((u32)gp->language == 0) {
+            PSMTXTrans(mtxTrans, float_92_8041c208, float_22_8041c1f0, float_0_8041c144);
+        } else {
+            PSMTXTrans(mtxTrans, float_100_8041c20c, float_22_8041c1f0, float_0_8041c144);
+        }
+        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXConcat(mtx, mtxTrans, mtxOut);
+        PSMTXConcat(mtxOut, mtxScale, mtxOut);
+        FontDrawStringMtx(mtxOut, msgSearch("btl_disp_slash"));
+        h2 = maxHp / 100;
+        rem2 = maxHp - h2 * 100;
+        t2 = rem2 / 10;
+        o2 = rem2 - t2 * 10;
+        digitsH[0] = o2;
+        digitsH[1] = t2;
+        digitsH[2] = h2;
+        if (h2 > 0) {
+            posH[0] = 0x1C;
+            posH[1] = 0x0E;
+            posH[2] = 0;
+            count2 = 3;
+        } else if (t2 > 0) {
+            posH[0] = 0x15;
+            posH[1] = 0x07;
+            posH[2] = 0;
+            count2 = 2;
+        } else {
+            posH[0] = 0x0E;
+            posH[1] = 0;
+            posH[2] = 0;
+            count2 = 1;
+        }
+        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        for (i = 0; i < count2; i++) {
+            textH[0] = (char)(digitsH[i] + 0x30);
+            textH[1] = 0;
+            if ((u32)gp->language == 0) {
+                PSMTXTrans(mtxTrans, float_76_8041c210 + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                           float_0_8041c144);
+            } else {
+                PSMTXTrans(mtxTrans, float_78_8041c214 + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                           float_0_8041c144);
+            }
+            PSMTXConcat(mtx, mtxTrans, mtxOut);
+            PSMTXConcat(mtxOut, mtxScale, mtxOut);
+            FontDrawStringMtx(mtxOut, textH);
         }
     }
 }

@@ -216,6 +216,7 @@ void N_partyFollowCloseOn(PartyEntry* party) {
     party->field_8 = (party->field_8 | 0x20000);
 }
 
+
 void party_set_behind_dir(PartyEntry* party, f32 dir) {
     CameraEntry* camera = camGetPtr(CAMERA_3D);
     *(f32*)((u8*)party + 0x54) = revise360(dir + camera->viewYaw);
@@ -1521,7 +1522,7 @@ void party_motion_stay(PartyEntry* party) {
     MarioWork* mario;
     HitEntry* hit;
     PartyEntry* other;
-    u32 id;
+    s32 id;
     f32 f31;
     f32 f30;
     f32 f29;

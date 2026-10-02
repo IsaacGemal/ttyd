@@ -3709,3 +3709,32 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - Experiment result for the orchestrator: all six reached the numbers above in about 1-2 hours each of one session; the rest in each is register allocation, schedule and the int-to-float conversion double (`winLogMain` reaches it through the string base register).
 - Review findings on #226-#230 (all fixed): `mot_slit` kept running after `marioChkJump()` where the original returns, wrapped key-independent turn logic inside `marioChkKey()`, and passed the wrong hitobj to `hitGetAttr`; `envAddTev` used 3x4 where the asm has 2x4 in cases 1-8 (and the reverse in case 10), which the percentage hid because the operands are one `li` each; `BattleSetStatusDamage` used three floats where the original has a `Vec`; the eki_00 escape scan must `break` at a flagged pose. Header correction kept: `BattleStatusChangeInfoSetAnnouce` takes `s32 type` (the asm reads a full int).
 - The class of bug to watch for in hand-written large functions (and in agent output generally): early `return` versus `break`, which statements sit inside a condition, and enum constants that compile to the right instruction count with the wrong immediate. A high percentage does not prove these; reading the diff rows that are not register renames does.
+## Waves 55-57: wave 55's last agents, wave 56, wave 57 batch 1 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 57** (00:33 on main 23988ae): 124 agents, wave 56's recipe (up to six continuation passes, 2-hour budgets on
+  groups over 2.5 KB). Mac builds are back to `nice -n 10 ninja -j4` / `CI_JOBS=4` (Isaac is using the Mac); main
+  reports come from the tower's base builds.
+- Batch (wave 55's last 8 units, wave 56's 11 agents, wave 57's first 35; onto main 720fc14): 8,992 -> 9,019.
+  Data fixes: statuswindow's `gauge_wakka` holds 0x1C0..0x1CF in order (adjacent halfwords were swapped; Claude #1's
+  [data] check), party.c's `vec3_802ccd30` is {1, 1, 1} as the original. extdrv as on main (an agent wrote inline
+  `asm`). When a .c goes back to main, the agent's header edits for it can no longer agree (a table declared as
+  `u32[3]` in the header and `u8[]` in the file): revert the header with it.
+- Review (`scratch/wave57/review1.md`, half the files): `kururing_capture` (under MUST_MATCH) built the int->float
+  pair wrong (the xored value in the high word, the low word left as maxTmp.y's bits), so C_MTXPerspective got a
+  garbage aspect ratio: as on main. partyRideMain, party_motion_homing_fly and mobj_lv_blk_evt (named objects read
+  past vec3_802ccd30 / vec3_802f3e40 / vec3_802c3dc8) unwritten again. Open (LOW): spline_maketable's sqrt constants
+  through vec3_802c16d8 + 0x2A8, unused `u8* p` locals in mapdrv, mapdrv.h declaring vec3_802c16e4 as u8[].
+- Claude #1's second review of #236: animPoseEntry's already-loaded paths reached `pose->fileId = fileId` and
+  `file->textureId = texId` with both unset (retail stores the loop counters r25/r22): as on main. winNameGX's third
+  branch is `else if (type == 2)` in retail, and winMailDisp read vec3s past str_802F3FE8: both unwritten again.
+  seq_title (L_titleInit/titleMain passed strings as offsets from vec3_802c11a0) as on main. Open (LOW):
+  battle_menu_disp's `*(GXColor*)&float_3p0039_8041c138` is really a GXColor (0x40404000).
+
+## Grind 90: win_log review fixes and known rule gaps (2026-10-02, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`capture` read the tattle camera table one level too deep (`data[0]` is the table, `data[1]` the byte count); fixed. `msg_help` is now a function-local `static` in winLogInit and `pos_tbl` a function-local non-const `static` in mapGX, matching the original `msg_help$506` (.sdata) and `pos_tbl$1271` (.data). Still open in `win_log.c`: the functions are in asm order where rule 18 wants reverse order, and the MUST_MATCH `LV`/`RO`/`HALF_FOV_TAN` macros read named objects as offsets from `str_802F5EB8` (rule 13).
+
+
+## Grind 91: shape check, three rewrites from m2c, and a pooling pattern (2026-10-02, Claude Sonnet 5.5 "TTYD Claude #3")
+
+`tools/diff_shape.py UNIT FUNC` compares the `bl` sequence and the immediates against the original before anyone looks at registers. It found the cause in every function below. Written from m2c rather than from the generic upstream source: `itemEntry` (14.8 to 99.25: slot reclaim through the inlined `itemDelete`, `j` as a separate counter, `evtId` mutated in place), `itemseq_Bound` (0 to 81.9), `winMain` (26.4 to 94.3), `__strtold` (75.3 to 96.1: the original is not the generic MSL hex path), `__dec2num` (51.7 to 91.5: max-value check only on overflow to infinity, two peeled loops with duplicated tails). One-line shape fixes: `ARCConvertPathToEntrynum` 72.65 to 100 (inlined `tolower` through `__lower_map`, which also removes the saved registers), `effLevelupMain` 98.26 to 100 (no temp for `data->timer` in `intplGetValue`), `effFallMain` 85.4 to 86.6 (strings and the initial Vec through the `vec3_802fe418` base, `(x >> 2) & 1`), `evt_unitwin_disp_func` 95.5 to 95.8 (u16 call to `iconDispGx`), `actionCommandDisp` 56.1 to 58.4 (one `PSMTXTrans`). Not worth chasing without a new idea: `effFlameDisp` (all 150 calls and the immediates match; the remaining 45% is the 24 inlined vertex transforms), `moamoa_hit_check` (the coefficient-locals form that fixed eki_00 moved it 68.69 to 68.58). Changing `iconDispGx` to u16 parameters in the shared header breaks the linked REL modules (extsh vs clrlwi), so the u16 form is a call-site cast.

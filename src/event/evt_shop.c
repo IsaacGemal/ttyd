@@ -577,8 +577,9 @@ void title_disp(WinMgrEntry* entry) {
 	}
 }
 
-// NONMATCHING (93.08%): i/bit/p land in a cyclic permutation of the original loop registers;
-// the message x arithmetic is reassociated; the int->float constants load on f28/f30 swapped.
+// NONMATCHING (94.99%): `i = 0` is emitted just before the loop preheader, not back after
+// `bl pouchGetPtr`; two header x-sums keep their last intermediate in r3 where the original
+// uses r0; and the int->float block schedules differently (mask lands in f30, not f28).
 void list_disp(WinMgrEntry* entry) {
 	PouchData* pouch;
 	GXColor color0;
@@ -592,7 +593,7 @@ void list_disp(WinMgrEntry* entry) {
 	s32 i;
 	ItemData* item;
 	const char* msg;
-	u16 width;
+	u32 width;
 	char buf[0x100];
 	Mtx mtx;
 	Mtx scale;
@@ -602,7 +603,6 @@ void list_disp(WinMgrEntry* entry) {
 	}
 
 	pouch = pouchGetPtr();
-	i = 0;
 
 	msg = msgSearch(str_802ECDF8);
 	FontDrawStart();
@@ -610,7 +610,7 @@ void list_disp(WinMgrEntry* entry) {
 	*(u32*)&color0 = dat_8041bbf0;
 	FontDrawColor(&color0);
 	width = FontGetMessageWidth(msg);
-	FontDrawMessage(entry->field_0x18 + ((100 - width) / 2 + 10), entry->field_0x1C + 13, msg);
+	FontDrawMessage((100 - (s32)width) / 2 + (10 + entry->field_0x18), entry->field_0x1C + 13, msg);
 	FontDrawEdgeOff();
 
 	msg = msgSearch(str_802ECE10);
@@ -619,11 +619,12 @@ void list_disp(WinMgrEntry* entry) {
 	*(u32*)&color1 = dat_8041bbf4;
 	FontDrawColor(&color1);
 	width = FontGetMessageWidth(msg);
-	FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10 + (100 - width) / 2, entry->field_0x1C + 13, msg);
+	FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10 + (100 - (s32)width) / 2, entry->field_0x1C + 13, msg);
 	FontDrawEdgeOff();
 
+	i = 0;
 	FontDrawStart();
-	for (i = 0; shopPointList[i].price != -1; i++) {
+	for (; shopPointList[i].price != -1; i++) {
 		item = &itemDataTable[shopPointList[i].item];
 		FontDrawStart();
 		if (pouch->field_0x5B4 & (1 << i)) {
@@ -636,7 +637,7 @@ void list_disp(WinMgrEntry* entry) {
 		}
 		sprintf(buf, "%s", winZenkakuStr(shopPointList[i].price));
 		width = FontGetMessageWidth(buf);
-		FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 90 - width, entry->field_0x1C - 20 - i * 26, buf);
+		FontDrawMessage(entry->field_0x20 / 2 - (s32)width + entry->field_0x18 - 90, entry->field_0x1C - 20 - i * 26, buf);
 
 		FontDrawStart();
 		if (pouch->field_0x5B4 & (1 << i)) {
@@ -702,7 +703,9 @@ void point_disp(WinMgrEntry* entry) {
 	}
 }
 
-// NONMATCHING (99.18%): 4 instructions differ, 10 missing, 3 extra, plus register differences.
+// NONMATCHING (99.18%): `_wp` is loaded straight into r29 where the original loads r5 and
+// copies to r29; and the two viewport-scale multiplies run y-first (0x172/0x14) where the
+// original runs x-first (0x170/0x10), which is also the 0x10/0x14 stack-slot swap.
 void name_disp(WinMgrEntry* entry) {
 	ShopWork* wp = (ShopWork*)_wp;
 	GXColor titleColor;

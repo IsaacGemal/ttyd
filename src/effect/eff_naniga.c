@@ -145,7 +145,7 @@ EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f
 	return entry;
 }
 
-// NONMATCHING (97.37%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets),
+// NONMATCHING (98.16%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets),
 // the compiler's switch layout, and register allocation.
 void effNanigaMain(EffectEntry* effect) {
 	effNanigaData* data = effect->userdata;
@@ -169,7 +169,7 @@ void effNanigaMain(EffectEntry* effect) {
 
 	switch (data->state) {
 	case 0:
-		data->state = 1;
+		data->state++;
 		data->timer = 30;
 		// fallthrough
 	case 1:
@@ -180,8 +180,7 @@ void effNanigaMain(EffectEntry* effect) {
 			}
 			psndSFXOn_3D("SFX_ITEM_WHAT1", &vec);
 		}
-		data->timer--;
-		if (data->timer < 0) {
+		if (--data->timer < 0) {
 			data->timer = 60;
 			data->state++;
 		}

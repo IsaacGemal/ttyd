@@ -92,7 +92,6 @@ EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	return entry;
 }
 
-// NONMATCHING (98.26%): the `s32 t = data->timer;` temp in case 3 fixed the intplGetValue argument order; one `lwz r4,0x14(r31)` is still hoisted above the `bge` (target loads it after the constants) and the anonymous @N pool entries stand in for vec3_802fe5c8/double_to_int_mask_802fe600.
 void effLevelupMain(EffectEntry* effect) {
 	effLevelupData* data = effect->userdata;
 	Vec disp = initializeVec(&data->position);
@@ -138,12 +137,10 @@ void effLevelupMain(EffectEntry* effect) {
 			break;
 		}
 		case 3: {
-			s32 t = data->timer;
-
 			if (i < 2) {
-				data->xOffset = intplGetValue(1, t, 0x1E, 0.0f, 400.0f);
+				data->xOffset = intplGetValue(1, data->timer, 0x1E, 0.0f, 400.0f);
 			} else {
-				data->xOffset = intplGetValue(1, t, 0x1E, 0.0f, -400.0f);
+				data->xOffset = intplGetValue(1, data->timer, 0x1E, 0.0f, -400.0f);
 			}
 		}
 			data->timer++;

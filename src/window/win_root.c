@@ -8,6 +8,7 @@
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
 #include <dolphin/types.h>
+#include "math_ext.h"
 #include <string.h>
 #include "driver/mapdrv.h"
 #include "system.h"
@@ -46,6 +47,7 @@ extern const GXColor dat_8041cf18;
 extern const GXColor dat_8041cf1c;
 extern const GXColor dat_8041cf20;
 extern const GXColor dat_8041cf24;
+extern const GXColor dat_8041cf4c;
 extern const f32 float_18_8041d1b8;
 extern const f32 float_320_8041d074;
 extern const f32 float_570_8041d1bc;
@@ -63,6 +65,8 @@ extern const f32 float_neg144_8041d1d4;
 #define WW_U32(w, off) (*(u32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
+#define WW_U16(w, off) (*(u16*)((u8*)(w) + (off)))
+
 
 typedef struct SortTable {
     const char* name;                 // 0x0
@@ -184,10 +188,39 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
     }
 }
 
-// Full-screen GX quad. The original reloads each position constant into f0
-// immediately before its FIFO store instead of CSE-ing the constants across the
-// four vertices, so the vertex writes under MUST_MATCH read the named floats
-// through a volatile view (the natural GXPosition3f32 form is in #else).
+// One name-plate half: a textured quad from (x,y) to (x+w,y-h), with the texture
+// stretched across it. The scales are f64 because the original uses the double
+// __fabs() (not the fabsf() of windowdrv.c); the (f32) conversion happens at the
+// division, matching the target's frsp placement.
+static inline void winNameQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sy;
+    f64 sx;
+    f32 syf;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
+
 void winZClear(void) {
     Mtx mtx;
 
@@ -236,6 +269,54 @@ void winZClear(void) {
     GXEnd();
     GXSetColorUpdate(1);
 }
+
+extern const GXColor dat_8041d018;
+extern const GXColor dat_8041d01c;
+extern const GXColor dat_8041d020;
+extern const GXColor dat_8041d024;
+extern const GXColor dat_8041d028;
+extern const GXColor dat_8041d02c;
+extern const GXColor dat_8041d030;
+extern const GXColor dat_8041d034;
+extern const GXColor dat_8041d038;
+extern const GXColor dat_8041d03c;
+extern const GXColor dat_8041d040;
+extern const GXColor dat_8041d044;
+extern const GXColor dat_8041d048;
+extern const GXColor dat_8041d04c;
+extern const GXColor dat_8041d050;
+extern const GXColor dat_8041d054;
+extern const GXColor dat_8041d058;
+extern const GXColor dat_8041d05c;
+extern const GXColor dat_8041d060;
+extern const f32 float_neg240_8041d078;
+extern const f32 float_4_8041d07c;
+extern const f32 float_208_8041d080;
+extern const f32 float_56_8041d084;
+extern const f32 float_72_8041d088;
+extern const f32 float_3_8041d08c;
+extern const f32 float_88_8041d094;
+extern const f32 float_104_8041d098;
+extern const f32 float_120_8041d09c;
+extern const f32 float_8_8041d0a0;
+extern const f32 float_32_8041d0a4;
+extern const f32 float_304_8041d0a8;
+extern const f32 float_240_8041d0ac;
+extern const f32 float_80_8041d0b0;
+extern const f32 float_210_8041d0b4;
+extern const f32 float_7_8041d0b8;
+extern const f32 float_360_8041d0bc;
+extern const f32 float_20_8041d0c0;
+extern const f32 float_230_8041d0c4;
+extern const f32 float_24_8041d0c8;
+
+static inline Vec mail_vec(const Vec* base, f32 x, f32 y) {
+    Vec v = *base;
+    v.x = x;
+    v.y = y;
+    return v;
+}
+
 
 int compare_func1(void* a, void* b) {
     if (*(u8*)a > *(u8*)b) {
