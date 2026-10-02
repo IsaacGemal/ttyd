@@ -307,6 +307,7 @@ calculate_defense:
     return result;
 }
 
+#pragma dont_inline on
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                             BattleWeapon* weapon, s32* damageCode, s32 flags) {
     s32 damage = 0;
@@ -343,6 +344,7 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
     }
     return damage;
 }
+#pragma dont_inline reset
 
 void BattleAttackDeclareAll(BattleWork* wp) {
     s32 i;
