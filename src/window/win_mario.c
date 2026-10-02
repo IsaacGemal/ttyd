@@ -402,25 +402,28 @@ void winMarioInit2(WindowWork* work) {
     WW_S32(work, 0x194) = 0;
 }
 
-// NONMATCHING (96.58%): the body is correct; only the pooled literals
-// (str_802F5650 base + offset) and callee-saved register rotation differ, both
-// of which resolve once the rest of the unit's literals exist.
+// NONMATCHING (99.97%): every instruction matches except five
+// `addi rN, r30, str_802F5650+...` rodata immediates (0x830..0x858); they land
+// at 0xb8..0xe0 until fukidashi/winMarioDisp own the earlier literals.
 void winMarioInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
     const char* anim;
     s32 i;
 
     if (work->flags & 0x2000) {
-        anim = "S_1";
+        anim = str_8041D580;
         switch (marioGetColor()) {
+        case 0:
+            anim = str_8041D580;
+            break;
         case 1:
-            anim = "S_2";
+            anim = str_8041D704;
             break;
         case 2:
-            anim = "S_3";
+            anim = str_8041D708;
             break;
         case 3:
-            anim = "S_4";
+            anim = str_8041D70C;
             break;
         }
         WW_S32(work, 0x188) = animPoseEntry("d_mario", 0);
@@ -428,6 +431,9 @@ void winMarioInit(WindowWork* work) {
     } else {
         anim = "a_mario";
         switch (marioGetColor()) {
+        case 0:
+            anim = "a_mario";
+            break;
         case 1:
             anim = "a_mario_l";
             break;

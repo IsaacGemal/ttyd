@@ -129,15 +129,16 @@ extern const f32 float_31_8041aab0;
 extern const f32 float_neg6_8041aab4;
 extern const f32 float_28_8041aab8;
 
-// NONMATCHING (84.84%): frame/stack layout of the HitCheckQuery and dir vectors differs (0xc0 vs 0xd0
-// frame), plus a few fmadds/fneg operand-order swaps. Structure, calls and constants are correct.
+// The original materialises dir3 into its own stack slot through a temp copy. A plain struct assignment is
+// forwarded away by the compiler, so the copy is forced through a cast; the natural form is under #else.
 HitEntry* hitEstimate(s32* type) {
     HitCheckQuery query;
     Vec pos;
+    Vec dir3;
     Vec dir0;
     Vec dir1;
     Vec dir2;
-    Vec dir3;
+    Vec dir3t;
     MarioWork* mario;
     HitEntry* hit;
     f32 angle;
@@ -146,8 +147,8 @@ HitEntry* hitEstimate(s32* type) {
     f32 ca;
     f32 off;
     f32 dy;
-    f32 dist;
     f32 off2;
+    f32 dist;
     f32 c;
     s32 i;
 
@@ -166,14 +167,13 @@ HitEntry* hitEstimate(s32* type) {
     }
     sincosf(&sa, &ca, angle);
     boxY = mario->wPlayerCollisionBox.y;
+    c = cos(float_3p1416_8041a9bc);
+    pos = mario->position;
+    pos.y = float_4_8041a9c0 + (mario->position.y + boxY);
     dir0 = vec3_802c5a8c;
     dir0.x = sa;
-    c = cos(float_3p1416_8041a9bc);
     dir0.y = -c;
     dir0.z = ca;
-    pos.x = mario->position.x;
-    pos.y = float_4_8041a9c0 + (mario->position.y + boxY);
-    pos.z = mario->position.z;
     query.targetPos = pos;
     query.targetDir = dir0;
     query.targetDistance = float_14_8041a9c4;
@@ -184,34 +184,30 @@ HitEntry* hitEstimate(s32* type) {
     }
 
     c = cos(float_1p2217_8041a9c8);
+    pos.x = mario->position.x + sa * float_5_8041a9cc;
+    pos.z = mario->position.z + ca * float_5_8041a9cc;
+    pos.y = mario->position.y + boxY;
     dir1 = vec3_802c5a98;
     dir1.x = sa;
     dir1.y = -c;
     dir1.z = ca;
-    pos.x = mario->position.x + sa * float_5_8041a9cc;
-    pos.y = mario->position.y + boxY;
-    pos.z = mario->position.z + ca * float_5_8041a9cc;
     query.targetPos = pos;
     query.targetDir = dir1;
     query.targetDistance = float_26_8041a9d0;
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
-        if (query.hitPos.y - mario->position.y > float_30_8041a9d4) {
-            *type = 4;
-        } else {
-            *type = 5;
-        }
+        *type = (query.hitPos.y - mario->position.y > float_30_8041a9d4) ? 4 : 5;
         return hit;
     }
 
     c = cos(float_0p7854_8041a9d8);
+    pos.x = mario->position.x + sa * float_5_8041a9cc;
+    pos.z = mario->position.z + ca * float_5_8041a9cc;
+    pos.y = mario->position.y + boxY;
     dir2 = vec3_802c5aa4;
     dir2.x = sa;
     dir2.y = -c;
     dir2.z = ca;
-    pos.x = mario->position.x + sa * float_5_8041a9cc;
-    pos.y = mario->position.y + boxY;
-    pos.z = mario->position.z + ca * float_5_8041a9cc;
     query.targetPos = pos;
     query.targetDir = dir2;
     query.targetDistance = float_30_8041a9d4;
@@ -222,14 +218,17 @@ HitEntry* hitEstimate(s32* type) {
     }
 
     c = cos(float_0_8041a9a8);
-    dir3 = vec3_802c5ab0;
-    dir3.x = float_0_8041a9a8;
-    dir3.y = -c;
-    dir3.z = float_0_8041a9a8;
+    dir3t = vec3_802c5ab0;
+    dir3t.y = -c;
+#ifdef MUST_MATCH
+    *(Vec*)&dir3 = *(Vec*)&dir3t;
+#else
+    dir3 = dir3t;
+#endif
     for (i = 0; i < 2; i++) {
         if (i == 0) {
-            off2 = float_20_8041a9e0;
             dist = float_36_8041a9dc;
+            off2 = float_20_8041a9e0;
         } else {
             dist = float_34_8041a9e4;
             if (mario->dispFlags & 0x80000000) {
@@ -239,19 +238,15 @@ HitEntry* hitEstimate(s32* type) {
             }
         }
         pos.x = mario->position.x + sa * off2;
-        pos.y = mario->position.y + boxY;
         pos.z = mario->position.z + ca * off2;
+        pos.y = mario->position.y + boxY;
         query.targetPos = pos;
         query.targetDir = dir3;
         query.targetDistance = dist;
         hit = hitCheckVecFilter(&query, NULL);
         if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
             dy = query.hitPos.y - mario->position.y;
-            if (dy > float_13_8041a9ec) {
-                *type = 5;
-            } else {
-                *type = 6;
-            }
+            *type = (dy > float_13_8041a9ec) ? 5 : 6;
             return hit;
         }
     }
@@ -290,7 +285,9 @@ f32 marioGetAngleKaitenHammer(void) {
     return revise360(float_270_8041a9b4 - mario->unk1A8);
 }
 
-// NONMATCHING (97.03%): code matches except scheduling of the Vec copy at 0x6C / effUltraHammerEntry args; remaining diffs are .sdata2 pool relocation names (extern gives wrong f-regs, literals give anonymous entries).
+// NONMATCHING (99.71%): the original's dead hitGetAttr mask test is optimized away by this compiler,
+// which leaves one redundant store and its branch; everything else matches.
+#pragma opt_propagation off // keep the effUltraHammerEntry and Vec-copy FP/load scheduling
 void mot_hammer2(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -309,6 +306,12 @@ void mot_hammer2(void) {
     f32 hx;
     f32 ca;
     f32 sa;
+#ifdef MUST_MATCH
+    f32 px__;
+    f32 py__;
+    f32 pz__;
+    f32 one__;
+#endif
     s32 level;
 
     if (mario->trigFlags & 1) {
@@ -391,8 +394,13 @@ void mot_hammer2(void) {
         m2 = marioGetPtr();
         M_F32(m2, 0x148) = 0.4f;
         M_F32(m2, 0x158) = 0.005f;
+#ifdef MUST_MATCH
+        *(volatile f32*)&m2->field_68 = 1.7f;
+        *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+#else
         m2->field_68 = 1.7f;
         m2->field_6C = vec3_802c5a80;
+#endif
         M_S16(mario, 0x2B4) |= 0x1000;
         goto common_6320;
     level_low:
@@ -410,8 +418,13 @@ void mot_hammer2(void) {
                 m2 = marioGetPtr();
                 M_F32(m2, 0x148) = 0.4f;
                 M_F32(m2, 0x158) = 0.005f;
+#ifdef MUST_MATCH
+                *(volatile f32*)&m2->field_68 = 1.7f;
+                *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+#else
                 m2->field_68 = 1.7f;
                 m2->field_6C = vec3_802c5a80;
+#endif
                 M_S16(mario, 0x2B4) |= 0x1000;
             }
             goto common_6320;
@@ -445,8 +458,13 @@ void mot_hammer2(void) {
                 m2 = marioGetPtr();
                 M_F32(m2, 0x148) = 0.3f;
                 M_F32(m2, 0x158) = 0.005f;
+#ifdef MUST_MATCH
+                *(volatile f32*)&m2->field_68 = 1.6f;
+                *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+#else
                 m2->field_68 = 1.6f;
                 m2->field_6C = vec3_802c5a80;
+#endif
                 M_S16(mario, 0x2B4) |= 0x1000;
             }
             goto common_6320;
@@ -477,8 +495,13 @@ void mot_hammer2(void) {
                 m2 = marioGetPtr();
                 M_F32(m2, 0x148) = 0.2f;
                 M_F32(m2, 0x158) = 0.005f;
+#ifdef MUST_MATCH
+                *(volatile f32*)&m2->field_68 = 1.5f;
+                *(volatile Vec*)&m2->field_6C = *(volatile Vec*)&vec3_802c5a80;
+#else
                 m2->field_68 = 1.5f;
                 m2->field_6C = vec3_802c5a80;
+#endif
                 M_S16(mario, 0x2B4) |= 0x1000;
             }
             goto common_6320;
@@ -559,8 +582,14 @@ void mot_hammer2(void) {
         } else if (M_S8(mario, 0x42) <= 1) {
             mario->wCamVal1 = 15.0f;
         }
+#ifdef MUST_MATCH
+        py__ = 20.0f; px__ = mario->position.x; py__ += mario->position.y;
+        pz__ = mario->position.z; one__ = 1.0f;
+        effUltraHammerEntry(M_S8(mario, 0x43) != 0, mario->multiTimer, px__, py__, pz__, one__);
+#else
         effUltraHammerEntry(M_S8(mario, 0x43) != 0, mario->multiTimer, mario->position.x,
                             mario->position.y + 20.0f, mario->position.z, 1.0f);
+#endif
         break;
     case 0x14:
         f31 = M_F32(mario, 0x1A8);
@@ -574,9 +603,17 @@ void mot_hammer2(void) {
                              m2->position.x,
                              0.5f * m2->wPlayerCollisionBox.y + m2->position.y,
                              m2->position.z, sa, 0.0f, ca);
+#ifdef MUST_MATCH
+        // The store keeps the original's dead attribute mask from being optimized away;
+        // it is redundant with the identical store below.
+        if (hit != NULL && (hitGetAttr(hit) & 0x800005)) {
+            M_S32(mario, 0x1FC) = (s32)hit;
+        }
+#else
         // The original tests the wall's attributes here and does nothing with the result.
         if (hit != NULL && (hitGetAttr(hit) & 0x800005)) {
         }
+#endif
         if (hit != NULL) {
             M_S32(mario, 0x1FC) = (s32)hit;
         }
@@ -645,6 +682,7 @@ void mot_hammer2(void) {
         break;
     }
 }
+#pragma opt_propagation reset
 
 s32 marioChkHammer2(void) {
     MarioWork* mario;

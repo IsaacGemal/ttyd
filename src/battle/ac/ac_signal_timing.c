@@ -70,8 +70,9 @@ s32 _get_ok_frame_range(s32 idx) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (90.24%): callee-saved register allocation (SFX pointers land in r25-r28 here
+// NONMATCHING (95.32%): callee-saved register allocation (SFX pointers land in r25-r28 here
 // instead of the original's r28-r31; work/bd/disp/auto/cont shift accordingly).
+#pragma optimize_for_size on // nudges the allocator toward the original's callee-saved register assignment
 s32 battleAcMain_SignalTiming(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     AcSignalTimingWork* bd = (AcSignalTimingWork*)&ac->field_0x2BC[0];
@@ -108,11 +109,9 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             bd->field_0x2C = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
             bd->field_0x30 = 0;
             *(s32*)&ac->field_34[0x28] = 0;
-            i = 0;
-            do {
+            for (i = 0; i < 5; i++) {
                 bd->states[i] = 0;
-                i++;
-            } while (i < 5);
+            }
             if (*(s32*)&ac->field_34[0x14] < 3 && *(s32*)&ac->field_34[0x14] >= 1) {
                 for (i = 0; i < *(s32*)&ac->field_34[4];) {
                     u32 pick;
@@ -143,6 +142,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                 for (i = 0; i < *(s32*)&ac->field_34[4]; i++) {
                     bd->buttons[i] = 0x100;
                 }
+                bd->field_0x34 = bd->buttons[0];
             }
             ac->mAcState = 0x63;
             break;
@@ -185,9 +185,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                 bd->field_0x30 = 0;
             } else if (bd->field_0x08 < *(s32*)&ac->field_34[0x1C]) {
                 bd->field_0x30 = 0;
-            } else if (bd->field_0x10 < bd->field_0x1C) {
-                bd->field_0x30 = 0;
-            } else if (bd->field_0x10 > bd->field_0x20) {
+            } else if (bd->field_0x10 < bd->field_0x1C || bd->field_0x10 > bd->field_0x20) {
                 bd->field_0x30 = 0;
             } else {
                 bd->field_0x30 = 1;
@@ -328,6 +326,7 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
 
     return 1;
 }
+#pragma optimize_for_size reset
 s32 battleAcResult_SignalTiming(BattleWork* work) {
     return work->actionCommands.result;
 }

@@ -83,21 +83,30 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (92.05%): sin/cos polynomial is one FPR off (radian in f0 vs f6, coefficients in f6/f7/f8).
+// Detailed diff: control flow, the sin/cos polynomial and the direct col_tbl[type % 10][i] reloads all
+// match, as do the radian (f6) and seed/c1/one (f5/f4/f3). Splitting pi per block and this declaration
+// order removed the earlier 90-98% register scrambles; the remaining diffs are allocator luck.
 // `#pragma opt_propagation off` required: stops MWCC rematerialising the sin/cos coefficients per branch.
 #pragma opt_propagation off
+// `#pragma opt_lifetimes off` required: with lifetimes on the frame, stack homes and FPR colouring shift.
+#pragma opt_lifetimes off // with lifetimes on the frame, stack homes and FPR colouring shift
+// NONMATCHING (99.55%): only FPR colouring is off: the four per-block pi constants (piA..piD land in
+// f7/f8/f3/f2 instead of f1) and, in case 17, the speed intermediate and the 6.2832/360 loads.
 void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 	f32 f0;
 	f32 f1;
-	f32 f2;
 	f32 f3;
 	f32 f4;
 	f32 f5;
 	f32 f6;
+	f32 f2;
 	f32 f7;
-	f32 angle;
 	f32 speed;
-	GXColor* color;
+	f32 piA;
+	f32 piB;
+	f32 piC;
+	f32 piD;
+	f32 angle;
 
 	data->type = type;
 	switch (type) {
@@ -144,11 +153,11 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->position.y = 0.0f;
 		data->position.z = 0.0f;
 
-		f1 = 3.1415927f;
+		piA = 3.1415927f;
 		f5 = 0.00761f;
 		f4 = 0.16605f;
 		f3 = 1.0f;
-		if (f6 <= f1) {
+		if (f6 <= piA) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
@@ -156,7 +165,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 				f5 = f5 * f0 + f3;
 				f5 = f5 * f6;
 			} else {
-				f0 = f6 - f1;
+				f0 = f6 - piA;
 				f1 = f1 - f0;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
@@ -166,7 +175,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f1 = f6 - f1;
+				f1 = f6 - piA;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
 				f5 = f5 * f0 + f3;
@@ -185,18 +194,18 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		}
 		data->velX = f7 * f5;
 
-		f1 = 3.1415927f;
+		piB = 3.1415927f;
 		f4 = 0.03705f;
 		f3 = 0.4967f;
 		f2 = 1.0f;
-		if (f6 <= f1) {
+		if (f6 <= piB) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;
 			} else {
-				f0 = f6 - f1;
+				f0 = f6 - piB;
 				f0 = f1 - f0;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
@@ -206,7 +215,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f0 = f6 - f1;
+				f0 = f6 - piB;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;
@@ -224,13 +233,12 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->scale = 1.0f;
 		data->lifetime = 0x1E;
 		data->alpha = 0xFF;
-		color = col_tbl[type % 10];
-		data->colorR = color[3].r;
-		data->colorG = color[3].g;
-		data->colorB = color[3].b;
-		data->targetR = color[0].r;
-		data->targetG = color[0].g;
-		data->targetB = color[0].b;
+		data->colorR = col_tbl[type % 10][3].r;
+		data->colorG = col_tbl[type % 10][3].g;
+		data->colorB = col_tbl[type % 10][3].b;
+		data->targetR = col_tbl[type % 10][0].r;
+		data->targetG = col_tbl[type % 10][0].g;
+		data->targetB = col_tbl[type % 10][0].b;
 		break;
 	case 17:
 		angle = 225.0f + (f32)irand(90);
@@ -241,11 +249,11 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->position.y = 0.0f;
 		data->position.z = 0.0f;
 
-		f1 = 3.1415927f;
+		piC = 3.1415927f;
 		f5 = 0.00761f;
 		f4 = 0.16605f;
 		f2 = 1.0f;
-		if (f6 <= f1) {
+		if (f6 <= piC) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
@@ -253,7 +261,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 				f5 = f5 * f0 + f2;
 				f5 = f5 * f6;
 			} else {
-				f0 = f6 - f1;
+				f0 = f6 - piC;
 				f1 = f1 - f0;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
@@ -263,7 +271,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f1 = f6 - f1;
+				f1 = f6 - piC;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
 				f5 = f5 * f0 + f2;
@@ -282,18 +290,18 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		}
 		data->velX = speed * f5;
 
-		f1 = 3.1415927f;
+		piD = 3.1415927f;
 		f4 = 0.03705f;
 		f3 = 0.4967f;
 		f2 = 1.0f;
-		if (f6 <= f1) {
+		if (f6 <= piD) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;
 			} else {
-				f0 = f6 - f1;
+				f0 = f6 - piD;
 				f0 = f1 - f0;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
@@ -303,7 +311,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f0 = f6 - f1;
+				f0 = f6 - piD;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;
@@ -321,16 +329,16 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->scale = 1.0f;
 		data->lifetime = 0x3C;
 		data->alpha = 0xFF;
-		color = col_tbl[type % 10];
-		data->colorR = color[3].r;
-		data->colorG = color[3].g;
-		data->colorB = color[3].b;
-		data->targetR = color[0].r;
-		data->targetG = color[0].g;
-		data->targetB = color[0].b;
+		data->colorR = col_tbl[type % 10][3].r;
+		data->colorG = col_tbl[type % 10][3].g;
+		data->colorB = col_tbl[type % 10][3].b;
+		data->targetR = col_tbl[type % 10][0].r;
+		data->targetG = col_tbl[type % 10][0].g;
+		data->targetB = col_tbl[type % 10][0].b;
 		break;
 	}
 }
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
 EffectEntry* effGonbabaBreathEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
@@ -559,8 +567,8 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effGonbabaBreathDisp, effect);
 }
 
-// NONMATCHING (95.18%): frame/registers match; remaining diffs are scheduling/operand order in the
-// first 6.2832f multiply, the case-A int->float hoist, and the camera/alpha loads around camGetPtr.
+// 100% matched: the case-A half-quad temps (`fa`..`fd`, `half`) and case-B `negSize / 2.0f` shape MWCC's
+// FP colouring so the halves land in the original's f1/f2 and the fneg/multiply order matches.
 void effGonbabaBreathDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effGonbabaBreathData* data = effect->userdata;
@@ -577,23 +585,34 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 	f32 f2;
 	f32 f3;
 	f32 cosVal;
+	// `half`/`fa`..`fd` are named temps: the fresh names keep the case-A halves in the original's
+	// f1/f2 and the multiply operands in the original's variable-first order.
+	f32 half = 0.5f;
+	f32 fa;
+	f32 fb;
+	f32 fc;
+	f32 fd;
 #ifdef MUST_MATCH
-	// `size` keeps the shared 4.0f in a non-volatile FPR so case B computes -size * 0.5f rather
-	// than folding to a -2.0 literal, matching the original; the natural form uses the literals.
+	// `size`/`negSize` keep the shared 4.0f in non-volatile FPRs so case B computes negSize / 2.0f
+	// rather than folding to a -2.0 literal, matching the original; natural form uses the literals.
 	f32 size = 4.0f;
+	f32 negSize;
 #endif
-	s32 type = data->type;
-	s32 alpha = data->alpha;
+	s32 type;
 	s32 colorIdx;
 	s32 i;
 	s32 j;
+	s32 alpha;
 
 	camera = camGetPtr(camId);
+	type = data->type;
+	alpha = data->alpha;
 	if (type < 10) {
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 	} else {
 		camera3d = camGetPtr(CAMERA_3D);
-		f1 = (6.2831855f * camera3d->viewYaw) / 360.0f;
+		f2 = camera3d->viewYaw;
+		f1 = (6.2831855f * f2) / 360.0f;
 		cosVal = (f32)cos(f1);
 		camera3d = camGetPtr(CAMERA_3D);
 		f2 = camera3d->viewYaw;
@@ -607,7 +626,7 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 
 	PSMTXRotRad(rot, 'y', 0.017453292f * (data->rotation - camGetPtr(camId)->viewYaw));
 
-	if (data->scale > 90.0f && data->scale < 270.0f) {
+	if (data->rotation > 90.0f && data->rotation < 270.0f) {
 		PSMTXScale(scaleMtx, data->scale, data->scale, -data->scale);
 	} else {
 		PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
@@ -636,6 +655,9 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	colorIdx = type % 10;
+#ifdef MUST_MATCH
+	negSize = -size;
+#endif
 	for (i = 1, data = data + 1; i < effect->count; i++, data++) {
 		if (data->field_0x44 != 0) {
 			continue;
@@ -661,20 +683,23 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 				GXSetChanMatColor(GX_COLOR0A0, col_tbl[colorIdx][j]);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
-				f1 = 16.0f - size * (f32)j;
+				fa = 16.0f - size * (f32)j;
+				fd = -fa;
+				fb = fa * half;
+				fc = fd * half;
 #else
-				f1 = 16.0f - 4.0f * (f32)j;
+				fa = 16.0f - 4.0f * (f32)j;
+				fd = -fa;
+				fb = fa * 0.5f;
+				fc = fd * 0.5f;
 #endif
-				f0 = -f1;
-				f1 = f1 * 0.5f;
-				f2 = f0 * 0.5f;
-				GXPosition3f32(f2, f1, 0.0f);
+				GXPosition3f32(fc, fb, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
-				GXPosition3f32(f1, f1, 0.0f);
+				GXPosition3f32(fb, fb, 0.0f);
 				GXTexCoord2f32(1.0f, 0.0f);
-				GXPosition3f32(f1, f2, 0.0f);
+				GXPosition3f32(fb, fc, 0.0f);
 				GXTexCoord2f32(1.0f, 1.0f);
-				GXPosition3f32(f2, f2, 0.0f);
+				GXPosition3f32(fc, fc, 0.0f);
 				GXTexCoord2f32(0.0f, 1.0f);
 			}
 			break;
@@ -694,7 +719,7 @@ void effGonbabaBreathDisp(CameraId camId, void* param) {
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			f1 = 2.0f;
 #ifdef MUST_MATCH
-			f2 = -size * 0.5f;
+			f2 = negSize / 2.0f;
 #else
 			f2 = -2.0f;
 #endif

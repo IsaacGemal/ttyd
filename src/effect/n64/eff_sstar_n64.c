@@ -11,9 +11,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
-#ifdef MUST_MATCH
 #include <dolphin/os/OSFastCast.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -119,29 +117,48 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-// Control flow, every constant and the GX/TEV state match, the four OSInitFastCast GQR2-5 blocks
-// match, and the triangle loop now schedules like retail. The remaining difference is the vertex
-// s16<->f32 conversion: MWCC 2.6 emits lha/fctiwz while retail uses psq_l/psq_st through GQR5
-// (s16), so retail keeps the psq results in f31/f30/f29/f28/f27/f26 (saved FPR set f25-f31 vs f31
-// here) and its frame is 0x1c0 vs 0x1a0, which shifts every local slot and register colour. No
-// source form, pragma or GC compiler version in this repo emits the psq path (see
-// eff_flame_n64.c / eff_balloon_n64.c / eff_opuku_wgun_n64.c).
-// NONMATCHING (81.78%): s16<->f32 conversion is lha/fctiwz, not retail's psq_l/psq_st.
+// One 14-byte half of a vertex, as an inlined helper: retail inlines this twice per vertex
+// (first half at +0x0, second at +0xE), each inlining with its own Vec slot and its own
+// GQR2-5 setup. The OSs16tof32/OSf32tos16 fast-cast calls are the SDK inlines (see
+// libs/dolsdk2004/include/dolphin/os/OSFastCast.h); without them MWCC 2.6 lowers the casts
+// to the lha/fctiwz integer path, which shifts the whole FPR set and frame size.
+static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
+    Vec v;
+    memcpy(dst, src, 0xE);
+    OSInitFastCast(); /* retail's GQR2-5 setup before the s16->f32 reads */
+    OSs16tof32(&dst[0], &v.x);
+    OSs16tof32(&dst[1], &v.y);
+    OSs16tof32(&dst[2], &v.z);
+    PSMTXMultVec(mtx, &v, &v);
+    OSInitFastCast(); /* retail's GQR2-5 setup before the f32->s16 writes */
+    OSf32tos16(&v.x, &dst[0]);
+    OSf32tos16(&v.y, &dst[1]);
+    OSf32tos16(&v.z, &dst[2]);
+}
+
+// The psq_l/psq_st vertex conversions now match: the original calls the SDK OSs16tof32/
+// OSf32tos16 fast-cast inlines (now present in libs/dolsdk2004/include/dolphin/os/OSFastCast.h),
+// which MWCC 2.6 lowers to the GQR5 paired-single path instead of lha/fctiwz. With those and an
+// explicit `off` induction variable the loop, the frame size (0x1c0), the FPR saves f25-f31 and
+// every instruction/constant match. What still differs is GPR colouring: the allocator puts
+// `type` in r22 (coalesced with the dead `param`) where retail has r25, which shifts camId to
+// r25 (retail r26), colR/colG/colB to r23/r24/r26 (retail r22/r23/r24), and the loop's off/src
+// to r29/r26 (retail r24/r29); the GXColor local also lands at 0x2c instead of 0x28. No
+// declaration/assignment/pragma variation tried changes that colouring.
+// NONMATCHING (98.08%): register colouring (type r22 vs r25, colR/G/B, loop off/src) and the
+// GXColor local slot (0x2c vs 0x28); every instruction and constant is present.
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     u8* base = (u8*)lbl_803A5C90;
     Mtx mtx1;
     Mtx mtx2;
-    Mtx mtx3;
     Mtx mtx4;
+    Mtx mtx3;
     GXTexObj tex;
-    GXColor color;
     CameraEntry* cam;
     SstarWork* data;
-    SstarVertex* vtx;
     u8* src;
-    Vec v;
-    Vec v2;
+    GXColor color;
     f32 scale;
     s32 type;
     s32 colR;
@@ -246,37 +263,12 @@ void effSstarDisp(CameraId camId, void* param) {
         PSMTXRotRad(mtx2, 'z', data->angle * 0.017453292f);
         PSMTXConcat(mtx1, mtx2, data->mtx[data->field_0x3C]);
 
-        vtx = data->vtx;
         src = base + 0xC0;
-        for (i = 0; i < 5; i++, vtx++, src += 0x1C) {
-            memcpy(&vtx->x, src, 0xE);
-#ifdef MUST_MATCH
-            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the s16->f32 reads */
-#endif
-            v.x = vtx->x;
-            v.y = vtx->y;
-            v.z = vtx->z;
-            PSMTXMultVec(data->mtx[(idx - i) % 8], &v, &v);
-#ifdef MUST_MATCH
-            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the f32->s16 writes */
-#endif
-            vtx->x = v.x;
-            vtx->y = v.y;
-            vtx->z = v.z;
-            memcpy(&vtx->x2, src + 0xE, 0xE);
-#ifdef MUST_MATCH
-            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the s16->f32 reads */
-#endif
-            v2.x = vtx->x2;
-            v2.y = vtx->y2;
-            v2.z = vtx->z2;
-            PSMTXMultVec(data->mtx[(idx - i) % 8], &v2, &v2);
-#ifdef MUST_MATCH
-            OSInitFastCast(); /* MUST_MATCH: retail's GQR2-5 setup before the f32->s16 writes */
-#endif
-            vtx->x2 = v2.x;
-            vtx->y2 = v2.y;
-            vtx->z2 = v2.z;
+        for (i = 0; i < 5; i++, src += 0x1C) {
+            u32 off = i * 0x1C;
+            sstarSetVtx((s16*)&data->vtx[i], data->mtx[(idx - i + 8) % 8], (s16*)src);
+            sstarSetVtx((s16*)((u8*)data->vtx + off + 0xE), data->mtx[(idx - i + 8) % 8],
+                (s16*)((u8*)(base + 0xC0) + off + 0xE));
         }
         GXInvalidateVtxCache();
         DCFlushRange(data->vtx, 0x8C);

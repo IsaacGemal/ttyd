@@ -94,25 +94,29 @@ EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 	return entry;
 }
 
-// NONMATCHING (95.18%): the whole state machine matches; the remaining diffs are register numbers
-// (p/sfx1/sfx2 are r30/r28/r29 instead of r28/r30/r29) and a few float temporaries in the type==1 block.
+static inline void sheepMakeVec(Vec* v, f32 x, f32 y, f32 z) {
+	*v = vec3_802ff9e8;
+	v->y = y;
+	v->x = x;
+	v->z = z;
+}
+
+// NONMATCHING (96.60%): the state machine matches; the `pos` zero-vector copy is scheduled before the
+// userdata load and the type==1 float temporaries land in f1/f0/f2 instead of f2/f1/f0.
 void effSheepMain(EffectEntry* effect) {
 	EffSheepWork* p;
-	const char* sfx2;
-	const char* sfx1;
+	const char* sfx[2];
 	Vec pos2;
 	Vec pos;
 	Vec soundPos1;
 	Vec soundPos2;
 	Vec soundPos3;
 	s32 i;
-	s32 living = 0;
+	s32 living;
+	s32 alive = 0;
 	s32 inBattle;
 
-	pos = vec3_802ff9e8;
-	pos.x = ((EffSheepWork*)effect->userdata)->x;
-	pos.y = ((EffSheepWork*)effect->userdata)->y;
-	pos.z = ((EffSheepWork*)effect->userdata)->z;
+	sheepMakeVec(&pos, ((EffSheepWork*)effect->userdata)->x, ((EffSheepWork*)effect->userdata)->y, ((EffSheepWork*)effect->userdata)->z);
 	pos2 = pos;
 	inBattle = gp->inBattle != 0;
 	if (effect->flags & 4) {
@@ -132,8 +136,8 @@ void effSheepMain(EffectEntry* effect) {
 		return;
 	}
 
-	sfx1 = str_802FFA18;
-	sfx2 = str_802FFA28;
+	sfx[0] = str_802FFA18;
+	sfx[1] = str_802FFA28;
 	p = &((EffSheepWork*)effect->userdata)[1];
 	for (i = 1; i < effect->count; i++, p++) {
 		switch (p->state) {
@@ -152,14 +156,14 @@ void effSheepMain(EffectEntry* effect) {
 					soundPos1.x = pos2.x + p->x;
 					soundPos1.y = pos2.y + p->y;
 					soundPos1.z = pos2.z + p->z;
-					p->sfxId = psndSFXOn_3D(sfx1, &soundPos1);
+					p->sfxId = psndSFXOn_3D(sfx[0], &soundPos1);
 				}
 				else if (i == effect->count - 1) {
 					soundPos2 = vec3_802ffa00;
 					soundPos2.x = pos2.x + p->x;
 					soundPos2.y = pos2.y + p->y;
 					soundPos2.z = pos2.z + p->z;
-					p->sfxId = psndSFXOn_3D(sfx2, &soundPos2);
+					p->sfxId = psndSFXOn_3D(sfx[1], &soundPos2);
 				}
 				p->state++;
 			}
@@ -175,10 +179,11 @@ void effSheepMain(EffectEntry* effect) {
 			if (p->x < float_500_80421954) {
 				p->x += p->field_0x2C;
 				if (p->type == 1) {
+					f32 zero = 0.0f;
 					p->y += p->field_0x18;
 					p->field_0x18 -= p->field_0x1C;
-					if (p->y < float_0_80421948) {
-						p->y = float_0_80421948;
+					if (p->y < zero) {
+						p->y = zero;
 						p->field_0x18 *= float_neg1_80421958;
 					}
 				}
@@ -203,7 +208,7 @@ void effSheepMain(EffectEntry* effect) {
 			p->state++;
 			break;
 		case 4:
-			living++;
+			alive++;
 			break;
 		}
 		if (p->poseId != -1) {
@@ -211,7 +216,7 @@ void effSheepMain(EffectEntry* effect) {
 		}
 	}
 
-	if (living >= effect->count - 1) {
+	if (alive >= effect->count - 1) {
 		effDelete(effect);
 	}
 	else {

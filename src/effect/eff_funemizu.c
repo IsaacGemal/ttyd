@@ -55,6 +55,18 @@ extern u8* gor_fune_dl_0_tbl[];
 extern u8 gor_fune_dl_0_size_tbl[];
 extern u8* gor_fune_dl_1_tbl[];
 extern u8 gor_fune_dl_1_size_tbl[];
+extern u8 funemizu_normal_tbl[32];
+extern u8 funemizu_color0_tbl[32];
+extern u8* funemizu_dl_0_tbl[3];
+extern u8 funemizu_dl_0_size_tbl[4];
+extern u8* funemizu_dl_1_tbl[4];
+extern u8 funemizu_dl_1_size_tbl[4];
+extern u8 gor_fune_normal_tbl[32];
+extern u8 gor_fune_color0_tbl[8];
+extern u8* gor_fune_dl_0_tbl[2];
+extern u8 gor_fune_dl_0_size_tbl[4];
+extern u8* gor_fune_dl_1_tbl[2];
+extern u8 gor_fune_dl_1_size_tbl[4];
 
 const f64 double_to_int_802fe8b0 = 4503601774854144.0;
 
@@ -156,6 +168,7 @@ static inline f32 clamp01(f32 v) {
 }
 
 // 100%: the clamp above needs opt_common_subs off so each constant test reloads the pool value.
+#pragma opt_common_subs off // without it MWCC CSEs the clamp's 1.0/0.0 into f1/f0 and drops the pool reloads
 void effFunemizuMain(EffectEntry* effect) {
 	EffFunemizuData* data;
 	EffFunemizuData* ptr;
@@ -260,6 +273,7 @@ void effFunemizuMain(EffectEntry* effect) {
 		dispEntry(camId, dispCalcZ(&pos2), 2, effFunemizuShibukiDisp, effect);
 	}
 }
+#pragma opt_common_subs reset
 
 // NONMATCHING (80.40%): 64 instructions differ, 11 missing, 49 extra, plus register differences.
 void effFunemizuDisp(CameraId camId, void* param) {
@@ -378,7 +392,7 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			for (j = 0; j < 3; i++) {
+			for (j = 0; j < 3; j++) {
 				GXCallDisplayList(funemizu_dl_0_tbl[j], funemizu_dl_0_size_tbl[j] << 5);
 			}
 		}
@@ -447,12 +461,22 @@ found:
 	}
 }
 
-// NONMATCHING (92.28%): GX immediate-mode float reloads are scheduled differently and the GXColor
-// temporary lands in the other stack slot; the rest matches.
+// 100%: `data++` before the loop (rather than a separate `ptr`) and the GX colour helper below put the
+// pointer init and the by-value GXColor in the original's slots.  The 0.0f/1.0f arguments are literals
+// (not the named externs) so each GX write reloads them, as the original does.
+#ifdef MUST_MATCH
+// Match-only: building the colour through a helper lands the by-value GXColor in the original's stack
+// slot; the in-place build under #else lands it one word lower.
+static inline GXColor funemizuShibukiColor(u8 a) {
+	GXColor c = *(GXColor*)&dat_8042146c;
+	c.a = a;
+	return c;
+}
+#endif
+
 void effFunemizuShibukiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	EffFunemizuData* data;
-	EffFunemizuData* ptr;
 	CameraEntry* cam;
 	Mtx mtx90;
 	Mtx mtx60;
@@ -495,30 +519,34 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 
 	sz = -float_3_80421474;
 	i = 1;
-	ptr = data + 1;
-	for (; i < effect->count; i++, ptr++) {
-		if (ptr->field_0x3C != 0) {
+	data++;
+	for (; i < effect->count; i++, data++) {
+		if (data->field_0x3C != 0) {
 			continue;
 		}
-		if (ptr->y < float_0_80421478) {
+		if (data->y < float_0_80421478) {
 			continue;
 		}
+#ifdef MUST_MATCH
+		GXSetChanMatColor(GX_COLOR0A0, funemizuShibukiColor(data->field_0x40));
+#else
 		color = *(GXColor*)&dat_8042146c;
-		color.a = ptr->field_0x40;
+		color.a = data->field_0x40;
 		GXSetChanMatColor(GX_COLOR0A0, color);
-		PSMTXTrans(mtx90, ptr->x, ptr->y, ptr->z);
+#endif
+		PSMTXTrans(mtx90, data->x, data->y, data->z);
 		PSMTXConcat(mtx30, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(sz * float_0p5_8042147c, float_1p5_80421480, float_0_80421478);
-		GXTexCoord2f32(float_0_80421478, float_0_80421478);
-		GXPosition3f32(float_1p5_80421480, float_1p5_80421480, float_0_80421478);
-		GXTexCoord2f32(float_1_80421484, float_0_80421478);
-		GXPosition3f32(float_1p5_80421480, sz * float_0p5_8042147c, float_0_80421478);
-		GXTexCoord2f32(float_1_80421484, float_1_80421484);
-		GXPosition3f32(sz * float_0p5_8042147c, sz * float_0p5_8042147c, float_0_80421478);
-		GXTexCoord2f32(float_0_80421478, float_1_80421484);
+		GXPosition3f32(sz * float_0p5_8042147c, float_1p5_80421480, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(float_1p5_80421480, float_1p5_80421480, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(float_1p5_80421480, sz * float_0p5_8042147c, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(sz * float_0p5_8042147c, sz * float_0p5_8042147c, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 		GXEnd();
 	}
 }

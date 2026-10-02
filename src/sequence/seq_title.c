@@ -143,19 +143,30 @@ void disp1(CameraId cameraId, void* param) {
 	              viewportBackup[5]);
 }
 
-// Match shape from docs/AGENT_BRIEF.md ("a Vec temp copied from a named zero vector"):
-// building the translate in an inline that starts from the rodata zero vector keeps the
-// argument temp in the same place the original's does; the plain local form scores ~78%.
-static inline Vec disp2Vec(f32 x, f32 y, const Vec* zero) {
-	Vec v = *zero;
+// Match shape: the original copies the zero Vec into the by-value argument temp and then
+// overwrites x/y there (so the intermediate temp sits directly below the outgoing Vec home).
+// Taking the zero Vec by value reproduces that; a pointer/return pair allocates the temp in
+// the wrong slot (97.14%). The parameter order (zero, y, x) is the one that puts the wp2
+// x/y loads (field_0xC to f1, field_0x10 to f0) the way the original does.
+static inline Vec disp2Vec(Vec v, f32 y, f32 x) {
 	v.x = x;
 	v.y = y;
 	return v;
 }
 
-// NONMATCHING (97.14%): identical instructions, different stack slots. Target packs each call
-// as scale/temp/outgoing (0x38/0x44/0x50, 0x14/0x20/0x2c); we get the inline temps first (0x20,
-// 0x14) then the scales (0x44, 0x2c). One fmuls dst too; .sdata2 needs titleMain's constants.
+// The two Vec by-value argument temp blocks now sit in the original slots (scale 0x38/0x14,
+// intermediate 0x44/0x20, outgoing 0x50/0x2c) and the pulse multiply matches. Two diffs remain,
+// both outside this function's control:
+//  (1) the int-to-float magic double: the target loads it from the rodata base
+//      (`lfd f2, 0xb0(r31)`, r31 = vec3_802c11a0); MWCC here emits its own address
+//      (`lis r3, @300@ha; lfd f2, @300@l(r3)`). This unit's vec3_802c11a0 is an extern in
+//      include/sequence/seq_title.h, so the compiler will not pool the generated double
+//      against it (defining the blob + #pragma pool_data on did not change it either).
+//  (2) the FontDrawString calls: the target evaluates the two floats before the string
+//      pointer (`lfs f1; lfs f2; lwz r3`), but include/manager/fontmgr.h declares
+//      FontDrawString(const char*, f32, f32), so MWCC evaluates the string pointer first.
+//      The callee's ABI registers are the same either way; only the call-site order differs.
+// NONMATCHING (97.32%): the two blockers above; the Vec arg temps and pulse multiply match.
 void disp2(CameraId cameraId, void* param) {
 	u8* base = (u8*)vec3_802c11a0; // base of this unit's .rodata pool
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
@@ -176,15 +187,15 @@ void disp2(CameraId cameraId, void* param) {
 
 	winTexInit(*wp2->texture->data);
 
-	unk_80177008(5, disp2Vec(wp2->field_0xC, wp2->field_0x10, (Vec*)(base + 0x18)), *(Vec*)(base + 0x24),
+	unk_80177008(5, disp2Vec(*(Vec*)(base + 0x18), wp2->field_0x10, wp2->field_0xC), *(Vec*)(base + 0x24),
 	             (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
-	winTexSet(6, disp2Vec(wp2->field_0x14, wp2->field_0x18, (Vec*)(base + 0x30)), *(Vec*)(base + 0x3c),
+	winTexSet(6, disp2Vec(*(Vec*)(base + 0x30), wp2->field_0x18, wp2->field_0x14), *(Vec*)(base + 0x3c),
 	          (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	*(s32*)((u8*)wp2 + 0x2C) += 1; // TitleWork pulse counter, no field declared in the header
 	pulse = (f32)sin((f64)(6.2831855f * (f32)*(s32*)((u8*)wp2 + 0x2C) / 120.0f));
-	alpha = (s32)(pulse * 459.0f * wp2->field_0x1C);
+	alpha = (s32)(wp2->field_0x1C * (459.0f * pulse));
 	if (alpha < 0) {
 		alpha = 0;
 	}

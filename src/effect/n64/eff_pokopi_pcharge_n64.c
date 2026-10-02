@@ -278,58 +278,77 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (85.65%): 18 instructions differ, 4 missing, 36 extra, plus register differences.
+static inline void effPokopiPchargeSetColor1(u32 r, u32 g, u32 b) {
+	GXColor c = unk_8042320c;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	GXSetTevColor(GX_TEVREG1, c);
+}
+
+static inline void effPokopiPchargeSetColor2(u32 r, u32 g, u32 b, s32 a) {
+	GXColor c = unk_80423210;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+
+// These build the three Tev colours retail reads from the unk_80423208/0c/10 globals.  They are void
+// inlines (not a colour returned and passed on) because that is what makes MWCC pair each colour's
+// build slot with its outgoing argument slot; the direct form gives a different stack layout.
+static inline void effPokopiPchargeSetColor0(u32 r, u32 g, u32 b, s32 a) {
+	GXColor c = unk_80423208;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+
 void effPokopiPchargeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	effPokopiPchargeData* data = effect->userdata;
 	CameraEntry* camera;
-	CameraEntry* camera3d;
 	Mtx mtx;
-	Mtx rot;
 	Mtx scale;
+	Mtx rot;
 	Mtx view;
 	GXTexObj tex;
-	s32 type;
+	s32 base3;
+	s32 base2;
+	s32 base1;
+	effVtxArray* tex9;
+	s32 base;
+	effPokopiPchargeData* data;
+	s32 i;
 	s32 alpha;
+	s32 type;
 	u32 r;
 	u32 g;
 	u32 b;
 	f32 scaleXZ;
 	f32 field38;
-	s32 i;
-	s32 base;
-	s32 base1;
-	s32 base2;
-	s32 base3;
-	GXColor color;
+	f32 scl;
 
 	camera = camGetPtr(camId);
-	type = data->type;
+	data = effect->userdata;
+	scaleXZ = data->scale * data->field_0x44;
 	alpha = data->a;
+	type = data->type;
 	r = data->r;
 	g = data->g;
 	b = data->b;
-	scaleXZ = data->scale * data->field_0x44;
 	field38 = data->field_0x38;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	camera3d = camGetPtr(CAMERA_3D);
-	PSMTXRotRad(rot, 'y', 0.017453292f * -camera3d->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scale, scaleXZ, scaleXZ, scaleXZ);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXConcat(camera->view, mtx, view);
 
-	color = unk_80423208;
-	color.r = data->r;
-	color.g = data->g;
-	color.b = data->b;
-	color.a = alpha;
-	GXSetTevColor(GX_TEVREG0, color);
-	color = unk_8042320c;
-	color.r = data->r2;
-	color.g = data->g2;
-	color.b = data->b2;
-	GXSetTevColor(GX_TEVREG1, color);
+	effPokopiPchargeSetColor0(data->r, data->g, data->b, alpha);
+	effPokopiPchargeSetColor1(data->r2, data->g2, data->b2);
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
@@ -347,29 +366,24 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	GXSetCullMode(GX_CULL_NONE);
 
 	base = type * 4;
-	base1 = base + 1;
-	base2 = base + 2;
 	base3 = base + 3;
+	base2 = base + 2;
+	base1 = base + 1;
+	tex9 = (effVtxArray*)((u8*)size10x10_tex32x32_2_vtx + 0x70);
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		u32 a = (alpha * data->a) / 255;
-		GXColor lcolor;
 
-		scaleXZ = data->scale;
-		lcolor = unk_80423210;
-		lcolor.r = r;
-		lcolor.g = g;
-		lcolor.b = b;
-		lcolor.a = a;
-		GXSetTevColor(GX_TEVREG0, lcolor);
+		scl = data->scale;
+		effPokopiPchargeSetColor2(r, g, b, a);
 
 		PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x3C);
 		PSMTXTrans(mtx, data->x + field38, 0.0f, 0.0f);
 		PSMTXConcat(rot, mtx, mtx);
-		if (type == 10 || type == 11) {
-			PSMTXScale(scale, scaleXZ, 1.0f, 1.0f);
+		if (type == 11 || type == 10) {
+			PSMTXScale(scale, scl, 1.0f, 1.0f);
 		} else {
-			PSMTXScale(scale, scaleXZ, scaleXZ, 1.0f);
+			PSMTXScale(scale, scl, scl, 1.0f);
 		}
 		PSMTXConcat(mtx, scale, mtx);
 		PSMTXConcat(view, mtx, mtx);
@@ -388,38 +402,30 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 		case 4:
 		case 5:
 			effSetVtxDescN64((effVtxArray*)size10x10_tex32x32_2_vtx);
-			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+			base3 -= 12;
+			base2 -= 12;
 			base -= 12;
 			base1 -= 12;
-			base2 -= 12;
-			base3 -= 12;
 			type -= 3;
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(base, base1, base2, 0, base, base2, base3, 0);
 			break;
 		case 6:
 		case 7:
 		case 8:
-			effSetVtxDescN64((effVtxArray*)size128x10_tex32x32_vtx);
-			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-			tri2(0, 1, 2, 0, 0, 2, 3, 0);
-			break;
-		case 9:
-			effSetVtxDescN64((effVtxArray*)((u8*)size10x10_tex32x32_2_vtx + 0x70));
-			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-			tri2(0, 1, 2, 0, 0, 2, 3, 0);
-			break;
-		case 10:
-			effSetVtxDescN64((effVtxArray*)size128x10_tex32x32_2_vtx);
-			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-			tri2(0, 1, 2, 0, 0, 2, 3, 0);
-			break;
 		case 11:
 			effSetVtxDescN64((effVtxArray*)size128x10_tex32x32_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			break;
+		case 9:
 		case 12:
-			effSetVtxDescN64((effVtxArray*)((u8*)size10x10_tex32x32_2_vtx + 0x70));
+			effSetVtxDescN64(tex9);
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+			tri2(0, 1, 2, 0, 0, 2, 3, 0);
+			break;
+		case 10:
+			effSetVtxDescN64((effVtxArray*)size128x10_tex32x32_2_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 			break;

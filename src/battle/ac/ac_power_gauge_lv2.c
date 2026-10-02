@@ -303,11 +303,38 @@ void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
     }
 }
 
-// NONMATCHING (84.40%): the frame/layout now match, but the Vec BaseRemat, the integer register
-// allocation in the two threshold loops, and the icon argument setup still differ.
+// Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
+// returned by BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function
+// pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_power_gauge.c.
+#ifdef MUST_MATCH
+#define ICON_DISP(v, f, id, s) (((void (*)(Vec*, s16, s32, f32))iconDispGx)((v), (f), (id), (s)))
+#else
+#define ICON_DISP(v, f, id, s) iconDispGx((v), (f), (id), (s))
+#endif
+
+// Match-only: the header declares BattleAcDrawGauge's float ratio last, but the original's
+// prototype lists it between `count` and the three thresholds: the ratio `lfs f1` is scheduled
+// between the two `fctiwz` conversions only when the float parameter is evaluated before the
+// threshold arguments. The ABI is identical (ints -> r3-r10, float -> f1).
+#ifdef MUST_MATCH
+#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags)                                  \
+    ((void (*)(s32, s32, s32, s32, f32, s32, s32, s32, s32))BattleAcDrawGauge)((x), (y), (type), (count), \
+                                                                               (ratio), (t0), (t1), (t2), (flags))
+#else
+#define BattleAcDrawGaugeFM(x, y, type, count, ratio, t0, t1, t2, flags) \
+    BattleAcDrawGauge((x), (y), (type), (count), (t0), (t1), (t2), (flags), (ratio))
+#endif
+
+// Match-only: the original is the FP division followed by the clamp, but writing the numerator
+// through a temp (`g`) and the clamp bound as the literal 1.0f colours the three FP registers as
+// the original does (numerator f2, 100.f f1, 1.f f0); the natural form rotates them.
+// MATCHING (100%): all instructions agree; the anonymous `@NNN` for the 1.0f literal is the
+// symbol-only difference noted above and disappears when the unit links.
 static void actionCommandDisp(f32 x, f32 y) {
+    Vec* vec = (Vec*)vec3_803001c0;
     BattleActions* ac = (BattleActions*)((u8*)_battleWorkPointer + 0x1C90);
-    const Vec* vec = vec3_803001c0;
+    BattleACDispParams* disp = &ac->dispParams;
+    PowerGaugeLv2DecWork* dec = (PowerGaugeLv2DecWork*)&ac->field_0x2BC[0];
     f32 f31;
     f32 f30;
     f32 ratio;
@@ -332,17 +359,18 @@ static void actionCommandDisp(f32 x, f32 y) {
     {
         s32 flags = 0;
 
-        ratio = *(f32*)((u8*)ac + 0x2C4) / float_100_80421c30;
-        if (ratio > float_1_80421c2c) {
-            ratio = float_1_80421c2c;
+        f32 g = dec->gaugePercent;
+        ratio = g / float_100_80421c30;
+        if (ratio > 1.0f) {
+            ratio = 1.0f;
         }
-        *(f32*)((u8*)ac + 0x2B8) = ratio;
+        disp->value = ratio;
 
-        if (*(s32*)((u8*)ac + 0x2D4) != 0) {
+        if (dec->flag != 0) {
             ((u8*)ac)[0x29D] = (u8)(((u8*)ac)[0x29D] + ((u8*)ac)[0x2A1]);
             ((u8*)ac)[0x29E] = (u8)(((u8*)ac)[0x29E] + ((u8*)ac)[0x2A2]);
 
-            if (ratio >= float_1_80421c2c) {
+            if (disp->value >= float_1_80421c2c) {
                 flags |= 1;
             }
             if (((u8*)ac)[0x29D] <= 0x80 && (s8)((u8*)ac)[0x2A1] < 0) {
@@ -355,24 +383,23 @@ static void actionCommandDisp(f32 x, f32 y) {
             }
         }
 
+        count = 0;
         for (i = 0; i < 4; i++) {
             thresholds[i] = 100;
         }
-        count = 0;
-        for (i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++, count++) {
             thresholds[i] = *(s32*)((u8*)ac + 0x78 + i * 4);
             if (i != 0 && (thresholds[i] - thresholds[i - 1]) <= 0) {
                 break;
             }
-            count++;
         }
 
-        BattleAcDrawGauge((s32)x, (s32)y, 0xB2, count, thresholds[0], thresholds[1], thresholds[2], flags,
-                          *(f32*)((u8*)ac + 0x2B8));
+        BattleAcDrawGaugeFM((s32)x, (s32)y, 0xB2, count, disp->value, thresholds[0], thresholds[1],
+                            thresholds[2], flags);
     }
 
-    icon1 = BattleACGetButtonIcon(*(s32*)((u8*)ac + 0x2C8), 1);
-    icon0 = BattleACGetButtonIcon(*(s32*)((u8*)ac + 0x2C8), 0);
+    icon1 = BattleACGetButtonIcon(dec->button, 1);
+    icon0 = BattleACGetButtonIcon(dec->button, 0);
 
     switch (ac->mAcState) {
         case 0x63:
@@ -384,30 +411,31 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec pos = vec[1];
             pos.x = f31;
             pos.y = float_70_80421c34 + y;
-            iconDispGx(&pos, 0x10, icon0, float_1_80421c2c);
+            ICON_DISP(&pos, 0x10, icon0, float_1_80421c2c);
             break;
         }
         case 0x3E8:
-            if (*(s32*)((u8*)ac + 0x2D8) != 0) {
+            if (dec->flag2 != 0) {
                 Vec pos = vec[2];
                 pos.x = f31;
                 pos.y = float_70_80421c34 + y;
-                iconDispGx(&pos, 0x10, icon1, float_1_80421c2c);
+                ICON_DISP(&pos, 0x10, icon1, float_1_80421c2c);
             }
             else {
                 Vec pos = vec[3];
                 pos.x = f31;
                 pos.y = float_70_80421c34 + y;
-                iconDispGx(&pos, 0x10, icon0, float_1_80421c2c);
+                ICON_DISP(&pos, 0x10, icon0, float_1_80421c2c);
             }
             break;
     }
 
     {
+        s32 id = dec->flag2 != 0 ? 0x95 : 0x91;
         Vec pos = vec[4];
         pos.x = float_120_80421c38 + f31;
         pos.y = f30;
-        iconDispGx(&pos, 0x10, *(s32*)((u8*)ac + 0x2D8) != 0 ? 0x95 : 0x91, float_1_80421c2c);
+        ICON_DISP(&pos, 0x10, id, float_1_80421c2c);
     }
 }
 

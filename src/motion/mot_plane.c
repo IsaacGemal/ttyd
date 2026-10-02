@@ -196,8 +196,9 @@ static void flyMain(void) {
 	}
 }
 
-// NONMATCHING (89.58%): only the three Vec copies differ (the original loads the first word
-// into r3 and the second into r0, MWCC here swaps them) plus the sdata2 float symbol offsets.
+// Matched at 100%. The MATCH_F32() and volatile accesses below reproduce the original's scheduling:
+// the y store must stay volatile so the volatile Vec copies do not hoist above it, and the Vec
+// copies are volatile so each loads/stores as an unscheduled pair.
 void mot_plane_post(void) {
 	MarioWork* mario = marioGetPtr();
 	MarioWork* m;
@@ -211,11 +212,25 @@ void mot_plane_post(void) {
 		}
 	}
 	m = marioGetPtr();
+#ifdef MUST_MATCH
+	// Volatile store keeps the following volatile Vec loads below it, as the original schedules them.
+	m->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
+	*(volatile f32*)&m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+#else
 	m->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
 	m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+#endif
+
+#ifdef MUST_MATCH
+	// The original copies each Vec with an unscheduled per-component load/store pair.
+	*(volatile Vec*)((u8*)m + 0xBC) = *(volatile Vec*)&vec3_802c5cd8;
+	*(volatile Vec*)((u8*)m + 0xB0) = *(volatile Vec*)&vec3_802c5ce4;
+	*(volatile Vec*)((u8*)m + 0x98) = *(volatile Vec*)&vec3_802c5cf0;
+#else
 	MWVEC(m, 0xBC) = vec3_802c5cd8;
 	MWVEC(m, 0xB0) = vec3_802c5ce4;
 	MWVEC(m, 0x98) = vec3_802c5cf0;
+#endif
 	marioPaperOff();
 	marioChgPaper(NULL);
 	m->dispFlags &= ~0x8;
@@ -239,19 +254,20 @@ void mot_plane_post(void) {
 	allPartyRideOff2();
 }
 
-// NONMATCHING (69.46%): FP scheduling and register allocation differ throughout the two Vec
-// computations, and the sdata2 float constants resolve to different offsets because this
-// file's original .sdata2 pool is not fully reconstructed yet.
+// NONMATCHING (87.23%): only FP register allocation and load scheduling differ in the v3C Vec block
+// and the five marioHitCheck call sites (f0/f1 and f4/f5/f6 swapped in places); every constant, call
+// argument and data reference is correct.
 s32 chkCollision(f32* out) {
 	s32 flag = 0;
 	MarioWork* mario = marioGetPtr();
-	Vec normal;
 	Vec dir;
+	Vec normal;
 	Vec v3C;
 	Vec v30;
 	f32 sinC, cosC;
 	f32 sinA, cosA;
 	f32 sinR, cosR;
+	f32 ten;
 	f32 hx, hy, hz;
 	f32 dist;
 	f32 nx, ny, nz;
@@ -262,29 +278,29 @@ s32 chkCollision(f32* out) {
 
 	v3C = vec3_802c5cfc;
 	{
-		f32 t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14;
-		t0 = mario->position.x;
+		f32 t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14;
 		t1 = MF32(mario, 0x98);
-		t2 = mario->position.y;
 		t3 = MF32(mario, 0x9C);
+		t0 = mario->position.x;
+		t2 = mario->position.y;
 		t4 = MF32(mario, 0xB0);
 		t5 = t0 + t1;
 		t6 = t2 + t3;
-		t7 = t4 + t5;
+		t4 = t4 + t5;
 		t8 = MF32(mario, 0xB4) + t6;
 		t9 = -sinA;
 		t10 = sinC * cosA;
-		t11 = MATCH_F32(float_4_8041ac00);
+		t11 = 4.0f;
 		t12 = cosC * cosA;
 		t8 = t9 * t11 + t8;
-		t7 = t11 * t10 + t7;
+		t4 = t11 * t10 + t4;
 		t13 = mario->position.z;
 		t14 = MF32(mario, 0xA0);
 		t14 = t13 + t14;
 		t13 = MF32(mario, 0xB8);
 		t14 = t13 + t14;
 		t14 = t11 * t12 + t14;
-		v3C.x = t7;
+		v3C.x = t4;
 		v3C.y = t8;
 		v3C.z = t14;
 	}
@@ -311,9 +327,10 @@ s32 chkCollision(f32* out) {
 		MFVEC(DATA, 0x30) = v30;
 	}
 
-	dist = MATCH_F32(float_10_8041ac08) + mario->baseSpeed;
+	ten = 10.0f;
+	dist = ten + mario->baseSpeed;
 	hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-	                    MF32(DATA, 0x30) - MATCH_F32(float_10_8041ac08) * sinC, MF32(DATA, 0x34), MF32(DATA, 0x38) - MATCH_F32(float_10_8041ac08) * cosC, sinC, MATCH_F32(float_0_8041ac0c), cosC);
+	                    MF32(DATA, 0x30) - ten * sinC, MF32(DATA, 0x34), MF32(DATA, 0x38) - ten * cosC, sinC, 0.0f, cosC);
 	if (hit != NULL) {
 		*(HitEntry**)((u8*)mario + 0x1E0) = hit;
 		flag = 1;
@@ -322,7 +339,7 @@ s32 chkCollision(f32* out) {
 
 	dist = mario->baseSpeed;
 	hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-	                    MF32(DATA, 0x3C), MF32(DATA, 0x40), MF32(DATA, 0x44), sinC, MATCH_F32(float_0_8041ac0c), cosC);
+	                    MF32(DATA, 0x3C), MF32(DATA, 0x40), MF32(DATA, 0x44), sinC, 0.0f, cosC);
 	if (hit != NULL) {
 		*(HitEntry**)((u8*)mario + 0x1E0) = hit;
 		flag = 1;
@@ -332,7 +349,7 @@ s32 chkCollision(f32* out) {
 	dist = MATCH_F32(float_10p1_8041ac10);
 	mario->hitobjStandOn = NULL;
 	hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-	                    v30.x, v30.y + 10.0f, v30.z, MATCH_F32(float_0_8041ac0c), MATCH_F32(float_neg1_8041ac14), MATCH_F32(float_0_8041ac0c));
+	                    v30.x, v30.y + ten, v30.z, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
 	if (hit != NULL) {
 		mario->hitobjStandOn = hit;
 		flag = 1;
@@ -342,7 +359,7 @@ s32 chkCollision(f32* out) {
 	if (flag == 0) {
 		dist = MATCH_F32(float_10p1_8041ac10);
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-		                    v3C.x, v3C.y + 10.0f, v3C.z, MATCH_F32(float_0_8041ac0c), MATCH_F32(float_neg1_8041ac14), MATCH_F32(float_0_8041ac0c));
+		                    v3C.x, v3C.y + ten, v3C.z, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
 		if (hit != NULL) {
 			mario->hitobjStandOn = hit;
 			flag = 1;
@@ -366,7 +383,7 @@ s32 chkCollision(f32* out) {
 	if (mario->hitobjStandOn == NULL) {
 		dist = MATCH_F32(float_2_8041ac18);
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-		                    v30.x, v30.y, v30.z, MATCH_F32(float_0_8041ac0c), MATCH_F32(float_1_8041ac1c), MATCH_F32(float_0_8041ac0c));
+		                    v30.x, v30.y, v30.z, 0.0f, MATCH_F32(float_1_8041ac1c), 0.0f);
 		if (hit != NULL) {
 			*(HitEntry**)((u8*)mario + 0x1F4) = hit;
 			flag = 1;

@@ -319,14 +319,9 @@ USER_FUNC(mario_get_renzoku_count_max) {
 }
 
 
-// NONMATCHING (97.60%): the only difference is the scheduling of the `lwz` that
-// reads event->userdata[0] for the two intplGetValue calls. With the frame in a
-// local (below) MWCC hoists the single load above the faceDirection test; with the
-// read inlined in each branch it stays in the branch but is issued before the
-// lfs/li argument setup, where the original issues it last. Tried with no change:
-// opt_common_subs/opt_propagation/optimize_for_size/pool_data/schedule off, inline
-// helpers, volatile, comma and assignment forms, swapped branch bodies, and the
-// other installed MWCC versions (all give the same schedule).
+// Read event->userdata[0] directly in each intplGetValue call (not via a shared
+// local): a local makes MWCC hoist one `lwz` above the faceDirection test, while
+// reading it in place lets the compiler schedule it as the last argument load.
 USER_FUNC(_hammer_star_effect) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -342,15 +337,12 @@ USER_FUNC(_hammer_star_effect) {
     if (isFirstCall) {
         event->userdata[0] = 0;
     }
-    {
-    s32 frame = event->userdata[0];
     if (unit->faceDirection >= 0) {
-        angle = intplGetValue(1, frame, 12, 210.0f, 420.0f);
+        angle = intplGetValue(1, event->userdata[0], 12, 210.0f, 420.0f);
         dir = -10.0f;
     } else {
-        angle = intplGetValue(1, frame, 12, 150.0f, -60.0f);
+        angle = intplGetValue(1, event->userdata[0], 12, 150.0f, -60.0f);
         dir = 10.0f;
-    }
     }
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
     pos.y += unit->mSizeMultiplier * (0.85f * (f32)BtlUnit_GetHeight(unit));

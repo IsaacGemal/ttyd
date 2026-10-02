@@ -611,8 +611,12 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
     return result;
 }
 
-// The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8 rate makes the
-// GALE_FORCE test `extsb. r0,r8`). The jump-table reloc name differs; objdiff ignores it.
+// The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8
+// rate makes the GALE_FORCE test `extsb. r0,r8`). The call casts BattleSetStatusDamage to a prototype
+// whose arg8/arg9 are `s8` (the callee sign-extends both, `extsb. r0,r28`/`extsb. r0,r29`); with the
+// file-scope `u8` prototype the scheduler loads p1 (arg8) before `weapon->special` (arg4), where the
+// original loads `lwz r6,0x74(r30)` first and then `lbz r10,0x11(r1)`. The jump-table reloc name
+// differs; objdiff ignores it.
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags) {
     s32 work = 0;
@@ -658,10 +662,7 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
                 break;
             }
 #ifdef MUST_MATCH
-            /* MUST_MATCH: the (no-op) 64-bit mask on the u32 flags swaps the two call-setup loads the way the original
-               has them (found by the permuter); no cast or plain form does. */
-            if (BattleSetStatusDamage(&work, unit2, part, weapon->special & 0xFFFFFFFFFFFFFFFFu, i, (s8)rate, levelDiff, p1,
-                                      p2)) {
+            if (((s32 (*)(s32*, BattleUnit*, BattleUnitPart*, s32, s32, s32, s32, s8, s8))BattleSetStatusDamage)(&work, unit2, part, weapon->special, i, (s8)rate, levelDiff, p1, p2)) {
 #else
             if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, rate, levelDiff, p1, p2)) {
 #endif

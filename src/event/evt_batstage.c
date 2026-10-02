@@ -44,6 +44,17 @@ typedef struct Vec3 {
 	Vec v[3];
 } Vec3;
 
+#ifdef MUST_MATCH
+// byte-blob copies reproduce the original's inline lwz/lhz/lbz copy schedule (memcpy would emit a call)
+typedef struct Blob3 {
+	u8 b[3];
+} Blob3;
+
+typedef struct Blob9 {
+	u8 b[9];
+} Blob9;
+#endif
+
 // .sbss2
 u8 unk_80423030[4];
 u8 gap_10_80423034_sbss2[4];
@@ -122,10 +133,7 @@ s32 evt_batstage_return_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma opt_dead_assignments off // keep the original's r16/r17 assignment in the setup copy block
-// NONMATCHING (91.85%): the four Vec3 copies, the mode switch and the whole light loop match; only the
-// load/register schedule of the copy block differs (original spills pos.x, unitOff1.z/2.y/2.z, all of
-// up and color word0 to 0x108+, ours spills a different subset and starts r18.. at 0x6c not 0x64).
+#pragma opt_dead_assignments off // keep the original's setup-copy register assignment
 s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	BattleWork* bw = _battleWorkPointer;
 	s32* args = event->args;
@@ -148,9 +156,14 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	*(Vec3*)target = *(const Vec3*)dat_802f337c;
 	*(Vec3*)unitOff = *(const Vec3*)dat_802f33a0;
 	*(Vec3*)up = *(const Vec3*)dat_802f33c4;
+#ifdef MUST_MATCH
+	*(Blob9*)color = *(const Blob9*)dat_802f33e8;
+	*(Blob3*)enabled = *(const Blob3*)unk_80423030;
+#else
+	memcpy(color, dat_802f33e8, sizeof(color));
 	*(u16*)enabled = *(const u16*)unk_80423030;
 	enabled[2] = unk_80423030[2];
-	memcpy(color, dat_802f33e8, sizeof(color));
+#endif
 
 	switch (mode) {
 	case 1:
@@ -185,8 +198,8 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	BattleStageSetAudDark(0x8c, 0, 0);
 	return EVT_RETURN_DONE;
 }
-
 #pragma opt_dead_assignments reset
+
 s32 evt_batstage_light_set_player_off(EventEntry* event, BOOL isFirstCall) {
 	s32 lightNo;
 

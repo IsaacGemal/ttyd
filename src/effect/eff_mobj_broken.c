@@ -72,15 +72,28 @@ static inline Vec effMObjBrokenGetAxis(const Vec* base, f32 a) {
 	return axis;
 }
 
-// NONMATCHING (87.36%): see effMObjBrokenGetAxis note; the two cube passes and GX state match.
+// The original keeps both cube loops' axis scratch vectors in one function-wide block
+// (`axis1`/`axis2` and their `tmpAxis` copies) instead of per-loop locals; that is what gives the
+// two passes their distinct stack slots. Reproducing the loop-invariant loads also needs the two
+// MUST_MATCH quirks below.
 void effMObjBrokenDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	MobjBrokenWork* data;
 	CameraEntry* camera;
+	Vec axis1;
+	Vec axis2;
+	Vec tmpAxis1;
+	Vec tmpAxis2;
+#ifdef MUST_MATCH
+	// volatile keeps MWCC from hoisting the shared zero-Vec load out of the loop.
+	volatile const Vec* base;
+#else
+	const Vec* base;
+#endif
 	GXTexObj tex;
 	Mtx mtx;
-	Mtx scale;
 	Mtx rot;
+	Mtx scale;
 	Mtx view;
 	s32 type;
 	s32 i;
@@ -113,20 +126,42 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 	if (type < 6) {
 		effGetTexObj(0x38 + type % 3, &tex);
+		GXLoadTexObj(&tex, 0);
 	}
 	else {
 		effGetTexObj(0x3B, &tex);
+		GXLoadTexObj(&tex, 0);
 	}
-	GXLoadTexObj(&tex, 0);
 	GXSetChanMatColor(4, dat_804210d8);
+	base = &vec3_802fe634;
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		Vec axis = effMObjBrokenGetAxis(&vec3_802fe634, data->field_0x1C);
-		PSMTXTrans(mtx, data->posX + float_5_804210fc, data->posY - float_5_804210fc, data->posZ);
+#ifdef MUST_MATCH
+		// Declaration order fixes the callee-saved FPRs; assignment order fixes the load order.
+		f32 kdeg;
+		f32 k5;
+		f32 k360;
+		f32 k2pi;
+
+		k2pi = float_6p2832_804210f4;
+		k360 = float_360_804210f8;
+		k5 = float_5_804210fc;
+		kdeg = float_deg2rad_804210e8;
+#else
+		f32 k2pi = float_6p2832_804210f4;
+		f32 k360 = float_360_804210f8;
+		f32 k5 = float_5_804210fc;
+		f32 kdeg = float_deg2rad_804210e8;
+#endif
+		tmpAxis1 = *base;
+		tmpAxis1.x = (f32)cos(k2pi * data->field_0x1C / k360);
+		tmpAxis1.z = (f32)sin(k2pi * data->field_0x1C / k360);
+		axis1 = tmpAxis1;
+		PSMTXTrans(mtx, k5 + data->posX, data->posY - k5, data->posZ);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
 		PSMTXConcat(mtx, scale, mtx);
-		PSMTXRotAxisRad(rot, &axis, float_deg2rad_804210e8 * -data->field_0x18);
+		PSMTXRotAxisRad(rot, &axis1, kdeg * -data->field_0x18);
 		PSMTXConcat(mtx, rot, mtx);
 		PSMTXScale(scale, 1.0f, 1.0f, 0.0f);
 		PSMTXConcat(mtx, scale, mtx);
@@ -136,14 +171,18 @@ void effMObjBrokenDisp(CameraId camId, void* param) {
 		GXDrawCube();
 	}
 	GXSetChanMatColor(4, dat_804210dc);
+	base = &vec3_802fe640;
 	data = effect->userdata;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		Vec axis = effMObjBrokenGetAxis(&vec3_802fe640, data->field_0x1C);
+		tmpAxis2 = *base;
+		tmpAxis2.x = (f32)cos(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8);
+		tmpAxis2.z = (f32)sin(float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8);
+		axis2 = tmpAxis2;
 		PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
 		PSMTXConcat(mtx, scale, mtx);
-		PSMTXRotAxisRad(rot, &axis, float_deg2rad_804210e8 * -data->field_0x18);
+		PSMTXRotAxisRad(rot, &axis2, float_deg2rad_804210e8 * -data->field_0x18);
 		PSMTXConcat(mtx, rot, mtx);
 		PSMTXScale(scale, 1.0f, 1.0f, 0.0f);
 		PSMTXConcat(mtx, scale, mtx);

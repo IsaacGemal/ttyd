@@ -3,6 +3,10 @@
 #include "battle/battle.h"
 #include "battle/battle_audience.h"
 #include "battle/battle_camera.h"
+#include "battle/battle_event_cmd.h"
+#include "battle/battle_message.h"
+#include "battle/battle_weapon_power.h"
+#include "evt/evt_eff.h"
 #include "battle/battle_disp.h"
 #include "eff/eff_break.h"
 #include "driver/dispdrv.h"
@@ -20,16 +24,6 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_803AB118[2] = { 0xBF800000, 0x3F800000 };
 
-extern s32 kinoko_effect[];
-extern s32 flower_effect[];
-extern s32 shine_effect[];
-extern s32 doku_kinoko_effect[];
-extern s32 star_effect[2];
-extern s32 msg_hp_max[9];
-extern s32 msg_fp_max[9];
-extern s32 msg_star_max[9];
-extern s32 msg_super_max[9];
-extern s32 msg_fault[9];
 
 typedef struct SlotCards8 {
     s32 v[8];
@@ -107,9 +101,191 @@ SDATA2_CONST f32 float_32767_8042055c = 32767.0f;
 
 u16 tex_id_list_small[] = { '+', '-', '/', '.', ',', 0 };
 u16 tex_id_list_big[] = { '0', '2', '4', '3', '1', 0 };
+
+// 0x8 bytes
+__declspec(section ".sdata") u32 star_effect[2] = {
+    0x00000002, 0x00000001,
+};
+// 0x24 bytes
+__declspec(section ".sdata") u32 msg_hp_max[9] = {
+    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
+    0xFFFFFF33, (u32)(void*)str_802FD6CC, 0x00000078, 0x00000002,
+    0x00000001,
+};
+// 0x24 bytes
+__declspec(section ".sdata") u32 msg_fp_max[9] = {
+    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
+    0xFFFFFF33, (u32)(void*)str_802FD6DC, 0x00000078, 0x00000002,
+    0x00000001,
+};
+// 0x24 bytes
+__declspec(section ".sdata") u32 msg_star_max[9] = {
+    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
+    0xFFFFFF33, (u32)(void*)str_802FD6EC, 0x00000078, 0x00000002,
+    0x00000001,
+};
+// 0x24 bytes
+__declspec(section ".sdata") u32 msg_super_max[9] = {
+    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
+    0xFFFFFF33, (u32)(void*)str_802FD6FC, 0x00000078, 0x00000002,
+    0x00000001,
+};
+// 0x24 bytes
+__declspec(section ".sdata") u32 msg_fault[9] = {
+    0x0006005B, (u32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000,
+    0xFFFFFF33, (u32)(void*)str_802FD710, 0x00000078, 0x00000002,
+    0x00000001,
+};
 const SlotCards8 R_slot_1_cards = { { 0, 1, 2, 1, 2, 0, 3, 4 } };
 const SlotCards8 R_slot_2_cards = { { 3, 1, 0, 1, 4, 2, 0, 2 } };
 const SlotCards5 R_slot_3_cards = { { 0, 1, 2, 3, 4 } };
+
+// .data objects that follow the lbl_803AB118 base pair in the original unit; the original
+// addresses kinoko/flower/shine/doku_kinoko through lbl_803AB118 (r27), so all of them must be
+// defined here, in this order.
+__declspec(section ".data") u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803AB128[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_803AB138[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803AB148[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+
+// TODO: type (0x1ac bytes)
+__declspec(section ".data") u32 kinoko_effect[107] = {
+    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
+    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
+    0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83, 0xFE363C85,
+    0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
+    0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
+    (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp, 0xFE363C83,
+    0xFE363C84, 0xFE363C85, 0x0003005B, (u32)btlevtcmd_AnimeChangePoseFromTable,
+    0xFE363C83, 0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetUnitId,
+    0xFFFFFFFC, 0xFE363C83, 0x00020019, 0xFE363C83,
+    0xFFFFFFFF, 0x0004005B, (u32)btlevtcmd_CheckStatus, 0xFE363C83,
+    0x0000001B, 0xFE363C80, 0x00020018, 0xFE363C80,
+    0x00000000, 0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83,
+    0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83,
+    0xFE363C85, 0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
+    0xFE363C81, 0x00000032, 0x000F005B, (u32)evt_eff,
+    (u32)(void*)&zero_80420520, (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0xFE363C85, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp,
+    0xFE363C83, 0xFE363C84, 0xFE363C85, 0x0003005B,
+    (u32)btlevtcmd_AnimeChangePoseFromTable, 0xFE363C83, 0xFE363C84, 0x00000021,
+    0x00000021, 0x00000002, 0x00000001,
+};
+// TODO: type (0xb0 bytes)
+__declspec(section ".data") u32 flower_effect[44] = {
+    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
+    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
+    0x0003005B, (u32)btlevtcmd_GetMaxFp, 0xFE363C83, 0xFE363C85,
+    0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
+    0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
+    (u32)(void*)str_802FD6C0, 0x00000005, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverFp, 0xFE363C83,
+    0xFE363C84, 0xFE363C85, 0x00000002, 0x00000001,
+};
+// TODO: type (0x25c bytes)
+__declspec(section ".data") u32 shine_effect[151] = {
+    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
+    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
+    0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83, 0xFE363C85,
+    0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
+    0x00000032, 0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520,
+    (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0xFE363C85, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp, 0xFE363C83,
+    0xFE363C84, 0xFE363C85, 0x0003005B, (u32)btlevtcmd_AnimeChangePoseFromTable,
+    0xFE363C83, 0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetUnitId,
+    0xFFFFFFFC, 0xFE363C83, 0x00020019, 0xFE363C83,
+    0xFFFFFFFF, 0x0004005B, (u32)btlevtcmd_CheckStatus, 0xFE363C83,
+    0x0000001B, 0xFE363C80, 0x00020018, 0xFE363C80,
+    0x00000000, 0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83,
+    0xFE363C84, 0x0003005B, (u32)btlevtcmd_GetMaxHp, 0xFE363C83,
+    0xFE363C85, 0x0005005B, (u32)btlevtcmd_GetPos, 0xFE363C83,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
+    0xFE363C81, 0x00000032, 0x000F005B, (u32)evt_eff,
+    (u32)(void*)&zero_80420520, (u32)(void*)str_802FD6C0, 0x00000004, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0xFE363C85, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x0004005B, (u32)btlevtcmd_RecoverHp,
+    0xFE363C83, 0xFE363C84, 0xFE363C85, 0x0003005B,
+    (u32)btlevtcmd_AnimeChangePoseFromTable, 0xFE363C83, 0xFE363C84, 0x00000021,
+    0x00000021, 0x00010009, 0x0000003C, 0x0003005B,
+    (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83, 0x0003005B,
+    (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84, 0x0003005B,
+    (u32)btlevtcmd_GetMaxFp, 0xFE363C83, 0xFE363C85, 0x0005005B,
+    (u32)btlevtcmd_GetPos, 0xFE363C83, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x00020035, 0xFE363C81, 0x00000032,
+    0x000F005B, (u32)evt_eff, (u32)(void*)&zero_80420520, (u32)(void*)str_802FD6C0,
+    0x00000005, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0xFE363C85, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x0004005B, (u32)btlevtcmd_RecoverFp, 0xFE363C83, 0xFE363C84,
+    0xFE363C85, 0x00000002, 0x00000001,
+};
+// TODO: type (0xc0 bytes)
+__declspec(section ".data") u32 weapon_doku_kinoko[48] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000000, 0x00000000, 0x00000000, (u32)weaponGetPowerHPHalf,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100160, 0x20000000, 0x00000302,
+    0x00000000, 0x00020048, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+};
+// TODO: type (0xc0 bytes)
+__declspec(section ".data") u32 weapon_doku_kinoko_fp[48] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)weaponGetFPPowerFPHalf, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100160, 0x20000000, 0x00000302,
+    0x00000000, 0x00020048, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+};
+// TODO: type (0x104 bytes)
+__declspec(section ".data") u32 doku_kinoko_effect[65] = {
+    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
+    0x0003005B, (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84,
+    0x0007005B, (u32)btlevtcmd_CheckDamage, 0xFFFFFFFD, 0xFE363C83,
+    0xFE363C84, (u32)&weapon_doku_kinoko, 0x00000000, 0xFE363C85,
+    0x0003005B, (u32)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C83,
+    0x00020019, 0xFE363C83, 0xFFFFFFFF, 0x0004005B,
+    (u32)btlevtcmd_CheckStatus, 0xFE363C83, 0x0000001B, 0xFE363C80,
+    0x00020018, 0xFE363C80, 0x00000000, 0x0003005B,
+    (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84, 0x0007005B,
+    (u32)btlevtcmd_CheckDamage, 0xFFFFFFFD, 0xFE363C83, 0xFE363C84,
+    (u32)&weapon_doku_kinoko, 0x00000100, 0xFE363C85, 0x00000021,
+    0x00000021, 0x00010009, 0x0000003C, 0x0003005B,
+    (u32)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83, 0x0003005B,
+    (u32)btlevtcmd_GetBodyId, 0xFE363C83, 0xFE363C84, 0x0007005B,
+    (u32)btlevtcmd_CheckDamage, 0xFFFFFFFD, 0xFE363C83, 0xFE363C84,
+    (u32)&weapon_doku_kinoko_fp, 0x00000100, 0xFE363C85, 0x00000002,
+    0x00000001,
+};
 void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
     s32 i;
 
@@ -276,124 +452,18 @@ static inline GXColor slotColor(u8 a, GXColor c) {
 
 // i->f32 pools an anonymous 2^52 double instead of the original's named double_to_int_802fd930; the value
 // and instructions are identical, only the pool label differs (not scored).
-void BattleBreakSlotDispReel(CameraId camId, void* param) {
-    s32 i;
-    BattleBreakSlotReel* reel;
-    Mtx mtxTrans;
-    Mtx mtxScale;
-    Mtx mtxPos;
-    Mtx mtxNeg;
-    Mtx mtxRot;
-    Mtx mtxRotX;
-    Mtx mtxRotY;
-    Mtx mtxRotZ;
-    Mtx mtxFinal;
-    u16* texList;
-    u16 tex;
-
-    i = 0;
-    {
-        BattleBreakSlotReel* reel1 = BattleBreakSlotReelGetPtr(0);
-
-        for (; i < 3; i++) {
-            if ((reel1->flags & 1) && reel1->state >= 1 && reel1->state <= 4) {
-                PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
-                {
-                    GXColor color = *(GXColor*)&dat_80420524;
-
-                    iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
-                }
-            }
-            reel1++;
-        }
-    }
-    reel = BattleBreakSlotReelGetPtr(0);
-    if (reel->state >= 1 && reel->state <= 4) {
-        GXSetScissor(0, 0x52, 0x260, 0x20);
-        texList = tex_id_list_small;
-    } else {
-        texList = tex_id_list_big;
-        if (reel->state != 0xB) {
-            GXSetScissor(0, 0xB0, 0x260, 0x80);
-        }
-    }
-    i = 0;
-    reel = BattleBreakSlotReelGetPtr(0);
-    for (; i < 3; i++) {
-        if (reel->flags & 1) {
-            GXSetBlendMode(1, 4, 5, 0);
-            GXSetZCompLoc(1);
-            GXSetAlphaCompare(7, 0, 0, 7, 0);
-            GXSetZMode(1, 3, 0);
-            PSMTXTrans(mtxTrans, reel->pos.x, reel->pos.y, reel->pos.z);
-            PSMTXScale(mtxScale, reel->scale.x, reel->scale.y, reel->scale.z);
-            PSMTXRotRad(mtxRotX, 'x', float_deg2rad_80420540 * reel->rot.x);
-            PSMTXRotRad(mtxRotY, 'y', float_deg2rad_80420540 * reel->rot.y);
-            PSMTXRotRad(mtxRotZ, 'z', float_deg2rad_80420540 * reel->rot.z);
-            PSMTXConcat(mtxRotX, mtxRotZ, mtxRot);
-            PSMTXConcat(mtxRotY, mtxRot, mtxRot);
-            PSMTXTrans(mtxPos, reel->pivot.x, reel->pivot.y, reel->pivot.z);
-            PSMTXTrans(mtxNeg, -reel->pivot.x, -reel->pivot.y, -reel->pivot.z);
-            PSMTXConcat(mtxRot, mtxPos, mtxFinal);
-            PSMTXConcat(mtxNeg, mtxFinal, mtxFinal);
-            PSMTXConcat(mtxScale, mtxFinal, mtxFinal);
-            PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
-            {
-                u16 tex0 = texList[reel->value];
-#ifdef MUST_MATCH
-                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->field_58, *(GXColor*)&dat_80420528), 0);
-#else
-                GXColor c0;
-
-                *(u32*)&c0 = dat_80420528;
-                c0.a = reel->field_58;
-                btlDispTexPlane2(mtxFinal, tex0, c0, 0);
-#endif
-            }
-            if (reel->state <= 0xA && reel->state != 3 && reel->state != 4) {
-                s32 idx = reel->index + 1;
-
-                if (idx >= reel->count) {
-                    idx = 0;
-                }
-                tex = texList[reel->cards[idx]];
-                if (reel->state >= 1 && reel->state <= 4) {
-                    PSMTXTrans(mtxTrans, float_0_8042053c, float_neg32_80420544, float_0_8042053c);
-                } else {
-                    PSMTXTrans(mtxTrans, float_0_8042053c, float_neg128_80420548, float_0_8042053c);
-                }
-                PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
-                {
-#ifdef MUST_MATCH
-                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->field_58, *(GXColor*)&dat_8042052c), 0);
-#else
-                    GXColor c1;
-
-                    *(u32*)&c1 = dat_8042052c;
-                    c1.a = reel->field_58;
-                    btlDispTexPlane2(mtxFinal, tex, c1, 0);
-#endif
-                }
-            }
-        }
-        reel++;
-    }
-    GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
-}
 void BattleBreakSlot_Disp(void) {
     dispEntry(CAMERA_2D, 490.0f, 0, BattleBreakSlotDispReel, NULL);
 }
 
-// NONMATCHING (98.50%): the .sdata2 float literals pool into anonymous slots, so objdiff still flags every
-// float load against the original's named symbols (the score counts them as matched, so they are not the
-// remaining gap). What still differs: the effect scripts are extern here, so each evtEntry loads its own
-// address instead of using a .data base register (r27), which in turn leaves _battleWorkPointer in r4 instead
-// of r5; the int-to-float double pools after Main's SFX strings in .rodata (0x2E0) instead of before them
-// (0x270); pouchGetAP's s16 return gets an extsh the original doesn't have (mario_pouch.h declares s16; the
-// target does srawi/addze on r3, so the original is s32); case 3's intplGetValue argument loads and case 9/10's
-// field_50 arithmetic are scheduled with different registers. The gp->language test is now the unsigned
-// compare the target has, and `0.0f != updown` reproduces its load order.
-// NONMATCHING (98.5%): see the note above for what still differs.
+// 100% (5612 B). Reaching it needed three things outside the function body:
+// - the effect scripts (kinoko/flower/shine/doku_kinoko) and the .data pair padding are defined in this
+//   file's .data, so evtEntry addresses them through the lbl_803AB118 base register (r27);
+// - BattleBreakSlotDispReel is compiled before BattleBreakSlot_Main (it uses the int-to-float double
+//   first), which pools that double at 0x270, before Main's SFX strings; the file's functions must be in
+//   the original's reverse-asm order for that;
+// - pouchGetAP's raw 32-bit return (the header says s16; the target has srawi without an extsh), cast in
+//   MUST_MATCH the same way battle_unit.c does.
 void BattleBreakSlot_Main(void) {
     static f32 updown;
     BattleWork* wp = _battleWorkPointer;
@@ -575,7 +645,13 @@ void BattleBreakSlot_Main(void) {
                 break;
             case 4:
                 evtEntry(doku_kinoko_effect, 0, 0x20);
+#ifdef MUST_MATCH
+                // Match-only: the header declares pouchGetAP as s16, but the target consumed the raw 32-bit
+                // return (srawi without an extsh); same cast battle_unit.c uses.
+                pouchSetAP((*(s32(*)(void))pouchGetAP)() / 2);
+#else
                 pouchSetAP(pouchGetAP() / 2);
+#endif
                 break;
             }
         }
@@ -883,6 +959,110 @@ void BattleBreakSlot_Main(void) {
             break;
         }
     }
+}
+void BattleBreakSlotDispReel(CameraId camId, void* param) {
+    s32 i;
+    BattleBreakSlotReel* reel;
+    Mtx mtxTrans;
+    Mtx mtxScale;
+    Mtx mtxPos;
+    Mtx mtxNeg;
+    Mtx mtxRot;
+    Mtx mtxRotX;
+    Mtx mtxRotY;
+    Mtx mtxRotZ;
+    Mtx mtxFinal;
+    u16* texList;
+    u16 tex;
+
+    i = 0;
+    {
+        BattleBreakSlotReel* reel1 = BattleBreakSlotReelGetPtr(0);
+
+        for (; i < 3; i++) {
+            if ((reel1->flags & 1) && reel1->state >= 1 && reel1->state <= 4) {
+                PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
+                {
+                    GXColor color = *(GXColor*)&dat_80420524;
+
+                    iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
+                }
+            }
+            reel1++;
+        }
+    }
+    reel = BattleBreakSlotReelGetPtr(0);
+    if (reel->state >= 1 && reel->state <= 4) {
+        GXSetScissor(0, 0x52, 0x260, 0x20);
+        texList = tex_id_list_small;
+    } else {
+        texList = tex_id_list_big;
+        if (reel->state != 0xB) {
+            GXSetScissor(0, 0xB0, 0x260, 0x80);
+        }
+    }
+    i = 0;
+    reel = BattleBreakSlotReelGetPtr(0);
+    for (; i < 3; i++) {
+        if (reel->flags & 1) {
+            GXSetBlendMode(1, 4, 5, 0);
+            GXSetZCompLoc(1);
+            GXSetAlphaCompare(7, 0, 0, 7, 0);
+            GXSetZMode(1, 3, 0);
+            PSMTXTrans(mtxTrans, reel->pos.x, reel->pos.y, reel->pos.z);
+            PSMTXScale(mtxScale, reel->scale.x, reel->scale.y, reel->scale.z);
+            PSMTXRotRad(mtxRotX, 'x', float_deg2rad_80420540 * reel->rot.x);
+            PSMTXRotRad(mtxRotY, 'y', float_deg2rad_80420540 * reel->rot.y);
+            PSMTXRotRad(mtxRotZ, 'z', float_deg2rad_80420540 * reel->rot.z);
+            PSMTXConcat(mtxRotX, mtxRotZ, mtxRot);
+            PSMTXConcat(mtxRotY, mtxRot, mtxRot);
+            PSMTXTrans(mtxPos, reel->pivot.x, reel->pivot.y, reel->pivot.z);
+            PSMTXTrans(mtxNeg, -reel->pivot.x, -reel->pivot.y, -reel->pivot.z);
+            PSMTXConcat(mtxRot, mtxPos, mtxFinal);
+            PSMTXConcat(mtxNeg, mtxFinal, mtxFinal);
+            PSMTXConcat(mtxScale, mtxFinal, mtxFinal);
+            PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
+            {
+                u16 tex0 = texList[reel->value];
+#ifdef MUST_MATCH
+                btlDispTexPlane2(mtxFinal, tex0, slotColor(reel->field_58, *(GXColor*)&dat_80420528), 0);
+#else
+                GXColor c0;
+
+                *(u32*)&c0 = dat_80420528;
+                c0.a = reel->field_58;
+                btlDispTexPlane2(mtxFinal, tex0, c0, 0);
+#endif
+            }
+            if (reel->state <= 0xA && reel->state != 3 && reel->state != 4) {
+                s32 idx = reel->index + 1;
+
+                if (idx >= reel->count) {
+                    idx = 0;
+                }
+                tex = texList[reel->cards[idx]];
+                if (reel->state >= 1 && reel->state <= 4) {
+                    PSMTXTrans(mtxTrans, float_0_8042053c, float_neg32_80420544, float_0_8042053c);
+                } else {
+                    PSMTXTrans(mtxTrans, float_0_8042053c, float_neg128_80420548, float_0_8042053c);
+                }
+                PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
+                {
+#ifdef MUST_MATCH
+                    btlDispTexPlane2(mtxFinal, tex, slotColor(reel->field_58, *(GXColor*)&dat_8042052c), 0);
+#else
+                    GXColor c1;
+
+                    *(u32*)&c1 = dat_8042052c;
+                    c1.a = reel->field_58;
+                    btlDispTexPlane2(mtxFinal, tex, c1, 0);
+#endif
+                }
+            }
+        }
+        reel++;
+    }
+    GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
 }
 void BattleBreakSlot_Init(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();

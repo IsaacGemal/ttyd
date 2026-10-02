@@ -474,11 +474,13 @@ void main_mario(void) {
     }
 }
 
-// The file's incomplete .rodata pool (same limitation as main_star1) makes MWCC emit the
-// int->float magic double and the two switch jump tables as anonymous `@...@` entries instead of
-// double_to_int_80300468 / jumptable_803B3C40 / jumptable_803B3C24. All other differences are
-// register allocation and instruction scheduling.
-// NONMATCHING (94.81%): the anonymous pool entries listed above.
+// The file's incomplete .rodata pool (same limitation as main_star1) means MWCC does not fold
+// the int->float magic double or str_80300470 into the vec3_803002b0 pool base: it emits a fresh
+// `lis`/`lfd` for the double instead of the original's `lfd 0x1b8(r29)`, and a fresh `lis` for the
+// string instead of `addi r4, r29, 0x1c0`. Those two pool offsets only come out once the vec3/string
+// entries from disp_3D are in the unit. The switch jump tables are anonymous `@...@` too, but those
+// are symbol-only (`~~`) and resolve when the unit links.
+// NONMATCHING (98.88%): the double/string pool base (2 sites, 10 instructions).
 void main_weapon(s32 idx) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -507,7 +509,12 @@ void main_weapon(s32 idx) {
         weapon->pos[0].x += float_20_80421d78 * mario->mSizeMultiplier;
         weapon->pos[0].y += float_28_80421dec * mario->mSizeMultiplier;
         {
+#ifdef MUST_MATCH
+            // Match-only: retail reads this Vec through the vec3_803002b0 base register.
+            Vec vel = *(const Vec*)&vec[0xC / 4];
+#else
             Vec vel = vec3_803002bc;
+#endif
 
             vel.x = float_10_80421d54 * (f32)cos(angle);
             vel.y = float_10_80421d54 * (f32)sin(angle);
@@ -551,9 +558,9 @@ void main_weapon(s32 idx) {
                     obj = &genki->objects[i];
 
                     if (obj->field_0 == 2) {
-                        f32 dy = wy - obj->field_10;
                         f32 dx = wx - obj->field_C;
-                        f32 d = dy * dy + dx * dx;
+                        f32 dy = wy - obj->field_10;
+                        f32 d = dx * dx + dy * dy;
 
                         if (d < best) {
                             best = d;
@@ -1030,12 +1037,19 @@ static void main_base(void) {
     }
 }
 
-// The callee-saved register assignment is shifted (star/vec/genki land in r29/r30/r31
-// here, r30/r31/r27 in the original) and the int->float magic double is an anonymous
-// local loaded with its own `lis` instead of the original's vec3+0x1b8 offset; the
-// intplGetValue argument setup is ordered differently.
-// NONMATCHING (87.67%): register assignment and the pooled magic double/schedule.
-// Logic and constants match the assembly.
+// NONMATCHING (91.66%): the int->float magic double is pooled as a local `@712` entry in
+// this object's .rodata (offset 0x48, right after vec3_803002b0) instead of at the
+// original's .rodata+0x1b8, so MWCC cannot fold it into `lfd fX, 0x1b8(r31)` and emits a
+// fresh `lis rN, @712@ha` before every conversion (the file's incomplete .rodata pool is
+// file-wide, so this is left as is). That extra lis shifts the schedule around each
+// conversion. The whole callee-saved map is also rotated by one register relative to the
+// original: here idx=r27, mario=r28, star=r29, vec=r30, genki=r31, where the original has
+// idx=r28, mario=r29, star=r30, vec=r31, genki=r27 (a 5-clique, so the allocator's
+// tie-break picks the rotation). Logic and constants match the assembly. Putting
+// field_58 after field_54/field_3C/field_48 (its original source order) fixed the case-1
+// schedule and was worth +1.4%.
+// NONMATCHING (91.66%): the pooled int->float magic double is not at vec3_803002b0+0x1B8,
+// so its `lis` is emitted and the scheduling plus the rotated callee-saved map differ.
 void main_star0(s32 idx) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -1057,10 +1071,10 @@ void main_star0(s32 idx) {
         *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
         *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
         star->field_28 += 30.0f;
-        star->field_58 = 6.283184f * (f32)idx / 7.0f;
         *(Vec*)&star->field_3C = *(const Vec*)&vec[0x24 / 4];
         *(Vec*)&star->field_48 = *(const Vec*)&vec[0x30 / 4];
         star->field_54 = 0.0f;
+        star->field_58 = 6.283184f * (f32)idx / 7.0f;
         star->field_5C = 0.1f;
         /* fallthrough */
     case 2:
@@ -1160,11 +1174,15 @@ void main_star0(s32 idx) {
     }
 }
 
-// The int->float magic double is pooled as an anonymous local and loaded through a
-// fresh `lis` instead of the original's `lfd 0x1b8(r30)`; the intplGetValue argument
-// setup orders the field_4 load before the two float loads where the original loads it
-// last. Logic and constants match the assembly.
-// NONMATCHING (95.37%): the pooled magic double and intplGetValue arg ordering.
+// The only remaining difference is the int->float magic double. MWCC pools it as an
+// anonymous local (`@712`) and loads it with a fresh `lis rX, @712@ha; lfd fY,
+// @712@l(rX)`; the original loads it as `lfd fY, 0x1b8(r30)` where r30 is the
+// vec3_803002b0 base. The original folded the pool double into that base because this
+// unit's .rodata begins with vec3_803002b0 and the five vectors main_star1 reads
+// (vec3_80300310/31c/328/334/340) are named globals; this file defines only
+// vec3_803002b0 and reaches the rest through a pointer, so MWCC never establishes the
+// section base. Logic, schedule and every constant match the assembly.
+// NONMATCHING (99.29%): the int->float magic double's address (`lis @712` vs `0x1b8(r30)`).
 void main_star1(void) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();

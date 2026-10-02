@@ -9,6 +9,7 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
 #include <math.h>
+#include <dolphin/os/OSFastCast.h>
 
 // .rodata
 const Vec vec3_802fb2c0 = { 0.0f, 0.0f, 0.0f };
@@ -168,13 +169,16 @@ void effOpukuWgunMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effOpukuWgunDisp, effect);
 }
 
-// Control flow, constants, both TEV branches, the transform loop and the triangle loop all line up. The remaining difference is the s16<->f32 vertex conversion: retail
-// reads/writes the transformed vertex through paired-single psq_l/psq_st (GQR2-5 set for S16) while
-// MWCC 2.6 lowers the same `f32 v = vtx->x` / `vtx->x = (s16)v` source to the xoris/lfd/fsubs
-// integer path. That changes the transform loop, the saved FPR set (retail keeps f21-f31, we keep
-// f24-f31) and the 0x190 vs 0x140 frame, which shifts every local slot and register assignment.
-// No source form in this toolchain emits the psq path (see eff_balloon_n64.c / eff_flame_n64.c).
-// NONMATCHING (85.6%): transform loop uses lha/fctiwz instead of retail's psq_l/psq_st.
+// Control flow, constants, both TEV branches, the transform loop and the triangle loop all line up. The GQR2-5
+// setup retail runs before the s16->f32 reads and before the f32->s16 writes is reproduced with OSInitFastCast
+// (the SDK inline asm), so those blocks match. The remaining difference is the conversion itself: retail
+// reads/writes the transformed vertex through paired-single psq_l/psq_st (GQR5, S16) while MWCC 2.6 lowers
+// `f32 v = vtx->x` / `vtx->x = (s16)v` to the xoris/lfd/fsubs and fctiwz/sth integer path. That changes the
+// transform loop, the saved FPR set (retail keeps f21-f31, we keep f25-f31) and the 0x190 vs 0x140 frame,
+// which shifts every local slot and register assignment. No source form in this toolchain emits the psq path
+// (see eff_balloon_n64.c / eff_flame_n64.c); game code may not use inline asm, so this cannot reach 100%.
+// NONMATCHING (87.93%): transform loop uses lha/fctiwz instead of retail's psq_l/psq_st; the OSInitFastCast
+// GQR blocks match.
 void effOpukuWgunDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -268,10 +272,12 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	PSMTXScale(scaleMtx, float_0p05_8041f868, float_0p05_8041f868, float_0p05_8041f868);
 
 	for (j = 0; j < i * 2; j++) {
+		OSInitFastCast();
 		v.x = vtx[j].x;
 		v.y = vtx[j].y;
 		v.z = vtx[j].z;
 		PSMTXMultVec(scaleMtx, &v, &v);
+		OSInitFastCast();
 		vtx[j].x = (s16)v.x;
 		vtx[j].y = (s16)v.y;
 		vtx[j].z = (s16)v.z;

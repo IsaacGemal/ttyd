@@ -283,10 +283,21 @@ s32 battleAcResult_StickRotate(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// NONMATCHING (85.92%): 3 instructions differ, 25 missing, 21 extra, plus register differences.
+// The volatile launder under MUST_MATCH stops the fold and puts sr in r31 as the original does, at
+// the cost of the stw/lwz pair the original does not have. Without it the function is at 97.13% and
+// the remaining diffs are that fold plus the s8 temp registers (r0 vs r3) in case 0x3E9.
+// NONMATCHING (98.35%): MWCC folds the work-area pointer (work+0x1F4C) into the BattleWork base.
 s32 battleAcMain_StickRotate(BattleWork* work) {
+#ifdef MUST_MATCH
+    // Match-only: the volatile read makes sr opaque to rematerialisation, so MWCC keeps it in r31
+    // (the original's register) instead of folding it into `work`.
+    StickRotateWork* volatile srv = (StickRotateWork*)((u8*)work + 0x1F4C);
+    StickRotateWork* sr = srv;
+    BattleACDispParams* disp = &work->actionCommands.dispParams;
+#else
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
+#endif
     s32 cont;
 
     do {
@@ -305,6 +316,8 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 sr->field_0x10 = 0;
                 sr->field_0x05 = 0;
                 work->actionCommands.mAcState = 0x63;
+                break;
+            case 0x63:
                 break;
             case 0x64:
                 sr->field_0x0C = 0x78;
@@ -411,20 +424,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     goto L_801FD700;
                 }
                 roll = _CalcRollDir();
-                if (roll == 0) {
-                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
-                        sr->field_0x04 = 0;
-                        if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
-                            work->actionCommands.result &= ~1;
-                            work->actionCommands.mAcState = 0x3EA;
-                            cont = 1;
-                            break;
-                        }
-                    } else if (sr->field_0x04 != 0) {
-                        sr->field_0x04 = 0;
-                    }
-                    goto L_801FD700;
-                }
+                if (roll != 0) {
                 if (sr->field_0x04 == 0) {
                     s8 dir;
                     sr->field_0x04 = roll;
@@ -509,6 +509,18 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 work->actionCommands.mAcState = 0x3EA;
                 cont = 1;
                 break;
+                }
+                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    sr->field_0x04 = 0;
+                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                        work->actionCommands.result &= ~1;
+                        work->actionCommands.mAcState = 0x3EA;
+                        cont = 1;
+                        break;
+                    }
+                } else if (sr->field_0x04 != 0) {
+                    sr->field_0x04 = 0;
+                }
             L_801FD700:
                 sr->field_0x01 = sr->field_0x00;
                 break;

@@ -176,15 +176,50 @@ void effOpukuJetwMain(EffectEntry* effect) {
     }
 }
 
-// The frame size (0x180), the Mtx slots (work/rot/scale/trans at 0x40/0x70/0xa0/0xd0), the switch layout and
-// the loop's `rowOffset += columns, j++` bottom test all match; what is left is register allocation. mwcc
-// puts the cached data fields in r18-r26 (original r25-r28), so the whole callee-saved assignment is rotated. That pressure spills `half` to 0x130 (original
-// keeps it in r14) and makes the inner pointer emit `(rowOffset + col) * 10` (add/mulli) where the original
-// emits `rowOffset * 10` then `+ col * 10` (the `&table[rowOffset] + col` shape); writing that shape in C makes
-// this compiler spill more, so the additive-index form is kept. The three GXColor call temporaries also land
-// at 0x8/0x10/0x18 rather than the original 0x8/0xc/0x10. All candidate compilers (GC/1.3..GC/2.7) generate
-// identical code; GC/3.0 is worse.
-// NONMATCHING (92.76%)
+// The frame size (0x180), the Mtx slots (work/rot/scale/trans at
+// 0x40/0x70/0xa0/0xd0), the switch layout, the loop's `rowOffset += columns, j++` bottom test and the
+// three GXColor call slots (0x18/0x1c, 0x10/0x14, 0x8/0xc) all match. What is left is register
+// allocation: mwcc puts the cached data fields in r21/r25/r26/r27 and lifetime in r14 (original
+// r25-r28 and r31), so the whole callee-saved assignment is rotated. That pressure spills `half` to
+// 0x130 (original keeps it in r14) and makes the inner pointer emit `(rowOffset + col) * 10`
+// (add/mulli) where the original emits `rowOffset * 10` then `+ col * 10` (the
+// `&table[rowOffset] + col` shape); writing that shape in C makes this compiler spill more, so the
+// additive-index form is kept. The pre-loop `if` and the three TEV colours also use the split
+// `trans`/`colPtr` field shape the original does (trans and rot use `ptr`, scale and alpha use
+// `colPtr`). Declaration-order permutations and the optimize_for_size / opt_lifetimes /
+// opt_propagation / opt_common_subs / scheduling / peephole / global_optimizer pragmas were tried;
+// none reach the target rotation. All candidate compilers (GC/1.3..GC/2.7) generate identical code;
+// GC/3.0 is worse.
+// Building each TEV colour and calling GXSetTevColor inside one inline makes mwcc allocate the
+// colour's build slot and its by-value argument copy together, matching the original's slots.
+static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 field24) {
+    GXColor color = unk_804231c8;
+    color.r = data->field_0x28;
+    color.g = data->field_0x2C;
+    color.b = data->field_0x30;
+    color.a = field24;
+    GXSetTevColor(GX_TEVREG1, color);
+}
+
+static inline void effOpukuJetwSetTev0a(s32 field18, s32 field1c, s32 field20, s32 field24) {
+    GXColor color = unk_804231cc;
+    color.r = field18;
+    color.g = field1c;
+    color.b = field20;
+    color.a = field24;
+    GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s32 alpha) {
+    GXColor color = unk_804231d0;
+    color.r = field18;
+    color.g = field1c;
+    color.b = field20;
+    color.a = alpha;
+    GXSetTevColor(GX_TEVREG0, color);
+}
+
+// NONMATCHING (92.84%): register allocation, see the note above the TEV colour inlines.
 void effOpukuJetwDisp(CameraId camId, void* param) {
     Mtx trans;
     s32 half;
@@ -262,24 +297,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     PSMTXConcat(rot, scale, scale);
     PSMTXConcat(work, scale, work);
 
-    {
-        GXColor color = unk_804231c8;
-        color.r = data->field_0x28;
-        color.g = data->field_0x2C;
-        color.b = data->field_0x30;
-        color.a = field24;
-        GXSetTevColor(GX_TEVREG1, color);
-    }
+    effOpukuJetwSetTev1(data, field24);
 
     if (columns - 1 <= lifetime) {
-        {
-            GXColor color = unk_804231cc;
-            color.r = field18;
-            color.g = field1c;
-            color.b = field20;
-            color.a = field24;
-            GXSetTevColor(GX_TEVREG0, color);
-        }
+        effOpukuJetwSetTev0a(field18, field1c, field20, field24);
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
         effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
@@ -301,7 +322,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
                 continue;
             }
             colPtr = &table[col];
-            PSMTXTrans(trans, (f32)colPtr->field_0x0, float_10_8041f7d0 + (f32)colPtr->field_0x1, float_0_8041f7c8);
+            PSMTXTrans(trans, (f32)ptr->field_0x0, float_10_8041f7d0 + (f32)ptr->field_0x1, float_0_8041f7c8);
             PSMTXScale(scale, (f32)colPtr->field_0x2 * float_0p01_8041f7d4, (f32)colPtr->field_0x4 * float_0p01_8041f7d4, float_1_8041f7cc);
             PSMTXConcat(trans, scale, trans);
             PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * ((f32)ptr->field_0x6 + (f32)dat_ry[(i + j) & 7]));
@@ -309,14 +330,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
             GXSetCurrentMtx(0);
-            {
-                GXColor color = unk_804231d0;
-                color.r = field18;
-                color.g = field1c;
-                color.b = field20;
-                color.a = (field24 * colPtr->field_0x8) >> 8;
-                GXSetTevColor(GX_TEVREG0, color);
-            }
+            effOpukuJetwSetTev0b(field18, field1c, field20, (field24 * colPtr->field_0x8) >> 8);
             effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);

@@ -3,7 +3,7 @@
 #include "driver/fadedrv.h"
 #include "system.h"
 #include <string.h>
-#include <math.h>
+#include "math_ext.h"
 
 //.data
 const char* katakana_tbl[] = {
@@ -118,9 +118,14 @@ void nameMaskGX(f32 alpha) {
 	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-// NONMATCHING (88.29%): GX setup and all three quads match; the texture scale computation
-// (f32 spans / GXGetTexObj* the original does through fabs(double)) leaves the frame at
-// 0x140 vs the original 0x170 and differs in the scale arithmetic.
+// The scale is the original's (f32)__fabs(<double literal>) / GXGetTexObj*; the separate f64
+// temporaries per quad keep the pool in instruction order. Depends on the file using math_ext.h
+// instead of <math.h>: math.h's extern inline sqrtf/sqrt put _half/_three at the start of
+// .rodata and stop the compiler anchoring the pool to str_802FD9A8.
+//
+// NONMATCHING (99.97%): only the .rodata pool offsets of the four doubled constants differ
+// (480/32/544/int-mask sit at 0x60/0x68/0x70/0x78 from str_802FD9A8, not 0x148/0x150/0x158/0x138);
+// they resolve once the rest of the unit's constants are in the object.
 void nameBG(void) {
 	GXTexObj texObj1;
 	GXTexObj texObj2;
@@ -130,6 +135,12 @@ void nameBG(void) {
 	Mtx mtx3;
 	f32 xscale;
 	f32 yscale;
+	f64 yt;
+	f64 xt;
+	f64 yt2;
+	f64 xt2;
+	f64 yt3;
+	f64 xt3;
 
 	GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
 	GXSetZCompLoc(GX_FALSE);
@@ -155,8 +166,10 @@ void nameBG(void) {
 	GXLoadTexObj(&texObj1, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	yscale = 480.0f / GXGetTexObjHeight(&texObj1);
-	xscale = 32.0f / GXGetTexObjWidth(&texObj1);
+	yt = __fabs(480.0);
+	xt = __fabs(32.0);
+	yscale = (f32)yt / GXGetTexObjHeight(&texObj1);
+	xscale = (f32)xt / GXGetTexObjWidth(&texObj1);
 	PSMTXScale(mtx1, xscale, yscale, 1.0f);
 	GXLoadTexMtxImm(mtx1, GX_TEXMTX0, GX_MTX2x4);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -174,8 +187,10 @@ void nameBG(void) {
 	GXLoadTexObj(&texObj2, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	yscale = 480.0f / GXGetTexObjHeight(&texObj2);
-	xscale = 544.0f / GXGetTexObjWidth(&texObj2);
+	yt2 = __fabs(480.0);
+	xt2 = __fabs(544.0);
+	yscale = (f32)yt2 / GXGetTexObjHeight(&texObj2);
+	xscale = (f32)xt2 / GXGetTexObjWidth(&texObj2);
 	PSMTXScale(mtx2, xscale, yscale, 1.0f);
 	GXLoadTexMtxImm(mtx2, GX_TEXMTX0, GX_MTX2x4);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -193,8 +208,10 @@ void nameBG(void) {
 	GXLoadTexObj(&texObj3, GX_TEXMAP0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	yscale = 480.0f / GXGetTexObjHeight(&texObj3);
-	xscale = 32.0f / GXGetTexObjWidth(&texObj3);
+	yt3 = __fabs(480.0);
+	xt3 = __fabs(32.0);
+	yscale = (f32)yt3 / GXGetTexObjHeight(&texObj3);
+	xscale = (f32)xt3 / GXGetTexObjWidth(&texObj3);
 	PSMTXScale(mtx3, xscale, yscale, 1.0f);
 	GXLoadTexMtxImm(mtx3, GX_TEXMTX0, GX_MTX2x4);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);

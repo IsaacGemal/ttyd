@@ -385,8 +385,28 @@ void effMiniGameMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (83.71%): matrix locals land at 0x98/0x68 swapped (rot/tmp), an extra f26 is spilled,
-// and the table pointers are not strength-reduced into the outer loop.
+#ifdef MUST_MATCH
+// Match-only: returning the colour from an inline instead of building it in the caller puts the
+// by-value temporary and its outgoing copy in the original's stack slots. The start helper takes
+// the base colour as its second parameter so the division operands stay in r0/r6 and the temporary
+// lands at 0x10; the finish helper builds its own local at 0x8.
+static inline GXColor makeMiniGameStartColor(u8 alpha, GXColor color) {
+	color.a = alpha;
+	return color;
+}
+#endif
+
+#ifdef MUST_MATCH
+static inline GXColor makeMiniGameFinishColor(u8 alpha) {
+	GXColor color = *(GXColor*)&dat_804212b0;
+	color.a = alpha;
+	return color;
+}
+#endif
+
+// Matched with the MUST_MATCH colour helpers above, by reloading `effect->userdata` into the
+// outer-loop entry pointer and holding the three texture tables as base pointers, and by keeping
+// `f29 = -f30` inside the inner loop.
 void effMiniGameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effMiniGameWork* data = effect->userdata;
@@ -400,16 +420,21 @@ void effMiniGameDisp(CameraId camId, void* param) {
 	f32 f28;
 	f32 f29;
 	f32 f30;
-	u32 type = data->type;
-	s32 i;
+	effMiniGameWork* entry;
 	s32 j;
-	u8 texId;
+	s32 i;
+	s32 type;
+	u32 texId;
+	s32 tblOff;
+	u8* startPtr;
+	u8* finishPtr;
+	u8* retirePtr;
 
 	cam = camGetPtr(camId);
+	type = data->type;
 	GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 	PSMTXTrans(mtx, data->field_0x04, data->field_0x08, data->field_0x0C);
-	cam = camGetPtr(camId);
-	PSMTXRotRad(rot, 'y', MTXDegToRad(-cam->viewYaw));
+	PSMTXRotRad(rot, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
 	PSMTXScale(tmp, data->field_0x10, data->field_0x14, 1.0f);
 	PSMTXConcat(mtx, rot, base);
 	PSMTXConcat(base, tmp, base);
@@ -429,17 +454,18 @@ void effMiniGameDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 13, 1, 4, 0);
 	f30 = 40.0f;
-	f29 = -f30;
-	f27 = 0.5f;
-	f28 = 20.0f;
 	for (i = 0; i < 2; i++) {
-		effMiniGameWork* entry = &data[1];
+		entry = (effMiniGameWork*)effect->userdata;
+		entry++;
+		tblOff = 1 - i;
+		startPtr = start_tbl + tblOff;
+		finishPtr = finish_tbl + tblOff;
+		retirePtr = retire_tbl + tblOff;
 
 		for (j = 1; j < effect->count; j++, entry++) {
-			f32 v2 = 0.0f;
-			f32 v4 = 0.0f;
+			f32 v2;
 			f32 v3;
-			f32 v1;
+			f32 v4;
 
 			PSMTXTrans(mtx, 0.0f, 20.0f, 0.0f);
 			PSMTXRotRad(rot, 'z', MTXDegToRad(entry->field_0x1C));
@@ -462,13 +488,13 @@ void effMiniGameDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(0);
 			switch (type) {
 			case 0:
-				texId = start_tbl[2 * (j - 1) + 1 - i];
+				texId = startPtr[2 * (j - 1)];
 				break;
 			case 1:
-				texId = finish_tbl[2 * (j - 1) + 1 - i];
+				texId = finishPtr[2 * (j - 1)];
 				break;
 			case 2:
-				texId = retire_tbl[2 * (j - 1) + 1 - i];
+				texId = retirePtr[2 * (j - 1)];
 				break;
 			}
 			effGetTexObj(texId, &tex);
@@ -476,6 +502,13 @@ void effMiniGameDisp(CameraId camId, void* param) {
 				GXInitTexObjLOD(&tex, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
 			}
 			GXLoadTexObj(&tex, 0);
+#ifdef MUST_MATCH
+			if (i == 0) {
+				GXSetChanMatColor(4, makeMiniGameStartColor(entry->field_0x34 * 140 / 255, unk_80423308));
+			} else {
+				GXSetChanMatColor(4, makeMiniGameFinishColor(entry->field_0x34 * 255 / 255));
+			}
+#else
 			if (i == 0) {
 				GXColor color = unk_80423308;
 				color.a = entry->field_0x34 * 140 / 255;
@@ -485,7 +518,13 @@ void effMiniGameDisp(CameraId camId, void* param) {
 				color.a = entry->field_0x34 * 255 / 255;
 				GXSetChanMatColor(4, color);
 			}
+#endif
 			GXBegin(0x80, 0, 4);
+			f27 = 0.5f;
+			f28 = 20.0f;
+			v2 = 0.0f;
+			v4 = v2;
+			f29 = -f30;
 			if (type == 0) {
 				v4 = f29 * f27;
 			} else if (type == 1) {
@@ -493,11 +532,10 @@ void effMiniGameDisp(CameraId camId, void* param) {
 				v4 = f29 * f27;
 			}
 			v3 = f29 * f27 + v2;
-			v1 = f30 + v4;
 			v2 = f28 + v2;
-			GXPosition3f32(v3, v1, 0.0f);
+			GXPosition3f32(v3, f30 + v4, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(v2, v1, 0.0f);
+			GXPosition3f32(v2, f30 + v4, 0.0f);
 			GXTexCoord2f32(1.0f, 0.0f);
 			GXPosition3f32(v2, v4, 0.0f);
 			GXTexCoord2f32(1.0f, 1.0f);

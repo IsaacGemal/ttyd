@@ -129,9 +129,12 @@ void mot_grasp(void) {
     }
 }
 
-// NONMATCHING (95.95%): the three switch dispatches are missing the original's
-// `extsb` on the signed state byte and a `bge` guard, and a few constant reloads
-// differ (compiler reuses the compared float instead of reloading it).
+// State byte 0x2BA is signed (the original sign-extends it with `extsb`). The two
+// otherwise single-case switch dispatches (state 1, state 11) only keep the original's
+// `beq; bge; b` compare tree because states 0 and 10 are explicit cases that break to
+// the same default; without them CodeWarrior folds the switch into a plain `if`.
+// The clamp constants are plain globals rather than MATCH_F32: the volatile wrapper
+// made the compiler reload the bound the original reuses from the compare.
 void swingMain(void) {
     MarioWork* mario = marioGetPtr();
     
@@ -148,19 +151,21 @@ void swingMain(void) {
         }
     }
     switch (MW_S8(mario, 0x2BA)) {
+    case 0:
+        break;
     case 1:
     timer = MW_S16(mario, 0x2B8);
     if (timer > 0) {
         MW_S16(mario, 0x2B8) = timer - 1;
         MW_F32(mario, 0x2B0) += ((JabaraWork*)marioGetPtr()->motStruct)->unk4;
-        if (MW_F32(mario, 0x2B0) >= MATCH_F32(float_40_8041aac0)) {
-            MW_F32(mario, 0x2B0) = MATCH_F32(float_40_8041aac0);
+        if (MW_F32(mario, 0x2B0) >= float_40_8041aac0) {
+            MW_F32(mario, 0x2B0) = float_40_8041aac0;
         }
     } else if (timer == 0) {
         MW_F32(mario, 0x2B0) += ((JabaraWork*)marioGetPtr()->motStruct)->unk8;
-        if (MW_F32(mario, 0x2B0) <= MATCH_F32(float_0_8041aac4)) {
-            MW_F32(mario, 0x2B0) = MATCH_F32(float_0_8041aac4);
-            MW_F32(mario, 0x2B4) = MATCH_F32(float_0p1_8041aac8);
+        if (MW_F32(mario, 0x2B0) <= float_0_8041aac4) {
+            MW_F32(mario, 0x2B0) = float_0_8041aac4;
+            MW_F32(mario, 0x2B4) = float_0p1_8041aac8;
             if (MW_F32(mario, 0xBC) >= MATCH_F32(float_180_8041aacc)) {
                 MW_S8(mario, 0x2BA) = 2;
             } else {
@@ -197,8 +202,8 @@ state2:
         break;
     case 3:
         MW_F32(mario, 0x2B0) -= MW_F32(mario, 0x2B4);
-        if (MW_F32(mario, 0x2B0) <= MATCH_F32(float_0_8041aac4)) {
-            MW_F32(mario, 0x2B0) = MATCH_F32(float_0_8041aac4);
+        if (MW_F32(mario, 0x2B0) <= float_0_8041aac4) {
+            MW_F32(mario, 0x2B0) = float_0_8041aac4;
             MW_S8(mario, 0x2BA) = 4;
             MW_F32(mario, 0x2B4) -= ((JabaraWork*)marioGetPtr()->motStruct)->unk10;
             if (fabs(MW_F32(mario, 0xBC)) < MATCH_F32(float_0p8_8041aad4)) {
@@ -217,8 +222,8 @@ state2:
         break;
     case 5:
         MW_F32(mario, 0x2B0) += MW_F32(mario, 0x2B4);
-        if (MW_F32(mario, 0x2B0) >= MATCH_F32(float_0_8041aac4)) {
-            MW_F32(mario, 0x2B0) = MATCH_F32(float_0_8041aac4);
+        if (MW_F32(mario, 0x2B0) >= float_0_8041aac4) {
+            MW_F32(mario, 0x2B0) = float_0_8041aac4;
             MW_S8(mario, 0x2BA) = 2;
             MW_F32(mario, 0x2B4) -= ((JabaraWork*)marioGetPtr()->motStruct)->unk10;
             if (fabs(MW_F32(mario, 0xBC)) < MATCH_F32(float_0p8_8041aad4)) {
@@ -229,17 +234,19 @@ state2:
         break;
     }
     switch (MW_S8(mario, 0x2BA)) {
+    case 10:
+        break;
     case 11:
         timer = MW_S16(mario, 0x2B8);
         if (timer > 0) {
             MW_S16(mario, 0x2B8) = timer - 1;
             MW_F32(mario, 0x2B0) += ((JabaraWork*)marioGetPtr()->motStruct)->unk4;
-            if (MW_F32(mario, 0x2B0) >= MATCH_F32(float_40_8041aac0)) {
-                MW_F32(mario, 0x2B0) = MATCH_F32(float_40_8041aac0);
+            if (MW_F32(mario, 0x2B0) >= float_40_8041aac0) {
+                MW_F32(mario, 0x2B0) = float_40_8041aac0;
             }
         } else if (timer == 0) {
             MW_F32(mario, 0x2B0) += ((JabaraWork*)marioGetPtr()->motStruct)->unk8;
-            if (MW_F32(mario, 0x2B0) <= MATCH_F32(float_0_8041aac4)) {
+            if (MW_F32(mario, 0x2B0) <= float_0_8041aac4) {
                 MW_F32(mario, 0x2B0) = MATCH_F32(float_1p4_8041aad0);
                 MW_F32(mario, 0x2B4) = MATCH_F32(float_0p1_8041aac8);
                 if (MW_F32(mario, 0xBC) >= MATCH_F32(float_180_8041aacc)) {
@@ -277,8 +284,8 @@ state2:
         break;
     case 13:
         MW_F32(mario, 0x2B0) -= MW_F32(mario, 0x2B4);
-        if (MW_F32(mario, 0x2B0) <= MATCH_F32(float_0_8041aac4)) {
-            MW_F32(mario, 0x2B0) = MATCH_F32(float_0_8041aac4);
+        if (MW_F32(mario, 0x2B0) <= float_0_8041aac4) {
+            MW_F32(mario, 0x2B0) = float_0_8041aac4;
             MW_S8(mario, 0x2BA) = 14;
             MW_F32(mario, 0x2B4) -= ((JabaraWork*)marioGetPtr()->motStruct)->unk10;
             if (fabs(MW_F32(mario, 0xBC)) < MATCH_F32(float_0p8_8041aad4)) {
@@ -297,8 +304,8 @@ state2:
         break;
     case 15:
         MW_F32(mario, 0x2B0) += MW_F32(mario, 0x2B4);
-        if (MW_F32(mario, 0x2B0) >= MATCH_F32(float_0_8041aac4)) {
-            MW_F32(mario, 0x2B0) = MATCH_F32(float_0_8041aac4);
+        if (MW_F32(mario, 0x2B0) >= float_0_8041aac4) {
+            MW_F32(mario, 0x2B0) = float_0_8041aac4;
             MW_S8(mario, 0x2BA) = 12;
             MW_F32(mario, 0x2B4) -= ((JabaraWork*)marioGetPtr()->motStruct)->unk10;
             if (fabs(MW_F32(mario, 0xBC)) < MATCH_F32(float_0p8_8041aad4)) {
@@ -370,8 +377,6 @@ s32 jabaraNoHitChk(void) {
     return 0;
 }
 
-// NONMATCHING (98.79%): only the `check` local's register differs (r4 vs the
-// original r0); identical instructions otherwise.
 BOOL marioChkJabara(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2 = marioGetPtr();
@@ -380,6 +385,19 @@ BOOL marioChkJabara(void) {
     s32 out1;
     f32 out3;
 
+#ifdef MUST_MATCH
+    // Chained assignment keeps `check` and wMotionTimer in the same register (r0);
+    // the inverted equality makes 1 the out-of-line branch, as in the original.
+    if ((mario2->flags & MARIO_FLAG_IS_8_BIT) || (mario2->flags & MARIO_FLAG_PAPER_MODE)) {
+        mario2->wMotionTimer = check = 0;
+    } else {
+        if ((s32)pouchCheckItem(8) == 0) {
+            check = 0;
+        } else {
+            check = 1;
+        }
+    }
+#else
     if ((mario2->flags & MARIO_FLAG_IS_8_BIT) || (mario2->flags & MARIO_FLAG_PAPER_MODE)) {
         mario2->wMotionTimer = 0;
         check = 0;
@@ -388,6 +406,7 @@ BOOL marioChkJabara(void) {
     } else {
         check = 0;
     }
+#endif
     if (check == 0) {
         return FALSE;
     }

@@ -182,7 +182,6 @@ USER_FUNC(evt_cam3d_evt_set) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (80.37%): 4 instructions differ, 16 missing, 16 extra, plus register differences.
 USER_FUNC(evt_cam3d_evt_set_rel) {
     s32* args = event->args;
     f32 x = evtGetValue(event, args[0]);
@@ -195,22 +194,25 @@ USER_FUNC(evt_cam3d_evt_set_rel) {
     s32 curve = evtGetValue(event, args[7]);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     MarioWork* mario = marioGetPtr();
+    Vec sp;
+    Vec sa;
+    f32 sx;
+    f32 sy;
+    f32 sz;
 
+    sx = mario->position.x + ax;
+    sy = mario->position.y + ay;
+    sz = mario->position.z + az;
+    sa.x = sx;
+    sa.y = sy;
+    sa.z = sz;
+    sp.x = x + sx;
+    sp.y = y + sy;
+    sp.z = z + sz;
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;
-    {
-        Vec sa;
-        Vec sp;
-
-        sa.x = mario->position.x + ax;
-        sa.y = mario->position.y + ay;
-        sa.z = mario->position.z + az;
-        sp.x = sa.x + x;
-        sp.y = sa.y + y;
-        sp.z = sa.z + z;
-        cam->storedPos = sp;
-        cam->storedAt = sa;
-    }
+    cam->storedPos = sp;
+    cam->storedAt = sa;
     cam->startTimeA = gp->renderTime;
     cam->durationA = OSMillisecondsToTicks(time);
     cam->stateA = 3;

@@ -54,16 +54,11 @@ extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// optimize_for_size: the original saves r23-r31 with `stmw` and keeps work in r25; the default
-// (-O4,p) model assigns work to r24 and emits individual saves, and scores 91.25%.
-#pragma optimize_for_size on
-// Logic, constants and every load/store offset match (byte size 1628 matches). The remaining diffs
-// are register allocation (dec=r29 vs r27, autoFlag=r28 vs r26, the loop-index and per-loop SFX-name
-// temporaries) and the pooled s32->f32 conversion double: MWCC emits a local literal at .rodata 0xD0
-// instead of the named double_to_int_80300060 at 0x80. That literal is shared with the original's
-// actionCommandDisp, which this unit does not define (0%, `*UND*`), so the conversion can't land at
-// 0x80 until actionCommandDisp is written.
-// NONMATCHING (96.47%): register allocation and the pooled int->float conversion double differ.
+// NONMATCHING (96.47%): register allocation (dec=r29 vs r27, autoFlag=r28 vs r26, the loop index
+// and the per-loop SFX-name temporaries are rotated) plus the s32->f32 conversion magic double:
+// MWCC pools it as an anonymous literal after the unit's strings (0xD0) where the original reads
+// the shared double_to_int_80300060 at 0x80. Every other load/store offset, including the named
+// double_6_80300058 at 0x78, matches; byte size 1628 matches.
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -274,7 +269,6 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	return 1;
 }
 
-#pragma optimize_for_size reset
 
 s32 battleAcResult_GaugeTiming2(BattleWork* work) {
 	return work->actionCommands.result;
