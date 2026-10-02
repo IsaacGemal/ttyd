@@ -1967,6 +1967,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 #pragma inline_max_total_size(60000)
 #pragma inline_max_size(1000)
 #pragma opt_propagation off
+// NONMATCHING (86.90%): behaviour complete, checked against the asm; the rest is register allocation and constant hoisting.
 #define MOA_TARGET(i) (wp->vec[(i) % 3])
 // Per-frame update of every moamoa (the Great Moamoa variant: a follower pulls the swarm to a joint of "base").
 static void ext_moamoa_main(void) {
