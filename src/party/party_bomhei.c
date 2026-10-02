@@ -274,10 +274,8 @@ HitEntry* check_front(PartyEntry* party) {
     return field138;
 }
 
-// Snap a coordinate to the 1/1000 grid, rounding half away from zero (the original does this to the
-// hit position before returning it).
-#define BOMHEI_ROUND_MILLI(v) \
-    ((f32)(s32)(1000.0f * (v) + ((v) >= 0.0f ? 0.5f : -0.5f)) / 1000.0f)
+// .text:0x3FC | 0x800BD24C | size: 0x880
+// partyGetReturnPos (TODO)
 
 
 // .text:0xC7C | 0x800BDACC | size: 0x94

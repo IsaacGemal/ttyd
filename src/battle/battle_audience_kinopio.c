@@ -409,7 +409,7 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 		if (BattleAudienceItemGetPtr(0)->mItemType < 0xec ||
 		    BattleAudienceItemGetPtr(0)->mItemType >= 0xf0) {
 			BattleAudienceAddTargetNum(
-			    -0.15f * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+			    -0.14999999f * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
 			    0.0f);
 		}
 	}

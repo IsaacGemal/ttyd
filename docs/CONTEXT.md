@@ -3738,3 +3738,16 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 ## Grind 91: shape check, three rewrites from m2c, and a pooling pattern (2026-10-02, Claude Sonnet 5.5 "TTYD Claude #3")
 
 `tools/diff_shape.py UNIT FUNC` compares the `bl` sequence and the immediates against the original before anyone looks at registers. It found the cause in every function below. Written from m2c rather than from the generic upstream source: `itemEntry` (14.8 to 99.25: slot reclaim through the inlined `itemDelete`, `j` as a separate counter, `evtId` mutated in place), `itemseq_Bound` (0 to 81.9), `winMain` (26.4 to 94.3), `__strtold` (75.3 to 96.1: the original is not the generic MSL hex path), `__dec2num` (51.7 to 91.5: max-value check only on overflow to infinity, two peeled loops with duplicated tails). One-line shape fixes: `ARCConvertPathToEntrynum` 72.65 to 100 (inlined `tolower` through `__lower_map`, which also removes the saved registers), `effLevelupMain` 98.26 to 100 (no temp for `data->timer` in `intplGetValue`), `effFallMain` 85.4 to 86.6 (strings and the initial Vec through the `vec3_802fe418` base, `(x >> 2) & 1`), `evt_unitwin_disp_func` 95.5 to 95.8 (u16 call to `iconDispGx`), `actionCommandDisp` 56.1 to 58.4 (one `PSMTXTrans`). Not worth chasing without a new idea: `effFlameDisp` (all 150 calls and the immediates match; the remaining 45% is the 24 inlined vertex transforms), `moamoa_hit_check` (the coefficient-locals form that fixed eki_00 moved it 68.69 to 68.58). Changing `iconDispGx` to u16 parameters in the shared header breaks the linked REL modules (extsh vs clrlwi), so the u16 form is a call-site cast.
+
+## Wave 57, batch 2 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- 49 agents onto main 3a86355: 9,022 -> 9,045 functions (battle_audience_kinopio +8, evt_mario +3, tou2 +2,
+  aji/moo unit_barriern_z +2 each, mri_puni +2). shadowdrv's SHADOW_ENTRY_DRAW now draws the cube only for type 1
+  and the cylinder otherwise, as retail (older bug). Files that broke, lost a score or failed the natural build as
+  on main, including eff_batfukidashi (its header changed effCoinFukidashiEntry's signature).
+- Review (`scratch/wave57/review2.md`): no behaviour defects. Agents had rewritten functions earlier reviews took
+  out: BattleStageObjectInit (as on main) and mobj_itembox (unwritten), both rule 13 again; eff_ultra_hammer's
+  N_systemErrorHandler read named strings through a struct laid over str_803019E0 (file as on main, the new
+  include/unk_0x8025de70.h out); party_bomhei's partyGetReturnPos placeholder restored; kinopio's -0.15f is
+  retail's -0.14999999f. **The functions reviews took out are now listed in `scratch/wave5x/removed.json`; the next
+  launcher puts each unit's entries in its prompt** (wave 53's two-entry list wasn't enough).

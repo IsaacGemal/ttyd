@@ -1119,135 +1119,6 @@ s32 evt_mobj_delete(EventEntry* event, BOOL isFirstCall) {
 }
 
 
-s32 mobj_itembox(MapObjectEntry* obj) {
-#ifdef MUST_MATCH
-    // MUST_MATCH: retail keeps the .data sound-script base in a register from the prologue.
-    u8* sndBase = (u8*)negone_one_374;
-#endif
-    u8* base = (u8*)vec3_802c3dc8;
-
-    switch (obj->unk1DC) {
-        case 0:
-            if (!(obj->flags & 8)) {
-                break;
-            }
-            marioKeyOff();
-            partyKeyOff();
-            marioStSystemLevel(1);
-            obj->eventId = 0;
-            mobjRunEvent(obj, obj->unk1D4);
-            obj->unk1DC++;
-            break;
-        case 1:
-            if (obj->eventId != 0) {
-                if (evtCheckID(obj->eventId) == 1) {
-                    break;
-                }
-                if (obj->flags & 0x1000) {
-                    obj->flags &= ~0x1000;
-                    obj->flags &= ~8;
-                    marioKeyOn();
-                    partyKeyOn();
-                    marioStSystemLevel(0);
-                    obj->eventId = 0;
-                    obj->unk1DC = 0;
-                    break;
-                }
-            }
-            obj->unk1DC++;
-            break;
-        case 2: {
-            EventEntry* event;
-
-            if (strcmp(obj->animName, (const char*)(base + 0x6A0)) == 0 || strcmp(obj->animName, (const char*)(base + 0x6C8)) == 0) {
-                // MUST_MATCH: retail reaches the box sound scripts from the .data base at
-                // negone_one_374 (offsets 0x90/0xE0/0x130) so one register holds the base.
-#ifdef MUST_MATCH
-                event = evtEntryType((s32*)(sndBase + 0x90), 0, 0, 0);
-#else
-                event = evtEntryType(evt_box_sound1, 0, 0, 0);
-#endif
-                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
-                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
-                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
-            } else if (strcmp(obj->animName, (const char*)(base + 0x6E0)) == 0) {
-#ifdef MUST_MATCH
-                event = evtEntryType((s32*)(sndBase + 0x130), 0, 0, 0);
-#else
-                event = evtEntryType(evt_box_sound3, 0, 0, 0);
-#endif
-                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
-                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
-                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
-            } else {
-#ifdef MUST_MATCH
-                event = evtEntryType((s32*)(sndBase + 0xE0), 0, 0, 0);
-#else
-                event = evtEntryType(evt_box_sound2, 0, 0, 0);
-#endif
-                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
-                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
-                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
-            }
-            animPoseSetAnim(obj->poseId, str_8041A118, 1);
-            obj->eventId = 0;
-            mobjRunEvent(obj, obj->unk1D8);
-            obj->unk1DC++;
-            break;
-        }
-        case 3: {
-            AnimationPoseData* animData;
-            Vec maxTmp;
-            Vec minTmp;
-            Vec bboxMax;
-            Vec bboxMin;
-
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
-                break;
-            }
-            if (obj->eventId != 0 && evtCheckID(obj->eventId) == 1) {
-                break;
-            }
-            obj->flags &= ~0x20;
-            animData = animPoseGetAnimBaseDataPtr(obj->poseId);
-            minTmp = *(Vec*)(base + 0x210);
-            minTmp.x = animData->bboxMin.x;
-            minTmp.y = animData->bboxMin.y;
-            minTmp.z = animData->bboxMin.z;
-            bboxMin = minTmp;
-            maxTmp = *(Vec*)(base + 0x21C);
-            maxTmp.x = animData->bboxMax.x;
-            maxTmp.y = animData->bboxMax.y;
-            maxTmp.z = animData->bboxMax.z;
-            bboxMax = maxTmp;
-            bboxMin.z = bboxMin.z - *(f64*)(base + 0x710) * __fabsf(bboxMax.y - bboxMin.y);
-            PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
-            PSVECScale(&obj->translation, &obj->translation, float_0p5_8041a15c);
-            PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
-            obj->translation.y = float_0_8041a150;
-            obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
-            obj->scale2.z = obj->scale2.z * float_1p2_8041a20c;
-            mobjCalcMtx2(obj);
-            marioKeyOn();
-            partyKeyOn();
-            marioStSystemLevel(0);
-            obj->eventId = 0;
-            obj->unk1DC = 0x63;
-            break;
-        }
-        case 99:
-            evtSetValue(NULL, obj->unk1E4, 1);
-            obj->flags |= 8;
-            obj->flags &= ~0x20;
-            if (strcmp(obj->animName, (const char*)(base + 0x6E0)) == 0) {
-                animPoseSetAnim(obj->poseId, str_8041A218, 1);
-            } else {
-                animPoseSetAnim(obj->poseId, str_8041A1C0, 1);
-            }
-            break;
-    }
-    return 0;
-}
 
 s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
     u8* base = (u8*)vec3_802c3dc8;
@@ -3412,6 +3283,7 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
 // Recovery block (heart / coin-taken). MapObjectEntry does not declare the fields this object stores in its
 // 0x1A0 padding, so they are read/written as raw offsets: 0x1A4 s32 coinNeeded, 0x1A8 s32 msgWindowId,
 // 0x1B0 s32 timer, 0x1C8 EffectEntry* effect.
+// NONMATCHING (89.86%)
 s32 mobj_recovery_blk(MapObjectEntry* obj) {
     s32 i;
 
