@@ -1863,9 +1863,239 @@ void BattleAudienceAnimProcess(void) {
 	}
 }
 
-// NONMATCHING (0.17%): 586 missing.
-void BattleAudienceDispAudience(CameraId camId, void* param) {
+extern f32 float_0p015625_8041e6ac;
+extern f32 float_deg2rad_8041e6b0;
+extern f32 float_360_8041e6b4;
+extern f32 float_180_8041e6b8;
+extern u32 unk_80423080;
+typedef struct BattleAudienceTexCoords {
+	f32 v[32];
+} BattleAudienceTexCoords;
 
+// NONMATCHING (93.88%): functionally complete; only instruction scheduling and FP-register
+// allocation differ (matrix build, texture-scale formulas, GX-vertex emission).
+void BattleAudienceDispAudience(CameraId camId, void* param) {
+	BattleAudience* audience;
+	CameraEntry* cam;
+	s32 i;
+	BattleAudienceMember* member;
+	s32 flip;
+	s32 texBase;
+	s32 front;
+	s32 j;
+	GXTexObj texObj;
+	Mtx mtxRot;
+	Mtx mtxScale;
+	Mtx mtxDraw;
+	BattleAudienceTexCoords texCoords;
+	f32 scaleX;
+	f32 cx;
+	f32 scaleZ;
+	f32 sy;
+	f32 scaleY;
+	f32 cy;
+	f32 sz;
+	f32 neg20;
+	f32 rx;
+	f32 rz;
+	f32 cz;
+	f32 offsetX;
+	f32 offsetY;
+	f32 angle;
+	f32 ry;
+	f32 offsetZ;
+	f32 sx;
+	u8 cr;
+	u8 cg;
+	u8 cb;
+	u8 ca;
+	GXColor color;
+
+	audience = BattleAudienceBaseGetPtr();
+	cam = camGetPtr(CAMERA_3D);
+
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_VTX, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+	GXSetNumTevStages(1);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ONE, GX_CC_TEXC, GX_CC_RASC);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+
+	i = 0;
+	member = BattleAudienceGetPtr(0);
+	neg20 = -float_20_8041e6a8;
+
+	for (; i < 0xC8; i++, member++) {
+		if (dispGetCurWork()->renderMode != 2) {
+			if (*(u8*)((u8*)member + 0x44) != 0xFF) {
+				continue;
+			}
+		}
+		else if (*(u8*)((u8*)member + 0x44) == 0xFF) {
+			continue;
+		}
+		if (!(member->flags & 1)) {
+			continue;
+		}
+		if (!(member->flags & 4)) {
+			continue;
+		}
+
+		if (member->type <= AUDIENCE_PIRANHA_PLANT) {
+			TEXGetGXTexObjFromPalette((TEXPalette*)audience->normalTex->data[0], &texObj, member->field_0x1A);
+			GXLoadTexObj(&texObj, GX_TEXMAP0);
+			{
+				f32 w = (f32)GXGetTexObjWidth(&texObj);
+				*(f32*)((u8*)member + 0x54) = *(f32*)((u8*)member + 0x60) *
+					(audience_kind[member->type].field_0x18 * w * float_0p015625_8041e6ac);
+			}
+			{
+				f32 h = (f32)GXGetTexObjHeight(&texObj);
+				*(f32*)((u8*)member + 0x58) = *(f32*)((u8*)member + 0x64) *
+					(audience_kind[member->type].field_0x1C * h * float_0p015625_8041e6ac);
+			}
+		}
+		else {
+			for (j = 0; j < 2; j++) {
+				if (member->type == audience->guestType[j]) {
+					TEXGetGXTexObjFromPalette((TEXPalette*)audience->guestTex[j]->data[0], &texObj,
+					                          member->field_0x1A);
+					GXLoadTexObj(&texObj, GX_TEXMAP0);
+					{
+						f32 w = (f32)GXGetTexObjWidth(&texObj);
+						*(f32*)((u8*)member + 0x54) = *(f32*)((u8*)member + 0x60) *
+							(audience_kind[member->type].field_0x18 * w * float_0p015625_8041e6ac);
+					}
+					{
+						f32 h = (f32)GXGetTexObjHeight(&texObj);
+						*(f32*)((u8*)member + 0x58) = *(f32*)((u8*)member + 0x64) *
+							(audience_kind[member->type].field_0x1C * h * float_0p015625_8041e6ac);
+					}
+					break;
+				}
+			}
+		}
+
+		scaleX = *(f32*)((u8*)member + 0x54);
+		offsetX = *(f32*)((u8*)member + 0xA8) * scaleX;
+		scaleY = *(f32*)((u8*)member + 0x58);
+		offsetY = *(f32*)((u8*)member + 0xAC) * scaleY;
+		scaleZ = *(f32*)((u8*)member + 0x5C);
+		offsetZ = *(f32*)((u8*)member + 0xB0) * scaleZ;
+		PSMTXScale(mtxScale, scaleX, scaleY, scaleZ);
+
+		rx = member->mRotation.x * float_deg2rad_8041e6b0;
+		ry = member->mRotation.y * float_deg2rad_8041e6b0;
+		rz = member->mRotation.z * float_deg2rad_8041e6b0;
+		sx = (f32)sin(rx);
+		cx = (f32)cos(rx);
+		sy = (f32)sin(ry);
+		cy = (f32)cos(ry);
+		cz = (f32)cos(rz);
+		sz = (f32)sin(rz);
+
+		mtxRot[0][0] = cy * cz - sx * sy * sz;
+		mtxRot[0][3] = 0.0f;
+		mtxRot[0][2] = -cx * sy;
+		mtxRot[2][0] = sy * cz + sx * cy * sz;
+		mtxRot[1][0] = cx * sz;
+		mtxRot[0][1] = -cy * sz - sx * sy * cz;
+		mtxRot[1][2] = -sx;
+		mtxRot[1][3] = 0.0f;
+		mtxRot[2][1] = -sy * sz + sx * cy * cz;
+		mtxRot[1][1] = cx * cz;
+		mtxRot[2][2] = cx * cy;
+		mtxRot[2][3] = 0.0f;
+
+		*(Vec*)((u8*)member + 0x90) = vec3_802f9768;
+		PSMTXMultVec(mtxRot, (Vec*)((u8*)member + 0x90), (Vec*)((u8*)member + 0x90));
+
+		mtxScale[0][3] += offsetX;
+		mtxScale[1][3] += offsetY;
+		mtxScale[2][3] += offsetZ;
+		PSMTXConcat(mtxRot, mtxScale, mtxScale);
+
+		mtxScale[0][3] = mtxScale[0][3] + (*(f32*)((u8*)member + 0xCC) + (-offsetX + member->position.x));
+		mtxScale[2][3] = mtxScale[2][3] + (*(f32*)((u8*)member + 0xD4) + (-offsetZ + member->position.z));
+		if (member->type != AUDIENCE_BOO) {
+			mtxScale[1][3] = mtxScale[1][3] + (*(f32*)((u8*)member + 0xD0) + (-offsetY + member->position.y));
+		}
+		else {
+			mtxScale[1][3] = mtxScale[1][3] + (*(f32*)((u8*)member + 0x130) +
+			                                      (*(f32*)((u8*)member + 0xD0) + (-offsetY + member->position.y)));
+		}
+
+		PSMTXConcat(cam->view, mtxScale, mtxDraw);
+		GXLoadPosMtxImm(mtxDraw, 0);
+
+		texCoords = *(BattleAudienceTexCoords*)dat_802f9774;
+
+		texBase = 0;
+		front = BattleAudience_GetFront(i);
+		if (*(s32**)((u8*)member + 0x24) == member->animTable[9]) {
+			texBase = 8;
+		}
+		cr = *(u8*)((u8*)member + 0x41);
+		cg = *(u8*)((u8*)member + 0x42);
+		cb = *(u8*)((u8*)member + 0x43);
+		ca = *(u8*)((u8*)member + 0x44);
+
+		if (*(f32*)((u8*)member + 0xE8) >= float_360_8041e6b4) {
+			*(f32*)((u8*)member + 0xE8) = *(f32*)((u8*)member + 0xE8) -
+			                              float_360_8041e6b4 * (f32)(s32)(*(f32*)((u8*)member + 0xE8) / float_360_8041e6b4);
+		}
+		if (*(f32*)((u8*)member + 0xE8) < 0.0f) {
+			*(f32*)((u8*)member + 0xE8) = float_360_8041e6b4 *
+			                              (f32)(1 - (s32)(*(f32*)((u8*)member + 0xE8) / float_360_8041e6b4)) +
+			                              *(f32*)((u8*)member + 0xE8);
+		}
+		angle = *(f32*)((u8*)member + 0xE8);
+		if (angle > 0.0f && angle <= float_180_8041e6b8) {
+			flip = 1;
+		}
+		else if (angle == 0.0f || (angle > float_180_8041e6b8 && angle < float_360_8041e6b4)) {
+			flip = 0;
+		}
+		if ((u8)front == 1) {
+			if (*(s32**)((u8*)member + 0x24) != member->animTable[9] &&
+			    *(s32**)((u8*)member + 0x24) != member->animTable[8] &&
+			    *(s32**)((u8*)member + 0x24) != member->animTable[7]) {
+				flip ^= 1;
+			}
+		}
+		if (flip == 1) {
+			texBase += 4;
+		}
+
+		color = *(GXColor*)&unk_80423080;
+		color.r = cr;
+		color.g = cg;
+		color.b = cb;
+		color.a = ca;
+		GXSetChanMatColor(GX_COLOR0A0, color);
+
+		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+		GXPosition3f32(neg20 + *(f32*)((u8*)member + 0x6C), 40.0f + *(f32*)((u8*)member + 0x70),
+		               *(f32*)((u8*)member + 0x74));
+		GXTexCoord2f32(texCoords.v[texBase * 2], texCoords.v[texBase * 2 + 1]);
+		GXPosition3f32(float_20_8041e6a8 + *(f32*)((u8*)member + 0x6C), 40.0f + *(f32*)((u8*)member + 0x70),
+		               *(f32*)((u8*)member + 0x74));
+		GXTexCoord2f32(texCoords.v[(texBase + 1) * 2], texCoords.v[(texBase + 1) * 2 + 1]);
+		GXPosition3f32(float_20_8041e6a8, 0.0f, 0.0f);
+		GXTexCoord2f32(texCoords.v[(texBase + 2) * 2], texCoords.v[(texBase + 2) * 2 + 1]);
+		GXPosition3f32(neg20, 0.0f, 0.0f);
+		GXTexCoord2f32(texCoords.v[(texBase + 3) * 2], texCoords.v[(texBase + 3) * 2 + 1]);
+	}
 }
 
 void BattleAudienceDispItem(CameraId camId, void* param) {
@@ -2248,6 +2478,8 @@ void BattleAudience_Attack(s32 index) {
 	BattleAudienceGetPtr(index)->flags |= 0x40;
 }
 
+// dont_inline: BattleAudienceDispAudience must emit a call to this function, not inline it
+#pragma dont_inline on
 BOOL BattleAudience_GetFront(s32 index) {
 	BattleAudienceMember* member;
 	CameraEntry* cam;
@@ -2264,7 +2496,9 @@ BOOL BattleAudience_GetFront(s32 index) {
 	         dz * *(f32*)((u8*)member + 0x98) >=
 	         float_0_8041e618);
 }
+#pragma dont_inline reset
 
+// dont_inline: the retail callers reach the functions up to the next reset out of line
 #pragma dont_inline on
 void BattleAudience_ChangeStatus(s32 index, s32 status) {
 	BattleAudienceMember* member;
