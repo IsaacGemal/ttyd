@@ -67,7 +67,7 @@ s32 badge_bteresa_table[] = { //Pianta Parlor
 };
 
 s32 badge_bteresa_table_card_special[] = { //Pianta Parlor Special Card
-	ITEM_MAPLE_SYRUP, ITEM_POWER_JUMP, ITEM_HP_PLUS_P, ITEM_FP_PLUS, ITEM_NULL
+	ITEM_MAPLE_SYRUP, ITEM_POWER_JUMP, ITEM_HP_PLUS, ITEM_FP_PLUS, ITEM_NULL
 };
 
 s32 badge_bteresa_table_card_silver[] = { //Pianta Parlor Silver Card
