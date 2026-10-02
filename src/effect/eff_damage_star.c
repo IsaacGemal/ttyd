@@ -241,7 +241,7 @@ static inline f32 damageStarCosf(f32 angle) {
 // technique): without them the whole preheader constant block shifts several registers.
 // The magic double also pools as @378 rather than double_to_int_802f3458 (objdiff resolves data by
 // section offset, so that is not scored).
-// Remaining diff: with the two pragmas below the instruction sequence, control flow, stack frame, the loop
+// Remaining diff: the instruction sequence, control flow, stack frame, the loop
 // accumulator (f13), rad (f29), the 30-count local (f4) and the per-branch 1.5708/4.7124 scratch all match.
 // The preheader constant block differs: the hoisted loop-invariant loads come out in a different order and in
 // a different FPR permutation. 12 loop-invariant values plus the f7 scratch saturate every volatile register
@@ -320,7 +320,6 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
 
     return entry;
 }
-// End of the Entry-only pragmas above.
 
 
 void effDamageStarMain(EffectEntry* effect) {

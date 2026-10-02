@@ -4711,7 +4711,6 @@ void BattleAudience_Case_ActionCommandBad(void* arg) {
 	audience->flags |= 0x20;
 }
 
-// (frame 0x20); the original recomputes addis r3,r31,1 at each access and only saves r30/r31.
 void BattleAudienceCheer(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	if (*(s32*)(audience->field_13794 + 0x30) > 0x320) {

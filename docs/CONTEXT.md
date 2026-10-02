@@ -3766,3 +3766,7 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   actionLevel and field_B4 initialisers were wrong at 0x6C/0xB4; data isn't scored); mario.c as on main (seven named
   vec3s read through str_802C3610; its header change to marioSetPaperAnimeLocalTime with it), npcdrv and koopa as
   on main (leftovers for unwritten functions; koopa.c needs the agent's koopa.h).
+- Claude #1's second review of #259: sac_genki disp_3D offsets x/y/z themselves (retail stores them back), so the
+  second draw (texture 0x42) uses the offset position too (now 92.83%); battle_stage_object _object_fall_attack
+  records `alloc[idx + 1]` only in the weighted-random branch. Confirmed fix in the batch: las_05 senkaron's 0xFFFE
+  mask (older bug).

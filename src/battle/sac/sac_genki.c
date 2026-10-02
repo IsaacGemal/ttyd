@@ -336,7 +336,7 @@ static inline void _drawGenkiTex2(s32 id, Vec scale, Vec trans, Vec rot, GXColor
     btlDispTex4(id, &trans, &scale, &rot, &color);
 }
 
-// NONMATCHING (93.87%): the object-loop switch decision tree and most of field_64 match; the
+// NONMATCHING (92.83%): the object-loop switch decision tree and most of field_64 match; the
 // `_drawGenkiTex`/`_drawGenkiTex2` by-value helpers are not inlined (the two calls stay `bl`), so
 // field_64's argument slots, the `@NNN` magic-double pool entry and some loop registers differ.
 static void disp_3D(CameraId cameraId, void* param) {
@@ -593,9 +593,12 @@ static void disp_3D(CameraId cameraId, void* param) {
 
             rot = *(const Vec*)&vec[0x114 / 4];
             trans = *(const Vec*)&vec[0xFC / 4];
-            trans.z = z + float_10_80421d54;
-            trans.x = x + float_10_80421d54;
-            trans.y = y + float_30_80421d80;
+            x += float_10_80421d54;
+            y += float_30_80421d80;
+            z += float_10_80421d54;
+            trans.z = z;
+            trans.x = x;
+            trans.y = y;
             rot.z = float_6_80421d5c * (f32)genki->field_68;
             _drawGenkiTex(0x41, rot, *(GXColor*)&dat_80421d34, trans, *(const Vec*)&vec[0x108 / 4]);
         }

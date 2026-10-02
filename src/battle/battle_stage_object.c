@@ -1513,7 +1513,7 @@ extern char str_802F3BF8[];
 extern char str_802F3C18[];
 extern Vec vec3_802f3bd0;
 
-// NONMATCHING (95.06%): register allocation only — MWCC gave `event` r31 where the original used r15, so
+// NONMATCHING (95.54%): register allocation only — MWCC gave `event` r31 where the original used r15, so
 // every callee-saved register shifted and the frame is 16 B short (the original spills strTub/strRest/part
 // where we keep them); the int->float double is pooled locally too. No op_mismatch remains.
 USER_FUNC(_object_fall_attack) {
@@ -1595,11 +1595,11 @@ USER_FUNC(_object_fall_attack) {
 					}
 					entry->type++;
 				}
+				alloc[idx + 1] = entry->type;
 			}
 			{
 				s32 t = entry->type;
 				entry->weapon = *(BattleWeapon*)(typeTable + 0xCC + t * 0xC0);
-				alloc[idx + 1] = t;
 			}
 			if (entry->type == 6) {
 				if (irand(100) < 0x32) {
