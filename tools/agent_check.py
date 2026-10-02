@@ -97,7 +97,14 @@ if FINAL:
         link = subprocess.run(["python3", "tools/rel_link.py", unit_path], capture_output=True, text=True)
         linked = link.stdout.strip() if link.returncode == 0 else ("NOT LINKED: tools/rel_link.py failed (exit "
                   f"{link.returncode})\n" + (link.stdout + link.stderr).strip()[-2000:])
-    lint = subprocess.run(["python3", "tools/lint_patch.py", src, base], capture_output=True, text=True)
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as rep:
+        json.dump(report, rep)  # this unit's fresh report, so the merge checks see the build just made
+    try:
+        lint = subprocess.run(["python3", "tools/lint_patch.py", src, base], capture_output=True, text=True,
+                              env={**os.environ, "LINT_PATCH_REPORT": rep.name})
+    finally:
+        os.unlink(rep.name)
     fns = u.get("functions", [])
     done = sum(1 for f in fns if f.get("fuzzy_match_percent", 0) >= 100)
     print(f"{unit}: builds; {done}/{len(fns)} functions at 100%.")
