@@ -272,33 +272,7 @@ HitEntry* check_front(PartyEntry* party) {
 }
 
 // .text:0x3FC | 0x800BD24C | size: 0x880
-static inline BOOL partyGetReturnPosSub(Vec* pos, f32 distance, f32 angle) {
-    HitCheckQuery query;
-    HitEntry* hit;
-    Vec p;
-    f32 x, z;
-
-    marioGetPtr();
-    x = pos->x;
-    z = pos->z;
-    movePos(&x, &z, distance, angle);
-    p = vec3_802ccf48;
-    query.targetDistance = 4.0f;
-    p.x = x;
-    p.y = 2.0f + pos->y;
-    p.z = z;
-    query.targetPos = p;
-    query.targetDir = vec3_802ccf54;
-    hit = hitCheckVecFilter(&query, NULL);
-    if (hit != NULL && !(hitGetAttr(hit) & 0xE00)) {
-        pos->x = (f32)(s32)(1000.0f * query.hitPos.x + (query.hitPos.x >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
-        pos->y = (f32)(s32)(1000.0f * query.hitPos.y + (query.hitPos.y >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
-        pos->z = (f32)(s32)(1000.0f * query.hitPos.z + (query.hitPos.z >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
-        return TRUE;
-    }
-    return FALSE;
-}
-
+// partyGetReturnPos (TODO)
 
 // .text:0xC7C | 0x800BDACC | size: 0x94
 void mario_controll(PartyEntry* party) {

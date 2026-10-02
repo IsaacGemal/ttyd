@@ -3650,5 +3650,11 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
 - **Header corrections kept (agents' asm evidence, as #142's filemgr.h line):** lightdrv.h `lightEntry` takes a
   `Vec*` (MWCC passes the struct by address either way); filemgr.h's six `u8 type` parameters are `s32`. Open
   (form): lightMain's Vec-building helper and `*(Vec*)&view[n]` row reads.
+- Claude #1's second review of #211 approved both header corrections (lightEntry's only caller passes the
+  Vec's address; filemgr's five `u8 type` parameters take `li` constants from all 58 callers, no clrlwi/extsb). As
+  on main or unwritten after it: mobj_lv_blk_evt (strings and a vec3 read past vec3_802c3dc8) and
+  BattleStageObjectInit (tables past lbl_80371490, strings past vec3_802f3ac8); party_bomhei's partyGetReturnPos
+  placeholder is back and the unused partyGetReturnPosSub out. Open (LOW): ac_air_gauge actionCommandDisp's #else
+  reads `(u8*)work + 0x1f4c` where actionCommands.field_0x2BC is declared.
 - **Wave 55** (launched 22:35 on main 8cbdff5): wave 54's recipe with 60-minute budgets and no starts after 00:15,
   leaving out every unit wave 53/54 work is pending on; 79 agents.

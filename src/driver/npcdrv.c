@@ -243,7 +243,7 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
 }
 
 
-// NONMATCHING (98.72%): 1 extra, plus register differences.
+// NONMATCHING (88.37%): 1 extra, plus register differences.
 void npcDisp_xlu(CameraId cameraId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -2093,7 +2093,7 @@ void npcSetStayPose(const char* name) {
     }
 }
 
-// NONMATCHING (98.72%): same prologue save-block scheduling as npcSetStayPose; the partyChgPoseId arg is 7.
+// NONMATCHING (88.37%): same prologue save-block scheduling as npcSetStayPose; the partyChgPoseId arg is 7.
 void npcSetTalkPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
