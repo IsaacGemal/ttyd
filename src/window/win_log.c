@@ -7,6 +7,9 @@
 #include "battle/battle_monosiri.h"
 #include "driver/animdrv.h"
 #include "driver/effdrv.h"
+#include "dolphin/gx.h"
+#include "dolphin/mtx.h"
+#include "math_ext.h"
 #include "eff/eff_starstone.h"
 #include "mario/mario_pouch.h"
 #include "manager/evtmgr_cmd.h"
@@ -1733,5 +1736,164 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
                          logMkVec(LV(0x128, vec3_802f5fe0), x + w->rows[i].curX, y + w->rows[i].curY),
                          LV(0x134, vec3_802f5fec), c4);
         }
+    }
+}
+extern const Vec vec3_802f5ff8;
+extern const Vec vec3_802f6004;
+extern const Vec vec3_802f6010;
+extern const Vec vec3_802f601c;
+extern const Vec vec3_802f6028;
+extern const Vec vec3_802f6034;
+extern const Vec vec3_802f6040;
+extern const Vec vec3_802f604c;
+extern const Vec vec3_802f6058;
+extern const Vec vec3_802f6064;
+extern const Vec vec3_802f6070;
+extern const Vec vec3_802f607c;
+extern const Vec vec3_802f6088;
+extern const Vec vec3_802f6094;
+extern const Vec vec3_802f60a0;
+extern const Vec vec3_802f60ac;
+extern const Vec vec3_802f60b8;
+extern const Vec vec3_802f60c4;
+extern const Vec vec3_802f60d0;
+extern const Vec vec3_802f60dc;
+extern const Vec vec3_802f60e8;
+extern const Vec vec3_802f60f4;
+extern const Vec vec3_802f6100;
+extern const Vec vec3_802f610c;
+
+extern const GXColor dat_8041d7a0;
+extern const f32 float_74_8041d86c;
+extern const f32 float_120_8041d870;
+extern const f32 float_304_8041d874;
+extern const f32 float_230_8041d878;
+extern const f32 float_240_8041d858;
+extern const f32 float_220_8041d868;
+extern const f32 float_1p5_8041d884;
+extern const f32 float_3_8041d888;
+extern const f32 float_0p125_8041d890;
+extern const f32 float_neg148_8041d898;
+
+static const f32 pos_tbl[7][2] = {
+    {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
+};
+
+// NONMATCHING: first draft.
+void mapGX(WindowWork* work, f32 x, f32 y) {
+    LogWin* w = (LogWin*)work;
+    const char* base = str_802F5EB8;
+    f32 tx = float_74_8041d86c + (x + w->mapScrollX);
+    f32 ty = float_120_8041d870 + (y + w->mapScrollY);
+    GXColor c0 = dat_8041d7a0;
+    GXColor c1 = dat_8041d7a0;
+    GXColor c2 = dat_8041d7a0;
+    f32 top;
+    f32 bounce;
+    s32 i;
+    TubuDt* t;
+
+    if (w->file != NULL) {
+        top = float_120_8041d870 + y;
+        GXSetScissor((u32)(((float_304_8041d874 + x) - float_230_8041d878) - float_2_8041d87c),
+                     (u32)((float_240_8041d858 - top) - float_2_8041d87c), 0x1D0, 0xF4);
+        winTexInit((TEXPalette*)w->file->data[0]);
+        winTexSet(0, logMkVec(LV(0x140, vec3_802f5ff8), tx, ty), LV(0x14C, vec3_802f6004), c1);
+        winTexInit(LOG_TEXPAL());
+        t = tubuDt;
+        for (i = 0; (u32)i < 0x5D; i++, t++) {
+            if (swByteGet(0) < (s32)t->minProgress) {
+                if (!tubuUnlocked(t)) {
+                    continue;
+                }
+            }
+            if (w->mapSel == i) {
+                s32 id = 0xBA;
+                GXColor c = c2;
+
+                if ((gp->retraceCount >> 4) & 1) {
+                    id = 0xB9;
+                }
+                winTexSet(id, logMkVec(LV(0x158, vec3_802f6010), tx + (f32)t->x, ty + (f32)t->y), LV(0x164, vec3_802f601c), c);
+            } else {
+                s32 id = 0xB8;
+                GXColor c = c2;
+
+                if (t->visible != 0) {
+                    id = 0xBA;
+                }
+                winTexSet(id, logMkVec(LV(0x170, vec3_802f6028), tx + (f32)t->x, ty + (f32)t->y), LV(0x17C, vec3_802f6034), c);
+            }
+        }
+        {
+            s32 sw = swByteGet(0);
+            s32 icon = -1;
+            s32 k;
+
+            if (sw >= 0x13 && sw < 0x37) {
+                icon = 0x197;
+                k = 0;
+            } else if (sw >= 0x41 && sw < 0x70) {
+                icon = 0x198;
+                k = 1;
+            } else if (sw >= 0x79 && sw < 0xA4) {
+                icon = 0x19A;
+                k = 2;
+            } else if (sw >= 0xAF && sw < 0xD5) {
+                icon = 0x19C;
+                k = 3;
+            } else if (sw >= 0xDE && sw < 0x105) {
+                icon = 0x19D;
+                k = 4;
+            } else if (sw >= 0x110 && sw < 0x152) {
+                icon = 0x199;
+                k = 5;
+            } else if (sw >= 0x15C && sw < 0x175) {
+                icon = 0x19B;
+                k = 6;
+            }
+            if (icon != -1) {
+                Vec scale = LV(0x194, vec3_802f604c);
+                Vec translate;
+
+                winIconInit();
+                translate = logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1]));
+                winIconSet(icon, &translate, &scale, &c0);
+            }
+        }
+        if (w->pose != -1) {
+            AnimData* anim;
+            f32 scale = float_1p5_8041d884;
+            Mtx m;
+            s32 n;
+
+            animPoseGetAnimPosePtr(WW_S32(work, 0x188));
+            anim = animPoseGetAnimDataPtr(WW_S32(work, 0x188));
+            if (w->flags & 0x2000) {
+                scale = float_3_8041d888;
+            }
+            PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, float_0_8041d7bc);
+            n = *(s32*)(*(u8**)((u8*)anim + 0x24) + 8);
+            animPoseSetLocalTime(w->pose, (f32)(gp->retraceCount % n));
+            animPoseMain(w->pose);
+            animPoseDrawMtx(w->pose, m, 1, float_0_8041d7bc, scale);
+            animPoseDrawMtx(w->pose, m, 2, float_0_8041d7bc, scale);
+            animPoseDrawMtx(w->pose, m, 3, float_0_8041d7bc, scale);
+        }
+        GXSetScissor(0, 0, 0x260, 0x1E0);
+        winTexInit(LOG_TEXPAL());
+        winTexSet(0xBF, logMkVec(LV(0x1A0, vec3_802f6058), (x - float_230_8041d878) - float_4_8041d88c, y), LV(0x1AC, vec3_802f6064), c1);
+        winTexSet(0xBF, logMkVec(LV(0x1B8, vec3_802f6070), float_4_8041d88c + (float_230_8041d878 + x), y), LV(0x1C4, vec3_802f607c), c1);
+        winTexSet(0xBF, logMkVec(LV(0x1D0, vec3_802f6088), x, float_4_8041d88c + top), LV(0x1DC, vec3_802f6094), c1);
+        winTexSet(0xBF, logMkVec(LV(0x1E8, vec3_802f60a0), x, (y - float_120_8041d870) - float_4_8041d88c), LV(0x1F4, vec3_802f60ac), c1);
+        bounce = (f32)fabs(float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890));
+        winTexInit(LOG_TEXPAL());
+        winTexSet(0xBD, logMkVec(LV(0x200, vec3_802f60b8), x, top + (float_neg240_8041d894 == w->mapScrollY ? float_0_8041d7bc : bounce)), LV(0x20C, vec3_802f60c4), c1);
+        winTexInit(LOG_TEXPAL());
+        winTexSet(0xBC, logMkVec(LV(0x218, vec3_802f60d0), float_220_8041d868 + x + (float_neg148_8041d898 == w->mapScrollX ? float_0_8041d7bc : bounce), y), LV(0x224, vec3_802f60dc), c1);
+        winTexInit(LOG_TEXPAL());
+        winTexSet(0xBE, logMkVec(LV(0x230, vec3_802f60e8), x, (y - float_120_8041d870) - (float_0_8041d7bc == w->mapScrollY ? float_0_8041d7bc : bounce)), LV(0x23C, vec3_802f60f4), c1);
+        winTexInit(LOG_TEXPAL());
+        winTexSet(0xBB, logMkVec(LV(0x248, vec3_802f6100), (x - float_220_8041d868) - (float_0_8041d7bc == w->mapScrollX ? float_0_8041d7bc : bounce), y), LV(0x254, vec3_802f610c), c1);
     }
 }
