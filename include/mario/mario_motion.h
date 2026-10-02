@@ -37,3 +37,4 @@ void mot_dummy(void);
 void mot_bottomless(void);  // TODO: real signature
 void mot_forceReset(void);
 void marioChgMotJump2(void);
+BOOL marioChkItemGetMotion(void);
