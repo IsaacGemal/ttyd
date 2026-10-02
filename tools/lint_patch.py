@@ -91,7 +91,8 @@ def main():
         touched_lines.update(range(s - 1, s - 1 + max(n, 1)))
     touched = {n for n, (s, body) in funcs.items() if touched_lines & set(range(s, s + body.count("\n") + 2))}
 
-    report = json.load(open("build/G8MJ01/report.json"))
+    # agent_check --final passes the fresh one-unit report; the full report.json is only as new as the last full build
+    report = json.load(open(os.environ.get("LINT_PATCH_REPORT") or "build/G8MJ01/report.json"))
     u = next(x for x in report["units"] if x["name"] == report_name)
     pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}
 
