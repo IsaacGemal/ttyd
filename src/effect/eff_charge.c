@@ -8,10 +8,11 @@
 #include <dolphin/mtx.h>
 
 const Vec vec3_802f8e60 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802f8e70 = 4503601774854144.0;
-const char str_802F8E78[] = "Charge";
-extern GXColor unk_80423068;
-extern GXColor unk_8042306c;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042306c;
+__declspec(section ".sdata") GXColor unk_80423068;
 
 
 // Matches. The init loop must be the nested `for (j = 0; j < 2; j++, elem++)` shape with a signed
@@ -26,7 +27,7 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
     s32 j;
 
     entry = effEntry();
-    entry->type = str_802F8E78;
+    entry->type = "Charge";
     entry->count = 0x1f;
     data = __memAlloc(HEAP_EFFECT, 0x8b8);
     entry->userdata = data;

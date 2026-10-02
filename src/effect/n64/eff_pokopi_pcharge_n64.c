@@ -9,9 +9,12 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-GXColor unk_80423208;
-GXColor unk_8042320c;
-GXColor unk_80423210;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423210;
+__declspec(section ".sdata") GXColor unk_8042320c;
+__declspec(section ".sdata") GXColor unk_80423208;
 
 //.sdata
 u8 n_data[16] = {

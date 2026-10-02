@@ -10,7 +10,10 @@
 #include <math_ext.h>
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
+// The tables are reached through base pointers, so the linker would drop the unreferenced ones.
+#pragma force_active on
 __declspec(section ".data") u32 lbl_803A4A60[2] = { 0xBF800000, 0x3F800000 };
+#pragma force_active reset
 
 // .rodata
 const Vec vec3_802fb4c8 = { 0.0f, 0.0f, 0.0f };
@@ -40,7 +43,10 @@ extern const f32 float_0p03125_8041fb0c;
 extern const f32 float_0p0026042_8041fb18;
 
 // uninitialized GXColor (alpha is filled in per particle)
-extern u32 unk_80423238;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 unk_80423238;
 
 // .data base the retail effRecoverHeartDisp reaches its vertex arrays from; it is
 // defined in eff_rappa_n64.c (the previous unit's last object) and only its address
@@ -52,6 +58,7 @@ extern u32 unk_80423238;
 #endif
 
 // .data
+#pragma force_active on
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 __declspec(section ".data") f32 lbl_803A4A70[2] = { 1.0f, -1.0f };
 __declspec(section ".data") static f32 one_negone_373[2] = { 1.0f, -1.0f };
@@ -91,6 +98,7 @@ u32 size16x24_tex32x32_r_flower_vtx[14] = {
 	0xFFFCFFF1, 0x00000000, 0x000024BE, 0x14FF0010, 0xFFF10000, 0x04000000, 0x24BE14FF,
 	0x00100009, 0x00000400, 0x040024BE, 0x14FFFFFC, 0x00090000, 0x00000400, 0x24BE14FF,
 };
+#pragma force_active reset
 
 typedef struct RecoverHeartData {
 	s32 type;       // 0x00
@@ -426,3 +434,17 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_8041fb08 = 0.017453292f;
+const f32 float_0p03125_8041fb0c = 0.03125f;
+const f32 float_0_8041fb10 = 0.0f;
+const f32 float_1_8041fb14 = 1.0f;
+const f32 float_0p0026042_8041fb18 = 0.0026041667f;
+const f32 float_0p05_8041fb1c = 0.05f;
+const f32 float_6p2832_8041fb20 = 6.2831855f;
+const f32 float_360_8041fb24 = 360.0f;
+const f32 float_neg30_8041fb28 = -30.0f;
+const f32 float_8_8041fb2c = 8.0f;
+const f32 float_0p9_8041fb30 = 0.9f;
+const f32 float_1p4_8041fb34 = 1.4f;

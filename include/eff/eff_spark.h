@@ -5,6 +5,7 @@ typedef struct EffectEntry EffectEntry;
 #include <dolphin/types.h>
 EffectEntry* effSparkEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
 #include <dolphin/mtx.h>
+#include "driver/camdrv.h"
 // Work data behind EffectEntry->userdata. It is an array of 0x38-byte elements:
 // element 0 is the effect header, elements 1..count-1 are the individual sparks.
 typedef struct effSparkData {
@@ -21,3 +22,5 @@ typedef struct effSparkData {
     s32 alpha;    // 0x30
     f32 scale;    // 0x34
 } effSparkData;
+void effSparkMain(EffectEntry* effect);
+void effSparkDisp(CameraId camId, void* param);

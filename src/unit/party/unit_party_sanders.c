@@ -1460,3 +1460,13 @@ static EVT_BEGIN(party_win_reaction)
     RETURN
 EVT_END()
 // clang-format on
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_40_8041de58 = 40.0f;
+const f32 float_0p1_8041de5c = 0.1f;
+const f32 float_0_8041de60 = 0.0f;
+const f32 float_1_8041de64 = 1.0f;
+const f32 float_0p2_8041de68 = 0.2f;
+const f32 float_0p8_8041de6c = 0.8f;
+const f32 float_0p9_8041de70 = 0.9f;
+const f32 float_0p75_8041de74 = 0.75f;
