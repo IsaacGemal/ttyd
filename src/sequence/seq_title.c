@@ -120,6 +120,7 @@ const GXColor dat_804194a8 = {0x00, 0x00, 0x00, 0xFF};
 
 // dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
 #pragma dont_inline on
+// NONMATCHING (4.50%)
 void titleMain(SequenceWork* work) {
 	switch (wp2->field_0x8) {
 		case 0:

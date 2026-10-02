@@ -3770,3 +3770,15 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   second draw (texture 0x42) uses the offset position too (now 92.83%); battle_stage_object _object_fall_attack
   records `alloc[idx + 1]` only in the weighted-random branch. Confirmed fix in the batch: las_05 senkaron's 0xFFFE
   mask (older bug).
+
+## Wave 58, batch 2 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- 33 agents onto main eb4c061: 9,074 -> 9,097 (battle_event_cmd +6, msgdrv +4, evt_badgeshop +3, party +3).
+  **An agent's change to an existing header line (msgdrv.h `msgWindow_Entry(..., u16 b)`) changed linked evt_msg and
+  broke the dol checksum**: the header keeps `s32`, and so does the definition (99.73%). battle_event_cmd's voice
+  strings are "SFX_VOICE_MARIO_AC*" (the agents had "SFX_V_MARIO_AC*"; the [data] check caught it).
+- Review (`scratch/wave58/review2.md`): badgeShop_bargainGeneration's MUST_MATCH branch stored the loop counter
+  `i` (unset) into field_0xF8[0..4]/field_0x10C where retail stores 0: only the natural stores remain (72.99%).
+  party.c's unk_800ba2dc (named vec3s read as v[23]/v[33]/v[34] past vec3_802ccd30) unwritten again; markers back
+  on titleMain, zubastar_get_kouten, msgWindow_Entry. Open (LOW): badgeShop_add and FontDrawString called through
+  casts with a different parameter type (if retail's id is s16, fix the prototypes instead).

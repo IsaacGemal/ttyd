@@ -17,7 +17,6 @@
 
 extern GlobalWork* gp;
 extern GXColor unk_80422fe4;
-extern GXColor unk_80422fe0;
 extern f32 float_0p36_8041a6a0;
 extern f32 float_0p6_8041a570;
 extern s32 msgWindowOpen_SE_Data[12][2];
@@ -804,6 +803,7 @@ void msgWindow_ForceClose(const char* tag) {
 	}
 }
 
+// NONMATCHING (99.73%)
 s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	// Declaration order steers MWCC's callee-saved allocation to the original (msg=r28, id=r27,
 	// buf=r30); the natural order lands msg in r27/buf in r27.

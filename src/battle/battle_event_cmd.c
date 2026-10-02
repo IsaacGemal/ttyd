@@ -5857,8 +5857,6 @@ extern const char str_802EE048[], str_802EE064[], str_802EE080[], str_802EE094[]
 // reloads the double_to_int constant via lis/lfd instead of the target's base-relative 0x1b0(r30).
 USER_FUNC(btlevtcmd_ACSuccessEffect) {
     s32* args = event->args;
-#ifdef MUST_MATCH
-#endif
     s32 type;
     Vec pos;
     f32 scale;

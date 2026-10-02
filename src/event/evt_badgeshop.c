@@ -244,7 +244,7 @@ void badgeShop_bteresaGeneration(void) {
 // inlined `badgeShop_get(bdsw->special_table, ...)` keeps the bottakuru compare the target
 // folds, and the compiler hoists the second loop's `count4 = 0` / `mtctr` setup above the first
 // loop; the rest is register allocation.
-// NONMATCHING (99.28%): the field-init stores share the loop counter's zero register in target
+// NONMATCHING (72.99%): the field-init stores share the loop counter's zero register in target
 // (`li r25,0`; `stw r25,0xf8..`), ours materialises a fresh `r0` for the two `field_0x110`
 // stores; one `extsh r4,r0` is one slot later than target.
 void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
@@ -311,19 +311,6 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 
 	memset(table, 0, sizeof(table));
-#ifdef MUST_MATCH
-	/* The target's field-init stores reuse the loop counter's zero register
-	   (r25) rather than a fresh constant; MWCC only does that when the store
-	   value is `i` while `i` is not yet a known constant (its `for` init is
-	   hoisted to just before the stores). Natural form under #else. */
-	bdsw->field_0xF8[0] = i;
-	bdsw->field_0xF8[1] = i;
-	bdsw->field_0xF8[2] = i;
-	bdsw->field_0xF8[3] = i;
-	bdsw->field_0xF8[4] = i;
-	bdsw->field_0x10C = i;
-	bdsw->field_0x110 = 0;
-#else
 	bdsw->field_0xF8[0] = ITEM_NULL;
 	bdsw->field_0xF8[1] = ITEM_NULL;
 	bdsw->field_0xF8[2] = ITEM_NULL;
@@ -331,7 +318,6 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	bdsw->field_0xF8[4] = ITEM_NULL;
 	bdsw->field_0x10C = 0;
 	bdsw->field_0x110 = 0;
-#endif
 
 	v7 = 0;
 	count = 0;
