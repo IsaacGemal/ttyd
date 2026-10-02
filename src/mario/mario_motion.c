@@ -81,7 +81,6 @@ extern s32 mot_roll[];
 extern s32 mot_roll_post[];
 extern s32 mot_ship[];
 extern s32 mot_ship_post[];
-extern s32 mot_slit[];
 extern s32 mot_slit_post[];
 extern s32 mot_stay[];
 extern s32 mot_stay_post[];
