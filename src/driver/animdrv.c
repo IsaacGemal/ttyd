@@ -211,10 +211,7 @@ void animPoseBattleInit(void) {
     animPoseRefresh();
 }
 
-// Control flow matches (fixed the two inverted tests and the file/alloc activity checks); the
-// target hoists one .rodata base for the five strings, this build does not (the unit's cflags lack
-// -str pool), and some loop offsets use `li 0` where the target copies the zeroed index with `mr`.
-// NONMATCHING (94.64%): the five-string .rodata base and a few `li 0`/`mr` loop offsets still differ.
+// NONMATCHING (94.61%): 13 instructions differ, 2 missing, 7 extra, plus register differences.
 s32 animPoseEntry(const char* animName, s32 type) {
     AnimationPose *pose, *temp;
     AnimationPoseFile *file, *tempfile;
@@ -253,7 +250,7 @@ label_1:
     check = wp->totalFiles;
     for (i = 0; i < check; i++) {
         file = &wp->files[i];
-        if (file->active) {
+        if (!file->active) {
             data = *file->handle->data;
             if (!strcmp(data->fileName, animName)) {
                 file->references++;
@@ -276,7 +273,7 @@ label_2:
     file->references++;
     file->handle = fileAllocf(5, "%s/%s", "a", animName);
 
-    if (file->handle == NULL) {
+    if (file->handle) {
         fileId = -2;
         file->active = FALSE;
         file->references--;
@@ -1866,7 +1863,6 @@ void animPaperPoseDisp(CameraId camId, void* param) {
 extern GXColor dat_80419a34;
 extern GXColor dat_80419a38;
 
-// dont_inline keeps animPaperPoseDispSub a real bl from animPaperPoseDisp (retail emits one).
 // Signals/offsets/logic/constants all match; the only diffs are the callee-saved GPR map.
 // The original keeps pose in r30, animData in r29, materialFlag in r31, flags in r28 and
 // materialLightFlag in r27, and reuses r27/r31/r28 for x/c/b in the y-flip block; this

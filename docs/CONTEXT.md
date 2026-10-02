@@ -3724,3 +3724,8 @@ Linked since Grind 58: `eff_nozle` (#171, 95 data objects), `battle_event_defaul
   garbage aspect ratio: as on main. partyRideMain, party_motion_homing_fly and mobj_lv_blk_evt (named objects read
   past vec3_802ccd30 / vec3_802f3e40 / vec3_802c3dc8) unwritten again. Open (LOW): spline_maketable's sqrt constants
   through vec3_802c16d8 + 0x2A8, unused `u8* p` locals in mapdrv, mapdrv.h declaring vec3_802c16e4 as u8[].
+- Claude #1's second review of #236: animPoseEntry's already-loaded paths reached `pose->fileId = fileId` and
+  `file->textureId = texId` with both unset (retail stores the loop counters r25/r22): as on main. winNameGX's third
+  branch is `else if (type == 2)` in retail, and winMailDisp read vec3s past str_802F3FE8: both unwritten again.
+  seq_title (L_titleInit/titleMain passed strings as offsets from vec3_802c11a0) as on main. Open (LOW):
+  battle_menu_disp's `*(GXColor*)&float_3p0039_8041c138` is really a GXColor (0x40404000).
