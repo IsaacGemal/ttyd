@@ -2785,9 +2785,9 @@ static EVT_BEGIN(sekai_yami_shake)
     RETURN
 EVT_END()
 
-const Vec vec3_usu_00004d84 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_usu_00004d84 = {0.0f, 100.0f, 0.0f};
 const Vec vec3_usu_00004d90 = {0.0f, 1.0f, 0.0f};
-const Vec vec3_usu_00004d9c = {0.0f, 100.0f, 0.0f};
+const Vec vec3_usu_00004d9c = {0.0f, 0.0f, 0.0f};
 static USER_FUNC(yami_view) {
     Vec camPos;
     Vec up;

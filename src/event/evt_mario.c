@@ -53,7 +53,7 @@ const char str_802E5910[] = "KPA_A_2D";
 const char str_802E591C[] = "KPA2_J_1C";
 
 const Vec vec3_802e5730[3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
-f64 double_to_int_802e5908 = 4503599627370496.0;
+f64 double_to_int_802e5908 = 4503601774854144.0;
 
 // .sdata2
 f32 float_0_8041b8ac = 0.0f;
