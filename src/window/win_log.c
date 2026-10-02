@@ -1629,11 +1629,23 @@ extern const f32 float_170_8041d8b8;
 extern const f32 float_130_8041d8bc;
 extern const f32 float_1_8041d7c0;
 
+#ifdef MUST_MATCH
+#define LV(off, sym) (*(const Vec*)((const char*)base + (off)))
+#else
+#define LV(off, sym) (sym)
+#endif
+static inline Vec logMkVec(Vec base, f32 x, f32 y) {
+    base.x = x;
+    base.y = y;
+    return base;
+}
+
 #define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
 
 // Draws one page of the log window: map, crystal stars, cards, badges, the tattle viewer and the tab strip.
 void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     LogWin* w = (LogWin*)work;
+    const char* base = str_802F5EB8;
     GXColor white = dat_8041d78c;
     GXColor white2 = dat_8041d78c;
     GXColor white3 = dat_8041d78c;
@@ -1647,16 +1659,12 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     }
     if (y + w->e70 > float_neg480_8041d89c) {
         GXColor col = dat_8041d790;
-        Vec translate = vec3_802f5f2c;
-        Vec scale = vec3_802f5f38;
 
         winTexInit(LOG_TEXPAL());
-        col.a = (u8)w->e78;
-        translate.x = x + w->e68;
-        translate.y = y + w->e70;
-        winTexSet(0x24, translate, scale, col);
+        col.a = (s8)w->e78;
+        winTexSet(0x24, logMkVec(LV(0x74, vec3_802f5f2c), x + w->e68, y + w->e70), LV(0x80, vec3_802f5f38), col);
         for (i = 0; i < 7; i++) {
-            Vec p = vec3_802f5f44;
+            Vec p = LV(0x8C, vec3_802f5f44);
             Mtx rx;
             Mtx ry;
             GXColor shadow = dat_8041d794;
@@ -1678,42 +1686,26 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     if (w->e84 < float_320_8041d8b0 && w->e8c > float_neg240_8041d894) {
         winHakoGX(work, 0, x + w->e84, y + w->e8c);
         winTexInit(LOG_TEXPAL());
-        {
-            Vec translate = vec3_802f5f50;
-            Vec scale = vec3_802f5f5c;
-
-            translate.x = x + w->ea8;
-            translate.y = y + w->eb0;
-            winTexSet(0x95, translate, scale, white);
-        }
+        winTexSet(0x95, logMkVec(LV(0x98, vec3_802f5f50), x + w->ea8, y + w->eb0), LV(0xA4, vec3_802f5f5c), white);
         if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
-            Vec translate = vec3_802f5f68;
-            Vec scale = vec3_802f5f74;
+            Vec scale = LV(0xBC, vec3_802f5f74);
+            Vec translate;
 
             winIconInit();
-            translate.x = x + w->ea8;
-            translate.y = (y + w->eb0) - float_4_8041d88c;
+            translate = logMkVec(LV(0xB0, vec3_802f5f68), x + w->ea8, (y + w->eb0) - float_4_8041d88c);
             winIconSet(itemDataTable[w->cardIcon[w->cardSel] + 240].icon_id, &translate, &scale, &white2);
         }
     }
     if (w->f80 < float_320_8041d8b0 && w->f88 > float_neg240_8041d894) {
         winHakoGX(work, 1, x + w->f80, y + w->f88);
         winTexInit(LOG_TEXPAL());
-        {
-            Vec translate = vec3_802f5f80;
-            Vec scale = vec3_802f5f8c;
-
-            translate.x = x + w->fa4;
-            translate.y = y + w->fac;
-            winTexSet(0x96, translate, scale, white);
-        }
+        winTexSet(0x96, logMkVec(LV(0xC8, vec3_802f5f80), x + w->fa4, y + w->fac), LV(0xD4, vec3_802f5f8c), white);
         if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
-            Vec translate = vec3_802f5f98;
-            Vec scale = vec3_802f5fa4;
+            Vec scale = LV(0xEC, vec3_802f5fa4);
+            Vec translate;
 
             winIconInit();
-            translate.x = x + w->fa4;
-            translate.y = (y + w->fac) - float_10_8041d8b4;
+            translate = logMkVec(LV(0xE0, vec3_802f5f98), x + w->fa4, (y + w->fac) - float_10_8041d8b4);
             winIconSet(itemDataTable[w->badgeIcon[w->badgeSel] + 179].icon_id, &translate, &scale, &white2);
         }
     }
@@ -1722,29 +1714,23 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     }
     for (i = 0; i < w->count; i++) {
         if (i == w->sel) {
-            Vec translate = vec3_802f5fb0;
-            Vec scale = vec3_802f5fbc;
-            Vec translate2 = vec3_802f5fc8;
-            Vec scale2 = vec3_802f5fd4;
             GXColor c3 = dat_8041d798;
 
             winTexInit(LOG_TEXPAL());
-            translate.x = x + w->rows[i].curX;
-            translate.y = y + w->rows[i].curY;
-            winTexSet(0xB5, translate, scale, c3);
+            winTexSet(0xB5, logMkVec(LV(0xF8, vec3_802f5fb0), x + w->rows[i].curX, y + w->rows[i].curY),
+                      LV(0x104, vec3_802f5fbc), c3);
             winTexInit_x2(LOG_TEXPAL());
-            translate2.x = (x + w->rows[i].curX) - float_8_8041d7d4;
-            translate2.y = float_8_8041d7d4 + (y + w->rows[i].curY);
-            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5, translate2, scale2, white3);
+            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
+                         logMkVec(LV(0x110, vec3_802f5fc8), (x + w->rows[i].curX) - float_8_8041d7d4,
+                                  float_8_8041d7d4 + (y + w->rows[i].curY)),
+                         LV(0x11C, vec3_802f5fd4), white3);
         } else {
-            Vec translate = vec3_802f5fe0;
-            Vec scale = vec3_802f5fec;
             GXColor c4 = dat_8041d79c;
 
             winTexInit_x2(LOG_TEXPAL());
-            translate.x = x + w->rows[i].curX;
-            translate.y = y + w->rows[i].curY;
-            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5, translate, scale, c4);
+            winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
+                         logMkVec(LV(0x128, vec3_802f5fe0), x + w->rows[i].curX, y + w->rows[i].curY),
+                         LV(0x134, vec3_802f5fec), c4);
         }
     }
 }
