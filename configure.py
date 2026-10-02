@@ -1913,7 +1913,7 @@ config.libs = [
             Object(Matching, "tik.c"),
             Object(NonMatching, "tik_00.c"),
             Object(Matching, "tik_02.c"),
-            Object(NonMatching, "tik_05.c"),
+            Object(Matching, "tik_05.c"),
             Object(Matching, "tik_11.c"),
             Object(Matching, "event/evt_lect_tik.c"),
         ],
