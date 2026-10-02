@@ -1177,7 +1177,8 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
 #define BU_S32(u, off) (*(s32*)((u8*)(u) + (off)))
 #define BU_U32(u, off) (*(u32*)((u8*)(u) + (off)))
 
-// NONMATCHING: first draft.
+// NONMATCHING (98.05%): behaviour complete, checked against the asm. The counter-check work, the three hit-position Vecs
+// and the register colouring differ (the original keeps &counter in r21).
 s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags) {
     BattleWork* wp;
     CounterPreCheckWork counter;
@@ -1187,6 +1188,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
     s32 damage;
     s32 fpDamage;
     s32 damageCode;
+    u32 hitFlag;
     s32 dc1;
     s32 dc2;
     Vec posA;
@@ -1317,13 +1319,14 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
             if (statusResult & 8) {
                 damageCode = flags | 0x1D;
             }
-            if ((flags & 0x100) != 0 && (statusResult & 0x10)) {
+            hitFlag = flags & 0x100;
+                if (hitFlag != 0 && (statusResult & 0x10)) {
                 dc1 = 0x717;
                 unit2->damagePattern = 0;
                 _checkDamageCode_EmergencyRevival(unit2, &dc1);
                 BattleRunHitEvent(unit2, dc1);
                 result = 18;
-            } else if ((flags & 0x100) != 0 && (weapon->special & 0x80) && (u32)BtlUnit_CheckStatus(unit2, 9) != 0
+            } else if (hitFlag != 0 && (weapon->special & 0x80) && BtlUnit_CheckStatus(unit2, 9) != 0
                        && irand(100) < 0) {
                 dc2 = 0x8717;
                 _checkDamageCode_EmergencyRevival(unit2, &dc2);
