@@ -18,6 +18,7 @@ void marioChgGetItemMotion(void);
 f32 marioGetFallSpd(void);
 void marioLandOn(void);
 void marioSetFallPara(void);
+void marioChgSmallJumpMotion(void);
 void marioBoots(void);
 void marioMotion(void);
 void marioFall(void);

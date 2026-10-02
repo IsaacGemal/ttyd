@@ -4750,26 +4750,29 @@ static inline u8 psndENVGetVol(PaperSoundEnv* env, PaperSoundWork* ps) {
 	return (u8)(ps->unk5A * x / 100);
 }
 
-// NONMATCHING (95.07%): three loops implemented. Remaining diffs are register allocation (ps/envs/env/work1/i
-// colours), the scheduler's placement of the spawn-call argument setup, a reload of env->unk14 that CSE
-// drops, and branch-orientation differences in the loop-2 state checks.
+// All three loops, volume math and control flow match. What still differs is callee-saved colouring of the three
+// persistent pointers across the whole function: our &psnd lands in r29 (target r28), the hoisted
+// (u8*)&psnd+0xC in r28 (target r27) and psenv/envs in r27 (target r29); i (r26) and the loop-1 env (r30) already
+// match. Because of that colouring the inlined psndENVGetVol result is masked to r3 then re-masked to r4 at the
+// four loop-1 spawn sites (one extra clrlwi), the loop-2 env->unk14 checks reload instead of reusing a register,
+// and the four loop-2 LPF blocks drop one dead duplicate `bne`. The declaration order and every tested
+// pragma/restructuring did not move the three colours.
+// NONMATCHING (96.60%): the three persistent pointers are a 3-cycle off in the callee-saved register allocation.
 void psndENVMain(void) {
-	u8* buf;
-	PaperSoundWork* ps;
-	PaperSoundEnv* env;
-	PaperSoundEnv* envs;
-	PaperSoundEffect* sfx;
-	SoundEffectEntry* entry;
-	u8* work;
-	u8* ramp;
-	u8 vol;
+	s32 target;
 	u16 span;
 	s32 i;
-	s32 target;
+	u8* work;
+	f32 f30;
+	PaperSoundEnv* envs;
+	u8* ramp;
 	s32 sfxId;
 	s32 rnd;
+	u8 vol;
 	f32 f31;
-	f32 f30;
+	SoundEffectEntry* entry;
+	PaperSoundEnv* env;
+	PaperSoundEffect* sfx;
 
 
 	target = 0x64;
@@ -4838,6 +4841,14 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
+#ifdef MUST_MATCH
+				case 1:
+				case 3:
+					break;
+#else
+				default:
+					break;
+#endif
 				}
 				continue;
 			default:
@@ -4874,6 +4885,14 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
+#ifdef MUST_MATCH
+				case 1:
+				case 3:
+					break;
+#else
+				default:
+					break;
+#endif
 				}
 				continue;
 			default:
@@ -4916,6 +4935,14 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
+#ifdef MUST_MATCH
+				case 1:
+				case 3:
+					break;
+#else
+				default:
+					break;
+#endif
 				}
 				continue;
 			default:
@@ -4952,6 +4979,14 @@ void psndENVMain(void) {
 					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
 					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
 					break;
+#ifdef MUST_MATCH
+				case 1:
+				case 3:
+					break;
+#else
+				default:
+					break;
+#endif
 				}
 				continue;
 			default:
@@ -4972,9 +5007,14 @@ void psndENVMain(void) {
 		}
 		switch (env->unk6[2]) {
 		case 0:
-			if ((s8)env->unk6[7] == 2) {
+			switch (env->unk6[7]) {
+			case 2:
 			vol = psndENVGetVol(env, &psnd);
+#ifdef MUST_MATCH
+			sfxId = *(volatile s32*)(env->unk6 + 0xE); // the target reloads env->unk14 here; volatile forces the reload
+#else
 			sfxId = *(s32*)(env->unk6 + 0xE);
+#endif
 			if ((u32)sfxId != -1) {
 				sfx = &pssfx[sfxId & 0xFF];
 				if ((u32)sfx->unk0 != -1) {
@@ -5002,12 +5042,18 @@ void psndENVMain(void) {
 					}
 				}
 			}
+				break;
 			}
 			continue;
 		case 1:
-			if ((s8)env->unk6[7] == 1) {
+			switch (env->unk6[7]) {
+			case 1:
 			vol = psndENVGetVol(env, &psnd);
+#ifdef MUST_MATCH
+			sfxId = *(volatile s32*)(env->unk6 + 0xE); // the target reloads env->unk14 here; volatile forces the reload
+#else
 			sfxId = *(s32*)(env->unk6 + 0xE);
+#endif
 			if ((u32)sfxId != -1) {
 				sfx = &pssfx[sfxId & 0xFF];
 				if ((u32)sfx->unk0 != -1) {
@@ -5035,12 +5081,18 @@ void psndENVMain(void) {
 					}
 				}
 			}
+				break;
 			}
 			continue;
 		case 2:
-			if ((s8)env->unk6[7] == 2) {
+			switch (env->unk6[7]) {
+			case 2:
 			vol = psndENVGetVol(env, &psnd);
+#ifdef MUST_MATCH
+			sfxId = *(volatile s32*)(env->unk6 + 0xE); // the target reloads env->unk14 here; volatile forces the reload
+#else
 			sfxId = *(s32*)(env->unk6 + 0xE);
+#endif
 			if ((u32)sfxId != -1) {
 				sfx = &pssfx[sfxId & 0xFF];
 				if ((u32)sfx->unk0 != -1) {
@@ -5068,12 +5120,18 @@ void psndENVMain(void) {
 					}
 				}
 			}
+				break;
 			}
 			continue;
 		case 3:
-			if ((s8)env->unk6[7] == 1) {
+			switch (env->unk6[7]) {
+			case 1:
 			vol = psndENVGetVol(env, &psnd);
+#ifdef MUST_MATCH
+			sfxId = *(volatile s32*)(env->unk6 + 0xE); // the target reloads env->unk14 here; volatile forces the reload
+#else
 			sfxId = *(s32*)(env->unk6 + 0xE);
+#endif
 			if ((u32)sfxId != -1) {
 				sfx = &pssfx[sfxId & 0xFF];
 				if ((u32)sfx->unk0 != -1) {
@@ -5101,6 +5159,7 @@ void psndENVMain(void) {
 					}
 				}
 			}
+				break;
 			}
 			continue;
 		default:

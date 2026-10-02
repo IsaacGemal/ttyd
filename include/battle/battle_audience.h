@@ -326,3 +326,6 @@ void BattleAudience_Case_MarioBigDamage();
 void BattleAudience_Case_PartyDown();
 void BattleAudience_Case_KillEnemy();
 void BattleAudience_Case_FinalAttack();
+extern s32 msg_puni_all_enter[9];
+extern s32 msg_pansy_sing[9];
+extern s32 msg_heavy_bomb_fire[9];

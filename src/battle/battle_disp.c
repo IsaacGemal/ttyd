@@ -392,21 +392,28 @@ void btlDispMain(void) {
 	}
 }
 
+#pragma opt_common_subs off // keeps the faceDirection int->float conversion in retail's f1/f2/f0 registers
 // All code, calls and matrix/switch structure match; remaining diffs are register allocation only. The
 // target keeps owner in r29 / wp in r31 (we have them swapped) and maps the six callee-saved floats to
 // f26-f31 in the "natural" order (f26=1.0, f27=270/90, f28=pos.z, f29=pos.x, f30=height, f31=angle),
 // while MWCC assigns ours in a different permutation. The three callees are kept as real `bl`s with
-// #pragma dont_inline because the target does not inline them.
-// NONMATCHING (97.05%): register allocation (owner/wp and f26/f27/f30 permutation).
+// #pragma dont_inline because the target does not inline them. MWCC gives owner r31 / wp r29 and puts
+// height in f27 and the 270/90 constant in f30; every x/z/1.0/angle and stack slot already matches. The
+// f32 declaration order and the prologue load order below are chosen so the allocator lands as close as
+// it can - reordering them moved several dozen instructions into the target's registers.
+// NONMATCHING (98.82%): only the callee-saved register assignment (owner/wp GPR swap and the height/270
+// FPR swap) plus the prologue schedule differ. parts->mOwner reloads at the flag tests, the rotation-sum
+// grouping, FP operand order, the float_270 initializer and opt_common_subs off moved the rest into place.
 void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	BattleWork* wp;
 	BattleUnit* owner;
 	CameraEntry* cam;
-	f32 f26;
-	f32 f27;
+	// Order matters for MWCC's callee-saved FPR allocation (do not sort).
+	f32 f27 = float_270_8041bf70;
 	f32 f28;
 	f32 f29;
 	f32 f30;
+	f32 f26;
 	f32 f31;
 	Mtx m28;
 	Mtx m27;
@@ -439,12 +446,12 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	Mtx m0;
 
 	(void)camId;
+	owner = parts->mOwner;
+	f26 = float_1_8041bf64;
+	wp = _battleWorkPointer;
 	if (*(s32*)((char*)parts + 0x1C0) < 0) {
 		return;
 	}
-	wp = _battleWorkPointer;
-	owner = parts->mOwner;
-	f26 = float_1_8041bf64;
 
 	PSMTXTrans(m11, -owner->mRotationOffset.x, -owner->mRotationOffset.y, -owner->mRotationOffset.z);
 	PSMTXTrans(m10, owner->mRotationOffset.x, owner->mRotationOffset.y, owner->mRotationOffset.z);
@@ -465,7 +472,6 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	PSMTXConcat(m10, m24, m28);
 	PSMTXConcat(m15, m28, m28);
 
-	f27 = float_270_8041bf70;
 
 	if (parts->attributes & 0x10000000) {
 		if (parts->faceDirection >= 0) {
@@ -484,7 +490,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		PSMTXTrans(m22, -parts->mRotationOffset.x, -parts->mRotationOffset.y, -parts->mRotationOffset.z);
 		PSMTXTrans(m21, parts->mRotationOffset.x, parts->mRotationOffset.y, parts->mRotationOffset.z);
 		PSMTXRotRad(m20, 'x', float_deg2rad_8041bf54 * (parts->mRotation.x + parts->mBaseRotation.x));
-		PSMTXRotRad(m19, 'y', float_deg2rad_8041bf54 * (parts->mBaseRotation.y + parts->mRotation.y + f31));
+		PSMTXRotRad(m19, 'y', float_deg2rad_8041bf54 * (parts->mRotation.y + parts->mBaseRotation.y + f31));
 		PSMTXRotRad(m18, 'z', float_deg2rad_8041bf54 * (parts->mRotation.z + parts->mBaseRotation.z));
 		PSMTXTrans(m23, f29, f30, f28);
 
@@ -497,7 +503,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 			if (f0 >= float_90_8041bf74 && f0 <= float_270_8041bf70) {
 				f26 = f26 * float_neg1_8041bf78;
 				PSMTXRotRad(m19, 'y', float_deg2rad_8041bf54 *
-					(f31 + parts->mRotation.y + parts->mBaseRotation.y -
+					(f31 + (parts->mRotation.y + parts->mBaseRotation.y) -
 					 float_2_8041bf68 * (float_180_8041bf7c - (f0 - f27))));
 			}
 		}
@@ -545,7 +551,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		f31 = (owner->mPosition.y + parts->mPositionOffset.y + getGravityDispOffset((BattleUnit*)parts)) + f26;
 		f29 = owner->mPosition.z + parts->mPositionOffset.z;
 		f28 = float_0_8041bf58;
-		if (owner->mAttributeFlags & 0x04000000) {
+		if (parts->mOwner->mAttributeFlags & 0x04000000) {
 			cam = camGetCurPtr();
 			f26 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
 			f28 = reviseAngle(f26 - angleABf(cam->cameraPos.x, cam->cameraPos.z, f30, f29));
@@ -554,13 +560,13 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		PSMTXTrans(m3, -parts->mRotationOffset.x, -parts->mRotationOffset.y, -parts->mRotationOffset.z);
 		PSMTXTrans(m2, parts->mRotationOffset.x, parts->mRotationOffset.y, parts->mRotationOffset.z);
 		PSMTXRotRad(m6, 'x', float_deg2rad_8041bf54 * (parts->mRotation.x + parts->mBaseRotation.x));
-		PSMTXRotRad(m5, 'y', float_deg2rad_8041bf54 * (parts->mBaseRotation.y + parts->mRotation.y + f28));
+		PSMTXRotRad(m5, 'y', float_deg2rad_8041bf54 * (parts->mRotation.y + parts->mBaseRotation.y + f28));
 		PSMTXRotRad(m4, 'z', float_deg2rad_8041bf54 * (parts->mRotation.z + parts->mBaseRotation.z));
 		PSMTXTrans(m8, f30, f31, f29);
 		PSMTXTrans(m7, parts->mDisplayOffset.x, parts->mDisplayOffset.y, parts->mDisplayOffset.z);
 
 		f30 = reviseAngle(float_neg1_8041bf78 * f27 - float_90_8041bf74);
-		if (!(owner->flags & 0x1000000)) {
+		if (!(parts->mOwner->flags & 0x1000000)) {
 			f26 = reviseAngle(parts->mBaseRotation.y + (owner->mBaseRotation.y +
 				(parts->mRotation.y + (f30 + owner->mRotation.y))));
 			cam = camGetCurPtr();
@@ -701,6 +707,8 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 #pragma dont_inline on
 	btlUnitPartsBlurControl(parts, 0, m25, *(GXColor*)((char*)parts + 0x218), f30);
 }
+
+#pragma opt_common_subs reset
 
 
 

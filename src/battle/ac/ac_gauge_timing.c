@@ -420,12 +420,27 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 
 // optimize_for_size: the original saves r25-r31 with `stmw` and keeps the 2D camera in r27.
 #pragma optimize_for_size on
-// Remaining diffs: the ELSE branch's p1/py live in f26/f25 instead of the target's f27/f28 (FPR
-// colouring); the loop's `Vec v = vec[1]` copy is scheduled before the float math (the target loads
-// it after); the int->float pool double is addressed by its own `lis` instead of `vec+0xd0`, so the
-// field_34[0x10] count lands in r4 rather than r3 in the THEN/ELSE ratio tests; the top `if
-// (field_34[0x0C] == 1)` emits `bne else` where the target has `beq then; b else`.
-// NONMATCHING (93.93%): guard/switch logic and constants match; see the diffs listed above.
+// Remaining diffs (99.32%): MWCC leaves the int->float pool double (the anonymous @NNN that
+// backs `(f32)int`) on its own `lis` base unless the function references enough distinct doubles
+// for it to build a shared .rodata pool.  Two MUST_MATCH seed reads of the existing conversion
+// doubles are enough to make it pool, so the `lfd`s become `lfd fN, 0xe0(r28)` instead of
+// `lis @NNN` (the target has `lfd fN, 0xd0(r30)`).  The remaining magic diffs are just that:
+// the pool base is r28 = `...rodata.0` rather than the vec3 pointer r30, and the anonymous magic
+// sits at +0xe0 (after the two named doubles) rather than the target's +0xd0, which would require
+// the named `double_to_int_802ff930` / `double_12_802ff938` to be compiler pool entries instead of
+// globals (out of scope, they are shared with battleAcMain_GaugeTiming).  An unused `f64 temp =
+// <magic>` local makes MWCC drop the pool base and use `vec3_802ff860` (the target's prologue) but
+// then it does not fold the magic (98.71%), so the seed form is kept.
+// The gauge loop's `176 * (100/(count+1) * (i+1)) / 100` is split into `f32 t`/`u` steps that
+// straddle the icon test, which reproduces the target's `fdivs; fmuls; beq; fmuls; fdivs`
+// schedule; separating `u` from `t` keeps the intermediate in the target's f0; naming
+// `bx = float_neg288 + x` forces `fadds f0, bx, u` (the target's operand order).
+// The ELSE rasta's two cross-call values live in `f32 q[2]` (not two scalars): as array elements
+// MWCC colours them f27/f28, exactly the target's registers (`fadds f28, f0, f31` / `fadds f27,
+// f2, f1`); with four scalars it used f25/f26 (the loop's v.x/v.y).
+// NONMATCHING (99.32%): the top `if (field_34[0x0C] == 1)` is a switch (case 1 / default) that
+// reproduces the target's `cmpwi; beq then; b else`; only the int->float double pool base/offset
+// differ (see above).
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     const Vec* vec = vec3_802ff860;
@@ -451,6 +466,11 @@ static void actionCommandDisp(f32 x, f32 y) {
     s32 icon2;
     s32 icon3;
 
+#ifdef MUST_MATCH
+    (void)*(volatile f64*)&double_to_int_802ff930;
+    (void)*(volatile f64*)&double_12_802ff938;
+#endif
+
     camGetPtr(CAMERA_2D);
 #ifdef MUST_MATCH
     dec = (GaugeTimingWork*)&ac->field_0x2BC[0];
@@ -464,7 +484,8 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
     disp->value = value;
 
-    if (*(s32*)&ac->field_34[0x0C] == 1) {
+    switch (*(s32*)&ac->field_34[0x0C]) {
+    case 1: {
         f32 ratio = disp->value * float_100_80421874 / (f32)*(s32*)&ac->field_34[0x10];
         if (ratio > float_100_80421874) {
             ratio = float_100_80421874;
@@ -482,36 +503,49 @@ static void actionCommandDisp(f32 x, f32 y) {
             v.y = float_18_8042188c + y;
             ICON_DISP(&v, 0x10, icon, float_1_80421878);
         }
-    } else {
+        break;
+    }
+    default: {
         BattleAcDrawGauge((s32)x, (s32)y, 0xB2, 0x64, 0x64, 0x64, 0x64, 0, float_0_80421890);
         if (dec->field_0x1C <= 0) {
             f32 a;
             f32 px;
-            f32 py;
-            f32 p1;
+            f32 q[2];
             cam = camGetPtr(CAMERA_2D);
             a = dec->field_0x04 * float_173_8042189c / float_100_80421874;
             px = (float_neg200_80421894 + x) - float_88_80421898;
-            py = float_49_804218a0 + y;
-            p1 = px + a;
+            q[0] = px + a;
+            q[1] = float_49_804218a0 + y;
             btlDispGXInit2DRasta();
             GXLoadPosMtxImm(cam->view, 0);
-            btlDispGXQuads2DRasta(p1, py, p1 + float_10_804218a4, py - float_16_80421880, 0, 0xFF, 0, 0xFF);
+            btlDispGXQuads2DRasta(q[0], q[1], q[0] + float_10_804218a4, q[1] - float_16_80421880, 0, 0xFF, 0, 0xFF);
         }
         count = *(s32*)&ac->field_34[0x10];
         for (i = 0; i < count; i++) {
+            {
+                s32 icon;
+                Vec v;
+                f32 u;
+                f32 bx;
+                f32 t = float_100_80421874 / (f32)(count + 1);
+                u = t * (f32)(i + 1);
+                icon = (dec->field_0x10 != 0) ? 0x95 : 0x91;
+                u = float_176_80421884 * u;
+                u = u / float_100_80421874;
 #ifdef MUST_MATCH
-            // volatile: stops MWCC hoisting the vec[1] copy out of the loop (the target reloads it each pass).
-            Vec v = *(volatile Vec*)&vec[1];
+                // volatile: stops MWCC hoisting the vec[1] copy out of the loop (the target reloads it each pass).
+                v = *(volatile Vec*)&vec[1];
 #else
-            Vec v = vec[1];
+                v = vec[1];
 #endif
-            v.x = (float_neg288_80421888 + x) +
-                  (float_176_80421884 * (float_100_80421874 / (f32)(count + 1) * (f32)(i + 1)) /
-                   float_100_80421874);
-            v.y = float_20_804218a8 + y;
-            ICON_DISP(&v, 0x10, (dec->field_0x10 != 0) ? 0x95 : 0x91, float_0p8_804218ac);
+                bx = float_neg288_80421888 + x;
+                v.x = bx + u;
+                v.y = float_20_804218a8 + y;
+                ICON_DISP(&v, 0x10, icon, float_0p8_804218ac);
+            }
         }
+        break;
+    }
     }
 
     switch (*(s32*)&ac->field_34[0x04]) {

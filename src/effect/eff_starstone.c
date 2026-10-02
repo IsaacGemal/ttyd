@@ -377,10 +377,19 @@ static inline GXColor starStoneTevColor2(GXColor c, effStarStoneData* data) {
 	}
 #endif
 
+// The original walks each display-list table with a small inline helper.  With the loop written as
+// an inlined helper (its parameters become the induction variables), MWCC colours the first loop's
+// counter r26 and its size induction r23; written directly in the caller the two come out swapped.
+static inline void starStoneDLLoop(u8* base, effStarStoneData* data, u32 off, u8* sztbl, u32 n) {
+	u32 ctr;
+	for (ctr = 0; ctr < n; ctr++) {
+		if ((data->field_0x4 & 1) || (s32)ctr != 0) {
+			GXCallDisplayList(((void**)(base + off))[ctr], sztbl[ctr] << 5);
+		}
+	}
+}
+
 // The `(u32)` cast on the base address is a match-only nudge that keeps it live in r30.
-// NONMATCHING (99.94%): in the first display-list loop the original has the size induction in r23 and
-// the counter in r26; MWCC swaps them (counter r23, size r26). Every other instruction is identical.
-#pragma opt_lifetimes off // the default lifetime analysis uses a different loop-counter register
 void effStarStoneDisp_2(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 	u8* base = (u8*)((u32)lbl_803AC080);
@@ -395,7 +404,6 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	Mtx scaleMtx;
 	Mtx rotMtx;
 	GXTexObj texObj;
-	u32 i;
 
 	mapSetMaterialFog();
 	GXSetArray(0xb, color_tbl[data->field_0x0], 4);
@@ -453,7 +461,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	STARSTONE_DL_LOOP2(0x590, diamond_2_2_dl_0_size_tbl, 0x13, i);
+	starStoneDLLoop(base, data, 0x590, diamond_2_2_dl_0_size_tbl, 0x13);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->field_0x50, data->field_0xC, data->field_0x10 + data->field_0x54);
 	PSMTXScale(scaleMtx, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14, float_1p1_80420b4c * data->field_0x14);
@@ -479,7 +487,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	STARSTONE_DL_LOOP2(0x5dc, diamond_2_2_dl_1_size_tbl, 0x13, i);
+	starStoneDLLoop(base, data, 0x5dc, diamond_2_2_dl_1_size_tbl, 0x13);
 
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
@@ -545,7 +553,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	STARSTONE_DL_LOOP2(0x590, diamond_2_2_dl_0_size_tbl, 0x13, i);
+	starStoneDLLoop(base, data, 0x590, diamond_2_2_dl_0_size_tbl, 0x13);
 
 	PSMTXTrans(mtx, data->field_0x8 + data->field_0x50, data->field_0xC, data->field_0x10 + data->field_0x54);
 	PSMTXScale(scaleMtx, data->field_0x14, data->field_0x14, data->field_0x14);
@@ -571,9 +579,8 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXSetVtxDesc(0xd, 2);
 	GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
 	GXSetArray(0xd, base + 0x520, 4);
-	STARSTONE_DL_LOOP2(0x5dc, diamond_2_2_dl_1_size_tbl, 0x13, i);
+	starStoneDLLoop(base, data, 0x5dc, diamond_2_2_dl_1_size_tbl, 0x13);
 }
-#pragma opt_lifetimes reset
 
 #define STARSTONE_VTX_COMMON(pos, nrm, tex) \
 	GXClearVtxDesc(); \
