@@ -8,8 +8,7 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
 void camRoadReset(void);
 struct CamRoadState;
 u32 compareCamRoad(struct CamRoadState* cur, struct CamRoadState* prev, f32* out);
-// The original reads a seventh float in f7 on entry, which its only caller (camRoadMain) never sets.
-void calcCamRoad(struct CamRoadState* a, struct CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az);
+void calcCamRoad(struct CamRoadState* a, struct CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank);
 void calcHokanCamRoad(s32 flag, struct CamRoadState* a, struct CamRoadState* b, f32 t, struct CamRoadState* c, struct CamRoadState* out);
 void calcCurrentCamState(f32* dst);
 typedef struct CollisionCurveData {
@@ -42,8 +41,8 @@ typedef struct CollisionCurveHit {
     /* 0x28 */ s32 unk_28;
 } CollisionCurveHit;
 
-BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec* p, CollisionCurveHit* out);
-BOOL collisionTri_simple(Vec* p, Vec* v0, Vec* v1, Vec* v2, f32* out);
+BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit* out);
+BOOL collisionTri_simple(Vec p, Vec v0, Vec v1, Vec v2, f32* out);
 void camRoadCurveOn(const char* name);
 void camRoadCurveOff(const char* name);
 f32 camRoadGetCurrentShiftXRate(void);
