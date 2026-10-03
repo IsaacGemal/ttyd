@@ -869,7 +869,7 @@ s32 npcGetReactionOfLivingBody(BOOL inBattle) {
 // TODO: fix entry->position delayed set-Vec with r6/r30
 // TODO: a1 is desc/ription?
 // NONMATCHING (81.76%): the two search loops use a cached `total` and an incrementing `entry` pointer,
-// and the position/scale zero/one vectors are the shared rodata blobs vec3_802c2f78[0]/[3].  Still register
+// and the position/scale zero/one vectors are this file's rodata vec3_802c2f78/vec3_802c2f84.  Still register
 // rotation (a1 in r26 vs r25, so `stmw r26` instead of `stmw r25`) and the vec3 base is scheduled later.
 s32 npcEntry(const char* a1, const char* animName) {
     NpcWork* wp;
@@ -919,7 +919,7 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
 #ifdef MUST_MATCH
-    entry->scale = *(Vec*)&vec3_802c2f78[3];
+    entry->scale = *(Vec*)&vec3_802c2f84;
 #else
     entry->scale.x = 1.0f;
     entry->scale.y = 1.0f;

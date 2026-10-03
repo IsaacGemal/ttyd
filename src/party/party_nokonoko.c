@@ -39,12 +39,10 @@ const double double_180_802ce160 = 180.0;
 #ifdef MUST_MATCH
 // MUST_MATCH: nokonoko_use reads the pose names (str_802CE150/158) as offsets from this first .rodata object.
 #define NK_STR(off, lit) ((char*)vec + (off))
-// MUST_MATCH: the 180.0 test compares against the .rodata double at vec3_802ce138+0x28 (lfd).
-#define NKF_180 (*(const f64*)((const u8*)vec + 0x28))
 #else
 #define NK_STR(off, lit) (lit)
-#define NKF_180 180.0f
 #endif
+#define NKF_180 double_180_802ce160
 
 static const f32 float_1p5708 = 1.5707964f;
 static const f32 float_4p7124 = 4.712389f;

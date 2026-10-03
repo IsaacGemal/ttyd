@@ -5632,9 +5632,16 @@ void slot_neon_sub(void* arg0, u8* data) {
 }
 
 // NONMATCHING (99.17%): only the register holding the `zero_gor_0001b7b4` address differs (r3 in the original, r5 here).
+#ifdef MUST_MATCH
+// MUST_MATCH: the unit's shared 0.0f pool constant, defined by no source file yet.
 extern const f32 zero_gor_0001b7b4;
+#endif
 USER_FUNC(goryuugijo_init_slot) {
+#ifdef MUST_MATCH
     f32 zero = zero_gor_0001b7b4;
+#else
+    f32 zero = 0.0f;
+#endif
     u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
 
     *(s32*)(data + 0x54) = 0;
