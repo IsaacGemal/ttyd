@@ -56,13 +56,19 @@ extern const f32 float_0p5_8041ef30;
 #else
 #endif
 
+// Shared scratch GXColors (zero-initialised in the original .sbss2).
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042310c;
+__declspec(section ".sdata") GXColor unk_80423108;
+#pragma section ".sdata" ".sbss"
+
 EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
 	EffectEntry* entry;
 	effFireworksData* data;
 	s32 i;
 
 	entry = effEntry();
-	entry->type = "FireworksN64";
+	entry->type = "FireworksN64\0\0\0";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFireworksData));
 	entry->userdata = data;
