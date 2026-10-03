@@ -587,7 +587,7 @@ void* kpaGetHitFlame(void) {
 
 
 #pragma opt_lifetimes off // keeps the target's register colouring this close (see NONMATCHING below)
-#pragma opt_dead_assignments off // same: without it the diff grows from 30 to 36 instructions
+#pragma opt_dead_assignments off // same: keeps the target's colouring
 // Register allocation only: the clear loop's `i`/`ofs` zero-inits are emitted as `mr r28,r26` + `li r27,0`
 // instead of the original's `mr r27,r26` + `mr r28,r26`, and the pi constant is in f30 vs the original's f31
 // (double_to_int stays in f31 vs f30). `result` is correctly in r25. Declaring `result` last (after
@@ -655,6 +655,8 @@ void* kpaHitCheck(void) {
     KPA(mp)->unk1C = result;
     return result;
 }
+#pragma opt_lifetimes reset
+#pragma opt_dead_assignments reset
 
 BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
     MapObjectEntry* obj = mobjHitObjPtrToPtr(entry);

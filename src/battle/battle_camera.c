@@ -61,10 +61,8 @@ void battleCameraInit(void) {
 #pragma dont_inline on
 
 // Prologue/epilogue (frame 0x100, stmw r25), the stack layout, every call and every rodata reference all match.
-// The only structural difference left is the original's dead `lfs f30, float_0` prologue load (MWCC
-// folds our `zero` initialiser instead of keeping it in f30); everything else is FP/GP register
-// allocation (the `!!` arg mismatches).
-// NONMATCHING (98.08%): see report; the unit cannot reach 100% until the dead-vector rodata in the other functions is fixed.
+// What differs is FP/GP register allocation.
+// NONMATCHING (98.18%): register allocation.
 void battleCameraMain(void) {
   CameraEntry* cam;
   BattleWork* wp;
@@ -87,6 +85,7 @@ void battleCameraMain(void) {
   wp = _battleWorkPointer;
   audience = BattleAudienceBaseGetPtr();
   zero = 0.0f;
+  zc = 0.0f; // the original's f30 starts at 0.0 (prologue `lfs f30`): zc when rank is outside 0..3
   (void)BattleGetMarioPtr(wp);
   o1 = zero;
   o2 = zero;
@@ -285,6 +284,7 @@ void battleCameraMain(void) {
     f32 base;
     f32 off;
     f32 yc;
+    f32 mid;
     f32 xc;
     BattleUnitPart* pt;
 
@@ -305,12 +305,13 @@ void battleCameraMain(void) {
     }
     base = 2.0f * wp->cameraWork.zoom;
     base -= 1.5f * w;
-    yc = 0.5f * (vv.y + hv.y);
+    // The original only writes yc in the two clamp arms; an in-range midpoint leaves it as it was.
+    mid = 0.5f * (vv.y + hv.y);
     off = -base / 10.0f;
-    if (yc > 50.0f) {
+    if (mid > 50.0f) {
       yc = 50.0f;
     }
-    if (yc < 0.0f) {
+    if (mid < 0.0f) {
       yc = 0.0f;
     }
     xc = 0.5f * (vv.x + hv.x);

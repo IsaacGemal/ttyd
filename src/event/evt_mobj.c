@@ -3837,7 +3837,7 @@ void kururing_capture(CameraId cameraId, void* param) {
     memcpy(camGetPtr(cameraId), &save, 0x260);
 }
 
-// Data externs / prototypes for this function only (see report).
+// Data externs / prototypes for this function only.
 extern const char str_8041A11C[4];
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
@@ -4451,7 +4451,7 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
 }
 #pragma opt_common_subs reset
 
-// Data for mobj_switch_float_blk only (unit .rodata; see report).
+// Data for mobj_switch_float_blk only (unit .rodata).
 extern const char* _switch_anim[6];
 
 extern const char str_8041A120[4];

@@ -2049,7 +2049,7 @@ static inline f32 bomCosApprox(f32 angle) {
     }
     return v;
 }
-// What made this match: the sin/cos polynomials live in one `static inline` helper each
+// The sin/cos polynomials live in one `static inline` helper each
 // (see pik_02.c's hoshi_sin_approx) so the angle^2 scratch / wrapped-angle pivot colour as
 // f0/f1; the angle is built in two statements (angle = 6p2832 * i; angle = angle * 0p125;)
 // for the target's f28/f29/f30 load order; mtxId is computed after PSMTXTrans; GXSetTevAlphaIn
@@ -2527,7 +2527,7 @@ static void pose_init(void) {
 
 // NONMATCHING (90.63%): retail materialises event->args in r27 and a separate args+2 in r31 (seven
 // callee-saved registers); here the args pointer lands in r31 and args+2 folds into displacements,
-// so the remaining callee-saved colours are shifted by one. The a2 aliases below are that attempt.
+// so the remaining callee-saved colours are shifted by one. The a2 aliases below are codegen-only.
 USER_FUNC(bom1000_msg) {
     s32* a2 = event->args + 2;
     s32 a = evtGetValue(event, a2[-2]);
@@ -2551,10 +2551,9 @@ USER_FUNC(bom1000_msg) {
     evtSetFloat(event, a2[0], pose[idx].matrix[0][0][3]);
     evtSetFloat(event, a2[1], pose[idx].matrix[0][2][3]);
     return EVT_RETURN_DONE;
-}// keeps the three float temps and the schedule the target has (see the NONMATCHING note)
-#pragma opt_common_subs off
+}
 
-// keeps the three float temps and the schedule the target has (see the NONMATCHING note)
+#pragma opt_common_subs off // keeps the three float temps and the schedule the target has (see the NONMATCHING note)
 // NONMATCHING (99.66%): the first block loads float_100 into r4 and zero into r3;
 // the target has float_100 in r3 and zero in r4 (f29/f30/f31 and the second block match).
 USER_FUNC(taihou_r) {
@@ -2571,6 +2570,7 @@ USER_FUNC(taihou_r) {
     effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
     return EVT_RETURN_DONE;
 }
+#pragma opt_common_subs reset
 
 // clang-format on
 

@@ -587,26 +587,17 @@ USER_FUNC(set_new_goods_list) {
 
 
 
-// NONMATCHING (96.15%): complete reconstruction; the bl sequence (338 calls), case layout
-// and .rodata order all match. Fixed here: the status-macro flag is passed as `flag | 0x10` (the
-// target does `ori` + `clrlwi`, not `extsh`); the badge/icon `iconId` is `s32` (the target
-// truncates it with `clrlwi` at the iconDispGx call); the common-tail buffer check keeps the
-// base pointer in a `char*` variable used by the loop, so `p != NULL` compiles to `cmplwi` on a
-// register instead of the folded `addic. r0, r1, 0x660`; the first block's price reads
-// `wp->field_0x8[i]` through one `s32 item` local (the target loads it once and reuses r0 in both
-// arms, ours re-evaluated the array load in the else arm -> 96.10 to 97.04); the status macro
-// copies its POSBLK vector through `UST_VEC` (a volatile read under MUST_MATCH) so MWCC does not
-// hoist the constant out of the row loop (96.98 to 97.04); and several declaration runs are
-// ordered to reproduce MWCC's callee-saved colouring (match-only, see REPORT). What remains is
-// MWCC's callee-saved colouring: our first-block sellName/sellDesc get r16/r17 where the target
-// uses r17/r18, and the same one-register shift runs through the function, which also makes the
-// frame 0x10 larger (0x790 vs 0x780). The int->float magic is the compiler's own pool entry, so
-// the named double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are
-// duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30) (removing
-// those two data definitions moves the loads to 0x3f0 but does not change the score). Display
-// callback for the shop window.
+// Display callback for the shop window. The bl sequence (338 calls), case layout and .rodata order all
+// match. The status-macro flag is passed as `flag | 0x10` (the target does `ori` + `clrlwi`, not
+// `extsh`); the badge/icon `iconId` is `s32` (the target truncates it with `clrlwi` at the iconDispGx
+// call); the common-tail buffer check keeps the base pointer in a `char*` variable used by the loop, so
+// `p != NULL` compiles to `cmplwi` on a register; the first block's price reads `wp->field_0x8[i]`
+// through one `s32 item` local (the target loads it once); several declaration runs are ordered to
+// reproduce MWCC's callee-saved colouring (match-only). The int->float magic is the compiler's own pool
+// entry, so the named double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are
+// duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30).
 // NONMATCHING (96.15%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
-// the target's r17/r18) and the frame is 0x20 larger; see the note above.
+// the target's r17/r18) through the function, which also makes the frame larger.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
 	PouchData* pouch = pouchGetPtr();
