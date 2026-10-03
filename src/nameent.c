@@ -345,7 +345,7 @@ static inline void nameKirinukiQuad(f32 x, f32 y, f32 w, f32 h) {
 	GXTexCoord2f32(1.0f, 0.0f);
 }
 
-// NONMATCHING (99.75%): frame 0x3e0 and the whole instruction stream match; only the float callee-saved register numbers of the eight per-quad size/temp values differ (46 register-name diffs) — MWCC's float allocator parks the short-lived `__fabs(8.0f)` temp in f24 where the target keeps a live size value there.
+// NONMATCHING (99.75%): frame 0x3e0 and the whole instruction stream match; only the float callee-saved register numbers differ (45 register-name diffs, all `arg_mismatch`). MWCC's float allocator colors the per-quad temporaries differently: e.g. in quad 4 ours parks `ww = __fabs(8.0f)` in f24 and the raw height `w - 16.0f` in f25, while the target keeps the raw height in f24 and `ww` in f30; the difference then cascades through quads 2-8. This is a permuter-class FP colouring difference; the instruction stream, calls and immediates are already identical.
 void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w) {
 	f32 yscale;
 

@@ -2430,9 +2430,8 @@ static inline GXColor marioBlurColor(u8 alpha) {
 }
 #endif
 
-// NONMATCHING (99.95%): body and control flow match; only the GXColor build in the
-// evt-color call differs, where MWCC swaps the two scratch registers (original keeps the
-// colour word in r3 and the mp pointer in r4; ours the other way round).
+// NONMATCHING (99.97%): body and control flow match; in the evt-color call, MWCC loads
+// the mp scratch into wp's r31 instead of the target's fresh r4 (two instructions).
 void marioDispBlurSub(s32* unused, s32 blurId) {
 	MarioWork* wp = mp;
 	Mtx mtx;
@@ -2532,6 +2531,10 @@ void marioDispBlurSub(s32* unused, s32 blurId) {
 	animPoseSetMaterialFlagOn(wp->paperAnimGroupId[marioAnimeId()], 0x40);
 
 #ifdef MUST_MATCH
+	// MUST_MATCH: re-defining wp (to the same mp) here is what makes MWCC's allocator keep
+	// the GXColor word in r3 and the marioAnimeId mp scratch in wp's r31; the plain form
+	// gives those two scratch registers the other way round (and 4 diffs instead of 2).
+	wp = mp;
 	color = marioBlurColor(0x80 - blurId * 16);
 #else
 	color = *(const GXColor*)&dat_80419e34;

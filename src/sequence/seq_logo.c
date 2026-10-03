@@ -104,6 +104,11 @@ void seq_logoExit(SequenceWork* work) {
 // result takes the highest callee-saved register. Separating the raw load (`tmp = *(...); size = swap(tmp);`)
 // avoids the special case and, with declarations ordered `decode; size; first; tmp`, gives exactly
 // r28/r29/r30, but emits an extra `mr r29, r0` (99.64%).
+// Also tried the CodeWarrior intrinsics: the nested `size = __rlwimi(__rlwimi(__rlwinm(tmp, 0, 16, 23), tmp,
+// 16, 8, 15), tmp, 16, 24, 31);` (and the three-statement form) emit the target instructions exactly - raw load
+// into r0, the rlwinm/rlwimi chain straight into `size`, no extra `mr` - but the allocator then colours
+// size=r30/decode=r29 again, so the swap remains. Copy-free codegen and the desired colouring look mutually
+// exclusive with this compiler: the forms that colour size=r29 (plain temp) all add the `mr r29, r0`.
 // NONMATCHING (99.89%): size/decode are assigned r30/r29 where the original has r29/r30.
 void seq_logoMain(SequenceWork* work) {
 	static OSTime time; //time instance 1

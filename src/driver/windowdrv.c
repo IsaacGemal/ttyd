@@ -419,10 +419,9 @@ static inline void windowSetFog(GXColor color) {
 }
 #endif
 
-// NONMATCHING (99.96%): 7 instructions differ. Block 2's y3/y4 computation is hoisted above its GXBegin by our build
-// (target computes it just after); the resulting FP register numbers differ for that block (target
-// f1=32/f2=0/f0=w-32, ours f2/f0/f1). Block 3's x4 = x3 + 32.0f comes out with the commutative fadds
-// operands swapped (target f1,f0; ours f0,f1).
+// NONMATCHING (99.97%): 6 instructions differ, all in block 2 (bottom-left). The y3/y4 scratch
+// registers come out rotated (target f1=32/f2=0/f0=temp; ours f2/f0/f1) while the operation sequence
+// (fsubs -> fneg -> fsubs) is identical. The callee-saved FP allocation already matches.
 void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
 #ifdef MUST_MATCH
@@ -606,7 +605,14 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
 	x3 = height - 32.0f;
+#ifdef MUST_MATCH
+	// MUST_MATCH: splitting the add into two statements makes MWCC encode the fadds as `x3 + 32.0f`
+	// (fadds f25, f1, f0); the natural single expression comes out with the operands swapped.
+	x4 = x3;
+	x4 += 32.0f; //f25 = x4
+#else
 	x4 = x3 + 32.0f; //f25 = x4
+#endif
 
 	GXPosition3f32(x3, 0.0f, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);

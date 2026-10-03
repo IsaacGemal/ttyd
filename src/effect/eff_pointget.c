@@ -108,13 +108,17 @@ void effPointGetMain(EffectEntry* effect) {
 
 // The frame (0x1e0), the callee-saved set (f19-f31/r26-r31), the order of the constant
 // loads and the mtx offsets (0xb8/0x88/0x58) all match. Only the callee-saved FP colouring
-// differs by a cycle: the original holds 48/32/dconst/half/basehalf in f23/f24/f25/f26/f27
-// with scale->f19 and s->f20, while ours puts them in f24/f26/f27/f25/f19 (basehalf reuses
-// the dead scale register f19, so the loop's nx temp takes f23 instead). Writing part2's
-// `base / 2.0f` as a division stops the compiler CSEing it with the precomputed basehalf,
-// which restores the 13-register frame.
+// differs: the original holds 48/32/dconst/half/basehalf in f23/f24/f25/f26/f27 with
+// scale->f19 and s->f20. With the declaration order below ours puts 48/32/dconst/half in
+// f24/f26/f27/f25 and basehalf in f23 (nx now correctly reuses the dead scale register f19).
+// That declaration order is what moves nx onto the freed f19: the natural order puts basehalf
+// there and gives the loop's nx temp f23, which is two more instructions off. The remaining
+// five registers are one 5-cycle over f23-f27 that no declaration order, assignment order or
+// opt pragma (opt_lifetimes/opt_common_subs/opt_propagation/optimization_level/scheduling)
+// tried so far changes. Writing part2's `base / 2.0f` as a division stops the compiler
+// CSEing it with the precomputed basehalf, which keeps the 13-register frame.
 // The @NNN vs named double_to_int_* pool labels are benign (see window/win_mario.c).
-// NONMATCHING (99.76%): only the callee-saved FP register colouring differs.
+// NONMATCHING (99.79%): only the callee-saved FP register colouring differs (5-cycle f23-f27).
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;
@@ -124,19 +128,19 @@ void effPointGetDisp(CameraId camId, void* param) {
 	Mtx mtx88;
 	Mtx mtx58;
 	char buf[32];
-	f32 f31;
-	f32 nx;
-	f32 scale;
+	f32 f26;
+	f32 f27;
 	f32 f23;
 	f32 f22;
-	f32 f24;
+	f32 scale;
 	f32 f28;
+	f32 f31;
 	f32 f20;
-	f32 f26;
-	f32 f21;
 	f32 f30;
+	f32 f21;
 	f32 ox;
-	f32 f27;
+	f32 nx;
+	f32 f24;
 	s32 i;
 
 	cam = camGetPtr(camId);
