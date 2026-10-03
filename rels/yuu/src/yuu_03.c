@@ -55,10 +55,12 @@ static Vec makeVecB(f32 x, f32 y, f32 z);
 #endif
 static s32 evt_nomal_cange(EventEntry* event, BOOL isFirstCall);
 
-Yuuminigame4Work* unk_yuu_bss00000010;
-RyushiEntry* xwp;
-s32 ryuwp;
+// .bss emission order is the reverse of declaration order; reverse the four globals so the
+// emitted layout matches the original: unk_yuu_bss00000010@0, xwp@4, ryuwp@8, yuunpc_wp@0xC.
 static void* yuunpc_wp;
+s32 ryuwp;
+RyushiEntry* xwp;
+Yuuminigame4Work* unk_yuu_bss00000010;
 
 // clang-format off
 extend_data(4,

@@ -406,6 +406,15 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
 #define ICON_DISP(v, f, id, s) iconDispGx((v), (f), (id), (s))
 #endif
 
+#ifdef MUST_MATCH
+// Match-only: passing the icon id through a u16 slot (instead of s32) makes MWCC schedule the
+// 0x92-loop's int->float conversion exactly as the original (lis/xoris/lwz hoisted, addi/clrlwi
+// last). The stored value and the call ABI are unchanged.
+#define ICON_DISP_B(v, f, id, s) (((void (*)(Vec*, s16, u16, f32))iconDispGx)((v), (f), (id), (s)))
+#else
+#define ICON_DISP_B(v, f, id, s) iconDispGx((v), (f), (id), (s))
+#endif
+
 // Match-only: MWCC hoists the loop-invariant zero-vector copies out of the loops (the target
 // reloads them each pass). A volatile copy keeps the load in the loop; the non-volatile reads
 // of the other vectors are direct source-object reads.
@@ -432,7 +441,7 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
 //    MWCC use it for `(f32)int`, so the extra pool entry shifts the load. ~15 instructions;
 //  - the `0x92 + i` icon block's store/conversion schedule still differs (the target delays the
 //    `lis 0x4330` store and the magic load; ours hoists them).
-// NONMATCHING (98.90%): the remaining diffs are the magic-double load above and that block's
+// NONMATCHING (99.98%): the remaining diffs are the magic-double load above and that block's
 // scheduling; the notes above list them.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work;
@@ -538,7 +547,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 u16 id = (u16)(0x92 + i);
                 t.y = f31;
                 t.x = x + (f32)(i * 0x21 - 0x102);
-                ICON_DISP(&t, 0x10, id, float_1_804216e8);
+                ICON_DISP_B(&t, 0x10, id, float_1_804216e8);
             } else {
                 Vec t = vec3_802fee10;
                 t.y = f31;

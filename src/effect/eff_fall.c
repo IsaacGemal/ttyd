@@ -11,7 +11,7 @@
 #include <dolphin/os/OSCache.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h" // external MSL math ABI; <math.h> pulls in the inline sqrtf/sqrt statics
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_803ADD20[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
@@ -193,9 +193,6 @@ s32 effFallCheckHit(EffectEntry* effect) {
 static inline GXColor effFallCol68(GXColor c, u8 a) { c.a = a; return c; }
 #endif
 
-// NONMATCHING (99.12%): 7 instructions differ, all register-allocation/scheduling: the u16->float
-// mask address and its surrounding load order. (The GXColor temp/argument slots are fixed by the
-// by-value effFallCol68 spelling and the quad `fmuls` order by the non-const `half` local above.)
 void effFallDispWater(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	FallWork* work = effect->userdata;
@@ -257,8 +254,12 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	f31 = f31 * float_0p5_80420f7c;
 	f30 = f30 * float_0p5_80420f7c;
 	PSMTXTrans(mtxPos, work[1].unk50, work[1].unk54, work[1].unk58);
+#ifdef MUST_MATCH
+	PSMTXScale(mtxScale, float_1_80420f80, f30 / (f32)GXGetTexObjHeight(&texObj), float_1_80420f80);
+#else
 	height = GXGetTexObjHeight(&texObj);
 	PSMTXScale(mtxScale, float_1_80420f80, f30 / (f32)height, float_1_80420f80);
+#endif
 	PSMTXConcat(mtxPos, mtxScale, mtxPos);
 	GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 	PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
@@ -438,7 +439,7 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 // copy stores the zero vector before the x/y/z overwrite, and the sound-name address is hoisted into a
 // callee-saved register: the declaration order (cInt, sfx, entry, elem) is what puts entry in r28 and cInt in
 // r30 as the original does. `sfx` exists only to force that hoist.
-// NONMATCHING (95.77%): the original emits two dead `b`s after the type-check `&&` chain that this compiler
+// NONMATCHING (98.57%): the original emits two dead `b`s after the type-check `&&` chain that this compiler
 // will not produce from any source shape tried (if/nested-if/goto/do-while); the sound-name address picks up
 // an extra `mr` before r29; and the vec3_802fe418 `lwz`s in case 3 schedule earlier than the original's.
 EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f32 d, f32 e) {
@@ -468,7 +469,7 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 	entry->userdata = data;
 	entry->callback = effFallMain;
 #ifdef MUST_MATCH
-	sfx = str_802FE584;
+	sfx = (const char*)&vec3_802fe418 + 0x16C;
 #endif
 	entry->flags |= 2;
 
@@ -612,21 +613,29 @@ static inline Vec effFallMakePos(f32 x, f32 y, f32 z) {
 }
 
 // Register allocation and the int-to-float pool remain on effFallMain:
-//  - ours saves r14 where the target's lowest callee-saved is r15: effect lands in r18 (target r19) and
-//    data in r6 (target r26); ours hoists strings 0x154/0x160 into callee-saved registers where the
-//    target rematerialises `addi rX, r31, imm` at each use (and the target hoists 0xd8 where ours
-//    spills it).
-//  - the type-2 x-update loop unrolls by 8 vertices (ours) vs 4 (target): the single-statement form
-//    below is the only one that strength-reduces to a pointer (explicit 4-statement bodies keep `mulli`).
-//  - the compiler's `(f32)` magic doubles are addressed from its anonymous pool (@1000/@679); the
-//    target loads them as the named objects at r31+0x60/0x68. Defining the named objects does not stop
-//    the compiler pooling its own copies (removing them only shortens .rodata, same instructions).
-// The sfx70/sfx88 locals force the two BUG sound-name addresses into registers the way the target does
-// (using the named constants instead made MWCC hoist `unk10 * 0.5f` as a common subexpression).
-// Block-scoping the type-7 sine/cosine locals (one per branch; p00761/p16605 and p03705/p4967 in their
-// own blocks) and wrapping str_802FE548 in FB took this from 94.67% to 96.59%
-// NONMATCHING (96.59%): every call/constant/switch body is byte-identical; the rest is register
-// colouring, the type-2 update-loop unroll factor and the `(f32)` magic-double pool addressing.
+//  - ours saves r14 where the target's lowest callee-saved is r15. The cause is the compiler's `(f32)`
+//    magic doubles: it pools anonymous `@` copies at .rodata+0x188/0x190 and addresses them through the
+//    section base (...rodata.0, r30), while the named `double_to_int_*` objects sit at r31+0x60/0x68. That
+//    second base register (r30) is live across the main loop and pushes the peak to 18, so the allocator
+//    needs r14; the target reuses the named objects and fits in 17. This is a project-wide MWCC limitation
+//    (win_badge/win_item/win_log/animdrv note the same); defining the objects does not stop the duplicate.
+//  - the type-2 x-update loop body is byte-identical (do-while with an explicit `--n` countdown and a
+//    4-vertex body, strength-reduced to one pointer stepped by 0x50), except that ours lowers the
+//    countdown to `subic.; bne` where the target uses `mtctr`/`bdnz`.
+//  - the remaining string addresses (0x130/0x13c/0x148/0x154/0x160) are base-relative but via the section
+//    base r30, not r31, for the same reason; 0x13c/0x148/0x160 are the named `str_802FE5*` symbols.
+// `#include "math_ext.h"` above (external MSL math ABI, no inline `sqrtf`/`sqrt` bodies) instead of
+// `<math.h>` removes the four weak-local sqrt statics from .rodata and makes the unit's .rodata layout
+// match the target exactly (vec3s, doubles at 0x60/0x68, strings at 0x70+). With the old `<math.h>`
+// include the statics shifted everything by 0x30 and capped the function at 96.37%.
+// The sfx88/sfx_d8 locals and the five named str_802FE5* references (0x130/0x13c/0x148/0x154/0x160)
+// are the best of a 3^9 search over each string's
+// FB/local/named mode; the declaration order is MWCC's default. Earlier fixes: block-scoping the type-7
+// sine/cosine locals (one per branch; p00761/p16605 and p03705/p4967 in their own blocks), the effFallMakePos
+// temp, and the do-while type-2 countdown (94.29% -> 96.37%).
+// NONMATCHING (98.19%): every call/constant/switch body is byte-identical; the rest is register
+// colouring (ours saves r14, target starts at r15, driven by the duplicate i2f pool base), the
+// `subic.`/`bdnz` countdown and a handful of schedule slots.
 void effFallMain(EffectEntry* effect) {
 	FallWork* data = effect->userdata;
 	FallWork* elem;
@@ -674,8 +683,8 @@ void effFallMain(EffectEntry* effect) {
 	f29 = float_30_80420fe0 + y;
 
 	{
-	const char* sfx70 = FB(0x70, str_802FE488);
 	const char* sfx88 = FB(0x88, str_802FE4A0);
+	const char* sfxD8 = FB(0xD8, str_802FE4F0);
 	done = 0;
 	for (i = 1, elem = &data[1]; i < effect->count; i++, elem++) {
 		switch (type) {
@@ -689,7 +698,7 @@ void effFallMain(EffectEntry* effect) {
 				if (elem->unk24 == 0) {
 					elem->unk38++;
 					if (type == 1) {
-						psndSFXOn_3D(sfx70, &pos);
+						psndSFXOn_3D(FB(0x70, str_802FE488), &pos);
 					} else if (i == 1) {
 						psndSFXOn_3D(sfx88, &pos);
 					}
@@ -797,6 +806,7 @@ void effFallMain(EffectEntry* effect) {
 			{
 				f32* v;
 				s32 j;
+				s32 n;
 				*(smartEntry**)((u8*)elem + 0x40) = smartAlloc(0x280, 3);
 				v = (*(smartEntry**)((u8*)elem + 0x40))->address;
 				for (j = 0; j < 0x20; j++) {
@@ -807,9 +817,18 @@ void effFallMain(EffectEntry* effect) {
 					v[j * 5 + 4] = float_0p066667_80421004 * (f32)(j / 2);
 				}
 				v = (*(smartEntry**)((u8*)elem + 0x40))->address;
-				for (i = 0; i < 0x20; i++) {
+				i = 0;
+				n = 8;
+				do {
 					v[i * 5 + 0] += elem->unk44 * ((v[i * 5 + 1] * v[i * 5 + 1]) / float_600_80421008);
-				}
+					v[i * 5 + 5] +=
+					    elem->unk44 * ((v[i * 5 + 6] * v[i * 5 + 6]) / float_600_80421008);
+					v[i * 5 + 10] +=
+					    elem->unk44 * ((v[i * 5 + 11] * v[i * 5 + 11]) / float_600_80421008);
+					v[i * 5 + 15] +=
+					    elem->unk44 * ((v[i * 5 + 16] * v[i * 5 + 16]) / float_600_80421008);
+					i += 4;
+				} while (--n != 0);
 				DCFlushRange((*(smartEntry**)((u8*)elem + 0x40))->address, 0x280);
 			}
 			break;
@@ -850,11 +869,11 @@ void effFallMain(EffectEntry* effect) {
 			switch (elem->unk38) {
 			case 0:
 				if (type == 5) {
-					if (!animGroupBaseAsync(FB(0x130, str_802FE548), inBattle, NULL)) {
+					if (!animGroupBaseAsync(str_802FE548, inBattle, NULL)) {
 						break;
 					}
 					if (elem->unk5C == -1) {
-						elem->unk5C = animPoseEntry(FB(0x130, str_802FE548), inBattle);
+						elem->unk5C = animPoseEntry(str_802FE548, inBattle);
 						animPoseSetAnim(elem->unk5C, str_80421018, 1);
 					}
 				} else {
@@ -1005,16 +1024,16 @@ void effFallMain(EffectEntry* effect) {
 		case 7:
 			switch (elem->unk38) {
 			case 0:
-				if (!animGroupBaseAsync(FB(0x154, str_802FE56C), inBattle, NULL)) {
+				if (!animGroupBaseAsync(str_802FE56C, inBattle, NULL)) {
 					break;
 				}
-				psndSFXOn_3D(FB(0xD8, str_802FE4F0), &pos);
+				psndSFXOn_3D(sfxD8, &pos);
 				if (elem->unk5C == -1) {
-					elem->unk5C = animPoseEntry(FB(0x154, str_802FE56C), inBattle);
+					elem->unk5C = animPoseEntry(str_802FE56C, inBattle);
 					animPoseSetAnim(elem->unk5C, str_80421018, 1);
 				}
 				if (elem->unk60 == -1) {
-					elem->unk60 = animPoseEntry(FB(0x154, str_802FE56C), inBattle);
+					elem->unk60 = animPoseEntry(str_802FE56C, inBattle);
 					animPoseSetAnim(elem->unk60, str_8042102C, 1);
 				}
 				/* fallthrough */

@@ -42,9 +42,8 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
                                     BattleWeapon* weapon, s32 flags);
 
 #define PART ((BattleUnitPart*)partArg)
-// NONMATCHING (99.99%): all 713 instructions match; only the .rodata base symbol (retail zero_802eda80 vs our
-// anonymous section symbol) and the .rodata string/double displacements (0x290 vs 0x20, 0x58 vs 0x18) differ,
-// which settle once the unit's data is in the original order.
+// The .rodata displacements (the i2f double at 0x58 and the SFX_MARIO_HAMMER_PIKKYO strings at 0x290) only
+// match when BattlePreCheckDamage is emitted after BattleCheckDamage, so its i2f double pools after the strings.
 void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damage, s32 arg4, s32 flags,
                         s32 arg6, s32 arg7) {
     BattleUnit* attacker;
@@ -944,9 +943,10 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
 // resist checks, the roll against `rate`, the status itself, the hit effect and the announcement. `*work` collects
 // what happened (1/2 got/lost a status, 4/8 fright/gale force, 0x10 instant kill, 0x20 sleep).
 #pragma opt_common_subs off // without it the callee-saved registers come out in the wrong order (unit/part in r30/r31)
-// NONMATCHING (99.59%): .rodata layout (the i2f double at 0x58 and the SFX_CONDITION strings at 0x60+ in the
-// original) makes 24 string `addi` loads and 3 `lfd` loads differ by a constant, and the two `(s8)type` casts
-// at the BtlUnit_SetStatus/BtlUnit_GetStatus calls schedule one slot earlier than the original.
+// The i2f double (double_to_int_802edad8) and the SFX_CONDITION strings this function loads through r31 must
+// sit at 0x58/0x60: the double is pooled by BattlePreCheckDamage, so that function has to come after
+// BattleCheckDamage (which pools the SFX_SYSTEM strings) in source order, i.e. before it in .text. With the
+// functions in the original .text order this function is byte-identical
 s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
                           s32 rate, s32 levelDiff, s8 turns, s8 strength) {
     u8 chargeStrength;
@@ -1083,7 +1083,14 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         if (type == STATUS_INSTANT_KILL) {
             *work |= 0x10;
         }
-        applied = BtlUnit_SetStatus(unit, (s8)type, turns, strength);
+        // The header declares these StatusEffectType (int), but the original callee sign-extends its type
+        // argument; calling through a matching pointer coerces it and puts the `extsb r4` after the other
+        // argument setup, like the original.
+#ifdef MUST_MATCH
+        applied = ((BOOL(*)(BattleUnit*, s8, s8, s8))BtlUnit_SetStatus)(unit, type, turns, strength);
+#else
+        applied = BtlUnit_SetStatus(unit, type, turns, strength);
+#endif
     }
     switch (type) {
     case STATUS_ELECTRIC:
@@ -1259,7 +1266,11 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
     }
     announced = 0;
     if (applied != 0) {
-        BtlUnit_GetStatus(unit, (s8)type, (s8*)&sp9, (s8*)&sp8);
+#ifdef MUST_MATCH
+        ((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, (s8*)&sp9, (s8*)&sp8);
+#else
+        BtlUnit_GetStatus(unit, type, (s8*)&sp9, (s8*)&sp8);
+#endif
         switch ((s32)type) {
         case STATUS_CHARGE:
             if ((s8)sp8 > 0) {
@@ -1463,6 +1474,94 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
 #define BU_S32(u, off) (*(s32*)((u8*)(u) + (off)))
 #define BU_U32(u, off) (*(u32*)((u8*)(u) + (off)))
 
+// The original loads the 0.5f multiplier from its own .sdata2 symbol; MATCH_F32 keeps the compiler
+// from folding it into an anonymous pooled literal (see matching.h).
+static const f32 float_0p5_8041bedc = 0.5f;
+
+s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 count;
+    s32 rate;
+
+    if (target == NULL || part == NULL) {
+        return 1;
+    }
+    if (weapon->special & 0x4) {
+        attacker->mTokenFlags |= 0x8;
+    }
+    if ((part->attributes & 0x4000) && !(weapon->special & 0x40000)) {
+        return 2;
+    }
+    if (weapon->special & 0x8) {
+        return 1;
+    }
+    if (BtlUnit_CheckStatus(target, 0x12) || (target->mAttributeFlags & 0x8)) {
+        return 4;
+    }
+    if (target->mAttributeFlags & 0x10) {
+        return 4;
+    }
+    if ((part->counterAttributes & 0x2) && !(weapon->counterResistanceFlags & 0x4) &&
+        attacker->badgesEquipped.SpikeShield == 0) {
+        return 5;
+    }
+    if (part->attributes & 0x10) {
+        return 4;
+    }
+    if (a & 0x100000) {
+        return 1;
+    }
+    if (target->badgesEquipped.PrettyLucky != 0) {
+        count = target->badgesEquipped.PrettyLucky;
+        while (count > 0) {
+            if (irand(100) >= 0x5A) {
+                return 3;
+            }
+            count--;
+        }
+    }
+    if (target->badgesEquipped.LuckyDay != 0) {
+        count = target->badgesEquipped.LuckyDay;
+        while (count > 0) {
+            if (irand(100) >= 0x4B) {
+                return 3;
+            }
+            count--;
+        }
+    }
+    if (target->currentHp <= target->mKindParams->mDangerHP) {
+        if (target->badgesEquipped.CloseCall != 0) {
+            count = target->badgesEquipped.CloseCall;
+            while (count > 0) {
+                if (irand(100) >= 0x43) {
+                    return 3;
+                }
+                count--;
+            }
+        }
+    }
+    if (BtlUnit_CheckStatus(target, 7)) {
+        if (!BtlUnit_CheckStatus(target, 1)) {
+            if (!BtlUnit_CheckStatus(target, 2)) {
+                if (irand(100) >= 0x32) {
+                    return 6;
+                }
+            }
+        }
+    }
+    rate = ((u8*)weapon)[0x10];
+    if (BtlUnit_CheckStatus(attacker, 3)) {
+        rate = rate * 0x32 / 100;
+    }
+    if (*(u32*)(wp->field_180C0 + 0x1E0)) {
+        rate = (s32)((f32)rate * MATCH_F32(float_0p5_8041bedc));
+    }
+    if (irand(100) >= rate) {
+        return 2;
+    }
+    return 1;
+}
+
 // The shapes here that reproduce the original's scheduling and block layout:
 //  - `damage = 0;` is a plain assignment placed after the `part` block (not an initializer); the original
 //    hoists it to between the `weapon->special` load and its test, which is also where `damage` (r22) first
@@ -1481,6 +1580,21 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
 // The four helpers it calls (`BattleInitCounterPreCheckWork`, `_checkDamageCode_EmergencyRevival`,
 // `BattleCalculateFpDamage`, `BattleSetStatusDamageFromWeapon`) are defined earlier in this file and each
 // needs its `dont_inline` pragma so the original's real `bl`s survive.
+#ifdef MUST_MATCH
+// BattleCheckDamage's three literals. Declaring them here pools them at parse time, ahead of the i2f double
+// BattlePreCheckDamage pools, which is the original's .rodata order (zero_802eda80, then these, then the
+// double). Under #else the calls pass the plain literals.
+static const char _sfxGreat1[20] = "SFX_SYSTEM_GREAT1";
+static const char _sfxNice1[20] = "SFX_SYSTEM_NICE1";
+static const char _sfxThunders[28] = "SFX_BTL_THUNDERS_ATTACK4";
+#define SFX_STR_GREAT1 _sfxGreat1
+#define SFX_STR_NICE1 _sfxNice1
+#define SFX_STR_THUNDERS _sfxThunders
+#else
+#define SFX_STR_GREAT1 "SFX_SYSTEM_GREAT1"
+#define SFX_STR_NICE1 "SFX_SYSTEM_NICE1"
+#define SFX_STR_THUNDERS "SFX_BTL_THUNDERS_ATTACK4"
+#endif
 s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags) {
     BattleWork* wp = _battleWorkPointer;
     CounterPreCheckWork work;
@@ -1509,7 +1623,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
         eff = effNiceEntry(2, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
         ((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
         flags |= 0x80000;
-        psndSFXOn("SFX_SYSTEM_GREAT1");
+        psndSFXOn(SFX_STR_GREAT1);
         BattleAudience_Case_GuardGood();
         *(s32*)unit1->field_0x27C += 1;
         unit2->field_0x26E[1] = *(s32*)unit1->field_0x27C;
@@ -1568,7 +1682,7 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
                 eff = effNiceEntry(0, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
                 ((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
                 flags |= 0x40000;
-                psndSFXOn("SFX_SYSTEM_NICE1");
+                psndSFXOn(SFX_STR_NICE1);
                 BattleAudience_Case_GuardGood();
             } else {
                 BattleAudience_Case_GuardBad();
@@ -1715,7 +1829,7 @@ counter_done:
         Vec pos;
         BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
         effBombEntry(0, pos.x, pos.y, pos.z, 1.0f);
-        psndSFXOn_3D("SFX_BTL_THUNDERS_ATTACK4", &pos);
+        psndSFXOn_3D(SFX_STR_THUNDERS, &pos);
         BattleFogForceStop();
     }
     BattleActionCommandStop(wp);
@@ -1989,93 +2103,6 @@ s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
     return 0;
 }
 
-// The original loads the 0.5f multiplier from its own .sdata2 symbol; MATCH_F32 keeps the compiler
-// from folding it into an anonymous pooled literal (see matching.h).
-static const f32 float_0p5_8041bedc = 0.5f;
-
-s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a) {
-    BattleWork* wp = _battleWorkPointer;
-    s32 count;
-    s32 rate;
-
-    if (target == NULL || part == NULL) {
-        return 1;
-    }
-    if (weapon->special & 0x4) {
-        attacker->mTokenFlags |= 0x8;
-    }
-    if ((part->attributes & 0x4000) && !(weapon->special & 0x40000)) {
-        return 2;
-    }
-    if (weapon->special & 0x8) {
-        return 1;
-    }
-    if (BtlUnit_CheckStatus(target, 0x12) || (target->mAttributeFlags & 0x8)) {
-        return 4;
-    }
-    if (target->mAttributeFlags & 0x10) {
-        return 4;
-    }
-    if ((part->counterAttributes & 0x2) && !(weapon->counterResistanceFlags & 0x4) &&
-        attacker->badgesEquipped.SpikeShield == 0) {
-        return 5;
-    }
-    if (part->attributes & 0x10) {
-        return 4;
-    }
-    if (a & 0x100000) {
-        return 1;
-    }
-    if (target->badgesEquipped.PrettyLucky != 0) {
-        count = target->badgesEquipped.PrettyLucky;
-        while (count > 0) {
-            if (irand(100) >= 0x5A) {
-                return 3;
-            }
-            count--;
-        }
-    }
-    if (target->badgesEquipped.LuckyDay != 0) {
-        count = target->badgesEquipped.LuckyDay;
-        while (count > 0) {
-            if (irand(100) >= 0x4B) {
-                return 3;
-            }
-            count--;
-        }
-    }
-    if (target->currentHp <= target->mKindParams->mDangerHP) {
-        if (target->badgesEquipped.CloseCall != 0) {
-            count = target->badgesEquipped.CloseCall;
-            while (count > 0) {
-                if (irand(100) >= 0x43) {
-                    return 3;
-                }
-                count--;
-            }
-        }
-    }
-    if (BtlUnit_CheckStatus(target, 7)) {
-        if (!BtlUnit_CheckStatus(target, 1)) {
-            if (!BtlUnit_CheckStatus(target, 2)) {
-                if (irand(100) >= 0x32) {
-                    return 6;
-                }
-            }
-        }
-    }
-    rate = ((u8*)weapon)[0x10];
-    if (BtlUnit_CheckStatus(attacker, 3)) {
-        rate = rate * 0x32 / 100;
-    }
-    if (*(u32*)(wp->field_180C0 + 0x1E0)) {
-        rate = (s32)((f32)rate * MATCH_F32(float_0p5_8041bedc));
-    }
-    if (irand(100) >= rate) {
-        return 2;
-    }
-    return 1;
-}
 
 s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                        BattleWeapon* weapon, s32* out) {

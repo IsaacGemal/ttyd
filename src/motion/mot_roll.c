@@ -6,7 +6,6 @@
 #include "memory.h"
 #include "driver/camdrv.h"
 #include <string.h>
-#include <math.h>
 #include "motion/mot_roll.h"
 #include "mario/mario_hit.h"
 #include "party.h"
@@ -14,6 +13,36 @@
 #include "driver/hitdrv.h"
 #include "mario/mariost.h"
 #include "system.h"
+
+// The original unit is built with pool_data on: every .rodata constant is reached base+offset from the
+// vec3_802c5d40 blob, its first object. Defining that prefix here and letting MWCC pool the rest places
+// the sqrtf doubles at +0x70.. and the strings at +0x98, exactly where the target's lfd fX,0xNN(r30)
+// loads expect them (mot_roll: 93.92% -> 95.48%).
+#pragma pool_data on
+
+__declspec(section ".rodata") Vec vec3_802c5d40[9] = {
+    { 0.0f, 40.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, -1.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+};
+__declspec(section ".rodata") f64 dbl_0p5 = 0.5;
+__declspec(section ".rodata") f64 dbl_3 = 3.0;
+__declspec(section ".rodata") f64 dbl_0 = 0.0;
+__declspec(section ".rodata") f64 dbl_45 = 45.0;
+__declspec(section ".rodata") f64 dbl_toint = 4503601774854144.0;
+
+
+// Include this after the prefix: <math.h> would emit its extern-inline sqrtf/sqrt weak-local _half/_three
+// doubles ahead of the pooled constants and shift them off the target offsets. math_ext.h declares the
+// same MSL ABI without those bodies; fabsf is kept as the __fabsf (fabs) intrinsic, as <math.h> defines it.
+#include "math_ext.h"
+#define fabsf(x) __fabsf(x)
 
 // MSL quiet-NaN bit pattern, used by the inlined sqrtf negative/NaN paths (headers disagree on its type).
 extern int __float_nan[];
@@ -516,13 +545,13 @@ static inline float mot_roll_sqrtf(float x) {
 
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = dbl_0p5 * guess * (dbl_3 - guess * guess * x);
+        guess = dbl_0p5 * guess * (dbl_3 - guess * guess * x);
+        guess = dbl_0p5 * guess * (dbl_3 - guess * guess * x);
         y = (float)(x * guess);
         return y;
     }
-    if (x < 0.0) {
+    if (x < dbl_0) {
         return *(float*)__float_nan;
     }
     if (mot_roll_fpclassifyf(x) == 1) {
@@ -536,11 +565,11 @@ static inline float mot_roll_sqrtf(float x) {
 // f31=unk19C block's targetYaw reload, the unsigned field_0x1D8 test, and splitting/reusing the velocity temps
 // (fmax/fqm, second block's multiplier back into f31, final angle into f28, vel_apply cos into f30) so the
 // callee-saved FPR set and frame 0xF0 match. Inlined MSL sqrtf/fpclassify match.
-// NONMATCHING (93.92%): remaining diffs are MWCC register naming/coloring (velocity lands in f27 vs f29),
+// NONMATCHING (97.89%): remaining diffs are MWCC register naming/coloring (velocity lands in f27 vs f29),
 // scheduler ordering and .rodata/.sdata2 constant addressing (i2f magic and sqrtf doubles reached via r30 in
 // the target, pooled @NNNN here).
 void mot_roll(void) {
-    Vec* vec = vec3_802c5d40;
+#define vec vec3_802c5d40
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
     MarioWork* m3;
@@ -592,9 +621,9 @@ void mot_roll(void) {
         mario->field_0x8 = 0x10;
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
-        marioPaperOn((char*)vec + 0x98);
+        marioPaperOn("p_roll");
         marioChgPose("M_I_U");
-        marioChgPaper((char*)vec + 0xA0);
+        marioChgPaper("PM_R_1A");
         mario->multiTimer = 0x41;
         m2 = marioGetPtr();
         m2->wPlayerCollisionBox.x = 14.8f;
@@ -643,7 +672,7 @@ void mot_roll(void) {
         if ((s32)--mario->multiTimer <= 0) {
             mario->currSubMotionId = 0x1E;
             marioChgPose("M_I_U");
-            marioChgPaper((char*)vec + 0xA8);
+            marioChgPaper("PM_R_1B");
             camGetPtr(CAMERA_2D)->flags &= ~0x200;
         }
         break;
@@ -673,7 +702,7 @@ void mot_roll(void) {
             m->unk148 = 0.0f;
             m->unk150.z = 0.004f;
         }
-        marioChgPaper((char*)vec + 0xB0);
+        marioChgPaper("PM_R_1C");
         marioPaperLightOff();
         psndSFXOn_3D((char*)0x17A, &mario->position);
         /* fallthrough */
@@ -829,7 +858,7 @@ void mot_roll(void) {
     if (mario->hitobjStandOn != NULL) {
         if (!(hitGetAttr(mario->hitobjStandOn) & 0xA00) && mario->airTimer == 0 &&
             (*(u16*)((u8*)mario + 0x248) & 0x100) &&
-            (strcmp(gp->currentMapName, (char*)vec + 0xB8) != 0 ||
+            (strcmp(gp->currentMapName, "eki_04") != 0 ||
              !(fabsf(*(f32*)((u8*)mario + 0x214)) >= 40.0f))) {
             MarioWork* m = marioGetPtr();
 
@@ -874,9 +903,9 @@ void mot_roll(void) {
     }
 
     f29 = ((MotRoll*)marioGetPtr()->motStruct)->velX;
+    f28 = ((MotRoll*)marioGetPtr()->motStruct)->velY;
     f30 = 0.0f;
     f27 = f30;
-    f28 = ((MotRoll*)marioGetPtr()->motStruct)->velY;
 
     if (!(mario->flags & 0x30000)) {
         f26 = (f32)(s8)mario->wStickDir1;
@@ -990,10 +1019,45 @@ void mot_roll(void) {
         }
     } else {
     if ((*(u32*)((u8*)mario + 0x2A4) & 0x10) && *(f32*)((u8*)mario + 0x220) == 0.0f) {
-        MarioWork* m = marioGetPtr();
-        if (rollDispAngleInRange(*(f32*)((u8*)m + 0x19C),
-                                 angleABf(0.0f, 0.0f, (f32)(s8)m->wStickDir1,
-                                          (f32)(s8)m->wStickDir2), 135.0f) == 1) {
+        MarioWork* m;
+        f32 a10;
+        f32 s1;
+        f32 s2;
+        s32 res = 0;
+        s32 kind = 0;
+        f32 lo;
+        f32 hi;
+        f32 ref;
+
+        m = marioGetPtr();
+        a10 = (f32)(s32)(10.0f * *(f32*)m->unk19C) / 10.0f;
+        s1 = (f32)(s8)*(volatile u8*)&m->wStickDir1;
+        s2 = (f32)(s8)*(volatile u8*)&m->wStickDir2;
+        lo = a10 - 135.0f;
+        if (lo < 0.0f) {
+            lo += 360.0f;
+            kind = 1;
+        }
+        ref = angleABf(0.0f, 0.0f, s1, s2);
+        hi = a10 + 135.0f;
+        if (hi > 360.0f) {
+            hi -= 360.0f;
+            kind = 2;
+        }
+        if (kind == 1) {
+            if (hi < ref && ref < lo) {
+                res = 1;
+            }
+        } else if (kind == 2) {
+            if (hi < ref && ref < lo) {
+                res = 1;
+            }
+        } else {
+            if (ref < lo || hi < ref) {
+                res = 1;
+            }
+        }
+        if (res == 1) {
             f29 = f29 + 0.2f * (-f29);
             f28 = f28 + 0.2f * (-f28);
             if (fabsf(f29) < 1.0f) {
@@ -1065,9 +1129,11 @@ vel_apply:
     f31 = -f28;
     f30 = angleABf(0.0f, 0.0f, f29, f31);
     f27 = 3.1415927f * f30 / 180.0f;
-    f30 = (f32)cos(f27);
-    f27 = (f32)sin(f27);
-    f27 = distABf(0.0f, 0.0f, f29 * f27, f28 * f30);
+    {
+        f32 c = (f32)cos(f27);
+        f32 s = (f32)sin(f27);
+        f27 = distABf(0.0f, 0.0f, f29 * s, f28 * c);
+    }
     f27 = 0.05f * f27;
     {
         MarioWork* m = marioGetPtr();
@@ -1136,12 +1202,27 @@ vel_apply:
     {
         s32 flg;
 
+#ifdef MUST_MATCH
+        /* Same schedule fix as marioSetRollDispDir: the volatile targetYaw load keeps the
+           angle*10 multiply in f0 and the targetYaw*10 in f1, as the original does. */
+        {
+            f32 a10 = (f32)(s32)(10.0f * f28) / 10.0f;
+            f32 t10 = (f32)(s32)(10.0f * *(volatile f32*)&m3->targetYaw) / 10.0f;
+
+            if (revise360(a10 - t10) < 180.0f) {
+                flg = 0;
+            } else {
+                flg = 1;
+            }
+        }
+#else
         if (revise360((f32)(s32)(10.0f * f28) / 10.0f -
                       (f32)(s32)(10.0f * m3->targetYaw) / 10.0f) < 180.0f) {
             flg = 0;
         } else {
             flg = 1;
         }
+#endif
         if (flg == 0) {
             if (fabsf(f28 - f30) > 90.0f && f30 > f28) {
                 f28 += 360.0f;
@@ -1218,8 +1299,9 @@ roll_tail:
 
             ang = angleABf(0.0f, 0.0f, len, -d.y);
             {
+                f32 ab = fabsf(ang);
                 f32 n = (f32)(s32)(ang + 0.5f);
-                if (fabsf(ang) < 45.0) {
+                if (ab < dbl_45) {
                     f32 s;
                     f32 c;
                     f32 tmp;
@@ -1235,13 +1317,19 @@ roll_tail:
                     f32 s;
 
                     sincosf(&s, &co, 90.0f);
-                    a = m->position;
-                    b = vec[8];
-                    b.x = s;
-                    b.z = co;
+                    {
+                        Vec tb;
+                        a = m->position;
+                        tb = vec[8];
+                        tb.x = s;
+                        tb.z = co;
+                        b = tb;
+                    }
                     marioHitCheckVec(&a, &b, &c, &d, &dist);
                 }
             }
         }
     }
 }
+#undef vec
+

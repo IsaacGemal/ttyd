@@ -70,6 +70,29 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
+#ifdef MUST_MATCH
+// MUST_MATCH: retail builds each by-value GXSetTevColor argument in a scratch slot below its
+// outgoing copy. Keeping the build and the call together in an inline reproduces that layout
+// (AGENT_BRIEF GXColor quirk); the plain block under #else is the natural form.
+static inline void sstarTev1(s32 r, s32 g, s32 b) {
+    GXColor color = (GXColor){ 0, 0, 0, 0xFF };
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    GXSetTevColor(1, color);
+}
+
+static inline void sstarTev2(void) {
+    GXColor color = (GXColor){ 0x7F, 0x7F, 0x7F, 0x7F };
+    GXSetTevColor(2, color);
+}
+
+static inline void sstarTev3(void) {
+    GXColor color = (GXColor){ 0x50, 0x50, 0x50, 0x50 };
+    GXSetTevColor(3, color);
+}
+#endif
+
 //.rodata
 
 //.data (the three vtx blocks are reached through lbl_803A5C90 + 0x40/0x78/0xC0,
@@ -142,26 +165,29 @@ static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
 // (rather than a `b += 2` induction) is what makes the loop emit retail's `mr r24, r22` init. The
 // declaration order below (found by search) is the only one that gives type=r25/colR=r22/colG=r23
 // and matches the GXColor argument slots for tev stages 2/3.
-// The colouring still differs in two places. (1) Retail has colB=r24/camId=r26; ours has the pair
-// swapped (camId=r24/colB=r26), which also shifts the GXColor by-value local from 0x28 to 0x2c
-// (arg copy at 0x2c vs 0x28). (2) In the vertex-copy loop retail keeps src=r29 and off=r24; ours
-// swaps those two, which cascades into the `addi` association for src2 and the r28-relative vtx.y2/z2
-// stores. The loop source below reaches the exact instruction shape otherwise (dataInd=r28, i=r26,
-// the `(u8*)data + off + 0x1d0` dst2 form is what makes the dst2 `addi rX, off, 0x1d0` association
-// match). Searches that did not help: all 171 single-swap declaration permutations and 1200 random
-// permutations, every subset of opt_lifetimes/opt_common_subs/opt_dead_assignments/opt_loop_invariants/
-// global_optimizer set off, opt_strength_reduction off (98.18), whole-file optimize_for_size (98.18),
-// optimization_level 0-3, `register`/initialisers/moving GXColor color, splitting the colour or loop
-// variables per block, block-scoping the colour locals, colour arrays/local structs, every
-// colour-construction shape (init list, direct `data->col*` reads and inline-return/inline-void GXColor
-// helpers all shift the tev scratch slots), colour-load reordering, a `s32 mi`/`Mtx*` matrix temp, the
-// fully inlined `i*0x1C+0xE` loop, a derived `src`, a `SstarVertex*` helper signature and a 900-case
-// random search over declaration order x colour form x loop form x pragmas (best 99.47). Compilers
-// GC/1.3..2.7 all give the same 99.51%, so this is not a compiler-version issue. A loop-carried `off`
-// (for-clause or body) makes mwcceppc loop forever; do not use it. Fixing the camId/colB pair is the
-// key: once colB owns r24 the loop's `off` reuses it and the rest falls out.
-// NONMATCHING (99.51%): register colouring only (camId/colB swap, loop src/off swap); no differing
-// instruction or constant -- `tools/diff_shape.py` reports no shape difference.
+// The GXColor staging for tev stages 1-3 matches (the sstarTev1-3 inlines build each colour in a
+// scratch slot below its outgoing copy, as retail does). What still differs is the callee-saved
+// register colouring only, in two linked places. (1) Retail has colB=r24/camId=r26; ours has the
+// pair swapped (camId=r24/colB=r26). (2) In the vertex-copy loop retail keeps src=r29 and off=r24;
+// ours swaps those two, which cascades into the `addi` association for src2 and the r28-relative
+// vtx.y2/z2 stores. `tools/diff_shape.py` reports no shape difference; all differences are the
+// `!!` register mismatches. Searches that did not help: every single-swap (171) and 1200 random
+// declaration permutations, a further 3000 random declaration x loop x colour-helper mutations
+// (fast-scored by comparing the effSstarDisp .text bytes), every subset of opt_lifetimes/
+// opt_common_subs/opt_dead_assignments/opt_loop_invariants/global_optimizer set off,
+// opt_strength_reduction off (98.18), whole-file optimize_for_size (98.18), optimization_level 0-3,
+// `register`/initialisers/moving GXColor color, splitting the colour or loop variables per block,
+// block-scoping the colour locals, colour arrays/local structs, direct `data->col*` reads,
+// inline-return/inline-void GXColor helpers, colour-load reordering, `u32`/`s16*`/`SstarVertex*`
+// src, `s32`/`int`/`u16` off, off hoisted to function scope or the enclosing block, a `s32 mi`/
+// `Mtx*` matrix temp, a derived `src`, coalescing hints (`off = colB`), a camId copy, and moving the
+// first camGetPtr before/after other statements. Compilers GC/1.3..2.7 all give the same result, so
+// this is not a compiler-version issue. A loop-carried `off` (for-clause or body) makes mwcceppc
+// loop forever; do not use it. The camId/colB pair and the loop src/off pair are independent
+// allocator tie-breaks (camId's last use is before the loop, so r24 is free in the loop either way).
+// This is a permuter job (queue the sstarTev1-3 base).
+// NONMATCHING (99.52%): register colouring only (camId/colB swap, loop src/off swap); no differing
+// instruction or constant.
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     u8* base = (u8*)lbl_803A5C90;
@@ -199,6 +225,11 @@ void effSstarDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx3, mtx2, mtx3);
 
     GXSetCullMode(GX_CULL_NONE);
+#ifdef MUST_MATCH
+    sstarTev1(colR, colG, colB);
+    sstarTev2();
+    sstarTev3();
+#else
     color = (GXColor){ 0, 0, 0, 0xFF };
     color.r = colR;
     color.g = colG;
@@ -206,6 +237,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetTevColor(1, color);
     GXSetTevColor(2, (GXColor){ 0x7F, 0x7F, 0x7F, 0x7F });
     GXSetTevColor(3, (GXColor){ 0x50, 0x50, 0x50, 0x50 });
+#endif
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
     GXSetNumTexGens(1);

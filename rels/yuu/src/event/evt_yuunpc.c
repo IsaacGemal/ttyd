@@ -692,9 +692,13 @@ EVT_BEGIN(evt_yuunpc_minigame4)
     RETURN
 EVT_END()
 
-// NONMATCHING (98.19%): logic complete (all blocks, states 0/1/2, all jump tables). Remaining
-// diff is callee-saved colouring (entry/i/counters land in different regs), `float_300`
-// addressing (`addi`+`lfs 0(rN)` vs `lfs @l(rN)`), and the `float_50`/`float_3600` hoist.
+// `float_300` is read through a volatile pointer (MUST_MATCH only) so the compiler emits the
+// original's `addi`+`lfs 0(rN)` address form instead of a direct `lfs @l(rN)`.
+extern const f32 float_300_yuu_0001508c;
+
+// Logic complete (all blocks, states 0/1/2, all jump tables). The `f32 y; z; x;` declaration
+// order below is load-bearing (see the comment there), as is `t = 3600.0f + (f0 + f1);` in case 2..6.
+// NONMATCHING (98.84%): callee-saved colouring (entry/i/counters land in different regs).
 void yuunpc_pose_minigame4_main(void) {
     Yuuminigame4Data* data;
     ExtPose* pose;
@@ -702,7 +706,12 @@ void yuunpc_pose_minigame4_main(void) {
     f32 f31;
     f32 camY;
     f32 f29;
-    f32 z, x, y;
+    // Declared in this order (and x/y/z separate) because it is load-bearing for the original's
+    // callee-saved FPR colouring: with `f32 z, x, y;` the allocator puts x in f27 and z in f28,
+    // the original has x in f28 and z in f27.
+    f32 y;
+    f32 z;
+    f32 x;
     f32 f27, f28;
     s32 mode;
     s32 n;
@@ -839,7 +848,12 @@ void yuunpc_pose_minigame4_main(void) {
                     d = -d;
                 }
                 if (d > 16.666666f) {
-                    entry->field_18 = 0.5f * (300.0f * (1.0f - d / 300.0f)) + entry->field_24;
+#ifdef MUST_MATCH
+                    f32 d300 = *(volatile const f32*)&float_300_yuu_0001508c;
+#else
+                    f32 d300 = 300.0f;
+#endif
+                    entry->field_18 = 0.5f * (d300 * (1.0f - d / d300)) + entry->field_24;
                 }
             }
             break;
@@ -864,8 +878,8 @@ void yuunpc_pose_minigame4_main(void) {
             } else {
                 f1 = 50.0f * (f32)(3 - (hh - 2));
             }
+            t = 3600.0f + (f0 + f1);
             f0 = f0 + f1;
-            t = 3600.0f + f0;
             n = (s32)(t / 50.0f) + 1;
             entry->field_18 = 50.0f * (f32)n - 3600.0f;
             {

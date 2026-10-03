@@ -4095,6 +4095,14 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   objects as one array (now MUST_MATCH only, literals in the natural build); sac_deka's agent defined the unit's
   .rodata out of retail's order, so the file's existing MUST_MATCH base+offset reads pointed at the wrong objects
   (as on main, as in wave 61).
+- **Batch 2** (onto main 592a06eb): 9,326 -> 9,342. The near-miss arm's later 55 agents put 12 more functions at
+  100% (party_move, battle_damage and battle_seq_command lead); the data-port arm adds vivian_use (0 -> 100%).
+  party_move.h's unk_800c9398/unk_800c93d0 return f32 (neither writes f1; the argument stays in it). itemdrv and
+  pmario_sound (a function or section lower) as on main. Review (`scratch/wave66/review2.md`, data first):
+  eff_ripple read its own unit's first .rodata object through an extern nothing defined (now defined in place);
+  evt_yuunpc's float_300_yuu_0001508c is the same kind of undefined object (natural form uses 300.0f; open until the
+  unit links). Codex's note on #332 that animdrv's error printfs should pass bindId was wrong: retail's r4 is the
+  lbzx'd frameExt. One agent comment named the model; reviews keep catching that, so the prompt should forbid it.
 
 ## Hand work on the 0% tail and the data ports (2026-10-03, Claude Sonnet 5.5 "TTYD Claude #3")
 

@@ -1,129 +1,105 @@
 #include "party/party_vivian.h"
 #include "party.h"
 #include "party/party_move.h"
+#include "party/party_motion.h"
 #include "mario/mario.h"
 #include "mario/mario_party.h"
 #include "mario/mario_motion.h"
+#include "mario/mario_sbr.h"
+#include "mario/mario_hit.h"
 #include "mario/mariost.h"
 #include "driver/animdrv.h"
 #include "driver/hitdrv.h"
+#include "eff/eff_ripple.h"
+#include "pmario_sound.h"
 #include "system.h"
 #include <string.h>
 
 // .sbss
 s32 vivian_cancel_req;
 
-// .rodata (three contiguous zero vectors used for paper/effect positioning)
-const Vec vec3_802f80a8 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f80b4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802f80c0 = {0.0f, 0.0f, 0.0f};
-const char str_802F80CC[] = "eki_02";
-const char str_802F80D4[] = "PTR_A2_1";
-const char str_802F80E0[] = "PTR_A2_3";
-const char str_802F80EC[] = "p_bibi";
-const char str_802F80F4[] = "PM_B_1";
-const char str_802F80FC[] = "PTR_A2_4";
-const f64 double_to_int_802f8108 = 4503601774854144.0;
-const char str_802F8110[] = "bom_01";
+// .rodata
 
 // .sdata2
-const f32 float_10_8041df00 = 10.0f;
-const char str_8041DF34[] = "M_B_3";
-const f32 float_0p1_8041df5c = 0.1f;
-const f32 float_22_8041df60 = 22.0f;
-const f32 float_neg1000_8041df64 = -1000.0f;
 
-// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
-// Without it the first loads and the constant land one register off.
-#pragma opt_common_subs off
-// 280 B
-void vivian_move(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
-        partyMoveFlyInit(party, 1);
+// 152 B
+void N_marioForceVivianAnime(void) {
+    MarioWork* mario = marioGetPtr();
+
+    marioPaperOff();
+    marioChgPaper(NULL);
+    marioPaperOn("p_bibi");
+    marioChgPose("M_B_3");
+    marioChgPaper("PM_B_1");
+    mario->poseTime = 0x18;
+    animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)*(u16*)&mario->poseTime);
+}
+
+// 104 B
+void mot_vivian(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->trigFlags & 1) {
+        mario->trigFlags &= ~1;
+        mario->flags &= ~0x000F0000;
+        mario->multiTimer = 0;
+        mario->airTimer = 0;
+        mario->currSubMotionId = 0;
+        mario->baseSpeed = 0.0f;
+        *(u32*)&mario->field_0x1DC[4] = 0;
+        *(u32*)&mario->field_0x1DC[0] = 0;
+        mario->hitobjPush = NULL;
+        *(u32*)&mario->field_0x1F0[0] = 0;
     }
-    partyFlyMain(party);
-    if (party != NULL && party->currentMemberId == 6) {
-        // The temps are declared mz, my, mx (reverse use order): that colouring is what puts the
-        // target's `my` in f3 and `mz` in f1. Assignments stay in mx, my, mz order.
-        f32 dx, dy, dz, mz, my, mx;
-        dx = party->position.x - party->field_B8.x;
-        dy = party->position.y - party->field_B8.y;
-        dz = party->position.z - party->field_B8.z;
-        mx = float_0p1_8041df5c * dx;
-        my = float_0p1_8041df5c * dy;
-        mz = float_0p1_8041df5c * dz;
-        party->field_B8.x = party->field_B8.x + mx;
-        party->field_B8.y = party->field_B8.y + my;
-        party->field_B8.z = party->field_B8.z + mz;
-        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= float_22_8041df60) {
-            party->field_B8 = party->position;
-            movePos(&party->field_B8.x, &party->field_B8.z, float_22_8041df60, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
+}
+
+// 340 B
+void mot_vivian_post(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->currMotionId == 0x20 || mario->currMotionId == 0x1f) {
+        mario->dispFlags &= ~0x1000;
+        marioPaperOff();
+        *(Vec*)&mario->field_0x98[0xC] = (Vec){0.0f, 0.0f, 0.0f};
+        mario->flags &= ~0x400;
+        if (party != NULL) {
+            partyPaperOff(party);
+            party->flags &= ~0x100;
+            party->flags &= ~0x80000000;
+            party->flags2 &= ~0x200000;
+#ifdef MUST_MATCH
+            *(volatile f32*)&party->field_174[0] = 10.0f;
+#else
+            *(f32*)&party->field_174[0] = 10.0f;
+#endif
+            *(Vec*)&party->field_7C[0] = (Vec){0.0f, 0.0f, 0.0f};
+            partyChgRunMode(party, 2);
+            party->field_3B = 0;
+            partyChgPoseId(party, 1);
+            if (party->currentMemberId == 6) {
+                *(s8*)&party->field_4D[2] &= ~1;
+            }
         }
-    }
-}
-
-// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
-// 240 B
-void vivianShadow(PartyEntry* party) {
-    if (party != NULL && party->currentMemberId == 6) {
-        f32 dx = party->position.x - party->field_B8.x;
-        f32 dy = party->position.y - party->field_B8.y;
-        f32 dz = party->position.z - party->field_B8.z;
-        f32 mx = float_0p1_8041df5c * dx;
-        f32 my = float_0p1_8041df5c * dy;
-        f32 mz = float_0p1_8041df5c * dz;
-        party->field_B8.x = party->field_B8.x + mx;
-        party->field_B8.y = party->field_B8.y + my;
-        party->field_B8.z = party->field_B8.z + mz;
-        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= float_22_8041df60) {
-            party->field_B8 = party->position;
-            movePos(&party->field_B8.x, &party->field_B8.z, float_22_8041df60, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
+    } else {
+        if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
+            return;
         }
-    }
-}
-#pragma opt_common_subs reset
-
-// 156 B
-s32 N_vivianDisplayTailCheck(PartyEntry* party) {
-    if (party->currentMemberId != 6) {
-        return 0;
-    }
-    if (*(u8*)((u8*)party + 0x4F) & 1) {
-        return 0;
-    }
-    if (party->flags2 & 0x800000) {
-        return 0;
-    }
-    if (strcmp(gp->currentMapName, str_802F8110) == 0 && party->position.y == float_neg1000_8041df64) {
-        return 0;
-    }
-    return 1;
-}
-
-// 28 B
-void L_partyVivianTailStart(PartyEntry* party) {
-    if (party->currentMemberId == 6) {
-        *(s8*)((u8*)party + 0x4F) &= ~1;
+        vivian_cancel_req = 1;
     }
 }
 
-// 28 B
-void L_partyVivianTailStop(PartyEntry* party) {
-    if (party->currentMemberId == 6) {
-        *(u8*)((u8*)party + 0x4F) |= 1;
-    }
-}
-
-// 60 B
-void vivianUnhold(PartyEntry* party) {
-    if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
-        return;
-    }
-    if (party->useMotionId != 0xa) {
-        return;
-    }
-    party->useMotionId = 0x14;
+// 84 B
+void vivian_init_801809C0(PartyEntry* party) {
+    party->field_33 = 6;
+    party->field_32 = 1;
+    *(f32*)&party->field_E8[8] = 35.0f;
+    party->field_F4 = 24.0f;
+    *(f32*)&party->field_174[0] = 10.0f;
+    party->field_4D[2] = 0;
+    party->field_B8 = party->position;
+    *(u32*)&party->field_174[0x10] = 0;
+    vivian_cancel_req = 0;
 }
 
 s32 vivianGetStatus(void) {
@@ -147,89 +123,420 @@ s32 vivianGetStatus(void) {
     return 4;
 }
 
-// 84 B
-void vivian_init_801809C0(PartyEntry* party) {
-    party->field_33 = 6;
-    party->field_32 = 1;
-    *(f32*)((u8*)party + 0xF0) = 35.0f;
-    *(f32*)((u8*)party + 0xF4) = 24.0f;
-    *(f32*)((u8*)party + 0x174) = 10.0f;
-    *(u8*)((u8*)party + 0x4F) = 0;
-    *(Vec*)((u8*)party + 0xB8) = party->position;
-    *(u32*)((u8*)party + 0x184) = 0;
-    vivian_cancel_req = 0;
+// 60 B
+void vivianUnhold(PartyEntry* party) {
+    if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
+        return;
+    }
+    if (party->useMotionId != 0xa) {
+        return;
+    }
+    party->useMotionId = 0x14;
 }
 
-// Match-only volatile lvalues: the target's register choice and schedule for these Vec/f32
-// copies only come out when the accesses are volatile-qualified (same trick as mot_yoshi.c).
-// 340 B
-void mot_vivian_post(void) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-    MarioWork* mario = marioGetPtr();
+// 28 B
+void L_partyVivianTailStop(PartyEntry* party) {
+    if (party->currentMemberId == 6) {
+        party->field_4D[2] |= 1;
+    }
+}
 
-    if (mario->currMotionId == 0x20 || mario->currMotionId == 0x1f) {
-        mario->dispFlags &= ~0x1000;
-        marioPaperOff();
-#ifdef MUST_MATCH
-        *(volatile Vec*)&mario->field_0x98[0xC] = *(volatile Vec*)&vec3_802f80a8;
-#else
-        *(Vec*)&mario->field_0x98[0xC] = vec3_802f80a8;
-#endif
-        mario->flags &= ~0x400;
-        if (party != NULL) {
-            partyPaperOff(party);
-            party->flags &= ~0x100;
-            party->flags &= ~0x80000000;
-            party->flags2 &= ~0x200000;
-#ifdef MUST_MATCH
-            *(volatile f32*)((u8*)party + 0x174) = float_10_8041df00;
-            *(volatile Vec*)&party->field_7C[0] = *(volatile Vec*)&vec3_802f80b4;
-#else
-            *(f32*)((u8*)party + 0x174) = float_10_8041df00;
-            *(Vec*)&party->field_7C[0] = vec3_802f80b4;
-#endif
-            partyChgRunMode(party, 2);
-            party->field_3B = 0;
-            partyChgPoseId(party, 1);
-            if (party->currentMemberId == 6) {
-                *(s8*)((u8*)party + 0x4F) &= ~1;
+// 28 B
+void L_partyVivianTailStart(PartyEntry* party) {
+    if (party->currentMemberId == 6) {
+        *(s8*)&party->field_4D[2] &= ~1;
+    }
+}
+
+// 156 B
+s32 N_vivianDisplayTailCheck(PartyEntry* party) {
+    if (party->currentMemberId != 6) {
+        return 0;
+    }
+    if (party->field_4D[2] & 1) {
+        return 0;
+    }
+    if (party->flags2 & 0x800000) {
+        return 0;
+    }
+    if (strcmp(gp->currentMapName, "bom_01") == 0 && party->position.y == -1000.0f) {
+        return 0;
+    }
+    return 1;
+}
+
+// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
+#pragma opt_common_subs off
+// 240 B
+void vivianShadow(PartyEntry* party) {
+    if (party != NULL && party->currentMemberId == 6) {
+        f32 dx = party->position.x - party->field_B8.x;
+        f32 dy = party->position.y - party->field_B8.y;
+        f32 dz = party->position.z - party->field_B8.z;
+        f32 mx = 0.1f * dx;
+        f32 my = 0.1f * dy;
+        f32 mz = 0.1f * dz;
+        party->field_B8.x = party->field_B8.x + mx;
+        party->field_B8.y = party->field_B8.y + my;
+        party->field_B8.z = party->field_B8.z + mz;
+        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= 22.0f) {
+            party->field_B8 = party->position;
+            movePos(&party->field_B8.x, &party->field_B8.z, 22.0f, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
+        }
+    }
+}
+
+// opt_common_subs off: needed for the target FPR colouring (field_B8.x in f1, the 0.1 constant in f6).
+// Without it the first loads and the constant land one register off.
+// 280 B
+void vivian_move(PartyEntry* party) {
+    if (party->field_8 & 0x8) {
+        party->field_8 &= ~0x8;
+        partyMoveFlyInit(party, 1);
+    }
+    partyFlyMain(party);
+    if (party != NULL && party->currentMemberId == 6) {
+        // The temps are declared mz, my, mx (reverse use order): that colouring is what puts the
+        // target's `my` in f3 and `mz` in f1. Assignments stay in mx, my, mz order.
+        f32 dx, dy, dz, mz, my, mx;
+        dx = party->position.x - party->field_B8.x;
+        dy = party->position.y - party->field_B8.y;
+        dz = party->position.z - party->field_B8.z;
+        mx = 0.1f * dx;
+        my = 0.1f * dy;
+        mz = 0.1f * dz;
+        party->field_B8.x = party->field_B8.x + mx;
+        party->field_B8.y = party->field_B8.y + my;
+        party->field_B8.z = party->field_B8.z + mz;
+        if (distABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z) >= 22.0f) {
+            party->field_B8 = party->position;
+            movePos(&party->field_B8.x, &party->field_B8.z, 22.0f, angleABf(party->position.x, party->position.z, party->field_B8.x, party->field_B8.z));
+        }
+    }
+}
+#pragma opt_common_subs reset
+
+static inline void vivianUseStep(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+    f32 gy, gx, gz;
+    f32 sx, sy, sz;
+    HitEntry* hit;
+
+    marioGetScreenPos(mario->position, &sx, &sy, &sz);
+    hit = marioSearchGround(&gy, &gx, &gz, 37.0f, -37.0f);
+    if (hit != NULL && !(hitGetAttr(hit) & 0xa00)) {
+        mario->hitobjStandOn = hit;
+        mario->position.y = gy;
+        if (mario->riderDelta.y < 0.0f) {
+            gy += 0.2f;
+        }
+    }
+    if (party->useMotionId >= 0x14 && party->useMotionId < 0x1e) {
+        *(f32*)&party->field_174[8] += -0.4f;
+        if (*(f32*)&party->field_174[8] < -13.0f) {
+            *(f32*)&party->field_174[8] = -13.0f;
+        }
+        *(Vec*)&party->field_7C[0x18] = mario->position;
+        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20], *(f32*)&party->field_174[8],
+                toMovedirSimple(mario->unk1A8));
+        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20], 0.0f, toMovedirSimple(mario->unk1A8));
+        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20],
+                (*(f32*)&mario->unk1AC[0] == 0.0f) ? -2.5f : 2.5f,
+                toMovedir(270.0f + mario->unk1A8));
+    } else {
+        if (party->useMotionId >= 4) {
+            *(f32*)&party->field_174[8] += 0.4f;
+            if (*(f32*)&party->field_174[8] >= 0.0f) {
+                *(f32*)&party->field_174[8] = 0.0f;
             }
         }
-    } else {
-        if (party == NULL || party->currentMemberId != 6 || !(party->flags & 0x100)) {
-            return;
+        *(Vec*)&party->field_7C[0x18] = mario->position;
+        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20], *(f32*)&party->field_174[8],
+                toMovedirSimple(mario->unk1A8));
+        movePos((f32*)&party->field_7C[0x18], (f32*)&party->field_7C[0x20],
+                (*(f32*)&mario->unk1AC[0] == 0.0f) ? -2.5f : 2.5f,
+                toMovedir(270.0f + mario->unk1A8));
+    }
+    if (strcmp(gp->currentMapName, "eki_02") == 0) {
+        marioChkWallAround(&mario->position, 1, 0.0f, mario->directionView,
+                           *(f32*)&mario->wPlayerCollisionBox.z, 0.5f);
+    }
+}
+
+// The zero-vector copies are `(Vec){0,0,0}` templates: the compiler pools the three of them at
+// .rodata 0x0/0xC/0x18, so this function's copy is the target's `lwz r3,0x18(r31)` with no extra
+// address copy (a named vec3_802f80c0 would instead be materialised into r4 first).
+void vivian_use(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+
+    if (party->field_8 & 0x8) {
+        party->field_8 &= ~0x8;
+        party->useMotionId = 0;
+        *(f32*)&party->field_174[0] = 10.0f;
+        party->field_B8 = party->position;
+        vivian_cancel_req = 0;
+        L_partyForceSlitOff(party);
+    }
+    mario->baseSpeed = 0.0f;
+    party->speed = 0.0f;
+
+    switch (party->useMotionId) {
+    case 0:
+        marioChgMot(0x1c);
+        *(f32*)&party->field_174[8] = -13.0f;
+        vivianUseStep(party);
+        party->dir = angleABf(party->position.x, party->position.z, *(f32*)&party->field_7C[0x18], *(f32*)&party->field_7C[0x20]);
+        party->field_10C = mario->unk1A8;
+        party->field_110 = *(f32*)&mario->unk1AC[0];
+        party->speed = 0.0f;
+        party->jumpPara1 = 0.0f;
+        party->useMotionId = 1;
+        *(s32*)&party->field_22[2] = 6;
+        partyChgPose(party, "PTR_A2_1");
+        // fallthrough
+    case 1:
+        vivianUseStep(party);
+        party->position.x += (*(f32*)&party->field_7C[0x18] - party->position.x) / (f32)*(s32*)&party->field_22[2];
+        party->position.y += (*(f32*)&party->field_7C[0x1C] - party->position.y) / (f32)*(s32*)&party->field_22[2];
+        party->position.z += (*(f32*)&party->field_7C[0x20] - party->position.z) / (f32)*(s32*)&party->field_22[2];
+        party->field_B8 = party->position;
+        if (--*(s32*)&party->field_22[2] > 0) {
+            break;
         }
-        vivian_cancel_req = 1;
+        party->flags2 |= 0x200000;
+        party->field_110 = *(f32*)&mario->unk1AC[0];
+        party->field_FC = toMovedirSimple(party->field_110);
+        party->field_B8 = party->position;
+        mario->dispFlags |= 0x1000;
+        partyChgPose(party, "PTR_A2_3");
+        partyPaperOn(party, "p_bibi");
+        partyChgPaper(party, "PM_B_1");
+        *(f32*)&party->field_7C[4] += 1.6f;
+        mario->dispFlags |= 0x1000;
+        marioPaperOn("p_bibi");
+        marioChgPose("M_B_3");
+        marioChgPaper("PM_B_1");
+        party->useMotionId = 4;
+        *(s32*)&party->field_22[2] = 0x1e;
+        psndSFXOn_3D((const char*)0x936, &party->position);
+        // fallthrough
+    case 4:
+        vivianUseStep(party);
+        if (0x1e - *(s32*)&party->field_22[2] <= 0x18) {
+            *(f32*)&party->field_7C[4] += 0.4f;
+            *(f32*)&mario->field_0x98[0x10] += 0.4f;
+            if (*(f32*)&party->field_7C[4] >= 8.0f) {
+                *(f32*)&party->field_7C[4] = 8.0f;
+            }
+            if (*(f32*)&mario->field_0x98[0x10] >= 8.0f) {
+                *(f32*)&mario->field_0x98[0x10] = 8.0f;
+            }
+        }
+        *(f32*)&party->field_174[0] += 1.0f;
+        if (*(f32*)&party->field_174[0] >= 20.0f) {
+            *(f32*)&party->field_174[0] = 20.0f;
+            mario->dispFlags |= 0x1000;
+        }
+        if (--*(s32*)&party->field_22[2] > 0) {
+            break;
+        }
+        {
+            MarioWork* m = party->playerPtr;
+            EffectEntry* eff = effRippleEntry(1, m->position.x, m->position.y + 1.5f, m->position.z);
+            *(EffectEntry**)&party->field_174[0x10] = eff;
+            if (party->camId != 4) {
+                effRippleSetCamId(eff, party->camId);
+            }
+        }
+        psndSFXOn_3D((const char*)0x935, &party->position);
+        if (party->currentMemberId == 6) {
+            party->field_4D[2] |= 1;
+        }
+        party->useMotionId = 5;
+        // fallthrough
+    case 5:
+        vivianUseStep(party);
+        *(f32*)&party->field_174[0] -= 1.0f;
+        if (*(f32*)&party->field_174[0] <= 10.0f) {
+            *(f32*)&party->field_174[0] = 10.0f;
+            party->useMotionId = 0xa;
+            mario->flags |= 0x400;
+        }
+        break;
+    case 10:
+        vivianUseStep(party);
+        partyUpdateKeyData(party);
+        if (vivian_cancel_req) {
+            party->useMotionId = 0x14;
+        }
+        if (!(party->flags & 0x80000000) && (*(u16*)&party->field_144[0xE] & 0x600)) {
+            party->useMotionId = 0x14;
+        }
+        break;
     }
-}
 
-// 104 B
-void mot_vivian(void) {
-    MarioWork* mario = marioGetPtr();
+    mario->position.x += mario->riderDelta.x;
+    mario->position.z += mario->riderDelta.z;
+    mario->position.y += mario->riderDelta.y;
+    if (party->useMotionId >= 2) {
+        party->position = *(Vec*)&party->field_7C[0x18];
+        party->field_B8 = mario->position;
+    } else {
+        party->field_B8 = party->position;
+    }
+    {
+        f32 d = mario->position.y - *(f32*)&mario->unk104[0x10];
+        if (d > 0.0f) {
+            party->field_B8.y += d;
+        }
+    }
+    {
+        Vec v = party->field_B8;
+        if (*(EffectEntry**)&party->field_174[0x10] == NULL) {
+            *(EffectEntry**)&party->field_174[0x10] = NULL;
+        } else if (*(u32*)*(EffectEntry**)&party->field_174[0x10] == 0) {
+            *(EffectEntry**)&party->field_174[0x10] = NULL;
+        } else {
+            effRippleSetPosition(*(EffectEntry**)&party->field_174[0x10], v.x, v.y + 1.5f, v.z);
+        }
+    }
 
-    if (mario->trigFlags & 1) {
-        mario->trigFlags &= ~1;
-        mario->flags &= ~0x000F0000;
-        mario->multiTimer = 0;
-        mario->airTimer = 0;
-        mario->currSubMotionId = 0;
+    switch (party->useMotionId - 0x14) {
+    case 0:
+        *(f32*)&party->field_174[8] = 0.0f;
+        mario->flags &= ~0x400;
+        psndSFXOn_3D((const char*)0x934, &party->position);
+        party->useMotionId = 0x15;
+        // fallthrough
+    case 1:
+        vivianUseStep(party);
+        *(f32*)&party->field_174[0] += 1.0f;
+        if (*(f32*)&party->field_174[0] >= 20.0f) {
+            *(f32*)&party->field_174[0] = 20.0f;
+            party->useMotionId = 0x16;
+        }
+        break;
+    case 2:
+        marioAdjustMoveDir();
+        partyChgPose(party, "PTR_A2_4");
+        party->field_20 = 0x18;
+        if (party->currentMemberId == 6) {
+            *(s8*)&party->field_4D[2] &= ~1;
+        }
+        party->useMotionId = 0x17;
+        break;
+    case 3:
+        vivianUseStep(party);
+        animPoseSetLocalTime(party->paperAnimGroup, 24.0f);
+        party->field_20 = 0x18;
+        party->useMotionId = 0x18;
+        *(s32*)&party->field_22[2] = 0x18;
+        psndSFXOn_3D((const char*)0x937, &party->position);
+        // fallthrough
+    case 4:
+        vivianUseStep(party);
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(s32*)&party->field_22[2]);
+        *(f32*)&party->field_7C[4] -= 0.4f;
+        if (*(f32*)&party->field_7C[4] <= 2.7f) {
+            *(f32*)&party->field_7C[4] = 2.7f;
+        }
+        if (--*(s32*)&party->field_22[2] <= 0) {
+            break;
+        }
+        if (*(s32*)&party->field_22[2] != 0x14) {
+            break;
+        }
+        marioChgPose("M_S_1");
+        mario->poseTime = 0x18;
+        *(s16*)&party->field_174[0xE] = 0x18;
+        party->useMotionId = 0x19;
+        break;
+    case 5:
+        vivianUseStep(party);
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(s32*)&party->field_22[2]);
+        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)*(s16*)&party->field_174[0xE]);
+        *(f32*)&mario->field_0x98[0x10] -= 0.4f;
+        if (*(f32*)&mario->field_0x98[0x10] <= 2.7f) {
+            *(f32*)&mario->field_0x98[0x10] = 2.7f;
+        }
+        *(f32*)&party->field_7C[4] -= 0.4f;
+        if (*(f32*)&party->field_7C[4] <= 2.7f) {
+            *(f32*)&party->field_7C[4] = 2.7f;
+        }
+        *(s16*)&party->field_174[0xE] -= 1;
+        if (--*(s32*)&party->field_22[2] > 0) {
+            break;
+        }
+        party->useMotionId = 0x1A;
+        *(s32*)&party->field_22[2] = 0x18;
+        // fallthrough
+    case 6:
+        vivianUseStep(party);
+        animPoseSetLocalTime(party->paperAnimGroup, 0.0f);
+        animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)*(s16*)&party->field_174[0xE]);
+        *(f32*)&mario->field_0x98[0x10] -= 0.4f;
+        if (*(f32*)&mario->field_0x98[0x10] <= 2.7f) {
+            *(f32*)&mario->field_0x98[0x10] = 2.7f;
+        }
+        *(f32*)&party->field_7C[4] -= 0.4f;
+        if (*(f32*)&party->field_7C[4] <= 2.7f) {
+            *(f32*)&party->field_7C[4] = 2.7f;
+        }
+        {
+            s16 t = *(s16*)&party->field_174[0xE];
+            t -= 1;
+            *(s16*)&party->field_174[0xE] = t;
+            if (t > 0) {
+                *(s16*)&party->field_174[0xE] = 0;
+            }
+        }
+        {
+            s32 t = *(s32*)&party->field_22[2] - 1;
+            *(s32*)&party->field_22[2] = t;
+            if (t > 0) {
+                *(s32*)&party->field_22[2] = 0;
+            }
+        }
+        if (*(s16*)&party->field_174[0xE] != 0) {
+            break;
+        }
+        if (*(s32*)&party->field_22[2] != 0) {
+            break;
+        }
+        party->useMotionId = 0x1B;
+        marioPaperOff();
+        *(s32*)&mario->field_0x20[0] = 0;
+        mario->dispFlags &= ~0x1000;
+        mario->hitobjJumpFrom = mario->hitobjStandOn;
+        mario->hitobjStandOn = NULL;
+        *(Vec*)&mario->field_0x98[0xC] = (Vec){0.0f, 0.0f, 0.0f};
+        marioChgSmallJumpMotion();
         mario->baseSpeed = 0.0f;
-        *(u32*)((u8*)mario + 0x1E0) = 0;
-        *(u32*)((u8*)mario + 0x1DC) = 0;
-        mario->hitobjPush = NULL;
-        *(u32*)((u8*)mario + 0x1F0) = 0;
+        break;
+    case 7:
+        animPoseSetLocalTime(party->paperAnimGroup, 0.0f);
+        *(f32*)&party->field_174[0] -= 1.0f;
+        if (*(f32*)&party->field_174[0] > 10.0f) {
+            break;
+        }
+        *(f32*)&party->field_174[0] = 10.0f;
+        partyPaperOff(party);
+        party->flags &= ~0x100;
+        party->flags2 &= ~0x200000;
+        *(f32*)&party->field_174[0] = 10.0f;
+        *(f32*)&party->field_7C[4] = 0.0f;
+        partyChgRunMode(party, 2);
+        party->field_3B = 0;
+        partyChgPoseId(party, 1);
+        party->flags &= ~0x80000000;
+        break;
     }
 }
 
-// 152 B
-void N_marioForceVivianAnime(void) {
-    MarioWork* mario = marioGetPtr();
-
-    marioPaperOff();
-    marioChgPaper(NULL);
-    marioPaperOn(str_802F80EC);
-    marioChgPose(str_8041DF34);
-    marioChgPaper(str_802F80F4);
-    mario->poseTime = 0x18;
-    animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)*(u16*)((u8*)mario + 0x28));
-}
+// Alignment gap after vivian_use's switch jump tables (0x4C..0x50). Defined after the function so the
+// compiler places it after the jump tables it emits while generating vivian_use.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_8038BA54_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset

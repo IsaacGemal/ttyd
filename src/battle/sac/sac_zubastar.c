@@ -383,22 +383,38 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// MUST_MATCH: MWCC emits the original's inline 6-iteration copy loop only when `points` is copied
+// from a named 48-byte template. A `ZubaStarPoints4` local initializer (or an unused file-scope one)
+// makes this compiler loop forever, and copying from the extern dat_802ff6d4 makes it form that
+// symbol's address with lis/addi instead of the original's single `addi r4, r29, 0x68`. A local
+// `static const Vec[4]` (not `ZubaStarPoints4`, which hangs) gives the r29-relative copy. The
+// natural form is under #else.
+#ifdef MUST_MATCH
+static const Vec zubastar_points_init[4] = {
+    { 0.0f, 240.0f, 0.0f },
+    { 304.0f, 240.0f, 0.0f },
+    { 304.0f, -240.0f, 0.0f },
+    { 0.0f, -240.0f, 0.0f },
+};
+#endif
+
 // .text:0x85C | 0x8022F128 | size: 0xDF8
 // Reconstruction of the SAC mini-game's main event callback. There are three state machines, each a
 // switch on work->field_0x004, work->field_0x018 and work->field_0x07C. Case 0x19 of the first
 // gathers the star endpoints, sorts them, finds the widest gap on each edge and randomly places a
 // split point in it before calling zubastar_bunkatu.
-#ifdef MUST_MATCH
-// MUST_MATCH: a struct-copy initializer from dat_802ff6d4 makes MWCC emit the original's inline
-// 6-iteration copy loop; a plain Vec[4] initializer gets its own anonymous rodata table.
-#endif
-// NONMATCHING (99.64%): the str_802FF830/848 reads are +0x18 (unit pool order puts
-// zubastar_bomb's str_802FF80C after the i2f double; the 0x18 gap is main_star's two (Vec){0,0,0} pools,
-// which must stay literals or main_star drops to 88.79%).
+// The instruction stream is complete; every remaining diff is the unit's
+// `.rodata` pool being short. `zubastar_points_init` sits at r29+0xc where the original's
+// dat_802ff6d4 is at r29+0x6c: the 0x60 missing bytes are the unit's not-yet-ported data strings
+// (str_802FF668/67C/68C from weapon_zubastar / marioAttackEvent_ZubaStar) and the five zero vec3_* 
+// objects. The double/string reads are a further 0x30 off because the original pools zubastar_bomb's
+// str_802FF80C and the STAR1/2/3 event strings before the i2f double while this build pools them
+// after. Both are unit pool layout, not this function.
+// NONMATCHING (99.95%): remaining diffs are unit .rodata pool offsets (details above).
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
 #ifdef MUST_MATCH
-    ZubaStarPoints4 points = *(const ZubaStarPoints4*)dat_802ff6d4;
+    ZubaStarPoints4 points = *(const ZubaStarPoints4*)zubastar_points_init;
 #else
     Vec points[4] = {
         { 0.0f, 240.0f, 0.0f },
@@ -889,9 +905,10 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
 // a single-case `switch` instead of `if` for the early-out guard, which makes MWCC emit `beq body;
 // b main_loop` like the original, and hoisting the SFX string into a loop-lived local to fix the
 // callee-saved colouring. The only remaining diffs are 9 rodata reads: the pool base symbol is
-// `...rodata.0` here vs `str_802FF668` in the original, so the same vectors/double read at offsets
-// 0xc/0x18/0x40 instead of 0x144/0x150/0x1c0. The missing 0x138 bytes are the string pool of the
-// not-yet-written zubastar_main, so this is not local to this function.
+// `...rodata.0` here vs `str_802FF668` in the original, so the two vectors and the i2f double read at
+// offsets 0xb4/0xc0/0xe8 instead of 0x144/0x158/0x1c0. The missing bytes are the .rodata prefix of
+// the not-yet-written zubastar_main (the three `str_802FF6*` strings, five zero `vec3_*`s and the
+// `dat_802ff6d4` point table, plus `str_802FF7D0/E4/F8/80C`), so this is not local to this function.
 // NONMATCHING (99.96%): 9 rodata offsets (unit pool layout; depends on zubastar_main).
 s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
@@ -1011,31 +1028,35 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
 // found-point stores use post-increment so MWCC reuses the copy-loop counter for index[0]+1/+2 and k,
 // and bomb1->count is written in the original's +2-then-+j order.
 // The original's callee-saved order is bombCount,b,a,i*4,n,j,used,work,i*4+0xa8,bomb,i,j*0xc; this
-// compiler produces b,a,i*4,n,j,used,work,i*4+0xa8,bombCount,i,bomb,j*0xc. Nudging `bombCount` to the
+// compiler produces b,a,i*4,j,n,work,offset,bombCount,i,bomb,used,j*0xc. Nudging `bombCount` to the
 // front of that order is the whole remaining difference and no declaration order, statement order, alias,
-// scope or pragma tried moves it. Kept from the recovered shapes: `used` base held in a pointer just for
-// the zeroing loop (the original keeps it in a callee-saved register and recomputes r1+0x18 for the dedupe
-// loop), the dedupe comparison inlines the (s32)out1/out2 casts (the original CSEs them into r6/r7), the two
-// point stores go through a `j1` temp (the original computes j+1 and adds 2 to j), and the bomb1/bomb2
-// field order below is the one whose schedule matches. The natural forms are under #else.
-// NONMATCHING (94.51%): register colouring (64 callee-saved + 18 caller-saved argument mismatches);
-// the 12 insert/delete/replace lines are the bomb1/bomb2 setup and the points[0]/[1] schedule.
+// scope or pragma tried moves it. Declaring the per-iteration scratch (`used`/`index`/`point`/`n`/out1/
+// out2) at function scope before i/j/k is the one source shape that moves `n` into the original's r27
+// (94.51 -> 94.64); everything else stays permuted. Kept from the recovered shapes: `used` base held in a
+// pointer just for the zeroing loop (the original keeps it in a callee-saved register and recomputes
+// r1+0x18 for the dedupe loop), the dedupe comparison inlines the (s32)out1/out2 casts (the original CSEs
+// them into r6/r7), the two point stores go through a `j1` temp (the original computes j+1 and adds 2 to
+// j), and the bomb1/bomb2 field order below is the one whose schedule matches. The natural forms are
+// under #else.
+// NONMATCHING (94.64%): register colouring (callee-saved + caller-saved argument mismatches);
+// the insert/delete/replace lines are the bomb1/bomb2 setup and the points[0]/[1] schedule.
 void zubastar_bunkatu(Vec* a, Vec* b) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 bombCount = work->bombCount;
+    s32 used[2];
+    s32 index[2];
+    Vec point[2];
+    s32 n;
+    f32 out1;
+    f32 out2;
     s32 i;
     s32 j;
     s32 k;
 
     for (i = 0; i < bombCount; i++) {
         ZubaStarBomb* bomb = work->bombs[i];
-        s32 used[2];
-        s32 index[2];
-        Vec point[2];
-        s32 n = 0;
-        f32 out1;
-        f32 out2;
 
+        n = 0;
         {
             s32* usedp = used;
 

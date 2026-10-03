@@ -10,15 +10,19 @@
 
 
 extern BattleWork *_battleWorkPointer;
-const Vec vec3_802efc40 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc4c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efc58 = { 0.0f, 0.0f, 0.0f };
+// These four zero vectors are read-only data, but the original's code loads them without hoisting the
+// loads past the preceding stores (a `const` declaration lets MWCC hoist them, shifting every FP/GP
+// register). Declaring them non-const while pinning the section to ".rodata" reproduces the original
+// schedule and keeps the data in place. The remaining five stay `const`.
+__declspec(section ".rodata") Vec vec3_802efc40 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802efc4c = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802efc58 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc64 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc70 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc7c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc88 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc94 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802efca0 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802efca0 = { 0.0f, 0.0f, 0.0f };
 
 // prototypes for the event wrappers
 
@@ -52,7 +56,7 @@ void battleCameraInit(void) {
   camera->zoom = 0.0f;
   camera->moveSpeedLv = 1;
   camera->zoomSpeedLv = 1;
-  camera->position = (Vec){0.0f, 0.0f, 0.0f};
+  camera->position = vec3_802efc40;
   camera->unk4 = 0;
 }
 
@@ -61,8 +65,9 @@ void battleCameraInit(void) {
 #pragma dont_inline on
 
 // Prologue/epilogue (frame 0x100, stmw r25), the stack layout, every call and every rodata reference all match.
-// What differs is FP/GP register allocation.
-// NONMATCHING (98.18%): register allocation.
+// What differs is FP/GP register allocation only (all remaining diffs are `arg_mismatch`, no insert/delete).
+// NONMATCHING (99.60%): register allocation (callee-saved GP choice in the unit-pointer cases, and
+// caller-saved FPR choices in the two-unit cases 8/9/11 and case 13). Permuter work.
 void battleCameraMain(void) {
   CameraEntry* cam;
   BattleWork* wp;
@@ -192,8 +197,7 @@ void battleCameraMain(void) {
     part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
     BtlUnit_GetPos(u, &vv.x, &vv.y, &vv.z);
     {
-      f32 hh = (f32)BtlUnit_GetHeight(u) - 50.0f;
-      hh *= 0.5f;
+      f32 hh = ((f32)BtlUnit_GetHeight(u) - 50.0f) * 0.5f;
       vv.y += hh;
     }
     w = (f32)BtlUnit_GetWidth(u) - 24.0f;
@@ -263,7 +267,7 @@ void battleCameraMain(void) {
     base = 2.0f * wp->cameraWork.zoom;
     base -= 1.5f * (wa + wb);
     v = (1.0f - t) * base;
-    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
+    xv = wp->cameraWork.unkC8.x * (1.0f - t);
     f11 = -v / 10.0f;
     f9 = (wp->cameraWork.unkC8.y / 80.0f) * (vv.y - wp->cameraWork.unkC8.y);
     if (f9 > 100.0f) {
@@ -343,8 +347,7 @@ void battleCameraMain(void) {
     }
     BtlUnit_GetHitPos(unit, part, &vv.x, &vv.y, &vv.z);
     {
-      f32 hh = (f32)BtlUnit_GetHeight(unit) - 50.0f;
-      hh *= 0.5f;
+      f32 hh = ((f32)BtlUnit_GetHeight(unit) - 50.0f) * 0.5f;
       vv.y += hh;
     }
     w = (f32)BtlUnit_GetWidth(unit) - 24.0f;
@@ -416,7 +419,7 @@ void battleCameraMain(void) {
     base = 2.0f * wp->cameraWork.zoom;
     base -= 1.5f * (wa + wb);
     v = (1.0f - t) * base;
-    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
+    xv = wp->cameraWork.unkC8.x * (1.0f - t);
     f11 = -v / 10.0f;
     f9 = (wp->cameraWork.unkC8.y / 80.0f) * (vv.y - wp->cameraWork.unkC8.y);
     if (f9 > 100.0f) {
@@ -478,7 +481,7 @@ void battleCameraMain(void) {
     u = 1.0f - t;
     cy = vv.y - wp->cameraWork.unkBC.y - 100.0f;
     zz = 2.0f * wp->cameraWork.zoom;
-    v = u * wp->cameraWork.unkC8.x;
+    v = wp->cameraWork.unkC8.x * u;
     if (cy > 0.0f) {
       cy = 0.0f;
     }
@@ -486,7 +489,7 @@ void battleCameraMain(void) {
       cy = -30.0f;
     }
     off = -(1.0 - t) * (125.0f - cy);
-    w = u * zz;
+    w = zz * u;
     battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, v, 110.0f + off, 750.0f - w, v, 60.0f + off,
                        -w);
     strcpy(name,
@@ -1375,7 +1378,10 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   camera->unkBC = home;
   camera->unk20 = memberId;
   member = &audience->members[memberId];
-  hit = (Vec){member->position.x, member->position.y, member->position.z};
+  hit = vec3_802efca0;
+  hit.x = member->position.x;
+  hit.y = member->position.y;
+  hit.z = member->position.z;
   camera->unkC8 = hit;
   return EVT_RETURN_DONE;
 }

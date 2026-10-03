@@ -1423,7 +1423,7 @@ first_done:
                     v.z = pz;
                     *(Vec*)((u8*)baku + 0x258) = v;
                 }
-                BtlUnit_GetHomePos(mario, &hx, &hy, &hz);
+                BtlUnit_GetHomePos(mario, &px, &py, &pz);
                 {
                     Vec v = vec3_802febe4;
                     v.x = px;

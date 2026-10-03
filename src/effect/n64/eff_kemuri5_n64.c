@@ -96,7 +96,7 @@ static inline Vec initializeVec(Vec* input) {
 // interleaving the reset/ct declarations and stores, moving the reset assignments to the top of the loop
 // or before it (98.83), param copies (MWCC always coalesces them with the incoming args), local
 // `register ... asm("fNN")` pins (ignored by mwcceppc 2.6), and the opt_* pragmas (no change or worse).
-// Also tried (DeepSeek V4.1 Flash): all 64 explicit-local/direct subsets of the six reset+ct locals and
+// Also tried: all 64 explicit-local/direct subsets of the six reset+ct locals and
 // every literal/named mix (the args never go above f19-f22; the reset never reaches f17-f20), the
 // optimization_level/optimize_for_size pragmas, statement reordering, and loop-body declarations; the
 // 16 mismatched instructions are always exactly the args (f23-f26) and reset (f17-f20) block swap.
@@ -121,6 +121,37 @@ static inline Vec initializeVec(Vec* input) {
 // Fourth pass: inlining the rad tail moves the 6p2832/360 temps before the params (f19-f22) but the
 // reset still colours after them; siblings effSweat/effKemuri9/effConfetti all keep params at the
 // bottom of their callee-saved range, so the target's params-above-locals order has no reusable idiom.
+// The local form is the best (16 instructions). The direct-literal
+// form is 99.04% (params f19-f22, 6p2832/360 f17/f18, early f23-f27, reset f28-f31); a
+// local/literal x opt_lifetimes/opt_propagation/opt_common_subs matrix, declaration/assignment-order
+// and -position sweeps, parameter qualifiers (const/register/volatile) and inline getter/setter
+// forms are all equal or worse. An anonymous or named struct of the reset values, a MATCH_F32
+// volatile read of them, and `#pragma ignore_oldstyle` + a K&R definition each send mwcceppc 2.6
+// into an endless loop (do not retry). A K&R definition with the header prototype hidden gives
+// params f23-f26 but leaves reset f19-f22 and 6p2832/360 f17/f18 plus the four old-style-promotion
+// `frsp`, and the header must keep its prototype for evt_eff.c, so it is not usable.
+// the retail object's .comment says compiler core 2.4.2.1, not
+// 2.6 (our GC/2.6 is 2.4.7.1); the exact core is available as GC/1.3.2. Recompiling this source
+// under GC/1.3.2 gives the same 16-instruction colouring, so the difference is the source, not the
+// compiler. A fast byte-diff harness against the retail object was used to search, under GC/1.3.2:
+// all 64 local/literal subsets of the six reset+ct values, ~600 random declaration/assignment
+// orders and positions, all 24 store orders, `auto`/`register`/`volatile` locals, file-scope vs
+// function-scope vs loop-scope declarations, and a pragma matrix (opt_lifetimes, opt_propagation,
+// opt_common_subs, opt_loop_invariants, opt_deadcode, opt_dead_assignments, opt_strength_reduction,
+// peephole, scheduling, optimize_for_size, pool_data, explicit_zero_data). None beats 16 diffs, so
+// this remains permuter-only register colouring.
+// every compiler that compiles the source to the right
+// instruction shape (GC 1.3, 1.3.2, 1.3.2r = core 2.4.2.1, 2.0, 2.5, 2.6, 2.7) yields the same 36
+// word-diffs, so no available compiler reproduces the retail allocation. All hooks in the loop are
+// fixed by the target asm (the target evaluates `reviseAngle(a4 + (f32)(i*45))` into f1 directly,
+// no shared angle local). The effKemuri3 idiom (one local reused for the int->float angle and the
+// rad) was transplanted (`rad = a4 + (f32)(i*45); rad = ct*reviseAngle(rad)/c360;`) and does not
+// change the colouring here (43 diffs). Also tried: declaration position (no effect), init at
+// function top / after the callback, inline setter function (49), all 720 reset/ct assignment
+// orders (canonical wins), and all 64 reset/ct local-vs-literal subsets (best 36). A normalised text
+// diff (register names -> f#/r#) shows the emitted Entry stream is instruction-for-instruction
+// identical to the target apart from the register numbers, so the seam is a pure allocator tie-break
+// on an identical IR and has resisted every source-level lever.
 EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri5Data* data;

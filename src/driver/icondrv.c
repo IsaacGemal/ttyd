@@ -459,6 +459,9 @@ static inline IconBinaryEntry* iconGetBinaryData(IconBinary* bin, u16 id) {
 // NONMATCHING (98.24%): the inline lookup gives us `data`=r4 (retail r4) and the MUST_MATCH
 // dummy store pins the cached numIcons load to r7 and `frames` to r8 (retail r8/r7); only that
 // numIcons/frames swap and the extra store remain. Lookup, loop bounds and branches match.
+// Without the dummy store the allocator puts numIcons in r5 (97.28%); explicit lookup, split
+// guards, aliases, loop forms, pragmas, declaration orders and inline helpers were all tried
+// (GC/1.3.2 gives the same colouring as GC/2.6), none give r8. Permuter target.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -513,7 +516,8 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
 
 // NONMATCHING (98.17%): same register picture as iconDispGx2 (retail `data` r4, `numIcons`
 // r8, `frames` r7). The inline lookup plus the MUST_MATCH dummy store reproduce everything
-// except the numIcons/frames swap and that extra store.
+// except the numIcons/frames swap and that extra store. Removing the dummy store drops it to 97.17%
+// (numIcons goes to r5); the same search as iconDispGx2 found no C shape that gives r8.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     ICON_FRAMES_DECL
     CameraEntry* camera;

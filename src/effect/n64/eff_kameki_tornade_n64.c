@@ -177,6 +177,28 @@ void effKamekiTornadeMain(EffectEntry* effect) {
 #pragma opt_common_subs reset
 // Build the two by-value GXColors in helpers so MWCC gives their argument copies the same stack
 // slots as the original (the trick from effBattenDisp2/effTimestampSetColor).
+#ifdef MUST_MATCH
+// MUST_MATCH: building the colour and calling GXSetTevColor inside the inline is what puts the
+// build/copy temps at the original's 0x28/0x2c and 0x20/0x24 slots; returning a GXColor from the
+// helper puts the first helper's build temp 4 bytes low (same shape as eff_fireworks_n64).
+static inline void kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24) {
+	GXColor color = unk_80423160;
+
+	color.r = data->field_0x18;
+	color.g = data->field_0x1C;
+	color.b = data->field_0x20;
+	color.a = (u8)(s32)((f32)field24 * data->field_0x148);
+	GXSetTevColor(1, color);
+}
+static inline void kamekiTornadeSetColor2(effKamekiTornadeData* data) {
+	GXColor color = *(GXColor*)&dat_8041f1d8;
+
+	color.r = data->field_0x28;
+	color.g = data->field_0x2C;
+	color.b = data->field_0x30;
+	GXSetTevColor(2, color);
+}
+#else
 static inline GXColor kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24) {
 	GXColor color = unk_80423160;
 
@@ -194,6 +216,7 @@ static inline GXColor kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 	color.b = data->field_0x30;
 	return color;
 }
+#endif
 #define KT_ZERO MATCH_F32(float_0_8041f1f8)
 // One 14-byte vertex: copy the source, then rotate its s16 position through the matrix with the
 // SDK fast-cast inlines. Retail inlines this once per vertex, each with its own Vec temp and its
@@ -223,10 +246,11 @@ static inline void kamekiTornadeSetVtx(KamekiTornadeVtx* dst, KamekiTornadeVtx* 
 }
 // Every instruction, constant and stack slot matches retail; the remaining diffs are register
 // colouring only. The ring loop's constants land one FPR higher than retail (f30-f27 vs f29-f26),
-// which pushes the helper's conversion temps (f26-f21 vs f25-f20) and the outer loop's i2f double
-// (f27 vs f26) and `10` (f20 vs f27) one register high as well. The ring preheader also sets its
-// strength-reduced accumulator up later than retail and its `t = 0` comes from `li` not `mr r20,r27`.
-// NONMATCHING (99.12%): only register colouring differs.
+// which pushes the outer loop's i2f double (f27 vs f26), its `10` (f20 vs f27) and the vertex
+// helper's conversion temps (f26-f24 vs f25-f23) one register high. The ring preheader also
+// initialises the strength-reduced `t`/angle accumulators later than retail (`li r20,0; li r27,0`
+// instead of retail's `li r27,0; mr r20,r27`).
+// NONMATCHING (99.14%): only register colouring differs.
 void effKamekiTornadeDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	CameraEntry* cam;
@@ -277,9 +301,15 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 	GXLoadTexObj(&texObj, 1);
 
+#ifdef MUST_MATCH
+	kamekiTornadeSetColor(data, field24);
+
+	kamekiTornadeSetColor2(data);
+#else
 	GXSetTevColor(1, kamekiTornadeSetColor(data, field24));
 
 	GXSetTevColor(2, kamekiTornadeSetColor2(data));
+#endif
 
 	GXSetCullMode(0);
 
@@ -287,10 +317,10 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 
 	{
 		KamekiTornadeVtx* q;
-		s32 s = 0;
-		s32 t = 0;
+		s32 s;
+		s32 t;
 
-		for (i = 0; i < 16; i++, s += 0x80, t += 0x200) {
+		for (i = 0, s = 0, t = 0; i < 16; i++, s += 0x80, t += 0x200) {
 			KamekiTornadeVtx* p = &tbl[i];
 			f32 angle =
 			    float_6p2832_8041f1dc * (f32)(i * 0x168 / 0xF) / float_360_8041f1e0;

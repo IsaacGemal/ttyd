@@ -1108,34 +1108,29 @@ USER_FUNC(_bgset_kemuri_effect) {
 }
 #pragma opt_propagation on
 
-// The whole body, control flow, constants and every memory access match. What is left is MWCC's callee-saved
-// register choice: the original keeps event=r29, wp=r28, base=r27, changed=r26; here the allocator gives
-// event=r26, changed=r28, wp=r29 (base already r27), a 3-cycle that also rotates the loop counter/string
-// temporaries. The int->float conversion constant is materialised as a fresh `@N@` .rodata literal with its
-// own base. Elsewhere in this file (`_fall_frame`, `_mobj_shake_main`) that same anonymous literal is only a
-// `~~` symbol-only difference against the original's named `double_to_int_802f3c30` and is not scored, but
-// here the original compiler folded the bias onto the `vec3_802f3ac8` base (`lfd f1, 0x168(r30)`), so ours
-// really differs by the extra `lis`/base. MWCC 2.6 always pools this literal and never folds it onto an
-// existing base (verified: defining `double_to_int_802f3c30`/`vec3_802f3ac8` in-file and laying them out at
-// the original .rodata offsets still emits `@1191`), so the fold is not reachable while the unit's .rodata is
-// supplied out of band. That extra address value is also what keeps the event/wp/changed colouring from being
-// reachable (the two are coupled). Tried: every pragma in the file
-// (opt_propagation/common_subs/dead_assignments/global_optimizer/peephole/scheduling/optimize_for_size),
-// declaration order (all permutations), local event copy, float temporaries; none moves event off r26. Also
-// tried: #pragma opt_lifetimes off (event->r25, changed->r27, base->r26) and global_optimizer off (event->r25),
-// every other opt_*/global_optimizer/scheduling/optimize_for_size/pool_data/optimization_level 0-4 on-off pair,
-// the reordered intpl_sub prototype cast that fixed `_fall_frame` (moves the lfs order but not the colouring),
-// inline int->float/store helpers, removing the `base`/`vec` variables, relocating the s0/s1 SFX temporaries,
-// and s32/BOOL/u32 changed. With `#pragma opt_common_subs off` and the declaration/assignment order
-// below, MWCC now keeps wp=r28 (it was r29) and only a 3-cycle of event/base/changed remains: ours
-// event=r26, changed=r27, base=r29 vs the target event=r29, changed=r26, base=r27. That is 97.13% / 36 diffs
-// The int->float bias is still the compiler's own `@1191` .rodata literal with its own
-// base (`lis`+`lfd`) instead of the target's `lfd f1, 0x168(r30)` folded onto the vec base.
-// Needed: with common-subexpression elimination on (or off) the allocator gives wp=r29 and beats only 40
-// diffs; `opt_common_subs off` plus this declaration/assignment order is the best found (97.13%).
-#pragma opt_common_subs off
-// NONMATCHING (97.13%): event/changed/base still cycle (r26/r27/r29 vs r29/r26/r27); the conversion constant
-// is not folded onto the vec3_802f3ac8 base.
+// NONMATCHING (99.30%): only the int->float pool and two `lfs` slots remain. The body, control flow,
+// constants and every memory access match; all callee-saved registers now match retail (event=r29,
+// changed=r26, wp=r28, base=r27, vec=r30, layer=r31, i/obj in their retail homes) and the volatile
+// r5/r6 pair matches.
+// The four remaining instruction diffs are:
+//  - the int->float bias: the compiler pools its own anonymous `@N@` .rodata literal and forms its
+//    address with its own `lis` (`lis r3,@N@ha; lfd f1,@N@l(r3)`) instead of retail's fold onto the
+//    vec3_802f3ac8 base (`lfd f1, 0x168(r30)`). MWCC 2.6 only folds that pooled literal when it lays
+//    out the unit's .rodata itself (the original .o has no relocation for this load); with the data
+//    supplied out of band it cannot, and a hand-rolled i2f loses the fused `fsubs`. Same limitation as
+//    win_badge.c / win_log.c; the only fix is porting the unit's .rodata.
+//  - the two float arguments of the layer-2 `intpl_sub` are scheduled in the opposite order
+//    (`lfs f1,float_0; lfs f2,float_90`, ours reversed); every declaration/statement order tried keeps
+//    the scheduler's choice.
+// Tried and rejected (all measured with mwcc/objdiff): ~2,000 declaration-order permutations, all
+// prologue assignment orders, local event copy, several intpl_sub prototype casts (the
+// (mode,start,end,currStep,steps) cast in the layer-0 arm is the one that fixed that arm's lfs
+// scheduling), manual i2f helpers, removing base/vec/wp, s0/s1 as two scalars, s32/BOOL/u32 changed,
+// and i as s16/u16/u8/u64; 60+ pragmas (only opt_propagation off helps).
+// opt_propagation off is required: with it on the vec `lis` temp and the `event->args` temp take the
+// opposite volatile registers (r6/r5 instead of retail's r5/r6) for four extra diffs.
+#pragma opt_propagation off
+// NONMATCHING (99.30%): see the full note above.
 USER_FUNC(_set_mobj_rotate_x) {
 	u8* vec;
 	s32 layer;
@@ -1143,12 +1138,14 @@ USER_FUNC(_set_mobj_rotate_x) {
 	s32 i;
 	BattleStageObject* obj;
 	BattleWork* wp;
+	s32* args;
 	s32 changed = 0;
 
 	vec = (u8*)vec3_802f3ac8;
 	wp = _battleWorkPointer;
 	base = (u8*)_battleWorkPointer + 0x20000;
-	layer = evtGetValue(event, *event->args);
+	args = event->args;
+	layer = evtGetValue(event, args[0]);
 
 	if (isFirstCall) {
 		switch (layer) {
@@ -1174,12 +1171,16 @@ USER_FUNC(_set_mobj_rotate_x) {
 		case 0:
 		case 1: {
 #ifdef MUST_MATCH
-			// The original reaches the two SFX through the vec3_802f3ac8 base (addi r29,r30,0x244 etc.).
-			u8* s0 = vec + 0x244; // str_802F3D0C
-			u8* s1 = vec + 0x25C; // str_802F3D24
+			// The original reaches the two SFX through the vec3_802f3ac8 base (addi r29,r30,0x244,
+			// addi r30,r30,0x25c). Two separate pointers compile to a 36-diff colouring; this array is
+			// a match-only shape that reaches retail's event/changed/i registers.
+			u8* sfx[2];
+			sfx[0] = vec + 0x244;
+			sfx[1] = vec + 0x25C;
 #else
-			char* s0 = str_802F3D0C;
-			char* s1 = str_802F3D24;
+			char* sfx[2];
+			sfx[0] = (char*)str_802F3D0C;
+			sfx[1] = (char*)str_802F3D24;
 #endif
 
 			for (i = 0; i < 32; i++) {
@@ -1192,19 +1193,23 @@ USER_FUNC(_set_mobj_rotate_x) {
 					} else {
 						if (obj->mNumFramesFalling == 0) {
 							if (layer == 0) {
-								psndSFXOn_3D((char*)s0, &obj->mPosition);
+								psndSFXOn_3D((char*)sfx[0], &obj->mPosition);
 							} else {
-								psndSFXOn_3D((char*)s1, &obj->mPosition);
+								psndSFXOn_3D((char*)sfx[1], &obj->mPosition);
 							}
 						}
 #ifdef MUST_MATCH
-						// Named endpoints make MWCC hoist the two lfs into the target's slots.
+						// Named endpoints make MWCC hoist the two lfs into the target's slots; the cast
+						// (ABI-identical) declares the floats before the int steps so they are evaluated
+						// first, as retail does.
 						{
 							f32 end = float_90_8041cd08;
-							f32 start = obj->mShakeAngle;
+							f32 start;
 							obj->mNumFramesFalling++;
-							obj->mRotation.x = intpl_sub(2, obj->mNumFramesFalling, obj->data->mNumFramesToFall,
-							                             start, end);
+							start = obj->mShakeAngle;
+							obj->mRotation.x = ((f32 (*)(s32, f32, f32, s32, s32))intpl_sub)(2, start, end,
+							                                                                 obj->mNumFramesFalling,
+							                                                                 obj->data->mNumFramesToFall);
 						}
 #else
 						obj->mNumFramesFalling++;
@@ -1254,7 +1259,7 @@ USER_FUNC(_set_mobj_rotate_x) {
 	}
 	return changed ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
-#pragma opt_common_subs reset
+#pragma opt_propagation reset
 
 USER_FUNC(_mobj_set_alpha) {
 	s32* args = event->args;
@@ -1535,6 +1540,32 @@ extern Vec vec3_802f3bd0;
 // initialised locals into a plain declaration plus an assignment (the scheduler then emits the original's
 // top-of-function schedule exactly) and shuffling the scalar declarations; both are semantically
 // irrelevant and only steer MWCC's register colouring.
+//
+// Root blocker (confirmed this session): the target folds the int->float magic double onto the extern
+// vec3_802f3ac8 rodata base (`lfd f1, 0x168(r30)`); MWCC GC/2.6 pools its own anonymous @1191 double and
+// addresses it with `lis`+`lfd`. A hand-rolled MUST_MATCH i2f that builds the magic by hand and subtracts
+// `*(const f64*)(vec + 0x168)` does produce the base-relative load, but the compiler emits `fsub`+`frsp`
+// instead of the target's fused `fsubs`, and the extra addressing slots shift the frame (94.62%). This is
+// the same limitation recorded on `_set_mobj_rotate_x` above, and it is coupled to the event/wp/vec
+// colouring. Tried: exhaustive adjacent-swap plus 149 random permutations of the scalar declaration order
+// (no change); a pragma sweep (opt_propagation/common_subs/lifetimes/dead_assignments/peephole/
+// strength_reduction/loop_invariants/global_optimizer/optimize_for_size/scheduling -- all neutral or worse);
+// moving the phase-1-only locals into the `if (isFirstCall)` scope (no change); `tools/flag_sweep.py`
+// (-O4,p drops 27 functions; -O4,s is the only no-drop variant); and defining the vec3_802f3ac8 rodata
+// block so the anonymous @1191 lands exactly at +0x168, with `#pragma pool_data on` -- GC/2.6 still emits
+// `lis`+`lfd`, so an anonymous pool at the right offset is not enough. Merging the timer-loop
+// `rand = (s16)(irand(0x16)+rand); rand += 0x14;` pair into the target's combined form scored 95.36%.
+// A compiler-revision sweep (2.0/2.5/2.6/2.7 all 95.57; 3.0a3+ 84.36) rules out a version mismatch.
+// The fold IS reachable in this toolchain when the unit's .rodata is reproduced in-source:
+// `_lvup_spot_on` (battle_seq_end, 100%) has the same `lfd f1, 0x260(r31); fsubs` shape because that
+// file lets MWCC build one large source pool (its `(Vec)` compound literals plus every pooled double),
+// so the compiler opens the pool with a base register and the i2f rides it. Here every rodata object is
+// extern, so the compiler's pool holds only the i2f and it addresses it absolutely; adding one string
+// literal puts the literal and the double in the same 40-byte `...rodata` section but MWCC still uses
+// `lis` for both. The fold therefore needs the pool to be as large as the original's 43 objects -- i.e.
+// porting this unit's .rodata (664 bytes, 0x0..0x298) -- which is a unit-level task. Doing it piecemeal
+// (define vec3 at the right size, pool_data on, string literals, local/volatile (Vec) templates, a
+// defined dummy rodata object) was tried here and still yields `lis`.
 // NONMATCHING (95.57%): see above.
 USER_FUNC(_object_fall_attack) {
 	// Scalar declarations: the order is not semantic. MWCC colours callee-saved registers roughly in

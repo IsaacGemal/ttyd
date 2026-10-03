@@ -7,6 +7,9 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// The unit's first .rodata object (retail +0x0): effRippleMain's zero position template.
+__declspec(section ".rodata") Vec vec3_802fb520 = { 0.0f, 0.0f, 0.0f };
+
 // .sdata2 constants owned by this unit (named after their original addresses).
 const GXColor dat_8041fb98;
 const f32 float_0p0625_8041fb9c;
@@ -74,28 +77,14 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 }
 #pragma dont_inline reset
 
-// Building `position` from a named zero vector schedules its loads before the callee-save stores and
-// leaves `effect`/`timer` in swapped callee-saved registers. Copying from the anonymous zero literal
-// (which pools to the same .rodata slot) reproduces the retail schedule.
-static inline Vec makeRippleVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
 
-// The Vec copy above fixed the prologue schedule and declaring `timer` before `type` fixed their
-// colours, leaving only `effect` in r30 instead of r28. Reading `effect->userdata` once more (an alias
-// of `data`) is what makes the allocator give `effect` the last callee-saved register; every pragma,
-// declaration/assignment order and pure-expression form tried either left `effect` in r30 or added the
-// same extra load. Further sweep: GC/1.3.2-2.7 all give r30 at -O4,p; `-opt level=2` and
-// `#pragma optimization_level 2/3` give r28 but change the frame (stmw) and instruction count, and
-// `tools/flag_sweep.py` finds no flag variant that helps. The flip needs a memory use of `effect` to
-// survive register allocation, which always costs the load. This is a register-allocation near-miss for
-// the permuter.
-// NONMATCHING (99.18%): one redundant `lwz r4, 0xc(r3)` before the field_0x20 update (retail reuses the
-// cached `data` in r31); everything else, including the callee-saved colours, matches.
+// Retail keeps `field_0x1C--` before `field_0x20++` and colours `effect`/`timer`/`type` r28/r30/r29.
+// At -O4,p mwcc coalesces the two read-modify-writes the other way round and gives `effect` r30; at
+// -O2 it emits the retail order and colours with the same 0x50 frame. `position` is built from the
+// .rodata zero vector (`vec3_802fb520`, defined above); the direct field writes
+// put the zero-vector load before the callee-save stores, as retail does.
+#pragma push
+#pragma optimization_level 2 // only this function needs the level-2 allocation; see above
 void effRippleMain(EffectEntry* effect) {
 	EffRippleData* data = effect->userdata;
 	Vec position2;
@@ -103,19 +92,16 @@ void effRippleMain(EffectEntry* effect) {
 	s32 timer;
 	s32 type;
 
-	position = makeRippleVec(data->x, data->y, data->z);
+	position = vec3_802fb520;
+	position.x = data->x;
+	position.y = data->y;
+	position.z = data->z;
 	position2 = position;
 
 	timer = data->field_0x1C;
 	type = data->type;
 	data->field_0x1C--;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: the extra `effect->userdata` read (same pointer as `data`) is what moves `effect`
-	   to r28; the natural form leaves it in r30. */
-	data->field_0x20 = ((EffRippleData*)effect->userdata)->field_0x20 + 1;
-#else
 	data->field_0x20++;
-#endif
 	if (data->field_0x1C < 0) {
 		effDelete(effect);
 		return;
@@ -162,6 +148,7 @@ void effRippleMain(EffectEntry* effect) {
 	data->field_0x10 += float_0p1_8041fbb8;
 	dispEntry(data->camId, dispCalcZ(&position2), 2, effRippleDisp, effect);
 }
+#pragma pop
 
 // The original builds each branch's TEV colour in a helper-style local whose stack slot sits below
 // its outgoing copy; writing the same code inline makes mwcc put the two slots the other way round.

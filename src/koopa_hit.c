@@ -194,9 +194,15 @@ static inline f32 kpaNrmToAngle(Vec* v) {
     return angleABf(0.0f, 0.0f, len, -v->y);
 }
 
-// NONMATCHING (99.96%): byte-for-byte except 4 register-name diffs — the two Vec-n reload blocks load the
-// hitN slots (0x18,0x14,0x10) in the opposite order to the target (0x10,0x14,0x18); dest registers and the
-// whole rest of the function match. Pure scheduler order; every source shape tried kept it.
+// Writing the three components through a Vec* (rather than `n.x = x` etc.) makes MWCC emit the component
+// reloads in ascending stack-address order and colour the destination FPRs the way the target does; the
+// direct field assignments emit them in the opposite order. This function is byte-for-byte identical.
+static inline void kpaSetVec(Vec* n, f32 x, f32 y, f32 z) {
+    n->x = x;
+    n->y = y;
+    n->z = z;
+}
+
 void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     MarioWork* mp;
     s32 i;
@@ -340,9 +346,7 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
             Vec n;
             MarioWork* m2;
             f32 ny100;
-            n.x = hitNX;
-            n.y = hitNY;
-            n.z = hitNZ;
+            kpaSetVec(&n, hitNX, hitNY, hitNZ);
             m2 = marioGetPtr();
             ny100 = float_100_80420e98 * n.y;
             MW_F32(m2, 0x218) =
@@ -359,9 +363,7 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
             Vec n;
             MarioWork* m2;
             f32 ny100;
-            n.x = hitNX;
-            n.y = hitNY;
-            n.z = hitNZ;
+            kpaSetVec(&n, hitNX, hitNY, hitNZ);
             m2 = marioGetPtr();
             ny100 = float_100_80420e98 * n.y;
             MW_F32(m2, 0x218) =
@@ -586,14 +588,24 @@ void* kpaGetHitFlame(void) {
 }
 
 
-#pragma opt_lifetimes off // keeps the target's register colouring this close (see NONMATCHING below)
-#pragma opt_dead_assignments off // same: keeps the target's colouring
-// Register allocation only: the clear loop's `i`/`ofs` zero-inits are emitted as `mr r28,r26` + `li r27,0`
-// instead of the original's `mr r27,r26` + `mr r28,r26`, and the pi constant is in f30 vs the original's f31
-// (double_to_int stays in f31 vs f30). `result` is correctly in r25. Declaring `result` last (after
-// entry/i/count/mp) is what fixes the colouring; the `pi`/`deg` locals are deliberate and removing them
-// costs 3 more instructions.
-// NONMATCHING (99.37%): every other instruction, constant and stack slot matches.
+// The clear loop must live in its own inlined helper: written directly in kpaHitCheck its counter/offset
+// zero-inits come out as `mr r28,r26` + `li r27,0` instead of the original's `mr r27,r26` + `mr r28,r26`.
+static inline void kpaClearHeadAll(void) {
+    s32 j;
+    for (j = 0; j < 10; j++) {
+        KPA(marioGetPtr())->head[j] = NULL;
+        KPA(marioGetPtr())->headDist[j] = 1000.0f;
+    }
+}
+
+#pragma opt_dead_assignments off // keeps the target's register colouring this close (see NONMATCHING below)
+// The `pi` constant sits in f30 and the compiler's int->float magic double in f31; the original has them
+// swapped (pi f31, double f30). Declaration placement/order for pi/deg, the named constants used directly,
+// pointer/struct setter helpers, `register`, `MATCH_F32`, and every opt_*/global_optimizer/scheduling/
+// optimization_level pragma tried all leave the double in f31. Everything else, including the clear loop
+// (whose counter/offset zero-init now comes out as `mr r27,r26`/`mr r28,r26` because the loop lives in the
+// kpaClearHeadAll helper above), is byte-identical.
+// NONMATCHING (99.76%): only the pi/double FPR swap differs.
 void* kpaHitCheck(void) {
     s32* entry;
     s32 i;
@@ -606,10 +618,7 @@ void* kpaHitCheck(void) {
         return NULL;
     }
     KPA(mp)->unk1C = NULL;
-    for (i = 0; i < 10; i++) {
-        KPA(marioGetPtr())->head[i] = NULL;
-        KPA(marioGetPtr())->headDist[i] = 1000.0f;
-    }
+    kpaClearHeadAll();
     if (kpaFireAttackCheck() == 1) {
         return NULL;
     }
@@ -655,7 +664,6 @@ void* kpaHitCheck(void) {
     KPA(mp)->unk1C = result;
     return result;
 }
-#pragma opt_lifetimes reset
 #pragma opt_dead_assignments reset
 
 BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
