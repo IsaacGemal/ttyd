@@ -135,192 +135,349 @@ typedef struct BattleStatusChangeMsgWork {
 	u64 field_0x250;                       // 0x250
 } BattleStatusChangeMsgWork;
 
-// The original passes the GXColor by value; the call below goes through a by-pointer prototype, which is
-// ABI-identical (a by-value GXColor struct is passed by reference) but steers MWCC's register allocation so
-// the 0x4330 conversion magic, the double_to_int base and the colour land in the target's r8/r9/r10 instead
-// of the swapped set (same trick as battle_message.c _disp).
-void _st_chg_msg_disp(CameraId camera, void* param) {
-	BattleWork* wp = _battleWorkPointer;
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
-	u16 lines;
-	u16 width;
-	f32 x;
-	f32 zero = 0.0f;
-	f32 neg120 = -120.0f; // keep the pool load: a bare `(s32)-120.0f` folds to -120 and drops the fctiwz
-	GXColor color;
-
-	width = FontGetMessageWidthLine(work->message, &lines);
-	lines++;
-	color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
-	x = zero - (f32)(width / 2);
-#ifdef MUST_MATCH
-	((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - 20.0f,
-	    -117.0f + (f32)((lines - 1) * 0x1D), (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
-#else
-	windowDispGX_Waku_col(0, color, x - 20.0f, -117.0f + (f32)((lines - 1) * 0x1D),
-	                      (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
-#endif
-	FontDrawStart();
-	FontDrawMessage((s32)x, (s32)neg120 + (lines - 1) * 0x1D, work->message);
+void BattleStatusEffectInit(BattleUnit* unit) {
+	; //stubbed in retail
 }
 
-BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
-	BattleStatusChangeEntry* entry;
-	BOOL shown = FALSE;
-	s8* pri;
-	s8 type;
+void BattleStatusEffectMain(BattleUnit* unit) {
+	BSE_Sleep(unit);
+	BSE_Biribiri(unit);
+	BSE_Fire(unit);
+	BSE_Freeze(unit);
+	BSE_Kagegakure(unit);
+}
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: naming the loaded byte in a local keeps it in r4 as in retail (extsb r0, r4 both times).
-	for (pri = _st_pri_data; (type = *pri) != -1; pri++) {
-		entry = &work->entries[type];
-#else
-	for (pri = _st_pri_data; *pri != -1; pri++) {
-		entry = &work->entries[*pri];
-#endif
+void BattleStatusEffectDelete(BattleUnit* unit) {
+	BSE_SleepDelete(unit);
+	BSE_BiribiriDelete(unit);
+	BSE_FireDelete(unit);
+	BSE_FreezeDelete(unit);
+	BSE_KagegakureDelete(unit);
+}
 
-		if (entry->type != -1) {
-			BattleUnit* unit;
+// dont_inline: without it BattleStatusEffectMain inlines BSE_Sleep; the original calls it.
+#pragma dont_inline on
+void BSE_Sleep(BattleUnit* unit) {
+	BattleEffectPosScale* work;
+	BattleUnitPart* part;
+	f32 x, y, z;
+	f32 scale;
+	f32 heightScale;
+	BOOL active = FALSE;
 
-			shown = TRUE;
-			unit = BattleGetUnitPtr(wp, entry->field_0x4);
-			if (entry->field_0x2 != 0) {
-				entry->field_0x2--;
-				if (BattlePadCheckTrigger(0x300) != 0) {
-					entry->field_0x2 = 0;
-				}
-				if (entry->field_0x2 == 0) {
-					entry->type = -1;
-				}
-			} else {
-				s32 i;
+	if (BtlUnit_CheckStatus(unit, STATUS_SLEEP)) {
+		active = TRUE;
+	}
+	if (active) {
+		if (((BattleUnitEffectFields*)unit)->mSleepEff == NULL) {
+			((BattleUnitEffectFields*)unit)->mSleepEff = effSleepEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f, 60.0f);
+		}
+		work = ((BattleUnitEffectFields*)unit)->mSleepEff->userdata;
+		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+		scale = 0.5f * (unit->mSizeMultiplier * (f32)BtlUnit_GetWidth(unit));
+		heightScale = 0.95f * (unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit));
+		if (unit->mAttributeFlags & kCeiling) {
+			heightScale = 0.0f;
+		}
+		x += scale;
+		y += heightScale;
+		work->position.x = x;
+		work->position.y = y;
+		work->position.z = z;
+	} else {
+		BSE_SleepDelete(unit);
+	}
+}
+#pragma dont_inline reset
 
-				sprintf(work->message, "");
-				for (i = 0; i < 0x1C; i++) {
-					if (entry->type == _st_chg_msg_data[i].type || _st_chg_msg_data[i].type == -1) {
-						if (entry->field_0x8 != 0) {
-							sprintf(work->message, msgSearch(_st_chg_msg_data[i].field_0x8));
-						} else {
-							sprintf(work->message, msgSearch(_st_chg_msg_data[i].field_0xC));
-						}
-						break;
-					}
-				}
-				entry->field_0x2 = 0x5A;
-			}
-			dispEntry(0x8, 900.0f, 1, _st_chg_msg_disp, NULL);
+// Keep BSE_SleepDelete out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_SleepDelete(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	EffectEntry* effect = fields->mSleepEff;
+
+	if (effect != NULL) {
+		effDelete(effect);
+		fields->mSleepEff = NULL;
+	}
+}
+
+// Keep BSE_Biribiri out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_Biribiri(BattleUnit* unit) {
+	BattleEffectPos* work;
+	BattleUnitPart* part;
+	f32 x, y, z;
+	f32 heightScale;
+	BOOL active = FALSE;
+
+	if (BtlUnit_CheckStatus(unit, STATUS_ELECTRIC)) {
+		active = TRUE;
+	}
+	if (active) {
+		if (((BattleUnitEffectFields*)unit)->mBiribiriEff == NULL) {
+			((BattleUnitEffectFields*)unit)->mBiribiriEff = effSparkEntry(0, 10, -1000.0f, -1000.0f, -1000.0f, (f32)(BtlUnit_GetWidth(unit) / 2));
+		}
+		work = ((BattleUnitEffectFields*)unit)->mBiribiriEff->userdata;
+		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+		heightScale = (f32)(BtlUnit_GetHeight(unit) / 2) * unit->mSizeMultiplier;
+		if (unit->mAttributeFlags & kCeiling) {
+			heightScale = 0.0f;
+		}
+		y += heightScale;
+		work->position.x = x;
+		work->position.y = y;
+		work->position.z = z + 10.0f;
+	} else {
+		BSE_BiribiriDelete(unit);
+	}
+}
+#pragma dont_inline reset
+
+// Keep BSE_BiribiriDelete out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_BiribiriDelete(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	EffectEntry* effect = fields->mBiribiriEff;
+
+	if (effect != NULL) {
+		effDelete(effect);
+		fields->mBiribiriEff = NULL;
+	}
+}
+
+// dont_inline: without it BattleStatusEffectMain inlines BSE_Fire; the original calls it.
+#pragma dont_inline on
+void BSE_Fire(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	BattleEffectPos* work;
+	BattleUnitPart* part;
+	f32 x, y, z;
+	f32 direction;
+	BOOL active = FALSE;
+
+	if (BtlUnit_CheckStatus(unit, STATUS_BURN)) {
+		active = TRUE;
+	}
+	if (active) {
+		if (fields->mFireEff == NULL) {
+			fields->mFireEff = effFireEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f);
+		}
+		work = fields->mFireEff->userdata;
+		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+		if (unit->faceDirection >= 0) {
+			direction = 1.0f;
+		} else {
+			direction = -1.0f;
+		}
+		x += unit->mSizeMultiplier * (((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x48 * direction);
+		y += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x4C * unit->mSizeMultiplier;
+		z += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x50 * unit->mSizeMultiplier;
+		work->position.x = x;
+		work->position.y = y;
+		work->position.z = z + 5.0f;
+	} else {
+		BSE_FireDelete(unit);
+	}
+}
+
+// Keep BSE_FireDelete out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_FireDelete(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	EffectEntry* effect = fields->mFireEff;
+
+	if (effect != NULL) {
+		effDelete(effect);
+		fields->mFireEff = NULL;
+	}
+}
+#pragma dont_inline reset
+
+// Keep BSE_Freeze out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_Freeze(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	BattleEffectPosScale* work;
+	BattleUnitPart* part;
+	f32 x, y, z;
+	f32 scale;
+	f32 widthScale;
+	f32 heightScale;
+	BOOL active = FALSE;
+
+	if (BtlUnit_CheckStatus(unit, STATUS_FREEZE)) {
+		active = TRUE;
+	}
+	if (active) {
+		if (fields->mFreezeEff == NULL) {
+			fields->mFreezeEff = effIceEntry(0, -1, -1000.0f, -1000.0f, -1000.0f, 1.0f);
+		}
+		work = fields->mFreezeEff->userdata;
+		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+		widthScale = (f32)unit->mWidth / 20.0f;
+		heightScale = (f32)unit->mHeight / 36.0f;
+		scale = (widthScale <= heightScale) ? widthScale : heightScale;
+		scale *= unit->mSizeMultiplier;
+		work->field_0x10 = scale;
+		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+		work->position.x = x;
+		work->position.y = y + 20.0f * scale;
+		work->position.z = z + 10.0f;
+	} else {
+		BSE_FreezeDelete(unit);
+	}
+}
+#pragma dont_inline reset
+
+// Keep BSE_FreezeDelete out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_FreezeDelete(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	EffectEntry* effect = fields->mFreezeEff;
+
+	if (effect != NULL) {
+		effSoftDelete(effect);
+		fields->mFreezeEff = NULL;
+	}
+}
+
+// Keep BSE_Kagegakure out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_Kagegakure(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	BattleUnitPart* part;
+	char name[0x14];
+	f32 x, y, z;
+	BOOL active = FALSE;
+
+	if ((_battleWorkPointer->dispFlags & 1) && (unit->mAttributeFlags & kVeiled)) {
+		active = TRUE;
+	}
+	if (active) {
+		if (fields->mKagegakureIcon == NULL) {
+			sprintf(name, "_biK_%02x", unit->unitId);
+			iconEntry(name, 0x99);
+			fields->mKagegakureIcon = iconNameToPtr(name);
+		}
+		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+		iconSetPos(fields->mKagegakureIcon->name, x, y, z + 5.0f);
+	} else {
+		BSE_KagegakureDelete(unit);
+	}
+}
+
+// Keep BSE_KagegakureDelete out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BSE_KagegakureDelete(BattleUnit* unit) {
+	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
+	IconEntry* entry = fields->mKagegakureIcon;
+
+	if (entry != NULL) {
+		iconDelete(entry->name);
+		fields->mKagegakureIcon = NULL;
+	}
+}
+#pragma dont_inline reset
+
+void BSE_TurnFirstProcessEffectEntry(BattleUnit* unit, s16 active) {
+	unit->mBurnDamageFlameState = 1;
+	unit->mbBurnDamageFlameActive = active;
+}
+#pragma dont_inline reset
+
+// NOTE: mBurnDamageFlameState/mbBurnDamageFlameActive are declared s16 in battle_unit.h, but the
+// original loads them with lhz and tests them unsigned (cmplwi); cast to u16 to match. Header likely wrong.
+BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
+	BattleUnitPart* part;
+	BattleEffectPosScale* work;
+	f32 x, y, z;
+	f32 scale;
+
+	part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+	if (!*(u16*)&unit->mBurnDamageFlameState) {
+		return FALSE;
+	}
+	if (!*(u16*)&unit->mbBurnDamageFlameActive) {
+		return FALSE;
+	}
+	switch (*(u16*)&unit->mbBurnDamageFlameActive) {
+	case 1:
+		switch (*(u16*)&unit->mBurnDamageFlameState) {
+		case 1:
+			*(u16*)&unit->mBurnDamageFlameState += 1;
+			unit->mBurnDamageFlameScale = 1.0f;
+			BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
+			z += 5.0f;
+			unit->mBurnDamageFlameEff = effFireEntry(0, 0, x, y, z, unit->mBurnDamageFlameScale);
+			unit->mBurnDamageFlameAnimTimer = 0;
 			break;
-		}
-	}
-
-	if (shown) {
-		s32 i;
-
-		for (i = 0; i < 0x40; i++) {
-			BattleUnit* unit = BattleGetUnitPtr(wp, i);
-			if (unit != NULL) {
-				BattleStatusChangeInfoWorkInit(unit);
+		case 2:
+			work = unit->mBurnDamageFlameEff->userdata;
+			unit->mBurnDamageFlameAnimTimer += 1;
+			scale = 1.6f * sinfd((f32)(unit->mBurnDamageFlameAnimTimer * 3)) + 0.4f;
+			unit->mBurnDamageFlameScale = scale;
+			work->mScale = unit->mBurnDamageFlameScale;
+			if (unit->mBurnDamageFlameAnimTimer >= 60) {
+				*(u16*)&unit->mBurnDamageFlameState += 1;
 			}
-		}
-	}
-	return shown;
-}
-
-void BattleStatusChangeMsgAdjust(BattleWork* wp) {
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
-	s8 i;
-
-	for (i = 0; i < 0x1C; i++) {
-		BattleStatusChangeEntry* entry = &work->entries[i];
-		s32 idx = i;
-
-		if (entry->type != -1) {
-			s32 j;
-
-			entry->field_0x1 = 0;
-			for (j = 0; j < 0x40; j++) {
-				BattleUnit* unit = BattleGetUnitPtr(wp, j);
-
-				if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-					s32 found = 0;
-					s32 k;
-					BattleStatusChangeEntry* info = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
-
-					for (k = 0; k < 6; k++) {
-						if (i == info[k].type) {
-							found = 1;
-							break;
-						}
-					}
-					if (found) {
-						BattleStatusChangeMsgSetAnnouce(unit, idx, info[k].field_0x8);
-					}
-				}
+			break;
+		case 3:
+			effDelete(unit->mBurnDamageFlameEff);
+			unit->mBurnDamageFlameEff = NULL;
+			unit->mBurnDamageFlameState = 0;
+			if (!BtlUnit_CheckShadowGuard(unit)) {
+				BattleDamageDirect(-5, unit, 0, 1, 0, 0x118, 0, 1);
 			}
-			if (entry->field_0x1 == 0) {
-				entry->field_0x4 = -1;
-				entry->type = -1;
-			} else if (work->field_0x250 & (s64)(1 << idx)) {
-				entry->field_0x4 = -1;
-				entry->type = -1;
-			}
+		case 0:
+		default:
+			return FALSE;
 		}
+		break;
+	default:
+		return FALSE;
 	}
-}
-
-// Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
-	BattleStatusChangeEntry* entry = &((BattleStatusChangeMsgWork*)((u8*)_battleWorkPointer + 0x18D88))->entries[type];
-
-	entry->field_0x4 = unit->unitId;
-	entry->type = type;
-	entry->field_0x2 = 0;
-	entry->field_0x8 = msg;
-	if (unit->currentKind == 0xDE) {
-		entry->field_0x1 |= 1;
-		return;
-	}
-	if (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
-		if (unit->mAlliance == 0) {
-			entry->field_0x1 |= 2;
-			return;
-		}
-	}
-	entry->field_0x1 |= 4;
+	return TRUE;
 }
 #pragma dont_inline reset
 
-void BattleStatusChangeMsgWorkInit(void) {
-	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)_battleWorkPointer + 0x18D88);
+#pragma dont_inline on
+void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
+	BattleStatusChangeEntry* entries = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
 	s32 i;
 
-	memset(work, 0, sizeof(BattleStatusChangeMsgWork));
-	for (i = 0; i < 0x1C; i++) {
-		work->entries[i].type = -1;
+	for (i = 0; i < 6; i++) {
+		BattleStatusChangeEntry* entry = &entries[i];
+		entry->type = -1;
+		entry->field_0x1 = 0;
+		entry->field_0x2 = 0;
+		entry->field_0x3 = 0;
+		entry->field_0x4 = 0;
 	}
-}
-
-// Keep BattleStatusChangeAnnouceMain_Unit out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
-	return FALSE;
 }
 #pragma dont_inline reset
 
-BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
-	s32 i;
-	BOOL result = FALSE;
+// Keep _get_pri out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+s32 _get_pri(s8 type) {
+	s8* val;
+	s32 priority = 24; //TODO: #define?
 
-	for (i = 0; i < 0x40; i++) {
-		BattleUnit* unit = BattleGetUnitPtr(wp, i);
-		if (unit != NULL && BattleStatusChangeAnnouceMain_Unit(unit)) {
-			result = TRUE;
+	for (val = _st_pri_data;; priority--, val++) {
+		if (*val == -1) {
+			return -1; //reached end of list
+		}
+		if (*val == type) {
+			return priority;
 		}
 	}
-	return result;
+	return -1;
 }
+#pragma dont_inline reset
 
 void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2) {
 	BattleStatusChangeEntry* list = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
@@ -389,351 +546,194 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 		}
 	}
 }
+#pragma dont_inline reset
 
-// Keep _get_pri out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-s32 _get_pri(s8 type) {
-	s8* val;
-	s32 priority = 24; //TODO: #define?
+BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
+	s32 i;
+	BOOL result = FALSE;
 
-	for (val = _st_pri_data;; priority--, val++) {
-		if (*val == -1) {
-			return -1; //reached end of list
-		}
-		if (*val == type) {
-			return priority;
+	for (i = 0; i < 0x40; i++) {
+		BattleUnit* unit = BattleGetUnitPtr(wp, i);
+		if (unit != NULL && BattleStatusChangeAnnouceMain_Unit(unit)) {
+			result = TRUE;
 		}
 	}
-	return -1;
+	return result;
 }
 #pragma dont_inline reset
 
+// Keep BattleStatusChangeAnnouceMain_Unit out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
-	BattleStatusChangeEntry* entries = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
+BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
+	return FALSE;
+}
+#pragma dont_inline reset
+
+void BattleStatusChangeMsgWorkInit(void) {
+	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)_battleWorkPointer + 0x18D88);
 	s32 i;
 
-	for (i = 0; i < 6; i++) {
-		BattleStatusChangeEntry* entry = &entries[i];
-		entry->type = -1;
-		entry->field_0x1 = 0;
-		entry->field_0x2 = 0;
-		entry->field_0x3 = 0;
-		entry->field_0x4 = 0;
+	memset(work, 0, sizeof(BattleStatusChangeMsgWork));
+	for (i = 0; i < 0x1C; i++) {
+		work->entries[i].type = -1;
 	}
 }
 #pragma dont_inline reset
 
-// NOTE: mBurnDamageFlameState/mbBurnDamageFlameActive are declared s16 in battle_unit.h, but the
-// original loads them with lhz and tests them unsigned (cmplwi); cast to u16 to match. Header likely wrong.
-BOOL BSE_TurnFirstProcessEffectMain(BattleUnit* unit) {
-	BattleUnitPart* part;
-	BattleEffectPosScale* work;
-	f32 x, y, z;
-	f32 scale;
+// Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
+	BattleStatusChangeEntry* entry = &((BattleStatusChangeMsgWork*)((u8*)_battleWorkPointer + 0x18D88))->entries[type];
 
-	part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-	if (!*(u16*)&unit->mBurnDamageFlameState) {
-		return FALSE;
+	entry->field_0x4 = unit->unitId;
+	entry->type = type;
+	entry->field_0x2 = 0;
+	entry->field_0x8 = msg;
+	if (unit->currentKind == 0xDE) {
+		entry->field_0x1 |= 1;
+		return;
 	}
-	if (!*(u16*)&unit->mbBurnDamageFlameActive) {
-		return FALSE;
+	if (unit->currentKind >= 0xE0 && unit->currentKind < 0xE7) {
+		if (unit->mAlliance == 0) {
+			entry->field_0x1 |= 2;
+			return;
+		}
 	}
-	switch (*(u16*)&unit->mbBurnDamageFlameActive) {
-	case 1:
-		switch (*(u16*)&unit->mBurnDamageFlameState) {
-		case 1:
-			*(u16*)&unit->mBurnDamageFlameState += 1;
-			unit->mBurnDamageFlameScale = 1.0f;
-			BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-			z += 5.0f;
-			unit->mBurnDamageFlameEff = effFireEntry(0, 0, x, y, z, unit->mBurnDamageFlameScale);
-			unit->mBurnDamageFlameAnimTimer = 0;
-			break;
-		case 2:
-			work = unit->mBurnDamageFlameEff->userdata;
-			unit->mBurnDamageFlameAnimTimer += 1;
-			scale = 1.6f * sinfd((f32)(unit->mBurnDamageFlameAnimTimer * 3)) + 0.4f;
-			unit->mBurnDamageFlameScale = scale;
-			work->mScale = unit->mBurnDamageFlameScale;
-			if (unit->mBurnDamageFlameAnimTimer >= 60) {
-				*(u16*)&unit->mBurnDamageFlameState += 1;
+	entry->field_0x1 |= 4;
+}
+#pragma dont_inline reset
+
+void BattleStatusChangeMsgAdjust(BattleWork* wp) {
+	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
+	s8 i;
+
+	for (i = 0; i < 0x1C; i++) {
+		BattleStatusChangeEntry* entry = &work->entries[i];
+		s32 idx = i;
+
+		if (entry->type != -1) {
+			s32 j;
+
+			entry->field_0x1 = 0;
+			for (j = 0; j < 0x40; j++) {
+				BattleUnit* unit = BattleGetUnitPtr(wp, j);
+
+				if (unit != NULL && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+					s32 found = 0;
+					s32 k;
+					BattleStatusChangeEntry* info = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
+
+					for (k = 0; k < 6; k++) {
+						if (i == info[k].type) {
+							found = 1;
+							break;
+						}
+					}
+					if (found) {
+						BattleStatusChangeMsgSetAnnouce(unit, idx, info[k].field_0x8);
+					}
+				}
 			}
-			break;
-		case 3:
-			effDelete(unit->mBurnDamageFlameEff);
-			unit->mBurnDamageFlameEff = NULL;
-			unit->mBurnDamageFlameState = 0;
-			if (!BtlUnit_CheckShadowGuard(unit)) {
-				BattleDamageDirect(-5, unit, 0, 1, 0, 0x118, 0, 1);
+			if (entry->field_0x1 == 0) {
+				entry->field_0x4 = -1;
+				entry->type = -1;
+			} else if (work->field_0x250 & (s64)(1 << idx)) {
+				entry->field_0x4 = -1;
+				entry->type = -1;
 			}
-		case 0:
-		default:
-			return FALSE;
 		}
-		break;
-	default:
-		return FALSE;
-	}
-	return TRUE;
-}
-
-void BSE_TurnFirstProcessEffectEntry(BattleUnit* unit, s16 active) {
-	unit->mBurnDamageFlameState = 1;
-	unit->mbBurnDamageFlameActive = active;
-}
-
-// Keep BSE_KagegakureDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_KagegakureDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	IconEntry* entry = fields->mKagegakureIcon;
-
-	if (entry != NULL) {
-		iconDelete(entry->name);
-		fields->mKagegakureIcon = NULL;
 	}
 }
-#pragma dont_inline reset
 
-// Keep BSE_Kagegakure out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_Kagegakure(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	BattleUnitPart* part;
-	char name[0x14];
-	f32 x, y, z;
-	BOOL active = FALSE;
+BOOL BattleStatusChangeMsgMain(BattleWork* wp) {
+	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
+	BattleStatusChangeEntry* entry;
+	BOOL shown = FALSE;
+	s8* pri;
+	s8 type;
 
-	if ((_battleWorkPointer->dispFlags & 1) && (unit->mAttributeFlags & kVeiled)) {
-		active = TRUE;
-	}
-	if (active) {
-		if (fields->mKagegakureIcon == NULL) {
-			sprintf(name, "_biK_%02x", unit->unitId);
-			iconEntry(name, 0x99);
-			fields->mKagegakureIcon = iconNameToPtr(name);
+#ifdef MUST_MATCH
+	// MUST_MATCH: naming the loaded byte in a local keeps it in r4 as in retail (extsb r0, r4 both times).
+	for (pri = _st_pri_data; (type = *pri) != -1; pri++) {
+		entry = &work->entries[type];
+#else
+	for (pri = _st_pri_data; *pri != -1; pri++) {
+		entry = &work->entries[*pri];
+#endif
+
+		if (entry->type != -1) {
+			BattleUnit* unit;
+
+			shown = TRUE;
+			unit = BattleGetUnitPtr(wp, entry->field_0x4);
+			if (entry->field_0x2 != 0) {
+				entry->field_0x2--;
+				if (BattlePadCheckTrigger(0x300) != 0) {
+					entry->field_0x2 = 0;
+				}
+				if (entry->field_0x2 == 0) {
+					entry->type = -1;
+				}
+			} else {
+				s32 i;
+
+				sprintf(work->message, "");
+				for (i = 0; i < 0x1C; i++) {
+					if (entry->type == _st_chg_msg_data[i].type || _st_chg_msg_data[i].type == -1) {
+						if (entry->field_0x8 != 0) {
+							sprintf(work->message, msgSearch(_st_chg_msg_data[i].field_0x8));
+						} else {
+							sprintf(work->message, msgSearch(_st_chg_msg_data[i].field_0xC));
+						}
+						break;
+					}
+				}
+				entry->field_0x2 = 0x5A;
+			}
+			dispEntry(0x8, 900.0f, 1, _st_chg_msg_disp, NULL);
+			break;
 		}
-		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		iconSetPos(fields->mKagegakureIcon->name, x, y, z + 5.0f);
-	} else {
-		BSE_KagegakureDelete(unit);
 	}
-}
-#pragma dont_inline reset
 
-// Keep BSE_FreezeDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_FreezeDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mFreezeEff;
+	if (shown) {
+		s32 i;
 
-	if (effect != NULL) {
-		effSoftDelete(effect);
-		fields->mFreezeEff = NULL;
-	}
-}
-#pragma dont_inline reset
-
-// Keep BSE_Freeze out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_Freeze(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	BattleEffectPosScale* work;
-	BattleUnitPart* part;
-	f32 x, y, z;
-	f32 scale;
-	f32 widthScale;
-	f32 heightScale;
-	BOOL active = FALSE;
-
-	if (BtlUnit_CheckStatus(unit, STATUS_FREEZE)) {
-		active = TRUE;
-	}
-	if (active) {
-		if (fields->mFreezeEff == NULL) {
-			fields->mFreezeEff = effIceEntry(0, -1, -1000.0f, -1000.0f, -1000.0f, 1.0f);
+		for (i = 0; i < 0x40; i++) {
+			BattleUnit* unit = BattleGetUnitPtr(wp, i);
+			if (unit != NULL) {
+				BattleStatusChangeInfoWorkInit(unit);
+			}
 		}
-		work = fields->mFreezeEff->userdata;
-		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-		widthScale = (f32)unit->mWidth / 20.0f;
-		heightScale = (f32)unit->mHeight / 36.0f;
-		scale = (widthScale <= heightScale) ? widthScale : heightScale;
-		scale *= unit->mSizeMultiplier;
-		work->field_0x10 = scale;
-		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		work->position.x = x;
-		work->position.y = y + 20.0f * scale;
-		work->position.z = z + 10.0f;
-	} else {
-		BSE_FreezeDelete(unit);
 	}
-}
-#pragma dont_inline reset
-
-// Keep BSE_FireDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_FireDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mFireEff;
-
-	if (effect != NULL) {
-		effDelete(effect);
-		fields->mFireEff = NULL;
-	}
-}
-#pragma dont_inline reset
-
-// dont_inline: without it BattleStatusEffectMain inlines BSE_Fire; the original calls it.
-#pragma dont_inline on
-void BSE_Fire(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	BattleEffectPos* work;
-	BattleUnitPart* part;
-	f32 x, y, z;
-	f32 direction;
-	BOOL active = FALSE;
-
-	if (BtlUnit_CheckStatus(unit, STATUS_BURN)) {
-		active = TRUE;
-	}
-	if (active) {
-		if (fields->mFireEff == NULL) {
-			fields->mFireEff = effFireEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f);
-		}
-		work = fields->mFireEff->userdata;
-		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		if (unit->faceDirection >= 0) {
-			direction = 1.0f;
-		} else {
-			direction = -1.0f;
-		}
-		x += unit->mSizeMultiplier * (((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x48 * direction);
-		y += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x4C * unit->mSizeMultiplier;
-		z += ((BattleUnitKindOffsetFields*)unit->mKindParams)->mField_0x50 * unit->mSizeMultiplier;
-		work->position.x = x;
-		work->position.y = y;
-		work->position.z = z + 5.0f;
-	} else {
-		BSE_FireDelete(unit);
-	}
-}
-#pragma dont_inline reset
-
-// Keep BSE_BiribiriDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_BiribiriDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mBiribiriEff;
-
-	if (effect != NULL) {
-		effDelete(effect);
-		fields->mBiribiriEff = NULL;
-	}
-}
-#pragma dont_inline reset
-
-// Keep BSE_Biribiri out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_Biribiri(BattleUnit* unit) {
-	BattleEffectPos* work;
-	BattleUnitPart* part;
-	f32 x, y, z;
-	f32 heightScale;
-	BOOL active = FALSE;
-
-	if (BtlUnit_CheckStatus(unit, STATUS_ELECTRIC)) {
-		active = TRUE;
-	}
-	if (active) {
-		if (((BattleUnitEffectFields*)unit)->mBiribiriEff == NULL) {
-			((BattleUnitEffectFields*)unit)->mBiribiriEff = effSparkEntry(0, 10, -1000.0f, -1000.0f, -1000.0f, (f32)(BtlUnit_GetWidth(unit) / 2));
-		}
-		work = ((BattleUnitEffectFields*)unit)->mBiribiriEff->userdata;
-		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		heightScale = (f32)(BtlUnit_GetHeight(unit) / 2) * unit->mSizeMultiplier;
-		if (unit->mAttributeFlags & kCeiling) {
-			heightScale = 0.0f;
-		}
-		y += heightScale;
-		work->position.x = x;
-		work->position.y = y;
-		work->position.z = z + 10.0f;
-	} else {
-		BSE_BiribiriDelete(unit);
-	}
-}
-#pragma dont_inline reset
-
-// Keep BSE_SleepDelete out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BSE_SleepDelete(BattleUnit* unit) {
-	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
-	EffectEntry* effect = fields->mSleepEff;
-
-	if (effect != NULL) {
-		effDelete(effect);
-		fields->mSleepEff = NULL;
-	}
-}
-#pragma dont_inline reset
-
-// dont_inline: without it BattleStatusEffectMain inlines BSE_Sleep; the original calls it.
-#pragma dont_inline on
-void BSE_Sleep(BattleUnit* unit) {
-	BattleEffectPosScale* work;
-	BattleUnitPart* part;
-	f32 x, y, z;
-	f32 scale;
-	f32 heightScale;
-	BOOL active = FALSE;
-
-	if (BtlUnit_CheckStatus(unit, STATUS_SLEEP)) {
-		active = TRUE;
-	}
-	if (active) {
-		if (((BattleUnitEffectFields*)unit)->mSleepEff == NULL) {
-			((BattleUnitEffectFields*)unit)->mSleepEff = effSleepEntry(0, 0, -1000.0f, -1000.0f, -1000.0f, 1.0f, 60.0f);
-		}
-		work = ((BattleUnitEffectFields*)unit)->mSleepEff->userdata;
-		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		scale = 0.5f * (unit->mSizeMultiplier * (f32)BtlUnit_GetWidth(unit));
-		heightScale = 0.95f * (unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit));
-		if (unit->mAttributeFlags & kCeiling) {
-			heightScale = 0.0f;
-		}
-		x += scale;
-		y += heightScale;
-		work->position.x = x;
-		work->position.y = y;
-		work->position.z = z;
-	} else {
-		BSE_SleepDelete(unit);
-	}
-}
-#pragma dont_inline reset
-
-void BattleStatusEffectDelete(BattleUnit* unit) {
-	BSE_SleepDelete(unit);
-	BSE_BiribiriDelete(unit);
-	BSE_FireDelete(unit);
-	BSE_FreezeDelete(unit);
-	BSE_KagegakureDelete(unit);
+	return shown;
 }
 
-void BattleStatusEffectMain(BattleUnit* unit) {
-	BSE_Sleep(unit);
-	BSE_Biribiri(unit);
-	BSE_Fire(unit);
-	BSE_Freeze(unit);
-	BSE_Kagegakure(unit);
-}
+// The original passes the GXColor by value; the call below goes through a by-pointer prototype, which is
+// ABI-identical (a by-value GXColor struct is passed by reference) but steers MWCC's register allocation so
+// the 0x4330 conversion magic, the double_to_int base and the colour land in the target's r8/r9/r10 instead
+// of the swapped set (same trick as battle_message.c _disp).
+void _st_chg_msg_disp(CameraId camera, void* param) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
+	u16 lines;
+	u16 width;
+	f32 x;
+	f32 zero = 0.0f;
+	f32 neg120 = -120.0f; // keep the pool load: a bare `(s32)-120.0f` folds to -120 and drops the fctiwz
+	GXColor color;
 
-void BattleStatusEffectInit(BattleUnit* unit) {
-	; //stubbed in retail
+	width = FontGetMessageWidthLine(work->message, &lines);
+	lines++;
+	color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+	x = zero - (f32)(width / 2);
+#ifdef MUST_MATCH
+	((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - 20.0f,
+	    -117.0f + (f32)((lines - 1) * 0x1D), (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
+#else
+	windowDispGX_Waku_col(0, color, x - 20.0f, -117.0f + (f32)((lines - 1) * 0x1D),
+	                      (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
+#endif
+	FontDrawStart();
+	FontDrawMessage((s32)x, (s32)neg120 + (lines - 1) * 0x1D, work->message);
 }
 

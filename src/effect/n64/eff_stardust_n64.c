@@ -73,30 +73,8 @@ static u32 size8x8_tex22x22_vtx[0x70] = {
 
 // .sdata2 data referenced by effStardustDisp and effStardustN64Entry.
 extern const GXColor dat_8041fef0;
-extern const f32 float_deg2rad_8041fef4;
-extern const f32 float_0p0056818_8041fef8;
-extern const f32 float_0p045455_8041fefc;
-extern const f32 float_0_8041ff00;
 
 // .sdata2 float constants.
-extern const f32 float_neg0p02_8041ff04;
-extern const f32 float_0p01_8041ff08;
-extern const f32 float_1_8041ff0c;
-extern const f32 float_0p5_8041ff10;
-extern const f32 float_6p2832_8041ff14;
-extern const f32 float_360_8041ff18;
-extern const f32 float_neg0p05_8041ff1c;
-extern const f32 float_0p96_8041ff20;
-extern const f32 float_0p1_8041ff24;
-extern const f32 float_0p9_8041ff28;
-extern const f32 float_8_8041ff2c;
-extern const f32 float_1000_8041ff30;
-extern const f32 float_1800_8041ff34;
-extern const f32 float_90_8041ff38;
-extern const f32 float_85_8041ff3c;
-extern const f32 float_15_8041ff40;
-extern const f32 float_100_8041ff44;
-extern const f32 float_0p05_8041ff48;
 
 // Structure matches: the switch arms (incl. `case 3: case 4:` for the >=3 default), the rand/angle math, the
 // `s`/`s2`/`s3`/`c`/`t` temporaries, the i/lifeA/lifeB init order, the default arm's vy-before-second-angle
@@ -144,11 +122,11 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
         break;
     case 3:
         count = 4;
-        scaleB = float_8_8041ff2c;
+        scaleB = 8.0f;
         break;
     default:
         count = 8;
-        scaleB = float_8_8041ff2c;
+        scaleB = 8.0f;
         break;
     }
     effect->type = "StardustN64";
@@ -162,41 +140,41 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     data->field_0x20 = 0;
     data->type = type;
     data->field_0x24 = 0x1e;
-    data->r = float_1_8041ff0c;
-    data->g = float_1_8041ff0c;
-    data->b = float_1_8041ff0c;
+    data->r = 1.0f;
+    data->g = 1.0f;
+    data->b = 1.0f;
     data->drawCam = 4;
-    data->scale = float_1_8041ff0c;
+    data->scale = 1.0f;
 
-    rangeA = (s32)(float_1000_8041ff30 * scale);
-    rangeB = (s32)(float_1000_8041ff30 * scaleB);
+    rangeA = (s32)(1000.f * scale);
+    rangeB = (s32)(1000.f * scaleB);
 
     ptr = data + 1;
     for (i = 1, lifeA = 0x20, lifeB = 0x14; i < count + 1; i++, ptr++) {
-        randA = (f32)(rand() % rangeA) / float_1000_8041ff30;
-        randB = (f32)(rand() % rangeB) / float_1000_8041ff30;
+        randA = (f32)(rand() % rangeA) / 1000.f;
+        randB = (f32)(rand() % rangeB) / 1000.f;
         switch (type) {
         case 0:
             ptr->field_0x18 = 0.0f;
-            t = float_1800_8041ff34 / (f32)count;
-            randB = float_6p2832_8041ff14 * (t * (f32)i - float_90_8041ff38)
-                / float_360_8041ff18;
+            t = 1800.f / (f32)count;
+            randB = 6.2831855f * (t * (f32)i - 90.f)
+                / 360.f;
             s = (f32)sin(randB);
-            t2 = float_360_8041ff18 / (f32)count;
-            randA = float_6p2832_8041ff14 * (t2 * (f32)i)
-                / float_360_8041ff18;
+            t2 = 360.f / (f32)count;
+            randA = 6.2831855f * (t2 * (f32)i)
+                / 360.f;
             s3 = (f32)sin(randA);
             odd5 = (i & 1) * 5;
             ptr->field_0x10 = scale
                 * (s3
-                    * (float_85_8041ff3c - float_15_8041ff40 * s - (f32)odd5)
-                    / float_100_8041ff44);
+                    * (85.0f - 15.0f * s - (f32)odd5)
+                    / 100.f);
             s2 = (f32)sin(randB);
             c = (f32)cos(randA);
             ptr->field_0x14 = scale
                 * (c
-                    * (float_85_8041ff3c - float_15_8041ff40 * s2 - (f32)odd5)
-                    / float_100_8041ff44);
+                    * (85.0f - 15.0f * s2 - (f32)odd5)
+                    / 100.f);
             ptr->z = 0.0f;
             ptr->field_0x34 = 0;
             break;
@@ -207,25 +185,25 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
                `(f32)count` one, which lands the two int->float scratch pairs in the original's
                slots (count 0x2c/0x28, i 0x24/0x20); the natural form below puts them the other
                way round. The result is unchanged (the first `(f32)i` is discarded). */
-            angle = (float_360_8041ff18 / (f32)count) * ((f32)i, (f32)i)
+            angle = (360.f / (f32)count) * ((f32)i, (f32)i)
                 + (f32)(rand() % 360);
 #else
-            angle = float_360_8041ff18 / (f32)count * (f32)i + (f32)(rand() % 360);
+            angle = 360.f / (f32)count * (f32)i + (f32)(rand() % 360);
 #endif
             if (i & 1) {
-                vy = -((f32)(rand() % 50 / 1000) + float_0p05_8041ff48);
+                vy = -((f32)(rand() % 50 / 1000) + 0.05f);
             } else {
                 vy = 0.0f;
             }
             ptr->field_0x18 = vy;
             ptr->field_0x10 = 0.0f;
             ptr->field_0x14 = 0.0f;
-            angle = float_6p2832_8041ff14 * angle / float_360_8041ff18;
+            angle = 6.2831855f * angle / 360.f;
             ptr->x = randA * (f32)sin(angle);
             ptr->y = randB * (f32)cos(angle);
             ptr->z = 0.0f;
             ptr->field_0x34 = i % 3;
-            ptr->scale = float_1_8041ff0c;
+            ptr->scale = 1.0f;
             ptr->field_0x24 = lifeA;
             ptr->field_0x20 = 0;
             break;
@@ -234,13 +212,13 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
         default:
 #ifdef MUST_MATCH
             /* MUST_MATCH: same comma as the case 1/2 arm above (int->float scratch slots). */
-            angle = (float_360_8041ff18 / (f32)count) * ((f32)i, (f32)i)
+            angle = (360.f / (f32)count) * ((f32)i, (f32)i)
                 + (f32)(rand() % 360);
 #else
-            angle = float_360_8041ff18 / (f32)count * (f32)i + (f32)(rand() % 360);
+            angle = 360.f / (f32)count * (f32)i + (f32)(rand() % 360);
 #endif
-            vy = -((f32)(rand() % 50 / 1000) + float_0p05_8041ff48);
-            angle = float_6p2832_8041ff14 * angle / float_360_8041ff18;
+            vy = -((f32)(rand() % 50 / 1000) + 0.05f);
+            angle = 6.2831855f * angle / 360.f;
             ptr->field_0x18 = vy;
             ptr->field_0x10 = 0.0f;
             ptr->field_0x14 = 0.0f;
@@ -248,7 +226,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
             ptr->y = randB * (f32)cos(angle);
             ptr->z = 0.0f;
             ptr->field_0x34 = i % 3;
-            ptr->scale = float_1_8041ff0c;
+            ptr->scale = 1.0f;
             ptr->field_0x24 = lifeB;
             ptr->field_0x20 = 0;
             break;
@@ -306,13 +284,13 @@ void effStardustMain(EffectEntry* effect) {
         data->field_0x38 = (counter + i) & 7;
         switch (type) {
         case 0:
-            data->field_0x18 += float_neg0p02_8041ff04;
+            data->field_0x18 += -0.02f;
             if (counter - 1 < 7) {
-                data->x = float_0p01_8041ff08
+                data->x = 0.01f
                     * (data->field_0x10 * (f32)speed_data[counter - 1]);
-                data->y = float_0p01_8041ff08
+                data->y = 0.01f
                     * (data->field_0x14 * (f32)speed_data[counter - 1]) + data->field_0x18;
-                data->scale = float_0p01_8041ff08 * (f32)scale_data[counter - 1];
+                data->scale = 0.01f * (f32)scale_data[counter - 1];
             } else {
                 s32 rnd;
 #ifdef MUST_MATCH
@@ -324,28 +302,28 @@ void effStardustMain(EffectEntry* effect) {
                 rnd = effTblRandN64(0x168, i + 0xb1);
 #ifdef MUST_MATCH
                 p = (f32)rnd;
-                radius = float_0p5_8041ff10 * (f32)(i & 3) + float_1_8041ff0c;
-                angle = float_6p2832_8041ff14 * p / float_360_8041ff18;
+                radius = 0.5f * (f32)(i & 3) + 1.0f;
+                angle = 6.2831855f * p / 360.f;
 #else
-                angle = float_6p2832_8041ff14 * (f32)rnd / float_360_8041ff18;
-                radius = float_0p5_8041ff10 * (f32)(i & 3) + float_1_8041ff0c;
+                angle = 6.2831855f * (f32)rnd / 360.f;
+                radius = 0.5f * (f32)(i & 3) + 1.0f;
 #endif
                 data->type = 10;
                 data->field_0x10 = radius * (f32)sin(angle);
                 data->field_0x14 = radius * (f32)cos(angle);
-                data->field_0x18 = float_neg0p05_8041ff1c;
+                data->field_0x18 = -0.05f;
             }
             break;
         case 10:
-            data->field_0x10 *= float_0p96_8041ff20;
-            data->field_0x14 *= float_0p96_8041ff20;
+            data->field_0x10 *= 0.96f;
+            data->field_0x14 *= 0.96f;
             data->field_0x14 += data->field_0x18;
             data->x += data->field_0x10;
             data->y += data->field_0x14;
-            data->scale = float_0p1_8041ff24 * (float_0p1_8041ff24 - data->scale) + data->scale;
+            data->scale = 0.1f * (0.1f - data->scale) + data->scale;
             break;
         default:
-            data->field_0x10 *= float_0p9_8041ff28;
+            data->field_0x10 *= 0.9f;
             data->field_0x14 += data->field_0x18;
             {
                 f32 vx = data->field_0x10;
@@ -363,9 +341,9 @@ void effStardustMain(EffectEntry* effect) {
                 data->field_0x20++;
                 counter = data->field_0x20;
                 if (counter - 1 < 7) {
-                    data->scale = float_0p01_8041ff08 * (f32)scale_data[counter - 1];
+                    data->scale = 0.01f * (f32)scale_data[counter - 1];
                 } else {
-                    data->scale = float_0p1_8041ff24 * (float_0p1_8041ff24 - data->scale) + data->scale;
+                    data->scale = 0.1f * (0.1f - data->scale) + data->scale;
                 }
             }
             break;
@@ -425,7 +403,7 @@ void effStardustDisp(CameraId camId, void* param) {
     colorG = data->g;
     colorB = data->b;
     PSMTXTrans(mtx, data->x, data->y, data->z);
-    PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041fef4);
+    PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
     PSMTXScale(scale, data->scale, data->scale, data->scale);
     PSMTXConcat(mtx, rot, base);
     PSMTXConcat(base, scale, base);
@@ -435,7 +413,7 @@ void effStardustDisp(CameraId camId, void* param) {
     GXSetNumChans(0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-    PSMTXScale(scale, float_0p0056818_8041fef8, float_0p045455_8041fefc, float_0_8041ff00);
+    PSMTXScale(scale, 0.0056818184f, 0.045454547f, 0.0f);
     GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
     effGetTexObjN64(0x20, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -530,3 +508,6 @@ void effStardustN64SetDrawCam(EffectEntry* entry, s32 cam) {
 void effStardustN64SetScale(EffectEntry* entry, f32 scale) {
     ((EffStardustN64Data*)entry->userdata)->scale = scale;
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041fef0 = { 0x00, 0x00, 0x00, 0xFF };

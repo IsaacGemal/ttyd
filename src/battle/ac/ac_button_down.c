@@ -41,40 +41,6 @@ typedef struct ButtonDownWork {
 } ButtonDownWork;
 
 
-void battleAcDelete_ButtonDown(BattleWork* work) {
-    work->actionCommands.mAcState = 1003;
-}
-
-// Deriving both the state and disp parameters from one BattleActions* (rather than straight from
-// the BattleWork*) is what makes MWCC materialise the disp base: `addi r4, r4, 0x1f20`, then 0x20(r4).
-void battleAcDisp_ButtonDown(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
-    s32 state = ac->mAcState;
-    BattleACDispParams* disp = &ac->dispParams;
-    f32 x;
-    f32 y;
-
-    switch (state) {
-        case 0:
-        case 99:
-            if (disp->counter > 0) {
-                disp->counter--;
-            }
-            x = intplGetValue(4, 20 - disp->counter, 20, float_neg300_804204fc, float_0_80420500);
-            y = float_0_80420500;
-            break;
-        default:
-            y = float_0_80420500;
-            x = y;
-            break;
-    }
-    actionCommandDisp(0, x, y);
-}
-
-s32 battleAcResult_ButtonDown(BattleWork* work) {
-    return work->actionCommands.result;
-}
-
 // The two unique-button loops must be `while (!found)` (a do-while leaves `pick` unspilled and drops
 // the frame to 0x30 with only 10 callee-saved GPRs). `bd->states[i] = 0;` must be written inside both
 // arms of `case -3` (duplicated, not once after the if/else): a shared store lets MWCC merge the two
@@ -307,6 +273,40 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
     return 1;
 }
 
+s32 battleAcResult_ButtonDown(BattleWork* work) {
+    return work->actionCommands.result;
+}
+
+// Deriving both the state and disp parameters from one BattleActions* (rather than straight from
+// the BattleWork*) is what makes MWCC materialise the disp base: `addi r4, r4, 0x1f20`, then 0x20(r4).
+void battleAcDisp_ButtonDown(CameraId camId, void* param) {
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    s32 state = ac->mAcState;
+    BattleACDispParams* disp = &ac->dispParams;
+    f32 x;
+    f32 y;
+
+    switch (state) {
+        case 0:
+        case 99:
+            if (disp->counter > 0) {
+                disp->counter--;
+            }
+            x = intplGetValue(4, 20 - disp->counter, 20, float_neg300_804204fc, float_0_80420500);
+            y = float_0_80420500;
+            break;
+        default:
+            y = float_0_80420500;
+            x = y;
+            break;
+    }
+    actionCommandDisp(0, x, y);
+}
+
+void battleAcDelete_ButtonDown(BattleWork* work) {
+    work->actionCommands.mAcState = 1003;
+}
+
 // 100%: the five .rodata Vecs above must stay five separate objects, not one Vec[5] array. Only
 // then does MWCC anchor its generated int->float 2^52 pool double at vec+0x40 and reach it as
 // `lfd f1, 0x40(r31)`; with one array it emits a fresh lis/addi and the score is 95.17%. The banner
@@ -435,3 +435,12 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
 #pragma opt_propagation reset
 #pragma opt_lifetimes reset
 #pragma optimize_for_size reset
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_neg200_804204e8 = -200.0f;
+const f32 float_40_804204ec = 40.0f;
+const f32 float_70_804204f0 = 70.0f;
+const f32 float_1_804204f4 = 1.0f;
+const f32 float_16_804204f8 = 16.0f;
+const f32 float_neg300_804204fc = -300.0f;
+const f32 float_0_80420500 = 0.0f;
