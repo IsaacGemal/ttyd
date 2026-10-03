@@ -220,8 +220,6 @@ void partySetFamicomMode(PartyEntry* party, s32 mode);
 extern s32 partyCtrlNo;
 extern char* partyPoseTbl[20][15];
 extern const Vec vec3_802cced4;
-extern const Vec vec3_802cce2c;
-extern const Vec vec3_802cce38;
 extern const Vec vec3_802cce5c;
 extern const Vec vec3_802cce68;
 extern const Vec vec3_802cce74;

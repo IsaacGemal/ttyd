@@ -1105,7 +1105,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 		{0, 0, 0, 0, 0, 0, 0, 0},
 		0x01000160,
 		0x20000002,
-		2, 3, 0, 0,
+		0, 0, 3, 2,
 		NULL,
 		0,
 		0,
@@ -1114,7 +1114,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		NULL,
-		{0x64},
+		{0, 0, 0, 0x64},
 	};
 	s16 arg = (s16)arg_;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);

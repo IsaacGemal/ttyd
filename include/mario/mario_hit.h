@@ -66,8 +66,6 @@ extern const Vec vec3_802c5748;
 extern const u8 vec3_802c573c[];
 extern const f32 float_8p64_8041a85c;
 extern const f32 float_105_8041a860;
-extern const Vec vec3_802c5790;
-extern const Vec vec3_802c579c;
 BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry);
 BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry);
 BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry);

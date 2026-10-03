@@ -3852,3 +3852,15 @@ looks the same as a slow agent from the log until the end.
   state 6 to the `field_0x018 == 0xA && field_0x07C == 0xA` check at the end of case 5, so case 5 now falls through
   into it (state 6 used to stall in default). The unit's .rodata reads through str_802FF668 + offset are under
   MUST_MATCH with the named vec3/str objects in #else, scoped to zubastar_main.
+
+## Wave 59, batch 2 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- 24 agents onto main ada9d06: 9,124 -> 9,125 and code fuzzy +0.35 (the 0% functions mostly came up partway).
+  battle_disp's btlDispTex4 fell from 86.9% to 0% when the pragma audit removed its dont_inline (file as on main);
+  nameent's GXColor constants were byte-reversed (the [data] check; as on main).
+- Review (`scratch/wave59/review2.md`): an agent rewrote battle_seq_command's defaultWeapon_Dummy_NoItem with the
+  same wrong bytes a wave 58 review had removed: 0x6C..0x6F is element 0, actionLevel 3, field_0x6F 2 (word
+  0x00000302), and field_B4 is {0, 0, 0, 0x64}; both fixed in place (the empty-pouch weapon). mario_hit, seq_load
+  and win_party as on main (rule 13 outside MUST_MATCH); unused header externs and include/cam_road_ext.h out.
+  **Data inside a function isn't scored and the [data] step only checks named data objects**, so function-static
+  initialisers need a byte check by the review.
