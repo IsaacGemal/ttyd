@@ -814,6 +814,13 @@ void envSetWater(s32 arg0, void* arg1) {
         }
     }
 
+#ifndef MUST_MATCH
+    // Retail doesn't check: when the parent walk runs out it skips these loads and tests whatever the four
+    // registers still hold against 0x3FF. The natural build stops there instead of dereferencing NULL.
+    if (obj == NULL) {
+        return;
+    }
+#endif
     x0 = *(u16*)(obj->field_0xEC + 0);
     y0 = *(u16*)(obj->field_0xEC + 2);
     x1 = *(u16*)(obj->field_0xEC + 4);

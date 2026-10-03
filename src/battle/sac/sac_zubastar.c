@@ -392,7 +392,7 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 // MUST_MATCH: a struct-copy initializer from dat_802ff6d4 makes MWCC emit the original's inline
 // 6-iteration copy loop; a plain Vec[4] initializer gets its own anonymous rodata table.
 #endif
-// NONMATCHING (99.99%, reads as 100.00%): the str_802FF830/848 reads are +0x18 (unit pool order puts
+// NONMATCHING (99.64%): the str_802FF830/848 reads are +0x18 (unit pool order puts
 // zubastar_bomb's str_802FF80C after the i2f double; the 0x18 gap is main_star's two (Vec){0,0,0} pools,
 // which must stay literals or main_star drops to 88.79%).
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
