@@ -3,6 +3,13 @@
 #include "eff/eff_n64.h"
 #include "memory.h"
 
+// .sbss2 zero GXColor scratch objects, placed by hand (the default .sbss2 only holds compiler pool templates);
+// declared in reverse: placed in reverse of declaration order.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804232bc;
+__declspec(section ".sdata") GXColor unk_804232b8;
+#pragma section ".sdata" ".sbss"
+
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_803A85F8[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
@@ -37,8 +44,8 @@ EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	data->color2G = 0xff;
 	data->color2B = 0xff;
 	data->color2A = 0xff;
-	data->field_0x38 = 0.0f;
-	data->field_0x3c = 0.0f;
+	data->field_0x38 = float_0_804200e4;
+	data->field_0x3c = float_0_804200e4;
 	return effect;
 }
 
@@ -359,3 +366,25 @@ void effVaporDisp(CameraId cameraId, void* param) {
 
 
 #pragma opt_common_subs reset
+
+// The .sdata2 constants the code above loads by name, defined after it.
+const f32 float_deg2rad_804200d8 = 0.0174532924f;
+const f32 float_0p5_804200dc = 0.5f;
+const f32 float_0p01_804200e0 = 0.00999999978f;
+const f32 float_0_804200e4 = 0.0f;
+const f32 float_5_804200e8 = 5.0f;
+const f32 float_0p0039062_804200ec = 0.00390625f;
+const f32 float_256_804200f0 = 256.0f;
+const f32 float_0p032258_804200f4 = 0.0322580636f;
+const f32 float_0p007874_804200f8 = 0.00787401572f;
+const f32 float_32_804200fc = 32.0f;
+const f32 float_0p02_80420100 = 0.0199999996f;
+const f32 float_neg1p5_80420104 = -1.5f;
+const f32 float_1_80420108 = 1.0f;
+
+// 4-byte zero word that ends the unit's .sdata2: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") const u32 gap_09_8042010C_sdata2 = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
