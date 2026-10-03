@@ -4464,17 +4464,16 @@ static inline f32 psndSqrtf(f32 x) {
 	return x;
 }
 
-// What still differs: the .rodata base pointer and the callee-saved register allocation.
-// The file's `#include <math.h>` makes MWCC emit the `sqrtf`/`sqrt` inline `_half`/`_three` as weak
-// objects at the start of .rodata; with the section's first object weak, MWCC never builds its
-// .rodata base pointer here, so the target's pooled doubles (`lfd f3, 0x7558(r31)`) come out as
-// `lis`/`@l` pairs. Compiling this same source with the math.h inlines suppressed (-D_MATH_H_) does
-// emit `addis r31, r10, 1` and the target's r27/r28/r29/r30/r31 allocation, but the unit's .rodata
-// is still 0x2128 bytes short of the original (strings for functions not written yet), so the base
-// offsets (ours 0x5410 vs the target's 0x7558) cannot match until the unit is complete. The
-// int-register shift is a consequence of the missing base.
-// NONMATCHING (80.06%): no .rodata base (math.h weak objects), so the int callee-saved registers
-// are r28-r31 instead of r27-r31, and rel/dist sit in f30/f31 instead of f31/f30.
+// -O4,p already emits the target's size-optimised stmw/lmw prologue and, with the SDK math.h
+// suppressed (see the top of the file), the target's .rodata base register that the
+// `lfd ...,(rBase)` loads need, so no pragma is needed. Declaring `ps` uninitialised and setting
+// it from &psnd only after `pos = *position` (not in the initialiser) is what puts ps in r27 and
+// the base in r31 like the target; written in the initialiser the whole callee-saved basis
+// rotates by one (vol/span/pan/base/ps). `pan`/`angOut` are s16 with a separate s32 temp
+// (`pan2`/`angOut2`) so the compiler truncates into the target's register instead of an `mr`.
+// NONMATCHING (85.60%): rel/dist sit in f30/f31 instead of the target's f31/f30, the conversion
+// temporaries use permuted stack slots in the same 0x18..0x34 area, and the .rodata base
+// displacements (0x5410 vs 0x7558) await the rest of the unit's functions/data.
 u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	static u8 PAN[4];
 	Vec pos;
@@ -4482,11 +4481,14 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	f32 dir;
 	f32 rel;
 	f32 dist;
-	s32 pan;
-	s32 angOut;
+	s16 pan;
+	s16 pan2;
+	s16 angOut;
+	s32 angOut2;
+	PaperSoundWork* ps;
 
-	PaperSoundWork* ps = &psnd;
 	pos = *position;
+	ps = &psnd;
 	if (flags & 0x01000000) {
 		pos.x += ps->position.x;
 		pos.y += ps->position.y;
@@ -4495,7 +4497,7 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	if (flags & 0x02000000) {
 		pos = ps->position;
 	}
-	dir = ps->direction;
+	dir = psnd.direction;
 #ifdef MUST_MATCH
 	// The target reloads pos.z for the distance computation after this call. Written as a plain
 	// field read MWCC CSEs it into the argument's load and keeps it live in f31, so force the
@@ -4504,7 +4506,7 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 #else
 	ang = angleABf(ps->position.x, ps->position.z, pos.x, pos.z);
 #endif
-	if (fabsf(ang - dir) >= 180.0f) {
+	if (__fabsf(ang - dir) >= 180.0f) {
 		if (ang < dir) {
 			ang += 360.0f;
 		}
@@ -4513,14 +4515,14 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 		}
 	}
 	rel = (ang - dir) / 180.0f;
-	pan = (s32)(127.0f * rel + 127.0f);
-	if ((s16)pan < 0x40) {
-		pan = 0x7F - pan;
+	pan2 = (s32)(127.0f * rel + 127.0f);
+	if (pan2 < 0x40) {
+		pan2 = 0x7F - pan2;
 	}
-	else if ((s16)pan > 0xC4) {
-		pan = 0xC4 - (pan - 0xC4);
+	else if (pan2 > 0xC4) {
+		pan2 = 0xC4 - (pan2 - 0xC4);
 	}
-	pan -= 0x40;
+	pan = pan2 - 0x40;
 	if ((s16)pan < 0) {
 		pan = 0;
 	}
@@ -4536,31 +4538,34 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	}
 	{
 		f32 cs = (f32)cos((f32)(3.14 * rel));
-		f32 a = fabsf(dist * cs);
+		f32 a = __fabsf(dist * cs);
 		s32 r;
+		f32 t;
 
 		if (a > 2048.0f) {
 			a = 2048.0f;
 		}
-		if (fabsf(rel) < 0.5f) {
-			r = (s32)(64.0f - 64.0f * a / 2048.0f);
+		t = 64.0f * a / 2048.0f;
+		if (__fabsf(rel) < 0.5f) {
+			r = (s32)(64.0f - t);
 			if ((s16)r < 1) {
 				r = 1;
 			}
 		}
 		else {
-			r = (s32)(64.0f + 64.0f * a / 2048.0f);
+			r = (s32)(64.0f + t);
 			if ((s16)r > 0x7F) {
 				r = 0x7F;
 			}
 		}
 		r = (s16)r;
 		if (r <= 0x40) {
-			angOut = (s32)(64.0f - 64.0f * (f32)sin(6.2831855f * (f32)((0x40 - r) * 0x5A / 0x40) / 360.0f));
+			angOut2 = (s32)(64.0f - 64.0f * (f32)sin(6.2831855f * (f32)((0x40 - r) * 0x5A / 0x40) / 360.0f));
 		}
 		else {
-			angOut = (s32)(64.0f + 64.0f * (f32)sin(6.2831855f * (f32)((r - 0x40) * 0x5A / 0x40) / 360.0f));
+			angOut2 = (s32)(64.0f + 64.0f * (f32)sin(6.2831855f * (f32)((r - 0x40) * 0x5A / 0x40) / 360.0f));
 		}
+		angOut = angOut2;
 	}
 	if ((s16)angOut < 0) {
 		angOut = 0;
@@ -4568,10 +4573,7 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	if ((s16)angOut > 0x7F) {
 		angOut = 0x7F;
 	}
-	if (span == 0) {
-		PAN[0] = volume;
-	}
-	else {
+	if (span != 0) {
 		f32 d = dist - 200.0f;
 
 		if (d > (f32)(span * 100)) {
@@ -4581,6 +4583,9 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 			d = 0.0f;
 		}
 		PAN[0] = (s32)((f32)volume * (127.0f * ((f32)(span * 100) - d) / (f32)(span * 100)) / 127.0f);
+	}
+	else {
+		PAN[0] = volume;
 	}
 	if (PAN[0] > 0x7F) {
 		PAN[0] = 0x7F;

@@ -819,20 +819,19 @@ void marioReset(void) {
 	marioChgMot(0);
 }
 
-// The four Vec stores and loads match; only the `lwz r5, mp` slot differs Known-hard
-// load-hoist class: scheduling on hoists the next vector's load past the previous store, scheduling off
-// puts `lwz mp` after the pool `addi`.
-#pragma scheduling off // target does not hoist the next vector's load past the previous store
-// NONMATCHING (90.50%): `lwz r5, mp` lands after `addi r4` instead of between `lis` and `addi`.
+// The original addresses the four zero vectors off the unit's first .rodata object (the "a_mario" string,
+// str_802C3610 in the asm) at +0x88, and reads them through the `s[i]` pointer so the compiler keeps the
+// load-load-store-store-load-store pattern: naming the vec3_802c36* objects directly makes it hoist the next
+// vector's load past the previous store.
 void marioOfsRotReset(void) {
 	u8* base = (u8*)mp;
+	const Vec* s = (const Vec*)("a_mario" + 0x88);
 
-	*(Vec*)(base + 0xBC) = vec3_802c3698;
-	*(Vec*)(base + 0xB0) = vec3_802c36a4;
-	*(Vec*)(base + 0x98) = vec3_802c36b0;
-	*(Vec*)(base + 0xA4) = vec3_802c36bc;
+	*(Vec*)(base + 0xBC) = s[0];
+	*(Vec*)(base + 0xB0) = s[1];
+	*(Vec*)(base + 0x98) = s[2];
+	*(Vec*)(base + 0xA4) = s[3];
 }
-#pragma scheduling reset
 
 void marioSoundInit(void) {
 	s32* p = (s32*)(mp->field_0x250 + 0x28);

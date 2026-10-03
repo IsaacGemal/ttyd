@@ -5,6 +5,12 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 #include <stdlib.h>
+#include "eff/eff_n64.h"
+#include "matching.h"
+#include "math_ext.h"
+#include <dolphin/os/OSCache.h>
+#include <dolphin/os/OSFastCast.h>
+#include <string.h>
 
 typedef struct effKamekiTornadeData {
 	s32 type;            // 0x00
@@ -169,3 +175,255 @@ void effKamekiTornadeMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKamekiTornadeDisp, effect);
 }
 #pragma opt_common_subs reset
+// Build the two by-value GXColors in helpers so MWCC gives their argument copies the same stack
+// slots as the original (the trick from effBattenDisp2/effTimestampSetColor).
+static inline GXColor kamekiTornadeSetColor(effKamekiTornadeData* data, s32 field24) {
+	GXColor color = unk_80423160;
+
+	color.r = data->field_0x18;
+	color.g = data->field_0x1C;
+	color.b = data->field_0x20;
+	color.a = (u8)(s32)((f32)field24 * data->field_0x148);
+	return color;
+}
+static inline GXColor kamekiTornadeSetColor2(effKamekiTornadeData* data) {
+	GXColor color = *(GXColor*)&dat_8041f1d8;
+
+	color.r = data->field_0x28;
+	color.g = data->field_0x2C;
+	color.b = data->field_0x30;
+	return color;
+}
+#define KT_ZERO MATCH_F32(float_0_8041f1f8)
+// One 14-byte vertex: copy the source, then rotate its s16 position through the matrix with the
+// SDK fast-cast inlines. Retail inlines this once per vertex, each with its own Vec temp and its
+// own GQR2-5 setup (same shape as eff_flame_n64/eff_sstar_n64).
+static inline void kamekiTornadeSetVtx(KamekiTornadeVtx* dst, KamekiTornadeVtx* src, Mtx mtx) {
+	Vec v;
+	memcpy(dst, src, sizeof(KamekiTornadeVtx));
+#ifdef MUST_MATCH
+	OSInitFastCast();
+	OSs16tof32(&dst->pos[0], &v.x);
+	OSs16tof32(&dst->pos[1], &v.y);
+	OSs16tof32(&dst->pos[2], &v.z);
+	PSMTXMultVec(mtx, &v, &v);
+	OSInitFastCast();
+	OSf32tos16(&v.x, &dst->pos[0]);
+	OSf32tos16(&v.y, &dst->pos[1]);
+	OSf32tos16(&v.z, &dst->pos[2]);
+#else
+	v.x = dst->pos[0];
+	v.y = dst->pos[1];
+	v.z = dst->pos[2];
+	PSMTXMultVec(mtx, &v, &v);
+	dst->pos[0] = v.x;
+	dst->pos[1] = v.y;
+	dst->pos[2] = v.z;
+#endif
+}
+// Every instruction, constant and stack slot matches retail; the remaining diffs are register
+// colouring only. The ring loop's constants land one FPR higher than retail (f30-f27 vs f29-f26),
+// which pushes the helper's conversion temps (f26-f21 vs f25-f20) and the outer loop's i2f double
+// (f27 vs f26) and `10` (f20 vs f27) one register high as well. The ring preheader also sets its
+// strength-reduced accumulator up later than retail and its `t = 0` comes from `li` not `mr r20,r27`.
+// NONMATCHING (99.12%): only register colouring differs.
+void effKamekiTornadeDisp(CameraId camId, void* param) {
+	EffectEntry* effect;
+	CameraEntry* cam;
+	effKamekiTornadeData* data;
+	s32 life;
+	KamekiTornadeVtx* tbl;
+	KamekiTornadeVtx* vtx;
+	GXTexObj texObj;
+	Mtx work;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	Mtx baseMtx;
+	Vec axis;
+	f32 scale;
+	f32 f19;
+	s32 i;
+	s32 j;
+	s32 field24;
+
+	effect = param;
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	field24 = data->field_0x24 >> 1;
+	life = data->field_0x10;
+	scale = data->scale;
+
+	GXSetNumChans(0);
+	GXSetNumTevStages(3);
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+	GXSetTevOrder(1, 1, 1, 0xFF);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 8, 0, 0, 0xF);
+	GXSetTevAlphaIn(1, 7, 0, 4, 7);
+	GXSetTevOrder(2, 0xFF, 0xFF, 0xFF);
+	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(2, 2, 4, 0, 0xF);
+	GXSetTevAlphaIn(2, 7, 0, 1, 7);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7D);
+	effGetTexObjN64(0x6C, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, 1);
+
+	GXSetTevColor(1, kamekiTornadeSetColor(data, field24));
+
+	GXSetTevColor(2, kamekiTornadeSetColor2(data));
+
+	GXSetCullMode(0);
+
+	tbl = smartAlloc(0x1C0, 3)->address;
+
+	{
+		KamekiTornadeVtx* q;
+		s32 s = 0;
+		s32 t = 0;
+
+		for (i = 0; i < 16; i++, s += 0x80, t += 0x200) {
+			KamekiTornadeVtx* p = &tbl[i];
+			f32 angle =
+			    float_6p2832_8041f1dc * (f32)(i * 0x168 / 0xF) / float_360_8041f1e0;
+
+			p->pos[0] = (s16)((f32)cos(angle) * float_100_8041f1e4);
+			p->pos[1] = 0;
+			p->pos[2] = (s16)((f32)sin(angle) * float_100_8041f1e4);
+			p->tex[0] = s;
+			p->tex[1] = 0;
+			{
+				q = &tbl[i + 16];
+
+				q->pos[0] = (s16)((f32)cos(angle) * float_100_8041f1e4);
+				q->pos[1] = 0;
+				q->pos[2] = (s16)((f32)sin(angle) * float_100_8041f1e4);
+				q->tex[0] = t;
+				q->tex[1] = 0x400;
+			}
+		}
+	}
+
+	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041f1e8 * data->field_0x144);
+	PSMTXScale(baseMtx, float_0p1_8041f1ec, float_0p1_8041f1ec, float_0p1_8041f1ec);
+	PSMTXConcat(rotMtx, baseMtx, baseMtx);
+
+	f19 = float_0p02_8041f1f0 * (f32)(0x7F - field24);
+
+	for (i = 0; i < 7; i++) {
+		vtx = smartAlloc(0x1C0, 3)->address;
+		effSetVtxDescN64((effVtxArray*)vtx);
+
+		/* first half: the 0..15 ring, rotated about vec3_802fa84c */
+		PSMTXTrans(work, float_10_8041f1f4 * data->field_0x38[i], float_10_8041f1f4 * data->field_0x58[i],
+		           float_10_8041f1f4 * data->field_0x78[i]);
+		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041f1e8 * data->field_0x118[i]);
+		PSMTXConcat(work, rotMtx, work);
+		axis = vec3_802fa84c;
+		PSMTXRotAxisRad(rotMtx, &axis, float_deg2rad_8041f1e8 * (data->field_0x138 + (f32)(i * i)));
+		PSMTXConcat(work, rotMtx, work);
+		{
+			f32 zScale = data->field_0x98[i] * scale;
+
+			if (life < 0x10) {
+				zScale += f19;
+			}
+			PSMTXScale(scaleMtx, zScale, scale, zScale);
+		}
+		PSMTXConcat(work, scaleMtx, work);
+		{
+			f32 s;
+			f32 theta;
+			f32 rad;
+			f32 c;
+
+			rad = float_10_8041f1f4 * data->field_0xF8[i];
+			theta = float_6p2832_8041f1dc * data->field_0xB8[i] / float_360_8041f1e0;
+			s = (f32)sin(theta);
+			c = (f32)cos(theta);
+
+			PSMTXTrans(scaleMtx, rad * s, KT_ZERO, rad * c);
+		}
+		PSMTXConcat(work, scaleMtx, work);
+		PSMTXConcat(baseMtx, work, work);
+		for (j = 0; j < 16; j++) {
+			kamekiTornadeSetVtx(&vtx[j], &tbl[j], work);
+		}
+
+		/* second half: the 16..31 ring, rotated about vec3_802fa858 */
+		PSMTXTrans(work, float_10_8041f1f4 * data->field_0x38[i + 1],
+		           float_10_8041f1f4 * data->field_0x58[i + 1],
+		           float_10_8041f1f4 * data->field_0x78[i + 1]);
+		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041f1e8 * data->field_0x118[i + 1]);
+		PSMTXConcat(work, rotMtx, work);
+		axis = vec3_802fa858;
+		PSMTXRotAxisRad(rotMtx, &axis, float_deg2rad_8041f1e8 * (data->field_0x138 + (f32)(i * i)));
+		PSMTXConcat(work, rotMtx, work);
+		{
+			f32 zScale = data->field_0x98[i + 1] * scale;
+
+			PSMTXScale(scaleMtx, zScale, scale, zScale);
+		}
+		PSMTXConcat(work, scaleMtx, work);
+		{
+			f32 rad = float_10_8041f1f4 * data->field_0xF8[i];
+			f32 s = (f32)sin(float_6p2832_8041f1dc * data->field_0xB8[i] / float_360_8041f1e0);
+			f32 c = (f32)cos(float_6p2832_8041f1dc * data->field_0xB8[i] / float_360_8041f1e0);
+
+			PSMTXTrans(scaleMtx, rad * s, KT_ZERO, rad * c);
+		}
+		PSMTXConcat(work, scaleMtx, work);
+		PSMTXConcat(baseMtx, work, work);
+		for (j = 16; j < 32; j++) {
+			kamekiTornadeSetVtx(&vtx[j], &tbl[j], work);
+		}
+
+		GXInvalidateVtxCache();
+		DCFlushRange(vtx, 0x1C0);
+
+		PSMTXScale(scaleMtx, float_0p015625_8041f1fc, float_0p03125_8041f200, KT_ZERO);
+		{
+#ifdef MUST_MATCH
+			/* MUST_MATCH: the literal zero reproduces retail's one-load-plus-`fmr` and keeps the
+			   function's scratch FPRs at retail's colours; the named float_0_8041f1f8 shifts them. */
+			f32 z = 0.0f;
+#else
+			f32 z = float_0_8041f1f8;
+#endif
+
+			PSMTXTrans(work, data->field_0x13C + (f32)(i * 4), z, z);
+		}
+		PSMTXConcat(scaleMtx, work, scaleMtx);
+		GXLoadTexMtxImm(scaleMtx, 0x1E, 1);
+
+		PSMTXScale(scaleMtx, float_0p015625_8041f1fc, float_0p03125_8041f200, KT_ZERO);
+		{
+#ifdef MUST_MATCH
+			f32 z = 0.0f;
+#else
+			f32 z = float_0_8041f1f8;
+#endif
+
+			PSMTXTrans(work, data->field_0x140 + (f32)(i * 2), z, z);
+		}
+		PSMTXConcat(scaleMtx, work, scaleMtx);
+		GXLoadTexMtxImm(scaleMtx, 0x21, 1);
+
+		GXLoadPosMtxImm(cam->view, 0);
+		GXSetCurrentMtx(0);
+
+		for (j = 0; j < 0xF; j++) {
+			GXBegin(0x90, 0, 6);
+			tri2(j + 0x10, j + 1, j, 0, j + 1, j + 0x10, j + 0x11, 1);
+		}
+	}
+}
+

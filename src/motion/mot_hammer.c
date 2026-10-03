@@ -70,221 +70,368 @@ s32 lv3quake_evt[] = {
 extern const f32 float_2_8041a9a0;
 extern const f32 float_0p5_8041a9a4;
 extern const f32 float_0_8041a9a8;
-extern const f32 float_neg20_8041a9ac;
-extern const f32 float_90_8041a9b0;
-extern const f32 float_270_8041a9b4;
-extern const f32 float_180_8041a9b8;
-extern const f32 float_3p1416_8041a9bc;
-extern const f32 float_4_8041a9c0;
-extern const f32 float_14_8041a9c4;
-extern const f32 float_1p2217_8041a9c8;
-extern const f32 float_5_8041a9cc;
-extern const f32 float_26_8041a9d0;
-extern const f32 float_30_8041a9d4;
-extern const f32 float_0p7854_8041a9d8;
-extern const f32 float_36_8041a9dc;
-extern const f32 float_20_8041a9e0;
-extern const f32 float_34_8041a9e4;
-extern const f32 float_37_8041a9e8;
-extern const f32 float_13_8041a9ec;
-extern const f32 float_0p01_8041a9f0;
-extern const f32 float_neg1_8041a9f4;
-extern const f32 float_neg2_8041a9f8;
-extern const f32 float_38_8041a9fc;
-extern const f32 float_15_8041aa00;
-extern const f32 float_10_8041aa04;
-const char str_8041AA08[] = "M_H_3";
-const char str_8041AA10[] = "M_H_6";
-const char str_8041AA18[] = "M_H_9";
-extern const f32 float_6_8041aa20;
-extern const f32 float_72_8041aa24;
-extern const f32 float_0p4_8041aa28;
-extern const f32 float_0p005_8041aa2c;
-extern const f32 float_1p7_8041aa30;
-extern const f32 float_54_8041aa34;
-extern const f32 float_1_8041aa38;
-extern const f32 float_42_8041aa3c;
-extern const f32 float_0p3_8041aa40;
-extern const f32 float_1p6_8041aa44;
-extern const f32 float_18_8041aa48;
-extern const f32 float_0p2_8041aa4c;
-extern const f32 float_1p5_8041aa50;
-extern const f32 float_24_8041aa54;
-extern const f32 float_22_8041aa58;
-const char str_8041AA5C[] = "M_S_1";
-const char str_8041AA64[] = "M_I_Y";
-extern const f32 float_neg30_8041aa6c;
-const char str_8041AA70[] = "M_H_2";
-const char str_8041AA78[] = "M_H_1";
-const char str_8041AA80[] = "M_H_5";
-const char str_8041AA88[] = "M_H_4";
-const char str_8041AA90[] = "M_H_8";
-const char str_8041AA98[] = "M_H_7";
-extern const f32 float_16_8041aaa0;
-extern const f32 float_53_8041aaa4;
-extern const f32 float_25_8041aaa8;
-extern const f32 float_neg3_8041aaac;
-extern const f32 float_31_8041aab0;
-extern const f32 float_neg6_8041aab4;
-extern const f32 float_28_8041aab8;
 
-// The original materialises dir3 into its own stack slot through a temp copy. A plain struct assignment is
-// forwarded away by the compiler, so the copy is forced through a cast; the natural form is under #else.
-HitEntry* hitEstimate(s32* type) {
-    HitCheckQuery query;
-    Vec pos;
-    Vec dir3;
-    Vec dir0;
-    Vec dir1;
-    Vec dir2;
-    Vec dir3t;
-    MarioWork* mario;
-    HitEntry* hit;
-    f32 angle;
-    f32 boxY;
-    f32 sa;
-    f32 ca;
-    f32 off;
-    f32 dy;
-    f32 off2;
-    f32 dist;
-    f32 c;
-    s32 i;
-
-    mario = marioGetPtr();
-    *type = 0;
-    angle = mario->unk1A8;
-    if (marioGetPtr()->dispFlags & 0x80000000) {
-        off = float_neg20_8041a9ac;
-    } else {
-        off = float_0_8041a9a8;
-    }
-    if (angle >= float_90_8041a9b0 && angle <= float_270_8041a9b4) {
-        angle = toMovedir2(float_180_8041a9b8, off);
-    } else {
-        angle = toMovedir2(float_0_8041a9a8, off);
-    }
-    sincosf(&sa, &ca, angle);
-    boxY = mario->wPlayerCollisionBox.y;
-    c = cos(float_3p1416_8041a9bc);
-    pos = mario->position;
-    pos.y = float_4_8041a9c0 + (mario->position.y + boxY);
-    dir0 = vec3_802c5a8c;
-    dir0.x = sa;
-    dir0.y = -c;
-    dir0.z = ca;
-    query.targetPos = pos;
-    query.targetDir = dir0;
-    query.targetDistance = float_14_8041a9c4;
-    hit = hitCheckVecFilter(&query, NULL);
-    if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
-        *type = 7;
-        return hit;
-    }
-
-    c = cos(float_1p2217_8041a9c8);
-    pos.x = mario->position.x + sa * float_5_8041a9cc;
-    pos.z = mario->position.z + ca * float_5_8041a9cc;
-    pos.y = mario->position.y + boxY;
-    dir1 = vec3_802c5a98;
-    dir1.x = sa;
-    dir1.y = -c;
-    dir1.z = ca;
-    query.targetPos = pos;
-    query.targetDir = dir1;
-    query.targetDistance = float_26_8041a9d0;
-    hit = hitCheckVecFilter(&query, NULL);
-    if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
-        *type = (query.hitPos.y - mario->position.y > float_30_8041a9d4) ? 4 : 5;
-        return hit;
-    }
-
-    c = cos(float_0p7854_8041a9d8);
-    pos.x = mario->position.x + sa * float_5_8041a9cc;
-    pos.z = mario->position.z + ca * float_5_8041a9cc;
-    pos.y = mario->position.y + boxY;
-    dir2 = vec3_802c5aa4;
-    dir2.x = sa;
-    dir2.y = -c;
-    dir2.z = ca;
-    query.targetPos = pos;
-    query.targetDir = dir2;
-    query.targetDistance = float_30_8041a9d4;
-    hit = hitCheckVecFilter(&query, NULL);
-    if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
-        *type = 5;
-        return hit;
-    }
-
-    c = cos(float_0_8041a9a8);
-    dir3t = vec3_802c5ab0;
-    dir3t.y = -c;
-#ifdef MUST_MATCH
-    *(Vec*)&dir3 = *(Vec*)&dir3t;
-#else
-    dir3 = dir3t;
-#endif
-    for (i = 0; i < 2; i++) {
-        if (i == 0) {
-            dist = float_36_8041a9dc;
-            off2 = float_20_8041a9e0;
-        } else {
-            dist = float_34_8041a9e4;
-            if (mario->dispFlags & 0x80000000) {
-                off2 = float_37_8041a9e8;
-            } else {
-                off2 = dist;
-            }
-        }
-        pos.x = mario->position.x + sa * off2;
-        pos.z = mario->position.z + ca * off2;
-        pos.y = mario->position.y + boxY;
-        query.targetPos = pos;
-        query.targetDir = dir3;
-        query.targetDistance = dist;
-        hit = hitCheckVecFilter(&query, NULL);
-        if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
-            dy = query.hitPos.y - mario->position.y;
-            *type = (dy > float_13_8041a9ec) ? 5 : 6;
-            return hit;
-        }
-    }
-    return hit;
+s32 marioGetHammerLevel(void) {
+    return pouchGetPtr()->hammerLevel;
 }
 
-void mot_ham2_post(void) {
+// Common subexpression elimination off keeps the rodata base in r31 and the mario pointer in r30; with it on
+// the two are swapped and every access thereafter shifts. Needed only for this function.
+#pragma opt_common_subs off
+#ifdef MUST_MATCH
+// These two inline helpers exist to reproduce the original's register allocation and schedule: the plain
+// expressions put `type` in r0 and `v` in r3 (the target is the other way). `minHammerTicks10` is kept for
+// reference/other matching builds; the pose-time clamp below no longer calls it. The #else holds the natural
+// expressions for --non-matching builds.
+static inline s32 clampHammerType(s32 t) {
+    return (t == 7) ? 3 : t;
+}
+
+static inline s32 minHammerTicks10(s32 b) {
+    s32 v = b;
+    if (b > 10) {
+        v = 10;
+    }
+    return v;
+}
+#endif
+
+// The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
+// register (base r31, mario r30, r28/r29, f30/f31) match. The pose-time clamp `b <= 10 ? b : 10` is branchy
+// in the target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); the plain ternary is if-converted to the one
+// instruction shorter `cmpwi; mr r0,r3; ble; li r0,10`. Under MUST_MATCH the clamp goes through a temp whose
+// condition and arm are syntactically different (the named field vs this file's raw accessor), which blocks
+// that if-conversion, and `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27`
+// split survives. Together they give the target's bytes; the #else holds the natural ternary.
+void mot_hammer(void) {
+#pragma opt_dead_assignments off // keep the `r27 = t` pose-time copy (target splits r0/r27)
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
+    MarioWork* mario3;
+    MapObjectEntry* mobj;
+    s32 mt;
+    s32 sound;
+    s32 r28, rp;
+    u32 i;
+    s32 type;
+    s32 r27;
+    s32 eff;
+    s32 lv;
+    HitEntry* hit;
+    f32 f31;
+    f32 f30;
+    f32 ang2;
+    f32 px;
+    f32 pz;
 
-    if (mario->dispFlags & 0x40000000) {
-        marioPaperOff();
+    if (mario->trigFlags & 1) {
+        mario->trigFlags &= ~1;
+        mario->flags &= ~0x000F0000;
+        mario->flags |= 0x80;
+        f30 = M_F32(mario, 0x1A8);
+        {
+            f32 off;
+            MarioWork* m = marioGetPtr();
+            off = float_0_8041a9a8;
+            if (m->dispFlags & 0x80000000) {
+                f32 ang = m->unk1A8;
+                s32 facing = 0;
+                if (ang >= 90.f && ang <= 270.f) {
+                    facing = 1;
+                }
+                off = facing ? 30.f : -30.f;
+            }
+            if (f30 >= 90.f && f30 <= 270.f) {
+                ang2 = revise360(180.f + off);
+            } else {
+                ang2 = revise360(off);
+            }
+            M_F32(mario, 0x2A4) = ang2;
+        }
+        M_S32(mario, 0x48) = 0;
+        M_S16(mario, 0x50) = 0;
+        M_S32(mario, 0x44) = 0;
+        M_F32(mario, 0x180) = float_0_8041a9a8;
+        M_S32(mario, 0x200) = 0;
+        hit = hitEstimate(&type);
+        M_S32(mario, 0x200) = (s32)hit;
+        if (hit != NULL) {
+            f30 = M_F32(mario, 0x1A8);
+            {
+                f32 v = (marioGetPtr()->dispFlags & 0x80000000) ? -30.f : float_0_8041a9a8;
+                if (f30 >= 90.f && f30 <= 270.f) {
+                    ang2 = toMovedir2(180.f, v);
+                } else {
+                    ang2 = toMovedir2(float_0_8041a9a8, v);
+                }
+                mario->directionView = ang2;
+            }
+            f30 = M_F32(mario, 0x1A8);
+            {
+                f32 off;
+                MarioWork* m = marioGetPtr();
+                off = float_0_8041a9a8;
+                if (m->dispFlags & 0x80000000) {
+                    f32 ang = m->unk1A8;
+                    s32 facing = 0;
+                    if (ang >= 90.f && ang <= 270.f) {
+                        facing = 1;
+                    }
+                    off = facing ? 30.f : -30.f;
+                }
+                if (f30 >= 90.f && f30 <= 270.f) {
+                    ang2 = revise360(180.f + off);
+                } else {
+                    ang2 = revise360(off);
+                }
+                M_F32(mario, 0x2A4) = ang2;
+            }
+        }
+        if (hitGetAttr(hit) & 0x80000000) {
+            mobj = mobjHitObjPtrToPtr(hit);
+            r28 = 0;
+            if (strcmp(mobj->animName, str_802C5ABC) == 0 ||
+                strcmp(mobj->animName, str_802C5ACC) == 0) {
+                if (pouchGetPtr()->hammerLevel >= 1) {
+                    r28 = 1;
+                }
+            } else if (strcmp(mobj->animName, str_802C5AE0) == 0 ||
+                       strcmp(mobj->animName, str_802C5AF0) == 0) {
+                if (pouchGetPtr()->hammerLevel >= 2) {
+                    r28 = 1;
+                }
+            } else if (strcmp(mobj->animName, str_802C5B04) == 0 ||
+                       strcmp(mobj->animName, str_802C5B14) == 0) {
+                if (pouchGetPtr()->hammerLevel >= 3) {
+                    r28 = 1;
+                }
+            }
+            if (r28) {
+                type = 0;
+            }
+        }
+        switch (pouchGetHammerLv()) {
+        case 1:
+            marioChgPose(type == 7 ? "M_H_2" : "M_H_1");
+            break;
+        case 2:
+            marioChgPose(type == 7 ? "M_H_5" : "M_H_4");
+            break;
+        case 3:
+            marioChgPose(type == 7 ? "M_H_8" : "M_H_7");
+            break;
+        }
+        if (type != 0) {
+#ifdef MUST_MATCH
+            M_S32(mario, 0x2A0) = clampHammerType(type);
+#else
+            M_S32(mario, 0x2A0) = (type == 7) ? 3 : type;
+#endif
+            mario->flags |= 0x800;
+        } else {
+            mario->flags &= ~0x800;
+        }
+        mario2 = marioGetPtr();
+        sound = 0x15B;
+        switch (pouchGetHammerLv()) {
+        case 1:
+            sound = 0x15B;
+            break;
+        case 2:
+            sound = 0x15C;
+            break;
+        case 3:
+            sound = 0x15D;
+            break;
+        }
+        psndSFXOn_3D((const char*)sound, &mario2->position);
+        M_S32(mario, 0x2A8) = type;
     }
-    mario2 = marioGetPtr();
-    M_F32(mario2, 0x148) = float_0_8041a9a8;
-    mario2->unk150.z = float_0p01_8041a9f0;
-    marioPaperOff();
-    marioPaperLightOn();
-    mario->dispFlags &= ~0x100;
-    mario->dispFlags &= ~0x8;
-    mario->dispFlags &= ~0x10;
-    mario->dispFlags &= ~0x4;
-    mario->flags &= ~0x80;
-    marioAdjustMoveDir();
+    M_F32(mario, 0x1A8) = (M_F32(mario, 0x2A4) >= 90.f && M_F32(mario, 0x2A4) <= 270.f)
+                              ? 180.f
+                              : float_0_8041a9a8;
+    M_F32(mario, 0x1AC) = M_F32(mario, 0x1A8);
+    M_F32(mario, 0x19C) = toMovedir(M_F32(mario, 0x2A4));
+    mario->directionView = M_F32(mario, 0x19C);
+    rp = 0;
+    if (mario->flags & 0x800) {
+        s32 b = mario->multiTimer;
+        s32 a = M_S32(mario, 0x2A0);
+        r27 = (b <= a) ? b : a;
+        if (b == a) {
+            rp = 1;
+        }
+    } else {
+        s32 b = mario->multiTimer;
+#ifdef MUST_MATCH
+        s32 t = (b <= 10) ? M_S32(mario, 0x48) : 10;
+        r27 = t;
+#else
+        r27 = (b <= 10) ? b : 10;
+#endif
+        if (b == 10) {
+            rp = 1;
+        }
+    }
+    mario->poseTime = r27;
+    animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)r27);
+    if (rp != 0) {
+        lv = (s8)pouchGetPtr()->hammerLevel;
+        if (lv == 1) {
+            evtEntry(lv1quake_evt, 0, 0);
+        } else if (lv == 2) {
+            evtEntry(lv2quake_evt, 0, 0);
+        } else if (lv == 3) {
+            evtEntry(lv3quake_evt, 0, 0);
+        }
+        mario->currSubMotionId = 1;
+        M_S32(mario, 0x1FC) = M_S32(mario, 0x200);
+        px = mario->position.x;
+        f30 = mario->position.y;
+        pz = mario->position.z;
+        if (!(mario->dispFlags & 0x80000000)) {
+            eff = -1;
+            switch (M_S32(mario, 0x2A8)) {            case 7:
+                movePos(&px, &pz, 16.0f, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
+                f31 = 53.0f;
+                eff = 0x16;
+                break;
+                        case 0:
+            case 6:
+                movePos(&px, &pz, 25.0f, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
+                f31 = -3.0f;
+                eff = 0x15;
+                break;
+            case 5:
+                movePos(&px, &pz, 31.0f, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
+                f31 = 5.0f;
+                eff = 0x15;
+                break;
+            case 4:
+                movePos(&px, &pz, 30.f, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
+                f31 = 30.f;
+                eff = 0x16;
+                break;
+}
+        } else {
+            eff = -1;
+            switch (M_S32(mario, 0x2A8)) {            case 7:
+                movePos(&px, &pz, 16.0f, toMovedir2(M_F32(mario, 0x1AC), -2.0f));
+                f31 = 53.0f;
+                eff = 0x16;
+                break;
+                        case 0:
+            case 6:
+                movePos(&px, &pz, 30.f, toMovedir2(M_F32(mario, 0x1AC), -6.0f));
+                f31 = -3.0f;
+                eff = 0x15;
+                break;
+            case 5:
+                movePos(&px, &pz, 36.0f, toMovedir2(M_F32(mario, 0x1AC), -6.0f));
+                f31 = 20.f;
+                eff = 0x16;
+                break;
+            case 4:
+                movePos(&px, &pz, 37.0f, toMovedir2(M_F32(mario, 0x1AC), -6.0f));
+                f31 = 28.0f;
+                eff = 0x16;
+                break;
+}
+        }
+        if (eff > 0) {
+            effKemuTestEntry(eff, px, f30 + f31, pz, 1.0f);
+        }
+        mario3 = marioGetPtr();
+        sound = 0x161;
+        switch (pouchGetHammerLv()) {
+        case 1:
+            psndSFXOn_3D((const char*)0x15E, &mario3->position);
+            break;
+        case 2:
+            psndSFXOn_3D((const char*)0x15F, &mario3->position);
+            break;
+        case 3:
+            psndSFXOn_3D((const char*)0x160, &mario3->position);
+            break;
+        }
+        i = 0;
+        while (i < 10) {
+            if (pouchEquipCheckBadge(se_data[M_S8(mario3, 0x3A)]) != 0) {
+                sound = se_data[M_S8(mario3, 0x3A) + 1];
+                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
+                if (M_S8(mario3, 0x3A) >= 0xA) {
+                    M_S8(mario3, 0x3A) -= 0xA;
+                }
+                break;
+            } else {
+                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
+                if (M_S8(mario3, 0x3A) >= 0xA) {
+                    M_S8(mario3, 0x3A) -= 0xA;
+                }
+                i++;
+            }
+        }
+        psndSFXOn_3D((const char*)sound, &mario3->position);
+    }
+    mt = mario->multiTimer + 1;
+    mario->multiTimer = mt;
+    if (mt > 0x14) {
+        mario->flags &= ~0x80;
+        marioChgMot(0);
+    }
+}
+#pragma opt_dead_assignments reset
+#pragma opt_common_subs reset
+
+#pragma opt_propagation off // keep marioChkHammer2/mot_hammer2's f0/f1/f2 load split; removing it regresses mot_hammer2
+s32 marioChkHammer2(void) {
+    MarioWork* mario;
+    s32 sp10;
+    s32 spC;
+    f32 sp8;
+    s32 ret;
+
+    mario = marioGetPtr();
+    if (pouchGetPtr()->hammerLevel < 2) {
+        return 0;
+    }
+    if (!(M_U16(mario, 0x246) & 0x200)) {
+        if (!(M_U16(mario, 0x246) & 0x100)) {
+            if (strcmp(mario->animName, "M_I_Y") == 0 && mario->currMotionId == MARIO_MOTION_STAY) {
+                marioChgPose("M_S_1");
+                marioVoiceGlareOff();
+            }
+            mario->wMotionTimer = 0;
+        }
+        return 0;
+    }
+    mario->wMotionTimer++;
+    if (mario->controlStickSensitivity != float_0_8041a9a8) {
+        if (mario->wMotionTimer > 10 && mario->currMotionId == MARIO_MOTION_STAY &&
+            !(mario->dispFlags & 0x40000000)) {
+            marioChgPose("M_I_Y");
+            marioVoiceGlareOn();
+        }
+    }
+    if (mario->wMotionTimer >= 50) {
+        mario->wMotionTimer = 50;
+        if (mario->currMotionId == MARIO_MOTION_STAY && !(mario->dispFlags & 0x40000000)) {
+            marioChgPose("M_I_Y");
+            marioVoiceGlareOn();
+        }
+    }
+    ret = marioGetRub(0x200, &spC, &sp10, &sp8);
+    if (ret != 1) {
+        return 0;
+    }
+    mario->baseSpeed = float_0_8041a9a8;
+    if (sp10 < 1) {
+        return 0;
+    }
+    M_S8(mario, 0x43) = spC;
+    return 1;
 }
 
-f32 marioGetAngleKaitenHammer(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->currMotionId != MARIO_MOTION_HAMMER_2) {
-        return float_neg1_8041a9f4;
-    }
-    if ((s32)mario->currSubMotionId != 0x14) {
-        return float_neg2_8041a9f8;
-    }
-    return revise360(float_270_8041a9b4 - mario->unk1A8);
-}
-
-#pragma opt_propagation off // keep the effUltraHammerEntry and Vec-copy FP/load scheduling
 // The original keeps a dead `hitGetAttr(hit) & 0x800005` comparison in this function (its branch was
 // folded away), while the compiler eliminates it from the natural empty-body form. A no-op store to
 // `hit` (below, under MUST_MATCH) keeps the comparison alive without adding instructions.
@@ -327,7 +474,7 @@ void mot_hammer2(void) {
         mario->dispFlags |= 4;
         M_S8(mario, 0x41) = 0;
         M_S8(mario, 0x42) = 0;
-        mario->baseSpeed = 0.0f;
+        mario->baseSpeed = float_0_8041a9a8;
         mario->airTimer = 0;
         mario->currSubMotionId = 1;
         mario->multiTimer = 0x1E;
@@ -336,17 +483,17 @@ void mot_hammer2(void) {
         } else if (M_S8(mario, 0x42) <= 2) {
             mario->wCamVal1 = 15.0f;
         } else {
-            mario->wCamVal1 = 10.0f;
+            mario->wCamVal1 = 10.f;
         }
         switch (pouchGetHammerLv()) {
         case 1:
-            marioChgPose(str_8041AA08);
+            marioChgPose("M_H_3");
             break;
         case 2:
-            marioChgPose(str_8041AA10);
+            marioChgPose("M_H_6");
             break;
         case 3:
-            marioChgPose(str_8041AA18);
+            marioChgPose("M_H_9");
             break;
         }
         M_S32(mario, 0x200) = 0;
@@ -357,17 +504,17 @@ void mot_hammer2(void) {
         if ((s32)--mario->multiTimer > 0) {
             break;
         }
-        if (180.0f == M_F32(mario, 0x1AC) && M_S8(mario, 0x43) == 1) {
+        if (180.f == M_F32(mario, 0x1AC) && M_S8(mario, 0x43) == 1) {
             mario->dispFlags |= 8;
         }
-        if (0.0f == M_F32(mario, 0x1AC) && M_S8(mario, 0x43) == 0) {
+        if (float_0_8041a9a8 == M_F32(mario, 0x1AC) && M_S8(mario, 0x43) == 0) {
             mario->dispFlags |= 0x10;
         }
         marioPaperOn(str_802C5B28);
         marioChgPaper(str_802C5B34);
         marioPaperLightOff();
         M_S32(mario, 0x2B8) = psndSFXOn_3D((const char*)0x162, &mario->position);
-        M_F32(mario, 0x2B0) = 0.0f;
+        M_F32(mario, 0x2B0) = float_0_8041a9a8;
         mario->poseTime = 0;
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], M_F32(mario, 0x2B0));
         mario->currSubMotionId = 0xA;
@@ -477,8 +624,8 @@ void mot_hammer2(void) {
             goto common_6320;
         } else {
             M_F32(mario, 0x2B0) -= 1.0f;
-            if (M_F32(mario, 0x2B0) <= 30.0f) {
-                M_F32(mario, 0x2B0) = 30.0f;
+            if (M_F32(mario, 0x2B0) <= 30.f) {
+                M_F32(mario, 0x2B0) = 30.f;
                 M_S16(mario, 0x2B4) &= ~0x10;
             }
             goto common_6320;
@@ -552,7 +699,7 @@ void mot_hammer2(void) {
             M_S32(mario, 0x2B8) = -1;
         }
         m2 = marioGetPtr();
-        M_F32(m2, 0x148) = 0.0f;
+        M_F32(m2, 0x148) = float_0_8041a9a8;
         M_F32(m2, 0x158) = 0.01f;
         switch (pouchGetHammerLv()) {
         case 1:
@@ -583,26 +730,26 @@ void mot_hammer2(void) {
             mario->wCamVal1 = 15.0f;
         }
 #ifdef MUST_MATCH
-        py__ = 20.0f; px__ = mario->position.x; py__ += mario->position.y;
+        py__ = 20.f; px__ = mario->position.x; py__ += mario->position.y;
         pz__ = mario->position.z; one__ = 1.0f;
         effUltraHammerEntry(M_S8(mario, 0x43) != 0, mario->multiTimer, px__, py__, pz__, one__);
 #else
         effUltraHammerEntry(M_S8(mario, 0x43) != 0, mario->multiTimer, mario->position.x,
-                            mario->position.y + 20.0f, mario->position.z, 1.0f);
+                            mario->position.y + 20.f, mario->position.z, 1.0f);
 #endif
         break;
     case 0x14:
         f31 = M_F32(mario, 0x1A8);
         M_S16(mario, 0x2A4) = 0xA;
         mario->dispFlags |= 0x100;
-        f30 = revise360(270.0f - M_F32(mario, 0x1A8));
+        f30 = revise360(270.f - M_F32(mario, 0x1A8));
         m2 = marioGetPtr();
         sincosf(&sa, &ca, f30);
-        dist = 2.0f * m2->wPlayerCollisionBox.x;
+        dist = float_2_8041a9a0 * m2->wPlayerCollisionBox.x;
         hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz,
                              m2->position.x,
-                             0.5f * m2->wPlayerCollisionBox.y + m2->position.y,
-                             m2->position.z, sa, 0.0f, ca);
+                             float_0p5_8041a9a4 * m2->wPlayerCollisionBox.y + m2->position.y,
+                             m2->position.z, sa, float_0_8041a9a8, ca);
 #ifdef MUST_MATCH
         // The original keeps the wall's attribute-mask comparison in the output even though its result
         // is never used (the branch on it was folded away). Written as an empty `if`, this compiler
@@ -637,7 +784,7 @@ void mot_hammer2(void) {
         if (M_S8(mario, 0x42) > 2 && mario->multiTimer == 0xA) {
             marioPaperOff();
             marioPaperLightOn();
-            marioChgPose(str_8041AA5C);
+            marioChgPose("M_S_1");
             mario->dispFlags &= ~4;
             mario->dispFlags &= ~8;
             mario->dispFlags &= ~0x10;
@@ -661,7 +808,7 @@ void mot_hammer2(void) {
         if (M_S8(mario, 0x42) <= 2) {
             marioPaperOff();
             marioPaperLightOn();
-            marioChgPose(str_8041AA5C);
+            marioChgPose("M_S_1");
             mario->dispFlags &= ~4;
             mario->dispFlags &= ~8;
             mario->dispFlags &= ~0x10;
@@ -693,361 +840,191 @@ void mot_hammer2(void) {
 }
 #pragma opt_propagation reset
 
-s32 marioChkHammer2(void) {
-    MarioWork* mario;
-    s32 sp10;
-    s32 spC;
-    f32 sp8;
-    s32 ret;
+f32 marioGetAngleKaitenHammer(void) {
+    MarioWork* mario = marioGetPtr();
 
-    mario = marioGetPtr();
-    if (pouchGetPtr()->hammerLevel < 2) {
-        return 0;
+    if (mario->currMotionId != MARIO_MOTION_HAMMER_2) {
+        return -1.0f;
     }
-    if (!(M_U16(mario, 0x246) & 0x200)) {
-        if (!(M_U16(mario, 0x246) & 0x100)) {
-            if (strcmp(mario->animName, str_8041AA64) == 0 && mario->currMotionId == MARIO_MOTION_STAY) {
-                marioChgPose(str_8041AA5C);
-                marioVoiceGlareOff();
-            }
-            mario->wMotionTimer = 0;
-        }
-        return 0;
+    if ((s32)mario->currSubMotionId != 0x14) {
+        return -2.0f;
     }
-    mario->wMotionTimer++;
-    if (mario->controlStickSensitivity != float_0_8041a9a8) {
-        if (mario->wMotionTimer > 10 && mario->currMotionId == MARIO_MOTION_STAY &&
-            !(mario->dispFlags & 0x40000000)) {
-            marioChgPose(str_8041AA64);
-            marioVoiceGlareOn();
-        }
-    }
-    if (mario->wMotionTimer >= 50) {
-        mario->wMotionTimer = 50;
-        if (mario->currMotionId == MARIO_MOTION_STAY && !(mario->dispFlags & 0x40000000)) {
-            marioChgPose(str_8041AA64);
-            marioVoiceGlareOn();
-        }
-    }
-    ret = marioGetRub(0x200, &spC, &sp10, &sp8);
-    if (ret != 1) {
-        return 0;
-    }
-    mario->baseSpeed = float_0_8041a9a8;
-    if (sp10 < 1) {
-        return 0;
-    }
-    M_S8(mario, 0x43) = spC;
-    return 1;
+    return revise360(270.f - mario->unk1A8);
 }
 
-// Common subexpression elimination off keeps the rodata base in r31 and the mario pointer in r30; with it on
-// the two are swapped and every access thereafter shifts. Needed only for this function.
-#pragma opt_common_subs off
-#ifdef MUST_MATCH
-// These two inline helpers exist to reproduce the original's register allocation and schedule: the plain
-// expressions put `type` in r0 and `v` in r3 (the target is the other way). `minHammerTicks10` is kept for
-// reference/other matching builds; the pose-time clamp below no longer calls it. The #else holds the natural
-// expressions for --non-matching builds.
-static inline s32 clampHammerType(s32 t) {
-    return (t == 7) ? 3 : t;
-}
-
-static inline s32 minHammerTicks10(s32 b) {
-    s32 v = b;
-    if (b > 10) {
-        v = 10;
-    }
-    return v;
-}
-#endif
-
-// The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
-// register (base r31, mario r30, r28/r29, f30/f31) match. The pose-time clamp `b <= 10 ? b : 10` is branchy
-// in the target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); the plain ternary is if-converted to the one
-// instruction shorter `cmpwi; mr r0,r3; ble; li r0,10`. Under MUST_MATCH the clamp goes through a temp whose
-// condition and arm are syntactically different (the named field vs this file's raw accessor), which blocks
-// that if-conversion, and `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27`
-// split survives. Together they give the target's bytes; the #else holds the natural ternary.
-void mot_hammer(void) {
-#pragma opt_dead_assignments off // keep the `r27 = t` pose-time copy (target splits r0/r27)
+void mot_ham2_post(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
-    MarioWork* mario3;
-    MapObjectEntry* mobj;
-    s32 mt;
-    s32 sound;
-    s32 r28, rp;
-    u32 i;
-    s32 type;
-    s32 r27;
-    s32 eff;
-    s32 lv;
-    HitEntry* hit;
-    f32 f31;
-    f32 f30;
-    f32 ang2;
-    f32 px;
-    f32 pz;
 
-    if (mario->trigFlags & 1) {
-        mario->trigFlags &= ~1;
-        mario->flags &= ~0x000F0000;
-        mario->flags |= 0x80;
-        f30 = M_F32(mario, 0x1A8);
-        {
-            f32 off;
-            MarioWork* m = marioGetPtr();
-            off = float_0_8041a9a8;
-            if (m->dispFlags & 0x80000000) {
-                f32 ang = m->unk1A8;
-                s32 facing = 0;
-                if (ang >= float_90_8041a9b0 && ang <= float_270_8041a9b4) {
-                    facing = 1;
-                }
-                off = facing ? float_30_8041a9d4 : float_neg30_8041aa6c;
-            }
-            if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
-                ang2 = revise360(float_180_8041a9b8 + off);
-            } else {
-                ang2 = revise360(off);
-            }
-            M_F32(mario, 0x2A4) = ang2;
-        }
-        M_S32(mario, 0x48) = 0;
-        M_S16(mario, 0x50) = 0;
-        M_S32(mario, 0x44) = 0;
-        M_F32(mario, 0x180) = float_0_8041a9a8;
-        M_S32(mario, 0x200) = 0;
-        hit = hitEstimate(&type);
-        M_S32(mario, 0x200) = (s32)hit;
-        if (hit != NULL) {
-            f30 = M_F32(mario, 0x1A8);
-            {
-                f32 v = (marioGetPtr()->dispFlags & 0x80000000) ? float_neg30_8041aa6c : float_0_8041a9a8;
-                if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
-                    ang2 = toMovedir2(float_180_8041a9b8, v);
-                } else {
-                    ang2 = toMovedir2(float_0_8041a9a8, v);
-                }
-                mario->directionView = ang2;
-            }
-            f30 = M_F32(mario, 0x1A8);
-            {
-                f32 off;
-                MarioWork* m = marioGetPtr();
-                off = float_0_8041a9a8;
-                if (m->dispFlags & 0x80000000) {
-                    f32 ang = m->unk1A8;
-                    s32 facing = 0;
-                    if (ang >= float_90_8041a9b0 && ang <= float_270_8041a9b4) {
-                        facing = 1;
-                    }
-                    off = facing ? float_30_8041a9d4 : float_neg30_8041aa6c;
-                }
-                if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
-                    ang2 = revise360(float_180_8041a9b8 + off);
-                } else {
-                    ang2 = revise360(off);
-                }
-                M_F32(mario, 0x2A4) = ang2;
-            }
-        }
-        if (hitGetAttr(hit) & 0x80000000) {
-            mobj = mobjHitObjPtrToPtr(hit);
-            r28 = 0;
-            if (strcmp(mobj->animName, str_802C5ABC) == 0 ||
-                strcmp(mobj->animName, str_802C5ACC) == 0) {
-                if (pouchGetPtr()->hammerLevel >= 1) {
-                    r28 = 1;
-                }
-            } else if (strcmp(mobj->animName, str_802C5AE0) == 0 ||
-                       strcmp(mobj->animName, str_802C5AF0) == 0) {
-                if (pouchGetPtr()->hammerLevel >= 2) {
-                    r28 = 1;
-                }
-            } else if (strcmp(mobj->animName, str_802C5B04) == 0 ||
-                       strcmp(mobj->animName, str_802C5B14) == 0) {
-                if (pouchGetPtr()->hammerLevel >= 3) {
-                    r28 = 1;
-                }
-            }
-            if (r28) {
-                type = 0;
-            }
-        }
-        switch (pouchGetHammerLv()) {
-        case 1:
-            marioChgPose(type == 7 ? str_8041AA70 : str_8041AA78);
-            break;
-        case 2:
-            marioChgPose(type == 7 ? str_8041AA80 : str_8041AA88);
-            break;
-        case 3:
-            marioChgPose(type == 7 ? str_8041AA90 : str_8041AA98);
-            break;
-        }
-        if (type != 0) {
-#ifdef MUST_MATCH
-            M_S32(mario, 0x2A0) = clampHammerType(type);
-#else
-            M_S32(mario, 0x2A0) = (type == 7) ? 3 : type;
-#endif
-            mario->flags |= 0x800;
-        } else {
-            mario->flags &= ~0x800;
-        }
-        mario2 = marioGetPtr();
-        sound = 0x15B;
-        switch (pouchGetHammerLv()) {
-        case 1:
-            sound = 0x15B;
-            break;
-        case 2:
-            sound = 0x15C;
-            break;
-        case 3:
-            sound = 0x15D;
-            break;
-        }
-        psndSFXOn_3D((const char*)sound, &mario2->position);
-        M_S32(mario, 0x2A8) = type;
+    if (mario->dispFlags & 0x40000000) {
+        marioPaperOff();
     }
-    M_F32(mario, 0x1A8) = (M_F32(mario, 0x2A4) >= float_90_8041a9b0 && M_F32(mario, 0x2A4) <= float_270_8041a9b4)
-                              ? float_180_8041a9b8
-                              : float_0_8041a9a8;
-    M_F32(mario, 0x1AC) = M_F32(mario, 0x1A8);
-    M_F32(mario, 0x19C) = toMovedir(M_F32(mario, 0x2A4));
-    mario->directionView = M_F32(mario, 0x19C);
-    rp = 0;
-    if (mario->flags & 0x800) {
-        s32 b = mario->multiTimer;
-        s32 a = M_S32(mario, 0x2A0);
-        r27 = (b <= a) ? b : a;
-        if (b == a) {
-            rp = 1;
-        }
+    mario2 = marioGetPtr();
+    M_F32(mario2, 0x148) = float_0_8041a9a8;
+    mario2->unk150.z = 0.01f;
+    marioPaperOff();
+    marioPaperLightOn();
+    mario->dispFlags &= ~0x100;
+    mario->dispFlags &= ~0x8;
+    mario->dispFlags &= ~0x10;
+    mario->dispFlags &= ~0x4;
+    mario->flags &= ~0x80;
+    marioAdjustMoveDir();
+}
+
+// The original materialises dir3 into its own stack slot through a temp copy. A plain struct assignment is
+// forwarded away by the compiler, so the copy is forced through a cast; the natural form is under #else.
+HitEntry* hitEstimate(s32* type) {
+    HitCheckQuery query;
+    Vec pos;
+    Vec dir3;
+    Vec dir0;
+    Vec dir1;
+    Vec dir2;
+    Vec dir3t;
+    MarioWork* mario;
+    HitEntry* hit;
+    f32 angle;
+    f32 boxY;
+    f32 sa;
+    f32 ca;
+    f32 off;
+    f32 dy;
+    f32 off2;
+    f32 dist;
+    f32 c;
+    s32 i;
+
+    mario = marioGetPtr();
+    *type = 0;
+    angle = mario->unk1A8;
+    if (marioGetPtr()->dispFlags & 0x80000000) {
+        off = -20.f;
     } else {
-        s32 b = mario->multiTimer;
-#ifdef MUST_MATCH
-        s32 t = (b <= 10) ? M_S32(mario, 0x48) : 10;
-        r27 = t;
-#else
-        r27 = (b <= 10) ? b : 10;
-#endif
-        if (b == 10) {
-            rp = 1;
-        }
+        off = float_0_8041a9a8;
     }
-    mario->poseTime = r27;
-    animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)r27);
-    if (rp != 0) {
-        lv = (s8)pouchGetPtr()->hammerLevel;
-        if (lv == 1) {
-            evtEntry(lv1quake_evt, 0, 0);
-        } else if (lv == 2) {
-            evtEntry(lv2quake_evt, 0, 0);
-        } else if (lv == 3) {
-            evtEntry(lv3quake_evt, 0, 0);
-        }
-        mario->currSubMotionId = 1;
-        M_S32(mario, 0x1FC) = M_S32(mario, 0x200);
-        px = mario->position.x;
-        f30 = mario->position.y;
-        pz = mario->position.z;
-        if (!(mario->dispFlags & 0x80000000)) {
-            eff = -1;
-            switch (M_S32(mario, 0x2A8)) {            case 7:
-                movePos(&px, &pz, float_16_8041aaa0, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
-                f31 = float_53_8041aaa4;
-                eff = 0x16;
-                break;
-                        case 0:
-            case 6:
-                movePos(&px, &pz, float_25_8041aaa8, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
-                f31 = float_neg3_8041aaac;
-                eff = 0x15;
-                break;
-            case 5:
-                movePos(&px, &pz, float_31_8041aab0, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
-                f31 = float_5_8041a9cc;
-                eff = 0x15;
-                break;
-            case 4:
-                movePos(&px, &pz, float_30_8041a9d4, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
-                f31 = float_30_8041a9d4;
-                eff = 0x16;
-                break;
-}
+    if (angle >= 90.f && angle <= 270.f) {
+        angle = toMovedir2(180.f, off);
+    } else {
+        angle = toMovedir2(float_0_8041a9a8, off);
+    }
+    sincosf(&sa, &ca, angle);
+    boxY = mario->wPlayerCollisionBox.y;
+#ifdef MUST_MATCH
+    { f32 p = 3.1415927f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
+#else
+    c = cos(3.1415927f);
+#endif
+    pos = mario->position;
+    pos.y = 4.0f + (mario->position.y + boxY);
+    dir0 = vec3_802c5a8c;
+    dir0.x = sa;
+    dir0.y = -c;
+    dir0.z = ca;
+    query.targetPos = pos;
+    query.targetDir = dir0;
+    query.targetDistance = 14.0f;
+    hit = hitCheckVecFilter(&query, NULL);
+    if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
+        *type = 7;
+        return hit;
+    }
+
+#ifdef MUST_MATCH
+    { f32 p = 1.2217306f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
+#else
+    c = cos(1.2217306f);
+#endif
+#ifdef MUST_MATCH
+    { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
+    pos.x = mario->position.x + sa * five;
+    pos.z = mario->position.z + ca * five; }
+#else
+    pos.x = mario->position.x + sa * 5.0f;
+    pos.z = mario->position.z + ca * 5.0f;
+#endif
+    pos.y = mario->position.y + boxY;
+    dir1 = vec3_802c5a98;
+    dir1.x = sa;
+    dir1.y = -c;
+    dir1.z = ca;
+    query.targetPos = pos;
+    query.targetDir = dir1;
+    query.targetDistance = 26.0f;
+    hit = hitCheckVecFilter(&query, NULL);
+    if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
+        *type = (query.hitPos.y - mario->position.y > 30.f) ? 4 : 5;
+        return hit;
+    }
+
+#ifdef MUST_MATCH
+    { f32 p = 0.7853982f; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
+#else
+    c = cos(0.7853982f);
+#endif
+#ifdef MUST_MATCH
+    { f32 five = 5.0f; // local keeps the 5.0f load after the stack load (target order)
+    pos.x = mario->position.x + sa * five;
+    pos.z = mario->position.z + ca * five; }
+#else
+    pos.x = mario->position.x + sa * 5.0f;
+    pos.z = mario->position.z + ca * 5.0f;
+#endif
+    pos.y = mario->position.y + boxY;
+    dir2 = vec3_802c5aa4;
+    dir2.x = sa;
+    dir2.y = -c;
+    dir2.z = ca;
+    query.targetPos = pos;
+    query.targetDir = dir2;
+    query.targetDistance = 30.f;
+    hit = hitCheckVecFilter(&query, NULL);
+    if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
+        *type = 5;
+        return hit;
+    }
+
+#ifdef MUST_MATCH
+    { f32 p = float_0_8041a9a8; c = cos(p); } // a bare literal makes MWCC pool a double and load it with lfd
+#else
+    c = cos(float_0_8041a9a8);
+#endif
+    dir3t = vec3_802c5ab0;
+    dir3t.y = -c;
+#ifdef MUST_MATCH
+    *(Vec*)&dir3 = *(Vec*)&dir3t;
+#else
+    dir3 = dir3t;
+#endif
+    for (i = 0; i < 2; i++) {
+        if (i == 0) {
+            dist = 36.0f;
+            off2 = 20.f;
         } else {
-            eff = -1;
-            switch (M_S32(mario, 0x2A8)) {            case 7:
-                movePos(&px, &pz, float_16_8041aaa0, toMovedir2(M_F32(mario, 0x1AC), float_neg2_8041a9f8));
-                f31 = float_53_8041aaa4;
-                eff = 0x16;
-                break;
-                        case 0:
-            case 6:
-                movePos(&px, &pz, float_30_8041a9d4, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
-                f31 = float_neg3_8041aaac;
-                eff = 0x15;
-                break;
-            case 5:
-                movePos(&px, &pz, float_36_8041a9dc, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
-                f31 = float_20_8041a9e0;
-                eff = 0x16;
-                break;
-            case 4:
-                movePos(&px, &pz, float_37_8041a9e8, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
-                f31 = float_28_8041aab8;
-                eff = 0x16;
-                break;
-}
-        }
-        if (eff > 0) {
-            effKemuTestEntry(eff, px, f30 + f31, pz, float_1_8041aa38);
-        }
-        mario3 = marioGetPtr();
-        sound = 0x161;
-        switch (pouchGetHammerLv()) {
-        case 1:
-            psndSFXOn_3D((const char*)0x15E, &mario3->position);
-            break;
-        case 2:
-            psndSFXOn_3D((const char*)0x15F, &mario3->position);
-            break;
-        case 3:
-            psndSFXOn_3D((const char*)0x160, &mario3->position);
-            break;
-        }
-        i = 0;
-        while (i < 10) {
-            if (pouchEquipCheckBadge(se_data[M_S8(mario3, 0x3A)]) != 0) {
-                sound = se_data[M_S8(mario3, 0x3A) + 1];
-                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
-                if (M_S8(mario3, 0x3A) >= 0xA) {
-                    M_S8(mario3, 0x3A) -= 0xA;
-                }
-                break;
+            dist = 34.0f;
+            if (mario->dispFlags & 0x80000000) {
+                off2 = 37.0f;
             } else {
-                M_S8(mario3, 0x3A) = M_S8(mario3, 0x3A) + 2;
-                if (M_S8(mario3, 0x3A) >= 0xA) {
-                    M_S8(mario3, 0x3A) -= 0xA;
-                }
-                i++;
+                off2 = dist;
             }
         }
-        psndSFXOn_3D((const char*)sound, &mario3->position);
+        pos.x = mario->position.x + sa * off2;
+        pos.z = mario->position.z + ca * off2;
+        pos.y = mario->position.y + boxY;
+        query.targetPos = pos;
+        query.targetDir = dir3;
+        query.targetDistance = dist;
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit != NULL && (hitGetAttr(hit) & 0x800005) == 0) {
+            dy = query.hitPos.y - mario->position.y;
+            *type = (dy > 13.0f) ? 5 : 6;
+            return hit;
+        }
     }
-    mt = mario->multiTimer + 1;
-    mario->multiTimer = mt;
-    if (mt > 0x14) {
-        mario->flags &= ~0x80;
-        marioChgMot(0);
-    }
+    return hit;
 }
-#pragma opt_dead_assignments reset
-#pragma opt_common_subs reset
-s32 marioGetHammerLevel(void) {
-    return pouchGetPtr()->hammerLevel;
-}
+
+// Named .sdata2 prefix: the first three floats of the original's layout are real objects.
+const f32 float_2_8041a9a0 = 2.0f;
+const f32 float_0p5_8041a9a4 = 0.5f;
+const f32 float_0_8041a9a8 = 0.0f;

@@ -8,38 +8,33 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
-#include <math.h>
+#include "math_ext.h"
 #include <dolphin/os/OSFastCast.h>
 
 // .rodata
 const Vec vec3_802fb2c0 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb2d0 = 4503601774854144.0;
-const char str_802FB2D8[] = "OpukuWgunN64";
+// The compiler's int->float magic double (0x4330000080000000) and the "OpukuWgunN64"
+// string literal are pooled by the compiler, in .text order; defining them here
+// duplicates the pool (eff_opuku_wprotect_n64's recipe).
 
-// .sdata2 float constants (named after their original addresses).
+// .sdata2 leading word the TEV colour is copied from (real object, emitted before the pool).
 const u32 dat_8041f840 = 0xC8;
-const f32 float_2_8041f844 = 2.0f;
-const f32 float_0p5_8041f848 = 0.5f;
-const f32 float_6_8041f84c = 6.0f;
-const f32 float_1_8041f850 = 1.0f;
-const f32 float_30_8041f854 = 30.0f;
-const f32 float_6p2832_8041f858 = 6.2831855f;
-const f32 float_360_8041f85c = 360.0f;
-const f32 float_20_8041f860 = 20.0f;
-const f32 float_0_8041f864 = 0.0f;
-const f32 float_0p05_8041f868 = 0.05f;
-const f32 float_0p015625_8041f86c = 0.015625f;
-const f32 float_0p03125_8041f870 = 0.03125f;
-const f32 float_180_8041f874 = 180.0f;
-const f32 float_120_8041f878 = 120.0f;
-const f32 float_255_8041f87c = 255.0f;
-const f32 float_10_8041f880 = 10.0f;
 
 // .sdata alpha table (non-const: MWCC places it in .sdata, not .sdata2).
 static u8 a_data[12] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC8, 0x80, 0x20 };
 
-// .sbss2 scratch colour (same pattern as eff_opuku_wcurtain_n64.c's unk_804231e0).
-GXColor unk_804231e8;
+// 4 zero bytes that end the unit's .sdata.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80413BFC_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// .sbss2 scratch colour (same pattern as eff_opuku_wprotect_n64.c's unk_804231f0).
+// Declared gap first: MWCC lays uninitialised globals out in reverse declaration order.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_804231EC_sbss2;
+__declspec(section ".sdata") GXColor unk_804231e8;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 inline Vec initializeVec(Vec* input) {
@@ -49,13 +44,21 @@ inline Vec initializeVec(Vec* input) {
 	temp.z = input->z;
 	return temp;
 }
+// Build the sine in its own inline so mwcc pools 180 before 120: a call's argument
+// constants pool after the other constants of the statement that holds the call, so the
+// inline expression in effOpukuWgunMain pools 120 first and the .sdata2 order differs.
+#ifdef MUST_MATCH
+static inline f32 opukuWgunSin(f32 t) {
+	return (f32)sin(6.2831855f * (180.0f * t) / 360.0f);
+}
+#endif
 EffectEntry* effOpukuWgunN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 endX, f32 endY, f32 endZ, f32 scale) {
 	EffectEntry* effect;
 	EffOpukuWgunData* data;
 	s32 i;
 
 	effect = effEntry();
-	effect->type = str_802FB2D8;
+	effect->type = "OpukuWgunN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffOpukuWgunData));
 	effect->userdata = data;
@@ -159,10 +162,14 @@ void effOpukuWgunMain(EffectEntry* effect) {
 		}
 		else {
 			data->x[i] = data->start.x + t * (data->end.x - data->start.x);
+#ifdef MUST_MATCH
+			data->y[i] = data->start.y + t * (data->end.y - data->start.y) + 120.0f * opukuWgunSin(t);
+#else
 			data->y[i] = data->start.y + t * (data->end.y - data->start.y)
-			           + float_120_8041f878 * (f32)sin(float_6p2832_8041f858 * (float_180_8041f874 * t) / float_360_8041f85c);
+			           + 120.0f * (f32)sin(6.2831855f * (180.0f * t) / 360.0f);
+#endif
 			data->z[i] = data->start.z + t * (data->end.z - data->start.z);
-			data->alpha[i] = (u8)(float_255_8041f87c - float_255_8041f87c * t);
+			data->alpha[i] = (u8)(255.0f - 255.0f * t);
 		}
 	}
 
@@ -284,34 +291,34 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		}
 #endif
 		if (data->type == 0) {
-			t = float_0p5_8041f848 * (f32)data->counter2[i] + float_2_8041f844;
-			if (t > float_6_8041f84c) {
-				t = float_6_8041f84c;
+			t = 0.5f * (f32)data->counter2[i] + 2.0f;
+			if (t > 6.0f) {
+				t = 6.0f;
 			}
 			alpha = a_data[i];
 		} else {
-			t = float_0p5_8041f848 * (f32)data->counter2[i] + float_1_8041f850;
-			if (t > float_30_8041f854) {
-				t = float_30_8041f854;
+			t = 0.5f * (f32)data->counter2[i] + 1.0f;
+			if (t > 30.0f) {
+				t = 30.0f;
 			}
 			alpha = a_data[i] * data->alpha[i] / 255;
 		}
 		t *= scale;
-		rad = float_6p2832_8041f858 * angle / float_360_8041f85c;
+		rad = 6.2831855f * angle / 360.0f;
 		s = t * (f32)sin(rad);
 		c = t * (f32)cos(rad);
-		vtx[0].x = (s16)(float_20_8041f860 * (data->x[i] + s));
-		vtx[0].y = (s16)(float_20_8041f860 * (data->y[i] + c));
-		vtx[0].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
+		vtx[0].x = (s16)(20.0f * (data->x[i] + s));
+		vtx[0].y = (s16)(20.0f * (data->y[i] + c));
+		vtx[0].z = (s16)(20.0f * (data->z[i] + zero));
 		vtx[0].s = (i * 5) << 6;
 		vtx[0].t = 0;
 		vtx[0].r = (i & 1) * 255;
 		vtx[0].g = ((i >> 1) & 1) * 255;
 		vtx[0].b = ((i >> 2) & 1) * 255;
 		vtx[0].a = alpha;
-		vtx[1].x = (s16)(float_20_8041f860 * (data->x[i] - s));
-		vtx[1].y = (s16)(float_20_8041f860 * (data->y[i] - c));
-		vtx[1].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
+		vtx[1].x = (s16)(20.0f * (data->x[i] - s));
+		vtx[1].y = (s16)(20.0f * (data->y[i] - c));
+		vtx[1].z = (s16)(20.0f * (data->z[i] + zero));
 		vtx[1].s = (i * 5) << 6;
 		vtx[1].t = 0x400;
 		vtx[1].r = (i & 1) * 255;
@@ -321,7 +328,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		vtx += 2;
 	}
 
-	PSMTXScale(scaleMtx, float_0p05_8041f868, float_0p05_8041f868, float_0p05_8041f868);
+	PSMTXScale(scaleMtx, 0.05f, 0.05f, 0.05f);
 
 	for (j = 0; j < i * 2; j++) {
 		OSInitFastCast();
@@ -357,7 +364,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
 		GXSetNumTexGens(1);
 		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-		PSMTXScale(scaleMtx, float_0p015625_8041f86c, float_0p03125_8041f870, float_0_8041f864);
+		PSMTXScale(scaleMtx, 0.015625f, 0.03125f, 0.0f);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 		effGetTexObjN64(0x8D, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -377,7 +384,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
 		GXSetNumTexGens(1);
 		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-		PSMTXScale(scaleMtx, float_0p03125_8041f870, float_0p03125_8041f870, float_0_8041f864);
+		PSMTXScale(scaleMtx, 0.03125f, 0.03125f, 0.0f);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 		effGetTexObjN64(0x8E, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);

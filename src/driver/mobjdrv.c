@@ -22,25 +22,32 @@
 #include "party.h"
 #include "mario/mario_party.h"
 
+extern u32 cubeDJ[26];
+extern u32 headDJ[26];
+extern u32 frontDJ[26];
+extern u32 front2DJ[26];
+
 #define MAX_MOBJ_WORK 3
 
 extern GlobalWork* gp;
 
-// .rodata constants referenced by this file's original.
+// .sdata2 pool constants this unit owns, defined after the code (real objects, in the original's address order).
 extern const f32 float_0_8041a0c8;
-extern const f32 float_0p5_8041a100;
-extern const f32 float_2p5_8041a0e8;
-extern const f32 float_deg2rad_8041a0dc;
 extern const f32 float_10_8041a0cc;
-extern char str_8041A0E0[8];
-extern char str_8041A104[8];
-extern char str_8041A10C[8];
-
-// .data joint templates used by mobjHitEntry to build the embedded hit joints.
-extern MapFileJoint cubeDJ;
-extern MapFileJoint headDJ;
-extern MapFileJoint frontDJ;
-extern MapFileJoint front2DJ;
+extern const f32 float_1_8041a0d0;
+extern const f32 float_neg1_8041a0d4;
+extern const f32 float_neg0p5_8041a0d8;
+extern const f32 float_deg2rad_8041a0dc;
+extern const char str_8041A0E0[8];
+extern const f32 float_2p5_8041a0e8;
+extern const f32 float_5_8041a0ec;
+extern const f32 float_25_8041a0f0;
+extern const f32 float_20_8041a0f4;
+extern const f32 float_0p1_8041a0f8;
+extern const char str_8041A0FC[4];
+extern const f32 float_0p5_8041a100;
+extern const char str_8041A104[8];
+extern const char str_8041A10C[8];
 
 #ifdef MUST_MATCH
 // MUST_MATCH: the original reaches the joint templates through the .data section base symbol (the
@@ -80,9 +87,9 @@ inline void calcMtx(MapObjectEntry* entry, Mtx dest, Vec position) { // guessing
 
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xrot, 'x', MTXDegToRad(entry->rotation.x));
-    MTXRotRad(yrot, 'y', MTXDegToRad(entry->rotation.y));
-    MTXRotRad(zrot, 'z', MTXDegToRad(entry->rotation.z));
+    MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
+    MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
+    MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
     MTXConcat(trans, zrot, trans);
     MTXConcat(trans, yrot, trans);
     MTXConcat(trans, xrot, trans);
@@ -97,11 +104,11 @@ void mobjDispXLU(CameraId camId, void* param) {
         animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
     }
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                 10.0f * entry->scale.x, 1);
+                 float_10_8041a0cc * entry->scale.x, 1);
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                 10.0f * entry->scale.x, 2);
+                 float_10_8041a0cc * entry->scale.x, 2);
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                 10.0f * entry->scale.x, 3);
+                 float_10_8041a0cc * entry->scale.x, 3);
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(NULL, NULL, NULL);
         animSetPaperTexObj(NULL, NULL, NULL, NULL, NULL, NULL, 1, 1);
@@ -120,16 +127,16 @@ void mobjDisp(CameraId camId, void* param) {
     switch (disp->renderMode) {
         case 0:
             animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                         10.0f * entry->scale.x, 1);
+                         float_10_8041a0cc * entry->scale.x, 1);
             break;
         case 1:
             animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                         10.0f * entry->scale.x, 2);
+                         float_10_8041a0cc * entry->scale.x, 2);
             break;
         case 2:
         default:
             animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                         10.0f * entry->scale.x, 3);
+                         float_10_8041a0cc * entry->scale.x, 3);
             break;
     }
     if (entry->flags & 0x400) {
@@ -149,11 +156,11 @@ void mobjDisp_OffscreenXLU(CameraId camId, void* param) {
         animSetPaperTexObj(&entry->paperTexObj, NULL, NULL, entry->unk208, NULL, NULL, 1, 1);
     }
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                 10.0f * entry->scale.x, 1);
+                 float_10_8041a0cc * entry->scale.x, 1);
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                 10.0f * entry->scale.x, 2);
+                 float_10_8041a0cc * entry->scale.x, 2);
     animPoseDraw(entry->poseId, entry->position.x, entry->position.y, entry->position.z, entry->rotation.y,
-                 10.0f * entry->scale.x, 3);
+                 float_10_8041a0cc * entry->scale.x, 3);
     if (entry->flags & 0x400) {
         animSetPaperTexMtx(NULL, NULL, NULL);
         animSetPaperTexObj(NULL, NULL, NULL, NULL, NULL, NULL, 1, 1);
@@ -215,30 +222,30 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     }
 
     PSVECAdd(&bboxMax, &bboxMin, &entry->translation);
-    PSVECScale(&entry->translation, &entry->translation, float_0p5_8041a100);
-    PSVECScale(&entry->translation, &entry->translation, 10.0f);
-    entry->translation.y = float_0_8041a0c8;
+    PSVECScale(&entry->translation, &entry->translation, (float_0p5_8041a100));
+    PSVECScale(&entry->translation, &entry->translation, float_10_8041a0cc);
+    entry->translation.y = (float_0_8041a0c8);
 #ifdef MUST_MATCH
     // MUST_MATCH: holding __fabs()'s double result in an f64 local (its natural return type) makes MWCC
     // colour bboxMax to f2 and scale to f1 as the target does; the direct form swaps the two.
     {
         f64 dx = __fabs(bboxMax.x - bboxMin.x);
-        entry->scale2.x = float_10_8041a0cc * (entry->scale.x * (f32)dx);
+        entry->scale2.x = (float_10_8041a0cc) * (entry->scale.x * (f32)dx);
     }
-    entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
+    entry->scale2.y = (float_10_8041a0cc) * (entry->scale.y * (f32)__fabs(bboxMax.y));
     {
         f64 dz = __fabs(bboxMax.z - bboxMin.z);
-        entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)dz);
+        entry->scale2.z = (float_10_8041a0cc) * (entry->scale.z * (f32)dz);
     }
 #else
-    entry->scale2.x = float_10_8041a0cc * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
-    entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
-    entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
+    entry->scale2.x = (float_10_8041a0cc) * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
+    entry->scale2.y = (float_10_8041a0cc) * (entry->scale.y * (f32)__fabs(bboxMax.y));
+    entry->scale2.z = (float_10_8041a0cc) * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 #endif
 
     if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
-        entry->translation.z = float_0_8041a0c8;
-        entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
+        entry->translation.z = (float_0_8041a0c8);
+        entry->scale2.z = (float_10_8041a0cc) * ((float_2p5_8041a0e8) * entry->scale.z);
     }
 
     switch (type) {
@@ -252,9 +259,9 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             PSVECAdd(&entry->position, &entry->translation, &position);
             MTXTrans(trans, position.x, position.y, position.z);
             MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-            MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * entry->rotation.x));
-            MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * entry->rotation.y));
-            MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * entry->rotation.z));
+            MTXRotRad(xrot, 'x', ((float_deg2rad_8041a0dc) * entry->rotation.x));
+            MTXRotRad(yrot, 'y', ((float_deg2rad_8041a0dc) * entry->rotation.y));
+            MTXRotRad(zrot, 'z', ((float_deg2rad_8041a0dc) * entry->rotation.z));
             MTXConcat(trans, zrot, trans);
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
@@ -281,9 +288,9 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             PSVECAdd(&entry->position, &entry->translation, &position);
             MTXTrans(trans, position.x, position.y, position.z);
             MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-            MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * entry->rotation.x));
-            MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * entry->rotation.y));
-            MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * entry->rotation.z));
+            MTXRotRad(xrot, 'x', ((float_deg2rad_8041a0dc) * entry->rotation.x));
+            MTXRotRad(yrot, 'y', ((float_deg2rad_8041a0dc) * entry->rotation.y));
+            MTXRotRad(zrot, 'z', ((float_deg2rad_8041a0dc) * entry->rotation.z));
             MTXConcat(trans, zrot, trans);
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
@@ -310,9 +317,9 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
             PSVECAdd(&entry->position, &entry->translation, &position);
             MTXTrans(trans, position.x, position.y, position.z);
             MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-            MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * entry->rotation.x));
-            MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * entry->rotation.y));
-            MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * entry->rotation.z));
+            MTXRotRad(xrot, 'x', ((float_deg2rad_8041a0dc) * entry->rotation.x));
+            MTXRotRad(yrot, 'y', ((float_deg2rad_8041a0dc) * entry->rotation.y));
+            MTXRotRad(zrot, 'z', ((float_deg2rad_8041a0dc) * entry->rotation.z));
             MTXConcat(trans, zrot, trans);
             MTXConcat(trans, yrot, trans);
             MTXConcat(trans, xrot, trans);
@@ -368,13 +375,13 @@ s32 mobjEntry(const char* name, const char* animPoseName) {
     entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
     entry->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
     entry->unk5C = (Vec){ 0.0f, 0.0f, 0.0f };
-    entry->unk68 = 1.0f;
-    entry->unk6C = 1.0f;
+    entry->unk68 = float_1_8041a0d0;
+    entry->unk6C = float_1_8041a0d0;
     entry->camId = CAMERA_3D;
     entry->poseId = animPoseEntry(animPoseName, gp->inBattle != 0);
     animPosePeraOff(entry->poseId);
     strcpy(entry->animName, animPoseName);
-    animPoseSetAnim(entry->poseId, "S_1", 1);
+    animPoseSetAnim(entry->poseId, str_8041A0FC, 1);
     animPoseSetMaterialLightFlagOn(entry->poseId, 2);
     mobjHitEntry(entry, 0);
     entry->offscreenId = -1;
@@ -420,7 +427,7 @@ void mobjSetPosition(const char* name, f32 x, f32 y, f32 z) {
     }
 
     entry->position.x = x;
-    entry->position.y = y + 0.1f;
+    entry->position.y = float_0p1_8041a0f8 + y;
     entry->position.z = z;
 }
 
@@ -463,21 +470,21 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
         maxTmp.z = animData->bboxMax.z;
         bboxMax = maxTmp;
 
-        entry->scale2.x = 10.0f * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
-        entry->scale2.y = 10.0f * (entry->scale.y * (f32)__fabs(bboxMax.y));
-        entry->scale2.z = 10.0f * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
+        entry->scale2.x = float_10_8041a0cc * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
+        entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
+        entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 
         if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
-            entry->translation.z = 0.0f;
-            entry->scale2.z = 10.0f * (2.5f * entry->scale.z);
+            entry->translation.z = float_0_8041a0c8;
+            entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
         }
     }
 
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xRot, 'x', MTXDegToRad(entry->rotation.x));
-    MTXRotRad(yRot, 'y', MTXDegToRad(entry->rotation.y));
-    MTXRotRad(zRot, 'z', MTXDegToRad(entry->rotation.z));
+    MTXRotRad(xRot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
+    MTXRotRad(yRot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
+    MTXRotRad(zRot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
     MTXConcat(trans, zRot, trans);
     MTXConcat(trans, yRot, trans);
     MTXConcat(trans, xRot, trans);
@@ -603,17 +610,17 @@ void mobjMain(void) {
             }
 
             if (entry->flags & 0x40) {
-                if (entry->unk5C.y >= 0.0f) {
+                if (entry->unk5C.y >= float_0_8041a0c8) {
                     entry->position.y += entry->unk5C.y;
                     entry->unk5C.y -= entry->unk68;
                 } else {
-                    dist = 10.0f + (1.0f + (f32)__fabs(entry->unk5C.y));
+                    dist = float_10_8041a0cc + (float_1_8041a0d0 + (f32)__fabs(entry->unk5C.y));
                     if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &dist, &nx, &ny, &nz, entry->position.x,
-                                       10.0f + entry->position.y, entry->position.z, 0.0f, -1.0f, 0.0f) != NULL) {
+                                       float_10_8041a0cc + entry->position.y, entry->position.z, float_0_8041a0c8, float_neg1_8041a0d4, float_0_8041a0c8) != NULL) {
                         entry->position.y = hitY;
-                        entry->unk5C.y = (-0.5f * entry->unk6C) * entry->unk5C.y;
+                        { f32 tmpk = float_neg0p5_8041a0d8 * entry->unk6C; entry->unk5C.y = tmpk * entry->unk5C.y; }
                         if (__fabs(entry->unk5C.y) <= 2.0) {
-                            entry->unk5C.y = 0.0f;
+                            entry->unk5C.y = float_0_8041a0c8;
                         }
                     } else {
                         entry->position.y += entry->unk5C.y;
@@ -628,7 +635,7 @@ void mobjMain(void) {
                 hitObj = entry->hitObj[0].hitObject;
                 if (mario->characterId != 2) {
                     if ((entry->flags & 0x10000) && *(void**)((u8*)mario + 0x1FC) == (void*)hitObj) {
-                        if (marioGetPtr()->position.y <= 5.0f + entry->position.y) {
+                        if (marioGetPtr()->position.y <= float_5_8041a0ec + entry->position.y) {
                             v22 = 1;
                             entry->unk1E0 = 0x10000;
                             goto apply;
@@ -767,11 +774,10 @@ void mobjMain(void) {
             if ((mapEntry->flags & 4) && !(animPoseGetMaterialFlag(entry->poseId) & 0x1000) && blend2.a != 0xff) {
                 goto noShadow;
             }
-            shadow = shadowEntry(entry->position.x, entry->position.y, entry->position.z,
-                                 10.0f * entry->scale.x * entry->scale2.x / 25.0f);
+            { f32 sz = float_10_8041a0cc * entry->scale.x; shadow = shadowEntry(entry->position.x, entry->position.y, entry->position.z, sz * entry->scale2.x / float_25_8041a0f0); }
             if (entry->flags & 0x400000) {
                 shadowSetType(shadow, 1);
-                shadowSetSize(shadow, 10.0f * entry->scale.x * entry->scale2.x / 20.0f);
+                { f32 ts = float_10_8041a0cc * entry->scale.x; shadowSetSize(shadow, ts * entry->scale2.x / float_20_8041a0f4); }
             }
         noShadow:;
         }
@@ -911,20 +917,20 @@ void mobjCalcMtx(MapObjectEntry* entry) {
     maxTmp.z = animData->bboxMax.z;
     bboxMax = maxTmp;
 
-    entry->scale2.x = 10.0f * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
-    entry->scale2.y = 10.0f * (entry->scale.y * (f32)__fabs(bboxMax.y));
-    entry->scale2.z = 10.0f * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
+    entry->scale2.x = float_10_8041a0cc * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
+    entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
+    entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
 
-    if (strncmp(animData->fileName, "HOBJ_", strlen("HOBJ_")) == 0) {
-        entry->translation.z = 0.0f;
-        entry->scale2.z = 10.0f * (2.5f * entry->scale.z);
+    if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+        entry->translation.z = float_0_8041a0c8;
+        entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
     }
 
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xRot, 'x', MTXDegToRad(entry->rotation.x));
-    MTXRotRad(yRot, 'y', MTXDegToRad(entry->rotation.y));
-    MTXRotRad(zRot, 'z', MTXDegToRad(entry->rotation.z));
+    MTXRotRad(xRot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
+    MTXRotRad(yRot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
+    MTXRotRad(zRot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
     MTXConcat(trans, zRot, trans);
     MTXConcat(trans, yRot, trans);
     MTXConcat(trans, xRot, trans);
@@ -952,9 +958,9 @@ void mobjCalcMtx2(MapObjectEntry* entry) {
     // Matches fine here
     MTXTrans(trans, position.x, position.y, position.z);
     MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
-    MTXRotRad(xRot, 'x', MTXDegToRad(entry->rotation.x));
-    MTXRotRad(yRot, 'y', MTXDegToRad(entry->rotation.y));
-    MTXRotRad(zRot, 'z', MTXDegToRad(entry->rotation.z));
+    MTXRotRad(xRot, 'x', (float_deg2rad_8041a0dc * (entry->rotation.x)));
+    MTXRotRad(yRot, 'y', (float_deg2rad_8041a0dc * (entry->rotation.y)));
+    MTXRotRad(zRot, 'z', (float_deg2rad_8041a0dc * (entry->rotation.z)));
     MTXConcat(trans, zRot, trans);
     MTXConcat(trans, yRot, trans);
     MTXConcat(trans, xRot, trans);
@@ -1077,3 +1083,309 @@ static int mobjCheckKururingFloorItem(MapObjectEntry* entry) { // was always inl
         return 0;
     }
 }
+
+#pragma force_active on
+// ---- .sdata2 prefix (named, in original address order) ----
+__declspec(section ".sdata2") const f32 float_0_8041a0c8 = 0.0f;
+__declspec(section ".sdata2") const f32 float_10_8041a0cc = 10.0f;
+__declspec(section ".sdata2") const f32 float_1_8041a0d0 = 1.0f;
+__declspec(section ".sdata2") const f32 float_neg1_8041a0d4 = -1.0f;
+__declspec(section ".sdata2") const f32 float_neg0p5_8041a0d8 = -0.5f;
+__declspec(section ".sdata2") const f32 float_deg2rad_8041a0dc = 0.017453292f;
+__declspec(section ".sdata2") const char str_8041A0E0[8] = "HOBJ_";
+__declspec(section ".sdata2") const f32 float_2p5_8041a0e8 = 2.5f;
+__declspec(section ".sdata2") const f32 float_5_8041a0ec = 5.0f;
+__declspec(section ".sdata2") const f32 float_25_8041a0f0 = 25.0f;
+__declspec(section ".sdata2") const f32 float_20_8041a0f4 = 20.0f;
+__declspec(section ".sdata2") const f32 float_0p1_8041a0f8 = 0.1f;
+__declspec(section ".sdata2") const char str_8041A0FC[4] = "S_1";
+__declspec(section ".sdata2") const f32 float_0p5_8041a100 = 0.5f;
+__declspec(section ".sdata2") const char str_8041A104[8] = "MOBJ_";
+__declspec(section ".sdata2") const char str_8041A10C[8] = "MOBJ~";
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") u32 gap_09_8041A114_sdata2[1] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// ---- .sdata ----
+__declspec(section ".sdata") u32 cubeMSJ[5] = {
+    0x00010000, 0x00000000, 0x80000000, 0x00000000, 0x00000000
+};
+
+__declspec(section ".sdata") u32 front2MSJ[5] = {
+    0x00010000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+
+
+// ---- .data (after negone_one_374 above) ----
+__declspec(section ".data") u32 lbl_803083C8[2] = {
+    0xBF800000, 0x3F800000
+};
+
+static __declspec(section ".data") u32 one_negone_373[2] = {
+    0x3F800000, 0xBF800000
+};
+
+__declspec(section ".data") u32 lbl_803083D8[2] = {
+    0x3F800000, 0xBF800000
+};
+
+static __declspec(section ".data") u32 negone_one_360[2] = {
+    0xBF800000, 0x3F800000
+};
+
+__declspec(section ".data") u32 lbl_803083E8[2] = {
+    0xBF800000, 0x3F800000
+};
+
+static __declspec(section ".data") u32 one_negone_359[2] = {
+    0x3F800000, 0xBF800000
+};
+
+__declspec(section ".data") u32 lbl_803083F8[2] = {
+    0x3F800000, 0xBF800000
+};
+
+u32 cubeDVP[103] = {
+    0x00000008, 0xBF000000, 0x00000000, 0x3F000000, 0x3F000000, 0x00000000, 0x3F000000, 0xBF000000,
+    0x3F800000, 0x3F000000, 0x3F000000, 0x3F800000, 0x3F000000, 0xBF000000, 0x3F800000, 0xBF000000,
+    0x3F000000, 0x3F800000, 0xBF000000, 0xBF000000, 0x00000000, 0xBF000000, 0x3F000000, 0x00000000,
+    0xBF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+
+u32 cubeDVN[55] = {
+    0x00000006, 0x00000000, 0x00000000, 0x3F800000, 0x00000000, 0x3F800000, 0x00000000, 0x00000000,
+    0x00000000, 0xBF800000, 0x00000000, 0xBF800000, 0x00000000, 0x3F800000, 0x00000000, 0x00000000,
+    0xBF800000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+
+u32 cubeDDT[26] = {
+    (u32)(void*)cubeDVP, (u32)(void*)cubeDVN, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000
+};
+
+u32 cubeDN[1230] = {
+    0x00000004, 0x00000005, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00060005,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00020005, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00040005, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000004, 0x00070004, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00010004, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0x00050004, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x00030004, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000004, 0x00070003, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0x00060003, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00010003,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000003, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000004,
+    0x00050002, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00040002, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00070002, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0x00060002, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000004, 0x00030001, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00020001, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0x00050001, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00040001,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000004, 0x00010000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00030000, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00020000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+
+u32 cubeDP[19] = {
+    0x00000000, 0x00000006, 0x00000000, (u32)(void*)cubeDDT, (u32)(void*)cubeDN, (u32)((u8*)cubeDN +820), (u32)((u8*)cubeDN +1640), (u32)((u8*)cubeDN +2460),
+    (u32)((u8*)cubeDN +3280), (u32)((u8*)cubeDN +4100), 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000
+};
+
+u32 cubeDJ[26] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xBF000000,
+    0x00000000, 0xBF000000, 0x3F000000, 0x3F800000, 0x3F000000, 0x00000000, (u32)(void*)cubeMSJ, 0x00000001,
+    0x00000000, (u32)(void*)cubeDP
+};
+
+u32 headDP[19] = {
+    0x00000000, 0x00000001, 0x00000000, (u32)(void*)cubeDDT, (u32)((u8*)cubeDN +1640), 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000
+};
+
+u32 headDJ[26] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xBF000000,
+    0x00000000, 0xBF000000, 0x3F000000, 0x00000000, 0x3F000000, 0x00000000, (u32)(void*)cubeMSJ, 0x00000001,
+    0x00000000, (u32)(void*)headDP
+};
+
+u32 frontDP[19] = {
+    0x00000000, 0x00000001, 0x00000000, (u32)(void*)cubeDDT, (u32)((u8*)cubeDN +4100), 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000
+};
+
+u32 frontDJ[26] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xBF000000,
+    0x00000000, 0xBF000000, 0x3F000000, 0x3F800000, 0x3F000000, 0x00000000, (u32)(void*)cubeMSJ, 0x00000001,
+    0x00000000, (u32)(void*)frontDP
+};
+
+u32 front2DP[19] = {
+    0x00000000, 0x00000005, 0x00000000, (u32)(void*)cubeDDT, (u32)(void*)cubeDN, (u32)((u8*)cubeDN +820), (u32)((u8*)cubeDN +1640), (u32)((u8*)cubeDN +2460),
+    (u32)((u8*)cubeDN +3280), 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000
+};
+
+u32 front2DJ[26] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xBF000000,
+    0x00000000, 0xBF000000, 0x3F000000, 0x3F800000, 0x3F000000, 0x00000000, (u32)(void*)front2MSJ, 0x00000001,
+    0x00000000, (u32)(void*)front2DP
+};
+#pragma force_active reset

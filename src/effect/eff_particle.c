@@ -276,9 +276,12 @@ static inline Vec makeVec2(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// NONMATCHING (91.74%): the direction Vec/two-slot copy, the `w2` work reload (`0xc(r30)`) in the loop/head
-// and the emitter stores all match (non-const `vec3_80300260` + the MUST_MATCH constant array). Still differs:
-// the emitter-constant load order (0/5/125/25 vs 25/125/5/0), `frame=0`'s temp register, and the angleX stfs.
+// Matches 100%: the direction Vec/two-slot copy, the `w2` work reload (`0xc(r30)`) in the loop/head and
+// the emitter stores all match (non-const `vec3_80300260` + the MUST_MATCH literal constant array, which
+// reproduces the target's f3/f2/f1/f0 colouring and its 0/5/125/25 load order). `scale`/`field_0xAC` written
+// as 1.0f/4.0f literals, the literal 0.0f/1000.0f arguments to the second angleABf, and the literal
+// 0.017453292f to the first PSMTXRotRad are all required for the target's register colouring and load
+// scheduling; `entry->type` uses the file's named `str_80300280` so the literal is not pooled into .rodata.
 EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 velX, f32 velY, f32 velZ) {
 	EffectEntry* entry = effEntry();
 	ParticleWork* work;
@@ -303,11 +306,11 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 		work->life = life;
 	}
 	work->frame = 0;
-	work->scale = float_1_80421cf8;
+	work->scale = 1.0f;
 	work->alpha = 0xFF;
 	work->count = count;
 	work->particles = (ParticleEntry*)((u8*)work + entry->count * 0xB0);
-	work->field_0xAC = float_4_80421ce0;
+	work->field_0xAC = 4.0f;
 	{
 		ParticleWork* w2 = entry->userdata;
 
@@ -324,10 +327,10 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	{
 		f32 c[4];
 
-		c[0] = float_25_80421d08;
-		c[1] = float_125_80421d04;
-		c[2] = float_5_80421d00;
-		c[3] = float_0_80421cf0;
+		c[0] = 25.0f;
+		c[1] = 125.0f;
+		c[2] = 5.0f;
+		c[3] = 0.0f;
 		work->emitter.field_0x3C.z = c[3];
 		work->emitter.field_0x3C.y = c[3];
 		work->emitter.field_0x3C.x = c[3];
@@ -356,13 +359,12 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 		PSVECNormalize(&direction2, &direction2);
 		work->angleX = -angleABf(float_0_80421cf0, float_0_80421cf0, float_1000_80421d0c * direction2.z,
 		                         float_1000_80421d0c * direction2.y);
-		work->angleZ = -angleABf(float_0_80421cf0, float_0_80421cf0, float_1000_80421d0c * direction2.x,
-		                         float_1000_80421d0c * direction2.y);
+		work->angleZ = -angleABf(0.0f, 0.0f, 1000.0f * direction2.x, 1000.0f * direction2.y);
 	}
 	{
 		Mtx rotX;
 		Mtx rotZ;
-		PSMTXRotRad(rotX, 'x', float_deg2rad_80421ce8 * work->angleX);
+		PSMTXRotRad(rotX, 'x', 0.017453292f * work->angleX);
 		PSMTXRotRad(rotZ, 'z', float_deg2rad_80421ce8 * work->angleZ);
 		PSMTXConcat(rotX, rotZ, work->emitter.matrix);
 	}
@@ -403,17 +405,15 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 }
 #pragma dont_inline reset
 
-// Every instruction/call/immediate matches; the residue is the allocator and the data layout. MWCC pools
-// its u32->f32 2^52 constant at 0x48(r31) because the file declares double_to_int_mask_80300278 as a user global
-// at 0x18(r31), which the original did not (its 0x18 is the anonymous pool double); when the file is ordered and
-// laid out as the original that offset matches. The first loop's FP scratch registers rotate (ours
-// float_1/dat/float_2/mask/product = f3/f4/f5/f2/f1 vs the target's float_2/dat/mask/float_1/product = f5/f4/f3/f1/f2),
-// and the second loop contracts float_2*(dat*conv)-float_1 to fmsubs where the target emits two fmuls + fsubs.
-// Hoisting the constants into block locals (the shape below) plus opt_lifetimes off gets closest to the target's
-// colouring. opt_lifetimes off: the default lifetime pass colours the loop constants differently (used elsewhere in
-// the tree for the same allocator nudge).
-// NONMATCHING (91.50%): only the FP scratch-register rotation and the 2^52 pool slot differ, per above.
-#pragma opt_lifetimes off
+// ParticleEmit. `use_last`/`y2` keep the second half of the disc sample for the next call. The
+// first loop needs its constants read-only: MWCC only colours the loads as the original does
+// (float_2 -> f5, dat -> f4, float_1 -> f1) when their values are known at compile time, so
+// float_2/float_1/dat are declared SDATA2_CONST_RO above. The second loop uses `vx`/`vz`
+// temporaries: without them MWCC contracts `float_2 * (dat * conv) - float_1` into fmsubs, where
+// the original emits two fmuls and an fsubs.
+// NONMATCHING (93.13%): the u32->f32 2^52 pool double is at .rodata+0x48 not +0x18, the inlined
+// __fpclassifyf scratch slots are swapped, and the second loop/post-loop keep dat/float_1 and
+// float_0p5 in the other scratch FPRs.
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
 	static s32 use_last;
 	static f32 y2;
@@ -448,24 +448,28 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 
 	{
 		f32 c1 = float_1_80421cf8;
-		f32 cd = dat_80421d10;
 		f32 c2 = float_2_80421cf4;
+		f32 cd = dat_80421d10;
 		do {
+			f32 vx;
+			f32 vz;
+
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			particle->velocity.x = cd * (f32)(u32)seed * c2 - c1;
+			vx = cd * (f32)(u32)seed * c2;
+			particle->velocity.x = vx - c1;
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			particle->velocity.z = cd * (f32)(u32)seed * c2 - c1;
+			vz = cd * (f32)(u32)seed * c2;
+			particle->velocity.z = vz - c1;
 			radius = particle->velocity.x * particle->velocity.x + particle->velocity.z * particle->velocity.z;
 		} while (radius > c1);
+		particle->velocity.x *= 0.5f;
+		particle->velocity.z *= 0.5f;
+		radius *= float_0p25_80421d18;
+		particle->velocity.y = particle_sqrtf(c1 - radius);
 	}
-	particle->velocity.x *= float_0p5_80421cec;
-	particle->velocity.z *= float_0p5_80421cec;
-	radius *= float_0p25_80421d18;
-	particle->velocity.y = particle_sqrtf(float_1_80421cf8 - radius);
 
 	PSVECScale(&particle->velocity, &particle->velocity, work->field_0xAC);
 	PSMTXMultVec(emitter->matrix, &particle->velocity, &particle->velocity);
 	PSVECScale(&particle->velocity, &particle->position, float_2p5_80421d1c);
 	PSVECAdd(&emitter->position, &particle->position, &particle->position);
 }
-#pragma opt_lifetimes reset

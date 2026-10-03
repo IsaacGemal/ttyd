@@ -246,31 +246,35 @@ extern u32 lp[1];
 
 // The instruction sequence and frame layout (0x120) match. Declaring `i`/`j` first
 // reproduces the outer-loop integer colouring and re-deriving `pd` inside the entry-match
-// block reproduces the retail r20 reload. Removing the `pi` local (comparing
-// float_3p1416_bom_00007070 directly) puts pi in f31 and the constants on f22..f30 as
-// retail has them; the local PoseState* `st`/`st2` fixed most of the integer colouring.
-// The callee-saved FPR values now match (c1=f23, c2=f24, ccos=f22, zero=f25, double=f26,
-// 6.2832=f27, 32767=f28, 400=f29, 500=f30, pi=f31, angle=f21). Assigning c1/ccos/c2
-// inside the loop (right after the sinv seed) rather than in the preheader is what makes
-// MWCC schedule the retail constant-load order. Casting the state address to bytes
+// block reproduces the retail r20 reload. Comparing float_3p1416_bom_00007070 directly (no
+// `pi` local) puts pi in f31 and the constants on f22..f30 as retail has them; the local
+// PoseState* `st`/`st2` fixed most of the integer colouring. The callee-saved FPR values
+// match (c1=f23, c2=f24, ccos=f22, zero=f25, double=f26, 6.2832=f27, 32767=f28, 400=f29,
+// 500=f30, pi=f31, angle=f21). Assigning c1/c2 right after the sinv seed and ccos just
+// before the second block is what makes MWCC hoist the constant loads in retail's order
+// (0.16605, 1.0, pi, 0.4967). Casting the state address to bytes
 // (`(PoseState*)((u8*)pd->states + i * sizeof(PoseState))`) folds the array base 0xB0 into
-// the store displacement (0xcc/0xc4/0xb0 off pd+i*0x30) as retail does, and swapping the
-// two sin-block scratch temps is what puts the polynomial working reg where retail wants
-// it. Still differs: (a) the preheader GPR base register allocation and load order, and
-// (b) the loop scratch f0/f1 colouring.
-// NONMATCHING (88.62%): a permuter candidate - only register colouring differs.
+// the store displacement (0xcc/0xc4/0xb0 off pd+i*0x30) as retail does.
+// Still differs: only the loop scratch/FPR pairs are swapped. Retail keeps `range` in f0
+// and the second sine scratch in f2; ours puts range in f2 and the second scratch in f0
+// (the primary scratch f1 and every callee-saved FPR match). The preheader GPR base
+// registers, the pose/e r23/r26 pair and the i2f stack slot (retail 0x28, ours 0x30) follow
+// from that one swap. Every compare and constant is checked against the asm.
+#pragma opt_lifetimes off   // stop MWCC keeping every loop-invariant constant live (f19..f31)
+#pragma opt_common_subs off // same: reuse retail's f22..f31 set instead of a wider one
+// NONMATCHING (98.99%): only the loop scratch/FPR pairs are swapped; see above.
 static void ext_init(void) {
+    f32 f0;
+    ExtPose* pose;
     s32 i;
     s32 j;
-    PoseData* pd;
-    ExtPose* pose;
     PoseEntry* e;
     f32 c2;
     f32 c1;
     f32 ccos;
     f32 angle;
     f32 range;
-    f32 f0;
+    PoseData* pd;
     f32 sinv;
     f32 f1;
 
@@ -292,41 +296,41 @@ static void ext_init(void) {
         range = (f32)rand() * float_400_bom_000070bc / float_32767_bom_000070ac + float_500_bom_000070e8;
         sinv = float_0p00761_bom_00007068;
         c1 = float_0p16605_bom_0000706c;
-        ccos = float_0p4967_bom_00007080;
         c2 = float_1_bom_00006ffc;
         if (angle <= float_3p1416_bom_00007070) {
             if (angle <= float_1p5708_bom_00007074) {
-                f1 = angle * angle;
-                sinv = sinv * f1 - c1;
-                sinv = sinv * f1 + c2;
+                f0 = angle * angle;
+                sinv = sinv * f0 - c1;
+                sinv = sinv * f0 + c2;
                 sinv = sinv * angle;
             } else {
-                f1 = angle - float_1p5708_bom_00007074;
-                f0 = float_1p5708_bom_00007074 - f1;
-                f1 = f0 * f0;
-                sinv = sinv * f1 - c1;
-                sinv = sinv * f1 + c2;
-                sinv = sinv * f0;
+                f0 = angle - float_1p5708_bom_00007074;
+                f1 = float_1p5708_bom_00007074 - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - c1;
+                sinv = sinv * f0 + c2;
+                sinv = sinv * f1;
             }
         } else if (angle < float_4p7124_bom_00007078) {
-            f0 = angle - float_3p1416_bom_00007070;
-            f1 = f0 * f0;
-            sinv = sinv * f1 - c1;
-            sinv = sinv * f1 + c2;
-            sinv = sinv * f0;
+            f1 = angle - float_3p1416_bom_00007070;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
             sinv = -sinv;
         } else {
-            f1 = angle - float_4p7124_bom_00007078;
-            f0 = float_1p5708_bom_00007074 - f1;
-            f1 = f0 * f0;
-            sinv = sinv * f1 - c1;
-            sinv = sinv * f1 + c2;
-            sinv = sinv * f0;
+            f0 = angle - float_4p7124_bom_00007078;
+            f1 = float_1p5708_bom_00007074 - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
             sinv = -sinv;
         }
         (*pose->matrix)[0][3] = range * sinv;
         (*pose->matrix)[1][3] = zero_bom_00007004;
         sinv = float_0p03705_bom_0000707c;
+        ccos = float_0p4967_bom_00007080;
         if (angle <= float_3p1416_bom_00007070) {
             if (angle <= float_1p5708_bom_00007074) {
                 f0 = angle * angle;
@@ -374,6 +378,8 @@ static void ext_init(void) {
         }
     }
 }
+#pragma opt_lifetimes reset   // end of ext_init scope
+#pragma opt_common_subs reset // end of ext_init scope
 
 
 EVT_BEGIN(evt_bom1000)

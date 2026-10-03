@@ -2293,12 +2293,16 @@ void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluM
     } while (0)
 
 // _animPoseDrawMtx
-// The three inlined copies of the camera-angle helper keep the ±360 angle constants in
-// f1/f0 and reload them at each loop, so the compiler must not merge the loads.
-// Declaration/use order, locals and the other -O pragmas were tried and only
-// opt_common_subs changes the colouring.
-// NONMATCHING (96.82%): the inlined camera-angle helper's 360/-360 constants are still
-// swapped (f0/f1) and the lastFrameZero block's GPRs differ.
+// The three inlined copies of the camera-angle helper and the two caller normalisations
+// read the file's named angle constants; MWCC must reload them at each loop rather than
+// CSE one register across the loops.
+#pragma opt_common_subs off // keeps the lastFrameZero block's GPR colouring
+// Still different: the helper's first-loop constants land swapped (360 in f0, -360 in f1; the
+// target has 360 in f1, -360 in f0), which also costs one extra 360 reload after the loops; the
+// rotation normalisation (loop-2 360 in f4 vs f2; rotationY/diff in f2/f1 vs the target's f1/f4)
+// and the lastFrameZero scratch (posNum/nrmNum/RP in r8/r0/r5 vs the target's r6/r5/r8) differ only
+// in register colouring.
+// NONMATCHING (98.61%): register colouring only (see above).
 void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     AnimationPoseData* poseData;
     AnimData* animData;
@@ -2417,8 +2421,9 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
         } else {
             pose->rotationY = float_0p1_80419ab4 * (pose->field_0x7C - pose->rotationY) + pose->rotationY;
         }
-        if (pose->rotationY != float_0_80419a48) {
-            PSMTXRotRad(rotMtx, 'y', float_deg2rad_80419a4c * pose->rotationY);
+        rotY = pose->rotationY;
+        if (float_0_80419a48 != rotY) {
+            PSMTXRotRad(rotMtx, 'y', float_deg2rad_80419a4c * rotY);
             PSMTXConcat(matrix, rotMtx, dstMtx);
             matrix = dstMtx;
         }
@@ -2448,20 +2453,18 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
         if (pose->typeFlags & 2) {
             AnimationPoseData* data;
             s32 posNum;
-            s32 nrmNum;
 
             data = animPoseGetBaseData(pose);
             posNum = data->mBufferPosNum;
-            nrmNum = data->mBufferNrmNum;
-            if (posNum + nrmNum <= (s32)wp->mFloatScratchRP) {
-                if ((s32)wp->mFloatScratchWP + posNum + nrmNum > (s32)wp->mFloatScratchRP) {
+            if (posNum + (s32)data->mBufferNrmNum <= (s32)wp->mFloatScratchRP) {
+                if ((s32)wp->mFloatScratchWP + posNum + (s32)data->mBufferNrmNum > (s32)wp->mFloatScratchRP) {
                     wp->mFloatScratchWP = 0;
                 }
                 wp->mbUseFloatScratch = 1;
                 wp->vtxArrayPos = (Vec*)((u8*)wp->mpFloatScratch + wp->mFloatScratchWP * 12);
                 wp->mFloatScratchWP += posNum;
                 wp->vtxArrayNrm = (Vec*)((u8*)wp->mpFloatScratch + wp->mFloatScratchWP * 12);
-                wp->mFloatScratchWP += nrmNum;
+                wp->mFloatScratchWP += (s32)data->mBufferNrmNum;
             }
             animPoseMain(poseIndex);
             wp->mbUseFloatScratch = 0;
@@ -2487,6 +2490,7 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
     GXInvalidateVtxCache();
     dispProc(-1, poseData->groupCount - 1, field_0x28, field_0x2c, field_0x30);
 }
+#pragma opt_common_subs reset
 
 // Searches ANIM_POSE_DATA_ANIMS(data) for `name` when i is negative (i is the string's address used as
 // a sentinel), then clamps the result into [0, top). Used by animPoseDrawMtx below. The `return` inside the loop makes MWCC emit the target's
@@ -3033,6 +3037,176 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
 }
 
 // animPoseDisp_MakeExtTexture
+
+extern const f32 float_16p667_80419a60;
+extern GXColor dat_80419a3c;
+extern GXColor dat_80419a40;
+// All logic/constants/offsets match (including every compare direction and signedness). What remains is
+// callee-saved register colouring: `data` now lands in r18 as in the target, but the search loop's `top`
+// and the compiler's 0x40-stride induction pointer have swapped registers (target top r26 / pointer r17;
+// here top r17 / pointer r26; the induction pointer wants data-1 = r17, which top took first). The target
+// also sets i=0 before loading gp and emits `offset = i` as `mr r28, r31`, where this build folds the
+// known-zero i to `li r28, 0`. Declaring `BOOL inBattle;` before `s32 offset;`, and `data` before `top`,
+// is what fixes the inBattle r26 / offset r28 split and puts data in r18. The `p` shadow (r28 in the
+// target) reproduces the target's re-materialised pose in the animId-fixup block; the rendering tail
+// matches byte-for-byte. A declaration-order sweep of the eight locals and every structural variant
+// tried leave the ceiling at 98.35%; the top/pointer swap is a pure graph-colouring tie-break.
+// NONMATCHING (98.35%): callee-saved GPR colouring in the two search loops only.
+void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void* texObj, void* base,
+                                 f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
+    s32 i;
+    BOOL inBattle;
+    s32 offset;
+    s32 animId;
+    s32 found;
+    AnimationPoseData* data;
+    s32 top;
+    AnimationPose* pose;
+    AnimationPose savedPose;
+
+    f32 f30;
+    f32 f29;
+    Mtx mtx;
+    u16 left;
+    u16 topEdge;
+    u16 right;
+    u16 bottom;
+    u16 w;
+    u16 h;
+    s32 flags;
+    GXColor color0;
+    GXColor color1;
+    s32 materialFlag;
+    OSTime time;
+    s32 cx;
+    s32 cy;
+
+    i = 0;
+    offset = 0;
+    inBattle = (gp->inBattle != 0);
+    while (i < wp->totalPoses) {
+        pose = (AnimationPose*)((u8*)wp->poses + offset);
+        if ((pose->flags & 1) && pose->type == inBattle &&
+            !strcmp(animPoseGetBaseData(pose)->fileName, name)) {
+            break;
+        }
+        offset += 0x170;
+        i++;
+    }
+    if (i == wp->totalPoses) {
+        i = -1;
+    }
+    if (i < 0) {
+        return;
+    }
+    pose = &wp->poses[i];
+    savedPose = *pose;
+    pose->paperId = -1;
+    {
+        // Shadow of the same address: the target materialises the pose again here (r28) and keeps
+        // the outer copy (r30) live, i.e. the original did not share one `pose` variable. Using the
+        // shadow reproduces the target's non-CSEd pair (see the animPoseDrawMtx note).
+        AnimationPose* p = &wp->poses[i];
+        data = animPoseGetBaseData(p);
+        animId = (s32)field_0x4;
+        top = data->mAnimCount;
+        found = animPoseSearchAnimIdx(data, (const char*)field_0x4, animId, top);
+        if (found != p->animId) {
+            p->animId = found;
+            if (p->paperId != -1 && (p->flags & 2)) {
+                p->flags |= 4;
+            }
+            p->localTime = animTimeGetTime(p->type);
+            p->lastFrameZero = -1;
+            p->lastFrameTime = 0.0f;
+            p->field_0x80 = 0;
+            p->loopTime = 0.0f;
+        }
+    }
+    pose->localTime = animTimeGetTime(pose->type);
+    pose->lastFrameZero = -1;
+    pose->lastFrameTime = 0.0f;
+    pose->field_0x80 = 0;
+    pose->loopTime = 0.0f;
+    {
+        // Shadow again: the target's `- time` reset runs on a re-materialised &wp->poses[i] (r29,
+        // reusing the post-loop i*0x170) and its paperId fixup reads that copy. The shadow has to be
+        // declared before `time =` so the compiler schedules the fmuls above it and the (OSTime)
+        // conversion below it, as the target does; moving it after costs ~1.4%.
+        AnimationPose* p2 = &wp->poses[i];
+        time = (OSTime)(float_16p667_80419a60 * f1);
+        p2->localTime = animTimeGetTime(p2->type) - time;
+        p2->mLocalTimeInit = p2->localTime;
+        if (p2->paperId != -1) {
+            AnimationPose* pera = &wp->poses[p2->paperId];
+
+            if (!(pera->typeFlags & 2)) {
+                pera->localTime = p2->localTime;
+            }
+        }
+    }
+    animPoseMain(i);
+    f30 = float_0p5_80419a64 * (f32)DEMOGetRenderModeObj()->fbWidth;
+    f29 = float_0p75_80419a68 * (f32)DEMOGetRenderModeObj()->efbHeight;
+    sysWaitDrawSync();
+    GXClearBoundingBox();
+    PSMTXTrans(mtx, float_0_80419a48, float_0p25_80419a6c * -(f32)DEMOGetRenderModeObj()->efbHeight, float_0_80419a48);
+    flags = pose->flags;
+    color0 = pose->materialColor;
+    color1 = pose->materialColor2;
+    materialFlag = pose->materialFlag;
+    pose->flags &= ~8;
+    pose->materialFlag = 0;
+    pose->materialColor = dat_80419a3c;
+    pose->materialColor2 = dat_80419a40;
+    _animPoseDrawMtx(pose, mtx, 1, float_0_80419a48, f2);
+    _animPoseDrawMtx(pose, mtx, 2, float_0_80419a48, f2);
+    _animPoseDrawMtx(pose, mtx, 3, float_0_80419a48, f2);
+    pose->materialColor = color0;
+    pose->materialColor2 = color1;
+    pose->flags = flags;
+    pose->materialFlag = materialFlag;
+    sysWaitDrawSync();
+    GXReadBoundingBox(&left, &topEdge, &right, &bottom);
+    if (left > right) {
+        left = 0;
+        topEdge = 0;
+        right = 0x10;
+        bottom = 0x10;
+    }
+    if (left < 2) {
+        left = 2;
+    }
+    if (topEdge < 2) {
+        topEdge = 2;
+    }
+    if (right > DEMOGetRenderModeObj()->fbWidth - 2) {
+        right = DEMOGetRenderModeObj()->fbWidth - 2;
+    }
+    if (topEdge > DEMOGetRenderModeObj()->efbHeight - 2) {
+        topEdge = DEMOGetRenderModeObj()->efbHeight - 2;
+    }
+    left -= left & 1;
+    topEdge -= topEdge & 1;
+    right += right & 1;
+    bottom += bottom & 1;
+    w = right - left;
+    h = bottom - topEdge;
+    GXSetTexCopySrc(left, topEdge, w, h);
+    GXSetTexCopyDst(w, h, 5, 0);
+    anim_ext_tex_size += GXGetTexBufferSize(w, h, 5, 0, 0);
+    *(void**)base = smartAlloc(GXGetTexBufferSize(w, h, 5, 0, 0), 1);
+    GXCopyTex(**(void***)base, 1);
+    GXPixModeSync();
+    GXInitTexObj(texObj, **(void***)base, w, h, 5, 0, 0, 0);
+    cx = (s32)f30;
+    cy = (s32)f29;
+    *out0 = left - cx;
+    *out1 = topEdge - cy;
+    *out2 = right - cx;
+    *out3 = bottom - cy;
+    *pose = savedPose;
+}
 
 void animSetPaperTexMtx(Mtx mtx1, Mtx mtx2, Mtx mtx3) {
     if (mtx1 == NULL) {

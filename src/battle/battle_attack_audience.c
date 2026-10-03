@@ -254,14 +254,25 @@ void* btlataudGetMoveEventPtr(s32 unitId) {
 #undef pz
 #endif
 
-// NONMATCHING (93.75%): MWCC emits the btlataudevtDummy base plus a separate `addi 0x4`; the original
-// folds the +4 into the @ha/@l reloc addend (btlataudevtDummy+0x4). No C form folds under this compiler:
-// arr+1, &arr[1], (char*)arr+4, struct/flexible-array/union member addresses, signed/unsigned/const/
-// volatile, all GC/Wii MWCC versions and the -O/-model/-opt flag variants materialise the base then add.
+s32 btlataudevtDummyBody[] = {
+    0x0005005B, (s32)_get_attack_aud_no, 0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0003005B, (s32)_attack_aud, 0xFE363C83,
+    0x00000000,
+    0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
+    0x00000002, 0x00000001,
+};
+// The original's `btlataudevtDummy+0x4` is a single RELA addend on a `lis`/`addi` pair. MWCC 2.6 emits the
+// base plus a separate `addi 0x4` for `btlataudevtDummy + 1` (every C form and every GC/Wii compiler version
+// tried); the only way to the two-instruction form is to name the body at +0x4, with the table's first zero
+// word emitted separately as btlataudevtDummy. btlataudevtDummy keeps its own address and zero word.
 s32* btlataudGetAttackEventPtr(s32 index) {
     s32* data = BtlUnit_GetData(BattleGetUnitPtr(_battleWorkPointer, index), 6);
     if (data == NULL) {
+#ifdef MUST_MATCH
+        return btlataudevtDummyBody;
+#else
         return btlataudevtDummy + 1;
+#endif
     }
     return data;
 }

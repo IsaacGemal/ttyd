@@ -1120,6 +1120,133 @@ s32 evt_mobj_delete(EventEntry* event, BOOL isFirstCall) {
 
 
 
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads these objects through the vec3_802c3dc8 / negone_one_374 base registers.
+#define IB_R(off, sym, val) ((const char*)(rbase + (off)))
+#define IB_D(off, sym) ((s32*)(dbase + (off)))
+#define IB_VEC(off, sym, val) (*(Vec*)(rbase + (off)))
+#define IB_F64(off, sym, val) (*(f64*)(rbase + (off)))
+#else
+#define IB_R(off, sym, val) (val)
+#define IB_D(off, sym) ((s32*)(sym))
+#define IB_VEC(off, sym, val) (val)
+#define IB_F64(off, sym, val) (val)
+#endif
+// Itembox per-frame update callback (obj->unk1D0). Installed by evt_mobj_itembox.
+s32 mobj_itembox(MapObjectEntry* obj) {
+#ifdef MUST_MATCH
+    u8* dbase = (u8*)negone_one_374;
+    u8* rbase = (u8*)vec3_802c3dc8;
+#endif
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                marioKeyOff();
+                partyKeyOff();
+                marioStSystemLevel(1);
+                obj->eventId = 0;
+                mobjRunEvent(obj, obj->unk1D4);
+                obj->unk1DC++;
+            }
+            break;
+        case 1:
+            if (obj->eventId != 0) {
+                if (evtCheckID(obj->eventId) == 1) {
+                    break;
+                }
+                if (obj->flags & 0x1000) {
+                    obj->flags &= ~0x1000;
+                    obj->flags &= ~8;
+                    marioKeyOn();
+                    partyKeyOn();
+                    marioStSystemLevel(0);
+                    obj->eventId = 0;
+                    obj->unk1DC = 0;
+                    break;
+                }
+            }
+            obj->unk1DC++;
+            break;
+        case 2: {
+            EventEntry* event;
+
+            if (strcmp(obj->animName, IB_R(0x6A0, str_802C4468, "MOBJ_TreasureBox")) == 0 ||
+                strcmp(obj->animName, IB_R(0x6C8, str_802C4490, "MOBJ_GrayTreasureBox")) == 0) {
+                event = evtEntryType(IB_D(0x90, evt_box_sound1), 0, 0, 0);
+                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
+            } else if (strcmp(obj->animName, IB_R(0x6E0, str_802C44A8, "MOBJ_BlackTreasureBox")) == 0) {
+                event = evtEntryType(IB_D(0x130, evt_box_sound3), 0, 0, 0);
+                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
+            } else {
+                event = evtEntryType(IB_D(0xE0, evt_box_sound2), 0, 0, 0);
+                event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
+                event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
+                event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
+            }
+            animPoseSetAnim(obj->poseId, str_8041A118, 1);
+            obj->eventId = 0;
+            mobjRunEvent(obj, obj->unk1D8);
+            obj->unk1DC++;
+            break;
+        }
+        case 3: {
+            AnimationPoseData* animData;
+            Vec maxTmp;
+            Vec minTmp;
+            Vec bboxMax;
+            Vec bboxMin;
+
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            if (obj->eventId != 0 && evtCheckID(obj->eventId) == 1) {
+                break;
+            }
+            obj->flags &= ~0x20;
+            animData = animPoseGetAnimBaseDataPtr(obj->poseId);
+            minTmp = IB_VEC(0x210, vec3_802c3fd8, ((Vec){0.0f, 0.0f, 0.0f}));
+            minTmp.x = animData->bboxMin.x;
+            minTmp.y = animData->bboxMin.y;
+            minTmp.z = animData->bboxMin.z;
+            bboxMin = minTmp;
+            maxTmp = IB_VEC(0x21C, vec3_802c3fe4, ((Vec){0.0f, 0.0f, 0.0f}));
+            maxTmp.x = animData->bboxMax.x;
+            maxTmp.y = animData->bboxMax.y;
+            maxTmp.z = animData->bboxMax.z;
+            bboxMax = maxTmp;
+            bboxMin.z = bboxMin.z - IB_F64(0x710, double_0p2_802c44d8, ((f64)0.2f)) * __fabsf(bboxMax.y - bboxMin.y);
+            PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
+            PSVECScale(&obj->translation, &obj->translation, float_0p5_8041a15c);
+            PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
+            obj->translation.y = float_0_8041a150;
+            obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
+            obj->scale2.z = obj->scale2.z * float_1p2_8041a20c;
+            mobjCalcMtx2(obj);
+            marioKeyOn();
+            partyKeyOn();
+            marioStSystemLevel(0);
+            obj->eventId = 0;
+            obj->unk1DC = 0x63;
+            break;
+        }
+        case 0x63:
+            evtSetValue(NULL, obj->unk1E4, 1);
+            obj->flags |= 8;
+            obj->flags &= ~0x20;
+            if (strcmp(obj->animName, IB_R(0x6E0, str_802C44A8, "MOBJ_BlackTreasureBox")) == 0) {
+                animPoseSetAnim(obj->poseId, str_8041A218, 1);
+            } else {
+                animPoseSetAnim(obj->poseId, str_8041A1C0, 1);
+            }
+            break;
+    }
+    return 0;
+}
+
 s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
     u8* base = (u8*)vec3_802c3dc8;
     s32* args = event->args;
@@ -3011,6 +3138,7 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
 extern Vec vec3_802c3ef4[];
 extern const char str_802C41DC[];
 extern const char str_802C41F0[];
+
 
 
 

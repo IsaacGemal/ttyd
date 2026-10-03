@@ -3,6 +3,7 @@
 #include <dolphin/types.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include "driver/camdrv.h"
 
 typedef struct ExtPose {
 	u32 flags;      //0x0
@@ -20,6 +21,13 @@ typedef struct ExtTexture {
 	GXTexObj texObj;    //0x4
 	GXTexRegion region; //0x24
 } ExtTexture;
+
+// 0xC-byte entry `param` points at in extMakeTexture/extEntry (name, argument, scale).
+typedef struct ExtMakeTextureEntry {
+	const char* name; //0x0
+	void* field_0x4;  //0x4
+	f32 field_0x8;    //0x8
+} ExtMakeTextureEntry;
 
 typedef struct ExtSortEntry {
 	s32 field_0x0; //0x0
@@ -62,5 +70,6 @@ s32 extGetPoseNum(void);
 void extPoseDraw(s32 poseId);
 ExtPose* extGetPosePtr(void);
 void extLoadShadowMtx(Mtx mtx);
+void extMakeTexture(CameraId camId, void* param);
 void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void));
 void extReset(void);
