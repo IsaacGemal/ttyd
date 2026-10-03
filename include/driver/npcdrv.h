@@ -270,6 +270,8 @@ void npcBlurOn(const char* name);
 void npcBlurOff(const char* name);
 void _npcGroupDead(NpcEntry* entry, s32 type);
 void* fbatHitCheck(s32 a1, s32 a2);  // a pointer: fbatEncountCheck reads 0x28 and 0x104 through it
+NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle);
+NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius);
 void npcGroupDead(NpcEntry* entry, s32 type);
 void npcDisp_xlu(CameraId cameraId, void* param);
 void npcDisp(CameraId camId, void* param);

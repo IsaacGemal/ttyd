@@ -259,9 +259,9 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     return hit;
 }
 
-// NONMATCHING (96.96%): frame/query offsets/scheduling mostly match; wins were reusing `d` for the second
-// query, plain `if (hit != NULL)` both blocks, and `partyNrmToAngle(&n)`. Left: callee-saved GPRs
-// (orig party=r30/pos=r31/vec3=r29/hit2=r28), an f4/f6 swap in the push-outs, rodata doubles, if-layout.
+// NONMATCHING (97.08%): GPR rotation (orig party=r30/pos=r31/vec3=r29, ours party=r29/pos=r30/vec3=r31),
+// f4/f6 nor.z-vs-dot swap in the push-outs, pooled i2f double (0xc0(r29) vs 0x128(r31)), first-if branch
+// layout and the deferred `mr r28, r3`. Declaration-order permutations and pragma sweeps do not move it.
 HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     HitCheckQuery query1;
     HitCheckQuery query2;
@@ -325,8 +325,8 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
         h = 1.0f;
     }
     p = party->position;
-    p.y += h;
     f31 = 0.5f * *(f32*)((u8*)party + 0xF4) + dist;
+    p.y += h;
     query2.targetPos = p;
     query2.targetDir = d;
     query2.targetDistance = f31;
@@ -497,9 +497,11 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
 // into `hit` at the end of each arm reproduces the retail phi (raw r3 tested, copy only inside the arm).
 // Keeping a second live `n2` copy of the hit normal (the original does the same) fixes the query offset
 // (0x30) and the frame (0x150); using only `n` collapsed that slot and shifted the whole frame down 0x10.
+// Hoisting query.hitPos.y and query.hitPos.z into locals around the first ROUND_MILLI (`hpy`/`hpz`,
+// placed after the first rounding) took the function 87.17% -> 88.82% (87 -> 83 diffs).
 // Remaining: FP register colouring (f24/f25/f26 rotated), the pooled i2f magic double (ours sits at
 // rodata+0x128, the original's named object at +0xC0), and some statement scheduling.
-// NONMATCHING (87.17%): FP colouring + magic-double offset
+// NONMATCHING (88.82%): FP colouring + magic-double offset
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
     f32 ny100;
     Vec n;
@@ -516,6 +518,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     f32 hxyz[3];
     f32 h;
     f32 f24;
+    f32 hpy, hpz;
 
     f24 = a + float_0p01_8041b418;
     *(Vec*)party->field_C4 = vec3_802cd338;
@@ -558,8 +561,10 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
         hit = h2;
     } else {
         hxyz[0] = ROUND_MILLI(query.hitPos.x);
-        hxyz[1] = ROUND_MILLI(query.hitPos.y);
-        hxyz[2] = ROUND_MILLI(query.hitPos.z);
+        hpy = query.hitPos.y;
+        hpz = query.hitPos.z;
+        hxyz[1] = ROUND_MILLI(hpy);
+        hxyz[2] = ROUND_MILLI(hpz);
         n = query.hitNormal;
         n2 = n;
         ny100 = float_100_8041b3f8 * n2.y;
@@ -589,8 +594,11 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
 
 // The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). Giving the
 // first hitCheckVecFilter result its own variable (h2) and copying it into `hit` after the test removes the
-// r27/r3 live-range split. The remaining diffs are FP register colouring (f19-f31 rotated).
-// NONMATCHING (98.50%): FP colouring
+// r27/r3 live-range split. Loading px before the offCos/targetDist statements fixes the px/pz load order.
+// Splitting the f32 declarations and reordering them (hitY early, bestY/targetDist/offSin moved) cut the
+// diffs to 45. The rest is FP register colouring: original has py=f21, targetDist=f26, offCos=f23,
+// noCos=f28, off=f22 while ours has py=f28, targetDist=f21, offCos=f26, noCos=f23, off=f21.
+// NONMATCHING (98.79%): FP register colouring
 HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     HitCheckQuery query;
     Vec targetPos;
@@ -600,20 +608,25 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     Vec tmpB;
     HitEntry* hit;
     HitEntry* best;
-    f32 h;
-    f32 off;
-    f32 rad;
-    f32 s, c;
-    f32 noSin, noCos;
-    f32 offSin, offCos;
-    f32 y;
-    f32 px, py, pz;
-    f32 targetDist;
-    f32 hitY;
-    HitEntry* h2;
-    f32 bestY;
     f32 dz;
+    f32 off;
+    f32 hitY;
+    f32 rad;
+    f32 s;
+    f32 c;
+    f32 py;
+    f32 noCos;
+    f32 noSin;
+    f32 offCos;
+    f32 y;
+    f32 pz;
+    f32 bestY;
+    f32 targetDist;
+    f32 offSin;
+    HitEntry* h2;
+    f32 h;
     f32 dx;
+    f32 px;
     s32 i;
 
     if (party->flags & 0x02000000) {
@@ -641,10 +654,10 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     py = party->position.y;
     noSin = -offSin;
     y = py + h;
+    px = party->position.x;
     offCos = float_0p375_8041b434 * (party->field_F4 * -c);
     targetDist = h + off;
     pz = party->position.z;
-    px = party->position.x;
     noCos = -offCos;
     dir = vec3_802cd32c;
     best = NULL;

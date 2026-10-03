@@ -115,22 +115,23 @@ void parsePopNext(void) {
 
 
 
-// 97.23%: control flow and every instruction shape match; only volatile register names differ.
-// The original puts state=r5, tokenStart=r6, the parse base temp=r7, base=r4, i=r10, end=r0; this version
-// gets base=r4, i=r10, end=r0 but state=r9, tokenStart=r8, parse temp=r5, which cascades into the token-scan
-// scratch registers (r5/r6/r7 vs r7/r8/r9) and case 0's i/src/q/src2 (the original's `mr r10, r6; i =
-// tokenStart` becomes a coalesced copy here). Declaration order is load-bearing (all 7! orders tried).
-// New evidence: making `state` born at function entry (`s32 state = 0;` at the top) gives the original's
-// state=r5 and parse temp=r7, and the token scan's scratch then lands in r8/r9; but the compiler also moves
-// the parse index/end from r0 to r4 (base r4 -> r6, end r0 -> r4) and hoists the `li r5,0` to the entry, so
-// that form scores 96.40%. Every reordering of the five default-block assignments and each opt_* /
-// optimize_for_size pragma around the function was tried without beating this version.
-// NONMATCHING (97.23%): only the volatile register assignment above still differs.
+// control flow and every instruction shape match; only volatile register names differ.
+// The original puts state=r5, tokenStart=r6, the parse base temp (=&parse)=r7, base=r4, i=r10, end=r0; this
+// version gets base=r4, i=r10, end=r0 but state=r8, tokenStart=r9, &parse=r5, which cascades into the
+// token-scan scratch (r6/r7 vs the original r7/r8/r9) and case 0's i/src/q/src2. Moving the `state`
+// declaration to the front (the declaration order here) keeps base/i/end right and swaps state/tokenStart
+// between r8/r9; no other order of the six default locals (240 permutations tried) beats this. Making
+// `state` born at entry (`s32 state = 0;` at the declaration) does give state=r5 and &parse=r7, and the scan
+// scratch then lands in r6/r7 with i=r10, but the compiler hoists the `li r5,0` to the entry and moves base
+// to r6 and i/end to r4 (96.40%). Every default-block assignment order, each opt_* / optimize_for_size /
+// scheduling pragma, and the named-`idx`/comma/default-scope forms leave the same allocator choice: the
+// colouring wants the `&parse` temp to take r5 before `state`. A permuter job.
+// NONMATCHING (97.32%): only the volatile register assignment above still differs.
 BOOL parseGet1Next(s32 type, void* data) {
+	s32 state;
+	s32 tokenStart;
 	s32 result = 1;
 	s32* p;
-	s32 tokenStart;
-	s32 state;
 	s32 i;
 	s32 end;
 	s8* base;

@@ -437,7 +437,7 @@ static inline f32 sqrtf(f32 x) {
 // The inline-sqrtf double pool now lands right after vec3_802c12d0: the unused named double_*
 // definitions were removed and the two str_802C1348/54 literals moved to the end of the file, so
 // MWCC's pooled doubles land at +0x30/+0x38/+0x40/+0x48.
-// NONMATCHING (97.66%): the fabs of `deg` lands in f4 instead of f3, which cascades through the
+// NONMATCHING (98.20%): the fabs of `deg` lands in f4 instead of f3, which cascades through the
 // maxVal/diff/cand blocks and leaves `dist` in f3 instead of f6; `d`/`node` are swapped (r5/r6);
 // the sqrtf x==0 return block is inline (bne + b) instead of a `beq` to a block at the end.
 u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
@@ -461,8 +461,15 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
             if (abs(d) <= 1) {
                 return 0;
             }
+#ifdef MUST_MATCH
+            // ordering the cast-expression before the `node` store matches the original's r5/node,
+            // r4/range, r3/abs assignment; the natural form is under #else.
+            range = ((CamRoadNode*)cur->unk_24)->unk_44 - ((CamRoadNode*)cur->unk_24)->unk_40;
+            node = (CamRoadNode*)cur->unk_24;
+#else
             node = (CamRoadNode*)cur->unk_24;
             range = node->unk_44 - node->unk_40;
+#endif
             if (abs(d) >= range - 1) {
                 return 0;
             }
@@ -481,8 +488,10 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         flags |= 0x4;
     }
 #ifdef MUST_MATCH
-    // the compiler materialises the negated `<=` here; the natural `> 1.0` emits a plain branch
-    if (!(__fabsf(cur->unk_4C - prev->unk_4C) <= 1.0)) {
+    // the compiler materialises the negated `<=` here; the natural `> 1.0` emits a plain branch.
+    // Reading the named double through its own address keeps MWCC from folding it into an anonymous
+    // pool copy, so the load lands at vec3_802c12d0+0x30 like the original.
+    if (!(__fabsf(cur->unk_4C - prev->unk_4C) <= *(const f64*)&double_1_802c1300)) {
 #else
     if (__fabsf(cur->unk_4C - prev->unk_4C) > 1.0) {
 #endif
@@ -531,7 +540,9 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         f32 dy = cur->y - prev->y;
         f32 dz = cur->z - prev->z;
 #ifdef MUST_MATCH
-        // separate square temps stop the compiler fusing the sum into fmadds
+        // separate square temps stop the compiler fusing the sum into fmadds; the original keeps the
+        // x == 0 short-circuit path and the accumulator's register (f6) through the sqrtf, which the
+        // natural single expression below does not.
         f32 dxx = dx * dx;
         f32 dyy = dy * dy;
         f32 dzz = dz * dz;
@@ -540,7 +551,12 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         d2 = dxx;
         d2 = d2 + dyy;
         d2 = d2 + dzz;
-        dist = sqrtf(d2);
+        if (d2 != 0.0f) {
+            d2 = sqrtf(d2);
+        } else {
+            d2 = 0.0f;
+        }
+        dist = d2;
 #else
         dist = sqrtf(dx * dx + dy * dy + dz * dz);
 #endif

@@ -6,53 +6,106 @@
 
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
-#include <math.h>
+#include "math_ext.h"
+#include "matching.h"
 #include <stdlib.h>
 
-// First object of this unit's .data (the float pair that used to end the previous unit's .data).
-__declspec(section ".data") u8 lbl_803B4860[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+// The unit's data, in the original's address order. The functions reach the vertex/texcoord tables
+// through the lbl_803B4860 anchor below/plus an offset, not by name, so force the linker to keep
+// every object.
+#pragma force_active on
 
-extern const Vec vec3_803006c0;
-extern const GXColor dat_80421f00;
-extern const GXColor dat_80421f04;
+// .data
+__declspec(section ".data") u8 lbl_803B4860[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
+static __declspec(section ".data") u8 negone_one_374[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
+__declspec(section ".data") u8 lbl_803B4870[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+static __declspec(section ".data") u8 one_negone_373[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+__declspec(section ".data") u8 lbl_803B4880[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
+static __declspec(section ".data") u8 negone_one_360[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
+__declspec(section ".data") u8 lbl_803B4890[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+static __declspec(section ".data") u8 one_negone_359[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+__declspec(section ".data") u32 ibuki_vertex_tbl[24] = {
+	0x00000000, 0x00000F00, 0x00000000, 0x1DFF0000,
+	0x000045FF, 0x00000000, 0x55000000, 0x00000000,
+	0x05000000, 0x0F000500, 0x00001DFF, 0x05000000,
+	0x45FF0500, 0x00005500, 0x05000000, 0x00000A00,
+	0x00000F00, 0x0F000000, 0x1DFF1400, 0x000045FF,
+	0x23000000, 0x55002800, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 ibuki_texcoord0_tbl[16] = {
+	0x00002000, 0x0B4B2CCC, 0x0B4B4000, 0x00004000,
+	0x16963333, 0x16964000, 0x34B43800, 0x34B44000,
+	0x40003800, 0x40004000, 0x00000000, 0x0B4B0000,
+	0x16960000, 0x34B40000, 0x40000000, 0x00000000,
+};
+__declspec(section ".data") u32 ibuki_texcoord1_tbl[16] = {
+	0x00002000, 0x0B4B2CCC, 0x0B4B4000, 0x00004000,
+	0x16963333, 0x16964000, 0x34B43800, 0x34B44000,
+	0x40003800, 0x40004000, 0x00000000, 0x0B4B0000,
+	0x16960000, 0x34B40000, 0x40000000, 0x00000000,
+};
+__declspec(section ".data") u32 ibuki_dl_0_0[16] = {
+	0x9800060A, 0x00000A0A, 0x0B00020B, 0x0B050000,
+	0x00000600, 0x01010100, 0x00000303, 0x01000002,
+	0x02000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 ibuki_dl_0_1[16] = {
+	0x9800060B, 0x00020B0B, 0x0C00030C, 0x0C060001,
+	0x01010700, 0x01040401, 0x00000202, 0x02000005,
+	0x05000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 ibuki_dl_0_2[16] = {
+	0x9800060C, 0x00030C0C, 0x0D00010D, 0x0D070001,
+	0x04040800, 0x01060602, 0x00000505, 0x03000007,
+	0x07000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 ibuki_dl_0_3[16] = {
+	0x9800060D, 0x00010D0D, 0x0E00000E, 0x0E080001,
+	0x06060900, 0x00080803, 0x00000707, 0x04000009,
+	0x09000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+#pragma force_active reset
+
+// .sdata
+u32 ibuki_normal_tbl[8] = { 0x00004000, 0, 0, 0, 0, 0, 0, 0 };
+u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
+void* ibuki_dl_0_tbl[4] = { ibuki_dl_0_0, ibuki_dl_0_1, ibuki_dl_0_2, ibuki_dl_0_3 };
+u8 ibuki_dl_0_size_tbl[4] = { 2, 2, 2, 2 };
+
+// .sdata2
+const GXColor dat_80421f00 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_80421f04 = { 0xFF, 0xFF, 0xFF, 0x00 };
+
+// .rodata
+const Vec vec3_803006c0 = { 0.0f, 0.0f, 0.0f };
+
 // The original reaches this file's tables from its .data section anchor, lbl_803B4860.
 #ifdef MUST_MATCH
 #define DATA_AT(off, sym) (base + (off))
 #else
-extern u8 ibuki_vertex_tbl[];
-extern u8 ibuki_texcoord0_tbl[];
-extern u8 ibuki_texcoord1_tbl[];
 #define DATA_AT(off, sym) ((u8*)(sym))
 #endif
-extern const f32 float_0_80421f08;
-extern const f32 float_0p5_80421f18;
-extern const f32 float_8_80421f1c;
-extern const f32 float_2_80421f20;
-extern const f32 float_neg0p0125_80421f24;
-extern const f32 float_0p0125_80421f28;
-extern const f32 float_30_80421f2c;
-extern const f32 float_1_80421f30;
-extern const f32 float_10_80421f34;
-extern const f32 float_1p01_80421f38;
-extern const f32 float_300_80421f3c;
-extern const f32 float_6p2832_80421f40;
-extern const f32 float_360_80421f44;
-extern const f32 float_deg2rad_80421f10;
-extern const f32 float_16_80421f14;
-extern const f32 float_0p02_80421f0c;
-
-extern u8 ibuki_dl_0_0[];
-extern u8 ibuki_dl_0_1[];
-extern u8 ibuki_dl_0_2[];
-extern u8 ibuki_dl_0_3[];
-
-void* ibuki_dl_0_tbl[4] = { ibuki_dl_0_0, ibuki_dl_0_1, ibuki_dl_0_2, ibuki_dl_0_3 };
-u8 ibuki_dl_0_size_tbl[4] = { 2, 2, 2, 2 };
-u32 ibuki_normal_tbl[8] = { 0x00004000, 0, 0, 0, 0, 0, 0, 0 };
-u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
-
-const f64 double_to_int_803006d0 = 4503601774854144.0;
-const char str_80421F48[] = "Ibuki";
 
 // The int->float magic pools as an anonymous @N rather than double_to_int_803006d0 (does not affect the
 // match score). The angle normalization needs the match shape guarded by MUST_MATCH below, which keeps
@@ -66,7 +119,7 @@ EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 	f32 angle;
 
 	entry = effEntry();
-	entry->type = str_80421F48;
+	entry->type = "Ibuki";
 	entry->count = 0x21;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effIbukiData) * 0x21);
 	entry->userdata = data;
@@ -82,42 +135,42 @@ EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 		data->lifetime = lifetime;
 	}
 	data->counter = 0;
-	data->scale = float_1_80421f30;
+	data->scale = 1.0f;
 	data->alpha = 0;
 	data->alpha2 = 0;
-	data->texU0 = float_0_80421f08;
-	data->texV0 = float_0_80421f08;
-	data->texU1 = float_0_80421f08;
-	data->field_0x4C = float_0_80421f08;
+	data->texU0 = 0.0f;
+	data->texV0 = 0.0f;
+	data->texU1 = 0.0f;
+	data->field_0x4C = 0.0f;
 
 	i = 1;
 	wait = 10;
 	elem = &data[i];
 	for (; i < entry->count; i++, elem++) {
 		angle = (f32)(30 - irand(40));
-		elem->positionX = float_0_80421f08;
+		elem->positionX = 0.0f;
 		elem->positionY = (f32)irand(30);
-		elem->positionZ = float_0_80421f08;
+		elem->positionZ = 0.0f;
 #ifdef MUST_MATCH
 		// Match shape: the comma keeps the 6.2832*angle product in a scratch FPR (f0) instead of
 		// coalescing it into angle, and sequences the division, as the target does.
-		angle = (angle = float_6p2832_80421f40 * angle, angle / float_360_80421f44);
+		angle = (angle = 6.2831855f * angle, angle / 360.0f);
 #else
-		angle = angle * float_6p2832_80421f40 / float_360_80421f44;
+		angle = angle * 6.2831855f / 360.0f;
 #endif
 		elem->velocityX = (f32)cos(angle);
 		elem->velocityY = (f32)sin(angle);
-		elem->velocityZ = float_0_80421f08;
-		elem->scale = float_1_80421f30;
+		elem->velocityZ = 0.0f;
+		elem->scale = 1.0f;
 		elem->alpha = 0;
 		elem->wait = wait;
-		elem->rotX = float_0_80421f08;
-		elem->rotY = float_0_80421f08;
+		elem->rotX = 0.0f;
+		elem->rotY = 0.0f;
 		if (irand(1000) < 500) {
 			elem->rotVelX = (f32)(irand(10) + 10);
-			elem->rotVelY = float_0_80421f08;
+			elem->rotVelY = 0.0f;
 		} else {
-			elem->rotVelX = float_0_80421f08;
+			elem->rotVelX = 0.0f;
 			elem->rotVelY = (f32)(irand(10) + 10);
 		}
 		wait += 10;
@@ -167,22 +220,22 @@ void effIbukiMain(EffectEntry* effect) {
 		data->alpha2 = (data->counter - 0x3c) * 8 + 7;
 	}
 	data->counter++;
-	data->texU0 += float_neg0p0125_80421f24;
-	data->texV0 += float_0p0125_80421f28;
-	data->texU1 += float_neg0p0125_80421f24;
-	data->field_0x4C = float_0_80421f08;
+	data->texU0 += -0.0125f;
+	data->texV0 += 0.0125f;
+	data->texU1 += -0.0125f;
+	data->field_0x4C = 0.0f;
 	if (data->counter > 0x78 && data->counter % 16 == 0) {
 		vaporPos.x = data->positionX + (f32)irand(300);
-		vaporPos.y = float_30_80421f2c + (data->positionY + (f32)irand(100));
+		vaporPos.y = 30.0f + (data->positionY + (f32)irand(100));
 		vaporPos.z = data->positionZ;
 		camera = camGetPtr(CAMERA_3D);
 		{
 			f32 t = -camera->viewYaw;
-			t = float_deg2rad_80421f10 * t;
+			t = 0.017453292f * t;
 			PSMTXRotRad(mtx, 'y', t);
 		}
 		PSMTXMultVec(mtx, &vaporPos, &vaporPos);
-		effVaporN64Entry(2, 0x1e, vaporPos.x, vaporPos.y, vaporPos.z, float_1_80421f30 + (f32)irand(10) / float_10_80421f34);
+		effVaporN64Entry(2, 0x1e, vaporPos.x, vaporPos.y, vaporPos.z, 1.0f + (f32)irand(10) / 10.0f);
 	}
 
 	i = 1;
@@ -197,34 +250,34 @@ void effIbukiMain(EffectEntry* effect) {
 			data->positionZ += data->velocityZ;
 			data->rotX += data->rotVelX;
 			data->rotY += data->rotVelY;
-			data->velocityX *= float_1p01_80421f38;
-			data->velocityY *= float_1p01_80421f38;
-			data->velocityZ *= float_1p01_80421f38;
-			data->rotVelX *= float_1p01_80421f38;
-			data->rotVelY *= float_1p01_80421f38;
+			data->velocityX *= 1.01f;
+			data->velocityY *= 1.01f;
+			data->velocityZ *= 1.01f;
+			data->rotVelX *= 1.01f;
+			data->rotVelY *= 1.01f;
 			data->alpha += 5;
 			if (data->alpha > 0xff) {
 				data->alpha = 0xff;
 			}
-			if (data->positionX > float_300_80421f3c) {
+			if (data->positionX > 300.0f) {
 				angle = (f32)(30 - irand(40));
-				data->positionX = float_0_80421f08;
+				data->positionX = 0.0f;
 				data->positionY = (f32)irand(30);
-				data->positionZ = float_0_80421f08;
-				angle = (angle = float_6p2832_80421f40 * angle, angle / float_360_80421f44);
+				data->positionZ = 0.0f;
+				angle = (angle = 6.2831855f * angle, angle / 360.0f);
 				data->velocityX = (f32)cos(angle);
 				data->velocityY = (f32)sin(angle);
-				data->velocityZ = float_0_80421f08;
-				data->scale = float_1_80421f30;
+				data->velocityZ = 0.0f;
+				data->scale = 1.0f;
 				data->alpha = 0;
 				data->wait = wait;
-				data->rotX = float_0_80421f08;
-				data->rotY = float_0_80421f08;
+				data->rotX = 0.0f;
+				data->rotY = 0.0f;
 				if (irand(1000) < 500) {
 					data->rotVelX = (f32)(irand(10) + 10);
-					data->rotVelY = float_0_80421f08;
+					data->rotVelY = 0.0f;
 				} else {
-					data->rotVelX = float_0_80421f08;
+					data->rotVelX = 0.0f;
 					data->rotVelY = (f32)(irand(10) + 10);
 				}
 			}
@@ -264,6 +317,9 @@ static inline GXColor effIbukiColor1(u8 a) {
 // float_0/float_2 per vertex (the literal 0.0f/2.0f keep MWCC from CSEing them; the extern float_8/float_0p5
 // keep the tmp*0.5 multiply inside the loop instead of hoisting it).
 #pragma opt_lifetimes off // required: without it the effect/cameraId live-range cascade costs 15 extra diffs
+#ifdef MUST_MATCH
+#pragma opt_loop_invariants off // keep tmp*0.5 inside the display loop as retail does
+#endif
 void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effIbukiData* data = effect->userdata;
@@ -280,6 +336,11 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	s32 i;
 	Mtx scale;
 	f32 tmp;
+#ifdef MUST_MATCH
+	f32 sixteen;
+#endif
+	f32 eight;
+	f32 half;
 	s32 alpha2;
 	Mtx out;
 	CameraEntry* camera;
@@ -323,13 +384,13 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetTevColor(GX_TEVREG0, color);
 #endif
 
-	PSMTXTrans(mtx, data->texU0, data->texV0, float_0_80421f08);
+	PSMTXTrans(mtx, data->texU0, data->texV0, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
-	PSMTXTrans(mtx, data->texU1, float_0p02_80421f0c, float_0_80421f08);
+	PSMTXTrans(mtx, data->texU1, 0.02f, 0.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 	PSMTXTrans(mtx, data->positionX, data->positionY, data->positionZ);
-	PSMTXRotRad(rot, 'y', float_deg2rad_80421f10 * -camGetPtr(cameraId)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(cameraId)->viewYaw);
 	if (data->type != 0) {
 		PSMTXScale(scale, -data->scale, data->scale, data->scale);
 	} else {
@@ -384,16 +445,23 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	effGetTexObj(0x63, &tex);
 	GXLoadTexObj(&tex, GX_TEXMAP0);
-	tmp = -float_16_80421f14;
+#ifdef MUST_MATCH
+	// `-16.0f` as one expression gets constant-folded (and then `tmp * 0.5f` with it),
+	// dropping the 16/0.5 pool pair retail keeps; an opaque local keeps both alive.
+	sixteen = 16.0f;
+	tmp = -sixteen;
+#else
+	tmp = -16.0f;
+#endif
 	i = 1;
 	data = &data[1];
 	for (; i < effect->count; i++, data++) {
 		alpha2 = (data->alpha * alpha) / 255;
 		if (data->wait == 0) {
 			PSMTXTrans(mtx, data->positionX, data->positionY, data->positionZ);
-			PSMTXRotRad(rot, 'x', float_deg2rad_80421f10 * data->rotX);
+			PSMTXRotRad(rot, 'x', 0.017453292f * data->rotX);
 			PSMTXConcat(mtx, rot, mtx);
-			PSMTXRotRad(rot, 'y', float_deg2rad_80421f10 * data->rotY);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY);
 			PSMTXConcat(mtx, rot, mtx);
 			PSMTXScale(scale, data->scale, data->scale, data->scale);
 			PSMTXConcat(mtx, scale, mtx);
@@ -408,15 +476,22 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 #endif
 			GXSetChanMatColor(GX_COLOR0A0, color2);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(tmp * float_0p5_80421f18, float_8_80421f1c, 0.0f);
+			// Local constants: retail keeps 8.0f in f1 across the strip and reloads 0.5f
+			// once per quad, which is what the named loads below reproduce.
+			half = 0.5f;
+			eight = 8.0f;
+			GXPosition3f32(tmp * half, eight, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(float_8_80421f1c, float_8_80421f1c, 0.0f);
+			GXPosition3f32(eight, eight, 0.0f);
 			GXTexCoord2f32(2.0f, 0.0f);
-			GXPosition3f32(float_8_80421f1c, tmp * float_0p5_80421f18, 0.0f);
+			GXPosition3f32(eight, tmp * half, 0.0f);
 			GXTexCoord2f32(2.0f, 2.0f);
-			GXPosition3f32(tmp * float_0p5_80421f18, tmp * float_0p5_80421f18, 0.0f);
+			GXPosition3f32(tmp * half, tmp * half, 0.0f);
 			GXTexCoord2f32(0.0f, 2.0f);
 		}
 	}
 }
 #pragma opt_lifetimes reset
+#ifdef MUST_MATCH
+#pragma opt_loop_invariants reset
+#endif

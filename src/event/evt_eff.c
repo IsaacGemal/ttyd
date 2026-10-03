@@ -172,6 +172,9 @@ extern const char lbl_8041A248[4];
 // explicit increments, register/const args, a third alias pointer; pragmas opt_propagation/opt_common_subs/
 // opt_lifetimes/opt_dead_code/opt_strength_reduction/global_optimizer off, optimization_level 2-4, scheduling
 // off (all no change or worse); file flags -O2/-O3/-O4,s/-inline auto. Only the source text retail used reproduces it.
+// Putting the copy after the `effSet` call (or through an address-taken helper there) does emit `stmw r20` and a
+// real copy, but rematerialises the int base as `addi rN, args, 0xc` and recolours the whole function (event r30,
+// args r29): 97.90%. The copy must survive at its current position without moving the colouring; permuter work.
 USER_FUNC(evt_eff) {
 	s32* args = event->args;
 	s32* iargs;
@@ -306,7 +309,7 @@ static inline s32* effIdent(s32** d, s32* p) { return *d = p; }
 
 // NONMATCHING (99.78%): every case, call and argument matches; the 8 remaining instructions are level-1
 // allocator/scheduler choices: `lwz r17` is one slot early, the two pointer copies schedule one slot before
-// the call's `mr r3,r30`, and the switch keeps the jump target in r3 not r0. See REPORT.md.
+// the call's `mr r3,r30`, and the switch keeps the jump target in r3 not r0.
 USER_FUNC(evt_eff64) {
 	s32* args = event->args;
 	s32* iargs;

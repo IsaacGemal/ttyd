@@ -1078,8 +1078,11 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
 // source land at different offsets. 94.75% -> 95.27%: a second `white` local
 // (whiteOverflow, MUST_MATCH) reproduces the original's third spill and gets the frame to
 // the original's 0x250; `white` now homes at r1+0x8 with copies at 0x2c (overflow) and
-// 0x38 (loop), as the original does).
-// NONMATCHING (95.27%): integer register colours and loop stack-slot order, see above.
+// 0x38 (loop), as the original does). 95.27% -> 95.29%: declaring `entry` before `i` and putting
+// `entry += 2` before `i++` in the for-increment matches the original's two `addi` order and removes
+// two operand diffs (the remaining 228 are the allocator's colours and stack offsets).
+// NONMATCHING (95.29%): integer register colours and the loop's stack-slot order; the target keeps
+// two per-branch `scale` temps our compiler coalesces (2 `addi` short).
 void item_disp(WindowWork* work, f32 x, f32 y) {
     GXColor white = dat_8041d474;
     GXColor dark = dat_8041d478;
@@ -1096,8 +1099,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     f32 f22;
     f32 f26;
     f32 f25;
-    s32 i;
     u8* entry;
+    s32 i;
     s32 count;
 
     if (WW_S32(work, 0x210) == 0) {
@@ -1110,7 +1113,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     twenty = float_20_8041d4e8;
     base = float_100_8041d4e4 + y;
 
-    for (i = 0, entry = (u8*)work; i < count; i++, entry += 2) {
+    for (i = 0, entry = (u8*)work; i < count; entry += 2, i++) {
         s32 item;
         s32 parity = i % 2;
         s32 half = i / 2;

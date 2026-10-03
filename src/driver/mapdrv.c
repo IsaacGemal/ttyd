@@ -132,7 +132,8 @@ void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapGrpFlagOff(name, 0x40);
 }
 
-// NONMATCHING (98.89%): register allocation of the first inlined search and error body
+// NONMATCHING (98.89%): only the second inlined mapGetMapObjSub search's registers differ
+// (target wp=r27/entry=r26/object=r28/i=r29/j=r30); the first search and the error body match.
 void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor color;
 	MapObject* obj;
@@ -167,11 +168,13 @@ void mapDispMapGrp_bbox(MapObject* obj, MapEntry* entry) {
 	GXReadBoundingBox((u16*)((u8*)entry + 0xEC), (u16*)((u8*)entry + 0xEE), (u16*)((u8*)entry + 0xF0), (u16*)((u8*)entry + 0xF2));
 }
 
-// NONMATCHING (98.84%): loop i/offset register swap only
+// NONMATCHING (99.12%): loop counter i/offset register swap only (target i=r31, off=r30 with an
+// `mr r30,r31` init; ours i=r30, off=r31). The `(u32)(off >> 3)` index is match-only.
 void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
 	Mtx invMtx;
 	Mtx mtx;
 	s32 i;
+	s32 off;
 	GXColor color;
 
 	sysWaitDrawSync();
@@ -190,9 +193,19 @@ void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+#ifdef MUST_MATCH
+	// MUST_MATCH: the explicit off induction variable and the (u32) index cast are what put the
+	// counter in r31/off in r30 (98.84% -> 99.12%); the natural indexed loop is under #else.
+	i = 0;
+	off = i;
+	for (; i < obj->joints->partCount; i++, off += 8) {
+		mapSetPolygon(obj, obj->joints->parts[(u32)(off >> 3)].mesh);
+	}
+#else
 	for (i = 0; i < obj->joints->partCount; i++) {
 		mapSetPolygon(obj, obj->joints->parts[i].mesh);
 	}
+#endif
 	sysWaitDrawSync();
 	GXReadBoundingBox((u16*)((u8*)obj + 0xEC), (u16*)((u8*)obj + 0xEE), (u16*)((u8*)obj + 0xF0), (u16*)((u8*)obj + 0xF2));
 }
@@ -607,8 +620,7 @@ void mapGetFog(u32* c, f32* near, f32* far, u32* c2) {
 
 // NONMATCHING (97.00%): register allocation of the inlined mapWork/activeGroup address computation
 void mapSetFog(u32 color, f32 near, f32 far, u32* color2) {
-	MapWork* wp = mapWork + activeGroup;
-	MapEntry* entry = &wp->entries[0];
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
 	u32 c2;
 
 	c2 = *color2;
@@ -789,9 +801,9 @@ static inline f32 spline_sqrtf(f32 x, const f64* c) {
 	return x;
 }
 
-// NONMATCHING (98.36%): all instructions match up to register names. GPRs are permuted (target count,a,b,c,dt
-// in r26-r30 with mat in volatile r3; ours count,c,dt,b,a) and sq lands in f2 where the target keeps it in f5.
-// `sizeof(f32)`/`sizeof(Vec)` on the _mapAlloc sizes is what got the prologue/spilling this close.
+// NONMATCHING (99.31%): only a rotation of the backward-substitution loop pointers differs (target
+// tangents=r6,dt=r7,mat=r8,temp=r9; ours tangents=r7,dt=r9,mat=r8,temp=r6). Pinned with `((Vec*)a)`
+// in the dt/mat loop, `((f32*)b)` in the dt loop, `f64 three, half` + `f32 knprev` at fn scope.
 void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	Vec* points = (Vec*)a;
 	f32* knots = (f32*)b;
@@ -800,6 +812,8 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	f32* dt = (f32*)_mapAlloc(count * sizeof(f32));
 	Vec* mat = (Vec*)_mapAlloc(count * sizeof(Vec));
 	s32 i;
+	f64 three, half;
+	f32 knprev;
 
 	knots[0] = 0.0f;
 	for (i = 1; i < count; i++) {
@@ -813,8 +827,8 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 		// calling spline_sqrtf forces the f32 return register f1 and leaves an extra `fmr f1,f5`
 		if (sq > float_0_80419850) {
 			f64 guess = __frsqrte(sq);
-			f64 half = cf[0];
-			f64 three = cf[1];
+			half = cf[0];
+			three = cf[1];
 			guess = half * guess * (three - guess * guess * sq);
 			guess = half * guess * (three - guess * guess * sq);
 			guess = half * guess * (three - guess * guess * sq);
@@ -827,7 +841,8 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 #else
 		sq = spline_sqrtf(sq, cf);
 #endif
-		knots[i] = knots[i - 1] + sq;
+		knprev = knots[i - 1];
+		knots[i] = knprev + sq;
 	}
 
 	for (i = 1; i < count; i++) {
@@ -841,13 +856,13 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	tangents[count - 1].y = 0.0f;
 	tangents[count - 1].z = 0.0f;
 	for (i = 0; i < count - 1; i++) {
-		dt[i] = knots[i + 1] - knots[i];
+		dt[i] = ((f32*)b)[i + 1] - ((f32*)b)[i];
 		if (dt[i] == 0.0f) {
 			dt[i] = float_0p0001_8041985c;
 		}
-		mat[i + 1].x = (points[i + 1].x - points[i].x) / dt[i];
-		mat[i + 1].y = (points[i + 1].y - points[i].y) / dt[i];
-		mat[i + 1].z = (points[i + 1].z - points[i].z) / dt[i];
+		mat[i + 1].x = (((Vec*)a)[i + 1].x - ((Vec*)a)[i].x) / dt[i];
+		mat[i + 1].y = (((Vec*)a)[i + 1].y - ((Vec*)a)[i].y) / dt[i];
+		mat[i + 1].z = (((Vec*)a)[i + 1].z - ((Vec*)a)[i].z) / dt[i];
 	}
 
 	tangents[1].x = mat[2].x - mat[1].x;
@@ -874,19 +889,29 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	tangents[count - 2].y = tangents[count - 2].y - dt[count - 2] * tangents[count - 1].y;
 	tangents[count - 2].z = tangents[count - 2].z - dt[count - 2] * tangents[count - 1].z;
 
-	for (i = count - 2; i > 0; i--) {
-		tangents[i].x = (tangents[i].x - dt[i] * tangents[i + 1].x) / mat[i].x;
-		tangents[i].y = (tangents[i].y - dt[i] * tangents[i + 1].y) / mat[i].y;
-		tangents[i].z = (tangents[i].z - dt[i] * tangents[i + 1].z) / mat[i].z;
+	{
+		Vec* mp = &mat[count - 2];
+		f32* dp = &dt[count - 2];
+		Vec* tp = &tangents[count - 2];
+		for (i = count - 2; i > 0; i--) {
+			tp->x = (tp->x - *dp * tp[1].x) / mp->x;
+			tp->y = (tp->y - *dp * tp[1].y) / mp->y;
+			tp->z = (tp->z - *dp * tp[1].z) / mp->z;
+			tp--;
+			dp--;
+			mp--;
+		}
 	}
 
 	_mapFree(mat);
 	_mapFree(dt);
 }
 
-// NONMATCHING (94.57%): arithmetic and control flow match instruction for instruction; only MWCC's FP
-// colouring differs now (knot[lo] loads into f2/f3, t-knot[lo] into f8, 2.0 into f0 vs the target's
-// f2/f3 for constants, f1 for t-knot[lo], f6 for 2.0). Uses the extern float_2/float_3 constants.
+#pragma opt_lifetimes off // MUST_MATCH: target FP live ranges need lifetime analysis off
+// Arithmetic, control flow and the instruction sequence match; MWCC's FPR colouring differs
+// (target keeps dt in f1, 2.0 in f6, 3.0 in f0; ours dt in f8, 2.0 in f0, 3.0 in f1) and the
+// r9/r0 tangent-base offset. `#pragma opt_lifetimes off` is required (94.57% without).
+// NONMATCHING (97.29%): FP colouring + tangent-base offset only
 void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	f32* points = (f32*)a;
 	f32* knots = (f32*)b;
@@ -972,6 +997,7 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	f3 = t * f3 + f8;
 	out[2] = f3;
 }
+#pragma opt_lifetimes reset
 
 
 //heavily inlined
@@ -1064,9 +1090,29 @@ void mapInit(void) {
 	mapClipOffFlag = FALSE;
 }
 
-// NONMATCHING (99.17%): the found/not-found split (goto found, idx = -1 on fall-through, then
-// use = idx; if (use == -1) use = 0) matches instruction for instruction; only the strcmp test's
-// branch direction differs (target bne increment + b found, ours beq found with increment falling through).
+// The table walk below was moved into the inline helper so the deferred inliner emits the original's
+// `bne increment; b found` split.
+#ifdef MUST_MATCH
+// Moving the walk into an inline whose found path is a `return` makes the deferred inliner emit the
+// target's `bne increment; b found` split instead of a single `beq found`.
+static inline s32 mapSearchTextureIdx(void* table, u8** ref) {
+	const char** p;
+	const char* name;
+	s32 idx;
+
+	name = *(const char**)(*ref);
+	idx = 0;
+	p = (const char**)table;
+	while (idx < *(s32*)table) {
+		if (strcmp(p[1], name) == 0) {
+			return idx;
+		}
+		p++;
+		idx++;
+	}
+	return -1;
+}
+#endif
 void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 	int i;
 	int j;
@@ -1083,6 +1129,9 @@ void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 			const char** p;
 
 			idx = 0;
+#ifdef MUST_MATCH
+			idx = mapSearchTextureIdx(table, ref);
+#else
 			p = (const char**)table;
 			while (idx < *(s32*)table) {
 				if (strcmp(p[1], name) == 0) {
@@ -1093,6 +1142,7 @@ void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 			}
 			idx = -1;
 		found:
+#endif
 			use = idx;
 			if (use == -1) {
 				use = 0;
@@ -1288,13 +1338,12 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	return mapEntrySub(joint, NULL, mtx, TRUE, index);
 }
 
-// MWCC register allocation of the long-lived locals differs: the target keeps wp in r31 and the
-// group*0x178 offset in r27, ours puts wp in r27 and the offset/slot/j8 temporaries in r29/r30/r31.
-// The declaration order below is match-only: it makes MWCC's declared-locals block start at r28 and
-// reproduce every other register.
-// NONMATCHING (97.11%): only wp/offset/slot/j8 registers differ.
+// `wp = mapGetWork()` (same value as &mapWork[activeGroup]) moves wp into r31 and lets the cached
+// entry pointer be dropped; the parenthesised else-store offset reproduces the target's
+// `add base,wp,off; stw 0x16c(base)` addressing. The only remaining diff is the operand order of that
+// one `add` (target puts wp first).
+// NONMATCHING (99.93%): `add r3, r31, r27` (target) vs `add r3, r27, r31` (the single differing insn)
 void makeDisplayList(BOOL group) {
-	MapEntry* entry;
 	MapWork* wp;
 	void* buf;
 	s32 i;
@@ -1305,18 +1354,17 @@ void makeDisplayList(BOOL group) {
 	u8* dest;
 	MapObject* obj;
 
-	wp = &mapWork[activeGroup];
+	wp = mapGetWork();
 	buf = _mapAlloc(0x10000);
-	entry = &wp->entries[group];
 	__mapdrv_make_dl = TRUE;
 	total = 0;
 	for (pass = 0; pass < 2; pass++) {
-		obj = entry->objects;
+		obj = wp->entries[group].objects;
 		for (i = 0; i < 8; i++) {
 			*(void**)(obj->field_0xEC + 8 + i * 4) = NULL;
 			*(u32*)(obj->field_0xEC + 0x28 + i * 4) = 0;
 		}
-		for (i = 0; i < entry->numJoints; i++, obj++) {
+		for (i = 0; i < wp->entries[group].numJoints; i++, obj++) {
 			if (obj->joints->partCount < 1 || obj->joints->partCount > 8) {
 				continue;
 			}
@@ -1331,17 +1379,17 @@ void makeDisplayList(BOOL group) {
 					continue;
 				}
 			}
-			if (!(entry->flags & 0x8000)) {
+			if (!(wp->entries[group].flags & 0x8000)) {
 				continue;
 			}
 			for (j = 0; j < obj->joints->partCount; j++) {
-				MapFileMesh* mesh = obj->joints->parts[j].mesh;
+				void* material = obj->joints->parts[j].material;
 
 				memset(buf, 0, 0x10000);
 				DCInvalidateRange(buf, 0x10000);
 				GXBeginDisplayList(buf, 0x10000);
 				GXResetWriteGatherPipe();
-				mapSetMaterial(obj, mesh);
+				mapSetMaterial(obj, material);
 				GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
 				*(u32*)(obj->field_0xEC + 0x28 + j * 4) = GXEndDisplayList();
 				if (pass == 0) {
@@ -1356,18 +1404,18 @@ void makeDisplayList(BOOL group) {
 			}
 		}
 		if (pass == 0) {
-			*(u32*)(entry->field_0x168) = total;
-			if (*(u32*)(entry->field_0x168) != 0) {
-				*(void**)(entry->field_0x168 + 4) = _mapAllocTail(*(u32*)(entry->field_0x168));
-				dest = *(u8**)(entry->field_0x168 + 4);
+			*(u32*)(wp->entries[group].field_0x168) = total;
+			if (*(u32*)(wp->entries[group].field_0x168) != 0) {
+				*(void**)(wp->entries[group].field_0x168 + 4) = _mapAllocTail(*(u32*)(wp->entries[group].field_0x168));
+				dest = *(u8**)(wp->entries[group].field_0x168 + 4);
 			}
 			else {
 #ifdef MUST_MATCH
 				// MUST_MATCH: naming the group offset here is what makes MWCC keep the offset live and
 				// emit the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
-				*(void**)(((u8*)wp + group * 0x178) + 0x16C) = NULL;
+				*(void**)((u8*)wp + (group * 0x178 + 0x16C)) = NULL;
 #else
-				*(void**)(entry->field_0x168 + 4) = NULL;
+				*(void**)(wp->entries[group].field_0x168 + 4) = NULL;
 #endif
 				break;
 			}
@@ -1634,7 +1682,9 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 extern const char float_0_804198cc[4];
 extern GXColor dat_8041981c;
 
-// NONMATCHING (98.06%): entry vs i register swap (target r29=entry, r30=i); opening load now matches
+// `i = 0; activeGroup = i;` plus `opt_propagation off` matched this; the pragma keeps the assignment
+// from constant-folding to a fresh r0 so i keeps r30.
+#pragma opt_propagation off // MUST_MATCH: keep activeGroup=i from folding to a fresh r0 so i keeps r30
 void mapUnLoad(void) {
 	MapEntry* entry;
 	s32 i;
@@ -1646,9 +1696,10 @@ void mapUnLoad(void) {
 #else
 	wp = mapWork;
 #endif
-	activeGroup = 0;
+	i = 0;
+	activeGroup = i;
 	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+	for (; i < wp->entries[0].count; entry++, i++) {
 		if (entry->objects) {
 			_mapFree(entry->objects);
 			entry->numJoints = 0;
@@ -1694,6 +1745,7 @@ void mapUnLoad(void) {
 	arcDelete(1);
 	memset(wp, 0, 0x2F4);
 }
+#pragma opt_propagation reset
 
 BOOL mapPreLoad(void) {
 	return TRUE; //do nothing
@@ -1871,7 +1923,8 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 	}
 }
 
-// NONMATCHING (96.54%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0
+// NONMATCHING (96.59%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0.
+// `i = 0;` is hoisted before `offset = 0;` because it scores marginally better (96.59 vs 96.54).
 void bmapLoad(const char* map1, const char* map2) {
 	s32 offset;
 	u8* p;
@@ -1880,11 +1933,12 @@ void bmapLoad(const char* map1, const char* map2) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
+	i = 0;
 	offset = 0;
 	wp = mapWork;
 	activeGroup = 0;
 	p = (u8*)wp;
-	for (i = 0; i < wp->entries[0].count; i++) {
+	for (; i < wp->entries[0].count; i++) {
 		entry = (MapEntry*)((u8*)mapWork + activeGroup * 0x2F4 + offset);
 		if (*(void**)((u8*)entry + 0x16C)) {
 			_mapFree(*(void**)((u8*)entry + 0x16C));
@@ -2005,9 +2059,10 @@ void bmapUnLoad(void) {
 	}
 }
 
-// NONMATCHING (96.87%): register colouring/scheduling only (276 real instruction diffs). The int->float
-// magic double is still a fresh anonymous pool entry (so the flags&0x800000 block and the GXColor stack
-// temporaries are one GPR off), TEXMTX uses add+lwzu instead of addi+lwzx, and texCount>0 folds into mr.
+#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (257 -> 242 diffs)
+// NONMATCHING (96.90%): register colouring/scheduling only (242 real instruction diffs, 21 symbol-only); the
+// unit's .rodata (vec3_802c16d8, double_to_int_mask_802c19a0, ...) is not defined here yet, so MWCC addresses
+// the pooled i2f double absolutely (lis/lfd) instead of `lfd f2, 0x2c8(r28)`, and TEXMTX uses add+lwzu.
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	u8* base;
 	s32 texMap;
@@ -2748,6 +2803,8 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	GXSetNumTevStages((u8)tevStage);
 	GXSetNumIndStages((u8)numIndStages);
 }
+
+#pragma opt_lifetimes reset
 
 static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
 	BOOL recalc;
@@ -4137,20 +4194,29 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 }
 
 
-// NONMATCHING (95.93%): GX setup order/constants and addressing match; only MWCC register coloring differs
-// (target keeps wp in r31, pos in r29, nrm in r30; ours puts wp in r29, pos in r25, nrm in r30, and the
-// first material load folds to lwzx instead of lwz with 0xA4 displacement).
+#pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted
+// GX setup order/constants and addressing match; the only remaining diff is the operand order of the
+// first material's `add r7, wp, idx` (target puts wp first, MWCC puts the index first). `wp=mapGetWork()`,
+// the `vcd` pointer local, the pos/nrm declaration order and the opt_common_subs pragma are all
+// match-only improvements over the 95.93% baseline.
+// NONMATCHING (99.91%): `add r7, r31, r0` (target) vs `add r7, r0, r31` (the single differing insn)
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
-	MapWork* wp = &mapWork[activeGroup];
-	u32 mask = mesh->elementMask;
-	void* pos = (void*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-	void* nrm = (void*)(((u32*)mesh->vcdTableOffset)[1] + 4);
+	MapWork* wp;
+	void* pos;
+	void* nrm;
+	u32 mask;
+	u32* vcd;
 	s32 i;
 	u8* material;
+	wp = mapGetWork();
+	vcd = (u32*)mesh->vcdTableOffset;
+	pos = (void*)(vcd[0] + 4);
+	nrm = (void*)(vcd[1] + 4);
+	mask = mesh->elementMask;
 
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
-	material = *(u8**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+	material = *(u8**)((u8*)wp->entries + (*(s16*)(obj->field_0xDC + 2) * 0x178 + 0xA4));
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)*(u32*)(material + 0x44));
 	GXSetArray(GX_VA_POS, pos, 6);
 	GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
@@ -4176,6 +4242,7 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 		GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 	}
 }
+#pragma opt_common_subs reset
 
 // Routing the inlined mapSetMaterialLastStageBlend through this wrapper reproduces the
 // original's register allocation (flags in r3, activeGroup in r4) and blend temp layout.

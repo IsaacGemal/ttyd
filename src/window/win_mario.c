@@ -564,17 +564,19 @@ void winMarioInit(WindowWork* work) {
 #else
 #define FUKI_VEC(off, sym) sym
 #endif
-// Match shape (same as win_item's winItemMkVec): building the modified Vec in an
-// inline that returns it puts the caller's translate temp in the target's slot.
-static inline Vec fukiMkVec(Vec base, f32 x, f32 y) {
-    base.x = x;
-    base.y = y;
-    return base;
-}
+// Match shape: the original calls winTexSet (declared by value) in a way that gives one
+// contiguous 0x6c Vec block per switch case. MWCC passes a by-value Vec/GXColor by
+// invisible reference (a pointer), so calling the real function through a pointer-parameter
+// signature is ABI-identical but lets the caller pass its own locals instead of hidden
+// argument copies. That is what produces the original's stack layout. The explicit per-part
+// `sc = vec; tmp = vec; tr = tmp;` order plus this cast is what matches.
+#ifdef MUST_MATCH
+typedef void (*WinTexSetPtr)(u32, Vec*, Vec*, GXColor*);
+#define WINTEXSET(id, tr, sc, c) ((WinTexSetPtr)winTexSet)((id), &(tr), &(sc), &(c))
+#else
+#define WINTEXSET(id, tr, sc, c) winTexSet((id), (tr), (sc), (c))
+#endif
 
-// NONMATCHING (99.35%): same 50 calls and no differing immediates; only the
-// first winTexSet part's translate temp slot (0x2cc vs 0x278) and a few volatile
-// GPR colours differ - MWCC stack/register coloring.; permuter work.
 void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
 #ifdef MUST_MATCH
     const u8* vp;
@@ -587,188 +589,200 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     switch (type) {
     case 2:
         if (pouchGetHammerLv() > 0) {
-            GXColor c1,c2,c3;
+            GXColor c3,c2,c1;
+            Vec sc3,tmp3,tr3,sc2,tmp2,tr2,sc1,tmp1,tr1;
             iconId = itemDataTable[pouchGetHammerLv() + 8].icon_id;
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x21C, vec3_802f586c);
-        tmp.x = (x - float_230_8041d6ec) + float_5_8041d6cc;
-        y = float_72_8041d6f0 + y;
-        tmp.y = y - float_5_8041d6cc;
         c1 = dat_8041d5dc;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x228, vec3_802f5878), c1);
-    }
-    {
+        sc1 = FUKI_VEC(0x228, vec3_802f5878);
+        tmp1 = FUKI_VEC(0x21C, vec3_802f586c);
+        tmp1.x = (x - float_230_8041d6ec) + float_5_8041d6cc;
+        y = float_72_8041d6f0 + y;
+        tmp1.y = y - float_5_8041d6cc;
+        tr1 = tmp1;
+        WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5e0;
-        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x234, vec3_802f5884), x - float_230_8041d6ec, y), FUKI_VEC(0x240, vec3_802f5890), c2);
-    }
-    winIconInit();
-    {
-        Vec sc,tr;
+        sc2 = FUKI_VEC(0x240, vec3_802f5890);
+        tmp2 = FUKI_VEC(0x234, vec3_802f5884);
+        tmp2.x = x - float_230_8041d6ec;
+        tmp2.y = y;
+        tr2 = tmp2;
+        WINTEXSET(0xB1, tr2, sc2, c2);
+        winIconInit();
         c3 = dat_8041d5e4;
-        sc = FUKI_VEC(0x258, vec3_802f58a8);
-        tr = fukiMkVec(FUKI_VEC(0x24C, vec3_802f589c), (x - float_230_8041d6ec) - float_6_8041d6f4, y);
-        winIconSet(iconId, &tr, &sc, &c3);
-    }
+        sc3 = FUKI_VEC(0x258, vec3_802f58a8);
+        tmp3 = FUKI_VEC(0x24C, vec3_802f589c);
+        tmp3.x = (x - float_230_8041d6ec) - float_6_8041d6f4;
+        tmp3.y = y;
+        tr3 = tmp3;
+        winIconSet(iconId, &tr3, &sc3, &c3);
         }
         break;
     case 3:
         if (pouchGetJumpLv() > 0) {
-            GXColor c1,c2,c3;
+            GXColor c3,c2,c1;
+            Vec sc3,tmp3,tr3,sc2,tmp2,tr2,sc1,tmp1,tr1;
             iconId = itemDataTable[pouchGetJumpLv() + 5].icon_id;
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x21C, vec3_802f586c);
-        tmp.x = (x - float_210_8041d6f8) + float_5_8041d6cc;
-        y = float_20_8041d628 + y;
-        tmp.y = y - float_5_8041d6cc;
         c1 = dat_8041d5dc;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x228, vec3_802f5878), c1);
-    }
-    {
+        sc1 = FUKI_VEC(0x228, vec3_802f5878);
+        tmp1 = FUKI_VEC(0x21C, vec3_802f586c);
+        tmp1.x = (x - float_210_8041d6f8) + float_5_8041d6cc;
+        y = float_20_8041d628 + y;
+        tmp1.y = y - float_5_8041d6cc;
+        tr1 = tmp1;
+        WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5e0;
-        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x234, vec3_802f5884), x - float_210_8041d6f8, y), FUKI_VEC(0x240, vec3_802f5890), c2);
-    }
-    winIconInit();
-    {
-        Vec sc,tr;
+        sc2 = FUKI_VEC(0x240, vec3_802f5890);
+        tmp2 = FUKI_VEC(0x234, vec3_802f5884);
+        tmp2.x = x - float_210_8041d6f8;
+        tmp2.y = y;
+        tr2 = tmp2;
+        WINTEXSET(0xB1, tr2, sc2, c2);
+        winIconInit();
         c3 = dat_8041d5e4;
-        sc = FUKI_VEC(0x258, vec3_802f58a8);
-        tr = fukiMkVec(FUKI_VEC(0x24C, vec3_802f589c), (x - float_210_8041d6f8) - float_6_8041d6f4, y);
-        winIconSet(iconId, &tr, &sc, &c3);
-    }
+        sc3 = FUKI_VEC(0x258, vec3_802f58a8);
+        tmp3 = FUKI_VEC(0x24C, vec3_802f589c);
+        tmp3.x = (x - float_210_8041d6f8) - float_6_8041d6f4;
+        tmp3.y = y;
+        tr3 = tmp3;
+        winIconSet(iconId, &tr3, &sc3, &c3);
         }
         break;
     case 7:
         if ((s32)pouchCheckItem(2) != 0) {
-            GXColor c1,c2,c3;
+            GXColor c3,c2,c1;
+            Vec sc3,tmp3,tr3,sc2,tmp2,tr2,sc1,tmp1,tr1;
             iconId = itemDataTable[2].icon_id;
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp.x = (x - float_80_8041d68c) + float_5_8041d6cc;
-        y = float_90_8041d6d8 + y;
-        tmp.y = y - float_5_8041d6cc;
         c1 = dat_8041d5d0;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
-    }
-    {
+        sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
+        tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp1.x = (x - float_80_8041d68c) + float_5_8041d6cc;
+        y = float_90_8041d6d8 + y;
+        tmp1.y = y - float_5_8041d6cc;
+        tr1 = tmp1;
+        WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
-        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_80_8041d68c, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
-    }
-    winIconInit();
-    {
-        Vec sc,tr;
+        sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
+        tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp2.x = x - float_80_8041d68c;
+        tmp2.y = y;
+        tr2 = tmp2;
+        WINTEXSET(0xB1, tr2, sc2, c2);
+        winIconInit();
         c3 = dat_8041d5d8;
-        sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_80_8041d68c) + float_6_8041d6f4, y);
-        winIconSet(iconId, &tr, &sc, &c3);
-    }
+        sc3 = FUKI_VEC(0x210, vec3_802f5860);
+        tmp3 = FUKI_VEC(0x204, vec3_802f5854);
+        tmp3.x = (x - float_80_8041d68c) + float_6_8041d6f4;
+        tmp3.y = y;
+        tr3 = tmp3;
+        winIconSet(iconId, &tr3, &sc3, &c3);
         }
         break;
     case 8:
         if ((s32)pouchCheckItem(4) != 0) {
-            GXColor c1,c2,c3;
+            GXColor c3,c2,c1;
+            Vec sc3,tmp3,tr3,sc2,tmp2,tr2,sc1,tmp1,tr1;
             iconId = itemDataTable[4].icon_id;
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp.x = (x - float_80_8041d68c) + float_5_8041d6cc;
-        y = float_20_8041d628 + y;
-        tmp.y = y - float_5_8041d6cc;
         c1 = dat_8041d5d0;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
-    }
-    {
+        sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
+        tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp1.x = (x - float_80_8041d68c) + float_5_8041d6cc;
+        y = float_20_8041d628 + y;
+        tmp1.y = y - float_5_8041d6cc;
+        tr1 = tmp1;
+        WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
-        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_80_8041d68c, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
-    }
-    winIconInit();
-    {
-        Vec sc,tr;
+        sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
+        tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp2.x = x - float_80_8041d68c;
+        tmp2.y = y;
+        tr2 = tmp2;
+        WINTEXSET(0xB1, tr2, sc2, c2);
+        winIconInit();
         c3 = dat_8041d5d8;
-        sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_80_8041d68c) + float_6_8041d6f4, y);
-        winIconSet(iconId, &tr, &sc, &c3);
-    }
+        sc3 = FUKI_VEC(0x210, vec3_802f5860);
+        tmp3 = FUKI_VEC(0x204, vec3_802f5854);
+        tmp3.x = (x - float_80_8041d68c) + float_6_8041d6f4;
+        tmp3.y = y;
+        tr3 = tmp3;
+        winIconSet(iconId, &tr3, &sc3, &c3);
         }
         break;
     case 9:
         if ((s32)pouchCheckItem(5) != 0) {
-            GXColor c1,c2,c3;
+            GXColor c3,c2,c1;
+            Vec sc3,tmp3,tr3,sc2,tmp2,tr2,sc1,tmp1,tr1;
             iconId = itemDataTable[5].icon_id;
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
-        y = float_130_8041d680 + y;
-        tmp.y = y - float_5_8041d6cc;
         c1 = dat_8041d5d0;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
-    }
-    {
+        sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
+        tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp1.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
+        y = float_130_8041d680 + y;
+        tmp1.y = y - float_5_8041d6cc;
+        tr1 = tmp1;
+        WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
-        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_30_8041d6fc, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
-    }
-    winIconInit();
-    {
-        Vec sc,tr;
+        sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
+        tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp2.x = x - float_30_8041d6fc;
+        tmp2.y = y;
+        tr2 = tmp2;
+        WINTEXSET(0xB1, tr2, sc2, c2);
+        winIconInit();
         c3 = dat_8041d5d8;
-        sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_30_8041d6fc) + float_6_8041d6f4, y);
-        winIconSet(iconId, &tr, &sc, &c3);
-    }
+        sc3 = FUKI_VEC(0x210, vec3_802f5860);
+        tmp3 = FUKI_VEC(0x204, vec3_802f5854);
+        tmp3.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
+        tmp3.y = y;
+        tr3 = tmp3;
+        winIconSet(iconId, &tr3, &sc3, &c3);
         }
         break;
     case 10:
         if ((s32)pouchCheckItem(3) != 0) {
-            GXColor c1,c2,c3;
+            GXColor c3,c2,c1;
+            Vec sc3,tmp3,tr3,sc2,tmp2,tr2,sc1,tmp1,tr1;
             iconId = itemDataTable[3].icon_id;
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
             GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
-        y = float_60_8041d700 + y;
-        tmp.y = y - float_5_8041d6cc;
         c1 = dat_8041d5d0;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
-    }
-    {
+        sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
+        tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
+        tmp1.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
+        y = float_60_8041d700 + y;
+        tmp1.y = y - float_5_8041d6cc;
+        tr1 = tmp1;
+        WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
-        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_30_8041d6fc, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
-    }
-    winIconInit();
-    {
-        Vec sc,tr;
+        sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
+        tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
+        tmp2.x = x - float_30_8041d6fc;
+        tmp2.y = y;
+        tr2 = tmp2;
+        WINTEXSET(0xB1, tr2, sc2, c2);
+        winIconInit();
         c3 = dat_8041d5d8;
-        sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_30_8041d6fc) + float_6_8041d6f4, y);
-        winIconSet(iconId, &tr, &sc, &c3);
-    }
+        sc3 = FUKI_VEC(0x210, vec3_802f5860);
+        tmp3 = FUKI_VEC(0x204, vec3_802f5854);
+        tmp3.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
+        tmp3.y = y;
+        tr3 = tmp3;
+        winIconSet(iconId, &tr3, &sc3, &c3);
         }
         break;
     default:

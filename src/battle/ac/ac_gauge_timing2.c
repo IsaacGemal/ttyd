@@ -30,7 +30,13 @@ extern const f32 float_55_80421b28;
 extern const f32 float_25_80421b2c;
 extern const f32 float_neg200_80421b30;
 extern const f32 float_60_80421b34;
-extern const s32 dat_80421ad8;
+#ifdef MUST_MATCH
+// Match-only: a non-const .sdata2 definition stops MWCC hoisting the `lwz` of this const global above
+// the surrounding case-0 stores; the hoist shifts the whole callee-saved GPR colouring (96.74 -> 98.38).
+__declspec(section ".sdata2") s32 dat_80421ad8 = -1;
+#else
+const s32 dat_80421ad8 = -1;
+#endif
 extern const s32 dat_80421adc;
 extern const s32 dat_80421ae0;
 extern const s32 dat_80421ae4;
@@ -74,15 +80,27 @@ extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// The only differences left are MWCC's callee-saved GPR colouring (dec=r29 vs r27, autoFlag=r28 vs
-// r26, loop index r30 vs r28, ng=r26/r27 vs r30/r29) and the scheduling that follows from it: the
-// `case 0` initialiser loads dat_80421ad8 earlier, and the `if (autoFlag)` block puts `autoFlag = 0`
-// after the other initialisers instead of before the branch. Calls, constants and memory accesses
-// all match; byte size 1628 matches. Tried: every relevant pragma (opt_lifetimes/opt_propagation/
-// opt_common_subs/opt_dead_assignments/global_optimizer/peephole/scheduling/optimize_for_size), local
-// declaration order/scope/type, `register`, splitting the loop counters, inlining the sound-name
-// literals, and shuffling the case 0 statements; none moves the colouring.
-// NONMATCHING (96.74%): callee-saved colouring and the two scheduling slots above.
+// Defining dat_80421ad8 non-const (see the .sdata2 definition at the top) stops MWCC hoisting its
+// `lwz` above the case-0 stores and fixes the case-0 schedule. Reading
+// `autoFlag` into a `doCheck` temp before zeroing it (`s32 doCheck = autoFlag; autoFlag = 0; if
+// (doCheck)`) pins the auto-command probe's `li <flag>,0` before its `beq`, which the scheduler only
+// did in the original, and lifts the function to 98.73 (#ifdef-free source change: the temp is
+// coalesced away by the allocator). Giving the ng loop, the auto-command probe loop and the big SFX
+// loop their own block-scoped counters (`{ s32 m; for (m = 0; ...) }`, likewise p and q) rather than
+// reusing the function-scope `i` is what finally nudges the allocator: 98.73 -> 99.03. The original
+// evidently declared those counters in their own scopes too (its ng/pone/big loops use r28/r30/r28,
+// while case 0 and the allSet loop use r11/r3). What is left is only MWCC's callee-saved GPR
+// colouring: the original packs the long-lived webs low (autoFlag=r26, dec=r27, found-loop i=r28)
+// and the later ones high (triggered=r29, sfx pointer=r30); ours is a permutation of the same
+// registers (dec=r29, autoFlag=r30, triggered=r28, ...). Calls, constants, memory accesses and byte
+// size 1628 all match. This is a pure allocator tie-break, not a source bug: the 5! permutation
+// sweep of the function-level declarations, every relevant pragma (opt_lifetimes/opt_propagation/
+// opt_common_subs/opt_dead_assignments/global_optimizer/peephole/opt_loop_invariants/
+// opt_strength_reduction/optimize_for_size/scheduling/optimization_level/defer_codegen), an `ac`
+// intermediate for dec/disp/unit, `&actionCommands.field_0x2BC[0]`, const/volatile/`char*` string
+// locals, block-scoping the case-0/allSet/pone loops, and making the individual float_* externs
+// non-const all leave it (or worsen it). Queued for the permuter.
+// NONMATCHING (99.03%): callee-saved GPR colouring only (same registers, permuted).
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -139,6 +157,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		work->actionCommands.mAcState = 0x3E8;
 		// fallthrough
 	case 0x3E8: {
+		s32 p;
 		s32 triggered = 0;
 		s32 allSet;
 
@@ -172,11 +191,14 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 
 		{
 			const char* ng = "SFX_AC_COMMAND_NG1";
-			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-				if (dec->state[i] == 0) {
-					if (dec->progress > float_6_80421b44 + dec->value[i]) {
-						dec->state[i] = -1;
-						psndSFXOn(ng);
+			{
+				s32 m;
+				for (m = 0; m < *(s32*)&work->actionCommands.field_34[0x0C]; m++) {
+					if (dec->state[m] == 0) {
+						if (dec->progress > float_6_80421b44 + dec->value[m]) {
+							dec->state[m] = -1;
+							psndSFXOn(ng);
+						}
 					}
 				}
 			}
@@ -197,17 +219,24 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			}
 		}
 
-		if (autoFlag) {
-			s32 found = 0;
+		{
+			s32 doCheck = autoFlag;
 			autoFlag = 0;
-			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-				if (dec->state[i] == 0 && __fabs(dec->progress - dec->value[i]) <= 6.0) {
-					found = 1;
-					break;
+			if (doCheck) {
+				s32 found;
+				found = 0;
+				{
+					s32 p;
+					for (p = 0; p < *(s32*)&work->actionCommands.field_34[0x0C]; p++) {
+						if (dec->state[p] == 0 && __fabs(dec->progress - dec->value[p]) <= 6.0) {
+							found = 1;
+							break;
+						}
+					}
 				}
-			}
-			if (found) {
-				autoFlag = 1;
+				if (found) {
+					autoFlag = 1;
+				}
 			}
 		}
 
@@ -215,35 +244,38 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			const char* ng2 = "SFX_AC_COMMAND_NG1";
 			const char* ok = "SFX_AC_COMMAND_OK1";
 			s32 done = 0;
-			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-				f64 diff;
-				if (dec->state[i] != 0) {
-					continue;
-				}
-				if (done) {
-					continue;
-				}
-				diff = __fabs(dec->progress - dec->value[i]);
-				if (diff <= 6.0) {
-					if (autoFlag == 0 && dec->flag[i] != 0) {
-						dec->state[i] = -1;
-						psndSFXOn(ng2);
-						done = 1;
+			{
+				s32 q;
+				for (q = 0; q < *(s32*)&work->actionCommands.field_34[0x0C]; q++) {
+					f64 diff;
+					if (dec->state[q] != 0) {
+						continue;
 					}
-					else {
-						dec->state[i] = 1;
-						work->actionCommands.outputParams[0]++;
-						psndSFXOn(ok);
-						done = 1;
+					if (done) {
+						continue;
 					}
-				}
-				else {
-					if (diff < __fabs(dec->value[1] - dec->value[0])) {
-						dec->flag[i] = 1;
-						if (i == *(s32*)&work->actionCommands.field_34[0x0C] - 1) {
-							dec->state[i] = -1;
+					diff = __fabs(dec->progress - dec->value[q]);
+					if (diff <= 6.0) {
+						if (autoFlag == 0 && dec->flag[q] != 0) {
+							dec->state[q] = -1;
 							psndSFXOn(ng2);
 							done = 1;
+						}
+						else {
+							dec->state[q] = 1;
+							work->actionCommands.outputParams[0]++;
+							psndSFXOn(ok);
+							done = 1;
+						}
+					}
+					else {
+						if (diff < __fabs(dec->value[1] - dec->value[0])) {
+							dec->flag[q] = 1;
+							if (q == *(s32*)&work->actionCommands.field_34[0x0C] - 1) {
+								dec->state[q] = -1;
+								psndSFXOn(ng2);
+								done = 1;
+							}
 						}
 					}
 				}
@@ -351,7 +383,8 @@ void battleAcDelete_GaugeTiming2(BattleWork* work) {
 // Written from scratch; byte size 1652 matches. All callee-saved register colouring now matches.
 // The only remaining diff is one scheduler slot near the top: the original issues `lfs f1,
 // float_neg288` before `lhz dec->total` and computes `f31` before `subic`, mine the reverse.
-// NONMATCHING (98.69%): one top-of-function instruction-scheduling slot.
+// NONMATCHING (99.21%): one top-of-function instruction-scheduling slot.
+#pragma opt_common_subs off // MWCC's CSE pass shifts the callee-saved FPR set by one; off restores it
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	BattleActions* ac = &work->actionCommands;
@@ -532,4 +565,4 @@ static void actionCommandDisp(f32 x, f32 y) {
 		}
 	}
 }
-
+#pragma opt_common_subs reset

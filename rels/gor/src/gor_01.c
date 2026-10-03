@@ -1,6 +1,6 @@
 #include "gor_01.h"
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,8 +106,10 @@ s32 christine_nakama_after[82];
 s32 iri_09_tentyo_talk[172];
 s32 iri_16_tyutyu_talk[445];
 s32 cooking_evt[852];
+// .bss order is last-declared-first: the original has item_tbl at 0x0 and
+// iri_09_item_tbl at 0x54, so iri_09_item_tbl is declared first.
+void* iri_09_item_tbl[1];
 static u32 item_tbl[21];
-extern void* iri_09_item_tbl[1];
 
 // clang-format off
 extend_data(8,
@@ -612,7 +614,7 @@ EVT_BEGIN(nancy_door_anime)
     RETURN
 EVT_END()
 USER_FUNC(nancy_block_init_func) {
-    NpcEntry* npc = evtNpcNameToPtr(event, "me");
+    NpcEntry* npc = evtNpcNameToPtr(event, "ナンシー");
     f32 z = npc->position.z;
 
     ((f32*)event->lwData)[10] = z;
@@ -623,7 +625,7 @@ USER_FUNC(nancy_block_init_func) {
 
 USER_FUNC(nancy_block_func) {
     MarioWork* mario = marioGetPtr();
-    NpcEntry* npc = evtNpcNameToPtr(event, "me");
+    NpcEntry* npc = evtNpcNameToPtr(event, "ナンシー");
     f32 value;
     f32 limit;
     f32 clamped;
@@ -5507,20 +5509,10 @@ EVT_BEGIN(cooking_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 item_tbl[21] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
-};
+// item_tbl and iri_09_item_tbl are uninitialised: the original keeps both in .bss
+// (item_tbl at 0x0, iri_09_item_tbl at 0x54). Their tentative definitions at the top
+// of the file place them there.
 
-// TODO: type
-void* iri_09_item_tbl[1] = {
-    0x00000000,
-};
 
 // The original lays chk_cook_eff_type out as a branchy tree (two sparse switches) and inlines it
 // into cook_effect / chk_cook_msg. Auto-inlining drops the branchy source (too big as a plain

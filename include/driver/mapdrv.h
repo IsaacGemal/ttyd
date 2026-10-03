@@ -318,3 +318,4 @@ typedef struct MapFileAnimEntry {
 extern GXColor unk_80422f80;
 extern const char str_80419848[];
 extern const char str_804198D0[];
+extern f32 scrl_uv[4];

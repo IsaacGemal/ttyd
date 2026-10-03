@@ -170,6 +170,7 @@ void unk_yuu_00001054(CameraId cameraId, void* param) {
     }
 }
 
+#pragma opt_propagation off // keep count*sizeof(MonteEntry) from folding to li 0x44 (count==1)
 #ifdef MUST_MATCH
 // Match-only shape: with this loop written inline in the function below, MWCC materialises the
 // byte-offset induction variable's init as `li r3,0`, which lets the scheduler sink the index init
@@ -193,9 +194,10 @@ static inline void monte_fill(void) {
 }
 #endif
 
-// Kept off so MWCC does not fold count*sizeof(MonteEntry) (count==1) to li 0x44 and drop the
-// target's li r28,1 / mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
-// NONMATCHING (84.58%): only the first loop's register swap differs (target monte_p=r8, base=r10;
+// `#pragma opt_propagation off` above is required: with propagation on MWCC folds
+// count*sizeof(MonteEntry) (count==1) to li 0x44 and drops the target's li r28,1 /
+// mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
+// NONMATCHING (99.36%): only the first loop's register swap differs (target monte_p=r8, base=r10;
 // ours monte_p=r10, base=r8) -- see the monte_fill comment above for the shapes tried.
 USER_FUNC(unk_yuu_00000f1c) {
     s32 already = 0;
@@ -231,6 +233,7 @@ USER_FUNC(unk_yuu_00000f1c) {
     }
     return EVT_RETURN_BLOCK;
 }
+#pragma opt_propagation reset
 
 static s32 get_monte_check(Vec* a, Vec* b) {
     if (PSVECDistance(a, b) < 20.0f && __fabs(a->y - b->y) < 20.0) {

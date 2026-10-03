@@ -447,9 +447,18 @@ void iconDispGx(Vec* position, s16 flags, s16 iconId, f32 scale) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 
-// NONMATCHING (97.80%): only `data` differs: retail keeps it in r4 and we use r6 (id's
-// register), which shifts the frame loop's scratch registers by one. The icon_bin/id lookup,
-// loop bounds and branch layout all match.
+// Inlining this lookup changes MWCC's register colouring: it puts `data` in r4 (retail's
+// register) instead of r6, so keep it inline.
+static inline IconBinaryEntry* iconGetBinaryData(IconBinary* bin, u16 id) {
+    if (!icon_tpl_ok || !icon_bin_ok) {
+        return NULL;
+    }
+    return (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+}
+
+// NONMATCHING (98.24%): the inline lookup gives us `data`=r4 (retail r4) and the MUST_MATCH
+// dummy store pins the cached numIcons load to r7 and `frames` to r8 (retail r8/r7); only that
+// numIcons/frames swap and the extra store remain. Lookup, loop bounds and branches match.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -469,17 +478,17 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     bin = icon_bin;
     id = (u16)iconId;
     entryp->iconId = id;
-    {
-        if (!icon_tpl_ok || !icon_bin_ok) {
-            data = NULL;
-        } else {
-            data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
-        }
-    }
+    data = iconGetBinaryData(bin, id);
     entryp->width = data->width;
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
+#ifdef MUST_MATCH
+    // MUST_MATCH: dummy store, not in retail. It forces the cached numIcons load into r7
+    // before the frame loop so the loop's register layout matches; the entry is a stack
+    // local and iconGX does not read numIcons, so behaviour is unchanged.
+    entryp->numIcons = data->numIcons;
+#endif
     if (data->numIcons > 1) {
         s32 total = 0;
         s32 rest;
@@ -502,8 +511,9 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (97.71%): same `data`-register difference as iconDispGx2 (retail r4, ours r6);
-// the lookup and the frame loop match.
+// NONMATCHING (98.17%): same register picture as iconDispGx2 (retail `data` r4, `numIcons`
+// r8, `frames` r7). The inline lookup plus the MUST_MATCH dummy store reproduce everything
+// except the numIcons/frames swap and that extra store.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -523,17 +533,15 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     bin = icon_bin;
     id = (u16)iconId;
     entryp->iconId = id;
-    {
-        if (!icon_tpl_ok || !icon_bin_ok) {
-            data = NULL;
-        } else {
-            data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
-        }
-    }
+    data = iconGetBinaryData(bin, id);
     entryp->width = data->width;
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
+#ifdef MUST_MATCH
+    // MUST_MATCH: dummy store, not in retail. See iconDispGx2.
+    entryp->numIcons = data->numIcons;
+#endif
     if (data->numIcons > 1) {
         s32 total = 0;
         s32 rest;

@@ -103,7 +103,9 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (91.59%): unk_yuu_000034bc; target computes size once into a register (mulli) and reuses it, we spill it to the stack; first loop bases at +8 vs +0
+// NONMATCHING (94.59%): unk_yuu_000034bc; MWCC folds num*sizeof to li 0x44 (no li r27,1/mulli r28),
+// so the volatile size only spills it to the stack; the first loop body now matches apart from the
+// base/i register swap (target base=r6 i=r8, ours base=r8 i=r6), the same swap monte_fill hit in yuu_02.
 USER_FUNC(unk_yuu_000034bc) {
     s32 prev = 0;
     s32 num = 1;
@@ -126,10 +128,10 @@ USER_FUNC(unk_yuu_000034bc) {
         unk_yuu_bss00000010->count = num;
         unk_yuu_bss00000010->work = work2;
         for (i = 0; i < unk_yuu_bss00000010->count; i++) {
-            Yuuminigame4Work* e = &unk_yuu_bss00000010[i];
-            e->position = mario->position;
-            e->position.y += 40.0f;
-            e->unk18 = 1.0f;
+            f32* base = (f32*)((u8*)&unk_yuu_bss00000010[i] + 8);
+            *(Vec*)&base[1] = mario->position;
+            base[2] += 40.0f;
+            base[4] = 1.0f;
         }
     }
     {
@@ -655,11 +657,16 @@ USER_FUNC(evt_ryushi_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.60%): evt_ryushi_clr; integer loop now matches exactly (temps a,b,c assigned after wp->unk0=0); remaining are top args[0]/xwp load order, the inlined randf fneg order (target negates x, we negate the max product) and one fmuls operand order
+// NONMATCHING (98.37%): evt_ryushi_clr; the whole loop body now matches, including both randf
+// products for all three coordinates. Remaining: the top xwp/event->args[0] load order - the
+// target emits `lis r4,xwp@ha; lwz r7,0x18(r3); ...; lwz r29,0(r6)`, we fuse `lwz r29,xwp@l(r6)`.
 USER_FUNC(evt_ryushi_clr) {
     RyushiEntry* wp = xwp;
     s32 i;
     s32 n = ryuwp;
+#ifdef MUST_MATCH
+    f32 half = 0.5f;
+#endif
 
     wp->unk04 = evtGetValue(event, event->args[0]);
     wp->unk24 = 0;
@@ -675,17 +682,39 @@ USER_FUNC(evt_ryushi_clr) {
         s32 a;
         s32 b;
         s32 c;
+        f32 hi;
+        f32 lo;
+        f32 va;
 
         wp->unk0 = 0;
         a = (i - 1) % 10;
         b = ((i - 1) / 10) % 6;
         c = (i - 1) / 60;
+#ifdef MUST_MATCH
+        wp->unk08 = xwp->unk08 * half * ((b + c) & 1) + ((f32)a * xwp->unk08 - xwp->unk08 * 4.5f);
+#else
         wp->unk08 = xwp->unk08 * 0.5f * ((b + c) & 1) + ((f32)a * xwp->unk08 - xwp->unk08 * 4.5f);
+#endif
         wp->unk0C = (f32)b * xwp->unk0C - xwp->unk0C * 2.5f;
         wp->unk10 = (f32)c * xwp->unk10 - xwp->unk10 * 1.5f;
-        wp->x = wp->unk08 + randf(-(0.3f * xwp->unk08), 0.3f * xwp->unk08);
-        wp->y = wp->unk0C + randf(-(0.3f * xwp->unk0C), 0.3f * xwp->unk0C);
-        wp->z = wp->unk10 + randf(-(0.3f * xwp->unk10), 0.3f * xwp->unk10);
+        hi = 0.3f * xwp->unk08;
+        lo = 0.3f * -xwp->unk08;
+        wp->x = wp->unk08 + randf(lo, hi);
+        hi = 0.3f * xwp->unk0C;
+        lo = 0.3f * -xwp->unk0C;
+        wp->y = wp->unk0C + randf(lo, hi);
+#ifdef MUST_MATCH
+        // Match-only dependency: folding the negation through `va` makes MWCC emit both
+        // 0.3f products before the rand call (the natural form defers the max product).
+        va = xwp->unk10;
+        hi = 0.3f * va;
+        va = -va;
+        lo = 0.3f * va;
+#else
+        hi = 0.3f * xwp->unk10;
+        lo = 0.3f * -xwp->unk10;
+#endif
+        wp->z = wp->unk10 + randf(lo, hi);
         wp->scale = 0.5f;
     }
     return EVT_RETURN_DONE;

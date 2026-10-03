@@ -394,11 +394,15 @@ extern const f32 float_0p017453_8041c164;
 // `pi * deg` numerators (a70/a84) before the `/ 180` divisions; that fixes the original's
 // interleaved `fmuls, fmuls, fdivs, fdivs` schedule, and writing case 4's `0.2 * n` as
 // `n * 0.2` puts its i2f magic/double in f4/f3 like the target (98.50% -> 99.77%).
-// Still differing: case 1 reloads `window->cursor` into r3 where the target uses r5 (and
-// field_0x18 in r0 vs r3); in case 4 only `v84` (f2 vs f3) and the `float_180`/`float_0p2`
-// pair (f5/f2 vs f2/f5) are swapped; case 5 keeps `pi`/`float_180` in f6/f5 where the target
-// has f3/f2, so its i2f magic/double/0.2 sit in f3/f2/f4 instead of f5/f4/f6.
-// NONMATCHING (99.77%): see above.
+// Case 1 now computes `d` as "load field_0x18 into a temp then subf" (`s32 d =
+// window->field_0x18; d = window->cursor->field_0 - d;`), which moves the field_0x18 load
+// from r4 to r3 and the `subf` to the target's `subf r4,r3,r0`; writing case 5's product as
+// `(f32)n * float_0p2` (not `float_0p2 * (f32)n`) re-colours the i2f/0p2 set (99.79%).
+// Still differing: case 1 reloads `window->cursor` into r3 where the target uses r5; in case 4
+// only `v84` (f2 vs f3) and the `float_180`/`float_0p2` pair (f5/f2 vs f2/f5) are swapped;
+// case 5 keeps `pi`/`float_180` in f6/f5 where the target has f3/f2, so its i2f magic/double/
+// 0.2 sit in f4/f3/f2 instead of f5/f4/f6.
+// NONMATCHING (99.79%): see above.
 void DrawMainMenu(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -433,8 +437,8 @@ void DrawMainMenu(void) {
     case 1:
         window->field_0x14 = 1;
         {
-            s32 d = window->cursor->field_0;
-            d -= window->field_0x18;
+            s32 d = window->field_0x18;
+            d = window->cursor->field_0 - d;
             if (d == 1 || -(window->cursor->unk8 - 1) == d) {
                 window->field_0xC = 2;
                 window->field_0x14 = 0;
@@ -594,7 +598,7 @@ void DrawMainMenu(void) {
                 // fmuls, fmuls, fdivs, fdivs schedule only comes out of this order.
                 a70 = float_3p1416_8041c14c * v70;
                 a84 = float_3p1416_8041c14c * v84;
-                cur = a70 / float_180_8041c150 - float_0p2_8041c148 * (f32)window->field_0x48[i];
+                cur = a70 / float_180_8041c150 - (f32)window->field_0x48[i] * float_0p2_8041c148;
                 angle = a84 / float_180_8041c150;
 #else
                 a70 = float_3p1416_8041c14c * v70 / float_180_8041c150;
@@ -1231,7 +1235,16 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
 // hangs MWCC). Per-region diff counts are 8/8/11 and the best tail-only form still leaves
 // 8 scheduling diffs. The scheduler never hoists the `float_0` load into f0 above
 // `pos->x`, so `pos->y`/`pos->x` land in f0 instead of the target's f1.
-// NONMATCHING (88.09%): see above.
+// Exhaustive first- and second-block linear-extension searches (all 30
+// dependency-respecting orderings each, in split and single-statement sum forms) and a
+// tail sweep were tried. The tail breakthrough: writing the product as a signed negated temp
+// `f32 ny = float_24 * -(f32)n; vec.y = pos->y + ny;` (rather than `vec.y = pos->y - ny`)
+// drops the tail diffs from 11 to 10 and lifts the whole function to 89.63%; the direct
+// `pos->y - 24*(f32)n` form emits the target's `fnmsubs` but re-schedules the `vec.x`
+// load (88.04%), and `(f32)n * 24`, `-ny + pos->y`, function-scope `ny`, `px`/`py` locals,
+// four store orders and every `vec.x` position all score lower. Per-region diff counts are
+// now 8/8/10; the remaining 8+8 are the first/second block's `pos->y`-in-f0 rotation.
+// NONMATCHING (89.63%): see above.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -1274,8 +1287,8 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         n = 5;
     }
     {
-        f32 ny = float_24_8041c198 * (f32)n;
-        vec.y = pos->y - ny;
+        f32 ny = float_24_8041c198 * -(f32)n;
+        vec.y = pos->y + ny;
         vec.z = float_0_8041c144;
     }
     iconDispGx(&vec, 0x14, 0x1F0, float_1_8041c178);

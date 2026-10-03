@@ -161,9 +161,9 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (93.62%): `switch`/`case 1` match. The 0xA block copies `*color` into a `GXColor c`
-// local, assigns `tx`/`ty`/`one`, stores `pos->x`, then `tz`, and passes `c`; the 0xB default inlines
-// `gauge->field_0x14` into the `tx` expression and the call. Left: one default-arm duplicate `w` load.
+// NONMATCHING (96.18%): `f32 w = gauge->field_0x14` and a volatile `GXColor c` read in the
+// 0xB arm give retail's `w`-in-f4 allocation and schedule; left are 5 instructions: the named
+// colour local plus its by-value argument temp stores the colour twice in each arm.
 void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
 	BattleWorkHpGauge* gauge = &unit->hpGauge;
@@ -200,15 +200,21 @@ void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 		break;
 	default:
 		{
-		f32 ty, tx;
+		f32 ty, tx, w = gauge->field_0x14;
+#ifdef MUST_MATCH
+		// volatile read pins the colour load before the fadds, as the target schedules it
+		GXColor c = *(volatile GXColor*)color;
+#else
 		GXColor c = *color;
+#endif
 		tx = float_19_8041c2e8 + pos->x;
-	tx -= float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14);
+		tx -= float_20_8041c304 * (float_1_8041c2f4 - w);
 		ty = pos->y - float_3_8041c2ec;
 		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, c, 0, tx, ty, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
+		    0xB, c, 0, tx, ty, float_0_8041c2f0, w, float_1_8041c2f4);
 		}
 	}}
+#pragma opt_propagation reset
 
 void BattleCommandInit(BattleWork* wp) {
 	wp->commandMenu.unk0 = 0;
@@ -724,13 +730,16 @@ void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x10;
 }
 
-// NONMATCHING (98.88%): callee-saved register shift only (target unit=r27/cmd=r31, ours r31/r30).
+// NONMATCHING (99.00%): declaring `s32 result;` first (assigned after BattleGetUnitPtr, as the
+// target does) puts `result` in r30 like retail; the rest is a callee-saved colouring: target
+// unit=r27/wp=r28/arg=r29/result=r30/cmd=r31, ours wp=r27/arg=r28/cmd=r29/result=r30/unit=r31.
 s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
+	s32 result;
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
-	s32 result = 0;
+	result = 0;
 
 	while (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, arg, &cursor);
@@ -3115,9 +3124,9 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
-// NONMATCHING (98.59%): only wp and the `event->args` temp are swapped (target wp=r4,
-// args temp=r6; ours wp=r6, args temp=r4). The data symbol (`str_802EF640` vs `...rodata.0`) is symbol-only
-// and disappears at link; the register swap does not.
+#pragma opt_dead_assignments off
+// NONMATCHING (99.49%): `opt_dead_assignments off` keeps the overwritten first `msg` assignment
+// so the pooled string base stays in r5; the only leftover is the wp/args r4/r6 colouring.
 s32 _get_msg(EventEntry* event) {
 	char* msg = "btl_wn_dummy_noitem";
 	BattleWork* wp = _battleWorkPointer;
@@ -3146,3 +3155,4 @@ s32 _get_msg(EventEntry* event) {
 	evtSetValue(event, index, (s32)msg);
 	return 2;
 }
+#pragma opt_dead_assignments reset
