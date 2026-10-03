@@ -717,12 +717,12 @@ static inline f32 mainLogI2F(s32 v, const char* base, f64* scratch) {
 #endif
 
 // Tattle log / menu main: the tabbed "kiroku" window (map, crystal stars, cards, tattle log).
-// NONMATCHING (96.35%): behaviour complete, checked against the asm. What still differs: the int->float pool (at all but the case-0 site ours emits an anonymous
+// NONMATCHING (96.24%): behaviour complete, checked against the asm. What still differs: the int->float pool (at all but the case-0 site ours emits an anonymous
 // `@NNN@l` load with its own `lis` where the original reads `base+0x420`; the case-0 site uses the MUST_MATCH
 // `mainLogI2F` helper above, which is base-relative but costs fsub+frsp), the 0xa0 vs 0x90 frame the helper
 // scratch forces, and the FPR colouring the pool register drives (map px/qx/py/qy, the map clamps,
 // card/badge/char).
-// NONMATCHING (96.35%): register allocation + the i2f pool remain (see the note above)
+// NONMATCHING (96.24%): register allocation + the i2f pool remain (see the note above)
 s32 winLogMain(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
@@ -2138,12 +2138,13 @@ extern const char str_802F6348[];
 extern const char str_802F6290[];
 extern const char str_802F62A0[];
 
+#pragma opt_loop_invariants off // needed: the target reloads the vec3 tables and address offsets inside the loop
 // Behaviour complete, checked against the asm. Declaring the shared rodata base non-const and
 // disabling loop-invariant motion stopped MWCC hoisting the vec3 loads; keeping the int->float
 // offsets as integer temps (`xoff`) and inlining the float positions (`xo`/`yo`, `ax`/`ay`)
 // made the allocator rematerialise them exactly as the original does. Tattle/msg coalescing and the
 // i2f pool doubles still differ.
-// NONMATCHING (90.11%): the allocator keeps tattle in one more callee-saved GPR than the original
+// NONMATCHING (91.54%): the allocator keeps tattle in one more callee-saved GPR than the original
 // (9: r23-r31 vs 8: r24-r31) and pools the two int->float doubles anonymously instead of reading
 // them at base+0x420/0x428, which offsets the loop colouring. All 33 calls and every immediate match.
 void monoshiriGX(WindowWork* work, f32 x, f32 y) {
@@ -2274,6 +2275,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         }
     }
 }
+#pragma opt_loop_invariants reset
 extern const Vec vec3_802f6258;
 extern const Vec vec3_802f6264;
 extern const Vec vec3_802f6270;

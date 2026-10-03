@@ -12,6 +12,8 @@
 #include "mario/mariost.h"
 #include <math.h>
 #include <string.h>
+#include "driver/mapdrv.h"
+#include "driver/offscreendrv.h"
 
 extern GlobalWork* gp;
 
@@ -108,15 +110,160 @@ void imgDisp_ProjPlane(CameraId camId, void* param) {
 
 }
 
-// NONMATCHING (0.31%): empty placeholder, not decompiled yet.
+//1:1
 void imgCapture_Prim(ImageEntry* entry, s32 id) {
+	ImageShadow* shadow;
+	s32 pose;
+	smartEntry* image;
+	u16 width, height;
 
+	shadow = &entry->shadows[id];
+	if (!(shadow->flags & 4)) {
+		return;
+	}
+
+	pose = shadow->field_0x10;
+	shadow->flags |= 0x10;
+
+	if (pose != -1) {
+		if (shadow->field_0x40 != 0) {
+			if (shadow->flags & 0x100) {
+				GXTexObj* texObj;
+				smartEntry* imageA;
+				GXTexFmt fmtTexA;
+				u32 sizeA;
+				u16 heightA, widthA;
+
+				offscreenGetTexObj(pose, &texObj, &imageA);
+				if (texObj != NULL) {
+					widthA = GXGetTexObjWidth(texObj);
+					heightA = GXGetTexObjHeight(texObj);
+					fmtTexA = GXGetTexObjFmt(texObj);
+					sizeA = GXGetTexBufferSize(widthA, heightA, fmtTexA, GX_FALSE, 0);
+					if (shadow->field_0x40 == 1) {
+						shadow->field_0x3C = smartAlloc(sizeA, 1);
+					} else if (shadow->field_0x40 == 2) {
+						shadow->field_0x3C = smartAlloc(sizeA, 0);
+					}
+					memcpy(shadow->field_0x3C->address, imageA->address, sizeA);
+					DCFlushRange(shadow->field_0x3C->address, sizeA);
+					GXInitTexObj((GXTexObj*)&shadow->field_0x1C[0], shadow->field_0x3C->address, widthA, heightA, fmtTexA, GX_CLAMP, GX_CLAMP, GX_FALSE);
+					GXInitTexObjLOD((GXTexObj*)&shadow->field_0x1C[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+					offscreenGetBoundingBox(pose, (u16*)&shadow->field_0x8[0], (u16*)&shadow->field_0x8[2], (u16*)&shadow->field_0x8[4], (u16*)&shadow->field_0x8[6]);
+					*(u16*)&shadow->field_0x8[4] -= *(u16*)&shadow->field_0x8[0];
+					*(u16*)&shadow->field_0x8[6] -= *(u16*)&shadow->field_0x8[2];
+					shadow->flags &= ~0x100;
+				}
+			}
+			if (shadow->flags & 0x100) {
+				return;
+			}
+			shadow->flags &= ~0x10;
+		} else {
+			GXTexObj* texObj;
+			smartEntry* image;
+
+			offscreenGetTexObj(pose, &texObj, &image);
+			if (texObj != NULL) {
+				*(GXTexObj*)&shadow->field_0x1C[0] = *texObj;
+				shadow->field_0x3C = image;
+				offscreenGetBoundingBox(pose, (u16*)&shadow->field_0x8[0], (u16*)&shadow->field_0x8[2], (u16*)&shadow->field_0x8[4], (u16*)&shadow->field_0x8[6]);
+				*(u16*)&shadow->field_0x8[4] -= *(u16*)&shadow->field_0x8[0];
+				*(u16*)&shadow->field_0x8[6] -= *(u16*)&shadow->field_0x8[2];
+				shadow->flags &= ~0x10;
+			}
+		}
+	} else {
+		if (shadow->field_0x40 != 0) {
+			if (shadow->flags & 0x100) {
+				GXTexFmt fmtTex, fmtDst;
+				u32 size;
+				s32 mode;
+
+				*(u16*)&shadow->field_0x8[0] = shadow->field_0x4;
+				*(u16*)&shadow->field_0x8[2] = shadow->field_0x6;
+				*(u16*)&shadow->field_0x8[4] = entry->field_0xE4;
+				*(u16*)&shadow->field_0x8[6] = entry->field_0xE6;
+				height = *(u16*)&shadow->field_0x8[6];
+				width = *(u16*)&shadow->field_0x8[4];
+				fmtTex = shadow->field_0x18;
+				fmtDst = shadow->field_0x14;
+				mode = shadow->field_0x40;
+				GXSetTexCopySrc(*(u16*)&shadow->field_0x8[0], *(u16*)&shadow->field_0x8[2], width, height);
+				GXSetTexCopyDst(width, height, fmtDst, GX_FALSE);
+				size = GXGetTexBufferSize(width, height, fmtTex, GX_FALSE, 0);
+				if (mode == 1) {
+					image = smartAlloc(size, 1);
+				} else if (mode == 2) {
+					image = smartAlloc(size, 0);
+				} else {
+					image = smartAlloc(size, 3);
+				}
+				GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+				GXCopyTex(image->address, GX_FALSE);
+				GXPixModeSync();
+				GXInitTexObj((GXTexObj*)&shadow->field_0x1C[0], image->address, width, height, fmtTex, GX_CLAMP, GX_CLAMP, GX_FALSE);
+				GXInitTexObjLOD((GXTexObj*)&shadow->field_0x1C[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+				shadow->field_0x3C = image;
+				shadow->flags &= ~0x100;
+			}
+			if (shadow->flags & 0x100) {
+				return;
+			}
+			shadow->flags &= ~0x10;
+		} else {
+			smartEntry* imageB;
+			u16 widthB, heightB;
+			u32 sizeB;
+			s32 modeB;
+			GXTexFmt fmtDstB, fmtTexB;
+
+			*(u16*)&shadow->field_0x8[0] = shadow->field_0x4;
+			*(u16*)&shadow->field_0x8[2] = shadow->field_0x6;
+			*(u16*)&shadow->field_0x8[4] = entry->field_0xE4;
+			*(u16*)&shadow->field_0x8[6] = entry->field_0xE6;
+			heightB = *(u16*)&shadow->field_0x8[6];
+			widthB = *(u16*)&shadow->field_0x8[4];
+			fmtTexB = shadow->field_0x18;
+			fmtDstB = shadow->field_0x14;
+			modeB = shadow->field_0x40;
+			GXSetTexCopySrc(*(u16*)&shadow->field_0x8[0], *(u16*)&shadow->field_0x8[2], widthB, heightB);
+			GXSetTexCopyDst(widthB, heightB, fmtDstB, GX_FALSE);
+			sizeB = GXGetTexBufferSize(widthB, heightB, fmtTexB, GX_FALSE, 0);
+			if (modeB == 1) {
+				imageB = smartAlloc(sizeB, 1);
+			} else if (modeB == 2) {
+				imageB = smartAlloc(sizeB, 0);
+			} else {
+				imageB = smartAlloc(sizeB, 3);
+			}
+			GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+			GXCopyTex(imageB->address, GX_FALSE);
+			GXPixModeSync();
+			GXInitTexObj((GXTexObj*)&shadow->field_0x1C[0], imageB->address, widthB, heightB, fmtTexB, GX_CLAMP, GX_CLAMP, GX_FALSE);
+			GXInitTexObjLOD((GXTexObj*)&shadow->field_0x1C[0], GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+			shadow->field_0x3C = imageB;
+			shadow->flags &= ~0x10;
+		}
+	}
 }
 
-// NONMATCHING (2.22%): empty placeholder, not decompiled yet.
 void imgCapture(CameraId camId, void* param) {
 	//param is NULL
-	
+	s32 type = gp->inBattle != 0;
+	int i, count;
+	ImageEntry* entry;
+	int shadow;
+
+	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
+		if (entry->flags & 1 && entry->poseId != -1 && (entry->type == 2 || entry->type == type)) {
+			if (entry->field_0x154 == camId) {
+				for (shadow = 0; shadow < 3; shadow++) {
+					imgCapture_Prim(entry, shadow);
+				}
+			}
+		}
+	}
 }
 
 void imgInit(void) { //1:1
@@ -125,9 +272,15 @@ void imgInit(void) { //1:1
 	memset(wp->entries, 0, wp->count * sizeof(ImageEntry));
 }
 
-// NONMATCHING (1.72%): empty placeholder, not decompiled yet.
 void imgAutoRelease(s32 type) {
+	int i, count;
+	ImageEntry* entry;
 
+	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
+		if (entry->flags & 1 && entry->type == type) {
+			imgRelease(entry, type);
+		}
+	}
 }
 
 s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names

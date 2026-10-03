@@ -980,7 +980,6 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     return (event->userdata[1] > 0) ? 0 : 2;
 }
 
-// NONMATCHING (98.35%): rebuilt from the asm. Body matches; only the .rodata constant base/offsets differ.
 s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     BattleSpotEntry* entry;
@@ -1008,9 +1007,17 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
         entry->field_4 = (Vec){25.0f * (f32)code + -50.0f, 25.0f, -50.0f};
         break;
     }
+#ifdef MUST_MATCH
+    // MUST_MATCH: the volatile Vec stores stop MWCC hoisting the dat_80420c28 load across them, and the
+    // volatile read pins it to the end in r0; the non-volatile form schedules it one slot early (98.39).
+    *(volatile Vec*)&entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
+    *(volatile Vec*)&entry->field_1C = (Vec){15.0f, 15.0f, 150.0f};
+    entry->field_28 = *(volatile const u32*)&dat_80420c28;
+#else
     entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
     entry->field_1C = (Vec){15.0f, 15.0f, 150.0f};
     entry->field_28 = dat_80420c28;
+#endif
     entry->flags |= 2;
     return 2;
 }
