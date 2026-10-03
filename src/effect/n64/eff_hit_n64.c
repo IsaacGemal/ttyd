@@ -18,20 +18,42 @@ extern const f32 float_0p0039062_8041f100;
 extern const f32 float_1_8041f104;
 extern const f32 float_256_8041f0fc;
 
+// Declared as an incomplete array so MWCC addresses this .rodata Vec with lis/addi instead of sda21
+// (the original copies it to a stack Vec each loop iteration).
+#ifdef MUST_MATCH
+// volatile keeps the optimizer from folding the vector's value; retail copies it from .rodata each time.
+#define VEC_CV const volatile
+#else
+#define VEC_CV const
+#endif
+extern VEC_CV Vec vec3_802fa784[];
+
 extern u8 cnt_table[4];
 extern u8 anim_data[16];
 extern u8 radius_data[16];
 extern u8 fire_data[16];
-// Declared as an incomplete array so MWCC addresses this .rodata Vec with lis/addi instead of sda21
-// (the original copies it to a stack Vec each loop iteration).
-extern Vec vec3_802fa784[];
 
 // Shared scratch GXColors (zero-initialised in the original .sbss2; only their bytes are overwritten).
-GXColor unk_80423138;
-GXColor unk_8042313c;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a
+// small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042313c;
+__declspec(section ".sdata") GXColor unk_80423138;
 
 // Vertex descriptor table for the 32x32 texture; 5 entries of 0x38 bytes.
-extern effVtxArray size32x32_tex32x32_vtx[];
+static u32 size32x32_tex32x32_vtx_words[70] = {
+    0xFFF0FFF0, 0x00000000, 0x00007878, 0x00FF0010, 0xFFF00000, 0x04000000, 0x787800FF,
+    0x00100010, 0x00000400, 0x04007878, 0x00FFFFF0, 0x00100000, 0x00000400, 0x787800FF,
+    0xFFF0FFF0, 0x00000000, 0x04007878, 0x00FF0010, 0xFFF00000, 0x04000400, 0x787800FF,
+    0x00100010, 0x00000400, 0x08007878, 0x00FFFFF0, 0x00100000, 0x00000800, 0x787800FF,
+    0xFFF0FFF0, 0x00000000, 0x08007878, 0x00FF0010, 0xFFF00000, 0x04000800, 0x787800FF,
+    0x00100010, 0x00000400, 0x0C007878, 0x00FFFFF0, 0x00100000, 0x00000C00, 0x787800FF,
+    0xFFF0FFF0, 0x00000000, 0x0C007878, 0x00FF0010, 0xFFF00000, 0x04000C00, 0x787800FF,
+    0x00100010, 0x00000400, 0x10007878, 0x00FFFFF0, 0x00100000, 0x00001000, 0x787800FF,
+    0xFFF0FFF0, 0x00000000, 0x10007878, 0x00FF0010, 0xFFF00000, 0x04001000, 0x787800FF,
+    0x00100010, 0x00000400, 0x14007878, 0x00FFFFF0, 0x00100000, 0x00001400, 0x787800FF,
+};
+#define size32x32_tex32x32_vtx ((effVtxArray*)size32x32_tex32x32_vtx_words)
 
 static void main_dl(EffectEntry* effect, Mtx matrix);
 
@@ -376,3 +398,22 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+
+// Original data objects of this unit.
+u8 cnt_table[4] = { 0x0D, 0x0D, 0x0D, 0x0D };
+u8 anim_data[16] = { 0x40, 0x68, 0x90, 0xA4, 0xB8, 0xC0, 0xD0, 0xD8, 0xE0, 0xE8, 0xF0, 0xF8, 0xFF, 0x00, 0x00, 0x00 };
+u8 radius_data[16] = { 0x0A, 0x14, 0x1C, 0x23, 0x2A, 0x30, 0x35, 0x39, 0x3C, 0x3E, 0x3F, 0x40, 0x41, 0x00, 0x00, 0x00 };
+u8 fire_data[16] = { 0xFF, 0xFF, 0xC8, 0x82, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+// Original data objects of this unit, in address order.
+const f32 float_5_8041f0e0 = 5.0f;
+const f32 float_4_8041f0e4 = 4.0f;
+const f32 float_0p03125_8041f0e8 = 0.03125f;
+const f32 float_0p0078125_8041f0ec = 0.0078125f;
+const f32 float_0_8041f0f0 = 0.0f;
+const f32 float_96_8041f0f4 = 96.0f;
+const f32 float_deg2rad_8041f0f8 = 0.017453292f;
+const f32 float_256_8041f0fc = 256.0f;
+const f32 float_0p0039062_8041f100 = 0.00390625f;
+const f32 float_1_8041f104 = 1.0f;
+VEC_CV Vec vec3_802fa784[1] = { { 1.0f, 1.0f, 1.0f } };
