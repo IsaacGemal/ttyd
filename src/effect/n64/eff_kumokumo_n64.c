@@ -14,18 +14,6 @@
 __declspec(section ".data") u8 lbl_803A2280[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
 
-extern const f32 float_deg2rad_8041f580;
-extern const f32 float_90_8041f584;
-extern const f32 float_neg1_8041f588;
-extern const f32 float_0p4_8041f58c;
-extern const f32 float_0p1_8041f590;
-extern const f32 float_0_8041f594;
-#define ZERO0 (*(volatile const f32*)&float_0_8041f594)
-extern const f32 float_360_8041f598;
-extern const f32 float_1_8041f5a0;
-extern const f32 float_2_8041f5a4;
-extern const f32 float_5_8041f59c;
-extern const f32 float_0p5_8041f5a8;
 // the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") u32 unk_804231a0;
@@ -116,9 +104,9 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 		count = 1;
 	}
 	if (type == 2) {
-		scale = float_0_8041f594;
+		scale = 0.0f;
 	}
-	effect->type = "KumokumoN64";
+	effect->type = "KumokumoN64\0\0\0\0";
 	effect->count = count;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effKumokumoData) * count);
 	effect->userdata = data;
@@ -140,19 +128,19 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 	data->color2A = 0xff;
 	data->rotation = scale;
 	data->camera = 4;
-	data->texX = float_0_8041f594;
-	data->texY = float_0_8041f594;
-	data->texX2 = float_0_8041f594;
-	data->texY2 = float_0_8041f594;
-	data->texXVel = float_0_8041f594;
+	data->texX = 0.0f;
+	data->texY = 0.0f;
+	data->texX2 = 0.0f;
+	data->texY2 = 0.0f;
+	data->texXVel = 0.0f;
 	data->texYVel = 0.018181818f;
-	data->texX2Vel = float_0_8041f594;
+	data->texX2Vel = 0.0f;
 	data->texY2Vel = 0.04f;
 	if (type == 1 || type == 3) {
-		data->texXVel *= float_neg1_8041f588;
-		data->texYVel *= float_neg1_8041f588;
-		data->texX2Vel *= float_neg1_8041f588;
-		data->texY2Vel *= float_neg1_8041f588;
+		data->texXVel *= -1.0f;
+		data->texYVel *= -1.0f;
+		data->texX2Vel *= -1.0f;
+		data->texY2Vel *= -1.0f;
 	}
 	switch (type) {
 		case 0:
@@ -195,10 +183,10 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 		switch (type) {
 			case 0:
 			case 1:
-				data->x = float_0_8041f594;
+				data->x = 0.0f;
 				data->y = 3.0f;
-				data->z = float_0_8041f594;
-				data->scale = float_0_8041f594;
+				data->z = 0.0f;
+				data->scale = 0.0f;
 				data->color1A = 0xcc;
 				data->lifetime = i * 30;
 				data->rotation = (f32)(-irand(20));
@@ -207,30 +195,30 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 			case 2:
 				data->x = (f32)(200 - irand(400));
 				data->y = -(f32)(irand(50) + 200);
-				data->z = float_0_8041f594;
-				data->scale = float_1_8041f5a0;
+				data->z = 0.0f;
+				data->scale = 1.0f;
 				data->color1A = 0;
 				data->lifetime = i * 15;
-				data->rotation = float_0_8041f594;
+				data->rotation = 0.0f;
 				break;
 			case 3:
 				angle = (f32)irand(360);
-				radius = 200.0f + (f32)irand(200);
-				angle = (6.2831855f * angle) / float_360_8041f598;
+				radius = 200.f + (f32)irand(200);
+				angle = (6.2831855f * angle) / 360.f;
 				data->x = radius * (f32)sin((f64)angle);
 				data->y = radius * (f32)cos((f64)angle);
-				data->z = float_0_8041f594;
-				data->scale = float_2_8041f5a4;
+				data->z = 0.0f;
+				data->scale = 2.0f;
 				data->color1A = 0;
 				data->lifetime = i * 15;
-				data->rotation = float_0_8041f594;
+				data->rotation = 0.0f;
 				break;
 			case 4:
 			default:
-				data->x = float_0_8041f594;
+				data->x = 0.0f;
 				data->y = 3.0f;
-				data->z = float_0_8041f594;
-				data->scale = float_0_8041f594;
+				data->z = 0.0f;
+				data->scale = 0.0f;
 				data->color1A = 0xcc;
 				data->lifetime = i * 30;
 				data->rotation = (f32)(-irand(20));
@@ -293,7 +281,7 @@ void effKumokumoMain(EffectEntry* effect) {
 	data->texX2 += data->texX2Vel;
 	data->texY2 += data->texY2Vel;
 	if (type == 3) {
-		data->rotation -= float_2_8041f5a4;
+		data->rotation -= 2.0f;
 	}
 	for (i = 1, data++; i < effect->count; i++, data++) {
 		if (data->lifetime != 0) {
@@ -304,92 +292,94 @@ void effKumokumoMain(EffectEntry* effect) {
 				case 0:
 					data->color1A -= 2;
 					if (data->color1A < 0) {
-						data->x = float_0_8041f594;
+						data->x = 0.0f;
 						data->y = 3.0f;
-						data->z = float_0_8041f594;
-						data->scale = float_0_8041f594;
+						data->z = 0.0f;
+						data->scale = 0.0f;
 						data->color1A = 0xcc;
 						data->lifetime = i * 30;
 						data->rotation = (f32)(-irand(20));
 						data->texX = 8.0f;
 					}
 					else {
-						f4 = 30.0f;
 						f3 = data->scale;
+						f4 = 30.f;
 						data->scale = f3 + (1.5f - f3) / f4;
 						f3 = data->rotation;
-						data->rotation = f3 + (30.0f - f3) / f4;
-						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
+						data->rotation = f3 + (30.f - f3) / f4;
+						f1 = (6.2831855f * data->rotation) / 360.f;
 						f3 = (f32)cos((f64)f1);
 						data->x += data->texX * f3;
-						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
+						f1 = (6.2831855f * data->rotation) / 360.f;
 						f3 = (f32)sin((f64)f1);
-						data->y += data->texX * (float_2_8041f5a4 * f3);
+						data->y += data->texX * (2.0f * f3);
 						f2 = data->texX;
-						data->texX += (float_2_8041f5a4 - f2) / 30.0f;
+						data->texX += (2.0f - f2) / 30.f;
 					}
 					break;
 				case 2:
 					data->color1A += (0xff - data->color1A) / 4;
-					data->scale += -data->scale * 0.03125f;
-					data->x += -data->x * 0.03125f;
-					data->y += -data->y * 0.03125f;
-					data->z += -data->z * 0.03125f;
-					if (data->scale < float_0p1_8041f590) {
+					f3 = 0.03125f;
+					data->scale += -data->scale * f3;
+					data->x += -data->x * f3;
+					data->y += -data->y * f3;
+					data->z += -data->z * f3;
+					if (data->scale < 0.1f) {
 						data->x = (f32)(200 - irand(400));
 						data->y = -(f32)(irand(50) + 200);
-						data->z = float_0_8041f594;
-						data->scale = float_1_8041f5a0;
+						data->z = 0.0f;
+						data->scale = 1.0f;
 						data->color1A = 0;
 						data->lifetime = i * 15;
-						data->rotation = float_0_8041f594;
+						data->rotation = 0.0f;
 					}
 					data->rotation = (f32)(u32)(rz_tbl[(u32)data->field_0x14 % 31] + ((u32)data->field_0x14 * 180) / 31);
 					data->rotation = (f32)fmod(data->rotation, 360.0);
 					break;
 				case 3:
 					data->color1A += (0xc0 - data->color1A) / 4;
-					data->scale += -data->scale * 0.03125f;
-					data->x += -data->x * 0.03125f;
-					data->y += -data->y * 0.03125f;
-					data->z += -data->z * 0.03125f;
-					if (data->scale < float_0p1_8041f590) {
+					f3 = 0.03125f;
+					data->scale += -data->scale * f3;
+					data->x += -data->x * f3;
+					data->y += -data->y * f3;
+					data->z += -data->z * f3;
+					if (data->scale < 0.1f) {
 						f1 = (f32)irand(360);
 						radius = (f32)irand(200);
-						f1 = (6.2831855f * f1) / float_360_8041f598;
-						radius = 200.0f + radius;
+						f1 = (6.2831855f * f1) / 360.f;
+						radius = 200.f + radius;
 						data->x = radius * (f32)sin((f64)f1);
 						data->y = radius * (f32)cos((f64)f1);
-						data->z = float_0_8041f594;
+						data->z = 0.0f;
 						data->scale = 3.0f;
 						data->color1A = 0;
 						data->lifetime = i * 15;
-						data->rotation = float_0_8041f594;
+						data->rotation = 0.0f;
 					}
 					break;
 				case 4:
 					data->color1A -= 2;
 					if (data->color1A < 0) {
-						data->x = float_0_8041f594;
+						data->x = 0.0f;
 						data->y = 3.0f;
-						data->z = float_0_8041f594;
-						data->scale = float_0_8041f594;
+						data->z = 0.0f;
+						data->scale = 0.0f;
 						data->color1A = 0xcc;
 						data->lifetime = i * 30;
 						data->rotation = (f32)(-irand(20));
 						data->texX = 8.0f;
 					}
 					else {
-						data->scale += (float_1_8041f5a0 - data->scale) / 30.0f;
-						data->rotation += (30.0f - data->rotation) / 30.0f;
-						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
+						data->scale += (1.0f - data->scale) / 30.f;
+						data->rotation += (30.f - data->rotation) / 30.f;
+						f1 = (6.2831855f * data->rotation) / 360.f;
 						f3 = (f32)cos((f64)f1);
 						data->x += data->texX * f3;
-						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
+						f1 = (6.2831855f * data->rotation) / 360.f;
 						f3 = (f32)sin((f64)f1);
-						data->y += data->texX * (float_2_8041f5a4 * f3);
+						data->y += data->texX * (2.0f * f3);
 						f2 = data->texX;
-						data->texX += (float_2_8041f5a4 - f2) / 30.0f;
+						data->texX += (2.0f - f2) / 30.f;
 					}
 					break;
 				default:
@@ -427,24 +417,24 @@ void effKumokumoDisp(CameraId camId, void* param) {
 	type = data->type;
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041f580);
+	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rot, mtx);
-	PSMTXRotRad(rot, 'z', float_deg2rad_8041f580 * data->rotation);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->rotation);
 	PSMTXConcat(mtx, rot, mtx);
 
 	if (type != 3) {
-		if (data->rotation < float_90_8041f584) {
+		if (data->rotation < 90.f) {
 			PSMTXScale(scale, data->scale, data->scale, data->scale);
 		} else {
-			PSMTXScale(scale, data->scale, float_neg1_8041f588 * data->scale, data->scale);
+			PSMTXScale(scale, data->scale, -1.0f * data->scale, data->scale);
 		}
 		PSMTXConcat(mtx, scale, mtx);
-		PSMTXScale(scale, float_0p4_8041f58c, float_0p4_8041f58c, float_0p4_8041f58c);
+		PSMTXScale(scale, 0.4f, 0.4f, 0.4f);
 		PSMTXConcat(mtx, scale, mtx);
 	} else {
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
 		PSMTXConcat(mtx, scale, mtx);
-		PSMTXScale(scale, float_0p1_8041f590, float_0p1_8041f590, float_0p1_8041f590);
+		PSMTXScale(scale, 0.1f, 0.1f, 0.1f);
 		PSMTXConcat(mtx, scale, mtx);
 	}
 
@@ -501,9 +491,9 @@ void effKumokumoDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 	effGetTexObj(0x85, &texObj);
 	GXLoadTexObj(&texObj, 1);
-	PSMTXTrans(mtx, data->texX, data->texY, float_0_8041f594);
+	PSMTXTrans(mtx, data->texX, data->texY, 0.0f);
 	GXLoadTexMtxImm(mtx, 0x1e, 1);
-	PSMTXTrans(mtx, data->texX2, data->texY2, float_0_8041f594);
+	PSMTXTrans(mtx, data->texX2, data->texY2, 0.0f);
 	GXLoadTexMtxImm(mtx, 0x21, 1);
 	GXSetCullMode(0);
 
@@ -549,9 +539,9 @@ void effKumokumoDisp(CameraId camId, void* param) {
 			break;
 		case 3:
 			for (j = 0; j < 5; j++) {
-				float angle = (float_360_8041f598 * (f32)j) / float_5_8041f59c;
+				float angle = (360.f * (f32)j) / 5.0f;
 
-				PSMTXRotRad(rot, 'z', float_deg2rad_8041f580 * angle);
+				PSMTXRotRad(rot, 'z', 0.017453292f * angle);
 				PSMTXConcat(view, rot, rot);
 				GXLoadPosMtxImm(rot, 0);
 				GXSetCurrentMtx(0);
@@ -655,7 +645,7 @@ void effKumokumoDisp(CameraId camId, void* param) {
 		}
 #endif
 		PSMTXTrans(mtx, data->x, data->y, data->z);
-		PSMTXRotRad(rot, 'z', float_deg2rad_8041f580 * data->rotation);
+		PSMTXRotRad(rot, 'z', 0.017453292f * data->rotation);
 		PSMTXScale(scale, data->scale, data->scale, data->scale);
 		PSMTXConcat(view, mtx, mtx);
 		PSMTXConcat(mtx, rot, mtx);
@@ -665,23 +655,24 @@ void effKumokumoDisp(CameraId camId, void* param) {
 		GXBegin(0x80, 0, 4);
 		halfW = (f32)GXGetTexObjWidth(&texObj);
 		halfH = (f32)GXGetTexObjHeight(&texObj);
-		f5 = float_1_8041f5a0;
+		f5 = 1.0f;
 		if (type == 3 || type == 4) {
-			f5 = float_2_8041f5a4;
+			f5 = 2.0f;
 		}
-		GXPosition3f32(-halfW * half, halfH * half, ZERO0);
-		GXTexCoord2f32(ZERO0, ZERO0);
-		GXPosition3f32(halfW * half, halfH * half, ZERO0);
-		GXTexCoord2f32(f5, ZERO0);
-		GXPosition3f32(halfW * half, -halfH * half, ZERO0);
+		GXPosition3f32(-halfW * half, halfH * half, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(halfW * half, halfH * half, 0.0f);
+		GXTexCoord2f32(f5, 0.0f);
+		GXPosition3f32(halfW * half, -halfH * half, 0.0f);
 		GXTexCoord2f32(f5, f5);
-		GXPosition3f32(-halfW * half, -halfH * half, ZERO0);
-		GXTexCoord2f32(ZERO0, f5);
+		GXPosition3f32(-halfW * half, -halfH * half, 0.0f);
+		GXTexCoord2f32(0.0f, f5);
 		GXEnd();
 	}
 }
 
 // TODO: type
+#pragma force_active on
 static __declspec(section ".data") u32 negone_one_374[2] = {
     0xBF800000, 0x3F800000,
 };
@@ -910,6 +901,12 @@ u8 cloud_dl_0_size_tbl[4] = {
     0x03, 0x03, 0x03, 0x03,
 };
 
+#pragma explicit_zero_data on
+#pragma force_active on
+u8 gap_07_80413AC8_sdata[0x18] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
 // TODO: type
 u32 batten_normal_tbl[8] = {
     0x00004000, 0x00000000, 0x00000000, 0x00000000,
@@ -936,18 +933,14 @@ u8 rz_tbl[32] = {
 	0x00, 0x09, 0x12, 0x1C, 0x25, 0x2F, 0x39, 0x43, 0x4D, 0x57, 0x61, 0x6B, 0x74, 0x7D, 0x86, 0x8F,
 	0x97, 0x9F, 0xA6, 0xAD, 0xB4, 0xB8, 0xB9, 0xB9, 0xB6, 0xB4, 0xB1, 0xAE, 0xAE, 0xAF, 0xB4, 0x00,
 };
+#pragma explicit_zero_data on
+#pragma force_active on
+u32 gap_07_80413B4C_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+#pragma force_active reset
 // clang-format on
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const u32 dat_8041f578 = 0xDBDFE700;
 const u32 dat_8041f57c = 0xFFFFFF00;
-const f32 float_deg2rad_8041f580 = 0.017453292f;
-const f32 float_90_8041f584 = 90.0f;
-const f32 float_neg1_8041f588 = -1.0f;
-const f32 float_0p4_8041f58c = 0.4f;
-const f32 float_0p1_8041f590 = 0.1f;
-const f32 float_0_8041f594 = 0.0f;
-const f32 float_360_8041f598 = 360.0f;
-const f32 float_5_8041f59c = 5.0f;
-const f32 float_1_8041f5a0 = 1.0f;
-const f32 float_2_8041f5a4 = 2.0f;
