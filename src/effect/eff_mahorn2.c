@@ -264,15 +264,9 @@ void effMahorn2Main(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMahorn2Disp, effect);
 }
 
-// Remaining differences are compiler register allocation and symbol naming, not values:
-// (1) the quad's -w and 0.5f temporaries land in f1/f2 swapped from retail (the four products
-// and four stfs keep the same order; only the temp FPRs differ); (2) the type-3 -h/0.5f temps
-// land in f0/f1 swapped (the fmuls f30 encoding is fixed by multiplying the constant first);
-// (3) the two local array-init templates are objdiff-named @252/@253 instead of retail's
-// dat_8030196c/84 (addresses and bytes are identical: they are a function-local aggregate init
-// and MWCC gives its .rodata an anonymous @N label); (4) the type-3 2.0f literal pools into @324
-// instead of float_2_804225a4 (sourcing it from the named constant rescues that load but shifts
-// the whole f24-f31 allocation down one and scores lower).
+// The only objdiff differences left are anonymous .rodata labels for the block-local widths/texs
+// aggregate initialisers (ours @252/@253 vs retail's dat_8030196c/dat_80301984); the bytes and
+// addresses are identical, so they resolve at link time.
 #ifdef MUST_MATCH
 // MUST_MATCH: retail builds the GXColor in a 0x8-based temp and copies it to the 0xc outgoing arg;
 // assigning the field inline makes MWCC use 0xc for the temp and 0x8 for the outgoing copy.
@@ -283,8 +277,6 @@ static inline GXColor mahorn2ChanColor(u8 a) {
 }
 #endif
 
-// NONMATCHING (99.78%): all logic matches; the texture switch dispatch and GXColor stack copy are
-// fixed, what remains is the quad/type-3 temp-FPR allocation and the anonymous .rodata symbols.
 void effMahorn2Disp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effMahorn2Data* data = effect->userdata;
@@ -420,8 +412,8 @@ void effMahorn2Disp(CameraId camId, void* param) {
 #else
             f32 two = 2.0f;
 #endif
-            top = h * float_0p5_804225ac;
-            bottom = float_0p5_804225ac * -h;
+            bottom = -h * half;
+            top = h * half;
 
             for (j = 0; j < 3; j++) {
                 GXBegin(0x80, 0, 4);

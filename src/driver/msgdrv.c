@@ -81,9 +81,13 @@ const char* language_dir[2] = {"msg", "emsg"};
 
 //local prototypes
 
-// NONMATCHING (99.94%): code is byte-identical; the three computed string offsets differ because
-// this file's .rodata pool is 0xCC bytes short (msgAnalize/msgDisp literals not emitted yet). It
-// reaches 100% once those functions contribute their literals.
+// NONMATCHING (99.94%): the code is byte-identical; the three string offsets (0x208/0x210/0x218)
+// are whole-unit .rodata layout. Our section is 0x243 bytes vs the original's 0x220; everything up
+// to the PM strings (0xe8) agrees. From there the +0x24 is compiler-generated conversion doubles:
+// msgAnalize's four inlined sqrtf/sqrt doubles at 0x118 add 0x20, and the unsigned magic
+// 0x4330000000000000 that the original emits at 0x120 is emitted after /paper at 0x210 here, whose
+// 8-byte alignment adds 4 more. Neither is reachable from msgInit; it resolves once the rest of the
+// unit's literal pool matches.
 void msgInit(void) {
 	msgw->poseId = animPoseEntry("hoshi_2", 2);
 	animPoseSetAnim(msgw->poseId, "HOS_C_1", TRUE);
@@ -847,7 +851,10 @@ void msgWindow_ForceClose(const char* tag) {
 	}
 }
 
-// NONMATCHING (99.73%)
+// The third parameter is really s16 (the caller in evt_msg.c sign-extends it with `extsh`), but
+// windowEntry is declared u16 in windowdrv.h and defined that way in windowdrv.c, so the plain
+// call zero-extends b. Calling through the callee's real width reproduces the original's `mr r3, r5`
+// without touching the shared header/definition; the natural call is kept under #else.
 s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	// Declaration order steers MWCC's callee-saved allocation to the original (msg=r28, id=r27,
 	// buf=r30); the natural order lands msg in r27/buf in r27.
@@ -857,7 +864,11 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	smartEntry* smart;
 	s32 id;
 
+#ifdef MUST_MATCH
+	id = ((s32 (*)(s32))windowEntry)(b);
+#else
 	id = windowEntry(b);
+#endif
 	window = windowGetPointer(id);
 	window->main = msgWindow_Main;
 	window->delete = msgWindow_Delete;
@@ -2003,15 +2014,11 @@ done:
 
 #pragma opt_dead_assignments reset
 
-// NONMATCHING (95.15%): 1 extra instruction; the compiler materialises the array address into r0 before
-// saving r31 instead of using addi r31 directly.
 s32 msgIconStr2ID(const char* str) {
-	MsgIcon* icon;
 	u32 i;
 
-	icon = msgIcon;
-	for (i = 0; i < 18; i++, icon++) {
-		if (!strcmp(icon->name, str)) {
+	for (i = 0; i < 18; i++) {
+		if (!strcmp(msgIcon[i].name, str)) {
 			return msgIcon[i].value;
 		}
 	}

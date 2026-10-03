@@ -162,7 +162,13 @@ void effLevelupMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (99.93%): the `elem; i; layer` declaration order plus a separate `layer` local puts effect/layer/i/xBaseI/elem in the target's r21/r22/r23/r25/r24. Splitting the element address into `elem = userdata; elem += i;` makes the compiler load userdata straight into elem's r24 instead of a scratch. What is left: the two inner-loop-latch decrements, `i--` (subi r23) and the strength-reduced `i*0x24` offset (subi r27), are scheduled in the opposite order (target runs i-- first, then the offset); every other instruction matches. The local 2x4 table's initializer is an anonymous @218 rodata pool standing in for the named dat_802fe5d4 (both 0x20 bytes, identical here).
+// The `elem; i; layer` declaration order plus a separate `layer` local puts effect/layer/i/xBaseI/elem in the
+// target's r21/r22/r23/r25/r24. Splitting the element address into `elem = userdata; elem += i;` makes the compiler
+// load userdata straight into elem's r24 instead of a scratch. The target's loop latch decrements `i` (subi r23)
+// before the strength-reduced `i*0x24` element offset (subi r27); the compiler derives both from `i` and schedules
+// the offset first, so under MUST_MATCH the element index is an explicit second induction (`elemIdx`) updated
+// after `i--` in the for-increment, which reproduces the target order with matching register colouring. The local
+// 2x4 table's initializer is an anonymous rodata pool standing in for the named dat_802fe5d4 (both 0x20 bytes).
 void effLevelupDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effLevelupData* data = effect->userdata;
@@ -175,6 +181,9 @@ void effLevelupDisp(CameraId camId, void* param) {
 	effLevelupData* elem;
 	s32 i;
 	s32 layer;
+#ifdef MUST_MATCH
+	s32 elemIdx; // match-only: explicit element index so the compiler updates it after i-- in the loop latch
+#endif
 	f32 halfConst = 0.5f;
 	f32 yConst = 48.0f;
 
@@ -201,7 +210,11 @@ void effLevelupDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
 	for (layer = 1; layer >= 0; layer--) {
+#ifdef MUST_MATCH
+		for (i = effect->count - 1, elemIdx = i; i >= 1; i--, elemIdx--) {
+#else
 		for (i = effect->count - 1; i >= 1; i--) {
+#endif
 			s32 xBaseI = layer * 4;
 			s32 yBaseI = -layer * 4;
 			f32 xBase = (f32)xBaseI;
@@ -211,7 +224,11 @@ void effLevelupDisp(CameraId camId, void* param) {
 			f32 neghalf;
 
 			elem = (effLevelupData*)effect->userdata;
+#ifdef MUST_MATCH
+			elem += elemIdx;
+#else
 			elem += i;
+#endif
 
 			if (layer != 0) {
 				effGetTexObj(texid_tbl[gp->language != 0][i + 2], &texObj);

@@ -318,9 +318,9 @@ static inline void effCloudTevColor2(s32 r, s32 g, s32 b) {
 }
 #endif
 
-// NONMATCHING (99.26%): logic/constants/GX calls/register set match; still differs in global graph
-// colouring (texBase/vtx land r31/r19 vs r19/r28, rotating the loop-constant trio; `prev` coalesces
-// into r15; fadeB conversion swaps r3/r4; second loop's i/v swap; i*180 increment scheduled late).
+// NONMATCHING (99.45%): vtx lands r31 vs the original's r28, rotating the loop-constant trio
+// (0x88888889 / count-1 / 0x4330) one register down; the i*180 strength-reduction increment
+// schedules at the loop end instead of mid-store. (texBase/prev/fade/second loop already fixed.)
 void effCloudDisp(CameraId cameraId, void* param) {
 	effCloudData* data;
 	s32 frame;
@@ -333,10 +333,10 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	s32 fadeG;
 	GXTexObj texObj;
 	f32 cy;
-	cloudVtx* vtx;
+	s32 texBase;
 	f32 dir;
 	s32 alpha;
-	s32 v;
+	s32 prev;
 	f32 px, py, pz;
 	smartEntry* entry;
 	s32 texU;
@@ -358,11 +358,11 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	f32 wobble;
 	s32 j;
 	f32 b;
-	s32 texBase;
 	s32 i;
 	s32 k;
-	s32 prev;
-
+	s32 v;
+	cloudVtx* vtx;
+	s32 i2;
 	effect = param;
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
@@ -501,13 +501,11 @@ void effCloudDisp(CameraId cameraId, void* param) {
 				fadeG = 0xff;
 				fadeB = 0xff - age * 100;
 				if (fadeB < 0) {
-					s32 t = (s32)(float_0p8_8041ebc8 * (f32)fadeB);
+					fadeG = (s32)(float_0p8_8041ebc8 * (f32)fadeB) + 0xff;
 					fadeB = 0;
-					fadeG = t + 0xff;
 					if (fadeG < 0) {
-						s32 t2 = (s32)(float_0p4_8041ebcc * (f32)fadeG);
+						fadeR = (s32)(float_0p4_8041ebcc * (f32)fadeG) + 0xff;
 						fadeG = 0;
-						fadeR = t2 + 0xff;
 						if (fadeR < 0) {
 							fadeR = 0;
 						}
@@ -544,7 +542,7 @@ void effCloudDisp(CameraId cameraId, void* param) {
 		DCFlushRange(base, 0x690);
 		GXInvalidateVtxCache();
 		v = firstActive * 2;
-		for (i = firstActive; i < 29; i++, v += 2) {
+		for (i2 = firstActive; i2 < 29; v += 2, i2++) {
 			GXBegin(0x90, 0, 6);
 			tri2(v, v + 2, v + 1, v, v + 1, v + 2, v + 3, v);
 		}

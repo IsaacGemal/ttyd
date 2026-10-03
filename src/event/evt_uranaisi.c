@@ -213,27 +213,22 @@ s32 uranaisi_ryokin_rtn(s32 idx) {
     return pouchGetPtr()->level * 2;
 }
 
-// NONMATCHING (98.21%): the structure matches (stmw r17-r31, value load on the
-// match path, gswf default at the loop exit). What differs is only the callee-saved
-// register assignment: the target keeps prefix in r24, &_udt in r19, maxLabel in r20,
-// the "enddata"/format literals in r22/r21 and count in r26, while this build puts
-// count in r31 and storyId in r20, shifting the long-lived set up by two registers
-// (tagNum r19 vs r23, saved r19 vs r25, labelId r25 vs r23). A randomised search over
-// the 15 declaration lines did not find an order that reproduces the target mapping.
+// NONMATCHING (98.75%): the instruction sequence is the target's; only the callee-saved
+// colouring differs (tagNum/saved/count*6 two registers below the target, the outer
+// prefix/&_udt/literal/maxLabel/count set two above).
 s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
-    UranaiWork* wp = &_udt;
+    s32 tagNum;
     char label[64];
     char tag[64];
     BOOL tagdone;
+    UranaiWork* wp = &_udt;
     char saved;
-    s32 tagNum;
     const s8* msg;
-    s32 count;
     s32 mbbpos;
+    s32 count;
     BOOL typeFlag;
-    s32 i;
-    s32 labelId;
     s32 maxLabel;
+    s32 labelId;
     s32 storyId;
     s32 gswf;
     char* tagdata;
@@ -304,30 +299,30 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
             if (labelId != -1 && labelId <= maxLabel) {
                 saved = initEndPos[tagEndPos];
 #ifdef MUST_MATCH
-                // The target materialises the not-found default (-1) on the loop-exit
-                // path, keeping gswf in a volatile register; a plain `break` keeps it
-                // live across the strcmp calls and costs an extra callee-saved register.
-                i = 0;
-                initEndPos[tagEndPos] = '\0';
-                while (uranai_table_supercoin[i].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_supercoin[i].name)) {
-                        gswf = uranai_table_supercoin[i].value;
+                // The target reuses mbbpos (already 0 after the tag parse) as the lookup
+                // index, so the terminator store and the index share one zero register
+                // (the `i` form materialises a second zero and adds an instruction).
+                mbbpos = 0;
+                initEndPos[tagEndPos] = mbbpos;
+                while (uranai_table_supercoin[mbbpos].name != NULL) {
+                    if (!strcmp(initEndPos, uranai_table_supercoin[mbbpos].name)) {
+                        gswf = uranai_table_supercoin[mbbpos].value;
                         goto gswf_done;
                     }
-                    i++;
+                    mbbpos++;
                 }
                 gswf = -1;
             gswf_done:
 #else
                 initEndPos[tagEndPos] = '\0';
-                i = 0;
+                mbbpos = 0;
                 gswf = -1;
-                while (uranai_table_supercoin[i].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_supercoin[i].name)) {
-                        gswf = uranai_table_supercoin[i].value;
+                while (uranai_table_supercoin[mbbpos].name != NULL) {
+                    if (!strcmp(initEndPos, uranai_table_supercoin[mbbpos].name)) {
+                        gswf = uranai_table_supercoin[mbbpos].value;
                         break;
                     }
-                    i++;
+                    mbbpos++;
                 }
 #endif
                 initEndPos[tagEndPos] = saved;
@@ -345,23 +340,22 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     return count;
 }
 
-// NONMATCHING (98.21%): mirror of make_supercoin, same register-allocation difference
-// (count in r31 instead of r26, and the &_udt/maxLabel/literal block shifted up two
-// registers); the code shape itself matches.
+// NONMATCHING (98.75%): mirror of make_supercoin, same remaining difference (only the
+// callee-saved colouring: tagNum/saved/count*6 two registers below the target, the
+// outer prefix/&_udt/literal/maxLabel/count set two above).
 s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
-    UranaiWork* wp = &_udt;
+    s32 tagNum;
     char label[64];
     char tag[64];
     BOOL tagdone;
+    UranaiWork* wp = &_udt;
     char saved;
-    s32 tagNum;
     const s8* msg;
-    s32 count;
     s32 mbbpos;
+    s32 count;
     BOOL typeFlag;
-    s32 i;
-    s32 labelId;
     s32 maxLabel;
+    s32 labelId;
     s32 storyId;
     s32 gswf;
     char* tagdata;
@@ -432,29 +426,30 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
             if (labelId != -1 && labelId <= maxLabel) {
                 saved = initEndPos[tagEndPos];
 #ifdef MUST_MATCH
-                // See uranaisi_data_make_supercoin: the default must sit on the
-                // loop-exit path so gswf stays in a volatile register.
-                i = 0;
-                initEndPos[tagEndPos] = '\0';
-                while (uranai_table_starpiece[i].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_starpiece[i].name)) {
-                        gswf = uranai_table_starpiece[i].value;
+                // See uranaisi_data_make_supercoin: mbbpos (0 after the tag parse) is
+                // reused as the lookup index, so the terminator store and the index share
+                // one zero register.
+                mbbpos = 0;
+                initEndPos[tagEndPos] = mbbpos;
+                while (uranai_table_starpiece[mbbpos].name != NULL) {
+                    if (!strcmp(initEndPos, uranai_table_starpiece[mbbpos].name)) {
+                        gswf = uranai_table_starpiece[mbbpos].value;
                         goto gswf_done;
                     }
-                    i++;
+                    mbbpos++;
                 }
                 gswf = -1;
             gswf_done:
 #else
                 initEndPos[tagEndPos] = '\0';
-                i = 0;
+                mbbpos = 0;
                 gswf = -1;
-                while (uranai_table_starpiece[i].name != NULL) {
-                    if (!strcmp(initEndPos, uranai_table_starpiece[i].name)) {
-                        gswf = uranai_table_starpiece[i].value;
+                while (uranai_table_starpiece[mbbpos].name != NULL) {
+                    if (!strcmp(initEndPos, uranai_table_starpiece[mbbpos].name)) {
+                        gswf = uranai_table_starpiece[mbbpos].value;
                         break;
                     }
-                    i++;
+                    mbbpos++;
                 }
 #endif
                 initEndPos[tagEndPos] = saved;

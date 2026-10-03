@@ -9,7 +9,7 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
 #include <dolphin/os/OSFastCast.h>
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_magic2.c).
@@ -56,6 +56,9 @@ void effBalloonMain(EffectEntry* effect) {
 	f32 radius;
 	f32 angle;
 	f32 wave;
+	// MUST_MATCH: the sin call in its own statement (result in `s`) makes MWCC pool
+	// 30/5/2 before 1.5, the original's .sdata2 order; the fused form pools 1.5 first.
+	f32 s;
 	s32 i;
 	s32 phase;
 
@@ -84,8 +87,9 @@ void effBalloonMain(EffectEntry* effect) {
 			segs->y = -radius * (f32)cos(angle);
 #ifdef MUST_MATCH
 			wave = (f32)sin(6.2831855f * (f32)(i * 53) / 360.0f);
-			segs->x += (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
-			                                  (wave = 0.1f * wave + 2.0f) * (f32)phase) / 360.0f) * 1.5f;
+			s = (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
+			                           (wave = 0.1f * wave + 2.0f) * (f32)phase) / 360.0f);
+			segs->x += s * 1.5f;
 #else
 			wave = 0.1f * (f32)sin(6.2831855f * (f32)(i * 53) / 360.0f) + 2.0f;
 			segs->x += 1.5f * (f32)sin(6.2831855f * (30.0f * (5.0f + (f32)i) +
@@ -119,12 +123,31 @@ typedef struct BalloonVtx {
 	u8 clr[4];  // 0xA, RGBA8
 } BalloonVtx;    // 0xE
 
-extern BalloonVtx balloon_vtx[];
-
-// .sdata2 constants that belong to this unit (named in the original's symbol table).
-extern const f32 float_0p0625_8041e940;
-extern const f32 float_0_8041e944;
-extern const f32 float_deg2rad_8041e948;
+// The shared vertex template from the original's .data (22 x 14 bytes).
+BalloonVtx balloon_vtx[22] = {
+	{ { 0, 0, 0 }, { 0, 0 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 480 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 160, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 160, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 160, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 160, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 160, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 160, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 160, 512 }, { 0, 0, 0, 255 } },
+	{ { 0, 0, 0 }, { 0, 512 }, { 0, 0, 0, 255 } },
+};
 
 // Retail inlines a per-vertex helper; each inlining gets its own Vec stack slot and its
 // own memcpy, exactly as in effFlameDisp's effFlameSetVtx. The s16<->f32 conversions use the
@@ -143,7 +166,13 @@ static inline void effBalloonSetVtx(BalloonVtx* dst, BalloonVtx* src, Mtx mtx) {
 	OSs16tof32(&dst->pos[2], &BALLOON_VEC->z);
 	PSMTXMultVec(mtx, BALLOON_VEC, BALLOON_VEC);
 	OSInitFastCast(); /* retail's GQR2-5 setup before the f32->s16 writes */
+#ifdef MUST_MATCH
+	// The original holds the memcpy destination in a caller register and stores pos[0]
+	// through it; the natural form below re-derives the address from the loop pointer.
+	{ s16* out = &dst->pos[0]; OSf32tos16(&BALLOON_VEC->x, out); }
+#else
 	OSf32tos16(&BALLOON_VEC->x, &dst->pos[0]);
+#endif
 	OSf32tos16(&BALLOON_VEC->y, &dst->pos[1]);
 	OSf32tos16(&BALLOON_VEC->z, &dst->pos[2]);
 #undef BALLOON_VEC
@@ -159,27 +188,27 @@ static inline void tri1WithUnused(s32 x, s32 y, s32 z, s32 unused) {
 #endif
 
 // The control flow, constants, GX/TEV state, matrix math and the six OSInitFastCast GQR2-5
-// blocks match; the psq_l/psq_st vertex conversions match too (via the SDK OSs16tof32/
-// OSf32tos16 fast-cast inlines); tri1WithUnused reproduces the original's 4th (unused) tri1
-// argument and its lack of a clrlwi on i+2/i+3.
-// The remaining gap is the callee-saved colouring (retail cam r28 vs ours r31, life r31 vs r29, balloon_vtx
-// base r29 vs r28). tri1's 4-argument form is not in include/eff/eff_n64.h or src/effect/n64/eff_n64.c (both
-// declare 3 u16 args); the local tri1WithUnused helper casts around that.
-// NONMATCHING (99.89%): callee-saved register colouring only.
+// blocks are the original's; the psq_l/psq_st vertex conversions come from the SDK's
+// OSs16tof32/OSf32tos16 fast-cast inlines. tri1's 4-argument form is not in
+// include/eff/eff_n64.h or src/effect/n64/eff_n64.c (both declare 3 u16 args); the local
+// tri1WithUnused helper casts around that. The declaration order and the opt_dead_assignments
+// pragma below reproduce retail's callee-saved colouring (cam r28, life r31, balloon_vtx base r29).
+#pragma opt_dead_assignments off // needed: without it MWCC colours cam r31 / life r29, not retail's cam r28 / life r31
 void effBalloonDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	CameraEntry* cam;
-	effBalloonN64Data* data;
-	GXTexObj texObj;
-	// Declaration order is transMtx before texMtx so MWCC lays the two out at retail's
-	// offsets (texMtx 0x100, transMtx 0x130); the usage order below is unchanged.
-	BalloonVtx* vtx;
+	// The Mtx block leads and `life` precedes `cam`; with the pragma above that makes MWCC
+	// colour life r31 and cam r28 as the original does. transMtx stays before texMtx so the
+	// two frame slots land at retail's 0x130/0x100.
 	Mtx transMtx;
 	Mtx texMtx;
 	Mtx rotMtx;
 	Mtx concatMtx;
 	Mtx resultMtx;
+	EffectEntry* effect = param;
 	s32 life;
+	CameraEntry* cam;
+	effBalloonN64Data* data;
+	GXTexObj texObj;
+	BalloonVtx* vtx;
 	s32 i;
 
 	cam = camGetPtr(camId);
@@ -201,7 +230,7 @@ void effBalloonDisp(CameraId camId, void* param) {
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	PSMTXScale(texMtx, float_0p0625_8041e940, float_0p0625_8041e940, float_0_8041e944);
+	PSMTXScale(texMtx, 0.0625f, 0.0625f, 0.0f);
 	GXLoadTexMtxImm(texMtx, 0x1E, 1);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(0, 0, 0, 0xFF);
@@ -213,17 +242,17 @@ void effBalloonDisp(CameraId camId, void* param) {
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
 	effBalloonSetVtx(vtx, &balloon_vtx[1], transMtx);
 
-	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e948 * data->field_0x10);
+	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x10);
 	PSMTXConcat(transMtx, rotMtx, concatMtx);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e948);
-	PSMTXTrans(transMtx, *(f32*)&data->pad[0xA0], *(f32*)&data->pad[0xA4], float_0_8041e944);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
+	PSMTXTrans(transMtx, *(f32*)&data->pad[0xA0], *(f32*)&data->pad[0xA4], 0.0f);
 	PSMTXConcat(rotMtx, transMtx, resultMtx);
 	PSMTXConcat(concatMtx, resultMtx, resultMtx);
 	effBalloonSetVtx(vtx + 1, &balloon_vtx[0], resultMtx);
 
 	for (i = 0; i < 20; i++) {
 		PSMTXTrans(transMtx, *(f32*)(data->pad + i * 8), *(f32*)(data->pad + i * 8 + 4),
-		           float_0_8041e944);
+		           0.0f);
 		PSMTXConcat(resultMtx, transMtx, transMtx);
 		effBalloonSetVtx(&vtx[i + 2], &balloon_vtx[i + 2], transMtx);
 	}
@@ -269,8 +298,5 @@ void effBalloonDisp(CameraId camId, void* param) {
 		}
 	}
 }
+#pragma opt_dead_assignments reset
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0p0625_8041e940 = 0.0625f;
-const f32 float_0_8041e944 = 0.0f;
-const f32 float_deg2rad_8041e948 = 0.017453292f;

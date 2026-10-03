@@ -235,10 +235,12 @@ void effIbukiMain(EffectEntry* effect) {
 }
 
 #ifdef MUST_MATCH
-// MUST_MATCH: building the GXColor in an inline (rather than assigning the table entry and then .a) puts the
-// colour in the same stack slot as the target.
-static inline GXColor effIbukiColor0(u8 a) {
-	GXColor c = dat_80421f00;
+// MUST_MATCH: the first colour is built in a helper that takes the base colour as a parameter and is called
+// directly in GXSetTevColor (the second reads its base global inside the helper and is stored in `color2`).
+// This is what makes mwcc place the inline local and the outgoing argument copy in retail's stack slots
+// (0x10/0x14 for the first colour vs 0x8/0xc for the second); reading the global inside the first helper
+// instead leaves its local at 0xc and pushes the second colour's argument to 0x10.
+static inline GXColor effIbukiColor0(GXColor c, u8 a) {
 	c.a = a;
 	return c;
 }
@@ -250,36 +252,37 @@ static inline GXColor effIbukiColor1(u8 a) {
 }
 #endif
 
-// Logic, call constants and frame size (0x130) match. The GX vertex block now reloads float_0/float_2 per
-// vertex (the literals for 0.0f/2.0f keep MWCC from CSEing them; the extern float_8/float_0p5 keep the
-// tmp*0.5 multiply inside the loop instead of hoisting it) and the final-loop latch is i++ then elem++.
-// The callee-saved GPR allocation of the two live parameters is still swapped: the original keeps effect
-// (r4, live to the end) in r29 and cameraId (r3, last used at the second camGetPtr) in r28, while MWCC
-// gives effect r28 and cameraId r29. That one swap cascades into the display-list loop and final-loop
-// registers and into the first GXColor's stack slot (0x10 vs 0xc). `opt_lifetimes off` and a separate
-// display-list counter `j` (instead of reusing `i`) remove the extra instructions this caused; the
-// remaining 25 differences are all register numbers from the effect/cameraId swap.
-// NONMATCHING (99.56%): effect/cameraId callee-saved registers swapped (effect r28 vs r29); the display
-// list loop, final loop and first GXColor slot differ only because of that swap.
-#pragma opt_lifetimes off // narrows the effect/cameraId live-range cascade; without it 11 more instructions differ
+// Matches. Beyond the straightforward port, three source shapes were needed: (1) the final loop reuses
+// `data` as the element pointer (data = &data[1]; ...; i++, data++) like effIbukiMain, which keeps `effect`
+// in r29 and `cameraId` in r28 like retail (a separate `elem` pointer gives the swap); (2) the display-list
+// loop is an explicit pointer walk (`j`, `dlSize`, `dlTbl` advanced in the for-latch) with setup ordered
+// j = 0 then size then table, reproducing retail's `li` order; (3) the first GXColor helper takes the base
+// colour as a parameter and is called directly in GXSetTevColor, while the second reads its base global
+// inside the helper and is stored in `color2` -- this is what lands the two colours' inline locals and
+// by-value argument copies in retail's 0x10/0x14 and 0x8/0xc stack slots. `opt_lifetimes off` is required
+// (without it the effect/cameraId live ranges cascade into 15 extra diffs). The GX vertex block reloads
+// float_0/float_2 per vertex (the literal 0.0f/2.0f keep MWCC from CSEing them; the extern float_8/float_0p5
+// keep the tmp*0.5 multiply inside the loop instead of hoisting it).
+#pragma opt_lifetimes off // required: without it the effect/cameraId live-range cascade costs 15 extra diffs
 void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effIbukiData* data = effect->userdata;
-	CameraEntry* camera;
-	s32 alpha;
-	s32 alpha2;
-	effIbukiData* elem;
+	s32 j;
 	GXColor color;
 	GXColor color2;
 	GXTexObj tex;
 	Mtx mtx;
+	u8* dlSize;
+	void** dlTbl;
 	Mtx rot;
-	Mtx scale;
-	Mtx out;
-	s32 i;
-	s32 j;
-	f32 tmp;
+	s32 alpha;
 	u8* base;
+	s32 i;
+	Mtx scale;
+	f32 tmp;
+	s32 alpha2;
+	Mtx out;
+	CameraEntry* camera;
 
 	base = lbl_803B4860;
 	camera = camGetPtr(cameraId);
@@ -313,12 +316,12 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0, GX_CA_ZERO);
 
 #ifdef MUST_MATCH
-	color = effIbukiColor0((alpha * alpha2) / 255);
+	GXSetTevColor(GX_TEVREG0, effIbukiColor0(dat_80421f00, (alpha * alpha2) / 255));
 #else
 	color = dat_80421f00;
 	color.a = (alpha * alpha2) / 255;
-#endif
 	GXSetTevColor(GX_TEVREG0, color);
+#endif
 
 	PSMTXTrans(mtx, data->texU0, data->texV0, float_0_80421f08);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
@@ -357,8 +360,11 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX1, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xe);
 	GXSetArray(GX_VA_TEX1, DATA_AT(0xe0, ibuki_texcoord1_tbl), 4);
-	for (j = 0; j < 4u; j++) {
-		GXCallDisplayList(ibuki_dl_0_tbl[j], ibuki_dl_0_size_tbl[j] << 5);
+	j = 0;
+	dlSize = ibuki_dl_0_size_tbl;
+	dlTbl = ibuki_dl_0_tbl;
+	for (; j < 4u; j++, dlSize++, dlTbl++) {
+		GXCallDisplayList(*dlTbl, *dlSize << 5);
 	}
 
 	GXSetNumChans(1);
@@ -380,16 +386,16 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXLoadTexObj(&tex, GX_TEXMAP0);
 	tmp = -float_16_80421f14;
 	i = 1;
-	elem = &data[1];
-	for (; i < effect->count; i++, elem++) {
-		alpha2 = (elem->alpha * alpha) / 255;
-		if (elem->wait == 0) {
-			PSMTXTrans(mtx, elem->positionX, elem->positionY, elem->positionZ);
-			PSMTXRotRad(rot, 'x', float_deg2rad_80421f10 * elem->rotX);
+	data = &data[1];
+	for (; i < effect->count; i++, data++) {
+		alpha2 = (data->alpha * alpha) / 255;
+		if (data->wait == 0) {
+			PSMTXTrans(mtx, data->positionX, data->positionY, data->positionZ);
+			PSMTXRotRad(rot, 'x', float_deg2rad_80421f10 * data->rotX);
 			PSMTXConcat(mtx, rot, mtx);
-			PSMTXRotRad(rot, 'y', float_deg2rad_80421f10 * elem->rotY);
+			PSMTXRotRad(rot, 'y', float_deg2rad_80421f10 * data->rotY);
 			PSMTXConcat(mtx, rot, mtx);
-			PSMTXScale(scale, elem->scale, elem->scale, elem->scale);
+			PSMTXScale(scale, data->scale, data->scale, data->scale);
 			PSMTXConcat(mtx, scale, mtx);
 			PSMTXConcat(out, mtx, mtx);
 			GXLoadPosMtxImm(mtx, 0);

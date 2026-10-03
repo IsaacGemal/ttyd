@@ -93,9 +93,6 @@ static inline f32 splashCos(f32 angle) {
     return (f32)cos(angle);
 }
 
-// NONMATCHING (99.33%): the four float args colour to f25-f28 where the target has f26-f29 and the
-// second loop's hoisted constants shift down with them: MWCC keeps 360 in the high block (f31, with
-// double_to_int/6.2832) where the target puts it in the low block (f20). Otherwise instruction-exact.
 EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	SplashData* data;
@@ -252,14 +249,12 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-// NONMATCHING (99.83%): the instructions are the target's except where symbols other
-// functions in this unit lay down decide. The zero-Vec literal below keeps the target's
-// schedule (switching to the named vec3_802fe728 makes MWCC hoist the first vector load
-// two instructions early), but it resolves to .rodata+0x2C instead of vec3_802fe728 at
-// +0x0, so objdiff flags it; extra _half$/_three$ doubles emitted before it push vec3 down.
-// double_to_int_mask/double_to_int are shifted the same way, effSplashDisp's -8.0f*0.5f
-// fold puts -4.0f where the target has 8.0f (shifting the 0.5f slot), and the type==3 trans
-// block assigns 0.125f to f2 / double_to_int to f1 (target f1/f2).
+// Instructions are the target's; the remaining objdiff marks are symbol-only and unit-wide.
+// The zero-Vec literal below keeps the target's schedule (switching to the named vec3_802fe728
+// makes MWCC hoist the first vector load two instructions early), but it resolves to
+// .rodata+0x2C instead of vec3_802fe728 at +0x0; extra _half$/_three$ doubles emitted before it
+// push vec3 down. double_to_int_mask/double_to_int are shifted the same way, and effSplashDisp's
+// -8.0f*0.5f fold puts -4.0f where the target has 8.0f (shifting the 0.5f slot).
 void effSplashMain(EffectEntry* effect) {
 	SplashData* data = effect->userdata;
 	Vec position;
@@ -324,8 +319,8 @@ void effSplashMain(EffectEntry* effect) {
 					data->scaleY = (f32)geso_scale_dt[counter] / 96.0f;
 				}
 				if (counter < 0x47) {
-					data->position.x = (f32)(geso_trans_dt[counter * 2] + 40) * 0.125f * 10.0f;
-					data->position.y = (f32)(geso_trans_dt[counter * 2 + 1] - 12) * 0.125f * 10.0f;
+					data->position.x = (f32)(geso_trans_dt[counter * 2] + 40) / 8.0f * 10.0f;
+					data->position.y = (f32)(geso_trans_dt[counter * 2 + 1] - 12) / 8.0f * 10.0f;
 				}
 
 				switch (i - 1) {
@@ -397,9 +392,19 @@ void effSplashGetCol(enum CameraId camId, void* param) {
 }
 
 
-// NONMATCHING (99.91%): byte-for-byte apart from 11 register-only slots -- the f0 vs f15
-// intermediate in `angle = 6.2832f * t; angle *= 0.125f;`, and the display-list loop's counter
-// (target reuses r25 for both j and k; ours gives k r20). Everything else matches.
+// The display-list loop must live in an inlined helper: with it inline in effSplashDisp MWCC
+// colours its counter r20 instead of the target's r25 (which the j loop above already used);
+// the rest of the function is byte-identical (same fix as effKumokumoCallDL in eff_kumokumo_n64.c).
+static inline void effSplashCallDL(void** dl, const u8* size) {
+	u32 k;
+
+	for (k = 0; k < 5; k++) {
+		GXCallDisplayList(dl[k], size[k] << 5);
+	}
+}
+
+// The angle is `6.2831855f * t / 8.0f`: MWCC strength-reduces the division by 8 to a multiply by
+// 0.125f and keeps 6.2832f*t in the scratch f0, which is exactly the target's two fmuls.
 void effSplashDisp(enum CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	SplashData* data = effect->userdata;
@@ -575,8 +580,13 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			for (j = 0; j < 9; j++) {
 				f32 angle, c, s, t;
 				t = (f32)j;
-				angle = 6.2831855f * t;
-				angle *= 0.125f;
+#ifdef MUST_MATCH
+				// MWCC strength-reduces / 8.0f to a * 0.125f and leaves 6.2832f*t in the scratch f0,
+				// which is the target's two fmuls; the natural form is under #else.
+				angle = 6.2831855f * t / 8.0f;
+#else
+				angle = 6.2831855f * t * 0.125f;
+#endif
 				c = (f32)cos(angle);
 				s = (f32)sin(angle);
 				GXPosition3f32(radiusA * s, 0.0f, radiusA * c);
@@ -604,9 +614,7 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
 			GXSetArray(GX_VA_TEX0, geso_shibuki_texcoord0_tbl, 4);
-			for (k = 0; k < 5; k++) {
-				GXCallDisplayList(geso_shibuki_dl_0_tbl[k], geso_shibuki_dl_0_size_tbl[k] * 32);
-			}
+			effSplashCallDL(geso_shibuki_dl_0_tbl, geso_shibuki_dl_0_size_tbl);
 			break;
 		}
 	}

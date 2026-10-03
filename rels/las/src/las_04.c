@@ -511,13 +511,14 @@ void _firebar_trans(FirebarEntry* entry) {
     }
 }
 
-// The original spills `entry` to 0x8(r1) and reloads it at region boundaries; the
-// MUST_MATCH address-take below forces the same spill (MWCC 2.6 would otherwise keep
-// entry in r31). The `addic.`/`bne`/`li`/`b` it adds are the only extra instructions;
-// the remaining r29/r30 and r26/r27 swaps and the Vec copy temps also occur without the
-// spill and resist every source shape tried; our .text is 0x10 bytes longer than the
-// original's.
-// NONMATCHING (97.65%)
+// The original spills `entry` to 0x8(r1) and reloads it at region boundaries. Taking
+// `entry`'s address through the MUST_MATCH self-assignment below forces MWCC to keep it in
+// that slot ((void)&entry; is optimized away, and an `if (&entry == NULL)` test adds three
+// instructions the original does not have). Two further details are needed to match:
+// `rand()` must be called inline (a named `s32 r` temporary changes the effect loop's fadds
+// operand order and scratch registers), and the release loop must reuse the first loop's
+// `i`/`seg` variables (`s32 k; FirebarSegment* sp;` makes the counter allocate to r25
+// instead of the original's r27).
 USER_FUNC(firebar_entry) {
     s32* args = event->args;
     FirebarDesc* desc = (FirebarDesc*)evtGetValue(event, args[0]);
@@ -562,11 +563,9 @@ USER_FUNC(firebar_entry) {
         }
 
 #ifdef MUST_MATCH
-        // Taking `entry`'s address makes MWCC spill it; the #else is the natural code.
-        if (&entry == NULL) {
-            for (;;) {
-            }
-        }
+        // Self-assignment through a taken address forces MWCC to keep `entry` in its
+        // stack slot (0x8(r1)) like the original, without emitting a branch.
+        entry = *(FirebarEntry**)&entry;
 #endif
         entry->segments = _mapAlloc(entry->count << 4);
         memset(entry->segments, 0, entry->count << 4);
@@ -609,11 +608,10 @@ USER_FUNC(firebar_entry) {
             s32 m;
             for (m = 0; m < 3; m++) {
                 s32 index = (entry->count + 1) * m / 3;
-                s32 r = rand();
                 f32 x;
                 f32 y;
 
-                x = bp[index].position.x + (f32)(r % 16 - 8);
+                x = bp[index].position.x + (f32)(rand() % 16 - 8);
                 y = bp[index].position.y + 10.0f;
                 seg = &bp[index];
 
@@ -621,10 +619,9 @@ USER_FUNC(firebar_entry) {
             }
         }
         {
-            s32 k;
-            FirebarSegment* sp = entry->segments;
-            for (k = 0; k < entry->count; k++, sp++) {
-                animPoseRelease(sp->poseId);
+            seg = entry->segments;
+            for (i = 0; i < entry->count; i++, seg++) {
+                animPoseRelease(seg->poseId);
             }
         }
         _mapFree(entry->segments);

@@ -166,19 +166,29 @@ void effMagic1Main(EffectEntry* effect) {
 // return temp where the original does (a plain local lands in the other slot); the
 // explicit (s32) casts keep the u8 channels on the signed int-to-float sequence
 // (without them MWCC uses the unsigned constant and the pool gains a second double).
+// Naming the raw sine in `s` is what makes the setup hoist 0.5 into f28 and 1.0 into
+// f29 (the target order); loading the channel byte into `a` first keeps the byte live
+// across the sin call so it stays in a callee-saved GPR. Without the split the two
+// constants and the f3/f4 temps land in the opposite slots.
 #ifdef MUST_MATCH
 static inline GXColor magic1Color2(u8* anime) {
     GXColor c = *(GXColor*)&dat_8041f650;
-    c.r = (u8)(s32)((s32)anime[1] + float_0p5_8041f688 * ((255 - (s32)anime[1]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0]))));
-    c.g = (u8)(s32)((s32)anime[2] + float_0p5_8041f688 * ((255 - (s32)anime[2]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0]))));
-    c.b = (u8)(s32)((s32)anime[3] + float_0p5_8041f688 * ((255 - (s32)anime[3]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0]))));
+    { s32 a = anime[1]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
+      c.r = (u8)(s32)(a + float_0p5_8041f688 * ((255 - a) * (float_1_8041f68c + s))); }
+    { s32 a = anime[2]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
+      c.g = (u8)(s32)(a + float_0p5_8041f688 * ((255 - a) * (float_1_8041f68c + s))); }
+    { s32 a = anime[3]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
+      c.b = (u8)(s32)(a + float_0p5_8041f688 * ((255 - a) * (float_1_8041f68c + s))); }
     return c;
 }
 
 static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
-    c.r = (u8)(s32)((s32)anime[1] + float_0p5_8041f688 * (-(s32)anime[1] * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
-    c.g = (u8)(s32)((s32)anime[2] + float_0p5_8041f688 * (-(s32)anime[2] * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
-    c.b = (u8)(s32)((s32)anime[3] + float_0p5_8041f688 * (-(s32)anime[3] * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    { s32 a = anime[1]; f32 s = (f32)MAGIC1_SIN(anime[0]);
+      c.r = (u8)(s32)(a + float_0p5_8041f688 * (-a * (float_1_8041f68c + s))); }
+    { s32 a = anime[2]; f32 s = (f32)MAGIC1_SIN(anime[0]);
+      c.g = (u8)(s32)(a + float_0p5_8041f688 * (-a * (float_1_8041f68c + s))); }
+    { s32 a = anime[3]; f32 s = (f32)MAGIC1_SIN(anime[0]);
+      c.b = (u8)(s32)(a + float_0p5_8041f688 * (-a * (float_1_8041f68c + s))); }
     c.a = alpha;
     return c;
 }
@@ -200,11 +210,7 @@ static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
 }
 #endif
 
-// Details are in REPORT.md. main_dl matches everywhere except one MWCC register
-// allocation tie-break that the source shape does not move: the setup loads 1.0 into
-// f28 and 0.5 into f29, while the target loads 0.5 into f28 and 1.0 into f29 (the
-// colour code then agrees, only these two registers swap).
-// NONMATCHING (99.69%): f28/f29 swapped.
+// Details are in REPORT.md.
 static void main_dl(EffectEntry* effect, Mtx mtx) {
     u8* anime;
     s32 size;

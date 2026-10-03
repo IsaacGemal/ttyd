@@ -38,9 +38,9 @@ static inline s32 scale2000b(u32 v) {
 	return (q >= 0 ? q : 0);
 }
 
-// NONMATCHING (99.91%): the second group-A element (0xF0) swaps its two registers (ours yuwp r6/q r7;
-// target r7/r6). The 0x90 element compiles as the embedded-assignment form below so MWCC keeps the
-// 0xA4..0xB4 constants after the 0xF0 store; the helper form hoists them four instructions early.
+// The 0x90 element needs the assignment repeated in the true arm: with the plain ternary MWCC colours
+// yuwp r6/q r7 instead of the target's r7/r6. The helper form would be natural but it hoists the
+// 0xA4..0xB4 constants four instructions early (and four inlined scale700 calls make mwcceppc hang).
 void yuugijou_init(void) {
 	s32 q;
 
@@ -78,7 +78,12 @@ void yuugijou_init(void) {
 	yuwp->field_0x9C = 0x8A;
 
 	yuwp->field_0xEC = scale700(yuwp->field_0x8C) + 1;
+#ifdef MUST_MATCH
+	// MUST_MATCH: the repeated assignment only shapes the register allocator (it CSEs to one quotient).
+	yuwp->field_0xF0 = (q = (0x2BC - (s32)yuwp->field_0x90) * 15 / 0x2BC) >= 0 ? (q = (0x2BC - (s32)yuwp->field_0x90) * 15 / 0x2BC) : 0;
+#else
 	yuwp->field_0xF0 = ((q = (0x2BC - (s32)yuwp->field_0x90) * 15 / 0x2BC) >= 0 ? q : 0);
+#endif
 	yuwp->field_0xF4 = ((q = (0x2BC - (s32)yuwp->field_0x94) * 15 / 0x2BC) >= 0 ? q : 0);
 	yuwp->field_0xF8 = ((q = (0x2BC - (s32)yuwp->field_0x98) * 15 / 0x2BC) >= 0 ? q : 0);
 	yuwp->field_0xFC = ((q = (0x2BC - (s32)yuwp->field_0x9C) * 15 / 0x2BC) >= 0 ? q : 0);

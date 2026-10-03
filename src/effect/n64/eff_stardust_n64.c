@@ -103,9 +103,8 @@ extern const f32 float_0p05_8041ff48;
 // ordering, and the int->float pool double (objdiff resolves the local @NNN alias by section offset).
 // opt_lifetimes off // needed: with lifetimes on the randA/randB temps coalesce into the wrong caller-saved
 // FPRs and the scale/scaleB homes swap (f26/f27); off restores the original colouring.
+#pragma opt_common_subs off // required for the type-0 randA constant colouring (`360` in f3, `6.2832` in f4); with CSE on they swap
 #pragma opt_lifetimes off // randA/randB temps coalesce into the wrong caller-saved FPRs and scale/scaleB swap (f26/f27) otherwise
-// NONMATCHING (99.82%): type-0 angle2's `360` and `6.2832` land in f3/f4 swapped, and the type-1/2/default
-// int->float conversion slots are mirrored (retail 0x2c/0x28 vs here 0x24/0x20).
 EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     f32 angle;
     f32 t2;
@@ -127,6 +126,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     f32 t;
     f32 s3;
     f32 s2;
+    s32 odd5; // explicit so the two `(i & 1) * 5` uses stay a single computation with CSE off
 
     effect = effEntry();
     switch (type) {
@@ -186,22 +186,32 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
             randA = float_6p2832_8041ff14 * (t2 * (f32)i)
                 / float_360_8041ff18;
             s3 = (f32)sin(randA);
+            odd5 = (i & 1) * 5;
             ptr->field_0x10 = scale
                 * (s3
-                    * (float_85_8041ff3c - float_15_8041ff40 * s - (f32)((i & 1) * 5))
+                    * (float_85_8041ff3c - float_15_8041ff40 * s - (f32)odd5)
                     / float_100_8041ff44);
             s2 = (f32)sin(randB);
             c = (f32)cos(randA);
             ptr->field_0x14 = scale
                 * (c
-                    * (float_85_8041ff3c - float_15_8041ff40 * s2 - (f32)((i & 1) * 5))
+                    * (float_85_8041ff3c - float_15_8041ff40 * s2 - (f32)odd5)
                     / float_100_8041ff44);
             ptr->z = 0.0f;
             ptr->field_0x34 = 0;
             break;
         case 1:
         case 2:
+#ifdef MUST_MATCH
+            /* MUST_MATCH: the comma makes MWCC materialise the `(f32)i` conversion before the
+               `(f32)count` one, which lands the two int->float scratch pairs in the original's
+               slots (count 0x2c/0x28, i 0x24/0x20); the natural form below puts them the other
+               way round. The result is unchanged (the first `(f32)i` is discarded). */
+            angle = (float_360_8041ff18 / (f32)count) * ((f32)i, (f32)i)
+                + (f32)(rand() % 360);
+#else
             angle = float_360_8041ff18 / (f32)count * (f32)i + (f32)(rand() % 360);
+#endif
             if (i & 1) {
                 vy = -((f32)(rand() % 50 / 1000) + float_0p05_8041ff48);
             } else {
@@ -222,7 +232,13 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
         case 3:
         case 4:
         default:
+#ifdef MUST_MATCH
+            /* MUST_MATCH: same comma as the case 1/2 arm above (int->float scratch slots). */
+            angle = (float_360_8041ff18 / (f32)count) * ((f32)i, (f32)i)
+                + (f32)(rand() % 360);
+#else
             angle = float_360_8041ff18 / (f32)count * (f32)i + (f32)(rand() % 360);
+#endif
             vy = -((f32)(rand() % 50 / 1000) + float_0p05_8041ff48);
             angle = float_6p2832_8041ff14 * angle / float_360_8041ff18;
             ptr->field_0x18 = vy;
@@ -243,6 +259,7 @@ EffectEntry* effStardustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
     return effect;
 }
 #pragma opt_lifetimes reset
+#pragma opt_common_subs reset
 
 // opt_common_subs on breaks the two fmadds contractions in the particle update; the original still
 // has them, so keep common subexpression merging off for this function.

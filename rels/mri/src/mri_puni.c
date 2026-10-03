@@ -5969,8 +5969,28 @@ void puni_puni_init(void) {
 }
 
 // The original unit's rodata is not yet moved into this source; the symbols are declared above.
-// NONMATCHING (99.87%): sharing case 27's `diff` Vec between both inner cases (hoisted to the case scope)
-// fixed those slots; only case 15's `hitCheckFilter` outputs/pos/normal now land at different stack offsets.
+// NONMATCHING (99.96%): 36 instructions differ; the reconstruction (logic, statement sequence,
+// constants, data symbols and callees) is complete. The remainder is MWCC's aggregate-slot order:
+//  - case 7 is correct: it calls the puniSearchTekiNamed/puniSearchMikataNamed static-inline twins
+//    (the same helpers puniSearch uses), which removed the old r28/r30 swap and the float data diffs.
+//  - the inlined puniModePreupdraft (case 18) / puniModeWonder (case 20) `pos` Vecs land at 0x30/0x24
+//    where retail has them at 0x64/0x58.
+//  - case 15's probe: retail has `pos` 0xc / `normal` 0x18 / hit outputs 0x24-0x38, exactly the layout
+//    of the standalone puniModePrehagure (100%, and byte-identical to the inlined case 15 at 0x1320C).
+//    Ours puts the hit outputs at 0xc-0x20 and pos/normal at 0x54/0x60. Root cause is now pinned: the
+//    auto-inline pass allocates inlined callees' slots in source order, so case-18/20 (which this unit
+//    auto-inlines because they are 256/324 B) claim the low slots before case 15. The 716-byte
+//    puniModePrehagure is above the auto-inline threshold, so our compiler never inlines it into case 15.
+//    A `static inline` copy inlines only in a late pass (locals land high: hits 0x24-0x38, pos/normal
+//    0x3c/0x48, case 18/20 0x10-0x20). Calling the 324-byte global puniPositionCheck DOES auto-inline in
+//    source order and put case 18/20 at 0x54/0x60 (matching retail), but its own locals come out
+//    hits-low/pos-normal-high because inlined address-taken locals take the low slots. No reconstructable
+//    source shape beats 36: 24 declaration orders (36-38), case/function/else scope, individual-f32 vs
+//    six-f32 vs two-Vec hits, static-inline copy (62), global copy (no inline, 220), `inline` keyword on
+//    puniModePrehagure (standalone then 0%), puniPositionCheck reorderings (62-64), and every inline_max_*/
+//    inline_depth/defer_codegen/always_inline/auto_inline pragma. Various probe helpers hang the compiler.
+// Queue for tools/perm_loop.py (do not run the permuter in a wave workspace).
+// NONMATCHING (99.96%): only MWCC aggregate stack-slot order (case 15 vs inlined cases 18/20) differs.
 void unk_mri_00012d58(PuniData* self) {
     switch (self->unkC) {
     case 0:
@@ -6039,9 +6059,9 @@ void unk_mri_00012d58(PuniData* self) {
                 self->field_0x114 = 0;
             } else if (((s32)gp->retraceCount & 3) == (self->field_0x116 & 3)) {
                 if (self->unk4 & 1) {
-                    *(PuniData**)((u8*)self + 0x1DC) = searchBattleTeki(self);  // PuniData 0x1DC
+                    *(PuniData**)((u8*)self + 0x1DC) = puniSearchTekiNamed(self);  // PuniData 0x1DC
                 } else {
-                    *(PuniData**)((u8*)self + 0x1DC) = searchBattleMikata(self);  // PuniData 0x1DC
+                    *(PuniData**)((u8*)self + 0x1DC) = puniSearchMikataNamed(self);  // PuniData 0x1DC
                 }
             }
             if (*(PuniData**)((u8*)self + 0x1DC) != NULL) {  // PuniData 0x1DC

@@ -503,8 +503,9 @@ static inline void gaugeHighlight(CameraEntry* cam, s32 x, s32 y, s32 type, s32 
 
 #pragma optimize_for_size on // -O4,s: the target keeps divw for /100 instead of a magic multiply
 // NONMATCHING (99.83%): the three 2px marker (gaugeHighlight) blocks colour xa/xb the other way
-// (retail xa=f27, xb=f29; ours xa=f29, xb=f27). Every other block matches; see REPORT.md for the
-// shapes tried. Register colouring only.
+// (retail xa=f27, xb=f29; ours xa=f29, xb=f27) and materialise y+32 before y+50 (ours the reverse).
+// Every other block matches; a wide search of struct/assignment orders (tmp/variants*.py) found
+// nothing better, so this is pure register colouring: permuter work.
 void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags, f32 ratio) {
 	BattleWork* work = getWorkPointer();
 	CameraEntry* cam;

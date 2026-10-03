@@ -73,15 +73,14 @@ typedef struct effKemuri1Data {
 
 //local prototypes
 
-// The type 4-7 preheader and loop are instruction-for-instruction identical to the original except for the
-// callee-saved FPR colours. The 5th float param `a5` is saved to f24 instead of f31; because a5 and the nine
-// loop-invariant constants form one interference clique over f22-f31, the allocator then rotates every constant
-// (neg3..10 land in f25,f26,f27,f28,f29,f30,f31,f22,f23 instead of f22..f30). Scoping `angle` to the case-4-7 loop
-// (a one-line shadow of the function-scope `angle`) fixes the angle temp to the original's f20 and lifts the
-// score from 99.62% to 99.69%. objdiff names the pooled "Kemuri1N64" string and int->float double anonymous
-// @NNN@ instead of str_802FA8A0/double_to_int_802fa898; those names are unscored.
-// NONMATCHING (99.69%): only the callee-saved FPR colouring of the case-4-7 clique differs (a5 at f24 instead
-// of f31 drags the nine constants around); every instruction and the instruction order match.
+// The case-4-7 loop and its preheader are instruction-for-instruction identical to the original only with the
+// two match shapes below: the sin/cos results for field_0x30/0x34 run through loop-local temps, and the 0.94
+// constant is written straight into both fields instead of a function-scope `k94` temp. Without them the
+// allocator colours the ten-value loop-invariant clique (nine constants + the a5 parameter) with a5 in f24 and
+// the constants rotated (99.69%); with them a5 lands in f31 and neg3..10 in f22..f30 as the original. Scoping
+// `angle` to the loop (shadow of the function-scope `angle`) keeps the angle temp in f20. objdiff names the
+// pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of str_802FA8A0/
+// double_to_int_802fa898; those are unscored.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
 	effKemuri1Data* data;
@@ -224,21 +223,39 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				// Case-4-7 scope: shadowing the function-scope `angle` makes MWCC keep the angle in the
 				// original's f20 (the function-scope one lands in f21 here).
 				f32 angle;
+#ifdef MUST_MATCH
+				// The temp and direct-constant shapes below are what colour this loop's a5 to f31 and its
+				// nine constants to f22..f30; the #else form is the natural code and scores 99.69%.
+				f32 s30;
+				f32 c34;
+#endif
 				entry->field_0x10 = float_neg3_8041f25c;
 				entry->field_0x14 = float_0p93_8041f2a8;
 				entry->field_0x20 = float_0_8041f248;
 				entry->field_0x24 = float_0p1_8041f2ac;
+#ifdef MUST_MATCH
+				entry->field_0x28 = float_0p94_8041f290;
+				entry->field_0x2C = float_0p94_8041f290;
+#else
 				k94 = float_0p94_8041f290;
 				entry->field_0x28 = k94;
 				entry->field_0x2C = k94;
+#endif
 				angle = float_6p2832_8041f278 * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / float_360_8041f27c;
 				sinAngle = (f32)sin(angle);
 				entry->position.x = float_10_8041f2a0 * -sinAngle;
 				entry->position.y = float_0_8041f248;
 				cosAngle = (f32)cos(angle);
 				entry->position.z = float_10_8041f2a0 * -cosAngle;
+#ifdef MUST_MATCH
+				s30 = sin(angle);
+				entry->field_0x30 = s30;
+				c34 = cos(angle);
+				entry->field_0x34 = c34;
+#else
 				entry->field_0x30 = sin(angle);
 				entry->field_0x34 = cos(angle);
+#endif
 				switch (type) {
 				case 4:
 				case 7:

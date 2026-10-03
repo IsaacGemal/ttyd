@@ -75,8 +75,6 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// optimize_for_size: battleAcMain's prologue uses stmw/lmw.
-#pragma optimize_for_size on
 // The two unique-button loops must be `while (!found)` (a do-while leaves `pick` unspilled and drops
 // the frame to 0x30 with only 10 callee-saved GPRs). `bd->states[i] = 0;` must be written inside both
 // arms of `case -3` (duplicated, not once after the if/else): a shared store lets MWCC merge the two
@@ -87,8 +85,10 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
 // scope for i, sfx, allDone, smooth, statement order, an inline helper, case order, do-while vs while,
 // and pool/data placement. Everything else (work r22, smooth r25, disp r28, bd r29, cont r27, offset
 // r26, table r21, found r20, pick r24/r23) matches.
-// NONMATCHING (99.52%): only the i/sfx callee-saved swap (i r31/target r30, sfx r30/target r31) and the
-// one extra `mr` from the string `addi r0, r3, @l; mr r30, r0` (target: direct `addi r31, r3, @l`) remain.
+// The last two callee-saved GPRs are i (r30) and sfx (r31). With the plain assignment MWCC starts sfx's
+// live range at the assignment and colours it r30, giving i r31 plus a `mr` when the string address is
+// materialised; a comma operator before the literal sequences an extra operand into the statement, which
+// pushes sfx above i in the allocator's order (r31, direct `addi r31, r3, @l`) and matches exactly.
 s32 battleAcMain_ButtonDown(BattleWork* work) {
     const char* sfx;
     ButtonDownWork* bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
@@ -103,7 +103,12 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
     }
     // Literal, not a named str_802FD618: the compiler pools it after actionCommandDisp's
     // generated int->float double, which is what puts the double at vec+0x40 (see below).
+#ifdef MUST_MATCH
+    // (0, ...) is the allocator nudge described above; the value of the left operand is discarded.
+    sfx = (0, "SFX_AC_BUTTON_PUSH1");
+#else
     sfx = "SFX_AC_BUTTON_PUSH1";
+#endif
 
     do {
         cont = 0;
@@ -301,7 +306,6 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
 
     return 1;
 }
-#pragma optimize_for_size reset
 
 // 100%: the five .rodata Vecs above must stay five separate objects, not one Vec[5] array. Only
 // then does MWCC anchor its generated int->float 2^52 pool double at vec+0x40 and reach it as

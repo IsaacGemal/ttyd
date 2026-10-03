@@ -654,13 +654,8 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// The only difference is the outer-loop prologue: the `(i / 4) * 32` `slwi` is scheduled one slot
-// before the `i % 4` `add` where the original schedules it after, which rotates the prologue's `gp` /
-// `0x4330` / row-base values into r31 / r30 / r29 instead of r30 / r29 / r31. Everything else,
-// including the whole inner loop, is byte-identical. Source order, expression association, the pointer
-// form, an inline helper, declaration-order permutations and the scheduling / optimizer pragmas all
-// leave the schedule unchanged.
-// NONMATCHING (98.81%): outer-prologue `slwi`/`i%4` schedule and the rotated registers (r31/r30/r29 vs r30/r29/r31).
+// The outer-loop prologue hoists `(i / 4) * 32` and `i % 4`; MWCC's list scheduler and the
+// callee-saved colouring it induces are sensitive to the front-end expression tree here.
 static void sun_tev(TevCallbackParam* param) {
     s32 field_C = param->field_C;
     s32 field_10 = param->field_10;
@@ -670,15 +665,27 @@ static void sun_tev(TevCallbackParam* param) {
     GXTexObj texObj;
     f32 mtx[2][3];
     s32 i, j;
+    s32 row;
 
     if (ind_lp == NULL) {
         ind_lp = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, 0), 1);
     }
     buf = (u8*)ind_lp->address;
     for (i = 0; i < 0x40; i++) {
+#ifdef MUST_MATCH
+        // MUST_MATCH: reusing `q` as the row base (rather than `row = (i / 4) * 32;`) puts MWCC's
+        // callee-saved GPRs in the target's order (`row`/`gp`/`0x4330`/`i%4` = r31/r30/r29/r28).
+        // `i % 4` must stay an inline expression in the inner loop so it colours r28; the #else
+        // form is the natural one and scores 97.94.
+        s32 q = i / 4;
+        q = q * 32;
+        row = q;
+#else
+        row = (i / 4) * 32;
+#endif
         for (j = 0; j < 0x40; j++) {
             f32 s = (f32)sin(31.41592f * j / 64.0f - gp->retraceCount / 8.0f);
-            s32 off = (i / 4) * 32 + (j / 4) * 512;
+            s32 off = row + (j / 4) * 512;
             off += ((i % 4) + (j % 4) * 4) * 2;
             buf[off] = (s32)(128.0f + 3.0f * s);
             buf[off + 1] = 0x80;

@@ -67,7 +67,13 @@ static inline void fileClearTpl(TEXPalette* tpl) {
 					pal->unpacked = FALSE;
 					tpl->descriptorArray[i].CLUTHeader->data -= (u32)tpl;
 				}
+#ifdef MUST_MATCH
+				// MUST_MATCH: the u32 view makes the compiler split descriptorArray (r4) and its +4 offset (r3)
+				// the way the original does.
+				*(u32*)&tpl->descriptorArray[i].CLUTHeader -= (u32)tpl;
+#else
 				tpl->descriptorArray[i].CLUTHeader = (void*)((u32)tpl->descriptorArray[i].CLUTHeader - (u32)tpl);
+#endif
 			}
 		}
 		tpl->descriptorArray = (void*)((u32)tpl->descriptorArray - (u32)tpl);
@@ -75,11 +81,8 @@ static inline void fileClearTpl(TEXPalette* tpl) {
 }
 
 // Cases 1,2,3,5,6,7,8,9,10 and the type-5 loop match exactly. Case 4 (TPL) goes through the
-// fileClearTpl inline above so its loop counter/byte offset take the original's r5/r6.
-// NONMATCHING (99.93%): 4 instructions. Case 4's CLUT pointer fixup loads descriptorArray into
-// r3 where the original uses r4 (and the +4 offset into r4 where the original uses r3), i.e.
-// lwzx/stwx r0, r3, r4 instead of r0, r4, r3; every other instruction, including the jump
-// table, matches.
+// fileClearTpl inline above so its loop counter/byte offset take the original's r5/r6. The CLUT
+// pointer fixup's u32 view (see the MUST_MATCH below) gives the original's r4/r3 operand split.
 void fileGarbageDataAdrClear(FileEntry* entry) {
 	void* data = *entry->data;
 	u8* d = data;

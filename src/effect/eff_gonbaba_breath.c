@@ -83,15 +83,19 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// Detailed diff: control flow, the sin/cos polynomial and the direct col_tbl[type % 10][i] reloads all
-// match, as do the radian (f6) and seed/c1/one (f5/f4/f3). Splitting pi per block and this declaration
-// order removed the earlier 90-98% register scrambles; the remaining diffs are allocator luck.
+// Detailed diff: control flow, the sin/cos polynomial, the direct col_tbl[type % 10][i] reloads
+// and the case-17 speed coalescing all match. Splitting pi per block is load-bearing; the named
+// locals `ten` (10.0f) and `zero` (0.0f), the `conv`/`rad` scopes and the two-statement speed split
+// were each chosen for MWCC's FPR colouring (name/scope/declaration-order permutations were tried,
+// The remaining 22 diffs are all register-only (diff_shape: same calls/immediates):
+// case 10's `piA`/`piB` land in f8 not f1, so the quotient is f1 (retail f7); case 17's 0.0f takes
+// f1 and `piC`/`piD` f3/f7 (retail 0.0f f3, pi f1). Splitting case 10's speed (which would coalesce
+// the quotient into f7) moves the radian from f6 to f5, so it stays one expression.
 // `#pragma opt_propagation off` required: stops MWCC rematerialising the sin/cos coefficients per branch.
 #pragma opt_propagation off
 // `#pragma opt_lifetimes off` required: with lifetimes on the frame, stack homes and FPR colouring shift.
 #pragma opt_lifetimes off // with lifetimes on the frame, stack homes and FPR colouring shift
-// NONMATCHING (99.55%): only FPR colouring is off: the four per-block pi constants (piA..piD land in
-// f7/f8/f3/f2 instead of f1) and, in case 17, the speed intermediate and the 6.2832/360 loads.
+// NONMATCHING (99.69%): only FPR colouring differs (case 10 quotient/pi, case 17 zero/pi).
 void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 	f32 f0;
 	f32 f1;
@@ -102,6 +106,8 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 	f32 f2;
 	f32 f7;
 	f32 speed;
+	f32 ten;
+	f32 zero;
 	f32 piA;
 	f32 piB;
 	f32 piC;
@@ -146,7 +152,11 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 	case 15:
 	case 16:
 		angle = 240.0f + (f32)irand(60);
-		f7 = ((f32)(irand(50) + 10) / 10.0f) * 1.5f;
+		{
+			f32 conv = (f32)(irand(50) + 10);
+			ten = 10.0f;
+			f7 = (conv / ten) * 1.5f;
+		}
 		f6 = (6.2831855f * angle) / 360.0f;
 		data->field_0x44 = index;
 		data->position.x = 0.0f;
@@ -242,12 +252,23 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		break;
 	case 17:
 		angle = 225.0f + (f32)irand(90);
+#ifdef MUST_MATCH
+		// MUST_MATCH: the two-statement form makes MWCC coalesce the division into f31 (retail); the
+		// one-expression form computes it in f1 and copies.
+		speed = (f32)(irand(50) + 10) / 10.0f;
+		speed *= 1.5f;
+#else
 		speed = ((f32)(irand(50) + 10) / 10.0f) * 1.5f;
+#endif
 		data->field_0x44 = irand(100);
-		f6 = (6.2831855f * angle) / 360.0f;
-		data->position.x = 0.0f;
-		data->position.y = 0.0f;
-		data->position.z = 0.0f;
+		{
+			f32 rad = 6.2831855f * angle;
+			f6 = rad / 360.0f;
+		}
+		zero = 0.0f;
+		data->position.x = zero;
+		data->position.y = zero;
+		data->position.z = zero;
 
 		piC = 3.1415927f;
 		f5 = 0.00761f;

@@ -2795,10 +2795,10 @@ static USER_FUNC(yami_view) {
     Mtx mtx;
     f32 value = evtGetFloat(event, event->args[0]);
 
-    target = vec3_usu_00004d84;
+    target = vec3_usu_00004d9c;
     target.z = value;
     up = vec3_usu_00004d90;
-    camPos = vec3_usu_00004d9c;
+    camPos = vec3_usu_00004d84;
     camPos.z = 100.0f + value;
     C_MTXLookAt(mtx, &camPos, &up, &target);
     envSetYamiView(mtx);

@@ -218,26 +218,23 @@ void effMistMain(EffectEntry* effect) {
 #pragma opt_common_subs reset
 
 #ifdef MUST_MATCH
-// Build the GXColor in a helper so the by-value argument lands in stack 0xc, as retail does.
+// Build the GXColor in a helper: its return slot lands at 0x8 and the by-value argument copy at 0xc, as
+// retail. Field assignment (c.r/c.g/c.b) rather than byte-array indexing is what makes MWCC emit the
+// channel loads in address order r,g,b (r->r6/g->r5/b->r0); array indexing rotates the schedule to b,g,r.
 static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor c;
-	u8* p = (u8*)&c;
-	c = unk_80423320;
-	p[0] = r;
-	p[1] = g;
-	p[2] = b;
-	p[3] = a;
+	GXColor c = unk_80423320;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
 	return c;
 }
 #endif
 
-// NONMATCHING (99.92%): the int->float magic and 0.0f/1.0f vertex literals pool as anonymous @NN symbols (see below).
-// The colour is built through mistColor so its return slot is 0x8 and the by-value argument copy
-// lands at 0xc, as retail. Passing the alpha through (u8) rather than (s32) is what makes MWCC emit
-// the channel loads in address order r,g,b with r->r6/g->r5/b->r0; an (s32) cast rotates the schedule
-// to b,r,g with different registers. The int->float magic and the 0.0f/1.0f vertex literals pool as
-// anonymous @NN rather than the named double_to_int_802fe918/float_0_804214f4/float_1_804214f8
-// (pool naming is not scored: effMistEntry is 100% with the same anonymous-@ mismatch).
+// Matching. The colour helper above keeps retail's stack slots. The int->float magic and the 0.0f/1.0f
+// vertex literals pool as anonymous @NN rather than the named
+// double_to_int_802fe918/float_0_804214f4/float_1_804214f8; those are symbol-only diffs that resolve when
+// the unit links (effMistEntry is 100% with the same anonymous-@ mismatch).
 void effMistDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MistWork* work;

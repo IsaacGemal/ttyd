@@ -213,6 +213,14 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 // (which gives its first-loop `i` r28; this build gives `data` r28 and `i` r26), the second loop's base
 // pointer/colr are r30/r29 here (r29/r30 there), `v = 0` compiles to `li` where the original emits `mr`
 // for its t=offset, and the `valB + offset - 3000` temp is r5/r6 swapped.
+// The `data`/first-loop-`i` colouring ({r28,r26} here vs {r26,r28} in the original) survives every
+// declaration-order permutation (single moves, 2500 random orders, pairwise hill-climb), a separate
+// first- or second-loop counter (including reusing `j`/`k`/`counter`), a second `data` pointer
+// (coalesced away), moving the `timer`/`counter` loads later, the `v = offset` init moved into the
+// `for`, statement reordering in the prologue and both loops (single moves and all pair swaps),
+// `-O4,p`, `optimization_level` 0-4, and every `opt_*` pragma the compiler accepts. `opt_common_subs`
+// is the only knob that moves `data` to r26, but it also breaks the FPR/moving-pointer shapes
+// (51-82 diffs), so it must stay off. It is allocator tie-break luck and wants a permuter job.
 // NONMATCHING (99.40%): instruction shapes and frame match; only register colouring differs.
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
