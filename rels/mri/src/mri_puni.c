@@ -5989,7 +5989,7 @@ void puni_puni_init(void) {
 //    six-f32 vs two-Vec hits, static-inline copy (62), global copy (no inline, 220), `inline` keyword on
 //    puniModePrehagure (standalone then 0%), puniPositionCheck reorderings (62-64), and every inline_max_*/
 //    inline_depth/defer_codegen/always_inline/auto_inline pragma. Various probe helpers hang the compiler.
-//    Wave 63 re-confirmed: a switch-free auto-inlined helper (global or static, value-returning or
+//    A switch-free auto-inlined helper (global or static, value-returning or
 //    void with an out-param) always starts at 0x24 because the early-inlined cases 18/20 hold 0xc-0x20,
 //    whatever the helper's definition position (above preupdraft/prehagure/unk, same result); the best
 //    non-base shape (void helper + s32* out-param) is 52 diffs and keeps the `li 2/li 0` state codegen.
@@ -5998,7 +5998,6 @@ void puni_puni_init(void) {
 //    scalars allocate low regardless of inline phase — but costs 85 diffs (the `Vec` word copies become
 //    `lfs`/`stfs` and the register/scheduling around them differs), so it loses to the 36-diff base.
 //    `*(Vec*)&posX = self->field_0x12C` word-copy attempts cost 100-140 diffs (register allocation).
-// Queue for tools/perm_loop.py (do not run the permuter in a wave workspace).
 // NONMATCHING (99.96%): only MWCC aggregate stack-slot order (case 15 vs inlined cases 18/20) differs.
 void unk_mri_00012d58(PuniData* self) {
     switch (self->unkC) {

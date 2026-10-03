@@ -1137,7 +1137,6 @@ void BattleAudienceSettingAudience(void) {
 	s32 i, j, k;
 	s32 target;
 	s32 targetNum;
-	f32 randomMul;
 	s32 order[12];
 	s32 weights[12];
 	s32 counts[13];

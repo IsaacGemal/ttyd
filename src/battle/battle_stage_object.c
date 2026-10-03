@@ -1126,10 +1126,10 @@ USER_FUNC(_bgset_kemuri_effect) {
 // every other opt_*/global_optimizer/scheduling/optimize_for_size/pool_data/optimization_level 0-4 on-off pair,
 // the reordered intpl_sub prototype cast that fixed `_fall_frame` (moves the lfs order but not the colouring),
 // inline int->float/store helpers, removing the `base`/`vec` variables, relocating the s0/s1 SFX temporaries,
-// and s32/BOOL/u32 changed. Wave 63: with `#pragma opt_common_subs off` and the declaration/assignment order
+// and s32/BOOL/u32 changed. With `#pragma opt_common_subs off` and the declaration/assignment order
 // below, MWCC now keeps wp=r28 (it was r29) and only a 3-cycle of event/base/changed remains: ours
 // event=r26, changed=r27, base=r29 vs the target event=r29, changed=r26, base=r27. That is 97.13% / 36 diffs
-// (was 97.01% / 40). The int->float bias is still the compiler's own `@1191` .rodata literal with its own
+// The int->float bias is still the compiler's own `@1191` .rodata literal with its own
 // base (`lis`+`lfd`) instead of the target's `lfd f1, 0x168(r30)` folded onto the vec base.
 // Needed: with common-subexpression elimination on (or off) the allocator gives wp=r29 and beats only 40
 // diffs; `opt_common_subs off` plus this declaration/assignment order is the best found (97.13%).

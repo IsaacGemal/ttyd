@@ -414,7 +414,7 @@ end:
 // Three things together reproduce retail:
 //  - a *non-volatile* `const u32*` source. A `volatile const u32*` source also batches but then
 //    MWCC colours the function's callee-saved registers the other way (a=r31/fbase=r30/entry=r29,
-//    the wave-61 99.30%); the non-volatile source keeps retail's a=r29/fbase=r31/entry=r30. Any
+//    99.30%); the non-volatile source keeps retail's a=r29/fbase=r31/entry=r30. Any
 //    volatile on the source pointer is the trigger, regardless of its element type.
 //  - the volatile *destination* pins the load-all/store-all order.
 //  - the temp declaration order and store order give retail's load colouring x->r6, y->r5, z->r0.
