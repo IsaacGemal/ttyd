@@ -476,14 +476,21 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
 // uses a separate source/dest index pair (two strength-reduced offsets plus a counter), the
 // found-point stores use post-increment so MWCC reuses the copy-loop counter for index[0]+1/+2 and k,
 // and bomb1->count is written in the original's +2-then-+j order.
-// NONMATCHING (91.73%): callee-saved colouring and bomb1/bomb2 Vec-copy schedule still differ.
-// Naming `&used[0]` as a local pointer shifts the colouring slightly closer (120 → 112 diffs); it is a
-// no-op alias, kept only for that.
+// The original's callee-saved order is bombCount,b,a,i*4,n,j,used,work,i*4+0xa8,bomb,i,j*0xc; this
+// compiler produces b,a,i*4,n,j,used,work,i*4+0xa8,bombCount,i,bomb,j*0xc. Nudging `bombCount` to the
+// front of that order is the whole remaining difference and no declaration order, statement order, alias,
+// scope or pragma tried moves it. Kept from the recovered shapes: `used` base held in a pointer just for
+// the zeroing loop (the original keeps it in a callee-saved register and recomputes r1+0x18 for the dedupe
+// loop), the dedupe comparison inlines the (s32)out1/out2 casts (the original CSEs them into r6/r7), the two
+// point stores go through a `j1` temp (the original computes j+1 and adds 2 to j), and the bomb1/bomb2
+// field order below is the one whose schedule matches. The natural forms are under #else.
+// NONMATCHING (94.51%): 78 callee-saved arg-mismatches and 12 scheduled instructions in bomb1/bomb2's setup.
 void zubastar_bunkatu(Vec* a, Vec* b) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 bombCount = work->bombCount;
     s32 i;
     s32 j;
+    s32 k;
 
     for (i = 0; i < bombCount; i++) {
         ZubaStarBomb* bomb = work->bombs[i];
@@ -496,16 +503,19 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 
         {
             s32* usedp = used;
-            s32 k;
 
             for (k = 0; k < 2; k++) {
                 usedp[k] = 0;
             }
         }
         for (j = 0; j < bomb->count; j++) {
-            s32 k;
+#ifdef MUST_MATCH
+            // The original compares the dedupe points against the CSE'd casts, not against stores of
+            // nx/ny; inlining them lets MWCC reuse r6/r7 exactly as the target does.
+#else
             s32 nx;
             s32 ny;
+#endif
 
             if (n == 2) {
                 break;
@@ -513,10 +523,16 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
             if (zubastar_get_kouten(a->x, a->y, b->x, b->y, bomb->points[j].x, bomb->points[j].y,
                                     bomb->points[(j + 1) % bomb->count].x,
                                     bomb->points[(j + 1) % bomb->count].y, &out1, &out2)) {
+#ifndef MUST_MATCH
                 nx = (s32)out1;
                 ny = (s32)out2;
+#endif
                 for (k = 0; k < n; k++) {
+#ifdef MUST_MATCH
+                    if (used[k] == 1 && (s32)point[k].x == (s32)out1 && (s32)point[k].y == (s32)out2) {
+#else
                     if (used[k] == 1 && (s32)point[k].x == nx && (s32)point[k].y == ny) {
+#endif
                         break;
                     }
                 }
@@ -551,8 +567,20 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
                     bomb1->points[k] = bomb->points[j];
                 }
             }
+#ifdef MUST_MATCH
+            // Storing through j++ twice makes MWCC emit two `addi j,1`; the target computes j+1 into a
+            // second register and adds 2 to j, so the stores use j and j+1 and j advances by two.
+            {
+                s32 j1 = j + 1;
+
+                bomb1->points[j] = point[0];
+                bomb1->points[j1] = point[1];
+                j = j1 + 1;
+            }
+#else
             bomb1->points[j++] = point[0];
             bomb1->points[j++] = point[1];
+#endif
             {
                 s32 k = j;
 
@@ -571,6 +599,18 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
                     bomb2->points[bomb2->count - 1] = point[1];
                 }
             }
+#ifdef MUST_MATCH
+            // Statement order only: it is what makes the target's schedule of the two vec3 loads, the state
+            // stores and the two irand calls come out (the state store of bomb1 lands before the vec3 load).
+            bomb1->timer = irand(0x80);
+            bomb1->field_0x0C = vec3_802ff6bc;
+            bomb1->maxTimer = irand(5) + 1;
+            bomb1->state = 0;
+            bomb2->field_0x0C = vec3_802ff6c8;
+            bomb2->state = 0;
+            bomb2->timer = irand(0x80);
+            bomb2->maxTimer = irand(5) + 1;
+#else
             bomb1->state = 0;
             bomb1->field_0x0C = vec3_802ff6bc;
             bomb1->timer = irand(0x80);
@@ -579,6 +619,7 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
             bomb2->field_0x0C = vec3_802ff6c8;
             bomb2->timer = irand(0x80);
             bomb2->maxTimer = irand(5) + 1;
+#endif
             BattleFree(work->bombs[i]->points);
             BattleFree(work->bombs[i]);
             work->bombs[i] = bomb1;

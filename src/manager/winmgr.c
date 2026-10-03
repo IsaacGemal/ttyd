@@ -1352,13 +1352,17 @@ void select_main(WinMgrEntry* entry) {
 #pragma opt_common_subs reset
 
 
-// NONMATCHING (92.75%): close, but MWCC folds the `0.0f + (f32)int` copies that the
-// original keeps (which is why the original also spills f29); the SDA/rodata label
-// spellings differ cosmetically.
+// Every instruction, call, constant and control-flow edge matches. The only remaining difference is
+// the compiler-generated int->float magic double: MWCC emits an anonymous copy at .rodata+0x548 and
+// references that, where the original references the named double_to_int_802fff00 at .rodata+0x468
+// (which this file already defines). It is the documented project-wide limitation of the (f32)int
+// conversion - objdiff scores the pool-double addend difference near zero - and no source spelling of
+// the conversion changes it.
+// NONMATCHING (99.98%): the (f32)int pool double references an anonymous .rodata copy (see above).
 void select_disp_luigi(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
-    InformantInfo* info = _jdt.info;
+    InformantInfo* info;
     Mtx mtx1;
     Mtx mtx2;
     char buf[0x20];
@@ -1383,26 +1387,40 @@ void select_disp_luigi(WinMgrEntry* entry) {
     GXColor colorGray = dat_80421a68;
     GXColor colorWhite = dat_80421a6c;
     GXColor fogColor;
+    InformantWork* jdt = &_jdt;
     const char* msg;
     u16 width;
     u16 x;
+    f32 zero;
 
     if (wp->mEntries[select->descriptorId[0]].flags & 4) {
         return;
     }
 
     fogColor = dat_80421a70;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original stores the fog colour in fogColor's own slot (0x18) and passes a
+    // pointer to it; with the by-value GXSetFog prototype MWCC copies it to a call temp at 0xc and
+    // the loop/edge/title colour locals move to 0x18/0x14/0x10. The cast only changes the calling
+    // convention (GXSetFog reads the colour, never writes it) and reproduces the original slots.
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, float_0_80421a80, float_0_80421a80, float_0_80421a80, float_0_80421a80, &fogColor);
+#else
     GXSetFog(0, float_0_80421a80, float_0_80421a80, float_0_80421a80, float_0_80421a80, fogColor);
+#endif
     GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
     GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
 
+    zero = 0.0f;
+    info = jdt->info;
     for (i = 0; i < select->field_0x34; i++, info++) {
         char saved;
+        f32 row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+        f32 bound = select->field_0x1C + (zero + row);
 
-        if ((f32)(entry->field_0x1C - 0x2c - i * 0x18) < select->field_0x1C + (f32)entry->field_0x1C - 32.0f) {
+        if ((f32)entry->field_0x1C < bound - 32.0f) {
             continue;
         }
-        if ((f32)(entry->field_0x1C - entry->field_0x24) > select->field_0x1C + (f32)entry->field_0x1C + 32.0f) {
+        if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
             continue;
         }
 
@@ -1417,7 +1435,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
             scaleRow = vec3_802ffccc;
             tmpRow.x = (f32)(entry->field_0x18 + 0x19);
             rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpRow.y = select->field_0x1C + rowY;
+            tmpRow.y = select->field_0x1C + (zero + rowY);
             posRow = tmpRow;
             winFontSet(&posRow, &scaleRow, &color, (const char*)info->initEndPos);
         }
@@ -1434,7 +1452,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
             scaleEdge = vec3_802ffce4;
             tmpEdge.x = (f32)(entry->field_0x18 + 0xf5);
             edgeY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
-            tmpEdge.y = select->field_0x1C + edgeY;
+            tmpEdge.y = select->field_0x1C + (zero + edgeY);
             posEdge = tmpEdge;
             winFontSet(&posEdge, &scaleEdge, &color, buf);
         }
@@ -1465,7 +1483,8 @@ void select_disp_luigi(WinMgrEntry* entry) {
         winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
     }
 
-    if (select->field_0x4 == 0x11) {
+    switch (select->field_0x4) {
+    case 0x11:
         PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
         PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
         PSMTXConcat(mtx1, mtx2, mtx1);
@@ -1474,6 +1493,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
         posLuigi.x = (f32)(entry->field_0x18 + 0x10c);
         posLuigi.y = (f32)(entry->field_0x1C - 0xc);
         iconDispGx(&posLuigi, 0x10, 0x18b, 0.6f);
+        break;
     }
 
     posMain = vec3_802ffd14;

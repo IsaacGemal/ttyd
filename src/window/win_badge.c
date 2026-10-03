@@ -479,8 +479,9 @@ static inline Vec winBadgeMkVec(Vec base, f32 x, f32 y) {
 // `float_20 + (ry - col) - float_18` (left assoc, not `float_20 + ((ry - col) - float_18)`); the second
 // winKirinukiGX y / two upper font rows keep `float_20 + (float_40 + y)` inline rather than through a `fy`
 // local; and in each font block the `GXColor c = color;` copy is declared before the `Vec`s. Together
-// 92.80% -> 93.64%.
-// NONMATCHING (93.65%): compiler register/stack allocation only, see above.
+// 92.80% -> 93.64%. The first-branch (i == work->0x3E0) winTexSet_x2 colour is `white` (not dat_8041d354,
+// the else branch's colour): retail loads 0x30(r1), the white stack copy, there. That fix is 93.64% -> 93.76%.
+// NONMATCHING (93.76%): compiler register/stack allocation only, see above.
 void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
     GXColor white = *(GXColor*)&dat_8041d348;
     GXColor color = *(GXColor*)&dat_8041d34c;
@@ -517,14 +518,14 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
 #endif
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
 #ifdef MUST_MATCH
-            winTexSet_x2(i + 0x1A, 0xB4, winBadgeMkVec(vec3_802f4a50, c, float_20_8041d39c + (b - (f32)ofs)), vec3_802f4a5c, *(GXColor*)&dat_8041d354);
+            winTexSet_x2(i + 0x1A, 0xB4, winBadgeMkVec(vec3_802f4a50, c, float_20_8041d39c + (b - (f32)ofs)), vec3_802f4a5c, white);
 #else
             {
                 Vec translate = vec3_802f4a50;
 
                 translate.x = c;
                 translate.y = float_20_8041d39c + (b - (f32)ofs);
-                winTexSet_x2(i + 0x1A, 0xB4, translate, vec3_802f4a5c, *(GXColor*)&dat_8041d354);
+                winTexSet_x2(i + 0x1A, 0xB4, translate, vec3_802f4a5c, white);
             }
 #endif
         } else {

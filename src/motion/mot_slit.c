@@ -559,7 +559,7 @@ BOOL marioCreviceWallChk(Vec* pos) {
 #else
     dist = 20.0f;
 #endif
-    A.y = *(volatile f32*)&A.y + ten;
+    A.y = *(volatile f32*)&A.y + 10.0f;
     {
         Vec dir = vec3_802c5e78;
         dir.x = sinv;
@@ -610,7 +610,7 @@ BOOL marioCreviceWallChk(Vec* pos) {
 #else
     dist = 20.0f;
 #endif
-    A.y = *(volatile f32*)&A.y + ten;
+    A.y = *(volatile f32*)&A.y + 10.0f;
     {
         Vec dir = vec3_802c5e9c;
         dir.x = sinv;

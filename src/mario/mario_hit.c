@@ -704,15 +704,51 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (57.32%): 21 instructions differ, 103 missing, 37 extra, plus register differences.
+// Reads the sqrt coefficients through the unit rodata base (base+0x1F8/0x200/0x208)
+// so MWCC folds them into the incoming base register like the original, instead of
+// emitting absolute lis/lfd pairs.
+static inline f32 sqrtf_base(f32 x, const char* base) {
+#ifdef MUST_MATCH
+    const f64* k05 = (const f64*)(base + 0x1F8);
+    const f64* k3 = (const f64*)(base + 0x200);
+    const f64* k0 = (const f64*)(base + 0x208);
+#else
+    const f64* k05 = &double_0p5_802c5928;
+    const f64* k3 = &double_3_802c5930;
+    const f64* k0 = &double_0_802c5938;
+#endif
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = *k05 * guess * (*k3 - guess * guess * x);
+        guess = *k05 * guess * (*k3 - guess * guess * x);
+        guess = *k05 * guess * (*k3 - guess * guess * x);
+        return x * guess;
+    } else if (x < *k0) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+
+// The p/up named-vector copies are inside the loop like marioSearchHead_roll (the `t` temp is
+// what makes MWCC emit the original's built-then-copied p at 0x10->0x40); f25 is built from
+// sin before cos is called; the sqrt coefficients are read through `base` (see sqrtf_base
+// above) to fold into r30. The int->float magic double still loads absolute (`@985@`) where
+// the original reads `0x1f0(r30)` -- the known file-wide blocker (vec3_802c5730 is extern),
+// see marioChkOverhead/marioChkFrontStep.
+// NONMATCHING (88.95%): only FPR colouring remains -- the original keeps a=f22/rad-y0=f23,
+// temps f24-f28, nz/ny/nx=f29-f31, ox/oz=f21/f20; ours shares a's f19 with ny100, so the
+// temps land in f26-f31 and the normals in f20-f22.
 void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
+    const char* base = (const char*)vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     Vec p;
     Vec up;
     Vec hitPos;
     Vec normal;
+    Vec t;
     HitEntry* hit;
-    f32 x0;
     f32 y0;
     f32 f25;
     f32 f24;
@@ -734,79 +770,78 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
     s = (f32)sin(rad);
+    f25 = float_0p5_8041a7c4 * ((wp->wPlayerCollisionBox.x - float_0p5_8041a7c4) * s);
     c = (f32)cos(rad);
-    x0 = wp->wPlayerCollisionBox.x - float_0p5_8041a7c4;
-    f25 = float_0p5_8041a7c4 * (x0 * s);
-    f24 = float_0p5_8041a7c4 * (x0 * -c);
+    f24 = float_0p5_8041a7c4 * ((wp->wPlayerCollisionBox.x - float_0p5_8041a7c4) * -c);
     f27 = -f25;
     f28 = -f24;
     y0 = *outY;
     f26 = float_0p5_8041a7c4 * y0;
     f22 = y0 + a;
     *outY = float_neg1_8041a7dc;
-    up = vec3_802c57fc;
     for (i = 0; i < 5; i++) {
         f32 ox;
         f32 oz;
 
-        switch (i) {
-        case 0:
+        if (i == 0) {
             ox = float_0_8041a7a4;
             oz = float_0_8041a7a4;
-            break;
-        case 1:
+        } else if (i == 1) {
             ox = f25;
             oz = f24;
-            break;
-        case 2:
+        } else if (i == 2) {
             ox = f28;
             oz = f25;
-            break;
-        case 3:
+        } else if (i == 3) {
             ox = f24;
             oz = f27;
-            break;
-        case 4:
+        } else if (i == 4) {
             ox = f27;
             oz = f28;
-            break;
         }
-        p.x = pos->x + ox;
-        p.y = pos->y + f26;
-        p.z = pos->z + oz;
         dist = f22;
+        t = *(const volatile Vec*)(RO(base, 0xC0, vec3_802c57f0));
+        up = *(const volatile Vec*)(RO(base, 0xCC, vec3_802c57fc));
+        t.x = pos->x + ox;
+        t.y = pos->y + f26;
+        t.z = pos->z + oz;
+        p = t;
         hit = marioHitCheck2(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
+            f32 nz = normal.z;
+            f32 ny = normal.y;
+            f32 nx = normal.x;
             MarioWork* wp2 = marioGetPtr();
+            f32 ny100 = 100.0f * ny;
             f32 ang;
 
             *(f32*)&wp2->field_0x1F0[0x28] =
-                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * normal.z,
-                                                            float_100_8041a7f8 * normal.y) -
+                (f32)(s32)(100.0f * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                                                            100.0f * nz,
+                                                            ny100) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
-                float_100_8041a7f8;
+                100.0f;
             *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
             *(f32*)&wp2->field_0x1F0[0x30] =
-                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * normal.x,
-                                                            float_100_8041a7f8 * normal.y) -
+                (f32)(s32)(100.0f * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                                                            100.0f * nx,
+                                                            ny100) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
-                float_100_8041a7f8;
-            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrt(normal.x * normal.x + normal.z * normal.z), -normal.y);
+                100.0f;
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf_base(nx * nx + nz * nz, base), -ny);
             if (!(wp->flags & 0x1000000)) {
                 f32 lim = (wp->dispFlags & 0x1000000) ? float_75_8041a840 : float_50_8041a844;
 
-                if (ang >= float_180_8041a7cc - lim && ang <= lim) {
+                if (ang <= float_180_8041a7cc - lim && ang >= lim) {
                     hit = NULL;
                 }
             }
         }
         if (wp->flags & 0x1000000) {
             if (hit != NULL) {
-                f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
+                f32 y = (f32)(s32)(100.0f * hitPos.y + f26) / 100.0f;
 
                 y = y - float_0p05_8041a848 * y0;
                 hitPos.y = y;
@@ -821,7 +856,7 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             }
         } else {
             if (hit != NULL) {
-                f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
+                f32 y = (f32)(s32)(100.0f * hitPos.y + f26) / 100.0f;
 
                 hitPos.y = y;
                 if (pos->y + y0 >= y) {

@@ -801,9 +801,23 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
     return result;
 }
 
-// NONMATCHING (92.17%): f-register allocation/scheduling; the collision half lands in
-// f27 instead of f29, and calc_area's constant load order differs. The p->flags clears now mask to 16 bits
-// (&= 0xFFFE) as the original does.
+// Match-only inline of calc_area with both differences computed before the division: the original's
+// calc_area loads neg570, neg270, then 40 (the plain call gives 40, 29.5, neg270, mask, neg570).
+#ifdef MUST_MATCH
+static inline void senkaron_calc_area(s32 index, f32 x, f32 z) {
+    KaronPoseEntry* entries = skwp->entries;
+    f32 dx = x - float_neg570_las_00012210;
+    f32 dz = z - float_neg270_las_00012214;
+    u16 a = (u16)(s32)(dz / float_40_las_00012218);
+    u16 b = (u16)(s32)(dx / float_40_las_00012218);
+
+    entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
+}
+#endif
+
+// NONMATCHING (97.23%): the orientation block, per-range ka checks and the first loop's pose+start base are
+// reconstructed, but MWCC's FPR colouring still differs: the collision half lands in f27 not f29, the
+// sign/x-difference take f29/f30 not f28/f27, and the direction branch uses cror+bne where the original has blt.
 static void senkaron_ext_main(void) {
     ExtPose* pose;
     MarioWork* mario;
@@ -817,6 +831,7 @@ static void senkaron_ext_main(void) {
     f32 f27;
     f32 f26;
     f32 f25;
+    f32 half = 0.5f;
     s32 i;
     s32 j;
     s32 start;
@@ -827,7 +842,7 @@ static void senkaron_ext_main(void) {
     pose = extGetPosePtr();
     mario = marioGetPtr();
     entries = skwp->entries;
-    f29 = mario->wPlayerCollisionBox.x * 0.5f;
+    f29 = mario->wPlayerCollisionBox.x * half;
     skwp->marioPushed = 0;
     dir = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
@@ -859,9 +874,14 @@ static void senkaron_ext_main(void) {
     }
     end = move_check_list[j];
 
+    pose += start;
     for (j = start; j < end; j++, pose++) {
         entries[j].flags &= ~2;
+#ifdef MUST_MATCH
+        senkaron_calc_area(j, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
+#else
         calc_area(j, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
+#endif
     }
 
     pose = extGetPosePtr() + start;
@@ -881,7 +901,7 @@ static void senkaron_ext_main(void) {
             continue;
         }
         nextPose = pose + 1;
-        for (k = j + 1; count != 0; count--, k++, nextPose++) {
+        for (k = j + 1; count != 0; k++, nextPose++, count--) {
             other = &entries[k];
             if (other->type == 1 && other->area == entry->area) {
                 f32 px = __fabsf((*pose->matrix)[0][3] - m->position.x);
@@ -964,14 +984,29 @@ static void senkaron_ext_main(void) {
                 p->field_4 = 300;
                 break;
             }
-            if (skwp->mesPushing != 0) {
-                break;
-            }
-
             hit = 0;
             f27 = (*pose->matrix)[0][3] - mario->position.x;
             f26 = __fabsf(f27);
             f25 = __fabsf((*pose->matrix)[2][3] - mario->position.z);
+            f28 = 0.0f;
+
+            if ((*pose->matrix)[0][3] >= mario->position.x) {
+                if (p->flags & 1) {
+                    pose->field_0x4 = 270.0f;
+                } else {
+                    pose->field_0x4 = 90.0f;
+                }
+            } else {
+                if (p->flags & 1) {
+                    pose->field_0x4 = 90.0f;
+                } else {
+                    pose->field_0x4 = 270.0f;
+                }
+            }
+
+            if (skwp->mesPushing != 0) {
+                break;
+            }
 
             if (dir != 0 && f25 < 80.0f) {
                 if (dir == 2) {
@@ -991,19 +1026,19 @@ static void senkaron_ext_main(void) {
                 f32 ka = marioGetAngleKaitenHammer();
 
                 if (ka >= 0.0f && f26 < 80.0f && f25 < 80.0f) {
-                    if (ka < 90.0f) {
+                    if (ka >= 0.0f && ka < 90.0f) {
                         if ((*pose->matrix)[2][3] > mario->position.z &&
                             (*pose->matrix)[0][3] > mario->position.x) {
                             hit = 1;
                             f28 = 1.0f;
                         }
-                    } else if (ka < 180.0f) {
+                    } else if (ka >= 90.0f && ka < 180.0f) {
                         if ((*pose->matrix)[2][3] > mario->position.z &&
                             (*pose->matrix)[0][3] < mario->position.x) {
                             hit = 1;
                             f28 = -1.0f;
                         }
-                    } else if (ka < 270.0f) {
+                    } else if (ka >= 180.0f && ka < 270.0f) {
                         if ((*pose->matrix)[2][3] < mario->position.z &&
                             (*pose->matrix)[0][3] < mario->position.x) {
                             hit = 1;
@@ -1166,6 +1201,10 @@ static void senkaron_ext_main(void) {
             f32 len = sqrtf(f25 * f25 + f26 * f26);
 
             switch (mario->currMotionId) {
+            case MARIO_MOTION_HAMMER:
+            case MARIO_MOTION_HAMMER_2:
+                speed = 0.0f;
+                break;
             case MARIO_MOTION_WALK:
                 speed = randf(3.0f, 3.5f);
                 break;
@@ -1174,10 +1213,6 @@ static void senkaron_ext_main(void) {
                 break;
             case MARIO_MOTION_JUMP:
                 speed = randf(3.3f, 3.8f);
-                break;
-            case MARIO_MOTION_HAMMER:
-            case MARIO_MOTION_HAMMER_2:
-                speed = 0.0f;
                 break;
             default:
                 speed = randf(1.7f, 2.2f);

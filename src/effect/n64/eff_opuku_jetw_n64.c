@@ -221,16 +221,22 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
     GXSetTevColor(GX_TEVREG0, color);
 }
 
-// NONMATCHING (94.19%): callee-saved allocation, plus two loop code shapes. Matches
-// counter/data/field24/field18/field1c/field20/half; off: `.data` base r31 vs r20, lifetime r15/r20 vs r31,
-// cam r17 vs r15. The base always claims r31 so lifetime cannot. The loop also differs structurally:
-// the target builds rowPtr = &table[rowOffset] first, then ptr = &rowPtr[col] and colPtr = &table[col]
-// sharing one col*10, and tests `columns - 1 - col > lifetime` off the cached local (no reload); ours uses
-// `&table[rowOffset + col]`, computes colPtr before the PSMTXTrans, and reloads `data->lifetime` with the
-// addition form `columns - 1 > col + data->lifetime`. Writing the target's shapes (rowPtr, subtraction,
-// cached lifetime) makes GC/2.6 keep `counter` as the loop induction and spill half/columns-1, so it scores
-// lower (86-92%); every GC/1.3..3.0 compiler, -O level, flag and pragma tried behaves the same.
+// Callee-saved allocation, plus one loop code shape. Matches
+// counter/data/field24/field18/field1c/field20/half/table/columns/rows/threshold/col; off: `.data` base
+// r31 vs r20, lifetime r15 vs r31, cam r17 vs r15, i r15 vs r29, j r19 vs r30, counter-copy r29 vs r18,
+// rowOffset r20 vs r19. The base claims r31 so lifetime cannot. Computed `ptr = &table[rowOffset + col]`
+// after the two `continue` tests (it used to be before them) and `colPtr` after the PSMTXTrans: worth
+// +0.16% (94.19 -> 94.35). The target still differs structurally: it builds rowPtr = &table[rowOffset]
+// first, then ptr = &rowPtr[col] and colPtr = &table[col] sharing one col*10, and tests
+// `columns - 1 - col > lifetime` off the cached local (no reload); ours uses `&table[rowOffset + col]`
+// and reloads `data->lifetime` with the addition form `columns - 1 > col + data->lifetime`. Writing the
+// target's shapes (rowPtr, subtraction, cached lifetime) makes GC/2.6 keep `counter`/`rowOffset` as
+// inductions, hoist `columns*10`/`columns-1` and spill half/rowOffset, so it scores lower (86-92%, or
+// 88-91% with opt_strength_reduction off); every GC/1.3..3.0 compiler, -O level, flag and pragma tried
+// behaves the same. Declaration/assignment permutation moves the `.data` base off r31 (random orders give
+// r14..r28), but never with the rest of the target colouring, so only the plain shuffle is kept.
 // See the note above the TEV colour inlines.
+// NONMATCHING (94.35%): callee-saved GPR map and one loop code shape; see the note above.
 void effOpukuJetwDisp(CameraId camId, void* param) {
     Mtx trans;
     s32 half;
@@ -325,15 +331,15 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
         col = (counter + i * 2) % columns;
         rowOffset = 0;
         for (j = 0; j < rows; rowOffset += columns, j++) {
-            ptr = &table[rowOffset + col];
             if (col > threshold) {
                 continue;
             }
             if (columns - 1 > col + data->lifetime) {
                 continue;
             }
-            colPtr = &table[col];
+            ptr = &table[rowOffset + col];
             PSMTXTrans(trans, (f32)ptr->field_0x0, float_10_8041f7d0 + (f32)ptr->field_0x1, float_0_8041f7c8);
+            colPtr = &table[col];
             PSMTXScale(scale, (f32)colPtr->field_0x2 * float_0p01_8041f7d4, (f32)colPtr->field_0x4 * float_0p01_8041f7d4, float_1_8041f7cc);
             PSMTXConcat(trans, scale, trans);
             PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * ((f32)ptr->field_0x6 + (f32)dat_ry[(i + j) & 7]));

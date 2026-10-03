@@ -29,8 +29,8 @@ PiantaParlorWork yuugijouwork;
 PiantaParlorWork* yuwp;
 
 static inline s32 scale700(u32 v) {
-	s32 q = (0x2BC - (s32)v) * 15 / 0x2BC;
-	return (q >= 0 ? q : 0);
+	s32 r = (0x2BC - (s32)v) * 15 / 0x2BC;
+	return (r >= 0 ? r : 0);
 }
 
 static inline s32 scale2000b(u32 v) {
@@ -38,7 +38,9 @@ static inline s32 scale2000b(u32 v) {
 	return (q >= 0 ? q : 0);
 }
 
-// NONMATCHING (95.46%): the 0xA4..0xB4 and 0xBC..0xCC constant loads are scheduled earlier than in the target.
+// NONMATCHING (99.91%): the second group-A element (0xF0) swaps its two registers (ours yuwp r6/q r7;
+// target r7/r6). The 0x90 element compiles as the embedded-assignment form below so MWCC keeps the
+// 0xA4..0xB4 constants after the 0xF0 store; the helper form hoists them four instructions early.
 void yuugijou_init(void) {
 	s32 q;
 
@@ -76,14 +78,10 @@ void yuugijou_init(void) {
 	yuwp->field_0x9C = 0x8A;
 
 	yuwp->field_0xEC = scale700(yuwp->field_0x8C) + 1;
-	q = (0x2BC - (s32)yuwp->field_0x90) * 15 / 0x2BC;
-	yuwp->field_0xF0 = (q >= 0 ? q : 0);
-	q = (0x2BC - (s32)yuwp->field_0x94) * 15 / 0x2BC;
-	yuwp->field_0xF4 = (q >= 0 ? q : 0);
-	q = (0x2BC - (s32)yuwp->field_0x98) * 15 / 0x2BC;
-	yuwp->field_0xF8 = (q >= 0 ? q : 0);
-	q = (0x2BC - (s32)yuwp->field_0x9C) * 15 / 0x2BC;
-	yuwp->field_0xFC = (q >= 0 ? q : 0);
+	yuwp->field_0xF0 = ((q = (0x2BC - (s32)yuwp->field_0x90) * 15 / 0x2BC) >= 0 ? q : 0);
+	yuwp->field_0xF4 = ((q = (0x2BC - (s32)yuwp->field_0x94) * 15 / 0x2BC) >= 0 ? q : 0);
+	yuwp->field_0xF8 = ((q = (0x2BC - (s32)yuwp->field_0x98) * 15 / 0x2BC) >= 0 ? q : 0);
+	yuwp->field_0xFC = ((q = (0x2BC - (s32)yuwp->field_0x9C) * 15 / 0x2BC) >= 0 ? q : 0);
 
 	yuwp->field_0x44 = 1;
 	yuwp->field_0x48 = 1;
@@ -97,16 +95,11 @@ void yuugijou_init(void) {
 	yuwp->field_0xB0 = 0x1F91E;
 	yuwp->field_0xB4 = 0x1E3AC;
 
-	q = ((s32)yuwp->field_0xA4 - 0x1A9C8) / 2000;
-	yuwp->field_0x104 = (q >= 0 ? q : 0) + 7;
-	q = ((s32)yuwp->field_0xA8 - 0x1A9C8) / 2000;
-	yuwp->field_0x108 = (q >= 0 ? q : 0) + 6;
-	q = ((s32)yuwp->field_0xAC - 0x1A9C8) / 2000;
-	yuwp->field_0x10C = (q >= 0 ? q : 0) + 4;
-	q = ((s32)yuwp->field_0xB0 - 0x1A9C8) / 2000;
-	yuwp->field_0x110 = (q >= 0 ? q : 0) + 4;
-	q = ((s32)yuwp->field_0xB4 - 0x1A9C8) / 2000;
-	yuwp->field_0x114 = (q >= 0 ? q : 0) + 1;
+	yuwp->field_0x104 = ((q = ((s32)yuwp->field_0xA4 - 0x1A9C8) / 2000) >= 0 ? q : 0) + 7;
+	yuwp->field_0x108 = ((q = ((s32)yuwp->field_0xA8 - 0x1A9C8) / 2000) >= 0 ? q : 0) + 6;
+	yuwp->field_0x10C = ((q = ((s32)yuwp->field_0xAC - 0x1A9C8) / 2000) >= 0 ? q : 0) + 4;
+	yuwp->field_0x110 = ((q = ((s32)yuwp->field_0xB0 - 0x1A9C8) / 2000) >= 0 ? q : 0) + 4;
+	yuwp->field_0x114 = ((q = ((s32)yuwp->field_0xB4 - 0x1A9C8) / 2000) >= 0 ? q : 0) + 1;
 
 	yuwp->field_0x5C = 1;
 	yuwp->field_0x60 = 1;

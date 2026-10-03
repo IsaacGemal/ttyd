@@ -9,6 +9,19 @@
 #include "system.h"
 #include <dolphin/mtx.h>
 
+// effSheepMain's `pos` zero vector must come from an inline that builds it from the
+// literal `(Vec){ 0.0f, 0.0f, 0.0f }`, not from a named `vec3_...`: the scheduler then keeps the
+// `effect->userdata` load ahead of the copy (from the named vec it hoists the copy first). The
+// helper must sit above the unit's other rodata so the anonymous literal lands at the start of
+// .rodata (offset 0), which is where the original's `vec3_802ff9e8` sat, and the named
+// `vec3_802ff9e8` definition is dropped (the literal replaces it byte for byte).
+static inline void sheepMakeVec(Vec* v, f32 x, f32 y, f32 z) {
+	*v = (Vec){ 0.0f, 0.0f, 0.0f };
+	v->y = y;
+	v->x = x;
+	v->z = z;
+}
+
 extern const f32 float_0_80421948;
 extern const f32 float_10_8042194c;
 extern const f32 float_500_80421954;
@@ -20,7 +33,6 @@ extern const f32 float_neg500_80421970;
 extern const f32 float_0p2_80421974;
 extern const f32 float_0p5_80421978;
 
-const Vec vec3_802ff9e8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ff9f4 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ffa00 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ffa0c = {0.0f, 0.0f, 0.0f};
@@ -94,15 +106,6 @@ EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 	return entry;
 }
 
-static inline void sheepMakeVec(Vec* v, f32 x, f32 y, f32 z) {
-	*v = vec3_802ff9e8;
-	v->y = y;
-	v->x = x;
-	v->z = z;
-}
-
-// NONMATCHING (96.60%): the state machine matches; the `pos` zero-vector copy is scheduled before the
-// userdata load and the type==1 float temporaries land in f1/f0/f2 instead of f2/f1/f0.
 void effSheepMain(EffectEntry* effect) {
 	EffSheepWork* p;
 	const char* sfx[2];
@@ -122,7 +125,10 @@ void effSheepMain(EffectEntry* effect) {
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
 		living = 1;
-		p = &((EffSheepWork*)effect->userdata)[1];
+		// The separate increment makes MWCC coalesce the userdata load's destination with the
+		// pointer register (the target loads it straight into r25, not r3 then r25).
+		p = (EffSheepWork*)effect->userdata;
+		p++;
 		while (living < effect->count) {
 			if (p->poseId != -1) {
 				animPoseRelease(p->poseId);

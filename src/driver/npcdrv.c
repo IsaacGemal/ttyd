@@ -2439,8 +2439,106 @@ static inline f32 npcSideCosf(f32 rad) {
     return cosv;
 }
 
-// NONMATCHING (78.35%): the sin/cos polynomial keeps its accumulator in a fresh register where the target
-// reuses the seed register (target sinv f4, cosv f5); the sqrtf pool displacements resolve at link.
+static inline f32 npcHitSideSinf(f32 rad) {
+    f32 f0, f1;
+    f32 sinv;
+    f32 c1, c2, pi;
+
+    sinv = 0.00761f;
+    c1 = 0.16605f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        pi = 1.5707964f;
+        if (rad <= pi) {
+            f1 = rad * rad;
+            sinv = sinv * f1 - c1;
+            sinv = sinv * f1 + c2;
+            sinv = sinv * rad;
+        } else {
+            f1 = rad - pi;
+            f0 = pi - f1;
+            f1 = f0 * f0;
+            sinv = sinv * f1 - c1;
+            sinv = sinv * f1 + c2;
+            sinv = sinv * f0;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - pi;
+        f1 = f0 * f0;
+        sinv = sinv * f1 - c1;
+        sinv = sinv * f1 + c2;
+        sinv = sinv * f0;
+        sinv = -sinv;
+    } else {
+        f1 = rad - 4.712389f;
+        pi = 1.5707964f;
+        f0 = pi - f1;
+        f1 = f0 * f0;
+        sinv = sinv * f1 - c1;
+        sinv = sinv * f1 + c2;
+        sinv = sinv * f0;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 npcHitSideCosf(f32 rad) {
+    f32 cosv;
+    f32 f0;
+    f32 c1, c2, pi;
+
+    cosv = 0.03705f;
+    c1 = 0.4967f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        pi = 1.5707964f;
+        if (rad <= pi) {
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+        } else {
+            f0 = rad - pi;
+            f0 = pi - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - pi;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = rad - 4.712389f;
+        pi = 1.5707964f;
+        f0 = pi - f0;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+// Match-only shape: folding the radius product through this one-line inline makes MWCC keep the
+// `box.x + width + 5.0f` accumulator in the target's f2 instead of f0. The natural `* 0.5f` is under
+// the #else at the call site (rule 7).
+#ifdef MUST_MATCH
+static inline f32 npcHitSideMul(f32 a, f32 b) {
+    return a * b;
+}
+#endif
+
+// `opt_propagation off` stops MWCC rematerialising the sin/cos coefficients into every branch;
+// `opt_lifetimes off` is what puts the accumulator/pivot/scratch in the target's FPRs.
+#pragma opt_propagation off
+#pragma opt_lifetimes off
+// NONMATCHING (99.58%): the sin/cos blocks and the radius match; only `offZ` (target f4, ours f6) and the
+// inlined sqrtf expression that reads it (target f6, ours f5) still colour into the other scratch FPR.
+// The remaining symbol-only pool displacements resolve when the unit links.
 s32 npcCheckHitMarioSide(NpcEntry* entry) {
     MarioWork* mario = marioGetPtr();
     Vec pos;
@@ -2461,7 +2559,11 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     pos.z = mario->position.z;
     pos.y = entry->position.y;
     d1 = PSVECDistance(&pos, &entry->position);
+#ifdef MUST_MATCH
+    radius = npcHitSideMul(mario->wPlayerCollisionBox.x + entry->width + 5.0f, 0.5f);
+#else
     radius = (mario->wPlayerCollisionBox.x + entry->width + 5.0f) * 0.5f;
+#endif
     if (d1 > radius) {
         return 0;
     }
@@ -2476,14 +2578,14 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
         {
             f32 t = 6.2831855f * mario->directionView;
-            offX = (radius - d2) * -npcSideSinf(t / 360.0f);
-            offZ = (radius - d2) * npcSideCosf(t / 360.0f);
+            offX = (radius - d2) * -npcHitSideSinf(t / 360.0f);
+            offZ = (radius - d2) * npcHitSideCosf(t / 360.0f);
         }
     } else {
         {
             f32 t = 6.2831855f * angle;
-            offX = (entry->position.x - radius * npcSideSinf(t / 360.0f)) - mario->position.x;
-            offZ = (entry->position.z + radius * npcSideCosf(t / 360.0f)) - mario->position.z;
+            offX = (entry->position.x - radius * npcHitSideSinf(t / 360.0f)) - mario->position.x;
+            offZ = (entry->position.z + radius * npcHitSideCosf(t / 360.0f)) - mario->position.z;
         }
     }
     dist = sqrtf(offX * offX + offZ * offZ);
@@ -2500,6 +2602,8 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     marioChkWallAround(&mario->position, 0, 0.0f, 160.0f + angle, 20.0f, mario->wPlayerCollisionBox.y);
     return 1;
 }
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 
 // NONMATCHING (99.97%): only the compiler sqrtf/int-to-float double-pool `lfd` displacements differ
 // (ours relative to this unit's local rodata base, the target's to vec3_802c2f78+0x1c0); they resolve

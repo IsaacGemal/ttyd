@@ -231,9 +231,29 @@ void computePosHermite(ExtPose* pose, f32* p) {
     (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
 }
 
-// NONMATCHING (79.15%): the Hermite is a call to computePosHermite(pose,
-// (f32*)&pTeresa[i]) which MWCC inlines, giving the original's 0x50 frame and
-// f31; remaining diffs are scheduling/register allocation in the inlined body.
+// Local copy of computePosHermite so senteresa_ext_main is not affected by other
+// agents editing that global function. Same body; MWCC inlines it identically.
+static inline void senteresa_ext_main_computePosHermite(ExtPose* pose, f32* p) {
+    f32 t = p[6];
+    f32 two_t = 2.0f * t;
+    f32 omt = 1.0f - t;
+    f32 t2 = t * t;
+    f32 h10 = t * omt * omt;
+    f32 h00 = (1.0f + two_t) * omt * omt;
+    f32 h11 = (t - 1.0f) * t2;
+    f32 h01 = (3.0f - two_t) * t2;
+    Vec va = vec3_jin_00007f9c;
+    Vec vb = vec3_jin_00007fa8;
+
+    f32 p1h00 = p[1] * h00;
+
+    (*pose->matrix)[0][3] = p[0] * h00 + p[9] * h10 + vb.x * h11 + p[3] * h01;
+    (*pose->matrix)[1][3] = p1h00 + 3.4f * p[4] * h10 + vb.y * h11 + p[4] * h01;
+    (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
+}
+
+// NONMATCHING (80.42%): the inlined Hermite body's FP register colouring differs
+// (target keeps 1.0/2.0/3.0 in f0/f2/f1 and t in f7; ours picks f1/f0/f3 and t in f4).
 static void senteresa_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count;
@@ -253,12 +273,9 @@ static void senteresa_ext_main(void) {
                 }
                 break;
             case 1: {
-                f32 t;
-
                 pose->field_0x10 = (gp->retraceCount + i * i) % 3 + 1;
-                t = pTeresa[i].field_0x18;
-                computePosHermite(pose, (f32*)&pTeresa[i]);
-                pTeresa[i].field_0x18 = t + 0.015f;
+                senteresa_ext_main_computePosHermite(pose, (f32*)&pTeresa[i]);
+                pTeresa[i].field_0x18 += 0.015f;
                 if (pTeresa[i].field_0x18 >= 1.0f) {
                     pTeresa[i].field_0x00 = (*pose->matrix)[0][3];
                     pTeresa[i].field_0x04 = (*pose->matrix)[1][3];

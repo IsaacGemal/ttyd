@@ -143,15 +143,24 @@ void effMagic1Main(EffectEntry* effect) {
 
 // Per-channel animation sine used by main_dl. The original recomputes the
 // phase for every channel, so this stays a macro instead of a shared local.
-// MUST_MATCH: the operand order (phase + 180 + retraceCount*32) is what puts the sum's
-// registers where the original has them; the natural left-to-right order scores lower.
+// MUST_MATCH: spelling the *32 as a shift and putting the +180 before the anime byte is
+// what puts the phase sum's registers where the original has them (the natural form
+// leaves retraceCount in r0 and the anime byte in r3, swapped).
 #ifdef MUST_MATCH
-#define MAGIC1_PHASE(phase) ((phase) + 180 + gp->retraceCount * 32)
+#define MAGIC1_PHASE(phase) ((gp->retraceCount << 5) + 180 + (phase))
 #else
 #define MAGIC1_PHASE(phase) (gp->retraceCount * 32 + (phase) + 180)
 #endif
 #define MAGIC1_SIN(phase) \
     ((f32)sin(float_6p2832_8041f67c * (f32)(s32)MAGIC1_PHASE(phase) / float_360_8041f680))
+// color2's sine has no +180 offset: the original computes retraceCount*32 + anime[0].
+#ifdef MUST_MATCH
+#define MAGIC1_PHASE2(phase) ((gp->retraceCount << 5) + (phase))
+#else
+#define MAGIC1_PHASE2(phase) (gp->retraceCount * 32 + (phase))
+#endif
+#define MAGIC1_SIN2(phase) \
+    ((f32)sin(float_6p2832_8041f67c * (f32)(s32)MAGIC1_PHASE2(phase) / float_360_8041f680))
 
 // Match-only: building each colour through an inline return puts its local and its
 // return temp where the original does (a plain local lands in the other slot); the
@@ -160,9 +169,9 @@ void effMagic1Main(EffectEntry* effect) {
 #ifdef MUST_MATCH
 static inline GXColor magic1Color2(u8* anime) {
     GXColor c = *(GXColor*)&dat_8041f650;
-    c.r = (u8)(s32)((s32)anime[1] + float_0p5_8041f688 * ((255 - (s32)anime[1]) * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
-    c.g = (u8)(s32)((s32)anime[2] + float_0p5_8041f688 * ((255 - (s32)anime[2]) * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
-    c.b = (u8)(s32)((s32)anime[3] + float_0p5_8041f688 * ((255 - (s32)anime[3]) * (float_1_8041f68c + MAGIC1_SIN(anime[0]))));
+    c.r = (u8)(s32)((s32)anime[1] + float_0p5_8041f688 * ((255 - (s32)anime[1]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0]))));
+    c.g = (u8)(s32)((s32)anime[2] + float_0p5_8041f688 * ((255 - (s32)anime[2]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0]))));
+    c.b = (u8)(s32)((s32)anime[3] + float_0p5_8041f688 * ((255 - (s32)anime[3]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0]))));
     return c;
 }
 
@@ -176,9 +185,9 @@ static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
 #else
 static inline GXColor magic1Color2(u8* anime) {
     GXColor c = *(GXColor*)&dat_8041f650;
-    c.r = (u8)(s32)(anime[1] + float_0p5_8041f688 * (255 - anime[1]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-    c.g = (u8)(s32)(anime[2] + float_0p5_8041f688 * (255 - anime[2]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-    c.b = (u8)(s32)(anime[3] + float_0p5_8041f688 * (255 - anime[3]) * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    c.r = (u8)(s32)(anime[1] + float_0p5_8041f688 * (255 - anime[1]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0])));
+    c.g = (u8)(s32)(anime[2] + float_0p5_8041f688 * (255 - anime[2]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0])));
+    c.b = (u8)(s32)(anime[3] + float_0p5_8041f688 * (255 - anime[3]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0])));
     return c;
 }
 
@@ -191,14 +200,11 @@ static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
 }
 #endif
 
-// Details are in REPORT.md. main_dl matches everywhere except two MWCC register
-// allocation tie-breaks that the source shape does not move:
-//  - the constant pool loads 1.0 before 0.5 and 1/256 before 64 (the target loads
-//    0.5/1.0 and 64/1/256), so f28/f29 and f30/f31 are swapped in the setup and in the
-//    colour/trans code;
-//  - each MAGIC1_SIN phase sum keeps retraceCount*32 in r0 and the anime byte in r3,
-//    the target the other way round (identical instruction, swapped operands).
-// NONMATCHING (97.41%): f28/f29 and f30/f31 swapped; phase sum r0/r3 swapped.
+// Details are in REPORT.md. main_dl matches everywhere except one MWCC register
+// allocation tie-break that the source shape does not move: the setup loads 1.0 into
+// f28 and 0.5 into f29, while the target loads 0.5 into f28 and 1.0 into f29 (the
+// colour code then agrees, only these two registers swap).
+// NONMATCHING (99.69%): f28/f29 swapped.
 static void main_dl(EffectEntry* effect, Mtx mtx) {
     u8* anime;
     s32 size;
@@ -225,6 +231,11 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
     f32 z;
     f32 cosAngle;
     f32 angle;
+#ifdef MUST_MATCH
+    // MUST_MATCH: naming the (3-j)*64 product first makes MWCC load 64 into f30 and
+    // 1/256 into f31 as the original does (in one expression it swaps the two).
+    f32 t;
+#endif
 
     data = effect->userdata;
     type = data->type;
@@ -314,8 +325,14 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 
             size = (type == 0) ? 15 : 10;
             PSMTXScale(mtxB, float_2_8041f668, float_0p25_8041f690, float_1_8041f68c);
+#ifdef MUST_MATCH
+            t = float_64_8041f694 * (f32)(3 - j);
+            PSMTXTrans(mtxA, 0.0f,
+                       t * float_0p0039062_8041f698, 0.0f);
+#else
             PSMTXTrans(mtxA, 0.0f,
                        (f32)(3 - j) * float_64_8041f694 * float_0p0039062_8041f698, 0.0f);
+#endif
             PSMTXConcat(mtxA, mtxB, mtxA);
             GXLoadTexMtxImm(mtxA, 0x1E, 1);
 

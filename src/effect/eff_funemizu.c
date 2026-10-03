@@ -13,6 +13,14 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_803B0200[2] = { 0xBF800000, 0x3F800000 };
 
+// MUST_MATCH: the original reaches the unit's .data tables off one base register (&lbl_803B0200); the natural
+// build names them.
+#ifdef MUST_MATCH
+#define FUNE_DATA(off, sym) ((void*)(base + (off)))
+#else
+#define FUNE_DATA(off, sym) ((void*)(sym))
+#endif
+
 typedef struct FunemizuMapEntry {
 	const char* name;
 	u32 value;
@@ -275,7 +283,30 @@ void effFunemizuMain(EffectEntry* effect) {
 }
 #pragma opt_common_subs reset
 
-// NONMATCHING (80.40%): 64 instructions differ, 11 missing, 49 extra, plus register differences.
+#ifdef MUST_MATCH
+// Match-only: the original walks both display-list tables with pointer induction variables, the size table
+// stepping 1 and the pointer table 4; the indexed form under #else is the natural equivalent.
+#define FUNEMIZU_DL_LOOP(n, tbl, sztbl) \
+	{ \
+		u8* sz; \
+		u8** dl; \
+		j = 0; \
+		sz = (sztbl); \
+		dl = (u8**)(tbl); \
+		for (; j < (n); j++, sz++, dl++) { \
+			GXCallDisplayList(*dl, *sz << 5); \
+		} \
+	}
+#else
+#define FUNEMIZU_DL_LOOP(n, tbl, sztbl) \
+	for (j = 0; j < (n); j++) { \
+		GXCallDisplayList((tbl)[j], (sztbl)[j] << 5); \
+	}
+#endif
+
+// NONMATCHING (99.94%): the map-lookup's two walks match except the second walk's pointer, which the
+// original keeps in r24 while MWCC reuses r26 for both (the first walk is r26). Everything else - the
+// .data base+offset addressing, the .sdata (r13) addressing and the display-list loop registers - matches.
 void effFunemizuDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	EffFunemizuData* data;
@@ -286,18 +317,21 @@ void effFunemizuDisp(CameraId camId, void* param) {
 	Mtx mtx30;
 	GXTexObj texObj;
 	FunemizuMapEntry* p;
-	u32 colorVal;
 	GXColor color;
+	u32 colorVal;
 	s32 type;
-	s32 j;
+	u32 j;
 	s32 i;
+#ifdef MUST_MATCH
+	u8* base = (u8*)lbl_803B0200; // first object of the unit's .data; the tables below are reached as base+offset
+#endif
 
 	effect = param;
 	data = effect->userdata;
-	type = data->type;
 	cam = camGetPtr(camId);
+	type = data->type;
 
-	for (p = unk_803b0640; p; p++) {
+	for (p = (FunemizuMapEntry*)FUNE_DATA(0x440, unk_803b0640); p; p++) {
 		if (p->name == NULL) {
 			break;
 		}
@@ -306,7 +340,7 @@ void effFunemizuDisp(CameraId camId, void* param) {
 			goto found;
 		}
 	}
-	for (p = unk_803b0640; p; p++) {
+	for (p = (FunemizuMapEntry*)FUNE_DATA(0x440, unk_803b0640); p; p++) {
 		if (p->name == NULL) {
 			break;
 		}
@@ -341,7 +375,7 @@ found:
 	PSMTXScale(mtx90, data->field_0x44, data->field_0x44, data->field_0x44);
 	PSMTXConcat(mtxC0, mtx60, mtxC0);
 	PSMTXConcat(mtxC0, mtx90, mtxC0);
-	PSMTXTrans(mtx60, float_neg15_80421488, float_0_80421478, float_0_80421478);
+	PSMTXTrans(mtx60, float_neg15_80421488, 0.0f, 0.0f);
 	PSMTXConcat(mtxC0, mtx60, mtxC0);
 	PSMTXConcat(cam->view, mtxC0, mtx30);
 
@@ -366,23 +400,23 @@ found:
 		else {
 			GXSetCullMode(GX_CULL_FRONT);
 		}
-		scale = float_1_80421484 - float_2_8042148c * (f32)i;
-		PSMTXTrans(mtxC0, float_0_80421478, float_0_80421478, scale);
+		scale = 1.0f - 2.0f * (f32)i;
+		PSMTXTrans(mtxC0, 0.0f, 0.0f, scale);
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
-		PSMTXScale(mtx90, float_1_80421484, float_1_80421484, scale);
+		PSMTXScale(mtx90, 1.0f, 1.0f, scale);
 		PSMTXConcat(mtxC0, mtx90, mtxC0);
 		PSMTXScale(mtx90, data->field_0x18, data->field_0x20, data->field_0x18);
 		PSMTXConcat(mtxC0, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
-		PSMTXTrans(mtx90, data->field_0x28, float_0_80421478, float_0_80421478);
+		PSMTXTrans(mtx90, data->field_0x28, 0.0f, 0.0f);
 		GXLoadTexMtxImm(mtx90, 0x1e, GX_MTX2x4);
 
 		if (type == 0) {
 			GXClearVtxDesc();
 			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 9);
-			GXSetArray(GX_VA_POS, funemizu_vertex_tbl, 6);
+			GXSetArray(GX_VA_POS, FUNE_DATA(0x40, funemizu_vertex_tbl), 6);
 			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, funemizu_normal_tbl, 3);
@@ -391,16 +425,14 @@ found:
 			GXSetArray(GX_VA_CLR0, funemizu_color0_tbl, 4);
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
-			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			for (j = 0; j < 3; j++) {
-				GXCallDisplayList(funemizu_dl_0_tbl[j], funemizu_dl_0_size_tbl[j] << 5);
-			}
+			GXSetArray(GX_VA_TEX0, FUNE_DATA(0x100, funemizu_texcoord0_tbl), 4);
+			FUNEMIZU_DL_LOOP(3, funemizu_dl_0_tbl, funemizu_dl_0_size_tbl);
 		}
 		else {
 			GXClearVtxDesc();
 			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 8);
-			GXSetArray(GX_VA_POS, gor_fune_vertex_tbl, 6);
+			GXSetArray(GX_VA_POS, FUNE_DATA(0x200, gor_fune_vertex_tbl), 6);
 			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, gor_fune_normal_tbl, 3);
@@ -409,24 +441,22 @@ found:
 			GXSetArray(GX_VA_CLR0, gor_fune_color0_tbl, 4);
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
-			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
-			for (j = 0; j < 2; i++) {
-				GXCallDisplayList(gor_fune_dl_0_tbl[j], gor_fune_dl_0_size_tbl[j] << 5);
-			}
+			GXSetArray(GX_VA_TEX0, FUNE_DATA(0x2e0, gor_fune_texcoord0_tbl), 4);
+			FUNEMIZU_DL_LOOP(2, gor_fune_dl_0_tbl, gor_fune_dl_0_size_tbl);
 		}
 
 		PSMTXScale(mtx90, data->field_0x1C, data->field_0x24, data->field_0x1C);
 		PSMTXConcat(mtxC0, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
-		PSMTXTrans(mtx90, data->field_0x2C, float_0_80421478, float_0_80421478);
+		PSMTXTrans(mtx90, data->field_0x2C, 0.0f, 0.0f);
 		GXLoadTexMtxImm(mtx90, 0x1e, GX_MTX2x4);
 
 		if (type == 0) {
 			GXClearVtxDesc();
 			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 9);
-			GXSetArray(GX_VA_POS, funemizu_vertex_tbl, 6);
+			GXSetArray(GX_VA_POS, FUNE_DATA(0x40, funemizu_vertex_tbl), 6);
 			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, funemizu_normal_tbl, 3);
@@ -435,16 +465,14 @@ found:
 			GXSetArray(GX_VA_CLR0, funemizu_color0_tbl, 4);
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
-			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			for (j = 0; j < 4; i++) {
-				GXCallDisplayList(funemizu_dl_1_tbl[j], funemizu_dl_1_size_tbl[j] << 5);
-			}
+			GXSetArray(GX_VA_TEX0, FUNE_DATA(0x100, funemizu_texcoord0_tbl), 4);
+			FUNEMIZU_DL_LOOP(4, funemizu_dl_1_tbl, funemizu_dl_1_size_tbl);
 		}
 		else {
 			GXClearVtxDesc();
 			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 8);
-			GXSetArray(GX_VA_POS, gor_fune_vertex_tbl, 6);
+			GXSetArray(GX_VA_POS, FUNE_DATA(0x200, gor_fune_vertex_tbl), 6);
 			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, gor_fune_normal_tbl, 3);
@@ -453,10 +481,8 @@ found:
 			GXSetArray(GX_VA_CLR0, gor_fune_color0_tbl, 4);
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
-			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
-			for (j = 0; j < 2; i++) {
-				GXCallDisplayList(gor_fune_dl_1_tbl[j], gor_fune_dl_1_size_tbl[j] << 5);
-			}
+			GXSetArray(GX_VA_TEX0, FUNE_DATA(0x2e0, gor_fune_texcoord0_tbl), 4);
+			FUNEMIZU_DL_LOOP(2, gor_fune_dl_1_tbl, gor_fune_dl_1_size_tbl);
 		}
 	}
 }

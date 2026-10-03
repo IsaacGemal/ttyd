@@ -94,21 +94,25 @@ static inline Vec getStageClearCamPos(void) {
 #pragma opt_common_subs off // without it MWCC CSEs the repeated float_0 pool loads in the GX vertex block
 // Frame, Vec copies, matrices and GX state match. What still differs is register colouring only: the
 // long-lived FP values land in f28/f30/f29/f31 where the target has f30/f29/f31/f28 for the
-// int->float magic / -24 / 1 / 24, so `type` lands in r26 instead of r22 (which also keeps i/work in
-// r23/r21 rather than r21/r23), and the GX vertex block's interleaved float_0 reloads follow from it.
-// The anonymous int->float magic also pools at 0x58/0x68 instead of the named slots at 0x38/0x30.
-// The declaration order above (field1C before type; f27 before f26) is what gets the closest; the
-// remaining colouring did not move under any declaration order, opt_lifetimes/fp_contract off or
-// global_optimizer off, so it is left for the permuter.
-// NONMATCHING (97.36%): only FP/GPR register colouring and the anonymous int->float magic slot differ.
+// int->float magic / -24 / 1 / 24, and the GX vertex block's interleaved float_0 reloads follow from
+// it. Declaring `i, j` before `type` (the order below) puts `type` in the target's r22; i/work stay in
+// r23/r21 rather than r21/r23 under every declaration/statement order and loop shape tried.
+// The anonymous int->float magic also pools at 0x58/0x68 instead of the named slots at 0x38/0x30 (the
+// compiler does not anchor the conversions to the named `double_to_int_*` objects; see win_item.c /
+// party_yoshi.c). The FP colouring did not move under any permutation of the f32 declarations,
+// opt_lifetimes/opt_dead_assignments/opt_propagation/scheduling/global_optimizer off, or
+// optimization_level 1-3, so it is left for the permuter.
+// NONMATCHING (97.38%): FP register colouring, the i/work GPR swap, and the anonymous int->float
+// magic / 0.2181 pool slots differ.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStageClearWork* data = effect->userdata;
 	CameraEntry* cam;
 	CameraEntry* cam2;
 	s32 field1C;
-	s32 type;
 	s32 shadow;
+	s32 i, j;
+	s32 type;
 	f32 scale;
 	f32 f27;
 	f32 f26;
@@ -124,7 +128,6 @@ void effStageClearDisp(CameraId camId, void* param) {
 	Mtx mtx;
 	Mtx persp;
 	Mtx lookAt;
-	s32 i, j;
 
 	cam = camGetPtr(camId);
 	scale = float_1p7_80420f1c * data->scale;

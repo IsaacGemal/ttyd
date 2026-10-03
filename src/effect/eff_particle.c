@@ -403,9 +403,17 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (90.44%): MWCC pools its u32->f32 2^52 constant at 0x48(r31); the original's is the same
-// value at 0x18(r31) (the slot our declared double_to_int_mask_80300278 fills). The FP constants
-// (float_2/dat/mask/float_1) also get different scratch registers (f5/f4/f3/f1 vs f3/f4/f2/f5 here).
+// Every instruction/call/immediate matches; the residue is the allocator and the data layout. MWCC pools
+// its u32->f32 2^52 constant at 0x48(r31) because the file declares double_to_int_mask_80300278 as a user global
+// at 0x18(r31), which the original did not (its 0x18 is the anonymous pool double); when the file is ordered and
+// laid out as the original that offset matches. The first loop's FP scratch registers rotate (ours
+// float_1/dat/float_2/mask/product = f3/f4/f5/f2/f1 vs the target's float_2/dat/mask/float_1/product = f5/f4/f3/f1/f2),
+// and the second loop contracts float_2*(dat*conv)-float_1 to fmsubs where the target emits two fmuls + fsubs.
+// Hoisting the constants into block locals (the shape below) plus opt_lifetimes off gets closest to the target's
+// colouring. opt_lifetimes off: the default lifetime pass colours the loop constants differently (used elsewhere in
+// the tree for the same allocator nudge).
+// NONMATCHING (91.50%): only the FP scratch-register rotation and the 2^52 pool slot differ, per above.
+#pragma opt_lifetimes off
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
 	static s32 use_last;
 	static f32 y2;
@@ -420,13 +428,16 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		use_last = 0;
 		random = y2;
 	} else {
+		f32 c1 = float_1_80421cf8;
+		f32 cd = dat_80421d10;
+		f32 c2 = float_2_80421cf4;
 		do {
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			x = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
+			x = cd * (f32)(u32)seed * c2 - c1;
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
-			z = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
+			z = cd * (f32)(u32)seed * c2 - c1;
 			radius = x * x + z * z;
-		} while (radius > float_1_80421cf8);
+		} while (radius > c1);
 		factor = particle_sqrtf(float_neg2_80421d14 * (f32)log(radius) / radius);
 		random = x * factor;
 		use_last = 1;
@@ -435,13 +446,18 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 
 	particle->life = (s32)(emitter->field_0x60 * random + emitter->field_0x5C);
 
-	do {
-		seed = seed * 0x5EEDF715 + 0x1B0CB173;
-		particle->velocity.x = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
-		seed = seed * 0x5EEDF715 + 0x1B0CB173;
-		particle->velocity.z = dat_80421d10 * (f32)(u32)seed * float_2_80421cf4 - float_1_80421cf8;
-		radius = particle->velocity.x * particle->velocity.x + particle->velocity.z * particle->velocity.z;
-	} while (radius > float_1_80421cf8);
+	{
+		f32 c1 = float_1_80421cf8;
+		f32 cd = dat_80421d10;
+		f32 c2 = float_2_80421cf4;
+		do {
+			seed = seed * 0x5EEDF715 + 0x1B0CB173;
+			particle->velocity.x = cd * (f32)(u32)seed * c2 - c1;
+			seed = seed * 0x5EEDF715 + 0x1B0CB173;
+			particle->velocity.z = cd * (f32)(u32)seed * c2 - c1;
+			radius = particle->velocity.x * particle->velocity.x + particle->velocity.z * particle->velocity.z;
+		} while (radius > c1);
+	}
 	particle->velocity.x *= float_0p5_80421cec;
 	particle->velocity.z *= float_0p5_80421cec;
 	radius *= float_0p25_80421d18;
@@ -452,3 +468,4 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	PSVECScale(&particle->velocity, &particle->position, float_2p5_80421d1c);
 	PSVECAdd(&emitter->position, &particle->position, &particle->position);
 }
+#pragma opt_lifetimes reset

@@ -1947,58 +1947,6 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (73.98%): 21 instructions differ, 41 missing, 25 extra, plus register differences.
-void kururing_capture(CameraId cameraId, void* param) {
-    MapObjectEntry* obj = param;
-    u8* base = (u8*)vec3_802c3dc8;
-    CameraEntry save;
-    CameraEntry* cam;
-    AnimationPoseData* animData;
-    Vec bboxMax;
-    Vec bboxMin;
-    u16 texWidth;
-    u16 texHeight;
-    f32 t;
-
-    memcpy(&save, camGetPtr(cameraId), 0x260);
-    animData = animPoseGetAnimBaseDataPtr(obj->poseId);
-    bboxMax = animData->bboxMax;
-    bboxMin = animData->bboxMin;
-    texWidth = (s32)((bboxMax.x - bboxMin.x) * float_10_8041a1a4);
-    texHeight = (s32)((bboxMax.z - bboxMin.z) * float_10_8041a1a4);
-    cam = camGetPtr(cameraId);
-    texWidth = (texWidth + 1) & ~1;
-    texHeight = (texHeight + 1) & ~1;
-    cam->cameraUp = *(Vec*)(base + 0x27C);
-    cam->cameraAt = obj->position;
-    cam->cameraPos = obj->position;
-    t = (f32)tan(*(f64*)(base + 0x510));
-    cam->cameraPos.y += 0.5f * (f32)texHeight / t;
-    C_MTXPerspective(cam->projection, float_25_8041a140, (f32)(texWidth / texHeight),
-                     float_1_8041a160, float_32767_8041a1e4);
-    cam->projType = GX_PERSPECTIVE;
-    C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
-    GXSetProjection(cam->projection, cam->projType);
-    GXSetViewport(float_0_8041a150, float_0_8041a150, (f32)texWidth, (f32)texHeight, float_0_8041a150,
-                  float_1_8041a160);
-    GXSetScissor(0, 0, texWidth, texHeight);
-    test_kururing_mapdisp(cameraId);
-    sysWaitDrawSync();
-    obj->unk208 = smartAlloc(GXGetTexBufferSize(texWidth / 2, texHeight / 2, 6, 0, 0), 3);
-    GXSetTexCopySrc(0, 0, texWidth, texHeight);
-    GXSetTexCopyDst(texWidth / 2, texHeight / 2, 6, 1);
-    GXSetZMode(1, 3, 1);
-    GXCopyTex(((smartEntry*)obj->unk208)->address, 1);
-    GXInvalidateTexAll();
-    GXPixModeSync();
-    GXTexModeSync();
-    GXInitTexObj(&obj->paperTexObj, ((smartEntry*)obj->unk208)->address, texWidth / 2,
-                 texHeight / 2, 6, 0, 0, 0);
-    GXInitTexObjLOD(&obj->paperTexObj, 0, 0, float_0_8041a150, float_0_8041a150, float_0_8041a150, 0,
-                    0, 0);
-    PSMTXIdentity(obj->paperTexMtx);
-    memcpy(camGetPtr(cameraId), &save, 0x260);
-}
 
 s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     u8* base = (u8*)vec3_802c3dc8;
@@ -3791,6 +3739,79 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
         obj->unk1DC = 0x63;
     }
     return 2;
+}
+
+// The 4-Vec bbox construction (minTmp/maxTmp -> bboxMin/bboxMax, the itembox pattern), the tex size
+// rounding and every call now match. The residue is the compiler's int->float magic doubles: the target
+// reads them base-relative -- lfd f2,0x518(r30) / lfd f2,0x400(r30), r30=vec3_802c3dc8 -- because the
+// original unit defines those doubles in .rodata next to vec3_802c3dc8. Our unlinked object does not
+// define this unit's .rodata, so mwcc pools its own @2190/@2192 copies in .rodata and reloads them with a
+// fresh lis/addi (3 instructions instead of 1), which also shifts the FP schedule around them. Defining
+// the doubles in the source does not help (mwcc still emits its own copy). Only other diff: the tan
+// argument lfd is scheduled one instruction later than the target; every constant, type and argument
+// order is verified against the asm.
+// NONMATCHING (87.36%): the int->float magic-double masks are not base-relative (see above).
+void kururing_capture(CameraId cameraId, void* param) {
+    MapObjectEntry* obj = param;
+    u8* base = (u8*)vec3_802c3dc8;
+    CameraEntry save;
+    CameraEntry* cam;
+    AnimationPoseData* animData;
+    Vec bboxMin;
+    Vec bboxMax;
+    Vec minTmp;
+    Vec maxTmp;
+    u16 texWidth;
+    u16 texHeight;
+    f32 t;
+    f32 ten = 10.0f; // local keeps the float_10 load in the target's f3 (the named extern hoists to a callee-saved FPR)
+
+    memcpy(&save, camGetPtr(cameraId), 0x260);
+    animData = animPoseGetAnimBaseDataPtr(obj->poseId);
+    minTmp = *(Vec*)(base + 0x264);
+    minTmp.x = animData->bboxMin.x;
+    minTmp.y = animData->bboxMin.y;
+    minTmp.z = animData->bboxMin.z;
+    bboxMin = minTmp;
+    maxTmp = *(Vec*)(base + 0x270);
+    maxTmp.x = animData->bboxMax.x;
+    maxTmp.y = animData->bboxMax.y;
+    maxTmp.z = animData->bboxMax.z;
+    bboxMax = maxTmp;
+    texWidth = (bboxMax.x - bboxMin.x) * ten;
+    texHeight = (bboxMax.z - bboxMin.z) * ten;
+    cam = camGetPtr(cameraId);
+    texWidth = (texWidth + 1) & ~1;
+    texHeight = (texHeight + 1) & ~1;
+    cam->cameraUp = *(Vec*)(base + 0x27C);
+    cam->cameraAt = obj->position;
+    cam->cameraPos = obj->position;
+    t = (f32)tan(*(f64*)(base + 0x510));
+    cam->cameraPos.y += 0.5f * (f32)texHeight / t;
+    C_MTXPerspective(cam->projection, float_25_8041a140, (f32)(texWidth / texHeight),
+                     float_1_8041a160, float_32767_8041a1e4);
+    cam->projType = GX_PERSPECTIVE;
+    C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
+    GXSetProjection(cam->projection, cam->projType);
+    GXSetViewport(float_0_8041a150, float_0_8041a150, (f32)texWidth, (f32)texHeight, float_0_8041a150,
+                  float_1_8041a160);
+    GXSetScissor(0, 0, texWidth, texHeight);
+    test_kururing_mapdisp(cameraId);
+    sysWaitDrawSync();
+    obj->unk208 = smartAlloc(GXGetTexBufferSize(texWidth / 2, texHeight / 2, 6, 0, 0), 3);
+    GXSetTexCopySrc(0, 0, texWidth, texHeight);
+    GXSetTexCopyDst(texWidth / 2, texHeight / 2, 6, 1);
+    GXSetZMode(1, 3, 1);
+    GXCopyTex(((smartEntry*)obj->unk208)->address, 1);
+    GXInvalidateTexAll();
+    GXPixModeSync();
+    GXTexModeSync();
+    GXInitTexObj(&obj->paperTexObj, ((smartEntry*)obj->unk208)->address, texWidth / 2,
+                 texHeight / 2, 6, 0, 0, 0);
+    GXInitTexObjLOD(&obj->paperTexObj, 0, 0, float_0_8041a150, float_0_8041a150, float_0_8041a150, 0,
+                    0, 0);
+    PSMTXIdentity(obj->paperTexMtx);
+    memcpy(camGetPtr(cameraId), &save, 0x260);
 }
 
 // Data externs / prototypes for this function only (see report).

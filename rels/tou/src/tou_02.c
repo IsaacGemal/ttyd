@@ -1663,7 +1663,7 @@ void fan_disp(void) {
 // `opt_lifetimes off` it is 95.5%. `opt_lifetimes off` recovered the loop FPRs (95.5 -> 98.0);
 // the else-branch and second-loop counters are block-scoped so MWCC keeps the short-lived `i` in
 // a volatile register as retail does (98.0 -> 98.1).
-// Four idioms recover retail's exact code shape (98.1 -> 98.19):
+// Five idioms recover retail's exact code shape (98.1 -> 98.20):
 //  - the random ranges use `randf(min, max)`, whose `r * (max - min) + min` emits MWCC's
 //    `fmadds rf, 90, ...` operand order directly (the hand-written `min + r * span` comes out with
 //    the constant first). `randf` inlines to the same `rand`-then-scale sequence.
@@ -1673,16 +1673,22 @@ void fan_disp(void) {
 //    fused form wants; `-(scale * c)` / `-scale * c` colour the FPRs differently.
 //  - the last loop advances `fan++, pose++, i++` (of the six permutations this one colours the
 //    loop's GPRs and the preceding switch loop exactly like retail).
-// What is still different (141 instruction diffs, most of them one register name):
+//  - the case-1 random angle goes through the `fanAngle` inline above: inlining `r * span + min`
+//    through parameters emits the retail `fmadds f, rf, 90, 135` operand order (the direct
+//    `135.0f + rf * 90.0f` comes out with the constant as the multiplicand).
+// What is still different (139 instruction diffs, most of them one register name):
 //  - the last loop: our MWCC hoists `&query.hitNormal` (r1+0x5c) into r30 across the loop, so the
 //    loop's fan/i land in r28/r27 where retail has r30/r28 (retail computes the address inline).
-//  - case 1's angle `a` lands in f31 where retail has f30 (and the `rf * 90.0f` fmadds operands
-//    come out swapped); this cascades through the inlined fanSinf/fanCosf branches.
+//  - case 1's angle `a` lands in f31 where retail has f30; this cascades through the inlined
+//    fanSinf/fanCosf branches.
 //  - case 2's `fan->target = vec3_tou_0000d064` / `ang = (ang + breath) / 2.0f` scheduling: retail
 //    loads the vector and 0.5 after the stores, ours before.
 //  - a few loop-counter / &fan_wp register swaps in the second and pairwise loops, and one
 //    `fcmpu cr0, f0, f1` where retail has the operands the other way round.
-// NONMATCHING (98.19%): the above register/scheduling clusters; no logic differs.
+static inline f32 fanAngle(f32 rf, f32 min, f32 span) {
+    return (rf * span + min) * TWO_PI / 360.0f;
+}
+// NONMATCHING (98.20%): the above register/scheduling clusters; no logic differs.
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
     ExtPose* pose;
@@ -1798,7 +1804,7 @@ void ext_fan_main(void) {
             fan->field_0x2 = 10;
             {
                 f32 rf = (f32)rand() / 32767.0f;
-                f32 a = (135.0f + rf * 90.0f) * TWO_PI / 360.0f;
+                f32 a = fanAngle(rf, 135.0f, 90.0f);
                 f32 dist = randf(400.0f, 500.0f);
                 f32 s = fanSinf(a);
                 f32 c;

@@ -1383,58 +1383,86 @@ s32 partyEntry(s32 memberId) {
 // The original emits two copies of the common body, one per arm. The natural shared-body form is
 // under #else; the #ifdef form duplicates it so the two copies are emitted.
 #ifdef MUST_MATCH
-#define PARTY_FAMICOM_BODY()                                                                                           \
-    do {                                                                                                               \
-        const char* animName;                                                                                                \
-        if (party->currentMemberId != PARTY_MEMBER_YOSHI) {                                                            \
-            if (!(party->flags2 & 0x8000)) {                                                                           \
-                animName = party_dp->name;                                                                             \
-            } else {                                                                                                   \
-                animName = str_802CCEEC;                                                                                  \
-            }                                                                                                          \
-        } else {                                                                                                       \
-            animName = yoshigroup[pouchGetPartyColor(PARTNER_YOSHI)];                                                   \
-            if (party->flags2 & 0x8000) {                                                                              \
-                animName = str_802CCEEC;                                                                                  \
-            }                                                                                                          \
-        }                                                                                                              \
-        if (party->paperAnimGroup >= 0) {                                                                              \
-            animPoseRelease(party->paperAnimGroup);                                                                    \
-        }                                                                                                              \
-        party->paperAnimGroup = animPoseEntry(animName, 2);                                                            \
-        {                                                                                                              \
-            char* pose;                                                                                                \
-            if (party->flags2 & 2) {                                                                                   \
-                pose = party->field_18;                                                                                \
-            } else {                                                                                                   \
-                s32 index = 1;                                                                                         \
-                s32 lowHp = 0;                                                                                         \
-                if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {                            \
-                    lowHp = 1;                                                                                         \
-                }                                                                                                      \
-                if (lowHp == 1) {                                                                                      \
-                    index = 12;                                                                                        \
-                }                                                                                                      \
-                if (!(party->flags2 & 0x8000)) {                                                                       \
-                    pose = partyPoseTbl[party->currentMemberId][index];                                                \
-                } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {                                             \
-                    pose = partyDotPoseTbl[party->currentMemberId][index];                                             \
-                } else {                                                                                               \
-                    pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][index];                                  \
-                }                                                                                                      \
-                if (!(party->field_18 && !strcmp(party->field_18, pose))) {                                            \
-                    party->field_18 = pose;                                                                            \
-                    party->field_20 = 0;                                                                               \
-                    party->field_8 |= 0x2000;                                                                          \
-                }                                                                                                      \
-            }                                                                                                          \
-            partyChgPose(party, pose);                                                                                 \
-        }                                                                                                              \
-    } while (0)
+// L_partyChgPoseId1 is defined with the other shared helpers further down the file.
+static inline char* L_partyChgPoseId1(PartyEntry* party);
+
+// Variant of L_animName without the `dp` local: the target schedules the party_dp load at the
+// use site, not at the top of the branch.
+static inline const char* L_famicomAnimName(PartyEntry* party) {
+    if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+        if (!(party->flags2 & 0x8000)) {
+            return party_dp->name;
+        }
+        return str_802CCEEC;
+    }
+    {
+        const char* name = yoshigroup[pouchGetPartyColor(PARTNER_YOSHI)];
+        if (party->flags2 & 0x8000) {
+            name = str_802CCEEC;
+        }
+        return name;
+    }
+}
+
+static inline char* L_partyChgPoseId1b(PartyEntry* party) {
+    s32 index = 1;
+    s32 v5;
+    char* v6;
+    char* v8;
+
+    if ((party->flags2 & 2) != 0) {
+        return party->field_18;
+    }
+    v5 = 0;
+    if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
+        v5 = TRUE;
+    }
+    if (v5 == TRUE) {
+        index = 12;
+    }
+    if (!(party->flags2 & 0x8000)) {
+        v6 = partyPoseTbl[party->currentMemberId][index];
+    } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+        v6 = partyDotPoseTbl[party->currentMemberId][index];
+    } else {
+        v6 = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)][index];
+    }
+    v8 = party->field_18;
+    if (v8 && !strcmp(v8, v6)) {
+        return v6;
+    }
+    party->field_18 = v6;
+    party->field_20 = 0;
+    party->field_8 |= 0x2000;
+    return v6;
+}
+
+static inline void L_partySetFamicomBodyA(PartyEntry* party) {
+    const char* animName = L_famicomAnimName(party);
+
+    if (party->paperAnimGroup >= 0) {
+        animPoseRelease(party->paperAnimGroup);
+    }
+    party->paperAnimGroup = animPoseEntry(animName, 2);
+    partyChgPose(party, L_partyChgPoseId1(party));
+}
+
+static inline void L_partySetFamicomBodyB(PartyEntry* party) {
+    const char* animName = L_famicomAnimName(party);
+
+    if (party->paperAnimGroup >= 0) {
+        animPoseRelease(party->paperAnimGroup);
+    }
+    party->paperAnimGroup = animPoseEntry(animName, 2);
+    partyChgPose(party, L_partyChgPoseId1b(party));
+}
+#define PARTY_FAMICOM_BODY() L_partySetFamicomBodyA(party)
 #endif
 
-// NONMATCHING (95.53%): the two `str_802CCEEC` address materialisations use `addi r0; mr r30,r0`
-// instead of a direct `addi r30`, and r28/r31 allocation differs in the pose block.
+// The str_802CCEEC materialisations and the anim-name register now match, and the two body copies
+// (one per arm) are emitted like the original.
+// NONMATCHING (99.84%): the pose value in the second (mode != 1) inline of the pose selection
+// lands in r29 instead of the target's r30; index/lowHp registers already match.
 void partySetFamicomMode(PartyEntry* party, s32 mode) {
     if (mode == 1) {
         if (party->flags2 & 0x8000) {
@@ -1451,7 +1479,7 @@ void partySetFamicomMode(PartyEntry* party, s32 mode) {
         }
         party->flags2 &= ~0x8000;
 #ifdef MUST_MATCH
-        PARTY_FAMICOM_BODY();
+        L_partySetFamicomBodyB(party);
 #endif
     }
 #ifndef MUST_MATCH

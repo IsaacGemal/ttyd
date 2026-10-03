@@ -257,9 +257,8 @@ void BattleAudienceCtrlProcessKinopio(s32 index) {
 	}
 }
 
-// NONMATCHING (97.53%): constants are literals, declarations ordered step/rangeA/rangeB/level.
-// The itemId == -1 branch folds `t = 0x14` to `cmpwi r28,0x14` and contracts `(f32)t + 10.0f*rangeA`
-// to fmadds where the original keeps t in r27 and converts via the 2^52 magic.
+#pragma opt_propagation off // needed: with propagation on MWCC folds t=0x14 into cmpwi and the int-to-float magic into fmadds
+#pragma opt_lifetimes off // needed: with lifetimes on the itemId magic colours t/magic/product r0/f1/f2 instead of r27/f2/f0
 void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
@@ -268,6 +267,7 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	f32 rangeB;
 	f32 level;
 	f32 ratio;
+	s32 t;
 
 	pouchGetPtr();
 	if ((u8)kind == 1) {
@@ -281,8 +281,8 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	// The period (level) and the step per frame (step) come from the same ladder. The original leaves the
 	// period unset in the last case, where the step is 0.
 	if (ratio >= 0.75f) {
-		level = 1.0f;
 		step = 1.0f;
+		level = 1.0f;
 	}
 	else if (ratio >= 0.5f) {
 		level = 2.0f;
@@ -415,18 +415,30 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	}
 	else if (member->flags & 0x20) {
 	}
-	else if (member->itemId == -1) {
+	else {
+		// The original lays the itemId test out as a one-case switch: `beq` to the
+		// body, then `b` past it (an `if` emits `bne` and falls through instead).
+		switch (member->itemId) {
+		case -1: {
 		s32 r = irand(0x57e40);
 		if (r < 0xa) {
 			BattleAudience_ChangeStatus(index, 1);
 		}
 		else {
-			s32 t = 0x14;
+			t = 0x14;
 			if (r < t) {
 				BattleAudience_ChangeStatus(index, 2);
 			}
 			else {
-			t = (s32)((f32)t + 10.0f * rangeA);
+#ifdef MUST_MATCH
+			// `step` is dead after the type switch; reusing it (rather than a fresh
+			// temp) colours the product f0 and the converted t f1 like the original.
+			step = 10.0f * rangeA;
+			t = (s32)((f32)t + step);
+#else
+			f32 rangeA10 = 10.0f * rangeA;
+			t = (s32)((f32)t + rangeA10);
+#endif
 			if (r < t) {
 				BattleAudience_ChangeStatus(index, 4);
 			}
@@ -451,8 +463,12 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 		}
 		}
 	}
+	}
+	}
 }
 
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 void BattleAudienceCtrlProcessKinopioWaitHurimuki(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 

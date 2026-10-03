@@ -450,44 +450,96 @@ void extReset(void) {
 	memset(wp, 0, 0x70);
 }
 
-// NONMATCHING (69.56%): 11 instructions differ, 35 missing, 20 extra, plus register differences.
+// 0xC-byte entry `param` points at in extMakeTexture/extEntry (name, argument, scale).
+typedef struct ExtMakeTextureEntry {
+	const char* name; //0x0
+	void* field_0x4;  //0x4
+	f32 field_0x8;    //0x8
+} ExtMakeTextureEntry;
+
+// NONMATCHING (99.82%): the only difference is the compiler's colour for the two induction variables
+// i*4 (texIdx, used by GXPosition1x16 and dlSizes) and i*0x80 (dlBuffer offset): the target has them
+// in r27/r28, ours in r28/r27 (all six differing instructions are that swap).
 void extMakeTexture(CameraId camId, void* param) {
 	ExtWork* wp = extGetWork();
+	ExtMakeTextureEntry* p = param;
 	ExtTexture* tex = wp->textures;
-	void* p = param;
 	f32 backup[4];
 	s32 i;
 
 	anim_ext_tex_size = 0;
 	memcpy(backup, queen_uv, 0x10);
-	{
-		f32 t = (f32)wp->texCount;
+	queen_uv[0] = 0.0f;
+	queen_uv[2] = 0.0f;
+	queen_uv[1] = -2.0f / (f32)wp->texCount;
+	queen_uv[3] = -1.0f / (f32)wp->texCount;
 
-		queen_uv[0] = 0.0f;
-		queen_uv[2] = 0.0f;
-		queen_uv[1] = -2.0f / t;
-		queen_uv[3] = -1.0f / t;
+#ifdef MUST_MATCH
+	// Match-only shapes: the post-incremented vtxIdx/texIdx force MWCC's index-strength-reduction
+	// chains, the loop-local `half` forces the fmuls operand order, the empty for-increment fixes
+	// the induction-variable update order, and the cast evaluates the pointer arguments before the
+	// float ones (the header declares f1 second).
+	for (i = 0; i < wp->texCount; ) {
+		s32 vtxIdx = i * 12;
+		s32 texIdx = i * 4;
+		f32 half = 0.5f;
+		s32 out0;
+		s32 out1;
+		s32 out2;
+		s32 out3;
+
+		((void (*)(const char*, void*, void*, void*, f32, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
+		    p->name, p->field_0x4, &tex->texObj, tex, p->field_0x8, 4.0f,
+		    &out0, &out1, &out2, &out3);
+		wp->vertices[vtxIdx++] = (f32)out0 * half;
+		wp->vertices[vtxIdx++] = (f32)(-out1) * half;
+		wp->vertices[vtxIdx++] = 0.0f;
+		wp->vertices[vtxIdx++] = (f32)out2 * half;
+		wp->vertices[vtxIdx++] = (f32)(-out1) * half;
+		wp->vertices[vtxIdx++] = 0.0f;
+		wp->vertices[vtxIdx++] = (f32)out2 * half;
+		wp->vertices[vtxIdx++] = (f32)(-out3) * half;
+		wp->vertices[vtxIdx++] = 0.0f;
+		wp->vertices[vtxIdx++] = (f32)out0 * half;
+		wp->vertices[vtxIdx++] = (f32)(-out3) * half;
+		wp->vertices[vtxIdx++] = 0.0f;
+
+		GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
+		GXBegin(0x80, 0, 4);
+		GXPosition1x16(texIdx++);
+		GXTexCoord1x16(0);
+		GXPosition1x16(texIdx++);
+		GXTexCoord1x16(1);
+		GXPosition1x16(texIdx++);
+		GXTexCoord1x16(2);
+		GXPosition1x16(texIdx++);
+		GXTexCoord1x16(3);
+		wp->dlSizes[i] = GXEndDisplayList();
+
+		i++;
+		p++;
+		tex++;
 	}
-
+#else
 	for (i = 0; i < wp->texCount; i++) {
 		s32 out0;
 		s32 out1;
 		s32 out2;
 		s32 out3;
 
-		animPoseDisp_MakeExtTexture(*(const char**)p, *(f32*)((u8*)p + 8), *(void**)((u8*)p + 4), &tex->texObj, tex,
+		animPoseDisp_MakeExtTexture(p->name, p->field_0x8, p->field_0x4, &tex->texObj, tex,
 		                            4.0f, &out0, &out1, &out2, &out3);
 		wp->vertices[i * 12 + 0] = (f32)out0 * 0.5f;
-		wp->vertices[i * 12 + 1] = -(f32)out1 * 0.5f;
+		wp->vertices[i * 12 + 1] = (f32)(-out1) * 0.5f;
 		wp->vertices[i * 12 + 2] = 0.0f;
 		wp->vertices[i * 12 + 3] = (f32)out2 * 0.5f;
-		wp->vertices[i * 12 + 4] = -(f32)out1 * 0.5f;
+		wp->vertices[i * 12 + 4] = (f32)(-out1) * 0.5f;
 		wp->vertices[i * 12 + 5] = 0.0f;
 		wp->vertices[i * 12 + 6] = (f32)out2 * 0.5f;
-		wp->vertices[i * 12 + 7] = -(f32)out3 * 0.5f;
+		wp->vertices[i * 12 + 7] = (f32)(-out3) * 0.5f;
 		wp->vertices[i * 12 + 8] = 0.0f;
 		wp->vertices[i * 12 + 9] = (f32)out0 * 0.5f;
-		wp->vertices[i * 12 + 10] = -(f32)out3 * 0.5f;
+		wp->vertices[i * 12 + 10] = (f32)(-out3) * 0.5f;
 		wp->vertices[i * 12 + 11] = 0.0f;
 
 		GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
@@ -502,9 +554,10 @@ void extMakeTexture(CameraId camId, void* param) {
 		GXTexCoord1x16(3);
 		wp->dlSizes[i] = GXEndDisplayList();
 
-		p = (u8*)p + 0xC;
+		p++;
 		tex++;
 	}
+#endif
 	memcpy(queen_uv, backup, 0x10);
 }
 

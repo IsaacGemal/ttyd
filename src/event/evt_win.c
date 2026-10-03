@@ -587,9 +587,15 @@ USER_FUNC(set_new_goods_list) {
 
 
 
-// NONMATCHING (95.82%): complete reconstruction; case layout and .rodata order match.
-// What remains: MWCC pools its own int->float double after the declared ones, plus
-// local stack slots and callee-saved assignment. Display callback for the shop window.
+// NONMATCHING (95.82%): complete reconstruction; the bl sequence (338 calls), case layout
+// and .rodata order all match. What remains is MWCC's callee-saved colouring: our first-block
+// sellName/sellDesc get r16/r17 where the target uses r17/r18, and the same one-register
+// shift runs through the function, which also makes the frame 0x20 larger (0x7a0 vs 0x780).
+// The int->float magic is the compiler's own pool entry, so the named double_to_int_802f68a8 /
+// double_to_int_mask_802f68b8 definitions in this file are duplicates: every i2f conversion
+// loads 0x408(r30) instead of the target's 0x3f0(r30) (removing those two data definitions
+// moves the loads to 0x3f0 but does not change the registers). Display callback for the shop
+// window.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
 	PouchData* pouch = pouchGetPtr();

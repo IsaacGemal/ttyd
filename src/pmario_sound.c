@@ -4464,9 +4464,17 @@ static inline f32 psndSqrtf(f32 x) {
 	return x;
 }
 
-// NONMATCHING (59.86%): structurally identical (same calls and immediates); only the callee-saved
-// register allocation and schedule differ. The target keeps &psnd in r27 and volume/span/pan/angOut in
-// r28/r29/r30/r31 (frame 0x80); ours uses four callee-saved registers (frame 0x70).
+// What still differs: the .rodata base pointer and the callee-saved register allocation.
+// The file's `#include <math.h>` makes MWCC emit the `sqrtf`/`sqrt` inline `_half`/`_three` as weak
+// objects at the start of .rodata; with the section's first object weak, MWCC never builds its
+// .rodata base pointer here, so the target's pooled doubles (`lfd f3, 0x7558(r31)`) come out as
+// `lis`/`@l` pairs. Compiling this same source with the math.h inlines suppressed (-D_MATH_H_) does
+// emit `addis r31, r10, 1` and the target's r27/r28/r29/r30/r31 allocation, but the unit's .rodata
+// is still 0x2128 bytes short of the original (strings for functions not written yet), so the base
+// offsets (ours 0x5410 vs the target's 0x7558) cannot match until the unit is complete. The
+// int-register shift is a consequence of the missing base.
+// NONMATCHING (80.06%): no .rodata base (math.h weak objects), so the int callee-saved registers
+// are r28-r31 instead of r27-r31, and rel/dist sit in f30/f31 instead of f31/f30.
 u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	static u8 PAN[4];
 	Vec pos;
@@ -4488,7 +4496,14 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 		pos = ps->position;
 	}
 	dir = ps->direction;
+#ifdef MUST_MATCH
+	// The target reloads pos.z for the distance computation after this call. Written as a plain
+	// field read MWCC CSEs it into the argument's load and keeps it live in f31, so force the
+	// reload the target has; the else form is the natural source.
+	ang = angleABf(ps->position.x, ps->position.z, pos.x, *(volatile f32*)&pos.z);
+#else
 	ang = angleABf(ps->position.x, ps->position.z, pos.x, pos.z);
+#endif
 	if (fabsf(ang - dir) >= 180.0f) {
 		if (ang < dir) {
 			ang += 360.0f;
@@ -4512,11 +4527,15 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	if ((s16)pan > 0x7F) {
 		pan = 0x7F;
 	}
-	dist = psndSqrtf((pos.x - ps->position.x) * (pos.x - ps->position.x)
-	           + (pos.y - ps->position.y) * (pos.y - ps->position.y)
-	           + (pos.z - ps->position.z) * (pos.z - ps->position.z));
 	{
-		f32 cs = (f32)cos(3.14 * rel);
+		f32 dx = pos.x - ps->position.x;
+		f32 dy = pos.y - ps->position.y;
+		f32 dz = pos.z - ps->position.z;
+
+		dist = psndSqrtf(dx * dx + dy * dy + dz * dz);
+	}
+	{
+		f32 cs = (f32)cos((f32)(3.14 * rel));
 		f32 a = fabsf(dist * cs);
 		s32 r;
 
@@ -4536,11 +4555,11 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 			}
 		}
 		r = (s16)r;
-		if (r > 0x40) {
-			angOut = (s32)(64.0f + 64.0f * (f32)sin(6.2831855f * (f32)((r - 0x40) * 0x5A / 0x40) / 360.0f));
+		if (r <= 0x40) {
+			angOut = (s32)(64.0f - 64.0f * (f32)sin(6.2831855f * (f32)((0x40 - r) * 0x5A / 0x40) / 360.0f));
 		}
 		else {
-			angOut = (s32)(64.0f - 64.0f * (f32)sin(6.2831855f * (f32)((0x40 - r) * 0x5A / 0x40) / 360.0f));
+			angOut = (s32)(64.0f + 64.0f * (f32)sin(6.2831855f * (f32)((r - 0x40) * 0x5A / 0x40) / 360.0f));
 		}
 	}
 	if ((s16)angOut < 0) {
@@ -4553,16 +4572,15 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 		PAN[0] = volume;
 	}
 	else {
-		f32 s100 = (f32)(span * 100);
 		f32 d = dist - 200.0f;
 
-		if (d > s100) {
-			d = s100;
+		if (d > (f32)(span * 100)) {
+			d = (f32)(span * 100);
 		}
 		if (d < 0.0f) {
 			d = 0.0f;
 		}
-		PAN[0] = (s32)((f32)volume * (127.0f * (s100 - d) / s100) / 127.0f);
+		PAN[0] = (s32)((f32)volume * (127.0f * ((f32)(span * 100) - d) / (f32)(span * 100)) / 127.0f);
 	}
 	if (PAN[0] > 0x7F) {
 		PAN[0] = 0x7F;

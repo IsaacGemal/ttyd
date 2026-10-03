@@ -259,14 +259,21 @@ void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 
 // with only `case 0` (MWCC will not emit the original's two-compare range test
 // for `if (entry->state == 0)`), and the jitter is `+ -45.0f` so the pool holds
 // float_neg45 and the op is fmadds.
-// Remaining differences are MWCC's choices, not source shape: the loop's live
-// pointers colour differently (pose/entry/sfx land in r28/r27/r25, the
-// original's r25/r24/r27; the original keeps r28 free as an oldState scratch,
-// we keep r24 free), the four Vec temporaries are slotted in a different order,
-// and the case-0 `deg` fmadds is scheduled before the second rand call rather
-// than after it.
-// NONMATCHING (80.58%): loop register colouring + Vec stack-slot order + fp scheduling.
+// The three pragmas below are needed only to steer MWCC's register allocator:
+// opt_propagation off stops it rematerialising the heiSinf/heiCosf coefficients
+// per branch, and opt_lifetimes off together with opt_dead_assignments off
+// recovers retail's callee-saved FPR colouring across the sin/cos and
+// angle-wrap blocks (all three are needed; any two alone score lower).
+// What is left is MWCC's choices, not source shape: the loop's live pointers
+// colour differently (we get pose/entry/sfx in r28/r27/r25, the original's
+// r25/r24/r27; the original keeps r28 free as an oldState scratch, we keep r24
+// free), the four Vec temporaries are slotted in a different order, and the
+// case-0 `deg` fmadds is scheduled before the second rand call rather than
+// after it.
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
+#pragma opt_lifetimes off // recover retail's callee-saved FPR colouring across the sin/cos blocks
+#pragma opt_dead_assignments off // with opt_lifetimes, recover retail's FPR colouring in the same blocks
+// NONMATCHING (85.84%): loop register colouring + Vec stack-slot order + fp scheduling.
 static void ext_main(void) {
     MarioWork* mario = marioGetPtr();
     ExtPose* pose = extGetPosePtr();
@@ -277,16 +284,36 @@ static void ext_main(void) {
     for (i = 0; i < wp->count; i++, pose++, entry++) {
         switch (entry->state) {
         case 0: {
+#ifdef MUST_MATCH
+            // randf's body is spelled out so MWCC schedules the `deg` fmadd
+            // after the second rand call, and the zero/pi locals fix the FPR
+            // colouring of the sin/cos blocks; both are score-lowering otherwise.
+            f32 dr = (f32)rand() / 32767.0f;
+            f32 sr = (f32)rand() / 32767.0f;
+            f32 zero = 0.0f;
+            f32 pi = 3.1415927f;
+            f32 deg = dr * 360.0f + zero;
+            f32 speed = sr * 3.0f + 4.0f;
+            f32 rad = pi * deg / 180.0f;
+#else
             f32 deg = randf(0.0f, 360.0f);
             f32 speed = randf(4.0f, 7.0f);
             f32 rad = 3.1415927f * deg / 180.0f;
+#endif
             f32 sinv = heiSinf(rad);
             f32 px = speed * sinv + (*pose->matrix)[0][3];
             f32 py = (*pose->matrix)[1][3];
             f32 cosv = heiCosf(rad);
             f32 pz = (*pose->matrix)[2][3] - speed * cosv;
+#ifdef MUST_MATCH
+            f32 ar = (f32)rand() / 32767.0f;
+            f32 br = (f32)rand() / 32767.0f;
+            f32 a = ar * (0.5f - 0.3f) + 0.3f;
+            f32 b = br * 0.3f + 0.5f;
+#else
             f32 a = randf(0.3f, 0.5f);
             f32 b = randf(0.5f, 0.8f);
+#endif
             Vec pos = { 0 };
             s16 oldState = entry->state;
             f32 dy;
@@ -439,6 +466,8 @@ static void ext_main(void) {
     }
 }
 #pragma opt_propagation reset
+#pragma opt_lifetimes reset
+#pragma opt_dead_assignments reset
 static void ext_dispent(void) {
     dispEntry(4, 0.0f, 1, ext_disp, NULL);
 }

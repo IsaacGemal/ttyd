@@ -149,15 +149,36 @@ end:
 	data->field_0x2C = 0.5f * (data->field_0x20 / 12.0f) + 0.5f;
 }
 
-// NONMATCHING (86.62%): all instructions match except the integer registers and the .rodata base
-// register. The original reaches the four sfx Vecs and three strings through r31 = vec3_802f3048
-// (+0x0c..+0x90); ours emits separate lis/addi, which shifts the ints and shrinks the frame by 0x10
+// The original reaches this unit's first .rodata object (vec3_802f3048) once into r31 and then
+// addresses the sfx Vecs (+0x0c..+0x38) and strings (+0x68..+0x90) from it. Naming the separate
+// objects makes the compiler emit one lis/addi per object and shifts every callee-saved register;
+// without a local base pointer it rematerialises lis/addi per branch instead of keeping r31.
+#ifdef MUST_MATCH
+#define FB(off, sym) (fbase + (off))
+#define FV(off, sym) (*(const Vec*)(fbase + (off)))
+// The original compares the c==-2/-3 fallthrough as unsigned (cmplwi); `c != 0` emits cmpwi.
+#define FUKI_C_NONZERO(x) ((u32)(x) != 0)
+#else
+#define FB(off, sym) (sym)
+#define FV(off, sym) (sym)
+#define FUKI_C_NONZERO(x) ((x) != 0)
+#endif
+
+// The original loads x,y,z (r6,r5,r0) then stores x,y,z for each dead sfx-Vec copy; ours
+// interleaves the loads/stores because the base is already live. effFukidashiMain gets the batched
+// shape because its copy uses a named symbol; nothing tried (int/union temps, a return-by-value
+// helper, pool_data / opt_* / scheduling pragmas) batches the base+offset copy while keeping r31.
+// The natural forms sit under #else.
+// NONMATCHING (95.61%): the base register, frame and every other instruction match.
 EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, f32 h, f32 i) {
 	EffectEntry* entry;
 	effFukidashiData* data;
+#ifdef MUST_MATCH
+	const char* fbase = (const char*)&vec3_802f3048;
+#endif
 
 	entry = effEntry();
-	entry->type = "Fukidashi";
+	entry->type = FB(0x68, "Fukidashi");
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFukidashiData));
 	entry->userdata = data;
@@ -217,7 +238,7 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 	if (c == -2 || c == -3) {
 		switch (a) {
 		case 0: {
-			Vec vec = vec3_802f3054;
+			Vec vec = FV(0x0C, vec3_802f3054);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -225,7 +246,7 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 			break;
 		}
 		case 1: {
-			Vec vec = vec3_802f3060;
+			Vec vec = FV(0x18, vec3_802f3060);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -233,22 +254,22 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 			break;
 		}
 		}
-	} else if (c != 0 && c != -1) {
+	} else if (FUKI_C_NONZERO(c) && c != -1) {
 		switch (a) {
 		case 0: {
-			Vec vec = vec3_802f306C;
+			Vec vec = FV(0x24, vec3_802f306C);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
-			psndSFXOn_3D("SFX_EVT_NPC_BIKKURI_MARK1", &vec);
+			psndSFXOn_3D(FB(0x74, "SFX_EVT_NPC_BIKKURI_MARK1"), &vec);
 			break;
 		}
 		case 1: {
-			Vec vec = vec3_802f3078;
+			Vec vec = FV(0x30, vec3_802f3078);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
-			psndSFXOn_3D("SFX_EVT_NPC_QUESTION_MARK1", &vec);
+			psndSFXOn_3D(FB(0x90, "SFX_EVT_NPC_QUESTION_MARK1"), &vec);
 			break;
 		}
 		}

@@ -185,37 +185,43 @@ static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a)
 }
 #endif
 
-// The vertex s16<->f32 conversions now use the SDK's psq_l/psq_st helpers
-// (__OSs16tof32/__OSf32tos16 with OSInitFastCast), so the loop structure, the GX/TEV/matrix calls
-// and the fp constant registers (f26=2pi, f29=360, f30=deg2rad, f31=30, f17=0.01, f18=1.0,
-// f28=-30, f27=magic) all match retail. What differs: the integer register allocation (retail keeps
-// data in r19, counter in r24; we use r23/r26) and the preheader scheduling of the -2*counter
-// conversion (retail precomputes the integer bits in r15 and converts in-loop; reading
-// data->field_0x14 makes MWCC reload/recompute them) and of the low scratch, which sits 0x14 lower
-// than retail, leaving the frame 0x10 short (0x2a0 vs 0x2b0). The `s` temp for the sin result (as in
-// eff_magic_horao_n64) is what lands the fp constants in retail's registers.
-// NONMATCHING (93.94%): integer register allocation; the -2*counter preheader and low scratch layout differ.
+// The vertex s16<->f32 conversions use the SDK's psq_l/psq_st helpers
+// (__OSs16tof32/__OSf32tos16 with OSInitFastCast); the loop structure, the GX/TEV/matrix calls, the
+// frame (0x2b0), every local's stack slot except the by-value GXColor temporaries, and the fp
+// constant registers (f26=2pi, f29=360, f30=deg2rad, f31=30, f17=0.01, f18=1.0, f28=-30, f27=magic)
+// all match retail. Declaring the five Mtx objects in retail's slot order (transMtx, scaleMtx,
+// rotMtx, resultMtx, baseMtx across the high-to-low slots), the largely reverse-engineered order of
+// the remaining locals, and an explicit `k = 2*j` induction variable for both vertex loops are what
+// recovered the low-scratch layout and the loop shapes. What still differs: the integer register
+// allocation (retail keeps effect/counter in r15, cam/vtx in r16, alpha/j in r17; we start at r16);
+// the -2*counter conversion (retail precomputes the encoded bits in r15 in the preheader and
+// reloads them in-loop, while reading data->field_0x14 makes MWCC recompute them each iteration);
+// the int->float magic (retail folds `lfd f27, double_to_int_802fa808@l(r4)` from the named .rodata
+// global, our anonymous @-pool copy needs `addi` + `lfd 0x0`); and vtx[k]/src[k] addressing, where we
+// keep running pointers (r27/r28) instead of retail's offset register (r31).
+// NONMATCHING (95.86%): integer register allocation, the -2*counter precompute/reload, the anonymous i2f-magic address, and the vtx/src induction variables.
 void effHoraoSpellDisp(CameraId camId, void* param) {
-	GXTexObj texObj;
-	Mtx scaleMtx;
-	s32 i;
-	Mtx resultMtx;
-	effHoraoSpellVtx* vtx;
-	EffectEntry* effect = param;
-	s32 angle;
-	s32 j;
-	s32 alpha;
-	CameraEntry* cam = camGetPtr(camId);
-	f32 s;
-	smartEntry* entry;
-	s32 counter;
-	GXColor color;
-	f32 scale;
-	Mtx baseMtx;
-	s32 colorIdx;
-	Mtx rotMtx;
-	effHoraoSpellData* data = effect->userdata;
 	Mtx transMtx;
+	s32 counter;
+	s32 angle;
+	s32 colorIdx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	EffectEntry* effect = param;
+	Mtx resultMtx;
+	f32 scale;
+	effHoraoSpellVtx* vtx;
+	smartEntry* entry;
+	GXTexObj texObj;
+	s32 j;
+	GXColor color;
+	s32 alpha;
+	s32 k;
+	f32 s;
+	Mtx baseMtx;
+	CameraEntry* cam = camGetPtr(camId);
+	effHoraoSpellData* data = effect->userdata;
+	s32 i;
 
 	counter = data->field_0x14;
 	alpha = data->field_0x24;
@@ -292,7 +298,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 		PSMTXConcat(transMtx, rotMtx, baseMtx);
 		entry = smartAlloc(0x1C0, 3);
 		vtx = (effHoraoSpellVtx*)entry->address;
-		for (j = 0; j < 16; j++) {
+		for (j = 0, k = 0; j < 16; j++, k += 2) {
 			PSMTXTrans(transMtx, 8.0f, 0.0f, 0.0f);
 			s = (f32)sin(6.2831855f * (f32)(counter * 8 + (j * 720) / 15) / 360.0f);
 			PSMTXRotRad(rotMtx, 'y', 0.017453292f * (30.0f * s));
@@ -303,18 +309,15 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 			PSMTXScale(scaleMtx, scale, scale, scale);
 			PSMTXConcat(transMtx, scaleMtx, transMtx);
 			PSMTXConcat(baseMtx, transMtx, baseMtx);
-			effHoraoSpellSetVtx(&vtx[2 * j], &horao_spell_vtx[2 * j], baseMtx);
-			effHoraoSpellSetVtx(&vtx[2 * j + 1], &horao_spell_vtx[2 * j + 1], baseMtx);
+			effHoraoSpellSetVtx(&vtx[k], &horao_spell_vtx[k], baseMtx);
+			effHoraoSpellSetVtx(&vtx[k + 1], &horao_spell_vtx[k + 1], baseMtx);
 		}
 		DCFlushRange(vtx, 0x1C0);
 		GXInvalidateVtxCache();
 		effSetVtxDescN64((effVtxArray*)vtx);
-		{
-			s32 k = 0;
-			for (j = 0; j < 15; j++, k += 2) {
-				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-				tri2(k, k + 2, k + 1, k, k + 1, k + 2, k + 3, k);
-			}
+		for (j = 0, k = 0; j < 15; j++, k += 2) {
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+			tri2(k, k + 2, k + 1, k, k + 1, k + 2, k + 3, k);
 		}
 	}
 }

@@ -536,11 +536,7 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 
 // Full reconstruction of the element-0 init, the per-element state machines for types 0-8, the type 2
 // procedural vertex build, the type 7 hand-rolled sin/cos approximation, and the display registration.
-// NONMATCHING (86.57%): the remaining diffs are register allocation (the
-// original keeps data/effect in r26/r19 and its constant addresses are pooled through vec3_802fe418 in
-// r31, so nearly every load/store differs in its base register) plus a few scheduling/pooling sites: the
-// int-to-float double constants are loaded through the compiler's own pool instead of base+0x60/0x68, the
-// frame is 0x110 vs 0x120, and `pos` sits at 0x8 instead of the original's 0x14.
+// The switch bodies, call order, type 7 sin/cos polynomial and type 2 vertex build are byte-identical.
 #ifdef MUST_MATCH
 #define FB(off, sym) ((const char*)&vec3_802fe418 + (off))
 #define FV(off, sym) (*(const Vec*)((const u8*)&vec3_802fe418 + (off)))
@@ -549,6 +545,26 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 #define FV(off, sym) (sym)
 #endif
 
+// Builds the effect's position vector through a temporary so the zero-vector copy and the x/y/z overwrite
+// schedule (and spill) as the original does (see REPORT.md); plain assignment under #else.
+static inline Vec effFallMakePos(f32 x, f32 y, f32 z) {
+#ifdef MUST_MATCH
+	Vec temp = *(const Vec*)((const u8*)&vec3_802fe418 + 0xC);
+#else
+	Vec temp = vec3_802fe424;
+#endif
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// Register allocation only: the original keeps the pool base (vec3_802fe418) live in r31 and
+// rematerialises `addi rX, r31, imm` at each string use, while ours hoists the string addresses into
+// callee-saved registers and drops the base; effect/data land in different registers, we save an extra
+// FPR f25 and GPR r14 (frame 0x130 vs 0x120), and the int-to-float magic doubles come from the compiler's
+// anonymous pool instead of base+0x60/0x68.
+// NONMATCHING (90.67%): see the note above.
 void effFallMain(EffectEntry* effect) {
 	FallWork* data = effect->userdata;
 	FallWork* elem;
@@ -566,19 +582,14 @@ void effFallMain(EffectEntry* effect) {
 	f32 f29;
 	f32 f26;
 
-	pos = FV(0xC, vec3_802fe424);
-	pos.x = data->x;
-	pos.y = data->y;
-	pos.z = data->z;
+	pos = effFallMakePos(data->x, data->y, data->z);
 
 	inBattle = gp->inBattle != 0;
 	y = data->y;
 	type = data->type;
 	unk10 = data->unk10;
-	f30 = float_6p2832_80420fa4 * data->unk18;
 	unk20 = data->unk20;
 	floor = y + data->unk14;
-	f29 = float_30_80420fe0 + y;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -595,6 +606,9 @@ void effFallMain(EffectEntry* effect) {
 		return;
 	}
 
+	f30 = float_6p2832_80420fa4 * data->unk18;
+	f29 = float_30_80420fe0 + y;
+
 	{
 	done = 0;
 	for (i = 1, elem = &data[1]; i < effect->count; i++, elem++) {
@@ -609,15 +623,15 @@ void effFallMain(EffectEntry* effect) {
 				if (elem->unk24 == 0) {
 					elem->unk38++;
 					if (type == 1) {
-						psndSFXOn_3D(FB(0x70, str_802FE488), &pos);
+						psndSFXOn_3D(str_802FE488, &pos);
 					} else if (i == 1) {
-						psndSFXOn_3D(FB(0x88, str_802FE4A0), &pos);
+						psndSFXOn_3D(str_802FE4A0, &pos);
 					}
 				}
 				break;
 			case 1:
 				if (type == 0 && i > 1 && flag == 0 && gp->retraceCount % 6 == 0) {
-					psndSFXOn_3D(FB(0x88, str_802FE4A0), &pos);
+					psndSFXOn_3D(str_802FE4A0, &pos);
 					flag = 1;
 				}
 				elem->y += elem->unk34;
@@ -652,7 +666,8 @@ void effFallMain(EffectEntry* effect) {
 				}
 				break;
 			case 3:
-				if (++elem->unk24 > 30) {
+				elem->unk24++;
+				if (elem->unk24 > 30) {
 					elem->unk38++;
 				}
 				break;
@@ -691,12 +706,14 @@ void effFallMain(EffectEntry* effect) {
 				elem->unk44 = (float_60_80420ff0 - (f32)elem->unk24) *
 				                  (f32)sin(float_62p832_80420fec * (f32)elem->unk24 / float_60_80420ff0) /
 				                  float_60_80420ff0;
-				if (++elem->unk24 > 60) {
+				elem->unk24++;
+				if (elem->unk24 > 60) {
 					elem->unk38++;
 				}
 				break;
 			case 2:
-				if (++elem->unk24 > 30) {
+				elem->unk24++;
+				if (elem->unk24 > 30) {
 					elem->unk38++;
 				}
 				break;
@@ -748,7 +765,8 @@ void effFallMain(EffectEntry* effect) {
 				if (elem->unk24 % 10 == 0) {
 					effWaterDamageN64Entry(4, 20, pos.x, pos.y, pos.z, float_1_80420f80);
 				}
-				if (++elem->unk24 > unk20) {
+				elem->unk24++;
+				if (elem->unk24 > unk20) {
 					elem->unk38++;
 				}
 				break;
@@ -769,19 +787,19 @@ void effFallMain(EffectEntry* effect) {
 			switch (elem->unk38) {
 			case 0:
 				if (type == 5) {
-					if (!animGroupBaseAsync(FB(0x130, str_802FE548), inBattle, NULL)) {
+					if (!animGroupBaseAsync(str_802FE548, inBattle, NULL)) {
 						break;
 					}
 					if (elem->unk5C == -1) {
-						elem->unk5C = animPoseEntry(FB(0x130, str_802FE548), inBattle);
+						elem->unk5C = animPoseEntry(str_802FE548, inBattle);
 						animPoseSetAnim(elem->unk5C, str_80421018, 1);
 					}
 				} else {
-					if (!animGroupBaseAsync(FB(0x13C, str_802FE554), inBattle, NULL)) {
+					if (!animGroupBaseAsync(str_802FE554, inBattle, NULL)) {
 						break;
 					}
 					if (elem->unk5C == -1) {
-						elem->unk5C = animPoseEntry(FB(0x13C, str_802FE554), inBattle);
+						elem->unk5C = animPoseEntry(str_802FE554, inBattle);
 						animPoseSetAnim(elem->unk5C, str_80421018, 1);
 					}
 				}
@@ -829,7 +847,8 @@ void effFallMain(EffectEntry* effect) {
 				}
 				break;
 			case 3:
-				if (++elem->unk24 > 30) {
+				elem->unk24++;
+				if (elem->unk24 > 30) {
 					elem->unk38++;
 				}
 				break;
@@ -846,14 +865,17 @@ void effFallMain(EffectEntry* effect) {
 				done++;
 				break;
 			}
-			if (type == 5) {
-				if (elem->unk38 > 1) {
-					elem->unk48 += (float_430_80421020 - elem->unk48) / float_10_80420fb0;
-				}
-			} else if (type == 4) {
+			switch (type) {
+			case 4:
 				if (elem->unk38 > 1) {
 					elem->unk48 += (float_360_80420fa8 - elem->unk48) / float_10_80420fb0;
 				}
+				break;
+			case 5:
+				if (elem->unk38 > 1) {
+					elem->unk48 += (float_430_80421020 - elem->unk48) / float_10_80420fb0;
+				}
+				break;
 			}
 			if (elem->unk5C != -1) {
 				animPoseMain(elem->unk5C);
@@ -862,18 +884,19 @@ void effFallMain(EffectEntry* effect) {
 		case 6:
 			switch (elem->unk38) {
 			case 0:
-				if (!animGroupBaseAsync(FB(0x148, str_802FE560), inBattle, NULL)) {
+				if (!animGroupBaseAsync(str_802FE560, inBattle, NULL)) {
 					break;
 				}
 				if (elem->unk5C == -1) {
-					elem->unk5C = animPoseEntry(FB(0x148, str_802FE560), inBattle);
+					elem->unk5C = animPoseEntry(str_802FE560, inBattle);
 					animPoseSetAnim(elem->unk5C, str_80421018, 1);
 					psndSFXOn_3D(FB(0xBC, str_802FE4D4), &pos);
 				}
 				elem->x += elem->unk50;
 				elem->y += elem->unk54;
 				elem->z += elem->unk58;
-				if (++elem->unk24 > 30) {
+				elem->unk24++;
+				if (elem->unk24 > 30) {
 					elem->unk24 = 0;
 					elem->unk38++;
 					effKemuri1N64Entry(4, pos.x + elem->x, pos.y + elem->y, pos.z + elem->z, float_0_80420f84);
@@ -886,7 +909,8 @@ void effFallMain(EffectEntry* effect) {
 					elem->unk4C = elem->unk48;
 					elem->unk48 = float_0_80420f84;
 				}
-				if (++elem->unk24 > 0xb4) {
+				elem->unk24++;
+				if (elem->unk24 > 0xb4) {
 					elem->unk24 = 0;
 					elem->unk38++;
 				}
@@ -900,7 +924,8 @@ void effFallMain(EffectEntry* effect) {
 					elem->unk4C = elem->unk48;
 					elem->unk48 = float_0_80420f84;
 				}
-				if (++elem->unk24 > 0xc8) {
+				elem->unk24++;
+				if (elem->unk24 > 0xc8) {
 					animPoseRelease(elem->unk5C);
 					elem->unk5C = -1;
 					done++;
@@ -933,12 +958,18 @@ void effFallMain(EffectEntry* effect) {
 			case 2:
 			case 4:
 			case 6: {
-				Vec tbl[4] = {
-					{ 140.0f, 40.0f, -10.0f },
-					{ 0.0f, 40.0f, -40.0f },
-					{ -140.0f, 40.0f, -10.0f },
-					{ -400.0f, 40.0f, -40.0f },
-				};
+				Vec tbl[4];
+#ifdef MUST_MATCH
+				tbl[0] = *(const Vec*)((const u8*)&vec3_802fe418 + 0x18);
+				tbl[1] = *(const Vec*)((const u8*)&vec3_802fe418 + 0x24);
+				tbl[2] = *(const Vec*)((const u8*)&vec3_802fe418 + 0x30);
+				tbl[3] = *(const Vec*)((const u8*)&vec3_802fe418 + 0x3C);
+#else
+				tbl[0] = dat_802fe430[0];
+				tbl[1] = dat_802fe430[1];
+				tbl[2] = dat_802fe430[2];
+				tbl[3] = dat_802fe430[3];
+#endif
 				elem->unk50 = tbl[elem->unk38 / 2].x;
 				elem->unk54 = tbl[elem->unk38 / 2].y;
 				elem->unk58 = tbl[elem->unk38 / 2].z;
@@ -956,9 +987,9 @@ void effFallMain(EffectEntry* effect) {
 			case 5:
 			case 7: {
 				f32 t, s, c;
-				const f32 p00761 = float_0p00761_80421034, p16605 = float_0p16605_80421038;
-				const f32 p03705 = float_0p03705_80421048, p4967 = float_0p4967_8042104c;
-				const f32 one = float_1_80420f80;
+				f32 p00761 = float_0p00761_80421034, p16605 = float_0p16605_80421038;
+				f32 p03705 = float_0p03705_80421048, p4967 = float_0p4967_8042104c;
+				f32 one = float_1_80420f80;
 				elem->y += elem->unk34;
 				elem->unk34 -= elem->unk30;
 				t = float_6p2832_80420fa4 * elem->unk18 / float_360_80420fa8;
@@ -977,12 +1008,12 @@ void effFallMain(EffectEntry* effect) {
 					if (t < float_4p7124_80421044) {
 						t = t - float_3p1416_8042103c;
 						s = -(((p00761 * (t * t) - p16605) * (t * t) +
-						       float_1_80420f80) *
+						       one) *
 						      t);
 					} else {
 						t = float_1p5708_80421040 - (t - float_4p7124_80421044);
 						s = -(((p00761 * (t * t) - p16605) * (t * t) +
-						       float_1_80420f80) *
+						       one) *
 						      t);
 					}
 				}
@@ -991,26 +1022,25 @@ void effFallMain(EffectEntry* effect) {
 				if (t <= float_3p1416_8042103c) {
 					if (t <= float_1p5708_80421040) {
 						c = (p03705 * (t * t) - p4967) * (t * t) +
-						    float_1_80420f80;
+						    one;
 					} else {
 						t = float_1p5708_80421040 - (t - float_1p5708_80421040);
 						c = -((p03705 * (t * t) - p4967) * (t * t) +
-						      float_1_80420f80);
+						      one);
 					}
 				} else {
 					if (t < float_4p7124_80421044) {
 						t = t - float_3p1416_8042103c;
 						c = -((p03705 * (t * t) - p4967) * (t * t) +
-						      float_1_80420f80);
+						      one);
 					} else {
 						t = float_1p5708_80421040 - (t - float_4p7124_80421044);
 						c = (p03705 * (t * t) - p4967) * (t * t) +
-						    float_1_80420f80;
+						    one;
 					}
 				}
 				elem->z += float_5_80421030 * -c;
-				elem->unk24--;
-				if (elem->unk24 < 0) {
+				if (--elem->unk24 < 0) {
 					elem->x = elem->unk50;
 					elem->y = elem->unk54;
 					elem->z = elem->unk58;
@@ -1075,7 +1105,8 @@ void effFallMain(EffectEntry* effect) {
 				break;
 			case 3:
 				if (animPoseGetLoopTimes(elem->unk5C) >= float_1_80420f80) {
-					if (++elem->unk24 > elem->unk20) {
+					elem->unk24++;
+					if (elem->unk24 > elem->unk20) {
 						elem->unk38++;
 					}
 				}

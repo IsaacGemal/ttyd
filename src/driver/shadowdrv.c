@@ -730,26 +730,50 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
     }
 }
 
-// NONMATCHING (95.81%): body matches. This compiler hoists `negSize * 0.5f` out of the entry loop into f31
-// (the original keeps -2.5 in f30 and computes the product per iteration), which shifts the immediate-mode
-// FP registers; the two GXColor argument-copy stack slots are also swapped (0x10/0x14 vs 0x14/0x10).
+// The target keeps `negSize = -size` in f30 across the entry loop and recomputes `negSize * half` per
+// iteration in f2; assigning size/negSize just before the loop, reading half/quarter from locals (they
+// fix the f0/f1/f2 colouring) and turning loop-invariant hoisting off gives that shape. The natural
+// form is under #else in each MUST_MATCH block.
+#ifdef MUST_MATCH
+// MUST_MATCH: building the by-value GXColor inside an inlined helper makes MWCC put its local in the
+// lower scratch slot (r1+0x10) and the GXSetFog copy in r1+0x14, as the original does; writing the
+// colour inline puts them the other way round. The independent form is under #else.
+static inline void shadowTexMatColor(void) {
+    GXColor c = cswp->unk100;
+    GXSetChanMatColor(4, c);
+}
+#endif
+
+#pragma opt_loop_invariants off // needed: the target recomputes negSize*0.5f inside the entry loop (below)
 void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
     u16 left, top, right, bottom;
-    GXColor color;
     GXTexObj texObj;
     Mtx mtx;
     f32 zero = 0.0f;
+#ifdef MUST_MATCH
+    f32 size;
+    f32 negSize;
+    f32 half = 0.5f;
+    f32 quarter = 1.25f;
+#else
     f32 size = 2.5f;
     f32 negSize = -size;
+#endif
     s32 i;
 
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
-    color = cswp->unk100;
-    GXSetChanMatColor(4, color);
+#ifdef MUST_MATCH
+    shadowTexMatColor();
+#else
+    {
+        GXColor color = cswp->unk100;
+        GXSetChanMatColor(4, color);
+    }
+#endif
     effGetTexObjN64(0x2C, &texObj);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
@@ -772,6 +796,10 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     GXSetVtxDesc(0xD, 1);
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+#ifdef MUST_MATCH
+    size = 2.5f;
+    negSize = -size;
+#endif
     for (i = 0; i < cswp->unk104; i++, entry++) {
         if (entry->size == zero) {
             continue;
@@ -792,13 +820,29 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         PSMTXConcat(view, entry->matrix, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+#ifdef MUST_MATCH
+        GXPosition3f32(negSize * half, 0.0f, quarter);
+#else
         GXPosition3f32(negSize * 0.5f, 0.0f, 1.25f);
+#endif
         GXTexCoord2f32(0.0f, 0.0f);
+#ifdef MUST_MATCH
+        GXPosition3f32(quarter, 0.0f, quarter);
+#else
         GXPosition3f32(1.25f, 0.0f, 1.25f);
+#endif
         GXTexCoord2f32(1.0f, 0.0f);
+#ifdef MUST_MATCH
+        GXPosition3f32(quarter, 0.0f, negSize * half);
+#else
         GXPosition3f32(1.25f, 0.0f, negSize * 0.5f);
+#endif
         GXTexCoord2f32(1.0f, 1.0f);
+#ifdef MUST_MATCH
+        GXPosition3f32(negSize * half, 0.0f, negSize * half);
+#else
         GXPosition3f32(negSize * 0.5f, 0.0f, negSize * 0.5f);
+#endif
         GXTexCoord2f32(0.0f, 1.0f);
         if (camId == 1) {
             sysWaitDrawSync();
@@ -807,6 +851,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         }
     }
 }
+#pragma opt_loop_invariants reset
 
 #ifdef MUST_MATCH
 // MUST_MATCH: building the by-value GXColor inside an inlined helper makes MWCC put its local in the

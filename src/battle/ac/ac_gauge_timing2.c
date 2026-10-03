@@ -74,10 +74,15 @@ extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// The callee-saved GPR colouring is rotated by two (dec=r29 vs r27, autoFlag=r28 vs r26, loop
-// index r30 vs r28, found/done swap r26/r29); a few load-scheduling slots in the `case 0`
-// initialiser and the autoFlag block are the only structural diffs.
-// NONMATCHING (96.48%): register rotation above; byte size 1628 matches.
+// The only differences left are MWCC's callee-saved GPR colouring (dec=r29 vs r27, autoFlag=r28 vs
+// r26, loop index r30 vs r28, ng=r26/r27 vs r30/r29) and the scheduling that follows from it: the
+// `case 0` initialiser loads dat_80421ad8 earlier, and the `if (autoFlag)` block puts `autoFlag = 0`
+// after the other initialisers instead of before the branch. Calls, constants and memory accesses
+// all match; byte size 1628 matches. Tried: every relevant pragma (opt_lifetimes/opt_propagation/
+// opt_common_subs/opt_dead_assignments/global_optimizer/peephole/scheduling/optimize_for_size), local
+// declaration order/scope/type, `register`, splitting the loop counters, inlining the sound-name
+// literals, and shuffling the case 0 statements; none moves the colouring.
+// NONMATCHING (96.74%): callee-saved colouring and the two scheduling slots above.
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -223,13 +228,14 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 					if (autoFlag == 0 && dec->flag[i] != 0) {
 						dec->state[i] = -1;
 						psndSFXOn(ng2);
+						done = 1;
 					}
 					else {
 						dec->state[i] = 1;
 						work->actionCommands.outputParams[0]++;
 						psndSFXOn(ok);
+						done = 1;
 					}
-					done = 1;
 				}
 				else {
 					if (diff < __fabs(dec->value[1] - dec->value[0])) {
@@ -278,8 +284,8 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		break;
 	case 0x3ED:
 		work->actionCommands.maincb = NULL;
-		work->actionCommands.resultcb = NULL;
 		work->actionCommands.dispcb = NULL;
+		work->actionCommands.resultcb = NULL;
 		work->actionCommands.deletecb = NULL;
 		return 0;
 	default:

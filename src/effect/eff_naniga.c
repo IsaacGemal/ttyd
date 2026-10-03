@@ -145,17 +145,25 @@ EffectEntry* effNanigaEntry(s32 type, s32* itemList, s32 itemId, f32 x, f32 y, f
 	return entry;
 }
 
-// NONMATCHING (98.16%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets),
-// the compiler's switch layout, and register allocation.
+// `s32` (signed long), not `BOOL` (int), for `inBattle`: MWCC colors `gp`/`effect->flags` into r5/r4 and the
+// first switch's state/jumptable base into r5/r4 the way the original does; with `int` they land one register
+// higher.  The second while loop writes its constant as the literal `40.0f` (the same value as
+// float_40_80421b6c, which the first loop still names) so MWCC hoists that load before the shared int->float
+// magic pair, matching the original's loop-setup order.
 void effNanigaMain(EffectEntry* effect) {
 	effNanigaData* data = effect->userdata;
-	BOOL inBattle;
+	s32 inBattle;
 	Vec vec;
 	EventEntry* event;
 	s32 i;
 	f32 scale;
+	s32 state;
 
+#ifdef MUST_MATCH
+	vec = initializeVec2((Vec*)&data->posX);
+#else
 	vec = initializeVec((Vec*)&data->posX);
+#endif
 	inBattle = gp->inBattle != 0;
 
 	if (effect->flags & 4) {
@@ -237,7 +245,12 @@ void effNanigaMain(EffectEntry* effect) {
 			data->timer++;
 		}
 		else {
+#ifdef MUST_MATCH
+			// MUST_MATCH: the addend must be on the left so MWCC loads float_40 before data->end.
+			data->field_0x34 = float_40_80421b6c + data->end;
+#else
 			data->field_0x34 = data->end + float_40_80421b6c;
+#endif
 			data->timer = 60;
 			data->state = 10;
 		}
@@ -285,11 +298,21 @@ void effNanigaMain(EffectEntry* effect) {
 	while (data->field_0x34 < float_0_80421b60) {
 		data->field_0x34 += float_40_80421b6c * (f32)data->count;
 	}
+#ifdef MUST_MATCH
+	// MUST_MATCH: writing this loop's constant as the literal 40.0f (== float_40_80421b6c) makes MWCC hoist
+	// that load before the shared int->float magic pair, matching the original's loop-setup order.
+	while (data->field_0x34 >= 40.0f * (f32)(data->count + 2)) {
+		data->field_0x34 -= 40.0f * (f32)data->count;
+	}
+#else
 	while (data->field_0x34 >= float_40_80421b6c * (f32)(data->count + 2)) {
 		data->field_0x34 -= float_40_80421b6c * (f32)data->count;
 	}
+#endif
 
-	switch (data->state) {
+	// A local keeps the second switch's selector live into the default case (the original has no reload).
+	state = data->state;
+	switch (state) {
 	case 2:
 	case 3:
 	case 4:
@@ -301,7 +324,7 @@ void effNanigaMain(EffectEntry* effect) {
 	case 1:
 		break;
 	default:
-		if (data->state != 11 || !(animPoseGetLoopTimes(data->poseId) < float_0p8_80421b90)) {
+		if (state != 11 || !(animPoseGetLoopTimes(data->poseId) < float_0p8_80421b90)) {
 			dispEntry(CAMERA_3D, dispCalcZ(&vec), 1, effNanigaDisp3, effect);
 		}
 		break;

@@ -151,8 +151,8 @@ const char* BattleGetRankNameLabel(s32 level) {
 extern const char str_802FDDF0[];
 extern const GXColor dat_80420c00;
 extern const GXColor dat_80420c04;
-extern s32 _event_MajinaiEnd[];
-extern s32 _rank_up_event[];
+extern __declspec(section ".sdata") s32 _event_MajinaiEnd[];
+extern __declspec(section ".sdata") s32 _rank_up_event[];
 extern s32 _curtain_close_event[];
 extern s32 _move_to_heart_event[];
 extern s32 _move_to_flower_event[];
@@ -165,22 +165,38 @@ extern BattleDispPose pose_table_nokotarou_stay[];
 // Until configure.py gets that flag for this file, keep btlseqEnd and the helpers it calls out of line.
 // (Without this mwcc inlines _audience_Whistle_control, btlseqEnd_DispMain, ... into btlseqEnd.)
 #pragma dont_inline on
-// NONMATCHING (95.47%): logic matches; remaining diffs are register allocation (mwcc picks r31 for wp here
-// instead of r26) and a few scheduling/switch-tree differences.
+#pragma opt_common_subs off // without it MWCC re-associates the BattleInformation flag masks and the callee-saved map drifts further
+// NONMATCHING (98.19%): only the callee-saved map differs (mwcc puts wp in r31, work in r26; the target has
+// wp=r26, work=r28), plus one effPointGetEntry load order and two `mr rN, r0` moves.
 void btlseqEnd(BattleWork* wp) {
-    BattleSeqEndWork* work = wp->seqEndWork;
-    FieldBattleInfo* info = wp->fbatInfo;
+    FieldBattleInfo* info;
+    BattleSeqEndWork* work;
 #ifdef MUST_MATCH
-    u8* data = (u8*)lbl_803ACB10;
+    u8* data;
 #endif
-    const char* str = str_802FDDF0;
-    PouchData* pouch = pouchGetPtr();
+    const char* str;
+    PouchData* pouch;
     BattleSeqEndWork* newWork;
     BattleUnit* unit;
     BattleUnit* party;
     EventEntry* event;
     s32 flag;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the loop variable is a signed byte in the original; typing it s32 and casting only at the
+    // comparisons makes MWCC emit the original's `extsb` in the loop and `mr` (no extension) for the calls.
+    s32 i;
+#else
     s8 i;
+#endif
+    NpcBattleInfo* setup;
+
+    work = wp->seqEndWork;
+    info = wp->fbatInfo;
+#ifdef MUST_MATCH
+    data = (u8*)lbl_803ACB10;
+#endif
+    str = str_802FDDF0;
+    pouch = pouchGetPtr();
 
     _audience_Whistle_control();
 
@@ -218,6 +234,8 @@ void btlseqEnd(BattleWork* wp) {
         case 3:
             BattleSetSeq(wp, SEQ_END, 0x07000001);
             break;
+        case 4:
+        case 5:
         default:
             _ExecAllUnitBattleEndEvent();
             BattleSetSeq(wp, SEQ_END, 0x0700001D);
@@ -298,8 +316,13 @@ void btlseqEnd(BattleWork* wp) {
                 pose_table_nokotarou_stay;
         }
         BattleConsumeReserveItem();
+#ifdef MUST_MATCH
+        for (i = 0; (s8)i < 0x1C; i++) {
+            if ((s8)i >= 0x1C || (s8)i < 0x19) {
+#else
         for (i = 0; i < 0x1C; i++) {
             if (i >= 0x1C || i < 0x19) {
+#endif
                 if (party != NULL) {
                     BtlUnit_SetStatus(party, i, 0, 0);
                 }
@@ -553,12 +576,12 @@ void btlseqEnd(BattleWork* wp) {
             }
             *(s32*)((u8*)work + 0x1FC) = 0;
         }
-        if (BattlePadCheckTrigger(8)) {
+        if (BattlePadCheckTrigger(0x80000)) {
             if (*(s32*)((u8*)work + 0x10) < *(s32*)((u8*)work + 0x18) - 1) {
                 (*(s32*)((u8*)work + 0x10))++;
             }
         }
-        if (BattlePadCheckTrigger(4)) {
+        if (BattlePadCheckTrigger(0x40000)) {
             if (*(s32*)((u8*)work + 0x10) > 0) {
                 (*(s32*)((u8*)work + 0x10))--;
             }
@@ -611,13 +634,13 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x07000013:
-        if (BattlePadCheckTrigger(2)) {
+        if (BattlePadCheckTrigger(0x20000)) {
             (*(s32*)((u8*)work + 0x24))++;
             if (*(s32*)((u8*)work + 0x24) >= *(s32*)((u8*)work + 0x2C)) {
                 *(s32*)((u8*)work + 0x24) = 0;
             }
         }
-        if (BattlePadCheckTrigger(1)) {
+        if (BattlePadCheckTrigger(0x10000)) {
             (*(s32*)((u8*)work + 0x24))--;
             if (*(s32*)((u8*)work + 0x24) < 0) {
                 *(s32*)((u8*)work + 0x24) = *(s32*)((u8*)work + 0x2C) - 1;
@@ -667,6 +690,7 @@ void btlseqEnd(BattleWork* wp) {
             }
         }
         flag = 1;
+        setup = wp->fbatInfo->setup;
         unit = BattleGetMarioPtr(wp);
         party = BattleGetPartyPtr(wp);
         {
@@ -675,15 +699,13 @@ void btlseqEnd(BattleWork* wp) {
             if ((sf & 0x10000000) || (sf & 0x20000000)) {
                 flag = 0;
             } else if (party != NULL) {
-                if ((sf & 0x10000000) || (sf & 0x20000000)) {
-                    flag = 0;
-                } else if (BtlUnit_CheckStatus(party, 0x1B)) {
+                if ((sf & 0x10000000) || (sf & 0x20000000) || BtlUnit_CheckStatus(party, 0x1B)) {
                     flag = 0;
                 }
             }
         }
         if (flag != 0) {
-            if (info->setup->field_4 & 0x20000000) {
+            if (setup->field_4 & 0x20000000) {
                 BtlUnit_snd_se(unit, str + 0x384, 0xF1194D80, 0);
             } else {
                 BtlUnit_snd_se(unit, str + 0x39C, 0xF1194D80, 0);
@@ -737,24 +759,23 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x07000019:
+        flag = 1;
+        setup = wp->fbatInfo->setup;
         unit = BattleGetMarioPtr(wp);
         party = BattleGetPartyPtr(wp);
-        flag = 1;
         {
             u32 sf = (u32)unit->mStatusFlags;
 
             if ((sf & 0x10000000) || (sf & 0x20000000)) {
                 flag = 0;
             } else if (party != NULL) {
-                if ((sf & 0x10000000) || (sf & 0x20000000)) {
-                    flag = 0;
-                } else if (BtlUnit_CheckStatus(party, 0x1B)) {
+                if ((sf & 0x10000000) || (sf & 0x20000000) || BtlUnit_CheckStatus(party, 0x1B)) {
                     flag = 0;
                 }
             }
         }
         if (flag == 0) {
-            if (info->setup->field_4 & 0x20000000) {
+            if (setup->field_4 & 0x20000000) {
                 BtlUnit_snd_se(unit, str + 0x3B4, 0xF1194D80, 0);
             } else {
                 BtlUnit_snd_se(unit, str + 0x3CC, 0xF1194D80, 0);
@@ -770,10 +791,10 @@ void btlseqEnd(BattleWork* wp) {
             break;
         }
         BtlUnit_SetBodyAnimType(BattleGetMarioPtr(wp), 0x2A);
-        party = BattleGetPartyPtr(wp);
-        if (party != NULL) {
+        if (BattleGetPartyPtr(wp) != NULL) {
+            party = BattleGetPartyPtr(wp);
             if (!(party->currentKind == 0xE1 && party->flippedTurns >= 1)) {
-                BtlUnit_SetBodyAnimType(party, 0x2A);
+                BtlUnit_SetBodyAnimType(BattleGetPartyPtr(wp), 0x2A);
             }
         }
         BattleSetSeq(wp, SEQ_END, 0x0700001B);
@@ -807,22 +828,27 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x0700001F:
-        party = BattleGetPartyPtr(wp);
-        flag = (party != NULL) ? party->currentKind : 0;
-        i = BattleTransPartyId((BattleUnitType)flag);
-        unit = BattleGetMarioPtr(wp);
-        if ((info->setup->field_4 & 0x40) && unit->currentHp <= 0) {
-            unit->currentHp = 1;
-        }
-        BattleSetMarioParamToFieldBattle(wp);
-        BattleFree(wp->seqEndWork);
-        wp->seqEndWork = NULL;
-        BattleSetSeq(wp, SEQ_UNKNOWN, 4);
-        *(u32*)((u8*)marioGetPtr() + 0x4) &= ~1;
-        if (flag != 0) {
-            marioPartyEntry(i);
-        } else {
-            marioPartyKill();
+        {
+            s32 id;
+
+            party = BattleGetPartyPtr(wp);
+            flag = (party != NULL) ? party->currentKind : 0;
+            id = BattleTransPartyId((BattleUnitType)flag);
+            setup = wp->fbatInfo->setup;
+            unit = BattleGetMarioPtr(wp);
+            if ((setup->field_4 & 0x40) && unit->currentHp <= 0) {
+                unit->currentHp = 1;
+            }
+            BattleSetMarioParamToFieldBattle(wp);
+            BattleFree(wp->seqEndWork);
+            wp->seqEndWork = NULL;
+            BattleSetSeq(wp, SEQ_UNKNOWN, 4);
+            marioGetPtr()->dispFlags &= ~1;
+            if (flag != 0) {
+                marioPartyEntry(id);
+            } else {
+                marioPartyKill();
+            }
         }
         {
             void* p = partyGetPtr(marioGetPartyId());
@@ -838,6 +864,7 @@ void btlseqEnd(BattleWork* wp) {
 
     btlseqEnd_DispMain(8, wp);
 }
+#pragma opt_common_subs reset
 
 // The original keeps _keta_get out of line: _lvup_select_object_disp calls it with bl, not inlined.
 s32 _keta_get(s32 value) {

@@ -56,11 +56,19 @@ s32 N_getDebugMode(void) {
 	return wp2->debug;
 }
 
-// NONMATCHING (91.55%): the original reaches its .rodata strings as offsets from one base register (vec3_802c11a0);
-// ours loads each string address on its own.
+// The original reaches this unit's pooled .rodata strings as offsets from its first rodata object,
+// vec3_802c11a0 (held in r31); MWCC's -rostr pool only names that base when it is referenced, so the
+// offset form below is what the original source must have used. The #else form is the plain literals.
 void L_titleInit(SequenceWork* work) {
+#ifdef MUST_MATCH
+	char* base = (char*)vec3_802c11a0;
+#endif
 	memset(wp2, 0, sizeof(TitleWork));
+#ifdef MUST_MATCH
+	wp2->texture = fileAllocf(4, base + 0xF4, getMarioStDvdRoot());
+#else
 	wp2->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
+#endif
 	wp2->field_0xC = 0.0f;
 	wp2->field_0x10 = 1000.0f;
 	wp2->field_0x14 = 0.0f;
@@ -88,13 +96,21 @@ void L_titleInit(SequenceWork* work) {
 			else {
 				SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
 			}
+#ifdef MUST_MATCH
+			psndBGMOn(0x200, base + 0x104);
+#else
 			psndBGMOn(0x200, "BGM_DIGEST1");
+#endif
 			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}
 		}
 		else {
+#ifdef MUST_MATCH
+			psndBGMOn(0x200, base + 0x110);
+#else
 			psndBGMOn(0x200, "BGM_TITLE1");
+#endif
 			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}

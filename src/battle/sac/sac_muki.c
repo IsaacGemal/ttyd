@@ -405,11 +405,15 @@ static inline Vec mukiScreenVec1(f32 x, f32 y) {
 
 // .text:0x908 | 0x802475F4 | size: 0x6EC
 // The inline Vec return temp still lands at 0x6c/0x60 instead of 0x5c/0x50, and block 1 keeps
-// `sx` in f28 rather than sharing f29 with `left`; the anonymous @625/@627/@928/@878 pool
-// entries also differ from the file's named .sdata2 symbols. The body, control flow and calls
-// match. The block-scoped `volatile` `cA`/`cB` force a distinct stack temp per operand,
-// restoring the original's parameter-slot layout.
-// NONMATCHING (98.10%): stack/register allocation and the constant pool, as above.
+// `sx` in f28 rather than sharing f29 with `left`, so the `left = sx - 32 - 8` chain loads via
+// an extra `fmr`; the by-value `cA`/`cB` colours get 6 stores where the target has 8 (the target
+// keeps an extra stack copy per colour); the anonymous @625/@627/@928/@878 pool entries also
+// differ from the file's named .sdata2 symbols (symbol-only; they resolve on link). The body,
+// control flow and calls match (`tools/diff_shape.py`: same 45 calls, no missing immediates).
+// The colours are plain `GXColor` (the target reloads nothing, so they are not volatile), and
+// `btlDispTexPlane3` is called through the original's 7-argument signature: the target sets
+// `r9 = 0` before the call, which the 6-parameter header prototype cannot express.
+// NONMATCHING (98.60%): stack/register allocation and the constant pool, as above.
 static void disp_2D(CameraId cameraId, void* param) {
     MukiWork* work = get_ptr();
     Mtx mtx;
@@ -462,13 +466,14 @@ static void disp_2D(CameraId cameraId, void* param) {
                               sy - float_8_80421fbc, cr, cg, cb, ca);
         n = work->field_24 % 12;
         if (n >= 0 && n <= 5) {
-            volatile GXColor cA;
-            volatile GXColor cB;
+            GXColor cA;
+            GXColor cB;
             PSMTXScale(mtx, float_0p5_80421fd0, float_0p5_80421fd0, float_0p5_80421fd0);
             PSMTXTransApply(mtx, mtx, left - float_30_80421fd4, sy, float_0_80421fb4);
             cA = *(GXColor*)&dat_80421f64;
             cB = *(GXColor*)&dat_80421f68;
-            btlDispTexPlane3(mtx, 0x45, cA, cA, cB, cB);
+            ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
+                mtx, 0x45, cA, cA, cB, cB, 0);
             PSMTXScale(mtx, float_0p7_80421fd8, float_0p7_80421fd8, float_0p7_80421fd8);
             PSMTXTransApply(mtx, mtx, left - float_35_80421fdc, sy - float_14_80421fe0, float_0_80421fb4);
             iconDispGx2(mtx, 0x10, 0x1ED);
@@ -514,13 +519,14 @@ static void disp_2D(CameraId cameraId, void* param) {
                               sy - float_8_80421fbc, cr, cg, cb, ca);
         n = work->field_28 % 12;
         if (n >= 0 && n <= 5) {
-            volatile GXColor cA;
-            volatile GXColor cB;
+            GXColor cA;
+            GXColor cB;
             PSMTXScale(mtx, float_0p5_80421fd0, float_0p5_80421fd0, float_0p5_80421fd0);
             PSMTXTransApply(mtx, mtx, left - float_30_80421fd4, sy, float_0_80421fb4);
             cA = *(GXColor*)&float_0p74966_80421f74;
             cB = *(GXColor*)&dat_80421f78;
-            btlDispTexPlane3(mtx, 0x45, cA, cA, cB, cB);
+            ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
+                mtx, 0x45, cA, cA, cB, cB, 0);
             PSMTXScale(mtx, float_0p7_80421fd8, float_0p7_80421fd8, float_0p7_80421fd8);
             PSMTXTransApply(mtx, mtx, left - float_35_80421fdc, sy - float_14_80421fe0, float_0_80421fb4);
             iconDispGx2(mtx, 0x10, 0x1ED);

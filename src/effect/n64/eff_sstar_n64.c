@@ -136,17 +136,20 @@ static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
     OSf32tos16(&v.z, &dst[2]);
 }
 
-// The psq_l/psq_st vertex conversions now match: the original calls the SDK OSs16tof32/
-// OSf32tos16 fast-cast inlines (now present in libs/dolsdk2004/include/dolphin/os/OSFastCast.h),
-// which MWCC 2.6 lowers to the GQR5 paired-single path instead of lha/fctiwz. With those and an
-// explicit `off` induction variable the loop, the frame size (0x1c0), the FPR saves f25-f31 and
-// every instruction/constant match. What still differs is GPR colouring: the allocator puts
-// `type` in r22 (coalesced with the dead `param`) where retail has r25, which shifts camId to
-// r25 (retail r26), colR/colG/colB to r23/r24/r26 (retail r22/r23/r24), and the loop's off/src
-// to r29/r26 (retail r24/r29); the GXColor local also lands at 0x2c instead of 0x28. No
-// declaration/assignment/pragma variation tried changes that colouring.
-// NONMATCHING (98.08%): register colouring (type r22 vs r25, colR/G/B, loop off/src) and the
-// GXColor local slot (0x2c vs 0x28); every instruction and constant is present.
+// The psq_l/psq_st vertex conversions match: the original calls the SDK OSs16tof32/OSf32tos16
+// fast-cast inlines (libs/dolsdk2004/include/dolphin/os/OSFastCast.h), which MWCC 2.6 lowers to
+// the GQR5 paired-single path instead of lha/fctiwz. The `b = i * 2;` form of the final tri2 loop
+// (rather than a `b += 2` induction) is what makes the loop emit retail's `mr r24, r22` init. The
+// declaration order below (found by search) is the only one that gives type=r25/colR=r22/colG=r23
+// and matches the GXColor argument slots for tev stages 2/3.
+// Retail has camId=r26, our camId=r24; our colB=r26 where retail has colB=r24 (the two are swapped). The
+// vertex-copy loop's induction registers differ (retail off=r24, src=r29, i=r26, r28=&vtx; ours
+// off=r28, src=r26, i=r25, r29=&vtx) because retail's `off` is `0xE + i*0x1C` -- an induction the
+// compiler creates and our `i*0x1C` + later `+0xE` does not. All source shapes that create that
+// induction (off=i*0x1C+0xE, a loop-carried `off`, a `dst`/`p` pointer) lower the total score by
+// 0.5-2% by shifting the prologue. The first GXColor by-value local is at 0x28 where retail has
+// it at 0x2c (the arg copy is at 0x2c); the inline-return trick moves it the wrong way here.
+// NONMATCHING (99.06%): register colouring only, no differing instruction/constant.
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     u8* base = (u8*)lbl_803A5C90;
@@ -155,18 +158,18 @@ void effSstarDisp(CameraId camId, void* param) {
     Mtx mtx4;
     Mtx mtx3;
     GXTexObj tex;
-    CameraEntry* cam;
     SstarWork* data;
-    u8* src;
-    GXColor color;
-    f32 scale;
-    s32 type;
-    s32 colR;
-    s32 colG;
-    s32 colB;
-    s32 i;
     s32 b;
+    GXColor color;
+    s32 colR;
+    f32 scale;
+    s32 colG;
+    s32 i;
     s32 idx;
+    u8* src;
+    CameraEntry* cam;
+    s32 type;
+    s32 colB;
 
     cam = camGetPtr(camId);
     data = effect->userdata;
@@ -267,14 +270,15 @@ void effSstarDisp(CameraId camId, void* param) {
         for (i = 0; i < 5; i++, src += 0x1C) {
             u32 off = i * 0x1C;
             sstarSetVtx((s16*)&data->vtx[i], data->mtx[(idx - i + 8) % 8], (s16*)src);
-            sstarSetVtx((s16*)((u8*)data->vtx + off + 0xE), data->mtx[(idx - i + 8) % 8],
+            sstarSetVtx((s16*)((u8*)&data->vtx[i] + 0xE), data->mtx[(idx - i + 8) % 8],
                 (s16*)((u8*)(base + 0xC0) + off + 0xE));
         }
         GXInvalidateVtxCache();
         DCFlushRange(data->vtx, 0x8C);
         effSetVtxDescN64((effVtxArray*)data->vtx);
         GXLoadPosMtxImm(cam->view, 0);
-        for (i = 0, b = 0; i < 4; i++, b += 2) {
+        for (i = 0; i < 4; i++) {
+            b = i * 2;
             GXBegin(0x90, 0, 6);
             tri2(b, b + 1, b + 2, b, b + 1, b + 3, b + 2, b + 1);
         }

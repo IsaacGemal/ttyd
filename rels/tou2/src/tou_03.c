@@ -4019,10 +4019,16 @@ EVT_BEGIN(evt_kyaku_8)
     RETURN
 EVT_END()
 
-// The texture-fill loop keeps i/4 and i%4 in volatile registers where retail uses r31/r30, shifting
-// the whole function's callee-saved assignment (`param` lands in r25, not r27), and the min-clamp
-// computes `ratio` in f0 where retail uses f1. All opcodes match; only registers differ.
-// NONMATCHING (97.33%): register allocation in the texture-fill loop and the min-clamp.
+// The two fill loops now reproduce retail's instruction sequence and schedule (the pixel loop keeps
+// `(i / 4) * 0x100` / `(i % 4) * 8` and uses `row = j / 8` / `pct = j % 8` locals; the sparkle loop
+// precomputes `sgrow` / `sgcol` with shifts). What still differs is register colouring only:
+// retail keeps `param` in r27 and the sparkle `sgrow` in r25 (here r25 / r27), the pixel loop's
+// hoisted row/col/0xFF sit in r7 / r8 / r3 (retail r4 / r3 / r5), and the min-clamp's `ratio`
+// lands in f0 (retail f1). The compiler's colouring of the {param, sgrow, sgcol} clique and of the
+// pixel-loop temporaries could not be steered from C (many declaration orders, expression forms,
+// shifts vs multiplies and pragma settings were tried).
+// NONMATCHING (99.47%): integer and float register allocation only.
+#pragma opt_propagation off // needed: with propagation on the second fill loop folds sgcol into a buf+sgcol pointer
 void screen_tev(TevCallbackParam* param) {
     GXTexObj texObj;
     Mtx mtx;
@@ -4041,22 +4047,28 @@ void screen_tev(TevCallbackParam* param) {
 
         for (i = 0; i < 0x40; i++) {
             for (j = 0; j < 0x40; j++) {
-                s32 idx = (j % 8) + (j / 8) * 0x20 + (i / 4) * 0x100;
-                s32 col = (i % 4) * 8;
-                buf[idx + col] = (i & 1) ? 0xFF : 0;
+                int row = j / 8;
+                int pct = j % 8;
+                int idx = (i / 4) * 0x100;
+                idx += row * 0x20;
+                idx += pct;
+                idx += (i % 4) * 8;
+                buf[idx] = (i & 1) ? 0xFF : 0;
             }
             {
                 s32 count = 100 + rand() % 100;
+                s32 sgrow = (i / 4) << 8;
+                s32 sgcol = (i % 4) << 3;
                 for (k = 0; k < count; k++) {
                     s32 len = rand() % 4 + 2;
                     s32 start = rand() % (0x41 - len);
                     u8 val = rand() % 0x100;
-                    s32 m;
-                    for (m = start; m < start + len; m++) {
-                        s32 idx = (m / 8) * 0x20 + (i / 4) * 0x100;
-                        s32 col = (i % 4) * 8;
-                        idx += (m % 8);
-                        buf[idx + col] = val;
+                    for (j = start; j < start + len; j++) {
+                        s32 idx = (j / 8) * 0x20;
+                        idx += sgrow;
+                        idx += (j % 8);
+                        idx += sgcol;
+                        buf[idx] = val;
                     }
                 }
             }
@@ -4113,9 +4125,7 @@ void screen_tev(TevCallbackParam* param) {
             }
             {
                 f32 x = screen_wp->field_0x10;
-                if (x > ratio) {
-                    x = ratio;
-                }
+                x = (ratio > x) ? x : ratio;
                 PSMTXTrans(mtxTrans, x, y, 0.0f);
             }
         }
@@ -4137,6 +4147,7 @@ void screen_tev(TevCallbackParam* param) {
     param->field_14 = 2;
     param->field_10 = 2;
 }
+#pragma opt_propagation reset
 
 s32 tribe_chk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;

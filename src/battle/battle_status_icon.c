@@ -474,21 +474,30 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	return TRUE;
 }
 
-// The three u8->f32 argument conversions are the only remaining difference: the original loads
-// the compiler's 2^52 mask from the unit's pooled .rodata through the vec base
-// (lfd f2, 0x108(r31), r31 = vec3_803011e8); MWCC here emits it as an anonymous @289 pool entry
-// addressed via its own lis/addi. Referencing the four vec3s by name (vec3_803012c0..vec3_803012e4)
-// instead of vec[18..21] DOES fold the mask to 0x108(r31) (86.10%) but batches the vec copies
-// against the conversion setup, so the pointer form (as in the file's other _bsi_*) is kept.
-// NONMATCHING (82.84%): the u8->f32 conversion mask pools as an anonymous @289 with its own
-// lis/addi, where the original folds it to 0x108(r31) (and the fctiwz/byte scheduling that
-// follows).
+// The u8->f32 argument conversions still use the compiler's 2^52 mask. MWCC only folds it to the
+// vec3 .rodata base (`lfd f2, 0x108(r31)`) once the function references some named vec3s; here
+// vec[18]/vec[19] are read by name (the rest through the pointer, as the file's other _bsi_* do).
+// That makes the mask base relative to the pooled base but costs one extra callee-saved register
+// for the `vec` pointer (r28 = pool base), so the entry/disp/unit registers shift by one and the
+// first block of Vec copies schedules differently from the target. The named reads below are the
+// match-only part (natural vec[18]/vec[19] under #else).
+#pragma optimize_for_size on // the target's modulo/division by 0x2d0 is a real divw, not the magic-multiply form
+#ifdef MUST_MATCH
+#define REGEN_VEC18 vec3_803012c0
+#define REGEN_VEC19 vec3_803012cc
+#else
+#define REGEN_VEC18 vec[18]
+#define REGEN_VEC19 vec[19]
+#endif
+// NONMATCHING (90.14%): the u8->f32 mask now folds to 0x108(r31) but the extra `vec` register
+// shifts r25-r31 and batches the first three Vec copies; the target keeps one register for both
+// the pointer and the pool base.
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
-	const Vec* vec = &vec3_803011e8;
 	s32 type = disp->id;
 	s16* counter;
 	s32 turnCount;
 	s32 offset;
+	const Vec* vec = &vec3_803011e8;
 	s8 turns;
 	s8 strength;
 	GXColor startColor;
@@ -539,8 +548,8 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 #endif
 	*(s32*)((u8*)entry + 0x4) = turnCount;
 	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)((u8*)entry + 0xC) = vec[18];
-	*(Vec*)((u8*)entry + 0x18) = vec[19];
+	*(Vec*)(entry->field_0x0 + 0xC) = REGEN_VEC18;
+	*(Vec*)(entry->field_0x0 + 0x18) = REGEN_VEC19;
 	*(Vec*)((u8*)entry + 0x24) = vec[20];
 	color = *(GXColor*)&dat_80422210;
 	color.r = intplGetValue(0xb, offset, 0x168, (f32)startColor.r, (f32)endColor.r);
@@ -551,3 +560,6 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 	*(Vec*)((u8*)entry + 0x30) = vec[21];
 	return TRUE;
 }
+#undef REGEN_VEC18
+#undef REGEN_VEC19
+#pragma optimize_for_size reset

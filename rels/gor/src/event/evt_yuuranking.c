@@ -137,10 +137,16 @@ void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
 #define A74(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x74 + (i) * 4))
 #define AD4(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0xd4 + (i) * 4))
 
-// Ported from rels/yuu/src/event/evt_yuuranking.c's disp_func (identical asm); block order, the nested mode
-// switches and the callee-saved set (stmw r24-r31) match, but the top waku/FontDrawMessage x-offset maths, the
-// GXColor/local stack slots (ours sit 4 bytes off) and the inlined fontlenpitch's copied pointer argument differ.
-// NONMATCHING (96.67%)
+// NONMATCHING (96.67%): ported from rels/yuu/src/event/evt_yuuranking.c's disp_func (identical asm); block order,
+// the nested mode switches and the callee-saved set (stmw r24-r31) match. The original source carries a
+// `f32 k = 1.0f;` variable used unfolded in sc (sc = k*w + 50.0f), the title-box x
+// (work->field_0C + -(k*w + 50.0f) * 0.5f), y (+ k) and the FontDrawMessage x (k * -w * 0.5f); writing those
+// forms reproduces the target's fnmadds/fmadds but lowers the score (96.62-96.64) so the plain forms are kept.
+// The GXColor/local slots sit 4 bytes high because the by-value c1 argument is copied to an extra 0x10 slot
+// (target coalesces it into c1's slot); that also shifts the inlined fontlenpitch pointer (buf 0x7c vs 0x78).
+// Inlining the colour expression removes the shift (739 -> 484 real instruction diffs) but grows the function
+// 5 instructions (96.33%). The rank-list msg[0]=='m'... chain is `cmpwi` in the target but `cmplwi` here
+// (the build is -char unsigned); an (s8) cast fixes it but perturbs scheduling (96.57%).
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     YuRankWork* work = param;
     const char* titleTbl[4] = {

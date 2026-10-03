@@ -1778,22 +1778,29 @@ extern const f32 float_3_8041d888;
 extern const f32 float_0p125_8041d890;
 extern const f32 float_neg148_8041d898;
 
-// NONMATCHING (75.01%): behaviour complete, checked against the asm; Vec copy order and register colouring differ.
+// Fixes that got here: the tail bounce ternaries computed into a local `d` before winTexInit (0xBC/0xBE/0xBB)
+// and the mapSel/visible selection written as an argument-level ternary both stop mwcc hoisting the argument
+// setup past the branch (that was ~90% of the old gap).
+// Remaining: tx/ty are coloured f30/f29 swapped, the dat_8041d7a0 colour load is hoisted above the scroll
+// loads at the top, and the s16->f32 conversion magic is read from a fresh anonymous @N literal where the
+// original reads it at base+0x420 (double_to_int_802f62d8).
+// NONMATCHING (92.86%): behaviour complete; only register colouring and the rodata-base conversion differ.
 void mapGX(WindowWork* work, f32 x, f32 y) {
     static f32 pos_tbl[7][2] = {
         {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
     };
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
-    f32 tx = float_74_8041d86c + (x + w->mapScrollX);
+    f32 top;
     f32 ty = float_120_8041d870 + (y + w->mapScrollY);
     GXColor c0 = dat_8041d7a0;
+    f32 tx = float_74_8041d86c + (x + w->mapScrollX);
     GXColor c1 = dat_8041d7a0;
     GXColor c2 = dat_8041d7a0;
-    f32 top;
     f32 bounce;
-    s32 i;
+    f32 d;
     TubuDt* t;
+    s32 i;
 
     if (w->file != NULL) {
         top = float_120_8041d870 + y;
@@ -1810,21 +1817,13 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 }
             }
             if (w->mapSel == i) {
-                s32 id = 0xBA;
                 GXColor c = c2;
 
-                if ((gp->retraceCount >> 4) & 1) {
-                    id = 0xB9;
-                }
-                winTexSet(id, logMkVec(LV(0x158, vec3_802f6010), tx + (f32)t->x, ty + (f32)t->y), LV(0x164, vec3_802f601c), c);
+                winTexSet(((gp->retraceCount >> 4) & 1) ? 0xB9 : 0xBA, logMkVec(LV(0x158, vec3_802f6010), tx + (f32)t->x, ty + (f32)t->y), LV(0x164, vec3_802f601c), c);
             } else {
-                s32 id = 0xB8;
                 GXColor c = c2;
 
-                if (t->visible != 0) {
-                    id = 0xBA;
-                }
-                winTexSet(id, logMkVec(LV(0x170, vec3_802f6028), tx + (f32)t->x, ty + (f32)t->y), LV(0x17C, vec3_802f6034), c);
+                winTexSet((t->visible != 0) ? 0xBA : 0xB8, logMkVec(LV(0x170, vec3_802f6028), tx + (f32)t->x, ty + (f32)t->y), LV(0x17C, vec3_802f6034), c);
             }
         }
         {
@@ -1855,22 +1854,24 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 k = 6;
             }
             if (icon != -1) {
-                Vec scale = LV(0x194, vec3_802f604c);
+                Vec scale;
                 Vec translate;
 
                 winIconInit();
+                scale = LV(0x194, vec3_802f604c);
                 translate = logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1]));
                 winIconSet(icon, &translate, &scale, &c0);
             }
         }
         if (w->pose != -1) {
             AnimData* anim;
-            f32 scale = float_1p5_8041d884;
+            f32 scale;
             Mtx m;
             s32 n;
 
             animPoseGetAnimPosePtr(WW_S32(work, 0x188));
             anim = animPoseGetAnimDataPtr(WW_S32(work, 0x188));
+            scale = float_1p5_8041d884;
             if (w->flags & 0x2000) {
                 scale = float_3_8041d888;
             }
@@ -1890,13 +1891,33 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0xBF, logMkVec(LV(0x1E8, vec3_802f60a0), x, (y - float_120_8041d870) - float_4_8041d88c), LV(0x1F4, vec3_802f60ac), c1);
         bounce = (f32)__fabs(float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890));
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBD, logMkVec(LV(0x200, vec3_802f60b8), x, top + (float_neg240_8041d894 == w->mapScrollY ? float_0_8041d7bc : bounce)), LV(0x20C, vec3_802f60c4), c1);
+        if (float_neg240_8041d894 == w->mapScrollY) {
+            d = float_0_8041d7bc;
+        } else {
+            d = bounce;
+        }
+        winTexSet(0xBD, logMkVec(LV(0x200, vec3_802f60b8), x, top + d), LV(0x20C, vec3_802f60c4), c1);
+        if (float_neg148_8041d898 == w->mapScrollX) {
+            d = float_0_8041d7bc;
+        } else {
+            d = bounce;
+        }
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBC, logMkVec(LV(0x218, vec3_802f60d0), float_220_8041d868 + x + (float_neg148_8041d898 == w->mapScrollX ? float_0_8041d7bc : bounce), y), LV(0x224, vec3_802f60dc), c1);
+        winTexSet(0xBC, logMkVec(LV(0x218, vec3_802f60d0), float_220_8041d868 + x + d, y), LV(0x224, vec3_802f60dc), c1);
+        if (float_0_8041d7bc == w->mapScrollY) {
+            d = float_0_8041d7bc;
+        } else {
+            d = bounce;
+        }
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBE, logMkVec(LV(0x230, vec3_802f60e8), x, (y - float_120_8041d870) - (float_0_8041d7bc == w->mapScrollY ? float_0_8041d7bc : bounce)), LV(0x23C, vec3_802f60f4), c1);
+        winTexSet(0xBE, logMkVec(LV(0x230, vec3_802f60e8), x, (y - float_120_8041d870) - d), LV(0x23C, vec3_802f60f4), c1);
+        if (float_0_8041d7bc == w->mapScrollX) {
+            d = float_0_8041d7bc;
+        } else {
+            d = bounce;
+        }
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBB, logMkVec(LV(0x248, vec3_802f6100), (x - float_220_8041d868) - (float_0_8041d7bc == w->mapScrollX ? float_0_8041d7bc : bounce), y), LV(0x254, vec3_802f610c), c1);
+        winTexSet(0xBB, logMkVec(LV(0x248, vec3_802f6100), (x - float_220_8041d868) - d, y), LV(0x254, vec3_802f610c), c1);
     }
 }
 extern const Vec vec3_802f6118;

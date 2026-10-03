@@ -336,10 +336,11 @@ static inline void _drawGenkiTex2(s32 id, Vec scale, Vec trans, Vec rot, GXColor
     btlDispTex4(id, &trans, &scale, &rot, &color);
 }
 
-// NONMATCHING (92.83%): the object-loop switch decision tree and most of field_64 match; the
-// `_drawGenkiTex`/`_drawGenkiTex2` by-value helpers are not inlined (the two calls stay `bl`), so
-// field_64's argument slots, the `@NNN` magic-double pool entry and some loop registers differ.
+// NONMATCHING (94.75%): the loop's `i`/`flags` are r26/r25 (original r25/r26); the by-value
+// `_drawGenkiTex` temporaries sit in the outgoing-argument area instead of the original's local
+// slots, and the int->float magic double is a fresh `@826` (the unit's .rodata pool is incomplete).
 static void disp_3D(CameraId cameraId, void* param) {
+    GenkiObject* obj;
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -477,13 +478,13 @@ static void disp_3D(CameraId cameraId, void* param) {
     }
 
     for (i = 0; i < 10; i++) {
-        GenkiObject* obj = &genki->objects[i];
+        obj = &genki->objects[i];
 
         if (obj->field_0 != 2) {
             continue;
         }
         {
-            s16 flags = 0;
+            u16 flags = 0;
             f32 scale = float_1p25_80421d6c;
             s32 icon;
             s32 frame;
@@ -576,7 +577,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             PSMTXScale(mtx, scale, scale, float_1_80421d74);
             PSMTXTransApply(mtx, mtx, obj->field_C,
                             obj->field_10 - float_20_80421d78 * scale, obj->field_14);
+#ifdef MUST_MATCH
+            // The original passes `flags` without a sign extension; with the header's s16
+            // parameter MWCC emits `extsh`, so call it through a u16 prototype.
+            ((void (*)(Mtx, u16, s32, GXColor))iconDispGxCol)(mtx, flags, icon, *(GXColor*)&dat_80421d30);
+#else
             iconDispGxCol(mtx, flags, icon, *(GXColor*)&dat_80421d30);
+#endif
         }
     }
 
@@ -585,20 +592,20 @@ static void disp_3D(CameraId cameraId, void* param) {
 
         PSMTXScale(mtx2, float_0p5_80421d64, float_0p5_80421d64, float_0p5_80421d64);
         BtlUnit_GetPos(mario, &x, &y, &z);
-        y += float_85_80421d7c * (f32)sin(angle);
         x += float_85_80421d7c * (f32)cos(angle);
+        y += float_85_80421d7c * (f32)sin(angle);
         {
             Vec trans;
             Vec rot;
 
-            rot = *(const Vec*)&vec[0x114 / 4];
-            trans = *(const Vec*)&vec[0xFC / 4];
             x += float_10_80421d54;
             y += float_30_80421d80;
             z += float_10_80421d54;
-            trans.z = z;
+            rot = *(const Vec*)&vec[0x114 / 4];
+            trans = *(const Vec*)&vec[0xFC / 4];
             trans.x = x;
             trans.y = y;
+            trans.z = z;
             rot.z = float_6_80421d5c * (f32)genki->field_68;
             _drawGenkiTex(0x41, rot, *(GXColor*)&dat_80421d34, trans, *(const Vec*)&vec[0x108 / 4]);
         }
@@ -607,11 +614,11 @@ static void disp_3D(CameraId cameraId, void* param) {
             Vec rot;
 
             rot = *(const Vec*)&vec[0x138 / 4];
-            rot.z = float_6_80421d5c * -(f32)genki->field_68;
             trans = *(const Vec*)&vec[0x120 / 4];
             trans.x = x;
             trans.y = y;
             trans.z = z;
+            rot.z = float_6_80421d5c * -(f32)genki->field_68;
             _drawGenkiTex2(0x42, *(const Vec*)&vec[0x12C / 4], trans, rot, *(GXColor*)&dat_80421d38);
         }
     }

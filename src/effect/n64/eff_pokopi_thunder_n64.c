@@ -287,34 +287,40 @@ extern const f32 float_neg180_8041fa50;
 extern const f32 float_10_8041fa58;
 extern const f32 float_0p005_8041fa5c;
 
+// Retail builds each Tev colour from the unk_80423220/dat_8041fa20 globals and passes it straight to
+// GXSetTevColor. They are void inlines (not a colour returned and passed on) because that is what makes
+// MWCC pair each colour's build slot with its outgoing argument slot; the direct form gives a different
+// stack layout (same shape as effPokopiPchargeDisp).
 #ifdef MUST_MATCH
-static inline GXColor effPokopiThunderColor1(EffPokopiThunderData* data, s32 a) {
+static inline void effPokopiThunderSetColor1(EffPokopiThunderData* data, s32 a) {
 	GXColor c = unk_80423220;
 	c.r = data->field_0x30;
 	c.g = data->field_0x34;
 	c.b = data->field_0x38;
 	c.a = a;
-	return c;
+	GXSetTevColor(1, c);
 }
 
-static inline GXColor effPokopiThunderColor2(EffPokopiThunderData* data) {
+static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 	GXColor c = *(GXColor*)&dat_8041fa20;
 	c.r = data->field_0x40;
 	c.g = data->field_0x44;
 	c.b = data->field_0x48;
-	return c;
+	GXSetTevColor(2, c);
 }
 #endif
 
-// NONMATCHING (97.20% / 74 differing insns): logic, constants, data, the prologue and loop-2's FP constant
-// registers all match; what is left is mwcc's register colouring/scheduling of the two particle loops. In
-// loop 1 our `p` cursor takes r27 where the target uses r29 (and the `tbl+i` temp the reverse); loop 2's
-// counter takes r30 instead of r26 (so `uoff`/`cb` shift too); and the amp's `8.0f * scale` is hoisted to
-// the loop-2 preheader instead of being sunk into the branch as the target does. The second GXSetTevColor
-// colour is built in the sp+0xc argument slot instead of sp+0x10. Declaration order and every loop-1
-// statement permutation were hill-climbed from 192 to 74 differing instructions and are exhausted
+// NONMATCHING (97.23% / 63 differing insns): logic, constants, data, the prologue, the colour stack slots
+// (built by the two void inlines above) and loop-2's FP constant registers all match; what is left is
+// mwcc's register colouring/scheduling of the two particle loops. In loop 1 our `p` cursor takes r27 where
+// the target uses r29 (and the `tbl+i` temp the reverse); loop 2's counter takes r30 instead of r26 (so
+// `uoff` and the `cr`/`cg`/`cb` zero-init shift too, and the trailing tri2 loop's bound follows `i`); and
+// the amp's `8.0f * scale` is hoisted to the loop-2 preheader instead of being rematerialised in the branch
+// as the target does. Declaration order (all 630 pairwise swaps), every loop-1 statement permutation, the
+// loop-2 statement order, the p[] assignment order and the loop init shapes were tried and none beat this;
+// the angle average is `/ 2.0f` (strength-reduced to the 0.5 pool multiply) as in effPokopiThunderMain.
 //
-// NONMATCHING (97.20%): 74 instructions differ only in mwcc register colouring/scheduling (see above).
+// NONMATCHING (97.23%): 63 instructions differ only in mwcc register colouring/scheduling (see above).
 void effPokopiThunderDisp(CameraId camId, void* param) {
 	s32 t1;
 	GXTexObj texObj;
@@ -369,24 +375,24 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetCurrentMtx(0);
 #ifdef MUST_MATCH
-	color = effPokopiThunderColor1(data, field3C);
+	effPokopiThunderSetColor1(data, field3C);
 #else
 	color = unk_80423220;
 	color.r = data->field_0x30;
 	color.g = data->field_0x34;
 	color.b = data->field_0x38;
 	color.a = field3C;
-#endif
 	GXSetTevColor(1, color);
+#endif
 #ifdef MUST_MATCH
-	color2 = effPokopiThunderColor2(data);
+	effPokopiThunderSetColor2(data);
 #else
 	color2 = *(GXColor*)&dat_8041fa20;
 	color2.r = data->field_0x40;
 	color2.g = data->field_0x44;
 	color2.b = data->field_0x48;
-#endif
 	GXSetTevColor(2, color2);
+#endif
 	GXSetNumChans(0);
 	GXSetNumTevStages(4);
 	GXSetTevOrder(0, 0, 0, 0xff);
@@ -476,7 +482,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 			} else if (a2 - a1 < -180.0f) {
 				a2 += 360.0f;
 			}
-			ang = (a1 + a2) * 0.5f;
+			ang = (a1 + a2) / 2.0f;
 		}
 		u = (0x80 - uoff) << 5;
 		f20 = 8.0f * scale * p[56];

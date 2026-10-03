@@ -425,9 +425,16 @@ s32 getLightColor(f32 angle) {
     return 0xFF - result * 2;
 }
 
-// NONMATCHING (87.80%): frame is 0x2a0 (target 0x280) because f24/f25 are saved in addition to f26-f31
-// (target saves f26-f31 only), so FPR pressure is still off; the entry-loop matrix/GXBegin scheduling,
-// the by-value GXColor copies and the background halfW/halfH colouring follow from that.
+// What is still off is integer register allocation: the original keeps the string-loop `msg` in r20 and its
+// loop counter in r17, while ours lands `msg` in r17 and the counter in r21, which cascades through the entry
+// loop (the original keeps &float_25 in r14 and spills &float_640 from the loop preheader; ours spills both,
+// adding one 4-byte slot and shifting every local -0x10). The first-vertex-region scheduling (the order/operand
+// of the four halfW/halfH `fmuls`) and the entry-loop camPos/camUp/target vec copies also differ. The
+// 0.5f/0.0f literals in the entry loop and 0.6f in the string loop are deliberate: they make MWCC reload those
+// constants each use like the target instead of hoisting them into extra callee-saved FPRs (the target loads
+// them from the named symbols).
+// NONMATCHING (90.17%): text differs only in register allocation and instruction scheduling; frame and FPR
+// saves match.
 void display_func(CameraId cameraId, void* param) {
     SysWork* work = param;
     CameraEntry* cam = camGetPtr(cameraId);
@@ -450,7 +457,7 @@ void display_func(CameraId cameraId, void* param) {
     s32 i;
     s32 lightColor;
     s32 revealed;
-    u8 alpha;
+    s32 alpha;
     f32 halfW;
     f32 halfH;
     f32 w;
@@ -501,7 +508,7 @@ void display_func(CameraId cameraId, void* param) {
 
     lightColor = getLightColor(float_90_sys_00001ae8 + work->field_0x8);
     color = *(GXColor*)&dat_sys_000019cc;
-    color.r = color.g = color.b = lightColor;
+    color.b = color.g = color.r = lightColor;
     GXSetChanMatColor(GX_COLOR0A0, color);
 
     PSMTXTrans(mtx, zero_sys_00001ad8, float_neg40_sys_00001b34, zero_sys_00001ad8);
@@ -534,8 +541,8 @@ void display_func(CameraId cameraId, void* param) {
     msg = msgSearch((const char*)msg_tbl[work->field_0x14]);
     FontDrawStart();
 
-    revealed = work->field_0x18 / (1 << 8);
-    alpha = (u8)work->field_0x18;
+    revealed = work->field_0x18 / 256;
+    alpha = work->field_0x18 % 256;
     msg16 = (const u16*)msg;
     for (i = 0; i < 0x2C; i += 2, msg16++) {
         if (i >= strlen(msg)) {
@@ -560,7 +567,7 @@ void display_func(CameraId cameraId, void* param) {
         PSMTXTrans(mtx, zero_sys_00001ad8, float_57p5_sys_00001b40, zero_sys_00001ad8);
 #endif
         PSMTXConcat(mtx3, mtx, mtx3);
-        PSMTXScale(mtx2, float_0p6_sys_00001b44, float_0p6_sys_00001b44, float_0p6_sys_00001b44);
+        PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
         PSMTXConcat(mtx, mtx2, mtx);
         if (i / 2 < revealed) {
             FontDrawStart_alpha(0xFF);
@@ -630,7 +637,7 @@ void display_func(CameraId cameraId, void* param) {
         GXLoadTexObj(&tex, GX_TEXMAP1);
         lightColor = getLightColor(entry->angle);
         color = *(GXColor*)&dat_sys_000019d4;
-        color.r = color.g = color.b = lightColor;
+        color.b = color.g = color.r = lightColor;
         GXSetChanMatColor(GX_COLOR0A0, color);
         if ((u32)gp->language != 0) {
             PSMTXScale(mtx2, float_0p8_sys_00001b08, float_0p8_sys_00001b08, float_0p8_sys_00001b08);
@@ -650,34 +657,34 @@ void display_func(CameraId cameraId, void* param) {
         camPos.z = float_1_sys_00001b18 / (f32)tan(double_0p21817_sys_00001b50);
         camUp = vec3_sys_000019e4;
         target = vec3_sys_000019f0;
-        C_MTXLightPerspective(mtx4, float_25_sys_00001b58, float_640_sys_00001b5c, float_0p5_sys_00001ae0,
-                              float_0p5_sys_00001ae0, float_0p5_sys_00001ae0, float_0p5_sys_00001ae0);
+        C_MTXLightPerspective(mtx4, float_25_sys_00001b58, float_640_sys_00001b5c, 0.5f,
+                              0.5f, 0.5f, 0.5f);
         C_MTXLookAt(mtx5, &camPos, &camUp, &target);
         PSMTXConcat(mtx4, mtx5, mtx4);
         if ((u32)gp->language != 0) {
-            PSMTXScale(mtx2, float_0p5_sys_00001ae0, float_0p5_sys_00001ae0, float_0p5_sys_00001ae0);
+            PSMTXScale(mtx2, 0.5f, 0.5f, 0.5f);
         } else {
             PSMTXScale(mtx2, float_1_sys_00001b18, float_1_sys_00001b18, float_1_sys_00001b18);
         }
         PSMTXTrans(mtx, entry->x, entry->y, entry->z);
         PSMTXConcat(mtx2, mtx, mtx);
         PSMTXConcat(mtx4, mtx, mtx);
-        PSMTXTrans(mtx2, (f32)-frame, zero_sys_00001ad8, zero_sys_00001ad8);
+        PSMTXTrans(mtx2, (f32)-frame, 0.0f, 0.0f);
         PSMTXConcat(mtx, mtx2, mtx);
         GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        w = float_44_sys_00001b48 * float_0p5_sys_00001ae0;
+        w = float_44_sys_00001b48 * 0.5f;
         GXPosition3f32(-w, float_22_sys_00001b60, 0.0f);
-        GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
         GXTexCoord2f32(0.0f, 0.0f);
         GXPosition3f32(float_22_sys_00001b60, float_22_sys_00001b60, 0.0f);
-        GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
         GXTexCoord2f32(1.0f, 0.0f);
         GXPosition3f32(float_22_sys_00001b60, -w, 0.0f);
-        GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
         GXTexCoord2f32(1.0f, 1.0f);
         GXPosition3f32(-w, -w, 0.0f);
-        GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
         GXTexCoord2f32(0.0f, 1.0f);
     }
 

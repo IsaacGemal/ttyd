@@ -1202,7 +1202,11 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
 // like the target; a single-expression form materialises it in a fresh register. The
 // residual: `pos->y` lands in f0 where the target has f1 (so the 0.0 load is scheduled
 // after pos->x); the second block has the same rotation; the tail uses the `f32 ny`
-// temp and schedules the final fnmsubs differently.
+// temp and schedules the final fnmsubs differently. All 140 valid orderings of the
+// first block's load/add/store statements compile identically, as do single-expression,
+// local-constant, shared-temp and volatile forms and opt_propagation/opt_lifetimes/
+// opt_common_subs/opt_dead_assignments off; only the register rotation is left, so this
+// is permuter work.
 // NONMATCHING (88.09%): see above.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;

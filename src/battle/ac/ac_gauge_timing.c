@@ -83,13 +83,14 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original saves r28-r31 with `stmw` and keeps `work` in r29.
 #pragma optimize_for_size on
-// The two `field_34[0] & 2` tests emit a single `beq skip` where the original emits a redundant
-// `bne` to the next instruction before `beq skip` (the pattern occurs nowhere else in the tree and
-// does not reproduce from any source shape tried); the default-case conversion
-// field_34[0x14]/100*field_0x08+50 loads field_34[0x14] into r0 instead of r4, which shifts the
-// A-conversion / B-load / hundred-load schedule (fdivs/fsubs/fmadds themselves already match).
-// NONMATCHING (99.01%): two `field_34[0] & 2` tests miss a redundant `bne` before `beq skip`;
-// default-case int->float puts field_34[0x14] in r0 instead of r4.
+// The two `field_34[0] & 2` short-circuit tests emit a single `beq skip` where the original emits
+// a redundant `bne` to the next instruction before `beq skip` (the pattern occurs nowhere else in
+// the tree and does not reproduce from any source shape tried: nested ifs, `!= 0`, explicit
+// empty/goto else, do/while(0), ternary, every GC compiler version, and scheduling/opt pragmas all
+// give the single branch).
+// NONMATCHING (99.58%): two `field_34[0] & 2` tests miss a redundant `bne` before `beq skip`.
+// The default-case field_34[0x14]/100*field_0x08+50 conversion matches r4 (not r0) once the /100
+// constant is read plainly instead of through MATCH_F32's volatile (float_50 stays volatile).
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
 #ifdef MUST_MATCH
     // MWCC folds two bases derived directly from `work` into one register; deriving both from
@@ -283,7 +284,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             }
             {
                 s32 a = *(s32*)&work->actionCommands.field_34[0x14];
-                f32 f = (f32)a / MATCH_F32(float_100_80421874);
+                f32 f = (f32)a / float_100_80421874;
                 dec->field_0x04 = f * (f32)dec->field_0x08 + MATCH_F32(float_50_804218c8);
             }
             if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
