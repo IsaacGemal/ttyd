@@ -72,6 +72,7 @@ const char str_8030041C[] = "SFX_BTL_SAC_HEART_SHOOT1";
 const char str_80300438[] = "SFX_HP_RECOVER_SHINE2";
 const char str_80300450[] = "stardust";
 const char str_8030045C[] = "M_C_2C";
+const char str_80300470[] = "SFX_BTL_SAC_HEART_SHOOT2";
 
 const f32 float_30_80421d80 = 30.0f;
 const f32 float_1p25_80421d6c = 1.25f;
@@ -138,7 +139,7 @@ const f32 float_344_80421dfc = 344.0f;
 const f32 float_576_80421e00 = 576.0f;
 const f32 float_1296_80421e04 = 1296.0f;
 const f32 float_1p125_80421e08 = 1.125f;
-extern char str_80300470[];
+
 
 
 typedef struct GenkiStar {
