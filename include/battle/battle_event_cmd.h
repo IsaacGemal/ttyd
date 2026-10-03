@@ -326,3 +326,8 @@ USER_FUNC(btlevtcmd_AcSetGaugeParam);
 USER_FUNC(btlevtcmd_AudienceAppeal);
 USER_FUNC(btlevtcmd_AcSetOutputParam);
 s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* out);
+USER_FUNC(btlevtcmd_FallPartsPosition);
+USER_FUNC(btlevtcmd_SetPartsDiveSound);
+USER_FUNC(btlevtcmd_SetPartsJumpSound);
+USER_FUNC(btlevtcmd_SetPartsRunSound);
+USER_FUNC(btlevtcmd_SetPartsWalkSound);
