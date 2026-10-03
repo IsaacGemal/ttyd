@@ -163,7 +163,7 @@ static inline f32 sqrtf(f32 x) {
     const f64 _half = .5;
     const f64 _three = 3.0;
 
-    if (x > 0.0f) {
+    if (x > float_0_8041a7a4) {
         f64 guess = __frsqrte(x);
         guess = _half * guess * (_three - guess * guess * x);
         guess = _half * guess * (_three - guess * guess * x);
@@ -1966,23 +1966,23 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             ny = normal.y;
             nx = normal.x;
             wp2 = marioGetPtr();
-            ny100 = 100.0f * ny;
+            ny100 = float_100_8041a7f8 * ny;
 
             *(f32*)&wp2->field_0x1F0[0x28] =
-                (f32)(s32)(100.0f * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            100.0f * nz,
+                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                                                            float_100_8041a7f8 * nz,
                                                             ny100) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
-                100.0f;
+                float_100_8041a7f8;
             *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
             *(f32*)&wp2->field_0x1F0[0x30] =
-                (f32)(s32)(100.0f * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            100.0f * nx,
+                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                                                            float_100_8041a7f8 * nx,
                                                             ny100) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
-                100.0f;
+                float_100_8041a7f8;
             ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(nx * nx + nz * nz), -ny);
             if (!(wp->flags & 0x1000000)) {
                 f32 lim = (wp->dispFlags & 0x1000000) ? float_75_8041a840 : float_50_8041a844;
@@ -1994,7 +1994,7 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
         }
         if (wp->flags & 0x1000000) {
             if (hit != NULL) {
-                f32 y = (f32)(s32)(100.0f * hitPos.y + f26) / 100.0f;
+                f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
 
                 y = y - float_0p05_8041a848 * y0;
                 hitPos.y = y;
@@ -2009,7 +2009,7 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             }
         } else {
             if (hit != NULL) {
-                f32 y = (f32)(s32)(100.0f * hitPos.y + f26) / 100.0f;
+                f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
 
                 hitPos.y = y;
                 if (pos->y + y0 >= y) {
@@ -2989,7 +2989,7 @@ HitEntry* N_dou10_yoko_yari3(void) {
 // ROUND_MILLI (1000, sign-dependent) there was the main miss (73.93%). A top-declared
 // `wp2 = marioGetPtr()` for the field writes (the inline-declaration form makes MWCC loop
 // forever) plus non-volatile hitPos/n locals (the volatile forced a different copy/round
-// schedule) brought it to 86.93%. Using the literal `100.0f` in the two `angleABf` arguments
+// schedule) brought it to 86.93%. Using the literal `float_100_8041a7f8` in the two `angleABf` arguments
 // and a searched FPR declaration order (`py, px, off, s, rad, pz, h, angle, c`) reached 87.14%.
 // Still differs: the int->float magic double and the five sqrtf coefficient doubles are not
 // folded into the rodata base pool (routing sqrtf through base hangs MWCC here); the
@@ -3090,11 +3090,11 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     if (hit != NULL) {
         wp2 = marioGetPtr();
         *(f32*)&wp2->field_0x1F0[0x28] = ROUND_CENTI(
-            angleABf(float_0_8041a7a4, float_0_8041a7a4, 100.0f * n.z, 100.0f * n.y) -
+            angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * n.z, float_100_8041a7f8 * n.y) -
             float_180_8041a7cc);
         *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
         *(f32*)&wp2->field_0x1F0[0x30] = ROUND_CENTI(
-            angleABf(float_0_8041a7a4, float_0_8041a7a4, 100.0f * n.x, 100.0f * n.y) -
+            angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * n.x, float_100_8041a7f8 * n.y) -
             float_180_8041a7cc);
         *(f32*)&wp->field_0x1F0[0x24] =
             angleABf(float_0_8041a7a4, float_0_8041a7a4, sqrtf(n.x * n.x + n.z * n.z), -n.y);
@@ -3567,3 +3567,65 @@ const Vec vec3_802c5820 = { 0.0f, 1.0f, 0.0f };
 __declspec(section ".data") u32 gap_05_8030E5DC_data = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
+
+//.sdata2 (defined after the code so the uses stay loads of the named symbols)
+const f32 float_1000_8041a7a0 = 1000.0f;
+const f32 float_0_8041a7a4 = 0.0f;
+const f32 float_4_8041a7a8 = 4.0f;
+const f32 float_11_8041a7ac = 11.0f;
+const f32 float_13_8041a7b0 = 13.0f;
+const f32 float_45_8041a7b4 = 45.0f;
+const f32 float_5_8041a7b8 = 5.0f;
+const f32 float_1_8041a7bc = 1.0f;
+const f32 float_360_8041a7c0 = 360.0f;
+const f32 float_0p5_8041a7c4 = 0.5f;
+const f32 float_neg0p5_8041a7c8 = -0.5f;
+const f32 float_180_8041a7cc = 180.0f;
+const f32 float_0p125_8041a7d0 = 0.125f;
+const f32 float_0p25_8041a7d4 = 0.25f;
+const f32 float_0p75_8041a7d8 = 0.75f;
+const f32 float_neg1_8041a7dc = -1.0f;
+const f32 float_3p1416_8041a7e0 = 3.14159274f;
+const f32 float_0p1_8041a7e4 = 0.100000001f;
+const f32 float_2_8041a7e8 = 2.0f;
+const f32 float_18p5_8041a7ec = 18.5f;
+const f32 float_3_8041a7f0 = 3.0f;
+const f32 float_0p265_8041a7f4 = 0.264999986f;
+const f32 float_100_8041a7f8 = 100.0f;
+const f32 float_10_8041a7fc = 10.0f;
+const f32 float_40_8041a800 = 40.0f;
+const f32 float_neg10_8041a804 = -10.0f;
+const f32 float_60_8041a808 = 60.0f;
+const f32 float_0p8_8041a80c = 0.800000012f;
+const f32 float_20_8041a810 = 20.0f;
+const f32 float_8_8041a814 = 8.0f;
+const f32 float_270_8041a818 = 270.0f;
+const f32 float_90_8041a81c = 90.0f;
+const f32 float_27p75_8041a820 = 27.75f;
+const f32 float_12_8041a824 = 12.0f;
+const f32 float_7_8041a828 = 7.0f;
+const f32 float_30_8041a82c = 30.0f;
+const f32 float_16p8_8041a830 = 16.7999992f;
+const f32 float_neg23p7_8041a834 = -23.7000008f;
+const f32 float_5p8_8041a838 = 5.80000019f;
+const f32 float_9_8041a83c = 9.0f;
+const f32 float_75_8041a840 = 75.0f;
+const f32 float_50_8041a844 = 50.0f;
+const f32 float_0p05_8041a848 = 0.0500000007f;
+const f32 float_47_8041a84c = 47.0f;
+const f32 float_18_8041a850 = 18.0f;
+const f32 float_0p01_8041a854 = 0.00999999978f;
+const f32 float_neg10000_8041a858 = -10000.0f;
+const f32 float_8p64_8041a85c = 8.63999939f;
+const f32 float_105_8041a860 = 105.0f;
+const f32 float_0p425_8041a864 = 0.425000012f;
+const f32 float_0p375_8041a868 = 0.375f;
+const f32 float_37_8041a86c = 37.0f;
+const f32 float_neg3000_8041a870 = -3000.0f;
+const f32 float_5000_8041a874 = 5000.0f;
+const f32 float_neg0p4_8041a878 = -0.400000006f;
+const f32 float_neg0p06_8041a87c = -0.0599999987f;
+const f32 float_neg0p04_8041a880 = -0.0399999991f;
+const f32 float_neg0p02_8041a884 = -0.0199999996f;
+const f32 float_1037_8041a888 = 1037.0f;
+const f32 float_6_8041a88c = 6.0f;
