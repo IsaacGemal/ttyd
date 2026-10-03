@@ -248,3 +248,4 @@ extern const f32 float_26_8041b1b0;
 extern const f32 float_neg26_8041b1b4;
 extern Vec vec3_802cce50;
 void partyRideMain(PartyEntry* party);
+void L_allPartyRideOn(void);

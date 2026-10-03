@@ -59,6 +59,7 @@ void kpa2DMain(void);
 void kpa3DMain(void);
 void kpaFireMain(void);
 s32 kpaFireAttackCheck(void);
+s32 kpaJumpChk(void);
 s32 kpaGetBodyStatus(void);
 f32 kpaGetBaseScale(s32 index);
 s32 kpaGetStageViewType(void);

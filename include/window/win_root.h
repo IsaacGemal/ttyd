@@ -62,3 +62,4 @@ typedef struct WinRootVecs {
 // The 0xC-byte record at work+0x404 that sort_4_3_func bubble-sorts; field names are placeholders
 // for the swap (only the 3-word size matters).
 typedef struct SortRec { u32 a; u32 b; u32 c; } SortRec;
+

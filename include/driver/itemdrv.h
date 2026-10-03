@@ -51,6 +51,7 @@ void itemForceGet(ItemEntry* item);
 ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist);
 ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist);
 void itemNokoForceGet(ItemEntry* item);
+void itemPickUp(ItemEntry* item);
 #include "driver/hitdrv.h"
 HitEntry* itemHitCheckSide(ItemEntry* item, f32* x, f32* z, s32* angle, f32 dx, f32 dz);
 s32 itemGetCheck(ItemEntry* entry);
