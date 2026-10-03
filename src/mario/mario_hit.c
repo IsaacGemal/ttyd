@@ -2996,8 +2996,8 @@ HitEntry* N_dou10_yoko_yari3(void) {
 // ROUND_MILLI (1000, sign-dependent) there was the main miss (73.93%). A top-declared
 // `wp2 = marioGetPtr()` for the field writes (the inline-declaration form makes MWCC loop
 // forever) plus non-volatile hitPos/n locals (the volatile forced a different copy/round
-// schedule) brought it to 86.93%. Reading `float_100_8041a7f8` through a volatile pointer in the two `/ 100` divisions
-// and a searched FPR declaration order (`py, px, off, s, rad, pz, h, angle, c`) reached 87.14%.
+// schedule) brought it to 86.93%. A searched FPR declaration order (`py, px, off, s, rad, pz, h, angle, c`) reached 87.14%
+// (float_100 is a plain read here; the volatile reloads are in marioSearchHead).
 // Still differs: the callee-saved GPR set (ours keeps hit in r30 and reuses r30 for
 // the base, so the hit test is `cmplwi r30` instead of the original's `mr r29,r3`); and the
 // ROUND_CENTI float_100 loads are hoisted into f31/f30 (callee-saved) instead of the
