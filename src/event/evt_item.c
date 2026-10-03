@@ -12,8 +12,6 @@
 // propagation off; lifetimes off holds retail's FPR colouring across the first-call block.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// Included here (not at the top): the unit header declares the named 0.5 pool constant, whose
-// declaration point is load-bearing for the first-block fmadds operand order.
 #include "evt/evt_item.h"
 
 #ifdef MUST_MATCH
@@ -92,58 +90,258 @@ static inline f32 item_cos_approx(f32 angle) {
 	}
 	return v;
 }
-
-USER_FUNC(evt_item_get_important_item) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	MarioWork* mario = marioGetPtr();
-	f32 mx = mario->position.x;
-	f32 my = mario->position.y + *(f32*)((u8*)mario + 0x1B8);
-	f32 mz = mario->position.z;
-	f32 f2, f4, f5;
-	f32 t;
-	f32 scale;
-	f32 d;
-
-	scale = 0.5f;
-	if (isFirstCall) {
-		d = distABf(mx, mz, item->position.x, item->position.z) / scale;
-		f4 = my - item->position.y;
-		f2 = 0.1f * d;
-		t = f2 * EI_HALF + f4 / d;
-		event->userdata[0] = *(s32*)&d;
-		event->userdata[1] = *(s32*)&t;
-		event->userdata[2] = *(s32*)&scale;
-		event->field_84 = 0;
-	}
-
-	d = event->userdataf[0];
-	t = event->userdataf[1];
-	scale = event->userdataf[2];
-
-	f2 = 6.2831855f * angleABf(item->position.x, item->position.z, mx, mz);
-	f5 = f2 / 360.0f;
-	item->position.x = scale * item_sin_approx(f5) + item->position.x;
-	item->position.z = item->position.z - scale * item_cos_approx(f5);
-	item->position.y = item->position.y + t;
-
-	t = t - 0.1f;
-	d = d - 1.0f;
-	if (d < 0.0f) {
-		item->position.x = mx;
-		item->position.y = my;
-		item->position.z = mz;
-		return EVT_RETURN_DONE;
-	}
-	event->userdata[0] = *(s32*)&d;
-	event->userdata[1] = *(s32*)&t;
-	return EVT_RETURN_BLOCK;
-}
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
+// itemEntry's third parameter is u16 (retail stores it with `sth` and masks it with `clrlwi`).
+USER_FUNC(evt_item_entry) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	s32 type = evtGetValue(event, args[1]);
+	s32 a6 = evtGetValue(event, args[2]);
+	s32 a7 = evtGetValue(event, args[3]);
+	s32 a8 = evtGetValue(event, args[4]);
+	s32 a3 = evtGetValue(event, args[5]);
+	s32 evtId = args[6];
+	s32 a5 = evtGetValue(event, args[7]);
+	itemEntry((char*)name, type, (u16)a3, evtId, a5, (f32)a6, (f32)a7, (f32)a8);
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_delete) {
+	s32* args = event->args;
 
-#pragma opt_propagation off // needed: with propagation on the step value is coalesced into r27 instead of dividing into r4
+	itemDelete((char*)evtGetValue(event, args[0]));
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_delete_check) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+
+	if (item != NULL) {
+		evtSetValue(event, args[1], 0);
+	}
+	else {
+		evtSetValue(event, args[1], 1);
+	}
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_flag_on) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	u16 flag = args[1];
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	itemFlagOn(item, flag);
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_flag_off) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	u16 flag = args[1];
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	itemFlagOff(item, flag);
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_status_on) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	s32 mask = args[1];
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	itemStatusOn(item, mask);
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_move_dir_speed) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	ItemEntry* item = itemNameToPtr((char*)name);
+	s32 dir = evtGetValue(event, args[1]);
+	f32 speed = evtGetFloat(event, args[2]);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	*(s32*)((u8*)item + 0x54) = dir;
+	*(f32*)((u8*)item + 0x50) = speed;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_jump_power) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	f32 power = evtGetFloat(event, args[1]);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	*(f32*)((u8*)item + 0x58) = power;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_gravity) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	f32 gravity = evtGetFloat(event, args[1]);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	*(f32*)((u8*)item + 0x84) = gravity;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_bound_rate) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	f32 rate = evtGetFloat(event, args[1]);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	*(f32*)((u8*)item + 0x80) = rate;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_bound_limit) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	s32 limit = evtGetValue(event, args[1]);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	*(s32*)((u8*)item + 0x88) = limit;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_get_item) {
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, event->args[0]));
+
+	if (isFirstCall) {
+		itemForceGet(item);
+		return EVT_RETURN_BLOCK;
+	}
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	if (!(item->flags & 1)) {
+		return EVT_RETURN_DONE;
+	}
+	if ((u32)itemStatus(item, 2) != 0) {
+		return EVT_RETURN_DONE;
+	}
+	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+USER_FUNC(evt_item_get_item_end_wait) {
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, event->args[0]));
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	if (!(item->flags & 1)) {
+		return EVT_RETURN_DONE;
+	}
+	if ((u32)itemStatus(item, 2) != 0) {
+		return EVT_RETURN_DONE;
+	}
+	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+}
+USER_FUNC(evt_item_change_mode) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	s32 mode = evtGetValue(event, args[1]);
+	ItemEntry* item = itemNameToPtr((char*)name);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	itemModeChange(item, (u16)mode);
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_bound_next_speed) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	f32 speed = evtGetFloat(event, args[1]);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	*(f32*)((u8*)item + 0x94) = speed;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_bound_next_dir) {
+	s32* args = event->args;
+	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
+	s32 dir = evtGetValue(event, args[1]);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	*(s32*)((u8*)item + 0x90) = dir;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_position) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	f32 x = evtGetFloat(event, args[1]);
+	f32 y = evtGetFloat(event, args[2]);
+	f32 z = evtGetFloat(event, args[3]);
+	ItemEntry* item = itemNameToPtr((char*)name);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	item->position.x = x;
+	item->position.y = y;
+	item->position.z = z;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_get_position) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	s32 outX = args[1];
+	s32 outY = args[2];
+	s32 outZ = args[3];
+	ItemEntry* item = itemNameToPtr((char*)name);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	evtSetFloat(event, outX, item->position.x);
+	evtSetFloat(event, outY, item->position.y);
+	evtSetFloat(event, outZ, item->position.z);
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_scale) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	f32 scale = evtGetFloat(event, args[1]);
+	ItemEntry* item = itemNameToPtr((char*)name);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	item->scale = scale;
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_item_set_alpha) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	u8 alpha = evtGetValue(event, args[1]);
+	ItemEntry* item = itemNameToPtr((char*)name);
+
+	if (item == NULL) {
+		return EVT_RETURN_DONE;
+	}
+	item->alpha = alpha;
+	return EVT_RETURN_DONE;
+}
+
+
+#pragma opt_propagation off
+// needed: with propagation on the step value is coalesced into r27 instead of dividing into r4
 USER_FUNC(evt_item_move_3d_position) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -188,249 +386,60 @@ USER_FUNC(evt_item_move_3d_position) {
 	return EVT_RETURN_DONE;
 }
 #pragma opt_propagation reset
-USER_FUNC(evt_item_set_alpha) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	u8 alpha = evtGetValue(event, args[1]);
-	ItemEntry* item = itemNameToPtr((char*)name);
 
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	item->alpha = alpha;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_scale) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	f32 scale = evtGetFloat(event, args[1]);
-	ItemEntry* item = itemNameToPtr((char*)name);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	item->scale = scale;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_get_position) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	s32 outX = args[1];
-	s32 outY = args[2];
-	s32 outZ = args[3];
-	ItemEntry* item = itemNameToPtr((char*)name);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	evtSetFloat(event, outX, item->position.x);
-	evtSetFloat(event, outY, item->position.y);
-	evtSetFloat(event, outZ, item->position.z);
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_position) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	f32 x = evtGetFloat(event, args[1]);
-	f32 y = evtGetFloat(event, args[2]);
-	f32 z = evtGetFloat(event, args[3]);
-	ItemEntry* item = itemNameToPtr((char*)name);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	item->position.x = x;
-	item->position.y = y;
-	item->position.z = z;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_bound_next_dir) {
+#pragma opt_propagation off
+#pragma opt_lifetimes off
+USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	s32 dir = evtGetValue(event, args[1]);
+	MarioWork* mario = marioGetPtr();
+	f32 mx = mario->position.x;
+	f32 my = mario->position.y + *(f32*)((u8*)mario + 0x1B8);
+	f32 mz = mario->position.z;
+	f32 f2, f4, f5;
+	f32 t;
+	f32 scale;
+	f32 d;
 
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	*(s32*)((u8*)item + 0x90) = dir;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_bound_next_speed) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	f32 speed = evtGetFloat(event, args[1]);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	*(f32*)((u8*)item + 0x94) = speed;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_change_mode) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	s32 mode = evtGetValue(event, args[1]);
-	ItemEntry* item = itemNameToPtr((char*)name);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	itemModeChange(item, (u16)mode);
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_get_item_end_wait) {
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, event->args[0]));
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	if (!(item->flags & 1)) {
-		return EVT_RETURN_DONE;
-	}
-	if ((u32)itemStatus(item, 2) != 0) {
-		return EVT_RETURN_DONE;
-	}
-	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
-USER_FUNC(evt_item_get_item) {
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, event->args[0]));
-
+	scale = EI_HALF;
 	if (isFirstCall) {
-		itemForceGet(item);
-		return EVT_RETURN_BLOCK;
+		d = distABf(mx, mz, item->position.x, item->position.z) / scale;
+		f4 = my - item->position.y;
+		f2 = 0.1f * d;
+		t = f2 * EI_HALF + f4 / d;
+		event->userdata[0] = *(s32*)&d;
+		event->userdata[1] = *(s32*)&t;
+		event->userdata[2] = *(s32*)&scale;
+		event->field_84 = 0;
 	}
-	if (item == NULL) {
+
+	d = event->userdataf[0];
+	t = event->userdataf[1];
+	scale = event->userdataf[2];
+
+	f2 = 6.2831855f * angleABf(item->position.x, item->position.z, mx, mz);
+	f5 = f2 / 360.0f;
+	item->position.x = scale * item_sin_approx(f5) + item->position.x;
+	item->position.z = item->position.z - scale * item_cos_approx(f5);
+	item->position.y = item->position.y + t;
+
+	t = t - 0.1f;
+	d = d - 1.0f;
+	if (d < 0.0f) {
+		item->position.x = mx;
+		item->position.y = my;
+		item->position.z = mz;
 		return EVT_RETURN_DONE;
 	}
-	if (!(item->flags & 1)) {
-		return EVT_RETURN_DONE;
-	}
-	if ((u32)itemStatus(item, 2) != 0) {
-		return EVT_RETURN_DONE;
-	}
-	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+	event->userdata[0] = *(s32*)&d;
+	event->userdata[1] = *(s32*)&t;
+	return EVT_RETURN_BLOCK;
 }
-USER_FUNC(evt_item_set_bound_limit) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	s32 limit = evtGetValue(event, args[1]);
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	*(s32*)((u8*)item + 0x88) = limit;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_bound_rate) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	f32 rate = evtGetFloat(event, args[1]);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	*(f32*)((u8*)item + 0x80) = rate;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_gravity) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	f32 gravity = evtGetFloat(event, args[1]);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	*(f32*)((u8*)item + 0x84) = gravity;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_jump_power) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	f32 power = evtGetFloat(event, args[1]);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	*(f32*)((u8*)item + 0x58) = power;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_set_move_dir_speed) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	ItemEntry* item = itemNameToPtr((char*)name);
-	s32 dir = evtGetValue(event, args[1]);
-	f32 speed = evtGetFloat(event, args[2]);
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	*(s32*)((u8*)item + 0x54) = dir;
-	*(f32*)((u8*)item + 0x50) = speed;
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_status_on) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	s32 mask = args[1];
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	itemStatusOn(item, mask);
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_flag_off) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	u16 flag = args[1];
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	itemFlagOff(item, flag);
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_flag_on) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-	u16 flag = args[1];
-
-	if (item == NULL) {
-		return EVT_RETURN_DONE;
-	}
-	itemFlagOn(item, flag);
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_delete_check) {
-	s32* args = event->args;
-	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
-
-	if (item != NULL) {
-		evtSetValue(event, args[1], 0);
-	}
-	else {
-		evtSetValue(event, args[1], 1);
-	}
-	return EVT_RETURN_DONE;
-}
-USER_FUNC(evt_item_delete) {
-	s32* args = event->args;
-
-	itemDelete((char*)evtGetValue(event, args[0]));
-	return EVT_RETURN_DONE;
-}
-
-// itemEntry's third parameter is u16 (retail stores it with `sth` and masks it with `clrlwi`).
-USER_FUNC(evt_item_entry) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	s32 type = evtGetValue(event, args[1]);
-	s32 a6 = evtGetValue(event, args[2]);
-	s32 a7 = evtGetValue(event, args[3]);
-	s32 a8 = evtGetValue(event, args[4]);
-	s32 a3 = evtGetValue(event, args[5]);
-	s32 evtId = args[6];
-	s32 a5 = evtGetValue(event, args[7]);
-	itemEntry((char*)name, type, (u16)a3, evtId, a5, (f32)a6, (f32)a7, (f32)a8);
-	return EVT_RETURN_DONE;
-}
+#ifdef MUST_MATCH
+// The .sdata2 pool's first word. Named, so it lands first in .sdata2 where retail has it; scale uses it too, so the
+// pool holds no second 0.5. Defined after the code so its uses stay loads.
+const f32 float_0p5_8041af58 = 0.5f;
+#endif
