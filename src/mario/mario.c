@@ -916,15 +916,15 @@ void marioInit(void) {
 	partyInit();
 }
 
-// The unit's first .rodata object is the pooled "a_mario" string (str_802C3610 in the target); taking it as
-// a base makes the three vec copies use the target's 0xd0/0xdc/0xe8 offsets from one hoisted base register.
-// What differs is register allocation and the
-// scheduling that follows from it: strBase r30/r29, camId r31/r30, partySlot0 r29/r21, partySlot1 r28/r24,
-// animGroup0 r24/r28, motionId r21/r31 (target/ours); `wp = mp` fails to coalesce (we get
-// `lwz r4, mp; mr r25, r4` where the target loads r25 directly), paperPoseId is loaded straight to r18
-// instead of through r0, and our prevParty0/1 loads are hoisted earlier. Reordering the declarations,
-// the snapshot loads and the restore stores did not move these.
-// NONMATCHING (96.21%): register allocation/scheduling only; all calls and constants match.
+// Calling marioSoundInit() (inlined by the target) makes the three 0x278/0x27C/0x280 stores reuse one
+// `lwz mp`, as the original does; writing them out as three mp->... stores reloads mp each time.
+// The snapshot's callee-saved registers are permuted versus the target (target/ours: camId r31/r30,
+// motionId r21/r31, partySlot0 r29/r21, partySlot1 r28/r24, animGroup0 r24/r28, str r30/r29),
+// `wp = mp` fails to coalesce (extra `mr r25, r4`), and the prevParty0/1 loads and the
+// scale/bottomlessReset Vec word copies are scheduled slightly differently. All calls, constants and
+// the rest of the body match; reordering the declarations, the snapshot loads and the restore stores
+// (all tried) did not move the registers.
+// NONMATCHING (93.47%): register/scheduling permutation of the snapshot and the Vec copies.
 void marioReInit(void) {
 	s32 animGroup1;
 	s32 animGroup2;
@@ -947,15 +947,13 @@ void marioReInit(void) {
 	f32 dirView;
 	f32 unk19C;
 	s32 i;
-	const u8* strBase;
 
 	wp = mp;
-	partySlot0 = wp->currPartySlotId[0];
 	highFlag = wp->flags & 0x80000000;
 	camId = marioGetCamId();
 	paperPoseId = wp->paperPoseId;
 	characterId = wp->characterId;
-	strBase = (const u8*)"a_mario";
+	partySlot0 = wp->currPartySlotId[0];
 	partySlot1 = wp->currPartySlotId[1];
 	peachFlags = wp->peachFlags;
 	field28C = *(s32*)wp->field_0x28C;
@@ -1036,8 +1034,8 @@ void marioReInit(void) {
 		animPoseSetMaterialLightFlagOn(wp->paperAnimGroupId[2], 2);
 	}
 
-	wp->scale = *(const Vec*)(strBase + 0xd0);
-	wp->bottomlessResetPosition = *(const Vec*)(strBase + 0xdc);
+	wp->scale = vec3_802c36e0;
+	wp->bottomlessResetPosition = vec3_802c36ec;
 
 	partyReInit();
 	marioBaloonInit();
@@ -1063,7 +1061,7 @@ void marioReInit(void) {
 		pouchGetItem(ITEM_HAMMER);
 	}
 
-	*(Vec*)(wp->field_0xD4 + 0xC) = *(const Vec*)(strBase + 0xe8);
+	*(Vec*)(wp->field_0xD4 + 0xC) = vec3_802c36f8;
 }
 
 // MUST_MATCH: the original builds the coin position in an inlined struct return, so the

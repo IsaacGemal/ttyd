@@ -118,13 +118,8 @@ void seq_mapChangeExit(SequenceWork* work) {
 // tou_03 and %s/rel/%s.rel are explicit objects in the parse-time part of the pool (str_802C1060/
 // str_802C1068), so they must stay pool-relative; every other string here is a normal generated pool
 // entry and is emitted by using the literal.
-#ifdef MUST_MATCH
 #define SMC_STR(off, lit) (lit)
 #define SMC_STR_OFF(off, lit) (lit)
-#else
-#define SMC_STR(off, lit) (lit)
-#define SMC_STR_OFF(off, lit) (lit)
-#endif
 
 extern void SoundSetOutputMode(s32 mode);
 extern s32 key_off[10];
@@ -565,9 +560,7 @@ void _relUnLoad(void) {
     }
 }
 
-#ifdef MUST_MATCH
 // The original .rodata's seq_mapChangeMain strings; emitted here (after the code) so MWCC keeps the pool's
 // original slots: they land between _load's pooled zero-vecs and its pooled map-name strings.
 const char str_802C1060[8] = "tou_03";
 const char str_802C1068[16] = "%s/rel/%s.rel";
-#endif
