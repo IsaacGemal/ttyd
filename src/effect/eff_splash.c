@@ -247,12 +247,8 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-// Instructions are the target's; the remaining objdiff marks are symbol-only and unit-wide.
-// The zero-Vec literal below keeps the target's schedule (switching to the named vec3_802fe728
-// makes MWCC hoist the first vector load two instructions early), but it resolves to
-// .rodata+0x2C instead of vec3_802fe728 at +0x0; extra _half$/_three$ doubles emitted before it
-// push vec3 down. double_to_int_mask/double_to_int are shifted the same way, and effSplashDisp's
-// -8.0f*0.5f fold puts -4.0f where the target has 8.0f (shifting the 0.5f slot).
+// The zero-Vec literal in initializeVec keeps the target's schedule (a named vec3 makes MWCC hoist the first
+// vector load two instructions early); its template is the unit's only Vec, at .rodata+0.
 void effSplashMain(EffectEntry* effect) {
 	SplashData* data = effect->userdata;
 	Vec position;

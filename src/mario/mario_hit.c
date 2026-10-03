@@ -119,6 +119,13 @@ extern const Vec vec3_802c58ec;
 #define ROS(base, off, str) (str)
 #endif
 
+// Match-only: a volatile read makes MWCC reload the constant per use, as the original does in a few places.
+#ifdef MUST_MATCH
+#define RELOAD_F32(x) (*(const volatile f32*)&(x))
+#else
+#define RELOAD_F32(x) (x)
+#endif
+
 //.rodata
 const Vec vec3_802c5730 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c573c = { 0.0f, 0.0f, 0.0f };
@@ -1974,10 +1981,10 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
                                                             ny100) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
-                (*(const volatile f32*)&float_100_8041a7f8);
+                RELOAD_F32(float_100_8041a7f8);
             *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
             *(f32*)&wp2->field_0x1F0[0x30] =
-                (f32)(s32)((*(const volatile f32*)&float_100_8041a7f8) * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                (f32)(s32)(RELOAD_F32(float_100_8041a7f8) * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
                                                             float_100_8041a7f8 * nx,
                                                             ny100) -
                                                   float_180_8041a7cc) +
@@ -2989,11 +2996,9 @@ HitEntry* N_dou10_yoko_yari3(void) {
 // ROUND_MILLI (1000, sign-dependent) there was the main miss (73.93%). A top-declared
 // `wp2 = marioGetPtr()` for the field writes (the inline-declaration form makes MWCC loop
 // forever) plus non-volatile hitPos/n locals (the volatile forced a different copy/round
-// schedule) brought it to 86.93%. Using the literal `float_100_8041a7f8` in the two `angleABf` arguments
+// schedule) brought it to 86.93%. Reading `float_100_8041a7f8` through a volatile pointer in the two `/ 100` divisions
 // and a searched FPR declaration order (`py, px, off, s, rad, pz, h, angle, c`) reached 87.14%.
-// Still differs: the int->float magic double and the five sqrtf coefficient doubles are not
-// folded into the rodata base pool (routing sqrtf through base hangs MWCC here); the
-// callee-saved GPR set differs as a consequence (ours keeps hit in r30 and reuses r30 for
+// Still differs: the callee-saved GPR set (ours keeps hit in r30 and reuses r30 for
 // the base, so the hit test is `cmplwi r30` instead of the original's `mr r29,r3`); and the
 // ROUND_CENTI float_100 loads are hoisted into f31/f30 (callee-saved) instead of the
 // original's volatile f7/f5 reloads, which costs `h` its f31.
