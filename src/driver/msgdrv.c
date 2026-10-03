@@ -16,23 +16,7 @@
 #include <stdio.h>
 
 extern GlobalWork* gp;
-extern GXColor unk_80422fe0;
 extern GXColor unk_80422fe4;
-extern f32 float_0_8041a514;
-extern f32 float_2_8041a524;
-extern f32 float_10_8041a538;
-extern f32 float_240_8041a53c;
-extern f32 float_36_8041a540;
-extern f32 float_62_8041a544;
-extern f32 float_80_8041a548;
-extern f32 float_60_8041a54c;
-extern f32 float_28_8041a550;
-extern f32 float_8_8041a558;
-extern f32 float_50_8041a55c;
-extern f32 float_52_8041a560;
-extern f32 float_31_8041a564;
-extern f32 float_180_8041a568;
-extern f32 float_5_8041a56c;
 extern f32 float_0p36_8041a6a0;
 extern f32 float_0p6_8041a570;
 extern s32 msgWindowOpen_SE_Data[12][2];

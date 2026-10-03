@@ -852,7 +852,6 @@ void sort_1_2_func(WindowWork* work) {
     WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
 }
 
-extern const f32 float_0p75_8041d108;
 
 // The waza window frame: eleven textured quads (a 3x3 border plus inner strips),
 // each an inlined winNameQuad. They come in three rows: the top bar at y (height
@@ -1003,8 +1002,6 @@ extern const f32 float_16_8041d0e4;
 extern const f32 float_20_8041d0c0;
 extern const f32 float_24_8041d0c8;
 extern const f32 float_128_8041d0ec;
-extern const f32 float_136_8041d0f0;
-extern const f32 float_64_8041d0f4;
 extern const f32 float_3_8041d08c;
 extern const f32 float_6_8041d0f8;
 extern const f32 float_8_8041d0a0;

@@ -61,30 +61,16 @@ const char str_8041B2B8[] = "M_S_1";
 extern s32 m_w_7_sync[];
 s32 longQuake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0x258, 2, 1};
 static s32 quake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0xC8, 2, 1};
-extern const f32 float_neg6_8041b21c;
-extern const f32 float_18_8041b220;
 extern const f32 float_7p5_8041b224;
 extern const f32 float_0p83333_8041b228;
 extern const f32 float_36_8041b23c;
 extern const f32 float_0p25_8041b240;
-extern const f32 float_38_8041b244;
-extern const f32 float_20_8041b248;
 extern const f32 float_3p5556_8041b24c;
 extern const f32 float_0p35556_8041b250;
 extern const f32 float_10p5_8041b254;
 extern const f32 float_neg0p33333_8041b258;
-extern const f32 float_0p6_8041b268;
 extern const f32 float_0p1_8041b26c;
 extern const f32 float_neg1_8041b270;
-extern const f32 float_8_8041b278;
-extern const f32 float_neg300_8041b27c;
-extern const f32 float_200_8041b280;
-extern const f32 float_37_8041b28c;
-extern const f32 float_11_8041b290;
-extern const f32 float_25_8041b294;
-extern const f32 float_neg2000_8041b298;
-extern const f32 float_2_8041b1e4;
-extern const f32 float_0_8041b1c4;
 
 // The per-use work block stored in PartyEntry::useStruct (0x170) while Bobbery is active.
 typedef struct BomheiWork {
