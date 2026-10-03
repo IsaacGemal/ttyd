@@ -53,6 +53,20 @@ extern const f32 float_0p7_80420f9c;
 extern const GXColor dat_80420f64;
 extern const GXColor dat_80420f68;
 extern const GXColor dat_80420f6c;
+extern const GXColor dat_80420f48;
+extern const GXColor dat_80420f4c;
+extern const GXColor dat_80420f50;
+extern const GXColor dat_80420f54;
+extern const GXColor dat_80420f58;
+extern const f32 float_42p667_80420fb8;
+extern const f32 float_0p33333_80420fbc;
+extern const f32 float_neg200_80420fc4;
+extern const f32 float_neg82p655_80420fcc;
+extern const f32 float_88p8_80420fd0;
+extern const f32 float_1p03_80420fd4;
+extern const f32 float_82p655_80420fd8;
+extern const f32 float_neg88p8_80420fdc;
+extern const Vec vec3_802fe460;
 // effFallMain constants and effect-local rodata (addresses from the target symbol table).
 extern const Vec vec3_802fe424;
 extern const Vec dat_802fe430[];
@@ -172,9 +186,9 @@ s32 effFallCheckHit(EffectEntry* effect) {
 }
 
 // Full GX state, quad display list and both shibuki splash passes. The quad uses float literals and the
-// splash pointer is re-read from effect->userdata (see REPORT.md).
+// splash pointer is re-read from effect->userdata
 // NONMATCHING (99.05%): 18 instructions differ, all register-allocation/scheduling: quad `fneg`/`fmuls`
-// operand order, GXColor temp slots, and the u16->float mask address. See REPORT.md for details.
+// operand order, GXColor temp slots, and the u16->float mask address. for details.
 void effFallDispWater(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	FallWork* work = effect->userdata;
@@ -546,7 +560,7 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 #endif
 
 // Builds the effect's position vector through a temporary so the zero-vector copy and the x/y/z overwrite
-// schedule (and spill) as the original does (see REPORT.md); plain assignment under #else.
+// schedule (and spill) as the original does; plain assignment under #else.
 static inline Vec effFallMakePos(f32 x, f32 y, f32 z) {
 #ifdef MUST_MATCH
 	Vec temp = *(const Vec*)((const u8*)&vec3_802fe418 + 0xC);
@@ -564,7 +578,7 @@ static inline Vec effFallMakePos(f32 x, f32 y, f32 z) {
 // callee-saved registers and drops the base; effect/data land in different registers, we save an extra
 // FPR f25 and GPR r14 (frame 0x130 vs 0x120), and the int-to-float magic doubles come from the compiler's
 // anonymous pool instead of base+0x60/0x68.
-// NONMATCHING (90.67%): see the note above.
+// NONMATCHING (90.92%): see the note above.
 void effFallMain(EffectEntry* effect) {
 	FallWork* data = effect->userdata;
 	FallWork* elem;
@@ -1154,5 +1168,237 @@ void effFallMain(EffectEntry* effect) {
 		dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effFallDisp, effect);
 		break;
 	}
+	}
+}
+
+// Builds the type-8 light colour. Returning it by value (rather than assigning the base and then
+// `color.a`) is a match-only spelling: it is what puts the colour temp and its outgoing argument copy
+// in the target's stack slots. MUST_MATCH builds it; otherwise the natural assignment is used.
+#ifdef MUST_MATCH
+static inline GXColor effFallCol8(u8 a) { GXColor c = dat_80420f58; c.a = a; return c; }
+#endif
+
+// GX display for the default/koopa/light types: a per-type textured quad, the procedural type-2 strip,
+// the type 4/5 animation halo, the type 6 koopa body and the type 8 light pose.
+// NONMATCHING (99.92%): 17 instructions differ beyond 27 data-symbol-only ones; all are register
+// allocation/scheduling (viewYaw and case 0/1 f28/quad `fmuls` operand order, the case 0/1 and 2
+// GXColor temp/argument stack slots).
+void effFallDisp(CameraId cameraId, void* param) {
+	EffectEntry* effect = param;
+	FallWork* elem = effect->userdata;
+	CameraEntry* cam;
+	CameraEntry* camView;
+	GXTexObj texObj;
+	Mtx mtxPos, mtxScale, mtxRot, mtxView;
+	s32 i;
+	s32 type;
+	f32 f31;
+	f32 f30;
+	f32 f29;
+	f32 f28;
+
+	camView = camGetPtr(cameraId);
+	type = elem->type;
+	f30 = elem->unk18;
+	PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
+	cam = camGetPtr(cameraId);
+	PSMTXRotRad(mtxRot, 'y', -cam->viewYaw * float_deg2rad_80420f70);
+	PSMTXConcat(mtxPos, mtxRot, mtxView);
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevOp(0, 0);
+	GXSetCullMode(0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xd, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+
+	switch (type) {
+	case 0:
+	case 1:
+		effGetTexObj(0x32, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		break;
+	case 2:
+		effGetTexObj(0x33, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		break;
+	}
+
+	f31 = float_6p2832_80420fa4 * f30;
+	for (i = 1, elem = &elem[1]; i < effect->count; i++, elem++) {
+		switch (type) {
+		case 0:
+		case 1: {
+			GXColor color;
+			f29 = float_64_80420f74;
+			f28 = float_42p667_80420fb8;
+			f29 = f29 * float_0p5_80420f7c;
+			f28 = f28 * float_0p5_80420f7c;
+			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
+			PSMTXRotRad(mtxRot, 'y', float_deg2rad_80420f70 * elem->unk18);
+			PSMTXConcat(mtxPos, mtxRot, mtxPos);
+			PSMTXTrans(mtxRot, float_0_80420f84, f28 * 0.5f * elem->unk2C, float_0_80420f84);
+			PSMTXConcat(mtxPos, mtxRot, mtxPos);
+			PSMTXRotRad(mtxRot, 'z', float_deg2rad_80420f70 * elem->unk48);
+			PSMTXConcat(mtxPos, mtxRot, mtxPos);
+			PSMTXTrans(mtxRot, float_0_80420f84, -f28 * 0.5f * elem->unk2C, float_0_80420f84);
+			PSMTXConcat(mtxPos, mtxRot, mtxPos);
+			PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+			PSMTXConcat(mtxPos, mtxScale, mtxPos);
+			PSMTXConcat(mtxView, mtxPos, mtxPos);
+			PSMTXConcat(camView->view, mtxPos, mtxPos);
+			GXLoadPosMtxImm(mtxPos, 0);
+			GXSetCurrentMtx(0);
+			color = dat_80420f48;
+			color.a = elem->unk3C;
+			GXSetChanMatColor(4, color);
+			PSMTXScale(mtxScale, float_1_80420f80, float_0p33333_80420fbc, float_1_80420f80);
+			PSMTXTrans(mtxPos, float_0_80420f84, (f32)elem->unk28, float_0_80420f84);
+			PSMTXConcat(mtxScale, mtxPos, mtxPos);
+			GXLoadTexMtxImm(mtxPos, 0x1e, 1);
+			GXBegin(0x80, 0, 4);
+			GXPosition3f32(-f29 * 0.5f, f28, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(f29 * 0.5f, f28, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(f29 * 0.5f, 0.0f, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-f29 * 0.5f, 0.0f, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+			break;
+		}
+		case 2: {
+			GXColor color;
+			s32 j;
+			f32* v;
+			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
+			PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+			PSMTXConcat(mtxPos, mtxScale, mtxPos);
+			PSMTXConcat(mtxView, mtxPos, mtxPos);
+			PSMTXConcat(camView->view, mtxPos, mtxPos);
+			GXLoadPosMtxImm(mtxPos, 0);
+			GXSetCurrentMtx(0);
+			color = dat_80420f4c;
+			color.a = elem->unk3C;
+			GXSetChanMatColor(4, color);
+			PSMTXIdentity(mtxPos);
+			GXLoadTexMtxImm(mtxPos, 0x1e, 1);
+			for (j = 0; j < 0x1e; j += 2) {
+				v = (f32*)(*(smartEntry**)((u8*)elem + 0x40))->address + j * 5;
+				GXBegin(0x80, 0, 4);
+				GXPosition3f32(v[0], v[1], v[2]);
+				GXTexCoord2f32(v[3], v[4]);
+				GXPosition3f32(v[10], v[11], v[12]);
+				GXTexCoord2f32(v[13], v[14]);
+				GXPosition3f32(v[15], v[16], v[17]);
+				GXTexCoord2f32(v[18], v[19]);
+				GXPosition3f32(v[5], v[6], v[7]);
+				GXTexCoord2f32(v[8], v[9]);
+			}
+			break;
+		}
+		case 3:
+		case 7:
+			break;
+		case 4:
+		case 5: {
+			Vec axis;
+			Vec tmpAxis;
+			f28 = f31 / float_360_80420fa8;
+			tmpAxis = vec3_802fe460;
+			tmpAxis.x = (f32)cos(f28);
+			tmpAxis.z = (f32)sin(f28);
+			axis = tmpAxis;
+			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
+			PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+			PSMTXConcat(mtxPos, mtxScale, mtxPos);
+			PSMTXTrans(mtxScale, 0.0f, (f32)(type == 4 ? 8 : 16), 0.0f);
+			PSMTXConcat(mtxPos, mtxScale, mtxPos);
+			PSMTXRotAxisRad(mtxRot, &axis, float_deg2rad_80420f70 * -elem->unk48);
+			PSMTXConcat(mtxPos, mtxRot, mtxPos);
+			PSMTXTrans(mtxScale, 0.0f, (f32)-(type == 4 ? 8 : 16), 0.0f);
+			PSMTXConcat(mtxPos, mtxScale, mtxPos);
+			PSMTXConcat(mtxView, mtxPos, mtxPos);
+			if (elem->unk5C != -1) {
+				animPoseDrawMtx(elem->unk5C, mtxPos, 1, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 2, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 3, float_0_80420f84, float_10_80420fb0);
+			}
+			break;
+		}
+		case 6: {
+			GXColor color;
+			if (elem->unk5C != -1) {
+				PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
+				if (f30 < float_180_80420fc0) {
+					PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+				} else {
+					PSMTXScale(mtxScale, -elem->unk2C, elem->unk2C, elem->unk2C);
+				}
+				PSMTXConcat(mtxPos, mtxScale, mtxPos);
+				if (elem->unk48 != float_0_80420f84) {
+					PSMTXRotRad(mtxRot, 'z', float_deg2rad_80420f70 * -elem->unk48);
+					PSMTXConcat(mtxPos, mtxRot, mtxPos);
+				} else {
+					PSMTXTrans(mtxScale, float_neg200_80420fc4, float_0_80420f84, float_0_80420f84);
+					PSMTXConcat(mtxPos, mtxScale, mtxPos);
+					PSMTXRotRad(mtxRot, 'z', float_deg2rad_80420f70 * -elem->unk4C);
+					PSMTXConcat(mtxPos, mtxRot, mtxPos);
+					PSMTXTrans(mtxScale, float_200_80420fc8, float_0_80420f84, float_0_80420f84);
+					PSMTXConcat(mtxPos, mtxScale, mtxPos);
+				}
+				PSMTXConcat(mtxView, mtxPos, mtxPos);
+				PSMTXTrans(mtxScale, float_neg82p655_80420fcc, float_88p8_80420fd0, float_0_80420f84);
+				PSMTXConcat(mtxPos, mtxScale, mtxScale);
+				PSMTXScale(mtxRot, float_1p03_80420fd4, float_1p03_80420fd4, float_1p03_80420fd4);
+				PSMTXConcat(mtxScale, mtxRot, mtxRot);
+				PSMTXTrans(mtxScale, float_82p655_80420fd8, float_neg88p8_80420fdc, float_0_80420f84);
+				PSMTXConcat(mtxRot, mtxScale, mtxScale);
+				animPoseSetMaterialFlagOn(elem->unk5C, 0x40);
+				color = dat_80420f50;
+				animPoseSetMaterialEvtColor(elem->unk5C, color);
+				animPoseDrawMtx(elem->unk5C, mtxScale, 1, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxScale, 2, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxScale, 3, float_0_80420f84, float_10_80420fb0);
+				animPoseSetMaterialFlagOn(elem->unk5C, 0x40);
+				color = dat_80420f54;
+				animPoseSetMaterialEvtColor(elem->unk5C, color);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 1, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 2, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 3, float_0_80420f84, float_10_80420fb0);
+			}
+			break;
+		}
+		case 8: {
+			GXColor color;
+			if (elem->unk5C != -1) {
+				PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
+				PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
+				PSMTXConcat(mtxPos, mtxScale, mtxPos);
+				PSMTXConcat(mtxView, mtxPos, mtxPos);
+				animPoseSetMaterialFlagOn(elem->unk5C, 0x40);
+#ifdef MUST_MATCH
+				color = effFallCol8(elem->unk3C);
+#else
+				color = dat_80420f58;
+				color.a = elem->unk3C;
+#endif
+				animPoseSetMaterialEvtColor(elem->unk5C, color);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 1, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 2, float_0_80420f84, float_10_80420fb0);
+				animPoseDrawMtx(elem->unk5C, mtxPos, 3, float_0_80420f84, float_10_80420fb0);
+			}
+			break;
+		}
+		}
 	}
 }

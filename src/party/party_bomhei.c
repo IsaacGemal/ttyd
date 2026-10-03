@@ -17,6 +17,8 @@
 #include "driver/npcdrv.h"
 #include "driver/animdrv.h"
 #include "manager/evtmgr.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_cam.h"
 #include "eff/eff_sandars.h"
 #include "motion/mot_damage.h"
 #include "memory.h"
@@ -53,6 +55,46 @@ const char str_8041B210[] = "M_C_1";
 const char str_8041B2A8[] = "M_W_1";
 const char str_8041B2B0[] = "M_R_1";
 const char str_8041B2B8[] = "M_S_1";
+
+// .data / .sdata objects bomhei_use_main references.  m_w_7_sync is the frame table the
+// M_W_7 pose follows; the two evt scripts are the short/long camera shakes.
+extern s32 m_w_7_sync[];
+s32 longQuake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0x258, 2, 1};
+static s32 quake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0xC8, 2, 1};
+extern const f32 float_neg6_8041b21c;
+extern const f32 float_18_8041b220;
+extern const f32 float_7p5_8041b224;
+extern const f32 float_0p83333_8041b228;
+extern const f32 float_36_8041b23c;
+extern const f32 float_0p25_8041b240;
+extern const f32 float_38_8041b244;
+extern const f32 float_20_8041b248;
+extern const f32 float_3p5556_8041b24c;
+extern const f32 float_0p35556_8041b250;
+extern const f32 float_10p5_8041b254;
+extern const f32 float_neg0p33333_8041b258;
+extern const f32 float_0p6_8041b268;
+extern const f32 float_0p1_8041b26c;
+extern const f32 float_neg1_8041b270;
+extern const f32 float_8_8041b278;
+extern const f32 float_neg300_8041b27c;
+extern const f32 float_200_8041b280;
+extern const f32 float_37_8041b28c;
+extern const f32 float_11_8041b290;
+extern const f32 float_25_8041b294;
+extern const f32 float_neg2000_8041b298;
+extern const f32 float_2_8041b1e4;
+extern const f32 float_0_8041b1c4;
+
+// The per-use work block stored in PartyEntry::useStruct (0x170) while Bobbery is active.
+typedef struct BomheiWork {
+    u32 flags; // 0x0
+    s32 timer; // 0x4
+} BomheiWork;
+
+// Raw offsets used (no named field): PartyEntry 0x24 frame counter, 0x94/0x98/0x9C target
+// position, 0xF0 f32, 0x130 HitEntry*, 0x178/0x17A/0x17B motion scratch, 0x180/0x184 SFX ids;
+// MarioWork 0x246.  Field_12C/0x138/0x140 are HitEntry* stored in void* fields.
 
 // NONMATCHING (99.99%): only the int->float magic double differs: our pool places it at
 // .rodata+0xe0 while the original folds it at +0x58 (the same objdiff-only base/offset difference
@@ -274,8 +316,147 @@ HitEntry* check_front(PartyEntry* party) {
     return field138;
 }
 
+// NONMATCHING (99.98%): instruction/stack/immediate identical; only attempt 0 `radius` (orig f29, ours f31)
+// callee-saved FPR colour differs (all `angle`s, `md`s and attempt 1 `radius` match).
 // .text:0x3FC | 0x800BD24C | size: 0x880
-// partyGetReturnPos (TODO)
+void partyGetReturnPos(Vec* pos) {
+    MarioWork* mario = marioGetPtr();
+    HitCheckQuery query1;
+    HitCheckQuery query2;
+    HitCheckQuery query3;
+    HitEntry* hit;
+    Vec v, dir0, dir1, dir2;
+    f32 radius, angle, md, px, pz;
+    f32 sin, cos;
+    f32 hx, hy, hz, dist, nx, ny, nz;
+    f32 z0, x0, z1, x1, z2, x2;
+    s32 ok;
+
+    // attempt 0: along Mario's target yaw with a 6-unit probe
+    px = mario->position.x;
+    radius = 2.0f + mario->position.y;
+    pz = mario->position.z;
+    dist = mario->wPlayerCollisionBox.x;
+    angle = mario->targetYaw;
+    sincosf(&sin, &cos, angle);
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, px, radius, pz, sin, 0.0f, cos);
+    if (hit == NULL) {
+        v = mario->position;
+        marioGetPtr();
+        x0 = v.x;
+        z0 = v.z;
+        movePos(&x0, &z0, 6.0f, angle);
+        query1.targetDistance = 4.0f;
+        dir0 = vec3_802ccf48;
+        dir0.x = x0;
+        dir0.y = 2.0f + v.y;
+        dir0.z = z0;
+        query1.targetPos = dir0;
+        query1.targetDir = vec3_802ccf54;
+        hit = hitCheckVecFilter(&query1, NULL);
+        if (hit != NULL && !(hitGetAttr(hit) & 0xE00)) {
+            v.x = (f32)(s32)(1000.0f * query1.hitPos.x + (query1.hitPos.x >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            v.y = (f32)(s32)(1000.0f * query1.hitPos.y + (query1.hitPos.y >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            v.z = (f32)(s32)(1000.0f * query1.hitPos.z + (query1.hitPos.z >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            ok = 1;
+        } else {
+            ok = 0;
+        }
+        if (ok) {
+            pos->x = v.x;
+            pos->y = v.y;
+            pos->z = v.z;
+            return;
+        }
+    }
+
+    // attempt 1: opposite of Mario's movement direction
+    px = mario->position.x;
+    radius = 2.0f + mario->position.y;
+    pz = mario->position.z;
+    dist = mario->wPlayerCollisionBox.x;
+    { f32 ang;
+    ang = revise360(toMovedirSimple(*(f32*)mario->unk1AC) - 180.0f);
+    sincosf(&sin, &cos, ang);
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, px, radius, pz, sin, 0.0f, cos);
+    if (hit == NULL) {
+        md = mario->wPlayerCollisionBox.x;
+        v = mario->position;
+        marioGetPtr();
+        x1 = v.x;
+        z1 = v.z;
+        movePos(&x1, &z1, md, ang);
+        query2.targetDistance = 4.0f;
+        dir1 = vec3_802ccf48;
+        dir1.x = x1;
+        dir1.y = 2.0f + v.y;
+        dir1.z = z1;
+        query2.targetPos = dir1;
+        query2.targetDir = vec3_802ccf54;
+        hit = hitCheckVecFilter(&query2, NULL);
+        if (hit != NULL && !(hitGetAttr(hit) & 0xE00)) {
+            v.x = (f32)(s32)(1000.0f * query2.hitPos.x + (query2.hitPos.x >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            v.y = (f32)(s32)(1000.0f * query2.hitPos.y + (query2.hitPos.y >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            v.z = (f32)(s32)(1000.0f * query2.hitPos.z + (query2.hitPos.z >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            ok = 1;
+        } else {
+            ok = 0;
+        }
+        if (ok) {
+            pos->x = v.x;
+            pos->y = v.y;
+            pos->z = v.z;
+            return;
+        }
+    }
+    }
+
+    // attempt 2: along Mario's movement direction
+    { f32 ang;
+    ang = toMovedirSimple(*(f32*)mario->unk1AC);
+    sincosf(&sin, &cos, ang);
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, px, radius, pz, sin, 0.0f, cos);
+    if (hit == NULL) {
+        { f32 md2 = mario->wPlayerCollisionBox.x;
+        v = mario->position;
+        marioGetPtr();
+        x2 = v.x;
+        z2 = v.z;
+        movePos(&x2, &z2, md2, ang); }
+        query3.targetDistance = 4.0f;
+        dir2 = vec3_802ccf48;
+        dir2.x = x2;
+        dir2.y = 2.0f + v.y;
+        dir2.z = z2;
+        query3.targetPos = dir2;
+        query3.targetDir = vec3_802ccf54;
+        hit = hitCheckVecFilter(&query3, NULL);
+        if (hit != NULL && !(hitGetAttr(hit) & 0xE00)) {
+            v.x = (f32)(s32)(1000.0f * query3.hitPos.x + (query3.hitPos.x >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            v.y = (f32)(s32)(1000.0f * query3.hitPos.y + (query3.hitPos.y >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            v.z = (f32)(s32)(1000.0f * query3.hitPos.z + (query3.hitPos.z >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+            ok = 1;
+        } else {
+            ok = 0;
+        }
+        if (ok) {
+            pos->x = v.x;
+            pos->y = v.y;
+            pos->z = v.z;
+            return;
+        }
+    }
+    }
+
+    // fallback: 180 degrees from Mario's target yaw
+    px = mario->position.x;
+    pz = mario->position.z;
+    angle = revise360(180.0f + mario->targetYaw);
+    movePos(&px, &pz, mario->wPlayerCollisionBox.x, angle);
+    pos->x = px;
+    pos->y = mario->position.y;
+    pos->z = pz;
+}
 
 
 // .text:0xC7C | 0x800BDACC | size: 0x94
@@ -406,7 +587,482 @@ BOOL mario_bomhei_keychk(void) {
 }
 
 // .text:0xE20 | 0x800BDE58 | size: 0x1318
-// bomhei_use_main (TODO)
+#pragma opt_common_subs off // without it MWCC CSE-hoists party+0x94 across movePos into r28/r29 (party_cloud does the same)
+// Common tail repeated after several states: if one of the three hit objects has the
+// "hit wall" attribute, switch to state 0x3C (or 0x28 for the soft variant).
+static inline void bomhei_checkHit(PartyEntry* party) {
+    if (party->field_12C != NULL && (hitGetAttr((HitEntry*)party->field_12C) & 0xC00) != 0) {
+        party->useMotionId = 0x3C;
+    } else if (party->field_140 != NULL && (hitGetAttr((HitEntry*)party->field_140) & 0xC00) != 0) {
+        party->useMotionId = 0x3C;
+    } else if (party->field_138 != NULL) {
+        s32 attr = hitGetAttr((HitEntry*)party->field_138);
+        if ((attr & 0xC00) != 0) {
+            party->useMotionId = 0x3C;
+        } else if ((attr & 0x200) != 0) {
+            party->useMotionId = 0x28;
+        }
+    }
+}
+
+void bomhei_use_main(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+    HitEntry* hit;
+    f32 f31;
+    Vec pos50;
+    f32 targetX, targetZ;
+    Vec splash;
+    Vec pos47;
+    Vec pos51;
+    f32 sx47, sy47, sz47;
+    f32 sx51, sy51, sz51;
+
+    if ((party->field_8 & 0x8) != 0) {
+        party->field_8 &= ~0x8;
+        party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+        party->flags &= ~0x03000000;
+        party->flags &= ~0x04000000;
+        party->useStruct = __memAlloc(HEAP_DEFAULT, 8);
+        memset(party->useStruct, 0, 8);
+        party->useMotionId = 0;
+    }
+
+    switch (party->useMotionId) {
+    case 0:
+        party->useMotionId = 1;
+        *(u8*)((u8*)party + 0x17A) = 100;
+        *(s16*)((u8*)party + 0x178) = 0;
+        *(s32*)((u8*)party + 0x24) = 4;
+        ((BomheiWork*)party->useStruct)->timer = 0;
+        ((BomheiWork*)party->useStruct)->flags = 0;
+        partyChgPose(party, (char*)"R_1");
+        /* fallthrough */
+    case 1: {
+        *(Vec*)((u8*)party + 0x94) = mario->position;
+        movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        party->position.x += (*(f32*)((u8*)party + 0x94) - party->position.x) / (f32)*(s32*)((u8*)party + 0x24);
+        party->position.y += (*(f32*)((u8*)party + 0x98) - party->position.y) / (f32)*(s32*)((u8*)party + 0x24);
+        party->position.z += (*(f32*)((u8*)party + 0x9C) - party->position.z) / (f32)*(s32*)((u8*)party + 0x24);
+        if (--*(s32*)((u8*)party + 0x24) > 0) {
+            break;
+        }
+        *(s32*)((u8*)party + 0x24) = 9;
+        targetX = mario->position.x;
+        targetZ = mario->position.z;
+        movePos(&targetX, &targetZ, -6.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 18.0f;
+        party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
+        party->field_FC = party->dir;
+        party->jumpPara1 = float_7p5_8041b224;
+        party->jumpPara2 = -float_0p83333_8041b228;
+        partyChgPose(party, (char*)"J_1A");
+        party->useMotionId = 2;
+        *(u8*)((u8*)party + 0x17A) = 0xA;
+        break;
+    }
+    case 2:
+        party->position.y += party->jumpPara1;
+        party->jumpPara1 += party->jumpPara2;
+        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+            party->flags2 |= 0x10;
+            partyChgPose(party, (char*)"L_1");
+            ((BomheiWork*)party->useStruct)->timer = (s16)sysMsec2Frame(3000);
+            party->useMotionId = 0xA;
+            *(u8*)((u8*)party + 0x17A) = 0x14;
+        }
+        break;
+    case 0xA:
+        if ((((BomheiWork*)party->useStruct)->flags & 2) != 0) {
+            partyChgPose(party, (char*)"L_2");
+        }
+        {
+            MarioWork* pm = party->playerPtr;
+
+            f31 = float_36_8041b23c;
+            if (strcmp(pm->animName, (char*)str_8041B208) == 0) {
+                f32 val = (f32)m_w_7_sync[*(u8*)((u8*)party + 0x17B)];
+                f31 += val * float_0p25_8041b240;
+            }
+            party->position.x = pm->position.x;
+            party->position.y = pm->position.y + f31;
+            party->position.z = pm->position.z;
+            movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(*(f32*)((u8*)pm + 0x1AC)));
+            party->position.z += 2.0f;
+            party->field_110 = *(f32*)((u8*)pm + 0x1AC);
+            party->field_10C = pm->unk1A8;
+        }
+        bomhei_checkHit(party);
+        if ((party->flags & 0x80000000) != 0 ||
+            (mario->hitobjStandOn != NULL && mario->airTimer == 0 &&
+             (*(u16*)((u8*)mario + 0x246) & 0x400) == 0)) {
+            party->useMotionId = 0x14;
+        }
+        break;
+    default:
+        break;
+    }
+
+    switch (party->useMotionId) {
+    case 0x14: {
+        psndSFXOn_3D((char*)0x939, &party->playerPtr->position);
+        *(u8*)((u8*)party + 0x17A) = 0x1E;
+        party->useMotionId = 0x15;
+        targetX = party->position.x;
+        targetZ = party->position.z;
+        movePos(&targetX, &targetZ, 38.0f, toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 20.0f;
+        party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
+        party->field_FC = party->dir;
+        party->jumpPara1 = float_3p5556_8041b24c;
+        party->jumpPara2 = -float_0p35556_8041b250;
+        *(s32*)((u8*)party + 0x24) = (s16)float_10p5_8041b254;
+        party->flags2 &= ~0x10;
+        party->flags |= 0x10;
+        bomhei_checkHit(party);
+        break;
+    }
+    case 0x15:
+        partyMoveNoHosei(party);
+        if (--*(s32*)((u8*)party + 0x24) > 0) {
+            bomhei_checkHit(party);
+            break;
+        }
+        party->jumpPara1 = 0.0f;
+        party->jumpPara2 = float_neg0p33333_8041b258;
+        *(s32*)((u8*)party + 0x24) = (s16)float_10p5_8041b254;
+        party->flags &= ~PARTY_FLAG_IS_JUMPING;
+        if (party->field_138 != NULL) {
+            party->useMotionId = 0x1E;
+        } else {
+            party->useMotionId = 0x16;
+        }
+        bomhei_checkHit(party);
+        break;
+    case 0x16: {
+        s32 found;
+
+        partyMoveNoHosei(party);
+        if (party->field_138 != NULL) {
+            if (party->field_12C != NULL && (hitGetAttr((HitEntry*)party->field_12C) & 0xC00) != 0) {
+                party->useMotionId = 0x3C;
+                found = TRUE;
+            } else if (party->field_140 != NULL && (hitGetAttr((HitEntry*)party->field_140) & 0xC00) != 0) {
+                party->useMotionId = 0x3C;
+                found = TRUE;
+            } else if (party->field_138 != NULL) {
+                s32 attr = hitGetAttr((HitEntry*)party->field_138);
+
+                if ((attr & 0xC00) != 0) {
+                    party->useMotionId = 0x3C;
+                    found = TRUE;
+                } else if ((attr & 0x200) != 0) {
+                    party->useMotionId = 0x28;
+                    found = TRUE;
+                } else {
+                    goto bomhei16_false;
+                }
+            } else {
+                goto bomhei16_false;
+            }
+            goto bomhei16_done;
+        bomhei16_false:
+            found = FALSE;
+        bomhei16_done:
+            if (found) {
+                break;
+            }
+            party->useMotionId = ((((BomheiWork*)party->useStruct)->flags & 4) == 0) ? 0x1E : 0x32;
+        }
+        break;
+    }
+    case 0x1E:
+        *(s32*)((u8*)party + 0x24) = sysMsec2Frame(200);
+        party->useMotionId = 0x1F;
+        /* fallthrough */
+    case 0x1F:
+        if ((party->flags & 0x80000000) == 0 && (gp->buttonNew[0] & 0x400) != 0) {
+            ((BomheiWork*)party->useStruct)->timer = (s16)(sysMsec2Frame(500) + 1);
+            party->useMotionId = 0x32;
+        }
+        partyChgPose(party, (char*)"S_1");
+        if (--*(s32*)((u8*)party + 0x24) > 0) {
+            bomhei_checkHit(party);
+            break;
+        }
+        party->useMotionId = 0x20;
+        /* fallthrough */
+    case 0x20:
+        if ((party->flags & 0x80000000) == 0 && (gp->buttonNew[0] & 0x400) != 0) {
+            ((BomheiWork*)party->useStruct)->timer = (s16)(sysMsec2Frame(500) + 1);
+        }
+        partyChgPose(party, (!(((BomheiWork*)party->useStruct)->flags & 2)) ? (char*)"W_1" : (char*)"W_2");
+        party->speed = 0.6f;
+        partyMove(party);
+        if (((BomheiWork*)party->useStruct)->timer <= 0) {
+            party->useMotionId = 0x32;
+        }
+        bomhei_checkHit(party);
+        break;
+    default:
+        break;
+    }
+
+    if (party->useMotionId < 0x32) {
+        if (((BomheiWork*)party->useStruct)->timer > 0) {
+            ((BomheiWork*)party->useStruct)->timer--;
+            if (((BomheiWork*)party->useStruct)->timer == (s16)sysMsec2Frame(2500)) {
+                ((BomheiWork*)party->useStruct)->flags |= 2;
+                if (*(u32*)((u8*)party + 0x184) == 0xFFFFFFFF) {
+                    *(s32*)((u8*)party + 0x180) = psndSFXOn_3D((char*)0x93C, &party->playerPtr->position);
+                }
+            } else if (((BomheiWork*)party->useStruct)->timer == (s16)sysMsec2Frame(500)) {
+                party->useMotionId = 0x32;
+                if ((mario->flags & 0x2000) != 0) {
+                    *(u8*)((u8*)party + 0x17A) = 0x28;
+                } else {
+                    party->useMotionId = 0x32;
+                }
+            }
+        }
+    }
+
+    switch (party->useMotionId) {
+    case 0x28: {
+        if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
+            psndSFXOff(*(s32*)((u8*)party + 0x180));
+            *(s32*)((u8*)party + 0x180) = -1;
+        }
+        splash = party->position;
+        marioSetSplash(0, &splash);
+        ((BomheiWork*)party->useStruct)->flags |= 8;
+        ((BomheiWork*)party->useStruct)->timer = (s16)(sysMsec2Frame(500) + 0x1E);
+        ((BomheiWork*)party->useStruct)->flags |= 2;
+        party->flags |= 0x02000000;
+        party->useMotionId = 0x29;
+        *(s32*)((u8*)party + 0x24) = 6;
+        break;
+    }
+    case 0x29:
+        party->position.y += party->jumpPara1;
+        party->jumpPara1 += party->jumpPara2;
+        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+            party->useMotionId = 0x2A;
+            party->jumpPara1 = 0.0f;
+            party->jumpPara2 = 0.0f;
+        }
+        /* fallthrough */
+    case 0x2A:
+        {
+            f32 tmp = float_0p1_8041b26c * (float_neg1_8041b270 - party->speed);
+            party->speed += tmp;
+        }
+        if (party->speed <= 0.0f) {
+            party->speed = 0.0f;
+        }
+        break;
+    default:
+        break;
+    }
+
+    switch (party->useMotionId) {
+    case 0x32:
+        if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
+            psndSFXOff(*(s32*)((u8*)party + 0x180));
+            *(s32*)((u8*)party + 0x180) = -1;
+        }
+        if (*(u32*)((u8*)party + 0x184) == 0xFFFFFFFF) {
+            *(s32*)((u8*)party + 0x184) = psndSFXOn_3D((char*)0x93D, &party->playerPtr->position);
+        }
+        partyChgPose(party, (char*)"A_3");
+        party->useMotionId = 0x33;
+        *(s32*)((u8*)party + 0x24) = 0x28;
+        /* fallthrough */
+    case 0x33:
+        if ((mario->flags & 0x2000) == 0) {
+            if ((party->flags & 2) != 0) {
+                party->speed = 0.0f;
+            }
+            partyMove(party);
+        } else {
+            MarioWork* pm = party->playerPtr;
+
+            f31 = float_36_8041b23c;
+            if (strcmp(pm->animName, (char*)str_8041B208) == 0) {
+                f32 val = (f32)m_w_7_sync[*(u8*)((u8*)party + 0x17B)];
+                f31 += val * float_0p25_8041b240;
+            }
+            party->position.x = pm->position.x;
+            party->position.y = pm->position.y + f31;
+            party->position.z = pm->position.z;
+            movePos(&party->position.x, &party->position.z, -6.0f, toMovedirSimple(*(f32*)((u8*)pm + 0x1AC)));
+            party->position.z += 2.0f;
+            party->field_110 = *(f32*)((u8*)pm + 0x1AC);
+            party->field_10C = pm->unk1A8;
+        }
+        if (--*(s32*)((u8*)party + 0x24) > 0) {
+            bomhei_checkHit(party);
+            break;
+        }
+        if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
+            psndSFXOff(*(s32*)((u8*)party + 0x184));
+            *(s32*)((u8*)party + 0x184) = -1;
+        }
+        ((BomheiWork*)party->useStruct)->flags &= ~0x2;
+        *(HitEntry**)((u8*)party + 0x130) = check_front(party);
+        if ((mario->flags & 0x2000) != 0) {
+            mario->flags &= ~0x2000;
+        }
+        party->flags &= ~0x20;
+        ((BomheiWork*)party->useStruct)->flags &= ~0x8;
+        party->useMotionId = 0x3C;
+        break;
+    default:
+        break;
+    }
+
+    switch (party->useMotionId) {
+    case 0x3C: {
+        s32 found;
+
+        if (*(u32*)((u8*)party + 0x180) != 0xFFFFFFFF) {
+            psndSFXOff(*(s32*)((u8*)party + 0x180));
+            *(s32*)((u8*)party + 0x180) = -1;
+        }
+        if (*(u32*)((u8*)party + 0x184) != 0xFFFFFFFF) {
+            psndSFXOff(*(s32*)((u8*)party + 0x184));
+            *(s32*)((u8*)party + 0x184) = -1;
+        }
+        psndSFXOn_3D((char*)0x93B, &party->position);
+        ((BomheiWork*)party->useStruct)->timer = 0;
+        party->speed = 0.0f;
+        partyMove(party);
+        hit = *(HitEntry**)((u8*)party + 0x130);
+        if (hit == NULL) {
+            found = FALSE;
+        } else if ((hitGetAttr(hit) & 0x80000000) != 0) {
+            if (strcmp(mobjHitObjPtrToPtr(hit)->animName, str_802CCF8C) != 0) {
+                goto bomhei3c_false;
+            }
+            found = TRUE;
+        } else {
+            CaseEntry* cs = caseCheckHitObj2(hit);
+            if (cs == NULL || cs->activeConditionId != 0xF) {
+                goto bomhei3c_false;
+            }
+            found = TRUE;
+        }
+        goto bomhei3c_done;
+    bomhei3c_false:
+        found = FALSE;
+    bomhei3c_done:
+        if (found) {
+            evtEntryType(longQuake_evt, 0, 0, 0);
+        } else {
+            evtEntryType(quake_evt, 0, 0, 0);
+        }
+        {
+            EffectEntry* eff = effSandarsEntry(pouchGetPartyAttackLv(3), party->position.x,
+                                               party->position.y + *(f32*)((u8*)party + 0xF0),
+                                               party->position.z, 0.0f);
+            *(s32*)((u8*)eff->userdata + 0x40) = party->camId;
+        }
+        fbatSandersBombTriggerOn();
+        party->useMotionId = 0x46;
+        break;
+    }
+    case 0x46:
+        party->speed = 0.0f;
+        party->jumpPara1 = 8.0f;
+        party->jumpPara2 = 0.0f;
+        *(s32*)((u8*)party + 0x24) = 0x3C;
+        party->useMotionId = 0x47;
+        /* fallthrough */
+    case 0x47: {
+        party->position.y += party->jumpPara1;
+        pos47 = party->position;
+        marioGetScreenPos(pos47, &sx47, &sy47, &sz47);
+        if (sy47 <= -300.0f) {
+            *(s32*)((u8*)party + 0x24) = sysMsec2Frame(800);
+            party->useMotionId = 0x50;
+        }
+        break;
+    }
+    case 0x50:
+        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+            partyGetAppearPos(party, &pos50);
+            party->position.x = pos50.x;
+            party->position.y = 200.0f + pos50.y;
+            party->position.z = pos50.z;
+            party->jumpPara1 = 0.0f;
+            party->jumpPara2 = -1.0f;
+            party->speed = 0.0f;
+            party->flags &= ~0x10;
+            party->flags |= 0x20;
+            party->flags |= 0x02000000;
+            partyChgPose(party, (char*)"J_1B");
+            party->useMotionId = 0x51;
+        }
+        break;
+    case 0x51: {
+        if (mario->position.y + 37.0f > party->position.y) {
+            party->flags &= ~0x02000000;
+        }
+        hit = partySearchGround(party, 11.0f, party->jumpPara1);
+        f31 = (f32)mario->unk16C - 25.0f;
+        pos51 = party->position;
+        marioGetScreenPos(pos51, &sx51, &sy51, &sz51);
+        if (sy51 > f31) {
+            party->flags &= ~0x02000000;
+        } else if (hit != NULL) {
+            party->field_138 = hit;
+            party->flags &= ~0x02000000;
+        }
+        partyMove(party);
+        if (party->jumpPara1 <= -6.0f) {
+            party->jumpPara2 = 0.0f;
+            party->jumpPara1 = -6.0f;
+        }
+        if ((party->flags & 0x02000000) != 0) {
+            break;
+        }
+        if (party->position.y < -2000.0f) {
+            party->position = mario->position;
+            party->position.y += 200.0f;
+            party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+        }
+        if (party->field_138 != NULL) {
+            if ((((u32)hitGetAttr((HitEntry*)party->field_138) >> 9) & 1) == 0) {
+                partyChgPose(party, (char*)"F_1");
+                party->useMotionId = 0x52;
+                *(s32*)((u8*)party + 0x24) = 0x1E;
+                psndSFXOn_3D((char*)0x93A, &party->position);
+            }
+        }
+        break;
+    }
+    case 0x52:
+        if (--*(s32*)((u8*)party + 0x24) <= 0) {
+            party->useMotionId = 0x64;
+        }
+        partyMove(party);
+        break;
+    case 0x64:
+        partyChgRunMode(party, 2);
+        party->field_3B = 0;
+        party->flags2 &= ~0x10;
+        party->flags &= ~0x80000000;
+        party->flags &= ~0x100;
+        if (party->useStruct != NULL) {
+            __memFree(HEAP_DEFAULT, party->useStruct);
+            party->useStruct = NULL;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+#pragma opt_common_subs reset
 
 // .text:0x2138 | 0x800BF170 | size: 0x604
 // Matches: the six jump-stand string references pool off vec3_802ccf48 (+0x68)

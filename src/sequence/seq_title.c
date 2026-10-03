@@ -10,6 +10,7 @@
 #include "system.h"
 #include "win/win_main.h"
 #include "manager/fontmgr.h"
+#include <dolphin/pad.h>
 #include <musyx/musyx.h>
 #include <string.h>
 #include "sequence/seq_title.h"

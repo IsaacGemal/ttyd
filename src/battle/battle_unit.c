@@ -104,6 +104,14 @@ void BtlUnit_PoseSoundInit(BattleUnitPart* part) {
     fields->mPoseSoundCur = 0.0f;
 }
 
+#ifdef MUST_MATCH
+// Match-only: routing the scale through this inline makes MWCC emit the target's runtime
+// unsigned int->double conversion (with the target's schedule) for the 127 volume; written
+// inline in the call instead it pools a 127.0 constant.
+static inline s32 poseSoundVolume(u32 v) { return (s32)(v * double_0p7_802efac0); }
+#endif
+
+
 BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit) {
     if (unit->mAttributeFlags & kVeiled) {
         return TRUE;

@@ -99,6 +99,7 @@ static const char* const tbl[] = {
     "eki",  "rsh",  "pik", "sin",   "bom", "moo", "aji", "las",
 };
 
+const GXColor dat_8041cf90 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_8041d064 = {0xFF, 0xFF, 0xFF, 0xFF};
 
 
@@ -851,6 +852,53 @@ void sort_1_2_func(WindowWork* work) {
     WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
 }
 
+extern const f32 float_0p75_8041d108;
+
+// The waza window frame: eleven textured quads (a 3x3 border plus inner strips),
+// each an inlined winNameQuad. They come in three rows: the top bar at y (height
+// 32), the body at y-32 (height h-48), and the bottom bar at y-h+16 (height 8/16).
+//
+// The instruction stream and schedule are identical to retail; the only `!!` diffs
+// are callee-saved FPR colouring (retail keeps w in f22, h in f31, w75 in f23; MWCC
+// puts ours in f26/f17/f27) and the anonymous i2f magic-double pool slot
+// (`lfd r31+0xb0` vs retail's `r31+0x540`), which is unit-wide .rodata order.
+// NONMATCHING (99.35%): callee-saved FPR colouring and the anonymous i2f double pool slot only.
+void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041cf90);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+    GXSetCurrentMtx(0);
+
+    {
+    f32 w75 = 0.75f * w;
+    winNameQuad(work, 0x98, x, y, w75, 32.0f);
+    winNameQuad(work, 0x9A, x + w75, y, (w - w75) - 16.0f, 32.0f);
+    winNameQuad(work, 0x9B, x + (w - 16.0f), y, 16.0f, 32.0f);
+    winNameQuad(work, 0xA2, x, y - 32.0f, w75, (h - 32.0f) - 16.0f);
+    winNameQuad(work, 0x9E, x + w75, y - 32.0f, (w - w75) - 8.0f, (h - 32.0f) - 16.0f);
+    winNameQuad(work, 0xA1, x + (w - 8.0f), y - 32.0f, 8.0f, (h - 32.0f) - 16.0f);
+    winNameQuad(work, 0x9E, x + w75, y - (h - 16.0f), (w - w75) - 8.0f, 8.0f);
+    winNameQuad(work, 0xA1, x + (w - 8.0f), y - (h - 16.0f), 8.0f, 8.0f);
+    winNameQuad(work, 0x9C, x, y - (h - 16.0f), w75, 16.0f);
+    winNameQuad(work, 0x9F, x + w75, y - (h - 8.0f), (w - w75) - 16.0f, 8.0f);
+    winNameQuad(work, 0x9D, x + (w - 16.0f), y - (h - 16.0f), 16.0f, 16.0f);
+    }
+}
+
 void sort_1_1_func(WindowWork* work) {
     s32 item = WW_S32(work, 0x214);
     pouchGetHaveItemCnt();
@@ -945,6 +993,163 @@ void winSortMain(WindowWork* work) {
         WW_F32(work, 0x164) += float_0p125_8041d104 * (WW_F32(work, 0x16C) - WW_F32(work, 0x164));
         WW_F32(work, 0x168) += float_0p125_8041d104 * (WW_F32(work, 0x170) - WW_F32(work, 0x168));
 #endif
+    }
+}
+
+// ---- winSortGX ------------------------------------------------------------
+extern const f32 float_240_8041d0ac;
+extern const f32 float_304_8041d0a8;
+extern const f32 float_16_8041d0e4;
+extern const f32 float_20_8041d0c0;
+extern const f32 float_24_8041d0c8;
+extern const f32 float_128_8041d0ec;
+extern const f32 float_136_8041d0f0;
+extern const f32 float_64_8041d0f4;
+extern const f32 float_3_8041d08c;
+extern const f32 float_6_8041d0f8;
+extern const f32 float_8_8041d0a0;
+extern const GXColor dat_8041d004;
+extern const GXColor dat_8041d008;
+extern const GXColor dat_8041d00c;
+extern const GXColor dat_8041d010;
+const Vec vec3_802f42cc = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f42d8 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802f42e4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f42f0 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802f42fc = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f4308 = { 1.0f, 1.0f, 1.0f };
+
+static inline Vec winSortMkVec(Vec base, f32 x, f32 y) {
+    Vec v = base;
+    v.x = x;
+    v.y = y;
+    return v;
+}
+
+// Draws one textured 1x1-uv quad. The original inlines this at every call site,
+// which is why each panel gets its own GXTexObj/Mtx stack slots.
+static inline void winSortPanel(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f64 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sx;
+    f64 sy;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj),
+               (f32)sy / (f32)GXGetTexObjHeight(&texObj), float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - (f32)h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + w, y - (f32)h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
+// The panels, sort-name tex selection and winTexSet/winTexSet_x2 loop all reproduce the
+// target: `h` is passed as f64 so MWCC emits the target's `lfd double_24/40/16; fabs; frsp`
+// scale idiom, and `w` as f32 (lfs + fabs + frsp). The six vec3_802f42xx constants are
+// defined as unit-local `const Vec` (all {0,0,0}/{1,1,1}, extracted from the target's
+// .rodata), which lets MWCC emit the target's rodata-base-relative loads. What is left is
+// register colouring and the offsets of the anonymous doubles (MWCC emits ours at
+// rodata+0xe8..0x100; the target's str_802F3FE8 blob puts them at +0x4e0..0x500, because
+// this unit's other .rodata (str_802F3FE8 and the vec3_802f40xx..42xx the unwritten
+// functions need) is not defined here yet).
+// NONMATCHING (96.33%): anonymous-double .rodata offsets + a few register-colouring diffs.
+void winSortGX(WindowWork* work) {
+    f32 x = WW_F32(work, 0x164);
+    f32 y = WW_F32(work, 0x168);
+    s32 i;
+
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041d004);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXLoadPosMtxImm((const f32(*)[4])((u8*)camGetPtr(8) + 0x11C), 0);
+    GXSetCurrentMtx(0);
+    if (WW_S32(work, 0x184) == 7) {
+        GXSetScissor((u32)(float_16_8041d0e4 +
+                           (float_16_8041d0e4 + (float_304_8041d0a8 + WW_F32(work, 0x244)))),
+                     (u32)(float_40_8041d0e8 + (float_240_8041d0ac - WW_F32(work, 0x24C))), 0x200,
+                     0xC0);
+    }
+
+    winSortPanel(work, 0xA5, x, y, float_128_8041d0ec, 24.0);
+    winSortPanel(work, 0xA3, x + float_128_8041d0ec, y, 24.0f, 24.0);
+
+    for (i = 0; i < WW_S32(work, 0x178); i++) {
+        winSortPanel(work, 0xA6, x + 136.0f, y - float_24_8041d0c8 - (f32)(i * 0x28), 16.0f,
+                     40.0);
+    }
+
+    winSortPanel(work, 0xA4, x + float_128_8041d0ec,
+                 y - float_24_8041d0c8 - (f32)(WW_S32(work, 0x178) * 0x28), 24.0f,
+                 24.0);
+    winSortPanel(work, 0xA7, x, y - float_24_8041d0c8 - (f32)(WW_S32(work, 0x178) * 0x28),
+                 float_128_8041d0ec, 24.0);
+    winSortPanel(work, 0xA8, x, y - float_24_8041d0c8, 136.0f,
+                 (f64)(WW_S32(work, 0x178) * 0x28));
+
+    for (i = 0; i < WW_S32(work, 0x178); i++) {
+        const SortTable* list = sort_data[WW_S32(work, 0x184)];
+        s32 tex = 0xAA;
+
+        if (strcmp(list[i].name, "msg_menu_sort_aiueo") == 0) {
+            tex = 0xA9;
+        } else if (strcmp(list[i].name, "msg_menu_sort_kind") == 0) {
+            tex = 0xAC;
+        } else if (strcmp(list[i].name, "msg_menu_sort_bp") == 0) {
+            tex = 0xAA;
+        } else if (strcmp(list[i].name, "msg_menu_sort_number") == 0) {
+            tex = 0xAD;
+        } else if (strcmp(list[i].name, "msg_menu_sort_place") == 0) {
+            tex = 0xAE;
+        } else {
+            tex = 0xAA;
+        }
+
+        if (i == WW_S32(work, 0x174)) {
+            f32 row;
+
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            row = y - float_20_8041d0c0 - (f32)(i * 0x28) - float_16_8041d0e4 - float_8_8041d0a0;
+            winTexSet(0xB6, winSortMkVec(vec3_802f42cc, x + 83.0f, row), vec3_802f42d8, dat_8041d008);
+            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42e4, x + 78.0f, float_6_8041d0f8 + row),
+                         vec3_802f42f0, dat_8041d00c);
+        } else {
+            f32 row;
+
+            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            row = y - float_20_8041d0c0 - (f32)(i * 0x28) - float_16_8041d0e4 - float_8_8041d0a0;
+            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42fc, x + 84.0f, row), vec3_802f4308,
+                         dat_8041d010);
+        }
+    }
+
+    if (WW_S32(work, 0x184) == 7) {
+        GXSetScissor(0, 0, 0x260, 0x1E0);
     }
 }
 

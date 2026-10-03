@@ -418,10 +418,85 @@ BOOL unk_8005bb80(void) {
 	return TRUE;
 }
 
-// NONMATCHING (0.50%): 1 instruction differs, 276 missing.
+static inline BOOL marioChkMenuYoshi(void) {
+	partyGetPtr(marioGetPartyId());
+	if (seqGetSeq() != 2) {
+		return FALSE;
+	}
+	if (marioKeyOffChk()) {
+		return FALSE;
+	}
+	if (yoshiGetStatus() == 1) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+// The two ctrl guards and the yoshi/seq/key block match (BOOL notCtrl = !ctrl; plus opt_dead_assignments
+// off keeps their cntlzw/srwi materialisation). Remaining: the final !marioChkKey() at both sites (a
+// cntlzw/srwi. + branch our compile folds into srwi r3) and the second ctrl check's shared return TRUE;
+// every source form that forces that materialisation hangs mwcceppc.
+// NONMATCHING (93.38%): the final !marioChkKey() materialisation and one shared return TRUE differ.
 BOOL marioCheckMenuDisable(void) {
+	MarioWork* wp = mp;
+
+	BOOL ctrl = marioChkCtrl();
+	BOOL notCtrl = !ctrl;
+
+	if (notCtrl) {
+		return TRUE;
+	}
+	if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
+		BOOL ctrl2 = marioChkCtrl();
+		BOOL notCtrl2 = !ctrl2;
+
+		if (notCtrl2) {
+			return TRUE;
+		}
+		if (marioChkKey()) {
+			return FALSE;
+		}
+		return TRUE;
+	}
+	if (wp->characterId == 1) {
+		return TRUE;
+	}
+	if (wp->characterId == 2 && kpaGetStageViewType() != 0) {
+		return TRUE;
+	}
+	if (wp->currMotionId == 0x12 || wp->currMotionId == 0x13) {
+		return TRUE;
+	}
+	if (wp->currMotionId == 0x14) {
+		return TRUE;
+	}
+	if (marioGetPlaneStatus() == 1) {
+		return TRUE;
+	}
+	if (marioShipChanging() == 1 || marioShipChanging() == 2) {
+		return TRUE;
+	}
+	if (wp->currMotionId == 0x1f || wp->currMotionId == 0x20) {
+		return TRUE;
+	}
+	if (wp->characterId != 2 && marioGetPlaneStatus() == 0 && wp->hitobjStandOn == NULL) {
+		return TRUE;
+	}
+	if (!mario_bomhei_keychk()) {
+		return TRUE;
+	}
+	if (vivianGetStatus() != 0 && vivianGetStatus() == 2) {
+		return FALSE;
+	}
+	if (marioChkMenuYoshi()) {
+		return FALSE;
+	}
+	if (marioChkKey()) {
+		return FALSE;
+	}
 	return TRUE;
 }
+
 
 BOOL marioChkKey(void) {
 	PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -2457,11 +2532,106 @@ void marioDispBlurSub(s32* unused, s32 blurId) {
 	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 3, 0.0f, 1.0f);
 }
 
-// NONMATCHING (1.03%): 96 missing.
-void marioDispBlur(CameraId camId, void* param) {
-	MarioWork* wp = param; //cast to correct type
+static inline f32 marioDispBlurSinf(f32 angle) {
+	f32 v = 0.00761f;
+	f32 b = 0.16605f;
+	f32 one = 1.0f;
+	f32 t, u;
 
+	if (angle <= 3.1415927f) {
+		if (angle <= 1.5707964f) {
+			t = angle * angle;
+			v = v * t - b;
+			v = v * t + one;
+			v = v * angle;
+		} else {
+			t = angle - 1.5707964f;
+			u = 1.5707964f - t;
+			t = u * u;
+			v = v * t - b;
+			v = v * t + one;
+			v = v * u;
+		}
+	} else if (angle < 4.712389f) {
+		t = angle - 3.1415927f;
+		u = t * t;
+		v = v * u - b;
+		v = v * u + one;
+		v = v * t;
+		v = -v;
+	} else {
+		t = angle - 4.712389f;
+		u = 1.5707964f - t;
+		t = u * u;
+		v = v * t - b;
+		v = v * t + one;
+		v = v * u;
+		v = -v;
+	}
+	return v;
 }
+
+static inline f32 marioDispBlurCosf(f32 angle) {
+	f32 v = 0.03705f;
+	f32 b = 0.4967f;
+	f32 one = 1.0f;
+	f32 t, u;
+
+	if (angle <= 3.1415927f) {
+		if (angle <= 1.5707964f) {
+			t = angle * angle;
+			v = v * t - b;
+			v = v * t + one;
+		} else {
+			t = angle - 1.5707964f;
+			u = 1.5707964f - t;
+			t = u * u;
+			v = v * t - b;
+			v = v * t + one;
+			v = -v;
+		}
+	} else if (angle < 4.712389f) {
+		t = angle - 3.1415927f;
+		t = t * t;
+		v = v * t - b;
+		v = v * t + one;
+		v = -v;
+	} else {
+		t = angle - 4.712389f;
+		u = 1.5707964f - t;
+		t = u * u;
+		v = v * t - b;
+		v = v * t + one;
+	}
+	return v;
+}
+
+// The target inlines the degree->radian conversion of targetYaw (6.2831855*targetYaw/360) followed by a
+// sin and a cos polynomial approximation whose results are unused by the surviving code, so the only
+// residue is their compare skeleton (angle<=pi, <=pi/2, <3pi/2). MWCC's dead-assignment pass removes the
+// whole chain; `opt_dead_assignments off` keeps the compare skeleton while still dropping the (unused)
+// polynomial arithmetic and coefficient loads, which is exactly what the target has.
+#pragma opt_dead_assignments off
+void marioDispBlur(CameraId camId, void* param) {
+	MarioWork* wp = param;
+	Mtx mtx;
+	f32 f5;
+	f32 sinv, cosv;
+	s32 i;
+	s32 flag = animPoseGetMaterialFlag(wp->paperAnimGroupId[marioAnimeId()]);
+
+	f5 = 6.2831855f * wp->targetYaw / 360.0f;
+	sinv = marioDispBlurSinf(f5);
+	cosv = marioDispBlurCosf(f5);
+
+	for (i = 7; i > 0; i--) {
+		marioDispBlurSub((s32*)mtx, i);
+	}
+	animPoseSetMaterialFlagOff(wp->paperAnimGroupId[marioAnimeId()], 0x40);
+	animPoseSetMaterialFlagOn(wp->paperAnimGroupId[marioAnimeId()], flag);
+}
+
+#pragma opt_dead_assignments reset
 
 void marioDisp(CameraId camId, void* param) {
 	MarioWork* wp = mp;

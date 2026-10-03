@@ -1352,6 +1352,287 @@ void select_main(WinMgrEntry* entry) {
 #pragma opt_common_subs reset
 
 
+// Register allocation: the item loop now matches the original register for register (entry r31,
+// select r25, rodata r28, itemDataTable r29, 0x4330 r30, counter r24, rowoff r26, itemoff r27,
+// item r22, value r23). What is left is the dots (`if (select->field_0x38)`) loop: its six
+// tmpDot/scaleDot word temps get callee-saved registers and its 0x4330 magic r20 here, where the
+// original keeps the three long-lived tmpDot words in caller-saved r10/r11/r12 and the magic in
+// r22. That forces r20/r21 to be saved too (`stmw r20` vs `stmw r22`) and makes the six vec loads
+// hoist to the top of the loop instead of interleaving with their stores; the same r20/r21 leak
+// then colours the edge block's tmpEdge.x and the title's message width. The scheduler also drops
+// the original's dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` compare at the top of the item loop.
+// Finally the (f32)int pool double still differs: the original references the named
+// double_to_int_802fff00 at .rodata+0x468 where this build emits an anonymous copy at +0x548 (the
+// same documented limitation as select_disp_luigi).
+// NONMATCHING (97.76%): the dots loop's colouring (two extra saved registers, r20/r21) and its
+// vec-load scheduling, the dead select->field_0x38 compare, and the (f32)int pool double.
+void select_disp(WinMgrEntry* entry) {
+    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    s32 i;
+    s32 value;
+    ItemData* item;
+    s32 hasValue;
+    Mtx mtx1;
+    Mtx mtx2;
+    char buf[0x20];
+    Vec posRow;
+    Vec tmpRow;
+    Vec scaleRow;
+    Vec posName;
+    Vec tmpName;
+    Vec scaleName;
+    Vec posEdge;
+    Vec tmpEdge;
+    Vec scaleEdge;
+    Vec posDot;
+    Vec tmpDot;
+    Vec scaleDot;
+    Vec posTitle;
+    Vec tmpTitle;
+    Vec scaleTitle;
+    Vec posIcon3;
+    Vec posIcon13;
+    Vec posIcon16;
+    Vec posMain;
+    Vec posUp;
+    Vec posDown;
+    u32 scissorLeft;
+    u32 scissorTop;
+    u32 scissorWidth;
+    u32 scissorHeight;
+    GXColor colorBlack = dat_80421a28;
+    GXColor colorGray = dat_80421a2c;
+    GXColor colorWhite = dat_80421a30;
+    GXColor colorWhite2 = dat_80421a30;
+    GXColor fogColor;
+    const char* msg;
+    u16 width;
+    u16 x;
+    f32 zero;
+    f32 textWidth;
+
+    if (wp->mEntries[select->descriptorId[0]].flags & 4) {
+        return;
+    }
+
+    fogColor = dat_80421a34;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
+    // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp_luigi.
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, float_0_80421a80, float_0_80421a80, float_0_80421a80, float_0_80421a80, &fogColor);
+#else
+    GXSetFog(0, float_0_80421a80, float_0_80421a80, float_0_80421a80, float_0_80421a80, fogColor);
+#endif
+    GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
+    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+
+    zero = float_0_80421a80;
+    for (i = 0; i < select->field_0x34; i++) {
+        f32 row;
+        f32 bound;
+        item = &itemDataTable[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2];
+        row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+        bound = select->field_0x1C + (zero + row);
+        if ((f32)entry->field_0x1C < bound - 32.0f) {
+            continue;
+        }
+        if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
+            continue;
+        }
+        if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+            winIconGrayInit();
+        } else {
+            winIconInit();
+        }
+        {
+            GXColor color = colorWhite;
+            f32 rowY;
+
+            tmpRow = vec3_802ffa98;
+            scaleRow = vec3_802ffaa4;
+            tmpRow.x = (f32)(entry->field_0x18 + 0x23);
+            rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
+            tmpRow.y = select->field_0x1C + (zero + rowY);
+            posRow = tmpRow;
+            winIconSet(*(u16*)&item->icon_id, &posRow, &scaleRow, &color);
+        }
+        winFontInit();
+        {
+            GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            f32 nameY;
+
+            tmpName = vec3_802ffab0;
+            scaleName = vec3_802ffabc;
+            tmpName.x = (f32)(entry->field_0x18 + 0x3c);
+            nameY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpName.y = select->field_0x1C + (zero + nameY);
+            posName = tmpName;
+            winFontSet(&posName, &scaleName, &color, msgSearch(item->name));
+        }
+
+        hasValue = 0;
+        switch (select->field_0x4) {
+        case 11:
+            value = ((ItemDataView*)item)->buy_price;
+            hasValue = 1;
+            break;
+        case 3:
+        case 12:
+            value = (u16)item->sell_price;
+            hasValue = 1;
+            break;
+        case 13:
+            value = (u16)item->star_piece_price;
+            hasValue = 1;
+            break;
+        case 14:
+            value = ((ItemDataView*)item)->buy_price * 12 / 10;
+            hasValue = 1;
+            break;
+        case 15:
+            value = ((ItemDataView*)item)->buy_price * (evtGetValue(0, 0xF5DE06A9) + 11) / 10;
+            hasValue = 1;
+            break;
+        case 16:
+            value = (((ItemDataView*)item)->buy_price * 2 + 2) / 3;
+            hasValue = 1;
+            break;
+        }
+        if (hasValue) {
+            GXColor color;
+            f32 edgeX;
+            f32 edgeY;
+
+            sprintf(buf, str_80421A9C, value);
+            textWidth = (f32)FontGetMessageWidth(buf);
+            winFontInit();
+            color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            scaleEdge = vec3_802ffad4;
+            tmpEdge = vec3_802ffac8;
+            edgeX = (f32)(entry->field_0x18 + entry->field_0x20 - 0xa) - textWidth;
+            edgeY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpEdge.x = edgeX;
+            tmpEdge.y = select->field_0x1C + (zero + edgeY);
+            posEdge = tmpEdge;
+            winFontSet(&posEdge, &scaleEdge, &color, buf);
+        }
+
+    }
+
+    if (select->field_0x38) {
+        winIconInit();
+        for (i = 2; i < 0x1e; i++) {
+            GXColor color = colorBlack;
+            f32 dotX;
+            f32 dotY;
+
+            dotX = (f32)(entry->field_0x18 + (i * entry->field_0x20) / 31);
+            dotY = (f32)(entry->field_0x1C - 0x38) + select->field_0x1C;
+            tmpDot = vec3_802ffae0;
+            scaleDot = vec3_802ffaec;
+            tmpDot.x = dotX;
+            tmpDot.y = dotY;
+            posDot = tmpDot;
+            winIconSet(0x1b7, &posDot, &scaleDot, &color);
+        }
+    }
+
+    GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
+
+    switch (select->field_0x4) {
+    case 2:
+    case 11:
+    case 12:
+    case 13:
+        msg = msgSearch(str_802FFF60);
+        break;
+    case 14:
+        msg = msgSearch(str_802FFF74);
+        break;
+    case 16:
+        msg = msgSearch(str_802FFF88);
+        break;
+    case 17:
+        msg = msgSearch(str_802FFED8);
+        break;
+    default:
+        msg = msgSearch(str_802FFF9C);
+        break;
+    }
+
+    width = FontGetMessageWidth(msg);
+    x = (entry->field_0x20 - width) / 2;
+    winFontInit();
+    {
+        GXColor color = colorWhite2;
+
+        tmpTitle = vec3_802ffaf8;
+        scaleTitle = vec3_802ffb04;
+        tmpTitle.x = (f32)(entry->field_0x18 + x);
+        tmpTitle.y = (f32)(entry->field_0x1C + 0xe);
+        posTitle = tmpTitle;
+        winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
+    }
+
+        switch (select->field_0x4) {
+        case 3:
+        case 11:
+        case 12:
+        case 14:
+        case 15:
+            PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+            PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
+            PSMTXConcat(mtx1, mtx2, mtx1);
+            iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a38);
+            posIcon3 = vec3_802ffb10;
+            posIcon3.x = (f32)(entry->field_0x18 + 0x10c);
+            posIcon3.y = (f32)(entry->field_0x1C - 0xc);
+            iconDispGx(&posIcon3, 0x10, 0x18b, 0.6f);
+            break;
+        case 13:
+            PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+            PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
+            PSMTXConcat(mtx1, mtx2, mtx1);
+            iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a3c);
+            posIcon13 = vec3_802ffb1c;
+            posIcon13.x = (f32)(entry->field_0x18 + 0x10c);
+            posIcon13.y = (f32)(entry->field_0x1C - 0xc);
+            iconDispGx(&posIcon13, 0x10, 0x18d, 0.6f);
+            break;
+        case 16:
+            PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+            PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
+            PSMTXConcat(mtx1, mtx2, mtx1);
+            iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a40);
+            posIcon16 = vec3_802ffb28;
+            posIcon16.x = (f32)(entry->field_0x18 + 0x10c);
+            posIcon16.y = (f32)(entry->field_0x1C - 0xc);
+            iconDispGx(&posIcon16, 0x10, 0x13f, 0.6f);
+            break;
+        }
+
+    posMain = vec3_802ffb34;
+    posMain.x = select->field_0x14;
+    posMain.y = select->field_0x18;
+    iconDispGx(&posMain, 0x14, 0x1f0, float_1_80421a90);
+
+    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->field_0x10 != 0) {
+            posUp = vec3_802ffb40;
+            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
+            posUp.y = (f32)(entry->field_0x1C - 0x24);
+            iconDispGx(&posUp, 0x10, 0x1b5, float_0p6_80421a8c);
+        }
+        if (select->field_0x10 != select->field_0x34 - 8) {
+            posDown = vec3_802ffb4c;
+            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
+            posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            iconDispGx(&posDown, 0x10, 0x1b6, float_0p6_80421a8c);
+        }
+    }
+}
+
+
 // Every instruction, call, constant and control-flow edge matches. The only remaining difference is
 // the compiler-generated int->float magic double: MWCC emits an anonymous copy at .rodata+0x548 and
 // references that, where the original references the named double_to_int_802fff00 at .rodata+0x468
