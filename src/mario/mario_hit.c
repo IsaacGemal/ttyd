@@ -21,6 +21,7 @@
 #include "motion/mot_slit.h"
 #include "mario/mariost.h"
 #include "matching.h"
+#include "mario/mario_balloon.h"
 #include "motion/mot_ship.h"
 #include "motion/mot_roll.h"
 
@@ -32,6 +33,17 @@ extern const f32 float_1000_8041a7a0;
 extern const f32 float_1_8041a7bc;
 extern const f32 float_11_8041a7ac;
 extern const f32 float_13_8041a7b0;
+#ifdef MUST_MATCH
+// Match-only: building the direction in an inline that starts from the named
+// vector and returns by value makes MWCC materialise the original's extra
+// built-then-copied Vec slot (as in searchUnder2's makeVec5760).
+static inline Vec makeDirVec(const Vec* src, f32 x, f32 z) {
+    Vec v = *src;
+    v.x = x;
+    v.z = z;
+    return v;
+}
+#endif
 extern const f32 float_45_8041a7b4;
 
 extern const f32 float_0p5_8041a7c4;
@@ -1571,6 +1583,193 @@ out:
     return hit;
 }
 
+extern const f32 float_45_8041a7b4;
+extern const f32 float_0p75_8041a7d8;
+extern const f32 float_27p75_8041a820;
+extern const f32 float_12_8041a824;
+extern const f32 float_7_8041a828;
+extern const f32 float_0p1_8041a7e4;
+extern const f32 float_11_8041a7ac;
+extern const char str_802C5948[];
+extern const Vec vec3_802c5844;
+extern const Vec vec3_802c5850;
+extern const Vec vec3_802c585c;
+// NONMATCHING (86.19%): the three passes build a `HitCheckQuery` local and call `marioHitCheckVecRound` (the caller-built shape `marioChkFront` uses), which reproduces the 3 query slots and the distance/hitPos/normal rounding; calls and control flow match. The pass-2 direction is built through `makeDirVec` (a by-value inline that starts from the named rodata vec) so MWCC materialises the original's built-then-copied `Vec` slot. What remains is register colouring, a 0x10 frame gap (0x240 vs 0x250 - the original keeps a second dead `Vec` copy in pass 1 that the inliner drops), and the file-wide i2f magic-double pool blocker (original `lfd f1,0x1f0(r31)`, ours `@1109@l`).
+HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
+    const char* base = (const char*)vec3_802c5730;
+    MarioWork* wp = marioGetPtr();
+    HitCheckQuery query;
+    HitCheckQuery query2;
+    HitCheckQuery query3;
+    Vec dir;
+    Vec dir2;
+    Vec dir3;
+    Vec bestNorm;
+    Vec p;
+    Vec hitPos;
+    Vec norm;
+#ifdef MUST_MATCH
+    Vec dtmp;
+    Vec dtmp2;
+#endif
+    HitEntry* hit;
+    HitEntry* best;
+    HitEntry* hit2;
+    f32 sin;
+    f32 cos;
+    f32 sin2;
+    f32 cos2;
+    f32 half[3];
+    f32 dist;
+    f32 curDist;
+    f32 bestDist;
+    f32 deltaX;
+    f32 deltaZ;
+    s32 count;
+    s32 i;
+
+    if (vivianGetStatus() == 2) {
+        return NULL;
+    }
+    sincosf(&sin, &cos, b);
+    if (marioChkSts(0x10) != 0 && strcmp(gp->currentMapName, RO(base, 0x218, str_802C5948)) == 0) {
+        if (__fabsf(*(f32*)&wp->field_0x1F0[0x28]) >= float_45_8041a7b4 ||
+            __fabsf(*(f32*)&wp->field_0x1F0[0x30]) >= float_45_8041a7b4) {
+            pos->x += a * sin;
+            pos->z += a * cos;
+            return NULL;
+        }
+    }
+    count = 2;
+    if (wp->characterId == 2) {
+        if (*(u32*)wp->field_0x14 & 1) {
+            count = 3;
+            half[0] = float_0p75_8041a7d8 * wp->wPlayerCollisionBox.y;
+            half[1] = float_0p5_8041a7c4 * wp->wPlayerCollisionBox.y;
+            half[2] = float_11_8041a7ac;
+        } else {
+            half[0] = float_0p75_8041a7d8 * wp->wPlayerCollisionBox.y;
+            half[1] = float_11_8041a7ac;
+        }
+    } else if (wp->currMotionId == 0x1A) {
+        MarioWork* wp2 = marioGetPtr();
+        f32 marioHeight = wp2->wPlayerCollisionBox.y;
+
+        if (wp2->currMotionId == 0x1A) {
+            PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+            if (party != NULL) {
+                marioHeight = partyGetHeight(party);
+            }
+        }
+        half[0] = float_0p75_8041a7d8 * marioHeight;
+        half[1] = float_11_8041a7ac;
+    } else if ((wp->flags & 0x1000000) == 0) {
+        half[0] = float_27p75_8041a820;
+        half[1] = float_11_8041a7ac;
+        if (wp->airTimer != 0) {
+            half[2] = float_0p1_8041a7e4;
+            count = 3;
+        }
+    } else {
+        half[0] = float_12_8041a824;
+        half[1] = float_11_8041a7ac;
+        if (wp->airTimer != 0) {
+            half[2] = float_7_8041a828;
+            count = 3;
+        }
+    }
+    dist = float_0p5_8041a7c4 * c;
+    p = *pos;
+    dir = *(const Vec*)RO(base, 0x114, vec3_802c5844);
+    dir.x = sin;
+    dir.z = cos;
+    curDist = dist + a;
+    bestDist = curDist;
+    best = NULL;
+    for (i = 0; i < count; i++) {
+        p.y = pos->y + half[i];
+        query.targetPos = p;
+        query.targetDir = dir;
+        query.targetDistance = dist + a;
+        curDist = dist + a;
+        hit = marioHitCheckVecRound(&query, &hitPos, &norm, &curDist);
+        if (hit != NULL) {
+            if (chkBalloon(hit) != 0) {
+                *(void**)((u8*)wp + 0x20C) = hit;
+            }
+            if (best == NULL || curDist < bestDist) {
+                bestDist = curDist;
+                best = hit;
+                bestNorm = norm;
+            }
+        }
+    }
+    if (best != NULL) {
+        f32 nx = bestNorm.x;
+        f32 nz = bestNorm.z;
+        f32 dx = sin * a;
+        f32 dz = cos * a;
+        f32 dot = dx * nx + dz * nz;
+
+        deltaX = float_0p5_8041a7c4 * (dx - dot * nx);
+        deltaZ = float_0p5_8041a7c4 * (dz - dot * nz);
+    }
+    sincosf(&sin2, &cos2, float_45_8041a7b4 + b);
+#ifdef MUST_MATCH
+    dtmp2 = makeDirVec((const Vec*)RO(base, 0x120, vec3_802c5850), sin2, cos2);
+    dir2 = dtmp2;
+#else
+    dir2 = *(const Vec*)RO(base, 0x120, vec3_802c5850);
+    dir2.x = sin2;
+    dir2.z = cos2;
+#endif
+    hit2 = NULL;
+    for (i = 0; i < count; i++) {
+        p.y = pos->y + half[i];
+        query2.targetPos = p;
+        query2.targetDir = dir2;
+        query2.targetDistance = dist;
+        curDist = dist;
+        hit = marioHitCheckVecRound(&query2, NULL, NULL, &curDist);
+        hit2 = hit;
+        if (hit2 != NULL) {
+            break;
+        }
+    }
+    if (hit2 != NULL) {
+        sincosf(&sin2, &cos2, b - float_45_8041a7b4);
+        dir3 = *(const Vec*)RO(base, 0x12C, vec3_802c585c);
+        dir3.x = sin2;
+        dir3.z = cos2;
+        hit2 = NULL;
+        for (i = 0; i < count; i++) {
+            p.y = pos->y + half[i];
+            query3.targetPos = p;
+            query3.targetDir = dir3;
+            query3.targetDistance = dist;
+            curDist = dist;
+            hit = marioHitCheckVecRound(&query3, NULL, NULL, &curDist);
+            hit2 = hit;
+        }
+    }
+    if (best != NULL) {
+        if (hit2 == NULL) {
+            *out = curDist;
+            pos->x += deltaX;
+            pos->z += deltaZ;
+        } else {
+            *out = float_0_8041a7a4;
+        }
+        return best;
+    }
+    if (hit2 == NULL) {
+        pos->x += a * sin;
+        pos->z += a * cos;
+    }
+    return NULL;
+}
+
 void marioSearchFrontWall_staying(f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec v;
@@ -1992,17 +2191,6 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
 }
 
 
-#ifdef MUST_MATCH
-// Match-only: building the direction in an inline that starts from the named
-// vector and returns by value makes MWCC materialise the original's extra
-// built-then-copied Vec slot (as in searchUnder2's makeVec5760).
-static inline Vec makeDirVec(const Vec* src, f32 x, f32 z) {
-    Vec v = *src;
-    v.x = x;
-    v.z = z;
-    return v;
-}
-#endif
 
 extern const f32 float_360_8041a7c0;
 extern const f32 float_0p125_8041a7d0;
