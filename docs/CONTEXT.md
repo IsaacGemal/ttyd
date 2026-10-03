@@ -4148,3 +4148,23 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
 - **Open**: bom_01 ext_main (wave 67 has it); cam_road .sdata2 (nodefer unit: all-literal gives byte-exact .sdata2 but the
   literal scheduling costs camRoadMain 1.5, calcHokanCamRoad 4.9; non-const section objects lose the const CSE in
   camRoadReset, 25 points).
+
+## Waves 66/67 collection; waves 67 and 68 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 67** (16:30, base 592a06eb, `scratch/wave67/`): 22 link agents (every unit at 100% code that didn't
+  link, with earlier link agents' REPORT.md as prev notes) and 16 data-port agents for functions still under 50%,
+  each seeded with the latest agent version. No near-miss share: two passes have drained most near-misses.
+- Collection (onto main 28c77d77): code linked 43.90 -> 46.39%, data linked 79.92 -> 81.25%, 9,343 -> 9,345.
+  **17 of 21 link agents' units link**: battle_break_slot, ac_shot, eff_bomb, eff_break, eff_mist, eff_naniga,
+  eff_sleep, eff_mahorn2, eff_kemuri1_n64, eff_magic1_n64, eff_magic3_n64, evt_mario, party_bomhei, aji
+  unit_boss_magnum_battender_mkII, las_04, muj_20, tik_00 (eff_kumokumo_n64, evt_npc, evt_sub and
+  unit_party_chuchurina didn't). Data-port: winMailGX 0 -> 99.8%, select_disp_party 0 -> 99.9%,
+  battleAcMain_ShotTarget 19.8 -> 99.9%, party_motion_homing_walk 0 -> 96.7%, mot_jabara 0 -> 96.3%, _mapLoad
+  21.9 -> 90.3%. eff_naniga's objdiff data score drops as it links (`--allow-regress`).
+- Review (`scratch/wave67/review1.md`; data_check clean over 171 objects, plus value checks of 283 constants and 73
+  base+offset loads in winMailGX): no behaviour defects; evt_mario's natural build indexed past one Vec and read
+  base + offset Vecs/strings that only exist under MUST_MATCH, and _mapLoad seeded corners from 0x28-0x7C past a
+  12-byte object; all MUST_MATCH only now, with named objects or literals otherwise.
+- **Wave 68** (18:20, base 28c77d77, `scratch/wave68/`): 5 link agents for the units wave 66 brought to 100%
+  (battle_damage, eff_fire, eff_ripple_n64, party_move, party_vivian) and 24 near-miss agents in units waves 66/67
+  didn't touch. Prompts now forbid model, tool and process names in source comments.
